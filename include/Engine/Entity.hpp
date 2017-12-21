@@ -97,6 +97,38 @@ namespace Engine {
 			friend bool operator!=(Entity left, Entity right);
 
 			/**
+			 * @brief Less than comparison.
+			 * @param[in] left The left operand.
+			 * @param[in] right The right operand.
+			 * @return The result of the comparison.
+			 */
+			friend bool operator<(Entity left, Entity right);
+
+			/**
+			 * @brief Greater than comparison.
+			 * @param[in] left The left operand.
+			 * @param[in] right The right operand.
+			 * @return The result of the comparison.
+			 */
+			friend bool operator>(Entity left, Entity right);
+
+			/**
+			 * @brief Less than or equal comparison.
+			 * @param[in] left The left operand.
+			 * @param[in] right The right operand.
+			 * @return The result of the comparison.
+			 */
+			friend bool operator<=(Entity left, Entity right);
+
+			/**
+			 * @brief Greater than or equal comparison.
+			 * @param[in] left The left operand.
+			 * @param[in] right The right operand.
+			 * @return The result of the comparison.
+			 */
+			friend bool operator>=(Entity left, Entity right);
+
+			/**
 			 * @brief Output an entity to @p os.
 			 * @param[in] os The output stream.
 			 * @param[in] ent The entity.

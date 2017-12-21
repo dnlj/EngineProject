@@ -33,6 +33,22 @@ namespace Engine {
 		return !(left == right);
 	}
 
+	bool operator<(Engine::Entity left, Engine::Entity right) {
+		return left.eid < right.eid;
+	}
+
+	bool operator>(Engine::Entity left, Engine::Entity right) {
+		return left.eid > right.eid;
+	}
+
+	bool operator<=(Engine::Entity left, Engine::Entity right) {
+		return !(left.eid > right.eid);
+	}
+
+	bool operator>=(Engine::Entity left, Engine::Entity right) {
+		return !(left.eid < right.eid);
+	}
+
 	std::ostream& operator<<(std::ostream& os, Engine::Entity ent) {
 		return os << "Engine::Entity(" << ent.getID() << ")";
 	}
