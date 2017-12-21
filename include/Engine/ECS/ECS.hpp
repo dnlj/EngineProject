@@ -196,6 +196,28 @@ namespace Engine::ECS {
 	 */
 	template<class Component>
 	Component& getComponent(EntityID eid);
+
+	/**
+	 * @brief Used to check if a type is valid for use as a system.
+	 * @tparam T The type to check.
+	 */
+	template<class T, class = void>
+	class isSystem : public std::false_type {};
+
+	/** @copydoc isSystem */
+	template<class T>
+	class isSystem<
+		T,
+		std::void_t<
+			decltype(
+				std::declval<T>().onEntityCreated(std::declval<Engine::Entity>()),
+				std::declval<T>().onComponentAdded(std::declval<Engine::Entity>()),
+				std::declval<T>().onComponentRemoved(std::declval<Engine::Entity>()),
+				std::declval<T>().onEntityDestroyed(std::declval<Engine::Entity>()),
+				std::declval<T>().run(std::declval<float>())
+			)
+		>
+	> : public std::true_type{};
 }
 
 #include <Engine/ECS/ECS.ipp>
