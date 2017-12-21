@@ -42,45 +42,59 @@ TEST(EngineECSTest, ECSTest) {
 
 	// Add/Remove components
 	{
+		Engine::ECS::ComponentBitset cbits;
+
+		// Test string to id
+		cbits[Engine::ECS::detail::getComponentID("ComponentA")] = true;
+		cbits[Engine::ECS::detail::getComponentID("ComponentB")] = true;
+		cbits[Engine::ECS::detail::getComponentID("ComponentC")] = true;
+
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentA>(eid), false);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentB>(eid), false);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentC>(eid), false);
+		EXPECT_EQ(Engine::ECS::hasComponents(eid, cbits), false);
 
 		Engine::ECS::addComponent<ComponentB>(eid);
 
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentA>(eid), false);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentB>(eid), true);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentC>(eid), false);
+		EXPECT_EQ(Engine::ECS::hasComponents(eid, cbits), false);
 
 		Engine::ECS::addComponent<ComponentA>(eid);
 
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentA>(eid), true);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentB>(eid), true);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentC>(eid), false);
+		EXPECT_EQ(Engine::ECS::hasComponents(eid, cbits), false);
 
 		Engine::ECS::addComponent<ComponentC>(eid);
 
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentA>(eid), true);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentB>(eid), true);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentC>(eid), true);
+		EXPECT_EQ(Engine::ECS::hasComponents(eid, cbits), true);
 
 		Engine::ECS::removeComponent<ComponentB>(eid);
 
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentA>(eid), true);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentB>(eid), false);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentC>(eid), true);
+		EXPECT_EQ(Engine::ECS::hasComponents(eid, cbits), false);
 
 		Engine::ECS::removeComponent<ComponentA>(eid);
 
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentA>(eid), false);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentB>(eid), false);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentC>(eid), true);
+		EXPECT_EQ(Engine::ECS::hasComponents(eid, cbits), false);
 
 		Engine::ECS::removeComponent<ComponentC>(eid);
 
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentA>(eid), false);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentB>(eid), false);
 		EXPECT_EQ(Engine::ECS::hasComponent<ComponentC>(eid), false);
+		EXPECT_EQ(Engine::ECS::hasComponents(eid, cbits), false);
 	}
 
 	// Destroy entity
@@ -113,5 +127,8 @@ TEST(EngineECSTest, ECSTest) {
 
 		EXPECT_EQ(Engine::ECS::isAlive(e2), false);
 		EXPECT_EQ(Engine::ECS::isAlive(e3), false);
+	}
+
+	{
 	}
 }

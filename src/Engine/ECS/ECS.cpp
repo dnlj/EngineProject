@@ -65,7 +65,9 @@ namespace Engine::ECS {
 		return detail::getComponentBitset(eid)[cid];
 	}
 
-	
+	bool hasComponents(EntityID eid, ComponentBitset cbits) {
+		return (detail::getComponentBitset(eid) & cbits) == cbits;
+	}
 
 	void removeComponent(EntityID eid, ComponentID cid) {
 		detail::getComponentBitset(eid)[cid] = false;

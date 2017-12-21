@@ -31,10 +31,11 @@ namespace Engine::ECS {
 	/** The type to use for component ids */
 	using ComponentID = size_t;
 
+	using ComponentBitset = std::bitset<MAX_COMPONENTS>;
+
 	namespace detail {
 		template<class T>
 		using ComponentContainer = std::vector<T>;
-		using ComponentBitset = std::bitset<MAX_COMPONENTS>;
 		using AddComponentFunction = void(*)(EntityID, ComponentID);
 		using GetComponentFunction = void*(*)(EntityID);
 
@@ -163,6 +164,22 @@ namespace Engine::ECS {
 	 */
 	template<class Component>
 	bool hasComponent(EntityID eid);
+
+	/**
+	 * @brief Checks if an entity has components.
+	 * @param[in] eid The id of the entity.
+	 * @param[in] cbit The bitset of components.
+	 * @return True if the entity has the components; otherwise false.
+	 */
+	bool hasComponents(EntityID eid, ComponentBitset cbit);
+
+	/**
+	 * @brief Checks if an entity has components.
+	 * @param[in] eid The id of the entity.
+	 * @param[in] cbit The bitset of components.
+	 * @return True if the entity has the components; otherwise false.
+	 */
+	bool hasComponents(EntityID eid, ComponentBitset cbit);
 
 	/**
 	 * @brief Removes a component from an entity.
