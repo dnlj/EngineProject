@@ -25,6 +25,12 @@ namespace Engine {
 			ECS::EntityID getID() const;
 
 			/**
+			 * @breif Checks if an entity is alive.
+			 * @return True if the entity is alive; otherwise false.
+			 */
+			bool isAlive() const;
+
+			/**
 			 * @brief Adds a component of to this Entity.
 			 * @param[in] cid The ComponentID for the type of component to add to this Entity.
 			 */
@@ -138,7 +144,7 @@ namespace Engine {
 
 		protected:
 			/** The EntityID */
-			const ECS::EntityID eid;
+			ECS::EntityID eid;
 	};
 }
 

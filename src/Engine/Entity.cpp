@@ -9,6 +9,10 @@ namespace Engine {
 		return eid;
 	};
 
+	bool Entity::isAlive() const {
+		return ECS::isAlive(eid);
+	}
+
 	void Entity::addComponent(ECS::ComponentID cid) {
 		ECS::addComponent(eid, cid);
 	};
