@@ -168,18 +168,10 @@ namespace Engine::ECS {
 	/**
 	 * @brief Checks if an entity has components.
 	 * @param[in] eid The id of the entity.
-	 * @param[in] cbit The bitset of components.
+	 * @param[in] cbits The bitset of components.
 	 * @return True if the entity has the components; otherwise false.
 	 */
-	bool hasComponents(EntityID eid, ComponentBitset cbit);
-
-	/**
-	 * @brief Checks if an entity has components.
-	 * @param[in] eid The id of the entity.
-	 * @param[in] cbit The bitset of components.
-	 * @return True if the entity has the components; otherwise false.
-	 */
-	bool hasComponents(EntityID eid, ComponentBitset cbit);
+	bool hasComponents(EntityID eid, ComponentBitset cbits);
 
 	/**
 	 * @brief Removes a component from an entity.

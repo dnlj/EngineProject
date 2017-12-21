@@ -37,15 +37,24 @@ namespace Engine {
 			/** 
 			 * @brief Checks if an Entity has a component of type cid.
 			 * @param[in] cid The ComponentID for the type of component to check for.
+			 * @return True if this entity has the components; othewise false.
 			 */
 			bool hasComponent(ECS::ComponentID cid) const;
 
 			/**
 			 * @copybrief Entity::hasComponent
 			 * @tparam The type of component to check for.
+			 * @return True if this entity has the components; othewise false.
 			 */
 			template<class Component>
 			bool hasComponent() const;
+
+			/**
+			 * @brief Checks if an Entity has components.
+			 * @param[in] cbits The bitset of components.
+			 * @return True if this entity has the components; othewise false.
+			 */
+			bool hasComponents(ECS::ComponentBitset cbits) const;
 
 			/**
 			 * @brief Removes a component from this Entity.

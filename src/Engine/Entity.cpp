@@ -17,6 +17,10 @@ namespace Engine {
 		return ECS::hasComponent(eid, cid);
 	}
 
+	bool  Entity::hasComponents(ECS::ComponentBitset cbits) const {
+		return ECS::hasComponents(eid, cbits);
+	}
+
 	void Entity::removeComponent(ECS::ComponentID cid) {
 		ECS::removeComponent(eid, cid);
 	}
