@@ -24,4 +24,16 @@ namespace Engine {
 	void Entity::removeComponent(ECS::ComponentID cid) {
 		ECS::removeComponent(eid, cid);
 	}
+
+	bool operator==(Engine::Entity left, Engine::Entity right) {
+		return left.eid == right.eid;
+	}
+
+	bool operator!=(Engine::Entity left, Engine::Entity right) {
+		return !(left == right);
+	}
+
+	std::ostream& operator<<(std::ostream& os, Engine::Entity ent) {
+		return os << "Engine::Entity(" << ent.getID() << ")";
+	}
 }

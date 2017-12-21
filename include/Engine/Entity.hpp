@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <ostream>
+
 // Engine
 #include <Engine/ECS/ECS.hpp>
 
@@ -77,7 +80,31 @@ namespace Engine {
 			template<class Component>
 			Component& getComponent();
 
-		private:
+			/**
+			 * @brief Checks if two entities are equal.
+			 * @param[in] left The left operand.
+			 * @param[in] right The right operand.
+			 * @return True if @p left and @p right are equal.
+			 */
+			friend bool operator==(Entity left, Entity right);
+
+			/**
+			 * @brief Checks if two entities are not equal.
+			 * @param[in] left The left operand.
+			 * @param[in] right The right operand.
+			 * @return True if @p left and @p right are not equal.
+			 */
+			friend bool operator!=(Entity left, Entity right);
+
+			/**
+			 * @brief Output an entity to @p os.
+			 * @param[in] os The output stream.
+			 * @param[in] ent The entity.
+			 * @return @p os.
+			 */
+			friend std::ostream& operator<<(std::ostream& os, Entity ent);
+
+		protected:
 			/** The EntityID */
 			const ECS::EntityID eid;
 	};
