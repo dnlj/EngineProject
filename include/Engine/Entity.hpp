@@ -25,7 +25,7 @@ namespace Engine {
 			ECS::EntityID getID() const;
 
 			/**
-			 * @breif Checks if an entity is alive.
+			 * @brief Checks if an entity is alive.
 			 * @return True if the entity is alive; otherwise false.
 			 */
 			bool isAlive() const;
