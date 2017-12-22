@@ -27,13 +27,14 @@ namespace Engine::ECS {
 	namespace detail {
 		template<class T>
 		using ComponentContainer = std::vector<T>;
-		using AddComponentFunction = void(*)(EntityID, ComponentID);
-		using GetComponentFunction = void*(*)(EntityID);
 
 		/**
 		 * @brief Stores data about the registered components.
 		 */
 		namespace ComponentData {
+			using AddComponentFunction = void(*)(EntityID, ComponentID);
+			using GetComponentFunction = void*(*)(EntityID);
+
 			extern std::unordered_map<std::string_view, ComponentID> nameToID;
 			extern std::array<AddComponentFunction, MAX_COMPONENTS> addComponent;
 			extern std::array<GetComponentFunction, MAX_COMPONENTS> getComponent;
