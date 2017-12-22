@@ -9,7 +9,6 @@
 
 // TODO: Add a tag system that doesnt require storage allocation (it would have to use the same component id things just not craete the arrays)
 // TODO: Since we known the number of components at compile time we should be able to pre alloccate all the detail::* containers
-// TODO: We never downsize any of the entity containers (entityLife, getComponentContainer)
 
 namespace {
 	class ComponentA {
@@ -88,7 +87,7 @@ int main(int argc, char* argv[]) {
 
 	e0.addComponent<ComponentA>();
 	Engine::ECS::detail::runAll(0.1666f);
-	e0.addComponent<ComponentC>();
+	//e0.addComponent<ComponentC>();
 	Engine::ECS::detail::runAll(0.1666f);
 	e0.addComponent<ComponentB>();
 	Engine::ECS::detail::runAll(0.1666f);
@@ -99,6 +98,9 @@ int main(int argc, char* argv[]) {
 	Engine::destroyEntity(e0);
 	Engine::ECS::detail::runAll(0.1666f);
 
+	Engine::destroyEntity(e1);
+
+	Engine::ECS::reclaim();
 
 	std::cout << "Done." << std::endl;
 	getchar();

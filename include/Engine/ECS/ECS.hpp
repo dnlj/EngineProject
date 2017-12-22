@@ -34,10 +34,12 @@ namespace Engine::ECS {
 		namespace ComponentData {
 			using AddComponentFunction = void(*)(EntityID, ComponentID);
 			using GetComponentFunction = void*(*)(EntityID);
+			using RecaimFunction = void(*)();
 
 			extern std::unordered_map<std::string_view, ComponentID> nameToID;
 			extern std::array<AddComponentFunction, MAX_COMPONENTS> addComponent;
 			extern std::array<GetComponentFunction, MAX_COMPONENTS> getComponent;
+			extern std::array<RecaimFunction, MAX_COMPONENTS> reclaim;
 		}
 
 		/**
@@ -45,7 +47,7 @@ namespace Engine::ECS {
 		 */
 		namespace EntityData {
 			extern std::vector<ComponentBitset> componentBitsets;
-			extern std::vector<EntityID> alive;
+			extern std::vector<uint8_t> alive;
 			extern std::vector<EntityID> reusableIDs;
 		}
 	
@@ -103,6 +105,13 @@ namespace Engine::ECS {
 		 */
 		template<class Component>
 		void* getComponentForEntity(EntityID eid);
+
+		/**
+		 * @brief Attempts to reclaim memory from dead entitie's components.
+		 * @tparam Component The component.
+		 */
+		template<class Component>
+		void reclaim();
 
 		/**
 		 * @brief Registers a component for use in the ECS.
@@ -197,6 +206,16 @@ namespace Engine::ECS {
 	 */
 	template<class Component>
 	Component& getComponent(EntityID eid);
+
+	/**
+	 * @brief Performs one time setup for the ECS.
+	 */
+	void init();
+
+	/**
+	 * @brief Attemps to reclaim memory throughout the ECS.
+	 */
+	void reclaim();
 }
 
 #include <Engine/ECS/ECS.ipp>

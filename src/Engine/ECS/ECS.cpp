@@ -8,6 +8,7 @@ namespace Engine::ECS::detail {
 		decltype(nameToID) nameToID(2 * MAX_COMPONENTS);
 		decltype(addComponent) addComponent;
 		decltype(getComponent) getComponent;
+		decltype(reclaim) reclaim;
 	}
 
 	namespace EntityData {
@@ -47,7 +48,6 @@ namespace Engine::ECS {
 			}
 		}
 
-		detail::EntityData::componentBitsets[eid] = 0;
 		detail::EntityData::alive[eid] = true;
 
 		detail::onEntityCreatedAll(eid);
@@ -58,6 +58,7 @@ namespace Engine::ECS {
 	void destroyEntity(EntityID eid) {
 		detail::EntityData::reusableIDs.emplace_back(eid);
 		detail::EntityData::alive[eid] = false;
+		detail::EntityData::componentBitsets[eid] = 0;
 		detail::onEntityDestroyedAll(eid);
 	}
 
@@ -82,5 +83,38 @@ namespace Engine::ECS {
 	void removeComponent(EntityID eid, ComponentID cid) {
 		detail::getComponentBitset(eid)[cid] = false;
 		detail::onComponentRemovedAll(eid, cid);
+	}
+
+	void init() {
+		detail::SystemData::onEntityCreated.shrink_to_fit();
+		detail::SystemData::onComponentAdded.shrink_to_fit();
+		detail::SystemData::onComponentRemoved.shrink_to_fit();
+		detail::SystemData::onEntityDestroyed.shrink_to_fit();
+		detail::SystemData::run.shrink_to_fit();
+	}
+
+	void reclaim() {
+		using detail::EntityData::componentBitsets;
+		using detail::EntityData::alive;
+		using detail::EntityData::reusableIDs;
+
+		reusableIDs.shrink_to_fit();
+
+		// Attempt to reclaim from each component
+		for (ComponentID cid = 0; cid < MAX_COMPONENTS; ++cid) {
+			const auto func = detail::ComponentData::reclaim[cid];
+			if (func == nullptr) { break; }
+			func();
+		}
+
+		// Trim any dead entities
+		auto pos = std::find(alive.crbegin(), alive.crend(), static_cast<uint8_t>(true));
+		if (pos == alive.crend()) { return; }
+		auto dist = std::distance(alive.crbegin(), pos);
+
+		alive.erase(alive.cend() - dist, alive.cend());
+		componentBitsets.erase(componentBitsets.cend() - dist, componentBitsets.cend());
+		alive.shrink_to_fit();
+		componentBitsets.shrink_to_fit();
 	}
 }

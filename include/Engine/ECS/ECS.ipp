@@ -33,6 +33,24 @@ namespace Engine::ECS::detail {
 	}
 
 	template<class Component>
+	void reclaim() {
+		auto& container = getComponentContainer<Component>();
+
+		const auto cid = getComponentID<Component>();
+		EntityID end = container.size();
+
+		for (; end != 0; --end) {
+			if (hasComponent(end - 1, cid)) {
+				++end;
+				break;
+			}
+		}
+
+		container.erase(container.cbegin() + end, container.end());
+		container.shrink_to_fit();
+	}
+
+	template<class Component>
 	int registerComponent(const std::string_view name) {
 		const auto id = getComponentID<Component>();
 
@@ -43,6 +61,7 @@ namespace Engine::ECS::detail {
 		detail::ComponentData::nameToID[name] = id;
 		detail::ComponentData::addComponent[id] = addComponentToEntity<Component>;
 		detail::ComponentData::getComponent[id] = getComponentForEntity<Component>;
+		detail::ComponentData::reclaim[id] = reclaim<Component>;
 
 		return 0;
 	}
