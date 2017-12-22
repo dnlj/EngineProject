@@ -1,7 +1,7 @@
 #pragma once
 
 namespace Engine::ECS {
-	/** The maximum number of components registrable. Idealy this would be exactly the number of components used. */
+	/** The maximum number of components registrable. Ideally this would be exactly the number of components used. */
 	constexpr size_t MAX_COMPONENTS = 64;
 
 	/** The type to use for entity ids. */
