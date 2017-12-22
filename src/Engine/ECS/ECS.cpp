@@ -30,8 +30,8 @@ namespace Engine::ECS {
 		auto eid = detail::entityComponentBitsets.size();
 
 		if (!forceNew && !detail::reusableEntityIDs.empty()) {
-			eid = detail::reusableEntityIDs.front();
-			detail::reusableEntityIDs.pop();
+			eid = detail::reusableEntityIDs.back();
+			detail::reusableEntityIDs.pop_back();
 		} else {
 			if (detail::entityComponentBitsets.size() <= eid) {
 				detail::entityComponentBitsets.resize(eid + 1);
@@ -51,7 +51,7 @@ namespace Engine::ECS {
 	}
 
 	void destroyEntity(EntityID eid) {
-		detail::reusableEntityIDs.push(eid);
+		detail::reusableEntityIDs.emplace_back(eid);
 		detail::entityLife[eid] = false;
 		detail::onEntityDestroyedAll(eid);
 	}

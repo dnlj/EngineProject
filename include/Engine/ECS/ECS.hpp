@@ -39,7 +39,7 @@ namespace Engine::ECS {
 
 		extern std::vector<ComponentBitset> entityComponentBitsets;
 		extern std::vector<EntityID> entityLife;
-		extern std::queue<EntityID> reusableEntityIDs;
+		extern std::vector<EntityID> reusableEntityIDs;
 	
 		/**
 		 * @brief Gets the next ComponentID.
