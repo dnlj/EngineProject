@@ -118,19 +118,36 @@ namespace Engine::ECS::detail {
 	template<class System>
 	void run(float dt);
 
-	// TODO: Doc
+	/**
+	 * @brief Runs onEntityCreated member function on all registered systems.
+	 * @param[in] eid The id of the entity being created.
+	 */
 	void onEntityCreatedAll(EntityID eid);
 
-	// TODO: Doc
+	/**
+	 * @brief Runs onComponentAdded member function on all registered systems.
+	 * @param[in] eid The id of the entity being added to.
+	 * @param[in] cid The id of the component being added.
+	 */
 	void onComponentAddedAll(EntityID eid, ComponentID cid);
 
-	// TODO: Doc
+	/**
+	 * @brief Runs onComponentRemoved member function on all registered systems.
+	 * @param[in] eid The id of the entity being removed from.
+	 * @param[in] cid The id of the component being removed.
+	 */
 	void onComponentRemovedAll(EntityID eid, ComponentID cid);
 
-	// TODO: Doc
+	/**
+	 * @brief Runs the onEntityDestroyed member function on all registered systems.
+	 * @param[in] eid The id of the entity being destroyed.
+	 */
 	void onEntityDestroyedAll(EntityID eid);
 
-	// TODO: Doc
+	/**
+	 * @brief Runs the run member function on all registered systems.
+	 * @param[in] dt The time delta between calls.
+	 */
 	void runAll(float dt);
 }
 
