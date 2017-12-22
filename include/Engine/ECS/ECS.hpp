@@ -36,9 +36,11 @@ namespace Engine::ECS {
 			extern std::array<GetComponentFunction, MAX_COMPONENTS> getComponent;
 		}
 
-		extern std::vector<ComponentBitset> entityComponentBitsets;
-		extern std::vector<EntityID> entityLife;
-		extern std::vector<EntityID> reusableEntityIDs;
+		namespace EntityData {
+			extern std::vector<ComponentBitset> componentBitsets;
+			extern std::vector<EntityID> alive;
+			extern std::vector<EntityID> reusableIDs;
+		}
 	
 		/**
 		 * @brief Gets the next ComponentID.

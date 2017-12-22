@@ -10,9 +10,11 @@ namespace Engine::ECS::detail {
 		decltype(getComponent) getComponent;
 	}
 
-	decltype(entityComponentBitsets) entityComponentBitsets;
-	decltype(entityLife) entityLife;
-	decltype(reusableEntityIDs) reusableEntityIDs;
+	namespace EntityData {
+		decltype(componentBitsets) componentBitsets;
+		decltype(alive) alive;
+		decltype(reusableIDs) reusableIDs;
+	}
 
 	ComponentID getNextComponentID() {
 		static ComponentID next = 0;
@@ -20,7 +22,7 @@ namespace Engine::ECS::detail {
 	}
 
 	ComponentBitset& getComponentBitset(EntityID eid) {
-		return detail::entityComponentBitsets[eid];
+		return detail::EntityData::componentBitsets[eid];
 	}
 
 	ComponentID getComponentID(const std::string_view name) {
@@ -30,23 +32,23 @@ namespace Engine::ECS::detail {
 
 namespace Engine::ECS {
 	EntityID createEntity(bool forceNew) {
-		auto eid = detail::entityComponentBitsets.size();
+		auto eid = detail::EntityData::componentBitsets.size();
 
-		if (!forceNew && !detail::reusableEntityIDs.empty()) {
-			eid = detail::reusableEntityIDs.back();
-			detail::reusableEntityIDs.pop_back();
+		if (!forceNew && !detail::EntityData::reusableIDs.empty()) {
+			eid = detail::EntityData::reusableIDs.back();
+			detail::EntityData::reusableIDs.pop_back();
 		} else {
-			if (detail::entityComponentBitsets.size() <= eid) {
-				detail::entityComponentBitsets.resize(eid + 1);
+			if (detail::EntityData::componentBitsets.size() <= eid) {
+				detail::EntityData::componentBitsets.resize(eid + 1);
 			}
 
-			if (detail::entityLife.size() <= eid) {
-				detail::entityLife.resize(eid + 1);
+			if (detail::EntityData::alive.size() <= eid) {
+				detail::EntityData::alive.resize(eid + 1);
 			}
 		}
 
-		detail::entityComponentBitsets[eid] = 0;
-		detail::entityLife[eid] = true;
+		detail::EntityData::componentBitsets[eid] = 0;
+		detail::EntityData::alive[eid] = true;
 
 		detail::onEntityCreatedAll(eid);
 
@@ -54,13 +56,13 @@ namespace Engine::ECS {
 	}
 
 	void destroyEntity(EntityID eid) {
-		detail::reusableEntityIDs.emplace_back(eid);
-		detail::entityLife[eid] = false;
+		detail::EntityData::reusableIDs.emplace_back(eid);
+		detail::EntityData::alive[eid] = false;
 		detail::onEntityDestroyedAll(eid);
 	}
 
 	bool isAlive(EntityID eid) {
-		return detail::entityLife[eid];
+		return detail::EntityData::alive[eid];
 	}
 
 	void addComponent(EntityID eid, ComponentID cid) {
