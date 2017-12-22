@@ -40,9 +40,9 @@ namespace Engine::ECS::detail {
 			throw std::exception{"[Engine][ECS] Maximum number of components exceed. Increase Engine::ECS::MAX_COMPONENTS."};
 		}
 
-		detail::componentIDMap[name] = id;
-		detail::addComponentFuncitons[id] = addComponentToEntity<Component>;
-		detail::getComponentFuncitons[id] = getComponentForEntity<Component>;
+		detail::ComponentData::nameToID[name] = id;
+		detail::ComponentData::addComponent[id] = addComponentToEntity<Component>;
+		detail::ComponentData::getComponent[id] = getComponentForEntity<Component>;
 
 		return 0;
 	}
@@ -67,6 +67,6 @@ namespace Engine::ECS {
 	template<class Component>
 	Component& getComponent(EntityID eid) {
 		const auto cid = detail::getComponentID<Component>();
-		return *static_cast<Component*>(detail::getComponentFuncitons[cid](eid));
+		return *static_cast<Component*>(detail::ComponentData::getComponent[cid](eid));
 	}
 }

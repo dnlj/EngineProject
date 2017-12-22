@@ -30,10 +30,11 @@ namespace Engine::ECS {
 		using AddComponentFunction = void(*)(EntityID, ComponentID);
 		using GetComponentFunction = void*(*)(EntityID);
 
-		// TODO: Move these to functions?
-		extern std::unordered_map<std::string_view, ComponentID> componentIDMap;
-		extern std::array<AddComponentFunction, MAX_COMPONENTS> addComponentFuncitons;
-		extern std::array<GetComponentFunction, MAX_COMPONENTS> getComponentFuncitons;
+		namespace ComponentData {
+			extern std::unordered_map<std::string_view, ComponentID> nameToID;
+			extern std::array<AddComponentFunction, MAX_COMPONENTS> addComponent;
+			extern std::array<GetComponentFunction, MAX_COMPONENTS> getComponent;
+		}
 
 		extern std::vector<ComponentBitset> entityComponentBitsets;
 		extern std::vector<EntityID> entityLife;

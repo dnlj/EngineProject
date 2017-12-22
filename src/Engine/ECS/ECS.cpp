@@ -4,9 +4,12 @@
 #include <Engine/ECS/ECS.hpp>
 
 namespace Engine::ECS::detail {
-	decltype(componentIDMap) componentIDMap(2 * MAX_COMPONENTS);
-	decltype(addComponentFuncitons) addComponentFuncitons;
-	decltype(getComponentFuncitons) getComponentFuncitons;
+	namespace ComponentData {
+		decltype(nameToID) nameToID(2 * MAX_COMPONENTS);
+		decltype(addComponent) addComponent;
+		decltype(getComponent) getComponent;
+	}
+
 	decltype(entityComponentBitsets) entityComponentBitsets;
 	decltype(entityLife) entityLife;
 	decltype(reusableEntityIDs) reusableEntityIDs;
@@ -21,7 +24,7 @@ namespace Engine::ECS::detail {
 	}
 
 	ComponentID getComponentID(const std::string_view name) {
-		return detail::componentIDMap[name];
+		return detail::ComponentData::nameToID[name];
 	}
 }
 
@@ -61,7 +64,7 @@ namespace Engine::ECS {
 	}
 
 	void addComponent(EntityID eid, ComponentID cid) {
-		detail::addComponentFuncitons[cid](eid, cid);
+		detail::ComponentData::addComponent[cid](eid, cid);
 		detail::onComponentAddedAll(eid, cid);
 	}
 
