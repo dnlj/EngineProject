@@ -23,7 +23,7 @@ namespace Engine {
 			 * @return The EntityID assigned to this Entity.
 			 */
 			ECS::EntityID getID() const;
-
+			
 			/**
 			 * @brief Checks if an entity is alive.
 			 * @return True if the entity is alive; otherwise false.

@@ -9,6 +9,10 @@
 #include <queue>
 #include <bitset>
 
+// Engine
+#include <Engine/ECS/Common.hpp>
+#include <Engine/ECS/System.hpp>
+
 /**
  * @brief Registers a component for use with the Entity Component System.
  */
@@ -22,17 +26,6 @@
  * This excludes the wrapper classes such as Engine::Entity.
  */
 namespace Engine::ECS {
-	/** The maximum number of components registrable. Idealy this would be exactly the number of components used. */
-	constexpr size_t MAX_COMPONENTS = 64;
-
-	/** The type to use for entity ids */
-	using EntityID = size_t;
-
-	/** The type to use for component ids */
-	using ComponentID = size_t;
-
-	using ComponentBitset = std::bitset<MAX_COMPONENTS>;
-
 	namespace detail {
 		template<class T>
 		using ComponentContainer = std::vector<T>;
@@ -196,28 +189,6 @@ namespace Engine::ECS {
 	 */
 	template<class Component>
 	Component& getComponent(EntityID eid);
-
-	/**
-	 * @brief Used to check if a type is valid for use as a system.
-	 * @tparam T The type to check.
-	 */
-	template<class T, class = void>
-	class isSystem : public std::false_type {};
-
-	/** @copydoc isSystem */
-	template<class T>
-	class isSystem<
-		T,
-		std::void_t<
-			decltype(
-				std::declval<T>().onEntityCreated(std::declval<Engine::Entity>()),
-				std::declval<T>().onComponentAdded(std::declval<Engine::Entity>()),
-				std::declval<T>().onComponentRemoved(std::declval<Engine::Entity>()),
-				std::declval<T>().onEntityDestroyed(std::declval<Engine::Entity>()),
-				std::declval<T>().run(std::declval<float>())
-			)
-		>
-	> : public std::true_type{};
 }
 
 #include <Engine/ECS/ECS.ipp>

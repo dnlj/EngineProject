@@ -44,12 +44,16 @@ namespace Engine::ECS {
 
 		detail::entityComponentBitsets[eid] = 0;
 		detail::entityLife[eid] = true;
+
+		detail::onEntityCreatedAll(eid);
+
 		return eid;
 	}
 
 	void destroyEntity(EntityID eid) {
 		detail::reusableEntityIDs.push(eid);
 		detail::entityLife[eid] = false;
+		detail::onEntityDestroyedAll(eid);
 	}
 
 	bool isAlive(EntityID eid) {
@@ -58,6 +62,7 @@ namespace Engine::ECS {
 
 	void addComponent(EntityID eid, ComponentID cid) {
 		detail::addComponentFuncitons[cid](eid, cid);
+		detail::onComponentAddedAll(eid);
 	}
 
 
@@ -71,5 +76,6 @@ namespace Engine::ECS {
 
 	void removeComponent(EntityID eid, ComponentID cid) {
 		detail::getComponentBitset(eid)[cid] = false;
+		detail::onComponentRemovedAll(eid);
 	}
 }
