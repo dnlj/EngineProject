@@ -8,14 +8,14 @@ namespace Engine {
 		}
 	}
 
-	void SystemBase::onComponentAdded(Entity ent) {
+	void SystemBase::onComponentAdded(Entity ent, ECS::ComponentID cid) {
 		if (!hasEntity(ent) && ent.hasComponents(cbits)) {
 			addEntity(ent);
 		}
 	}
 
-	void SystemBase::onComponentRemoved(Entity ent) {
-		if (hasEntity(ent) && !ent.hasComponents(cbits)) {
+	void SystemBase::onComponentRemoved(Entity ent, ECS::ComponentID cid) {
+		if (hasEntity(ent) && cbits[cid]) {
 			removeEntity(ent);
 		}
 	}

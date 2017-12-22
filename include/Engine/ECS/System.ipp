@@ -13,13 +13,13 @@ namespace Engine::ECS::detail {
 	}
 
 	template<class System>
-	void onComponentAdded(EntityID eid) {
-		getSystem<System>().onComponentAdded(Entity{eid});
+	void onComponentAdded(EntityID eid, ComponentID cid) {
+		getSystem<System>().onComponentAdded(Entity{eid}, cid);
 	}
 
 	template<class System>
-	void onComponentRemoved(EntityID eid) {
-		getSystem<System>().onComponentRemoved(Entity{eid});
+	void onComponentRemoved(EntityID eid, ComponentID cid) {
+		getSystem<System>().onComponentRemoved(Entity{eid}, cid);
 	}
 
 	template<class System>

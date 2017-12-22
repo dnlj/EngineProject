@@ -62,7 +62,7 @@ namespace Engine::ECS {
 
 	void addComponent(EntityID eid, ComponentID cid) {
 		detail::addComponentFuncitons[cid](eid, cid);
-		detail::onComponentAddedAll(eid);
+		detail::onComponentAddedAll(eid, cid);
 	}
 
 
@@ -76,6 +76,6 @@ namespace Engine::ECS {
 
 	void removeComponent(EntityID eid, ComponentID cid) {
 		detail::getComponentBitset(eid)[cid] = false;
-		detail::onComponentRemovedAll(eid);
+		detail::onComponentRemovedAll(eid, cid);
 	}
 }

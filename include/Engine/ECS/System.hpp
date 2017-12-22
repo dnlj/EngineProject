@@ -23,8 +23,8 @@ namespace Engine::ECS {
 		std::void_t<
 		decltype(
 			std::declval<T>().onEntityCreated(std::declval<Engine::Entity>()),
-			std::declval<T>().onComponentAdded(std::declval<Engine::Entity>()),
-			std::declval<T>().onComponentRemoved(std::declval<Engine::Entity>()),
+			std::declval<T>().onComponentAdded(std::declval<Engine::Entity>(), std::declval<ComponentID>()),
+			std::declval<T>().onComponentRemoved(std::declval<Engine::Entity>(), std::declval<ComponentID>()),
 			std::declval<T>().onEntityDestroyed(std::declval<Engine::Entity>()),
 			std::declval<T>().run(std::declval<float>())
 			)
@@ -39,19 +39,20 @@ namespace Engine::ECS::detail {
 	class SystemData {
 		public:
 			using EntityModifyFunction = void(*)(EntityID);
+			using ComponentModifyFunction = void(*)(EntityID, ComponentID);
 			using RunFunction = void(*)(float);
 
 			SystemData(
 				EntityModifyFunction onEntityCreated,
-				EntityModifyFunction onComponentAdded,
-				EntityModifyFunction onComponentRemoved,
+				ComponentModifyFunction onComponentAdded,
+				ComponentModifyFunction onComponentRemoved,
 				EntityModifyFunction onEntityDestroyed,
 				RunFunction run
 			);
 
 			const EntityModifyFunction onEntityCreated;
-			const EntityModifyFunction onComponentAdded;
-			const EntityModifyFunction onComponentRemoved;
+			const ComponentModifyFunction onComponentAdded;
+			const ComponentModifyFunction onComponentRemoved;
 			const EntityModifyFunction onEntityDestroyed;
 			const RunFunction run;
 	};
@@ -87,17 +88,19 @@ namespace Engine::ECS::detail {
 	 * @brief Calls the onComponentAdded member function on the system.
 	 * @tparam System The type of the system.
 	 * @param[in] eid The id of the entity being added to.
+	 * @param[in] cid The id of the component being added.
 	 */
 	template<class System>
-	void onComponentAdded(EntityID eid);
+	void onComponentAdded(EntityID eid, ComponentID);
 
 	/**
 	 * @brief Calls the onComponentRemoved member function on the system.
 	 * @tparam System The type of the system.
 	 * @param[in] eid The id of the entity being removed from.
+	 * @param[in] cid The id of the component being removed.
 	 */
 	template<class System>
-	void onComponentRemoved(EntityID eid);
+	void onComponentRemoved(EntityID eid, ComponentID cid);
 
 	/**
 	 * @brief Calls the onEntityDestroyed member function on the system.
@@ -119,10 +122,10 @@ namespace Engine::ECS::detail {
 	void onEntityCreatedAll(EntityID eid);
 
 	// TODO: Doc
-	void onComponentAddedAll(EntityID eid);
+	void onComponentAddedAll(EntityID eid, ComponentID cid);
 
 	// TODO: Doc
-	void onComponentRemovedAll(EntityID eid);
+	void onComponentRemovedAll(EntityID eid, ComponentID cid);
 
 	// TODO: Doc
 	void onEntityDestroyedAll(EntityID eid);

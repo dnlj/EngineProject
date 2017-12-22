@@ -24,13 +24,13 @@ namespace Engine {
 			 * @brief Called by Engine::ECS when a component is added to an entity.
 			 * @param[in] ent The entity.
 			 */
-			void onComponentAdded(Entity ent);
+			void onComponentAdded(Entity ent, ECS::ComponentID cid);
 
 			/**
 			 * @brief Called by Engine::ECS when a component is removed from an entity.
 			 * @param[in] ent The entity.
 			 */
-			void onComponentRemoved(Entity ent);
+			void onComponentRemoved(Entity ent, ECS::ComponentID cid);
 
 			/**
 			 * @brief Called by Engine::ECS when a entity is destroyed.

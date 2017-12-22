@@ -3,8 +3,8 @@
 namespace Engine::ECS::detail {
 	SystemData::SystemData(
 			EntityModifyFunction onEntityCreated,
-			EntityModifyFunction onComponentAdded,
-			EntityModifyFunction onComponentRemoved,
+			ComponentModifyFunction onComponentAdded,
+			ComponentModifyFunction onComponentRemoved,
 			EntityModifyFunction onEntityDestroyed,
 			RunFunction run
 		)
@@ -23,15 +23,15 @@ namespace Engine::ECS::detail {
 		}
 	}
 
-	void onComponentAddedAll(EntityID eid) {
+	void onComponentAddedAll(EntityID eid, ComponentID cid) {
 		for (auto& data : systemData) {
-			data.onComponentAdded(eid);
+			data.onComponentAdded(eid, cid);
 		}
 	}
 
-	void onComponentRemovedAll(EntityID eid) {
+	void onComponentRemovedAll(EntityID eid, ComponentID cid) {
 		for (auto& data : systemData) {
-			data.onComponentRemoved(eid);
+			data.onComponentRemoved(eid, cid);
 		}
 	}
 

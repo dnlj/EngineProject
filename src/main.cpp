@@ -59,12 +59,12 @@ namespace {
 				std::cout << "B create: " << ent << std::endl;
 			}
 
-			void onComponentAdded(Engine::Entity ent) {
-				std::cout << "B add: " << ent << std::endl;
+			void onComponentAdded(Engine::Entity ent, Engine::ECS::ComponentID cid) {
+				std::cout << "B add: " << ent << " " << cid << std::endl;
 			}
 
-			void onComponentRemoved(Engine::Entity ent) {
-				std::cout << "B remove: " << ent << std::endl;
+			void onComponentRemoved(Engine::Entity ent, Engine::ECS::ComponentID cid) {
+				std::cout << "B remove: " << ent << " " << cid << std::endl;
 			}
 
 			void onEntityDestroyed(Engine::Entity ent) {
