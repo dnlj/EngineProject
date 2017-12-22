@@ -36,13 +36,11 @@ namespace Engine::ECS::detail {
 	int registerSystem() {
 		const auto system = getSystem<System>();
 
-		systemData.emplace_back(
-			onEntityCreated<System>,
-			onComponentAdded<System>,
-			onComponentRemoved<System>,
-			onEntityDestroyed<System>,
-			run<System>
-		);
+		SystemData::onEntityCreated.emplace_back(onEntityCreated<System>);
+		SystemData::onComponentAdded.emplace_back(onComponentAdded<System>);
+		SystemData::onComponentRemoved.emplace_back(onComponentRemoved<System>);
+		SystemData::onEntityDestroyed.emplace_back(onEntityDestroyed<System>);
+		SystemData::run.emplace_back(run<System>);
 
 		return 0;
 	}

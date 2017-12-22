@@ -1,49 +1,41 @@
 #include <Engine/ECS/System.hpp>
 
 namespace Engine::ECS::detail {
-	SystemData::SystemData(
-			EntityModifyFunction onEntityCreated,
-			ComponentModifyFunction onComponentAdded,
-			ComponentModifyFunction onComponentRemoved,
-			EntityModifyFunction onEntityDestroyed,
-			RunFunction run
-		)
-		: onEntityCreated{onEntityCreated}
-		, onComponentAdded{onComponentAdded}
-		, onComponentRemoved{onComponentRemoved}
-		, onEntityDestroyed{onEntityDestroyed}
-		, run{run} {
+	namespace SystemData {
+		decltype(onEntityCreated) onEntityCreated;
+		decltype(onComponentAdded) onComponentAdded;
+		decltype(onComponentRemoved) onComponentRemoved;
+		decltype(onEntityDestroyed) onEntityDestroyed;
+		decltype(run) run;
 	}
 
-	decltype(systemData) systemData;
-
 	void onEntityCreatedAll(EntityID eid) {
-		for (auto& data : systemData) {
-			data.onEntityCreated(eid);
+		for (const auto func : SystemData::onEntityCreated) {
+			func(eid);
 		}
 	}
 
 	void onComponentAddedAll(EntityID eid, ComponentID cid) {
-		for (auto& data : systemData) {
-			data.onComponentAdded(eid, cid);
+		for (const auto func : SystemData::onComponentAdded) {
+			func(eid, cid);
 		}
 	}
 
 	void onComponentRemovedAll(EntityID eid, ComponentID cid) {
-		for (auto& data : systemData) {
-			data.onComponentRemoved(eid, cid);
+		for (const auto func : SystemData::onComponentRemoved) {
+			func(eid, cid);
 		}
 	}
 
 	void onEntityDestroyedAll(EntityID eid) {
-		for (auto& data : systemData) {
-			data.onEntityDestroyed(eid);
+		for (const auto func : SystemData::onEntityDestroyed) {
+			func(eid);
 		}
 	}
 
 	void runAll(float dt) {
-		for (auto& data : systemData) {
-			data.run(dt);
+		for (const auto func : SystemData::run) {
+			func(dt);
 		}
 	}
 }

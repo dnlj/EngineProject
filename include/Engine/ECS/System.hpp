@@ -34,39 +34,19 @@ namespace Engine::ECS {
 
 namespace Engine::ECS::detail {
 	/**
-	 * @brief Stores data about a system.
+	 * @brief Stores data about the registered systems.
 	 */
-	class SystemData {
-		public:
-			using EntityModifyFunction = void(*)(EntityID);
-			using ComponentModifyFunction = void(*)(EntityID, ComponentID);
-			using RunFunction = void(*)(float);
+	namespace SystemData {
+		using EntityModifyFunction = void(*)(EntityID);
+		using ComponentModifyFunction = void(*)(EntityID, ComponentID);
+		using RunFunction = void(*)(float);
 
-			SystemData(
-				EntityModifyFunction onEntityCreated,
-				ComponentModifyFunction onComponentAdded,
-				ComponentModifyFunction onComponentRemoved,
-				EntityModifyFunction onEntityDestroyed,
-				RunFunction run
-			);
-
-			const EntityModifyFunction onEntityCreated;
-			const ComponentModifyFunction onComponentAdded;
-			const ComponentModifyFunction onComponentRemoved;
-			const EntityModifyFunction onEntityDestroyed;
-			const RunFunction run;
-	};
-
-	/** Store data about the registered systems. */
-	extern std::vector<SystemData> systemData;
-
-	/**
-	 * @brief Registers a system for use in the ECS.
-	 * @tparam System The system.
-	 * @return This is always zero.
-	 */
-	template<class System, class = std::enable_if_t<IsSystem<System>::value>>
-	int registerSystem();
+		extern std::vector<EntityModifyFunction> onEntityCreated;
+		extern std::vector<ComponentModifyFunction> onComponentAdded;
+		extern std::vector<ComponentModifyFunction> onComponentRemoved;
+		extern std::vector<EntityModifyFunction> onEntityDestroyed;
+		extern std::vector<RunFunction> run;
+	}
 
 	/**
 	 * @brief Gets the a reference to the system.
@@ -149,6 +129,14 @@ namespace Engine::ECS::detail {
 	 * @param[in] dt The time delta between calls.
 	 */
 	void runAll(float dt);
+
+	/**
+	 * @brief Registers a system for use in the ECS.
+	 * @tparam System The system.
+	 * @return This is always zero.
+	 */
+	template<class System, class = std::enable_if_t<IsSystem<System>::value>>
+	int registerSystem();
 }
 
 #include <Engine/ECS/System.ipp>
