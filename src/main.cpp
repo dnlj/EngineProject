@@ -13,6 +13,11 @@
 #include <Engine/Entity.hpp>
 #include <Engine/SystemBase.hpp>
 
+namespace {
+	constexpr int OPENGL_VERSION_MAJOR = 4;
+	constexpr int OPENGL_VERSION_MINOR = 5;
+}
+
 // TODO: Add a tag system that doesnt require storage allocation (it would have to use the same component id things just not craete the arrays)
 
 namespace {
@@ -84,23 +89,41 @@ namespace {
 ENGINE_REGISTER_SYSTEM(SystemA);
 ENGINE_REGISTER_SYSTEM(SystemB);
 
-
-void run() {
-	constexpr int OPENGL_VERSION_MAJOR = 4;
-	constexpr int OPENGL_VERSION_MINOR = 5;
-
-	// GLFW error callback
-	glfwSetErrorCallback([](int error, const char* desc) {
-		// TODO: Create a more standard error system
-		fprintf(stderr, "[GLFW][Error] %s\n", desc);
-	});
-
-	// Initialize GLFW
-	if (!glfwInit()) {
-		// TODO: Better error
-		throw std::runtime_error{"[GLFW] Failed to initialize."};
+// TODO: Create a proper logging/warning/error library
+namespace Log {
+	void log(std::string_view msg) {
+		std::clog << "[LOG] " << msg << "\n";
 	}
 
+	void warn(std::string_view msg) {
+		std::cerr << "[WARN] " << msg << "\n";
+	}
+
+	void error(std::string_view msg) {
+		std::cerr << "[ERROR] " << msg << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+}
+
+void initializeOpenGL() {
+	auto loaded = ogl_LoadFunctions();
+
+	if (loaded == ogl_LOAD_FAILED) {
+		Log::error("[glLoadGen] initialization failed.");
+	}
+
+	auto failed = loaded - ogl_LOAD_SUCCEEDED;
+	if (failed > 0) {
+		Log::error("[glLoadGen] Failed to load " + std::to_string(failed) + " functions.");
+	}
+
+
+	if (!ogl_IsVersionGEQ(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR)) {
+		Log::error("[glLoadGen] OpenGL version " + std::to_string(OPENGL_VERSION_MAJOR) + "." + std::to_string(OPENGL_VERSION_MINOR) + " is not available.");
+	}
+}
+
+GLFWwindow* createWindow() {
 	// GLFW hints
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, OPENGL_VERSION_MAJOR);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, OPENGL_VERSION_MINOR);
@@ -119,35 +142,33 @@ void run() {
 	auto window = glfwCreateWindow(1280, 720, "Window Title", nullptr, nullptr);
 
 	if (!window) {
-		// TODO: Better error
-		throw std::runtime_error{"[GLFW] Failed to create window."};
+		Log::error("[GLFW] Failed to create window.");
 	}
 
+	return window;
+}
+
+void run() {
+	// GLFW error callback
+	glfwSetErrorCallback([](int error, const char* desc) {
+		// TODO: Create a more standard error system
+		fprintf(stderr, "[GLFW] %s\n", desc);
+	});
+
+	// Initialize GLFW
+	if (!glfwInit()) {
+		Log::error("[GLFW] Failed to initialize.");
+	}
+
+	// Create a window
+	auto window = createWindow();
 	glfwMakeContextCurrent(window);
 	
 	// Enable vsync
 	glfwSwapInterval(1);
 
 	// Initialize OpenGL functions
-	{
-		auto loaded = ogl_LoadFunctions();
-
-		if (loaded == ogl_LOAD_FAILED) {
-			// TODO: Better error
-			throw std::runtime_error{"[glLoadGen] initialization failed."};
-		}
-
-		auto failed = loaded - ogl_LOAD_SUCCEEDED;
-		if (failed > 0) {
-			// TODO: Better error
-			throw std::runtime_error{"[glLoadGen] Failed to load " + std::to_string(failed) + " functions."};
-		}
-
-
-		if (!ogl_IsVersionGEQ(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR)) {
-			throw std::runtime_error("[glLoadGen] OpenGL version " + std::to_string(OPENGL_VERSION_MAJOR) + "." + std::to_string(OPENGL_VERSION_MINOR) + " is not available.");
-		}
-	}
+	initializeOpenGL();
 
 	// Key callbacks
 	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -163,14 +184,17 @@ void run() {
 	}
 
 	glfwDestroyWindow(window);
-	glfwTerminate();
 }
 
 
 int main(int argc, char* argv[]) {
+	std::atexit([](){
+		glfwTerminate();
+	});
+
 	Engine::ECS::init();
 	run();
 
 	std::cout << "Done." << std::endl;
-	return 0;
+	return EXIT_SUCCESS;
 }
