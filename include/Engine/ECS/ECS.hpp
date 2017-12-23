@@ -213,6 +213,12 @@ namespace Engine::ECS {
 	void init();
 
 	/**
+	 * @brief Calls run on all systems.
+	 * @param[in] dt The delta time between calls.
+	 */
+	void run(float dt);
+
+	/**
 	 * @brief Attemps to reclaim memory throughout the ECS.
 	 */
 	void reclaim();

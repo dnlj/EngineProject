@@ -179,6 +179,7 @@ void run() {
 
 	// Main loop
 	while (!glfwWindowShouldClose(window)) {
+		Engine::ECS::run(1.0f);
 		glfwPollEvents();
 		glfwSwapBuffers(window);
 	}

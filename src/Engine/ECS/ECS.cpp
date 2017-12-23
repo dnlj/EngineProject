@@ -93,6 +93,10 @@ namespace Engine::ECS {
 		detail::SystemData::run.shrink_to_fit();
 	}
 
+	void run(float dt) {
+		detail::runAll(dt);
+	}
+
 	void reclaim() {
 		using detail::EntityData::componentBitsets;
 		using detail::EntityData::alive;
