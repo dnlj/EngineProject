@@ -43,9 +43,6 @@ workspace(PROJECT_NAME .."Workspace")
 	targetdir "./bin/%{cfg.buildcfg}_%{cfg.platform}"
 	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
 	startproject(PROJECT_NAME)
-	includedirs {
-		"./include",
-	}
 	
 	if (_ACTION == "vs2015" or _ACTION == "vs2017") then
 		buildoptions{
@@ -57,9 +54,11 @@ workspace(PROJECT_NAME .."Workspace")
 	filter "platforms:Windows_x64"
         architecture "x64"
 		defines {string.upper(PROJECT_NAME) .."_OS_WINDOWS"}
+		
 	filter "configurations:Debug"
 		symbols "On"
 		defines {"DEBUG"}
+		
 	filter "configurations:Release"
 		optimize "Full"
 		defines {"NDEBUG", "RELEASE"}
@@ -70,10 +69,32 @@ project(PROJECT_NAME)
 		"./include/**",
 		"./src/**",
 	}
+	
 	debugdir "./src"
+	
+	includedirs {
+		"./include",
+		"./deps/glfw/include",
+	}
+	
+	links {
+		"glfw3.lib",
+		"opengl32.lib",
+	}
+	
+	filter {"platforms:Windows_x64", "configurations:Debug"}
+		libdirs {
+			"./deps/glfw/build/src/Debug",
+		}
+		
+	filter {"platforms:Windows_x64", "configurations:Release"}
+		libdirs {
+			"./deps/glfw/build/src/Release",
+		}
 
 project(PROJECT_NAME .."Test")
 	includedirs {
+		"./include",
 		"./test/include",
 		"./deps/googletest/googlemock/include",
 		"./deps/googletest/googletest/include",
@@ -88,6 +109,7 @@ project(PROJECT_NAME .."Test")
 	
 	removefiles {
 		"./src/main.cpp",
+		"./src/glloadgen/**"
 	}
 	
 	filter {"platforms:Windows_x64", "configurations:Debug"}

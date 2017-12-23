@@ -2,13 +2,18 @@
 #include <algorithm>
 #include <iostream>
 
+// glLoadGen
+#include <glloadgen/gl_core_4_5.h>
+
+// GLFW
+#include <GLFW/glfw3.h>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Entity.hpp>
 #include <Engine/SystemBase.hpp>
 
 // TODO: Add a tag system that doesnt require storage allocation (it would have to use the same component id things just not craete the arrays)
-// TODO: Since we known the number of components at compile time we should be able to pre alloccate all the detail::* containers
 
 namespace {
 	class ComponentA {
@@ -80,29 +85,92 @@ ENGINE_REGISTER_SYSTEM(SystemA);
 ENGINE_REGISTER_SYSTEM(SystemB);
 
 
+void run() {
+	constexpr int OPENGL_VERSION_MAJOR = 4;
+	constexpr int OPENGL_VERSION_MINOR = 5;
+
+	// GLFW error callback
+	glfwSetErrorCallback([](int error, const char* desc) {
+		// TODO: Create a more standard error system
+		fprintf(stderr, "[GLFW][Error] %s\n", desc);
+	});
+
+	// Initialize GLFW
+	if (!glfwInit()) {
+		// TODO: Better error
+		throw std::runtime_error{"[GLFW] Failed to initialize."};
+	}
+
+	// GLFW hints
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, OPENGL_VERSION_MAJOR);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, OPENGL_VERSION_MINOR);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+	glfwWindowHint(GLFW_DECORATED, GL_TRUE);
+
+	glfwWindowHint(GLFW_RED_BITS, 8);
+	glfwWindowHint(GLFW_GREEN_BITS, 8);
+	glfwWindowHint(GLFW_BLUE_BITS, 8);
+	glfwWindowHint(GLFW_ALPHA_BITS, 8);
+	glfwWindowHint(GLFW_DEPTH_BITS, 32);
+
+	// Create a window
+	auto window = glfwCreateWindow(1280, 720, "Window Title", nullptr, nullptr);
+
+	if (!window) {
+		// TODO: Better error
+		throw std::runtime_error{"[GLFW] Failed to create window."};
+	}
+
+	glfwMakeContextCurrent(window);
+	
+	// Enable vsync
+	glfwSwapInterval(1);
+
+	// Initialize OpenGL functions
+	{
+		auto loaded = ogl_LoadFunctions();
+
+		if (loaded == ogl_LOAD_FAILED) {
+			// TODO: Better error
+			throw std::runtime_error{"[glLoadGen] initialization failed."};
+		}
+
+		auto failed = loaded - ogl_LOAD_SUCCEEDED;
+		if (failed > 0) {
+			// TODO: Better error
+			throw std::runtime_error{"[glLoadGen] Failed to load " + std::to_string(failed) + " functions."};
+		}
+
+
+		if (!ogl_IsVersionGEQ(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR)) {
+			throw std::runtime_error("[glLoadGen] OpenGL version " + std::to_string(OPENGL_VERSION_MAJOR) + "." + std::to_string(OPENGL_VERSION_MINOR) + " is not available.");
+		}
+	}
+
+	// Key callbacks
+	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+			glfwSetWindowShouldClose(window, true);
+		}
+	});
+
+	// Main loop
+	while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
+		glfwSwapBuffers(window);
+	}
+
+	glfwDestroyWindow(window);
+	glfwTerminate();
+}
+
+
 int main(int argc, char* argv[]) {
-	auto e0 = Engine::createEntity();
-	auto e1 = Engine::createEntity();
-	auto e2 = Engine::createEntity();
-
-	e0.addComponent<ComponentA>();
-	Engine::ECS::detail::runAll(0.1666f);
-	//e0.addComponent<ComponentC>();
-	Engine::ECS::detail::runAll(0.1666f);
-	e0.addComponent<ComponentB>();
-	Engine::ECS::detail::runAll(0.1666f);
-	e0.removeComponent<ComponentB>();
-	Engine::ECS::detail::runAll(0.1666f);
-	e0.addComponent<ComponentB>();
-	Engine::ECS::detail::runAll(0.1666f);
-	Engine::destroyEntity(e0);
-	Engine::ECS::detail::runAll(0.1666f);
-
-	Engine::destroyEntity(e1);
-
-	Engine::ECS::reclaim();
+	Engine::ECS::init();
+	run();
 
 	std::cout << "Done." << std::endl;
-	getchar();
 	return 0;
 }
