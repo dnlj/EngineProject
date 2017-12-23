@@ -1,6 +1,7 @@
 // STD
 #include <algorithm>
 #include <iostream>
+#include <chrono>
 
 // glLoadGen
 #include <glloadgen/gl_core_4_5.h>
@@ -178,10 +179,30 @@ void run() {
 	});
 
 	// Main loop
+	auto startTime = std::chrono::high_resolution_clock::now();
+	auto lastUpdate = startTime;
 	while (!glfwWindowShouldClose(window)) {
-		Engine::ECS::run(1.0f);
+		// Get the elapsed time in seconds
+		auto diff = std::chrono::high_resolution_clock::now() - startTime;
+		startTime = std::chrono::high_resolution_clock::now();
+		auto dt = std::chrono::duration_cast<
+			std::chrono::duration<
+				float,
+				std::chrono::seconds::period
+			>
+		>(diff).count();
+		
+		// Update frame time
+		if ((std::chrono::high_resolution_clock::now() - lastUpdate) > std::chrono::seconds{1}) {
+			glfwSetWindowTitle(window, std::to_string(dt).c_str());
+			lastUpdate = std::chrono::high_resolution_clock::now();
+		}
+
+		// Other
+		Engine::ECS::run(dt);
 		glfwPollEvents();
 		glfwSwapBuffers(window);
+
 	}
 
 	glfwDestroyWindow(window);
