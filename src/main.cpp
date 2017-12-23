@@ -17,78 +17,27 @@
 namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
+
+	constexpr char* vertShaderSource = R"(
+		#version 450 core
+		layout (location = 0) in vec2 vert;
+
+		void main() {
+			gl_Positino = vec4(vert, 0.0, 1.0);
+		}
+	)";
+
+	constexpr char* fragShaderSource = R"(
+		#version 450 core
+		out vec4 finalColor;		
+
+		void main() {
+			finalColor = vec4(1.0, 0.0, 0.0, 1.0);
+		}
+	)";
 }
 
 // TODO: Add a tag system that doesnt require storage allocation (it would have to use the same component id things just not craete the arrays)
-
-namespace {
-	class ComponentA {
-		public:
-			int a = -1;
-			int b = -2;
-	};
-
-	class ComponentB {
-		public:
-			float c = -3.0f;
-			float d = -4.0f;
-	};
-
-	class ComponentC {
-		public:
-			double e = -5.0;
-			double f = -6.0;
-	};
-}
-
-ENGINE_REGISTER_COMPONENT(ComponentA);
-ENGINE_REGISTER_COMPONENT(ComponentB);
-ENGINE_REGISTER_COMPONENT(ComponentC);
-
-
-namespace {
-	class SystemA : public Engine::SystemBase {
-		public:
-			SystemA() {
-				cbits[Engine::ECS::detail::getComponentID<ComponentA>()] = true;
-				cbits[Engine::ECS::detail::getComponentID<ComponentB>()] = true;
-			}
-
-			void run(float dt) {
-				std::cout << "A Run: " << dt << std::endl;
-				
-				for (auto& ent : entities) {
-					std::cout << "A process: " << ent.getID() << "\n";
-				}
-			};
-	};
-
-	class SystemB : public Engine::SystemBase {
-		public:
-			void onEntityCreated(Engine::Entity ent) {
-				std::cout << "B create: " << ent << std::endl;
-			}
-
-			void onComponentAdded(Engine::Entity ent, Engine::ECS::ComponentID cid) {
-				std::cout << "B add: " << ent << " " << cid << std::endl;
-			}
-
-			void onComponentRemoved(Engine::Entity ent, Engine::ECS::ComponentID cid) {
-				std::cout << "B remove: " << ent << " " << cid << std::endl;
-			}
-
-			void onEntityDestroyed(Engine::Entity ent) {
-				std::cout << "B destroy: " << ent << std::endl;
-			}
-
-			void run(float dt) {
-				std::cout << "B Run: " << dt << std::endl;
-			};
-	};
-}
-
-ENGINE_REGISTER_SYSTEM(SystemA);
-ENGINE_REGISTER_SYSTEM(SystemB);
 
 // TODO: Create a proper logging/warning/error library
 namespace Log {
@@ -178,6 +127,55 @@ void run() {
 		}
 	});
 
+	// GL stuff
+	GLuint vao;
+	GLuint vbo;
+
+	{
+		constexpr GLfloat data[] = {
+			+0.0f, +0.5f,
+			-0.5f, -0.5f,
+			+0.5f, -0.5f,
+		};
+
+		// VAO
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+
+		// VBO
+		glGenBuffers(1, &vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(data), &data, GL_STATIC_DRAW);
+
+		// Vertex attributes
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+
+		// Vertex shader
+		auto vertShader = glCreateShader(GL_VERTEX_SHADER);
+		glShaderSource(vertShader, 1, &vertShaderSource, nullptr);
+		glCompileShader(vertShader);
+
+		// Fragment shader
+		auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(fragShader, 1, &fragShaderSource, nullptr);
+		glCompileShader(fragShader);
+
+		// Shader program
+		auto shaderProgram = glCreateProgram();
+		glAttachShader(shaderProgram, vertShader);
+		glAttachShader(shaderProgram, fragShader);
+		glLinkProgram(shaderProgram);
+		
+		// Shader cleanup
+		glDetachShader(shaderProgram, vertShader);
+		glDetachShader(shaderProgram, fragShader);
+		glDeleteShader(vertShader);
+		glDeleteShader(fragShader);
+
+		// TODO: Error checking when in debug mode
+	}
+
 	// Main loop
 	auto startTime = std::chrono::high_resolution_clock::now();
 	auto lastUpdate = startTime;
@@ -198,13 +196,25 @@ void run() {
 			lastUpdate = std::chrono::high_resolution_clock::now();
 		}
 
-		// Other
+		// ECS
 		Engine::ECS::run(dt);
-		glfwPollEvents();
-		glfwSwapBuffers(window);
 
+		// Rendering
+		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		// GLFW
+		glfwSwapBuffers(window);
+		glfwPollEvents();
 	}
 
+	// OpenGL cleanup
+	glDeleteVertexArrays(1, &vao);
+	glDeleteBuffers(1, &vbo);
+
+	// GLFW cleanup
 	glfwDestroyWindow(window);
 }
 
