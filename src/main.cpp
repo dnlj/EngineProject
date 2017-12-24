@@ -130,6 +130,7 @@ void run() {
 	// GL stuff
 	GLuint vao;
 	GLuint vbo;
+	GLuint shaderProgram;
 
 	{
 		constexpr GLfloat data[] = {
@@ -162,10 +163,11 @@ void run() {
 		glCompileShader(fragShader);
 
 		// Shader program
-		auto shaderProgram = glCreateProgram();
+		shaderProgram = glCreateProgram();
 		glAttachShader(shaderProgram, vertShader);
 		glAttachShader(shaderProgram, fragShader);
 		glLinkProgram(shaderProgram);
+		glUseProgram(shaderProgram);
 		
 		// Shader cleanup
 		glDetachShader(shaderProgram, vertShader);
@@ -213,6 +215,7 @@ void run() {
 	// OpenGL cleanup
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &vbo);
+	glDeleteProgram(shaderProgram);
 
 	// GLFW cleanup
 	glfwDestroyWindow(window);
