@@ -9,6 +9,9 @@
 // GLFW
 #include <GLFW/glfw3.h>
 
+// SOIL
+#include <SOIL.h>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Entity.hpp>
@@ -20,19 +23,26 @@ namespace {
 
 	constexpr char* vertShaderSource = R"(
 		#version 450 core
-		layout (location = 0) in vec2 vert;
+		layout (location = 0) in vec2 vertPos;
+		layout (location = 1) in vec2 vertTexCoord;
+		
+		out vec2 fragTexCoord;
 
 		void main() {
-			gl_Positino = vec4(vert, 0.0, 1.0);
+			gl_Position = vec4(vertPos, 0.0, 1.0);
+			fragTexCoord = vertTexCoord;
 		}
 	)";
 
 	constexpr char* fragShaderSource = R"(
 		#version 450 core
-		out vec4 finalColor;		
+		in vec2 fragTexCoord;
+		out vec4 finalColor;
+
+		uniform sampler2D tex;
 
 		void main() {
-			finalColor = vec4(1.0, 0.0, 0.0, 1.0);
+			finalColor = texture(tex, fragTexCoord);
 		}
 	)";
 }
@@ -127,6 +137,51 @@ void run() {
 		}
 	});
 
+	// Image loading
+	GLuint texture;
+	{
+		int width;
+		int height;
+		int channels;
+		auto image = SOIL_load_image("../assets/test.png", &width, &height, &channels, SOIL_LOAD_RGBA);
+		
+		bool failedToLoad = false;
+		if (image == nullptr) {
+			auto res = SOIL_last_result();
+			Log::warn(std::string{"[SOIL] "} + res);
+
+			width = 2;
+			height = 2;
+			channels = 4;
+			image = new GLubyte[4 * 4]{
+				255, 000, 000, 255,    000, 255, 000, 255,
+				000, 255, 000, 255,    255, 000, 000, 255,
+			};
+		}
+
+		glGenBuffers(1, &texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+
+		//glGenerateMipmap(GL_TEXTURE_2D);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		if (!failedToLoad) {
+			SOIL_free_image_data(image);
+		} else {
+			delete[] image;
+		}
+	}
+
 	// GL stuff
 	GLuint vao;
 	GLuint vbo;
@@ -134,9 +189,9 @@ void run() {
 
 	{
 		constexpr GLfloat data[] = {
-			+0.0f, +0.5f,
-			-0.5f, -0.5f,
-			+0.5f, -0.5f,
+			+0.0f, +0.5f, +0.5, +0.0f,
+			-0.5f, -0.5f, +0.0, +1.0f,
+			+0.5f, -0.5f, +1.0, +1.0f,
 		};
 
 		// VAO
@@ -150,17 +205,42 @@ void run() {
 
 		// Vertex attributes
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+		
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), reinterpret_cast<const void*>(2 * sizeof(GLfloat)));
 
 		// Vertex shader
 		auto vertShader = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vertShader, 1, &vertShaderSource, nullptr);
 		glCompileShader(vertShader);
 
+		{
+			GLint status;
+			glGetShaderiv(vertShader, GL_COMPILE_STATUS, &status);
+
+			if (!status) {
+				char buffer[512];
+				glGetShaderInfoLog(vertShader, 512, NULL, buffer);
+				std::cout << buffer << std::endl;
+			}
+		}
+
 		// Fragment shader
 		auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
 		glShaderSource(fragShader, 1, &fragShaderSource, nullptr);
 		glCompileShader(fragShader);
+
+		{
+			GLint status;
+			glGetShaderiv(fragShader, GL_COMPILE_STATUS, &status);
+
+			if (!status) {
+				char buffer[512];
+				glGetShaderInfoLog(fragShader, 512, NULL, buffer);
+				std::cout << buffer << std::endl;
+			}
+		}
 
 		// Shader program
 		shaderProgram = glCreateProgram();
@@ -216,6 +296,7 @@ void run() {
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &vbo);
 	glDeleteProgram(shaderProgram);
+	glDeleteTextures(1, &texture);
 
 	// GLFW cleanup
 	glfwDestroyWindow(window);

@@ -1,6 +1,7 @@
 libs/
 deps/
 tools/
+assets/
 *.dll
 
 # VS Stuff
