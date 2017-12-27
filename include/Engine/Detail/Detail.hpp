@@ -1,6 +1,8 @@
 #pragma once
 
 // STD
+#include <iostream>
+#include <string>
 #include <string_view>
 #include <ostream>
 
