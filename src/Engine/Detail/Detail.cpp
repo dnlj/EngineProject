@@ -19,14 +19,14 @@ namespace {
 }
 
 namespace Engine::Detail {
-	void log(std::ostream& out, std::string_view prefix, std::string_view msg, std::string_view file, int line) {
+	std::ostream& log(std::ostream& out, std::string_view prefix, std::string_view file, int line) {
 		const auto date = getDateTimeString();
 
 		out
 			<< "[" << date << "]"
 			<< "[" << file << ":" << line << "]"
-			<< prefix << " "
-			<< msg
-			<< '\n';
+			<< prefix << " ";
+
+		return out;
 	}
 }

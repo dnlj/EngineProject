@@ -59,12 +59,12 @@ void initializeOpenGL() {
 
 	auto failed = loaded - ogl_LOAD_SUCCEEDED;
 	if (failed > 0) {
-		ENGINE_ERROR("[glLoadGen] Failed to load " + std::to_string(failed) + " functions.");
+		ENGINE_ERROR("[glLoadGen] Failed to load " << failed << " functions.");
 	}
 
 
 	if (!ogl_IsVersionGEQ(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR)) {
-		ENGINE_ERROR("[glLoadGen] OpenGL version " + std::to_string(OPENGL_VERSION_MAJOR) + "." + std::to_string(OPENGL_VERSION_MINOR) + " is not available.");
+		ENGINE_ERROR("[glLoadGen] OpenGL version " << OPENGL_VERSION_MAJOR << "." << OPENGL_VERSION_MINOR << " is not available.");
 	}
 }
 
@@ -133,7 +133,7 @@ void run() {
 		bool failedToLoad = false;
 		if (image == nullptr) {
 			auto res = SOIL_last_result();
-			ENGINE_WARN(std::string{"[SOIL] "} + res);
+			ENGINE_WARN("[SOIL] " << res);
 
 			width = 2;
 			height = 2;
