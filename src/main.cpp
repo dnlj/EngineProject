@@ -124,7 +124,7 @@ void run() {
 	});
 
 	// Image loading
-	Engine::Texture texture("../assets/test.png");
+	Engine::Texture texture("../assets/test.png", Engine::TextureOptions{Engine::TextureWrap::REPEAT, Engine::TextureFilter::NEAREST, false});
 
 	// GL stuff
 	GLuint vao;
@@ -229,6 +229,8 @@ void run() {
 		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture.getID());
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
