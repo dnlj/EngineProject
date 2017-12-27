@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 // glLoadGen
 #include <glloadgen/gl_core_4_5.h>
@@ -49,37 +50,21 @@ namespace {
 
 // TODO: Add a tag system that doesnt require storage allocation (it would have to use the same component id things just not craete the arrays)
 
-// TODO: Create a proper logging/warning/error library
-namespace Log {
-	void log(std::string_view msg) {
-		std::clog << "[LOG] " << msg << "\n";
-	}
-
-	void warn(std::string_view msg) {
-		std::cerr << "[WARN] " << msg << "\n";
-	}
-
-	void error(std::string_view msg) {
-		std::cerr << "[ERROR] " << msg << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-}
-
 void initializeOpenGL() {
 	auto loaded = ogl_LoadFunctions();
 
 	if (loaded == ogl_LOAD_FAILED) {
-		Log::error("[glLoadGen] initialization failed.");
+		ENGINE_ERROR("[glLoadGen] initialization failed.");
 	}
 
 	auto failed = loaded - ogl_LOAD_SUCCEEDED;
 	if (failed > 0) {
-		Log::error("[glLoadGen] Failed to load " + std::to_string(failed) + " functions.");
+		ENGINE_ERROR("[glLoadGen] Failed to load " + std::to_string(failed) + " functions.");
 	}
 
 
 	if (!ogl_IsVersionGEQ(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR)) {
-		Log::error("[glLoadGen] OpenGL version " + std::to_string(OPENGL_VERSION_MAJOR) + "." + std::to_string(OPENGL_VERSION_MINOR) + " is not available.");
+		ENGINE_ERROR("[glLoadGen] OpenGL version " + std::to_string(OPENGL_VERSION_MAJOR) + "." + std::to_string(OPENGL_VERSION_MINOR) + " is not available.");
 	}
 }
 
@@ -102,7 +87,7 @@ GLFWwindow* createWindow() {
 	auto window = glfwCreateWindow(1280, 720, "Window Title", nullptr, nullptr);
 
 	if (!window) {
-		Log::error("[GLFW] Failed to create window.");
+		ENGINE_ERROR("[GLFW] Failed to create window.");
 	}
 
 	return window;
@@ -117,7 +102,7 @@ void run() {
 
 	// Initialize GLFW
 	if (!glfwInit()) {
-		Log::error("[GLFW] Failed to initialize.");
+		ENGINE_ERROR("[GLFW] Failed to initialize.");
 	}
 
 	// Create a window
@@ -148,7 +133,7 @@ void run() {
 		bool failedToLoad = false;
 		if (image == nullptr) {
 			auto res = SOIL_last_result();
-			Log::warn(std::string{"[SOIL] "} + res);
+			ENGINE_WARN(std::string{"[SOIL] "} + res);
 
 			width = 2;
 			height = 2;
@@ -286,6 +271,8 @@ void run() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
 
 		// GLFW
 		glfwSwapBuffers(window);
