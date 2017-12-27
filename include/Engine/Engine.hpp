@@ -7,10 +7,10 @@
 #include <Engine/Entity.hpp>
 
 #define ENGINE_LOG(msg)\
-	Engine::Detail::log(std::clog, "[LOG]", __FILE__, __LINE__) << msg << '\n';\
+	Engine::Detail::log(std::clog, "[LOG]", __FILE__, __LINE__) << msg << '\n'
 
 #define ENGINE_WARN(msg)\
-	Engine::Detail::log(std::cerr, "[WARN]", __FILE__, __LINE__) << msg << '\n';
+	Engine::Detail::log(std::cerr, "[WARN]", __FILE__, __LINE__) << msg << '\n'
 
 #define ENGINE_ERROR(msg)\
 	Engine::Detail::log(std::cerr, "[ERROR]", __FILE__, __LINE__) << msg << '\n';\
