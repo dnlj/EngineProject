@@ -1,3 +1,6 @@
+// Windows
+#include <Windows.h>
+
 // STD
 #include <algorithm>
 #include <iostream>
@@ -85,10 +88,17 @@ namespace {
 		glfwWindowHint(GLFW_DEPTH_BITS, 32);
 
 		// Create a window
+		constexpr int width = 1280;
+		constexpr int height = 720;
 		auto window = glfwCreateWindow(1280, 720, "Window Title", nullptr, nullptr);
 
 		if (!window) {
 			ENGINE_ERROR("[GLFW] Failed to create window.");
+		}
+
+		{ // Position the window
+			auto mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+			glfwSetWindowPos(window, mode->width/2 - width/2, mode->height/2 - height/2);
 		}
 
 		return window;
@@ -305,6 +315,11 @@ int main(int argc, char* argv[]) {
 	std::atexit([](){
 		glfwTerminate();
 	});
+
+	{ // Position the console
+		auto window = GetConsoleWindow();
+		SetWindowPos(window, HWND_TOP, 0, 0, 1000, 500, 0);
+	}
 
 	Engine::ECS::init();
 	run();
