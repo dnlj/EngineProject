@@ -12,6 +12,8 @@
 namespace Engine {
 	class Texture {
 		public:
+			Texture() = default;
+
 			/**
 			 * @brief Creates a texture from the image at a given path with the given options.
 			 * @param[in] path The path to the image.
@@ -30,8 +32,10 @@ namespace Engine {
 			 */
 			GLuint getID() const;
 
+			void load(const std::string& path, TextureOptions options);
+
 		private:
 			/** The OpenGL texture id. */
-			GLuint texture;
+			GLuint texture = 0;
 	};
 }

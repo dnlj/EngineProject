@@ -8,6 +8,10 @@
 
 namespace Engine {
 	Texture::Texture(const std::string& path, TextureOptions options) {
+		load(path, options);
+	}
+
+	void Texture::load(const std::string& path, TextureOptions options) {
 		glGenTextures(1, &texture);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
