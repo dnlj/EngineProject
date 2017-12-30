@@ -75,7 +75,7 @@ project(PROJECT_NAME)
 	includedirs {
 		"./include",
 		"./deps/glfw/include",
-		"./deps/soil/src"
+		"./deps/soil/src",
 	}
 	
 	links {
@@ -94,46 +94,4 @@ project(PROJECT_NAME)
 		libdirs {
 			"./deps/glfw/build/src/Release",
 			"./deps/soil/projects/VC9/x64/Release",
-		}
-
-project(PROJECT_NAME .."Test")
-	includedirs {
-		"./include",
-		"./test/include",
-		"./deps/googletest/googlemock/include",
-		"./deps/googletest/googletest/include",
-	}
-	
-	files {
-		"./test/src/**",
-		"./test/include/**",
-		"./include/**",
-		"./src/**",
-	}
-	
-	removefiles {
-		"./src/main.cpp",
-		"./src/glloadgen/**"
-	}
-	
-	filter {"platforms:Windows_x64", "configurations:Debug"}
-		libdirs {
-			"./deps/googletest/googlemock/build/Debug",
-			"./deps/googletest/googletest/build/Debug",
-		}
-		
-		links {
-			"gtestd.lib",
-			"gmockd.lib",
-		}
-		
-	filter {"platforms:Windows_x64", "configurations:Release"}
-		libdirs {
-			"./deps/googletest/googlemock/build/Release",
-			"./deps/googletest/googletest/build/Release",
-		}
-		
-		links {
-			"gtest.lib",
-			"gmock.lib",
 		}
