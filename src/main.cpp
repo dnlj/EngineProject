@@ -26,40 +26,12 @@
 #include <Engine/Entity.hpp>
 #include <Engine/SystemBase.hpp>
 #include <Engine/TextureManager.hpp>
+#include <Engine/Utility/Utility.hpp>
 
 namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
 	GLFWwindow* window = nullptr; // TODO: need to add a way to pass data to systems
-
-	constexpr char* vertShaderSource = R"(
-		#version 450 core
-		layout (location = 0) in vec2 vertPos;
-		layout (location = 1) in vec2 vertTexCoord;
-		
-		layout (location = 2) uniform mat4 mvp;
-		
-		out vec2 fragTexCoord;
-
-		void main() {
-			gl_Position = mvp * vec4(vertPos, 0.0, 1.0);
-			fragTexCoord = vertTexCoord;
-		}
-	)";
-
-	constexpr char* fragShaderSource = R"(
-		#version 450 core
-		in vec2 fragTexCoord;
-		out vec4 finalColor;
-
-		// TODO: is this location unique per shader or program? I would assume program? Does it differ by type(attrib vs uniform)?
-		layout (location = 6) uniform sampler2D tex;
-
-		void main() {
-			finalColor = texture(tex, fragTexCoord);
-			//finalColor = vec4(1.0, 0.0, 0.0, 1.0);
-		}
-	)";
 
 	void initializeOpenGL() {
 		auto loaded = ogl_LoadFunctions();
@@ -156,7 +128,11 @@ namespace {
 
 				// Vertex shader
 				auto vertShader = glCreateShader(GL_VERTEX_SHADER);
-				glShaderSource(vertShader, 1, &vertShaderSource, nullptr);
+				{
+					const auto source = Engine::Utility::readFile("shaders/vertex.glsl");
+					const auto cstr = source.c_str();
+					glShaderSource(vertShader, 1, &cstr, nullptr);
+				}
 				glCompileShader(vertShader);
 
 				{
@@ -172,7 +148,11 @@ namespace {
 
 				// Fragment shader
 				auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-				glShaderSource(fragShader, 1, &fragShaderSource, nullptr);
+				{
+					const auto source = Engine::Utility::readFile("shaders/fragment.glsl");
+					const auto cstr = source.c_str();
+					glShaderSource(fragShader, 1, &cstr, nullptr);
+				}
 				glCompileShader(fragShader);
 
 				{
