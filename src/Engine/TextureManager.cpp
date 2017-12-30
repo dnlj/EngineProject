@@ -1,17 +1,29 @@
 // Engine
-#include <Engine/Texture.hpp>
+#include <Engine/TextureManager.hpp>
 #include <Engine/Engine.hpp>
-#include <Engine/Debug/Debug.hpp>
+#include <Engine/TextureOptions.hpp>
 
 // SOIL
 #include <SOIL.h>
 
 namespace Engine {
-	Texture::Texture(const std::string& path, TextureOptions options) {
-		load(path, options);
+	TextureManager::TextureManager() {
+		textures.max_load_factor(0.5f);
 	}
 
-	void Texture::load(const std::string& path, TextureOptions options) {
+	TextureManager::~TextureManager() {
+		for (const auto& texture : textures) {
+			glDeleteTextures(1, &texture.second);
+		}
+	}
+
+	GLuint TextureManager::getTexture(const std::string& path) {
+		auto& texture = textures[path];
+
+		if (texture != 0) { return texture; }
+
+		Engine::TextureOptions options{Engine::TextureWrap::REPEAT, Engine::TextureFilter::NEAREST, false};
+
 		glGenTextures(1, &texture);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -26,14 +38,15 @@ namespace Engine {
 
 			width = 2;
 			height = 2;
-			image = new GLubyte[4 * 4] {
+			image = new GLubyte[4 * 4]{
 				255, 000, 000, 255,    000, 255, 000, 255,
 				000, 255, 000, 255,    255, 000, 000, 255,
 			};
-			
+
 			options.setFilter(TextureFilter::NEAREST);
 			options.setWrap(TextureWrap::REPEAT);
 			options.setMipmap(false);
+
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 			delete[] image;
 		} else {
@@ -53,16 +66,6 @@ namespace Engine {
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		#if defined(DEBUG)
-				Debug::checkOpenGLErrors();
-		#endif
-	}
-
-	Texture::~Texture() {
-		glDeleteTextures(1, &texture);
-	}
-
-	GLuint Texture::getID() const {
 		return texture;
 	}
 }

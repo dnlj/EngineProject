@@ -21,7 +21,7 @@
 #include <Engine/Debug/Debug.hpp>
 #include <Engine/Entity.hpp>
 #include <Engine/SystemBase.hpp>
-#include <Engine/Texture.hpp>
+#include <Engine/TextureManager.hpp>
 
 namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
@@ -112,7 +112,7 @@ namespace {
 			GLuint vao = 0;
 			GLuint vbo = 0;
 			GLuint shader = 0;
-			Engine::Texture texture;
+			GLuint texture = 0;
 
 			// TODO: make this non-static
 			~RenderableTest() {
@@ -122,14 +122,15 @@ namespace {
 				glDeleteProgram(shader);
 			}
 
-			void setup() {
+			void setup(Engine::TextureManager& textureManager) {
 				constexpr GLfloat data[] = {
 					+0.0f, +0.5f, +0.5, +0.0f,
 					-0.5f, -0.5f, +0.0, +1.0f,
 					+0.5f, -0.5f, +1.0, +1.0f,
 				};
 
-				texture.load("../assets/test.png", Engine::TextureOptions{Engine::TextureWrap::REPEAT, Engine::TextureFilter::NEAREST, false});
+				//texture.load("../assets/test.png", Engine::TextureOptions{Engine::TextureWrap::REPEAT, Engine::TextureFilter::NEAREST, false});
+				texture = textureManager.getTexture("../assets/test.png");
 
 				// VAO
 				glGenVertexArrays(1, &vao);
@@ -223,7 +224,7 @@ namespace {
 					// Texture
 					// TODO: is this texture stuff stored in VAO?
 					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, rtest.texture.getID());
+					glBindTexture(GL_TEXTURE_2D, rtest.texture);
 					glUniform1i(2, 0);
 					
 					// Draw
@@ -263,13 +264,15 @@ void run() {
 		}
 	});
 
+	// ECS Test stuff
+	Engine::TextureManager textureManager;
 	{
 		// TODO: make a create entity with x,y,z components function? to prevent unnessassary calls
 		auto& ent = Engine::createEntity();
 
 		// TODO: maybe make an addAndGetComponent function
 		ent.addComponent<RenderableTest>();
-		ent.getComponent<RenderableTest>().setup();
+		ent.getComponent<RenderableTest>().setup(textureManager);
 	}
 
 	// Main loop
