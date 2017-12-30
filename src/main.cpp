@@ -113,7 +113,6 @@ namespace {
 }
 
 namespace {
-	// TODO: OpenGL cleanup
 	class RenderableTest {
 		public:
 			GLuint vao = 0;
@@ -192,7 +191,6 @@ namespace {
 				glAttachShader(shader, vertShader);
 				glAttachShader(shader, fragShader);
 				glLinkProgram(shader);
-				glUseProgram(shader); // TODO: This shouldnt need to be here
 
 				{
 					GLint status;
@@ -210,7 +208,6 @@ namespace {
 				glDetachShader(shader, fragShader);
 				glDeleteShader(vertShader);
 				glDeleteShader(fragShader);
-				// TODO: Error checking when in debug mode
 			}
 	};
 	ENGINE_REGISTER_COMPONENT(RenderableTest);
