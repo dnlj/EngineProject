@@ -16,6 +16,10 @@
 // SOIL
 #include <SOIL.h>
 
+// GLM
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Debug/Debug.hpp>
@@ -32,10 +36,12 @@ namespace {
 		layout (location = 0) in vec2 vertPos;
 		layout (location = 1) in vec2 vertTexCoord;
 		
+		layout (location = 2) uniform mat4 mvp;
+		
 		out vec2 fragTexCoord;
 
 		void main() {
-			gl_Position = vec4(vertPos, 0.0, 1.0);
+			gl_Position = mvp * vec4(vertPos, 0.0, 1.0);
 			fragTexCoord = vertTexCoord;
 		}
 	)";
@@ -46,7 +52,7 @@ namespace {
 		out vec4 finalColor;
 
 		// TODO: is this location unique per shader or program? I would assume program? Does it differ by type(attrib vs uniform)?
-		layout (location = 2) uniform sampler2D tex;
+		layout (location = 6) uniform sampler2D tex;
 
 		void main() {
 			finalColor = texture(tex, fragTexCoord);
@@ -90,7 +96,7 @@ namespace {
 		// Create a window
 		constexpr int width = 1280;
 		constexpr int height = 720;
-		auto window = glfwCreateWindow(1280, 720, "Window Title", nullptr, nullptr);
+		auto window = glfwCreateWindow(width, height, "Window Title", nullptr, nullptr);
 
 		if (!window) {
 			ENGINE_ERROR("[GLFW] Failed to create window.");
@@ -213,6 +219,15 @@ namespace {
 			RenderableTestSystem() {
 				// TODO: create a better way to do this.
 				cbits[Engine::ECS::detail::getComponentID<RenderableTest>()] = true;
+
+				// MVP
+				constexpr float scale = 1.0f / 400.0f;
+				auto halfWidth = (1280.0f / 2.0f) * scale;
+				auto halfHeight = (720.0f / 2.0f) * scale;
+				auto projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
+				auto view = glm::mat4{1.0f};
+				auto model = glm::mat4{1.0f};
+				mvp = projection * view * model;
 			}
 
 			void run(float dt) {
@@ -225,12 +240,17 @@ namespace {
 					// TODO: is this texture stuff stored in VAO?
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_2D, rtest.texture);
-					glUniform1i(2, 0);
+					glUniform1i(6, 0);
+
+					// MVP
+					glUniformMatrix4fv(2, 1, GL_FALSE, &mvp[0][0]);
 					
 					// Draw
 					glDrawArrays(GL_TRIANGLES, 0, 3);
 				}
 			}
+		private:
+			glm::mat4 mvp;
 	};
 	ENGINE_REGISTER_SYSTEM(RenderableTestSystem);
 }
@@ -301,6 +321,10 @@ void run() {
 
 		// ECS
 		Engine::ECS::run(dt);
+
+		#if defined(DEBUG)
+			Engine::Debug::checkOpenGLErrors();
+		#endif
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
 

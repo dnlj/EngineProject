@@ -76,6 +76,7 @@ project(PROJECT_NAME)
 		"./include",
 		"./deps/glfw/include",
 		"./deps/soil/src",
+		"./deps/glm/include",
 	}
 	
 	links {
