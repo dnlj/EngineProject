@@ -30,6 +30,7 @@
 namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
+	GLFWwindow* window = nullptr; // TODO: need to add a way to pass data to systems
 
 	constexpr char* vertShaderSource = R"(
 		#version 450 core
@@ -119,6 +120,7 @@ namespace {
 			GLuint vbo = 0;
 			GLuint shader = 0;
 			GLuint texture = 0;
+			glm::vec2 position{};
 
 			// TODO: make this non-static
 			~RenderableTest() {
@@ -135,7 +137,6 @@ namespace {
 					+0.5f, -0.5f, +1.0, +1.0f,
 				};
 
-				//texture.load("../assets/test.png", Engine::TextureOptions{Engine::TextureWrap::REPEAT, Engine::TextureFilter::NEAREST, false});
 				texture = textureManager.getTexture("../assets/test.png");
 
 				// VAO
@@ -224,10 +225,8 @@ namespace {
 				constexpr float scale = 1.0f / 400.0f;
 				auto halfWidth = (1280.0f / 2.0f) * scale;
 				auto halfHeight = (720.0f / 2.0f) * scale;
-				auto projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
-				auto view = glm::mat4{1.0f};
-				auto model = glm::mat4{1.0f};
-				mvp = projection * view * model;
+				projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
+				view = glm::mat4{1.0f};
 			}
 
 			void run(float dt) {
@@ -243,16 +242,53 @@ namespace {
 					glUniform1i(6, 0);
 
 					// MVP
-					glUniformMatrix4fv(2, 1, GL_FALSE, &mvp[0][0]);
+					{
+						auto model = glm::translate(glm::mat4{1}, glm::vec3{rtest.position, 0.0f});
+						glm::mat4 mvp = projection * view * model;
+						glUniformMatrix4fv(2, 1, GL_FALSE, &mvp[0][0]);
+					}
 					
 					// Draw
 					glDrawArrays(GL_TRIANGLES, 0, 3);
 				}
 			}
 		private:
-			glm::mat4 mvp;
+			glm::mat4 projection;
+			glm::mat4 view;
 	};
 	ENGINE_REGISTER_SYSTEM(RenderableTestSystem);
+
+	class RenderableTestMovement : public Engine::SystemBase {
+		public:
+		RenderableTestMovement() {
+				cbits[Engine::ECS::detail::getComponentID<RenderableTest>()] = true;
+			}
+
+			void run(float dt) {
+				// TODO: Need to add a way to ensure that this system is run before the render system
+				constexpr float speed = 1.0f;
+				for (auto& ent : entities) {
+					auto& rtest = ent.getComponent<RenderableTest>();
+					
+					if (glfwGetKey(window, GLFW_KEY_W)) {
+						rtest.position.y += speed * dt;
+					}
+
+					if (glfwGetKey(window, GLFW_KEY_S)) {
+						rtest.position.y -= speed * dt;
+					}
+
+					if (glfwGetKey(window, GLFW_KEY_A)) {
+						rtest.position.x -= speed * dt;
+					}
+
+					if (glfwGetKey(window, GLFW_KEY_D)) {
+						rtest.position.x += speed * dt;
+					}
+				}
+			}
+	};
+	ENGINE_REGISTER_SYSTEM(RenderableTestMovement);
 }
 
 void run() {
@@ -268,7 +304,7 @@ void run() {
 	}
 
 	// Create a window
-	auto window = createWindow();
+	window = createWindow();
 	glfwMakeContextCurrent(window);
 	
 	// Enable vsync
