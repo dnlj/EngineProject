@@ -1,5 +1,19 @@
 #pragma once
 
+namespace Engine::ECS {
+	template<class System1, class System2, class... Systems>
+	SystemBitset getBitsetForSystems() {
+		return getBitsetForSystems<System1>() |= getBitsetForSystems<System2, Systems...>();
+	}
+
+	template<class System>
+	SystemBitset getBitsetForSystems() {
+		SystemBitset value;
+		value[detail::getSystemID<System>()] = true;
+		return value;
+	}
+}
+
 namespace Engine::ECS::detail {
 	template<class System>
 	System& getSystem() {

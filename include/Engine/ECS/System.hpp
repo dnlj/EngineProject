@@ -9,6 +9,14 @@
 	}
 
 namespace Engine::ECS {
+	// TODO: Doc
+	template<class System1, class System2, class... Systems>
+	SystemBitset getBitsetForSystems();
+
+	// TODO: Doc
+	template<class System>
+	SystemBitset getBitsetForSystems();
+
 	/**
 	 * @brief Used to check if a type is valid for use as a system.
 	 * @tparam T The type to check.

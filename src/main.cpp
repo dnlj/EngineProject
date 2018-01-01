@@ -249,7 +249,7 @@ namespace {
 
 			RenderableTestMovement() {
 				cbits[Engine::ECS::detail::getComponentID<RenderableTest>()] = true;
-				priorityBefore[Engine::ECS::detail::getSystemID<RenderableTestSystem>()] = true;
+				priorityBefore = Engine::ECS::getBitsetForSystems<RenderableTestSystem>();
 			}
 
 			void run(float dt) {
@@ -284,8 +284,10 @@ namespace {
 			Engine::ECS::SystemBitset priorityAfter{};
 
 			RenderableTestSystem3() {
-				priorityAfter[Engine::ECS::detail::getSystemID<RenderableTestMovement>()] = true;
-				priorityBefore[Engine::ECS::detail::getSystemID<RenderableTestSystem>()] = true;
+				priorityBefore = Engine::ECS::getBitsetForSystems<
+					RenderableTestSystem,
+					RenderableTestMovement
+				>();
 			}
 
 			void run(float dt) {
