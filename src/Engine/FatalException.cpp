@@ -15,7 +15,9 @@ namespace Engine {
 	};
 
 	FatalException::~FatalException() {
-		if (*refCount == 1) {
+		--*refCount;
+
+		if (*refCount == 0) {
 			delete refCount;
 			std::terminate();
 		}
