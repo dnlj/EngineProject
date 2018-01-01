@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/ECS/ECS.hpp>
+#include <Engine/Engine.hpp>
 
 namespace Engine::ECS::detail {
 	namespace ComponentData {
@@ -102,9 +103,7 @@ namespace Engine::ECS {
 
 				// Cycle
 				if (nodes[node] == 1) {
-					// TODO: proper error
-					puts("Cycle in graph.");
-					throw std::runtime_error("Cycle in graph");
+					ENGINE_ERROR("Circular system dependency involving system " << node);
 				}
 
 				// Continue visiting
