@@ -85,10 +85,9 @@ namespace Engine::ECS {
 		detail::onComponentRemovedAll(eid, cid);
 	}
 
-	void init() {
-		// TODO: Mostly untested
-		// Topological sort (DFS)
-		{ // TODO: cleanup/simplify/move
+	namespace {
+		void topologicallySortSystems() {
+			// All SystemData containers should be the same size. The use of run is arbitrary.
 			const auto systemCount = detail::SystemData::run.size();
 
 			// Sort the graph
@@ -96,10 +95,11 @@ namespace Engine::ECS {
 			std::vector<SystemID> order; // The reverse order of the systems
 			order.reserve(systemCount);
 
+			// Recursively visit all children of node using DFS
 			auto visit = [&order, &nodes](SystemID node, auto& visit) {
 				// Already visited
 				if (nodes[node] == 2) { return; }
-				
+
 				// Cycle
 				if (nodes[node] == 1) {
 					// TODO: proper error
@@ -118,13 +118,14 @@ namespace Engine::ECS {
 				order.emplace_back(node);
 			};
 
+			// Visit all unvisited nodes
 			for (size_t i = 0; i < systemCount; ++i) {
 				if (nodes[i] == 0) {
 					visit(i, visit);
 				}
 			}
 
-			// Sort containers
+			// Sort the containers
 			auto reorder = [&order](auto& container) {
 				std::remove_reference_t<decltype(container)> sorted;
 				sorted.reserve(container.size());
@@ -141,6 +142,11 @@ namespace Engine::ECS {
 			reorder(detail::SystemData::onEntityDestroyed);
 			reorder(detail::SystemData::run);
 		}
+	}
+
+	void init() {
+		// Topological sort (DFS)
+		topologicallySortSystems();
 
 		// Shrink the containers since they should be at there final size.
 		detail::SystemData::onEntityCreated.shrink_to_fit();
