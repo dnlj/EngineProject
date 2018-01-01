@@ -254,7 +254,6 @@ namespace {
 
 			void run(float dt) {
 				std::cout << " - Move run\n";
-				// TODO: Need to add a way to ensure that this system is run before the render system
 				constexpr float speed = 1.0f;
 				for (auto& ent : entities) {
 					auto& rtest = ent.getComponent<RenderableTest>();

@@ -20,10 +20,6 @@ namespace Engine::ECS::detail {
 		return next++;
 	}
 
-	//const SystemBitset& getSystemPriority(SystemID sid) {
-	//	return SystemData::priority[sid];
-	//}
-
 	void onEntityCreatedAll(EntityID eid) {
 		for (const auto func : SystemData::onEntityCreated) {
 			func(eid);

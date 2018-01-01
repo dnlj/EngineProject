@@ -16,18 +16,19 @@ namespace Engine::ECS {
 	template<class T, class = void>
 	class IsSystem : public std::false_type {};
 
-	// TODO: Update to require priority
 	/** @copydoc isSystem */
 	template<class T>
 	class IsSystem<
 		T,
 		std::void_t<
-		decltype(
-			std::declval<T>().onEntityCreated(std::declval<Engine::Entity>()),
-			std::declval<T>().onComponentAdded(std::declval<Engine::Entity>(), std::declval<ComponentID>()),
-			std::declval<T>().onComponentRemoved(std::declval<Engine::Entity>(), std::declval<ComponentID>()),
-			std::declval<T>().onEntityDestroyed(std::declval<Engine::Entity>()),
-			std::declval<T>().run(std::declval<float>())
+			decltype(
+				std::declval<T>().onEntityCreated(std::declval<Engine::Entity>()),
+				std::declval<T>().onComponentAdded(std::declval<Engine::Entity>(), std::declval<ComponentID>()),
+				std::declval<T>().onComponentRemoved(std::declval<Engine::Entity>(), std::declval<ComponentID>()),
+				std::declval<T>().onEntityDestroyed(std::declval<Engine::Entity>()),
+				std::declval<T>().run(std::declval<float>()),
+				std::declval<T>().priorityBefore,
+				std::declval<T>().priorityAfter
 			)
 		>
 	> : public std::true_type{};
@@ -79,10 +80,6 @@ namespace Engine::ECS::detail {
 	 */
 	template<class System>
 	SystemID getSystemID();
-
-	// TODO: Doc
-	// TODO: Unused? remove.
-	//const PriorityPair& getSystemPriority(SystemID sid);
 
 	/**
 	 * @brief Calls the onEntityCreated member function on the system.
