@@ -91,7 +91,7 @@ namespace Engine::ECS {
 
 	template<class Component1, class Component2, class... Components>
 	ComponentBitset getBitsetForComponent() {
-		return getBitsetForSystems<Component1>() |= getBitsetForSystems<Component2, Components...>();
+		return getBitsetForComponent<Component1>() |= getBitsetForComponent<Component2, Components...>();
 	}
 
 	template<class Component>

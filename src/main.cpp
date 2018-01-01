@@ -192,6 +192,9 @@ namespace {
 	};
 	ENGINE_REGISTER_COMPONENT(RenderableTest);
 
+	class Component2 {};
+	ENGINE_REGISTER_COMPONENT(Component2);
+
 	class RenderableTestMovement;
 	class RenderableTestSystem : public Engine::SystemBase {
 		public:
@@ -247,7 +250,7 @@ namespace {
 			Engine::ECS::SystemBitset priorityAfter{};
 
 			RenderableTestMovement() {
-				cbits = Engine::ECS::getBitsetForComponent<RenderableTest>();
+				cbits = Engine::ECS::getBitsetForComponent<RenderableTest, Component2>();
 				priorityBefore = Engine::ECS::getBitsetForSystems<RenderableTestSystem>();
 			}
 
