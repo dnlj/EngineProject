@@ -9,8 +9,4 @@ namespace Engine {
 	void destroyEntity(Entity ent) {
 		ECS::destroyEntity(ent.getID());
 	}
-
-	void fatal() {
-		std::exit(EXIT_FAILURE);
-	}
 }

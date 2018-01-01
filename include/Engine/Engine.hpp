@@ -5,6 +5,7 @@
 // Engine
 #include <Engine/Detail/Detail.hpp>
 #include <Engine/Entity.hpp>
+#include <Engine/FatalException.hpp>
 
 #define ENGINE_LOG(msg)\
 	Engine::Detail::log(std::clog, "[LOG]", __FILE__, __LINE__) << msg << '\n'
@@ -14,7 +15,7 @@
 
 #define ENGINE_ERROR(msg)\
 	Engine::Detail::log(std::cerr, "[ERROR]", __FILE__, __LINE__) << msg << '\n';\
-	Engine::fatal();
+	throw Engine::FatalException{};
 
 namespace Engine {
 	/**
@@ -30,9 +31,4 @@ namespace Engine {
 	 * @param[in] ent The Entity to destroy.
 	 */
 	void destroyEntity(Entity ent);
-
-	/**
-	 * @brief Exits the program.
-	 */
-	void fatal();
 }
