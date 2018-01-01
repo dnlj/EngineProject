@@ -200,8 +200,7 @@ namespace {
 
 			RenderableTestSystem() {
 				// TODO: make this static?
-				// TODO: create a better way to do this.
-				cbits[Engine::ECS::detail::getComponentID<RenderableTest>()] = true;
+				cbits = Engine::ECS::getBitsetForComponent<RenderableTest>();
 
 				// MVP
 				constexpr float scale = 1.0f / 400.0f;
@@ -248,7 +247,7 @@ namespace {
 			Engine::ECS::SystemBitset priorityAfter{};
 
 			RenderableTestMovement() {
-				cbits[Engine::ECS::detail::getComponentID<RenderableTest>()] = true;
+				cbits = Engine::ECS::getBitsetForComponent<RenderableTest>();
 				priorityBefore = Engine::ECS::getBitsetForSystems<RenderableTestSystem>();
 			}
 

@@ -123,6 +123,14 @@ namespace Engine::ECS {
 		int registerComponent(const std::string_view name);
 	}
 
+	// TODO: Doc
+	template<class Component1, class Component2, class... Components>
+	ComponentBitset getBitsetForComponent();
+
+	// TODO: Doc
+	template<class Component>
+	ComponentBitset getBitsetForComponent();
+
 	/**
 	 * @brief Creates a new entity.
 	 * @param[in] forceNew When set to true, prevents the reuse of ids.

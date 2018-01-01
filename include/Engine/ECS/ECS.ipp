@@ -88,4 +88,16 @@ namespace Engine::ECS {
 		const auto cid = detail::getComponentID<Component>();
 		return *static_cast<Component*>(detail::ComponentData::getComponent[cid](eid));
 	}
+
+	template<class Component1, class Component2, class... Components>
+	ComponentBitset getBitsetForComponent() {
+		return getBitsetForSystems<Component1>() |= getBitsetForSystems<Component2, Components...>();
+	}
+
+	template<class Component>
+	ComponentBitset getBitsetForComponent() {
+		ComponentBitset value;
+		value[detail::getComponentID<Component>()] = true;
+		return value;
+	}
 }
