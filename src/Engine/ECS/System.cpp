@@ -20,9 +20,9 @@ namespace Engine::ECS::detail {
 		return next++;
 	}
 
-	const PriorityPair& getSystemPriority(SystemID sid) {
-		return SystemData::priority[sid];
-	}
+	//const SystemBitset& getSystemPriority(SystemID sid) {
+	//	return SystemData::priority[sid];
+	//}
 
 	void onEntityCreatedAll(EntityID eid) {
 		for (const auto func : SystemData::onEntityCreated) {

@@ -55,7 +55,7 @@ namespace Engine::ECS::detail {
 		extern std::vector<ComponentModifyFunction> onComponentRemoved;
 		extern std::vector<EntityModifyFunction> onEntityDestroyed;
 		extern std::vector<RunFunction> run;
-		extern std::vector<PriorityPair> priority;
+		extern std::array<SystemBitset, MAX_SYSTEMS> priority;
 	}
 
 	/**
@@ -81,7 +81,8 @@ namespace Engine::ECS::detail {
 	SystemID getSystemID();
 
 	// TODO: Doc
-	const PriorityPair& getSystemPriority(SystemID sid);
+	// TODO: Unused? remove.
+	//const PriorityPair& getSystemPriority(SystemID sid);
 
 	/**
 	 * @brief Calls the onEntityCreated member function on the system.

@@ -91,26 +91,12 @@ namespace Engine::ECS {
 		{ // TODO: cleanup/simplify/move
 			const auto systemCount = detail::SystemData::run.size();
 
-			// TODO: couldnt we do this part as we register the systems so we only need to keep track priorityBefore and not priorityAfter?
-			// Construct the graph
-			std::vector<SystemBitset> nodeChildren(systemCount);
-			for (size_t sid = 0; sid < systemCount; ++sid) {
-				const auto& priority = detail::getSystemPriority(sid);
-				nodeChildren[sid] |= priority.priorityBefore;
-
-				for (size_t i = 0; i < priority.priorityAfter.size(); ++i) {
-					if (priority.priorityAfter[i]) {
-						nodeChildren[i][sid] = true;
-					}
-				}
-			}
-
 			// Sort the graph
 			std::vector<int8_t> nodes(systemCount); // 0 = no mark  1 = temp mark  2 = perma mark
 			std::vector<SystemID> order; // The reverse order of the systems
 			order.reserve(systemCount);
 
-			auto visit = [&nodeChildren, &order, &nodes](SystemID node, auto& visit) {
+			auto visit = [&order, &nodes](SystemID node, auto& visit) {
 				// Already visited
 				if (nodes[node] == 2) { return; }
 				
@@ -123,8 +109,8 @@ namespace Engine::ECS {
 
 				// Continue visiting
 				nodes[node] = 1;
-				for (size_t i = 0; i < nodeChildren[node].size(); ++i) {
-					if (nodeChildren[node][i]) {
+				for (size_t i = 0; i < detail::SystemData::priority[node].size(); ++i) {
+					if (detail::SystemData::priority[node][i]) {
 						visit(i, visit);
 					}
 				}
@@ -138,8 +124,8 @@ namespace Engine::ECS {
 				}
 			}
 
-			// Order lists
-			auto reorder = [&order](auto& container){
+			// Sort containers
+			auto reorder = [&order](auto& container) {
 				std::remove_reference_t<decltype(container)> sorted;
 				sorted.reserve(container.size());
 				for (auto it = order.rbegin(); it != order.rend(); ++it) {
@@ -156,6 +142,7 @@ namespace Engine::ECS {
 			reorder(detail::SystemData::run);
 		}
 
+		// Shrink the containers since they should be at there final size.
 		detail::SystemData::onEntityCreated.shrink_to_fit();
 		detail::SystemData::onComponentAdded.shrink_to_fit();
 		detail::SystemData::onComponentRemoved.shrink_to_fit();

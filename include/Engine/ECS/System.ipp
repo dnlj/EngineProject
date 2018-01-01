@@ -50,7 +50,6 @@ namespace Engine::ECS::detail {
 			SystemData::onComponentRemoved.resize(sid + 1);
 			SystemData::onEntityDestroyed.resize(sid + 1);
 			SystemData::run.resize(sid + 1);
-			SystemData::priority.resize(sid + 1);
 		}
 
 		SystemData::onEntityCreated[sid] = onEntityCreated<System>;
@@ -58,7 +57,16 @@ namespace Engine::ECS::detail {
 		SystemData::onComponentRemoved[sid] = onComponentRemoved<System>;
 		SystemData::onEntityDestroyed[sid] = onEntityDestroyed<System>;
 		SystemData::run[sid] = run<System>;
-		SystemData::priority[sid] = {system.priorityBefore, system.priorityAfter};
+
+
+		// Update priorities
+		SystemData::priority[sid] |= system.priorityBefore;
+		
+		for (size_t i = 0; i < system.priorityAfter.size(); ++i) {
+			if (system.priorityAfter[i]) {
+				SystemData::priority[i][sid] = true;
+			}
+		}
 
 		return 0;
 	}
