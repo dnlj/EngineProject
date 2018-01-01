@@ -8,6 +8,12 @@ namespace Engine::ECS::detail {
 	};
 
 	template<class System>
+	SystemID getSystemID() {
+		const static SystemID id = getNextSystemID();
+		return id;
+	}
+
+	template<class System>
 	void onEntityCreated(EntityID eid) {
 		getSystem<System>().onEntityCreated(Entity{eid});
 	}
@@ -35,12 +41,24 @@ namespace Engine::ECS::detail {
 	template<class System, class>
 	int registerSystem() {
 		const auto system = getSystem<System>();
+		auto sid = getSystemID<System>();
 
-		SystemData::onEntityCreated.emplace_back(onEntityCreated<System>);
-		SystemData::onComponentAdded.emplace_back(onComponentAdded<System>);
-		SystemData::onComponentRemoved.emplace_back(onComponentRemoved<System>);
-		SystemData::onEntityDestroyed.emplace_back(onEntityDestroyed<System>);
-		SystemData::run.emplace_back(run<System>);
+		// All containers should be of the same size
+		if (sid >= SystemData::run.size()) {
+			SystemData::onEntityCreated.resize(sid + 1);
+			SystemData::onComponentAdded.resize(sid + 1);
+			SystemData::onComponentRemoved.resize(sid + 1);
+			SystemData::onEntityDestroyed.resize(sid + 1);
+			SystemData::run.resize(sid + 1);
+			SystemData::priority.resize(sid + 1);
+		}
+
+		SystemData::onEntityCreated[sid] = onEntityCreated<System>;
+		SystemData::onComponentAdded[sid] = onComponentAdded<System>;
+		SystemData::onComponentRemoved[sid] = onComponentRemoved<System>;
+		SystemData::onEntityDestroyed[sid] = onEntityDestroyed<System>;
+		SystemData::run[sid] = run<System>;
+		SystemData::priority[sid] = {system.priorityBefore, system.priorityAfter};
 
 		return 0;
 	}

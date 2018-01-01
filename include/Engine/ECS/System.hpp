@@ -16,6 +16,7 @@ namespace Engine::ECS {
 	template<class T, class = void>
 	class IsSystem : public std::false_type {};
 
+	// TODO: Update to require priority
 	/** @copydoc isSystem */
 	template<class T>
 	class IsSystem<
@@ -33,6 +34,14 @@ namespace Engine::ECS {
 }
 
 namespace Engine::ECS::detail {
+	class PriorityPair {
+		public:
+			PriorityPair() = default;
+			PriorityPair(SystemBitset priorityBefore, SystemBitset priorityAfter);
+			SystemBitset priorityBefore;
+			SystemBitset priorityAfter;
+	};
+
 	/**
 	 * @brief Stores data about the registered systems.
 	 */
@@ -46,6 +55,7 @@ namespace Engine::ECS::detail {
 		extern std::vector<ComponentModifyFunction> onComponentRemoved;
 		extern std::vector<EntityModifyFunction> onEntityDestroyed;
 		extern std::vector<RunFunction> run;
+		extern std::vector<PriorityPair> priority;
 	}
 
 	/**
@@ -55,6 +65,23 @@ namespace Engine::ECS::detail {
 	 */
 	template<class System>
 	System& getSystem();
+
+	/**
+	 * @brief Gets the next SystemID.
+	 * @return The next SystemID.
+	 */
+	SystemID getNextSystemID();
+
+	/**
+	 * @brief Get the SystemID associated an system.
+	 * @tparam System The system.
+	 * @return The id of @p System.
+	 */
+	template<class System>
+	SystemID getSystemID();
+
+	// TODO: Doc
+	const PriorityPair& getSystemPriority(SystemID sid);
 
 	/**
 	 * @brief Calls the onEntityCreated member function on the system.

@@ -86,6 +86,76 @@ namespace Engine::ECS {
 	}
 
 	void init() {
+		// TODO: Mostly untested
+		// Topological sort (DFS)
+		{ // TODO: cleanup/simplify/move
+			const auto systemCount = detail::SystemData::run.size();
+
+			// TODO: couldnt we do this part as we register the systems so we only need to keep track priorityBefore and not priorityAfter?
+			// Construct the graph
+			std::vector<SystemBitset> nodeChildren(systemCount);
+			for (size_t sid = 0; sid < systemCount; ++sid) {
+				const auto& priority = detail::getSystemPriority(sid);
+				nodeChildren[sid] |= priority.priorityBefore;
+
+				for (size_t i = 0; i < priority.priorityAfter.size(); ++i) {
+					if (priority.priorityAfter[i]) {
+						nodeChildren[i][sid] = true;
+					}
+				}
+			}
+
+			// Sort the graph
+			std::vector<int8_t> nodes(systemCount); // 0 = no mark  1 = temp mark  2 = perma mark
+			std::vector<SystemID> order; // The reverse order of the systems
+			order.reserve(systemCount);
+
+			auto visit = [&nodeChildren, &order, &nodes](SystemID node, auto& visit) {
+				// Already visited
+				if (nodes[node] == 2) { return; }
+				
+				// Cycle
+				if (nodes[node] == 1) {
+					// TODO: proper error
+					puts("Cycle in graph.");
+					throw std::runtime_error("Cycle in graph");
+				}
+
+				// Continue visiting
+				nodes[node] = 1;
+				for (size_t i = 0; i < nodeChildren[node].size(); ++i) {
+					if (nodeChildren[node][i]) {
+						visit(i, visit);
+					}
+				}
+				nodes[node] = 2;
+				order.emplace_back(node);
+			};
+
+			for (size_t i = 0; i < systemCount; ++i) {
+				if (nodes[i] == 0) {
+					visit(i, visit);
+				}
+			}
+
+			// Order lists
+			auto reorder = [&order](auto& container){
+				std::remove_reference_t<decltype(container)> sorted;
+				sorted.reserve(container.size());
+				for (auto it = order.rbegin(); it != order.rend(); ++it) {
+					sorted.emplace_back(container[*it]);
+				}
+
+				container = std::move(sorted);
+			};
+
+			reorder(detail::SystemData::onEntityCreated);
+			reorder(detail::SystemData::onComponentAdded);
+			reorder(detail::SystemData::onComponentRemoved);
+			reorder(detail::SystemData::onEntityDestroyed);
+			reorder(detail::SystemData::run);
+		}
+
 		detail::SystemData::onEntityCreated.shrink_to_fit();
 		detail::SystemData::onComponentAdded.shrink_to_fit();
 		detail::SystemData::onComponentRemoved.shrink_to_fit();

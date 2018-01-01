@@ -7,6 +7,21 @@ namespace Engine::ECS::detail {
 		decltype(onComponentRemoved) onComponentRemoved;
 		decltype(onEntityDestroyed) onEntityDestroyed;
 		decltype(run) run;
+		decltype(priority) priority;
+	}
+
+	PriorityPair::PriorityPair(SystemBitset priorityBefore, SystemBitset priorityAfter)
+		: priorityBefore{priorityBefore}
+		, priorityAfter{priorityAfter} {
+	}
+
+	SystemID getNextSystemID() {
+		static SystemID next = 0;
+		return next++;
+	}
+
+	const PriorityPair& getSystemPriority(SystemID sid) {
+		return SystemData::priority[sid];
 	}
 
 	void onEntityCreatedAll(EntityID eid) {

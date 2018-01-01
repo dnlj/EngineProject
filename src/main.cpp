@@ -192,9 +192,14 @@ namespace {
 	};
 	ENGINE_REGISTER_COMPONENT(RenderableTest);
 
+	class RenderableTestMovement;
 	class RenderableTestSystem : public Engine::SystemBase {
 		public:
+			Engine::ECS::SystemBitset priorityBefore{};
+			Engine::ECS::SystemBitset priorityAfter{};
+
 			RenderableTestSystem() {
+				// TODO: make this static?
 				// TODO: create a better way to do this.
 				cbits[Engine::ECS::detail::getComponentID<RenderableTest>()] = true;
 
@@ -207,6 +212,7 @@ namespace {
 			}
 
 			void run(float dt) {
+				std::cout << " - Draw run\n";
 				for(auto& ent : entities) {
 					const auto& rtest = ent.getComponent<RenderableTest>();
 					glBindVertexArray(rtest.vao);
@@ -237,11 +243,17 @@ namespace {
 
 	class RenderableTestMovement : public Engine::SystemBase {
 		public:
-		RenderableTestMovement() {
+			// TODO: These should be const. And ideally static.
+			Engine::ECS::SystemBitset priorityBefore{};
+			Engine::ECS::SystemBitset priorityAfter{};
+
+			RenderableTestMovement() {
 				cbits[Engine::ECS::detail::getComponentID<RenderableTest>()] = true;
+				priorityBefore[Engine::ECS::detail::getSystemID<RenderableTestSystem>()] = true;
 			}
 
 			void run(float dt) {
+				std::cout << " - Move run\n";
 				// TODO: Need to add a way to ensure that this system is run before the render system
 				constexpr float speed = 1.0f;
 				for (auto& ent : entities) {
@@ -266,6 +278,22 @@ namespace {
 			}
 	};
 	ENGINE_REGISTER_SYSTEM(RenderableTestMovement);
+
+	class RenderableTestSystem3 : public Engine::SystemBase {
+		public:
+			Engine::ECS::SystemBitset priorityBefore{};
+			Engine::ECS::SystemBitset priorityAfter{};
+
+			RenderableTestSystem3() {
+				priorityAfter[Engine::ECS::detail::getSystemID<RenderableTestMovement>()] = true;
+				priorityBefore[Engine::ECS::detail::getSystemID<RenderableTestSystem>()] = true;
+			}
+
+			void run(float dt) {
+				std::cout << " - System3 run\n";
+			}
+	};
+	ENGINE_REGISTER_SYSTEM(RenderableTestSystem3);
 }
 
 void run() {
@@ -333,11 +361,13 @@ void run() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// ECS
+		std::cout << "== New run ==\n";
 		Engine::ECS::run(dt);
 
 		#if defined(DEBUG)
 			Engine::Debug::checkOpenGLErrors();
 		#endif
+
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
 
