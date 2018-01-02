@@ -125,11 +125,11 @@ namespace Engine::ECS {
 
 	// TODO: Doc
 	template<class Component1, class Component2, class... Components>
-	ComponentBitset getBitsetForComponent();
+	ComponentBitset getBitsetForComponents();
 
 	// TODO: Doc
 	template<class Component>
-	ComponentBitset getBitsetForComponent();
+	ComponentBitset getBitsetForComponents();
 
 	/**
 	 * @brief Creates a new entity.
