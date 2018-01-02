@@ -14,6 +14,14 @@ namespace Engine {
 	 */
 	class SystemBase {
 		public:
+			// TODO: Ideally this would be const/static
+			/** The bitset of systems to have higher priority than. */
+			Engine::ECS::SystemBitset priorityBefore;
+
+			// TODO: Ideally this would be const/static
+			/** The bitset of systems to have lower priority than. */
+			Engine::ECS::SystemBitset priorityAfter;
+
 			/**
 			 * @brief Called by Engine::ECS when a entity is created.
 			 * @param[in] ent The entity.

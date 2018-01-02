@@ -198,12 +198,8 @@ namespace {
 	class RenderableTestMovement;
 	class RenderableTestSystem : public Engine::SystemBase {
 		public:
-			Engine::ECS::SystemBitset priorityBefore{};
-			Engine::ECS::SystemBitset priorityAfter{};
-
 			RenderableTestSystem() {
-				// TODO: make this static?
-				cbits = Engine::ECS::getBitsetForComponent<RenderableTest>();
+				cbits = Engine::ECS::getBitsetForComponents<RenderableTest>();
 
 				// MVP
 				constexpr float scale = 1.0f / 400.0f;
@@ -245,10 +241,6 @@ namespace {
 
 	class RenderableTestMovement : public Engine::SystemBase {
 		public:
-			// TODO: These should be const. And ideally static.
-			Engine::ECS::SystemBitset priorityBefore{};
-			Engine::ECS::SystemBitset priorityAfter{};
-
 			RenderableTestMovement() {
 				cbits = Engine::ECS::getBitsetForComponents<RenderableTest>();
 				priorityBefore = Engine::ECS::getBitsetForSystems<RenderableTestSystem>();
@@ -282,9 +274,6 @@ namespace {
 
 	class RenderableTestSystem3 : public Engine::SystemBase {
 		public:
-			Engine::ECS::SystemBitset priorityBefore{};
-			Engine::ECS::SystemBitset priorityAfter{};
-
 			RenderableTestSystem3() {
 				priorityBefore = Engine::ECS::getBitsetForSystems<
 					RenderableTestSystem,
