@@ -250,7 +250,7 @@ namespace {
 			Engine::ECS::SystemBitset priorityAfter{};
 
 			RenderableTestMovement() {
-				cbits = Engine::ECS::getBitsetForComponent<RenderableTest, Component2>();
+				cbits = Engine::ECS::getBitsetForComponents<RenderableTest>();
 				priorityBefore = Engine::ECS::getBitsetForSystems<RenderableTestSystem>();
 			}
 

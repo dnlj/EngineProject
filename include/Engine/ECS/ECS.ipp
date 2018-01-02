@@ -90,12 +90,12 @@ namespace Engine::ECS {
 	}
 
 	template<class Component1, class Component2, class... Components>
-	ComponentBitset getBitsetForComponent() {
-		return getBitsetForComponent<Component1>() |= getBitsetForComponent<Component2, Components...>();
+	ComponentBitset getBitsetForComponents() {
+		return getBitsetForComponents<Component1>() |= getBitsetForComponents<Component2, Components...>();
 	}
 
 	template<class Component>
-	ComponentBitset getBitsetForComponent() {
+	ComponentBitset getBitsetForComponents() {
 		ComponentBitset value;
 		value[detail::getComponentID<Component>()] = true;
 		return value;
