@@ -87,16 +87,9 @@ project(PROJECT_NAME)
 		"Box2D.lib",
 	}
 	
-	filter {"platforms:Windows_x64", "configurations:Debug"}
+	filter {"platforms:Windows_x64"}
 		libdirs {
-			"./deps/glfw/build/src/Debug",
-			"./deps/soil/projects/VC9/x64/Debug",
-			"./deps/Box2D/Build/vs2017/bin/Debug",
-		}
-		
-	filter {"platforms:Windows_x64", "configurations:Release"}
-		libdirs {
-			"./deps/glfw/build/src/Release",
-			"./deps/soil/projects/VC9/x64/Release",
-			"./deps/Box2D/Build/vs2017/bin/Release",
+			"./deps/glfw/build/src/%{cfg.buildcfg}",
+			"./deps/soil/projects/VC9/x64/%{cfg.buildcfg}",
+			"./deps/Box2D/Build/vs2017/bin/%{cfg.buildcfg}",
 		}
