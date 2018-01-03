@@ -20,6 +20,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+// Box2D
+#include <Box2D/Box2D.h>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Debug/Debug.hpp>
@@ -317,6 +320,14 @@ void run() {
 		}
 	});
 
+	// Box2D testing
+	b2World world{b2Vec2{0.0f, -1.0f}};
+	{
+		// TODO: setup debug draw
+		// world.SetDebugDraw(...);
+
+	}
+
 	// ECS Test stuff
 	Engine::TextureManager textureManager;
 	{
@@ -351,6 +362,9 @@ void run() {
 		// Rendering
 		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		// Box2D
+		world.Step(dt, 8, 3);
 
 		// ECS
 		std::cout << "== New run ==\n";

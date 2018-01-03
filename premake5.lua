@@ -77,22 +77,26 @@ project(PROJECT_NAME)
 		"./deps/glfw/include",
 		"./deps/soil/src",
 		"./deps/glm/include",
+		"./deps/Box2D/Box2D",
 	}
 	
 	links {
 		"glfw3.lib",
 		"opengl32.lib",
 		"SOIL.lib",
+		"Box2D.lib",
 	}
 	
 	filter {"platforms:Windows_x64", "configurations:Debug"}
 		libdirs {
 			"./deps/glfw/build/src/Debug",
 			"./deps/soil/projects/VC9/x64/Debug",
+			"./deps/Box2D/Build/vs2017/bin/Debug",
 		}
 		
 	filter {"platforms:Windows_x64", "configurations:Release"}
 		libdirs {
 			"./deps/glfw/build/src/Release",
 			"./deps/soil/projects/VC9/x64/Release",
+			"./deps/Box2D/Build/vs2017/bin/Release",
 		}
