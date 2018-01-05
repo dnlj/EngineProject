@@ -198,6 +198,8 @@ namespace {
 	class Component2 {};
 	ENGINE_REGISTER_COMPONENT(Component2);
 
+	glm::mat4 projection; // TODO: Make this not global
+	glm::mat4 view; // TODO: Make this not global
 	class RenderableTestMovement;
 	class RenderableTestSystem : public Engine::SystemBase {
 		public:
@@ -237,8 +239,6 @@ namespace {
 				}
 			}
 		private:
-			glm::mat4 projection;
-			glm::mat4 view;
 	};
 	ENGINE_REGISTER_SYSTEM(RenderableTestSystem);
 
@@ -291,6 +291,215 @@ namespace {
 	ENGINE_REGISTER_SYSTEM(RenderableTestSystem3);
 }
 
+namespace {
+	class DebugDraw : public b2Draw {
+		private:
+			struct Vertex {
+				public:
+				b2Vec2 pos;
+				b2Color color;
+			};
+
+		public:
+			DebugDraw() {
+				glGenVertexArrays(1, &vao);
+				glBindVertexArray(vao);
+
+				glGenBuffers(1, &vbo);
+				glBindBuffer(GL_ARRAY_BUFFER, vbo);
+				glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(Vertex), vertexData.data(), GL_DYNAMIC_DRAW);
+
+				// Vertex attributes
+				constexpr auto stride = sizeof(b2Vec2) + sizeof(b2Color);
+				glEnableVertexAttribArray(0);
+				glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, 0);
+
+				glEnableVertexAttribArray(1);
+				glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void*>(sizeof(b2Vec2)));
+				
+				// Vertex shader
+				auto vertShader = glCreateShader(GL_VERTEX_SHADER);
+				{
+					const auto source = Engine::Utility::readFile("shaders/box2d_debug.vert");
+					const auto cstr = source.c_str();
+					glShaderSource(vertShader, 1, &cstr, nullptr);
+				}
+				glCompileShader(vertShader);
+				
+				{
+					GLint status;
+					glGetShaderiv(vertShader, GL_COMPILE_STATUS, &status);
+				
+					if (!status) {
+						char buffer[512];
+						glGetShaderInfoLog(vertShader, 512, NULL, buffer);
+						std::cout << buffer << std::endl;
+					}
+				}
+				
+				// Fragment shader
+				auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+				{
+					const auto source = Engine::Utility::readFile("shaders/box2d_debug.frag");
+					const auto cstr = source.c_str();
+					glShaderSource(fragShader, 1, &cstr, nullptr);
+				}
+				glCompileShader(fragShader);
+				
+				{
+					GLint status;
+					glGetShaderiv(fragShader, GL_COMPILE_STATUS, &status);
+				
+					if (!status) {
+						char buffer[512];
+						glGetShaderInfoLog(fragShader, 512, NULL, buffer);
+						std::cout << buffer << std::endl;
+					}
+				}
+				
+				// Shader program
+				shader = glCreateProgram();
+				glAttachShader(shader, vertShader);
+				glAttachShader(shader, fragShader);
+				glLinkProgram(shader);
+				
+				{
+					GLint status;
+					glGetProgramiv(shader, GL_LINK_STATUS, &status);
+				
+					if (!status) {
+						char buffer[512];
+						glGetProgramInfoLog(shader, 512, NULL, buffer);
+						std::cout << buffer << std::endl;
+					}
+				}
+				
+				// Shader cleanup
+				glDetachShader(shader, vertShader);
+				glDetachShader(shader, fragShader);
+				glDeleteShader(vertShader);
+				glDeleteShader(fragShader);
+			}
+
+			~DebugDraw() {
+				glDeleteVertexArrays(1, &vao);
+				glDeleteBuffers(1, &vbo);
+				glDeleteProgram(shader);
+			}
+
+			void reset() {
+				vertexCount = 0;
+			}
+
+			void draw() {
+				glBindVertexArray(vao);
+
+				glBindBuffer(GL_ARRAY_BUFFER, vbo);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, vertexCount * sizeof(Vertex), vertexData.data());
+
+				glUseProgram(shader);
+
+				glm::mat4 pv = projection * view;
+				glUniformMatrix4fv(2, 1, GL_FALSE, &pv[0][0]);
+
+				glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexData.size()));
+			}
+			
+			virtual void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override {
+				for (int32 i = 0; i < vertexCount - 1; ++i) {
+					DrawSegmentInside(vertices[i], vertices[i + 1], b2Color{0.0f, 0.0f, 1.0f});
+				}
+
+				DrawSegmentInside(vertices[vertexCount - 1], vertices[0], b2Color{0.0f, 0.0f, 1.0f});
+			}
+
+			virtual void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override {
+				for (int32 i = 1; i < vertexCount - 1; ++i) {
+					addVertex(Vertex{vertices[0], color});
+					addVertex(Vertex{vertices[i], color});
+					addVertex(Vertex{vertices[i + 1], color});
+				}
+			}
+
+			virtual void DrawCircle(const b2Vec2& center, float32 radius, const b2Color& color) override {
+				std::cout << "DrawCircle\n";
+			}
+
+			virtual void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color) override {
+				std::cout << "DrawSolidCircle\n";
+			}
+
+			virtual void DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color) override {
+				// Get a scaled normal vector
+				b2Vec2 normal{p2.y - p1.y, -p2.x + p1.x};
+				normal.Normalize();
+				normal *= LINE_SIZE;
+				
+				// Compute points
+				auto v1 = p1 - normal;
+				auto v2 = p1 + normal;
+				auto v3 = p2 + normal;
+				auto v4 = p2 - normal;
+
+				// Add the data
+				addVertex(Vertex{v1, color});
+				addVertex(Vertex{v2, color});
+				addVertex(Vertex{v3, color});
+
+				addVertex(Vertex{v3, color});
+				addVertex(Vertex{v4, color});
+				addVertex(Vertex{v1, color});
+			}
+
+			void DrawSegmentInside(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color) {
+				// Get a scaled normal vector
+				b2Vec2 normal{p2.y - p1.y, -p2.x + p1.x};
+				normal.Normalize();
+				normal *= LINE_SIZE;
+
+				// Compute points
+				auto v1 = p1 - normal;
+				auto v2 = p1;
+				auto v3 = p2;
+				auto v4 = p2 - normal;
+
+				// Add the data
+				addVertex(Vertex{v1, color});
+				addVertex(Vertex{v2, color});
+				addVertex(Vertex{v3, color});
+				
+				addVertex(Vertex{v3, color});
+				addVertex(Vertex{v4, color});
+				addVertex(Vertex{v1, color});
+			}
+
+			virtual void DrawTransform(const b2Transform& xf) override {
+				std::cout << "DrawTransform\n";
+			}
+
+			virtual void DrawPoint(const b2Vec2& p, float32 size, const b2Color& color) override {
+				std::cout << "DrawPoint\n";
+			}
+
+			void addVertex(Vertex vertex) {
+				if (vertexCount == vertexData.size()) {
+					ENGINE_WARN("To many debug vertices. Increase MAX_VERTICES");
+				} else {
+					vertexData[vertexCount] = vertex;
+					++vertexCount;
+				}
+			}
+
+		private:
+			static constexpr float LINE_SIZE = 0.005f;
+			std::array<Vertex, 512> vertexData;
+			size_t vertexCount = 0;
+			GLuint vao;
+			GLuint vbo;
+			GLuint shader;
+	};
+}
+
 void run() {
 	// GLFW error callback
 	glfwSetErrorCallback([](int error, const char* desc) {
@@ -321,11 +530,25 @@ void run() {
 	});
 
 	// Box2D testing
-	b2World world{b2Vec2{0.0f, -1.0f}};
+	b2World world{b2Vec2{0.0f, -0.0f}};
+	b2Body* body;
+	DebugDraw debugDraw;
 	{
-		// TODO: setup debug draw
-		// world.SetDebugDraw(...);
+		debugDraw.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_aabbBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
+		world.SetDebugDraw(&debugDraw);
 
+		b2BodyDef bodyDef;
+		bodyDef.type = b2_dynamicBody;
+
+		body = world.CreateBody(&bodyDef);
+
+		b2PolygonShape boxShape;
+		boxShape.SetAsBox(0.5f, 0.5f);
+
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &boxShape;
+		fixtureDef.density = 1.0f;
+		body->CreateFixture(&fixtureDef);
 	}
 
 	// ECS Test stuff
@@ -343,6 +566,8 @@ void run() {
 	auto startTime = std::chrono::high_resolution_clock::now();
 	auto lastUpdate = startTime;
 	while (!glfwWindowShouldClose(window)) {
+		std::cout << "== New run ==\n";
+
 		// Get the elapsed time in seconds
 		auto diff = std::chrono::high_resolution_clock::now() - startTime;
 		startTime = std::chrono::high_resolution_clock::now();
@@ -365,17 +590,20 @@ void run() {
 
 		// Box2D
 		world.Step(dt, 8, 3);
+		debugDraw.reset();
+		world.DrawDebugData();
 
 		// ECS
-		std::cout << "== New run ==\n";
 		Engine::ECS::run(dt);
 
 		#if defined(DEBUG)
 			Engine::Debug::checkOpenGLErrors();
 		#endif
 
-
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
+
+		// Box2D debug draw
+		debugDraw.draw();
 
 		// GLFW
 		glfwSwapBuffers(window);

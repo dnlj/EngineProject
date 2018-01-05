@@ -8,3 +8,4 @@
 * Move check for passing MAX_SYSTEM/COMPONENT into the get id function
 * Update IsSystem for priorities
 * Change the ECS to use classes not globals.
+* Change the check opengl error to use a macro so it audo disables when not in debug mode
