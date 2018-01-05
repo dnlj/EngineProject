@@ -44,12 +44,12 @@ workspace(PROJECT_NAME .."Workspace")
 	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
 	startproject(PROJECT_NAME)
 	
-	if (_ACTION == "vs2015" or _ACTION == "vs2017") then
+	filter "action:vs*"
+		systemversion "10.0.16299.0"
 		buildoptions{
 			"/std:c++latest", -- Use the latest version of C++
 			"/wd4996", -- Disable some warnings about things Visual Studio has taken apon itself to deem "deprecated"
 		}
-	end
 	
 	filter "platforms:Windows_x64"
         architecture "x64"
@@ -62,7 +62,7 @@ workspace(PROJECT_NAME .."Workspace")
 	filter "configurations:Release"
 		optimize "Full"
 		defines {"NDEBUG", "RELEASE"}
-
+		
 project(PROJECT_NAME)
 	files {
 		"./TODO.md",
