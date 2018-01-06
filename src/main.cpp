@@ -474,7 +474,8 @@ namespace {
 			}
 
 			virtual void DrawTransform(const b2Transform& xf) override {
-				std::cout << "DrawTransform\n";
+				DrawSegment(xf.p, xf.p + AXIS_SIZE * xf.q.GetXAxis(), b2Color{1.0f, 0.0f, 0.0f});
+				DrawSegment(xf.p, xf.p + AXIS_SIZE * xf.q.GetYAxis(), b2Color{0.0f, 1.0f, 0.0f});
 			}
 
 			virtual void DrawPoint(const b2Vec2& p, float32 size, const b2Color& color) override {
@@ -492,6 +493,8 @@ namespace {
 
 		private:
 			static constexpr float LINE_SIZE = 0.005f;
+			static constexpr float AXIS_SIZE = 0.1f;
+
 			std::array<Vertex, 512> vertexData;
 			size_t vertexCount = 0;
 			GLuint vao;
