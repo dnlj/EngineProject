@@ -451,7 +451,7 @@ namespace {
 				// Get a scaled normal vector
 				b2Vec2 normal{p2.y - p1.y, -p2.x + p1.x};
 				normal.Normalize();
-				normal *= LINE_SIZE;
+				normal *= LINE_SIZE / 2.0f;
 				
 				// Compute points
 				auto v1 = p1 - normal;
@@ -510,7 +510,7 @@ namespace {
 			}
 
 		private:
-			static constexpr float LINE_SIZE = 0.005f;
+			static constexpr float LINE_SIZE = 0.008f;
 			static constexpr float AXIS_SIZE = 0.1f;
 			static constexpr float FILL_COLOR_MULT = 0.5f;
 
