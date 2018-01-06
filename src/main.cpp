@@ -95,7 +95,7 @@ namespace {
 			GLuint vbo = 0;
 			GLuint shader = 0;
 			GLuint texture = 0;
-			glm::vec2 position{};
+			b2Body* body = nullptr;
 
 			// TODO: make this non-static
 			~RenderableTest() {
@@ -105,7 +105,7 @@ namespace {
 				glDeleteProgram(shader);
 			}
 
-			void setup(Engine::TextureManager& textureManager) {
+			void setup(Engine::TextureManager& textureManager, b2World& world) {
 				constexpr GLfloat data[] = {
 					+0.0f, +0.5f, +0.5, +0.0f,
 					-0.5f, -0.5f, +0.0, +1.0f,
@@ -192,6 +192,23 @@ namespace {
 				glDetachShader(shader, fragShader);
 				glDeleteShader(vertShader);
 				glDeleteShader(fragShader);
+
+				// Box2D
+				{
+					b2BodyDef bodyDef;
+					bodyDef.type = b2_dynamicBody;
+
+					body = world.CreateBody(&bodyDef);
+
+					b2CircleShape shape;
+					shape.m_radius = 0.25f;
+
+					b2FixtureDef fixtureDef;
+					fixtureDef.shape = &shape;
+					fixtureDef.density = 1.0f;
+
+					body->CreateFixture(&fixtureDef);
+				}
 			}
 	};
 	ENGINE_REGISTER_COMPONENT(RenderableTest);
@@ -216,7 +233,6 @@ namespace {
 			}
 
 			void run(float dt) {
-				std::cout << " - Draw run\n";
 				for(auto& ent : entities) {
 					const auto& rtest = ent.getComponent<RenderableTest>();
 					glBindVertexArray(rtest.vao);
@@ -230,7 +246,8 @@ namespace {
 
 					// MVP
 					{
-						auto model = glm::translate(glm::mat4{1}, glm::vec3{rtest.position, 0.0f});
+						const auto& transform = rtest.body->GetTransform();
+						auto model = glm::translate(glm::mat4{1}, glm::vec3{transform.p.x, transform.p.y, 0.0f});
 						glm::mat4 mvp = projection * view * model;
 						glUniformMatrix4fv(2, 1, GL_FALSE, &mvp[0][0]);
 					}
@@ -251,25 +268,25 @@ namespace {
 			}
 
 			void run(float dt) {
-				std::cout << " - Move run\n";
 				constexpr float speed = 1.0f;
 				for (auto& ent : entities) {
 					auto& rtest = ent.getComponent<RenderableTest>();
 					
+					// TODO: this should work the other way. Apply force to the body then update the draw position.
 					if (glfwGetKey(window, GLFW_KEY_W)) {
-						rtest.position.y += speed * dt;
+						rtest.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, speed * dt}, true);
 					}
 
 					if (glfwGetKey(window, GLFW_KEY_S)) {
-						rtest.position.y -= speed * dt;
+						rtest.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, -speed * dt}, true);
 					}
 
 					if (glfwGetKey(window, GLFW_KEY_A)) {
-						rtest.position.x -= speed * dt;
+						rtest.body->ApplyLinearImpulseToCenter(b2Vec2{-speed * dt, 0.0f}, true);
 					}
 
 					if (glfwGetKey(window, GLFW_KEY_D)) {
-						rtest.position.x += speed * dt;
+						rtest.body->ApplyLinearImpulseToCenter(b2Vec2{speed * dt, 0.0f}, true);
 					}
 				}
 			}
@@ -286,7 +303,6 @@ namespace {
 			}
 
 			void run(float dt) {
-				std::cout << " - System3 run\n";
 			}
 	};
 	ENGINE_REGISTER_SYSTEM(RenderableTestSystem3);
@@ -559,9 +575,10 @@ void run() {
 
 	// Box2D testing
 	b2World world{b2Vec2{0.0f, -0.0f}};
-	b2Body* body;
 	DebugDraw debugDraw;
 	{
+		b2Body* body;
+
 		debugDraw.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_aabbBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
 		world.SetDebugDraw(&debugDraw);
 
@@ -570,14 +587,14 @@ void run() {
 
 		body = world.CreateBody(&bodyDef);
 
-		//b2PolygonShape boxShape;
-		//boxShape.SetAsBox(0.5f, 0.5f);
-		b2CircleShape boxShape;
-		boxShape.m_radius = 0.5f;
+		b2PolygonShape boxShape;
+		boxShape.SetAsBox(0.25f, 0.25f);
 
+		// TODO: Can you reuse fixtures? Does a body own a fixture?
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &boxShape;
 		fixtureDef.density = 1.0f;
+
 		body->CreateFixture(&fixtureDef);
 	}
 
@@ -589,15 +606,13 @@ void run() {
 
 		// TODO: maybe make an addAndGetComponent function
 		ent.addComponent<RenderableTest>();
-		ent.getComponent<RenderableTest>().setup(textureManager);
+		ent.getComponent<RenderableTest>().setup(textureManager, world);
 	}
 
 	// Main loop
 	auto startTime = std::chrono::high_resolution_clock::now();
 	auto lastUpdate = startTime;
 	while (!glfwWindowShouldClose(window)) {
-		std::cout << "== New run ==\n";
-
 		// Get the elapsed time in seconds
 		auto diff = std::chrono::high_resolution_clock::now() - startTime;
 		startTime = std::chrono::high_resolution_clock::now();
