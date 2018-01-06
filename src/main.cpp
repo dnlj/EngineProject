@@ -6,6 +6,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <cmath>
 
 // glLoadGen
 #include <glloadgen/gl_core_4_5.h>
@@ -407,10 +408,10 @@ namespace {
 			
 			virtual void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override {
 				for (int32 i = 0; i < vertexCount - 1; ++i) {
-					DrawSegmentInside(vertices[i], vertices[i + 1], b2Color{0.0f, 0.0f, 1.0f});
+					DrawSegmentInside(vertices[i], vertices[i + 1], color);
 				}
 
-				DrawSegmentInside(vertices[vertexCount - 1], vertices[0], b2Color{0.0f, 0.0f, 1.0f});
+				DrawSegmentInside(vertices[vertexCount - 1], vertices[0], color);
 			}
 
 			virtual void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override {
@@ -426,7 +427,20 @@ namespace {
 			}
 
 			virtual void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color) override {
-				std::cout << "DrawSolidCircle\n";
+				// TODO: Redo this formula to calculate the number need to have a certain angle between edge segments.
+				const unsigned int vertCount = 16 + static_cast<unsigned int>(std::max(0.0f, (radius - 0.2f) * 5.0f));
+				const float angleInc = glm::two_pi<float>() / vertCount;
+
+				std::vector<b2Vec2> vertices{vertCount};
+
+				for (unsigned int i = 0; i < vertCount; ++i) {
+					vertices[i].x = cos(i * angleInc) * radius;
+					vertices[i].y = sin(i * angleInc) * radius;
+					vertices[i] += center;
+				}
+
+				DrawSolidPolygon(vertices.data(), vertCount, color);
+				DrawSegment(center, center + radius * axis, color);
 			}
 
 			virtual void DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color) override {
@@ -494,6 +508,7 @@ namespace {
 		private:
 			static constexpr float LINE_SIZE = 0.005f;
 			static constexpr float AXIS_SIZE = 0.1f;
+			static constexpr float FILL_COLOR_MULT = 0.5f;
 
 			std::array<Vertex, 512> vertexData;
 			size_t vertexCount = 0;
@@ -545,8 +560,10 @@ void run() {
 
 		body = world.CreateBody(&bodyDef);
 
-		b2PolygonShape boxShape;
-		boxShape.SetAsBox(0.5f, 0.5f);
+		//b2PolygonShape boxShape;
+		//boxShape.SetAsBox(0.5f, 0.5f);
+		b2CircleShape boxShape;
+		boxShape.m_radius = 0.5f;
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &boxShape;
