@@ -427,23 +427,13 @@ namespace {
 			}
 
 			virtual void DrawCircle(const b2Vec2& center, float32 radius, const b2Color& color) override {
-				std::cout << "DrawCircle\n";
+				const auto vertices = getCircleVertices(center, radius);
+				DrawPolygon(vertices.data(), static_cast<int>(vertices.size()), color);
 			}
 
 			virtual void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color) override {
-				// TODO: Redo this formula to calculate the number need to have a certain angle between edge segments.
-				const unsigned int vertCount = 16 + static_cast<unsigned int>(std::max(0.0f, (radius - 0.2f) * 5.0f));
-				const float angleInc = glm::two_pi<float>() / vertCount;
-
-				std::vector<b2Vec2> vertices{vertCount};
-
-				for (unsigned int i = 0; i < vertCount; ++i) {
-					vertices[i].x = cos(i * angleInc) * radius;
-					vertices[i].y = sin(i * angleInc) * radius;
-					vertices[i] += center;
-				}
-
-				DrawSolidPolygon(vertices.data(), vertCount, color);
+				const auto vertices = getCircleVertices(center, radius);
+				DrawSolidPolygon(vertices.data(), static_cast<int>(vertices.size()), color);
 				DrawSegment(center, center + radius * axis, color);
 			}
 
@@ -500,15 +490,6 @@ namespace {
 				std::cout << "DrawPoint\n";
 			}
 
-			void addVertex(Vertex vertex) {
-				if (vertexCount == vertexData.size()) {
-					ENGINE_WARN("To many debug vertices. Increase MAX_VERTICES");
-				} else {
-					vertexData[vertexCount] = vertex;
-					++vertexCount;
-				}
-			}
-
 		private:
 			static constexpr float LINE_SIZE = 0.008f;
 			static constexpr float AXIS_SIZE = 0.1f;
@@ -519,6 +500,31 @@ namespace {
 			GLuint vao;
 			GLuint vbo;
 			GLuint shader;
+
+			void addVertex(Vertex vertex) {
+				if (vertexCount == vertexData.size()) {
+					ENGINE_WARN("To many debug vertices. Increase MAX_VERTICES");
+				} else {
+					vertexData[vertexCount] = vertex;
+					++vertexCount;
+				}
+			}
+
+			std::vector<b2Vec2> getCircleVertices(const b2Vec2& center, float32 radius) const {
+				// TODO: Redo this formula to calculate the number need to have a certain angle between edge segments.
+				const unsigned int vertCount = 16 + static_cast<unsigned int>(std::max(0.0f, (radius - 0.2f) * 5.0f));
+				const float angleInc = glm::two_pi<float>() / vertCount;
+
+				std::vector<b2Vec2> vertices{vertCount};
+
+				for (unsigned int i = 0; i < vertCount; ++i) {
+					vertices[i].x = cos(i * angleInc) * radius;
+					vertices[i].y = sin(i * angleInc) * radius;
+					vertices[i] += center;
+				}
+
+				return vertices;
+			}
 	};
 }
 
