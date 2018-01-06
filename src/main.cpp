@@ -503,7 +503,7 @@ namespace {
 			}
 
 			virtual void DrawPoint(const b2Vec2& p, float32 size, const b2Color& color) override {
-				std::cout << "DrawPoint\n";
+				ENGINE_WARN("TODO: DrawPoint is not yet implemented.");
 			}
 
 		private:
