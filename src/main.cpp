@@ -415,11 +415,15 @@ namespace {
 			}
 
 			virtual void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override {
+				b2Color fillColor{FILL_COLOR_MULT * color.r, FILL_COLOR_MULT * color.g, FILL_COLOR_MULT * color.b, FILL_COLOR_MULT * color.a};
+
 				for (int32 i = 1; i < vertexCount - 1; ++i) {
-					addVertex(Vertex{vertices[0], color});
-					addVertex(Vertex{vertices[i], color});
-					addVertex(Vertex{vertices[i + 1], color});
+					addVertex(Vertex{vertices[0], fillColor});
+					addVertex(Vertex{vertices[i], fillColor});
+					addVertex(Vertex{vertices[i + 1], fillColor});
 				}
+
+				DrawPolygon(vertices, vertexCount, color);
 			}
 
 			virtual void DrawCircle(const b2Vec2& center, float32 radius, const b2Color& color) override {
