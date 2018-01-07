@@ -34,6 +34,7 @@
 
 // Game
 #include <Game/RenderableTest.hpp>
+#include <Game/RenderableTestSystem.hpp>
 
 namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
@@ -92,60 +93,11 @@ namespace {
 }
 
 namespace {
-	
-
-	class Component2 {};
-	ENGINE_REGISTER_COMPONENT(Component2);
-
-	glm::mat4 projection; // TODO: Make this not global
-	glm::mat4 view; // TODO: Make this not global
-	class RenderableTestMovement;
-	class RenderableTestSystem : public Engine::SystemBase {
-		public:
-			RenderableTestSystem() {
-				cbits = Engine::ECS::getBitsetForComponents<Game::RenderableTest>();
-
-				// MVP
-				constexpr float scale = 1.0f / 400.0f;
-				auto halfWidth = (1280.0f / 2.0f) * scale;
-				auto halfHeight = (720.0f / 2.0f) * scale;
-				projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
-				view = glm::mat4{1.0f};
-			}
-
-			void run(float dt) {
-				for(auto& ent : entities) {
-					const auto& rtest = ent.getComponent<Game::RenderableTest>();
-					glBindVertexArray(rtest.vao);
-					glUseProgram(rtest.shader);
-
-					// Texture
-					// TODO: is this texture stuff stored in VAO?
-					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, rtest.texture);
-					glUniform1i(6, 0);
-
-					// MVP
-					{
-						const auto& transform = rtest.body->GetTransform();
-						auto model = glm::translate(glm::mat4{1}, glm::vec3{transform.p.x, transform.p.y, 0.0f});
-						glm::mat4 mvp = projection * view * model;
-						glUniformMatrix4fv(2, 1, GL_FALSE, &mvp[0][0]);
-					}
-					
-					// Draw
-					glDrawArrays(GL_TRIANGLES, 0, 3);
-				}
-			}
-		private:
-	};
-	ENGINE_REGISTER_SYSTEM(RenderableTestSystem);
-
 	class RenderableTestMovement : public Engine::SystemBase {
 		public:
 			RenderableTestMovement() {
 				cbits = Engine::ECS::getBitsetForComponents<Game::RenderableTest>();
-				priorityBefore = Engine::ECS::getBitsetForSystems<RenderableTestSystem>();
+				priorityBefore = Engine::ECS::getBitsetForSystems<Game::RenderableTestSystem>();
 			}
 
 			void run(float dt) {
@@ -178,7 +130,7 @@ namespace {
 		public:
 			RenderableTestSystem3() {
 				priorityBefore = Engine::ECS::getBitsetForSystems<
-					RenderableTestSystem,
+					Game::RenderableTestSystem,
 					RenderableTestMovement
 				>();
 			}
@@ -297,7 +249,7 @@ namespace {
 
 				glUseProgram(shader);
 
-				glm::mat4 pv = projection * view;
+				glm::mat4 pv = Game::projection * Game::view;
 				glUniformMatrix4fv(2, 1, GL_FALSE, &pv[0][0]);
 
 				glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexData.size()));
