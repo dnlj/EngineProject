@@ -36,10 +36,11 @@
 #include <Game/RenderableTest.hpp>
 #include <Game/RenderableTestSystem.hpp>
 
+GLFWwindow* window = nullptr; // TODO: need to add a way to pass data to systems
+
 namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
-	GLFWwindow* window = nullptr; // TODO: need to add a way to pass data to systems
 
 	void initializeOpenGL() {
 		auto loaded = ogl_LoadFunctions();
@@ -90,55 +91,6 @@ namespace {
 
 		return window;
 	}
-}
-
-namespace {
-	class RenderableTestMovement : public Engine::SystemBase {
-		public:
-			RenderableTestMovement() {
-				cbits = Engine::ECS::getBitsetForComponents<Game::RenderableTest>();
-				priorityBefore = Engine::ECS::getBitsetForSystems<Game::RenderableTestSystem>();
-			}
-
-			void run(float dt) {
-				constexpr float speed = 1.0f;
-				for (auto& ent : entities) {
-					auto& rtest = ent.getComponent<Game::RenderableTest>();
-					
-					// TODO: this should work the other way. Apply force to the body then update the draw position.
-					if (glfwGetKey(window, GLFW_KEY_W)) {
-						rtest.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, speed * dt}, true);
-					}
-
-					if (glfwGetKey(window, GLFW_KEY_S)) {
-						rtest.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, -speed * dt}, true);
-					}
-
-					if (glfwGetKey(window, GLFW_KEY_A)) {
-						rtest.body->ApplyLinearImpulseToCenter(b2Vec2{-speed * dt, 0.0f}, true);
-					}
-
-					if (glfwGetKey(window, GLFW_KEY_D)) {
-						rtest.body->ApplyLinearImpulseToCenter(b2Vec2{speed * dt, 0.0f}, true);
-					}
-				}
-			}
-	};
-	ENGINE_REGISTER_SYSTEM(RenderableTestMovement);
-
-	class RenderableTestSystem3 : public Engine::SystemBase {
-		public:
-			RenderableTestSystem3() {
-				priorityBefore = Engine::ECS::getBitsetForSystems<
-					Game::RenderableTestSystem,
-					RenderableTestMovement
-				>();
-			}
-
-			void run(float dt) {
-			}
-	};
-	ENGINE_REGISTER_SYSTEM(RenderableTestSystem3);
 }
 
 namespace {
