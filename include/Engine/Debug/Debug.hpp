@@ -15,6 +15,9 @@ namespace Engine::Debug {
 	 */
 	void checkOpenGLErrors();
 
+	// TODO: Doc
+	void checkOpenGLShaderCompilation(GLuint shader);
+
 	/**
 	 * @brief Converts an OpenGL error constant to a string.
 	 * @param[in] error The error constant.

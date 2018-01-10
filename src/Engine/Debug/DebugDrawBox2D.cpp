@@ -8,6 +8,7 @@
 #include <glm/gtc/constants.hpp>
 
 // Engine
+#include <Engine/Debug/Debug.hpp>
 #include <Engine/Debug/DebugDrawBox2D.hpp>
 #include <Engine/Utility/Utility.hpp>
 #include <Engine/Engine.hpp>
@@ -41,16 +42,7 @@ namespace Engine::Debug {
 		}
 		glCompileShader(vertShader);
 
-		{
-			GLint status;
-			glGetShaderiv(vertShader, GL_COMPILE_STATUS, &status);
-
-			if (!status) {
-				char buffer[512];
-				glGetShaderInfoLog(vertShader, 512, NULL, buffer);
-				std::cout << buffer << std::endl;
-			}
-		}
+		Engine::Debug::checkOpenGLShaderCompilation(vertShader);
 
 		// Fragment shader
 		auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -61,16 +53,7 @@ namespace Engine::Debug {
 		}
 		glCompileShader(fragShader);
 
-		{
-			GLint status;
-			glGetShaderiv(fragShader, GL_COMPILE_STATUS, &status);
-
-			if (!status) {
-				char buffer[512];
-				glGetShaderInfoLog(fragShader, 512, NULL, buffer);
-				std::cout << buffer << std::endl;
-			}
-		}
+		Engine::Debug::checkOpenGLShaderCompilation(fragShader);
 
 		// Shader program
 		shader = glCreateProgram();

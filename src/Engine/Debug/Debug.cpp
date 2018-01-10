@@ -1,10 +1,25 @@
 // Engine
 #include <Engine/Debug/Debug.hpp>
+#include <Engine/Engine.hpp>
 
 namespace Engine::Debug {
 	void checkOpenGLErrors() {
 		for (auto error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
 			ENGINE_DEBUG(openGLErrorToString(error));
+		}
+	}
+
+	void checkOpenGLShaderCompilation(GLuint shader) {
+		GLint success;
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+
+		if (!success) {
+			GLint length = 0;
+			glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+
+			std::string info(length, '\0');
+			glGetShaderInfoLog(shader, length, nullptr, info.data());
+			ENGINE_WARN(info);
 		}
 	}
 
