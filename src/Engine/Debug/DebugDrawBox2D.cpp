@@ -2,7 +2,7 @@
 #include <iostream>
 
 // glLoadGen
-#include <glloadgen/gl_core_4_5.h>
+#include <glloadgen/gl_core_4_5.hpp>
 
 // GLM
 #include <glm/gtc/constants.hpp>

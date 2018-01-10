@@ -1,7 +1,7 @@
 #pragma once
 
 // glLoadGen
-#include <glloadgen/gl_core_4_5.h>
+#include <glloadgen/gl_core_4_5.hpp>
 
 // Box2D
 #include <Box2D/Box2D.h>
