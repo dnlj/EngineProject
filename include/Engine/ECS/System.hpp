@@ -24,7 +24,7 @@ namespace Engine::ECS {
 	template<class T, class = void>
 	class IsSystem : public std::false_type {};
 
-	/** @copydoc isSystem */
+	/** @copydoc IsSystem */
 	template<class T>
 	class IsSystem<
 		T,
