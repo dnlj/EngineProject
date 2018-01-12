@@ -65,7 +65,7 @@ namespace Engine::Debug {
 			/** The multiplier to use for fill colors */
 			static constexpr float FILL_COLOR_MULT = 0.5f;
 
-			/** The maximum distance from the line between two vertices and the true circle*/
+			/** The maximum distance from the line between two vertices and the true circle */
 			static constexpr float MAX_CIRCLE_ERROR = 0.005f;
 
 			/** The minimum number of vertices to have in a circle */
