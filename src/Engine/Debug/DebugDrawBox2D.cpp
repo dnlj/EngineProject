@@ -1,5 +1,6 @@
 // STD
 #include <iostream>
+#include <cmath>
 
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
@@ -198,12 +199,27 @@ namespace Engine::Debug {
 	}
 
 	std::vector<b2Vec2> DebugDrawBox2D::getCircleVertices(const b2Vec2& center, float32 radius) const {
-		// TODO: Redo this formula to calculate the number need to have a certain angle between edge segments.
-		const unsigned int vertCount = 16 + static_cast<unsigned int>(std::max(0.0f, (radius - 0.2f) * 5.0f));
+		// Calculate the number of vertices needed.
+		// This formula is derived from the fact that:
+		//     d = r - rcos(t/2)
+		// Where:
+		//     n = the number of vertices needed (solve for this)
+		//     r = the radius
+		//     t = theta = 2pi/n = the angle between two vertices
+		//     d = maximum difference between two vertices and a true circle
+		// See notes for more detail
+		const unsigned int vertCount = std::max(
+			MIN_CIRCLE_VERTICES,
+			static_cast<unsigned int>(std::ceil(
+				glm::pi<float>() / std::acos(1.0f - (MAX_CIRCLE_ERROR / radius))
+			))
+		);
+		
+		// The angle by which to increment each vertex;
 		const float angleInc = glm::two_pi<float>() / vertCount;
-
 		std::vector<b2Vec2> vertices{vertCount};
 
+		// Generate our vertices
 		for (unsigned int i = 0; i < vertCount; ++i) {
 			vertices[i].x = cos(i * angleInc) * radius;
 			vertices[i].y = sin(i * angleInc) * radius;

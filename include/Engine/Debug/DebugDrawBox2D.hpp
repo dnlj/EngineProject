@@ -36,9 +36,12 @@ namespace Engine::Debug {
 			virtual void DrawPoint(const b2Vec2& p, float32 size, const b2Color& color) override;
 
 		private:
+			// TODO: Make these constructor arguments instead of constants
 			static constexpr float LINE_SIZE = 0.008f;
 			static constexpr float AXIS_SIZE = 0.1f;
 			static constexpr float FILL_COLOR_MULT = 0.5f;
+			static constexpr float MAX_CIRCLE_ERROR = 0.005f;
+			static constexpr unsigned int MIN_CIRCLE_VERTICES = 8;
 
 			std::array<Vertex, 512> vertexData;
 			size_t vertexCount = 0;
