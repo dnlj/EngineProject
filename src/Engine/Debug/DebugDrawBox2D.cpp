@@ -206,7 +206,7 @@ namespace Engine::Debug {
 		//     n = the number of vertices needed (solve for this)
 		//     r = the radius
 		//     t = theta = 2pi/n = the angle between two vertices
-		//     d = maximum difference between two vertices and a true circle
+		//     d = the maximum distance from the line between two vertices and the true circle
 		// See notes for more detail
 		const unsigned int vertCount = std::max(
 			MIN_CIRCLE_VERTICES,
