@@ -130,7 +130,7 @@ void run() {
 	// OpenGL debug message
 	#if defined(DEBUG)
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-		glDebugMessageCallback(Engine::Debug::openGLDebugMessageCallback, nullptr);
+		glDebugMessageCallback(Engine::Debug::GL::debugMessageCallback, nullptr);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 	#endif
 
@@ -201,10 +201,6 @@ void run() {
 
 		// ECS
 		Engine::ECS::run(dt);
-
-		#if defined(DEBUG)
-			Engine::Debug::checkOpenGLErrors();
-		#endif
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
 

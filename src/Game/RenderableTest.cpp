@@ -51,8 +51,6 @@ namespace Game {
 		}
 		glCompileShader(vertShader);
 
-		Engine::Debug::checkOpenGLShaderCompilation(vertShader);
-
 		// Fragment shader
 		auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
 		{
@@ -61,8 +59,6 @@ namespace Game {
 			glShaderSource(fragShader, 1, &cstr, nullptr);
 		}
 		glCompileShader(fragShader);
-
-		Engine::Debug::checkOpenGLShaderCompilation(fragShader);
 
 		// Shader program
 		shader = glCreateProgram();
