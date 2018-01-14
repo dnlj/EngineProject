@@ -67,6 +67,10 @@ namespace {
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, OPENGL_VERSION_MINOR);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+		#if defined(DEBUG)
+			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+		#endif
+		
 		glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 		glfwWindowHint(GLFW_DECORATED, GL_TRUE);
 
@@ -122,6 +126,13 @@ void run() {
 			glfwSetWindowShouldClose(window, true);
 		}
 	});
+
+	// OpenGL debug message
+	#if defined(DEBUG)
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(Engine::Debug::openGLDebugMessageCallback, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	#endif
 
 	// Box2D testing
 	b2World world{b2Vec2{0.0f, -0.0f}};

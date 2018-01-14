@@ -24,4 +24,7 @@ namespace Engine::Debug {
 	 * @return The string representation of the error constant
 	 */
 	std::string openGLErrorToString(const GLint error);
+
+	// TODO: Doc
+	void openGLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 }
