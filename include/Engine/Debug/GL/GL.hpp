@@ -6,8 +6,8 @@
 namespace Engine::Debug::GL {
 	/**
 	 * @brief Converts an OpenGL error enum to a string.
-	 * @param[in] error The error enum.
-	 * @return The string representation of the error.
+	 * @param[in] error The enum.
+	 * @return The string representation of the enum.
 	 */
 	std::string errorEnumToString(GLenum error);
 
