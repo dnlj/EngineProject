@@ -57,21 +57,24 @@ namespace Engine::Debug::GL {
 		return msg;
 	}
 
+	std::string severityEnumToString(GLenum severity) {
+		switch (severity) {
+			case GL_DEBUG_SEVERITY_LOW: return "GL_DEBUG_SEVERITY_LOW";
+			case GL_DEBUG_SEVERITY_MEDIUM: return "GL_DEBUG_SEVERITY_MEDIUM";
+			case GL_DEBUG_SEVERITY_HIGH: return "GL_DEBUG_SEVERITY_HIGH";
+			case GL_DEBUG_SEVERITY_NOTIFICATION: return "GL_DEBUG_SEVERITY_NOTIFICATION";
+		}
+
+		const auto msg = "Unknown GL_DEBUG_SEVERITY_* enum (" + std::to_string(severity) + ")";
+		ENGINE_WARN(msg);
+		return msg;
+	}
+
 	void debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
 		// Skip notifications
 		if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) { return; }
 
 		// TODO: move into functions
-
-		const auto severityToString = [](GLenum severity) {
-			switch (severity) {
-				case GL_DEBUG_SEVERITY_LOW: return "GL_DEBUG_SEVERITY_LOW";
-				case GL_DEBUG_SEVERITY_MEDIUM: return "GL_DEBUG_SEVERITY_MEDIUM";
-				case GL_DEBUG_SEVERITY_HIGH: return "GL_DEBUG_SEVERITY_HIGH";
-				case GL_DEBUG_SEVERITY_NOTIFICATION: return "GL_DEBUG_SEVERITY_NOTIFICATION";
-				default: return "Unknown GL_DEBUG_SEVERITY_* enum";
-			}
-		};
 
 		std::cerr
 			<< "=====================================\n"
@@ -80,7 +83,7 @@ namespace Engine::Debug::GL {
 			<< "id: " << id << "\n"
 			<< "source: " << sourceEnumToString(source) << "\n"
 			<< "type: " << typeEnumToString(type) << "\n"
-			<< "severity: " << severityToString(severity) << "\n"
+			<< "severity: " << severityEnumToString(severity) << "\n"
 			<< "message: " << message << "\n\n";
 	}
 }

@@ -20,10 +20,17 @@ namespace Engine::Debug::GL {
 
 	/**
 	 * @brief Converts an OpenGL type enum to a string.
-	 * @param[in] source The enum.
+	 * @param[in] type The enum.
 	 * @return The string representation of the enum.
 	 */
-	std::string typeEnumToString(GLenum source);
+	std::string typeEnumToString(GLenum type);
+
+	/**
+	 * @brief Converts an OpenGL severity enum to a string.
+	 * @param[in] severity The enum.
+	 * @return The string representation of the enum.
+	 */
+	std::string severityEnumToString(GLenum severity);
 
 	// TODO: Doc
 	void debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
