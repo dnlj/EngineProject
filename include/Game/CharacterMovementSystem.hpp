@@ -4,9 +4,9 @@
 #include <Engine/SystemBase.hpp>
 
 namespace Game {
-	class RenderableTestMovement : public Engine::SystemBase {
+	class CharacterMovementSystem : public Engine::SystemBase {
 		public:
-			RenderableTestMovement();
+			CharacterMovementSystem();
 			void run(float dt);
 	};
 }

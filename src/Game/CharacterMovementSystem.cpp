@@ -5,19 +5,19 @@
 #include <GLFW/glfw3.h>
 
 // Game
-#include <Game/RenderableTestMovement.hpp>
+#include <Game/CharacterMovementSystem.hpp>
 #include <Game/RenderSystem.hpp>
 #include <Game/PhysicsComponent.hpp>
 
 extern GLFWwindow* window; // TODO: Add a way to pass data to systems
 
 namespace Game {
-	RenderableTestMovement::RenderableTestMovement() {
+	CharacterMovementSystem::CharacterMovementSystem() {
 		cbits = Engine::ECS::getBitsetForComponents<Game::PhysicsComponent>();
 		priorityBefore = Engine::ECS::getBitsetForSystems<Game::RenderSystem>();
 	}
 
-	void RenderableTestMovement::run(float dt) {
+	void CharacterMovementSystem::run(float dt) {
 		constexpr float speed = 1.0f;
 		for (auto& ent : entities) {
 			auto& physComp = ent.getComponent<Game::PhysicsComponent>();
@@ -41,5 +41,5 @@ namespace Game {
 		}
 	}
 
-	ENGINE_REGISTER_SYSTEM(RenderableTestMovement);
+	ENGINE_REGISTER_SYSTEM(CharacterMovementSystem);
 }
