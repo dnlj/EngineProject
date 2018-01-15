@@ -32,6 +32,9 @@ namespace Engine::Debug::GL {
 	 */
 	std::string severityEnumToString(GLenum severity);
 
-	// TODO: Doc
+	/**
+	 * @brief A function to use with glDebugMessageCallback.
+	 * See OpenGL documentation for glDebugMessageCallback.
+	 */
 	void debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 }

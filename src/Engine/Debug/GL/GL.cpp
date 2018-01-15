@@ -74,8 +74,7 @@ namespace Engine::Debug::GL {
 		// Skip notifications
 		if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) { return; }
 
-		// TODO: move into functions
-
+		// Output message
 		std::cerr
 			<< "=====================================\n"
 			<< "=== OpenGL Debug Message Callback ===\n"
