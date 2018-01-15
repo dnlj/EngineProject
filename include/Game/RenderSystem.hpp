@@ -10,9 +10,9 @@ namespace Game {
 	extern glm::mat4 projection; // TODO: Make this not global
 	extern glm::mat4 view; // TODO: Make this not global
 
-	class RenderableTestSystem : public Engine::SystemBase {
+	class RenderSystem : public Engine::SystemBase {
 		public:
-			RenderableTestSystem();
+			RenderSystem();
 			void run(float dt);
 	};
 }

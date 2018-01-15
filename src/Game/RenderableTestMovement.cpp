@@ -6,7 +6,7 @@
 
 // Game
 #include <Game/RenderableTestMovement.hpp>
-#include <Game/RenderableTestSystem.hpp>
+#include <Game/RenderSystem.hpp>
 #include <Game/PhysicsComponent.hpp>
 
 extern GLFWwindow* window; // TODO: Add a way to pass data to systems
@@ -14,7 +14,7 @@ extern GLFWwindow* window; // TODO: Add a way to pass data to systems
 namespace Game {
 	RenderableTestMovement::RenderableTestMovement() {
 		cbits = Engine::ECS::getBitsetForComponents<Game::PhysicsComponent>();
-		priorityBefore = Engine::ECS::getBitsetForSystems<Game::RenderableTestSystem>();
+		priorityBefore = Engine::ECS::getBitsetForSystems<Game::RenderSystem>();
 	}
 
 	void RenderableTestMovement::run(float dt) {

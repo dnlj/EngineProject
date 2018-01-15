@@ -35,8 +35,8 @@
 
 // Game
 #include <Game/PhysicsComponent.hpp>
-#include <Game/RenderableTest.hpp>
-#include <Game/RenderableTestSystem.hpp>
+#include <Game/RenderComponent.hpp>
+#include <Game/RenderSystem.hpp>
 
 GLFWwindow* window = nullptr; // TODO: need to add a way to pass data to systems
 
@@ -167,8 +167,8 @@ void run() {
 		auto& ent = Engine::createEntity();
 
 		// TODO: maybe make an addAndGetComponent function
-		ent.addComponent<Game::RenderableTest>();
-		ent.getComponent<Game::RenderableTest>().setup(textureManager);
+		ent.addComponent<Game::RenderComponent>();
+		ent.getComponent<Game::RenderComponent>().setup(textureManager);
 
 		ent.addComponent<Game::PhysicsComponent>();
 		ent.getComponent<Game::PhysicsComponent>().setup(world);

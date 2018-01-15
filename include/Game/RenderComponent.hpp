@@ -7,14 +7,14 @@
 #include <Engine/TextureManager.hpp>
 
 namespace Game {
-	class RenderableTest {
+	class RenderComponent {
 		public:
 			GLuint vao = 0;
 			GLuint vbo = 0;
 			GLuint shader = 0;
 			GLuint texture = 0;
 
-			~RenderableTest();
+			~RenderComponent();
 			void setup(Engine::TextureManager& textureManager);
 	};
 }

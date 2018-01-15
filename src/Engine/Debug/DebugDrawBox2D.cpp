@@ -15,7 +15,7 @@
 #include <Engine/Engine.hpp>
 
 // Game
-#include <Game/RenderableTestSystem.hpp>
+#include <Game/RenderSystem.hpp>
 
 namespace Engine::Debug {
 	DebugDrawBox2D::DebugDrawBox2D() {

@@ -7,17 +7,17 @@
 #include <Engine/ECS/ECS.hpp>
 
 // Game
-#include <Game/RenderableTest.hpp>
+#include <Game/RenderComponent.hpp>
 
 namespace Game {
-	RenderableTest::~RenderableTest() {
+	RenderComponent::~RenderComponent() {
 		// TODO: shouldnt do this in deconstructor
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
 		glDeleteProgram(shader);
 	}
 
-	void RenderableTest::setup(Engine::TextureManager& textureManager) {
+	void RenderComponent::setup(Engine::TextureManager& textureManager) {
 		constexpr GLfloat data[] = {
 			+0.0f, +0.5f, +0.5, +0.0f,
 			-0.5f, -0.5f, +0.0, +1.0f,
@@ -84,5 +84,5 @@ namespace Game {
 		glDeleteShader(fragShader);
 	}
 
-	ENGINE_REGISTER_COMPONENT(RenderableTest);
+	ENGINE_REGISTER_COMPONENT(RenderComponent);
 }

@@ -5,16 +5,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 // Game
-#include <Game/RenderableTestSystem.hpp>
-#include <Game/RenderableTest.hpp>
+#include <Game/RenderSystem.hpp>
+#include <Game/RenderComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
 
 namespace Game {
 	decltype(projection) projection;
 	decltype(view) view;
 
-	RenderableTestSystem::RenderableTestSystem() {
-		cbits = Engine::ECS::getBitsetForComponents<Game::RenderableTest, Game::PhysicsComponent>();
+	RenderSystem::RenderSystem() {
+		cbits = Engine::ECS::getBitsetForComponents<Game::RenderComponent, Game::PhysicsComponent>();
 
 		// MVP
 		constexpr float scale = 1.0f / 400.0f;
@@ -24,9 +24,9 @@ namespace Game {
 		view = glm::mat4{1.0f};
 	}
 
-	void RenderableTestSystem::run(float dt) {
+	void RenderSystem::run(float dt) {
 		for (auto& ent : entities) {
-			const auto& rendComp = ent.getComponent<Game::RenderableTest>();
+			const auto& rendComp = ent.getComponent<Game::RenderComponent>();
 			const auto& physComp = ent.getComponent<Game::PhysicsComponent>();
 
 			glBindVertexArray(rendComp.vao);
@@ -51,5 +51,5 @@ namespace Game {
 		}
 	}
 
-	ENGINE_REGISTER_SYSTEM(RenderableTestSystem);
+	ENGINE_REGISTER_SYSTEM(RenderSystem);
 }
