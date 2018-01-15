@@ -34,6 +34,7 @@
 #include <Engine/Utility/Utility.hpp>
 
 // Game
+#include <Game/PhysicsComponent.hpp>
 #include <Game/RenderableTest.hpp>
 #include <Game/RenderableTestSystem.hpp>
 
@@ -166,8 +167,10 @@ void run() {
 		auto& ent = Engine::createEntity();
 
 		// TODO: maybe make an addAndGetComponent function
-		ent.addComponent<Game::RenderableTest>();
-		ent.getComponent<Game::RenderableTest>().setup(textureManager, world);
+		//ent.addComponent<Game::RenderableTest>();
+		//ent.getComponent<Game::RenderableTest>().setup(textureManager, world);
+		ent.addComponent<Game::PhysicsComponent>();
+		ent.getComponent<Game::PhysicsComponent>().setup(world);
 	}
 
 	// Main loop
