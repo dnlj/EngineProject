@@ -6,37 +6,37 @@
 
 // Game
 #include <Game/RenderableTestMovement.hpp>
-#include <Game/RenderableTest.hpp>
 #include <Game/RenderableTestSystem.hpp>
+#include <Game/PhysicsComponent.hpp>
 
 extern GLFWwindow* window; // TODO: Add a way to pass data to systems
 
 namespace Game {
 	RenderableTestMovement::RenderableTestMovement() {
-		cbits = Engine::ECS::getBitsetForComponents<Game::RenderableTest>();
+		cbits = Engine::ECS::getBitsetForComponents<Game::PhysicsComponent>();
 		priorityBefore = Engine::ECS::getBitsetForSystems<Game::RenderableTestSystem>();
 	}
 
 	void RenderableTestMovement::run(float dt) {
 		constexpr float speed = 1.0f;
 		for (auto& ent : entities) {
-			auto& rtest = ent.getComponent<Game::RenderableTest>();
+			auto& physComp = ent.getComponent<Game::PhysicsComponent>();
 
 			// TODO: this should work the other way. Apply force to the body then update the draw position.
 			if (glfwGetKey(window, GLFW_KEY_W)) {
-				rtest.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, speed * dt}, true);
+				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, speed * dt}, true);
 			}
 
 			if (glfwGetKey(window, GLFW_KEY_S)) {
-				rtest.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, -speed * dt}, true);
+				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, -speed * dt}, true);
 			}
 
 			if (glfwGetKey(window, GLFW_KEY_A)) {
-				rtest.body->ApplyLinearImpulseToCenter(b2Vec2{-speed * dt, 0.0f}, true);
+				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{-speed * dt, 0.0f}, true);
 			}
 
 			if (glfwGetKey(window, GLFW_KEY_D)) {
-				rtest.body->ApplyLinearImpulseToCenter(b2Vec2{speed * dt, 0.0f}, true);
+				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{speed * dt, 0.0f}, true);
 			}
 		}
 	}

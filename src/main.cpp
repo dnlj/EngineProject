@@ -167,8 +167,9 @@ void run() {
 		auto& ent = Engine::createEntity();
 
 		// TODO: maybe make an addAndGetComponent function
-		//ent.addComponent<Game::RenderableTest>();
-		//ent.getComponent<Game::RenderableTest>().setup(textureManager, world);
+		ent.addComponent<Game::RenderableTest>();
+		ent.getComponent<Game::RenderableTest>().setup(textureManager);
+
 		ent.addComponent<Game::PhysicsComponent>();
 		ent.getComponent<Game::PhysicsComponent>().setup(world);
 	}

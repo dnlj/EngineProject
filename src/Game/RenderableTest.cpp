@@ -17,7 +17,7 @@ namespace Game {
 		glDeleteProgram(shader);
 	}
 
-	void RenderableTest::setup(Engine::TextureManager& textureManager, b2World& world) {
+	void RenderableTest::setup(Engine::TextureManager& textureManager) {
 		constexpr GLfloat data[] = {
 			+0.0f, +0.5f, +0.5, +0.0f,
 			-0.5f, -0.5f, +0.0, +1.0f,
@@ -82,23 +82,6 @@ namespace Game {
 		glDetachShader(shader, fragShader);
 		glDeleteShader(vertShader);
 		glDeleteShader(fragShader);
-
-		// Box2D
-		{
-			b2BodyDef bodyDef;
-			bodyDef.type = b2_dynamicBody;
-
-			body = world.CreateBody(&bodyDef);
-
-			b2CircleShape shape;
-			shape.m_radius = 0.25f;
-
-			b2FixtureDef fixtureDef;
-			fixtureDef.shape = &shape;
-			fixtureDef.density = 1.0f;
-
-			body->CreateFixture(&fixtureDef);
-		}
 	}
 
 	ENGINE_REGISTER_COMPONENT(RenderableTest);
