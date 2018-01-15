@@ -32,23 +32,26 @@ namespace Engine::Debug::GL {
 		}
 	}
 
+	std::string sourceEnumToString(GLenum source) {
+		switch (source) {
+			case GL_DEBUG_SOURCE_API: return "GL_DEBUG_SOURCE_API";
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "GL_DEBUG_SOURCE_WINDOW_SYSTEM";
+			case GL_DEBUG_SOURCE_SHADER_COMPILER: return "GL_DEBUG_SOURCE_SHADER_COMPILER";
+			case GL_DEBUG_SOURCE_THIRD_PARTY: return "GL_DEBUG_SOURCE_THIRD_PARTY";
+			case GL_DEBUG_SOURCE_APPLICATION: return "GL_DEBUG_SOURCE_APPLICATION";
+			case GL_DEBUG_SOURCE_OTHER: return "GL_DEBUG_SOURCE_OTHE";
+		}
+
+		const auto msg = "Unknown GL_DEBUG_SOURCE_* enum (" + std::to_string(source) + ")";
+		ENGINE_WARN(msg);
+		return msg;
+	};
+
 	void debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
 		// Skip notifications
 		if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) { return; }
 
 		// TODO: move into functions
-		const auto sourceToString = [](GLenum source) {
-			switch (source) {
-				case GL_DEBUG_SOURCE_API: return "GL_DEBUG_SOURCE_API";
-				case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "GL_DEBUG_SOURCE_WINDOW_SYSTEM";
-				case GL_DEBUG_SOURCE_SHADER_COMPILER: return "GL_DEBUG_SOURCE_SHADER_COMPILER";
-				case GL_DEBUG_SOURCE_THIRD_PARTY: return "GL_DEBUG_SOURCE_THIRD_PARTY";
-				case GL_DEBUG_SOURCE_APPLICATION: return "GL_DEBUG_SOURCE_APPLICATION";
-				case GL_DEBUG_SOURCE_OTHER: return "GL_DEBUG_SOURCE_OTHE";
-				default: return "Unknown GL_DEBUG_SOURCE_* enum";
-			}
-		};
-
 		const auto typeToString = [](GLenum type) {
 			switch (type) {
 				case GL_DEBUG_TYPE_ERROR: return "GL_DEBUG_TYPE_ERROR";
@@ -79,7 +82,7 @@ namespace Engine::Debug::GL {
 			<< "=== OpenGL Debug Message Callback ===\n"
 			<< "=====================================\n"
 			<< "id: " << id << "\n"
-			<< "source: " << sourceToString(source) << "\n"
+			<< "source: " << sourceEnumToString(source) << "\n"
 			<< "type: " << typeToString(type) << "\n"
 			<< "severity: " << severityToString(severity) << "\n"
 			<< "message: " << message << "\n\n";
