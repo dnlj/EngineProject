@@ -37,27 +37,31 @@ namespace Engine::Debug::GL {
 		const auto msg = "Unknown GL_DEBUG_SOURCE_* enum (" + std::to_string(source) + ")";
 		ENGINE_WARN(msg);
 		return msg;
-	};
+	}
+
+	std::string typeEnumToString(GLenum type) {
+		switch (type) {
+			case GL_DEBUG_TYPE_ERROR: return "GL_DEBUG_TYPE_ERROR";
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR";
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR";
+			case GL_DEBUG_TYPE_PORTABILITY: return "GL_DEBUG_TYPE_PORTABILITY";
+			case GL_DEBUG_TYPE_PERFORMANCE: return "GL_DEBUG_TYPE_PERFORMANCE";
+			case GL_DEBUG_TYPE_MARKER: return "GL_DEBUG_TYPE_MARKER";
+			case GL_DEBUG_TYPE_PUSH_GROUP: return "GL_DEBUG_TYPE_PUSH_GROUP";
+			case GL_DEBUG_TYPE_POP_GROUP: return "GL_DEBUG_TYPE_POP_GROUP";
+			case GL_DEBUG_TYPE_OTHER: return "GL_DEBUG_TYPE_OTHER";
+		}
+
+		const auto msg = "Unknown GL_DEBUG_TYPE_* enum (" + std::to_string(type) + ")";
+		ENGINE_WARN(msg);
+		return msg;
+	}
 
 	void debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
 		// Skip notifications
 		if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) { return; }
 
 		// TODO: move into functions
-		const auto typeToString = [](GLenum type) {
-			switch (type) {
-				case GL_DEBUG_TYPE_ERROR: return "GL_DEBUG_TYPE_ERROR";
-				case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR";
-				case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR";
-				case GL_DEBUG_TYPE_PORTABILITY: return "GL_DEBUG_TYPE_PORTABILITY";
-				case GL_DEBUG_TYPE_PERFORMANCE: return "GL_DEBUG_TYPE_PERFORMANCE";
-				case GL_DEBUG_TYPE_MARKER: return "GL_DEBUG_TYPE_MARKER";
-				case GL_DEBUG_TYPE_PUSH_GROUP: return "GL_DEBUG_TYPE_PUSH_GROUP";
-				case GL_DEBUG_TYPE_POP_GROUP: return "GL_DEBUG_TYPE_POP_GROUP";
-				case GL_DEBUG_TYPE_OTHER: return "GL_DEBUG_TYPE_OTHER";
-				default: return "Unknown GL_DEBUG_TYPE_* enum";
-			}
-		};
 
 		const auto severityToString = [](GLenum severity) {
 			switch (severity) {
@@ -75,7 +79,7 @@ namespace Engine::Debug::GL {
 			<< "=====================================\n"
 			<< "id: " << id << "\n"
 			<< "source: " << sourceEnumToString(source) << "\n"
-			<< "type: " << typeToString(type) << "\n"
+			<< "type: " << typeEnumToString(type) << "\n"
 			<< "severity: " << severityToString(severity) << "\n"
 			<< "message: " << message << "\n\n";
 	}

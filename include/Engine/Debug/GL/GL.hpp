@@ -18,6 +18,13 @@ namespace Engine::Debug::GL {
 	 */
 	std::string sourceEnumToString(GLenum source);
 
+	/**
+	 * @brief Converts an OpenGL type enum to a string.
+	 * @param[in] source The enum.
+	 * @return The string representation of the enum.
+	 */
+	std::string typeEnumToString(GLenum source);
+
 	// TODO: Doc
 	void debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 }
