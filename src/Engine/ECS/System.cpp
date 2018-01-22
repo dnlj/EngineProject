@@ -10,11 +10,6 @@ namespace Engine::ECS::detail {
 		decltype(priority) priority;
 	}
 
-	PriorityPair::PriorityPair(SystemBitset priorityBefore, SystemBitset priorityAfter)
-		: priorityBefore{priorityBefore}
-		, priorityAfter{priorityAfter} {
-	}
-
 	SystemID getNextSystemID() {
 		static SystemID next = 0;
 		return next++;

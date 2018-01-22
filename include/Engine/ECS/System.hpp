@@ -43,14 +43,6 @@ namespace Engine::ECS {
 }
 
 namespace Engine::ECS::detail {
-	class PriorityPair {
-		public:
-			PriorityPair() = default;
-			PriorityPair(SystemBitset priorityBefore, SystemBitset priorityAfter);
-			SystemBitset priorityBefore;
-			SystemBitset priorityAfter;
-	};
-
 	/**
 	 * @brief Stores data about the registered systems.
 	 */
