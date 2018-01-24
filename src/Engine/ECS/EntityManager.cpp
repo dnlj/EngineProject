@@ -18,4 +18,13 @@ namespace Engine::ECS {
 		// TODO: onEntityCreatedAll(eid);
 		return eid;
 	}
+
+	void EntityManager::destroyEntity(EntityID eid) {
+		deadEntities.emplace_back(eid);
+		entityAlive[eid] = false;
+		entityComponents[eid] = 0;
+		// TODO: onEntityDestroyedAll
+	}
+
+
 }

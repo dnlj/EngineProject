@@ -16,6 +16,12 @@ namespace Engine::ECS {
 			 */
 			EntityID createEntity(bool forceNew = false);
 
+			/**
+			 * @brief Destroys an entity.
+			 * @param[in] eid The id of the entity.
+			 */
+			void destroyEntity(EntityID eid);
+
 		private:
 			std::vector<ComponentBitset> entityComponents;
 			std::vector<EntityID> deadEntities;
