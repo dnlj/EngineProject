@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <bitset>
+
 namespace Engine::ECS {
 	/** The maximum number of components registrable. Ideally this would be exactly the number of components used. */
 	constexpr size_t MAX_COMPONENTS = 64;
