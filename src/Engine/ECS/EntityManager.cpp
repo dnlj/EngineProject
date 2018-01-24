@@ -16,5 +16,6 @@ namespace Engine::ECS {
 		entityAlive[eid] = true;
 
 		// TODO: onEntityCreatedAll(eid);
+		return eid;
 	}
 }
