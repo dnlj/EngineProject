@@ -26,5 +26,7 @@ namespace Engine::ECS {
 		// TODO: onEntityDestroyedAll
 	}
 
-
+	bool EntityManager::isAlive(EntityID eid) {
+		return entityAlive[eid];
+	}
 }

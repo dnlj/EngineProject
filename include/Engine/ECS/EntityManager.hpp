@@ -22,6 +22,13 @@ namespace Engine::ECS {
 			 */
 			void destroyEntity(EntityID eid);
 
+			/**
+			 * @brief Checks is an entity is alive.
+			 * @param[in] eid The id of the entity.
+			 * @return True if the entity is alive; otherwise false.
+			 */
+			bool isAlive(EntityID eid);
+
 		private:
 			std::vector<ComponentBitset> entityComponents;
 			std::vector<EntityID> deadEntities;
