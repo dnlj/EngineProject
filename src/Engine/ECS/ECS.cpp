@@ -40,13 +40,8 @@ namespace Engine::ECS {
 			eid = detail::EntityData::reusableIDs.back();
 			detail::EntityData::reusableIDs.pop_back();
 		} else {
-			if (detail::EntityData::componentBitsets.size() <= eid) {
-				detail::EntityData::componentBitsets.resize(eid + 1);
-			}
-
-			if (detail::EntityData::alive.size() <= eid) {
-				detail::EntityData::alive.resize(eid + 1);
-			}
+			detail::EntityData::componentBitsets.resize(eid + 1);
+			detail::EntityData::alive.resize(eid + 1);
 		}
 
 		detail::EntityData::alive[eid] = true;
