@@ -123,11 +123,16 @@ namespace Engine::ECS {
 		int registerComponent(const std::string_view name);
 	}
 
-	// TODO: Doc
+	/**
+	 * @brief Gets the bitset with the bits that correspond to the ids of the components set.
+	 * @tparam Component1 The first component.
+	 * @tparam Component2 The second component.
+	 * @tparam Components The third through nth component.
+	 */
 	template<class Component1, class Component2, class... Components>
 	ComponentBitset getBitsetForComponents();
 
-	// TODO: Doc
+	/** @copydoc getBitsetForComponents */
 	template<class Component>
 	ComponentBitset getBitsetForComponents();
 
