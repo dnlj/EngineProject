@@ -9,11 +9,16 @@
 	}
 
 namespace Engine::ECS {
-	// TODO: Doc
+	/**
+	 * @brief Gets the bitset with the bits that correspond to the ids of the systems set.
+	 * @tparam System1 The first system.
+	 * @tparam System2 The second system.
+	 * @tparam Systems The third through nth systems.
+	 */
 	template<class System1, class System2, class... Systems>
 	SystemBitset getBitsetForSystems();
 
-	// TODO: Doc
+	/** @copydoc getBitsetForSystems */
 	template<class System>
 	SystemBitset getBitsetForSystems();
 
