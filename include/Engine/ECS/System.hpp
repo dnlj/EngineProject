@@ -1,11 +1,12 @@
 #pragma once
 
 // Engine
+#include <Engine/Macros.hpp>
 #include <Engine/ECS/ECS.hpp>
 
-#define ENGINE_REGISTER_SYSTEM(s) \
+#define ENGINE_REGISTER_SYSTEM(system)\
 	namespace {\
-		const auto __ENGINE_ECS_SYSTEM_DEF__ ## s ## __ = Engine::ECS::detail::registerSystem<s>();\
+		const auto ENGINE_MACRO_CONCAT(__ENGINE_ECS_SYSTEM_DEF__, __LINE__) ## __ = Engine::ECS::detail::registerSystem<system>();\
 	}
 
 namespace Engine::ECS {

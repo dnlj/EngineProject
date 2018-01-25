@@ -50,6 +50,6 @@ namespace Game {
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
 	}
-
-	ENGINE_REGISTER_SYSTEM(RenderSystem);
 }
+
+ENGINE_REGISTER_SYSTEM(Game::RenderSystem);

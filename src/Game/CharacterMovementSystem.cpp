@@ -40,6 +40,6 @@ namespace Game {
 			}
 		}
 	}
-
-	ENGINE_REGISTER_SYSTEM(CharacterMovementSystem);
 }
+
+ENGINE_REGISTER_SYSTEM(Game::CharacterMovementSystem);

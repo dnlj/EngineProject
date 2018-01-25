@@ -5,6 +5,6 @@ namespace Game {
 	void PhysicsSystem::run(float dt) {
 		puts("PhysicsSystem::run\n");
 	}
-
-	ENGINE_REGISTER_SYSTEM(PhysicsSystem);
 }
+
+ENGINE_REGISTER_SYSTEM(Game::PhysicsSystem);
