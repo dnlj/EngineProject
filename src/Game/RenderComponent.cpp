@@ -83,6 +83,6 @@ namespace Game {
 		glDeleteShader(vertShader);
 		glDeleteShader(fragShader);
 	}
-
-	ENGINE_REGISTER_COMPONENT(RenderComponent);
 }
+
+ENGINE_REGISTER_COMPONENT(Game::RenderComponent);

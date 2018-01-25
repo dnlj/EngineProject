@@ -14,9 +14,9 @@
 /**
  * @brief Registers a component for use with the Entity Component System.
  */
-#define ENGINE_REGISTER_COMPONENT(c) \
+#define ENGINE_REGISTER_COMPONENT(component) \
 	namespace {\
-		const auto __ENGINE_ECS_COMPONENT_DEF__ ## c ## __ = Engine::ECS::detail::registerComponent<c>(#c);\
+		const auto ENGINE_MACRO_CONCAT(__ENGINE_ECS_COMPONENT_DEF__, __LINE__) ## __ = Engine::ECS::detail::registerComponent<component>(#component);\
 	}
 
 /** 

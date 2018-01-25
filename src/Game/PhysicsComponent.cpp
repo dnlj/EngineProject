@@ -20,6 +20,6 @@ namespace Game {
 
 		body->CreateFixture(&fixtureDef);
 	}
-
-	ENGINE_REGISTER_COMPONENT(PhysicsComponent);
 }
+
+ENGINE_REGISTER_COMPONENT(Game::PhysicsComponent);
