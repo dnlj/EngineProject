@@ -32,7 +32,7 @@ action_clean_files = {
 -- The main premake settings
 -------------------------------------------------------------------------------
 workspace(PROJECT_NAME .."Workspace")
-	configurations {"Debug", "Release"}
+	configurations {"Debug", "Debug_All", "Debug_Physics", "Debug_Graphics", "Release"}
 	platforms {"Windows_x64"}
 	characterset "Unicode"
 	kind "ConsoleApp"
@@ -55,13 +55,23 @@ workspace(PROJECT_NAME .."Workspace")
         architecture "x64"
 		defines {string.upper(PROJECT_NAME) .."_OS_WINDOWS"}
 		
-	filter "configurations:Debug"
+	filter "configurations:Debug*"
 		symbols "On"
 		defines {"DEBUG"}
 		
-	filter "configurations:Release"
+	filter "configurations:Debug_All"
+		defines {"DEBUG_ALL"}
+		
+	filter {"configurations:Debug_Physics or configurations:Debug_All"}
+		defines {"DEBUG_PHYSICS"}
+		
+	filter {"configurations:Debug_Graphics or configurations:Debug_All"}
+		defines {"DEBUG_GRAPHICS"}
+		
+	filter "configurations:Release*"
 		optimize "Full"
-		defines {"NDEBUG", "RELEASE"}
+		defines {"RELEASE"}
+		flags {"LinkTimeOptimization"}
 		
 project(PROJECT_NAME)
 	files {
@@ -87,9 +97,16 @@ project(PROJECT_NAME)
 		"Box2D.lib",
 	}
 	
-	filter {"platforms:Windows_x64"}
+	filter {"platforms:Windows_x64", "configurations:Debug*"}
 		libdirs {
-			"./deps/glfw/build/src/%{cfg.buildcfg}",
-			"./deps/soil/projects/VC9/x64/%{cfg.buildcfg}",
-			"./deps/Box2D/Build/vs2017/bin/%{cfg.buildcfg}",
+			"./deps/glfw/build/src/Debug",
+			"./deps/soil/projects/VC9/x64/Debug",
+			"./deps/Box2D/Build/vs2017/bin/Debug",
+		}
+		
+	filter {"platforms:Windows_x64", "configurations:Release*"}
+		libdirs {
+			"./deps/glfw/build/src/Release",
+			"./deps/soil/projects/VC9/x64/Release",
+			"./deps/Box2D/Build/vs2017/bin/Release",
 		}
