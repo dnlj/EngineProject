@@ -54,7 +54,7 @@ namespace Engine::ECS::detail {
 
 	template<class System, class>
 	int registerSystem() {
-		const auto system = getSystem<System>();
+		const auto& system = getSystem<System>();
 		const auto sid = getSystemID<System>();
 
 		// All containers should be of the same size
