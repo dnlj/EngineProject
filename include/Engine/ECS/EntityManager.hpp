@@ -33,7 +33,6 @@ namespace Engine::ECS {
 			bool isAlive(EntityID eid);
 
 		private:
-			std::vector<ComponentBitset> entityComponents;
 			std::vector<bool> aliveEntities;
 			std::vector<EntityID> deadEntities;
 	};

@@ -13,7 +13,6 @@ namespace Engine::ECS {
 			eid = deadEntities.back();
 			deadEntities.pop_back();
 		} else {
-			entityComponents.resize(eid + 1);
 			aliveEntities.resize(eid + 1);
 		}
 
@@ -32,7 +31,6 @@ namespace Engine::ECS {
 		#endif
 
 		aliveEntities[eid] = false;
-		entityComponents[eid] = 0;
 		deadEntities.emplace_back(eid);
 		// TODO: detail::onEntityDestroyedAll(eid);
 	}
