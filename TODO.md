@@ -6,3 +6,5 @@
 * Make addComponent emplace objects?
 * Move check for passing MAX_SYSTEM/COMPONENT into the get id function
 * Change the check opengl error to use a macro so it audo disables when not in debug mode
+* Add unit tests
+* Once new ECS is implemented remove ECS/Common.hpp? Will be no longer needed?
