@@ -22,6 +22,10 @@ namespace Engine::ECS {
 
 // Non-static members
 namespace Engine::ECS{
+	ComponentManager::ComponentManager() {
+		nameToID.max_load_factor(0.5f);
+	}
+
 	ComponentID ComponentManager::getNextComponentID() {
 		#if defined(DEBUG)
 			if (nextID >= MAX_COMPONENTS) {

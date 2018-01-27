@@ -2,6 +2,7 @@
 
 // STD
 #include <array>
+#include <unordered_map>
 
 // Engine
 #include <Engine/ECS/Common.hpp>
@@ -27,6 +28,8 @@ namespace Engine::ECS {
 			static ComponentID getGlobalComponentID();
 
 		public:
+			ComponentManager();
+
 			/**
 			 * @brief Get the ComponentID associated with a component.
 			 * @tparam Component The component.
@@ -35,12 +38,23 @@ namespace Engine::ECS {
 			template<class Component>
 			ComponentID getComponentID();
 
+			/**
+			 * @brief Registers a component.
+			 * @param[in] name The name to associate with the component.
+			 * @tparam Component The component.
+			 */
+			template<class Component>
+			void registerComponent(const std::string name);
+
 		private:
 			/** The next id to use for components */
 			ComponentID nextID = 0;
 
 			/** The array used for translating from global to local ids */
 			std::array<ComponentID, MAX_COMPONENTS> globalToLocalID;
+
+			/** The map used for translating from strings to local ids */
+			std::unordered_map<std::string, ComponentID> nameToID;
 
 			/**
 			 * @brief Gets the next id to use for components.
