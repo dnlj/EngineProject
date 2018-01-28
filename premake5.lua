@@ -23,6 +23,9 @@ action_clean_files = {
 	"./".. PROJECT_NAME .."Test.vcxproj",
 	"./".. PROJECT_NAME .."Test.vcxproj.filters",
 	"./".. PROJECT_NAME .."Test.vcxproj.user",
+	"./".. PROJECT_NAME .."Engine.vcxproj",
+	"./".. PROJECT_NAME .."Engine.vcxproj.filters",
+	"./".. PROJECT_NAME .."Engine.vcxproj.user",
 	"./".. PROJECT_NAME .."Workspace.sln",
 	"./".. PROJECT_NAME .."Workspace.VC.db",
 	"./".. PROJECT_NAME .."Workspace.VC.VC.opendb"
@@ -72,12 +75,17 @@ workspace(PROJECT_NAME .."Workspace")
 		optimize "Full"
 		defines {"RELEASE"}
 		flags {"LinkTimeOptimization"}
-		
-project(PROJECT_NAME)
+
+project(PROJECT_NAME .."Engine")
+	kind "None"
+
+-- The engine files are put in the workspace since Game, Engine, and Test all use them.
+project("*")
 	files {
-		"./TODO.md",
-		"./include/**",
-		"./src/**",
+		"./include/Engine/**",
+		"./src/Engine/**",
+		"./include/glloadgen/**",
+		"./src/glloadgen/**",
 	}
 	
 	debugdir "./src"
@@ -109,4 +117,44 @@ project(PROJECT_NAME)
 			"./deps/glfw/build/src/Release",
 			"./deps/soil/projects/VC9/x64/Release",
 			"./deps/Box2D/Build/vs2017/bin/Release",
+		}
+
+project(PROJECT_NAME)
+	files {
+		"./TODO.md",
+		"./src/main.cpp",
+		"./include/Game/**",
+		"./src/Game/**",
+	}
+
+project(PROJECT_NAME .."Test")
+	files {
+		"./test/**",
+	}
+	
+	includedirs {
+		"./deps/googletest/googlemock/include",
+		"./deps/googletest/googletest/include",
+	}
+	
+	filter {"platforms:Windows_x64", "configurations:Debug*"}
+		links {
+			"gtestd.lib",
+			"gmockd.lib",
+		}
+		
+		libdirs {
+			"./deps/googletest/googlemock/build/Debug",
+			"./deps/googletest/googletest/build/Debug",
+		}
+		
+	filter {"platforms:Windows_x64", "configurations:Release*"}
+		links {
+			"gtest.lib",
+			"gmock.lib",
+		}
+		
+		libdirs {
+			"./deps/googletest/googlemock/build/Release",
+			"./deps/googletest/googletest/build/Release",
 		}
