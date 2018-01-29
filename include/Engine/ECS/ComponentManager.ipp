@@ -7,7 +7,7 @@
 namespace Engine::ECS {
 	template<class Component>
 	ComponentID ComponentManager::getGlobalComponentID() {
-		const static Component id = getNextGlobalComponentID();
+		const static ComponentID id = getNextGlobalComponentID();
 		return id;
 	}
 }
