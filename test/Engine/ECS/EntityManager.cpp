@@ -4,10 +4,12 @@
 // GoogleTest
 #include<gtest/gtest.h>
 
-class EntityManagerTest : public testing::Test {
-	public:
-		Engine::ECS::EntityManager em;
-};
+namespace {
+	class EntityManagerTest : public testing::Test {
+		public:
+			Engine::ECS::EntityManager em;
+	};
+}
 
 TEST_F(EntityManagerTest, CreateEntity) {
 	// Entities should be created sequentially
