@@ -39,6 +39,13 @@ namespace Engine::ECS {
 			ComponentID getComponentID();
 
 			/**
+			 * @brief Get the ComponentID associated with @p name.
+			 * @param[in] name The name of the component.
+			 * @return The id of the component.
+			 */
+			ComponentID getComponentID(const std::string& name);
+
+			/**
 			 * @brief Registers a component.
 			 * @param[in] name The name to associate with the component.
 			 * @tparam Component The component.

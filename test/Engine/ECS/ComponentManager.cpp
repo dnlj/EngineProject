@@ -47,4 +47,11 @@ TEST_F(ComponentManagerTest, ComponentID) {
 	ASSERT_EQ(cm.getComponentID<C>(), 2);
 	ASSERT_EQ(cm.getComponentID<D>(), 3);
 	ASSERT_EQ(cm.getComponentID<E>(), 4);
+
+	// Components names should get the correct ids
+	ASSERT_EQ(cm.getComponentID("A"), 0);
+	ASSERT_EQ(cm.getComponentID("B"), 1);
+	ASSERT_EQ(cm.getComponentID("C"), 2);
+	ASSERT_EQ(cm.getComponentID("D"), 3);
+	ASSERT_EQ(cm.getComponentID("E"), 4);
 }

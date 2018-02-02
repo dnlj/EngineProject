@@ -45,4 +45,8 @@ namespace Engine::ECS{
 
 		return globalToLocalID[gcid];
 	}
+
+	ComponentID ComponentManager::getComponentID(const std::string& name) {
+		return nameToID[name];
+	}
 }
