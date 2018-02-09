@@ -46,6 +46,19 @@ namespace Engine::ECS {
 			ComponentID getComponentID(const std::string& name);
 
 			/**
+			 * @brief Gets the bitset with the bits that correspond to the ids of the components set.
+			 * @tparam Component1 The first component.
+			 * @tparam Component2 The second component.
+			 * @tparam Components The third through nth component.
+			 */
+			template<class Component1, class Component2, class... Components>
+			ComponentBitset getBitsetForComponents();
+
+			/** @copydoc getBitsetForComponents */
+			template<class Component>
+			ComponentBitset getBitsetForComponents();
+
+			/**
 			 * @brief Registers a component.
 			 * @param[in] name The name to associate with the component.
 			 * @tparam Component The component.

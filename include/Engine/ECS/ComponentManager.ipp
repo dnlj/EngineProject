@@ -29,4 +29,16 @@ namespace Engine::ECS {
 		// TODO: detail::ComponentData::getComponent[id] = getComponentForEntity<Component>;
 		// TODO: detail::ComponentData::reclaim[id] = reclaim<Component>;
 	}
+
+	template<class Component1, class Component2, class... Components>
+	ComponentBitset ComponentManager::getBitsetForComponents() {
+		return getBitsetForComponents<Component1>() |= getBitsetForComponents<Component2, Components...>();
+	}
+
+	template<class Component>
+	ComponentBitset ComponentManager::getBitsetForComponents() {
+		ComponentBitset value;
+		value[getComponentID<Component>()] = true;
+		return value;
+	}
 }

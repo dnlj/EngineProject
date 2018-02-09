@@ -55,3 +55,56 @@ TEST_F(ComponentManagerTest, ComponentID) {
 	ASSERT_EQ(cm.getComponentID("D"), 3);
 	ASSERT_EQ(cm.getComponentID("E"), 4);
 }
+
+TEST_F(ComponentManagerTest, BitsetForComponentsSingle) {
+	{
+		using Type = A;
+		const auto cbits = cm.getBitsetForComponents<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[cm.getComponentID<Type>()] = true;
+		ASSERT_EQ(cbits, bits);
+	}
+
+	{
+		using Type = B;
+		const auto cbits = cm.getBitsetForComponents<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[cm.getComponentID<Type>()] = true;
+		ASSERT_EQ(cbits, bits);
+	}
+
+	{
+		using Type = C;
+		const auto cbits = cm.getBitsetForComponents<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[cm.getComponentID<Type>()] = true;
+		ASSERT_EQ(cbits, bits);
+	}
+
+	{
+		using Type = D;
+		const auto cbits = cm.getBitsetForComponents<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[cm.getComponentID<Type>()] = true;
+		ASSERT_EQ(cbits, bits);
+	}
+
+	{
+		using Type = E;
+		const auto cbits = cm.getBitsetForComponents<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[cm.getComponentID<Type>()] = true;
+		ASSERT_EQ(cbits, bits);
+	}
+}
+
+TEST_F(ComponentManagerTest, BitsetForComponentsMultiple) {
+	const auto cbits = cm.getBitsetForComponents<A, B, C>();
+	Engine::ECS::ComponentBitset bits;
+
+	bits[cm.getComponentID<A>()] = true;
+	bits[cm.getComponentID<B>()] = true;
+	bits[cm.getComponentID<C>()] = true;
+
+	ASSERT_EQ(cbits, bits);
+}
