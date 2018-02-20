@@ -32,12 +32,36 @@ namespace Engine::ECS {
 			template<class System>
 			SystemID getSystemID();
 
+			/**
+			 * @brief Gets a reference to the system.
+			 * @tparam System The type of the system.
+			 * @return A reference to the system.
+			 */
+			template<class System>
+			System& getSystem();
+
+			/**
+			 * @brief Registers a system.
+			 * @tparam System The system.
+			 */
+			template<class System, class = std::enable_if_t<IsSystem<System>::value>>
+			void registerSystem();
+
 		private:
 			/** The next id to use for systems */
 			SystemID nextID = 0;
 
+			/** The number of registered systems */
+			size_t systemCount = 0;
+
 			/** The array used for translating from global to local ids */
-			std::array<ComponentID, MAX_SYSTEMS> globalToLocalID;
+			std::array<SystemID, MAX_SYSTEMS> globalToLocalID;
+
+			/** The array used for storing system instances */
+			std::array<void*, MAX_SYSTEMS> systems;
+
+			/** The array used for storing system priorities */
+			std::array<SystemBitset, MAX_SYSTEMS> priority;
 
 			/**
 			 * @brief Gets the next id to use for systems.
