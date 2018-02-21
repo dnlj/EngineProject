@@ -128,6 +128,8 @@ project(PROJECT_NAME)
 	}
 
 project(PROJECT_NAME .."Test")
+	defines {"RUNNING_TESTS"}
+
 	files {
 		"./test/**",
 	}

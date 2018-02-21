@@ -2,6 +2,10 @@
 #include <Engine/SystemBase.hpp>
 #include <Engine/ECS/SystemManager.hpp>
 
+#if defined(DEBUG)
+	#include <Engine/Engine.hpp>
+#endif
+
 // GoogleTest
 #include <gtest/gtest.h>
 
@@ -12,6 +16,7 @@ namespace {
 	class C : public Engine::SystemBase { public: void run(float){}; };
 	class D : public Engine::SystemBase { public: void run(float){}; };
 	class E : public Engine::SystemBase { public: void run(float){}; };
+	class Nonregistered : public Engine::SystemBase { public: void run(float){}; };
 
 	class SystemManagerTest : public testing::Test {
 		public:
@@ -139,3 +144,9 @@ TEST_F(SystemManagerTest, BitsetForSystemsMultiple) {
 	}
 }
 
+TEST_F(SystemManagerTest, SystemIDThrows) {
+	// Getting the id of a nonregistered system
+	#if defined(DEBUG)
+		ASSERT_THROW(sm.getSystemID<Nonregistered>(), Engine::FatalException);
+	#endif
+}

@@ -19,7 +19,10 @@ namespace Engine {
 
 		if (*refCount == 0) {
 			delete refCount;
-			std::terminate();
+
+			#if !defined(RUNNING_TESTS)
+				std::terminate();
+			#endif
 		}
 	}
 }

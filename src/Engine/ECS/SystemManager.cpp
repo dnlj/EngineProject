@@ -32,12 +32,18 @@ namespace Engine::ECS {
 	}
 
 	SystemID SystemManager::getSystemID(SystemID gsid) {
+		const auto sid = globalToLocalID[gsid];
+
 		#if defined(DEBUG)
 			if (gsid >= MAX_SYSTEMS) {
 				ENGINE_ERROR("Attempting to get the local id of an invalid local system id.");
 			}
+
+			if (sid >= nextID) {
+				ENGINE_ERROR("Attempting to get the local id of an nonregistered system.");
+			}
 		#endif
 
-		return globalToLocalID[gsid];
+		return sid;
 	}
 }
