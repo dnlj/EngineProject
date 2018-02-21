@@ -7,11 +7,36 @@
 
 
 namespace {
+	constexpr size_t EXTRA_SYSTEM_COUNT = 2;
+
 	template<int I>
 	class System : public Engine::SystemBase {
 		public:
 			int value = 0;
 			void run(float) {};
+	};
+
+	class Foo : public Engine::SystemBase {
+		public:
+			Foo() = delete;
+			void run(float) {};
+
+			Foo(int value1, int value2, int value3) : value1{value1}, value2{value2}, value3{value3} {};
+
+			int value1 = 0;
+			int value2 = 0;
+			int value3 = 0;
+	};
+
+	class Bar : public Engine::SystemBase {
+		public:
+		Bar() = delete;
+		void run(float) {};
+
+		Bar(float value1, float value2) : value1{value1}, value2{value2} {};
+
+		float value1 = 0.0f;
+		float value2 = 0.0f;
 	};
 
 	using A = System<0>;
@@ -33,6 +58,18 @@ namespace {
 
 			Engine::ECS::SystemManager sm;
 	};
+}
+
+TEST_F(SystemManagerTest, RegisterSystemArgs) {
+	sm.registerSystem<Foo>(64, 32, 16);
+
+	ASSERT_EQ(sm.getSystem<Foo>().value1, 64);
+	ASSERT_EQ(sm.getSystem<Foo>().value2, 32);
+	ASSERT_EQ(sm.getSystem<Foo>().value3, 16);
+
+	sm.registerSystem<Bar>(-42.0f, -1000.0f);
+	ASSERT_EQ(sm.getSystem<Bar>().value1, -42.0f);
+	ASSERT_EQ(sm.getSystem<Bar>().value2, -1000.0f);
 }
 
 TEST_F(SystemManagerTest, SystemID) {
@@ -197,10 +234,10 @@ namespace {
 TEST_F(SystemManagerTest, ToManySystemsThrows) {
 	#if defined(DEBUG)
 		Engine::ECS::SystemManager sm2;
-
+		constexpr auto num = Engine::ECS::MAX_SYSTEMS - 1 - EXTRA_SYSTEM_COUNT;
 		// Generating to many systems
-		recursiveRegisterWith<Engine::ECS::MAX_SYSTEMS - 1>(sm2);
+		recursiveRegisterWith<num>(sm2);
 
-		ASSERT_THROW(sm2.registerSystem<System<Engine::ECS::MAX_SYSTEMS - 1>>(), Engine::FatalException);
+		ASSERT_THROW(sm2.registerSystem<System<num>>(), Engine::FatalException);
 	#endif
 }

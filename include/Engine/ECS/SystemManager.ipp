@@ -36,8 +36,8 @@ namespace Engine::ECS {
 		return value;
 	}
 
-	template<class System, class>
-	void SystemManager::registerSystem() {
+	template<class System, class... Args, class>
+	void SystemManager::registerSystem(Args&&... args) {
 		const auto gsid = getGlobalSystemID<System>();
 
 		if (globalToLocalID[gsid] != static_cast<SystemID>(-1)) {
@@ -48,7 +48,7 @@ namespace Engine::ECS {
 		const auto sid = getNextSystemID();
 
 		globalToLocalID[gsid] = sid;
-		systems[sid] = new System();
+		systems[sid] = new System(std::forward<Args>(args)...);
 
 		const auto& system = getSystem<System>();
 

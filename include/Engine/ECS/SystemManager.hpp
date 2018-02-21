@@ -61,9 +61,11 @@ namespace Engine::ECS {
 			/**
 			 * @brief Registers a system.
 			 * @tparam System The system.
+			 * @tparam Args the type of @p args.
+			 * @param[in,out] args The arguments to foward to the constructor of @p System.
 			 */
-			template<class System, class = std::enable_if_t<IsSystem<System>::value>>
-			void registerSystem();
+			template<class System, class... Args, class = std::enable_if_t<IsSystem<System>::value>>
+			void registerSystem(Args&&... args);
 
 		private:
 			/** The next id to use for systems */
