@@ -1,9 +1,5 @@
 #pragma once
 
-#if defined(DEBUG)
-	#include <Engine/Engine.hpp>
-#endif
-
 // Static members
 namespace Engine::ECS {
 	template<class System>
@@ -26,14 +22,10 @@ namespace Engine::ECS {
 
 	template<class System, class>
 	void SystemManager::registerSystem() {
-		#if defined(DEBUG)
-			if (systemCount >= MAX_SYSTEMS) {
-				ENGINE_ERROR("Attempting to register to many systems. Consider increasing Engine::ECS::MAX_SYSTEMS");
-			}
-		#endif
+		const auto sid = getNextSystemID();
+		globalToLocalID[getGlobalSystemID<System>()] = sid;
 
-		systems[systemCount] = new System();
-		++systemCount;
+		systems[sid] = new System();
 		const auto& system = getSystem<System>();
 
 		// Update priorities

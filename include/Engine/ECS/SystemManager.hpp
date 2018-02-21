@@ -51,9 +51,6 @@ namespace Engine::ECS {
 			/** The next id to use for systems */
 			SystemID nextID = 0;
 
-			/** The number of registered systems */
-			size_t systemCount = 0;
-
 			/** The array used for translating from global to local ids */
 			std::array<SystemID, MAX_SYSTEMS> globalToLocalID;
 
