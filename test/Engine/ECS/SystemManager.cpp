@@ -2,21 +2,20 @@
 #include <Engine/SystemBase.hpp>
 #include <Engine/ECS/SystemManager.hpp>
 
-#if defined(DEBUG)
-	#include <Engine/Engine.hpp>
-#endif
-
 // GoogleTest
 #include <gtest/gtest.h>
 
 
 namespace {
-	class A : public Engine::SystemBase { public: void run(float){}; };
-	class B : public Engine::SystemBase { public: void run(float){}; };
-	class C : public Engine::SystemBase { public: void run(float){}; };
-	class D : public Engine::SystemBase { public: void run(float){}; };
-	class E : public Engine::SystemBase { public: void run(float){}; };
-	class Nonregistered : public Engine::SystemBase { public: void run(float){}; };
+	template<int I>
+	class System : public Engine::SystemBase { public: void run(float) {}; };
+
+	using A = System<0>;
+	using B = System<1>;
+	using C = System<2>;
+	using D = System<3>;
+	using E = System<4>;
+	using Nonregistered = System<-1>;
 
 	class SystemManagerTest : public testing::Test {
 		public:
@@ -148,5 +147,29 @@ TEST_F(SystemManagerTest, SystemIDThrows) {
 	// Getting the id of a nonregistered system
 	#if defined(DEBUG)
 		ASSERT_THROW(sm.getSystemID<Nonregistered>(), Engine::FatalException);
+	#endif
+}
+
+namespace {
+	template<int I>
+	void recursiveRegisterWith(Engine::ECS::SystemManager& sm) {
+		sm.registerSystem<System<I - 1>>();
+		recursiveRegisterWith<I - 1>(sm);
+	}
+
+	template<>
+	void recursiveRegisterWith<1>(Engine::ECS::SystemManager& sm) {
+		sm.registerSystem<System<0>>();
+	}
+}
+
+TEST_F(SystemManagerTest, ToManySystemsThrows) {
+	#if defined(DEBUG)
+		Engine::ECS::SystemManager sm2;
+
+		// Generating to many systems
+		recursiveRegisterWith<Engine::ECS::MAX_SYSTEMS - 1>(sm2);
+
+		ASSERT_THROW(sm2.registerSystem<System<Engine::ECS::MAX_SYSTEMS - 1>>(), Engine::FatalException);
 	#endif
 }
