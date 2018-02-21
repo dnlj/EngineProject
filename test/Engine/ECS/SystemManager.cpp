@@ -8,7 +8,11 @@
 
 namespace {
 	template<int I>
-	class System : public Engine::SystemBase { public: void run(float) {}; };
+	class System : public Engine::SystemBase {
+		public:
+			int value = 0;
+			void run(float) {};
+	};
 
 	using A = System<0>;
 	using B = System<1>;
@@ -141,6 +145,33 @@ TEST_F(SystemManagerTest, BitsetForSystemsMultiple) {
 		bits[sm.getSystemID<E>()] = true;
 		ASSERT_EQ(sbits, bits);
 	}
+}
+
+TEST_F(SystemManagerTest, GetSystem) {
+	// Values are correctly initialized
+	ASSERT_EQ(sm.getSystem<A>().value, 0);
+	ASSERT_EQ(sm.getSystem<B>().value, 0);
+	ASSERT_EQ(sm.getSystem<C>().value, 0);
+	ASSERT_EQ(sm.getSystem<D>().value, 0);
+	ASSERT_EQ(sm.getSystem<E>().value, 0);
+
+	// Values are changed
+	sm.getSystem<A>().value = 1;
+	sm.getSystem<B>().value = 2;
+	sm.getSystem<C>().value = 4;
+
+	ASSERT_EQ(sm.getSystem<A>().value, 1);
+	ASSERT_EQ(sm.getSystem<B>().value, 2);
+	ASSERT_EQ(sm.getSystem<C>().value, 4);
+
+	// Values are changed again
+	sm.getSystem<A>().value = 8;
+	sm.getSystem<B>().value = 16;
+	sm.getSystem<C>().value = 32;
+
+	ASSERT_EQ(sm.getSystem<A>().value, 8);
+	ASSERT_EQ(sm.getSystem<B>().value, 16);
+	ASSERT_EQ(sm.getSystem<C>().value, 32);
 }
 
 TEST_F(SystemManagerTest, SystemIDThrows) {
