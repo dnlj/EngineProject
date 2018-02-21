@@ -20,6 +20,19 @@ namespace Engine::ECS {
 		return *static_cast<System*>(systems[getSystemID<System>()]);
 	}
 
+	template<class System1, class System2, class... Systems>
+	SystemBitset SystemManager::getBitsetForSystems() {
+		return getBitsetForSystems<System1>() |= getBitsetForSystems<System2, Systems...>();
+	}
+
+	template<class System>
+	SystemBitset SystemManager::getBitsetForSystems() {
+		const auto sid = getSystemID<System>();
+		SystemBitset value;
+		value[sid] = true;
+		return value;
+	}
+
 	template<class System, class>
 	void SystemManager::registerSystem() {
 		const auto sid = getNextSystemID();

@@ -49,3 +49,93 @@ TEST_F(SystemManagerTest, SystemID) {
 	ASSERT_EQ(sm2.getSystemID<D>(), 3);
 	ASSERT_EQ(sm2.getSystemID<E>(), 4);
 }
+
+TEST_F(SystemManagerTest, BitsetForSystemsSingle) {
+	{
+		using Type = A;
+		const auto sbits = sm.getBitsetForSystems<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[sm.getSystemID<Type>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+
+	{
+		using Type = B;
+		const auto sbits = sm.getBitsetForSystems<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[sm.getSystemID<Type>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+
+	{
+		using Type = C;
+		const auto sbits = sm.getBitsetForSystems<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[sm.getSystemID<Type>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+
+	{
+		using Type = D;
+		const auto sbits = sm.getBitsetForSystems<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[sm.getSystemID<Type>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+
+	{
+		using Type = E;
+		const auto sbits = sm.getBitsetForSystems<Type>();
+		Engine::ECS::ComponentBitset bits;
+		bits[sm.getSystemID<Type>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+}
+
+TEST_F(SystemManagerTest, BitsetForSystemsMultiple) {
+	{
+		const auto sbits = sm.getBitsetForSystems<A>();
+		Engine::ECS::SystemBitset bits;
+		bits[sm.getSystemID<A>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+
+	{
+		const auto sbits = sm.getBitsetForSystems<A, B>();
+		Engine::ECS::SystemBitset bits;
+		bits[sm.getSystemID<A>()] = true;
+		bits[sm.getSystemID<B>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+
+	{
+		const auto sbits = sm.getBitsetForSystems<A, B, C>();
+		Engine::ECS::SystemBitset bits;
+		bits[sm.getSystemID<A>()] = true;
+		bits[sm.getSystemID<B>()] = true;
+		bits[sm.getSystemID<C>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+
+	{
+		const auto sbits = sm.getBitsetForSystems<A, B, C, D>();
+		Engine::ECS::SystemBitset bits;
+		bits[sm.getSystemID<A>()] = true;
+		bits[sm.getSystemID<B>()] = true;
+		bits[sm.getSystemID<C>()] = true;
+		bits[sm.getSystemID<D>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+
+	{
+		const auto sbits = sm.getBitsetForSystems<A, B, C, D, E>();
+		Engine::ECS::SystemBitset bits;
+		bits[sm.getSystemID<A>()] = true;
+		bits[sm.getSystemID<B>()] = true;
+		bits[sm.getSystemID<C>()] = true;
+		bits[sm.getSystemID<D>()] = true;
+		bits[sm.getSystemID<E>()] = true;
+		ASSERT_EQ(sbits, bits);
+	}
+}
+
