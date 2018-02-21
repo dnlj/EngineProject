@@ -1,5 +1,8 @@
 #pragma once
 
+// Engine
+#include <Engine/Engine.hpp>
+
 // Static members
 namespace Engine::ECS {
 	template<class System, class>
@@ -35,10 +38,18 @@ namespace Engine::ECS {
 
 	template<class System, class>
 	void SystemManager::registerSystem() {
-		const auto sid = getNextSystemID();
-		globalToLocalID[getGlobalSystemID<System>()] = sid;
+		const auto gsid = getGlobalSystemID<System>();
 
+		if (globalToLocalID[gsid] != static_cast<SystemID>(-1)) {
+			ENGINE_WARN("Each system may only be registered once per SystemManager.");
+			return;
+		}
+
+		const auto sid = getNextSystemID();
+
+		globalToLocalID[gsid] = sid;
 		systems[sid] = new System();
+
 		const auto& system = getSystem<System>();
 
 		// Update priorities

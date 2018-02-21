@@ -21,6 +21,9 @@ namespace Engine::ECS {
 }
 
 namespace Engine::ECS {
+	SystemManager::SystemManager() {
+		std::fill(globalToLocalID.begin(), globalToLocalID.end(), static_cast<SystemID>(-1));
+	}
 	SystemID SystemManager::getNextSystemID() {
 		#if defined(DEBUG)
 			if (nextID >= MAX_SYSTEMS) {

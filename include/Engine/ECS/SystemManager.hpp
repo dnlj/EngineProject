@@ -25,6 +25,11 @@ namespace Engine::ECS {
 
 		public:
 			/**
+			 * @brief Constructor.
+			 */
+			SystemManager();
+
+			/**
 			 * @brief Get the id associated with a system.
 			 * @tparam System The system.
 			 * @return The id associated with @p System.
