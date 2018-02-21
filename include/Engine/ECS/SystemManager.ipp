@@ -2,7 +2,7 @@
 
 // Static members
 namespace Engine::ECS {
-	template<class System>
+	template<class System, class>
 	SystemID SystemManager::getGlobalSystemID() {
 		const static SystemID id = getNextGlobalSystemID();
 		return id;

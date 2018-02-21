@@ -20,7 +20,7 @@ namespace Engine::ECS {
 			 * @tparam System The system.
 			 * @return The global id of @p System.
 			 */
-			template<class System>
+			template<class System, class = std::enable_if_t<IsSystem<System>::value>>
 			static SystemID getGlobalSystemID();
 
 		public:
