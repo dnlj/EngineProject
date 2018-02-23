@@ -71,7 +71,7 @@ namespace Engine::ECS {
 			ComponentID nextID = 0;
 
 			/** The array used for translating from global to local ids */
-			std::array<ComponentID, MAX_COMPONENTS> globalToLocalID;
+			std::array<ComponentID, MAX_COMPONENTS_GLOBAL> globalToLocalID;
 
 			/** The map used for translating from strings to local ids */
 			std::unordered_map<std::string, ComponentID> nameToID;

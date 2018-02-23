@@ -11,7 +11,7 @@ namespace Engine::ECS {
 		static ComponentID nextID = 0;
 
 		#if defined(DEBUG)
-			if (nextID >= MAX_COMPONENTS) {
+			if (nextID >= MAX_COMPONENTS_GLOBAL) {
 				ENGINE_ERROR("Attempting to generate invalid global component ids.");
 			}
 		#endif
@@ -38,7 +38,7 @@ namespace Engine::ECS{
 
 	ComponentID ComponentManager::getComponentID(ComponentID gcid) {
 		#if defined(DEBUG)
-			if (gcid >= MAX_COMPONENTS) {
+			if (gcid >= MAX_COMPONENTS_GLOBAL) {
 				ENGINE_ERROR("Attempting to get the local id of an invalid global component id.");
 			}
 		#endif

@@ -7,6 +7,9 @@ namespace Engine::ECS {
 	/** The maximum number of components registrable. Ideally this would be exactly the number of components used. */
 	constexpr size_t MAX_COMPONENTS = 64;
 
+	/** The maximum number of components registrable across the whole program. */
+	constexpr size_t MAX_COMPONENTS_GLOBAL = 128;
+
 	/** The maximum number of systems registrable. Ideally this would be exactly the number of systems used. */
 	constexpr size_t MAX_SYSTEMS = 64;
 
