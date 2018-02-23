@@ -56,6 +56,13 @@ namespace Engine::ECS {
 		// Get the system
 		const auto& system = getSystem<System>();
 
+		// Register functions
+		systems.onEntityCreated[sid] = &SystemManager::onEntityCreatedCall<System>;
+		systems.onEntityDestroyed[sid] = &SystemManager::onEntityDestroyedCall<System>;
+		systems.onComponentAdded[sid] = &SystemManager::onComponentAddedCall<System>;
+		systems.onComponentRemoved[sid] = &SystemManager::onComponentRemovedCall<System>;
+		systems.run[sid] = &SystemManager::runCall<System>;
+
 		// Update priorities
 		systems.priority[sid] |= system.priorityBefore;
 
@@ -65,4 +72,29 @@ namespace Engine::ECS {
 			}
 		}
 	}
+
+	template<class System>
+	void SystemManager::onEntityCreatedCall(EntityID eid) {
+		getSystem<System>().onEntityCreated(Entity{eid});
+	}
+
+	template<class System>
+	void SystemManager::onEntityDestroyedCall(EntityID eid) {
+		getSystem<System>().onEntityDestroyed(Entity{eid});
+	}
+
+	template<class System>
+	void SystemManager::onComponentAddedCall(EntityID eid, ComponentID cid) {
+		getSystem<System>().onComponentAdded(Entity{eid}, cid);
+	}
+
+	template<class System>
+	void SystemManager::onComponentRemovedCall(EntityID eid, ComponentID cid) {
+		getSystem<System>().onComponentRemoved(Entity{eid}, cid);
+	}
+	template<class System>
+	void SystemManager::runCall(float dt) {
+		getSystem<System>().run(dt);
+	}
+
 }

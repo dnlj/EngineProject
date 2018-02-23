@@ -108,6 +108,49 @@ namespace Engine::ECS {
 			 * @return The id associated with @p gsid.
 			 */
 			SystemID getSystemID(SystemID gsid);
+
+			/**
+			 * @brief Calls the onEntityCreated member function on the system.
+			 * @tparam System The type of the system.
+			 * @param[in] eid The id of the entity being created.
+			 */
+			template<class System>
+			void onEntityCreatedCall(EntityID eid);
+
+			/**
+			 * @brief Calls the onEntityDestroyed member function on the system.
+			 * @tparam System The type of the system.
+			 * @param[in] eid The id of the entity being destroyed.
+			 */
+			template<class System>
+			void onEntityDestroyedCall(EntityID eid);
+
+			/**
+			 * @brief Calls the onComponentAdded member function on the system.
+			 * @tparam System The type of the system.
+			 * @param[in] eid The id of the entity being added to.
+			 * @param[in] cid The id of the component being added.
+			 */
+			template<class System>
+			void onComponentAddedCall(EntityID eid, ComponentID cid);
+
+			/**
+			 * @brief Calls the onComponentRemoved member function on the system.
+			 * @tparam System The type of the system.
+			 * @param[in] eid The id of the entity being removed from.
+			 * @param[in] cid The id of the component being removed.
+			 */
+			template<class System>
+			void onComponentRemovedCall(EntityID eid, ComponentID cid);
+
+			/**
+			 * @brief Calls the run member function on the system.
+			 * @tparam System The type of the system.
+			 * @param[in] dt The time delta between calls.
+			 */
+			template<class System>
+			void runCall(float dt);
+
 	};
 }
 
