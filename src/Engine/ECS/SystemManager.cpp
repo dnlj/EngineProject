@@ -50,4 +50,34 @@ namespace Engine::ECS {
 
 		return sid;
 	}
+
+	void SystemManager::onEntityCreatedAll(EntityID eid) {
+		for (size_t i = 0; i < systems.count; ++i) {
+			(this->*systems.onEntityCreated[i])(eid);
+		}
+	}
+
+	void SystemManager::onComponentAddedAll(EntityID eid, ComponentID cid) {
+		for (size_t i = 0; i < systems.count; ++i) {
+			(this->*systems.onComponentAdded[i])(eid, cid);
+		}
+	}
+
+	void SystemManager::onComponentRemovedAll(EntityID eid, ComponentID cid) {
+		for (size_t i = 0; i < systems.count; ++i) {
+			(this->*systems.onComponentRemoved[i])(eid, cid);
+		}
+	}
+
+	void SystemManager::onEntityDestroyedAll(EntityID eid) {
+		for (size_t i = 0; i < systems.count; ++i) {
+			(this->*systems.onEntityDestroyed[i])(eid);
+		}
+	}
+
+	void SystemManager::runAll(float dt) {
+		for (size_t i = 0; i < systems.count; ++i) {
+			(this->*systems.run[i])(dt);
+		}
+	}
 }

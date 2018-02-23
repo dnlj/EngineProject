@@ -67,6 +67,38 @@ namespace Engine::ECS {
 			template<class System, class... Args, class = std::enable_if_t<IsSystem<System>::value>>
 			void registerSystem(Args&&... args);
 
+			/**
+			 * @brief Runs onEntityCreated member function on all registered systems.
+			 * @param[in] eid The id of the entity being created.
+			 */
+			void onEntityCreatedAll(EntityID eid);
+
+			/**
+			 * @brief Runs onComponentAdded member function on all registered systems.
+			 * @param[in] eid The id of the entity being added to.
+			 * @param[in] cid The id of the component being added.
+			 */
+			void onComponentAddedAll(EntityID eid, ComponentID cid);
+
+			/**
+			 * @brief Runs onComponentRemoved member function on all registered systems.
+			 * @param[in] eid The id of the entity being removed from.
+			 * @param[in] cid The id of the component being removed.
+			 */
+			void onComponentRemovedAll(EntityID eid, ComponentID cid);
+
+			/**
+			 * @brief Runs the onEntityDestroyed member function on all registered systems.
+			 * @param[in] eid The id of the entity being destroyed.
+			 */
+			void onEntityDestroyedAll(EntityID eid);
+
+			/**
+			 * @brief Runs the run member function on all registered systems.
+			 * @param[in] dt The time delta between calls.
+			 */
+			void runAll(float dt);
+
 		private:
 			/** The next id to use for systems */
 			SystemID nextID = 0;
