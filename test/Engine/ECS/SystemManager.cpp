@@ -234,7 +234,8 @@ namespace {
 TEST_F(SystemManagerTest, ToManySystemsThrows) {
 	#if defined(DEBUG)
 		Engine::ECS::SystemManager sm2;
-		constexpr auto num = Engine::ECS::MAX_SYSTEMS - 1 - EXTRA_SYSTEM_COUNT;
+		constexpr auto num = Engine::ECS::MAX_SYSTEMS;
+
 		// Generating to many systems
 		recursiveRegisterWith<num>(sm2);
 

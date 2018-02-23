@@ -104,7 +104,7 @@ namespace Engine::ECS {
 			SystemID nextID = 0;
 
 			/** The array used for translating from global to local ids */
-			std::array<SystemID, MAX_SYSTEMS> globalToLocalID;
+			std::array<SystemID, MAX_SYSTEMS_GLOBAL> globalToLocalID;
 
 			struct {
 				using EntityModifyFunction = void(SystemManager::*)(EntityID);

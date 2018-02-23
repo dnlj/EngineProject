@@ -11,7 +11,7 @@ namespace Engine::ECS {
 		static SystemID id = 0;
 
 		#if defined(DEBUG)
-			if (id >= MAX_SYSTEMS) {
+			if (id >= MAX_SYSTEMS_GLOBAL) {
 				ENGINE_ERROR("Attempting to generate invalid global system id.");
 			}
 		#endif
@@ -39,10 +39,6 @@ namespace Engine::ECS {
 		const auto sid = globalToLocalID[gsid];
 
 		#if defined(DEBUG)
-			if (gsid >= MAX_SYSTEMS) {
-				ENGINE_ERROR("Attempting to get the local id of an invalid local system id.");
-			}
-
 			if (sid >= nextID) {
 				ENGINE_ERROR("Attempting to get the local id of an nonregistered system.");
 			}

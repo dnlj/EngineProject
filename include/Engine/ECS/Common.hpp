@@ -10,6 +10,9 @@ namespace Engine::ECS {
 	/** The maximum number of systems registrable. Ideally this would be exactly the number of systems used. */
 	constexpr size_t MAX_SYSTEMS = 64;
 
+	/** The maximum number of systems registrable across the whole program. */
+	constexpr size_t MAX_SYSTEMS_GLOBAL = 128;
+
 	/** The type to use for entity ids. */
 	using EntityID = size_t;
 
