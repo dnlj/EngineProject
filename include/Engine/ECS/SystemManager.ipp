@@ -71,6 +71,9 @@ namespace Engine::ECS {
 				systems.priority[i][sid] = true;
 			}
 		}
+
+		// Increment count
+		++systems.count;
 	}
 
 	template<class System>
