@@ -74,11 +74,27 @@ namespace Engine::ECS {
 			/** The array used for translating from global to local ids */
 			std::array<SystemID, MAX_SYSTEMS> globalToLocalID;
 
-			/** The array used for storing system instances */
-			std::array<void*, MAX_SYSTEMS> systems;
+			struct {
+				using EntityModifyFunction = void(SystemManager::*)(EntityID);
+				using ComponentModifyFunction = void(SystemManager::*)(EntityID, ComponentID);
+				using RunFunction = void(SystemManager::*)(float);
 
-			/** The array used for storing system priorities */
-			std::array<SystemBitset, MAX_SYSTEMS> priority;
+				/** The number of registered systems */
+				size_t count;
+
+				/** The array used for storing system instances */
+				std::array<void*, MAX_SYSTEMS> system;
+
+				/** The array used for storing system priorities */
+				std::array<SystemBitset, MAX_SYSTEMS> priority;
+
+				// TODO: Doc
+				std::array<EntityModifyFunction, MAX_SYSTEMS> onEntityCreated;
+				std::array<EntityModifyFunction, MAX_SYSTEMS> onEntityDestroyed;
+				std::array<ComponentModifyFunction, MAX_SYSTEMS> onComponentAdded;
+				std::array<ComponentModifyFunction, MAX_SYSTEMS> onComponentRemoved;
+				std::array<RunFunction, MAX_SYSTEMS> run;
+			} systems;
 
 			/**
 			 * @brief Gets the next id to use for systems.

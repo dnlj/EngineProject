@@ -20,7 +20,7 @@ namespace Engine::ECS {
 
 	template<class System>
 	System& SystemManager::getSystem() {
-		return *static_cast<System*>(systems[getSystemID<System>()]);
+		return *static_cast<System*>(systems.system[getSystemID<System>()]);
 	}
 
 	template<class System1, class System2, class... Systems>
@@ -47,17 +47,21 @@ namespace Engine::ECS {
 
 		const auto sid = getNextSystemID();
 
+		// Set translation id
 		globalToLocalID[gsid] = sid;
-		systems[sid] = new System(std::forward<Args>(args)...);
 
+		// Create system
+		systems.system[sid] = new System(std::forward<Args>(args)...);
+
+		// Get the system
 		const auto& system = getSystem<System>();
 
 		// Update priorities
-		priority[sid] |= system.priorityBefore;
+		systems.priority[sid] |= system.priorityBefore;
 
 		for (size_t i = 0; i < system.priorityAfter.size(); ++i) {
 			if (system.priorityAfter[i]) {
-				priority[i][sid] = true;
+				systems.priority[i][sid] = true;
 			}
 		}
 	}
