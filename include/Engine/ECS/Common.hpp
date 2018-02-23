@@ -31,3 +31,12 @@ namespace Engine::ECS {
 	/** The bitset type used for storing system priorites */
 	using SystemBitset = std::bitset<MAX_SYSTEMS>;
 }
+
+// Asserts
+namespace Engine::ECS {
+	static_assert(MAX_COMPONENTS_GLOBAL < std::numeric_limits<ComponentID>::max(), "[Engine::ECS] MAX_COMPONENTS_GLOBAL must be one less than the maximum value for the type ComponentID.");
+	static_assert(MAX_COMPONENTS < MAX_COMPONENTS_GLOBAL, "[Engine::ECS] MAX_COMPONENTS must not be large than MAX_COMPONENTS_GLOBAL.");
+
+	static_assert(MAX_SYSTEMS_GLOBAL < std::numeric_limits<SystemID>::max(), "[Engine::ECS] MAX_SYSTEMS_GLOBAL must be one less than the maximum value for the type SystemID.");
+	static_assert(MAX_SYSTEMS < MAX_SYSTEMS_GLOBAL, "[Engine::ECS] MAX_SYSTEMS must not be large than MAX_SYSTEMS_GLOBAL.");
+}
