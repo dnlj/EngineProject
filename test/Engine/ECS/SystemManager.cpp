@@ -242,3 +242,99 @@ TEST_F(SystemManagerTest, ToManySystemsThrows) {
 		ASSERT_THROW(sm2.registerSystem<System<num>>(), Engine::FatalException);
 	#endif
 }
+
+TEST_F(SystemManagerTest, Sort) {
+	Engine::ECS::SystemManager sm;
+
+	int last = -1;
+
+	class TestSystem0 : public Engine::SystemBase {
+		private:
+			int& last;
+
+		public:
+			TestSystem0(int& last) : last{last} {
+			}
+
+			void run(float dt) {
+				ASSERT_EQ(last, 2);
+				last = 0;
+			};
+	};
+
+	class TestSystem1 : public Engine::SystemBase {
+		private:
+			int& last;
+
+		public:
+			TestSystem1(int& last) : last{last} {
+				priorityBefore[2] = true;
+			}
+
+			void run(float dt) {
+				ASSERT_EQ(last, -1);
+				last = 1;
+			};
+	};
+
+	class TestSystem2 : public Engine::SystemBase {
+		private:
+			int& last;
+
+		public:
+			TestSystem2(int& last) : last{last} {
+				priorityBefore[0] = true;
+			}
+
+			void run(float dt) {
+				ASSERT_EQ(last, 1);
+				last = 2;
+			};
+	};
+
+	sm.registerSystem<TestSystem0>(last);
+	sm.registerSystem<TestSystem1>(last);
+	sm.registerSystem<TestSystem2>(last);
+
+	sm.sort();
+
+	sm.run(1.0f / 60.0f);
+}
+
+TEST_F(SystemManagerTest, SortInvalid) {
+	Engine::ECS::SystemManager sm;
+
+	class TestSystem0 : public Engine::SystemBase {
+		public:
+			TestSystem0() {
+				priorityBefore[1] = true;
+			}
+
+			void run(float dt) {};
+	};
+
+	class TestSystem1 : public Engine::SystemBase {
+		public:
+			TestSystem1() {
+				priorityBefore[2] = true;
+			}
+
+			void run(float dt) {};
+	};
+
+	class TestSystem2 : public Engine::SystemBase {
+		public:
+			TestSystem2() {
+				priorityBefore[0] = true;
+			}
+
+			void run(float dt) {};
+	};
+
+	sm.registerSystem<TestSystem0>();
+	sm.registerSystem<TestSystem1>();
+	sm.registerSystem<TestSystem2>();
+
+	ASSERT_THROW(sm.sort(), Engine::FatalException);
+}
+

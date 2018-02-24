@@ -99,6 +99,11 @@ namespace Engine::ECS {
 			 */
 			void run(float dt);
 
+			/**
+			 * @brief Sorts all registered systems.
+			 */
+			void sort();
+
 		private:
 			/** The next id to use for systems */
 			SystemID nextID = 0;
@@ -112,7 +117,7 @@ namespace Engine::ECS {
 				using RunFunction = void(SystemManager::*)(float);
 
 				/** The number of registered systems */
-				size_t count;
+				size_t count = 0;
 
 				/** The array used for storing system instances */
 				std::array<void*, MAX_SYSTEMS> system;
