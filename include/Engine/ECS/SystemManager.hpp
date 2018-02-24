@@ -125,11 +125,19 @@ namespace Engine::ECS {
 				/** The array used for storing system priorities */
 				std::array<SystemBitset, MAX_SYSTEMS> priority;
 
-				// TODO: Doc
+				/** Stores functions to call whenever an entity is created. */
 				std::array<EntityModifyFunction, MAX_SYSTEMS> onEntityCreated;
+
+				/** Stores functions to call whenever an entity is destroyed. */
 				std::array<EntityModifyFunction, MAX_SYSTEMS> onEntityDestroyed;
+
+				/** Stores functions to call whenever an component is added to an entity. */
 				std::array<ComponentModifyFunction, MAX_SYSTEMS> onComponentAdded;
+
+				/** Stores functions to call whenever an component is removed from an entity. */
 				std::array<ComponentModifyFunction, MAX_SYSTEMS> onComponentRemoved;
+
+				/** Stores functions to call each update. */
 				std::array<RunFunction, MAX_SYSTEMS> run;
 			} systems;
 
