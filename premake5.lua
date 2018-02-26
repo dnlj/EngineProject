@@ -1,4 +1,4 @@
-require "premake5/actions"
+require "build/action_clean"
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -17,6 +17,7 @@ action_clean_directories = {
 }	
 
 action_clean_files = {
+	-- Visual Studio files
 	"./".. PROJECT_NAME ..".vcxproj",
 	"./".. PROJECT_NAME ..".vcxproj.filters",
 	"./".. PROJECT_NAME ..".vcxproj.user",
