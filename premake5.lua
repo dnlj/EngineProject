@@ -42,7 +42,10 @@ workspace(PROJECT_NAME .."Workspace")
 	language "C++"
 	rtti "Off"
 	warnings "Default"
-	flags {"FatalWarnings"}
+	flags {
+		"FatalWarnings",
+		"MultiProcessorCompile",
+	}
 	targetdir "./bin/%{cfg.buildcfg}_%{cfg.platform}"
 	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
 	startproject(PROJECT_NAME)
