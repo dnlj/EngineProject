@@ -36,16 +36,6 @@ namespace Engine::ECS{
 		return nextID++;
 	}
 
-	ComponentID ComponentManager::getComponentID(ComponentID gcid) {
-		#if defined(DEBUG)
-			if (gcid >= MAX_COMPONENTS_GLOBAL) {
-				ENGINE_ERROR("Attempting to get the local id of an invalid global component id.");
-			}
-		#endif
-
-		return globalToLocalID[gcid];
-	}
-
 	ComponentID ComponentManager::getComponentID(const std::string& name) {
 		return nameToID[name];
 	}

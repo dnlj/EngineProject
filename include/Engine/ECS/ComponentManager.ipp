@@ -15,7 +15,7 @@ namespace Engine::ECS {
 namespace Engine::ECS {
 	template<class Component>
 	ComponentID ComponentManager::getComponentID() {
-		return getComponentID(getGlobalComponentID<Component>());
+		return globalToLocalID[getGlobalComponentID<Component>()];
 	}
 
 	template<class Component>

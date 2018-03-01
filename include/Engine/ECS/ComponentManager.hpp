@@ -81,13 +81,6 @@ namespace Engine::ECS {
 			 * @return The next id.
 			 */
 			ComponentID getNextComponentID();
-
-			/**
-			 * @brief Get the id associated with a global component id.
-			 * @param gcid The global id.
-			 * @return The id associated with 
-			 */
-			ComponentID getComponentID(ComponentID gcid);
 	};
 }
 
