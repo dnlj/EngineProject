@@ -1,5 +1,6 @@
 // Engine
 #include <Engine/ECS/ComponentManager.hpp>
+#include <Engine/FatalException.hpp>
 
 // GoogleTest
 #include<gtest/gtest.h>
@@ -10,6 +11,7 @@ namespace {
 	class C {};
 	class D {};
 	class E {};
+	class Nonregistered {};
 
 	class ComponentManagerTest : public testing::Test {
 		public:
@@ -107,4 +109,11 @@ TEST_F(ComponentManagerTest, BitsetForComponentsMultiple) {
 	bits[cm.getComponentID<C>()] = true;
 
 	ASSERT_EQ(cbits, bits);
+}
+
+TEST_F(ComponentManagerTest, ComponentIDThrows) {
+	// Getting the id of a nonregistered component
+	#if defined(DEBUG)
+		ASSERT_THROW(cm.getComponentID<Nonregistered>(), Engine::FatalException);
+	#endif
 }

@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/ECS/ComponentManager.hpp>
+#include <Engine/Engine.hpp>
 
 // Static members
 namespace Engine::ECS {
@@ -15,7 +16,15 @@ namespace Engine::ECS {
 namespace Engine::ECS {
 	template<class Component>
 	ComponentID ComponentManager::getComponentID() {
-		return globalToLocalID[getGlobalComponentID<Component>()];
+		const auto cid = globalToLocalID[getGlobalComponentID<Component>()];
+
+		#if defined(DEBUG)
+			if (cid >= nextID) {
+				ENGINE_ERROR("Attempting to get the local id of a nonregistered component.");
+			}
+		#endif
+
+		return cid;
 	}
 
 	template<class Component>
