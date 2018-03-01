@@ -35,18 +35,6 @@ namespace Engine::ECS {
 		return nextID++;
 	}
 
-	SystemID SystemManager::getSystemID(SystemID gsid) {
-		const auto sid = globalToLocalID[gsid];
-
-		#if defined(DEBUG)
-			if (sid >= nextID) {
-				ENGINE_ERROR("Attempting to get the local id of an nonregistered system.");
-			}
-		#endif
-
-		return sid;
-	}
-
 	void SystemManager::onEntityCreated(EntityID eid) {
 		for (size_t i = 0; i < systems.count; ++i) {
 			(this->*systems.onEntityCreated[i])(eid);

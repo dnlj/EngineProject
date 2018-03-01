@@ -15,7 +15,15 @@ namespace Engine::ECS {
 namespace Engine::ECS {
 	template<class System>
 	SystemID SystemManager::getSystemID() {
-		return getSystemID(getGlobalSystemID<System>());
+		const auto sid = globalToLocalID[getGlobalSystemID<System>()];
+
+		#if defined(DEBUG)
+			if (sid >= nextID) {
+				ENGINE_ERROR("Attempting to get the local id of an nonregistered system.");
+			}
+		#endif
+
+		return sid;
 	}
 
 	template<class System>

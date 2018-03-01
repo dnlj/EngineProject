@@ -148,13 +148,6 @@ namespace Engine::ECS {
 			SystemID getNextSystemID();
 
 			/**
-			 * @brief Get the id associated with a global system id.
-			 * @param[in] gsid The global id.
-			 * @return The id associated with @p gsid.
-			 */
-			SystemID getSystemID(SystemID gsid);
-
-			/**
 			 * @brief Calls the onEntityCreated member function on the system.
 			 * @tparam System The type of the system.
 			 * @param[in] eid The id of the entity being created.
