@@ -25,6 +25,14 @@ namespace Engine::ECS {
 		std::fill(globalToLocalID.begin(), globalToLocalID.end(), static_cast<SystemID>(-1));
 	}
 
+	SystemManager::~SystemManager() {
+		for (const auto& system : systems) {
+			if (system != nullptr) {
+				delete system;
+			}
+		}
+	}
+
 	SystemID SystemManager::getNextSystemID() {
 		#if defined(DEBUG)
 			if (nextID >= MAX_SYSTEMS) {
@@ -36,40 +44,40 @@ namespace Engine::ECS {
 	}
 
 	void SystemManager::onEntityCreated(EntityID eid) {
-		for (size_t i = 0; i < systems.count; ++i) {
-			(this->*systems.onEntityCreated[i])(eid);
+		for (size_t i = 0; i < count; ++i) {
+			systems[i]->onEntityCreated(eid);
 		}
 	}
 
 	void SystemManager::onComponentAdded(EntityID eid, ComponentID cid) {
-		for (size_t i = 0; i < systems.count; ++i) {
-			(this->*systems.onComponentAdded[i])(eid, cid);
+		for (size_t i = 0; i < count; ++i) {
+			systems[i]->onComponentAdded(eid, cid);
 		}
 	}
 
 	void SystemManager::onComponentRemoved(EntityID eid, ComponentID cid) {
-		for (size_t i = 0; i < systems.count; ++i) {
-			(this->*systems.onComponentRemoved[i])(eid, cid);
+		for (size_t i = 0; i < count; ++i) {
+			systems[i]->onComponentRemoved(eid, cid);
 		}
 	}
 
 	void SystemManager::onEntityDestroyed(EntityID eid) {
-		for (size_t i = 0; i < systems.count; ++i) {
-			(this->*systems.onEntityDestroyed[i])(eid);
+		for (size_t i = 0; i < count; ++i) {
+			systems[i]->onEntityDestroyed(eid);
 		}
 	}
 
 	void SystemManager::run(float dt) {
-		for (size_t i = 0; i < systems.count; ++i) {
-			(this->*systems.run[i])(dt);
+		for (size_t i = 0; i < count; ++i) {
+			systems[i]->run(dt);
 		}
 	}
 
 	void SystemManager::sort() {
 		// Sort the graph
-		std::vector<int8_t> nodes(systems.count); // 0 = no mark  1 = temp mark  2 = perma mark
+		std::vector<int8_t> nodes(count); // 0 = no mark  1 = temp mark  2 = perma mark
 		std::vector<SystemID> order; // The reverse order of the systems
-		order.reserve(systems.count);
+		order.reserve(count);
 
 		// Recursively visit all children of node using DFS
 		auto visit = [this, &order, &nodes](SystemID node, auto& visit) {
@@ -84,8 +92,8 @@ namespace Engine::ECS {
 			// Continue visiting
 			nodes[node] = 1;
 
-			for (size_t i = 0; i < systems.priority[node].size(); ++i) {
-				if (systems.priority[node][i]) {
+			for (size_t i = 0; i < priority[node].size(); ++i) {
+				if (priority[node][i]) {
 					visit(i, visit);
 				}
 			}
@@ -95,7 +103,7 @@ namespace Engine::ECS {
 		};
 
 		// Visit all unvisited nodes
-		for (size_t i = 0; i < systems.count; ++i) {
+		for (size_t i = 0; i < count; ++i) {
 			if (nodes[i] == 0) {
 				visit(i, visit);
 			}
@@ -103,25 +111,21 @@ namespace Engine::ECS {
 
 		// Sort the containers
 		auto reorder = [this, &order](auto& container) {
-			std::remove_reference_t<decltype(container)> sorted;
+			std::remove_reference_t<decltype(container)> sorted{};
 
-			for (size_t i = systems.count; --i != static_cast<size_t>(-1);) {
-				sorted[systems.count - i - 1] = std::move(container[order[i]]);
+			for (size_t i = count; --i != static_cast<size_t>(-1);) {
+				sorted[count - i - 1] = std::move(container[order[i]]);
 			}
 
 			container = std::move(sorted);
 		};
 
 		// Do the sorting
-		reorder(systems.onEntityCreated);
-		reorder(systems.onEntityDestroyed);
-		reorder(systems.onComponentAdded);
-		reorder(systems.onComponentRemoved);
-		reorder(systems.run);
-		reorder(systems.priority);
+		reorder(systems);
+		reorder(priority);
 
-		for (size_t i = 0; i < systems.count; ++i) {
-			reorder(systems.priority[i]);
+		for (size_t i = 0; i < count; ++i) {
+			reorder(priority[i]);
 		}
 
 		// Update gsid to sid translation
@@ -134,8 +138,8 @@ namespace Engine::ECS {
 				}
 			}
 
-			for (size_t i = systems.count; --i != static_cast<size_t>(-1);) {
-				const auto idx = systems.count - i - 1;
+			for (size_t i = count; --i != static_cast<size_t>(-1);) {
+				const auto idx = count - i - 1;
 				globalToLocalID[localToGlobalID[idx]] = order[i];
 			}
 		}

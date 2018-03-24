@@ -1,5 +1,4 @@
 // Engine
-#include <Engine/SystemBase.hpp>
 #include <Engine/ECS/SystemManager.hpp>
 
 // GoogleTest
@@ -10,17 +9,14 @@ namespace {
 	constexpr size_t EXTRA_SYSTEM_COUNT = 2;
 
 	template<int I>
-	class System : public Engine::SystemBase {
+	class System : public Engine::ECS::System {
 		public:
 			int value = 0;
-			void run(float) {};
 	};
 
-	class Foo : public Engine::SystemBase {
+	class Foo : public Engine::ECS::System {
 		public:
 			Foo() = delete;
-			void run(float) {};
-
 			Foo(int value1, int value2, int value3) : value1{value1}, value2{value2}, value3{value3} {};
 
 			int value1 = 0;
@@ -28,15 +24,13 @@ namespace {
 			int value3 = 0;
 	};
 
-	class Bar : public Engine::SystemBase {
+	class Bar : public Engine::ECS::System {
 		public:
-		Bar() = delete;
-		void run(float) {};
+			Bar() = delete;
+			Bar(float value1, float value2) : value1{value1}, value2{value2} {};
 
-		Bar(float value1, float value2) : value1{value1}, value2{value2} {};
-
-		float value1 = 0.0f;
-		float value2 = 0.0f;
+			float value1 = 0.0f;
+			float value2 = 0.0f;
 	};
 
 	using A = System<0>;
@@ -248,7 +242,7 @@ TEST_F(SystemManagerTest, Sort) {
 
 	int last = -1;
 
-	class TestSystem0 : public Engine::SystemBase {
+	class TestSystem0 : public Engine::ECS::System {
 		private:
 			int& last;
 
@@ -262,7 +256,7 @@ TEST_F(SystemManagerTest, Sort) {
 			};
 	};
 
-	class TestSystem1 : public Engine::SystemBase {
+	class TestSystem1 : public Engine::ECS::System {
 		private:
 			int& last;
 
@@ -277,7 +271,7 @@ TEST_F(SystemManagerTest, Sort) {
 			};
 	};
 
-	class TestSystem2 : public Engine::SystemBase {
+	class TestSystem2 : public Engine::ECS::System {
 		private:
 			int& last;
 
@@ -304,7 +298,7 @@ TEST_F(SystemManagerTest, Sort) {
 TEST_F(SystemManagerTest, SortInvalid) {
 	Engine::ECS::SystemManager sm;
 
-	class TestSystem0 : public Engine::SystemBase {
+	class TestSystem0 : public Engine::ECS::System {
 		public:
 			TestSystem0() {
 				priorityBefore[1] = true;
@@ -313,7 +307,7 @@ TEST_F(SystemManagerTest, SortInvalid) {
 			void run(float dt) {};
 	};
 
-	class TestSystem1 : public Engine::SystemBase {
+	class TestSystem1 : public Engine::ECS::System {
 		public:
 			TestSystem1() {
 				priorityBefore[2] = true;
@@ -322,7 +316,7 @@ TEST_F(SystemManagerTest, SortInvalid) {
 			void run(float dt) {};
 	};
 
-	class TestSystem2 : public Engine::SystemBase {
+	class TestSystem2 : public Engine::ECS::System {
 		public:
 			TestSystem2() {
 				priorityBefore[0] = true;

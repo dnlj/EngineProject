@@ -7,6 +7,28 @@
 #include <Engine/ECS/Common.hpp>
 
 namespace Engine::ECS {
+	// TODO: Doc
+	// TODO: Move
+	class System {
+		public:
+			// TODO: Ideally this would be const/static
+			/** The bitset of systems to have higher priority than. */
+			Engine::ECS::SystemBitset priorityBefore;
+
+			// TODO: Ideally this would be const/static
+			/** The bitset of systems to have lower priority than. */
+			Engine::ECS::SystemBitset priorityAfter;
+
+			virtual ~System() {}; // TODO: make pure virtual
+			virtual void onEntityCreated(EntityID eid) {};
+			virtual void onEntityDestroyed(EntityID eid) {};
+			virtual void onComponentAdded(EntityID eid, ComponentID cid) {};
+			virtual void onComponentRemoved(EntityID eid, ComponentID cid) {};
+			virtual void run(float dt) {};
+	};
+}
+
+namespace Engine::ECS {
 	class SystemManager {
 		private:
 			/**
@@ -20,7 +42,7 @@ namespace Engine::ECS {
 			 * @tparam System The system.
 			 * @return The global id of @p System.
 			 */
-			template<class System, class = std::enable_if_t<IsSystem<System>::value>>
+			template<class System, class = std::enable_if_t<std::is_base_of_v<ECS::System, System>>>
 			static SystemID getGlobalSystemID();
 
 		public:
@@ -28,6 +50,11 @@ namespace Engine::ECS {
 			 * @brief Constructor.
 			 */
 			SystemManager();
+
+			/**
+			 * @brief Destructor.
+			 */
+			~SystemManager();
 
 			/**
 			 * @brief Get the id associated with a system.
@@ -64,7 +91,7 @@ namespace Engine::ECS {
 			 * @tparam Args the type of @p args.
 			 * @param[in,out] args The arguments to foward to the constructor of @p System.
 			 */
-			template<class System, class... Args, class = std::enable_if_t<IsSystem<System>::value>>
+			template<class System, class... Args, class = std::enable_if_t<std::is_base_of_v<ECS::System, System>>>
 			void registerSystem(Args&&... args);
 
 			/**
@@ -111,84 +138,24 @@ namespace Engine::ECS {
 			/** The array used for translating from global to local ids */
 			std::array<SystemID, MAX_SYSTEMS_GLOBAL> globalToLocalID;
 
-			struct {
-				using EntityModifyFunction = void(SystemManager::*)(EntityID);
-				using ComponentModifyFunction = void(SystemManager::*)(EntityID, ComponentID);
-				using RunFunction = void(SystemManager::*)(float);
+			using EntityModifyFunction = void(SystemManager::*)(EntityID);
+			using ComponentModifyFunction = void(SystemManager::*)(EntityID, ComponentID);
+			using RunFunction = void(SystemManager::*)(float);
 
-				/** The number of registered systems */
-				size_t count = 0;
+			/** The number of registered systems */
+			size_t count = 0;
 
-				/** The array used for storing system instances */
-				std::array<void*, MAX_SYSTEMS> system;
+			/** The array used for storing system instances */
+			std::array<System*, MAX_SYSTEMS> systems = {};
 
-				/** The array used for storing system priorities */
-				std::array<SystemBitset, MAX_SYSTEMS> priority;
-
-				/** Stores functions to call whenever an entity is created. */
-				std::array<EntityModifyFunction, MAX_SYSTEMS> onEntityCreated;
-
-				/** Stores functions to call whenever an entity is destroyed. */
-				std::array<EntityModifyFunction, MAX_SYSTEMS> onEntityDestroyed;
-
-				/** Stores functions to call whenever an component is added to an entity. */
-				std::array<ComponentModifyFunction, MAX_SYSTEMS> onComponentAdded;
-
-				/** Stores functions to call whenever an component is removed from an entity. */
-				std::array<ComponentModifyFunction, MAX_SYSTEMS> onComponentRemoved;
-
-				/** Stores functions to call each update. */
-				std::array<RunFunction, MAX_SYSTEMS> run;
-			} systems;
+			/** The array used for storing system priorities */
+			std::array<SystemBitset, MAX_SYSTEMS> priority = {};
 
 			/**
 			 * @brief Gets the next id to use for systems.
 			 * @return The next id.
 			 */
 			SystemID getNextSystemID();
-
-			/**
-			 * @brief Calls the onEntityCreated member function on the system.
-			 * @tparam System The type of the system.
-			 * @param[in] eid The id of the entity being created.
-			 */
-			template<class System>
-			void onEntityCreatedCall(EntityID eid);
-
-			/**
-			 * @brief Calls the onEntityDestroyed member function on the system.
-			 * @tparam System The type of the system.
-			 * @param[in] eid The id of the entity being destroyed.
-			 */
-			template<class System>
-			void onEntityDestroyedCall(EntityID eid);
-
-			/**
-			 * @brief Calls the onComponentAdded member function on the system.
-			 * @tparam System The type of the system.
-			 * @param[in] eid The id of the entity being added to.
-			 * @param[in] cid The id of the component being added.
-			 */
-			template<class System>
-			void onComponentAddedCall(EntityID eid, ComponentID cid);
-
-			/**
-			 * @brief Calls the onComponentRemoved member function on the system.
-			 * @tparam System The type of the system.
-			 * @param[in] eid The id of the entity being removed from.
-			 * @param[in] cid The id of the component being removed.
-			 */
-			template<class System>
-			void onComponentRemovedCall(EntityID eid, ComponentID cid);
-
-			/**
-			 * @brief Calls the run member function on the system.
-			 * @tparam System The type of the system.
-			 * @param[in] dt The time delta between calls.
-			 */
-			template<class System>
-			void runCall(float dt);
-
 	};
 }
 

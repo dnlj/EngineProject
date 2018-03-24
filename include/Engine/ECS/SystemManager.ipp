@@ -28,7 +28,7 @@ namespace Engine::ECS {
 
 	template<class System>
 	System& SystemManager::getSystem() {
-		return *static_cast<System*>(systems.system[getSystemID<System>()]);
+		return *static_cast<System*>(systems[getSystemID<System>()]);
 	}
 
 	template<class System1, class System2, class... Systems>
@@ -59,53 +59,21 @@ namespace Engine::ECS {
 		globalToLocalID[gsid] = sid;
 
 		// Create system
-		systems.system[sid] = new System(std::forward<Args>(args)...);
+		systems[sid] = new System(std::forward<Args>(args)...);
 
 		// Get the system
 		const auto& system = getSystem<System>();
 
-		// Register functions
-		systems.onEntityCreated[sid] = &SystemManager::onEntityCreatedCall<System>;
-		systems.onEntityDestroyed[sid] = &SystemManager::onEntityDestroyedCall<System>;
-		systems.onComponentAdded[sid] = &SystemManager::onComponentAddedCall<System>;
-		systems.onComponentRemoved[sid] = &SystemManager::onComponentRemovedCall<System>;
-		systems.run[sid] = &SystemManager::runCall<System>;
-
 		// Update priorities
-		systems.priority[sid] |= system.priorityBefore;
+		priority[sid] |= system.priorityBefore;
 
 		for (size_t i = 0; i < system.priorityAfter.size(); ++i) {
 			if (system.priorityAfter[i]) {
-				systems.priority[i][sid] = true;
+				priority[i][sid] = true;
 			}
 		}
 
 		// Increment count
-		++systems.count;
+		++count;
 	}
-
-	template<class System>
-	void SystemManager::onEntityCreatedCall(EntityID eid) {
-		getSystem<System>().onEntityCreated(Entity{eid});
-	}
-
-	template<class System>
-	void SystemManager::onEntityDestroyedCall(EntityID eid) {
-		getSystem<System>().onEntityDestroyed(Entity{eid});
-	}
-
-	template<class System>
-	void SystemManager::onComponentAddedCall(EntityID eid, ComponentID cid) {
-		getSystem<System>().onComponentAdded(Entity{eid}, cid);
-	}
-
-	template<class System>
-	void SystemManager::onComponentRemovedCall(EntityID eid, ComponentID cid) {
-		getSystem<System>().onComponentRemoved(Entity{eid}, cid);
-	}
-	template<class System>
-	void SystemManager::runCall(float dt) {
-		getSystem<System>().run(dt);
-	}
-
 }
