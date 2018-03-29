@@ -1,10 +1,12 @@
 require "build/action_clean"
+require "build/action_deps"
 
 --------------------------------------------------------------------------------
 -- Constants
 --------------------------------------------------------------------------------
 -- The name of this project. Should not be changed, it is here just for convenience.
-PROJECT_NAME = "DungeonGame"
+local PROJECT_NAME = "DungeonGame"
+local CONFIG_TYPE_STR = '%{string.lower(string.match(cfg.buildcfg, "^([^_]+)"))}'
 
 --------------------------------------------------------------------------------
 -- The files and folders to delete when the "clean" action is run.
@@ -31,6 +33,7 @@ action_clean_files = {
 	"./".. PROJECT_NAME .."Workspace.VC.db",
 	"./".. PROJECT_NAME .."Workspace.VC.VC.opendb"
 }
+
 
 --------------------------------------------------------------------------------
 -- The main premake settings
@@ -80,12 +83,12 @@ workspace(PROJECT_NAME .."Workspace")
 		defines {"RELEASE"}
 		flags {"LinkTimeOptimization"}
 
-project(PROJECT_NAME .."Engine")
-	kind "None"
-
 --------------------------------------------------------------------------------
 -- Engine
 --------------------------------------------------------------------------------
+project(PROJECT_NAME .."Engine")
+	kind "None"
+	
 -- The engine files are put in the workspace since Game, Engine, and Test all use them.
 project("*")
 	files {
@@ -102,29 +105,21 @@ project("*")
 		"./deps/glfw/include",
 		"./deps/soil/src",
 		"./deps/glm/include",
-		"./deps/Box2D/Box2D",
+		"./deps/box2d/include",
 	}
 	
 	links {
-		"glfw3.lib",
-		"opengl32.lib",
-		"SOIL.lib",
-		"Box2D.lib",
+		"glfw3",
+		"opengl32",
+		"SOIL",
+		"Box2D",
 	}
 	
-	filter {"platforms:Windows_x64", "configurations:Debug*"}
-		libdirs {
-			"./deps/glfw/build/src/Debug",
-			"./deps/soil/projects/VC9/x64/Debug",
-			"./deps/Box2D/Build/vs2017/bin/Debug",
-		}
-		
-	filter {"platforms:Windows_x64", "configurations:Release*"}
-		libdirs {
-			"./deps/glfw/build/src/Release",
-			"./deps/soil/projects/VC9/x64/Release",
-			"./deps/Box2D/Build/vs2017/bin/Release",
-		}
+	libdirs {
+		"./deps/glfw/lib/".. CONFIG_TYPE_STR,
+		"./deps/soil/lib/".. CONFIG_TYPE_STR,
+		"./deps/box2d/lib/".. CONFIG_TYPE_STR,
+	}
 
 --------------------------------------------------------------------------------
 -- Game
@@ -152,24 +147,18 @@ project(PROJECT_NAME .."Test")
 		"./deps/googletest/googletest/include",
 	}
 	
+	libdirs {
+		"./deps/googletest/lib/".. CONFIG_TYPE_STR,
+	}
+	
 	filter {"platforms:Windows_x64", "configurations:Debug*"}
 		links {
 			"gtestd.lib",
 			"gmockd.lib",
 		}
 		
-		libdirs {
-			"./deps/googletest/googlemock/build/Debug",
-			"./deps/googletest/googletest/build/Debug",
-		}
-		
 	filter {"platforms:Windows_x64", "configurations:Release*"}
 		links {
 			"gtest.lib",
 			"gmock.lib",
-		}
-		
-		libdirs {
-			"./deps/googletest/googlemock/build/Release",
-			"./deps/googletest/googletest/build/Release",
 		}
