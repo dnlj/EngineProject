@@ -1,20 +1,9 @@
--- Visual Studio
-local vs = {}
-vs.year = "2017"
-vs.toolVersion = "15.0"
-vs.platformToolset = "141"
-vs.sdkVersion = "10.0.16299.0"
-vs.version = "Community"
-vs.msbuild = '"C:/Program Files (x86)/Microsoft Visual Studio/'.. vs.year ..'/'.. vs.version ..'/MSBuild/'.. vs.toolVersion ..'/Bin/msbuild.exe"'
-vs.devenv = '"C:/Program Files (x86)/Microsoft Visual Studio/'.. vs.year ..'/'.. vs.version ..'/Common7/IDE/devenv.exe"'
-vs.cmake = "Visual Studio 15 2017 Win64"
-
 -- Project Information
 local depsDir = "./deps/"
 local cacheDir = depsDir .."_dlcache/"
 
 -- Load packages
-local PACKAGES = loadfile("./packages.lua")(vs, depsDir)
+local PACKAGES = loadfile("./packages.lua")(depsDir)
 
 
 --------------------------------------------------------------------------------

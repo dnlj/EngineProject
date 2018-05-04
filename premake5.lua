@@ -1,12 +1,14 @@
 require "build/action_clean"
 require "build/action_deps"
+require "build/action_build"
+require "build/action_tests"
 
 --------------------------------------------------------------------------------
 -- Constants
 --------------------------------------------------------------------------------
 -- The name of this project. Should not be changed, it is here just for convenience.
-local PROJECT_NAME = "DungeonGame"
-local CONFIG_TYPE_STR = '%{string.lower(string.match(cfg.buildcfg, "^([^_]+)"))}'
+PROJECT_NAME = "DungeonGame"
+CONFIG_TYPE_STR = '%{string.lower(string.match(cfg.buildcfg, "^([^_]+)"))}'
 
 --------------------------------------------------------------------------------
 -- The files and folders to delete when the "clean" action is run.

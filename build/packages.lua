@@ -1,7 +1,6 @@
+local vs = require("build/vs_build")
 local args = {...}
-local vs  = args[1]
-local depsDir = args[2]
-local vsBuildCommon = "/verbosity:minimal /t:Build /toolsversion:".. vs.toolVersion .." /p:Platform=x64 /p:VisualStudioVersion=".. vs.toolVersion .." /p:WindowsTargetPlatformVersion=".. vs.sdkVersion
+local depsDir = args[1]
 
 local PACKAGES = {}
 
@@ -35,7 +34,7 @@ end
 
 local function buildMSBuild(fileName, args)
 	io.write("\n")
-	os.execute(vs.msbuild .." ".. fileName .." ".. vsBuildCommon .." ".. args)
+	os.execute(vs.msbuild .." ".. fileName .." ".. vs:buildCommon() .." ".. args)
 end
 
 local function buildCMakeProjectWithMSBuild(workingDir, buildDir, buildFile, cmakeArgs, msBuildArgs, filesToMove)
@@ -53,7 +52,7 @@ local function buildCMakeProjectWithMSBuild(workingDir, buildDir, buildFile, cma
 	)
 	
 	-- MSBuild
-	local buildCommon = table.concat(msBuildArgs, " ") .." ".. vsBuildCommon
+	local buildCommon = table.concat(msBuildArgs, " ") .." ".. vs:buildCommon()
 	
 	buildMSBuild(buildFile, buildCommon .." /p:Configuration=Debug")
 	buildMSBuild(buildFile, buildCommon .." /p:Configuration=Release")
