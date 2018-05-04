@@ -3,7 +3,7 @@
 /[Tt]ools/
 /[Aa]ssets/
 *.dll
-_TEMP_*_
+/_TEMP_*_
 
 # VS Stuff
 *.vcxproj
