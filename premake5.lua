@@ -108,6 +108,7 @@ project("*")
 		"./deps/soil/src",
 		"./deps/glm/include",
 		"./deps/box2d/include",
+		"./deps/meta/include",
 	}
 	
 	links {

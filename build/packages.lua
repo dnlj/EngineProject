@@ -230,5 +230,17 @@ PACKAGES["googletest"] = {
 	end,
 }
 
+PACKAGES["meta"] = {
+	name = "Meta",
+	url = "https://github.com/dnlj/Meta/archive/master.zip",
+
+	postExtract = function(uid)
+		local dir = depsDir .. uid .."/"
+		moveFolder(dir .."Meta-master/", dir)
+	end,
+	
+	build = function(uid)
+	end,
+}
+
 return PACKAGES
- 
