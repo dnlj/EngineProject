@@ -9,8 +9,6 @@
 
 
 namespace {
-	constexpr size_t EXTRA_SYSTEM_COUNT = 2;
-
 	template<int I>
 	class System : public Engine::ECS::System {
 		public:
