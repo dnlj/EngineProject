@@ -45,7 +45,7 @@ namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
 	template<class System1, class System2, class... SystemN>
 	SystemBitset SystemManager<SystemsType<Systems...>>::getBitsetForSystems() {
-		return getBitsetForSystems<System1>() |= getBitsetForSystems<System2, SystemN...>();
+		return getBitsetForSystems<System1>() |= (getBitsetForSystems<System2>() |= ... |= getBitsetForSystems<SystemN>());
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
