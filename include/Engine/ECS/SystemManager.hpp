@@ -77,38 +77,38 @@ namespace Engine::ECS {
 			template<class System1, class System2, class... SystemN>
 			SystemBitset getBitsetForSystems();
 
-			/** @copydoc getBitsetForSystems */
+			/** @see getBitsetForSystems */
 			template<class System1>
 			SystemBitset getBitsetForSystems();
 
 			/**
-			 * @brief Runs onEntityCreated member function on all systems.
+			 * @brief Runs `onEntityCreated` member function on all systems.
 			 * @param[in] eid The id of the entity being created.
 			 */
 			void onEntityCreated(EntityID eid);
 
 			/**
-			 * @brief Runs onComponentAdded member function on all systems.
+			 * @brief Runs `onComponentAdded` member function on all systems.
 			 * @param[in] eid The id of the entity being added to.
 			 * @param[in] cid The id of the component being added.
 			 */
 			void onComponentAdded(EntityID eid, ComponentID cid);
 
 			/**
-			 * @brief Runs onComponentRemoved member function on all systems.
+			 * @brief Runs `onComponentRemoved` member function on all systems.
 			 * @param[in] eid The id of the entity being removed from.
 			 * @param[in] cid The id of the component being removed.
 			 */
 			void onComponentRemoved(EntityID eid, ComponentID cid);
 
 			/**
-			 * @brief Runs the onEntityDestroyed member function on all systems.
+			 * @brief Runs the `onEntityDestroyed` member function on all systems.
 			 * @param[in] eid The id of the entity being destroyed.
 			 */
 			void onEntityDestroyed(EntityID eid);
 
 			/**
-			 * @brief Runs the run member function on all systems.
+			 * @brief Runs the `run` member function on all systems.
 			 * @param[in] dt The time delta between calls.
 			 */
 			void run(float dt);
