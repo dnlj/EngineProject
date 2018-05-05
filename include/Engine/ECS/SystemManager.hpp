@@ -114,10 +114,6 @@ namespace Engine::ECS {
 			void run(float dt);
 
 		private:
-			using EntityModifyFunction = void(SystemManager::*)(EntityID);
-			using ComponentModifyFunction = void(SystemManager::*)(EntityID, ComponentID);
-			using RunFunction = void(SystemManager::*)(float);
-
 			/** The number of systems used by this manager */
 			constexpr static size_t count = sizeof...(Systems);
 
