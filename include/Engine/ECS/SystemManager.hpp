@@ -6,15 +6,18 @@
 // Engine
 #include <Engine/ECS/Common.hpp>
 
+
 namespace Engine::ECS {
 	// TODO: Doc
 	// TODO: Move
 	class System {
 		public:
+			// TODO: Make this use a typeset instead?
 			// TODO: Ideally this would be const/static
 			/** The bitset of systems to have higher priority than. */
 			Engine::ECS::SystemBitset priorityBefore;
 
+			// TODO: Make this use a typeset instead?
 			// TODO: Ideally this would be const/static
 			/** The bitset of systems to have lower priority than. */
 			Engine::ECS::SystemBitset priorityAfter;
@@ -29,22 +32,15 @@ namespace Engine::ECS {
 }
 
 namespace Engine::ECS {
-	class SystemManager {
+	template<class SystemsSet>
+	class SystemManager;
+
+	// TODO: SFINAE for Systems...?
+	// TODO: Ensure unique via SFINAE?
+	template<template<class...> class SystemsType, class... Systems>
+	class SystemManager<SystemsType<Systems...>> {
 		private:
-			/**
-			 * @brief Gets the next global id to use for systems.
-			 * @return The next global id.
-			 */
-			static SystemID getNextGlobalSystemID();
-
-			/**
-			 * @brief Get the global id associated with a system.
-			 * @tparam System The system.
-			 * @return The global id of @p System.
-			 */
-			template<class System, class = std::enable_if_t<std::is_base_of_v<ECS::System, System>>>
-			static SystemID getGlobalSystemID();
-
+			
 		public:
 			/**
 			 * @brief Constructor.
@@ -76,86 +72,65 @@ namespace Engine::ECS {
 			 * @brief Gets the bitset with the bits that correspond to the ids of the systems set.
 			 * @tparam System1 The first system.
 			 * @tparam System2 The second system.
-			 * @tparam Systems The third through nth systems.
+			 * @tparam SystemN The third through nth systems.
 			 */
-			template<class System1, class System2, class... Systems>
+			template<class System1, class System2, class... SystemN>
 			SystemBitset getBitsetForSystems();
 
 			/** @copydoc getBitsetForSystems */
-			template<class System>
+			template<class System1>
 			SystemBitset getBitsetForSystems();
 
 			/**
-			 * @brief Registers a system.
-			 * @tparam System The system.
-			 * @tparam Args the type of @p args.
-			 * @param[in,out] args The arguments to foward to the constructor of @p System.
-			 */
-			template<class System, class... Args, class = std::enable_if_t<std::is_base_of_v<ECS::System, System>>>
-			void registerSystem(Args&&... args);
-
-			/**
-			 * @brief Runs onEntityCreated member function on all registered systems.
+			 * @brief Runs onEntityCreated member function on all systems.
 			 * @param[in] eid The id of the entity being created.
 			 */
 			void onEntityCreated(EntityID eid);
 
 			/**
-			 * @brief Runs onComponentAdded member function on all registered systems.
+			 * @brief Runs onComponentAdded member function on all systems.
 			 * @param[in] eid The id of the entity being added to.
 			 * @param[in] cid The id of the component being added.
 			 */
 			void onComponentAdded(EntityID eid, ComponentID cid);
 
 			/**
-			 * @brief Runs onComponentRemoved member function on all registered systems.
+			 * @brief Runs onComponentRemoved member function on all systems.
 			 * @param[in] eid The id of the entity being removed from.
 			 * @param[in] cid The id of the component being removed.
 			 */
 			void onComponentRemoved(EntityID eid, ComponentID cid);
 
 			/**
-			 * @brief Runs the onEntityDestroyed member function on all registered systems.
+			 * @brief Runs the onEntityDestroyed member function on all systems.
 			 * @param[in] eid The id of the entity being destroyed.
 			 */
 			void onEntityDestroyed(EntityID eid);
 
 			/**
-			 * @brief Runs the run member function on all registered systems.
+			 * @brief Runs the run member function on all systems.
 			 * @param[in] dt The time delta between calls.
 			 */
 			void run(float dt);
 
 			/**
-			 * @brief Sorts all registered systems.
+			 * @brief Sorts all systems.
 			 */
 			void sort();
 
 		private:
-			/** The next id to use for systems */
-			SystemID nextID = 0;
-
-			/** The array used for translating from global to local ids */
-			std::array<SystemID, MAX_SYSTEMS_GLOBAL> globalToLocalID;
-
 			using EntityModifyFunction = void(SystemManager::*)(EntityID);
 			using ComponentModifyFunction = void(SystemManager::*)(EntityID, ComponentID);
 			using RunFunction = void(SystemManager::*)(float);
 
-			/** The number of registered systems */
-			size_t count = 0;
+			/** The number of systems used by this manager */
+			constexpr static size_t count = sizeof...(Systems);
 
 			/** The array used for storing system instances */
-			std::array<System*, MAX_SYSTEMS> systems = {};
+			std::array<System*, count> systems = {};
 
 			/** The array used for storing system priorities */
-			std::array<SystemBitset, MAX_SYSTEMS> priority = {};
-
-			/**
-			 * @brief Gets the next id to use for systems.
-			 * @return The next id.
-			 */
-			SystemID getNextSystemID();
+			std::array<SystemBitset, count> priority = {};
 	};
 }
 
