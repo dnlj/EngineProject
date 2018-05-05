@@ -131,6 +131,9 @@ namespace Engine::ECS {
 
 			/** The array used for storing system priorities */
 			std::array<SystemBitset, count> priority = {};
+
+			/** The order that the systems should be operated on based on priorities */
+			std::array<SystemID, count> systemOrder;
 	};
 }
 

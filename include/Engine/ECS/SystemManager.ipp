@@ -11,7 +11,8 @@ namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
 	SystemManager<SystemsType<Systems...>>::SystemManager()
 		// TODO: Constructor arguments?
-		: systems{new Systems() ...} {
+		: systems{new Systems() ...}
+		, systemOrder{getSystemID<Systems>() ...} {
 
 		// Update priorities
 		for (SystemID sid = 0; sid < count; ++sid) {
@@ -68,35 +69,35 @@ namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
 	void SystemManager<SystemsType<Systems...>>::onEntityCreated(EntityID eid) {
 		for (size_t i = 0; i < count; ++i) {
-			systems[i]->onEntityCreated(eid);
+			systems[systemOrder[i]]->onEntityCreated(eid);
 		}
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
 	void SystemManager<SystemsType<Systems...>>::onComponentAdded(EntityID eid, ComponentID cid) {
 		for (size_t i = 0; i < count; ++i) {
-			systems[i]->onComponentAdded(eid, cid);
+			systems[systemOrder[i]]->onComponentAdded(eid, cid);
 		}
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
 	void SystemManager<SystemsType<Systems...>>::onComponentRemoved(EntityID eid, ComponentID cid) {
 		for (size_t i = 0; i < count; ++i) {
-			systems[i]->onComponentRemoved(eid, cid);
+			systems[systemOrder[i]]->onComponentRemoved(eid, cid);
 		}
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
 	void SystemManager<SystemsType<Systems...>>::onEntityDestroyed(EntityID eid) {
 		for (size_t i = 0; i < count; ++i) {
-			systems[i]->onEntityDestroyed(eid);
+			systems[systemOrder[i]]->onEntityDestroyed(eid);
 		}
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
 	void SystemManager<SystemsType<Systems...>>::run(float dt) {
 		for (size_t i = 0; i < count; ++i) {
-			systems[i]->run(dt);
+			systems[systemOrder[i]]->run(dt);
 		}
 	}
 
@@ -149,12 +150,7 @@ namespace Engine::ECS {
 		};
 
 		// Do the sorting
-		reorder(systems);
-		reorder(priority);
-
-		for (size_t i = 0; i < count; ++i) {
-			reorder(priority[i]);
-		}
+		reorder(systemOrder);
 	}
 }
 
