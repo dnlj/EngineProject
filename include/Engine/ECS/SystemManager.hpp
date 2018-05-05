@@ -58,7 +58,7 @@ namespace Engine::ECS {
 			 * @return The id associated with @p System.
 			 */
 			template<class System>
-			SystemID getSystemID();
+			constexpr SystemID getSystemID() noexcept;
 
 			/**
 			 * @brief Gets a reference to the system.
