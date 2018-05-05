@@ -190,100 +190,97 @@ namespace {
 		ASSERT_EQ(sm.getSystem<C>().value, 32);
 	}
 
-	// TODO: Reimplement using new methods if the test still makes sense
-	//TEST_F(SystemManagerTest, Sort) {
-	//	SM sm;
-	//
-	//	int last = -1;
-	//
-	//	class TestSystem0 : public Engine::ECS::System {
-	//		private:
-	//			int& last;
-	//
-	//		public:
-	//			TestSystem0(int& last) : last{last} {
-	//			}
-	//
-	//			void run(float dt) {
-	//				ASSERT_EQ(last, 2);
-	//				last = 0;
-	//			};
-	//	};
-	//
-	//	class TestSystem1 : public Engine::ECS::System {
-	//		private:
-	//			int& last;
-	//
-	//		public:
-	//			TestSystem1(int& last) : last{last} {
-	//				priorityBefore[2] = true;
-	//			}
-	//
-	//			void run(float dt) {
-	//				ASSERT_EQ(last, -1);
-	//				last = 1;
-	//			};
-	//	};
-	//
-	//	class TestSystem2 : public Engine::ECS::System {
-	//		private:
-	//			int& last;
-	//
-	//		public:
-	//			TestSystem2(int& last) : last{last} {
-	//				priorityBefore[0] = true;
-	//			}
-	//
-	//			void run(float dt) {
-	//				ASSERT_EQ(last, 1);
-	//				last = 2;
-	//			};
-	//	};
-	//
-	//	sm.registerSystem<TestSystem0>(last);
-	//	sm.registerSystem<TestSystem1>(last);
-	//	sm.registerSystem<TestSystem2>(last);
-	//
-	//	sm.sort();
-	//
-	//	sm.run(1.0f / 60.0f);
-	//}
+	TEST(Engine_ECS_SystemManager, sort) {
+		int last = -1;
+	
+		class TestSystem0 : public Engine::ECS::System {
+			public:
+				int* last;
 
-	// TODO: Reimplement using new methods if the test still makes sense
-	//TEST_F(SystemManagerTest, SortInvalid) {
-	//	SM sm;
-	//
-	//	class TestSystem0 : public Engine::ECS::System {
-	//		public:
-	//			TestSystem0() {
-	//				priorityBefore[1] = true;
-	//			}
-	//
-	//			void run(float dt) {};
-	//	};
-	//
-	//	class TestSystem1 : public Engine::ECS::System {
-	//		public:
-	//			TestSystem1() {
-	//				priorityBefore[2] = true;
-	//			}
-	//
-	//			void run(float dt) {};
-	//	};
-	//
-	//	class TestSystem2 : public Engine::ECS::System {
-	//		public:
-	//			TestSystem2() {
-	//				priorityBefore[0] = true;
-	//			}
-	//
-	//			void run(float dt) {};
-	//	};
-	//
-	//	sm.registerSystem<TestSystem0>();
-	//	sm.registerSystem<TestSystem1>();
-	//	sm.registerSystem<TestSystem2>();
-	//
-	//	ASSERT_THROW(sm.sort(), Engine::FatalException);
-	//}
+				TestSystem0() {
+				}
+	
+				void run(float dt) {
+					ASSERT_EQ(*last, 2);
+					*last = 0;
+				};
+		};
+	
+		class TestSystem1 : public Engine::ECS::System {
+			public:
+				int* last;
+
+				TestSystem1() {
+					priorityBefore[2] = true;
+				}
+	
+				void run(float dt) {
+					ASSERT_EQ(*last, -1);
+					*last = 1;
+				};
+		};
+	
+		class TestSystem2 : public Engine::ECS::System {
+			public:
+				int* last;
+
+				TestSystem2() {
+					priorityBefore[0] = true;
+				}
+	
+				void run(float dt) {
+					ASSERT_EQ(*last, 1);
+					*last = 2;
+				};
+		};
+
+		Engine::ECS::SystemManager<Meta::TypeSet::TypeSet<
+			TestSystem0,
+			TestSystem1,
+			TestSystem2
+		>> sm;
+
+		sm.getSystem<TestSystem0>().last = &last;
+		sm.getSystem<TestSystem1>().last = &last;
+		sm.getSystem<TestSystem2>().last = &last;
+	
+		sm.run(1.0f / 60.0f);
+	}
+
+	TEST(Engine_ECS_SystemManager, sort_Invalid) {
+		class TestSystem0 : public Engine::ECS::System {
+			public:
+				TestSystem0() {
+					priorityBefore[1] = true;
+				}
+	
+				void run(float dt) {};
+		};
+	
+		class TestSystem1 : public Engine::ECS::System {
+			public:
+				TestSystem1() {
+					priorityBefore[2] = true;
+				}
+	
+				void run(float dt) {};
+		};
+	
+		class TestSystem2 : public Engine::ECS::System {
+			public:
+				TestSystem2() {
+					priorityBefore[0] = true;
+				}
+	
+				void run(float dt) {};
+		};
+
+		using SM = Engine::ECS::SystemManager<Meta::TypeSet::TypeSet<
+			TestSystem0,
+			TestSystem1,
+			TestSystem2
+		>>;
+
+		ASSERT_THROW(SM(), Engine::FatalException);
+	}
 }

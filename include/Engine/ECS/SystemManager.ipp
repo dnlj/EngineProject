@@ -24,6 +24,9 @@ namespace Engine::ECS {
 				}
 			}
 		}
+
+		// Sort systems
+		sort();
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
@@ -151,22 +154,6 @@ namespace Engine::ECS {
 
 		for (size_t i = 0; i < count; ++i) {
 			reorder(priority[i]);
-		}
-
-		// Update gsid to sid translation
-		{
-			decltype(globalToLocalID) localToGlobalID;
-
-			for(size_t i = 0; i < globalToLocalID.size(); ++i) {
-				if (globalToLocalID[i] != static_cast<SystemID>(-1)) {
-					localToGlobalID[globalToLocalID[i]] = i;
-				}
-			}
-
-			for (size_t i = count; --i != static_cast<size_t>(-1);) {
-				const auto idx = count - i - 1;
-				globalToLocalID[localToGlobalID[idx]] = order[i];
-			}
 		}
 	}
 }
