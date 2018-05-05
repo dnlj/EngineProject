@@ -113,11 +113,6 @@ namespace Engine::ECS {
 			 */
 			void run(float dt);
 
-			/**
-			 * @brief Sorts all systems.
-			 */
-			void sort();
-
 		private:
 			using EntityModifyFunction = void(SystemManager::*)(EntityID);
 			using ComponentModifyFunction = void(SystemManager::*)(EntityID, ComponentID);
@@ -134,6 +129,11 @@ namespace Engine::ECS {
 
 			/** The order that the systems should be operated on based on priorities */
 			std::array<SystemID, count> systemOrder;
+
+			/**
+			 * @brief Sorts all systems.
+			 */
+			void sort();
 	};
 }
 
