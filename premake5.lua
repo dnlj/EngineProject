@@ -59,7 +59,6 @@ workspace(PROJECT_NAME .."Workspace")
 	filter "action:vs*"
 		systemversion "10.0.16299.0"
 		buildoptions{
-			"/std:c++latest", -- Use the latest version of C++
 			"/wd4996", -- Disable some warnings about things Visual Studio has taken apon itself to deem "deprecated"
 		}
 	
@@ -93,6 +92,8 @@ project(PROJECT_NAME .."Engine")
 	
 -- The engine files are put in the workspace since Game, Engine, and Test all use them.
 project("*")
+	cppdialect "C++latest"
+	
 	files {
 		"./include/Engine/**",
 		"./src/Engine/**",
