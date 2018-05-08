@@ -57,7 +57,6 @@ workspace(PROJECT_NAME .."Workspace")
 	startproject(PROJECT_NAME)
 	
 	filter "action:vs*"
-		systemversion "10.0.16299.0"
 		buildoptions{
 			"/wd4996", -- Disable some warnings about things Visual Studio has taken apon itself to deem "deprecated"
 		}
@@ -93,6 +92,7 @@ project(PROJECT_NAME .."Engine")
 -- The engine files are put in the workspace since Game, Engine, and Test all use them.
 project("*")
 	cppdialect "C++latest"
+	systemversion "latest"
 	
 	files {
 		"./include/Engine/**",
