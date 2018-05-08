@@ -46,6 +46,8 @@ workspace(PROJECT_NAME .."Workspace")
 	characterset "Unicode"
 	kind "ConsoleApp"
 	language "C++"
+	cppdialect "C++latest"
+	systemversion "latest"
 	rtti "Off"
 	warnings "Default"
 	flags {
@@ -91,9 +93,6 @@ project(PROJECT_NAME .."Engine")
 	
 -- The engine files are put in the workspace since Game, Engine, and Test all use them.
 project("*")
-	cppdialect "C++latest"
-	systemversion "latest"
-	
 	files {
 		"./include/Engine/**",
 		"./src/Engine/**",
