@@ -25,7 +25,7 @@ namespace Engine::ECS {
 	template<template<class...> class ComponentsType, class... Components>
 	template<class Component1, class Component2, class... ComponentN>
 	ComponentBitset ComponentManager<ComponentsType<Components...>>::getBitsetForComponents() {
-		return getBitsetForComponents<Component1>() |= getBitsetForComponents<Component2, ComponentN...>();
+		return getBitsetForComponents<Component1>() |= (getBitsetForComponents<Component2>() |= ... |=  getBitsetForComponents<ComponentN>());
 	}
 
 	template<template<class...> class ComponentsType, class... Components>
