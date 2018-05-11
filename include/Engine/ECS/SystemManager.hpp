@@ -2,9 +2,13 @@
 
 // STD
 #include <array>
+#include <type_traits>
 
 // Engine
 #include <Engine/ECS/Common.hpp>
+
+// Meta
+#include <Meta/TypeSet/MakeUnique.hpp>
 
 
 namespace Engine::ECS {
@@ -35,12 +39,23 @@ namespace Engine::ECS {
 	template<class SystemsSet>
 	class SystemManager;
 
-	// TODO: SFINAE for Systems...?
-	// TODO: Ensure unique via SFINAE?
 	template<template<class...> class SystemsType, class... Systems>
 	class SystemManager<SystemsType<Systems...>> {
-		private:
-			
+		static_assert(
+			std::is_same<
+				SystemsType<Systems...>,
+				typename Meta::TypeSet::MakeUnique<SystemsType<Systems...>>::type
+			>::value,
+			"Each system must be unique."
+		);
+
+		static_assert(
+			std::conjunction<
+				std::is_base_of<System, Systems>...
+			>::value,
+			"Each type must be a system."
+		);
+
 		public:
 			/**
 			 * @brief Constructor.
