@@ -2,6 +2,7 @@
 
 // STD
 #include <bitset>
+#include <vector>
 
 namespace Engine::ECS {
 	/** The maximum number of components registrable. Ideally this would be exactly the number of components used. */
@@ -24,6 +25,10 @@ namespace Engine::ECS {
 
 	/** The bitset type used for storing system priorites */
 	using SystemBitset = std::bitset<MAX_SYSTEMS>;
+
+	// TODO: Doc
+	template<class T>
+	using ComponentContainer = std::vector<T>;
 }
 
 // Asserts

@@ -35,4 +35,10 @@ namespace Engine::ECS {
 		value[getComponentID<Component>()] = true;
 		return value;
 	}
+
+	template<template<class...> class ComponentsType, class... Components>
+	template<class Component>
+	ComponentContainer<Component>& ComponentManager<ComponentsType<Components...>>::getComponentContainer() {
+		return std::get<ComponentContainer<Component>>(containers);
+	}
 }

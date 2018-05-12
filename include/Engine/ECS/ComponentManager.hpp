@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <tuple>
+
 // Engine
 #include <Engine/ECS/Common.hpp>
 
@@ -37,7 +40,16 @@ namespace Engine::ECS {
 			template<class Component>
 			ComponentBitset getBitsetForComponents();
 
+			// TODO: Doc
+			template<class Component>
+			ComponentContainer<Component>& getComponentContainer();
+
 		private:
+			/** The number of components used by this manager */
+			constexpr static size_t count = sizeof...(Components);
+
+			// TODO: Doc
+			std::tuple<ComponentContainer<Components>...> containers;
 	};
 }
 

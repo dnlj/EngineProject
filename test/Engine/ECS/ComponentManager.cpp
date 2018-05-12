@@ -87,4 +87,53 @@ namespace {
 
 		ASSERT_EQ(cbits, bits);
 	}
+
+	TEST(Engine_ECS_ComponentManager, getComponentContainer) {
+		CM cm;
+
+		{
+			using T = A;
+
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 0);
+			
+			cm.getComponentContainer<T>().push_back(T{});
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 1);
+
+			cm.getComponentContainer<T>().push_back(T{});
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 2);
+
+			cm.getComponentContainer<T>().push_back(T{});
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 3);
+		}
+
+		{
+			using T = C;
+
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 0);
+			
+			cm.getComponentContainer<T>().push_back(T{});
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 1);
+
+			cm.getComponentContainer<T>().push_back(T{});
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 2);
+
+			cm.getComponentContainer<T>().push_back(T{});
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 3);
+		}
+
+		{
+			using T = E;
+
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 0);
+			
+			cm.getComponentContainer<T>().push_back(T{});
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 1);
+
+			cm.getComponentContainer<T>().push_back(T{});
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 2);
+
+			cm.getComponentContainer<T>().push_back(T{});
+			ASSERT_EQ(cm.getComponentContainer<T>().size(), 3);
+		}
+	}
 }
