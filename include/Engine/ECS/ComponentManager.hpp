@@ -1,15 +1,9 @@
 #pragma once
 
-// STD
-#include <array>
-#include <unordered_map>
-
 // Engine
 #include <Engine/ECS/Common.hpp>
 
 
-// TODO: Document
-// TODO: Test
 namespace Engine::ECS {
 	template<class ComponentsSet>
 	class ComponentManager;
@@ -17,6 +11,9 @@ namespace Engine::ECS {
 	template<template<class...> class ComponentsType, class... Components>
 	class ComponentManager<ComponentsType<Components...>> {
 		public:
+			/**
+			 * Constructor
+			 */
 			ComponentManager();
 
 			/**
