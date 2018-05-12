@@ -43,6 +43,7 @@ namespace Engine::ECS {
 			/**
 			 * Get the container for components of type @p Component.
 			 * @tparam Component The type of the component.
+			 * @return A reference to the container associated with @p Component.
 			 */
 			template<class Component>
 			ComponentContainer<Component>& getComponentContainer();
