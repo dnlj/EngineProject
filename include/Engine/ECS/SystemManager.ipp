@@ -32,7 +32,7 @@ namespace Engine::ECS {
 
 	template<template<class...> class SystemsType, class... Systems>
 	template<class System>
-	constexpr SystemID SystemManager<SystemsType<Systems...>>::getSystemID() noexcept {
+	constexpr SystemID SystemManager<SystemsType<Systems...>>::getSystemID() const noexcept {
 		return Meta::IndexOf<System, Systems...>::value;
 	}
 
@@ -44,13 +44,13 @@ namespace Engine::ECS {
 
 	template<template<class...> class SystemsType, class... Systems>
 	template<class System1, class System2, class... SystemN>
-	SystemBitset SystemManager<SystemsType<Systems...>>::getBitsetForSystems() {
+	SystemBitset SystemManager<SystemsType<Systems...>>::getBitsetForSystems() const {
 		return getBitsetForSystems<System1>() |= (getBitsetForSystems<System2>() |= ... |= getBitsetForSystems<SystemN>());
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
 	template<class System1>
-	SystemBitset SystemManager<SystemsType<Systems...>>::getBitsetForSystems() {
+	SystemBitset SystemManager<SystemsType<Systems...>>::getBitsetForSystems() const {
 		const auto sid = getSystemID<System1>();
 		SystemBitset value;
 		value[sid] = true;

@@ -73,7 +73,7 @@ namespace Engine::ECS {
 			 * @return The id associated with @p System.
 			 */
 			template<class System>
-			constexpr SystemID getSystemID() noexcept;
+			constexpr SystemID getSystemID() const noexcept;
 
 			/**
 			 * @brief Gets a reference to the system.
@@ -90,11 +90,11 @@ namespace Engine::ECS {
 			 * @tparam SystemN The third through nth systems.
 			 */
 			template<class System1, class System2, class... SystemN>
-			SystemBitset getBitsetForSystems();
+			SystemBitset getBitsetForSystems() const;
 
 			/** @see getBitsetForSystems */
 			template<class System1>
-			SystemBitset getBitsetForSystems();
+			SystemBitset getBitsetForSystems() const;
 
 			/**
 			 * @brief Runs `onEntityCreated` member function on all systems.
