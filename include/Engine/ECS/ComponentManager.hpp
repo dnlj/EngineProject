@@ -40,7 +40,10 @@ namespace Engine::ECS {
 			template<class Component>
 			ComponentBitset getBitsetForComponents() const;
 
-			// TODO: Doc
+			/**
+			 * Get the container for components of type @p Component.
+			 * @tparam Component The type of the component.
+			 */
 			template<class Component>
 			ComponentContainer<Component>& getComponentContainer();
 
@@ -48,7 +51,7 @@ namespace Engine::ECS {
 			/** The number of components used by this manager */
 			constexpr static size_t count = sizeof...(Components);
 
-			// TODO: Doc
+			/** The containers for storing components. */
 			std::tuple<ComponentContainer<Components>...> containers;
 	};
 }

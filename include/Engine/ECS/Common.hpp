@@ -26,7 +26,7 @@ namespace Engine::ECS {
 	/** The bitset type used for storing system priorites */
 	using SystemBitset = std::bitset<MAX_SYSTEMS>;
 
-	// TODO: Doc
+	/** The type used for storing components */
 	template<class T>
 	using ComponentContainer = std::vector<T>;
 }
