@@ -20,13 +20,13 @@ namespace Engine::ECS {
 	/** The type to use for system ids. */
 	using SystemID = size_t;
 
-	/** The bitset type used for storing what components an entity has */
+	/** The bitset type used for storing what components an entity has. */
 	using ComponentBitset = std::bitset<MAX_COMPONENTS>;
 
-	/** The bitset type used for storing system priorites */
+	/** The bitset type used for storing system priorites. */
 	using SystemBitset = std::bitset<MAX_SYSTEMS>;
 
-	/** The type used for storing components */
+	/** The type used for storing components. */
 	template<class T>
 	using ComponentContainer = std::vector<T>;
 }

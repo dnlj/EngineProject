@@ -15,7 +15,7 @@ namespace Engine::ECS {
 	class ComponentManager<ComponentsType<Components...>> {
 		public:
 			/**
-			 * Constructor
+			 * Constructor.
 			 */
 			ComponentManager();
 
@@ -48,7 +48,7 @@ namespace Engine::ECS {
 			ComponentContainer<Component>& getComponentContainer();
 
 		private:
-			/** The number of components used by this manager */
+			/** The number of components used by this manager. */
 			constexpr static size_t count = sizeof...(Components);
 
 			/** The containers for storing components. */

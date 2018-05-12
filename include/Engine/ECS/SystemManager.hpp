@@ -129,16 +129,16 @@ namespace Engine::ECS {
 			void run(float dt);
 
 		private:
-			/** The number of systems used by this manager */
+			/** The number of systems used by this manager. */
 			constexpr static size_t count = sizeof...(Systems);
 
-			/** The array used for storing system instances */
+			/** The array used for storing system instances. */
 			std::array<System*, count> systems = {};
 
-			/** The array used for storing system priorities */
+			/** The array used for storing system priorities. */
 			std::array<SystemBitset, count> priority = {};
 
-			/** The order that the systems should be operated on based on priorities */
+			/** The order that the systems should be operated on based on priorities. */
 			std::array<SystemID, count> systemOrder;
 
 			/**
