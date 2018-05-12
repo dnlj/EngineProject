@@ -25,7 +25,7 @@ namespace Engine::ECS {
 			 * @return The id of @p Component.
 			 */
 			template<class Component>
-			constexpr ComponentID getComponentID() noexcept;
+			constexpr ComponentID getComponentID() const noexcept;
 
 			/**
 			 * @brief Gets the bitset with the bits that correspond to the ids of the components set.
@@ -34,11 +34,11 @@ namespace Engine::ECS {
 			 * @tparam ComponentN The third through nth components.
 			 */
 			template<class Component1, class Component2, class... ComponentN>
-			ComponentBitset getBitsetForComponents();
+			ComponentBitset getBitsetForComponents() const;
 
 			/** @see getBitsetForComponents */
 			template<class Component>
-			ComponentBitset getBitsetForComponents();
+			ComponentBitset getBitsetForComponents() const;
 
 			// TODO: Doc
 			template<class Component>

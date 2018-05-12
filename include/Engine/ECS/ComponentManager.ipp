@@ -18,19 +18,19 @@ namespace Engine::ECS {
 
 	template<template<class...> class ComponentsType, class... Components>
 	template<class Component>
-	constexpr ComponentID ComponentManager<ComponentsType<Components...>>::getComponentID() noexcept {
+	constexpr ComponentID ComponentManager<ComponentsType<Components...>>::getComponentID() const noexcept {
 		return Meta::IndexOf<Component, Components...>::value;
 	}
 
 	template<template<class...> class ComponentsType, class... Components>
 	template<class Component1, class Component2, class... ComponentN>
-	ComponentBitset ComponentManager<ComponentsType<Components...>>::getBitsetForComponents() {
+	ComponentBitset ComponentManager<ComponentsType<Components...>>::getBitsetForComponents() const {
 		return getBitsetForComponents<Component1>() |= (getBitsetForComponents<Component2>() |= ... |=  getBitsetForComponents<ComponentN>());
 	}
 
 	template<template<class...> class ComponentsType, class... Components>
 	template<class Component>
-	ComponentBitset ComponentManager<ComponentsType<Components...>>::getBitsetForComponents() {
+	ComponentBitset ComponentManager<ComponentsType<Components...>>::getBitsetForComponents() const {
 		ComponentBitset value;
 		value[getComponentID<Component>()] = true;
 		return value;
