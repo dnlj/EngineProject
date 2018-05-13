@@ -47,6 +47,15 @@ namespace Engine::ECS {
 			template<class Component>
 			Component& addComponent(EntityID eid);
 
+			/**
+			 * Checks if an entity has a component.
+			 * @param[in] eid The id of the entity.
+			 * @tparam Component The component type.
+			 * @return True if the entity has the component; otherwise false.
+			 */
+			template<class Component>
+			bool hasComponent(EntityID eid);
+
 		private:
 			/** The bitsets for storing what components entities have. */
 			std::vector<ComponentBitset> componentBitsets;
