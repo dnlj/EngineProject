@@ -1,6 +1,7 @@
 #pragma once
 
 // Engine
+#include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/SystemManager.hpp>
 #include <Engine/ECS/ComponentManager.hpp>
 #include <Engine/ECS/EntityManager.hpp>
@@ -19,7 +20,6 @@ namespace Engine::ECS {
 
 		public:
 			// EntityManager members
-			using EntityManager::createEntity;
 			using EntityManager::destroyEntity;
 			using EntityManager::isAlive;
 
@@ -31,5 +31,25 @@ namespace Engine::ECS {
 			using SystemManager::getSystemID;
 			using SystemManager::getSystem;
 			using SystemManager::getBitsetForSystems;
+
+		public:
+			/** @copydoc EntityManager::createEntity */
+			EntityID createEntity(bool forceNew = false);
+
+		private:
+			// TODO: Doc
+			std::vector<ComponentBitset> componentBitsets;
+			
+			/**
+			 * @brief Get the bitset associated with an entity.
+			 * @param[in] eid The id of the entity.
+			 * @return A reference to the bitset associated with the entity.
+			 */
+			ComponentBitset& getComponentBitset(EntityID eid);
+
+			/** @see getComponentBitset */
+			const ComponentBitset& getComponentBitset(EntityID eid) const;
 	};
 }
+
+#include <Engine/ECS/World.ipp>
