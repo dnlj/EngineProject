@@ -33,7 +33,9 @@ namespace Engine::ECS {
 			using SystemManager::getBitsetForSystems;
 
 		public:
-			/** @copydoc EntityManager::createEntity */
+			/**
+			 * @copydoc EntityManager::createEntity
+			 */
 			EntityID createEntity(bool forceNew = false);
 
 		private:
