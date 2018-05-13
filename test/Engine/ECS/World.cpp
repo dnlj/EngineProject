@@ -55,4 +55,11 @@ namespace {
 	TEST(Engine_ECS_World, Constructor) {
 		W w;
 	}
+
+	TEST(Engine_ECS_World, addComponent) {
+		W w;
+
+		auto eid = w.createEntity();
+		w.addComponent<ComponentA>(eid);
+	}
 }

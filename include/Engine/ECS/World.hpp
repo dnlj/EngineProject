@@ -38,6 +38,11 @@ namespace Engine::ECS {
 			 */
 			EntityID createEntity(bool forceNew = false);
 
+			// TODO: Doc
+			// TODO: Test
+			template<class Component>
+			Component& addComponent(EntityID eid);
+
 		private:
 			// TODO: Doc
 			std::vector<ComponentBitset> componentBitsets;
