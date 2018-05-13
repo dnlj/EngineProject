@@ -38,13 +38,17 @@ namespace Engine::ECS {
 			 */
 			EntityID createEntity(bool forceNew = false);
 
-			// TODO: Doc
-			// TODO: Test
+			/**
+			 * @brief Adds a component to an entity.
+			 * @param[in] eid The id of the entity.
+			 * @tparam Component The component.
+			 * @return A reference to the added component.
+			 */
 			template<class Component>
 			Component& addComponent(EntityID eid);
 
 		private:
-			// TODO: Doc
+			/** The bitsets for storing what components entities have. */
 			std::vector<ComponentBitset> componentBitsets;
 			
 			/**
