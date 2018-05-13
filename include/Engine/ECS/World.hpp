@@ -12,17 +12,9 @@ namespace Engine::ECS {
 	 * @tparam ComponentsSet The components for this world to have.
 	 */
 	template<class SystemsSet, class ComponentsSet>
-	class World;
-
-	/** @see World */
-	template<
-		template<class...> class SystemsType,
-		class... Systems,
-		template<class...> class ComponentsType,
-		class... Components
-	> class World<SystemsType<Systems...>, ComponentsType<Components...>>
-		: private SystemManager<SystemsType<Systems...>>
-		, private ComponentManager<ComponentsType<Components...>>
+	class World
+		: private SystemManager<SystemsSet>
+		, private ComponentManager<ComponentsSet>
 		, private EntityManager {
 
 		public:
