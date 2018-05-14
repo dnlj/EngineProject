@@ -67,16 +67,6 @@ namespace Engine::ECS {
 		private:
 			/** The bitsets for storing what components entities have. */
 			std::vector<ComponentBitset> componentBitsets;
-			
-			/**
-			 * @brief Get the bitset associated with an entity.
-			 * @param[in] eid The id of the entity.
-			 * @return A reference to the bitset associated with the entity.
-			 */
-			ComponentBitset& getComponentBitset(EntityID eid);
-
-			/** @see getComponentBitset */
-			const ComponentBitset& getComponentBitset(EntityID eid) const;
 	};
 }
 

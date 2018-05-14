@@ -25,7 +25,7 @@ namespace Engine::ECS {
 
 		// Add the component
 		container[eid] = Component();
-		getComponentBitset(eid)[cid] = true;
+		componentBitsets[eid][cid] = true;
 
 		// Tell the systems
 		onComponentAdded(eid, cid);
@@ -36,7 +36,7 @@ namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
 	bool World<SystemsSet, ComponentsSet>::hasComponent(EntityID eid) {
-		return getComponentBitset(eid)[getComponentID<Component>()];
+		return componentBitsets[eid][getComponentID<Component>()];
 	}
 
 	template<class SystemsSet, class ComponentsSet>
@@ -46,15 +46,5 @@ namespace Engine::ECS {
 
 		componentBitsets[eid][cid] = false;
 		onComponentRemoved(eid, cid);
-	}
-
-	template<class SystemsSet, class ComponentsSet>
-	ComponentBitset& World<SystemsSet, ComponentsSet>::getComponentBitset(EntityID eid) {
-		return componentBitsets[eid];
-	}
-
-	template<class SystemsSet, class ComponentsSet>
-	const ComponentBitset& World<SystemsSet, ComponentsSet>::getComponentBitset(EntityID eid) const {
-		return getComponentBitset(eid);
 	}
 }
