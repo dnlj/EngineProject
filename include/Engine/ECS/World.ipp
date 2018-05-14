@@ -9,6 +9,8 @@ namespace Engine::ECS {
 			componentBitsets.resize(eid + 1);
 		}
 
+		onEntityCreated(eid);
+
 		return eid;
 	}
 
