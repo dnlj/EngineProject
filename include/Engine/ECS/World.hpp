@@ -56,6 +56,14 @@ namespace Engine::ECS {
 			template<class Component>
 			bool hasComponent(EntityID eid);
 
+			/**
+			 * Removes a component from an entity.
+			 * @param[in] eid The id of the entity.
+			 * @tparam Component The component.
+			 */
+			template<class Component>
+			void removeComponent(EntityID eid);
+
 		private:
 			/** The bitsets for storing what components entities have. */
 			std::vector<ComponentBitset> componentBitsets;

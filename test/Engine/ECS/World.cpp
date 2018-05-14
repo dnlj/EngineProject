@@ -60,12 +60,13 @@ namespace {
 		W w;
 
 		auto eid = w.createEntity();
+
 		w.addComponent<ComponentA>(eid);
+		ASSERT_TRUE(w.hasComponent<ComponentA>(eid));
 	}
 
 	TEST(Engine_ECS_World, hasComponent) {
 		W w;
-
 		auto eid = w.createEntity();
 
 		ASSERT_FALSE(w.hasComponent<ComponentA>(eid));
@@ -98,6 +99,28 @@ namespace {
 		ASSERT_FALSE(w.hasComponent<ComponentD>(eid));
 		ASSERT_TRUE(w.hasComponent<ComponentE>(eid));
 
-		// TODO: Update to also do checks after removeComponent
+		w.removeComponent<ComponentA>(eid);
+
+		ASSERT_FALSE(w.hasComponent<ComponentA>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentB>(eid));
+		ASSERT_TRUE(w.hasComponent<ComponentC>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentD>(eid));
+		ASSERT_TRUE(w.hasComponent<ComponentE>(eid));
+
+		w.removeComponent<ComponentC>(eid);
+
+		ASSERT_FALSE(w.hasComponent<ComponentA>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentB>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentC>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentD>(eid));
+		ASSERT_TRUE(w.hasComponent<ComponentE>(eid));
+
+		w.removeComponent<ComponentE>(eid);
+
+		ASSERT_FALSE(w.hasComponent<ComponentA>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentB>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentC>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentD>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentE>(eid));
 	}
 }
