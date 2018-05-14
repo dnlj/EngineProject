@@ -52,20 +52,7 @@ namespace {
 }
 
 namespace {
-	TEST(Engine_ECS_World, Constructor) {
-		W w;
-	}
-
-	TEST(Engine_ECS_World, addComponent) {
-		W w;
-
-		auto eid = w.createEntity();
-
-		w.addComponent<ComponentA>(eid);
-		ASSERT_TRUE(w.hasComponent<ComponentA>(eid));
-	}
-
-	TEST(Engine_ECS_World, hasComponent) {
+	TEST(Engine_ECS_World, has_add_remove_Component) {
 		W w;
 		auto eid = w.createEntity();
 
