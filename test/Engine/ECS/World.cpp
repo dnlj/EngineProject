@@ -59,6 +59,21 @@ namespace {
 		w.destroyEntity(eid);
 	}
 
+	TEST(Engine_ECS_World, getComponent) {
+		W w;
+
+		auto eid = w.createEntity();
+		
+		auto& c1 = w.addComponent<ComponentB>(eid);
+		auto& c2 = w.getComponent<ComponentB>(eid);
+
+		ASSERT_EQ(&c1, &c2);
+
+		auto& c3 = w.getComponent<ComponentB>(eid);
+
+		ASSERT_EQ(&c2, &c3);
+	}
+
 	TEST(Engine_ECS_World, has_add_remove_Component) {
 		W w;
 		auto eid = w.createEntity();

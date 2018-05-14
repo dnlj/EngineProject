@@ -55,4 +55,10 @@ namespace Engine::ECS {
 		componentBitsets[eid][cid] = false;
 		onComponentRemoved(eid, cid);
 	}
+
+	template<class SystemsSet, class ComponentsSet>
+	template<class Component>
+	Component& World<SystemsSet, ComponentsSet>::getComponent(EntityID eid) {
+		return getComponentContainer<Component>()[eid];
+	}
 }

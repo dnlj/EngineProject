@@ -68,6 +68,15 @@ namespace Engine::ECS {
 			template<class Component>
 			void removeComponent(EntityID eid);
 
+			/**
+			 * Gets a reference the component associated with an entity.
+			 * @param[in] eid The id of the entity.
+			 * @tparam Component The component.
+			 * @return A reference to the component.
+			 */
+			template<class Component>
+			Component& getComponent(EntityID eid);
+
 		private:
 			/** The bitsets for storing what components entities have. */
 			std::vector<ComponentBitset> componentBitsets;
