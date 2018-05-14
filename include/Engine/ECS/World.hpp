@@ -39,7 +39,7 @@ namespace Engine::ECS {
 			EntityID createEntity(bool forceNew = false);
 
 			/**
-			 * @brief Adds a component to an entity.
+			 * Adds a component to an entity.
 			 * @param[in] eid The id of the entity.
 			 * @tparam Component The component.
 			 * @return A reference to the added component.

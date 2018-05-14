@@ -20,7 +20,7 @@ namespace Engine::ECS {
 			ComponentManager();
 
 			/**
-			 * @brief Get the ComponentID associated with a component.
+			 * Get the ComponentID associated with a component.
 			 * @tparam Component The component.
 			 * @return The id of @p Component.
 			 */
@@ -28,7 +28,7 @@ namespace Engine::ECS {
 			constexpr ComponentID getComponentID() const noexcept;
 
 			/**
-			 * @brief Gets the bitset with the bits that correspond to the ids of the components set.
+			 * Gets the bitset with the bits that correspond to the ids of the components set.
 			 * @tparam Component1 The first component.
 			 * @tparam Component2 The second component.
 			 * @tparam ComponentN The third through nth components.

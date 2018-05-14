@@ -58,17 +58,17 @@ namespace Engine::ECS {
 
 		public:
 			/**
-			 * @brief Constructor.
+			 * Constructor.
 			 */
 			SystemManager();
 
 			/**
-			 * @brief Destructor.
+			 * Destructor.
 			 */
 			~SystemManager();
 
 			/**
-			 * @brief Get the id associated with a system.
+			 * Get the id associated with a system.
 			 * @tparam System The system.
 			 * @return The id associated with @p System.
 			 */
@@ -76,7 +76,7 @@ namespace Engine::ECS {
 			constexpr SystemID getSystemID() const noexcept;
 
 			/**
-			 * @brief Gets a reference to the system.
+			 * Gets a reference to the system.
 			 * @tparam System The type of the system.
 			 * @return A reference to the system.
 			 */
@@ -84,7 +84,7 @@ namespace Engine::ECS {
 			System& getSystem();
 
 			/**
-			 * @brief Gets the bitset with the bits that correspond to the ids of the systems set.
+			 * Gets the bitset with the bits that correspond to the ids of the systems set.
 			 * @tparam System1 The first system.
 			 * @tparam System2 The second system.
 			 * @tparam SystemN The third through nth systems.
@@ -97,33 +97,33 @@ namespace Engine::ECS {
 			SystemBitset getBitsetForSystems() const;
 
 			/**
-			 * @brief Runs `onEntityCreated` member function on all systems.
+			 * Runs `onEntityCreated` member function on all systems.
 			 * @param[in] eid The id of the entity being created.
 			 */
 			void onEntityCreated(EntityID eid);
 
 			/**
-			 * @brief Runs `onComponentAdded` member function on all systems.
+			 * Runs `onComponentAdded` member function on all systems.
 			 * @param[in] eid The id of the entity being added to.
 			 * @param[in] cid The id of the component being added.
 			 */
 			void onComponentAdded(EntityID eid, ComponentID cid);
 
 			/**
-			 * @brief Runs `onComponentRemoved` member function on all systems.
+			 * Runs `onComponentRemoved` member function on all systems.
 			 * @param[in] eid The id of the entity being removed from.
 			 * @param[in] cid The id of the component being removed.
 			 */
 			void onComponentRemoved(EntityID eid, ComponentID cid);
 
 			/**
-			 * @brief Runs the `onEntityDestroyed` member function on all systems.
+			 * Runs the `onEntityDestroyed` member function on all systems.
 			 * @param[in] eid The id of the entity being destroyed.
 			 */
 			void onEntityDestroyed(EntityID eid);
 
 			/**
-			 * @brief Runs the `run` member function on all systems.
+			 * Runs the `run` member function on all systems.
 			 * @param[in] dt The time delta between calls.
 			 */
 			void run(float dt);
@@ -142,7 +142,7 @@ namespace Engine::ECS {
 			std::array<SystemID, count> systemOrder;
 
 			/**
-			 * @brief Sorts all systems.
+			 * Sorts all systems.
 			 */
 			void sort();
 	};
