@@ -20,7 +20,6 @@ namespace Engine::ECS {
 
 		public:
 			// EntityManager members
-			using EntityManager::destroyEntity;
 			using EntityManager::isAlive;
 
 			// ComponentManager members
@@ -37,6 +36,11 @@ namespace Engine::ECS {
 			 * @copydoc EntityManager::createEntity
 			 */
 			EntityID createEntity(bool forceNew = false);
+
+			/**
+			 * @copydoc EntityManager::destroyEntity
+			 */
+			void destroyEntity(EntityID eid);
 
 			/**
 			 * Adds a component to an entity.

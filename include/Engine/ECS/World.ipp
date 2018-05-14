@@ -13,6 +13,12 @@ namespace Engine::ECS {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
+	void World<SystemsSet, ComponentsSet>::destroyEntity(EntityID eid) {
+		EntityManager::destroyEntity(eid);
+		onEntityDestroyed(eid);
+	}
+
+	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
 	Component& World<SystemsSet, ComponentsSet>::addComponent(EntityID eid) {
 		auto& container = getComponentContainer<Component>();

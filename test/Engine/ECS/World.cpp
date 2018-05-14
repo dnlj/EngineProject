@@ -52,6 +52,13 @@ namespace {
 }
 
 namespace {
+	TEST(Engine_ECS_World, create_destroy_Entity) {
+		W w;
+
+		auto eid = w.createEntity();
+		w.destroyEntity(eid);
+	}
+
 	TEST(Engine_ECS_World, has_add_remove_Component) {
 		W w;
 		auto eid = w.createEntity();
