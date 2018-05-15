@@ -1,12 +1,13 @@
 #pragma once
 
-// Engine
-#include <Engine/SystemBase.hpp>
+// Game
+#include <Game/Common.hpp>
+
 
 namespace Game {
-	class CharacterMovementSystem : public Engine::SystemBase {
+	class CharacterMovementSystem : public SystemBase {
 		public:
-			CharacterMovementSystem();
+			CharacterMovementSystem(World& world);
 			void run(float dt);
 	};
 }

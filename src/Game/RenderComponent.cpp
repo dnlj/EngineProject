@@ -4,7 +4,6 @@
 // Engine
 #include <Engine/Debug/Debug.hpp>
 #include <Engine/Utility/Utility.hpp>
-#include <Engine/ECS/ECS.hpp>
 
 // Game
 #include <Game/RenderComponent.hpp>
@@ -84,5 +83,3 @@ namespace Game {
 		glDeleteShader(fragShader);
 	}
 }
-
-ENGINE_REGISTER_COMPONENT(Game::RenderComponent);

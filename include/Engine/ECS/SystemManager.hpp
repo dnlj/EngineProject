@@ -48,7 +48,7 @@ namespace Engine::ECS {
 			>::value,
 			"Each system must be unique."
 		);
-
+		
 		static_assert(
 			std::conjunction<
 				std::is_base_of<System, Systems>...
@@ -60,7 +60,8 @@ namespace Engine::ECS {
 			/**
 			 * Constructor.
 			 */
-			SystemManager();
+			template<class World> // TODO: Better way to handle this?
+			SystemManager(World& world);
 
 			/**
 			 * Destructor.

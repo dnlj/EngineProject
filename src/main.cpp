@@ -24,6 +24,9 @@
 // Box2D
 #include <Box2D/Box2D.h>
 
+// Meta
+#include <Meta/TypeSet/TypeSet.hpp>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Debug/Debug.hpp>
@@ -32,11 +35,12 @@
 #include <Engine/SystemBase.hpp>
 #include <Engine/TextureManager.hpp>
 #include <Engine/Utility/Utility.hpp>
+#include <Engine/ECS/World.hpp>
 
 // Game
-#include <Game/PhysicsComponent.hpp>
+#include <Game/Common.hpp>
 #include <Game/RenderComponent.hpp>
-#include <Game/RenderSystem.hpp>
+#include <Game/PhysicsComponent.hpp>
 
 GLFWwindow* window = nullptr; // TODO: need to add a way to pass data to systems
 
@@ -162,16 +166,14 @@ void run() {
 
 	// ECS Test stuff
 	Engine::TextureManager textureManager;
+	Game::World ecsWorld;
+
 	{
 		// TODO: make a create entity with x,y,z components function? to prevent unnessassary calls
-		auto& ent = Engine::createEntity();
+		auto eid = ecsWorld.createEntity();
 
-		// TODO: maybe make an addAndGetComponent function
-		ent.addComponent<Game::RenderComponent>();
-		ent.getComponent<Game::RenderComponent>().setup(textureManager);
-
-		ent.addComponent<Game::PhysicsComponent>();
-		ent.getComponent<Game::PhysicsComponent>().setup(world);
+		ecsWorld.addComponent<Game::RenderComponent>(eid).setup(textureManager);
+		ecsWorld.addComponent<Game::PhysicsComponent>(eid).setup(world);
 	}
 
 	// Main loop
@@ -204,7 +206,7 @@ void run() {
 		world.DrawDebugData();
 
 		// ECS
-		Engine::ECS::run(dt);
+		ecsWorld.run(dt);
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
 
@@ -231,7 +233,6 @@ int main(int argc, char* argv[]) {
 		SetWindowPos(window, HWND_TOP, 0, 0, 1000, 500, 0);
 	}
 
-	Engine::ECS::init();
 	run();
 
 	std::cout << "Done." << std::endl;

@@ -12,34 +12,32 @@
 extern GLFWwindow* window; // TODO: Add a way to pass data to systems
 
 namespace Game {
-	CharacterMovementSystem::CharacterMovementSystem() {
-		cbits = Engine::ECS::getBitsetForComponents<Game::PhysicsComponent>();
-		priorityBefore = Engine::ECS::getBitsetForSystems<Game::RenderSystem>();
+	CharacterMovementSystem::CharacterMovementSystem(World& world) : SystemBase{world} {
+		cbits = world.getBitsetForComponents<Game::PhysicsComponent>();
+		priorityBefore = world.getBitsetForSystems<Game::RenderSystem>();
 	}
 
 	void CharacterMovementSystem::run(float dt) {
 		constexpr float speed = 1.0f;
-		for (auto& ent : entities) {
-			auto& physComp = ent.getComponent<Game::PhysicsComponent>();
-
+		for (auto eid : entities) {
+			auto& physComp = world.getComponent<Game::PhysicsComponent>(eid);
+		
 			// TODO: this should work the other way. Apply force to the body then update the draw position.
 			if (glfwGetKey(window, GLFW_KEY_W)) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, speed * dt}, true);
 			}
-
+		
 			if (glfwGetKey(window, GLFW_KEY_S)) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, -speed * dt}, true);
 			}
-
+		
 			if (glfwGetKey(window, GLFW_KEY_A)) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{-speed * dt, 0.0f}, true);
 			}
-
+		
 			if (glfwGetKey(window, GLFW_KEY_D)) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{speed * dt, 0.0f}, true);
 			}
 		}
 	}
 }
-
-ENGINE_REGISTER_SYSTEM(Game::CharacterMovementSystem);

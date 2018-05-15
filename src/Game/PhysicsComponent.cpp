@@ -1,6 +1,3 @@
-// Engine
-#include <Engine/ECS/ECS.hpp>
-
 // Game
 #include <Game/PhysicsComponent.hpp>
 
@@ -21,5 +18,3 @@ namespace Game {
 		body->CreateFixture(&fixtureDef);
 	}
 }
-
-ENGINE_REGISTER_COMPONENT(Game::PhysicsComponent);

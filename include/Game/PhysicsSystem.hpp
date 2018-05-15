@@ -1,11 +1,13 @@
 #pragma once
 
-// Engine
-#include <Engine/SystemBase.hpp>
+// Game
+#include <Game/Common.hpp>
+
 
 namespace Game {
-	class PhysicsSystem : public Engine::SystemBase {
+	class PhysicsSystem : public SystemBase {
 		public:
+			PhysicsSystem(World& world);
 			void run(float dt);
 	};
 }

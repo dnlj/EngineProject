@@ -13,8 +13,8 @@ namespace Game {
 	decltype(projection) projection;
 	decltype(view) view;
 
-	RenderSystem::RenderSystem() {
-		cbits = Engine::ECS::getBitsetForComponents<Game::RenderComponent, Game::PhysicsComponent>();
+	RenderSystem::RenderSystem(World& world) : SystemBase{world} {
+		cbits = world.getBitsetForComponents<Game::RenderComponent, Game::PhysicsComponent>();
 
 		// MVP
 		constexpr float scale = 1.0f / 400.0f;
@@ -25,19 +25,19 @@ namespace Game {
 	}
 
 	void RenderSystem::run(float dt) {
-		for (auto& ent : entities) {
-			const auto& rendComp = ent.getComponent<Game::RenderComponent>();
-			const auto& physComp = ent.getComponent<Game::PhysicsComponent>();
-
+		for (auto& eid : entities) {
+			const auto& rendComp = world.getComponent<Game::RenderComponent>(eid);
+			const auto& physComp = world.getComponent<Game::PhysicsComponent>(eid);
+		
 			glBindVertexArray(rendComp.vao);
 			glUseProgram(rendComp.shader);
-
+		
 			// Texture
 			// TODO: is this texture stuff stored in VAO?
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, rendComp.texture);
 			glUniform1i(6, 0);
-
+		
 			// MVP
 			{
 				const auto& transform = physComp.body->GetTransform();
@@ -45,11 +45,9 @@ namespace Game {
 				glm::mat4 mvp = projection * view * model;
 				glUniformMatrix4fv(2, 1, GL_FALSE, &mvp[0][0]);
 			}
-
+		
 			// Draw
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
 	}
 }
-
-ENGINE_REGISTER_SYSTEM(Game::RenderSystem);

@@ -9,9 +9,10 @@
 
 namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
-	SystemManager<SystemsType<Systems...>>::SystemManager()
+	template<class World>
+	SystemManager<SystemsType<Systems...>>::SystemManager(World& world)
 		// TODO: Constructor arguments?
-		: systems{new Systems() ...}
+		: systems{new Systems(world) ...}
 		, systemOrder{getSystemID<Systems>() ...} {
 
 		// Update priorities

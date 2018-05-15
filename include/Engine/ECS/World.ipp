@@ -2,6 +2,11 @@
 
 namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
+	World<SystemsSet, ComponentsSet>::World()
+		: SystemManager{*this} { // TODO: Better way to handle this?
+	}
+
+	template<class SystemsSet, class ComponentsSet>
 	EntityID World<SystemsSet, ComponentsSet>::createEntity(bool forceNew) {
 		const auto eid = EntityManager::createEntity(forceNew);
 

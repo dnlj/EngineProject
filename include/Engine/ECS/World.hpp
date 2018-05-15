@@ -30,8 +30,12 @@ namespace Engine::ECS {
 			using SystemManager::getSystemID;
 			using SystemManager::getSystem;
 			using SystemManager::getBitsetForSystems;
+			using SystemManager::run;
 
 		public:
+			// TODO: Doc
+			World();
+
 			/**
 			 * @copydoc EntityManager::createEntity
 			 */
@@ -59,6 +63,11 @@ namespace Engine::ECS {
 			 */
 			template<class Component>
 			bool hasComponent(EntityID eid);
+
+			// TODO: Doc
+			// TODO: Impl
+			// TODO: Change to use type set
+			bool hasComponents(EntityID eid, ComponentBitset cbits) { return false; }
 
 			/**
 			 * Removes a component from an entity.
