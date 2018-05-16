@@ -9,16 +9,16 @@ namespace Engine {
 
 	template<class SystemsSet, class ComponentsSet>
 	void SystemBase<ECS::World<SystemsSet, ComponentsSet>>::onEntityCreated(ECS::EntityID eid) {
-		//if (!hasEntity(eid) && world.hasComponents(eid, cbits)) {
-		//	addEntity(eid);
-		//}
+		if (!hasEntity(eid) && world.hasComponents(eid, cbits)) {
+			addEntity(eid);
+		}
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	void SystemBase<ECS::World<SystemsSet, ComponentsSet>>::onComponentAdded(ECS::EntityID eid, ECS::ComponentID cid) {
-		//if (!hasEntity(eid) && world.hasComponents(eid, cbits)) {
-		//	addEntity(eid);
-		//}
+		if (!hasEntity(eid) && world.hasComponents(eid, cbits)) {
+			addEntity(eid);
+		}
 	}
 
 	template<class SystemsSet, class ComponentsSet>

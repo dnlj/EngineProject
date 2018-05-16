@@ -53,6 +53,11 @@ namespace Engine::ECS {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
+	bool World<SystemsSet, ComponentsSet>::hasComponents(EntityID eid, ComponentBitset cbits) {
+		return (componentBitsets[eid] & cbits) == cbits;
+	}
+
+	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
 	void World<SystemsSet, ComponentsSet>::removeComponent(EntityID eid) {
 		const auto cid = getComponentID<Component>();

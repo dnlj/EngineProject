@@ -64,10 +64,14 @@ namespace Engine::ECS {
 			template<class Component>
 			bool hasComponent(EntityID eid);
 
-			// TODO: Doc
-			// TODO: Impl
-			// TODO: Change to use type set
-			bool hasComponents(EntityID eid, ComponentBitset cbits) { return false; }
+			/**
+			 * Checks if an entity has components.
+			 * @param[in] eid The id of the entity.
+			 * @param[in] cbits The bitset of components.
+			 * @return True if the entity has the components; otherwise false.
+			 */
+			// TODO: Test
+			bool hasComponents(EntityID eid, ComponentBitset cbits);
 
 			/**
 			 * Removes a component from an entity.
