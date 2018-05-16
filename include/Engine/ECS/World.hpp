@@ -33,7 +33,9 @@ namespace Engine::ECS {
 			using SystemManager::run;
 
 		public:
-			// TODO: Doc
+			/**
+			 * Constructor.
+			 */
 			World();
 
 			/**
