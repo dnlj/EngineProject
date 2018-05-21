@@ -7,6 +7,7 @@
 // GoogleTest
 #include <gtest/gtest.h>
 
+// TODO: Fix
 namespace {
 	template<int I>
 	class Component {
@@ -14,17 +15,14 @@ namespace {
 			int value = 0;
 	};
 
+	template<int>
+	class System;
+	
 	using ComponentA = Component<0>;
 	using ComponentB = Component<1>;
 	using ComponentC = Component<2>;
 	using ComponentD = Component<3>;
 	using ComponentE = Component<4>;
-
-	template<int I>
-	class System : public Engine::ECS::System {
-		public:
-			int value = 0;
-	};
 
 	using SystemA = System<0>;
 	using SystemB = System<1>;
@@ -48,19 +46,26 @@ namespace {
 		ComponentE
 	>;
 
-	using W = Engine::ECS::World<SystemsSet, ComponentsSet>;
+	using World = Engine::ECS::World<SystemsSet, ComponentsSet>;
+
+	template<int I>
+	class System : public Engine::ECS::System {
+		public:
+			System(World&) {};
+			int value = 0;
+	};
 }
 
 namespace {
 	TEST(Engine_ECS_World, create_destroy_Entity) {
-		W w;
+		World w;
 
 		auto eid = w.createEntity();
 		w.destroyEntity(eid);
 	}
 
 	TEST(Engine_ECS_World, getComponent) {
-		W w;
+		World w;
 
 		auto eid = w.createEntity();
 		
@@ -75,7 +80,7 @@ namespace {
 	}
 
 	TEST(Engine_ECS_World, has_add_remove_Component) {
-		W w;
+		World w;
 		auto eid = w.createEntity();
 
 		ASSERT_FALSE(w.hasComponent<ComponentA>(eid));
