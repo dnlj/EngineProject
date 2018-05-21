@@ -8,6 +8,6 @@ namespace Game {
 	class PhysicsSystem : public SystemBase {
 		public:
 			PhysicsSystem(World& world);
-			void run(float dt);
+			virtual void run(float dt) override;
 	};
 }

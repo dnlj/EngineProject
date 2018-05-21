@@ -14,6 +14,6 @@ namespace Game {
 	class RenderSystem : public SystemBase {
 		public:
 			RenderSystem(World& world);
-			void run(float dt);
+			virtual void run(float dt) override;
 	};
 }
