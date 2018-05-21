@@ -22,7 +22,6 @@ namespace Game {
 		for (auto eid : entities) {
 			auto& physComp = world.getComponent<Game::PhysicsComponent>(eid);
 		
-			// TODO: this should work the other way. Apply force to the body then update the draw position.
 			if (glfwGetKey(window, GLFW_KEY_W)) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, speed * dt}, true);
 			}

@@ -17,9 +17,6 @@ namespace Engine::ECS {
 		}
 
 		aliveEntities[eid] = true;
-		
-		// TODO: detail::onEntityCreatedAll(eid);
-
 		return eid;
 	}
 
@@ -32,7 +29,6 @@ namespace Engine::ECS {
 
 		aliveEntities[eid] = false;
 		deadEntities.emplace_back(eid);
-		// TODO: detail::onEntityDestroyedAll(eid);
 	}
 
 	bool EntityManager::isAlive(EntityID eid) {

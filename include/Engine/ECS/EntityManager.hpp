@@ -7,9 +7,10 @@
 #include <Engine/ECS/Common.hpp>
 
 
-// TODO: Document
-// TODO: Test
 namespace Engine::ECS {
+	/**
+	 * Manages entity ids.
+	 */
 	class EntityManager {
 		public:
 			/**

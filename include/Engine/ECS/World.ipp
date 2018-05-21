@@ -3,7 +3,7 @@
 namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	World<SystemsSet, ComponentsSet>::World()
-		: SystemManager{*this} { // TODO: Better way to handle this?
+		: SystemManager{*this} {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
