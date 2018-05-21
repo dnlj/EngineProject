@@ -61,9 +61,7 @@ namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
 	SystemManager<SystemsType<Systems...>>::~SystemManager() {
 		for (const auto& system : systems) {
-			if (system != nullptr) {
-				delete system;
-			}
+			delete system;
 		}
 	}
 
