@@ -37,7 +37,7 @@ namespace Engine::ECS {
 			/**
 			 * Constructor.
 			 */
-			template<class World> // TODO: Better way to handle this?
+			template<class World>
 			SystemManager(World& world);
 
 			/**

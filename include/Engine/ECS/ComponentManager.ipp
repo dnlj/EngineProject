@@ -10,10 +10,6 @@
 namespace Engine::ECS {
 	template<template<class...> class ComponentsType, class... Components>
 	ComponentManager<ComponentsType<Components...>>::ComponentManager() {
-		// const auto id = getNextComponentID();
-		// TODO: detail::ComponentData::addComponent[id] = addComponentToEntity<Component>;
-		// TODO: detail::ComponentData::getComponent[id] = getComponentForEntity<Component>;
-		// TODO: detail::ComponentData::reclaim[id] = reclaim<Component>;
 	}
 
 	template<template<class...> class ComponentsType, class... Components>
