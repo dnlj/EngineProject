@@ -72,7 +72,6 @@ namespace Engine::ECS {
 			 * @param[in] cbits The bitset of components.
 			 * @return True if the entity has the components; otherwise false.
 			 */
-			// TODO: Test
 			bool hasComponents(EntityID eid, ComponentBitset cbits);
 
 			/**

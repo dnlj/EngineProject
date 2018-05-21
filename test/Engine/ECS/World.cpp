@@ -137,4 +137,20 @@ namespace {
 		ASSERT_FALSE(w.hasComponent<ComponentD>(eid));
 		ASSERT_FALSE(w.hasComponent<ComponentE>(eid));
 	}
+
+	TEST(Engine_ECS_World, hasComponents) {
+		World w;
+
+		const auto eid = w.createEntity();
+		w.addComponent<ComponentA>(eid);
+		w.addComponent<ComponentC>(eid);
+		w.addComponent<ComponentE>(eid);
+
+		Engine::ECS::ComponentBitset cbits;
+		cbits[0] = true;
+		cbits[2] = true;
+		cbits[4] = true;
+
+		ASSERT_TRUE(w.hasComponents(eid, cbits));
+	}
 }
