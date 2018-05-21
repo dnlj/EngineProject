@@ -41,9 +41,19 @@ namespace Engine::ECS {
 			SystemManager(World& world);
 
 			/**
+			 *  Deleted copy constructor
+			 */
+			SystemManager(SystemManager&) = delete;
+
+			/**
 			 * Destructor.
 			 */
 			~SystemManager();
+
+			/**
+			 * Deleted assignment operator.
+			 */
+			SystemManager& operator=(const SystemManager&) = delete;
 
 			/**
 			 * Get the id associated with a system.
