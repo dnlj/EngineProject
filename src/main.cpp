@@ -106,8 +106,7 @@ namespace {
 void run() {
 	// GLFW error callback
 	glfwSetErrorCallback([](int error, const char* desc) {
-		// TODO: Create a more standard error system
-		fprintf(stderr, "[GLFW] %s\n", desc);
+		ENGINE_ERROR("[GLFW] " << desc);
 	});
 
 	// Initialize GLFW
@@ -156,7 +155,6 @@ void run() {
 		b2PolygonShape boxShape;
 		boxShape.SetAsBox(0.25f, 0.25f);
 
-		// TODO: Can you reuse fixtures? Does a body own a fixture?
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &boxShape;
 		fixtureDef.density = 1.0f;
@@ -169,7 +167,6 @@ void run() {
 	Game::World ecsWorld;
 
 	{
-		// TODO: make a create entity with x,y,z components function? to prevent unnessassary calls
 		auto eid = ecsWorld.createEntity();
 
 		ecsWorld.addComponent<Game::RenderComponent>(eid).setup(textureManager);
