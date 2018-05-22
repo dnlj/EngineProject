@@ -141,36 +141,24 @@ void run() {
 	// Box2D testing
 	b2World world{b2Vec2{0.0f, -0.0f}};
 	Engine::Debug::DebugDrawBox2D debugDraw;
-	{
-		b2Body* body;
-
-		debugDraw.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_aabbBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
-		world.SetDebugDraw(&debugDraw);
-
-		b2BodyDef bodyDef;
-		bodyDef.type = b2_dynamicBody;
-
-		body = world.CreateBody(&bodyDef);
-
-		b2PolygonShape boxShape;
-		boxShape.SetAsBox(0.25f, 0.25f);
-
-		b2FixtureDef fixtureDef;
-		fixtureDef.shape = &boxShape;
-		fixtureDef.density = 1.0f;
-
-		body->CreateFixture(&fixtureDef);
-	}
+	debugDraw.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_aabbBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
+	world.SetDebugDraw(&debugDraw);
 
 	// ECS Test stuff
 	Engine::TextureManager textureManager;
 	Game::World ecsWorld;
 
 	{
-		auto eid = ecsWorld.createEntity();
+		// Player
+		auto player = ecsWorld.createEntity();
+		ecsWorld.addComponent<Game::RenderComponent>(player).setup(textureManager);
+		ecsWorld.addComponent<Game::PhysicsComponent>(player).setup(world);
+		ecsWorld.addComponent<Game::CharacterMovementComponent>(player);
 
-		ecsWorld.addComponent<Game::RenderComponent>(eid).setup(textureManager);
-		ecsWorld.addComponent<Game::PhysicsComponent>(eid).setup(world);
+		// Other
+		auto other = ecsWorld.createEntity();
+		ecsWorld.addComponent<Game::RenderComponent>(other).setup(textureManager);
+		ecsWorld.addComponent<Game::PhysicsComponent>(other).setup(world);
 	}
 
 	// Main loop

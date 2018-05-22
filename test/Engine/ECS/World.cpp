@@ -7,7 +7,6 @@
 // GoogleTest
 #include <gtest/gtest.h>
 
-// TODO: Fix
 namespace {
 	template<int I>
 	class Component {

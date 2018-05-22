@@ -8,12 +8,17 @@
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/RenderSystem.hpp>
 #include <Game/PhysicsComponent.hpp>
+#include <Game/CharacterMovementComponent.hpp>
 
 extern GLFWwindow* window; // TODO: Add a way to pass data to systems
 
 namespace Game {
 	CharacterMovementSystem::CharacterMovementSystem(World& world) : SystemBase{world} {
-		cbits = world.getBitsetForComponents<Game::PhysicsComponent>();
+		cbits = world.getBitsetForComponents<
+			Game::PhysicsComponent,
+			Game::CharacterMovementComponent
+		>();
+
 		priorityBefore = world.getBitsetForSystems<Game::RenderSystem>();
 	}
 

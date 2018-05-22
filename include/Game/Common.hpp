@@ -14,6 +14,7 @@ namespace Game {
 	class CharacterMovementSystem;
 	class PhysicsComponent;
 	class RenderComponent;
+	class CharacterMovementComponent;
 
 	using SystemsSet = Meta::TypeSet::TypeSet<
 		PhysicsSystem,
@@ -23,7 +24,8 @@ namespace Game {
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<
 		PhysicsComponent,
-		RenderComponent
+		RenderComponent,
+		CharacterMovementComponent
 	>;
 
 	using World = Engine::ECS::World<SystemsSet, ComponentsSet>;
@@ -36,3 +38,4 @@ namespace Game {
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/PhysicsComponent.hpp>
 #include <Game/RenderComponent.hpp>
+#include <Game/CharacterMovementComponent.hpp>
