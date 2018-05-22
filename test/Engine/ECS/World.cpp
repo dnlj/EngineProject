@@ -166,4 +166,21 @@ namespace {
 		ASSERT_TRUE(&c == &w.getComponent<ComponentC>(eid));
 		ASSERT_TRUE(&e == &w.getComponent<ComponentE>(eid));
 	}
+
+	TEST(Engine_ECS_World, removeComponents) {
+		World w;
+
+		const auto eid = w.createEntity();
+		const auto cbits = w.getBitsetForComponents<ComponentA, ComponentC, ComponentE>();
+
+		w.addComponents<ComponentA, ComponentC, ComponentE>(eid);
+
+		ASSERT_TRUE(w.hasComponents(eid, cbits));
+
+		w.removeComponents<ComponentA, ComponentC, ComponentE>(eid);
+
+		ASSERT_FALSE(w.hasComponent<ComponentA>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentC>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentE>(eid));
+	}
 }

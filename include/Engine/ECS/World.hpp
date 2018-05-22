@@ -95,6 +95,14 @@ namespace Engine::ECS {
 			void removeComponent(EntityID eid);
 
 			/**
+			 * Removes components from an entity.
+			 * @param[in] eid The id of the entity.
+			 * @tparam Components The components.
+			 */
+			template<class... Components>
+			void removeComponents(EntityID eid);
+
+			/**
 			 * Gets a reference the component associated with an entity.
 			 * @param[in] eid The id of the entity.
 			 * @tparam Component The component.

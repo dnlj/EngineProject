@@ -73,6 +73,12 @@ namespace Engine::ECS {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
+	template<class... Components>
+	void World<SystemsSet, ComponentsSet>::removeComponents(EntityID eid) {
+		(removeComponent<Components>(eid), ...);
+	}
+
+	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
 	Component& World<SystemsSet, ComponentsSet>::getComponent(EntityID eid) {
 		return getComponentContainer<Component>()[eid];
