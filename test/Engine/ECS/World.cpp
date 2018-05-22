@@ -153,4 +153,17 @@ namespace {
 
 		ASSERT_TRUE(w.hasComponents(eid, cbits));
 	}
+
+	TEST(Engine_ECS_World, addComponents) {
+		World w;
+
+		const auto eid = w.createEntity();
+		auto& [a, c ,e] = w.addComponents<ComponentA, ComponentC, ComponentE>(eid);
+		const auto cbits = w.getBitsetForComponents<ComponentA, ComponentC, ComponentE>();
+
+		ASSERT_TRUE(w.hasComponents(eid, cbits));
+		ASSERT_TRUE(&a == &w.getComponent<ComponentA>(eid));
+		ASSERT_TRUE(&c == &w.getComponent<ComponentC>(eid));
+		ASSERT_TRUE(&e == &w.getComponent<ComponentE>(eid));
+	}
 }

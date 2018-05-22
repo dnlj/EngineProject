@@ -47,6 +47,12 @@ namespace Engine::ECS {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
+	template<class... Components>
+	std::tuple<Components&...> World<SystemsSet, ComponentsSet>::addComponents(EntityID eid) {
+		return std::forward_as_tuple(addComponent<Components>(eid) ...);
+	}
+
+	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
 	bool World<SystemsSet, ComponentsSet>::hasComponent(EntityID eid) {
 		return componentBitsets[eid][getComponentID<Component>()];

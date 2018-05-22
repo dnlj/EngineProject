@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <tuple>
+
 // Engine
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/SystemManager.hpp>
@@ -56,6 +59,15 @@ namespace Engine::ECS {
 			 */
 			template<class Component>
 			Component& addComponent(EntityID eid);
+
+			/**
+			 * Adds components to an entity.
+			 * @param[in] eid The id of the entity.
+			 * @tparam Components The components.
+			 * @return A tuple of references to the added components.
+			 */
+			template<class... Components>
+			std::tuple<Components&...> addComponents(EntityID eid);
 
 			/**
 			 * Checks if an entity has a component.
