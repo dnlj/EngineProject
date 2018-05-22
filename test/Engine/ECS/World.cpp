@@ -158,7 +158,7 @@ namespace {
 		World w;
 
 		const auto eid = w.createEntity();
-		auto& [a, c ,e] = w.addComponents<ComponentA, ComponentC, ComponentE>(eid);
+		auto& [a, c, e] = w.addComponents<ComponentA, ComponentC, ComponentE>(eid);
 		const auto cbits = w.getBitsetForComponents<ComponentA, ComponentC, ComponentE>();
 
 		ASSERT_TRUE(w.hasComponents(eid, cbits));
@@ -182,5 +182,18 @@ namespace {
 		ASSERT_FALSE(w.hasComponent<ComponentA>(eid));
 		ASSERT_FALSE(w.hasComponent<ComponentC>(eid));
 		ASSERT_FALSE(w.hasComponent<ComponentE>(eid));
+	}
+
+	TEST(Engine_ECS_World, getComponents) {
+		World w;
+
+		const auto eid = w.createEntity();
+		auto& [a1, c1, e1] = w.addComponents<ComponentA, ComponentC, ComponentE>(eid);
+		auto& [a2, c2, e2] = w.getComponents<ComponentA, ComponentC, ComponentE>(eid);
+
+
+		ASSERT_TRUE(&a1 == &a2);
+		ASSERT_TRUE(&c1 == &c2);
+		ASSERT_TRUE(&e1 == &e2);
 	}
 }

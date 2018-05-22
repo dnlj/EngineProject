@@ -111,6 +111,15 @@ namespace Engine::ECS {
 			template<class Component>
 			Component& getComponent(EntityID eid);
 
+			/**
+			 * Gets a reference the components associated with an entity.
+			 * @param[in] eid The id of the entity.
+			 * @tparam Components The components.
+			 * @return A tuple of references to the components.
+			 */
+			template<class... Components>
+			std::tuple<Components&...> getComponents(EntityID eid);
+
 		private:
 			/** The bitsets for storing what components entities have. */
 			std::vector<ComponentBitset> componentBitsets;

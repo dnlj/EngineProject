@@ -83,4 +83,10 @@ namespace Engine::ECS {
 	Component& World<SystemsSet, ComponentsSet>::getComponent(EntityID eid) {
 		return getComponentContainer<Component>()[eid];
 	}
+
+	template<class SystemsSet, class ComponentsSet>
+	template<class... Components>
+	std::tuple<Components&...> World<SystemsSet, ComponentsSet>::getComponents(EntityID eid) {
+		return std::forward_as_tuple(getComponent<Components>(eid) ...);
+	}
 }
