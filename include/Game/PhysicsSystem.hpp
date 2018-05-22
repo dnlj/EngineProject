@@ -1,5 +1,11 @@
 #pragma once
 
+// Box2D
+#include <Box2D/Box2D.h>
+
+// Engine
+#include <Engine/Debug/DebugDrawBox2D.hpp>
+
 // Game
 #include <Game/Common.hpp>
 
@@ -9,5 +15,11 @@ namespace Game {
 		public:
 			PhysicsSystem(World& world);
 			virtual void run(float dt) override;
+
+			b2World& getPhysicsWorld();
+
+		private:
+			b2World physWorld;
+			Engine::Debug::DebugDrawBox2D debugDraw;
 	};
 }

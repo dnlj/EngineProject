@@ -4,6 +4,9 @@
 #include <array>
 #include <vector>
 
+// glLoadGen
+#include <glloadgen/gl_core_4_5.hpp>
+
 // GLM
 #include <glm/glm.hpp>
 

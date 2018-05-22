@@ -21,16 +21,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-// Box2D
-#include <Box2D/Box2D.h>
-
 // Meta
 #include <Meta/TypeSet/TypeSet.hpp>
 
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Debug/Debug.hpp>
-#include <Engine/Debug/DebugDrawBox2D.hpp>
 #include <Engine/Entity.hpp>
 #include <Engine/SystemBase.hpp>
 #include <Engine/TextureManager.hpp>
@@ -138,27 +134,23 @@ void run() {
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 	#endif
 
-	// Box2D testing
-	b2World world{b2Vec2{0.0f, -0.0f}};
-	Engine::Debug::DebugDrawBox2D debugDraw;
-	debugDraw.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_aabbBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
-	world.SetDebugDraw(&debugDraw);
-
 	// ECS Test stuff
 	Engine::TextureManager textureManager;
-	Game::World ecsWorld;
+	Game::World world;
 
 	{
+		auto& physSys = world.getSystem<Game::PhysicsSystem>();
+
 		// Player
-		auto player = ecsWorld.createEntity();
-		ecsWorld.addComponent<Game::RenderComponent>(player).setup(textureManager);
-		ecsWorld.addComponent<Game::PhysicsComponent>(player).setup(world);
-		ecsWorld.addComponent<Game::CharacterMovementComponent>(player);
+		auto player = world.createEntity();
+		// ecsWorld.addComponent<Game::RenderComponent>(player).setup(textureManager);
+		world.addComponent<Game::PhysicsComponent>(player).setup(physSys.getPhysicsWorld());
+		world.addComponent<Game::CharacterMovementComponent>(player);
 
 		// Other
-		auto other = ecsWorld.createEntity();
-		ecsWorld.addComponent<Game::RenderComponent>(other).setup(textureManager);
-		ecsWorld.addComponent<Game::PhysicsComponent>(other).setup(world);
+		auto other = world.createEntity();
+		// ecsWorld.addComponent<Game::RenderComponent>(other).setup(textureManager);
+		world.addComponent<Game::PhysicsComponent>(other).setup(physSys.getPhysicsWorld());
 	}
 
 	// Main loop
@@ -185,18 +177,10 @@ void run() {
 		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// Box2D
-		world.Step(dt, 8, 3);
-		debugDraw.reset();
-		world.DrawDebugData();
-
 		// ECS
-		ecsWorld.run(dt);
+		world.run(dt);
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
-
-		// Box2D debug draw
-		debugDraw.draw();
 
 		// GLFW
 		glfwSwapBuffers(window);
