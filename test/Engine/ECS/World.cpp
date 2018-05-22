@@ -142,6 +142,16 @@ namespace {
 		World w;
 
 		const auto eid = w.createEntity();
+		w.addComponents<ComponentA, ComponentC, ComponentE>(eid);
+
+		const auto value = w.hasComponents<ComponentA, ComponentC, ComponentE>(eid);
+		ASSERT_TRUE(value);
+	}
+
+	TEST(Engine_ECS_World, hasComponents_bitset) {
+		World w;
+
+		const auto eid = w.createEntity();
 		w.addComponent<ComponentA>(eid);
 		w.addComponent<ComponentC>(eid);
 		w.addComponent<ComponentE>(eid);

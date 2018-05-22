@@ -79,6 +79,15 @@ namespace Engine::ECS {
 			bool hasComponent(EntityID eid);
 
 			/**
+			 * Checks if an entity has the components.
+			 * @param[in] eid The id of the entity.
+			 * @tparam Components The components.
+			 * @return True if the entity has the components; otherwise false.
+			 */
+			template<class... Components>
+			bool hasComponents(EntityID eid);
+
+			/**
 			 * Checks if an entity has components.
 			 * @param[in] eid The id of the entity.
 			 * @param[in] cbits The bitset of components.

@@ -59,6 +59,12 @@ namespace Engine::ECS {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
+	template<class... Components>
+	bool World<SystemsSet, ComponentsSet>::hasComponents(EntityID eid) {
+		return hasComponents(eid, getBitsetForComponents<Components...>());
+	}
+
+	template<class SystemsSet, class ComponentsSet>
 	bool World<SystemsSet, ComponentsSet>::hasComponents(EntityID eid, ComponentBitset cbits) {
 		return (componentBitsets[eid] & cbits) == cbits;
 	}
