@@ -23,7 +23,7 @@ namespace Game {
 	}
 
 	void CharacterMovementSystem::run(float dt) {
-		constexpr float speed = 1.0f;
+		constexpr float speed = 2.0f;
 		for (auto eid : entities) {
 			auto& physComp = world.getComponent<Game::PhysicsComponent>(eid);
 		
@@ -33,6 +33,7 @@ namespace Game {
 		
 			if (glfwGetKey(window, GLFW_KEY_S)) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, -speed * dt}, true);
+
 			}
 		
 			if (glfwGetKey(window, GLFW_KEY_A)) {
