@@ -43,7 +43,10 @@ namespace Engine {
 		if (hasEntities.size() <= eid) {
 			hasEntities.resize(eid + 1);
 		}
+
 		hasEntities[eid] = true;
+
+		onEntityAdded(eid);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
@@ -51,6 +54,8 @@ namespace Engine {
 		auto found = std::lower_bound(entities.cbegin(), entities.cend(), eid);
 		entities.erase(found);
 		hasEntities[eid] = false;
+
+		onEntityRemoved(eid);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
@@ -60,5 +65,13 @@ namespace Engine {
 		} else {
 			return hasEntities[eid];
 		}
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	void SystemBase<ECS::World<SystemsSet, ComponentsSet>>::onEntityAdded(ECS::EntityID eid) {
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	void SystemBase<ECS::World<SystemsSet, ComponentsSet>>::onEntityRemoved(ECS::EntityID eid) {
 	}
 }

@@ -87,6 +87,18 @@ namespace Engine {
 			 * @param[in] eid The entity.
 			 */
 			bool hasEntity(ECS::EntityID eid);
+
+			/**
+			 * Called when an entity is added to this system.
+			 * @param[in] eid The id of the entity.
+			 */
+			virtual void onEntityAdded(ECS::EntityID eid);
+
+			/**
+			 * Called when an entity is removed from this system.
+			 * @param[in] eid The id of the entity.
+			 */
+			virtual void onEntityRemoved(ECS::EntityID eid);
 	};
 }
 
