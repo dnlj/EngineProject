@@ -137,14 +137,30 @@ namespace {
 		ASSERT_FALSE(w.hasComponent<ComponentE>(eid));
 	}
 
-	TEST(Engine_ECS_World, hasComponents) {
+	TEST(Engine_ECS_World, hasComponent) {
 		World w;
 
 		const auto eid = w.createEntity();
-		w.addComponents<ComponentA, ComponentC, ComponentE>(eid);
 
-		const auto value = w.hasComponents<ComponentA, ComponentC, ComponentE>(eid);
-		ASSERT_TRUE(value);
+		ASSERT_FALSE(w.hasComponent(eid, w.getComponentID<ComponentA>()));
+		ASSERT_FALSE(w.hasComponent(eid, w.getComponentID<ComponentC>()));
+		ASSERT_FALSE(w.hasComponent(eid, w.getComponentID<ComponentE>()));
+
+		w.addComponent<ComponentA>(eid);
+		w.addComponent<ComponentC>(eid);
+		w.addComponent<ComponentE>(eid);
+
+		ASSERT_TRUE(w.hasComponent(eid, w.getComponentID<ComponentA>()));
+		ASSERT_TRUE(w.hasComponent(eid, w.getComponentID<ComponentC>()));
+		ASSERT_TRUE(w.hasComponent(eid, w.getComponentID<ComponentE>()));
+
+		w.removeComponent<ComponentA>(eid);
+		w.removeComponent<ComponentC>(eid);
+		w.removeComponent<ComponentE>(eid);
+
+		ASSERT_FALSE(w.hasComponent(eid, w.getComponentID<ComponentA>()));
+		ASSERT_FALSE(w.hasComponent(eid, w.getComponentID<ComponentC>()));
+		ASSERT_FALSE(w.hasComponent(eid, w.getComponentID<ComponentE>()));
 	}
 
 	TEST(Engine_ECS_World, hasComponents_bitset) {
@@ -161,6 +177,16 @@ namespace {
 		cbits[4] = true;
 
 		ASSERT_TRUE(w.hasComponents(eid, cbits));
+	}
+
+	TEST(Engine_ECS_World, hasComponents) {
+		World w;
+
+		const auto eid = w.createEntity();
+		w.addComponents<ComponentA, ComponentC, ComponentE>(eid);
+
+		const auto value = w.hasComponents<ComponentA, ComponentC, ComponentE>(eid);
+		ASSERT_TRUE(value);
 	}
 
 	TEST(Engine_ECS_World, addComponents) {

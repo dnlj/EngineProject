@@ -69,6 +69,9 @@ namespace Engine::ECS {
 			template<class... Components>
 			std::tuple<Components&...> addComponents(EntityID eid);
 
+			// TODO: Doc
+			bool hasComponent(EntityID eid, ComponentID cid);
+
 			/**
 			 * Checks if an entity has a component.
 			 * @param[in] eid The id of the entity.
@@ -79,6 +82,14 @@ namespace Engine::ECS {
 			bool hasComponent(EntityID eid);
 
 			/**
+			 * Checks if an entity has components.
+			 * @param[in] eid The id of the entity.
+			 * @param[in] cbits The bitset of components.
+			 * @return True if the entity has the components; otherwise false.
+			 */
+			bool hasComponents(EntityID eid, ComponentBitset cbits);
+
+			/**
 			 * Checks if an entity has the components.
 			 * @param[in] eid The id of the entity.
 			 * @tparam Components The components.
@@ -86,14 +97,6 @@ namespace Engine::ECS {
 			 */
 			template<class... Components>
 			bool hasComponents(EntityID eid);
-
-			/**
-			 * Checks if an entity has components.
-			 * @param[in] eid The id of the entity.
-			 * @param[in] cbits The bitset of components.
-			 * @return True if the entity has the components; otherwise false.
-			 */
-			bool hasComponents(EntityID eid, ComponentBitset cbits);
 
 			/**
 			 * Removes a component from an entity.
