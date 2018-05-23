@@ -163,7 +163,7 @@ namespace {
 		ASSERT_FALSE(w.hasComponent(eid, w.getComponentID<ComponentE>()));
 	}
 
-	TEST(Engine_ECS_World, hasComponents_bitset) {
+	TEST(Engine_ECS_World, hasComponents) {
 		World w;
 
 		const auto eid = w.createEntity();
@@ -179,7 +179,7 @@ namespace {
 		ASSERT_TRUE(w.hasComponents(eid, cbits));
 	}
 
-	TEST(Engine_ECS_World, hasComponents) {
+	TEST(Engine_ECS_World, hasComponents_Template) {
 		World w;
 
 		const auto eid = w.createEntity();
