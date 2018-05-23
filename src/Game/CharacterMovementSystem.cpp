@@ -19,6 +19,7 @@ namespace Game {
 			Game::CharacterMovementComponent
 		>();
 
+		priorityAfter = world.getBitsetForSystems<Game::InputSystem>();
 		priorityBefore = world.getBitsetForSystems<Game::RenderSystem>();
 	}
 
@@ -26,21 +27,23 @@ namespace Game {
 		constexpr float speed = 2.0f;
 		for (auto eid : entities) {
 			auto& physComp = world.getComponent<Game::PhysicsComponent>(eid);
+			auto& inputComp = world.getComponent<Game::InputComponent>(eid);
+			auto& inputManager = *inputComp.inputManager;
 		
-			if (glfwGetKey(window, GLFW_KEY_W)) {
+			if (inputManager.isPressed("MoveUp")) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, speed * dt}, true);
 			}
 		
-			if (glfwGetKey(window, GLFW_KEY_S)) {
+			if (inputManager.isPressed("MoveDown")) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, -speed * dt}, true);
 
 			}
 		
-			if (glfwGetKey(window, GLFW_KEY_A)) {
+			if (inputManager.isPressed("MoveLeft")) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{-speed * dt, 0.0f}, true);
 			}
 		
-			if (glfwGetKey(window, GLFW_KEY_D)) {
+			if (inputManager.isPressed("MoveRight")) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{speed * dt, 0.0f}, true);
 			}
 		}

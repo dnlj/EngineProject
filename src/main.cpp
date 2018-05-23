@@ -32,6 +32,7 @@
 #include <Engine/TextureManager.hpp>
 #include <Engine/Utility/Utility.hpp>
 #include <Engine/ECS/World.hpp>
+#include <Engine/EngineInstance.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -120,13 +121,6 @@ void run() {
 	// Initialize OpenGL functions
 	initializeOpenGL();
 
-	// Key callbacks
-	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-			glfwSetWindowShouldClose(window, true);
-		}
-	});
-
 	// OpenGL debug message
 	#if defined(DEBUG)
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -135,23 +129,41 @@ void run() {
 	#endif
 
 	// ECS Test stuff
-	Engine::TextureManager textureManager;
+	//Engine::TextureManager textureManager; // TODO: Move to EngineInstance?
+	Engine::EngineInstance engine;
 	Game::World world;
-
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
+		world.getSystem<Game::InputSystem>().setup(engine.inputManager);
 
 		// Player
 		auto player = world.createEntity();
 		// ecsWorld.addComponent<Game::RenderComponent>(player).setup(textureManager);
 		world.addComponent<Game::PhysicsComponent>(player).setup(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
-
+		world.addComponent<Game::InputComponent>(player);
+		
 		// Other
 		auto other = world.createEntity();
 		// ecsWorld.addComponent<Game::RenderComponent>(other).setup(textureManager);
 		world.addComponent<Game::PhysicsComponent>(other).setup(physSys.getPhysicsWorld());
 	}
+
+	// Binds
+	engine.inputManager.bind("MoveUp", 17);
+	engine.inputManager.bind("MoveDown", 31);
+	engine.inputManager.bind("MoveLeft", 30);
+	engine.inputManager.bind("MoveRight", 32);
+
+	// Key callbacks
+	glfwSetWindowUserPointer(window, &engine);
+	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+			glfwSetWindowShouldClose(window, true);
+		}
+
+		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.callback(scancode, action);
+	});
 
 	// Main loop
 	auto startTime = std::chrono::high_resolution_clock::now();
