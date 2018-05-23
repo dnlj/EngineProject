@@ -69,7 +69,12 @@ namespace Engine::ECS {
 			template<class... Components>
 			std::tuple<Components&...> addComponents(EntityID eid);
 
-			// TODO: Doc
+			/**
+			 * Checks if an entity has a component.
+			 * @param[in] eid The id of the entity.
+			 * @param[in] cid The id of the component.
+			 * @return True if the entity has the component; otherwise false.
+			 */
 			bool hasComponent(EntityID eid, ComponentID cid);
 
 			/**
