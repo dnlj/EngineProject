@@ -10,7 +10,6 @@
 #include <Game/PhysicsComponent.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 
-extern GLFWwindow* window; // TODO: Add a way to pass data to systems
 
 namespace Game {
 	CharacterMovementSystem::CharacterMovementSystem(World& world) : SystemBase{world} {
@@ -36,7 +35,6 @@ namespace Game {
 		
 			if (inputManager.isPressed("MoveDown")) {
 				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, -speed * dt}, true);
-
 			}
 		
 			if (inputManager.isPressed("MoveLeft")) {
