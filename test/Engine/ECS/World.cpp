@@ -163,6 +163,32 @@ namespace {
 		ASSERT_FALSE(w.hasComponent(eid, w.getComponentID<ComponentE>()));
 	}
 
+	TEST(Engine_ECS_World, hasComponent_Template) {
+		World w;
+
+		const auto eid = w.createEntity();
+
+		ASSERT_FALSE(w.hasComponent<ComponentA>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentC>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentE>(eid));
+
+		w.addComponent<ComponentA>(eid);
+		w.addComponent<ComponentC>(eid);
+		w.addComponent<ComponentE>(eid);
+
+		ASSERT_TRUE(w.hasComponent<ComponentA>(eid));
+		ASSERT_TRUE(w.hasComponent<ComponentC>(eid));
+		ASSERT_TRUE(w.hasComponent<ComponentE>(eid));
+
+		w.removeComponent<ComponentA>(eid);
+		w.removeComponent<ComponentC>(eid);
+		w.removeComponent<ComponentE>(eid);
+
+		ASSERT_FALSE(w.hasComponent<ComponentA>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentC>(eid));
+		ASSERT_FALSE(w.hasComponent<ComponentE>(eid));
+	}
+
 	TEST(Engine_ECS_World, hasComponents) {
 		World w;
 
