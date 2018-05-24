@@ -128,24 +128,24 @@ void run() {
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 	#endif
 
-	// ECS Test stuff
-	//Engine::TextureManager textureManager; // TODO: Move to EngineInstance?
+	// Engine stuff
 	Engine::EngineInstance engine;
 	Game::World world;
+
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		world.getSystem<Game::InputSystem>().setup(engine.inputManager);
 
 		// Player
 		auto player = world.createEntity();
-		// ecsWorld.addComponent<Game::RenderComponent>(player).setup(textureManager);
+		//world.addComponent<Game::RenderComponent>(player).setup(engine.textureManager);
 		world.addComponent<Game::PhysicsComponent>(player).setup(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::InputComponent>(player);
 		
 		// Other
 		auto other = world.createEntity();
-		// ecsWorld.addComponent<Game::RenderComponent>(other).setup(textureManager);
+		//world.addComponent<Game::RenderComponent>(other).setup(engine.textureManager);
 		world.addComponent<Game::PhysicsComponent>(other).setup(physSys.getPhysicsWorld());
 	}
 
