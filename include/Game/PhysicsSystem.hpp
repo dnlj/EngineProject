@@ -20,6 +20,9 @@ namespace Game {
 
 		private:
 			b2World physWorld;
-			Engine::Debug::DebugDrawBox2D debugDraw;
+
+			#if defined(DEBUG_PHYSICS)
+				Engine::Debug::DebugDrawBox2D debugDraw;
+			#endif
 	};
 }
