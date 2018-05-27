@@ -19,7 +19,7 @@ namespace Game {
 		>();
 
 		priorityAfter = world.getBitsetForSystems<Game::InputSystem>();
-		priorityBefore = world.getBitsetForSystems<Game::RenderSystem>();
+		priorityBefore = world.getBitsetForSystems<Game::PhysicsSystem>();
 	}
 
 	void CharacterMovementSystem::run(float dt) {

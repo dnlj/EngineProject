@@ -13,6 +13,8 @@ namespace Game {
 	RenderSystem::RenderSystem(World& world) : SystemBase{world} {
 		cbits = world.getBitsetForComponents<Game::RenderComponent, Game::PhysicsComponent>();
 
+		priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem>();
+
 		// MVP
 		constexpr float scale = 1.0f / 400.0f;
 		auto halfWidth = (1280.0f / 2.0f) * scale;
