@@ -24,6 +24,11 @@ namespace Game {
 	}
 
 	void RenderSystem::run(float dt) {
+		{
+			const auto focusPos = world.getComponent<PhysicsComponent>(focus).body->GetPosition();
+			view = glm::translate(glm::mat4{1.0f}, glm::vec3{-focusPos.x, -focusPos.y, 0.0f});
+		}
+
 		for (auto& eid : entities) {
 			const auto& rendComp = world.getComponent<Game::RenderComponent>(eid);
 			const auto& physComp = world.getComponent<Game::PhysicsComponent>(eid);
