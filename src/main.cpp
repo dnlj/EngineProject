@@ -27,7 +27,6 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Debug/Debug.hpp>
-#include <Engine/Entity.hpp>
 #include <Engine/SystemBase.hpp>
 #include <Engine/TextureManager.hpp>
 #include <Engine/Utility/Utility.hpp>

@@ -4,7 +4,6 @@
 
 // Engine
 #include <Engine/Detail/Detail.hpp>
-#include <Engine/Entity.hpp>
 #include <Engine/FatalException.hpp>
 
 #define ENGINE_LOG(msg)\
