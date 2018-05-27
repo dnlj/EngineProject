@@ -14,9 +14,14 @@ namespace Game {
 	class PhysicsSystem : public SystemBase {
 		public:
 			PhysicsSystem(World& world);
+
 			virtual void run(float dt) override;
 
 			b2World& getPhysicsWorld();
+
+			#if defined(DEBUG_PHYSICS)
+				Engine::Debug::DebugDrawBox2D& getDebugDraw();
+			#endif
 
 		private:
 			b2World physWorld;

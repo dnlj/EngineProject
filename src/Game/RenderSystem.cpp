@@ -10,9 +10,6 @@
 #include <Game/PhysicsComponent.hpp>
 
 namespace Game {
-	decltype(projection) projection;
-	decltype(view) view;
-
 	RenderSystem::RenderSystem(World& world) : SystemBase{world} {
 		cbits = world.getBitsetForComponents<Game::RenderComponent, Game::PhysicsComponent>();
 
@@ -49,5 +46,9 @@ namespace Game {
 			// Draw
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
+
+		#if defined (DEBUG_PHYSICS)
+			world.getSystem<PhysicsSystem>().getDebugDraw().draw(projection, view);
+		#endif
 	}
 }

@@ -86,7 +86,7 @@ namespace Engine::Debug {
 		vertexCount = 0;
 	}
 
-	void DebugDrawBox2D::draw() {
+	void DebugDrawBox2D::draw(glm::mat4 projection, glm::mat4 view) {
 		glBindVertexArray(vao);
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -94,8 +94,7 @@ namespace Engine::Debug {
 
 		glUseProgram(shader);
 
-		// TODO: make this not use globals
-		glm::mat4 pv = Game::projection * Game::view;
+		glm::mat4 pv = projection * view;
 		glUniformMatrix4fv(2, 1, GL_FALSE, &pv[0][0]);
 
 		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexData.size()));

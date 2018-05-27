@@ -18,11 +18,17 @@ namespace Game {
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.reset();
 			physWorld.DrawDebugData();
-			debugDraw.draw();
 		#endif
 	}
 
 	b2World& PhysicsSystem::getPhysicsWorld() {
 		return physWorld;
 	}
+
+	#if defined(DEBUG_PHYSICS)
+		Engine::Debug::DebugDrawBox2D& PhysicsSystem::getDebugDraw() {
+			constexpr size_t a = sizeof(Engine::Debug::DebugDrawBox2D);
+			return debugDraw;
+		}
+	#endif
 }

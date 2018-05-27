@@ -34,7 +34,7 @@ namespace Engine::Debug {
 			/**
 			 * @brief Draws the vertices currently in the vertex data.
 			 */
-			void draw();
+			void draw(glm::mat4 projection, glm::mat4 view);
 
 			/** @brief see Box2D documentation. */
 			virtual void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override;
