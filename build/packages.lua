@@ -243,4 +243,27 @@ PACKAGES["meta"] = {
 	end,
 }
 
+PACKAGES["imgui"] = {
+	name = "Dear ImGui",
+	url = "https://github.com/ocornut/imgui/archive/master.zip",
+
+	postExtract = function(uid)
+		local dir = depsDir .. uid .."/"
+		moveFolder(dir .."imgui-master/", dir)
+		
+		os.rmdir(dir ..".github")
+		os.rmdir(dir .."examples")
+		os.rmdir(dir .."misc")
+		
+		os.remove(dir ..".travis.yml")
+		os.remove(dir .."CHANGELOG.txt")
+		os.remove(dir .."LICENSE.txt")
+		os.remove(dir .."README.md")
+		os.remove(dir .."TODO.txt")
+	end,
+	
+	build = function(uid)
+	end,
+}
+
 return PACKAGES

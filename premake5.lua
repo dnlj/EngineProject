@@ -98,6 +98,7 @@ project("*")
 		"./src/Engine/**",
 		"./include/glloadgen/**",
 		"./src/glloadgen/**",
+		"./deps/imgui/**",
 	}
 	
 	debugdir "./src"
@@ -109,6 +110,7 @@ project("*")
 		"./deps/glm/include",
 		"./deps/box2d/include",
 		"./deps/meta/include",
+		"./deps/imgui",
 	}
 	
 	links {
