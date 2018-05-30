@@ -24,6 +24,9 @@
 // Meta
 #include <Meta/TypeSet/TypeSet.hpp>
 
+// ImGui
+#include <imgui.h>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Debug/Debug.hpp>
@@ -37,6 +40,7 @@
 #include <Game/Common.hpp>
 #include <Game/RenderComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
+#include <Game/imgui_impl_glfw_gl3.hpp>
 
 GLFWwindow* window = nullptr; // TODO: need to add a way to pass data to systems
 
@@ -99,6 +103,24 @@ namespace {
 	}
 }
 
+void initImGui(GLFWwindow* window) {
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplGlfwGL3_Init(window, false);
+	ImGui::StyleColorsDark();
+}
+
+void doUI() {
+	static bool showWindow = true;
+
+	ImGui_ImplGlfwGL3_NewFrame();
+
+	ImGui::ShowDemoWindow(&showWindow);
+
+	ImGui::Render();
+	ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
 void run() {
 	// GLFW error callback
 	glfwSetErrorCallback([](int error, const char* desc) {
@@ -126,6 +148,9 @@ void run() {
 		glDebugMessageCallback(Engine::Debug::GL::debugMessageCallback, nullptr);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 	#endif
+
+	// UI
+	initImGui(window);
 
 	// Engine stuff
 	Engine::EngineInstance engine;
@@ -194,10 +219,17 @@ void run() {
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
 
+		// Draw UI
+		doUI();
+
 		// GLFW
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	// UI cleanup
+	ImGui_ImplGlfwGL3_Shutdown();
+	ImGui::DestroyContext();
 
 	// GLFW cleanup
 	glfwDestroyWindow(window);
