@@ -188,7 +188,15 @@ void run() {
 		}
 
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.callback(scancode, action);
+
+		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	});
+
+	// ImGui callbacks
+	glfwSetMouseButtonCallback(window, ImGui_ImplGlfw_MouseButtonCallback);
+	glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
+	// glfwSetKeyCallback(window, ImGui_ImplGlfw_KeyCallback);
+	glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 
 	// Main loop
 	auto startTime = std::chrono::high_resolution_clock::now();

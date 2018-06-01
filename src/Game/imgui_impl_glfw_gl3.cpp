@@ -348,13 +348,6 @@ void    ImGui_ImplGlfwGL3_InvalidateDeviceObjects() {
 	}
 }
 
-static void ImGui_ImplGlfw_InstallCallbacks(GLFWwindow* window) {
-	glfwSetMouseButtonCallback(window, ImGui_ImplGlfw_MouseButtonCallback);
-	glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-	glfwSetKeyCallback(window, ImGui_ImplGlfw_KeyCallback);
-	glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
-}
-
 bool ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks, const char* glsl_version) {
 	g_Window = window;
 	g_Time = 0.0;
@@ -412,10 +405,6 @@ bool ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks, const ch
 	g_MouseCursors[ImGuiMouseCursor_ResizeEW] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
 	g_MouseCursors[ImGuiMouseCursor_ResizeNESW] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
 	g_MouseCursors[ImGuiMouseCursor_ResizeNWSE] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-
-	if (install_callbacks) {
-		ImGui_ImplGlfw_InstallCallbacks(window);
-	}
 
 	return true;
 }
