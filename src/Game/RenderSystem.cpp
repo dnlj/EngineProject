@@ -14,19 +14,17 @@ namespace Game {
 		cbits = world.getBitsetForComponents<Game::RenderComponent, Game::PhysicsComponent>();
 
 		priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem>();
+	}
 
-		// MVP
-		constexpr float scale = 1.0f / 400.0f;
-		auto halfWidth = (1280.0f / 2.0f) * scale;
-		auto halfHeight = (720.0f / 2.0f) * scale;
-		projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
-		view = glm::mat4{1.0f};
+	void RenderSystem::setup(Engine::Camera& camera) {
+		this->camera = &camera;
 	}
 
 	void RenderSystem::run(float dt) {
 		{
+			// TODO: Move into different system
 			const auto focusPos = world.getComponent<PhysicsComponent>(focus).body->GetPosition();
-			view = glm::translate(glm::mat4{1.0f}, glm::vec3{-focusPos.x, -focusPos.y, 0.0f});
+			camera->view = glm::translate(glm::mat4{1.0f}, glm::vec3{-focusPos.x, -focusPos.y, 0.0f});
 		}
 
 		for (auto& eid : entities) {
@@ -46,7 +44,7 @@ namespace Game {
 			{
 				const auto& transform = physComp.body->GetTransform();
 				auto model = glm::translate(glm::mat4{1}, glm::vec3{transform.p.x, transform.p.y, 0.0f});
-				glm::mat4 mvp = projection * view * model;
+				glm::mat4 mvp = camera->projection * camera->view * model;
 				glUniformMatrix4fv(2, 1, GL_FALSE, &mvp[0][0]);
 			}
 		
@@ -55,7 +53,7 @@ namespace Game {
 		}
 
 		#if defined (DEBUG_PHYSICS)
-			world.getSystem<PhysicsSystem>().getDebugDraw().draw(projection, view);
+			world.getSystem<PhysicsSystem>().getDebugDraw().draw(camera->projection, camera->view);
 		#endif
 	}
 }
