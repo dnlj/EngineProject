@@ -102,24 +102,24 @@ namespace {
 
 		return window;
 	}
-}
 
-void initImGui(GLFWwindow* window) {
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGui_ImplGlfwGL3_Init(window, false);
-	ImGui::StyleColorsDark();
-}
+	void initImGui(GLFWwindow* window) {
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGui_ImplGlfwGL3_Init(window, false);
+		ImGui::StyleColorsDark();
+	}
 
-void doUI() {
-	static bool showWindow = true;
+	void doUI() {
+		static bool showWindow = true;
 
-	ImGui_ImplGlfwGL3_NewFrame();
+		ImGui_ImplGlfwGL3_NewFrame();
 
-	ImGui::ShowDemoWindow(&showWindow);
+		ImGui::ShowDemoWindow(&showWindow);
 
-	ImGui::Render();
-	ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+		ImGui::Render();
+		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+	}
 }
 
 void run() {
