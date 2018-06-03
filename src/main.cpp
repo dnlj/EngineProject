@@ -140,6 +140,54 @@ namespace {
 
 		return body;
 	}
+
+	b2Body* createPhysicsLevel(b2World& world) {
+		constexpr int levelSize = 8;
+		constexpr int level[levelSize][levelSize] = {
+			{3, 0, 0, 0, 0, 0, 0, 3},
+			{0, 2, 0, 0, 0, 0, 2, 0},
+			{0, 0, 2, 2, 2, 2, 0, 0},
+			{0, 0, 2, 1, 1, 2, 0, 0},
+			{0, 0, 2, 0, 1, 2, 0, 0},
+			{0, 0, 2, 2, 2, 2, 0, 0},
+			{0, 0, 0, 0, 0, 0, 2, 0},
+			{4, 0, 0, 0, 0, 0, 0, 3},
+		};
+
+
+		b2BodyDef bodyDef;
+		bodyDef.type = b2_staticBody;
+		bodyDef.awake = false;
+		bodyDef.fixedRotation = true;
+
+		b2Body* body = world.CreateBody(&bodyDef);
+
+		b2PolygonShape shape;
+
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &shape;
+
+		constexpr auto a = level[7][0];
+
+		for (int x = 0; x < levelSize; ++x) {
+			for (int y = 0; y < levelSize; ++y) {
+				if (level[y][x] != 0) {
+					constexpr auto halfSize = 1.0f/8.0f;
+
+					shape.SetAsBox(
+						halfSize,
+						halfSize,
+						b2Vec2(x * halfSize * 2.0f, -y * halfSize * 2.0f),
+						0.0f
+					);
+
+					body->CreateFixture(&fixtureDef);
+				}
+			}
+		}
+
+		return body;
+	}
 }
 
 void run() {
@@ -204,6 +252,9 @@ void run() {
 		auto other = world.createEntity();
 		//world.addComponent<Game::RenderComponent>(other).setup(engine.textureManager);
 		world.addComponent<Game::PhysicsComponent>(other).body = createPhysicsCircle(physSys.getPhysicsWorld());
+
+		auto level = world.createEntity();
+		world.addComponent<Game::PhysicsComponent>(level).body = createPhysicsLevel(physSys.getPhysicsWorld());
 	}
 
 	// Binds
