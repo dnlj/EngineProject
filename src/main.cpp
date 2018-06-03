@@ -120,6 +120,26 @@ namespace {
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 	}
+
+	b2Body* createPhysicsCircle(b2World& world) {
+		b2BodyDef bodyDef;
+		bodyDef.type = b2_dynamicBody;
+
+		b2Body* body = world.CreateBody(&bodyDef);
+
+		b2CircleShape shape;
+		shape.m_radius = 1.0f/8.0f;
+
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &shape;
+		fixtureDef.density = 1.0f;
+
+		body->CreateFixture(&fixtureDef);
+		body->SetLinearDamping(10.0f);
+		body->SetFixedRotation(true);
+
+		return body;
+	}
 }
 
 void run() {
@@ -176,14 +196,14 @@ void run() {
 		auto player = world.createEntity();
 		world.getSystem<Game::RenderSystem>().focus = player;
 		//world.addComponent<Game::RenderComponent>(player).setup(engine.textureManager);
-		world.addComponent<Game::PhysicsComponent>(player).setup(physSys.getPhysicsWorld());
+		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::InputComponent>(player);
 		
 		// Other
 		auto other = world.createEntity();
 		//world.addComponent<Game::RenderComponent>(other).setup(engine.textureManager);
-		world.addComponent<Game::PhysicsComponent>(other).setup(physSys.getPhysicsWorld());
+		world.addComponent<Game::PhysicsComponent>(other).body = createPhysicsCircle(physSys.getPhysicsWorld());
 	}
 
 	// Binds
