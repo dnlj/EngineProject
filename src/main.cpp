@@ -188,6 +188,18 @@ namespace {
 
 		return body;
 	}
+
+	 void framebufferCallback(GLFWwindow* window, int width, int height) {
+		glViewport(0, 0, width, height);
+
+		auto& camera = static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->camera;
+
+		constexpr float scale = 1.0f / 400.0f;
+		auto halfWidth = (width / 2.0f) * scale;
+		auto halfHeight = (height / 2.0f) * scale;
+
+		camera.projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
+	}
 }
 
 void run() {
@@ -223,22 +235,12 @@ void run() {
 
 	// Engine stuff
 	Engine::EngineInstance engine;
-	Engine::Camera camera;
 	Game::World world;
-
-	{ // Setup camera
-		// MVP
-		constexpr float scale = 1.0f / 400.0f;
-		auto halfWidth = (1280.0f / 2.0f) * scale;
-		auto halfHeight = (720.0f / 2.0f) * scale;
-		camera.projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
-		camera.view = glm::mat4{1.0f};
-	}
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		world.getSystem<Game::InputSystem>().setup(engine.inputManager);
-		world.getSystem<Game::RenderSystem>().setup(camera);
+		world.getSystem<Game::RenderSystem>().setup(engine.camera);
 
 		// Player
 		auto player = world.createEntity();
@@ -274,6 +276,15 @@ void run() {
 
 		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	});
+
+	// Framebuffer callback
+	glfwSetFramebufferSizeCallback(window, framebufferCallback);
+	{
+		int w;
+		int h;
+		glfwGetFramebufferSize(window, &w, &h);
+		framebufferCallback(window, w, h);
+	}
 
 	// ImGui callbacks
 	glfwSetMouseButtonCallback(window, ImGui_ImplGlfw_MouseButtonCallback);
