@@ -188,6 +188,12 @@ namespace Engine::Debug {
 		if (vertexCount == vertexData.size()) {
 			ENGINE_WARN("To many debug vertices. Increase MAX_VERTICES");
 		} else {
+			// SRGB framebuffer correction
+			vertex.color.r = powf(vertex.color.r, 2.2f);
+			vertex.color.g = powf(vertex.color.g, 2.2f);
+			vertex.color.b = powf(vertex.color.b, 2.2f);
+			vertex.color.a = powf(vertex.color.a, 2.2f);
+
 			vertexData[vertexCount] = vertex;
 			++vertexCount;
 		}
