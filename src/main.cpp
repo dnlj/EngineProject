@@ -316,7 +316,7 @@ void run() {
 		}
 
 		// Rendering
-		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+		glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// ECS
