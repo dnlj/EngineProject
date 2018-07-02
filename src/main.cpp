@@ -79,6 +79,7 @@ namespace {
 		
 		glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 		glfwWindowHint(GLFW_DECORATED, GL_TRUE);
+		glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 
 		glfwWindowHint(GLFW_RED_BITS, 8);
 		glfwWindowHint(GLFW_GREEN_BITS, 8);
@@ -229,6 +230,8 @@ void run() {
 		glDebugMessageCallback(Engine::Debug::GL::debugMessageCallback, nullptr);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 	#endif
+
+	glEnable(GL_FRAMEBUFFER_SRGB);
 
 	// UI
 	initImGui(window);
