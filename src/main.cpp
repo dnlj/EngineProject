@@ -245,7 +245,7 @@ void run() {
 		// Player
 		auto player = world.createEntity();
 		world.getSystem<Game::RenderSystem>().focus = player;
-		//world.addComponent<Game::RenderComponent>(player).setup(engine.textureManager);
+		world.addComponent<Game::RenderComponent>(player).setup(engine.textureManager);
 		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::InputComponent>(player);

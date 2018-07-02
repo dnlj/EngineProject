@@ -49,7 +49,7 @@ namespace Game {
 			}
 		
 			// Draw
-			glDrawArrays(GL_TRIANGLES, 0, 3);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 
 		#if defined (DEBUG_PHYSICS)

@@ -18,9 +18,14 @@ namespace Game {
 
 	void RenderComponent::setup(Engine::TextureManager& textureManager) {
 		constexpr GLfloat data[] = {
-			+0.0f, +0.5f, +0.5, +0.0f,
-			-0.5f, -0.5f, +0.0, +1.0f,
-			+0.5f, -0.5f, +1.0, +1.0f,
+		//   x     y       u     v
+			-0.5, +0.5,   +0.0, +1.0,
+			-0.5, -0.5,   +0.0, +0.0,
+			+0.5, -0.5,   +1.0, +0.0,
+
+			+0.5, -0.5,   +1.0, +0.0,
+			+0.5, +0.5,   +1.0, +1.0,
+			-0.5, +0.5,   +0.0, +1.0,
 		};
 
 		texture = textureManager.getTexture("../assets/test.png");
