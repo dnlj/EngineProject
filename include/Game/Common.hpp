@@ -16,6 +16,7 @@ namespace Game {
 
 	class PhysicsComponent;
 	class RenderComponent;
+	class SpriteComponent;
 	class CharacterMovementComponent;
 	class InputComponent;
 
@@ -29,6 +30,7 @@ namespace Game {
 	using ComponentsSet = Meta::TypeSet::TypeSet<
 		PhysicsComponent,
 		RenderComponent,
+		SpriteComponent,
 		CharacterMovementComponent,
 		InputComponent
 	>;
@@ -45,5 +47,6 @@ namespace Game {
 
 #include <Game/PhysicsComponent.hpp>
 #include <Game/RenderComponent.hpp>
+#include <Game/SpriteComponent.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 #include <Game/InputComponent.hpp>
