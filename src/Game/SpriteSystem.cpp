@@ -187,9 +187,7 @@ namespace Game {
 			const auto& group = spriteGroups[i];
 
 			// Set texture
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, group.texture);
-			// TODO: glBindTextureUnit(0, group.texture);
+			glBindTextureUnit(0, group.texture);
 			glUniform1i(6, 0);
 
 			// Draw our sprites

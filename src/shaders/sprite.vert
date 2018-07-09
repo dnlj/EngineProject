@@ -6,6 +6,7 @@ layout (location = 2) in mat4 instMVP;
 
 out vec2 fragTexCoord;
 
+
 void main() {
 	gl_Position = instMVP * vec4(vertPosition, 0.0, 1.0);
 	fragTexCoord = vertTexCoord;
