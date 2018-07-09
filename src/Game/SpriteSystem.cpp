@@ -65,8 +65,7 @@ namespace Game {
 		}
 
 		{ // Vertex array
-			glGenVertexArrays(1, &vao);
-			glBindVertexArray(vao);
+			glCreateVertexArrays(1, &vao);
 		}
 
 		{ // Vertex buffer
@@ -79,11 +78,13 @@ namespace Game {
 
 			glCreateBuffers(1, &vbo);
 			glNamedBufferData(vbo, sizeof(data), &data, GL_STATIC_DRAW);
+			glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(Vertex));
 		}
 
 		{ // Instance vertex buffer
 			glCreateBuffers(1, &ivbo);
 			glNamedBufferData(ivbo, MAX_SPRITES * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
+			glVertexArrayVertexBuffer(vao, 1, ivbo, 0, sizeof(InstanceData));
 			instanceData.reserve(MAX_SPRITES);
 		}
 
@@ -99,42 +100,38 @@ namespace Game {
 		}
 
 		{ // Vertex attributes
-			// TODO: Look into https://www.khronos.org/opengl/wiki/Vertex_Specification#Separate_attribute_format
-			constexpr GLsizei vertexStride = sizeof(Vertex);
-			constexpr GLsizei instanceStride = sizeof(InstanceData);
-
 			// Vertex attributes
-			glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, vertexStride, reinterpret_cast<const void*>(offsetof(Vertex, position)));
+			glEnableVertexArrayAttrib(vao, 0);
+			glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+			glVertexArrayAttribBinding(vao, 0, 0);
 			
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, vertexStride, reinterpret_cast<const void*>(offsetof(Vertex, texCoord)));
+			glEnableVertexArrayAttrib(vao, 1);
+			glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoord));
+			glVertexArrayAttribBinding(vao, 1, 0);
+
 
 			// Instance attributes
-			glBindBuffer(GL_ARRAY_BUFFER, ivbo);
+			glEnableVertexArrayAttrib(vao, 2);
+			glEnableVertexArrayAttrib(vao, 3);
+			glEnableVertexArrayAttrib(vao, 4);
+			glEnableVertexArrayAttrib(vao, 5);
 
-			glEnableVertexAttribArray(2);
-			glEnableVertexAttribArray(3);
-			glEnableVertexAttribArray(4);
-			glEnableVertexAttribArray(5);
-			glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, instanceStride, reinterpret_cast<const void*>(offsetof(InstanceData, mvp) +  0 * sizeof(GLfloat)));
-			glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, instanceStride, reinterpret_cast<const void*>(offsetof(InstanceData, mvp) +  4 * sizeof(GLfloat)));
-			glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, instanceStride, reinterpret_cast<const void*>(offsetof(InstanceData, mvp) +  8 * sizeof(GLfloat)));
-			glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, instanceStride, reinterpret_cast<const void*>(offsetof(InstanceData, mvp) + 12 * sizeof(GLfloat)));
-			glVertexAttribDivisor(2, 1);
-			glVertexAttribDivisor(3, 1);
-			glVertexAttribDivisor(4, 1);
-			glVertexAttribDivisor(5, 1);
+			glVertexArrayAttribFormat(vao, 2, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) +  0 * sizeof(GLfloat));
+			glVertexArrayAttribFormat(vao, 3, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) +  4 * sizeof(GLfloat));
+			glVertexArrayAttribFormat(vao, 4, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) +  8 * sizeof(GLfloat));
+			glVertexArrayAttribFormat(vao, 5, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) + 12 * sizeof(GLfloat));
+
+			glVertexArrayAttribBinding(vao, 2, 1);
+			glVertexArrayAttribBinding(vao, 3, 1);
+			glVertexArrayAttribBinding(vao, 4, 1);
+			glVertexArrayAttribBinding(vao, 5, 1);
+
+			glVertexArrayBindingDivisor(vao, 1, 1);
 		}
 	}
 
 	void SpriteSystem::run(float dt) {
 		if (entities.empty()) { return; }
-
-		glBindVertexArray(vao);
-		glUseProgram(shader);
 
 		// TODO: Look into SSBO, UBO, Buffer Texture, Vertex Attribute Divisor for mvp
 		// TODO: Look into using a geometry shader then (in a ubo?) we only would need to pass: width, height, mvp
@@ -179,6 +176,10 @@ namespace Game {
 
 		// Update data
 		glNamedBufferSubData(ivbo, 0, instanceData.size() * sizeof(InstanceData), instanceData.data());
+
+		// VAO / Program
+		glBindVertexArray(vao);
+		glUseProgram(shader);
 
 		// Draw
 		for (std::size_t i = 1; i < spriteGroups.size(); ++i) {
