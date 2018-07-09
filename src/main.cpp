@@ -39,7 +39,6 @@
 
 // Game
 #include <Game/Common.hpp>
-#include <Game/RenderComponent.hpp>
 #include <Game/SpriteComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
 #include <Game/imgui_impl_glfw_gl3.hpp>
@@ -244,7 +243,6 @@ void run() {
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		world.getSystem<Game::InputSystem>().setup(engine.inputManager);
-		world.getSystem<Game::RenderSystem>().setup(engine.camera);
 		world.getSystem<Game::SpriteSystem>().setup(engine.camera);
 		
 		// Player
@@ -254,8 +252,6 @@ void run() {
 		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::InputComponent>(player);
-		
-		world.getSystem<Game::RenderSystem>().focus = player;
 		
 		//// Other
 		//auto other = world.createEntity();

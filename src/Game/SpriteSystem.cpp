@@ -10,8 +10,7 @@
 namespace Game {
 	SpriteSystem::SpriteSystem(World& world) : SystemBase{world} {
 		cbits = world.getBitsetForComponents<Game::SpriteComponent, Game::PhysicsComponent>();
-		// TODO: Remove render system
-		priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem, Game::RenderSystem>();
+		priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem>();
 	}
 
 	void SpriteSystem::setup(const Engine::Camera& camera) {

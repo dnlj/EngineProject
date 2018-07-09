@@ -14,8 +14,6 @@
 #include <Engine/Utility/Utility.hpp>
 #include <Engine/Engine.hpp>
 
-// Game
-#include <Game/RenderSystem.hpp>
 
 namespace Engine::Debug {
 	DebugDrawBox2D::DebugDrawBox2D() {

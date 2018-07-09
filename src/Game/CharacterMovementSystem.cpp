@@ -6,7 +6,6 @@
 
 // Game
 #include <Game/CharacterMovementSystem.hpp>
-#include <Game/RenderSystem.hpp>
 #include <Game/PhysicsComponent.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 

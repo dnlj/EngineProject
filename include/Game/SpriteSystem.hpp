@@ -3,6 +3,9 @@
 // STD
 #include <vector>
 
+// Engine
+#include <Engine/Camera.hpp>
+
 // Game
 #include <Game/Common.hpp>
 
