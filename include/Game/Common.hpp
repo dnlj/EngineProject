@@ -13,6 +13,7 @@ namespace Game {
 	class SpriteSystem;
 	class CharacterMovementSystem;
 	class InputSystem;
+	class CameraTrackingSystem;
 
 	class PhysicsComponent;
 	class SpriteComponent;
@@ -23,7 +24,8 @@ namespace Game {
 		PhysicsSystem,
 		SpriteSystem,
 		CharacterMovementSystem,
-		InputSystem
+		InputSystem,
+		CameraTrackingSystem
 	>;
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<
@@ -42,6 +44,7 @@ namespace Game {
 #include <Game/SpriteSystem.hpp>
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/InputSystem.hpp>
+#include <Game/CameraTrackingSystem.hpp>
 
 #include <Game/PhysicsComponent.hpp>
 #include <Game/SpriteComponent.hpp>

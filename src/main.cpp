@@ -244,14 +244,16 @@ void run() {
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		world.getSystem<Game::InputSystem>().setup(engine.inputManager);
 		world.getSystem<Game::SpriteSystem>().setup(engine.camera);
+		world.getSystem<Game::CameraTrackingSystem>().setup(engine.camera);
 		
 		// Player
 		auto player = world.createEntity();
-		//world.addComponent<Game::RenderComponent>(player).setup(engine.textureManager);
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.getTexture("../assets/test.png");
 		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::InputComponent>(player);
+
+		world.getSystem<Game::CameraTrackingSystem>().focus = player;
 		
 		//// Other
 		//auto other = world.createEntity();
@@ -262,7 +264,7 @@ void run() {
 		//auto level = world.createEntity();
 		//world.addComponent<Game::PhysicsComponent>(level).body = createPhysicsLevel(physSys.getPhysicsWorld());
 
-		for (int i = 0; i < 10; ++i) {
+		for (int i = 0; i < 1; ++i) {
 			auto eid = world.createEntity();
 			world.addComponent<Game::SpriteComponent>(eid).texture = engine.textureManager.getTexture("../assets/test.png");
 			world.addComponent<Game::PhysicsComponent>(eid).body = createPhysicsCircle(physSys.getPhysicsWorld());
