@@ -68,6 +68,7 @@ namespace Game {
 			glCreateVertexArrays(1, &vao);
 		}
 
+		GLuint dataBindingIndex = 0;
 		{ // Vertex buffer
 			Vertex data[] = {
 				Vertex{glm::vec2{-0.5f, +0.5f},   glm::vec2{+0.0f, +1.0f}},
@@ -78,13 +79,14 @@ namespace Game {
 
 			glCreateBuffers(1, &vbo);
 			glNamedBufferData(vbo, sizeof(data), &data, GL_STATIC_DRAW);
-			glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(Vertex));
+			glVertexArrayVertexBuffer(vao, dataBindingIndex, vbo, 0, sizeof(Vertex));
 		}
 
+		GLuint instanceBindingIndex = 1;
 		{ // Instance vertex buffer
 			glCreateBuffers(1, &ivbo);
 			glNamedBufferData(ivbo, MAX_SPRITES * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
-			glVertexArrayVertexBuffer(vao, 1, ivbo, 0, sizeof(InstanceData));
+			glVertexArrayVertexBuffer(vao, instanceBindingIndex, ivbo, 0, sizeof(InstanceData));
 			instanceData.reserve(MAX_SPRITES);
 		}
 
@@ -102,12 +104,13 @@ namespace Game {
 		{ // Vertex attributes
 			// Vertex attributes
 			glEnableVertexArrayAttrib(vao, 0);
-			glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
-			glVertexArrayAttribBinding(vao, 0, 0);
-			
 			glEnableVertexArrayAttrib(vao, 1);
+
+			glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
 			glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoord));
-			glVertexArrayAttribBinding(vao, 1, 0);
+
+			glVertexArrayAttribBinding(vao, 0, dataBindingIndex);
+			glVertexArrayAttribBinding(vao, 1, dataBindingIndex);
 
 
 			// Instance attributes
@@ -121,12 +124,12 @@ namespace Game {
 			glVertexArrayAttribFormat(vao, 4, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) +  8 * sizeof(GLfloat));
 			glVertexArrayAttribFormat(vao, 5, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) + 12 * sizeof(GLfloat));
 
-			glVertexArrayAttribBinding(vao, 2, 1);
-			glVertexArrayAttribBinding(vao, 3, 1);
-			glVertexArrayAttribBinding(vao, 4, 1);
-			glVertexArrayAttribBinding(vao, 5, 1);
+			glVertexArrayAttribBinding(vao, 2, instanceBindingIndex);
+			glVertexArrayAttribBinding(vao, 3, instanceBindingIndex);
+			glVertexArrayAttribBinding(vao, 4, instanceBindingIndex);
+			glVertexArrayAttribBinding(vao, 5, instanceBindingIndex);
 
-			glVertexArrayBindingDivisor(vao, 1, 1);
+			glVertexArrayBindingDivisor(vao, instanceBindingIndex, 1);
 		}
 	}
 
