@@ -11,6 +11,7 @@
 namespace Game {
 	class PhysicsSystem;
 	class RenderSystem;
+	class SpriteSystem;
 	class CharacterMovementSystem;
 	class InputSystem;
 
@@ -23,6 +24,7 @@ namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
 		PhysicsSystem,
 		RenderSystem,
+		SpriteSystem,
 		CharacterMovementSystem,
 		InputSystem
 	>;
@@ -42,6 +44,7 @@ namespace Game {
 // Game
 #include <Game/PhysicsSystem.hpp>
 #include <Game/RenderSystem.hpp>
+#include <Game/SpriteSystem.hpp>
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/InputSystem.hpp>
 
