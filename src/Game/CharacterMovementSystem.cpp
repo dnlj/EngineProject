@@ -22,7 +22,7 @@ namespace Game {
 	}
 
 	void CharacterMovementSystem::run(float dt) {
-		constexpr float speed = 2.0f;
+		constexpr float speed = 1.0f * 2;
 		for (auto eid : entities) {
 			auto& physComp = world.getComponent<Game::PhysicsComponent>(eid);
 			auto& inputComp = world.getComponent<Game::InputComponent>(eid);

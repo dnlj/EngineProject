@@ -37,7 +37,7 @@ namespace Game {
 		private:
 			const Engine::Camera* camera;
 
-			constexpr static std::size_t MAX_SPRITES = 128;
+			constexpr static std::size_t MAX_SPRITES = 1024;
 			std::vector<InstanceData> instanceData;
 
 			std::vector<SpriteGroup> spriteGroups;

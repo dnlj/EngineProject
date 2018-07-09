@@ -122,14 +122,15 @@ namespace {
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 
-	b2Body* createPhysicsCircle(b2World& world) {
+	b2Body* createPhysicsCircle(b2World& world, b2Vec2 position = b2Vec2_zero) {
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_dynamicBody;
+		bodyDef.position = position;
 
 		b2Body* body = world.CreateBody(&bodyDef);
 
 		b2CircleShape shape;
-		shape.m_radius = 1.0f/8.0f;
+		shape.m_radius = 1.0f/8;
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &shape;
@@ -195,7 +196,7 @@ namespace {
 
 		auto& camera = static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->camera;
 
-		constexpr float scale = 1.0f / 400.0f;
+		constexpr float scale = 1.0f / 200.0f;
 		auto halfWidth = (width / 2.0f) * scale;
 		auto halfHeight = (height / 2.0f) * scale;
 
@@ -264,10 +265,18 @@ void run() {
 		//auto level = world.createEntity();
 		//world.addComponent<Game::PhysicsComponent>(level).body = createPhysicsLevel(physSys.getPhysicsWorld());
 
-		for (int i = 0; i < 1; ++i) {
-			auto eid = world.createEntity();
-			world.addComponent<Game::SpriteComponent>(eid).texture = engine.textureManager.getTexture("../assets/test.png");
-			world.addComponent<Game::PhysicsComponent>(eid).body = createPhysicsCircle(physSys.getPhysicsWorld());
+		constexpr int half = 8;
+		for (int x = -half; x < half; ++x) {
+			for (int y = -half; y < half; ++y) {
+				constexpr float scale = 0.26f;
+				auto eid = world.createEntity();
+
+				world.addComponent<Game::SpriteComponent>(eid).texture
+					= engine.textureManager.getTexture("../assets/test.png");
+
+				world.addComponent<Game::PhysicsComponent>(eid).body
+					= createPhysicsCircle(physSys.getPhysicsWorld(), b2Vec2(scale * x, scale * y));
+			}
 		}
 	}
 

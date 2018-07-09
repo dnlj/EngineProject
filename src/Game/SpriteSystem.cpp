@@ -157,7 +157,7 @@ namespace Game {
 			const auto& transform = physComp.body->GetTransform();
 
 			// Set camera uniform
-			auto model = glm::translate(glm::mat4{1.0f}, glm::vec3{transform.p.x, transform.p.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, glm::vec3{0.25f});
+			auto model = glm::translate(glm::mat4{1.0f}, glm::vec3{transform.p.x, transform.p.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/4});
 			glm::mat4 mvp = camera->projection * camera->view * model;
 			
 			auto& group = spriteGroups.back();
