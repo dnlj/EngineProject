@@ -77,15 +77,13 @@ namespace Game {
 				Vertex{glm::vec2{+0.5f, +0.5f},   glm::vec2{+1.0f, +1.0f}},
 			};
 
-			glGenBuffers(1, &vbo);
-			glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(data), &data, GL_STATIC_DRAW);
+			glCreateBuffers(1, &vbo);
+			glNamedBufferData(vbo, sizeof(data), &data, GL_STATIC_DRAW);
 		}
 
 		{ // Instance vertex buffer
-			glGenBuffers(1, &ivbo);
-			glBindBuffer(GL_ARRAY_BUFFER, ivbo);
-			glBufferData(GL_ARRAY_BUFFER, MAX_SPRITES * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
+			glCreateBuffers(1, &ivbo);
+			glNamedBufferData(ivbo, MAX_SPRITES * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
 			instanceData.reserve(MAX_SPRITES);
 		}
 
@@ -95,9 +93,9 @@ namespace Game {
 				2, 3, 0,
 			};
 
-			glGenBuffers(1, &ebo);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(data), &data, GL_STATIC_DRAW);
+			glCreateBuffers(1, &ebo);
+			glNamedBufferData(ebo, sizeof(data), &data, GL_STATIC_DRAW);
+			glVertexArrayElementBuffer(vao, ebo);
 		}
 
 		{ // Vertex attributes
