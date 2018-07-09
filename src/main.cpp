@@ -331,6 +331,11 @@ void run() {
 		// ECS
 		world.run(dt);
 
+		// Physics debug
+		#if defined (DEBUG_PHYSICS)
+			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw(engine.camera.projection, engine.camera.view);
+		#endif
+
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
 
 		// Draw UI
