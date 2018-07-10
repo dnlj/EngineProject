@@ -196,7 +196,7 @@ namespace {
 
 		auto& camera = static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->camera;
 
-		constexpr float scale = 1.0f / 200.0f;
+		constexpr float scale = 1.0f / 250.0f;
 		auto halfWidth = (width / 2.0f) * scale;
 		auto halfHeight = (height / 2.0f) * scale;
 
@@ -265,17 +265,19 @@ void run() {
 		//auto level = world.createEntity();
 		//world.addComponent<Game::PhysicsComponent>(level).body = createPhysicsLevel(physSys.getPhysicsWorld());
 
-		constexpr int half = 8;
+		constexpr int half = 4;
+		constexpr float scale = 0.26f;
+		const b2Vec2 offset{scale * (half + 1), 0.0f};
+
 		for (int x = -half; x < half; ++x) {
 			for (int y = -half; y < half; ++y) {
-				constexpr float scale = 0.26f;
 				auto eid = world.createEntity();
 
 				world.addComponent<Game::SpriteComponent>(eid).texture
 					= engine.textureManager.getTexture("../assets/test.png");
 
 				world.addComponent<Game::PhysicsComponent>(eid).body
-					= createPhysicsCircle(physSys.getPhysicsWorld(), b2Vec2(scale * x, scale * y));
+					= createPhysicsCircle(physSys.getPhysicsWorld(), offset + b2Vec2(scale * x, scale * y));
 			}
 		}
 	}
