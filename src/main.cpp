@@ -143,6 +143,27 @@ namespace {
 		return body;
 	}
 
+	b2Body* createPhysicsSquare(b2World& world, b2Vec2 position = b2Vec2_zero) {
+		b2BodyDef bodyDef;
+		bodyDef.type = b2_dynamicBody;
+		bodyDef.position = position;
+
+		b2Body* body = world.CreateBody(&bodyDef);
+
+		b2PolygonShape shape;
+		shape.SetAsBox(1.0f/8, 1.0f/8);
+
+		b2FixtureDef fixtureDef;
+		fixtureDef.shape = &shape;
+		fixtureDef.density = 1.0f;
+
+		body->CreateFixture(&fixtureDef);
+		body->SetLinearDamping(10.0f);
+		body->SetFixedRotation(true);
+
+		return body;
+	}
+
 	b2Body* createPhysicsLevel(b2World& world) {
 		constexpr int levelSize = 8;
 		constexpr int level[levelSize][levelSize] = {
@@ -277,7 +298,7 @@ void run() {
 					= engine.textureManager.getTexture("../assets/test.png");
 
 				world.addComponent<Game::PhysicsComponent>(eid).body
-					= createPhysicsCircle(physSys.getPhysicsWorld(), offset + b2Vec2(scale * x, scale * y));
+					= createPhysicsSquare(physSys.getPhysicsWorld(), offset + b2Vec2(scale * x, scale * y));
 			}
 		}
 	}
