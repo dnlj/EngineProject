@@ -13,6 +13,14 @@ namespace Game {
 		priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem, Game::CameraTrackingSystem>();
 	}
 
+	SpriteSystem::~SpriteSystem() {
+		glDeleteProgram(shader);
+		glDeleteVertexArrays(1, &vao);
+		glDeleteBuffers(1, &vbo);
+		glDeleteBuffers(1, &ivbo);
+		glDeleteBuffers(1, &ebo);
+	}
+
 	void SpriteSystem::setup(const Engine::Camera& camera) {
 		this->camera = &camera;
 

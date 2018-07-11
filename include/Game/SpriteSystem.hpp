@@ -30,6 +30,7 @@ namespace Game {
 
 		public:
 			SpriteSystem(World& world);
+			~SpriteSystem();
 
 			void setup(const Engine::Camera& camera);
 			void run(float dt);
@@ -42,7 +43,6 @@ namespace Game {
 
 			std::vector<SpriteGroup> spriteGroups;
 
-			// TODO: GL resource cleanup
 			GLuint shader = 0;
 			GLuint vao = 0;
 			GLuint vbo = 0;
