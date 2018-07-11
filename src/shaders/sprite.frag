@@ -9,4 +9,8 @@ layout (location = 6) uniform sampler2D tex;
 
 void main() {
 	finalColor = texture(tex, fragTexCoord);
+
+	if (finalColor.a < 0.5) {
+		discard;
+	}
 }

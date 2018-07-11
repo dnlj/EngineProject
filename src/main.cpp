@@ -270,7 +270,7 @@ void run() {
 		
 		// Player
 		auto player = world.createEntity();
-		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.getTexture("../assets/test.png");
+		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.getTexture("../assets/player.png");
 		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::InputComponent>(player);
