@@ -24,11 +24,9 @@ namespace Game {
 	void SpriteSystem::setup(const Engine::Camera& camera) {
 		this->camera = &camera;
 
-		// TODO: DSA?
 		// TODO: Split into multiple functions?
 
 		{// Shader programs
-			// TODO: SSO?
 			// Vertex shader
 			auto vertShader = glCreateShader(GL_VERTEX_SHADER);
 			{
@@ -143,9 +141,6 @@ namespace Game {
 	void SpriteSystem::run(float dt) {
 		if (entities.empty()) { return; }
 
-		// TODO: Look into SSBO, UBO, Buffer Texture, Vertex Attribute Divisor for mvp
-		// TODO: Look into using a geometry shader then (in a ubo?) we only would need to pass: width, height, mvp
-		// TODO: Although if we have static geometry (such as the level) it would probably be faster to use a VBO instead of a geometry shader
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
 
 		// Sort by texture
