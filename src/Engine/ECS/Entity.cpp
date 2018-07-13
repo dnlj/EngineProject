@@ -10,4 +10,9 @@ namespace Engine::ECS {
 	bool operator!=(const Entity& e1, const Entity& e2) {
 		return !(e1 == e2);
 	}
+
+	std::ostream& operator<<(std::ostream& os, const Entity& ent) {
+		os << "Entity(" << ent.id << ", " << ent.gen << ")";
+		return os;
+	}
 }
