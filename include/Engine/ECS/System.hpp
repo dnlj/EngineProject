@@ -15,6 +15,9 @@ namespace Engine::ECS {
 			/** The bitset of systems to have lower priority than. */
 			Engine::ECS::SystemBitset priorityAfter;
 
+			System() = default;
+			System(const System&) = delete;
+
 			virtual ~System() = 0;
 			virtual void onEntityCreated(EntityID eid) {};
 			virtual void onEntityDestroyed(EntityID eid) {};
