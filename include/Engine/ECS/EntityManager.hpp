@@ -22,7 +22,7 @@ namespace Engine::ECS {
 
 			/**
 			 * Destroys an entity.
-			 * @param[in] ent The id of the entity.
+			 * @param[in] ent The entity.
 			 */
 			void destroyEntity(Entity ent);
 
