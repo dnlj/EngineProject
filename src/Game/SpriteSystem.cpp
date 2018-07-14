@@ -154,9 +154,9 @@ namespace Game {
 		spriteGroups.clear();
 		spriteGroups.emplace_back();
 
-		for (auto& eid : entitiesByTexture) {
-			const auto& spriteComp = world.getComponent<Game::SpriteComponent>(eid);
-			const auto& physComp = world.getComponent<Game::PhysicsComponent>(eid);
+		for (auto& ent : entitiesByTexture) {
+			const auto& spriteComp = world.getComponent<Game::SpriteComponent>(ent);
+			const auto& physComp = world.getComponent<Game::PhysicsComponent>(ent);
 			const auto& transform = physComp.body->GetTransform();
 
 			// Set camera uniform

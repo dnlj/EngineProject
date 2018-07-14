@@ -292,12 +292,12 @@ void run() {
 
 		for (int x = -half; x < half; ++x) {
 			for (int y = -half; y < half; ++y) {
-				auto eid = world.createEntity();
+				auto ent = world.createEntity();
 
-				world.addComponent<Game::SpriteComponent>(eid).texture
+				world.addComponent<Game::SpriteComponent>(ent).texture
 					= engine.textureManager.getTexture("../assets/test.png");
 
-				world.addComponent<Game::PhysicsComponent>(eid).body
+				world.addComponent<Game::PhysicsComponent>(ent).body
 					= createPhysicsSquare(physSys.getPhysicsWorld(), offset + b2Vec2(scale * x, scale * y));
 			}
 		}
