@@ -9,32 +9,32 @@
 
 namespace Engine::ECS {
 	/**
-	 * Manages entity ids.
+	 * Manages entities.
 	 */
 	class EntityManager {
 		public:
 			/**
 			 * Creates a new entity.
 			 * @param[in] forceNew When set to true, prevents the reuse of ids.
-			 * @return The id of the new entity.
+			 * @return The new entity.
 			 */
-			EntityID createEntity(bool forceNew = false);
+			Entity createEntity(bool forceNew = false);
 
 			/**
 			 * Destroys an entity.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The id of the entity.
 			 */
-			void destroyEntity(EntityID eid);
+			void destroyEntity(Entity ent);
 
 			/**
 			 * Checks is an entity is alive.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @return True if the entity is alive; otherwise false.
 			 */
-			bool isAlive(EntityID eid);
+			bool isAlive(Entity ent);
 
 		private:
-			std::vector<bool> aliveEntities;
-			std::vector<EntityID> deadEntities;
+			std::vector<decltype(Entity::gen)> aliveEntities;
+			std::vector<Entity> deadEntities;
 	};
 }

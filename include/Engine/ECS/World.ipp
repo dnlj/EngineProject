@@ -8,7 +8,7 @@ namespace Engine::ECS {
 
 	template<class SystemsSet, class ComponentsSet>
 	EntityID World<SystemsSet, ComponentsSet>::createEntity(bool forceNew) {
-		const auto eid = EntityManager::createEntity(forceNew);
+		const auto eid = EntityManager::createEntity(forceNew).id;
 
 		if (eid >= componentBitsets.size()) {
 			componentBitsets.resize(eid + 1);
@@ -21,7 +21,7 @@ namespace Engine::ECS {
 
 	template<class SystemsSet, class ComponentsSet>
 	void World<SystemsSet, ComponentsSet>::destroyEntity(EntityID eid) {
-		EntityManager::destroyEntity(eid);
+		EntityManager::destroyEntity(Entity{static_cast<decltype(Entity::id)>(eid), 1});
 		onEntityDestroyed(eid);
 	}
 

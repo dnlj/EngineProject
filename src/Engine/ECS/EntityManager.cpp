@@ -6,32 +6,37 @@
 #endif
 
 namespace Engine::ECS {
-	EntityID EntityManager::createEntity(bool forceNew) {
-		auto eid = aliveEntities.size();
+	Entity EntityManager::createEntity(bool forceNew) {
+		Entity ent;
 
 		if (!forceNew && !deadEntities.empty()) {
-			eid = deadEntities.back();
+			ent = deadEntities.back();
 			deadEntities.pop_back();
 		} else {
-			aliveEntities.resize(eid + 1);
+			ent = Entity{static_cast<decltype(Entity::id)>(aliveEntities.size()), 0};
+			aliveEntities.resize(ent.id + 1);
 		}
 
-		aliveEntities[eid] = true;
-		return eid;
+		++ent.gen;
+		aliveEntities[ent.id] = ent.gen;
+
+		return ent;
 	}
 
-	void EntityManager::destroyEntity(EntityID eid) {
-		#if defined(DEBUG) 
-			if (!isAlive(eid)) {
-				ENGINE_ERROR("Attempting to deleting already dead entity with id \"" << eid << "\"");
+	void EntityManager::destroyEntity(Entity ent) {
+		#if defined(DEBUG)
+			if (!isAlive(ent)) {
+				ENGINE_ERROR("Attempting to deleting already dead entity \"" << ent << "\"");
+			} else if (aliveEntities[ent.id] != ent.gen) {
+				ENGINE_ERROR("Attempting to delete an out of date entity. Current generation is " << aliveEntities[ent.id] << " attempted to delete " << ent.gen);
 			}
 		#endif
 
-		aliveEntities[eid] = false;
-		deadEntities.emplace_back(eid);
+		deadEntities.emplace_back(std::move(ent));
+		aliveEntities[ent.id] = 0;
 	}
 
-	bool EntityManager::isAlive(EntityID eid) {
-		return aliveEntities[eid];
+	bool EntityManager::isAlive(Entity ent) {
+		return aliveEntities[ent.id];
 	}
 }
