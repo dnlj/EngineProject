@@ -48,6 +48,10 @@ namespace Engine::ECS {
 			template<class Component>
 			ComponentContainer<Component>& getComponentContainer();
 
+		protected:
+			/** The bitsets for storing what components entities have. */
+			std::vector<ComponentBitset> componentBitsets;
+
 		private:
 			/** The number of components used by this manager. */
 			constexpr static size_t count = sizeof...(Components);

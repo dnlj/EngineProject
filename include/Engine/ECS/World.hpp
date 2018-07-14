@@ -17,9 +17,9 @@ namespace Engine::ECS {
 	 */
 	template<class SystemsSet, class ComponentsSet>
 	class World
-		: private SystemManager<SystemsSet>
+		: private EntityManager
 		, private ComponentManager<ComponentsSet>
-		, private EntityManager {
+		, private SystemManager<SystemsSet> {
 
 		public:
 			// EntityManager members
@@ -138,8 +138,7 @@ namespace Engine::ECS {
 			std::tuple<Components&...> getComponents(Entity ent);
 
 		private:
-			/** The bitsets for storing what components entities have. */
-			std::vector<ComponentBitset> componentBitsets;
+			
 	};
 }
 
