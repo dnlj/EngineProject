@@ -86,29 +86,29 @@ namespace Engine::ECS {
 
 			/**
 			 * Runs `onEntityCreated` member function on all systems.
-			 * @param[in] eid The id of the entity being created.
+			 * @param[in] ent The entity being created.
 			 */
-			void onEntityCreated(EntityID eid);
+			void onEntityCreated(Entity ent);
 
 			/**
 			 * Runs `onComponentAdded` member function on all systems.
-			 * @param[in] eid The id of the entity being added to.
+			 * @param[in] ent The entity being added to.
 			 * @param[in] cid The id of the component being added.
 			 */
-			void onComponentAdded(EntityID eid, ComponentID cid);
+			void onComponentAdded(Entity ent, ComponentID cid);
 
 			/**
 			 * Runs `onComponentRemoved` member function on all systems.
-			 * @param[in] eid The id of the entity being removed from.
+			 * @param[in] ent The entity being removed from.
 			 * @param[in] cid The id of the component being removed.
 			 */
-			void onComponentRemoved(EntityID eid, ComponentID cid);
+			void onComponentRemoved(Entity ent, ComponentID cid);
 
 			/**
 			 * Runs the `onEntityDestroyed` member function on all systems.
-			 * @param[in] eid The id of the entity being destroyed.
+			 * @param[in] ent The entity being destroyed.
 			 */
-			void onEntityDestroyed(EntityID eid);
+			void onEntityDestroyed(Entity ent);
 
 			/**
 			 * Runs the `run` member function on all systems.

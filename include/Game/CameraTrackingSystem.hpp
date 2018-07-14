@@ -11,7 +11,7 @@ namespace Game {
 			void setup(Engine::Camera& camera);
 			virtual void run(float dt) override;
 
-			Engine::ECS::EntityID focus;
+			Engine::ECS::Entity focus;
 
 		private:
 			Engine::Camera* camera;

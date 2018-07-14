@@ -23,9 +23,9 @@ namespace Game {
 
 	void CharacterMovementSystem::run(float dt) {
 		constexpr float speed = 1.0f * 2;
-		for (auto eid : entities) {
-			auto& physComp = world.getComponent<Game::PhysicsComponent>(eid);
-			auto& inputComp = world.getComponent<Game::InputComponent>(eid);
+		for (auto ent : entities) {
+			auto& physComp = world.getComponent<Game::PhysicsComponent>(ent);
+			auto& inputComp = world.getComponent<Game::InputComponent>(ent);
 			auto& inputManager = *inputComp.inputManager;
 		
 			if (inputManager.isPressed("MoveUp")) {

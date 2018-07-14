@@ -145,7 +145,7 @@ namespace Game {
 
 		// Sort by texture
 		auto entitiesByTexture = entities;
-		std::sort(entitiesByTexture.begin(), entitiesByTexture.end(), [this](Engine::ECS::EntityID a, Engine::ECS::EntityID b) {
+		std::sort(entitiesByTexture.begin(), entitiesByTexture.end(), [this](Engine::ECS::Entity a, Engine::ECS::Entity b) {
 			return world.getComponent<Game::SpriteComponent>(a).texture < world.getComponent<Game::SpriteComponent>(b).texture;
 		});
 

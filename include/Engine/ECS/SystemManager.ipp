@@ -66,30 +66,30 @@ namespace Engine::ECS {
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::onEntityCreated(EntityID eid) {
+	void SystemManager<SystemsType<Systems...>>::onEntityCreated(Entity ent) {
 		for (size_t i = 0; i < count; ++i) {
-			systems[systemOrder[i]]->onEntityCreated(eid);
+			systems[systemOrder[i]]->onEntityCreated(ent);
 		}
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::onComponentAdded(EntityID eid, ComponentID cid) {
+	void SystemManager<SystemsType<Systems...>>::onComponentAdded(Entity ent, ComponentID cid) {
 		for (size_t i = 0; i < count; ++i) {
-			systems[systemOrder[i]]->onComponentAdded(eid, cid);
+			systems[systemOrder[i]]->onComponentAdded(ent, cid);
 		}
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::onComponentRemoved(EntityID eid, ComponentID cid) {
+	void SystemManager<SystemsType<Systems...>>::onComponentRemoved(Entity ent, ComponentID cid) {
 		for (size_t i = 0; i < count; ++i) {
-			systems[systemOrder[i]]->onComponentRemoved(eid, cid);
+			systems[systemOrder[i]]->onComponentRemoved(ent, cid);
 		}
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::onEntityDestroyed(EntityID eid) {
+	void SystemManager<SystemsType<Systems...>>::onEntityDestroyed(Entity ent) {
 		for (size_t i = 0; i < count; ++i) {
-			systems[systemOrder[i]]->onEntityDestroyed(eid);
+			systems[systemOrder[i]]->onEntityDestroyed(ent);
 		}
 	}
 

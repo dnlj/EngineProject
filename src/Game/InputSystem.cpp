@@ -11,12 +11,12 @@ namespace Game {
 		this->inputManager = &inputManager;
 	}
 
-	void InputSystem::onEntityAdded(Engine::ECS::EntityID eid) {
-		world.getComponent<InputComponent>(eid).inputManager = inputManager;
+	void InputSystem::onEntityAdded(Engine::ECS::Entity ent) {
+		world.getComponent<InputComponent>(ent).inputManager = inputManager;
 	}
 
-	void InputSystem::onEntityRemoved(Engine::ECS::EntityID eid) {
-		world.getComponent<InputComponent>(eid).inputManager = nullptr;
+	void InputSystem::onEntityRemoved(Engine::ECS::Entity ent) {
+		world.getComponent<InputComponent>(ent).inputManager = nullptr;
 	}
 
 	void InputSystem::run(float dt) {

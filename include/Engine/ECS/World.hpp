@@ -44,98 +44,98 @@ namespace Engine::ECS {
 			/**
 			 * @copydoc EntityManager::createEntity
 			 */
-			EntityID createEntity(bool forceNew = false);
+			Entity createEntity(bool forceNew = false);
 
 			/**
 			 * @copydoc EntityManager::destroyEntity
 			 */
-			void destroyEntity(EntityID eid);
+			void destroyEntity(Entity ent);
 
 			/**
 			 * Adds a component to an entity.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @tparam Component The component.
 			 * @return A reference to the added component.
 			 */
 			template<class Component>
-			Component& addComponent(EntityID eid);
+			Component& addComponent(Entity ent);
 
 			/**
 			 * Adds components to an entity.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @tparam Components The components.
 			 * @return A tuple of references to the added components.
 			 */
 			template<class... Components>
-			std::tuple<Components&...> addComponents(EntityID eid);
+			std::tuple<Components&...> addComponents(Entity ent);
 
 			/**
 			 * Checks if an entity has a component.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @param[in] cid The id of the component.
 			 * @return True if the entity has the component; otherwise false.
 			 */
-			bool hasComponent(EntityID eid, ComponentID cid);
+			bool hasComponent(Entity ent, ComponentID cid);
 
 			/**
 			 * Checks if an entity has a component.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @tparam Component The component type.
 			 * @return True if the entity has the component; otherwise false.
 			 */
 			template<class Component>
-			bool hasComponent(EntityID eid);
+			bool hasComponent(Entity ent);
 
 			/**
 			 * Checks if an entity has components.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @param[in] cbits The bitset of components.
 			 * @return True if the entity has the components; otherwise false.
 			 */
-			bool hasComponents(EntityID eid, ComponentBitset cbits);
+			bool hasComponents(Entity ent, ComponentBitset cbits);
 
 			/**
 			 * Checks if an entity has the components.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @tparam Components The components.
 			 * @return True if the entity has the components; otherwise false.
 			 */
 			template<class... Components>
-			bool hasComponents(EntityID eid);
+			bool hasComponents(Entity ent);
 
 			/**
 			 * Removes a component from an entity.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @tparam Component The component.
 			 */
 			template<class Component>
-			void removeComponent(EntityID eid);
+			void removeComponent(Entity ent);
 
 			/**
 			 * Removes components from an entity.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @tparam Components The components.
 			 */
 			template<class... Components>
-			void removeComponents(EntityID eid);
+			void removeComponents(Entity ent);
 
 			/**
 			 * Gets a reference the component associated with an entity.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @tparam Component The component.
 			 * @return A reference to the component.
 			 */
 			template<class Component>
-			Component& getComponent(EntityID eid);
+			Component& getComponent(Entity ent);
 
 			/**
 			 * Gets a reference the components associated with an entity.
-			 * @param[in] eid The id of the entity.
+			 * @param[in] ent The entity.
 			 * @tparam Components The components.
 			 * @return A tuple of references to the components.
 			 */
 			template<class... Components>
-			std::tuple<Components&...> getComponents(EntityID eid);
+			std::tuple<Components&...> getComponents(Entity ent);
 
 		private:
 			/** The bitsets for storing what components entities have. */

@@ -7,97 +7,97 @@ namespace Engine::ECS {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
-	EntityID World<SystemsSet, ComponentsSet>::createEntity(bool forceNew) {
-		const auto eid = EntityManager::createEntity(forceNew).id;
+	Entity World<SystemsSet, ComponentsSet>::createEntity(bool forceNew) {
+		const auto ent = EntityManager::createEntity(forceNew);
 
-		if (eid >= componentBitsets.size()) {
-			componentBitsets.resize(eid + 1);
+		if (ent.id >= componentBitsets.size()) {
+			componentBitsets.resize(ent.id + 1);
 		}
 
-		onEntityCreated(eid);
+		onEntityCreated(ent);
 
-		return eid;
+		return ent;
 	}
 
 	template<class SystemsSet, class ComponentsSet>
-	void World<SystemsSet, ComponentsSet>::destroyEntity(EntityID eid) {
-		EntityManager::destroyEntity(Entity{static_cast<decltype(Entity::id)>(eid), 1});
-		onEntityDestroyed(eid);
+	void World<SystemsSet, ComponentsSet>::destroyEntity(Entity ent) {
+		EntityManager::destroyEntity(ent);
+		onEntityDestroyed(ent);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
-	Component& World<SystemsSet, ComponentsSet>::addComponent(EntityID eid) {
+	Component& World<SystemsSet, ComponentsSet>::addComponent(Entity ent) {
 		auto& container = getComponentContainer<Component>();
 		const auto cid = getComponentID<Component>();
 
 		// Ensure the container is of the correct size
-		if (eid >= container.size()) {
-			container.resize(eid + 1);
+		if (ent.id >= container.size()) {
+			container.resize(ent.id + 1);
 		}
 
 		// Add the component
-		container[eid] = Component();
-		componentBitsets[eid][cid] = true;
+		container[ent.id] = Component();
+		componentBitsets[ent.id][cid] = true;
 
 		// Tell the systems
-		onComponentAdded(eid, cid);
+		onComponentAdded(ent, cid);
 
-		return container[eid];
+		return container[ent.id];
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class... Components>
-	std::tuple<Components&...> World<SystemsSet, ComponentsSet>::addComponents(EntityID eid) {
-		return std::forward_as_tuple(addComponent<Components>(eid) ...);
+	std::tuple<Components&...> World<SystemsSet, ComponentsSet>::addComponents(Entity ent) {
+		return std::forward_as_tuple(addComponent<Components>(ent) ...);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
-	bool World<SystemsSet, ComponentsSet>::hasComponent(EntityID eid, ComponentID cid) {
-		return componentBitsets[eid][cid];
+	bool World<SystemsSet, ComponentsSet>::hasComponent(Entity ent, ComponentID cid) {
+		return componentBitsets[ent.id][cid];
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
-	bool World<SystemsSet, ComponentsSet>::hasComponent(EntityID eid) {
-		return hasComponent(eid, getComponentID<Component>());
+	bool World<SystemsSet, ComponentsSet>::hasComponent(Entity ent) {
+		return hasComponent(ent, getComponentID<Component>());
 	}
 
 	template<class SystemsSet, class ComponentsSet>
-	bool World<SystemsSet, ComponentsSet>::hasComponents(EntityID eid, ComponentBitset cbits) {
-		return (componentBitsets[eid] & cbits) == cbits;
+	bool World<SystemsSet, ComponentsSet>::hasComponents(Entity ent, ComponentBitset cbits) {
+		return (componentBitsets[ent.id] & cbits) == cbits;
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class... Components>
-	bool World<SystemsSet, ComponentsSet>::hasComponents(EntityID eid) {
-		return hasComponents(eid, getBitsetForComponents<Components...>());
+	bool World<SystemsSet, ComponentsSet>::hasComponents(Entity ent) {
+		return hasComponents(ent, getBitsetForComponents<Components...>());
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
-	void World<SystemsSet, ComponentsSet>::removeComponent(EntityID eid) {
+	void World<SystemsSet, ComponentsSet>::removeComponent(Entity ent) {
 		const auto cid = getComponentID<Component>();
 
-		componentBitsets[eid][cid] = false;
-		onComponentRemoved(eid, cid);
+		componentBitsets[ent.id][cid] = false;
+		onComponentRemoved(ent, cid);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class... Components>
-	void World<SystemsSet, ComponentsSet>::removeComponents(EntityID eid) {
-		(removeComponent<Components>(eid), ...);
+	void World<SystemsSet, ComponentsSet>::removeComponents(Entity ent) {
+		(removeComponent<Components>(ent), ...);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
-	Component& World<SystemsSet, ComponentsSet>::getComponent(EntityID eid) {
-		return getComponentContainer<Component>()[eid];
+	Component& World<SystemsSet, ComponentsSet>::getComponent(Entity ent) {
+		return getComponentContainer<Component>()[ent.id];
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class... Components>
-	std::tuple<Components&...> World<SystemsSet, ComponentsSet>::getComponents(EntityID eid) {
-		return std::forward_as_tuple(getComponent<Components>(eid) ...);
+	std::tuple<Components&...> World<SystemsSet, ComponentsSet>::getComponents(Entity ent) {
+		return std::forward_as_tuple(getComponent<Components>(ent) ...);
 	}
 }
