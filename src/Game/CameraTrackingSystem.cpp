@@ -6,7 +6,6 @@
 
 namespace Game {
 	CameraTrackingSystem::CameraTrackingSystem(World& world) : SystemBase{world} {
-		priorityAfter = world.getBitsetForSystems<Game::InputSystem>();
 	}
 
 	void CameraTrackingSystem::setup(Engine::Camera& camera) {

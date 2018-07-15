@@ -17,7 +17,6 @@ namespace Game {
 			Game::CharacterMovementComponent
 		>();
 
-		priorityAfter = world.getBitsetForSystems<Game::InputSystem>();
 		priorityBefore = world.getBitsetForSystems<Game::PhysicsSystem>();
 	}
 

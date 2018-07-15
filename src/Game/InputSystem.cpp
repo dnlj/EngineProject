@@ -5,6 +5,8 @@
 namespace Game {
 	InputSystem::InputSystem(World& world) : SystemBase{world} {
 		cbits = world.getBitsetForComponents<InputComponent>();
+		priorityBefore.set();
+		priorityBefore.reset(world.getSystemID<InputSystem>());
 	}
 
 	void InputSystem::setup(Engine::InputManager& inputManager) {

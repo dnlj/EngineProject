@@ -6,8 +6,6 @@ namespace Game {
 		: SystemBase{world}
 		, physWorld{b2Vec2_zero} {
 
-		priorityAfter = world.getBitsetForSystems<Game::InputSystem>();
-
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
 			physWorld.SetDebugDraw(&debugDraw);
