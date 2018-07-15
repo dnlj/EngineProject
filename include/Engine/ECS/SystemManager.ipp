@@ -120,7 +120,7 @@ namespace Engine::ECS {
 			// Continue visiting
 			nodes[node] = 1;
 
-			for (size_t i = 0; i < priority[node].size(); ++i) {
+			for (size_t i = 0; i < count; ++i) {
 				if (priority[node][i]) {
 					visit(i, visit);
 				}
