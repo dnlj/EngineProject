@@ -1,8 +1,5 @@
 #pragma once
 
-#pragma once
-#include <array>
-
 
 namespace Engine::Algorithm {
 	template<class T>
