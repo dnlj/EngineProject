@@ -15,6 +15,7 @@ namespace Engine::Algorithm {
 	template<class T, std::size_t N>
 	constexpr int partition(std::array<T, N>& arr, int b, int e);
 
+	// NOTE: Doesnt work with duplicate elements
 	template<class T, std::size_t N>
 	constexpr void quicksort(std::array<T, N>& arr, int b, int e);
 
