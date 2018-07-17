@@ -1,8 +1,5 @@
 #pragma once
 
-// Engine
-#include <Engine/Algorithm/Algorithm.hpp>
-
 namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	World<SystemsSet, ComponentsSet>::World()
@@ -102,59 +99,5 @@ namespace Engine::ECS {
 	template<class... Components>
 	std::tuple<Components&...> World<SystemsSet, ComponentsSet>::getComponents(Entity ent) {
 		return std::forward_as_tuple(getComponent<Components>(ent) ...);
-	}
-
-	template<class SystemsSet, class ComponentsSet>
-	template<class... Components>
-	const EntityFilter& World<SystemsSet, ComponentsSet>::getFilterFor() {
-		// TODO: Handle the caase there sizeof...(Components) == 0
-		return getFilterFor<Components...>(std::index_sequence_for<Components...>());
-	}
-	
-	template<class SystemsSet, class ComponentsSet>
-	template<class... Components, std::size_t... Is>
-	const EntityFilter& World<SystemsSet, ComponentsSet>::getFilterFor(std::index_sequence<Is...>) {
-		// Sort the argument order so we dont have duplicate filters
-		constexpr auto order = Algorithm::sort(
-			std::array<ComponentID, sizeof...(Components)>{World::getComponentID<Components>() ...}
-		);
-	
-		return getFilterFor<order[Is]...>();
-	}
-	
-	template<class SystemsSet, class ComponentsSet>
-	template<ComponentID C1, ComponentID... Cs>
-	const EntityFilter& World<SystemsSet, ComponentsSet>::getFilterFor() {
-		auto& con = filters[C1];
-	
-		ComponentBitset cbits;
-		(cbits.set(Cs), ...);
-	
-		// TODO: sort for faster search?
-		auto found = std::find_if(con.cbegin(), con.cend(), [&cbits](const EntityFilter& f) {
-			return f.componentBits == cbits;
-		});
-	
-		if (found == con.cend()) {
-			con.emplace_back(std::move(cbits));
-			auto& back = con.back();
-
-			// Populate the new filter
-			for (decltype(Entity::id) i = 0; i < aliveEntities.size(); ++i) {
-				const auto gen = aliveEntities[i];
-
-				if (gen > 0) {
-					Entity ent{i, gen};
-
-					if (hasComponents(ent, cbits)) {
-						back.addEntity(ent);
-					}
-				}
-			}
-
-			return back;
-		} else {
-			return *found;
-		}
 	}
 }

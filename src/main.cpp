@@ -261,14 +261,6 @@ void run() {
 	// Engine stuff
 	Engine::EngineInstance engine;
 	Game::World world;
-	auto& filter = world.getFilterFor<Game::PhysicsComponent>();
-
-	{
-		std::cout << "Filter 1: \n";
-		for (auto ent : filter) {
-			std::cout << "\tEntity: " << ent << "\n";
-		}
-	}
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
@@ -308,13 +300,6 @@ void run() {
 				world.addComponent<Game::PhysicsComponent>(ent).body
 					= createPhysicsSquare(physSys.getPhysicsWorld(), offset + b2Vec2(scale * x, scale * y));
 			}
-		}
-	}
-
-	{
-		std::cout << "Filter 2: \n";
-		for (auto ent : filter) {
-			std::cout << "\tEntity: " << ent << "\n";
 		}
 	}
 

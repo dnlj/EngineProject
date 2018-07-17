@@ -8,7 +8,6 @@
 #include <Engine/ECS/SystemManager.hpp>
 #include <Engine/ECS/ComponentManager.hpp>
 #include <Engine/ECS/EntityManager.hpp>
-#include <Engine/ECS/EntityFilter.hpp>
 
 
 namespace Engine::ECS {
@@ -138,25 +137,8 @@ namespace Engine::ECS {
 			template<class... Components>
 			std::tuple<Components&...> getComponents(Entity ent);
 
-			// TODO: Doc
-			// TODO: Test
-			template<class... Components>
-			const EntityFilter& getFilterFor();
-
 		private:
-			// TODO: Doc
-			// TODO: Test
-			template<class... Components, std::size_t... Is>
-			const EntityFilter& getFilterFor(std::index_sequence<Is...>);
 			
-			// TODO: Doc
-			// TODO: Test
-			template<ComponentID C1, ComponentID... Cs>
-			const EntityFilter& getFilterFor();
-			
-			// TODO: Doc
-			// TODO: Change size to: ComponentManager::count
-			std::array<std::vector<EntityFilter>, MAX_COMPONENTS> filters;
 	};
 }
 
