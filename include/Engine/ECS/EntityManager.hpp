@@ -33,8 +33,10 @@ namespace Engine::ECS {
 			 */
 			bool isAlive(Entity ent);
 
-		private:
+		protected:
 			std::vector<decltype(Entity::gen)> aliveEntities;
+			
+		private:
 			std::vector<Entity> deadEntities;
 	};
 }
