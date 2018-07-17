@@ -14,7 +14,7 @@ namespace Engine::ECS {
 
 	template<template<class...> class ComponentsType, class... Components>
 	template<class Component>
-	constexpr ComponentID ComponentManager<ComponentsType<Components...>>::getComponentID() const noexcept {
+	constexpr static ComponentID ComponentManager<ComponentsType<Components...>>::getComponentID() noexcept {
 		return Meta::IndexOf<Component, Components...>::value;
 	}
 

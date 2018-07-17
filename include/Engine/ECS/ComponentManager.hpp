@@ -25,7 +25,7 @@ namespace Engine::ECS {
 			 * @return The id of @p Component.
 			 */
 			template<class Component>
-			constexpr ComponentID getComponentID() const noexcept;
+			constexpr static ComponentID getComponentID() noexcept;
 
 			/**
 			 * Gets the bitset with the bits that correspond to the ids of the components set.
