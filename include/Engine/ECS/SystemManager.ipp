@@ -33,7 +33,7 @@ namespace Engine::ECS {
 
 	template<template<class...> class SystemsType, class... Systems>
 	template<class System>
-	constexpr SystemID SystemManager<SystemsType<Systems...>>::getSystemID() const noexcept {
+	constexpr static SystemID SystemManager<SystemsType<Systems...>>::getSystemID() noexcept {
 		return Meta::IndexOf<System, Systems...>::value;
 	}
 
