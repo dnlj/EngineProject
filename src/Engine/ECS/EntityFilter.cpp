@@ -7,12 +7,10 @@
 
 namespace Engine::ECS {
 	void EntityFilter::add(Entity ent, const ComponentBitset& cbits) {
-		puts("add 2");
 		if ((cbits & componentsBits) == componentsBits) {
 			// TODO: Use array style?
 			auto pos = std::lower_bound(entities.cbegin(), entities.cend(), ent);
 			entities.insert(pos, ent);
-			puts("add 3");
 		}
 	}
 

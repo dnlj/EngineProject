@@ -11,7 +11,6 @@ namespace Engine::ECS {
 		if (cid >= filtersByComponentID.size()) { return; }
 
 		for (auto& filter : filtersByComponentID[cid]) {
-			puts("add 1");
 			filter->add(ent, cbits);
 		}
 	}
