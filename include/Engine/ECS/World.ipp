@@ -41,7 +41,8 @@ namespace Engine::ECS {
 		componentBitsets[ent.id][cid] = true;
 
 		// Tell the systems
-		onComponentAdded(ent, cid);
+		SystemManager::onComponentAdded(ent, cid);
+		FilterManager::onComponentAdded(ent, cid, componentBitsets[ent.id]);
 
 		return container[ent.id];
 	}
@@ -99,5 +100,11 @@ namespace Engine::ECS {
 	template<class... Components>
 	std::tuple<Components&...> World<SystemsSet, ComponentsSet>::getComponents(Entity ent) {
 		return std::forward_as_tuple(getComponent<Components>(ent) ...);
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	template<class... Components>
+	EntityFilter& World<SystemsSet, ComponentsSet>::getFilterFor() {
+		return FilterManager::getFilterFor(*this, getBitsetForComponents<Components...>());
 	}
 }

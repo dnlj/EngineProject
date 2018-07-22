@@ -8,6 +8,7 @@
 #include <Engine/ECS/SystemManager.hpp>
 #include <Engine/ECS/ComponentManager.hpp>
 #include <Engine/ECS/EntityManager.hpp>
+#include <Engine/ECS/FilterManager.hpp>
 
 
 namespace Engine::ECS {
@@ -19,6 +20,7 @@ namespace Engine::ECS {
 	class World
 		: private EntityManager
 		, private ComponentManager<ComponentsSet>
+		, private FilterManager
 		, private SystemManager<SystemsSet> {
 
 		public:
@@ -137,8 +139,9 @@ namespace Engine::ECS {
 			template<class... Components>
 			std::tuple<Components&...> getComponents(Entity ent);
 
-		private:
-			
+			// TODO: Doc
+			template<class... Components>
+			EntityFilter& getFilterFor();
 	};
 }
 

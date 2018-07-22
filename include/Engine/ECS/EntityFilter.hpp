@@ -4,9 +4,10 @@
 #include <vector>
 
 // Engine
-#include <Engine/ECS/Entity.hpp>
+#include <Engine/ECS/Common.hpp>
 
 
+// TODO: Doc
 namespace Engine::ECS {
 	class EntityFilter {
 		private:
@@ -15,9 +16,16 @@ namespace Engine::ECS {
 		public:
 			using ConstIterator = decltype(entities)::const_iterator;
 
+			// TODO: Make private. Move to constructor
+			ComponentBitset componentsBits;
+
+			void add(Entity ent, const ComponentBitset& cbits);
+			// TODO: Remove
+
+			ConstIterator begin();
+			ConstIterator end();
+
 			ConstIterator begin() const;
 			ConstIterator end() const;
-
-			Entity operator[](std::size_t index) const;
 	};
 }
