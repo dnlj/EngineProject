@@ -14,6 +14,14 @@ namespace Engine::ECS {
 		}
 	}
 
+	void EntityFilter::remove(Entity ent) {
+		auto pos = std::lower_bound(entities.cbegin(), entities.cend(), ent);
+
+		if (pos != entities.cend()) {
+			entities.erase(pos);
+		}
+	}
+
 	auto EntityFilter::begin() -> ConstIterator {
 		return entities.cbegin();
 	}

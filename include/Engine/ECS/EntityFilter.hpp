@@ -20,7 +20,7 @@ namespace Engine::ECS {
 			ComponentBitset componentsBits;
 
 			void add(Entity ent, const ComponentBitset& cbits);
-			// TODO: Remove
+			void remove(Entity ent);
 
 			ConstIterator begin();
 			ConstIterator end();
