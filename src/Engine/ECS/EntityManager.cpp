@@ -36,6 +36,10 @@ namespace Engine::ECS {
 		aliveEntities[ent.id] = 0;
 	}
 
+	auto EntityManager::getEntities() const -> const EntityContainer& {
+		return aliveEntities;
+	}
+
 	bool EntityManager::isAlive(Entity ent) {
 		return aliveEntities[ent.id];
 	}

@@ -26,6 +26,7 @@ namespace Engine::ECS {
 		public:
 			// EntityManager members
 			using EntityManager::isAlive;
+			using EntityManager::getEntities;
 
 			// ComponentManager members
 			using ComponentManager::getComponentID;

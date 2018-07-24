@@ -13,6 +13,8 @@ namespace Engine::ECS {
 	 */
 	class EntityManager {
 		public:
+			using EntityContainer = std::vector<decltype(Entity::gen)>;
+
 			/**
 			 * Creates a new entity.
 			 * @param[in] forceNew When set to true, prevents the reuse of ids.
@@ -33,8 +35,12 @@ namespace Engine::ECS {
 			 */
 			bool isAlive(Entity ent);
 
+			// TODO: Doc
+			// TODO: Test
+			const EntityContainer& getEntities() const;
+
 		private:
-			std::vector<decltype(Entity::gen)> aliveEntities;
+			EntityContainer aliveEntities;
 			std::vector<Entity> deadEntities;
 	};
 }
