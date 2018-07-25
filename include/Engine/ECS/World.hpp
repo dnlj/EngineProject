@@ -140,6 +140,13 @@ namespace Engine::ECS {
 			template<class... Components>
 			std::tuple<Components&...> getComponents(Entity ent);
 
+			/**
+			 * Gets the components bitset for an entity.
+			 * @param[in] ent The entity.
+			 * @return The components bitset for the entity
+			 */
+			ComponentBitset getComponentsBitset(Entity ent);
+
 			// TODO: Doc
 			template<class... Components>
 			EntityFilter& getFilterFor();

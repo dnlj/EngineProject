@@ -257,4 +257,24 @@ namespace {
 		ASSERT_TRUE(&c1 == &c2);
 		ASSERT_TRUE(&e1 == &e2);
 	}
+
+	TEST(Engine_ECS_World, getComponentsBitset) {
+		World w;
+
+		const auto ent = w.createEntity();
+		w.addComponents<ComponentA, ComponentC, ComponentE>(ent);
+
+		auto cbits = w.getComponentsBitset(ent);
+
+		for (std::size_t i = 0; i < cbits.size(); ++i) {
+			if (i == w.getComponentID<ComponentA>()
+				|| i == w.getComponentID<ComponentC>()
+				|| i == w.getComponentID<ComponentE>()) {
+
+				ASSERT_TRUE(cbits[i]);
+			} else {
+				ASSERT_FALSE(cbits[i]);
+			}
+		}
+	}
 }

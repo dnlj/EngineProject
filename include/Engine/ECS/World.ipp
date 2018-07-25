@@ -103,6 +103,11 @@ namespace Engine::ECS {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
+	ComponentBitset World<SystemsSet, ComponentsSet>::getComponentsBitset(Entity ent) {
+		return componentBitsets[ent.id];
+	}
+
+	template<class SystemsSet, class ComponentsSet>
 	template<class... Components>
 	EntityFilter& World<SystemsSet, ComponentsSet>::getFilterFor() {
 		return FilterManager::getFilterFor(*this, getBitsetForComponents<Components...>());
