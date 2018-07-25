@@ -145,7 +145,7 @@ namespace Engine::ECS {
 			 * @param[in] ent The entity.
 			 * @return The components bitset for the entity
 			 */
-			ComponentBitset getComponentsBitset(Entity ent);
+			ComponentBitset getComponentsBitset(Entity ent) const;
 
 			// TODO: Doc
 			template<class... Components>

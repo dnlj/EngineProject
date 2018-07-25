@@ -103,7 +103,7 @@ namespace Engine::ECS {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
-	ComponentBitset World<SystemsSet, ComponentsSet>::getComponentsBitset(Entity ent) {
+	ComponentBitset World<SystemsSet, ComponentsSet>::getComponentsBitset(Entity ent) const {
 		return componentBitsets[ent.id];
 	}
 
