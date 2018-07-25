@@ -14,4 +14,10 @@ namespace Engine::ECS {
 			filter->add(ent, cbits);
 		}
 	}
+
+	void FilterManager::onComponentRemoved(Entity ent, ComponentID cid) {
+		for (auto& filter : filtersByComponentID[cid]) {
+			filter->remove(ent);
+		}
+	}
 }

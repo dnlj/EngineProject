@@ -24,6 +24,7 @@ namespace Engine::ECS {
 
 		protected:
 			void onComponentAdded(Entity ent, ComponentID cid, const ComponentBitset& cbits);
+			void onComponentRemoved(Entity ent, ComponentID cid);
 
 		private:
 			std::unordered_map<ComponentBitset, std::unique_ptr<EntityFilter>> filters;

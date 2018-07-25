@@ -81,7 +81,8 @@ namespace Engine::ECS {
 		const auto cid = getComponentID<Component>();
 
 		componentBitsets[ent.id][cid] = false;
-		onComponentRemoved(ent, cid);
+		SystemManager::onComponentRemoved(ent, cid);
+		FilterManager::onComponentRemoved(ent, cid);
 	}
 
 	template<class SystemsSet, class ComponentsSet>

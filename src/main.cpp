@@ -317,8 +317,26 @@ void run() {
 		auto& filter2 = world.getFilterFor<Game::InputComponent>();
 		assert(&filter1 == &filter2);
 
+		std::vector<Engine::ECS::Entity> toRemove;
+
 		std::cout << "Filter2:\n";
 		for (auto ent : filter2) {
+			std::cout << "\t" << ent << "\n";
+			toRemove.push_back(ent);
+		}
+
+		for (auto ent : toRemove) {
+			world.removeComponent<Game::InputComponent>(ent);
+		}
+	}
+
+	// Filter Testing
+	{
+		auto& filter3 = world.getFilterFor<Game::InputComponent>();
+		assert(&filter1 == &filter3);
+	
+		std::cout << "Filter3:\n";
+		for (auto ent : filter3) {
 			std::cout << "\t" << ent << "\n";
 		}
 	}
