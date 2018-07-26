@@ -20,4 +20,14 @@ namespace Engine::ECS {
 			filter->remove(ent);
 		}
 	}
+
+	void FilterManager::onEntityDestroyed(Entity ent, const ComponentBitset& cbits) {
+		for (auto& pair : filters) {
+			auto& filterBits = pair.first;
+
+			if ((cbits & filterBits) == filterBits) {
+				pair.second->remove(ent);
+			}
+		}
+	}
 }

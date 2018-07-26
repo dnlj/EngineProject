@@ -22,7 +22,8 @@ namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	void World<SystemsSet, ComponentsSet>::destroyEntity(Entity ent) {
 		EntityManager::destroyEntity(ent);
-		onEntityDestroyed(ent);
+		SystemManager::onEntityDestroyed(ent);
+		FilterManager::onEntityDestroyed(ent, componentBitsets[ent.id]);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
