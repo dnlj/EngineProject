@@ -66,34 +66,6 @@ namespace Engine::ECS {
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::onEntityCreated(Entity ent) {
-		for (size_t i = 0; i < count; ++i) {
-			systems[systemOrder[i]]->onEntityCreated(ent);
-		}
-	}
-
-	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::onComponentAdded(Entity ent, ComponentID cid) {
-		for (size_t i = 0; i < count; ++i) {
-			systems[systemOrder[i]]->onComponentAdded(ent, cid);
-		}
-	}
-
-	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::onComponentRemoved(Entity ent, ComponentID cid) {
-		for (size_t i = 0; i < count; ++i) {
-			systems[systemOrder[i]]->onComponentRemoved(ent, cid);
-		}
-	}
-
-	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::onEntityDestroyed(Entity ent) {
-		for (size_t i = 0; i < count; ++i) {
-			systems[systemOrder[i]]->onEntityDestroyed(ent);
-		}
-	}
-
-	template<template<class...> class SystemsType, class... Systems>
 	void SystemManager<SystemsType<Systems...>>::run(float dt) {
 		for (size_t i = 0; i < count; ++i) {
 			systems[systemOrder[i]]->run(dt);

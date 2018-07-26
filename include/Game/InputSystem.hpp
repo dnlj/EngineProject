@@ -14,8 +14,9 @@ namespace Game {
 			InputSystem(World& world);
 			void setup(Engine::InputManager& inputManager);
 
-			virtual void onEntityAdded(Engine::ECS::Entity ent) override;
-			virtual void onEntityRemoved(Engine::ECS::Entity ent) override;
+			// TODO: Fix
+			//virtual void onEntityAdded(Engine::ECS::Entity ent) override;
+			//virtual void onEntityRemoved(Engine::ECS::Entity ent) override;
 			virtual void run(float dt) override;
 
 		private:

@@ -273,7 +273,9 @@ void run() {
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.getTexture("../assets/player.png");
 		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
-		world.addComponent<Game::InputComponent>(player);
+
+		// TODO: Fix or remove InputSystem
+		world.addComponent<Game::InputComponent>(player).inputManager = &engine.inputManager;
 
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
 		

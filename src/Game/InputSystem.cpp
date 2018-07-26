@@ -4,7 +4,8 @@
 
 namespace Game {
 	InputSystem::InputSystem(World& world) : SystemBase{world} {
-		cbits = world.getBitsetForComponents<InputComponent>();
+		// TODO: Fix
+		//cbits = world.getBitsetForComponents<InputComponent>();
 		priorityBefore.set();
 		priorityBefore.reset(world.getSystemID<InputSystem>());
 	}
@@ -13,13 +14,14 @@ namespace Game {
 		this->inputManager = &inputManager;
 	}
 
-	void InputSystem::onEntityAdded(Engine::ECS::Entity ent) {
-		world.getComponent<InputComponent>(ent).inputManager = inputManager;
-	}
-
-	void InputSystem::onEntityRemoved(Engine::ECS::Entity ent) {
-		world.getComponent<InputComponent>(ent).inputManager = nullptr;
-	}
+	// TODO: Fix
+	//void InputSystem::onEntityAdded(Engine::ECS::Entity ent) {
+	//	world.getComponent<InputComponent>(ent).inputManager = inputManager;
+	//}
+	//
+	//void InputSystem::onEntityRemoved(Engine::ECS::Entity ent) {
+	//	world.getComponent<InputComponent>(ent).inputManager = nullptr;
+	//}
 
 	void InputSystem::run(float dt) {
 		inputManager->update();

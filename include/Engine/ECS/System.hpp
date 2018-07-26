@@ -19,10 +19,6 @@ namespace Engine::ECS {
 			System(const System&) = delete;
 
 			virtual ~System() = 0;
-			virtual void onEntityCreated(Entity ent) {};
-			virtual void onEntityDestroyed(Entity ent) {};
-			virtual void onComponentAdded(Entity ent, ComponentID cid) {};
-			virtual void onComponentRemoved(Entity ent, ComponentID cid) {};
 			virtual void run(float dt) {};
 	};
 }

@@ -14,15 +14,12 @@ namespace Engine::ECS {
 			componentBitsets.resize(ent.id + 1);
 		}
 
-		onEntityCreated(ent);
-
 		return ent;
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	void World<SystemsSet, ComponentsSet>::destroyEntity(Entity ent) {
 		EntityManager::destroyEntity(ent);
-		SystemManager::onEntityDestroyed(ent);
 		FilterManager::onEntityDestroyed(ent, componentBitsets[ent.id]);
 	}
 
@@ -41,8 +38,7 @@ namespace Engine::ECS {
 		container[ent.id] = Component();
 		componentBitsets[ent.id][cid] = true;
 
-		// Tell the systems
-		SystemManager::onComponentAdded(ent, cid);
+		// Update filters
 		FilterManager::onComponentAdded(ent, cid, componentBitsets[ent.id]);
 
 		return container[ent.id];
@@ -82,7 +78,6 @@ namespace Engine::ECS {
 		const auto cid = getComponentID<Component>();
 
 		componentBitsets[ent.id][cid] = false;
-		SystemManager::onComponentRemoved(ent, cid);
 		FilterManager::onComponentRemoved(ent, cid);
 	}
 

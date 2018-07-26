@@ -143,12 +143,15 @@ namespace Game {
 	}
 
 	void SpriteSystem::run(float dt) {
-		if (entities.empty()) { return; }
+		// TODO: Fix
+		//if (entities.empty()) { return; }
 
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
 
 		// Sort by texture
-		auto entitiesByTexture = entities;
+		// TODO: Fix
+		//auto entitiesByTexture = entities;
+		auto entitiesByTexture = std::vector<Engine::ECS::Entity>();
 		std::sort(entitiesByTexture.begin(), entitiesByTexture.end(), [this](Engine::ECS::Entity a, Engine::ECS::Entity b) {
 			return world.getComponent<Game::SpriteComponent>(a).texture < world.getComponent<Game::SpriteComponent>(b).texture;
 		});

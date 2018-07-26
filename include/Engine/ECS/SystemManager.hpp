@@ -85,32 +85,6 @@ namespace Engine::ECS {
 			SystemBitset getBitsetForSystems() const;
 
 			/**
-			 * Runs `onEntityCreated` member function on all systems.
-			 * @param[in] ent The entity being created.
-			 */
-			void onEntityCreated(Entity ent);
-
-			/**
-			 * Runs `onComponentAdded` member function on all systems.
-			 * @param[in] ent The entity being added to.
-			 * @param[in] cid The id of the component being added.
-			 */
-			void onComponentAdded(Entity ent, ComponentID cid);
-
-			/**
-			 * Runs `onComponentRemoved` member function on all systems.
-			 * @param[in] ent The entity being removed from.
-			 * @param[in] cid The id of the component being removed.
-			 */
-			void onComponentRemoved(Entity ent, ComponentID cid);
-
-			/**
-			 * Runs the `onEntityDestroyed` member function on all systems.
-			 * @param[in] ent The entity being destroyed.
-			 */
-			void onEntityDestroyed(Entity ent);
-
-			/**
 			 * Runs the `run` member function on all systems.
 			 * @param[in] dt The time delta between calls.
 			 */
