@@ -19,6 +19,10 @@ namespace Engine::ECS {
 		entities.erase(pos);
 	}
 
+	bool EntityFilter::empty() const {
+		return entities.empty();
+	}
+
 	std::size_t EntityFilter::size() const {
 		return entities.size();
 	}

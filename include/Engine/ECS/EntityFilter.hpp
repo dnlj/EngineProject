@@ -22,6 +22,8 @@ namespace Engine::ECS {
 			void add(Entity ent, const ComponentBitset& cbits);
 			void remove(Entity ent);
 
+			bool empty() const;
+
 			std::size_t size() const;
 
 			ConstIterator begin();
