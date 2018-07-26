@@ -8,8 +8,12 @@
 #include <Game/SpriteSystem.hpp>
 
 namespace Game {
-	SpriteSystem::SpriteSystem(World& world) : SystemBase{world} {
-		cbits = world.getBitsetForComponents<Game::SpriteComponent, Game::PhysicsComponent>();
+	SpriteSystem::SpriteSystem(World& world)
+		: SystemBase{world}
+		, filter{world.getFilterFor<
+			Game::SpriteComponent,
+			Game::PhysicsComponent>()}{
+
 		priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem, Game::CameraTrackingSystem>();
 	}
 

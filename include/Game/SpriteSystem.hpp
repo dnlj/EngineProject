@@ -36,6 +36,8 @@ namespace Game {
 			void run(float dt);
 
 		private:
+			Engine::ECS::EntityFilter& filter;
+
 			const Engine::Camera* camera;
 
 			constexpr static std::size_t MAX_SPRITES = 1024;
