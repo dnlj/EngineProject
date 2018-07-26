@@ -11,19 +11,19 @@
 
 
 namespace Game {
-	CharacterMovementSystem::CharacterMovementSystem(World& world) : SystemBase{world} {
-		cbits = world.getBitsetForComponents<
+	CharacterMovementSystem::CharacterMovementSystem(World& world)
+		: SystemBase{world}
+		, filter{world.getFilterFor<
 			Game::PhysicsComponent,
 			Game::CharacterMovementComponent,
-			Game::InputComponent
-		>();
+			Game::InputComponent>()} {
 
 		priorityBefore = world.getBitsetForSystems<Game::PhysicsSystem>();
 	}
 
 	void CharacterMovementSystem::run(float dt) {
 		constexpr float speed = 1.0f * 2;
-		for (auto ent : entities) {
+		for (auto ent : filter) {
 			auto& physComp = world.getComponent<Game::PhysicsComponent>(ent);
 			auto& inputComp = world.getComponent<Game::InputComponent>(ent);
 			auto& inputManager = *inputComp.inputManager;
