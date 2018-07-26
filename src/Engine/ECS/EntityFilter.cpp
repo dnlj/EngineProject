@@ -19,6 +19,10 @@ namespace Engine::ECS {
 		entities.erase(pos);
 	}
 
+	std::size_t EntityFilter::size() const {
+		return entities.size();
+	}
+
 	auto EntityFilter::begin() -> ConstIterator {
 		return cbegin();
 	}
