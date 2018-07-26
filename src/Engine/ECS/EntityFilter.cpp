@@ -20,18 +20,26 @@ namespace Engine::ECS {
 	}
 
 	auto EntityFilter::begin() -> ConstIterator {
-		return entities.cbegin();
+		return cbegin();
 	}
 
 	auto EntityFilter::end() -> ConstIterator {
-		return entities.cend();
+		return cend();
 	}
 
 	auto EntityFilter::begin() const -> ConstIterator {
-		return entities.cbegin();
+		return cbegin();
 	}
 
 	auto EntityFilter::end() const -> ConstIterator {
+		return cend();
+	}
+
+	auto EntityFilter::cbegin() const -> ConstIterator {
+		return entities.cbegin();
+	}
+
+	auto EntityFilter::cend() const -> ConstIterator {
 		return entities.cend();
 	}
 }

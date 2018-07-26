@@ -27,5 +27,8 @@ namespace Engine::ECS {
 
 			ConstIterator begin() const;
 			ConstIterator end() const;
+
+			ConstIterator cbegin() const;
+			ConstIterator cend() const;
 	};
 }
