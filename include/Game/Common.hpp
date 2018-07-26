@@ -12,7 +12,6 @@ namespace Game {
 	class PhysicsSystem;
 	class SpriteSystem;
 	class CharacterMovementSystem;
-	class InputSystem;
 	class CameraTrackingSystem;
 
 	class PhysicsComponent;
@@ -24,7 +23,6 @@ namespace Game {
 		PhysicsSystem,
 		SpriteSystem,
 		CharacterMovementSystem,
-		InputSystem,
 		CameraTrackingSystem
 	>;
 	
@@ -43,7 +41,6 @@ namespace Game {
 #include <Game/PhysicsSystem.hpp>
 #include <Game/SpriteSystem.hpp>
 #include <Game/CharacterMovementSystem.hpp>
-#include <Game/InputSystem.hpp>
 #include <Game/CameraTrackingSystem.hpp>
 
 #include <Game/PhysicsComponent.hpp>

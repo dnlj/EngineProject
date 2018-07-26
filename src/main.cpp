@@ -264,7 +264,6 @@ void run() {
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
-		world.getSystem<Game::InputSystem>().setup(engine.inputManager);
 		world.getSystem<Game::SpriteSystem>().setup(engine.camera);
 		world.getSystem<Game::CameraTrackingSystem>().setup(engine.camera);
 		
@@ -273,8 +272,6 @@ void run() {
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.getTexture("../assets/player.png");
 		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
-
-		// TODO: Fix or remove InputSystem
 		world.addComponent<Game::InputComponent>(player).inputManager = &engine.inputManager;
 
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
