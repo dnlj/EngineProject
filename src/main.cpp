@@ -271,6 +271,7 @@ void run() {
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.getTexture("../assets/player.png");
 		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(physSys.getPhysicsWorld());
 		world.addComponent<Game::CharacterMovementComponent>(player);
+		world.addComponent<Game::CharacterSpellComponent>(player);
 		world.addComponent<Game::InputComponent>(player).inputManager = &engine.inputManager;
 
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
@@ -306,6 +307,7 @@ void run() {
 	engine.inputManager.bind("MoveDown", 31);
 	engine.inputManager.bind("MoveLeft", 30);
 	engine.inputManager.bind("MoveRight", 32);
+	engine.inputManager.bind("Spell_1", 57);
 
 	// Key callbacks
 	glfwSetWindowUserPointer(window, &engine);

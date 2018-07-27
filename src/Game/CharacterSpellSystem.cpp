@@ -13,5 +13,12 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::run(float dt) {
+		for (auto ent : filter) {
+			auto& inputManager = *world.getComponent<Game::InputComponent>(ent).inputManager;
+
+			if (inputManager.wasPressed("Spell_1")) {
+				std::cout << "Spell 1\n";
+			}
+		}
 	}
 }
