@@ -34,20 +34,6 @@ namespace Engine {
 		protected:
 			/** The world that owns this system. */
 			World& world;
-
-			// TODO: Remove
-			/**
-			 * Called when an entity is added to this system.
-			 * @param[in] ent The entity.
-			 */
-			virtual void onEntityAdded(ECS::Entity ent);
-
-			// TODO: Remove
-			/**
-			 * Called when an entity is removed from this system.
-			 * @param[in] ent The entity.
-			 */
-			virtual void onEntityRemoved(ECS::Entity ent);
 	};
 }
 
