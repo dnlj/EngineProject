@@ -150,6 +150,9 @@ namespace Engine::ECS {
 			// TODO: Doc
 			template<class... Components>
 			EntityFilter& getFilterFor();
+
+			template<>
+			EntityFilter& getFilterFor() = delete;
 	};
 }
 
