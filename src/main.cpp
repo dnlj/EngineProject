@@ -43,7 +43,6 @@
 #include <Game/PhysicsComponent.hpp>
 #include <Game/imgui_impl_glfw_gl3.hpp>
 
-GLFWwindow* window = nullptr; // TODO: need to add a way to pass data to systems
 
 namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
@@ -237,7 +236,7 @@ void run() {
 	}
 
 	// Create a window
-	window = createWindow();
+	GLFWwindow* window = createWindow();
 	glfwMakeContextCurrent(window);
 	
 	// Enable vsync
