@@ -362,6 +362,7 @@ void run() {
 
 		// ECS
 		world.run(dt);
+		engine.inputManager.update();
 
 		// Physics debug
 		#if defined (DEBUG_PHYSICS)
