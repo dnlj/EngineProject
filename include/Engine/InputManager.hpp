@@ -1,5 +1,8 @@
 #pragma once
 
+// GLM
+#include <glm/common.hpp>
+
 // STD
 #include <string>
 #include <unordered_map>
@@ -57,6 +60,13 @@ namespace Engine {
 			 */
 			void keyCallback(ScanCode code, int action);
 
+			/**
+			 * The callback for updating the mouse position
+			 * @param[in] x The x position of the mouse.
+			 * @param[in] y The y position of the mouse.
+			 */
+			void mouseCallback(double x, double y);
+
 		private:
 			/** Maps binds to scancodes */
 			std::unordered_map<std::string, ScanCode> binds;
@@ -66,5 +76,9 @@ namespace Engine {
 			
 			/** The state of the input this update */
 			std::unordered_map<ScanCode, bool> currentState;
+
+			/** The current position of the mouse */
+			glm::vec2 mousePosition;
+			 
 	};
 }

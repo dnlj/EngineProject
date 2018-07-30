@@ -310,8 +310,9 @@ void run() {
 	engine.inputManager.bind("MoveRight", 32);
 	engine.inputManager.bind("Spell_1", 57);
 
-	// Key callbacks
+	// Callbacks
 	glfwSetWindowUserPointer(window, &engine);
+
 	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 			glfwSetWindowShouldClose(window, true);
@@ -320,6 +321,10 @@ void run() {
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.keyCallback(scancode, action);
 
 		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
+	});
+
+	glfwSetCursorPosCallback(window, [](GLFWwindow* window, double x, double y) {
+		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.mouseCallback(x, y);
 	});
 
 	// Framebuffer callback

@@ -59,4 +59,9 @@ namespace Engine {
 			currentState[code] = (action == GLFW_PRESS);
 		}
 	}
+
+	void InputManager::mouseCallback(double x, double y) {
+		mousePosition.x = static_cast<float>(x);
+		mousePosition.y = static_cast<float>(y);
+	}
 }
