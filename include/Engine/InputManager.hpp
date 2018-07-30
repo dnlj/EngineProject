@@ -29,7 +29,7 @@ namespace Engine {
 			 * @param[in] name The name of the bind.
 			 * @return True if the bind is pressed; otherwise false.
 			 */
-			bool isPressed(const std::string& name);
+			bool isPressed(const std::string& name) const;
 			
 			/**
 			 * Checks if the bind associated with @p name was released this update.
