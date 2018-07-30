@@ -53,11 +53,20 @@ namespace Game {
 			auto& inputManager = *world.getComponent<Game::InputComponent>(ent).inputManager;
 
 			if (inputManager.wasPressed("Spell_1")) {
-				auto ent = missles[currentMissle];
+				auto& entBody = *world.getComponent<Game::PhysicsComponent>(ent).body;
+				auto missle = missles[currentMissle];
+				auto mousePos = inputManager.getMousePosition();
+				auto entPos = entBody.GetPosition();
+				auto dir = b2Vec2(mousePos.x - entPos.x, mousePos.y - entPos.y);
+				dir.Normalize();
 
-				auto body = world.getComponent<Game::PhysicsComponent>(ent).body;
-				body->SetTransform(b2Vec2(0.0f, 0.0f), 0);
+				// TODO: Mouse pos is wrong since its not in world coords
 
+				std::cout << "x: " << mousePos.x;
+				std::cout << "\ny: " << mousePos.y << "\n";
+
+				auto body = world.getComponent<Game::PhysicsComponent>(missle).body;
+				body->SetTransform(entPos, 0);
 				currentMissle = (currentMissle + 1) % missles.size();
 			}
 		}
