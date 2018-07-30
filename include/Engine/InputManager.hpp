@@ -36,7 +36,7 @@ namespace Engine {
 			 * @param[in] name The name of the bind.
 			 * @return True if the bind was released this update; otherwise false.
 			 */
-			bool wasReleased(const std::string& name);
+			bool wasReleased(const std::string& name) const;
 
 			/**
 			 * Maps the bind @p name with the scancode @p code.

@@ -33,9 +33,17 @@ namespace Engine {
 		return true;
 	}
 	
-	bool InputManager::wasReleased(const std::string& name) {
-		const auto& code = binds[name];
-		return previousState[code] && !currentState[code];
+	bool InputManager::wasReleased(const std::string& name) const {
+		const auto code = binds.find(name);
+		if (code == binds.cend()) { return false; }
+
+		const auto prev = previousState.find(code->second);
+		if (prev == previousState.cend() || !prev->second) { return false; }
+
+		const auto curr = currentState.find(code->second);
+		if (curr == currentState.cend() || curr->second) { return false; }
+
+		return true;
 	}
 
 	void InputManager::bind(std::string name, ScanCode code) {
