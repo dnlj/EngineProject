@@ -17,4 +17,12 @@ namespace Engine {
 		projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
 		glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
 	}
+
+	unsigned int Camera::getWidth() const {
+		return width;
+	}
+
+	unsigned int Camera::getHeight() const {
+		return height;
+	}
 }

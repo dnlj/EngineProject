@@ -12,7 +12,8 @@ namespace Engine {
 			glm::mat4 view{1.0f};
 
 			void setAsOrtho(unsigned int width, unsigned int height, float scale);
-
+			unsigned int getWidth() const;
+			unsigned int getHeight() const;
 			// TODO: const glm::mat4& getProjection() const;
 			// TODO: const glm::mat4& getView() const;
 
