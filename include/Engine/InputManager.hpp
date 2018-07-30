@@ -55,7 +55,7 @@ namespace Engine {
 			 * @param[in] code The scancode.
 			 * @param[in] action The action. See GLFW documentation for more information.
 			 */
-			void callback(ScanCode code, int action);
+			void keyCallback(ScanCode code, int action);
 
 		private:
 			/** Maps binds to scancodes */

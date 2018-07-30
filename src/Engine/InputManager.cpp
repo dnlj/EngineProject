@@ -54,7 +54,7 @@ namespace Engine {
 		previousState = currentState;
 	}
 
-	void InputManager::callback(ScanCode code, int action) {
+	void InputManager::keyCallback(ScanCode code, int action) {
 		if (action != GLFW_REPEAT) {
 			currentState[code] = (action == GLFW_PRESS);
 		}

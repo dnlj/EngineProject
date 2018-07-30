@@ -317,7 +317,7 @@ void run() {
 			glfwSetWindowShouldClose(window, true);
 		}
 
-		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.callback(scancode, action);
+		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.keyCallback(scancode, action);
 
 		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	});
