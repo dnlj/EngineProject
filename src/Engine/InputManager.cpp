@@ -50,6 +50,10 @@ namespace Engine {
 		binds[std::move(name)] = code;
 	}
 
+	glm::vec2 InputManager::getMousePosition() const {
+		return mousePosition;
+	}
+
 	void InputManager::update() {
 		previousState = currentState;
 	}

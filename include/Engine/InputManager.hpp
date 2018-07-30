@@ -48,6 +48,13 @@ namespace Engine {
 			 */
 			void bind(std::string name, ScanCode code);
 
+
+			/**
+			 * Gets the current position of the mouse.
+			 * @return The x and y position of the mouse.
+			 */
+			glm::vec2 getMousePosition() const;
+
 			/**
 			 * Signals a new update. This should be called once per frame.
 			 */
