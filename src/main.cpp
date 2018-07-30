@@ -215,12 +215,7 @@ namespace {
 		glViewport(0, 0, width, height);
 
 		auto& camera = static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->camera;
-
-		constexpr float scale = 1.0f / 250.0f;
-		auto halfWidth = (width / 2.0f) * scale;
-		auto halfHeight = (height / 2.0f) * scale;
-
-		camera.projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
+		camera.setAsOrtho(width, height, 1.0f / 250.0f);
 	}
 }
 
