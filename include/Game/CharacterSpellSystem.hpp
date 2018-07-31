@@ -16,6 +16,7 @@ namespace Game {
 
 		private:
 			Engine::ECS::EntityFilter& filter;
+			Engine::Camera* camera;
 			std::vector<Engine::ECS::Entity> missles;
 			size_t currentMissle = 0;
 	};

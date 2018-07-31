@@ -13,6 +13,7 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::setup(Engine::EngineInstance& engine) {
+		camera = &engine.camera;
 		auto& physWorld = world.getSystem<Game::PhysicsSystem>().getPhysicsWorld();
 		
 		missles.reserve(10);
@@ -37,10 +38,10 @@ namespace Game {
 
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &shape;
-				fixtureDef.density = 1.0f;
+				fixtureDef.density = 0.001f;
 
 				physComp.body->CreateFixture(&fixtureDef);
-				physComp.body->SetLinearDamping(10.0f);
+				physComp.body->SetLinearDamping(0.0f);
 				physComp.body->SetFixedRotation(true);
 			}
 
@@ -55,18 +56,22 @@ namespace Game {
 			if (inputManager.wasPressed("Spell_1")) {
 				auto& entBody = *world.getComponent<Game::PhysicsComponent>(ent).body;
 				auto missle = missles[currentMissle];
-				auto mousePos = inputManager.getMousePosition();
+
+				// Get the mouse position in world space
+				auto mousePos = inputManager.getMousePosition(); // Mouse position relative to window
+				mousePos -= glm::vec2(camera->getWidth() * 0.5f, camera->getHeight() * 0.5f); // Relative to center of screen
+				mousePos.y *= -1.0f; // In screen space up is negative. In world space up is positive
+				mousePos = glm::vec2(camera->getPosition()) + mousePos; // Offset by camera position
+
+				// The direction of the cursor relative to ent
 				auto entPos = entBody.GetPosition();
 				auto dir = b2Vec2(mousePos.x - entPos.x, mousePos.y - entPos.y);
 				dir.Normalize();
 
-				// TODO: Mouse pos is wrong since its not in world coords
-
-				std::cout << "x: " << mousePos.x;
-				std::cout << "\ny: " << mousePos.y << "\n";
-
+				// Fire the missile
 				auto body = world.getComponent<Game::PhysicsComponent>(missle).body;
-				body->SetTransform(entPos, 0);
+				body->SetTransform(entPos + 0.25f * dir, 0); // TODO: This scalar depends on the size of ent and missle. Handle this better.
+				body->SetLinearVelocity(2.0f * dir);
 				currentMissle = (currentMissle + 1) % missles.size();
 			}
 		}
