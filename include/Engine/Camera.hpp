@@ -14,6 +14,8 @@ namespace Engine {
 			void setAsOrtho(unsigned int width, unsigned int height, float scale);
 			unsigned int getWidth() const;
 			unsigned int getHeight() const;
+			float getScale() const;
+			glm::vec3 getPosition() const;
 			// TODO: const glm::mat4& getProjection() const;
 			// TODO: const glm::mat4& getView() const;
 

@@ -18,11 +18,19 @@ namespace Engine {
 		glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
 	}
 
+	glm::vec3 Camera::getPosition() const {
+		return view * glm::vec4(0, 0, 0, 1);
+	}
+
 	unsigned int Camera::getWidth() const {
 		return width;
 	}
 
 	unsigned int Camera::getHeight() const {
 		return height;
+	}
+
+	float Camera::getScale() const {
+		return scale;
 	}
 }
