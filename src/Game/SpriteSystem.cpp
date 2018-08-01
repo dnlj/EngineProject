@@ -167,7 +167,7 @@ namespace Game {
 
 			// Set camera uniform
 			auto model = glm::translate(glm::mat4{1.0f}, glm::vec3{transform.p.x, transform.p.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/4});
-			glm::mat4 mvp = camera->getProjection() * camera->view * model;
+			glm::mat4 mvp = camera->getProjection() * camera->getView() * model;
 			
 			auto& group = spriteGroups.back();
 			if (group.texture == spriteComp.texture) {

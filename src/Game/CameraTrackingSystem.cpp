@@ -14,6 +14,6 @@ namespace Game {
 
 	void CameraTrackingSystem::run(float dt) {
 		const auto focusPos = world.getComponent<PhysicsComponent>(focus).body->GetPosition();
-		camera->view = glm::translate(glm::mat4{1.0f}, glm::vec3{-focusPos.x, -focusPos.y, 0.0f});
+		camera->setPosition(glm::vec2{focusPos.x, focusPos.y});
 	}
 }
