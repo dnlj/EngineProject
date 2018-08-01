@@ -33,4 +33,8 @@ namespace Engine {
 	float Camera::getScale() const {
 		return scale;
 	}
+
+	const glm::mat4& Camera::getProjection() const {
+		return projection;
+	}
 }
