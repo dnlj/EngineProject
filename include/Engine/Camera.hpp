@@ -12,9 +12,25 @@ namespace Engine {
 			unsigned int getWidth() const;
 			unsigned int getHeight() const;
 			float getScale() const;
+
+			/**
+			 * @param[in] position The position vector.
+			 */
 			void setPosition(const glm::vec2& position);
+
+			/**
+			 * @return The position vector.
+			 */
 			glm::vec3 getPosition() const;
+
+			/**
+			 * @return The projection matrix.
+			 */
 			const glm::mat4& getProjection() const;
+
+			/**
+			 * @return The view matrix.
+			 */
 			const glm::mat4& getView() const;
 
 		private:
