@@ -23,8 +23,8 @@ namespace Game {
 				if (dataB == nullptr) { return; }
 
 				std::cout
-					<< "A: "<< dataA->ent << " "
-					<< "B: " << dataB->ent << "\n";
+					<< "A: "<< dataA << " "
+					<< "B: " << dataB << "\n";
 			}
 	};
 
@@ -33,6 +33,8 @@ namespace Game {
 			PhysicsSystem(World& world);
 
 			virtual void run(float dt) override;
+
+			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef);
 
 			b2World& getPhysicsWorld();
 
@@ -43,6 +45,8 @@ namespace Game {
 		private:
 			b2World physWorld;
 			TestContactListener contactListener;
+
+			std::vector<PhysicsUserData> userData;
 
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D debugDraw;

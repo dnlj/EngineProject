@@ -14,15 +14,13 @@ namespace Game {
 
 	void CharacterSpellSystem::setup(Engine::EngineInstance& engine) {
 		camera = &engine.camera;
-		auto& physWorld = world.getSystem<Game::PhysicsSystem>().getPhysicsWorld();
+		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 
 		constexpr std::size_t count = 10;
 		missles.reserve(count);
-		userData.resize(count);
 		
 		for (int i = 0; i < 10; ++i) {
 			auto ent = missles.emplace_back(world.createEntity(true));
-			userData[i].ent = ent;
 
 			auto& [physComp, spriteComp] = world.addComponents<
 				Game::PhysicsComponent,
@@ -34,8 +32,7 @@ namespace Game {
 				bodyDef.type = b2_dynamicBody;
 				bodyDef.position = b2Vec2_zero;
 
-				physComp.body = physWorld.CreateBody(&bodyDef);
-				physComp.body->SetUserData(&userData[i]);
+				physComp.body = physSys.createBody(ent, bodyDef);
 
 				b2CircleShape shape;
 				shape.m_radius = 1.0f/8;

@@ -23,6 +23,19 @@ namespace Game {
 		#endif
 	}
 
+	b2Body* PhysicsSystem::createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef) {
+		auto body = physWorld.CreateBody(&bodyDef);
+
+		if (userData.size() <= ent.id) {
+			userData.resize(ent.id + 1);
+		}
+
+		userData[ent.id] = PhysicsUserData{ent};
+		body->SetUserData(reinterpret_cast<void*>(static_cast<std::uintptr_t>(ent.id)));
+
+		return body;
+	}
+
 	b2World& PhysicsSystem::getPhysicsWorld() {
 		return physWorld;
 	}
