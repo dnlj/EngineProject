@@ -4,7 +4,8 @@
 namespace Game {
 	PhysicsSystem::PhysicsSystem(World& world)
 		: SystemBase{world}
-		, physWorld{b2Vec2_zero} {
+		, physWorld{b2Vec2_zero}
+		, contactListener{*this} {
 
 		physWorld.SetContactListener(&contactListener);
 
@@ -36,6 +37,10 @@ namespace Game {
 		return body;
 	}
 
+	const PhysicsUserData& PhysicsSystem::getUserData(void* ptr) const {
+		return userData[reinterpret_cast<std::size_t>(ptr)];
+	}
+
 	b2World& PhysicsSystem::getPhysicsWorld() {
 		return physWorld;
 	}
@@ -46,4 +51,22 @@ namespace Game {
 			return debugDraw;
 		}
 	#endif
+}
+
+namespace Game {
+	PhysicsSystem::ContactListener::ContactListener(PhysicsSystem& physSys)
+		: physSys{physSys} {
+	}
+
+	void PhysicsSystem::ContactListener::BeginContact(b2Contact* contact) {
+		const auto dataA = static_cast<PhysicsUserData*>(contact->GetFixtureA()->GetBody()->GetUserData());
+		const auto dataB = static_cast<PhysicsUserData*>(contact->GetFixtureB()->GetBody()->GetUserData());
+
+		if (dataA == nullptr) { return; }
+		if (dataB == nullptr) { return; }
+
+		std::cout
+			<< "A: "<< physSys.getUserData(dataA).ent << " "
+			<< "B: " << physSys.getUserData(dataB).ent << "\n";
+	}
 }

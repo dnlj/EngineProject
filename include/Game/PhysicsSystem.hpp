@@ -13,20 +13,7 @@
 
 namespace Game {
 	// TODO: Move to file
-	class TestContactListener : public b2ContactListener {
-		public:
-			void BeginContact(b2Contact* contact) override {
-				const auto dataA = static_cast<PhysicsUserData*>(contact->GetFixtureA()->GetBody()->GetUserData());
-				const auto dataB = static_cast<PhysicsUserData*>(contact->GetFixtureB()->GetBody()->GetUserData());
-
-				if (dataA == nullptr) { return; }
-				if (dataB == nullptr) { return; }
-
-				std::cout
-					<< "A: "<< dataA << " "
-					<< "B: " << dataB << "\n";
-			}
-	};
+	
 
 	class PhysicsSystem : public SystemBase {
 		public:
@@ -34,7 +21,10 @@ namespace Game {
 
 			virtual void run(float dt) override;
 
+
 			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef);
+
+			const PhysicsUserData& getUserData(void* ptr) const;
 
 			b2World& getPhysicsWorld();
 
@@ -43,8 +33,18 @@ namespace Game {
 			#endif
 
 		private:
+			class ContactListener : public b2ContactListener {
+				public:
+					ContactListener(PhysicsSystem& physSys);
+					void BeginContact(b2Contact* contact) override;
+
+				private:
+					PhysicsSystem& physSys;
+			};
+
 			b2World physWorld;
-			TestContactListener contactListener;
+
+			ContactListener contactListener;
 
 			std::vector<PhysicsUserData> userData;
 
