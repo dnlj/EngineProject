@@ -12,15 +12,11 @@
 
 
 namespace Game {
-	// TODO: Move to file
-	
-
 	class PhysicsSystem : public SystemBase {
 		public:
 			PhysicsSystem(World& world);
 
 			virtual void run(float dt) override;
-
 
 			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef);
 
