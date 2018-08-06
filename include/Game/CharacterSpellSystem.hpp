@@ -5,6 +5,7 @@
 
 // Game
 #include <Game/Common.hpp>
+#include <Game/PhysicsUserData.hpp>
 
 
 namespace Game {
@@ -18,6 +19,7 @@ namespace Game {
 			Engine::ECS::EntityFilter& filter;
 			Engine::Camera* camera;
 			std::vector<Engine::ECS::Entity> missles;
+			std::vector<PhysicsUserData> userData;
 			size_t currentMissle = 0;
 	};
 }
