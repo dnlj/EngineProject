@@ -41,10 +41,6 @@ namespace Game {
 		return userData[reinterpret_cast<std::size_t>(ptr)];
 	}
 
-	b2World& PhysicsSystem::getPhysicsWorld() {
-		return physWorld;
-	}
-
 	#if defined(DEBUG_PHYSICS)
 		Engine::Debug::DebugDrawBox2D& PhysicsSystem::getDebugDraw() {
 			constexpr size_t a = sizeof(Engine::Debug::DebugDrawBox2D);

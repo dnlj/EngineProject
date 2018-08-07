@@ -22,7 +22,6 @@ namespace Game {
 
 			const PhysicsUserData& getUserData(void* ptr) const;
 
-			b2World& getPhysicsWorld();
 
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D& getDebugDraw();
