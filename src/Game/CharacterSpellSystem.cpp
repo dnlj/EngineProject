@@ -75,6 +75,10 @@ namespace Game {
 		currentMissle = (currentMissle + 1) % missles.size();
 	}
 
+	void CharacterSpellSystem::detonateMissle(Engine::ECS::Entity ent) {
+		std::cout << "Boom: " << ent << "\n";
+	}
+
 	void CharacterSpellSystem::run(float dt) {
 		for (auto ent : filter) {
 			auto& inputManager = *world.getComponent<Game::InputComponent>(ent).inputManager;
@@ -82,6 +86,12 @@ namespace Game {
 			if (inputManager.wasPressed("Spell_1")) {
 				fireMissile(ent, inputManager);
 			}
+		}
+
+		while (!toDestroy.empty()) {
+			auto ent = toDestroy.back();
+			detonateMissle(ent);
+			toDestroy.pop_back();
 		}
 	}
 }
@@ -100,11 +110,11 @@ namespace Game {
 
 
 		if (entA <= maxEnt && entA >= minEnt) {
-			std::cout << "Boom A\n";
+			spellSys.toDestroy.push_back(entA);
 		}
 
 		if (entB <= maxEnt && entB >= minEnt) {
-			std::cout << "Boom B\n";
+			spellSys.toDestroy.push_back(entB);
 		}
 	}
 }

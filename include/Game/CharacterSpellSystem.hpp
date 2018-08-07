@@ -26,11 +26,13 @@ namespace Game {
 			};
 
 			void fireMissile(Engine::ECS::Entity ent, Engine::InputManager& inputManager);
+			void detonateMissle(Engine::ECS::Entity ent);
 
 			CollisionListener collisionListener;
 			Engine::ECS::EntityFilter& filter;
 			Engine::Camera* camera;
 			std::vector<Engine::ECS::Entity> missles;
+			std::vector<Engine::ECS::Entity> toDestroy;
 			size_t currentMissle = 0;
 	};
 }
