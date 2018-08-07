@@ -104,10 +104,8 @@ namespace Game {
 	void CharacterSpellSystem::CollisionListener::beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) {
 		const auto entA = dataA.ent;
 		const auto entB = dataB.ent;
-
 		const auto minEnt = spellSys.missles.front();
 		const auto maxEnt = spellSys.missles.back();
-
 
 		if (entA <= maxEnt && entA >= minEnt) {
 			spellSys.toDestroy.push_back(entA);

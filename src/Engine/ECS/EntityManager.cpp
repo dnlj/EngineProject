@@ -15,10 +15,12 @@ namespace Engine::ECS {
 		} else {
 			ent = Entity{static_cast<decltype(Entity::id)>(aliveEntities.size()), 0};
 			aliveEntities.resize(ent.id + 1);
+			enabledEntities.resize(ent.id + 1);
 		}
 
 		++ent.gen;
 		aliveEntities[ent.id] = ent.gen;
+		enabledEntities[ent.id] = true;
 
 		return ent;
 	}
@@ -42,5 +44,13 @@ namespace Engine::ECS {
 
 	bool EntityManager::isAlive(Entity ent) {
 		return aliveEntities[ent.id];
+	}
+
+	void EntityManager::setEnabled(Entity ent, bool enabled) {
+		enabledEntities[ent.id] = enabled;
+	}
+
+	bool EntityManager::isEnabled(Entity ent) {
+		return enabledEntities[ent.id];
 	}
 }

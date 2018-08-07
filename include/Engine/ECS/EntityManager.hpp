@@ -37,10 +37,19 @@ namespace Engine::ECS {
 
 			// TODO: Doc
 			// TODO: Test
+			void setEnabled(Entity ent, bool enabled);
+
+			// TODO: Doc
+			// TODO: Test
+			bool isEnabled(Entity ent);
+
+			// TODO: Doc
+			// TODO: Test
 			const EntityContainer& getEntities() const;
 
 		private:
 			EntityContainer aliveEntities;
+			std::vector<uint8_t> enabledEntities;
 			std::vector<Entity> deadEntities;
 	};
 }
