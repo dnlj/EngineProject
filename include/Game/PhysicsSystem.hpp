@@ -9,22 +9,11 @@
 // Game
 #include <Game/Common.hpp>
 #include <Game/PhysicsUserData.hpp>
+#include <Game/PhysicsListener.hpp>
 
 
 namespace Game {
-	// TODO: Move
 	// TODO: Doc
-	class PhysicsListener {
-		public:
-			virtual ~PhysicsListener() {};
-
-			virtual void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) {};
-			virtual void endContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) {};
-			//TODO: virtual void preSolve() {};
-			//TODO: virtual void postSolve() {};
-	};
-
-
 	class PhysicsSystem : public SystemBase {
 		public:
 			PhysicsSystem(World& world);
@@ -33,6 +22,7 @@ namespace Game {
 
 			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef);
 
+			void addListener(PhysicsListener* listener);
 
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D& getDebugDraw();

@@ -5,6 +5,7 @@
 
 // Game
 #include <Game/Common.hpp>
+#include <Game/PhysicsListener.hpp>
 
 
 namespace Game {
@@ -15,6 +16,16 @@ namespace Game {
 			virtual void run(float dt) override;
 
 		private:
+			class CollisionListener : public PhysicsListener {
+				public:
+					CollisionListener(CharacterSpellSystem& spellSys);
+					virtual void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) override;
+
+				private:
+					CharacterSpellSystem& spellSys;
+			};
+
+			CollisionListener collisionListener;
 			Engine::ECS::EntityFilter& filter;
 			Engine::Camera* camera;
 			std::vector<Engine::ECS::Entity> missles;

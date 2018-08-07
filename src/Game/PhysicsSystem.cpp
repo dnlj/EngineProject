@@ -37,6 +37,10 @@ namespace Game {
 		return body;
 	}
 
+	void PhysicsSystem::addListener(PhysicsListener* listener) {
+		contactListener.addListener(listener);
+	}
+
 	const PhysicsUserData& PhysicsSystem::getUserData(void* ptr) const {
 		return userData[reinterpret_cast<std::size_t>(ptr)];
 	}

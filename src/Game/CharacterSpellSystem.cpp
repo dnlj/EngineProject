@@ -4,6 +4,7 @@
 namespace Game {
 	CharacterSpellSystem::CharacterSpellSystem(World& world)
 		: SystemBase{world}
+		, collisionListener{*this}
 		, filter{world.getFilterFor<
 			Game::CharacterSpellComponent,
 			Game::InputComponent>()} {
@@ -15,6 +16,7 @@ namespace Game {
 	void CharacterSpellSystem::setup(Engine::EngineInstance& engine) {
 		camera = &engine.camera;
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
+		physSys.addListener(&collisionListener);
 
 		constexpr std::size_t count = 10;
 		missles.reserve(count);
@@ -75,6 +77,29 @@ namespace Game {
 				body->SetLinearVelocity(2.0f * dir);
 				currentMissle = (currentMissle + 1) % missles.size();
 			}
+		}
+	}
+}
+
+namespace Game {
+	CharacterSpellSystem::CollisionListener::CollisionListener(CharacterSpellSystem& spellSys)
+		: spellSys{spellSys} {
+	}
+
+	void CharacterSpellSystem::CollisionListener::beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) {
+		const auto entA = dataA.ent;
+		const auto entB = dataB.ent;
+
+		const auto minEnt = spellSys.missles.front();
+		const auto maxEnt = spellSys.missles.back();
+
+
+		if (entA <= maxEnt && entA >= minEnt) {
+			std::cout << "Boom A\n";
+		}
+
+		if (entB <= maxEnt && entB >= minEnt) {
+			std::cout << "Boom B\n";
 		}
 	}
 }
