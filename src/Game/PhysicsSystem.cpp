@@ -62,9 +62,6 @@ namespace Game {
 		const auto dataA = static_cast<PhysicsUserData*>(contact->GetFixtureA()->GetBody()->GetUserData());
 		const auto dataB = static_cast<PhysicsUserData*>(contact->GetFixtureB()->GetBody()->GetUserData());
 
-		if (dataA == nullptr) { return; }
-		if (dataB == nullptr) { return; }
-
 		std::cout
 			<< "A: "<< physSys.getUserData(dataA).ent << " "
 			<< "B: " << physSys.getUserData(dataB).ent << "\n";

@@ -121,12 +121,12 @@ namespace {
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 
-	b2Body* createPhysicsCircle(b2World& world, b2Vec2 position = b2Vec2_zero) {
+	b2Body* createPhysicsCircle(Engine::ECS::Entity ent, Game::PhysicsSystem& physSys, b2Vec2 position = b2Vec2_zero) {
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_dynamicBody;
 		bodyDef.position = position;
 
-		b2Body* body = world.CreateBody(&bodyDef);
+		b2Body* body = physSys.createBody(ent, bodyDef);
 
 		b2CircleShape shape;
 		shape.m_radius = 1.0f/8;
@@ -142,12 +142,12 @@ namespace {
 		return body;
 	}
 
-	b2Body* createPhysicsSquare(b2World& world, b2Vec2 position = b2Vec2_zero) {
+	b2Body* createPhysicsSquare(Engine::ECS::Entity ent, Game::PhysicsSystem& physSys, b2Vec2 position = b2Vec2_zero) {
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_dynamicBody;
 		bodyDef.position = position;
 
-		b2Body* body = world.CreateBody(&bodyDef);
+		b2Body* body = physSys.createBody(ent, bodyDef);
 
 		b2PolygonShape shape;
 		shape.SetAsBox(1.0f/8, 1.0f/8);
@@ -265,7 +265,7 @@ void run() {
 		// Player
 		auto player = world.createEntity();
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.getTexture("../assets/player.png");
-		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(physSys.getPhysicsWorld());
+		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(player, physSys);
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::CharacterSpellComponent>(player);
 		world.addComponent<Game::InputComponent>(player).inputManager = &engine.inputManager;
@@ -293,7 +293,7 @@ void run() {
 					= engine.textureManager.getTexture("../assets/test.png");
 
 				world.addComponent<Game::PhysicsComponent>(ent).body
-					= createPhysicsSquare(physSys.getPhysicsWorld(), offset + b2Vec2(scale * x, scale * y));
+					= createPhysicsSquare(ent, physSys, offset + b2Vec2(scale * x, scale * y));
 			}
 		}
 	}
