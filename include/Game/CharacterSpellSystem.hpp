@@ -25,6 +25,8 @@ namespace Game {
 					CharacterSpellSystem& spellSys;
 			};
 
+			void fireMissile(Engine::ECS::Entity ent, Engine::InputManager& inputManager);
+
 			CollisionListener collisionListener;
 			Engine::ECS::EntityFilter& filter;
 			Engine::Camera* camera;
