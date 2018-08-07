@@ -68,7 +68,7 @@ namespace Game {
 		const auto dataB = static_cast<PhysicsUserData*>(contact->GetFixtureB()->GetBody()->GetUserData());
 
 		for (auto listener : listeners) {
-			listener->beginContact(physSys.getUserData(dataA), physSys.getUserData(dataB));
+			listener->endContact(physSys.getUserData(dataA), physSys.getUserData(dataB));
 		}
 	}
 
