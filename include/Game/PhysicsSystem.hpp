@@ -12,6 +12,19 @@
 
 
 namespace Game {
+	// TODO: Move
+	// TODO: Doc
+	class PhysicsListener {
+		public:
+			virtual ~PhysicsListener() {};
+
+			virtual void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) {};
+			virtual void endContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) {};
+			//TODO: virtual void preSolve() {};
+			//TODO: virtual void postSolve() {};
+	};
+
+
 	class PhysicsSystem : public SystemBase {
 		public:
 			PhysicsSystem(World& world);
@@ -19,8 +32,6 @@ namespace Game {
 			virtual void run(float dt) override;
 
 			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef);
-
-			const PhysicsUserData& getUserData(void* ptr) const;
 
 
 			#if defined(DEBUG_PHYSICS)
@@ -31,11 +42,19 @@ namespace Game {
 			class ContactListener : public b2ContactListener {
 				public:
 					ContactListener(PhysicsSystem& physSys);
-					void BeginContact(b2Contact* contact) override;
+					virtual void BeginContact(b2Contact* contact) override;
+					virtual void EndContact(b2Contact* contact) override;
+					// virtual void PreSolve(b2Contact* contact, const b2Manifold* oldManifold) override;
+					// virtual void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) override;
+
+					void addListener(PhysicsListener* listener);
 
 				private:
 					PhysicsSystem& physSys;
+					std::vector<PhysicsListener*> listeners;
 			};
+
+			const PhysicsUserData& getUserData(void* ptr) const;
 
 			b2World physWorld;
 

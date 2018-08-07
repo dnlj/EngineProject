@@ -58,8 +58,21 @@ namespace Game {
 		const auto dataA = static_cast<PhysicsUserData*>(contact->GetFixtureA()->GetBody()->GetUserData());
 		const auto dataB = static_cast<PhysicsUserData*>(contact->GetFixtureB()->GetBody()->GetUserData());
 
-		std::cout
-			<< "A: "<< physSys.getUserData(dataA).ent << " "
-			<< "B: " << physSys.getUserData(dataB).ent << "\n";
+		for (auto listener : listeners) {
+			listener->beginContact(physSys.getUserData(dataA), physSys.getUserData(dataB));
+		}
+	}
+
+	void PhysicsSystem::ContactListener::EndContact(b2Contact* contact) {
+		const auto dataA = static_cast<PhysicsUserData*>(contact->GetFixtureA()->GetBody()->GetUserData());
+		const auto dataB = static_cast<PhysicsUserData*>(contact->GetFixtureB()->GetBody()->GetUserData());
+
+		for (auto listener : listeners) {
+			listener->beginContact(physSys.getUserData(dataA), physSys.getUserData(dataB));
+		}
+	}
+
+	void PhysicsSystem::ContactListener::addListener(PhysicsListener* listener) {
+		listeners.push_back(listener);
 	}
 }
