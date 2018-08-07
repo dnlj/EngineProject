@@ -13,15 +13,31 @@
 
 
 namespace Game {
-	// TODO: Doc
 	class PhysicsSystem : public SystemBase {
 		public:
+			/**
+			 * Constructor.
+			 * @param[in,out] world The world that owns this system.
+			 */
 			PhysicsSystem(World& world);
 
+			/**
+			 * @see SystemBase::run.
+			 */
 			virtual void run(float dt) override;
 
+			/**
+			 * Creates a box2d body and associates an entity with it.
+			 * @param[in] ent The entity.
+			 * @param[in] bodyDef The box2d body definition.
+			 * @return A box2d body.
+			 */
 			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef);
 
+			/**
+			 * Adds a physics listener.
+			 * @param[in] listener The listener.
+			 */
 			void addListener(PhysicsListener* listener);
 
 			#if defined(DEBUG_PHYSICS)
@@ -44,12 +60,20 @@ namespace Game {
 					std::vector<PhysicsListener*> listeners;
 			};
 
+			/**
+			 * Converts from box2d user data to PhysicsUserData.
+			 * @param[in] ptr The box2d user data.
+			 * @return The PhysicsUserData.
+			 */
 			const PhysicsUserData& getUserData(void* ptr) const;
 
+			/** The box2d world */
 			b2World physWorld;
 
+			/** The box2d contact listener */
 			ContactListener contactListener;
 
+			/** The user data to use for box2d */
 			std::vector<PhysicsUserData> userData;
 
 			#if defined(DEBUG_PHYSICS)
