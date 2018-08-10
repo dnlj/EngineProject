@@ -12,6 +12,8 @@ namespace Engine::ECS {
 
 		if (ent.id >= componentBitsets.size()) {
 			componentBitsets.resize(ent.id + 1);
+		} else {
+			componentBitsets[ent.id].reset();
 		}
 
 		return ent;
