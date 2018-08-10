@@ -277,4 +277,23 @@ namespace {
 			}
 		}
 	}
+
+	TEST(Engine_ECS_World, ReuseEntity_ResetComponents) {
+		World w;
+		auto ent = w.createEntity();
+
+		ASSERT_EQ(w.getComponentsBitset(ent), 0);
+
+		w.addComponents<ComponentA, ComponentC, ComponentE>(ent);
+
+		const auto cbits = w.getBitsetForComponents<ComponentA, ComponentC, ComponentE>();
+		ASSERT_EQ(cbits, w.getComponentsBitset(ent));
+
+		w.destroyEntity(ent);
+		auto ent2 = w.createEntity();
+
+		ASSERT_EQ(ent.id, ent2.id);
+
+		ASSERT_EQ(w.getComponentsBitset(ent), 0);
+	}
 }
