@@ -16,6 +16,8 @@ namespace Engine::ECS {
 	}
 
 	void FilterManager::onComponentRemoved(Entity ent, ComponentID cid) {
+		if (cid >= filtersByComponentID.size()) { return; }
+
 		for (auto& filter : filtersByComponentID[cid]) {
 			filter->remove(ent);
 		}
