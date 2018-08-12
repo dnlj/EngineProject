@@ -10,6 +10,7 @@ namespace Engine {
 	template<class T>
 	class UninitializedVector {
 		public:
+			~UninitializedVector();
 			std::size_t size() const;
 
 		private:
