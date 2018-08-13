@@ -77,16 +77,18 @@ namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
 	void World<SystemsSet, ComponentsSet>::removeComponent(Entity ent) {
-		const auto cid = getComponentID<Component>();
-
-		componentBitsets[ent.id][cid] = false;
-		FilterManager::onComponentRemoved(ent, cid);
+		removeComponents<Component>(ent);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class... Components>
 	void World<SystemsSet, ComponentsSet>::removeComponents(Entity ent) {
-		(removeComponent<Components>(ent), ...);
+		componentBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
+
+		((getComponent<Components>(ent) = Components()), ...);
+
+		// TODO: Make filter manager take bitset?
+		(FilterManager::onComponentRemoved(ent, getComponentID<Components>()), ...);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
