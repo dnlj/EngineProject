@@ -230,19 +230,18 @@ namespace {
 
 	TEST(Engine_ECS_World, removeComponents) {
 		World w;
-
 		const auto ent = w.createEntity();
 		const auto cbits = w.getBitsetForComponents<ComponentA, ComponentC, ComponentE>();
 
+		ASSERT_EQ(w.getComponentsBitset(ent), 0);
+
 		w.addComponents<ComponentA, ComponentC, ComponentE>(ent);
 
-		ASSERT_TRUE(w.hasComponents(ent, cbits));
+		ASSERT_EQ(w.getComponentsBitset(ent), cbits);
 
 		w.removeComponents<ComponentA, ComponentC, ComponentE>(ent);
 
-		ASSERT_FALSE(w.hasComponent<ComponentA>(ent));
-		ASSERT_FALSE(w.hasComponent<ComponentC>(ent));
-		ASSERT_FALSE(w.hasComponent<ComponentE>(ent));
+		ASSERT_EQ(w.getComponentsBitset(ent), 0);
 	}
 
 	TEST(Engine_ECS_World, getComponents) {
