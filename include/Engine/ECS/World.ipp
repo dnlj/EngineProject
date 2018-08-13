@@ -37,7 +37,6 @@ namespace Engine::ECS {
 		}
 
 		// Add the component
-		container[ent.id] = Component();
 		componentBitsets[ent.id][cid] = true;
 
 		// Update filters
