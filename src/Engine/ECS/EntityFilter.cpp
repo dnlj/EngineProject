@@ -16,7 +16,10 @@ namespace Engine::ECS {
 
 	void EntityFilter::remove(Entity ent) {
 		auto pos = std::lower_bound(entities.cbegin(), entities.cend(), ent);
-		entities.erase(pos);
+
+		if (pos != entities.cend() && *pos == ent) {
+			entities.erase(pos);
+		}
 	}
 
 	bool EntityFilter::empty() const {
