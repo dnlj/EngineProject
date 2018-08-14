@@ -1,5 +1,9 @@
+// STD
+#include <algorithm>
+
 // Game
 #include <Game/CharacterSpellSystem.hpp>
+
 
 namespace Game {
 	CharacterSpellSystem::CharacterSpellSystem(World& world)
@@ -77,6 +81,7 @@ namespace Game {
 
 	void CharacterSpellSystem::detonateMissle(Engine::ECS::Entity ent) {
 		std::cout << "Boom: " << ent << "\n";
+		world.removeComponent<Game::PhysicsComponent>(ent);
 	}
 
 	void CharacterSpellSystem::run(float dt) {
@@ -106,13 +111,18 @@ namespace Game {
 		const auto entB = dataB.ent;
 		const auto minEnt = spellSys.missles.front();
 		const auto maxEnt = spellSys.missles.back();
+		auto& con = spellSys.toDestroy;
 
 		if (entA <= maxEnt && entA >= minEnt) {
-			spellSys.toDestroy.push_back(entA);
+			if (std::find(con.begin(), con.end(), entA) == con.end()) {
+				con.push_back(entA);
+			}
 		}
 
 		if (entB <= maxEnt && entB >= minEnt) {
-			spellSys.toDestroy.push_back(entB);
+			if (std::find(con.begin(), con.end(), entB) == con.end()) {
+				con.push_back(entB);
+			}
 		}
 	}
 }
