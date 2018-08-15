@@ -15,7 +15,7 @@ namespace Engine {
 		if (code == binds.cend()) { return false; }
 
 		const auto prev = previousState.find(code->second);
-		if (prev == previousState.cend() || prev->second) { return false; }
+		if (prev != previousState.cend() && prev->second) { return false; }
 
 		const auto curr = currentState.find(code->second);
 		if (curr == currentState.cend() || !curr->second) { return false; }
