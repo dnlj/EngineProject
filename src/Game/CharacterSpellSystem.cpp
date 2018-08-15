@@ -25,35 +25,9 @@ namespace Game {
 		constexpr std::size_t count = 10;
 		missles.reserve(count);
 		
-		for (int i = 0; i < 10; ++i) {
+		for (int i = 0; i < count; ++i) {
 			auto ent = missles.emplace_back(world.createEntity(true));
-
-			auto& [physComp, spriteComp] = world.addComponents<
-				Game::PhysicsComponent,
-				Game::SpriteComponent
-			>(ent);
-
-			{
-				b2BodyDef bodyDef;
-				bodyDef.type = b2_kinematicBody;
-				bodyDef.position = b2Vec2_zero;
-
-				physComp.body = physSys.createBody(ent, bodyDef);
-
-				b2CircleShape shape;
-				shape.m_radius = 1.0f/8;
-
-				b2FixtureDef fixtureDef;
-				fixtureDef.shape = &shape;
-				fixtureDef.density = 0.0f;
-				fixtureDef.isSensor = true;
-
-				physComp.body->CreateFixture(&fixtureDef);
-				physComp.body->SetLinearDamping(0.0f);
-				physComp.body->SetFixedRotation(true);
-			}
-
-			spriteComp.texture = engine.textureManager.getTexture("../assets/fire.png");
+			world.addComponent<Game::SpriteComponent>(ent).texture = engine.textureManager.getTexture("../assets/fire.png");
 		}
 	}
 
@@ -73,15 +47,37 @@ namespace Game {
 		dir.Normalize();
 
 		// Fire the missile
-		auto body = world.getComponent<Game::PhysicsComponent>(missle).body;
-		body->SetTransform(entPos + 0.25f * dir, 0); // TODO: This scalar depends on the size of ent and missle. Handle this better.
-		body->SetLinearVelocity(2.0f * dir);
+		auto& physComp = world.addComponent<Game::PhysicsComponent>(missle);
+
+		{
+			b2BodyDef bodyDef;
+			bodyDef.type = b2_kinematicBody;
+			bodyDef.position = b2Vec2_zero;
+
+			physComp.physSys = &world.getSystem<Game::PhysicsSystem>();
+			physComp.body = physComp.physSys->createBody(missle, bodyDef);
+
+			b2CircleShape shape;
+			shape.m_radius = 1.0f/8;
+
+			b2FixtureDef fixtureDef;
+			fixtureDef.shape = &shape;
+			fixtureDef.density = 0.10f;
+			fixtureDef.isSensor = true;
+
+			physComp.body->CreateFixture(&fixtureDef);
+			physComp.body->SetLinearDamping(0.0f);
+			physComp.body->SetFixedRotation(true);
+		}
+
+		physComp.body->SetTransform(entPos + 0.35f * dir, 0); // TODO: This scalar depends on the size of ent and missle. Handle this better.
+		physComp.body->SetLinearVelocity(2.0f * dir);
 		currentMissle = (currentMissle + 1) % missles.size();
 	}
 
 	void CharacterSpellSystem::detonateMissle(Engine::ECS::Entity ent) {
 		std::cout << "Boom: " << ent << "\n";
-		world.removeComponent<Game::PhysicsComponent>(ent);
+		world.removeComponent<Game::PhysicsComponent>(ent); // TODO: Look into b2Body::setActive`
 	}
 
 	void CharacterSpellSystem::run(float dt) {
@@ -93,10 +89,17 @@ namespace Game {
 			}
 		}
 
+
+		std::sort(toDestroy.begin(), toDestroy.end());
+
 		while (!toDestroy.empty()) {
 			auto ent = toDestroy.back();
-			detonateMissle(ent);
 			toDestroy.pop_back();
+			detonateMissle(ent);
+
+			while(!toDestroy.empty() && toDestroy.back() == ent) {
+				toDestroy.pop_back();
+			}
 		}
 	}
 }
@@ -114,15 +117,11 @@ namespace Game {
 		auto& con = spellSys.toDestroy;
 
 		if (entA <= maxEnt && entA >= minEnt) {
-			if (std::find(con.begin(), con.end(), entA) == con.end()) {
-				con.push_back(entA);
-			}
+			con.push_back(entA);
 		}
 
 		if (entB <= maxEnt && entB >= minEnt) {
-			if (std::find(con.begin(), con.end(), entB) == con.end()) {
-				con.push_back(entB);
-			}
+			con.push_back(entB);
 		}
 	}
 }
