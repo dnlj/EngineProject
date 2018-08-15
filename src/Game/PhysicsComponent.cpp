@@ -3,6 +3,13 @@
 
 
 namespace Game {
+	PhysicsComponent::PhysicsComponent(PhysicsComponent&& other) {
+		other.destruct = false;
+
+		// TODO: doesnt swap kinda ruin move?
+		swap(*this, other);
+	}
+
 	PhysicsComponent::~PhysicsComponent() {
 		if (destruct) {
 			std::cout << "~PhysicsComponent()\n";
@@ -13,5 +20,17 @@ namespace Game {
 				physSys->destroyBody(body);
 			}
 		}
+	}
+
+	PhysicsComponent& PhysicsComponent::operator=(PhysicsComponent other) {
+		swap(*this, other);
+		return *this;
+	}
+
+	
+	void swap(PhysicsComponent& first, PhysicsComponent& second) {
+		using std::swap;
+		swap(first.body, second.body);
+		swap(first.physSys, second.physSys);
 	}
 }

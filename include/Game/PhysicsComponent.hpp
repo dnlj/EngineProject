@@ -10,29 +10,12 @@
 namespace Game {
 	class PhysicsComponent {
 		public:
-			// TODO: Move
-			friend void swap(PhysicsComponent& first, PhysicsComponent& second) {
-				using std::swap;
-				swap(first.body, second.body);
-				swap(first.physSys, second.physSys);
-			}
-
 			PhysicsComponent() = default;
+			PhysicsComponent(PhysicsComponent&& other);
 			~PhysicsComponent();
+			PhysicsComponent& operator=(PhysicsComponent other);
 
-			// TODO: Move
-			PhysicsComponent& operator=(PhysicsComponent other) {
-				swap(*this, other);
-				return *this;
-			}
-
-			// TODO: Move
-			PhysicsComponent(PhysicsComponent&& other) {
-				other.destruct = false;
-
-				// TODO: doesnt swap kinda ruin move?
-				swap(*this, other);
-			}
+			friend void swap(PhysicsComponent& first, PhysicsComponent& second);
 
 			b2Body* body = nullptr;
 			PhysicsSystem* physSys = nullptr;
