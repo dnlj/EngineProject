@@ -34,6 +34,9 @@ namespace Game {
 			 */
 			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef);
 
+			// TODO: Doc
+			void destroyBody(b2Body* body);
+
 			/**
 			 * Adds a physics listener.
 			 * @param[in] listener The listener.

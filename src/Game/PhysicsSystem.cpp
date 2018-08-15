@@ -37,6 +37,10 @@ namespace Game {
 		return body;
 	}
 
+	void PhysicsSystem::destroyBody(b2Body* body) {
+		physWorld.DestroyBody(body);
+	}
+
 	void PhysicsSystem::addListener(PhysicsListener* listener) {
 		contactListener.addListener(listener);
 	}
@@ -59,8 +63,8 @@ namespace Game {
 	}
 
 	void PhysicsSystem::ContactListener::BeginContact(b2Contact* contact) {
-		const auto dataA = static_cast<PhysicsUserData*>(contact->GetFixtureA()->GetBody()->GetUserData());
-		const auto dataB = static_cast<PhysicsUserData*>(contact->GetFixtureB()->GetBody()->GetUserData());
+		const auto dataA = contact->GetFixtureA()->GetBody()->GetUserData();
+		const auto dataB = contact->GetFixtureB()->GetBody()->GetUserData();
 
 		for (auto listener : listeners) {
 			listener->beginContact(physSys.getUserData(dataA), physSys.getUserData(dataB));
