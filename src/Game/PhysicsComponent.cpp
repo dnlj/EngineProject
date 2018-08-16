@@ -4,8 +4,6 @@
 
 namespace Game {
 	PhysicsComponent::PhysicsComponent(PhysicsComponent&& other) {
-		other.destruct = false;
-
 		// TODO: doesnt swap kinda ruin move?
 		swap(*this, other);
 	}
@@ -24,10 +22,10 @@ namespace Game {
 
 	PhysicsComponent& PhysicsComponent::operator=(PhysicsComponent other) {
 		swap(*this, other);
+		other.destruct = true;
 		return *this;
 	}
 
-	
 	void swap(PhysicsComponent& first, PhysicsComponent& second) {
 		using std::swap;
 		swap(first.body, second.body);

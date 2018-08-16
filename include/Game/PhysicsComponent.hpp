@@ -21,6 +21,6 @@ namespace Game {
 			PhysicsSystem* physSys = nullptr;
 
 		private:
-			bool destruct = true;
+			bool destruct = false;
 	};
 }
