@@ -35,11 +35,11 @@ namespace Engine::ECS {
 	}
 
 	auto EntityFilter::begin() const -> ConstIterator {
-		return ConstIterator(entities.begin()); // TODO: impl
+		return ConstIterator(*this, entities.begin()); // TODO: impl
 	}
 
 	auto EntityFilter::end() const -> ConstIterator {
-		return ConstIterator(entities.end()); // TODO: impl
+		return ConstIterator(*this, entities.end()); // TODO: impl
 	}
 
 	auto EntityFilter::cbegin() const -> ConstIterator {

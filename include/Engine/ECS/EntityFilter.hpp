@@ -19,7 +19,9 @@ namespace Engine::ECS {
 			template<class T>
 			class Iterator {
 				private:
-					typename std::vector<std::remove_const_t<T>>::const_iterator it;
+					using ItType = typename std::vector<std::remove_const_t<T>>::const_iterator;
+					ItType it;
+					const EntityFilter& filter;
 
 				public:
 					using difference_type = std::ptrdiff_t;
@@ -31,7 +33,10 @@ namespace Engine::ECS {
 					Iterator() = default;
 
 					// TODO: move
-					Iterator(decltype(it) it) : it(it) {};
+					Iterator(const EntityFilter& filter, ItType it)
+						: filter(filter)
+						, it(it) {
+					};
 
 					// TODO: Move
 					T& operator*() {
@@ -45,7 +50,7 @@ namespace Engine::ECS {
 
 					// TODO: Move
 					T* operator->() {
-						return const_cast<const Iterator*>(this)->();
+						return const_cast<const Iterator*>(this)->(); // TODO: is this correct?
 					}
 
 					// TODO: Move
@@ -55,13 +60,17 @@ namespace Engine::ECS {
 
 					// TODO: Move
 					Iterator& operator++() {
-						++it;
+						// TODO: Debug check if it is already end
+						while (++it != filter.entities.end() && !filter.entityManager.isEnabled(*it)) {
+						}
 						return *this;
 					};
 
 					// TODO: Move
 					Iterator& operator--() {
-						--it;
+						// TODO: Debug check if it is already begin
+						while (--it != filter.entities.begin() && !filter.entityManager.isEnabled(*it)) {
+						}
 						return *this;
 					}
 
