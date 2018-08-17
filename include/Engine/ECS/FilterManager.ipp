@@ -7,7 +7,7 @@ namespace Engine::ECS {
 		auto& filter = filters[components];
 
 		if (!filter) {
-			filter = std::make_unique<EntityFilter>();
+			filter = std::make_unique<EntityFilter>(entityManager);
 			filter->componentsBits = components;
 
 			// Populate new filter

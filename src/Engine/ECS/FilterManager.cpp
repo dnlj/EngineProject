@@ -3,7 +3,9 @@
 
 
 namespace Engine::ECS {
-	FilterManager::FilterManager() {
+	FilterManager::FilterManager(EntityManager& entityManager)
+		: entityManager{entityManager} {
+
 		filters.max_load_factor(0.5f);
 	}
 

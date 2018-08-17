@@ -9,6 +9,7 @@
 // Engine
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/ECS/Common.hpp>
+#include <Engine/ECS/EntityManager.hpp>
 
 
 // TODO: Test
@@ -17,7 +18,7 @@
 namespace Engine::ECS {
 	class FilterManager {
 		public:
-			FilterManager();
+			FilterManager(EntityManager& entityManager);
 
 			template<class World>
 			EntityFilter& getFilterFor(const World& world, const ComponentBitset& components);
@@ -27,6 +28,7 @@ namespace Engine::ECS {
 			void onEntityDestroyed(Entity ent, const ComponentBitset& cbits);
 
 		private:
+			EntityManager& entityManager;
 			std::unordered_map<ComponentBitset, std::unique_ptr<EntityFilter>> filters;
 			std::vector<std::vector<EntityFilter*>> filtersByComponentID;
 	};

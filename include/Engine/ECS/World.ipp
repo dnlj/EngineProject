@@ -3,7 +3,8 @@
 namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	World<SystemsSet, ComponentsSet>::World()
-		: sm{*this} {
+		: fm{em}
+		, sm{*this} {
 	}
 
 	template<class SystemsSet, class ComponentsSet>

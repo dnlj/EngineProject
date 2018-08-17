@@ -6,6 +6,10 @@
 
 
 namespace Engine::ECS {
+	EntityFilter::EntityFilter(EntityManager& entityManager)
+		: entityManager{entityManager} {
+	}
+
 	void EntityFilter::add(Entity ent, const ComponentBitset& cbits) {
 		if ((cbits & componentsBits) == componentsBits) {
 			// TODO: Use array style?
