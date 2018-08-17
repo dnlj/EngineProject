@@ -3,17 +3,17 @@
 namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	World<SystemsSet, ComponentsSet>::World()
-		: SystemManager{*this} {
+		: sm{*this} {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	Entity World<SystemsSet, ComponentsSet>::createEntity(bool forceNew) {
-		const auto ent = EntityManager::createEntity(forceNew);
+		const auto ent = em.createEntity(forceNew);
 
-		if (ent.id >= componentBitsets.size()) {
-			componentBitsets.resize(ent.id + 1);
+		if (ent.id >= cm.componentBitsets.size()) {
+			cm.componentBitsets.resize(ent.id + 1);
 		} else {
-			componentBitsets[ent.id].reset();
+			cm.componentBitsets[ent.id].reset();
 		}
 
 		return ent;
@@ -21,14 +21,14 @@ namespace Engine::ECS {
 
 	template<class SystemsSet, class ComponentsSet>
 	void World<SystemsSet, ComponentsSet>::destroyEntity(Entity ent) {
-		EntityManager::destroyEntity(ent);
-		FilterManager::onEntityDestroyed(ent, componentBitsets[ent.id]);
+		em.destroyEntity(ent);
+		fm.onEntityDestroyed(ent, cm.componentBitsets[ent.id]);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
 	Component& World<SystemsSet, ComponentsSet>::addComponent(Entity ent) {
-		auto& container = getComponentContainer<Component>();
+		auto& container = cm.getComponentContainer<Component>();
 		const auto cid = getComponentID<Component>();
 
 		// Ensure the container is of the correct size
@@ -37,10 +37,10 @@ namespace Engine::ECS {
 		}
 
 		// Add the component
-		componentBitsets[ent.id][cid] = true;
+		cm.componentBitsets[ent.id][cid] = true;
 
 		// Update filters
-		FilterManager::onComponentAdded(ent, cid, componentBitsets[ent.id]);
+		fm.onComponentAdded(ent, cid, cm.componentBitsets[ent.id]);
 
 		return container[ent.id];
 	}
@@ -53,7 +53,7 @@ namespace Engine::ECS {
 
 	template<class SystemsSet, class ComponentsSet>
 	bool World<SystemsSet, ComponentsSet>::hasComponent(Entity ent, ComponentID cid) {
-		return componentBitsets[ent.id][cid];
+		return cm.componentBitsets[ent.id][cid];
 	}
 
 	template<class SystemsSet, class ComponentsSet>
@@ -64,7 +64,7 @@ namespace Engine::ECS {
 
 	template<class SystemsSet, class ComponentsSet>
 	bool World<SystemsSet, ComponentsSet>::hasComponents(Entity ent, ComponentBitset cbits) {
-		return (componentBitsets[ent.id] & cbits) == cbits;
+		return (cm.componentBitsets[ent.id] & cbits) == cbits;
 	}
 
 	template<class SystemsSet, class ComponentsSet>
@@ -82,18 +82,18 @@ namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	template<class... Components>
 	void World<SystemsSet, ComponentsSet>::removeComponents(Entity ent) {
-		componentBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
+		cm.componentBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
 
 		((getComponent<Components>(ent) = Components()), ...);
 
 		// TODO: Make filter manager take bitset?
-		(FilterManager::onComponentRemoved(ent, getComponentID<Components>()), ...);
+		(fm.onComponentRemoved(ent, getComponentID<Components>()), ...);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class Component>
 	Component& World<SystemsSet, ComponentsSet>::getComponent(Entity ent) {
-		return getComponentContainer<Component>()[ent.id];
+		return cm.getComponentContainer<Component>()[ent.id];
 	}
 
 	template<class SystemsSet, class ComponentsSet>
@@ -104,12 +104,12 @@ namespace Engine::ECS {
 
 	template<class SystemsSet, class ComponentsSet>
 	ComponentBitset World<SystemsSet, ComponentsSet>::getComponentsBitset(Entity ent) const {
-		return componentBitsets[ent.id];
+		return cm.componentBitsets[ent.id];
 	}
 
 	template<class SystemsSet, class ComponentsSet>
 	template<class... Components>
 	EntityFilter& World<SystemsSet, ComponentsSet>::getFilterFor() {
-		return FilterManager::getFilterFor(*this, getBitsetForComponents<Components...>());
+		return fm.getFilterFor(*this, getBitsetForComponents<Components...>());
 	}
 }

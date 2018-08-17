@@ -22,7 +22,6 @@ namespace Engine::ECS {
 			template<class World>
 			EntityFilter& getFilterFor(const World& world, const ComponentBitset& components);
 
-		protected:
 			void onComponentAdded(Entity ent, ComponentID cid, const ComponentBitset& cbits);
 			void onComponentRemoved(Entity ent, ComponentID cid);
 			void onEntityDestroyed(Entity ent, const ComponentBitset& cbits);

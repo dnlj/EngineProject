@@ -17,28 +17,66 @@ namespace Engine::ECS {
 	 * @tparam ComponentsSet The components for this world to have.
 	 */
 	template<class SystemsSet, class ComponentsSet>
-	class World
-		: private EntityManager
-		, private ComponentManager<ComponentsSet>
-		, private FilterManager
-		, private SystemManager<SystemsSet> {
+	class World {
+		using ComponentManager = ComponentManager<ComponentsSet>;
+		using SystemManager = SystemManager<SystemsSet>;
+
+		//// EntityManager members
+		//using EntityManager::isAlive;
+		//	using EntityManager::getEntities;
+		//using EntityManager::setEnabled;
+		//using EntityManager::isEnabled;
+		//
+		//// ComponentManager members
+		//	using ComponentManager::getComponentID;
+		//	using ComponentManager::getBitsetForComponents;
+		//
+		//// SystemManager members
+		//using SystemManager::getSystemID;
+		//	using SystemManager::getSystem;
+		//	using SystemManager::getBitsetForSystems;
+		//	using SystemManager::run;
 
 		public:
-			// EntityManager members
-			using EntityManager::isAlive;
-			using EntityManager::getEntities;
-			using EntityManager::setEnabled;
-			using EntityManager::isEnabled;
+			// TODO: Move
+			// TODO: Doc
+			const EntityManager::EntityContainer& getEntities() const {
+				return em.getEntities();
+			}
 
-			// ComponentManager members
-			using ComponentManager::getComponentID;
-			using ComponentManager::getBitsetForComponents;
+			// TODO: Move
+			// TODO: Doc
+			template<class... ComponentN>
+			ComponentBitset getBitsetForComponents() const {
+				return cm.getBitsetForComponents<ComponentN...>();
+			}
+			
+			// TODO: Move
+			// TODO: Doc
+			template<class Component>
+			constexpr static ComponentID getComponentID() noexcept {
+				return ComponentManager::getComponentID<Component>();
+			}
 
-			// SystemManager members
-			using SystemManager::getSystemID;
-			using SystemManager::getSystem;
-			using SystemManager::getBitsetForSystems;
-			using SystemManager::run;
+			// TODO: Move
+			// TODO: Doc
+			template<class System>
+			System& getSystem() {
+				return sm.getSystem<System>();
+			}
+
+			// TODO: Move
+			// TODO: Doc
+			template<class... SystemN>
+			SystemBitset getBitsetForSystems() const {
+				return sm.getBitsetForSystems<SystemN...>();
+			};
+
+			// TODO: Move
+			// TODO: Doc
+			void run(float dt) {
+				sm.run(dt);
+			}
 
 		public:
 			/**
@@ -155,6 +193,12 @@ namespace Engine::ECS {
 
 			template<>
 			EntityFilter& getFilterFor() = delete;
+
+		private:
+			EntityManager em;
+			ComponentManager cm;
+			FilterManager fm;
+			SystemManager sm;
 	};
 }
 
