@@ -12,7 +12,6 @@ namespace Engine::ECS {
 
 	void EntityFilter::add(Entity ent, const ComponentBitset& cbits) {
 		if ((cbits & componentsBits) == componentsBits) {
-			// TODO: Use array style?
 			auto pos = std::lower_bound(entities.cbegin(), entities.cend(), ent);
 			entities.insert(pos, ent);
 		}
@@ -35,11 +34,11 @@ namespace Engine::ECS {
 	}
 
 	auto EntityFilter::begin() const -> ConstIterator {
-		return ConstIterator(*this, entities.begin()); // TODO: impl
+		return ConstIterator(*this, entities.begin());
 	}
 
 	auto EntityFilter::end() const -> ConstIterator {
-		return ConstIterator(*this, entities.end()); // TODO: impl
+		return ConstIterator(*this, entities.end());
 	}
 
 	auto EntityFilter::cbegin() const -> ConstIterator {
