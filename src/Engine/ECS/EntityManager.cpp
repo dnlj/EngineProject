@@ -42,7 +42,7 @@ namespace Engine::ECS {
 		return aliveEntities;
 	}
 
-	bool EntityManager::isAlive(Entity ent) {
+	bool EntityManager::isAlive(Entity ent) const {
 		return aliveEntities[ent.id];
 	}
 
@@ -50,7 +50,7 @@ namespace Engine::ECS {
 		enabledEntities[ent.id] = enabled;
 	}
 
-	bool EntityManager::isEnabled(Entity ent) {
+	bool EntityManager::isEnabled(Entity ent) const {
 		return enabledEntities[ent.id];
 	}
 }

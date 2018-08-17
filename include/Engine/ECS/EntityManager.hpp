@@ -33,7 +33,7 @@ namespace Engine::ECS {
 			 * @param[in] ent The entity.
 			 * @return True if the entity is alive; otherwise false.
 			 */
-			bool isAlive(Entity ent);
+			bool isAlive(Entity ent) const;
 
 			// TODO: Doc
 			// TODO: Test
@@ -41,7 +41,7 @@ namespace Engine::ECS {
 
 			// TODO: Doc
 			// TODO: Test
-			bool isEnabled(Entity ent);
+			bool isEnabled(Entity ent) const;
 
 			// TODO: Doc
 			// TODO: Test
