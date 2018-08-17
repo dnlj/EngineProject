@@ -30,27 +30,19 @@ namespace Engine::ECS {
 		return entities.size();
 	}
 
-	auto EntityFilter::begin() -> ConstIterator {
-		return cbegin();
-	}
-
-	auto EntityFilter::end() -> ConstIterator {
-		return cend();
-	}
-
 	auto EntityFilter::begin() const -> ConstIterator {
-		return cbegin();
+		return ConstIterator(entities.begin()); // TODO: impl
 	}
 
 	auto EntityFilter::end() const -> ConstIterator {
-		return cend();
+		return ConstIterator(entities.end()); // TODO: impl
 	}
 
 	auto EntityFilter::cbegin() const -> ConstIterator {
-		return entities.cbegin();
+		return begin();
 	}
 
 	auto EntityFilter::cend() const -> ConstIterator {
-		return entities.cend();
+		return end();
 	}
 }
