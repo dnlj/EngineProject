@@ -7,6 +7,61 @@ namespace Engine::ECS {
 	}
 
 	template<class SystemsSet, class ComponentsSet>
+	bool World<SystemsSet, ComponentsSet>::isAlive(Entity ent) const {
+		return em.isAlive(ent);
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	void World<SystemsSet, ComponentsSet>::setEnabled(Entity ent, bool enabled) {
+		em.setEnabled(ent, enabled);
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	bool World<SystemsSet, ComponentsSet>::isEnabled(Entity ent) const {
+		return em.isEnabled(ent);
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	const EntityManager::EntityContainer& World<SystemsSet, ComponentsSet>::getEntities() const {
+		return em.getEntities();
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	template<class... ComponentN>
+	ComponentBitset World<SystemsSet, ComponentsSet>::getBitsetForComponents() const {
+		return cm.getBitsetForComponents<ComponentN...>();
+	}
+	
+	template<class SystemsSet, class ComponentsSet>
+	template<class Component>
+	constexpr static ComponentID World<SystemsSet, ComponentsSet>::getComponentID() noexcept {
+		return ComponentManager::getComponentID<Component>();
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	template<class System>
+	constexpr static SystemID World<SystemsSet, ComponentsSet>::getSystemID() noexcept {
+		return SystemManager::getSystemID<System>();
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	template<class System>
+	System& World<SystemsSet, ComponentsSet>::getSystem() {
+		return sm.getSystem<System>();
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	template<class... SystemN>
+	SystemBitset World<SystemsSet, ComponentsSet>::getBitsetForSystems() const {
+		return sm.getBitsetForSystems<SystemN...>();
+	};
+
+	template<class SystemsSet, class ComponentsSet>
+	void World<SystemsSet, ComponentsSet>::run(float dt) {
+		sm.run(dt);
+	}
+
+	template<class SystemsSet, class ComponentsSet>
 	Entity World<SystemsSet, ComponentsSet>::createEntity(bool forceNew) {
 		const auto ent = em.createEntity(forceNew);
 

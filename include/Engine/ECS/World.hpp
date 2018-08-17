@@ -23,76 +23,45 @@ namespace Engine::ECS {
 			using SystemManager = SystemManager<SystemsSet>;
 
 		public:
-			// TODO: Move
-			// TODO: Doc
-			bool isAlive(Entity ent) const {
-				return em.isAlive(ent);
-			}
-
-			// TODO: Move
-			// TODO: Doc
-			void setEnabled(Entity ent, bool enabled) {
-				em.setEnabled(ent, enabled);
-			}
-
-			// TODO: Move
-			// TODO: Doc
-			bool isEnabled(Entity ent) const {
-				return em.isEnabled(ent);
-			}
-
-			// TODO: Move
-			// TODO: Doc
-			const EntityManager::EntityContainer& getEntities() const {
-				return em.getEntities();
-			}
-
-			// TODO: Move
-			// TODO: Doc
-			template<class... ComponentN>
-			ComponentBitset getBitsetForComponents() const {
-				return cm.getBitsetForComponents<ComponentN...>();
-			}
-			
-			// TODO: Move
-			// TODO: Doc
-			template<class Component>
-			constexpr static ComponentID getComponentID() noexcept {
-				return ComponentManager::getComponentID<Component>();
-			}
-
-			// TODO: Move
-			// TODO: Doc
-			template<class System>
-			constexpr static SystemID getSystemID() noexcept {
-				return SystemManager::getSystemID<System>();
-			}
-
-			// TODO: Move
-			// TODO: Doc
-			template<class System>
-			System& getSystem() {
-				return sm.getSystem<System>();
-			}
-
-			// TODO: Move
-			// TODO: Doc
-			template<class... SystemN>
-			SystemBitset getBitsetForSystems() const {
-				return sm.getBitsetForSystems<SystemN...>();
-			};
-
-			// TODO: Move
-			// TODO: Doc
-			void run(float dt) {
-				sm.run(dt);
-			}
-
-		public:
 			/**
 			 * Constructor.
 			 */
 			World();
+
+			// TODO: Doc
+			bool isAlive(Entity ent) const;
+
+			// TODO: Doc
+			void setEnabled(Entity ent, bool enabled);
+
+			// TODO: Doc
+			bool isEnabled(Entity ent) const;
+
+			// TODO: Doc
+			const EntityManager::EntityContainer& getEntities() const;
+
+			// TODO: Doc
+			template<class... ComponentN>
+			ComponentBitset getBitsetForComponents() const;
+			
+			// TODO: Doc
+			template<class Component>
+			constexpr static ComponentID getComponentID() noexcept;
+
+			// TODO: Doc
+			template<class System>
+			constexpr static SystemID getSystemID() noexcept;
+
+			// TODO: Doc
+			template<class System>
+			System& getSystem();
+
+			// TODO: Doc
+			template<class... SystemN>
+			SystemBitset getBitsetForSystems() const;
+
+			// TODO: Doc
+			void run(float dt);
 
 			/**
 			 * @copydoc EntityManager::createEntity
