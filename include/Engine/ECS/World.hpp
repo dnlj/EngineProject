@@ -18,26 +18,29 @@ namespace Engine::ECS {
 	 */
 	template<class SystemsSet, class ComponentsSet>
 	class World {
-		using ComponentManager = ComponentManager<ComponentsSet>;
-		using SystemManager = SystemManager<SystemsSet>;
-
-		//// EntityManager members
-		//using EntityManager::isAlive;
-		//	using EntityManager::getEntities;
-		//using EntityManager::setEnabled;
-		//using EntityManager::isEnabled;
-		//
-		//// ComponentManager members
-		//	using ComponentManager::getComponentID;
-		//	using ComponentManager::getBitsetForComponents;
-		//
-		//// SystemManager members
-		//using SystemManager::getSystemID;
-		//	using SystemManager::getSystem;
-		//	using SystemManager::getBitsetForSystems;
-		//	using SystemManager::run;
+		public:
+			using ComponentManager = ComponentManager<ComponentsSet>;
+			using SystemManager = SystemManager<SystemsSet>;
 
 		public:
+			// TODO: Move
+			// TODO: Doc
+			bool isAlive(Entity ent) const {
+				return em.isAlive(ent);
+			}
+
+			// TODO: Move
+			// TODO: Doc
+			void setEnabled(Entity ent, bool enabled) {
+				em.setEnabled(ent, enabled);
+			}
+
+			// TODO: Move
+			// TODO: Doc
+			bool isEnabled(Entity ent) const {
+				return em.isEnabled(ent);
+			}
+
 			// TODO: Move
 			// TODO: Doc
 			const EntityManager::EntityContainer& getEntities() const {
@@ -56,6 +59,13 @@ namespace Engine::ECS {
 			template<class Component>
 			constexpr static ComponentID getComponentID() noexcept {
 				return ComponentManager::getComponentID<Component>();
+			}
+
+			// TODO: Move
+			// TODO: Doc
+			template<class System>
+			constexpr static SystemID getSystemID() noexcept {
+				return SystemManager::getSystemID<System>();
 			}
 
 			// TODO: Move
