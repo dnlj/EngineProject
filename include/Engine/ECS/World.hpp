@@ -28,48 +28,68 @@ namespace Engine::ECS {
 			 */
 			World();
 
-			// TODO: Doc
+			/**
+			 * @see EntityManager::isAlive
+			 */
 			bool isAlive(Entity ent) const;
 
-			// TODO: Doc
+			/**
+			 * @see EntityManager::setEnabled
+			 */
 			void setEnabled(Entity ent, bool enabled);
 
-			// TODO: Doc
+			/**
+			 * @see EntityManager::isEnabled
+			 */
 			bool isEnabled(Entity ent) const;
 
-			// TODO: Doc
+			/**
+			 * @see EntityManager::getEntities
+			 */
 			const EntityManager::EntityContainer& getEntities() const;
 
-			// TODO: Doc
+			/**
+			 * @see ComponentManager<T>::getBitsetForComponents
+			 */
 			template<class... ComponentN>
 			ComponentBitset getBitsetForComponents() const;
 			
-			// TODO: Doc
+			/**
+			 * @see ComponentManager::getComponentID
+			 */
 			template<class Component>
 			constexpr static ComponentID getComponentID() noexcept;
 
-			// TODO: Doc
+			/**
+			 * @see SystemManager::getSystemID
+			 */
 			template<class System>
 			constexpr static SystemID getSystemID() noexcept;
 
-			// TODO: Doc
+			/**
+			 * @see SystemManager::getSystem
+			 */
 			template<class System>
 			System& getSystem();
 
-			// TODO: Doc
+			/**
+			 * @see SystemManager::getBitsetForSystems
+			 */
 			template<class... SystemN>
 			SystemBitset getBitsetForSystems() const;
 
-			// TODO: Doc
+			/**
+			 * @see SystemManager::run
+			 */
 			void run(float dt);
 
 			/**
-			 * @copydoc EntityManager::createEntity
+			 * @see EntityManager::createEntity
 			 */
 			Entity createEntity(bool forceNew = false);
 
 			/**
-			 * @copydoc EntityManager::destroyEntity
+			 * @see EntityManager::destroyEntity
 			 */
 			void destroyEntity(Entity ent);
 
