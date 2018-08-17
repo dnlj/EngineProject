@@ -60,17 +60,29 @@ namespace Engine::ECS {
 
 					// TODO: Move
 					Iterator& operator++() {
-						// TODO: Debug check if it is already end
+						#if defined(DEBUG)
+							if (it == filter.entities.end()) {
+								ENGINE_ERROR("Attempting to increment an end iterator");
+							}
+						#endif
+
 						while (++it != filter.entities.end() && !filter.entityManager.isEnabled(*it)) {
 						}
+
 						return *this;
 					};
 
 					// TODO: Move
 					Iterator& operator--() {
-						// TODO: Debug check if it is already begin
+						#if defined(DEBUG)
+							if (it == filter.entities.begin()) {
+								ENGINE_ERROR("Attempting to decrement an begin iterator");
+							}
+						#endif
+
 						while (--it != filter.entities.begin() && !filter.entityManager.isEnabled(*it)) {
 						}
+
 						return *this;
 					}
 
