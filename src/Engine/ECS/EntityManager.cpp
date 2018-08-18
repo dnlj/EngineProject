@@ -28,9 +28,14 @@ namespace Engine::ECS {
 	void EntityManager::destroyEntity(Entity ent) {
 		#if defined(DEBUG)
 			if (!isAlive(ent)) {
-				ENGINE_ERROR("Attempting to deleting already dead entity \"" << ent << "\"");
+				ENGINE_ERROR("Attempting to destroy an already dead entity \"" << ent << "\"");
 			} else if (aliveEntities[ent.id] != ent.gen) {
-				ENGINE_ERROR("Attempting to delete an out of date entity. Current generation is " << aliveEntities[ent.id] << " attempted to delete " << ent.gen);
+				ENGINE_ERROR(
+					"Attempting to destroy an old generation entity. Current generation is "
+					<< aliveEntities[ent.id]
+					<< " attempted to delete "
+					<< ent.gen
+				);
 			}
 		#endif
 
