@@ -18,7 +18,7 @@
 namespace Engine::ECS {
 	class FilterManager {
 		public:
-			FilterManager(EntityManager& entityManager);
+			FilterManager(const EntityManager& entityManager);
 
 			template<class World>
 			EntityFilter& getFilterFor(const World& world, const ComponentBitset& components);
@@ -28,7 +28,7 @@ namespace Engine::ECS {
 			void onEntityDestroyed(Entity ent, const ComponentBitset& cbits);
 
 		private:
-			EntityManager& entityManager;
+			const EntityManager& entityManager;
 			std::unordered_map<ComponentBitset, std::unique_ptr<EntityFilter>> filters;
 			std::vector<std::vector<EntityFilter*>> filtersByComponentID;
 	};

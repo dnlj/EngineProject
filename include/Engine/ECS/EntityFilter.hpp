@@ -122,7 +122,7 @@ namespace Engine::ECS {
 			// TODO: Make private. Move to constructor
 			ComponentBitset componentsBits;
 
-			EntityFilter(EntityManager& entityManager);
+			EntityFilter(const EntityManager& entityManager);
 
 			void add(Entity ent, const ComponentBitset& cbits);
 			void remove(Entity ent);
@@ -137,6 +137,6 @@ namespace Engine::ECS {
 			ConstIterator cend() const;
 
 		private:
-			EntityManager& entityManager;
+			const EntityManager& entityManager;
 	};
 }

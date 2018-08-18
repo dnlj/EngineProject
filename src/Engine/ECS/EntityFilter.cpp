@@ -6,7 +6,7 @@
 
 
 namespace Engine::ECS {
-	EntityFilter::EntityFilter(EntityManager& entityManager)
+	EntityFilter::EntityFilter(const EntityManager& entityManager)
 		: entityManager{entityManager} {
 	}
 
