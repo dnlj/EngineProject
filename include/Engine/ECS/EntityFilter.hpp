@@ -51,7 +51,7 @@ namespace Engine::ECS {
 
 					// TODO: Move
 					T* operator->() {
-						return const_cast<const Iterator*>(this)->(); // TODO: is this correct?
+						return const_cast<const Iterator*>(this)->operator->();
 					}
 
 					// TODO: Move
