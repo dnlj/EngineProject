@@ -7,6 +7,7 @@
 // Engine
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/EntityManager.hpp>
+#include <Engine/Engine.hpp>
 
 
 // TODO: Doc
@@ -60,13 +61,15 @@ namespace Engine::ECS {
 
 					// TODO: Move
 					Iterator& operator++() {
+						auto end = filter.end();
+
 						#if defined(DEBUG)
-							if (it == filter.entities.end()) {
+							if (*this == end) {
 								ENGINE_ERROR("Attempting to increment an end iterator");
 							}
 						#endif
 
-						while (++it != filter.entities.end() && !filter.entityManager.isEnabled(*it)) {
+						while ((++it, *this) != end && !filter.entityManager.isEnabled(*it)) {
 						}
 
 						return *this;
@@ -74,13 +77,15 @@ namespace Engine::ECS {
 
 					// TODO: Move
 					Iterator& operator--() {
+						auto begin = filter.begin();
+
 						#if defined(DEBUG)
-							if (it == filter.entities.begin()) {
+							if (*this == begin) {
 								ENGINE_ERROR("Attempting to decrement an begin iterator");
 							}
 						#endif
 
-						while (--it != filter.entities.begin() && !filter.entityManager.isEnabled(*it)) {
+						while ((--it, *this) != begin && !filter.entityManager.isEnabled(*it)) {
 						}
 
 						return *this;
@@ -122,11 +127,8 @@ namespace Engine::ECS {
 			void add(Entity ent, const ComponentBitset& cbits);
 			void remove(Entity ent);
 
-			// TODO: Redfine this in terms of size
-			bool empty() const;
-
-			// TODO: Will need to make this track the number of active entities
 			std::size_t size() const;
+			bool empty() const;
 
 			ConstIterator begin() const;
 			ConstIterator end() const;
@@ -135,6 +137,7 @@ namespace Engine::ECS {
 			ConstIterator cend() const;
 
 		private:
+			std::size_t count = 0;
 			EntityManager& entityManager;
 	};
 }

@@ -13,7 +13,9 @@ namespace Engine::ECS {
 	void EntityFilter::add(Entity ent, const ComponentBitset& cbits) {
 		if ((cbits & componentsBits) == componentsBits) {
 			auto pos = std::lower_bound(entities.cbegin(), entities.cend(), ent);
+			// TODO: add debug check for dups
 			entities.insert(pos, ent);
+			++count;
 		}
 	}
 
@@ -22,19 +24,26 @@ namespace Engine::ECS {
 
 		if (pos != entities.cend() && *pos == ent) {
 			entities.erase(pos);
+			--count;
 		}
 	}
 
-	bool EntityFilter::empty() const {
-		return entities.empty();
+	std::size_t EntityFilter::size() const {
+		return count;
 	}
 
-	std::size_t EntityFilter::size() const {
-		return entities.size();
+	bool EntityFilter::empty() const {
+		return size() == 0;
 	}
 
 	auto EntityFilter::begin() const -> ConstIterator {
-		return ConstIterator(*this, entities.begin());
+		auto it = ConstIterator(*this, entities.begin());
+
+		if (!entityManager.isEnabled(*it)) {
+			++it;
+		}
+
+		return it;
 	}
 
 	auto EntityFilter::end() const -> ConstIterator {
