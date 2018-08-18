@@ -55,6 +55,7 @@ namespace Game {
 			}
 
 			spriteComp.texture = engine.textureManager.getTexture("../assets/fire.png");
+			world.setEnabled(ent, false);
 		}
 	}
 
@@ -74,6 +75,7 @@ namespace Game {
 		dir.Normalize();
 
 		// Fire the missile
+		world.setEnabled(missle, true);
 		auto* body = world.getComponent<Game::PhysicsComponent>(missle).body;
 		body->SetActive(true);
 		body->SetTransform(entPos + 0.35f * dir, 0); // TODO: This scalar depends on the size of ent and missle. Handle this better.
@@ -84,6 +86,7 @@ namespace Game {
 
 	void CharacterSpellSystem::detonateMissle(Engine::ECS::Entity ent) {
 		std::cout << "Boom: " << ent << "\n";
+		world.setEnabled(ent, false);
 		world.getComponent<Game::PhysicsComponent>(ent).body->SetActive(false);
 	}
 
