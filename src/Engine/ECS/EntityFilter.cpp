@@ -12,8 +12,14 @@ namespace Engine::ECS {
 
 	void EntityFilter::add(Entity ent, const ComponentBitset& cbits) {
 		if ((cbits & componentsBits) == componentsBits) {
-			auto pos = std::lower_bound(entities.cbegin(), entities.cend(), ent);
-			// TODO: add debug check for dups
+			auto pos = std::lower_bound(entities.begin(), entities.end(), ent);
+
+			#if defined(DEBUG)
+				if (pos != entities.end() && *pos == ent) {
+					ENGINE_ERROR("Attempting to add duplicate entity to filter");
+				}
+			#endif
+
 			entities.insert(pos, ent);
 		}
 	}
