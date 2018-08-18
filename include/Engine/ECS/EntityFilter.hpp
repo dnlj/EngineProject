@@ -137,7 +137,6 @@ namespace Engine::ECS {
 			ConstIterator cend() const;
 
 		private:
-			std::size_t count = 0;
 			EntityManager& entityManager;
 	};
 }

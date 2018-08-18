@@ -15,7 +15,6 @@ namespace Engine::ECS {
 			auto pos = std::lower_bound(entities.cbegin(), entities.cend(), ent);
 			// TODO: add debug check for dups
 			entities.insert(pos, ent);
-			++count;
 		}
 	}
 
@@ -24,12 +23,11 @@ namespace Engine::ECS {
 
 		if (pos != entities.cend() && *pos == ent) {
 			entities.erase(pos);
-			--count;
 		}
 	}
 
 	std::size_t EntityFilter::size() const {
-		return count;
+		return std::distance(begin(), end());
 	}
 
 	bool EntityFilter::empty() const {
