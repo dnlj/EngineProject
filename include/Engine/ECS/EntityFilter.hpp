@@ -32,78 +32,19 @@ namespace Engine::ECS {
 					using iterator_category = std::bidirectional_iterator_tag;
 					
 					Iterator() = default;
+					Iterator(const EntityFilter& filter, ItType it);
 
-					// TODO: move
-					Iterator(const EntityFilter& filter, ItType it)
-						: filter(filter)
-						, it(it) {
-					};
+					T& operator*();
+					T& operator*() const;
 
-					// TODO: Move
-					T& operator*() {
-						return **const_cast<const Iterator*>(this);
-					};
+					T* operator->();
+					T* operator->() const;
 
-					// TODO: Move
-					T& operator*() const {
-						return *it;
-					}
+					Iterator& operator++();
+					Iterator& operator--();
 
-					// TODO: Move
-					T* operator->() {
-						return const_cast<const Iterator*>(this)->operator->();
-					}
-
-					// TODO: Move
-					T* operator->() const {
-						return &*it;
-					}
-
-					// TODO: Move
-					Iterator& operator++() {
-						auto end = filter.end();
-
-						#if defined(DEBUG)
-							if (*this == end) {
-								ENGINE_ERROR("Attempting to increment an end iterator");
-							}
-						#endif
-
-						while ((++it, *this) != end && !filter.entityManager.isEnabled(*it)) {
-						}
-
-						return *this;
-					};
-
-					// TODO: Move
-					Iterator& operator--() {
-						auto begin = filter.begin();
-
-						#if defined(DEBUG)
-							if (*this == begin) {
-								ENGINE_ERROR("Attempting to decrement an begin iterator");
-							}
-						#endif
-
-						while ((--it, *this) != begin && !filter.entityManager.isEnabled(*it)) {
-						}
-
-						return *this;
-					}
-
-					// TODO: Move
-					Iterator operator++(int) {
-						auto temp = *this;
-						++*this;
-						return temp;
-					};
-
-					// TODO: Move
-					Iterator operator--(int) {
-						auto temp = *this;
-						--*this;
-						return temp;
-					}
+					Iterator operator++(int);
+					Iterator operator--(int);
 
 					// TODO: Move
 					friend bool operator==(const Iterator& first, const Iterator& second) {
