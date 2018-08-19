@@ -34,7 +34,10 @@ namespace Game {
 			 */
 			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef);
 
-			// TODO: Doc
+			/**
+			 * Destroys a box2d body.
+			 * @param[in] body The body to destroy.
+			 */
 			void destroyBody(b2Body* body);
 
 			/**
