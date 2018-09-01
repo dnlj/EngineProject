@@ -163,60 +163,75 @@ namespace {
 		return body;
 	}
 
-	b2Body* createPhysicsLevel(b2World& world) {
-		constexpr int levelSize = 8;
-		constexpr int level[levelSize][levelSize] = {
-			{3, 0, 0, 0, 0, 0, 0, 3},
-			{0, 2, 0, 0, 0, 0, 2, 0},
-			{0, 0, 2, 2, 2, 2, 0, 0},
-			{0, 0, 2, 1, 1, 2, 0, 0},
-			{0, 0, 2, 0, 1, 2, 0, 0},
-			{0, 0, 2, 2, 2, 2, 0, 0},
-			{0, 0, 0, 0, 0, 0, 2, 0},
-			{4, 0, 0, 0, 0, 0, 0, 3},
-		};
-
-
-		b2BodyDef bodyDef;
-		bodyDef.type = b2_staticBody;
-		bodyDef.awake = false;
-		bodyDef.fixedRotation = true;
-
-		b2Body* body = world.CreateBody(&bodyDef);
-
-		b2PolygonShape shape;
-
-		b2FixtureDef fixtureDef;
-		fixtureDef.shape = &shape;
-
-		constexpr auto a = level[7][0];
-
-		for (int x = 0; x < levelSize; ++x) {
-			for (int y = 0; y < levelSize; ++y) {
-				if (level[y][x] != 0) {
-					constexpr auto halfSize = 1.0f/8.0f;
-
-					shape.SetAsBox(
-						halfSize,
-						halfSize,
-						b2Vec2(x * halfSize * 2.0f, -y * halfSize * 2.0f),
-						0.0f
-					);
-
-					body->CreateFixture(&fixtureDef);
-				}
-			}
-		}
-
-		return body;
-	}
-
-	 void framebufferCallback(GLFWwindow* window, int width, int height) {
+	void framebufferCallback(GLFWwindow* window, int width, int height) {
 		glViewport(0, 0, width, height);
 
 		auto& camera = static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->camera;
 		camera.setAsOrtho(width, height, 1.0f / 250.0f);
 	}
+}
+
+namespace {
+	class Tile {
+		public:
+			const int id;
+	};
+
+	class Map {
+		public:
+			constexpr static Tile AIR{0};
+			constexpr static Tile DIRT{1};
+
+		public:
+			constexpr static int width = 8;
+			constexpr static int height = width;
+			constexpr static auto halfSize = 1.0f/8.0f;
+
+			decltype(Tile::id) data[width][height] = {
+				{3, 0, 0, 0, 0, 0, 0, 3},
+				{0, 2, 0, 0, 0, 0, 2, 0},
+				{0, 0, 2, 2, 2, 2, 0, 0},
+				{0, 0, 2, 1, 1, 2, 0, 0},
+				{0, 0, 2, 0, 1, 2, 0, 0},
+				{0, 0, 2, 2, 2, 2, 0, 0},
+				{0, 0, 0, 0, 0, 0, 2, 0},
+				{4, 0, 0, 0, 0, 0, 0, 3},
+			};
+
+			b2Body* body; // TODO: Cleanup
+			Engine::ECS::Entity ent;
+
+			void generate(Game::PhysicsSystem& physSys) {
+				// TODO: Look into edge and chain shapes
+
+				b2BodyDef bodyDef;
+				bodyDef.type = b2_staticBody;
+				bodyDef.awake = false;
+				bodyDef.fixedRotation = true;
+
+				b2PolygonShape shape;
+
+				b2FixtureDef fixtureDef;
+				fixtureDef.shape = &shape;
+
+				body = physSys.createBody(ent, bodyDef);
+
+				for (int x = 0; x < width; ++x) {
+					for (int y = 0; y < height; ++y) {
+						if (data[x][y] == AIR.id) { continue; }
+
+						shape.SetAsBox(
+							halfSize,
+							halfSize,
+							b2Vec2(x * halfSize * 2.0f, -y * halfSize * 2.0f),
+							0.0f
+						);
+
+						body->CreateFixture(&fixtureDef);
+					}
+				}
+			}
+	};
 }
 
 void run() {
@@ -255,12 +270,17 @@ void run() {
 	// Engine stuff
 	Engine::EngineInstance engine;
 	Game::World world;
+	Map map;
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		world.getSystem<Game::SpriteSystem>().setup(engine.camera);
 		world.getSystem<Game::CameraTrackingSystem>().setup(engine.camera);
 		world.getSystem<Game::CharacterSpellSystem>().setup(engine);
+
+		// Map
+		map.ent = world.createEntity();
+		map.generate(world.getSystem<Game::PhysicsSystem>());
 		
 		// Player
 		auto player = world.createEntity();
@@ -281,21 +301,21 @@ void run() {
 		//auto level = world.createEntity();
 		//world.addComponent<Game::PhysicsComponent>(level).body = createPhysicsLevel(physSys.getPhysicsWorld());
 
-		constexpr int half = 4;
-		constexpr float scale = 0.26f;
-		const b2Vec2 offset{scale * (half + 1), 0.0f};
-
-		for (int x = -half; x < half; ++x) {
-			for (int y = -half; y < half; ++y) {
-				auto ent = world.createEntity();
-
-				world.addComponent<Game::SpriteComponent>(ent).texture
-					= engine.textureManager.getTexture("../assets/test.png");
-
-				world.addComponent<Game::PhysicsComponent>(ent).body
-					= createPhysicsSquare(ent, physSys, offset + b2Vec2(scale * x, scale * y));
-			}
-		}
+		//constexpr int half = 4;
+		//constexpr float scale = 0.26f;
+		//const b2Vec2 offset{scale * (half + 1), 0.0f};
+		//
+		//for (int x = -half; x < half; ++x) {
+		//	for (int y = -half; y < half; ++y) {
+		//		auto ent = world.createEntity();
+		//
+		//		world.addComponent<Game::SpriteComponent>(ent).texture
+		//			= engine.textureManager.getTexture("../assets/test.png");
+		//
+		//		world.addComponent<Game::PhysicsComponent>(ent).body
+		//			= createPhysicsSquare(ent, physSys, offset + b2Vec2(scale * x, scale * y));
+		//	}
+		//}
 	}
 
 	// Binds
@@ -367,7 +387,7 @@ void run() {
 
 		// Physics debug
 		#if defined (DEBUG_PHYSICS)
-			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw(engine.camera.projection, engine.camera.view);
+			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw(engine.camera.getProjection(), engine.camera.getView());
 		#endif
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
