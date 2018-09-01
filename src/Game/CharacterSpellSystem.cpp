@@ -34,7 +34,7 @@ namespace Game {
 
 			{
 				b2BodyDef bodyDef;
-				bodyDef.type = b2_kinematicBody;
+				bodyDef.type = b2_dynamicBody;
 				bodyDef.position = b2Vec2_zero;
 
 				physComp.physSys = &world.getSystem<Game::PhysicsSystem>();
@@ -45,7 +45,7 @@ namespace Game {
 
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &shape;
-				fixtureDef.density = 0.10f;
+				fixtureDef.density = 0.0f;
 				fixtureDef.isSensor = true;
 
 				physComp.body->CreateFixture(&fixtureDef);
