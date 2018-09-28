@@ -180,7 +180,7 @@ namespace {
 			const int id;
 	};
 
-	class Map {
+	class Chunk {
 		public:
 			constexpr static Tile AIR{0};
 			constexpr static Tile DIRT{1};
@@ -201,11 +201,13 @@ namespace {
 				{4, 0, 0, 0, 0, 0, 0, 3},
 			};
 
-			b2Body* body; // TODO: Cleanup
+			b2Body* body = nullptr; // TODO: Cleanup
 			Engine::ECS::Entity ent;
 
 			void generate(Game::PhysicsSystem& physSys) {
 				// TODO: Look into edge and chain shapes
+
+				if (body != nullptr) { physSys.destroyBody(body); }
 
 				b2BodyDef bodyDef;
 				bodyDef.type = b2_staticBody;
@@ -282,7 +284,7 @@ void run() {
 	// Engine stuff
 	Engine::EngineInstance engine;
 	Game::World world;
-	Map map;
+	Chunk map;
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
