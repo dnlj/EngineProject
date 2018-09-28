@@ -354,6 +354,10 @@ void run() {
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.mouseCallback(x, y);
 	});
 
+	glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int mods){
+		ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+	});
+
 	// Framebuffer callback
 	glfwSetFramebufferSizeCallback(window, framebufferCallback);
 	{
@@ -364,9 +368,7 @@ void run() {
 	}
 
 	// ImGui callbacks
-	glfwSetMouseButtonCallback(window, ImGui_ImplGlfw_MouseButtonCallback);
 	glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-	// glfwSetKeyCallback(window, ImGui_ImplGlfw_KeyCallback);
 	glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 
 	// Main loop
