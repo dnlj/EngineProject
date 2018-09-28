@@ -48,6 +48,8 @@ namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
 
+	void editorUI();
+
 	void initializeOpenGL() {
 		auto loaded = ogl_LoadFunctions();
 
@@ -116,6 +118,7 @@ namespace {
 		ImGui_ImplGlfwGL3_NewFrame();
 
 		ImGui::ShowDemoWindow(&showWindow);
+		editorUI();
 
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
@@ -232,6 +235,15 @@ namespace {
 				}
 			}
 	};
+
+	void editorUI() {
+		bool open = true;
+		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
+
+		ImGui::Text("test");
+
+		ImGui::End();
+	}
 }
 
 void run() {
