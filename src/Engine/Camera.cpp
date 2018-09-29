@@ -18,12 +18,13 @@ namespace Engine {
 		glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
 	}
 
-	void Camera::setPosition(const glm::vec2& position) {
-		view = glm::translate(glm::mat4{1.0f}, glm::vec3{-position, 0.0f});
+	void Camera::setPosition(const glm::vec2 newPosition) {
+		position = glm::vec3(newPosition, 0.0f);
+		view = glm::translate(glm::mat4{1.0f}, -position);
 	}
 
 	glm::vec3 Camera::getPosition() const {
-		return view * glm::vec4(0, 0, 0, 1);
+		return position;
 	}
 
 	unsigned int Camera::getWidth() const {

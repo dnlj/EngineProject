@@ -16,7 +16,7 @@ namespace Engine {
 			/**
 			 * @param[in] position The position vector.
 			 */
-			void setPosition(const glm::vec2& position);
+			void setPosition(const glm::vec2 newPosition);
 
 			/**
 			 * @return The position vector.
@@ -42,6 +42,7 @@ namespace Engine {
 		private:
 			glm::mat4 view{1.0f};
 			glm::mat4 projection{1.0f};
+			glm::vec3 position;
 			unsigned int width = 0;
 			unsigned int height = 0;
 			float scale = 1.0f;
