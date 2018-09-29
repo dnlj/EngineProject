@@ -64,10 +64,7 @@ namespace Game {
 		auto missle = missles[currentMissle];
 
 		// Get the mouse position in world space
-		auto mousePos = inputManager.getMousePosition(); // Mouse position relative to window
-		mousePos -= glm::vec2(camera->getWidth() * 0.5f, camera->getHeight() * 0.5f); // Relative to center of screen
-		mousePos.y *= -1.0f; // In screen space up is negative. In world space up is positive
-		mousePos = glm::vec2(camera->getPosition()) + mousePos; // Offset by camera position
+		auto mousePos = camera->screenToWorld(inputManager.getMousePosition());
 
 		// The direction of the cursor relative to ent
 		auto entPos = entBody.GetPosition();
