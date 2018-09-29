@@ -2,7 +2,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 // Engine
-#include<Engine/Camera.hpp>
+#include <Engine/Camera.hpp>
 
 
 namespace Engine {
@@ -44,5 +44,16 @@ namespace Engine {
 
 	const glm::mat4& Camera::getView() const {
 		return view;
+	}
+
+	glm::vec2 Camera::screenToWorld(glm::vec2 point) const {
+		// Convert from screen space to normalized device coordinates. That is: from [0, width] to [-1, 1]
+		point = point * 2.0f / glm::vec2(width, height) - glm::vec2(1.0f, 1.0f);
+
+		// In screen space up is negative. In world/ndc space up is positive
+		point.y *= -1.0f;
+
+		// Apply camera transforms
+		return glm::inverse(view) * glm::inverse(projection) * glm::vec4(point, 0, 1);
 	}
 }

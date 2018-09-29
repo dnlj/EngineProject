@@ -33,6 +33,12 @@ namespace Engine {
 			 */
 			const glm::mat4& getView() const;
 
+			/**
+			 * Converts a point from screen space to world space.
+			 * @return The world space position of the point.
+			 */
+			glm::vec2 screenToWorld(glm::vec2 point) const;
+
 		private:
 			glm::mat4 view{1.0f};
 			glm::mat4 projection{1.0f};
