@@ -46,6 +46,7 @@ namespace Engine {
 	void InputManager::bind(ScanCode code, const std::string& name) {
 		auto& bid = bindToBindID[name];
 
+		// TODO: This is wrong. can never have bind 0. look into insert_or_assign
 		if (bid == 0) {
 			bid = nextBindID;
 			++nextBindID;
@@ -55,7 +56,7 @@ namespace Engine {
 		}
 
 		if (scanCodeToBindID.size() <= code) {
-			scanCodeToBindID.resize(code + 1);
+			scanCodeToBindID.resize(code + 1, -1);
 		}
 
 		scanCodeToBindID[code] = bid;
@@ -70,10 +71,10 @@ namespace Engine {
 	}
 
 	void InputManager::keyCallback(ScanCode code, int action) {
-		if (action != GLFW_REPEAT) {
+		if (action != GLFW_REPEAT && code < scanCodeToBindID.size()) {
 			auto bid = scanCodeToBindID[code];
 
-			if (bid < currentState.size()) {
+			if (bid >= 0 && bid < currentState.size()) {
 				currentState[bid] = (action == GLFW_PRESS);
 			}
 		}

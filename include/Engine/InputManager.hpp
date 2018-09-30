@@ -13,7 +13,7 @@ namespace Engine {
 	class InputManager {
 		public:
 			/** TODO: Doc */
-			using BindID = uint32_t;
+			using BindID = int;
 
 			/** The type of scancodes */
 			using ScanCode = int;
@@ -105,6 +105,5 @@ namespace Engine {
 
 			/** The current position of the mouse */
 			glm::vec2 mousePosition;
-			 
 	};
 }
