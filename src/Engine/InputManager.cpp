@@ -44,10 +44,10 @@ namespace Engine {
 	}
 
 	void InputManager::bind(ScanCode code, const std::string& name) {
+		const bool inserted = bindToBindID.find(name) == bindToBindID.end();
 		auto& bid = bindToBindID[name];
 
-		// TODO: This is wrong. can never have bind 0. look into insert_or_assign
-		if (bid == 0) {
+		if (inserted) {
 			bid = nextBindID;
 			++nextBindID;
 
