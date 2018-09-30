@@ -53,13 +53,12 @@ namespace Engine {
 			// TODO: Doc
 			bool wasReleased(BindID bid) const;
 
-			// TODO: Reverse arg order
 			/**
 			 * Maps the bind @p name with the scancode @p code.
 			 * @param[in] name The name of the bind.
 			 * @param[in] code The scancode.
 			 */
-			void bind(const std::string& name, ScanCode code);
+			void bind(ScanCode code, const std::string& name);
 
 			// TODO: Add BindID version of bind
 

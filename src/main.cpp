@@ -333,11 +333,11 @@ void run() {
 	}
 
 	// Binds
-	engine.inputManager.bind("MoveUp", 17);
-	engine.inputManager.bind("MoveDown", 31);
-	engine.inputManager.bind("MoveLeft", 30);
-	engine.inputManager.bind("MoveRight", 32);
-	engine.inputManager.bind("Spell_1", 57);
+	engine.inputManager.bind(17, "MoveUp");
+	engine.inputManager.bind(31, "MoveDown");
+	engine.inputManager.bind(30, "MoveLeft");
+	engine.inputManager.bind(32, "MoveRight");
+	engine.inputManager.bind(57, "Spell_1");
 
 	// Callbacks
 	glfwSetWindowUserPointer(window, &engine);

@@ -43,7 +43,7 @@ namespace Engine {
 		return previousState[bid] && !currentState[bid];
 	}
 
-	void InputManager::bind(const std::string& name, ScanCode code) {
+	void InputManager::bind(ScanCode code, const std::string& name) {
 		auto& bid = bindToBindID[name];
 
 		if (bid == 0) {
