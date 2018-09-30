@@ -4,50 +4,61 @@
 // Engine
 #include <Engine/InputManager.hpp>
 
+
 namespace Engine {
 	InputManager::InputManager() {
-		previousState.max_load_factor(0.5);
-		currentState.max_load_factor(0.5);
+		bindToBindID.max_load_factor(0.5f);
 	}
 	
 	bool InputManager::wasPressed(const std::string& name) const {
-		const auto code = binds.find(name);
-		if (code == binds.cend()) { return false; }
+		const auto bp = bindToBindID.find(name);
+		if (bp == bindToBindID.cend()) { return false; }
+		return wasPressed(bp->second);
+	}
 
-		const auto prev = previousState.find(code->second);
-		if (prev != previousState.cend() && prev->second) { return false; }
-
-		const auto curr = currentState.find(code->second);
-		if (curr == currentState.cend() || !curr->second) { return false; }
-
-		return true;
-	}	
+	bool InputManager::wasPressed(BindID bid) const {
+		if (bid > currentState.size()) { return false; }
+		return currentState[bid] && !previousState[bid];
+	}
 	
 	bool InputManager::isPressed(const std::string& name) const {
-		const auto code = binds.find(name);
-		if (code == binds.cend()) { return false; }
+		const auto bp = bindToBindID.find(name);
+		if (bp == bindToBindID.cend()) { return false; }
+		return isPressed(bp->second);
+	}
 
-		const auto curr = currentState.find(code->second);
-		if (curr == currentState.cend() || !curr->second) { return false; }
-
-		return true;
+	bool InputManager::isPressed(BindID bid) const {
+		if (bid > currentState.size()) { return false; }
+		return currentState[bid];
 	}
 	
 	bool InputManager::wasReleased(const std::string& name) const {
-		const auto code = binds.find(name);
-		if (code == binds.cend()) { return false; }
-
-		const auto prev = previousState.find(code->second);
-		if (prev == previousState.cend() || !prev->second) { return false; }
-
-		const auto curr = currentState.find(code->second);
-		if (curr == currentState.cend() || curr->second) { return false; }
-
-		return true;
+		const auto bp = bindToBindID.find(name);
+		if (bp == bindToBindID.cend()) { return false; }
+		return wasReleased(bp->second);
 	}
 
-	void InputManager::bind(std::string name, ScanCode code) {
-		binds[std::move(name)] = code;
+	bool InputManager::wasReleased(BindID bid) const {
+		if (bid > currentState.size()) { return false; }
+		return previousState[bid] && !currentState[bid];
+	}
+
+	void InputManager::bind(const std::string& name, ScanCode code) {
+		auto& bid = bindToBindID[name];
+
+		if (bid == 0) {
+			bid = nextBindID;
+			++nextBindID;
+
+			currentState.resize(bid + 1);
+			previousState.resize(bid + 1);
+		}
+
+		if (scanCodeToBindID.size() <= code) {
+			scanCodeToBindID.resize(code + 1);
+		}
+
+		scanCodeToBindID[code] = bid;
 	}
 
 	glm::vec2 InputManager::getMousePosition() const {
@@ -60,7 +71,11 @@ namespace Engine {
 
 	void InputManager::keyCallback(ScanCode code, int action) {
 		if (action != GLFW_REPEAT) {
-			currentState[code] = (action == GLFW_PRESS);
+			auto bid = scanCodeToBindID[code];
+
+			if (bid < currentState.size()) {
+				currentState[bid] = (action == GLFW_PRESS);
+			}
 		}
 	}
 
