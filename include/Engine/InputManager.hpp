@@ -55,8 +55,8 @@ namespace Engine {
 
 			/**
 			 * Maps the bind @p name with the scancode @p code.
-			 * @param[in] name The name of the bind.
 			 * @param[in] code The scancode.
+			 * @param[in] name The name of the bind.
 			 */
 			void bind(ScanCode code, const std::string& name);
 
