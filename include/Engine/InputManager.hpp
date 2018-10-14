@@ -5,16 +5,43 @@
 
 // STD
 #include <string>
+#include <array>
 #include <unordered_map>
 
+
 namespace Engine {
+	// TODO: Doc
+	using BindID = int;
+
+	// TODO: Doc
+	// TODO: Move
+	enum class BindState : uint8_t {
+		PRESS,
+		RELEASE,
+		INVALID,
+	};
+
+	// TODO: Doc
+	// TODO: Move
+	class BindEvent {
+		public:
+			BindID bid;
+			BindState state;
+	};
+
+	// TODO: Doc
+	// TODO: Move
+	// TODO: Make a fixed_queue class
+	class BindEventQueue {
+		public:
+			std::array<BindEvent, 32> events;
+			int size;
+	};
+
 	// TODO: Doc
 	// TODO: Axis/mouse support.
 	class InputManager {
 		public:
-			/** TODO: Doc */
-			using BindID = int;
-
 			/** The type of scancodes */
 			using ScanCode = int;
 
@@ -73,6 +100,9 @@ namespace Engine {
 			 */
 			void update();
 
+			// TODO: Doc
+			const BindEventQueue& getBindEventQueue() const;
+
 			/**
 			 * The callback for updating keys.
 			 * @param[in] code The scancode.
@@ -105,5 +135,8 @@ namespace Engine {
 
 			/** The current position of the mouse */
 			glm::vec2 mousePosition;
+
+			// TODO: Doc
+			BindEventQueue bindEventQueue;
 	};
 }

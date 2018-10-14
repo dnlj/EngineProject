@@ -1,9 +1,22 @@
+// STD
+#include <algorithm>
+
 // GLFW
 #include <GLFW/glfw3.h>
 
 // Engine
 #include <Engine/InputManager.hpp>
 
+// Helpers
+namespace {
+	constexpr Engine::BindState getBindStateFromInt(int state) {
+		switch (state) {
+			case GLFW_RELEASE: return Engine::BindState::RELEASE;
+			case GLFW_PRESS: return Engine::BindState::PRESS;
+			default: return Engine::BindState::INVALID;
+		}
+	}
+}
 
 namespace Engine {
 	InputManager::InputManager() {
@@ -68,14 +81,22 @@ namespace Engine {
 
 	void InputManager::update() {
 		previousState = currentState;
+		bindEventQueue.size = 0;
 	}
+
+	const BindEventQueue& InputManager::getBindEventQueue() const {
+		return bindEventQueue;
+	};
 
 	void InputManager::keyCallback(ScanCode code, int action) {
 		if (action != GLFW_REPEAT && code < scanCodeToBindID.size()) {
 			auto bid = scanCodeToBindID[code];
 
-			if (bid >= 0 && bid < currentState.size()) {
+			if (bid >= 0) {
 				currentState[bid] = (action == GLFW_PRESS);
+
+				bindEventQueue.events[bindEventQueue.size] = {bid, getBindStateFromInt(action)};
+				++bindEventQueue.size;
 			}
 		}
 	}
