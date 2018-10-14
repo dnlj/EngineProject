@@ -100,7 +100,9 @@ namespace Engine {
 			 */
 			void update();
 
-			// TODO: Doc
+			/**
+			 * @return The queue of bind events since the last update.
+			 */
 			const BindEventQueue& getBindEventQueue() const;
 
 			/**
@@ -118,25 +120,25 @@ namespace Engine {
 			void mouseCallback(double x, double y);
 
 		private:
-			// TODO: Doc
+			/** The next id to assign to bind */
 			BindId nextBindID = 0;
 
 			/** Maps bind names to bind ids */
 			std::unordered_map<std::string, BindId> bindToBindID;
 
-			// TODO: Doc
+			/** Converts from scan codes to bind ids */
 			std::vector<BindId> scanCodeToBindID;
 
-			// TODO: Doc
+			/** The current state of binds */
 			std::vector<uint8_t> currentState;
 
-			// TODO: Doc
+			/** The previous state of binds */
 			std::vector<uint8_t> previousState;
 
 			/** The current position of the mouse */
 			glm::vec2 mousePosition;
 
-			// TODO: Doc
+			/** The queue for bind events since last update */
 			BindEventQueue bindEventQueue;
 	};
 }
