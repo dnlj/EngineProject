@@ -10,10 +10,10 @@
 
 
 namespace Engine {
-	// TODO: Doc
+	/** The type to use for bind ids */
 	using BindId = int;
 
-	// TODO: Doc
+	/** The states for bind events */
 	// TODO: Move
 	enum class BindState : uint8_t {
 		PRESS,
