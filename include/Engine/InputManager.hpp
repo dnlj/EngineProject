@@ -57,7 +57,7 @@ namespace Engine {
 			 */
 			bool wasPressed(const std::string& name) const;
 
-			// TODO: Doc
+			/** @see wasPressed */
 			bool wasPressed(BindId bid) const;
 			
 			/**
@@ -67,7 +67,7 @@ namespace Engine {
 			 */
 			bool isPressed(const std::string& name) const;
 
-			// TODO: Doc
+			/** @see isPressed */
 			bool isPressed(BindId bid) const;
 			
 			/**
@@ -77,7 +77,7 @@ namespace Engine {
 			 */
 			bool wasReleased(const std::string& name) const;
 
-			// TODO: Doc
+			/** @see wasReleased */
 			bool wasReleased(BindId bid) const;
 
 			/**
