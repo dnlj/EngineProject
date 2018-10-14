@@ -11,7 +11,7 @@
 
 namespace Engine {
 	// TODO: Doc
-	using BindID = int;
+	using BindId = int;
 
 	// TODO: Doc
 	// TODO: Move
@@ -25,7 +25,7 @@ namespace Engine {
 	// TODO: Move
 	class BindEvent {
 		public:
-			BindID bid;
+			BindId bid;
 			BindState state;
 	};
 
@@ -58,7 +58,7 @@ namespace Engine {
 			bool wasPressed(const std::string& name) const;
 
 			// TODO: Doc
-			bool wasPressed(BindID bid) const;
+			bool wasPressed(BindId bid) const;
 			
 			/**
 			 * Checks if the bind associated with @p name is pressed.
@@ -68,7 +68,7 @@ namespace Engine {
 			bool isPressed(const std::string& name) const;
 
 			// TODO: Doc
-			bool isPressed(BindID bid) const;
+			bool isPressed(BindId bid) const;
 			
 			/**
 			 * Checks if the bind associated with @p name was released this update.
@@ -78,7 +78,7 @@ namespace Engine {
 			bool wasReleased(const std::string& name) const;
 
 			// TODO: Doc
-			bool wasReleased(BindID bid) const;
+			bool wasReleased(BindId bid) const;
 
 			/**
 			 * Maps the bind @p name with the scancode @p code.
@@ -119,13 +119,13 @@ namespace Engine {
 
 		private:
 			// TODO: Doc
-			BindID nextBindID = 0;
+			BindId nextBindID = 0;
 
 			/** Maps bind names to bind ids */
-			std::unordered_map<std::string, BindID> bindToBindID;
+			std::unordered_map<std::string, BindId> bindToBindID;
 
 			// TODO: Doc
-			std::vector<BindID> scanCodeToBindID;
+			std::vector<BindId> scanCodeToBindID;
 
 			// TODO: Doc
 			std::vector<uint8_t> currentState;

@@ -29,7 +29,7 @@ namespace Engine {
 		return wasPressed(bp->second);
 	}
 
-	bool InputManager::wasPressed(BindID bid) const {
+	bool InputManager::wasPressed(BindId bid) const {
 		if (bid > currentState.size()) { return false; }
 		return currentState[bid] && !previousState[bid];
 	}
@@ -40,7 +40,7 @@ namespace Engine {
 		return isPressed(bp->second);
 	}
 
-	bool InputManager::isPressed(BindID bid) const {
+	bool InputManager::isPressed(BindId bid) const {
 		if (bid > currentState.size()) { return false; }
 		return currentState[bid];
 	}
@@ -51,7 +51,7 @@ namespace Engine {
 		return wasReleased(bp->second);
 	}
 
-	bool InputManager::wasReleased(BindID bid) const {
+	bool InputManager::wasReleased(BindId bid) const {
 		if (bid > currentState.size()) { return false; }
 		return previousState[bid] && !currentState[bid];
 	}
