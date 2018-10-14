@@ -14,7 +14,7 @@ namespace Engine {
 			float getScale() const;
 
 			/**
-			 * @param[in] position The position vector.
+			 * @param[in] newPosition The position vector.
 			 */
 			void setPosition(const glm::vec2 newPosition);
 
