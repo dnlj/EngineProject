@@ -82,7 +82,7 @@ workspace(PROJECT_NAME .."Workspace")
 		
 	filter "configurations:Release*"
 		optimize "Full"
-		defines {"RELEASE"}
+		defines {"NDEBUG"}
 		flags {"LinkTimeOptimization"}
 
 --------------------------------------------------------------------------------
