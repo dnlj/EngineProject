@@ -9,26 +9,18 @@
 
 
 namespace Game {
-	class CharacterSpellSystem : public SystemBase {
+	class CharacterSpellSystem : public SystemBase, public PhysicsListener {
 		public:
 			CharacterSpellSystem(World& world);
 			void setup(Engine::EngineInstance& engine);
 			virtual void run(float dt) override;
 
 		private:
-			class CollisionListener : public PhysicsListener {
-				public:
-					CollisionListener(CharacterSpellSystem& spellSys);
-					virtual void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) override;
-
-				private:
-					CharacterSpellSystem& spellSys;
-			};
+			virtual void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) override;
 
 			void fireMissile(Engine::ECS::Entity ent, Engine::InputManager& inputManager);
 			void detonateMissle(Engine::ECS::Entity ent);
 
-			CollisionListener collisionListener;
 			Engine::ECS::EntityFilter& filter;
 			Engine::Camera* camera;
 			std::vector<Engine::ECS::Entity> missles;
