@@ -111,6 +111,9 @@ namespace Engine {
 			 */
 			const BindEventQueue& getBindEventQueue() const;
 
+			// TODO: Doc
+			BindId getBindId(const std::string& name);
+
 			/**
 			 * The callback for updating keys.
 			 * @param[in] code The scancode.

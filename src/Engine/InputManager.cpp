@@ -57,16 +57,7 @@ namespace Engine {
 	}
 
 	void InputManager::bindkey(ScanCode code, const std::string& name) {
-		const bool inserted = bindToBindID.find(name) == bindToBindID.end();
-		auto& bid = bindToBindID[name];
-
-		if (inserted) {
-			bid = nextBindID;
-			++nextBindID;
-
-			currentState.resize(bid + 1);
-			previousState.resize(bid + 1);
-		}
+		auto bid = getBindId(name);
 
 		if (scanCodeToBindID.size() <= code) {
 			scanCodeToBindID.resize(code + 1, -1);
@@ -76,16 +67,7 @@ namespace Engine {
 	}
 
 	void InputManager::bindMouseButton(MouseButton button, const std::string& name) {
-		const bool inserted = bindToBindID.find(name) == bindToBindID.end();
-		auto& bid = bindToBindID[name];
-
-		if (inserted) {
-			bid = nextBindID;
-			++nextBindID;
-
-			currentState.resize(bid + 1);
-			previousState.resize(bid + 1);
-		}
+		auto bid = getBindId(name);
 
 		if (mouseButtonToBindId.size() <= button) {
 			mouseButtonToBindId.resize(button + 1, -1);
@@ -106,6 +88,21 @@ namespace Engine {
 	const BindEventQueue& InputManager::getBindEventQueue() const {
 		return bindEventQueue;
 	};
+
+	BindId InputManager::getBindId(const std::string& name) {
+		const bool inserted = bindToBindID.find(name) == bindToBindID.end();
+		auto& bid = bindToBindID[name];
+
+		if (inserted) {
+			bid = nextBindID;
+			++nextBindID;
+
+			currentState.resize(bid + 1);
+			previousState.resize(bid + 1);
+		}
+
+		return bid;
+	}
 
 	void InputManager::keyCallback(ScanCode code, int action) {
 		if (action != GLFW_REPEAT && code < scanCodeToBindID.size()) {
