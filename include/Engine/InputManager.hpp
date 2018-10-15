@@ -45,6 +45,9 @@ namespace Engine {
 			/** The type of scancodes */
 			using ScanCode = int;
 
+			// TODO: Doc
+			using MouseButton = int;
+
 			/**
 			 * Constructor.
 			 */
@@ -85,9 +88,12 @@ namespace Engine {
 			 * @param[in] code The scancode.
 			 * @param[in] name The name of the bind.
 			 */
-			void bind(ScanCode code, const std::string& name);
+			void bindkey(ScanCode code, const std::string& name);
 
 			// TODO: Add BindID version of bind
+
+			// TODO: Doc
+			void bindMouseButton(MouseButton button, const std::string& name);
 
 			/**
 			 * Gets the current position of the mouse.
@@ -119,6 +125,9 @@ namespace Engine {
 			 */
 			void mouseCallback(double x, double y);
 
+			// TODO: Doc
+			void mouseCallback(MouseButton button, int action);
+
 		private:
 			/** The next id to assign to bind */
 			BindId nextBindID = 0;
@@ -128,6 +137,9 @@ namespace Engine {
 
 			/** Converts from scan codes to bind ids */
 			std::vector<BindId> scanCodeToBindID;
+
+			// TODO: Doc
+			std::vector<BindId> mouseButtonToBindId;
 
 			/** The current state of binds */
 			std::vector<uint8_t> currentState;

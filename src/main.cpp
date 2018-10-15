@@ -333,11 +333,12 @@ void run() {
 	}
 
 	// Binds
-	engine.inputManager.bind(17, "MoveUp");
-	engine.inputManager.bind(31, "MoveDown");
-	engine.inputManager.bind(30, "MoveLeft");
-	engine.inputManager.bind(32, "MoveRight");
-	engine.inputManager.bind(57, "Spell_1");
+	engine.inputManager.bindkey(17, "MoveUp");
+	engine.inputManager.bindkey(31, "MoveDown");
+	engine.inputManager.bindkey(30, "MoveLeft");
+	engine.inputManager.bindkey(32, "MoveRight");
+	engine.inputManager.bindkey(57, "Spell_1");
+	engine.inputManager.bindMouseButton(0, "Spell_1");
 
 	// Callbacks
 	glfwSetWindowUserPointer(window, &engine);
@@ -357,6 +358,7 @@ void run() {
 	});
 
 	glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int mods){
+		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.mouseCallback(button, action);
 		ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 	});
 

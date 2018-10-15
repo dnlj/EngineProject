@@ -56,7 +56,7 @@ namespace Engine {
 		return previousState[bid] && !currentState[bid];
 	}
 
-	void InputManager::bind(ScanCode code, const std::string& name) {
+	void InputManager::bindkey(ScanCode code, const std::string& name) {
 		const bool inserted = bindToBindID.find(name) == bindToBindID.end();
 		auto& bid = bindToBindID[name];
 
@@ -73,6 +73,25 @@ namespace Engine {
 		}
 
 		scanCodeToBindID[code] = bid;
+	}
+
+	void InputManager::bindMouseButton(MouseButton button, const std::string& name) {
+		const bool inserted = bindToBindID.find(name) == bindToBindID.end();
+		auto& bid = bindToBindID[name];
+
+		if (inserted) {
+			bid = nextBindID;
+			++nextBindID;
+
+			currentState.resize(bid + 1);
+			previousState.resize(bid + 1);
+		}
+
+		if (mouseButtonToBindId.size() <= button) {
+			mouseButtonToBindId.resize(button + 1, -1);
+		}
+
+		mouseButtonToBindId[button] = bid;
 	}
 
 	glm::vec2 InputManager::getMousePosition() const {
@@ -104,5 +123,18 @@ namespace Engine {
 	void InputManager::mouseCallback(double x, double y) {
 		mousePosition.x = static_cast<float>(x);
 		mousePosition.y = static_cast<float>(y);
+	}
+
+	void InputManager::mouseCallback(MouseButton button, int action) {
+		if (button < mouseButtonToBindId.size()) {
+			auto bid = mouseButtonToBindId[button];
+
+			if (bid >= 0) {
+				currentState[bid] = (action == GLFW_PRESS);
+
+				bindEventQueue.events[bindEventQueue.size] = {bid, getBindStateFromInt(action)};
+				++bindEventQueue.size;
+			}
+		}
 	}
 }
