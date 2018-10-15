@@ -13,10 +13,10 @@ namespace Game {
 		public:
 			CharacterSpellSystem(World& world);
 			void setup(Engine::EngineInstance& engine);
-			virtual void run(float dt) override;
+			void run(float dt) override;
 
 		private:
-			virtual void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) override;
+			void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) override;
 
 			void fireMissile(Engine::ECS::Entity ent, Engine::InputManager& inputManager);
 			void detonateMissle(Engine::ECS::Entity ent);
