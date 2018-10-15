@@ -155,5 +155,8 @@ namespace Engine {
 
 			/** The queue for bind events since last update */
 			BindEventQueue bindEventQueue;
+
+			// TODO: Doc
+			void insertBindEvent(BindEvent event);
 	};
 }

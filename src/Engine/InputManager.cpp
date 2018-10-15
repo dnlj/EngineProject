@@ -110,9 +110,7 @@ namespace Engine {
 
 			if (bid >= 0) {
 				currentState[bid] = (action == GLFW_PRESS);
-
-				bindEventQueue.events[bindEventQueue.size] = {bid, getBindStateFromInt(action)};
-				++bindEventQueue.size;
+				insertBindEvent({bid, getBindStateFromInt(action)});
 			}
 		}
 	}
@@ -128,10 +126,13 @@ namespace Engine {
 
 			if (bid >= 0) {
 				currentState[bid] = (action == GLFW_PRESS);
-
-				bindEventQueue.events[bindEventQueue.size] = {bid, getBindStateFromInt(action)};
-				++bindEventQueue.size;
+				insertBindEvent({bid, getBindStateFromInt(action)});
 			}
 		}
+	}
+
+	void InputManager::insertBindEvent(BindEvent event) {
+		bindEventQueue.events[bindEventQueue.size] = std::move(event);
+		++bindEventQueue.size;
 	}
 }
