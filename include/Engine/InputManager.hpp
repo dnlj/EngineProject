@@ -84,15 +84,17 @@ namespace Engine {
 			bool wasReleased(BindId bid) const;
 
 			/**
-			 * Maps the bind @p name with the scancode @p code.
-			 * @param[in] code The scancode.
+			 * Binds a key to a bind name.
+			 * @param[in] code The scan code of the key.
 			 * @param[in] name The name of the bind.
 			 */
 			void bindkey(ScanCode code, const std::string& name);
 
-			// TODO: Add BindID version of bind
-
-			// TODO: Doc
+			/**
+			 * Binds a mouse button to a bind name.
+			 * @param[in] button The mouse button to bind.
+			 * @param[in] name The name of the bind
+			 */
 			void bindMouseButton(MouseButton button, const std::string& name);
 
 			/**
@@ -111,24 +113,35 @@ namespace Engine {
 			 */
 			const BindEventQueue& getBindEventQueue() const;
 
-			// TODO: Doc
+			/**
+			 * Get the id of a bind name.
+			 * @param[in] name The name of the bind.
+			 * @return The id of the bind.
+			 */
 			BindId getBindId(const std::string& name);
 
 			/**
 			 * The callback for updating keys.
+			 * See GLFW documentation for more information.
 			 * @param[in] code The scancode.
-			 * @param[in] action The action. See GLFW documentation for more information.
+			 * @param[in] action The action.
 			 */
 			void keyCallback(ScanCode code, int action);
 
 			/**
-			 * The callback for updating the mouse position
+			 * The callback for updating the mouse position.
+			 * See GLFW documentation for more information.
 			 * @param[in] x The x position of the mouse.
 			 * @param[in] y The y position of the mouse.
 			 */
 			void mouseCallback(double x, double y);
 
-			// TODO: Doc
+			/**
+			 * The callback for updating the mouse buttons.
+			 * See GLFW documentation for more information.
+			 * @param[in] button The mouse button.
+			 * @param[in] action The action.
+			 */
 			void mouseCallback(MouseButton button, int action);
 
 		private:
