@@ -190,7 +190,7 @@ namespace {
 			constexpr static int height = width;
 			constexpr static auto halfSize = 1.0f/8.0f;
 
-			decltype(Tile::id) data[width][height] = {
+			int data[width][height] = {
 				{3, 0, 0, 0, 0, 0, 0, 3},
 				{0, 2, 0, 0, 0, 0, 2, 0},
 				{0, 0, 2, 2, 2, 2, 0, 0},
@@ -203,6 +203,26 @@ namespace {
 
 			b2Body* body = nullptr; // TODO: Cleanup
 			Engine::ECS::Entity ent;
+
+			void update(Engine::EngineInstance& engine, Game::World& world) {
+				auto& im = engine.inputManager;
+				const auto& cam = engine.camera;
+
+				if (im.wasPressed("edit_place")) {
+					auto mpos = cam.screenToWorld(im.getMousePosition());
+					auto pos = body->GetPosition();
+
+					auto offset = mpos - glm::vec2{pos.x, pos.y};
+					offset /= (halfSize * 2);
+					offset.y *= -1; // TODO: Make the chunk position the bottom left instead of top left so we dont need to do this.
+
+					if (offset.x < 0 || offset.x > width) { return; }
+					if (offset.y < 0 || offset.y > height) { return; }
+
+					data[static_cast<int>(offset.x)][static_cast<int>(offset.y)] = 1;
+					generate(world.getSystem<Game::PhysicsSystem>());
+				}
+			}
 
 			void generate(Game::PhysicsSystem& physSys) {
 				// TODO: Look into edge and chain shapes
@@ -228,13 +248,15 @@ namespace {
 						shape.SetAsBox(
 							halfSize,
 							halfSize,
-							b2Vec2(x * halfSize * 2.0f, -y * halfSize * 2.0f),
+							b2Vec2(x * halfSize * 2.0f + halfSize, -y * halfSize * 2.0f - halfSize),
 							0.0f
 						);
 
 						body->CreateFixture(&fixtureDef);
 					}
 				}
+
+				body->SetTransform(b2Vec2{2, 2}, body->GetAngle());
 			}
 	};
 
@@ -338,7 +360,7 @@ void run() {
 	engine.inputManager.bindkey(30, "MoveLeft");
 	engine.inputManager.bindkey(32, "MoveRight");
 	engine.inputManager.bindkey(57, "Spell_1");
-	engine.inputManager.bindMouseButton(0, "Spell_1");
+	engine.inputManager.bindMouseButton(0, "edit_place");
 
 	// Callbacks
 	glfwSetWindowUserPointer(window, &engine);
@@ -398,6 +420,9 @@ void run() {
 		// Rendering
 		glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		// Editor
+		map.update(engine, world);
 
 		// ECS
 		world.run(dt);
