@@ -186,7 +186,7 @@ namespace {
 			constexpr static Tile DIRT{1};
 
 		public:
-			constexpr static int width = 8;
+			constexpr static int width = 16;
 			constexpr static int height = width;
 			constexpr static auto halfSize = 1.0f/8.0f;
 
@@ -208,7 +208,7 @@ namespace {
 				auto& im = engine.inputManager;
 				const auto& cam = engine.camera;
 
-				if (im.wasPressed("edit_place")) {
+				if (im.isPressed("edit_place")) {
 					auto mpos = cam.screenToWorld(im.getMousePosition());
 					auto pos = body->GetPosition();
 
@@ -219,7 +219,9 @@ namespace {
 					if (offset.x < 0 || offset.x > width) { return; }
 					if (offset.y < 0 || offset.y > height) { return; }
 
-					data[static_cast<int>(offset.x)][static_cast<int>(offset.y)] = 1;
+					auto& tile = data[static_cast<int>(offset.x)][static_cast<int>(offset.y)];
+					if (tile != 0) { return; }
+					tile = 1;
 					generate(world.getSystem<Game::PhysicsSystem>());
 				}
 			}
