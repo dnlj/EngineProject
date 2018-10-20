@@ -243,22 +243,35 @@ namespace {
 
 				body = physSys.createBody(ent, bodyDef);
 
+				constexpr float size = halfSize * 2.0f;
+
 				for (int x = 0; x < width; ++x) {
-					for (int y = 0; y < height; ++y) {
-						if (data[x][y] == AIR.id) { continue; }
+					int h = 0;
 
-						shape.SetAsBox(
-							halfSize,
-							halfSize,
-							b2Vec2(x * halfSize * 2.0f + halfSize, -y * halfSize * 2.0f - halfSize),
-							0.0f
-						);
+					for (int y = 0; y <= height; ++y) {
+						if (y == height || data[x][y] == AIR.id) {
+							// No tiles to build
+							if (h == 0) { continue; }
 
-						body->CreateFixture(&fixtureDef);
+							shape.SetAsBox(
+								halfSize,
+								halfSize * h,
+								b2Vec2(
+									x * size + halfSize,
+									(-y + h/2.0f) * size
+								),
+								0.0f
+							);
+
+							body->CreateFixture(&fixtureDef);
+							h = 0;
+						} else  {
+							++h;
+						}
 					}
 				}
 
-				body->SetTransform(b2Vec2{2, 2}, body->GetAngle());
+				body->SetTransform(b2Vec2{1, 1}, body->GetAngle());
 			}
 	};
 
