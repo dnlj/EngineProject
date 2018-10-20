@@ -270,7 +270,7 @@ namespace {
 					int w = 0;
 					int h = 0;
 					bool expandWidth = true;
-					bool expandHeight = true; // TODO: Temp while dev
+					bool expandHeight = true;
 
 					// TODO: what if we only allow generation of squares?
 					while (expandWidth || expandHeight) {
@@ -289,12 +289,16 @@ namespace {
 								for (int y = iy; y < limit; ++y) {
 									used[ix + w][y] = true;
 								}
+
 								++w;
+
+								if (ix + w == width) {
+									expandWidth = false;
+								}
 							}
 						}
 
 						if (expandHeight) {
-							// TODO: any way to remove duplicate loops?
 							const auto limit = std::min(ix + w, width);
 							for (int x = ix; x < limit; ++x) {
 								if (used[x][iy + h] || data[x][iy + h] == AIR.id) {
@@ -308,7 +312,12 @@ namespace {
 								for (int x = ix; x < limit; ++x) {
 									used[x][iy + h] = true;
 								}
+
 								++h;
+
+								if (iy + h == height) {
+									expandHeight = false;
+								}
 							}
 						}
 					}
