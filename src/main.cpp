@@ -208,6 +208,8 @@ namespace {
 				auto& im = engine.inputManager;
 				const auto& cam = engine.camera;
 
+				// TODO: Reduce duplicate code
+
 				if (im.isPressed("edit_place")) {
 					auto mpos = cam.screenToWorld(im.getMousePosition());
 					auto pos = body->GetPosition();
@@ -222,6 +224,23 @@ namespace {
 					auto& tile = data[static_cast<int>(offset.x)][static_cast<int>(offset.y)];
 					if (tile != 0) { return; }
 					tile = 1;
+					generate(world.getSystem<Game::PhysicsSystem>());
+				}
+
+				if (im.isPressed("edit_remove")) {
+					auto mpos = cam.screenToWorld(im.getMousePosition());
+					auto pos = body->GetPosition();
+
+					auto offset = mpos - glm::vec2{pos.x, pos.y};
+					offset /= (halfSize * 2);
+					offset.y *= -1; // TODO: Make the chunk position the bottom left instead of top left so we dont need to do this.
+
+					if (offset.x < 0 || offset.x > width) { return; }
+					if (offset.y < 0 || offset.y > height) { return; }
+
+					auto& tile = data[static_cast<int>(offset.x)][static_cast<int>(offset.y)];
+					if (tile == 0) { return; }
+					tile = 0;
 					generate(world.getSystem<Game::PhysicsSystem>());
 				}
 			}
@@ -244,30 +263,72 @@ namespace {
 				body = physSys.createBody(ent, bodyDef);
 
 				constexpr float size = halfSize * 2.0f;
+				bool used[width][height]{};
+
+
+				auto expand = [&](const int ix, const int iy) {
+					int w = 0;
+					int h = 0;
+					bool expandWidth = true;
+					bool expandHeight = true; // TODO: Temp while dev
+
+					// TODO: what if we only allow generation of squares?
+					while (expandWidth || expandHeight) {
+						if (expandWidth) {
+							// TODO: any way to remove duplicate loops?
+							const auto limit = std::min(iy + h, height);
+							for (int y = iy; y < limit; ++y) {
+								if (used[ix + w][y] || data[ix + w][y] == AIR.id) {
+									if (w == 0) { return; }
+									expandWidth = false;
+									break;
+								}
+							}
+
+							if (expandWidth) {
+								for (int y = iy; y < limit; ++y) {
+									used[ix + w][y] = true;
+								}
+								++w;
+							}
+						}
+
+						if (expandHeight) {
+							// TODO: any way to remove duplicate loops?
+							const auto limit = std::min(ix + w, width);
+							for (int x = ix; x < limit; ++x) {
+								if (used[x][iy + h] || data[x][iy + h] == AIR.id) {
+									if (h == 0) { return; }
+									expandHeight = false;
+									break;
+								}
+							}
+
+							if (expandHeight) {
+								for (int x = ix; x < limit; ++x) {
+									used[x][iy + h] = true;
+								}
+								++h;
+							}
+						}
+					}
+
+					shape.SetAsBox(
+						halfSize * w,
+						halfSize * h,
+						b2Vec2(
+							(+ix + w/2.0f) * size,
+							(-iy - h/2.0f) * size
+						),
+						0.0f
+					);
+
+					body->CreateFixture(&fixtureDef);
+				};
 
 				for (int x = 0; x < width; ++x) {
-					int h = 0;
-
-					for (int y = 0; y <= height; ++y) {
-						if (y == height || data[x][y] == AIR.id) {
-							// No tiles to build
-							if (h == 0) { continue; }
-
-							shape.SetAsBox(
-								halfSize,
-								halfSize * h,
-								b2Vec2(
-									x * size + halfSize,
-									(-y + h/2.0f) * size
-								),
-								0.0f
-							);
-
-							body->CreateFixture(&fixtureDef);
-							h = 0;
-						} else  {
-							++h;
-						}
+					for (int y = 0; y < height; ++y) {
+						expand(x, y);
 					}
 				}
 
@@ -376,6 +437,7 @@ void run() {
 	engine.inputManager.bindkey(32, "MoveRight");
 	engine.inputManager.bindkey(57, "Spell_1");
 	engine.inputManager.bindMouseButton(0, "edit_place");
+	engine.inputManager.bindMouseButton(1, "edit_remove");
 
 	// Callbacks
 	glfwSetWindowUserPointer(window, &engine);
