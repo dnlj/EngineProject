@@ -81,3 +81,5 @@ namespace Engine::ECS {
 			const EntityManager& entityManager;
 	};
 }
+
+#include <Engine/ECS/EntityFilter.ipp>
