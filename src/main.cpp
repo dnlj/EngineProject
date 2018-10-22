@@ -188,8 +188,9 @@ namespace {
 		public:
 			constexpr static int width = 16;
 			constexpr static int height = width;
-			constexpr static auto halfSize = 1.0f/8.0f;
+			constexpr static auto halfSize = 1.0f/8.0f; // TODO: change to tileSize. halfSize is only used once
 
+		private:
 			int data[width][height] = {
 				{3, 0, 0, 0, 0, 0, 0, 3},
 				{0, 2, 0, 0, 0, 0, 2, 0},
@@ -203,6 +204,13 @@ namespace {
 
 			b2Body* body = nullptr; // TODO: Cleanup
 			Engine::ECS::Entity ent;
+
+		public:
+			void setup(Game::World& world, glm::vec2 pos) {
+				ent = world.createEntity(true);
+				generate(world.getSystem<Game::PhysicsSystem>());
+				body->SetTransform(b2Vec2{pos.x, pos.y}, 0.0f);
+			}
 
 			void update(Engine::EngineInstance& engine, Game::World& world) {
 				auto& im = engine.inputManager;
@@ -218,8 +226,11 @@ namespace {
 					offset /= (halfSize * 2);
 					offset.y *= -1; // TODO: Make the chunk position the bottom left instead of top left so we dont need to do this.
 
+					// TODO: this only works for pos = 0,0
 					if (offset.x < 0 || offset.x > width) { return; }
 					if (offset.y < 0 || offset.y > height) { return; }
+
+					std::cout << "Chunk - x: " << offset.x << " y: " << offset.y << "\n";
 
 					auto& tile = data[static_cast<int>(offset.x)][static_cast<int>(offset.y)];
 					if (tile != 0) { return; }
@@ -247,8 +258,12 @@ namespace {
 
 			void generate(Game::PhysicsSystem& physSys) {
 				// TODO: Look into edge and chain shapes
+				b2Vec2 oldPos = b2Vec2_zero;
 
-				if (body != nullptr) { physSys.destroyBody(body); }
+				if (body != nullptr) {
+					oldPos = body->GetPosition();
+					physSys.destroyBody(body);
+				}
 
 				b2BodyDef bodyDef;
 				bodyDef.type = b2_staticBody;
@@ -339,7 +354,58 @@ namespace {
 					}
 				}
 
-				body->SetTransform(b2Vec2{1, 1}, body->GetAngle());
+				body->SetTransform(oldPos, 0.0f);
+			}
+	};
+
+	class Map {
+		private:
+			constexpr static int chunkCountX = 2;
+			constexpr static int chunkCountY = chunkCountX;
+
+			Chunk chunks[chunkCountX][chunkCountY]{};
+
+		public:
+			void setup(Game::World& world) {
+				for (int y = 0; y < chunkCountY; ++y) {
+					for (int x = 0; x < chunkCountX; ++x) {
+						chunks[x][y].setup(world, glm::vec2{
+							x * Chunk::width * Chunk::halfSize * 2.0f,
+							y * Chunk::height * Chunk::halfSize * 2.0f
+						});
+
+						std::cout << " WOOOP\n";
+					}
+				}
+			}
+
+			void update(Engine::EngineInstance& engine, Game::World& world) {
+				auto& im = engine.inputManager;
+				const auto& cam = engine.camera;
+
+				// TODO: Reduce duplicate code
+
+				if (im.isPressed("edit_place")) {
+					// TODO: Rework this logic. its trash.
+					auto mpos = cam.screenToWorld(im.getMousePosition());
+					constexpr auto pos = glm::vec2{0, 0};
+					auto bounds = pos + glm::vec2{chunkCountX * Chunk::width, chunkCountY * Chunk::height};
+
+					auto offset = mpos - pos;
+					offset /= (Chunk::halfSize * 2);
+					offset.y *= -1;
+
+					// TODO: this only works if pos = 0,0
+					if (offset.x < 0 || offset.x >= bounds.x) { return; }
+					if (offset.y < 0 || offset.y >= bounds.y) { return; }
+
+					const auto ix = static_cast<int>(offset.x / Chunk::width);
+					const auto iy = static_cast<int>(offset.y / Chunk::height);
+
+					std::cout << "Map - x: " << ix << " y: " << iy << "\n";
+
+					chunks[ix][iy].update(engine, world);
+				}
 			}
 	};
 
@@ -389,7 +455,7 @@ void run() {
 	// Engine stuff
 	Engine::EngineInstance engine;
 	Game::World world;
-	Chunk map;
+	Map map;
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
@@ -398,8 +464,7 @@ void run() {
 		world.getSystem<Game::CharacterSpellSystem>().setup(engine);
 
 		// Map
-		map.ent = world.createEntity();
-		map.generate(world.getSystem<Game::PhysicsSystem>());
+		map.setup(world);
 		
 		// Player
 		auto player = world.createEntity();
