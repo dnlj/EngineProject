@@ -3,6 +3,7 @@
 
 // Engine
 #include <Engine/Utility/Utility.hpp>
+#include <Engine/ECS/EntityFilter.hpp>
 
 // Game
 #include <Game/SpriteSystem.hpp>
@@ -148,7 +149,7 @@ namespace Game {
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
 
 		// Sort by texture
-		std::vector<Engine::ECS::Entity> entitiesByTexture(filter.begin(), filter.end());
+		entitiesByTexture.assign(filter.begin(), filter.end());
 
 		std::sort(entitiesByTexture.begin(), entitiesByTexture.end(), [this](Engine::ECS::Entity a, Engine::ECS::Entity b) {
 			return world.getComponent<Game::SpriteComponent>(a).texture < world.getComponent<Game::SpriteComponent>(b).texture;

@@ -42,8 +42,8 @@ namespace Game {
 
 			constexpr static std::size_t MAX_SPRITES = 1024;
 			std::vector<InstanceData> instanceData;
-
 			std::vector<SpriteGroup> spriteGroups;
+			std::vector<Engine::ECS::Entity> entitiesByTexture;
 
 			GLuint shader = 0;
 			GLuint vao = 0;
