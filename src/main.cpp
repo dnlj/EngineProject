@@ -360,7 +360,7 @@ namespace {
 
 	class Map {
 		private:
-			constexpr static int chunkCountX = 2;
+			constexpr static int chunkCountX = 4;
 			constexpr static int chunkCountY = chunkCountX;
 
 			Chunk chunks[chunkCountX][chunkCountY]{};
@@ -371,7 +371,7 @@ namespace {
 					for (int x = 0; x < chunkCountX; ++x) {
 						chunks[x][y].setup(world, glm::vec2{
 							x * Chunk::width * Chunk::halfSize * 2.0f,
-							y * Chunk::height * Chunk::halfSize * 2.0f
+							-y * Chunk::height * Chunk::halfSize * 2.0f
 						});
 
 						std::cout << " WOOOP\n";
