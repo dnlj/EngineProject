@@ -224,7 +224,6 @@ namespace {
 
 					auto offset = mpos - glm::vec2{pos.x, pos.y};
 					offset /= (halfSize * 2);
-					offset.y *= -1; // TODO: Make the chunk position the bottom left instead of top left so we dont need to do this.
 
 					// TODO: this only works for pos = 0,0
 					if (offset.x < 0 || offset.x > width) { return; }
@@ -244,7 +243,6 @@ namespace {
 
 					auto offset = mpos - glm::vec2{pos.x, pos.y};
 					offset /= (halfSize * 2);
-					offset.y *= -1; // TODO: Make the chunk position the bottom left instead of top left so we dont need to do this.
 
 					if (offset.x < 0 || offset.x > width) { return; }
 					if (offset.y < 0 || offset.y > height) { return; }
@@ -339,8 +337,8 @@ namespace {
 						halfSize * w,
 						halfSize * h,
 						b2Vec2(
-							(+ix + w/2.0f) * size,
-							(-iy - h/2.0f) * size
+							(ix + w/2.0f) * size,
+							(iy + h/2.0f) * size
 						),
 						0.0f
 					);
@@ -371,10 +369,8 @@ namespace {
 					for (int x = 0; x < chunkCountX; ++x) {
 						chunks[x][y].setup(world, glm::vec2{
 							x * Chunk::width * Chunk::halfSize * 2.0f,
-							-y * Chunk::height * Chunk::halfSize * 2.0f
+							y * Chunk::height * Chunk::halfSize * 2.0f
 						});
-
-						std::cout << " WOOOP\n";
 					}
 				}
 			}
@@ -393,7 +389,6 @@ namespace {
 
 					auto offset = mpos - pos;
 					offset /= (Chunk::halfSize * 2);
-					offset.y *= -1;
 
 					// TODO: this only works if pos = 0,0
 					if (offset.x < 0 || offset.x >= bounds.x) { return; }
@@ -404,6 +399,7 @@ namespace {
 
 					std::cout << "Map - x: " << ix << " y: " << iy << "\n";
 
+					// TODO: passthorugh offset
 					chunks[ix][iy].update(engine, world);
 				}
 			}
