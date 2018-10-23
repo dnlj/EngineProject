@@ -42,6 +42,7 @@
 #include <Game/SpriteComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
 #include <Game/imgui_impl_glfw_gl3.hpp>
+#include <Game/MapTile.hpp>
 
 
 namespace {
@@ -175,15 +176,10 @@ namespace {
 }
 
 namespace {
-	class Tile {
-		public:
-			const int id;
-	};
-
 	class Chunk {
 		public:
-			constexpr static Tile AIR{0};
-			constexpr static Tile DIRT{1};
+			constexpr static Game::MapTile AIR{0};
+			constexpr static Game::MapTile DIRT{1};
 
 		public:
 			constexpr static int width = 16;
