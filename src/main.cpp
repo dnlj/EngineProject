@@ -212,46 +212,14 @@ namespace {
 				body->SetTransform(b2Vec2{pos.x, pos.y}, 0.0f);
 			}
 
-			void update(Engine::EngineInstance& engine, Game::World& world) {
-				auto& im = engine.inputManager;
-				const auto& cam = engine.camera;
+			void addTile(int x, int y, Game::PhysicsSystem& physSys) {
+				data[x][y] = DIRT.id;
+				generate(physSys);
+			}
 
-				// TODO: Reduce duplicate code
-
-				if (im.isPressed("edit_place")) {
-					auto mpos = cam.screenToWorld(im.getMousePosition());
-					auto pos = body->GetPosition();
-
-					auto offset = mpos - glm::vec2{pos.x, pos.y};
-					offset /= tileSize;
-
-					// TODO: this only works for pos = 0,0
-					if (offset.x < 0 || offset.x > width) { return; }
-					if (offset.y < 0 || offset.y > height) { return; }
-
-					std::cout << "Chunk - x: " << offset.x << " y: " << offset.y << "\n";
-
-					auto& tile = data[static_cast<int>(offset.x)][static_cast<int>(offset.y)];
-					if (tile != 0) { return; }
-					tile = 1;
-					generate(world.getSystem<Game::PhysicsSystem>());
-				}
-
-				if (im.isPressed("edit_remove")) {
-					auto mpos = cam.screenToWorld(im.getMousePosition());
-					auto pos = body->GetPosition();
-
-					auto offset = mpos - glm::vec2{pos.x, pos.y};
-					offset /= tileSize;
-
-					if (offset.x < 0 || offset.x > width) { return; }
-					if (offset.y < 0 || offset.y > height) { return; }
-
-					auto& tile = data[static_cast<int>(offset.x)][static_cast<int>(offset.y)];
-					if (tile == 0) { return; }
-					tile = 0;
-					generate(world.getSystem<Game::PhysicsSystem>());
-				}
+			void removeTile(int x, int y, Game::PhysicsSystem& physSys) {
+				data[x][y] = AIR.id;
+				generate(physSys);
 			}
 
 			void generate(Game::PhysicsSystem& physSys) {
@@ -276,7 +244,6 @@ namespace {
 				body = physSys.createBody(ent, bodyDef);
 
 				bool used[width][height]{};
-
 
 				auto expand = [&](const int ix, const int iy) {
 					int w = 0;
@@ -396,10 +363,11 @@ namespace {
 					const auto ix = static_cast<int>(offset.x / Chunk::width);
 					const auto iy = static_cast<int>(offset.y / Chunk::height);
 
-					std::cout << "Map - x: " << ix << " y: " << iy << "\n";
-
-					// TODO: passthorugh offset
-					chunks[ix][iy].update(engine, world);
+					chunks[ix][iy].addTile(
+						static_cast<int>(offset.x - ix * Chunk::width),
+						static_cast<int>(offset.y - iy * Chunk::height),
+						world.getSystem<Game::PhysicsSystem>()
+					);
 				}
 			}
 	};
