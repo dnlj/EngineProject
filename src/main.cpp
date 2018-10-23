@@ -345,10 +345,7 @@ namespace {
 				auto& im = engine.inputManager;
 				const auto& cam = engine.camera;
 
-				// TODO: Reduce duplicate code
-
-				if (im.isPressed("edit_place")) {
-					// TODO: Rework this logic. its trash.
+				const auto applyEdit = [&](auto func){
 					auto mpos = cam.screenToWorld(im.getMousePosition());
 					constexpr auto pos = glm::vec2{0, 0};
 					auto bounds = pos + glm::vec2{chunkCountX * Chunk::width, chunkCountY * Chunk::height};
@@ -363,13 +360,21 @@ namespace {
 					const auto ix = static_cast<int>(offset.x / Chunk::width);
 					const auto iy = static_cast<int>(offset.y / Chunk::height);
 
-					chunks[ix][iy].addTile(
+					(chunks[ix][iy].*func)(
 						static_cast<int>(offset.x - ix * Chunk::width),
 						static_cast<int>(offset.y - iy * Chunk::height),
 						world.getSystem<Game::PhysicsSystem>()
 					);
+				};
+
+				if (im.isPressed("edit_place")) {
+					applyEdit(&Chunk::addTile);
+				} else if (im.isPressed("edit_remove")) {
+					applyEdit(&Chunk::removeTile);
 				}
 			}
+
+		private:
 	};
 
 	void editorUI() {
