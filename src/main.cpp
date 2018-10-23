@@ -188,7 +188,7 @@ namespace {
 		public:
 			constexpr static int width = 16;
 			constexpr static int height = width;
-			constexpr static auto halfSize = 1.0f/8.0f; // TODO: change to tileSize. halfSize is only used once
+			constexpr static auto tileSize = 1.0f/4.0f;
 
 		private:
 			int data[width][height] = {
@@ -223,7 +223,7 @@ namespace {
 					auto pos = body->GetPosition();
 
 					auto offset = mpos - glm::vec2{pos.x, pos.y};
-					offset /= (halfSize * 2);
+					offset /= tileSize;
 
 					// TODO: this only works for pos = 0,0
 					if (offset.x < 0 || offset.x > width) { return; }
@@ -242,7 +242,7 @@ namespace {
 					auto pos = body->GetPosition();
 
 					auto offset = mpos - glm::vec2{pos.x, pos.y};
-					offset /= (halfSize * 2);
+					offset /= tileSize;
 
 					if (offset.x < 0 || offset.x > width) { return; }
 					if (offset.y < 0 || offset.y > height) { return; }
@@ -275,7 +275,6 @@ namespace {
 
 				body = physSys.createBody(ent, bodyDef);
 
-				constexpr float size = halfSize * 2.0f;
 				bool used[width][height]{};
 
 
@@ -334,11 +333,11 @@ namespace {
 					}
 
 					shape.SetAsBox(
-						halfSize * w,
-						halfSize * h,
+						tileSize * 0.5f * w,
+						tileSize * 0.5f * h,
 						b2Vec2(
-							(ix + w/2.0f) * size,
-							(iy + h/2.0f) * size
+							(ix + w/2.0f) * tileSize,
+							(iy + h/2.0f) * tileSize
 						),
 						0.0f
 					);
@@ -368,8 +367,8 @@ namespace {
 				for (int y = 0; y < chunkCountY; ++y) {
 					for (int x = 0; x < chunkCountX; ++x) {
 						chunks[x][y].setup(world, glm::vec2{
-							x * Chunk::width * Chunk::halfSize * 2.0f,
-							y * Chunk::height * Chunk::halfSize * 2.0f
+							x * Chunk::width * Chunk::tileSize,
+							y * Chunk::height * Chunk::tileSize
 						});
 					}
 				}
@@ -388,7 +387,7 @@ namespace {
 					auto bounds = pos + glm::vec2{chunkCountX * Chunk::width, chunkCountY * Chunk::height};
 
 					auto offset = mpos - pos;
-					offset /= (Chunk::halfSize * 2);
+					offset /= Chunk::tileSize;
 
 					// TODO: this only works if pos = 0,0
 					if (offset.x < 0 || offset.x >= bounds.x) { return; }
