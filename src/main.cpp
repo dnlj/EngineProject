@@ -42,7 +42,7 @@
 #include <Game/SpriteComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
 #include <Game/imgui_impl_glfw_gl3.hpp>
-#include <Game/MapChunk.hpp>
+#include <Game/Map.hpp>
 
 
 namespace {
@@ -173,63 +173,6 @@ namespace {
 		auto& camera = static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->camera;
 		camera.setAsOrtho(width, height, 1.0f / 250.0f);
 	}
-}
-
-namespace Game {
-	class Map {
-		private:
-			constexpr static int chunkCountX = 4;
-			constexpr static int chunkCountY = chunkCountX;
-
-			MapChunk chunks[chunkCountX][chunkCountY]{};
-
-		public:
-			void setup(Game::World& world) {
-				for (int y = 0; y < chunkCountY; ++y) {
-					for (int x = 0; x < chunkCountX; ++x) {
-						chunks[x][y].setup(world, glm::vec2{
-							x * MapChunk::width * MapChunk::tileSize,
-							y * MapChunk::height * MapChunk::tileSize
-						});
-					}
-				}
-			}
-
-			void update(Engine::EngineInstance& engine, Game::World& world) {
-				auto& im = engine.inputManager;
-				const auto& cam = engine.camera;
-
-				const auto applyEdit = [&](auto func){
-					auto mpos = cam.screenToWorld(im.getMousePosition());
-					constexpr auto pos = glm::vec2{0, 0};
-					auto bounds = pos + glm::vec2{chunkCountX * MapChunk::width, chunkCountY * MapChunk::height};
-
-					auto offset = mpos - pos;
-					offset /= MapChunk::tileSize;
-
-					// TODO: this only works if pos = 0,0
-					if (offset.x < 0 || offset.x >= bounds.x) { return; }
-					if (offset.y < 0 || offset.y >= bounds.y) { return; }
-
-					const auto ix = static_cast<int>(offset.x / MapChunk::width);
-					const auto iy = static_cast<int>(offset.y / MapChunk::height);
-
-					(chunks[ix][iy].*func)(
-						static_cast<int>(offset.x - ix * MapChunk::width),
-						static_cast<int>(offset.y - iy * MapChunk::height),
-						world.getSystem<Game::PhysicsSystem>()
-					);
-				};
-
-				if (im.isPressed("edit_place")) {
-					applyEdit(&MapChunk::addTile);
-				} else if (im.isPressed("edit_remove")) {
-					applyEdit(&MapChunk::removeTile);
-				}
-			}
-
-		private:
-	};
 }
 
 namespace {
