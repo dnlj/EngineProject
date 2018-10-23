@@ -42,7 +42,7 @@
 #include <Game/SpriteComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
 #include <Game/imgui_impl_glfw_gl3.hpp>
-#include <Game/MapTile.hpp>
+#include <Game/MapChunk.hpp>
 
 
 namespace {
@@ -175,163 +175,21 @@ namespace {
 	}
 }
 
-namespace {
-	class Chunk {
-		public:
-			constexpr static Game::MapTile AIR{0};
-			constexpr static Game::MapTile DIRT{1};
-
-		public:
-			constexpr static int width = 16;
-			constexpr static int height = width;
-			constexpr static auto tileSize = 1.0f/4.0f;
-
-		private:
-			int data[width][height] = {
-				{3, 0, 0, 0, 0, 0, 0, 3},
-				{0, 2, 0, 0, 0, 0, 2, 0},
-				{0, 0, 2, 2, 2, 2, 0, 0},
-				{0, 0, 2, 1, 1, 2, 0, 0},
-				{0, 0, 2, 0, 1, 2, 0, 0},
-				{0, 0, 2, 2, 2, 2, 0, 0},
-				{0, 0, 0, 0, 0, 0, 2, 0},
-				{4, 0, 0, 0, 0, 0, 0, 3},
-			};
-
-			b2Body* body = nullptr; // TODO: Cleanup
-			Engine::ECS::Entity ent;
-
-		public:
-			void setup(Game::World& world, glm::vec2 pos) {
-				ent = world.createEntity(true);
-				generate(world.getSystem<Game::PhysicsSystem>());
-				body->SetTransform(b2Vec2{pos.x, pos.y}, 0.0f);
-			}
-
-			void addTile(int x, int y, Game::PhysicsSystem& physSys) {
-				data[x][y] = DIRT.id;
-				generate(physSys);
-			}
-
-			void removeTile(int x, int y, Game::PhysicsSystem& physSys) {
-				data[x][y] = AIR.id;
-				generate(physSys);
-			}
-
-			void generate(Game::PhysicsSystem& physSys) {
-				// TODO: Look into edge and chain shapes
-				b2Vec2 oldPos = b2Vec2_zero;
-
-				if (body != nullptr) {
-					oldPos = body->GetPosition();
-					physSys.destroyBody(body);
-				}
-
-				b2BodyDef bodyDef;
-				bodyDef.type = b2_staticBody;
-				bodyDef.awake = false;
-				bodyDef.fixedRotation = true;
-
-				b2PolygonShape shape;
-
-				b2FixtureDef fixtureDef;
-				fixtureDef.shape = &shape;
-
-				body = physSys.createBody(ent, bodyDef);
-
-				bool used[width][height]{};
-
-				auto expand = [&](const int ix, const int iy) {
-					int w = 0;
-					int h = 0;
-					bool expandWidth = true;
-					bool expandHeight = true;
-
-					while (expandWidth || expandHeight) {
-						if (expandWidth) {
-							const auto limit = std::min(iy + h, height);
-							for (int y = iy; y < limit; ++y) {
-								if (used[ix + w][y] || data[ix + w][y] == AIR.id) {
-									if (w == 0) { return; }
-									expandWidth = false;
-									break;
-								}
-							}
-
-							if (expandWidth) {
-								for (int y = iy; y < limit; ++y) {
-									used[ix + w][y] = true;
-								}
-
-								++w;
-
-								if (ix + w == width) {
-									expandWidth = false;
-								}
-							}
-						}
-
-						if (expandHeight) {
-							const auto limit = std::min(ix + w, width);
-							for (int x = ix; x < limit; ++x) {
-								if (used[x][iy + h] || data[x][iy + h] == AIR.id) {
-									if (h == 0) { return; }
-									expandHeight = false;
-									break;
-								}
-							}
-
-							if (expandHeight) {
-								for (int x = ix; x < limit; ++x) {
-									used[x][iy + h] = true;
-								}
-
-								++h;
-
-								if (iy + h == height) {
-									expandHeight = false;
-								}
-							}
-						}
-					}
-
-					shape.SetAsBox(
-						tileSize * 0.5f * w,
-						tileSize * 0.5f * h,
-						b2Vec2(
-							(ix + w/2.0f) * tileSize,
-							(iy + h/2.0f) * tileSize
-						),
-						0.0f
-					);
-
-					body->CreateFixture(&fixtureDef);
-				};
-
-				for (int x = 0; x < width; ++x) {
-					for (int y = 0; y < height; ++y) {
-						expand(x, y);
-					}
-				}
-
-				body->SetTransform(oldPos, 0.0f);
-			}
-	};
-
+namespace Game {
 	class Map {
 		private:
 			constexpr static int chunkCountX = 4;
 			constexpr static int chunkCountY = chunkCountX;
 
-			Chunk chunks[chunkCountX][chunkCountY]{};
+			MapChunk chunks[chunkCountX][chunkCountY]{};
 
 		public:
 			void setup(Game::World& world) {
 				for (int y = 0; y < chunkCountY; ++y) {
 					for (int x = 0; x < chunkCountX; ++x) {
 						chunks[x][y].setup(world, glm::vec2{
-							x * Chunk::width * Chunk::tileSize,
-							y * Chunk::height * Chunk::tileSize
+							x * MapChunk::width * MapChunk::tileSize,
+							y * MapChunk::height * MapChunk::tileSize
 						});
 					}
 				}
@@ -344,35 +202,37 @@ namespace {
 				const auto applyEdit = [&](auto func){
 					auto mpos = cam.screenToWorld(im.getMousePosition());
 					constexpr auto pos = glm::vec2{0, 0};
-					auto bounds = pos + glm::vec2{chunkCountX * Chunk::width, chunkCountY * Chunk::height};
+					auto bounds = pos + glm::vec2{chunkCountX * MapChunk::width, chunkCountY * MapChunk::height};
 
 					auto offset = mpos - pos;
-					offset /= Chunk::tileSize;
+					offset /= MapChunk::tileSize;
 
 					// TODO: this only works if pos = 0,0
 					if (offset.x < 0 || offset.x >= bounds.x) { return; }
 					if (offset.y < 0 || offset.y >= bounds.y) { return; }
 
-					const auto ix = static_cast<int>(offset.x / Chunk::width);
-					const auto iy = static_cast<int>(offset.y / Chunk::height);
+					const auto ix = static_cast<int>(offset.x / MapChunk::width);
+					const auto iy = static_cast<int>(offset.y / MapChunk::height);
 
 					(chunks[ix][iy].*func)(
-						static_cast<int>(offset.x - ix * Chunk::width),
-						static_cast<int>(offset.y - iy * Chunk::height),
+						static_cast<int>(offset.x - ix * MapChunk::width),
+						static_cast<int>(offset.y - iy * MapChunk::height),
 						world.getSystem<Game::PhysicsSystem>()
 					);
 				};
 
 				if (im.isPressed("edit_place")) {
-					applyEdit(&Chunk::addTile);
+					applyEdit(&MapChunk::addTile);
 				} else if (im.isPressed("edit_remove")) {
-					applyEdit(&Chunk::removeTile);
+					applyEdit(&MapChunk::removeTile);
 				}
 			}
 
 		private:
 	};
+}
 
+namespace {
 	void editorUI() {
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
@@ -419,7 +279,7 @@ void run() {
 	// Engine stuff
 	Engine::EngineInstance engine;
 	Game::World world;
-	Map map;
+	Game::Map map;
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
