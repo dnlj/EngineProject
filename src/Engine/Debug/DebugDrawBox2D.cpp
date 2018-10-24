@@ -96,7 +96,7 @@ namespace Engine::Debug {
 		glm::mat4 pv = projection * view;
 		glUniformMatrix4fv(2, 1, GL_FALSE, &pv[0][0]);
 
-		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexData.size()));
+		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexCount));
 	}
 
 	void DebugDrawBox2D::DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) {
