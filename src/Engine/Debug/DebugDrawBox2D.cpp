@@ -82,6 +82,7 @@ namespace Engine::Debug {
 
 	void DebugDrawBox2D::reset() {
 		vertexCount = 0;
+		vertexWarning = true;
 	}
 
 	void DebugDrawBox2D::draw(glm::mat4 projection, glm::mat4 view) {
@@ -184,7 +185,10 @@ namespace Engine::Debug {
 
 	void DebugDrawBox2D::addVertex(Vertex vertex) {
 		if (vertexCount == vertexData.size()) {
-			ENGINE_WARN("To many debug vertices. Increase MAX_VERTICES");
+			if (vertexWarning) {
+				ENGINE_WARN("To many debug vertices. Increase MAX_VERTICES");
+				vertexWarning = false;
+			}
 		} else {
 			// SRGB framebuffer correction
 			vertex.color.r = powf(vertex.color.r, 2.2f);

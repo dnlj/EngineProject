@@ -89,6 +89,9 @@ namespace Engine::Debug {
 			/** The OpenGL shader program */
 			GLuint shader;
 
+			/** Used to prevent vertex warning */
+			 bool vertexWarning = true;
+
 			/**
 			 * @brief Adds a vertex the vertex data to draw.
 			 * @param[in] vertex The vertex to add.
