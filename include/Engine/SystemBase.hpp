@@ -12,7 +12,6 @@
 namespace Engine {
 	/**
 	 * A base class from systems.
-	 * This class provides functions for handling the addition and remove of entities that are suitable for most systems.
 	 * @tparam World The world type.
 	 */
 	template<class World>
