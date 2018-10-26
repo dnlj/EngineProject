@@ -242,31 +242,6 @@ void run() {
 		world.addComponent<Game::InputComponent>(player).inputManager = &engine.inputManager;
 
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
-		
-		//// Other
-		//auto other = world.createEntity();
-		////world.addComponent<Game::RenderComponent>(other).setup(engine.textureManager);
-		//world.addComponent<Game::PhysicsComponent>(other).body = createPhysicsCircle(physSys.getPhysicsWorld());
-		//
-		//// Level
-		//auto level = world.createEntity();
-		//world.addComponent<Game::PhysicsComponent>(level).body = createPhysicsLevel(physSys.getPhysicsWorld());
-
-		//constexpr int half = 4;
-		//constexpr float scale = 0.26f;
-		//const b2Vec2 offset{scale * (half + 1), 0.0f};
-		//
-		//for (int x = -half; x < half; ++x) {
-		//	for (int y = -half; y < half; ++y) {
-		//		auto ent = world.createEntity();
-		//
-		//		world.addComponent<Game::SpriteComponent>(ent).texture
-		//			= engine.textureManager.getTexture("../assets/test.png");
-		//
-		//		world.addComponent<Game::PhysicsComponent>(ent).body
-		//			= createPhysicsSquare(ent, physSys, offset + b2Vec2(scale * x, scale * y));
-		//	}
-		//}
 	}
 
 	// Binds
