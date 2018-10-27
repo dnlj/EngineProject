@@ -22,15 +22,16 @@ namespace Game {
 				glm::mat4 mvp;
 			};
 
-			struct Sprite {
-				GLuint texture;
-				glm::vec3 position;
-			};
-
 			struct SpriteGroup {
 				GLuint texture = 0;
 				GLsizei count = 0;
 				GLuint base = 0;
+			};
+
+		public:
+			struct Sprite {
+				GLuint texture;
+				glm::vec3 position;
 			};
 
 		public:
@@ -39,6 +40,8 @@ namespace Game {
 
 			void setup(const Engine::Camera& camera);
 			void run(float dt);
+
+			void addSprite(Sprite sprite);
 
 		private:
 			Engine::ECS::EntityFilter& filter;

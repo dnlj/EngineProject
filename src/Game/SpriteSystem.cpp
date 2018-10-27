@@ -148,12 +148,6 @@ namespace Game {
 
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
 
-		// Cleanup
-		sprites.clear();
-		instanceData.clear();
-		spriteGroups.clear();
-		spriteGroups.emplace_back();
-
 		for (const auto& ent : filter) {
 			const auto pos = world.getComponent<Game::PhysicsComponent>(ent).body->GetPosition();
 			sprites.push_back({
@@ -167,6 +161,8 @@ namespace Game {
 		});
 
 		// Populate data
+		spriteGroups.emplace_back();
+
 		for (auto& sprite : sprites) {
 			// Set camera uniform
 			auto model = glm::translate(glm::mat4{1.0f}, sprite.position) * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/4});
@@ -206,5 +202,14 @@ namespace Game {
 			// Draw our sprites
 			glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0, group.count, group.base);
 		}
+
+		// Cleanup
+		sprites.clear();
+		instanceData.clear();
+		spriteGroups.clear();
+	}
+
+	void SpriteSystem::addSprite(Sprite sprite) {
+		sprites.push_back(std::move(sprite));
 	}
 }
