@@ -15,7 +15,7 @@ namespace Game {
 			Game::SpriteComponent,
 			Game::PhysicsComponent>()}{
 
-		priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem, Game::CameraTrackingSystem>();
+		priorityAfter = world.getBitsetForSystems<Game::MapRenderSystem>();
 	}
 
 	SpriteSystem::~SpriteSystem() {
