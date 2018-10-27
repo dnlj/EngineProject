@@ -36,5 +36,6 @@ namespace Game {
 			void addTile(int x, int y, PhysicsSystem& physSys);
 			void removeTile(int x, int y, PhysicsSystem& physSys);
 			void generate(PhysicsSystem& physSys);
+			void draw(SpriteSystem& spriteSys) const; // TODO: Temp
 	};
 }

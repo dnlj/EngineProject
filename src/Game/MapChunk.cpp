@@ -116,4 +116,19 @@ namespace Game {
 
 		body->SetTransform(oldPos, 0.0f);
 	}
+
+	void MapChunk::draw(SpriteSystem& spriteSys) const {
+		const auto pos = body->GetPosition();
+
+		for (int y = 0; y < height; ++y) {
+			for (int x = 0; x < width; ++x) {
+				if (data[x][y] != 0) {
+					spriteSys.addSprite({
+						2,
+						{pos.x + (x + 0.5f) * tileSize, pos.y + (y + 0.5f) * tileSize, 0.0f}
+					});
+				}
+			}
+		}
+	}
 }

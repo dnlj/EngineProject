@@ -44,5 +44,15 @@ namespace Game {
 		} else if (im.isPressed("edit_remove")) {
 			applyEdit(&MapChunk::removeTile);
 		}
+
+		{ // TODO: Temp. Should probably generate a mesh
+			auto& spriteSys = world.getSystem<Game::SpriteSystem>();
+
+			for (int y = 0; y < chunkCountY; ++y) {
+				for (int x = 0; x < chunkCountX; ++x) {
+					chunks[x][y].draw(spriteSys);
+				}
+			}
+		}
 	}
 }
