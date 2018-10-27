@@ -148,32 +148,35 @@ namespace Game {
 
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
 
-		// Sort by texture
-		entitiesByTexture.assign(filter.begin(), filter.end());
-
-		std::sort(entitiesByTexture.begin(), entitiesByTexture.end(), [this](Engine::ECS::Entity a, Engine::ECS::Entity b) {
-			return world.getComponent<Game::SpriteComponent>(a).texture < world.getComponent<Game::SpriteComponent>(b).texture;
-		});
-
-		// Populate data
+		// Cleanup
+		sprites.clear();
 		instanceData.clear();
 		spriteGroups.clear();
 		spriteGroups.emplace_back();
 
-		for (auto& ent : entitiesByTexture) {
-			const auto& spriteComp = world.getComponent<Game::SpriteComponent>(ent);
-			const auto& physComp = world.getComponent<Game::PhysicsComponent>(ent);
-			const auto& transform = physComp.body->GetTransform();
+		for (const auto& ent : filter) {
+			const auto pos = world.getComponent<Game::PhysicsComponent>(ent).body->GetPosition();
+			sprites.push_back({
+				world.getComponent<Game::SpriteComponent>(ent).texture,
+				{pos.x, pos.y, 0.0f}
+			});
+		}
 
+		std::sort(sprites.begin(), sprites.end(), [](const Sprite& a, const Sprite& b) {
+			return a.texture < b.texture;
+		});
+
+		// Populate data
+		for (auto& sprite : sprites) {
 			// Set camera uniform
-			auto model = glm::translate(glm::mat4{1.0f}, glm::vec3{transform.p.x, transform.p.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/4});
+			auto model = glm::translate(glm::mat4{1.0f}, sprite.position) * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/4});
 			glm::mat4 mvp = camera->getProjection() * camera->getView() * model;
 			
 			auto& group = spriteGroups.back();
-			if (group.texture == spriteComp.texture) {
+			if (group.texture == sprite.texture) {
 				++group.count;
 			} else {
-				spriteGroups.push_back({spriteComp.texture, 1, static_cast<GLuint>(instanceData.size())});
+				spriteGroups.push_back({sprite.texture, 1, static_cast<GLuint>(instanceData.size())});
 			}
 
 			instanceData.push_back(InstanceData{mvp});

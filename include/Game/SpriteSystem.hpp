@@ -22,6 +22,11 @@ namespace Game {
 				glm::mat4 mvp;
 			};
 
+			struct Sprite {
+				GLuint texture;
+				glm::vec3 position;
+			};
+
 			struct SpriteGroup {
 				GLuint texture = 0;
 				GLsizei count = 0;
@@ -43,7 +48,7 @@ namespace Game {
 			constexpr static std::size_t MAX_SPRITES = 1024;
 			std::vector<InstanceData> instanceData;
 			std::vector<SpriteGroup> spriteGroups;
-			std::vector<Engine::ECS::Entity> entitiesByTexture;
+			std::vector<Sprite> sprites;
 
 			GLuint shader = 0;
 			GLuint vao = 0;
