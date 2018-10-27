@@ -12,3 +12,4 @@ namespace Game {
 			void run(float dt) override;
 	};
 }
+

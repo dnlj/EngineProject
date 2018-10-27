@@ -1,5 +1,6 @@
 // Game
 #include <Game/Map.hpp>
+#include <Game/SpriteSystem.hpp>
 
 namespace Game {
 	void Map::setup(World& world) {

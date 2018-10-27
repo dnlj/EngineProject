@@ -1,5 +1,8 @@
 #pragma once
 
+// Engine
+#include <Engine/Camera.hpp>
+
 // Game
 #include <Game/Common.hpp>
 

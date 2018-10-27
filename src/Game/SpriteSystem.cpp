@@ -7,6 +7,8 @@
 
 // Game
 #include <Game/SpriteSystem.hpp>
+#include <Game/PhysicsComponent.hpp>
+#include <Game/SpriteComponent.hpp>
 
 namespace Game {
 	SpriteSystem::SpriteSystem(World& world)

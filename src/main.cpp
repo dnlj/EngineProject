@@ -39,7 +39,15 @@
 
 // Game
 #include <Game/Common.hpp>
+#include <Game/SpriteSystem.hpp>
+#include <Game/CameraTrackingSystem.hpp>
+#include <Game/CharacterSpellSystem.hpp>
+#include <Game/CharacterSpellComponent.hpp>
+#include <Game/CharacterMovementSystem.hpp>
+#include <Game/MapRenderSystem.hpp>
+#include <Game/CharacterMovementComponent.hpp>
 #include <Game/SpriteComponent.hpp>
+#include <Game/InputComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
 #include <Game/imgui_impl_glfw_gl3.hpp>
 #include <Game/Map.hpp>

@@ -1,5 +1,6 @@
 // Game
 #include <Game/MapChunk.hpp>
+#include <Game/SpriteSystem.hpp>
 
 namespace Game {
 	void MapChunk::setup(World& world, glm::vec2 pos) {

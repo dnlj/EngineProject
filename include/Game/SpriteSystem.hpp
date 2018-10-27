@@ -3,6 +3,9 @@
 // STD
 #include <vector>
 
+// glLoadGen
+#include <glloadgen/gl_core_4_5.hpp>
+
 // Engine
 #include <Engine/Camera.hpp>
 

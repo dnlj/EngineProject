@@ -1,5 +1,8 @@
 #pragma once
 
+// Engine
+#include <Engine/EngineInstance.hpp>
+
 // Game
 #include <Game/MapChunk.hpp>
 

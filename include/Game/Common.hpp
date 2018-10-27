@@ -7,7 +7,7 @@
 #include <Engine/ECS/World.hpp>
 #include <Engine/SystemBase.hpp>
 
-// TODO: split into files?
+
 namespace Game {
 	class PhysicsSystem;
 	class SpriteSystem;
@@ -42,17 +42,3 @@ namespace Game {
 	using World = Engine::ECS::World<SystemsSet, ComponentsSet>;
 	using SystemBase = Engine::SystemBase<World>;
 }
-
-// Game
-#include <Game/PhysicsSystem.hpp>
-#include <Game/SpriteSystem.hpp>
-#include <Game/CharacterMovementSystem.hpp>
-#include <Game/CharacterSpellSystem.hpp>
-#include <Game/CameraTrackingSystem.hpp>
-#include <Game/MapRenderSystem.hpp>
-
-#include <Game/PhysicsComponent.hpp>
-#include <Game/SpriteComponent.hpp>
-#include <Game/CharacterMovementComponent.hpp>
-#include <Game/CharacterSpellComponent.hpp>
-#include <Game/InputComponent.hpp>
