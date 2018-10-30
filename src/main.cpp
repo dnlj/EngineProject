@@ -51,7 +51,6 @@
 #include <Game/InputComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
 #include <Game/imgui_impl_glfw_gl3.hpp>
-#include <Game/Map.hpp>
 
 
 namespace {
