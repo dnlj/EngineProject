@@ -18,7 +18,7 @@ namespace Engine::ECS {
 
 	template<template<class...> class SystemsType, class... Systems>
 	class SystemManager<SystemsType<Systems...>> {
-		/*static_assert(
+		static_assert(
 			std::is_same<
 				SystemsType<Systems...>,
 				typename Meta::TypeSet::MakeUnique<SystemsType<Systems...>>::type
@@ -26,7 +26,7 @@ namespace Engine::ECS {
 			"Each system must be unique."
 		);
 		
-		static_assert(
+		/*static_assert(
 			std::conjunction<
 				std::is_base_of<System, Systems>...
 			>::value,
