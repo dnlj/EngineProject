@@ -1,9 +1,16 @@
+// GLM
+#include <glm/gtc/matrix_transform.hpp>
+
 // Game
-#include <Game/Map.hpp>
+#include <Game/MapSystem.hpp>
+#include <Game/PhysicsSystem.hpp>
 #include <Game/SpriteSystem.hpp>
 
 namespace Game {
-	void Map::setup(World& world) {
+	MapSystem::MapSystem(World& world) : SystemBase{world} {
+		// TODO: Before/after
+		priorityAfter = world.getSystemID<Game::CameraTrackingSystem>();
+
 		for (int y = 0; y < chunkCountY; ++y) {
 			for (int x = 0; x < chunkCountX; ++x) {
 				chunks[x][y].setup(world, glm::vec2{
@@ -14,12 +21,14 @@ namespace Game {
 		}
 	}
 
-	void Map::update(Engine::EngineInstance& engine, World& world) {
-		auto& im = engine.inputManager;
-		const auto& cam = engine.camera;
+	void MapSystem::setup(Engine::EngineInstance& engine) {
+		input = &engine.inputManager;
+		camera = &engine.camera;
+	}
 
+	void MapSystem::run(float dt) {
 		const auto applyEdit = [&](auto func){
-			auto mpos = cam.screenToWorld(im.getMousePosition());
+			auto mpos = camera->screenToWorld(input->getMousePosition());
 			constexpr auto pos = glm::vec2{0, 0};
 			auto bounds = pos + glm::vec2{chunkCountX * MapChunk::width, chunkCountY * MapChunk::height};
 
@@ -40,15 +49,18 @@ namespace Game {
 			);
 		};
 
-		if (im.isPressed("edit_place")) {
+		if (input->isPressed("edit_place")) {
 			applyEdit(&MapChunk::addTile);
-		} else if (im.isPressed("edit_remove")) {
+		} else if (input->isPressed("edit_remove")) {
 			applyEdit(&MapChunk::removeTile);
 		}
 
-		for (int y = 0; y < chunkCountY; ++y) {
-			for (int x = 0; x < chunkCountX; ++x) {
-				chunks[x][y].draw(glm::mat4{});
+		{
+			glm::mat4 mvp = camera->getProjection() * camera->getView() * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/1});
+			for (int y = 0; y < chunkCountY; ++y) {
+				for (int x = 0; x < chunkCountX; ++x) {
+					chunks[x][y].draw(mvp);
+				}
 			}
 		}
 	}

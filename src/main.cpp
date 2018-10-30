@@ -45,6 +45,7 @@
 #include <Game/CharacterSpellComponent.hpp>
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/MapRenderSystem.hpp>
+#include <Game/MapSystem.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 #include <Game/SpriteComponent.hpp>
 #include <Game/InputComponent.hpp>
@@ -230,16 +231,13 @@ void run() {
 	// Engine stuff
 	Engine::EngineInstance engine;
 	Game::World world;
-	Game::Map map;
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		world.getSystem<Game::SpriteSystem>().setup(engine.camera);
 		world.getSystem<Game::CameraTrackingSystem>().setup(engine.camera);
 		world.getSystem<Game::CharacterSpellSystem>().setup(engine);
-
-		// Map
-		map.setup(world);
+		world.getSystem<Game::MapSystem>().setup(engine);
 		
 		// Player
 		auto player = world.createEntity();
@@ -319,9 +317,6 @@ void run() {
 		// Rendering
 		glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		// Editor
-		map.update(engine, world);
 
 		// ECS
 		world.run(dt);

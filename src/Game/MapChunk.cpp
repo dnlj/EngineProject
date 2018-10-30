@@ -1,8 +1,68 @@
+// glLoadGen
+#include <glloadgen/gl_core_4_5.hpp>
+
+// GLM
+#include <glm/gtc/type_ptr.hpp>
+
+// Engine
+#include <Engine/Utility/Utility.hpp>
+
 // Game
 #include <Game/MapChunk.hpp>
 #include <Game/SpriteSystem.hpp>
 
+
 namespace Game {
+	MapChunk::MapChunk() {
+		// TODO: Create resource manager for shaders (generalize resource management?)
+		{// Shader programs
+			// Vertex shader
+			auto vertShader = glCreateShader(GL_VERTEX_SHADER);
+			{
+				const auto source = Engine::Utility::readFile("./shaders/terrain.vert");
+				const auto cstr = source.c_str();
+				glShaderSource(vertShader, 1, &cstr, nullptr);
+			}
+			glCompileShader(vertShader);
+
+			// Fragment shader
+			auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+			{
+				const auto source = Engine::Utility::readFile("./shaders/terrain.frag");
+				const auto cstr = source.c_str();
+				glShaderSource(fragShader, 1, &cstr, nullptr);
+			}
+			glCompileShader(fragShader);
+
+			// Shader program
+			shader = glCreateProgram();
+			glAttachShader(shader, vertShader);
+			glAttachShader(shader, fragShader);
+			glLinkProgram(shader);
+
+			{
+				GLint status;
+				glGetProgramiv(shader, GL_LINK_STATUS, &status);
+
+				if (!status) {
+					char buffer[512];
+					glGetProgramInfoLog(shader, 512, NULL, buffer);
+					std::cout << buffer << std::endl;
+				}
+			}
+
+			// Shader cleanup
+			glDetachShader(shader, vertShader);
+			glDetachShader(shader, fragShader);
+			glDeleteShader(vertShader);
+			glDeleteShader(fragShader);
+		}
+
+		{ // Vertex array
+			glCreateVertexArrays(1, &vao);
+		}
+	}
+
 	void MapChunk::setup(World& world, glm::vec2 pos) {
 		ent = world.createEntity(true);
 		generate(world.getSystem<PhysicsSystem>());
@@ -41,6 +101,27 @@ namespace Game {
 		body = physSys.createBody(ent, bodyDef);
 
 		bool used[width][height]{};
+		std::vector<Vertex> vboData;
+		std::vector<GLushort> eboData;
+		vboData.reserve(elementCount); // NOTE: This is only an estimate. the correct ratio would be `c * 4/6.0f`
+		eboData.reserve(elementCount);
+
+		auto addRect = [&](float halfW, float halfH, b2Vec2 center) {
+			center = center + oldPos;
+			const auto size = static_cast<GLushort>(vboData.size());
+
+			eboData.push_back(size + 0);
+			eboData.push_back(size + 1);
+			eboData.push_back(size + 2);
+			eboData.push_back(size + 2);
+			eboData.push_back(size + 3);
+			eboData.push_back(size + 0);
+
+			vboData.push_back(Vertex{glm::vec2{-halfW + center.x, +halfH + center.y}, glm::vec2{+0.0f, +1.0f}});
+			vboData.push_back(Vertex{glm::vec2{-halfW + center.x, -halfH + center.y}, glm::vec2{+0.0f, +0.0f}});
+			vboData.push_back(Vertex{glm::vec2{+halfW + center.x, -halfH + center.y}, glm::vec2{+1.0f, +0.0f}});
+			vboData.push_back(Vertex{glm::vec2{+halfW + center.x, +halfH + center.y}, glm::vec2{+1.0f, +1.0f}});
+		};
 
 		auto expand = [&](const int ix, const int iy) {
 			int w = 0;
@@ -96,15 +177,15 @@ namespace Game {
 				}
 			}
 
-			shape.SetAsBox(
-				tileSize * 0.5f * w,
-				tileSize * 0.5f * h,
-				b2Vec2(
-					(ix + w/2.0f) * tileSize,
-					(iy + h/2.0f) * tileSize
-				),
-				0.0f
+			auto halfW = tileSize * 0.5f * w;
+			auto halfH = tileSize * 0.5f * h;
+			auto center = b2Vec2(
+				(ix + w/2.0f) * tileSize,
+				(iy + h/2.0f) * tileSize
 			);
+
+			shape.SetAsBox(halfW, halfH, center, 0.0f);
+			addRect(halfW, halfH, center);
 
 			body->CreateFixture(&fixtureDef);
 		};
@@ -116,20 +197,56 @@ namespace Game {
 		}
 
 		body->SetTransform(oldPos, 0.0f);
+		elementCount = static_cast<GLsizei>(eboData.size());
+		updateVertexData(vboData, eboData);
 	}
 
-	void MapChunk::draw(SpriteSystem& spriteSys) const {
-		const auto pos = body->GetPosition();
+	void MapChunk::draw(const glm::mat4& mvp) const {
+		if (elementCount == 0) { return; }
 
-		for (int y = 0; y < height; ++y) {
-			for (int x = 0; x < width; ++x) {
-				if (data[x][y] != 0) {
-					spriteSys.addSprite({
-						2,
-						{pos.x + (x + 0.5f) * tileSize, pos.y + (y + 0.5f) * tileSize, 0.0f}
-					});
-				}
-			}
+		glBindVertexArray(vao);
+		glUseProgram(shader);
+
+		// Set texture
+		glBindTextureUnit(0, 2); // TODO: Dont hardcode texture
+		glUniform1i(6, 0);
+
+		// Set MVP
+		glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(mvp));
+
+		// Draw
+		glDrawElements(GL_TRIANGLES, elementCount, GL_UNSIGNED_SHORT, 0);
+	}
+
+	// TODO: cleanup gl stuff
+
+	void MapChunk::updateVertexData(const std::vector<Vertex>& vboData, const std::vector<GLushort>& eboData) {
+		constexpr GLuint dataBindingIndex = 0;
+
+		glDeleteBuffers(1, &vbo);
+		glDeleteBuffers(1, &ebo);
+
+		{ // Element buffer
+			glCreateBuffers(1, &ebo);
+			glNamedBufferData(ebo, sizeof(GLushort) * eboData.size(), eboData.data(), GL_STATIC_DRAW);
+			glVertexArrayElementBuffer(vao, ebo);
+		}
+
+		{ // Vertex buffer
+			glCreateBuffers(1, &vbo);
+			glNamedBufferData(vbo, sizeof(Vertex) * vboData.size(), vboData.data(), GL_STATIC_DRAW);
+			glVertexArrayVertexBuffer(vao, dataBindingIndex, vbo, 0, sizeof(Vertex));
+		}
+
+		{ // Vertex attributes
+			glEnableVertexArrayAttrib(vao, 0);
+			glEnableVertexArrayAttrib(vao, 1);
+
+			glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+			glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoord));
+
+			glVertexArrayAttribBinding(vao, 0, dataBindingIndex);
+			glVertexArrayAttribBinding(vao, 1, dataBindingIndex);
 		}
 	}
 }
