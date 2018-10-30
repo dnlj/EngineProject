@@ -65,8 +65,10 @@ namespace Game {
 
 	void MapChunk::setup(World& world, glm::vec2 pos) {
 		ent = world.createEntity(true);
-		generate(world.getSystem<PhysicsSystem>());
+		auto& physSys = world.getSystem<PhysicsSystem>();
+		createBody(physSys);
 		body->SetTransform(b2Vec2{pos.x, pos.y}, 0.0f);
+		generate(physSys);
 	}
 
 	void MapChunk::addTile(int x, int y, PhysicsSystem& physSys) {
@@ -79,27 +81,33 @@ namespace Game {
 		generate(physSys);
 	}
 
-	void MapChunk::generate(PhysicsSystem& physSys) {
-		// TODO: Look into edge and chain shapes
-		b2Vec2 oldPos = b2Vec2_zero;
-
-		if (body != nullptr) {
-			oldPos = body->GetPosition();
-			physSys.destroyBody(body);
-		}
-
+	void MapChunk::createBody(PhysicsSystem& physSys) {
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_staticBody;
 		bodyDef.awake = false;
 		bodyDef.fixedRotation = true;
+
+		body = physSys.createBody(ent, bodyDef);
+	}
+
+	void MapChunk::generate(PhysicsSystem& physSys) {
+		// TODO: Look into edge and chain shapes
+
+		{ // Clear all fixtures
+			auto* fixture = body->GetFixtureList();
+			while (fixture) {
+				auto* next = fixture->GetNext();
+				body->DestroyFixture(fixture);
+				fixture = next;
+			}
+		}
 
 		b2PolygonShape shape;
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &shape;
 
-		body = physSys.createBody(ent, bodyDef);
-
+		auto pos = body->GetPosition();
 		bool used[width][height]{};
 		std::vector<Vertex> vboData;
 		std::vector<GLushort> eboData;
@@ -107,7 +115,7 @@ namespace Game {
 		eboData.reserve(elementCount);
 
 		auto addRect = [&](float halfW, float halfH, b2Vec2 center) {
-			center = center + oldPos;
+			center = center + pos;
 			const auto size = static_cast<GLushort>(vboData.size());
 
 			eboData.push_back(size + 0);
@@ -196,7 +204,6 @@ namespace Game {
 			}
 		}
 
-		body->SetTransform(oldPos, 0.0f);
 		elementCount = static_cast<GLsizei>(eboData.size());
 		updateVertexData(vboData, eboData);
 	}
