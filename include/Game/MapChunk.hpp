@@ -18,6 +18,8 @@ namespace Game {
 
 		public:
 			MapChunk();
+			~MapChunk();
+
 			void setup(World& world, glm::vec2 pos);
 			void addTile(int x, int y, PhysicsSystem& physSys);
 			void removeTile(int x, int y, PhysicsSystem& physSys);

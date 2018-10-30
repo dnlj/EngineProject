@@ -63,6 +63,13 @@ namespace Game {
 		}
 	}
 
+	MapChunk::~MapChunk() {
+		glDeleteProgram(shader);
+		glDeleteVertexArrays(1, &vao);
+		glDeleteBuffers(1, &vbo);
+		glDeleteBuffers(1, &ebo);
+	}
+
 	void MapChunk::setup(World& world, glm::vec2 pos) {
 		ent = world.createEntity(true);
 		auto& physSys = world.getSystem<PhysicsSystem>();
@@ -224,8 +231,6 @@ namespace Game {
 		// Draw
 		glDrawElements(GL_TRIANGLES, elementCount, GL_UNSIGNED_SHORT, 0);
 	}
-
-	// TODO: cleanup gl stuff
 
 	void MapChunk::updateVertexData(const std::vector<Vertex>& vboData, const std::vector<GLushort>& eboData) {
 		constexpr GLuint dataBindingIndex = 0;
