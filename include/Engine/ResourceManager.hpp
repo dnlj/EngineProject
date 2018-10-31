@@ -51,6 +51,20 @@ namespace Engine {
 				return found;
 			};
 
+			void reclaim() {
+				for (auto& [path, res] : resources) {
+					auto* store = res.storage;
+
+					if (store->clean && store->refCount == 1) {
+						self().unload(store->data);
+						delete store;
+					}
+
+					res.storage = nullptr;
+					// TODO: Remove from map?
+				}
+			}
+
 		private:
 			ResourceManager() = default;
 			std::unordered_map<std::string, Resource<T>> resources;

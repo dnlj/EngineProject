@@ -240,9 +240,13 @@ void run() {
 				GLuint load(const std::string& path) {
 					return 0;
 				};
+
+				void unload(GLuint tex) {
+				};
 		} sm;
 
 		sm.get("path/to/file.ext");
+		sm.reclaim();
 	}
 
 	// Engine stuff
