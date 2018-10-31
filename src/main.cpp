@@ -228,27 +228,6 @@ void run() {
 	// UI
 	initImGui(window);
 
-	// Testing
-	{
-		class TextureManager : public Engine::ResourceManager<TextureManager, GLuint> {
-			friend class Engine::ResourceManager<TextureManager, GLuint>;
-
-			public:
-				TextureManager() {};
-
-			private:
-				GLuint load(const std::string& path) {
-					return 0;
-				};
-
-				void unload(GLuint tex) {
-				};
-		} sm;
-
-		sm.get("path/to/file.ext");
-		sm.reclaim();
-	}
-
 	// Engine stuff
 	Engine::EngineInstance engine;
 	Game::World world;
@@ -262,7 +241,7 @@ void run() {
 		
 		// Player
 		auto player = world.createEntity();
-		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.getTexture("../assets/player.png");
+		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");
 		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(player, physSys);
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::CharacterSpellComponent>(player);

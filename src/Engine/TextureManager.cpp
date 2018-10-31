@@ -10,20 +10,8 @@
 #include <SOIL.h>
 
 namespace Engine {
-	TextureManager::TextureManager() {
-		textures.max_load_factor(0.5f);
-	}
-
-	TextureManager::~TextureManager() {
-		for (const auto& texture : textures) {
-			glDeleteTextures(1, &texture.second);
-		}
-	}
-
-	GLuint TextureManager::getTexture(const std::string& path) {
-		auto& texture = textures[path];
-
-		if (texture != 0) { return texture; }
+	GLuint TextureManager::load(const std::string& path) {
+		GLuint texture = 0;
 
 		Engine::TextureOptions options{Engine::TextureWrap::REPEAT, Engine::TextureFilter::NEAREST, false};
 
@@ -81,5 +69,9 @@ namespace Engine {
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		return texture;
+	}
+
+	void TextureManager::unload(GLuint texture) {
+		glDeleteTextures(1, &texture);
 	}
 }

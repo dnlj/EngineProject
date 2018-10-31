@@ -153,7 +153,7 @@ namespace Game {
 		for (const auto& ent : filter) {
 			const auto pos = world.getComponent<Game::PhysicsComponent>(ent).body->GetPosition();
 			sprites.push_back({
-				world.getComponent<Game::SpriteComponent>(ent).texture,
+				world.getComponent<Game::SpriteComponent>(ent).texture.get(),
 				{pos.x, pos.y, 0.0f}
 			});
 		}

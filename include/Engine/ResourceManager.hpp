@@ -4,54 +4,11 @@
 #include <string>
 #include <unordered_map>
 
+// Engine
+#include <Engine/Resource.hpp>
+
 
 namespace Engine {
-	// TODO: Move
-	// TODO: Split
-	// TODO: Doc
-	template<class T>
-	class Resource {
-		template<class, class> friend class ResourceManager;
-
-		public:
-			Resource() = default;
-			
-			~Resource() {
-				if (storage != nullptr) {
-					--storage->refCount;
-				}
-			};
-
-			Resource(const Resource& other) {
-				storage = other.storage;
-				++storage->refCount;
-			}
-
-			Resource& operator=(const Resource& other) {
-				if (this != &other) {
-					storage = other.storage;
-					++storage->refCount;
-				}
-
-				return *this;
-			}
-
-			const T& get() const {
-				return storage->data;
-			}
-
-		private:
-			struct Storage {
-				public:
-					Storage(T&& other) : data{other} {}
-					T data;
-					short refCount = 1;
-					bool clean = true;
-			};
-
-			Storage* storage = nullptr;
-	};
-
 	// TODO: Split
 	// TODO: Doc
 	template<class Manager, class T>
