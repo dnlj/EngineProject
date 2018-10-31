@@ -15,7 +15,13 @@ namespace Engine {
 	class ResourceManager {
 		friend Manager;
 		public:
-			// TODO: cleanup all resources in destructor
+			~ResourceManager() {
+				for (auto& [path, res] : resources) {
+					auto* store = res.storage;
+					self().unload(store->data);
+					delete store;
+				}
+			}
 			
 			Resource<T> get(const std::string& path) {
 				auto& found = resources[path];
