@@ -36,6 +36,7 @@
 #include <Engine/ECS/World.hpp>
 #include <Engine/EngineInstance.hpp>
 #include <Engine/Camera.hpp>
+#include <Engine/ResourceManager.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -226,6 +227,23 @@ void run() {
 
 	// UI
 	initImGui(window);
+
+	// Testing
+	{
+		class TextureManager : public Engine::ResourceManager<TextureManager, GLuint> {
+			friend class Engine::ResourceManager<TextureManager, GLuint>;
+
+			public:
+				TextureManager() {};
+
+			private:
+				GLuint load(const std::string& path) {
+					return 0;
+				};
+		} sm;
+
+		sm.get("path/to/file.ext");
+	}
 
 	// Engine stuff
 	Engine::EngineInstance engine;
