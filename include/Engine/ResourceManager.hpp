@@ -11,24 +11,41 @@ namespace Engine {
 	// TODO: Doc
 	template<class T>
 	class Resource {
+		template<class, class> friend class ResourceManager;
+
 		public:
-			Resource() {
+			Resource() = default;
+			
+			~Resource() {
+				if (storage != nullptr) {
+					--storage->refCount;
+				}
 			};
 
-			~Resource() {
-			};
+			Resource(const Resource& other) {
+				storage = other.storage;
+				++storage->refCount;
+			}
+
+			Resource& operator=(const Resource& other) {
+				if (this != &other) {
+					storage = other.storage;
+					++storage->refCount;
+				}
+
+				return *this;
+			}
 
 			const T& get() const {
 				return storage->data;
 			}
 
 		private:
-			template<class, class> friend class ResourceManager;
 			struct Storage {
 				public:
 					Storage(T&& other) : data{other} {}
 					T data;
-					short refCount = 0;
+					short refCount = 1;
 					bool clean = true;
 			};
 
@@ -41,6 +58,8 @@ namespace Engine {
 	class ResourceManager {
 		friend Manager;
 		public:
+			// TODO: cleanup all resources in destructor
+			
 			Resource<T> get(const std::string& path) {
 				auto& found = resources[path];
 				
