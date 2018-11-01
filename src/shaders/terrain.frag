@@ -1,12 +1,12 @@
 #version 450 core
 
-in vec2 fragTexCoord;
+in vec2 fragPosition;
 
 out vec4 finalColor;
 
-layout (location = 6) uniform sampler2D tex;
+layout (location = 5) uniform sampler2D tex;
 
 
 void main() {
-	finalColor = texture(tex, fragTexCoord);
+	finalColor = texture(tex, fragPosition * 4);
 }

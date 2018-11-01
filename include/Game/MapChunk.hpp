@@ -30,7 +30,6 @@ namespace Game {
 			class Vertex {
 				public:
 					glm::vec2 position;
-					glm::vec2 texCoord;
 			};
 
 			int data[width][height] = {

@@ -89,10 +89,10 @@ namespace Game {
 			eboData.push_back(size + 3);
 			eboData.push_back(size + 0);
 
-			vboData.push_back(Vertex{glm::vec2{-halfW + center.x, +halfH + center.y}, glm::vec2{+0.0f, +1.0f}});
-			vboData.push_back(Vertex{glm::vec2{-halfW + center.x, -halfH + center.y}, glm::vec2{+0.0f, +0.0f}});
-			vboData.push_back(Vertex{glm::vec2{+halfW + center.x, -halfH + center.y}, glm::vec2{+1.0f, +0.0f}});
-			vboData.push_back(Vertex{glm::vec2{+halfW + center.x, +halfH + center.y}, glm::vec2{+1.0f, +1.0f}});
+			vboData.push_back(Vertex{glm::vec2{-halfW + center.x, +halfH + center.y}});
+			vboData.push_back(Vertex{glm::vec2{-halfW + center.x, -halfH + center.y}});
+			vboData.push_back(Vertex{glm::vec2{+halfW + center.x, -halfH + center.y}});
+			vboData.push_back(Vertex{glm::vec2{+halfW + center.x, +halfH + center.y}});
 		};
 
 		auto expand = [&](const int ix, const int iy) {
@@ -180,10 +180,10 @@ namespace Game {
 
 		// Set texture
 		glBindTextureUnit(0, texture);
-		glUniform1i(6, 0);
+		glUniform1i(5, 0);
 
 		// Set MVP
-		glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(mvp));
+		glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(mvp));
 
 		// Draw
 		glDrawElements(GL_TRIANGLES, elementCount, GL_UNSIGNED_SHORT, 0);
@@ -209,13 +209,8 @@ namespace Game {
 
 		{ // Vertex attributes
 			glEnableVertexArrayAttrib(vao, 0);
-			glEnableVertexArrayAttrib(vao, 1);
-
 			glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
-			glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoord));
-
 			glVertexArrayAttribBinding(vao, 0, dataBindingIndex);
-			glVertexArrayAttribBinding(vao, 1, dataBindingIndex);
 		}
 	}
 }
