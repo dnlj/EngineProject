@@ -4,7 +4,7 @@
 namespace Engine {
 	// TODO: Split
 	// TODO: Doc
-	template<class T>
+	template<class Manager, class T>
 	class Resource {
 		template<class, class> friend class ResourceManager;
 

@@ -13,7 +13,6 @@
 namespace Game {
 	class SpriteComponent {
 		public:
-			// TODO: Texture resource instead of Resource<T> ?
-			Engine::Resource<GLuint> texture;
+			Engine::Texture texture;
 	};
 }

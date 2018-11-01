@@ -17,4 +17,6 @@ namespace Engine {
 			GLuint load(const std::string& path);
 			void unload(GLuint texture);
 	};
+
+	using Texture = TextureManager::ResourceType;
 }

@@ -15,6 +15,8 @@ namespace Engine {
 	class ResourceManager {
 		friend Manager;
 		public:
+			using ResourceType = Resource<Manager, T>;
+
 			~ResourceManager() {
 				for (auto& [path, res] : resources) {
 					auto* store = res.storage;
@@ -23,11 +25,11 @@ namespace Engine {
 				}
 			}
 			
-			Resource<T> get(const std::string& path) {
+			ResourceType get(const std::string& path) {
 				auto& found = resources[path];
 				
 				if (found.storage == nullptr) {
-					found.storage = new Resource<T>::Storage{self().load(path)};
+					found.storage = new ResourceType::Storage{self().load(path)};
 				}
 				
 				return found;
@@ -49,7 +51,7 @@ namespace Engine {
 
 		private:
 			ResourceManager() = default;
-			std::unordered_map<std::string, Resource<T>> resources;
+			std::unordered_map<std::string, ResourceType> resources;
 			Manager& self() { return static_cast<Manager&>(*this); }
 	};
 }
