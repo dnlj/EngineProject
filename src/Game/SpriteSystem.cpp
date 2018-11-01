@@ -21,60 +21,18 @@ namespace Game {
 	}
 
 	SpriteSystem::~SpriteSystem() {
-		glDeleteProgram(shader);
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
 		glDeleteBuffers(1, &ivbo);
 		glDeleteBuffers(1, &ebo);
 	}
 
-	void SpriteSystem::setup(const Engine::Camera& camera) {
-		this->camera = &camera;
-
+	void SpriteSystem::setup(Engine::EngineInstance& engine) {
+		camera = &engine.camera;
+		
 		// TODO: Split into multiple functions?
 
-		{// Shader programs
-			// Vertex shader
-			auto vertShader = glCreateShader(GL_VERTEX_SHADER);
-			{
-				const auto source = Engine::Utility::readFile("./shaders/sprite.vert");
-				const auto cstr = source.c_str();
-				glShaderSource(vertShader, 1, &cstr, nullptr);
-			}
-			glCompileShader(vertShader);
-
-			// Fragment shader
-			auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-			{
-				const auto source = Engine::Utility::readFile("./shaders/sprite.frag");
-				const auto cstr = source.c_str();
-				glShaderSource(fragShader, 1, &cstr, nullptr);
-			}
-			glCompileShader(fragShader);
-
-			// Shader program
-			shader = glCreateProgram();
-			glAttachShader(shader, vertShader);
-			glAttachShader(shader, fragShader);
-			glLinkProgram(shader);
-
-			{
-				GLint status;
-				glGetProgramiv(shader, GL_LINK_STATUS, &status);
-
-				if (!status) {
-					char buffer[512];
-					glGetProgramInfoLog(shader, 512, NULL, buffer);
-					std::cout << buffer << std::endl;
-				}
-			}
-
-			// Shader cleanup
-			glDetachShader(shader, vertShader);
-			glDetachShader(shader, fragShader);
-			glDeleteShader(vertShader);
-			glDeleteShader(fragShader);
-		}
+		shader = engine.shaderManager.get("shaders/sprite");
 
 		{ // Vertex array
 			glCreateVertexArrays(1, &vao);
@@ -191,7 +149,7 @@ namespace Game {
 
 		// VAO / Program
 		glBindVertexArray(vao);
-		glUseProgram(shader);
+		glUseProgram(shader.get());
 
 		// Draw
 		for (std::size_t i = 1; i < spriteGroups.size(); ++i) {

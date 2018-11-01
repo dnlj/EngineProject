@@ -234,7 +234,7 @@ void run() {
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
-		world.getSystem<Game::SpriteSystem>().setup(engine.camera);
+		world.getSystem<Game::SpriteSystem>().setup(engine);
 		world.getSystem<Game::CameraTrackingSystem>().setup(engine.camera);
 		world.getSystem<Game::CharacterSpellSystem>().setup(engine);
 		world.getSystem<Game::MapSystem>().setup(engine);

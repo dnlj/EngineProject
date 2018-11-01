@@ -7,7 +7,7 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Engine
-#include <Engine/Camera.hpp>
+#include <Engine/EngineInstance.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -41,7 +41,7 @@ namespace Game {
 			SpriteSystem(World& world);
 			~SpriteSystem();
 
-			void setup(const Engine::Camera& camera);
+			void setup(Engine::EngineInstance& engine);
 			void run(float dt);
 
 			void addSprite(Sprite sprite);
@@ -56,7 +56,7 @@ namespace Game {
 			std::vector<SpriteGroup> spriteGroups;
 			std::vector<Sprite> sprites;
 
-			GLuint shader = 0;
+			Engine::Shader shader;
 			GLuint vao = 0;
 			GLuint vbo = 0;
 			GLuint ivbo = 0;
