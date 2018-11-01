@@ -20,7 +20,7 @@ namespace Game {
 			MapChunk();
 			~MapChunk();
 
-			void setup(World& world, glm::vec2 pos, GLuint shader);
+			void setup(World& world, glm::vec2 pos, GLuint shader, GLuint texture);
 			void addTile(int x, int y, PhysicsSystem& physSys);
 			void removeTile(int x, int y, PhysicsSystem& physSys);
 			void generate(PhysicsSystem& physSys);
@@ -47,6 +47,7 @@ namespace Game {
 			b2Body* body = nullptr; // TODO: Cleanup
 			Engine::ECS::Entity ent;
 			GLuint shader = 0;
+			GLuint texture = 0;
 			GLuint vao = 0;
 			GLuint vbo = 0;
 			GLuint ebo = 0;

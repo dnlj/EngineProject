@@ -24,7 +24,8 @@ namespace Engine {
 					delete store;
 				}
 			}
-			
+
+			// TODO: canonicalize + normalize paths to avoid duplicates
 			ResourceType get(const std::string& path) {
 				auto& found = resources[path];
 				

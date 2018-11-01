@@ -23,5 +23,6 @@ namespace Game {
 			Engine::InputManager* input;
 			const Engine::Camera* camera;
 			Engine::Shader shader;
+			Engine::Texture texture;
 	};
 }

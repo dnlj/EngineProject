@@ -25,8 +25,9 @@ namespace Game {
 		glDeleteBuffers(1, &ebo);
 	}
 
-	void MapChunk::setup(World& world, glm::vec2 pos, GLuint shader) {
+	void MapChunk::setup(World& world, glm::vec2 pos, GLuint shader, GLuint texture) {
 		this->shader = shader;
+		this->texture = texture;
 		ent = world.createEntity(true);
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		createBody(physSys);
@@ -178,7 +179,7 @@ namespace Game {
 		glUseProgram(shader);
 
 		// Set texture
-		glBindTextureUnit(0, 2); // TODO: Dont hardcode texture
+		glBindTextureUnit(0, texture);
 		glUniform1i(6, 0);
 
 		// Set MVP
