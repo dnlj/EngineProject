@@ -14,50 +14,6 @@
 
 namespace Game {
 	MapChunk::MapChunk() {
-		// TODO: Create resource manager for shaders (generalize resource management?)
-		{// Shader programs
-			// Vertex shader
-			auto vertShader = glCreateShader(GL_VERTEX_SHADER);
-			{
-				const auto source = Engine::Utility::readFile("./shaders/terrain.vert");
-				const auto cstr = source.c_str();
-				glShaderSource(vertShader, 1, &cstr, nullptr);
-			}
-			glCompileShader(vertShader);
-
-			// Fragment shader
-			auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-			{
-				const auto source = Engine::Utility::readFile("./shaders/terrain.frag");
-				const auto cstr = source.c_str();
-				glShaderSource(fragShader, 1, &cstr, nullptr);
-			}
-			glCompileShader(fragShader);
-
-			// Shader program
-			shader = glCreateProgram();
-			glAttachShader(shader, vertShader);
-			glAttachShader(shader, fragShader);
-			glLinkProgram(shader);
-
-			{
-				GLint status;
-				glGetProgramiv(shader, GL_LINK_STATUS, &status);
-
-				if (!status) {
-					char buffer[512];
-					glGetProgramInfoLog(shader, 512, NULL, buffer);
-					std::cout << buffer << std::endl;
-				}
-			}
-
-			// Shader cleanup
-			glDetachShader(shader, vertShader);
-			glDetachShader(shader, fragShader);
-			glDeleteShader(vertShader);
-			glDeleteShader(fragShader);
-		}
-
 		{ // Vertex array
 			glCreateVertexArrays(1, &vao);
 		}
@@ -70,7 +26,8 @@ namespace Game {
 		glDeleteBuffers(1, &ebo);
 	}
 
-	void MapChunk::setup(World& world, glm::vec2 pos) {
+	void MapChunk::setup(World& world, glm::vec2 pos, GLuint shader) {
+		this->shader = shader;
 		ent = world.createEntity(true);
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		createBody(physSys);

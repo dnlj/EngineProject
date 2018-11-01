@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/InputManager.hpp>
 #include <Engine/TextureManager.hpp>
+#include <Engine/ShaderManager.hpp>
 #include <Engine/Camera.hpp>
 
 namespace Engine {
@@ -11,6 +12,7 @@ namespace Engine {
 		public:
 			InputManager inputManager;
 			TextureManager textureManager;
+			ShaderManager shaderManager;
 			Camera camera;
 	};
 }

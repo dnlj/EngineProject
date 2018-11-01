@@ -10,20 +10,22 @@ namespace Game {
 	MapSystem::MapSystem(World& world) : SystemBase{world} {
 		// TODO: Before/after
 		priorityAfter = world.getSystemID<Game::CameraTrackingSystem>();
-
-		for (int y = 0; y < chunkCountY; ++y) {
-			for (int x = 0; x < chunkCountX; ++x) {
-				chunks[x][y].setup(world, glm::vec2{
-					x * MapChunk::width * MapChunk::tileSize,
-					y * MapChunk::height * MapChunk::tileSize
-				});
-			}
-		}
 	}
 
 	void MapSystem::setup(Engine::EngineInstance& engine) {
 		input = &engine.inputManager;
 		camera = &engine.camera;
+		shader = engine.shaderManager.get("shaders/terrain");
+
+		const GLuint shdr = shader.get();
+		for (int y = 0; y < chunkCountY; ++y) {
+			for (int x = 0; x < chunkCountX; ++x) {
+				chunks[x][y].setup(world, glm::vec2{
+					x * MapChunk::width * MapChunk::tileSize,
+					y * MapChunk::height * MapChunk::tileSize
+				}, shdr);
+			}
+		}
 	}
 
 	void MapSystem::run(float dt) {

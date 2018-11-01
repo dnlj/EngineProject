@@ -20,7 +20,7 @@ namespace Game {
 			MapChunk();
 			~MapChunk();
 
-			void setup(World& world, glm::vec2 pos);
+			void setup(World& world, glm::vec2 pos, GLuint shader);
 			void addTile(int x, int y, PhysicsSystem& physSys);
 			void removeTile(int x, int y, PhysicsSystem& physSys);
 			void generate(PhysicsSystem& physSys);

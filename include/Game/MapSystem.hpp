@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/EngineInstance.hpp>
+#include <Engine/ShaderManager.hpp>
 
 // Game
 #include <Game/MapChunk.hpp>
@@ -21,5 +22,6 @@ namespace Game {
 
 			Engine::InputManager* input;
 			const Engine::Camera* camera;
+			Engine::Shader shader;
 	};
 }
