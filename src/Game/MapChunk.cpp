@@ -20,7 +20,6 @@ namespace Game {
 	}
 
 	MapChunk::~MapChunk() {
-		glDeleteProgram(shader);
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
 		glDeleteBuffers(1, &ebo);
