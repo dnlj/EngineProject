@@ -45,7 +45,6 @@
 #include <Game/CharacterSpellSystem.hpp>
 #include <Game/CharacterSpellComponent.hpp>
 #include <Game/CharacterMovementSystem.hpp>
-#include <Game/MapRenderSystem.hpp>
 #include <Game/MapSystem.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 #include <Game/SpriteComponent.hpp>

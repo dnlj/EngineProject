@@ -14,7 +14,6 @@ namespace Game {
 	class CharacterMovementSystem;
 	class CharacterSpellSystem;
 	class CameraTrackingSystem;
-	class MapRenderSystem;
 	class MapSystem;
 
 	class PhysicsComponent;
@@ -29,7 +28,6 @@ namespace Game {
 		CharacterMovementSystem,
 		CharacterSpellSystem,
 		CameraTrackingSystem,
-		MapRenderSystem,
 		MapSystem
 	>;
 	
