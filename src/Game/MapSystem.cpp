@@ -8,8 +8,7 @@
 
 namespace Game {
 	MapSystem::MapSystem(World& world) : SystemBase{world} {
-		// TODO: Before/after
-		priorityAfter = world.getSystemID<Game::CameraTrackingSystem>();
+		priorityAfter = world.getBitsetForSystems<Game::CameraTrackingSystem>();
 	}
 
 	void MapSystem::setup(Engine::EngineInstance& engine) {

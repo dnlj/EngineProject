@@ -16,6 +16,8 @@ namespace Game {
 		, filter{world.getFilterFor<
 			Game::SpriteComponent,
 			Game::PhysicsComponent>()}{
+
+		priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem>();
 	}
 
 	SpriteSystem::~SpriteSystem() {

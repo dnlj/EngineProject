@@ -8,6 +8,10 @@
 
 namespace Game {
 	CameraTrackingSystem::CameraTrackingSystem(World& world) : SystemBase{world} {
+		priorityAfter = world.getBitsetForSystems<
+			Game::CharacterMovementSystem,
+			Game::PhysicsSystem
+		>();
 	}
 
 	void CameraTrackingSystem::setup(Engine::Camera& camera) {
