@@ -57,7 +57,17 @@ namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
 
-	void editorUI();
+	void editorUI(Engine::EngineInstance& engine) {
+		bool open = true;
+		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
+
+		{
+			auto pos = engine.camera.getPosition();
+			ImGui::Text("Camera: (%f, %f, %f)", pos.x, pos.y, pos.z);
+		}
+
+		ImGui::End();
+	}
 
 	void initializeOpenGL() {
 		auto loaded = ogl_LoadFunctions();
@@ -121,13 +131,13 @@ namespace {
 		ImGui::StyleColorsDark();
 	}
 
-	void doUI() {
+	void doUI(Engine::EngineInstance& engine) {
 		static bool showWindow = true;
 
 		ImGui_ImplGlfwGL3_NewFrame();
 
 		ImGui::ShowDemoWindow(&showWindow);
-		editorUI();
+		editorUI(engine);
 
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
@@ -180,17 +190,6 @@ namespace {
 
 		auto& camera = static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->camera;
 		camera.setAsOrtho(width, height, 1.0f / 250.0f);
-	}
-}
-
-namespace {
-	void editorUI() {
-		bool open = true;
-		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
-
-		ImGui::Text("test");
-
-		ImGui::End();
 	}
 }
 
@@ -329,7 +328,7 @@ void run() {
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
 
 		// Draw UI
-		doUI();
+		doUI(engine);
 
 		// GLFW
 		glfwSwapBuffers(window);
