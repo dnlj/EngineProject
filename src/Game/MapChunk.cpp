@@ -3,6 +3,7 @@
 
 // GLM
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 // Engine
 #include <Engine/Utility/Utility.hpp>
@@ -71,7 +72,6 @@ namespace Game {
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &shape;
 
-		auto pos = body->GetPosition();
 		bool used[width][height]{};
 		std::vector<Vertex> vboData;
 		std::vector<GLushort> eboData;
@@ -79,7 +79,6 @@ namespace Game {
 		eboData.reserve(elementCount);
 
 		auto addRect = [&](float halfW, float halfH, b2Vec2 center) {
-			center = center + pos;
 			const auto size = static_cast<GLushort>(vboData.size());
 
 			eboData.push_back(size + 0);
@@ -172,8 +171,11 @@ namespace Game {
 		updateVertexData(vboData, eboData);
 	}
 
-	void MapChunk::draw(const glm::mat4& mvp) const {
+	void MapChunk::draw(glm::mat4 mvp) const {
 		if (elementCount == 0) { return; }
+
+		auto& pos = body->GetPosition();
+		mvp = glm::translate(mvp, glm::vec3(pos.x, pos.y, 0.0f));
 
 		glBindVertexArray(vao);
 		glUseProgram(shader);

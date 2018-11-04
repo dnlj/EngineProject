@@ -24,7 +24,7 @@ namespace Game {
 			void addTile(int x, int y, PhysicsSystem& physSys);
 			void removeTile(int x, int y, PhysicsSystem& physSys);
 			void generate(PhysicsSystem& physSys);
-			void draw(const glm::mat4& mvp) const;
+			void draw(glm::mat4 mvp) const;
 
 		private:
 			class Vertex {
