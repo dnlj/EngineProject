@@ -61,10 +61,11 @@ namespace {
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
 
-		{
-			auto pos = engine.camera.getPosition();
-			ImGui::Text("Camera: (%f, %f, %f)", pos.x, pos.y, pos.z);
-		}
+		auto camPos = engine.camera.getPosition();
+		ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
+
+		auto mousePos = engine.camera.screenToWorld(engine.inputManager.getMousePosition());
+		ImGui::Text("Mouse: (%f, %f)", mousePos.x, mousePos.y);
 
 		ImGui::End();
 	}
