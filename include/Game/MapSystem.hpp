@@ -19,8 +19,9 @@ namespace Game {
 			const glm::ivec2& getOffset() const;
 
 		private:
-			constexpr static int chunkCountX = 4;
+			constexpr static int chunkCountX = 2;
 			constexpr static int chunkCountY = chunkCountX;
+			constexpr static int originRange = 4; // TODO: Change range to chunks?
 
 			glm::ivec2 mapOffset = {0, 0};
 

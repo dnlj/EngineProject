@@ -34,24 +34,29 @@ namespace Game {
 
 	void MapSystem::run(float dt) {
 		const auto applyEdit = [&](auto func){
-			auto mpos = camera->screenToWorld(input->getMousePosition());
-			constexpr auto pos = glm::vec2{0, 0};
-			auto bounds = pos + glm::vec2{chunkCountX * MapChunk::width, chunkCountY * MapChunk::height};
+			constexpr auto chunkSize = glm::vec2{MapChunk::width, MapChunk::height};
+			constexpr auto mapSize = glm::ivec2{chunkCountX, chunkCountY};
+			const auto mpos = camera->screenToWorld(input->getMousePosition());
 
-			auto offset = mpos - pos;
-			offset /= MapChunk::tileSize;
+			// Position, in tiles, relative to current offset
+			const auto offset = mpos / MapChunk::tileSize;
 
-			if (offset.x < pos.x || offset.x >= bounds.x) { return; }
-			if (offset.y < pos.y || offset.y >= bounds.y) { return; }
+			// Offset of tile relative to current offset
+			const auto offsetTile = glm::floor(offset);
 
-			const auto ix = static_cast<int>(offset.x / MapChunk::width);
-			const auto iy = static_cast<int>(offset.y / MapChunk::height);
+			// Chunk position relative to current offset
+			const auto offsetChunk = glm::ivec2{glm::floor(offsetTile /chunkSize)};
 
-			(chunks[ix][iy].*func)(
-				static_cast<int>(offset.x - ix * MapChunk::width),
-				static_cast<int>(offset.y - iy * MapChunk::height),
-				world.getSystem<PhysicsSystem>()
-			);
+			// Absolute chunk position
+			const auto absChunk = mapOffset + offsetChunk;
+
+			// Index for this chunk
+			const auto indexChunk = (mapSize + (absChunk % mapSize)) % mapSize;
+
+			// Index of this tile in this chunk
+			const auto indexTile = glm::ivec2{glm::fract(offsetTile / chunkSize) * chunkSize};
+
+			(chunks[indexChunk.x][indexChunk.y].*func)(indexTile.x, indexTile.y, world.getSystem<PhysicsSystem>());
 		};
 
 		if (input->isPressed("edit_place")) {
@@ -61,28 +66,27 @@ namespace Game {
 		}
 
 		{ // TODO: Move to own system? This should happen before the next frame
-			constexpr int shiftRange = 8;
 			const auto& pos = camera->getPosition();
 
-			if (std::abs(pos.x) > shiftRange) {
+			if (std::abs(pos.x) > originRange) {
 				auto& physSys = world.getSystem<Game::PhysicsSystem>();
 				auto dir = std::copysign(1.0f, pos.x);
 
 				physSys.getWorld().ShiftOrigin(b2Vec2{
-					shiftRange * dir,
-					0
+					originRange * dir,
+					0.0f
 				});
 
 				mapOffset.x += static_cast<int>(dir);
 			}
 
-			if (std::abs(pos.y) > shiftRange) {
+			if (std::abs(pos.y) > originRange) {
 				auto& physSys = world.getSystem<Game::PhysicsSystem>();
-				auto dir = std::copysign(1.0f, pos.y);
+				auto dir = originRange * std::copysign(1.0f, pos.y);
 
 				physSys.getWorld().ShiftOrigin(b2Vec2{
-					0,
-					shiftRange * dir
+					0.0f,
+					originRange * dir
 				});
 
 				mapOffset.y += static_cast<int>(dir);
