@@ -82,7 +82,7 @@ namespace Game {
 
 			if (std::abs(pos.y) > originRange) {
 				auto& physSys = world.getSystem<Game::PhysicsSystem>();
-				auto dir = originRange * std::copysign(1.0f, pos.y);
+				auto dir = std::copysign(1.0f, pos.y);
 
 				physSys.getWorld().ShiftOrigin(b2Vec2{
 					0.0f,
