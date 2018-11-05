@@ -46,6 +46,9 @@ namespace Game {
 			 */
 			void addListener(PhysicsListener* listener);
 
+			// TODO: Temp, move functions into PhysicsSystem
+			b2World& getWorld() { return physWorld; };
+
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D& getDebugDraw();
 			#endif

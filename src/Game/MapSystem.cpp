@@ -41,9 +41,8 @@ namespace Game {
 			auto offset = mpos - pos;
 			offset /= MapChunk::tileSize;
 
-			// TODO: this only works if pos = 0,0
-			if (offset.x < 0 || offset.x >= bounds.x) { return; }
-			if (offset.y < 0 || offset.y >= bounds.y) { return; }
+			if (offset.x < pos.x || offset.x >= bounds.x) { return; }
+			if (offset.y < pos.y || offset.y >= bounds.y) { return; }
 
 			const auto ix = static_cast<int>(offset.x / MapChunk::width);
 			const auto iy = static_cast<int>(offset.y / MapChunk::height);
@@ -61,6 +60,35 @@ namespace Game {
 			applyEdit(&MapChunk::removeTile);
 		}
 
+		{ // TODO: Move to own system? This should happen before the next frame
+			constexpr int shiftRange = 8;
+			const auto& pos = camera->getPosition();
+
+			if (std::abs(pos.x) > shiftRange) {
+				auto& physSys = world.getSystem<Game::PhysicsSystem>();
+				auto dir = std::copysign(1.0f, pos.x);
+
+				physSys.getWorld().ShiftOrigin(b2Vec2{
+					shiftRange * dir,
+					0
+				});
+
+				mapOffset.x += static_cast<int>(dir);
+			}
+
+			if (std::abs(pos.y) > shiftRange) {
+				auto& physSys = world.getSystem<Game::PhysicsSystem>();
+				auto dir = std::copysign(1.0f, pos.y);
+
+				physSys.getWorld().ShiftOrigin(b2Vec2{
+					0,
+					shiftRange * dir
+				});
+
+				mapOffset.y += static_cast<int>(dir);
+			}
+		}
+
 		{
 			glm::mat4 mvp = camera->getProjection() * camera->getView() * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/1});
 			for (int y = 0; y < chunkCountY; ++y) {
@@ -69,5 +97,9 @@ namespace Game {
 				}
 			}
 		}
+	}
+	
+	const glm::ivec2& MapSystem::getOffset() const {
+		return mapOffset;
 	}
 }

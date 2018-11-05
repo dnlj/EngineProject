@@ -57,7 +57,7 @@ namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
 
-	void editorUI(Engine::EngineInstance& engine) {
+	void editorUI(Engine::EngineInstance& engine, Game::World& world) {
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
 
@@ -66,6 +66,10 @@ namespace {
 
 		auto mousePos = engine.camera.screenToWorld(engine.inputManager.getMousePosition());
 		ImGui::Text("Mouse: (%f, %f)", mousePos.x, mousePos.y);
+
+		auto& mapSys = world.getSystem<Game::MapSystem>();
+		auto mapOffset = mapSys.getOffset();
+		ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
 
 		ImGui::End();
 	}
@@ -132,13 +136,13 @@ namespace {
 		ImGui::StyleColorsDark();
 	}
 
-	void doUI(Engine::EngineInstance& engine) {
+	void doUI(Engine::EngineInstance& engine, Game::World& world) {
 		static bool showWindow = true;
 
 		ImGui_ImplGlfwGL3_NewFrame();
 
 		ImGui::ShowDemoWindow(&showWindow);
-		editorUI(engine);
+		editorUI(engine, world);
 
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
@@ -329,7 +333,7 @@ void run() {
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
 
 		// Draw UI
-		doUI(engine);
+		doUI(engine, world);
 
 		// GLFW
 		glfwSwapBuffers(window);

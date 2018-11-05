@@ -1,5 +1,8 @@
 #pragma once
 
+// GLM
+#include <glm/vec2.hpp>
+
 // Engine
 #include <Engine/EngineInstance.hpp>
 #include <Engine/ShaderManager.hpp>
@@ -13,10 +16,13 @@ namespace Game {
 			MapSystem(World& world);
 			void setup(Engine::EngineInstance& engine);
 			void run(float dt) override;
+			const glm::ivec2& getOffset() const;
 
 		private:
 			constexpr static int chunkCountX = 4;
 			constexpr static int chunkCountY = chunkCountX;
+
+			glm::ivec2 mapOffset = {0, 0};
 
 			MapChunk chunks[chunkCountX][chunkCountY]{};
 
