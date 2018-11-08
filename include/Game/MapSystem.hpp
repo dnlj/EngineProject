@@ -21,8 +21,11 @@ namespace Game {
 		private:
 			constexpr static int chunkCountX = 2;
 			constexpr static int chunkCountY = chunkCountX;
-			constexpr static int originRange = 1 << 3; // TODO: Change range to chunks?
 
+			/** Number of chunks before shifting the origin */
+			constexpr static int originRange = 2;
+
+			/** Offset of current origin in increments of originRange */
 			glm::ivec2 mapOffset = {0, 0};
 
 			MapChunk chunks[chunkCountX][chunkCountY]{};

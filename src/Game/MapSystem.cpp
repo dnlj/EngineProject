@@ -48,7 +48,7 @@ namespace Game {
 			const glm::ivec2 offsetChunk = glm::floor(offsetTile / glm::vec2{chunkSize});
 
 			// Absolute chunk position
-			const auto absChunk = mapOffset + offsetChunk;
+			const auto absChunk = mapOffset * originRange + offsetChunk;
 
 			// Index for this chunk
 			const auto indexChunk = (mapSize + absChunk % mapSize) % mapSize;
@@ -67,26 +67,30 @@ namespace Game {
 
 		{ // TODO: Move to own system? This should happen before the next frame
 			const auto& pos = camera->getPosition();
+			constexpr auto range = glm::vec2{
+				originRange * MapChunk::width * MapChunk::tileSize,
+				originRange * MapChunk::height * MapChunk::tileSize
+			};
 
-			if (std::abs(pos.x) > originRange) {
+			if (std::abs(pos.x) > range.x) {
 				auto& physSys = world.getSystem<Game::PhysicsSystem>();
 				auto dir = std::copysign(1.0f, pos.x);
 
 				physSys.getWorld().ShiftOrigin(b2Vec2{
-					originRange * dir,
+					range.x * dir,
 					0.0f
 				});
 
 				mapOffset.x += static_cast<int>(dir);
 			}
 
-			if (std::abs(pos.y) > originRange) {
+			if (std::abs(pos.y) > range.y) {
 				auto& physSys = world.getSystem<Game::PhysicsSystem>();
 				auto dir = std::copysign(1.0f, pos.y);
 
 				physSys.getWorld().ShiftOrigin(b2Vec2{
 					0.0f,
-					originRange * dir
+					range.y * dir
 				});
 
 				mapOffset.y += static_cast<int>(dir);
