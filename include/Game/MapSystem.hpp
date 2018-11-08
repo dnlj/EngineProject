@@ -19,8 +19,8 @@ namespace Game {
 			const glm::ivec2& getOffset() const;
 
 		private:
-			constexpr static int chunkCountX = 2;
-			constexpr static int chunkCountY = chunkCountX;
+			/** The number of chunks in the map */
+			constexpr static glm::ivec2 mapSize = {2, 2};
 
 			/** Number of chunks before shifting the origin */
 			constexpr static int originRange = 2;
@@ -28,7 +28,7 @@ namespace Game {
 			/** Offset of current origin in increments of originRange */
 			glm::ivec2 mapOffset = {0, 0};
 
-			MapChunk chunks[chunkCountX][chunkCountY]{};
+			MapChunk chunks[mapSize.x][mapSize.y]{};
 
 			Engine::InputManager* input;
 			const Engine::Camera* camera;

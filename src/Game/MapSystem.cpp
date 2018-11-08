@@ -17,8 +17,8 @@ namespace Game {
 		shader = engine.shaderManager.get("shaders/terrain");
 		texture = engine.textureManager.get("../assets/test.png");
 
-		for (int y = 0; y < chunkCountY; ++y) {
-			for (int x = 0; x < chunkCountX; ++x) {
+		for (int y = 0; y < mapSize.y; ++y) {
+			for (int x = 0; x < mapSize.x; ++x) {
 				chunks[x][y].setup(
 					world,
 					glm::vec2{
@@ -35,7 +35,6 @@ namespace Game {
 	void MapSystem::run(float dt) {
 		const auto applyEdit = [&](auto func){
 			constexpr auto chunkSize = glm::ivec2{MapChunk::width, MapChunk::height};
-			constexpr auto mapSize = glm::ivec2{chunkCountX, chunkCountY};
 			const auto mpos = camera->screenToWorld(input->getMousePosition());
 
 			// Position, in tiles, relative to current offset
@@ -99,8 +98,8 @@ namespace Game {
 
 		{
 			glm::mat4 mvp = camera->getProjection() * camera->getView() * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/1});
-			for (int y = 0; y < chunkCountY; ++y) {
-				for (int x = 0; x < chunkCountX; ++x) {
+			for (int y = 0; y < mapSize.y; ++y) {
+				for (int x = 0; x < mapSize.x; ++x) {
 					chunks[x][y].draw(mvp);
 				}
 			}
