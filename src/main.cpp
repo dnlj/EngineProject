@@ -61,11 +61,14 @@ namespace {
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
 
+		auto screenMousePos = engine.inputManager.getMousePosition();
+		ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
+
+		auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
+		ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
+
 		auto camPos = engine.camera.getPosition();
 		ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
-
-		auto mousePos = engine.camera.screenToWorld(engine.inputManager.getMousePosition());
-		ImGui::Text("Mouse: (%f, %f)", mousePos.x, mousePos.y);
 
 		auto& mapSys = world.getSystem<Game::MapSystem>();
 		auto mapOffset = mapSys.getOffset();
