@@ -72,7 +72,7 @@ namespace Game {
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &shape;
 
-		bool used[width][height]{};
+		bool used[size.x][size.y]{};
 		std::vector<Vertex> vboData;
 		std::vector<GLushort> eboData;
 		vboData.reserve(elementCount); // NOTE: This is only an estimate. the correct ratio would be `c * 4/6.0f`
@@ -102,7 +102,7 @@ namespace Game {
 
 			while (expandWidth || expandHeight) {
 				if (expandWidth) {
-					const auto limit = std::min(iy + h, height);
+					const auto limit = std::min(iy + h, size.y);
 					for (int y = iy; y < limit; ++y) {
 						if (used[ix + w][y] || data[ix + w][y] == AIR.id) {
 							if (w == 0) { return; }
@@ -118,14 +118,14 @@ namespace Game {
 
 						++w;
 
-						if (ix + w == width) {
+						if (ix + w == size.x) {
 							expandWidth = false;
 						}
 					}
 				}
 
 				if (expandHeight) {
-					const auto limit = std::min(ix + w, width);
+					const auto limit = std::min(ix + w, size.x);
 					for (int x = ix; x < limit; ++x) {
 						if (used[x][iy + h] || data[x][iy + h] == AIR.id) {
 							if (h == 0) { return; }
@@ -141,7 +141,7 @@ namespace Game {
 
 						++h;
 
-						if (iy + h == height) {
+						if (iy + h == size.y) {
 							expandHeight = false;
 						}
 					}
@@ -161,8 +161,8 @@ namespace Game {
 			body->CreateFixture(&fixtureDef);
 		};
 
-		for (int y = 0; y < height; ++y) {
-			for (int x = 0; x < width; ++x) {
+		for (int y = 0; y < size.y; ++y) {
+			for (int x = 0; x < size.x; ++x) {
 				expand(x, y);
 			}
 		}

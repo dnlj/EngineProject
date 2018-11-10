@@ -1,5 +1,8 @@
 #pragma once
 
+// GLM
+#include <glm/glm.hpp>
+
 // Game
 #include <Game/MapTile.hpp>
 #include <Game/PhysicsSystem.hpp>
@@ -12,8 +15,7 @@ namespace Game {
 			constexpr static MapTile DIRT{1};
 
 		public:
-			constexpr static int width = 16;
-			constexpr static int height = width;
+			constexpr static glm::ivec2 size = {16, 16};
 			constexpr static auto tileSize = 1.0f/4.0f;
 
 		public:
@@ -32,7 +34,7 @@ namespace Game {
 					glm::vec2 position;
 			};
 
-			int data[width][height] = {
+			int data[size.x][size.y] = {
 				{3, 0, 0, 0, 0, 0, 0, 3},
 				{0, 2, 0, 0, 0, 0, 2, 0},
 				{0, 0, 2, 2, 2, 2, 0, 0},

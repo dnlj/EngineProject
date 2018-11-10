@@ -22,8 +22,8 @@ namespace Game {
 				chunks[x][y].setup(
 					world,
 					glm::vec2{
-						x * MapChunk::width * MapChunk::tileSize,
-						y * MapChunk::height * MapChunk::tileSize
+						x * MapChunk::size.x * MapChunk::tileSize,
+						y * MapChunk::size.y * MapChunk::tileSize
 					},
 					shader.get(),
 					texture.get()
@@ -34,7 +34,6 @@ namespace Game {
 
 	void MapSystem::run(float dt) {
 		const auto applyEdit = [&](auto func){
-			constexpr auto chunkSize = glm::ivec2{MapChunk::width, MapChunk::height};
 			const auto mpos = camera->screenToWorld(input->getMousePosition());
 
 			// Position, in tiles, relative to current offset
@@ -44,7 +43,7 @@ namespace Game {
 			const auto offsetTile = glm::floor(offset);
 
 			// Chunk position relative to current offset
-			const glm::ivec2 offsetChunk = glm::floor(offsetTile / glm::vec2{chunkSize});
+			const glm::ivec2 offsetChunk = glm::floor(offsetTile / glm::vec2{MapChunk::size});
 
 			// Absolute chunk position
 			const auto absChunk = mapOffset * originRange + offsetChunk;
@@ -53,7 +52,7 @@ namespace Game {
 			const auto indexChunk = (mapSize + absChunk % mapSize) % mapSize;
 
 			// Index of this tile in this chunk
-			const auto indexTile = (chunkSize + glm::ivec2{offsetTile} % chunkSize) % chunkSize;
+			const auto indexTile = (MapChunk::size + glm::ivec2{offsetTile} % MapChunk::size) % MapChunk::size;
 
 			(chunks[indexChunk.x][indexChunk.y].*func)(indexTile.x, indexTile.y, world.getSystem<PhysicsSystem>());
 		};
@@ -66,10 +65,7 @@ namespace Game {
 
 		{ // TODO: Move to own system? This should happen before the next frame
 			const auto& pos = camera->getPosition();
-			constexpr auto range = glm::vec2{
-				originRange * MapChunk::width * MapChunk::tileSize,
-				originRange * MapChunk::height * MapChunk::tileSize
-			};
+			constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::tileSize;
 
 			if (std::abs(pos.x) > range.x) {
 				auto& physSys = world.getSystem<Game::PhysicsSystem>();

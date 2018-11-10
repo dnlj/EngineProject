@@ -1,7 +1,7 @@
 #pragma once
 
 // GLM
-#include <glm/common.hpp>
+#include <glm/glm.hpp>
 
 // STD
 #include <string>
