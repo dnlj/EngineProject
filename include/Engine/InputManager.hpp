@@ -99,6 +99,7 @@ namespace Engine {
 
 			/**
 			 * Gets the current position of the mouse.
+			 * Origin is top left
 			 * @return The x and y position of the mouse.
 			 */
 			glm::vec2 getMousePosition() const;
