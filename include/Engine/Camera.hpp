@@ -8,9 +8,9 @@
 namespace Engine {
 	class Camera {
 		public:
-			void setAsOrtho(unsigned int width, unsigned int height, float scale);
-			unsigned int getWidth() const;
-			unsigned int getHeight() const;
+			void setAsOrtho(int width, int height, float scale);
+			int getWidth() const;
+			int getHeight() const;
 			float getScale() const;
 
 			/**
@@ -39,12 +39,14 @@ namespace Engine {
 			 */
 			glm::vec2 screenToWorld(glm::vec2 point) const;
 
+			// TODO: Doc
+			const glm::ivec2& getScreenSize() const;
+
 		private:
 			glm::mat4 view{1.0f};
 			glm::mat4 projection{1.0f};
 			glm::vec3 position;
-			unsigned int width = 0;
-			unsigned int height = 0;
+			glm::ivec2 size = {0, 0};
 			float scale = 1.0f;
 	};
 }

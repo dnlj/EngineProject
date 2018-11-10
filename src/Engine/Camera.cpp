@@ -6,16 +6,12 @@
 
 
 namespace Engine {
-	void Camera::setAsOrtho(unsigned int width, unsigned int height, float scale) {
-		this->width = width;
-		this->height = height;
+	void Camera::setAsOrtho(int width, int height, float scale) {
+		size = {width, height};
 		this->scale = scale;
 
-		auto halfWidth = (width / 2.0f) * scale;
-		auto halfHeight = (height / 2.0f) * scale;
-
-		projection = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
-		glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight);
+		const auto half = glm::vec2{size} / 2.0f * scale;
+		projection = glm::ortho(-half.x, half.x, -half.y, half.y);
 	}
 
 	void Camera::setPosition(const glm::vec2 newPosition) {
@@ -27,12 +23,16 @@ namespace Engine {
 		return position;
 	}
 
-	unsigned int Camera::getWidth() const {
-		return width;
+	int Camera::getWidth() const {
+		return size.x;
 	}
 
-	unsigned int Camera::getHeight() const {
-		return height;
+	int Camera::getHeight() const {
+		return size.y;
+	}
+
+	const glm::ivec2& Camera::getScreenSize() const {
+		return size;
 	}
 
 	float Camera::getScale() const {
@@ -49,7 +49,7 @@ namespace Engine {
 
 	glm::vec2 Camera::screenToWorld(glm::vec2 point) const {
 		// Convert from screen space to normalized device coordinates. That is: from [0, width] to [-1, 1]
-		point = point * 2.0f / glm::vec2(width, height) - glm::vec2(1.0f, 1.0f);
+		point = point * 2.0f / glm::vec2{size} - 1.0f;
 
 		// In screen space up is negative. In world/ndc space up is positive
 		point.y *= -1.0f;
