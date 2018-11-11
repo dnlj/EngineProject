@@ -19,10 +19,18 @@ namespace Game {
 			const glm::ivec2& getOffset() const;
 
 		private:
-			// TODO: Doc
+			/**
+			 * Converts from a world position to chunk coordinates.
+			 * @param[in] pos The position in world space.
+			 * @return The chunk coordinates.
+			 */
 			glm::ivec2 worldToChunk(glm::vec2 pos) const;
 
-			// TODO: Doc
+			/**
+			 * Get the chunk at a position.
+			 * @param[in] pos The position in chunk coordinates.
+			 * @return The chunk at the position.
+			 */
 			const MapChunk& getChunkAt(glm::ivec2 pos) const;
 
 			// TODO: Doc
