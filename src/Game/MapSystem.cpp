@@ -132,7 +132,17 @@ namespace Game {
 		return mapOffset * originRange + chunkOffset;
 	}
 
-	const MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) const {
+	glm::vec2 MapSystem::chunkToWorld(glm::ivec2 pos) const {
+		// absolute -> relative
+		pos -= mapOffset * originRange;
+
+		// chunk -> tile
+		pos *= glm::vec2{MapChunk::size} * MapChunk::tileSize;
+
+		return pos;
+	}
+
+	MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) {
 		// Wrap index to valid range
 		pos = (mapSize + pos % mapSize) % mapSize;
 		return chunks[pos.x][pos.y];
@@ -143,6 +153,7 @@ namespace Game {
 
 		if (worldToChunk(chunk.getPosition()) != pos) {
 			std::cout << "loadChunk: " << "(" << pos.x << ", " << pos.y << ")    " << rand() << "\n";
+			chunk.from(world.getSystem<PhysicsSystem>(), chunkToWorld(pos)); // TODO: Data
 		}
 	}
 }

@@ -32,6 +32,10 @@ namespace Game {
 		ent = world.createEntity(true);
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		createBody(physSys);
+		from(physSys, pos);
+	}
+
+	void MapChunk::from(PhysicsSystem& physSys, glm::vec2 pos) {
 		body->SetTransform(b2Vec2{pos.x, pos.y}, 0.0f);
 		generate(physSys);
 	}

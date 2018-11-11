@@ -26,18 +26,21 @@ namespace Game {
 			 */
 			glm::ivec2 worldToChunk(glm::vec2 pos) const;
 
+			// TODO: Doc
+			glm::vec2 chunkToWorld(glm::ivec2 pos) const;
+
 			/**
 			 * Get the chunk at a position.
 			 * @param[in] pos The position in chunk coordinates.
 			 * @return The chunk at the position.
 			 */
-			const MapChunk& getChunkAt(glm::ivec2 pos) const;
+			MapChunk& getChunkAt(glm::ivec2 pos);
 
 			// TODO: Doc
 			void loadChunk(glm::ivec2 pos);
 
 			/** The number of chunks in the map */
-			constexpr static glm::ivec2 mapSize = {4, 4};
+			constexpr static glm::ivec2 mapSize = {8, 8};
 
 			/** Number of chunks before shifting the origin */
 			constexpr static int originRange = 2;
