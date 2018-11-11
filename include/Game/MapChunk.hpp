@@ -7,7 +7,7 @@
 #include <Game/MapTile.hpp>
 #include <Game/PhysicsSystem.hpp>
 
-
+// TODO: Doc
 namespace Game {
 	class MapChunk {
 		public:
@@ -26,6 +26,7 @@ namespace Game {
 			void addTile(int x, int y, PhysicsSystem& physSys);
 			void removeTile(int x, int y, PhysicsSystem& physSys);
 			void generate(PhysicsSystem& physSys);
+			glm::ivec2 getPosition() const;
 			void draw(glm::mat4 mvp) const;
 
 		private:

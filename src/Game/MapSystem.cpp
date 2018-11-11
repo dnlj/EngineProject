@@ -63,6 +63,24 @@ namespace Game {
 			applyEdit(&MapChunk::removeTile);
 		}
 
+		// TODO: this shoudl be before edit
+		{
+			const auto tl = worldToChunk(camera->screenToWorld({0, 0}));
+			const auto br = worldToChunk(camera->screenToWorld(camera->getScreenSize()));
+
+			// TODO: if we had velocity we would only need to check two sides instead of all four
+
+			for (int x = tl.x; x <= br.x; ++x) {
+				loadChunk({x, tl.y});
+				loadChunk({x, br.y});
+			}
+
+			for (int y = br.y; y <= tl.y; ++y) {
+				loadChunk({tl.x, y});
+				loadChunk({br.x, y});
+			}
+		}
+
 		{ // TODO: Move to own system? This should happen before the next frame
 			const auto& pos = camera->getPosition();
 			constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::tileSize;
@@ -104,5 +122,27 @@ namespace Game {
 	
 	const glm::ivec2& MapSystem::getOffset() const {
 		return mapOffset;
+	}
+
+	glm::ivec2 MapSystem::worldToChunk(glm::vec2 pos) const {
+		// Chunk position relative to current offset
+		const glm::ivec2 chunkOffset = glm::floor(pos / MapChunk::tileSize / glm::vec2{MapChunk::size});
+
+		// Absolute chunk position
+		return mapOffset * originRange + chunkOffset;
+	}
+
+	const MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) const {
+		// Wrap index to valid range
+		pos = (mapSize + pos % mapSize) % mapSize;
+		return chunks[pos.x][pos.y];
+	}
+
+	void MapSystem::loadChunk(glm::ivec2 pos) {
+		auto& chunk = getChunkAt(pos);
+
+		if (worldToChunk(chunk.getPosition()) != pos) {
+			std::cout << "loadChunk: " << "(" << pos.x << ", " << pos.y << ")    " << rand() << "\n";
+		}
 	}
 }
