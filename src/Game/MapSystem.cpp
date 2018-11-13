@@ -36,11 +36,8 @@ namespace Game {
 		const auto applyEdit = [&](auto func){
 			const auto mpos = camera->screenToWorld(input->getMousePosition());
 
-			// Position, in tiles, relative to current offset
-			const auto offset = mpos / MapChunk::tileSize;
-
 			// Offset of tile relative to current offset
-			const auto offsetTile = glm::floor(offset);
+			const auto offsetTile = glm::floor(mpos / MapChunk::tileSize);
 
 			// Chunk position relative to current offset
 			const glm::ivec2 offsetChunk = glm::floor(offsetTile / glm::vec2{MapChunk::size});
