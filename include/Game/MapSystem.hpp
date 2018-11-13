@@ -26,7 +26,11 @@ namespace Game {
 			 */
 			glm::ivec2 worldToChunk(glm::vec2 pos) const;
 
-			// TODO: Doc
+			/**
+			 * Converts from a chunk position to world coordinates.
+			 * @param[in] pos The position in chunk space.
+			 * @return The world coordinates.
+			 */
 			glm::vec2 chunkToWorld(glm::ivec2 pos) const;
 
 			/**
