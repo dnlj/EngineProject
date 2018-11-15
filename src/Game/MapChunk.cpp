@@ -175,7 +175,7 @@ namespace Game {
 		updateVertexData(vboData, eboData);
 	}
 
-	glm::ivec2 MapChunk::getPosition() const {
+	glm::vec2 MapChunk::getPosition() const {
 		const auto& pos = body->GetPosition();
 		return glm::vec2{pos.x, pos.y};
 	}

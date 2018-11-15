@@ -27,7 +27,7 @@ namespace Game {
 			void addTile(int x, int y, PhysicsSystem& physSys);
 			void removeTile(int x, int y, PhysicsSystem& physSys);
 			void generate(PhysicsSystem& physSys);
-			glm::ivec2 getPosition() const;
+			glm::vec2 getPosition() const;
 			void draw(glm::mat4 mvp) const;
 
 		private:
