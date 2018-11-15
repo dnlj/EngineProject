@@ -108,7 +108,7 @@ namespace Game {
 		}
 
 		{
-			glm::mat4 mvp = camera->getProjection() * camera->getView() * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/1});
+			glm::mat4 mvp = camera->getProjection() * camera->getView();
 			for (int y = 0; y < mapSize.y; ++y) {
 				for (int x = 0; x < mapSize.x; ++x) {
 					chunks[x][y].draw(mvp);

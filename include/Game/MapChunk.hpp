@@ -16,7 +16,7 @@ namespace Game {
 
 		public:
 			constexpr static glm::ivec2 size = {16, 16};
-			constexpr static auto tileSize = 1.0f/4.0f;
+			constexpr static auto tileSize = 1.0f/5.0f;
 
 		public:
 			MapChunk();

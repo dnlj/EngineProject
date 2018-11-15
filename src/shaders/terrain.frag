@@ -8,5 +8,5 @@ layout (location = 5) uniform sampler2D tex;
 
 
 void main() {
-	finalColor = texture(tex, fragPosition * 4);
+	finalColor = texture(tex, fragPosition * 5);
 }
