@@ -134,9 +134,7 @@ namespace Game {
 		pos -= mapOffset * originRange;
 
 		// chunk -> tile
-		pos *= glm::vec2{MapChunk::size} * MapChunk::tileSize;
-
-		return pos;
+		return glm::vec2{pos * MapChunk::size} * MapChunk::tileSize;
 	}
 
 	MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) {
