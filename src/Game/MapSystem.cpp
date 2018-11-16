@@ -60,21 +60,22 @@ namespace Game {
 			applyEdit(&MapChunk::removeTile);
 		}
 
+		
+		const auto tlChunk = worldToChunk(camera->screenToWorld({0, 0}));
+		const auto brChunk = worldToChunk(camera->screenToWorld(camera->getScreenSize()));
+
+
 		// TODO: this shoudl be before edit
 		{
-			const auto tl = worldToChunk(camera->screenToWorld({0, 0}));
-			const auto br = worldToChunk(camera->screenToWorld(camera->getScreenSize()));
-
 			// TODO: if we had velocity we would only need to check two sides instead of all four
-
-			for (int x = tl.x; x <= br.x; ++x) {
-				loadChunk({x, tl.y});
-				loadChunk({x, br.y});
+			for (int x = tlChunk.x; x <= brChunk.x; ++x) {
+				loadChunk({x, tlChunk.y});
+				loadChunk({x, brChunk.y});
 			}
 
-			for (int y = br.y; y <= tl.y; ++y) {
-				loadChunk({tl.x, y});
-				loadChunk({br.x, y});
+			for (int y = brChunk.y; y <= tlChunk.y; ++y) {
+				loadChunk({tlChunk.x, y});
+				loadChunk({brChunk.x, y});
 			}
 		}
 
@@ -82,9 +83,10 @@ namespace Game {
 
 		{
 			glm::mat4 mvp = camera->getProjection() * camera->getView();
-			for (int y = 0; y < mapSize.y; ++y) {
-				for (int x = 0; x < mapSize.x; ++x) {
-					chunks[x][y].draw(mvp);
+
+			for (int y = brChunk.y; y <= tlChunk.y; ++y) {
+				for (int x = tlChunk.x; x <= brChunk.x; ++x) {
+					getChunkAt({x, y}).draw(mvp);
 				}
 			}
 		}
