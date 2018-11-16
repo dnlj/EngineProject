@@ -78,34 +78,7 @@ namespace Game {
 			}
 		}
 
-		{ // TODO: Move to own system? This should happen before the next frame
-			const auto& pos = camera->getPosition();
-			constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::tileSize;
-
-			if (std::abs(pos.x) > range.x) {
-				auto& physSys = world.getSystem<Game::PhysicsSystem>();
-				auto dir = std::copysign(1.0f, pos.x);
-
-				physSys.getWorld().ShiftOrigin(b2Vec2{
-					range.x * dir,
-					0.0f
-				});
-
-				mapOffset.x += static_cast<int>(dir);
-			}
-
-			if (std::abs(pos.y) > range.y) {
-				auto& physSys = world.getSystem<Game::PhysicsSystem>();
-				auto dir = std::copysign(1.0f, pos.y);
-
-				physSys.getWorld().ShiftOrigin(b2Vec2{
-					0.0f,
-					range.y * dir
-				});
-
-				mapOffset.y += static_cast<int>(dir);
-			}
-		}
+		updateOrigin();
 
 		{
 			glm::mat4 mvp = camera->getProjection() * camera->getView();
@@ -149,6 +122,36 @@ namespace Game {
 		if (worldToChunk(chunk.getPosition()) != pos) {
 			std::cout << "loadChunk: " << "(" << pos.x << ", " << pos.y << ")    " << rand() << "\n";
 			chunk.from(world.getSystem<PhysicsSystem>(), chunkToWorld(pos)); // TODO: Data
+		}
+	}
+
+	void MapSystem::updateOrigin() {
+		// TODO: Move to own system? This should happen before the next frame
+		const auto& pos = camera->getPosition();
+		constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::tileSize;
+
+		if (std::abs(pos.x) > range.x) {
+			auto& physSys = world.getSystem<Game::PhysicsSystem>();
+			auto dir = std::copysign(1.0f, pos.x);
+
+			physSys.getWorld().ShiftOrigin(b2Vec2{
+				range.x * dir,
+				0.0f
+			});
+
+			mapOffset.x += static_cast<int>(dir);
+		}
+
+		if (std::abs(pos.y) > range.y) {
+			auto& physSys = world.getSystem<Game::PhysicsSystem>();
+			auto dir = std::copysign(1.0f, pos.y);
+
+			physSys.getWorld().ShiftOrigin(b2Vec2{
+				0.0f,
+				range.y * dir
+			});
+
+			mapOffset.y += static_cast<int>(dir);
 		}
 	}
 }

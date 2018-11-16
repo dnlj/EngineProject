@@ -43,6 +43,9 @@ namespace Game {
 			// TODO: Doc
 			void loadChunk(glm::ivec2 pos);
 
+			// TODO: Doc
+			void updateOrigin();
+
 			/** The number of chunks in the map */
 			constexpr static glm::ivec2 mapSize = {8, 8};
 
