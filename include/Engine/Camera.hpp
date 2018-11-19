@@ -54,6 +54,7 @@ namespace Engine {
 		private:
 			void setProjection(glm::mat4 m);
 			void setView(glm::mat4 m);
+			void updateScreenBounds();
 
 			glm::mat4 view{1.0f};
 			glm::mat4 viewInv;
