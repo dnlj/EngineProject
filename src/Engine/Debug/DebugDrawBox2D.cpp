@@ -80,12 +80,16 @@ namespace Engine::Debug {
 		glDeleteProgram(shader);
 	}
 
+	void DebugDrawBox2D::setup(Camera& camera) {
+		this->camera = &camera;
+	}
+
 	void DebugDrawBox2D::reset() {
 		vertexCount = 0;
 		vertexWarning = true;
 	}
 
-	void DebugDrawBox2D::draw(glm::mat4 projection, glm::mat4 view) {
+	void DebugDrawBox2D::draw() {
 		glBindVertexArray(vao);
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -93,7 +97,7 @@ namespace Engine::Debug {
 
 		glUseProgram(shader);
 
-		glm::mat4 pv = projection * view;
+		glm::mat4 pv = camera->getProjection() * camera->getView();
 		glUniformMatrix4fv(2, 1, GL_FALSE, &pv[0][0]);
 
 		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexCount));

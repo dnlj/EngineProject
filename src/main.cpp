@@ -238,6 +238,10 @@ void run() {
 	Engine::EngineInstance engine;
 	Game::World world;
 
+	#if defined (DEBUG_PHYSICS)
+		world.getSystem<Game::PhysicsSystem>().getDebugDraw().setup(engine.camera);
+	#endif
+
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		world.getSystem<Game::SpriteSystem>().setup(engine);
@@ -330,7 +334,7 @@ void run() {
 
 		// Physics debug
 		#if defined (DEBUG_PHYSICS)
-			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw(engine.camera.getProjection(), engine.camera.getView());
+			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw();
 		#endif
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{70});

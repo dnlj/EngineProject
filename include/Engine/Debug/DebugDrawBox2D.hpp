@@ -13,6 +13,9 @@
 // Box2D
 #include <Box2D/Box2D.h>
 
+// Engine
+#include <Engine/Camera.hpp>
+
 namespace Engine::Debug {
 	class DebugDrawBox2D : public b2Draw {
 		private:
@@ -26,6 +29,9 @@ namespace Engine::Debug {
 			DebugDrawBox2D();
 			~DebugDrawBox2D();
 
+			// TODO: Doc
+			void setup(Camera& camera);
+
 			/**
 			 * @brief Resets the vertices to be drawn next frame.
 			 */
@@ -34,7 +40,7 @@ namespace Engine::Debug {
 			/**
 			 * @brief Draws the vertices currently in the vertex data.
 			 */
-			void draw(glm::mat4 projection, glm::mat4 view);
+			void draw();
 
 			/** @brief see Box2D documentation. */
 			virtual void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override;
@@ -90,7 +96,11 @@ namespace Engine::Debug {
 			GLuint shader;
 
 			/** Used to prevent vertex warning */
-			 bool vertexWarning = true;
+			bool vertexWarning = true;
+
+			// TODO: Doc
+			Camera* camera = nullptr;
+
 
 			/**
 			 * @brief Adds a vertex the vertex data to draw.
