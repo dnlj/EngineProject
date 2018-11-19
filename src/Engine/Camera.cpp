@@ -19,7 +19,7 @@ namespace Engine {
 		setView(glm::translate(glm::mat4{1.0f}, -position));
 	}
 
-	glm::vec3 Camera::getPosition() const {
+	const glm::vec3& Camera::getPosition() const {
 		return position;
 	}
 
