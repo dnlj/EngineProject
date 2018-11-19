@@ -101,10 +101,10 @@ namespace Engine::Debug {
 			/** Used to prevent vertex warning */
 			bool vertexWarning = true;
 
-			// TODO: Doc
+			/** The camera to use */
 			Camera* camera = nullptr;
 
-			// TODO: Doc
+			/** The bounding box of the screen in world space */
 			Camera::ScreenBounds screenBounds;
 
 			/**
