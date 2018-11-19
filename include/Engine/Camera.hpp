@@ -45,10 +45,14 @@ namespace Engine {
 			 */
 			glm::vec2 screenToWorld(glm::vec2 point) const;
 
-			// TODO: Doc
+			/**
+			 * @return The screen size in pixels.
+			 */
 			const glm::ivec2& getScreenSize() const;
 
-			// TODO: Doc
+			/**
+			 * @return The bounds of the screen in world coordinates.
+			 */
 			const Camera::ScreenBounds& getWorldScreenBounds() const;
 
 		private:
