@@ -64,29 +64,29 @@ namespace Game {
 		}
 
 		
-		const auto tlChunk = worldToChunk(camera->screenToWorld({0, 0}));
-		const auto brChunk = worldToChunk(camera->screenToWorld(camera->getScreenSize()));
+		const auto minChunk = worldToChunk(camera->getWorldScreenBounds().min);
+		const auto maxChunk = worldToChunk(camera->getWorldScreenBounds().max);
 
 
 		// TODO: this shoudl be before edit
 		{
 			// TODO: if we had velocity we would only need to check two sides instead of all four
-			for (int x = tlChunk.x; x <= brChunk.x; ++x) {
-				loadChunk({x, tlChunk.y});
-				loadChunk({x, brChunk.y});
+			for (int x = minChunk.x; x <= maxChunk.x; ++x) {
+				loadChunk({x, minChunk.y});
+				loadChunk({x, maxChunk.y});
 			}
 
-			for (int y = brChunk.y; y <= tlChunk.y; ++y) {
-				loadChunk({tlChunk.x, y});
-				loadChunk({brChunk.x, y});
+			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
+				loadChunk({minChunk.x, y});
+				loadChunk({maxChunk.x, y});
 			}
 		}
 
 		{
 			glm::mat4 mvp = camera->getProjection() * camera->getView();
 
-			for (int y = brChunk.y; y <= tlChunk.y; ++y) {
-				for (int x = tlChunk.x; x <= brChunk.x; ++x) {
+			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
+				for (int x = minChunk.x; x <= maxChunk.x; ++x) {
 					getChunkAt({x, y}).draw(mvp);
 				}
 			}
