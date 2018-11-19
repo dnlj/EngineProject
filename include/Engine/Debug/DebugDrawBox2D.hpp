@@ -101,6 +101,13 @@ namespace Engine::Debug {
 			// TODO: Doc
 			Camera* camera = nullptr;
 
+			// TODO: Doc
+			glm::vec2 screenBoundsMin;
+			glm::vec2 screenBoundsMax;
+
+			// TODO: Doc
+			bool shouldCullLineSegment(const b2Vec2& p1, const b2Vec2& p2);
+
 
 			/**
 			 * @brief Adds a vertex the vertex data to draw.

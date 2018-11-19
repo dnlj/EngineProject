@@ -7,6 +7,7 @@
 
 // GLM
 #include <glm/gtc/constants.hpp>
+#include <glm/glm.hpp>
 
 // Engine
 #include <Engine/Debug/Debug.hpp>
@@ -101,6 +102,14 @@ namespace Engine::Debug {
 		glUniformMatrix4fv(2, 1, GL_FALSE, &pv[0][0]);
 
 		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexCount));
+
+		{ // Update screen bounds
+			const auto tl = camera->screenToWorld({0, 0});
+			const auto br = camera->screenToWorld(camera->getScreenSize());
+
+			screenBoundsMin = {tl.x, br.y};
+			screenBoundsMax = {br.x, tl.y};
+		}
 	}
 
 	void DebugDrawBox2D::DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) {
@@ -135,6 +144,8 @@ namespace Engine::Debug {
 	}
 
 	void DebugDrawBox2D::DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color) {
+		if (shouldCullLineSegment(p1, p2)) { return; }
+
 		// Get a scaled normal vector
 		b2Vec2 normal{p2.y - p1.y, -p2.x + p1.x};
 		normal.Normalize();
@@ -157,6 +168,8 @@ namespace Engine::Debug {
 	}
 
 	void DebugDrawBox2D::DrawSegmentInside(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color) {
+		if (shouldCullLineSegment(p1, p2)) { return; }
+
 		// Get a scaled normal vector
 		b2Vec2 normal{p2.y - p1.y, -p2.x + p1.x};
 		normal.Normalize();
@@ -185,6 +198,14 @@ namespace Engine::Debug {
 
 	void DebugDrawBox2D::DrawPoint(const b2Vec2& p, float32 size, const b2Color& color) {
 		ENGINE_WARN("TODO: DrawPoint is not yet implemented.");
+	}
+
+	bool DebugDrawBox2D::shouldCullLineSegment(const b2Vec2& p1, const b2Vec2& p2) {
+		const glm::vec2 aabbMin = {std::min(p1.x, p2.x), std::min(p1.y, p2.y)};
+		const glm::vec2 aabbMax = {std::max(p1.x, p2.x), std::max(p1.y, p2.y)};
+
+		return glm::all(glm::lessThan(aabbMax, screenBoundsMin))
+			|| glm::all(glm::greaterThan(aabbMin, screenBoundsMax));
 	}
 
 	void DebugDrawBox2D::addVertex(Vertex vertex) {
