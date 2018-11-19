@@ -29,7 +29,11 @@ namespace Engine::Debug {
 			DebugDrawBox2D();
 			~DebugDrawBox2D();
 
-			// TODO: Doc
+			/**
+			 * Performs camera dependant setup.
+			 * Should be called before use.
+			 * @param[in,out] camera The camera to use.
+			 */
 			void setup(Camera& camera);
 
 			/**
