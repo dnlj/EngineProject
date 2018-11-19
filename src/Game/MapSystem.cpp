@@ -133,6 +133,7 @@ namespace Game {
 	}
 
 	void MapSystem::updateOrigin() {
+		// TODO: Move to own system. This doesnt really depend on the map.
 		const auto& pos = camera->getPosition();
 		constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::tileSize;
 
