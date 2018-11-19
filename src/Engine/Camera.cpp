@@ -17,6 +17,11 @@ namespace Engine {
 	void Camera::setPosition(const glm::vec2 newPosition) {
 		position = glm::vec3(newPosition, 0.0f);
 		view = glm::translate(glm::mat4{1.0f}, -position);
+
+		// Update screen bounds
+		const auto tl = screenToWorld({0, 0});
+		const auto br = screenToWorld(getScreenSize());
+		screenBounds = {{tl.x, br.y}, {br.x, tl.y}};
 	}
 
 	glm::vec3 Camera::getPosition() const {
@@ -58,10 +63,7 @@ namespace Engine {
 		return glm::inverse(view) * glm::inverse(projection) * glm::vec4(point, 0, 1);
 	}
 
-	Camera::ScreenBounds Camera::getWorldScreenBounds() const {
-		// TODO: Cache result
-		const auto tl = screenToWorld({0, 0});
-		const auto br = screenToWorld(getScreenSize());
-		return {{tl.x, br.y}, {br.x, tl.y}};
+	const Camera::ScreenBounds& Camera::getWorldScreenBounds() const {
+		return screenBounds;
 	}
 }

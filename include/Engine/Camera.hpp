@@ -49,7 +49,7 @@ namespace Engine {
 			const glm::ivec2& getScreenSize() const;
 
 			// TODO: Doc
-			ScreenBounds getWorldScreenBounds() const;
+			const Camera::ScreenBounds& getWorldScreenBounds() const;
 
 		private:
 			glm::mat4 view{1.0f};
@@ -57,5 +57,6 @@ namespace Engine {
 			glm::vec3 position;
 			glm::ivec2 size = {0, 0};
 			float scale = 1.0f;
+			ScreenBounds screenBounds;
 	};
 }
