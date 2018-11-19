@@ -84,7 +84,7 @@ namespace Engine::Debug {
 			static constexpr unsigned int MIN_CIRCLE_VERTICES = 8;
 
 			/** The vertex data */
-			std::array<Vertex, 1ull << 14> vertexData;
+			std::array<Vertex, 1ull << 15> vertexData;
 
 			/** The number of elements in the vertex data */
 			size_t vertexCount = 0;
