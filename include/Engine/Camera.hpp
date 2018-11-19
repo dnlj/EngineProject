@@ -52,11 +52,19 @@ namespace Engine {
 			const Camera::ScreenBounds& getWorldScreenBounds() const;
 
 		private:
+			void setProjection(glm::mat4 m);
+			void setView(glm::mat4 m);
+
 			glm::mat4 view{1.0f};
-			glm::mat4 projection{1.0f};
+			glm::mat4 viewInv;
+
+			glm::mat4 proj{1.0f};
+			glm::mat4 projInv;
+
 			glm::vec3 position;
 			glm::ivec2 size = {0, 0};
 			float scale = 1.0f;
+
 			ScreenBounds screenBounds;
 	};
 }

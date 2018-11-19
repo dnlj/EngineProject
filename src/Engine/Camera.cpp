@@ -11,12 +11,12 @@ namespace Engine {
 		this->scale = scale;
 
 		const auto half = glm::vec2{size} / 2.0f * scale;
-		projection = glm::ortho(-half.x, half.x, -half.y, half.y);
+		setProjection(glm::ortho(-half.x, half.x, -half.y, half.y));
 	}
 
 	void Camera::setPosition(const glm::vec2 newPosition) {
 		position = glm::vec3(newPosition, 0.0f);
-		view = glm::translate(glm::mat4{1.0f}, -position);
+		setView(glm::translate(glm::mat4{1.0f}, -position));
 
 		// Update screen bounds
 		const auto tl = screenToWorld({0, 0});
@@ -45,7 +45,7 @@ namespace Engine {
 	}
 
 	const glm::mat4& Camera::getProjection() const {
-		return projection;
+		return proj;
 	}
 
 	const glm::mat4& Camera::getView() const {
@@ -60,10 +60,20 @@ namespace Engine {
 		point.y *= -1.0f;
 
 		// Apply camera transforms
-		return glm::inverse(view) * glm::inverse(projection) * glm::vec4(point, 0, 1);
+		return viewInv * projInv * glm::vec4(point, 0, 1);
 	}
 
 	const Camera::ScreenBounds& Camera::getWorldScreenBounds() const {
 		return screenBounds;
+	}
+
+	void Camera::setProjection(glm::mat4 m) {
+		projInv = glm::inverse(m);
+		proj = std::move(m);
+	}
+
+	void Camera::setView(glm::mat4 m) {
+		viewInv = glm::inverse(m);
+		view = std::move(m);
 	}
 }
