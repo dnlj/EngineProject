@@ -237,7 +237,7 @@ namespace Engine::Debug {
 			vertex.color.b = powf(vertex.color.b, 2.2f);
 			vertex.color.a = powf(vertex.color.a, 2.2f);
 
-			vertexData[vertexCount] = vertex;
+			vertexData[vertexCount] = std::move(vertex);
 			++vertexCount;
 		}
 	}
