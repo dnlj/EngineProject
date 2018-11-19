@@ -107,8 +107,14 @@ namespace Engine::Debug {
 			// TODO: Doc
 			Camera::ScreenBounds screenBounds;
 
-			// TODO: Doc
+			/**
+			 * Checks if the AABB of a line is off screen.
+			 */
 			bool shouldCullLineSegment(const b2Vec2& p1, const b2Vec2& p2);
+
+			/**
+			 * Checks if a circle is off screen.
+			 */
 			bool shouldCullCircle(const b2Vec2& center, float32 radius);
 
 
