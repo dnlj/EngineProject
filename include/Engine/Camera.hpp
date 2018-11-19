@@ -4,7 +4,6 @@
 #include <glm/glm.hpp>
 
 
-// TODO: Doc
 namespace Engine {
 	class Camera {
 		public:
@@ -14,9 +13,24 @@ namespace Engine {
 			};
 
 		public:
+			/**
+			 * Sets this camera to use an orthographic projection.
+			 */
 			void setAsOrtho(int width, int height, float scale);
+
+			/**
+			 * @return The width of the screen in pixels.
+			 */
 			int getWidth() const;
+
+			/**
+			 * @return The height of the screen in pixels.
+			 */
 			int getHeight() const;
+
+			/**
+			 * @return The scale of world units to pixels.
+			 */
 			float getScale() const;
 
 			/**
