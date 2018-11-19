@@ -19,15 +19,15 @@ namespace Game {
 
 		for (int y = 0; y < mapSize.y; ++y) {
 			for (int x = 0; x < mapSize.x; ++x) {
-				chunks[x][y].setup(
+				auto& chunk = chunks[x][y];
+
+				chunk.setup(
 					world,
-					glm::vec2{
-						x * MapChunk::size.x * MapChunk::tileSize,
-						y * MapChunk::size.y * MapChunk::tileSize
-					},
 					shader.get(),
 					texture.get()
 				);
+
+				loadChunk(chunk, glm::ivec2{x, y});
 			}
 		}
 	}
@@ -118,13 +118,17 @@ namespace Game {
 		return chunks[pos.x][pos.y];
 	}
 
-	void MapSystem::loadChunk(glm::ivec2 pos) {
+	void MapSystem::loadChunk(glm::ivec2 pos) {	
 		auto& chunk = getChunkAt(pos);
 
 		if (worldToChunk(chunk.getPosition()) != pos) {
 			std::cout << "loadChunk: " << "(" << pos.x << ", " << pos.y << ")    " << rand() << "\n";
-			chunk.from(world.getSystem<PhysicsSystem>(), chunkToWorld(pos)); // TODO: Data
+			loadChunk(chunk, pos);
 		}
+	}
+
+	void MapSystem::loadChunk(MapChunk& chunk, glm::ivec2 pos) {
+		chunk.from(world.getSystem<PhysicsSystem>(), chunkToWorld(pos)); // TODO: Data
 	}
 
 	void MapSystem::updateOrigin() {

@@ -26,13 +26,12 @@ namespace Game {
 		glDeleteBuffers(1, &ebo);
 	}
 
-	void MapChunk::setup(World& world, glm::vec2 pos, GLuint shader, GLuint texture) {
+	void MapChunk::setup(World& world, GLuint shader, GLuint texture) {
 		this->shader = shader;
 		this->texture = texture;
 		ent = world.createEntity(true);
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		createBody(physSys);
-		from(physSys, pos);
 	}
 
 	void MapChunk::from(PhysicsSystem& physSys, glm::vec2 pos) {
