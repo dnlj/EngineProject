@@ -42,6 +42,9 @@ namespace Engine::Debug {
 			 */
 			void draw();
 
+			// TODO: Doc
+			size_t getVertexCount() const;
+
 			/** @brief see Box2D documentation. */
 			virtual void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override;
 

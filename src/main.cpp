@@ -74,6 +74,11 @@ namespace {
 		auto mapOffset = mapSys.getOffset();
 		ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
 
+		#if defined(DEBUG_PHYSICS)
+			auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
+			ImGui::Text("Physics Debug Verts: (%i)", physDebug.getVertexCount());
+		#endif
+
 		ImGui::End();
 	}
 

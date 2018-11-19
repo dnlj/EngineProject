@@ -112,6 +112,10 @@ namespace Engine::Debug {
 		}
 	}
 
+	 size_t DebugDrawBox2D::getVertexCount() const {
+		return vertexCount;
+	}
+
 	void DebugDrawBox2D::DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) {
 		for (int32 i = 0; i < vertexCount - 1; ++i) {
 			DrawSegmentInside(vertices[i], vertices[i + 1], color);
@@ -208,8 +212,8 @@ namespace Engine::Debug {
 		const glm::vec2 aabbMin = {std::min(p1.x, p2.x), std::min(p1.y, p2.y)};
 		const glm::vec2 aabbMax = {std::max(p1.x, p2.x), std::max(p1.y, p2.y)};
 
-		return glm::all(glm::lessThan(aabbMax, screenBoundsMin))
-			|| glm::all(glm::greaterThan(aabbMin, screenBoundsMax));
+		return glm::any(glm::lessThan(aabbMax, screenBoundsMin))
+			|| glm::any(glm::greaterThan(aabbMin, screenBoundsMax));
 	}
 
 	bool DebugDrawBox2D::shouldCullCircle(const b2Vec2& center, float32 radius) {
