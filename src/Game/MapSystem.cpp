@@ -5,6 +5,7 @@
 #include <Game/MapSystem.hpp>
 #include <Game/PhysicsSystem.hpp>
 #include <Game/SpriteSystem.hpp>
+#include <Game/CameraTrackingSystem.hpp>
 
 namespace Game {
 	MapSystem::MapSystem(World& world) : SystemBase{world} {
@@ -33,6 +34,8 @@ namespace Game {
 	}
 
 	void MapSystem::run(float dt) {
+		updateOrigin();
+
 		const auto applyEdit = [&](auto func){
 			const auto mpos = camera->screenToWorld(input->getMousePosition());
 
@@ -78,8 +81,6 @@ namespace Game {
 				loadChunk({brChunk.x, y});
 			}
 		}
-
-		updateOrigin();
 
 		{
 			glm::mat4 mvp = camera->getProjection() * camera->getView();
@@ -132,7 +133,6 @@ namespace Game {
 	}
 
 	void MapSystem::updateOrigin() {
-		// TODO: Move to own system? This should happen before the next frame
 		const auto& pos = camera->getPosition();
 		constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::tileSize;
 
@@ -146,6 +146,10 @@ namespace Game {
 			});
 
 			mapOffset.x += static_cast<int>(dir);
+
+			// TODO: Figure out a better way to update camera. This seems hacky.
+			// TODO: Doing this could also cause problems with other things that use the camera.
+			world.getSystem<CameraTrackingSystem>().run(0.0f);
 		}
 
 		if (std::abs(pos.y) > range.y) {
@@ -158,6 +162,10 @@ namespace Game {
 			});
 
 			mapOffset.y += static_cast<int>(dir);
+
+			// TODO: Figure out a better way to update camera. This seems hacky.
+			// TODO: Doing this could also cause problems with other things that use the camera.
+			world.getSystem<CameraTrackingSystem>().run(0.0f);
 		}
 	}
 }
