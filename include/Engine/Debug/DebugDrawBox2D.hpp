@@ -107,6 +107,7 @@ namespace Engine::Debug {
 
 			// TODO: Doc
 			bool shouldCullLineSegment(const b2Vec2& p1, const b2Vec2& p2);
+			bool shouldCullCircle(const b2Vec2& center, float32 radius);
 
 
 			/**

@@ -133,11 +133,15 @@ namespace Engine::Debug {
 	}
 
 	void DebugDrawBox2D::DrawCircle(const b2Vec2& center, float32 radius, const b2Color& color) {
+		if (shouldCullCircle(center, radius)) { return; };
+
 		const auto vertices = getCircleVertices(center, radius);
 		DrawPolygon(vertices.data(), static_cast<int>(vertices.size()), color);
 	}
 
 	void DebugDrawBox2D::DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color) {
+		if (shouldCullCircle(center, radius)) { return; };
+
 		const auto vertices = getCircleVertices(center, radius);
 		DrawSolidPolygon(vertices.data(), static_cast<int>(vertices.size()), color);
 		DrawSegment(center, center + radius * axis, color);
@@ -206,6 +210,14 @@ namespace Engine::Debug {
 
 		return glm::all(glm::lessThan(aabbMax, screenBoundsMin))
 			|| glm::all(glm::greaterThan(aabbMin, screenBoundsMax));
+	}
+
+	bool DebugDrawBox2D::shouldCullCircle(const b2Vec2& center, float32 radius) {
+		const glm::vec2 min = {center.x + radius, center.y + radius};
+		const glm::vec2 max = {center.x - radius, center.y - radius};
+
+		return glm::any(glm::lessThan(min, screenBoundsMin))
+			|| glm::any(glm::greaterThan(max, screenBoundsMax));
 	}
 
 	void DebugDrawBox2D::addVertex(Vertex vertex) {
