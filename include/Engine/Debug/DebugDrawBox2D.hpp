@@ -46,7 +46,9 @@ namespace Engine::Debug {
 			 */
 			void draw();
 
-			// TODO: Doc
+			/**
+			 * @return The number of vertices currently in use.
+			 */
 			size_t getVertexCount() const;
 
 			/** @brief see Box2D documentation. */
