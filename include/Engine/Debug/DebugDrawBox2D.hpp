@@ -105,8 +105,7 @@ namespace Engine::Debug {
 			Camera* camera = nullptr;
 
 			// TODO: Doc
-			glm::vec2 screenBoundsMin;
-			glm::vec2 screenBoundsMax;
+			Camera::ScreenBounds screenBounds;
 
 			// TODO: Doc
 			bool shouldCullLineSegment(const b2Vec2& p1, const b2Vec2& p2);

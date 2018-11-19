@@ -8,6 +8,7 @@
 // GLM
 #include <glm/gtc/constants.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_access.hpp>
 
 // Engine
 #include <Engine/Debug/Debug.hpp>
@@ -103,13 +104,8 @@ namespace Engine::Debug {
 
 		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertexCount));
 
-		{ // Update screen bounds
-			const auto tl = camera->screenToWorld({0, 0});
-			const auto br = camera->screenToWorld(camera->getScreenSize());
-
-			screenBoundsMin = {tl.x, br.y};
-			screenBoundsMax = {br.x, tl.y};
-		}
+		// Update screen bounds
+		screenBounds = camera->getWorldScreenBounds();
 	}
 
 	 size_t DebugDrawBox2D::getVertexCount() const {
@@ -212,16 +208,16 @@ namespace Engine::Debug {
 		const glm::vec2 aabbMin = {std::min(p1.x, p2.x), std::min(p1.y, p2.y)};
 		const glm::vec2 aabbMax = {std::max(p1.x, p2.x), std::max(p1.y, p2.y)};
 
-		return glm::any(glm::lessThan(aabbMax, screenBoundsMin))
-			|| glm::any(glm::greaterThan(aabbMin, screenBoundsMax));
+		return glm::any(glm::lessThan(aabbMax, screenBounds.min))
+			|| glm::any(glm::greaterThan(aabbMin, screenBounds.max));
 	}
 
 	bool DebugDrawBox2D::shouldCullCircle(const b2Vec2& center, float32 radius) {
 		const glm::vec2 min = {center.x + radius, center.y + radius};
 		const glm::vec2 max = {center.x - radius, center.y - radius};
 
-		return glm::any(glm::lessThan(min, screenBoundsMin))
-			|| glm::any(glm::greaterThan(max, screenBoundsMax));
+		return glm::any(glm::lessThan(min, screenBounds.min))
+			|| glm::any(glm::greaterThan(max, screenBounds.max));
 	}
 
 	void DebugDrawBox2D::addVertex(Vertex vertex) {

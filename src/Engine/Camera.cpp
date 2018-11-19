@@ -57,4 +57,11 @@ namespace Engine {
 		// Apply camera transforms
 		return glm::inverse(view) * glm::inverse(projection) * glm::vec4(point, 0, 1);
 	}
+
+	Camera::ScreenBounds Camera::getWorldScreenBounds() const {
+		// TODO: Cache result
+		const auto tl = screenToWorld({0, 0});
+		const auto br = screenToWorld(getScreenSize());
+		return {{tl.x, br.y}, {br.x, tl.y}};
+	}
 }

@@ -8,6 +8,12 @@
 namespace Engine {
 	class Camera {
 		public:
+			struct ScreenBounds {
+				glm::vec2 min;
+				glm::vec2 max;
+			};
+
+		public:
 			void setAsOrtho(int width, int height, float scale);
 			int getWidth() const;
 			int getHeight() const;
@@ -41,6 +47,9 @@ namespace Engine {
 
 			// TODO: Doc
 			const glm::ivec2& getScreenSize() const;
+
+			// TODO: Doc
+			ScreenBounds getWorldScreenBounds() const;
 
 		private:
 			glm::mat4 view{1.0f};
