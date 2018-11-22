@@ -132,6 +132,11 @@ namespace Game {
 		chunk.from(world.getSystem<PhysicsSystem>(), chunkToWorld(pos)); // TODO: Data
 	}
 
+	void MapSystem::loadRegion(glm::ivec2 pos) {
+		const auto region = pos / regionSize;
+
+	}
+
 	void MapSystem::updateOrigin() {
 		// TODO: Move to own system. This doesnt really depend on the map.
 		const auto& pos = camera->getPosition();
