@@ -72,13 +72,13 @@ namespace Game {
 		{
 			// TODO: if we had velocity we would only need to check two sides instead of all four
 			for (int x = minChunk.x; x <= maxChunk.x; ++x) {
-				loadChunk({x, minChunk.y});
-				loadChunk({x, maxChunk.y});
+				ensureChunkLoaded({x, minChunk.y});
+				ensureChunkLoaded({x, maxChunk.y});
 			}
 
 			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
-				loadChunk({minChunk.x, y});
-				loadChunk({maxChunk.x, y});
+				ensureChunkLoaded({minChunk.x, y});
+				ensureChunkLoaded({maxChunk.x, y});
 			}
 		}
 
@@ -119,7 +119,7 @@ namespace Game {
 		return chunks[pos.x][pos.y];
 	}
 
-	void MapSystem::loadChunk(glm::ivec2 pos) {	
+	void MapSystem::ensureChunkLoaded(glm::ivec2 pos) {	
 		auto& chunk = getChunkAt(pos);
 
 		if (worldToChunk(chunk.getPosition()) != pos) {
