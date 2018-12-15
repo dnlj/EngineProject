@@ -57,6 +57,9 @@ workspace(PROJECT_NAME .."Workspace")
 	targetdir "./bin/%{cfg.buildcfg}_%{cfg.platform}"
 	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
 	startproject(PROJECT_NAME)
+	defines {
+		"GLM_FORCE_PURE" -- TODO: Remove. See https://github.com/g-truc/glm/issues/841
+	}
 	
 	filter "action:vs*"
 		buildoptions{
