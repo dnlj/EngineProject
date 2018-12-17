@@ -28,6 +28,7 @@ namespace Game {
 					texture.get()
 				);
 
+				// TODO: switch to regions?
 				loadChunk(chunk, glm::ivec2{x, y});
 			}
 		}
@@ -88,6 +89,7 @@ namespace Game {
 			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
 				for (int x = minChunk.x; x <= maxChunk.x; ++x) {
 					getChunkAt({x, y}).draw(mvp);
+					getChunkAt({x, y}).draw(mvp * glm::scale(glm::mat4{1.0f}, glm::vec3{0.1f}));
 				}
 			}
 		}
@@ -98,10 +100,13 @@ namespace Game {
 	}
 
 	glm::ivec2 MapSystem::worldToChunk(glm::vec2 pos) const {
-		// Chunk position relative to current offset
-		const glm::ivec2 chunkOffset = glm::floor(pos / MapChunk::tileSize / glm::vec2{MapChunk::size});
+		// world -> tile
+		const auto tile = glm::round(pos / MapChunk::tileSize);
 
-		// Absolute chunk position
+		// tile -> relative chunk
+		const glm::ivec2 chunkOffset = glm::floor(tile / glm::vec2{MapChunk::size});
+
+		// relative chunk -> absolute chunk
 		return mapOffset * originRange + chunkOffset;
 	}
 
@@ -119,12 +124,11 @@ namespace Game {
 		return chunks[pos.x][pos.y];
 	}
 
-	void MapSystem::ensureChunkLoaded(glm::ivec2 pos) {	
+	void MapSystem::ensureChunkLoaded(glm::ivec2 pos) {
 		auto& chunk = getChunkAt(pos);
 
 		if (worldToChunk(chunk.getPosition()) != pos) {
-			std::cout << "loadChunk: " << "(" << pos.x << ", " << pos.y << ")    " << rand() << "\n";
-			loadChunk(chunk, pos);
+			loadRegion(chunkToRegion(pos));
 		}
 	}
 
@@ -132,9 +136,27 @@ namespace Game {
 		chunk.from(world.getSystem<PhysicsSystem>(), chunkToWorld(pos)); // TODO: Data
 	}
 
-	void MapSystem::loadRegion(glm::ivec2 pos) {
-		const auto region = pos / regionSize;
+	glm::ivec2 MapSystem::chunkToRegion(glm::ivec2 pos) {
+		// Integer version of floor(a/b)
+		return pos / regionSize - glm::ivec2{glm::lessThan(pos, {0, 0})};
+	}
 
+	glm::ivec2 MapSystem::regionToChunk(glm::ivec2 region) {
+		return region * regionSize;
+	}
+
+	void MapSystem::loadRegion(const glm::ivec2 region) {
+		std::cout << "loadRegion: " << "(" << region.x << ", " << region.y << ")    " << rand() << "\n";
+
+		auto& physSys = world.getSystem<PhysicsSystem>();
+		const auto regionStart = regionToChunk(region);
+
+		for (int y = 0; y < regionSize.y; ++y) {
+			for (int x = 0; x < regionSize.x; ++x) {
+				const auto chunk = regionStart + glm::ivec2{x, y};
+				getChunkAt(chunk).from(physSys, chunkToWorld(chunk)); // TODO: Data
+			}
+		}
 	}
 
 	void MapSystem::updateOrigin() {
