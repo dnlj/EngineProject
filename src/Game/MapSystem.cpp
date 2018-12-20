@@ -36,6 +36,7 @@ namespace Game {
 
 	void MapSystem::run(float dt) {
 		updateOrigin();
+		auto& physSys = world.getSystem<PhysicsSystem>();
 
 		const auto applyEdit = [&](auto func){
 			const auto mpos = camera->screenToWorld(input->getMousePosition());
@@ -55,7 +56,10 @@ namespace Game {
 			// Index of this tile in this chunk
 			const auto indexTile = (MapChunk::size + glm::ivec2{offsetTile} % MapChunk::size) % MapChunk::size;
 
-			(chunks[indexChunk.x][indexChunk.y].*func)(indexTile.x, indexTile.y, world.getSystem<PhysicsSystem>());
+			MapChunk& chunk = chunks[indexChunk.x][indexChunk.y];
+
+			(chunk.*func)(indexTile.x, indexTile.y, physSys);
+			chunk.generate(physSys);
 		};
 
 		if (input->isPressed("edit_place")) {
@@ -71,15 +75,17 @@ namespace Game {
 
 		// TODO: this shoudl be before edit
 		{
+			// TODO: we should probably have a buffer around the screen space for this stuff so it has time to load/gen
+			// TODO: Handle chunk/region loading in different thread
 			// TODO: if we had velocity we would only need to check two sides instead of all four
 			for (int x = minChunk.x; x <= maxChunk.x; ++x) {
-				ensureChunkLoaded({x, minChunk.y});
-				ensureChunkLoaded({x, maxChunk.y});
+				ensureChunkLoaded({x, minChunk.y}).generate(physSys);
+				ensureChunkLoaded({x, maxChunk.y}).generate(physSys);
 			}
 
 			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
-				ensureChunkLoaded({minChunk.x, y});
-				ensureChunkLoaded({maxChunk.x, y});
+				ensureChunkLoaded({minChunk.x, y}).generate(physSys);
+				ensureChunkLoaded({maxChunk.x, y}).generate(physSys);
 			}
 		}
 
@@ -124,12 +130,14 @@ namespace Game {
 		return chunks[pos.x][pos.y];
 	}
 
-	void MapSystem::ensureChunkLoaded(glm::ivec2 pos) {
+	MapChunk& MapSystem::ensureChunkLoaded(glm::ivec2 pos) {
 		auto& chunk = getChunkAt(pos);
 
 		if (worldToChunk(chunk.getPosition()) != pos) {
 			loadRegion(chunkToRegion(pos));
 		}
+
+		return chunk;
 	}
 
 	void MapSystem::loadChunk(MapChunk& chunk, glm::ivec2 pos) {

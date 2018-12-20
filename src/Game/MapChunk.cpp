@@ -36,17 +36,17 @@ namespace Game {
 
 	void MapChunk::from(PhysicsSystem& physSys, glm::vec2 pos) {
 		body->SetTransform(b2Vec2{pos.x, pos.y}, 0.0f);
-		generate(physSys);
+		updated = true;
 	}
 
 	void MapChunk::addTile(int x, int y, PhysicsSystem& physSys) {
 		data[x][y] = DIRT.id;
-		generate(physSys);
+		updated = true;
 	}
 
 	void MapChunk::removeTile(int x, int y, PhysicsSystem& physSys) {
 		data[x][y] = AIR.id;
-		generate(physSys);
+		updated = true;
 	}
 
 	void MapChunk::createBody(PhysicsSystem& physSys) {
@@ -58,8 +58,11 @@ namespace Game {
 		body = physSys.createBody(ent, bodyDef);
 	}
 
+	// TODO: Rename to rebuild or similar? generate is a bad name.
 	void MapChunk::generate(PhysicsSystem& physSys) {
 		// TODO: Look into edge and chain shapes
+
+		if (!updated) { return; }
 
 		{ // Clear all fixtures
 			auto* fixture = body->GetFixtureList();
@@ -172,6 +175,7 @@ namespace Game {
 
 		elementCount = static_cast<GLsizei>(eboData.size());
 		updateVertexData(vboData, eboData);
+		updated = false;
 	}
 
 	glm::vec2 MapChunk::getPosition() const {

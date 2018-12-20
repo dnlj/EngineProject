@@ -56,6 +56,8 @@ namespace Game {
 			GLuint ebo = 0;
 			GLsizei elementCount = 0;
 
+			bool updated = false;
+
 			void createBody(PhysicsSystem& physSys);
 			void updateVertexData(const std::vector<Vertex>& vboData, const std::vector<GLushort>& eboData);
 	};
