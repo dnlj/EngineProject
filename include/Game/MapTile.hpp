@@ -4,5 +4,6 @@ namespace Game {
 	class MapTile {
 		public:
 			const int id;
+			const bool solid;
 	};
 }

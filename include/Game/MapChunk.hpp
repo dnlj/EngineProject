@@ -11,8 +11,8 @@
 namespace Game {
 	class MapChunk {
 		public:
-			constexpr static MapTile AIR{0};
-			constexpr static MapTile DIRT{1};
+			constexpr static MapTile AIR{0, false};
+			constexpr static MapTile DIRT{1, true};
 
 		public:
 			constexpr static glm::ivec2 size = {16, 16};
