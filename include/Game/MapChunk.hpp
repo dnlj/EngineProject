@@ -22,10 +22,27 @@ namespace Game {
 				public:
 					using DepthType = int8_t;
 
+					void setv(int x, int y) { // TODO: Better name
+						set(y * N + x, 1);
+					}
+
+					void unsetv(int x, int y) { // TODO: Better name
+						unset(y * N + x, 1);
+					}
+
 					void set(int current, int currentSize) {
 						if (data[current] != -1) { return; }
 
 						memset(data + current, getDepth(currentSize), currentSize);
+
+						const auto parentSize = currentSize * 4;
+						update(getParentIndex(current, parentSize), parentSize);
+					}
+
+					void unset(int current, int currentSize) {
+						if (data[current] == -1) { return; }
+
+						memset(data + current, -1, currentSize);
 
 						const auto parentSize = currentSize * 4;
 						update(getParentIndex(current, parentSize), parentSize);
@@ -70,7 +87,6 @@ namespace Game {
 					}
 
 					int getChildIndex(int current, int child, int childSize) const {
-						// TODO: update to work with size = 1
 						return current + getChildOffset(child, childSize);
 					}
 
@@ -121,6 +137,9 @@ namespace Game {
 				{0, 0, 0, 0, 0, 0, 2, 0},
 				{4, 0, 0, 0, 0, 0, 0, 3},
 			};
+
+			static_assert(size.x == size.y, "collisionTree expects an equal width and height.");
+			FlatQuadtree<size.x> collisionTree;
 
 			b2Body* body = nullptr; // TODO: Cleanup
 			Engine::ECS::Entity ent;
