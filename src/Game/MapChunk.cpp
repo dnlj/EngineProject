@@ -100,8 +100,12 @@ namespace Game {
 			vboData.push_back(Vertex{glm::vec2{-halfW + center.x, -halfH + center.y}});
 			vboData.push_back(Vertex{glm::vec2{+halfW + center.x, -halfH + center.y}});
 			vboData.push_back(Vertex{glm::vec2{+halfW + center.x, +halfH + center.y}});
+
+			shape.SetAsBox(halfW, halfH, center, 0.0f);
+			body->CreateFixture(&fixtureDef);
 		};
 
+		
 		auto expand = [&](const int ix, const int iy) {
 			int w = 0;
 			int h = 0;
@@ -163,17 +167,33 @@ namespace Game {
 				(iy + h/2.0f) * tileSize
 			);
 
-			shape.SetAsBox(halfW, halfH, center, 0.0f);
+			//shape.SetAsBox(halfW, halfH, center, 0.0f);
 			addRect(halfW, halfH, center);
 
-			body->CreateFixture(&fixtureDef);
+			//body->CreateFixture(&fixtureDef);
 		};
 
 		for (int y = 0; y < size.y; ++y) {
 			for (int x = 0; x < size.x; ++x) {
-				expand(x, y);
+				// TODO: Also try a recursive expand
+				//expand(x, y);
 			}
 		}
+
+		collisionTree.traverse([&](int current, int currentSize) {
+			const float half = std::sqrt(static_cast<float>(currentSize)) * 0.5f * tileSize;
+
+			// TODO: Move this into a function or something and doc
+			const int x = collisionTree.compactBits(current);
+			const int y = collisionTree.compactBits(current >> 1);
+
+			const auto center = b2Vec2{
+				x * tileSize + half,
+				y * tileSize + half
+			};
+
+			addRect(half, half, center);
+		});
 
 		elementCount = static_cast<GLsizei>(eboData.size());
 		updateVertexData(vboData, eboData);
