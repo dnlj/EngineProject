@@ -84,34 +84,17 @@ namespace Game {
 					void split(int child, int childDepth) {
 						if (childDepth == 0) { return; }
 
-						const auto parent = getParentIndex(child, getSize(childDepth) * 4);
 						const auto parentDepth = childDepth - 1;
+						const auto parent = getParentIndex(child, getSize(parentDepth));
 						const auto children = getChildren(parent, getSize(childDepth));
 
 						for (const auto c : children) {
-							if (data[c] == parentDepth) {
+							if (data[c] <= parentDepth) {
 								memset(data + c, childDepth, getSize(childDepth));
 							}
 						}
 
 						split(parent, parentDepth);
-					}
-
-					// TODO: Rename
-					// TODO: use depth
-					void split2(int parent, int parentSize, int current, int oldDepth) {
-						const auto childSize = parentSize / 4;
-						if (childSize == 0) { return; }
-
-						const auto children = getChildren(parent, childSize);
-						const auto parentDepth = getDepth(parentSize);
-						const auto childDepth = getDepth(childSize);
-
-						for (const auto child : children) {
-							if (child != current && data[child] == parentDepth) {
-								memset(data + child, childDepth, childSize);
-							}
-						}
 					}
 
 					// TODO: could pass around depth so we dont need to calculate it every time
