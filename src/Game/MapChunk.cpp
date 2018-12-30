@@ -76,7 +76,6 @@ namespace Game {
 		}
 
 		b2PolygonShape shape;
-
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &shape;
 

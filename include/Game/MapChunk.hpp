@@ -20,10 +20,10 @@ namespace Game {
 			template<int N>
 			class FlatQuadtree {
 				public:
-					using DepthType = int8_t;
+					using DepthType = int8_t; // TODO: why not uint8_t ?
 
 					FlatQuadtree() {
-						memset(data, -1, sizeof(data));
+						memset(data, nullValue, sizeof(data));
 					};
 
 					// TODO: Move
@@ -64,32 +64,62 @@ namespace Game {
 					}
 
 					void set(int current, int currentSize) {
-						// TODO: Dont i need to check depth not just empty?
-						//if (data[current] != -1) { return; } 
+						const auto depth = getDepth(currentSize);
+						if (data[current] < depth) { return; }
 
-						const auto d = getDepth(currentSize); // TODO: Remove;
-						memset(data + current, getDepth(currentSize), currentSize);
+						memset(data + current, depth, currentSize);
 
 						const auto parentSize = currentSize * 4;
-						update(getParentIndex(current, parentSize), parentSize);
+						merge(getParentIndex(current, parentSize), parentSize);
 					}
 
 					void unset(int current, int currentSize) {
-						// TODO: Dont i need to check depth not just empty?
-						//if (data[current] == -1) { return; }
+						const auto depth = data[current];
+						split(current, getDepth(currentSize));
+						memset(data + current, nullValue, currentSize);
+					}
 
-						memset(data + current, -1, currentSize);
+					// TODO: Rename
+					// TODO: use depth
+					void split(int child, int childDepth) {
+						if (childDepth == 0) { return; }
 
-						const auto parentSize = currentSize * 4;
-						update(getParentIndex(current, parentSize), parentSize);
+						const auto parent = getParentIndex(child, getSize(childDepth) * 4);
+						const auto parentDepth = childDepth - 1;
+						const auto children = getChildren(parent, getSize(childDepth));
+
+						for (const auto c : children) {
+							if (data[c] == parentDepth) {
+								memset(data + c, childDepth, getSize(childDepth));
+							}
+						}
+
+						split(parent, parentDepth);
+					}
+
+					// TODO: Rename
+					// TODO: use depth
+					void split2(int parent, int parentSize, int current, int oldDepth) {
+						const auto childSize = parentSize / 4;
+						if (childSize == 0) { return; }
+
+						const auto children = getChildren(parent, childSize);
+						const auto parentDepth = getDepth(parentSize);
+						const auto childDepth = getDepth(childSize);
+
+						for (const auto child : children) {
+							if (child != current && data[child] == parentDepth) {
+								memset(data + child, childDepth, childSize);
+							}
+						}
 					}
 
 					// TODO: could pass around depth so we dont need to calculate it every time
-					void update(int current, int currentSize) {
+					void merge(int current, int currentSize) {
 						const auto childSize = currentSize / 4;
-						const auto first  = data[getChildIndex(current, 0, childSize)];
+						const auto first = data[getChildIndex(current, 0, childSize)];
 						const auto second = data[getChildIndex(current, 1, childSize)];
-						const auto third  = data[getChildIndex(current, 2, childSize)];
+						const auto third = data[getChildIndex(current, 2, childSize)];
 						const auto fourth = data[getChildIndex(current, 3, childSize)];
 						const auto depth = getDepth(currentSize);
 
@@ -103,7 +133,7 @@ namespace Game {
 							const auto parentSize = currentSize * 4;
 
 							if (parentSize <= rootSize) {
-								update(getParentIndex(current, parentSize), parentSize);
+								merge(getParentIndex(current, parentSize), parentSize);
 							}
 						}
 					}
@@ -119,16 +149,33 @@ namespace Game {
 						);
 					}
 
+					// TODO: Change to use depth
 					int getChildOffset(int child, int childSize) const {
 						return child * childSize;
 					}
 
+					// TODO: Change to use depth
 					int getChildIndex(int current, int child, int childSize) const {
 						return current + getChildOffset(child, childSize);
 					}
 
+					// TODO: Change to use depth
+					std::array<int, 4> getChildren(int current, int childSize) {
+						return {
+							getChildIndex(current, 0, childSize),
+							getChildIndex(current, 1, childSize),
+							getChildIndex(current, 2, childSize),
+							getChildIndex(current, 3, childSize),
+						};
+					}
+
+					// TODO: Change to use depth
 					int getParentIndex(int current, int parentSize) const {
 						return (current / parentSize) * parentSize;
+					}
+
+					constexpr static int getSize(DepthType depth) {
+						return rootSize >> depth * 2;
 					}
 
 					template<class Callable>
@@ -137,7 +184,7 @@ namespace Game {
 					}
 
 					template<class Callable>
-					void traverse(Callable&& func, int current, int currentSize, int depth) const {
+					void traverse(Callable&& func, int current, int currentSize, DepthType depth) const {
 						//if (data[current] == -1) { return; } // TODO: Fix
 
 						if (data[current] == depth) {
@@ -159,6 +206,7 @@ namespace Game {
 					static_assert(N && !(N & (N - 1)), "Template parameter 'N' must be a power of two.");
 
 					constexpr static int rootSize = N * N;
+					constexpr static DepthType nullValue = std::numeric_limits<DepthType>::max();
 					DepthType data[rootSize]{};
 			};
 
