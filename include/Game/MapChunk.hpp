@@ -88,6 +88,9 @@ namespace Game {
 						const auto parent = getParentIndex(child, getSize(parentDepth));
 						const auto children = getChildren(parent, getSize(childDepth));
 
+
+						std::cout << "Parent: " << parent << "-" << getParent(child, parentDepth) << "\n";
+
 						for (const auto c : children) {
 							if (data[c] <= parentDepth) {
 								memset(data + c, childDepth, getSize(childDepth));
@@ -157,12 +160,19 @@ namespace Game {
 						return (current / parentSize) * parentSize;
 					}
 
+					constexpr static int getParent(int child, DepthType parentDepth) {
+						const auto maskBits = 2 * (maxDepth - parentDepth);
+						const auto mask = 0xFFFFFFFF << maskBits;
+						return child & mask;
+					}
+
 					constexpr static int getSize(DepthType depth) {
 						return rootSize >> depth * 2;
 					}
 
 					template<class Callable>
 					void traverse(Callable&& callable) const {
+						std::cout << "Max Depth: " << maxDepth << "\n";
 						traverse(callable, 0, rootSize, 0);
 					}
 
@@ -185,10 +195,29 @@ namespace Game {
 						}
 					}
 
+					// TODO: Doc
+					// TODO: Test
+					// TODO: Move
+					// TODO: Check that T is integral type
+					template<class T>
+					constexpr static int count_trailing_zeros(T value) {
+						static_assert(std::is_integral<T>::value, "T must be an integral type");
+
+						auto count = std::numeric_limits<T>::digits;
+
+						while (value) {
+							value = value << 1;
+							--count;
+						}
+
+						return count;
+					}
+
 				private:
 					static_assert(N && !(N & (N - 1)), "Template parameter 'N' must be a power of two.");
 
 					constexpr static int rootSize = N * N;
+					constexpr static int maxDepth = count_trailing_zeros(rootSize) / 2 + 1;
 					constexpr static DepthType nullValue = std::numeric_limits<DepthType>::max();
 					DepthType data[rootSize]{};
 			};
@@ -198,7 +227,7 @@ namespace Game {
 			constexpr static MapTile DIRT{1, true};
 
 		public:
-			constexpr static glm::ivec2 size = {16, 16};
+			constexpr static glm::ivec2 size = {32, 32};
 			constexpr static auto tileSize = 1.0f/5.0f;
 
 		public:
