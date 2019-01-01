@@ -162,7 +162,7 @@ namespace Game {
 
 					constexpr static int getParent(int child, DepthType parentDepth) {
 						const auto maskBits = 2 * (maxDepth - parentDepth);
-						const auto mask = 0xFFFFFFFF << maskBits;
+						const auto mask = 0xFFFFFFFF << maskBits; // TODO: Change to use fixed width for index types
 						return child & mask;
 					}
 
