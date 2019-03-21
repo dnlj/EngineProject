@@ -20,6 +20,7 @@ namespace Game {
 			template<int N>
 			class FlatQuadtree {
 				public:
+					// TODO: Change from depth to level? where level maxDepth - depth. It would work better in some places.
 					using DepthType = int8_t; // TODO: why not uint8_t ?
 
 					FlatQuadtree() {
