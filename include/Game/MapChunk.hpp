@@ -50,9 +50,6 @@ namespace Game {
 				{4, 0, 0, 0, 0, 0, 0, 3},*/
 			};
 
-			static_assert(size.x == size.y, "collisionTree expects an equal width and height.");
-			FlatQuadtree<size.x> collisionTree;
-
 			b2Body* body = nullptr; // TODO: Cleanup
 			Engine::ECS::Entity ent;
 			GLuint shader = 0;

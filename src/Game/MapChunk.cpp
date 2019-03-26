@@ -41,13 +41,11 @@ namespace Game {
 
 	void MapChunk::addTile(int x, int y, PhysicsSystem& physSys) {
 		data[x][y] = DIRT.id;
-		collisionTree.setv(x, y);
 		updated = true;
 	}
 
 	void MapChunk::removeTile(int x, int y, PhysicsSystem& physSys) {
 		data[x][y] = AIR.id;
-		collisionTree.unsetv(x, y);
 		updated = true;
 	}
 
