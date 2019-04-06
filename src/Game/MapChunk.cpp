@@ -105,73 +105,7 @@ namespace Game {
 			body->CreateFixture(&fixtureDef);
 		};
 		
-		const auto expand = [&](const int ix, const int iy) {
-			int w = 0;
-			int h = 0;
-			bool expandWidth = true;
-			bool expandHeight = true;
-
-			while (expandWidth || expandHeight) {
-				if (expandWidth) {
-					const auto limit = std::min(iy + h, size.y);
-					for (int y = iy; y < limit; ++y) {
-						if (used[ix + w][y] || data[ix + w][y] == AIR.id) {
-							if (w == 0) { return; }
-							expandWidth = false;
-							break;
-						}
-					}
-
-					if (expandWidth) {
-						for (int y = iy; y < limit; ++y) {
-							used[ix + w][y] = true;
-						}
-
-						++w;
-
-						if (ix + w == size.x) {
-							expandWidth = false;
-						}
-					}
-				}
-
-				if (expandHeight) {
-					const auto limit = std::min(ix + w, size.x);
-					for (int x = ix; x < limit; ++x) {
-						if (used[x][iy + h] || data[x][iy + h] == AIR.id) {
-							if (h == 0) { return; }
-							expandHeight = false;
-							break;
-						}
-					}
-
-					if (expandHeight) {
-						for (int x = ix; x < limit; ++x) {
-							used[x][iy + h] = true;
-						}
-
-						++h;
-
-						if (iy + h == size.y) {
-							expandHeight = false;
-						}
-					}
-				}
-			}
-
-			auto halfW = tileSize * 0.5f * w;
-			auto halfH = tileSize * 0.5f * h;
-			auto center = b2Vec2(
-				(ix + w/2.0f) * tileSize,
-				(iy + h/2.0f) * tileSize
-			);
-
-			addRect(halfW, halfH, center);
-		};
-
-		// TODO: Rename
-		// TODO: captures?
-		const auto expand2 = [&](const int x0, const int y0){
+		const auto expand = [&](const int x0, const int y0){
 			int x = x0;
 			int y = y0;
 
@@ -203,7 +137,7 @@ namespace Game {
 		for (int x = 0; x < size.x; ++x) {
 			for (int y = 0; y < size.y; ++y) {
 				// TODO: Also try a recursive expand
-				expand2(x, y);
+				expand(x, y);
 			}
 		}
 
