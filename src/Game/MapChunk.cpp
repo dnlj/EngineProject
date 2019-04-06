@@ -1,3 +1,6 @@
+// STD
+#include <iterator>
+
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
 
@@ -83,7 +86,7 @@ namespace Game {
 		vboData.reserve(elementCount); // NOTE: This is only an estimate. the correct ratio would be `c * 4/6.0f`
 		eboData.reserve(elementCount);
 
-		auto addRect = [&](float halfW, float halfH, b2Vec2 center) {
+		const auto addRect = [&](float halfW, float halfH, b2Vec2 center) {
 			const auto size = static_cast<GLushort>(vboData.size());
 
 			eboData.push_back(size + 0);
@@ -101,9 +104,8 @@ namespace Game {
 			shape.SetAsBox(halfW, halfH, center, 0.0f);
 			body->CreateFixture(&fixtureDef);
 		};
-
 		
-		auto expand = [&](const int ix, const int iy) {
+		const auto expand = [&](const int ix, const int iy) {
 			int w = 0;
 			int h = 0;
 			bool expandWidth = true;
@@ -167,10 +169,41 @@ namespace Game {
 			addRect(halfW, halfH, center);
 		};
 
-		for (int y = 0; y < size.y; ++y) {
-			for (int x = 0; x < size.x; ++x) {
+		// TODO: Rename
+		// TODO: captures?
+		const auto expand2 = [&](const int x0, const int y0){
+			int x = x0;
+			int y = y0;
+
+			const auto useable = [
+					&used = std::as_const(used),
+					&data = std::as_const(data)
+				](const auto& value) {
+				return value && !*(&used[0][0] + (&value - &data[0][0]));
+			};
+
+			while (y < size.y && useable(data[x][y])) { ++y; }
+			if (y == y0) { return; }
+
+			do {
+				std::fill(&used[x][y0], &used[x][y], true);
+				++x;
+			} while (x < size.x && std::all_of(&data[x][y0], &data[x][y], useable));
+
+			const auto halfW = tileSize * 0.5f * (x - x0);
+			const auto halfH = tileSize * 0.5f * (y - y0);
+			const auto center = b2Vec2(
+				x0 * tileSize + halfW,
+				y0 * tileSize + halfH
+			);
+
+			addRect(halfW, halfH, center);
+		};
+
+		for (int x = 0; x < size.x; ++x) {
+			for (int y = 0; y < size.y; ++y) {
 				// TODO: Also try a recursive expand
-				expand(x, y);
+				expand2(x, y);
 			}
 		}
 
