@@ -39,7 +39,6 @@ namespace Game {
 					glm::vec2 position;
 			};
 
-			// TODO: Change to row major?
 			int data[size.x][size.y] = {
 				{2, 2, 0, 0, 0, 0, 0, 1},
 				{0, 0, 0, 0, 0, 0, 0, 0},
