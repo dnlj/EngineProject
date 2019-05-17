@@ -282,6 +282,8 @@ void run() {
 			glfwSetWindowShouldClose(window, true);
 		}
 
+		std::cout << "Code: " << scancode << "\tAction: " << action << "\n";
+
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.keyCallback(scancode, action);
 
 		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
@@ -291,10 +293,12 @@ void run() {
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.mouseCallback(x, y);
 	});
 
+	// TODO: look into "Raw mouse motion" https://www.glfw.org/docs/latest/input_guide.html#raw_mouse_motion
 	glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int mods){
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.mouseCallback(button, action);
 		ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 	});
+
 
 	// Framebuffer callback
 	glfwSetFramebufferSizeCallback(window, framebufferCallback);
