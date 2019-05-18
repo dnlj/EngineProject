@@ -6,7 +6,9 @@
 // STD
 #include <string>
 #include <array>
-#include <unordered_map>
+
+// Engine
+#include <Engine/FlatHashMap.hpp>
 
 
 namespace Engine {
@@ -150,7 +152,7 @@ namespace Engine {
 			BindId nextBindID = 0;
 
 			/** Maps bind names to bind ids */
-			std::unordered_map<std::string, BindId> bindToBindID;
+			FlatHashMap<std::string, BindId> bindToBindID;
 
 			/** Converts from scan codes to bind ids */
 			std::vector<BindId> scanCodeToBindID;

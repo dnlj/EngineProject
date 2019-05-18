@@ -20,7 +20,6 @@ namespace {
 
 namespace Engine {
 	InputManager::InputManager() {
-		bindToBindID.max_load_factor(0.5f);
 	}
 	
 	bool InputManager::wasPressed(const std::string& name) const {
