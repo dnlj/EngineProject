@@ -93,8 +93,7 @@ namespace Engine {
 		auto& bid = bindToBindID[name];
 
 		if (inserted) {
-			bid = nextBindID;
-			++nextBindID;
+			bid = static_cast<BindId>(bindToBindID.size() - 1);
 
 			currentState.resize(bid + 1);
 			previousState.resize(bid + 1);

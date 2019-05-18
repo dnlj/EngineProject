@@ -148,9 +148,6 @@ namespace Engine {
 			void mouseCallback(MouseButton button, int action);
 
 		private:
-			/** The next id to assign to bind */
-			BindId nextBindID = 0;
-
 			/** Maps bind names to bind ids */
 			FlatHashMap<std::string, BindId> bindToBindID;
 
