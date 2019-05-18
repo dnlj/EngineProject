@@ -266,4 +266,17 @@ PACKAGES["imgui"] = {
 	end,
 }
 
+PACKAGES["robin_hood"] = {
+	name = "Robin Hood",
+	url = "https://github.com/martinus/robin-hood-hashing/archive/master.zip",
+
+	postExtract = function(uid)
+		local dir = depsDir .. uid .."/"
+		moveFolder(dir .."robin-hood-hashing-master/", dir)
+	end,
+	
+	build = function(uid)
+	end,
+}
+
 return PACKAGES

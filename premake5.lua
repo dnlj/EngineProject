@@ -112,6 +112,7 @@ project("*")
 		"./deps/glm/include",
 		"./deps/box2d/include",
 		"./deps/meta/include",
+		"./deps/robin_hood/src/include",
 	}
 	
 	links {
