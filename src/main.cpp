@@ -274,6 +274,15 @@ void run() {
 	engine.inputManager.bindMouseButton(0, "edit_place");
 	engine.inputManager.bindMouseButton(1, "edit_remove");
 
+	engine.inputManager2.createBind("MoveUp");
+	engine.inputManager2.addInputBindMapping( // TODO: Test multiple inputs
+		Engine::InputSequence{
+			Engine::Input{Engine::InputType::KEYBOARD, 17},
+			Engine::Input{Engine::InputType::KEYBOARD, 31},
+		},
+		"MoveUp"
+	);
+
 	// Callbacks
 	glfwSetWindowUserPointer(window, &engine);
 
@@ -282,9 +291,13 @@ void run() {
 			glfwSetWindowShouldClose(window, true);
 		}
 
-		std::cout << "Code: " << scancode << "\tAction: " << action << "\n";
+		if (action == GLFW_REPEAT) { return; }
+
+		// std::cout << "Code: " << scancode << "\tAction: " << action << "\n";
 
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.keyCallback(scancode, action);
+		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))
+			->inputManager2.processInput({{Engine::InputType::KEYBOARD, scancode}, action == GLFW_PRESS});
 
 		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	});
