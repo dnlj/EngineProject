@@ -274,26 +274,26 @@ void run() {
 	engine.inputManager.bindMouseButton(0, "edit_place");
 	engine.inputManager.bindMouseButton(1, "edit_remove");
 
-	engine.inputManager2.createBind("MoveUp");
-	engine.inputManager2.addInputBindMapping( // TODO: Test multiple inputs
+	engine.inputManager2.createBind("MyTestBind");
+	engine.inputManager2.addInputBindMapping(
 		Engine::InputSequence{
-			Engine::Input{Engine::InputType::KEYBOARD, 17},
-			Engine::Input{Engine::InputType::KEYBOARD, 31},
+			Engine::Input{Engine::InputType::KEYBOARD, 42},
+			Engine::Input{Engine::InputType::MOUSE, 3},
 		},
-		"MoveUp"
+		"MyTestBind"
 	);
 
 	// Callbacks
 	glfwSetWindowUserPointer(window, &engine);
 
 	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+		if (action == GLFW_REPEAT) { return; }
+
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 			glfwSetWindowShouldClose(window, true);
 		}
 
-		if (action == GLFW_REPEAT) { return; }
-
-		// std::cout << "Code: " << scancode << "\tAction: " << action << "\n";
+		//std::cout << "Keyboard Code: " << scancode << "\tAction: " << action << "\n";
 
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.keyCallback(scancode, action);
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))
@@ -308,7 +308,12 @@ void run() {
 
 	// TODO: look into "Raw mouse motion" https://www.glfw.org/docs/latest/input_guide.html#raw_mouse_motion
 	glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int mods){
+		//std::cout << "Mouse Code: " << button << "\tAction: " << action << "\n";
+
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.mouseCallback(button, action);
+		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))
+			->inputManager2.processInput({{Engine::InputType::MOUSE, button}, action == GLFW_PRESS});
+
 		ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 	});
 
