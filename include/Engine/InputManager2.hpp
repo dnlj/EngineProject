@@ -61,11 +61,7 @@ namespace Engine {
 
 				#ifdef DEBUG
 					if (!inputs[0]) {
-						// TODO: Error: must have at least one key
-					}
-
-					if (bid < 0) {
-						// TODO: Error: invalid bind id
+						ENGINE_ERROR("InputSequence must have at least one input.");
 					}
 				#endif
 
