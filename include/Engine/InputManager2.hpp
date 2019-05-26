@@ -30,10 +30,8 @@ namespace Engine {
 
 					if (!preActive && postActive) {
 						binds[map.getBindId()].press();
-						printf("Press: %s\n", binds[map.getBindId()].name.c_str());
 					} else if (preActive && !postActive) {
 						binds[map.getBindId()].release();
-						printf("Release: %s\n", binds[map.getBindId()].name.c_str());
 					}
 				}
 			}
