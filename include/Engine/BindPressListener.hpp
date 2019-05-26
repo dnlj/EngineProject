@@ -2,7 +2,8 @@
 
 namespace Engine {
 	class BindPressListener {
-		public:
+		private:
+			friend class Bind;
 			virtual void onBindPress() = 0;
 	};
 }

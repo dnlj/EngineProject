@@ -3,7 +3,8 @@
 
 namespace Engine {
 	class BindReleaseListener {
-		public:
+		private:
+			friend class Bind;
 			virtual void onBindRelease() = 0;
 	};
 }
