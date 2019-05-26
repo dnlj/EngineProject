@@ -6,6 +6,8 @@
 // Engine
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Input.hpp>
+#include <Engine/InputSequence.hpp>
+#include <Engine/InputState.hpp>
 
 
 // TODO: Doc

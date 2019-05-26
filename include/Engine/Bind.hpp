@@ -4,20 +4,14 @@
 #include <string>
 #include <vector>
 
+// Engine
+#include <Engine/BindPressListener.hpp>
+#include <Engine/BindReleaseListener.hpp>
+
 
 // TODO: Doc
 // TODO: Split
 namespace Engine {
-	class BindPressListener {
-		public:
-			virtual void onBindPress() = 0;
-	};
-
-	class BindReleaseListener {
-		public:
-			virtual void onBindRelease() = 0;
-	};
-
 	class Bind {
 		public:
 			Bind(std::string name) : name{std::move(name)} {

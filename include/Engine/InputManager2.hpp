@@ -9,6 +9,8 @@
 #include <Engine/Bind.hpp>
 #include <Engine/Input.hpp>
 #include <Engine/InputBindMapping.hpp>
+#include <Engine/InputState.hpp>
+#include <Engine/InputSequence.hpp>
 
 
 namespace Engine {

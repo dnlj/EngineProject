@@ -1,24 +1,13 @@
 #pragma once
 
-// STD
-#include <cstdint>
-#include <array>
-
 // Engine
 #include <Engine/Hash.hpp>
+#include <Engine/InputType.hpp>
 
 
 // TODO: Doc
 // TODO: split
 namespace Engine {
-	// TODO: move
-	enum class InputType : int8_t {
-		UNKNOWN = 0,
-		KEYBOARD = 1,
-		MOUSE = 2,
-		GAMEPAD = 3,
-	};
-
 	class Input {
 		public:
 			InputType type = InputType::UNKNOWN;
@@ -28,7 +17,6 @@ namespace Engine {
 				return static_cast<bool>(type);
 			}
 
-			// TODO: split
 			friend bool operator==(const Input& first, const Input& second) {
 				return first.code == second.code
 					&& first.type == second.type;
@@ -47,11 +35,4 @@ namespace Engine {
 				return seed;
 			}
 	};
-	
-	struct InputState {
-		Input input{};
-		bool state = false; // TODO: will need to generalize this for more than just buttons (e.g. an axis)
-	};
-
-	using InputSequence = std::array<Input, 4>;
 }
