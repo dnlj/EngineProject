@@ -243,6 +243,27 @@ void run() {
 	Engine::EngineInstance engine;
 	Game::World world;
 
+	// Binds
+	//engine.inputManager.bindkey(17, "MoveUp");
+	//engine.inputManager.bindkey(31, "MoveDown");
+	//engine.inputManager.bindkey(30, "MoveLeft");
+	//engine.inputManager.bindkey(32, "MoveRight");
+	engine.inputManager.bindkey(57, "Spell_1");
+	engine.inputManager.bindMouseButton(0, "edit_place");
+	engine.inputManager.bindMouseButton(1, "edit_remove");
+
+	// TODO: make to so that addinputBindMapping creates the bind if it doesnt exist.
+	engine.inputManager2.createBind("MoveUp");
+	engine.inputManager2.createBind("MoveDown");
+	engine.inputManager2.createBind("MoveLeft");
+	engine.inputManager2.createBind("MoveRight");
+
+	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 17}}, "MoveUp");
+	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 31}}, "MoveDown");
+	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 30}}, "MoveLeft");
+	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 32}}, "MoveRight");
+
+	// More engine stuff
 	#if defined (DEBUG_PHYSICS)
 		world.getSystem<Game::PhysicsSystem>().getDebugDraw().setup(engine.camera);
 	#endif
@@ -263,25 +284,49 @@ void run() {
 		world.addComponent<Game::InputComponent>(player).inputManager = &engine.inputManager;
 
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
+
+		// TODO: Do this in a better way. Listener on an EntityFilter for CharacterMovementComponent would be one way.
+		const auto createCharacterMOvementListener = [&](glm::ivec2&& move) {
+			class Listener : public Engine::BindPressListener, public Engine::BindReleaseListener {
+				public:
+					Listener(Game::World& world, Engine::ECS::Entity player, glm::ivec2&& move)
+						: world{world}, player{player}, move{move} {
+					}
+
+				private:
+					Game::World& world;
+					const Engine::ECS::Entity player;
+					const glm::ivec2 move;
+
+					virtual void onBindPress() override {
+						auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(player);
+						moveComp.dir += move;
+					}
+
+					virtual void onBindRelease() override {
+						auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(player);
+						moveComp.dir -= move;
+					}
+			};
+
+			return Listener{world, player, std::move(move)};
+		};
+
+		auto playerInputCharacterMovementListenerUp = createCharacterMOvementListener(glm::ivec2{0, 1});
+		auto playerInputCharacterMovementListenerDown = createCharacterMOvementListener(glm::ivec2{0, -1});
+		auto playerInputCharacterMovementListenerLeft = createCharacterMOvementListener(glm::ivec2{-1, 0});
+		auto playerInputCharacterMovementListenerRight = createCharacterMOvementListener(glm::ivec2{1, 0});
+
+		engine.inputManager2.addBindPressListener("MoveUp", &playerInputCharacterMovementListenerUp);
+		engine.inputManager2.addBindPressListener("MoveDown", &playerInputCharacterMovementListenerDown);
+		engine.inputManager2.addBindPressListener("MoveLeft", &playerInputCharacterMovementListenerLeft);
+		engine.inputManager2.addBindPressListener("MoveRight", &playerInputCharacterMovementListenerRight);
+
+		engine.inputManager2.addBindReleaseListener("MoveUp", &playerInputCharacterMovementListenerUp);
+		engine.inputManager2.addBindReleaseListener("MoveDown", &playerInputCharacterMovementListenerDown);
+		engine.inputManager2.addBindReleaseListener("MoveLeft", &playerInputCharacterMovementListenerLeft);
+		engine.inputManager2.addBindReleaseListener("MoveRight", &playerInputCharacterMovementListenerRight);
 	}
-
-	// Binds
-	engine.inputManager.bindkey(17, "MoveUp");
-	engine.inputManager.bindkey(31, "MoveDown");
-	engine.inputManager.bindkey(30, "MoveLeft");
-	engine.inputManager.bindkey(32, "MoveRight");
-	engine.inputManager.bindkey(57, "Spell_1");
-	engine.inputManager.bindMouseButton(0, "edit_place");
-	engine.inputManager.bindMouseButton(1, "edit_remove");
-
-	engine.inputManager2.createBind("MyTestBind");
-	engine.inputManager2.addInputBindMapping(
-		Engine::InputSequence{
-			Engine::Input{Engine::InputType::KEYBOARD, 42},
-			Engine::Input{Engine::InputType::MOUSE, 3},
-		},
-		"MyTestBind"
-	);
 
 	// Callbacks
 	glfwSetWindowUserPointer(window, &engine);

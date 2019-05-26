@@ -16,8 +16,8 @@ namespace Game {
 		: SystemBase{world}
 		, filter{world.getFilterFor<
 			Game::PhysicsComponent,
-			Game::CharacterMovementComponent,
-			Game::InputComponent>()} {
+			Game::CharacterMovementComponent
+		>()} {
 
 		priorityBefore = world.getBitsetForSystems<Game::PhysicsSystem>();
 	}
@@ -26,23 +26,14 @@ namespace Game {
 		constexpr float speed = 1.0f * 4;
 		for (auto ent : filter) {
 			auto& physComp = world.getComponent<Game::PhysicsComponent>(ent);
-			auto& inputComp = world.getComponent<Game::InputComponent>(ent);
-			auto& inputManager = *inputComp.inputManager;
-		
-			if (inputManager.isPressed("MoveUp")) {
-				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, speed * dt}, true);
-			}
-		
-			if (inputManager.isPressed("MoveDown")) {
-				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{0.0f, -speed * dt}, true);
-			}
-		
-			if (inputManager.isPressed("MoveLeft")) {
-				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{-speed * dt, 0.0f}, true);
-			}
-		
-			if (inputManager.isPressed("MoveRight")) {
-				physComp.body->ApplyLinearImpulseToCenter(b2Vec2{speed * dt, 0.0f}, true);
+			auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(ent);
+
+			if (moveComp.dir.x != 0 || moveComp.dir.y != 0) {
+				printf("Move\n");
+				physComp.body->ApplyLinearImpulseToCenter(
+					dt * speed * b2Vec2{static_cast<float>(moveComp.dir.x), static_cast<float>(moveComp.dir.y)},
+					true
+				);
 			}
 		}
 	}
