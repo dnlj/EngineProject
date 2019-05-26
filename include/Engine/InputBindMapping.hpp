@@ -8,12 +8,11 @@
 #include <Engine/Input.hpp>
 #include <Engine/InputSequence.hpp>
 #include <Engine/InputState.hpp>
+#include <Engine/BindId.hpp>
 
 
 // TODO: Doc
 namespace Engine {
-	using BindId = int; // TODO: Move
-
 	class InputBindMapping {
 		public:
 			InputBindMapping(InputSequence inputs, BindId bid);
