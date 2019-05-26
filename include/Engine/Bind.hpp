@@ -10,44 +10,20 @@
 
 
 // TODO: Doc
-// TODO: Split
 namespace Engine {
 	class Bind {
 		public:
-			Bind(std::string name) : name{std::move(name)} {
-			}
+			Bind(std::string name);
 
-			void press() {
-				if (active == 0) {
-					for (auto l : pressListeners) {
-						// TODO: call press listeners
-						l->onBindPress();
-					}
-				}
+			void press();
 
-				++active;
-			};
-
-			void release() {
-				--active;
-
-				if (active == 0) {
-					for (auto l : releaseListeners) {
-						// TODO: release listeners
-						l->onBindRelease();
-					}
-				}
-			};
+			void release();
 
 			// TODO handle hold listeners? or should we have the listeners implement that themselves?
 
-			void addPressListener(BindPressListener* listener) {
-				pressListeners.push_back(listener);
-			}
+			void addPressListener(BindPressListener* listener);
 
-			void addReleaseListener(BindReleaseListener* listener) {
-				releaseListeners.push_back(listener);
-			}
+			void addReleaseListener(BindReleaseListener* listener);
 
 			const std::string name;
 
