@@ -29,7 +29,6 @@ namespace Game {
 			auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(ent);
 
 			if (moveComp.dir.x != 0 || moveComp.dir.y != 0) {
-				printf("Move\n");
 				physComp.body->ApplyLinearImpulseToCenter(
 					dt * speed * b2Vec2{static_cast<float>(moveComp.dir.x), static_cast<float>(moveComp.dir.y)},
 					true
