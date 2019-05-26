@@ -29,10 +29,10 @@ namespace Engine {
 
 					if (!preActive && postActive) {
 						binds[map.getBindId()].press();
-						puts("Press\n");
+						printf("Press: %s\n", binds[map.getBindId()].name.c_str());
 					} else if (preActive && !postActive) {
 						binds[map.getBindId()].release();
-						puts("Release\n");
+						printf("Release: %s\n", binds[map.getBindId()].name.c_str());
 					}
 				}
 			}
