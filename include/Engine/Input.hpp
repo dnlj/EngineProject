@@ -27,10 +27,9 @@ namespace Engine {
 	class Hash<Input> {
 		public:
 			size_t operator()(const Input& input) const {
-				using InputTypeUnder = std::underlying_type_t<decltype(Input::type)>;
-				Hash<InputTypeUnder> a;
+				Hash<decltype(Input::type)> a;
 				Hash<decltype(Input::code)> b;
-				auto seed = a(static_cast<InputTypeUnder>(input.type));
+				auto seed = a(input.type);
 				hashCombine(seed, b(input.code));
 				return seed;
 			}
