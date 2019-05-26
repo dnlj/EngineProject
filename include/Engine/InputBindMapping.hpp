@@ -11,41 +11,15 @@
 
 
 // TODO: Doc
-// TODO: split
 namespace Engine {
-	using BindId = int;
+	using BindId = int; // TODO: Move
 
 	class InputBindMapping {
 		public:
-			InputBindMapping(InputSequence inputs, BindId bid)
-				: bid{bid} {
-
-				for (int i = 0; i < inputs.size(); ++i) {
-					inputStates[i].input = std::move(inputs[i]);
-				}
-			}
-
-			void processInput(const InputState& is) {
-				active = true;
-
-				for (auto& s : inputStates) {
-					if (s.input == is.input) {
-						s.state = is.state;
-					} else if (!s.input) {
-						break;
-					}
-
-					active = active && s.state;
-				}
-			};
-
-			bool isActive() const {
-				return active;
-			}
-
-			BindId getBindId() const {
-				return bid;
-			}
+			InputBindMapping(InputSequence inputs, BindId bid);
+			void processInput(const InputState& is);
+			bool isActive() const;
+			BindId getBindId() const;
 
 		private:
 			bool active = false;
