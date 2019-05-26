@@ -54,6 +54,10 @@ namespace Engine {
 				#endif
 			}
 
+			Bind& getBind(const std::string& name) {
+				return binds[getBindId(name)];
+			}
+
 			void addInputBindMapping(InputSequence inputs, std::string bind) {
 				const auto bid = getBindId(bind);
 
@@ -76,17 +80,6 @@ namespace Engine {
 						);
 					}
 				}
-			}
-
-			// TODO: Could replace both addListener functions with a templated addListener method that does the correct thing in the case of multiple inheritance if we wanted to.
-			void addBindPressListener(const std::string& bind, BindPressListener* listener) {
-				const auto bid = getBindId(bind);
-				binds[bid].addPressListener(listener);
-			}
-
-			void addBindReleaseListener(const std::string& bind, BindReleaseListener* listener) {
-				const auto bid = getBindId(bind);
-				binds[bid].addReleaseListener(listener);
 			}
 
 		private:

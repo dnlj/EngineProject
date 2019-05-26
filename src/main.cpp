@@ -317,15 +317,15 @@ void run() {
 		auto playerInputCharacterMovementListenerLeft = createCharacterMOvementListener(glm::ivec2{-1, 0});
 		auto playerInputCharacterMovementListenerRight = createCharacterMOvementListener(glm::ivec2{1, 0});
 
-		engine.inputManager2.addBindPressListener("MoveUp", &playerInputCharacterMovementListenerUp);
-		engine.inputManager2.addBindPressListener("MoveDown", &playerInputCharacterMovementListenerDown);
-		engine.inputManager2.addBindPressListener("MoveLeft", &playerInputCharacterMovementListenerLeft);
-		engine.inputManager2.addBindPressListener("MoveRight", &playerInputCharacterMovementListenerRight);
+		engine.inputManager2.getBind("MoveUp").addPressListener(&playerInputCharacterMovementListenerUp);
+		engine.inputManager2.getBind("MoveDown").addPressListener(&playerInputCharacterMovementListenerDown);
+		engine.inputManager2.getBind("MoveLeft").addPressListener(&playerInputCharacterMovementListenerLeft);
+		engine.inputManager2.getBind("MoveRight").addPressListener(&playerInputCharacterMovementListenerRight);
 
-		engine.inputManager2.addBindReleaseListener("MoveUp", &playerInputCharacterMovementListenerUp);
-		engine.inputManager2.addBindReleaseListener("MoveDown", &playerInputCharacterMovementListenerDown);
-		engine.inputManager2.addBindReleaseListener("MoveLeft", &playerInputCharacterMovementListenerLeft);
-		engine.inputManager2.addBindReleaseListener("MoveRight", &playerInputCharacterMovementListenerRight);
+		engine.inputManager2.getBind("MoveUp").addReleaseListener(&playerInputCharacterMovementListenerUp);
+		engine.inputManager2.getBind("MoveDown").addReleaseListener(&playerInputCharacterMovementListenerDown);
+		engine.inputManager2.getBind("MoveLeft").addReleaseListener(&playerInputCharacterMovementListenerLeft);
+		engine.inputManager2.getBind("MoveRight").addReleaseListener(&playerInputCharacterMovementListenerRight);
 	}
 
 	// Callbacks
