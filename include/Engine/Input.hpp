@@ -24,14 +24,11 @@ namespace Engine {
 	};
 
 	template<>
-	class Hash<Input> {
-		public:
-			size_t operator()(const Input& input) const {
-				Hash<decltype(Input::type)> a;
-				Hash<decltype(Input::code)> b;
-				auto seed = a(input.type);
-				hashCombine(seed, b(input.code));
-				return seed;
-			}
+	struct Hash<Input> {
+		size_t operator()(const Input& v) const {
+			auto seed = hash(v.type);
+			hashCombine(seed, hash(v.code));
+			return seed;
+		}
 	};
 }

@@ -20,7 +20,11 @@ namespace Engine {
 		}
 	};
 
-	// TODO: split
+	template<class T>
+	inline size_t hash(const T& val) {
+		return Hash<T>()(val);
+	}
+
 	inline void hashCombine(size_t& seed, size_t value) {
 		seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 	}
