@@ -36,8 +36,9 @@ namespace Engine {
 				}
 			}
 
-			void createBind(std::string name) {
+			BindId createBind(std::string name) {
 				binds.emplace_back(std::move(name));
+				return static_cast<BindId>(binds.size()) - 1;
 			}
 
 			BindId getBindId(const std::string& name) const {
@@ -47,23 +48,24 @@ namespace Engine {
 					}
 				}
 
-				#ifdef DEBUG
-					ENGINE_ERROR("Invalid bind name: " << name);
-				#endif
+				return -1;
 			}
 
 			Bind& getBind(const std::string& name) {
 				return binds[getBindId(name)];
 			}
 
-			void addInputBindMapping(InputSequence inputs, std::string bind) {
-				const auto bid = getBindId(bind);
-
+			void addInputBindMapping(InputSequence inputs, const std::string& name) {
 				#ifdef DEBUG
 					if (!inputs[0]) {
 						ENGINE_ERROR("InputSequence must have at least one input.");
 					}
 				#endif
+
+				auto bid = getBindId(name);
+				if (bid < 0) {
+					bid = createBind(name);
+				}
 
 				inputBindMappings.emplace_back(std::move(inputs), bid);
 

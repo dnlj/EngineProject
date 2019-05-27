@@ -249,13 +249,6 @@ void run() {
 	engine.inputManager.bindMouseButton(0, "edit_place");
 	engine.inputManager.bindMouseButton(1, "edit_remove");
 
-	// TODO: make to so that addinputBindMapping creates the bind if it doesnt exist.
-	engine.inputManager2.createBind("Spell_1");
-	engine.inputManager2.createBind("MoveUp");
-	engine.inputManager2.createBind("MoveDown");
-	engine.inputManager2.createBind("MoveLeft");
-	engine.inputManager2.createBind("MoveRight");
-
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 57}}, "Spell_1");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 17}}, "MoveUp");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 31}}, "MoveDown");
