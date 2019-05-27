@@ -45,8 +45,9 @@
 #include <Game/CharacterSpellSystem.hpp>
 #include <Game/CharacterSpellComponent.hpp>
 #include <Game/CharacterMovementSystem.hpp>
-#include <Game/MapSystem.hpp>
+#include <Game/CharacterMovementBindListener.hpp>
 #include <Game/CharacterMovementComponent.hpp>
+#include <Game/MapSystem.hpp>
 #include <Game/SpriteComponent.hpp>
 #include <Game/InputComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
@@ -244,10 +245,6 @@ void run() {
 	Game::World world;
 
 	// Binds
-	//engine.inputManager.bindkey(17, "MoveUp");
-	//engine.inputManager.bindkey(31, "MoveDown");
-	//engine.inputManager.bindkey(30, "MoveLeft");
-	//engine.inputManager.bindkey(32, "MoveRight");
 	engine.inputManager.bindkey(57, "Spell_1");
 	engine.inputManager.bindMouseButton(0, "edit_place");
 	engine.inputManager.bindMouseButton(1, "edit_remove");
@@ -268,6 +265,14 @@ void run() {
 		world.getSystem<Game::PhysicsSystem>().getDebugDraw().setup(engine.camera);
 	#endif
 
+	auto player = world.createEntity();
+	Game::CharacterMovementBindListener playerMovementBindListeners[] = {
+		Game::CharacterMovementBindListener{world, player, glm::ivec2{0, 1}},
+		Game::CharacterMovementBindListener{world, player, glm::ivec2{0, -1}},
+		Game::CharacterMovementBindListener{world, player, glm::ivec2{-1, 0}},
+		Game::CharacterMovementBindListener{world, player, glm::ivec2{1, 0}},
+	};
+
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		world.getSystem<Game::SpriteSystem>().setup(engine);
@@ -276,7 +281,6 @@ void run() {
 		world.getSystem<Game::MapSystem>().setup(engine);
 		
 		// Player
-		auto player = world.createEntity();
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");
 		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(player, physSys);
 		world.addComponent<Game::CharacterMovementComponent>(player);
@@ -286,46 +290,14 @@ void run() {
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
 
 		// TODO: Do this in a better way. Listener on an EntityFilter for CharacterMovementComponent would be one way.
-		const auto createCharacterMOvementListener = [&](glm::ivec2&& move) {
-			class Listener : public Engine::BindPressListener, public Engine::BindReleaseListener {
-				public:
-					Listener(Game::World& world, Engine::ECS::Entity player, glm::ivec2&& move)
-						: world{world}, player{player}, move{move} {
-					}
-
-				private:
-					Game::World& world;
-					const Engine::ECS::Entity player;
-					const glm::ivec2 move;
-
-					virtual void onBindPress() override {
-						auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(player);
-						moveComp.dir += move;
-					}
-
-					virtual void onBindRelease() override {
-						auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(player);
-						moveComp.dir -= move;
-					}
-			};
-
-			return Listener{world, player, std::move(move)};
-		};
-
-		auto playerInputCharacterMovementListenerUp = createCharacterMOvementListener(glm::ivec2{0, 1});
-		auto playerInputCharacterMovementListenerDown = createCharacterMOvementListener(glm::ivec2{0, -1});
-		auto playerInputCharacterMovementListenerLeft = createCharacterMOvementListener(glm::ivec2{-1, 0});
-		auto playerInputCharacterMovementListenerRight = createCharacterMOvementListener(glm::ivec2{1, 0});
-
-		engine.inputManager2.getBind("MoveUp").addPressListener(&playerInputCharacterMovementListenerUp);
-		engine.inputManager2.getBind("MoveDown").addPressListener(&playerInputCharacterMovementListenerDown);
-		engine.inputManager2.getBind("MoveLeft").addPressListener(&playerInputCharacterMovementListenerLeft);
-		engine.inputManager2.getBind("MoveRight").addPressListener(&playerInputCharacterMovementListenerRight);
-
-		engine.inputManager2.getBind("MoveUp").addReleaseListener(&playerInputCharacterMovementListenerUp);
-		engine.inputManager2.getBind("MoveDown").addReleaseListener(&playerInputCharacterMovementListenerDown);
-		engine.inputManager2.getBind("MoveLeft").addReleaseListener(&playerInputCharacterMovementListenerLeft);
-		engine.inputManager2.getBind("MoveRight").addReleaseListener(&playerInputCharacterMovementListenerRight);
+		engine.inputManager2.getBind("MoveUp").addPressListener(&playerMovementBindListeners[0]);
+		engine.inputManager2.getBind("MoveUp").addReleaseListener(&playerMovementBindListeners[0]);
+		engine.inputManager2.getBind("MoveDown").addPressListener(&playerMovementBindListeners[1]);
+		engine.inputManager2.getBind("MoveDown").addReleaseListener(&playerMovementBindListeners[1]);
+		engine.inputManager2.getBind("MoveLeft").addPressListener(&playerMovementBindListeners[2]);
+		engine.inputManager2.getBind("MoveLeft").addReleaseListener(&playerMovementBindListeners[2]);
+		engine.inputManager2.getBind("MoveRight").addPressListener(&playerMovementBindListeners[3]);
+		engine.inputManager2.getBind("MoveRight").addReleaseListener(&playerMovementBindListeners[3]);
 	}
 
 	// Callbacks
