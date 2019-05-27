@@ -8,13 +8,11 @@
 #include <array>
 
 // Engine
+#include <Engine/BindId.hpp>
 #include <Engine/FlatHashMap.hpp>
 
 
 namespace Engine {
-	/** The type to use for bind ids */
-	using BindId = int;
-
 	/** The states for bind events */
 	// TODO: Move
 	enum class BindState : uint8_t {

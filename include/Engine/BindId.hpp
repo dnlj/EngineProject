@@ -2,5 +2,5 @@
 
 namespace Engine {
 	/** Used for identifying a bind in an InputManager */
-	using BindId = int;
+	using BindId = int16_t;
 }
