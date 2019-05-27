@@ -289,15 +289,11 @@ void run() {
 
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
 
-		// TODO: Do this in a better way. Listener on an EntityFilter for CharacterMovementComponent would be one way.
-		engine.inputManager2.getBind("MoveUp").addPressListener(&playerMovementBindListeners[0]);
-		engine.inputManager2.getBind("MoveUp").addReleaseListener(&playerMovementBindListeners[0]);
-		engine.inputManager2.getBind("MoveDown").addPressListener(&playerMovementBindListeners[1]);
-		engine.inputManager2.getBind("MoveDown").addReleaseListener(&playerMovementBindListeners[1]);
-		engine.inputManager2.getBind("MoveLeft").addPressListener(&playerMovementBindListeners[2]);
-		engine.inputManager2.getBind("MoveLeft").addReleaseListener(&playerMovementBindListeners[2]);
-		engine.inputManager2.getBind("MoveRight").addPressListener(&playerMovementBindListeners[3]);
-		engine.inputManager2.getBind("MoveRight").addReleaseListener(&playerMovementBindListeners[3]);
+		// TODO: Do this in a better way? Listener on an EntityFilter for CharacterMovementComponent would be one way.
+		engine.inputManager2.getBind("MoveUp").addListener(&playerMovementBindListeners[0]);
+		engine.inputManager2.getBind("MoveDown").addListener(&playerMovementBindListeners[1]);
+		engine.inputManager2.getBind("MoveLeft").addListener(&playerMovementBindListeners[2]);
+		engine.inputManager2.getBind("MoveRight").addListener(&playerMovementBindListeners[3]);
 	}
 
 	// Callbacks

@@ -28,7 +28,7 @@ namespace Engine {
 	void Bind::addPressListener(BindPressListener* listener) {
 		pressListeners.push_back(listener);
 	}
-
+	
 	void Bind::addReleaseListener(BindReleaseListener* listener) {
 		releaseListeners.push_back(listener);
 	}
