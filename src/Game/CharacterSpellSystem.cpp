@@ -11,17 +11,13 @@
 
 namespace Game {
 	CharacterSpellSystem::CharacterSpellSystem(World& world)
-		: SystemBase{world}
-		, filter{world.getFilterFor<
-			Game::CharacterSpellComponent,
-			Game::InputComponent>()} {
+		: SystemBase{world} {
 
 		priorityAfter = world.getBitsetForSystems<Game::CharacterMovementSystem>();
 		priorityBefore = world.getBitsetForSystems<Game::PhysicsSystem>();
 	}
 
 	void CharacterSpellSystem::setup(Engine::EngineInstance& engine) {
-		camera = &engine.camera;
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		physSys.addListener(this);
 
@@ -62,23 +58,13 @@ namespace Game {
 		}
 	}
 
-	void CharacterSpellSystem::fireMissile(Engine::ECS::Entity ent, Engine::InputManager& inputManager) {
-		auto& entBody = *world.getComponent<Game::PhysicsComponent>(ent).body;
+	void CharacterSpellSystem::fireMissile(const b2Vec2& pos, const b2Vec2& dir) {
 		auto missle = missles[currentMissle];
 
-		// Get the mouse position in world space
-		auto mousePos = camera->screenToWorld(inputManager.getMousePosition());
-
-		// The direction of the cursor relative to ent
-		auto entPos = entBody.GetPosition();
-		auto dir = b2Vec2(mousePos.x - entPos.x, mousePos.y - entPos.y);
-		dir.Normalize();
-
-		// Fire the missile
 		world.setEnabled(missle, true);
 		auto* body = world.getComponent<Game::PhysicsComponent>(missle).body;
 		body->SetActive(true);
-		body->SetTransform(entPos + 0.35f * dir, 0); // TODO: This scalar depends on the size of ent and missle. Handle this better.
+		body->SetTransform(pos, 0);
 		body->SetLinearVelocity(2.0f * dir);
 
 		currentMissle = (currentMissle + 1) % missles.size();
@@ -91,13 +77,7 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::run(float dt) {
-		for (auto ent : filter) {
-			auto& inputManager = *world.getComponent<Game::InputComponent>(ent).inputManager;
-
-			if (inputManager.wasPressed("Spell_1")) {
-				fireMissile(ent, inputManager);
-			}
-		}
+		if (toDestroy.empty()) { return; }
 
 		std::sort(toDestroy.begin(), toDestroy.end());
 

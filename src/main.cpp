@@ -43,6 +43,7 @@
 #include <Game/SpriteSystem.hpp>
 #include <Game/CameraTrackingSystem.hpp>
 #include <Game/CharacterSpellSystem.hpp>
+#include <Game/CharacterSpellBindListener.hpp>
 #include <Game/CharacterSpellComponent.hpp>
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/CharacterMovementBindListener.hpp>
@@ -245,16 +246,17 @@ void run() {
 	Game::World world;
 
 	// Binds
-	engine.inputManager.bindkey(57, "Spell_1");
 	engine.inputManager.bindMouseButton(0, "edit_place");
 	engine.inputManager.bindMouseButton(1, "edit_remove");
 
 	// TODO: make to so that addinputBindMapping creates the bind if it doesnt exist.
+	engine.inputManager2.createBind("Spell_1");
 	engine.inputManager2.createBind("MoveUp");
 	engine.inputManager2.createBind("MoveDown");
 	engine.inputManager2.createBind("MoveLeft");
 	engine.inputManager2.createBind("MoveRight");
 
+	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 57}}, "Spell_1");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 17}}, "MoveUp");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 31}}, "MoveDown");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 30}}, "MoveLeft");
@@ -266,6 +268,7 @@ void run() {
 	#endif
 
 	auto player = world.createEntity();
+	Game::CharacterSpellBindListener playerSpellBindListener{engine, world, player};
 	Game::CharacterMovementBindListener playerMovementBindListeners[] = {
 		Game::CharacterMovementBindListener{world, player, glm::ivec2{0, 1}},
 		Game::CharacterMovementBindListener{world, player, glm::ivec2{0, -1}},
@@ -290,10 +293,12 @@ void run() {
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
 
 		// TODO: Do this in a better way? Listener on an EntityFilter for CharacterMovementComponent would be one way.
+		engine.inputManager2.getBind("Spell_1").addListener(&playerSpellBindListener);
 		engine.inputManager2.getBind("MoveUp").addListener(&playerMovementBindListeners[0]);
 		engine.inputManager2.getBind("MoveDown").addListener(&playerMovementBindListeners[1]);
 		engine.inputManager2.getBind("MoveLeft").addListener(&playerMovementBindListeners[2]);
 		engine.inputManager2.getBind("MoveRight").addListener(&playerMovementBindListeners[3]);
+
 	}
 
 	// Callbacks

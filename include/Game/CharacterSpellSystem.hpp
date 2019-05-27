@@ -1,5 +1,8 @@
 #pragma once
 
+// Box2D
+#include <Box2D/Common/b2Math.h>
+
 // Engine
 #include <Engine/EngineInstance.hpp>
 
@@ -14,15 +17,12 @@ namespace Game {
 			CharacterSpellSystem(World& world);
 			void setup(Engine::EngineInstance& engine);
 			void run(float dt) override;
+			void fireMissile(const b2Vec2& pos, const b2Vec2& dir);
 
 		private:
 			void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) override;
-
-			void fireMissile(Engine::ECS::Entity ent, Engine::InputManager& inputManager);
 			void detonateMissle(Engine::ECS::Entity ent);
 
-			Engine::ECS::EntityFilter& filter;
-			Engine::Camera* camera;
 			std::vector<Engine::ECS::Entity> missles;
 			std::vector<Engine::ECS::Entity> toDestroy;
 			size_t currentMissle = 0;
