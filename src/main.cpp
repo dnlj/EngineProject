@@ -261,6 +261,8 @@ void run() {
 	#endif
 
 	auto player = world.createEntity();
+
+	// TODO: better place to store these?
 	Game::CharacterSpellBindListener playerSpellBindListener{engine, world, player};
 	Game::CharacterMovementBindListener playerMovementBindListeners[] = {
 		Game::CharacterMovementBindListener{world, player, glm::ivec2{0, 1}},
