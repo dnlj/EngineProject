@@ -18,6 +18,10 @@ namespace Game {
 			void run(float dt) override;
 			const glm::ivec2& getOffset() const;
 
+			// TODO: Doc
+			template<MapChunk::EditMemberFunction func>
+			void applyEdit();
+
 		private:
 			/**
 			 * Converts from a world position to chunk coordinates.
@@ -81,3 +85,5 @@ namespace Game {
 			Engine::Texture texture;
 	};
 }
+
+#include <Game/MapSystem.ipp>

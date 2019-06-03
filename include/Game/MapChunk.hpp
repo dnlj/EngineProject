@@ -22,6 +22,7 @@ namespace Game {
 			constexpr static auto tileSize = 1.0f/5.0f;
 
 		public:
+			using EditMemberFunction = void(MapChunk::*)(int,int,PhysicsSystem&);
 			MapChunk();
 			~MapChunk();
 

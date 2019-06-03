@@ -49,6 +49,7 @@
 #include <Game/CharacterMovementBindListener.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 #include <Game/MapSystem.hpp>
+#include <Game/MapSystemBindListener.hpp>
 #include <Game/SpriteComponent.hpp>
 #include <Game/InputComponent.hpp>
 #include <Game/PhysicsComponent.hpp>
@@ -246,14 +247,13 @@ void run() {
 	Game::World world;
 
 	// Binds
-	engine.inputManager.bindMouseButton(0, "edit_place");
-	engine.inputManager.bindMouseButton(1, "edit_remove");
-
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 57}}, "Spell_1");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 17}}, "MoveUp");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 31}}, "MoveDown");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 30}}, "MoveLeft");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 32}}, "MoveRight");
+	engine.inputManager2.addInputBindMapping({{Engine::InputType::MOUSE, 0}}, "EditPlace");
+	engine.inputManager2.addInputBindMapping({{Engine::InputType::MOUSE, 1}}, "EditRemove");
 
 	// More engine stuff
 	#if defined (DEBUG_PHYSICS)
@@ -270,6 +270,8 @@ void run() {
 		Game::CharacterMovementBindListener{world, player, glm::ivec2{-1, 0}},
 		Game::CharacterMovementBindListener{world, player, glm::ivec2{1, 0}},
 	};
+	Game::MapSystemBindListener<&Game::MapChunk::addTile> mapSystemBindListener_EditPlace{world.getSystem<Game::MapSystem>()};
+	Game::MapSystemBindListener<&Game::MapChunk::removeTile> mapSystemBindListener_EditRemove{world.getSystem<Game::MapSystem>()};
 
 	{
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
@@ -293,6 +295,8 @@ void run() {
 		engine.inputManager2.getBind("MoveDown").addListener(&playerMovementBindListeners[1]);
 		engine.inputManager2.getBind("MoveLeft").addListener(&playerMovementBindListeners[2]);
 		engine.inputManager2.getBind("MoveRight").addListener(&playerMovementBindListeners[3]);
+		engine.inputManager2.getBind("EditPlace").addListener(&mapSystemBindListener_EditPlace);
+		engine.inputManager2.getBind("EditRemove").addListener(&mapSystemBindListener_EditRemove);
 
 	}
 

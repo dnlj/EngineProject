@@ -37,38 +37,6 @@ namespace Game {
 	void MapSystem::run(float dt) {
 		updateOrigin();
 		auto& physSys = world.getSystem<PhysicsSystem>();
-
-		const auto applyEdit = [&](auto func){
-			const auto mpos = camera->screenToWorld(input->getMousePosition());
-
-			// Offset of tile relative to current offset
-			const auto offsetTile = glm::floor(mpos / MapChunk::tileSize);
-
-			// Chunk position relative to current offset
-			const glm::ivec2 offsetChunk = glm::floor(offsetTile / glm::vec2{MapChunk::size});
-
-			// Absolute chunk position
-			const auto absChunk = mapOffset * originRange + offsetChunk;
-
-			// Index for this chunk
-			const auto indexChunk = (mapSize + absChunk % mapSize) % mapSize;
-
-			// Index of this tile in this chunk
-			const auto indexTile = (MapChunk::size + glm::ivec2{offsetTile} % MapChunk::size) % MapChunk::size;
-
-			MapChunk& chunk = chunks[indexChunk.x][indexChunk.y];
-
-			(chunk.*func)(indexTile.x, indexTile.y, physSys);
-			chunk.generate(physSys);
-		};
-
-		if (input->isPressed("edit_place")) {
-			applyEdit(&MapChunk::addTile);
-		} else if (input->isPressed("edit_remove")) {
-			applyEdit(&MapChunk::removeTile);
-		}
-
-		
 		const auto minChunk = worldToChunk(camera->getWorldScreenBounds().min);
 		const auto maxChunk = worldToChunk(camera->getWorldScreenBounds().max);
 
