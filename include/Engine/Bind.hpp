@@ -28,6 +28,7 @@ namespace Engine {
 			// TODO: Could replace both addListener functions with a templated addListener method that does the correct thing in the case of multiple inheritance if we wanted to.
 			void addPressListener(BindPressListener* listener);
 			void addReleaseListener(BindReleaseListener* listener);
+			// TODO: Do we want an on changed listener?
 
 			/**
 			 * Register a BindListener for all applicable events based on parent types.

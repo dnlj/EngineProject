@@ -55,6 +55,10 @@ namespace Engine {
 				return binds[getBindId(name)];
 			}
 
+			Bind& getBind(const BindId bid) {
+				return binds[bid];
+			}
+
 			void addInputBindMapping(InputSequence inputs, const std::string& name) {
 				#ifdef DEBUG
 					if (!inputs[0]) {

@@ -247,6 +247,9 @@ void run() {
 	Game::World world;
 
 	// Binds
+	engine.inputManager2.addInputBindMapping({
+		Engine::Input{Engine::InputType::KEYBOARD, 29}, {Engine::InputType::KEYBOARD, 46} // CTRL + C
+	}, "Spell_1");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 57}}, "Spell_1");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 17}}, "MoveUp");
 	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 31}}, "MoveDown");
@@ -310,7 +313,7 @@ void run() {
 			glfwSetWindowShouldClose(window, true);
 		}
 
-		//std::cout << "Keyboard Code: " << scancode << "\tAction: " << action << "\n";
+		std::cout << "Keyboard Code: " << scancode << "\tAction: " << action << "\n";
 
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.keyCallback(scancode, action);
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))

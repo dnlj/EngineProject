@@ -11,18 +11,27 @@ namespace Engine {
 	}
 
 	void InputBindMapping::processInput(const InputState& is) {
-		active = true;
+		for (int i = 0; i < inputStates.size(); ++i) {
+			auto& s = inputStates[i];
 
-		for (auto& s : inputStates) {
-			if (s.input == is.input) {
+			if (s.input == is.input){
 				s.state = is.state;
 			} else if (!s.input) {
 				break;
 			}
 
-			active = active && s.state;
+			if (!s.state) {
+				for (; i < inputStates.size(); ++i) {
+					inputStates[i].state = false;
+				}
+
+				active = false;
+				return;
+			}
 		}
-	};
+		
+		active = true;
+	}
 
 	bool InputBindMapping::isActive() const {
 		return active;
