@@ -29,8 +29,10 @@ namespace Engine {
 					const bool postActive = map.isActive();
 
 					if (!preActive && postActive) {
+						puts("Bind Press");
 						binds[map.getBindId()].press();
 					} else if (preActive && !postActive) {
+						puts("Bind Release");
 						binds[map.getBindId()].release();
 					}
 				}
@@ -61,7 +63,7 @@ namespace Engine {
 
 			void addInputBindMapping(InputSequence inputs, const std::string& name) {
 				#ifdef DEBUG
-					if (!inputs[0]) {
+					if (inputs.size() < 1) {
 						ENGINE_ERROR("InputSequence must have at least one input.");
 					}
 				#endif

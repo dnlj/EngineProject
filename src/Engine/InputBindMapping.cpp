@@ -29,7 +29,6 @@ namespace Engine {
 				return;
 			}
 		}
-		
 		active = true;
 	}
 

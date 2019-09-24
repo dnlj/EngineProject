@@ -247,16 +247,21 @@ void run() {
 	Game::World world;
 
 	// Binds
-	engine.inputManager2.addInputBindMapping({
-		Engine::Input{Engine::InputType::KEYBOARD, 29}, {Engine::InputType::KEYBOARD, 46} // CTRL + C
+	engine.inputManager2.addInputBindMapping(Engine::InputSequence{
+		Engine::Input{Engine::InputType::KEYBOARD, 29}, Engine::Input{Engine::InputType::KEYBOARD, 46} // CTRL + C
 	}, "Spell_1");
-	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 57}}, "Spell_1");
-	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 17}}, "MoveUp");
-	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 31}}, "MoveDown");
-	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 30}}, "MoveLeft");
-	engine.inputManager2.addInputBindMapping({{Engine::InputType::KEYBOARD, 32}}, "MoveRight");
-	engine.inputManager2.addInputBindMapping({{Engine::InputType::MOUSE, 0}}, "EditPlace");
-	engine.inputManager2.addInputBindMapping({{Engine::InputType::MOUSE, 1}}, "EditRemove");
+	engine.inputManager2.addInputBindMapping(Engine::InputSequence{
+		Engine::Input{Engine::InputType::KEYBOARD, 29}, // CTRL
+		Engine::Input{Engine::InputType::KEYBOARD, 56}, // ALT
+		Engine::Input{Engine::InputType::KEYBOARD, 16}, // Q
+	}, "Spell_1");
+	engine.inputManager2.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 57}}, "Spell_1");
+	engine.inputManager2.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 17}}, "MoveUp");
+	engine.inputManager2.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 31}}, "MoveDown");
+	engine.inputManager2.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 30}}, "MoveLeft");
+	engine.inputManager2.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 32}}, "MoveRight");
+	engine.inputManager2.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::MOUSE, 0}}, "EditPlace");
+	engine.inputManager2.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::MOUSE, 1}}, "EditRemove");
 
 	// More engine stuff
 	#if defined (DEBUG_PHYSICS)
