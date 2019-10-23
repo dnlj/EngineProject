@@ -318,7 +318,7 @@ void run() {
 			glfwSetWindowShouldClose(window, true);
 		}
 
-		std::cout << "Keyboard Code: " << scancode << "\tAction: " << action << "\n";
+		//std::cout << "Keyboard Code: " << scancode << "\tAction: " << action << "\n";
 
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.keyCallback(scancode, action);
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))
@@ -390,14 +390,14 @@ void run() {
 			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw();
 		#endif
 
-		//std::this_thread::sleep_for(std::chrono::milliseconds{70});
-
 		// Draw UI
 		doUI(engine, world);
 
 		// GLFW
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
 
 	// UI cleanup

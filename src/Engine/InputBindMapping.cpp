@@ -11,6 +11,7 @@ namespace Engine {
 	}
 
 	void InputBindMapping::processInput(const InputState& is) {
+		// TODO: Currently order of binds matter. I think we probably only want the last key's order to matter. (Ex [not currently the case]: CTRL + ALT + Q == ALT + CTRL + Q)
 		for (int i = 0; i < inputStates.size(); ++i) {
 			auto& s = inputStates[i];
 

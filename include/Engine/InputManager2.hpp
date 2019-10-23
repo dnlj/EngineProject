@@ -40,10 +40,8 @@ namespace Engine {
 					const bool postActive = map.isActive();
 
 					if (!preActive && postActive) {
-						puts("Bind Press");
 						binds[map.getBindId()].press();
 					} else if (preActive && !postActive) {
-						puts("Bind Release");
 						binds[map.getBindId()].release();
 					}
 				}
