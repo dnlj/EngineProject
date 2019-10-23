@@ -14,9 +14,20 @@
 #include <Engine/InputSequence.hpp>
 
 
+// TODO: Doc
+// TODO: Move all this input stuff into a namespace
+// TODO: split
 namespace Engine {
 	class InputManager2 {
 		public:
+			void update() {
+				for (const auto& bind : binds) {
+					if (bind.isActive()) {
+						bind.hold();
+					}
+				}
+			}
+
 			void processInput(const InputState& is) {
 				const auto found = inputToMapping.find(is.input);
 				if (found == inputToMapping.end()) { return; }

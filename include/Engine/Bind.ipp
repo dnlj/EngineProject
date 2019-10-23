@@ -10,6 +10,10 @@ namespace Engine {
 			addPressListener(listener);
 		}
 
+		if constexpr (std::is_base_of_v<BindHoldListener, Listener>) {
+			addHoldListener(listener);
+		}
+
 		if constexpr (std::is_base_of_v<BindReleaseListener, Listener>) {
 			addReleaseListener(listener);
 		}

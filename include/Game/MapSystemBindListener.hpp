@@ -9,14 +9,18 @@
 
 namespace Game {
 	template<MapChunk::EditMemberFunction func>
-	class MapSystemBindListener : public Engine::BindPressListener {
+	class MapSystemBindListener : public Engine::BindPressListener, public Engine::BindHoldListener {
 		public:
 			MapSystemBindListener(MapSystem& mapSystem) : mapSystem{mapSystem} {};
 
 		private:
 			MapSystem& mapSystem;
+
 			virtual void onBindPress() override {
-				// TODO: Need to handle hold.
+				mapSystem.applyEdit<func>();
+			};
+
+			virtual void onBindHold() override {
 				mapSystem.applyEdit<func>();
 			};
 	};

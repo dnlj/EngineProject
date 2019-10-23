@@ -8,6 +8,7 @@
 // Engine
 #include <Engine/BindListener.hpp>
 #include <Engine/BindPressListener.hpp>
+#include <Engine/BindHoldListener.hpp>
 #include <Engine/BindReleaseListener.hpp>
 
 
@@ -18,8 +19,13 @@ namespace Engine {
 			Bind(std::string name);
 
 			void press();
-
+			void hold() const;
 			void release();
+
+			/**
+			 * Checks if a bind has been pressed and not released.
+			 */
+			bool isActive() const;
 
 			// TODO handle hold listeners? or should we have the listeners implement that themselves?
 
@@ -27,6 +33,7 @@ namespace Engine {
 			// TODO: How should axis inputs work with press/release listeners? zero/nonzero? epsilon? Are deadzones handles by drivers?
 			// TODO: Could replace both addListener functions with a templated addListener method that does the correct thing in the case of multiple inheritance if we wanted to.
 			void addPressListener(BindPressListener* listener);
+			void addHoldListener(BindHoldListener* listener);
 			void addReleaseListener(BindReleaseListener* listener);
 			// TODO: Do we want an on changed listener?
 
@@ -45,6 +52,7 @@ namespace Engine {
 		private:
 			int active = 0;
 			std::vector<BindPressListener*> pressListeners;
+			std::vector<BindHoldListener*> holdListeners;
 			std::vector<BindReleaseListener*> releaseListeners;
 	};
 }

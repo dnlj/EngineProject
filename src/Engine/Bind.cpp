@@ -15,6 +15,12 @@ namespace Engine {
 		++active;
 	};
 
+	void Bind::hold() const {
+		for (auto l : holdListeners) {
+			l->onBindHold();
+		}
+	};
+
 	void Bind::release() {
 		--active;
 
@@ -25,8 +31,16 @@ namespace Engine {
 		}
 	};
 
+	bool Bind::isActive() const {
+		return active;
+	}
+
 	void Bind::addPressListener(BindPressListener* listener) {
 		pressListeners.push_back(listener);
+	}
+
+	void Bind::addHoldListener(BindHoldListener* listener) {
+		holdListeners.push_back(listener);
 	}
 	
 	void Bind::addReleaseListener(BindReleaseListener* listener) {
