@@ -63,7 +63,7 @@ namespace Game {
 			void updateOrigin();
 
 			/** Number of chunks before shifting the origin */
-			constexpr static int originRange = 2;
+			constexpr static int originRange = 4; // Absolute Range = originRange * chunkSize * tileSize
 
 			/** Size of regions in chunks */
 			constexpr static glm::ivec2 regionSize = {16, 16};
