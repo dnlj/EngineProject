@@ -5,32 +5,32 @@ namespace Engine {
 	InputBindMapping::InputBindMapping(InputSequence inputs, BindId bid)
 		: bid{bid} {
 
+		inputStates.resize(inputs.size());
+
 		for (int i = 0; i < inputs.size(); ++i) {
 			inputStates[i].input = std::move(inputs[i]);
 		}
 	}
 
 	void InputBindMapping::processInput(const InputState& is) {
-		// TODO: Currently order of binds matter. I think we probably only want the last key's order to matter. (Ex [not currently the case]: CTRL + ALT + Q == ALT + CTRL + Q)
-		for (int i = 0; i < inputStates.size(); ++i) {
+		active = true;
+
+		for (int i = 0; i < inputStates.size() - 1; ++i) {
 			auto& s = inputStates[i];
 
-			if (s.input == is.input){
+			if (s.input == is.input) {
 				s.state = is.state;
-			} else if (!s.input) {
-				break;
-			}
-
-			if (!s.state) {
-				for (; i < inputStates.size(); ++i) {
-					inputStates[i].state = false;
-				}
-
 				active = false;
-				return;
+				return; // There should only be one state for each input. No need to check the rest.
 			}
+
+			active = active && s.state;
 		}
-		active = true;
+
+		// If we havent already returned we are dealing with the last input
+		auto& last = inputStates.back();
+		last.state = is.state;
+		active = active && last.state;
 	}
 
 	bool InputBindMapping::isActive() const {

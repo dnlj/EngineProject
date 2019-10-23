@@ -1,13 +1,16 @@
 #pragma once
 
 // Engine
+#include <Engine/Engine.hpp>
 #include <Engine/Input.hpp>
+#include <Engine/InputState.hpp>
 
 
 namespace Engine {
 	// TODO: name?
 	// TODO: move
 	// TODO: split
+	// TODO: asserts
 	template<class T, uint16_t N>
 	class StaticVector {
 		private:
@@ -30,17 +33,29 @@ namespace Engine {
 		public:
 			StaticVector() = default;
 
+			// TODO: would be nice to have a size constructor
 			template<class... Vals>
 			StaticVector(Vals&&... vals) : storage{std::forward<Vals>(vals)...}, used{sizeof...(Vals)} {
 				static_assert(sizeof...(Vals) <= N, "Too many values given");
 			}
 
-			// TODO: resize
+			// TODO: overloads with default value
+			void resize(size_type count) noexcept {
+				//ENGINE_ASSERT(count <= capacity(), "Cannot resize larger than capacity() = " << capacity());
+				used = count;
+			}
 
 			// TODO: clear
 
 			// TODO: front()
-			// TODO: back()
+
+			T& back() noexcept {
+				return storage[used - 1];
+			}
+
+			const T& back() const noexcept {
+				return storage[used - 1];
+			}
 
 			// TODO: push_back
 			// TODO: pop_back
@@ -106,4 +121,5 @@ namespace Engine {
 	// TODO: do we want to do this?
 	//struct InputSequence : StaticVector<Input, 4> {};
 	using InputSequence = StaticVector<Input, 4>;
+	using InputStateSequence = StaticVector<InputState, 4>; // TODO: move
 }

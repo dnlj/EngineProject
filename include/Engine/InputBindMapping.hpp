@@ -24,6 +24,6 @@ namespace Engine {
 			bool active = false;
 			const BindId bid;
 			// TODO: Do we really want to use InputState here? While it works, it seems semantically incorrect.
-			std::array<InputState, InputSequence::max_size()> inputStates;
+			InputStateSequence inputStates;
 	};
 };
