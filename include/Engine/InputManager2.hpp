@@ -4,6 +4,9 @@
 #include <vector>
 #include <string>
 
+// GLM
+#include <glm/vec2.hpp>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
@@ -93,9 +96,32 @@ namespace Engine {
 				}
 			}
 
+			// TODO: remove? Represent mouse/axis as a bind?
+			/**
+			 * Gets the current position of the mouse.
+			 * Origin is top left
+			 * @return The x and y position of the mouse.
+			 */
+			glm::vec2 getMousePosition() const {
+				return mousePosition;
+			}
+
+			// TODO: remove? Represent mouse/axis as a bind?
+			/**
+			 * The callback for updating the mouse position.
+			 * See GLFW documentation for more information.
+			 * @param[in] x The x position of the mouse.
+			 * @param[in] y The y position of the mouse.
+			 */
+			void mouseCallback(double x, double y) {
+				mousePosition.x = static_cast<float>(x);
+				mousePosition.y = static_cast<float>(y);
+			}
+
 		private:
 			FlatHashMap<Input, std::vector<uint16_t>, Hash<Input>> inputToMapping;
 			std::vector<InputBindMapping> inputBindMappings;
 			std::vector<Bind> binds;
+			glm::vec2 mousePosition; // TODO: remove? Represent mouse/axis as a bind?
 	};
 }

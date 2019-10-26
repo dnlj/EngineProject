@@ -4,11 +4,11 @@
 #include <string>
 
 // Engine
-#include <Engine/InputManager.hpp>
+#include <Engine/InputManager2.hpp>
 
 namespace Game {
 	class  InputComponent {
 		public:
-			Engine::InputManager* inputManager = nullptr;
+			Engine::InputManager2* inputManager = nullptr;
 	};
 }

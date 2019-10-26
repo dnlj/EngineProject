@@ -1,7 +1,6 @@
 #pragma once
 
 // Engine
-#include <Engine/InputManager.hpp>
 #include <Engine/InputManager2.hpp>
 #include <Engine/TextureManager.hpp>
 #include <Engine/ShaderManager.hpp>
@@ -11,8 +10,7 @@ namespace Engine {
 	// TODO: Doc
 	class EngineInstance {
 		public:
-			InputManager inputManager;
-			InputManager2 inputManager2;
+			InputManager2 inputManager;
 			TextureManager textureManager;
 			ShaderManager shaderManager;
 			Camera camera;
