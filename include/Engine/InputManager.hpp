@@ -21,7 +21,7 @@
 // TODO: Move all this input stuff into a namespace
 // TODO: split
 namespace Engine {
-	class InputManager2 {
+	class InputManager {
 		public:
 			void update() {
 				for (const auto& bind : binds) {
