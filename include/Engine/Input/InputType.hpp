@@ -4,7 +4,7 @@
 #include <cstdint>
 
 
-namespace Engine {
+namespace Engine::Input {
 	enum class InputType : int8_t {
 		UNKNOWN = 0,
 		KEYBOARD = 1,

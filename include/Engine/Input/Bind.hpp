@@ -6,14 +6,14 @@
 #include <type_traits>
 
 // Engine
-#include <Engine/BindListener.hpp>
-#include <Engine/BindPressListener.hpp>
-#include <Engine/BindHoldListener.hpp>
-#include <Engine/BindReleaseListener.hpp>
+#include <Engine/Input/BindListener.hpp>
+#include <Engine/Input/BindPressListener.hpp>
+#include <Engine/Input/BindHoldListener.hpp>
+#include <Engine/Input/BindReleaseListener.hpp>
 
 
 // TODO: Doc
-namespace Engine {
+namespace Engine::Input {
 	class Bind {
 		public:
 			Bind(std::string name);
@@ -53,4 +53,4 @@ namespace Engine {
 	};
 }
 
-#include <Engine/Bind.ipp>
+#include <Engine/Input/Bind.ipp>

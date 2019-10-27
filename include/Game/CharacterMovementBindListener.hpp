@@ -4,15 +4,15 @@
 #include <glm/vec2.hpp>
 
 // Engine
-#include <Engine/BindPressListener.hpp>
-#include <Engine/BindReleaseListener.hpp>
+#include <Engine/Input/BindPressListener.hpp>
+#include <Engine/Input/BindReleaseListener.hpp>
 
 // Game
 #include <Game/Common.hpp>
 
 
 namespace Game {
-	class CharacterMovementBindListener : public Engine::BindPressListener, public Engine::BindReleaseListener {
+	class CharacterMovementBindListener : public Engine::Input::BindPressListener, public Engine::Input::BindReleaseListener {
 		public:
 			CharacterMovementBindListener(Game::World& world, Engine::ECS::Entity player, glm::ivec2&& move);
 

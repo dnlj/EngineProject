@@ -247,21 +247,24 @@ void run() {
 	Game::World world;
 
 	// Binds
-	engine.inputManager.addInputBindMapping(Engine::InputSequence{
-		Engine::Input{Engine::InputType::KEYBOARD, 29}, Engine::Input{Engine::InputType::KEYBOARD, 46} // CTRL + C
-	}, "Spell_1");
-	engine.inputManager.addInputBindMapping(Engine::InputSequence{
-		Engine::Input{Engine::InputType::KEYBOARD, 29}, // CTRL
-		Engine::Input{Engine::InputType::KEYBOARD, 56}, // ALT
-		Engine::Input{Engine::InputType::KEYBOARD, 16}, // Q
-	}, "Spell_1");
-	engine.inputManager.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 57}}, "Spell_1");
-	engine.inputManager.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 17}}, "MoveUp");
-	engine.inputManager.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 31}}, "MoveDown");
-	engine.inputManager.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 30}}, "MoveLeft");
-	engine.inputManager.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::KEYBOARD, 32}}, "MoveRight");
-	engine.inputManager.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::MOUSE, 0}}, "EditPlace");
-	engine.inputManager.addInputBindMapping(Engine::InputSequence{Engine::Input{Engine::InputType::MOUSE, 1}}, "EditRemove");
+	{
+		using namespace Engine::Input;
+		engine.inputManager.addInputBindMapping(InputSequence{
+			InputId{InputType::KEYBOARD, 29}, InputId{InputType::KEYBOARD, 46} // CTRL + C
+		}, "Spell_1");
+		engine.inputManager.addInputBindMapping(InputSequence{
+			InputId{InputType::KEYBOARD, 29}, // CTRL
+			InputId{InputType::KEYBOARD, 56}, // ALT
+			InputId{InputType::KEYBOARD, 16}, // Q
+		}, "Spell_1");
+		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 57}}, "Spell_1");
+		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 17}}, "MoveUp");
+		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 31}}, "MoveDown");
+		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 30}}, "MoveLeft");
+		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 32}}, "MoveRight");
+		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::MOUSE, 0}}, "EditPlace");
+		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::MOUSE, 1}}, "EditRemove");
+	}
 
 	// More engine stuff
 	#if defined (DEBUG_PHYSICS)
@@ -321,12 +324,13 @@ void run() {
 		//std::cout << "Keyboard Code: " << scancode << "\tAction: " << action << "\n";
 
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))
-			->inputManager.processInput({{Engine::InputType::KEYBOARD, scancode}, action == GLFW_PRESS});
+			->inputManager.processInput({{Engine::Input::InputType::KEYBOARD, scancode}, action == GLFW_PRESS});
 
 		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	});
 
 	glfwSetCursorPosCallback(window, [](GLFWwindow* window, double x, double y) {
+		//std::cout << "Mouse Pos: " << x << ", " << y << "\n";
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.mouseCallback(x, y);
 	});
 
@@ -335,7 +339,7 @@ void run() {
 		//std::cout << "Mouse Code: " << button << "\tAction: " << action << "\n";
 
 		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))
-			->inputManager.processInput({{Engine::InputType::MOUSE, button}, action == GLFW_PRESS});
+			->inputManager.processInput({{Engine::Input::InputType::MOUSE, button}, action == GLFW_PRESS});
 
 		ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 	});

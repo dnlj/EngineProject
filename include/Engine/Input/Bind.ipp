@@ -1,9 +1,9 @@
 #pragma once
 
 // Engine
-#include <Engine/Bind.hpp>
+#include <Engine/Input/Bind.hpp>
 
-namespace Engine {
+namespace Engine::Input {
 	template<class Listener, class>
 	void Bind::addListener(Listener* listener) {
 		if constexpr (std::is_base_of_v<BindPressListener, Listener>) {

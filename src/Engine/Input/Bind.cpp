@@ -1,7 +1,7 @@
 // Engine
-#include <Engine/Bind.hpp>
+#include <Engine/Input/Bind.hpp>
 
-namespace Engine {
+namespace Engine::Input {
 	Bind::Bind(std::string name) : name{std::move(name)} {
 	}
 

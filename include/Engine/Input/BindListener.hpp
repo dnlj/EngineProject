@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Engine {
+namespace Engine::Input {
 	/**
 	 * Base class for all bind listeners.
 	 */

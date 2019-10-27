@@ -8,6 +8,7 @@
 
 
 namespace Engine {
+	// TODO: put in `Container` namespace?
 	template <
 		class KeyType,
 		class ValueType,

@@ -2,13 +2,13 @@
 
 // Engine
 #include <Engine/Hash.hpp>
-#include <Engine/InputType.hpp>
+#include <Engine/Input/InputType.hpp>
 
 
 // TODO: Doc
 // TODO: split
-namespace Engine {
-	class Input {
+namespace Engine::Input { // TODO: change namespace name? I dont like having the same name for a class and namespace. InputId?
+	class InputId {
 		public:
 			InputType type = InputType::UNKNOWN;
 			int code = 0;
@@ -17,15 +17,17 @@ namespace Engine {
 				return static_cast<bool>(type);
 			}
 
-			friend bool operator==(const Input& first, const Input& second) {
+			friend bool operator==(const InputId& first, const InputId& second) {
 				return first.code == second.code
 					&& first.type == second.type;
 			};
 	};
+}
 
+namespace Engine {
 	template<>
-	struct Hash<Input> {
-		size_t operator()(const Input& v) const {
+	struct Hash<Input::InputId> {
+		size_t operator()(const Input::InputId& v) const {
 			auto seed = hash(v.type);
 			hashCombine(seed, hash(v.code));
 			return seed;

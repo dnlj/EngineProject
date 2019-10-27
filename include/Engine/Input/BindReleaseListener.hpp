@@ -1,10 +1,10 @@
 #pragma once
 
 // Engine
-#include <Engine/BindListener.hpp>
+#include <Engine/Input/BindListener.hpp>
 
 
-namespace Engine {
+namespace Engine::Input {
 	class BindReleaseListener : public BindListener {
 		private:
 			friend class Bind;

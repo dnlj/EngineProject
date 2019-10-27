@@ -79,7 +79,7 @@ namespace Game {
 
 			MapChunk chunks[mapSize.x][mapSize.y]{};
 
-			Engine::InputManager* input;
+			Engine::Input::InputManager* input;
 			const Engine::Camera* camera;
 			Engine::Shader shader;
 			Engine::Texture texture;

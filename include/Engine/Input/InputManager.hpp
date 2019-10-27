@@ -10,17 +10,17 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
-#include <Engine/Bind.hpp>
-#include <Engine/Input.hpp>
-#include <Engine/InputBindMapping.hpp>
-#include <Engine/InputState.hpp>
-#include <Engine/InputSequence.hpp>
+#include <Engine/Input/Bind.hpp>
+#include <Engine/Input/InputId.hpp>
+#include <Engine/Input/InputBindMapping.hpp>
+#include <Engine/Input/InputState.hpp>
+#include <Engine/Input/InputSequence.hpp>
 
 
 // TODO: Doc
 // TODO: Move all this input stuff into a namespace
 // TODO: split
-namespace Engine {
+namespace Engine::Input {
 	class InputManager {
 		public:
 			void update() {
@@ -119,7 +119,7 @@ namespace Engine {
 			}
 
 		private:
-			FlatHashMap<Input, std::vector<uint16_t>, Hash<Input>> inputToMapping;
+			FlatHashMap<InputId, std::vector<uint16_t>, Hash<InputId>> inputToMapping;
 			std::vector<InputBindMapping> inputBindMappings;
 			std::vector<Bind> binds;
 			glm::vec2 mousePosition; // TODO: remove? Represent mouse/axis as a bind?

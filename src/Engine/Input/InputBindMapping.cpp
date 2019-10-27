@@ -1,7 +1,7 @@
 // Engine
-#include <Engine/InputBindMapping.hpp>
+#include <Engine/Input/InputBindMapping.hpp>
 
-namespace Engine {
+namespace Engine::Input {
 	InputBindMapping::InputBindMapping(InputSequence inputs, BindId bid)
 		: bid{bid} {
 

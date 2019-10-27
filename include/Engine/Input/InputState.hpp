@@ -1,11 +1,11 @@
 #pragma once
 
 // Engine
-#include <Engine/Input.hpp>
+#include <Engine/Input/InputId.hpp>
 
-namespace Engine {
+namespace Engine::Input {
 	struct InputState {
-		Input input{};
+		InputId input{};
 		bool state = false; // TODO: will need to generalize this for more than just buttons (e.g. an axis)
 	};
 }

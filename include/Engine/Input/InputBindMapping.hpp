@@ -5,14 +5,14 @@
 
 // Engine
 #include <Engine/FlatHashMap.hpp>
-#include <Engine/Input.hpp>
-#include <Engine/InputSequence.hpp>
-#include <Engine/InputState.hpp>
-#include <Engine/BindId.hpp>
+#include <Engine/Input/InputId.hpp>
+#include <Engine/Input/InputSequence.hpp>
+#include <Engine/Input/InputState.hpp>
+#include <Engine/Input/BindId.hpp>
 
 
 // TODO: Doc
-namespace Engine {
+namespace Engine::Input {
 	class InputBindMapping {
 		public:
 			// TODO: swap bid to be first? makes more sense and look nicer in code.

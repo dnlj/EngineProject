@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/BindPressListener.hpp>
+#include <Engine/Input/BindPressListener.hpp>
 
 // Game
 #include <Game/MapSystem.hpp>
@@ -9,7 +9,7 @@
 
 namespace Game {
 	template<MapChunk::EditMemberFunction func>
-	class MapSystemBindListener : public Engine::BindPressListener, public Engine::BindHoldListener {
+	class MapSystemBindListener : public Engine::Input::BindPressListener, public Engine::Input::BindHoldListener {
 		public:
 			MapSystemBindListener(MapSystem& mapSystem) : mapSystem{mapSystem} {};
 
