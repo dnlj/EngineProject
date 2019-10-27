@@ -249,21 +249,36 @@ void run() {
 	// Binds
 	{
 		using namespace Engine::Input;
-		engine.inputManager.addInputBindMapping(InputSequence{
-			InputId{InputType::KEYBOARD, 29}, InputId{InputType::KEYBOARD, 46} // CTRL + C
-		}, "Spell_1");
-		engine.inputManager.addInputBindMapping(InputSequence{
+		engine.inputManager.addInputBindMapping("Spell_1", InputSequence{
+			InputId{InputType::KEYBOARD, 29}, // CTRL
+			InputId{InputType::KEYBOARD, 46}, // C
+		});
+		engine.inputManager.addInputBindMapping("Spell_1", InputSequence{
 			InputId{InputType::KEYBOARD, 29}, // CTRL
 			InputId{InputType::KEYBOARD, 56}, // ALT
 			InputId{InputType::KEYBOARD, 16}, // Q
-		}, "Spell_1");
-		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 57}}, "Spell_1");
-		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 17}}, "MoveUp");
-		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 31}}, "MoveDown");
-		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 30}}, "MoveLeft");
-		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::KEYBOARD, 32}}, "MoveRight");
-		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::MOUSE, 0}}, "EditPlace");
-		engine.inputManager.addInputBindMapping(InputSequence{InputId{InputType::MOUSE, 1}}, "EditRemove");
+		});
+		engine.inputManager.addInputBindMapping("Spell_1", InputSequence{
+			InputId{InputType::KEYBOARD, 57}
+		});
+		engine.inputManager.addInputBindMapping("MoveUp", InputSequence{
+			InputId{InputType::KEYBOARD, 17}
+		});
+		engine.inputManager.addInputBindMapping("MoveDown", InputSequence{
+			InputId{InputType::KEYBOARD, 31}
+		});
+		engine.inputManager.addInputBindMapping("MoveLeft", InputSequence{
+			InputId{InputType::KEYBOARD, 30}
+		});
+		engine.inputManager.addInputBindMapping("MoveRight", InputSequence{
+			InputId{InputType::KEYBOARD, 32}
+		});
+		engine.inputManager.addInputBindMapping("EditPlace", InputSequence{
+			InputId{InputType::MOUSE, 0}
+		});
+		engine.inputManager.addInputBindMapping("EditRemove", InputSequence{
+			InputId{InputType::MOUSE, 1}
+		});
 	}
 
 	// More engine stuff
