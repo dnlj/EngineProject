@@ -65,7 +65,7 @@ namespace Engine::Input {
 			bid = createBind(name);
 		}
 
-		inputBindMappings.emplace_back(std::move(inputs), bid);
+		inputBindMappings.emplace_back(bid, std::move(inputs));
 
 		for (const auto& input : inputs) {
 			if (input) {

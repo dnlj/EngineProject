@@ -15,8 +15,7 @@
 namespace Engine::Input {
 	class InputBindMapping {
 		public:
-			// TODO: swap bid to be first? makes more sense and look nicer in code.
-			InputBindMapping(InputSequence inputs, BindId bid);
+			InputBindMapping(BindId bid, InputSequence inputs);
 			void processInput(const InputState& is);
 			bool isActive() const;
 			BindId getBindId() const;

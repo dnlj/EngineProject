@@ -2,7 +2,7 @@
 #include <Engine/Input/InputBindMapping.hpp>
 
 namespace Engine::Input {
-	InputBindMapping::InputBindMapping(InputSequence inputs, BindId bid)
+	InputBindMapping::InputBindMapping(BindId bid, InputSequence inputs)
 		: bid{bid} {
 
 		inputStates.resize(inputs.size());
