@@ -393,13 +393,15 @@ void run() {
 			lastUpdate = std::chrono::high_resolution_clock::now();
 		}
 
+		// Input
+		engine.inputManager.update();
+
 		// Rendering
 		glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// ECS
 		world.run(dt);
-		engine.inputManager.update();
 
 		// Physics debug
 		#if defined (DEBUG_PHYSICS)

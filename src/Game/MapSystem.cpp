@@ -122,10 +122,11 @@ namespace Game {
 	}
 
 	void MapSystem::loadRegion(const glm::ivec2 region) {
-		std::cout << "loadRegion: " << "(" << region.x << ", " << region.y << ")    " << rand() << "\n";
+		std::cout << "loadRegion: " << "(" << region.x << ", " << region.y << ")\n";
 
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		const auto regionStart = regionToChunk(region);
+		std::cout << "regionStart: " << "(" << regionStart.x << ", " << regionStart.y << ")\n\n";
 
 		for (int y = 0; y < regionSize.y; ++y) {
 			for (int x = 0; x < regionSize.x; ++x) {

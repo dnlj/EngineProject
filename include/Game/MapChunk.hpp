@@ -19,7 +19,7 @@ namespace Game {
 
 		public:
 			constexpr static glm::ivec2 size = {32, 32};
-			constexpr static auto tileSize = 1.0f/5.0f;
+			constexpr static auto tileSize = 1.0f/6.0f;
 
 		public:
 			using EditMemberFunction = void(MapChunk::*)(int,int,PhysicsSystem&);

@@ -53,7 +53,11 @@ namespace Game {
 			// TODO: Doc
 			glm::ivec2 chunkToRegion(glm::ivec2 pos);
 
-			// TODO: Doc
+			/**
+			 * Converts from region coordinates to chunk coordinates.
+			 * @param region The region coordinates.
+			 * @return The chunk coordinates.
+			 */
 			glm::ivec2 regionToChunk(glm::ivec2 region);
 
 			// TODO: Doc
@@ -68,7 +72,7 @@ namespace Game {
 			/** Size of regions in chunks */
 			constexpr static glm::ivec2 regionSize = {16, 16};
 
-			/** The number of regions in the map*/
+			/** The number of regions in the map */
 			constexpr static glm::ivec2 regionCount = {3, 3};
 
 			/** Offset of current origin in increments of originRange */
