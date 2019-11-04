@@ -59,28 +59,39 @@
 namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
+	GLuint mapTexture = 0;
 
 	void editorUI(Engine::EngineInstance& engine, Game::World& world) {
+		static auto texture32 = engine.textureManager.get("../assets/32.bmp");
+
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
 
-		auto screenMousePos = engine.inputManager.getMousePosition();
-		ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
+		if (ImGui::CollapsingHeader("Debug")) {
+			auto screenMousePos = engine.inputManager.getMousePosition();
+			ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
-		auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
-		ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
+			auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
+			ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
 
-		auto camPos = engine.camera.getPosition();
-		ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
+			auto camPos = engine.camera.getPosition();
+			ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
 
-		auto& mapSys = world.getSystem<Game::MapSystem>();
-		auto mapOffset = mapSys.getOffset();
-		ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
+			auto& mapSys = world.getSystem<Game::MapSystem>();
+			auto mapOffset = mapSys.getOffset();
+			ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
 
-		#if defined(DEBUG_PHYSICS)
-			auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
-			ImGui::Text("Physics Debug Verts: (%i)", physDebug.getVertexCount());
-		#endif
+			#if defined(DEBUG_PHYSICS)
+				auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
+				ImGui::Text("Physics Debug Verts: (%i)", physDebug.getVertexCount());
+			#endif
+		}
+
+		if (ImGui::CollapsingHeader("Map", ImGuiTreeNodeFlags_DefaultOpen)) {
+			auto screenMousePos = engine.inputManager.getMousePosition();
+			ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
+			ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(512, 512));
+		}
 
 		ImGui::End();
 	}
@@ -152,7 +163,7 @@ namespace {
 
 		ImGui_ImplGlfwGL3_NewFrame();
 
-		ImGui::ShowDemoWindow(&showWindow);
+		//ImGui::ShowDemoWindow(&showWindow);
 		editorUI(engine, world);
 
 		ImGui::Render();
@@ -373,6 +384,43 @@ void run() {
 	glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
 	glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 
+	// Procedural test
+	{
+		struct Color {
+			uint8_t r;
+			uint8_t g;
+			uint8_t b;
+
+			Color(uint32_t value) {
+				r = (value & 0x00FF0000) >> 16;
+				g = (value & 0x0000FF00) >> 8;
+				b = (value & 0x000000FF) >> 0;
+			}
+		};
+		constexpr int w = 4;
+		constexpr int h = 4;
+
+		Color map[h][w] = {
+			0x00'00'00, 0xFF'00'00, 0x00'FF'00, 0x00'00'FF,
+			0xFF'FF'FF, 0xFF'FF'00, 0x00'FF'FF, 0xFF'00'FF,
+			0x00'00'00, 0xFF'00'00, 0x00'FF'00, 0x00'00'FF,
+			0xFF'FF'FF, 0xFF'FF'00, 0x00'FF'FF, 0xFF'00'FF,
+		};
+
+		glGenTextures(1, &mapTexture);
+		glBindTexture(GL_TEXTURE_2D, mapTexture);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, map);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
 	// Main loop
 	auto startTime = std::chrono::high_resolution_clock::now();
 	auto lastUpdate = startTime;
@@ -417,6 +465,8 @@ void run() {
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
+
+	glDeleteTextures(1, &mapTexture);
 
 	// UI cleanup
 	ImGui_ImplGlfwGL3_Shutdown();
