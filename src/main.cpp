@@ -27,6 +27,9 @@
 // ImGui
 #include <imgui.h>
 
+// OpenSimplexNoise
+#include <OpenSimplexNoise.hpp>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Debug/Debug.hpp>
@@ -387,25 +390,48 @@ void run() {
 	// Procedural test
 	{
 		struct Color {
-			uint8_t r;
-			uint8_t g;
-			uint8_t b;
+			uint8_t r = 255;
+			uint8_t g = 0;
+			uint8_t b = 0;
 
-			Color(uint32_t value) {
+			Color() = default;
+			explicit Color(uint32_t value) {
+				*this = value;
+			}
+
+			Color& operator=(uint32_t value) {
 				r = (value & 0x00FF0000) >> 16;
 				g = (value & 0x0000FF00) >> 8;
 				b = (value & 0x000000FF) >> 0;
+				return *this;
+			}
+
+			void gray(uint8_t value) {
+				r = g = b = value;
 			}
 		};
-		constexpr int w = 4;
-		constexpr int h = 4;
+		constexpr int w = 512;
+		constexpr int h = 512;
 
-		Color map[h][w] = {
-			0x00'00'00, 0xFF'00'00, 0x00'FF'00, 0x00'00'FF,
-			0xFF'FF'FF, 0xFF'FF'00, 0x00'FF'FF, 0xFF'00'FF,
-			0x00'00'00, 0xFF'00'00, 0x00'FF'00, 0x00'00'FF,
-			0xFF'FF'FF, 0xFF'FF'00, 0x00'FF'FF, 0xFF'00'FF,
-		};
+		Color map[h][w];
+		OpenSimplexNoise onoise{1234};
+
+		for (int y = 0; y < h; ++y) {
+			for (int x = 0; x < w; ++x) {
+				float v = (float)onoise.eval(x * 0.05f, y * 0.05f);
+
+#if 1
+				if (v < 0.0f) {
+					v = -1.0f;
+				} else {
+					v = 1.0f;
+				}
+#endif
+				map[y][x].gray(static_cast<uint8_t>(roundf(
+					(v + 1.0f) * 0.5f * 255.0f
+				)));
+			}
+		}
 
 		glGenTextures(1, &mapTexture);
 		glBindTexture(GL_TEXTURE_2D, mapTexture);
