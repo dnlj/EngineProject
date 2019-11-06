@@ -64,6 +64,91 @@ namespace {
 	constexpr int OPENGL_VERSION_MINOR = 5;
 	GLuint mapTexture = 0;
 
+	void mapTest() {
+		struct Color {
+			uint8_t r = 255;
+			uint8_t g = 0;
+			uint8_t b = 0;
+
+			Color() = default;
+			explicit Color(uint32_t value) {
+				*this = value;
+			}
+
+			Color& operator=(uint32_t value) {
+				r = (value & 0x00FF0000) >> 16;
+				g = (value & 0x0000FF00) >> 8;
+				b = (value & 0x000000FF) >> 0;
+				return *this;
+			}
+
+			void gray(uint8_t value) {
+				r = g = b = value;
+			}
+		};
+
+		constexpr int w = 512;
+		constexpr int h = 512;
+
+		Color map[h][w];
+
+		OpenSimplexNoise noise{1234};
+
+		const auto gradient = [](float v, int y, int min, int max, float from, float to){
+			if (y < min || y >= max) { return v; }
+			float p = static_cast<float>(y - min) / static_cast<float>(max - min); // Get precent
+			return v + (p * (to - from) + from); // Map from [0, 1] to [from, to]
+		};
+
+		const auto fill = [](float v, int y, int min, int max, float fv){
+			if (y < min || y >= max) { return v; }
+			return fv;
+		};
+
+		for (int y = 0; y < h; ++y) {
+			for (int x = 0; x < w; ++x) {
+				float v = 0.0f;
+				float s = 0.02f;
+
+				s *= 2;
+				v += noise.eval(x * s, y * s) / 2;
+
+				s *= 2;
+				v += noise.eval(x * s, y * s) / 4;
+				
+				s *= 2;
+				v += noise.eval(x * s, y * s) / 8;
+				
+				s *= 2;
+				v += noise.eval(x * s, y * s) / 16;
+
+				v = gradient(v, y, 64, 128, -1.0f, 1.0f);
+				v = gradient(v, y, 128, 200, 1.0f, 0.0f);
+				v = fill(v, y, 0, 64, -1.0f);
+
+				v = v < 0.0f ? -1.0f : 1.0f; // TODO: try having a gradient for the step value
+
+				v = std::max(std::min(v, 1.0f), -1.0f);
+				map[y][x].gray(static_cast<uint8_t>(roundf(
+					(v + 1.0f) * 0.5f * 255.0f
+				)));
+			}
+		}
+
+		glGenTextures(1, &mapTexture);
+		glBindTexture(GL_TEXTURE_2D, mapTexture);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, map);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
 	void editorUI(Engine::EngineInstance& engine, Game::World& world) {
 		static auto texture32 = engine.textureManager.get("../assets/32.bmp");
 
@@ -93,7 +178,7 @@ namespace {
 		if (ImGui::CollapsingHeader("Map", ImGuiTreeNodeFlags_DefaultOpen)) {
 			auto screenMousePos = engine.inputManager.getMousePosition();
 			ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
-			ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(512, 512));
+			ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(1024, 1024));
 		}
 
 		ImGui::End();
@@ -138,8 +223,8 @@ namespace {
 		glfwWindowHint(GLFW_DEPTH_BITS, 32);
 
 		// Create a window
-		constexpr int width = 1280;
-		constexpr int height = 720;
+		constexpr int width = 1900;
+		constexpr int height = 1300;
 		auto window = glfwCreateWindow(width, height, "Window Title", nullptr, nullptr);
 
 		if (!window) {
@@ -388,64 +473,7 @@ void run() {
 	glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 
 	// Procedural test
-	{
-		struct Color {
-			uint8_t r = 255;
-			uint8_t g = 0;
-			uint8_t b = 0;
-
-			Color() = default;
-			explicit Color(uint32_t value) {
-				*this = value;
-			}
-
-			Color& operator=(uint32_t value) {
-				r = (value & 0x00FF0000) >> 16;
-				g = (value & 0x0000FF00) >> 8;
-				b = (value & 0x000000FF) >> 0;
-				return *this;
-			}
-
-			void gray(uint8_t value) {
-				r = g = b = value;
-			}
-		};
-		constexpr int w = 512;
-		constexpr int h = 512;
-
-		Color map[h][w];
-		OpenSimplexNoise onoise{1234};
-
-		for (int y = 0; y < h; ++y) {
-			for (int x = 0; x < w; ++x) {
-				float v = (float)onoise.eval(x * 0.05f, y * 0.05f);
-
-#if 1
-				if (v < 0.0f) {
-					v = -1.0f;
-				} else {
-					v = 1.0f;
-				}
-#endif
-				map[y][x].gray(static_cast<uint8_t>(roundf(
-					(v + 1.0f) * 0.5f * 255.0f
-				)));
-			}
-		}
-
-		glGenTextures(1, &mapTexture);
-		glBindTexture(GL_TEXTURE_2D, mapTexture);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, map);
-
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
+	mapTest();
 
 	// Main loop
 	auto startTime = std::chrono::high_resolution_clock::now();
