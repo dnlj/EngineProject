@@ -15,7 +15,7 @@ class OpenSimplexNoise {
 		constexpr static float NORM_CONSTANT_3D = 103.0f;
 		constexpr static float NORM_CONSTANT_4D = 30.0f;
 		int32_t DEFAULT_SEED = 0;
-		int16_t perm[256];
+		int16_t perm[256]; // TODO: Why is this int16? wouldnt uint8 work?
 		int16_t permGradIndex3D[256];
 		int16_t source[256];
 
@@ -28,6 +28,7 @@ class OpenSimplexNoise {
 			-5, -2,		-2, -5,
 		};
 
+		// TODO: Check if this is actually faster
 		constexpr static int fastFloor(float x) {
 			int xi = (int)x;
 			return x < xi ? xi - 1 : xi;
@@ -37,12 +38,12 @@ class OpenSimplexNoise {
 			// My interpretation of this function.
 			//
 			// - gradients2D: An array of pairs of numbers to use for our gradient values. Size = 16 = 8 pairs
-			// - perm: an array of 255 random numbers in range [0, 255]. (255 = max value for 8 bits = 1 byte = # elems in perm)
+			// - perm: an array of numbers [0, 255] in random order. (255 = max value for 8 bits = 1 byte = # elems in perm)
 			// - 0xFF = 0b1111'1111 = 255 = max value for 8 bits = 1 byte
 			// - 0x0E = 0b0000'1110 = Used to get a value in between zero and the # of pairs in gradients2D - 1
 			//
 			// 1. xsb & 0xFF = Takes the lower 8 bits of xsb. (don't overflow perm.)
-			// 2. perm[xsb & 0xFF] + ysb = Incorperate both x and y coordinate in the calculation/hash
+			// 2. perm[xsb & 0xFF] + ysb = Incorporate both x and y coordinate in the calculation/hash
 			// 3. perm[... + ysb & 0xFF] = Again, take the lower 8 bits of our value based on xsb and ysb and get a random element from perm.
 			// 4. ... & 0x0E = Mask our random value by 0x0E = 0b1110 to get an even value between 0 and 7 (index into gradients2D. gradients2D has 8 pairs of values.)
 			// Since index value is always even (since the lowest bit is always zero because of the 0x0E mask) we can always add 1 without overflowing gradients2D.
@@ -54,16 +55,21 @@ class OpenSimplexNoise {
 
 	public:
 		OpenSimplexNoise(int64_t seed) {
-			for (int16_t i = 0; i < 256; i++)
+			// TODO: How does this work? What is source for?
+			for (int16_t i = 0; i < 256; i++) {
 				source[i] = i;
+			}
+
 			seed = seed * 6364136223846793005l + 1442695040888963407l;
 			seed = seed * 6364136223846793005l + 1442695040888963407l;
 			seed = seed * 6364136223846793005l + 1442695040888963407l;
+
 			for (int i = 255; i >= 0; i--) {
 				seed = seed * 6364136223846793005l + 1442695040888963407l;
 				int r = (int)((seed + 31) % (i + 1));
-				if (r < 0)
+				if (r < 0) {
 					r += (i + 1);
+				}
 				perm[i] = source[r];
 				source[r] = source[i];
 			}

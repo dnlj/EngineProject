@@ -29,6 +29,7 @@
 
 // OpenSimplexNoise
 #include <OpenSimplexNoise.hpp>
+#include <WorleyNoise.hpp>
 
 // Engine
 #include <Engine/Engine.hpp>
@@ -92,7 +93,8 @@ namespace {
 
 		Color map[h][w];
 
-		OpenSimplexNoise noise{1234};
+		OpenSimplexNoise simplex{1234};
+		WorleyNoise worley{1234};
 
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
 			if (y < min || y >= max) { return v; }
@@ -108,26 +110,41 @@ namespace {
 		for (int y = 0; y < h; ++y) {
 			for (int x = 0; x < w; ++x) {
 				float v = 0.0f;
-				float s = 0.02f;
 
-				s *= 2;
-				v += noise.eval(x * s, y * s) / 2;
+				{ // Cave structure
+					float s = 0.02f;
 
-				s *= 2;
-				v += noise.eval(x * s, y * s) / 4;
-				
-				s *= 2;
-				v += noise.eval(x * s, y * s) / 8;
-				
-				s *= 2;
-				v += noise.eval(x * s, y * s) / 16;
+					s *= 2;
+					v += simplex.eval(x * s, y * s) / 2;
+					
+					s *= 2;
+					v += simplex.eval(x * s, y * s) / 4;
+					
+					s *= 2;
+					v += simplex.eval(x * s, y * s) / 8;
+					
+					s *= 2;
+					v += simplex.eval(x * s, y * s) / 16;
+				}
 
-				v = gradient(v, y, 64, 128, -1.0f, 1.0f);
-				v = gradient(v, y, 128, 200, 1.0f, 0.0f);
-				v = fill(v, y, 0, 64, -1.0f);
+				{ // Surface
+					constexpr int begin = 100;
+					constexpr int mid = begin + 40;
+					constexpr int end = mid + 30;
+					v = gradient(v, y, begin, mid, -1.0f, 1.0f);
+					v = gradient(v, y, mid, end, 1.0f, 0.0f);
+					v = fill(v, y, 0, begin, -1.0f);
+				}
 
-				v = v < 0.0f ? -1.0f : 1.0f; // TODO: try having a gradient for the step value
+				// Step
+				v = v < -0.09f ? -1.0f : 1.0f;
 
+				{ // Worley testing
+					float s = 0.5f;
+					v = worley.at(x * s, y * s);
+				}
+
+				// Convert to color map
 				v = std::max(std::min(v, 1.0f), -1.0f);
 				map[y][x].gray(static_cast<uint8_t>(roundf(
 					(v + 1.0f) * 0.5f * 255.0f
