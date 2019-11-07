@@ -7,8 +7,7 @@
 // TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
 class WorleyNoise {
 	public:
-		// TODO: move into Engine and specifys
-	all types. float32, float64, int32, uint32 etc. Make sure to verify behavior/size. May conflict with box2d? Can use numeric_limits for asserts. http://www.cs.technion.ac.il/users/yechiel/c++-faq/bytes-review.html
+		// TODO: move into Engine and specifys all types. float32, float64, int32, uint32 etc. Make sure to verify behavior/size. May conflict with box2d? Can use numeric_limits for asserts. http://www.cs.technion.ac.il/users/yechiel/c++-faq/bytes-review.html
 		// TODO: Verify that a float is 32bits and a specific type. Static asserts
 		using float32 = float;
 
