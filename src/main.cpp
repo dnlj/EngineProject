@@ -27,10 +27,6 @@
 // ImGui
 #include <imgui.h>
 
-// OpenSimplexNoise
-#include <OpenSimplexNoise.hpp>
-#include <WorleyNoise.hpp>
-
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Debug/Debug.hpp>
@@ -41,6 +37,9 @@
 #include <Engine/EngineInstance.hpp>
 #include <Engine/Camera.hpp>
 #include <Engine/ResourceManager.hpp>
+#include <Engine/Noise/OpenSimplexNoise.hpp>
+#include <Engine/Noise/WorleyNoise.hpp>
+
 
 // Game
 #include <Game/Common.hpp>
@@ -93,8 +92,8 @@ namespace {
 
 		Color map[h][w];
 
-		OpenSimplexNoise simplex{1234};
-		WorleyNoise worley{1234};
+		Engine::Noise::OpenSimplexNoise simplex{1234};
+		Engine::Noise::WorleyNoise worley{1234};
 
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
 			if (y < min || y >= max) { return v; }
