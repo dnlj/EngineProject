@@ -2,14 +2,19 @@
 
 // STD
 #include <cstdint>
-#include <algorithm>
 #include <array>
+#include <cmath>
+
+// GLM
+#include <glm/glm.hpp>
 
 // Engine
 #include <Engine/Engine.hpp>
 
 
 namespace Engine::Noise {
+	// TODO: Split? Inline?
+	// TODO: Vertorify?
 	// TODO: For large step sizes (>10ish. very noticeable at 100) we can start to notice repetitions in the noise. I suspect this this correlates with the perm table size.
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
 	class WorleyNoise {
@@ -18,6 +23,16 @@ namespace Engine::Noise {
 			// TODO: template params?
 			using Float = float32;
 			using Int = int32;
+
+			// TODO: Create standard vector types in engine like you did for ints
+			using vec3 = glm::vec<3, Float>;
+			static_assert(sizeof(vec3) == 3 * sizeof(Float));
+
+			using vec2 = glm::vec<2, Float>;
+			static_assert(sizeof(vec2) == 2 * sizeof(Float));
+
+			using ivec2 = glm::vec<2, Int>;
+			static_assert(sizeof(ivec2) == 2 * sizeof(Float));
 
 			// TODO: Does an unsigned seed change anything?
 			WorleyNoise(int64 seed) { // TODO: replace. Stolen from OpenSimplexNoise.
@@ -53,20 +68,29 @@ namespace Engine::Noise {
 				}
 			}
 
+			// TODO: Doc
 			// TODO: name?
 			Float at(const Float x, const Float y) {
-				// Figure out which unit square we are in
+				// TODO: if we dont use base as an int very much maybe store it as a vec2 (no i) so we dont have to convert in the loop
+				// Figure out which base unit square we are in
 				const Int xb = fastFloor(x);
 				const Int yb = fastFloor(y);
 
-				// Lookup how many points are in this unit square
-				const int32 numPoints = poisson[index(xb, yb)];
+				// TODO: How many points to store? "typical values of n of 1 or 2" - I think is is the Fn number.
+				Float minDistSquared = std::numeric_limits<Float>::max();
 
-				// TODO: determine position of points
+				// TODO: in theory couldnt cube be empty?
+				// TODO: check boundary cubes. Based on our closest point we can cull rows/cols		
+				for (int yi = -1; yi < 2; ++yi) {
+					for (int xi = -1; xi < 2; ++xi) {
+						const Float d2 = minDistanceSquaredBetween(xb + xi, yb + yi, x, y);
+						if (d2 < minDistSquared) {
+							minDistSquared = d2;
+						}
+					}
+				}
 
-				// TODO: rest
-
-				return index(fastFloor(x), fastFloor(y)) / 255.0f;
+				return std::sqrt(minDistSquared);
 			}
 
 		private:
@@ -76,19 +100,49 @@ namespace Engine::Noise {
 				return x < xi ? xi - 1 : xi;
 			}
 
-			constexpr int8 index(const Int x) const {
+			constexpr Int index(const Int x) const {
 				return perm[x & 0xFF];
 			}
 
-			constexpr int8 index(const Int x, const Int y) const {
+			constexpr Int index(const Int x, const Int y) const {
 				return perm[(index(x) + y) & 0xFF];
 			}
 
+			constexpr Int index(const Int x, const Int y, const Int z) const {
+				return perm[(index(x, y) + z) & 0xFF];
+			}
+
+			// TODO: much better name. this is bad
+			Float minDistanceSquaredBetween(const Int xb, const Int yb, const Float x, const Float y) {
+				// Lookup how many points are in this unit square
+				const int numPoints = poisson[index(xb, yb)];
+
+				// TODO: doc
+				Float minDistSquared = std::numeric_limits<Float>::max();
+
+				for (int i = 0; i < numPoints; ++i) {
+					// TODO: fix xp yp. This causes patterns along the diag.
+					// TODO: Remove static casts? should be implicit
+					const Float xp = index(xb, yb, i) / Float{255} + xb;
+					const Float yp = index(yb, xb, i) / Float{255} + yb;
+					const Float xdiff = xp - x;
+					const Float ydiff = yp - y;
+					const Float d2 = (xdiff * xdiff) + (ydiff * ydiff);
+
+					if (d2 < minDistSquared) {
+						minDistSquared = d2;
+					}
+				}
+
+				return minDistSquared;
+			}
 		private:
 			/** Stores all numbers [0, 255] in a random order based on the initial seed */
 			// TODO: Compute this at runtime like open simplex does. Could also populate it from a seeded constexpr function.
 			uint8 perm[256] = {}; // TODO: When move into lib, have a shared perm array?
 
+			// TODO: do we want to clamp this range to something like [1, 9] like suggested in the paper?
+			// TODO: Make a constexpr function to generate this array for any given mean
 			/** Perfect Poisson distribution with mean = 4 for 256 values in random order */
 			const int8 poisson[256] = {
 				 2,  1,  4,  7,  3,  2,  3,  5,  5,  5,  0,  4,  7,  2,  3,  4,  9,  4,  3,  2,  6,  5,  5,  3,  4,  4,  4, 10,  4,  5,  6,  3,
@@ -102,6 +156,6 @@ namespace Engine::Noise {
 			};
 
 			/** The maximum value in #poisson */
-			constexpr static int32 poissonMax = 10;
+			constexpr static int32 POISSON_MAX = 10;
 	};
 }

@@ -95,6 +95,27 @@ namespace {
 		Engine::Noise::OpenSimplexNoise simplex{1234};
 		Engine::Noise::WorleyNoise worley{1234};
 
+		{
+			srand((unsigned)time(NULL));
+			Engine::Noise::WorleyNoise worley{rand()};
+			int w = 1 << 12;
+			int h = w;
+			double max = 0;
+			double min = 0;
+			for (int y = 0; y < h; ++y) {
+				for (int x = 0; x < w; ++x) {
+					const auto v = (double)worley.at((float)x,(float)y);
+					max = std::max(max, v);
+					min = std::min(min, v);
+				}
+			}
+
+			// 1.08485
+			std::cout << "Max: " << max << "\n";
+			std::cout << "Min: " << min << "\n";
+		}
+
+
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
 			if (y < min || y >= max) { return v; }
 			float p = static_cast<float>(y - min) / static_cast<float>(max - min); // Get precent
@@ -109,7 +130,7 @@ namespace {
 		for (int y = 0; y < h; ++y) {
 			for (int x = 0; x < w; ++x) {
 				float v = 0.0f;
-
+				/*
 				{ // Cave structure
 					float s = 0.02f;
 
@@ -134,20 +155,22 @@ namespace {
 					v = gradient(v, y, mid, end, 1.0f, 0.0f);
 					v = fill(v, y, 0, begin, -1.0f);
 				}
-
-				// Step
-				v = v < -0.09f ? -1.0f : 1.0f;
-
+				*/
+				
 				{ // Worley testing
-					float s = 0.5f;
-					v = worley.at(x * s, y * s);
+					float s = 0.05f;
+					v += -worley.at(x * s, y * s);
+					v += -worley.at(x * s * 2, y * s * 2) / 2;
 				}
 
+				// Step
+				//v = v < -0.09f ? -1.0f : 1.0f;
+
 				// Convert to color map
-				v = std::max(std::min(v, 1.0f), -1.0f);
-				map[y][x].gray(static_cast<uint8_t>(roundf(
+				map[y][x].gray(static_cast<uint8_t>(roundf(std::max(std::min(
 					(v + 1.0f) * 0.5f * 255.0f
-				)));
+					//(1 - v) * 255.0f
+				, 255.0f), 0.0f))));
 			}
 		}
 
