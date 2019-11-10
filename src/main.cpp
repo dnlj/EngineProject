@@ -95,10 +95,10 @@ namespace {
 		Engine::Noise::OpenSimplexNoise simplex{1234};
 		Engine::Noise::WorleyNoise worley{1234};
 
-		{
+		/*{
 			srand((unsigned)time(NULL));
 			Engine::Noise::WorleyNoise worley{rand()};
-			int w = 1 << 12;
+			int w = 1 << 10;
 			int h = w;
 			double max = 0;
 			double min = 0;
@@ -113,7 +113,7 @@ namespace {
 			// 1.08485
 			std::cout << "Max: " << max << "\n";
 			std::cout << "Min: " << min << "\n";
-		}
+		}*/
 
 
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
@@ -158,9 +158,9 @@ namespace {
 				*/
 				
 				{ // Worley testing
-					float s = 0.05f;
-					v += -worley.at(x * s, y * s);
-					v += -worley.at(x * s * 2, y * s * 2) / 2;
+					float s = 0.03f;
+					v += -worley.at(-x * s, y * s);
+					//v += -worley.at(x * s * 2, y * s * 2) / 2;
 				}
 
 				// Step
