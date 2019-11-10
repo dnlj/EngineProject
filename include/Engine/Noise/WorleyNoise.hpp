@@ -62,7 +62,7 @@ namespace Engine::Noise {
 
 			// TODO: Doc
 			// TODO: name?
-			Float at(const Float x, const Float y) {
+			Float value(const Float x, const Float y) {
 				// Figure out which base unit square we are in
 				const Int baseX = floorTo<Int>(x);
 				const Int baseY = floorTo<Int>(y);
