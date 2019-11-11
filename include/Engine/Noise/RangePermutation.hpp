@@ -44,7 +44,7 @@ namespace Engine::Noise {
 				}
 			}
 
-			int32 value(int32 x) {
+			int32 value(int32 x) const {
 				if constexpr (isPowerOfTwo) {
 					// Some reason this isnt automatically done by the compiler
 					return perm[x & (Size - 1)];
@@ -54,11 +54,11 @@ namespace Engine::Noise {
 				}
 			}
 
-			int32 value(int32 x, int32 y) {
+			int32 value(int32 x, int32 y) const {
 				return value(value(x) + y);
 			}
 
-			int32 value(int32 x, int32 y, int32 z) {
+			int32 value(int32 x, int32 y, int32 z) const {
 				return value(value(x, y) + z);
 			}
 		private:

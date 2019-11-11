@@ -138,21 +138,21 @@ namespace {
 		for (int y = 0; y < h; ++y) {
 			for (int x = 0; x < w; ++x) {
 				float v = 0.0f;
-				/*
+				
 				{ // Cave structure
-					float s = 0.02f;
+					float s = 0.91f;
 
 					s *= 2;
 					v += simplex.value(x * s, y * s) / 2;
 					
-					s *= 2;
-					v += simplex.value(x * s, y * s) / 4;
-
-					s *= 2;
-					v += simplex.value(x * s, y * s) / 8;
-
-					s *= 2;
-					v += simplex.value(x * s, y * s) / 16;
+					//s *= 2;
+					//v += simplex.value(x * s, y * s) / 4;
+					//
+					//s *= 2;
+					//v += simplex.value(x * s, y * s) / 8;
+					//
+					//s *= 2;
+					//v += simplex.value(x * s, y * s) / 16;
 				}
 
 				/*
@@ -167,8 +167,8 @@ namespace {
 				*/
 				
 				{ // Worley testing
-					float s = 0.01f;
-					//v = sqrt(worley.value(-x * s, y * s).distanceSquared);
+					float s = 0.05f;
+					//v = -sqrt(worley.value(x * s, y * s).distanceSquared);
 					v = mgen.value(x, y);
 				}
 

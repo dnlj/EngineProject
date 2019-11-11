@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/Noise/Noise.hpp>
+#include <Engine/Noise/RangePermutation.hpp>
 
 
 namespace Engine::Noise {
@@ -15,25 +16,7 @@ namespace Engine::Noise {
 			using Int = int32;
 			using Float = float32;
 
-			OpenSimplexNoise(int64 seed) {
-				decltype(perm) source;
-				for (int i = 0; i < 256; i++) {
-					source[i] = i;
-				}
-
-				seed = lcg(seed);
-				seed = lcg(seed);
-				seed = lcg(seed);
-
-				for (int i = 255; i >= 0; i--) {
-					seed = lcg(seed);
-					int r = (int)((seed + 31) % (i + 1));
-					if (r < 0) {
-						r += (i + 1);
-					}
-					perm[i] = source[r];
-					source[r] = source[i];
-				}
+			OpenSimplexNoise(int64 seed) : perm{seed} {
 			}
 
 			// 2D OpenSimplex Noise.
@@ -160,7 +143,7 @@ namespace Engine::Noise {
 			constexpr static Float NORM_CONSTANT_2D		= Float(47.0);
 			constexpr static Float NORM_CONSTANT_3D		= Float(103.0);
 			constexpr static Float NORM_CONSTANT_4D		= Float(30.0);
-			uint8 perm[256];
+			RangePermutation<256> perm;
 
 			// Gradients for 2D. They approximate the directions to the
 			// vertices of an octagon from the center.
@@ -172,21 +155,7 @@ namespace Engine::Noise {
 			};
 
 			Float extrapolate(Int xsb, Int ysb, Float dx, Float dy) const {
-				// My interpretation of this function.
-				//
-				// - gradients2D: An array of pairs of numbers to use for our gradient values. Size = 16 = 8 pairs
-				// - perm: an array of numbers [0, 255] in random order. (255 = max value for 8 bits = 1 byte = # elems in perm)
-				// - 0xFF = 0b1111'1111 = 255 = max value for 8 bits = 1 byte
-				// - 0x0E = 0b0000'1110 = Used to get a value in between zero and the # of pairs in gradients2D - 1
-				//
-				// 1. xsb & 0xFF = Takes the lower 8 bits of xsb. (don't overflow perm.)
-				// 2. perm[xsb & 0xFF] + ysb = Incorporate both x and y coordinate in the calculation/hash
-				// 3. perm[... + ysb & 0xFF] = Again, take the lower 8 bits of our value based on xsb and ysb and get a random element from perm.
-				// 4. ... & 0x0E = Mask our random value by 0x0E = 0b1110 to get an even value between 0 and 7 (index into gradients2D. gradients2D has 8 pairs of values.)
-				// Since index value is always even (since the lowest bit is always zero because of the 0x0E mask) we can always add 1 without overflowing gradients2D.
-				// We then use this index to get our gradient values and take the dot product of that with dx and dy
-
-				int index = perm[(perm[xsb & 0xFF] + ysb) & 0xFF] & 0x0E;
+				int index = perm.value(xsb, ysb) & 0x0E;
 				return gradients2D[index] * dx + gradients2D[index + 1] * dy;
 			}
 
