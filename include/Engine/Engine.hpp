@@ -29,8 +29,8 @@
 	#define ENGINE_ASSERT(cond, msg)
 #endif
 
-
-namespace Engine {
+// TODO: move to own file
+namespace Engine::Types {
 	static_assert(std::numeric_limits<char>::digits + std::numeric_limits<char>::is_signed == 8, "This program assumes an 8 bit byte.");
 
 	using int8 = int8_t;
@@ -50,4 +50,8 @@ namespace Engine {
 	using float64 = double;
 	static_assert(sizeof(float64) == 8, "float64 is an incorrect number of bytes.");
 	static_assert(std::numeric_limits<float64>::is_iec559, "float64 is not IEEE 754 double-precision (binary64) format.");
+}
+
+namespace Engine {
+	using namespace Engine::Types;
 }

@@ -24,6 +24,22 @@ namespace Engine::Noise {
 			// TODO: template params?
 			using Float = float32;
 			using Int = int32;
+			using Vec2 = glm::vec<2, Float>;
+			using Vec2i = glm::vec<2, Int>;
+
+			struct Result {
+				/** The x coordinate of the cell the closest point is in. */
+				Int x;
+
+				/** The y coordinate of the cell the closest point is in. */
+				Int y;
+
+				/** The number of the point in the cell. */
+				Int n;
+
+				/** The squared distance from the original input point. */
+				Float distanceSquared = std::numeric_limits<Float>::max();
+			};
 
 			// TODO: make the point distribution a arg or calc in construct
 			WorleyNoise(int64 seed) { // TODO: replace. Stolen from OpenSimplexNoise.
@@ -62,13 +78,13 @@ namespace Engine::Noise {
 
 			// TODO: Doc
 			// TODO: name?
-			Float value(const Float x, const Float y) {
+			Result value(const Float x, const Float y) {
 				// Figure out which base unit square we are in
-				const Int baseX = floorTo<Int>(x);
-				const Int baseY = floorTo<Int>(y);
-				Float minDistSquared = std::numeric_limits<Float>::max();
+				Int baseX = floorTo<Int>(x);
+				Int baseY = floorTo<Int>(y);
+				Result result;
 
-				// TODO: check boundary cubes. Based on our closest point we can cull rows/cols		
+				// TODO: check boundary cubes. Based on our closest point we can cull rows/cols
 				for (int offsetY = -1; offsetY < 2; ++offsetY) {
 					for (int offsetX = -1; offsetX < 2; ++offsetX) {
 						// Position and points in this cell
@@ -84,15 +100,18 @@ namespace Engine::Noise {
 							const Float diffY = pointY - y;
 							const Float distSquared = (diffX * diffX) + (diffY * diffY);
 
-							if (distSquared < minDistSquared) {
-								minDistSquared = distSquared;
+							if (distSquared < result.distanceSquared) {
+								result.x = cellX;
+								result.y = cellY;
+								result.n = i;
+								result.distanceSquared = distSquared;
 							}
 						}
 					}
 				}
 
 				// Return the true distance
-				return std::sqrt(minDistSquared);
+				return result;
 			}
 
 		private:

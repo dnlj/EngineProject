@@ -52,6 +52,7 @@
 #include <Game/CharacterMovementBindListener.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 #include <Game/MapSystem.hpp>
+#include <Game/MapGenerator.hpp>
 #include <Game/MapSystemBindListener.hpp>
 #include <Game/SpriteComponent.hpp>
 #include <Game/InputComponent.hpp>
@@ -94,6 +95,13 @@ namespace {
 
 		Engine::Noise::OpenSimplexNoise simplex{1234};
 		Engine::Noise::WorleyNoise worley{1234};
+		Game::MapGenerator<
+			Game::BiomeA,
+			Game::BiomeB,
+			Game::BiomeC,
+			Game::BiomeD,
+			Game::BiomeE
+		> mgen{1234};
 
 		/*{
 			srand((unsigned)time(NULL));
@@ -135,18 +143,19 @@ namespace {
 					float s = 0.02f;
 
 					s *= 2;
-					v += simplex.eval(x * s, y * s) / 2;
+					v += simplex.value(x * s, y * s) / 2;
 					
 					s *= 2;
-					v += simplex.eval(x * s, y * s) / 4;
-					
+					v += simplex.value(x * s, y * s) / 4;
+
 					s *= 2;
-					v += simplex.eval(x * s, y * s) / 8;
-					
+					v += simplex.value(x * s, y * s) / 8;
+
 					s *= 2;
-					v += simplex.eval(x * s, y * s) / 16;
+					v += simplex.value(x * s, y * s) / 16;
 				}
 
+				/*
 				{ // Surface
 					constexpr int begin = 100;
 					constexpr int mid = begin + 40;
@@ -158,13 +167,13 @@ namespace {
 				*/
 				
 				{ // Worley testing
-					float s = 0.03f;
-					v += -worley.at(-x * s, y * s);
-					//v += -worley.at(x * s * 2, y * s * 2) / 2;
+					float s = 0.01f;
+					//v = sqrt(worley.value(-x * s, y * s).distanceSquared);
+					v = mgen.value(x, y);
 				}
 
 				// Step
-				//v = v < -0.09f ? -1.0f : 1.0f;
+				//v = v < 0.00f ? -1.0f : 1.0f;
 
 				// Convert to color map
 				map[y][x].gray(static_cast<uint8_t>(roundf(std::max(std::min(

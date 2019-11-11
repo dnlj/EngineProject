@@ -1,3 +1,4 @@
+#pragma once
 // TODO: split? inline?
 // TODO: move to namespace
 // TODO: Cleanup

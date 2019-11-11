@@ -9,6 +9,8 @@
 
 
 namespace Game {
+	using namespace Engine::Types;
+
 	class PhysicsSystem;
 	class SpriteSystem;
 	class CharacterMovementSystem;
