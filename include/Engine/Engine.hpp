@@ -24,7 +24,8 @@
 
 // TODO: test
 #if defined(DEBUG)
-	#define ENGINE_ASSERT(cond, msg) if (cond) { ENGINE_ERROR("Assertion failed: " << msg); }
+	// TODO: insert cond in message
+	#define ENGINE_ASSERT(cond, msg) if (!(cond)) { ENGINE_ERROR("Assertion failed: " << msg); }
 #else
 	#define ENGINE_ASSERT(cond, msg)
 #endif

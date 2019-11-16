@@ -14,12 +14,93 @@
 
 
 namespace Engine::Noise {
+	// TODO: just make this a function?
+	template<int Count, int Mean, int Min, int Max>
+	class PoissonDistribution {
+		static_assert(Min < Mean);
+		static_assert(Max > Mean);
+		public:
+			PoissonDistribution() {
+				std::cout << "PoissonDistribution<" << Count << ", " << Mean << ", " << Min << ", " << Max << ">\n";
+				constexpr int size = Max - Min;
+				float64 percent[size];
+				float64 total = 0.0f;
+				const float64 logMean = log(Mean);
+
+				for (int i = 0; i < size; ++i) {
+					// Find log of pmf
+					const auto k = Min + i;
+					float64 pmf = k * logMean - Mean;
+
+					// ... / ln(k!) = ... - ln(k) - ln(k - 1) - ... - ln(2)
+					for (int j = k; j > 1; --j) {
+						pmf -= log(j);
+					}
+
+					// Get true value of pmf
+					pmf = exp(pmf);
+					std::cout << "PMF(" << k << "; " << Mean << ") = " << pmf << "\n";
+					percent[i] = pmf;
+					total += pmf;
+				}
+
+				// Distribute the values from most probable to least.
+				int dataOffset = 0;
+				int lo = Mean;
+				int hi = Mean + 1;
+				constexpr int loBound = Min - 1;
+				constexpr int hiBound = Max;
+				int remaining = Count;
+				while(lo > loBound || hi < hiBound) {
+					int cur;
+
+					if (hi == hiBound || (lo != loBound && percent[lo] > percent[hi])) {
+						cur = lo;
+						--lo;
+					} else {
+						cur = hi;
+						++hi;
+					}
+
+					// Get the number of `cur`s to insert
+					const auto p = percent[cur - Min];
+					int amount = static_cast<int>(round(p / total * remaining));
+					total -= p;
+					remaining -= amount;
+
+					// Populate data
+					const auto dataP = data.data() + dataOffset;
+					std::fill(dataP, dataP + amount, cur);
+					dataOffset += amount;
+				}
+
+				ENGINE_ASSERT(remaining == 0, "No remaining expected.");
+			}
+
+			int32 operator[](const int i) const {
+				return data[i];
+			}
+		private:
+			std::array<int8, Count> data;
+	};
+
+	// TODO: move
+	// TODO: name?
+	template<int32 Value>
+	class ConstantDistribution {
+		public:
+			int32 operator[](const int i) const {
+				return Value;
+			}
+	};
+
 	// TODO: Different F_n values as template param? (nth distance)
 	// TODO: Split? Inline?
 	// TODO: Vectorify?
 	// TODO: There seems to be some diag artifacts (s = 0.91) in the noise (existed pre RangePermutation)
 	// TODO: For large step sizes (>10ish. very noticeable at 100) we can start to notice repetitions in the noise. I suspect this this correlates with the perm table size.
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
+	template<class Distribution>
 	class WorleyNoise {
 		public:
 			// For easy changing later
@@ -41,8 +122,9 @@ namespace Engine::Noise {
 				Float distanceSquared = std::numeric_limits<Float>::max();
 			};
 
+			// TODO: This code makes some assumptions about `Distribution`. We should probably note those or enforce those somewhere.
 			// TODO: make the point distribution a arg or calc in construct
-			WorleyNoise(int64 seed) : perm{seed} {
+			WorleyNoise(int64 seed, const Distribution& dist) : perm{seed}, dist{dist} {
 			}
 
 			// TODO: Doc
@@ -59,7 +141,7 @@ namespace Engine::Noise {
 						// Position and points in this cell
 						const Int cellX = baseX + offsetX;
 						const Int cellY = baseY + offsetY;
-						const int numPoints = poisson[perm.value(cellX, cellY)];
+						const int numPoints = dist[perm.value(cellX, cellY)];
 
 						// Find the smallest squared distance in this cell
 						for (int i = 0; i < numPoints; ++i) {
@@ -83,24 +165,36 @@ namespace Engine::Noise {
 				return result;
 			}
 
-		private:
+		protected:
 			RangePermutation<256> perm;
+			Distribution dist;
+	};
 
-			// TODO: do we want to clamp this range to something like [1, 9] like suggested in the paper?
-			// TODO: Make a constexpr function to generate this array for any given mean
-			/** Perfect Poisson distribution with mean = 4 for 256 values in random order */
-			const int8 poisson[256] = {
-				 2,  1,  4,  7,  3,  2,  3,  5,  5,  5,  0,  4,  7,  2,  3,  4,  9,  4,  3,  2,  6,  5,  5,  3,  4,  4,  4, 10,  4,  5,  6,  3,
-				 2,  1,  5,  2,  2,  1,  6,  6,  6,  7,  4,  5,  6,  2,  6,  4,  6,  3,  5,  7,  2,  4,  3,  3,  3,  8,  5,  7,  4,  3,  1,  6,
-				 3,  3,  4,  3,  5,  3,  3,  5,  1,  6,  3,  3,  2,  3,  6,  2,  4,  5,  4,  3,  4,  7,  4,  3,  4,  6,  3,  9,  4,  8,  6,  2,
-				 4,  3,  4,  6,  7,  3,  5,  4,  5,  5,  1,  7,  2,  4,  5,  1,  0,  2,  5,  2,  4,  3,  3,  4,  3,  2,  5,  5,  2,  4,  5,  8,
-				 2,  4,  4,  3,  4,  5,  7,  3,  4,  2,  1,  4,  4,  0,  5,  6,  7,  8,  5,  3,  3,  1,  4,  4,  5,  3,  6,  4,  6,  6,  4,  4,
-				 3,  5,  1,  4,  3,  4,  4,  5,  2,  2,  2,  3,  5,  7,  1,  6,  2,  8,  3,  1,  4,  3,  1,  1,  1,  2,  4,  4,  3,  2,  3,  6,
-				 5,  8,  2,  6,  5,  2,  5,  6,  1,  3,  6,  1,  8,  2,  3,  6,  0,  2,  3,  6,  5,  4,  3,  7,  1,  9,  4,  5,  3,  5,  5,  2,
-				 2,  5,  0,  3,  7,  3,  2,  3,  4,  5,  2,  4,  7,  6,  4,  4,  2,  7,  2,  5,  8,  1,  2,  2,  6,  3,  3,  3,  5,  2,  5,  4,
-			};
+	// TODO: move into namesapce ore something
+	const static inline auto poisson3 = PoissonDistribution<256, 3, 1, 9>{};
+	const static inline auto poisson2 = PoissonDistribution<256, 2, 1, 3>{};
 
-			/** The maximum value in #poisson */
-			constexpr static int32 POISSON_MAX = 10;
+	// TODO: name. WorleyNoiseP3 ?
+	class WorleyNoise3 : public WorleyNoise<decltype(poisson3)> {
+		public:
+			WorleyNoise3(int64 seed) : WorleyNoise{seed, poisson3} {
+			}
+	};
+
+	// TODO: do this instead. Only change one var.
+	// TODO: name.
+	template<auto* a = &poisson2>
+	class WorleyNoise2 : public WorleyNoise<decltype(*a)> {
+		public:
+			WorleyNoise2(int64 seed) : WorleyNoise{seed, *a} {
+			}
+	};
+
+	// TODO: name. WorleyNoiseConst<N> ? or similar
+	// TODO: impl
+	class WorleyNoise1 : public WorleyNoise<ConstantDistribution<1>> {
+		public:
+			WorleyNoise1(int64 seed) : WorleyNoise{seed, ConstantDistribution<1>{}} {
+			}
 	};
 }

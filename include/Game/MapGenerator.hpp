@@ -98,7 +98,7 @@ namespace Game {
 		private:
 			std::tuple<Biomes...> biomeStorage;
 			Biome* biomes[sizeof...(Biomes)] = { &std::get<Biomes>(biomeStorage) ... };
-			Engine::Noise::WorleyNoise worley;
+			Engine::Noise::WorleyNoise2<> worley;
 			Engine::Noise::RangePermutation<sizeof...(Biomes)> biome;
 	};
 }

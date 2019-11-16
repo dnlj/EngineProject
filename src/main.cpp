@@ -64,7 +64,7 @@ namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
 	GLuint mapTexture = 0;
-
+	
 	void mapTest() {
 		struct Color {
 			uint8_t r = 255;
@@ -94,14 +94,14 @@ namespace {
 		Color map[h][w];
 
 		Engine::Noise::OpenSimplexNoise simplex{1234};
-		Engine::Noise::WorleyNoise worley{1234};
+		Engine::Noise::WorleyNoise3 worley{1234};
 		Game::MapGenerator<
 			Game::BiomeA,
 			Game::BiomeB,
 			Game::BiomeC,
 			Game::BiomeD,
 			Game::BiomeE
-		> mgen{1234};
+		> mgen{12342};
 
 		/*{
 			srand((unsigned)time(NULL));
@@ -167,9 +167,10 @@ namespace {
 				*/
 				
 				{ // Worley testing
-					float s = 0.05f;
+					float s = 0.03f;
+					int s2 = 2;
 					//v = -sqrt(worley.value(x * s, y * s).distanceSquared);
-					v = mgen.value(x, y);
+					v = mgen.value(x * s2, y * s2);
 				}
 
 				// Step
