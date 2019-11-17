@@ -94,7 +94,7 @@ namespace {
 		Color map[h][w];
 
 		Engine::Noise::OpenSimplexNoise simplex{1234};
-		Engine::Noise::WorleyNoise3 worley{1234};
+		Engine::Noise::WorleyNoise worley{1234};
 		Game::MapGenerator<
 			Game::BiomeA,
 			Game::BiomeB,
@@ -168,7 +168,7 @@ namespace {
 				
 				{ // Worley testing
 					float s = 0.03f;
-					int s2 = 2;
+					int s2 = 1;
 					//v = -sqrt(worley.value(x * s, y * s).distanceSquared);
 					v = mgen.value(x * s2, y * s2);
 				}
