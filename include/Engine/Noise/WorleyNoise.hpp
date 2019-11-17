@@ -105,6 +105,6 @@ namespace Engine::Noise {
 	};
 
 	// TODO: doc
-	class WorleyNoise : public WorleyNoiseFrom<&Distribution::poisson3> {
+	class WorleyNoise : public WorleyNoiseFrom<&poisson3> {
 	};
 }
