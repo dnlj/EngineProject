@@ -9,6 +9,7 @@
 #include <Game/Common.hpp>
 
 
+// TODO: split
 namespace Game {
 	// TODO: move
 	class Biome {
@@ -23,8 +24,8 @@ namespace Game {
 
 			virtual float32 value(int32 x, int32 y) override {
 				constexpr float32 scale = 0.05f;
-				return -1.0f;
-				//return noise.value(x * scale, y * scale);
+				return -1;
+				return noise.value(x * scale, y * scale);
 			}
 		private:
 			Engine::Noise::OpenSimplexNoise noise;
@@ -36,9 +37,8 @@ namespace Game {
 			}
 
 			virtual float32 value(int32 x, int32 y) override {
-				constexpr float32 scale = 0.05f;
-				return -0.5f;
-				//return -noise.value(x * scale, y * scale);
+				constexpr float32 scale = 0.03f;
+				return noise.value(x * scale, y * scale);
 			}
 		private:
 			Engine::Noise::OpenSimplexNoise noise;
@@ -46,59 +46,86 @@ namespace Game {
 
 	class BiomeC : public Biome {
 		public:
-			BiomeC(int64 seed) {
+			BiomeC(int64 seed) : noise{seed} {
 			}
 
 			virtual float32 value(int32 x, int32 y) override {
-				return 0.0f;
+				constexpr float32 scale = 0.01f;
+				return 1;
+				return noise.value(x * scale, y * scale);
 			}
-	};
-
-	class BiomeD : public Biome {
-		public:
-			BiomeD(int64 seed) {
-			}
-
-			virtual float32 value(int32 x, int32 y) override {
-				return 0.5f;
-			}
-	};
-
-	class BiomeE : public Biome {
-		public:
-			BiomeE(int64 seed) {
-			}
-
-			virtual float32 value(int32 x, int32 y) override {
-				return 1.0f;
-			}
+		private:
+			Engine::Noise::OpenSimplexNoise noise;
 	};
 
 	template<class... Biomes>
 	class MapGenerator {
 		public:
-			MapGenerator(int64 seed)
+			MapGenerator(const int64 seed)
 				: biomeStorage{ Biomes{seed} ...}
 				, worley{seed}
 				, biome{seed} {
 			}
 
-			int32 biomeAt(int32 x, int32 y) {
-				constexpr float32 scale = 0.01f;
-				const auto res = worley.value(x * scale, y * scale);
-				return biome.value(res.x, res.y, res.n);
-			}
+			float32 value(const int32 x, const int32 y) {
+				float32 weights[BIOME_COUNT] = {};
+				float32 total = 0;
+				{
+					const auto biome = biomeAt(x, y);
+					weights[biome.index] += biome.strength;
+					total += biome.strength;
 
-			float32 value(int32 x, int32 y) {
-				auto& b1 = *biomes[biomeAt(x, y)];
-				return b1.value(x, y);
-				//return sqrt(worley.value(x * 0.01f, y * 0.01f).distanceSquared);
+					return biome.strength * 2 - 1;
+				}
+				// TODO: Look into F2-F1 voronoi https://www.iquilezles.org/www/articles/voronoilines/voronoilines.htm https://www.ronja-tutorials.com/2018/09/29/voronoi-noise.html
+
+				// TODO: simplify
+				// TODO: To smooth this we need more samples at distances. Is there a better way to do this? If we do a bunch of distances it will get really slow.
+				// TODO: Could try using the actual worley value to help with weighting some how
+				// TODO: is there a better way to hard code the kernel shape? Maybe look at image processing?
+				constexpr int32 steps = 4;
+				for (int32 i = 0; i < steps; ++i) {
+					constexpr float32 step = 2 * Engine::PI / steps;
+					constexpr int32 r = 16;
+					const float32 ang = step * i;
+					const int32 xi = x + Engine::Noise::floorTo<int32>(r * cos(ang));
+					const int32 yi = y + Engine::Noise::floorTo<int32>(r * sin(ang));
+					const auto biome = biomeAt(xi, yi);
+					weights[biome.index] += biome.strength;
+					total += biome.strength;
+				}
+
+				float32 avg = 0;
+				for (int32 biome = 0; biome < BIOME_COUNT; ++biome) {
+					float32 w = weights[biome];
+					if (w == 0) { continue; }
+
+					float32 relW = w / total;
+					avg += biomes[biome]->value(x, y) * relW;
+				}
+
+				return avg;
 			}
 
 		private:
+			constexpr static auto BIOME_COUNT = sizeof...(Biomes);
+			static_assert(BIOME_COUNT > 0, "Cannot generate a map without any biomes");
+
 			std::tuple<Biomes...> biomeStorage;
-			Biome* biomes[sizeof...(Biomes)] = { &std::get<Biomes>(biomeStorage) ... };
-			Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley;
-			Engine::Noise::RangePermutation<sizeof...(Biomes)> biome;
+			Biome* biomes[BIOME_COUNT] = { &std::get<Biomes>(biomeStorage) ... };
+			Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley; // TODO: if we just used packed circles on a grid we would probably get similar results much faster. Consider?
+			Engine::Noise::RangePermutation<BIOME_COUNT> biome;
+
+			class BiomeValue {
+				public:
+					int32 index;
+					float32 strength;
+			};
+
+			BiomeValue biomeAt(const int32 x, const int32 y) {
+				constexpr float32 scale = 0.005f;
+				const auto res = worley.value<1>(x * scale, y * scale)[0];
+				return {biome.value(res.x, res.y, res.n), 1 - sqrt(res.distanceSquared/2)};
+			}
 	};
 }

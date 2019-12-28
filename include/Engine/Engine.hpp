@@ -56,3 +56,8 @@ namespace Engine::Types {
 namespace Engine {
 	using namespace Engine::Types;
 }
+
+// TODO: is this a good place for these?
+namespace Engine {
+	constexpr float32 PI = 3.141592653589793238462643383279502884197169f;
+}

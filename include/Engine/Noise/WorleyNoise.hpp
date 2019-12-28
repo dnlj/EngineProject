@@ -1,5 +1,9 @@
 #pragma once
 
+// STD
+#include <algorithm>
+#include <array>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Noise/Noise.hpp>
@@ -7,6 +11,7 @@
 #include <Engine/Noise/PoissonDistribution.hpp>
 
 
+// TOOD: Look at "Implementation of Fast and Adaptive Procedural Cellular Noise" http://www.jcgt.org/published/0008/01/02/paper.pdf
 namespace Engine::Noise {
 	// TODO: move
 	// TODO: name?
@@ -20,7 +25,6 @@ namespace Engine::Noise {
 
 	const static inline auto constant1 = ConstantDistribution<1>{};
 
-	// TODO: Different F_n values as template param? (nth distance)
 	// TODO: Split? Inline?
 	// TODO: Vectorify?
 	// TODO: There seems to be some diag artifacts (s = 0.91) in the noise (existed pre RangePermutation)
@@ -34,18 +38,23 @@ namespace Engine::Noise {
 			using Float = float32;
 			using Int = int32;
 
-			struct Result {
-				/** The x coordinate of the cell the closest point is in. */
-				Int x;
+			class Result {
+				public:
+					/** The x coordinate of the cell the closest point is in. */
+					Int x;
 
-				/** The y coordinate of the cell the closest point is in. */
-				Int y;
+					/** The y coordinate of the cell the closest point is in. */
+					Int y;
 
-				/** The number of the point in the cell. */
-				Int n;
+					/** The number of the point in the cell. */
+					Int n;
 
-				/** The squared distance from the original input point. */
-				Float distanceSquared = std::numeric_limits<Float>::max();
+					/** The squared distance from the original input point. */
+					Float distanceSquared = std::numeric_limits<Float>::max();
+
+					friend bool operator<(const Float b, const Result& a) {
+						return b < a.distanceSquared;
+					}
 			};
 
 			// TODO: This code makes some assumptions about `Distribution`. We should probably note those or enforce those somewhere.
@@ -53,13 +62,15 @@ namespace Engine::Noise {
 			WorleyNoiseGeneric(int64 seed, const Dist& dist) : perm{seed}, dist{dist} {
 			}
 
+			// TODO: Test against straight F1 and non <algorithm> impl. Seems to be much slower than before.
 			// TODO: Doc
 			// TODO: name?
-			Result value(const Float x, const Float y) {
+			template<int32 FeaturePoints>
+			std::array<Result, FeaturePoints> value(const Float x, const Float y) {
 				// Figure out which base unit square we are in
 				Int baseX = floorTo<Int>(x);
 				Int baseY = floorTo<Int>(y);
-				Result result;
+				std::array<Result, FeaturePoints> results;
 
 				// TODO: check boundary cubes. Based on our closest point we can cull rows/cols
 				for (int offsetY = -1; offsetY < 2; ++offsetY) {
@@ -75,20 +86,21 @@ namespace Engine::Noise {
 							const Float pointY = cellY + perm.value(cellX, cellY, -i) / Float{255};
 							const Float diffX = pointX - x;
 							const Float diffY = pointY - y;
+							// TODO: Version/setting for manhattan distance
 							const Float distSquared = (diffX * diffX) + (diffY * diffY);
 
-							if (distSquared < result.distanceSquared) {
-								result.x = cellX;
-								result.y = cellY;
-								result.n = i;
-								result.distanceSquared = distSquared;
+							auto pos = std::upper_bound(results.begin(), results.end(), distSquared);
+
+							if (pos != results.end()) {
+								*pos = Result{cellX, cellY, i, distSquared};
+								std::shift_right(pos + 1, results.end(), 1);
 							}
 						}
 					}
 				}
 
 				// Return the true distance
-				return result;
+				return results;
 			}
 
 		protected:

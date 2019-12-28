@@ -90,6 +90,8 @@ namespace {
 
 		constexpr int w = 512;
 		constexpr int h = 512;
+		//constexpr int w = 128;
+		//constexpr int h = 128;
 
 		Color map[h][w];
 
@@ -97,10 +99,8 @@ namespace {
 		Engine::Noise::WorleyNoise worley{1234};
 		Game::MapGenerator<
 			Game::BiomeA,
-			Game::BiomeB,
-			Game::BiomeC,
-			Game::BiomeD,
-			Game::BiomeE
+			//Game::BiomeB,
+			Game::BiomeC
 		> mgen{12342};
 
 		/*{
@@ -135,15 +135,16 @@ namespace {
 			return fv;
 		};
 
+		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < h; ++y) {
 			for (int x = 0; x < w; ++x) {
 				float v = 0.0f;
 				
 				{ // Cave structure
-					float s = 0.91f;
+					float s = 0.051f;
 
-					s *= 2;
-					v += simplex.value(x * s, y * s) / 2;
+					//s *= 2;
+					//v += simplex.value(x * s, y * s) / 2;
 					
 					//s *= 2;
 					//v += simplex.value(x * s, y * s) / 4;
@@ -167,10 +168,11 @@ namespace {
 				*/
 				
 				{ // Worley testing
-					float s = 0.03f;
+					float s = 0.01f;
 					int s2 = 1;
-					//v = -sqrt(worley.value(x * s, y * s).distanceSquared);
-					v = mgen.value(x * s2, y * s2);
+					//v = sqrt(worley.value(x * s, y * s).distanceSquared);
+					v = sqrt(worley.value<1>(x * s, y * s)[0].distanceSquared);
+					//v = mgen.value(x * s2, y * s2);
 				}
 
 				// Step
@@ -183,6 +185,10 @@ namespace {
 				, 255.0f), 0.0f))));
 			}
 		}
+
+		const auto end = std::chrono::high_resolution_clock::now();
+
+		std::cout << "Map Time (ms): " << std::chrono::duration<long double, std::milli>{end - begin}.count() << "\n";
 
 		glGenTextures(1, &mapTexture);
 		glBindTexture(GL_TEXTURE_2D, mapTexture);
