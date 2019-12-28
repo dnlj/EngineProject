@@ -74,15 +74,8 @@ namespace Game {
 					const auto biome = biomeAt(x, y);
 					weights[biome.index] += biome.strength;
 					total += biome.strength;
-
-					return biome.strength * 2 - 1;
 				}
-				// TODO: Look into F2-F1 voronoi https://www.iquilezles.org/www/articles/voronoilines/voronoilines.htm https://www.ronja-tutorials.com/2018/09/29/voronoi-noise.html
 
-				// TODO: simplify
-				// TODO: To smooth this we need more samples at distances. Is there a better way to do this? If we do a bunch of distances it will get really slow.
-				// TODO: Could try using the actual worley value to help with weighting some how
-				// TODO: is there a better way to hard code the kernel shape? Maybe look at image processing?
 				constexpr int32 steps = 4;
 				for (int32 i = 0; i < steps; ++i) {
 					constexpr float32 step = 2 * Engine::PI / steps;
@@ -124,8 +117,8 @@ namespace Game {
 
 			BiomeValue biomeAt(const int32 x, const int32 y) {
 				constexpr float32 scale = 0.005f;
-				const auto res = worley.value<1>(x * scale, y * scale)[0];
-				return {biome.value(res.x, res.y, res.n), 1 - sqrt(res.distanceSquared/2)};
+				const auto res = worley.valueF2F1(x * scale, y * scale);
+				return {biome.value(res.x, res.y, res.n), res.value};
 			}
 	};
 }

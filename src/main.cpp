@@ -173,8 +173,8 @@ namespace {
 					int s2 = 1;
 					//v = sqrt(worley.value(x * s, y * s).distanceSquared);
 					//v = sqrt(worley.valueD2(x * s, y * s).value);
-					v = worley1.valueF2F1(x * s, y * s).value;
-					//v = mgen.value(x * s2, y * s2);
+					//v = worley1.valueF2F1(x * s, y * s).value;
+					v = mgen.value(x * s2, y * s2);
 				}
 
 				// Step
