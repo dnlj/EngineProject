@@ -18,7 +18,7 @@ namespace Engine::Noise {
 	template<int32 Value>
 	class ConstantDistribution {
 		public:
-			int32 operator[](const int i) const {
+			constexpr int32 operator[](const int i) const {
 				return Value;
 			}
 	};
@@ -30,6 +30,7 @@ namespace Engine::Noise {
 	// TODO: There seems to be some diag artifacts (s = 0.91) in the noise (existed pre RangePermutation)
 	// TODO: For large step sizes (>10ish. very noticeable at 100) we can start to notice repetitions in the noise. I suspect this this correlates with the perm table size.
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
+	// TODO: Version/setting for distance type (Euclidean, Manhattan, Chebyshev, Minkowski)
 	template<class Dist>
 	class WorleyNoiseGeneric {
 		public:
@@ -49,12 +50,9 @@ namespace Engine::Noise {
 					/** The number of the point in the cell. */
 					Int n;
 
+					// TODO: Update comment.
 					/** The squared distance from the original input point. */
-					Float distanceSquared = std::numeric_limits<Float>::max();
-
-					friend bool operator<(const Float b, const Result& a) {
-						return b < a.distanceSquared;
-					}
+					Float value = std::numeric_limits<Float>::max();
 			};
 
 			// TODO: This code makes some assumptions about `Distribution`. We should probably note those or enforce those somewhere.
@@ -62,15 +60,32 @@ namespace Engine::Noise {
 			WorleyNoiseGeneric(int64 seed, const Dist& dist) : perm{seed}, dist{dist} {
 			}
 
-			// TODO: Test against straight F1 and non <algorithm> impl. Seems to be much slower than before.
-			// TODO: Doc
-			// TODO: name?
-			template<int32 FeaturePoints>
-			std::array<Result, FeaturePoints> value(const Float x, const Float y) {
+			// TODO: doc
+			// TODO: name
+			Result valueD2(Float x, Float y) const {
+				Result result;
+
+				evaluate(x, y, [&](Float x, Float y, Float px, Float py, Int cx, Int cy, Int ci) {
+					const Float diffX = px - x;
+					const Float diffY = py - y;
+					const Float d2 = (diffX * diffX) + (diffY * diffY);
+					if (d2 < result.value) {
+						result = Result{cx, cy, ci, d2};
+					}
+				});
+
+				return result;
+			}
+
+		protected:
+			RangePermutation<256> perm;
+			Dist dist;
+
+			template<class PointProcessor>
+			void evaluate(const Float x, const Float y, PointProcessor& pp) const {
 				// Figure out which base unit square we are in
 				Int baseX = floorTo<Int>(x);
 				Int baseY = floorTo<Int>(y);
-				std::array<Result, FeaturePoints> results;
 
 				// TODO: check boundary cubes. Based on our closest point we can cull rows/cols
 				for (int offsetY = -1; offsetY < 2; ++offsetY) {
@@ -84,28 +99,11 @@ namespace Engine::Noise {
 						for (int i = 0; i < numPoints; ++i) {
 							const Float pointX = cellX + perm.value(cellX, cellY, +i) / Float{255};
 							const Float pointY = cellY + perm.value(cellX, cellY, -i) / Float{255};
-							const Float diffX = pointX - x;
-							const Float diffY = pointY - y;
-							// TODO: Version/setting for manhattan distance
-							const Float distSquared = (diffX * diffX) + (diffY * diffY);
-
-							auto pos = std::upper_bound(results.begin(), results.end(), distSquared);
-
-							if (pos != results.end()) {
-								*pos = Result{cellX, cellY, i, distSquared};
-								std::shift_right(pos + 1, results.end(), 1);
-							}
+							pp(x, y, pointX, pointY, cellX, cellY, i);
 						}
 					}
 				}
-
-				// Return the true distance
-				return results;
 			}
-
-		protected:
-			RangePermutation<256> perm;
-			Dist dist;
 	};
 	
 	// TODO: Doc

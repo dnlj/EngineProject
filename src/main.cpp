@@ -97,6 +97,7 @@ namespace {
 
 		Engine::Noise::OpenSimplexNoise simplex{1234};
 		Engine::Noise::WorleyNoise worley{1234};
+		Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
 		Game::MapGenerator<
 			Game::BiomeA,
 			//Game::BiomeB,
@@ -171,7 +172,7 @@ namespace {
 					float s = 0.01f;
 					int s2 = 1;
 					//v = sqrt(worley.value(x * s, y * s).distanceSquared);
-					v = sqrt(worley.value<1>(x * s, y * s)[0].distanceSquared);
+					v = sqrt(worley.valueD2(x * s, y * s).value);
 					//v = mgen.value(x * s2, y * s2);
 				}
 
