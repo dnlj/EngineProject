@@ -172,7 +172,8 @@ namespace {
 					float s = 0.01f;
 					int s2 = 1;
 					//v = sqrt(worley.value(x * s, y * s).distanceSquared);
-					v = sqrt(worley.valueD2(x * s, y * s).value);
+					//v = sqrt(worley.valueD2(x * s, y * s).value);
+					v = worley1.valueF2F1(x * s, y * s).value;
 					//v = mgen.value(x * s2, y * s2);
 				}
 
@@ -182,8 +183,15 @@ namespace {
 				// Convert to color map
 				map[y][x].gray(static_cast<uint8_t>(roundf(std::max(std::min(
 					(v + 1.0f) * 0.5f * 255.0f
+					//v * 255.0f
 					//(1 - v) * 255.0f
 				, 255.0f), 0.0f))));
+
+				//if (v < 0.02) {
+				//	map[y][x].r = 255;
+				//	map[y][x].g = 0;
+				//	map[y][x].b = 0;
+				//}
 			}
 		}
 

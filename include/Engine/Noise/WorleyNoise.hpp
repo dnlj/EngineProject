@@ -70,17 +70,41 @@ namespace Engine::Noise {
 					const Float diffY = py - y;
 					const Float d2 = (diffX * diffX) + (diffY * diffY);
 					if (d2 < result.value) {
-						result = Result{cx, cy, ci, d2};
+						result = {cx, cy, ci, d2};
 					}
 				});
 
 				return result;
 			}
 
+			// TODO: doc
+			// TODO: name
+			Result valueF2F1(Float x, Float y) const {
+				Result result1;
+				Result result2;
+
+				evaluate(x, y, [&](Float x, Float y, Float px, Float py, Int cx, Int cy, Int ci) {
+					const Float diffX = px - x;
+					const Float diffY = py - y;
+					const Float d2 = (diffX * diffX) + (diffY * diffY);
+					if (d2 < result1.value) {
+						result2 = result1;
+						result1 = {cx, cy, ci, d2};
+					} else if (d2 < result2.value) {
+						result2 = {cx, cy, ci, d2};
+					}
+				});
+
+				result1.value = result2.value - result1.value;
+
+				return result1;
+			}
+
 		protected:
 			RangePermutation<256> perm;
 			Dist dist;
 
+			// TODO: Doc
 			template<class PointProcessor>
 			void evaluate(const Float x, const Float y, PointProcessor& pp) const {
 				// Figure out which base unit square we are in
