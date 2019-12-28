@@ -24,7 +24,7 @@ namespace Game {
 
 			virtual float32 value(int32 x, int32 y) override {
 				constexpr float32 scale = 0.05f;
-				return -1;
+				//return -1;
 				return noise.value(x * scale, y * scale);
 			}
 		private:
@@ -51,7 +51,7 @@ namespace Game {
 
 			virtual float32 value(int32 x, int32 y) override {
 				constexpr float32 scale = 0.01f;
-				return 1;
+				//return 1;
 				return noise.value(x * scale, y * scale);
 			}
 		private:
@@ -79,7 +79,7 @@ namespace Game {
 				constexpr int32 steps = 4;
 				for (int32 i = 0; i < steps; ++i) {
 					constexpr float32 step = 2 * Engine::PI / steps;
-					constexpr int32 r = 16;
+					constexpr int32 r = 32;
 					const float32 ang = step * i;
 					const int32 xi = x + Engine::Noise::floorTo<int32>(r * cos(ang));
 					const int32 yi = y + Engine::Noise::floorTo<int32>(r * sin(ang));

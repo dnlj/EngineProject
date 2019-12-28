@@ -36,7 +36,6 @@ namespace Game {
 
 	void MapSystem::run(float dt) {
 		updateOrigin();
-		auto& physSys = world.getSystem<PhysicsSystem>();
 		const auto minChunk = worldToChunk(camera->getWorldScreenBounds().min);
 		const auto maxChunk = worldToChunk(camera->getWorldScreenBounds().max);
 
@@ -47,13 +46,13 @@ namespace Game {
 			// TODO: Handle chunk/region loading in different thread
 			// TODO: if we had velocity we would only need to check two sides instead of all four
 			for (int x = minChunk.x; x <= maxChunk.x; ++x) {
-				ensureChunkLoaded({x, minChunk.y}).generate(physSys);
-				ensureChunkLoaded({x, maxChunk.y}).generate(physSys);
+				ensureChunkLoaded({x, minChunk.y}).generate();
+				ensureChunkLoaded({x, maxChunk.y}).generate();
 			}
 
 			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
-				ensureChunkLoaded({minChunk.x, y}).generate(physSys);
-				ensureChunkLoaded({maxChunk.x, y}).generate(physSys);
+				ensureChunkLoaded({minChunk.x, y}).generate();
+				ensureChunkLoaded({maxChunk.x, y}).generate();
 			}
 		}
 
@@ -101,6 +100,7 @@ namespace Game {
 	MapChunk& MapSystem::ensureChunkLoaded(glm::ivec2 pos) {
 		auto& chunk = getChunkAt(pos);
 
+		// TODO: Should just store chunk pos on chunk. This is called a lot
 		if (worldToChunk(chunk.getPosition()) != pos) {
 			loadRegion(chunkToRegion(pos));
 		}
@@ -109,7 +109,7 @@ namespace Game {
 	}
 
 	void MapSystem::loadChunk(MapChunk& chunk, glm::ivec2 pos) {
-		chunk.from(world.getSystem<PhysicsSystem>(), chunkToWorld(pos)); // TODO: Data
+		chunk.from(chunkToWorld(pos)); // TODO: Data
 	}
 
 	glm::ivec2 MapSystem::chunkToRegion(glm::ivec2 pos) {
@@ -124,14 +124,13 @@ namespace Game {
 	void MapSystem::loadRegion(const glm::ivec2 region) {
 		std::cout << "loadRegion: " << "(" << region.x << ", " << region.y << ")\n";
 
-		auto& physSys = world.getSystem<PhysicsSystem>();
 		const auto regionStart = regionToChunk(region);
 		std::cout << "regionStart: " << "(" << regionStart.x << ", " << regionStart.y << ")\n\n";
 
 		for (int y = 0; y < regionSize.y; ++y) {
 			for (int x = 0; x < regionSize.x; ++x) {
 				const auto chunk = regionStart + glm::ivec2{x, y};
-				getChunkAt(chunk).from(physSys, chunkToWorld(chunk)); // TODO: Data
+				getChunkAt(chunk).from(chunkToWorld(chunk)); // TODO: Data
 			}
 		}
 	}

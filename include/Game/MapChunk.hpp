@@ -22,15 +22,15 @@ namespace Game {
 			constexpr static auto tileSize = 1.0f/6.0f;
 
 		public:
-			using EditMemberFunction = void(MapChunk::*)(int,int,PhysicsSystem&);
+			using EditMemberFunction = void(MapChunk::*)(int,int);
 			MapChunk();
 			~MapChunk();
 
 			void setup(World& world, GLuint shader, GLuint texture);
-			void from(PhysicsSystem& physSys, glm::vec2 pos);
-			void addTile(int x, int y, PhysicsSystem& physSys);
-			void removeTile(int x, int y, PhysicsSystem& physSys);
-			void generate(PhysicsSystem& physSys);
+			void from(glm::vec2 pos);
+			void addTile(int x, int y);
+			void removeTile(int x, int y);
+			void generate();
 			glm::vec2 getPosition() const;
 			void draw(glm::mat4 mvp) const;
 

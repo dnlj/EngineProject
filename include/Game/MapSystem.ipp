@@ -6,8 +6,7 @@
 namespace Game {
 	template<MapChunk::EditMemberFunction func>
 	void MapSystem::applyEdit() {
-		// TODO: do we need to updateOrigin() ?
-		auto& physSys = world.getSystem<PhysicsSystem>();
+		// TODO: do we need to updateOrigin()?
 		const auto mpos = camera->screenToWorld(input->getMousePosition());
 
 		// Offset of tile relative to current offset
@@ -27,7 +26,7 @@ namespace Game {
 
 		MapChunk& chunk = chunks[indexChunk.x][indexChunk.y];
 
-		(chunk.*func)(indexTile.x, indexTile.y, physSys);
-		chunk.generate(physSys);
+		(chunk.*func)(indexTile.x, indexTile.y);
+		chunk.generate();
 	}
 }

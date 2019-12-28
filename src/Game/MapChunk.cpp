@@ -37,17 +37,17 @@ namespace Game {
 		createBody(physSys);
 	}
 
-	void MapChunk::from(PhysicsSystem& physSys, glm::vec2 pos) {
+	void MapChunk::from(glm::vec2 pos) {
 		body->SetTransform(b2Vec2{pos.x, pos.y}, 0.0f);
 		updated = true;
 	}
 
-	void MapChunk::addTile(int x, int y, PhysicsSystem& physSys) {
+	void MapChunk::addTile(int x, int y) {
 		data[x][y] = DIRT.id;
 		updated = true;
 	}
 
-	void MapChunk::removeTile(int x, int y, PhysicsSystem& physSys) {
+	void MapChunk::removeTile(int x, int y) {
 		data[x][y] = AIR.id;
 		updated = true;
 	}
@@ -61,8 +61,9 @@ namespace Game {
 		body = physSys.createBody(ent, bodyDef);
 	}
 
+	// TODO: can this be split up more? Should be able to
 	// TODO: Rename to rebuild or similar? generate is a bad name.
-	void MapChunk::generate(PhysicsSystem& physSys) {
+	void MapChunk::generate() {
 		// TODO: Look into edge and chain shapes
 
 		if (!updated) { return; }

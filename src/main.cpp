@@ -178,7 +178,7 @@ namespace {
 				}
 
 				// Step
-				//v = v < 0.00f ? -1.0f : 1.0f;
+				v = v < 0.00f ? -1.0f : 1.0f;
 
 				// Convert to color map
 				map[y][x].gray(static_cast<uint8_t>(roundf(std::max(std::min(
