@@ -177,20 +177,21 @@ namespace {
 				}
 
 				// Step
-				v = v < 0.00f ? -1.0f : 1.0f;
+				v = v < 0.0f ? -1.0f : 1.0f;
 
 				// Convert to color map
-				map[y][x].gray(static_cast<uint8_t>(roundf(std::max(std::min(
+				const auto y2 = h - y - 1;
+				map[y2][x].gray(static_cast<uint8_t>(roundf(std::max(std::min(
 					(v + 1.0f) * 0.5f * 255.0f
 					//v * 255.0f
 					//(1 - v) * 255.0f
 				, 255.0f), 0.0f))));
 
-				//if (v < 0.02) {
-				//	map[y][x].r = 255;
-				//	map[y][x].g = 0;
-				//	map[y][x].b = 0;
-				//}
+				if (x < 10 && y < 20) {
+					map[y2][x].r = 255;
+					map[y2][x].g = 0;
+					map[y2][x].b = 0;
+				}
 			}
 		}
 
@@ -255,7 +256,7 @@ namespace {
 		}
 
 		if (ImGui::CollapsingHeader("Map")) {
-			ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(1024, 1024));
+			//ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(1024, 1024));
 		}
 
 		ImGui::End();

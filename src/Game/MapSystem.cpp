@@ -74,7 +74,7 @@ namespace Game {
 	}
 
 	glm::ivec2 MapSystem::getBlockOffset() const {
-		return mapOffset * originRange * MapChunk::size;
+		return mapOffset * MapChunk::size;
 	}
 
 	glm::ivec2 MapSystem::worldToChunk(const glm::vec2 wpos) const {
@@ -85,7 +85,7 @@ namespace Game {
 		const glm::ivec2 chunkOffset = glm::floor(block / glm::vec2{MapChunk::size});
 		
 		// relative chunk -> absolute chunk
-		return mapOffset * originRange + chunkOffset;
+		return mapOffset + chunkOffset;
 	}
 
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 wpos) const {
@@ -96,7 +96,7 @@ namespace Game {
 
 	glm::vec2 MapSystem::chunkToWorld(glm::ivec2 pos) const {
 		// absolute -> relative
-		pos -= mapOffset * originRange;
+		pos -= mapOffset;
 
 		// chunk -> tile
 		return glm::vec2{pos * MapChunk::size} * MapChunk::tileSize;
@@ -180,7 +180,7 @@ namespace Game {
 				0.0f
 			});
 
-			mapOffset.x += static_cast<int>(dir);
+			mapOffset.x += static_cast<int>(dir) * originRange;
 
 			// TODO: Figure out a better way to update camera. This seems hacky.
 			// TODO: Doing this could also cause problems with other things that use the camera.
@@ -196,7 +196,7 @@ namespace Game {
 				range.y * dir
 			});
 
-			mapOffset.y += static_cast<int>(dir);
+			mapOffset.y += static_cast<int>(dir) * originRange;
 
 			// TODO: Figure out a better way to update camera. This seems hacky.
 			// TODO: Doing this could also cause problems with other things that use the camera.

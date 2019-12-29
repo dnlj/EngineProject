@@ -16,7 +16,7 @@
 // TODO: Change all mentions of "tile" to "block". Its a more common term.
 /**
  * World Coordinates - Always relative to Box2D origin. When mapOffset is changed
- *
+ * Region - A grouping of chunks. Used for saving/loading.
  *
  *
  *
@@ -95,7 +95,7 @@ namespace Game {
 			void updateOrigin();
 
 			/** Number of chunks before shifting the origin */
-			constexpr static int originRange = 4; // Absolute Range = originRange * chunkSize * tileSize
+			constexpr static int originRange = 4;
 
 			/** Size of regions in chunks */
 			constexpr static glm::ivec2 regionSize = {16, 16};
@@ -103,7 +103,7 @@ namespace Game {
 			/** The number of regions in the map */
 			constexpr static glm::ivec2 regionCount = {3, 3};
 
-			/** Offset of current origin in increments of originRange */
+			/** Offset (in chunks) of current origin */
 			glm::ivec2 mapOffset = {0, 0}; // TODO: is there a reason to not just use a block offset? We never use this without also referencing originRange anyways.
 
 			/** The number of chunks in the map */
