@@ -102,7 +102,7 @@ namespace {
 			Game::BiomeA,
 			//Game::BiomeB,
 			Game::BiomeC
-		> mgen{12342};
+		> mgen{1234};
 
 		/*{
 			srand((unsigned)time(NULL));
@@ -170,11 +170,10 @@ namespace {
 				
 				{ // Worley testing
 					float s = 0.01f;
-					int s2 = 1;
 					//v = sqrt(worley.value(x * s, y * s).distanceSquared);
 					//v = sqrt(worley.valueD2(x * s, y * s).value);
 					//v = worley1.valueF2F1(x * s, y * s).value;
-					v = mgen.value(x * s2, y * s2);
+					v = mgen.value(x, y);
 				}
 
 				// Step
@@ -219,19 +218,35 @@ namespace {
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
 
-		if (ImGui::CollapsingHeader("Debug")) {
+		if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
+			auto& mapSys = world.getSystem<Game::MapSystem>();
+
 			auto screenMousePos = engine.inputManager.getMousePosition();
 			ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
 			auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
 			ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
 
+			auto chunkMousePos = mapSys.worldToChunk(worldMousePos);
+			ImGui::Text("Mouse (chunk): (%i, %i)", chunkMousePos.x, chunkMousePos.y);
+
+			auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
+			ImGui::Text("Mouse (chunk block): (%i, %i)", chunkBlockMousePos.x, chunkBlockMousePos.y);
+
+			auto blockMousePos = mapSys.worldToBlock(worldMousePos);
+			ImGui::Text("Mouse (block): (%i, %i)", blockMousePos.x, blockMousePos.y);
+
+			// TODO: Abs block pos
+
 			auto camPos = engine.camera.getPosition();
 			ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
 
-			auto& mapSys = world.getSystem<Game::MapSystem>();
 			auto mapOffset = mapSys.getOffset();
 			ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
+
+			auto mapBlockOffset = mapSys.getBlockOffset();
+			ImGui::Text("Map Block Offset: (%i, %i)", mapBlockOffset.x, mapBlockOffset.y);
+
 
 			#if defined(DEBUG_PHYSICS)
 				auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
@@ -239,9 +254,7 @@ namespace {
 			#endif
 		}
 
-		if (ImGui::CollapsingHeader("Map", ImGuiTreeNodeFlags_DefaultOpen)) {
-			auto screenMousePos = engine.inputManager.getMousePosition();
-			ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
+		if (ImGui::CollapsingHeader("Map")) {
 			ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(1024, 1024));
 		}
 

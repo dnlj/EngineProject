@@ -18,9 +18,7 @@
 
 namespace Game {
 	MapChunk::MapChunk() {
-		{ // Vertex array
-			glCreateVertexArrays(1, &vao);
-		}
+		glCreateVertexArrays(1, &vao);
 	}
 
 	MapChunk::~MapChunk() {
@@ -61,11 +59,11 @@ namespace Game {
 		body = physSys.createBody(ent, bodyDef);
 	}
 
+	// TODO: Can we flatten this lambda mess? Seems a bit much.
 	// TODO: can this be split up more? Should be able to
 	// TODO: Rename to rebuild or similar? generate is a bad name.
 	void MapChunk::generate() {
 		// TODO: Look into edge and chain shapes
-
 		if (!updated) { return; }
 
 		{ // Clear all fixtures
@@ -178,22 +176,19 @@ namespace Game {
 		glDeleteBuffers(1, &vbo);
 		glDeleteBuffers(1, &ebo);
 
-		{ // Element buffer
-			glCreateBuffers(1, &ebo);
-			glNamedBufferData(ebo, sizeof(GLushort) * eboData.size(), eboData.data(), GL_STATIC_DRAW);
-			glVertexArrayElementBuffer(vao, ebo);
-		}
+		// Element buffer
+		glCreateBuffers(1, &ebo);
+		glNamedBufferData(ebo, sizeof(GLushort) * eboData.size(), eboData.data(), GL_STATIC_DRAW);
+		glVertexArrayElementBuffer(vao, ebo);
 
-		{ // Vertex buffer
-			glCreateBuffers(1, &vbo);
-			glNamedBufferData(vbo, sizeof(Vertex) * vboData.size(), vboData.data(), GL_STATIC_DRAW);
-			glVertexArrayVertexBuffer(vao, dataBindingIndex, vbo, 0, sizeof(Vertex));
-		}
+		// Vertex buffer
+		glCreateBuffers(1, &vbo);
+		glNamedBufferData(vbo, sizeof(Vertex) * vboData.size(), vboData.data(), GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, dataBindingIndex, vbo, 0, sizeof(Vertex));
 
-		{ // Vertex attributes
-			glEnableVertexArrayAttrib(vao, 0);
-			glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
-			glVertexArrayAttribBinding(vao, 0, dataBindingIndex);
-		}
+		// Vertex attributes
+		glEnableVertexArrayAttrib(vao, 0);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+		glVertexArrayAttribBinding(vao, 0, dataBindingIndex);
 	}
 }

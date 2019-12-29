@@ -4,6 +4,7 @@
 #include <Game/MapSystem.hpp>
 
 namespace Game {
+	// TODO: Update to use map system conversion functions
 	template<MapChunk::EditMemberFunction func>
 	void MapSystem::applyEdit() {
 		// TODO: do we need to updateOrigin()?

@@ -7,6 +7,7 @@
 #include <Game/SpriteSystem.hpp>
 #include <Game/CameraTrackingSystem.hpp>
 
+
 namespace Game {
 	MapSystem::MapSystem(World& world) : SystemBase{world} {
 		priorityAfter = world.getBitsetForSystems<Game::CameraTrackingSystem>();
@@ -18,8 +19,8 @@ namespace Game {
 		shader = engine.shaderManager.get("shaders/terrain");
 		texture = engine.textureManager.get("../assets/test.png");
 
-		for (int y = 0; y < mapSize.y; ++y) {
-			for (int x = 0; x < mapSize.x; ++x) {
+		for (int x = 0; x < mapSize.x; ++x) {
+			for (int y = 0; y < mapSize.y; ++y) {
 				auto& chunk = chunks[x][y];
 
 				chunk.setup(
@@ -29,7 +30,7 @@ namespace Game {
 				);
 
 				// TODO: switch to regions?
-				loadChunk(chunk, glm::ivec2{x, y});
+				//loadChunk(chunk, glm::ivec2{x, y});
 			}
 		}
 	}
@@ -62,7 +63,7 @@ namespace Game {
 			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
 				for (int x = minChunk.x; x <= maxChunk.x; ++x) {
 					getChunkAt({x, y}).draw(mvp);
-					getChunkAt({x, y}).draw(mvp * glm::scale(glm::mat4{1.0f}, glm::vec3{0.1f}));
+					//getChunkAt({x, y}).draw(mvp * glm::scale(glm::mat4{1.0f}, glm::vec3{0.1f}));
 				}
 			}
 		}
@@ -72,15 +73,25 @@ namespace Game {
 		return mapOffset;
 	}
 
-	glm::ivec2 MapSystem::worldToChunk(glm::vec2 pos) const {
-		// world -> tile
-		const auto tile = glm::round(pos / MapChunk::tileSize);
+	glm::ivec2 MapSystem::getBlockOffset() const {
+		return mapOffset * originRange * MapChunk::size;
+	}
 
-		// tile -> relative chunk
-		const glm::ivec2 chunkOffset = glm::floor(tile / glm::vec2{MapChunk::size});
-
+	glm::ivec2 MapSystem::worldToChunk(const glm::vec2 wpos) const {
+		// world -> relative block
+		const auto block = glm::floor(wpos / MapChunk::tileSize);
+		
+		// block -> relative chunk
+		const glm::ivec2 chunkOffset = glm::floor(block / glm::vec2{MapChunk::size});
+		
 		// relative chunk -> absolute chunk
 		return mapOffset * originRange + chunkOffset;
+	}
+
+	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 wpos) const {
+		// world -> relative block
+		const glm::ivec2 relBlock = glm::floor(wpos / MapChunk::tileSize);
+		return getBlockOffset() + relBlock;
 	}
 
 	glm::vec2 MapSystem::chunkToWorld(glm::ivec2 pos) const {
@@ -89,6 +100,10 @@ namespace Game {
 
 		// chunk -> tile
 		return glm::vec2{pos * MapChunk::size} * MapChunk::tileSize;
+	}
+
+	glm::ivec2 MapSystem::chunkToBlock(glm::ivec2 pos) const {
+		return pos * MapChunk::size;
 	}
 
 	MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) {
@@ -100,6 +115,7 @@ namespace Game {
 	MapChunk& MapSystem::ensureChunkLoaded(glm::ivec2 pos) {
 		auto& chunk = getChunkAt(pos);
 
+		// TODO: We are checking chunks but loading regions? strange.
 		// TODO: Should just store chunk pos on chunk. This is called a lot
 		if (worldToChunk(chunk.getPosition()) != pos) {
 			loadRegion(chunkToRegion(pos));
@@ -108,13 +124,28 @@ namespace Game {
 		return chunk;
 	}
 
-	void MapSystem::loadChunk(MapChunk& chunk, glm::ivec2 pos) {
-		chunk.from(chunkToWorld(pos)); // TODO: Data
+	void MapSystem::loadChunk(MapChunk& chunk, const glm::ivec2 pos) {
+		const auto chunkBlockPos = chunkToBlock(pos);
+
+		for (glm::ivec2 tpos = {0, 0}; tpos.x < MapChunk::size.x; ++tpos.x) {
+			for (tpos.y = 0; tpos.y < MapChunk::size.y; ++tpos.y) {
+				const auto absPos = chunkBlockPos + tpos;
+				auto block = 0;
+		
+				if (0 < mgen.value(absPos.x, absPos.y)) {
+					block = 1;
+				}
+		
+				chunk.data[tpos.x][tpos.y] = block;
+			}
+		}
+
+		chunk.from(chunkToWorld(pos));
 	}
 
 	glm::ivec2 MapSystem::chunkToRegion(glm::ivec2 pos) {
 		// Integer version of floor(a/b)
-		return pos / regionSize - glm::ivec2{glm::lessThan(pos, {0, 0})};
+		return pos / regionSize - glm::ivec2{glm::lessThan(pos, {0, 0})}; // TODO: This is off by one for negative values where: pos % regionSize == 0
 	}
 
 	glm::ivec2 MapSystem::regionToChunk(glm::ivec2 region) {
@@ -127,10 +158,10 @@ namespace Game {
 		const auto regionStart = regionToChunk(region);
 		std::cout << "regionStart: " << "(" << regionStart.x << ", " << regionStart.y << ")\n\n";
 
-		for (int y = 0; y < regionSize.y; ++y) {
-			for (int x = 0; x < regionSize.x; ++x) {
+		for (int x = 0; x < regionSize.x; ++x) {
+			for (int y = 0; y < regionSize.y; ++y) {
 				const auto chunk = regionStart + glm::ivec2{x, y};
-				getChunkAt(chunk).from(chunkToWorld(chunk)); // TODO: Data
+				loadChunk(getChunkAt(chunk), chunk);
 			}
 		}
 	}

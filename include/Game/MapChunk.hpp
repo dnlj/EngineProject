@@ -10,6 +10,8 @@
 #include <Game/MapTile.hpp>
 #include <Game/PhysicsSystem.hpp>
 
+// TODO: convert to use sized types - int32, float32, etc.
+// TODO: Change all mentions of "tile" to "block". Its a more common term.
 // TODO: Doc
 namespace Game {
 	class MapChunk {
@@ -34,21 +36,12 @@ namespace Game {
 			glm::vec2 getPosition() const;
 			void draw(glm::mat4 mvp) const;
 
+			int data[size.x][size.y] = {};
+
 		private:
 			class Vertex {
 				public:
 					glm::vec2 position;
-			};
-
-			int data[size.x][size.y] = {
-				{2, 2, 0, 0, 0, 0, 0, 1},
-				{0, 0, 0, 0, 0, 0, 0, 0},
-				{0, 0, 2, 2, 2, 2, 0, 0},
-				{0, 0, 2, 1, 1, 2, 0, 0},
-				{0, 0, 2, 0, 1, 2, 0, 0},
-				{0, 0, 2, 2, 2, 2, 0, 0},
-				{3, 3, 0, 0, 0, 0, 4, 4},
-				{3, 0, 0, 0, 0, 0, 4, 4},
 			};
 
 			b2Body* body = nullptr; // TODO: Cleanup
