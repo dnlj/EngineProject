@@ -35,8 +35,9 @@ namespace Game {
 		createBody(physSys);
 	}
 
-	void MapChunk::from(glm::vec2 pos) {
-		body->SetTransform(b2Vec2{pos.x, pos.y}, 0.0f);
+	void MapChunk::from(const glm::vec2 wpos, const glm::ivec2 cpos) {
+		pos = cpos;
+		body->SetTransform(b2Vec2{wpos.x, wpos.y}, 0.0f);
 		updated = true;
 	}
 
@@ -145,9 +146,8 @@ namespace Game {
 		updated = false;
 	}
 
-	glm::vec2 MapChunk::getPosition() const {
-		const auto& pos = body->GetPosition();
-		return glm::vec2{pos.x, pos.y};
+	glm::ivec2 MapChunk::getPosition() const {
+		return pos;
 	}
 
 	void MapChunk::draw(glm::mat4 mvp) const {

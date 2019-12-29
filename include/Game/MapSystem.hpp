@@ -76,7 +76,7 @@ namespace Game {
 			MapChunk& ensureChunkLoaded(glm::ivec2 pos);
 
 			// TODO: Doc
-			void loadChunk(MapChunk& chunk, const glm::ivec2 pos);
+			void loadChunk(const glm::ivec2 pos);
 
 			// TODO: Doc
 			glm::ivec2 chunkToRegion(glm::ivec2 pos);

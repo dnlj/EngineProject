@@ -29,11 +29,11 @@ namespace Game {
 			~MapChunk();
 
 			void setup(World& world, GLuint shader, GLuint texture);
-			void from(glm::vec2 pos);
+			void from(const glm::vec2 wpos, const glm::ivec2 cpos);
 			void addTile(int x, int y);
 			void removeTile(int x, int y);
 			void generate();
-			glm::vec2 getPosition() const;
+			glm::ivec2 getPosition() const;
 			void draw(glm::mat4 mvp) const;
 
 			int data[size.x][size.y] = {};
@@ -52,6 +52,7 @@ namespace Game {
 			GLuint vbo = 0;
 			GLuint ebo = 0;
 			GLsizei elementCount = 0;
+			glm::ivec2 pos = {0x7FFF'FFFF, 0x7FFF'FFFF};
 
 			bool updated = false;
 

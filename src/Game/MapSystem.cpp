@@ -21,16 +21,7 @@ namespace Game {
 
 		for (int x = 0; x < mapSize.x; ++x) {
 			for (int y = 0; y < mapSize.y; ++y) {
-				auto& chunk = chunks[x][y];
-
-				chunk.setup(
-					world,
-					shader.get(),
-					texture.get()
-				);
-
-				// TODO: switch to regions?
-				//loadChunk(chunk, glm::ivec2{x, y});
+				chunks[x][y].setup(world, shader.get(), texture.get());
 			}
 		}
 	}
@@ -40,20 +31,19 @@ namespace Game {
 		const auto minChunk = worldToChunk(camera->getWorldScreenBounds().min);
 		const auto maxChunk = worldToChunk(camera->getWorldScreenBounds().max);
 
-
 		// TODO: this shoudl be before edit
 		{
 			// TODO: we should probably have a buffer around the screen space for this stuff so it has time to load/gen
 			// TODO: Handle chunk/region loading in different thread
 			// TODO: if we had velocity we would only need to check two sides instead of all four
 			for (int x = minChunk.x; x <= maxChunk.x; ++x) {
-				ensureChunkLoaded({x, minChunk.y}).generate();
-				ensureChunkLoaded({x, maxChunk.y}).generate();
+				ensureChunkLoaded({x, minChunk.y});
+				ensureChunkLoaded({x, maxChunk.y});
 			}
 
 			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
-				ensureChunkLoaded({minChunk.x, y}).generate();
-				ensureChunkLoaded({maxChunk.x, y}).generate();
+				ensureChunkLoaded({minChunk.x, y});
+				ensureChunkLoaded({maxChunk.x, y});
 			}
 		}
 
@@ -116,15 +106,16 @@ namespace Game {
 		auto& chunk = getChunkAt(pos);
 
 		// TODO: We are checking chunks but loading regions? strange.
-		// TODO: Should just store chunk pos on chunk. This is called a lot
-		if (worldToChunk(chunk.getPosition()) != pos) {
+		if (chunk.getPosition() != pos) {
 			loadRegion(chunkToRegion(pos));
 		}
 
 		return chunk;
 	}
 
-	void MapSystem::loadChunk(MapChunk& chunk, const glm::ivec2 pos) {
+	// TODO: no reason to pass both chunk and pos here.
+	void MapSystem::loadChunk(const glm::ivec2 pos) {
+		auto& chunk = getChunkAt(pos);
 		const auto chunkBlockPos = chunkToBlock(pos);
 
 		for (glm::ivec2 tpos = {0, 0}; tpos.x < MapChunk::size.x; ++tpos.x) {
@@ -140,7 +131,8 @@ namespace Game {
 			}
 		}
 
-		chunk.from(chunkToWorld(pos));
+		chunk.from(chunkToWorld(pos), pos);
+		chunk.generate();
 	}
 
 	glm::ivec2 MapSystem::chunkToRegion(glm::ivec2 pos) {
@@ -161,7 +153,7 @@ namespace Game {
 		for (int x = 0; x < regionSize.x; ++x) {
 			for (int y = 0; y < regionSize.y; ++y) {
 				const auto chunk = regionStart + glm::ivec2{x, y};
-				loadChunk(getChunkAt(chunk), chunk);
+				loadChunk(chunk);
 			}
 		}
 	}
