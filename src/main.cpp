@@ -242,8 +242,8 @@ namespace {
 			auto camPos = engine.camera.getPosition();
 			ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
 
-			auto mapOffset = mapSys.getOffset();
-			ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
+			auto mapChunkOffset = mapSys.getChunkOffset();
+			ImGui::Text("Map Chunk Offset: (%i, %i)", mapChunkOffset.x, mapChunkOffset.y);
 
 			auto mapBlockOffset = mapSys.getBlockOffset();
 			ImGui::Text("Map Block Offset: (%i, %i)", mapBlockOffset.x, mapBlockOffset.y);
@@ -256,7 +256,7 @@ namespace {
 		}
 
 		if (ImGui::CollapsingHeader("Map")) {
-			//ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(1024, 1024));
+			ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(1024, 1024));
 		}
 
 		ImGui::End();

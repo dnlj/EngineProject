@@ -14,14 +14,14 @@
 // TODO: Document the different coordinate systems and terms used here.
 // TODO: convert to use sized types - int32, float32, etc.
 // TODO: Change all mentions of "tile" to "block". Its a more common term.
+// TODO: Standardize terms to be `xyzOffset`, `xyzPosition`, `xyzIndex`
 /**
  * World Coordinates - Always relative to Box2D origin. When mapOffset is changed
  * Region - A grouping of chunks. Used for saving/loading.
  *
- *
- *
- *
- *
+ * xyzOffset - The position of xyz relative to the current origin shift.
+ * xyzPos - The position of xyz in absolute terms. Always the same regardless of the origin shift.
+ * xyzIndex - The index of xyz into its storage array.
  *
  */
 namespace Game {
@@ -30,10 +30,15 @@ namespace Game {
 			MapSystem(World& world);
 			void setup(Engine::EngineInstance& engine);
 			void run(float dt) override;
-			const glm::ivec2& getOffset() const; // TODO: Remove? Dont think this is used anywhere.
 
+			// TODO: Name? this isnt consistent with our other usage of offset
+			const glm::ivec2& getChunkOffset() const; // TODO: Remove? Dont think this is used anywhere.
+
+			// TODO: Name? this isnt consistent with our other usage of offset
 			// TODO: Doc. Gets the size of the current offset in blocks coordinates
 			glm::ivec2 getBlockOffset() const;
+
+			void setValueAt(const glm::vec2 wpos);
 
 			// TODO: Doc
 			template<MapChunk::EditMemberFunction func>
@@ -41,29 +46,29 @@ namespace Game {
 
 			/**
 			 * Converts from a world position to chunk coordinates.
-			 * @param[in] pos The position in world space.
+			 * @param[in] worldPos The position in world space.
 			 * @return The chunk coordinates.
 			 */
-			glm::ivec2 worldToChunk(const glm::vec2 wpos) const;
+			glm::ivec2 worldToChunk(const glm::vec2 worldPos) const;
 
 			/**
 			 * Converts world coordinates to absolute block coordinates.
 			 * TODO: Finish docs
 			 */
-			glm::ivec2 worldToBlock(const glm::vec2 wpos) const;
+			glm::ivec2 worldToBlock(const glm::vec2 worldPos) const;
 
 			/**
 			 * Converts from a chunk position to world coordinates.
-			 * @param[in] pos The position in chunk space.
+			 * @param[in] chunkPos The position in chunk space.
 			 * @return The world coordinates.
 			 */
-			glm::vec2 chunkToWorld(glm::ivec2 pos) const;
+			glm::vec2 chunkToWorld(const glm::ivec2 chunkPos) const;
 
 			/**
 			 * Converts chunk coordinates to absolute block coordinates.
 			 * TODO: Finish docs
 			 */
-			glm::ivec2 chunkToBlock(glm::ivec2 pos) const;
+			glm::ivec2 chunkToBlock(const glm::ivec2 chunkPos) const;
 		private:
 			/**
 			 * Get the chunk at a position.

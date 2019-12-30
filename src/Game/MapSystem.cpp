@@ -59,7 +59,7 @@ namespace Game {
 		}
 	}
 	
-	const glm::ivec2& MapSystem::getOffset() const {
+	const glm::ivec2& MapSystem::getChunkOffset() const {
 		return mapOffset;
 	}
 
@@ -67,33 +67,42 @@ namespace Game {
 		return mapOffset * MapChunk::size;
 	}
 
-	glm::ivec2 MapSystem::worldToChunk(const glm::vec2 wpos) const {
-		// world -> relative block
-		const auto block = glm::floor(wpos / MapChunk::tileSize);
-		
-		// block -> relative chunk
-		const glm::ivec2 chunkOffset = glm::floor(block / glm::vec2{MapChunk::size});
-		
-		// relative chunk -> absolute chunk
+	void MapSystem::setValueAt(const glm::vec2 wpos) {
+		// TODO: Make conversion functions for all of these? Better names
+
+		const auto blockOffset = glm::floor(wpos / MapChunk::tileSize);
+		// TODO: there should be a better way of dealing with negatives. Lookinto this.
+		const auto blockIndex = (MapChunk::size + glm::ivec2{blockOffset} % MapChunk::size) % MapChunk::size;
+
+		//std::cout << "Bidx: " << blockIndex.x << ", " << blockIndex.y << "\n";
+		const glm::ivec2 chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
+		const auto chunkPos = mapOffset + chunkOffset;
+		// TODO: there should be a better way of dealing with negatives. Lookinto this.
+		const auto chunkIndex = (mapSize + glm::ivec2{chunkPos} % mapSize) % mapSize;
+
+		auto& chunk = chunks[chunkIndex.x][chunkIndex.y];
+		chunk.data[blockIndex.x][blockIndex.y] = 0;
+		chunk.generate();
+	}
+
+	glm::ivec2 MapSystem::worldToChunk(const glm::vec2 worldPos) const {
+		const auto blockOffset = glm::floor(worldPos / MapChunk::tileSize);
+		const glm::ivec2 chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
 		return mapOffset + chunkOffset;
 	}
 
-	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 wpos) const {
-		// world -> relative block
-		const glm::ivec2 relBlock = glm::floor(wpos / MapChunk::tileSize);
-		return getBlockOffset() + relBlock;
+	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 worldPos) const {
+		const glm::ivec2 blockOffset = glm::floor(worldPos / MapChunk::tileSize);
+		return getBlockOffset() + blockOffset;
 	}
 
-	glm::vec2 MapSystem::chunkToWorld(glm::ivec2 pos) const {
-		// absolute -> relative
-		pos -= mapOffset;
-
-		// chunk -> tile
-		return glm::vec2{pos * MapChunk::size} * MapChunk::tileSize;
+	glm::vec2 MapSystem::chunkToWorld(glm::ivec2 chunkPos) const {
+		const auto chunkOffset = chunkPos - mapOffset;
+		return glm::vec2{chunkOffset * MapChunk::size} * MapChunk::tileSize;
 	}
 
-	glm::ivec2 MapSystem::chunkToBlock(glm::ivec2 pos) const {
-		return pos * MapChunk::size;
+	glm::ivec2 MapSystem::chunkToBlock(const glm::ivec2 chunkPos) const {
+		return chunkPos * MapChunk::size;
 	}
 
 	MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) {
@@ -113,7 +122,6 @@ namespace Game {
 		return chunk;
 	}
 
-	// TODO: no reason to pass both chunk and pos here.
 	void MapSystem::loadChunk(const glm::ivec2 pos) {
 		auto& chunk = getChunkAt(pos);
 		const auto chunkBlockPos = chunkToBlock(pos);

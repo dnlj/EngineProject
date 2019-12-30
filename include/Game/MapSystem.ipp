@@ -9,6 +9,7 @@ namespace Game {
 	void MapSystem::applyEdit() {
 		// TODO: do we need to updateOrigin()?
 		const auto mpos = camera->screenToWorld(input->getMousePosition());
+		setValueAt(mpos);
 
 		// Offset of tile relative to current offset
 		const auto offsetTile = glm::floor(mpos / MapChunk::tileSize);
@@ -17,7 +18,7 @@ namespace Game {
 		const glm::ivec2 offsetChunk = glm::floor(offsetTile / glm::vec2{MapChunk::size});
 
 		// Absolute chunk position
-		const auto absChunk = mapOffset * originRange + offsetChunk;
+		const auto absChunk = mapOffset + offsetChunk;
 
 		// Index for this chunk
 		const auto indexChunk = (mapSize + absChunk % mapSize) % mapSize;
@@ -27,7 +28,7 @@ namespace Game {
 
 		MapChunk& chunk = chunks[indexChunk.x][indexChunk.y];
 
-		(chunk.*func)(indexTile.x, indexTile.y);
+		//(chunk.*func)(indexTile.x, indexTile.y);
 		chunk.generate();
 	}
 }

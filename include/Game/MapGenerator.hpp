@@ -23,7 +23,7 @@ namespace Game {
 			}
 
 			virtual float32 value(int32 x, int32 y) override {
-				constexpr float32 scale = 0.05f;
+				constexpr float32 scale = 0.1f;
 				//return -1;
 				return noise.value(x * scale, y * scale);
 			}
@@ -50,7 +50,7 @@ namespace Game {
 			}
 
 			virtual float32 value(int32 x, int32 y) override {
-				constexpr float32 scale = 0.01f;
+				constexpr float32 scale = 0.05f;
 				//return 1;
 				return noise.value(x * scale, y * scale);
 			}

@@ -54,8 +54,6 @@ namespace Game {
 			GLsizei elementCount = 0;
 			glm::ivec2 pos = {0x7FFF'FFFF, 0x7FFF'FFFF};
 
-			bool updated = false;
-
 			void createBody(PhysicsSystem& physSys);
 			void updateVertexData(const std::vector<Vertex>& vboData, const std::vector<GLushort>& eboData);
 	};
