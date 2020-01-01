@@ -231,7 +231,7 @@ namespace {
 			auto blockMousePos = mapSys.worldToBlock(worldMousePos);
 			ImGui::Text("Mouse (block): (%i, %i)", blockMousePos.x, blockMousePos.y);
 
-			auto chunkMousePos = mapSys.worldToChunk(worldMousePos);
+			auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
 			auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
 			ImGui::Text("Mouse (chunk): (%i, %i) (%i, %i)", chunkMousePos.x, chunkMousePos.y, chunkBlockMousePos.x, chunkBlockMousePos.y);
 

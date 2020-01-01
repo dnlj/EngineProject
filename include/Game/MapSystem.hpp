@@ -44,45 +44,36 @@ namespace Game {
 			template<MapChunk::EditMemberFunction func>
 			void applyEdit();
 
-			// TODO: do we want these multi step conversion functions? or do we just want world>block>chunk>region
 			/**
-			 * Converts from a world position to chunk coordinates.
-			 * @param[in] worldPos The position in world space.
-			 * @return The chunk coordinates.
+			 * Converts from world coordinates to block coordinates.
 			 */
-			glm::ivec2 worldToChunk(const glm::vec2 worldPos) const;
+			glm::ivec2 worldToBlock(const glm::vec2 world) const;
 
 			/**
-			 * Converts world coordinates to absolute block coordinates.
-			 * TODO: Finish docs
+			 * Converts from block coordinates to world coordinates.
 			 */
-			glm::ivec2 worldToBlock(const glm::vec2 worldPos) const;
+			glm::vec2 blockToWorld(const glm::ivec2 block) const;
 
-			// TODO: Doc
+			/**
+			 * Converts from block coordinates to chunk coordinates.
+			 */
 			glm::ivec2 blockToChunk(const glm::ivec2 block) const;
 
 			/**
-			 * Converts from a chunk position to world coordinates.
-			 * @param[in] chunkPos The position in chunk space.
-			 * @return The world coordinates.
+			 * Converts from chunk coordinates to block coordinates.
 			 */
-			glm::vec2 chunkToWorld(const glm::ivec2 chunkPos) const;
+			glm::ivec2 chunkToBlock(const glm::ivec2 chunk) const;
 
 			/**
-			 * Converts chunk coordinates to absolute block coordinates.
-			 * TODO: Finish docs
+			 * Converts from chunk coordinates to region coordinates.
 			 */
-			glm::ivec2 chunkToBlock(const glm::ivec2 chunkPos) const;
-
-			// TODO: Doc
-			glm::ivec2 chunkToRegion(const glm::ivec2 chunk);
+			glm::ivec2 chunkToRegion(const glm::ivec2 chunk) const;
 
 			/**
 			 * Converts from region coordinates to chunk coordinates.
-			 * @param region The region coordinates.
-			 * @return The chunk coordinates.
 			 */
-			glm::ivec2 regionToChunk(glm::ivec2 region);
+			glm::ivec2 regionToChunk(glm::ivec2 region) const;
+
 		private:
 			/**
 			 * Get the chunk at a position.

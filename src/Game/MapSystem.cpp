@@ -89,15 +89,13 @@ namespace Game {
 		chunk.generate();
 	}
 
-	glm::ivec2 MapSystem::worldToChunk(const glm::vec2 worldPos) const {
-		const auto blockOffset = glm::floor(worldPos / MapChunk::tileSize);
-		const glm::ivec2 chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
-		return mapOffset + chunkOffset;
-	}
-
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 worldPos) const {
 		const glm::ivec2 blockOffset = glm::floor(worldPos / MapChunk::tileSize);
 		return getBlockOffset() + blockOffset;
+	}
+
+	glm::vec2 MapSystem::blockToWorld(const glm::ivec2 block) const {
+		return glm::vec2{block} * MapChunk::tileSize;
 	}
 
 	glm::ivec2 MapSystem::blockToChunk(const glm::ivec2 block) const {
@@ -106,22 +104,17 @@ namespace Game {
 		return d * MapChunk::size == block ? d : d - glm::ivec2{glm::lessThan(block, {0, 0})};
 	}
 
-	glm::vec2 MapSystem::chunkToWorld(glm::ivec2 chunkPos) const {
-		const auto chunkOffset = chunkPos - mapOffset;
-		return glm::vec2{chunkOffset * MapChunk::size} * MapChunk::tileSize;
+	glm::ivec2 MapSystem::chunkToBlock(const glm::ivec2 chunk) const {
+		return chunk * MapChunk::size;
 	}
 
-	glm::ivec2 MapSystem::chunkToBlock(const glm::ivec2 chunkPos) const {
-		return chunkPos * MapChunk::size;
-	}
-
-	glm::ivec2 MapSystem::chunkToRegion(const glm::ivec2 chunk) {
+	glm::ivec2 MapSystem::chunkToRegion(const glm::ivec2 chunk) const {
 		// Integer division + floor
 		const auto d = chunk / regionSize;
 		return d * regionSize == chunk ? d : d - glm::ivec2{glm::lessThan(chunk, {0, 0})};
 	}
 
-	glm::ivec2 MapSystem::regionToChunk(glm::ivec2 region) {
+	glm::ivec2 MapSystem::regionToChunk(glm::ivec2 region) const {
 		return region * regionSize;
 	}
 
@@ -163,7 +156,7 @@ namespace Game {
 			}
 		}
 
-		chunk.from(chunkToWorld(pos), pos);
+		chunk.from(blockToWorld(chunkToBlock(pos)), pos);
 		chunk.generate();
 	}
 
