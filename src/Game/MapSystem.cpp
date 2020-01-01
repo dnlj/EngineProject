@@ -28,14 +28,18 @@ namespace Game {
 
 	void MapSystem::run(float dt) {
 		updateOrigin();
-		const auto minChunk = worldToChunk(camera->getWorldScreenBounds().min);
-		const auto maxChunk = worldToChunk(camera->getWorldScreenBounds().max);
+		const auto minChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().min));
+		const auto maxChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().max));
 
 		// TODO: this shoudl be before edit
 		{
 			// TODO: we should probably have a buffer around the screen space for this stuff so it has time to load/gen
 			// TODO: Handle chunk/region loading in different thread
 			// TODO: if we had velocity we would only need to check two sides instead of all four
+			
+			const auto region = chunkToRegion(minChunk);
+			std::cout << "Region: " << region.x << ", " << region.y << "\n";
+
 			for (int x = minChunk.x; x <= maxChunk.x; ++x) {
 				ensureChunkLoaded({x, minChunk.y});
 				ensureChunkLoaded({x, maxChunk.y});
@@ -96,6 +100,12 @@ namespace Game {
 		return getBlockOffset() + blockOffset;
 	}
 
+	glm::ivec2 MapSystem::blockToChunk(const glm::ivec2 block) const {
+		// Integer division + floor 
+		const auto d = block / MapChunk::size;
+		return d * MapChunk::size == block ? d : d - glm::ivec2{glm::lessThan(block, {0, 0})};
+	}
+
 	glm::vec2 MapSystem::chunkToWorld(glm::ivec2 chunkPos) const {
 		const auto chunkOffset = chunkPos - mapOffset;
 		return glm::vec2{chunkOffset * MapChunk::size} * MapChunk::tileSize;
@@ -105,10 +115,24 @@ namespace Game {
 		return chunkPos * MapChunk::size;
 	}
 
+	glm::ivec2 MapSystem::chunkToRegion(const glm::ivec2 chunk) {
+		// Integer division + floor
+		const auto d = chunk / regionSize;
+		return d * regionSize == chunk ? d : d - glm::ivec2{glm::lessThan(chunk, {0, 0})};
+	}
+
+	glm::ivec2 MapSystem::regionToChunk(glm::ivec2 region) {
+		return region * regionSize;
+	}
+
 	MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) {
 		// Wrap index to valid range
 		pos = (mapSize + pos % mapSize) % mapSize;
 		return chunks[pos.x][pos.y];
+	}
+
+	void MapSystem::ensureRegionLoaded(glm::ivec2 region) {
+		// block / chunkSize / regionSize
 	}
 
 	MapChunk& MapSystem::ensureChunkLoaded(glm::ivec2 pos) {
@@ -135,21 +159,12 @@ namespace Game {
 					block = 1;
 				}
 		
-				chunk.data[tpos.x][tpos.y] = block;
+				// chunk.data[tpos.x][tpos.y] = block;
 			}
 		}
 
 		chunk.from(chunkToWorld(pos), pos);
 		chunk.generate();
-	}
-
-	glm::ivec2 MapSystem::chunkToRegion(glm::ivec2 pos) {
-		// Integer version of floor(a/b)
-		return pos / regionSize - glm::ivec2{glm::lessThan(pos, {0, 0})}; // TODO: This is off by one for negative values where: pos % regionSize == 0
-	}
-
-	glm::ivec2 MapSystem::regionToChunk(glm::ivec2 region) {
-		return region * regionSize;
 	}
 
 	void MapSystem::loadRegion(const glm::ivec2 region) {

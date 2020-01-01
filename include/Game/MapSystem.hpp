@@ -44,6 +44,7 @@ namespace Game {
 			template<MapChunk::EditMemberFunction func>
 			void applyEdit();
 
+			// TODO: do we want these multi step conversion functions? or do we just want world>block>chunk>region
 			/**
 			 * Converts from a world position to chunk coordinates.
 			 * @param[in] worldPos The position in world space.
@@ -57,6 +58,9 @@ namespace Game {
 			 */
 			glm::ivec2 worldToBlock(const glm::vec2 worldPos) const;
 
+			// TODO: Doc
+			glm::ivec2 blockToChunk(const glm::ivec2 block) const;
+
 			/**
 			 * Converts from a chunk position to world coordinates.
 			 * @param[in] chunkPos The position in chunk space.
@@ -69,6 +73,16 @@ namespace Game {
 			 * TODO: Finish docs
 			 */
 			glm::ivec2 chunkToBlock(const glm::ivec2 chunkPos) const;
+
+			// TODO: Doc
+			glm::ivec2 chunkToRegion(const glm::ivec2 chunk);
+
+			/**
+			 * Converts from region coordinates to chunk coordinates.
+			 * @param region The region coordinates.
+			 * @return The chunk coordinates.
+			 */
+			glm::ivec2 regionToChunk(glm::ivec2 region);
 		private:
 			/**
 			 * Get the chunk at a position.
@@ -77,21 +91,14 @@ namespace Game {
 			 */
 			MapChunk& getChunkAt(glm::ivec2 pos);
 
+			// TODO: doc
+			void ensureRegionLoaded(glm::ivec2 region);
+
 			// TODO: Doc
 			MapChunk& ensureChunkLoaded(glm::ivec2 pos);
 
 			// TODO: Doc
 			void loadChunk(const glm::ivec2 pos);
-
-			// TODO: Doc
-			glm::ivec2 chunkToRegion(glm::ivec2 pos);
-
-			/**
-			 * Converts from region coordinates to chunk coordinates.
-			 * @param region The region coordinates.
-			 * @return The chunk coordinates.
-			 */
-			glm::ivec2 regionToChunk(glm::ivec2 region);
 
 			// TODO: Doc
 			void loadRegion(const glm::ivec2 region);
@@ -103,7 +110,8 @@ namespace Game {
 			constexpr static int originRange = 4;
 
 			/** Size of regions in chunks */
-			constexpr static glm::ivec2 regionSize = {16, 16};
+			//constexpr static glm::ivec2 regionSize = {16, 16};
+			constexpr static glm::ivec2 regionSize = {3, 3};
 
 			/** The number of regions in the map */
 			constexpr static glm::ivec2 regionCount = {3, 3};
@@ -114,7 +122,8 @@ namespace Game {
 			/** The number of chunks in the map */
 			constexpr static glm::ivec2 mapSize = regionCount * regionSize;
 
-			MapChunk chunks[mapSize.x][mapSize.y]{};
+			MapChunk chunks[mapSize.x][mapSize.y];
+			glm::ivec2 loadedRegions[regionCount.x][regionCount.y] = {};
 
 			Engine::Input::InputManager* input;
 			const Engine::Camera* camera;

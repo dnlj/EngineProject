@@ -227,15 +227,17 @@ namespace {
 
 			auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
 			ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
-
-			auto chunkMousePos = mapSys.worldToChunk(worldMousePos);
-			ImGui::Text("Mouse (chunk): (%i, %i)", chunkMousePos.x, chunkMousePos.y);
-
-			auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
-			ImGui::Text("Mouse (chunk block): (%i, %i)", chunkBlockMousePos.x, chunkBlockMousePos.y);
-
+			
 			auto blockMousePos = mapSys.worldToBlock(worldMousePos);
 			ImGui::Text("Mouse (block): (%i, %i)", blockMousePos.x, blockMousePos.y);
+
+			auto chunkMousePos = mapSys.worldToChunk(worldMousePos);
+			auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
+			ImGui::Text("Mouse (chunk): (%i, %i) (%i, %i)", chunkMousePos.x, chunkMousePos.y, chunkBlockMousePos.x, chunkBlockMousePos.y);
+
+			const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);
+			ImGui::Text("Mouse (region): (%i, %i)", regionMousePos.x, regionMousePos.y);
+
 
 			// TODO: Abs block pos
 
