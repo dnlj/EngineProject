@@ -29,7 +29,7 @@ namespace Engine::ECS {
 
 		private:
 			const EntityManager& entityManager;
-			std::unordered_map<ComponentBitset, std::unique_ptr<EntityFilter>> filters;
+			std::unordered_map<ComponentBitset, std::unique_ptr<EntityFilter>> filters; // TODO: Use FlatHashMap
 			std::vector<std::vector<EntityFilter*>> filtersByComponentID;
 	};
 }

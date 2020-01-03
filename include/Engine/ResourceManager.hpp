@@ -52,7 +52,7 @@ namespace Engine {
 
 		private:
 			ResourceManager() = default;
-			std::unordered_map<std::string, ResourceType> resources;
+			std::unordered_map<std::string, ResourceType> resources; // TODO: Update to use Engine::FlatHashMap
 			Manager& self() { return static_cast<Manager&>(*this); }
 	};
 }

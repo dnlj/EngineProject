@@ -475,10 +475,10 @@ void run() {
 		Game::CharacterMovementBindListener{world, player, glm::ivec2{-1, 0}},
 		Game::CharacterMovementBindListener{world, player, glm::ivec2{1, 0}},
 	};
-	Game::MapSystemBindListener<&Game::MapChunk::addTile> mapSystemBindListener_EditPlace{world.getSystem<Game::MapSystem>()};
-	Game::MapSystemBindListener<&Game::MapChunk::removeTile> mapSystemBindListener_EditRemove{world.getSystem<Game::MapSystem>()};
+	Game::MapSystemBindListener<1> mapSystemBindListener_EditPlace{world.getSystem<Game::MapSystem>(), engine};
+	Game::MapSystemBindListener<0> mapSystemBindListener_EditRemove{world.getSystem<Game::MapSystem>(), engine};
 
-	{
+	{ // TODO: is there a better way to handle these setup functions? This seems dumb.
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		world.getSystem<Game::SpriteSystem>().setup(engine);
 		world.getSystem<Game::CameraTrackingSystem>().setup(engine.camera);

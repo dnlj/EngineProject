@@ -14,7 +14,6 @@ namespace Game {
 	}
 
 	void MapSystem::setup(Engine::EngineInstance& engine) {
-		input = &engine.inputManager;
 		camera = &engine.camera;
 		shader = engine.shaderManager.get("shaders/terrain");
 		texture = engine.textureManager.get("../assets/test.png");
@@ -31,6 +30,7 @@ namespace Game {
 		const auto minChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().min));
 		const auto maxChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().max));
 
+		// TODO: Dont we only need to check the corners? As long as screen size < region size i think that would be fine
 		// TODO: this shoudl be before edit
 		{
 			// TODO: we should probably have a buffer around the screen space for this stuff so it has time to load/gen
@@ -71,7 +71,7 @@ namespace Game {
 		return mapOffset * MapChunk::size;
 	}
 
-	void MapSystem::setValueAt(const glm::vec2 wpos) {
+	void MapSystem::setValueAt(const glm::vec2 wpos, int value) {
 		// TODO: Make conversion functions for all of these? Better names
 
 		const auto blockOffset = glm::floor(wpos / MapChunk::tileSize);
@@ -85,10 +85,10 @@ namespace Game {
 		const auto chunkIndex = (mapSize + glm::ivec2{chunkPos} % mapSize) % mapSize;
 
 		auto& chunk = chunks[chunkIndex.x][chunkIndex.y];
-		chunk.data[blockIndex.x][blockIndex.y] = 0;
+		chunk.data[blockIndex.x][blockIndex.y] = value;
 		chunk.generate();
 	}
-
+	
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 worldPos) const {
 		const glm::ivec2 blockOffset = glm::floor(worldPos / MapChunk::tileSize);
 		return getBlockOffset() + blockOffset;
@@ -152,7 +152,7 @@ namespace Game {
 					block = 1;
 				}
 		
-				// chunk.data[tpos.x][tpos.y] = block;
+				chunk.data[tpos.x][tpos.y] = block;
 			}
 		}
 

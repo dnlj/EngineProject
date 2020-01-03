@@ -8,20 +8,30 @@
 
 
 namespace Game {
-	template<MapChunk::EditMemberFunction func>
+	template<int value>
 	class MapSystemBindListener : public Engine::Input::BindPressListener, public Engine::Input::BindHoldListener {
 		public:
-			MapSystemBindListener(MapSystem& mapSystem) : mapSystem{mapSystem} {};
+			MapSystemBindListener(MapSystem& mapSystem, Engine::EngineInstance& engine)
+				: mapSystem{mapSystem}
+				, engine{engine} {
+			};
 
 		private:
 			MapSystem& mapSystem;
+			Engine::EngineInstance& engine;
+			void apply() {
+				mapSystem.setValueAt(
+					engine.camera.screenToWorld(engine.inputManager.getMousePosition()),
+					value
+				);
+			};
 
 			virtual void onBindPress() override {
-				mapSystem.applyEdit<func>();
+				apply();
 			};
 
 			virtual void onBindHold() override {
-				mapSystem.applyEdit<func>();
+				apply();
 			};
 	};
 }

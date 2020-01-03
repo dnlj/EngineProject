@@ -38,7 +38,7 @@ namespace Game {
 			// TODO: Doc. Gets the size of the current offset in blocks coordinates
 			glm::ivec2 getBlockOffset() const;
 
-			void setValueAt(const glm::vec2 wpos);
+			void setValueAt(const glm::vec2 wpos, int value);
 
 			// TODO: Doc
 			template<MapChunk::EditMemberFunction func>
@@ -116,7 +116,6 @@ namespace Game {
 			MapChunk chunks[mapSize.x][mapSize.y];
 			glm::ivec2 loadedRegions[regionCount.x][regionCount.y] = {};
 
-			Engine::Input::InputManager* input;
 			const Engine::Camera* camera;
 			Engine::Shader shader;
 			Engine::Texture texture;
@@ -126,5 +125,3 @@ namespace Game {
 			> mgen{1234};
 	};
 }
-
-#include <Game/MapSystem.ipp>
