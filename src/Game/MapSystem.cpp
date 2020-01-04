@@ -101,9 +101,11 @@ namespace Game {
 	}
 
 	glm::ivec2 MapSystem::blockToChunk(const glm::ivec2 block) const {
-		// Integer division + floor 
-		const auto d = block / MapChunk::size;
-		return d * MapChunk::size == block ? d : d - glm::ivec2{glm::lessThan(block, {0, 0})};
+		// Integer division + floor
+		auto d = block / MapChunk::size;
+		d.x = d.x * MapChunk::size.x == block.x ? d.x : d.x - (block.x < 0);
+		d.y = d.y * MapChunk::size.y == block.y ? d.y : d.y - (block.y < 0);
+		return d;
 	}
 
 	glm::ivec2 MapSystem::chunkToBlock(const glm::ivec2 chunk) const {
@@ -112,8 +114,10 @@ namespace Game {
 
 	glm::ivec2 MapSystem::chunkToRegion(const glm::ivec2 chunk) const {
 		// Integer division + floor
-		const auto d = chunk / regionSize;
-		return d * regionSize == chunk ? d : d - glm::ivec2{glm::lessThan(chunk, {0, 0})};
+		auto d = chunk / regionSize;
+		d.x = d.x * regionSize.x == chunk.x ? d.x : d.x - (chunk.x < 0);
+		d.y = d.y * regionSize.y == chunk.y ? d.y : d.y - (chunk.y < 0);
+		return d;
 	}
 
 	glm::ivec2 MapSystem::regionToChunk(glm::ivec2 region) const {

@@ -240,10 +240,7 @@ namespace {
 
 			const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);
 			ImGui::Text("Mouse (region): (%i, %i)", regionMousePos.x, regionMousePos.y);
-
-
-			// TODO: Abs block pos
-
+			
 			auto camPos = engine.camera.getPosition();
 			ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
 
