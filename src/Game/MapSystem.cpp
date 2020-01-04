@@ -37,8 +37,8 @@ namespace Game {
 			// TODO: Handle chunk/region loading in different thread
 			// TODO: if we had velocity we would only need to check two sides instead of all four
 			
-			const auto region = chunkToRegion(minChunk);
-			std::cout << "Region: " << region.x << ", " << region.y << "\n";
+			//const auto region = chunkToRegion(minChunk);
+			//std::cout << "Region: " << region.x << ", " << region.y << "\n";
 
 			for (int x = minChunk.x; x <= maxChunk.x; ++x) {
 				ensureChunkLoaded({x, minChunk.y});
@@ -86,6 +86,8 @@ namespace Game {
 
 		auto& chunk = chunks[chunkIndex.x][chunkIndex.y];
 		chunk.data[blockIndex.x][blockIndex.y] = value;
+		// TODO: we really only want to generate once if we the chunk has been changed since last frame.
+		// TODO: as it is now we generate once per edit, which could be many times per frame
 		chunk.generate();
 	}
 	
@@ -95,7 +97,7 @@ namespace Game {
 	}
 
 	glm::vec2 MapSystem::blockToWorld(const glm::ivec2 block) const {
-		return glm::vec2{block} * MapChunk::tileSize;
+		return glm::vec2{block - mapOffset * MapChunk::size} * MapChunk::tileSize;
 	}
 
 	glm::ivec2 MapSystem::blockToChunk(const glm::ivec2 block) const {
@@ -143,20 +145,20 @@ namespace Game {
 		auto& chunk = getChunkAt(pos);
 		const auto chunkBlockPos = chunkToBlock(pos);
 
-		for (glm::ivec2 tpos = {0, 0}; tpos.x < MapChunk::size.x; ++tpos.x) {
-			for (tpos.y = 0; tpos.y < MapChunk::size.y; ++tpos.y) {
-				const auto absPos = chunkBlockPos + tpos;
-				auto block = 0;
+		for (glm::ivec2 bpos = {0, 0}; bpos.x < MapChunk::size.x; ++bpos.x) {
+			for (bpos.y = 0; bpos.y < MapChunk::size.y; ++bpos.y) {
+				const auto absPos = chunkBlockPos + bpos;
+				int block = 0;
 		
 				if (0 < mgen.value(absPos.x, absPos.y)) {
 					block = 1;
 				}
 		
-				chunk.data[tpos.x][tpos.y] = block;
+				chunk.data[bpos.x][bpos.y] = block;
 			}
 		}
 
-		chunk.from(blockToWorld(chunkToBlock(pos)), pos);
+		chunk.from(blockToWorld(chunkBlockPos), pos);
 		chunk.generate();
 	}
 
