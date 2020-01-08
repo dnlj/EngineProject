@@ -30,25 +30,18 @@ namespace Game {
 		const auto minChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().min));
 		const auto maxChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().max));
 
-		// TODO: Dont we only need to check the corners? As long as screen size < region size i think that would be fine
-		// TODO: this shoudl be before edit
 		{
-			// TODO: we should probably have a buffer around the screen space for this stuff so it has time to load/gen
+			// TODO: We should probably have a buffer around the screen space for this stuff so it has time to load/gen
 			// TODO: Handle chunk/region loading in different thread
-			// TODO: if we had velocity we would only need to check two sides instead of all four
 			
 			//const auto region = chunkToRegion(minChunk);
 			//std::cout << "Region: " << region.x << ", " << region.y << "\n";
 
-			for (int x = minChunk.x; x <= maxChunk.x; ++x) {
-				ensureChunkLoaded({x, minChunk.y});
-				ensureChunkLoaded({x, maxChunk.y});
-			}
-
-			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
-				ensureChunkLoaded({minChunk.x, y});
-				ensureChunkLoaded({maxChunk.x, y});
-			}
+			// As long as screen size < region size we only need to check the four corners
+			ensureChunkLoaded(minChunk);
+			ensureChunkLoaded(maxChunk);
+			ensureChunkLoaded({minChunk.x, maxChunk.y});
+			ensureChunkLoaded({maxChunk.x, minChunk.y});
 		}
 
 		{
