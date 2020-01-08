@@ -35,8 +35,7 @@ namespace Game {
 		createBody(physSys);
 	}
 
-	void MapChunk::from(const glm::vec2 wpos, const glm::ivec2 cpos) {
-		pos = cpos;
+	void MapChunk::from(const glm::vec2 wpos) {
 		body->SetTransform(b2Vec2{wpos.x, wpos.y}, 0.0f);
 	}
 
@@ -139,10 +138,6 @@ namespace Game {
 
 		elementCount = static_cast<GLsizei>(eboData.size());
 		updateVertexData(vboData, eboData);
-	}
-
-	glm::ivec2 MapChunk::getPosition() const {
-		return pos;
 	}
 
 	void MapChunk::draw(glm::mat4 mvp) const {

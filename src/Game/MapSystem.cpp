@@ -23,28 +23,29 @@ namespace Game {
 				chunks[x][y].setup(world, shader.get(), texture.get());
 			}
 		}
+
+		std::fill(&loadedRegions[0][0], &loadedRegions[0][0] + regionCount.x * regionCount.y, glm::ivec2{0x7FFF'FFFF, 0x7FFF'FFFF});
 	}
 
 	void MapSystem::run(float dt) {
 		updateOrigin();
-		const auto minChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().min));
-		const auto maxChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().max));
 
 		{
 			// TODO: We should probably have a buffer around the screen space for this stuff so it has time to load/gen
 			// TODO: Handle chunk/region loading in different thread
 			
-			//const auto region = chunkToRegion(minChunk);
-			//std::cout << "Region: " << region.x << ", " << region.y << "\n";
-
 			// As long as screen size < region size we only need to check the four corners
-			ensureChunkLoaded(minChunk);
-			ensureChunkLoaded(maxChunk);
-			ensureChunkLoaded({minChunk.x, maxChunk.y});
-			ensureChunkLoaded({maxChunk.x, minChunk.y});
+			const auto minRegion = chunkToRegion(blockToChunk(worldToBlock(camera->getWorldScreenBounds().min)));
+			const auto maxRegion = chunkToRegion(blockToChunk(worldToBlock(camera->getWorldScreenBounds().max)));
+			ensureRegionLoaded(minRegion);
+			ensureRegionLoaded(maxRegion);
+			ensureRegionLoaded({minRegion.x, maxRegion.y});
+			ensureRegionLoaded({maxRegion.x, minRegion.y});
 		}
 
-		{
+		{ // TODO: Move out of MapSystem. We shouldnt be mixing logic and rendering.
+			const auto minChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().min));
+			const auto maxChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().max));
 			glm::mat4 mvp = camera->getProjection() * camera->getView();
 
 			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
@@ -68,13 +69,11 @@ namespace Game {
 		// TODO: Make conversion functions for all of these? Better names
 
 		const auto blockOffset = glm::floor(wpos / MapChunk::tileSize);
-		// TODO: there should be a better way of dealing with negatives. Lookinto this.
 		const auto blockIndex = (MapChunk::size + glm::ivec2{blockOffset} % MapChunk::size) % MapChunk::size;
 
 		//std::cout << "Bidx: " << blockIndex.x << ", " << blockIndex.y << "\n";
 		const glm::ivec2 chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
 		const auto chunkPos = mapOffset + chunkOffset;
-		// TODO: there should be a better way of dealing with negatives. Lookinto this.
 		const auto chunkIndex = (mapSize + glm::ivec2{chunkPos} % mapSize) % mapSize;
 
 		auto& chunk = chunks[chunkIndex.x][chunkIndex.y];
@@ -84,8 +83,8 @@ namespace Game {
 		chunk.generate();
 	}
 	
-	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 worldPos) const {
-		const glm::ivec2 blockOffset = glm::floor(worldPos / MapChunk::tileSize);
+	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 world) const {
+		const glm::ivec2 blockOffset = glm::floor(world / MapChunk::tileSize);
 		return getBlockOffset() + blockOffset;
 	}
 
@@ -113,8 +112,12 @@ namespace Game {
 		return d;
 	}
 
-	glm::ivec2 MapSystem::regionToChunk(glm::ivec2 region) const {
+	glm::ivec2 MapSystem::regionToChunk(const glm::ivec2 region) const {
 		return region * regionSize;
+	}
+
+	glm::ivec2 MapSystem::regionToIndex(const glm::ivec2 region) const {
+		return (regionSize + region % regionSize) % regionSize;
 	}
 
 	MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) {
@@ -123,19 +126,30 @@ namespace Game {
 		return chunks[pos.x][pos.y];
 	}
 
-	void MapSystem::ensureRegionLoaded(glm::ivec2 region) {
-		// block / chunkSize / regionSize
+	void MapSystem::ensureRegionLoaded(const glm::ivec2 region) {
+		// TODO: Consider combining this and loadRegion. We never call one without the other and they could share some data.
+		const auto index = regionToIndex(region);
+
+		if (loadedRegions[index.x][index.y] != region) {
+			loadRegion(region);
+		}
 	}
 
-	MapChunk& MapSystem::ensureChunkLoaded(glm::ivec2 pos) {
-		auto& chunk = getChunkAt(pos);
+	void MapSystem::loadRegion(const glm::ivec2 region) {
+		std::cout << "loadRegion: " << "(" << region.x << ", " << region.y << ")\n";
 
-		// TODO: We are checking chunks but loading regions? strange.
-		if (chunk.getPosition() != pos) {
-			loadRegion(chunkToRegion(pos));
+		const auto regionStart = regionToChunk(region);
+		std::cout << "regionStart: " << "(" << regionStart.x << ", " << regionStart.y << ")\n\n";
+
+		const auto index = regionToIndex(region);
+		loadedRegions[index.x][index.y] = region;
+
+		for (int x = 0; x < regionSize.x; ++x) {
+			for (int y = 0; y < regionSize.y; ++y) {
+				const auto chunk = regionStart + glm::ivec2{x, y};
+				loadChunk(chunk);
+			}
 		}
-
-		return chunk;
 	}
 
 	void MapSystem::loadChunk(const glm::ivec2 pos) {
@@ -155,22 +169,8 @@ namespace Game {
 			}
 		}
 
-		chunk.from(blockToWorld(chunkBlockPos), pos);
+		chunk.from(blockToWorld(chunkBlockPos));
 		chunk.generate();
-	}
-
-	void MapSystem::loadRegion(const glm::ivec2 region) {
-		std::cout << "loadRegion: " << "(" << region.x << ", " << region.y << ")\n";
-
-		const auto regionStart = regionToChunk(region);
-		std::cout << "regionStart: " << "(" << regionStart.x << ", " << regionStart.y << ")\n\n";
-
-		for (int x = 0; x < regionSize.x; ++x) {
-			for (int y = 0; y < regionSize.y; ++y) {
-				const auto chunk = regionStart + glm::ivec2{x, y};
-				loadChunk(chunk);
-			}
-		}
 	}
 
 	void MapSystem::updateOrigin() {
