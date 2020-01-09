@@ -117,7 +117,7 @@ namespace Game {
 	}
 
 	glm::ivec2 MapSystem::regionToIndex(const glm::ivec2 region) const {
-		return (regionSize + region % regionSize) % regionSize;
+		return (regionCount + region % regionCount) % regionCount;
 	}
 
 	MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) {
@@ -139,7 +139,6 @@ namespace Game {
 		std::cout << "loadRegion: " << "(" << region.x << ", " << region.y << ")\n";
 
 		const auto regionStart = regionToChunk(region);
-		std::cout << "regionStart: " << "(" << regionStart.x << ", " << regionStart.y << ")\n\n";
 
 		const auto index = regionToIndex(region);
 		loadedRegions[index.x][index.y] = region;

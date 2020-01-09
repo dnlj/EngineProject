@@ -104,8 +104,7 @@ namespace Game {
 			constexpr static int originRange = 4;
 
 			/** Size of regions in chunks */
-			//constexpr static glm::ivec2 regionSize = {16, 16};
-			constexpr static glm::ivec2 regionSize = {3, 3};
+			constexpr static glm::ivec2 regionSize = {16, 16};
 
 			/** The number of regions in the map */
 			constexpr static glm::ivec2 regionCount = {3, 3};
