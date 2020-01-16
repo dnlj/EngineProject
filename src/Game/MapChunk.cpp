@@ -139,46 +139,52 @@ namespace Game {
 		elementCount = static_cast<GLsizei>(eboData.size());
 		updateVertexData(vboData, eboData);
 	}
-
+	
+	// TODO: remove
 	void MapChunk::draw(glm::mat4 mvp) const {
-		if (elementCount == 0) { return; }
-
-		auto& pos = body->GetPosition();
-		mvp = glm::translate(mvp, glm::vec3(pos.x, pos.y, 0.0f));
-
-		glBindVertexArray(vao);
-		glUseProgram(shader);
-
-		// Set texture
-		glBindTextureUnit(0, texture);
-		glUniform1i(5, 0);
-
-		// Set MVP
-		glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(mvp));
-
-		// Draw
-		glDrawElements(GL_TRIANGLES, elementCount, GL_UNSIGNED_SHORT, 0);
+		//if (elementCount == 0) { return; }
+		//
+		//auto& pos = body->GetPosition();
+		//mvp = glm::translate(mvp, glm::vec3(pos.x, pos.y, 0.0f));
+		//
+		//glBindVertexArray(vao);
+		//glUseProgram(shader);
+		//
+		//// Set texture
+		//glBindTextureUnit(0, texture);
+		//glUniform1i(5, 0);
+		//
+		//// Set MVP
+		//glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(mvp));
+		//
+		//// Draw
+		//glDrawElements(GL_TRIANGLES, elementCount, GL_UNSIGNED_SHORT, 0);
 	}
 
+	b2Body& MapChunk::getBody() const {
+		return *body;
+	}
+
+	// TODO: remove
 	void MapChunk::updateVertexData(const std::vector<Vertex>& vboData, const std::vector<GLushort>& eboData) {
-		constexpr GLuint dataBindingIndex = 0;
-
-		glDeleteBuffers(1, &vbo);
-		glDeleteBuffers(1, &ebo);
-
-		// Element buffer
-		glCreateBuffers(1, &ebo);
-		glNamedBufferData(ebo, sizeof(GLushort) * eboData.size(), eboData.data(), GL_STATIC_DRAW);
-		glVertexArrayElementBuffer(vao, ebo);
-
-		// Vertex buffer
-		glCreateBuffers(1, &vbo);
-		glNamedBufferData(vbo, sizeof(Vertex) * vboData.size(), vboData.data(), GL_STATIC_DRAW);
-		glVertexArrayVertexBuffer(vao, dataBindingIndex, vbo, 0, sizeof(Vertex));
-
-		// Vertex attributes
-		glEnableVertexArrayAttrib(vao, 0);
-		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
-		glVertexArrayAttribBinding(vao, 0, dataBindingIndex);
+		//constexpr GLuint dataBindingIndex = 0;
+		//
+		//glDeleteBuffers(1, &vbo);
+		//glDeleteBuffers(1, &ebo);
+		//
+		//// Element buffer
+		//glCreateBuffers(1, &ebo);
+		//glNamedBufferData(ebo, sizeof(GLushort) * eboData.size(), eboData.data(), GL_STATIC_DRAW);
+		//glVertexArrayElementBuffer(vao, ebo);
+		//
+		//// Vertex buffer
+		//glCreateBuffers(1, &vbo);
+		//glNamedBufferData(vbo, sizeof(Vertex) * vboData.size(), vboData.data(), GL_STATIC_DRAW);
+		//glVertexArrayVertexBuffer(vao, dataBindingIndex, vbo, 0, sizeof(Vertex));
+		//
+		//// Vertex attributes
+		//glEnableVertexArrayAttrib(vao, 0);
+		//glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+		//glVertexArrayAttribBinding(vao, 0, dataBindingIndex);
 	}
 }

@@ -52,6 +52,7 @@
 #include <Game/CharacterMovementBindListener.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 #include <Game/MapSystem.hpp>
+#include <Game/MapRenderSystem.hpp>
 #include <Game/MapGenerator.hpp>
 #include <Game/MapSystemBindListener.hpp>
 #include <Game/SpriteComponent.hpp>
@@ -484,6 +485,7 @@ void run() {
 		world.getSystem<Game::CameraTrackingSystem>().setup(engine.camera);
 		world.getSystem<Game::CharacterSpellSystem>().setup(engine);
 		world.getSystem<Game::MapSystem>().setup(engine);
+		world.getSystem<Game::MapRenderSystem>().setup(engine);
 		
 		// Player
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");
@@ -553,7 +555,7 @@ void run() {
 	glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 
 	// Procedural test
-	mapTest();
+	//mapTest();
 
 	// Main loop
 	auto startTime = std::chrono::high_resolution_clock::now();

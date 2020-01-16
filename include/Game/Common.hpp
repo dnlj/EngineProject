@@ -17,6 +17,7 @@ namespace Game {
 	class CharacterSpellSystem;
 	class CameraTrackingSystem;
 	class MapSystem;
+	class MapRenderSystem;
 
 	class PhysicsComponent;
 	class SpriteComponent;
@@ -30,7 +31,8 @@ namespace Game {
 		CharacterMovementSystem,
 		CharacterSpellSystem,
 		CameraTrackingSystem,
-		MapSystem
+		MapSystem,
+		MapRenderSystem
 	>;
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<

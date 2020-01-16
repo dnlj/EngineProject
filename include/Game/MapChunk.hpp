@@ -10,6 +10,7 @@
 #include <Game/MapTile.hpp>
 #include <Game/PhysicsSystem.hpp>
 
+// TODO: Should chunks know their world position? there are a few places we do things like `doSomething(chunkPos, getChunkAt(chunkPos))`
 // TODO: convert to use sized types - int32, float32, etc.
 // TODO: Change all mentions of "tile" to "block". Its a more common term.
 // TODO: Doc
@@ -34,6 +35,7 @@ namespace Game {
 			void removeTile(int x, int y);
 			void generate();
 			void draw(glm::mat4 mvp) const;
+			b2Body& getBody() const;
 
 			int data[size.x][size.y] = {};
 

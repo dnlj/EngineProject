@@ -12,7 +12,7 @@ namespace Engine::ECS {
 	template<class World>
 	SystemManager<SystemsType<Systems...>>::SystemManager(World& world)
 		// TODO: Constructor arguments?
-		: systems{new Systems(world) ...}
+		: systems{new Systems(world) ...} // TODO: Make systems stored as part of the SystemManager object (tuple for ex)
 		, systemOrder{getSystemID<Systems>() ...} {
 
 		// Update priorities

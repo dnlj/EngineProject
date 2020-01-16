@@ -9,7 +9,8 @@
 
 
 namespace Game {
-	MapSystem::MapSystem(World& world) : SystemBase{world} {
+	MapSystem::MapSystem(World& world)
+		: SystemBase{world} {
 		priorityAfter = world.getBitsetForSystems<Game::CameraTrackingSystem>();
 	}
 
@@ -17,6 +18,9 @@ namespace Game {
 		camera = &engine.camera;
 		shader = engine.shaderManager.get("shaders/terrain");
 		texture = engine.textureManager.get("../assets/test.png");
+
+		// TODO: Once you change ECS::SystemManager to store instances on the class itself instead of with `new`, this will no longer be needed.
+		mapRenderSystem = &world.getSystem<MapRenderSystem>();
 
 		for (int x = 0; x < mapSize.x; ++x) {
 			for (int y = 0; y < mapSize.y; ++y) {
@@ -29,6 +33,12 @@ namespace Game {
 
 	void MapSystem::run(float dt) {
 		updateOrigin();
+
+		const auto screenBuffer = glm::ivec2{2, 2};
+		const auto minActiveChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().min)) - screenBuffer;
+		const auto maxActiveChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().max)) + screenBuffer;
+		// TODO: need to maintain active area. We dont need physics and graphics for all loaded regions. only areas around the player.
+
 
 		{
 			// TODO: We should probably have a buffer around the screen space for this stuff so it has time to load/gen
@@ -50,7 +60,7 @@ namespace Game {
 
 			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
 				for (int x = minChunk.x; x <= maxChunk.x; ++x) {
-					getChunkAt({x, y}).draw(mvp);
+					//getChunkAt({x, y}).draw(mvp);
 					//getChunkAt({x, y}).draw(mvp * glm::scale(glm::mat4{1.0f}, glm::vec3{0.1f}));
 				}
 			}
@@ -81,6 +91,7 @@ namespace Game {
 		// TODO: we really only want to generate once if we the chunk has been changed since last frame.
 		// TODO: as it is now we generate once per edit, which could be many times per frame
 		chunk.generate();
+		updateChunk(chunkPos);
 	}
 	
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 world) const {
@@ -170,6 +181,13 @@ namespace Game {
 
 		chunk.from(blockToWorld(chunkBlockPos));
 		chunk.generate();
+		updateChunk(pos);
+	}
+	
+	// TODO: Doc
+	void MapSystem::updateChunk(const glm::ivec2 chunk) {
+		// TODO: we only want ot be updating chunks that are in the active area
+		mapRenderSystem->updateChunk(chunk, &getChunkAt(chunk));
 	}
 
 	void MapSystem::updateOrigin() {

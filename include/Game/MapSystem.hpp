@@ -8,6 +8,7 @@
 #include <Engine/ShaderManager.hpp>
 
 // Game
+#include <Game/MapRenderSystem.hpp>
 #include <Game/MapChunk.hpp>
 #include <Game/MapGenerator.hpp>
 
@@ -27,6 +28,21 @@
 namespace Game {
 	class MapSystem : public SystemBase {
 		public:
+			/** Number of chunks before shifting the origin */
+			constexpr static int originRange = 4; // TODO: In prod this should be a much larger value. maybe around 10,000 world units (whatever that is in chunks)
+			/** The number of chunks in each region */
+			constexpr static glm::ivec2 regionSize = {16, 16};
+
+			/** The number of regions in the map */
+			constexpr static glm::ivec2 regionCount = {3, 3};
+
+			/** Offset (in chunks) of current origin */
+			glm::ivec2 mapOffset = {0, 0}; // TODO: is there a reason to not just use a block offset? We never use this without also referencing originRange anyways.
+
+			/** The number of chunks in the map */
+			constexpr static glm::ivec2 mapSize = regionCount * regionSize;
+
+		public:
 			MapSystem(World& world);
 			void setup(Engine::EngineInstance& engine);
 			void run(float dt) override;
@@ -38,11 +54,8 @@ namespace Game {
 			// TODO: Doc. Gets the size of the current offset in blocks coordinates
 			glm::ivec2 getBlockOffset() const;
 
-			void setValueAt(const glm::vec2 wpos, int value);
-
 			// TODO: Doc
-			template<MapChunk::EditMemberFunction func>
-			void applyEdit();
+			void setValueAt(const glm::vec2 wpos, int value);
 
 			/**
 			 * Converts from world coordinates to block coordinates.
@@ -74,7 +87,6 @@ namespace Game {
 			 */
 			glm::ivec2 regionToChunk(const glm::ivec2 region) const;
 
-
 			/**
 			 * Converts from a region to an index wrapped at increments of regionSize.
 			 */
@@ -96,24 +108,12 @@ namespace Game {
 
 			// TODO: Doc
 			void loadChunk(const glm::ivec2 pos);
+			
+			// TODO: Doc
+			void updateChunk(const glm::ivec2 chunk);
 
 			// TODO: Doc
 			void updateOrigin();
-
-			/** Number of chunks before shifting the origin */
-			constexpr static int originRange = 4;
-
-			/** Size of regions in chunks */
-			constexpr static glm::ivec2 regionSize = {16, 16};
-
-			/** The number of regions in the map */
-			constexpr static glm::ivec2 regionCount = {3, 3};
-
-			/** Offset (in chunks) of current origin */
-			glm::ivec2 mapOffset = {0, 0}; // TODO: is there a reason to not just use a block offset? We never use this without also referencing originRange anyways.
-
-			/** The number of chunks in the map */
-			constexpr static glm::ivec2 mapSize = regionCount * regionSize;
 
 			MapChunk chunks[mapSize.x][mapSize.y];
 			glm::ivec2 loadedRegions[regionCount.x][regionCount.y] = {};
@@ -121,6 +121,7 @@ namespace Game {
 			const Engine::Camera* camera;
 			Engine::Shader shader;
 			Engine::Texture texture;
+			MapRenderSystem* mapRenderSystem;
 			Game::MapGenerator<
 				Game::BiomeA,
 				Game::BiomeC
