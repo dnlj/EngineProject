@@ -83,6 +83,11 @@ namespace Game {
 			glm::ivec2 chunkToRegion(const glm::ivec2 chunk) const;
 
 			/**
+			 * Converts from chunk coordinates to an index wrapped at increments of mapSize.
+			 */
+			glm::ivec2 chunkToIndex(const glm::ivec2 chunk) const;
+
+			/**
 			 * Converts from region coordinates to chunk coordinates.
 			 */
 			glm::ivec2 regionToChunk(const glm::ivec2 region) const;
@@ -92,13 +97,17 @@ namespace Game {
 			 */
 			glm::ivec2 MapSystem::regionToIndex(const glm::ivec2 region) const;
 
-		private:
 			/**
 			 * Get the chunk at a position.
-			 * @param[in] pos The position in chunk coordinates.
+			 * @param[in] chunk The position in chunk coordinates.
 			 * @return The chunk at the position.
 			 */
-			MapChunk& getChunkAt(glm::ivec2 pos);
+			MapChunk& getChunkAt(glm::ivec2 chunk);
+
+			// TODO: doc. @see ? how do you do that?
+			const MapChunk& getChunkAt(glm::ivec2 chunk) const;
+
+		private:
 
 			// TODO: doc
 			void ensureRegionLoaded(const glm::ivec2 region);

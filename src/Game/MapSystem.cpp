@@ -33,13 +33,6 @@ namespace Game {
 
 	void MapSystem::run(float dt) {
 		updateOrigin();
-
-		const auto screenBuffer = glm::ivec2{2, 2};
-		const auto minActiveChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().min)) - screenBuffer;
-		const auto maxActiveChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().max)) + screenBuffer;
-		// TODO: need to maintain active area. We dont need physics and graphics for all loaded regions. only areas around the player.
-
-
 		{
 			// TODO: We should probably have a buffer around the screen space for this stuff so it has time to load/gen
 			// TODO: Handle chunk/region loading in different thread
@@ -51,19 +44,6 @@ namespace Game {
 			ensureRegionLoaded(maxRegion);
 			ensureRegionLoaded({minRegion.x, maxRegion.y});
 			ensureRegionLoaded({maxRegion.x, minRegion.y});
-		}
-
-		{ // TODO: Move out of MapSystem. We shouldnt be mixing logic and rendering.
-			const auto minChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().min));
-			const auto maxChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().max));
-			glm::mat4 mvp = camera->getProjection() * camera->getView();
-
-			for (int y = minChunk.y; y <= maxChunk.y; ++y) {
-				for (int x = minChunk.x; x <= maxChunk.x; ++x) {
-					//getChunkAt({x, y}).draw(mvp);
-					//getChunkAt({x, y}).draw(mvp * glm::scale(glm::mat4{1.0f}, glm::vec3{0.1f}));
-				}
-			}
 		}
 	}
 	
@@ -123,6 +103,10 @@ namespace Game {
 		return d;
 	}
 
+	glm::ivec2 MapSystem::chunkToIndex(const glm::ivec2 chunk) const {
+		return (mapSize + chunk % mapSize) % mapSize;
+	}
+
 	glm::ivec2 MapSystem::regionToChunk(const glm::ivec2 region) const {
 		return region * regionSize;
 	}
@@ -131,10 +115,13 @@ namespace Game {
 		return (regionCount + region % regionCount) % regionCount;
 	}
 
-	MapChunk& MapSystem::getChunkAt(glm::ivec2 pos) {
-		// Wrap index to valid range
-		pos = (mapSize + pos % mapSize) % mapSize;
+	MapChunk& MapSystem::getChunkAt(glm::ivec2 chunk) {
+		const auto pos = chunkToIndex(chunk);
 		return chunks[pos.x][pos.y];
+	}
+
+	const MapChunk& MapSystem::getChunkAt(glm::ivec2 chunk) const {
+		return const_cast<MapSystem*>(this)->getChunkAt(chunk);
 	}
 
 	void MapSystem::ensureRegionLoaded(const glm::ivec2 region) {
@@ -176,10 +163,11 @@ namespace Game {
 				}
 		
 				chunk.data[bpos.x][bpos.y] = block;
+				//chunk.data[bpos.x][bpos.y] = bpos.x == 0 || bpos.y == 0;
 			}
 		}
 
-		chunk.from(blockToWorld(chunkBlockPos));
+		chunk.from(blockToWorld(chunkBlockPos), pos);
 		chunk.generate();
 		updateChunk(pos);
 	}
@@ -187,7 +175,7 @@ namespace Game {
 	// TODO: Doc
 	void MapSystem::updateChunk(const glm::ivec2 chunk) {
 		// TODO: we only want ot be updating chunks that are in the active area
-		mapRenderSystem->updateChunk(chunk, &getChunkAt(chunk));
+		mapRenderSystem->updateChunk(getChunkAt(chunk));
 	}
 
 	void MapSystem::updateOrigin() {

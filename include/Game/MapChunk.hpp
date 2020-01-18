@@ -30,12 +30,13 @@ namespace Game {
 			~MapChunk();
 
 			void setup(World& world, GLuint shader, GLuint texture);
-			void from(const glm::vec2 wpos);
+			void from(const glm::vec2 wpos, const glm::ivec2 chunkPos);
 			void addTile(int x, int y);
 			void removeTile(int x, int y);
 			void generate();
 			void draw(glm::mat4 mvp) const;
 			b2Body& getBody() const;
+			glm::ivec2 getPosition() const;
 
 			int data[size.x][size.y] = {};
 
@@ -44,7 +45,7 @@ namespace Game {
 				public:
 					glm::vec2 position;
 			};
-
+			glm::ivec2 pos;
 			b2Body* body = nullptr; // TODO: Cleanup
 			Engine::ECS::Entity ent;
 			GLuint shader = 0;

@@ -24,9 +24,17 @@ namespace Game {
 
 			void setup(Engine::EngineInstance& engine);
 
-			void updateChunk(const glm::ivec2 chunkPos, const MapChunk* chunk);
+			void updateChunk(const MapChunk& chunk);
 
 		private:
+			constexpr static GLuint bufferBindingIndex = 0;
+			constexpr static GLuint positionAttribLocation = 0;
+			
+			struct Vertex {
+				glm::vec2 pos;
+				GLuint texture = 0; // TODO: probably doesnt need to be 32bit
+			};
+
 			// TODO: All chunks could share one vbo and just update ebo
 			// TODO: Pull block texture from separate buffer? Can we set this up in vao?
 			// TODO: look into array textures
@@ -43,15 +51,15 @@ namespace Game {
 						GLuint ebo;
 					};
 				};
+
+				constexpr static GLsizei numBuffers = static_cast<GLsizei>(std::extent_v<decltype(buffers)>);
 			};
 
 			const Engine::Camera* camera;
 			Engine::Shader shader;
 			Engine::Texture texture;
 
-			// TODO: rename. This is the size of our chunk cache. not
-			// TODO: this should probably be on the mapsystem and should be used for chunk loading around the screen area
-			// TODO: this really should be based on screen size/view area
+			// TODO: rename. This is the size of our chunk cache.
 			/** The number of chunks in the active game area */
 			constexpr static glm::ivec2 activeArea = {8, 8};
 

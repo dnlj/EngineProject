@@ -35,8 +35,9 @@ namespace Game {
 		createBody(physSys);
 	}
 
-	void MapChunk::from(const glm::vec2 wpos) {
+	void MapChunk::from(const glm::vec2 wpos, const glm::ivec2 chunkPos) {
 		body->SetTransform(b2Vec2{wpos.x, wpos.y}, 0.0f);
+		pos = chunkPos;
 	}
 
 	void MapChunk::addTile(int x, int y) {
@@ -163,6 +164,10 @@ namespace Game {
 
 	b2Body& MapChunk::getBody() const {
 		return *body;
+	}
+	
+	glm::ivec2 MapChunk::getPosition() const {
+		return pos;
 	}
 
 	// TODO: remove

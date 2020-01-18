@@ -18,6 +18,14 @@ namespace Game {
 	MapRenderSystem::~MapRenderSystem() {
 		// TODO: loop over and delete render data
 		// TODO: cleanup any other gl objects
+
+		for (int x = 0; x < activeArea.x; ++x) {
+			for (int y = 0; y < activeArea.y; ++y) {
+				auto& data = chunkRenderData[x][y];
+				glDeleteVertexArrays(1, &data.vao);
+				glDeleteBuffers(data.numBuffers, data.buffers);
+			}
+		}
 	}
 
 	
@@ -25,6 +33,23 @@ namespace Game {
 		camera = &engine.camera;
 		shader = engine.shaderManager.get("shaders/terrain_v2");
 		texture = engine.textureManager.get("../assets/test.png");
+
+		const auto& mapSys = world.getSystem<MapSystem>();
+		for (int x = 0; x < activeArea.x; ++x) {
+			for (int y = 0; y < activeArea.y; ++y) {
+				auto& data = chunkRenderData[x][y];
+				data.chunk = &mapSys.getChunkAt({x, y});
+				data.updated = true;
+				
+				glCreateVertexArrays(1, &data.vao);
+				
+				glEnableVertexArrayAttrib(data.vao, positionAttribLocation);
+				glVertexArrayAttribFormat(data.vao, positionAttribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+				glVertexArrayAttribBinding(data.vao, positionAttribLocation, bufferBindingIndex);
+
+				// TODO: texture attribute
+			}
+		}
 	}
 
 	void MapRenderSystem::run(float dt) {
@@ -36,34 +61,23 @@ namespace Game {
 
 		const auto mvp = camera->getProjection() * camera->getView();
 
-		//const auto& mapSys = world.getSystem<MapSystem>();
-		//const auto screenBuffer = glm::ivec2{2, 2};
-		//const auto screenBounds = camera->getWorldScreenBounds();
-		//const auto minChunk = mapSys.blockToChunk(mapSys.worldToBlock(screenBounds.min)) - screenBuffer;
-		//const auto maxChunk = mapSys.blockToChunk(mapSys.worldToBlock(screenBounds.max)) + screenBuffer;
-		//
-		//for (int x = minChunk.x; x <= maxChunk.x; ++x) {
-		//	for (int y = minChunk.y; y <= maxChunk.y; ++y) {
-		//		// If 
-		//		//const auto index = chunkToIndex({x, y});
-		//		//auto& data = chunkRenderData[index.x][index.y];
-		//	}
-		//}
+		const auto& mapSys = world.getSystem<MapSystem>();
+		constexpr auto screenBuffer = glm::ivec2{0, 0}; // TODO: this only makes sense if we are multithreading
+		const auto screenBounds = camera->getWorldScreenBounds();
+		const auto minChunk = mapSys.blockToChunk(mapSys.worldToBlock(screenBounds.min)) - screenBuffer;
+		const auto maxChunk = mapSys.blockToChunk(mapSys.worldToBlock(screenBounds.max)) + screenBuffer;
+		
+		for (glm::ivec2 chunk = minChunk; chunk.x <= maxChunk.x; ++chunk.x) {
+			for (chunk.y = minChunk.y; chunk.y <= maxChunk.y; ++chunk.y) {
+				const auto index = chunkToIndex(chunk);
+				auto& data = chunkRenderData[index.x][index.y];
 
-		// TODO: I think something is wrong with the greedy expand
+				if (data.chunk->getPosition() != chunk) {
+					data.chunk = &mapSys.getChunkAt(chunk);
+					data.updated = true;
+				}
 
-		/**
-		 * For chunks in active area:
-		 *     If chunk not in cache or chunk updated:
-		 *         update chunk cache
-		 *     draw chunk
-		 */
-
-		for (int x = 0; x < activeArea.x; ++x) {
-			for (int y = 0; y < activeArea.y; ++y) {
-				auto& data = chunkRenderData[x][y];
 				if (data.updated) {
-					data.updated = false;
 					updateChunkRenderData(data);
 				}
 
@@ -72,20 +86,12 @@ namespace Game {
 		}
 	}
 
-	void MapRenderSystem::updateChunk(const glm::ivec2 chunkPos, const MapChunk* chunk) {
-		constexpr auto chunkSize = glm::vec2{MapChunk::size} * MapChunk::tileSize;
-		constexpr auto maxActiveArea = glm::vec2{activeArea / 2} * chunkSize;
-		constexpr auto minActiveArea = -maxActiveArea;
-
-		const auto& pos = chunk->getBody().GetPosition();
-
-		if (pos.x < minActiveArea.x || pos.y < minActiveArea.y) { return; }
-		if (pos.x > maxActiveArea.x || pos.y > maxActiveArea.y) { return; }
-
-		const auto index = chunkToIndex(chunkPos);
+	void MapRenderSystem::updateChunk(const MapChunk& chunk) {
+		const auto index = chunkToIndex(chunk.getPosition());
 		auto& data = chunkRenderData[index.x][index.y];
-		data.updated = true;
-		data.chunk = chunk;
+		if (data.chunk == &chunk) {
+			data.updated = true;
+		}
 	}
 	
 	glm::ivec2 MapRenderSystem::chunkToIndex(const glm::ivec2 chunk) const {
@@ -107,6 +113,7 @@ namespace Game {
 			GLuint texture = 0; // TODO: probably doesnt need to be 32bit
 		};
 
+		data.updated = false;
 		bool used[MapChunk::size.x][MapChunk::size.y] = {};
 		// TODO: make `StaticVector`s?
 		std::vector<Vertex> vboData;
@@ -127,10 +134,15 @@ namespace Game {
 
 				while (end.y < MapChunk::size.y && usable(end, blockType)) { ++end.y; }
 
-				do {
+				for (bool cond = true; cond;) {
 					std::fill(&used[end.x][begin.y], &used[end.x][end.y], true);
 					++end.x;
-				} while (end.x < MapChunk::size.x && usable(end, blockType));
+
+					if (end.x == MapChunk::size.x) { break; }
+					for (int y = begin.y; y < end.y; ++y) {
+						if (!usable({end.x, y}, blockType)) { cond = false; break; }
+					}
+				}
 
 				// Add buffer data
 				glm::vec2 origin = glm::vec2{begin} * MapChunk::tileSize;
@@ -152,26 +164,14 @@ namespace Game {
 		}
 
 		data.elementCount = static_cast<GLsizei>(eboData.size());
-		constexpr GLuint bindingIndex = 0;
 
-		// TODO: move this out into some static init location.
-		if (data.vao == 0) {
-			glCreateVertexArrays(1, &data.vao);
-
-			glEnableVertexArrayAttrib(data.vao, 0);
-			glVertexArrayAttribFormat(data.vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
-			glVertexArrayAttribBinding(data.vao, 0, bindingIndex);
-
-			// TODO: texture attribute
-		}
-
-		glDeleteBuffers(2, data.buffers);
-		glCreateBuffers(2, data.buffers);
+		glDeleteBuffers(data.numBuffers, data.buffers);
+		glCreateBuffers(data.numBuffers, data.buffers);
 
 		glNamedBufferData(data.ebo, sizeof(eboData[0]) * eboData.size(), eboData.data(), GL_STATIC_DRAW);
 		glVertexArrayElementBuffer(data.vao, data.ebo);
 
 		glNamedBufferData(data.vbo, sizeof(vboData[0]) * vboData.size(), vboData.data(), GL_STATIC_DRAW);
-		glVertexArrayVertexBuffer(data.vao, bindingIndex, data.vbo, 0, sizeof(Vertex));
+		glVertexArrayVertexBuffer(data.vao, bufferBindingIndex, data.vbo, 0, sizeof(Vertex));
 	}
 }
