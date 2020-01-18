@@ -16,9 +16,6 @@ namespace Game {
 	}
 
 	MapRenderSystem::~MapRenderSystem() {
-		// TODO: loop over and delete render data
-		// TODO: cleanup any other gl objects
-
 		for (int x = 0; x < activeArea.x; ++x) {
 			for (int y = 0; y < activeArea.y; ++y) {
 				auto& data = chunkRenderData[x][y];
@@ -59,7 +56,7 @@ namespace Game {
 		glBindTextureUnit(0, texture.get());
 		glUniform1i(5, 0);
 
-		const auto mvp = camera->getProjection() * camera->getView();
+		const auto vp = camera->getProjection() * camera->getView();
 
 		const auto& mapSys = world.getSystem<MapSystem>();
 		constexpr auto screenBuffer = glm::ivec2{0, 0}; // TODO: this only makes sense if we are multithreading
@@ -81,7 +78,12 @@ namespace Game {
 					updateChunkRenderData(data);
 				}
 
-				drawChunk(data, mvp);
+				const auto pos = data.chunk->getBody().GetPosition();
+				const auto mvp = glm::translate(vp, glm::vec3(pos.x, pos.y, 0.0f));
+
+				glBindVertexArray(data.vao);
+				glUniformMatrix4fv(1, 1, GL_FALSE, &mvp[0][0]);
+				glDrawElements(GL_TRIANGLES, data.elementCount, GL_UNSIGNED_SHORT, 0);
 			}
 		}
 	}
@@ -98,21 +100,7 @@ namespace Game {
 		return (activeArea + chunk % activeArea) % activeArea;
 	}
 
-	void MapRenderSystem::drawChunk(const RenderData& data, glm::mat4 mvp) const {
-		const auto pos = data.chunk->getBody().GetPosition();
-		mvp = glm::translate(mvp, glm::vec3(pos.x, pos.y, 0.0f));
-
-		glBindVertexArray(data.vao);
-		glUniformMatrix4fv(1, 1, GL_FALSE, &mvp[0][0]);
-		glDrawElements(GL_TRIANGLES, data.elementCount, GL_UNSIGNED_SHORT, 0);
-	}
-
 	void MapRenderSystem::updateChunkRenderData(RenderData& data) {
-		struct Vertex {
-			glm::vec2 pos;
-			GLuint texture = 0; // TODO: probably doesnt need to be 32bit
-		};
-
 		data.updated = false;
 		bool used[MapChunk::size.x][MapChunk::size.y] = {};
 		// TODO: make `StaticVector`s?

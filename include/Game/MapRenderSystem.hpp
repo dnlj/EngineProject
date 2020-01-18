@@ -35,8 +35,6 @@ namespace Game {
 				GLuint texture = 0; // TODO: probably doesnt need to be 32bit
 			};
 
-			// TODO: All chunks could share one vbo and just update ebo
-			// TODO: Pull block texture from separate buffer? Can we set this up in vao?
 			// TODO: look into array textures
 			struct RenderData {
 				bool updated = false;
@@ -67,8 +65,6 @@ namespace Game {
 			RenderData chunkRenderData[activeArea.x][activeArea.y];
 
 			glm::ivec2 chunkToIndex(const glm::ivec2 chunk) const;
-
-			void drawChunk(const RenderData& data, glm::mat4 mvp) const;
 
 			void updateChunkRenderData(RenderData& data);
 	};
