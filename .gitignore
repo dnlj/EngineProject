@@ -5,6 +5,9 @@
 *.dll
 /_TEMP_*_
 
+# Conan
+.conan
+
 # ImGui
 **/imgui.ini
 
@@ -12,6 +15,7 @@
 *.vcxproj
 *.vcxproj.*
 *.sln
+/.vscode
 
 # Premake
 premake5.exe
