@@ -1,12 +1,13 @@
--- TODO: use conan profiles for build configs. debug/release/release_with_debug/etc
--- TODO: setup home dir: https://docs.conan.io/en/latest/reference/commands/consumer/config.html#conan-config-install
-
 assert(CONAN_USER_HOME, "CONAN_USER_HOME must be defined")
 assert(CONAN_PACKAGES, "CONAN_PACKAGES must be defined")
 
 local subCommands = {}
 local templateDir = CONAN_USER_HOME .."/conan_template"
 local recipesDir = CONAN_USER_HOME .."/conan_recipes"
+
+local function parseConanReference(ref)
+	return ref:match("^([^@/]*)/?([^@/]*)@?([^@/]*)/?([^@/]*)$")
+end
 
 local getCommandPrefix
 do
@@ -83,11 +84,14 @@ end
 
 function subCommands.export()
 	local dirs = os.matchdirs(recipesDir .."/*")
-	for _, dir in pairs(dirs) do
-		local file = dir .."/conanfile.py"
-		assert(os.isfile(file), "Conan recipe not found in ".. dir)
-		--
-		--os.execute(execSetup .." conan export ".. file .." glm/0.9.9.7@user/channel")
+	for i, ref in pairs(CONAN_PACKAGES.requires) do
+		local name, version, user, channel = parseConanReference(ref)
+		io.write("\nExporting conan recipe ", ref, "\n")
+		
+		local dir = recipesDir .."/".. name
+		assert(os.isdir(dir), "No recipe found with name ".. tostring(name))
+		
+		execConan(("conan export %s %s"):format(dir, ref))
 	end
 end
 
@@ -125,7 +129,8 @@ newaction {
 }
 
 if _ACTION ~= "conan" then
-	-- TODO: workaround for premake ignoring loadfile's env parameter: https://github.com/premake/premake-core/issues/1392
+	-- TODO: Only try to load files if they exist. If they dont maybe throw a warning? For example we dont need these files if we do a `premake5 clean`
+	-- Workaround for premake ignoring loadfile's env parameter: https://github.com/premake/premake-core/issues/1392
 	local oldmeta = getmetatable(_ENV)
 	local values = {}
 	setmetatable(_ENV, {

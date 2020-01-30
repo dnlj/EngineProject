@@ -2,7 +2,6 @@ from conans import ConanFile, tools, errors
 
 class Recipe(ConanFile):
 	name = "glm"
-	version = "0.9.9.7"
 	description = "OpenGL Mathematics (GLM): A C++ mathematics library for graphics programming."
 	license = "Happy Bunny, MIT, https://glm.g-truc.net/copying.txt"
 	homepage = "https://glm.g-truc.net"

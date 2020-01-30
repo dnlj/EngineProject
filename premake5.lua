@@ -1,22 +1,19 @@
 --------------------------------------------------------------------------------
--- Constants
+-- Constants / Globals
 --------------------------------------------------------------------------------
 PROJECT_NAME = "DungeonGame"
 CONFIG_TYPE_STR = '%{string.lower(string.match(cfg.buildcfg, "^([^_]+)"))}'
 CONAN_USER_HOME = os.getcwd()
 CONAN_PACKAGES = {
 	["requires"] = {
-		"glm/0.9.9.7",
-		"soil2/1.11",
+		"glm/0.9.9.7@user/channel",
+		"soil2/1.11@user/channel",
+		"test/1.2.3@user/channel",
 	},
 	["generators"] = {
 		"premake",
 	}
 }
-
--- TODO: Either parse the conanfile.txt and pull lib version from there or define them here and gen the conanfile.txt
--- TODO: I think i like the idea of gen-ing the conanfile.txt better? keeps everything in premake.
--- TODO: insert comment at top of conanfile.txt mentioning that it is a generated file
 
 --------------------------------------------------------------------------------
 --
@@ -31,6 +28,7 @@ require "build/action_conan"
 --------------------------------------------------------------------------------
 -- The files and folders to delete when the "clean" action is run.
 --------------------------------------------------------------------------------
+-- TODO: move these with the rest of the constants/globals
 action_clean_directories = {
 	"./.vs",
 	"./bin",
