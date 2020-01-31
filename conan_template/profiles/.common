@@ -1,8 +1,0 @@
-[settings]
-arch=x86_64
-
-[options]
-
-[build_requires]
-
-[env]

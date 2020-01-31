@@ -15,13 +15,9 @@ function printTable(tbl, depth, shown)
 		end
 		
 		local t = type(v)
-		if t == "table" then
-			if not shown[v] then
-				shown[v] = true
-				printTable(v, depth, shown)
-			else
-				io.write(tostring(tbl), " (repeat)\n")
-			end
+		if t == "table" and not shown[v] then
+			shown[v] = true
+			printTable(v, depth, shown)
 		elseif t == "string" then
 			io.write("\"", tostring(v), "\"\n")
 		else

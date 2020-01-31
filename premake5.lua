@@ -3,7 +3,14 @@
 --------------------------------------------------------------------------------
 PROJECT_NAME = "DungeonGame"
 CONFIG_TYPE_STR = '%{string.lower(string.match(cfg.buildcfg, "^([^_]+)"))}'
+
+--------------------------------------------------------------------------------
+-- Conan Settings
+--------------------------------------------------------------------------------
 CONAN_USER_HOME = os.getcwd()
+
+-- TODO: CONAN_REMOTES = {a, b, c}
+
 CONAN_PACKAGES = {
 	["requires"] = {
 		"glm/0.9.9.7@user/channel",
@@ -15,10 +22,38 @@ CONAN_PACKAGES = {
 	}
 }
 
+CONAN_PROFILES = {
+	common = {
+		includes = {},
+		settings = {
+			arch = "x86_64",
+		},
+		options = {},
+		env = {},
+	},
+	release = {
+		includes = {"common"},
+		settings = {
+			build_type = "Release",
+		},
+		options = {},
+		env = {},
+	},
+	debug = {
+		includes = {"common"},
+		settings = {
+			build_type = "Debug",
+		},
+		options = {},
+		env = {},
+	},
+}
+
 --------------------------------------------------------------------------------
 --
 --------------------------------------------------------------------------------
 -- TODO: rename build folder
+require "build/printTable"
 require "build/action_clean"
 require "build/action_deps"
 require "build/action_build"

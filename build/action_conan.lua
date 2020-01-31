@@ -1,5 +1,6 @@
 assert(CONAN_USER_HOME, "CONAN_USER_HOME must be defined")
 assert(CONAN_PACKAGES, "CONAN_PACKAGES must be defined")
+assert(CONAN_PROFILES, "CONAN_PROFILES must be defined")
 
 local subCommands = {}
 local templateDir = CONAN_USER_HOME .."/conan_template"
@@ -7,6 +8,25 @@ local recipesDir = CONAN_USER_HOME .."/conan_recipes"
 
 local function parseConanReference(ref)
 	return ref:match("^([^@/]*)/?([^@/]*)@?([^@/]*)/?([^@/]*)$")
+end
+
+local getConanProfile
+do
+	local profiles = {}
+	function getConanProfile(name)
+		if profiles[name] then return profiles[name] end
+		assert(CONAN_PROFILES[name], "Unknown profile ".. tostring(name))
+		local prof = CONAN_PROFILES[name]
+		local incs = {}
+		
+		for _, n in pairs(prof.includes or {}) do
+			table.insert(incs, getConanProfile(n))
+		end
+		
+		table.insert(incs, prof)
+		profiles[name] = table.merge(table.unpack(incs))
+		return profiles[name]
+	end
 end
 
 local getCommandPrefix
@@ -84,7 +104,7 @@ end
 
 function subCommands.export()
 	local dirs = os.matchdirs(recipesDir .."/*")
-	for i, ref in pairs(CONAN_PACKAGES.requires) do
+	for _, ref in pairs(CONAN_PACKAGES.requires) do
 		local name, version, user, channel = parseConanReference(ref)
 		io.write("\nExporting conan recipe ", ref, "\n")
 		
@@ -101,6 +121,9 @@ end
 
 function subCommands.install()
 	os.execute("echo install")
+	for _, ref in pairs(CONAN_PACKAGES.requires) do
+		execConan(("conan install -b -if %s %s"):format())
+	end
 end
 
 newaction {
