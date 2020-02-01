@@ -11,11 +11,11 @@ CONAN_USER_HOME = os.getcwd()
 
 -- TODO: CONAN_REMOTES = {a, b, c}
 
-CONAN_PACKAGES = {
+CONAN_PACKAGES = { -- TODO: Name?
 	["requires"] = {
 		"glm/0.9.9.7@user/channel",
-		"soil2/1.11@user/channel",
-		"test/1.2.3@user/channel",
+		--"soil2/1.11@user/channel",
+		--"test/1.2.3@user/channel",
 	},
 	["generators"] = {
 		"premake",
@@ -24,6 +24,7 @@ CONAN_PACKAGES = {
 
 CONAN_PROFILES = {
 	common = {
+		build = false,
 		includes = {},
 		settings = {
 			arch = "x86_64",
@@ -32,6 +33,7 @@ CONAN_PROFILES = {
 		env = {},
 	},
 	release = {
+		build = true,
 		includes = {"common"},
 		settings = {
 			build_type = "Release",
@@ -40,6 +42,7 @@ CONAN_PROFILES = {
 		env = {},
 	},
 	debug = {
+		build = true,
 		includes = {"common"},
 		settings = {
 			build_type = "Debug",

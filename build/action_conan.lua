@@ -10,22 +10,34 @@ local function parseConanReference(ref)
 	return ref:match("^([^@/]*)/?([^@/]*)@?([^@/]*)/?([^@/]*)$")
 end
 
-local getConanProfile
-do
-	local profiles = {}
-	function getConanProfile(name)
-		if profiles[name] then return profiles[name] end
-		assert(CONAN_PROFILES[name], "Unknown profile ".. tostring(name))
+do -- Build the CONAN_PROFILES table
+	local profileTemplate = {
+		_HAS_BEEN_BUILT = true,
+		build = true,
+		includes = {},
+		settings = {},
+		options = {},
+		env = {},
+	}
+	
+	local function buildConanProfile(name)
 		local prof = CONAN_PROFILES[name]
-		local incs = {}
+		assert(prof, "Unknown profile ".. tostring(name))
+		if prof._HAS_BEEN_BUILT then return prof end
+		
+		local incs = {profileTemplate}
 		
 		for _, n in pairs(prof.includes or {}) do
-			table.insert(incs, getConanProfile(n))
+			table.insert(incs, buildConanProfile(n))
 		end
 		
 		table.insert(incs, prof)
-		profiles[name] = table.merge(table.unpack(incs))
-		return profiles[name]
+		CONAN_PROFILES[name] = table.merge(table.unpack(incs))
+		return CONAN_PROFILES[name]
+	end
+	
+	for name in pairs(CONAN_PROFILES) do
+		buildConanProfile(name)
 	end
 end
 
@@ -83,25 +95,6 @@ local function execConan(cmd)
 	
 end
 
-local getProfiles
-do
-	local profiles
-	function getProfiles()
-		if profiles then return profiles end
-		profiles = {}
-
-		local files = os.matchfiles(templateDir .."/profiles/*")
-		for _, file in pairs(files) do
-			file = path.getname(file)
-			if file:sub(1,1) ~= "." then
-				table.insert(profiles, file)
-			end
-		end
-
-		return profiles
-	end
-end
-
 function subCommands.export()
 	local dirs = os.matchdirs(recipesDir .."/*")
 	for _, ref in pairs(CONAN_PACKAGES.requires) do
@@ -121,9 +114,42 @@ end
 
 function subCommands.install()
 	os.execute("echo install")
-	for _, ref in pairs(CONAN_PACKAGES.requires) do
-		execConan(("conan install -b -if %s %s"):format())
+	local fileName = CONAN_USER_HOME .."/temp_conanfile.txt_".. os.uuid()
+	local file = io.open(fileName, "w")
+	
+	for section, lines in pairs(CONAN_PACKAGES) do
+		file:write("[", section, "]\n")
+		for _, line in pairs(lines) do
+			file:write(line, "\n")
+		end
+		file:write("\n")
 	end
+	file:close()
+	
+	for name, prof in pairs(CONAN_PROFILES) do
+		if prof.build then
+			local function buildArgs(arg, dat)
+				local tbl = {}
+				for k,v in pairs(dat) do
+					table.insert(tbl, arg)
+					table.insert(tbl, k)
+					table.insert(tbl, "=")
+					table.insert(tbl, v)
+				end
+				return table.concat(tbl)
+			end
+			
+			local settings = buildArgs(" -s ", prof.settings)
+			local options = buildArgs(" -o ", prof.options)
+			local envs = buildArgs(" -e ", prof.env)
+			
+			for _, ref in pairs(CONAN_PACKAGES.requires) do
+				execConan(("conan install -b -if conan_build_%s%s%s%s %s"):format(name, settings, options, envs, fileName))
+			end
+		end
+	end
+	
+	assert(os.remove(fileName))
 end
 
 newaction {
