@@ -181,21 +181,37 @@ newaction {
 }
 
 if _ACTION ~= "conan" then
-	-- TODO: Only try to load files if they exist. If they dont maybe throw a warning? For example we dont need these files if we do a `premake5 clean`
-	-- Workaround for premake ignoring loadfile's env parameter: https://github.com/premake/premake-core/issues/1392
-	local oldmeta = getmetatable(_ENV)
-	local values = {}
-	setmetatable(_ENV, {
-		__newindex = function(t, k, v)
-			values[k] = v
+	CONAN_PACKAGE_DATA = {}
+	for name, prof in pairs(CONAN_PROFILES) do
+		if prof.build then
+			local profData = {all = {}}
+			for _, ref in pairs(CONAN_PACKAGES.requires) do
+				local file = CONAN_BUILD_DIR .."/".. name .."/".. ref:gsub("@", "/") .."/conanbuildinfo.premake.lua"
+				file = file:gsub("/", "\\")
+				print(file)
+				if not os.isfile(file) then
+					premake.warn("Unable to find conan build info for %s under profile %s", ref, name)
+				else
+					-- Workaround for premake ignoring loadfile's env parameter: https://github.com/premake/premake-core/issues/1392
+					local oldmeta = getmetatable(_ENV)
+					local values = {}
+					setmetatable(_ENV, {
+						__newindex = function(t, k, v)
+							profData.all[k] = table.join(profData.all[k] or {}, v)
+							values[k] = v
+						end
+					});
+					assert(loadfile(file))()
+					setmetatable(_ENV, oldmeta)
+					profData[ref] = values
+				end
+			end
+			
+			for k,v in pairs(profData.all) do
+				profData.all[k] = table.unique(v)
+			end
+			
+			CONAN_PACKAGE_DATA[name] = profData
 		end
-	});
-
-	assert(loadfile("conanbuildinfo.premake.lua"))()
-	setmetatable(_ENV, oldmeta)
-
-	for k,v in pairs(values) do print("--- ", k, v) end
-
-	print("premake _ENV: ", _ENV)
-	print("premake env: ", env)
+	end
 end
