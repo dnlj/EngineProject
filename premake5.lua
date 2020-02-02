@@ -9,7 +9,10 @@ CONFIG_TYPE_STR = '%{string.lower(string.match(cfg.buildcfg, "^([^_]+)"))}'
 --------------------------------------------------------------------------------
 CONAN_USER_HOME = os.getcwd()
 
--- TODO: CONAN_REMOTES = {a, b, c}
+CONAN_REMOTES = {
+	-- ["conan-center"] = "https://api.bintray.com/conan/conan/conan-center",
+	-- ["bincrafters"] = "https://api.bintray.com/conan/bincrafters/public-conan",
+}
 
 CONAN_PACKAGES = { -- TODO: Name?
 	["requires"] = {

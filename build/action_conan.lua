@@ -95,6 +95,13 @@ local function execConan(cmd)
 	
 end
 
+function subCommands.remote()
+	execConan("conan remote clean")
+	for k,v in pairs(CONAN_REMOTES) do
+		execConan(("conan remote add %s %s"):format(k, v))
+	end
+end
+
 function subCommands.export()
 	local dirs = os.matchdirs(recipesDir .."/*")
 	for _, ref in pairs(CONAN_PACKAGES.requires) do
@@ -108,12 +115,7 @@ function subCommands.export()
 	end
 end
 
-function subCommands.config()
-	execConan("conan config install ".. templateDir)
-end
-
 function subCommands.install()
-	os.execute("echo install")
 	local fileName = CONAN_USER_HOME .."/temp_conanfile.txt_".. os.uuid()
 	local file = io.open(fileName, "w")
 	
