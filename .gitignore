@@ -7,7 +7,7 @@
 
 # Conan
 .conan
-conan_build_*
+conan_build
 
 # ImGui
 **/imgui.ini

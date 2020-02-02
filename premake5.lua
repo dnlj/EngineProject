@@ -17,7 +17,7 @@ CONAN_REMOTES = {
 CONAN_PACKAGES = { -- TODO: Name?
 	["requires"] = {
 		"glm/0.9.9.7@user/channel",
-		--"soil2/1.11@user/channel",
+		"soil/latest@user/channel", -- TODO: Look into soil2 or other image loading lib. We dont use any of the opengl features of soil.
 		--"test/1.2.3@user/channel",
 	},
 	["generators"] = {

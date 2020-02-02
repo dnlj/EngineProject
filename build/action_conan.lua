@@ -1,10 +1,13 @@
+-- TODO: Doc each of these
 assert(CONAN_USER_HOME, "CONAN_USER_HOME must be defined")
 assert(CONAN_PACKAGES, "CONAN_PACKAGES must be defined")
 assert(CONAN_PROFILES, "CONAN_PROFILES must be defined")
 
 local subCommands = {}
-local templateDir = CONAN_USER_HOME .."/conan_template"
-local recipesDir = CONAN_USER_HOME .."/conan_recipes"
+
+-- TODO: make user configurable?
+CONAN_BUILD_DIR = CONAN_USER_HOME .."/conan_build"
+CONAN_RECIPES_DIR = CONAN_USER_HOME .."/conan_recipes"
 
 local function parseConanReference(ref)
 	return ref:match("^([^@/]*)/?([^@/]*)@?([^@/]*)/?([^@/]*)$")
@@ -18,6 +21,8 @@ do -- Build the CONAN_PROFILES table
 		settings = {},
 		options = {},
 		env = {},
+		-- We could also have a vars section for full feature parity, but
+		-- since we can just do vars in lua so i dont think they are needed.
 	}
 	
 	local function buildConanProfile(name)
@@ -103,12 +108,12 @@ function subCommands.remote()
 end
 
 function subCommands.export()
-	local dirs = os.matchdirs(recipesDir .."/*")
+	local dirs = os.matchdirs(CONAN_RECIPES_DIR .."/*")
 	for _, ref in pairs(CONAN_PACKAGES.requires) do
 		local name, version, user, channel = parseConanReference(ref)
 		io.write("\nExporting conan recipe ", ref, "\n")
 		
-		local dir = recipesDir .."/".. name
+		local dir = CONAN_RECIPES_DIR .."/".. name
 		assert(os.isdir(dir), "No recipe found with name ".. tostring(name))
 		
 		execConan(("conan export %s %s"):format(dir, ref))
@@ -116,42 +121,38 @@ function subCommands.export()
 end
 
 function subCommands.install()
-	local fileName = CONAN_USER_HOME .."/temp_conanfile.txt_".. os.uuid()
-	local file = io.open(fileName, "w")
-	
-	for section, lines in pairs(CONAN_PACKAGES) do
-		file:write("[", section, "]\n")
-		for _, line in pairs(lines) do
-			file:write(line, "\n")
-		end
-		file:write("\n")
+	if os.isdir(CONAN_BUILD_DIR) then
+		assert(os.rmdir(CONAN_BUILD_DIR))
 	end
-	file:close()
 	
 	for name, prof in pairs(CONAN_PROFILES) do
 		if prof.build then
-			local function buildArgs(arg, dat)
+			local function buildArgs(arg, key, dat)
 				local tbl = {}
 				for k,v in pairs(dat) do
 					table.insert(tbl, arg)
-					table.insert(tbl, k)
-					table.insert(tbl, "=")
+					if key then
+						table.insert(tbl, k)
+						table.insert(tbl, "=")
+					end
 					table.insert(tbl, v)
 				end
 				return table.concat(tbl)
 			end
 			
-			local settings = buildArgs(" -s ", prof.settings)
-			local options = buildArgs(" -o ", prof.options)
-			local envs = buildArgs(" -e ", prof.env)
+			local settings = buildArgs(" -s ", true, prof.settings)
+			local options = buildArgs(" -o ", true, prof.options)
+			local envs = buildArgs(" -e ", true, prof.env)
+			local gens = buildArgs(" -g ", false, CONAN_PACKAGES.generators)
 			
 			for _, ref in pairs(CONAN_PACKAGES.requires) do
-				execConan(("conan install -b -if conan_build_%s%s%s%s %s"):format(name, settings, options, envs, fileName))
+				execConan(
+					("conan install -if %s/%s/%s%s%s%s%s %s")
+					:format(CONAN_BUILD_DIR, name, ref:gsub("@", "/"), settings, options, envs, gens, ref)
+				)
 			end
 		end
 	end
-	
-	assert(os.remove(fileName))
 end
 
 newaction {
