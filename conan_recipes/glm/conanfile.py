@@ -9,14 +9,14 @@ class Recipe(ConanFile):
 	topics = ("glm", "opengl", "math")
 
 	def source(self):
-		tools.get("https://github.com/g-truc/glm/archive/{}.zip".format(self.version))
+		tools.get(f"https://github.com/g-truc/glm/archive/{self.version}.zip")
 
 	def build(self):
 		pass
 
 	def package(self):
 		self.copy("*",
-			src="glm-{}/glm".format(self.version),
+			src=f"glm-{self.version}/glm",
 			dst="include/glm",
 			keep_path=True,
 			excludes="*.txt"

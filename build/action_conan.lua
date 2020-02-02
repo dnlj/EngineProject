@@ -147,7 +147,7 @@ function subCommands.install()
 			
 			for _, ref in pairs(CONAN_PACKAGES.requires) do
 				execConan(
-					("conan install -if %s/%s/%s%s%s%s%s %s")
+					("conan install -b outdated -if %s/%s/%s%s%s%s%s %s")
 					:format(CONAN_BUILD_DIR, name, ref:gsub("@", "/"), settings, options, envs, gens, ref)
 				)
 			end
