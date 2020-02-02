@@ -27,5 +27,4 @@ class Recipe(ConanFile):
 		self.copy("*.a", src="soil/projects", dst="lib", keep_path=False)
 		
 	def package_info(self):
-		for libname in os.listdir("lib"):
-			self.cpp_info.libs.append(libname)
+		self.cpp_info.libs = tools.collect_libs(self)

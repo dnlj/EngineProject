@@ -9,6 +9,7 @@ class Recipe(ConanFile):
 	topics = ("glm", "opengl", "math")
 
 	def source(self):
+		# TODO: change to use git
 		tools.get(f"https://github.com/g-truc/glm/archive/{self.version}.zip")
 
 	def build(self):
