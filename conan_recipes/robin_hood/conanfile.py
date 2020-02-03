@@ -1,16 +1,16 @@
 from conans import ConanFile, tools, errors
 
 class Recipe(ConanFile):
-	name = "meta"
-	description = "A header only C++ library that provides type manipulation utilities."
-	license = "None"
-	homepage = "https://github.com/dnlj/Meta"
+	name = "robin_hood"
+	description = "A fast & memory efficient hashtable based on robin hood hashing."
+	license = "MIT"
+	homepage = "https://github.com/martinus/robin-hood-hashing"
 	url = "none"
 	topics = ()
 
 	def source(self):
 		tools.Git().clone(
-			url="https://github.com/dnlj/Meta.git",
+			url="https://github.com/martinus/robin-hood-hashing.git",
 			branch=self.version,
 			shallow=True
 		)
@@ -19,7 +19,7 @@ class Recipe(ConanFile):
 		pass
 
 	def package(self):
-		self.copy("*.hpp", src="include", dst="include", keep_path=True)
+		self.copy("*.h", src="src/include", dst="include", keep_path=True)
 
 	def package_id(self):
 		self.info.header_only()

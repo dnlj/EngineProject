@@ -20,6 +20,7 @@ CONAN_PACKAGES = { -- TODO: Name?
 		"glfw/3.3.2@dnlj/wobbly",
 		"glm/0.9.9.7@dnlj/wobbly",
 		"meta/master@dnlj/wobbly",
+		"robin_hood/3.5.0@dnlj/wobbly",
 		"soil/latest@dnlj/wobbly", -- TODO: Look into soil2 or other image loading lib. We dont use any of the opengl features of soil.
 	},
 	["generators"] = {
