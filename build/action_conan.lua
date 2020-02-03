@@ -116,7 +116,7 @@ function subCommands.export()
 		local dir = CONAN_RECIPES_DIR .."/".. name
 		assert(os.isdir(dir), "No recipe found with name ".. tostring(name))
 		
-		execConan(("conan export %s %s"):format(dir, ref))
+		execConan(("conan export -k %s %s"):format(dir, ref))
 	end
 end
 
@@ -161,7 +161,8 @@ newaction {
 	execute = function()
 		local cmdstr = _ARGS[1]
 		local cmd = subCommands[cmdstr]
-
+		
+		-- TODO: forward args to commands? for example `premake5 conan export -k` would be useful for testing
 		if cmd then
 			cmd()
 		else
