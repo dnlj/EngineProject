@@ -125,6 +125,22 @@ function subCommands.install()
 		assert(os.rmdir(CONAN_BUILD_DIR))
 	end
 	
+	 -- We have to do it this way (w/ temp file) or else we can't use custom generators.
+	local fileName = CONAN_USER_HOME .."/.temp.conanfile.".. os.uuid()
+	do
+		local file = io.open(fileName, "w")
+
+		for section, lines in pairs(CONAN_PACKAGES) do
+			file:write("[", section, "]\n")
+			for _, line in pairs(lines) do
+				file:write(line, "\n")
+			end
+			file:write("\n")
+		end
+		file:close()
+	end
+	
+	-- TODO: put all this in pcall so that we always clean up the temp file even if error
 	for name, prof in pairs(CONAN_PROFILES) do
 		if prof.build then
 			local function buildArgs(arg, key, dat)
@@ -144,15 +160,16 @@ function subCommands.install()
 			local options = buildArgs(" -o ", true, prof.options)
 			local envs = buildArgs(" -e ", true, prof.env)
 			local gens = buildArgs(" -g ", false, CONAN_PACKAGES.generators)
-			
-			for _, ref in pairs(CONAN_PACKAGES.requires) do
-				execConan(
-					("conan install -b outdated -if %s/%s/%s%s%s%s%s %s")
-					:format(CONAN_BUILD_DIR, name, ref:gsub("@", "/"), settings, options, envs, gens, ref)
-				)
-			end
+			local out = path.join(CONAN_BUILD_DIR, name)
+			local jsonfile = path.join(out, "info.json")
+			execConan(
+				("conan install -b outdated -if %s/%s%s%s%s%s %s")
+				:format(CONAN_BUILD_DIR, name, settings, options, envs, gens, fileName)
+			)
 		end
 	end
+	
+	assert(os.remove(fileName))
 end
 
 newaction {
@@ -182,6 +199,8 @@ newaction {
 }
 
 if _ACTION ~= "conan" then
+	-- TODO: this will need fixed since we changed install to use temp conanfile.txt
+	-- TODO: Since the premake generator doesnt output full info we will need to parse the `conan install -j` output
 	CONAN_PACKAGE_DATA = {}
 	for name, prof in pairs(CONAN_PROFILES) do
 		if prof.build then
