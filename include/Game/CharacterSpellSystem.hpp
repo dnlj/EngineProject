@@ -1,7 +1,7 @@
 #pragma once
 
 // Box2D
-#include <Box2D/Common/b2Math.h>
+#include <box2d/b2_math.h>
 
 // Engine
 #include <Engine/EngineInstance.hpp>

@@ -14,6 +14,7 @@
 #include <Box2D/Box2D.h>
 
 // Engine
+#include <Engine/Engine.hpp>
 #include <Engine/Camera.hpp>
 
 namespace Engine::Debug {

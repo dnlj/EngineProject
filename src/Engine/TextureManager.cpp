@@ -7,7 +7,7 @@
 #include <Engine/TextureOptions.hpp>
 
 // SOIL
-#include <SOIL.h>
+#include <soil/SOIL.h>
 
 namespace Engine {
 	GLuint TextureManager::load(const std::string& path) {

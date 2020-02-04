@@ -15,7 +15,7 @@
 #include <GLFW/glfw3.h>
 
 // SOIL
-#include <SOIL.h>
+#include <soil/SOIL.h>
 
 // GLM
 #include <glm/glm.hpp>

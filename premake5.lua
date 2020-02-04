@@ -16,8 +16,8 @@ CONAN_REMOTES = {
 
 CONAN_PACKAGES = { -- TODO: Name?
 	["requires"] = {
-		"box2d/master@dnlj/wobbly",
-		"dear_imgui/1.74@dnlj/wobbly",
+		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
+		"dear_imgui/1.74@dnlj/wobbly", -- TODO: turn into lib? should be simple
 		"glfw/3.3.2@dnlj/wobbly",
 		"glm/0.9.9.7@dnlj/wobbly",
 		"meta/master@dnlj/wobbly",
@@ -168,28 +168,22 @@ project("*")
 	}
 
 	debugdir "./src"
-
+	
+	filter "configurations:Debug*"
+		conan_setup_build_info(CONAN_BUILD_INFO["debug"])
+	filter "configurations:Release*"
+		conan_setup_build_info(CONAN_BUILD_INFO["release"])	
+	filter {}
+	
 	includedirs {
 		"./include",
-		"./deps/glfw/include",
-		"./deps/soil/src",
-		"./deps/glm/include",
-		"./deps/box2d/include",
-		"./deps/meta/include",
-		"./deps/robin_hood/src/include",
 	}
 
 	links {
-		"glfw3",
 		"opengl32",
-		"SOIL",
-		"Box2D",
 	}
 
 	libdirs {
-		"./deps/glfw/lib/".. CONFIG_TYPE_STR,
-		"./deps/soil/lib/".. CONFIG_TYPE_STR,
-		"./deps/box2d/lib/".. CONFIG_TYPE_STR,
 	}
 
 --------------------------------------------------------------------------------
@@ -201,40 +195,35 @@ project(PROJECT_NAME)
 		"./src/main.cpp",
 		"./include/Game/**",
 		"./src/Game/**",
-		"./deps/imgui/**",
-	}
-
-	includedirs {
-		"./deps/imgui",
 	}
 
 --------------------------------------------------------------------------------
 -- Test
 --------------------------------------------------------------------------------
-project(PROJECT_NAME .."Test")
-	defines {"RUNNING_TESTS"}
-
-	files {
-		"./test/**",
-	}
-
-	includedirs {
-		"./deps/googletest/googlemock/include",
-		"./deps/googletest/googletest/include",
-	}
-
-	libdirs {
-		"./deps/googletest/lib/".. CONFIG_TYPE_STR,
-	}
-
-	filter {"platforms:Windows_x64", "configurations:Debug*"}
-		links {
-			"gtestd.lib",
-			"gmockd.lib",
-		}
-
-	filter {"platforms:Windows_x64", "configurations:Release*"}
-		links {
-			"gtest.lib",
-			"gmock.lib",
-		}
+--project(PROJECT_NAME .."Test")
+--	defines {"RUNNING_TESTS"}
+--
+--	files {
+--		"./test/**",
+--	}
+--
+--	includedirs {
+--		"./deps/googletest/googlemock/include",
+--		"./deps/googletest/googletest/include",
+--	}
+--
+--	libdirs {
+--		"./deps/googletest/lib/".. CONFIG_TYPE_STR,
+--	}
+--
+--	filter {"platforms:Windows_x64", "configurations:Debug*"}
+--		links {
+--			"gtestd.lib",
+--			"gmockd.lib",
+--		}
+--
+--	filter {"platforms:Windows_x64", "configurations:Release*"}
+--		links {
+--			"gtest.lib",
+--			"gmock.lib",
+--		}

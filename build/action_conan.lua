@@ -84,6 +84,20 @@ do
 	end
 end
 
+-- TODO: Move into namespace? what about CONAN_ globals?
+function conan_setup_build_info(info)
+	if not info then return end
+	for _, p in pairs(info.src_paths) do
+		files(path.join(p, "**"))
+	end
+	
+	includedirs(info.include_paths)
+	libdirs(info.lib_paths)
+	links(info.libs)
+	bindirs(info.bin_paths)
+	defines(info.defines)
+end
+
 local function execConan(cmd)
 	os.execute(getCommandPrefix() .. cmd .." 2>&1")
 	
@@ -198,8 +212,8 @@ newaction {
 	end
 }
 
+CONAN_BUILD_INFO = {}
 if _ACTION ~= "conan" then
-	CONAN_BUILD_INFO = {}
 	for name, prof in pairs(CONAN_PROFILES) do
 		if prof.build then
 			local profData = {}
@@ -221,7 +235,7 @@ if _ACTION ~= "conan" then
 				setmetatable(_ENV, oldmeta)
 			end
 			
-			CONAN_BUILD_INFO[name] = profData
+			CONAN_BUILD_INFO[name] = profData.conan
 		end
 	end
 end
