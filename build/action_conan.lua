@@ -199,39 +199,29 @@ newaction {
 }
 
 if _ACTION ~= "conan" then
-	-- TODO: this will need fixed since we changed install to use temp conanfile.txt
-	-- TODO: Since the premake generator doesnt output full info we will need to parse the `conan install -j` output
-	CONAN_PACKAGE_DATA = {}
+	CONAN_BUILD_INFO = {}
 	for name, prof in pairs(CONAN_PROFILES) do
 		if prof.build then
-			local profData = {all = {}}
-			for _, ref in pairs(CONAN_PACKAGES.requires) do
-				local file = CONAN_BUILD_DIR .."/".. name .."/".. ref:gsub("@", "/") .."/conanbuildinfo.premake.lua"
-				file = file:gsub("/", "\\")
-				print(file)
-				if not os.isfile(file) then
-					premake.warn("Unable to find conan build info for %s under profile %s", ref, name)
-				else
-					-- Workaround for premake ignoring loadfile's env parameter: https://github.com/premake/premake-core/issues/1392
-					local oldmeta = getmetatable(_ENV)
-					local values = {}
-					setmetatable(_ENV, {
-						__newindex = function(t, k, v)
-							profData.all[k] = table.join(profData.all[k] or {}, v)
-							values[k] = v
-						end
-					});
-					assert(loadfile(file))()
-					setmetatable(_ENV, oldmeta)
-					profData[ref] = values
-				end
+			local profData = {}
+			local file = CONAN_BUILD_DIR .."/".. name .."/conanbuildinfo.lua"
+			if not os.isfile(file) then
+				premake.warn("Unable to find conan build info for profile %s", name)
+			else
+				-- Workaround for premake ignoring loadfile's env parameter: https://github.com/premake/premake-core/issues/1392
+				local oldmeta = getmetatable(_ENV)
+				setmetatable(_ENV, {
+					__newindex = function(t, k, v)
+						profData[k] = v
+					end,
+					__index = function(t, k)
+						return profData[k]
+					end,
+				});
+				assert(loadfile(file))()
+				setmetatable(_ENV, oldmeta)
 			end
 			
-			for k,v in pairs(profData.all) do
-				profData.all[k] = table.unique(v)
-			end
-			
-			CONAN_PACKAGE_DATA[name] = profData
+			CONAN_BUILD_INFO[name] = profData
 		end
 	end
 end
