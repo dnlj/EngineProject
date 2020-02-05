@@ -66,7 +66,6 @@ CONAN_PROFILES = {
 -- TODO: rename build folder
 require "build/printTable"
 require "build/action_clean"
-require "build/action_deps"
 require "build/action_build"
 require "build/action_tests"
 require "build/action_conan"
