@@ -8,6 +8,7 @@ local subCommands = {}
 -- TODO: make user configurable?
 CONAN_BUILD_DIR = CONAN_USER_HOME .."/conan_build"
 CONAN_RECIPES_DIR = CONAN_USER_HOME .."/conan_recipes"
+CONAN_BUILD_INFO = {}
 
 local function parseConanReference(ref)
 	return ref:match("^([^@/]*)/?([^@/]*)@?([^@/]*)/?([^@/]*)$")
@@ -100,7 +101,7 @@ function conan_setup_build_info(info)
 end
 
 local function execConan(cmd)
-	os.execute(getCommandPrefix() .. cmd .." 2>&1")
+	return os.execute(getCommandPrefix() .. cmd .." 2>&1")
 	
 	-- Could wrap with io.popen but ANSI color codes dont work unless run through echo.
 	-- If you do end up doing this it would probably be worth pulling out into its own function so you can use it elsewhere
@@ -155,6 +156,7 @@ function subCommands.install()
 		file:close()
 	end
 	
+	local errors = 0
 	-- TODO: put all this in pcall so that we always clean up the temp file even if error
 	for name, prof in pairs(CONAN_PROFILES) do
 		if prof.build then
@@ -177,14 +179,22 @@ function subCommands.install()
 			local gens = buildArgs(" -g ", false, CONAN_PACKAGES.generators)
 			local out = path.join(CONAN_BUILD_DIR, name)
 			local jsonfile = path.join(out, "info.json")
-			execConan(
+			local err = execConan(
 				("conan install -b outdated -if %s/%s%s%s%s%s %s")
 				:format(CONAN_BUILD_DIR, name, settings, options, envs, gens, fileName)
 			)
+			errors = errors + (err and 0 or 1)
 		end
 	end
 	
 	assert(os.remove(fileName))
+	return errors
+end
+
+function subCommands.fullsetup()
+	subCommands.remote()
+	subCommands.export()
+	subCommands.install()
 end
 
 newaction {
@@ -213,12 +223,21 @@ newaction {
 	end
 }
 
-CONAN_BUILD_INFO = {}
-if _ACTION ~= "conan" then
+local skiplist = {"conan", "clean"}
+if not table.contains(skiplist, _ACTION) then
+	if not os.isdir(CONAN_BUILD_DIR) then
+		msg.warn("Unable to find conan build info. Attempting to install.\n")
+		if subCommands.install() > 0 then
+			msg.warn("One or more packages missing. Attempting to perform full setup.")
+			subCommands.fullsetup()
+		end
+	end
+	
 	-- Workaround for premake ignoring loadfile's env parameter: https://github.com/premake/premake-core/issues/1392
 	local oldmeta = getmetatable(_ENV)
 	setmetatable(_ENV, {
 		__newindex = function(t, k, v)
+			print(_ENV, t, k, v)
 			error("Conan build info assigned a non-local value. This is a generator bug.")
 		end,
 	});
