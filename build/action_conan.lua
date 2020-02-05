@@ -227,7 +227,7 @@ if _ACTION ~= "conan" then
 		if prof.build then
 			local file = CONAN_BUILD_DIR .."/".. name .."/conanbuildinfo.lua"
 			if not os.isfile(file) then
-				premake.warn("Unable to find conan build info for profile %s", name)
+				msg.warn("Unable to find conan build info for profile ", name, " \n")
 			else
 				CONAN_BUILD_INFO[name] = assert(loadfile(file))()
 			end

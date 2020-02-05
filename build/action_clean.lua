@@ -14,13 +14,9 @@ newaction {
 				end
 				
 				if not suc then
-					term.pushColor(term.warningColor)
-					io.write("\rUnable to delete ", match, " with error: ", err:gsub("[\r\n]", " "), "\n")
-					term.popColor()
+					msg.warn("\rUnable to delete ", match, " with error: ", err:gsub("[\r\n]", " "), "\n")
 				else
-					term.pushColor(term.infoColor)
-					io.write("\rSuccessfully deleted ", match, "\n")
-					term.popColor()
+					msg.success("\rSuccessfully deleted ", match, "\n")
 				end
 			end
 		end
