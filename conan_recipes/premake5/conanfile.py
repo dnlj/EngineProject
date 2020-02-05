@@ -9,14 +9,13 @@ def makeSafeKey(s):
 def toLua(obj, level = 1, prefix = None):
 	seq = level > 0
 	indent = "\t" * level
-	
 	# Primitive objects
 	if obj is None:
 		return ["nil"]
-	if isinstance(obj, (int, float)):
-		return [str(obj)]
 	if isinstance(obj, bool):
 		return ["true" if obj else "false"]
+	if isinstance(obj, (int, float)):
+		return [str(obj)]
 	if isinstance(obj, str):
 		return ["\"" + obj.replace("\\", "\\\\").replace("\"", "\\\"") + "\""]
 	if isinstance(obj, collections.abc.KeysView):
@@ -66,7 +65,7 @@ class premake5(model.Generator):
 	def content(self):
 		parts = []
 		
-		parts.append("conan = {}\n\n")
+		parts.append("local conan = {}\n\n")
 		
 		parts.append(divider("Settings"))
 		parts.extend(toLua(self.settings, 0, "conan."))
@@ -74,6 +73,8 @@ class premake5(model.Generator):
 		
 		parts.append(divider("Build Info"))
 		parts.extend(toLua(self.deps_build_info, 0, "conan."))
+		
+		parts.append("return conan")
 		
 		return "".join(parts)
 		
