@@ -7,7 +7,6 @@ class Recipe(ConanFile):
 	license = "Public Domain"
 	homepage = "http://www.lonesock.net/soil.html"
 	url = "none"
-	topics = ("soil", "opengl", "image", "texture")
 	settings = "arch", "build_type", "compiler"
 	
 	def source(self):

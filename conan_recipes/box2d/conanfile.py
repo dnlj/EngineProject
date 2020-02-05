@@ -8,7 +8,6 @@ class Recipe(ConanFile):
 	license = "MIT"
 	homepage = "https://box2d.org/"
 	url = "none"
-	topics = ("box2d", "physics")
 	settings = "arch", "build_type", "compiler"
 	
 	def isLegacy(self):

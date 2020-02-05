@@ -6,7 +6,6 @@ class Recipe(ConanFile):
 	license = "None"
 	homepage = "https://github.com/dnlj/Meta"
 	url = "none"
-	topics = ()
 
 	def source(self):
 		tools.Git().clone(

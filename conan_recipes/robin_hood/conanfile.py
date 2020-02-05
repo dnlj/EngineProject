@@ -6,7 +6,6 @@ class Recipe(ConanFile):
 	license = "MIT"
 	homepage = "https://github.com/martinus/robin-hood-hashing"
 	url = "none"
-	topics = ()
 
 	def source(self):
 		tools.Git().clone(

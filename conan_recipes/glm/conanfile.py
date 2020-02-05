@@ -6,7 +6,6 @@ class Recipe(ConanFile):
 	license = "Happy Bunny, MIT, https://glm.g-truc.net/copying.txt"
 	homepage = "https://glm.g-truc.net"
 	url = "none"
-	topics = ("glm", "opengl", "math")
 
 	def source(self):
 		# TODO: change to use git

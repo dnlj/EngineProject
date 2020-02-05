@@ -7,7 +7,6 @@ class Recipe(ConanFile):
 	license = "Zlib"
 	homepage = "https://www.glfw.org/"
 	url = "none"
-	topics = ("glfw", "opengl", "opengles", "vulkan", "context", "window", "input")
 	settings = "arch", "build_type", "compiler"
 	
 	def source(self):
