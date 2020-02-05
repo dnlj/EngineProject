@@ -87,6 +87,7 @@ end
 -- TODO: Move into namespace? what about CONAN_ globals?
 function conan_setup_build_info(info)
 	if not info then return end
+	
 	for _, p in pairs(info.src_paths) do
 		files(path.join(p, "**"))
 	end

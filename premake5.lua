@@ -17,9 +17,9 @@ CONAN_REMOTES = {
 CONAN_PACKAGES = { -- TODO: Name?
 	["requires"] = {
 		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
-		"dear_imgui/1.74@dnlj/wobbly", -- TODO: turn into lib? should be simple
 		"glfw/3.3.2@dnlj/wobbly",
 		"glm/0.9.9.7@dnlj/wobbly",
+		"imgui/1.74@dnlj/wobbly",
 		"meta/master@dnlj/wobbly",
 		"premake5/latest@dnlj/wobbly",
 		"robin_hood/3.5.0@dnlj/wobbly",
@@ -80,6 +80,7 @@ action_clean_directories = {
 	"./bin",
 	"./obj",
 	"./docs",
+	"conan_build",
 }
 
 action_clean_files = {
@@ -96,8 +97,6 @@ action_clean_files = {
 	"./".. PROJECT_NAME .."Workspace.sln",
 	"./".. PROJECT_NAME .."Workspace.VC.db",
 	"./".. PROJECT_NAME .."Workspace.VC.VC.opendb",
-
-	-- TODO: conan files
 }
 
 
@@ -172,7 +171,7 @@ project("*")
 	filter "configurations:Debug*"
 		conan_setup_build_info(CONAN_BUILD_INFO["debug"])
 	filter "configurations:Release*"
-		conan_setup_build_info(CONAN_BUILD_INFO["release"])	
+		conan_setup_build_info(CONAN_BUILD_INFO["release"])
 	filter {}
 	
 	includedirs {
