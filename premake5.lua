@@ -71,33 +71,34 @@ require "build/action_tests"
 require "build/action_conan"
 
 --------------------------------------------------------------------------------
--- The files and folders to delete when the "clean" action is run.
+-- The files and folders to delete when the clean action is run.
 --------------------------------------------------------------------------------
 -- TODO: move these with the rest of the constants/globals
-action_clean_directories = {
-	"./.vs",
+action_clean_patterns = {
+	-- Visual Studio
+	".vs",
+	PROJECT_NAME ..".vcxproj",
+	PROJECT_NAME ..".vcxproj.filters",
+	PROJECT_NAME ..".vcxproj.user",
+	PROJECT_NAME .."Test.vcxproj",
+	PROJECT_NAME .."Test.vcxproj.filters",
+	PROJECT_NAME .."Test.vcxproj.user",
+	PROJECT_NAME .."Engine.vcxproj",
+	PROJECT_NAME .."Engine.vcxproj.filters",
+	PROJECT_NAME .."Engine.vcxproj.user",
+	PROJECT_NAME .."Workspace.sln",
+	PROJECT_NAME .."Workspace.VC.db",
+	PROJECT_NAME .."Workspace.VC.VC.opendb",
+	
+	-- Build Artifacts
 	"./bin",
 	"./obj",
 	"./docs",
+	
+	-- Conan
 	"conan_build",
+	".temp.conanfile.*"
 }
-
-action_clean_files = {
-	-- Visual Studio files
-	"./".. PROJECT_NAME ..".vcxproj",
-	"./".. PROJECT_NAME ..".vcxproj.filters",
-	"./".. PROJECT_NAME ..".vcxproj.user",
-	"./".. PROJECT_NAME .."Test.vcxproj",
-	"./".. PROJECT_NAME .."Test.vcxproj.filters",
-	"./".. PROJECT_NAME .."Test.vcxproj.user",
-	"./".. PROJECT_NAME .."Engine.vcxproj",
-	"./".. PROJECT_NAME .."Engine.vcxproj.filters",
-	"./".. PROJECT_NAME .."Engine.vcxproj.user",
-	"./".. PROJECT_NAME .."Workspace.sln",
-	"./".. PROJECT_NAME .."Workspace.VC.db",
-	"./".. PROJECT_NAME .."Workspace.VC.VC.opendb",
-}
-
 
 --------------------------------------------------------------------------------
 -- The main premake settings
