@@ -215,28 +215,24 @@ newaction {
 
 CONAN_BUILD_INFO = {}
 if _ACTION ~= "conan" then
+	-- Workaround for premake ignoring loadfile's env parameter: https://github.com/premake/premake-core/issues/1392
+	local oldmeta = getmetatable(_ENV)
+	setmetatable(_ENV, {
+		__newindex = function(t, k, v)
+			error("Conan build info assigned a non-local value. This is a generator bug.")
+		end,
+	});
+	
 	for name, prof in pairs(CONAN_PROFILES) do
 		if prof.build then
-			local profData = {}
 			local file = CONAN_BUILD_DIR .."/".. name .."/conanbuildinfo.lua"
 			if not os.isfile(file) then
 				premake.warn("Unable to find conan build info for profile %s", name)
 			else
-				-- Workaround for premake ignoring loadfile's env parameter: https://github.com/premake/premake-core/issues/1392
-				local oldmeta = getmetatable(_ENV)
-				setmetatable(_ENV, {
-					__newindex = function(t, k, v)
-						profData[k] = v
-					end,
-					__index = function(t, k)
-						return profData[k]
-					end,
-				});
-				assert(loadfile(file))()
-				setmetatable(_ENV, oldmeta)
+				CONAN_BUILD_INFO[name] = assert(loadfile(file))()
 			end
-			
-			CONAN_BUILD_INFO[name] = profData.conan
 		end
 	end
+	
+	setmetatable(_ENV, oldmeta)
 end
