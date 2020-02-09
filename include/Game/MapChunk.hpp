@@ -11,7 +11,6 @@
 #include <Game/PhysicsSystem.hpp>
 
 // TODO: Should chunks know their world position? there are a few places we do things like `doSomething(chunkPos, getChunkAt(chunkPos))`
-// TODO: convert to use sized types - int32, float32, etc.
 // TODO: Change all mentions of "tile" to "block". Its a more common term.
 // TODO: Doc
 namespace Game {
@@ -34,7 +33,6 @@ namespace Game {
 			void addTile(int x, int y);
 			void removeTile(int x, int y);
 			void generate();
-			void draw(glm::mat4 mvp) const;
 			b2Body& getBody() const;
 			glm::ivec2 getPosition() const;
 
@@ -48,14 +46,7 @@ namespace Game {
 			glm::ivec2 pos;
 			b2Body* body = nullptr; // TODO: Cleanup
 			Engine::ECS::Entity ent;
-			GLuint shader = 0;
-			GLuint texture = 0;
-			GLuint vao = 0;
-			GLuint vbo = 0;
-			GLuint ebo = 0;
-			GLsizei elementCount = 0;
 
 			void createBody(PhysicsSystem& physSys);
-			void updateVertexData(const std::vector<Vertex>& vboData, const std::vector<GLushort>& eboData);
 	};
 }

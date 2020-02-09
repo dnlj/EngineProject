@@ -108,6 +108,8 @@ namespace Game {
 		std::vector<GLushort> eboData;
 
 		// TODO: Reserve vectors
+		//vboData.reserve(elementCount); // NOTE: This is only an estimate. the correct ratio would be `c * 4/6.0f`
+		//eboData.reserve(elementCount);
 
 		const auto usable = [&](const glm::ivec2 pos, const int blockType) {
 			return !used[pos.x][pos.y] && data.chunk->data[pos.x][pos.y] == blockType;
