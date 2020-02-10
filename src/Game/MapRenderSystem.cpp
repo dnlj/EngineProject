@@ -39,6 +39,11 @@ namespace Game {
 				data.updated = true;
 				
 				glCreateVertexArrays(1, &data.vao);
+
+				glCreateBuffers(data.numBuffers, data.buffers);
+				
+				glVertexArrayElementBuffer(data.vao, data.ebo);
+				glVertexArrayVertexBuffer(data.vao, bufferBindingIndex, data.vbo, 0, sizeof(Vertex));
 				
 				glEnableVertexArrayAttrib(data.vao, positionAttribLocation);
 				glVertexArrayAttribFormat(data.vao, positionAttribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
@@ -155,15 +160,7 @@ namespace Game {
 
 		data.elementCount = static_cast<GLsizei>(eboData.size());
 		
-		// TODO: I dont think we actually need to create/delete here? This is just the name of the buffer, glNamedBufferData sets the data/size for that name i think.
-		// TODO: if the above is true then we shouldnt need glVertexArrayElementBuffer calls either? after init of course
-		glDeleteBuffers(data.numBuffers, data.buffers);
-		glCreateBuffers(data.numBuffers, data.buffers);
-
 		glNamedBufferData(data.ebo, sizeof(eboData[0]) * eboData.size(), eboData.data(), GL_STATIC_DRAW);
-		glVertexArrayElementBuffer(data.vao, data.ebo);
-
 		glNamedBufferData(data.vbo, sizeof(vboData[0]) * vboData.size(), vboData.data(), GL_STATIC_DRAW);
-		glVertexArrayVertexBuffer(data.vao, bufferBindingIndex, data.vbo, 0, sizeof(Vertex));
 	}
 }
