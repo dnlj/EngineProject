@@ -154,7 +154,9 @@ namespace Game {
 		}
 
 		data.elementCount = static_cast<GLsizei>(eboData.size());
-
+		
+		// TODO: I dont think we actually need to create/delete here? This is just the name of the buffer, glNamedBufferData sets the data/size for that name i think.
+		// TODO: if the above is true then we shouldnt need glVertexArrayElementBuffer calls either? after init of course
 		glDeleteBuffers(data.numBuffers, data.buffers);
 		glCreateBuffers(data.numBuffers, data.buffers);
 

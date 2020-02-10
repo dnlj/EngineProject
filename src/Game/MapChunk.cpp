@@ -24,9 +24,9 @@ namespace Game {
 	}
 
 	void MapChunk::setup(World& world, GLuint shader, GLuint texture) {
-		ent = world.createEntity(true);
+		auto ent = world.createEntity(true);
 		auto& physSys = world.getSystem<PhysicsSystem>();
-		createBody(physSys);
+		createBody(ent, physSys);
 	}
 
 	void MapChunk::from(const glm::vec2 wpos, const glm::ivec2 chunkPos) {
@@ -34,15 +34,7 @@ namespace Game {
 		pos = chunkPos;
 	}
 
-	void MapChunk::addTile(int x, int y) {
-		data[x][y] = DIRT.id;
-	}
-
-	void MapChunk::removeTile(int x, int y) {
-		data[x][y] = AIR.id;
-	}
-
-	void MapChunk::createBody(PhysicsSystem& physSys) {
+	void MapChunk::createBody(Engine::ECS::Entity ent, PhysicsSystem& physSys) {
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_staticBody;
 		bodyDef.awake = false;

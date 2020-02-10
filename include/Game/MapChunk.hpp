@@ -1,8 +1,5 @@
 #pragma once
 
-// STD
-#include <cmath>
-
 // GLM
 #include <glm/glm.hpp>
 
@@ -30,8 +27,6 @@ namespace Game {
 
 			void setup(World& world, GLuint shader, GLuint texture);
 			void from(const glm::vec2 wpos, const glm::ivec2 chunkPos);
-			void addTile(int x, int y);
-			void removeTile(int x, int y);
 			void generate();
 			b2Body& getBody() const;
 			glm::ivec2 getPosition() const;
@@ -39,14 +34,9 @@ namespace Game {
 			int data[size.x][size.y] = {};
 
 		private:
-			class Vertex {
-				public:
-					glm::vec2 position;
-			};
 			glm::ivec2 pos;
 			b2Body* body = nullptr; // TODO: Cleanup
-			Engine::ECS::Entity ent;
 
-			void createBody(PhysicsSystem& physSys);
+			void createBody(Engine::ECS::Entity ent, PhysicsSystem& physSys);
 	};
 }
