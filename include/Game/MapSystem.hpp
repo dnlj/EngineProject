@@ -146,9 +146,13 @@ namespace Game {
 			};
 
 			struct ActiveChunkData {
+				ActiveChunkData() = default;
+				ActiveChunkData(const ActiveChunkData&) = delete;
+				ActiveChunkData& operator=(const ActiveChunkData&) = delete;
 				b2Body* body;
 				RenderData rdata;
 				glm::ivec2 chunkPos;
+				bool updated = true;
 			};
 
 			// TODO: Doc

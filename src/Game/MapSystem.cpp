@@ -81,12 +81,12 @@ namespace Game {
 		ensureRegionLoaded({minRegion.x, maxRegion.y});
 		ensureRegionLoaded({maxRegion.x, minRegion.y});
 
-		for (auto chunk = minChunk; chunk.x < maxChunk.x; ++chunk.x) {
-			for (chunk.y = minChunk.y; chunk.y < maxChunk.y; ++chunk.y) {
+		for (auto chunk = minChunk; chunk.x <= maxChunk.x; ++chunk.x) {
+			for (chunk.y = minChunk.y; chunk.y <= maxChunk.y; ++chunk.y) {
 				const auto idx = chunkToActiveIndex(chunk);
 				auto& data = activeAreaData[idx.x][idx.y];
 
-				if (data.chunkPos != chunk) {
+				if (data.updated || data.chunkPos != chunk) {
 					data.chunkPos = chunk;
 					buildActiveChunkData(data);
 				}
@@ -119,7 +119,11 @@ namespace Game {
 		// TODO: we really only want to generate once if we the chunk has been changed since last frame.
 		// TODO: as it is now we generate once per edit, which could be many times per frame
 
-		// TODO: chunk.generate();
+		const auto aidx = chunkToActiveIndex(chunkPos);
+		auto& adata = activeAreaData[aidx.x][aidx.y];
+		if (adata.chunkPos == chunkPos) {
+			adata.updated = true;
+		}
 	}
 	
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 world) const {
@@ -177,6 +181,7 @@ namespace Game {
 	}
 
 	void MapSystem::buildActiveChunkData(ActiveChunkData& data) {
+		data.updated = false;
 		// TODO: simplify. currently have two mostly duplicate sections.
 		const auto idx = chunkToIndex(data.chunkPos);
 		const auto& chunk = chunks[idx.x][idx.y];
@@ -338,7 +343,6 @@ namespace Game {
 		}
 
 		chunk.from(blockToWorld(chunkBlockPos), pos);
-		// TODO: chunk.generate();
 	}
 
 	void MapSystem::updateOrigin() {
