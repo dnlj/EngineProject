@@ -25,18 +25,12 @@ namespace Game {
 			MapChunk();
 			~MapChunk();
 
-			void setup(World& world, GLuint shader, GLuint texture);
 			void from(const glm::vec2 wpos, const glm::ivec2 chunkPos);
-			void generate();
-			b2Body& getBody() const;
 			glm::ivec2 getPosition() const;
 
 			int data[size.x][size.y] = {};
 
 		private:
 			glm::ivec2 pos;
-			b2Body* body = nullptr; // TODO: Cleanup
-
-			void createBody(Engine::ECS::Entity ent, PhysicsSystem& physSys);
 	};
 }

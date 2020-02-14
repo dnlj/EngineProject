@@ -1,6 +1,7 @@
 #pragma once
 
 // GLM
+#include <glm/vector_relational.hpp>
 #include <glm/vec2.hpp>
 
 // Engine
@@ -30,6 +31,7 @@ namespace Game {
 		public:
 			/** Number of chunks before shifting the origin */
 			constexpr static int originRange = 4; // TODO: In prod this should be a much larger value. maybe around 10,000 world units (whatever that is in chunks)
+
 			/** The number of chunks in each region */
 			constexpr static glm::ivec2 regionSize = {16, 16};
 
@@ -42,8 +44,14 @@ namespace Game {
 			/** The number of chunks in the map */
 			constexpr static glm::ivec2 mapSize = regionCount * regionSize;
 
+			// TODO: Doc
+			constexpr static glm::ivec2 activeAreaSize = {8, 8};
+			static_assert(!(activeAreaSize.x & (activeAreaSize.x - 1)), "Must be power of two");
+			static_assert(!(activeAreaSize.y & (activeAreaSize.y - 1)), "Must be power of two");
+
 		public:
 			MapSystem(World& world);
+			~MapSystem();
 			void setup(Engine::EngineInstance& engine);
 			void run(float dt) override;
 
@@ -53,7 +61,7 @@ namespace Game {
 			// TODO: Name? this isnt consistent with our other usage of offset
 			// TODO: Doc. Gets the size of the current offset in blocks coordinates
 			glm::ivec2 getBlockOffset() const;
-
+			
 			// TODO: Doc
 			void setValueAt(const glm::vec2 wpos, int value);
 
@@ -88,6 +96,11 @@ namespace Game {
 			glm::ivec2 chunkToIndex(const glm::ivec2 chunk) const;
 
 			/**
+			 * Converts from chunk coordinates to an index wrapped at increments of activeAreaSize.
+			 */
+			glm::ivec2 chunkToActiveIndex(const glm::ivec2 chunk) const;
+
+			/**
 			 * Converts from region coordinates to chunk coordinates.
 			 */
 			glm::ivec2 regionToChunk(const glm::ivec2 region) const;
@@ -108,6 +121,38 @@ namespace Game {
 			const MapChunk& getChunkAt(glm::ivec2 chunk) const;
 
 		private:
+			// TODO: split?
+			// TODO: need to move this out into a `Mesh` & `Model` classes
+			struct RenderData {
+				struct Vertex {
+					glm::vec2 pos;
+					GLuint texture = 0; // TODO: probably doesnt need to be 32bit
+				};
+
+				GLuint vao = 0;
+				GLsizei elementCount = 0;
+
+				union {
+					GLuint buffers[2] = {0, 0};
+					struct {
+						GLuint vbo;
+						GLuint ebo;
+					};
+				};
+
+				constexpr static GLsizei numBuffers = static_cast<GLsizei>(std::extent_v<decltype(buffers)>);
+				constexpr static GLuint bufferBindingIndex = 0;
+				constexpr static GLuint positionAttribLocation = 0;
+			};
+
+			struct ActiveChunkData {
+				b2Body* body;
+				RenderData rdata;
+				glm::ivec2 chunkPos;
+			};
+
+			// TODO: Doc
+			void buildActiveChunkData(ActiveChunkData& data);
 
 			// TODO: doc
 			void ensureRegionLoaded(const glm::ivec2 region);
@@ -124,13 +169,19 @@ namespace Game {
 			// TODO: Doc
 			void updateOrigin();
 
+		public: // TODO: make proper accessors if we actually end up needing this stuff
+			glm::ivec2 activeAreaOrigin = {0, 0};
+			ActiveChunkData activeAreaData[activeAreaSize.x][activeAreaSize.y];
+
 			MapChunk chunks[mapSize.x][mapSize.y];
 			glm::ivec2 loadedRegions[regionCount.x][regionCount.y] = {};
 
 			const Engine::Camera* camera;
+
 			Engine::Shader shader;
 			Engine::Texture texture;
-			MapRenderSystem* mapRenderSystem;
+		private:
+			Engine::ECS::Entity mapEntity;
 			Game::MapGenerator<
 				Game::BiomeA,
 				Game::BiomeC

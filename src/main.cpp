@@ -485,7 +485,6 @@ void run() {
 		world.getSystem<Game::CameraTrackingSystem>().setup(engine.camera);
 		world.getSystem<Game::CharacterSpellSystem>().setup(engine);
 		world.getSystem<Game::MapSystem>().setup(engine);
-		world.getSystem<Game::MapRenderSystem>().setup(engine);
 		
 		// Player
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");

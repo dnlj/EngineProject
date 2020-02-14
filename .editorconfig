@@ -19,7 +19,7 @@ end_of_line = lf
 charset = utf-8
 
 # Is whitespace allowed at the end of lines
-trim_trailing_whitespace = false
+trim_trailing_whitespace = true
 
 # Should files end with a new line
 insert_final_newline = true
