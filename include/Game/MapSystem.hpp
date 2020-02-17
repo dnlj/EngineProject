@@ -126,7 +126,7 @@ namespace Game {
 			struct RenderData {
 				struct Vertex {
 					glm::vec2 pos;
-					GLuint texture = 0; // TODO: probably doesnt need to be 32bit
+					//GLuint texture = 0; // TODO: probably doesnt need to be 32bit
 				};
 
 				GLuint vao = 0;
@@ -186,6 +186,10 @@ namespace Game {
 			Engine::Texture texture;
 		private:
 			Engine::ECS::Entity mapEntity;
+
+			std::vector<RenderData::Vertex> buildVBOData;
+			std::vector<GLushort> buildEBOData;
+
 			Game::MapGenerator<
 				Game::BiomeA,
 				Game::BiomeC

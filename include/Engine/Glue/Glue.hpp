@@ -7,7 +7,7 @@ namespace Engine::Glue {
 	}
 
 	template<class To, class From>
-	auto&& as(From&& v) {
+	decltype(auto) as(From&& v) {
 		// TODO: is there a good way to get better error messages here?
 		return _impl::as<To, From>::call(std::forward<From>(v));
 	};

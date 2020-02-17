@@ -189,15 +189,6 @@ namespace Game {
 		{ // Render stuff
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};
 
-			// TODO: store outside of scope so we dont always create/destory them? this is a frequent-ish function.
-			// TODO: make `StaticVector`s?
-			std::vector<RenderData::Vertex> vboData;
-			std::vector<GLushort> eboData;
-
-			// TODO: Reserve vectors
-			//vboData.reserve(elementCount); // NOTE: This is only an estimate. the correct ratio would be `c * 4/6.0f`
-			//eboData.reserve(elementCount);
-
 			const auto usable = [&](const glm::ivec2 pos, const int blockType) {
 				return !used[pos.x][pos.y] && chunk.data[pos.x][pos.y] == blockType;
 			};
@@ -205,7 +196,7 @@ namespace Game {
 			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {  
 				for (begin.y = 0; begin.y < MapChunk::size.y; ++begin.y) {
 					// Greedy expand
-					const auto blockType = static_cast<GLuint>(chunk.data[begin.x][begin.y]);
+					const auto blockType = chunk.data[begin.x][begin.y];
 					if (blockType == MapChunk::AIR.id || !usable(begin, blockType)) { continue; }
 					auto end = begin;
 
@@ -224,26 +215,28 @@ namespace Game {
 					// Add buffer data
 					glm::vec2 origin = glm::vec2{begin} * MapChunk::tileSize;
 					glm::vec2 size = glm::vec2{end - begin} * MapChunk::tileSize;
-					const auto vertexCount = static_cast<GLushort>(vboData.size());
+					const auto vertexCount = static_cast<GLushort>(buildVBOData.size());
 
-					vboData.push_back({origin, blockType});
-					vboData.push_back({origin + glm::vec2{size.x, 0}, blockType});
-					vboData.push_back({origin + size, blockType});
-					vboData.push_back({origin + glm::vec2{0, size.y}, blockType});
+					buildVBOData.push_back({origin});
+					buildVBOData.push_back({origin + glm::vec2{size.x, 0}});
+					buildVBOData.push_back({origin + size});
+					buildVBOData.push_back({origin + glm::vec2{0, size.y}});
 
-					eboData.push_back(vertexCount + 0);
-					eboData.push_back(vertexCount + 1);
-					eboData.push_back(vertexCount + 2);
-					eboData.push_back(vertexCount + 2);
-					eboData.push_back(vertexCount + 3);
-					eboData.push_back(vertexCount + 0);
+					buildEBOData.push_back(vertexCount + 0);
+					buildEBOData.push_back(vertexCount + 1);
+					buildEBOData.push_back(vertexCount + 2);
+					buildEBOData.push_back(vertexCount + 2);
+					buildEBOData.push_back(vertexCount + 3);
+					buildEBOData.push_back(vertexCount + 0);
 				}
 			}
 
-			data.rdata.elementCount = static_cast<GLsizei>(eboData.size());
-		
-			glNamedBufferData(data.rdata.ebo, sizeof(eboData[0]) * eboData.size(), eboData.data(), GL_STATIC_DRAW);
-			glNamedBufferData(data.rdata.vbo, sizeof(vboData[0]) * vboData.size(), vboData.data(), GL_STATIC_DRAW);
+			data.rdata.elementCount = static_cast<GLsizei>(buildEBOData.size());
+
+			glNamedBufferData(data.rdata.vbo, sizeof(buildVBOData[0]) * buildVBOData.size(), buildVBOData.data(), GL_STATIC_DRAW);
+			glNamedBufferData(data.rdata.ebo, sizeof(buildEBOData[0]) * buildEBOData.size(), buildEBOData.data(), GL_STATIC_DRAW);
+			buildVBOData.clear();
+			buildEBOData.clear();
 		}
 
 		{ // Physics stuff
@@ -263,37 +256,36 @@ namespace Game {
 
 			bool used[MapChunk::size.x][MapChunk::size.y]{};
 
-			const auto expand = [&](const int x0, const int y0){
-				int x = x0;
-				int y = y0;
-
-				const auto useable = [&](const auto& value) {
-					return value && !*(&used[0][0] + (&value - &chunk.data[0][0]));
-				};
-
-				while (y < MapChunk::size.y && useable(chunk.data[x][y])) { ++y; }
-				if (y == y0) { return; }
-
-				do {
-					std::fill(&used[x][y0], &used[x][y], true);
-					++x;
-				} while (x < MapChunk::size.x && std::all_of(&chunk.data[x][y0], &chunk.data[x][y], useable));
-
-				const auto halfW = MapChunk::tileSize * 0.5f * (x - x0);
-				const auto halfH = MapChunk::tileSize * 0.5f * (y - y0);
-				const auto center = b2Vec2(
-					x0 * MapChunk::tileSize + halfW,
-					y0 * MapChunk::tileSize + halfH
-				);
-
-				shape.SetAsBox(halfW, halfH, center, 0.0f);
-				data.body->CreateFixture(&fixtureDef);
+			// TODO: For collision we only want to check if a block is solid or not. We dont care about type.
+			const auto usable = [&](const glm::ivec2 pos, const int blockType) {
+				return !used[pos.x][pos.y] && chunk.data[pos.x][pos.y] == blockType;
 			};
+			
+			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {
+				for (begin.y = 0; begin.y < MapChunk::size.y; ++begin.y) {
+					// Greedy expand
+					const auto blockType = chunk.data[begin.x][begin.y];
+					if (blockType == MapChunk::AIR.id || !usable(begin, blockType)) { continue; }
+					auto end = begin;
 
-			for (int x = 0; x < MapChunk::size.x; ++x) {
-				for (int y = 0; y < MapChunk::size.y; ++y) {
-					// TODO: Also try a recursive expand
-					expand(x, y);
+					while (end.y < MapChunk::size.y && usable(end, blockType)) { ++end.y; }
+
+					for (bool cond = true; cond;) {
+						std::fill(&used[end.x][begin.y], &used[end.x][end.y], true);
+						++end.x;
+
+						if (end.x == MapChunk::size.x) { break; }
+						for (int y = begin.y; y < end.y; ++y) {
+							if (!usable({end.x, y}, blockType)) { cond = false; break; }
+						}
+					}
+
+					// Add physics data
+					const auto halfSize = MapChunk::tileSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
+					const auto center = MapChunk::tileSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
+
+					shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
+					data.body->CreateFixture(&fixtureDef);
 				}
 			}
 		}
@@ -339,6 +331,7 @@ namespace Game {
 		
 				chunk.data[bpos.x][bpos.y] = block;
 				//chunk.data[bpos.x][bpos.y] = bpos.x == 0 || bpos.y == 0;
+				//chunk.data[bpos.x][bpos.y] = bpos.x & 1 || bpos.y & 1;
 			}
 		}
 

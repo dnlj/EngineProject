@@ -10,6 +10,8 @@ namespace Engine {
 	// TODO: tests
 	template<class T, uint16_t N>
 	class StaticVector {
+		static_assert(N > 0, "Number of elements must be non-zero");
+
 		private:
 			T storage[N];
 			uint16_t used = 0;
