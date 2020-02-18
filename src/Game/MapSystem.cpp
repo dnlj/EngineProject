@@ -18,14 +18,6 @@ namespace Game {
 	}
 
 	MapSystem::~MapSystem() {
-		// TODO: this should probably be part of a render abstraction?
-		for (int x = 0; x < activeAreaSize.x; ++x) {
-			for (int y = 0; y < activeAreaSize.y; ++y) {
-				auto& data = activeAreaData[x][y];
-				glDeleteVertexArrays(1, &data.rdata.vao);
-				glDeleteBuffers(data.rdata.numBuffers, data.rdata.buffers);
-			}
-		}
 	}
 
 	void MapSystem::setup(Engine::EngineInstance& engine) {
@@ -45,24 +37,17 @@ namespace Game {
 		bodyDef.awake = false;
 		bodyDef.fixedRotation = true;
 
+		constexpr Engine::VertexFormat<1> vertexFormat = {
+			sizeof(Vertex),
+			{{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)}}
+		};
+
 		for (int x = 0; x < activeAreaSize.x; ++x) {
 			for (int y = 0; y < activeAreaSize.y; ++y) {
 				auto& data = activeAreaData[x][y];
 				data.body = physSys.createBody(mapEntity, bodyDef);
 				data.chunkPos = glm::ivec2{0x7FFF'FFFF, 0x7FFF'FFFF};
-
-				glCreateVertexArrays(1, &data.rdata.vao);
-
-				glCreateBuffers(data.rdata.numBuffers, data.rdata.buffers);
-				
-				glVertexArrayElementBuffer(data.rdata.vao, data.rdata.ebo);
-				glVertexArrayVertexBuffer(data.rdata.vao, RenderData::bufferBindingIndex, data.rdata.vbo, 0, sizeof(RenderData::Vertex));
-				
-				glEnableVertexArrayAttrib(data.rdata.vao, RenderData::positionAttribLocation);
-				glVertexArrayAttribFormat(data.rdata.vao, RenderData::positionAttribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(RenderData::Vertex, pos));
-				glVertexArrayAttribBinding(data.rdata.vao, RenderData::positionAttribLocation, RenderData::bufferBindingIndex);
-
-				// TODO: texture attribute
+				data.mesh.setBufferFormat(vertexFormat);
 			}
 		}
 	}
@@ -231,10 +216,8 @@ namespace Game {
 				}
 			}
 
-			data.rdata.elementCount = static_cast<GLsizei>(buildEBOData.size());
+			data.mesh.setBufferData(buildVBOData, buildEBOData);
 
-			glNamedBufferData(data.rdata.vbo, sizeof(buildVBOData[0]) * buildVBOData.size(), buildVBOData.data(), GL_STATIC_DRAW);
-			glNamedBufferData(data.rdata.ebo, sizeof(buildEBOData[0]) * buildEBOData.size(), buildEBOData.data(), GL_STATIC_DRAW);
 			buildVBOData.clear();
 			buildEBOData.clear();
 		}

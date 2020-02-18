@@ -7,6 +7,7 @@
 // Engine
 #include <Engine/EngineInstance.hpp>
 #include <Engine/ShaderManager.hpp>
+#include <Engine/Mesh.hpp>
 
 // Game
 #include <Game/MapRenderSystem.hpp>
@@ -122,27 +123,9 @@ namespace Game {
 
 		private:
 			// TODO: split?
-			// TODO: need to move this out into a `Mesh` & `Model` classes
-			struct RenderData {
-				struct Vertex {
-					glm::vec2 pos;
-					//GLuint texture = 0; // TODO: probably doesnt need to be 32bit
-				};
-
-				GLuint vao = 0;
-				GLsizei elementCount = 0;
-
-				union {
-					GLuint buffers[2] = {0, 0};
-					struct {
-						GLuint vbo;
-						GLuint ebo;
-					};
-				};
-
-				constexpr static GLsizei numBuffers = static_cast<GLsizei>(std::extent_v<decltype(buffers)>);
-				constexpr static GLuint bufferBindingIndex = 0;
-				constexpr static GLuint positionAttribLocation = 0;
+			struct Vertex {
+				glm::vec2 pos;
+				//GLuint texture = 0; // TODO: probably doesnt need to be 32bit
 			};
 
 			struct ActiveChunkData {
@@ -150,7 +133,7 @@ namespace Game {
 				ActiveChunkData(const ActiveChunkData&) = delete;
 				ActiveChunkData& operator=(const ActiveChunkData&) = delete;
 				b2Body* body;
-				RenderData rdata;
+				Engine::Mesh mesh;
 				glm::ivec2 chunkPos;
 				bool updated = true;
 			};
@@ -187,7 +170,7 @@ namespace Game {
 		private:
 			Engine::ECS::Entity mapEntity;
 
-			std::vector<RenderData::Vertex> buildVBOData;
+			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;
 
 			Game::MapGenerator<
