@@ -90,7 +90,7 @@ namespace Game {
 	void MapSystem::setValueAt(const glm::vec2 wpos, int value) {
 		// TODO: Make conversion functions for all of these? Better names
 
-		const auto blockOffset = glm::floor(wpos / MapChunk::tileSize);
+		const auto blockOffset = glm::floor(wpos / MapChunk::blockSize);
 		const auto blockIndex = (MapChunk::size + glm::ivec2{blockOffset} % MapChunk::size) % MapChunk::size;
 
 		//std::cout << "Bidx: " << blockIndex.x << ", " << blockIndex.y << "\n";
@@ -112,12 +112,12 @@ namespace Game {
 	}
 	
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 world) const {
-		const glm::ivec2 blockOffset = glm::floor(world / MapChunk::tileSize);
+		const glm::ivec2 blockOffset = glm::floor(world / MapChunk::blockSize);
 		return getBlockOffset() + blockOffset;
 	}
 
 	glm::vec2 MapSystem::blockToWorld(const glm::ivec2 block) const {
-		return glm::vec2{block - mapOffset * MapChunk::size} * MapChunk::tileSize;
+		return glm::vec2{block - mapOffset * MapChunk::size} * MapChunk::blockSize;
 	}
 
 	glm::ivec2 MapSystem::blockToChunk(const glm::ivec2 block) const {
@@ -198,8 +198,8 @@ namespace Game {
 					}
 
 					// Add buffer data
-					glm::vec2 origin = glm::vec2{begin} * MapChunk::tileSize;
-					glm::vec2 size = glm::vec2{end - begin} * MapChunk::tileSize;
+					glm::vec2 origin = glm::vec2{begin} * MapChunk::blockSize;
+					glm::vec2 size = glm::vec2{end - begin} * MapChunk::blockSize;
 					const auto vertexCount = static_cast<GLushort>(buildVBOData.size());
 
 					buildVBOData.push_back({origin});
@@ -264,8 +264,8 @@ namespace Game {
 					}
 
 					// Add physics data
-					const auto halfSize = MapChunk::tileSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
-					const auto center = MapChunk::tileSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
+					const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
+					const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
 
 					shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
 					data.body->CreateFixture(&fixtureDef);
@@ -318,13 +318,13 @@ namespace Game {
 			}
 		}
 
-		chunk.from(blockToWorld(chunkBlockPos), pos);
+		chunk.pos = pos;
 	}
 
 	void MapSystem::updateOrigin() {
 		// TODO: Move to own system. This doesnt really depend on the map.
 		const auto& pos = camera->getPosition();
-		constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::tileSize;
+		constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::blockSize;
 
 		if (std::abs(pos.x) > range.x) {
 			auto& physSys = world.getSystem<Game::PhysicsSystem>();

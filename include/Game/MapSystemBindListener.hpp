@@ -20,7 +20,7 @@ namespace Game {
 			MapSystem& mapSystem;
 			Engine::EngineInstance& engine;
 			void apply() {
-				constexpr auto s = MapChunk::tileSize;
+				constexpr auto s = MapChunk::blockSize;
 
 				mapSystem.setValueAt(
 					engine.camera.screenToWorld(engine.inputManager.getMousePosition()) + glm::vec2{0, 0},

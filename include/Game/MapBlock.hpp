@@ -1,7 +1,7 @@
 #pragma once
 
 namespace Game {
-	class MapTile {
+	class MapBlock {
 		public:
 			const int id;
 			const bool solid;
