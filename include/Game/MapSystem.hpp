@@ -7,7 +7,7 @@
 // Engine
 #include <Engine/EngineInstance.hpp>
 #include <Engine/ShaderManager.hpp>
-#include <Engine/Mesh.hpp>
+#include <Engine/Graphics/Mesh.hpp>
 
 // Game
 #include <Game/MapRenderSystem.hpp>
@@ -133,7 +133,7 @@ namespace Game {
 				ActiveChunkData(const ActiveChunkData&) = delete;
 				ActiveChunkData& operator=(const ActiveChunkData&) = delete;
 				b2Body* body;
-				Engine::Mesh mesh;
+				Engine::Graphics::Mesh mesh;
 				glm::ivec2 chunkPos;
 				bool updated = true;
 			};

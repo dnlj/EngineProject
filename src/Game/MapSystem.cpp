@@ -37,7 +37,7 @@ namespace Game {
 		bodyDef.awake = false;
 		bodyDef.fixedRotation = true;
 
-		constexpr Engine::VertexFormat<1> vertexFormat = {
+		constexpr Engine::Graphics::VertexFormat<1> vertexFormat = {
 			sizeof(Vertex),
 			{{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)}}
 		};
