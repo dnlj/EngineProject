@@ -63,12 +63,11 @@ CONAN_PROFILES = {
 --------------------------------------------------------------------------------
 --
 --------------------------------------------------------------------------------
--- TODO: rename build folder
-require "build/message"
-require "build/action_clean"
-require "build/action_build"
-require "build/action_tests"
-require "build/action_conan"
+require "premake/message"
+require "premake/action_clean"
+require "premake/action_build"
+require "premake/action_tests"
+require "premake/action_conan"
 
 --------------------------------------------------------------------------------
 -- The files and folders to delete when the clean action is run.
