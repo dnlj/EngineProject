@@ -611,7 +611,7 @@ void run() {
 	glfwDestroyWindow(window);
 }
 
-
+static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
 int main(int argc, char* argv[]) {
 	std::atexit([](){
 		glfwTerminate();
@@ -620,6 +620,12 @@ int main(int argc, char* argv[]) {
 	{ // Position the console
 		auto window = GetConsoleWindow();
 		SetWindowPos(window, HWND_TOP, 0, 0, 1000, 500, 0);
+
+		if constexpr (ENGINE_CLIENT) {
+			SetWindowTextW(window, L"Client");
+		} else if (ENGINE_SERVER) {
+			SetWindowTextW(window, L"Server");
+		}
 	}
 
 	run();

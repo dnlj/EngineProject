@@ -10,18 +10,10 @@ CONFIG_TYPE_STR = '%{string.lower(string.match(cfg.buildcfg, "^([^_]+)"))}'
 CLEAN_PATTERNS = {
 	-- Visual Studio
 	".vs",
-	PROJECT_NAME ..".vcxproj",
-	PROJECT_NAME ..".vcxproj.filters",
-	PROJECT_NAME ..".vcxproj.user",
-	PROJECT_NAME .."Test.vcxproj",
-	PROJECT_NAME .."Test.vcxproj.filters",
-	PROJECT_NAME .."Test.vcxproj.user",
-	PROJECT_NAME .."Engine.vcxproj",
-	PROJECT_NAME .."Engine.vcxproj.filters",
-	PROJECT_NAME .."Engine.vcxproj.user",
-	PROJECT_NAME .."Workspace.sln",
-	PROJECT_NAME .."Workspace.VC.db",
-	PROJECT_NAME .."Workspace.VC.VC.opendb",
+	"*.vcxproj*",
+	"*.sln",
+	"*.VC.db",
+	"*.VC.VC.opendb",
 
 	-- Build Artifacts
 	"./bin",
@@ -152,19 +144,23 @@ workspace(PROJECT_NAME .."Workspace")
 --------------------------------------------------------------------------------
 -- Engine
 --------------------------------------------------------------------------------
-project(PROJECT_NAME .."Engine")
-	kind "None"
+--project(PROJECT_NAME .."Engine")
+--	kind "None"
 
 -- The engine files are put in the workspace since Game, Engine, and Test all use them.
 project("*")
 	files {
-		"./include/Engine/**",
-		"./src/Engine/**",
-		"./include/glloadgen/**",
-		"./src/glloadgen/**",
+		"include/Engine/**",
+		"src/Engine/**",
+		"include/glloadgen/**",
+		"src/glloadgen/**",
+	}
+	defines {
+		"ENGINE_CLIENT=false",
+		"ENGINE_SERVER=false",
 	}
 
-	debugdir "./src"
+	debugdir "src"
 
 	filter "configurations:Debug*"
 		conan_setup_build_info(CONAN_BUILD_INFO["debug"])
@@ -173,7 +169,7 @@ project("*")
 	filter {}
 
 	includedirs {
-		"./include",
+		"include",
 	}
 
 	links {
@@ -182,16 +178,35 @@ project("*")
 
 	libdirs {
 	}
+	
+--------------------------------------------------------------------------------
+-- Client
+--------------------------------------------------------------------------------
+project(PROJECT_NAME .."Client")
+	files {
+		"TODO.md",
+		"src/main.cpp",
+		"include/Game/**",
+		"src/Game/**",
+	}
+	
+	defines {
+		"ENGINE_CLIENT=true"
+	}
 
 --------------------------------------------------------------------------------
--- Game
+-- Server
 --------------------------------------------------------------------------------
-project(PROJECT_NAME)
+project(PROJECT_NAME .."Server")
 	files {
-		"./TODO.md",
-		"./src/main.cpp",
-		"./include/Game/**",
-		"./src/Game/**",
+		"TODO.md",
+		"src/main.cpp",
+		"include/Game/**",
+		"src/Game/**",
+	}
+	
+	defines {
+		"ENGINE_SERVER=true"
 	}
 
 --------------------------------------------------------------------------------
