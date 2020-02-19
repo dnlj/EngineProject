@@ -5,6 +5,35 @@ PROJECT_NAME = "DungeonGame"
 CONFIG_TYPE_STR = '%{string.lower(string.match(cfg.buildcfg, "^([^_]+)"))}'
 
 --------------------------------------------------------------------------------
+-- Clean settings
+--------------------------------------------------------------------------------
+CLEAN_PATTERNS = {
+	-- Visual Studio
+	".vs",
+	PROJECT_NAME ..".vcxproj",
+	PROJECT_NAME ..".vcxproj.filters",
+	PROJECT_NAME ..".vcxproj.user",
+	PROJECT_NAME .."Test.vcxproj",
+	PROJECT_NAME .."Test.vcxproj.filters",
+	PROJECT_NAME .."Test.vcxproj.user",
+	PROJECT_NAME .."Engine.vcxproj",
+	PROJECT_NAME .."Engine.vcxproj.filters",
+	PROJECT_NAME .."Engine.vcxproj.user",
+	PROJECT_NAME .."Workspace.sln",
+	PROJECT_NAME .."Workspace.VC.db",
+	PROJECT_NAME .."Workspace.VC.VC.opendb",
+
+	-- Build Artifacts
+	"./bin",
+	"./obj",
+	"./docs",
+
+	-- Conan
+	"conan_build",
+	".temp.conanfile.*"
+}
+
+--------------------------------------------------------------------------------
 -- Conan Settings
 --------------------------------------------------------------------------------
 CONAN_USER_HOME = os.getcwd()
@@ -68,36 +97,6 @@ require "premake/action_clean"
 require "premake/action_build"
 require "premake/action_tests"
 require "premake/action_conan"
-
---------------------------------------------------------------------------------
--- The files and folders to delete when the clean action is run.
---------------------------------------------------------------------------------
--- TODO: move these with the rest of the constants/globals
-action_clean_patterns = {
-	-- Visual Studio
-	".vs",
-	PROJECT_NAME ..".vcxproj",
-	PROJECT_NAME ..".vcxproj.filters",
-	PROJECT_NAME ..".vcxproj.user",
-	PROJECT_NAME .."Test.vcxproj",
-	PROJECT_NAME .."Test.vcxproj.filters",
-	PROJECT_NAME .."Test.vcxproj.user",
-	PROJECT_NAME .."Engine.vcxproj",
-	PROJECT_NAME .."Engine.vcxproj.filters",
-	PROJECT_NAME .."Engine.vcxproj.user",
-	PROJECT_NAME .."Workspace.sln",
-	PROJECT_NAME .."Workspace.VC.db",
-	PROJECT_NAME .."Workspace.VC.VC.opendb",
-	
-	-- Build Artifacts
-	"./bin",
-	"./obj",
-	"./docs",
-	
-	-- Conan
-	"conan_build",
-	".temp.conanfile.*"
-}
 
 --------------------------------------------------------------------------------
 -- The main premake settings
@@ -166,13 +165,13 @@ project("*")
 	}
 
 	debugdir "./src"
-	
+
 	filter "configurations:Debug*"
 		conan_setup_build_info(CONAN_BUILD_INFO["debug"])
 	filter "configurations:Release*"
 		conan_setup_build_info(CONAN_BUILD_INFO["release"])
 	filter {}
-	
+
 	includedirs {
 		"./include",
 	}
