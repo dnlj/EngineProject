@@ -406,7 +406,8 @@ void run() {
 		
 		while (true) {
 			if constexpr (ENGINE_CLIENT) {
-				socket.send(27015);
+				constexpr char data[] = "Hello, world!";
+				socket.send({127, 0, 0, 1, 27015}, data, sizeof(data));
 			} else {
 				socket.recv();
 			}
