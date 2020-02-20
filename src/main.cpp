@@ -1,4 +1,5 @@
 // Windows
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
 // STD
@@ -39,6 +40,8 @@
 #include <Engine/ResourceManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/Noise/WorleyNoise.hpp>
+#include <Engine/Net/Net.hpp>
+#include <Engine/Net/UDPSocket.hpp>
 
 
 // Game
@@ -390,6 +393,27 @@ namespace {
 }
 
 void run() {
+	// Init networking
+	Engine::Net::startup();
+
+	// Network test
+	{
+		#if ENGINE_SERVER
+			Engine::Net::UDPSocket socket{27015};
+		#else
+			Engine::Net::UDPSocket socket;
+		#endif
+		
+		while (true) {
+			if constexpr (ENGINE_CLIENT) {
+				socket.send(27015);
+			} else {
+				socket.recv();
+			}
+			Sleep(1000);
+		}
+	}
+
 	// GLFW error callback
 	glfwSetErrorCallback([](int error, const char* desc) {
 		ENGINE_ERROR("[GLFW] " << desc);
@@ -556,6 +580,7 @@ void run() {
 	// Procedural test
 	//mapTest();
 
+
 	// Main loop
 	auto startTime = std::chrono::high_resolution_clock::now();
 	auto lastUpdate = startTime;
@@ -609,6 +634,9 @@ void run() {
 
 	// GLFW cleanup
 	glfwDestroyWindow(window);
+
+	// Network cleanup
+	Engine::Net::shutdown();
 }
 
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
