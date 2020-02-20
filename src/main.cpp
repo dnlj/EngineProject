@@ -647,11 +647,11 @@ int main(int argc, char* argv[]) {
 
 	{ // Position the console
 		auto window = GetConsoleWindow();
-		SetWindowPos(window, HWND_TOP, 0, 0, 1000, 500, 0);
-
 		if constexpr (ENGINE_CLIENT) {
+			SetWindowPos(window, HWND_TOP, 0, 0, 1000, 500, 0);
 			SetWindowTextW(window, L"Client");
 		} else if (ENGINE_SERVER) {
+			SetWindowPos(window, HWND_TOP, 0, 500, 1000, 500, 0);
 			SetWindowTextW(window, L"Server");
 		}
 	}

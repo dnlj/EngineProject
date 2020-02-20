@@ -1,10 +1,13 @@
 #pragma once
 
-#if defined(ENGINE_OS_WINDOWS)
+#if ENGINE_OS_WINDOWS
 	#include <WinSock2.h>
 #else
 	#error Not yet implemented for this operating system.
 #endif
+
+// Engine
+#include <Engine/Net/IPv4Address.hpp>
 
 namespace Engine::Net {
 	// TODO: doc
@@ -13,13 +16,8 @@ namespace Engine::Net {
 		public:
 			UDPSocket(uint16 port) : UDPSocket{} {
 				// TODO: look into getaddrinfo - https://beej.us/guide/bgnet/html/#getaddrinfoprepare-to-launch
-				const sockaddr_in address {
-					.sin_family = AF_INET,
-					.sin_port = htons(port),
-					.sin_addr = INADDR_ANY,
-				};
-
-				if (bind(handle, reinterpret_cast<const sockaddr*>(&address), sizeof(address))) {
+				const auto address = IPv4Address{INADDR_ANY, port}.getSocketAddress();
+				if (bind(handle, &address, sizeof(address))) {
 					const auto err = WSAGetLastError();
 					ENGINE_ERROR(err << " - " << getWindowsErrorMessage(err));
 				}
@@ -30,14 +28,14 @@ namespace Engine::Net {
 				handle = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 				if (handle == INVALID_SOCKET) {
-					// TODO: handle - WSAGetLastError
-					ENGINE_ERROR("UDPSocket Error");
+					const auto err = WSAGetLastError();
+					ENGINE_ERROR(err << " - " << getWindowsErrorMessage(err));
 				}
 
 				// Set non-blocking
 				if (DWORD mode = 1; ioctlsocket(handle, FIONBIO, &mode)) {
-					// TODO: handle - WSAGetLastError
-					ENGINE_ERROR("UDPSocket Error");
+					const auto err = WSAGetLastError();
+					ENGINE_ERROR(err << " - " << getWindowsErrorMessage(err));
 				}
 			};
 
@@ -50,27 +48,14 @@ namespace Engine::Net {
 
 			void send(uint16 port) {
 				const char data[] = "This is a test!";
+				const auto address = IPv4Address{127, 0, 0, 1, port}.getSocketAddress();
 
-				constexpr uint32 ip = (127 << 24) | (0 << 16) | (0 << 8) | (1 << 0);
-
-				sockaddr_in address;
-				address.sin_family = AF_INET;
-				address.sin_port = htons(port);
-				address.sin_addr.s_addr = htonl(ip);
-
-				auto sent = sendto(
-					handle,
-					data,
-					sizeof(data),
-					0,
-					reinterpret_cast<const sockaddr*>(&address),
-					sizeof(address)
-				);
+				auto sent = sendto(handle, data, sizeof(data), 0, &address, sizeof(address));
 
 				// TODO: sent can be less than data. look at SO_MAX_MSG_SIZE https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-sendto
 				if (sent != sizeof(data)) {
-					// TODO: handle
-					ENGINE_ERROR("UDPSocket Error");
+					const auto err = WSAGetLastError();
+					ENGINE_ERROR(err << " - " << getWindowsErrorMessage(err));
 				}
 			}
 
@@ -80,30 +65,17 @@ namespace Engine::Net {
 
 					sockaddr_in from;
 					int fromlen = sizeof(from);
-					int len = recvfrom(
-						handle,
-						data,
-						sizeof(data),
-						0,
-						reinterpret_cast<sockaddr*>(&from),
-						&fromlen
-					);
+					int len = recvfrom(handle, data, sizeof(data), 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
 
 					if (len <= 0) {
 						break;
 					}
 
-					const auto ip = ntohl(from.sin_addr.s_addr);
-					const auto port = ntohs(from.sin_port);
+					IPv4Address address{from};
 
 					std::cout
 						<< "\n== got data ==" << "\n"
-						<< "ip = "
-							<< (ip & (255 << 24)) << "."
-							<< (ip & (255 << 16)) << "."
-							<< (ip & (255 <<  8)) << "."
-							<< (ip & (255 <<  0)) << "\n"
-						<< "port = " << port << "\n"
+						<< "from = " << address << "\n"
 						<< "len = " << len << "\n"
 						<< "data = " << data << "\n";
 				}
@@ -113,7 +85,7 @@ namespace Engine::Net {
 			SOCKET handle;
 
 			/**
-			 * Gets the error string for the given error code.
+			 * Gets the error string (utf-8) for the given error code.
 			 * @see https://docs.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
 			 */
 			std::string getWindowsErrorMessage(int err) {
