@@ -84,11 +84,18 @@ CONAN_PROFILES = {
 --------------------------------------------------------------------------------
 --
 --------------------------------------------------------------------------------
+require "vstudio"
 require "premake/message"
 require "premake/action_clean"
 require "premake/action_build"
 require "premake/action_tests"
 require "premake/action_conan"
+
+premake.override(premake.vstudio.vc2010.elements, "user", function(base, cfg)
+	local calls = base(cfg)
+	table.insert(calls, function(cfg) premake.w("<ShowAllFiles>true</ShowAllFiles>") end)
+	return calls
+end)
 
 --------------------------------------------------------------------------------
 -- The main premake settings
@@ -121,7 +128,7 @@ workspace(PROJECT_NAME .."Workspace")
 
 	filter "platforms:Windows_x64"
         architecture "x64"
-		defines {string.upper(PROJECT_NAME) .."_OS_WINDOWS"}
+		defines {"ENGINE_OS_WINDOWS"}
 
 	filter "configurations:Debug*"
 		symbols "On"
@@ -178,7 +185,7 @@ project("*")
 
 	libdirs {
 	}
-	
+
 --------------------------------------------------------------------------------
 -- Client
 --------------------------------------------------------------------------------
@@ -189,7 +196,7 @@ project(PROJECT_NAME .."Client")
 		"include/Game/**",
 		"src/Game/**",
 	}
-	
+
 	defines {
 		"ENGINE_CLIENT=true"
 	}
@@ -204,7 +211,7 @@ project(PROJECT_NAME .."Server")
 		"include/Game/**",
 		"src/Game/**",
 	}
-	
+
 	defines {
 		"ENGINE_SERVER=true"
 	}
