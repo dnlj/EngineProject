@@ -36,6 +36,7 @@ namespace Engine::Net {
 		const auto sent = sendto(handle, data, size, 0, &saddr, sizeof(saddr));
 
 		// TODO: sent can be less than data. look at SO_MAX_MSG_SIZE https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-sendto
+		// TODO: i think the above is only true for TCP. For UDP its either all sent or we get an error.
 		if (sent != size) {
 			const auto err = WSAGetLastError();
 			ENGINE_ERROR(err << " - " << getWindowsErrorMessage(err));

@@ -11,36 +11,22 @@
 namespace Game {
 	using namespace Engine::Types;
 
-	class PhysicsSystem;
-	class SpriteSystem;
-	class CharacterMovementSystem;
-	class CharacterSpellSystem;
-	class CameraTrackingSystem;
-	class MapSystem;
-	class MapRenderSystem;
-
-	class PhysicsComponent;
-	class SpriteComponent;
-	class CharacterMovementComponent;
-	class CharacterSpellComponent;
-	class InputComponent;
-
 	using SystemsSet = Meta::TypeSet::TypeSet<
-		PhysicsSystem,
-		SpriteSystem,
-		CharacterMovementSystem,
-		CharacterSpellSystem,
-		CameraTrackingSystem,
-		MapSystem,
-		MapRenderSystem
+		class CharacterMovementSystem,
+		class CharacterSpellSystem,
+		class PhysicsSystem,
+		class CameraTrackingSystem,
+		class MapSystem,
+		class MapRenderSystem,
+		class SpriteSystem
 	>;
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<
-		PhysicsComponent,
-		SpriteComponent,
-		CharacterMovementComponent,
-		CharacterSpellComponent,
-		InputComponent
+		class PhysicsComponent,
+		class SpriteComponent,
+		class CharacterMovementComponent,
+		class CharacterSpellComponent,
+		class InputComponent
 	>;
 
 	using World = Engine::ECS::World<SystemsSet, ComponentsSet>;

@@ -26,9 +26,6 @@ namespace Engine::ECS {
 				}
 			}
 		}
-
-		// Sort systems
-		sort();
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
@@ -70,58 +67,6 @@ namespace Engine::ECS {
 		for (size_t i = 0; i < count; ++i) {
 			systems[systemOrder[i]]->run(dt);
 		}
-	}
-
-	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::sort() {
-		// Sort the graph
-		std::vector<int8_t> nodes(count); // 0 = no mark  1 = temp mark  2 = perma mark
-		std::vector<SystemID> order; // The reverse order of the systems
-		order.reserve(count);
-
-		// Recursively visit all children of node using DFS
-		auto visit = [this, &order, &nodes](SystemID node, auto& visit) {
-			// Already visited
-			if (nodes[node] == 2) { return; }
-
-			// Cycle
-			if (nodes[node] == 1) {
-				ENGINE_ERROR("Circular system dependency involving system " << node);
-			}
-
-			// Continue visiting
-			nodes[node] = 1;
-
-			for (size_t i = 0; i < count; ++i) {
-				if (priority[node][i]) {
-					visit(i, visit);
-				}
-			}
-
-			nodes[node] = 2;
-			order.emplace_back(node);
-		};
-
-		// Visit all unvisited nodes
-		for (size_t i = 0; i < count; ++i) {
-			if (nodes[i] == 0) {
-				visit(i, visit);
-			}
-		}
-
-		// Sort the containers
-		auto reorder = [this, &order](auto& container) {
-			std::remove_reference_t<decltype(container)> sorted{};
-
-			for (size_t i = count; --i != static_cast<size_t>(-1);) {
-				sorted[count - i - 1] = std::move(container[order[i]]);
-			}
-
-			container = std::move(sorted);
-		};
-
-		// Do the sorting
-		reorder(systemOrder);
 	}
 }
 

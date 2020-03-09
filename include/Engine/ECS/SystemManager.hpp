@@ -102,11 +102,6 @@ namespace Engine::ECS {
 
 			/** The order that the systems should be operated on based on priorities. */
 			std::array<SystemID, count> systemOrder;
-
-			/**
-			 * Sorts all systems.
-			 */
-			void sort();
 	};
 }
 
