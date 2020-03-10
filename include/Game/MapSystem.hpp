@@ -54,7 +54,7 @@ namespace Game {
 			MapSystem(World& world);
 			~MapSystem();
 			void setup(Engine::EngineInstance& engine);
-			void run(float dt) override;
+			void run(float dt);
 
 			// TODO: Name? this isnt consistent with our other usage of offset
 			const glm::ivec2& getChunkOffset() const; // TODO: Remove? Dont think this is used anywhere.

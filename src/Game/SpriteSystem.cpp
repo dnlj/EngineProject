@@ -18,7 +18,7 @@ namespace Game {
 			Game::SpriteComponent,
 			Game::PhysicsComponent>()}{
 
-		priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem>();
+		// TODO: Add static check for: priorityAfter = world.getBitsetForSystems<Game::PhysicsSystem>();
 	}
 
 	SpriteSystem::~SpriteSystem() {

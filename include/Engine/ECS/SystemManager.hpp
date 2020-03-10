@@ -5,7 +5,6 @@
 
 // Engine
 #include <Engine/ECS/Common.hpp>
-#include <Engine/ECS/System.hpp>
 
 // Meta
 #include <Meta/TypeSet/MakeUnique.hpp>
@@ -24,7 +23,8 @@ namespace Engine::ECS {
 			>::value,
 			"Each system must be unique."
 		);
-		
+
+		// TODO: maybe add a concepts check?
 		/*static_assert(
 			std::conjunction<
 				std::is_base_of<System, Systems>...

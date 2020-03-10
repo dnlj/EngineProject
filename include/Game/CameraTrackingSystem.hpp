@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Camera.hpp>
+#include <Engine/ECS/Entity.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -12,7 +13,7 @@ namespace Game {
 		public:
 			CameraTrackingSystem(World& world);
 			void setup(Engine::Camera& camera);
-			virtual void run(float dt) override;
+			void run(float dt);
 
 			Engine::ECS::Entity focus;
 

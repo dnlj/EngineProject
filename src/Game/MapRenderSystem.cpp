@@ -13,7 +13,7 @@
 
 namespace Game {
 	MapRenderSystem::MapRenderSystem(World& world) : SystemBase{world} {
-		priorityAfter = world.getBitsetForSystems<Game::MapSystem>();
+		// TODO: Add static check for: priorityAfter = world.getBitsetForSystems<Game::MapSystem>();
 	}
 
 	MapRenderSystem::~MapRenderSystem() {

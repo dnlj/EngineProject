@@ -16,7 +16,7 @@ namespace Game {
 		public:
 			CharacterSpellSystem(World& world);
 			void setup(Engine::EngineInstance& engine);
-			void run(float dt) override;
+			void run(float dt);
 			void fireMissile(const b2Vec2& pos, const b2Vec2& dir);
 
 		private:

@@ -1,13 +1,22 @@
 #pragma once
 
-// Meta
-#include <Meta/TypeSet/TypeSet.hpp>
-
-// Engine
-#include <Engine/SystemBase.hpp>
-
 
 namespace Game {
-	// TODO: rename to just System
-	using SystemBase = Engine::SystemBase<class World>;
+	class World; // Forward declaration
+
+	/**
+	 * A base class from systems.
+	 */
+	class SystemBase {
+		protected:
+			/** The world that owns this system. */
+			World& world;
+
+		public:
+			/**
+			 * Constructor.
+			 * @param[in,out] world The world that owns this system.
+			 */
+			SystemBase(World& world) : world{world} {};
+	};
 }

@@ -8,6 +8,7 @@
 
 // Engine
 #include <Engine/EngineInstance.hpp>
+#include <Engine/ECS/EntityFilter.hpp>
 
 // Game
 #include <Game/System.hpp>

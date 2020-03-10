@@ -24,7 +24,7 @@ namespace Game {
 			/**
 			 * @see SystemBase::run.
 			 */
-			virtual void run(float dt) override;
+			void run(float dt);
 
 			/**
 			 * Creates a box2d body and associates an entity with it.

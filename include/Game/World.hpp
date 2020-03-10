@@ -3,6 +3,9 @@
 // Meta
 #include <Meta/TypeSet/TypeSet.hpp>
 
+// Engine
+#include <Engine/ECS/World.hpp>
+
 // Game
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/CharacterSpellSystem.hpp>
