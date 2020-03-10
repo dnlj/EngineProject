@@ -13,13 +13,10 @@
 
 
 namespace Game {
-	class PhysicsSystem : public SystemBase {
+	class PhysicsSystem : public System {
 		public:
 			PhysicsSystem(SystemArg arg);
 
-			/**
-			 * @see SystemBase::run.
-			 */
 			void run(float dt);
 
 			/**

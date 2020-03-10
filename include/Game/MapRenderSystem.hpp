@@ -15,7 +15,7 @@
 
 // TODO: Doc
 namespace Game {
-	class MapRenderSystem : public SystemBase {
+	class MapRenderSystem : public System {
 		public:
 			MapRenderSystem(SystemArg arg);
 			~MapRenderSystem();

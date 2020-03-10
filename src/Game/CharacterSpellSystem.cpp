@@ -12,7 +12,7 @@
 
 namespace Game {
 	CharacterSpellSystem::CharacterSpellSystem(SystemArg arg)
-		: SystemBase{arg} {
+		: System{arg} {
 
 		// TODO: Add static check for: priorityAfter = world.getBitsetForSystems<Game::CharacterMovementSystem>();
 		// TODO: Add static check for: priorityBefore = world.getBitsetForSystems<Game::PhysicsSystem>();

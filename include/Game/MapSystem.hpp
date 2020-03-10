@@ -28,7 +28,7 @@
  *
  */
 namespace Game {
-	class MapSystem : public SystemBase {
+	class MapSystem : public System {
 		public:
 			/** Number of chunks before shifting the origin */
 			constexpr static int originRange = 4; // TODO: In prod this should be a much larger value. maybe around 10,000 world units (whatever that is in chunks)

@@ -14,7 +14,7 @@
 
 namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
-		: SystemBase{arg} {
+		: System{arg} {
 		// TODO: Add static check for: priorityAfter = world.getBitsetForSystems<Game::CameraTrackingSystem>();
 	}
 

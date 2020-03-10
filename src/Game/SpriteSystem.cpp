@@ -13,7 +13,7 @@
 
 namespace Game {
 	SpriteSystem::SpriteSystem(SystemArg arg)
-		: SystemBase{arg}
+		: System{arg}
 		, filter{world.getFilterFor<
 			Game::SpriteComponent,
 			Game::PhysicsComponent>()}{

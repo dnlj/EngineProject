@@ -15,7 +15,7 @@
 
 
 namespace Game {
-	class SpriteSystem : public SystemBase {
+	class SpriteSystem : public System {
 		private:
 			struct Vertex {
 				glm::vec2 position;

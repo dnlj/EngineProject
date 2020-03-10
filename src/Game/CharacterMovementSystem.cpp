@@ -14,7 +14,7 @@
 
 namespace Game {
 	CharacterMovementSystem::CharacterMovementSystem(SystemArg arg)
-		: SystemBase{arg}
+		: System{arg}
 		, filter{world.getFilterFor<
 			Game::PhysicsComponent,
 			Game::CharacterMovementComponent

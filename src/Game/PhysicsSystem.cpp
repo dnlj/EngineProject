@@ -3,7 +3,7 @@
 
 namespace Game {
 	PhysicsSystem::PhysicsSystem(SystemArg arg)
-		: SystemBase{arg}
+		: System{arg}
 		, physWorld{b2Vec2_zero}
 		, contactListener{*this} {
 

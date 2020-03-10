@@ -12,7 +12,7 @@
 
 
 namespace Game {
-	class CharacterSpellSystem : public SystemBase, public PhysicsListener {
+	class CharacterSpellSystem : public System, public PhysicsListener {
 		public:
 			CharacterSpellSystem(SystemArg arg);
 			void setup(Engine::EngineInstance& engine);

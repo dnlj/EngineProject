@@ -10,22 +10,19 @@
 namespace Game {
 	class World; // Forward declaration
 
+	/** The argument type system constructors require. */
 	using SystemArg = const std::tuple<World&, Engine::EngineInstance&>&;
 
 	/**
-	 * A base class from systems.
+	 * A base class for game systems.
 	 */
-	class SystemBase {
+	class System {
 		protected:
 			World& world;
 			Engine::EngineInstance& engine;
 
 		public:
-			/**
-			 * Constructor.
-			 * @param[in,out] world The world that owns this system.
-			 */
-			SystemBase(SystemArg arg)
+			System(SystemArg arg)
 				: world{std::get<World&>(arg)}
 				, engine{std::get<Engine::EngineInstance&>(arg)} {
 			};

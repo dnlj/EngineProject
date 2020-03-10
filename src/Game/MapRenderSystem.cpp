@@ -12,7 +12,7 @@
 
 
 namespace Game {
-	MapRenderSystem::MapRenderSystem(SystemArg arg) : SystemBase{arg} {
+	MapRenderSystem::MapRenderSystem(SystemArg arg) : System{arg} {
 		// TODO: Add static check for: priorityAfter = world.getBitsetForSystems<Game::MapSystem>();
 	}
 

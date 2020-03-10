@@ -8,7 +8,7 @@
 
 
 namespace Game {
-	class CharacterMovementSystem : public SystemBase {
+	class CharacterMovementSystem : public System {
 		public:
 			CharacterMovementSystem(SystemArg arg);
 			void run(float dt);
