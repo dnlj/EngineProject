@@ -39,7 +39,7 @@ namespace Game {
 			};
 
 		public:
-			SpriteSystem(World& world);
+			SpriteSystem(SystemArg arg);
 			~SpriteSystem();
 
 			void setup(Engine::EngineInstance& engine);

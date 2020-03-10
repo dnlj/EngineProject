@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/ECS/World.hpp>
+#include <Engine/EngineInstance.hpp>
 
 // Game
 #include <Game/CharacterMovementSystem.hpp>
@@ -40,10 +41,11 @@ namespace Game {
 		CharacterSpellComponent,
 		InputComponent
 	>;
-	
+
 	class World : public Engine::ECS::World<SystemsSet, ComponentsSet> {
 		public:
-			World() : Engine::ECS::World<SystemsSet, ComponentsSet>(*this) {
+			World(Engine::EngineInstance& engine)
+				: Engine::ECS::World<SystemsSet, ComponentsSet>(std::tie(*this, engine)) {
 			}
 	};
 }

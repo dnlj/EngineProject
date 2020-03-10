@@ -51,7 +51,7 @@ namespace Game {
 			static_assert(!(activeAreaSize.y & (activeAreaSize.y - 1)), "Must be power of two");
 
 		public:
-			MapSystem(World& world);
+			MapSystem(SystemArg arg);
 			~MapSystem();
 			void setup(Engine::EngineInstance& engine);
 			void run(float dt);

@@ -13,8 +13,8 @@
 
 
 namespace Game {
-	CharacterMovementSystem::CharacterMovementSystem(World& world)
-		: SystemBase{world}
+	CharacterMovementSystem::CharacterMovementSystem(SystemArg arg)
+		: SystemBase{arg}
 		, filter{world.getFilterFor<
 			Game::PhysicsComponent,
 			Game::CharacterMovementComponent

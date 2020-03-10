@@ -17,7 +17,7 @@
 namespace Game {
 	class MapRenderSystem : public SystemBase {
 		public:
-			MapRenderSystem(World& world);
+			MapRenderSystem(SystemArg arg);
 			~MapRenderSystem();
 
 			void run(float dt);

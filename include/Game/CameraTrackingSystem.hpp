@@ -11,7 +11,7 @@
 namespace Game {
 	class CameraTrackingSystem : public SystemBase {
 		public:
-			CameraTrackingSystem(World& world);
+			CameraTrackingSystem(SystemArg arg);
 			void setup(Engine::Camera& camera);
 			void run(float dt);
 

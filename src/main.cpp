@@ -31,7 +31,6 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Debug/Debug.hpp>
-#include <Engine/SystemBase.hpp>
 #include <Engine/TextureManager.hpp>
 #include <Engine/Utility/Utility.hpp>
 #include <Engine/ECS/World.hpp>
@@ -439,7 +438,7 @@ void run() {
 
 	// Engine stuff
 	Engine::EngineInstance engine;
-	auto worldStorage = std::make_unique<Game::World>(); // TODO: just make engine an arg for Game::World. Most systems use it. Add to Game::SystemBase
+	auto worldStorage = std::make_unique<Game::World>(engine); // TODO: just make engine an arg for Game::World. Most systems use it. Add to Game::SystemBase
 	Game::World& world = *worldStorage.get();
 
 	// Binds

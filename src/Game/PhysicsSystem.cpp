@@ -2,8 +2,8 @@
 #include <Game/PhysicsSystem.hpp>
 
 namespace Game {
-	PhysicsSystem::PhysicsSystem(World& world)
-		: SystemBase{world}
+	PhysicsSystem::PhysicsSystem(SystemArg arg)
+		: SystemBase{arg}
 		, physWorld{b2Vec2_zero}
 		, contactListener{*this} {
 

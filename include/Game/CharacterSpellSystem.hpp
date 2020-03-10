@@ -14,7 +14,7 @@
 namespace Game {
 	class CharacterSpellSystem : public SystemBase, public PhysicsListener {
 		public:
-			CharacterSpellSystem(World& world);
+			CharacterSpellSystem(SystemArg arg);
 			void setup(Engine::EngineInstance& engine);
 			void run(float dt);
 			void fireMissile(const b2Vec2& pos, const b2Vec2& dir);

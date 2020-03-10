@@ -8,7 +8,7 @@
 #include <Game/World.hpp>
 
 namespace Game {
-	CameraTrackingSystem::CameraTrackingSystem(World& world) : SystemBase{world} {
+	CameraTrackingSystem::CameraTrackingSystem(SystemArg arg) : SystemBase{arg} {
 		// TODO: Add static check for: priorityAfter = world.getBitsetForSystems<
 		//									Game::CharacterMovementSystem,
 		//									Game::PhysicsSystem

@@ -15,11 +15,7 @@
 namespace Game {
 	class PhysicsSystem : public SystemBase {
 		public:
-			/**
-			 * Constructor.
-			 * @param[in,out] world The world that owns this system.
-			 */
-			PhysicsSystem(World& world);
+			PhysicsSystem(SystemArg arg);
 
 			/**
 			 * @see SystemBase::run.

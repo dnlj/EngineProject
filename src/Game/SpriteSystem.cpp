@@ -12,8 +12,8 @@
 #include <Game/World.hpp>
 
 namespace Game {
-	SpriteSystem::SpriteSystem(World& world)
-		: SystemBase{world}
+	SpriteSystem::SpriteSystem(SystemArg arg)
+		: SystemBase{arg}
 		, filter{world.getFilterFor<
 			Game::SpriteComponent,
 			Game::PhysicsComponent>()}{

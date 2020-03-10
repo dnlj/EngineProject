@@ -10,7 +10,7 @@
 namespace Game {
 	class CharacterMovementSystem : public SystemBase {
 		public:
-			CharacterMovementSystem(World& world);
+			CharacterMovementSystem(SystemArg arg);
 			void run(float dt);
 
 		private:
