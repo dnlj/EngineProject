@@ -10,7 +10,7 @@
 #include <Engine/Graphics/Mesh.hpp>
 
 // Game
-#include <Game/MapRenderSystem.hpp>
+#include <Game/Common.hpp>
 #include <Game/MapChunk.hpp>
 #include <Game/MapGenerator.hpp>
 

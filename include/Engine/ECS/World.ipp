@@ -2,9 +2,10 @@
 
 namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
-	World<SystemsSet, ComponentsSet>::World()
+	template<class Arg>
+	World<SystemsSet, ComponentsSet>::World(Arg& arg)
 		: fm{em}
-		, sm{*this} {
+		, sm(arg) {
 	}
 
 	template<class SystemsSet, class ComponentsSet>

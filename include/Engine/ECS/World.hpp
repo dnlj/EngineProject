@@ -25,8 +25,10 @@ namespace Engine::ECS {
 		public:
 			/**
 			 * Constructor.
+			 * @param arg The argument to pass to system constructors.
 			 */
-			World();
+			template<class Arg>
+			World(Arg& arg);
 
 			/**
 			 * @see EntityManager::isAlive

@@ -10,7 +10,7 @@
 #include <Engine/EngineInstance.hpp>
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/System.hpp>
 
 
 namespace Game {

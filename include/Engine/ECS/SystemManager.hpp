@@ -1,8 +1,7 @@
 #pragma once
 
 // STD
-#include <array>
-#include <type_traits>
+#include <tuple>
 
 // Engine
 #include <Engine/ECS/Common.hpp>
@@ -36,9 +35,10 @@ namespace Engine::ECS {
 		public:
 			/**
 			 * Constructor.
+			 * @param arg The argument to pass to system constructors.
 			 */
-			template<class World>
-			SystemManager(World& world);
+			template<class Arg>
+			SystemManager(Arg& arg);
 
 			/**
 			 *  Deleted copy constructor
@@ -94,14 +94,8 @@ namespace Engine::ECS {
 			/** The number of systems used by this manager. */
 			constexpr static size_t count = sizeof...(Systems);
 
-			/** The array used for storing system instances. */
-			std::array<System*, count> systems = {};
-
-			/** The array used for storing system priorities. */
-			std::array<SystemBitset, count> priority = {};
-
-			/** The order that the systems should be operated on based on priorities. */
-			std::array<SystemID, count> systemOrder;
+			/** The systems to be managed. */
+			std::tuple<Systems...> systems;
 	};
 }
 

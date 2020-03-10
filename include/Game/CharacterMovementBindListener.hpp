@@ -8,7 +8,7 @@
 #include <Engine/Input/BindReleaseListener.hpp>
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/World.hpp>
 
 
 namespace Game {

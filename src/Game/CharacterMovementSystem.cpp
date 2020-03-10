@@ -9,6 +9,7 @@
 #include <Game/PhysicsComponent.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 #include <Game/InputComponent.hpp>
+#include <Game/World.hpp>
 
 
 namespace Game {

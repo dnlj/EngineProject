@@ -9,23 +9,11 @@
 
 namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
-	template<class World>
-	SystemManager<SystemsType<Systems...>>::SystemManager(World& world)
-		// TODO: Constructor arguments?
-		: systems{new Systems(world) ...} // TODO: Make systems stored as part of the SystemManager object (tuple for ex)
-		, systemOrder{getSystemID<Systems>() ...} {
-
-		// Update priorities
-		for (SystemID sid = 0; sid < count; ++sid) {
-			const auto& system = *systems[sid];
-			priority[sid] |= system.priorityBefore;
-		
-			for (size_t i = 0; i < system.priorityAfter.size(); ++i) {
-				if (system.priorityAfter[i]) {
-					priority[i][sid] = true;
-				}
-			}
-		}
+	template<class Arg>
+	SystemManager<SystemsType<Systems...>>::SystemManager(Arg& arg)
+		// Using sizeof here allows us to use the comma operator to duplicate `arg` N times
+		: systems((sizeof(Systems*), arg) ...) {
+		// TODO: Add function to allow systems to statically check their run order.
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
@@ -37,7 +25,7 @@ namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
 	template<class System>
 	System& SystemManager<SystemsType<Systems...>>::getSystem() {
-		return *static_cast<System*>(systems[getSystemID<System>()]);
+		return std::get<System>(systems);
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
@@ -57,16 +45,11 @@ namespace Engine::ECS {
 
 	template<template<class...> class SystemsType, class... Systems>
 	SystemManager<SystemsType<Systems...>>::~SystemManager() {
-		for (const auto& system : systems) {
-			delete system;
-		}
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
 	void SystemManager<SystemsType<Systems...>>::run(float dt) {
-		for (size_t i = 0; i < count; ++i) {
-			systems[systemOrder[i]]->run(dt);
-		}
+		(getSystem<Systems>().run(dt), ...);
 	}
 }
 

@@ -7,7 +7,7 @@
 #include <Engine/Debug/DebugDrawBox2D.hpp>
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/System.hpp>
 #include <Game/PhysicsUserData.hpp>
 #include <Game/PhysicsListener.hpp>
 

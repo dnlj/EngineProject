@@ -46,21 +46,11 @@
 
 // Game
 #include <Game/Common.hpp>
-#include <Game/SpriteSystem.hpp>
-#include <Game/CameraTrackingSystem.hpp>
-#include <Game/CharacterSpellSystem.hpp>
+#include <Game/World.hpp>
 #include <Game/CharacterSpellBindListener.hpp>
-#include <Game/CharacterSpellComponent.hpp>
-#include <Game/CharacterMovementSystem.hpp>
 #include <Game/CharacterMovementBindListener.hpp>
-#include <Game/CharacterMovementComponent.hpp>
-#include <Game/MapSystem.hpp>
-#include <Game/MapRenderSystem.hpp>
 #include <Game/MapGenerator.hpp>
 #include <Game/MapSystemBindListener.hpp>
-#include <Game/SpriteComponent.hpp>
-#include <Game/InputComponent.hpp>
-#include <Game/PhysicsComponent.hpp>
 #include <Game/imgui_impl_glfw_gl3.hpp>
 
 
@@ -449,7 +439,8 @@ void run() {
 
 	// Engine stuff
 	Engine::EngineInstance engine;
-	Game::World world;
+	auto worldStorage = std::make_unique<Game::World>(); // TODO: just make engine an arg for Game::World. Most systems use it. Add to Game::SystemBase
+	Game::World& world = *worldStorage.get();
 
 	// Binds
 	{

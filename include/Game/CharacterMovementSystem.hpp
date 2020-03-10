@@ -1,7 +1,7 @@
 #pragma once
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/System.hpp>
 
 
 namespace Game {

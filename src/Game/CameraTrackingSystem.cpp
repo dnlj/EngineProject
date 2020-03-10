@@ -5,6 +5,7 @@
 #include <Game/CameraTrackingSystem.hpp>
 #include <Game/PhysicsSystem.hpp>
 #include <Game/PhysicsComponent.hpp>
+#include <Game/World.hpp>
 
 namespace Game {
 	CameraTrackingSystem::CameraTrackingSystem(World& world) : SystemBase{world} {

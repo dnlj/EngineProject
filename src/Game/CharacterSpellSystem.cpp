@@ -7,6 +7,7 @@
 #include <Game/PhysicsComponent.hpp>
 #include <Game/SpriteComponent.hpp>
 #include <Game/InputComponent.hpp>
+#include <Game/World.hpp>
 
 
 namespace Game {

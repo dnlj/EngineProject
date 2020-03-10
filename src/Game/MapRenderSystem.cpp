@@ -8,6 +8,7 @@
 // Game
 #include <Game/MapSystem.hpp>
 #include <Game/MapRenderSystem.hpp>
+#include <Game/World.hpp>
 
 
 namespace Game {

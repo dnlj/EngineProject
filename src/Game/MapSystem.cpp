@@ -9,6 +9,7 @@
 #include <Game/PhysicsSystem.hpp>
 #include <Game/SpriteSystem.hpp>
 #include <Game/CameraTrackingSystem.hpp>
+#include <Game/World.hpp>
 
 
 namespace Game {

@@ -15,25 +15,16 @@ namespace Engine {
 	 * @tparam World The world type.
 	 */
 	template<class World>
-	class SystemBase;
-
-	/** @see SystemBase */
-	template<class SystemsSet, class ComponentsSet>
-	class SystemBase<ECS::World<SystemsSet, ComponentsSet>> : public Engine::ECS::System {
+	class SystemBase : public Engine::ECS::System {
 		public:
-			/** The world type used by this system. */
-			using World = ECS::World<SystemsSet, ComponentsSet>;
-
 			/**
 			 * Constructor.
 			 * @param[in,out] world The world that owns this system.
 			 */
-			SystemBase(World& world);
+			SystemBase(World& world) : world{world} {};
 
 		protected:
 			/** The world that owns this system. */
 			World& world;
 	};
 }
-
-#include <Engine/SystemBase.ipp>

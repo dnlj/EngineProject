@@ -7,7 +7,7 @@
 #include <Engine/EngineInstance.hpp>
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/System.hpp>
 #include <Game/PhysicsListener.hpp>
 
 

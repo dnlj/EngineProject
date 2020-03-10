@@ -4,7 +4,7 @@
 #include <Engine/Camera.hpp>
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/System.hpp>
 
 
 namespace Game {

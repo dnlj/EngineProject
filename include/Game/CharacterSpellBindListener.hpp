@@ -5,7 +5,7 @@
 #include <Engine/Input/BindPressListener.hpp>
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/World.hpp>
 
 namespace Game {
 	class CharacterSpellBindListener : public Engine::Input::BindPressListener {
