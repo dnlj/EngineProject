@@ -14,8 +14,8 @@ namespace Game {
 	CharacterSpellSystem::CharacterSpellSystem(SystemArg arg)
 		: System{arg} {
 
-		// TODO: Add static check for: priorityAfter = world.getBitsetForSystems<Game::CharacterMovementSystem>();
-		// TODO: Add static check for: priorityBefore = world.getBitsetForSystems<Game::PhysicsSystem>();
+		static_assert(World::orderAfter<CharacterSpellSystem, CharacterMovementSystem>());
+		static_assert(World::orderBefore<CharacterSpellSystem, PhysicsSystem>());
 	}
 
 	void CharacterSpellSystem::setup(Engine::EngineInstance& engine) {

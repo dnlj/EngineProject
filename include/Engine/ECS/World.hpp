@@ -199,6 +199,14 @@ namespace Engine::ECS {
 
 			template<>
 			EntityFilter& getFilterFor() = delete;
+
+			/** @see SystemManager::orderBefore */
+			template<class SystemA, class SystemB>
+			constexpr static bool orderBefore();
+
+			/** @see SystemManager::orderAfter */
+			template<class SystemA, class SystemB>
+			constexpr static bool orderAfter();
 	};
 }
 

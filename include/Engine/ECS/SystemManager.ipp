@@ -58,5 +58,17 @@ namespace Engine::ECS {
 		
 		(getSystem<Systems>().run(dt), ...);
 	}
+
+	template<template<class...> class SystemsType, class... Systems>
+	template<class SystemA, class SystemB>
+	constexpr static bool SystemManager<SystemsType<Systems...>>::orderBefore() {
+		return Meta::IndexOf<SystemA, Systems...>::value < Meta::IndexOf<SystemB, Systems...>::value;
+	}
+
+	template<template<class...> class SystemsType, class... Systems>
+	template<class SystemA, class SystemB>
+	constexpr static bool SystemManager<SystemsType<Systems...>>::orderAfter() {
+		return SystemManager::orderBefore<SystemB, SystemA>();
+	}
 }
 

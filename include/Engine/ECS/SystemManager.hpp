@@ -103,6 +103,19 @@ namespace Engine::ECS {
 			 * @param[in] dt The time delta between calls.
 			 */
 			void run(float dt);
+
+		public:
+			/**
+			 * Returns true if @p SystemA will run before @p SystemB.
+			 */
+			template<class SystemA, class SystemB>
+			constexpr static bool orderBefore();
+			
+			/**
+			 * Returns true if @p SystemA will run after @p SystemB.
+			 */
+			template<class SystemA, class SystemB>
+			constexpr static bool orderAfter();
 	};
 }
 

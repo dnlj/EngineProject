@@ -15,7 +15,7 @@
 namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
 		: System{arg} {
-		// TODO: Add static check for: priorityAfter = world.getBitsetForSystems<Game::CameraTrackingSystem>();
+		static_assert(World::orderAfter<MapSystem, CameraTrackingSystem>());
 	}
 
 	MapSystem::~MapSystem() {

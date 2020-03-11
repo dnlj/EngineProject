@@ -169,4 +169,16 @@ namespace Engine::ECS {
 	EntityFilter& World<SystemsSet, ComponentsSet>::getFilterFor() {
 		return fm.getFilterFor(*this, getBitsetForComponents<Components...>());
 	}
+
+	template<class SystemsSet, class ComponentsSet>
+	template<class SystemA, class SystemB>
+	constexpr static bool World<SystemsSet, ComponentsSet>::orderBefore() {
+		return SystemManager::orderBefore<SystemA, SystemB>();
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	template<class SystemA, class SystemB>
+	constexpr static bool World<SystemsSet, ComponentsSet>::orderAfter() {
+		return SystemManager::orderAfter<SystemA, SystemB>();
+	}
 }

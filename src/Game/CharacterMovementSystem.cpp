@@ -20,7 +20,7 @@ namespace Game {
 			Game::CharacterMovementComponent
 		>()} {
 
-		// TODO: Add static check for: priorityBefore = world.getBitsetForSystems<Game::PhysicsSystem>();
+		static_assert(World::orderBefore<CharacterMovementSystem, PhysicsSystem>());
 	}
 
 	void CharacterMovementSystem::run(float dt) {

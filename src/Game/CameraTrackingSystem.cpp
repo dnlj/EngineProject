@@ -9,10 +9,8 @@
 
 namespace Game {
 	CameraTrackingSystem::CameraTrackingSystem(SystemArg arg) : System{arg} {
-		// TODO: Add static check for: priorityAfter = world.getBitsetForSystems<
-		//									Game::CharacterMovementSystem,
-		//									Game::PhysicsSystem
-		//								>();
+		static_assert(World::orderAfter<CameraTrackingSystem, CharacterMovementSystem>());
+		static_assert(World::orderAfter<CameraTrackingSystem, PhysicsSystem>());
 	}
 
 	void CameraTrackingSystem::setup(Engine::Camera& camera) {
