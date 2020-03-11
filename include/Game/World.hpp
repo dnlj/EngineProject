@@ -44,8 +44,8 @@ namespace Game {
 
 	class World : public Engine::ECS::World<SystemsSet, ComponentsSet> {
 		public:
-			World(Engine::EngineInstance& engine)
-				: Engine::ECS::World<SystemsSet, ComponentsSet>(std::tie(*this, engine)) {
+			World(float tickInterval, Engine::EngineInstance& engine)
+				: Engine::ECS::World<SystemsSet, ComponentsSet>(tickInterval, std::tie(*this, engine)) {
 			}
 	};
 }

@@ -3,9 +3,9 @@
 namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	template<class Arg>
-	World<SystemsSet, ComponentsSet>::World(Arg& arg)
+	World<SystemsSet, ComponentsSet>::World(float tickInterval, Arg& arg)
 		: fm{em}
-		, sm(arg) {
+		, sm(tickInterval, arg) {
 	}
 
 	template<class SystemsSet, class ComponentsSet>

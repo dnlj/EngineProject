@@ -438,7 +438,7 @@ void run() {
 
 	// Engine stuff
 	Engine::EngineInstance engine;
-	auto worldStorage = std::make_unique<Game::World>(engine);
+	auto worldStorage = std::make_unique<Game::World>(1.0f / 60.0f, engine);
 	Game::World& world = *worldStorage.get();
 
 	// Binds

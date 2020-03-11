@@ -26,5 +26,8 @@ namespace Game {
 				: world{std::get<World&>(arg)}
 				, engine{std::get<Engine::EngineInstance&>(arg)} {
 			};
+
+			void tick(float dt) {}
+			void run(float dt) {}
 	};
 }

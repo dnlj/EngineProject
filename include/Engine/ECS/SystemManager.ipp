@@ -10,9 +10,10 @@
 namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
 	template<class Arg>
-	SystemManager<SystemsType<Systems...>>::SystemManager(Arg& arg)
+	SystemManager<SystemsType<Systems...>>::SystemManager(float tickInterval, Arg& arg)
 		// Using sizeof here allows us to use the comma operator to duplicate `arg` N times
-		: systems((sizeof(Systems*), arg) ...) {
+		: tickInterval{tickInterval}
+		, systems((sizeof(Systems*), arg) ...) {
 		// TODO: Add function to allow systems to statically check their run order.
 	}
 
@@ -49,6 +50,12 @@ namespace Engine::ECS {
 
 	template<template<class...> class SystemsType, class... Systems>
 	void SystemManager<SystemsType<Systems...>>::run(float dt) {
+		tickAccum += dt;
+		while (tickInterval < tickAccum) {
+			(getSystem<Systems>().tick(tickInterval), ...);
+			tickAccum -= tickInterval;
+		}
+		
 		(getSystem<Systems>().run(dt), ...);
 	}
 }

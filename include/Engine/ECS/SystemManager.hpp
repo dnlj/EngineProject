@@ -32,13 +32,27 @@ namespace Engine::ECS {
 			"Each type must be a system."
 		);*/
 
+		private:
+			/** The number of systems used by this manager. */
+			constexpr static size_t count = sizeof...(Systems);
+
+			/** How long between ticks (seconds). */
+			const float tickInterval;
+
+			/** The accumulator used to determine how many ticks to run. */
+			float tickAccum = 0.0f;
+
+			/** The systems to be managed. */
+			std::tuple<Systems...> systems;
+
 		public:
 			/**
 			 * Constructor.
+			 * @param tickInterval How frequently (in seconds) to run system ticks.
 			 * @param arg The argument to pass to system constructors.
 			 */
 			template<class Arg>
-			SystemManager(Arg& arg);
+			SystemManager(float tickInterval, Arg& arg);
 
 			/**
 			 *  Deleted copy constructor
@@ -89,13 +103,6 @@ namespace Engine::ECS {
 			 * @param[in] dt The time delta between calls.
 			 */
 			void run(float dt);
-
-		private:
-			/** The number of systems used by this manager. */
-			constexpr static size_t count = sizeof...(Systems);
-
-			/** The systems to be managed. */
-			std::tuple<Systems...> systems;
 	};
 }
 

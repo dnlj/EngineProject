@@ -22,13 +22,18 @@ namespace Engine::ECS {
 			using ComponentManager = ComponentManager<ComponentsSet>;
 			using SystemManager = SystemManager<SystemsSet>;
 
+		private:
+			EntityManager em;
+			ComponentManager cm;
+			FilterManager fm;
+			SystemManager sm;
+
 		public:
 			/**
-			 * Constructor.
-			 * @param arg The argument to pass to system constructors.
+			 * @see SystemManager::SystemManager
 			 */
 			template<class Arg>
-			World(Arg& arg);
+			World(float tickInterval, Arg& arg);
 
 			/**
 			 * @see EntityManager::isAlive
@@ -194,12 +199,6 @@ namespace Engine::ECS {
 
 			template<>
 			EntityFilter& getFilterFor() = delete;
-
-		private:
-			EntityManager em;
-			ComponentManager cm;
-			FilterManager fm;
-			SystemManager sm;
 	};
 }
 
