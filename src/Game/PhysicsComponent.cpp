@@ -3,26 +3,14 @@
 
 
 namespace Game {
-	PhysicsComponent::PhysicsComponent(PhysicsComponent&& other) {
-		// TODO: doesnt swap kinda ruin move?
-		swap(*this, other);
+	
+	void PhysicsComponent::setTransform(const b2Vec2& pos, float32 ang) {
+		body->SetTransform(pos, ang);
+		prevTransform.Set(pos, ang);
+		interpTransform.Set(pos, ang);
 	}
 
-	PhysicsComponent::~PhysicsComponent() {
-		if (destruct) {
-			physSys->destroyBody(body);
-		}
-	}
-
-	PhysicsComponent& PhysicsComponent::operator=(PhysicsComponent other) {
-		swap(*this, other);
-		other.destruct = true;
-		return *this;
-	}
-
-	void swap(PhysicsComponent& first, PhysicsComponent& second) {
-		using std::swap;
-		swap(first.body, second.body);
-		swap(first.physSys, second.physSys);
+	const b2Vec2& PhysicsComponent::getInterpPosition() const {
+		return interpTransform.p;
 	}
 }

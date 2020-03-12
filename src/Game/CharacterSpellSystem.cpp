@@ -36,8 +36,7 @@ namespace Game {
 				bodyDef.type = b2_dynamicBody;
 				bodyDef.position = b2Vec2_zero;
 
-				physComp.physSys = &world.getSystem<Game::PhysicsSystem>();
-				physComp.body = physComp.physSys->createBody(ent, bodyDef);
+				physComp.body = physSys.createBody(ent, bodyDef);
 
 				b2CircleShape shape;
 				shape.m_radius = 1.0f/8;
@@ -62,10 +61,12 @@ namespace Game {
 		auto missle = missles[currentMissle];
 
 		world.setEnabled(missle, true);
-		auto* body = world.getComponent<Game::PhysicsComponent>(missle).body;
+		auto& physComp = world.getComponent<Game::PhysicsComponent>(missle);
+		physComp.setTransform(pos, 0);
+
+		auto* body = physComp.body;
 		body->SetActive(true);
-		body->SetTransform(pos, 0);
-		body->SetLinearVelocity(2.0f * dir);
+		body->SetLinearVelocity(4.0f * dir);
 
 		currentMissle = (currentMissle + 1) % missles.size();
 	}

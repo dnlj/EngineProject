@@ -4,6 +4,7 @@
 #include <tuple>
 
 // Engine
+#include <Engine/Engine.hpp>
 #include <Engine/ECS/Common.hpp>
 
 // Meta
@@ -37,10 +38,10 @@ namespace Engine::ECS {
 			constexpr static size_t count = sizeof...(Systems);
 
 			/** How long between ticks (seconds). */
-			const float tickInterval;
+			const float32 tickInterval;
 
 			/** The accumulator used to determine how many ticks to run. */
-			float tickAccum = 0.0f;
+			float32 tickAccum = 0.0f;
 
 			/** The systems to be managed. */
 			std::tuple<Systems...> systems;
@@ -103,6 +104,12 @@ namespace Engine::ECS {
 			 * @param[in] dt The time delta between calls.
 			 */
 			void run(float dt);
+			
+			/** Gets the tick interval in seconds. */
+			float32 getTickInterval() const;
+
+			/** Gets the remaining tick time to be simulated in seconds. */
+			float32 getTickAccumulation() const;
 
 		public:
 			/**

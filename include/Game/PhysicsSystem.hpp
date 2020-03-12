@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/Debug/DebugDrawBox2D.hpp>
+#include <Engine/ECS/EntityFilter.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -78,6 +79,9 @@ namespace Game {
 
 			/** The user data to use for box2d */
 			std::vector<PhysicsUserData> userData;
+
+			// TODO:Doc
+			Engine::ECS::EntityFilter& filter;
 
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D debugDraw;

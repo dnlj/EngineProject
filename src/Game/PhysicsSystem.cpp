@@ -1,11 +1,13 @@
 // Game
+#include <Game/World.hpp>
 #include <Game/PhysicsSystem.hpp>
 
 namespace Game {
 	PhysicsSystem::PhysicsSystem(SystemArg arg)
 		: System{arg}
 		, physWorld{b2Vec2_zero}
-		, contactListener{*this} {
+		, contactListener{*this}
+		, filter{world.getFilterFor<PhysicsComponent>()} {
 
 		physWorld.SetContactListener(&contactListener);
 
@@ -16,10 +18,27 @@ namespace Game {
 	}
 
 	void PhysicsSystem::tick(float dt) {
+		for (auto ent : filter) {
+			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			physComp.prevTransform = physComp.body->GetTransform();
+		}
+
 		physWorld.Step(dt, 8, 3);
 	}
 
 	void PhysicsSystem::run(float dt) {
+		const float32 a = world.getTickAccumulation() / world.getTickInterval();
+		const float32 b = 1.0f - a;
+
+		for (auto ent : filter) {
+			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			auto& prevTrans = physComp.prevTransform;
+			auto& nextTrans = physComp.body->GetTransform();
+
+			physComp.interpTransform.p = a * nextTrans.p + b * prevTrans.p;
+			// TODO: angle
+		}
+
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.reset();
 			physWorld.DrawDebugData();

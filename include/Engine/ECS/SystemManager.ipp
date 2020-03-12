@@ -56,7 +56,7 @@ namespace Engine::ECS {
 			(getSystem<Systems>().tick(tickInterval), ...);
 			tickAccum -= tickInterval;
 		}
-		
+
 		(getSystem<Systems>().run(dt), ...);
 	}
 
@@ -70,6 +70,16 @@ namespace Engine::ECS {
 	template<class SystemA, class SystemB>
 	constexpr static bool SystemManager<SystemsType<Systems...>>::orderAfter() {
 		return SystemManager::orderBefore<SystemB, SystemA>();
+	}
+	
+	template<template<class...> class SystemsType, class... Systems>
+	float32 SystemManager<SystemsType<Systems...>>::getTickInterval() const {
+		return tickInterval;
+	}
+
+	template<template<class...> class SystemsType, class... Systems>
+	float32 SystemManager<SystemsType<Systems...>>::getTickAccumulation() const {
+		return tickAccum;
 	}
 }
 

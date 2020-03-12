@@ -4,6 +4,7 @@
 #include <tuple>
 
 // Engine
+#include <Engine/Engine.hpp>
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/SystemManager.hpp>
 #include <Engine/ECS/ComponentManager.hpp>
@@ -199,6 +200,12 @@ namespace Engine::ECS {
 
 			template<>
 			EntityFilter& getFilterFor() = delete;
+			
+			/** @see SystemManager::getTickInterval */
+			float32 getTickInterval() const;
+
+			/** @see SystemManager::getTickAccumulation */
+			float32 getTickAccumulation() const;
 
 			/** @see SystemManager::orderBefore */
 			template<class SystemA, class SystemB>
@@ -207,6 +214,7 @@ namespace Engine::ECS {
 			/** @see SystemManager::orderAfter */
 			template<class SystemA, class SystemB>
 			constexpr static bool orderAfter();
+
 	};
 }
 

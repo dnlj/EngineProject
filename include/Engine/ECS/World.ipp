@@ -1,5 +1,9 @@
 #pragma once
 
+// Engine
+#include <Engine/ECS/World.hpp>
+
+
 namespace Engine::ECS {
 	template<class SystemsSet, class ComponentsSet>
 	template<class Arg>
@@ -168,6 +172,16 @@ namespace Engine::ECS {
 	template<class... Components>
 	EntityFilter& World<SystemsSet, ComponentsSet>::getFilterFor() {
 		return fm.getFilterFor(*this, getBitsetForComponents<Components...>());
+	}
+	
+	template<class SystemsSet, class ComponentsSet>
+	float32 World<SystemsSet, ComponentsSet>::getTickInterval() const {
+		return sm.getTickInterval();
+	}
+	
+	template<class SystemsSet, class ComponentsSet>
+	float32 World<SystemsSet, ComponentsSet>::getTickAccumulation() const {
+		return sm.getTickAccumulation();
 	}
 
 	template<class SystemsSet, class ComponentsSet>

@@ -42,6 +42,7 @@ namespace Game {
 			{{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)}}
 		};
 
+		// TODO: will need to change to using components for all bodies if we want interp.
 		for (int x = 0; x < activeAreaSize.x; ++x) {
 			for (int y = 0; y < activeAreaSize.y; ++y) {
 				auto& data = activeAreaData[x][y];
