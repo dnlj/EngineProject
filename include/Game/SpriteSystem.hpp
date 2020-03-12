@@ -42,15 +42,12 @@ namespace Game {
 			SpriteSystem(SystemArg arg);
 			~SpriteSystem();
 
-			void setup(Engine::EngineInstance& engine);
 			void run(float dt);
 
 			void addSprite(Sprite sprite);
 
 		private:
 			Engine::ECS::EntityFilter& filter;
-
-			const Engine::Camera* camera;
 
 			constexpr static std::size_t MAX_SPRITES = 1024;
 			std::vector<InstanceData> instanceData;

@@ -16,20 +16,10 @@ namespace Game {
 		: System{arg}
 		, filter{world.getFilterFor<
 			Game::SpriteComponent,
-			Game::PhysicsComponent>()}{
+			Game::PhysicsComponent>()
+		} {
 
 		static_assert(World::orderAfter<SpriteSystem, PhysicsSystem>());
-	}
-
-	SpriteSystem::~SpriteSystem() {
-		glDeleteVertexArrays(1, &vao);
-		glDeleteBuffers(1, &vbo);
-		glDeleteBuffers(1, &ivbo);
-		glDeleteBuffers(1, &ebo);
-	}
-
-	void SpriteSystem::setup(Engine::EngineInstance& engine) {
-		camera = &engine.camera;
 		
 		// TODO: Split into multiple functions?
 
@@ -104,6 +94,13 @@ namespace Game {
 		}
 	}
 
+	SpriteSystem::~SpriteSystem() {
+		glDeleteVertexArrays(1, &vao);
+		glDeleteBuffers(1, &vbo);
+		glDeleteBuffers(1, &ivbo);
+		glDeleteBuffers(1, &ebo);
+	}
+
 	void SpriteSystem::run(float dt) {
 		if (filter.empty()) { return; }
 
@@ -127,7 +124,7 @@ namespace Game {
 		for (auto& sprite : sprites) {
 			// Set camera uniform
 			auto model = glm::translate(glm::mat4{1.0f}, sprite.position) * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/4});
-			glm::mat4 mvp = camera->getProjection() * camera->getView() * model;
+			glm::mat4 mvp = engine.camera.getProjection() * engine.camera.getView() * model;
 			
 			auto& group = spriteGroups.back();
 			if (group.texture == sprite.texture) {
