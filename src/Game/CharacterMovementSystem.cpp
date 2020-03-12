@@ -23,7 +23,7 @@ namespace Game {
 		static_assert(World::orderBefore<CharacterMovementSystem, PhysicsSystem>());
 	}
 
-	void CharacterMovementSystem::run(float dt) {
+	void CharacterMovementSystem::tick(float dt) {
 		constexpr float speed = 1.0f * 4;
 		for (auto ent : filter) {
 			auto& physComp = world.getComponent<Game::PhysicsComponent>(ent);

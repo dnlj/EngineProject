@@ -11,7 +11,7 @@ namespace Game {
 	class CharacterMovementSystem : public System {
 		public:
 			CharacterMovementSystem(SystemArg arg);
-			void run(float dt);
+			void tick(float dt);
 
 		private:
 			Engine::ECS::EntityFilter& filter;

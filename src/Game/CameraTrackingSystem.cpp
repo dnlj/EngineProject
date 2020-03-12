@@ -15,7 +15,6 @@ namespace Game {
 	}
 
 	void CameraTrackingSystem::run(float dt) {
-		// TODO: this should be in tick? no point in updating if objects havent moved.
 		const auto focusPos = world.getComponent<PhysicsComponent>(focus).body->GetPosition();
 		engine.camera.setPosition(glm::vec2{focusPos.x, focusPos.y});
 	}

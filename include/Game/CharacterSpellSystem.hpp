@@ -16,7 +16,7 @@ namespace Game {
 		public:
 			CharacterSpellSystem(SystemArg arg);
 			void setup();
-			void run(float dt);
+			void tick(float dt);
 			void fireMissile(const b2Vec2& pos, const b2Vec2& dir);
 
 		private:

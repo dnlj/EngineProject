@@ -14,9 +14,7 @@ namespace Game {
 	CharacterSpellSystem::CharacterSpellSystem(SystemArg arg)
 		: System{arg} {
 		static_assert(World::orderAfter<CharacterSpellSystem, CharacterMovementSystem>());
-
-		// TODO: this should be after? we get a physics update then detonate. not vice versa.
-		static_assert(World::orderBefore<CharacterSpellSystem, PhysicsSystem>());
+		static_assert(World::orderAfter<CharacterSpellSystem, PhysicsSystem>());
 	}
 
 	void CharacterSpellSystem::setup() {
@@ -78,8 +76,7 @@ namespace Game {
 		world.getComponent<Game::PhysicsComponent>(ent).body->SetActive(false);
 	}
 
-	// TODO: shouldnt this be tick?
-	void CharacterSpellSystem::run(float dt) {
+	void CharacterSpellSystem::tick(float dt) {
 		if (toDestroy.empty()) { return; }
 
 		std::sort(toDestroy.begin(), toDestroy.end());
