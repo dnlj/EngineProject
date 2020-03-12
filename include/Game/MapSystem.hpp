@@ -53,7 +53,7 @@ namespace Game {
 		public:
 			MapSystem(SystemArg arg);
 			~MapSystem();
-			void setup(Engine::EngineInstance& engine);
+			void setup();
 			void run(float dt);
 
 			// TODO: Name? this isnt consistent with our other usage of offset
@@ -163,10 +163,9 @@ namespace Game {
 			MapChunk chunks[mapSize.x][mapSize.y];
 			glm::ivec2 loadedRegions[regionCount.x][regionCount.y] = {};
 
-			const Engine::Camera* camera;
-
 			Engine::Shader shader;
 			Engine::Texture texture;
+
 		private:
 			Engine::ECS::Entity mapEntity;
 

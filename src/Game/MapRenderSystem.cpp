@@ -25,7 +25,6 @@ namespace Game {
 		// TODO: these should be part of model/mesh
 		auto& shader = mapSys.shader;
 		auto& texture = mapSys.texture;
-		auto& camera = mapSys.camera;
 
 		glUseProgram(shader.get());
 
@@ -33,7 +32,7 @@ namespace Game {
 		glBindTextureUnit(0, texture.get());
 		glUniform1i(5, 0);
 
-		const auto vp = camera->getProjection() * camera->getView();
+		const auto vp = engine.camera.getProjection() * engine.camera.getView();
 
 		// TODO: only draw on screen
 		for (int x = 0; x < MapSystem::activeAreaSize.x; ++x) {

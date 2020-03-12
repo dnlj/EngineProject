@@ -27,6 +27,7 @@ namespace Game {
 				, engine{std::get<Engine::EngineInstance&>(arg)} {
 			};
 
+			void setup() {}
 			void tick(float dt) {}
 			void run(float dt) {}
 	};

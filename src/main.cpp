@@ -496,8 +496,6 @@ void run() {
 
 	{ // TODO: is there a better way to handle these setup functions? This seems dumb.
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
-		world.getSystem<Game::CharacterSpellSystem>().setup(engine);
-		world.getSystem<Game::MapSystem>().setup(engine);
 		
 		// Player
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");

@@ -21,8 +21,7 @@ namespace Game {
 	MapSystem::~MapSystem() {
 	}
 
-	void MapSystem::setup(Engine::EngineInstance& engine) {
-		camera = &engine.camera;
+	void MapSystem::setup() {
 		shader = engine.shaderManager.get("shaders/terrain");
 		texture = engine.textureManager.get("../assets/test.png");
 		mapEntity = world.createEntity();
@@ -55,8 +54,8 @@ namespace Game {
 
 	void MapSystem::run(float dt) {
 		updateOrigin();
-		const auto minChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().min)) - glm::ivec2{1, 1};
-		const auto maxChunk = blockToChunk(worldToBlock(camera->getWorldScreenBounds().max)) + glm::ivec2{1, 1};
+		const auto minChunk = blockToChunk(worldToBlock(engine.camera.getWorldScreenBounds().min)) - glm::ivec2{1, 1};
+		const auto maxChunk = blockToChunk(worldToBlock(engine.camera.getWorldScreenBounds().max)) + glm::ivec2{1, 1};
 		
 		// TODO: Handle chunk/region loading in different thread	
 		// As long as screen size < region size we only need to check the four corners
@@ -324,7 +323,7 @@ namespace Game {
 
 	void MapSystem::updateOrigin() {
 		// TODO: Move to own system. This doesnt really depend on the map.
-		const auto& pos = camera->getPosition();
+		const auto& pos = engine.camera.getPosition();
 		constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::blockSize;
 
 		if (std::abs(pos.x) > range.x) {

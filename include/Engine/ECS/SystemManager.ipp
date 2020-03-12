@@ -14,7 +14,8 @@ namespace Engine::ECS {
 		// Using sizeof here allows us to use the comma operator to duplicate `arg` N times
 		: tickInterval{tickInterval}
 		, systems((sizeof(Systems*), arg) ...) {
-		// TODO: Add function to allow systems to statically check their run order.
+
+		(getSystem<Systems>().setup(), ...);
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
