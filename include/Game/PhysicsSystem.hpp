@@ -17,6 +17,7 @@ namespace Game {
 		public:
 			PhysicsSystem(SystemArg arg);
 
+			void tick(float dt);
 			void run(float dt);
 
 			/**

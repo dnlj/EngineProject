@@ -15,9 +15,11 @@ namespace Game {
 		#endif
 	}
 
-	void PhysicsSystem::run(float dt) {
+	void PhysicsSystem::tick(float dt) {
 		physWorld.Step(dt, 8, 3);
+	}
 
+	void PhysicsSystem::run(float dt) {
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.reset();
 			physWorld.DrawDebugData();
