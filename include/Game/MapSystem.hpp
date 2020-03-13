@@ -132,8 +132,9 @@ namespace Game {
 				ActiveChunkData() = default;
 				ActiveChunkData(const ActiveChunkData&) = delete;
 				ActiveChunkData& operator=(const ActiveChunkData&) = delete;
-				b2Body* body;
-				Engine::Graphics::Mesh mesh;
+
+				Engine::ECS::Entity ent;
+				Engine::Graphics::Mesh mesh; // TODO: move into component?
 				glm::ivec2 chunkPos;
 				bool updated = true;
 			};

@@ -46,7 +46,12 @@ namespace Game {
 		for (int x = 0; x < activeAreaSize.x; ++x) {
 			for (int y = 0; y < activeAreaSize.y; ++y) {
 				auto& data = activeAreaData[x][y];
-				data.body = physSys.createBody(mapEntity, bodyDef);
+				data.ent = world.createEntity(true);
+
+				// TODO: Is there a clean way to make it so we dont have to addcomponent then create body?
+				auto& physComp = world.addComponent<PhysicsComponent>(data.ent);
+				physComp.body = physSys.createBody(mapEntity, bodyDef);
+
 				data.chunkPos = glm::ivec2{0x7FFF'FFFF, 0x7FFF'FFFF};
 				data.mesh.setBufferFormat(vertexFormat);
 			}
@@ -225,12 +230,14 @@ namespace Game {
 
 		{ // Physics stuff
 			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(data.chunkPos)));
-			data.body->SetTransform(pos, 0);
+			auto& physComp = world.getComponent<PhysicsComponent>(data.ent);
+			physComp.setTransform(pos, 0);
+
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures
-			for (auto* fixture = data.body->GetFixtureList(); fixture;) {
+			for (auto* fixture = physComp.body->GetFixtureList(); fixture;) {
 				auto* next = fixture->GetNext();
-				data.body->DestroyFixture(fixture);
+				physComp.body->DestroyFixture(fixture);
 				fixture = next;
 			}
 
@@ -269,7 +276,7 @@ namespace Game {
 					const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
 
 					shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
-					data.body->CreateFixture(&fixtureDef);
+					physComp.body->CreateFixture(&fixtureDef);
 				}
 			}
 		}
