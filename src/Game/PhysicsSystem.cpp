@@ -32,11 +32,18 @@ namespace Game {
 
 		for (auto ent : filter) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			auto& prevTrans = physComp.prevTransform;
-			auto& nextTrans = physComp.body->GetTransform();
+			const auto& prevTrans = physComp.prevTransform;
+			const auto& nextTrans = physComp.body->GetTransform();
+			auto& lerpTrans = physComp.interpTransform;
 
-			physComp.interpTransform.p = a * nextTrans.p + b * prevTrans.p;
-			// TODO: angle
+			lerpTrans.p = a * nextTrans.p + b * prevTrans.p;
+
+			// Normalized lerp - really should use slerp but since the delta is small nlerp is close to slerp
+			lerpTrans.q.c = a * nextTrans.q.c + b * prevTrans.q.c;
+			lerpTrans.q.s = a * nextTrans.q.s + b * prevTrans.q.s;
+			const float32 mag = lerpTrans.q.c * lerpTrans.q.c + lerpTrans.q.s * lerpTrans.q.s;
+			lerpTrans.q.c /= mag;
+			lerpTrans.q.s /= mag;
 		}
 
 		#if defined(DEBUG_PHYSICS)
