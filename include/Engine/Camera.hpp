@@ -80,7 +80,7 @@ namespace Engine {
 			glm::mat4 proj{1.0f};
 			glm::mat4 projInv;
 
-			glm::vec3 position;
+			glm::vec3 position{0.0f};
 			glm::ivec2 size = {0, 0};
 			float scale = 1.0f;
 
