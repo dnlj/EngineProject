@@ -237,11 +237,14 @@ namespace {
 			auto camPos = engine.camera.getPosition();
 			ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
 
-			auto mapChunkOffset = mapSys.getChunkOffset();
-			ImGui::Text("Map Chunk Offset: (%i, %i)", mapChunkOffset.x, mapChunkOffset.y);
+			auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
+			ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
 
 			auto mapBlockOffset = mapSys.getBlockOffset();
-			ImGui::Text("Map Block Offset: (%i, %i)", mapBlockOffset.x, mapBlockOffset.y);
+			ImGui::Text("Map Offset (block): (%i, %i)", mapBlockOffset.x, mapBlockOffset.y);
+
+			auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
+			ImGui::Text("Map Offset (chunk): (%i, %i)", mapChunkOffset.x, mapChunkOffset.y);
 
 
 			#if defined(DEBUG_PHYSICS)

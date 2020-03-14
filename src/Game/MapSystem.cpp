@@ -10,6 +10,7 @@
 #include <Game/SpriteSystem.hpp>
 #include <Game/CameraTrackingSystem.hpp>
 #include <Game/World.hpp>
+#include <Game/PhysicsOriginShiftSystem.hpp>
 
 
 namespace Game {
@@ -59,7 +60,6 @@ namespace Game {
 	}
 
 	void MapSystem::run(float dt) {
-		updateOrigin();
 		const auto minChunk = blockToChunk(worldToBlock(engine.camera.getWorldScreenBounds().min)) - glm::ivec2{1, 1};
 		const auto maxChunk = blockToChunk(worldToBlock(engine.camera.getWorldScreenBounds().max)) + glm::ivec2{1, 1};
 		
@@ -85,12 +85,10 @@ namespace Game {
 		}
 	}
 	
-	const glm::ivec2& MapSystem::getChunkOffset() const {
-		return mapOffset;
-	}
-
 	glm::ivec2 MapSystem::getBlockOffset() const {
-		return mapOffset * MapChunk::size;
+		constexpr int32 blocksPerShift = static_cast<int32>(PhysicsOriginShiftSystem::range / MapChunk::blockSize);
+		static_assert(PhysicsOriginShiftSystem::range - blocksPerShift * MapChunk::blockSize == 0.0f, "Remainder not handled");
+		return blocksPerShift * world.getSystem<PhysicsOriginShiftSystem>().getOffset();
 	}
 
 	void MapSystem::setValueAt(const glm::vec2 wpos, int value) {
@@ -99,10 +97,9 @@ namespace Game {
 		const auto blockOffset = glm::floor(wpos / MapChunk::blockSize);
 		const auto blockIndex = (MapChunk::size + glm::ivec2{blockOffset} % MapChunk::size) % MapChunk::size;
 
-		//std::cout << "Bidx: " << blockIndex.x << ", " << blockIndex.y << "\n";
 		const glm::ivec2 chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
-		const auto chunkPos = mapOffset + chunkOffset;
-		const auto chunkIndex = (mapSize + glm::ivec2{chunkPos} % mapSize) % mapSize;
+		const auto chunkPos = blockToChunk(getBlockOffset()) + chunkOffset;
+		const auto chunkIndex = chunkToIndex(chunkPos);
 
 		auto& chunk = chunks[chunkIndex.x][chunkIndex.y];
 		chunk.data[blockIndex.x][blockIndex.y] = value;
@@ -123,7 +120,7 @@ namespace Game {
 	}
 
 	glm::vec2 MapSystem::blockToWorld(const glm::ivec2 block) const {
-		return glm::vec2{block - mapOffset * MapChunk::size} * MapChunk::blockSize;
+		return glm::vec2{block - getBlockOffset()} * MapChunk::blockSize;
 	}
 
 	glm::ivec2 MapSystem::blockToChunk(const glm::ivec2 block) const {
@@ -327,43 +324,5 @@ namespace Game {
 		}
 
 		chunk.pos = pos;
-	}
-
-	void MapSystem::updateOrigin() {
-		// TODO: Move to own system. This doesnt really depend on the map.
-		const auto& pos = engine.camera.getPosition();
-		constexpr auto range = glm::vec2{MapChunk::size * originRange} * MapChunk::blockSize;
-
-		if (std::abs(pos.x) > range.x) {
-			auto& physSys = world.getSystem<Game::PhysicsSystem>();
-			auto dir = std::copysign(1.0f, pos.x);
-
-			physSys.getWorld().ShiftOrigin(b2Vec2{
-				range.x * dir,
-				0.0f
-			});
-
-			mapOffset.x += static_cast<int>(dir) * originRange;
-
-			// TODO: Figure out a better way to update camera. This seems hacky.
-			// TODO: Doing this could also cause problems with other things that use the camera.
-			world.getSystem<CameraTrackingSystem>().run(0.0f);
-		}
-
-		if (std::abs(pos.y) > range.y) {
-			auto& physSys = world.getSystem<Game::PhysicsSystem>();
-			auto dir = std::copysign(1.0f, pos.y);
-
-			physSys.getWorld().ShiftOrigin(b2Vec2{
-				0.0f,
-				range.y * dir
-			});
-
-			mapOffset.y += static_cast<int>(dir) * originRange;
-
-			// TODO: Figure out a better way to update camera. This seems hacky.
-			// TODO: Doing this could also cause problems with other things that use the camera.
-			world.getSystem<CameraTrackingSystem>().run(0.0f);
-		}
 	}
 }

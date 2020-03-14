@@ -9,6 +9,7 @@
 
 // Game
 #include <Game/CharacterMovementSystem.hpp>
+#include <Game/PhysicsOriginShiftSystem.hpp>
 #include <Game/PhysicsSystem.hpp>
 #include <Game/CharacterSpellSystem.hpp>
 #include <Game/CameraTrackingSystem.hpp>
@@ -26,6 +27,7 @@
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
 		CharacterMovementSystem,
+		PhysicsOriginShiftSystem,
 		PhysicsSystem,
 		CharacterSpellSystem,
 		CameraTrackingSystem,

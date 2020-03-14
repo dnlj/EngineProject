@@ -30,17 +30,11 @@
 namespace Game {
 	class MapSystem : public System {
 		public:
-			/** Number of chunks before shifting the origin */
-			constexpr static int originRange = 4; // TODO: In prod this should be a much larger value. maybe around 10,000 world units (whatever that is in chunks)
-
 			/** The number of chunks in each region */
 			constexpr static glm::ivec2 regionSize = {16, 16};
 
 			/** The number of regions in the map */
 			constexpr static glm::ivec2 regionCount = {3, 3};
-
-			/** Offset (in chunks) of current origin */
-			glm::ivec2 mapOffset = {0, 0}; // TODO: is there a reason to not just use a block offset? We never use this without also referencing originRange anyways.
 
 			/** The number of chunks in the map */
 			constexpr static glm::ivec2 mapSize = regionCount * regionSize;
@@ -55,9 +49,6 @@ namespace Game {
 			~MapSystem();
 			void setup();
 			void run(float dt);
-
-			// TODO: Name? this isnt consistent with our other usage of offset
-			const glm::ivec2& getChunkOffset() const; // TODO: Remove? Dont think this is used anywhere.
 
 			// TODO: Name? this isnt consistent with our other usage of offset
 			// TODO: Doc. Gets the size of the current offset in blocks coordinates
@@ -153,9 +144,6 @@ namespace Game {
 			
 			// TODO: Doc
 			void updateChunk(const glm::ivec2 chunk);
-
-			// TODO: Doc
-			void updateOrigin();
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			glm::ivec2 activeAreaOrigin = {0, 0};

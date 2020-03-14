@@ -6,6 +6,9 @@
 // Engine
 #include <Engine/EngineInstance.hpp>
 
+// Game
+#include <Game/Common.hpp>
+
 
 namespace Game {
 	class World; // Forward declaration
@@ -28,7 +31,7 @@ namespace Game {
 			};
 
 			void setup() {}
-			void tick(float dt) {}
-			void run(float dt) {}
+			void tick(float32 dt) {}
+			void run(float32 dt) {}
 	};
 }
