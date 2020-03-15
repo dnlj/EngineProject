@@ -73,6 +73,15 @@ namespace Game {
 		contactListener.addListener(listener);
 	}
 
+	void PhysicsSystem::shiftOrigin(const b2Vec2& newOrigin) {
+		physWorld.ShiftOrigin(newOrigin);
+
+		for (auto& ent : filter) {
+			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			physComp.prevTransform = physComp.body->GetTransform();
+		}
+	}
+
 	const PhysicsUserData& PhysicsSystem::getUserData(void* ptr) const {
 		return userData[reinterpret_cast<std::size_t>(ptr)];
 	}

@@ -41,8 +41,11 @@ namespace Game {
 			 */
 			void addListener(PhysicsListener* listener);
 
-			// TODO: Temp, move functions into PhysicsSystem
-			b2World& getWorld() { return physWorld; };
+			/**
+			 * Changes the origin of the physics world.
+			 * @param[in] newOrigin The new origin relative to the current origin.
+			 */
+			void shiftOrigin(const b2Vec2& newOrigin);
 
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D& getDebugDraw();

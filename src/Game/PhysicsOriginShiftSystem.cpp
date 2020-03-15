@@ -24,7 +24,7 @@ namespace Game {
 			auto& physSys = world.getSystem<Game::PhysicsSystem>();
 			auto dir = std::copysign(1.0f, pos.x);
 
-			physSys.getWorld().ShiftOrigin(b2Vec2{
+			physSys.shiftOrigin({
 				range * dir,
 				0.0f
 			});
@@ -40,7 +40,7 @@ namespace Game {
 			auto& physSys = world.getSystem<Game::PhysicsSystem>();
 			auto dir = std::copysign(1.0f, pos.y);
 
-			physSys.getWorld().ShiftOrigin(b2Vec2{
+			physSys.shiftOrigin({
 				0.0f,
 				range * dir
 			});
