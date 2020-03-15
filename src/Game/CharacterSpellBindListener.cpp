@@ -16,7 +16,7 @@ namespace Game {
 
 	void CharacterSpellBindListener::onBindPress() {
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();
-		const auto& pos = world.getComponent<Game::PhysicsComponent>(player).body->GetPosition();
+		const auto& pos = world.getComponent<Game::PhysicsComponent>(player).getPosition();
 		auto mousePos = engine.camera.screenToWorld(engine.inputManager.getMousePosition());
 		auto dir = b2Vec2(mousePos.x - pos.x, mousePos.y - pos.y);
 		dir.Normalize();

@@ -36,7 +36,7 @@ namespace Game {
 				bodyDef.type = b2_dynamicBody;
 				bodyDef.position = b2Vec2_zero;
 
-				physComp.body = physSys.createBody(ent, bodyDef);
+				physComp.setBody(physSys.createBody(ent, bodyDef));
 
 				b2CircleShape shape;
 				shape.m_radius = 1.0f/8;
@@ -46,10 +46,10 @@ namespace Game {
 				fixtureDef.density = 0.0f;
 				fixtureDef.isSensor = true;
 
-				physComp.body->CreateFixture(&fixtureDef);
-				physComp.body->SetLinearDamping(0.0f);
-				physComp.body->SetFixedRotation(true);
-				physComp.body->SetActive(false);
+				physComp.getBody().CreateFixture(&fixtureDef);
+				physComp.getBody().SetLinearDamping(0.0f);
+				physComp.getBody().SetFixedRotation(true);
+				physComp.getBody().SetActive(false);
 			}
 
 			spriteComp.texture = engine.textureManager.get("../assets/fire.png");
@@ -64,9 +64,9 @@ namespace Game {
 		auto& physComp = world.getComponent<Game::PhysicsComponent>(missle);
 		physComp.setTransform(pos, 0);
 
-		auto* body = physComp.body;
-		body->SetActive(true);
-		body->SetLinearVelocity(4.0f * dir);
+		auto& body = physComp.getBody();
+		body.SetActive(true);
+		body.SetLinearVelocity(4.0f * dir);
 
 		currentMissle = (currentMissle + 1) % missles.size();
 	}
@@ -74,7 +74,7 @@ namespace Game {
 	void CharacterSpellSystem::detonateMissle(Engine::ECS::Entity ent) {
 		std::cout << "Boom: " << ent << "\n";
 		world.setEnabled(ent, false);
-		world.getComponent<Game::PhysicsComponent>(ent).body->SetActive(false);
+		world.getComponent<Game::PhysicsComponent>(ent).getBody().SetActive(false);
 	}
 
 	void CharacterSpellSystem::tick(float dt) {

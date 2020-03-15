@@ -51,7 +51,7 @@ namespace Game {
 
 				// TODO: Is there a clean way to make it so we dont have to addcomponent then create body?
 				auto& physComp = world.addComponent<PhysicsComponent>(data.ent);
-				physComp.body = physSys.createBody(mapEntity, bodyDef);
+				physComp.setBody(physSys.createBody(mapEntity, bodyDef));
 
 				data.chunkPos = glm::ivec2{0x7FFF'FFFF, 0x7FFF'FFFF};
 				data.mesh.setBufferFormat(vertexFormat);
@@ -232,9 +232,9 @@ namespace Game {
 
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures
-			for (auto* fixture = physComp.body->GetFixtureList(); fixture;) {
+			for (auto* fixture = physComp.getBody().GetFixtureList(); fixture;) {
 				auto* next = fixture->GetNext();
-				physComp.body->DestroyFixture(fixture);
+				physComp.getBody().DestroyFixture(fixture);
 				fixture = next;
 			}
 
@@ -273,7 +273,7 @@ namespace Game {
 					const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
 
 					shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
-					physComp.body->CreateFixture(&fixtureDef);
+					physComp.getBody().CreateFixture(&fixtureDef);
 				}
 			}
 		}

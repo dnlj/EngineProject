@@ -502,7 +502,7 @@ void run() {
 		
 		// Player
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");
-		world.addComponent<Game::PhysicsComponent>(player).body = createPhysicsCircle(player, physSys);
+		world.addComponent<Game::PhysicsComponent>(player).setBody(createPhysicsCircle(player, physSys));
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::CharacterSpellComponent>(player);
 		world.addComponent<Game::InputComponent>(player).inputManager = &engine.inputManager;

@@ -10,8 +10,6 @@ namespace Game {
 	}
 
 	void PhysicsOriginShiftSystem::run(float32 dt) {
-		// TODO: interpolation causes an error with origin shifting
-
 		// Using last frames position shouldnt be a problem here normally.
 		// May be an issue in cases of long distance teleportation.
 		const auto& pos = engine.camera.getPosition();
@@ -34,8 +32,8 @@ namespace Game {
 
 		if (std::abs(pos.y) > range) {
 			std::cout
-				<< "shift x "
-				<< pos.x << " "
+				<< "shift y "
+				<< pos.y << " "
 				<< range << "\n";
 			auto& physSys = world.getSystem<Game::PhysicsSystem>();
 			auto dir = std::copysign(1.0f, pos.y);
