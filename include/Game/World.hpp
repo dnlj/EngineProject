@@ -44,10 +44,10 @@ namespace Game {
 		InputComponent
 	>;
 
-	class World : public Engine::ECS::World<SystemsSet, ComponentsSet> {
+	class World : public Engine::ECS::World<64, SystemsSet, ComponentsSet> {
 		public:
 			World(float tickInterval, Engine::EngineInstance& engine)
-				: Engine::ECS::World<SystemsSet, ComponentsSet>(tickInterval, std::tie(*this, engine)) {
+				: Engine::ECS::World<64, SystemsSet, ComponentsSet>(tickInterval, std::tie(*this, engine)) {
 			}
 	};
 }

@@ -92,11 +92,14 @@ namespace Engine::ECS {
 			template<class System1>
 			SystemBitset getBitsetForSystems() const;
 
-			// TODO: Doc
+			/**
+			 * Calls the `tick` member function on all systems.
+			 * @param[in] dt The time delta between calls.
+			 */
 			void tick(float dt);
 
 			/**
-			 * Runs the `run` member function on all systems.
+			 * Calls the `run` member function on all systems.
 			 * @param[in] dt The time delta between calls.
 			 */
 			void run(float dt);

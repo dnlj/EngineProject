@@ -8,6 +8,7 @@
 #include <chrono>
 #include <thread>
 #include <cmath>
+#include <numeric>
 
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
@@ -57,6 +58,7 @@ namespace {
 	constexpr int OPENGL_VERSION_MAJOR = 4;
 	constexpr int OPENGL_VERSION_MINOR = 5;
 	GLuint mapTexture = 0;
+	double avgDeltaTime = 0.0;
 	
 	void mapTest() {
 		struct Color {
@@ -211,6 +213,8 @@ namespace {
 
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
+
+		ImGui::Text("FPS %f (%f)", 1.0/avgDeltaTime, avgDeltaTime);
 
 		if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
 			auto& mapSys = world.getSystem<Game::MapSystem>();
@@ -570,27 +574,10 @@ void run() {
 	// Procedural test
 	//mapTest();
 
-
 	// Main loop
-	auto startTime = std::chrono::high_resolution_clock::now();
-	auto lastUpdate = startTime;
+	std::array<float, 64> deltas = {};
+	size_t deltaIndex = 0;
 	while (!glfwWindowShouldClose(window)) {
-		// Get the elapsed time in seconds
-		auto diff = std::chrono::high_resolution_clock::now() - startTime;
-		startTime = std::chrono::high_resolution_clock::now();
-		auto dt = std::chrono::duration_cast<
-			std::chrono::duration<
-				float,
-				std::chrono::seconds::period
-			>
-		>(diff).count();
-		
-		// Update frame time
-		if ((std::chrono::high_resolution_clock::now() - lastUpdate) > std::chrono::seconds{1}) {
-			glfwSetWindowTitle(window, std::to_string(dt).c_str());
-			lastUpdate = std::chrono::high_resolution_clock::now();
-		}
-
 		// Input
 		engine.inputManager.update();
 
@@ -600,7 +587,13 @@ void run() {
 
 		// ECS
 		world.run();
-		//world.run(dt);
+
+		// Frame rate
+		deltas[deltaIndex] = world.getDeltaTime();
+		deltaIndex = ++deltaIndex % deltas.size();
+		if (deltaIndex == 0) {
+			avgDeltaTime = std::accumulate(deltas.cbegin(), deltas.cend(), 0.0) / deltas.size();
+		}
 
 		// Physics debug
 		#if defined (DEBUG_PHYSICS)
@@ -614,7 +607,7 @@ void run() {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
+		//std::this_thread::sleep_for(std::chrono::milliseconds{16});
 	}
 
 	glDeleteTextures(1, &mapTexture);

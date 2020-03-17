@@ -16,10 +16,11 @@
 
 namespace Engine::ECS {
 	/**
+	 * @tparam TickRate The tick rate of the world.
 	 * @tparam SystemsSet The systems for this world to have.
 	 * @tparam ComponentsSet The components for this world to have.
 	 */
-	template<class SystemsSet, class ComponentsSet>
+	template<int64 TickRate, class SystemsSet, class ComponentsSet>
 	class World {
 		public:
 			using ComponentManager = ComponentManager<ComponentsSet>;
@@ -40,15 +41,21 @@ namespace Engine::ECS {
 			FilterManager fm;
 			SystemManager sm;
 
-			// TODO: doc
-			TimePoint lastTime;
+			/** Beginning of last run. */
+			TimePoint beginTime;
 
-			// TODO: doc
+			/** Accumulator used for ticking. */
 			TimeDuration tickAccum{0};
 
-			// TODO: doc
-			// TODO: better way to specify this. std::ratio?
-			constexpr static TimeDuration tickInterval{15625000ll}; /* 1/64 ns*/;
+			/** How long between each tick. */
+			constexpr static TimeDuration tickInterval{TimeDuration::period::den / TickRate};
+			
+			/** Time it took to process the last run. */
+			float32 deltaTime = 0.0f;
+			
+			/** Delta time in nanoseconds. @see deltaTime */
+			TimeDuration deltaTimeNS{0};
+
 
 		public:
 			/**
@@ -225,14 +232,31 @@ namespace Engine::ECS {
 			template<>
 			EntityFilter& getFilterFor() = delete;
 			
-			/** Gets the tick interval */
+			/**
+			 * Gets the tick interval.
+			 */
 			auto getTickInterval() const;
 
-			/** Gets the remaining tick time to be simulated */
+			/**
+			 * Gets the remaining tick time to be simulated.
+			 */
 			auto getTickAccumulation() const;
 			
-			/** TODO: doc */
+			/**
+			 * Gets tick accumulation divided by tick interval.
+			 * Useful for interpolation.
+			 */
 			float32 getTickRatio() const;
+
+			/**
+			 * Gets the time (in seconds) last update took to run.
+			 */
+			float32 getDeltaTime() const;
+
+			/**
+			 * Gets the time (in nanoseconds) last update took to run.
+			 */
+			auto getDeltaTimeNS() const;
 
 			/** @see SystemManager::orderBefore */
 			template<class SystemA, class SystemB>
