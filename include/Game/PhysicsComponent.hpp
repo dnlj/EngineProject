@@ -14,9 +14,6 @@ namespace Game {
 			friend class PhysicsSystem;
 			b2Transform prevTransform;
 			b2Transform interpTransform;
-			
-			// TODO: Should we wrap body so we never directly interact with box2d?
-			// TODO: We should so we dont forget to do things like use `setTransform` instead of `body->SetTransform`
 			b2Body* body = nullptr;
 
 		public:

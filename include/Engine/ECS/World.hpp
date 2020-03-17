@@ -2,6 +2,8 @@
 
 // STD
 #include <tuple>
+#include <chrono>
+#include <type_traits>
 
 // Engine
 #include <Engine/Engine.hpp>
@@ -23,11 +25,30 @@ namespace Engine::ECS {
 			using ComponentManager = ComponentManager<ComponentsSet>;
 			using SystemManager = SystemManager<SystemsSet>;
 
+			// TODO: move into Engine?
+			using TimeClock = std::chrono::high_resolution_clock;
+			using TimePoint = TimeClock::time_point;
+			using TimeDuration = std::chrono::duration<int64, std::nano>;
+			using TimeDurationSeconds = std::chrono::duration<float32, std::ratio<1, 1>>;
+			static_assert(std::is_same_v<TimeClock::duration, TimeDuration>);
+			static_assert(std::is_same_v<TimeDuration::rep, int64>);
+			static_assert(std::is_same_v<float32, decltype(std::declval<TimeDuration>() / std::declval<TimeDurationSeconds>())>);
+
 		private:
 			EntityManager em;
 			ComponentManager cm;
 			FilterManager fm;
 			SystemManager sm;
+
+			// TODO: doc
+			TimePoint lastTime;
+
+			// TODO: doc
+			TimeDuration tickAccum{0};
+
+			// TODO: doc
+			// TODO: better way to specify this. std::ratio?
+			constexpr static TimeDuration tickInterval{15625000ll}; /* 1/64 ns*/;
 
 		public:
 			/**
@@ -35,6 +56,9 @@ namespace Engine::ECS {
 			 */
 			template<class Arg>
 			World(float tickInterval, Arg& arg);
+
+			// TODO: doc
+			void run();
 
 			/**
 			 * @see EntityManager::isAlive
@@ -201,11 +225,14 @@ namespace Engine::ECS {
 			template<>
 			EntityFilter& getFilterFor() = delete;
 			
-			/** @see SystemManager::getTickInterval */
-			float32 getTickInterval() const;
+			/** Gets the tick interval */
+			auto getTickInterval() const;
 
-			/** @see SystemManager::getTickAccumulation */
-			float32 getTickAccumulation() const;
+			/** Gets the remaining tick time to be simulated */
+			auto getTickAccumulation() const;
+			
+			/** TODO: doc */
+			float32 getTickRatio() const;
 
 			/** @see SystemManager::orderBefore */
 			template<class SystemA, class SystemB>

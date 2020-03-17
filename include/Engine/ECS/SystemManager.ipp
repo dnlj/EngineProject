@@ -10,10 +10,9 @@
 namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
 	template<class Arg>
-	SystemManager<SystemsType<Systems...>>::SystemManager(float tickInterval, Arg& arg)
+	SystemManager<SystemsType<Systems...>>::SystemManager(Arg& arg)
 		// Using sizeof here allows us to use the comma operator to duplicate `arg` N times
-		: tickInterval{tickInterval}
-		, systems((sizeof(Systems*), arg) ...) {
+		: systems((sizeof(Systems*), arg) ...) {
 
 		(getSystem<Systems>().setup(), ...);
 	}
@@ -50,13 +49,12 @@ namespace Engine::ECS {
 	}
 
 	template<template<class...> class SystemsType, class... Systems>
-	void SystemManager<SystemsType<Systems...>>::run(float dt) {
-		tickAccum += dt;
-		while (tickInterval < tickAccum) {
-			(getSystem<Systems>().tick(tickInterval), ...);
-			tickAccum -= tickInterval;
-		}
+	void SystemManager<SystemsType<Systems...>>::tick(float dt) {
+		(getSystem<Systems>().tick(dt), ...);
+	}
 
+	template<template<class...> class SystemsType, class... Systems>
+	void SystemManager<SystemsType<Systems...>>::run(float dt) {
 		(getSystem<Systems>().run(dt), ...);
 	}
 
@@ -70,16 +68,6 @@ namespace Engine::ECS {
 	template<class SystemA, class SystemB>
 	constexpr static bool SystemManager<SystemsType<Systems...>>::orderAfter() {
 		return SystemManager::orderBefore<SystemB, SystemA>();
-	}
-	
-	template<template<class...> class SystemsType, class... Systems>
-	float32 SystemManager<SystemsType<Systems...>>::getTickInterval() const {
-		return tickInterval;
-	}
-
-	template<template<class...> class SystemsType, class... Systems>
-	float32 SystemManager<SystemsType<Systems...>>::getTickAccumulation() const {
-		return tickAccum;
 	}
 }
 

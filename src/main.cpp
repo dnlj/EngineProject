@@ -599,7 +599,8 @@ void run() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// ECS
-		world.run(dt);
+		world.run();
+		//world.run(dt);
 
 		// Physics debug
 		#if defined (DEBUG_PHYSICS)

@@ -9,7 +9,25 @@ namespace Engine::ECS {
 	template<class Arg>
 	World<SystemsSet, ComponentsSet>::World(float tickInterval, Arg& arg)
 		: fm{em}
-		, sm(tickInterval, arg) {
+		, sm{arg}
+		, lastTime{TimeClock::now()} {
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	void World<SystemsSet, ComponentsSet>::run() {
+		// TODO: make accessor for diff in case we want to get ns for some reason in a system
+		const auto diff = TimeClock::now() - lastTime;
+		lastTime = TimeClock::now();
+		const auto dt = std::chrono::duration_cast<TimeDurationSeconds>(diff).count();
+
+		tickAccum += diff;
+		while (tickInterval < tickAccum) {
+			constexpr auto tickDelta = std::chrono::duration_cast<TimeDurationSeconds>(tickInterval).count();
+			sm.tick(tickDelta);
+			tickAccum -= tickInterval;
+		}
+
+		sm.run(dt);
 	}
 
 	template<class SystemsSet, class ComponentsSet>
@@ -175,13 +193,18 @@ namespace Engine::ECS {
 	}
 	
 	template<class SystemsSet, class ComponentsSet>
-	float32 World<SystemsSet, ComponentsSet>::getTickInterval() const {
-		return sm.getTickInterval();
+	auto World<SystemsSet, ComponentsSet>::getTickInterval() const {
+		return tickInterval;
 	}
 	
 	template<class SystemsSet, class ComponentsSet>
-	float32 World<SystemsSet, ComponentsSet>::getTickAccumulation() const {
-		return sm.getTickAccumulation();
+	auto World<SystemsSet, ComponentsSet>::getTickAccumulation() const {
+		return tickAccum;
+	}
+
+	template<class SystemsSet, class ComponentsSet>
+	float32 World<SystemsSet, ComponentsSet>::getTickRatio() const {
+		return tickAccum.count() / static_cast<float>(tickInterval.count());
 	}
 
 	template<class SystemsSet, class ComponentsSet>
