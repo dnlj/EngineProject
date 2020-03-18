@@ -2,11 +2,11 @@
 
 // STD
 #include <tuple>
-#include <chrono>
 #include <type_traits>
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/SystemManager.hpp>
 #include <Engine/ECS/ComponentManager.hpp>
@@ -26,15 +26,6 @@ namespace Engine::ECS {
 			using ComponentManager = ComponentManager<ComponentsSet>;
 			using SystemManager = SystemManager<SystemsSet>;
 
-			// TODO: move into Engine?
-			using TimeClock = std::chrono::high_resolution_clock;
-			using TimePoint = TimeClock::time_point;
-			using TimeDuration = std::chrono::duration<int64, std::nano>;
-			using TimeDurationSeconds = std::chrono::duration<float32, std::ratio<1, 1>>;
-			static_assert(std::is_same_v<TimeClock::duration, TimeDuration>);
-			static_assert(std::is_same_v<TimeDuration::rep, int64>);
-			static_assert(std::is_same_v<float32, decltype(std::declval<TimeDuration>() / std::declval<TimeDurationSeconds>())>);
-
 		private:
 			EntityManager em;
 			ComponentManager cm;
@@ -42,23 +33,23 @@ namespace Engine::ECS {
 			SystemManager sm;
 
 			/** Beginning of last run. */
-			TimePoint beginTime;
+			Clock::TimePoint beginTime;
 
 			/** Accumulator used for ticking. */
-			TimeDuration tickAccum{0};
+			Clock::Duration tickAccum{0};
 
 			/** Maximum tick duration to accumulate */
-			constexpr static TimeDuration tickAccumMax = std::chrono::milliseconds{250};
+			constexpr static Clock::Duration tickAccumMax = std::chrono::milliseconds{250};
 
 			/** How long between each tick. */
-			constexpr static TimeDuration tickInterval{TimeDuration::period::den / TickRate};
+			constexpr static Clock::Duration tickInterval{Clock::Period::den / TickRate};
 			static_assert(tickInterval < tickAccumMax, "Tick interval must be less than the maximum accumulable tick duration.");
 			
 			/** Time it took to process the last run. */
 			float32 deltaTime = 0.0f;
 			
 			/** Delta time in nanoseconds. @see deltaTime */
-			TimeDuration deltaTimeNS{0};
+			Clock::Duration deltaTimeNS{0};
 
 
 		public:

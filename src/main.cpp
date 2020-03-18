@@ -5,7 +5,6 @@
 // STD
 #include <algorithm>
 #include <iostream>
-#include <chrono>
 #include <thread>
 #include <cmath>
 #include <numeric>

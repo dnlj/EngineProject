@@ -54,11 +54,7 @@ namespace Engine::Input {
 	}
 
 	void InputManager::addInputBindMapping(const std::string& name, InputSequence inputs) {
-		#ifdef DEBUG
-			if (inputs.size() < 1) {
-				ENGINE_ERROR("InputSequence must have at least one input.");
-			}
-		#endif
+		ENGINE_ASSERT(inputs.size() > 0, "InputSequence must have at least one input.");
 
 		auto bid = getBindId(name);
 		if (bid < 0) {

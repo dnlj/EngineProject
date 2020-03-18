@@ -10,27 +10,27 @@ namespace Engine::ECS {
 	World<TickRate, SystemsSet, ComponentsSet>::World(float tickInterval, Arg& arg)
 		: fm{em}
 		, sm{arg}
-		, beginTime{TimeClock::now()} {
+		, beginTime{Clock::now()} {
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
 	void World<TickRate, SystemsSet, ComponentsSet>::run() {
-		const auto endTime = TimeClock::now();
+		const auto endTime = Clock::now();
 		deltaTimeNS = endTime - beginTime;
 		beginTime = endTime;
-		deltaTime = std::chrono::duration_cast<TimeDurationSeconds>(deltaTimeNS).count();
+		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
 		tickAccum += deltaTimeNS;
 		if (tickAccum > tickAccumMax) {
 			ENGINE_WARN(
 				"World tick falling behind by "
-				<< TimeDurationSeconds{tickAccum - tickAccumMax}.count() << "s"
+				<< Clock::Seconds{tickAccum - tickAccumMax}.count() << "s"
 			);
 			tickAccum = tickAccumMax;
 		}
 
 		while (tickInterval < tickAccum) {
-			constexpr auto tickDelta = std::chrono::duration_cast<TimeDurationSeconds>(tickInterval).count();
+			constexpr auto tickDelta = Clock::Seconds{tickInterval}.count();
 			sm.tick(tickDelta);
 			tickAccum -= tickInterval;
 		}

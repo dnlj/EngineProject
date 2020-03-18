@@ -8,6 +8,7 @@
 #include <Engine/EngineInstance.hpp>
 
 // Game
+#include <Game/InputSystem.hpp>
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/PhysicsOriginShiftSystem.hpp>
 #include <Game/PhysicsSystem.hpp>
@@ -26,6 +27,7 @@
 
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
+		InputSystem,
 		CharacterMovementSystem,
 		PhysicsOriginShiftSystem,
 		PhysicsSystem,
