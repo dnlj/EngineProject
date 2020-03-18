@@ -47,8 +47,12 @@ namespace Engine::ECS {
 			/** Accumulator used for ticking. */
 			TimeDuration tickAccum{0};
 
+			/** Maximum tick duration to accumulate */
+			constexpr static TimeDuration tickAccumMax = std::chrono::milliseconds{250};
+
 			/** How long between each tick. */
 			constexpr static TimeDuration tickInterval{TimeDuration::period::den / TickRate};
+			static_assert(tickInterval < tickAccumMax, "Tick interval must be less than the maximum accumulable tick duration.");
 			
 			/** Time it took to process the last run. */
 			float32 deltaTime = 0.0f;

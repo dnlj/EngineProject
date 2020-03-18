@@ -21,6 +21,14 @@ namespace Engine::ECS {
 		deltaTime = std::chrono::duration_cast<TimeDurationSeconds>(deltaTimeNS).count();
 
 		tickAccum += deltaTimeNS;
+		if (tickAccum > tickAccumMax) {
+			ENGINE_WARN(
+				"World tick falling behind by "
+				<< TimeDurationSeconds{tickAccum - tickAccumMax}.count() << "s"
+			);
+			tickAccum = tickAccumMax;
+		}
+
 		while (tickInterval < tickAccum) {
 			constexpr auto tickDelta = std::chrono::duration_cast<TimeDurationSeconds>(tickInterval).count();
 			sm.tick(tickDelta);
