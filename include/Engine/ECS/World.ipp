@@ -21,15 +21,16 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		if (beginTime - tickTime > tickAccumMax) {
+		if (beginTime - tickTime > maxDelay) {
 			ENGINE_WARN(
 				"World tick falling behind by "
-				<< Clock::Seconds{beginTime - tickTime - tickAccumMax}.count() << "s"
+				<< Clock::Seconds{beginTime - tickTime - maxDelay}.count() << "s"
 			);
+
 			// We could instead limit the number of ticks in the while loop
 			// which would have the effect of slowing down the world instead of
 			// throwing away time like this does
-			tickTime = beginTime - tickAccumMax;
+			tickTime = beginTime - maxDelay;
 		}
 		
 		while (tickTime + tickInterval <= beginTime) {

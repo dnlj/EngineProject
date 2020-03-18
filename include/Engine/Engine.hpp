@@ -11,7 +11,7 @@
 #include <Engine/FatalException.hpp>
 
 // TODO: make these usable in a noexcept context
-
+// TODO: replace macros with source_location?
 #define ENGINE_LOG(msg)\
 	Engine::Detail::log(std::clog, "[LOG]", __FILE__, __LINE__) << msg << '\n'
 
@@ -20,7 +20,10 @@
 
 #define ENGINE_ERROR(msg)\
 	Engine::Detail::log(std::cerr, "[ERROR]", __FILE__, __LINE__) << msg << '\n';\
-	throw Engine::FatalException{};
+	__pragma(warning(push))\
+	__pragma(warning(disable:4297))\
+	throw Engine::FatalException{};\
+	__pragma(warning(pop))
 
 // TODO: test
 #if defined(DEBUG)

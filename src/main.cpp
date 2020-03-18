@@ -378,13 +378,6 @@ namespace {
 
 		return body;
 	}
-
-	void framebufferCallback(GLFWwindow* window, int width, int height) {
-		glViewport(0, 0, width, height);
-
-		auto& camera = static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->camera;
-		camera.setAsOrtho(width, height, 1.0f / 250.0f);
-	}
 }
 
 void run() {
@@ -446,6 +439,13 @@ void run() {
 	Engine::EngineInstance engine;
 	auto worldStorage = std::make_unique<Game::World>(1.0f / 60.0f, engine);
 	Game::World& world = *worldStorage.get();
+
+	// TODO: once input is finished this should go away;
+	struct TempWorldEngineWrapper {
+		Engine::EngineInstance& engine;
+		Game::World& world;
+	};
+	TempWorldEngineWrapper wrapper{engine, world};
 
 	// Binds
 	{
@@ -524,7 +524,7 @@ void run() {
 	}
 
 	// Callbacks
-	glfwSetWindowUserPointer(window, &engine);
+	glfwSetWindowUserPointer(window, &wrapper);
 
 	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 		if (action == GLFW_REPEAT) { return; }
@@ -534,36 +534,43 @@ void run() {
 		}
 
 		//std::cout << "Keyboard Code: " << scancode << "\tAction: " << action << "\n";
-
-		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))
-			->inputManager.processInput({{Engine::Input::InputType::KEYBOARD, scancode}, action == GLFW_PRESS});
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(glfwGetWindowUserPointer(window));
+		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::KEYBOARD, scancode}, action == GLFW_PRESS});
 
 		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	});
 
 	glfwSetCursorPosCallback(window, [](GLFWwindow* window, double x, double y) {
 		//std::cout << "Mouse Pos: " << x << ", " << y << "\n";
-		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))->inputManager.mouseCallback(x, y);
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(glfwGetWindowUserPointer(window));
+		wrapper.engine.inputManager.mouseCallback(x, y);
+		// TODO: inputsystem
 	});
 
 	// TODO: look into "Raw mouse motion" https://www.glfw.org/docs/latest/input_guide.html#raw_mouse_motion
 	glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int mods){
 		//std::cout << "Mouse Code: " << button << "\tAction: " << action << "\n";
-
-		static_cast<Engine::EngineInstance*>(glfwGetWindowUserPointer(window))
-			->inputManager.processInput({{Engine::Input::InputType::MOUSE, button}, action == GLFW_PRESS});
+		
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(glfwGetWindowUserPointer(window));
+		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::MOUSE, button}, action == GLFW_PRESS});
 
 		ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 	});
 
 
 	// Framebuffer callback
-	glfwSetFramebufferSizeCallback(window, framebufferCallback);
 	{
+		const auto callback = [](GLFWwindow* window, int width, int height){
+			glViewport(0, 0, width, height);
+			auto& wrapper = *static_cast<TempWorldEngineWrapper*>(glfwGetWindowUserPointer(window));
+			wrapper.engine.camera.setAsOrtho(width, height, 1.0f / 250.0f);
+		};
+		glfwSetFramebufferSizeCallback(window, callback);
+
 		int w;
 		int h;
 		glfwGetFramebufferSize(window, &w, &h);
-		framebufferCallback(window, w, h);
+		callback(window, w, h);
 	}
 
 	// ImGui callbacks
@@ -606,7 +613,7 @@ void run() {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		//std::this_thread::sleep_for(std::chrono::milliseconds{16});
+		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
 
 	glDeleteTextures(1, &mapTexture);
