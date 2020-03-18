@@ -35,15 +35,15 @@ namespace Engine::ECS {
 			/** Beginning of last run. */
 			Clock::TimePoint beginTime;
 
-			/** Accumulator used for ticking. */
-			Clock::Duration tickAccum{0};
+			/** Time currently being ticked */
+			Clock::TimePoint tickTime;
 
-			/** Maximum tick duration to accumulate */
-			constexpr static Clock::Duration tickAccumMax = std::chrono::milliseconds{250};
+			/** Maximum tick delay to accumulate */
+			constexpr static Clock::Duration maxDelay = std::chrono::milliseconds{250};
 
 			/** How long between each tick. */
 			constexpr static Clock::Duration tickInterval{Clock::Period::den / TickRate};
-			static_assert(tickInterval < tickAccumMax, "Tick interval must be less than the maximum accumulable tick duration.");
+			static_assert(tickInterval < maxDelay, "Tick interval must be less than the maximum accumulable tick duration.");
 			
 			/** Time it took to process the last run. */
 			float32 deltaTime = 0.0f;
@@ -233,9 +233,9 @@ namespace Engine::ECS {
 			auto getTickInterval() const;
 
 			/**
-			 * Gets the remaining tick time to be simulated.
+			 * Current time being ticked.
 			 */
-			auto getTickAccumulation() const;
+			Clock::TimePoint getTickTime() const;
 			
 			/**
 			 * Gets tick accumulation divided by tick interval.

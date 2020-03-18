@@ -10,7 +10,8 @@ namespace Engine::ECS {
 	World<TickRate, SystemsSet, ComponentsSet>::World(float tickInterval, Arg& arg)
 		: fm{em}
 		, sm{arg}
-		, beginTime{Clock::now()} {
+		, beginTime{Clock::now()}
+		, tickTime{beginTime} {
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
@@ -20,19 +21,21 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		tickAccum += deltaTimeNS;
-		if (tickAccum > tickAccumMax) {
+		if (beginTime - tickTime > tickAccumMax) {
 			ENGINE_WARN(
 				"World tick falling behind by "
-				<< Clock::Seconds{tickAccum - tickAccumMax}.count() << "s"
+				<< Clock::Seconds{beginTime - tickTime - tickAccumMax}.count() << "s"
 			);
-			tickAccum = tickAccumMax;
+			// We could instead limit the number of ticks in the while loop
+			// which would have the effect of slowing down the world instead of
+			// throwing away time like this does
+			tickTime = beginTime - tickAccumMax;
 		}
-
-		while (tickInterval < tickAccum) {
+		
+		while (tickTime + tickInterval <= beginTime) {
 			constexpr auto tickDelta = Clock::Seconds{tickInterval}.count();
 			sm.tick(tickDelta);
-			tickAccum -= tickInterval;
+			tickTime += tickInterval;
 		}
 
 		sm.run(deltaTime);
@@ -206,13 +209,13 @@ namespace Engine::ECS {
 	}
 	
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	auto World<TickRate, SystemsSet, ComponentsSet>::getTickAccumulation() const {
-		return tickAccum;
+	Clock::TimePoint World<TickRate, SystemsSet, ComponentsSet>::getTickTime() const {
+		return tickTime;
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
 	float32 World<TickRate, SystemsSet, ComponentsSet>::getTickRatio() const {
-		return tickAccum.count() / static_cast<float>(tickInterval.count());
+		return (beginTime - tickTime).count() / static_cast<float32>(tickInterval.count());
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
