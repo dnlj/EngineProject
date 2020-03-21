@@ -26,12 +26,14 @@
 	__pragma(warning(pop))
 
 // TODO: test
+#define ENGINE_ASSERT(cond, msg) if (!(cond)) { ENGINE_ERROR(msg); }
 #if defined(DEBUG)
 	// TODO: insert cond in message
-	#define ENGINE_ASSERT(cond, msg) if (!(cond)) { ENGINE_ERROR("Assertion failed: " << msg); }
+	#define ENGINE_DEBUG_ASSERT(cond, msg) ENGINE_ASSERT(cond, msg)
 #else
-	#define ENGINE_ASSERT(cond, msg)
+	#define ENGINE_DEBUG_ASSERT(cond, msg)
 #endif
+
 
 // TODO: move to own file
 namespace Engine::Types {

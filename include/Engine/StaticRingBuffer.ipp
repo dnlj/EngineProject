@@ -12,7 +12,7 @@ namespace Engine {
 
 	template<class T, uint32 Size>
 	T& StaticRingBuffer<T, Size>::back() noexcept {
-		ENGINE_ASSERT(!empty(), "StaticRingBuffer::back called on empty buffer")
+		ENGINE_DEBUG_ASSERT(!empty(), "StaticRingBuffer::back called on empty buffer")
 		return dataT()[start];
 	}
 
@@ -80,14 +80,14 @@ namespace Engine {
 
 	template<class T, uint32 Size>
 	void StaticRingBuffer<T, Size>::elementAdded() noexcept {
-		ENGINE_ASSERT(stop != start || empty(), "Element added to full StaticRingBuffer");
+		ENGINE_DEBUG_ASSERT(stop != start || empty(), "Element added to full StaticRingBuffer");
 		stop = ++stop % Size;
 		isEmpty = false;
 	}
 
 	template<class T, uint32 Size>
 	void StaticRingBuffer<T, Size>::elementRemoved() noexcept {
-		ENGINE_ASSERT(start != stop || full(), "Element removed from empty StaticRingBuffer");
+		ENGINE_DEBUG_ASSERT(start != stop || full(), "Element removed from empty StaticRingBuffer");
 		start = ++start % Size;
 		isEmpty = start == stop;
 	}

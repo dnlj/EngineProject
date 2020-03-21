@@ -42,6 +42,7 @@
 #include <Engine/Net/Net.hpp>
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Windows/Windows.hpp>
+#include <Engine/Windows/OpenGLWindow.hpp>
 
 
 // Game
@@ -633,7 +634,7 @@ void run() {
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
 int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
 	if(!AllocConsole()) {
-		ENGINE_ERROR("Unable to allocate console window" << Engine::Windows::getLastErrorMessage());
+		ENGINE_ERROR("Unable to allocate console window - " << Engine::Windows::getLastErrorMessage());
 	} else {
 		FILE* unused;
 		freopen_s(&unused, "CONIN$", "r", stdin);

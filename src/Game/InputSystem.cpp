@@ -24,7 +24,7 @@ namespace Game {
 	}
 
 	void InputSystem::queueInput(const Engine::Input::InputState& state) {
-		ENGINE_ASSERT(!buffer.full(), "Too many inputs");
+		ENGINE_DEBUG_ASSERT(!buffer.full(), "Too many inputs");
 		buffer.emplace(state, Engine::Clock::now());
 	}
 }

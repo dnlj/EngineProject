@@ -62,7 +62,7 @@ namespace Engine::Noise {
 			dataOffset += amount;
 		}
 
-		ENGINE_ASSERT(remaining == 0, "No remaining expected.");
+		ENGINE_DEBUG_ASSERT(remaining == 0, "No remaining expected.");
 	}
 	template<int Count, int Mean, int Min, int Max>
 	int32 PoissonDistribution<Count, Mean, Min, Max>::operator[](const int i) const {
