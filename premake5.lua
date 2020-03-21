@@ -104,7 +104,7 @@ workspace(PROJECT_NAME .."Workspace")
 	configurations {"Debug", "Debug_All", "Debug_Physics", "Debug_Graphics", "Release"}
 	platforms {"Windows_x64"}
 	characterset "Unicode"
-	kind "ConsoleApp"
+	kind "WindowedApp"
 	language "C++"
 	cppdialect "C++latest"
 	systemversion "latest"

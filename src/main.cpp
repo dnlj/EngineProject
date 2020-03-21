@@ -41,6 +41,7 @@
 #include <Engine/Noise/WorleyNoise.hpp>
 #include <Engine/Net/Net.hpp>
 #include <Engine/Net/UDPSocket.hpp>
+#include <Engine/Windows/Windows.hpp>
 
 
 // Game
@@ -630,8 +631,18 @@ void run() {
 }
 
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
-int main(int argc, char* argv[]) {
+int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+	if(!AllocConsole()) {
+		ENGINE_ERROR("Unable to allocate console window" << Engine::Windows::getLastErrorMessage());
+	} else {
+		FILE* unused;
+		freopen_s(&unused, "CONIN$", "r", stdin);
+		freopen_s(&unused, "CONOUT$", "w", stdout);
+		freopen_s(&unused, "CONOUT$", "w", stderr);
+	}
+
 	std::atexit([](){
+		// TODO: windows cleanup?
 		glfwTerminate();
 	});
 
