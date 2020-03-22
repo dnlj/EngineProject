@@ -647,7 +647,20 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 		glfwTerminate();
 	});
 
-	Engine::Windows::OpenGLWindow window;
+	Engine::Windows::OpenGLWindow window{{
+			.colorBits = 24,
+			.alphaBits = 8,
+			.depthBits = 24,
+			.stencilBits = 8,
+		}, {
+			.majorVersion = 4,
+			.minorVersion = 5,
+			#ifdef DEBUG
+				.debug = true,
+			#else
+				.debug = false,
+			#endif
+	}};
 	window.makeContextCurrent();
 	window.show();
 

@@ -4,6 +4,10 @@
 #include <glloadgen/gl_core_4_5.hpp>
 #include <wglext.h> // TODO: should be part of glloadgen or similar.
 
+// Engine
+#include <Engine/Windows/PixelFormat.hpp>
+#include <Engine/Windows/ContextFormat.hpp>
+
 
 namespace Engine::Windows {
 	// TODO: name?
@@ -21,7 +25,7 @@ namespace Engine::Windows {
 			HGLRC renderContext = nullptr;
 
 		public:
-			OpenGLWindow();
+			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat);
 			OpenGLWindow(const OpenGLWindow&) = delete;
 
 			~OpenGLWindow(); // TODO: cleanup Windows objects

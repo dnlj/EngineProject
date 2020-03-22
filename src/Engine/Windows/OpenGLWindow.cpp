@@ -29,7 +29,7 @@ namespace {
 }
 
 namespace Engine::Windows {
-	OpenGLWindow::OpenGLWindow() {
+	OpenGLWindow::OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat) {
 		static const WGLPointers ptrs = OpenGLWindow::init();
 
 		window = CreateWindowExW(
@@ -59,38 +59,39 @@ namespace Engine::Windows {
 			WGL_DOUBLE_BUFFER_ARB, true,
 			WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
 			WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
-			WGL_COLOR_BITS_ARB, 32,
-			WGL_ALPHA_BITS_ARB, 8,
-			WGL_DEPTH_BITS_ARB, 24,
-			WGL_STENCIL_BITS_ARB, 8,
-			WGL_SAMPLE_BUFFERS_ARB, true,
-			WGL_SAMPLES_ARB, 4,
+			WGL_COLOR_BITS_ARB, pixelFormat.colorBits,
+			WGL_ALPHA_BITS_ARB, pixelFormat.alphaBits,
+			WGL_DEPTH_BITS_ARB, pixelFormat.depthBits,
+			WGL_STENCIL_BITS_ARB, pixelFormat.stencilBits,
+			//WGL_SAMPLE_BUFFERS_ARB, true,
+			//WGL_SAMPLES_ARB, 4,
 			0
 		};
 
-		int pixelFormat;
+		int winPixelFormat;
 		UINT numFormats;
 	
 		// TODO: glfw manually chooses pixel format - wglGetPixelFormatAttribivARB, WGL_NUMBER_PIXEL_FORMATS_ARB
 		// TODO: do we want multiple results?
 		// TODO: verify chosen pixel format
-		ENGINE_ASSERT(ptrs.wglChoosePixelFormatARB(deviceContext, pixelAttributes, nullptr, 1, &pixelFormat, &numFormats),
+		ENGINE_ASSERT(ptrs.wglChoosePixelFormatARB(deviceContext, pixelAttributes, nullptr, 1, &winPixelFormat, &numFormats),
 			"Unable to find suitable pixel format - ", getLastErrorMessage()
 		);
 
 		PIXELFORMATDESCRIPTOR pixelFormatDesc;
-		ENGINE_ASSERT(DescribePixelFormat(deviceContext, pixelFormat, sizeof(pixelFormatDesc), &pixelFormatDesc),
+		ENGINE_ASSERT(DescribePixelFormat(deviceContext, winPixelFormat, sizeof(pixelFormatDesc), &pixelFormatDesc),
 			"Unable to find describe pixel format - ", getLastErrorMessage()
 		);
 
-		ENGINE_ASSERT(SetPixelFormat(deviceContext, pixelFormat, &pixelFormatDesc),
+		ENGINE_ASSERT(SetPixelFormat(deviceContext, winPixelFormat, &pixelFormatDesc),
 			"Unable to set pixel format - ", getLastErrorMessage()
 		);
 
 		// TODO: figure out what we actually want
 		const int contextAttributes[] = {
-			WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-			WGL_CONTEXT_MINOR_VERSION_ARB, 5,
+			WGL_CONTEXT_MAJOR_VERSION_ARB, contextFormat.majorVersion,
+			WGL_CONTEXT_MINOR_VERSION_ARB, contextFormat.minorVersion,
+			WGL_CONTEXT_FLAGS_ARB, contextFormat.debug ? WGL_CONTEXT_DEBUG_BIT_ARB : 0,
 			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 			0
 		};
