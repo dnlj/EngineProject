@@ -38,8 +38,8 @@ namespace Engine {
 				return GL_NEAREST;
 			default:
 				ENGINE_WARN(
-					"Unknown Engine::TextureFilter: "
-					<< static_cast<std::underlying_type_t<decltype(filter)>>(filter)
+					"Unknown Engine::TextureFilter: ",
+					static_cast<std::underlying_type_t<decltype(filter)>>(filter)
 				);
 
 				return  GL_NEAREST;
@@ -55,8 +55,8 @@ namespace Engine {
 				return GL_NEAREST;
 			default:
 				ENGINE_WARN(
-					"Unknown Engine::TextureFilter: "
-					<< static_cast<std::underlying_type_t<decltype(filter)>>(filter)
+					"Unknown Engine::TextureFilter: ",
+					static_cast<std::underlying_type_t<decltype(filter)>>(filter)
 				);
 
 				return  GL_NEAREST;

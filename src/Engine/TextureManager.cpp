@@ -26,7 +26,7 @@ namespace Engine {
 		if (image == nullptr) {
 			auto res = SOIL_last_result();
 
-			ENGINE_WARN("[SOIL] " << res);
+			ENGINE_WARN("[SOIL] ", res);
 
 			width = 2;
 			height = 2;

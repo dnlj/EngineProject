@@ -1,42 +1,19 @@
 #pragma once
 
 
+// TODO: trim includes
 // STD
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <string>
+#include <ctime>
 
 // Engine
 #include <Engine/Detail/Detail.hpp>
 #include <Engine/FatalException.hpp>
 
-// TODO: make these usable in a noexcept context
-// TODO: replace macros with source_location?
-#define ENGINE_LOG(msg)\
-	Engine::Detail::log(std::clog, "[LOG]", __FILE__, __LINE__) << msg << '\n'
-
-#define ENGINE_WARN(msg)\
-	Engine::Detail::log(std::cerr, "[WARN]", __FILE__, __LINE__) << msg << '\n'
-
-#define ENGINE_ERROR(msg)\
-	Engine::Detail::log(std::cerr, "[ERROR]", __FILE__, __LINE__) << msg << '\n';\
-	__pragma(warning(push))\
-	__pragma(warning(disable:4297))\
-	throw Engine::FatalException{};\
-	__pragma(warning(pop))
-
-// TODO: test
-#define ENGINE_ASSERT(cond, msg) if (!(cond)) { ENGINE_ERROR(msg); }
-#if defined(DEBUG)
-	// TODO: insert cond in message
-	#define ENGINE_DEBUG_ASSERT(cond, msg) ENGINE_ASSERT(cond, msg)
-#else
-	#define ENGINE_DEBUG_ASSERT(cond, msg)
-#endif
-
-
-// TODO: move to own file
-namespace Engine::Types {
+namespace Engine::Types { // TODO: C++20: namespace Engine::inline Types {
 	static_assert(std::numeric_limits<char>::digits + std::numeric_limits<char>::is_signed == 8, "This program assumes an 8 bit byte.");
 
 	using int8 = int8_t;
@@ -57,12 +34,58 @@ namespace Engine::Types {
 	static_assert(sizeof(float64) == 8, "float64 is an incorrect number of bytes.");
 	static_assert(std::numeric_limits<float64>::is_iec559, "float64 is not IEEE 754 double-precision (binary64) format.");
 }
+namespace Engine { using namespace Engine::Types; }
 
-namespace Engine {
-	using namespace Engine::Types;
-}
-
-// TODO: is this a good place for these?
-namespace Engine {
+namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
 	constexpr float32 PI = 3.141592653589793238462643383279502884197169f;
 }
+namespace Engine { using namespace Engine::Constants; }
+
+
+// TODO: rm - see Engine::Detail cpp file
+namespace Engine::Detail {
+	inline std::string getDateTimeString() {
+		// Example output: 2017-12-24 18:29:35 -0600
+		const auto time = std::time(nullptr);
+		std::string date(26, '.');
+		
+		std::strftime(date.data(), date.size(), "%Y-%m-%d %H:%M:%S %z", localtime(&time));
+		date.pop_back();
+		return date;
+	}
+}
+
+// TODO: move all this macro stuff into files?
+// TODO: replace macros with source_location?
+#define _ENGINE_CREATE_LOG_LAMBDA(Stream, Prefix, Other)\
+	([](auto&&... args){\
+		Stream\
+			<< "[" << ::Engine::Detail::getDateTimeString() << "]"\
+			<< "[" << __FILE__ << ":" << __LINE__ << "]"\
+			<< Prefix << " ";\
+		(Stream << ... << std::forward<decltype(args)>(args));\
+		Stream << '\n';\
+		Other;\
+	})
+
+#define _ENGINE_CREATE_ASSERT_LAMBDA(Stream, Prefix, Other)\
+	([](bool cond, auto&&... args){\
+		if (!cond) {\
+			_ENGINE_CREATE_LOG_LAMBDA(Stream, Prefix, Other)(std::forward<decltype(args)>(args)...);\
+		}\
+	})
+
+#define ENGINE_DIE std::terminate();
+#define ENGINE_TEST_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA(::std::cerr, "[TEST ASSERT]", ENGINE_DIE)
+
+#define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA(::std::cout, "[LOG]", 0)
+#define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA(::std::cerr, "[WARN]", 0)
+#define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA(::std::cerr, "[ERROR]", ENGINE_DIE)
+
+#define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA(::std::cerr, "[ERROR]", ENGINE_DIE)
+#if defined(DEBUG)
+	// TODO: insert cond in message
+	#define ENGINE_DEBUG_ASSERT(cond, msg) ENGINE_ASSERT(cond, msg)
+#else
+	#define ENGINE_DEBUG_ASSERT(cond, msg)
+#endif

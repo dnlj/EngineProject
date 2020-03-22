@@ -22,9 +22,8 @@ namespace Engine::ECS {
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
 		if (beginTime - tickTime > maxDelay) {
-			ENGINE_WARN(
-				"World tick falling behind by "
-				<< Clock::Seconds{beginTime - tickTime - maxDelay}.count() << "s"
+			ENGINE_WARN("World tick falling behind by ",
+				Clock::Seconds{beginTime - tickTime - maxDelay}.count(), "s"
 			);
 
 			// We could instead limit the number of ticks in the while loop

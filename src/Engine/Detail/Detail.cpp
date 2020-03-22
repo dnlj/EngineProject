@@ -7,6 +7,7 @@
 #include <Engine/Detail/Detail.hpp>
 
 namespace {
+	// TODO: look into C++20 chrono and std::formatter/<format>
 	std::string getDateTimeString() {
 		// Example output: 2017-12-24 18:29:35 -0600
 		const auto time = std::time(nullptr);

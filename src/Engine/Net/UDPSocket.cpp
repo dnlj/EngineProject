@@ -7,7 +7,7 @@ namespace Engine::Net {
 		const auto address = IPv4Address{INADDR_ANY, port}.getSocketAddress();
 		if (bind(handle, &address, sizeof(address))) {
 			const auto err = WSAGetLastError();
-			ENGINE_ERROR(err << " - " << getWindowsErrorMessage(err));
+			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
 		}
 	}
 
@@ -17,13 +17,13 @@ namespace Engine::Net {
 
 		if (handle == INVALID_SOCKET) {
 			const auto err = WSAGetLastError();
-			ENGINE_ERROR(err << " - " << getWindowsErrorMessage(err));
+			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
 		}
 
 		// Set non-blocking
 		if (DWORD mode = 1; ioctlsocket(handle, FIONBIO, &mode)) {
 			const auto err = WSAGetLastError();
-			ENGINE_ERROR(err << " - " << getWindowsErrorMessage(err));
+			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
 		}
 	};
 
@@ -39,7 +39,7 @@ namespace Engine::Net {
 		// TODO: i think the above is only true for TCP. For UDP its either all sent or we get an error.
 		if (sent != size) {
 			const auto err = WSAGetLastError();
-			ENGINE_ERROR(err << " - " << getWindowsErrorMessage(err));
+			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
 		}
 	}
 

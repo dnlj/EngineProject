@@ -274,12 +274,12 @@ namespace {
 
 		auto failed = loaded - ogl_LOAD_SUCCEEDED;
 		if (failed > 0) {
-			ENGINE_ERROR("[glLoadGen] Failed to load " << failed << " functions.");
+			ENGINE_ERROR("[glLoadGen] Failed to load ", failed, " functions.");
 		}
 
 
 		if (!ogl_IsVersionGEQ(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR)) {
-			ENGINE_ERROR("[glLoadGen] OpenGL version " << OPENGL_VERSION_MAJOR << "." << OPENGL_VERSION_MINOR << " is not available.");
+			ENGINE_ERROR("[glLoadGen] OpenGL version ", OPENGL_VERSION_MAJOR, ".", OPENGL_VERSION_MINOR, " is not available.");
 		}
 	}
 
@@ -407,7 +407,7 @@ void run() {
 
 	// GLFW error callback
 	glfwSetErrorCallback([](int error, const char* desc) {
-		ENGINE_ERROR("[GLFW] " << desc);
+		ENGINE_ERROR("[GLFW] ", desc);
 	});
 
 	// Initialize GLFW
@@ -634,7 +634,7 @@ void run() {
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
 int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
 	if(!AllocConsole()) {
-		ENGINE_ERROR("Unable to allocate console window - " << Engine::Windows::getLastErrorMessage());
+		ENGINE_ERROR("Unable to allocate console window - ", Engine::Windows::getLastErrorMessage());
 	} else {
 		FILE* unused;
 		freopen_s(&unused, "CONIN$", "r", stdin);
