@@ -12,7 +12,7 @@ namespace Engine {
 
 	template<class T, uint32 Size>
 	T& StaticRingBuffer<T, Size>::back() noexcept {
-		ENGINE_DEBUG_ASSERT(!empty(), "StaticRingBuffer::back called on empty buffer")
+		ENGINE_DEBUG_ASSERT(!empty(), "StaticRingBuffer::back called on empty buffer");
 		return dataT()[start];
 	}
 

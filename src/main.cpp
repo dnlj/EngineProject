@@ -647,6 +647,19 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 		glfwTerminate();
 	});
 
+	Engine::Windows::OpenGLWindow window;
+	window.makeContextCurrent();
+	window.show();
+
+	initializeOpenGL();
+
+	while(true) {
+		window.poll();
+		glClearColor(0.1f, 0.5f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		window.swapBuffers();
+	}
+
 	{ // Position the console
 		auto window = GetConsoleWindow();
 		if constexpr (ENGINE_CLIENT) {

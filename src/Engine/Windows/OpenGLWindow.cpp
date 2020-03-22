@@ -1,10 +1,6 @@
 // Windows
 #include <Windows.h>
 
-// GL
-#include <glloadgen/gl_core_4_5.hpp>
-#include <wglext.h> // TODO: should be part of glloadgen or similar.
-
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Windows/Windows.hpp>
@@ -34,17 +30,103 @@ namespace {
 
 namespace Engine::Windows {
 	OpenGLWindow::OpenGLWindow() {
-		// TODO: need static check to only run once for temp window
-		static const bool a = []() {
-			return true;
-		}();
+		static const WGLPointers ptrs = OpenGLWindow::init();
 
+		window = CreateWindowExW(
+			0, // TODO:
+			className,
+			L"My Window Title",
+			WS_OVERLAPPEDWINDOW, // TODO:
+			CW_USEDEFAULT,
+			CW_USEDEFAULT,
+			512,
+			512,
+			0,
+			0,
+			GetModuleHandleW(nullptr),
+			nullptr
+		);
+		ENGINE_ASSERT(window, "Unable to create window. - ", getLastErrorMessage());
+
+		deviceContext = GetDC(window);
+		ENGINE_ASSERT(deviceContext, "Unable to get Windows device context - ", getLastErrorMessage());
+
+		// TODO: srgb?
+		// TODO: figure out what we actually want
+		const int pixelAttributes[] = {
+			WGL_DRAW_TO_WINDOW_ARB, true,
+			WGL_SUPPORT_OPENGL_ARB, true,
+			WGL_DOUBLE_BUFFER_ARB, true,
+			WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+			WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
+			WGL_COLOR_BITS_ARB, 32,
+			WGL_ALPHA_BITS_ARB, 8,
+			WGL_DEPTH_BITS_ARB, 24,
+			WGL_STENCIL_BITS_ARB, 8,
+			WGL_SAMPLE_BUFFERS_ARB, true,
+			WGL_SAMPLES_ARB, 4,
+			0
+		};
+
+		int pixelFormat;
+		UINT numFormats;
+	
+		// TODO: glfw manually chooses pixel format - wglGetPixelFormatAttribivARB, WGL_NUMBER_PIXEL_FORMATS_ARB
+		// TODO: do we want multiple results?
+		// TODO: verify chosen pixel format
+		ENGINE_ASSERT(ptrs.wglChoosePixelFormatARB(deviceContext, pixelAttributes, nullptr, 1, &pixelFormat, &numFormats),
+			"Unable to find suitable pixel format - ", getLastErrorMessage()
+		);
+
+		PIXELFORMATDESCRIPTOR pixelFormatDesc;
+		ENGINE_ASSERT(DescribePixelFormat(deviceContext, pixelFormat, sizeof(pixelFormatDesc), &pixelFormatDesc),
+			"Unable to find describe pixel format - ", getLastErrorMessage()
+		);
+
+		ENGINE_ASSERT(SetPixelFormat(deviceContext, pixelFormat, &pixelFormatDesc),
+			"Unable to set pixel format - ", getLastErrorMessage()
+		);
+
+		// TODO: figure out what we actually want
+		const int contextAttributes[] = {
+			WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+			WGL_CONTEXT_MINOR_VERSION_ARB, 5,
+			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+			0
+		};
+	
+		renderContext = ptrs.wglCreateContextAttribsARB(deviceContext, nullptr, contextAttributes);
+		ENGINE_ASSERT(renderContext, "Unable to create WGL render context - ", getLastErrorMessage());
 	}
 
 	OpenGLWindow::~OpenGLWindow() {
+		ENGINE_ASSERT(wglMakeCurrent(nullptr, nullptr), "Unable to make WGL render context non-current - ", getLastErrorMessage());
+		ENGINE_ASSERT(wglDeleteContext(renderContext), "Unable to delete WGL render context - ", getLastErrorMessage());
+		ReleaseDC(window, deviceContext);
+		ENGINE_ASSERT(DestroyWindow(window), "Unable to destroy window for - ", getLastErrorMessage());
 	}
 
-	void OpenGLWindow::init() {
+	void OpenGLWindow::show() {
+		ShowWindow(window, SW_SHOW);
+	}
+
+	void OpenGLWindow::makeContextCurrent() {
+		wglMakeCurrent(deviceContext, renderContext);
+	}
+
+	void OpenGLWindow::poll() {
+		for (MSG msg; PeekMessageW(&msg, window, 0, 0, PM_REMOVE);) {
+			TranslateMessage(&msg); // Needed for text input
+			DispatchMessageW(&msg);
+		}
+	}
+
+	void OpenGLWindow::swapBuffers() {
+		SwapBuffers(deviceContext);
+	}
+
+	auto OpenGLWindow::init() -> WGLPointers {
+		puts("OpenGLWindow::init");
 		const auto hInstance = GetModuleHandleW(nullptr);
 
 		const WNDCLASSEXW windowClass {
@@ -125,16 +207,27 @@ namespace Engine::Windows {
 			"Unable to make WGL render context current - ", getLastErrorMessage()
 		);
 
-		// TODO: store
-		const auto wglChoosePixelFormatARB = getFunctionPointerGL<PFNWGLCHOOSEPIXELFORMATARBPROC>("wglChoosePixelFormatARB");
-		const auto wglCreateContextAttribsARB = getFunctionPointerGL<PFNWGLCREATECONTEXTATTRIBSARBPROC>("wglCreateContextAttribsARB");
+		WGLPointers pointers = {
+			.wglChoosePixelFormatARB = getFunctionPointerGL<PFNWGLCHOOSEPIXELFORMATARBPROC>("wglChoosePixelFormatARB"),
+			.wglCreateContextAttribsARB = getFunctionPointerGL<PFNWGLCREATECONTEXTATTRIBSARBPROC>("wglCreateContextAttribsARB"),
+		};
 
 		ENGINE_ASSERT(wglMakeCurrent(nullptr, nullptr), "Unable to make WGL render context non-current - ", getLastErrorMessage());
 		ENGINE_ASSERT(wglDeleteContext(tempRenderContext), "Unable to delete temporary WGL render context - ", getLastErrorMessage());
 		ReleaseDC(tempWindow, tempDeviceContext);
 		ENGINE_ASSERT(DestroyWindow(tempWindow), "Unable to destroy temporary window for WGL function loading - ", getLastErrorMessage());
+
+		return pointers;
 	}
 
 	LRESULT OpenGLWindow::windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+		switch (uMsg) {
+			// TODO: rm - HANDLE_MESSAGE(WM_PAINT);
+			case WM_CREATE: puts("Create!"); break;
+			default:
+				return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+		}
+	
+		return 0;
 	}
 }
