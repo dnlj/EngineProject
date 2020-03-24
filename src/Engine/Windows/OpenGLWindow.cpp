@@ -41,7 +41,8 @@ namespace Engine::Windows {
 			0, // TODO:
 			className,
 			L"My Window Title",
-			WS_OVERLAPPEDWINDOW, // TODO:
+			WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
+			//WS_POPUP,
 			CW_USEDEFAULT,
 			CW_USEDEFAULT,
 			1900,
@@ -129,6 +130,10 @@ namespace Engine::Windows {
 
 	void OpenGLWindow::swapBuffers() {
 		SwapBuffers(deviceContext);
+	}
+
+	HWND OpenGLWindow::getWin32WindowHandle() const {
+		return window;
 	}
 
 	auto OpenGLWindow::init() -> WGLPointers {
@@ -273,9 +278,10 @@ namespace Engine::Windows {
 				break;
 			}
 			// TODO: WM_SIZE, and WM_(create?) should also call sizing callback
-			case WM_SIZING: {
-				const RECT& rect = *reinterpret_cast<RECT*>(lParam);
-				sizingCallback(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+			case WM_SIZE: {
+				const int32 w = LOWORD(lParam);
+				const int32 h = HIWORD(lParam);
+				sizeCallback(w, h);
 				break;
 			}
 			default:

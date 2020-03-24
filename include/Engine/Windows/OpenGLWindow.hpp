@@ -43,7 +43,7 @@ namespace Engine::Windows {
 
 			void swapBuffers();
 
-			
+			HWND getWin32WindowHandle() const;
 
 		private:
 			static WGLPointers init();
@@ -60,5 +60,5 @@ namespace Engine::Windows {
 	inline void (*mousePressCallback)(int32 button) = nullptr;
 	inline void (*mouseReleaseCallback)(int32 button) = nullptr;
 	inline void (*mouseMoveCallback)(int32 x, int32 y) = nullptr;
-	inline void (*sizingCallback)(int32 x, int32 y, int32 w, int32 h) = nullptr;
+	inline void (*sizeCallback)(int32 w, int32 h) = nullptr;
 }

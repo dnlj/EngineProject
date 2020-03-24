@@ -75,7 +75,7 @@ namespace Engine::Input {
 		return mousePosition;
 	}
 
-	void InputManager::mouseCallback(double x, double y) {
+	void InputManager::mouseCallback(int32 x, int32 y) {
 		mousePosition.x = static_cast<float>(x);
 		mousePosition.y = static_cast<float>(y);
 	}

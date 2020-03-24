@@ -82,7 +82,7 @@ namespace Engine::Input {
 			 * @param[in] x The x position of the mouse.
 			 * @param[in] y The y position of the mouse.
 			 */
-			void mouseCallback(double x, double y);
+			void mouseCallback(int32 x, int32 y);
 
 		private:
 			/** Stores a set of indices into #inputBindMappings where each index corresponds to an InputBindMapping that uses the given InputId. */
