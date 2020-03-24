@@ -15,6 +15,15 @@ namespace Engine::Windows {
 	// TODO: GLFW_SRGB_CAPABLE
 	// TODO: name?
 	class OpenGLWindow {
+		public:
+			using KeyPressCallback = void (*)(void* userdata, int scancode, bool extended);
+			using KeyReleaseCallback = void (*)(void* userdata, int scancode, bool extended);
+			using MousePressCallback = void (*)(void* userdata, int32 button);
+			using MouseReleaseCallback = void (*)(void* userdata, int32 button);
+			using MouseMoveCallback = void (*)(void* userdata, int32 x, int32 y);
+			using ResizeCallback = void (*)(void* userdata, int32 w, int32 h);
+			void* userdata; // TODO: rm - figure out better
+
 		private:
 			struct WGLPointers {
 				PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
@@ -27,6 +36,13 @@ namespace Engine::Windows {
 			HDC deviceContext = nullptr;
 			HGLRC renderContext = nullptr;
 			bool close = false;
+
+			KeyPressCallback keyPressCallback = nullptr;
+			KeyReleaseCallback keyReleaseCallback = nullptr;
+			MousePressCallback mousePressCallback = nullptr;
+			MouseReleaseCallback mouseReleaseCallback = nullptr;
+			MouseMoveCallback mouseMoveCallback = nullptr;
+			ResizeCallback resizeCallback = nullptr;
 
 		public:
 			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat);
@@ -48,20 +64,16 @@ namespace Engine::Windows {
 
 			bool shouldClose() const;
 
+			void setKeyPressCallback(KeyPressCallback callback);
+			void setKeyReleaseCallback(KeyReleaseCallback callback);
+			void setMousePressCallback(MousePressCallback callback);
+			void setMouseReleaseCallback(MouseReleaseCallback callback);
+			void setMouseMoveCallback(MouseMoveCallback callback);
+			void setResizeCallback(ResizeCallback callback);
+
 		private:
 			static WGLPointers init();
 			static LRESULT windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	};
-
-
-	// TODO: do we reall want press/release? or just one?
-	// TODO: nope. none of this.
-	inline void* userdata = nullptr;
-	inline void (*keyPressCallback)(int scancode, bool extended) = nullptr;
-	inline void (*keyReleaseCallback)(int scancode, bool extended) = nullptr;
-	inline void (*mousePressCallback)(int32 button) = nullptr;
-	inline void (*mouseReleaseCallback)(int32 button) = nullptr;
-	inline void (*mouseMoveCallback)(int32 x, int32 y) = nullptr;
-	inline void (*sizeCallback)(int32 w, int32 h) = nullptr;
 }

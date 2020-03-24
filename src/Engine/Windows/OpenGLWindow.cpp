@@ -141,6 +141,31 @@ namespace Engine::Windows {
 		return close;
 	}
 
+	void OpenGLWindow::setKeyPressCallback(KeyPressCallback callback) {
+		keyPressCallback = callback;
+	}
+
+	void OpenGLWindow::setKeyReleaseCallback(KeyReleaseCallback callback) {
+		keyReleaseCallback = callback;
+	}
+
+	void OpenGLWindow::setMousePressCallback(MousePressCallback callback) {
+		mousePressCallback = callback;
+	}
+
+	void OpenGLWindow::setMouseReleaseCallback(MouseReleaseCallback callback) {
+		mouseReleaseCallback = callback;
+	}
+
+	void OpenGLWindow::setMouseMoveCallback(MouseMoveCallback callback) {
+		mouseMoveCallback = callback;
+	}
+
+	void OpenGLWindow::setResizeCallback(ResizeCallback callback) {
+		resizeCallback = callback;
+	}
+
+
 	auto OpenGLWindow::init() -> WGLPointers {
 		puts("OpenGLWindow::init");
 		const auto hInstance = GetModuleHandleW(nullptr);
@@ -237,13 +262,16 @@ namespace Engine::Windows {
 	}
 	
 	LRESULT OpenGLWindow::windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-		// TODO: Use window userdata to replace globals for callbacks
+		// TODO: dont need to get window for messages we dont handle
+		// TODO: HANDLE_MESSAGE(WM_PAINT); style
+
 		switch (uMsg) {
 			// TODO: WM_SIZE, and WM_(create?) should also call sizing callback
 			case WM_SIZE: {
 				const int32 w = LOWORD(lParam);
 				const int32 h = HIWORD(lParam);
-				sizeCallback(w, h);
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.resizeCallback(window.userdata, w, h);
 				break;
 			}
 			case WM_CLOSE: {
@@ -251,47 +279,48 @@ namespace Engine::Windows {
 				window.close = true;
 				break;
 			}
-			// TODO: HANDLE_MESSAGE(WM_PAINT); style
 			case WM_KEYDOWN: {
 				// As far as i can tell there is no way to get a more precise timestamp
 				// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
 				// https://devblogs.microsoft.com/oldnewthing/20140122-00/?p=2013
-				const auto time = Engine::Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}};
 				const auto scancode = (lParam & 0xFF'00'00) >> 16;
 				const bool extended = lParam & (1 << 24);
 				const bool repeat = lParam & (1 << 30);
 				if (repeat) { break; } // TODO: repeat gets its own callback
-				keyPressCallback((int)scancode, extended);
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.keyPressCallback(window.userdata, (int)scancode, extended);
 				break;
 			}
 			case WM_KEYUP: {
-				// As far as i can tell there is no way to get a more precise timestamp
-				// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
-				// https://devblogs.microsoft.com/oldnewthing/20140122-00/?p=2013
-				const auto time = Engine::Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}};
 				const auto scancode = (lParam & 0xFF'00'00) >> 16;
 				const bool extended = lParam & (1 << 24);
-				keyReleaseCallback((int)scancode, extended);
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.keyReleaseCallback(window.userdata, (int)scancode, extended);
 				break;
 			}
 			case WM_MOUSEMOVE: {
-				mouseMoveCallback(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.mouseMoveCallback(window.userdata, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 				break;
 			}
 			case WM_LBUTTONDOWN: {
-				mousePressCallback(0);
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.mousePressCallback(window.userdata, 0);
 				break;
 			}
 			case WM_LBUTTONUP: {
-				mouseReleaseCallback(0);
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.mouseReleaseCallback(window.userdata, 0);
 				break;
 			}
 			case WM_RBUTTONDOWN: {
-				mousePressCallback(1);
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.mousePressCallback(window.userdata, 1);
 				break;
 			}
 			case WM_RBUTTONUP: {
-				mouseReleaseCallback(1);
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.mouseReleaseCallback(window.userdata, 1);
 				break;
 			}
 			default:
