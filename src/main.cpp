@@ -56,8 +56,8 @@
 
 
 namespace {
-	constexpr int OPENGL_VERSION_MAJOR = 4;
-	constexpr int OPENGL_VERSION_MINOR = 5;
+	constexpr int32 OPENGL_VERSION_MAJOR = 4;
+	constexpr int32 OPENGL_VERSION_MINOR = 5;
 	GLuint mapTexture = 0;
 	double avgDeltaTime = 0.0;
 	
@@ -283,43 +283,6 @@ namespace {
 		}
 	}
 
-	GLFWwindow* createWindow() {
-		// GLFW hints
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, OPENGL_VERSION_MAJOR);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, OPENGL_VERSION_MINOR);
-		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-		#if defined(DEBUG)
-			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-		#endif
-		
-		glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-		glfwWindowHint(GLFW_DECORATED, GL_TRUE);
-		glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
-
-		glfwWindowHint(GLFW_RED_BITS, 8);
-		glfwWindowHint(GLFW_GREEN_BITS, 8);
-		glfwWindowHint(GLFW_BLUE_BITS, 8);
-		glfwWindowHint(GLFW_ALPHA_BITS, 8);
-		glfwWindowHint(GLFW_DEPTH_BITS, 32);
-
-		// Create a window
-		constexpr int width = 1900;
-		constexpr int height = 1300;
-		auto window = glfwCreateWindow(width, height, "Window Title", nullptr, nullptr);
-
-		if (!window) {
-			ENGINE_ERROR("[GLFW] Failed to create window.");
-		}
-
-		{ // Position the window
-			auto mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-			glfwSetWindowPos(window, mode->width/2 - width/2, mode->height/2 - height/2);
-		}
-
-		return window;
-	}
-
 	void initImGui(GLFWwindow* window) {
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
@@ -405,22 +368,23 @@ void run() {
 	//	}
 	//}
 
-	// GLFW error callback
-	glfwSetErrorCallback([](int error, const char* desc) {
-		ENGINE_ERROR("[GLFW] ", desc);
-	});
-
-	// Initialize GLFW
-	if (!glfwInit()) {
-		ENGINE_ERROR("[GLFW] Failed to initialize.");
-	}
-
-	// Create a window
-	GLFWwindow* window = createWindow();
-	glfwMakeContextCurrent(window);
-	
-	// Enable vsync
-	glfwSwapInterval(1);
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	Engine::Windows::OpenGLWindow window{{
+			.colorBits = 24,
+			.alphaBits = 8,
+			.depthBits = 24,
+			.stencilBits = 8,
+		}, {
+			.majorVersion = OPENGL_VERSION_MAJOR,
+			.minorVersion = OPENGL_VERSION_MINOR,
+			#ifdef DEBUG
+				.debug = true,
+			#else
+				.debug = false,
+			#endif
+	}};
+	window.makeContextCurrent();
+	////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// Initialize OpenGL functions
 	initializeOpenGL();
@@ -435,7 +399,7 @@ void run() {
 	glEnable(GL_FRAMEBUFFER_SRGB);
 
 	// UI
-	initImGui(window);
+	//initImGui(window);
 
 	// Engine stuff
 	Engine::EngineInstance engine;
@@ -448,6 +412,7 @@ void run() {
 		Game::World& world;
 	};
 	TempWorldEngineWrapper wrapper{engine, world};
+	Engine::Windows::userdata = &wrapper;
 
 	// Binds
 	{
@@ -525,67 +490,64 @@ void run() {
 
 	}
 
-	// Callbacks
-	glfwSetWindowUserPointer(window, &wrapper);
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	Engine::Windows::keyPressCallback = [](int scancode, bool extended){
+		puts("keyPressCallback");
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(Engine::Windows::userdata);
+		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::KEYBOARD, scancode}, true});
+	};
 
-	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-		if (action == GLFW_REPEAT) { return; }
+	Engine::Windows::keyReleaseCallback = [](int scancode, bool extended){
+		puts("keyReleaseCallback");
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(Engine::Windows::userdata);
+		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::KEYBOARD, scancode}, false});
+	};
 
-		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-			glfwSetWindowShouldClose(window, true);
-		}
+	Engine::Windows::mousePressCallback = [](int32 button){
+		//puts("mousePressCallback");
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(Engine::Windows::userdata);
+		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::MOUSE, button}, true});
+		//ImGui_ImplGlfw_MouseButtonCallback(nullptr, button, true, 0);
+	};
 
-		//std::cout << "Keyboard Code: " << scancode << "\tAction: " << action << "\n";
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(glfwGetWindowUserPointer(window));
-		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::KEYBOARD, scancode}, action == GLFW_PRESS});
+	Engine::Windows::mouseReleaseCallback = [](int32 button){
+		//puts("mouseReleaseCallback");
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(Engine::Windows::userdata);
+		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::MOUSE, button}, false});
+		//ImGui_ImplGlfw_MouseButtonCallback(nullptr, button, 0, 0);
+	};
 
-		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
-	});
-
-	glfwSetCursorPosCallback(window, [](GLFWwindow* window, double x, double y) {
-		//std::cout << "Mouse Pos: " << x << ", " << y << "\n";
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(glfwGetWindowUserPointer(window));
+	Engine::Windows::mouseMoveCallback = [](int32 x, int32 y){
+		//puts("mouseMoveCallback");
+		std::cout << "Mouse Pos: " << x << ", " << y << "\n";
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(Engine::Windows::userdata);
 		wrapper.engine.inputManager.mouseCallback(x, y);
 		// TODO: inputsystem
-	});
+	};
 
-	// TODO: look into "Raw mouse motion" https://www.glfw.org/docs/latest/input_guide.html#raw_mouse_motion
-	glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int mods){
-		//std::cout << "Mouse Code: " << button << "\tAction: " << action << "\n";
-		
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(glfwGetWindowUserPointer(window));
-		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::MOUSE, button}, action == GLFW_PRESS});
+	Engine::Windows::sizingCallback = [](int32 x, int32 y, int32 w, int32 h){
+		puts("sizingCallback");
+		glViewport(0, 0, w, h);
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(Engine::Windows::userdata);
+		wrapper.engine.camera.setAsOrtho(w, h, 1.0f / 250.0f);
+	};
+	Engine::Windows::sizingCallback(0, 0, 1900, 1300); // TODO: get true size
 
-		ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
-	});
-
-
-	// Framebuffer callback
-	{
-		const auto callback = [](GLFWwindow* window, int width, int height){
-			glViewport(0, 0, width, height);
-			auto& wrapper = *static_cast<TempWorldEngineWrapper*>(glfwGetWindowUserPointer(window));
-			wrapper.engine.camera.setAsOrtho(width, height, 1.0f / 250.0f);
-		};
-		glfwSetFramebufferSizeCallback(window, callback);
-
-		int w;
-		int h;
-		glfwGetFramebufferSize(window, &w, &h);
-		callback(window, w, h);
-	}
-
-	// ImGui callbacks
-	glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-	glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+	//// ImGui callbacks
+	//glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
+	//glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 
 	// Procedural test
 	//mapTest();
 
 	// Main loop
+	window.show();
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;
-	while (!glfwWindowShouldClose(window)) {
+	//while (!glfwWindowShouldClose(window)) {
+	while (true) {
+		window.poll();
+
 		// Input
 		engine.inputManager.update();
 
@@ -609,11 +571,13 @@ void run() {
 		#endif
 
 		// Draw UI
-		doUI(engine, world);
+		//doUI(engine, world);
+
+		window.swapBuffers();
 
 		// GLFW
-		glfwSwapBuffers(window);
-		glfwPollEvents();
+		//glfwSwapBuffers(window);
+		//glfwPollEvents();
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
@@ -621,11 +585,11 @@ void run() {
 	glDeleteTextures(1, &mapTexture);
 
 	// UI cleanup
-	ImGui_ImplGlfwGL3_Shutdown();
-	ImGui::DestroyContext();
+	//ImGui_ImplGlfwGL3_Shutdown();
+	//ImGui::DestroyContext();
 
 	// GLFW cleanup
-	glfwDestroyWindow(window);
+	//glfwDestroyWindow(window);
 
 	// Network cleanup
 	Engine::Net::shutdown();
@@ -646,32 +610,6 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 		// TODO: windows cleanup?
 		glfwTerminate();
 	});
-
-	Engine::Windows::OpenGLWindow window{{
-			.colorBits = 24,
-			.alphaBits = 8,
-			.depthBits = 24,
-			.stencilBits = 8,
-		}, {
-			.majorVersion = 4,
-			.minorVersion = 5,
-			#ifdef DEBUG
-				.debug = true,
-			#else
-				.debug = false,
-			#endif
-	}};
-	window.makeContextCurrent();
-	window.show();
-
-	initializeOpenGL();
-
-	while(true) {
-		window.poll();
-		glClearColor(0.1f, 0.5f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		window.swapBuffers();
-	}
 
 	{ // Position the console
 		auto window = GetConsoleWindow();

@@ -1,10 +1,15 @@
 // Windows
 #include <Windows.h>
+#include <windowsx.h>
+
+// STD
+#include <chrono>
 
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Windows/Windows.hpp>
 #include <Engine/Windows/OpenGLWindow.hpp>
+#include <Engine/Clock.hpp>
 
 
 namespace {
@@ -39,8 +44,8 @@ namespace Engine::Windows {
 			WS_OVERLAPPEDWINDOW, // TODO:
 			CW_USEDEFAULT,
 			CW_USEDEFAULT,
-			512,
-			512,
+			1900,
+			1300,
 			0,
 			0,
 			GetModuleHandleW(nullptr),
@@ -220,11 +225,59 @@ namespace Engine::Windows {
 
 		return pointers;
 	}
-
+	
 	LRESULT OpenGLWindow::windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		switch (uMsg) {
 			// TODO: rm - HANDLE_MESSAGE(WM_PAINT);
-			case WM_CREATE: puts("Create!"); break;
+			//case WM_CREATE: puts("Create!"); break;
+			case WM_KEYDOWN: {
+				// As far as i can tell there is no way to get a more precise timestamp
+				// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
+				// https://devblogs.microsoft.com/oldnewthing/20140122-00/?p=2013
+				const auto time = Engine::Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}};
+				const auto scancode = (lParam & 0xFF'00'00) >> 16;
+				const bool extended = lParam & (1 << 24);
+				const bool repeat = lParam & (1 << 30);
+				if (repeat) { break; } // TODO: repeat gets its own callback
+				keyPressCallback((int)scancode, extended);
+				break;
+			}
+			case WM_KEYUP: {
+				// As far as i can tell there is no way to get a more precise timestamp
+				// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
+				// https://devblogs.microsoft.com/oldnewthing/20140122-00/?p=2013
+				const auto time = Engine::Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}};
+				const auto scancode = (lParam & 0xFF'00'00) >> 16;
+				const bool extended = lParam & (1 << 24);
+				keyReleaseCallback((int)scancode, extended);
+				break;
+			}
+			case WM_MOUSEMOVE: {
+				mouseMoveCallback(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				break;
+			}
+			case WM_LBUTTONDOWN: {
+				mousePressCallback(0);
+				break;
+			}
+			case WM_LBUTTONUP: {
+				mouseReleaseCallback(0);
+				break;
+			}
+			case WM_RBUTTONDOWN: {
+				mousePressCallback(1);
+				break;
+			}
+			case WM_RBUTTONUP: {
+				mouseReleaseCallback(1);
+				break;
+			}
+			// TODO: WM_SIZE, and WM_(create?) should also call sizing callback
+			case WM_SIZING: {
+				const RECT& rect = *reinterpret_cast<RECT*>(lParam);
+				sizingCallback(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+				break;
+			}
 			default:
 				return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 		}
