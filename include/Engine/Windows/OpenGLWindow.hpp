@@ -23,9 +23,10 @@ namespace Engine::Windows {
 
 			static constexpr wchar_t className[] = L"Engine_Windows_OpenGLWindow";
 
-			HWND window = nullptr;
+			HWND windowHandle = nullptr;
 			HDC deviceContext = nullptr;
 			HGLRC renderContext = nullptr;
+			bool close = false;
 
 		public:
 			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat);
@@ -44,6 +45,8 @@ namespace Engine::Windows {
 			void swapBuffers();
 
 			HWND getWin32WindowHandle() const;
+
+			bool shouldClose() const;
 
 		private:
 			static WGLPointers init();

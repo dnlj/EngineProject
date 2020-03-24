@@ -536,8 +536,7 @@ void run() {
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;
 	window.show();
-	// TODO: while (!glfwWindowShouldClose(window)) {
-	while (true) {
+	while (!window.shouldClose()) {
 		window.poll();
 
 		// Input

@@ -37,7 +37,7 @@ namespace Engine::Windows {
 	OpenGLWindow::OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat) {
 		static const WGLPointers ptrs = OpenGLWindow::init();
 
-		window = CreateWindowExW(
+		windowHandle = CreateWindowExW(
 			0, // TODO:
 			className,
 			L"My Window Title",
@@ -52,9 +52,10 @@ namespace Engine::Windows {
 			GetModuleHandleW(nullptr),
 			nullptr
 		);
-		ENGINE_ASSERT(window, "Unable to create window. - ", getLastErrorMessage());
+		ENGINE_ASSERT(windowHandle, "Unable to create window. - ", getLastErrorMessage());
+		SetWindowLongPtrW(windowHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 
-		deviceContext = GetDC(window);
+		deviceContext = GetDC(windowHandle);
 		ENGINE_ASSERT(deviceContext, "Unable to get Windows device context - ", getLastErrorMessage());
 
 		// TODO: srgb?
@@ -109,12 +110,12 @@ namespace Engine::Windows {
 	OpenGLWindow::~OpenGLWindow() {
 		ENGINE_ASSERT(wglMakeCurrent(nullptr, nullptr), "Unable to make WGL render context non-current - ", getLastErrorMessage());
 		ENGINE_ASSERT(wglDeleteContext(renderContext), "Unable to delete WGL render context - ", getLastErrorMessage());
-		ReleaseDC(window, deviceContext);
-		ENGINE_ASSERT(DestroyWindow(window), "Unable to destroy window for - ", getLastErrorMessage());
+		ReleaseDC(windowHandle, deviceContext);
+		ENGINE_ASSERT(DestroyWindow(windowHandle), "Unable to destroy window for - ", getLastErrorMessage());
 	}
 
 	void OpenGLWindow::show() {
-		ShowWindow(window, SW_SHOW);
+		ShowWindow(windowHandle, SW_SHOW);
 	}
 
 	void OpenGLWindow::makeContextCurrent() {
@@ -122,7 +123,7 @@ namespace Engine::Windows {
 	}
 
 	void OpenGLWindow::poll() {
-		for (MSG msg; PeekMessageW(&msg, window, 0, 0, PM_REMOVE);) {
+		for (MSG msg; PeekMessageW(&msg, windowHandle, 0, 0, PM_REMOVE);) {
 			TranslateMessage(&msg); // Needed for text input
 			DispatchMessageW(&msg);
 		}
@@ -133,7 +134,11 @@ namespace Engine::Windows {
 	}
 
 	HWND OpenGLWindow::getWin32WindowHandle() const {
-		return window;
+		return windowHandle;
+	}
+
+	bool OpenGLWindow::shouldClose() const {
+		return close;
 	}
 
 	auto OpenGLWindow::init() -> WGLPointers {
@@ -232,9 +237,21 @@ namespace Engine::Windows {
 	}
 	
 	LRESULT OpenGLWindow::windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+		// TODO: Use window userdata to replace globals for callbacks
 		switch (uMsg) {
-			// TODO: rm - HANDLE_MESSAGE(WM_PAINT);
-			//case WM_CREATE: puts("Create!"); break;
+			// TODO: WM_SIZE, and WM_(create?) should also call sizing callback
+			case WM_SIZE: {
+				const int32 w = LOWORD(lParam);
+				const int32 h = HIWORD(lParam);
+				sizeCallback(w, h);
+				break;
+			}
+			case WM_CLOSE: {
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.close = true;
+				break;
+			}
+			// TODO: HANDLE_MESSAGE(WM_PAINT); style
 			case WM_KEYDOWN: {
 				// As far as i can tell there is no way to get a more precise timestamp
 				// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
@@ -275,13 +292,6 @@ namespace Engine::Windows {
 			}
 			case WM_RBUTTONUP: {
 				mouseReleaseCallback(1);
-				break;
-			}
-			// TODO: WM_SIZE, and WM_(create?) should also call sizing callback
-			case WM_SIZE: {
-				const int32 w = LOWORD(lParam);
-				const int32 h = HIWORD(lParam);
-				sizeCallback(w, h);
 				break;
 			}
 			default:
