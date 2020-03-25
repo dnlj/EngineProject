@@ -141,6 +141,12 @@ namespace Engine::Windows {
 		return close;
 	}
 
+	glm::ivec2 OpenGLWindow::getFramebufferSize() const {
+		RECT rect;
+		GetClientRect(windowHandle, &rect);
+		return glm::ivec2{rect.right, rect.bottom};
+	}
+
 	void OpenGLWindow::setKeyPressCallback(KeyPressCallback callback) {
 		keyPressCallback = callback;
 	}
@@ -163,6 +169,10 @@ namespace Engine::Windows {
 
 	void OpenGLWindow::setMouseMoveCallback(MouseMoveCallback callback) {
 		mouseMoveCallback = callback;
+	}
+	
+	void OpenGLWindow::setMouseWheelCallback(MouseWheelCallback callback) {
+		mouseWheelCallback = callback;
 	}
 
 	void OpenGLWindow::setResizeCallback(ResizeCallback callback) {
@@ -330,6 +340,14 @@ namespace Engine::Windows {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 				window.mouseReleaseCallback(window.userdata, 1);
 				break;
+			}
+			case WM_MOUSEWHEEL: {
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.mouseWheelCallback(window.userdata, 0.0f, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA));
+			}
+			case WM_MOUSEHWHEEL: {
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.mouseWheelCallback(window.userdata, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA), 0.0f);
 			}
 			default:
 				return DefWindowProcW(hWnd, uMsg, wParam, lParam);

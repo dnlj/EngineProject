@@ -4,9 +4,13 @@
 #include <glloadgen/gl_core_4_5.hpp>
 #include <wglext.h> // TODO: should be part of glloadgen or similar.
 
+// GLM
+#include <glm/vec2.hpp>
+
 // Engine
 #include <Engine/Windows/PixelFormat.hpp>
 #include <Engine/Windows/ContextFormat.hpp>
+
 
 
 namespace Engine::Windows {
@@ -14,6 +18,7 @@ namespace Engine::Windows {
 	// TODO: GLFW_OPENGL_DEBUG_CONTEXT
 	// TODO: GLFW_SRGB_CAPABLE
 	// TODO: name?
+	// TODO: High DPI https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
 	class OpenGLWindow {
 		public:
 			using KeyPressCallback = void (*)(void* userdata, int scancode, bool extended);
@@ -22,6 +27,7 @@ namespace Engine::Windows {
 			using MousePressCallback = void (*)(void* userdata, int32 button);
 			using MouseReleaseCallback = void (*)(void* userdata, int32 button);
 			using MouseMoveCallback = void (*)(void* userdata, int32 x, int32 y);
+			using MouseWheelCallback = void (*)(void* userdata, float32 x, float32 y);
 			using ResizeCallback = void (*)(void* userdata, int32 w, int32 h);
 			void* userdata; // TODO: rm - figure out better
 
@@ -44,6 +50,7 @@ namespace Engine::Windows {
 			MousePressCallback mousePressCallback = nullptr;
 			MouseReleaseCallback mouseReleaseCallback = nullptr;
 			MouseMoveCallback mouseMoveCallback = nullptr;
+			MouseWheelCallback mouseWheelCallback = nullptr;
 			ResizeCallback resizeCallback = nullptr;
 
 		public:
@@ -66,6 +73,11 @@ namespace Engine::Windows {
 
 			bool shouldClose() const;
 
+			glm::ivec2 getFramebufferSize() const;
+
+			// TODO: std::string getClipboardText() const;
+			// TODO: void setClipboardText(const 
+
 			// TODO: make these all "setOnKeyPressCallback"
 			void setKeyPressCallback(KeyPressCallback callback);
 			void setKeyReleaseCallback(KeyReleaseCallback callback);
@@ -73,6 +85,7 @@ namespace Engine::Windows {
 			void setMousePressCallback(MousePressCallback callback);
 			void setMouseReleaseCallback(MouseReleaseCallback callback);
 			void setMouseMoveCallback(MouseMoveCallback callback);
+			void setMouseWheelCallback(MouseWheelCallback callback);
 			void setResizeCallback(ResizeCallback callback);
 
 		private:

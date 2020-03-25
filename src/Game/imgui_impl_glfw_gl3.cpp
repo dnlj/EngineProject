@@ -25,8 +25,8 @@
 
 // GLFW data
 namespace {
-	//static GLFWwindow*  g_Window = NULL;
-	HWND g_hWnd = nullptr; // TODO: use OpenGLWindow
+	using namespace Engine::Types;
+	Engine::Windows::OpenGLWindow* g_Window;
 	Engine::Clock::TimePoint g_Time;
 	bool g_MouseJustPressed[3] = {false, false, false};
 	struct {
@@ -168,7 +168,7 @@ void ImGui_ImplGlfwGL3_RenderDrawData(ImDrawData* draw_data) {
 
 // TODO:
 //static const char* ImGui_ImplGlfwGL3_GetClipboardText(void* user_data) {
-//	return glfwGetClipboardString((GLFWwindow*)user_data);
+//	return 
 //}
 
 // TODO:
@@ -181,12 +181,16 @@ void ImGui_ImplGlfw_MouseButtonCallback(int button, bool action) {
 	g_MouseJustPressed[button] = g_MouseJustPressed[button] || action;
 }
 
+void ImGui_ImplGlfw_MouseMoveCallback(int x, int y) {
+	ImGui::GetIO().MousePos = ImVec2{static_cast<float32>(x), static_cast<float32>(y)};
+}
+
 // TODO:
-//void ImGui_ImplGlfw_ScrollCallback(GLFWwindow*, double xoffset, double yoffset) {
-//	ImGuiIO& io = ImGui::GetIO();
-//	io.MouseWheelH += (float)xoffset;
-//	io.MouseWheel += (float)yoffset;
-//}
+void ImGui_ImplGlfw_ScrollCallback(float xoffset, float yoffset) {
+	ImGuiIO& io = ImGui::GetIO();
+	io.MouseWheelH += xoffset;
+	io.MouseWheel += yoffset;
+}
 
 void ImGui_ImplGlfw_KeyCallback(int key, bool action) {
 	ImGuiIO& io = ImGui::GetIO();
@@ -314,9 +318,8 @@ void ImGui_ImplGlfwGL3_InvalidateDeviceObjects() {
 	}
 }
 
-bool ImGui_ImplGlfwGL3_Init(HWND hWnd) {
-	//g_Window = window;
-	g_hWnd = hWnd;
+bool ImGui_ImplGlfwGL3_Init(Engine::Windows::OpenGLWindow& window) {
+	g_Window = &window;
 	g_Time = Engine::Clock::now();
 
 	// Store GLSL version string so we can refer to it later in case we recreate shaders. Note: GLSL version is NOT the same as GL version. Leave this to NULL if unsure.
@@ -367,7 +370,7 @@ bool ImGui_ImplGlfwGL3_Init(HWND hWnd) {
 	//io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
 	//io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
 	//io.ClipboardUserData = g_Window;
-	io.ImeWindowHandle = hWnd;
+	io.ImeWindowHandle = g_Window->getWin32WindowHandle();
 
 	// Load cursors
 	// FIXME: GLFW doesn't expose suitable cursors for ResizeAll, ResizeNESW, ResizeNWSE. We revert to arrow cursor for those.
@@ -379,6 +382,7 @@ bool ImGui_ImplGlfwGL3_Init(HWND hWnd) {
 	//g_MouseCursors[ImGuiMouseCursor_ResizeNESW] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
 	//g_MouseCursors[ImGuiMouseCursor_ResizeNWSE] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
 
+	ImGui_ImplGlfwGL3_CreateDeviceObjects();
 	return true;
 }
 
@@ -395,64 +399,26 @@ void ImGui_ImplGlfwGL3_Shutdown() {
 }
 
 void ImGui_ImplGlfwGL3_NewFrame() {
-	if (!g_FontTexture) {
-		ImGui_ImplGlfwGL3_CreateDeviceObjects();
-	}
-
 	ImGuiIO& io = ImGui::GetIO();
 
 	// Setup display size (every frame to accommodate for window resizing)
-	int w;
-	int h;
-	int display_w = 0;
-	int display_h = 0;
+	const auto dispSize = g_Window->getFramebufferSize();
+	const auto winSize = dispSize; // TODO: get correct value here to support high dpi
 
-	{ // TODO: impl in OpenGLWindow
-		RECT area;
-		GetClientRect(g_hWnd, &area);
-		w = area.right;
-		h = area.bottom;
-		display_w = w;
-		display_h = h;
-		// TODO: glfwGetWindowSize(g_Window, &w, &h);
-		// TODO: glfwGetFramebufferSize(g_Window, &display_w, &display_h);
-	}
+	// TODO: Engine::Glue
+	io.DisplaySize = ImVec2(static_cast<float32>(winSize.x), static_cast<float32>(winSize.y));
+	io.DisplayFramebufferScale = ImVec2(dispSize.x / static_cast<float32>(winSize.x), dispSize.y / static_cast<float32>(winSize.y));
 
-	io.DisplaySize = ImVec2((float)w, (float)h);
-	io.DisplayFramebufferScale = ImVec2(w > 0 ? ((float)display_w / w) : 0, h > 0 ? ((float)display_h / h) : 0);
-
-	// Setup time step
+	// Time step. Setup as system::tick or system::run? what is this used for? I think in run.
 	const auto current_time = Engine::Clock::now();
 	io.DeltaTime = Engine::Clock::Seconds{current_time - g_Time}.count();
 	g_Time = current_time;
 
-	// Setup inputs
-	// (we already got mouse wheel, keyboard keys & characters from glfw callbacks polled in glfwPollEvents())
-	//if (glfwGetWindowAttrib(g_Window, GLFW_FOCUSED)) {
-	//	// Set OS mouse position if requested (only used when ImGuiConfigFlags_NavEnableSetMousePos is enabled by user)
-	//	if (io.WantSetMousePos) {
-	//		glfwSetCursorPos(g_Window, (double)io.MousePos.x, (double)io.MousePos.y);
-	//	} else {
-	//		double mouse_x, mouse_y;
-	//		glfwGetCursorPos(g_Window, &mouse_x, &mouse_y);
-	//		io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
-	//	}
-	//} else {
-	//	io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
-	//}
-
+	// Modifier keys
 	io.KeyCtrl = io.KeysDown[g_KeyMap.lctrl] || io.KeysDown[g_KeyMap.rctrl];
-    io.KeyShift = io.KeysDown[g_KeyMap.lshift] || io.KeysDown[g_KeyMap.rshift];
-    io.KeyAlt = io.KeysDown[g_KeyMap.lalt] || io.KeysDown[g_KeyMap.ralt];
-    io.KeySuper = io.KeysDown[g_KeyMap.lsuper] || io.KeysDown[g_KeyMap.rsuper];
-
-	{ // TODO: impl in OpenGLWindow
-		POINT pos;
-		GetCursorPos(&pos);
-		ENGINE_ASSERT(ScreenToClient(g_hWnd, &pos));
-		// TODO: set to -FLT_MAX if offscreen/dont want to show
-		io.MousePos = ImVec2{static_cast<float>(pos.x), static_cast<float>(pos.y)};
-	}
+	io.KeyShift = io.KeysDown[g_KeyMap.lshift] || io.KeysDown[g_KeyMap.rshift];
+	io.KeyAlt = io.KeysDown[g_KeyMap.lalt] || io.KeysDown[g_KeyMap.ralt];
+	io.KeySuper = io.KeysDown[g_KeyMap.lsuper] || io.KeysDown[g_KeyMap.rsuper];
 
 	for (int i = 0; i < 3; i++) {
 		io.MouseDown[i] = io.MouseDown[i] || g_MouseJustPressed[i];
