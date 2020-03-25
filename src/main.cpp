@@ -40,6 +40,7 @@
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Windows/Windows.hpp>
 #include <Engine/Windows/OpenGLWindow.hpp>
+#include <Engine/ImGui/ImGui.hpp>
 
 
 // Game
@@ -49,7 +50,6 @@
 #include <Game/CharacterMovementBindListener.hpp>
 #include <Game/MapGenerator.hpp>
 #include <Game/MapSystemBindListener.hpp>
-#include <Game/imgui_impl_glfw_gl3.hpp>
 
 
 namespace {
@@ -283,11 +283,11 @@ namespace {
 
 	void doUI(Engine::EngineInstance& engine, Game::World& world) {
 		static bool showWindow = true;
-		ImGui_ImplGlfwGL3_NewFrame();
+		Engine::ImGui::newFrame();
 		ImGui::ShowDemoWindow(&showWindow);
 		editorUI(engine, world);
 		ImGui::Render();
-		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+		Engine::ImGui::renderDrawData(ImGui::GetDrawData());
 	}
 
 	b2Body* createPhysicsCircle(Engine::ECS::Entity ent, Game::PhysicsSystem& physSys, b2Vec2 position = b2Vec2_zero) {
@@ -389,7 +389,7 @@ void run() {
 	// UI
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGui_ImplGlfwGL3_Init(window);
+	Engine::ImGui::init(window);
 	ImGui::StyleColorsDark();
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -402,40 +402,40 @@ void run() {
 	window.setKeyPressCallback([](void* userdata, int scancode, bool extended){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::KEYBOARD, scancode}, true});
-		ImGui_ImplGlfw_KeyCallback(scancode, true);
+		Engine::ImGui::keyCallback(scancode, true);
 	});
 
 	window.setKeyReleaseCallback([](void* userdata, int scancode, bool extended){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::KEYBOARD, scancode}, false});
-		ImGui_ImplGlfw_KeyCallback(scancode, false);
+		Engine::ImGui::keyCallback(scancode, false);
 	});
 
 	window.setCharCallback([](void* userdata, wchar_t character){
-		ImGui_ImplGlfw_CharCallback(character);
+		Engine::ImGui::charCallback(character);
 	});
 
 	window.setMousePressCallback([](void* userdata, int32 button){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::MOUSE, button}, true});
-		ImGui_ImplGlfw_MouseButtonCallback(button, true);
+		Engine::ImGui::mouseButtonCallback(button, true);
 	});
 
 	window.setMouseReleaseCallback([](void* userdata, int32 button){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::MOUSE, button}, false});
-		ImGui_ImplGlfw_MouseButtonCallback(button, false);
+		Engine::ImGui::mouseButtonCallback(button, false);
 	});
 
 	window.setMouseWheelCallback([](void* userdata, float32 x, float32 y){
-		ImGui_ImplGlfw_ScrollCallback(x, y);
+		Engine::ImGui::scrollCallback(x, y);
 	});
 
 	window.setMouseMoveCallback([](void* userdata, int32 x, int32 y){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		wrapper.engine.inputManager.mouseCallback(x, y);
-		ImGui_ImplGlfw_MouseMoveCallback(x, y);
 		// TODO: inputsystem
+		Engine::ImGui::mouseMoveCallback(x, y);
 	});
 
 	window.setResizeCallback([](void* userdata, int32 w, int32 h){
@@ -576,7 +576,7 @@ void run() {
 	glDeleteTextures(1, &mapTexture);
 
 	// UI cleanup
-	ImGui_ImplGlfwGL3_Shutdown();
+	Engine::ImGui::shutdown();
 	ImGui::DestroyContext();
 
 	// Network cleanup
