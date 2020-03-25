@@ -16,4 +16,4 @@ bool ImGui_ImplGlfwGL3_CreateDeviceObjects();
 void ImGui_ImplGlfw_MouseButtonCallback(int button, bool action);
 //void ImGui_ImplGlfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void ImGui_ImplGlfw_KeyCallback(int button, bool action);
-//void ImGui_ImplGlfw_CharCallback(GLFWwindow* window, unsigned int c);
+void ImGui_ImplGlfw_CharCallback(unsigned int c);

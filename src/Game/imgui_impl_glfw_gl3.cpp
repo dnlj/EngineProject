@@ -24,19 +24,31 @@
 
 
 // GLFW data
-//static GLFWwindow*  g_Window = NULL;
-static HWND g_hWnd = nullptr; // TODO: use OpenGLWindow
-static Engine::Clock::TimePoint g_Time;
-static bool         g_MouseJustPressed[3] = {false, false, false};
-//static GLFWcursor*  g_MouseCursors[ImGuiMouseCursor_COUNT] = {0};
+namespace {
+	//static GLFWwindow*  g_Window = NULL;
+	HWND g_hWnd = nullptr; // TODO: use OpenGLWindow
+	Engine::Clock::TimePoint g_Time;
+	bool g_MouseJustPressed[3] = {false, false, false};
+	struct {
+		int lctrl;
+		int rctrl;
+		int lshift;
+		int rshift;
+		int lalt;
+		int ralt;
+		int lsuper;
+		int rsuper;
+	} g_KeyMap;
+	//static GLFWcursor*  g_MouseCursors[ImGuiMouseCursor_COUNT] = {0};
 
-// OpenGL3 data
-static char         g_GlslVersion[32] = "#version 150";
-static GLuint       g_FontTexture = 0;
-static int          g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
-static int          g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
-static int          g_AttribLocationPosition = 0, g_AttribLocationUV = 0, g_AttribLocationColor = 0;
-static unsigned int g_VboHandle = 0, g_ElementsHandle = 0;
+	// OpenGL3 data
+	char         g_GlslVersion[32] = "#version 150";
+	GLuint       g_FontTexture = 0;
+	int          g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
+	int          g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
+	int          g_AttribLocationPosition = 0, g_AttribLocationUV = 0, g_AttribLocationColor = 0;
+	unsigned int g_VboHandle = 0, g_ElementsHandle = 0;
+}
 
 // OpenGL3 Render function.
 // (this used to be set in io.RenderDrawListsFn and called by ImGui::Render(), but you can now call this directly from your main loop)
@@ -179,22 +191,15 @@ void ImGui_ImplGlfw_MouseButtonCallback(int button, bool action) {
 void ImGui_ImplGlfw_KeyCallback(int key, bool action) {
 	ImGuiIO& io = ImGui::GetIO();
 	io.KeysDown[key] = action;
-
-	// TODO:
-	//io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
-	//io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
-	//io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
-	//io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
 }
 
-// TODO:
-//void ImGui_ImplGlfw_CharCallback(GLFWwindow*, unsigned int c) {
-//	ImGuiIO& io = ImGui::GetIO();
-//
-//	if (c > 0 && c < 0x10000) {
-//		io.AddInputCharacter((unsigned short)c);
-//	}
-//}
+void ImGui_ImplGlfw_CharCallback(unsigned int c) {
+	ImGuiIO& io = ImGui::GetIO();
+
+	if (c > 0 && c < 0x10000) {
+		io.AddInputCharacter((unsigned short)c);
+	}
+}
 
 bool ImGui_ImplGlfwGL3_CreateFontsTexture() {
 	// Build texture atlas
@@ -286,7 +291,7 @@ bool ImGui_ImplGlfwGL3_CreateDeviceObjects() {
 	return true;
 }
 
-void    ImGui_ImplGlfwGL3_InvalidateDeviceObjects() {
+void ImGui_ImplGlfwGL3_InvalidateDeviceObjects() {
 	if (g_VboHandle) glDeleteBuffers(1, &g_VboHandle);
 	if (g_ElementsHandle) glDeleteBuffers(1, &g_ElementsHandle);
 	g_VboHandle = g_ElementsHandle = 0;
@@ -327,27 +332,37 @@ bool ImGui_ImplGlfwGL3_Init(HWND hWnd) {
 	io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;    // We can honor io.WantSetMousePos requests (optional, rarely used)
 
 	// Keyboard mapping. ImGui will use those indices to peek into the io.KeysDown[] array.
-	io.KeyMap[ImGuiKey_Tab] = MapVirtualKeyW(VK_TAB, MAPVK_VK_TO_VSC);//GLFW_KEY_TAB;
-	io.KeyMap[ImGuiKey_LeftArrow] = MapVirtualKeyW(VK_LEFT, MAPVK_VK_TO_VSC);//GLFW_KEY_LEFT;
-	io.KeyMap[ImGuiKey_RightArrow] = MapVirtualKeyW(VK_RIGHT, MAPVK_VK_TO_VSC);//GLFW_KEY_RIGHT;
-	io.KeyMap[ImGuiKey_UpArrow] = MapVirtualKeyW(VK_UP, MAPVK_VK_TO_VSC);//GLFW_KEY_UP;
-	io.KeyMap[ImGuiKey_DownArrow] = MapVirtualKeyW(VK_DOWN, MAPVK_VK_TO_VSC);//GLFW_KEY_DOWN;
-	io.KeyMap[ImGuiKey_PageUp] = MapVirtualKeyW(VK_PRIOR, MAPVK_VK_TO_VSC);//GLFW_KEY_PAGE_UP;
-	io.KeyMap[ImGuiKey_PageDown] = MapVirtualKeyW(VK_NEXT, MAPVK_VK_TO_VSC);//GLFW_KEY_PAGE_DOWN;
-	io.KeyMap[ImGuiKey_Home] = MapVirtualKeyW(VK_HOME, MAPVK_VK_TO_VSC);//GLFW_KEY_HOME;
-	io.KeyMap[ImGuiKey_End] = MapVirtualKeyW(VK_END, MAPVK_VK_TO_VSC);//GLFW_KEY_END;
-	io.KeyMap[ImGuiKey_Insert] = MapVirtualKeyW(VK_INSERT, MAPVK_VK_TO_VSC);//GLFW_KEY_INSERT;
-	io.KeyMap[ImGuiKey_Delete] = MapVirtualKeyW(VK_DELETE, MAPVK_VK_TO_VSC);//GLFW_KEY_DELETE;
-	io.KeyMap[ImGuiKey_Backspace] = MapVirtualKeyW(VK_BACK, MAPVK_VK_TO_VSC);//GLFW_KEY_BACKSPACE;
-	io.KeyMap[ImGuiKey_Space] = MapVirtualKeyW(VK_SPACE, MAPVK_VK_TO_VSC);//GLFW_KEY_SPACE;
-	io.KeyMap[ImGuiKey_Enter] = MapVirtualKeyW(VK_RETURN, MAPVK_VK_TO_VSC);//GLFW_KEY_ENTER;
+	io.KeyMap[ImGuiKey_Tab] = MapVirtualKeyW(VK_TAB, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_LeftArrow] = MapVirtualKeyW(VK_LEFT, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_RightArrow] = MapVirtualKeyW(VK_RIGHT, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_UpArrow] = MapVirtualKeyW(VK_UP, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_DownArrow] = MapVirtualKeyW(VK_DOWN, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_PageUp] = MapVirtualKeyW(VK_PRIOR, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_PageDown] = MapVirtualKeyW(VK_NEXT, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_Home] = MapVirtualKeyW(VK_HOME, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_End] = MapVirtualKeyW(VK_END, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_Insert] = MapVirtualKeyW(VK_INSERT, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_Delete] = MapVirtualKeyW(VK_DELETE, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_Backspace] = MapVirtualKeyW(VK_BACK, MAPVK_VK_TO_VSC);
+	std::cout << "io.KeyMap[ImGuiKey_Backspace] = " << io.KeyMap[ImGuiKey_Backspace] << "\n";
+	io.KeyMap[ImGuiKey_Space] = MapVirtualKeyW(VK_SPACE, MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_Enter] = MapVirtualKeyW(VK_RETURN, MAPVK_VK_TO_VSC);
 	io.KeyMap[ImGuiKey_Escape] = MapVirtualKeyW(VK_ESCAPE, MAPVK_VK_TO_VSC);
-	io.KeyMap[ImGuiKey_A] = MapVirtualKeyW('A', MAPVK_VK_TO_VSC);//GLFW_KEY_A;
-	io.KeyMap[ImGuiKey_C] = MapVirtualKeyW('C', MAPVK_VK_TO_VSC);//GLFW_KEY_C;
-	io.KeyMap[ImGuiKey_V] = MapVirtualKeyW('V', MAPVK_VK_TO_VSC);//GLFW_KEY_V;
-	io.KeyMap[ImGuiKey_X] = MapVirtualKeyW('X', MAPVK_VK_TO_VSC);//GLFW_KEY_X;
-	io.KeyMap[ImGuiKey_Y] = MapVirtualKeyW('Y', MAPVK_VK_TO_VSC);//GLFW_KEY_Y;
-	io.KeyMap[ImGuiKey_Z] = MapVirtualKeyW('Z', MAPVK_VK_TO_VSC);//GLFW_KEY_Z;
+	io.KeyMap[ImGuiKey_A] = MapVirtualKeyW('A', MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_C] = MapVirtualKeyW('C', MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_V] = MapVirtualKeyW('V', MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_X] = MapVirtualKeyW('X', MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_Y] = MapVirtualKeyW('Y', MAPVK_VK_TO_VSC);
+	io.KeyMap[ImGuiKey_Z] = MapVirtualKeyW('Z', MAPVK_VK_TO_VSC);
+
+	g_KeyMap.lctrl = MapVirtualKeyW(VK_LCONTROL, MAPVK_VK_TO_VSC);
+	g_KeyMap.rctrl = MapVirtualKeyW(VK_RCONTROL, MAPVK_VK_TO_VSC);
+	g_KeyMap.lshift = MapVirtualKeyW(VK_LSHIFT, MAPVK_VK_TO_VSC);
+	g_KeyMap.rshift = MapVirtualKeyW(VK_RSHIFT, MAPVK_VK_TO_VSC);
+	g_KeyMap.lalt = MapVirtualKeyW(VK_LMENU, MAPVK_VK_TO_VSC);
+	g_KeyMap.ralt = MapVirtualKeyW(VK_RMENU, MAPVK_VK_TO_VSC);
+	g_KeyMap.lsuper = MapVirtualKeyW(VK_LWIN, MAPVK_VK_TO_VSC);
+	g_KeyMap.rsuper = MapVirtualKeyW(VK_RWIN, MAPVK_VK_TO_VSC);
 
 	//io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
 	//io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
@@ -425,6 +440,11 @@ void ImGui_ImplGlfwGL3_NewFrame() {
 	//} else {
 	//	io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
 	//}
+
+	io.KeyCtrl = io.KeysDown[g_KeyMap.lctrl] || io.KeysDown[g_KeyMap.rctrl];
+    io.KeyShift = io.KeysDown[g_KeyMap.lshift] || io.KeysDown[g_KeyMap.rshift];
+    io.KeyAlt = io.KeysDown[g_KeyMap.lalt] || io.KeysDown[g_KeyMap.ralt];
+    io.KeySuper = io.KeysDown[g_KeyMap.lsuper] || io.KeysDown[g_KeyMap.rsuper];
 
 	{ // TODO: impl in OpenGLWindow
 		POINT pos;

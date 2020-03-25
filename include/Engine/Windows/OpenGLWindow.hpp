@@ -18,6 +18,7 @@ namespace Engine::Windows {
 		public:
 			using KeyPressCallback = void (*)(void* userdata, int scancode, bool extended);
 			using KeyReleaseCallback = void (*)(void* userdata, int scancode, bool extended);
+			using CharCallback = void (*)(void* userdata, wchar_t character);
 			using MousePressCallback = void (*)(void* userdata, int32 button);
 			using MouseReleaseCallback = void (*)(void* userdata, int32 button);
 			using MouseMoveCallback = void (*)(void* userdata, int32 x, int32 y);
@@ -39,6 +40,7 @@ namespace Engine::Windows {
 
 			KeyPressCallback keyPressCallback = nullptr;
 			KeyReleaseCallback keyReleaseCallback = nullptr;
+			CharCallback charCallback = nullptr;
 			MousePressCallback mousePressCallback = nullptr;
 			MouseReleaseCallback mouseReleaseCallback = nullptr;
 			MouseMoveCallback mouseMoveCallback = nullptr;
@@ -64,8 +66,10 @@ namespace Engine::Windows {
 
 			bool shouldClose() const;
 
+			// TODO: make these all "setOnKeyPressCallback"
 			void setKeyPressCallback(KeyPressCallback callback);
 			void setKeyReleaseCallback(KeyReleaseCallback callback);
+			void setCharCallback(CharCallback callback);
 			void setMousePressCallback(MousePressCallback callback);
 			void setMouseReleaseCallback(MouseReleaseCallback callback);
 			void setMouseMoveCallback(MouseMoveCallback callback);

@@ -149,6 +149,10 @@ namespace Engine::Windows {
 		keyReleaseCallback = callback;
 	}
 
+	void OpenGLWindow::setCharCallback(CharCallback callback) {
+		charCallback = callback;
+	}
+
 	void OpenGLWindow::setMousePressCallback(MousePressCallback callback) {
 		mousePressCallback = callback;
 	}
@@ -297,6 +301,10 @@ namespace Engine::Windows {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 				window.keyReleaseCallback(window.userdata, (int)scancode, extended);
 				break;
+			}
+			case WM_CHAR: {
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.charCallback(window.userdata, static_cast<wchar_t>(wParam));
 			}
 			case WM_MOUSEMOVE: {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));

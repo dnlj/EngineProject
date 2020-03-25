@@ -402,12 +402,21 @@ void run() {
 		//puts("keyPressCallback");
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::KEYBOARD, scancode}, true});
+		ImGui_ImplGlfw_KeyCallback(scancode, true);
 	});
 
 	window.setKeyReleaseCallback([](void* userdata, int scancode, bool extended){
 		//puts("keyReleaseCallback");
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::KEYBOARD, scancode}, false});
+		ImGui_ImplGlfw_KeyCallback(scancode, false);
+	});
+
+	window.setCharCallback([](void* userdata, wchar_t character){
+		//puts("setCharCallback");
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
+		//wrapper.world.getSystem<Game::InputSystem>().queueInput({{Engine::Input::InputType::KEYBOARD, scancode}, true});
+		ImGui_ImplGlfw_CharCallback(character);
 	});
 
 	window.setMousePressCallback([](void* userdata, int32 button){
