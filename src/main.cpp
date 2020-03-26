@@ -398,54 +398,61 @@ void run() {
 		Game::World& world;
 	};
 
-	window.setKeyPressCallback([](void* userdata, int scancode, bool extended){
+	window.resizeCallback = [](void* userdata, int32 w, int32 h){
+		glViewport(0, 0, w, h);
+		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
+		wrapper.engine.camera.setAsOrtho(w, h, 1.0f / 250.0f);
+	};
+
+	window.keyPressCallback = [](void* userdata, int scancode, bool extended){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		Engine::Input::InputState input = {{Engine::Input::InputType::KEYBOARD, scancode}, true};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::keyCallback(input);
-	});
+	};
 
-	window.setKeyReleaseCallback([](void* userdata, int scancode, bool extended){
+	window.keyReleaseCallback = [](void* userdata, int scancode, bool extended){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		Engine::Input::InputState input = {{Engine::Input::InputType::KEYBOARD, scancode}, false};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::keyCallback(input);
-	});
+	};
 
-	window.setCharCallback([](void* userdata, wchar_t character){
+	window.charCallback = [](void* userdata, wchar_t character){
 		Engine::ImGui::charCallback(character);
-	});
+	};
 
-	window.setMousePressCallback([](void* userdata, int32 button){
+	window.mousePressCallback = [](void* userdata, int32 button){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		Engine::Input::InputState input = {{Engine::Input::InputType::MOUSE, button}, true};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::mouseButtonCallback(input);
-	});
+	};
 
-	window.setMouseReleaseCallback([](void* userdata, int32 button){
+	window.mouseReleaseCallback = [](void* userdata, int32 button){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		Engine::Input::InputState input = {{Engine::Input::InputType::MOUSE, button}, false};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::mouseButtonCallback(input);
-	});
+	};
 
-	window.setMouseWheelCallback([](void* userdata, float32 x, float32 y){
+	window.mouseWheelCallback = [](void* userdata, float32 x, float32 y){
 		Engine::ImGui::scrollCallback(x, y);
-	});
+	};
 
-	window.setMouseMoveCallback([](void* userdata, int32 x, int32 y){
+	window.mouseMoveCallback = [](void* userdata, int32 x, int32 y){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		wrapper.engine.inputManager.mouseCallback(x, y);
 		// TODO: inputsystem
 		Engine::ImGui::mouseMoveCallback(x, y);
-	});
+	};
 
-	window.setResizeCallback([](void* userdata, int32 w, int32 h){
-		glViewport(0, 0, w, h);
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		wrapper.engine.camera.setAsOrtho(w, h, 1.0f / 250.0f);
-	});
+	window.mouseLeaveCallback = [](void* userdata){
+	};
+
+	window.mouseEnterCallback = [](void* userdata){
+		Engine::ImGui::mouseEnterCallback();
+	};
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Engine stuff

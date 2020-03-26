@@ -17,4 +17,5 @@ namespace Engine::ImGui {
 	void scrollCallback(float xoffset, float yoffset);
 	void keyCallback(const Engine::Input::InputState& is);
 	void charCallback(unsigned int c);
+	void mouseEnterCallback();
 }

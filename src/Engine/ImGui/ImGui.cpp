@@ -15,6 +15,7 @@ namespace {
 	using namespace Engine::Types;
 	Engine::Window* g_Window;
 	Engine::Clock::TimePoint g_Time;
+	ImGuiMouseCursor g_LastCursor = ImGuiMouseCursor_COUNT;
 	bool g_MouseJustPressed[3] = {false, false, false};
 	struct {
 		int lctrl;
@@ -380,6 +381,10 @@ namespace Engine::ImGui {
 		}
 	}
 
+	void mouseEnterCallback() {
+		g_LastCursor = ImGuiMouseCursor_COUNT;
+	}
+
 	bool init(Engine::Window& window) {
 		ImGui_ImplOpenGL3_Init();
 
@@ -463,8 +468,9 @@ namespace Engine::ImGui {
 			g_MouseJustPressed[i] = false;
 		}
 
-		{ // Update Cursors
-			ImGuiMouseCursor imgui_cursor = ::ImGui::GetMouseCursor();
+		// Update Cursors
+		ImGuiMouseCursor imgui_cursor = ::ImGui::GetMouseCursor();
+		if (imgui_cursor != g_LastCursor) {
 			if (imgui_cursor == ImGuiMouseCursor_None || io.MouseDrawCursor) {
 				// Hide OS mouse cursor if imgui is drawing it or if it wants no cursor
 				::SetCursor(nullptr);
@@ -484,6 +490,7 @@ namespace Engine::ImGui {
 				}
 				::SetCursor(::LoadCursor(nullptr, win32_cursor));
 			}
+			g_LastCursor = imgui_cursor;
 		}
 
 		// TODO: Gamepad navigation. See imgui/examples.

@@ -21,6 +21,7 @@ namespace Engine::Win32 {
 	// TODO: High DPI https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
 	class OpenGLWindow {
 		public:
+			using ResizeCallback = void (*)(void* userdata, int32 w, int32 h);
 			using KeyPressCallback = void (*)(void* userdata, int scancode, bool extended);
 			using KeyReleaseCallback = void (*)(void* userdata, int scancode, bool extended);
 			using CharCallback = void (*)(void* userdata, wchar_t character);
@@ -28,8 +29,21 @@ namespace Engine::Win32 {
 			using MouseReleaseCallback = void (*)(void* userdata, int32 button);
 			using MouseMoveCallback = void (*)(void* userdata, int32 x, int32 y);
 			using MouseWheelCallback = void (*)(void* userdata, float32 x, float32 y);
-			using ResizeCallback = void (*)(void* userdata, int32 w, int32 h);
+			using MouseLeaveCallback = void (*)(void* userdata);
+			using MouseEnterCallback = void (*)(void* userdata);
 			void* userdata; // TODO: rm - figure out better
+
+			// TODO: just make virtual member functions?
+			ResizeCallback resizeCallback = nullptr;
+			KeyPressCallback keyPressCallback = nullptr;
+			KeyReleaseCallback keyReleaseCallback = nullptr;
+			CharCallback charCallback = nullptr;
+			MousePressCallback mousePressCallback = nullptr;
+			MouseReleaseCallback mouseReleaseCallback = nullptr;
+			MouseMoveCallback mouseMoveCallback = nullptr;
+			MouseWheelCallback mouseWheelCallback = nullptr;
+			MouseLeaveCallback mouseLeaveCallback = nullptr;
+			MouseEnterCallback mouseEnterCallback = nullptr;
 
 		private:
 			struct WGLPointers {
@@ -43,15 +57,7 @@ namespace Engine::Win32 {
 			HDC deviceContext = nullptr;
 			HGLRC renderContext = nullptr;
 			bool close = false;
-
-			KeyPressCallback keyPressCallback = nullptr;
-			KeyReleaseCallback keyReleaseCallback = nullptr;
-			CharCallback charCallback = nullptr;
-			MousePressCallback mousePressCallback = nullptr;
-			MouseReleaseCallback mouseReleaseCallback = nullptr;
-			MouseMoveCallback mouseMoveCallback = nullptr;
-			MouseWheelCallback mouseWheelCallback = nullptr;
-			ResizeCallback resizeCallback = nullptr;
+			bool mouseInWindow = false;
 
 		public:
 			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat);
@@ -76,17 +82,7 @@ namespace Engine::Win32 {
 			glm::ivec2 getFramebufferSize() const;
 
 			// TODO: std::string getClipboardText() const;
-			// TODO: void setClipboardText(const 
-
-			// TODO: make these all "setOnKeyPressCallback"
-			void setKeyPressCallback(KeyPressCallback callback);
-			void setKeyReleaseCallback(KeyReleaseCallback callback);
-			void setCharCallback(CharCallback callback);
-			void setMousePressCallback(MousePressCallback callback);
-			void setMouseReleaseCallback(MouseReleaseCallback callback);
-			void setMouseMoveCallback(MouseMoveCallback callback);
-			void setMouseWheelCallback(MouseWheelCallback callback);
-			void setResizeCallback(ResizeCallback callback);
+			// TODO: void setClipboardText
 
 		private:
 			static WGLPointers init();

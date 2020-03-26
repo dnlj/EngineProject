@@ -147,39 +147,6 @@ namespace Engine::Win32 {
 		return glm::ivec2{rect.right, rect.bottom};
 	}
 
-	void OpenGLWindow::setKeyPressCallback(KeyPressCallback callback) {
-		keyPressCallback = callback;
-	}
-
-	void OpenGLWindow::setKeyReleaseCallback(KeyReleaseCallback callback) {
-		keyReleaseCallback = callback;
-	}
-
-	void OpenGLWindow::setCharCallback(CharCallback callback) {
-		charCallback = callback;
-	}
-
-	void OpenGLWindow::setMousePressCallback(MousePressCallback callback) {
-		mousePressCallback = callback;
-	}
-
-	void OpenGLWindow::setMouseReleaseCallback(MouseReleaseCallback callback) {
-		mouseReleaseCallback = callback;
-	}
-
-	void OpenGLWindow::setMouseMoveCallback(MouseMoveCallback callback) {
-		mouseMoveCallback = callback;
-	}
-	
-	void OpenGLWindow::setMouseWheelCallback(MouseWheelCallback callback) {
-		mouseWheelCallback = callback;
-	}
-
-	void OpenGLWindow::setResizeCallback(ResizeCallback callback) {
-		resizeCallback = callback;
-	}
-
-
 	auto OpenGLWindow::init() -> WGLPointers {
 		puts("OpenGLWindow::init");
 		const auto hInstance = GetModuleHandleW(nullptr);
@@ -318,6 +285,19 @@ namespace Engine::Win32 {
 			}
 			case WM_MOUSEMOVE: {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+
+				if (!window.mouseInWindow) {
+					TRACKMOUSEEVENT event = {
+						.cbSize = sizeof(event),
+						.dwFlags = TME_LEAVE,
+						.hwndTrack = hWnd,
+						.dwHoverTime = 0,
+					};
+					TrackMouseEvent(&event);
+					window.mouseEnterCallback(window.userdata);
+					window.mouseInWindow = true;
+				}
+
 				window.mouseMoveCallback(window.userdata, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 				break;
 			}
@@ -348,6 +328,12 @@ namespace Engine::Win32 {
 			case WM_MOUSEHWHEEL: {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 				window.mouseWheelCallback(window.userdata, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA), 0.0f);
+			}
+			case WM_MOUSELEAVE: {
+				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+				window.mouseInWindow = false;
+				window.mouseLeaveCallback(window.userdata);
+
 			}
 			default:
 				return DefWindowProcW(hWnd, uMsg, wParam, lParam);
