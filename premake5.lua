@@ -38,7 +38,6 @@ CONAN_REMOTES = {
 CONAN_PACKAGES = { -- TODO: Name?
 	["requires"] = {
 		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
-		"glfw/3.3.2@dnlj/wobbly",
 		"glm/0.9.9.7@dnlj/wobbly",
 		"imgui/1.75@dnlj/wobbly",
 		"meta/master@dnlj/wobbly",
