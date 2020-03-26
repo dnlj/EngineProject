@@ -12,7 +12,7 @@ namespace Engine::Input {
 	}
 
 	void InputManager::processInput(const InputState& is) {
-		const auto found = inputToMapping.find(is.input);
+		const auto found = inputToMapping.find(is.id);
 		if (found == inputToMapping.end()) { return; }
 
 		for (const auto mapi : found->second) {

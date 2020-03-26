@@ -8,7 +8,7 @@ namespace Engine::Input {
 		inputStates.resize(inputs.size());
 
 		for (int i = 0; i < inputs.size(); ++i) {
-			inputStates[i].input = std::move(inputs[i]);
+			inputStates[i].id = std::move(inputs[i]);
 		}
 	}
 
@@ -18,7 +18,7 @@ namespace Engine::Input {
 		for (int i = 0; i < inputStates.size() - 1; ++i) {
 			auto& s = inputStates[i];
 
-			if (s.input == is.input) {
+			if (s.id == is.id) {
 				s.state = is.state;
 				active = false;
 				return; // There should only be one state for each input. No need to check the rest.

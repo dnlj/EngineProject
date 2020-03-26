@@ -1,9 +1,6 @@
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
 
-// GLFW
-#include <GLFW/glfw3.h>
-
 // Game
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/PhysicsComponent.hpp>

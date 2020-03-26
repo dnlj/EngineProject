@@ -20,6 +20,7 @@
 
 // GLFW data
 namespace {
+	// TODO: rm globals
 	using namespace Engine::Types;
 	Engine::Windows::OpenGLWindow* g_Window;
 	Engine::Clock::TimePoint g_Time;
@@ -35,17 +36,6 @@ namespace {
 		int rsuper;
 	} g_KeyMap;
 
-	// OpenGL3 data
-	// TODO: rm - char         g_GlslVersion[32] = "#version 150";
-	// TODO: rm - GLuint       g_FontTexture = 0;
-	// TODO: rm - int          g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
-	// TODO: rm - int          g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
-	// TODO: rm - int          g_AttribLocationPosition = 0, g_AttribLocationUV = 0, g_AttribLocationColor = 0;
-	// TODO: rm - unsigned int g_VboHandle = 0, g_ElementsHandle = 0;
-}
-
-namespace {
-	// TODO: rm globals
 	// OpenGL Data
 	const char   g_GlslVersionString[] = "#version 330";
 	GLuint       g_FontTexture = 0;
@@ -89,9 +79,7 @@ namespace {
 		}
 		return (GLboolean)status == GL_TRUE;
 	}
-}
 
-namespace {
 	void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_width, int fb_height, GLuint vertex_array_object) {
 		// Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
 		glEnable(GL_BLEND);
@@ -134,8 +122,6 @@ namespace {
 		glVertexAttribPointer(g_AttribLocationColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, col));
 	}
 
-	// OpenGL3 Render function.
-	// Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so.
 	void ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data) {
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
 		int fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
@@ -312,7 +298,6 @@ namespace {
 		glGenBuffers(1, &g_VboHandle);
 		glGenBuffers(1, &g_ElementsHandle);
 
-		
 		// Build texture atlas
 		ImGuiIO& io = ::ImGui::GetIO();
 		unsigned char* pixels;
@@ -362,7 +347,6 @@ namespace {
 		ImGui_ImplOpenGL3_CreateDeviceObjects();
 		return true;
 	}
-
 }
 
 namespace Engine::ImGui {
@@ -370,15 +354,16 @@ namespace Engine::ImGui {
 	//static const char* ImGui_ImplGlfwGL3_GetClipboardText(void* user_data) {
 	//	return 
 	//}
-
+	  
 	// TODO:
 	//static void ImGui_ImplGlfwGL3_SetClipboardText(void* user_data, const char* text) {
 	//	glfwSetClipboardString((GLFWwindow*)user_data, text);
 	//}
 
-	void mouseButtonCallback(int button, bool action) {
-		::ImGui::GetIO().MouseDown[button] = action;
-		g_MouseJustPressed[button] = g_MouseJustPressed[button] || action;
+	void mouseButtonCallback(const Engine::Input::InputState& is) {
+		const auto btn = is.id.code;
+		::ImGui::GetIO().MouseDown[btn] = is.state;
+		g_MouseJustPressed[btn] = g_MouseJustPressed[btn] || is.state;
 	}
 
 	void mouseMoveCallback(int x, int y) {
@@ -391,9 +376,9 @@ namespace Engine::ImGui {
 		io.MouseWheel += yoffset;
 	}
 
-	void keyCallback(int key, bool action) {
+	void keyCallback(const Engine::Input::InputState& is) {
 		ImGuiIO& io = ::ImGui::GetIO();
-		io.KeysDown[key] = action;
+		io.KeysDown[is.id.code] = is.state;
 	}
 
 	void charCallback(unsigned int c) {
