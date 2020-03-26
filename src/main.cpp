@@ -404,16 +404,22 @@ void run() {
 		wrapper.engine.camera.setAsOrtho(w, h, 1.0f / 250.0f);
 	};
 
-	window.keyPressCallback = [](void* userdata, int scancode, bool extended){
+	window.keyPressCallback = [](void* userdata, int16 scancode, bool extended){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		Engine::Input::InputState input = {{Engine::Input::InputType::KEYBOARD, scancode}, true};
+		const Engine::Input::InputState input = {
+			.id = {Engine::Input::InputType::KEYBOARD, scancode},
+			.active = true,
+		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::keyCallback(input);
 	};
 
-	window.keyReleaseCallback = [](void* userdata, int scancode, bool extended){
+	window.keyReleaseCallback = [](void* userdata, int16 scancode, bool extended){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		Engine::Input::InputState input = {{Engine::Input::InputType::KEYBOARD, scancode}, false};
+		const Engine::Input::InputState input = {
+			.id = {Engine::Input::InputType::KEYBOARD, scancode},
+			.active = false,
+		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::keyCallback(input);
 	};
@@ -422,16 +428,22 @@ void run() {
 		Engine::ImGui::charCallback(character);
 	};
 
-	window.mousePressCallback = [](void* userdata, int32 button){
+	window.mousePressCallback = [](void* userdata, int16 button){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		Engine::Input::InputState input = {{Engine::Input::InputType::MOUSE, button}, true};
+		const Engine::Input::InputState input = {
+			.id = {Engine::Input::InputType::MOUSE, button},
+			.active = true,
+		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::mouseButtonCallback(input);
 	};
 
-	window.mouseReleaseCallback = [](void* userdata, int32 button){
+	window.mouseReleaseCallback = [](void* userdata, int16 button){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		Engine::Input::InputState input = {{Engine::Input::InputType::MOUSE, button}, false};
+		Engine::Input::InputState input = {
+			.id = {Engine::Input::InputType::MOUSE, button},
+			.active = false,
+		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::mouseButtonCallback(input);
 	};
@@ -440,11 +452,15 @@ void run() {
 		Engine::ImGui::scrollCallback(x, y);
 	};
 
-	window.mouseMoveCallback = [](void* userdata, int32 x, int32 y){
+	window.mouseMoveCallback = [](void* userdata, int16 axis, int32 value){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		wrapper.engine.inputManager.mouseCallback(x, y);
-		// TODO: inputsystem
-		Engine::ImGui::mouseMoveCallback(x, y);
+		wrapper.engine.inputManager.mouseCallback(axis, value);
+		Engine::Input::InputState input = {
+			.id = {Engine::Input::InputType::MOUSE_AXIS, axis},
+			.valuei = value,
+		};
+		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
+		Engine::ImGui::mouseMoveCallback(axis, value);
 	};
 
 	window.mouseLeaveCallback = [](void* userdata){

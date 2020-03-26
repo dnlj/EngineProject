@@ -76,13 +76,7 @@ namespace Engine::Input {
 			glm::vec2 getMousePosition() const;
 
 			// TODO: remove? Represent mouse/axis as a bind?
-			/**
-			 * The callback for updating the mouse position.
-			 * See GLFW documentation for more information.
-			 * @param[in] x The x position of the mouse.
-			 * @param[in] y The y position of the mouse.
-			 */
-			void mouseCallback(int32 x, int32 y);
+			void mouseCallback(int16 axis, int32 value);
 
 		private:
 			/** Stores a set of indices into #inputBindMappings where each index corresponds to an InputBindMapping that uses the given InputId. */

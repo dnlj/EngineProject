@@ -1,17 +1,18 @@
 #pragma once
 
 // Engine
+#include <Engine/Engine.hpp>
 #include <Engine/Hash.hpp>
 #include <Engine/Input/InputType.hpp>
 
 
 // TODO: Doc
 // TODO: split
-namespace Engine::Input { // TODO: change namespace name? I dont like having the same name for a class and namespace. InputId?
+namespace Engine::Input {
 	class InputId {
 		public:
 			InputType type = InputType::UNKNOWN;
-			int code = 0;
+			int16 code = 0;
 
 			operator bool() const {
 				return static_cast<bool>(type);

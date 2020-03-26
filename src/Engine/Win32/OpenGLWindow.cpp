@@ -299,7 +299,19 @@ namespace Engine::Win32 {
 					window.mouseInWindow = true;
 				}
 
-				window.mouseMoveCallback(window.userdata, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				const int32 x = GET_X_LPARAM(lParam);
+				const int32 y = GET_Y_LPARAM(lParam);
+
+				if (x != window.lastMousePos.x) {
+					window.lastMousePos.x = x;
+					window.mouseMoveCallback(window.userdata, 0, x);
+				}
+
+				if (y != window.lastMousePos.y) {
+					window.lastMousePos.y = y;
+					window.mouseMoveCallback(window.userdata, 1, y);
+				}
+
 				break;
 			}
 			case WM_LBUTTONDOWN: {

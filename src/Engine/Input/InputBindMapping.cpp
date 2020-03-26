@@ -13,24 +13,25 @@ namespace Engine::Input {
 	}
 
 	void InputBindMapping::processInput(const InputState& is) {
+		// TODO: deal with MOUSE_MOVE
 		active = true;
 
 		for (int i = 0; i < inputStates.size() - 1; ++i) {
 			auto& s = inputStates[i];
 
 			if (s.id == is.id) {
-				s.state = is.state;
+				s.active = is.active;
 				active = false;
 				return; // There should only be one state for each input. No need to check the rest.
 			}
 
-			active = active && s.state;
+			active = active && s.active;
 		}
 
 		// If we havent already returned we are dealing with the last input
 		auto& last = inputStates.back();
-		last.state = is.state;
-		active = active && last.state;
+		last.active = is.active;
+		active = active && last.active;
 	}
 
 	bool InputBindMapping::isActive() const {

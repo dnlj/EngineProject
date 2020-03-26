@@ -22,12 +22,12 @@ namespace Engine::Win32 {
 	class OpenGLWindow {
 		public:
 			using ResizeCallback = void (*)(void* userdata, int32 w, int32 h);
-			using KeyPressCallback = void (*)(void* userdata, int scancode, bool extended);
-			using KeyReleaseCallback = void (*)(void* userdata, int scancode, bool extended);
+			using KeyPressCallback = void (*)(void* userdata, int16 scancode, bool extended);
+			using KeyReleaseCallback = void (*)(void* userdata, int16 scancode, bool extended);
 			using CharCallback = void (*)(void* userdata, wchar_t character);
-			using MousePressCallback = void (*)(void* userdata, int32 button);
-			using MouseReleaseCallback = void (*)(void* userdata, int32 button);
-			using MouseMoveCallback = void (*)(void* userdata, int32 x, int32 y);
+			using MousePressCallback = void (*)(void* userdata, int16 button);
+			using MouseReleaseCallback = void (*)(void* userdata, int16 button);
+			using MouseMoveCallback = void (*)(void* userdata, int16 axis, int32 value);
 			using MouseWheelCallback = void (*)(void* userdata, float32 x, float32 y);
 			using MouseLeaveCallback = void (*)(void* userdata);
 			using MouseEnterCallback = void (*)(void* userdata);
@@ -58,6 +58,7 @@ namespace Engine::Win32 {
 			HGLRC renderContext = nullptr;
 			bool close = false;
 			bool mouseInWindow = false;
+			glm::ivec2 lastMousePos = {0, 0};
 
 		public:
 			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat);

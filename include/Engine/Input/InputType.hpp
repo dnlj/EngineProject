@@ -5,10 +5,16 @@
 
 
 namespace Engine::Input {
-	enum class InputType : int8_t {
+	enum class InputType : int8 {
 		UNKNOWN = 0,
-		KEYBOARD = 1,
-		MOUSE = 2,
-		GAMEPAD = 3,
+
+		KEYBOARD,
+		MOUSE,
+		GAMEPAD,
+
+		MOUSE_AXIS,
+		GAMEPAD_AXIS,
+
+		_COUNT,
 	};
 }

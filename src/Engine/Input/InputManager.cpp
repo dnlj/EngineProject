@@ -74,9 +74,8 @@ namespace Engine::Input {
 	glm::vec2 InputManager::getMousePosition() const {
 		return mousePosition;
 	}
-
-	void InputManager::mouseCallback(int32 x, int32 y) {
-		mousePosition.x = static_cast<float>(x);
-		mousePosition.y = static_cast<float>(y);
+	
+	void InputManager::mouseCallback(int16 axis, int32 value) {
+		mousePosition[axis] = static_cast<float32>(value);
 	}
 }
