@@ -260,23 +260,26 @@ namespace Engine::Win32 {
 				window.close = true;
 				break;
 			}
+			case WM_SYSKEYDOWN: // TODO: raw input plz
 			case WM_KEYDOWN: {
 				// As far as i can tell there is no way to get a more precise timestamp
 				// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
 				// https://devblogs.microsoft.com/oldnewthing/20140122-00/?p=2013
-				const auto scancode = (lParam & 0xFF'00'00) >> 16;
+				const int16 scancode = (lParam & 0xFF'00'00) >> 16;
 				const bool extended = lParam & (1 << 24);
 				const bool repeat = lParam & (1 << 30);
-				if (repeat) { break; } // TODO: repeat gets its own callback
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.keyPressCallback(window.userdata, (int)scancode, extended);
+				if (!repeat) {
+					auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+					window.keyPressCallback(window.userdata, scancode, extended);
+				}
 				break;
 			}
+			case WM_SYSKEYUP:
 			case WM_KEYUP: {
-				const auto scancode = (lParam & 0xFF'00'00) >> 16;
+				const int16 scancode = (lParam & 0xFF'00'00) >> 16;
 				const bool extended = lParam & (1 << 24);
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.keyReleaseCallback(window.userdata, (int)scancode, extended);
+				window.keyReleaseCallback(window.userdata, scancode, extended);
 				break;
 			}
 			case WM_CHAR: {
@@ -334,12 +337,12 @@ namespace Engine::Win32 {
 				window.mouseReleaseCallback(window.userdata, 1);
 				break;
 			}
-			case WM_MOUSEWHEEL: {
+			case WM_MOUSEWHEEL: { // TODO: Make axis
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 				window.mouseWheelCallback(window.userdata, 0.0f, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA));
 				break;
 			}
-			case WM_MOUSEHWHEEL: {
+			case WM_MOUSEHWHEEL: { // TODO: Make axis
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 				window.mouseWheelCallback(window.userdata, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA), 0.0f);
 				break;

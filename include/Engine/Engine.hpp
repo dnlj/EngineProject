@@ -82,9 +82,9 @@ namespace Engine::Detail {
 #define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA(::std::cerr, "[ERROR]", ENGINE_DIE)
 
 #define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA(::std::cerr, "[ERROR]", ENGINE_DIE)
+
 #if defined(DEBUG)
-	// TODO: insert cond in message
-	#define ENGINE_DEBUG_ASSERT(cond, msg) ENGINE_ASSERT(cond, msg)
+	#define ENGINE_DEBUG_ASSERT ENGINE_ASSERT
 #else
-	#define ENGINE_DEBUG_ASSERT(cond, msg)
+	#define ENGINE_DEBUG_ASSERT(...)
 #endif

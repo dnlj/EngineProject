@@ -14,7 +14,11 @@ namespace Engine::Input {
 			InputType type = InputType::UNKNOWN;
 			int16 code = 0;
 
-			operator bool() const {
+			constexpr bool isAxis() const {
+				return isAxisInput(type);
+			}
+
+			constexpr operator bool() const {
 				return static_cast<bool>(type);
 			}
 

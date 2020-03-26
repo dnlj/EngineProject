@@ -408,7 +408,7 @@ void run() {
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		const Engine::Input::InputState input = {
 			.id = {Engine::Input::InputType::KEYBOARD, scancode},
-			.active = true,
+			.value = true,
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::keyCallback(input);
@@ -418,7 +418,7 @@ void run() {
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		const Engine::Input::InputState input = {
 			.id = {Engine::Input::InputType::KEYBOARD, scancode},
-			.active = false,
+			.value = false,
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::keyCallback(input);
@@ -432,7 +432,7 @@ void run() {
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		const Engine::Input::InputState input = {
 			.id = {Engine::Input::InputType::MOUSE, button},
-			.active = true,
+			.value = true,
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::mouseButtonCallback(input);
@@ -442,7 +442,7 @@ void run() {
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		Engine::Input::InputState input = {
 			.id = {Engine::Input::InputType::MOUSE, button},
-			.active = false,
+			.value = false,
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::mouseButtonCallback(input);
@@ -457,7 +457,7 @@ void run() {
 		wrapper.engine.inputManager.mouseCallback(axis, value);
 		Engine::Input::InputState input = {
 			.id = {Engine::Input::InputType::MOUSE_AXIS, axis},
-			.valuei = value,
+			.value = value,
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::mouseMoveCallback(axis, value);
