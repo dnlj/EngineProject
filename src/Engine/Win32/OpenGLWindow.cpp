@@ -282,6 +282,7 @@ namespace Engine::Win32 {
 			case WM_CHAR: {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 				window.charCallback(window.userdata, static_cast<wchar_t>(wParam));
+				break;
 			}
 			case WM_MOUSEMOVE: {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
@@ -324,16 +325,18 @@ namespace Engine::Win32 {
 			case WM_MOUSEWHEEL: {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 				window.mouseWheelCallback(window.userdata, 0.0f, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA));
+				break;
 			}
 			case WM_MOUSEHWHEEL: {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 				window.mouseWheelCallback(window.userdata, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA), 0.0f);
+				break;
 			}
 			case WM_MOUSELEAVE: {
 				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 				window.mouseInWindow = false;
 				window.mouseLeaveCallback(window.userdata);
-
+				break;
 			}
 			default:
 				return DefWindowProcW(hWnd, uMsg, wParam, lParam);
