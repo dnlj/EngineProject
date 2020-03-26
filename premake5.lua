@@ -100,7 +100,7 @@ end)
 -- The main premake settings
 --------------------------------------------------------------------------------
 workspace(PROJECT_NAME .."Workspace")
-	configurations {"Debug", "Debug_All", "Debug_Physics", "Debug_Graphics", "Release"}
+	configurations {"Debug", "Debug_All", "Debug_Physics", "Debug_Graphics", "Release", "Release_Debug"}
 	platforms {"Windows_x64"}
 	characterset "Unicode"
 	kind "WindowedApp"
@@ -132,7 +132,8 @@ workspace(PROJECT_NAME .."Workspace")
 	filter "configurations:Debug*"
 		symbols "On"
 		defines {"DEBUG"}
-
+		inlining "Explicit"
+		
 	filter "configurations:Debug_All"
 		defines {"DEBUG_ALL"}
 
@@ -143,10 +144,19 @@ workspace(PROJECT_NAME .."Workspace")
 		defines {"DEBUG_GRAPHICS"}
 
 	filter "configurations:Release*"
-		optimize "Full"
+		symbols "Off"
+		optimize "Speed"
+		inlining "Auto"
 		defines {"NDEBUG"}
 		flags {"LinkTimeOptimization"}
-
+		
+	filter {"configurations:Release*", "action:vs*"}
+		inlining "Default" -- To avoid D9025
+		buildoptions {"/Ob3"}
+		
+	filter "configurations:Release_Debug"
+		symbols "On"
+		
 --------------------------------------------------------------------------------
 -- Engine
 --------------------------------------------------------------------------------
