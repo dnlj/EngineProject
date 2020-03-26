@@ -4,7 +4,7 @@
 #include <Engine/Engine.hpp>
 
 
-namespace Engine::Windows {
+namespace Engine::Win32 {
 	struct ContextFormat {
 		int32 majorVersion = 4;
 		int32 minorVersion = 5;

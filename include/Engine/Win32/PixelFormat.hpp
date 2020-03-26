@@ -4,7 +4,7 @@
 #include <Engine/Engine.hpp>
 
 
-namespace Engine::Windows {
+namespace Engine::Win32 {
 	struct PixelFormat {
 		int32 colorBits = 24;
 		int32 alphaBits = 8;

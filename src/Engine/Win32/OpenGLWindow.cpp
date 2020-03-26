@@ -7,8 +7,8 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Windows/Windows.hpp>
-#include <Engine/Windows/OpenGLWindow.hpp>
+#include <Engine/Win32/Windows.hpp>
+#include <Engine/Win32/OpenGLWindow.hpp>
 #include <Engine/Clock.hpp>
 
 
@@ -16,7 +16,7 @@ namespace {
 	template<class T>
 	T getFunctionPointerGL(const char* name) {
 		auto addr = wglGetProcAddress(name);
-		ENGINE_ASSERT(addr, "Unable to get WGL function pointer for ", name, " - ", Engine::Windows::getLastErrorMessage());
+		ENGINE_ASSERT(addr, "Unable to get WGL function pointer for ", name, " - ", Engine::Win32::getLastErrorMessage());
 		return reinterpret_cast<T>(addr);
 
 		// TODO: only needed for gl 1?
@@ -33,7 +33,7 @@ namespace {
 	}
 }
 
-namespace Engine::Windows {
+namespace Engine::Win32 {
 	OpenGLWindow::OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat) {
 		static const WGLPointers ptrs = OpenGLWindow::init();
 

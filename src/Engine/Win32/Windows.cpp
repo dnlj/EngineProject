@@ -6,10 +6,10 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Windows/Windows.hpp>
+#include <Engine/Win32/Windows.hpp>
 
 
-namespace Engine::Windows {
+namespace Engine::Win32 {
 	std::string getLastErrorMessage() {
 		WCHAR* wmsg = nullptr;
 		if (!FormatMessageW(

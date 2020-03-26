@@ -38,8 +38,8 @@
 #include <Engine/Noise/WorleyNoise.hpp>
 #include <Engine/Net/Net.hpp>
 #include <Engine/Net/UDPSocket.hpp>
-#include <Engine/Windows/Windows.hpp>
-#include <Engine/Windows/OpenGLWindow.hpp>
+#include <Engine/Win32/Windows.hpp>
+#include <Engine/Win32/OpenGLWindow.hpp>
 #include <Engine/ImGui/ImGui.hpp>
 
 
@@ -356,7 +356,7 @@ void run() {
 	//}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	Engine::Windows::OpenGLWindow window{{
+	Engine::Win32::OpenGLWindow window{{
 			.colorBits = 24,
 			.alphaBits = 8,
 			.depthBits = 24,
@@ -589,7 +589,7 @@ void run() {
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
 int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
 	if(!AllocConsole()) {
-		ENGINE_ERROR("Unable to allocate console window - ", Engine::Windows::getLastErrorMessage());
+		ENGINE_ERROR("Unable to allocate console window - ", Engine::Win32::getLastErrorMessage());
 	} else {
 		FILE* unused;
 		freopen_s(&unused, "CONIN$", "r", stdin);

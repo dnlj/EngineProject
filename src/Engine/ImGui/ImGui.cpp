@@ -22,7 +22,7 @@
 namespace {
 	// TODO: rm globals
 	using namespace Engine::Types;
-	Engine::Windows::OpenGLWindow* g_Window;
+	Engine::Win32::OpenGLWindow* g_Window;
 	Engine::Clock::TimePoint g_Time;
 	bool g_MouseJustPressed[3] = {false, false, false};
 	struct {
@@ -389,7 +389,7 @@ namespace Engine::ImGui {
 		}
 	}
 
-	bool init(Engine::Windows::OpenGLWindow& window) {
+	bool init(Engine::Win32::OpenGLWindow& window) {
 		ImGui_ImplOpenGL3_Init();
 
 		g_Window = &window;

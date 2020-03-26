@@ -2,12 +2,12 @@
 #include <imgui.h>
 
 // Engine
-#include <Engine/Windows/OpenGLWindow.hpp>
+#include <Engine/Win32/OpenGLWindow.hpp>
 #include <Engine/Input/InputState.hpp>
 
 
 namespace Engine::ImGui {
-	bool init(Engine::Windows::OpenGLWindow& hWnd);
+	bool init(Engine::Win32::OpenGLWindow& hWnd);
 	void shutdown();
 	void newFrame();
 	void draw();

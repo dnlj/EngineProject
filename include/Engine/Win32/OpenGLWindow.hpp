@@ -8,12 +8,12 @@
 #include <glm/vec2.hpp>
 
 // Engine
-#include <Engine/Windows/PixelFormat.hpp>
-#include <Engine/Windows/ContextFormat.hpp>
+#include <Engine/Win32/PixelFormat.hpp>
+#include <Engine/Win32/ContextFormat.hpp>
 
 
 
-namespace Engine::Windows {
+namespace Engine::Win32 {
 	// TODO: vsync support
 	// TODO: GLFW_OPENGL_DEBUG_CONTEXT
 	// TODO: GLFW_SRGB_CAPABLE
