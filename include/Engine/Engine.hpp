@@ -76,7 +76,6 @@ namespace Engine::Detail {
 	})
 
 #define ENGINE_DIE std::terminate();
-#define ENGINE_TEST_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA(::std::cerr, "[TEST ASSERT]", ENGINE_DIE)
 
 #define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA(::std::cout, "[LOG]", 0)
 #define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA(::std::cerr, "[WARN]", 0)

@@ -39,7 +39,7 @@
 #include <Engine/Net/Net.hpp>
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Win32/Windows.hpp>
-#include <Engine/Win32/OpenGLWindow.hpp>
+#include <Engine/Window.hpp>
 #include <Engine/ImGui/ImGui.hpp>
 
 
@@ -356,7 +356,7 @@ void run() {
 	//}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	Engine::Win32::OpenGLWindow window{{
+	Engine::Window window{{
 			.colorBits = 24,
 			.alphaBits = 8,
 			.depthBits = 24,

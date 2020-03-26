@@ -1,12 +1,3 @@
-// Implemented features:
-//  [X] User texture binding. Cast 'GLuint' OpenGL texture identifier as void*/ImTextureID. Read the FAQ about ImTextureID in imgui.cpp.
-//  [X] Gamepad navigation mapping. Enable with 'io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad'.
-
-// You can copy and use unmodified imgui_impl_* files in your project. See main.cpp for an example of using this.
-// If you use this binding you'll need to call 4 functions: ImGui_ImplXXXX_Init(), ImGui_ImplXXXX_NewFrame(), ImGui::Render() and ImGui_ImplXXXX_Shutdown().
-// If you are new to ImGui, see examples/README.txt and documentation at the top of imgui.cpp.
-// https://github.com/ocornut/imgui
-
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
 
@@ -22,7 +13,7 @@
 namespace {
 	// TODO: rm globals
 	using namespace Engine::Types;
-	Engine::Win32::OpenGLWindow* g_Window;
+	Engine::Window* g_Window;
 	Engine::Clock::TimePoint g_Time;
 	bool g_MouseJustPressed[3] = {false, false, false};
 	struct {
@@ -389,7 +380,7 @@ namespace Engine::ImGui {
 		}
 	}
 
-	bool init(Engine::Win32::OpenGLWindow& window) {
+	bool init(Engine::Window& window) {
 		ImGui_ImplOpenGL3_Init();
 
 		g_Window = &window;
