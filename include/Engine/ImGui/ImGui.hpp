@@ -9,10 +9,7 @@ namespace Engine::ImGui {
 	bool init(Engine::Windows::OpenGLWindow& hWnd);
 	void shutdown();
 	void newFrame();
-	void renderDrawData(ImDrawData* draw_data);
-
-	void invalidateDeviceObjects();
-	bool createDeviceObjects();
+	void draw();
 
 	void mouseButtonCallback(int button, bool action);
 	void mouseMoveCallback(int x, int y);

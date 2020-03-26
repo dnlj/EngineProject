@@ -286,8 +286,7 @@ namespace {
 		Engine::ImGui::newFrame();
 		ImGui::ShowDemoWindow(&showWindow);
 		editorUI(engine, world);
-		ImGui::Render();
-		Engine::ImGui::renderDrawData(ImGui::GetDrawData());
+		Engine::ImGui::draw();
 	}
 
 	b2Body* createPhysicsCircle(Engine::ECS::Entity ent, Game::PhysicsSystem& physSys, b2Vec2 position = b2Vec2_zero) {
