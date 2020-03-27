@@ -23,8 +23,6 @@ namespace Game {
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();
 		const auto& pos = world.getComponent<Game::PhysicsComponent>(player).getPosition();
 		const auto mousePos = engine.camera.screenToWorld(engine.inputManager.getAxisValue(axisIds));
-		std::cout << "mouse: " << mousePos.x << " " << mousePos.y << "\n";
-
 		auto dir = Engine::Glue::as<b2Vec2>(mousePos) - pos;
 		dir.Normalize();
 		

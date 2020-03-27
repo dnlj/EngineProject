@@ -35,6 +35,10 @@ namespace Engine::Glue::_impl {
 			return b2Vec2{static_cast<float32>(v.x), static_cast<float32>(v.y)};
 		}
 
+		static const b2Vec2& call(const glm::vec2& v) {
+			return reinterpret_cast<const b2Vec2&>(v);
+		}
+
 		static b2Vec2& call(glm::vec2& v) {
 			return reinterpret_cast<b2Vec2&>(v);
 		}
