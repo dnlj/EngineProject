@@ -118,7 +118,9 @@ namespace Engine::Input {
 			// TODO: split
 			template<class... AxisIdN, int32... Is>
 			auto getAxisValue(const std::tuple<AxisIdN...>& aidN, std::index_sequence<Is...>) {
-				return glm::vec<sizeof...(AxisIdN), float32, glm::defaultp>{std::get<Is>(aidN)...};
+				return glm::vec<sizeof...(Is), float32, glm::defaultp>{
+					getAxisValue(std::get<Is>(aidN))...
+				};
 			}
 
 			// TODO: split
