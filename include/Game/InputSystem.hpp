@@ -21,7 +21,6 @@ namespace Game {
 				Engine::Clock::TimePoint time;
 			};
 
-			// TODO: is this large enough? what about things like mouse/axis inputs?
 			Engine::StaticRingBuffer<TimedInput, 128> buffer;
 	};
 }

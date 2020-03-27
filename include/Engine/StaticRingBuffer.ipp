@@ -70,7 +70,7 @@ namespace Engine {
 
 	template<class T, uint32 Size>
 	auto StaticRingBuffer<T, Size>::size() const noexcept -> SizeType {
-		return start < stop ? stop - start : stop + Size - start;
+		return stop < start ? stop + Size - start : stop - start;
 	}
 
 	template<class T, uint32 Size>
