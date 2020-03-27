@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Input/BindPressListener.hpp>
+#include <Engine/Glue/glm.hpp>
 
 // Game
 #include <Game/MapSystem.hpp>
@@ -13,24 +14,28 @@ namespace Game {
 		public:
 			MapSystemBindListener(MapSystem& mapSystem, Engine::EngineInstance& engine)
 				: mapSystem{mapSystem}
-				, engine{engine} {
+				, engine{engine}
+				, axisIds{engine.inputManager.getAxisId("target_x"), engine.inputManager.getAxisId("target_y")} {
 			};
 
 		private:
 			MapSystem& mapSystem;
 			Engine::EngineInstance& engine;
+			Engine::Input::AxisId axisIds[2];
+
 			void apply() {
 				constexpr auto s = MapChunk::blockSize;
+				const auto mousePos = engine.camera.screenToWorld(engine.inputManager.getAxisValue(axisIds));
 
 				mapSystem.setValueAt(
-					engine.camera.screenToWorld(engine.inputManager.getMousePosition()) + glm::vec2{0, 0},
+					mousePos + glm::vec2{0, 0},
 					value
 				);
 
 				for (int x = -1; x < 2; ++x) {
 					for (int y = -1; y < 2; ++y) {
 						mapSystem.setValueAt(
-							engine.camera.screenToWorld(engine.inputManager.getMousePosition()) + glm::vec2{x * s, y * s},
+							mousePos + glm::vec2{x * s, y * s},
 							value
 						);
 					}

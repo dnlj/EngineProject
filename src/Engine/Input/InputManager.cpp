@@ -89,13 +89,6 @@ namespace Engine::Input {
 			}
 		}
 	}
-	glm::vec2 InputManager::getMousePosition() const {
-		return mousePosition;
-	}
-	
-	void InputManager::mouseCallback(int16 axis, int32 value) {
-		mousePosition[axis] = static_cast<float32>(value);
-	}
 
 	AxisId InputManager::createAxisBind(std::string_view name) {
 		axisBinds.emplace_back(std::string{name});

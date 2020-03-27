@@ -209,6 +209,7 @@ namespace {
 
 	void editorUI(Engine::EngineInstance& engine, Game::World& world) {
 		static auto texture32 = engine.textureManager.get("../assets/32.bmp");
+		static auto axisIds = engine.inputManager.getAxisId("target_x", "target_y");
 
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
@@ -218,7 +219,8 @@ namespace {
 		if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
 			auto& mapSys = world.getSystem<Game::MapSystem>();
 
-			auto screenMousePos = engine.inputManager.getMousePosition();
+			// TODO: fix
+			auto screenMousePos = engine.inputManager.getAxisValue(axisIds);
 			ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
 			auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
@@ -454,7 +456,6 @@ void run() {
 
 	window.mouseMoveCallback = [](void* userdata, int16 axis, int32 value){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		wrapper.engine.inputManager.mouseCallback(axis, value);
 		Engine::Input::InputState input = {
 			.id = {Engine::Input::InputType::MOUSE_AXIS, axis},
 			.valuef = static_cast<float32>(value),

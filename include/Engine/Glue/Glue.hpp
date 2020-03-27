@@ -3,7 +3,10 @@
 namespace Engine::Glue {
 	namespace _impl {
 		template<class To, class From>
-		struct as;
+		struct as {
+			// We use is_same so that we only trigger the static assert if a type is given.
+			static_assert(!std::is_same_v<To, To>, "Unknown Engine::Glue::as conversion. Did you include the correct headers?");
+		};
 	}
 
 	template<class To, class From>

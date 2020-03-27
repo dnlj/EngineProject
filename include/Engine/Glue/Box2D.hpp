@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <tuple>
+
 // Engine
 #include <Engine/Glue/Glue.hpp>
 
@@ -22,6 +25,11 @@ namespace Engine::Glue::_impl {
 		static_assert(std::is_same_v<decltype(glm::vec2::y), float32>);
 		static_assert(offsetof(b2Vec2, x) == offsetof(glm::vec2, x));
 		static_assert(offsetof(b2Vec2, y) == offsetof(glm::vec2, y));
+
+		template<class X, class Y>
+		static b2Vec2 call(const std::tuple<X, Y>& v) {
+			return b2Vec2{static_cast<float32>(std::get<0>(v)), static_cast<float32>(std::get<1>(v))};
+		}
 
 		static b2Vec2 call(const glm::ivec2& v) {
 			return b2Vec2{static_cast<float32>(v.x), static_cast<float32>(v.y)};

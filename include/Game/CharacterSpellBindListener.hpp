@@ -20,6 +20,7 @@ namespace Game {
 			Engine::EngineInstance& engine;
 			World& world;
 			const Engine::ECS::Entity player;
+			Engine::Input::AxisId axisIds[2];
 
 			virtual void onBindPress() override;
 	};

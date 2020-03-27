@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#include <type_traits>
+#include <tuple>
 
 // GLM
 #include <glm/vec2.hpp>
@@ -85,23 +87,57 @@ namespace Engine::Input {
 			 */
 			void addButtonMapping(const std::string& name, InputSequence inputs);
 
-			// TODO: remove? Represent mouse/axis as a bind?
-			/**
-			 * Gets the current position of the mouse.
-			 * Origin is top left
-			 * @return The x and y position of the mouse.
-			 */
-			glm::vec2 getMousePosition() const;
 
-			// TODO: remove? Represent mouse/axis as a bind?
-			void mouseCallback(int16 axis, int32 value);
-
+			///////////////////////////////////////////////////////////
+			// TODO: doc all axis functions
+			///////////////////////////////////////////////////////////
 			AxisId createAxisBind(std::string_view name);
+
 			AxisId getAxisId(std::string_view name) const;
+
+			// TODO: split
+			template<class StringView1, class StringView2, class... StringViewN>
+			auto getAxisId(StringView1 view1, StringView2 view2, StringViewN... viewN) const {
+				return std::tuple{getAxisId(view1), getAxisId(view2), getAxisId(viewN)...};
+			}
+
 			AxisBind& getAxisBind(const AxisId aid);
 			AxisBind& getAxisBind(std::string_view name);
 			void addAxisMapping(std::string_view name, InputId axis);
+
 			float32 getAxisValue(AxisId aid);
+			
+			// TODO: split
+			template<class... AxisIdN>
+			auto getAxisValue(AxisId aid1, AxisId aid2, AxisIdN... aidN) {
+				return glm::vec<2 + sizeof...(AxisIdN), float32, glm::defaultp>{
+					getAxisValue(aid1), getAxisValue(aid2), getAxisValue(aidN),
+				};
+			}
+
+			// TODO: split
+			template<class... AxisIdN, int32... Is>
+			auto getAxisValue(const std::tuple<AxisIdN...>& aidN, std::index_sequence<Is...>) {
+				return glm::vec<sizeof...(AxisIdN), float32, glm::defaultp>{std::get<Is>(aidN)...};
+			}
+
+			// TODO: split
+			template<class... AxisIdN>
+			auto getAxisValue(const std::tuple<AxisIdN...>& aidN) {
+				return getAxisValue(aidN, std::make_index_sequence<sizeof...(AxisIdN)>{});
+			}
+
+			// TODO: split
+			template<int32 N, int32... Is>
+			auto getAxisValue(const AxisId (&ids)[N], std::index_sequence<Is...>) {
+				return glm::vec<N, float32, glm::defaultp>{getAxisValue(ids[Is])...};
+			};
+			
+			// TODO: split
+			template<int32 N>
+			auto getAxisValue(const AxisId (&ids)[N]) {
+				return getAxisValue(ids, std::make_index_sequence<N>{});
+			};
 
 		private:
 			/** Stores a set of indices into #inputBindMappings where each index corresponds to an InputBindMapping that uses the given InputId. */
@@ -112,10 +148,6 @@ namespace Engine::Input {
 
 			/** Stores every Bind used by this manager. */
 			std::vector<Bind> buttonBinds;
-
-			/** Stores the current position of the mouse. */
-			glm::vec2 mousePosition; // TODO: remove? Represent mouse/axis as a bind?
-
 			
 			// TODO: doc
 			FlatHashMap<InputId, std::vector<AxisId>, Hash<InputId>> axisMappings;
