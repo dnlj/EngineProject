@@ -13,6 +13,7 @@ namespace Engine::Input {
 	}
 
 	void InputBindMapping::processInput(const InputState& is) {
+		ENGINE_DEBUG_ASSERT(!is.id.isAxis(), "Axis input not valid in button mapping.");
 		active = true;
 
 		for (int i = 0; i < inputStates.size() - 1; ++i) {
@@ -25,13 +26,12 @@ namespace Engine::Input {
 			}
 
 			active = active && s.value;
-			ENGINE_DEBUG_ASSERT(!s.id.isAxis(), "Axis input may only be the last input in a mapping.");
 		}
 
 		// If we havent already returned we are dealing with the last input
 		auto& last = inputStates.back();
 		last.value = is.value;
-		active = active && (last.value || last.id.isAxis());
+		active = active && last.value;
 	}
 
 	bool InputBindMapping::isActive() const {

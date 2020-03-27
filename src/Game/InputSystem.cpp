@@ -25,6 +25,6 @@ namespace Game {
 
 	void InputSystem::queueInput(const Engine::Input::InputState& state) {
 		ENGINE_DEBUG_ASSERT(!buffer.full(), "Too many inputs");
-		buffer.emplace(state, Engine::Clock::now());
+		buffer.emplace(state, Engine::Clock::now()); // TODO: use time from Win32 message queue
 	}
 }

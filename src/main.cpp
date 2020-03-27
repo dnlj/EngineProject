@@ -457,7 +457,7 @@ void run() {
 		wrapper.engine.inputManager.mouseCallback(axis, value);
 		Engine::Input::InputState input = {
 			.id = {Engine::Input::InputType::MOUSE_AXIS, axis},
-			.value = value,
+			.valuef = static_cast<float32>(value),
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
 		Engine::ImGui::mouseMoveCallback(axis, value);
@@ -482,36 +482,39 @@ void run() {
 	// Binds
 	{
 		using namespace Engine::Input;
-		engine.inputManager.addInputBindMapping("Spell_1", InputSequence{
+		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
 			InputId{InputType::KEYBOARD, 29}, // CTRL
 			InputId{InputType::KEYBOARD, 46}, // C
 		});
-		engine.inputManager.addInputBindMapping("Spell_1", InputSequence{
+		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
 			InputId{InputType::KEYBOARD, 29}, // CTRL
 			InputId{InputType::KEYBOARD, 56}, // ALT
 			InputId{InputType::KEYBOARD, 16}, // Q
 		});
-		engine.inputManager.addInputBindMapping("Spell_1", InputSequence{
+		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
 			InputId{InputType::KEYBOARD, 57}
 		});
-		engine.inputManager.addInputBindMapping("MoveUp", InputSequence{
+		engine.inputManager.addButtonMapping("MoveUp", InputSequence{
 			InputId{InputType::KEYBOARD, 17}
 		});
-		engine.inputManager.addInputBindMapping("MoveDown", InputSequence{
+		engine.inputManager.addButtonMapping("MoveDown", InputSequence{
 			InputId{InputType::KEYBOARD, 31}
 		});
-		engine.inputManager.addInputBindMapping("MoveLeft", InputSequence{
+		engine.inputManager.addButtonMapping("MoveLeft", InputSequence{
 			InputId{InputType::KEYBOARD, 30}
 		});
-		engine.inputManager.addInputBindMapping("MoveRight", InputSequence{
+		engine.inputManager.addButtonMapping("MoveRight", InputSequence{
 			InputId{InputType::KEYBOARD, 32}
 		});
-		engine.inputManager.addInputBindMapping("EditPlace", InputSequence{
+		engine.inputManager.addButtonMapping("EditPlace", InputSequence{
 			InputId{InputType::MOUSE, 0}
 		});
-		engine.inputManager.addInputBindMapping("EditRemove", InputSequence{
+		engine.inputManager.addButtonMapping("EditRemove", InputSequence{
 			InputId{InputType::MOUSE, 1}
 		});
+
+		engine.inputManager.addAxisMapping("target_x", {InputType::MOUSE_AXIS, 0});
+		engine.inputManager.addAxisMapping("target_y", {InputType::MOUSE_AXIS, 1});
 	}
 
 	// More engine stuff
@@ -545,13 +548,13 @@ void run() {
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
 
 		// TODO: Do this in a better way? Listener on an EntityFilter for CharacterMovementComponent would be one way.
-		engine.inputManager.getBind("Spell_1").addListener(&playerSpellBindListener);
-		engine.inputManager.getBind("MoveUp").addListener(&playerMovementBindListeners[0]);
-		engine.inputManager.getBind("MoveDown").addListener(&playerMovementBindListeners[1]);
-		engine.inputManager.getBind("MoveLeft").addListener(&playerMovementBindListeners[2]);
-		engine.inputManager.getBind("MoveRight").addListener(&playerMovementBindListeners[3]);
-		engine.inputManager.getBind("EditPlace").addListener(&mapSystemBindListener_EditPlace);
-		engine.inputManager.getBind("EditRemove").addListener(&mapSystemBindListener_EditRemove);
+		engine.inputManager.getButtonBind("Spell_1").addListener(&playerSpellBindListener);
+		engine.inputManager.getButtonBind("MoveUp").addListener(&playerMovementBindListeners[0]);
+		engine.inputManager.getButtonBind("MoveDown").addListener(&playerMovementBindListeners[1]);
+		engine.inputManager.getButtonBind("MoveLeft").addListener(&playerMovementBindListeners[2]);
+		engine.inputManager.getButtonBind("MoveRight").addListener(&playerMovementBindListeners[3]);
+		engine.inputManager.getButtonBind("EditPlace").addListener(&mapSystemBindListener_EditPlace);
+		engine.inputManager.getButtonBind("EditRemove").addListener(&mapSystemBindListener_EditRemove);
 
 	}
 
