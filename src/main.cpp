@@ -573,9 +573,6 @@ void run() {
 	while (!window.shouldClose()) {
 		window.poll();
 
-		// Input
-		engine.inputManager.update();
-
 		// Rendering
 		glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
