@@ -13,7 +13,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
-#include <Engine/Input/ButtonBind.hpp>
+#include <Engine/Input/Bind.hpp>
 #include <Engine/Input/InputId.hpp>
 #include <Engine/Input/InputBindMapping.hpp>
 #include <Engine/Input/InputState.hpp>
@@ -71,14 +71,14 @@ namespace Engine::Input {
 			 * @param name The name of the bind.
 			 * @return The Bind for the given name.
 			 */
-			ButtonBind& getButtonBind(const std::string& name);
+			Bind& getButtonBind(const std::string& name);
 			
 			/**
 			 * Gets the Bind associated with @p bid.
 			 * @param bid The bind id.
 			 * @return The Bind for the given id.
 			 */
-			ButtonBind& getButtonBind(const BindId bid);
+			Bind& getButtonBind(const BindId bid);
 			
 			/**
 			 * Adds a mapping from the input sequence @p inputs to the bind @p name.
@@ -171,7 +171,7 @@ namespace Engine::Input {
 			std::vector<InputBindMapping> buttonMappings;
 
 			/** Stores every Bind used by this manager. */
-			std::vector<ButtonBind> buttonBinds;
+			std::vector<Bind> buttonBinds;
 			
 			/** Stores every axis id associated with a input axis. */
 			FlatHashMap<InputId, std::vector<AxisId>, Hash<InputId>> axisMappings;
