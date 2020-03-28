@@ -87,27 +87,49 @@ namespace Engine::Input {
 			 */
 			void addButtonMapping(const std::string& name, InputSequence inputs);
 
-
-			///////////////////////////////////////////////////////////
-			// TODO: doc all axis functions
-			///////////////////////////////////////////////////////////
+			/**
+			 * Creates a new bind with the given name.
+			 * @return The id of the new bind.
+			 */
 			AxisId createAxisBind(std::string_view name);
 
+
+			/**
+			 * Gets the id associated with a name.
+			 */
 			AxisId getAxisId(std::string_view name) const;
 
-			// TODO: split
+			/**
+			 * Gets the ids associated with multiple names.
+			 */
 			template<class StringView1, class StringView2, class... StringViewN>
 			auto getAxisId(StringView1 view1, StringView2 view2, StringViewN... viewN) const {
 				return std::tuple{getAxisId(view1), getAxisId(view2), getAxisId(viewN)...};
 			}
-
+			
+			/**
+			 * Gets the bind associated with a name.
+			 */
 			AxisBind& getAxisBind(const AxisId aid);
+
+			/**
+			 * Gets the bind associated with a name.
+			 */
 			AxisBind& getAxisBind(std::string_view name);
+
+			/**
+			 * Associates a name with an input axis.
+			 */
 			void addAxisMapping(std::string_view name, InputId axis);
 
+			/**
+			 * Gets the value of an axis.
+			 */
 			float32 getAxisValue(AxisId aid);
 			
-			// TODO: split
+			/**
+			 * Gets the value of multiple axes.
+			 */
 			template<class... AxisIdN>
 			auto getAxisValue(AxisId aid1, AxisId aid2, AxisIdN... aidN) {
 				return glm::vec<2 + sizeof...(AxisIdN), float32, glm::defaultp>{
@@ -115,7 +137,7 @@ namespace Engine::Input {
 				};
 			}
 
-			// TODO: split
+			/** @see getAxisValue */
 			template<class... AxisIdN, int32... Is>
 			auto getAxisValue(const std::tuple<AxisIdN...>& aidN, std::index_sequence<Is...>) {
 				return glm::vec<sizeof...(Is), float32, glm::defaultp>{
@@ -123,19 +145,19 @@ namespace Engine::Input {
 				};
 			}
 
-			// TODO: split
+			/** @see getAxisValue */
 			template<class... AxisIdN>
 			auto getAxisValue(const std::tuple<AxisIdN...>& aidN) {
 				return getAxisValue(aidN, std::make_index_sequence<sizeof...(AxisIdN)>{});
 			}
-
-			// TODO: split
+			
+			/** @see getAxisValue */
 			template<int32 N, int32... Is>
 			auto getAxisValue(const AxisId (&ids)[N], std::index_sequence<Is...>) {
 				return glm::vec<N, float32, glm::defaultp>{getAxisValue(ids[Is])...};
 			};
 			
-			// TODO: split
+			/** @see getAxisValue */
 			template<int32 N>
 			auto getAxisValue(const AxisId (&ids)[N]) {
 				return getAxisValue(ids, std::make_index_sequence<N>{});
@@ -151,8 +173,10 @@ namespace Engine::Input {
 			/** Stores every Bind used by this manager. */
 			std::vector<Bind> buttonBinds;
 			
-			// TODO: doc
+			/** Stores every axis id associated with a input axis. */
 			FlatHashMap<InputId, std::vector<AxisId>, Hash<InputId>> axisMappings;
+
+			/** Stores every axis bind used by this manager. */
 			std::vector<AxisBind> axisBinds;
 	};
 }
