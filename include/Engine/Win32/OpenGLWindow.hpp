@@ -12,7 +12,6 @@
 #include <Engine/Win32/ContextFormat.hpp>
 
 
-
 namespace Engine::Win32 {
 	// TODO: vsync support
 	// TODO: GLFW_OPENGL_DEBUG_CONTEXT
@@ -87,7 +86,10 @@ namespace Engine::Win32 {
 
 		private:
 			static WGLPointers init();
+
 			static LRESULT windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+			template<UINT Msg>
+			static LRESULT processMessage(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) = delete;
 	};
 }

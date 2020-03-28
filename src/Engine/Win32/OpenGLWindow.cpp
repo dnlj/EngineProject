@@ -13,6 +13,8 @@
 
 
 namespace {
+	using namespace Engine::Types;
+
 	template<class T>
 	T getFunctionPointerGL(const char* name) {
 		auto addr = wglGetProcAddress(name);
@@ -31,8 +33,155 @@ namespace {
 		//
 		//addr = GetProcAddress(module, name);
 	}
+	
+	constexpr int16 getKeyScancode(LPARAM lParam) {
+		return (lParam & 0xFF'00'00) >> 16;
+	}
+
+	constexpr bool getKeyExtended(LPARAM lParam) {
+		return lParam & (1 << 24);
+	}
+
+	constexpr bool getKeyRepeat(LPARAM lParam) {
+		return lParam & (1 << 30);
+	}
+
 }
 
+
+namespace Engine::Win32 {
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_SIZE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		const int32 w = LOWORD(lParam);
+		const int32 h = HIWORD(lParam);
+		window.resizeCallback(window.userdata, w, h);
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_CLOSE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.close = true;
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_KEYDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		// As far as i can tell there is no way to get a more precise timestamp
+		// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
+		// https://devblogs.microsoft.com/oldnewthing/20140122-00/?p=2013
+		// TODO: make constexpr functinos to extract these
+		const int16 scancode = getKeyScancode(lParam);
+		const bool extended = getKeyExtended(lParam);
+		const bool repeat = getKeyRepeat(lParam);
+		if (!repeat) {
+			window.keyPressCallback(window.userdata, scancode, extended);
+		}
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_SYSKEYDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		// TODO: Raw input
+		return processMessage<WM_KEYDOWN>(window, wParam, lParam);
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_KEYUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		const int16 scancode = getKeyScancode(lParam);
+		const bool extended = getKeyExtended(lParam);
+		window.keyReleaseCallback(window.userdata, scancode, extended);
+		return 0;
+	}
+	
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_SYSKEYUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		return processMessage<WM_KEYUP>(window, wParam, lParam);
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_CHAR>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.charCallback(window.userdata, static_cast<wchar_t>(wParam));
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_MOUSEMOVE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+
+		if (!window.mouseInWindow) {
+			TRACKMOUSEEVENT event = {
+				.cbSize = sizeof(event),
+				.dwFlags = TME_LEAVE,
+				.hwndTrack = window.getWin32WindowHandle(),
+				.dwHoverTime = 0,
+			};
+			TrackMouseEvent(&event);
+			window.mouseEnterCallback(window.userdata);
+			window.mouseInWindow = true;
+		}
+
+		const int32 x = GET_X_LPARAM(lParam);
+		const int32 y = GET_Y_LPARAM(lParam);
+
+		if (x != window.lastMousePos.x) {
+			window.lastMousePos.x = x;
+			window.mouseMoveCallback(window.userdata, 0, x);
+		}
+
+		if (y != window.lastMousePos.y) {
+			window.lastMousePos.y = y;
+			window.mouseMoveCallback(window.userdata, 1, y);
+		}
+
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_LBUTTONDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.mousePressCallback(window.userdata, 0);
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_LBUTTONUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.mouseReleaseCallback(window.userdata, 0);
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_RBUTTONDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.mousePressCallback(window.userdata, 1);
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_RBUTTONUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.mouseReleaseCallback(window.userdata, 1);
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_MOUSEWHEEL>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) { // TODO: Make axis
+		window.mouseWheelCallback(window.userdata, 0.0f, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA));
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_MOUSEHWHEEL>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) { // TODO: Make axis
+		window.mouseWheelCallback(window.userdata, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA), 0.0f);
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_MOUSELEAVE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.mouseInWindow = false;
+		window.mouseLeaveCallback(window.userdata);
+		return 0;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// OpenGLWindow
+////////////////////////////////////////////////////////////////////////////////
 namespace Engine::Win32 {
 	OpenGLWindow::OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat) {
 		static const WGLPointers ptrs = OpenGLWindow::init();
@@ -243,120 +392,33 @@ namespace Engine::Win32 {
 	}
 	
 	LRESULT OpenGLWindow::windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-		// TODO: dont need to get window for messages we dont handle
-		// TODO: HANDLE_MESSAGE(WM_PAINT); style
+		#define HANDLE_MESSAGE(Msg) case Msg: {\
+			return processMessage<Msg>(\
+				*reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)),\
+				wParam, lParam\
+			);\
+		}
 
 		switch (uMsg) {
-			// TODO: WM_SIZE, and WM_(create?) should also call sizing callback
-			case WM_SIZE: {
-				const int32 w = LOWORD(lParam);
-				const int32 h = HIWORD(lParam);
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.resizeCallback(window.userdata, w, h);
-				break;
-			}
-			case WM_CLOSE: {
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.close = true;
-				break;
-			}
-			case WM_SYSKEYDOWN: // TODO: raw input plz
-			case WM_KEYDOWN: {
-				// As far as i can tell there is no way to get a more precise timestamp
-				// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
-				// https://devblogs.microsoft.com/oldnewthing/20140122-00/?p=2013
-				const int16 scancode = (lParam & 0xFF'00'00) >> 16;
-				const bool extended = lParam & (1 << 24);
-				const bool repeat = lParam & (1 << 30);
-				if (!repeat) {
-					auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-					window.keyPressCallback(window.userdata, scancode, extended);
-				}
-				break;
-			}
-			case WM_SYSKEYUP:
-			case WM_KEYUP: {
-				const int16 scancode = (lParam & 0xFF'00'00) >> 16;
-				const bool extended = lParam & (1 << 24);
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.keyReleaseCallback(window.userdata, scancode, extended);
-				break;
-			}
-			case WM_CHAR: {
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.charCallback(window.userdata, static_cast<wchar_t>(wParam));
-				break;
-			}
-			case WM_MOUSEMOVE: {
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-
-				if (!window.mouseInWindow) {
-					TRACKMOUSEEVENT event = {
-						.cbSize = sizeof(event),
-						.dwFlags = TME_LEAVE,
-						.hwndTrack = hWnd,
-						.dwHoverTime = 0,
-					};
-					TrackMouseEvent(&event);
-					window.mouseEnterCallback(window.userdata);
-					window.mouseInWindow = true;
-				}
-
-				const int32 x = GET_X_LPARAM(lParam);
-				const int32 y = GET_Y_LPARAM(lParam);
-
-				if (x != window.lastMousePos.x) {
-					window.lastMousePos.x = x;
-					window.mouseMoveCallback(window.userdata, 0, x);
-				}
-
-				if (y != window.lastMousePos.y) {
-					window.lastMousePos.y = y;
-					window.mouseMoveCallback(window.userdata, 1, y);
-				}
-
-				break;
-			}
-			case WM_LBUTTONDOWN: {
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.mousePressCallback(window.userdata, 0);
-				break;
-			}
-			case WM_LBUTTONUP: {
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.mouseReleaseCallback(window.userdata, 0);
-				break;
-			}
-			case WM_RBUTTONDOWN: {
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.mousePressCallback(window.userdata, 1);
-				break;
-			}
-			case WM_RBUTTONUP: {
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.mouseReleaseCallback(window.userdata, 1);
-				break;
-			}
-			case WM_MOUSEWHEEL: { // TODO: Make axis
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.mouseWheelCallback(window.userdata, 0.0f, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA));
-				break;
-			}
-			case WM_MOUSEHWHEEL: { // TODO: Make axis
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.mouseWheelCallback(window.userdata, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA), 0.0f);
-				break;
-			}
-			case WM_MOUSELEAVE: {
-				auto& window = *reinterpret_cast<OpenGLWindow*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
-				window.mouseInWindow = false;
-				window.mouseLeaveCallback(window.userdata);
-				break;
-			}
-			default:
-				return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+			HANDLE_MESSAGE(WM_SIZE);
+			HANDLE_MESSAGE(WM_CLOSE);
+			HANDLE_MESSAGE(WM_SYSKEYDOWN);
+			HANDLE_MESSAGE(WM_KEYDOWN);
+			HANDLE_MESSAGE(WM_SYSKEYUP);
+			HANDLE_MESSAGE(WM_KEYUP);
+			HANDLE_MESSAGE(WM_CHAR);
+			HANDLE_MESSAGE(WM_MOUSEMOVE);
+			HANDLE_MESSAGE(WM_LBUTTONDOWN);
+			HANDLE_MESSAGE(WM_LBUTTONUP);
+			HANDLE_MESSAGE(WM_RBUTTONDOWN);
+			HANDLE_MESSAGE(WM_RBUTTONUP);
+			HANDLE_MESSAGE(WM_MOUSEWHEEL);
+			HANDLE_MESSAGE(WM_MOUSEHWHEEL);
+			HANDLE_MESSAGE(WM_MOUSELEAVE);
+			default: return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 		}
-	
+
+		#undef HANDLE_MESSAGE
 		return 0;
 	}
 }
