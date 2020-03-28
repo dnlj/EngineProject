@@ -58,6 +58,7 @@ namespace Engine::Win32 {
 			bool close = false;
 			bool mouseInWindow = false;
 			glm::ivec2 lastMousePos = {0, 0};
+			BYTE rawInputBuffer[128];
 
 		public:
 			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat);

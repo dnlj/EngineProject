@@ -65,6 +65,42 @@ namespace Engine::Win32 {
 	}
 
 	template<>
+	LRESULT OpenGLWindow::processMessage<WM_INPUT>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		// Useful links
+		// MS docs: https://docs.microsoft.com/en-us/windows/win32/inputdev/using-raw-input
+		// USB HID usage pages and ids: https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf
+		// USB HID: https://www.usb.org/hid
+		// MS usage pages: https://docs.microsoft.com/en-us/windows-hardware/drivers/hid/top-level-collections-opened-by-windows-for-system-use
+		// Scancode info: https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html and https://www.win.tue.nl/~aeb/linux/kbd/scancodes.html
+
+		UINT size = std::extent_v<decltype(rawInputBuffer)>;
+
+		#ifdef ENGINE_DEBUG
+			GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
+			ENGINE_ASSERT(size <= std::extent_v<decltype(rawInputBuffer)>, "Raw input buffer to small. Needs at least ", size);
+		#endif
+
+		GetRawInputData(
+			reinterpret_cast<HRAWINPUT>(lParam),
+			RID_INPUT,
+			window.rawInputBuffer,
+			&size,
+			sizeof(RAWINPUTHEADER)
+		);
+
+		const auto& raw = *reinterpret_cast<const RAWINPUT*>(window.rawInputBuffer);
+
+		if (raw.header.dwType == RIM_TYPEMOUSE) {
+			// If the cursor is visible we should use WM_MOUSEMOVE so we maintain cursor ballistics.
+			// TODO: impl mouse delta when cursor hidden.
+		} else if (raw.header.dwType == RIM_TYPEHID) {
+			// TODO: Gamepad input
+		}
+
+		return 0;
+	}
+
+	template<>
 	LRESULT OpenGLWindow::processMessage<WM_KEYDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
 		// As far as i can tell there is no way to get a more precise timestamp
 		// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
@@ -81,7 +117,6 @@ namespace Engine::Win32 {
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_SYSKEYDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		// TODO: Raw input
 		return processMessage<WM_KEYDOWN>(window, wParam, lParam);
 	}
 
@@ -254,6 +289,27 @@ namespace Engine::Win32 {
 	
 		renderContext = ptrs.wglCreateContextAttribsARB(deviceContext, nullptr, contextAttributes);
 		ENGINE_ASSERT(renderContext, "Unable to create WGL render context - ", getLastErrorMessage());
+
+		// Setup raw input
+		RAWINPUTDEVICE devices[] = {
+			{ // Mouse
+				.usUsagePage = 0x01,
+				.usUsage = 0x02,
+				.dwFlags = 0,
+				.hwndTarget = nullptr,
+			},
+			// TODO: Gamepad
+			//{ // Gamepad
+			//	.usUsagePage = 0x01,
+			//	.usUsage = 0x06,
+			//	.dwFlags = 0,
+			//	.hwndTarget = nullptr,
+			//},
+		};
+
+		ENGINE_ASSERT(RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0])),
+			"Unable to register input devices - ", getLastErrorMessage()
+		);
 	}
 
 	OpenGLWindow::~OpenGLWindow() {
@@ -402,6 +458,7 @@ namespace Engine::Win32 {
 		switch (uMsg) {
 			HANDLE_MESSAGE(WM_SIZE);
 			HANDLE_MESSAGE(WM_CLOSE);
+			HANDLE_MESSAGE(WM_INPUT);
 			HANDLE_MESSAGE(WM_SYSKEYDOWN);
 			HANDLE_MESSAGE(WM_KEYDOWN);
 			HANDLE_MESSAGE(WM_SYSKEYUP);
