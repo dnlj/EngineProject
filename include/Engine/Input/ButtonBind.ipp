@@ -1,11 +1,11 @@
 #pragma once
 
 // Engine
-#include <Engine/Input/Bind.hpp>
+#include <Engine/Input/ButtonBind.hpp>
 
 namespace Engine::Input {
 	template<class Listener, class>
-	void Bind::addListener(Listener* listener) {
+	void ButtonBind::addListener(Listener* listener) {
 		if constexpr (std::is_base_of_v<BindPressListener, Listener>) {
 			addPressListener(listener);
 		}

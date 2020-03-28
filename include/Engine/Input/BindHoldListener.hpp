@@ -7,7 +7,7 @@
 namespace Engine::Input {
 	class BindHoldListener : public BindListener {
 		private:
-			friend class Bind;
+			friend class ButtonBind;
 			virtual void onBindHold() = 0;
 	};
 }

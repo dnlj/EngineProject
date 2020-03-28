@@ -14,9 +14,9 @@
 
 // TODO: Doc
 namespace Engine::Input {
-	class Bind {
+	class ButtonBind {
 		public:
-			Bind(std::string name);
+			ButtonBind(std::string name);
 
 			void press();
 			void hold() const;
@@ -53,4 +53,4 @@ namespace Engine::Input {
 	};
 }
 
-#include <Engine/Input/Bind.ipp>
+#include <Engine/Input/ButtonBind.ipp>

@@ -63,11 +63,11 @@ namespace Engine::Input {
 		return -1;
 	}
 
-	Bind& InputManager::getButtonBind(const std::string& name) {
+	ButtonBind& InputManager::getButtonBind(const std::string& name) {
 		return buttonBinds[getButtonBindId(name)];
 	}
 
-	Bind& InputManager::getButtonBind(const BindId bid) {
+	ButtonBind& InputManager::getButtonBind(const BindId bid) {
 		return buttonBinds[bid];
 	}
 

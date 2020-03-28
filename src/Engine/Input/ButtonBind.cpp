@@ -1,11 +1,11 @@
 // Engine
-#include <Engine/Input/Bind.hpp>
+#include <Engine/Input/ButtonBind.hpp>
 
 namespace Engine::Input {
-	Bind::Bind(std::string name) : name{std::move(name)} {
+	ButtonBind::ButtonBind(std::string name) : name{std::move(name)} {
 	}
 
-	void Bind::press() {
+	void ButtonBind::press() {
 		if (active == 0) {
 			for (auto l : pressListeners) {
 				l->onBindPress();
@@ -15,13 +15,13 @@ namespace Engine::Input {
 		++active;
 	};
 
-	void Bind::hold() const {
+	void ButtonBind::hold() const {
 		for (auto l : holdListeners) {
 			l->onBindHold();
 		}
 	};
 
-	void Bind::release() {
+	void ButtonBind::release() {
 		--active;
 
 		if (active == 0) {
@@ -31,19 +31,19 @@ namespace Engine::Input {
 		}
 	};
 
-	bool Bind::isActive() const {
+	bool ButtonBind::isActive() const {
 		return active;
 	}
 
-	void Bind::addPressListener(BindPressListener* listener) {
+	void ButtonBind::addPressListener(BindPressListener* listener) {
 		pressListeners.push_back(listener);
 	}
 
-	void Bind::addHoldListener(BindHoldListener* listener) {
+	void ButtonBind::addHoldListener(BindHoldListener* listener) {
 		holdListeners.push_back(listener);
 	}
 	
-	void Bind::addReleaseListener(BindReleaseListener* listener) {
+	void ButtonBind::addReleaseListener(BindReleaseListener* listener) {
 		releaseListeners.push_back(listener);
 	}
 }
