@@ -9,6 +9,7 @@
 // TODO: Doc
 // TODO: split
 namespace Engine::Input {
+	// TODO: This cannot distinguish between two devices
 	class InputId {
 		public:
 			InputType type = InputType::UNKNOWN;

@@ -3,6 +3,7 @@
 #include <windowsx.h>
 
 // STD
+#include <iomanip>
 #include <chrono>
 
 // Engine
@@ -33,13 +34,13 @@ namespace {
 		//
 		//addr = GetProcAddress(module, name);
 	}
-	
-	constexpr int16 getKeyScancode(LPARAM lParam) {
-		return (lParam & 0xFF'00'00) >> 16;
-	}
 
 	constexpr bool getKeyExtended(LPARAM lParam) {
 		return lParam & (1 << 24);
+	}
+	
+	constexpr int16 getKeyScancode(LPARAM lParam) {
+		return ((lParam & 0xFF'00'00) >> 16);
 	}
 
 	constexpr bool getKeyRepeat(LPARAM lParam) {
@@ -47,7 +48,6 @@ namespace {
 	}
 
 }
-
 
 namespace Engine::Win32 {
 	template<>
@@ -89,10 +89,68 @@ namespace Engine::Win32 {
 		);
 
 		const auto& raw = *reinterpret_cast<const RAWINPUT*>(window.rawInputBuffer);
+		if (raw.header.hDevice == nullptr) { return; }
 
 		if (raw.header.dwType == RIM_TYPEMOUSE) {
 			// If the cursor is visible we should use WM_MOUSEMOVE so we maintain cursor ballistics.
+			// Although if you use WM_MOUSEMOVE you cannot distinguish between multiple mice.
 			// TODO: impl mouse delta when cursor hidden.
+		} else if (raw.header.dwType == RIM_TYPEKEYBOARD) {
+			const auto& data = raw.data.keyboard;
+			if (data.VKey == 0xFF) { return 0; }
+
+			const bool isE0 = data.Flags & RI_KEY_E0;
+			const bool isE1 = data.Flags & RI_KEY_E1;
+			ENGINE_DEBUG_ASSERT((isE0 ^ isE1) | ~isE0, "Scancode extension E0 and E1 set");
+
+			uint16 scancode = data.MakeCode | (isE0 ? 0xE000 : (isE1 ? 0xE100 : 0x0000));
+			if (data.MakeCode == 0) {
+				const auto sc = MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC);
+				if (sc) {
+					scancode |= sc;
+				} else {
+					// TODO: doc this magic number somewhere as made up. Used to indicate storing a VK code.
+					scancode = 0xAA00 | data.VKey;
+				}
+			}
+
+
+			if constexpr (true) { // For debugging
+				// TODO: C++20 <format>
+				const auto flags = std::cout.flags();
+				std::cout
+					<< "\nRaw: "
+					<< "\n\tDevice: " << raw.header.hDevice
+					<< "\n\tScancode: " << scancode
+					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << scancode << ")";
+				
+				std::cout.flags(flags);
+				std::cout
+					<< "\n\tMakeCode: " << data.MakeCode
+					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << data.MakeCode << ")";
+
+				std::cout.flags(flags);
+				std::cout
+					<< "\n\tVKey: " << data.VKey
+					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << data.VKey << ")";
+
+				std::cout.flags(flags);
+				std::cout
+					<< "\n\tVKey Map: " << MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC)
+					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC) << ")";
+
+				std::cout.flags(flags);
+				std::cout
+					<< "\n\tFlags: " << data.Flags
+					<< "\n\tReserved: " << data.Reserved
+					<< "\n\tMessage: " << data.Message
+					<< "\n\tExtraInformation: " << data.ExtraInformation
+					<< "\n";
+				std::cout.flags(flags);
+			}
+
+
+
 		} else if (raw.header.dwType == RIM_TYPEHID) {
 			// TODO: Gamepad input
 		}
@@ -105,7 +163,6 @@ namespace Engine::Win32 {
 		// As far as i can tell there is no way to get a more precise timestamp
 		// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
 		// https://devblogs.microsoft.com/oldnewthing/20140122-00/?p=2013
-		// TODO: make constexpr functinos to extract these
 		const int16 scancode = getKeyScancode(lParam);
 		const bool extended = getKeyExtended(lParam);
 		const bool repeat = getKeyRepeat(lParam);
@@ -301,12 +358,18 @@ namespace Engine::Win32 {
 			// TODO: Gamepad
 			//{ // Gamepad
 			//	.usUsagePage = 0x01,
-			//	.usUsage = 0x06,
+			//	.usUsage = 0x05,
 			//	.dwFlags = 0,
 			//	.hwndTarget = nullptr,
 			//},
+			{ // Keyboard
+				.usUsagePage = 0x01,
+				.usUsage = 0x06,
+				.dwFlags = 0,
+				.hwndTarget = nullptr,
+			},
 		};
-
+		
 		ENGINE_ASSERT(RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0])),
 			"Unable to register input devices - ", getLastErrorMessage()
 		);
@@ -329,7 +392,7 @@ namespace Engine::Win32 {
 
 	void OpenGLWindow::poll() {
 		for (MSG msg; PeekMessageW(&msg, windowHandle, 0, 0, PM_REMOVE);) {
-			TranslateMessage(&msg); // Needed for text input
+			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
 		}
 	}

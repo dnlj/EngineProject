@@ -10,6 +10,7 @@
 // Engine
 #include <Engine/Win32/PixelFormat.hpp>
 #include <Engine/Win32/ContextFormat.hpp>
+#include <Engine/Input/InputEvent.hpp>
 
 
 namespace Engine::Win32 {
