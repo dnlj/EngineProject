@@ -12,6 +12,7 @@ namespace Engine::Input {
 	// TODO: This cannot distinguish between two devices
 	class InputId {
 		public:
+			uint8 device = 0;
 			InputType type = InputType::UNKNOWN;
 			int16 code = 0;
 
@@ -25,7 +26,8 @@ namespace Engine::Input {
 
 			friend bool operator==(const InputId& first, const InputId& second) {
 				return first.code == second.code
-					&& first.type == second.type;
+					&& first.type == second.type
+					&& first.device == second.device;
 			};
 	};
 }
@@ -36,6 +38,7 @@ namespace Engine {
 		size_t operator()(const Input::InputId& v) const {
 			auto seed = hash(v.type);
 			hashCombine(seed, hash(v.code));
+			hashCombine(seed, hash(v.device));
 			return seed;
 		}
 	};

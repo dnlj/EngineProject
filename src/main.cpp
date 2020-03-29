@@ -408,7 +408,7 @@ void run() {
 	window.keyPressCallback = [](void* userdata, int16 scancode, bool extended){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		const Engine::Input::InputState input = {
-			.id = {Engine::Input::InputType::KEYBOARD, scancode},
+			.id = {0, Engine::Input::InputType::KEYBOARD, scancode},
 			.value = true,
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
@@ -418,7 +418,7 @@ void run() {
 	window.keyReleaseCallback = [](void* userdata, int16 scancode, bool extended){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		const Engine::Input::InputState input = {
-			.id = {Engine::Input::InputType::KEYBOARD, scancode},
+			.id = {0, Engine::Input::InputType::KEYBOARD, scancode},
 			.value = false,
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
@@ -432,7 +432,7 @@ void run() {
 	window.mousePressCallback = [](void* userdata, int16 button){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		const Engine::Input::InputState input = {
-			.id = {Engine::Input::InputType::MOUSE, button},
+			.id = {0, Engine::Input::InputType::MOUSE, button},
 			.value = true,
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
@@ -442,7 +442,7 @@ void run() {
 	window.mouseReleaseCallback = [](void* userdata, int16 button){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		Engine::Input::InputState input = {
-			.id = {Engine::Input::InputType::MOUSE, button},
+			.id = {0, Engine::Input::InputType::MOUSE, button},
 			.value = false,
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
@@ -456,7 +456,7 @@ void run() {
 	window.mouseMoveCallback = [](void* userdata, int16 axis, int32 value){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
 		Engine::Input::InputState input = {
-			.id = {Engine::Input::InputType::MOUSE_AXIS, axis},
+			.id = {0, Engine::Input::InputType::MOUSE_AXIS, axis},
 			.valuef = static_cast<float32>(value),
 		};
 		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
@@ -483,38 +483,38 @@ void run() {
 	{
 		using namespace Engine::Input;
 		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
-			InputId{InputType::KEYBOARD, 29}, // CTRL
-			InputId{InputType::KEYBOARD, 46}, // C
+			InputId{0, InputType::KEYBOARD, 29}, // CTRL
+			InputId{0, InputType::KEYBOARD, 46}, // C
 		});
 		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
-			InputId{InputType::KEYBOARD, 29}, // CTRL
-			InputId{InputType::KEYBOARD, 56}, // ALT
-			InputId{InputType::KEYBOARD, 16}, // Q
+			InputId{0, InputType::KEYBOARD, 29}, // CTRL
+			InputId{0, InputType::KEYBOARD, 56}, // ALT
+			InputId{0, InputType::KEYBOARD, 16}, // Q
 		});
 		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
-			InputId{InputType::KEYBOARD, 57}
+			InputId{0, InputType::KEYBOARD, 57}
 		});
 		engine.inputManager.addButtonMapping("MoveUp", InputSequence{
-			InputId{InputType::KEYBOARD, 17}
+			InputId{0, InputType::KEYBOARD, 17}
 		});
 		engine.inputManager.addButtonMapping("MoveDown", InputSequence{
-			InputId{InputType::KEYBOARD, 31}
+			InputId{0, InputType::KEYBOARD, 31}
 		});
 		engine.inputManager.addButtonMapping("MoveLeft", InputSequence{
-			InputId{InputType::KEYBOARD, 30}
+			InputId{0, InputType::KEYBOARD, 30}
 		});
 		engine.inputManager.addButtonMapping("MoveRight", InputSequence{
-			InputId{InputType::KEYBOARD, 32}
+			InputId{0, InputType::KEYBOARD, 32}
 		});
 		engine.inputManager.addButtonMapping("EditPlace", InputSequence{
-			InputId{InputType::MOUSE, 0}
+			InputId{0, InputType::MOUSE, 0}
 		});
 		engine.inputManager.addButtonMapping("EditRemove", InputSequence{
-			InputId{InputType::MOUSE, 1}
+			InputId{0, InputType::MOUSE, 1}
 		});
 
-		engine.inputManager.addAxisMapping("target_x", {InputType::MOUSE_AXIS, 0});
-		engine.inputManager.addAxisMapping("target_y", {InputType::MOUSE_AXIS, 1});
+		engine.inputManager.addAxisMapping("target_x", {0, InputType::MOUSE_AXIS, 0});
+		engine.inputManager.addAxisMapping("target_y", {0, InputType::MOUSE_AXIS, 1});
 	}
 
 	// More engine stuff

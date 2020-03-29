@@ -56,13 +56,7 @@ namespace {
 
 		uint16 scancode = data.MakeCode | (isE0 ? 0xE000 : (isE1 ? 0xE100 : 0x0000));
 		if (data.MakeCode == 0) {
-			const auto sc = MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC);
-			if (sc) {
-				scancode |= sc;
-			} else {
-				// TODO: doc this magic number somewhere as made up. Used to indicate storing a VK code.
-				scancode = 0xAA00 | data.VKey;
-			}
+			scancode = 0xAA00 | data.VKey;
 		}
 
 		return scancode;
@@ -436,16 +430,19 @@ namespace Engine::Win32 {
 			"Unable to get number of input devices - ", getLastErrorMessage()
 		);
 
-		ENGINE_ASSERT(numDevices < std::numeric_limits<decltype(deviceHandleToIndex)::mapped_type>::max(),
-			"Too many devices connected (", numDevices, ")"
-		);
-
 		std::vector<RAWINPUTDEVICELIST> deviceList(numDevices);
 		ENGINE_ASSERT(GetRawInputDeviceList(deviceList.data(), &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
 			"Unable to get input devices - ", getLastErrorMessage()
 		);
 
-		deviceHandleToIndex.reserve(numDevices);
+		for (const auto& dev : deviceList) {
+			if (dev.dwType == RIM_TYPEKEYBOARD) {
+				keyboardHandleToIndex[dev.hDevice] = static_cast<uint8>(keyboardData.size());
+				keyboardData.push_back({});
+			}
+		}
+		keyboardData.shrink_to_fit();
+		keyboardHandleToIndex.reserve(0);
 
 		// TODO: rm - for debugging
 		printRawDevices();
