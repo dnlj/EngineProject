@@ -47,6 +47,67 @@ namespace {
 		return lParam & (1 << 30);
 	}
 
+	void printRawDevices() {
+		UINT numDevices;
+		ENGINE_ASSERT(GetRawInputDeviceList(nullptr, &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
+			"Unable to get number of input devices - ", Engine::Win32::getLastErrorMessage()
+		);
+
+		std::vector<RAWINPUTDEVICELIST> deviceList(numDevices);
+		ENGINE_ASSERT(GetRawInputDeviceList(deviceList.data(), &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
+			"Unable to get input devices - ", Engine::Win32::getLastErrorMessage()
+		);
+
+		std::cout << "Device List - numDevices: " << numDevices;
+		RID_DEVICE_INFO info = {.cbSize = sizeof(RID_DEVICE_INFO)};
+		wchar_t name[256] = {};
+		for (uint32 i = 0; i < numDevices; ++i) {
+			const auto& dev = deviceList[i];
+
+			UINT size = std::extent_v<decltype(name)> - 1;
+			size = GetRawInputDeviceInfoW(dev.hDevice, RIDI_DEVICENAME, &name, &size);
+
+			std::cout << "\n  " << i << ": "
+				<< "\n    Type: " << dev.dwType
+				<< " (" << ((dev.dwType == RIM_TYPEMOUSE) ? "RIM_TYPEMOUSE" : ((dev.dwType == RIM_TYPEKEYBOARD) ? "RIM_TYPEKEYBOARD" : ((dev.dwType == RIM_TYPEHID) ? "RIM_TYPEHID" : ("Unknown")))) << ")"
+				<< "\n    Handle: " << dev.hDevice
+				<< "\n    Name Size: " << size;
+			std::wcout
+				<< "\n    Name: " << name;
+
+			size = sizeof(info);
+			size = GetRawInputDeviceInfoW(dev.hDevice, RIDI_DEVICEINFO, &info, &size);
+			ENGINE_DEBUG_ASSERT(dev.dwType == info.dwType);
+
+			if (dev.dwType == RIM_TYPEMOUSE) {
+				std::cout
+					<< "\n    Id: " << info.mouse.dwId
+					<< "\n    NumberOfButtons: " << info.mouse.dwNumberOfButtons
+					<< "\n    SampleRate: " << info.mouse.dwSampleRate
+					<< "\n    HasHorizontalWheel: " << info.mouse.fHasHorizontalWheel;
+			} else if (dev.dwType == RIM_TYPEKEYBOARD) {
+				std::cout
+					<< "\n    Type: " << info.keyboard.dwType
+					<< "\n    SubType: " << info.keyboard.dwSubType
+					<< "\n    KeyboardMode: " << info.keyboard.dwKeyboardMode
+					<< "\n    NumberOfFunctionKeys: " << info.keyboard.dwNumberOfFunctionKeys
+					<< "\n    NumberOfIndicators: " << info.keyboard.dwNumberOfIndicators
+					<< "\n    NumberOfKeysTotal: " << info.keyboard.dwNumberOfKeysTotal;
+			} else if (dev.dwType == RIM_TYPEHID) {
+				auto flags = std::cout.flags();
+				std::cout
+					<< "\n    VendorId: " << info.hid.dwVendorId
+					<< "\n    ProductId: " << info.hid.dwProductId
+					<< "\n    VersionNumber: " << info.hid.dwVersionNumber
+					<< "\n    UsagePage: " << info.hid.usUsagePage
+					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << info.hid.usUsagePage << ")"
+					<< "\n    Usage: " << info.hid.usUsage
+					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << info.hid.usUsage << ")";
+				std::cout.flags(flags);
+			}
+		}
+		std::cout << "\n";
+	}
 }
 
 namespace Engine::Win32 {
@@ -72,6 +133,8 @@ namespace Engine::Win32 {
 		// USB HID: https://www.usb.org/hid
 		// MS usage pages: https://docs.microsoft.com/en-us/windows-hardware/drivers/hid/top-level-collections-opened-by-windows-for-system-use
 		// Scancode info: https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html and https://www.win.tue.nl/~aeb/linux/kbd/scancodes.html
+		// USB Vendor Ids: http://www.linux-usb.org/usb.ids and http://www.linux-usb.org/usb-ids.html
+		// If raw.hDevice == 0 then it is a virtual device such as On-Screen Keyboard or other software.
 
 		UINT size = std::extent_v<decltype(rawInputBuffer)>;
 
@@ -89,8 +152,8 @@ namespace Engine::Win32 {
 		);
 
 		const auto& raw = *reinterpret_cast<const RAWINPUT*>(window.rawInputBuffer);
-		if (raw.header.hDevice == nullptr) { return; }
 
+		// TODO: split into functions like we did for WM_* messages.
 		if (raw.header.dwType == RIM_TYPEMOUSE) {
 			// If the cursor is visible we should use WM_MOUSEMOVE so we maintain cursor ballistics.
 			// Although if you use WM_MOUSEMOVE you cannot distinguish between multiple mice.
@@ -101,7 +164,7 @@ namespace Engine::Win32 {
 
 			const bool isE0 = data.Flags & RI_KEY_E0;
 			const bool isE1 = data.Flags & RI_KEY_E1;
-			ENGINE_DEBUG_ASSERT((isE0 ^ isE1) | ~isE0, "Scancode extension E0 and E1 set");
+			ENGINE_DEBUG_ASSERT((isE0 ^ isE1) | !isE0, "Scancode extension E0 and E1 set");
 
 			uint16 scancode = data.MakeCode | (isE0 ? 0xE000 : (isE1 ? 0xE100 : 0x0000));
 			if (data.MakeCode == 0) {
@@ -148,8 +211,6 @@ namespace Engine::Win32 {
 					<< "\n";
 				std::cout.flags(flags);
 			}
-
-
 
 		} else if (raw.header.dwType == RIM_TYPEHID) {
 			// TODO: Gamepad input
@@ -346,6 +407,19 @@ namespace Engine::Win32 {
 	
 		renderContext = ptrs.wglCreateContextAttribsARB(deviceContext, nullptr, contextAttributes);
 		ENGINE_ASSERT(renderContext, "Unable to create WGL render context - ", getLastErrorMessage());
+
+		UINT numDevices;
+		ENGINE_ASSERT(GetRawInputDeviceList(nullptr, &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
+			"Unable to get number of input devices - ", getLastErrorMessage()
+		);
+
+		std::vector<RAWINPUTDEVICELIST> deviceList(numDevices);
+		ENGINE_ASSERT(GetRawInputDeviceList(deviceList.data(), &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
+			"Unable to get input devices - ", getLastErrorMessage()
+		);
+
+		// TODO: rm - for debugging
+		printRawDevices();
 
 		// Setup raw input
 		RAWINPUTDEVICE devices[] = {
