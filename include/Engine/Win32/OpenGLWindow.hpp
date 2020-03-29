@@ -11,6 +11,7 @@
 #include <Engine/Win32/PixelFormat.hpp>
 #include <Engine/Win32/ContextFormat.hpp>
 #include <Engine/Input/InputEvent.hpp>
+#include <Engine/FlatHashMap.hpp>
 
 
 namespace Engine::Win32 {
@@ -60,6 +61,7 @@ namespace Engine::Win32 {
 			bool mouseInWindow = false;
 			glm::ivec2 lastMousePos = {0, 0};
 			BYTE rawInputBuffer[128];
+			FlatHashMap<HANDLE, uint8> deviceHandleToIndex;
 
 		public:
 			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat);

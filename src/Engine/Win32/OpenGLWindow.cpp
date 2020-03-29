@@ -1,6 +1,8 @@
 // Windows
+#define NOMINMAX // Breaks <limits>
 #include <Windows.h>
 #include <windowsx.h>
+#undef NOMINMAX
 
 // STD
 #include <iomanip>
@@ -45,6 +47,76 @@ namespace {
 
 	constexpr bool getKeyRepeat(LPARAM lParam) {
 		return lParam & (1 << 30);
+	}
+
+	uint16 makeScancode(const RAWKEYBOARD& data) {
+		const bool isE0 = data.Flags & RI_KEY_E0;
+		const bool isE1 = data.Flags & RI_KEY_E1;
+		ENGINE_DEBUG_ASSERT((isE0 ^ isE1) | !isE0, "Scancode extension E0 and E1 set");
+
+		uint16 scancode = data.MakeCode | (isE0 ? 0xE000 : (isE1 ? 0xE100 : 0x0000));
+		if (data.MakeCode == 0) {
+			const auto sc = MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC);
+			if (sc) {
+				scancode |= sc;
+			} else {
+				// TODO: doc this magic number somewhere as made up. Used to indicate storing a VK code.
+				scancode = 0xAA00 | data.VKey;
+			}
+		}
+
+		return scancode;
+	}
+
+	void printRawMouse(const RAWINPUT& raw) {
+		const auto data = raw.data.mouse;
+		std::cout << "Raw Mouse Input: "
+			<< "\n\tDevice: " << raw.header.hDevice
+			<< "\n\tFlags: " << data.usFlags
+			<< "\n\tButtons: " << data.ulButtons
+			<< "\n\tButtonFlags: " << data.usButtonFlags
+			<< "\n\tButtonData: " << data.usButtonData
+			<< "\n\tRawButtons: " << data.ulRawButtons
+			<< "\n\tLastX: " << data.lLastX
+			<< "\n\tLastY: " << data.lLastY
+			<< "\n\tExtraInformation: " << data.ulExtraInformation
+			<< "\n";
+	}
+
+	void printRawKeyboard(const RAWINPUT& raw) {
+		const auto data = raw.data.keyboard;
+		const auto scancode = makeScancode(data);
+		const auto flags = std::cout.flags();
+		std::cout
+			<< "\nRaw: "
+			<< "\n\tDevice: " << raw.header.hDevice
+			<< "\n\tScancode: " << scancode
+			<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << scancode << ")";
+				
+		std::cout.flags(flags);
+		std::cout
+			<< "\n\tMakeCode: " << data.MakeCode
+			<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << data.MakeCode << ")";
+
+		std::cout.flags(flags);
+		std::cout
+			<< "\n\tVKey: " << data.VKey
+			<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << data.VKey << ")";
+
+		std::cout.flags(flags);
+		std::cout
+			<< "\n\tVKey Map: " << MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC)
+			<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC) << ")";
+
+		std::cout.flags(flags);
+		std::cout
+			<< "\n\tFlags: " << data.Flags
+			<< "\n\tReserved: " << data.Reserved
+			<< "\n\tMessage: " << data.Message
+			<< "\n\tExtraInformation: " << data.ExtraInformation
+			<< "\n";
+
+		std::cout.flags(flags);
 	}
 
 	void printRawDevices() {
@@ -158,60 +230,11 @@ namespace Engine::Win32 {
 			// If the cursor is visible we should use WM_MOUSEMOVE so we maintain cursor ballistics.
 			// Although if you use WM_MOUSEMOVE you cannot distinguish between multiple mice.
 			// TODO: impl mouse delta when cursor hidden.
+			//printRawMouse(raw);
 		} else if (raw.header.dwType == RIM_TYPEKEYBOARD) {
 			const auto& data = raw.data.keyboard;
 			if (data.VKey == 0xFF) { return 0; }
-
-			const bool isE0 = data.Flags & RI_KEY_E0;
-			const bool isE1 = data.Flags & RI_KEY_E1;
-			ENGINE_DEBUG_ASSERT((isE0 ^ isE1) | !isE0, "Scancode extension E0 and E1 set");
-
-			uint16 scancode = data.MakeCode | (isE0 ? 0xE000 : (isE1 ? 0xE100 : 0x0000));
-			if (data.MakeCode == 0) {
-				const auto sc = MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC);
-				if (sc) {
-					scancode |= sc;
-				} else {
-					// TODO: doc this magic number somewhere as made up. Used to indicate storing a VK code.
-					scancode = 0xAA00 | data.VKey;
-				}
-			}
-
-
-			if constexpr (true) { // For debugging
-				// TODO: C++20 <format>
-				const auto flags = std::cout.flags();
-				std::cout
-					<< "\nRaw: "
-					<< "\n\tDevice: " << raw.header.hDevice
-					<< "\n\tScancode: " << scancode
-					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << scancode << ")";
-				
-				std::cout.flags(flags);
-				std::cout
-					<< "\n\tMakeCode: " << data.MakeCode
-					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << data.MakeCode << ")";
-
-				std::cout.flags(flags);
-				std::cout
-					<< "\n\tVKey: " << data.VKey
-					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << data.VKey << ")";
-
-				std::cout.flags(flags);
-				std::cout
-					<< "\n\tVKey Map: " << MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC)
-					<< " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << MapVirtualKeyW(data.VKey, MAPVK_VK_TO_VSC) << ")";
-
-				std::cout.flags(flags);
-				std::cout
-					<< "\n\tFlags: " << data.Flags
-					<< "\n\tReserved: " << data.Reserved
-					<< "\n\tMessage: " << data.Message
-					<< "\n\tExtraInformation: " << data.ExtraInformation
-					<< "\n";
-				std::cout.flags(flags);
-			}
-
+			printRawKeyboard(raw);
 		} else if (raw.header.dwType == RIM_TYPEHID) {
 			// TODO: Gamepad input
 		}
@@ -413,10 +436,16 @@ namespace Engine::Win32 {
 			"Unable to get number of input devices - ", getLastErrorMessage()
 		);
 
+		ENGINE_ASSERT(numDevices < std::numeric_limits<decltype(deviceHandleToIndex)::mapped_type>::max(),
+			"Too many devices connected (", numDevices, ")"
+		);
+
 		std::vector<RAWINPUTDEVICELIST> deviceList(numDevices);
 		ENGINE_ASSERT(GetRawInputDeviceList(deviceList.data(), &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
 			"Unable to get input devices - ", getLastErrorMessage()
 		);
+
+		deviceHandleToIndex.reserve(numDevices);
 
 		// TODO: rm - for debugging
 		printRawDevices();
