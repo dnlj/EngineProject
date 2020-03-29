@@ -12,10 +12,10 @@ namespace Game {
 		const auto nextTime = curTime + world.getTickInterval();
 
 		while (!buffer.empty()) {
-			auto& ti = buffer.back();
+			auto& ie = buffer.back();
 
-			if (ti.time < nextTime) {
-				engine.inputManager.processInput(ti.input);
+			if (ie.time < nextTime) {
+				engine.inputManager.processInput(ie.state);
 				buffer.pop();
 			} else {
 				break;
@@ -25,8 +25,8 @@ namespace Game {
 		engine.inputManager.update();
 	}
 
-	void InputSystem::queueInput(const Engine::Input::InputState& state) {
+	void InputSystem::queueInput(const Engine::Input::InputEvent& event) {
 		ENGINE_DEBUG_ASSERT(!buffer.full(), "Too many inputs");
-		buffer.emplace(state, Engine::Clock::now()); // TODO: use time from Win32 message queue
+		buffer.emplace(event);
 	}
 }

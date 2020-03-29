@@ -12,9 +12,9 @@ namespace Engine::Input {
 	// TODO: This cannot distinguish between two devices
 	class InputId {
 		public:
-			uint8 device = 0;
 			InputType type = InputType::UNKNOWN;
-			int16 code = 0;
+			uint8 device = 0;
+			uint16 code = 0;
 
 			constexpr bool isAxis() const {
 				return isAxisInput(type);

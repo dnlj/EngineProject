@@ -1,5 +1,4 @@
 // Windows
-#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
 // STD
@@ -405,62 +404,30 @@ void run() {
 		wrapper.engine.camera.setAsOrtho(w, h, 1.0f / 250.0f);
 	};
 
-	window.keyPressCallback = [](void* userdata, int16 scancode, bool extended){
+	window.keyCallback = [](void* userdata, Engine::Input::InputEvent event){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		const Engine::Input::InputState input = {
-			.id = {0, Engine::Input::InputType::KEYBOARD, scancode},
-			.value = true,
-		};
-		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
-		Engine::ImGui::keyCallback(input);
-	};
-
-	window.keyReleaseCallback = [](void* userdata, int16 scancode, bool extended){
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		const Engine::Input::InputState input = {
-			.id = {0, Engine::Input::InputType::KEYBOARD, scancode},
-			.value = false,
-		};
-		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
-		Engine::ImGui::keyCallback(input);
+		wrapper.world.getSystem<Game::InputSystem>().queueInput(event);
+		Engine::ImGui::keyCallback(event.state);
 	};
 
 	window.charCallback = [](void* userdata, wchar_t character){
 		Engine::ImGui::charCallback(character);
 	};
 
-	window.mousePressCallback = [](void* userdata, int16 button){
+	window.mouseButtonCallback = [](void* userdata, Engine::Input::InputEvent event){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		const Engine::Input::InputState input = {
-			.id = {0, Engine::Input::InputType::MOUSE, button},
-			.value = true,
-		};
-		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
-		Engine::ImGui::mouseButtonCallback(input);
-	};
-
-	window.mouseReleaseCallback = [](void* userdata, int16 button){
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		Engine::Input::InputState input = {
-			.id = {0, Engine::Input::InputType::MOUSE, button},
-			.value = false,
-		};
-		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
-		Engine::ImGui::mouseButtonCallback(input);
+		wrapper.world.getSystem<Game::InputSystem>().queueInput(event);
+		Engine::ImGui::mouseButtonCallback(event.state);
 	};
 
 	window.mouseWheelCallback = [](void* userdata, float32 x, float32 y){
 		Engine::ImGui::scrollCallback(x, y);
 	};
 
-	window.mouseMoveCallback = [](void* userdata, int16 axis, int32 value){
+	window.mouseMoveCallback = [](void* userdata, Engine::Input::InputEvent event){
 		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		Engine::Input::InputState input = {
-			.id = {0, Engine::Input::InputType::MOUSE_AXIS, axis},
-			.valuef = static_cast<float32>(value),
-		};
-		wrapper.world.getSystem<Game::InputSystem>().queueInput(input);
-		Engine::ImGui::mouseMoveCallback(axis, value);
+		wrapper.world.getSystem<Game::InputSystem>().queueInput(event);
+		Engine::ImGui::mouseMoveCallback(event.state);
 	};
 
 	window.mouseLeaveCallback = [](void* userdata){
@@ -481,40 +448,41 @@ void run() {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
 	{
+		// TODO: Make device 0 match any device? 0xFF?
 		using namespace Engine::Input;
 		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
-			InputId{0, InputType::KEYBOARD, 29}, // CTRL
-			InputId{0, InputType::KEYBOARD, 46}, // C
+			InputId{InputType::KEYBOARD, 5, 29}, // CTRL
+			InputId{InputType::KEYBOARD, 5, 46}, // C
 		});
 		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
-			InputId{0, InputType::KEYBOARD, 29}, // CTRL
-			InputId{0, InputType::KEYBOARD, 56}, // ALT
-			InputId{0, InputType::KEYBOARD, 16}, // Q
+			InputId{InputType::KEYBOARD, 5, 29}, // CTRL
+			InputId{InputType::KEYBOARD, 5, 56}, // ALT
+			InputId{InputType::KEYBOARD, 5, 16}, // Q
 		});
 		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
-			InputId{0, InputType::KEYBOARD, 57}
+			InputId{InputType::KEYBOARD, 5, 57}
 		});
 		engine.inputManager.addButtonMapping("MoveUp", InputSequence{
-			InputId{0, InputType::KEYBOARD, 17}
+			InputId{InputType::KEYBOARD, 5, 17}
 		});
 		engine.inputManager.addButtonMapping("MoveDown", InputSequence{
-			InputId{0, InputType::KEYBOARD, 31}
+			InputId{InputType::KEYBOARD, 5, 31}
 		});
 		engine.inputManager.addButtonMapping("MoveLeft", InputSequence{
-			InputId{0, InputType::KEYBOARD, 30}
+			InputId{InputType::KEYBOARD, 5, 30}
 		});
 		engine.inputManager.addButtonMapping("MoveRight", InputSequence{
-			InputId{0, InputType::KEYBOARD, 32}
+			InputId{InputType::KEYBOARD, 5, 32}
 		});
 		engine.inputManager.addButtonMapping("EditPlace", InputSequence{
-			InputId{0, InputType::MOUSE, 0}
+			InputId{InputType::MOUSE, 0, 0}
 		});
 		engine.inputManager.addButtonMapping("EditRemove", InputSequence{
-			InputId{0, InputType::MOUSE, 1}
+			InputId{InputType::MOUSE, 0, 1}
 		});
 
-		engine.inputManager.addAxisMapping("target_x", {0, InputType::MOUSE_AXIS, 0});
-		engine.inputManager.addAxisMapping("target_y", {0, InputType::MOUSE_AXIS, 1});
+		engine.inputManager.addAxisMapping("target_x", {InputType::MOUSE_AXIS, 0, 0});
+		engine.inputManager.addAxisMapping("target_y", {InputType::MOUSE_AXIS, 0, 1});
 	}
 
 	// More engine stuff

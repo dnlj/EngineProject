@@ -127,7 +127,11 @@ workspace(PROJECT_NAME .."Workspace")
 
 	filter "platforms:Windows_x64"
         architecture "x64"
-		defines {"ENGINE_OS_WINDOWS"}
+		defines {
+			"ENGINE_OS_WINDOWS",
+			"WIN32_LEAN_AND_MEAN",
+			"NOMINMAX",
+		}
 
 	filter "configurations:Debug*"
 		symbols "On"

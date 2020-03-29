@@ -12,6 +12,7 @@
 #include <Engine/Win32/ContextFormat.hpp>
 #include <Engine/Input/InputEvent.hpp>
 #include <Engine/FlatHashMap.hpp>
+#include <Engine/Input/InputEvent.hpp>
 
 
 namespace Engine::Win32 {
@@ -20,15 +21,16 @@ namespace Engine::Win32 {
 	// TODO: GLFW_SRGB_CAPABLE
 	// TODO: name?
 	// TODO: High DPI https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
+	// TODO: mouse buttons other than l/r
 	class OpenGLWindow {
 		public:
 			using ResizeCallback = void (*)(void* userdata, int32 w, int32 h);
-			using KeyPressCallback = void (*)(void* userdata, int16 scancode, bool extended);
-			using KeyReleaseCallback = void (*)(void* userdata, int16 scancode, bool extended);
+			using KeyCallback = void (*)(void* userdata, Input::InputEvent event);
+			//using KeyReleaseCallback = void (*)(void* userdata, uint16 scancode, bool extended);
 			using CharCallback = void (*)(void* userdata, wchar_t character);
-			using MousePressCallback = void (*)(void* userdata, int16 button);
-			using MouseReleaseCallback = void (*)(void* userdata, int16 button);
-			using MouseMoveCallback = void (*)(void* userdata, int16 axis, int32 value);
+			using MouseButtonCallback = void (*)(void* userdata, Input::InputEvent event);
+			//using MouseReleaseCallback = void (*)(void* userdata, Input::InputEvent event);
+			using MouseMoveCallback = void (*)(void* userdata, Input::InputEvent event);
 			using MouseWheelCallback = void (*)(void* userdata, float32 x, float32 y);
 			using MouseLeaveCallback = void (*)(void* userdata);
 			using MouseEnterCallback = void (*)(void* userdata);
@@ -36,11 +38,11 @@ namespace Engine::Win32 {
 
 			// TODO: just make virtual member functions?
 			ResizeCallback resizeCallback = nullptr;
-			KeyPressCallback keyPressCallback = nullptr;
-			KeyReleaseCallback keyReleaseCallback = nullptr;
+			KeyCallback keyCallback = nullptr;
+			//KeyReleaseCallback keyReleaseCallback = nullptr;
 			CharCallback charCallback = nullptr;
-			MousePressCallback mousePressCallback = nullptr;
-			MouseReleaseCallback mouseReleaseCallback = nullptr;
+			MouseButtonCallback mouseButtonCallback = nullptr;
+			//MouseReleaseCallback mouseReleaseCallback = nullptr;
 			MouseMoveCallback mouseMoveCallback = nullptr;
 			MouseWheelCallback mouseWheelCallback = nullptr;
 			MouseLeaveCallback mouseLeaveCallback = nullptr;
@@ -61,7 +63,7 @@ namespace Engine::Win32 {
 				// the prefix 0xAA = 0b10101010 which is mostly arbitrary value.
 
 				// Must be stored so we can detect repeat (held) keys
-				uint16 scancodes[0xFF * 4]; // For each prefix: 0x00, 0xE0, 0xE1, 0xAA (custom)
+				bool state[0xFF * 4]; // For each prefix: 0x00, 0xE0, 0xE1, 0xAA (custom)
 			};
 
 			static constexpr wchar_t className[] = L"Engine_Windows_OpenGLWindow";

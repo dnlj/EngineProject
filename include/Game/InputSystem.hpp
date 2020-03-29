@@ -2,7 +2,7 @@
 
 // Engine
 #include <Engine/Clock.hpp>
-#include <Engine/Input/InputState.hpp>
+#include <Engine/Input/InputEvent.hpp>
 #include <Engine/StaticRingBuffer.hpp>
 
 // Game
@@ -13,14 +13,9 @@ namespace Game {
 		public:
 			InputSystem(SystemArg arg);
 			void tick(float32 dt);
-			void queueInput(const Engine::Input::InputState& state);
+			void queueInput(const Engine::Input::InputEvent& event);
 
 		private:
-			struct TimedInput {
-				Engine::Input::InputState input;
-				Engine::Clock::TimePoint time;
-			};
-
-			Engine::StaticRingBuffer<TimedInput, 128> buffer;
+			Engine::StaticRingBuffer<Engine::Input::InputEvent, 128> buffer;
 	};
 }

@@ -1,8 +1,6 @@
 // Windows
-#define NOMINMAX // Breaks <limits>
 #include <Windows.h>
 #include <windowsx.h>
-#undef NOMINMAX
 
 // STD
 #include <iomanip>
@@ -49,7 +47,19 @@ namespace {
 		return lParam & (1 << 30);
 	}
 
-	uint16 makeScancode(const RAWKEYBOARD& data) {
+	uint16 getScancodeIndex(uint16 code) {
+		const auto hi = code & 0xFF00;
+		const auto lo = code & 0x00FF;
+		switch (hi) {
+			case 0x0000: return 0xFF * 0 + lo;
+			case 0xE000: return 0xFF * 1 + lo;
+			case 0xE100: return 0xFF * 2 + lo;
+			case 0xAA00: return 0xFF * 3 + lo;
+		}
+		return 0;
+	}
+
+	uint16 getScancode(const RAWKEYBOARD& data) {
 		const bool isE0 = data.Flags & RI_KEY_E0;
 		const bool isE1 = data.Flags & RI_KEY_E1;
 		ENGINE_DEBUG_ASSERT((isE0 ^ isE1) | !isE0, "Scancode extension E0 and E1 set");
@@ -79,7 +89,7 @@ namespace {
 
 	void printRawKeyboard(const RAWINPUT& raw) {
 		const auto data = raw.data.keyboard;
-		const auto scancode = makeScancode(data);
+		const auto scancode = getScancode(data);
 		const auto flags = std::cout.flags();
 		std::cout
 			<< "\nRaw: "
@@ -228,7 +238,25 @@ namespace Engine::Win32 {
 		} else if (raw.header.dwType == RIM_TYPEKEYBOARD) {
 			const auto& data = raw.data.keyboard;
 			if (data.VKey == 0xFF) { return 0; }
-			printRawKeyboard(raw);
+			const auto device = window.keyboardHandleToIndex[raw.header.hDevice];
+			const auto scancode = getScancode(data);
+			const auto index = getScancodeIndex(scancode);
+			auto& pressed = window.keyboardData[device].state[index];
+			const auto wasPressed = pressed;
+			pressed = !(data.Flags & RI_KEY_BREAK);
+
+			if (!pressed || !wasPressed) {
+				const Input::InputEvent event = {
+					.state = {
+						.id = {Input::InputType::KEYBOARD, device, getScancode(data)},
+						.value = pressed,
+					},
+					.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+				};
+				window.keyCallback(window.userdata, event);
+			}
+			
+			//printRawKeyboard(raw);
 		} else if (raw.header.dwType == RIM_TYPEHID) {
 			// TODO: Gamepad input
 		}
@@ -245,7 +273,7 @@ namespace Engine::Win32 {
 		const bool extended = getKeyExtended(lParam);
 		const bool repeat = getKeyRepeat(lParam);
 		if (!repeat) {
-			window.keyPressCallback(window.userdata, scancode, extended);
+			//window.keyPressCallback(window.userdata, scancode, extended);
 		}
 		return 0;
 	}
@@ -259,7 +287,7 @@ namespace Engine::Win32 {
 	LRESULT OpenGLWindow::processMessage<WM_KEYUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
 		const int16 scancode = getKeyScancode(lParam);
 		const bool extended = getKeyExtended(lParam);
-		window.keyReleaseCallback(window.userdata, scancode, extended);
+		//window.keyReleaseCallback(window.userdata, scancode, extended);
 		return 0;
 	}
 	
@@ -293,13 +321,29 @@ namespace Engine::Win32 {
 		const int32 y = GET_Y_LPARAM(lParam);
 
 		if (x != window.lastMousePos.x) {
+			// TODO: we currently don't distinguish between mouse devices
+			const Input::InputEvent event = {
+				.state = {
+					.id = {Input::InputType::MOUSE_AXIS, 0, 0},
+					.valuef = static_cast<float32>(x),
+				},
+				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+			};
 			window.lastMousePos.x = x;
-			window.mouseMoveCallback(window.userdata, 0, x);
+			window.mouseMoveCallback(window.userdata, event);
 		}
 
 		if (y != window.lastMousePos.y) {
+			// TODO: we currently don't distinguish between mouse devices
+			const Input::InputEvent event = {
+				.state = {
+					.id = {Input::InputType::MOUSE_AXIS, 0, 1},
+					.valuef = static_cast<float32>(y),
+				},
+				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+			};
 			window.lastMousePos.y = y;
-			window.mouseMoveCallback(window.userdata, 1, y);
+			window.mouseMoveCallback(window.userdata, event);
 		}
 
 		return 0;
@@ -307,25 +351,57 @@ namespace Engine::Win32 {
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_LBUTTONDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		window.mousePressCallback(window.userdata, 0);
+		// TODO: we currently don't distinguish between mouse devices
+		const Input::InputEvent event = {
+			.state = {
+				.id = {Input::InputType::MOUSE, 0, 0},
+				.value = true,
+			},
+			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+		};
+		window.mouseButtonCallback(window.userdata, event);
 		return 0;
 	}
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_LBUTTONUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		window.mouseReleaseCallback(window.userdata, 0);
+		// TODO: we currently don't distinguish between mouse devices
+		const Input::InputEvent event = {
+			.state = {
+				.id = {Input::InputType::MOUSE, 0, 0},
+				.value = false,
+			},
+			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+		};
+		window.mouseButtonCallback(window.userdata, event);
 		return 0;
 	}
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_RBUTTONDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		window.mousePressCallback(window.userdata, 1);
+		// TODO: we currently don't distinguish between mouse devices
+		const Input::InputEvent event = {
+			.state = {
+				.id = {Input::InputType::MOUSE, 0, 1},
+				.value = true,
+			},
+			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+		};
+		window.mouseButtonCallback(window.userdata, event);
 		return 0;
 	}
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_RBUTTONUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		window.mouseReleaseCallback(window.userdata, 1);
+		// TODO: we currently don't distinguish between mouse devices
+		const Input::InputEvent event = {
+			.state = {
+				.id = {Input::InputType::MOUSE, 0, 1},
+				.value = false,
+			},
+			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+		};
+		window.mouseButtonCallback(window.userdata, event);
 		return 0;
 	}
 
@@ -435,10 +511,13 @@ namespace Engine::Win32 {
 			"Unable to get input devices - ", getLastErrorMessage()
 		);
 
+		// On-Screen Keyboard and other software inputs use device 0
+		keyboardHandleToIndex[0] = static_cast<uint8>(keyboardData.size());
+		keyboardData.emplace_back();
 		for (const auto& dev : deviceList) {
 			if (dev.dwType == RIM_TYPEKEYBOARD) {
 				keyboardHandleToIndex[dev.hDevice] = static_cast<uint8>(keyboardData.size());
-				keyboardData.push_back({});
+				keyboardData.emplace_back();
 			}
 		}
 		keyboardData.shrink_to_fit();

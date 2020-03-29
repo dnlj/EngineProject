@@ -7,6 +7,24 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Win32/Win32.hpp>
+#include <Engine/Clock.hpp>
+
+
+namespace {
+	const int _ENGINE_CLOCK_CHECK = [](){
+		const auto tc = GetTickCount();
+		const auto ec = Engine::Clock::now();
+		const auto wc = Engine::Clock::TimePoint{std::chrono::milliseconds{tc}};
+
+		// Verify that GetTickCount and Engine::Clock share an epoch.
+		// If they are within a second they probably do.
+		ENGINE_DEBUG_ASSERT((ec - wc) < std::chrono::seconds{1},
+			"Engine::Clock is incompatible with Win32 GetTickCount."
+		);
+
+		return 0;
+	}();
+}
 
 
 namespace Engine::Win32 {
