@@ -238,62 +238,29 @@ namespace Engine::Win32 {
 		} else if (raw.header.dwType == RIM_TYPEKEYBOARD) {
 			const auto& data = raw.data.keyboard;
 			if (data.VKey == 0xFF) { return 0; }
-			const auto device = window.keyboardHandleToIndex[raw.header.hDevice];
+
+			const auto device = window.getKeyboardId(raw.header.hDevice);
 			const auto scancode = getScancode(data);
-			const auto index = getScancodeIndex(scancode);
-			auto& pressed = window.keyboardData[device].state[index];
+			auto& pressed = window.keyboardData[device].state[getScancodeIndex(scancode)];
 			const auto wasPressed = pressed;
 			pressed = !(data.Flags & RI_KEY_BREAK);
 
 			if (!pressed || !wasPressed) {
 				const Input::InputEvent event = {
 					.state = {
-						.id = {Input::InputType::KEYBOARD, device, getScancode(data)},
+						.id = {Input::InputType::KEYBOARD, device, scancode},
 						.value = pressed,
 					},
 					.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 				};
+
 				window.keyCallback(window.userdata, event);
 			}
-			
-			//printRawKeyboard(raw);
 		} else if (raw.header.dwType == RIM_TYPEHID) {
 			// TODO: Gamepad input
 		}
 
 		return 0;
-	}
-
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_KEYDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		// As far as i can tell there is no way to get a more precise timestamp
-		// GetMessageTime is in ms and usually has a resolution of 10ms-16ms
-		// https://devblogs.microsoft.com/oldnewthing/20140122-00/?p=2013
-		const int16 scancode = getKeyScancode(lParam);
-		const bool extended = getKeyExtended(lParam);
-		const bool repeat = getKeyRepeat(lParam);
-		if (!repeat) {
-			//window.keyPressCallback(window.userdata, scancode, extended);
-		}
-		return 0;
-	}
-
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_SYSKEYDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		return processMessage<WM_KEYDOWN>(window, wParam, lParam);
-	}
-
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_KEYUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		const int16 scancode = getKeyScancode(lParam);
-		const bool extended = getKeyExtended(lParam);
-		//window.keyReleaseCallback(window.userdata, scancode, extended);
-		return 0;
-	}
-	
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_SYSKEYUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		return processMessage<WM_KEYUP>(window, wParam, lParam);
 	}
 
 	template<>
@@ -506,22 +473,16 @@ namespace Engine::Win32 {
 			"Unable to get number of input devices - ", getLastErrorMessage()
 		);
 
-		std::vector<RAWINPUTDEVICELIST> deviceList(numDevices);
-		ENGINE_ASSERT(GetRawInputDeviceList(deviceList.data(), &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
-			"Unable to get input devices - ", getLastErrorMessage()
-		);
+		//std::vector<RAWINPUTDEVICELIST> deviceList(numDevices);
+		//ENGINE_ASSERT(GetRawInputDeviceList(deviceList.data(), &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
+		//	"Unable to get input devices - ", getLastErrorMessage()
+		//);
 
 		// On-Screen Keyboard and other software inputs use device 0
-		keyboardHandleToIndex[0] = static_cast<uint8>(keyboardData.size());
-		keyboardData.emplace_back();
-		for (const auto& dev : deviceList) {
-			if (dev.dwType == RIM_TYPEKEYBOARD) {
-				keyboardHandleToIndex[dev.hDevice] = static_cast<uint8>(keyboardData.size());
-				keyboardData.emplace_back();
-			}
-		}
+		keyboardHandleToIndex.reserve(numDevices + 1);
+		keyboardHandleToIndex.push_back(0);
+		keyboardData.resize(1);
 		keyboardData.shrink_to_fit();
-		keyboardHandleToIndex.reserve(0);
 
 		// TODO: rm - for debugging
 		printRawDevices();
@@ -592,6 +553,24 @@ namespace Engine::Win32 {
 		RECT rect;
 		GetClientRect(windowHandle, &rect);
 		return glm::ivec2{rect.right, rect.bottom};
+	}
+
+	uint8 OpenGLWindow::getKeyboardId(HANDLE handle) {
+		uint8 device = 0;
+		const auto size = keyboardHandleToIndex.size();
+
+		for (;device < size; ++device) {
+			if (keyboardHandleToIndex[device] == handle) {
+				break;
+			}
+		}
+
+		if (device == size) {
+			keyboardData.resize(size + 1);
+			keyboardHandleToIndex.resize(size + 1, handle);
+		}
+
+		return device;
 	}
 
 	auto OpenGLWindow::init() -> WGLPointers {
@@ -701,10 +680,6 @@ namespace Engine::Win32 {
 			HANDLE_MESSAGE(WM_SIZE);
 			HANDLE_MESSAGE(WM_CLOSE);
 			HANDLE_MESSAGE(WM_INPUT);
-			HANDLE_MESSAGE(WM_SYSKEYDOWN);
-			HANDLE_MESSAGE(WM_KEYDOWN);
-			HANDLE_MESSAGE(WM_SYSKEYUP);
-			HANDLE_MESSAGE(WM_KEYUP);
 			HANDLE_MESSAGE(WM_CHAR);
 			HANDLE_MESSAGE(WM_MOUSEMOVE);
 			HANDLE_MESSAGE(WM_LBUTTONDOWN);

@@ -451,28 +451,28 @@ void run() {
 		// TODO: Make device 0 match any device? 0xFF?
 		using namespace Engine::Input;
 		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
-			InputId{InputType::KEYBOARD, 5, 29}, // CTRL
-			InputId{InputType::KEYBOARD, 5, 46}, // C
+			InputId{InputType::KEYBOARD, 1, 29}, // CTRL
+			InputId{InputType::KEYBOARD, 1, 46}, // C
 		});
 		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
-			InputId{InputType::KEYBOARD, 5, 29}, // CTRL
-			InputId{InputType::KEYBOARD, 5, 56}, // ALT
-			InputId{InputType::KEYBOARD, 5, 16}, // Q
+			InputId{InputType::KEYBOARD, 1, 29}, // CTRL
+			InputId{InputType::KEYBOARD, 1, 56}, // ALT
+			InputId{InputType::KEYBOARD, 1, 16}, // Q
 		});
 		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
-			InputId{InputType::KEYBOARD, 5, 57}
+			InputId{InputType::KEYBOARD, 1, 57}
 		});
 		engine.inputManager.addButtonMapping("MoveUp", InputSequence{
-			InputId{InputType::KEYBOARD, 5, 17}
+			InputId{InputType::KEYBOARD, 1, 17}
 		});
 		engine.inputManager.addButtonMapping("MoveDown", InputSequence{
-			InputId{InputType::KEYBOARD, 5, 31}
+			InputId{InputType::KEYBOARD, 1, 31}
 		});
 		engine.inputManager.addButtonMapping("MoveLeft", InputSequence{
-			InputId{InputType::KEYBOARD, 5, 30}
+			InputId{InputType::KEYBOARD, 1, 30}
 		});
 		engine.inputManager.addButtonMapping("MoveRight", InputSequence{
-			InputId{InputType::KEYBOARD, 5, 32}
+			InputId{InputType::KEYBOARD, 1, 32}
 		});
 		engine.inputManager.addButtonMapping("EditPlace", InputSequence{
 			InputId{InputType::MOUSE, 0, 0}

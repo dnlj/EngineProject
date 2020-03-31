@@ -11,7 +11,6 @@
 #include <Engine/Win32/PixelFormat.hpp>
 #include <Engine/Win32/ContextFormat.hpp>
 #include <Engine/Input/InputEvent.hpp>
-#include <Engine/FlatHashMap.hpp>
 #include <Engine/Input/InputEvent.hpp>
 
 
@@ -75,8 +74,9 @@ namespace Engine::Win32 {
 			bool mouseInWindow = false;
 			glm::ivec2 lastMousePos = {0, 0};
 			BYTE rawInputBuffer[128];
+
 			// TODO: if we want to save key bindings to a config file we will need a way to back to HANDLE and use RIDI_DEVICENAME to save
-			FlatHashMap<HANDLE, uint8> keyboardHandleToIndex;
+			std::vector<HANDLE> keyboardHandleToIndex;
 			std::vector<KeyBoardState> keyboardData;
 
 		public:
@@ -103,6 +103,8 @@ namespace Engine::Win32 {
 
 			// TODO: std::string getClipboardText() const;
 			// TODO: void setClipboardText
+
+			uint8 getKeyboardId(HANDLE handle);
 
 		private:
 			static WGLPointers init();
