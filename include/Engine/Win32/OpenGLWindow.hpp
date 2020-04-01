@@ -11,7 +11,7 @@
 #include <Engine/Win32/PixelFormat.hpp>
 #include <Engine/Win32/ContextFormat.hpp>
 #include <Engine/Input/InputEvent.hpp>
-#include <Engine/Input/InputEvent.hpp>
+#include <Engine/WindowCallbacks.hpp>
 
 
 namespace Engine::Win32 {
@@ -22,31 +22,6 @@ namespace Engine::Win32 {
 	// TODO: High DPI https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
 	// TODO: mouse buttons other than l/r
 	class OpenGLWindow {
-		public:
-			using ResizeCallback = void (*)(void* userdata, int32 w, int32 h);
-			using KeyCallback = void (*)(void* userdata, Input::InputEvent event);
-			//using KeyReleaseCallback = void (*)(void* userdata, uint16 scancode, bool extended);
-			using CharCallback = void (*)(void* userdata, wchar_t character);
-			using MouseButtonCallback = void (*)(void* userdata, Input::InputEvent event);
-			//using MouseReleaseCallback = void (*)(void* userdata, Input::InputEvent event);
-			using MouseMoveCallback = void (*)(void* userdata, Input::InputEvent event);
-			using MouseWheelCallback = void (*)(void* userdata, float32 x, float32 y);
-			using MouseLeaveCallback = void (*)(void* userdata);
-			using MouseEnterCallback = void (*)(void* userdata);
-			void* userdata; // TODO: rm - figure out better
-
-			// TODO: just make virtual member functions?
-			ResizeCallback resizeCallback = nullptr;
-			KeyCallback keyCallback = nullptr;
-			//KeyReleaseCallback keyReleaseCallback = nullptr;
-			CharCallback charCallback = nullptr;
-			MouseButtonCallback mouseButtonCallback = nullptr;
-			//MouseReleaseCallback mouseReleaseCallback = nullptr;
-			MouseMoveCallback mouseMoveCallback = nullptr;
-			MouseWheelCallback mouseWheelCallback = nullptr;
-			MouseLeaveCallback mouseLeaveCallback = nullptr;
-			MouseEnterCallback mouseEnterCallback = nullptr;
-
 		private:
 			struct WGLPointers {
 				PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
@@ -66,7 +41,9 @@ namespace Engine::Win32 {
 			};
 
 			static constexpr wchar_t className[] = L"Engine_Windows_OpenGLWindow";
-
+			
+			// TODO: make template after de-globalizing UI/ImGui
+			WindowCallbackFunctions& callbacks;
 			HWND windowHandle = nullptr;
 			HDC deviceContext = nullptr;
 			HGLRC renderContext = nullptr;
@@ -80,7 +57,7 @@ namespace Engine::Win32 {
 			std::vector<KeyBoardState> keyboardData;
 
 		public:
-			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat);
+			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat, WindowCallbackFunctions& callbacks);
 			OpenGLWindow(const OpenGLWindow&) = delete;
 
 			~OpenGLWindow(); // TODO: cleanup Windows objects

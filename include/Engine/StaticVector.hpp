@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <concepts>
+#include <type_traits>
 
 
 namespace Engine {
@@ -32,8 +35,9 @@ namespace Engine {
 		public:
 			StaticVector() = default;
 
+
 			// TODO: would be nice to have a size constructor
-			template<class... Vals> // TODO: SFINAE check for convertability
+			template<class... Vals, class = std::enable_if_t<(std::is_assignable_v<Vals, value_type> && ...)>>
 			StaticVector(Vals&&... vals) : storage{std::forward<Vals>(vals)...}, used{sizeof...(Vals)} {
 				static_assert(sizeof...(Vals) <= N, "Too many values given");
 			}

@@ -38,8 +38,10 @@
 #include <Engine/Net/Net.hpp>
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Win32/Win32.hpp>
+#include <Engine/WindowCallbacks.hpp>
 #include <Engine/Window.hpp>
 #include <Engine/ImGui/ImGui.hpp>
+#include <Engine/Input/InputSequence.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -332,6 +334,52 @@ namespace {
 	}
 }
 
+namespace {
+	// TODO: once input is finished this should go away;
+	struct TempWorldEngineWrapper {
+		Engine::EngineInstance& engine;
+		Game::World& world;
+	};
+
+	// TODO: move into file
+	class WindowCallbacks final : public Engine::WindowCallbacks<TempWorldEngineWrapper> {
+		void resizeCallback(int32 w, int32 h) override {
+			glViewport(0, 0, w, h);
+			userdata->engine.camera.setAsOrtho(w, h, 1.0f / 250.0f);
+		}
+
+		void keyCallback(Engine::Input::InputEvent event) override {
+			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
+			Engine::ImGui::keyCallback(event.state);
+		}
+
+		void charCallback(wchar_t character) {
+			Engine::ImGui::charCallback(character);
+		}
+
+		void mouseButtonCallback(Engine::Input::InputEvent event) override {
+			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
+			Engine::ImGui::mouseButtonCallback(event.state);
+		}
+
+		void mouseWheelCallback(float32 x, float32 y) override {
+			Engine::ImGui::scrollCallback(x, y);
+		}
+
+		void mouseMoveCallback(Engine::Input::InputEvent event) override {
+			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
+			Engine::ImGui::mouseMoveCallback(event.state);
+		}
+
+		void mouseLeaveCallback() override {
+		}
+
+		void mouseEnterCallback() override {
+			Engine::ImGui::mouseEnterCallback();
+		}
+	};
+}
+
 void run() {
 	// Init networking
 	Engine::Net::startup();
@@ -356,6 +404,7 @@ void run() {
 	//}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
+	WindowCallbacks windowCallbacks;
 	Engine::Window window{{
 			.colorBits = 24,
 			.alphaBits = 8,
@@ -369,7 +418,9 @@ void run() {
 			#else
 				.debug = false,
 			#endif
-	}};
+		},
+		windowCallbacks
+	};
 	window.makeContextCurrent();
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -392,58 +443,12 @@ void run() {
 	ImGui::StyleColorsDark();
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	// TODO: once input is finished this should go away;
-	struct TempWorldEngineWrapper {
-		Engine::EngineInstance& engine;
-		Game::World& world;
-	};
-
-	window.resizeCallback = [](void* userdata, int32 w, int32 h){
-		glViewport(0, 0, w, h);
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		wrapper.engine.camera.setAsOrtho(w, h, 1.0f / 250.0f);
-	};
-
-	window.keyCallback = [](void* userdata, Engine::Input::InputEvent event){
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		wrapper.world.getSystem<Game::InputSystem>().queueInput(event);
-		Engine::ImGui::keyCallback(event.state);
-	};
-
-	window.charCallback = [](void* userdata, wchar_t character){
-		Engine::ImGui::charCallback(character);
-	};
-
-	window.mouseButtonCallback = [](void* userdata, Engine::Input::InputEvent event){
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		wrapper.world.getSystem<Game::InputSystem>().queueInput(event);
-		Engine::ImGui::mouseButtonCallback(event.state);
-	};
-
-	window.mouseWheelCallback = [](void* userdata, float32 x, float32 y){
-		Engine::ImGui::scrollCallback(x, y);
-	};
-
-	window.mouseMoveCallback = [](void* userdata, Engine::Input::InputEvent event){
-		auto& wrapper = *static_cast<TempWorldEngineWrapper*>(userdata);
-		wrapper.world.getSystem<Game::InputSystem>().queueInput(event);
-		Engine::ImGui::mouseMoveCallback(event.state);
-	};
-
-	window.mouseLeaveCallback = [](void* userdata){
-	};
-
-	window.mouseEnterCallback = [](void* userdata){
-		Engine::ImGui::mouseEnterCallback();
-	};
-
-	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Engine stuff
 	Engine::EngineInstance engine;
 	auto worldStorage = std::make_unique<Game::World>(1.0f / 60.0f, engine);
 	Game::World& world = *worldStorage.get();
 	TempWorldEngineWrapper wrapper{engine, world};
-	window.userdata = &wrapper;
+	windowCallbacks.userdata = &wrapper;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds

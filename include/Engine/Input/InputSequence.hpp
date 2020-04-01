@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/StaticVector.hpp>
+#include <Engine/Input/InputId.hpp>
 #include <Engine/Input/InputState.hpp>
 
 

@@ -191,7 +191,7 @@ namespace Engine::Win32 {
 	LRESULT OpenGLWindow::processMessage<WM_SIZE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
 		const int32 w = LOWORD(lParam);
 		const int32 h = HIWORD(lParam);
-		window.resizeCallback(window.userdata, w, h);
+		window.callbacks.resizeCallback(w, h);
 		return 0;
 	}
 
@@ -254,7 +254,7 @@ namespace Engine::Win32 {
 					.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 				};
 
-				window.keyCallback(window.userdata, event);
+				window.callbacks.keyCallback(event);
 			}
 		} else if (raw.header.dwType == RIM_TYPEHID) {
 			// TODO: Gamepad input
@@ -265,7 +265,7 @@ namespace Engine::Win32 {
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_CHAR>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		window.charCallback(window.userdata, static_cast<wchar_t>(wParam));
+		window.callbacks.charCallback(static_cast<wchar_t>(wParam));
 		return 0;
 	}
 
@@ -280,7 +280,7 @@ namespace Engine::Win32 {
 				.dwHoverTime = 0,
 			};
 			TrackMouseEvent(&event);
-			window.mouseEnterCallback(window.userdata);
+			window.callbacks.mouseEnterCallback();
 			window.mouseInWindow = true;
 		}
 
@@ -297,7 +297,7 @@ namespace Engine::Win32 {
 				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 			};
 			window.lastMousePos.x = x;
-			window.mouseMoveCallback(window.userdata, event);
+			window.callbacks.mouseMoveCallback(event);
 		}
 
 		if (y != window.lastMousePos.y) {
@@ -310,7 +310,7 @@ namespace Engine::Win32 {
 				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 			};
 			window.lastMousePos.y = y;
-			window.mouseMoveCallback(window.userdata, event);
+			window.callbacks.mouseMoveCallback(event);
 		}
 
 		return 0;
@@ -326,7 +326,7 @@ namespace Engine::Win32 {
 			},
 			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 		};
-		window.mouseButtonCallback(window.userdata, event);
+		window.callbacks.mouseButtonCallback(event);
 		return 0;
 	}
 
@@ -340,7 +340,7 @@ namespace Engine::Win32 {
 			},
 			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 		};
-		window.mouseButtonCallback(window.userdata, event);
+		window.callbacks.mouseButtonCallback(event);
 		return 0;
 	}
 
@@ -354,7 +354,7 @@ namespace Engine::Win32 {
 			},
 			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 		};
-		window.mouseButtonCallback(window.userdata, event);
+		window.callbacks.mouseButtonCallback(event);
 		return 0;
 	}
 
@@ -368,26 +368,26 @@ namespace Engine::Win32 {
 			},
 			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 		};
-		window.mouseButtonCallback(window.userdata, event);
+		window.callbacks.mouseButtonCallback(event);
 		return 0;
 	}
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_MOUSEWHEEL>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) { // TODO: Make axis
-		window.mouseWheelCallback(window.userdata, 0.0f, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA));
+		window.callbacks.mouseWheelCallback(0.0f, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA));
 		return 0;
 	}
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_MOUSEHWHEEL>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) { // TODO: Make axis
-		window.mouseWheelCallback(window.userdata, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA), 0.0f);
+		window.callbacks.mouseWheelCallback(GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA), 0.0f);
 		return 0;
 	}
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_MOUSELEAVE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
 		window.mouseInWindow = false;
-		window.mouseLeaveCallback(window.userdata);
+		window.callbacks.mouseLeaveCallback();
 		return 0;
 	}
 }
@@ -396,7 +396,8 @@ namespace Engine::Win32 {
 // OpenGLWindow
 ////////////////////////////////////////////////////////////////////////////////
 namespace Engine::Win32 {
-	OpenGLWindow::OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat) {
+	OpenGLWindow::OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat, WindowCallbackFunctions& callbacks)
+		: callbacks{callbacks} {
 		static const WGLPointers ptrs = OpenGLWindow::init();
 
 		windowHandle = CreateWindowExW(
