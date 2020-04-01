@@ -40,7 +40,7 @@ namespace Engine::Win32 {
 				bool state[0xFF * 4]; // For each prefix: 0x00, 0xE0, 0xE1, 0xAA (custom)
 			};
 
-			static constexpr wchar_t className[] = L"Engine_Windows_OpenGLWindow";
+			static constexpr wchar_t className[] = L"Engine::Win32::OpenGLWindow";
 			
 			// TODO: make template after de-globalizing UI/ImGui
 			WindowCallbackFunctions& callbacks;
