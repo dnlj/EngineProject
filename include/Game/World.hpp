@@ -17,6 +17,7 @@
 #include <Game/MapSystem.hpp>
 #include <Game/MapRenderSystem.hpp>
 #include <Game/SpriteSystem.hpp>
+#include <Game/NetworkingSystem.hpp>
 
 #include <Game/PhysicsComponent.hpp>
 #include <Game/SpriteComponent.hpp>
@@ -35,7 +36,8 @@ namespace Game {
 		CameraTrackingSystem,
 		MapSystem,
 		MapRenderSystem,
-		SpriteSystem
+		SpriteSystem,
+		NetworkingSystem
 	>;
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<

@@ -7,6 +7,7 @@
 #endif
 
 // Engine
+#include <Engine/Engine.hpp>
 #include <Engine/Net/IPv4Address.hpp>
 
 
@@ -14,18 +15,16 @@ namespace Engine::Net {
 	// TODO: doc
 	class UDPSocket {
 		public:
-			UDPSocket(uint16 port);
-
-			UDPSocket();
+			UDPSocket(const uint16 port);
 
 			UDPSocket(const UDPSocket&) = delete;
 			UDPSocket& operator=(const UDPSocket&) = delete;
 
 			~UDPSocket();
 
-			void send(const IPv4Address& address, const char* data, int size) const;
+			int32 send(const IPv4Address& address, const char* data, int size) const;
 
-			void recv() const;
+			int32 recv(char* data, uint32 size, IPv4Address& address) const;
 
 		private:
 			SOCKET handle;

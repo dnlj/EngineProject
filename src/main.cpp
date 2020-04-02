@@ -381,27 +381,9 @@ namespace {
 }
 
 void run() {
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Init networking
 	Engine::Net::startup();
-
-	// Network test
-	//{
-	//	#if ENGINE_SERVER
-	//		Engine::Net::UDPSocket socket{27015};
-	//	#else
-	//		Engine::Net::UDPSocket socket;
-	//	#endif
-	//	
-	//	while (true) {
-	//		if constexpr (ENGINE_CLIENT) {
-	//			constexpr char data[] = "Hello, world!";
-	//			socket.send({127, 0, 0, 1, 27015}, data, sizeof(data));
-	//		} else {
-	//			socket.recv();
-	//		}
-	//		Sleep(1000);
-	//	}
-	//}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	WindowCallbacks windowCallbacks;

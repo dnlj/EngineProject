@@ -3,15 +3,7 @@
 
 
 namespace Engine::Net {
-	UDPSocket::UDPSocket(uint16 port) : UDPSocket{} {
-		const auto address = IPv4Address{INADDR_ANY, port}.getSocketAddress();
-		if (bind(handle, &address, sizeof(address))) {
-			const auto err = WSAGetLastError();
-			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
-		}
-	}
-
-	UDPSocket::UDPSocket() {
+	UDPSocket::UDPSocket(const uint16 port) {
 		// TODO: is it possible to make this work with IPv4 and IPv6. AF_USPEC?
 		handle = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
@@ -25,44 +17,39 @@ namespace Engine::Net {
 			const auto err = WSAGetLastError();
 			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
 		}
-	};
 
-	UDPSocket::~UDPSocket() {
-		closesocket(handle);
-	};
-
-	void UDPSocket::send(const IPv4Address& address, const char* data, int size) const {
-		const auto saddr = address.getSocketAddress();
-		const auto sent = sendto(handle, data, size, 0, &saddr, sizeof(saddr));
-
-		// TODO: sent can be less than data. look at SO_MAX_MSG_SIZE https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-sendto
-		// TODO: i think the above is only true for TCP. For UDP its either all sent or we get an error.
-		if (sent != size) {
+		// Bind to a port (0 = OS assigned)
+		const auto address = IPv4Address{INADDR_ANY, port}.getSocketAddress();
+		if (bind(handle, &address, sizeof(address))) {
 			const auto err = WSAGetLastError();
 			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
 		}
 	}
 
-	void UDPSocket::recv() const {
-		while (true) {
-			char data[1024] = {};
+	UDPSocket::~UDPSocket() {
+		closesocket(handle);
+	};
 
-			sockaddr_in from;
-			int fromlen = sizeof(from);
-			int len = recvfrom(handle, data, sizeof(data), 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
+	int32 UDPSocket::send(const IPv4Address& address, const char* data, int size) const {
+		const auto saddr = address.getSocketAddress();
+		const auto sent = sendto(handle, data, size, 0, &saddr, sizeof(saddr));
 
-			if (len <= 0) {
-				break;
+		#ifdef DEBUG
+			if (sent != size) {
+				const auto err = WSAGetLastError();
+				ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
 			}
+		#endif
 
-			IPv4Address address{from};
+		return sent;
+	}
 
-			std::cout
-				<< "\n== got data ==" << "\n"
-				<< "from = " << address << "\n"
-				<< "len = " << len << "\n"
-				<< "data = " << data << "\n";
-		}
+	int32 UDPSocket::recv(char* data, uint32 size, IPv4Address& address) const{
+		sockaddr_in from;
+		int fromlen = sizeof(from);
+		int32 len = recvfrom(handle, data, size, 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
+		address = from;
+		return len;
 	}
 
 	// TODO: use Engine::Windows
