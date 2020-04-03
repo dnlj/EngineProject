@@ -30,6 +30,11 @@ namespace Engine::Net {
 		return msg.data;
 	}
 
+	
+	void MesssageStream::write(const std::string& t) {
+		write(t.c_str(), t.size() + 1);
+	}
+
 	void MesssageStream::read(std::string& t) {
 		const auto sz = strlen(curr) + 1;
 		ENGINE_DEBUG_ASSERT(curr + sz <= last, "Insufficient space remaining to read");

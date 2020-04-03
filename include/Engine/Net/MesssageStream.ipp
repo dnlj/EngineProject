@@ -18,13 +18,27 @@ namespace Engine::Net {
 	}
 
 	template<class T>
-	void MesssageStream::write(const T& t) {
-		constexpr auto sz = sizeof(T);
+	void MesssageStream::write(const T* t, size_t sz) {
 		ENGINE_DEBUG_ASSERT(curr + sz < msg.data + sizeof(msg.data), "Insufficient space remaining to write");
-		memcpy(curr, &t, sz);
+		memcpy(curr, t, sz);
 		curr += sz;
 		last += sz;
 	};
+
+	template<class T>
+	void MesssageStream::write(const T& t) {
+		write(&t, sizeof(T));
+	};
+
+	template<class T, size_t N>
+	void MesssageStream::write(const T(&t)[N]) {
+		write(t, N * sizeof(T));
+	}
+
+	template<class T, size_t N>
+	void MesssageStream::write(const std::array<T, N>& t) {
+		write(t.data(), N * sizeof(T));
+	}
 
 	template<class T>
 	void MesssageStream::read(T* t, size_t sz) {

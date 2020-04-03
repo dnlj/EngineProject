@@ -54,7 +54,18 @@ namespace Engine::Net {
 			MesssageStream& operator>>(T& t);
 
 			template<class T>
+			void write(const T* t, size_t sz);
+
+			template<class T>
 			void write(const T& t);
+
+			template<class T, size_t N>
+			void write(const T(&t)[N]);
+
+			template<class T, size_t N>
+			void write(const std::array<T, N>& t);
+
+			void write(const std::string& t);
 
 			template<class T> 
 			void read(T* t, size_t sz);

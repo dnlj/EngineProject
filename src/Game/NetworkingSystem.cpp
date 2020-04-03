@@ -17,7 +17,6 @@ namespace Game {
 	void NetworkingSystem::tick(float32 dt) {
 		if constexpr (ENGINE_SERVER) {
 			Engine::Net::IPv4Address addr;
-			memset(stream.data(), 0, sizeof(Engine::Net::Message::data)); // TODO: rm - for testing. this shouldnt matter
 			const auto size = socket.recv(stream.data(), stream.capacity(), addr);
 
 			if (size != -1) {
@@ -42,8 +41,18 @@ namespace Game {
 		} else {
 			const Engine::Net::IPv4Address addr = {127,0,0,1, 27015};
 
-			stream.reset();
-			stream << "NetworkingSystem::tick" << " - " << "apples " << 3.14159001f << " " << 0xFF << " this is a test";
+			stream.reset(0);
+			std::string a = "NetworkingSystem::tick";
+			std::array<char, 4> b = {' ', '-', ' ', '\0'};
+			char c[8] = "apples ";
+			stream
+				<< a
+				<< b
+				<< c
+				<< 3.14159001f
+				<< " "
+				<< 0xFF
+				<< " this is a test";
 
 			const auto size = socket.send(addr, reinterpret_cast<const char*>(stream.data()), stream.size());
 		}
