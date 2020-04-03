@@ -29,4 +29,11 @@ namespace Engine::Net {
 	const char* MesssageStream::data() const {
 		return msg.data;
 	}
+
+	void MesssageStream::read(std::string& t) {
+		const auto sz = strlen(curr) + 1;
+		ENGINE_DEBUG_ASSERT(curr + sz <= last, "Insufficient space remaining to read");
+		t.assign(curr, sz - 1);
+		curr += sz;
+	}
 }

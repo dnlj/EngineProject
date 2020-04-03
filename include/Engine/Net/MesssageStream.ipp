@@ -12,7 +12,7 @@ namespace Engine::Net {
 	}
 
 	template<class T>
-	MesssageStream& MesssageStream::operator>>(const T& t) {
+	MesssageStream& MesssageStream::operator>>(T& t) {
 		read(t);
 		return *this;
 	}
@@ -36,6 +36,16 @@ namespace Engine::Net {
 	template<class T>
 	void MesssageStream::read(T& t) {
 		read(&t, sizeof(T));
+	}
+
+	template<class T, size_t N>
+	void MesssageStream::read(T(&t)[N]) {
+		read(t, N * sizeof(T));
+	}
+
+	template<class T, size_t N>
+	void MesssageStream::read(std::array<T, N>& t) {
+		read(t.data(), N * sizeof(T));
 	}
 
 	template<class T>

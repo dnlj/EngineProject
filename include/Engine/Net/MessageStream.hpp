@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <cstring>
 #include <string>
+#include <vector>
 
 // Engine
 #include <Engine/Engine.hpp>
@@ -50,18 +51,21 @@ namespace Engine::Net {
 			MesssageStream& operator<<(const T& t);
 
 			template<class T>
-			MesssageStream& operator>>(const T& t);
+			MesssageStream& operator>>(T& t);
 
 			template<class T>
 			void write(const T& t);
 
-			// TODO: write<std::string>
-			// TODO: write<std::array>
-			// TODO: write<std::vector>
-			// TODO: write<T[N]>
-
 			template<class T> 
 			void read(T* t, size_t sz);
+
+			template<class T, size_t N>
+			void read(T(&t)[N]);
+
+			template<class T, size_t N>
+			void read(std::array<T, N>& t);
+
+			void read(std::string& t);
 
 			template<class T> 
 			void read(T& t);

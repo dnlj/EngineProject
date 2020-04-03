@@ -22,12 +22,17 @@ namespace Game {
 
 			if (size != -1) {
 				stream.reset(size);
+				std::string a;
+				std::array<char, 4> b;
+				char c[8];
+				stream >> a;
+				stream >> b;
+				stream >> c;
 				std::cout << "== recv == "
 					<< "\n\tdata: " << stream.data()
 					<< "\n\tsize: " << stream.size()
 					<< "\n\taddr: " << addr
-					<< "\n\t" << stream.read<char[]>()
-					<< stream.read<char[]>()
+					<< "\n\t" << a << b.data() << c
 					<< stream.read<float32>()
 					<< stream.read<char[]>()
 					<< stream.read<int32>()
@@ -35,11 +40,10 @@ namespace Game {
 					<< "\n";
 			}
 		} else {
-			const char data[] = "NetworkingSystem::tick";
 			const Engine::Net::IPv4Address addr = {127,0,0,1, 27015};
 
 			stream.reset();
-			stream << data << " - " << 3.14159001f << " " << 0xFF << " this is a test";
+			stream << "NetworkingSystem::tick" << " - " << "apples " << 3.14159001f << " " << 0xFF << " this is a test";
 
 			const auto size = socket.send(addr, reinterpret_cast<const char*>(stream.data()), stream.size());
 		}
