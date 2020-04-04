@@ -24,4 +24,12 @@ namespace Game {
 	const b2Vec2& PhysicsComponent::getInterpPosition() const {
 		return interpTransform.p;
 	}
+
+	void PhysicsComponent::toNetwork(Engine::Net::MessageStream& msg) const {
+		puts("To network!");
+	}
+
+	void PhysicsComponent::fromNetwork(Engine::Net::MessageStream& msg) {
+		puts("From network!");
+	}
 }

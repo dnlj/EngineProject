@@ -1,60 +1,82 @@
+// STD
+
 // Engine
 #include <Engine/Clock.hpp>
 
 // Game
+#include <Game/World.hpp>
 #include <Game/NetworkingSystem.hpp>
+
+namespace {
+	template<class T>
+	concept IsNetworkedComponent = requires (T t, Engine::Net::MessageStream& msg) {
+		t.toNetwork(msg);
+		t.fromNetwork(msg);
+	};
+
+	// TODO: move into meta
+	template<class ComponentsSet>
+	struct ForEachIn {
+		template<class Func>
+		static void call(Func& func) {};
+	};
+
+	template<template<class...> class ComponentsSet, class... Components>
+	struct ForEachIn<ComponentsSet<Components...>> {
+		template<class Func>
+		static void call(Func& func) {
+			(func.operator()<Components>(), ...);
+		}
+	};
+}
 
 
 namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
-		, socket{ENGINE_SERVER ? 27015 : 0}{
+		, socket{ENGINE_SERVER ? 27015 : 0} {
 	}
 
 	void NetworkingSystem::setup() {
+		ForEachIn<ComponentsSet>::call([&]<class C>(){
+			if constexpr (IsNetworkedComponent<C>) {
+				for (const auto eid : world.getFilterFor<C>()) {
+					//msg.reset();
+					//// TODO: move into some kind of header?
+					//msg.write(eid);
+					//msg.write(world.getComponentID<C>());
+					//world.getComponent<C>(eid).toNetwork(msg);
+				}
+			}
+		});
 	}
 
 	void NetworkingSystem::tick(float32 dt) {
 		if constexpr (ENGINE_SERVER) {
 			Engine::Net::IPv4Address addr;
-			const auto size = socket.recv(stream.data(), stream.capacity(), addr);
+			const auto size = socket.recv(msg.data(), msg.capacity(), addr);
 
 			if (size != -1) {
-				stream.reset(size);
-				std::string a;
-				std::array<char, 4> b;
-				char c[8];
-				stream >> a;
-				stream >> b;
-				stream >> c;
-				std::cout << "== recv == "
-					<< "\n\tdata: " << stream.data()
-					<< "\n\tsize: " << stream.size()
-					<< "\n\taddr: " << addr
-					<< "\n\t" << a << b.data() << c
-					<< stream.read<float32>()
-					<< stream.read<char[]>()
-					<< stream.read<int32>()
-					<< stream.read<char[]>()
+				auto& conn = connections[addr];
+				if (conn.lastMessageTime.time_since_epoch().count() == 0) {
+					std::cout << "New connection from: " << addr << "\n";
+				}
+
+				conn.lastMessageTime = world.getTickTime();
+
+				msg.reset(size);
+				std::cout << addr << " - "
+					<< msg.read<std::string>()
+					<< Engine::Clock::Seconds{msg.read<Engine::Clock::TimePoint>().time_since_epoch()}.count() << "s"
 					<< "\n";
 			}
+
+			// TODO: Handle connection timeout
 		} else {
 			const Engine::Net::IPv4Address addr = {127,0,0,1, 27015};
-
-			stream.reset(0);
-			std::string a = "NetworkingSystem::tick";
-			std::array<char, 4> b = {' ', '-', ' ', '\0'};
-			char c[8] = "apples ";
-			stream
-				<< a
-				<< b
-				<< c
-				<< 3.14159001f
-				<< " "
-				<< 0xFF
-				<< " this is a test";
-
-			const auto size = socket.send(addr, reinterpret_cast<const char*>(stream.data()), stream.size());
+			msg.reset();
+			msg << "This is a test message! " << Engine::Clock::now();
+			const auto size = socket.send(addr, reinterpret_cast<const char*>(msg.data()), msg.size());
 		}
 		Sleep(1000);
 	}

@@ -5,37 +5,37 @@
 
 
 namespace Engine::Net {
-	void MesssageStream::reset(int32 sz) {
+	void MessageStream::reset(int32 sz) {
 		reset();
 		last = curr + sz;
 	}
 
-	void MesssageStream::reset() {
+	void MessageStream::reset() {
 		curr = msg.data;
 	}
 
-	int32 MesssageStream::size() const {
+	int32 MessageStream::size() const {
 		return static_cast<int32>(curr - msg.data);
 	}
 
-	int32 MesssageStream::capacity() const {
+	int32 MessageStream::capacity() const {
 		return sizeof(msg.data);
 	}
 
-	char* MesssageStream::data() {
+	char* MessageStream::data() {
 		return msg.data;
 	}
 
-	const char* MesssageStream::data() const {
+	const char* MessageStream::data() const {
 		return msg.data;
 	}
 
 	
-	void MesssageStream::write(const std::string& t) {
+	void MessageStream::write(const std::string& t) {
 		write(t.c_str(), t.size() + 1);
 	}
 
-	void MesssageStream::read(std::string& t) {
+	void MessageStream::read(std::string& t) {
 		const auto sz = strlen(curr) + 1;
 		ENGINE_DEBUG_ASSERT(curr + sz <= last, "Insufficient space remaining to read");
 		t.assign(curr, sz - 1);

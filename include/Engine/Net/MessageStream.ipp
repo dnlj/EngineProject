@@ -6,19 +6,19 @@
 
 namespace Engine::Net {
 	template<class T>
-	MesssageStream& MesssageStream::operator<<(const T& t) {
+	MessageStream& MessageStream::operator<<(const T& t) {
 		write(t);
 		return *this;
 	}
 
 	template<class T>
-	MesssageStream& MesssageStream::operator>>(T& t) {
+	MessageStream& MessageStream::operator>>(T& t) {
 		read(t);
 		return *this;
 	}
 
 	template<class T>
-	void MesssageStream::write(const T* t, size_t sz) {
+	void MessageStream::write(const T* t, size_t sz) {
 		ENGINE_DEBUG_ASSERT(curr + sz < msg.data + sizeof(msg.data), "Insufficient space remaining to write");
 		memcpy(curr, t, sz);
 		curr += sz;
@@ -26,44 +26,44 @@ namespace Engine::Net {
 	};
 
 	template<class T>
-	void MesssageStream::write(const T& t) {
+	void MessageStream::write(const T& t) {
 		write(&t, sizeof(T));
 	};
 
 	template<class T, size_t N>
-	void MesssageStream::write(const T(&t)[N]) {
+	void MessageStream::write(const T(&t)[N]) {
 		write(t, N * sizeof(T));
 	}
 
 	template<class T, size_t N>
-	void MesssageStream::write(const std::array<T, N>& t) {
+	void MessageStream::write(const std::array<T, N>& t) {
 		write(t.data(), N * sizeof(T));
 	}
 
 	template<class T>
-	void MesssageStream::read(T* t, size_t sz) {
+	void MessageStream::read(T* t, size_t sz) {
 		ENGINE_DEBUG_ASSERT(curr + sz <= last, "Insufficient space remaining to read");
 		memcpy(t, curr, sz);
 		curr += sz;
 	}
 
 	template<class T>
-	void MesssageStream::read(T& t) {
+	void MessageStream::read(T& t) {
 		read(&t, sizeof(T));
 	}
 
 	template<class T, size_t N>
-	void MesssageStream::read(T(&t)[N]) {
+	void MessageStream::read(T(&t)[N]) {
 		read(t, N * sizeof(T));
 	}
 
 	template<class T, size_t N>
-	void MesssageStream::read(std::array<T, N>& t) {
+	void MessageStream::read(std::array<T, N>& t) {
 		read(t.data(), N * sizeof(T));
 	}
 
 	template<class T>
-	auto MesssageStream::read() {
+	auto MessageStream::read() {
 		if constexpr (std::is_bounded_array_v<T> && std::rank_v<T> == 1) {
 			// TODO: N dimension
 			std::array<std::remove_extent_t<T>, std::extent_v<T>> t;
@@ -77,11 +77,7 @@ namespace Engine::Net {
 	}
 
 	template<>
-	inline auto MesssageStream::read<char[]>() {
-		const auto sz = strlen(curr) + 1;
-		ENGINE_DEBUG_ASSERT(curr + sz <= last, "Insufficient space remaining to read");
-		std::string t{curr, sz - 1};
-		curr += sz;
-		return t;
+	inline auto MessageStream::read<char[]>() {
+		return read<std::string>();
 	}
 }

@@ -28,8 +28,7 @@ namespace Engine::Net {
 	};
 	static_assert(sizeof(Message) == 512);
 
-	// TODO: bad name
-	class MesssageStream {
+	class MessageStream {
 		private:
 			char* curr;
 			char* last;
@@ -48,10 +47,10 @@ namespace Engine::Net {
 			const char* data() const;
 
 			template<class T>
-			MesssageStream& operator<<(const T& t);
+			MessageStream& operator<<(const T& t);
 
 			template<class T>
-			MesssageStream& operator>>(T& t);
+			MessageStream& operator>>(T& t);
 
 			template<class T>
 			void write(const T* t, size_t sz);
@@ -86,4 +85,4 @@ namespace Engine::Net {
 	};
 }
 
-#include <Engine/Net/MesssageStream.ipp>
+#include <Engine/Net/MessageStream.ipp>

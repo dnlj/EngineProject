@@ -11,14 +11,15 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Hash.hpp>
 
 
 namespace Engine::Net {
 	class IPv4Address {
 		public:
 			IPv4Address() = default;
-			IPv4Address(uint32 address, uint16 port);
-			IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint16 port);
+			IPv4Address(uint32 address, uint32 port);
+			IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint32 port);
 			IPv4Address(const sockaddr_in& saddress);
 			IPv4Address(const sockaddr& saddress);
 
@@ -36,8 +37,20 @@ namespace Engine::Net {
 				};
 			};
 
-			uint16 port;
+			uint32 port;
 	};
 
+	bool operator==(const IPv4Address& a, const IPv4Address& b);
 	std::ostream& operator<<(std::ostream& os, const IPv4Address& address);
+}
+
+namespace Engine {
+	template<>
+	struct Hash<Net::IPv4Address> {
+		size_t operator()(const Net::IPv4Address& v) const {
+			static_assert(sizeof(v) == 8);
+			auto seed = hash(reinterpret_cast<const uint64&>(v));
+			return seed;
+		}
+	};
 }
