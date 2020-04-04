@@ -574,6 +574,36 @@ namespace Engine::Win32 {
 		return device;
 	}
 
+	void OpenGLWindow::setPosition(int32 x, int32 y) {
+		SetWindowPos(windowHandle, HWND_TOP, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+	}
+
+	void OpenGLWindow::setSize(int32 w, int32 h) {
+		SetWindowPos(windowHandle, HWND_TOP, 0, 0, w, h, SWP_NOREPOSITION | SWP_NOZORDER);
+	}
+
+	void OpenGLWindow::setPosSize(int32 x, int32 y, int32 w, int32 h) {
+		SetWindowPos(windowHandle, HWND_TOP, x, y, w, h, SWP_NOZORDER);
+	}
+
+	void OpenGLWindow::center() {
+		RECT selfRect;
+		GetWindowRect(windowHandle, &selfRect);
+
+		const auto monitor = MonitorFromWindow(windowHandle, MONITOR_DEFAULTTONEAREST);
+		MONITORINFO minfo {
+			.cbSize = sizeof(minfo),
+			.rcMonitor = {.right = 640, .bottom = 480},
+		};
+		ENGINE_ASSERT_WARN(GetMonitorInfoW(monitor, &minfo), "Unable to determine monitor for window - ", getLastErrorMessage());
+
+
+		setPosition(
+			(minfo.rcMonitor.right - minfo.rcMonitor.left - selfRect.right + selfRect.left) / 2,
+			(minfo.rcMonitor.bottom - minfo.rcMonitor.top - selfRect.bottom + selfRect.top) / 2
+		);
+	}
+
 	auto OpenGLWindow::init() -> WGLPointers {
 		puts("OpenGLWindow::init");
 		const auto hInstance = GetModuleHandleW(nullptr);

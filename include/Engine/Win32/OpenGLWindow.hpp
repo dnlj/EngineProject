@@ -83,6 +83,11 @@ namespace Engine::Win32 {
 
 			uint8 getKeyboardId(HANDLE handle);
 
+			void setPosition(int32 x, int32 y);
+			void setSize(int32 w, int32 h);
+			void setPosSize(int32 x, int32 y, int32 w, int32 h);
+			void center();
+
 		private:
 			static WGLPointers init();
 
