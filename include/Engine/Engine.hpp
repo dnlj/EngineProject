@@ -38,6 +38,8 @@ namespace Engine { using namespace Engine::Types; }
 
 namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
 	constexpr float32 PI = 3.141592653589793238462643383279502884197169f;
+	constexpr int32 ServerSide = 1 << 0;
+	constexpr int32 ClientSide = 1 << 1;
 }
 namespace Engine { using namespace Engine::Constants; }
 
@@ -56,6 +58,10 @@ namespace Engine::Detail {
 }
 
 // TODO: move all this macro stuff into files?
+
+#define ENGINE_SERVER (ENGINE_SIDE == ::Engine::ServerSide)
+#define ENGINE_CLIENT (ENGINE_SIDE == ::Engine::ClientSide)
+
 // TODO: replace macros with source_location?
 #define _ENGINE_CREATE_LOG_LAMBDA(Stream, Prefix, Other)\
 	([](auto&&... args){\

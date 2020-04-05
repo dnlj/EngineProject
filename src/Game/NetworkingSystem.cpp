@@ -51,46 +51,48 @@ namespace Game {
 		});
 	}
 
-	void NetworkingSystem::tick(float32 dt) {
-		if constexpr (ENGINE_SERVER) {
-			Engine::Net::IPv4Address addr;
-			const auto size = socket.recv(msg.data(), msg.capacity(), addr);
-
-			if (size != -1) {
-				auto& conn = connections[addr];
-				if (conn.lastMessageTime.time_since_epoch().count() == 0) {
-					std::cout << "New connection from: " << addr << "\n";
-				}
-
-				conn.lastMessageTime = world.getTickTime();
-
-				msg.reset(size);
-				std::cout << addr << " - "
-					<< msg.read<std::string>()
-					<< Engine::Clock::Seconds{msg.read<Engine::Clock::TimePoint>().time_since_epoch()}.count() << "s"
-					<< "\n";
-				msg.reset();
-				msg << "This is the response!";
-				socket.send(addr, msg.data(), msg.size());
-			}
-
-			// TODO: Handle connection timeout
-		} else {
-			Engine::Net::IPv4Address addr = {127,0,0,1, 27015};
-			msg.reset();
-			msg << "This is a test message! " << Engine::Clock::now();
-			auto size = socket.send(addr, msg.data(), msg.size());
-
-			while (true) {
-				const auto size = socket.recv(msg.data(), msg.capacity(), addr);
-				if (size == -1) { break; }
-				msg.reset(size);
-				std::cout << "Received message from " << addr << " of size " << size << "\n";
-			}
-		}
-		//Sleep(1000);
+	template<>
+	void NetworkingSystem::handleMessage<Engine::ServerSide>(const Engine::Net::IPv4Address& from) {
+		std::cout << from << " - "
+			<< msg.read<std::string>()
+			<< Engine::Clock::Seconds{msg.read<Engine::Clock::TimePoint>().time_since_epoch()}.count() << "s"
+			<< "\n";
+		msg.reset();
+		msg << "This is the response!";
+		socket.send(from, msg.data(), msg.size());
 	}
 
-	void NetworkingSystem::run(float32 dt) {
+	template<>
+	void NetworkingSystem::handleMessage<Engine::ClientSide>(const Engine::Net::IPv4Address& from) {
+		std::cout << "Received message from " << from << "\n";
+	}
+
+	void NetworkingSystem::tick(float32 dt) {
+		Engine::Net::IPv4Address addr = {127,0,0,1, 27015};
+
+		if constexpr (ENGINE_CLIENT) {
+			msg.reset();
+			msg << "This is a test message! " << Engine::Clock::now();
+			socket.send(addr, msg.data(), msg.size());
+		}
+
+		while (true) {
+			const auto size = socket.recv(msg.data(), msg.capacity(), addr);
+			if (size == -1) { break; }
+			auto& conn = getConnection(addr);
+			conn.lastMessageTime = world.getTickTime();
+			msg.reset(size);
+			handleMessage<ENGINE_SIDE>(addr);
+		}
+
+		// TODO: Handle connection timeout
+	}
+
+	Engine::Net::Connection& NetworkingSystem::getConnection(const Engine::Net::IPv4Address& addr) {
+		const auto [found, ins] = ipToConnection.emplace(addr, static_cast<uint8>(connections.size()));
+		if (ins) {
+			connections.emplace_back();
+		}
+		return connections[found->second];
 	}
 }

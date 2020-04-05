@@ -8,6 +8,7 @@
 namespace Engine::Net {
 	class Connection {
 		public:
-		Clock::TimePoint lastMessageTime;
+			Clock::TimePoint lastMessageTime;
+			uint32 sequence;
 	};
 }

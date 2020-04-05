@@ -14,12 +14,18 @@ namespace Game {
 		private:
 			Engine::Net::UDPSocket socket;
 			Engine::Net::MessageStream msg;
-			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::Net::Connection> connections;
+			Engine::FlatHashMap<Engine::Net::IPv4Address, uint8> ipToConnection;
+			std::vector<Engine::Net::Connection> connections;
 
 		public:
 			NetworkingSystem(SystemArg arg);
 			void setup();
 			void tick(float32 dt);
-			void run(float32 dt);
+
+		private:
+			Engine::Net::Connection& getConnection(const Engine::Net::IPv4Address& addr);
+
+			template<int32>
+			void handleMessage(const Engine::Net::IPv4Address& from);
 	};
 }

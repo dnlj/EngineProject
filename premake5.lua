@@ -175,11 +175,7 @@ project("*")
 		"include/glloadgen/**",
 		"src/glloadgen/**",
 	}
-	defines {
-		"ENGINE_CLIENT=false",
-		"ENGINE_SERVER=false",
-	}
-
+	
 	debugdir "src"
 
 	filter "configurations:Debug*"
@@ -212,7 +208,7 @@ project(PROJECT_NAME .."Client")
 	}
 
 	defines {
-		"ENGINE_CLIENT=true"
+		"ENGINE_SIDE=::Engine::ClientSide",
 	}
 
 --------------------------------------------------------------------------------
@@ -227,7 +223,7 @@ project(PROJECT_NAME .."Server")
 	}
 
 	defines {
-		"ENGINE_SERVER=true"
+		"ENGINE_SIDE=::Engine::ServerSide",
 	}
 
 --------------------------------------------------------------------------------

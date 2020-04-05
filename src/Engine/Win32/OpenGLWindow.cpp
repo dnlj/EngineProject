@@ -597,7 +597,6 @@ namespace Engine::Win32 {
 		};
 		ENGINE_ASSERT_WARN(GetMonitorInfoW(monitor, &minfo), "Unable to determine monitor for window - ", getLastErrorMessage());
 
-
 		setPosition(
 			(minfo.rcMonitor.right - minfo.rcMonitor.left - selfRect.right + selfRect.left) / 2,
 			(minfo.rcMonitor.bottom - minfo.rcMonitor.top - selfRect.bottom + selfRect.top) / 2

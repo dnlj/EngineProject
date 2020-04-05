@@ -584,7 +584,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 		if constexpr (ENGINE_CLIENT) {
 			SetWindowPos(window, HWND_TOP, 0, 0, 1000, 500, 0);
 			SetWindowTextW(window, L"Client");
-		} else if (ENGINE_SERVER) {
+		} else if constexpr (ENGINE_SERVER) {
 			SetWindowPos(window, HWND_TOP, 0, 500, 1000, 500, 0);
 			SetWindowTextW(window, L"Server");
 		}
