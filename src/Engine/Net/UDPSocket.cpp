@@ -30,7 +30,7 @@ namespace Engine::Net {
 		closesocket(handle);
 	};
 
-	int32 UDPSocket::send(const IPv4Address& address, const char* data, int size) const {
+	int32 UDPSocket::send(const char* data, int32 size, const IPv4Address& address) const {
 		const auto saddr = address.getSocketAddress();
 		const auto sent = sendto(handle, data, size, 0, &saddr, sizeof(saddr));
 
@@ -44,7 +44,7 @@ namespace Engine::Net {
 		return sent;
 	}
 
-	int32 UDPSocket::recv(char* data, uint32 size, IPv4Address& address) const{
+	int32 UDPSocket::recv(char* data, int32 size, IPv4Address& address) const {
 		sockaddr_in from;
 		int fromlen = sizeof(from);
 		int32 len = recvfrom(handle, data, size, 0, reinterpret_cast<sockaddr*>(&from), &fromlen);

@@ -9,6 +9,8 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Net/UDPSocket.hpp>
+#include <Engine/Net/IPv4Address.hpp>
 
 
 namespace Engine::Net {
@@ -17,11 +19,11 @@ namespace Engine::Net {
 			class Header {
 				public:
 					uint16 protocol;
-					uint8 channel;
-					uint8 reserved;
+					uint8 type;
+					uint8 flags;
 					uint32 sequence;
-					uint16 type;
 			};
+			static_assert(sizeof(Header) == 8);
 
 			Header header;
 			char data[512 - sizeof(Header)];
@@ -35,6 +37,13 @@ namespace Engine::Net {
 			Message msg;
 
 		public:
+			// TODO: header field operations
+			Message::Header& header();
+			const Message::Header& header() const;
+
+			int32 recv(const UDPSocket& socket, IPv4Address& addr);
+			int32 send(const UDPSocket& socket, const IPv4Address& addr) const;
+
 			void reset(int32 sz);
 			void reset();
 

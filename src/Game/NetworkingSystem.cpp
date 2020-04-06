@@ -52,37 +52,41 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessage<Engine::ServerSide>(const Engine::Net::IPv4Address& from) {
-		std::cout << from << " - "
-			<< msg.read<std::string>()
-			<< Engine::Clock::Seconds{msg.read<Engine::Clock::TimePoint>().time_since_epoch()}.count() << "s"
-			<< "\n";
-		msg.reset();
-		msg << "This is the response!";
-		socket.send(from, msg.data(), msg.size());
+	void NetworkingSystem::handleMessageType<MessageType::PING>() {
+		if (msg.read<bool>()) {
+			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
+			msg.reset();
+			msg.header().type = static_cast<uint8>(MessageType::PING);
+			msg.write(false);
+			msg.send(socket, addr);
+		} else {
+			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
+		}
 	}
 
 	template<>
-	void NetworkingSystem::handleMessage<Engine::ClientSide>(const Engine::Net::IPv4Address& from) {
-		std::cout << "Received message from " << from << "\n";
+	void NetworkingSystem::handleMessageType<MessageType::TEST>() {
+		puts("Test!");
 	}
 
 	void NetworkingSystem::tick(float32 dt) {
-		Engine::Net::IPv4Address addr = {127,0,0,1, 27015};
-
 		if constexpr (ENGINE_CLIENT) {
-			msg.reset();
-			msg << "This is a test message! " << Engine::Clock::now();
-			socket.send(addr, msg.data(), msg.size());
+			static auto next = world.getTickTime();
+			if (next <= world.getTickTime()) {
+				next = world.getTickTime() + std::chrono::seconds{1};
+				msg.reset();
+				msg.header().type = static_cast<uint8>(MessageType::PING);
+				msg.write(true);
+				msg.send(socket, {127,0,0,1, 27015});
+			}
 		}
 
 		while (true) {
-			const auto size = socket.recv(msg.data(), msg.capacity(), addr);
+			const auto size = msg.recv(socket, addr);
 			if (size == -1) { break; }
 			auto& conn = getConnection(addr);
 			conn.lastMessageTime = world.getTickTime();
-			msg.reset(size);
-			handleMessage<ENGINE_SIDE>(addr);
+			dispatchMessage();
 		}
 
 		// TODO: Handle connection timeout
@@ -94,5 +98,17 @@ namespace Game {
 			connections.emplace_back();
 		}
 		return connections[found->second];
+	}
+
+	void NetworkingSystem::dispatchMessage() {
+		#define HANDLE(Type) case Type: { return handleMessageType<Type>(); }
+		switch(static_cast<MessageType>(msg.header().type)) {
+			HANDLE(MessageType::PING);
+			HANDLE(MessageType::TEST);
+			default: {
+				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(msg.header().type));
+			}
+		}
+		#undef HANDLE
 	}
 }

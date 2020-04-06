@@ -5,6 +5,24 @@
 
 
 namespace Engine::Net {
+	Message::Header& MessageStream::header() {
+		return msg.header;
+	}
+
+	const Message::Header& MessageStream::header() const {
+		return msg.header;
+	}
+
+	int32 MessageStream::recv(const UDPSocket& socket, IPv4Address& addr) {
+		const auto len = socket.recv(reinterpret_cast<char*>(&msg), sizeof(msg), addr);
+		reset(len);
+		return len;
+	}
+
+	int32 MessageStream::send(const UDPSocket& socket, const IPv4Address& addr) const {
+		return socket.send(reinterpret_cast<const char*>(&msg), sizeof(msg.header) + size(), addr);
+	}
+
 	void MessageStream::reset(int32 sz) {
 		reset();
 		last = curr + sz;
