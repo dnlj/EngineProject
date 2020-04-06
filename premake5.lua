@@ -131,6 +131,7 @@ workspace(PROJECT_NAME .."Workspace")
 			"ENGINE_OS_WINDOWS",
 			"WIN32_LEAN_AND_MEAN",
 			"NOMINMAX",
+			"ENGINE_BASE_PATH=R\"(".. os.getcwd() .. ")\"",
 		}
 
 	filter "configurations:Debug*"

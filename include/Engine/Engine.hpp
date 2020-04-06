@@ -67,7 +67,7 @@ namespace Engine::Detail {
 	([](auto&&... args){\
 		Stream\
 			<< "[" << ::Engine::Detail::getDateTimeString() << "]"\
-			<< "[" << __FILE__ << ":" << __LINE__ << "]"\
+			<< "[" << (__FILE__ + sizeof(ENGINE_BASE_PATH)) << ":" << __LINE__ << "]"\
 			<< Prefix << " ";\
 		(Stream << ... << std::forward<decltype(args)>(args));\
 		Stream << '\n';\
