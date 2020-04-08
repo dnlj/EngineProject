@@ -35,6 +35,10 @@ namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
 		, socket{ENGINE_SERVER ? 27015 : 0} {
+
+		// TODO: This seems messy. Find better solution.
+		msg.setSocket(socket);
+		msg.setAddress(addr);
 	}
 
 	void NetworkingSystem::setup() {
@@ -53,12 +57,14 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::PING>() {
+		msg.read<Engine::Net::MessageHeader>(); // TODO: move into tick, handles probably dont care about this.
 		if (msg.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
 			msg.reset();
+			msg.next();
 			msg.header().type = static_cast<uint8>(MessageType::PING);
 			msg.write(false);
-			msg.send(socket, addr);
+			msg.send();
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
 		}
@@ -75,15 +81,15 @@ namespace Game {
 			if (next <= world.getTickTime()) {
 				next = world.getTickTime() + std::chrono::seconds{1};
 				msg.reset();
+				msg.next();
 				msg.header().type = static_cast<uint8>(MessageType::PING);
 				msg.write(true);
-				msg.send(socket, {127,0,0,1, 27015});
+				addr = {127,0,0,1, 27015}; // TODO: find a better way to setup MessageStream address/socket. This is far to error prone.
+				msg.send();
 			}
 		}
 
-		while (true) {
-			const auto size = msg.recv(socket, addr);
-			if (size == -1) { break; }
+		while (msg.recv() != -1) {
 			auto& conn = getConnection(addr);
 			conn.lastMessageTime = world.getTickTime();
 			dispatchMessage();

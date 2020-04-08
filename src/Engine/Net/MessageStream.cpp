@@ -5,50 +5,65 @@
 
 
 namespace Engine::Net {
-	Message::Header& MessageStream::header() {
-		return msg.header;
+	MessageStream::MessageStream() {
 	}
 
-	const Message::Header& MessageStream::header() const {
-		return msg.header;
+	void MessageStream::setSocket(UDPSocket& sock) {
+		this->sock = &sock;
 	}
 
-	int32 MessageStream::recv(const UDPSocket& socket, IPv4Address& addr) {
-		const auto len = socket.recv(reinterpret_cast<char*>(&msg), sizeof(msg), addr);
+	void MessageStream::setAddress(IPv4Address& addr) {
+		this->addr = &addr;
+	}
+
+	void MessageStream::next() {
+		curr = last;
+		last += sizeof(MessageHeader);
+	}
+
+	MessageHeader& MessageStream::header() {
+		return *reinterpret_cast<MessageHeader*>(curr);
+	}
+
+	const MessageHeader& MessageStream::header() const {
+		return *reinterpret_cast<MessageHeader*>(curr);
+	}
+
+	char* MessageStream::data() {
+		return packet.data;
+	}
+
+	const char* MessageStream::data() const {
+		return packet.data;
+	}
+
+	int32 MessageStream::recv() {
+		const auto len = sock->recv(reinterpret_cast<char*>(&packet), sizeof(packet), *addr);
 		reset(len);
 		return len;
 	}
 
-	int32 MessageStream::send(const UDPSocket& socket, const IPv4Address& addr) const {
-		return socket.send(reinterpret_cast<const char*>(&msg), sizeof(msg.header) + size(), addr);
+	int32 MessageStream::send() const {
+		return sock->send(
+			reinterpret_cast<const char*>(&packet),
+			static_cast<int32>(last - reinterpret_cast<const char*>(&packet)),
+			*addr
+		);
 	}
 
 	void MessageStream::reset(int32 sz) {
-		reset();
+		curr = data();
 		last = curr + sz;
 	}
 
-	void MessageStream::reset() {
-		curr = msg.data;
-	}
-
 	int32 MessageStream::size() const {
-		return static_cast<int32>(curr - msg.data);
+		return static_cast<int32>(last - curr);
 	}
 
 	int32 MessageStream::capacity() const {
-		return sizeof(msg.data);
+		return sizeof(packet.data);
 	}
 
-	char* MessageStream::data() {
-		return msg.data;
-	}
-
-	const char* MessageStream::data() const {
-		return msg.data;
-	}
-
-	
 	void MessageStream::write(const std::string& t) {
 		write(t.c_str(), t.size() + 1);
 	}

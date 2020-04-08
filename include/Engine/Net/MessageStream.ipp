@@ -19,10 +19,20 @@ namespace Engine::Net {
 
 	template<class T>
 	void MessageStream::write(const T* t, size_t sz) {
-		ENGINE_DEBUG_ASSERT(curr + sz < msg.data + sizeof(msg.data), "Insufficient space remaining to write");
-		memcpy(curr, t, sz);
-		curr += sz;
-		last += sz;
+		if (last + sz < packet.data + sizeof(packet.data)) {
+			memcpy(last, t, sz);
+			last += sz;
+		} else {
+			// TODO: this is never hit?
+			ENGINE_ASSERT(false, "Untested");
+			ENGINE_ASSERT(true, "Untested");
+			send();
+			memcpy(data(), curr, size());
+			reset(size());
+			write(t, sz);
+		}
+
+		ENGINE_DEBUG_ASSERT(size() <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
 	};
 
 	template<class T>

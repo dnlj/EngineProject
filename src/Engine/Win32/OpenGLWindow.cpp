@@ -403,7 +403,7 @@ namespace Engine::Win32 {
 		windowHandle = CreateWindowExW(
 			0, // TODO:
 			className,
-			L"My Window Title",
+			(std::wstring{L"My Window Title - "} + (ENGINE_SERVER?L"Server":L"Client")).c_str(),
 			WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
 			//WS_POPUP,
 			CW_USEDEFAULT,

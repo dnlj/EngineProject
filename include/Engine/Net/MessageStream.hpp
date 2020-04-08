@@ -12,48 +12,69 @@
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Net/IPv4Address.hpp>
 
-
+// TODO: split
+// TODO: doc
 namespace Engine::Net {
-	class Message {
+	class PacketHeader {
 		public:
-			class Header {
-				public:
-					uint16 protocol;
-					uint8 type;
-					uint8 flags;
-					uint32 sequence;
-			};
-			static_assert(sizeof(Header) == 8);
-
-			Header header;
-			char data[512 - sizeof(Header)];
+			uint16 protocol;
 	};
-	static_assert(sizeof(Message) == 512);
+	static_assert(sizeof(PacketHeader) == 2);
+
+	class MessageHeader {
+		public:
+			uint8 type; // TODO: should this be a property of the packet not messages?
+			uint8 flags;
+			uint16 _filler;
+			uint32 sequence;
+	};
+	static_assert(sizeof(MessageHeader) == 8);
+
+	class Packet {
+		public:
+			PacketHeader header;
+			char data[512 - sizeof(header)];
+	};
+	static_assert(sizeof(Packet) == 512);
 
 	class MessageStream {
 		private:
+			UDPSocket* sock;
+			IPv4Address* addr;
+
 			char* curr;
 			char* last;
-			Message msg;
+			// TODO: add class for this. less error prone.
+			Packet packet;
 
 		public:
+			static constexpr int32 MAX_MESSAGE_SIZE = 256;
+
+		public:
+			MessageStream();
+			MessageStream(const MessageStream&) = delete;
+			MessageStream(const MessageStream&&) = delete;
+
+			void setSocket(UDPSocket& sock);
+			void setAddress(IPv4Address& addr);
+
+			void next();
+
 			// TODO: header field operations
-			Message::Header& header();
-			const Message::Header& header() const;
+			MessageHeader& header();
+			const MessageHeader& header() const;
 
-			int32 recv(const UDPSocket& socket, IPv4Address& addr);
-			int32 send(const UDPSocket& socket, const IPv4Address& addr) const;
+			char* data();
+			const char* data() const;
 
-			void reset(int32 sz);
-			void reset();
+			int32 recv();
+			int32 send() const;
+
+			void reset(int32 sz = 0);
 
 			int32 size() const;
 
 			int32 capacity() const;
-
-			char* data();
-
-			const char* data() const;
 
 			template<class T>
 			MessageStream& operator<<(const T& t);
