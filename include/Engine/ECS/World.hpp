@@ -23,6 +23,7 @@ namespace Engine::ECS {
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
 	class World {
 		public:
+			// TODO: Since we are wrapping all of these operations is there any real benifit to splitting into XYZManagers?
 			using ComponentManager = ComponentManager<ComponentsSet>;
 			using SystemManager = SystemManager<SystemsSet>;
 
@@ -260,6 +261,10 @@ namespace Engine::ECS {
 			/** @see SystemManager::orderAfter */
 			template<class SystemA, class SystemB>
 			constexpr static bool orderAfter();
+
+			// TODO: doc
+			template<class Callable>
+			void callWithComponent(Entity ent, ComponentID cid, Callable&& callable);
 
 	};
 }

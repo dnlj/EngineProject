@@ -13,7 +13,7 @@ namespace Game {
 	enum class MessageType : uint8 {
 		UNKNOWN,
 		PING,
-		TEST,
+		ECS_COMP,
 	};
 
 	class NetworkingSystem : public System {

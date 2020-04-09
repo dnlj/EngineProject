@@ -2,6 +2,8 @@
 
 // STD
 #include <tuple>
+#include <utility>
+#include <type_traits>
 
 // Engine
 #include <Engine/ECS/Common.hpp>
@@ -51,7 +53,16 @@ namespace Engine::ECS {
 			/** The bitsets for storing what components entities have. */
 			std::vector<ComponentBitset> componentBitsets;
 
+			// TODO: This feels like it should be part of ECS::World (involves an Entity) but since that only has access to `ComponentsSet` and not `Components...` it cant.
+			// TODO: Doc
+			template<class Callable>
+			void callWithComponent(Entity ent, ComponentID cid, Callable&& callable);
+
 		private:
+			// TODO: doc
+			template<class Component, class Callable>
+			void callWithComponentCaller(Entity ent, Callable&& callable);
+
 			/** The number of components used by this manager. */
 			constexpr static size_t count = sizeof...(Components);
 

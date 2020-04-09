@@ -37,4 +37,20 @@ namespace Engine::ECS {
 	ComponentContainer<Component>& ComponentManager<ComponentsType<Components...>>::getComponentContainer() {
 		return std::get<ComponentContainer<Component>>(containers);
 	}
+	
+	template<template<class...> class ComponentsType, class... Components>
+	template<class Callable>
+	void ComponentManager<ComponentsType<Components...>>::callWithComponent(Entity ent, ComponentID cid, Callable&& callable) {
+		using Caller = void(ComponentManager::*)(Entity, Callable&&);
+		constexpr Caller callers[]{
+			&ComponentManager<ComponentsType<Components...>>::callWithComponentCaller<Components, Callable>...
+		};
+		return (this->*callers[cid])(ent, std::forward<Callable>(callable));
+	}
+	
+	template<template<class...> class ComponentsType, class... Components>
+	template<class Component, class Callable>
+	void ComponentManager<ComponentsType<Components...>>::callWithComponentCaller(Entity ent, Callable&& callable) {
+		return callable(getComponentContainer<Component>()[ent.id]);
+	}
 }

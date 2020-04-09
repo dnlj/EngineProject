@@ -239,4 +239,10 @@ namespace Engine::ECS {
 	constexpr static bool World<TickRate, SystemsSet, ComponentsSet>::orderAfter() {
 		return SystemManager::orderAfter<SystemA, SystemB>();
 	}
+	
+	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	template<class Callable>
+	void World<TickRate, SystemsSet, ComponentsSet>::callWithComponent(Entity ent, ComponentID cid, Callable&& callable) {
+		return cm.callWithComponent(ent, cid, std::forward<Callable>(callable));
+	}
 }

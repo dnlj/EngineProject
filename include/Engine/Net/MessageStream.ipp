@@ -23,9 +23,6 @@ namespace Engine::Net {
 			memcpy(last, t, sz);
 			last += sz;
 		} else {
-			// TODO: this is never hit?
-			ENGINE_ASSERT(false, "Untested");
-			ENGINE_ASSERT(true, "Untested");
 			send();
 			memcpy(data(), curr, size());
 			reset(size());

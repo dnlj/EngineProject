@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Clock.hpp>
+#include <Engine/ECS/Entity.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -57,7 +58,6 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::PING>() {
-		msg.read<Engine::Net::MessageHeader>(); // TODO: move into tick, handles probably dont care about this.
 		if (msg.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
 			msg.reset();
@@ -71,8 +71,13 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::TEST>() {
-		puts("Test!");
+	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>() {
+		const auto ent = msg.read<Engine::ECS::Entity>();
+		world.callWithComponent(ent, msg.read<Engine::ECS::ComponentID>(), [&](auto& comp){
+			if constexpr (IsNetworkedComponent<decltype(comp)>) {
+				comp.fromNetwork(msg);
+			}
+		});
 	}
 
 	void NetworkingSystem::tick(float32 dt) {
@@ -86,6 +91,25 @@ namespace Game {
 				msg.write(true);
 				addr = {127,0,0,1, 27015}; // TODO: find a better way to setup MessageStream address/socket. This is far to error prone.
 				msg.send();
+			}
+		} else {
+			for (const auto& conn : connections) {
+				addr = conn.address;
+				ForEachIn<ComponentsSet>::call([&]<class C>(){
+					if constexpr (IsNetworkedComponent<C>) {
+						msg.reset();
+						for (const auto ent : world.getFilterFor<C>()) {
+							msg.next();
+							msg.header().type = static_cast<uint8>(MessageType::ECS_COMP);
+							msg.write(ent);
+							msg.write(world.getComponentID<C>());
+							world.getComponent<C>(ent).toNetwork(msg);
+						}
+						if (msg.size() > 0) {
+							msg.send();
+						}
+					}
+				});
 			}
 		}
 
@@ -101,16 +125,16 @@ namespace Game {
 	Engine::Net::Connection& NetworkingSystem::getConnection(const Engine::Net::IPv4Address& addr) {
 		const auto [found, ins] = ipToConnection.emplace(addr, static_cast<uint8>(connections.size()));
 		if (ins) {
-			connections.emplace_back();
+			connections.emplace_back(addr, Engine::Clock::now(), 0);
 		}
 		return connections[found->second];
 	}
 
 	void NetworkingSystem::dispatchMessage() {
 		#define HANDLE(Type) case Type: { return handleMessageType<Type>(); }
-		switch(static_cast<MessageType>(msg.header().type)) {
+		switch(static_cast<MessageType>(msg.read<Engine::Net::MessageHeader>().type)) {
 			HANDLE(MessageType::PING);
-			HANDLE(MessageType::TEST);
+			HANDLE(MessageType::ECS_COMP);
 			default: {
 				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(msg.header().type));
 			}

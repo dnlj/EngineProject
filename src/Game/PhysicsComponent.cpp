@@ -27,6 +27,7 @@ namespace Game {
 
 	void PhysicsComponent::toNetwork(Engine::Net::MessageStream& msg) const {
 		puts("To network!");
+		msg.write(body->GetTransform());
 	}
 
 	void PhysicsComponent::fromNetwork(Engine::Net::MessageStream& msg) {
