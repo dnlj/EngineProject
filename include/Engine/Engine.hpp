@@ -59,8 +59,9 @@ namespace Engine::Detail {
 
 // TODO: move all this macro stuff into files?
 
-#define ENGINE_SERVER (ENGINE_SIDE == ::Engine::ServerSide)
-#define ENGINE_CLIENT (ENGINE_SIDE == ::Engine::ClientSide)
+constexpr auto ENGINE_SIDE = _ENGINE_SIDE;
+constexpr bool ENGINE_SERVER = ENGINE_SIDE == Engine::ServerSide;
+constexpr bool ENGINE_CLIENT = ENGINE_SIDE == Engine::ClientSide;
 
 // TODO: replace macros with source_location?
 #define _ENGINE_CREATE_LOG_LAMBDA(Stream, Prefix, Other)\

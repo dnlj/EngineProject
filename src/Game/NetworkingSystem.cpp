@@ -38,8 +38,10 @@ namespace Game {
 		, socket{ENGINE_SERVER ? 27015 : 0} {
 
 		// TODO: This seems messy. Find better solution.
-		msg.setSocket(socket);
-		msg.setAddress(addr);
+		writer.setSocket(socket);
+		writer.setAddress(addr);
+		reader.setSocket(socket);
+		reader.setAddress(addr);
 	}
 
 	void NetworkingSystem::setup() {
@@ -58,13 +60,13 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::PING>() {
-		if (msg.read<bool>()) {
+		if (reader.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
-			msg.reset();
-			msg.next();
-			msg.header().type = static_cast<uint8>(MessageType::PING);
-			msg.write(false);
-			msg.send();
+			writer.reset();
+			writer.next();
+			writer.header().type = static_cast<uint8>(MessageType::PING);
+			writer.write(false);
+			ENGINE_LOG("recv ping b @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
 		}
@@ -72,10 +74,11 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>() {
-		const auto ent = msg.read<Engine::ECS::Entity>();
-		world.callWithComponent(ent, msg.read<Engine::ECS::ComponentID>(), [&](auto& comp){
+		const auto ent = reader.read<Engine::ECS::Entity>();
+		const auto cid = reader.read<Engine::ECS::ComponentID>();
+		world.callWithComponent(ent, cid, [&](auto& comp){
 			if constexpr (IsNetworkedComponent<decltype(comp)>) {
-				comp.fromNetwork(msg);
+				comp.fromNetwork(reader);
 			}
 		});
 	}
@@ -85,38 +88,44 @@ namespace Game {
 			static auto next = world.getTickTime();
 			if (next <= world.getTickTime()) {
 				next = world.getTickTime() + std::chrono::seconds{1};
-				msg.reset();
-				msg.next();
-				msg.header().type = static_cast<uint8>(MessageType::PING);
-				msg.write(true);
+				writer.reset();
+				writer.next();
+				writer.header().type = static_cast<uint8>(MessageType::PING);
+				writer.write(true);
 				addr = {127,0,0,1, 27015}; // TODO: find a better way to setup MessageStream address/socket. This is far to error prone.
-				msg.send();
+				writer.send();
 			}
 		} else {
 			for (const auto& conn : connections) {
 				addr = conn.address;
 				ForEachIn<ComponentsSet>::call([&]<class C>(){
 					if constexpr (IsNetworkedComponent<C>) {
-						msg.reset();
+						writer.reset();
 						for (const auto ent : world.getFilterFor<C>()) {
-							msg.next();
-							msg.header().type = static_cast<uint8>(MessageType::ECS_COMP);
-							msg.write(ent);
-							msg.write(world.getComponentID<C>());
-							world.getComponent<C>(ent).toNetwork(msg);
+							writer.next();
+							writer.header().type = static_cast<uint8>(MessageType::ECS_COMP);
+							writer.write(ent);
+							writer.write(world.getComponentID<C>());
+							world.getComponent<C>(ent).toNetwork(writer);
 						}
-						if (msg.size() > 0) {
-							msg.send();
+						if (writer.size() > 0) {
+							writer.send();
 						}
 					}
 				});
 			}
 		}
 
-		while (msg.recv() != -1) {
+		while (reader.recv() > -1) {
 			auto& conn = getConnection(addr);
 			conn.lastMessageTime = world.getTickTime();
-			dispatchMessage();
+			while (reader.size()) {
+				dispatchMessage();
+			}
+		}
+
+		if (writer.size() > 0) {
+			writer.send();
 		}
 
 		// TODO: Handle connection timeout
@@ -131,12 +140,14 @@ namespace Game {
 	}
 
 	void NetworkingSystem::dispatchMessage() {
+		// TODO: use array?
+		const auto header = reader.read<Engine::Net::MessageHeader>();
 		#define HANDLE(Type) case Type: { return handleMessageType<Type>(); }
-		switch(static_cast<MessageType>(msg.read<Engine::Net::MessageHeader>().type)) {
+		switch(static_cast<MessageType>(header.type)) {
 			HANDLE(MessageType::PING);
 			HANDLE(MessageType::ECS_COMP);
 			default: {
-				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(msg.header().type));
+				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(reader.header().type));
 			}
 		}
 		#undef HANDLE

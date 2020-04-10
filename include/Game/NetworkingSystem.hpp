@@ -19,7 +19,8 @@ namespace Game {
 	class NetworkingSystem : public System {
 		private:
 			Engine::Net::UDPSocket socket;
-			Engine::Net::MessageStream msg;
+			Engine::Net::MessageStream reader;
+			Engine::Net::MessageStream writer;
 			Engine::FlatHashMap<Engine::Net::IPv4Address, uint8> ipToConnection;
 			std::vector<Engine::Net::Connection> connections;
 			Engine::Net::IPv4Address addr;

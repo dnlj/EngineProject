@@ -23,6 +23,7 @@ namespace Engine::Net {
 			memcpy(last, t, sz);
 			last += sz;
 		} else {
+			last = curr;
 			send();
 			memcpy(data(), curr, size());
 			reset(size());

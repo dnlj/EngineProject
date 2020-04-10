@@ -11,10 +11,14 @@ namespace Game {
 		return *body;
 	}
 
+	void PhysicsComponent::setTransform(const b2Transform& trans) {
+		setTransform(trans.p, trans.q.GetAngle());
+	}
+
 	void PhysicsComponent::setTransform(const b2Vec2& pos, float32 ang) {
 		body->SetTransform(pos, ang);
-		prevTransform.Set(pos, ang);
-		interpTransform.Set(pos, ang);
+		prevTransform = body->GetTransform();
+		interpTransform = prevTransform;
 	}
 	
 	const b2Vec2& PhysicsComponent::getPosition() const {
@@ -26,11 +30,11 @@ namespace Game {
 	}
 
 	void PhysicsComponent::toNetwork(Engine::Net::MessageStream& msg) const {
-		puts("To network!");
 		msg.write(body->GetTransform());
 	}
 
 	void PhysicsComponent::fromNetwork(Engine::Net::MessageStream& msg) {
-		puts("From network!");
+		const auto trans = msg.read<b2Transform>();
+		setTransform(trans.p, trans.q.GetAngle());
 	}
 }

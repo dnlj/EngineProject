@@ -18,7 +18,7 @@ namespace Engine::Net {
 
 	void MessageStream::next() {
 		curr = last;
-		last += sizeof(MessageHeader);
+		write(MessageHeader{});
 	}
 
 	MessageHeader& MessageStream::header() {
@@ -38,7 +38,7 @@ namespace Engine::Net {
 	}
 
 	int32 MessageStream::recv() {
-		const auto len = sock->recv(reinterpret_cast<char*>(&packet), sizeof(packet), *addr);
+		const int32 len = sock->recv(reinterpret_cast<char*>(&packet), sizeof(packet), *addr) - sizeof(packet.header);
 		reset(len);
 		return len;
 	}
