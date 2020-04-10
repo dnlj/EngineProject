@@ -45,28 +45,16 @@ namespace Game {
 	}
 
 	void NetworkingSystem::setup() {
-		ForEachIn<ComponentsSet>::call([&]<class C>(){
-			if constexpr (IsNetworkedComponent<C>) {
-				for (const auto eid : world.getFilterFor<C>()) {
-					//msg.reset();
-					//// TODO: move into some kind of header?
-					//msg.write(eid);
-					//msg.write(world.getComponentID<C>());
-					//world.getComponent<C>(eid).toNetwork(msg);
-				}
-			}
-		});
 	}
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::PING>() {
 		if (reader.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
-			writer.reset();
-			writer.next();
-			writer.header().type = static_cast<uint8>(MessageType::PING);
+			writer.reset(); // TODO: rm. shouldnt have to do this.
+			writer.next({static_cast<uint8>(MessageType::PING)});
 			writer.write(false);
-			ENGINE_LOG("recv ping b @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
+			writer.send(); // TODO: rm. shouldnt have to do this.
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
 		}
@@ -86,11 +74,10 @@ namespace Game {
 	void NetworkingSystem::tick(float32 dt) {
 		if constexpr (ENGINE_CLIENT) {
 			static auto next = world.getTickTime();
-			if (next <= world.getTickTime()) {
-				next = world.getTickTime() + std::chrono::seconds{1};
+			if (next <= Engine::Clock::now()) {
+				next = Engine::Clock::now() + std::chrono::seconds{1};
 				writer.reset();
-				writer.next();
-				writer.header().type = static_cast<uint8>(MessageType::PING);
+				writer.next({static_cast<uint8>(MessageType::PING)});
 				writer.write(true);
 				addr = {127,0,0,1, 27015}; // TODO: find a better way to setup MessageStream address/socket. This is far to error prone.
 				writer.send();
@@ -98,21 +85,20 @@ namespace Game {
 		} else {
 			for (const auto& conn : connections) {
 				addr = conn.address;
+				writer.reset();
 				ForEachIn<ComponentsSet>::call([&]<class C>(){
 					if constexpr (IsNetworkedComponent<C>) {
-						writer.reset();
 						for (const auto ent : world.getFilterFor<C>()) {
-							writer.next();
-							writer.header().type = static_cast<uint8>(MessageType::ECS_COMP);
+							writer.next({static_cast<uint8>(MessageType::ECS_COMP)});
 							writer.write(ent);
 							writer.write(world.getComponentID<C>());
 							world.getComponent<C>(ent).toNetwork(writer);
 						}
-						if (writer.size() > 0) {
-							writer.send();
-						}
 					}
 				});
+				if (writer.size() > 0) {
+					writer.send();
+				}
 			}
 		}
 

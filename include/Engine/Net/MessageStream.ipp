@@ -23,10 +23,11 @@ namespace Engine::Net {
 			memcpy(last, t, sz);
 			last += sz;
 		} else {
+			const auto msgsz = size();
 			last = curr;
 			send();
-			memcpy(data(), curr, size());
-			reset(size());
+			memcpy(data(), curr, msgsz);
+			reset(msgsz);
 			write(t, sz);
 		}
 

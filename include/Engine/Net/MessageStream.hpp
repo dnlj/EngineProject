@@ -58,7 +58,7 @@ namespace Engine::Net {
 			void setSocket(UDPSocket& sock);
 			void setAddress(IPv4Address& addr);
 
-			void next();
+			void next(MessageHeader head);
 
 			// TODO: header field operations
 			MessageHeader& header();

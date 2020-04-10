@@ -16,9 +16,9 @@ namespace Engine::Net {
 		this->addr = &addr;
 	}
 
-	void MessageStream::next() {
+	void MessageStream::next(MessageHeader head) {
 		curr = last;
-		write(MessageHeader{});
+		write(head);
 	}
 
 	MessageHeader& MessageStream::header() {
