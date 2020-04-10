@@ -96,10 +96,10 @@ namespace Engine::ECS {
 			constexpr static ComponentId getComponentId() noexcept;
 
 			/**
-			 * @see SystemManager::getSystemID
+			 * @see SystemManager::getSystemId
 			 */
 			template<class System>
-			constexpr static SystemID getSystemID() noexcept;
+			constexpr static SystemId getSystemId() noexcept;
 
 			/**
 			 * @see SystemManager::getSystem

@@ -75,8 +75,8 @@ namespace Engine::ECS {
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
 	template<class System>
-	constexpr static SystemID World<TickRate, SystemsSet, ComponentsSet>::getSystemID() noexcept {
-		return SystemManager::getSystemID<System>();
+	constexpr static SystemId World<TickRate, SystemsSet, ComponentsSet>::getSystemId() noexcept {
+		return SystemManager::getSystemId<System>();
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>

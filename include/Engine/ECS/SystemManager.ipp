@@ -19,7 +19,7 @@ namespace Engine::ECS {
 
 	template<template<class...> class SystemsType, class... Systems>
 	template<class System>
-	constexpr static SystemID SystemManager<SystemsType<Systems...>>::getSystemID() noexcept {
+	constexpr static SystemId SystemManager<SystemsType<Systems...>>::getSystemId() noexcept {
 		return Meta::IndexOf<System, Systems...>::value;
 	}
 
@@ -38,7 +38,7 @@ namespace Engine::ECS {
 	template<template<class...> class SystemsType, class... Systems>
 	template<class System1>
 	SystemBitset SystemManager<SystemsType<Systems...>>::getBitsetForSystems() const {
-		const auto sid = getSystemID<System1>();
+		const auto sid = getSystemId<System1>();
 		SystemBitset value;
 		value[sid] = true;
 		return value;
