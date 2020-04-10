@@ -9,18 +9,18 @@ namespace Engine::ECS {
 		filters.max_load_factor(0.5f);
 	}
 
-	void FilterManager::onComponentAdded(Entity ent, ComponentID cid, const ComponentBitset& cbits) {
-		if (cid >= filtersByComponentID.size()) { return; }
+	void FilterManager::onComponentAdded(Entity ent, ComponentId cid, const ComponentBitset& cbits) {
+		if (cid >= filtersByComponentId.size()) { return; }
 
-		for (auto& filter : filtersByComponentID[cid]) {
+		for (auto& filter : filtersByComponentId[cid]) {
 			filter->add(ent, cbits);
 		}
 	}
 
-	void FilterManager::onComponentRemoved(Entity ent, ComponentID cid) {
-		if (cid >= filtersByComponentID.size()) { return; }
+	void FilterManager::onComponentRemoved(Entity ent, ComponentId cid) {
+		if (cid >= filtersByComponentId.size()) { return; }
 
-		for (auto& filter : filtersByComponentID[cid]) {
+		for (auto& filter : filtersByComponentId[cid]) {
 			filter->remove(ent);
 		}
 	}

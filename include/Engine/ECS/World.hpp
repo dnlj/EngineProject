@@ -90,10 +90,10 @@ namespace Engine::ECS {
 			ComponentBitset getBitsetForComponents() const;
 			
 			/**
-			 * @see ComponentManager::getComponentID
+			 * @see ComponentManager::getComponentId
 			 */
 			template<class Component>
-			constexpr static ComponentID getComponentID() noexcept;
+			constexpr static ComponentId getComponentId() noexcept;
 
 			/**
 			 * @see SystemManager::getSystemID
@@ -152,7 +152,7 @@ namespace Engine::ECS {
 			 * @param[in] cid The id of the component.
 			 * @return True if the entity has the component; otherwise false.
 			 */
-			bool hasComponent(Entity ent, ComponentID cid);
+			bool hasComponent(Entity ent, ComponentId cid);
 
 			/**
 			 * Checks if an entity has a component.
@@ -264,7 +264,7 @@ namespace Engine::ECS {
 
 			// TODO: doc
 			template<class Callable>
-			void callWithComponent(Entity ent, ComponentID cid, Callable&& callable);
+			void callWithComponent(Entity ent, ComponentId cid, Callable&& callable);
 
 	};
 }

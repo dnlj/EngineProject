@@ -23,14 +23,14 @@ namespace Engine::ECS {
 			template<class World>
 			EntityFilter& getFilterFor(const World& world, const ComponentBitset& components);
 
-			void onComponentAdded(Entity ent, ComponentID cid, const ComponentBitset& cbits);
-			void onComponentRemoved(Entity ent, ComponentID cid);
+			void onComponentAdded(Entity ent, ComponentId cid, const ComponentBitset& cbits);
+			void onComponentRemoved(Entity ent, ComponentId cid);
 			void onEntityDestroyed(Entity ent, const ComponentBitset& cbits);
 
 		private:
 			const EntityManager& entityManager;
 			std::unordered_map<ComponentBitset, std::unique_ptr<EntityFilter>> filters; // TODO: Use FlatHashMap
-			std::vector<std::vector<EntityFilter*>> filtersByComponentID;
+			std::vector<std::vector<EntityFilter*>> filtersByComponentId;
 	};
 }
 

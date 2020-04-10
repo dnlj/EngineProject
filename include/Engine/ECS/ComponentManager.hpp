@@ -22,12 +22,12 @@ namespace Engine::ECS {
 			ComponentManager();
 
 			/**
-			 * Get the ComponentID associated with a component.
+			 * Get the ComponentId associated with a component.
 			 * @tparam Component The component.
 			 * @return The id of @p Component.
 			 */
 			template<class Component>
-			constexpr static ComponentID getComponentID() noexcept;
+			constexpr static ComponentId getComponentId() noexcept;
 
 			/**
 			 * Gets the bitset with the bits that correspond to the ids of the components set.
@@ -56,7 +56,7 @@ namespace Engine::ECS {
 			// TODO: This feels like it should be part of ECS::World (involves an Entity) but since that only has access to `ComponentsSet` and not `Components...` it cant.
 			// TODO: Doc
 			template<class Callable>
-			void callWithComponent(Entity ent, ComponentID cid, Callable&& callable);
+			void callWithComponent(Entity ent, ComponentId cid, Callable&& callable);
 
 		private:
 			// TODO: doc

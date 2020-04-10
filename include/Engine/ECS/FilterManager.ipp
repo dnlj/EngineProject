@@ -20,14 +20,14 @@ namespace Engine::ECS {
 				filter->add(ent, world.getComponentsBitset(ent));
 			}
 
-			// Update filtersByComponentID
-			for (ComponentID cid = 0; cid < components.size(); ++cid) {
+			// Update filtersByComponentId
+			for (ComponentId cid = 0; cid < components.size(); ++cid) {
 				if (components[cid]) {
-					if (filtersByComponentID.size() <= cid) {
-						filtersByComponentID.resize(cid + 1);
+					if (filtersByComponentId.size() <= cid) {
+						filtersByComponentId.resize(cid + 1);
 					}
 
-					filtersByComponentID[cid].push_back(filter.get());
+					filtersByComponentId[cid].push_back(filter.get());
 				}
 			}
 		}

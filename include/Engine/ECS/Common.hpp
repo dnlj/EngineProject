@@ -15,7 +15,7 @@ namespace Engine::ECS {
 	constexpr size_t MAX_SYSTEMS = 64;
 
 	/** The type to use for component ids. */
-	using ComponentID = size_t;
+	using ComponentId = size_t;
 
 	/** The type to use for system ids. */
 	using SystemID = size_t;
@@ -33,6 +33,6 @@ namespace Engine::ECS {
 
 // Asserts
 namespace Engine::ECS {
-	static_assert(MAX_COMPONENTS < std::numeric_limits<ComponentID>::max(), "[Engine::ECS] MAX_COMPONENTS must not be larger than the maximum value for the type ComponentID.");
+	static_assert(MAX_COMPONENTS < std::numeric_limits<ComponentId>::max(), "[Engine::ECS] MAX_COMPONENTS must not be larger than the maximum value for the type ComponentId.");
 	static_assert(MAX_SYSTEMS <= std::numeric_limits<SystemID>::max(), "[Engine::ECS] MAX_SYSTEMS must not be greater than the maximum value for the type SystemID.");
 }

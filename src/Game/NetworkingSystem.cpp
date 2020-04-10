@@ -63,7 +63,7 @@ namespace Game {
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>() {
 		const auto ent = reader.read<Engine::ECS::Entity>();
-		const auto cid = reader.read<Engine::ECS::ComponentID>();
+		const auto cid = reader.read<Engine::ECS::ComponentId>();
 		world.callWithComponent(ent, cid, [&](auto& comp){
 			if constexpr (IsNetworkedComponent<decltype(comp)>) {
 				comp.fromNetwork(reader);
@@ -91,7 +91,7 @@ namespace Game {
 						for (const auto ent : world.getFilterFor<C>()) {
 							writer.next({static_cast<uint8>(MessageType::ECS_COMP)});
 							writer.write(ent);
-							writer.write(world.getComponentID<C>());
+							writer.write(world.getComponentId<C>());
 							world.getComponent<C>(ent).toNetwork(writer);
 						}
 					}

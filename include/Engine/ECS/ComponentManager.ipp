@@ -14,7 +14,7 @@ namespace Engine::ECS {
 
 	template<template<class...> class ComponentsType, class... Components>
 	template<class Component>
-	constexpr static ComponentID ComponentManager<ComponentsType<Components...>>::getComponentID() noexcept {
+	constexpr static ComponentId ComponentManager<ComponentsType<Components...>>::getComponentId() noexcept {
 		return Meta::IndexOf<Component, Components...>::value;
 	}
 
@@ -28,7 +28,7 @@ namespace Engine::ECS {
 	template<class Component>
 	ComponentBitset ComponentManager<ComponentsType<Components...>>::getBitsetForComponents() const {
 		ComponentBitset value;
-		value[getComponentID<Component>()] = true;
+		value[getComponentId<Component>()] = true;
 		return value;
 	}
 
@@ -40,7 +40,7 @@ namespace Engine::ECS {
 	
 	template<template<class...> class ComponentsType, class... Components>
 	template<class Callable>
-	void ComponentManager<ComponentsType<Components...>>::callWithComponent(Entity ent, ComponentID cid, Callable&& callable) {
+	void ComponentManager<ComponentsType<Components...>>::callWithComponent(Entity ent, ComponentId cid, Callable&& callable) {
 		using Caller = void(ComponentManager::*)(Entity, Callable&&);
 		constexpr Caller callers[]{
 			&ComponentManager<ComponentsType<Components...>>::callWithComponentCaller<Components, Callable>...

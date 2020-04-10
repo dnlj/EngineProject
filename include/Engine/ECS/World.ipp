@@ -69,8 +69,8 @@ namespace Engine::ECS {
 	
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
 	template<class Component>
-	constexpr static ComponentID World<TickRate, SystemsSet, ComponentsSet>::getComponentID() noexcept {
-		return ComponentManager::getComponentID<Component>();
+	constexpr static ComponentId World<TickRate, SystemsSet, ComponentsSet>::getComponentId() noexcept {
+		return ComponentManager::getComponentId<Component>();
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
@@ -119,7 +119,7 @@ namespace Engine::ECS {
 	template<class Component>
 	Component& World<TickRate, SystemsSet, ComponentsSet>::addComponent(Entity ent) {
 		auto& container = cm.getComponentContainer<Component>();
-		const auto cid = getComponentID<Component>();
+		const auto cid = getComponentId<Component>();
 
 		// Ensure the container is of the correct size
 		if (ent.id >= container.size()) {
@@ -142,14 +142,14 @@ namespace Engine::ECS {
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	bool World<TickRate, SystemsSet, ComponentsSet>::hasComponent(Entity ent, ComponentID cid) {
+	bool World<TickRate, SystemsSet, ComponentsSet>::hasComponent(Entity ent, ComponentId cid) {
 		return cm.componentBitsets[ent.id][cid];
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
 	template<class Component>
 	bool World<TickRate, SystemsSet, ComponentsSet>::hasComponent(Entity ent) {
-		return hasComponent(ent, getComponentID<Component>());
+		return hasComponent(ent, getComponentId<Component>());
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
@@ -177,7 +177,7 @@ namespace Engine::ECS {
 		((getComponent<Components>(ent) = Components()), ...);
 
 		// TODO: Make filter manager take bitset?
-		(fm.onComponentRemoved(ent, getComponentID<Components>()), ...);
+		(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
@@ -242,7 +242,7 @@ namespace Engine::ECS {
 	
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
 	template<class Callable>
-	void World<TickRate, SystemsSet, ComponentsSet>::callWithComponent(Entity ent, ComponentID cid, Callable&& callable) {
+	void World<TickRate, SystemsSet, ComponentsSet>::callWithComponent(Entity ent, ComponentId cid, Callable&& callable) {
 		return cm.callWithComponent(ent, cid, std::forward<Callable>(callable));
 	}
 }
