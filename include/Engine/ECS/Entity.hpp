@@ -4,12 +4,15 @@
 #include <cstdint>
 #include <ostream>
 
+// Engine
+#include <Engine/Engine.hpp>
+
 
 namespace Engine::ECS {
 	class Entity {
 		public:
-			std::uint32_t id;
-			std::uint16_t gen;
+			uint16 id;
+			uint16 gen;
 	};
 
 	bool operator==(const Entity& e1, const Entity& e2);

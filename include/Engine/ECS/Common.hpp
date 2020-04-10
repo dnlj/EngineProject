@@ -15,10 +15,10 @@ namespace Engine::ECS {
 	constexpr size_t MAX_SYSTEMS = 64;
 
 	/** The type to use for component ids. */
-	using ComponentId = size_t;
+	using ComponentId = uint16;
 
 	/** The type to use for system ids. */
-	using SystemId = size_t;
+	using SystemId = uint16;
 
 	/** The bitset type used for storing what components an entity has. */
 	using ComponentBitset = std::bitset<MAX_COMPONENTS>;
