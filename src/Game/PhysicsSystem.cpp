@@ -27,7 +27,6 @@ namespace Game {
 	}
 
 	void PhysicsSystem::run(float dt) {
-		//const float32 a = world.getTickAccumulation() / world.getTickInterval();
 		const float32 a = world.getTickRatio();
 		const float32 b = 1.0f - a;
 

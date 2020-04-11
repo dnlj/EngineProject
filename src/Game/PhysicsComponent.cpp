@@ -11,6 +11,14 @@ namespace Game {
 		return *body;
 	}
 
+	void PhysicsComponent::updateTransform(const b2Transform& trans) {
+		updateTransform(trans.p, trans.q.GetAngle());
+	}
+
+	void PhysicsComponent::updateTransform(const b2Vec2& pos, float32 ang) {
+		body->SetTransform(pos, ang);
+	}
+
 	void PhysicsComponent::setTransform(const b2Transform& trans) {
 		setTransform(trans.p, trans.q.GetAngle());
 	}
@@ -35,6 +43,6 @@ namespace Game {
 
 	void PhysicsComponent::fromNetwork(Engine::Net::MessageStream& msg) {
 		const auto trans = msg.read<b2Transform>();
-		setTransform(trans.p, trans.q.GetAngle());
+		updateTransform(trans.p, trans.q.GetAngle());
 	}
 }
