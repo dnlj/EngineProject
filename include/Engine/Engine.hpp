@@ -62,6 +62,12 @@ constexpr auto ENGINE_SIDE = _ENGINE_SIDE;
 constexpr bool ENGINE_SERVER = ENGINE_SIDE == Engine::ServerSide;
 constexpr bool ENGINE_CLIENT = ENGINE_SIDE == Engine::ClientSide;
 
+#ifdef DEBUG
+	constexpr bool ENGINE_DEBUG = true;
+#else
+	constexpr bool ENGINE_DEBUG = false;
+#endif
+
 // TODO: move all this macro stuff into files?
 
 // TODO: cross platform inline

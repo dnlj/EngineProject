@@ -167,7 +167,7 @@ namespace Game {
 
 		private:
 			std::condition_variable condv;
-			std::thread threads[DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
+			std::thread threads[ENGINE_DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
 			std::mutex chunksToLoadMutex;
 			std::queue<glm::ivec2> chunksToLoad;
 
