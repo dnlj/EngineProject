@@ -17,9 +17,16 @@ namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
 		: System{arg} {
 		static_assert(World::orderAfter<MapSystem, CameraTrackingSystem>());
+
+		for (auto& t : threads) {
+			t = std::thread{&MapSystem::loadChunkAsync, this};
+		}
 	}
 
 	MapSystem::~MapSystem() {
+		for (auto& t : threads) {
+			t.join();
+		}
 	}
 
 	void MapSystem::setup() {
@@ -43,20 +50,18 @@ namespace Game {
 			{{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)}}
 		};
 
-		// TODO: will need to change to using components for all bodies if we want interp.
 		for (int x = 0; x < activeAreaSize.x; ++x) {
 			for (int y = 0; y < activeAreaSize.y; ++y) {
 				auto& data = activeAreaData[x][y];
 				data.body = physSys.createBody(mapEntity, bodyDef);
-				data.chunkPos = glm::ivec2{0x7FFF'FFFF, 0x7FFF'FFFF};
 				data.mesh.setBufferFormat(vertexFormat);
 			}
 		}
 	}
 
 	void MapSystem::run(float dt) {
-		const auto minChunk = blockToChunk(worldToBlock(engine.camera.getWorldScreenBounds().min)) - glm::ivec2{1, 1};
-		const auto maxChunk = blockToChunk(worldToBlock(engine.camera.getWorldScreenBounds().max)) + glm::ivec2{1, 1};
+		const auto minChunk = blockToChunk(worldToBlock(glm::vec2{engine.camera.getPosition()})) - glm::ivec2{2,2};
+		const auto maxChunk = blockToChunk(worldToBlock(glm::vec2{engine.camera.getPosition()})) + glm::ivec2{2,2};
 		
 		// TODO: Handle chunk/region loading in different thread	
 		// As long as screen size < region size we only need to check the four corners
@@ -69,12 +74,12 @@ namespace Game {
 
 		for (auto chunk = minChunk; chunk.x <= maxChunk.x; ++chunk.x) {
 			for (chunk.y = minChunk.y; chunk.y <= maxChunk.y; ++chunk.y) {
-				const auto idx = chunkToActiveIndex(chunk);
-				auto& data = activeAreaData[idx.x][idx.y];
+				const auto idx = chunkToIndex(chunk);
+				auto& data = chunks[idx.x][idx.y];
 
-				if (data.updated || data.chunkPos != chunk) {
-					data.chunkPos = chunk;
-					buildActiveChunkData(data);
+				if (data.updated) {
+					data.updated = false;
+					buildActiveChunkData(idx);
 				}
 			}
 		}
@@ -102,10 +107,10 @@ namespace Game {
 		// TODO: we really only want to generate once if we the chunk has been changed since last frame.
 		// TODO: as it is now we generate once per edit, which could be many times per frame
 
-		const auto aidx = chunkToActiveIndex(chunkPos);
-		auto& adata = activeAreaData[aidx.x][aidx.y];
-		if (adata.chunkPos == chunkPos) {
-			adata.updated = true;
+		const auto idx = chunkToIndex(chunkPos);
+		auto& data = chunks[idx.x][idx.y];
+		if (data.pos == chunkPos) {
+			data.updated = true;
 		}
 	}
 	
@@ -163,11 +168,12 @@ namespace Game {
 		return const_cast<MapSystem*>(this)->getChunkAt(chunk);
 	}
 
-	void MapSystem::buildActiveChunkData(ActiveChunkData& data) {
-		data.updated = false;
+	// TODO: thread this. Not sure how nice box2d will play with it.
+	void MapSystem::buildActiveChunkData(glm::ivec2 chunkIndex) {
 		// TODO: simplify. currently have two mostly duplicate sections.
-		const auto idx = chunkToIndex(data.chunkPos);
-		const auto& chunk = chunks[idx.x][idx.y];
+		const auto& chunk = chunks[chunkIndex.x][chunkIndex.y];
+		const auto aIdx = chunkToActiveIndex(chunk.pos);
+		auto& data = activeAreaData[aIdx.x][aIdx.y];
 
 		{ // Render stuff
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};
@@ -221,7 +227,7 @@ namespace Game {
 		}
 
 		{ // Physics stuff
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(data.chunkPos)));
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunk.pos)));
 			data.body->SetTransform(pos, 0);
 
 			// TODO: Look into edge and chain shapes
@@ -274,21 +280,17 @@ namespace Game {
 	}
 
 	void MapSystem::ensureRegionLoaded(const glm::ivec2 region) {
-		// TODO: Consider combining this and loadRegion. We never call one without the other and they could share some data.
 		const auto index = regionToIndex(region);
-
 		if (loadedRegions[index.x][index.y] != region) {
-			loadRegion(region);
+			loadedRegions[index.x][index.y] = region;
+			//loadRegion(region);
+			queueRegionToLoad(region);
 		}
 	}
 
 	void MapSystem::loadRegion(const glm::ivec2 region) {
-		std::cout << "loadRegion: " << "(" << region.x << ", " << region.y << ")\n";
-
+		std::cout << "loadRegion: " << "(" << region.x << ", " << region.y << ") " << std::this_thread::get_id() << "\n";
 		const auto regionStart = regionToChunk(region);
-
-		const auto index = regionToIndex(region);
-		loadedRegions[index.x][index.y] = region;
 
 		for (int x = 0; x < regionSize.x; ++x) {
 			for (int y = 0; y < regionSize.y; ++y) {
@@ -318,5 +320,38 @@ namespace Game {
 		}
 
 		chunk.pos = pos;
+		chunk.updated = true;
+	}
+
+	void MapSystem::loadChunkAsync() {
+		while(true) {
+			std::unique_lock lock{chunksToLoadMutex};
+			condv.wait(lock, [&]{ return !chunksToLoad.empty(); });
+
+			const auto chunk = chunksToLoad.front();
+			chunksToLoad.pop();
+			lock.unlock();
+
+			// TODO: Currently there are no locks or similar for region/chunk data. But since we are loading offscreen and _should_ never be editing offscreen we should be okay for now.
+			loadChunk(chunk);
+			//std::this_thread::sleep_for(std::chrono::milliseconds{rand() % 1000});
+		}
+	}
+
+	void MapSystem::queueRegionToLoad(glm::ivec2 region) {
+		std::cout << "Queue region: " << region.x << " " << region.y << "\n";
+		const auto regionStart = regionToChunk(region);
+
+		std::unique_lock lock{chunksToLoadMutex};
+
+		for (int x = 0; x < regionSize.x; ++x) {
+			for (int y = 0; y < regionSize.y; ++y) {
+				const auto chunk = regionStart + glm::ivec2{x, y};
+				chunksToLoad.push(chunk);
+			}
+		}
+
+		lock.unlock();
+		condv.notify_all();
 	}
 }

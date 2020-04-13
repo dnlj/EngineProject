@@ -1,5 +1,10 @@
 #pragma once
 
+// STD
+#include <thread>
+#include <condition_variable>
+#include <queue>
+
 // GLM
 #include <glm/vector_relational.hpp>
 #include <glm/vec2.hpp>
@@ -47,6 +52,7 @@ namespace Game {
 		public:
 			MapSystem(SystemArg arg);
 			~MapSystem();
+
 			void setup();
 			void run(float dt);
 
@@ -125,13 +131,11 @@ namespace Game {
 				ActiveChunkData& operator=(const ActiveChunkData&) = delete;
 
 				b2Body* body;
-				Engine::Graphics::Mesh mesh; // TODO: move into component?
-				glm::ivec2 chunkPos;
-				bool updated = true;
+				Engine::Graphics::Mesh mesh;
 			};
 
 			// TODO: Doc
-			void buildActiveChunkData(ActiveChunkData& data);
+			void buildActiveChunkData(glm::ivec2 chunkIndex);
 
 			// TODO: doc
 			void ensureRegionLoaded(const glm::ivec2 region);
@@ -145,6 +149,12 @@ namespace Game {
 			// TODO: Doc
 			void updateChunk(const glm::ivec2 chunk);
 
+			// TODO: Doc
+			void loadChunkAsync();
+
+			// TODO: Doc
+			void queueRegionToLoad(glm::ivec2 region);
+
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			glm::ivec2 activeAreaOrigin = {0, 0};
 			ActiveChunkData activeAreaData[activeAreaSize.x][activeAreaSize.y];
@@ -156,6 +166,11 @@ namespace Game {
 			Engine::Texture texture;
 
 		private:
+			std::condition_variable condv;
+			std::thread threads[DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
+			std::mutex chunksToLoadMutex;
+			std::queue<glm::ivec2> chunksToLoad;
+
 			Engine::ECS::Entity mapEntity;
 
 			std::vector<Vertex> buildVBOData;

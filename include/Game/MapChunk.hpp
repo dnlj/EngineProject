@@ -24,6 +24,7 @@ namespace Game {
 
 		public:
 			std::decay_t<decltype(MapBlock::id)> data[size.x][size.y] = {};
-			glm::ivec2 pos;
+			glm::ivec2 pos = {0x7FFF'FFFF, 0x7FFF'FFFF};
+			bool updated = false;
 	};
 }
