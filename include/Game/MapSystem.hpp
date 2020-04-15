@@ -141,7 +141,12 @@ namespace Game {
 			// TODO: Doc
 			void buildActiveChunkData(const glm::ivec2 chunkPos, const MapChunk& chunk);
 
-			// TODO: doc
+			/**
+			 * Gets a region if it is already loaded; otherwise queues the region for loading.
+			 * @see MapRegion::loading
+			 * @see queueRegionToLoad
+			 * @see loadChunk
+			 */
 			MapRegion& ensureRegionLoaded(const glm::ivec2 regionPos);
 			
 			// TODO: Doc
