@@ -6,6 +6,9 @@
 // STD
 #include <type_traits>
 
+// GLM
+#include <glm/glm.hpp>
+
 // TODO: Doc
 namespace Engine {
 	template<class T, class SFINAE = void>
@@ -28,4 +31,13 @@ namespace Engine {
 	inline void hashCombine(size_t& seed, size_t value) {
 		seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 	}
+
+	// TODO: should this be in Engine::Glue or similar?
+	template<>
+	struct Hash<glm::ivec2> {
+		size_t operator()(const glm::ivec2& val) const {
+			static_assert(sizeof(size_t) == sizeof(val));
+			return *reinterpret_cast<const size_t*>(&val);
+		}
+	};
 }

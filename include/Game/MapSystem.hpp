@@ -4,6 +4,8 @@
 #include <thread>
 #include <condition_variable>
 #include <queue>
+#include <memory>
+#include <atomic>
 
 // GLM
 #include <glm/vector_relational.hpp>
@@ -33,6 +35,18 @@
  *
  */
 namespace Game {
+	class MapRegion {
+		public:
+			constexpr static glm::ivec2 size = {16, 16};
+			MapChunk data[size.x][size.y];
+			std::atomic<int32> loadedChunks = 0;
+			bool loading() const {
+				// TODO: look into which memory order is needed
+				return loadedChunks.load() != size.x * size.y;
+			}
+			static_assert(decltype(loadedChunks)::is_always_lock_free);
+	};
+
 	class MapSystem : public System {
 		public:
 			/** The number of chunks in each region */
@@ -89,9 +103,9 @@ namespace Game {
 			glm::ivec2 chunkToRegion(const glm::ivec2 chunk) const;
 
 			/**
-			 * Converts from chunk coordinates to an index wrapped at increments of mapSize.
+			 * Converts from chunk coordinates to an index wrapped at increments of MapRegion::size.
 			 */
-			glm::ivec2 chunkToIndex(const glm::ivec2 chunk) const;
+			glm::ivec2 chunkToRegionIndex(const glm::ivec2 chunk) const;
 
 			/**
 			 * Converts from chunk coordinates to an index wrapped at increments of activeAreaSize.
@@ -107,16 +121,6 @@ namespace Game {
 			 * Converts from a region to an index wrapped at increments of regionSize.
 			 */
 			glm::ivec2 MapSystem::regionToIndex(const glm::ivec2 region) const;
-
-			/**
-			 * Get the chunk at a position.
-			 * @param[in] chunk The position in chunk coordinates.
-			 * @return The chunk at the position.
-			 */
-			MapChunk& getChunkAt(glm::ivec2 chunk);
-
-			// TODO: doc. @see ? how do you do that?
-			const MapChunk& getChunkAt(glm::ivec2 chunk) const;
 
 		private:
 			// TODO: split?
@@ -135,33 +139,23 @@ namespace Game {
 			};
 
 			// TODO: Doc
-			void buildActiveChunkData(glm::ivec2 chunkIndex);
+			void buildActiveChunkData(const MapChunk& chunk);
 
 			// TODO: doc
-			void ensureRegionLoaded(const glm::ivec2 region);
+			MapRegion& ensureRegionLoaded(const glm::ivec2 regionPos);
 			
 			// TODO: Doc
-			void loadRegion(const glm::ivec2 region);
+			void loadChunk(MapChunk& chunk);
 
 			// TODO: Doc
-			void loadChunk(const glm::ivec2 pos);
-			
-			// TODO: Doc
-			void updateChunk(const glm::ivec2 chunk);
+			void loadChunkAsyncWorker();
 
 			// TODO: Doc
-			void loadChunkAsync();
-
-			// TODO: Doc
-			void queueRegionToLoad(glm::ivec2 region);
+			void queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region);
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			glm::ivec2 activeAreaOrigin = {0, 0};
 			ActiveChunkData activeAreaData[activeAreaSize.x][activeAreaSize.y];
-
-			MapChunk chunks[mapSize.x][mapSize.y];
-			glm::ivec2 loadedRegions[regionCount.x][regionCount.y] = {};
-
 			Engine::Shader shader;
 			Engine::Texture texture;
 
@@ -169,7 +163,15 @@ namespace Game {
 			std::condition_variable condv;
 			std::thread threads[ENGINE_DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
 			std::mutex chunksToLoadMutex;
-			std::queue<glm::ivec2> chunksToLoad;
+
+			struct Job { // TODO: replace with actual job system in EngineInstance
+				MapRegion& region;
+				MapChunk& chunk;
+			};
+			std::queue<Job> chunksToLoad;
+
+			// TODO: atm we never unload regions
+			Engine::FlatHashMap<glm::ivec2, std::unique_ptr<MapRegion>> regions;
 
 			Engine::ECS::Entity mapEntity;
 
