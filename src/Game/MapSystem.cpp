@@ -63,17 +63,17 @@ namespace Game {
 		const auto minRegion = chunkToRegion(minChunk);
 		const auto maxRegion = chunkToRegion(maxChunk);
 
-		for (auto chunk = minChunk; chunk.x <= maxChunk.x; ++chunk.x) {
-			for (chunk.y = minChunk.y; chunk.y <= maxChunk.y; ++chunk.y) {
-				auto& region = ensureRegionLoaded(chunkToRegion(chunk));
+		for (auto chunkPos = minChunk; chunkPos.x <= maxChunk.x; ++chunkPos.x) {
+			for (chunkPos.y = minChunk.y; chunkPos.y <= maxChunk.y; ++chunkPos.y) {
+				auto& region = ensureRegionLoaded(chunkToRegion(chunkPos));
 				if (region.loading()) { continue; }
 
-				const auto idx = chunkToRegionIndex(chunk);
+				const auto idx = chunkToRegionIndex(chunkPos);
 				auto& chunk = region.data[idx.x][idx.y];
 
 				if (chunk.updated) {
 					chunk.updated = false;
-					buildActiveChunkData(chunk);
+					buildActiveChunkData(chunkPos, chunk);
 				}
 			}
 		}
@@ -153,10 +153,10 @@ namespace Game {
 	}
 
 	// TODO: thread this. Not sure how nice box2d will play with it.
-	void MapSystem::buildActiveChunkData(const MapChunk& chunk) {
+	void MapSystem::buildActiveChunkData(const glm::ivec2 chunkPos, const MapChunk& chunk) {
 		// TODO: simplify. currently have two mostly duplicate sections.
 		//const auto& chunk = chunks[chunkIndex.x][chunkIndex.y];
-		const auto aIdx = chunkToActiveIndex(chunk.pos);
+		const auto aIdx = chunkToActiveIndex(chunkPos);
 		auto& data = activeAreaData[aIdx.x][aIdx.y];
 
 		{ // Render stuff
@@ -211,7 +211,7 @@ namespace Game {
 		}
 
 		{ // Physics stuff
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunk.pos)));
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos)));
 			data.body->SetTransform(pos, 0);
 
 			// TODO: Look into edge and chain shapes
@@ -272,8 +272,8 @@ namespace Game {
 		return *it->second;
 	}
 
-	void MapSystem::loadChunk(MapChunk& chunk) {
-		const auto chunkBlockPos = chunkToBlock(chunk.pos);
+	void MapSystem::loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk) {
+		const auto chunkBlockPos = chunkToBlock(chunkPos);
 
 		for (glm::ivec2 bpos = {0, 0}; bpos.x < MapChunk::size.x; ++bpos.x) {
 			for (bpos.y = 0; bpos.y < MapChunk::size.y; ++bpos.y) {
@@ -304,10 +304,9 @@ namespace Game {
 			const auto job = chunksToLoad.front();
 			chunksToLoad.pop();
 			lock.unlock();
-			loadChunk(job.chunk);
-			++job.region.loadedChunks;
 
-			//std::this_thread::sleep_for(std::chrono::milliseconds{rand() % 1000});
+			loadChunk(job.chunkPos, job.chunk);
+			++job.region.loadedChunks;
 		}
 	}
 
@@ -321,8 +320,7 @@ namespace Game {
 			for (int y = 0; y < regionSize.y; ++y) {
 				const auto chunkPos = regionStart + glm::ivec2{x, y};
 				auto& chunk = region.data[x][y];
-				chunk.pos = chunkPos;
-				chunksToLoad.push({region, chunk});
+				chunksToLoad.push({chunkPos, region, chunk});
 			}
 		}
 

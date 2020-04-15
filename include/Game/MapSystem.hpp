@@ -139,13 +139,13 @@ namespace Game {
 			};
 
 			// TODO: Doc
-			void buildActiveChunkData(const MapChunk& chunk);
+			void buildActiveChunkData(const glm::ivec2 chunkPos, const MapChunk& chunk);
 
 			// TODO: doc
 			MapRegion& ensureRegionLoaded(const glm::ivec2 regionPos);
 			
 			// TODO: Doc
-			void loadChunk(MapChunk& chunk);
+			void loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk);
 
 			// TODO: Doc
 			void loadChunkAsyncWorker();
@@ -165,6 +165,7 @@ namespace Game {
 			std::mutex chunksToLoadMutex;
 
 			struct Job { // TODO: replace with actual job system in EngineInstance
+				const glm::ivec2 chunkPos;
 				MapRegion& region;
 				MapChunk& chunk;
 			};
