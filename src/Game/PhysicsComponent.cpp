@@ -11,6 +11,10 @@ namespace Game {
 		return *body;
 	}
 
+	b2World* PhysicsComponent::getWorld() {
+		return body->GetWorld();
+	}
+
 	void PhysicsComponent::updateTransform(const b2Transform& trans) {
 		updateTransform(trans.p, trans.q.GetAngle());
 	}

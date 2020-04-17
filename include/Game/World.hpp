@@ -14,6 +14,7 @@
 #include <Game/PhysicsSystem.hpp>
 #include <Game/CharacterSpellSystem.hpp>
 #include <Game/CameraTrackingSystem.hpp>
+#include <Game/SubWorldSystem.hpp>
 #include <Game/MapSystem.hpp>
 #include <Game/MapRenderSystem.hpp>
 #include <Game/SpriteSystem.hpp>
@@ -34,6 +35,7 @@ namespace Game {
 		PhysicsSystem,
 		CharacterSpellSystem,
 		CameraTrackingSystem,
+		SubWorldSystem,
 		MapSystem,
 		MapRenderSystem,
 		SpriteSystem,

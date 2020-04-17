@@ -22,6 +22,7 @@ namespace Game {
 		public:
 			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent
 			b2Body& getBody();
+			b2World* getWorld();
 
 			void updateTransform(const b2Transform& trans);
 			void updateTransform(const b2Vec2& pos, float32 ang);

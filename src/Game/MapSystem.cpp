@@ -55,6 +55,7 @@ namespace Game {
 		}
 	}
 
+	// TODO: should probably be tick
 	void MapSystem::run(float dt) {
 		const auto minChunk = blockToChunk(worldToBlock(glm::vec2{engine.camera.getPosition()})) - glm::ivec2{2,2};
 		const auto maxChunk = blockToChunk(worldToBlock(glm::vec2{engine.camera.getPosition()})) + glm::ivec2{2,2};
@@ -296,10 +297,7 @@ namespace Game {
 	void MapSystem::loadChunkAsyncWorker() {
 		while(true) {
 			std::unique_lock lock{chunksToLoadMutex};
-			condv.wait(lock, [&]{
-				// TODO: do i need a lock in here? do i already have a lock at this point?
-				return !chunksToLoad.empty();
-			});
+			condv.wait(lock, [&]{ return !chunksToLoad.empty(); });
 
 			const auto job = chunksToLoad.front();
 			chunksToLoad.pop();
