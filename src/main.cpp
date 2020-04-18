@@ -494,6 +494,7 @@ void run() {
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		
 		// Player
+		ENGINE_LOG("PlayerId: ", player);
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");
 		world.addComponent<Game::PhysicsComponent>(player).setBody(createPhysicsCircle(player, physSys));
 		world.addComponent<Game::CharacterMovementComponent>(player);

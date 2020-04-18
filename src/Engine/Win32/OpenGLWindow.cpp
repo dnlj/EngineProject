@@ -485,9 +485,6 @@ namespace Engine::Win32 {
 		keyboardData.resize(1);
 		keyboardData.shrink_to_fit();
 
-		// TODO: rm - for debugging
-		printRawDevices();
-
 		// Setup raw input
 		RAWINPUTDEVICE devices[] = {
 			{ // Mouse

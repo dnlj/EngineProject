@@ -64,6 +64,7 @@ namespace Engine::ECS {
 			ComponentBitset componentsBits;
 
 			EntityFilter(const EntityManager& entityManager);
+			EntityFilter(const EntityFilter&) = delete;
 
 			void add(Entity ent, const ComponentBitset& cbits);
 			void remove(Entity ent);

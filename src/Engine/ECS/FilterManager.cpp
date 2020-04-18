@@ -10,7 +10,9 @@ namespace Engine::ECS {
 	}
 
 	void FilterManager::onComponentAdded(Entity ent, ComponentId cid, const ComponentBitset& cbits) {
-		if (cid >= filtersByComponentId.size()) { return; }
+		if (cid >= filtersByComponentId.size()) {
+			return;
+		}
 
 		for (auto& filter : filtersByComponentId[cid]) {
 			filter->add(ent, cbits);

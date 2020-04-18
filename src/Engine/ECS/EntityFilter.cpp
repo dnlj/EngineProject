@@ -37,13 +37,13 @@ namespace Engine::ECS {
 	}
 
 	bool EntityFilter::empty() const {
-		return size() == 0;
+		return size() == 0; // TODO: begin != end would be cheaper. Is there a reason we did this? i dont think so.
 	}
 
 	auto EntityFilter::begin() const -> ConstIterator {
 		auto it = ConstIterator(*this, entities.begin());
 
-		if (!entityManager.isEnabled(*it)) {
+		if (!entities.empty() && !entityManager.isEnabled(*it)) {
 			++it;
 		}
 

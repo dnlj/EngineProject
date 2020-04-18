@@ -10,6 +10,7 @@ namespace Game {
 	}
 
 	void PhysicsOriginShiftSystem::run(float32 dt) {
+		return;
 		// Using last frames position shouldnt be a problem here normally.
 		// May be an issue in cases of long distance teleportation.
 		const auto& pos = engine.camera.getPosition();

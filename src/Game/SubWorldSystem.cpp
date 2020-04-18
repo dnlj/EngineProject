@@ -9,7 +9,7 @@ namespace {
 		b2BodyDef bodyDef;
 		b2FixtureDef fixtureDef;
 		bodyDef.type = body->GetType();
-		bodyDef.position = body->GetPosition();
+		bodyDef.position = body->GetPosition(); // TODO: this wont work. need to adjust for new world origin
 		bodyDef.angle = body->GetAngle();
 		bodyDef.linearVelocity = body->GetLinearVelocity();
 		bodyDef.angularVelocity = body->GetAngularVelocity();
@@ -43,22 +43,29 @@ namespace {
 namespace Game {
 	SubWorldSystem::SubWorldSystem(SystemArg arg)
 		: System{arg}
-		, playerFilter{world.getFilterFor<CharacterMovementComponent>()} { // TODO: add own comp (flag comp?) to id players
+		, playerFilter{world.getFilterFor<CharacterMovementComponent, PhysicsComponent>()} { // TODO: add own comp (flag comp?) to id players
 	};
-	
+
 	void SubWorldSystem::tick(float32 dt) {
 		// TODO: Lots can be improved here.
+
+
+		// TODO: shoudl be able to do this whenever we merge/split so we dont need an extra iteration
+		playerData.clear();
+		for (auto ent : playerFilter) {
+			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			playerData.push_back({
+				.ent = ent,
+				.physComp = &physComp,
+				.pos = physComp.getPosition(),
+				.group = nullptr,
+				.shouldSplit = false,
+			});
+		}
 		const auto size = playerData.size();
 
-		// TODO: shoudl be able to do this whenever we merge so we dont need an extra iteration
-		for (int i = 0; i < size; ++i) {
-			auto& ply = playerData[i];
-			ply.group = nullptr;
-			ply.shouldSplit = false;
-		}
-
 		// Group and split players by proximity to eachother and world origins
-		std::vector<Group> groups;
+		groups.clear();
 		groups.reserve(size);
 		for (int i = 0; i < size; ++i) {
 			auto& ply1 = playerData[i];
@@ -67,15 +74,15 @@ namespace Game {
 				ply1.shouldSplit = true;
 			}
 
-			for (int j = i; j < size; ++j) {
+			if (ply1.group == nullptr) {
+				groups.emplace_back();
+				ply1.group = &groups.back();
+			}
+
+			for (int j = i + 1; j < size; ++j) {
 				auto& ply2 = playerData[j];
 				const auto diff = abs(ply1.pos.LengthSquared() - ply2.pos.LengthSquared());
 				if (diff < minRangeSquared) {
-					if (ply1.group == nullptr) {
-						groups.emplace_back();
-						ply1.group = &groups.back();
-					}
-
 					ply2.group = ply1.group;
 					ply1.shouldSplit = false;
 				}
@@ -89,7 +96,9 @@ namespace Game {
 		// Determine the most populated world per group
 		for (int i = 0; i < size; ++i) {
 			auto& ply = playerData[i];
-			++ply.group->worlds[ply.physComp->getWorld()];
+			if (!ply.shouldSplit) {
+				++ply.group->worlds[ply.physComp->getWorld()];
+			}
 		}
 
 		// Set the world for each group
@@ -97,13 +106,15 @@ namespace Game {
 			group.world = std::max_element(group.worlds.begin(), group.worlds.end(), [](const auto& a, const auto& b){
 				return a.second < b.second;
 			})->first;
+			int a = 1;
 		}
+		// TODO: unused worlds arent freed
 
 		// Merge worlds
 		for (int i = 0; i < size; ++i) {
 			auto& ply = playerData[i];
-			if (ply.world != ply.group->world) {
-				mergePlayer(ply);
+			if (!ply.shouldSplit && ply.physComp->getWorld() != ply.group->world) {
+				mergePlayer(ply, ply.group->world);
 			}
 		}
 
@@ -112,25 +123,26 @@ namespace Game {
 		for (int i = 0; i < size; ++i) {
 			auto& ply = playerData[i];
 			if (!ply.shouldSplit) { continue; }
-			ENGINE_DEBUG_ASSERT(ply.group == nullptr, "Attempting to split player that is part of group");
+			splitFromWorld(ply);
 		}
 
 		// TODO: where to handle shifting worlds?
 	}
 
-	void SubWorldSystem::mergePlayer(PlayerData& ply) {
+	void SubWorldSystem::mergePlayer(PlayerData& ply, b2World* world) {
+		ENGINE_LOG("Merging - ", ply.ent, " ", world);
 		ENGINE_DEBUG_ASSERT(ply.physComp->getWorld() != ply.group->world);
 		auto* oldW = ply.physComp->getWorld();
-		auto* newW = ply.group->world;
 
-		robin_hood::unordered_flat_set<b2Body*> bodies; // TODO: cache on object itself and just .clear()
-		struct : public b2QueryCallback {
-			decltype(bodies)& bodies = bodies;
+		bodies.clear();
+		struct QueryCallback : public b2QueryCallback {
+			decltype(bodies)& bs;
+			QueryCallback(decltype(bs) bs) : bs{bs} {};
 			bool ReportFixture(b2Fixture* fixture) override {
-				bodies.insert(fixture->GetBody());
+				bs.insert(fixture->GetBody());
 				return true;
 			};
-		} callback;
+		} callback{bodies};
 
 		oldW->QueryAABB(&callback, b2AABB{
 			ply.pos - b2Vec2{minRange, minRange},
@@ -140,15 +152,28 @@ namespace Game {
 		b2BodyDef bodyDef;
 		b2FixtureDef fixtureDef;
 		for (auto* body : bodies) {
-			copyBodyToWorld(body, newW);
+			copyBodyToWorld(body, world);
 		}
 
+		// TODO: update ply.physComp.body
 		// TODO: if oldW has no players add it to usable list for splitting
 	}
 
 	void SubWorldSystem::splitFromWorld(PlayerData& ply) {
 		ENGINE_DEBUG_ASSERT(maxRangeSquared < ply.pos.LengthSquared(), "Needless player splitting");
-		// TODO: impl
-		assert(false);
+		auto* world = getFreeWorld();
+		mergePlayer(ply, world);
+	}
+
+	b2World* SubWorldSystem::getFreeWorld() {
+		b2World* world;
+		if (freeWorlds.empty()) {
+			// TODO: need to copy world properities
+			world = worlds.emplace_back(std::make_unique<b2World>(b2Vec2_zero)).get();
+		} else {
+			world = freeWorlds.back();
+			freeWorlds.pop_back();
+		}
+		return world;
 	}
 }
