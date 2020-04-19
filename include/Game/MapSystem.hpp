@@ -138,12 +138,14 @@ namespace Game {
 				ActiveChunkData() = default;
 				ActiveChunkData(const ActiveChunkData&) = delete;
 				ActiveChunkData& operator=(const ActiveChunkData&) = delete;
+
+				glm::ivec2 chunkPos;
 				Engine::ECS::Entity ent;
 				Engine::Graphics::Mesh mesh; // TODO: move to comp?
 			};
 
 			// TODO: Doc
-			void buildActiveChunkData(const glm::ivec2 chunkPos, const MapChunk& chunk);
+			void buildActiveChunkData(ActiveChunkData& data, const MapChunk& chunk);
 
 			/**
 			 * Gets a region if it is already loaded; otherwise queues the region for loading.
@@ -174,7 +176,7 @@ namespace Game {
 			std::mutex chunksToLoadMutex;
 
 			struct Job { // TODO: replace with actual job system in EngineInstance
-				const glm::ivec2 chunkPos;
+				glm::ivec2 chunkPos;
 				MapRegion& region;
 				MapChunk& chunk;
 			};

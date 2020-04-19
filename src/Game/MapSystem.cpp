@@ -86,16 +86,17 @@ namespace Game {
 			for (chunkPos.y = minChunk.y; chunkPos.y <= maxChunk.y; ++chunkPos.y) {
 				auto& region = ensureRegionLoaded(chunkToRegion(chunkPos));
 				if (region.loading()) { continue; }
+				region.lastUsed = world.getTickTime();
 
 				const auto idx = chunkToRegionIndex(chunkPos);
 				auto& chunk = region.data[idx.x][idx.y];
 
-				if (chunk.updated) {
+				const auto aIdx = chunkToActiveIndex(chunkPos);
+				auto& data = activeAreaData[aIdx.x][aIdx.y];
+				if (chunk.updated || data.chunkPos != chunkPos) {
 					chunk.updated = false;
-					region.lastUsed = world.getTickTime();
-
-					// TODO: pass active area data
-					buildActiveChunkData(chunkPos, chunk);
+					data.chunkPos = chunkPos;
+					buildActiveChunkData(data, chunk);
 				}
 			}
 		}
@@ -175,11 +176,9 @@ namespace Game {
 	}
 
 	// TODO: thread this. Not sure how nice box2d will play with it.
-	void MapSystem::buildActiveChunkData(const glm::ivec2 chunkPos, const MapChunk& chunk) {
+	void MapSystem::buildActiveChunkData(ActiveChunkData& data, const MapChunk& chunk) {
+		std::cout << "Building chunk data: " << data.chunkPos.x << ", " << data.chunkPos.y << "\n";
 		// TODO: simplify. currently have two mostly duplicate sections.
-		//const auto& chunk = chunks[chunkIndex.x][chunkIndex.y];
-		const auto aIdx = chunkToActiveIndex(chunkPos);
-		auto& data = activeAreaData[aIdx.x][aIdx.y];
 
 		{ // Render stuff
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};
@@ -233,7 +232,7 @@ namespace Game {
 		}
 
 		{ // Physics stuff
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos)));
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(data.chunkPos)));
 			auto& physComp = world.getComponent<PhysicsComponent>(data.ent);
 			physComp.setTransform(pos, 0);
 			auto& body = physComp.getBody();
