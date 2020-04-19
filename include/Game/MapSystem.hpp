@@ -15,6 +15,8 @@
 #include <Engine/EngineInstance.hpp>
 #include <Engine/ShaderManager.hpp>
 #include <Engine/Graphics/Mesh.hpp>
+#include <Engine/Clock.hpp>
+#include <Engine/ECS/FilterManager.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -40,6 +42,8 @@ namespace Game {
 			constexpr static glm::ivec2 size = {16, 16};
 			MapChunk data[size.x][size.y];
 			std::atomic<int32> loadedChunks = 0;
+			Engine::Clock::TimePoint lastUsed;
+
 			bool loading() const {
 				// TODO: look into which memory order is needed
 				return loadedChunks.load() != size.x * size.y;
@@ -69,6 +73,7 @@ namespace Game {
 
 			void setup();
 			void run(float dt);
+			void ensurePlayAreaLoaded(glm::ivec2 chunkPos);
 
 			// TODO: Name? this isnt consistent with our other usage of offset
 			// TODO: Doc. Gets the size of the current offset in blocks coordinates
@@ -133,7 +138,6 @@ namespace Game {
 				ActiveChunkData() = default;
 				ActiveChunkData(const ActiveChunkData&) = delete;
 				ActiveChunkData& operator=(const ActiveChunkData&) = delete;
-
 				Engine::ECS::Entity ent;
 				Engine::Graphics::Mesh mesh; // TODO: move to comp?
 			};
@@ -180,6 +184,7 @@ namespace Game {
 			Engine::FlatHashMap<glm::ivec2, std::unique_ptr<MapRegion>> regions;
 
 			Engine::ECS::Entity mapEntity;
+			Engine::ECS::EntityFilter& playerFilter;
 
 			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;

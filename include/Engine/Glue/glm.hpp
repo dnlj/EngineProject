@@ -19,5 +19,17 @@ namespace Engine::Glue::_impl {
 		static To call(const std::tuple<X, Y>& v) {
 			return To{static_cast<float32>(std::get<0>(v)), static_cast<float32>(std::get<1>(v))};
 		}
+
+		static const To& call(const b2Vec2& v) {
+			return reinterpret_cast<const To&>(v);
+		}
+
+		static To& call(b2Vec2& v) {
+			return reinterpret_cast<To&>(v);
+		}
+
+		static To&& call(b2Vec2&& v) {
+			return reinterpret_cast<To&&>(v);
+		}
 	};
 }

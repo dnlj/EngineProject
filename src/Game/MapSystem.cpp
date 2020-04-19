@@ -3,6 +3,7 @@
 
 // Engine
 #include <Engine/Glue/Box2D.hpp>
+#include <Engine/Glue/glm.hpp>
 
 // Game
 #include <Game/MapSystem.hpp>
@@ -15,7 +16,8 @@
 
 namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
-		: System{arg} {
+		: System{arg}
+		, playerFilter{world.getFilterFor<PlayerComponent>()} {
 		static_assert(World::orderAfter<MapSystem, CameraTrackingSystem>());
 
 		for (auto& t : threads) {
@@ -58,10 +60,25 @@ namespace Game {
 
 	// TODO: should probably be tick
 	void MapSystem::run(float dt) {
-		const auto minChunk = blockToChunk(worldToBlock(glm::vec2{engine.camera.getPosition()})) - glm::ivec2{2,2};
-		const auto maxChunk = blockToChunk(worldToBlock(glm::vec2{engine.camera.getPosition()})) + glm::ivec2{2,2};
-		
-		// As long as screen size < region size we only need to check the four corners
+		for (auto& ply : playerFilter) {
+			auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsComponent>(ply).getPosition());
+			ensurePlayAreaLoaded(worldToBlock(pos));
+		}
+
+		auto timeout = world.getTickTime() - std::chrono::seconds{10};
+		for (auto it = regions.begin(); it != regions.end();) {
+			if (it->second->lastUsed < timeout) {
+				std::cout << "Unloading region: " << it->first.x << ", " << it->first.y << "\n";
+				it = regions.erase(it);
+			} else {
+				++it;
+			}
+		}
+	}
+
+	void MapSystem::ensurePlayAreaLoaded(glm::ivec2 blockPos) {
+		const auto minChunk = blockToChunk(blockPos) - glm::ivec2{2,2};
+		const auto maxChunk = blockToChunk(blockPos) + glm::ivec2{2,2};
 		const auto minRegion = chunkToRegion(minChunk);
 		const auto maxRegion = chunkToRegion(maxChunk);
 
@@ -75,6 +92,9 @@ namespace Game {
 
 				if (chunk.updated) {
 					chunk.updated = false;
+					region.lastUsed = world.getTickTime();
+
+					// TODO: pass active area data
 					buildActiveChunkData(chunkPos, chunk);
 				}
 			}
@@ -270,7 +290,9 @@ namespace Game {
 	MapRegion& MapSystem::ensureRegionLoaded(const glm::ivec2 regionPos) {
 		auto it = regions.find(regionPos);
 		if (it == regions.end()) {
-			it = regions.emplace(regionPos, std::make_unique<MapRegion>()).first;
+			it = regions.emplace(regionPos, new MapRegion{
+				.lastUsed = world.getTickTime(),
+			}).first;
 			queueRegionToLoad(regionPos, *it->second);
 		}
 		return *it->second;
