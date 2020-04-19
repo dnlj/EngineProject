@@ -60,6 +60,7 @@ namespace Game {
 		}
 
 		userData[ent.id] = PhysicsUserData{ent};
+		// TODO: change this to be whole ECS::Entity object
 		body->SetUserData(reinterpret_cast<void*>(static_cast<std::uintptr_t>(ent.id)));
 
 		return body;

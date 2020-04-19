@@ -12,6 +12,7 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/PhysicsComponent.hpp>
+#include <Game/MapSystem.hpp>
 
 
 namespace Game {

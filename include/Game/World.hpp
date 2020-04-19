@@ -35,7 +35,7 @@ namespace Game {
 		PhysicsSystem,
 		CharacterSpellSystem,
 		CameraTrackingSystem,
-		SubWorldSystem,
+		//SubWorldSystem,
 		MapSystem,
 		MapRenderSystem,
 		SpriteSystem,

@@ -5,7 +5,7 @@
 
 
 namespace {
-	ENGINE_INLINE void copyBodyToWorld(b2Body* body, b2World* world) {
+	ENGINE_INLINE b2Body* copyBodyToWorld(b2Body* body, b2World* world) {
 		b2BodyDef bodyDef;
 		b2FixtureDef fixtureDef;
 		bodyDef.type = body->GetType();
@@ -37,6 +37,8 @@ namespace {
 			newBody->CreateFixture(&fixtureDef);
 			fixture = fixture->GetNext();
 		}
+
+		return newBody;
 	}
 }
 
@@ -48,7 +50,6 @@ namespace Game {
 
 	void SubWorldSystem::tick(float32 dt) {
 		// TODO: Lots can be improved here.
-
 
 		// TODO: shoudl be able to do this whenever we merge/split so we dont need an extra iteration
 		playerData.clear();
@@ -88,10 +89,6 @@ namespace Game {
 				}
 			}
 		}
-
-		//std::sort(playerData.begin(), playerData.end(), [](const PlayerData& a, const PlayerData& b){
-		//	return a.group < b.group;
-		//});
 
 		// Determine the most populated world per group
 		for (int i = 0; i < size; ++i) {
@@ -152,17 +149,22 @@ namespace Game {
 		b2BodyDef bodyDef;
 		b2FixtureDef fixtureDef;
 		for (auto* body : bodies) {
-			copyBodyToWorld(body, world);
+			Engine::ECS::Entity ent{static_cast<uint16>(reinterpret_cast<uintptr_t>(body->GetUserData())), 0};
+			auto* newBody = copyBodyToWorld(body, world);
+			this->world.getComponent<PhysicsComponent>(ent).setBody(newBody);
 		}
 
-		// TODO: update ply.physComp.body
 		// TODO: if oldW has no players add it to usable list for splitting
 	}
 
 	void SubWorldSystem::splitFromWorld(PlayerData& ply) {
 		ENGINE_DEBUG_ASSERT(maxRangeSquared < ply.pos.LengthSquared(), "Needless player splitting");
 		auto* world = getFreeWorld();
-		mergePlayer(ply, world);
+		ENGINE_LOG("Splitting - ", ply.ent, " ", world);
+		if (world != ply.physComp->getWorld()) {
+			mergePlayer(ply, world);
+		}
+		world->ShiftOrigin(ply.pos);
 	}
 
 	b2World* SubWorldSystem::getFreeWorld() {

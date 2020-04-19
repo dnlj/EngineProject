@@ -15,6 +15,12 @@ namespace Engine::ECS {
 			uint16 gen;
 	};
 
+	static_assert(sizeof(Entity) <= sizeof(void*),
+		"Since entities are sometimes stored in userdata pointers, they should not exceed the size of a pointer."
+	);
+
+	constexpr Entity INVALID_ENTITY = {-1, -1};
+
 	bool operator==(const Entity& e1, const Entity& e2);
 	bool operator!=(const Entity& e1, const Entity& e2);
 	bool operator<(const Entity& e1, const Entity& e2);

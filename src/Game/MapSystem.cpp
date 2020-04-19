@@ -32,7 +32,6 @@ namespace Game {
 	void MapSystem::setup() {
 		shader = engine.shaderManager.get("shaders/terrain");
 		texture = engine.textureManager.get("../assets/test.png");
-		mapEntity = world.createEntity();
 		auto& physSys = world.getSystem<PhysicsSystem>();
 
 		// Active Area stuff
@@ -49,7 +48,9 @@ namespace Game {
 		for (int x = 0; x < activeAreaSize.x; ++x) {
 			for (int y = 0; y < activeAreaSize.y; ++y) {
 				auto& data = activeAreaData[x][y];
-				data.body = physSys.createBody(mapEntity, bodyDef);
+				data.ent = world.createEntity(true);
+				auto& physComp = world.addComponent<PhysicsComponent>(data.ent);
+				physComp.setBody(physSys.createBody(data.ent, bodyDef));
 				data.mesh.setBufferFormat(vertexFormat);
 			}
 		}
@@ -213,13 +214,15 @@ namespace Game {
 
 		{ // Physics stuff
 			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos)));
-			data.body->SetTransform(pos, 0);
+			auto& physComp = world.getComponent<PhysicsComponent>(data.ent);
+			physComp.setTransform(pos, 0);
+			auto& body = physComp.getBody();
 
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures
-			for (auto* fixture = data.body->GetFixtureList(); fixture;) {
+			for (auto* fixture = body.GetFixtureList(); fixture;) {
 				auto* next = fixture->GetNext();
-				data.body->DestroyFixture(fixture);
+				body.DestroyFixture(fixture);
 				fixture = next;
 			}
 
@@ -258,7 +261,7 @@ namespace Game {
 					const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
 
 					shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
-					data.body->CreateFixture(&fixtureDef);
+					body.CreateFixture(&fixtureDef);
 				}
 			}
 		}
