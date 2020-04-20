@@ -72,17 +72,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::tick(float32 dt) {
-		if constexpr (ENGINE_CLIENT) {
-			static auto next = world.getTickTime();
-			if (next <= Engine::Clock::now()) {
-				next = Engine::Clock::now() + std::chrono::seconds{1};
-				writer.reset();
-				writer.next({static_cast<uint8>(MessageType::PING)});
-				writer.write(true);
-				addr = {127,0,0,1, 27015}; // TODO: find a better way to setup MessageStream address/socket. This is far to error prone.
-				writer.send();
-			}
-		} else {
+		if constexpr (ENGINE_SERVER) {
 			for (const auto& conn : connections) {
 				addr = conn.address;
 				writer.reset();
@@ -102,6 +92,22 @@ namespace Game {
 			}
 		}
 
+		if constexpr (ENGINE_CLIENT) {
+			static auto next = world.getTickTime();
+			if (next <= Engine::Clock::now()) {
+				next = Engine::Clock::now() + std::chrono::seconds{1};
+
+				for (auto& conn : connections) {
+					// TODO: find a better way to setup MessageStream address/socket. This is far to error prone.
+					addr = conn.address;
+					writer.reset();
+					writer.next({static_cast<uint8>(MessageType::PING)});
+					writer.write(true);
+					writer.send();
+				}
+			}
+		}
+		
 		while (reader.recv() > -1) {
 			auto& conn = getConnection(addr);
 			conn.lastMessageTime = world.getTickTime();
@@ -115,6 +121,11 @@ namespace Game {
 		}
 
 		// TODO: Handle connection timeout
+	}
+
+	
+	void NetworkingSystem::connect(const Engine::Net::IPv4Address& addr) {
+		getConnection(addr);
 	}
 
 	Engine::Net::Connection& NetworkingSystem::getConnection(const Engine::Net::IPv4Address& addr) {

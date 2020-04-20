@@ -1,9 +1,6 @@
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
 
-// ImGui
-#include <imgui.h>
-
 // Engine
 #include <Engine/Clock.hpp>
 #include <Engine/ImGui/ImGui.hpp>

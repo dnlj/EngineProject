@@ -29,6 +29,8 @@ namespace Game {
 			NetworkingSystem(SystemArg arg);
 			void setup();
 			void tick(float32 dt);
+			void connect(const Engine::Net::IPv4Address& addr);
+
 
 		private:
 			Engine::Net::Connection& getConnection(const Engine::Net::IPv4Address& addr);

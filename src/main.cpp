@@ -1,5 +1,7 @@
 // Windows
 #include <Windows.h>
+#include <WinSock2.h>
+#include <WS2tcpip.h>
 
 // STD
 #include <algorithm>
@@ -20,9 +22,6 @@
 
 // Meta
 #include <Meta/TypeSet/TypeSet.hpp>
-
-// ImGui
-#include <imgui.h>
 
 // Engine
 #include <Engine/Engine.hpp>
@@ -207,6 +206,33 @@ namespace {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
+	bool connectTo(const std::string& host, Engine::EngineInstance& engine, Game::World& world) {
+		addrinfo* results = nullptr;
+		addrinfo hints = {
+			.ai_family = AF_INET, // TODO: support ipv6 - AF_UNSPEC
+			.ai_socktype = SOCK_DGRAM,
+		};
+
+		if (auto err = getaddrinfo(host.data(), nullptr, &hints, &results); err) {
+			freeaddrinfo(results);
+			return false;
+		} else {
+			for (auto ptr = results; ptr; ptr = results->ai_next) {
+				if (ptr->ai_family != AF_INET) {
+					ENGINE_ERROR("Unsuported network family");
+				}
+
+				Engine::Net::IPv4Address addr{*ptr->ai_addr};
+				addr.port = 27015; // TODO: port from addr
+				std::cout << "Address: " << addr << "\n";
+				world.getSystem<Game::NetworkingSystem>().connect(addr);
+			}
+		}
+
+		freeaddrinfo(results);
+		return true;
+	}
+
 	void editorUI(Engine::EngineInstance& engine, Game::World& world) {
 		static auto texture32 = engine.textureManager.get("../assets/32.bmp");
 		static auto axisIds = engine.inputManager.getAxisId("target_x", "target_y");
@@ -265,6 +291,25 @@ namespace {
 		ImGui::End();
 	}
 
+	void connectUI(Engine::EngineInstance& engine, Game::World& world) {
+		static bool connected = false;
+		if (connected) { return; }
+
+		auto& io = ImGui::GetIO();
+		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;
+		ImGui::SetNextWindowPos(0.5f * io.DisplaySize, ImGuiCond_Once, ImVec2{0.5f, 0.5f});
+		ImGui::Begin("Join Server", nullptr, flags);
+
+		static char serverText[32] = {};
+		ImGui::InputText("", serverText, sizeof(serverText));
+
+		if (ImGui::Button("Connect")) {
+			connected = connectTo(serverText, engine, world);
+		};
+
+		ImGui::End();
+	}
+
 	void initializeOpenGL() {
 		auto loaded = ogl_LoadFunctions();
 
@@ -286,8 +331,13 @@ namespace {
 	void doUI(Engine::EngineInstance& engine, Game::World& world) {
 		static bool showWindow = true;
 		Engine::ImGui::newFrame();
-		ImGui::ShowDemoWindow(&showWindow);
+		//ImGui::ShowDemoWindow(&showWindow);
 		editorUI(engine, world);
+
+		if constexpr (ENGINE_CLIENT) {
+			connectUI(engine, world);
+		}
+
 		Engine::ImGui::draw();
 	}
 
