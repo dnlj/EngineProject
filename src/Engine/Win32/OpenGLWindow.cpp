@@ -188,6 +188,12 @@ namespace {
 
 namespace Engine::Win32 {
 	template<>
+	LRESULT OpenGLWindow::processMessage<WM_DESTROY>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		PostQuitMessage(0);
+		return 0;
+	}
+
+	template<>
 	LRESULT OpenGLWindow::processMessage<WM_SIZE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
 		const int32 w = LOWORD(lParam);
 		const int32 h = HIWORD(lParam);
@@ -704,6 +710,7 @@ namespace Engine::Win32 {
 		}
 
 		switch (uMsg) {
+			HANDLE_MESSAGE(WM_DESTROY);
 			HANDLE_MESSAGE(WM_SIZE);
 			HANDLE_MESSAGE(WM_CLOSE);
 			HANDLE_MESSAGE(WM_INPUT);
