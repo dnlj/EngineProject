@@ -6,10 +6,9 @@
 // STD
 #include <algorithm>
 #include <iostream>
-#include <thread>
 #include <cmath>
 #include <numeric>
-#include <string_view>
+#include <filesystem>
 #include <regex>
 
 // glLoadGen
@@ -309,7 +308,7 @@ namespace {
 		ImGui::SetNextWindowPos(0.5f * io.DisplaySize, ImGuiCond_Once, ImVec2{0.5f, 0.5f});
 		ImGui::Begin("Join Server", nullptr, flags);
 
-		static char serverText[64] = "localhost";
+		static char serverText[64] = "localhost:27015";
 
 		bool shouldConnect = false;
 		shouldConnect |= ImGui::InputText("", serverText, sizeof(serverText), ImGuiInputTextFlags_EnterReturnsTrue);
@@ -466,11 +465,11 @@ void run() {
 		windowCallbacks
 	};
 	window.makeContextCurrent();
-
+	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Initialize OpenGL functions
 	initializeOpenGL();
-
+	
 	// OpenGL debug message
 	#if defined(DEBUG_GRAPHICS)
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -485,7 +484,7 @@ void run() {
 	ImGui::CreateContext();
 	Engine::ImGui::init(window);
 	ImGui::StyleColorsDark();
-
+	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Engine stuff
 	Engine::EngineInstance engine;
@@ -493,7 +492,7 @@ void run() {
 	Game::World& world = *worldStorage.get();
 	TempWorldEngineWrapper wrapper{engine, world};
 	windowCallbacks.userdata = &wrapper;
-
+	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
 	{
@@ -583,7 +582,6 @@ void run() {
 
 	// Procedural test
 	//mapTest();
-
 	// Main loop
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;
@@ -654,6 +652,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 		}
 	}
 
+	std::wcout << "Working Directory: " << std::filesystem::current_path().generic_wstring() << "\n";
 	run();
 
 	std::cout << "Done." << std::endl;
