@@ -175,6 +175,10 @@ namespace Game {
 			std::thread threads[ENGINE_DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
 			std::mutex chunksToLoadMutex;
 
+			// TODO: C++20: use atomic_flag since it now has a `test` member function.
+			std::atomic<bool> threadsShouldExit = false;
+			static_assert(decltype(threadsShouldExit)::is_always_lock_free);
+
 			struct Job { // TODO: replace with actual job system in EngineInstance
 				glm::ivec2 chunkPos;
 				MapRegion& region;

@@ -26,6 +26,9 @@ namespace Game {
 	}
 
 	MapSystem::~MapSystem() {
+		threadsShouldExit = true;
+		condv.notify_all();
+
 		for (auto& t : threads) {
 			t.join();
 		}
@@ -321,7 +324,11 @@ namespace Game {
 	void MapSystem::loadChunkAsyncWorker() {
 		while(true) {
 			std::unique_lock lock{chunksToLoadMutex};
-			condv.wait(lock, [&]{ return !chunksToLoad.empty(); });
+
+			while (chunksToLoad.empty()) {
+				condv.wait(lock);
+				if (threadsShouldExit) { return; }
+			}
 
 			const auto job = chunksToLoad.front();
 			chunksToLoad.pop();
