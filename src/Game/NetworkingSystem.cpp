@@ -46,6 +46,19 @@ namespace Game {
 
 	void NetworkingSystem::setup() {
 	}
+	
+	template<>
+	void NetworkingSystem::handleMessageType<MessageType::CONNECT>() {
+		// TODO: since messages arent reliable do connect/disconnect really make any sense?
+		ENGINE_LOG("MessageType::CONNECT from ", addr);
+		connect(addr);
+	}
+
+	template<>
+	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>() {
+		ENGINE_LOG("MessageType::DISCONNECT from ", addr);
+		disconnect(addr);
+	}
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::PING>() {
@@ -73,7 +86,7 @@ namespace Game {
 
 	void NetworkingSystem::tick(float32 dt) {
 		if constexpr (ENGINE_SERVER) {
-			for (const auto& conn : connections) {
+			/*for (const auto& conn : connections) {
 				addr = conn.address;
 				writer.reset();
 				ForEachIn<ComponentsSet>::call([&]<class C>(){
@@ -89,15 +102,15 @@ namespace Game {
 				if (writer.size() > 0) {
 					writer.send();
 				}
-			}
+			}*/
 		}
 
 		if constexpr (ENGINE_CLIENT) {
 			static auto next = world.getTickTime();
-			if (next <= Engine::Clock::now()) {
-				next = Engine::Clock::now() + std::chrono::seconds{1};
+			if (next <= world.getTickTime()) {
+				next = world.getTickTime() + std::chrono::seconds{1};
 
-				for (auto& conn : connections) {
+				for (auto& [_, conn] : connections) {
 					// TODO: find a better way to setup MessageStream address/socket. This is far to error prone.
 					addr = conn.address;
 					writer.reset();
@@ -121,19 +134,60 @@ namespace Game {
 		}
 
 		// TODO: Handle connection timeout
+		for (auto conn = connections.begin(); conn != connections.end();) {
+			if (world.getTickTime() - conn->second.lastMessageTime > timeout) {
+				onDisconnect(conn->second);
+				// TODO: send timeout message
+				conn = connections.erase(conn);
+			} else {
+				++conn;
+			}
+		}
 	}
 
-	
+	int32 NetworkingSystem::connectionsCount() const {
+		return static_cast<int32>(connections.size());
+	}
+
 	void NetworkingSystem::connect(const Engine::Net::IPv4Address& addr) {
 		getConnection(addr);
 	}
 
-	Engine::Net::Connection& NetworkingSystem::getConnection(const Engine::Net::IPv4Address& addr) {
-		const auto [found, ins] = ipToConnection.emplace(addr, static_cast<uint8>(connections.size()));
-		if (ins) {
-			connections.emplace_back(addr, Engine::Clock::now(), 0);
+	void NetworkingSystem::disconnect(const Engine::Net::IPv4Address& addr) {
+		auto found = connections.find(addr);
+		if (found != connections.end()) {
+			ENGINE_LOG("Disconnecting ", addr);
+			onDisconnect(found->second);
+			connections.erase(found);
+		} else {
+			ENGINE_LOG("Disconnecting ", addr, " (invalid)");
 		}
-		return connections[found->second];
+	}
+
+	void NetworkingSystem::onConnect(const Engine::Net::Connection& conn) {
+		this->addr = conn.address;
+		writer.reset();
+		writer.next({static_cast<uint8>(MessageType::CONNECT)});
+		writer.send();
+	}
+
+	void NetworkingSystem::onDisconnect(const Engine::Net::Connection& conn) {
+		std::cout
+			<< "onDisconnect from: " << conn.address
+			<< " @ " << conn.lastMessageTime.time_since_epoch().count()
+			<< "\n";
+	}
+
+	Engine::Net::Connection& NetworkingSystem::getConnection(const Engine::Net::IPv4Address& addr) {
+		auto found = connections.find(addr);
+		if (found == connections.end()) {
+			found = connections.emplace(
+				addr,
+				Engine::Net::Connection{addr, Engine::Clock::now(), 0}
+			).first;
+			onConnect(found->second);
+		}
+		return found->second;
 	}
 
 	void NetworkingSystem::dispatchMessage() {
@@ -141,6 +195,8 @@ namespace Game {
 		const auto header = reader.read<Engine::Net::MessageHeader>();
 		#define HANDLE(Type) case Type: { return handleMessageType<Type>(); }
 		switch(static_cast<MessageType>(header.type)) {
+			HANDLE(MessageType::CONNECT);
+			HANDLE(MessageType::DISCONNECT);
 			HANDLE(MessageType::PING);
 			HANDLE(MessageType::ECS_COMP);
 			default: {

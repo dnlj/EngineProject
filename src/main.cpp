@@ -9,6 +9,8 @@
 #include <thread>
 #include <cmath>
 #include <numeric>
+#include <string_view>
+#include <regex>
 
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
@@ -206,15 +208,24 @@ namespace {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	bool connectTo(const std::string& host, Engine::EngineInstance& engine, Game::World& world) {
+	bool connectTo(const std::string& uri, Engine::EngineInstance& engine, Game::World& world) {
 		addrinfo* results = nullptr;
 		addrinfo hints = {
 			.ai_family = AF_INET, // TODO: support ipv6 - AF_UNSPEC
 			.ai_socktype = SOCK_DGRAM,
 		};
 
-		if (auto err = getaddrinfo(host.data(), nullptr, &hints, &results); err) {
-			freeaddrinfo(results);
+		std::regex regex{R"(^(?:(.*):\/\/)?(.*?)(?::(\d+))?(?:\/.*)?$)"};
+		std::smatch matches;
+		std::regex_match(uri, matches, regex);
+		ENGINE_ASSERT_WARN(matches.size() == 4, "Incorrect number of captures");
+
+		std::string host = matches[2].str();
+		std::string serv = matches[3].matched ? matches[3].str() : matches[1].str();
+
+		if (auto err = getaddrinfo(host.data(), serv.data(), &hints, &results); err) {
+			ENGINE_WARN("Address error - ", Engine::Win32::getLastErrorMessage());
+			// TODO: error message popup/notification
 			return false;
 		} else {
 			for (auto ptr = results; ptr; ptr = results->ai_next) {
@@ -223,7 +234,6 @@ namespace {
 				}
 
 				Engine::Net::IPv4Address addr{*ptr->ai_addr};
-				addr.port = 27015; // TODO: port from addr
 				std::cout << "Address: " << addr << "\n";
 				world.getSystem<Game::NetworkingSystem>().connect(addr);
 			}
@@ -292,19 +302,21 @@ namespace {
 	}
 
 	void connectUI(Engine::EngineInstance& engine, Game::World& world) {
-		static bool connected = false;
-		if (connected) { return; }
+		if (world.getSystem<Game::NetworkingSystem>().connectionsCount()) { return; }
 
 		auto& io = ImGui::GetIO();
 		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;
 		ImGui::SetNextWindowPos(0.5f * io.DisplaySize, ImGuiCond_Once, ImVec2{0.5f, 0.5f});
 		ImGui::Begin("Join Server", nullptr, flags);
 
-		static char serverText[32] = {};
-		ImGui::InputText("", serverText, sizeof(serverText));
+		static char serverText[64] = "localhost";
 
-		if (ImGui::Button("Connect")) {
-			connected = connectTo(serverText, engine, world);
+		bool shouldConnect = false;
+		shouldConnect |= ImGui::InputText("", serverText, sizeof(serverText), ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::SameLine();
+		shouldConnect |= ImGui::Button("Connect");
+		if (shouldConnect && strlen(serverText)) {
+			connectTo(serverText, engine, world);
 		};
 
 		ImGui::End();
