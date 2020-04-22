@@ -39,6 +39,7 @@ namespace Game {
 			void onConnect(const Engine::Net::Connection& conn);
 			void onDisconnect(const Engine::Net::Connection& conn);
 			Engine::Net::Connection& getConnection(const Engine::Net::IPv4Address& addr);
+			void ping(const Engine::Net::IPv4Address& addr);
 
 			void dispatchMessage();
 
