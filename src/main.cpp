@@ -309,6 +309,23 @@ namespace {
 		ImGui::Begin("Join Server", nullptr, flags);
 
 		static char serverText[64] = "localhost:27015";
+		static Engine::Clock::TimePoint lastRefresh;
+
+		//if (Engine::Clock::now() - lastRefresh > std::chrono::seconds{5}) {
+		//	Engine::
+		//}
+		
+		//for (int i = 0; i < 10; ++i) {
+		//	ImGui::Text("This is the name of the server!");
+		//	ImGui::SameLine();
+		//	ImGui::Spacing();
+		//	ImGui::SameLine();
+		//	ImGui::Text("2/8");
+		//	ImGui::SameLine();
+		//	ImGui::Text("100 ms");
+		//	ImGui::SameLine();
+		//	ImGui::Button("Connect");
+		//}
 
 		bool shouldConnect = false;
 		shouldConnect |= ImGui::InputText("", serverText, sizeof(serverText), ImGuiInputTextFlags_EnterReturnsTrue);
@@ -342,7 +359,7 @@ namespace {
 	void doUI(Engine::EngineInstance& engine, Game::World& world) {
 		static bool showWindow = true;
 		Engine::ImGui::newFrame();
-		//ImGui::ShowDemoWindow(&showWindow);
+		ImGui::ShowDemoWindow(&showWindow);
 		editorUI(engine, world);
 
 		if constexpr (ENGINE_CLIENT) {

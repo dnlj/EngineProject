@@ -23,7 +23,7 @@ namespace Engine::Net {
 
 	class MessageHeader {
 		public:
-			uint8 type; // TODO: should this be a property of the packet not messages?
+			uint8 type;
 			uint8 flags;
 			uint16 _filler;
 			uint32 sequence;
@@ -39,24 +39,20 @@ namespace Engine::Net {
 
 	class MessageStream {
 		private:
-			UDPSocket* sock;
-			IPv4Address* addr;
+			UDPSocket& sock;
+			IPv4Address addr;
 
 			char* curr;
 			char* last;
-			// TODO: add class for this. less error prone.
 			Packet packet;
 
 		public:
-			static constexpr int32 MAX_MESSAGE_SIZE = 256;
+			static constexpr int32 MAX_MESSAGE_SIZE = 256; // TODO: Is this ever used? Why is it here?
 
 		public:
-			MessageStream();
+			MessageStream(UDPSocket& socket);
 			MessageStream(const MessageStream&) = delete;
 			MessageStream(const MessageStream&&) = delete;
-
-			void setSocket(UDPSocket& sock);
-			void setAddress(IPv4Address& addr);
 
 			void next(MessageHeader head);
 
@@ -67,10 +63,48 @@ namespace Engine::Net {
 			char* data();
 			const char* data() const;
 
-			int32 recv();
-			int32 send() const;
+			const IPv4Address& address() const;
 
-			void reset(int32 sz = 0);
+			int32 recv();
+
+			/**
+			 * Sends this packet to @p addr. Does not modify this packet.
+			 * Useful if you wish to send the same packet to multiple addresses.
+			 * It is recommended to always reset() or clear() once all sending is done.
+			 * 
+			 * @returns The number of bytes sent.
+			 */
+			int32 sendto(const IPv4Address& addr) const;
+			
+			/**
+			 * Sends this packet to the address specified the last time reset() was called.
+			 * Also resets this packet.
+			 * 
+			 * @returns The number of bytes sent.
+			 */
+			int32 send();
+			
+			/**
+			 * Sends any remaining data in this packet.
+			 * 
+			 * @returns The number of bytes sent.
+			 * @see send()
+			 */
+			int32 flush();
+
+			/**
+			 * Resets this packet's data and 
+			 */
+			void reset(IPv4Address addr, int32 sz = 0);
+
+			/**
+			 * Clears stream data without sending.
+			 * Equivalent to `reset({0,0,0,0,0})`
+			 * 
+			 * @warning It is an error to attempt to write more than `sizeof(Packet::data)` before calling reset()
+			 * @see reset()
+			 */
+			void clear();
 
 			int32 size() const;
 
@@ -107,11 +141,14 @@ namespace Engine::Net {
 
 			void read(std::string& t);
 
-			template<class T> 
+			template<class T>
 			void read(T& t);
 
-			template<class T> 
+			template<class T>
 			auto read();
+
+		private:
+			void reset(int32 sz = 0);
 	};
 }
 

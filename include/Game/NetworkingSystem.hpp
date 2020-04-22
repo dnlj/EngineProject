@@ -25,7 +25,6 @@ namespace Game {
 			Engine::Net::MessageStream reader;
 			Engine::Net::MessageStream writer;
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::Net::Connection> connections; // TODO: node map?
-			Engine::Net::IPv4Address addr;
 
 		public:
 			NetworkingSystem(SystemArg arg);
@@ -39,11 +38,10 @@ namespace Game {
 			void onConnect(const Engine::Net::Connection& conn);
 			void onDisconnect(const Engine::Net::Connection& conn);
 			Engine::Net::Connection& getConnection(const Engine::Net::IPv4Address& addr);
-			void ping(const Engine::Net::IPv4Address& addr);
 
-			void dispatchMessage();
+			void dispatchMessage(const Engine::Net::IPv4Address& from);
 
 			template<MessageType Type>
-			void handleMessageType() { static_assert(Type != Type, "Unhandled network message type."); };
+			void handleMessageType(const Engine::Net::IPv4Address& from) { static_assert(Type != Type, "Unhandled network message type."); };
 	};
 }

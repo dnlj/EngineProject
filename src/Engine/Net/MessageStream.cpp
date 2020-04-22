@@ -5,15 +5,8 @@
 
 
 namespace Engine::Net {
-	MessageStream::MessageStream() {
-	}
-
-	void MessageStream::setSocket(UDPSocket& sock) {
-		this->sock = &sock;
-	}
-
-	void MessageStream::setAddress(IPv4Address& addr) {
-		this->addr = &addr;
+	MessageStream::MessageStream(UDPSocket& socket)
+		: sock{socket} {
 	}
 
 	void MessageStream::next(MessageHeader head) {
@@ -37,23 +30,49 @@ namespace Engine::Net {
 		return packet.data;
 	}
 
+	const IPv4Address& MessageStream::address() const {
+		return addr;
+	}
+
 	int32 MessageStream::recv() {
-		const int32 len = sock->recv(reinterpret_cast<char*>(&packet), sizeof(packet), *addr) - sizeof(packet.header);
+		const int32 len = sock.recv(reinterpret_cast<char*>(&packet), sizeof(packet), addr) - sizeof(packet.header);
 		reset(len);
 		return len;
 	}
 
-	int32 MessageStream::send() const {
-		return sock->send(
+	int32 MessageStream::sendto(const IPv4Address& addr) const {
+		return sock.send(
 			reinterpret_cast<const char*>(&packet),
 			static_cast<int32>(last - reinterpret_cast<const char*>(&packet)),
-			*addr
+			addr
 		);
+	}
+
+	int32 MessageStream::send() {
+		const auto sent = sendto(addr);
+		reset();
+		return sent;
+	}
+
+	int32 MessageStream::flush() {
+		if (size() > 0) {
+			return send();
+		}
+		return 0;
+	}
+	
+	void MessageStream::reset(IPv4Address addr, int32 sz) {
+		this->addr = addr;
+		reset(sz);
 	}
 
 	void MessageStream::reset(int32 sz) {
 		curr = data();
 		last = curr + sz;
+	}
+
+	void MessageStream::clear() {
+		reset({0,0,0,0, 00000});
 	}
 
 	int32 MessageStream::size() const {

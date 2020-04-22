@@ -35,36 +35,32 @@ namespace {
 namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
-		, socket{ENGINE_SERVER ? 27015 : 0} {
-
-		// TODO: This seems messy. Find better solution.
-		writer.setSocket(socket);
-		writer.setAddress(addr);
-		reader.setSocket(socket);
-		reader.setAddress(addr);
+		, socket{ENGINE_SERVER ? 27015 : 0}
+		, reader{socket}
+		, writer{socket} {
 	}
 
 	void NetworkingSystem::setup() {
 	}
 	
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::CONNECT>() {
+	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(const Engine::Net::IPv4Address& from) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
-		ENGINE_LOG("MessageType::CONNECT from ", addr);
-		connect(addr);
+		ENGINE_LOG("MessageType::CONNECT from ", from);
+		//connect(from);
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>() {
-		ENGINE_LOG("MessageType::DISCONNECT from ", addr);
-		disconnect(addr);
+	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(const Engine::Net::IPv4Address& from) {
+		ENGINE_LOG("MessageType::DISCONNECT from ", from);
+		disconnect(from);
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::PING>() {
+	void NetworkingSystem::handleMessageType<MessageType::PING>(const Engine::Net::IPv4Address& from) {
 		if (reader.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9);
-			writer.reset(); // TODO: rm. shouldnt have to do this.
+			writer.reset(from); // TODO: rm. shouldnt have to do this.
 			writer.next({static_cast<uint8>(MessageType::PING)});
 			writer.write(false);
 			writer.send(); // TODO: rm. shouldnt have to do this.
@@ -74,7 +70,7 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>() {
+	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(const Engine::Net::IPv4Address& from) {
 		const auto ent = reader.read<Engine::ECS::Entity>();
 		const auto cid = reader.read<Engine::ECS::ComponentId>();
 		world.callWithComponent(ent, cid, [&](auto& comp){
@@ -101,9 +97,7 @@ namespace Game {
 						}
 					}
 				});
-				if (writer.size() > 0) {
-					writer.send();
-				}
+				writer.flush();
 			}*/
 		}
 
@@ -111,23 +105,30 @@ namespace Game {
 			static auto next = now;
 			if (next <= now) {
 				next = now + std::chrono::seconds{2};
+
+				writer.clear();
+				writer.next({static_cast<uint8>(MessageType::PING)});
+				writer.write(true);
+
 				for (auto& [_, conn] : connections) {
-					ping(conn.address);
+					writer.sendto(conn.address);
 				}
-			}
-		}
-		
-		while (reader.recv() > -1) {
-			auto& conn = getConnection(addr);
-			conn.lastMessageTime = world.getTickTime();
-			while (reader.size()) {
-				dispatchMessage();
+
+				writer.clear();
 			}
 		}
 
-		if (writer.size() > 0) {
-			writer.send();
+		while (reader.recv() > -1) {
+			const auto& addr = reader.address();
+			auto& conn = getConnection(addr);
+			conn.lastMessageTime = now;
+			while (reader.size()) {
+				dispatchMessage(addr);
+			}
 		}
+
+		// TODO: would probably be easiest for each connection to have its own reader/writer. That would allow use to combine single messages like PING.
+		writer.flush();
 
 		// TODO: Handle connection timeout
 		for (auto it = connections.begin(); it != connections.end();) {
@@ -163,8 +164,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::onConnect(const Engine::Net::Connection& conn) {
-		this->addr = conn.address;
-		writer.reset();
+		writer.reset(conn.address);
 		writer.next({static_cast<uint8>(MessageType::CONNECT)});
 		writer.send();
 	}
@@ -187,19 +187,11 @@ namespace Game {
 		}
 		return found->second;
 	}
-	void NetworkingSystem::ping(const Engine::Net::IPv4Address& addr) {
-		// TODO: find a better way to setup MessageStream address/socket. This is far to error prone.
-		this->addr = addr;
-		writer.reset();
-		writer.next({static_cast<uint8>(MessageType::PING)});
-		writer.write(true);
-		writer.send();
-	}
 
-	void NetworkingSystem::dispatchMessage() {
+	void NetworkingSystem::dispatchMessage(const Engine::Net::IPv4Address& from) {
 		// TODO: use array?
 		const auto header = reader.read<Engine::Net::MessageHeader>();
-		#define HANDLE(Type) case Type: { return handleMessageType<Type>(); }
+		#define HANDLE(Type) case Type: { return handleMessageType<Type>(from); }
 		switch(static_cast<MessageType>(header.type)) {
 			HANDLE(MessageType::CONNECT);
 			HANDLE(MessageType::DISCONNECT);
