@@ -48,9 +48,12 @@ namespace Game {
 			void disconnect(const Engine::Net::IPv4Address& addr);
 
 		private:
-			void onConnect(const Engine::Net::Connection& conn);
+			void addConnection(const Engine::Net::IPv4Address& addr);
+
+			// TODO: rm
 			void onDisconnect(const Engine::Net::Connection& conn);
-			Engine::Net::Connection& getConnection(const Engine::Net::IPv4Address& addr);
+
+			// TODO: rm - Engine::Net::Connection& getConnection(const Engine::Net::IPv4Address& addr);
 
 			void dispatchMessage(const Engine::Net::IPv4Address& from);
 

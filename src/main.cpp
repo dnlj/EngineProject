@@ -303,7 +303,7 @@ namespace {
 	void connectUI(Engine::EngineInstance& engine, Game::World& world) {
 		// TODO: need a way to check active connections so we dont connect from a single message
 		auto& netSys = world.getSystem<Game::NetworkingSystem>();
-		//if (netSys.connectionsCount()) { return; }
+		if (netSys.connectionsCount()) { return; }
 
 		auto& io = ImGui::GetIO();
 		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;

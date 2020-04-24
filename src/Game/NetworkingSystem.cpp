@@ -127,7 +127,7 @@ namespace Game {
 	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(const Engine::Net::IPv4Address& from) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
 		ENGINE_LOG("MessageType::CONNECT from ", from);
-		//connect(from);
+		addConnection(from);
 	}
 
 	template<>
@@ -200,8 +200,12 @@ namespace Game {
 
 		while (reader.recv() > -1) {
 			const auto& addr = reader.address();
-			auto& conn = getConnection(addr);
-			conn.lastMessageTime = now;
+			// TODO: dont connect withotu connect message
+			auto found = connections.find(addr);
+			if (found != connections.end()) {
+				found->second.lastMessageTime = now;
+			}
+
 			while (reader.size()) {
 				dispatchMessage(addr);
 			}
@@ -229,7 +233,17 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connect(const Engine::Net::IPv4Address& addr) {
-		getConnection(addr);
+		writer.reset(addr);
+		writer.next({static_cast<uint8>(MessageType::CONNECT)}); // TODO: reliable message
+		writer.send();
+		addConnection(addr);
+	}
+
+	void NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {
+		connections.emplace(
+			addr,
+			Engine::Net::Connection{addr, Engine::Clock::now(), 0}
+		);
 	}
 
 	void NetworkingSystem::disconnect(const Engine::Net::IPv4Address& addr) {
@@ -243,12 +257,6 @@ namespace Game {
 		}
 	}
 
-	void NetworkingSystem::onConnect(const Engine::Net::Connection& conn) {
-		writer.reset(conn.address);
-		writer.next({static_cast<uint8>(MessageType::CONNECT)});
-		writer.send();
-	}
-
 	void NetworkingSystem::onDisconnect(const Engine::Net::Connection& conn) {
 		std::cout
 			<< "onDisconnect from: " << conn.address
@@ -256,17 +264,18 @@ namespace Game {
 			<< "\n";
 	}
 
-	Engine::Net::Connection& NetworkingSystem::getConnection(const Engine::Net::IPv4Address& addr) {
-		auto found = connections.find(addr);
-		if (found == connections.end()) {
-			found = connections.emplace(
-				addr,
-				Engine::Net::Connection{addr, Engine::Clock::now(), 0}
-			).first;
-			onConnect(found->second);
-		}
-		return found->second;
-	}
+	// TODO: rm
+	//Engine::Net::Connection& NetworkingSystem::getConnection(const Engine::Net::IPv4Address& addr) {
+	//	auto found = connections.find(addr);
+	//	if (found == connections.end()) {
+	//		found = connections.emplace(
+	//			addr,
+	//			Engine::Net::Connection{addr, Engine::Clock::now(), 0}
+	//		).first;
+	//		connect(found->first);
+	//	}
+	//	return found->second;
+	//}
 
 	void NetworkingSystem::dispatchMessage(const Engine::Net::IPv4Address& from) {
 		// TODO: use array?
