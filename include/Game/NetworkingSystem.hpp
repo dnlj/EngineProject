@@ -25,10 +25,11 @@ namespace Game {
 		public:
 			// TODO: find better way to handle this
 			struct ServerInfo {
-				Engine::Net::IPv4Address address;
-				// TODO: name, player count, ping, tags, etc.
+				Engine::Clock::TimePoint lastUpdate;
+				std::string name;
+				// TODO: name, player count, ping, private, tags, etc.
 			};
-			std::vector<ServerInfo> servers;
+			Engine::FlatHashMap<Engine::Net::IPv4Address, ServerInfo> servers;
 
 		private:
 			static constexpr auto timeout = std::chrono::milliseconds{10'000};

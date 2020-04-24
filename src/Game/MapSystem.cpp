@@ -180,7 +180,6 @@ namespace Game {
 
 	// TODO: thread this. Not sure how nice box2d will play with it.
 	void MapSystem::buildActiveChunkData(ActiveChunkData& data, const MapChunk& chunk) {
-		std::cout << "Building chunk data: " << data.chunkPos.x << ", " << data.chunkPos.y << "\n";
 		// TODO: simplify. currently have two mostly duplicate sections.
 
 		{ // Render stuff

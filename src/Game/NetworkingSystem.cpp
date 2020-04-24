@@ -87,6 +87,13 @@ namespace Game {
 	}
 
 	void NetworkingSystem::broadcastDiscover() {
+		const auto now = Engine::Clock::now();
+		for (auto it = servers.begin(); it != servers.end(); ++it) {
+			if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
+				servers.erase(it);
+			}
+		}
+
 		writer.reset(MULTICAST_GROUP);
 		writer.next({static_cast<uint8>(MessageType::DISCOVER_SERVER)});
 		writer << DISCOVER_SERVER_DATA;
@@ -102,7 +109,7 @@ namespace Game {
 		if (reader.size() == size && !memcmp(reader.current(), DISCOVER_SERVER_DATA, size)) {
 			writer.reset(from);
 			writer.next({static_cast<uint8>(MessageType::SERVER_INFO)});
-			writer << "This is the name of the server!";
+			writer << "This is the name of the server";
 			writer.send();
 		}
 
@@ -111,9 +118,9 @@ namespace Game {
 	
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::SERVER_INFO>(const Engine::Net::IPv4Address& from) {
-		const auto name = reader.read<std::string>();
-		std::cout << "SERVER_INFO: " << name << "\n";
-		//servers.push_back({from});
+		auto& info = servers[from];
+		info.name = reader.read<std::string>();
+		info.lastUpdate = Engine::Clock::now();
 	}
 
 	template<>

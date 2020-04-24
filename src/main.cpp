@@ -302,11 +302,12 @@ namespace {
 
 	void connectUI(Engine::EngineInstance& engine, Game::World& world) {
 		// TODO: need a way to check active connections so we dont connect from a single message
-		if (world.getSystem<Game::NetworkingSystem>().connectionsCount()) { return; }
+		auto& netSys = world.getSystem<Game::NetworkingSystem>();
+		//if (netSys.connectionsCount()) { return; }
 
 		auto& io = ImGui::GetIO();
 		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;
-		ImGui::SetNextWindowPos(0.5f * io.DisplaySize, ImGuiCond_Once, ImVec2{0.5f, 0.5f});
+		ImGui::SetNextWindowPos(0.5f * io.DisplaySize, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 		ImGui::Begin("Join Server", nullptr, flags);
 
 		static char serverText[64] = "localhost:27015";
@@ -318,21 +319,39 @@ namespace {
 			world.getSystem<Game::NetworkingSystem>().broadcastDiscover();
 		}
 
-		//if (Engine::Clock::now() - lastRefresh > std::chrono::seconds{5}) {
-		//	Engine::
-		//}
-		
-		//for (int i = 0; i < 10; ++i) {
-		//	ImGui::Text("This is the name of the server!");
-		//	ImGui::SameLine();
-		//	ImGui::Spacing();
-		//	ImGui::SameLine();
-		//	ImGui::Text("2/8");
-		//	ImGui::SameLine();
-		//	ImGui::Text("100 ms");
-		//	ImGui::SameLine();
-		//	ImGui::Button("Connect");
-		//}
+		ImGui::PushItemWidth(io.DisplaySize.x * 0.5f);
+
+		// TODO: imgui tables https://github.com/ocornut/imgui/issues/2957
+		ImGui::Columns(4);
+		ImGui::Text("Name");
+		ImGui::NextColumn();
+		ImGui::Text("Players");
+		ImGui::NextColumn();
+		ImGui::Text("Ping");
+		ImGui::NextColumn();
+		ImGui::Text("");
+		ImGui::Columns(1);
+		ImGui::Separator();
+		ImGui::Columns(4);
+
+		for (const auto& [addr, info] : netSys.servers) {
+			int c = 0;
+			ImGui::Text(info.name.c_str());
+
+			ImGui::NextColumn();
+			ImGui::Text("2/8");
+
+			ImGui::NextColumn();
+			ImGui::Text("100 ms");
+
+			ImGui::NextColumn();
+			if (ImGui::Button("Connect")) {
+				netSys.connect(addr);
+			}
+			ImGui::NextColumn();
+		}
+
+		ImGui::Columns(1);
 
 		bool shouldConnect = false;
 		shouldConnect |= ImGui::InputText("", serverText, sizeof(serverText), ImGuiInputTextFlags_EnterReturnsTrue);
