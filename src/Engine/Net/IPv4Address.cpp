@@ -3,16 +3,6 @@
 
 
 namespace Engine::Net {
-	IPv4Address::IPv4Address(uint32 address, uint32 port)
-		: address{address}
-		, port{port} {
-	}
-
-	IPv4Address::IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint32 port)
-		: a{a}, b{b}, c{c}, d{d}
-		, port{port} {
-	}
-
 	IPv4Address::IPv4Address(const sockaddr_in& saddress)
 		: address{ntohl(saddress.sin_addr.s_addr)}
 		, port{ntohs(saddress.sin_port)} {

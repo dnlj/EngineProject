@@ -301,6 +301,7 @@ namespace {
 	}
 
 	void connectUI(Engine::EngineInstance& engine, Game::World& world) {
+		// TODO: need a way to check active connections so we dont connect from a single message
 		if (world.getSystem<Game::NetworkingSystem>().connectionsCount()) { return; }
 
 		auto& io = ImGui::GetIO();
@@ -309,7 +310,13 @@ namespace {
 		ImGui::Begin("Join Server", nullptr, flags);
 
 		static char serverText[64] = "localhost:27015";
-		static Engine::Clock::TimePoint lastRefresh;
+		static Engine::Clock::TimePoint nextRefresh;
+
+		const auto now = Engine::Clock::now();
+		if (nextRefresh <= now) {
+			nextRefresh = now + std::chrono::seconds{2};
+			world.getSystem<Game::NetworkingSystem>().broadcastDiscover();
+		}
 
 		//if (Engine::Clock::now() - lastRefresh > std::chrono::seconds{5}) {
 		//	Engine::

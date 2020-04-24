@@ -30,12 +30,21 @@ namespace Engine::Net {
 		return packet.data;
 	}
 
+	char* MessageStream::current() {
+		return curr;
+	}
+
+	const char* MessageStream::current() const {
+		return curr;
+	}
+
 	const IPv4Address& MessageStream::address() const {
 		return addr;
 	}
 
 	int32 MessageStream::recv() {
 		const int32 len = sock.recv(reinterpret_cast<char*>(&packet), sizeof(packet), addr) - sizeof(packet.header);
+		// TODO: filter by PacketHeader.protocol
 		reset(len);
 		return len;
 	}
@@ -77,10 +86,6 @@ namespace Engine::Net {
 
 	int32 MessageStream::size() const {
 		return static_cast<int32>(last - curr);
-	}
-
-	int32 MessageStream::capacity() const {
-		return sizeof(packet.data);
 	}
 
 	void MessageStream::write(const std::string& t) {

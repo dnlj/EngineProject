@@ -17,9 +17,13 @@ namespace Engine::Net {
 		return *this;
 	}
 
+	constexpr int32 MessageStream::capacity() {
+		return sizeof(packet.data);
+	}
+
 	template<class T>
 	void MessageStream::write(const T* t, size_t sz) {
-		if (last + sz < packet.data + sizeof(packet.data)) {
+		if (last + sz <= packet.data + sizeof(packet.data)) {
 			memcpy(last, t, sz);
 			last += sz;
 		} else {
@@ -31,7 +35,7 @@ namespace Engine::Net {
 			write(t, sz);
 		}
 
-		ENGINE_DEBUG_ASSERT(size() <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
+		ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
 	};
 
 	template<class T>

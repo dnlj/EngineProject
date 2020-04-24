@@ -17,7 +17,7 @@
 namespace Engine::Net {
 	class PacketHeader {
 		public:
-			uint16 protocol;
+			uint16 protocol = 0b0110'1001'1001'0110;
 	};
 	static_assert(sizeof(PacketHeader) == 2);
 
@@ -47,7 +47,7 @@ namespace Engine::Net {
 			Packet packet;
 
 		public:
-			static constexpr int32 MAX_MESSAGE_SIZE = 256; // TODO: Is this ever used? Why is it here?
+			static constexpr int32 MAX_MESSAGE_SIZE = sizeof(Packet::data) - sizeof(MessageHeader);
 
 		public:
 			MessageStream(UDPSocket& socket);
@@ -62,6 +62,9 @@ namespace Engine::Net {
 
 			char* data();
 			const char* data() const;
+
+			char* current();
+			const char* current() const;
 
 			const IPv4Address& address() const;
 
@@ -108,7 +111,7 @@ namespace Engine::Net {
 
 			int32 size() const;
 
-			int32 capacity() const;
+			static constexpr int32 capacity();
 
 			template<class T>
 			MessageStream& operator<<(const T& t);

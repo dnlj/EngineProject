@@ -2,6 +2,7 @@
 
 #if ENGINE_OS_WINDOWS
 	#include <WinSock2.h>
+	#include <Ws2tcpip.h>
 #else
 	#error Not yet implemented for this operating system.
 #endif
@@ -12,11 +13,17 @@
 
 
 namespace Engine::Net {
+	// TODO: move
+	enum class SocketOption : int {
+		BROADCAST,
+		MULTICAST_JOIN,
+		// TODO: others
+	};
+
 	// TODO: doc
 	class UDPSocket {
 		public:
 			UDPSocket(const uint16 port);
-
 			UDPSocket(const UDPSocket&) = delete;
 			UDPSocket& operator=(const UDPSocket&) = delete;
 
@@ -25,6 +32,9 @@ namespace Engine::Net {
 			int32 send(const char* data, int32 size, const IPv4Address& address) const;
 
 			int32 recv(char* data, int32 size, IPv4Address& address) const;
+
+			template<SocketOption Opt, class Value>
+			bool setOption(const Value& value);
 
 		private:
 			SOCKET handle;
@@ -36,3 +46,5 @@ namespace Engine::Net {
 			std::string getWindowsErrorMessage(int err) const;
 	};
 }
+
+#include <Engine/Net/UDPSocket.ipp>

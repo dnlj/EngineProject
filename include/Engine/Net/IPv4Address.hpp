@@ -18,8 +18,8 @@ namespace Engine::Net {
 	class IPv4Address {
 		public:
 			IPv4Address() = default;
-			IPv4Address(uint32 address, uint32 port);
-			IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint32 port);
+			constexpr IPv4Address(uint32 address, uint32 port = 0);
+			constexpr IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint32 port = 0);
 			IPv4Address(const sockaddr_in& saddress);
 			IPv4Address(const sockaddr& saddress);
 
@@ -54,3 +54,5 @@ namespace Engine {
 		}
 	};
 }
+
+#include <Engine/Net/IPv4Address.ipp>

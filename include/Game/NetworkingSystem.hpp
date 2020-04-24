@@ -1,4 +1,5 @@
 #pragma once
+
 // Engine
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Net/MessageStream.hpp>
@@ -12,6 +13,8 @@
 namespace Game {
 	enum class MessageType : uint8 {
 		UNKNOWN,
+		DISCOVER_SERVER,
+		SERVER_INFO,
 		CONNECT,
 		DISCONNECT,
 		PING,
@@ -19,6 +22,14 @@ namespace Game {
 	};
 
 	class NetworkingSystem : public System {
+		public:
+			// TODO: find better way to handle this
+			struct ServerInfo {
+				Engine::Net::IPv4Address address;
+				// TODO: name, player count, ping, tags, etc.
+			};
+			std::vector<ServerInfo> servers;
+
 		private:
 			static constexpr auto timeout = std::chrono::milliseconds{10'000};
 			Engine::Net::UDPSocket socket;
@@ -29,6 +40,7 @@ namespace Game {
 		public:
 			NetworkingSystem(SystemArg arg);
 			void setup();
+			void broadcastDiscover(); // TODO: better way to handle messages
 			void tick(float32 dt);
 			int32 connectionsCount() const;
 			void connect(const Engine::Net::IPv4Address& addr);
