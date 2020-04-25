@@ -53,8 +53,6 @@ namespace Game {
 			// TODO: rm
 			void onDisconnect(const Engine::Net::Connection& conn);
 
-			// TODO: rm - Engine::Net::Connection& getConnection(const Engine::Net::IPv4Address& addr);
-
 			void dispatchMessage(const Engine::Net::IPv4Address& from);
 
 			template<MessageType Type>

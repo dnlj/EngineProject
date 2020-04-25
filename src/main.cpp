@@ -345,7 +345,7 @@ namespace {
 			ImGui::Text("100 ms");
 
 			ImGui::NextColumn();
-			if (ImGui::Button("Connect")) {
+			if (ImGui::Button("Connect")) { // TODO: do i need to PushId ?
 				netSys.connect(addr);
 			}
 			ImGui::NextColumn();
@@ -356,7 +356,8 @@ namespace {
 		bool shouldConnect = false;
 		shouldConnect |= ImGui::InputText("", serverText, sizeof(serverText), ImGuiInputTextFlags_EnterReturnsTrue);
 		ImGui::SameLine();
-		shouldConnect |= ImGui::Button("Connect");
+		shouldConnect |= ImGui::Button("Connect##IP");
+
 		if (shouldConnect && strlen(serverText)) {
 			connectTo(serverText, engine, world);
 		};

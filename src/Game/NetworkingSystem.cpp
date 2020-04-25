@@ -78,9 +78,11 @@ namespace Game {
 		, reader{socket}
 		, writer{socket} {
 
-		std::cout << "Setting multicast: "
-			<< socket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(MULTICAST_GROUP)
-			<< "\n";
+		if (socket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(MULTICAST_GROUP)) {
+			ENGINE_LOG("LAN server discovery is available. Joining multicast group ", MULTICAST_GROUP);
+		} else {
+			ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", MULTICAST_GROUP);
+		}
 	}
 
 	void NetworkingSystem::setup() {
@@ -263,19 +265,6 @@ namespace Game {
 			<< " @ " << conn.lastMessageTime.time_since_epoch().count()
 			<< "\n";
 	}
-
-	// TODO: rm
-	//Engine::Net::Connection& NetworkingSystem::getConnection(const Engine::Net::IPv4Address& addr) {
-	//	auto found = connections.find(addr);
-	//	if (found == connections.end()) {
-	//		found = connections.emplace(
-	//			addr,
-	//			Engine::Net::Connection{addr, Engine::Clock::now(), 0}
-	//		).first;
-	//		connect(found->first);
-	//	}
-	//	return found->second;
-	//}
 
 	void NetworkingSystem::dispatchMessage(const Engine::Net::IPv4Address& from) {
 		// TODO: use array?
