@@ -301,7 +301,6 @@ namespace {
 	}
 
 	void connectUI(Engine::EngineInstance& engine, Game::World& world) {
-		// TODO: need a way to check active connections so we dont connect from a single message
 		auto& netSys = world.getSystem<Game::NetworkingSystem>();
 		if (netSys.connectionsCount()) { return; }
 
@@ -310,7 +309,7 @@ namespace {
 		ImGui::SetNextWindowPos(0.5f * io.DisplaySize, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 		ImGui::Begin("Join Server", nullptr, flags);
 
-		static char serverText[64] = "localhost:27015";
+		static char serverText[64] = "localhost:21212";
 		static Engine::Clock::TimePoint nextRefresh;
 
 		const auto now = Engine::Clock::now();

@@ -164,8 +164,8 @@ namespace Engine::Input {
 			};
 
 		private:
-			/** Stores a set of indices into #inputBindMappings where each index corresponds to an InputBindMapping that uses the given InputId. */
-			FlatHashMap<InputId, std::vector<uint16_t>, Hash<InputId>> buttonToMapping;
+			/** Stores a set of indices into #buttonMappings where each index corresponds to an InputBindMapping that uses the given InputId. */
+			FlatHashMap<InputId, std::vector<uint16_t>> buttonToMapping;
 
 			/** Stores every InputBindMapping used by this manager. */
 			std::vector<InputBindMapping> buttonMappings;

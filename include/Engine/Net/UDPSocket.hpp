@@ -10,17 +10,11 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Net/IPv4Address.hpp>
+#include <Engine/Net/SocketOptions.hpp>
 
 
 namespace Engine::Net {
-	// TODO: move
-	enum class SocketOption : int {
-		BROADCAST,
-		MULTICAST_JOIN,
-		// TODO: others
-	};
 
-	// TODO: doc
 	class UDPSocket {
 		public:
 			UDPSocket(const uint16 port);

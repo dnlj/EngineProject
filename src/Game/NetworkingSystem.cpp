@@ -30,7 +30,7 @@ namespace {
 		}
 	};
 
-	constexpr uint16 DEFAULT_PORT = 27015; // TODO: cmd line arg
+	constexpr uint16 DEFAULT_PORT = 21212; // TODO: cmd line arg
 	constexpr Engine::Net::IPv4Address MULTICAST_GROUP = {224,0,0,212, DEFAULT_PORT}; // TODO: cmd line arg
 
 	// TODO: figure out a good pattern
