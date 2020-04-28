@@ -1,49 +1,43 @@
 // Engine
 #include <Engine/Input/Bind.hpp>
 
+
 namespace Engine::Input {
-	Bind::Bind(std::string name) : name{std::move(name)} {
+	Bind::Bind(InputSequence inputs, BindListener listener)
+		: listener{listener} {
+		inputStates.resize(inputs.size());
+
+		for (int i = 0; i < inputs.size(); ++i) {
+			inputStates[i].id = std::move(inputs[i]);
+		}
 	}
 
-	void Bind::press() {
-		if (active == 0) {
-			for (auto l : pressListeners) {
-				l->onBindPress();
+	void Bind::processInput(const InputState& is) {
+		bool update = true;
+
+		for (int i = 0; i < inputStates.size() - 1; ++i) {
+			auto& s = inputStates[i];
+			if (s.id == is.id) {
+				s.value = is.value;
+				return; // There should only be one state for each input. No need to check the rest.
 			}
+
+			update = update && s.value;
 		}
 
-		++active;
-	};
-
-	void Bind::hold() const {
-		for (auto l : holdListeners) {
-			l->onBindHold();
+		// If we havent already returned we are dealing with the last input
+		auto& last = inputStates.back();
+		last.value = is.value;
+		if (update) {
+			state.value = last.value;
 		}
-	};
-
-	void Bind::release() {
-		--active;
-
-		if (active == 0) {
-			for (auto l : releaseListeners) {
-				l->onBindRelease();
-			}
-		}
-	};
-
-	bool Bind::isActive() const {
-		return active;
 	}
 
-	void Bind::addPressListener(BindPressListener* listener) {
-		pressListeners.push_back(listener);
+	Value Bind::getState() const {
+		return state;
 	}
 
-	void Bind::addHoldListener(BindHoldListener* listener) {
-		holdListeners.push_back(listener);
+	void Bind::notify(Value curr, Value prev) const {
+		listener(curr, prev);
 	}
-	
-	void Bind::addReleaseListener(BindReleaseListener* listener) {
-		releaseListeners.push_back(listener);
-	}
-}
+};

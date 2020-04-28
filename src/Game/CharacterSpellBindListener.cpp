@@ -16,16 +16,19 @@ namespace Game {
 		: engine{engine}
 		, world{world}
 		, player{player}
-		, axisIds{engine.inputManager.getAxisId("target_x"), engine.inputManager.getAxisId("target_y")} {
+		, targetIds{engine.actionManager.getId("Target_X", "Target_Y")} {
 	}
 
-	void CharacterSpellBindListener::onBindPress() {
+	bool CharacterSpellBindListener::operator()(Engine::Input::Value curr, Engine::Input::Value prev) {
+		if (!curr.value || prev.value) { return false; }
+
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();
 		const auto& pos = world.getComponent<Game::PhysicsComponent>(player).getPosition();
-		const auto mousePos = engine.camera.screenToWorld(engine.inputManager.getAxisValue(axisIds));
+		const auto mousePos = engine.camera.screenToWorld(engine.actionManager.getValue<float32>(targetIds));
 		auto dir = Engine::Glue::as<b2Vec2>(mousePos) - pos;
 		dir.Normalize();
 		
 		spellSys.fireMissile(pos + 0.3f * dir, dir);
+		return false;
 	}
 }

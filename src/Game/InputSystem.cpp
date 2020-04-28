@@ -21,8 +21,6 @@ namespace Game {
 				break;
 			}
 		}
-
-		engine.inputManager.update();
 	}
 
 	void InputSystem::queueInput(const Engine::Input::InputEvent& event) {

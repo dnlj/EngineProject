@@ -244,7 +244,7 @@ namespace {
 
 	void editorUI(Engine::EngineInstance& engine, Game::World& world) {
 		static auto texture32 = engine.textureManager.get("../assets/32.bmp");
-		static auto axisIds = engine.inputManager.getAxisId("target_x", "target_y");
+		static auto targetIds = engine.actionManager.getId("Target_X", "Target_Y");
 
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
@@ -254,8 +254,7 @@ namespace {
 		if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
 			auto& mapSys = world.getSystem<Game::MapSystem>();
 
-			// TODO: fix
-			auto screenMousePos = engine.inputManager.getAxisValue(axisIds);
+			auto screenMousePos = engine.actionManager.getValue<float32>(targetIds);
 			ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
 			auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
@@ -535,64 +534,75 @@ void run() {
 	Game::World& world = *worldStorage.get();
 	TempWorldEngineWrapper wrapper{engine, world};
 	windowCallbacks.userdata = &wrapper;
+	const auto player = world.createEntity();
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
 	{
-		// TODO: Make device 0 match any device? 0xFF?
 		using namespace Engine::Input;
-		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
+		auto& im = engine.inputManager;
+		auto& am = engine.actionManager;
+
+		const auto Spell_1 = am.create("Spell_1");
+		const auto Move_Up = am.create("Move_Up");
+		const auto Move_Down = am.create("Move_Down");
+		const auto Move_Left = am.create("Move_Left");
+		const auto Move_Right = am.create("Move_Right");
+		const auto Edit_Place = am.create("Edit_Place");
+		const auto Edit_Remove = am.create("Edit_Remove");
+		const auto Target_X = am.create("Target_X");
+		const auto Target_Y = am.create("Target_Y");
+
+		im.addBind(InputSequence{
 			InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 			InputId{InputType::KEYBOARD, 1, 46}, // C
-		});
-		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
+		}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
+		im.addBind(InputSequence{
 			InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 			InputId{InputType::KEYBOARD, 1, 56}, // ALT
 			InputId{InputType::KEYBOARD, 1, 16}, // Q
-		});
-		engine.inputManager.addButtonMapping("Spell_1", InputSequence{
+		}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
+		im.addBind(InputSequence{
 			InputId{InputType::KEYBOARD, 1, 57}
-		});
-		engine.inputManager.addButtonMapping("MoveUp", InputSequence{
+		}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
+		im.addBind(InputSequence{
 			InputId{InputType::KEYBOARD, 1, 17}
-		});
-		engine.inputManager.addButtonMapping("MoveDown", InputSequence{
+		}, [&](Value curr, Value prev){ am.get(Move_Up).set(curr); });
+		im.addBind(InputSequence{
 			InputId{InputType::KEYBOARD, 1, 31}
-		});
-		engine.inputManager.addButtonMapping("MoveLeft", InputSequence{
+		}, [&](Value curr, Value prev){ am.get(Move_Down).set(curr); });
+		im.addBind(InputSequence{
 			InputId{InputType::KEYBOARD, 1, 30}
-		});
-		engine.inputManager.addButtonMapping("MoveRight", InputSequence{
+		}, [&](Value curr, Value prev){ am.get(Move_Left).set(curr); });
+		im.addBind(InputSequence{
 			InputId{InputType::KEYBOARD, 1, 32}
-		});
-		engine.inputManager.addButtonMapping("EditPlace", InputSequence{
+		}, [&](Value curr, Value prev){ am.get(Move_Right).set(curr); });
+		im.addBind(InputSequence{
 			InputId{InputType::MOUSE, 0, 0}
-		});
-		engine.inputManager.addButtonMapping("EditRemove", InputSequence{
+		}, [&](Value curr, Value prev){ am.get(Edit_Place).set(curr); });
+		im.addBind(InputSequence{
 			InputId{InputType::MOUSE, 0, 1}
-		});
-
-		engine.inputManager.addAxisMapping("target_x", {InputType::MOUSE_AXIS, 0, 0});
-		engine.inputManager.addAxisMapping("target_y", {InputType::MOUSE_AXIS, 0, 1});
+		}, [&](Value curr, Value prev){ am.get(Edit_Remove).set(curr); });
+		im.addBind(InputSequence{
+			InputId{InputType::MOUSE_AXIS, 0, 0}
+		}, [&](Value curr, Value prev){ am.get(Target_X).set(curr); });
+		im.addBind(InputSequence{
+			InputId{InputType::MOUSE_AXIS, 0, 1}
+		}, [&](Value curr, Value prev){ am.get(Target_Y).set(curr); });
+		
+		am.addListener(Spell_1, Game::CharacterSpellBindListener{engine, world, player});
+		am.addListener(Move_Up, Game::CharacterMovementBindListener{world, player, glm::ivec2{0, 1}});
+		am.addListener(Move_Down, Game::CharacterMovementBindListener{world, player, glm::ivec2{0, -1}});
+		am.addListener(Move_Left, Game::CharacterMovementBindListener{world, player, glm::ivec2{-1, 0}});
+		am.addListener(Move_Right, Game::CharacterMovementBindListener{world, player, glm::ivec2{1, 0}});
+		am.addListener(Edit_Remove, Game::MapSystemBindListener<0>{world.getSystem<Game::MapSystem>(), engine});
+		am.addListener(Edit_Place, Game::MapSystemBindListener<1>{world.getSystem<Game::MapSystem>(), engine});
 	}
 
 	// More engine stuff
 	#if defined (DEBUG_PHYSICS)
 		world.getSystem<Game::PhysicsSystem>().getDebugDraw().setup(engine.camera);
 	#endif
-
-	auto player = world.createEntity();
-
-	// TODO: better place to store these?
-	Game::CharacterSpellBindListener playerSpellBindListener{engine, world, player};
-	Game::CharacterMovementBindListener playerMovementBindListeners[] = {
-		Game::CharacterMovementBindListener{world, player, glm::ivec2{0, 1}},
-		Game::CharacterMovementBindListener{world, player, glm::ivec2{0, -1}},
-		Game::CharacterMovementBindListener{world, player, glm::ivec2{-1, 0}},
-		Game::CharacterMovementBindListener{world, player, glm::ivec2{1, 0}},
-	};
-	Game::MapSystemBindListener<1> mapSystemBindListener_EditPlace{world.getSystem<Game::MapSystem>(), engine};
-	Game::MapSystemBindListener<0> mapSystemBindListener_EditRemove{world.getSystem<Game::MapSystem>(), engine};
 
 	{ // TODO: is there a better way to handle these setup functions? This seems dumb.
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
@@ -608,14 +618,6 @@ void run() {
 
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
 
-		// TODO: Do this in a better way? Listener on an EntityFilter for CharacterMovementComponent would be one way.
-		engine.inputManager.getButtonBind("Spell_1").addListener(&playerSpellBindListener);
-		engine.inputManager.getButtonBind("MoveUp").addListener(&playerMovementBindListeners[0]);
-		engine.inputManager.getButtonBind("MoveDown").addListener(&playerMovementBindListeners[1]);
-		engine.inputManager.getButtonBind("MoveLeft").addListener(&playerMovementBindListeners[2]);
-		engine.inputManager.getButtonBind("MoveRight").addListener(&playerMovementBindListeners[3]);
-		engine.inputManager.getButtonBind("EditPlace").addListener(&mapSystemBindListener_EditPlace);
-		engine.inputManager.getButtonBind("EditRemove").addListener(&mapSystemBindListener_EditRemove);
 
 	}
 
