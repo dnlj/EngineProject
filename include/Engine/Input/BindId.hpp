@@ -1,6 +1,10 @@
 #pragma once
 
+// Engine
+#include <Engine/Engine.hpp>
+
+
 namespace Engine::Input {
 	/** Used for identifying a bind in an InputManager */
-	using BindId = int16_t;
+	enum class BindId : uint16;
 }

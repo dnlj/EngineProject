@@ -45,8 +45,4 @@ namespace Engine::Input {
 	Value ActionManager::getValue(ActionId aid) {
 		return get(aid).state;
 	}
-
-	void ActionManager::addListener(ActionId aid, ActionListener listener) {
-		actions[aid].listeners.push_back(std::move(listener));
-	}
 }

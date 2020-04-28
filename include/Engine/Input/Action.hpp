@@ -6,7 +6,7 @@
 
 namespace Engine::Input {
 	class Action {
-		public: // TODO: private
+		public:
 			Value state;
 			std::string name;
 			std::vector<ActionListener> listeners;
