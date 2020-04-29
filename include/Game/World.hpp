@@ -44,6 +44,7 @@ namespace Game {
 	>;
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<
+		MapEditComponent,
 		PhysicsComponent,
 		SpriteComponent,
 		CharacterMovementComponent,

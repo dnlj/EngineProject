@@ -51,6 +51,13 @@ namespace Game {
 			static_assert(decltype(loadedChunks)::is_always_lock_free);
 	};
 
+	// TODO: move
+	class MapEditComponent {
+		public:
+			bool place = false;
+			bool remove = false;
+	};
+
 	class MapSystem : public System {
 		public:
 			/** The number of chunks in each region */
@@ -72,7 +79,8 @@ namespace Game {
 			~MapSystem();
 
 			void setup();
-			void run(float dt);
+			void tick(float32 dt);
+			void run(float32 dt);
 			void ensurePlayAreaLoaded(glm::ivec2 chunkPos);
 
 			// TODO: Name? this isnt consistent with our other usage of offset

@@ -61,8 +61,35 @@ namespace Game {
 		}
 	}
 
+	void MapSystem::tick(float32 dt) {
+		// TODO: move
+		const auto makeEdit = [&](int value){
+			// TODO: store ids somewhere
+			const auto mousePos = engine.camera.screenToWorld(
+				engine.actionManager.getValue<float32>(
+					engine.actionManager.getId("Target_X", "Target_Y")
+				)
+			);
+
+			for (int x = -1; x < 2; ++x) {
+				for (int y = -1; y < 2; ++y) {
+					setValueAt(
+						mousePos + glm::vec2{x * MapChunk::blockSize, y * MapChunk::blockSize},
+						value
+					);
+				}
+			}
+		};
+
+		for (auto& ply : playerFilter) {
+			auto& me = world.getComponent<MapEditComponent>(ply);
+			if (me.place) { makeEdit(1); }
+			if (me.remove) { makeEdit(0); }
+		}
+	}
+
 	// TODO: should probably be tick
-	void MapSystem::run(float dt) {
+	void MapSystem::run(float32 dt) {
 		for (auto& ply : playerFilter) {
 			auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsComponent>(ply).getPosition());
 			ensurePlayAreaLoaded(worldToBlock(pos));

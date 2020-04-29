@@ -49,7 +49,6 @@
 #include <Game/CharacterSpellBindListener.hpp>
 #include <Game/CharacterMovementBindListener.hpp>
 #include <Game/MapGenerator.hpp>
-#include <Game/MapSystemBindListener.hpp>
 
 
 namespace {
@@ -595,8 +594,8 @@ void run() {
 		am.addListener(Move_Down, Game::CharacterMovementBindListener{world, player, glm::ivec2{0, -1}});
 		am.addListener(Move_Left, Game::CharacterMovementBindListener{world, player, glm::ivec2{-1, 0}});
 		am.addListener(Move_Right, Game::CharacterMovementBindListener{world, player, glm::ivec2{1, 0}});
-		am.addListener(Edit_Remove, Game::MapSystemBindListener<0>{world.getSystem<Game::MapSystem>(), engine});
-		am.addListener(Edit_Place, Game::MapSystemBindListener<1>{world.getSystem<Game::MapSystem>(), engine});
+		am.addListener(Edit_Remove, [&](Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(player).remove = curr && !prev; return false; });
+		am.addListener(Edit_Place, [&](Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(player).place = curr && !prev; return false; });
 	}
 
 	// More engine stuff
@@ -610,6 +609,7 @@ void run() {
 		// Player
 		ENGINE_LOG("PlayerId: ", player);
 		world.addComponent<Game::PlayerComponent>(player);
+		world.addComponent<Game::MapEditComponent>(player);
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");
 		world.addComponent<Game::PhysicsComponent>(player).setBody(createPhysicsCircle(player, physSys));
 		world.addComponent<Game::CharacterMovementComponent>(player);
