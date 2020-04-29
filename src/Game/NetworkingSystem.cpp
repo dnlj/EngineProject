@@ -162,6 +162,13 @@ namespace Game {
 		});
 	}
 
+	template<>
+	void NetworkingSystem::handleMessageType<MessageType::ACTION>(const Engine::Net::IPv4Address& from) {
+		const auto aid = reader.read<Engine::Input::ActionId>();
+		const auto val = reader.read<Engine::Input::Value>();
+		std::cout << "Recv action: " << aid << " - " << val.value << "\n";
+	}
+
 	void NetworkingSystem::tick(float32 dt) {
 		const auto now = Engine::Clock::now();
 
@@ -277,6 +284,7 @@ namespace Game {
 			HANDLE(MessageType::DISCONNECT);
 			HANDLE(MessageType::PING);
 			HANDLE(MessageType::ECS_COMP);
+			HANDLE(MessageType::ACTION);
 			default: {
 				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(reader.header().type));
 			}

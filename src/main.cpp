@@ -46,8 +46,8 @@
 // Game
 #include <Game/Common.hpp>
 #include <Game/World.hpp>
-#include <Game/CharacterSpellBindListener.hpp>
-#include <Game/CharacterMovementBindListener.hpp>
+#include <Game/CharacterSpellActionListener.hpp>
+#include <Game/CharacterMovementActionListener.hpp>
 #include <Game/MapGenerator.hpp>
 
 
@@ -552,50 +552,75 @@ void run() {
 		const auto Target_X = am.create("Target_X");
 		const auto Target_Y = am.create("Target_Y");
 
-		im.addBind(InputSequence{
-			InputId{InputType::KEYBOARD, 1, 29}, // CTRL
-			InputId{InputType::KEYBOARD, 1, 46}, // C
-		}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::KEYBOARD, 1, 29}, // CTRL
-			InputId{InputType::KEYBOARD, 1, 56}, // ALT
-			InputId{InputType::KEYBOARD, 1, 16}, // Q
-		}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::KEYBOARD, 1, 57}
-		}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::KEYBOARD, 1, 17}
-		}, [&](Value curr, Value prev){ am.get(Move_Up).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::KEYBOARD, 1, 31}
-		}, [&](Value curr, Value prev){ am.get(Move_Down).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::KEYBOARD, 1, 30}
-		}, [&](Value curr, Value prev){ am.get(Move_Left).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::KEYBOARD, 1, 32}
-		}, [&](Value curr, Value prev){ am.get(Move_Right).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::MOUSE, 0, 0}
-		}, [&](Value curr, Value prev){ am.get(Edit_Place).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::MOUSE, 0, 1}
-		}, [&](Value curr, Value prev){ am.get(Edit_Remove).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::MOUSE_AXIS, 0, 0}
-		}, [&](Value curr, Value prev){ am.get(Target_X).set(curr); });
-		im.addBind(InputSequence{
-			InputId{InputType::MOUSE_AXIS, 0, 1}
-		}, [&](Value curr, Value prev){ am.get(Target_Y).set(curr); });
-		
-		am.addListener(Spell_1, Game::CharacterSpellBindListener{engine, world, player});
-		am.addListener(Move_Up, Game::CharacterMovementBindListener{world, player, glm::ivec2{0, 1}});
-		am.addListener(Move_Down, Game::CharacterMovementBindListener{world, player, glm::ivec2{0, -1}});
-		am.addListener(Move_Left, Game::CharacterMovementBindListener{world, player, glm::ivec2{-1, 0}});
-		am.addListener(Move_Right, Game::CharacterMovementBindListener{world, player, glm::ivec2{1, 0}});
-		am.addListener(Edit_Remove, [&](Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(player).remove = curr && !prev; return false; });
-		am.addListener(Edit_Place, [&](Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(player).place = curr && !prev; return false; });
+		if constexpr (ENGINE_CLIENT) {
+			im.addBind(InputSequence{
+				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
+				InputId{InputType::KEYBOARD, 1, 46}, // C
+			}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
+				InputId{InputType::KEYBOARD, 1, 56}, // ALT
+				InputId{InputType::KEYBOARD, 1, 16}, // Q
+			}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::KEYBOARD, 1, 57}
+			}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::KEYBOARD, 1, 17}
+			}, [&](Value curr, Value prev){ am.get(Move_Up).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::KEYBOARD, 1, 31}
+			}, [&](Value curr, Value prev){ am.get(Move_Down).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::KEYBOARD, 1, 30}
+			}, [&](Value curr, Value prev){ am.get(Move_Left).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::KEYBOARD, 1, 32}
+			}, [&](Value curr, Value prev){ am.get(Move_Right).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::MOUSE, 0, 0}
+			}, [&](Value curr, Value prev){ am.get(Edit_Place).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::MOUSE, 0, 1}
+			}, [&](Value curr, Value prev){ am.get(Edit_Remove).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::MOUSE_AXIS, 0, 0}
+			}, [&](Value curr, Value prev){ am.get(Target_X).set(curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::MOUSE_AXIS, 0, 1}
+			}, [&](Value curr, Value prev){ am.get(Target_Y).set(curr); });
+		}
+
+		if constexpr (ENGINE_CLIENT) {
+			am.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world, player});
+			am.addListener(Move_Up, Game::CharacterMovementActionListener{world, player, glm::ivec2{0, 1}});
+			am.addListener(Move_Down, Game::CharacterMovementActionListener{world, player, glm::ivec2{0, -1}});
+			am.addListener(Move_Left, Game::CharacterMovementActionListener{world, player, glm::ivec2{-1, 0}});
+			am.addListener(Move_Right, Game::CharacterMovementActionListener{world, player, glm::ivec2{1, 0}});
+			am.addListener(Edit_Remove, [&](ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(player).remove = curr && !prev; return false; });
+			am.addListener(Edit_Place, [&](ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(player).place = curr && !prev; return false; });
+
+			{ // TODO: better way to do this
+				auto& netSys = world.getSystem<Game::NetworkingSystem>();
+				auto& writer = netSys.getWriter();
+
+				const auto sendAction = [&](ActionId aid, Value curr, Value prev){
+					std::cout << "Send action: " << aid << " - " << curr.value << "\n";
+					writer.reset({127,0,0,1, 21212});
+					writer.next(Engine::Net::MessageHeader{static_cast<uint8>(Game::MessageType::ACTION)});
+					writer << aid << curr;
+					return false;
+				};
+
+				am.addListener(Spell_1, sendAction);
+				am.addListener(Move_Up, sendAction);
+				am.addListener(Move_Down, sendAction);
+				am.addListener(Move_Left, sendAction);
+				am.addListener(Move_Right, sendAction);
+				am.addListener(Edit_Remove, sendAction);
+				am.addListener(Edit_Place, sendAction);
+			}
+		}
 	}
 
 	// More engine stuff

@@ -3,16 +3,11 @@
 
 
 namespace Engine::Input {
-	Action::Action(Value state, std::string name)
-		: state{state}
-		, name{std::move(name)} {
-	}
-
 	ActionId ActionManager::create(const std::string& name) {
 		auto found = actionNameToId.find(name);
 		if (found == actionNameToId.end()) {
 			found = actionNameToId.emplace(name, static_cast<ActionId>(actions.size())).first;
-			actions.emplace_back(Value{}, name);
+			actions.emplace_back(found->second, Value{}, name);
 		} else {
 			ENGINE_WARN("Attempting to create action that already exists: ", name);
 		}

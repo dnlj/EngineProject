@@ -7,7 +7,7 @@
 #include <Game/World.hpp>
 
 namespace Game {
-	class CharacterSpellBindListener {
+	class CharacterSpellActionListener {
 		private:
 			Engine::EngineInstance& engine;
 			World& world;
@@ -15,12 +15,12 @@ namespace Game {
 			std::array<Engine::Input::ActionId, 2> targetIds;
 
 		public:
-			CharacterSpellBindListener(
+			CharacterSpellActionListener(
 				Engine::EngineInstance& engine,
 				World& world,
 				Engine::ECS::Entity player
 			);
 
-			bool operator()(Engine::Input::Value curr, Engine::Input::Value prev);
+			bool operator()(Engine::Input::ActionId aid, Engine::Input::Value curr, Engine::Input::Value prev);
 	};
 }

@@ -3,13 +3,13 @@
 #include <Engine/Glue/glm.hpp>
 
 // Game
-#include <Game/CharacterSpellBindListener.hpp>
+#include <Game/CharacterSpellActionListener.hpp>
 #include <Game/CharacterSpellSystem.hpp>
 #include <Game/PhysicsComponent.hpp>
 
 
 namespace Game {
-	CharacterSpellBindListener::CharacterSpellBindListener(
+	CharacterSpellActionListener::CharacterSpellActionListener(
 		Engine::EngineInstance& engine,
 		World& world,
 		Engine::ECS::Entity player)
@@ -19,7 +19,7 @@ namespace Game {
 		, targetIds{engine.actionManager.getId("Target_X", "Target_Y")} {
 	}
 
-	bool CharacterSpellBindListener::operator()(Engine::Input::Value curr, Engine::Input::Value prev) {
+	bool CharacterSpellActionListener::operator()(Engine::Input::ActionId aid, Engine::Input::Value curr, Engine::Input::Value prev) {
 		if (!curr.value || prev.value) { return false; }
 
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();

@@ -19,6 +19,7 @@ namespace Game {
 		DISCONNECT,
 		PING,
 		ECS_COMP,
+		ACTION,
 	};
 
 	class NetworkingSystem : public System {
@@ -46,6 +47,9 @@ namespace Game {
 			int32 connectionsCount() const;
 			void connect(const Engine::Net::IPv4Address& addr);
 			void disconnect(const Engine::Net::IPv4Address& addr);
+
+			// TODO: better way for other things to send messages
+			decltype(writer)& getWriter() { return writer; }
 
 		private:
 			void addConnection(const Engine::Net::IPv4Address& addr);
