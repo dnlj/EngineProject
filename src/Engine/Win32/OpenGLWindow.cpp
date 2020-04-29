@@ -607,7 +607,6 @@ namespace Engine::Win32 {
 	}
 
 	auto OpenGLWindow::init() -> WGLPointers {
-		puts("OpenGLWindow::init");
 		const auto hInstance = GetModuleHandleW(nullptr);
 
 		const WNDCLASSEXW windowClass {

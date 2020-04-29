@@ -40,22 +40,35 @@ namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
 	constexpr float32 PI = 3.141592653589793238462643383279502884197169f;
 	constexpr int32 ServerSide = 1 << 0;
 	constexpr int32 ClientSide = 1 << 1;
+
+	// TODO: move into own ns?
+	constexpr std::string_view ASCII_BLACK        = "\033[30m";
+	constexpr std::string_view ASCII_RED          = "\033[31m";
+	constexpr std::string_view ASCII_GREEN        = "\033[32m";
+	constexpr std::string_view ASCII_YELLOW       = "\033[33m";
+	constexpr std::string_view ASCII_BLUE         = "\033[34m";
+	constexpr std::string_view ASCII_MAGENTA      = "\033[35m";
+	constexpr std::string_view ASCII_CYAN         = "\033[36m";
+	constexpr std::string_view ASCII_WHITE        = "\033[37m";
+	constexpr std::string_view ASCII_BLACK_BOLD   = "\033[1;30m";
+	constexpr std::string_view ASCII_RED_BOLD     = "\033[1;31m";
+	constexpr std::string_view ASCII_GREEN_BOLD   = "\033[1;32m";
+	constexpr std::string_view ASCII_YELLOW_BOLD  = "\033[1;33m";
+	constexpr std::string_view ASCII_BLUE_BOLD    = "\033[1;34m";
+	constexpr std::string_view ASCII_MAGENTA_BOLD = "\033[1;35m";
+	constexpr std::string_view ASCII_CYAN_BOLD    = "\033[1;36m";
+	constexpr std::string_view ASCII_WHITE_BOLD   = "\033[1;37m";
+	constexpr std::string_view ASCII_RESET        = "\033[0m";
+
+	constexpr std::string_view ASCII_INFO     = ASCII_BLUE;
+	constexpr std::string_view ASCII_SUCCESS  = ASCII_GREEN;
+	constexpr std::string_view ASCII_WARN     = ASCII_YELLOW;
+	constexpr std::string_view ASCII_ERROR    = ASCII_RED;
+	constexpr std::string_view ASCII_FG       = ASCII_WHITE;
+	constexpr std::string_view ASCII_FG2      = ASCII_BLACK_BOLD;
+
 }
 namespace Engine { using namespace Engine::Constants; }
-
-
-// TODO: rm - see Engine::Detail cpp file
-namespace Engine::Detail {
-	inline std::string getDateTimeString() {
-		// Example output: 2017-12-24 18:29:35 -0600
-		const auto time = std::time(nullptr);
-		std::string date(26, '.');
-		
-		std::strftime(date.data(), date.size(), "%Y-%m-%d %H:%M:%S %z", localtime(&time));
-		date.pop_back();
-		return date;
-	}
-}
 
 
 constexpr auto ENGINE_SIDE = _ENGINE_SIDE;
@@ -74,32 +87,32 @@ constexpr bool ENGINE_CLIENT = ENGINE_SIDE == Engine::ClientSide;
 #define ENGINE_INLINE __forceinline
 
 // TODO: replace macros with source_location?
-#define _ENGINE_CREATE_LOG_LAMBDA(Stream, Prefix, Other)\
+#define _ENGINE_CREATE_LOG_LAMBDA(Stream, Prefix, Color, Other)\
 	([](auto&&... args){\
-		Stream\
-			<< "[" << ::Engine::Detail::getDateTimeString() << "]"\
-			<< "[" << (__FILE__ + sizeof(ENGINE_BASE_PATH)) << ":" << __LINE__ << "]"\
-			<< Prefix << " ";\
-		(Stream << ... << std::forward<decltype(args)>(args));\
-		Stream << '\n';\
+		::Engine::Detail::log(Stream, Prefix, Color,\
+			(__FILE__ + sizeof(ENGINE_BASE_PATH)), __LINE__,\
+			std::forward<decltype(args)>(args) ...\
+		);\
 		Other;\
 	})
 
-#define _ENGINE_CREATE_ASSERT_LAMBDA(Stream, Prefix, Other)\
+#define _ENGINE_CREATE_ASSERT_LAMBDA(Stream, Prefix, Color, Other)\
 	([](bool cond, auto&&... args){\
 		if (!cond) {\
-			_ENGINE_CREATE_LOG_LAMBDA(Stream, Prefix, Other)(std::forward<decltype(args)>(args)...);\
+			_ENGINE_CREATE_LOG_LAMBDA(Stream, Prefix, Color, Other)(std::forward<decltype(args)>(args)...);\
 		}\
 	})
 
 #define ENGINE_DIE std::terminate();
 
-#define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA(::std::cout, "[LOG]", 0)
-#define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA(::std::cerr, "[WARN]", 0)
-#define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA(::std::cerr, "[ERROR]", ENGINE_DIE)
+#define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA(::Engine::Detail::StandardOut, "[LOG]", Engine::ASCII_FG2, 0)
+#define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA(::Engine::Detail::StandardOut, "[INFO]", Engine::ASCII_INFO, 0)
+#define ENGINE_SUCCESS _ENGINE_CREATE_LOG_LAMBDA(::Engine::Detail::StandardOut, "[SUCCESS]", Engine::ASCII_SUCCESS, 0)
+#define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA(::Engine::Detail::StandardErr, "[WARN]", Engine::ASCII_WARN, 0)
+#define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA(::Engine::Detail::StandardErr, "[ERROR]", Engine::ASCII_ERROR, ENGINE_DIE)
 
-#define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA(::std::cerr, "[ERROR]", ENGINE_DIE)
-#define ENGINE_ASSERT_WARN _ENGINE_CREATE_ASSERT_LAMBDA(::std::cerr, "[WARN]", nullptr)
+#define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA(::Engine::Detail::StandardErr, "[ERROR]", Engine::ASCII_ERROR, ENGINE_DIE)
+#define ENGINE_ASSERT_WARN _ENGINE_CREATE_ASSERT_LAMBDA(::Engine::Detail::StandardErr, "[WARN]", Engine::ASCII_WARN, 0)
 
 #if defined(DEBUG)
 	#define ENGINE_DEBUG_ASSERT ENGINE_ASSERT

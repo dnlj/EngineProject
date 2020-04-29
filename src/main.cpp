@@ -683,11 +683,24 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 		freopen_s(&unused, "CONOUT$", "w", stderr);
 	}
 
+	const auto console = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	if (!SetConsoleMode(console, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+		ENGINE_WARN(Engine::Win32::getLastErrorMessage());
+	}
+
+	ENGINE_LOG("This is a test of the", "console ouput");
+	ENGINE_INFO("This is a test of the", "console ouput");
+	ENGINE_SUCCESS("This is a test of the", "console ouput");
+	ENGINE_WARN("This is a test of the", "console ouput");
+	//ENGINE_ERROR("This is a test of the", "console ouput");
+
 	std::atexit([](){
 	});
 
 	{ // Position the console
 		auto window = GetConsoleWindow();
+
 		if constexpr (ENGINE_CLIENT) {
 			SetWindowPos(window, HWND_TOP, 0, 0, 1000, 500, 0);
 			SetWindowTextW(window, L"Client");
@@ -697,7 +710,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 		}
 	}
 
-	std::wcout << "Working Directory: " << std::filesystem::current_path().generic_wstring() << "\n";
+	ENGINE_INFO("Working Directory: ", std::filesystem::current_path().generic_string());
 	run();
 
 	std::cout << "Done." << std::endl;
