@@ -233,7 +233,7 @@ namespace {
 
 				Engine::Net::IPv4Address addr{*ptr->ai_addr};
 				std::cout << "Address: " << addr << "\n";
-				world.getSystem<Game::NetworkingSystem>().connect(addr);
+				world.getSystem<Game::NetworkingSystem>().connectTo(addr);
 			}
 		}
 
@@ -331,6 +331,7 @@ namespace {
 		ImGui::Separator();
 		ImGui::Columns(4);
 
+		#if ENGINE_CLIENT
 		for (const auto& [addr, info] : netSys.servers) {
 			int c = 0;
 			ImGui::Text(info.name.c_str());
@@ -343,10 +344,11 @@ namespace {
 
 			ImGui::NextColumn();
 			if (ImGui::Button("Connect")) { // TODO: do i need to PushId ?
-				netSys.connect(addr);
+				netSys.connectTo(addr);
 			}
 			ImGui::NextColumn();
 		}
+		#endif
 
 		ImGui::Columns(1);
 
@@ -601,24 +603,25 @@ void run() {
 			am.addListener(Edit_Place, [&](ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(player).place = curr && !prev; return false; });
 
 			{ // TODO: better way to do this
-				auto& netSys = world.getSystem<Game::NetworkingSystem>();
-				auto& writer = netSys.getWriter();
-
-				const auto sendAction = [&](ActionId aid, Value curr, Value prev){
-					std::cout << "Send action: " << aid << " - " << curr.value << "\n";
-					writer.reset({127,0,0,1, 21212});
-					writer.next(Engine::Net::MessageHeader{static_cast<uint8>(Game::MessageType::ACTION)});
-					writer << aid << curr;
-					return false;
-				};
-
-				am.addListener(Spell_1, sendAction);
-				am.addListener(Move_Up, sendAction);
-				am.addListener(Move_Down, sendAction);
-				am.addListener(Move_Left, sendAction);
-				am.addListener(Move_Right, sendAction);
-				am.addListener(Edit_Remove, sendAction);
-				am.addListener(Edit_Place, sendAction);
+				// TODO: re-enable
+				//auto& netSys = world.getSystem<Game::NetworkingSystem>();
+				//auto& writer = netSys.getWriter();
+				//
+				//const auto sendAction = [&](ActionId aid, Value curr, Value prev){
+				//	std::cout << "Send action: " << aid << " - " << curr.value << "\n";
+				//	writer.reset({127,0,0,1, 21212});
+				//	writer.next(Engine::Net::MessageHeader{static_cast<uint8>(Game::MessageType::ACTION)});
+				//	writer << aid << curr;
+				//	return false;
+				//};
+				//
+				//am.addListener(Spell_1, sendAction);
+				//am.addListener(Move_Up, sendAction);
+				//am.addListener(Move_Down, sendAction);
+				//am.addListener(Move_Left, sendAction);
+				//am.addListener(Move_Right, sendAction);
+				//am.addListener(Edit_Remove, sendAction);
+				//am.addListener(Edit_Place, sendAction);
 			}
 		}
 	}

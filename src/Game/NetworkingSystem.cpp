@@ -7,6 +7,7 @@
 // Game
 #include <Game/World.hpp>
 #include <Game/NetworkingSystem.hpp>
+#include <Game/ConnectionComponent.hpp>
 
 namespace {
 	template<class T>
@@ -76,7 +77,8 @@ namespace Game {
 		: System{arg}
 		, socket{ENGINE_SERVER ? DEFAULT_PORT : 0}
 		, reader{socket}
-		, writer{socket} {
+		, anyConn{socket}
+		, connFilter{world.getFilterFor<ConnectionComponent>()} {
 
 		if (socket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(MULTICAST_GROUP)) {
 			ENGINE_LOG("LAN server discovery is available. Joining multicast group ", MULTICAST_GROUP);
@@ -89,70 +91,74 @@ namespace Game {
 	}
 
 	void NetworkingSystem::broadcastDiscover() {
-		const auto now = Engine::Clock::now();
-		for (auto it = servers.begin(); it != servers.end(); ++it) {
-			if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
-				servers.erase(it);
+		#if ENGINE_CLIENT
+		{
+			const auto now = Engine::Clock::now();
+			for (auto it = servers.begin(); it != servers.end(); ++it) {
+				if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
+					servers.erase(it);
+				}
 			}
-		}
 
-		writer.reset(MULTICAST_GROUP);
-		writer.next({static_cast<uint8>(MessageType::DISCOVER_SERVER)});
-		writer << DISCOVER_SERVER_DATA;
-		writer.send(); // TODO: test if getting on other systems
+			anyConn.writer.reset(MULTICAST_GROUP);
+			anyConn.writer.next({static_cast<uint8>(MessageType::DISCOVER_SERVER)});
+			anyConn.writer << DISCOVER_SERVER_DATA;
+			anyConn.writer.send(); // TODO: test if getting on other systems
+		}
+		#endif
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::DISCOVER_SERVER>(const Engine::Net::IPv4Address& from) {
+	void NetworkingSystem::handleMessageType<MessageType::DISCOVER_SERVER>(Engine::Net::Connection& from) {
 		constexpr auto size = sizeof(DISCOVER_SERVER_DATA);
 
 		// TODO: rate limit per ip (longer if invalid packet)
 
 		if (reader.size() == size && !memcmp(reader.current(), DISCOVER_SERVER_DATA, size)) {
-			writer.reset(from);
-			writer.next({static_cast<uint8>(MessageType::SERVER_INFO)});
-			writer << "This is the name of the server";
-			writer.send();
+			// TODO: rm - from.writer.reset(from);
+			from.writer.next({static_cast<uint8>(MessageType::SERVER_INFO)});
+			from.writer << "This is the name of the server";
+			// TODO: rm - from.writer.send();
 		}
 
 		reader.clear();
 	}
 	
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::SERVER_INFO>(const Engine::Net::IPv4Address& from) {
-		auto& info = servers[from];
-		info.name = reader.read<std::string>();
-		info.lastUpdate = Engine::Clock::now();
+	void NetworkingSystem::handleMessageType<MessageType::SERVER_INFO>(Engine::Net::Connection& from) {
+		#if ENGINE_CLIENT
+			auto& info = servers[from.address];
+			info.name = reader.read<std::string>();
+			info.lastUpdate = Engine::Clock::now();
+		#endif
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(const Engine::Net::IPv4Address& from) {
+	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(Engine::Net::Connection& from) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
-		ENGINE_LOG("MessageType::CONNECT from ", from);
-		addConnection(from);
+		ENGINE_LOG("MessageType::CONNECT from ", from.address);
+		addConnection(from.address);
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(const Engine::Net::IPv4Address& from) {
-		ENGINE_LOG("MessageType::DISCONNECT from ", from);
+	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(Engine::Net::Connection& from) {
+		ENGINE_LOG("MessageType::DISCONNECT from ", from.address);
 		disconnect(from);
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::PING>(const Engine::Net::IPv4Address& from) {
+	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::Net::Connection& from) {
 		if (reader.read<bool>()) {
-			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from);
-			writer.reset(from); // TODO: rm. shouldnt have to do this.
-			writer.next({static_cast<uint8>(MessageType::PING)});
-			writer.write(false);
-			writer.send(); // TODO: rm. shouldnt have to do this.
+			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address);
+			from.writer.next({static_cast<uint8>(MessageType::PING)});
+			from.writer.write(false);
 		} else {
-			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from);
+			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address);
 		}
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(const Engine::Net::IPv4Address& from) {
+	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(Engine::Net::Connection& from) {
 		const auto ent = reader.read<Engine::ECS::Entity>();
 		const auto cid = reader.read<Engine::ECS::ComponentId>();
 		world.callWithComponent(ent, cid, [&](auto& comp){
@@ -163,7 +169,7 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ACTION>(const Engine::Net::IPv4Address& from) {
+	void NetworkingSystem::handleMessageType<MessageType::ACTION>(Engine::Net::Connection& from) {
 		const auto aid = reader.read<Engine::Input::ActionId>();
 		const auto val = reader.read<Engine::Input::Value>();
 		std::cout << "Recv action: " << aid << " - " << val.value << "\n";
@@ -195,75 +201,97 @@ namespace Game {
 			if (next <= now) {
 				next = now + std::chrono::seconds{2};
 
-				writer.clear();
-				writer.next({static_cast<uint8>(MessageType::PING)});
-				writer.write(true);
-
-				for (auto& [_, conn] : connections) {
-					writer.sendto(conn.address);
+				for (auto& ply : connFilter) {
+					auto& writer = world.getComponent<ConnectionComponent>(ply).conn->writer;
+					writer.next({static_cast<uint8>(MessageType::PING)});
+					writer.write(true);
 				}
-
-				writer.clear();
 			}
 		}
 
 		while (reader.recv() > -1) {
 			const auto& addr = reader.address();
 			// TODO: dont connect withotu connect message
-			auto found = connections.find(addr);
-			if (found != connections.end()) {
-				found->second.lastMessageTime = now;
+			auto found = ipToPlayer.find(addr);
+			Engine::Net::Connection* conn;
+			if (found != ipToPlayer.end()) {
+				conn = &*world.getComponent<ConnectionComponent>(found->second).conn;
+				conn->lastMessageTime = now;
+			} else {
+				if constexpr (ENGINE_CLIENT) { break; }
+
+				anyConn.writer.flush();
+				anyConn.address = addr;
+				anyConn.writer.reset(addr);
+				conn = &anyConn;
 			}
 
 			while (reader.size()) {
-				dispatchMessage(addr);
+				dispatchMessage(*conn);
 			}
 		}
 
-		// TODO: would probably be easiest for each connection to have its own reader/writer. That would allow use to combine single messages like PING.
-		writer.flush();
+		anyConn.writer.flush();
+		for (auto& ply : connFilter) {
+			world.getComponent<ConnectionComponent>(ply).conn->writer.flush();
+		}
 
-		// TODO: Handle connection timeout
-		for (auto it = connections.begin(); it != connections.end();) {
-			auto& conn = it->second;
+		for (auto& ply : connFilter) { // TODO: merge into above loop
+			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			const auto diff = now - conn.lastMessageTime;
 			if (diff > timeout) {
 				onDisconnect(conn);
 				// TODO: send timeout message
-				it = connections.erase(it);
-			} else {
-				++it;
+				world.destroyEntity(ply);
+				break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
 			}
 		}
 	}
 
 	int32 NetworkingSystem::connectionsCount() const {
-		return static_cast<int32>(connections.size());
+		return static_cast<int32>(connFilter.size());
 	}
 
-	void NetworkingSystem::connect(const Engine::Net::IPv4Address& addr) {
-		writer.reset(addr);
-		writer.next({static_cast<uint8>(MessageType::CONNECT)}); // TODO: reliable message
-		writer.send();
+	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
+		anyConn.address = addr;
+		anyConn.writer.reset(addr);
+		anyConn.writer.next({static_cast<uint8>(MessageType::CONNECT)}); // TODO: reliable message
+		anyConn.writer.send();
 		addConnection(addr);
 	}
 
 	void NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {
-		connections.emplace(
-			addr,
-			Engine::Net::Connection{addr, Engine::Clock::now(), 0}
-		);
+		// TODO: i feel like this should be handled elsewhere. Where?
+		auto& ply = world.createEntity();
+		std::cout << "Created player: " << ply << "\n";
+		ipToPlayer.emplace(addr, ply);
+		auto& connComp = world.addComponent<ConnectionComponent>(ply); // TODO: setup socket for writer
+		connComp.conn = std::make_unique<Engine::Net::Connection>(socket, addr, Engine::Clock::now(), 0);
+
+		if constexpr (ENGINE_SERVER) {
+			// TODO: world.addComponent<PlayerComponent>(ply);
+			world.addComponent<MapEditComponent>(ply);
+			world.addComponent<SpriteComponent>(ply).texture = engine.textureManager.get("../assets/player.png");
+			//world.addComponent<PhysicsComponent>(ply).setBody(createPhysicsCircle(ply, physSys));
+			world.addComponent<CharacterMovementComponent>(ply);
+			world.addComponent<CharacterSpellComponent>(ply);
+		}
+
+		if constexpr (ENGINE_CLIENT) {
+			ENGINE_DEBUG_ASSERT(ipToPlayer.size() == 1, "A Client should not be connected to more than one server.");
+		}
 	}
 
-	void NetworkingSystem::disconnect(const Engine::Net::IPv4Address& addr) {
-		auto found = connections.find(addr);
-		if (found != connections.end()) {
-			ENGINE_LOG("Disconnecting ", addr);
-			onDisconnect(found->second);
-			connections.erase(found);
-		} else {
-			ENGINE_LOG("Disconnecting ", addr, " (invalid)");
-		}
+	void NetworkingSystem::disconnect(const Engine::Net::Connection& conn) {
+		ENGINE_WARN("TODO: impl disconnect");
+		//auto found = connections.find(addr);
+		//if (found != connections.end()) {
+		//	ENGINE_LOG("Disconnecting ", addr);
+		//	onDisconnect(found->second);
+		//	connections.erase(found);
+		//} else {
+		//	ENGINE_LOG("Disconnecting ", addr, " (invalid)");
+		//}
 	}
 
 	void NetworkingSystem::onDisconnect(const Engine::Net::Connection& conn) {
@@ -273,7 +301,7 @@ namespace Game {
 			<< "\n";
 	}
 
-	void NetworkingSystem::dispatchMessage(const Engine::Net::IPv4Address& from) {
+	void NetworkingSystem::dispatchMessage(Engine::Net::Connection& from) {
 		// TODO: use array?
 		const auto header = reader.read<Engine::Net::MessageHeader>();
 		#define HANDLE(Type) case Type: { return handleMessageType<Type>(from); }

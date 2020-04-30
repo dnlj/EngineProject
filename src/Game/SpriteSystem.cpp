@@ -138,7 +138,7 @@ namespace Game {
 
 		#if defined(DEBUG_GRAPHICS)
 			if (instanceData.size() >= MAX_SPRITES) {
-				ENGINE_WARN("Increase SpriteSystem::MAX_SPRITES. Attempting to draw " << instanceData.size() << " while MAX_SPRITES = " << MAX_SPRITES);
+				ENGINE_WARN("Increase SpriteSystem::MAX_SPRITES. Attempting to draw ", instanceData.size(), " while MAX_SPRITES = ", MAX_SPRITES);
 			}
 		#endif
 

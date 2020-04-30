@@ -209,7 +209,7 @@ project(PROJECT_NAME .."Client")
 	}
 
 	defines {
-		"_ENGINE_SIDE=::Engine::ClientSide",
+		"ENGINE_SIDE=ENGINE_SIDE_CLIENT",
 	}
 
 --------------------------------------------------------------------------------
@@ -224,7 +224,7 @@ project(PROJECT_NAME .."Server")
 	}
 
 	defines {
-		"_ENGINE_SIDE=::Engine::ServerSide",
+		"ENGINE_SIDE=ENGINE_SIDE_SERVER",
 	}
 
 --------------------------------------------------------------------------------

@@ -26,6 +26,7 @@
 #include <Game/CharacterSpellComponent.hpp>
 #include <Game/InputComponent.hpp>
 #include <Game/PlayerComponent.hpp>
+#include <Game/ConnectionComponent.hpp>
 
 
 namespace Game {
@@ -50,7 +51,8 @@ namespace Game {
 		CharacterMovementComponent,
 		CharacterSpellComponent,
 		InputComponent,
-		PlayerComponent
+		PlayerComponent,
+		ConnectionComponent
 	>;
 
 	class World : public Engine::ECS::World<64, SystemsSet, ComponentsSet> {

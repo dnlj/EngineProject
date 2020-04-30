@@ -71,9 +71,10 @@ namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
 namespace Engine { using namespace Engine::Constants; }
 
 
-constexpr auto ENGINE_SIDE = _ENGINE_SIDE;
-constexpr bool ENGINE_SERVER = ENGINE_SIDE == Engine::ServerSide;
-constexpr bool ENGINE_CLIENT = ENGINE_SIDE == Engine::ClientSide;
+#define ENGINE_SIDE_SERVER 1
+#define ENGINE_SIDE_CLIENT 2
+#define ENGINE_SERVER (ENGINE_SIDE == ENGINE_SIDE_SERVER)
+#define ENGINE_CLIENT (ENGINE_SIDE == ENGINE_SIDE_CLIENT)
 
 #ifdef DEBUG
 	constexpr bool ENGINE_DEBUG = true;
@@ -103,7 +104,7 @@ constexpr bool ENGINE_CLIENT = ENGINE_SIDE == Engine::ClientSide;
 		}\
 	})
 
-#define ENGINE_DIE std::terminate();
+#define ENGINE_DIE ::std::terminate();
 
 #define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA(stdout, "[LOG]", Engine::ASCII_FG2, 0)
 #define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA(stdout, "[INFO]", Engine::ASCII_INFO, 0)
