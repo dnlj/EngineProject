@@ -92,7 +92,6 @@ namespace Game {
 
 	void NetworkingSystem::broadcastDiscover() {
 		#if ENGINE_CLIENT
-		{
 			const auto now = Engine::Clock::now();
 			for (auto it = servers.begin(); it != servers.end(); ++it) {
 				if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
@@ -104,7 +103,6 @@ namespace Game {
 			anyConn.writer.next({static_cast<uint8>(MessageType::DISCOVER_SERVER)});
 			anyConn.writer << DISCOVER_SERVER_DATA;
 			anyConn.writer.send(); // TODO: test if getting on other systems
-		}
 		#endif
 	}
 
@@ -115,10 +113,8 @@ namespace Game {
 		// TODO: rate limit per ip (longer if invalid packet)
 
 		if (reader.size() == size && !memcmp(reader.current(), DISCOVER_SERVER_DATA, size)) {
-			// TODO: rm - from.writer.reset(from);
 			from.writer.next({static_cast<uint8>(MessageType::SERVER_INFO)});
 			from.writer << "This is the name of the server";
-			// TODO: rm - from.writer.send();
 		}
 
 		reader.clear();
@@ -211,15 +207,12 @@ namespace Game {
 
 		while (reader.recv() > -1) {
 			const auto& addr = reader.address();
-			// TODO: dont connect withotu connect message
 			auto found = ipToPlayer.find(addr);
 			Engine::Net::Connection* conn;
 			if (found != ipToPlayer.end()) {
 				conn = &*world.getComponent<ConnectionComponent>(found->second).conn;
 				conn->lastMessageTime = now;
 			} else {
-				if constexpr (ENGINE_CLIENT) { break; }
-
 				anyConn.writer.flush();
 				anyConn.address = addr;
 				anyConn.writer.reset(addr);
@@ -236,7 +229,7 @@ namespace Game {
 			world.getComponent<ConnectionComponent>(ply).conn->writer.flush();
 		}
 
-		for (auto& ply : connFilter) { // TODO: merge into above loop
+		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			const auto diff = now - conn.lastMessageTime;
 			if (diff > timeout) {
@@ -257,24 +250,25 @@ namespace Game {
 		anyConn.writer.reset(addr);
 		anyConn.writer.next({static_cast<uint8>(MessageType::CONNECT)}); // TODO: reliable message
 		anyConn.writer.send();
-		addConnection(addr);
+		addConnection(addr);	
 	}
 
 	void NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {
 		// TODO: i feel like this should be handled elsewhere. Where?
 		auto& ply = world.createEntity();
-		std::cout << "Created player: " << ply << "\n";
 		ipToPlayer.emplace(addr, ply);
 		auto& connComp = world.addComponent<ConnectionComponent>(ply); // TODO: setup socket for writer
 		connComp.conn = std::make_unique<Engine::Net::Connection>(socket, addr, Engine::Clock::now(), 0);
 
 		if constexpr (ENGINE_SERVER) {
-			// TODO: world.addComponent<PlayerComponent>(ply);
+			auto& physSys = world.getSystem<PhysicsSystem>();
+			world.addComponent<PlayerComponent>(ply);
 			world.addComponent<MapEditComponent>(ply);
 			world.addComponent<SpriteComponent>(ply).texture = engine.textureManager.get("../assets/player.png");
-			//world.addComponent<PhysicsComponent>(ply).setBody(createPhysicsCircle(ply, physSys));
+			world.addComponent<PhysicsComponent>(ply).setBody(physSys.createPhysicsCircle(ply));
 			world.addComponent<CharacterMovementComponent>(ply);
 			world.addComponent<CharacterSpellComponent>(ply);
+			world.addComponent<Game::ActionComponent>(ply).grow(world.getSystem<Game::ActionSystem>().count());
 		}
 
 		if constexpr (ENGINE_CLIENT) {

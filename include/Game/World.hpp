@@ -9,6 +9,7 @@
 
 // Game
 #include <Game/InputSystem.hpp>
+#include <Game/ActionSystem.hpp>
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/PhysicsOriginShiftSystem.hpp>
 #include <Game/PhysicsSystem.hpp>
@@ -25,6 +26,7 @@
 #include <Game/CharacterMovementComponent.hpp>
 #include <Game/CharacterSpellComponent.hpp>
 #include <Game/InputComponent.hpp>
+#include <Game/ActionComponent.hpp>
 #include <Game/PlayerComponent.hpp>
 #include <Game/ConnectionComponent.hpp>
 
@@ -32,6 +34,7 @@
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
 		InputSystem,
+		ActionSystem,
 		CharacterMovementSystem,
 		PhysicsOriginShiftSystem,
 		PhysicsSystem,
@@ -51,6 +54,7 @@ namespace Game {
 		CharacterMovementComponent,
 		CharacterSpellComponent,
 		InputComponent,
+		ActionComponent,
 		PlayerComponent,
 		ConnectionComponent
 	>;

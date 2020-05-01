@@ -51,6 +51,28 @@ namespace Game {
 				Engine::Debug::DebugDrawBox2D& getDebugDraw();
 			#endif
 
+			// TODO: rm - temp
+			b2Body* createPhysicsCircle(Engine::ECS::Entity ent, b2Vec2 position = b2Vec2_zero) {
+				b2BodyDef bodyDef;
+				bodyDef.type = b2_dynamicBody;
+				bodyDef.position = position;
+
+				b2Body* body = createBody(ent, bodyDef);
+
+				b2CircleShape shape;
+				shape.m_radius = 1.0f/8;
+
+				b2FixtureDef fixtureDef;
+				fixtureDef.shape = &shape;
+				fixtureDef.density = 1.0f;
+
+				body->CreateFixture(&fixtureDef);
+				body->SetLinearDamping(10.0f);
+				body->SetFixedRotation(true);
+
+				return body;
+			}
+
 		private:
 			class ContactListener : public b2ContactListener {
 				public:

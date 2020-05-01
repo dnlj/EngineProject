@@ -63,11 +63,12 @@ namespace Game {
 
 	void MapSystem::tick(float32 dt) {
 		// TODO: move
-		const auto makeEdit = [&](int value){
+		const auto makeEdit = [&](Engine::ECS::Entity ent, int value){
+			auto& actionComp = world.getComponent<ActionComponent>(ent);
 			// TODO: store ids somewhere
 			const auto mousePos = engine.camera.screenToWorld(
-				engine.actionManager.getValue<float32>(
-					engine.actionManager.getId("Target_X", "Target_Y")
+				actionComp.getValue<float32>(
+					world.getSystem<ActionSystem>().getId("Target_X", "Target_Y")
 				)
 			);
 
@@ -83,8 +84,8 @@ namespace Game {
 
 		for (auto& ply : playerFilter) {
 			auto& me = world.getComponent<MapEditComponent>(ply);
-			if (me.place) { makeEdit(1); }
-			if (me.remove) { makeEdit(0); }
+			if (me.place) { makeEdit(ply, 1); }
+			if (me.remove) { makeEdit(ply, 0); }
 		}
 	}
 

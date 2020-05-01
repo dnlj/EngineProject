@@ -23,7 +23,6 @@ namespace Game {
 		ACTION,
 	};
 
-	// TODO: crtp specialization based on server/client
 	class NetworkingSystem : public System {
 		public:
 			// TODO: find better way to handle this

@@ -243,7 +243,7 @@ namespace {
 
 	void editorUI(Engine::EngineInstance& engine, Game::World& world) {
 		static auto texture32 = engine.textureManager.get("../assets/32.bmp");
-		static auto targetIds = engine.actionManager.getId("Target_X", "Target_Y");
+		static auto targetIds = world.getSystem<Game::ActionSystem>().getId("Target_X", "Target_Y");
 
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
@@ -253,7 +253,8 @@ namespace {
 		if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
 			auto& mapSys = world.getSystem<Game::MapSystem>();
 
-			auto screenMousePos = engine.actionManager.getValue<float32>(targetIds);
+			auto& actC = world.getComponent<Game::ActionComponent>(Engine::ECS::Entity{74, 1}); // TODO: dont hardcode
+			auto screenMousePos = actC.getValue<float32>(targetIds);
 			ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
 			auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
@@ -395,27 +396,6 @@ namespace {
 		Engine::ImGui::draw();
 	}
 
-	b2Body* createPhysicsCircle(Engine::ECS::Entity ent, Game::PhysicsSystem& physSys, b2Vec2 position = b2Vec2_zero) {
-		b2BodyDef bodyDef;
-		bodyDef.type = b2_dynamicBody;
-		bodyDef.position = position;
-
-		b2Body* body = physSys.createBody(ent, bodyDef);
-
-		b2CircleShape shape;
-		shape.m_radius = 1.0f/8;
-
-		b2FixtureDef fixtureDef;
-		fixtureDef.shape = &shape;
-		fixtureDef.density = 1.0f;
-
-		body->CreateFixture(&fixtureDef);
-		body->SetLinearDamping(10.0f);
-		body->SetFixedRotation(true);
-
-		return body;
-	}
-
 	b2Body* createPhysicsSquare(Engine::ECS::Entity ent, Game::PhysicsSystem& physSys, b2Vec2 position = b2Vec2_zero) {
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_dynamicBody;
@@ -542,86 +522,88 @@ void run() {
 	{
 		using namespace Engine::Input;
 		auto& im = engine.inputManager;
-		auto& am = engine.actionManager;
+		auto& as = world.getSystem<Game::ActionSystem>();
 
-		const auto Spell_1 = am.create("Spell_1");
-		const auto Move_Up = am.create("Move_Up");
-		const auto Move_Down = am.create("Move_Down");
-		const auto Move_Left = am.create("Move_Left");
-		const auto Move_Right = am.create("Move_Right");
-		const auto Edit_Place = am.create("Edit_Place");
-		const auto Edit_Remove = am.create("Edit_Remove");
-		const auto Target_X = am.create("Target_X");
-		const auto Target_Y = am.create("Target_Y");
-
+		const auto Spell_1 = as.create("Spell_1");
+		const auto Move_Up = as.create("Move_Up");
+		const auto Move_Down = as.create("Move_Down");
+		const auto Move_Left = as.create("Move_Left");
+		const auto Move_Right = as.create("Move_Right");
+		const auto Edit_Place = as.create("Edit_Place");
+		const auto Edit_Remove = as.create("Edit_Remove");
+		const auto Target_X = as.create("Target_X");
+		const auto Target_Y = as.create("Target_Y");
+		
 		if constexpr (ENGINE_CLIENT) {
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 1, 46}, // C
-			}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
+				}, [&](Value curr, Value prev){ as.processAction({player, Spell_1, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 1, 56}, // ALT
 				InputId{InputType::KEYBOARD, 1, 16}, // Q
-			}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Spell_1, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 57}
-			}, [&](Value curr, Value prev){ am.get(Spell_1).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Spell_1, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 17}
-			}, [&](Value curr, Value prev){ am.get(Move_Up).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Move_Up, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 31}
-			}, [&](Value curr, Value prev){ am.get(Move_Down).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Move_Down, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 30}
-			}, [&](Value curr, Value prev){ am.get(Move_Left).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Move_Left, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 32}
-			}, [&](Value curr, Value prev){ am.get(Move_Right).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Move_Right, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE, 0, 0}
-			}, [&](Value curr, Value prev){ am.get(Edit_Place).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Edit_Place, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE, 0, 1}
-			}, [&](Value curr, Value prev){ am.get(Edit_Remove).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Edit_Remove, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE_AXIS, 0, 0}
-			}, [&](Value curr, Value prev){ am.get(Target_X).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Target_X, curr}); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE_AXIS, 0, 1}
-			}, [&](Value curr, Value prev){ am.get(Target_Y).set(curr); });
+			}, [&](Value curr, Value prev){ as.processAction({player, Target_Y, curr}); });
 		}
 
 		if constexpr (ENGINE_CLIENT) {
-			am.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world, player});
-			am.addListener(Move_Up, Game::CharacterMovementActionListener{world, player, glm::ivec2{0, 1}});
-			am.addListener(Move_Down, Game::CharacterMovementActionListener{world, player, glm::ivec2{0, -1}});
-			am.addListener(Move_Left, Game::CharacterMovementActionListener{world, player, glm::ivec2{-1, 0}});
-			am.addListener(Move_Right, Game::CharacterMovementActionListener{world, player, glm::ivec2{1, 0}});
-			am.addListener(Edit_Remove, [&](ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(player).remove = curr && !prev; return false; });
-			am.addListener(Edit_Place, [&](ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(player).place = curr && !prev; return false; });
+			as.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world});
+			as.addListener(Move_Up, Game::CharacterMovementActionListener{world, glm::ivec2{0, 1}});
+			as.addListener(Move_Down, Game::CharacterMovementActionListener{world, glm::ivec2{0, -1}});
+			as.addListener(Move_Left, Game::CharacterMovementActionListener{world, glm::ivec2{-1, 0}});
+			as.addListener(Move_Right, Game::CharacterMovementActionListener{world, glm::ivec2{1, 0}});
+			as.addListener(Edit_Remove, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).remove = curr && !prev; return false; });
+			as.addListener(Edit_Place, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).place = curr && !prev; return false; });
 
 			{ // TODO: better way to do this
-				// TODO: re-enable
-				//auto& netSys = world.getSystem<Game::NetworkingSystem>();
-				//auto& writer = netSys.getWriter();
-				//
-				//const auto sendAction = [&](ActionId aid, Value curr, Value prev){
-				//	std::cout << "Send action: " << aid << " - " << curr.value << "\n";
-				//	writer.reset({127,0,0,1, 21212});
-				//	writer.next(Engine::Net::MessageHeader{static_cast<uint8>(Game::MessageType::ACTION)});
-				//	writer << aid << curr;
-				//	return false;
-				//};
-				//
-				//am.addListener(Spell_1, sendAction);
-				//am.addListener(Move_Up, sendAction);
-				//am.addListener(Move_Down, sendAction);
-				//am.addListener(Move_Left, sendAction);
-				//am.addListener(Move_Right, sendAction);
-				//am.addListener(Edit_Remove, sendAction);
-				//am.addListener(Edit_Place, sendAction);
+				auto& netSys = world.getSystem<Game::NetworkingSystem>();
+				auto& connFilter = world.getFilterFor<Game::ConnectionComponent>();
+				
+				const auto sendAction = [&](Engine::ECS::Entity ent, ActionId aid, Value curr, Value prev){
+					ENGINE_DEBUG_ASSERT(connFilter.size() <= 1);
+					for (auto& ply : connFilter) {
+						auto& writer = world.getComponent<Game::ConnectionComponent>(ply).conn->writer;
+						writer.next(Engine::Net::MessageHeader{static_cast<uint8>(Game::MessageType::ACTION)});
+						writer << aid << curr;
+						std::cout << "Send action: " << ent << " - " << aid << " - " << curr.value << " - " << connFilter.size() << "\n";
+					}
+					return false;
+				};
+				
+				as.addListener(Spell_1, sendAction);
+				as.addListener(Move_Up, sendAction);
+				as.addListener(Move_Down, sendAction);
+				as.addListener(Move_Left, sendAction);
+				as.addListener(Move_Right, sendAction);
+				as.addListener(Edit_Remove, sendAction);
+				as.addListener(Edit_Place, sendAction);
 			}
 		}
 	}
@@ -639,10 +621,13 @@ void run() {
 		world.addComponent<Game::PlayerComponent>(player);
 		world.addComponent<Game::MapEditComponent>(player);
 		world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");
-		world.addComponent<Game::PhysicsComponent>(player).setBody(createPhysicsCircle(player, physSys));
+		world.addComponent<Game::PhysicsComponent>(player).setBody(physSys.createPhysicsCircle(player));
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::CharacterSpellComponent>(player);
 		world.addComponent<Game::InputComponent>(player).inputManager = &engine.inputManager;
+
+		// TODO: cleaner way to do this. constructor args?
+		world.addComponent<Game::ActionComponent>(player).grow(world.getSystem<Game::ActionSystem>().count());
 
 		world.getSystem<Game::CameraTrackingSystem>().focus = player;
 
@@ -739,6 +724,14 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 	}
 
 	ENGINE_INFO("Working Directory: ", std::filesystem::current_path().generic_string());
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// At seemingly random the debugger decides to not work for STL code. Enable, run, disable, run seems to fix this for some reason.
+	// Other times spam clicking on Visual Studio while the program launches fixes this. 10/10.
+	//_set_error_mode(_OUT_TO_MSGBOX);
+	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW);
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	run();
 
 	std::cout << "Done." << std::endl;
