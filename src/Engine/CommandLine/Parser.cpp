@@ -3,14 +3,20 @@
 #include <Engine/CommandLine/Parser.hpp>
 
 namespace Engine::CommandLine {
-	// TODO: allow for -- to explicitly begin positional args
-	// TODo: positional arg types?
+	// TODO: positional arg types?
 	void Parser::parse(int argc, char* argv[]) {
 		std::vector<std::string> args;
 		args.reserve(2 * argc);
 
 		for (int i = 0; i < argc; ++i) {
 			std::string arg = argv[i];
+			if (arg == "--") {
+				for (auto j = i + 1; j < argc; ++j) {
+					args.push_back(argv[j]);
+				}
+				break;
+			}
+
 			auto found = arg.find('=');
 			if (found == std::string::npos) {
 				if (arg.size() > 1 && arg[0] == '-' && arg[1] != '-') {
@@ -28,8 +34,15 @@ namespace Engine::CommandLine {
 
 		const auto last = args.size() - 1;
 		for (int i = 0; i <= last; ++i) {
-			const auto arg = args[i];
+			auto& arg = args[i];
 			detail::ArgumentBase* ptr = nullptr;
+
+			if (arg == "--") {
+				for (int j = i + 1; j <= last; ++j) {
+					positional.emplace_back(std::move(args[j]));
+				}
+				break;
+			}
 
 			if (arg.starts_with("--")) {
 				const auto full = arg.substr(2);
@@ -48,7 +61,7 @@ namespace Engine::CommandLine {
 				}
 				ptr = found->second;
 			} else {
-				positional.emplace_back(arg);
+				positional.emplace_back(std::move(arg));
 				continue;
 			}
 
