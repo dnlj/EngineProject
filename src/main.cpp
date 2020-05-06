@@ -42,6 +42,7 @@
 #include <Engine/Window.hpp>
 #include <Engine/ImGui/ImGui.hpp>
 #include <Engine/Input/InputSequence.hpp>
+#include <Engine/CommandLine/Parser.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -464,7 +465,7 @@ namespace {
 	};
 }
 
-void run() {
+void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Init networking
 	Engine::Net::startup();
@@ -507,7 +508,55 @@ void run() {
 	ImGui::CreateContext();
 	Engine::ImGui::init(window);
 	ImGui::StyleColorsDark();
-	
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Command Line Args
+	{
+		using namespace Engine::CommandLine;
+		Parser parser;
+		parser
+			.add<bool>("alpaca", 'a', false, "This is the help message. This is the help message.")
+			.add<bool>("bear", 'b', true, "This is the help message. This is the help message.")
+			.add<bool>("cat", 'c', false, "This is the help message. This is the help message.")
+			.add<int16>("port", 'p', 21212, "This is the help message. This is the help message.")
+			.add<bool>("cmd", 0, true, "This is the help message. This is the help message.")
+			.add<std::string>("test", 't', "Default String Value", "This is the help message. This is the help message.");
+
+		char* argv[] = {
+			"-abc",
+			"-p=1234",
+			"--cmd=",
+			"--test",
+			"D:/My Folder/file.txt",
+			"positional arg 1",
+			"--invalid",
+			"some arg here",
+			"-i",
+		};
+
+		parser.parse(sizeof(argv) / sizeof(argv[0]), argv);
+
+		const char empty[] = "";
+
+		const auto prt = [&](const auto* val){
+			if (val) {
+				std::cout << *val;
+			} else {
+				std::cout << "<NotFound>";
+			}
+
+			std::cout << "\n";
+		};
+
+		std::cout << "Value of alpaca: ";		prt(parser.get<bool>("alpaca"));
+		std::cout << "Value of bear: ";			prt(parser.get<bool>("bear"));
+		std::cout << "Value of cat: ";			prt(parser.get<bool>("cat"));
+		std::cout << "Value of port: ";			prt(parser.get<int16>("port"));
+		std::cout << "Value of cmd: ";			prt(parser.get<bool>("cmd"));
+		std::cout << "Value of test: ";			prt(parser.get<std::string>("test"));
+		std::cout << "Value of --invalid: ";	prt(parser.get<std::string>("invalid"));
+		std::cout << "Value of <invalid> -i: ";	prt(parser.get<std::string>("<invalid> -i"));
+	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Engine stuff
 	Engine::EngineInstance engine;
@@ -573,15 +622,15 @@ void run() {
 			}, [&](Value curr, Value prev){ as.processAction({player, Target_Y, curr}); });
 		}
 
-		if constexpr (ENGINE_CLIENT) {
-			as.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world});
-			as.addListener(Move_Up, Game::CharacterMovementActionListener{world, glm::ivec2{0, 1}});
-			as.addListener(Move_Down, Game::CharacterMovementActionListener{world, glm::ivec2{0, -1}});
-			as.addListener(Move_Left, Game::CharacterMovementActionListener{world, glm::ivec2{-1, 0}});
-			as.addListener(Move_Right, Game::CharacterMovementActionListener{world, glm::ivec2{1, 0}});
-			as.addListener(Edit_Remove, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).remove = curr && !prev; return false; });
-			as.addListener(Edit_Place, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).place = curr && !prev; return false; });
+		as.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world});
+		as.addListener(Move_Up, Game::CharacterMovementActionListener{world, glm::ivec2{0, 1}});
+		as.addListener(Move_Down, Game::CharacterMovementActionListener{world, glm::ivec2{0, -1}});
+		as.addListener(Move_Left, Game::CharacterMovementActionListener{world, glm::ivec2{-1, 0}});
+		as.addListener(Move_Right, Game::CharacterMovementActionListener{world, glm::ivec2{1, 0}});
+		as.addListener(Edit_Remove, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).remove = curr && !prev; return false; });
+		as.addListener(Edit_Place, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).place = curr && !prev; return false; });
 
+		if constexpr (ENGINE_CLIENT) {
 			{ // TODO: better way to do this
 				auto& netSys = world.getSystem<Game::NetworkingSystem>();
 				auto& connFilter = world.getFilterFor<Game::ConnectionComponent>();
@@ -592,7 +641,7 @@ void run() {
 						auto& writer = world.getComponent<Game::ConnectionComponent>(ply).conn->writer;
 						writer.next(Engine::Net::MessageHeader{static_cast<uint8>(Game::MessageType::ACTION)});
 						writer << aid << curr;
-						std::cout << "Send action: " << ent << " - " << aid << " - " << curr.value << " - " << connFilter.size() << "\n";
+						//std::cout << "Send action: " << ent << " - " << aid << " - " << curr.value << " - " << connFilter.size() << "\n";
 					}
 					return false;
 				};
@@ -686,7 +735,7 @@ void run() {
 }
 
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
-int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+int entry(int argc, char* argv[]) {
 	if(!AllocConsole()) {
 		ENGINE_ERROR("Unable to allocate console window - ", Engine::Win32::getLastErrorMessage());
 	} else {
@@ -732,8 +781,18 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	run();
+	run(argc, argv);
 
 	std::cout << "Done." << std::endl;
 	return EXIT_SUCCESS;
 }
+
+#ifdef ENGINE_OS_WINDOWS
+int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+	return entry(__argc, __argv);
+}
+#else
+int main(int argc, char* argv[]) {
+	return entry(argc, argv);
+}
+#endif

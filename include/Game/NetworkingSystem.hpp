@@ -60,9 +60,9 @@ namespace Game {
 			// TODO: rm
 			void onDisconnect(const Engine::Net::Connection& conn);
 
-			void dispatchMessage(Engine::Net::Connection& from);
+			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);
 
 			template<MessageType Type>
-			void handleMessageType(Engine::Net::Connection& from) { static_assert(Type != Type, "Unhandled network message type."); };
+			void handleMessageType(Engine::ECS::Entity ent, Engine::Net::Connection& from) { static_assert(Type != Type, "Unhandled network message type."); };
 	};
 }

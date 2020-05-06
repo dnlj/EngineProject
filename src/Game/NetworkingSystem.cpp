@@ -107,7 +107,7 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::DISCOVER_SERVER>(Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::DISCOVER_SERVER>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		constexpr auto size = sizeof(DISCOVER_SERVER_DATA);
 
 		// TODO: rate limit per ip (longer if invalid packet)
@@ -121,7 +121,7 @@ namespace Game {
 	}
 	
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::SERVER_INFO>(Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::SERVER_INFO>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		#if ENGINE_CLIENT
 			auto& info = servers[from.address];
 			info.name = reader.read<std::string>();
@@ -130,20 +130,20 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
 		ENGINE_LOG("MessageType::CONNECT from ", from.address);
 		addConnection(from.address);
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		ENGINE_LOG("MessageType::DISCONNECT from ", from.address);
 		disconnect(from);
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		if (reader.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address);
 			from.writer.next({static_cast<uint8>(MessageType::PING)});
@@ -154,21 +154,24 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(Engine::Net::Connection& from) {
-		const auto ent = reader.read<Engine::ECS::Entity>();
-		const auto cid = reader.read<Engine::ECS::ComponentId>();
-		world.callWithComponent(ent, cid, [&](auto& comp){
-			if constexpr (IsNetworkedComponent<decltype(comp)>) {
-				comp.fromNetwork(reader);
-			}
-		});
+	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+		//const auto ent = reader.read<Engine::ECS::Entity>();
+		//const auto cid = reader.read<Engine::ECS::ComponentId>();
+		//world.callWithComponent(ent, cid, [&](auto& comp){
+		//	if constexpr (IsNetworkedComponent<decltype(comp)>) {
+		//		comp.fromNetwork(reader);
+		//	}
+		//});
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ACTION>(Engine::Net::Connection& from) {
-		const auto aid = reader.read<Engine::Input::ActionId>();
-		const auto val = reader.read<Engine::Input::Value>();
-		std::cout << "Recv action: " << aid << " - " << val.value << "\n";
+	void NetworkingSystem::handleMessageType<MessageType::ACTION>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+		world.getSystem<ActionSystem>().processAction({
+			ent,
+			reader.read<Engine::Input::ActionId>(),
+			reader.read<Engine::Input::Value>()
+		});
+		//std::cout << "Recv action: " << ent << " - " << aid << " - " << val.value << "\n";
 	}
 
 	void NetworkingSystem::tick(float32 dt) {
@@ -209,10 +212,14 @@ namespace Game {
 			const auto& addr = reader.address();
 			auto found = ipToPlayer.find(addr);
 			Engine::Net::Connection* conn;
+			Engine::ECS::Entity ent;
+
 			if (found != ipToPlayer.end()) {
-				conn = &*world.getComponent<ConnectionComponent>(found->second).conn;
+				ent = found->second;
+				conn = &*world.getComponent<ConnectionComponent>(ent).conn;
 				conn->lastMessageTime = now;
 			} else {
+				ent = Engine::ECS::INVALID_ENTITY;
 				anyConn.writer.flush();
 				anyConn.address = addr;
 				anyConn.writer.reset(addr);
@@ -220,7 +227,7 @@ namespace Game {
 			}
 
 			while (reader.size()) {
-				dispatchMessage(*conn);
+				dispatchMessage(ent, *conn);
 			}
 		}
 
@@ -257,7 +264,7 @@ namespace Game {
 		// TODO: i feel like this should be handled elsewhere. Where?
 		auto& ply = world.createEntity();
 		ipToPlayer.emplace(addr, ply);
-		auto& connComp = world.addComponent<ConnectionComponent>(ply); // TODO: setup socket for writer
+		auto& connComp = world.addComponent<ConnectionComponent>(ply);
 		connComp.conn = std::make_unique<Engine::Net::Connection>(socket, addr, Engine::Clock::now(), 0);
 
 		if constexpr (ENGINE_SERVER) {
@@ -295,10 +302,10 @@ namespace Game {
 			<< "\n";
 	}
 
-	void NetworkingSystem::dispatchMessage(Engine::Net::Connection& from) {
+	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		// TODO: use array?
 		const auto header = reader.read<Engine::Net::MessageHeader>();
-		#define HANDLE(Type) case Type: { return handleMessageType<Type>(from); }
+		#define HANDLE(Type) case Type: { return handleMessageType<Type>(ent, from); }
 		switch(static_cast<MessageType>(header.type)) {
 			HANDLE(MessageType::DISCOVER_SERVER);
 			HANDLE(MessageType::SERVER_INFO);

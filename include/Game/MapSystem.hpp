@@ -206,6 +206,6 @@ namespace Game {
 			Game::MapGenerator<
 				Game::BiomeA,
 				Game::BiomeC
-			> mgen{1234};
+			> mgen{12345};
 	};
 }

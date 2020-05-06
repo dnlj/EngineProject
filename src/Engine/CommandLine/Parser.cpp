@@ -1,0 +1,62 @@
+// Engine
+#include <Engine/Engine.hpp>
+#include <Engine/CommandLine/Parser.hpp>
+
+namespace Engine::CommandLine {
+	// TODO: allow for -- to explicitly begin positional args
+	// TODo: positional arg types?
+	void Parser::parse(int argc, char* argv[]) {
+		std::vector<std::string> args;
+		args.reserve(2 * argc);
+
+		for (int i = 0; i < argc; ++i) {
+			std::string arg = argv[i];
+			auto found = arg.find('=');
+			if (found == std::string::npos) {
+				if (arg.size() > 1 && arg[0] == '-' && arg[1] != '-') {
+					for (int i = 1; i < arg.size(); ++i) {
+						args.emplace_back("-") += arg[i];
+					}
+				} else {
+					args.push_back(arg);
+				}
+			} else {
+				args.push_back(arg.substr(0, found));
+				args.push_back(arg.substr(found + 1));
+			}
+		}
+
+		const auto last = args.size() - 1;
+		for (int i = 0; i <= last; ++i) {
+			const auto arg = args[i];
+			detail::ArgumentBase* ptr = nullptr;
+
+			if (arg.starts_with("--")) {
+				const auto full = arg.substr(2);
+				auto found = params.find(full);
+				if (found == params.end()) {
+					ENGINE_WARN("Unknown command line argument: ", arg);
+					found = params.emplace(full, std::make_unique<Argument<std::string>>(0, "", "<invalid argument>")).first;
+				}
+				ptr = found->second.get();
+			} else if (arg.starts_with("-")) {
+				auto found = abbrToFull.find(arg[1]);
+				if (found == abbrToFull.end()) {
+					ENGINE_WARN("Unkown abbreviated command line argument: ", arg);
+					const auto [it, _] = params.emplace("<invalid> " + arg, std::make_unique<Argument<std::string>>(0, "", "<invalid argument>"));
+					found = abbrToFull.emplace(arg[1], it->second.get()).first;
+				}
+				ptr = found->second;
+			} else {
+				positional.emplace_back(arg);
+				continue;
+			}
+
+			if ((i < last) && !args[i+1].starts_with("-")) {
+				ptr->store(args[++i]);
+			} else {
+				ptr->store("1");
+			}
+		}
+	}
+}
