@@ -116,11 +116,11 @@ namespace Engine::ECS {
 	}
 
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	template<class Component>
-	Component& World<TickRate, SystemsSet, ComponentsSet>::addComponent(Entity ent) {
+	template<class Component, class... Args>
+	Component& World<TickRate, SystemsSet, ComponentsSet>::addComponent(Entity ent, Args&&... args) {
 		auto& container = cm.getComponentContainer<Component>();
 		constexpr auto cid = getComponentId<Component>();
-		container.add(ent.id); // TODO: constructor args
+		container.add(ent.id, std::forward<Args>(args)...);
 
 		// Add the component
 		cm.componentBitsets[ent.id][cid] = true;

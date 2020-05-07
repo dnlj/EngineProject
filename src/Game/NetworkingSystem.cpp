@@ -275,7 +275,7 @@ namespace Game {
 			world.addComponent<PhysicsComponent>(ply).setBody(physSys.createPhysicsCircle(ply));
 			world.addComponent<CharacterMovementComponent>(ply);
 			world.addComponent<CharacterSpellComponent>(ply);
-			world.addComponent<Game::ActionComponent>(ply).grow(world.getSystem<Game::ActionSystem>().count());
+			world.addComponent<ActionComponent>(ply).grow(world.getSystem<ActionSystem>().count());
 		}
 
 		if constexpr (ENGINE_CLIENT) {

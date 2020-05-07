@@ -130,12 +130,13 @@ namespace Engine::ECS {
 
 			/**
 			 * Adds a component to an entity.
-			 * @param[in] ent The entity.
+			 * @param ent The entity.
+			 * @param args The arguments to pass to the constructor of the component.
 			 * @tparam Component The component.
 			 * @return A reference to the added component.
 			 */
-			template<class Component>
-			Component& addComponent(Entity ent);
+			template<class Component, class... Args>
+			Component& addComponent(Entity ent, Args&&... args);
 
 			/**
 			 * Adds components to an entity.
