@@ -27,6 +27,8 @@ namespace Engine::Net {
 
 			int32 recv(char* data, int32 size, IPv4Address& address) const;
 
+			IPv4Address getAddress() const;
+
 			template<SocketOption Opt, class Value>
 			bool setOption(const Value& value);
 

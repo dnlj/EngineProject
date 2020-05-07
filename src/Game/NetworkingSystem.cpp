@@ -31,9 +31,6 @@ namespace {
 		}
 	};
 
-	constexpr uint16 DEFAULT_PORT = 21212; // TODO: cmd line arg
-	constexpr Engine::Net::IPv4Address MULTICAST_GROUP = {224,0,0,212, DEFAULT_PORT}; // TODO: cmd line arg
-
 	// TODO: figure out a good pattern
 	constexpr uint8 DISCOVER_SERVER_DATA[Engine::Net::MessageStream::MAX_MESSAGE_SIZE] = {
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
@@ -75,15 +72,18 @@ namespace {
 namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
-		, socket{ENGINE_SERVER ? DEFAULT_PORT : 0}
+		, socket{ENGINE_SERVER ? *engine.commandLineArgs.get<uint16>("port") : 0}
 		, reader{socket}
 		, anyConn{socket}
-		, connFilter{world.getFilterFor<ConnectionComponent>()} {
+		, connFilter{world.getFilterFor<ConnectionComponent>()}
+		, group{*engine.commandLineArgs.get<Engine::Net::IPv4Address>("group")} {
 
-		if (socket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(MULTICAST_GROUP)) {
-			ENGINE_LOG("LAN server discovery is available. Joining multicast group ", MULTICAST_GROUP);
+		ENGINE_LOG("Listening on port ", socket.getAddress().port);
+
+		if (socket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(group)) {
+			ENGINE_LOG("LAN server discovery is available. Joining multicast group ", group);
 		} else {
-			ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", MULTICAST_GROUP);
+			ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", group);
 		}
 	}
 
@@ -99,7 +99,7 @@ namespace Game {
 				}
 			}
 
-			anyConn.writer.reset(MULTICAST_GROUP);
+			anyConn.writer.reset(group);
 			anyConn.writer.next({static_cast<uint8>(MessageType::DISCOVER_SERVER)});
 			anyConn.writer << DISCOVER_SERVER_DATA;
 			anyConn.writer.send(); // TODO: test if getting on other systems

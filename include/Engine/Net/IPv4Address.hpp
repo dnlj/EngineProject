@@ -37,7 +37,7 @@ namespace Engine::Net {
 				};
 			};
 
-			uint32 port;
+			uint32 port; // TODO: why is this 32bit? arent ports 16?
 	};
 
 	bool operator==(const IPv4Address& a, const IPv4Address& b);

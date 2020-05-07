@@ -32,7 +32,7 @@ namespace Engine::CommandLine {
 			}
 		}
 
-		const auto last = args.size() - 1;
+		const int last = static_cast<int>(args.size()) - 1;
 		for (int i = 0; i <= last; ++i) {
 			auto& arg = args[i];
 			detail::ArgumentBase* ptr = nullptr;

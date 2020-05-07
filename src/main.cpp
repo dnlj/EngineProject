@@ -208,6 +208,7 @@ namespace {
 	}
 
 	bool connectTo(const std::string& uri, Engine::EngineInstance& engine, Game::World& world) {
+		// TODO: use Engine::Net::hostToAddress
 		addrinfo* results = nullptr;
 		addrinfo hints = {
 			.ai_family = AF_INET, // TODO: support ipv6 - AF_UNSPEC
@@ -510,56 +511,30 @@ void run(int argc, char* argv[]) {
 	ImGui::StyleColorsDark();
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Command Line Args
+	// Engine
+	Engine::EngineInstance engine;
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Command Line
 	{
 		using namespace Engine::CommandLine;
-		Parser parser;
+		using namespace Engine::Net;
+		auto& parser = engine.commandLineArgs;
+
 		parser
-			.add<bool>("alpaca", 'a', false, "This is the help message. This is the help message.")
-			.add<bool>("bear", 'b', true, "This is the help message. This is the help message.")
-			.add<bool>("cat", 'c', false, "This is the help message. This is the help message.")
-			.add<int16>("port", 'p', 21212, "This is the help message. This is the help message.")
-			.add<bool>("cmd", 0, true, "This is the help message. This is the help message.")
-			.add<std::string>("test", 't', "Default String Value", "This is the help message. This is the help message.");
+			.add<uint16>("port", 'p', 21212,
+				"The port to listen on.")
+			.add<IPv4Address>("group", 'g', {224,0,0,212, 21212},
+				"The multicast group to join for server discovery.")
+			.add<std::string>("log", 'l', "", // TODO: impl
+				"The file to use for logging.")
+		;
 
-		char* argv[] = {
-			"-abc",
-			"-p=1234",
-			"--cmd=",
-			"--test",
-			"D:/My Folder/file.txt",
-			"positional arg 1",
-			"--invalid",
-			"some arg here",
-			"-i",
-		};
-
-		parser.parse(sizeof(argv) / sizeof(argv[0]), argv);
-
-		const char empty[] = "";
-
-		const auto prt = [&](const auto* val){
-			if (val) {
-				std::cout << *val;
-			} else {
-				std::cout << "<NotFound>";
-			}
-
-			std::cout << "\n";
-		};
-
-		std::cout << "Value of alpaca: ";		prt(parser.get<bool>("alpaca"));
-		std::cout << "Value of bear: ";			prt(parser.get<bool>("bear"));
-		std::cout << "Value of cat: ";			prt(parser.get<bool>("cat"));
-		std::cout << "Value of port: ";			prt(parser.get<int16>("port"));
-		std::cout << "Value of cmd: ";			prt(parser.get<bool>("cmd"));
-		std::cout << "Value of test: ";			prt(parser.get<std::string>("test"));
-		std::cout << "Value of --invalid: ";	prt(parser.get<std::string>("invalid"));
-		std::cout << "Value of <invalid> -i: ";	prt(parser.get<std::string>("<invalid> -i"));
+		parser.parse(argc - 1, argv + 1);
 	}
+	
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Engine stuff
-	Engine::EngineInstance engine;
+	// World
 	auto worldStorage = std::make_unique<Game::World>(1.0f / 60.0f, engine);
 	Game::World& world = *worldStorage.get();
 	TempWorldEngineWrapper wrapper{engine, world};
@@ -788,7 +763,7 @@ int entry(int argc, char* argv[]) {
 }
 
 #ifdef ENGINE_OS_WINDOWS
-int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nCmdShow) {
 	return entry(__argc, __argv);
 }
 #else

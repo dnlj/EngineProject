@@ -52,6 +52,13 @@ namespace Engine::Net {
 		return len;
 	}
 
+	IPv4Address UDPSocket::getAddress() const {
+		sockaddr addr = {};
+		int len = sizeof(addr);
+		getsockname(handle, &addr, &len);
+		return addr;
+	}
+
 	// TODO: use Engine::Windows
 	std::string UDPSocket::getWindowsErrorMessage(int err) const {
 		WCHAR* wmsg = nullptr;

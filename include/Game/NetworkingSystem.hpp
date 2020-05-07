@@ -43,6 +43,7 @@ namespace Game {
 			Engine::ECS::EntityFilter& connFilter;
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> ipToPlayer;
 			Engine::Net::Connection anyConn; // Used for unconnected messages
+			const Engine::Net::IPv4Address group;
 
 
 		public:
