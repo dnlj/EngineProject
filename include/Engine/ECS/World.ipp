@@ -119,12 +119,8 @@ namespace Engine::ECS {
 	template<class Component>
 	Component& World<TickRate, SystemsSet, ComponentsSet>::addComponent(Entity ent) {
 		auto& container = cm.getComponentContainer<Component>();
-		const auto cid = getComponentId<Component>();
-
-		// Ensure the container is of the correct size
-		if (ent.id >= container.size()) {
-			container.resize(ent.id + 1);
-		}
+		constexpr auto cid = getComponentId<Component>();
+		container.add(ent.id); // TODO: constructor args
 
 		// Add the component
 		cm.componentBitsets[ent.id][cid] = true;
@@ -174,7 +170,7 @@ namespace Engine::ECS {
 	void World<TickRate, SystemsSet, ComponentsSet>::removeComponents(Entity ent) {
 		cm.componentBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
 
-		((getComponent<Components>(ent) = Components()), ...);
+		cm.getComponentContainer<Components>().remove(ent.id), ...;
 
 		// TODO: Make filter manager take bitset?
 		(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);

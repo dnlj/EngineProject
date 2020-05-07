@@ -6,6 +6,7 @@
 
 // Engine
 #include <Engine/ECS/Entity.hpp>
+#include <Engine/SparseSet.hpp>
 
 namespace Engine::ECS {
 	/** The maximum number of components registrable. Ideally this would be exactly the number of components used. */
@@ -28,7 +29,7 @@ namespace Engine::ECS {
 
 	/** The type used for storing components. */
 	template<class T>
-	using ComponentContainer = std::vector<T>;
+	using ComponentContainer = SparseSet<decltype(Entity::id), T>;
 }
 
 // Asserts
