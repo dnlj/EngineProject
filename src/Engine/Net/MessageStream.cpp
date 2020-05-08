@@ -9,9 +9,13 @@ namespace Engine::Net {
 		: sock{socket} {
 	}
 
-	void MessageStream::next(MessageHeader head) {
+	void MessageStream::next(MessageType type, MessageChannel channel) {
 		curr = last;
-		write(head);
+		write(MessageHeader{
+			.type = type,
+			.channel = channel,
+			.sequence = nextSeqNum[channel]++,
+		});
 	}
 
 	MessageHeader& MessageStream::header() {

@@ -9,10 +9,20 @@
 
 
 namespace Engine::Net {
+	struct Channel {
+		enum Type : MessageChannel {
+			UNRELIABLE,
+			RELIABLE,
+			ORDERED,
+			_COUNT,
+		};
+	};
+
 	class MessageStream {
 		private:
 			UDPSocket& sock;
 			IPv4Address addr;
+			SequenceNumber nextSeqNum[Channel::_COUNT] = {};
 
 			char* curr;
 			char* last;
@@ -26,7 +36,7 @@ namespace Engine::Net {
 			MessageStream(const MessageStream&) = delete;
 			MessageStream(const MessageStream&&) = delete;
 
-			void next(MessageHeader head);
+			void next(MessageType type, MessageChannel channel);
 
 			// TODO: header field operations
 			MessageHeader& header();

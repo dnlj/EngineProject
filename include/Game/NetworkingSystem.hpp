@@ -12,15 +12,17 @@
 
 
 namespace Game {
-	enum class MessageType : uint8 {
-		UNKNOWN,
-		DISCOVER_SERVER,
-		SERVER_INFO,
-		CONNECT,
-		DISCONNECT,
-		PING,
-		ECS_COMP,
-		ACTION,
+	struct MessageType {
+		enum Type : Engine::Net::MessageType {
+			UNKNOWN,
+			DISCOVER_SERVER,
+			SERVER_INFO,
+			CONNECT,
+			DISCONNECT,
+			PING,
+			ECS_COMP,
+			ACTION,
+		};
 	};
 
 	class NetworkingSystem : public System {
@@ -63,7 +65,7 @@ namespace Game {
 
 			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);
 
-			template<MessageType Type>
+			template<MessageType::Type Type>
 			void handleMessageType(Engine::ECS::Entity ent, Engine::Net::Connection& from) { static_assert(Type != Type, "Unhandled network message type."); };
 	};
 }

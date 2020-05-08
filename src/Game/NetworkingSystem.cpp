@@ -100,7 +100,7 @@ namespace Game {
 			}
 
 			anyConn.writer.reset(group);
-			anyConn.writer.next({static_cast<uint8>(MessageType::DISCOVER_SERVER)});
+			anyConn.writer.next(MessageType::DISCOVER_SERVER, Engine::Net::Channel::UNRELIABLE);
 			anyConn.writer << DISCOVER_SERVER_DATA;
 			anyConn.writer.send(); // TODO: test if getting on other systems
 		#endif
@@ -113,7 +113,7 @@ namespace Game {
 		// TODO: rate limit per ip (longer if invalid packet)
 
 		if (reader.size() == size && !memcmp(reader.current(), DISCOVER_SERVER_DATA, size)) {
-			from.writer.next({static_cast<uint8>(MessageType::SERVER_INFO)});
+			from.writer.next(MessageType::SERVER_INFO, Engine::Net::Channel::UNRELIABLE);
 			from.writer << "This is the name of the server";
 		}
 
@@ -146,7 +146,7 @@ namespace Game {
 	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		if (reader.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address);
-			from.writer.next({static_cast<uint8>(MessageType::PING)});
+			from.writer.next(MessageType::PING, Engine::Net::Channel::UNRELIABLE);
 			from.writer.write(false);
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address);
@@ -202,7 +202,7 @@ namespace Game {
 
 				for (auto& ply : connFilter) {
 					auto& writer = world.getComponent<ConnectionComponent>(ply).conn->writer;
-					writer.next({static_cast<uint8>(MessageType::PING)});
+					writer.next(MessageType::PING, Engine::Net::Channel::UNRELIABLE);
 					writer.write(true);
 				}
 			}
@@ -255,7 +255,7 @@ namespace Game {
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		anyConn.address = addr;
 		anyConn.writer.reset(addr);
-		anyConn.writer.next({static_cast<uint8>(MessageType::CONNECT)}); // TODO: reliable message
+		anyConn.writer.next(MessageType::CONNECT, Engine::Net::Channel::UNRELIABLE); // TODO: reliable message
 		anyConn.writer.send();
 		addConnection(addr);	
 	}
@@ -306,7 +306,7 @@ namespace Game {
 		// TODO: use array?
 		const auto header = reader.read<Engine::Net::MessageHeader>();
 		#define HANDLE(Type) case Type: { return handleMessageType<Type>(ent, from); }
-		switch(static_cast<MessageType>(header.type)) {
+		switch(header.type) {
 			HANDLE(MessageType::DISCOVER_SERVER);
 			HANDLE(MessageType::SERVER_INFO);
 			HANDLE(MessageType::CONNECT);
