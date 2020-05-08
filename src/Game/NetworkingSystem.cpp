@@ -198,7 +198,7 @@ namespace Game {
 		if constexpr (ENGINE_CLIENT) {
 			static auto next = now;
 			if (next <= now) {
-				next = now + std::chrono::seconds{2};
+				next = now + std::chrono::seconds{1};
 
 				for (auto& ply : connFilter) {
 					auto& writer = world.getComponent<ConnectionComponent>(ply).conn->writer;

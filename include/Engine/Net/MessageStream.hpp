@@ -1,44 +1,14 @@
 #pragma once
 
-// STD
-#include <array>
-#include <type_traits>
-#include <cstring>
-#include <string>
-#include <vector>
-
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Net/IPv4Address.hpp>
+#include <Engine/Net/Packet.hpp>
+#include <Engine/Net/MessageHeader.hpp>
 
 
 namespace Engine::Net {
-	// TODO: move
-	class PacketHeader {
-		public:
-			uint16 protocol = 0b0110'1001'1001'0110;
-	};
-	static_assert(sizeof(PacketHeader) == 2);
-	
-	// TODO: move
-	class MessageHeader {
-		public:
-			uint8 type;
-			uint8 flags;
-			uint16 _filler;
-			uint32 sequence;
-	};
-	static_assert(sizeof(MessageHeader) == 8);
-	
-	// TODO: move
-	class Packet {
-		public:
-			PacketHeader header;
-			char data[512 - sizeof(header)];
-	};
-	static_assert(sizeof(Packet) == 512);
-
 	class MessageStream {
 		private:
 			UDPSocket& sock;
