@@ -146,8 +146,9 @@ namespace Game {
 	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		if (reader.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
-			std::cout << "PING: " << from.next(MessageType::PING, Engine::Net::Channel::RELIABLE) << "\n";
-			from.write(false);
+			if (from.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
+				from.write(false);
+			}
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
 		}
@@ -202,8 +203,9 @@ namespace Game {
 
 				for (auto& ply : connFilter) {
 					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-					std::cout << "PING: " << conn.next(MessageType::PING, Engine::Net::Channel::RELIABLE) << "\n";
-					conn.write(true);
+					if (conn.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
+						conn.write(true);
+					}
 				}
 			}
 		}
@@ -304,10 +306,10 @@ namespace Game {
 	}
 
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
-		// TODO: use array?
 		const auto header = reader.read<Engine::Net::MessageHeader>();
 		from.ack(header);
 
+		// TODO: use array?
 		#define HANDLE(Type) case Type: { return handleMessageType<Type>(ent, from); }
 		switch(header.type) {
 			HANDLE(MessageType::DISCOVER_SERVER);
@@ -318,7 +320,7 @@ namespace Game {
 			HANDLE(MessageType::ECS_COMP);
 			HANDLE(MessageType::ACTION);
 			default: {
-				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(reader.header().type));
+				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(header.type));
 			}
 		}
 		#undef HANDLE

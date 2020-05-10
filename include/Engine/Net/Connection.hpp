@@ -38,8 +38,6 @@ namespace Engine::Net {
 		public:
 			static constexpr int32 MAX_MESSAGE_SIZE = sizeof(Packet::data) - sizeof(MessageHeader);
 			Clock::TimePoint lastMessageTime;
-			uint32 sequence;
-			//Engine::Net::Connection writer;
 
 		public:
 			Connection(UDPSocket& sock, IPv4Address addr = {}, Clock::TimePoint lastMessageTime = {});

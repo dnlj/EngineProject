@@ -27,7 +27,7 @@ namespace Engine::Net {
 			.sequence = ++(lastSeq[static_cast<int32>(channel)]),
 		});
 
-		std::cout << "WRITE: " << header().sequence << " " << lastSeq[static_cast<int32>(channel)] << " " << (int32)channel << " " << this << "\n";
+		std::cout << "WRITE: " << header().sequence << " " << this << "\n";
 
 		return true;
 	}
@@ -141,10 +141,10 @@ namespace Engine::Net {
 	bool Connection::canUseChannel(Channel ch) const {
 		switch(ch) {
 			case Channel::RELIABLE: {
-				return reliableData.lastAck - lastSeq[static_cast<int32>(Channel::RELIABLE)] < MAX_UNACKED_MESSAGES;
+				return lastSeq[static_cast<int32>(Channel::RELIABLE)] - reliableData.lastAck < MAX_UNACKED_MESSAGES;
 			}
 			case Channel::ORDERED: {
-				return orderedData.lastAck - lastSeq[static_cast<int32>(Channel::ORDERED)] < MAX_UNACKED_MESSAGES;
+				return lastSeq[static_cast<int32>(Channel::ORDERED)] - orderedData.lastAck < MAX_UNACKED_MESSAGES;
 			}
 			case Channel::UNRELIABLE: { return true; }
 		}
