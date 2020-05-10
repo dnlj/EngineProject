@@ -41,12 +41,12 @@ namespace Game {
 		return interpTransform.p;
 	}
 
-	void PhysicsComponent::toNetwork(Engine::Net::MessageStream& msg) const {
-		msg.write(body->GetTransform());
+	void PhysicsComponent::toNetwork(Engine::Net::Connection& conn) const {
+		conn.write(body->GetTransform());
 	}
 
-	void PhysicsComponent::fromNetwork(Engine::Net::MessageStream& msg) {
-		const auto trans = msg.read<b2Transform>();
+	void PhysicsComponent::fromNetwork(Engine::Net::Connection& conn) {
+		const auto trans = conn.read<b2Transform>();
 		updateTransform(trans.p, trans.q.GetAngle());
 	}
 }

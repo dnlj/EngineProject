@@ -2,7 +2,6 @@
 
 // Engine
 #include <Engine/Net/UDPSocket.hpp>
-#include <Engine/Net/MessageStream.hpp>
 #include <Engine/Net/Connection.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Engine.hpp>
@@ -41,7 +40,7 @@ namespace Game {
 		private:
 			static constexpr auto timeout = std::chrono::milliseconds{10'000};
 			Engine::Net::UDPSocket socket;
-			Engine::Net::MessageStream reader;
+			Engine::Net::Connection reader; // TODO: is this needed anymore? just use anyConn? or do we need anyConnRead, anyConnWrite
 			Engine::ECS::EntityFilter& connFilter;
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> ipToPlayer;
 			Engine::Net::Connection anyConn; // Used for unconnected messages

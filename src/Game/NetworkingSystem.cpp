@@ -11,7 +11,7 @@
 
 namespace {
 	template<class T>
-	concept IsNetworkedComponent = requires (T t, Engine::Net::MessageStream& msg) {
+	concept IsNetworkedComponent = requires (T t, Engine::Net::Connection& msg) {
 		t.toNetwork(msg);
 		t.fromNetwork(msg);
 	};
@@ -32,7 +32,7 @@ namespace {
 	};
 
 	// TODO: figure out a good pattern
-	constexpr uint8 DISCOVER_SERVER_DATA[Engine::Net::MessageStream::MAX_MESSAGE_SIZE] = {
+	constexpr uint8 DISCOVER_SERVER_DATA[Engine::Net::Connection::MAX_MESSAGE_SIZE] = {
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
@@ -99,10 +99,10 @@ namespace Game {
 				}
 			}
 
-			anyConn.writer.reset(group);
-			anyConn.writer.next(MessageType::DISCOVER_SERVER, Engine::Net::Channel::UNRELIABLE);
-			anyConn.writer << DISCOVER_SERVER_DATA;
-			anyConn.writer.send(); // TODO: test if getting on other systems
+			anyConn.reset(group);
+			anyConn.next(MessageType::DISCOVER_SERVER, Engine::Net::Channel::UNRELIABLE);
+			anyConn << DISCOVER_SERVER_DATA;
+			anyConn.send(); // TODO: test if getting on other systems
 		#endif
 	}
 
@@ -113,8 +113,8 @@ namespace Game {
 		// TODO: rate limit per ip (longer if invalid packet)
 
 		if (reader.size() == size && !memcmp(reader.current(), DISCOVER_SERVER_DATA, size)) {
-			from.writer.next(MessageType::SERVER_INFO, Engine::Net::Channel::UNRELIABLE);
-			from.writer << "This is the name of the server";
+			from.next(MessageType::SERVER_INFO, Engine::Net::Channel::UNRELIABLE);
+			from << "This is the name of the server";
 		}
 
 		reader.clear();
@@ -123,7 +123,7 @@ namespace Game {
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::SERVER_INFO>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		#if ENGINE_CLIENT
-			auto& info = servers[from.address];
+			auto& info = servers[from.address()];
 			info.name = reader.read<std::string>();
 			info.lastUpdate = Engine::Clock::now();
 		#endif
@@ -132,24 +132,24 @@ namespace Game {
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
-		ENGINE_LOG("MessageType::CONNECT from ", from.address);
-		addConnection(from.address);
+		ENGINE_LOG("MessageType::CONNECT from ", from.address());
+		addConnection(from.address());
 	}
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
-		ENGINE_LOG("MessageType::DISCONNECT from ", from.address);
+		ENGINE_LOG("MessageType::DISCONNECT from ", from.address());
 		disconnect(from);
 	}
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		if (reader.read<bool>()) {
-			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address);
-			from.writer.next(MessageType::PING, Engine::Net::Channel::UNRELIABLE);
-			from.writer.write(false);
+			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
+			from.next(MessageType::PING, Engine::Net::Channel::UNRELIABLE);
+			from.write(false);
 		} else {
-			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address);
+			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
 		}
 	}
 
@@ -201,9 +201,9 @@ namespace Game {
 				next = now + std::chrono::seconds{1};
 
 				for (auto& ply : connFilter) {
-					auto& writer = world.getComponent<ConnectionComponent>(ply).conn->writer;
-					writer.next(MessageType::PING, Engine::Net::Channel::UNRELIABLE);
-					writer.write(true);
+					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+					conn.next(MessageType::PING, Engine::Net::Channel::UNRELIABLE);
+					conn.write(true);
 				}
 			}
 		}
@@ -220,9 +220,8 @@ namespace Game {
 				conn->lastMessageTime = now;
 			} else {
 				ent = Engine::ECS::INVALID_ENTITY;
-				anyConn.writer.flush();
-				anyConn.address = addr;
-				anyConn.writer.reset(addr);
+				anyConn.flush();
+				anyConn.reset(addr);
 				conn = &anyConn;
 			}
 
@@ -231,9 +230,9 @@ namespace Game {
 			}
 		}
 
-		anyConn.writer.flush();
+		anyConn.flush();
 		for (auto& ply : connFilter) {
-			world.getComponent<ConnectionComponent>(ply).conn->writer.flush();
+			world.getComponent<ConnectionComponent>(ply).conn->flush();
 		}
 
 		for (auto& ply : connFilter) {
@@ -253,10 +252,9 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		anyConn.address = addr;
-		anyConn.writer.reset(addr);
-		anyConn.writer.next(MessageType::CONNECT, Engine::Net::Channel::UNRELIABLE); // TODO: reliable message
-		anyConn.writer.send();
+		anyConn.reset(addr);
+		anyConn.next(MessageType::CONNECT, Engine::Net::Channel::UNRELIABLE); // TODO: reliable message
+		anyConn.send();
 		addConnection(addr);	
 	}
 
@@ -265,7 +263,7 @@ namespace Game {
 		auto& ply = world.createEntity();
 		ipToPlayer.emplace(addr, ply);
 		auto& connComp = world.addComponent<ConnectionComponent>(ply);
-		connComp.conn = std::make_unique<Engine::Net::Connection>(socket, addr, Engine::Clock::now(), 0);
+		connComp.conn = std::make_unique<Engine::Net::Connection>(socket, addr, Engine::Clock::now());
 
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
@@ -297,7 +295,7 @@ namespace Game {
 
 	void NetworkingSystem::onDisconnect(const Engine::Net::Connection& conn) {
 		std::cout
-			<< "onDisconnect from: " << conn.address
+			<< "onDisconnect from: " << conn.address()
 			<< " @ " << conn.lastMessageTime.time_since_epoch().count()
 			<< "\n";
 	}

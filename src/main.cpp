@@ -613,9 +613,9 @@ void run(int argc, char* argv[]) {
 				const auto sendAction = [&](Engine::ECS::Entity ent, ActionId aid, Value curr, Value prev){
 					ENGINE_DEBUG_ASSERT(connFilter.size() <= 1);
 					for (auto& ply : connFilter) {
-						auto& writer = world.getComponent<Game::ConnectionComponent>(ply).conn->writer;
-						writer.next(Game::MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
-						writer << aid << curr;
+						auto& conn = *world.getComponent<Game::ConnectionComponent>(ply).conn;
+						conn.next(Game::MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
+						conn << aid << curr;
 						//std::cout << "Send action: " << ent << " - " << aid << " - " << curr.value << " - " << connFilter.size() << "\n";
 					}
 					return false;

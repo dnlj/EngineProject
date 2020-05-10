@@ -201,6 +201,7 @@ project("*")
 -- Client
 --------------------------------------------------------------------------------
 project(PROJECT_NAME .."Client")
+	uuid "6E25C6C1-DA3B-C457-23B3-4F798F0895DF"
 	files {
 		"TODO.md",
 		"src/main.cpp",
@@ -216,6 +217,7 @@ project(PROJECT_NAME .."Client")
 -- Server
 --------------------------------------------------------------------------------
 project(PROJECT_NAME .."Server")
+	uuid "863A9FE6-F250-9D7C-3BC8-289EA71D6E04"
 	files {
 		"TODO.md",
 		"src/main.cpp",

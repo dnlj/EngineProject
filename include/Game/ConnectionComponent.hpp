@@ -4,7 +4,6 @@
 #include <memory>
 
 // Engine
-#include <Engine/Net/MessageStream.hpp>
 #include <Engine/Net/Connection.hpp>
 
 
