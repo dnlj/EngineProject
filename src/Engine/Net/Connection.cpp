@@ -16,13 +16,41 @@ namespace Engine::Net {
 		reset(addr);
 	}
 
-	void Connection::next(MessageType type, Channel channel) {
+	bool Connection::next(MessageType type, Channel channel) {
+		if (!canUseChannel(channel)) { return false; }
+
+		store();
 		curr = last;
 		write(MessageHeader{
 			.type = type,
 			.channel = channel,
-			.sequence = nextSeqNum[static_cast<int32>(channel)]++,
+			.sequence = ++(lastSeq[static_cast<int32>(channel)]),
 		});
+
+		std::cout << "WRITE: " << header().sequence << " " << lastSeq[static_cast<int32>(channel)] << " " << (int32)channel << " " << this << "\n";
+
+		return true;
+	}
+
+	void Connection::ack(const MessageHeader& hdr) {
+		switch(hdr.channel) {
+			case Channel::RELIABLE: {
+				const auto i = hdr.sequence % MAX_UNACKED_MESSAGES;
+				reliableData.acks |= 1ull << i;
+				while (reliableData.acks & 1) {
+					reliableData.acks = reliableData.acks >> 1;
+					++reliableData.lastAck;
+				}
+				std::cout << "ACK: " << hdr.sequence << "\n";
+				return;
+			}
+			case Channel::ORDERED: {
+				// TODO: impl
+				ENGINE_ERROR("TODO: Unimplemented");
+				return;
+			}
+			case Channel::UNRELIABLE: { return; }
+		}
 	}
 
 	MessageHeader& Connection::header() {
@@ -108,5 +136,44 @@ namespace Engine::Net {
 		ENGINE_DEBUG_ASSERT(curr + sz <= last, "Insufficient space remaining to read");
 		t.assign(curr, sz - 1);
 		curr += sz;
+	}
+	
+	bool Connection::canUseChannel(Channel ch) const {
+		switch(ch) {
+			case Channel::RELIABLE: {
+				return reliableData.lastAck - lastSeq[static_cast<int32>(Channel::RELIABLE)] < MAX_UNACKED_MESSAGES;
+			}
+			case Channel::ORDERED: {
+				return orderedData.lastAck - lastSeq[static_cast<int32>(Channel::ORDERED)] < MAX_UNACKED_MESSAGES;
+			}
+			case Channel::UNRELIABLE: { return true; }
+		}
+
+		ENGINE_DEBUG_ASSERT(false, "Unhandled network channel type.");
+		return false;
+	}
+
+	void Connection::store() {
+		const auto sz = size();
+		if (sz == 0) { return; }
+		const auto& hdr = header();
+		const auto i = hdr.sequence % MAX_UNACKED_MESSAGES;
+		switch(hdr.channel) {
+			case Channel::RELIABLE: {
+				auto& msg = reliableData.messages[i];
+				ENGINE_DEBUG_ASSERT(!msg);
+				msg.reset(new char[sz]);
+				memcpy(msg.get(), curr, sz);
+				return;
+			}
+			case Channel::ORDERED: {
+				auto& msg = orderedData.messages[i];
+				ENGINE_DEBUG_ASSERT(!msg);
+				msg.reset(new char[sz]);
+				memcpy(msg.get(), curr, sz);
+				return;
+			}
+			case Channel::UNRELIABLE: { return; }
+		}
 	}
 }

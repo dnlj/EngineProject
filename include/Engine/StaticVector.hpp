@@ -125,5 +125,9 @@ namespace Engine {
 
 			// TODO: (c)rbegin()
 			// TODO: (c)rend()
+
+			void expand(size_type n = 1) noexcept {
+				resize(size() + n);
+			}
 	};
 }

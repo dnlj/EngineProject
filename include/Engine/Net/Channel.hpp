@@ -6,9 +6,9 @@
 
 namespace Engine::Net {
 	enum class Channel : uint8 {
-		UNRELIABLE,
 		RELIABLE,
 		ORDERED,
+		UNRELIABLE,
 		_COUNT,
 	};
 }

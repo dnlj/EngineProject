@@ -7,6 +7,7 @@
 #include <Engine/Net/Packet.hpp>
 #include <Engine/Net/MessageHeader.hpp>
 #include <Engine/Clock.hpp>
+#include <Engine/StaticVector.hpp>
 
 
 namespace Engine::Net {
@@ -14,11 +15,25 @@ namespace Engine::Net {
 		private:
 			UDPSocket& sock;
 			IPv4Address addr;
-			SequenceNumber nextSeqNum[static_cast<int32>(Channel::_COUNT)] = {};
 
 			char* curr;
 			char* last;
 			Packet packet;
+
+			static constexpr int32 MAX_UNACKED_MESSAGES = 64;
+
+			struct ChannelData {
+				SequenceNumber lastAck = 0;
+				uint64 acks = 0;
+				// TODO: some kind of memory pool and views instead? this seems dumb
+				std::unique_ptr<char[]> messages[MAX_UNACKED_MESSAGES];
+			};
+			 
+			SequenceNumber lastSeq[static_cast<int32>(Channel::_COUNT)] = {};
+			// TODO: move reliable types to top of enum so we can use as array index?
+			ChannelData reliableData;
+			ChannelData orderedData;
+
 
 		public:
 			static constexpr int32 MAX_MESSAGE_SIZE = sizeof(Packet::data) - sizeof(MessageHeader);
@@ -31,7 +46,9 @@ namespace Engine::Net {
 			Connection(const Connection&) = delete;
 			Connection(const Connection&&) = delete;
 
-			void next(MessageType type, Channel channel);
+			bool next(MessageType type, Channel channel);
+
+			void ack(const MessageHeader& hdr);
 
 			// TODO: header field operations
 			MessageHeader& header();
@@ -204,6 +221,8 @@ namespace Engine::Net {
 
 		private:
 			void reset(int32 sz = 0);
+			bool canUseChannel(Channel ch) const;
+			void store();
 	};
 }
 

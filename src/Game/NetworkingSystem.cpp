@@ -146,7 +146,7 @@ namespace Game {
 	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		if (reader.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
-			from.next(MessageType::PING, Engine::Net::Channel::UNRELIABLE);
+			std::cout << "PING: " << from.next(MessageType::PING, Engine::Net::Channel::RELIABLE) << "\n";
 			from.write(false);
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
@@ -202,7 +202,7 @@ namespace Game {
 
 				for (auto& ply : connFilter) {
 					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-					conn.next(MessageType::PING, Engine::Net::Channel::UNRELIABLE);
+					std::cout << "PING: " << conn.next(MessageType::PING, Engine::Net::Channel::RELIABLE) << "\n";
 					conn.write(true);
 				}
 			}
@@ -230,6 +230,9 @@ namespace Game {
 			}
 		}
 
+		// TODO: re-write unacked messages # frames
+		// TODO: write ack messages
+
 		anyConn.flush();
 		for (auto& ply : connFilter) {
 			world.getComponent<ConnectionComponent>(ply).conn->flush();
@@ -253,7 +256,7 @@ namespace Game {
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		anyConn.reset(addr);
-		anyConn.next(MessageType::CONNECT, Engine::Net::Channel::UNRELIABLE); // TODO: reliable message
+		std::cout << "Connect: " << anyConn.next(MessageType::CONNECT, Engine::Net::Channel::RELIABLE) << "\n";
 		anyConn.send();
 		addConnection(addr);	
 	}
@@ -303,6 +306,8 @@ namespace Game {
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		// TODO: use array?
 		const auto header = reader.read<Engine::Net::MessageHeader>();
+		from.ack(header);
+
 		#define HANDLE(Type) case Type: { return handleMessageType<Type>(ent, from); }
 		switch(header.type) {
 			HANDLE(MessageType::DISCOVER_SERVER);
