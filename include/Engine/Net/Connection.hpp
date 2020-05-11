@@ -22,18 +22,17 @@ namespace Engine::Net {
 
 			static constexpr int32 MAX_UNACKED_MESSAGES = 64;
 
-			struct ChannelData {
-				SequenceNumber lastAck = 0;
+			struct AckData {
+				SequenceNumber nextAck = 0;
 				uint64 acks = 0;
 				// TODO: some kind of memory pool and views instead? this seems dumb
 				std::unique_ptr<char[]> messages[MAX_UNACKED_MESSAGES];
 			};
 			 
-			SequenceNumber lastSeq[static_cast<int32>(Channel::_COUNT)] = {};
-			// TODO: move reliable types to top of enum so we can use as array index?
-			ChannelData reliableData;
-			ChannelData orderedData;
+			SequenceNumber nextSeq[static_cast<int32>(Channel::_COUNT)] = {};
 
+			AckData sendAckData[2] = {};
+			AckData recvAckData[2] = {}; // TODO: we dont need `messsages[#]` for recv reliable data. Maybe a better way to store datas
 
 		public:
 			static constexpr int32 MAX_MESSAGE_SIZE = sizeof(Packet::data) - sizeof(MessageHeader);
@@ -47,6 +46,8 @@ namespace Engine::Net {
 			bool next(MessageType type, Channel channel);
 
 			void ack(const MessageHeader& hdr);
+
+			void writeAcks(Channel ch);
 
 			// TODO: header field operations
 			MessageHeader& header();

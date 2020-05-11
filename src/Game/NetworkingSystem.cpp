@@ -148,6 +148,8 @@ namespace Game {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
 			if (from.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
 				from.write(false);
+			} else {
+				ENGINE_WARN("TODO: how to handle unsendable messages");
 			}
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
@@ -205,6 +207,8 @@ namespace Game {
 					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 					if (conn.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
 						conn.write(true);
+					} else {
+						ENGINE_WARN("TODO: how to handle unsendable messages");
 					}
 				}
 			}
@@ -232,8 +236,9 @@ namespace Game {
 			}
 		}
 
-		// TODO: re-write unacked messages # frames
 		// TODO: write ack messages
+		// TODO: re-write unacked messages # frames
+		// TODO: then flush
 
 		anyConn.flush();
 		for (auto& ply : connFilter) {

@@ -24,33 +24,29 @@ namespace Engine::Net {
 		write(MessageHeader{
 			.type = type,
 			.channel = channel,
-			.sequence = ++(lastSeq[static_cast<int32>(channel)]),
+			.sequence = nextSeq[static_cast<int32>(channel)]++,
 		});
 
-		std::cout << "WRITE: " << header().sequence << " " << this << "\n";
+		std::cout << "WRITE: " << header().sequence << " " << (int)channel << " " << this << "\n";
 
 		return true;
 	}
 
 	void Connection::ack(const MessageHeader& hdr) {
-		switch(hdr.channel) {
-			case Channel::RELIABLE: {
-				const auto i = hdr.sequence % MAX_UNACKED_MESSAGES;
-				reliableData.acks |= 1ull << i;
-				while (reliableData.acks & 1) {
-					reliableData.acks = reliableData.acks >> 1;
-					++reliableData.lastAck;
-				}
-				std::cout << "ACK: " << hdr.sequence << "\n";
-				return;
-			}
-			case Channel::ORDERED: {
-				// TODO: impl
-				ENGINE_ERROR("TODO: Unimplemented");
-				return;
-			}
-			case Channel::UNRELIABLE: { return; }
+		if (hdr.channel == Channel::UNRELIABLE) { return; }
+		auto& ackData = recvAckData[static_cast<int32>(hdr.channel)];
+		ackData.acks |= 1ull << (hdr.sequence % MAX_UNACKED_MESSAGES);
+		while (ackData.acks & 1) {
+			ackData.acks = ackData.acks >> 1;
+			++ackData.nextAck;
 		}
+		std::cout << "ACK: " << hdr.sequence << " " << (int)hdr.channel << " " << this << "\n";
+	}
+	
+	void Connection::writeAcks(Channel ch) {
+
+		//write(lastAck);
+		//write(acks);
 	}
 
 	MessageHeader& Connection::header() {
@@ -139,41 +135,23 @@ namespace Engine::Net {
 	}
 	
 	bool Connection::canUseChannel(Channel ch) const {
-		switch(ch) {
-			case Channel::RELIABLE: {
-				return lastSeq[static_cast<int32>(Channel::RELIABLE)] - reliableData.lastAck < MAX_UNACKED_MESSAGES;
-			}
-			case Channel::ORDERED: {
-				return lastSeq[static_cast<int32>(Channel::ORDERED)] - orderedData.lastAck < MAX_UNACKED_MESSAGES;
-			}
-			case Channel::UNRELIABLE: { return true; }
-		}
-
-		ENGINE_DEBUG_ASSERT(false, "Unhandled network channel type.");
-		return false;
+		if (ch == Channel::UNRELIABLE) { return true; }
+		auto& ackData = sendAckData[static_cast<int32>(ch)];
+		return nextSeq[static_cast<int32>(ch)] - ackData.nextAck <= MAX_UNACKED_MESSAGES;
 	}
 
 	void Connection::store() {
 		const auto sz = size();
 		if (sz == 0) { return; }
+
 		const auto& hdr = header();
-		const auto i = hdr.sequence % MAX_UNACKED_MESSAGES;
-		switch(hdr.channel) {
-			case Channel::RELIABLE: {
-				auto& msg = reliableData.messages[i];
-				ENGINE_DEBUG_ASSERT(!msg);
-				msg.reset(new char[sz]);
-				memcpy(msg.get(), curr, sz);
-				return;
-			}
-			case Channel::ORDERED: {
-				auto& msg = orderedData.messages[i];
-				ENGINE_DEBUG_ASSERT(!msg);
-				msg.reset(new char[sz]);
-				memcpy(msg.get(), curr, sz);
-				return;
-			}
-			case Channel::UNRELIABLE: { return; }
-		}
+		if (hdr.channel == Channel::UNRELIABLE) { return; }
+
+		auto& ackData = sendAckData[static_cast<int32>(hdr.channel)];
+		auto& msg = ackData.messages[hdr.sequence % MAX_UNACKED_MESSAGES];
+		ENGINE_DEBUG_ASSERT(!msg);
+
+		msg.reset(new char[sz]);
+		memcpy(msg.get(), curr, sz);
 	}
 }
