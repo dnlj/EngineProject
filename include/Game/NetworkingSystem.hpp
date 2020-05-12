@@ -21,6 +21,7 @@ namespace Game {
 			PING,
 			ECS_COMP,
 			ACTION,
+			ACK,
 		};
 	};
 
@@ -65,6 +66,6 @@ namespace Game {
 			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);
 
 			template<MessageType::Type Type>
-			void handleMessageType(Engine::ECS::Entity ent, Engine::Net::Connection& from) { static_assert(Type != Type, "Unhandled network message type."); };
+			void handleMessageType(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) { static_assert(Type != Type, "Unhandled network message type."); };
 	};
 }

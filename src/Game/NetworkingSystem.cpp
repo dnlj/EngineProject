@@ -107,7 +107,7 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::DISCOVER_SERVER>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::DISCOVER_SERVER>(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) {
 		constexpr auto size = sizeof(DISCOVER_SERVER_DATA);
 
 		// TODO: rate limit per ip (longer if invalid packet)
@@ -121,7 +121,7 @@ namespace Game {
 	}
 	
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::SERVER_INFO>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::SERVER_INFO>(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) {
 		#if ENGINE_CLIENT
 			auto& info = servers[from.address()];
 			info.name = reader.read<std::string>();
@@ -130,20 +130,20 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
 		ENGINE_LOG("MessageType::CONNECT from ", from.address());
 		addConnection(from.address());
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) {
 		ENGINE_LOG("MessageType::DISCONNECT from ", from.address());
 		disconnect(from);
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) {
 		if (reader.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
 			if (from.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
@@ -157,7 +157,7 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) {
 		//const auto ent = reader.read<Engine::ECS::Entity>();
 		//const auto cid = reader.read<Engine::ECS::ComponentId>();
 		//world.callWithComponent(ent, cid, [&](auto& comp){
@@ -168,13 +168,27 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ACTION>(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+	void NetworkingSystem::handleMessageType<MessageType::ACTION>(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) {
 		world.getSystem<ActionSystem>().processAction({
 			ent,
 			reader.read<Engine::Input::ActionId>(),
 			reader.read<Engine::Input::Value>()
 		});
 		//std::cout << "Recv action: " << ent << " - " << aid << " - " << val.value << "\n";
+	}
+
+	template<>
+	void NetworkingSystem::handleMessageType<MessageType::ACK>(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) {
+		const auto chan = reader.read<Engine::Net::Channel>();
+		const auto next = reader.read<Engine::Net::SequenceNumber>();
+		const auto acks = reader.read<uint64>();
+
+		if (chan > Engine::Net::Channel::ORDERED) {
+			ENGINE_WARN("Received ACK message for invalid channel ", static_cast<int32>(head.channel));
+			return;
+		}
+
+		from.updateSentAcks(chan, next, acks);
 	}
 
 	void NetworkingSystem::tick(float32 dt) {
@@ -236,13 +250,16 @@ namespace Game {
 			}
 		}
 
-		// TODO: write ack messages
-		// TODO: re-write unacked messages # frames
-		// TODO: then flush
-
 		anyConn.flush();
 		for (auto& ply : connFilter) {
-			world.getComponent<ConnectionComponent>(ply).conn->flush();
+			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+			conn.next(MessageType::ACK, Engine::Net::Channel::UNRELIABLE);
+			// TODO: all channels
+			conn.writeRecvAcks(Engine::Net::Channel::RELIABLE);
+
+			// TODO: re-write unacked messages every x frames (seconds?)
+
+			conn.flush();
 		}
 
 		for (auto& ply : connFilter) {
@@ -262,6 +279,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
+		// TODO: reliable over anyConn doesnt make sense
 		anyConn.reset(addr);
 		std::cout << "Connect: " << anyConn.next(MessageType::CONNECT, Engine::Net::Channel::RELIABLE) << "\n";
 		anyConn.send();
@@ -311,12 +329,20 @@ namespace Game {
 	}
 
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
-		const auto header = reader.read<Engine::Net::MessageHeader>();
-		from.ack(header);
+		const auto head = reader.read<Engine::Net::MessageHeader>();
+
+		// TODO: beter check for this
+		if (head.channel != Engine::Net::Channel::UNRELIABLE) {
+			if (!from.updateRecvAcks(head)) {
+				ENGINE_WARN("TODO: Handle bad seq num");
+				// TODO: this messages should be discarded. How to do with current write/read scheme?
+				return;
+			}
+		}
 
 		// TODO: use array?
-		#define HANDLE(Type) case Type: { return handleMessageType<Type>(ent, from); }
-		switch(header.type) {
+		#define HANDLE(Type) case Type: { return handleMessageType<Type>(ent, from, head); }
+		switch(head.type) {
 			HANDLE(MessageType::DISCOVER_SERVER);
 			HANDLE(MessageType::SERVER_INFO);
 			HANDLE(MessageType::CONNECT);
@@ -324,8 +350,9 @@ namespace Game {
 			HANDLE(MessageType::PING);
 			HANDLE(MessageType::ECS_COMP);
 			HANDLE(MessageType::ACTION);
+			HANDLE(MessageType::ACK);
 			default: {
-				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(header.type));
+				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(head.type));
 			}
 		}
 		#undef HANDLE

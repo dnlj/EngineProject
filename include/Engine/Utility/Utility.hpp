@@ -2,6 +2,8 @@
 
 // STD
 #include <string>
+#include <concepts>
+
 
 namespace Engine::Utility {
 	/**
@@ -10,4 +12,7 @@ namespace Engine::Utility {
 	 * @return The contents of the file as a string.
 	 */
 	std::string readFile(const std::string& path);
+
+	template<std::integral T>
+	constexpr bool isPowerOfTwo(T i) { return !(i & (i - 1)); }
 }

@@ -11,6 +11,7 @@
 
 
 namespace Engine::Net {
+	// TODO: make read functions return ptrs? We need better error handling.
 	class Connection {
 		private:
 			UDPSocket& sock;
@@ -28,10 +29,10 @@ namespace Engine::Net {
 				// TODO: some kind of memory pool and views instead? this seems dumb
 				std::unique_ptr<char[]> messages[MAX_UNACKED_MESSAGES];
 			};
-			 
+
 			SequenceNumber nextSeq[static_cast<int32>(Channel::_COUNT)] = {};
 
-			AckData sendAckData[2] = {};
+			AckData sentAckData[2] = {};
 			AckData recvAckData[2] = {}; // TODO: we dont need `messsages[#]` for recv reliable data. Maybe a better way to store datas
 
 		public:
@@ -45,9 +46,11 @@ namespace Engine::Net {
 
 			bool next(MessageType type, Channel channel);
 
-			void ack(const MessageHeader& hdr);
+			void updateSentAcks(Channel ch, SequenceNumber nextAck, uint64 acks);
 
-			void writeAcks(Channel ch);
+			bool updateRecvAcks(const MessageHeader& hdr);
+
+			void writeRecvAcks(Channel ch);
 
 			// TODO: header field operations
 			MessageHeader& header();
@@ -222,6 +225,7 @@ namespace Engine::Net {
 			void reset(int32 sz = 0);
 			bool canUseChannel(Channel ch) const;
 			void store();
+			constexpr static SequenceNumber seqToIndex(SequenceNumber seq);
 	};
 }
 

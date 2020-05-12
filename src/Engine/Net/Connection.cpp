@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Net/Connection.hpp>
+#include <Engine/Utility/Utility.hpp>
 
 
 namespace Engine::Net {
@@ -27,26 +28,51 @@ namespace Engine::Net {
 			.sequence = nextSeq[static_cast<int32>(channel)]++,
 		});
 
-		std::cout << "WRITE: " << header().sequence << " " << (int)channel << " " << this << "\n";
+		if ((int)channel < 2) { // TODO: rm
+			std::cout << "WRITE: " << header().sequence << " " << (int)channel << " " << this << "\n";
+		}
 
 		return true;
 	}
 
-	void Connection::ack(const MessageHeader& hdr) {
-		if (hdr.channel == Channel::UNRELIABLE) { return; }
-		auto& ackData = recvAckData[static_cast<int32>(hdr.channel)];
-		ackData.acks |= 1ull << (hdr.sequence % MAX_UNACKED_MESSAGES);
-		while (ackData.acks & 1) {
-			ackData.acks = ackData.acks >> 1;
+	void Connection::updateSentAcks(Channel ch, SequenceNumber nextAck, uint64 acks) {
+		auto& ackData = sentAckData[static_cast<int32>(ch)];
+		if (nextAck < ackData.nextAck) { return; }
+
+		while (ackData.nextAck < nextAck) {
+			const auto i = seqToIndex(ackData.nextAck);
+			ackData.messages[i].reset();
+			//ackData.acks &= ~(1ull << i); // TODO: we dont need this since we assign below
+			std::cout << "UPDATE SENT ACK: " << ackData.nextAck << " " << (int)ch << " " << this << "\n";
 			++ackData.nextAck;
 		}
-		std::cout << "ACK: " << hdr.sequence << " " << (int)hdr.channel << " " << this << "\n";
+		ackData.acks = acks;
+	}
+
+	bool Connection::updateRecvAcks(const MessageHeader& hdr) {
+		const auto seq = hdr.sequence;
+		auto& ackData = recvAckData[static_cast<int32>(hdr.channel)];
+		const auto min = ackData.nextAck;
+		const auto max = min + MAX_UNACKED_MESSAGES - 1;
+
+		if (seq < min || seq > max) { return false; }
+		ackData.acks |= 1ull << seqToIndex(seq);
+
+		for (decltype(ackData.acks) curr;
+			(curr = 1ull << seqToIndex(ackData.nextAck)), (ackData.acks & curr);
+			++ackData.nextAck) {
+			ackData.acks &= ~curr;
+			std::cout << "UPDATE RECV ACK: " << ackData.nextAck << " " << (int)hdr.channel << " " << this << "\n";
+		}
+
+		return true;
 	}
 	
-	void Connection::writeAcks(Channel ch) {
-
-		//write(lastAck);
-		//write(acks);
+	void Connection::writeRecvAcks(Channel ch) {
+		auto& ackData = recvAckData[static_cast<int32>(ch)];
+		write(ch);
+		write(ackData.nextAck);
+		write(ackData.acks);
 	}
 
 	MessageHeader& Connection::header() {
@@ -136,7 +162,7 @@ namespace Engine::Net {
 	
 	bool Connection::canUseChannel(Channel ch) const {
 		if (ch == Channel::UNRELIABLE) { return true; }
-		auto& ackData = sendAckData[static_cast<int32>(ch)];
+		auto& ackData = sentAckData[static_cast<int32>(ch)];
 		return nextSeq[static_cast<int32>(ch)] - ackData.nextAck <= MAX_UNACKED_MESSAGES;
 	}
 
@@ -147,11 +173,16 @@ namespace Engine::Net {
 		const auto& hdr = header();
 		if (hdr.channel == Channel::UNRELIABLE) { return; }
 
-		auto& ackData = sendAckData[static_cast<int32>(hdr.channel)];
+		auto& ackData = sentAckData[static_cast<int32>(hdr.channel)];
 		auto& msg = ackData.messages[hdr.sequence % MAX_UNACKED_MESSAGES];
 		ENGINE_DEBUG_ASSERT(!msg);
 
 		msg.reset(new char[sz]);
 		memcpy(msg.get(), curr, sz);
+	}
+
+	constexpr SequenceNumber Connection::seqToIndex(SequenceNumber seq) {
+		static_assert(Engine::Utility::isPowerOfTwo(MAX_UNACKED_MESSAGES));
+		return seq & (MAX_UNACKED_MESSAGES - 1);
 	}
 }
