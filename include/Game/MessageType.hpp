@@ -20,7 +20,7 @@ namespace Game {
 			ACTION,
 			ACK,
 			// TODO: static asserts to make sure support structures are defined, such as dispatchMessage HANDLE cases
-			_COUNT, 
+			_COUNT,
 		};
 	};
 }

@@ -335,11 +335,10 @@ namespace Game {
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		const auto& head = reader.read<Engine::Net::MessageHeader>();
 
-		// TODO: beter check for this
+		// TODO: better check for this
 		if (head.channel != Engine::Net::Channel::UNRELIABLE) {
 			if (!from.updateRecvAcks(head)) {
-				ENGINE_WARN("TODO: Handle bad seq num");
-				// TODO: this messages should be discarded. How to do with current write/read scheme?
+				reader.read(head.size);
 				return;
 			}
 		}

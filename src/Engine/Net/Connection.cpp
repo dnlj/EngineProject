@@ -18,7 +18,7 @@ namespace Engine::Net {
 	}
 
 	void Connection::endMessage() {
-		header().size = size();
+		header().size = size() - static_cast<uint16>(sizeof(MessageHeader));
 		store();
 		curr = last;
 	}
@@ -130,7 +130,6 @@ namespace Engine::Net {
 	int32 Connection::recv() {
 		const int32 len = sock.recv(reinterpret_cast<char*>(&packet), sizeof(packet), addr) - sizeof(packet.header);
 		// TODO: filter by PacketHeader.protocol
-		if (len) { std::cout << "len: " << len << "\n"; }
 		reset(len);
 		return len;
 	}
@@ -176,18 +175,16 @@ namespace Engine::Net {
 	}
 
 	void Connection::write(const std::string& t) {
-		std::cout << "** write std string\n";
 		write(t.c_str(), t.size() + 1);
 	}
 
 	void Connection::write(const char* t) {
-		std::cout << "** write const char* " << strlen(t) << "\n";
 		write(t, strlen(t) + 1);
 	}
 
 	const void* Connection::read(size_t sz) {
 		ENGINE_DEBUG_ASSERT(curr + sz <= last, "Insufficient space remaining to read");
-		if (curr + sz > last) { puts("ITS NULL!"); return nullptr; }
+		if (curr + sz > last) { return nullptr; }
 
 		const void* temp = curr;
 		curr += sz;

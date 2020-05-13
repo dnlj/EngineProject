@@ -13,6 +13,8 @@ namespace Engine::Net {
 		public:
 			MessageType type;
 			Channel channel;
+			// TODO: we only need bits for size since we limit messages to 512
+			// TODO: name? this is really data size (size - sizeof(header))
 			uint16 size;
 			SequenceNumber sequence;
 	};
