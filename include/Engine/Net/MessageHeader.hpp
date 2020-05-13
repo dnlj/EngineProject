@@ -13,7 +13,7 @@ namespace Engine::Net {
 		public:
 			MessageType type;
 			Channel channel;
-			uint16 _unused;
+			uint16 size;
 			SequenceNumber sequence;
 	};
 	static_assert(sizeof(MessageHeader) == 8);

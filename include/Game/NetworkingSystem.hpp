@@ -8,23 +8,10 @@
 
 // Game
 #include <Game/System.hpp>
+#include <Game/MessageType.hpp>
 
 
 namespace Game {
-	struct MessageType {
-		enum Type : Engine::Net::MessageType {
-			UNKNOWN,
-			DISCOVER_SERVER,
-			SERVER_INFO,
-			CONNECT,
-			DISCONNECT,
-			PING,
-			ECS_COMP,
-			ACTION,
-			ACK,
-		};
-	};
-
 	class NetworkingSystem : public System {
 		public:
 			// TODO: find better way to handle this
@@ -66,6 +53,8 @@ namespace Game {
 			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);
 
 			template<MessageType::Type Type>
-			void handleMessageType(Engine::ECS::Entity ent, Engine::Net::Connection& from, const Engine::Net::MessageHeader& head) { static_assert(Type != Type, "Unhandled network message type."); };
+			void handleMessageType(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+				static_assert(Type != Type, "Unhandled network message type.");
+			};
 	};
 }

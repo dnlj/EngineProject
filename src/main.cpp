@@ -752,6 +752,9 @@ int entry(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// At seemingly random the debugger decides to not work for STL code. Enable, run, disable, run seems to fix this for some reason.
 	// Other times spam clicking on Visual Studio while the program launches fixes this. 10/10.
+	// --------------------------
+	// Function Breakpoints: assert, _wassert, abort, exit
+	// --------------------------
 	//_set_error_mode(_OUT_TO_MSGBOX);
 	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <vector>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Net/UDPSocket.hpp>
@@ -27,7 +30,7 @@ namespace Engine::Net {
 				SequenceNumber nextAck = 0;
 				uint64 acks = 0;
 				// TODO: some kind of memory pool and views instead? this seems dumb
-				std::unique_ptr<char[]> messages[MAX_UNACKED_MESSAGES];
+				std::vector<char> messages[MAX_UNACKED_MESSAGES] = {};
 			};
 
 			SequenceNumber nextSeq[static_cast<int32>(Channel::_COUNT)] = {};
@@ -51,6 +54,8 @@ namespace Engine::Net {
 			bool updateRecvAcks(const MessageHeader& hdr);
 
 			void writeRecvAcks(Channel ch);
+
+			void writeUnacked(Channel ch);
 
 			// TODO: header field operations
 			MessageHeader& header();
@@ -99,7 +104,7 @@ namespace Engine::Net {
 			 * 
 			 * @returns The number of bytes sent.
 			 */
-			int32 sendto(const IPv4Address& addr) const;
+			int32 sendto(const IPv4Address& addr);
 			
 			/**
 			 * Sends this packet to the address specified the last time #reset was called.
@@ -160,7 +165,7 @@ namespace Engine::Net {
 			/**
 			 * Writes a specific number of bytes to the current message.
 			 */
-			template<class T>
+			template<class T> // TODO: why is this a template? just make `const void*`?
 			void write(const T* t, size_t sz);
 
 			/**
@@ -170,50 +175,19 @@ namespace Engine::Net {
 			void write(const T& t);
 
 			/**
-			 * Writes an array to the current message.
-			 */
-			template<class T, size_t N>
-			void write(const T(&t)[N]);
-
-			/**
-			 * Writes an array to the current message.
-			 */
-			template<class T, size_t N>
-			void write(const std::array<T, N>& t);
-
-			/**
 			 * Writes a string to the current message.
 			 */
 			void write(const std::string& t);
 
 			/**
-			 * Reads a specific number of bytes from the current message.
+			 * Writes a string to the current message.
 			 */
-			template<class T> 
-			void read(T* t, size_t sz);
+			void write(const char* t);
 
 			/**
-			 * Reads an array from the current message.
+			 * Reads a specific number of bytes from the current message.
 			 */
-			template<class T, size_t N>
-			void read(T(&t)[N]);
-			
-			/**
-			 * Reads an array from the current message.
-			 */
-			template<class T, size_t N>
-			void read(std::array<T, N>& t);
-			
-			/**
-			 * Reads a string from the current message.
-			 */
-			void read(std::string& t);
-			
-			/**
-			 * Reads an object from the current message.
-			 */
-			template<class T>
-			void read(T& t);
+			const void* read(size_t sz);
 			
 			/**
 			 * Reads an object from the current message.
@@ -222,6 +196,7 @@ namespace Engine::Net {
 			auto read();
 
 		private:
+			void endMessage();
 			void reset(int32 sz = 0);
 			bool canUseChannel(Channel ch) const;
 			void store();

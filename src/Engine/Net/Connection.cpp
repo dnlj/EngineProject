@@ -17,11 +17,16 @@ namespace Engine::Net {
 		reset(addr);
 	}
 
+	void Connection::endMessage() {
+		header().size = size();
+		store();
+		curr = last;
+	}
+
 	bool Connection::next(MessageType type, Channel channel) {
 		if (!canUseChannel(channel)) { return false; }
 
-		store();
-		curr = last;
+		endMessage();
 		write(MessageHeader{
 			.type = type,
 			.channel = channel,
@@ -41,7 +46,9 @@ namespace Engine::Net {
 
 		while (ackData.nextAck < nextAck) {
 			const auto i = seqToIndex(ackData.nextAck);
-			ackData.messages[i].reset();
+			auto& msg = ackData.messages[i];
+			msg.clear();
+			//msg.shrink_to_fit();
 			//ackData.acks &= ~(1ull << i); // TODO: we dont need this since we assign below
 			std::cout << "UPDATE SENT ACK: " << ackData.nextAck << " " << (int)ch << " " << this << "\n";
 			++ackData.nextAck;
@@ -56,6 +63,7 @@ namespace Engine::Net {
 		const auto max = min + MAX_UNACKED_MESSAGES - 1;
 
 		if (seq < min || seq > max) { return false; }
+
 		ackData.acks |= 1ull << seqToIndex(seq);
 
 		for (decltype(ackData.acks) curr;
@@ -73,6 +81,22 @@ namespace Engine::Net {
 		write(ch);
 		write(ackData.nextAck);
 		write(ackData.acks);
+	}
+
+	void Connection::writeUnacked(Channel ch) {
+		const auto& ackData = sentAckData[static_cast<int32>(ch)];
+		const auto max = nextSeq[static_cast<int32>(ch)];
+		for (auto seq = ackData.nextAck; seq < max; ++seq) {
+			const auto i = seqToIndex(seq);
+			if ((ackData.acks & (1ull << i)) == 0) {
+				const auto& msg = ackData.messages[i];
+				if (!msg.empty()) {
+					endMessage();
+					write(msg.data(), msg.size());
+					std::cout << "Send " << seq << " " << (int)ch << "\n";
+				}
+			}
+		}
 	}
 
 	MessageHeader& Connection::header() {
@@ -106,11 +130,13 @@ namespace Engine::Net {
 	int32 Connection::recv() {
 		const int32 len = sock.recv(reinterpret_cast<char*>(&packet), sizeof(packet), addr) - sizeof(packet.header);
 		// TODO: filter by PacketHeader.protocol
+		if (len) { std::cout << "len: " << len << "\n"; }
 		reset(len);
 		return len;
 	}
 
-	int32 Connection::sendto(const IPv4Address& addr) const {
+	int32 Connection::sendto(const IPv4Address& addr) {
+		endMessage();
 		return sock.send(
 			reinterpret_cast<const char*>(&packet),
 			static_cast<int32>(last - reinterpret_cast<const char*>(&packet)),
@@ -150,14 +176,22 @@ namespace Engine::Net {
 	}
 
 	void Connection::write(const std::string& t) {
+		std::cout << "** write std string\n";
 		write(t.c_str(), t.size() + 1);
 	}
 
-	void Connection::read(std::string& t) {
-		const auto sz = strlen(curr) + 1;
+	void Connection::write(const char* t) {
+		std::cout << "** write const char* " << strlen(t) << "\n";
+		write(t, strlen(t) + 1);
+	}
+
+	const void* Connection::read(size_t sz) {
 		ENGINE_DEBUG_ASSERT(curr + sz <= last, "Insufficient space remaining to read");
-		t.assign(curr, sz - 1);
+		if (curr + sz > last) { puts("ITS NULL!"); return nullptr; }
+
+		const void* temp = curr;
 		curr += sz;
+		return temp;
 	}
 	
 	bool Connection::canUseChannel(Channel ch) const {
@@ -174,11 +208,10 @@ namespace Engine::Net {
 		if (hdr.channel == Channel::UNRELIABLE) { return; }
 
 		auto& ackData = sentAckData[static_cast<int32>(hdr.channel)];
-		auto& msg = ackData.messages[hdr.sequence % MAX_UNACKED_MESSAGES];
-		ENGINE_DEBUG_ASSERT(!msg);
-
-		msg.reset(new char[sz]);
-		memcpy(msg.get(), curr, sz);
+		auto& msg = ackData.messages[seqToIndex(hdr.sequence)];
+		// TODO: ? ENGINE_DEBUG_ASSERT(msg.empty());
+		// TODO: check if already exists
+		msg.assign(curr, last);
 	}
 
 	constexpr SequenceNumber Connection::seqToIndex(SequenceNumber seq) {
