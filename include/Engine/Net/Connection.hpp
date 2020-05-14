@@ -165,8 +165,7 @@ namespace Engine::Net {
 			/**
 			 * Writes a specific number of bytes to the current message.
 			 */
-			template<class T> // TODO: why is this a template? just make `const void*`?
-			void write(const T* t, size_t sz);
+			void write(const void* t, size_t sz);
 
 			/**
 			 * Writes an object to the current message.

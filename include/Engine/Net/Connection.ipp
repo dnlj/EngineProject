@@ -24,23 +24,6 @@ namespace Engine::Net {
 	}
 
 	template<class T>
-	void Connection::write(const T* t, size_t sz) {
-		if (last + sz <= packet.data + sizeof(packet.data)) {
-			memcpy(last, t, sz);
-			last += sz;
-		} else {
-			const auto msgsz = size();
-			last = curr;
-			send();
-			memcpy(data(), curr, msgsz);
-			reset(msgsz);
-			write(t, sz);
-		}
-
-		ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
-	};
-
-	template<class T>
 	void Connection::write(const T& t) {
 		write(&t, sizeof(T));
 	};

@@ -194,6 +194,7 @@ namespace Game {
 		#endif
 	}
 
+	// TODO: should be in update, not tick
 	void NetworkingSystem::tick(float32 dt) {
 		const auto now = Engine::Clock::now();
 
@@ -337,6 +338,7 @@ namespace Game {
 
 		// TODO: better check for this
 		if (head.channel != Engine::Net::Channel::UNRELIABLE) {
+			std::cout << "Recv " << head.sequence << "\n";
 			if (!from.updateRecvAcks(head)) {
 				reader.read(head.size);
 				return;

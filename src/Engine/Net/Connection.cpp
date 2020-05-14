@@ -85,14 +85,17 @@ namespace Engine::Net {
 
 	void Connection::writeUnacked(Channel ch) {
 		const auto& ackData = sentAckData[static_cast<int32>(ch)];
-		const auto max = nextSeq[static_cast<int32>(ch)];
-		for (auto seq = ackData.nextAck; seq < max; ++seq) {
+		const auto min = ackData.nextAck;
+		const auto max = std::min(nextSeq[static_cast<int32>(ch)], min + MAX_UNACKED_MESSAGES - 1);
+
+		for (auto seq = min; seq < max; ++seq) {
 			const auto i = seqToIndex(seq);
 			if ((ackData.acks & (1ull << i)) == 0) {
 				const auto& msg = ackData.messages[i];
 				if (!msg.empty()) {
 					endMessage();
 					write(msg.data(), msg.size());
+
 					std::cout << "Send " << seq << " " << (int)ch << "\n";
 				}
 			}
@@ -173,6 +176,22 @@ namespace Engine::Net {
 	int32 Connection::size() const {
 		return static_cast<int32>(last - curr);
 	}
+
+	void Connection::write(const void* t, size_t sz) {
+		if (last + sz <= packet.data + sizeof(packet.data)) {
+			memcpy(last, t, sz);
+			last += sz;
+		} else {
+			const auto msgsz = size();
+			last = curr;
+			send();
+			memcpy(data(), curr, msgsz);
+			reset(msgsz);
+			write(t, sz);
+		}
+
+		ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
+	};
 
 	void Connection::write(const std::string& t) {
 		write(t.c_str(), t.size() + 1);
