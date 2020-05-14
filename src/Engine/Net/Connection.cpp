@@ -13,7 +13,6 @@ namespace Engine::Net {
 		: sock{sock}
 		, addr{addr}
 		, lastMessageTime{lastMessageTime} {
-		// TODO: why not part of writer constructor?
 		reset(addr);
 	}
 
@@ -33,10 +32,6 @@ namespace Engine::Net {
 			.sequence = nextSeq[static_cast<int32>(channel)]++,
 		});
 
-		if ((int)channel < 2) { // TODO: rm
-			std::cout << "WRITE: " << header().sequence << " " << (int)channel << " " << this << "\n";
-		}
-
 		return true;
 	}
 
@@ -49,7 +44,7 @@ namespace Engine::Net {
 			auto& msg = ackData.messages[i];
 			msg.clear();
 			//msg.shrink_to_fit();
-			//ackData.acks &= ~(1ull << i); // TODO: we dont need this since we assign below
+			//ackData.acks &= ~(1ull << i); // we dont need this since we assign below
 			std::cout << "UPDATE SENT ACK: " << ackData.nextAck << " " << (int)ch << " " << this << "\n";
 			++ackData.nextAck;
 		}
@@ -225,9 +220,10 @@ namespace Engine::Net {
 
 		auto& ackData = sentAckData[static_cast<int32>(hdr.channel)];
 		auto& msg = ackData.messages[seqToIndex(hdr.sequence)];
-		// TODO: ? ENGINE_DEBUG_ASSERT(msg.empty());
-		// TODO: check if already exists
-		msg.assign(curr, last);
+
+		if (msg.empty()) {
+			msg.assign(curr, last);
+		}
 	}
 
 	constexpr SequenceNumber Connection::seqToIndex(SequenceNumber seq) {

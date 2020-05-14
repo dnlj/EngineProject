@@ -257,12 +257,12 @@ namespace Game {
 		anyConn.flush();
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-			conn.next(MessageType::ACK, Engine::Net::Channel::UNRELIABLE);
-			// TODO: all channels
-			conn.writeRecvAcks(Engine::Net::Channel::RELIABLE);
 
-			// TODO: re-write unacked messages every x frames (seconds?)
-			conn.writeUnacked(Engine::Net::Channel::RELIABLE);
+			for (Engine::Net::Channel ch{0}; ch < Engine::Net::Channel::UNRELIABLE; ++ch) {
+				conn.next(MessageType::ACK, Engine::Net::Channel::UNRELIABLE);
+				conn.writeRecvAcks(ch);
+				conn.writeUnacked(ch); // TODO: re-write unacked messages only every x frames (seconds?)
+			}
 
 			conn.flush();
 		}
@@ -336,8 +336,10 @@ namespace Game {
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
 		const auto& head = reader.read<Engine::Net::MessageHeader>();
 
-		// TODO: better check for this
 		if (head.channel != Engine::Net::Channel::UNRELIABLE) {
+			// TODO: Queue Ordered messages
+			ENGINE_ASSERT(head.channel != Engine::Net::Channel::ORDERED, "TODO: Ordered network messages are not yet implemented.");
+
 			std::cout << "Recv " << head.sequence << "\n";
 			if (!from.updateRecvAcks(head)) {
 				reader.read(head.size);

@@ -11,4 +11,9 @@ namespace Engine::Net {
 		UNRELIABLE,
 		_COUNT,
 	};
+
+	ENGINE_INLINE Channel& operator++(Channel& ch) {
+		++reinterpret_cast<std::underlying_type_t<Channel>&>(ch);
+		return ch;
+	}
 }
