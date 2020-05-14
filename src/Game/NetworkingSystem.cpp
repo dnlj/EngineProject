@@ -71,6 +71,10 @@ namespace {
 
 namespace Game {
 	template<>
+	void NetworkingSystem::handleMessageType<MessageType::UNKNOWN>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	}
+
+	template<>
 	void NetworkingSystem::handleMessageType<MessageType::DISCOVER_SERVER>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
 		constexpr auto size = sizeof(DISCOVER_SERVER_DATA);
 
@@ -97,7 +101,14 @@ namespace Game {
 	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
 		ENGINE_LOG("MessageType::CONNECT from ", from.address());
-		addConnection(from.address());
+		auto& conn = addConnection(from.address());
+		conn.next(MessageType::CONNECT_CONFIRM, Engine::Net::Channel::RELIABLE);
+	}
+	
+	template<>
+	void NetworkingSystem::handleMessageType<MessageType::CONNECT_CONFIRM>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		// TODO: server has acknowledged connection.
+		ENGINE_WARN("TODO: Server has acknowledged connection.");
 	}
 
 	template<>
@@ -284,14 +295,12 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		// TODO: reliable over anyConn doesnt make sense
-		anyConn.reset(addr);
-		std::cout << "Connect: " << anyConn.next(MessageType::CONNECT, Engine::Net::Channel::RELIABLE) << "\n";
-		anyConn.send();
-		addConnection(addr);	
+		auto& conn = addConnection(addr);
+		conn.next(MessageType::CONNECT, Engine::Net::Channel::UNRELIABLE);
+		conn.send();
 	}
 
-	void NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {
+	Engine::Net::Connection& NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {
 		// TODO: i feel like this should be handled elsewhere. Where?
 		auto& ply = world.createEntity();
 		ipToPlayer.emplace(addr, ply);
@@ -312,6 +321,8 @@ namespace Game {
 		if constexpr (ENGINE_CLIENT) {
 			ENGINE_DEBUG_ASSERT(ipToPlayer.size() == 1, "A Client should not be connected to more than one server.");
 		}
+
+		return *connComp.conn;
 	}
 
 	void NetworkingSystem::disconnect(const Engine::Net::Connection& conn) {
@@ -347,21 +358,12 @@ namespace Game {
 			}
 		}
 
-		// TODO: use array?
-		#define HANDLE(Type) case Type: { return handleMessageType<Type>(from, head, ent); }
 		switch(head.type) {
-			HANDLE(MessageType::DISCOVER_SERVER);
-			HANDLE(MessageType::SERVER_INFO);
-			HANDLE(MessageType::CONNECT);
-			HANDLE(MessageType::DISCONNECT);
-			HANDLE(MessageType::PING);
-			HANDLE(MessageType::ECS_COMP);
-			HANDLE(MessageType::ACTION);
-			HANDLE(MessageType::ACK);
+			#define X(name) case MessageType::name: { return handleMessageType<MessageType::name>(from, head, ent); };
+			#include <Game/MessageType.xpp>
 			default: {
 				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(head.type));
 			}
 		}
-		#undef HANDLE
 	}
 }

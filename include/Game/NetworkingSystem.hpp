@@ -45,7 +45,7 @@ namespace Game {
 
 		private:
 			void disconnect(const Engine::Net::Connection& conn);
-			void addConnection(const Engine::Net::IPv4Address& addr);
+			Engine::Net::Connection& addConnection(const Engine::Net::IPv4Address& addr);
 
 			// TODO: rm
 			void onDisconnect(const Engine::Net::Connection& conn);
