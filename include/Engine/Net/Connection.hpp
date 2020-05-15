@@ -11,55 +11,61 @@
 #include <Engine/Net/MessageHeader.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/StaticVector.hpp>
+#include <Engine/Utility/Utility.hpp>
 
 
 namespace Engine::Net {
-	// TODO: make read functions return ptrs? We need better error handling.
-	class Connection {
-		private:
+	inline constexpr int32 MAX_UNACKED_MESSAGES = 64;
+	inline constexpr int32 MAX_MESSAGE_SIZE = sizeof(Packet::data) - sizeof(MessageHeader);
+	
+	// TODO: name
+	// TODO: move
+	inline constexpr SequenceNumber seqToIndex(SequenceNumber seq) {
+		static_assert(Engine::Utility::isPowerOfTwo(MAX_UNACKED_MESSAGES));
+		return seq & (MAX_UNACKED_MESSAGES - 1);
+	}
+	
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	// TODO: move
+	struct AckData {
+		SequenceNumber nextAck = 0;
+		uint64 acks = 0;
+		// TODO: some kind of memory pool and views instead? this seems dumb
+		std::vector<char> messages[MAX_UNACKED_MESSAGES] = {};
+	};
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	// TODO: move
+	class PacketWriter {
+		public: // TODO: not public
 			UDPSocket& sock;
 			IPv4Address addr;
 
-			char* curr;
-			char* last;
+			char* curr = nullptr;
+			char* last = nullptr;
 			Packet packet;
 
-			static constexpr int32 MAX_UNACKED_MESSAGES = 64;
-
-			struct AckData {
-				SequenceNumber nextAck = 0;
-				uint64 acks = 0;
-				// TODO: some kind of memory pool and views instead? this seems dumb
-				std::vector<char> messages[MAX_UNACKED_MESSAGES] = {};
-			};
-
 			SequenceNumber nextSeq[static_cast<int32>(Channel::_COUNT)] = {};
-
-			AckData sentAckData[2] = {};
-			AckData recvAckData[2] = {}; // TODO: we dont need `messsages[#]` for recv reliable data. Maybe a better way to store datas
+			AckData channelAckData[2] = {};
 
 		public:
-			static constexpr int32 MAX_MESSAGE_SIZE = sizeof(Packet::data) - sizeof(MessageHeader);
-			Clock::TimePoint lastMessageTime;
+			PacketWriter(UDPSocket& sock, IPv4Address addr);
+			PacketWriter(const PacketWriter&) = delete;
+			PacketWriter(PacketWriter&&) = delete;
 
-		public:
-			Connection(UDPSocket& sock, IPv4Address addr = {}, Clock::TimePoint lastMessageTime = {});
-			Connection(const Connection&) = delete;
-			Connection(const Connection&&) = delete;
-
-			bool next(MessageType type, Channel channel);
-
-			void updateSentAcks(Channel ch, SequenceNumber nextAck, uint64 acks);
-
-			bool updateRecvAcks(const MessageHeader& hdr);
-
-			void writeRecvAcks(Channel ch);
-
-			void writeUnacked(Channel ch);
-
-			// TODO: header field operations
 			MessageHeader& header();
 			const MessageHeader& header() const;
+
+			/**
+			 * Gets the address of the data buffer for the next message.
+			 * Not be confused with the address of the internal data buffer.
+			 * 
+			 * @see #data
+			 */
+			char* current(); // TODO: i dont think this useful/needed anywhere
+
+			/** @copydoc current */
+			const char* current() const;
 
 			/**
 			 * Gets the address of the internal data buffer.
@@ -72,30 +78,8 @@ namespace Engine::Net {
 			/** @copydoc data */
 			const char* data() const;
 
-			/**
-			 * Gets the address of the data buffer for the next message.
-			 * Not be confused with the address of the internal data buffer.
-			 * 
-			 * @see #data
-			 */
-			char* current();
-
-			/** @copydoc current */
-			const char* current() const;
-
-			/**
-			 * Gets the most recently associated address.
-			 * Set from either #reset or #recv.
-			 */
-			const IPv4Address& address() const;
-
-			/**
-			 * Gets the next packet from the associated UDPSocket.
-			 * 
-			 * @returns Then number of bytes received.
-			 * @see UDPSocket::recv
-			 */
-			int32 recv();
+			// TODO: doc
+			void updateSentAcks(Channel ch, SequenceNumber nextAck, uint64 acks);
 
 			/**
 			 * Sends this packet to @p addr. Does not modify this packet.
@@ -104,7 +88,7 @@ namespace Engine::Net {
 			 * 
 			 * @returns The number of bytes sent.
 			 */
-			int32 sendto(const IPv4Address& addr);
+			int32 sendto();
 			
 			/**
 			 * Sends this packet to the address specified the last time #reset was called.
@@ -123,20 +107,6 @@ namespace Engine::Net {
 			int32 flush();
 
 			/**
-			 * Resets this packet's data and 
-			 */
-			void reset(IPv4Address addr, int32 sz = 0); // TODO: does it make sense for this to be public anymore?
-
-			/**
-			 * Clears stream data without sending.
-			 * Equivalent to `#reset({0,0,0,0,0})`
-			 * 
-			 * @warning It is an error to attempt to write more than `sizeof(Packet::data)` before calling #reset
-			 * @see reset
-			 */
-			void clear();
-
-			/**
 			 * Gets the size of the current message.
 			 * @see data
 			 */
@@ -148,19 +118,7 @@ namespace Engine::Net {
 			 */
 			static constexpr int32 capacity();
 
-			/**
-			 * Writes to the current message.
-			 * @see write
-			 */
-			template<class T>
-			Connection& operator<<(const T& t);
-
-			/**
-			 * Reads from the current message.
-			 * @see read
-			 */
-			template<class T>
-			Connection& operator>>(T& t);
+			bool next(MessageType type, Channel channel);
 
 			/**
 			 * Writes a specific number of bytes to the current message.
@@ -183,6 +141,41 @@ namespace Engine::Net {
 			 */
 			void write(const char* t);
 
+			// TODO: doc
+			void writeUnacked(Channel ch);
+
+		private:
+			void reset(int32 sz = 0);
+			void store();
+			void endMessage();
+			bool canUseChannel(Channel ch) const;
+			
+	};
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	// TODO: move
+	class PacketReader {
+		public: // TODO: not public
+			char* curr = nullptr;
+			char* last = nullptr;
+
+			SequenceNumber nextSeq[static_cast<int32>(Channel::_COUNT)] = {}; // TODO: dont think we need this on reader. Only writer
+			AckData channelAckData[2] = {};
+
+		public:
+			void set(char* curr, char* last);
+
+			bool updateRecvAcks(const MessageHeader& hdr);
+
+			// TODO: rm
+			///**
+			// * Gets the next packet from the associated UDPSocket.
+			// * 
+			// * @returns Then number of bytes received.
+			// * @see UDPSocket::recv
+			// */
+			//int32 recv(UDPSocket& sock, IPv4Address& addr);
+
 			/**
 			 * Reads a specific number of bytes from the current message.
 			 */
@@ -192,14 +185,31 @@ namespace Engine::Net {
 			 * Reads an object from the current message.
 			 */
 			template<class T>
-			auto read();
+			decltype(auto) read();
 
-		private:
-			void endMessage();
-			void reset(int32 sz = 0);
-			bool canUseChannel(Channel ch) const;
-			void store();
-			constexpr static SequenceNumber seqToIndex(SequenceNumber seq);
+			// TODO: move duplicate reader/writer functions into base class?
+			int32 size() const { return static_cast<int32>(last - curr); }
+	};
+
+	// TODO: make read functions return ptrs? We need better error handling.
+	class Connection {
+		public:
+			PacketReader reader;
+			PacketWriter writer;
+			Clock::TimePoint lastMessageTime;
+
+		public:
+			Connection(UDPSocket& sock, IPv4Address addr = {}, Clock::TimePoint lastMessageTime = {});
+			Connection(const Connection&) = delete;
+			Connection(const Connection&&) = delete;
+
+			void writeRecvAcks(Channel ch);
+
+			/**
+			 * Gets the most recently associated address.
+			 * Set from either #reset or #recv.
+			 */
+			const IPv4Address& address() const; // TODO: is this used anywhere?
 	};
 }
 

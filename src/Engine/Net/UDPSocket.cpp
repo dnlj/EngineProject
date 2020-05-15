@@ -44,10 +44,10 @@ namespace Engine::Net {
 		return sent;
 	}
 
-	int32 UDPSocket::recv(char* data, int32 size, IPv4Address& address) const {
+	int32 UDPSocket::recv(void* data, int32 size, IPv4Address& address) const {
 		sockaddr_in from;
 		int fromlen = sizeof(from);
-		int32 len = recvfrom(handle, data, size, 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
+		int32 len = recvfrom(handle, static_cast<char*>(data), size, 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
 		address = from;
 		return len;
 	}

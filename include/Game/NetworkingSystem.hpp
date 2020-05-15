@@ -28,9 +28,11 @@ namespace Game {
 		private:
 			static constexpr auto timeout = std::chrono::milliseconds{10'000};
 			Engine::Net::UDPSocket socket;
-			Engine::Net::Connection reader; // TODO: is this needed anymore? just use anyConn? or do we need anyConnRead, anyConnWrite
 			Engine::ECS::EntityFilter& connFilter;
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> ipToPlayer;
+
+			Engine::Net::IPv4Address address;
+			Engine::Net::Packet packet = {};
 			Engine::Net::Connection anyConn; // Used for unconnected messages
 			const Engine::Net::IPv4Address group;
 
@@ -44,11 +46,8 @@ namespace Game {
 			void connectTo(const Engine::Net::IPv4Address& addr);
 
 		private:
-			void disconnect(const Engine::Net::Connection& conn);
+			void disconnect(Engine::ECS::Entity ent);
 			Engine::Net::Connection& addConnection(const Engine::Net::IPv4Address& addr);
-
-			// TODO: rm
-			void onDisconnect(const Engine::Net::Connection& conn);
 
 			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);
 

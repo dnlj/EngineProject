@@ -614,8 +614,9 @@ void run(int argc, char* argv[]) {
 					ENGINE_DEBUG_ASSERT(connFilter.size() <= 1);
 					for (auto& ply : connFilter) {
 						auto& conn = *world.getComponent<Game::ConnectionComponent>(ply).conn;
-						conn.next(Game::MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
-						conn << aid << curr;
+						conn.writer.next(Game::MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
+						conn.writer.write(aid);
+						conn.writer.write(curr);
 						//std::cout << "Send action: " << ent << " - " << aid << " - " << curr.value << " - " << connFilter.size() << "\n";
 					}
 					return false;

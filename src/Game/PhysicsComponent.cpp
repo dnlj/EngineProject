@@ -42,11 +42,11 @@ namespace Game {
 	}
 
 	void PhysicsComponent::toNetwork(Engine::Net::Connection& conn) const {
-		conn.write(body->GetTransform());
+		conn.writer.write(body->GetTransform());
 	}
 
 	void PhysicsComponent::fromNetwork(Engine::Net::Connection& conn) {
-		const auto trans = conn.read<b2Transform>();
-		updateTransform(trans.p, trans.q.GetAngle());
+		const auto trans = conn.reader.read<b2Transform>();
+		updateTransform(trans->p, trans->q.GetAngle());
 	}
 }
