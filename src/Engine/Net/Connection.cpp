@@ -47,7 +47,6 @@ namespace Engine::Net {
 			msg.clear();
 			//msg.shrink_to_fit();
 			//ackData.acks &= ~(1ull << i); // we dont need this since we assign below
-			std::cout << "UPDATE SENT ACK: " << ackData.nextAck << " " << (int)ch << " " << this << "\n";
 			++ackData.nextAck;
 		}
 		ackData.acks = acks;
@@ -183,11 +182,9 @@ namespace Engine::Net {
 
 		if (seq < min || seq > max) { return false; }
 
-		//std::cout << "UPDATE RECV ACK: " << seq << " " << (int)hdr.channel << " " << this << "\n";
 		const auto i = seqToIndex(seq);
 		auto bit = 1ull << i;
 
-		// TODO: simplify
 		if (hdr.channel == Channel::RELIABLE) {
 			if (ackData.acks & bit) { return false; }
 			ackData.acks |= bit;
@@ -205,7 +202,6 @@ namespace Engine::Net {
 		}
 
 		// Channel::ORDERED and seq != nextAck. Store for later replay.
-		std::cout << "OUT OF ORDER " << seq << "\n";
 		ackData.acks |= bit;
 		const char* start = reinterpret_cast<const char*>(&hdr);
 		ackData.messages[i].assign(start, start + sizeof(MessageHeader) + hdr.size);
@@ -230,7 +226,6 @@ namespace Engine::Net {
 		const auto bit = 1ull << i;
 
 		if (ackData.acks & bit) {
-			// Update curr/last ptrs
 			auto& msg = ackData.messages[i];
 			curr = msg.data();
 			last = curr + msg.size();

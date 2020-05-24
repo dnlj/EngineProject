@@ -231,30 +231,30 @@ namespace Game {
 		if constexpr (ENGINE_CLIENT) {
 			static auto next = now;
 			if (next <= now) {
-				next = now + std::chrono::seconds{5};
-
-				//for (auto& ply : connFilter) {
-				//	auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-				//	if (conn.writer.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
-				//		conn.writer.write(true);
-				//	} else {
-				//		ENGINE_WARN("TODO: how to handle unsendable messages");
-				//	}
-				//}
+				next = now + std::chrono::seconds{1};
 
 				for (auto& ply : connFilter) {
 					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-
-					// TODO: test that mixing works using channel reliable
-					for (int i = 0; i < 10; ++i) {
-						conn.writer.flush();
-						if (conn.writer.next(MessageType::TEST, Engine::Net::Channel::ORDERED)) {
-							conn.writer.send();
-						} else {
-							ENGINE_WARN("TODO: how to handle unsendable messages");
-						}
+					if (conn.writer.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
+						conn.writer.write(true);
+					} else {
+						ENGINE_WARN("TODO: how to handle unsendable messages");
 					}
 				}
+
+				//for (auto& ply : connFilter) {
+				//	auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+				//
+				//	// TODO: test that mixing works using channel reliable
+				//	for (int i = 0; i < 10; ++i) {
+				//		conn.writer.flush();
+				//		if (conn.writer.next(MessageType::TEST, Engine::Net::Channel::ORDERED)) {
+				//			conn.writer.send();
+				//		} else {
+				//			ENGINE_WARN("TODO: how to handle unsendable messages");
+				//		}
+				//	}
+				//}
 			}
 		}
 
@@ -358,7 +358,6 @@ namespace Game {
 
 		// TODO: from unconnected players we only want to process connect and discover messages
 		if (head.channel <= Engine::Net::Channel::ORDERED) {
-			// TODO: rm - std::cout << "Recv " << head.sequence << "\n";
 			if (!from.reader.updateRecvAcks(head)) {
 				from.reader.read(head.size);
 				return;
