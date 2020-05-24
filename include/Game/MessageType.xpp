@@ -8,5 +8,6 @@ X(PING)
 X(ECS_COMP)
 X(ACTION)
 X(ACK)
+X(TEST)
 
 #undef X

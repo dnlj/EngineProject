@@ -162,6 +162,11 @@ namespace Game {
 
 		from.writer.updateSentAcks(chan, next, acks);
 	}
+
+	template<>
+	void NetworkingSystem::handleMessageType<MessageType::TEST>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		std::cout << "***** TEST: " << head.sequence << "\n";
+	}
 }
 
 
@@ -226,22 +231,33 @@ namespace Game {
 		if constexpr (ENGINE_CLIENT) {
 			static auto next = now;
 			if (next <= now) {
-				next = now + std::chrono::seconds{1};
+				next = now + std::chrono::seconds{5};
+
+				//for (auto& ply : connFilter) {
+				//	auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+				//	if (conn.writer.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
+				//		conn.writer.write(true);
+				//	} else {
+				//		ENGINE_WARN("TODO: how to handle unsendable messages");
+				//	}
+				//}
 
 				for (auto& ply : connFilter) {
 					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-					if (conn.writer.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
-						conn.writer.write(true);
-					} else {
-						ENGINE_WARN("TODO: how to handle unsendable messages");
+
+					// TODO: test that mixing works using channel reliable
+					for (int i = 0; i < 10; ++i) {
+						conn.writer.flush();
+						if (conn.writer.next(MessageType::TEST, Engine::Net::Channel::ORDERED)) {
+							conn.writer.send();
+						} else {
+							ENGINE_WARN("TODO: how to handle unsendable messages");
+						}
 					}
 				}
 			}
 		}
 
-		// TODO: need to read into correct connection to allow for ordered messages
-		// TODO: this means that connections will need two buffers. one for read. one for write.
-		// TODO: not true because we dont read from from: actually it should work fine without a separate read buffer because when you store the packets - that is done in the from connection not reader - so it should be fine
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
 			auto found = ipToPlayer.find(address);
@@ -263,18 +279,16 @@ namespace Game {
 			char* start = reinterpret_cast<char*>(&packet.data);
 			conn->reader.set(start, start + sz);
 
-			while (conn->reader.size()) {
+			while (conn->reader.next()) {
 				dispatchMessage(ent, *conn);
 			}
-
-			// TODO: read from conn to recv ordered messages
 		}
 
 		anyConn.writer.flush();
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
-			for (Engine::Net::Channel ch{0}; ch < Engine::Net::Channel::UNRELIABLE; ++ch) {
+			for (Engine::Net::Channel ch{0}; ch <= Engine::Net::Channel::ORDERED; ++ch) {
 				conn.writer.next(MessageType::ACK, Engine::Net::Channel::UNRELIABLE);
 				conn.writeRecvAcks(ch);
 				conn.writer.writeUnacked(ch); // TODO: re-write unacked messages only every x frames (seconds?)
@@ -343,12 +357,8 @@ namespace Game {
 		const auto& head = *from.reader.read<Engine::Net::MessageHeader>();
 
 		// TODO: from unconnected players we only want to process connect and discover messages
-
 		if (head.channel <= Engine::Net::Channel::ORDERED) {
-			// TODO: Queue Ordered messages
-			ENGINE_ASSERT(head.channel != Engine::Net::Channel::ORDERED, "TODO: Ordered network messages are not yet implemented.");
-
-			std::cout << "Recv " << head.sequence << "\n";
+			// TODO: rm - std::cout << "Recv " << head.sequence << "\n";
 			if (!from.reader.updateRecvAcks(head)) {
 				from.reader.read(head.size);
 				return;

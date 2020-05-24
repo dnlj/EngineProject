@@ -141,7 +141,7 @@ namespace Engine::Net {
 		const auto min = ackData.nextAck;
 		const auto max = std::min(nextSeq[static_cast<int32>(ch)], min + MAX_UNACKED_MESSAGES - 1);
 
-		for (auto seq = min; seq < max; ++seq) {
+		for (auto seq = min; seq <= max; ++seq) {
 			const auto i = seqToIndex(seq);
 			if ((ackData.acks & (1ull << i)) == 0) {
 				const auto& msg = ackData.messages[i];
@@ -183,26 +183,34 @@ namespace Engine::Net {
 
 		if (seq < min || seq > max) { return false; }
 
-		ackData.acks |= 1ull << seqToIndex(seq);
+		//std::cout << "UPDATE RECV ACK: " << seq << " " << (int)hdr.channel << " " << this << "\n";
+		const auto i = seqToIndex(seq);
+		auto bit = 1ull << i;
 
-		for (decltype(ackData.acks) curr;
-			(curr = 1ull << seqToIndex(ackData.nextAck)), (ackData.acks & curr);
-			++ackData.nextAck) {
-			ackData.acks &= ~curr;
-			std::cout << "UPDATE RECV ACK: " << ackData.nextAck << " " << (int)hdr.channel << " " << this << "\n";
+		// TODO: simplify
+		if (hdr.channel == Channel::RELIABLE) {
+			if (ackData.acks & bit) { return false; }
+			ackData.acks |= bit;
+
+			while(ackData.acks & (bit = 1ull << seqToIndex(ackData.nextAck))) {
+				ackData.acks &= ~bit;
+				++ackData.nextAck;
+			}
+
+			return true;
+		} else if (seq == ackData.nextAck) {
+			ackData.acks &= ~bit;
+			++ackData.nextAck;
+			return true;
 		}
 
-		return true;
+		// Channel::ORDERED and seq != nextAck. Store for later replay.
+		std::cout << "OUT OF ORDER " << seq << "\n";
+		ackData.acks |= bit;
+		const char* start = reinterpret_cast<const char*>(&hdr);
+		ackData.messages[i].assign(start, start + sizeof(MessageHeader) + hdr.size);
+		return false;
 	}
-
-	// TODO: rm
-	//int32 PacketReader::recv(UDPSocket& sock, IPv4Address& addr) {
-	//	const int32 len = sock.recv(reinterpret_cast<char*>(&packet), sizeof(packet), addr) - sizeof(packet.header);
-	//	// TODO: filter by PacketHeader.protocol
-	//	curr = packet.data;
-	//	last = curr + len;
-	//	return len;
-	//}
 
 	const void* PacketReader::read(size_t sz) {
 		ENGINE_DEBUG_ASSERT(curr + sz <= last, "Insufficient space remaining to read");
@@ -211,6 +219,25 @@ namespace Engine::Net {
 		const void* temp = curr;
 		curr += sz;
 		return temp;
+	}
+
+	bool PacketReader::next() {
+		if (size() != 0) { return true; }
+
+		// Ordered messages
+		auto& ackData = channelAckData[static_cast<int32>(Channel::ORDERED)];
+		const auto i = seqToIndex(ackData.nextAck);
+		const auto bit = 1ull << i;
+
+		if (ackData.acks & bit) {
+			// Update curr/last ptrs
+			auto& msg = ackData.messages[i];
+			curr = msg.data();
+			last = curr + msg.size();
+			return true;
+		}
+
+		return false;
 	}
 }
 
@@ -233,5 +260,10 @@ namespace Engine::Net {
 
 	const IPv4Address& Connection::address() const {
 		return writer.addr;
+	}
+
+	constexpr SequenceNumber seqToIndex(SequenceNumber seq) {
+		static_assert(Engine::Utility::isPowerOfTwo(MAX_UNACKED_MESSAGES));
+		return seq & (MAX_UNACKED_MESSAGES - 1);
 	}
 }

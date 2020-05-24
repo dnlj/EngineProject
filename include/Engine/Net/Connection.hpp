@@ -11,7 +11,6 @@
 #include <Engine/Net/MessageHeader.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/StaticVector.hpp>
-#include <Engine/Utility/Utility.hpp>
 
 
 namespace Engine::Net {
@@ -20,10 +19,7 @@ namespace Engine::Net {
 	
 	// TODO: name
 	// TODO: move
-	inline constexpr SequenceNumber seqToIndex(SequenceNumber seq) {
-		static_assert(Engine::Utility::isPowerOfTwo(MAX_UNACKED_MESSAGES));
-		return seq & (MAX_UNACKED_MESSAGES - 1);
-	}
+	constexpr SequenceNumber seqToIndex(SequenceNumber seq);
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	// TODO: move
@@ -118,6 +114,7 @@ namespace Engine::Net {
 			 */
 			static constexpr int32 capacity();
 
+			// TODO: doc
 			bool next(MessageType type, Channel channel);
 
 			/**
@@ -165,16 +162,9 @@ namespace Engine::Net {
 		public:
 			void set(char* curr, char* last);
 
+			// TODO: name
+			// TODO: doc
 			bool updateRecvAcks(const MessageHeader& hdr);
-
-			// TODO: rm
-			///**
-			// * Gets the next packet from the associated UDPSocket.
-			// * 
-			// * @returns Then number of bytes received.
-			// * @see UDPSocket::recv
-			// */
-			//int32 recv(UDPSocket& sock, IPv4Address& addr);
 
 			/**
 			 * Reads a specific number of bytes from the current message.
@@ -186,6 +176,9 @@ namespace Engine::Net {
 			 */
 			template<class T>
 			decltype(auto) read();
+
+			// TODO: doc
+			bool next();
 
 			// TODO: move duplicate reader/writer functions into base class?
 			int32 size() const { return static_cast<int32>(last - curr); }
