@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/Net/Connection.hpp>
+#include <Engine/Net/PacketReader.hpp>
 
 
 namespace Engine::Net {
@@ -10,7 +10,7 @@ namespace Engine::Net {
 		if constexpr (std::is_same_v<T, char*>) {
 			return reinterpret_cast<const char*>(read(strlen(curr) + 1));
 		} else {
-			return reinterpret_cast<const T*>(read(sizeof(T))); // TODO: should be ptr not ref - ref doesnt make sense
+			return reinterpret_cast<const T*>(read(sizeof(T)));
 		}
 	}
 }
