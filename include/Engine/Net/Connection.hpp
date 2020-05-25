@@ -52,28 +52,6 @@ namespace Engine::Net {
 			MessageHeader& header();
 			const MessageHeader& header() const;
 
-			/**
-			 * Gets the address of the data buffer for the next message.
-			 * Not be confused with the address of the internal data buffer.
-			 * 
-			 * @see #data
-			 */
-			char* current(); // TODO: i dont think this useful/needed anywhere
-
-			/** @copydoc current */
-			const char* current() const;
-
-			/**
-			 * Gets the address of the internal data buffer.
-			 * Not be confused with the address of the current message.
-			 * 
-			 * @see #current
-			 */
-			char* data();
-
-			/** @copydoc data */
-			const char* data() const;
-
 			// TODO: doc
 			void updateSentAcks(Channel ch, SequenceNumber nextAck, uint64 acks);
 

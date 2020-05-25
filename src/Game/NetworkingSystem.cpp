@@ -346,7 +346,6 @@ namespace Game {
 		if (ent == Engine::ECS::INVALID_ENTITY) { return; }
 		auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 		ENGINE_LOG("Disconnecting ", ent, " ", conn.address());
-		// TODO: send disconnect message
 		conn.writer.flush();
 		conn.writer.next(MessageType::DISCONNECT, Engine::Net::Channel::UNRELIABLE);
 		conn.writer.send();

@@ -15,26 +15,9 @@ namespace Engine::Net {
 	MessageHeader& PacketWriter::header() {
 		return *reinterpret_cast<MessageHeader*>(curr);
 	}
-
+	
 	const MessageHeader& PacketWriter::header() const {
 		return *reinterpret_cast<MessageHeader*>(curr);
-	}
-
-	char* PacketWriter::current() {
-		return curr;
-	}
-
-	/** @copydoc current */
-	const char* PacketWriter::current() const {
-		return curr;
-	}
-
-	char* PacketWriter::data() {
-		return packet.data;
-	}
-
-	const char* PacketWriter::data() const {
-		return packet.data;
 	}
 
 	void PacketWriter::updateSentAcks(Channel ch, SequenceNumber nextAck, uint64 acks) {
@@ -75,7 +58,7 @@ namespace Engine::Net {
 	}
 
 	void PacketWriter::reset(int32 sz) {
-		curr = data();
+		curr = packet.data;
 		last = curr + sz;
 	}
 
@@ -104,7 +87,7 @@ namespace Engine::Net {
 			const auto msgsz = size();
 			last = curr;
 			send();
-			memcpy(data(), curr, msgsz);
+			memcpy(packet.data, curr, msgsz);
 			reset(msgsz);
 			write(t, sz);
 		}
