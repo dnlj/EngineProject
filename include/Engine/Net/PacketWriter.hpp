@@ -12,12 +12,12 @@
 namespace Engine::Net {
 	inline constexpr int32 MAX_MESSAGE_SIZE = sizeof(Packet::data) - sizeof(MessageHeader);
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	// TODO: move
 	class PacketWriter {
-		public: // TODO: not public
-			UDPSocket& sock;
+		public:
 			IPv4Address addr;
+
+		private:
+			UDPSocket& sock;
 
 			char* curr = nullptr;
 			char* last = nullptr;
@@ -34,7 +34,12 @@ namespace Engine::Net {
 			MessageHeader& header();
 			const MessageHeader& header() const;
 
-			// TODO: doc
+			/**
+			 * Updates what messages have been acknowledged.
+			 * @param ch The channel that the acknowledgements belong to.
+			 * @param nextAck The first sequence number represented in the bitmap @p acks.
+			 * @param acks A bitmap containing which packets have been acknowledged.
+			 */
 			void updateSentAcks(Channel ch, SequenceNumber nextAck, uint64 acks);
 
 			/**
@@ -74,7 +79,12 @@ namespace Engine::Net {
 			 */
 			static constexpr int32 capacity();
 
-			// TODO: doc
+			/**
+			 * Begins a new message on a channel.
+			 * @param type The type of the message.
+			 * @param channel The channel on wich to send the message.
+			 * @return False if a new message could not be created on the specified channel; otherwise returns true.
+			 */
 			bool next(MessageType type, Channel channel);
 
 			/**
@@ -98,7 +108,9 @@ namespace Engine::Net {
 			 */
 			void write(const char* t);
 
-			// TODO: doc
+			/**
+			 * Rewrites any unacknowledged message on the specified channel.
+			 */
 			void writeUnacked(Channel ch);
 
 		private:

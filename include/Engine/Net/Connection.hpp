@@ -66,7 +66,7 @@ namespace Engine::Net {
 			 * Gets the most recently associated address.
 			 * Set from either #reset or #recv.
 			 */
-			const IPv4Address& address() const; // TODO: is this used anywhere?
+			IPv4Address address() const;
 	};
 }
 

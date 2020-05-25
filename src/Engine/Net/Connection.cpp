@@ -92,7 +92,7 @@ namespace Engine::Net {
 		writer.write(ackData.acks);
 	}
 
-	const IPv4Address& Connection::address() const {
+	IPv4Address Connection::address() const {
 		return writer.addr;
 	}
 }
