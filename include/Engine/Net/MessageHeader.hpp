@@ -3,12 +3,10 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Net/Channel.hpp>
+#include <Engine/Net/Common.hpp>
 
 
 namespace Engine::Net {
-	using MessageType = uint8;
-	using SequenceNumber = uint32;
-
 	class MessageHeader {
 		public:
 			MessageType type;

@@ -4,19 +4,6 @@
 #include <Engine/Net/Connection.hpp>
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////
-// TODO: move
-namespace Engine::Net {
-	template<class T>
-	void PacketWriter::write(const T& t) {
-		write(&t, sizeof(T));
-	};
-
-	constexpr int32 PacketWriter::capacity() {
-		return sizeof(packet.data);
-	}
-}
-
 namespace Engine::Net {
 	template<class T>
 	decltype(auto) PacketReader::read() {
