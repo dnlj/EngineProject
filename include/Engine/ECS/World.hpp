@@ -21,11 +21,24 @@ namespace Engine::ECS {
 	 * @tparam ComponentsSet The components for this world to have.
 	 */
 	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	class World {
+	class World;
+
+	#define WORLD_TPARAMS template<\
+		int64 TickRate,\
+		class... Ss,\
+		template<class...> class SystemsSet,\
+		class... Cs,\
+		template<class...> class ComponentsSet\
+	>
+
+	#define WORLD_CLASS World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
+
+	WORLD_TPARAMS
+	class WORLD_CLASS {
 		public:
 			// TODO: Since we are wrapping all of these operations is there any real benifit to splitting into XYZManagers?
-			using ComponentManager = ComponentManager<ComponentsSet>;
-			using SystemManager = SystemManager<SystemsSet>;
+			using ComponentManager = ComponentManager<ComponentsSet<Cs...>>;
+			using SystemManager = SystemManager<SystemsSet<Ss...>>;
 
 		private:
 			EntityManager em;
@@ -198,6 +211,11 @@ namespace Engine::ECS {
 			void removeComponents(Entity ent);
 
 			/**
+			 * Removes all components from an entity.
+			 */
+			void removeAllComponents(Entity ent);
+
+			/**
 			 * Gets a reference the component associated with an entity.
 			 * @param[in] ent The entity.
 			 * @tparam Component The component.
@@ -226,8 +244,8 @@ namespace Engine::ECS {
 			template<class... Components>
 			EntityFilter& getFilterFor();
 
-			template<>
-			EntityFilter& getFilterFor() = delete;
+			//template<>
+			//EntityFilter& getFilterFor() = delete;
 			
 			/**
 			 * Gets the tick interval.
@@ -271,3 +289,6 @@ namespace Engine::ECS {
 }
 
 #include <Engine/ECS/World.ipp>
+
+#undef WORLD_TPARAMS
+#undef WORLD_CLASS

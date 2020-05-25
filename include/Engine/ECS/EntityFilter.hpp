@@ -14,6 +14,7 @@
 namespace Engine::ECS {
 	class EntityFilter {
 		private:
+			// TODO: use sparse set?
 			std::vector<Entity> entities;
 
 		private:

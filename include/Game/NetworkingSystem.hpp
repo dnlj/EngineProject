@@ -44,9 +44,9 @@ namespace Game {
 			void tick(float32 dt);
 			int32 connectionsCount() const;
 			void connectTo(const Engine::Net::IPv4Address& addr);
+			void disconnect(Engine::ECS::Entity ent);
 
 		private:
-			void disconnect(Engine::ECS::Entity ent);
 			Engine::Net::Connection& addConnection(const Engine::Net::IPv4Address& addr);
 
 			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);

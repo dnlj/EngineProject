@@ -36,10 +36,9 @@ namespace Engine {
 			}
 
 			ENGINE_INLINE void remove(Key key) {
-				using std::swap;
-				sparse[dense.back().key] = sparse[key];
+				sparse[dense.back().first] = sparse[key];
+				dense[sparse[key]] = std::move(dense.back());
 				sparse[key] = invalid;
-				swap(dense.back(), get(key));
 				dense.pop_back();
 			}
 

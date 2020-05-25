@@ -111,6 +111,7 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		puts("MessageType::DISCONNECT");
 		disconnect(ent);
 	}
 
@@ -126,6 +127,7 @@ namespace Game {
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
 		}
+		std::cout << "Alive1: " << ent << " " << world.isAlive(ent) << "\n";
 	}
 
 	template<>
@@ -301,6 +303,7 @@ namespace Game {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			const auto diff = now - conn.lastMessageTime;
 			if (diff > timeout) {
+				std::cout << "Timeout: " << ply << "\n";
 				disconnect(ply);
 				break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
 			}
@@ -343,12 +346,19 @@ namespace Game {
 	}
 
 	void NetworkingSystem::disconnect(Engine::ECS::Entity ent) {
-		if (ent == Engine::ECS::INVALID_ENTITY) { return; }
+		if (ent == Engine::ECS::INVALID_ENTITY) {
+			return;
+		}
+
 		auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-		ENGINE_LOG("Disconnecting ", ent, " ", conn.address());
+		const auto addr = conn.address();
+		ENGINE_LOG("Disconnecting ", ent, " ", addr);
 		conn.writer.flush();
 		conn.writer.next(MessageType::DISCONNECT, Engine::Net::Channel::UNRELIABLE);
 		conn.writer.send();
+
+		std::cout << "Alive2: " << ent << " " << world.isAlive(ent) << "\n";
+		ipToPlayer.erase(addr);
 		world.destroyEntity(ent);
 	}
 

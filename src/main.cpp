@@ -252,6 +252,10 @@ namespace {
 
 		ImGui::Text("FPS %f (%f)", 1.0/avgDeltaTime, avgDeltaTime);
 
+		if (ImGui::Button("Disconnect")) {
+			world.getSystem<Game::NetworkingSystem>().disconnect(Engine::ECS::Entity{75, 1}); // TODO: dont hardcode
+		}
+
 		if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
 			auto& mapSys = world.getSystem<Game::MapSystem>();
 

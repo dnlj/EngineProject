@@ -5,17 +5,17 @@
 
 
 namespace Engine::ECS {
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class Arg>
-	World<TickRate, SystemsSet, ComponentsSet>::World(float tickInterval, Arg& arg)
+	WORLD_CLASS::World(float tickInterval, Arg& arg)
 		: fm{em}
 		, sm{arg}
 		, beginTime{Clock::now()}
 		, tickTime{beginTime} {
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	void World<TickRate, SystemsSet, ComponentsSet>::run() {
+	WORLD_TPARAMS
+	void WORLD_CLASS::run() {
 		const auto endTime = Clock::now();
 		deltaTimeNS = endTime - beginTime;
 		beginTime = endTime;
@@ -41,63 +41,63 @@ namespace Engine::ECS {
 		sm.run(deltaTime);
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	bool World<TickRate, SystemsSet, ComponentsSet>::isAlive(Entity ent) const {
+	WORLD_TPARAMS
+	bool WORLD_CLASS::isAlive(Entity ent) const {
 		return em.isAlive(ent);
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	void World<TickRate, SystemsSet, ComponentsSet>::setEnabled(Entity ent, bool enabled) {
+	WORLD_TPARAMS
+	void WORLD_CLASS::setEnabled(Entity ent, bool enabled) {
 		em.setEnabled(ent, enabled);
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	bool World<TickRate, SystemsSet, ComponentsSet>::isEnabled(Entity ent) const {
+	WORLD_TPARAMS
+	bool WORLD_CLASS::isEnabled(Entity ent) const {
 		return em.isEnabled(ent);
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	const EntityManager::EntityContainer& World<TickRate, SystemsSet, ComponentsSet>::getEntities() const {
+	WORLD_TPARAMS
+	const EntityManager::EntityContainer& WORLD_CLASS::getEntities() const {
 		return em.getEntities();
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class... ComponentN>
-	ComponentBitset World<TickRate, SystemsSet, ComponentsSet>::getBitsetForComponents() const {
+	ComponentBitset WORLD_CLASS::getBitsetForComponents() const {
 		return cm.getBitsetForComponents<ComponentN...>();
 	}
 	
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class Component>
-	constexpr static ComponentId World<TickRate, SystemsSet, ComponentsSet>::getComponentId() noexcept {
+	constexpr static ComponentId WORLD_CLASS::getComponentId() noexcept {
 		return ComponentManager::getComponentId<Component>();
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class System>
-	constexpr static SystemId World<TickRate, SystemsSet, ComponentsSet>::getSystemId() noexcept {
+	constexpr static SystemId WORLD_CLASS::getSystemId() noexcept {
 		return SystemManager::getSystemId<System>();
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class System>
-	System& World<TickRate, SystemsSet, ComponentsSet>::getSystem() {
+	System& WORLD_CLASS::getSystem() {
 		return sm.getSystem<System>();
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class... SystemN>
-	SystemBitset World<TickRate, SystemsSet, ComponentsSet>::getBitsetForSystems() const {
+	SystemBitset WORLD_CLASS::getBitsetForSystems() const {
 		return sm.getBitsetForSystems<SystemN...>();
 	};
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	void World<TickRate, SystemsSet, ComponentsSet>::run(float dt) {
+	WORLD_TPARAMS
+	void WORLD_CLASS::run(float dt) {
 		sm.run(dt);
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	Entity World<TickRate, SystemsSet, ComponentsSet>::createEntity(bool forceNew) {
+	WORLD_TPARAMS
+	Entity WORLD_CLASS::createEntity(bool forceNew) {
 		const auto ent = em.createEntity(forceNew);
 
 		if (ent.id >= cm.componentBitsets.size()) {
@@ -109,15 +109,16 @@ namespace Engine::ECS {
 		return ent;
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	void World<TickRate, SystemsSet, ComponentsSet>::destroyEntity(Entity ent) {
+	WORLD_TPARAMS
+	void WORLD_CLASS::destroyEntity(Entity ent) {
+		removeAllComponents(ent);
 		em.destroyEntity(ent);
 		fm.onEntityDestroyed(ent, cm.componentBitsets[ent.id]);
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class Component, class... Args>
-	Component& World<TickRate, SystemsSet, ComponentsSet>::addComponent(Entity ent, Args&&... args) {
+	Component& WORLD_CLASS::addComponent(Entity ent, Args&&... args) {
 		auto& container = cm.getComponentContainer<Component>();
 		constexpr auto cid = getComponentId<Component>();
 		container.add(ent.id, std::forward<Args>(args)...);
@@ -131,114 +132,126 @@ namespace Engine::ECS {
 		return container[ent.id];
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class... Components>
-	std::tuple<Components&...> World<TickRate, SystemsSet, ComponentsSet>::addComponents(Entity ent) {
+	std::tuple<Components&...> WORLD_CLASS::addComponents(Entity ent) {
 		return std::forward_as_tuple(addComponent<Components>(ent) ...);
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	bool World<TickRate, SystemsSet, ComponentsSet>::hasComponent(Entity ent, ComponentId cid) {
+	WORLD_TPARAMS
+	bool WORLD_CLASS::hasComponent(Entity ent, ComponentId cid) {
 		return cm.componentBitsets[ent.id][cid];
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class Component>
-	bool World<TickRate, SystemsSet, ComponentsSet>::hasComponent(Entity ent) {
+	bool WORLD_CLASS::hasComponent(Entity ent) {
 		return hasComponent(ent, getComponentId<Component>());
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	bool World<TickRate, SystemsSet, ComponentsSet>::hasComponents(Entity ent, ComponentBitset cbits) {
+	WORLD_TPARAMS
+	bool WORLD_CLASS::hasComponents(Entity ent, ComponentBitset cbits) {
 		return (cm.componentBitsets[ent.id] & cbits) == cbits;
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class... Components>
-	bool World<TickRate, SystemsSet, ComponentsSet>::hasComponents(Entity ent) {
+	bool WORLD_CLASS::hasComponents(Entity ent) {
 		return hasComponents(ent, getBitsetForComponents<Components...>());
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class Component>
-	void World<TickRate, SystemsSet, ComponentsSet>::removeComponent(Entity ent) {
+	void WORLD_CLASS::removeComponent(Entity ent) {
 		removeComponents<Component>(ent);
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class... Components>
-	void World<TickRate, SystemsSet, ComponentsSet>::removeComponents(Entity ent) {
+	void WORLD_CLASS::removeComponents(Entity ent) {
 		cm.componentBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
 
-		cm.getComponentContainer<Components>().remove(ent.id), ...;
+		(cm.getComponentContainer<Components>().remove(ent.id), ...);
 
 		// TODO: Make filter manager take bitset?
 		(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);
 	}
+	
+	WORLD_TPARAMS
+	void WORLD_CLASS::removeAllComponents(Entity ent) {
+		//((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...);
+		((std::cout << "cid: " << getComponentId<Cs>() << " " << hasComponent<Cs>(ent) << "\n"), ...);
+		(
+			(hasComponent<Cs>(ent)
+			&& (std::cout << "cid: " << getComponentId<Cs>() << " " << hasComponent<Cs>(ent) << "\n", 1)
+			&& (removeComponent<Cs>(ent), 1))
+		, ...);
+	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class Component>
-	Component& World<TickRate, SystemsSet, ComponentsSet>::getComponent(Entity ent) {
+	Component& WORLD_CLASS::getComponent(Entity ent) {
 		return cm.getComponentContainer<Component>()[ent.id];
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class... Components>
-	std::tuple<Components&...> World<TickRate, SystemsSet, ComponentsSet>::getComponents(Entity ent) {
+	std::tuple<Components&...> WORLD_CLASS::getComponents(Entity ent) {
 		return std::forward_as_tuple(getComponent<Components>(ent) ...);
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	ComponentBitset World<TickRate, SystemsSet, ComponentsSet>::getComponentsBitset(Entity ent) const {
+	WORLD_TPARAMS
+	ComponentBitset WORLD_CLASS::getComponentsBitset(Entity ent) const {
 		return cm.componentBitsets[ent.id];
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class... Components>
-	EntityFilter& World<TickRate, SystemsSet, ComponentsSet>::getFilterFor() {
+	EntityFilter& WORLD_CLASS::getFilterFor() {
+		static_assert(sizeof...(Components) > 0, "Unable to get filter for no components.");
 		return fm.getFilterFor(*this, getBitsetForComponents<Components...>());
 	}
 	
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	auto World<TickRate, SystemsSet, ComponentsSet>::getTickInterval() const {
+	WORLD_TPARAMS
+	auto WORLD_CLASS::getTickInterval() const {
 		return tickInterval;
 	}
 	
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	Clock::TimePoint World<TickRate, SystemsSet, ComponentsSet>::getTickTime() const {
+	WORLD_TPARAMS
+	Clock::TimePoint WORLD_CLASS::getTickTime() const {
 		return tickTime;
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	float32 World<TickRate, SystemsSet, ComponentsSet>::getTickRatio() const {
+	WORLD_TPARAMS
+	float32 WORLD_CLASS::getTickRatio() const {
 		return (beginTime - tickTime).count() / static_cast<float32>(tickInterval.count());
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	float32 World<TickRate, SystemsSet, ComponentsSet>::getDeltaTime() const {
+	WORLD_TPARAMS
+	float32 WORLD_CLASS::getDeltaTime() const {
 		return deltaTime;
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
-	auto World<TickRate, SystemsSet, ComponentsSet>::getDeltaTimeNS() const {
+	WORLD_TPARAMS
+	auto WORLD_CLASS::getDeltaTimeNS() const {
 		return deltaTimeNS;
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class SystemA, class SystemB>
-	constexpr static bool World<TickRate, SystemsSet, ComponentsSet>::orderBefore() {
+	constexpr static bool WORLD_CLASS::orderBefore() {
 		return SystemManager::orderBefore<SystemA, SystemB>();
 	}
 
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class SystemA, class SystemB>
-	constexpr static bool World<TickRate, SystemsSet, ComponentsSet>::orderAfter() {
+	constexpr static bool WORLD_CLASS::orderAfter() {
 		return SystemManager::orderAfter<SystemA, SystemB>();
 	}
 	
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	WORLD_TPARAMS
 	template<class Callable>
-	void World<TickRate, SystemsSet, ComponentsSet>::callWithComponent(Entity ent, ComponentId cid, Callable&& callable) {
+	void WORLD_CLASS::callWithComponent(Entity ent, ComponentId cid, Callable&& callable) {
 		return cm.callWithComponent(ent, cid, std::forward<Callable>(callable));
 	}
 }
