@@ -96,7 +96,6 @@ namespace Engine::Noise {
 				});
 
 				result1.value = result2.value - result1.value;
-
 				return result1;
 			}
 

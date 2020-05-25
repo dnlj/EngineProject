@@ -8,19 +8,22 @@
 
 namespace Engine::Net {
 	class PacketReader {
-		public: // TODO: not public
+		private:
 			char* curr = nullptr;
 			char* last = nullptr;
-
-			SequenceNumber nextSeq[static_cast<int32>(Channel::_COUNT)] = {}; // TODO: dont think we need this on reader. Only writer
 			AckData channelAckData[2] = {};
 
 		public:
-			// TODO: del copy/move constr
+			PacketReader() = default;
+			PacketReader(const PacketReader&) = delete;
+			PacketReader(PacketReader&&) = delete;
+
 			void set(char* curr, char* last);
 
-			// TODO: name
-			// TODO: doc
+			/**
+			 * Updates message acknowledgements.
+			 * @return True if the message should be processes; otherwise returns false.
+			 */
 			bool updateRecvAcks(const MessageHeader& hdr);
 
 			/**
@@ -34,11 +37,20 @@ namespace Engine::Net {
 			template<class T>
 			decltype(auto) read();
 
-			// TODO: doc
+			/**
+			 * Checks if there are any messages to read.
+			 */
 			bool next();
 
-			// TODO: move duplicate reader/writer functions into base class?
+			/**
+			 * Gets the size of the current message.
+			 */
 			int32 size() const;
+
+			/**
+			 * Gets that ack data for the channel @p ch.
+			 */
+			const AckData& getAckData(Channel ch) const;
 	};
 }
 

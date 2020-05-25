@@ -15,7 +15,7 @@ namespace Engine::Net {
 	}
 	
 	void Connection::writeRecvAcks(Channel ch) {
-		auto& ackData = reader.channelAckData[static_cast<int32>(ch)];
+		auto& ackData = reader.getAckData(ch);
 		writer.write(ch);
 		writer.write(ackData.nextAck);
 		writer.write(ackData.acks);

@@ -73,4 +73,8 @@ namespace Engine::Net {
 	int32 PacketReader::size() const {
 		return static_cast<int32>(last - curr);
 	}
+
+	const AckData& PacketReader::getAckData(Channel ch) const {
+		return channelAckData[static_cast<int32>(ch)];
+	}
 }
