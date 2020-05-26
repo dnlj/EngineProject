@@ -49,6 +49,7 @@ namespace Engine::Net {
 
 		const void* temp = curr;
 		curr += sz;
+		bytesRead += sz;
 		return temp;
 	}
 

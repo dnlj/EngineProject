@@ -25,6 +25,7 @@ namespace Engine::Net {
 
 			SequenceNumber nextSeq[static_cast<int32>(Channel::_COUNT)] = {};
 			AckData channelAckData[2] = {};
+			uint64 bytesWritten = 0;
 
 		public:
 			PacketWriter(UDPSocket& sock, IPv4Address addr);
@@ -33,6 +34,8 @@ namespace Engine::Net {
 
 			MessageHeader& header();
 			const MessageHeader& header() const;
+
+			uint64 totalBytesWritten() const { return bytesWritten; }
 
 			/**
 			 * Updates what messages have been acknowledged.

@@ -127,7 +127,6 @@ namespace Game {
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
 		}
-		std::cout << "Alive1: " << ent << " " << world.isAlive(ent) << "\n";
 	}
 
 	template<>
@@ -357,7 +356,6 @@ namespace Game {
 		conn.writer.next(MessageType::DISCONNECT, Engine::Net::Channel::UNRELIABLE);
 		conn.writer.send();
 
-		std::cout << "Alive2: " << ent << " " << world.isAlive(ent) << "\n";
 		ipToPlayer.erase(addr);
 		world.destroyEntity(ent);
 	}

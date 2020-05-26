@@ -12,11 +12,14 @@ namespace Engine::Net {
 			char* curr = nullptr;
 			char* last = nullptr;
 			AckData channelAckData[2] = {};
+			uint64 bytesRead = 0;
 
 		public:
 			PacketReader() = default;
 			PacketReader(const PacketReader&) = delete;
 			PacketReader(PacketReader&&) = delete;
+
+			uint64 totalBytesRead() const { return bytesRead; }
 
 			void set(char* curr, char* last);
 

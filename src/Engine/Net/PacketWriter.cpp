@@ -33,11 +33,13 @@ namespace Engine::Net {
 
 	int32 PacketWriter::sendto() {
 		endMessage();
-		return sock.send(
+		const auto sent = sock.send(
 			reinterpret_cast<const char*>(&packet),
 			static_cast<int32>(last - reinterpret_cast<const char*>(&packet)),
 			addr
 		);
+		bytesWritten += sent;
+		return sent;
 	}
 
 	int32 PacketWriter::send() {

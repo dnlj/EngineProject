@@ -246,6 +246,7 @@ namespace {
 	void editorUI(Engine::EngineInstance& engine, Game::World& world) {
 		static auto texture32 = engine.textureManager.get("../assets/32.bmp");
 		static auto targetIds = world.getSystem<Game::ActionSystem>().getId("Target_X", "Target_Y");
+		static auto& connFilter = world.getFilterFor<Game::ConnectionComponent>();
 
 		bool open = true;
 		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
@@ -253,10 +254,20 @@ namespace {
 		ImGui::Text("FPS %f (%f)", 1.0/avgDeltaTime, avgDeltaTime);
 
 		if (ImGui::Button("Disconnect")) {
-			auto& filter = world.getFilterFor<Game::ConnectionComponent>();
-			std::vector<Engine::ECS::Entity> ents = {filter.cbegin(), filter.cend()};
+			std::vector<Engine::ECS::Entity> ents = {connFilter.cbegin(), connFilter.cend()};
 			for (const auto ent : ents) {
 				world.getSystem<Game::NetworkingSystem>().disconnect(ent);
+			}
+		}
+		
+		if (ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) {
+			const auto now = Engine::Clock::now();
+			for (const auto ent : connFilter) {
+				const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+				const auto& dt = Engine::Clock::Seconds{now - conn.connectTime}.count();
+				const auto recv = conn.writer.totalBytesWritten();
+				const auto sent = conn.reader.totalBytesRead();
+				ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s", sent, sent / dt, recv, recv / dt);
 			}
 		}
 

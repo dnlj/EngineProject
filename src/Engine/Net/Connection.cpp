@@ -11,7 +11,8 @@ namespace Engine::Net {
 		IPv4Address addr,
 		Clock::TimePoint lastMessageTime)
 		: writer{sock, addr}
-		, lastMessageTime{lastMessageTime} {
+		, lastMessageTime{lastMessageTime}
+		, connectTime{Clock::now()} {
 	}
 	
 	void Connection::writeRecvAcks(Channel ch) {

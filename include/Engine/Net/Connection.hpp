@@ -18,6 +18,7 @@ namespace Engine::Net {
 			PacketReader reader;
 			PacketWriter writer;
 			Clock::TimePoint lastMessageTime;
+			const Clock::TimePoint connectTime;
 
 		public:
 			Connection(UDPSocket& sock, IPv4Address addr = {}, Clock::TimePoint lastMessageTime = {});
