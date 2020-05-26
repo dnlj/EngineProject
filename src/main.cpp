@@ -268,6 +268,7 @@ namespace {
 				const auto recv = conn.writer.totalBytesWritten();
 				const auto sent = conn.reader.totalBytesRead();
 				ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s", sent, sent / dt, recv, recv / dt);
+				//ImPlot::ShowDemoWindow();
 			}
 		}
 

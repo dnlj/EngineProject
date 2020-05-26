@@ -2,6 +2,9 @@
 #define IMGUI_USER_CONFIG <Engine/ImGui/Config.hpp>
 #include <imgui.h>
 
+// ImPlot
+#include <implot.h>
+
 // Engine
 #include <Engine/ImGui/Operators.hpp>
 #include <Engine/Window.hpp>
