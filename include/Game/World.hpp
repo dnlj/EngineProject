@@ -8,6 +8,8 @@
 #include <Engine/EngineInstance.hpp>
 
 // Game
+#include <Game/Common.hpp>
+
 #include <Game/InputSystem.hpp>
 #include <Game/ActionSystem.hpp>
 #include <Game/CharacterMovementSystem.hpp>
@@ -29,6 +31,7 @@
 #include <Game/ActionComponent.hpp>
 #include <Game/PlayerComponent.hpp>
 #include <Game/ConnectionComponent.hpp>
+#include <Game/ConnectionStatsComponent.hpp>
 
 
 namespace Game {
@@ -56,13 +59,14 @@ namespace Game {
 		InputComponent,
 		ActionComponent,
 		PlayerComponent,
-		ConnectionComponent
+		ConnectionComponent,
+		ConnectionStatsComponent
 	>;
 
-	class World : public Engine::ECS::World<64, SystemsSet, ComponentsSet> {
+	class World : public Engine::ECS::World<tickrate, SystemsSet, ComponentsSet> {
 		public:
 			World(float tickInterval, Engine::EngineInstance& engine)
-				: Engine::ECS::World<64, SystemsSet, ComponentsSet>(tickInterval, std::tie(*this, engine)) {
+				: Engine::ECS::World<tickrate, SystemsSet, ComponentsSet>(tickInterval, std::tie(*this, engine)) {
 			}
 	};
 }

@@ -10,6 +10,7 @@
 #include <numeric>
 #include <filesystem>
 #include <regex>
+#include <iterator>
 
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
@@ -261,15 +262,43 @@ namespace {
 		}
 		
 		if (ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) {
+			constexpr auto points = Game::ConnectionStatsComponent::points;
+			constexpr auto seconds = Game::ConnectionStatsComponent::seconds;
+			static int idx = 0;
+			static float32 times[points] = {};
+
 			const auto now = Engine::Clock::now();
+
+			// TODO: want ot sample at fixt wall time increments. independent of ticks
 			for (const auto ent : connFilter) {
+				// TODO: dont really like this way of storing debug/ui data. Doesnt scale conveniently as ui increases.
+				if (!world.hasComponent<Game::ConnectionStatsComponent>(ent)) {
+					world.addComponent<Game::ConnectionStatsComponent>(ent);
+				}
+				auto& stats = world.getComponent<Game::ConnectionStatsComponent>(ent);
 				const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+
 				const auto& dt = Engine::Clock::Seconds{now - conn.connectTime}.count();
 				const auto recv = conn.writer.totalBytesWritten();
 				const auto sent = conn.reader.totalBytesRead();
 				ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s", sent, sent / dt, recv, recv / dt);
-				//ImPlot::ShowDemoWindow();
+
+				const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
+				const auto begin = end - seconds;
+
+				stats.bytesSentTotal[idx] = static_cast<float32>(sent);
+				stats.bytesSent[idx] = stats.bytesSentTotal[idx] - stats.bytesSentTotal[(idx + points - 1) % points];
+				times[idx] = end;
+
+				ImPlot::SetNextPlotLimitsX(begin, end, ImGuiCond_Always);
+				static int rt_axis = ImPlotAxisFlags_Default;
+				if (ImPlot::BeginPlot("##Scrolling", NULL, NULL, ImVec2(-1,300), ImPlotFlags_Default, rt_axis, rt_axis)) {
+					ImPlot::PlotLine("Data 1", times, stats.bytesSent, points, (idx + 1) % points); // Why is offset +1?
+					ImPlot::EndPlot();
+				}
 			}
+
+			idx = ++idx % points;
 		}
 
 		if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {

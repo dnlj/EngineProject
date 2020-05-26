@@ -5,4 +5,5 @@
 
 namespace Game {
 	using namespace Engine::Types;
+	inline constexpr int32 tickrate = 64;
 }
