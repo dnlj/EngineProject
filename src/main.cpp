@@ -253,7 +253,11 @@ namespace {
 		ImGui::Text("FPS %f (%f)", 1.0/avgDeltaTime, avgDeltaTime);
 
 		if (ImGui::Button("Disconnect")) {
-			world.getSystem<Game::NetworkingSystem>().disconnect(Engine::ECS::Entity{75, 1}); // TODO: dont hardcode
+			auto& filter = world.getFilterFor<Game::ConnectionComponent>();
+			std::vector<Engine::ECS::Entity> ents = {filter.cbegin(), filter.cend()};
+			for (const auto ent : ents) {
+				world.getSystem<Game::NetworkingSystem>().disconnect(ent);
+			}
 		}
 
 		if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {

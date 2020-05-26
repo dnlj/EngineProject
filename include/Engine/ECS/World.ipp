@@ -179,13 +179,7 @@ namespace Engine::ECS {
 	
 	WORLD_TPARAMS
 	void WORLD_CLASS::removeAllComponents(Entity ent) {
-		//((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...);
-		((std::cout << "cid: " << getComponentId<Cs>() << " " << hasComponent<Cs>(ent) << "\n"), ...);
-		(
-			(hasComponent<Cs>(ent)
-			&& (std::cout << "cid: " << getComponentId<Cs>() << " " << hasComponent<Cs>(ent) << "\n", 1)
-			&& (removeComponent<Cs>(ent), 1))
-		, ...);
+		((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...);
 	}
 
 	WORLD_TPARAMS

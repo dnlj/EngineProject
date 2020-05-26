@@ -2,7 +2,7 @@
 
 // STD
 #include <string>
-#include <concepts>
+#include <type_traits>
 
 
 namespace Engine::Utility {
@@ -13,6 +13,10 @@ namespace Engine::Utility {
 	 */
 	std::string readFile(const std::string& path);
 
-	template<std::integral T>
-	constexpr bool isPowerOfTwo(T i) { return !(i & (i - 1)); }
+	// TODO: use C++20 concept std::integral instead of static assert - as of VS16.6.0 it compiles but breaks intellisense
+	template<class T>
+	constexpr bool isPowerOfTwo(T i) {
+		static_assert(std::is_integral_v<T>, "T must be integral type.");
+		return !(i & (i - 1));
+	}
 }

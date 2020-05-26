@@ -4,6 +4,7 @@
 #include <tuple>
 
 // Engine
+#include <Engine/Engine.hpp>
 #include <Engine/Glue/Glue.hpp>
 
 // Box2D
