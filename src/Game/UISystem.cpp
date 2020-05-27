@@ -54,11 +54,16 @@ namespace Game {
 		, connFilter{world.getFilterFor<Game::ConnectionComponent>()} {
 	}
 
+
+	void UISystem::setup() {
+		// TODO: handle errors Engine::Input errors better than just spamming console.
+		targetIds = world.getSystem<Game::ActionSystem>().getId("Target_X", "Target_Y");
+	}
+
 	void UISystem::run(float32 dt) {
 		Engine::ImGui::newFrame();
 
 		static auto texture32 = engine.textureManager.get("../assets/32.bmp");
-		static auto targetIds = world.getSystem<Game::ActionSystem>().getId("Target_X", "Target_Y");
 		static auto& connFilter = world.getFilterFor<Game::ConnectionComponent>();
 
 		bool open = true;
@@ -73,55 +78,14 @@ namespace Game {
 			}
 		}
 
-		ui_connect();
+		ui_debug();
 		ui_network();
 		
-		if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
-			auto& mapSys = world.getSystem<Game::MapSystem>();
-
-			auto& actC = world.getComponent<Game::ActionComponent>(Engine::ECS::Entity{74, 1}); // TODO: dont hardcode
-			auto screenMousePos = actC.getValue<float32>(targetIds);
-			ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
-
-			auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
-			ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
-			
-			auto blockMousePos = mapSys.worldToBlock(worldMousePos);
-			ImGui::Text("Mouse (block): (%i, %i)", blockMousePos.x, blockMousePos.y);
-
-			auto blockWorldMousePos = mapSys.blockToWorld(blockMousePos);
-			ImGui::Text("Mouse (block-world): (%f, %f)", blockWorldMousePos.x, blockWorldMousePos.y);
-
-			auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
-			auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
-			ImGui::Text("Mouse (chunk): (%i, %i) (%i, %i)", chunkMousePos.x, chunkMousePos.y, chunkBlockMousePos.x, chunkBlockMousePos.y);
-
-			const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);
-			ImGui::Text("Mouse (region): (%i, %i)", regionMousePos.x, regionMousePos.y);
-			
-			auto camPos = engine.camera.getPosition();
-			ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
-
-			auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
-			ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
-
-			auto mapBlockOffset = mapSys.getBlockOffset();
-			ImGui::Text("Map Offset (block): (%i, %i)", mapBlockOffset.x, mapBlockOffset.y);
-
-			auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
-			ImGui::Text("Map Offset (chunk): (%i, %i)", mapChunkOffset.x, mapChunkOffset.y);
-
-
-			#if defined(DEBUG_PHYSICS)
-				auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
-				ImGui::Text("Physics Debug Verts: (%i)", physDebug.getVertexCount());
-			#endif
-		}
-
 		if (ImGui::CollapsingHeader("Map")) {
 			//ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(1024, 1024));
 		}
 
+		ui_connect();
 		ImGui::End();
 		Engine::ImGui::draw();
 	}
@@ -190,6 +154,49 @@ namespace Game {
 		};
 
 		ImGui::End();
+	}
+
+	void UISystem::ui_debug() {
+		if (!ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+		auto& mapSys = world.getSystem<Game::MapSystem>();
+
+		auto& actC = world.getComponent<Game::ActionComponent>(Engine::ECS::Entity{74, 1}); // TODO: dont hardcode
+		auto screenMousePos = actC.getValue<float32>(targetIds);
+		ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
+
+		auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
+		ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
+			
+		auto blockMousePos = mapSys.worldToBlock(worldMousePos);
+		ImGui::Text("Mouse (block): (%i, %i)", blockMousePos.x, blockMousePos.y);
+
+		auto blockWorldMousePos = mapSys.blockToWorld(blockMousePos);
+		ImGui::Text("Mouse (block-world): (%f, %f)", blockWorldMousePos.x, blockWorldMousePos.y);
+
+		auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
+		auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
+		ImGui::Text("Mouse (chunk): (%i, %i) (%i, %i)", chunkMousePos.x, chunkMousePos.y, chunkBlockMousePos.x, chunkBlockMousePos.y);
+
+		const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);
+		ImGui::Text("Mouse (region): (%i, %i)", regionMousePos.x, regionMousePos.y);
+			
+		auto camPos = engine.camera.getPosition();
+		ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
+
+		auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
+		ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
+
+		auto mapBlockOffset = mapSys.getBlockOffset();
+		ImGui::Text("Map Offset (block): (%i, %i)", mapBlockOffset.x, mapBlockOffset.y);
+
+		auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
+		ImGui::Text("Map Offset (chunk): (%i, %i)", mapChunkOffset.x, mapChunkOffset.y);
+
+
+		#if defined(DEBUG_PHYSICS)
+			auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
+			ImGui::Text("Physics Debug Verts: (%i)", physDebug.getVertexCount());
+		#endif
 	}
 
 	void UISystem::ui_network() {
