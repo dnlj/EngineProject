@@ -95,6 +95,15 @@ namespace Engine::detail {
 	auto RingBufferImpl<T, Size>::size() const noexcept -> SizeType {
 		return stop < start ? stop + capacity() - start : stop - start;
 	}
+	
+	template<class T, uint32 Size>
+	void RingBufferImpl<T, Size>::swap(RingBufferImpl& other) {
+		using std::swap;
+		swap(data, other.data);
+		swap(start, other.start);
+		swap(stop, other.stop);
+		swap(isEmpty, other.isEmpty);
+	}
 
 	template<class T, uint32 Size>
 	T* RingBufferImpl<T, Size>::dataT() noexcept {
@@ -108,14 +117,14 @@ namespace Engine::detail {
 	template<class T, uint32 Size>
 	void RingBufferImpl<T, Size>::elementAdded() noexcept {
 		ENGINE_DEBUG_ASSERT(!full(), "Element added to full RingBuffer");
-		stop = ++stop % Size;
+		stop = ++stop % capacity();
 		isEmpty = false;
 	}
 
 	template<class T, uint32 Size>
 	void RingBufferImpl<T, Size>::elementRemoved() noexcept {
 		ENGINE_DEBUG_ASSERT(!empty(), "Element removed from empty RingBuffer");
-		start = ++start % Size;
+		start = ++start % capacity();
 		isEmpty = start == stop;
 	}
 	
@@ -131,18 +140,7 @@ namespace Engine::detail {
 				pop();
 			}
 
-			swap(*this, other);
+			swap(other);
 		}
-	}
-}
-
-namespace Engine::detail {
-	template<class T>
-	void swap(RingBufferImpl<T, 0>& first, RingBufferImpl<T, 0>& second) {
-		using std::swap;
-		swap(first.data, second.data);
-		swap(first.start, second.start);
-		swap(first.stop, second.stop);
-		swap(first.isEmpty, second.isEmpty);
 	}
 }

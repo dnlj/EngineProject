@@ -48,7 +48,7 @@ namespace Engine {
 			
 				SizeType size() const noexcept;
 
-				friend void swap(RingBufferImpl<T, 0>& first, RingBufferImpl<T, 0>& second);
+				void swap(RingBufferImpl& other);
 
 			private:
 				// TODO: we need to store size somewhere
@@ -67,6 +67,9 @@ namespace Engine {
 				void elementRemoved() noexcept;
 				void ensureSpace();
 		};
+
+		template<class T>
+		void swap(RingBufferImpl<T, 0>& first, RingBufferImpl<T, 0>& second) { first.swap(second); };
 	}
 
 	template<class T>
