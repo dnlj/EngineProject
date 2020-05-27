@@ -7,49 +7,79 @@
 namespace Engine {
 	// TODO: largely untested
 	// TODO: doc all
-	template<class T, uint32 Size>
-	class StaticRingBuffer {
-		public:
-			using size_type = decltype(Size);
-			using SizeType = size_type;
+	namespace detail {
+		template<class T, uint32 Size = 0>
+		class RingBufferImpl {
+			public:
+				constexpr static bool IsStatic = Size != 0;
+				using size_type = decltype(Size);
+				using SizeType = size_type;
 
-			StaticRingBuffer() = default;
-			~StaticRingBuffer();
+				template<class = std::enable_if_t<IsStatic>>
+				RingBufferImpl();
 
-			T& back() noexcept;
+				template<class = std::enable_if_t<!IsStatic>>
+				RingBufferImpl(SizeType sz = 16);
 
-			const T& back() const noexcept;
+				~RingBufferImpl();
 
-			SizeType capacity() const noexcept;
+				T& back() noexcept;
 
-			void clear();
+				const T& back() const noexcept;
 
-			template<class... Args>
-			void emplace(Args&&... args);
+				SizeType capacity() const noexcept;
 
-			bool empty() const noexcept;
+				// TODO: reserve(n)
 
-			bool full() const noexcept;
+				void clear();
 
-			void pop();
+				template<class... Args>
+				void emplace(Args&&... args);
 
-			void push(const T& obj);
+				bool empty() const noexcept;
+
+				bool full() const noexcept;
+
+				void pop();
+
+				void push(const T& obj);
 			
-			void push(T&& obj);
+				void push(T&& obj);
 			
-			SizeType size() const noexcept;
+				SizeType size() const noexcept;
 
-		private:
-			char data[sizeof(T) * Size];
-			SizeType start = 0;
-			SizeType stop = 0;
-			bool isEmpty = true;
+				friend void swap(RingBufferImpl<T, 0>& first, RingBufferImpl<T, 0>& second);
 
-			T* dataT() noexcept;
+			private:
+				// TODO: we need to store size somewhere
+				std::conditional_t<IsStatic,
+					char[sizeof(T) * Size],
+					std::pair<char*, SizeType> // TODO: unique_ptr
+				> data;
 
-			void elementAdded() noexcept;
-			void elementRemoved() noexcept;
+				SizeType start = 0;
+				SizeType stop = 0;
+				bool isEmpty = true;
+
+				T* dataT() noexcept;
+
+				void elementAdded() noexcept;
+				void elementRemoved() noexcept;
+				void ensureSpace();
+		};
+	}
+
+	template<class T>
+	class RingBuffer : public detail::RingBufferImpl<T> {
+		using RingBufferImpl::RingBufferImpl;
 	};
+
+	template<class T, uint32 Size>
+	class StaticRingBuffer : public detail::RingBufferImpl<T, Size> {
+		using RingBufferImpl::RingBufferImpl;
+	};
+
+
 }
 
 #include <Engine/StaticRingBuffer.ipp>
