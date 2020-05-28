@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <cmath>
+
 // Engine
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/Input/ActionId.hpp>
@@ -24,11 +27,22 @@ namespace Game {
 			bool update = false;
 
 			Engine::Clock::TimePoint rollingWindow;
-			Engine::Clock::Duration rollingWindowSize = std::chrono::milliseconds{1000};
+			Engine::Clock::Duration rollingWindowSize = std::chrono::milliseconds{5000};
 
+			// TODO: rm RollingData for consistency with above
+			struct FrameData {
+				float32 dt = 0.0f;
 
+				uint64 sent = 0;
+				float32 sentDiff = NAN;
+
+				uint64 recv = 0;
+				float32 recvDiff = NAN;
+			};
+			Engine::RingBuffer<std::pair<FrameData, Engine::Clock::TimePoint>> frameData;
+
+			Engine::Clock::Duration fpsAvgWindow = std::chrono::milliseconds{500};
 			float32 fps = 0.0f;
-			Engine::RingBuffer<std::pair<float32, Engine::Clock::TimePoint>> frameTimes;
 
 			void ui_connect();
 			void ui_debug();

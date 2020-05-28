@@ -27,6 +27,16 @@ namespace Engine::detail {
 	}
 
 	template<class T, uint32 Size>
+	T& RingBufferImpl<T, Size>::operator[](SizeType i) {
+		return dataT()[wrapIndex(start + i)];
+	}
+
+	template<class T, uint32 Size>
+	const T& RingBufferImpl<T, Size>::operator[](SizeType i) const {
+		return reinterpret_cast<RingBufferImpl&>(*this)[i];
+	}
+
+	template<class T, uint32 Size>
 	T& RingBufferImpl<T, Size>::back() noexcept {
 		ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::back called on empty buffer");
 		return dataT()[start];
@@ -34,7 +44,7 @@ namespace Engine::detail {
 
 	template<class T, uint32 Size>
 	const T& RingBufferImpl<T, Size>::back() const noexcept {
-		return dataT()[start];
+		return reinterpret_cast<RingBufferImpl&>(*this).back();
 	}
 
 	template<class T, uint32 Size>
@@ -44,7 +54,7 @@ namespace Engine::detail {
 
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::begin() const noexcept -> ConstIterator {
-		return {*this, start};
+		return cbegin();
 	}
 
 	template<class T, uint32 Size>
@@ -88,12 +98,23 @@ namespace Engine::detail {
 
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::end() const noexcept -> ConstIterator {
-		return {*this, stop};
+		return cend();
 	}
 
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::cend() const noexcept -> ConstIterator {
 		return {*this, stop};
+	}
+
+	template<class T, uint32 Size>
+	T& RingBufferImpl<T, Size>::front() noexcept {
+		ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::front called on empty buffer");
+		return dataT()[wrapIndex(stop - 1)];
+	}
+
+	template<class T, uint32 Size>
+	const T& RingBufferImpl<T, Size>::front() const noexcept {
+		return reinterpret_cast<RingBufferImpl&>(*this).front();
 	}
 
 	template<class T, uint32 Size>
@@ -147,14 +168,14 @@ namespace Engine::detail {
 	template<class T, uint32 Size>
 	void RingBufferImpl<T, Size>::elementAdded() noexcept {
 		ENGINE_DEBUG_ASSERT(!full(), "Element added to full RingBuffer");
-		stop = ++stop % capacity();
+		stop = wrapIndex(++stop);
 		isEmpty = false;
 	}
 
 	template<class T, uint32 Size>
 	void RingBufferImpl<T, Size>::elementRemoved() noexcept {
 		ENGINE_DEBUG_ASSERT(!empty(), "Element removed from empty RingBuffer");
-		start = ++start % capacity();
+		start = wrapIndex(++start);
 		isEmpty = start == stop;
 	}
 	
@@ -172,5 +193,10 @@ namespace Engine::detail {
 
 			swap(other);
 		}
+	}
+	template<class T, uint32 Size>
+	auto RingBufferImpl<T, Size>::wrapIndex(SizeType i) -> SizeType {
+		const auto c = capacity();
+		return (i + c) % c;
 	}
 }

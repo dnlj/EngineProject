@@ -27,8 +27,17 @@ namespace Engine {
 
 						bool operator==(IteratorBase& other) { return (&rb == &other.rb) && (i == other.i); }
 						bool operator!=(IteratorBase& other) { return !(*this == other); }
-						IteratorBase& operator++() { i = ++i % rb.capacity(); return *this; }
+
+						IteratorBase& operator+=(int32 n) { i = rb.wrapIndex(i + n); return *this; }
+						IteratorBase& operator++() { return *this += 1; }
+						IteratorBase operator+(int32 n) { auto other = *this; return other += n; }
+
+						IteratorBase& operator-=(int32 n) { return *this += -n; }
+						IteratorBase& operator--() { return *this -= 1; }
+						IteratorBase operator-(int32 n) { return *this + -n; }
+
 						T& operator*() { return rb.dataT()[i]; }
+						T* operator->() { return &**this; }
 				};
 
 				using Iterator = IteratorBase<T>;
@@ -43,8 +52,11 @@ namespace Engine {
 
 				~RingBufferImpl();
 
-				T& back() noexcept;
+				T& operator[](SizeType i);
 
+				const T& operator[](SizeType i) const;
+
+				T& back() noexcept;
 				const T& back() const noexcept;
 
 				Iterator begin() noexcept;
@@ -65,6 +77,9 @@ namespace Engine {
 				Iterator end() noexcept;
 				ConstIterator end() const noexcept;
 				ConstIterator cend() const noexcept;
+				
+				T& front() noexcept;
+				const T& front() const noexcept;
 
 				bool full() const noexcept;
 
@@ -85,7 +100,10 @@ namespace Engine {
 					std::pair<char*, SizeType> // TODO: unique_ptr
 				> data;
 
+				/** The index of the first element */
 				SizeType start = 0;
+
+				/** The index of the last element plus one */
 				SizeType stop = 0;
 				bool isEmpty = true;
 
@@ -94,6 +112,7 @@ namespace Engine {
 				void elementAdded() noexcept;
 				void elementRemoved() noexcept;
 				void ensureSpace();
+				SizeType wrapIndex(SizeType i);
 		};
 
 		template<class T>

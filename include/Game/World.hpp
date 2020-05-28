@@ -32,7 +32,6 @@
 #include <Game/ActionComponent.hpp>
 #include <Game/PlayerComponent.hpp>
 #include <Game/ConnectionComponent.hpp>
-#include <Game/ConnectionStatsComponent.hpp>
 
 
 namespace Game {
@@ -61,8 +60,7 @@ namespace Game {
 		InputComponent,
 		ActionComponent,
 		PlayerComponent,
-		ConnectionComponent,
-		ConnectionStatsComponent
+		ConnectionComponent
 	>;
 
 	class World : public Engine::ECS::World<tickrate, SystemsSet, ComponentsSet> {

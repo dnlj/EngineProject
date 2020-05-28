@@ -62,14 +62,21 @@ namespace Game {
 
 	void UISystem::run(float32 dt) {
 		now = Engine::Clock::now();
-		rollingWindow = now - std::chrono::milliseconds{1000};
+		rollingWindow = now - rollingWindowSize;
 		update = now - lastUpdate >= updateRate;
 
 		if (update) {
 			lastUpdate = now;
 		}
 
-		frameTimes.emplace(dt, now);
+		frameData.emplace(FrameData{
+			.dt = dt,
+		}, now);
+
+		// Cull old data
+		while(!frameData.empty() && frameData.back().second < rollingWindow) {
+			frameData.pop();
+		}
 
 		Engine::ImGui::newFrame();
 		ui_connect();
@@ -84,16 +91,14 @@ namespace Game {
 		if (!ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_MenuBar)) { ImGui::End(); return; }
 
 		if (update) {
-			// Cull old times
-			while(!frameTimes.empty() && frameTimes.back().second < rollingWindow) {
-				frameTimes.pop();
-			}
-
 			fps = 0.0f;
-			for (auto& [ft, _] : frameTimes) {
-				fps += ft;
+			int32 count = 0;
+			auto min = now - fpsAvgWindow;
+			for (auto& [fd, time] : frameData) {
+				if (time < min) { continue; } else { ++count; }
+				fps += fd.dt;
 			}
-			fps = frameTimes.size() / fps;
+			fps = count / fps;
 		}
 
 		ImGui::Text("Avg FPS %f (%f)", fps, 1.0f / fps);
@@ -222,48 +227,41 @@ namespace Game {
 
 	void UISystem::ui_network() {
 		if (!ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+		auto& [fd, now] = frameData.front();
 
-		constexpr auto points = Game::ConnectionStatsComponent::points;
-		constexpr auto seconds = Game::ConnectionStatsComponent::seconds;
-		static int prev = 0;
-		static int curr = 0;
-		static int next = 0;
-
-		static float32 times[points] = {};
-
-		const auto now = Engine::Clock::now();
-
-		// TODO: want ot sample at fixt wall time increments. independent of ticks
 		for (const auto ent : connFilter) {
-			// TODO: dont really like this way of storing debug/ui data. Doesnt scale conveniently as ui increases.
-			if (!world.hasComponent<Game::ConnectionStatsComponent>(ent)) {
-				world.addComponent<Game::ConnectionStatsComponent>(ent);
-			}
-			auto& stats = world.getComponent<Game::ConnectionStatsComponent>(ent);
 			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 
 			const auto& dt = Engine::Clock::Seconds{now - conn.connectTime}.count();
-			const auto recv = conn.writer.totalBytesWritten();
-			const auto sent = conn.reader.totalBytesRead();
-			ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s", sent, sent / dt, recv, recv / dt);
-
+			fd.sent = conn.writer.totalBytesWritten();
+			fd.recv = conn.reader.totalBytesRead();
+			ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s", fd.sent, fd.sent / dt, fd.recv, fd.recv / dt);
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
-			const auto begin = end - seconds;
+			const auto begin = Engine::Clock::Seconds{rollingWindow.time_since_epoch()}.count();
 
-			stats.bytesSentTotal[curr] = static_cast<float32>(sent);
-			stats.bytesSent[curr] = stats.bytesSentTotal[curr] - stats.bytesSentTotal[prev];
-			times[curr] = end;
+			const auto func = [](void* data, int idx) -> ImVec2 {
+				auto& self = *reinterpret_cast<decltype(this)>(data);
+				auto curr = self.frameData.begin() + idx;
 
+				if (isnan(curr->first.sentDiff)) {
+					const auto count = idx - std::max(0, idx - 10);
+					auto last = curr - count;
+					auto ydiff = static_cast<float32>(curr->first.sent - last->first.sent);
+					auto xdiff = Engine::Clock::Seconds{curr->second - last->second}.count();
+					curr->first.sentDiff = ydiff / xdiff;
+				}
+
+				return {Engine::Clock::Seconds{curr->second.time_since_epoch()}.count(), curr->first.sentDiff};
+			};
+
+			constexpr auto yAxisflags = ImPlotAxisFlags_Auxiliary;
+			constexpr auto xAxisflags = yAxisflags & ~ImPlotAxisFlags_TickLabels;
 			ImPlot::SetNextPlotLimitsX(begin, end, ImGuiCond_Always);
-			static int rt_axis = ImPlotAxisFlags_Default;
-			if (ImPlot::BeginPlot("##Scrolling", NULL, NULL, ImVec2(-1,300), ImPlotFlags_Default, rt_axis, rt_axis)) {
-				ImPlot::PlotLine("Data 1", times, stats.bytesSent, points, next); // Why is next instead of curr?
+			// TODO: set default y limits Cond_Once?
+			if (ImPlot::BeginPlot("##Netgraph", nullptr, nullptr, ImVec2(-1,200), ImPlotFlags_Default, xAxisflags, yAxisflags)) {
+				ImPlot::PlotLine("Avg Bytes / Second", func, this, frameData.size(), 0);
 				ImPlot::EndPlot();
 			}
 		}
-
-		prev = curr;
-		curr = next;
-		next = ++next % points;
 	}
 }
