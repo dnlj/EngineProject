@@ -1,5 +1,6 @@
 // STD
 #include <regex>
+#include <algorithm>
 
 // Engine
 #include <Engine/ImGui/ImGui.hpp>
@@ -54,22 +55,48 @@ namespace Game {
 		, connFilter{world.getFilterFor<Game::ConnectionComponent>()} {
 	}
 
-
 	void UISystem::setup() {
 		// TODO: handle errors Engine::Input errors better than just spamming console.
 		targetIds = world.getSystem<Game::ActionSystem>().getId("Target_X", "Target_Y");
 	}
 
 	void UISystem::run(float32 dt) {
+		now = Engine::Clock::now();
+		rollingWindow = now - std::chrono::milliseconds{1000};
+		update = now - lastUpdate >= updateRate;
+
+		if (update) {
+			lastUpdate = now;
+		}
+
+		frameTimes.emplace(dt, now);
+
 		Engine::ImGui::newFrame();
+		ui_connect();
+		ui_debug();
+		Engine::ImGui::draw();
+	}
 
-		static auto texture32 = engine.textureManager.get("../assets/32.bmp");
-		static auto& connFilter = world.getFilterFor<Game::ConnectionComponent>();
+	void UISystem::tick(float32 dt) {
+	}
 
-		bool open = true;
-		ImGui::Begin("Editor UI", &open, ImGuiWindowFlags_MenuBar);
+	void UISystem::ui_debug() {
+		if (!ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_MenuBar)) { ImGui::End(); return; }
 
-		ImGui::Text("FPS %f (%f)", 1.0/avgDeltaTime, avgDeltaTime);
+		if (update) {
+			// Cull old times
+			while(!frameTimes.empty() && frameTimes.back().second < rollingWindow) {
+				frameTimes.pop();
+			}
+
+			fps = 0.0f;
+			for (auto& [ft, _] : frameTimes) {
+				fps += ft;
+			}
+			fps = frameTimes.size() / fps;
+		}
+
+		ImGui::Text("Avg FPS %f (%f)", fps, 1.0f / fps);
 
 		if (ImGui::Button("Disconnect")) {
 			std::vector<Engine::ECS::Entity> ents = {connFilter.cbegin(), connFilter.cend()};
@@ -78,16 +105,10 @@ namespace Game {
 			}
 		}
 
-		ui_debug();
+		ui_coordinates();
 		ui_network();
-		
-		if (ImGui::CollapsingHeader("Map")) {
-			//ImGui::Image(reinterpret_cast<void*>(static_cast<uintptr_t>(mapTexture)), ImVec2(1024, 1024));
-		}
 
-		ui_connect();
 		ImGui::End();
-		Engine::ImGui::draw();
 	}
 
 	void UISystem::ui_connect() {
@@ -156,8 +177,8 @@ namespace Game {
 		ImGui::End();
 	}
 
-	void UISystem::ui_debug() {
-		if (!ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+	void UISystem::ui_coordinates() {
+		if (!ImGui::CollapsingHeader("Coordinates", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 		auto& mapSys = world.getSystem<Game::MapSystem>();
 
 		auto& actC = world.getComponent<Game::ActionComponent>(Engine::ECS::Entity{74, 1}); // TODO: dont hardcode
@@ -204,7 +225,10 @@ namespace Game {
 
 		constexpr auto points = Game::ConnectionStatsComponent::points;
 		constexpr auto seconds = Game::ConnectionStatsComponent::seconds;
-		static int idx = 0;
+		static int prev = 0;
+		static int curr = 0;
+		static int next = 0;
+
 		static float32 times[points] = {};
 
 		const auto now = Engine::Clock::now();
@@ -226,18 +250,20 @@ namespace Game {
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
 			const auto begin = end - seconds;
 
-			stats.bytesSentTotal[idx] = static_cast<float32>(sent);
-			stats.bytesSent[idx] = stats.bytesSentTotal[idx] - stats.bytesSentTotal[(idx + points - 1) % points];
-			times[idx] = end;
+			stats.bytesSentTotal[curr] = static_cast<float32>(sent);
+			stats.bytesSent[curr] = stats.bytesSentTotal[curr] - stats.bytesSentTotal[prev];
+			times[curr] = end;
 
 			ImPlot::SetNextPlotLimitsX(begin, end, ImGuiCond_Always);
 			static int rt_axis = ImPlotAxisFlags_Default;
 			if (ImPlot::BeginPlot("##Scrolling", NULL, NULL, ImVec2(-1,300), ImPlotFlags_Default, rt_axis, rt_axis)) {
-				ImPlot::PlotLine("Data 1", times, stats.bytesSent, points, (idx + 1) % points); // Why is offset +1?
+				ImPlot::PlotLine("Data 1", times, stats.bytesSent, points, next); // Why is next instead of curr?
 				ImPlot::EndPlot();
 			}
 		}
 
-		idx = ++idx % points;
+		prev = curr;
+		curr = next;
+		next = ++next % points;
 	}
 }

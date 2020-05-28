@@ -15,6 +15,26 @@ namespace Engine {
 				using size_type = decltype(Size);
 				using SizeType = size_type;
 
+				template<class T>
+				class IteratorBase {
+					private:
+						RingBufferImpl& rb;
+						SizeType i;
+
+					public:
+						IteratorBase(RingBufferImpl& rb, SizeType i) : rb{rb}, i{i} {}
+						~IteratorBase() = default;
+
+						bool operator==(IteratorBase& other) { return (&rb == &other.rb) && (i == other.i); }
+						bool operator!=(IteratorBase& other) { return !(*this == other); }
+						IteratorBase& operator++() { i = ++i % rb.capacity(); return *this; }
+						T& operator*() { return rb.dataT()[i]; }
+				};
+
+				using Iterator = IteratorBase<T>;
+				using ConstIterator = IteratorBase<const T>;
+
+			public:
 				template<class = std::enable_if_t<IsStatic>>
 				RingBufferImpl();
 
@@ -27,6 +47,10 @@ namespace Engine {
 
 				const T& back() const noexcept;
 
+				Iterator begin() noexcept;
+				ConstIterator begin() const noexcept;
+				ConstIterator cbegin() const noexcept;
+
 				SizeType capacity() const noexcept;
 
 				// TODO: reserve(n)
@@ -37,6 +61,10 @@ namespace Engine {
 				void emplace(Args&&... args);
 
 				bool empty() const noexcept;
+				
+				Iterator end() noexcept;
+				ConstIterator end() const noexcept;
+				ConstIterator cend() const noexcept;
 
 				bool full() const noexcept;
 
