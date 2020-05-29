@@ -7,6 +7,7 @@
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/Input/ActionId.hpp>
 #include <Engine/StaticRingBuffer.hpp>
+#include <Engine/ImGui/ImGui.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -27,17 +28,17 @@ namespace Game {
 			bool update = false;
 
 			Engine::Clock::TimePoint rollingWindow;
-			Engine::Clock::Duration rollingWindowSize = std::chrono::milliseconds{5000};
+			Engine::Clock::Duration rollingWindowSize = std::chrono::milliseconds{5'000};
 
 			// TODO: rm RollingData for consistency with above
 			struct FrameData {
 				float32 dt = 0.0f;
 
-				uint64 sent = 0;
-				float32 sentDiff = NAN;
-
-				uint64 recv = 0;
-				float32 recvDiff = NAN;
+				struct {
+					uint64 total = 0;
+					float32 diff = NAN;
+					float32 avg = NAN;
+				} netstats[2];
 			};
 			Engine::RingBuffer<std::pair<FrameData, Engine::Clock::TimePoint>> frameData;
 
@@ -49,6 +50,12 @@ namespace Game {
 			void ui_coordinates();
 
 			void ui_network();
+
+			template<int32 I>
+			static ImVec2 netGetPointAvg(void* data, int idx);
+
+			template<int32 I>
+			static ImVec2 netGetDiff(void* data, int idx);
 
 			std::array<Engine::Input::ActionId, 2> targetIds;
 			Engine::ECS::EntityFilter& connFilter;

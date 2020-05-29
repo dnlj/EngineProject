@@ -2,9 +2,6 @@
 #include <regex>
 #include <algorithm>
 
-// Engine
-#include <Engine/ImGui/ImGui.hpp>
-
 // Game
 #include <Game/UISystem.hpp>
 #include <Game/World.hpp>
@@ -47,6 +44,7 @@ namespace {
 		freeaddrinfo(results);
 		return true;
 	}
+
 }
 
 namespace Game {
@@ -233,35 +231,78 @@ namespace Game {
 			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 
 			const auto& dt = Engine::Clock::Seconds{now - conn.connectTime}.count();
-			fd.sent = conn.writer.totalBytesWritten();
-			fd.recv = conn.reader.totalBytesRead();
-			ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s", fd.sent, fd.sent / dt, fd.recv, fd.recv / dt);
+			fd.netstats[0].total = conn.writer.totalBytesWritten();
+			fd.netstats[1].total = conn.reader.totalBytesRead();
+			ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s",
+				fd.netstats[0].total, fd.netstats[0].total / dt,
+				fd.netstats[1].total, fd.netstats[1].total / dt
+			);
+
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
 			const auto begin = Engine::Clock::Seconds{rollingWindow.time_since_epoch()}.count();
 
-			const auto func = [](void* data, int idx) -> ImVec2 {
-				auto& self = *reinterpret_cast<decltype(this)>(data);
-				auto curr = self.frameData.begin() + idx;
-
-				if (isnan(curr->first.sentDiff)) {
-					const auto count = idx - std::max(0, idx - 10);
-					auto last = curr - count;
-					auto ydiff = static_cast<float32>(curr->first.sent - last->first.sent);
-					auto xdiff = Engine::Clock::Seconds{curr->second - last->second}.count();
-					curr->first.sentDiff = ydiff / xdiff;
-				}
-
-				return {Engine::Clock::Seconds{curr->second.time_since_epoch()}.count(), curr->first.sentDiff};
-			};
-
 			constexpr auto yAxisflags = ImPlotAxisFlags_Auxiliary;
+			constexpr auto y2Axisflags = yAxisflags;
 			constexpr auto xAxisflags = yAxisflags & ~ImPlotAxisFlags_TickLabels;
 			ImPlot::SetNextPlotLimitsX(begin, end, ImGuiCond_Always);
-			// TODO: set default y limits Cond_Once?
-			if (ImPlot::BeginPlot("##Netgraph", nullptr, nullptr, ImVec2(-1,200), ImPlotFlags_Default, xAxisflags, yAxisflags)) {
-				ImPlot::PlotLine("Avg Bytes / Second", func, this, frameData.size(), 0);
+			ImPlot::SetNextPlotLimitsY(0.0f, 5000.0f, ImGuiCond_Once, 0);
+			ImPlot::SetNextPlotLimitsY(0.0f, 250.0f, ImGuiCond_Once, 1);
+			if (ImPlot::BeginPlot(
+				"##Netgraph", nullptr, nullptr, ImVec2(-1,200),
+				ImPlotFlags_Default | ImPlotFlags_YAxis2,
+				xAxisflags, yAxisflags, y2Axisflags)) {
+
+				// TODO: good colors
+				const ImVec4 colors[] = {
+					{1.0f, 0.0f, 0.0f, 0.5f},
+					{0.0f, 1.0f, 0.0f, 0.5f},
+					{1.0f, 1.0f, 0.0f, 0.5f},
+					{1.0f, 0.0f, 1.0f, 0.5f},
+				};
+
+				ImPlot::SetPlotYAxis(0);
+				ImPlot::SetPalette(colors, sizeof(colors));
+				ImPlot::PlotLine("Avg Sent (Bytes / Second)", netGetPointAvg<0>, this, frameData.size(), 0);
+				ImPlot::PlotLine("Avg Recv (Bytes / Second)", netGetPointAvg<1>, this, frameData.size(), 0);
+
+				ImPlot::SetPlotYAxis(1);
+				ImPlot::PlotBars("Sent (Bytes)", netGetDiff<0>, this, frameData.size(), 1.0f/Game::tickrate, 0);
+				ImPlot::PlotBars("Recv (Bytes)", netGetDiff<1>, this, frameData.size(), 1.0f/Game::tickrate, 0);
+
 				ImPlot::EndPlot();
+				ImPlot::RestorePalette();
 			}
+
+			ImPlot::ShowDemoWindow();
 		}
+	}
+
+	template<int32 I>
+	ImVec2 UISystem::netGetPointAvg(void* data, int idx) {
+		auto& self = *reinterpret_cast<UISystem*>(data);
+		auto curr = self.frameData.begin() + idx;
+
+		if (isnan(curr->first.netstats[I].avg)) {
+			auto last = curr - std::max(0, idx - 5);
+			auto ydiff = static_cast<float32>(curr->first.netstats[I].total - last->first.netstats[I].total);
+			auto xdiff = Engine::Clock::Seconds{curr->second - last->second}.count();
+			curr->first.netstats[I].avg = ydiff / xdiff;
+		}
+
+		return {Engine::Clock::Seconds{curr->second.time_since_epoch()}.count(), curr->first.netstats[I].avg};
+	};
+
+	template<int32 I>
+	ImVec2 UISystem::netGetDiff(void* data, int idx) {
+		auto& self = *reinterpret_cast<UISystem*>(data);
+		auto curr = self.frameData.begin() + idx;
+
+		if (isnan(curr->first.netstats[I].diff) && (idx > 0)){
+			auto last = curr - 1;
+			curr->first.netstats[I].diff = static_cast<float32>(curr->first.netstats[I].total - last->first.netstats[I].total);
+
+		}
+
+		return {Engine::Clock::Seconds{curr->second.time_since_epoch()}.count(), curr->first.netstats[I].diff};
 	}
 }
