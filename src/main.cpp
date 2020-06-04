@@ -488,10 +488,6 @@ void run(int argc, char* argv[]) {
 
 		// TODO: cleaner way to do this. constructor args?
 		world.addComponent<Game::ActionComponent>(player).grow(world.getSystem<Game::ActionSystem>().count());
-
-		world.getSystem<Game::CameraTrackingSystem>().focus = player;
-
-
 	}
 
 	//// ImGui callbacks

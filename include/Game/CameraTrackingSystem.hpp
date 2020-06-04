@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Camera.hpp>
 #include <Engine/ECS/Entity.hpp>
+#include <Engine/ECS/EntityFilter.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -14,6 +15,7 @@ namespace Game {
 			CameraTrackingSystem(SystemArg arg);
 			void run(float dt);
 
-			Engine::ECS::Entity focus;
+		private:
+			Engine::ECS::EntityFilter& activePlayerFilter;
 	};
 }
