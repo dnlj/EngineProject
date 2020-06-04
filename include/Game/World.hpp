@@ -28,10 +28,10 @@
 #include <Game/SpriteComponent.hpp>
 #include <Game/CharacterMovementComponent.hpp>
 #include <Game/CharacterSpellComponent.hpp>
-#include <Game/InputComponent.hpp>
 #include <Game/ActionComponent.hpp>
 #include <Game/PlayerComponent.hpp>
 #include <Game/ConnectionComponent.hpp>
+#include <Game/ActivePlayerComponent.hpp>
 
 
 namespace Game {
@@ -57,10 +57,10 @@ namespace Game {
 		SpriteComponent,
 		CharacterMovementComponent,
 		CharacterSpellComponent,
-		InputComponent,
 		ActionComponent,
 		PlayerComponent,
-		ConnectionComponent
+		ConnectionComponent,
+		ActivePlayerComponent
 	>;
 
 	class World : public Engine::ECS::World<tickrate, SystemsSet, ComponentsSet> {

@@ -387,42 +387,49 @@ void run(int argc, char* argv[]) {
 		const auto Target_Y = as.create("Target_Y");
 		
 		if constexpr (ENGINE_CLIENT) {
+			const auto& filter = world.getFilterFor<Game::ActivePlayerComponent>();
+			const auto pa = [&](auto action, auto curr){
+				for (auto ent : filter) {
+					as.processAction({ent, action, curr});
+				}
+			};
+
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 1, 46}, // C
-				}, [&](Value curr, Value prev){ as.processAction({player, Spell_1, curr}); });
+				}, [&](Value curr, Value prev){ pa(Spell_1, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 1, 56}, // ALT
 				InputId{InputType::KEYBOARD, 1, 16}, // Q
-			}, [&](Value curr, Value prev){ as.processAction({player, Spell_1, curr}); });
+			}, [&](Value curr, Value prev){ pa(Spell_1, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 57}
-			}, [&](Value curr, Value prev){ as.processAction({player, Spell_1, curr}); });
+			}, [&](Value curr, Value prev){ pa(Spell_1, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 17}
-			}, [&](Value curr, Value prev){ as.processAction({player, Move_Up, curr}); });
+			}, [&](Value curr, Value prev){ pa(Move_Up, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 31}
-			}, [&](Value curr, Value prev){ as.processAction({player, Move_Down, curr}); });
+			}, [&](Value curr, Value prev){ pa(Move_Down, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 30}
-			}, [&](Value curr, Value prev){ as.processAction({player, Move_Left, curr}); });
+			}, [&](Value curr, Value prev){ pa(Move_Left, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 32}
-			}, [&](Value curr, Value prev){ as.processAction({player, Move_Right, curr}); });
+			}, [&](Value curr, Value prev){ pa(Move_Right, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE, 0, 0}
-			}, [&](Value curr, Value prev){ as.processAction({player, Edit_Place, curr}); });
+			}, [&](Value curr, Value prev){ pa(Edit_Place, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE, 0, 1}
-			}, [&](Value curr, Value prev){ as.processAction({player, Edit_Remove, curr}); });
+			}, [&](Value curr, Value prev){ pa(Edit_Remove, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE_AXIS, 0, 0}
-			}, [&](Value curr, Value prev){ as.processAction({player, Target_X, curr}); });
+			}, [&](Value curr, Value prev){ pa(Target_X, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE_AXIS, 0, 1}
-			}, [&](Value curr, Value prev){ as.processAction({player, Target_Y, curr}); });
+			}, [&](Value curr, Value prev){ pa(Target_Y, curr); });
 		}
 
 		as.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world});
@@ -477,7 +484,7 @@ void run(int argc, char* argv[]) {
 		world.addComponent<Game::PhysicsComponent>(player).setBody(physSys.createPhysicsCircle(player));
 		world.addComponent<Game::CharacterMovementComponent>(player);
 		world.addComponent<Game::CharacterSpellComponent>(player);
-		world.addComponent<Game::InputComponent>(player).inputManager = &engine.inputManager;
+		world.addComponent<Game::ActivePlayerComponent>(player);
 
 		// TODO: cleaner way to do this. constructor args?
 		world.addComponent<Game::ActionComponent>(player).grow(world.getSystem<Game::ActionSystem>().count());

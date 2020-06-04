@@ -362,6 +362,7 @@ namespace Game {
 
 		if constexpr (ENGINE_CLIENT) {
 			ENGINE_DEBUG_ASSERT(ipToPlayer.size() == 1, "A Client should not be connected to more than one server.");
+			//world.addComponent<ActivePlayerComponent>(ply);
 		}
 
 		return *connComp.conn;
