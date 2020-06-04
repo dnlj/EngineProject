@@ -131,11 +131,24 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
-		//const auto ent = reader.read<Engine::ECS::Entity>();
-		//const auto cid = reader.read<Engine::ECS::ComponentId>();
-		//world.callWithComponent(ent, cid, [&](auto& comp){
-		//	if constexpr (IsNetworkedComponent<decltype(comp)>) {
-		//		comp.fromNetwork(reader);
+		if constexpr (ENGINE_SERVER) { return; }
+
+		const auto& remote = *from.reader.read<Engine::ECS::Entity>();
+		auto& local = entToLocal[remote];
+
+		if (local == Engine::ECS::INVALID_ENTITY) {
+			// Create
+			local = world.createEntity();
+			puts("CREATE!!!!!!!!!!!!!!!!!!!!!!!!!");
+		}
+
+		// update
+		//world.callWithComponent(local, i, [&]<class C>(C*){
+		//	//std::cout << "test: " << world.getComponentId<C>() << "\n";
+		//	if (!world.hasComponent<C>(local)) {
+		//		puts("not has comp");
+		//		auto& c = world.addComponent<C>();
+		//		//c.fromNetwork(from.reader);
 		//	}
 		//});
 	}
@@ -226,6 +239,16 @@ namespace Game {
 					}
 				});
 				writer.flush();
+			}
+			
+			for (auto& ply : connFilter) {
+				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+				if (conn.writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE)) {
+					conn.writer.write(ply);
+					//conn.writer.write();
+				} else {
+					ENGINE_WARN("TODO: how to handle unsendable messages");
+				}
 			}*/
 		}
 

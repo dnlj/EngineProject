@@ -272,8 +272,6 @@ namespace Game {
 				ImPlot::EndPlot();
 				ImPlot::RestorePalette();
 			}
-
-			ImPlot::ShowDemoWindow();
 		}
 	}
 

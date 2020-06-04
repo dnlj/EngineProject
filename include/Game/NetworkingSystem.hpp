@@ -36,6 +36,8 @@ namespace Game {
 			Engine::Net::Connection anyConn; // Used for unconnected messages
 			const Engine::Net::IPv4Address group;
 
+			Engine::FlatHashMap<Engine::ECS::Entity, Engine::ECS::Entity> entToLocal;
+
 
 		public:
 			NetworkingSystem(SystemArg arg);
