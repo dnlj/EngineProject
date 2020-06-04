@@ -51,6 +51,6 @@ namespace Engine::ECS {
 	template<template<class...> class ComponentsType, class... Components>
 	template<class Component, class Callable>
 	void ComponentManager<ComponentsType<Components...>>::callWithComponentCaller(Entity ent, Callable&& callable) {
-		return callable(static_cast<Component*>(nullptr));
+		return callable.operator()<Component>();
 	}
 }

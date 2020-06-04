@@ -143,7 +143,7 @@ namespace Game {
 		}
 
 		// update
-		//world.callWithComponent(local, i, [&]<class C>(C*){
+		//world.callWithComponent(local, i, [&]<class C>(){
 		//	//std::cout << "test: " << world.getComponentId<C>() << "\n";
 		//	if (!world.hasComponent<C>(local)) {
 		//		puts("not has comp");
@@ -250,6 +250,23 @@ namespace Game {
 					ENGINE_WARN("TODO: how to handle unsendable messages");
 				}
 			}*/
+			for (auto& ply : connFilter) {
+				// TODO: figure out which entities have been updated
+				// TODO: prioritize entities
+				// TODO: figure out which comps on those entities have been updated
+
+				//ForEachIn<ComponentsSet>::call([&]<class C>(){
+				//	if constexpr (IsNetworkedComponent<C>) {
+				//		for (const auto ent : world.getFilterFor<C>()) {
+				//			writer.next({static_cast<uint8>(MessageType::ECS_COMP)});
+				//			writer.write(ent);
+				//			writer.write(world.getComponentId<C>());
+				//			world.getComponent<C>(ent).toNetwork(writer);
+				//		}
+				//	}
+				//});
+			}
+			
 		}
 
 		if constexpr (ENGINE_CLIENT) {
