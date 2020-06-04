@@ -50,7 +50,8 @@ namespace {
 namespace Game {
 	UISystem::UISystem(SystemArg arg)
 		: System{arg}
-		, connFilter{world.getFilterFor<Game::ConnectionComponent>()} {
+		, connFilter{world.getFilterFor<Game::ConnectionComponent>()}
+		, activePlayerFilter{world.getFilterFor<Game::ActivePlayerComponent>()} {
 	}
 
 	void UISystem::setup() {
@@ -77,8 +78,16 @@ namespace Game {
 		}
 
 		Engine::ImGui::newFrame();
-		ui_connect();
+
+		if constexpr (ENGINE_CLIENT) {
+			ui_connect();
+		}
+
+		if constexpr (ENGINE_SERVER) {
+		}
+
 		ui_debug();
+
 		Engine::ImGui::draw();
 	}
 
@@ -182,9 +191,11 @@ namespace Game {
 
 	void UISystem::ui_coordinates() {
 		if (!ImGui::CollapsingHeader("Coordinates", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+		if (activePlayerFilter.empty()) { return; }
+
 		auto& mapSys = world.getSystem<Game::MapSystem>();
 
-		auto& actC = world.getComponent<Game::ActionComponent>(Engine::ECS::Entity{74, 1}); // TODO: dont hardcode
+		auto& actC = world.getComponent<Game::ActionComponent>(*activePlayerFilter.begin());
 		auto screenMousePos = actC.getValue<float32>(targetIds);
 		ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 

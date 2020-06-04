@@ -59,5 +59,6 @@ namespace Game {
 
 			std::array<Engine::Input::ActionId, 2> targetIds;
 			Engine::ECS::EntityFilter& connFilter;
+			Engine::ECS::EntityFilter& activePlayerFilter;
 	};
 }
