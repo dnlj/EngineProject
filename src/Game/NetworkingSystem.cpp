@@ -250,6 +250,7 @@ namespace Game {
 					ENGINE_WARN("TODO: how to handle unsendable messages");
 				}
 			}*/
+
 			for (auto& ply : connFilter) {
 				// TODO: figure out which entities have been updated
 				// TODO: prioritize entities
@@ -257,6 +258,7 @@ namespace Game {
 
 				//ForEachIn<ComponentsSet>::call([&]<class C>(){
 				//	if constexpr (IsNetworkedComponent<C>) {
+				// TODO: need specialization for flag comps
 				//		for (const auto ent : world.getFilterFor<C>()) {
 				//			writer.next({static_cast<uint8>(MessageType::ECS_COMP)});
 				//			writer.write(ent);
@@ -266,7 +268,6 @@ namespace Game {
 				//	}
 				//});
 			}
-			
 		}
 
 		if constexpr (ENGINE_CLIENT) {

@@ -9,7 +9,6 @@
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/SystemManager.hpp>
-#include <Engine/ECS/ComponentManager.hpp>
 #include <Engine/ECS/EntityManager.hpp>
 #include <Engine/ECS/FilterManager.hpp>
 
@@ -18,9 +17,10 @@ namespace Engine::ECS {
 	/**
 	 * @tparam TickRate The tick rate of the world.
 	 * @tparam SystemsSet The systems for this world to have.
-	 * @tparam ComponentsSet The components for this world to have.
+	 * @tparam ComponentsSet The components for entities in this world to have.
+	 * @tparam FlagsSet The flags for entities in this world to have.
 	 */
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	template<int64 TickRate, class SystemsSet, class ComponentsSet, class FlagsSet>
 	class World;
 
 	#define WORLD_TPARAMS template<\
@@ -28,21 +28,23 @@ namespace Engine::ECS {
 		class... Ss,\
 		template<class...> class SystemsSet,\
 		class... Cs,\
-		template<class...> class ComponentsSet\
+		template<class...> class ComponentsSet,\
+		class... Fs,\
+		template<class...> class FlagsSet\
 	>
 
-	#define WORLD_CLASS World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
+	#define WORLD_CLASS World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>>
 
 	WORLD_TPARAMS
 	class WORLD_CLASS {
 		public:
-			// TODO: Since we are wrapping all of these operations is there any real benifit to splitting into XYZManagers?
-			using ComponentManager = ComponentManager<ComponentsSet<Cs...>>;
+			// TODO: Since we are wrapping all of these operations is there any real benefit to splitting into XYZManagers?
 			using SystemManager = SystemManager<SystemsSet<Ss...>>;
+			using FlagsBitset = std::bitset<sizeof...(Fs)>;
+			static_assert(sizeof...(Cs) + sizeof...(Fs) <= MAX_COMPONENTS);
 
 		private:
 			EntityManager em;
-			ComponentManager cm;
 			FilterManager fm;
 			SystemManager sm;
 
@@ -65,6 +67,11 @@ namespace Engine::ECS {
 			/** Delta time in nanoseconds. @see deltaTime */
 			Clock::Duration deltaTimeNS{0};
 
+			/** The containers for storing components. */
+			std::tuple<ComponentContainer<Cs>...> compContainers;
+
+			/** The bitsets for storing what components entities have. */
+			std::vector<ComponentBitset> compBitsets = {};
 
 		public:
 			/**
@@ -95,15 +102,17 @@ namespace Engine::ECS {
 			 * @see EntityManager::getEntities
 			 */
 			const EntityManager::EntityContainer& getEntities() const;
-
-			/**
-			 * @see ComponentManager<T>::getBitsetForComponents
-			 */
-			template<class... ComponentN>
-			ComponentBitset getBitsetForComponents() const;
 			
 			/**
-			 * @see ComponentManager::getComponentId
+			 * Gets the bitset with the bits that correspond to the ids of the given components set.
+			 */
+			template<class... ComponentN>
+			ComponentBitset getBitsetForComponents() const; // TODO: constexpr, noexcept
+			
+			/**
+			 * Get the ComponentId associated with a component.
+			 * @tparam Component The component.
+			 * @return The id of @p Component.
 			 */
 			template<class Component>
 			constexpr static ComponentId getComponentId() noexcept;
@@ -124,7 +133,7 @@ namespace Engine::ECS {
 			 * @see SystemManager::getBitsetForSystems
 			 */
 			template<class... SystemN>
-			SystemBitset getBitsetForSystems() const;
+			SystemBitset getBitsetForSystems() const; // TODO: constexpr, noexcept
 
 			/**
 			 * @see SystemManager::run
@@ -284,6 +293,19 @@ namespace Engine::ECS {
 			// TODO: doc
 			template<class Callable>
 			void callWithComponent(Entity ent, ComponentId cid, Callable&& callable);
+
+		private:
+			// TODO: doc
+			template<class Component, class Callable>
+			void callWithComponentCaller(Entity ent, Callable&& callable);
+
+			/**
+			 * Get the container for components of type @p Component.
+			 * @tparam Component The type of the component.
+			 * @return A reference to the container associated with @p Component.
+			 */
+			template<class Component>
+			ComponentContainer<Component>& getComponentContainer();
 
 	};
 }

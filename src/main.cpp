@@ -387,7 +387,7 @@ void run(int argc, char* argv[]) {
 		const auto Target_Y = as.create("Target_Y");
 		
 		if constexpr (ENGINE_CLIENT) {
-			const auto& filter = world.getFilterFor<Game::ActivePlayerComponent>();
+			const auto& filter = world.getFilterFor<Game::ActivePlayerFlag>();
 			const auto pa = [&](auto action, auto curr){
 				for (auto ent : filter) {
 					as.processAction({ent, action, curr});

@@ -64,13 +64,19 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class... ComponentN>
 	ComponentBitset WORLD_CLASS::getBitsetForComponents() const {
-		return cm.getBitsetForComponents<ComponentN...>();
+		ComponentBitset value;
+		((value[getComponentId<ComponentN>()] = true), ...);
+		return value;
 	}
 	
 	WORLD_TPARAMS
 	template<class Component>
 	constexpr static ComponentId WORLD_CLASS::getComponentId() noexcept {
-		return ComponentManager::getComponentId<Component>();
+		if constexpr ((std::is_same_v<Cs, Component> || ...)) {
+			return Meta::IndexOf<Component, Cs...>::value;
+		} else {
+			return sizeof...(Cs) + Meta::IndexOf<Component, Fs...>::value;
+		}
 	}
 
 	WORLD_TPARAMS
@@ -100,10 +106,10 @@ namespace Engine::ECS {
 	Entity WORLD_CLASS::createEntity(bool forceNew) {
 		const auto ent = em.createEntity(forceNew);
 
-		if (ent.id >= cm.componentBitsets.size()) {
-			cm.componentBitsets.resize(ent.id + 1);
+		if (ent.id >= compBitsets.size()) {
+			compBitsets.resize(ent.id + 1); // TODO: Is one really the best increment size? Doesnt seem right.
 		} else {
-			cm.componentBitsets[ent.id].reset();
+			compBitsets[ent.id].reset();
 		}
 
 		return ent;
@@ -113,21 +119,22 @@ namespace Engine::ECS {
 	void WORLD_CLASS::destroyEntity(Entity ent) {
 		removeAllComponents(ent);
 		em.destroyEntity(ent);
-		fm.onEntityDestroyed(ent, cm.componentBitsets[ent.id]);
+		// TODO: shouldnt this be called before the entity is actually destroyed? bitset will be empty at this time.
+		fm.onEntityDestroyed(ent, compBitsets[ent.id]);
 	}
 
 	WORLD_TPARAMS
 	template<class Component, class... Args>
 	Component& WORLD_CLASS::addComponent(Entity ent, Args&&... args) {
-		auto& container = cm.getComponentContainer<Component>();
+		auto& container = getComponentContainer<Component>();
 		constexpr auto cid = getComponentId<Component>();
 		container.add(ent.id, std::forward<Args>(args)...);
 
 		// Add the component
-		cm.componentBitsets[ent.id][cid] = true;
+		compBitsets[ent.id][cid] = true;
 
 		// Update filters
-		fm.onComponentAdded(ent, cid, cm.componentBitsets[ent.id]);
+		fm.onComponentAdded(ent, cid, compBitsets[ent.id]);
 
 		return container[ent.id];
 	}
@@ -140,7 +147,7 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	bool WORLD_CLASS::hasComponent(Entity ent, ComponentId cid) {
-		return cm.componentBitsets[ent.id][cid];
+		return compBitsets[ent.id][cid];
 	}
 
 	WORLD_TPARAMS
@@ -169,9 +176,9 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class... Components>
 	void WORLD_CLASS::removeComponents(Entity ent) {
-		cm.componentBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
+		compBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
 
-		(cm.getComponentContainer<Components>().remove(ent.id), ...);
+		(getComponentContainer<Components>().remove(ent.id), ...);
 
 		// TODO: Make filter manager take bitset?
 		(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);
@@ -185,7 +192,7 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class Component>
 	Component& WORLD_CLASS::getComponent(Entity ent) {
-		return cm.getComponentContainer<Component>()[ent.id];
+		return getComponentContainer<Component>()[ent.id];
 	}
 
 	WORLD_TPARAMS
@@ -196,7 +203,7 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	ComponentBitset WORLD_CLASS::getComponentsBitset(Entity ent) const {
-		return cm.componentBitsets[ent.id];
+		return compBitsets[ent.id];
 	}
 
 	WORLD_TPARAMS
@@ -246,6 +253,19 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class Callable>
 	void WORLD_CLASS::callWithComponent(Entity ent, ComponentId cid, Callable&& callable) {
-		return cm.callWithComponent(ent, cid, std::forward<Callable>(callable));
+		// TODO: rm - using Caller = void(WORLD_CLASS::*)(Entity, Callable&&);
+		using Caller = void(*)()
+		constexpr auto callers[]{
+			// TODO: rm - &WORLD_CLASS::template callWithComponentCaller<Cs, Callable>...
+			&callable.operator()<Cs>...
+		};
+		//return (this->*callers[cid])(ent, std::forward<Callable>(callable));
+		return callers[cid]();
+	}
+
+	WORLD_TPARAMS
+	template<class Component>
+	ComponentContainer<Component>& WORLD_CLASS::getComponentContainer() {
+		return std::get<ComponentContainer<Component>>(compContainers);
 	}
 }

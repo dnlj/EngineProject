@@ -10,7 +10,7 @@
 namespace Game {
 	CameraTrackingSystem::CameraTrackingSystem(SystemArg arg)
 		: System{arg}
-		, activePlayerFilter{world.getFilterFor<Game::ActivePlayerComponent>()} {
+		, activePlayerFilter{world.getFilterFor<Game::ActivePlayerFlag>()} {
 		static_assert(World::orderAfter<CameraTrackingSystem, CharacterMovementSystem>());
 		static_assert(World::orderAfter<CameraTrackingSystem, PhysicsSystem>());
 	}

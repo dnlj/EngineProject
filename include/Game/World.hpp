@@ -27,11 +27,10 @@
 #include <Game/PhysicsComponent.hpp>
 #include <Game/SpriteComponent.hpp>
 #include <Game/CharacterMovementComponent.hpp>
-#include <Game/CharacterSpellComponent.hpp>
+#include <Game/CharacterSpellComponent.hpp> // TODO: flag
 #include <Game/ActionComponent.hpp>
-#include <Game/PlayerComponent.hpp>
+#include <Game/PlayerComponent.hpp> // TODO: flag
 #include <Game/ConnectionComponent.hpp>
-#include <Game/ActivePlayerComponent.hpp>
 
 
 namespace Game {
@@ -59,14 +58,17 @@ namespace Game {
 		CharacterSpellComponent,
 		ActionComponent,
 		PlayerComponent,
-		ConnectionComponent,
-		ActivePlayerComponent
+		ConnectionComponent
 	>;
 
-	class World : public Engine::ECS::World<tickrate, SystemsSet, ComponentsSet> {
+	using FlagsSet = Meta::TypeSet::TypeSet<
+		class ActivePlayerFlag
+	>;
+
+	class World : public Engine::ECS::World<tickrate, SystemsSet, ComponentsSet, FlagsSet> {
 		public:
 			World(float tickInterval, Engine::EngineInstance& engine)
-				: Engine::ECS::World<tickrate, SystemsSet, ComponentsSet>(tickInterval, std::tie(*this, engine)) {
+				: Engine::ECS::World<tickrate, SystemsSet, ComponentsSet, FlagsSet>(tickInterval, std::tie(*this, engine)) {
 			}
 	};
 }
