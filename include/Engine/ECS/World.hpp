@@ -36,12 +36,9 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	class WORLD_CLASS {
-		public:
-			// TODO: Since we are wrapping all of these operations is there any real benefit to splitting into XYZManagers?
-			using FlagsBitset = std::bitset<sizeof...(Fs)>;
-			static_assert(sizeof...(Cs) + sizeof...(Fs) <= MAX_COMPONENTS);
-
+		static_assert(sizeof...(Cs) + sizeof...(Fs) <= MAX_COMPONENTS);
 		private:
+			// TODO: Since we are wrapping all of these operations is there any real benefit to splitting into XYZManagers?
 			EntityManager em;
 			FilterManager fm;
 

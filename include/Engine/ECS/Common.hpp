@@ -7,6 +7,7 @@
 // Engine
 #include <Engine/ECS/Entity.hpp>
 #include <Engine/SparseSet.hpp>
+#include <Engine/Bitset.hpp>
 
 namespace Engine::ECS {
 	/** The maximum number of components registrable. Ideally this would be exactly the number of components used. */
@@ -22,10 +23,10 @@ namespace Engine::ECS {
 	using SystemId = uint16;
 
 	/** The bitset type used for storing what components an entity has. */
-	using ComponentBitset = std::bitset<MAX_COMPONENTS>;
+	using ComponentBitset = Bitset<MAX_COMPONENTS>;
 
 	/** The bitset type used for storing system priorites. */
-	using SystemBitset = std::bitset<MAX_SYSTEMS>;
+	using SystemBitset = Bitset<MAX_SYSTEMS>;
 
 	/** The type used for storing components. */
 	template<class T>

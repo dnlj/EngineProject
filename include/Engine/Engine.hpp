@@ -16,6 +16,10 @@
 namespace Engine::Types { // TODO: C++20: namespace Engine::inline Types {
 	static_assert(std::numeric_limits<char>::digits + std::numeric_limits<char>::is_signed == 8, "This program assumes an 8 bit byte.");
 
+	// TODO: index or size type would be useful
+
+	using byte = char;
+
 	using int8 = int8_t;
 	using int16 = int16_t;
 	using int32 = int32_t;
