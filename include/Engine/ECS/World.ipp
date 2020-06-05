@@ -126,19 +126,32 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
+	template<class F>
+	constexpr static bool WORLD_CLASS::isFlag() {
+		return (std::is_same_v<F, Fs> || ...);
+	}
+
+	WORLD_TPARAMS
+	template<class C>
+	constexpr static bool WORLD_CLASS::isComponent() {
+		return (std::is_same_v<C, Cs> || ...);
+	}
+
+	WORLD_TPARAMS
 	template<class Component, class... Args>
 	Component& WORLD_CLASS::addComponent(Entity ent, Args&&... args) {
-		auto& container = getComponentContainer<Component>();
 		constexpr auto cid = getComponentId<Component>();
-		container.add(ent.id, std::forward<Args>(args)...);
-
-		// Add the component
 		compBitsets[ent.id][cid] = true;
-
-		// Update filters
 		fm.onComponentAdded(ent, cid, compBitsets[ent.id]);
 
-		return container[ent.id];
+		if constexpr (isComponent<Component>()) {
+			auto& container = getComponentContainer<Component>();
+			container.add(ent.id, std::forward<Args>(args)...);
+			return container[ent.id];
+		} else {
+			// TODO: why is this not a compile error? this should need `decltype(auto)` return type?
+			return compBitsets[ent.id][cid];
+		}
 	}
 
 	WORLD_TPARAMS
@@ -160,7 +173,7 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	bool WORLD_CLASS::hasComponents(Entity ent, ComponentBitset cbits) {
-		return (cm.componentBitsets[ent.id] & cbits) == cbits;
+		return (compBitsets[ent.id] & cbits) == cbits;
 	}
 
 	WORLD_TPARAMS
@@ -180,7 +193,7 @@ namespace Engine::ECS {
 	void WORLD_CLASS::removeComponents(Entity ent) {
 		compBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
 
-		(getComponentContainer<Components>().remove(ent.id), ...);
+		((isComponent<Components>() && (getComponentContainer<Components>().remove(ent.id), true)), ...);
 
 		// TODO: Make filter manager take bitset?
 		(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);
@@ -194,7 +207,12 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class Component>
 	Component& WORLD_CLASS::getComponent(Entity ent) {
-		return getComponentContainer<Component>()[ent.id];
+		// TODO: why is this not a compile error? this should need `decltype(auto)` return type?
+		if constexpr (isFlag<Component>()) {
+			return compBitsets[ent][getComponentId<Component>()];
+		} else {
+			return getComponentContainer<Component>()[ent.id];
+		}
 	}
 
 	WORLD_TPARAMS
@@ -204,7 +222,7 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	ComponentBitset WORLD_CLASS::getComponentsBitset(Entity ent) const {
+	const ComponentBitset& WORLD_CLASS::getComponentsBitset(Entity ent) const {
 		return compBitsets[ent.id];
 	}
 

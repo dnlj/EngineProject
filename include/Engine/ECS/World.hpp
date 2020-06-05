@@ -146,6 +146,18 @@ namespace Engine::ECS {
 			 * @see EntityManager::destroyEntity
 			 */
 			void destroyEntity(Entity ent);
+			
+			/**
+			 * Checks if a type is a flag.
+			 */
+			template<class F>
+			constexpr static bool isFlag();
+
+			/**
+			 * Checks if a type is a component.
+			 */
+			template<class C>
+			constexpr static bool isComponent();
 
 			/**
 			 * Adds a component to an entity.
@@ -222,10 +234,7 @@ namespace Engine::ECS {
 			void removeAllComponents(Entity ent);
 
 			/**
-			 * Gets a reference the component associated with an entity.
-			 * @param[in] ent The entity.
-			 * @tparam Component The component.
-			 * @return A reference to the component.
+			 * Gets a reference to the component instance associated with an entity.
 			 */
 			template<class Component>
 			Component& getComponent(Entity ent);
@@ -244,7 +253,7 @@ namespace Engine::ECS {
 			 * @param[in] ent The entity.
 			 * @return The components bitset for the entity
 			 */
-			ComponentBitset getComponentsBitset(Entity ent) const;
+			const ComponentBitset& getComponentsBitset(Entity ent) const;
 
 			// TODO: Doc
 			template<class... Components>
