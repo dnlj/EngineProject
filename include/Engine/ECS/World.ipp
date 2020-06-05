@@ -1,5 +1,8 @@
 #pragma once
 
+// Meta
+#include <Meta/IndexOf.hpp>
+
 // Engine
 #include <Engine/ECS/World.hpp>
 
@@ -9,9 +12,11 @@ namespace Engine::ECS {
 	template<class Arg>
 	WORLD_CLASS::World(float tickInterval, Arg& arg)
 		: fm{em}
-		, sm{arg}
+		, systems((sizeof(Ss*), arg) ...)
 		, beginTime{Clock::now()}
 		, tickTime{beginTime} {
+
+		(getSystem<Ss>().setup(), ...);
 	}
 
 	WORLD_TPARAMS
@@ -34,11 +39,11 @@ namespace Engine::ECS {
 		
 		while (tickTime + tickInterval <= beginTime) {
 			constexpr auto tickDelta = Clock::Seconds{tickInterval}.count();
-			sm.tick(tickDelta);
+			(getSystem<Ss>().tick(tickDelta), ...);
 			tickTime += tickInterval;
 		}
-
-		sm.run(deltaTime);
+		
+		(getSystem<Ss>().run(deltaTime), ...);
 	}
 
 	WORLD_TPARAMS
@@ -82,25 +87,22 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class System>
 	constexpr static SystemId WORLD_CLASS::getSystemId() noexcept {
-		return SystemManager::getSystemId<System>();
+		return Meta::IndexOf<System, Ss...>::value;
 	}
 
 	WORLD_TPARAMS
 	template<class System>
 	System& WORLD_CLASS::getSystem() {
-		return sm.getSystem<System>();
+		return std::get<System>(systems);
 	}
 
 	WORLD_TPARAMS
 	template<class... SystemN>
 	SystemBitset WORLD_CLASS::getBitsetForSystems() const {
-		return sm.getBitsetForSystems<SystemN...>();
+		SystemBitset value;
+		((value[getSystemId<SystemN>()] = true), ...);
+		return value;
 	};
-
-	WORLD_TPARAMS
-	void WORLD_CLASS::run(float dt) {
-		sm.run(dt);
-	}
 
 	WORLD_TPARAMS
 	Entity WORLD_CLASS::createEntity(bool forceNew) {
@@ -241,13 +243,13 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class SystemA, class SystemB>
 	constexpr static bool WORLD_CLASS::orderBefore() {
-		return SystemManager::orderBefore<SystemA, SystemB>();
+		return Meta::IndexOf<SystemA, Ss...>::value < Meta::IndexOf<SystemB, Ss...>::value;
 	}
 
 	WORLD_TPARAMS
 	template<class SystemA, class SystemB>
 	constexpr static bool WORLD_CLASS::orderAfter() {
-		return SystemManager::orderAfter<SystemA, SystemB>();
+		return orderBefore<SystemB, SystemA>();
 	}
 	
 	WORLD_TPARAMS

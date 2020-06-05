@@ -8,7 +8,6 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
-#include <Engine/ECS/SystemManager.hpp>
 #include <Engine/ECS/EntityManager.hpp>
 #include <Engine/ECS/FilterManager.hpp>
 
@@ -39,14 +38,12 @@ namespace Engine::ECS {
 	class WORLD_CLASS {
 		public:
 			// TODO: Since we are wrapping all of these operations is there any real benefit to splitting into XYZManagers?
-			using SystemManager = SystemManager<SystemsSet<Ss...>>;
 			using FlagsBitset = std::bitset<sizeof...(Fs)>;
 			static_assert(sizeof...(Cs) + sizeof...(Fs) <= MAX_COMPONENTS);
 
 		private:
 			EntityManager em;
 			FilterManager fm;
-			SystemManager sm;
 
 			/** Beginning of last run. */
 			Clock::TimePoint beginTime;
@@ -71,16 +68,21 @@ namespace Engine::ECS {
 			std::tuple<ComponentContainer<Cs>...> compContainers;
 
 			/** The bitsets for storing what components entities have. */
-			std::vector<ComponentBitset> compBitsets = {};
+			std::vector<ComponentBitset> compBitsets;
+
+			/** All the systems in this world. */
+			std::tuple<Ss...> systems;
 
 		public:
-			/**
-			 * @see SystemManager::SystemManager
-			 */
+			// TODO: doc
 			template<class Arg>
 			World(float tickInterval, Arg& arg);
 
-			// TODO: doc
+			World(const World&) = delete;
+
+			/**
+			 * Advances simulation time and calls the `tick` and `run` members of systems.
+			 */
 			void run();
 
 			/**
@@ -118,27 +120,22 @@ namespace Engine::ECS {
 			constexpr static ComponentId getComponentId() noexcept;
 
 			/**
-			 * @see SystemManager::getSystemId
+			 * Gets the id of a system.
 			 */
 			template<class System>
 			constexpr static SystemId getSystemId() noexcept;
 
 			/**
-			 * @see SystemManager::getSystem
+			 * Gets the instance of the system for this world.
 			 */
 			template<class System>
 			System& getSystem();
 
 			/**
-			 * @see SystemManager::getBitsetForSystems
+			 * Gets a bitset with the bits for the given systems set.
 			 */
 			template<class... SystemN>
 			SystemBitset getBitsetForSystems() const; // TODO: constexpr, noexcept
-
-			/**
-			 * @see SystemManager::run
-			 */
-			void run(float dt);
 
 			/**
 			 * @see EntityManager::createEntity
@@ -282,11 +279,15 @@ namespace Engine::ECS {
 			 */
 			auto getDeltaTimeNS() const;
 
-			/** @see SystemManager::orderBefore */
+			/**
+			 * Checks if SystemA is run before SystemB.
+			 */
 			template<class SystemA, class SystemB>
 			constexpr static bool orderBefore();
 
-			/** @see SystemManager::orderAfter */
+			/**
+			 * Checks if SystemA is run after SystemB.
+			 */
 			template<class SystemA, class SystemB>
 			constexpr static bool orderAfter();
 
@@ -295,10 +296,6 @@ namespace Engine::ECS {
 			void callWithComponent(Entity ent, ComponentId cid, Callable&& callable);
 
 		private:
-			// TODO: doc
-			template<class Component, class Callable>
-			void callWithComponentCaller(Entity ent, Callable&& callable);
-
 			/**
 			 * Get the container for components of type @p Component.
 			 * @tparam Component The type of the component.
