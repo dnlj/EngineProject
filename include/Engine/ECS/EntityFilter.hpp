@@ -6,7 +6,6 @@
 
 // Engine
 #include <Engine/ECS/Common.hpp>
-#include <Engine/ECS/EntityManager.hpp>
 #include <Engine/Engine.hpp>
 
 

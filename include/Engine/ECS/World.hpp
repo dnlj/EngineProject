@@ -97,24 +97,24 @@ namespace Engine::ECS {
 			void run();
 
 			/**
-			 * @see EntityManager::isAlive
+			 * Checks if an entity is alive.
 			 */
 			bool isAlive(Entity ent) const;
 
 			/**
-			 * @see EntityManager::setEnabled
+			 * Enables or disables and entity.
 			 */
 			void setEnabled(Entity ent, bool enabled);
 
 			/**
-			 * @see EntityManager::isEnabled
+			 * Checks if an entity is enabled.
 			 */
 			bool isEnabled(Entity ent) const;
 
 			/**
-			 * @see EntityManager::getEntities
+			 * Gets all entities.
 			 */
-			const EntityManager::EntityContainer& getEntities() const;
+			const EntityContainer& getEntities() const;
 			
 			/**
 			 * Gets the bitset with the bits that correspond to the ids of the given components set.
@@ -149,12 +149,13 @@ namespace Engine::ECS {
 			SystemBitset getBitsetForSystems() const; // TODO: constexpr, noexcept
 
 			/**
-			 * @see EntityManager::createEntity
+			 * Creates an entity.
+			 * @param forceNew Disables recycling entity ids.
 			 */
 			Entity createEntity(bool forceNew = false);
 
 			/**
-			 * @see EntityManager::destroyEntity
+			 * Destroys and entity, freeing its id to be recycled.
 			 */
 			void destroyEntity(Entity ent);
 			

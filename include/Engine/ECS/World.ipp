@@ -61,7 +61,7 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	const EntityManager::EntityContainer& WORLD_CLASS::getEntities() const {
+	auto WORLD_CLASS::getEntities() const -> const EntityContainer& {
 		return aliveEntities;
 	}
 
