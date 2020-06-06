@@ -70,7 +70,7 @@ namespace Engine::ECS {
 	template<class... ComponentN>
 	ComponentBitset WORLD_CLASS::getBitsetForComponents() const {
 		ComponentBitset value;
-		((value[getComponentId<ComponentN>()] = true), ...);
+		(value.set(getComponentId<ComponentN>()), ...);
 		return value;
 	}
 	
@@ -141,7 +141,7 @@ namespace Engine::ECS {
 	template<class Component, class... Args>
 	Component& WORLD_CLASS::addComponent(Entity ent, Args&&... args) {
 		constexpr auto cid = getComponentId<Component>();
-		compBitsets[ent.id][cid] = true;
+		compBitsets[ent.id].set(cid);
 		fm.onComponentAdded(ent, cid, compBitsets[ent.id]);
 
 		if constexpr (isComponent<Component>()) {
@@ -162,7 +162,7 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	bool WORLD_CLASS::hasComponent(Entity ent, ComponentId cid) {
-		return compBitsets[ent.id][cid];
+		return compBitsets[ent.id].test(cid);
 	}
 
 	WORLD_TPARAMS

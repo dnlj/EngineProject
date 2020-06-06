@@ -32,44 +32,66 @@ namespace Engine {
 			//template<std::integral I>
 			//Bitset(I initial) {};
 
-			ENGINE_INLINE bool test(SizeType i) const noexcept { return storage[index(i)] & (1 << bit(i)); };
-			ENGINE_INLINE void set(SizeType i) noexcept { storage[index(i)] |= (1 << bit(i)); };
+			// TODO: ref(SizeType i);
+
+			ENGINE_INLINE bool test(SizeType i) const noexcept { return storage[index(i)] & (StorageUnit{1} << bit(i)); };
+
+			ENGINE_INLINE void set() noexcept { /* TODO: impl */ };
+			ENGINE_INLINE void set(SizeType i) noexcept { storage[index(i)] |= (StorageUnit{1} << bit(i)); };
 			ENGINE_INLINE void set(SizeType i, bool v) noexcept { reset(i); storage[index(i)] |= (v << bit(i));};
-			ENGINE_INLINE void reset(SizeType i) noexcept { storage[index(i)] &= ~(1 << bit(i)); };
-			ENGINE_INLINE void flip(SizeType i) noexcept { storage[index(i)] ^= 1 << bit(i); }
+
+			ENGINE_INLINE void reset() noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] = 0; } };
+			ENGINE_INLINE void reset(SizeType i) noexcept { storage[index(i)] &= ~(StorageUnit{1} << bit(i)); };
+
+			ENGINE_INLINE void flip(SizeType i) noexcept { storage[index(i)] ^= StorageUnit{1} << bit(i); }
+
 			ENGINE_INLINE void invert() noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] = ~storage[i]; } }
 
 			// TODO: [cr]begin / [cr]end
 
-			byte* data() noexcept { return storage; } // TODO: will need some way to get data size in bytes;
-			const byte* data() const noexcept { return reinterpret_cast<Bitset*>(this)->data(); }
+			ENGINE_INLINE StorageUnit* data() noexcept { return storage; }
+			ENGINE_INLINE const StorageUnit* data() const noexcept { return const_cast<Bitset*>(this)->data(); }
 
 			constexpr static SizeType size() noexcept { return N; }
 			constexpr static SizeType capacity() noexcept { return sizeof(storage) * CHAR_BIT; }
+			constexpr static SizeType dataSize() { return storageSize; }
 
-			// TODO: |, &, ~, ^, <<, >> and assignment versions
+			// TODO: <<, >> and assignment versions
 
-			// TODO: integral version
-			ENGINE_INLINE Bitset& operator&=(const Bitset& other) { for (SizeType i = 0; i < storageSize; ++i) { storage[i] &= other.storage[i]; } }
-			ENGINE_INLINE Bitset& operator|=(const Bitset& other) { for (SizeType i = 0; i < storageSize; ++i) { storage[i] |= other.storage[i]; } }
-			ENGINE_INLINE Bitset& operator^=(const Bitset& other) { for (SizeType i = 0; i < storageSize; ++i) { storage[i] ^= other.storage[i]; } }
-			ENGINE_INLINE Bitset operator~() { Bitset n{*this}; n.invert(); return n; }
+			ENGINE_INLINE Bitset& operator&=(const Bitset& other) noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] &= other.storage[i]; } return *this; }
+			ENGINE_INLINE Bitset operator&(const Bitset& other) const noexcept {auto n = *this; return n &= other; }
 
-			ENGINE_INLINE friend bool operator==(Bitset a, Bitset b) {
+			ENGINE_INLINE Bitset& operator|=(const Bitset& other) noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] |= other.storage[i]; } return *this; }
+			ENGINE_INLINE Bitset operator|(const Bitset& other) const noexcept {auto n = *this; return n |= other; }
+
+			ENGINE_INLINE Bitset& operator^=(const Bitset& other) noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] ^= other.storage[i]; } return *this; }
+			ENGINE_INLINE Bitset operator^(const Bitset& other) const noexcept {auto n = *this; return n ^= other; }
+
+			ENGINE_INLINE Bitset operator~() const noexcept { Bitset n{*this}; n.invert(); return n; }
+
+			ENGINE_INLINE friend bool operator==(const Bitset& a, const Bitset& b) noexcept {
 				for (SizeType i = 0; i < storageSize; ++i) {
-					if (storage[i] != other.storage[i]) {
+					if (a.storage[i] != b.storage[i]) {
 						return false;
 					}
 				}
 				return true;
 			}
 
-			ENGINE_INLINE friend bool operator!=(Bitset a, Bitset b) { return !(a == b); }
+			ENGINE_INLINE friend bool operator!=(const Bitset& a, const Bitset& b) noexcept { return !(a == b); }
 
 		private:
-			ENGINE_INLINE constexpr static SizeType index(SizeType i) { return i >> storagePow2; };
-			ENGINE_INLINE constexpr static SizeType bit(SizeType i) { return i & (storageUnitBits - 1); };
+			ENGINE_INLINE constexpr static SizeType index(SizeType i) noexcept { return i >> storagePow2; };
+			ENGINE_INLINE constexpr static SizeType bit(SizeType i) noexcept { return i & (storageUnitBits - 1); };
 	};
 
-	// TODO: hash specialization
+	template<auto I> struct Hash<Bitset<I>> {
+		uint64 operator()(const Bitset<I>& v) const noexcept {
+			uint64 seed = 0;
+			for (Bitset<I>::SizeType i = 0; i < v.dataSize(); ++i) {
+				hashCombine(seed, v.data()[i]);
+			}
+			return seed;
+		}
+	};
 }

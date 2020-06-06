@@ -22,7 +22,7 @@ namespace Engine::ECS {
 
 			// Update filtersByComponentId
 			for (ComponentId cid = 0; cid < components.size(); ++cid) {
-				if (components[cid]) {
+				if (components.test(cid)) {
 					if (filtersByComponentId.size() <= cid) {
 						filtersByComponentId.resize(cid + 1);
 					}

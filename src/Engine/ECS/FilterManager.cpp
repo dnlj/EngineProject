@@ -5,8 +5,6 @@
 namespace Engine::ECS {
 	FilterManager::FilterManager(const EntityManager& entityManager)
 		: entityManager{entityManager} {
-
-		filters.max_load_factor(0.5f);
 	}
 
 	void FilterManager::onComponentAdded(Entity ent, ComponentId cid, const ComponentBitset& cbits) {

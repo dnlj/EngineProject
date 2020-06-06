@@ -4,12 +4,12 @@
 #include <array>
 #include <vector>
 #include <memory>
-#include <unordered_map>
 
 // Engine
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/EntityManager.hpp>
+#include <Engine/FlatHashMap.hpp>
 
 
 // TODO: Test
@@ -29,7 +29,7 @@ namespace Engine::ECS {
 
 		private:
 			const EntityManager& entityManager;
-			std::unordered_map<ComponentBitset, std::unique_ptr<EntityFilter>> filters; // TODO: Use FlatHashMap
+			FlatHashMap<ComponentBitset, std::unique_ptr<EntityFilter>> filters;
 			std::vector<std::vector<EntityFilter*>> filtersByComponentId;
 	};
 }
