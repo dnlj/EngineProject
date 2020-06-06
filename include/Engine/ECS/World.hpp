@@ -34,6 +34,19 @@ namespace Engine::ECS {
 	>
 
 	#define WORLD_CLASS World<Derived, TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>>
+	
+	class EntityState {
+		public:
+			enum State : uint8 {
+				Dead = 0 << 0,
+				Alive =  1 << 0,
+				Enabled = 1 << 1,
+			};
+
+			EntityState(Entity ent, State state) : ent{ent}, state{state} {}
+			Entity ent;
+			uint8 state;
+	};
 
 	WORLD_TPARAMS
 	class WORLD_CLASS {
@@ -42,8 +55,6 @@ namespace Engine::ECS {
 			using Filter = EntityFilter<Derived>;
 
 		private:
-			using EntityContainer = std::vector<decltype(Entity::gen)>;
-
 			// TODO: Since we are wrapping all of these operations is there any real benefit to splitting into XYZManagers?
 			FilterManager<Derived> fm;
 
@@ -76,13 +87,10 @@ namespace Engine::ECS {
 			std::tuple<Ss...> systems;
 
 			/** TODO: doc */
-			EntityContainer aliveEntities;
-
-			/** TODO: doc */
-			std::vector<uint8_t> enabledEntities;
-
-			/** TODO: doc */
 			std::vector<Entity> deadEntities;
+
+			/** TODo: doc */
+			std::vector<EntityState> entities;
 
 		public:
 			// TODO: doc
@@ -114,7 +122,7 @@ namespace Engine::ECS {
 			/**
 			 * Gets all entities.
 			 */
-			const EntityContainer& getEntities() const;
+			auto& getEntities() const;
 			
 			/**
 			 * Gets the bitset with the bits that correspond to the ids of the given components set.

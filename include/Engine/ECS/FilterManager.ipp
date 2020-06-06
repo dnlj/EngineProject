@@ -17,10 +17,11 @@ namespace Engine::ECS {
 			// Populate new filter
 			const auto& entities = world.getEntities();
 
+			// TODO: redo this loop. no reason to do it this way.
 			for (decltype(Entity::id) eid = 0; eid < entities.size(); ++eid) {
-				if (entities[eid] == 0) { continue; }
+				if (!world.isAlive(entities[eid].ent)) { continue; }
 
-				Entity ent = Entity{eid, entities[eid]};
+				Entity ent = Entity{eid, entities[eid].ent.gen};
 				filter->add(ent, world.getComponentsBitset(ent));
 			}
 

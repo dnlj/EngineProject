@@ -268,7 +268,7 @@ namespace Game {
 				//	}
 				//});
 				//
-				//for () { // TODO: we actually have no way to iterate over alive entities. getEntities is wrong.
+				//for (auto ent : world.getEntities()) { // TODO: we actually have no way to iterate over alive entities. getEntities is wrong.
 				//	writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
 				//	writer.write(ent);
 				//	writer.write(world.getComponentsBitset(ent));

@@ -47,22 +47,23 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	bool WORLD_CLASS::isAlive(Entity ent) const {
-		return aliveEntities[ent.id];
+		return entities[ent.id].state & EntityState::Alive;
 	}
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::setEnabled(Entity ent, bool enabled) {
-		enabledEntities[ent.id] = enabled; // TODO: couldnt we just use aliveEntities[ent.id] = 2 or something instead of having two arrays?
+		auto& state = entities[ent.id].state;
+		state = (state & ~EntityState::Enabled) | (enabled ? EntityState::Enabled : EntityState::Dead);
 	}
 
 	WORLD_TPARAMS
 	bool WORLD_CLASS::isEnabled(Entity ent) const {
-		return enabledEntities[ent.id];
+		return entities[ent.id].state & EntityState::Enabled;
 	}
 
 	WORLD_TPARAMS
-	auto WORLD_CLASS::getEntities() const -> const EntityContainer& {
-		return aliveEntities;
+	auto& WORLD_CLASS::getEntities() const {
+		return entities;
 	}
 
 	WORLD_TPARAMS
@@ -105,28 +106,26 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	Entity WORLD_CLASS::createEntity(bool forceNew) {
-		Entity ent;
+		EntityState* es;
 
 		if (!forceNew && !deadEntities.empty()) {
-			ent = deadEntities.back();
+			const auto i = deadEntities.back().id;
 			deadEntities.pop_back();
+			es = &entities[i];
 		} else {
-			ent = Entity{static_cast<decltype(Entity::id)>(aliveEntities.size()), 0};
-			aliveEntities.resize(ent.id + 1);
-			enabledEntities.resize(ent.id + 1);
+			es = &entities.emplace_back(Entity{static_cast<decltype(Entity::id)>(entities.size()), 0}, EntityState::Dead);
 		}
 
-		++ent.gen;
-		aliveEntities[ent.id] = ent.gen;
-		enabledEntities[ent.id] = true;
+		++es->ent.gen;
+		es->state = EntityState::Alive | EntityState::Enabled;
 
-		if (ent.id >= compBitsets.size()) {
-			compBitsets.resize(ent.id + 1); // TODO: Is one really the best increment size? Doesnt seem right.
+		if (es->ent.id >= compBitsets.size()) {
+			compBitsets.resize(es->ent.id + 1); // TODO: Is one really the best increment size? Doesnt seem right.
 		} else {
-			compBitsets[ent.id].reset();
+			compBitsets[es->ent.id].reset();
 		}
 
-		return ent;
+		return es->ent;
 	}
 
 	WORLD_TPARAMS
@@ -136,18 +135,18 @@ namespace Engine::ECS {
 		#if defined(DEBUG)
 			if (!isAlive(ent)) {
 				ENGINE_ERROR("Attempting to destroy an already dead entity \"", ent, "\"");
-			} else if (aliveEntities[ent.id] != ent.gen) {
+			} else if (entities[ent.id].ent.gen != ent.gen) {
 				ENGINE_ERROR(
 					"Attempting to destroy an old generation entity. Current generation is ",
-					aliveEntities[ent.id],
+					entities[ent.id].ent.gen,
 					" attempted to delete ",
 					ent.gen
 				);
 			}
 		#endif
 
-		deadEntities.emplace_back(std::move(ent));
-		aliveEntities[ent.id] = 0;
+		deadEntities.push_back(ent);
+		entities[ent.id].state = EntityState::Dead;
 
 		// TODO: shouldnt this be called before the entity is actually destroyed? bitset will be empty at this time.
 		fm.onEntityDestroyed(ent, compBitsets[ent.id]);
