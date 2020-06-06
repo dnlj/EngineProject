@@ -7,17 +7,17 @@
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Input/ActionEvent.hpp>
 #include <Engine/Input/ActionListener.hpp>
-#include <Engine/ECS/EntityFilter.hpp>
 
 // Game
 #include <Game/System.hpp>
+#include <Game/EntityFilter.hpp>
 
 namespace Game {
 	class ActionSystem : public System {
 		private:
 			Engine::FlatHashMap<std::string, Engine::Input::ActionId> actionNameToId;
 			std::vector<std::vector<Engine::Input::ActionListener>> actionIdToListeners;
-			Engine::ECS::EntityFilter& actionFilter;
+			EntityFilter& actionFilter;
 
 		public:
 			ActionSystem(SystemArg arg);

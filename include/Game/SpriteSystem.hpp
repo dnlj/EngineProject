@@ -8,10 +8,10 @@
 
 // Engine
 #include <Engine/EngineInstance.hpp>
-#include <Engine/ECS/EntityFilter.hpp>
 
 // Game
 #include <Game/System.hpp>
+#include <Game/EntityFilter.hpp>
 
 
 namespace Game {
@@ -47,7 +47,7 @@ namespace Game {
 			void addSprite(Sprite sprite);
 
 		private:
-			Engine::ECS::EntityFilter& filter;
+			EntityFilter& filter;
 
 			constexpr static std::size_t MAX_SPRITES = 1024;
 			std::vector<InstanceData> instanceData;

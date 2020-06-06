@@ -8,6 +8,7 @@
 
 // Game
 #include <Game/System.hpp>
+#include <Game/EntityFilter.hpp>
 #include <Game/MessageType.hpp>
 
 
@@ -28,7 +29,7 @@ namespace Game {
 		private:
 			static constexpr auto timeout = std::chrono::milliseconds{10'000};
 			Engine::Net::UDPSocket socket;
-			Engine::ECS::EntityFilter& connFilter;
+			EntityFilter& connFilter;
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> ipToPlayer;
 
 			Engine::Net::IPv4Address address;

@@ -6,11 +6,9 @@
 // Box2D
 #include <box2d/b2_math.h>
 
-// Engine
-#include <Engine/ECS/EntityFilter.hpp>
-
 // Game
 #include <Game/System.hpp>
+#include <Game/EntityFilter.hpp>
 #include <Game/PhysicsComponent.hpp>
 #include <Game/MapSystem.hpp>
 
@@ -44,7 +42,7 @@ namespace Game {
 			std::vector<std::unique_ptr<b2World>> worlds; // TODO: who should own worlds? physics sys?
 			std::vector<b2World*> freeWorlds;
 
-			Engine::ECS::EntityFilter& playerFilter;
+			EntityFilter& playerFilter;
 
 			std::vector<Group> groups;
 			robin_hood::unordered_flat_set<b2Body*> bodies; // TODO: add engine type

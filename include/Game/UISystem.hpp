@@ -4,13 +4,13 @@
 #include <cmath>
 
 // Engine
-#include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/Input/ActionId.hpp>
 #include <Engine/StaticRingBuffer.hpp>
 #include <Engine/ImGui/ImGui.hpp>
 
 // Game
 #include <Game/System.hpp>
+#include <Game/EntityFilter.hpp>
 
 namespace Game {
 	class UISystem : public System {
@@ -58,7 +58,7 @@ namespace Game {
 			static ImVec2 netGetDiff(void* data, int idx);
 
 			std::array<Engine::Input::ActionId, 2> targetIds;
-			Engine::ECS::EntityFilter& connFilter;
-			Engine::ECS::EntityFilter& activePlayerFilter;
+			EntityFilter& connFilter;
+			EntityFilter& activePlayerFilter;
 	};
 }

@@ -5,10 +5,10 @@
 
 // Engine
 #include <Engine/Debug/DebugDrawBox2D.hpp>
-#include <Engine/ECS/EntityFilter.hpp>
 
 // Game
 #include <Game/System.hpp>
+#include <Game/EntityFilter.hpp>
 #include <Game/PhysicsUserData.hpp>
 #include <Game/PhysicsListener.hpp>
 
@@ -106,7 +106,7 @@ namespace Game {
 			std::vector<PhysicsUserData> userData;
 
 			// TODO:Doc
-			Engine::ECS::EntityFilter& filter;
+			EntityFilter& filter;
 
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D debugDraw;

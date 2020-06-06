@@ -12,10 +12,12 @@
 
 // TODO: Doc
 namespace Engine::ECS {
+	template<class World>
 	class EntityFilter {
 		private:
 			// TODO: use sparse set?
 			std::vector<Entity> entities;
+			const World& world;
 
 		private:
 			template<class T>
@@ -64,7 +66,7 @@ namespace Engine::ECS {
 			// TODO: Make private. Move to constructor
 			ComponentBitset componentsBits;
 
-			EntityFilter(const EntityManager& entityManager);
+			EntityFilter(const World& world);
 			EntityFilter(const EntityFilter&) = delete;
 
 			void add(Entity ent, const ComponentBitset& cbits);
@@ -78,9 +80,6 @@ namespace Engine::ECS {
 
 			ConstIterator cbegin() const;
 			ConstIterator cend() const;
-
-		private:
-			const EntityManager& entityManager;
 	};
 }
 

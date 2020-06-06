@@ -11,8 +11,7 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class Arg>
 	WORLD_CLASS::World(float tickInterval, Arg& arg)
-		: fm{em}
-		, systems((sizeof(Ss*), arg) ...)
+		: systems((sizeof(Ss*), arg) ...)
 		, beginTime{Clock::now()}
 		, tickTime{beginTime} {
 
@@ -48,22 +47,22 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	bool WORLD_CLASS::isAlive(Entity ent) const {
-		return em.isAlive(ent);
+		return aliveEntities[ent.id];
 	}
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::setEnabled(Entity ent, bool enabled) {
-		em.setEnabled(ent, enabled);
+		enabledEntities[ent.id] = enabled; // TODO: couldnt we just use aliveEntities[ent.id] = 2 or something instead of having two arrays?
 	}
 
 	WORLD_TPARAMS
 	bool WORLD_CLASS::isEnabled(Entity ent) const {
-		return em.isEnabled(ent);
+		return enabledEntities[ent.id];
 	}
 
 	WORLD_TPARAMS
 	const EntityManager::EntityContainer& WORLD_CLASS::getEntities() const {
-		return em.getEntities();
+		return aliveEntities;
 	}
 
 	WORLD_TPARAMS
@@ -106,7 +105,20 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	Entity WORLD_CLASS::createEntity(bool forceNew) {
-		const auto ent = em.createEntity(forceNew);
+		Entity ent;
+
+		if (!forceNew && !deadEntities.empty()) {
+			ent = deadEntities.back();
+			deadEntities.pop_back();
+		} else {
+			ent = Entity{static_cast<decltype(Entity::id)>(aliveEntities.size()), 0};
+			aliveEntities.resize(ent.id + 1);
+			enabledEntities.resize(ent.id + 1);
+		}
+
+		++ent.gen;
+		aliveEntities[ent.id] = ent.gen;
+		enabledEntities[ent.id] = true;
 
 		if (ent.id >= compBitsets.size()) {
 			compBitsets.resize(ent.id + 1); // TODO: Is one really the best increment size? Doesnt seem right.
@@ -120,7 +132,23 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	void WORLD_CLASS::destroyEntity(Entity ent) {
 		removeAllComponents(ent);
-		em.destroyEntity(ent);
+		
+		#if defined(DEBUG)
+			if (!isAlive(ent)) {
+				ENGINE_ERROR("Attempting to destroy an already dead entity \"", ent, "\"");
+			} else if (aliveEntities[ent.id] != ent.gen) {
+				ENGINE_ERROR(
+					"Attempting to destroy an old generation entity. Current generation is ",
+					aliveEntities[ent.id],
+					" attempted to delete ",
+					ent.gen
+				);
+			}
+		#endif
+
+		deadEntities.emplace_back(std::move(ent));
+		aliveEntities[ent.id] = 0;
+
 		// TODO: shouldnt this be called before the entity is actually destroyed? bitset will be empty at this time.
 		fm.onEntityDestroyed(ent, compBitsets[ent.id]);
 	}
@@ -228,9 +256,9 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	template<class... Components>
-	EntityFilter& WORLD_CLASS::getFilterFor() {
+	auto WORLD_CLASS::getFilterFor() -> Filter& {
 		static_assert(sizeof...(Components) > 0, "Unable to get filter for no components.");
-		return fm.getFilterFor(*this, getBitsetForComponents<Components...>());
+		return fm.getFilterFor(self(), getBitsetForComponents<Components...>());
 	}
 	
 	WORLD_TPARAMS

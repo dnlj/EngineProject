@@ -8,21 +8,22 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
-#include <Engine/ECS/EntityManager.hpp>
 #include <Engine/ECS/FilterManager.hpp>
 
 
 namespace Engine::ECS {
 	/**
+	 * @tparam Derived CRTP dervied class. Needed for EntityFilter<Derived>.
 	 * @tparam TickRate The tick rate of the world.
 	 * @tparam SystemsSet The systems for this world to have.
 	 * @tparam ComponentsSet The components for entities in this world to have.
 	 * @tparam FlagsSet The flags for entities in this world to have.
 	 */
-	template<int64 TickRate, class SystemsSet, class ComponentsSet, class FlagsSet>
+	template<class Derived, int64 TickRate, class SystemsSet, class ComponentsSet, class FlagsSet>
 	class World;
 
 	#define WORLD_TPARAMS template<\
+		class Derived,\
 		int64 TickRate,\
 		class... Ss,\
 		template<class...> class SystemsSet,\
@@ -32,15 +33,19 @@ namespace Engine::ECS {
 		template<class...> class FlagsSet\
 	>
 
-	#define WORLD_CLASS World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>>
+	#define WORLD_CLASS World<Derived, TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>>
 
 	WORLD_TPARAMS
 	class WORLD_CLASS {
 		static_assert(sizeof...(Cs) + sizeof...(Fs) <= MAX_COMPONENTS);
+		public:
+			using Filter = EntityFilter<Derived>;
+
 		private:
+			using EntityContainer = std::vector<decltype(Entity::gen)>;
+
 			// TODO: Since we are wrapping all of these operations is there any real benefit to splitting into XYZManagers?
-			EntityManager em;
-			FilterManager fm;
+			FilterManager<Derived> fm;
 
 			/** Beginning of last run. */
 			Clock::TimePoint beginTime;
@@ -69,6 +74,15 @@ namespace Engine::ECS {
 
 			/** All the systems in this world. */
 			std::tuple<Ss...> systems;
+
+			/** TODO: doc */
+			EntityContainer aliveEntities;
+
+			/** TODO: doc */
+			std::vector<uint8_t> enabledEntities;
+
+			/** TODO: doc */
+			std::vector<Entity> deadEntities;
 
 		public:
 			// TODO: doc
@@ -254,7 +268,7 @@ namespace Engine::ECS {
 
 			// TODO: Doc
 			template<class... Components>
-			EntityFilter& getFilterFor();
+			Filter& getFilterFor();
 
 			//template<>
 			//EntityFilter& getFilterFor() = delete;
@@ -301,6 +315,12 @@ namespace Engine::ECS {
 			template<class Callable>
 			void callWithComponent(Entity ent, ComponentId cid, Callable&& callable);
 
+			/**
+			 * Helper to cast from `this` to CRTP derived class.
+			 */
+			decltype(auto) self() { return reinterpret_cast<Derived&>(*this); }
+			decltype(auto) self() const { return reinterpret_cast<const Derived&>(*this); }
+
 		private:
 			/**
 			 * Get the container for components of type @p Component.
@@ -309,7 +329,6 @@ namespace Engine::ECS {
 			 */
 			template<class Component>
 			ComponentContainer<Component>& getComponentContainer();
-
 	};
 }
 

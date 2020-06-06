@@ -3,10 +3,10 @@
 // Engine
 #include <Engine/Camera.hpp>
 #include <Engine/ECS/Entity.hpp>
-#include <Engine/ECS/EntityFilter.hpp>
 
 // Game
 #include <Game/System.hpp>
+#include <Game/EntityFilter.hpp>
 
 
 namespace Game {
@@ -16,6 +16,6 @@ namespace Game {
 			void run(float dt);
 
 		private:
-			Engine::ECS::EntityFilter& activePlayerFilter;
+			EntityFilter& activePlayerFilter;
 	};
 }

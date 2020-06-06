@@ -1,10 +1,8 @@
 #pragma once
 
-// Engine
-#include <Engine/ECS/EntityFilter.hpp>
-
 // Game
 #include <Game/System.hpp>
+#include <Game/EntityFilter.hpp>
 
 
 namespace Game {
@@ -14,6 +12,6 @@ namespace Game {
 			void tick(float dt);
 
 		private:
-			Engine::ECS::EntityFilter& filter;
+			EntityFilter& filter;
 	};
 }
