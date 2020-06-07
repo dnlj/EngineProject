@@ -255,7 +255,7 @@ namespace Game {
 				// TODO: figure out which entities have been updated
 				// TODO: prioritize entities
 				// TODO: figure out which comps on those entities have been updated
-				//auto& writer = world.getComponent<ConnectionComponent>(ply).conn->writer;
+				auto& writer = world.getComponent<ConnectionComponent>(ply).conn->writer;
 				//ForEachIn<ComponentsSet>::call([&]<class C>(){
 				//	if constexpr (IsNetworkedComponent<C>) {
 				//		for (const auto ent : world.getFilterFor<C>()) {
@@ -267,12 +267,6 @@ namespace Game {
 				//		}
 				//	}
 				//});
-				//
-				//for (auto ent : world.getEntities()) { // TODO: we actually have no way to iterate over alive entities. getEntities is wrong.
-				//	writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
-				//	writer.write(ent);
-				//	writer.write(world.getComponentsBitset(ent));
-				//}
 			}
 		}
 

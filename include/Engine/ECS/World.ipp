@@ -256,7 +256,6 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class... Components>
 	auto WORLD_CLASS::getFilterFor() -> Filter& {
-		static_assert(sizeof...(Components) > 0, "Unable to get filter for no components.");
 		return fm.getFilterFor(self(), getBitsetForComponents<Components...>());
 	}
 	

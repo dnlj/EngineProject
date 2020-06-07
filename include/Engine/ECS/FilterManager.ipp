@@ -40,7 +40,8 @@ namespace Engine::ECS {
 		return *filter;
 	}
 
-	
+	// TODO: also need onEntityCreated for empty filter
+
 	template<class World>
 	void FilterManager<World>::onComponentAdded(Entity ent, ComponentId cid, const ComponentBitset& cbits) {
 		if (cid >= filtersByComponentId.size()) {

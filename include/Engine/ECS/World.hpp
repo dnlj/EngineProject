@@ -89,7 +89,7 @@ namespace Engine::ECS {
 			/** TODO: doc */
 			std::vector<Entity> deadEntities;
 
-			/** TODo: doc */
+			/** TODO: doc */
 			std::vector<EntityState> entities;
 
 		public:
