@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/Net/Connection.hpp>
+#include <Engine/Net/Replication.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -20,6 +21,8 @@ namespace Game {
 			b2Body* body = nullptr;
 
 		public:
+			constexpr static auto networkReplication = Engine::Net::Replication::ALWAYS;
+
 			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent
 			b2Body& getBody();
 			b2World* getWorld();

@@ -299,14 +299,9 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class Callable>
 	void WORLD_CLASS::callWithComponent(Entity ent, ComponentId cid, Callable&& callable) {
-		// TODO: rm - using Caller = void(WORLD_CLASS::*)(Entity, Callable&&);
-		using Caller = void(*)()
-		constexpr auto callers[]{
-			// TODO: rm - &WORLD_CLASS::template callWithComponentCaller<Cs, Callable>...
-			&callable.operator()<Cs>...
-		};
-		//return (this->*callers[cid])(ent, std::forward<Callable>(callable));
-		return callers[cid]();
+		using Caller = void(Callable::*)(void) const;
+		constexpr Caller callers[]{ &Callable::operator()<Cs>... };
+		return (callable.*callers[cid])();
 	}
 
 	WORLD_TPARAMS

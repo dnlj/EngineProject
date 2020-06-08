@@ -16,6 +16,17 @@ namespace {
 		t.fromNetwork(msg);
 	};
 
+	// TODO: would probably be easier to just have a base class instead of all these type traits
+	template<class T, class = void>
+	struct GetComponentReplication {
+		constexpr static auto value = Engine::Net::Replication::NONE;
+	};
+
+	template<class T>
+	struct GetComponentReplication<T, std::void_t<decltype(T::networkReplication)>> {
+		constexpr static auto value = T::networkReplication;
+	};
+
 	// TODO: move into meta
 	template<class ComponentsSet>
 	struct ForEachIn {
@@ -134,6 +145,7 @@ namespace Game {
 		if constexpr (ENGINE_SERVER) { return; }
 
 		const auto& remote = *from.reader.read<Engine::ECS::Entity>();
+		const auto cid = *from.reader.read<Engine::ECS::ComponentId>();
 		auto& local = entToLocal[remote];
 
 		if (local == Engine::ECS::INVALID_ENTITY) {
@@ -143,14 +155,18 @@ namespace Game {
 		}
 
 		// update
-		//world.callWithComponent(local, i, [&]<class C>(){
-		//	//std::cout << "test: " << world.getComponentId<C>() << "\n";
-		//	if (!world.hasComponent<C>(local)) {
-		//		puts("not has comp");
-		//		auto& c = world.addComponent<C>();
-		//		//c.fromNetwork(from.reader);
-		//	}
-		//});
+		world.callWithComponent(local, cid, [&]<class C>(){
+			if constexpr (IsNetworkedComponent<C>) {
+				C* comp;
+				if (!world.hasComponent<C>(local)) {
+					puts("not has comp");
+					comp = &world.addComponent<C>(local);
+				} else {
+					comp = &world.getComponent<C>(local);
+				}
+				comp->fromNetwork(from);
+			}
+		});
 	}
 
 	template<>
@@ -160,7 +176,7 @@ namespace Game {
 			*from.reader.read<Engine::Input::ActionId>(),
 			*from.reader.read<Engine::Input::Value>()
 		});
-		//std::cout << "Recv action: " << ent << " - " << aid << " - " << val.value << "\n";
+		std::cout << "Recv action\n";
 	}
 
 	template<>
@@ -225,48 +241,40 @@ namespace Game {
 		const auto now = Engine::Clock::now();
 
 		if constexpr (ENGINE_SERVER) {
-			/*for (const auto& conn : connections) {
-				addr = conn.address;
-				writer.reset();
-				ForEachIn<ComponentsSet>::call([&]<class C>(){
-					if constexpr (IsNetworkedComponent<C>) {
-						for (const auto ent : world.getFilterFor<C>()) {
-							writer.next({static_cast<uint8>(MessageType::ECS_COMP)});
-							writer.write(ent);
-							writer.write(world.getComponentId<C>());
-							world.getComponent<C>(ent).toNetwork(writer);
-						}
-					}
-				});
-				writer.flush();
-			}
-			
 			for (auto& ply : connFilter) {
-				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-				if (conn.writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE)) {
-					conn.writer.write(ply);
-					//conn.writer.write();
-				} else {
-					ENGINE_WARN("TODO: how to handle unsendable messages");
-				}
-			}*/
+				auto& physComp = world.getComponent<Game::PhysicsComponent>(ply);
 
-			for (auto& ply : connFilter) {
+				// TODO: figure out which entities are relevant to this ply
+				// TODO: handle entities without phys comp?
+				//struct QueryCallback : b2QueryCallback {
+				//	virtual bool ReportFixture(b2Fixture* fixture) override {
+				//		return false;
+				//	};
+				//} queryCallback;
+				//physComp.getWorld()->QueryAABB(&queryCallback, b2AABB{});
+
 				// TODO: figure out which entities have been updated
 				// TODO: prioritize entities
 				// TODO: figure out which comps on those entities have been updated
-				auto& writer = world.getComponent<ConnectionComponent>(ply).conn->writer;
-				//ForEachIn<ComponentsSet>::call([&]<class C>(){
-				//	if constexpr (IsNetworkedComponent<C>) {
-				//		for (const auto ent : world.getFilterFor<C>()) {
-				//		// TODO: need specialization for flag comps
-				//			writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
-				//			writer.write(ent);
-				//			writer.write(world.getComponentId<C>());
-				//			world.getComponent<C>(ent).toNetwork(writer);
-				//		}
-				//	}
-				//});
+				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+				auto& writer = conn.writer;
+				ForEachIn<ComponentsSet>::call([&]<class C>(){
+					if constexpr (!IsNetworkedComponent<C>) { return; }
+					constexpr auto repl = GetComponentReplication<C>::value;
+
+					if constexpr (repl == Engine::Net::Replication::ALWAYS) {
+						for (const auto ent : world.getFilterFor<C>()) {
+							// TODO: need specialization for flag comps
+							writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
+							writer.write(ent);
+							writer.write(world.getComponentId<C>());
+							world.getComponent<C>(ent).toNetwork(conn);
+						}
+					} else if constexpr (repl == Engine::Net::Replication::UPDATE) {
+						// TODO: impl
+						ENGINE_WARN("TODO: impl");
+					}
+				});
 			}
 		}
 
@@ -418,6 +426,10 @@ namespace Game {
 			default: {
 				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(head.type));
 			}
+		}
+
+		if constexpr (ENGINE_DEBUG) {
+			// TODO: if &head + head.size != from.reader.currentPosition then issue warning and read rest of message
 		}
 	}
 }
