@@ -155,6 +155,7 @@ namespace Game {
 		}
 
 		// update
+		return;
 		world.callWithComponent(local, cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				C* comp;
@@ -421,7 +422,7 @@ namespace Game {
 		}
 
 		switch(head.type) {
-			#define X(name) case MessageType::name: { return handleMessageType<MessageType::name>(from, head, ent); };
+			#define X(name) case MessageType::name: { handleMessageType<MessageType::name>(from, head, ent); break; };
 			#include <Game/MessageType.xpp>
 			default: {
 				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(head.type));
@@ -429,7 +430,14 @@ namespace Game {
 		}
 
 		if constexpr (ENGINE_DEBUG) {
-			// TODO: if &head + head.size != from.reader.currentPosition then issue warning and read rest of message
+			const byte* stop = reinterpret_cast<const byte*>(&head) + sizeof(head) + head.size;
+			const byte* curr = static_cast<const byte*>(from.reader.read(0));
+			const auto rem = stop - curr;
+
+			if (rem > 0) {
+				ENGINE_WARN("Incomplete read of network message (", rem, " bytes remaining). Ignoring.");
+				from.reader.read(rem);
+			}
 		}
 	}
 }
