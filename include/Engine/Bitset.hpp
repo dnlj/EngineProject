@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <iostream>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Bit/Bit.hpp>
@@ -28,9 +31,15 @@ namespace Engine {
 		public:
 			Bitset() = default;
 
-			// TODO:
-			//template<std::integral I>
-			//Bitset(I initial) {};
+			template<std::integral I>
+			Bitset(I initial) {
+				if constexpr (sizeof(I) > sizeof(StorageUnit)) {
+					// TODO: handle
+					static_assert(false, "TODO: impl");
+				} else {
+					storage[0] = initial;
+				}
+			};
 
 			// TODO: ref(SizeType i);
 
@@ -69,6 +78,28 @@ namespace Engine {
 
 			ENGINE_INLINE Bitset operator~() const noexcept { Bitset n{*this}; n.invert(); return n; }
 
+			Bitset& operator>>=(SizeType n) noexcept {
+				while (n > 0) {
+					const auto b = std::min<SizeType>(n, storageUnitBits - 1);
+					const auto carryBits = storageUnitBits - b;
+
+					for (SizeType i = 0; i < storageSize - 1; ++i) {
+						auto& s = storage[i];
+						s >>= b;
+
+						auto c = storage[i + 1];
+						c <<= carryBits;
+						s |= c;
+					}
+
+					storage[storageSize - 1] >>= b;
+					n -= b;
+				}
+				return *this;
+			}
+
+			ENGINE_INLINE Bitset operator>>(SizeType n) noexcept { auto copy = *this; return copy >>= n; }
+
 			ENGINE_INLINE friend bool operator==(const Bitset& a, const Bitset& b) noexcept {
 				for (SizeType i = 0; i < storageSize; ++i) {
 					if (a.storage[i] != b.storage[i]) {
@@ -80,10 +111,21 @@ namespace Engine {
 
 			ENGINE_INLINE friend bool operator!=(const Bitset& a, const Bitset& b) noexcept { return !(a == b); }
 
+			friend std::ostream& operator<<(std::ostream& os, const Bitset& bs) {
+				for (SizeType i = storageSize - 1; i >= 0; --i) {
+					for (size_t bit = 0; bit < storageUnitBits; ++bit) {
+						os << ((bs.storage[i] >> (storageUnitBits - bit - 1)) & 1);
+					}
+				}
+				return os;
+			}
+
+
 		private:
 			ENGINE_INLINE constexpr static SizeType index(SizeType i) noexcept { return i >> storagePow2; };
 			ENGINE_INLINE constexpr static SizeType bit(SizeType i) noexcept { return i & (storageUnitBits - 1); };
 	};
+	
 
 	template<auto I> struct Hash<Bitset<I>> {
 		uint64 operator()(const Bitset<I>& v) const noexcept {

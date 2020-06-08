@@ -560,6 +560,37 @@ int entry(int argc, char* argv[]) {
 	ENGINE_WARN("This is a test of the", "console ouput");
 	//ENGINE_ERROR("This is a test of the", "console ouput");
 
+	/*{ // TODO: bitset testing
+		Engine::Bitset<64> a = 0b10000000'10000000'10000000'10000000'10000000'10000000'10000000'10000000ull;
+		const auto b = ~a;
+		std::cout << "A: " << a << "\n";
+		std::cout << "B: " << b << "\n";
+		std::cout << "|: " << (b | a) << "\n";
+		std::cout << "&: " << (b & a) << "\n";
+		std::cout << "^: " << (b ^ a) << "\n";
+
+		Engine::Bitset<128> z;
+		z.set(127);
+		std::cout << "  Z: " << z << "\n";
+		std::cout << "  1: " << (z >> 1) << "\n";
+		std::cout << "  4: " << (z >> 4) << "\n";
+		std::cout << "  8: " << (z >> 8) << "\n";
+		std::cout << " 63: " << (z >> 63) << "\n";
+		std::cout << " 64: " << (z >> 64) << "\n";
+		std::cout << "127: " << (z >> 127) << "\n";
+		std::cout << "128: " << (z >> 128) << "\n";
+		1ull << 63;
+		Engine::Bitset<128> c;
+		c.set(127);
+		c.set(63);
+		c.set(64);
+		c.set(0);
+		std::cout << "C: " << c << "\n";
+
+		__debugbreak();
+		return 0;
+	}*/
+
 	std::atexit([](){
 	});
 

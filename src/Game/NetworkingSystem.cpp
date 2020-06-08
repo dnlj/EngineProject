@@ -171,6 +171,11 @@ namespace Game {
 	}
 
 	template<>
+	void NetworkingSystem::handleMessageType<MessageType::ECS_FLAG>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		std::cout << "ECS_FLAG\n";
+	}
+
+	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ACTION>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
 		world.getSystem<ActionSystem>().processAction({
 			ent,
@@ -276,6 +281,15 @@ namespace Game {
 						ENGINE_WARN("TODO: impl");
 					}
 				});
+
+				for (const auto ent : world.getFilterFor<>()) {
+					// TODO: need specialization for flag comps
+					//writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
+					//writer.write(ent);
+					//Engine::Bitset<FlagsSet::size> bs = world.getComponentsBitset(ent) >> ComponentsSet::size;
+					//writer.write(bs);
+					//world.getComponent<C>(ent).toNetwork(conn);
+				}
 			}
 		}
 
