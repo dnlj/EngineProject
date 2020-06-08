@@ -579,13 +579,17 @@ int entry(int argc, char* argv[]) {
 		std::cout << " 64: " << (z >> 64) << "\n";
 		std::cout << "127: " << (z >> 127) << "\n";
 		std::cout << "128: " << (z >> 128) << "\n";
-		1ull << 63;
-		Engine::Bitset<128> c;
-		c.set(127);
-		c.set(63);
-		c.set(64);
-		c.set(0);
-		std::cout << "C: " << c << "\n";
+
+		Engine::Bitset<128> y;
+		y.set(0);
+		std::cout << "  Y: " << y << "\n";
+		std::cout << "  1: " << (y << 1) << "\n";
+		std::cout << "  4: " << (y << 4) << "\n";
+		std::cout << "  8: " << (y << 8) << "\n";
+		std::cout << " 63: " << (y << 63) << "\n";
+		std::cout << " 64: " << (y << 64) << "\n";
+		std::cout << "127: " << (y << 127) << "\n";
+		std::cout << "128: " << (y << 128) << "\n";
 
 		__debugbreak();
 		return 0;

@@ -86,10 +86,7 @@ namespace Engine {
 					for (SizeType i = 0; i < storageSize - 1; ++i) {
 						auto& s = storage[i];
 						s >>= b;
-
-						auto c = storage[i + 1];
-						c <<= carryBits;
-						s |= c;
+						s |= storage[i + 1] << carryBits;
 					}
 
 					storage[storageSize - 1] >>= b;
@@ -98,7 +95,25 @@ namespace Engine {
 				return *this;
 			}
 
+			Bitset& operator<<=(SizeType n) noexcept {
+				while (n > 0) {
+					const auto b = std::min<SizeType>(n, storageUnitBits - 1);
+					const auto carryBits = storageUnitBits - b;
+
+					for (SizeType i = storageSize - 1; i > 0; --i) {
+						auto& s = storage[i];
+						s <<= b;
+						s |= storage[i - 1] >> carryBits;
+					}
+
+					storage[0] <<= b;
+					n -= b;
+				}
+				return *this;
+			}
+
 			ENGINE_INLINE Bitset operator>>(SizeType n) noexcept { auto copy = *this; return copy >>= n; }
+			ENGINE_INLINE Bitset operator<<(SizeType n) noexcept { auto copy = *this; return copy <<= n; }
 
 			ENGINE_INLINE friend bool operator==(const Bitset& a, const Bitset& b) noexcept {
 				for (SizeType i = 0; i < storageSize; ++i) {
