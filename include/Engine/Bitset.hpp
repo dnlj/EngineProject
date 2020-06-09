@@ -10,12 +10,14 @@
 
 namespace Engine {
 	// TODO: SIMD?
-	template<int16 N>
+	template<int16 N, class StorageUnit = uint64> // TODO: select best storage type based on N and sys arch;
 	class Bitset {
 		static_assert(N > 0, "Attempting to create empty bitset.");
 		public:
 			using SizeType = decltype(N);
-			using StorageUnit = uint64; // TODO: select best storage type based on N and sys arch;
+
+			template<int16 M, class U>
+			friend class Bitset;
 
 		private:
 			constexpr static SizeType storageUnitBits = sizeof(StorageUnit) * CHAR_BIT;
@@ -39,6 +41,11 @@ namespace Engine {
 				} else {
 					storage[0] = initial;
 				}
+			};
+
+			template<auto M, class U>
+			Bitset(const Bitset<M, U>& other) {
+				memcpy(storage, other.storage, std::min(sizeof(storage), sizeof(other.storage)));
 			};
 
 			// TODO: ref(SizeType i);
@@ -142,10 +149,10 @@ namespace Engine {
 	};
 	
 
-	template<auto I> struct Hash<Bitset<I>> {
-		uint64 operator()(const Bitset<I>& v) const noexcept {
+	template<auto I, class T> struct Hash<Bitset<I, T>> {
+		uint64 operator()(const Bitset<I, T>& v) const noexcept {
 			uint64 seed = 0;
-			for (Bitset<I>::SizeType i = 0; i < v.dataSize(); ++i) {
+			for (Bitset<I, T>::SizeType i = 0; i < v.dataSize(); ++i) {
 				hashCombine(seed, v.data()[i]);
 			}
 			return seed;

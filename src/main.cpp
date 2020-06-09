@@ -569,8 +569,17 @@ int entry(int argc, char* argv[]) {
 		std::cout << "&: " << (b & a) << "\n";
 		std::cout << "^: " << (b ^ a) << "\n";
 
+		std::cout << "\n";
+		std::cout << "  A: " << a << "\n";
+		std::cout << "  9: " << Engine::Bitset<9, uint8>{a} << "\n";
+		std::cout << " 32: " << Engine::Bitset<32, uint8>{a} << "\n";
+		std::cout << " 64: " << Engine::Bitset<64, uint8>{a} << "\n";
+		std::cout << " 70: " << Engine::Bitset<70, uint8>{a} << "\n";
+		std::cout << "128: " << Engine::Bitset<128, uint8>{a} << "\n";
+
 		Engine::Bitset<128> z;
 		z.set(127);
+		std::cout << "\n";
 		std::cout << "  Z: " << z << "\n";
 		std::cout << "  1: " << (z >> 1) << "\n";
 		std::cout << "  4: " << (z >> 4) << "\n";
@@ -582,6 +591,7 @@ int entry(int argc, char* argv[]) {
 
 		Engine::Bitset<128> y;
 		y.set(0);
+		std::cout << "\n";
 		std::cout << "  Y: " << y << "\n";
 		std::cout << "  1: " << (y << 1) << "\n";
 		std::cout << "  4: " << (y << 4) << "\n";
@@ -593,7 +603,7 @@ int entry(int argc, char* argv[]) {
 
 		__debugbreak();
 		return 0;
-	}*/
+	}/**/
 
 	std::atexit([](){
 	});
