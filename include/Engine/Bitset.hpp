@@ -83,6 +83,8 @@ namespace Engine {
 
 			ENGINE_INLINE Bitset operator~() const noexcept { Bitset n{*this}; n.invert(); return n; }
 
+			ENGINE_INLINE operator bool() const { for (SizeType i = 0; i < storageSize; ++i) { if (storage[i]) { return true; } return false; } }
+
 			template<std::integral I>
 			Bitset& operator>>=(I n) noexcept {
 				while (n > 0) {

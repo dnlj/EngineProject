@@ -172,26 +172,15 @@ namespace Game {
 		});
 	}
 
-
-	// No Pong: 2, 5, 9
-	// Incomplete read: 7
-	constexpr auto TEMP_RM_byteCount = 5; // TODO: rm
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_FLAG>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
-		//const auto& remote = *from.reader.read<Engine::ECS::Entity>();
-		//auto& local = entToLocal[remote];
+		const auto remote = from.reader.read<Engine::ECS::Entity>();
+		const auto flags = from.reader.read<FlagsBitset>();
+		if (!remote || !flags) { return; }
 
-
-		//const auto flags = from.reader.read<FlagsBitset>();
-		for (int i = 0; i < TEMP_RM_byteCount; ++i) {
-			from.reader.read<uint8>();
-			//std::cout << i << ": " << (int32)*from.reader.read<uint8>() << " " << head.channel << "\n";
-		}
-		//from.reader.read<uint8>();
-		//if (flags && flags->test(0)) {
-		//const auto flags = from.reader.read<uint32>();
+		//auto& local = entToLocal[remote]; // TODO: prob put this into func
 		//if (flags && *flags) {
-			//std::cout << "FLAGS: " << remote << " - " << *flags << "\n";
+		//	std::cout << "FLAGS: " << remote << " - " << *flags << "\n";
 		//}
 	}
 
@@ -303,20 +292,14 @@ namespace Game {
 
 				for (const auto ent : world.getFilterFor<>()) {
 					writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
-					//writer.write(ent);
-					//const auto bs = FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size};
-					//writer.write(bs);
+					writer.write(ent);
+					const auto bs = FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size};
+					writer.write(bs);
 					//writer.write("a"); // TODO: why can we not read/write one byte. two works. but one doesnt
 					// Two works. why not one?? wat
 					//writer.write(uint8{255});
 					//writer.write(uint8{254});
 					//writer.write(uint8{253});
-
-					// Breaks at 5. lower is fine. higher is fine.
-					for (uint8 i = 0; i < TEMP_RM_byteCount; ++i) {
-						writer.write(uint8{i});
-					}
-
 					//ENGINE_LOG(Engine::Bitset<FlagsSet::size, byte>{world.getComponentsBitset(ent) >> ComponentsSet::size});
 					//writer.write(uint32{32});
 				}
@@ -463,11 +446,8 @@ namespace Game {
 		// TODO: from unconnected players we only want to process connect and discover messages
 		if (head->channel <= Engine::Net::Channel::ORDERED) {
 			if (!from.reader.updateRecvAcks(*head)) {
-				ENGINE_LOG("N: ", head->sequence, " ", head->channel);
 				from.reader.read(head->size);
 				return;
-			} else {
-				ENGINE_LOG("Y: ", head->sequence, " ", head->channel);
 			}
 		}
 
