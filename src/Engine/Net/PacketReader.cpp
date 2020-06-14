@@ -19,9 +19,9 @@ namespace Engine::Net {
 
 		const auto i = seqToIndex(seq);
 		auto bit = 1ull << i;
+		if (ackData.acks & bit) { return false; }
 
 		if (hdr.channel == Channel::RELIABLE) {
-			if (ackData.acks & bit) { return false; }
 			ackData.acks |= bit;
 
 			while(ackData.acks & (bit = 1ull << seqToIndex(ackData.nextAck))) {

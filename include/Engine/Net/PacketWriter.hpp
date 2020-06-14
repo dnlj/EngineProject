@@ -22,7 +22,6 @@ namespace Engine::Net {
 			char* curr = nullptr;
 			char* last = nullptr;
 			Packet packet;
-
 			SequenceNumber nextSeq[static_cast<int32>(Channel::_COUNT)] = {};
 			AckData channelAckData[2] = {};
 			uint64 bytesWritten = 0;
@@ -46,17 +45,8 @@ namespace Engine::Net {
 			void updateSentAcks(Channel ch, SequenceNumber nextAck, uint64 acks);
 
 			/**
-			 * Sends this packet to @p addr. Does not modify this packet.
-			 * Useful if you wish to send the same packet to multiple addresses.
+			 * Sends this packet to @p addr. Does not reset this packet.
 			 * It is recommended to always #reset or #clear once all sending is done.
-			 * 
-			 * @returns The number of bytes sent.
-			 */
-			int32 sendto();
-			
-			/**
-			 * Sends this packet to the address specified the last time #reset was called.
-			 * Also resets this packet.
 			 * 
 			 * @returns The number of bytes sent.
 			 */
@@ -121,6 +111,7 @@ namespace Engine::Net {
 			void store();
 			void endMessage();
 			bool canUseChannel(Channel ch) const;
+			int32 sendAsIs();
 			
 	};
 }

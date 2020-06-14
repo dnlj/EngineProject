@@ -166,7 +166,7 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	template<class Component, class... Args>
-	Component& WORLD_CLASS::addComponent(Entity ent, Args&&... args) {
+	decltype(auto) WORLD_CLASS::addComponent(Entity ent, Args&&... args) {
 		constexpr auto cid = getComponentId<Component>();
 		compBitsets[ent.id].set(cid);
 		fm.onComponentAdded(ent, cid, compBitsets[ent.id]);
@@ -176,8 +176,7 @@ namespace Engine::ECS {
 			container.add(ent.id, std::forward<Args>(args)...);
 			return container[ent.id];
 		} else {
-			// TODO: why is this not a compile error? this should need `decltype(auto)` return type?
-			return compBitsets[ent.id][cid];
+			return compBitsets[ent.id].set(cid);
 		}
 	}
 

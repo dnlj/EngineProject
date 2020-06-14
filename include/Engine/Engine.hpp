@@ -108,7 +108,11 @@ namespace Engine { using namespace Engine::Constants; }
 		}\
 	})
 
-#define ENGINE_DIE ::std::terminate();
+#ifdef DEBUG
+	#define ENGINE_DIE __debugbreak(); ::std::terminate();
+#else
+	#define ENGINE_DIE ::std::terminate();
+#endif
 
 #define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA(stdout, "[LOG]", Engine::ASCII_FG2, 0)
 #define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA(stdout, "[INFO]", Engine::ASCII_INFO, 0)

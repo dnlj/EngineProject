@@ -31,8 +31,8 @@ namespace Engine::Net {
 		ackData.acks = acks;
 	}
 
-	int32 PacketWriter::sendto() {
-		endMessage();
+	
+	int32 PacketWriter::sendAsIs() {
 		const auto sent = sock.send(
 			reinterpret_cast<const char*>(&packet),
 			static_cast<int32>(last - reinterpret_cast<const char*>(&packet)),
@@ -43,14 +43,15 @@ namespace Engine::Net {
 	}
 
 	int32 PacketWriter::send() {
-		const auto sent = sendto();
-		reset();
-		return sent;
+		endMessage();
+		return sendAsIs();
 	}
 
 	int32 PacketWriter::flush() {
 		if (size() > 0) {
-			return send();
+			const auto sent = send();
+			reset();
+			return sent;
 		}
 		return 0;
 	}
@@ -84,7 +85,7 @@ namespace Engine::Net {
 		} else {
 			const auto msgsz = size();
 			last = curr;
-			send();
+			sendAsIs();
 			memcpy(packet.data, curr, msgsz);
 			reset(msgsz);
 			write(t, sz);

@@ -187,7 +187,7 @@ namespace Engine::ECS {
 			 * @return A reference to the added component.
 			 */
 			template<class Component, class... Args>
-			Component& addComponent(Entity ent, Args&&... args);
+			decltype(auto) addComponent(Entity ent, Args&&... args);
 
 			/**
 			 * Adds components to an entity.

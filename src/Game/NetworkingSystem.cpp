@@ -10,6 +10,8 @@
 #include <Game/ConnectionComponent.hpp>
 
 namespace {
+	using FlagsBitset = Engine::Bitset<Game::FlagsSet::size, Engine::byte>;
+
 	template<class T>
 	concept IsNetworkedComponent = requires (T t, Engine::Net::Connection& msg) {
 		t.toNetwork(msg);
@@ -170,9 +172,27 @@ namespace Game {
 		});
 	}
 
+
+	// No Pong: 2, 5, 9
+	// Incomplete read: 7
+	constexpr auto TEMP_RM_byteCount = 5; // TODO: rm
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_FLAG>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
-		std::cout << "ECS_FLAG\n";
+		//const auto& remote = *from.reader.read<Engine::ECS::Entity>();
+		//auto& local = entToLocal[remote];
+
+
+		//const auto flags = from.reader.read<FlagsBitset>();
+		for (int i = 0; i < TEMP_RM_byteCount; ++i) {
+			from.reader.read<uint8>();
+			//std::cout << i << ": " << (int32)*from.reader.read<uint8>() << " " << head.channel << "\n";
+		}
+		//from.reader.read<uint8>();
+		//if (flags && flags->test(0)) {
+		//const auto flags = from.reader.read<uint32>();
+		//if (flags && *flags) {
+			//std::cout << "FLAGS: " << remote << " - " << *flags << "\n";
+		//}
 	}
 
 	template<>
@@ -238,7 +258,7 @@ namespace Game {
 			anyConn.writer.addr = group;
 			anyConn.writer.next(MessageType::DISCOVER_SERVER, Engine::Net::Channel::UNRELIABLE);
 			anyConn.writer.write(DISCOVER_SERVER_DATA);
-			anyConn.writer.send(); // TODO: test if getting on other systems
+			anyConn.writer.flush(); // TODO: test if getting on other systems
 		#endif
 	}
 
@@ -270,11 +290,10 @@ namespace Game {
 
 					if constexpr (repl == Engine::Net::Replication::ALWAYS) {
 						for (const auto ent : world.getFilterFor<C>()) {
-							// TODO: need specialization for flag comps
-							writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
-							writer.write(ent);
-							writer.write(world.getComponentId<C>());
-							world.getComponent<C>(ent).toNetwork(conn);
+							//writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
+							//writer.write(ent);
+							//writer.write(world.getComponentId<C>());
+							//world.getComponent<C>(ent).toNetwork(conn);
 						}
 					} else if constexpr (repl == Engine::Net::Replication::UPDATE) {
 						// TODO: impl
@@ -283,13 +302,25 @@ namespace Game {
 				});
 
 				for (const auto ent : world.getFilterFor<>()) {
-					// TODO: need specialization for flag comps
-					//writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
+					writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
 					//writer.write(ent);
-					//Engine::Bitset<FlagsSet::size> bs = world.getComponentsBitset(ent) >> ComponentsSet::size;
+					//const auto bs = FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size};
 					//writer.write(bs);
-					//world.getComponent<C>(ent).toNetwork(conn);
+					//writer.write("a"); // TODO: why can we not read/write one byte. two works. but one doesnt
+					// Two works. why not one?? wat
+					//writer.write(uint8{255});
+					//writer.write(uint8{254});
+					//writer.write(uint8{253});
+
+					// Breaks at 5. lower is fine. higher is fine.
+					for (uint8 i = 0; i < TEMP_RM_byteCount; ++i) {
+						writer.write(uint8{i});
+					}
+
+					//ENGINE_LOG(Engine::Bitset<FlagsSet::size, byte>{world.getComponentsBitset(ent) >> ComponentsSet::size});
+					//writer.write(uint32{32});
 				}
+				//writer.flush();
 			}
 		}
 
@@ -380,7 +411,7 @@ namespace Game {
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		auto& conn = addConnection(addr);
 		conn.writer.next(MessageType::CONNECT, Engine::Net::Channel::UNRELIABLE);
-		conn.writer.send();
+		conn.writer.flush();
 	}
 
 	Engine::Net::Connection& NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {
@@ -399,6 +430,7 @@ namespace Game {
 			world.addComponent<CharacterMovementComponent>(ply);
 			world.addComponent<CharacterSpellComponent>(ply);
 			world.addComponent<ActionComponent>(ply).grow(world.getSystem<ActionSystem>().count());
+			world.addComponent<ActivePlayerFlag>(ply);
 		}
 
 		if constexpr (ENGINE_CLIENT) {
@@ -418,39 +450,45 @@ namespace Game {
 		ENGINE_LOG("Disconnecting ", ent, " ", addr);
 		conn.writer.flush();
 		conn.writer.next(MessageType::DISCONNECT, Engine::Net::Channel::UNRELIABLE);
-		conn.writer.send();
+		conn.writer.flush();
 
 		ipToPlayer.erase(addr);
 		world.destroyEntity(ent);
 	}
 
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
-		const auto& head = *from.reader.read<Engine::Net::MessageHeader>();
+		const auto* head = from.reader.read<Engine::Net::MessageHeader>();
+		ENGINE_DEBUG_ASSERT(head != nullptr);
 
 		// TODO: from unconnected players we only want to process connect and discover messages
-		if (head.channel <= Engine::Net::Channel::ORDERED) {
-			if (!from.reader.updateRecvAcks(head)) {
-				from.reader.read(head.size);
+		if (head->channel <= Engine::Net::Channel::ORDERED) {
+			if (!from.reader.updateRecvAcks(*head)) {
+				ENGINE_LOG("N: ", head->sequence, " ", head->channel);
+				from.reader.read(head->size);
 				return;
+			} else {
+				ENGINE_LOG("Y: ", head->sequence, " ", head->channel);
 			}
 		}
 
-		switch(head.type) {
-			#define X(name) case MessageType::name: { handleMessageType<MessageType::name>(from, head, ent); break; };
+		switch(head->type) {
+			#define X(name) case MessageType::name: { handleMessageType<MessageType::name>(from, *head, ent); break; };
 			#include <Game/MessageType.xpp>
 			default: {
-				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(head.type));
+				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(head->type));
 			}
 		}
 
 		if constexpr (ENGINE_DEBUG) {
-			const byte* stop = reinterpret_cast<const byte*>(&head) + sizeof(head) + head.size;
+			const byte* stop = reinterpret_cast<const byte*>(head) + sizeof(*head) + head->size;
 			const byte* curr = static_cast<const byte*>(from.reader.read(0));
 			const auto rem = stop - curr;
 
 			if (rem > 0) {
 				ENGINE_WARN("Incomplete read of network message (", rem, " bytes remaining). Ignoring.");
 				from.reader.read(rem);
+			} else if (rem < 0) {
+				ENGINE_WARN("Network message read past message end (", rem, " bytes remaining).");
 			}
 		}
 	}
