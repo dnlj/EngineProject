@@ -387,11 +387,8 @@ void run(int argc, char* argv[]) {
 		const auto Target_Y = as.create("Target_Y");
 		
 		if constexpr (ENGINE_CLIENT) {
-			const auto& filter = world.getFilterFor<Game::ActivePlayerFlag>();
 			const auto pa = [&](auto action, auto curr){
-				for (auto ent : filter) {
-					as.processAction({ent, action, curr});
-				}
+				as.processAction(action, curr);
 			};
 
 			im.addBind(InputSequence{
@@ -439,33 +436,6 @@ void run(int argc, char* argv[]) {
 		as.addListener(Move_Right, Game::CharacterMovementActionListener{world, glm::ivec2{1, 0}});
 		as.addListener(Edit_Remove, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).remove = curr && !prev; return false; });
 		as.addListener(Edit_Place, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).place = curr && !prev; return false; });
-
-		if constexpr (ENGINE_CLIENT) {
-			{ // TODO: better way to do this
-				auto& netSys = world.getSystem<Game::NetworkingSystem>();
-				auto& connFilter = world.getFilterFor<Game::ConnectionComponent>();
-				
-				const auto sendAction = [&](Engine::ECS::Entity ent, ActionId aid, Value curr, Value prev){
-					ENGINE_DEBUG_ASSERT(connFilter.size() <= 1);
-					for (auto& ply : connFilter) {
-						auto& conn = *world.getComponent<Game::ConnectionComponent>(ply).conn;
-						conn.writer.next(Game::MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
-						conn.writer.write(aid);
-						conn.writer.write(curr);
-						//std::cout << "Send action: " << ent << " - " << aid << " - " << curr.value << " - " << connFilter.size() << "\n";
-					}
-					return false;
-				};
-				
-				as.addListener(Spell_1, sendAction);
-				as.addListener(Move_Up, sendAction);
-				as.addListener(Move_Down, sendAction);
-				as.addListener(Move_Left, sendAction);
-				as.addListener(Move_Right, sendAction);
-				as.addListener(Edit_Remove, sendAction);
-				as.addListener(Edit_Place, sendAction);
-			}
-		}
 	}
 
 	// More engine stuff

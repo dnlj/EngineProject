@@ -7,18 +7,38 @@
 namespace Game {
 	ActionSystem::ActionSystem(SystemArg arg)
 		: System{arg}
-		, actionFilter{world.getFilterFor<ActionComponent>()} {
+		, actionFilter{world.getFilterFor<ActionComponent>()}
+		, connFilter{world.getFilterFor<ConnectionComponent>()} {
 	}
 
-	void ActionSystem::processAction(const Engine::Input::ActionEvent& event) {
-		ENGINE_DEBUG_ASSERT(event.aid < count(), "Attempting to process invalid action");
-		auto& actionComp = world.getComponent<ActionComponent>(event.ent);
-		auto& action = actionComp.get(event.aid);
-		auto& listeners = actionIdToListeners[event.aid];
-		for (auto& l : listeners) {
-			l(event.ent, event.aid, event.val, action.state);
+	void ActionSystem::processAction(Engine::Input::ActionId aid, Engine::Input::Value curr) {
+		if constexpr (ENGINE_SERVER) {
+			ENGINE_ASSERT("Should not be called on server. This is a bug.");
+			return;
 		}
-		action.state = event.val;
+
+		for (auto& ent : actionFilter) {
+			processAction(ent, aid, curr);
+		}
+
+		for (auto& ent : connFilter) {
+			// TODO: we probably dont want to be sending every axis input to the server. just once every tick or something.
+			auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+			conn.writer.next(Game::MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
+			conn.writer.write(aid);
+			conn.writer.write(curr);
+		}
+	}
+
+	void ActionSystem::processAction(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr) {
+		ENGINE_DEBUG_ASSERT(aid < count(), "Attempting to process invalid action");
+		auto& actionComp = world.getComponent<ActionComponent>(ent);
+		auto& action = actionComp.get(aid);
+		auto& listeners = actionIdToListeners[aid];
+		for (auto& l : listeners) {
+			l(ent, aid, curr, action.state);
+		}
+		action.state = curr;
 	}
 
 	Engine::Input::ActionId ActionSystem::create(const std::string& name) {

@@ -1,4 +1,5 @@
 // STD
+#include <set>
 
 // Engine
 #include <Engine/Clock.hpp>
@@ -186,12 +187,13 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ACTION>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
-		world.getSystem<ActionSystem>().processAction({
-			ent,
-			*from.reader.read<Engine::Input::ActionId>(),
-			*from.reader.read<Engine::Input::Value>()
-		});
-		std::cout << "Recv action\n";
+		const auto* aid = from.reader.read<Engine::Input::ActionId>();
+		const auto* val = from.reader.read<Engine::Input::Value>();
+
+		if (aid && val) {
+			// TODO: sanity check inputs
+			world.getSystem<ActionSystem>().processAction(ent, *aid, *val);
+		}
 	}
 
 	template<>
@@ -261,12 +263,27 @@ namespace Game {
 
 				// TODO: figure out which entities are relevant to this ply
 				// TODO: handle entities without phys comp?
-				//struct QueryCallback : b2QueryCallback {
-				//	virtual bool ReportFixture(b2Fixture* fixture) override {
-				//		return false;
-				//	};
-				//} queryCallback;
-				//physComp.getWorld()->QueryAABB(&queryCallback, b2AABB{});
+
+				static std::set<Engine::ECS::Entity> entities; // TODO: no static, better set
+				entities.clear();
+				struct QueryCallback : b2QueryCallback {
+					World& world;
+					QueryCallback(World& world) : world{world} {}
+					virtual bool ReportFixture(b2Fixture* fixture) override {
+						const auto* eid = fixture->GetBody()->GetUserData();
+						if (eid) {
+							const auto& ud = world.getSystem<PhysicsSystem>().getUserData(eid);
+							entities.emplace(ud.ent);
+						}
+						return false;
+					}
+				} queryCallback(world);
+				const auto& pos = physComp.getPosition();
+				constexpr float32 range = 5; // TODO: what range?
+				physComp.getWorld()->QueryAABB(&queryCallback, b2AABB{
+					{pos.x - range, pos.y - range},
+					{pos.x + range, pos.y + range},
+				});
 
 				// TODO: figure out which entities have been updated
 				// TODO: prioritize entities
@@ -278,7 +295,7 @@ namespace Game {
 					constexpr auto repl = GetComponentReplication<C>::value;
 
 					if constexpr (repl == Engine::Net::Replication::ALWAYS) {
-						for (const auto ent : world.getFilterFor<C>()) {
+						for (const auto ent : entities) {
 							//writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
 							//writer.write(ent);
 							//writer.write(world.getComponentId<C>());
@@ -290,20 +307,11 @@ namespace Game {
 					}
 				});
 
-				for (const auto ent : world.getFilterFor<>()) {
+				for (const auto ent : entities) {
 					writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
 					writer.write(ent);
-					const auto bs = FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size};
-					writer.write(bs);
-					//writer.write("a"); // TODO: why can we not read/write one byte. two works. but one doesnt
-					// Two works. why not one?? wat
-					//writer.write(uint8{255});
-					//writer.write(uint8{254});
-					//writer.write(uint8{253});
-					//ENGINE_LOG(Engine::Bitset<FlagsSet::size, byte>{world.getComponentsBitset(ent) >> ComponentsSet::size});
-					//writer.write(uint32{32});
+					writer.write(FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size});
 				}
-				//writer.flush();
 			}
 		}
 

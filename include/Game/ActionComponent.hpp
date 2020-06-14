@@ -6,7 +6,6 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Input/Action.hpp>
-#include <Engine/Input/ActionEvent.hpp>
 
 // Game
 #include <Game/Common.hpp>

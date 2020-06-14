@@ -83,7 +83,7 @@ namespace Game {
 		}
 	}
 
-	const PhysicsUserData& PhysicsSystem::getUserData(void* ptr) const {
+	const PhysicsUserData& PhysicsSystem::getUserData(const void* ptr) const {
 		return userData[reinterpret_cast<std::size_t>(ptr)];
 	}
 

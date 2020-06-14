@@ -72,6 +72,13 @@ namespace Game {
 
 				return body;
 			}
+			
+			/**
+			 * Converts from box2d user data to PhysicsUserData.
+			 * @param[in] ptr The box2d user data.
+			 * @return The PhysicsUserData.
+			 */
+			const PhysicsUserData& getUserData(const void* ptr) const;
 
 		private:
 			class ContactListener : public b2ContactListener {
@@ -89,12 +96,6 @@ namespace Game {
 					std::vector<PhysicsListener*> listeners;
 			};
 
-			/**
-			 * Converts from box2d user data to PhysicsUserData.
-			 * @param[in] ptr The box2d user data.
-			 * @return The PhysicsUserData.
-			 */
-			const PhysicsUserData& getUserData(void* ptr) const;
 
 			/** The box2d world */
 			b2World physWorld;
