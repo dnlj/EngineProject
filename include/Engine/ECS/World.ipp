@@ -10,7 +10,7 @@
 namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class Arg>
-	WORLD_CLASS::World(float tickInterval, Arg& arg)
+	WORLD_CLASS::World(Arg& arg)
 		: systems((sizeof(Ss*), arg) ...)
 		, beginTime{Clock::now()}
 		, tickTime{beginTime} {

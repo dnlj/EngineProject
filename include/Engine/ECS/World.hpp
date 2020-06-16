@@ -95,7 +95,7 @@ namespace Engine::ECS {
 		public:
 			// TODO: doc
 			template<class Arg>
-			World(float tickInterval, Arg& arg);
+			World(Arg& arg);
 
 			World(const World&) = delete;
 

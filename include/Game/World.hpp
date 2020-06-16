@@ -70,8 +70,8 @@ namespace Game {
 	// TODO: cont. - Would need to move the set defs into own file then. Not sure if worth. Probably is. CRTP is a little stinky.
 	class World : public Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet, FlagsSet> {
 		public:
-			World(float tickInterval, Engine::EngineInstance& engine)
-				: Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet, FlagsSet>(tickInterval, std::tie(*this, engine)) {
+			World(Engine::EngineInstance& engine)
+				: Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet, FlagsSet>(std::tie(*this, engine)) {
 			}
 	};
 

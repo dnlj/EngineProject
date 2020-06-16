@@ -266,7 +266,7 @@ namespace Game {
 
 				// ImGui doesn't handle color correctly so we need to convert it
 				constexpr auto g = [](float32 in){ return powf(in/255.0f, 2.2f); };
-				const ImVec4 colors[] = {
+				static const ImVec4 colors[] = {
 					{g(239), g( 91), g( 91), 1.0f},
 					{g( 32), g(163), g(158), 1.0f},
 					{g(255), g(186), g( 73), 1.0f},

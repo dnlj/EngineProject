@@ -363,7 +363,7 @@ void run(int argc, char* argv[]) {
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// World
-	auto worldStorage = std::make_unique<Game::World>(1.0f / 60.0f, engine);
+	auto worldStorage = std::make_unique<Game::World>(engine);
 	Game::World& world = *worldStorage.get();
 	TempWorldEngineWrapper wrapper{engine, world};
 	windowCallbacks.userdata = &wrapper;
