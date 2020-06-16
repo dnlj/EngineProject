@@ -28,7 +28,7 @@ namespace Game {
 			bool update = false;
 
 			Engine::Clock::TimePoint rollingWindow;
-			Engine::Clock::Duration rollingWindowSize = std::chrono::milliseconds{5'000};
+			Engine::Clock::Duration rollingWindowSize = std::chrono::milliseconds{10'000};
 
 			// TODO: rm RollingData for consistency with above
 			struct FrameData {

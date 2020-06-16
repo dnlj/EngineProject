@@ -255,30 +255,35 @@ namespace Game {
 			constexpr auto yAxisflags = ImPlotAxisFlags_Auxiliary;
 			constexpr auto y2Axisflags = yAxisflags;
 			constexpr auto xAxisflags = yAxisflags & ~ImPlotAxisFlags_TickLabels;
+			constexpr float32 yScale = 250.0f;
 			ImPlot::SetNextPlotLimitsX(begin, end, ImGuiCond_Always);
-			ImPlot::SetNextPlotLimitsY(0.0f, 5000.0f, ImGuiCond_Once, 0);
-			ImPlot::SetNextPlotLimitsY(0.0f, 250.0f, ImGuiCond_Once, 1);
+			ImPlot::SetNextPlotLimitsY(0.0f, yScale * tickrate * 0.333f, ImGuiCond_Once, 0);
+			ImPlot::SetNextPlotLimitsY(0.0f, yScale, ImGuiCond_Once, 1);
 			if (ImPlot::BeginPlot(
 				"##Netgraph", nullptr, nullptr, ImVec2(-1,200),
 				ImPlotFlags_Default | ImPlotFlags_YAxis2,
 				xAxisflags, yAxisflags, y2Axisflags)) {
 
-				// TODO: good colors
+				// ImGui doesn't handle color correctly so we need to convert it
+				constexpr auto g = [](float32 in){ return powf(in/255.0f, 2.2f); };
 				const ImVec4 colors[] = {
-					{1.0f, 0.0f, 0.0f, 0.5f},
-					{0.0f, 1.0f, 0.0f, 0.5f},
-					{1.0f, 1.0f, 0.0f, 0.5f},
-					{1.0f, 0.0f, 1.0f, 0.5f},
+					{g(239), g( 91), g( 91), 1.0f},
+					{g( 32), g(163), g(158), 1.0f},
+					{g(255), g(186), g( 73), 1.0f},
+					//{g(220), g(214), g(247), 0.33f},
+					//{g(199), g(242), g(167), 0.33f},
+					{g(219), g(254), g(184), 0.33f},
 				};
 
 				ImPlot::SetPlotYAxis(0);
 				ImPlot::SetPalette(colors, sizeof(colors));
+				// TODO: thickness?
 				ImPlot::PlotLine("Avg Sent (Bytes / Second)", netGetPointAvg<0>, this, frameData.size(), 0);
 				ImPlot::PlotLine("Avg Recv (Bytes / Second)", netGetPointAvg<1>, this, frameData.size(), 0);
 
 				ImPlot::SetPlotYAxis(1);
-				ImPlot::PlotBars("Sent (Bytes)", netGetDiff<0>, this, frameData.size(), 1.0f/Game::tickrate, 0);
-				ImPlot::PlotBars("Recv (Bytes)", netGetDiff<1>, this, frameData.size(), 1.0f/Game::tickrate, 0);
+				ImPlot::PlotBars("Sent (Bytes)", netGetDiff<0>, this, frameData.size(), 1.0f / tickrate, 0);
+				ImPlot::PlotBars("Recv (Bytes)", netGetDiff<1>, this, frameData.size(), 1.0f / tickrate, 0);
 
 				ImPlot::EndPlot();
 				ImPlot::RestorePalette();
