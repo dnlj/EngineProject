@@ -21,8 +21,6 @@ namespace Game {
 			b2Body* body = nullptr;
 
 		public:
-			constexpr static auto networkReplication = Engine::Net::Replication::ALWAYS;
-
 			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent
 			b2Body& getBody();
 			b2World* getWorld();
@@ -34,7 +32,8 @@ namespace Game {
 			const b2Vec2& getPosition() const;
 			const b2Vec2& getInterpPosition() const;
 
-			void toNetwork(Engine::Net::Connection& conn) const;
-			void fromNetwork(Engine::Net::Connection& conn);
+			Engine::Net::Replication netRepl() const;
+			void netTo(Engine::Net::Connection& conn) const;
+			void netFrom(Engine::Net::Connection& conn);
 	};
 }

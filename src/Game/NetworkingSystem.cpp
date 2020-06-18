@@ -1,5 +1,6 @@
 // STD
 #include <set>
+#include <concepts>
 
 // Engine
 #include <Engine/Clock.hpp>
@@ -15,19 +16,15 @@ namespace {
 
 	template<class T>
 	concept IsNetworkedComponent = requires (T t, Engine::Net::Connection& msg) {
-		t.toNetwork(msg);
-		t.fromNetwork(msg);
+		Engine::Net::Replication{t.netRepl()};
+		t.netTo(msg);
+		t.netFrom(msg);
 	};
 
 	// TODO: would probably be easier to just have a base class instead of all these type traits
 	template<class T, class = void>
 	struct GetComponentReplication {
 		constexpr static auto value = Engine::Net::Replication::NONE;
-	};
-
-	template<class T>
-	struct GetComponentReplication<T, std::void_t<decltype(T::networkReplication)>> {
-		constexpr static auto value = T::networkReplication;
 	};
 
 	// TODO: move into meta
@@ -168,7 +165,7 @@ namespace Game {
 				} else {
 					comp = &world.getComponent<C>(local);
 				}
-				comp->fromNetwork(from);
+				comp->netFrom(from);
 			}
 		});
 	}
@@ -291,19 +288,20 @@ namespace Game {
 				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 				auto& writer = conn.writer;
 				ForEachIn<ComponentsSet>::call([&]<class C>(){
-					if constexpr (!IsNetworkedComponent<C>) { return; }
-					constexpr auto repl = GetComponentReplication<C>::value;
-
-					if constexpr (repl == Engine::Net::Replication::ALWAYS) {
+					if constexpr (IsNetworkedComponent<C>) {
 						for (const auto ent : entities) {
-							//writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
-							//writer.write(ent);
-							//writer.write(world.getComponentId<C>());
-							//world.getComponent<C>(ent).toNetwork(conn);
+							auto& comp = world.getComponent<C>(ent);
+							const auto repl = comp.netRepl();
+
+							if (repl == Engine::Net::Replication::ALWAYS) {
+									//writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
+									//writer.write(ent);
+									//writer.write(world.getComponentId<C>());
+									//world.getComponent<C>(ent).toNetwork(conn);
+							} else if (repl == Engine::Net::Replication::UPDATE) {
+								// TODO: impl
+							}
 						}
-					} else if constexpr (repl == Engine::Net::Replication::UPDATE) {
-						// TODO: impl
-						ENGINE_WARN("TODO: impl");
 					}
 				});
 

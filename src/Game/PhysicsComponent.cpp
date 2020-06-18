@@ -40,12 +40,16 @@ namespace Game {
 	const b2Vec2& PhysicsComponent::getInterpPosition() const {
 		return interpTransform.p;
 	}
+	
+	Engine::Net::Replication PhysicsComponent::netRepl() const {
+		return body->GetType() == b2_staticBody ? Engine::Net::Replication::UPDATE : Engine::Net::Replication::ALWAYS;
+	}
 
-	void PhysicsComponent::toNetwork(Engine::Net::Connection& conn) const {
+	void PhysicsComponent::netTo(Engine::Net::Connection& conn) const {
 		conn.writer.write(body->GetTransform());
 	}
 
-	void PhysicsComponent::fromNetwork(Engine::Net::Connection& conn) {
+	void PhysicsComponent::netFrom(Engine::Net::Connection& conn) {
 		const auto trans = conn.reader.read<b2Transform>();
 		updateTransform(trans->p, trans->q.GetAngle());
 	}
