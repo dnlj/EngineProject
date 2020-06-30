@@ -8,31 +8,13 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/IndexHash.hpp>
 
 
 namespace Engine {
 	// TODO: move
 	// TODO: name? dense, unique, sequential, key
-	template<class T>
-	struct IndexHash {
-		int32 operator()(const T& v) const {
-			static_assert(false, "IndexHash is not specialized for this type");
-		}
-	};
-
-	template<std::integral T>
-	struct IndexHash<T> {
-		T operator()(const T& v) const {
-			return v;
-		}
-	};
-
-	template<>
-	struct IndexHash<ECS::Entity> {
-		int32 operator()(const ECS::Entity& v) const {
-			return v.id;
-		}
-	};
+	
 
 	template<class Key, class Value, class Hash = IndexHash<Key>>
 	class SparseSet {

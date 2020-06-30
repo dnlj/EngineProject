@@ -7,6 +7,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Hash.hpp>
+#include <Engine/IndexHash.hpp>
 
 
 namespace Engine::ECS {
@@ -37,6 +38,12 @@ namespace Engine {
 	template<> struct Hash<ECS::Entity> {
 		size_t operator()(const ECS::Entity& val) const {
 			return reinterpret_cast<const uint32&>(val);
+		}
+	};
+
+	template<> struct IndexHash<ECS::Entity> {
+		int32 operator()(const ECS::Entity& v) const {
+			return v.id;
 		}
 	};
 }
