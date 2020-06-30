@@ -15,6 +15,7 @@
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/PhysicsOriginShiftSystem.hpp>
 #include <Game/PhysicsSystem.hpp>
+#include <Game/NeighborSystem.hpp>
 #include <Game/CharacterSpellSystem.hpp>
 #include <Game/CameraTrackingSystem.hpp>
 #include <Game/SubWorldSystem.hpp>
@@ -31,6 +32,7 @@
 #include <Game/ActionComponent.hpp>
 #include <Game/PlayerComponent.hpp> // TODO: flag
 #include <Game/ConnectionComponent.hpp>
+#include <Game/NeighborsComponent.hpp>
 
 
 namespace Game {
@@ -40,6 +42,7 @@ namespace Game {
 		CharacterMovementSystem,
 		PhysicsOriginShiftSystem,
 		PhysicsSystem,
+		NeighborSystem,
 		CharacterSpellSystem,
 		CameraTrackingSystem,
 		//SubWorldSystem,
@@ -58,7 +61,8 @@ namespace Game {
 		CharacterSpellComponent,
 		ActionComponent,
 		PlayerComponent,
-		ConnectionComponent
+		ConnectionComponent,
+		NeighborsComponent
 	>;
 
 	using FlagsSet = Meta::TypeSet::TypeSet<

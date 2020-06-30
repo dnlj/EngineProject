@@ -255,32 +255,11 @@ namespace Game {
 		const auto now = Engine::Clock::now();
 
 		if constexpr (ENGINE_SERVER) {
-			for (auto& ply : connFilter) {
-				auto& physComp = world.getComponent<Game::PhysicsComponent>(ply);
+			/*for (auto& ply : connFilter) {
+				auto& neighComp = world.getComponent<NeighborsComponent>(ply);
 
 				// TODO: figure out which entities are relevant to this ply
 				// TODO: handle entities without phys comp?
-
-				static std::set<Engine::ECS::Entity> entities; // TODO: no static, better set
-				entities.clear();
-				struct QueryCallback : b2QueryCallback {
-					World& world;
-					QueryCallback(World& world) : world{world} {}
-					virtual bool ReportFixture(b2Fixture* fixture) override {
-						const auto* eid = fixture->GetBody()->GetUserData();
-						if (eid) {
-							const auto& ud = world.getSystem<PhysicsSystem>().getUserData(eid);
-							entities.emplace(ud.ent);
-						}
-						return false;
-					}
-				} queryCallback(world);
-				const auto& pos = physComp.getPosition();
-				constexpr float32 range = 5; // TODO: what range?
-				physComp.getWorld()->QueryAABB(&queryCallback, b2AABB{
-					{pos.x - range, pos.y - range},
-					{pos.x + range, pos.y + range},
-				});
 
 				// TODO: figure out which entities have been updated
 				// TODO: prioritize entities
@@ -310,7 +289,7 @@ namespace Game {
 					writer.write(ent);
 					writer.write(FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size});
 				}
-			}
+			}*/
 		}
 
 		if constexpr (ENGINE_CLIENT) {
@@ -420,6 +399,7 @@ namespace Game {
 			world.addComponent<CharacterSpellComponent>(ply);
 			world.addComponent<ActionComponent>(ply).grow(world.getSystem<ActionSystem>().count());
 			world.addComponent<ActivePlayerFlag>(ply);
+			world.addComponent<NeighborsComponent>(ply);
 		}
 
 		if constexpr (ENGINE_CLIENT) {
