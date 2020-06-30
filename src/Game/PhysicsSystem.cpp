@@ -54,15 +54,8 @@ namespace Game {
 
 	b2Body* PhysicsSystem::createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef) {
 		auto body = physWorld.CreateBody(&bodyDef);
-
-		if (userData.size() <= ent.id) {
-			userData.resize(ent.id + 1);
-		}
-
-		userData[ent.id] = PhysicsUserData{ent};
-		// TODO: change this to be whole ECS::Entity object
-		body->SetUserData(reinterpret_cast<void*>(static_cast<std::uintptr_t>(ent.id)));
-
+		static_assert(sizeof(void*) >= sizeof(ent), "Engine::ECS::Entity is to large to store in userdata pointer.");
+		body->SetUserData(reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t&>(ent)));
 		return body;
 	}
 
@@ -83,10 +76,6 @@ namespace Game {
 		}
 	}
 
-	const PhysicsUserData& PhysicsSystem::getUserData(const void* ptr) const {
-		return userData[reinterpret_cast<std::size_t>(ptr)];
-	}
-
 	#if defined(DEBUG_PHYSICS)
 		Engine::Debug::DebugDrawBox2D& PhysicsSystem::getDebugDraw() {
 			constexpr size_t a = sizeof(Engine::Debug::DebugDrawBox2D);
@@ -101,20 +90,20 @@ namespace Game {
 	}
 
 	void PhysicsSystem::ContactListener::BeginContact(b2Contact* contact) {
-		const auto dataA = contact->GetFixtureA()->GetBody()->GetUserData();
-		const auto dataB = contact->GetFixtureB()->GetBody()->GetUserData();
+		const auto entA = toEntity(contact->GetFixtureA()->GetBody()->GetUserData());
+		const auto entB = toEntity(contact->GetFixtureB()->GetBody()->GetUserData());
 
 		for (auto listener : listeners) {
-			listener->beginContact(physSys.getUserData(dataA), physSys.getUserData(dataB));
+			listener->beginContact(entA, entB);
 		}
 	}
 
 	void PhysicsSystem::ContactListener::EndContact(b2Contact* contact) {
-		const auto dataA = static_cast<PhysicsUserData*>(contact->GetFixtureA()->GetBody()->GetUserData());
-		const auto dataB = static_cast<PhysicsUserData*>(contact->GetFixtureB()->GetBody()->GetUserData());
+		const auto entA = toEntity(contact->GetFixtureA()->GetBody()->GetUserData());
+		const auto entB = toEntity(contact->GetFixtureB()->GetBody()->GetUserData());
 
 		for (auto listener : listeners) {
-			listener->endContact(physSys.getUserData(dataA), physSys.getUserData(dataB));
+			listener->endContact(entA, entB);
 		}
 	}
 

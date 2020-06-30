@@ -9,7 +9,6 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/EntityFilter.hpp>
-#include <Game/PhysicsUserData.hpp>
 #include <Game/PhysicsListener.hpp>
 
 
@@ -72,13 +71,10 @@ namespace Game {
 
 				return body;
 			}
-			
-			/**
-			 * Converts from box2d user data to PhysicsUserData.
-			 * @param[in] ptr The box2d user data.
-			 * @return The PhysicsUserData.
-			 */
-			const PhysicsUserData& getUserData(const void* ptr) const;
+
+			ENGINE_INLINE static Engine::ECS::Entity toEntity(void* userdata) {
+				return reinterpret_cast<Engine::ECS::Entity&>(userdata);
+			};
 
 		private:
 			class ContactListener : public b2ContactListener {
@@ -102,9 +98,6 @@ namespace Game {
 
 			/** The box2d contact listener */
 			ContactListener contactListener;
-
-			/** The user data to use for box2d */
-			std::vector<PhysicsUserData> userData;
 
 			// TODO:Doc
 			EntityFilter& filter;

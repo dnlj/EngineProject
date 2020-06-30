@@ -26,12 +26,9 @@ namespace Game {
 				World& world;
 				QueryCallback(World& world, decltype(ents) ents) : world{world}, ents{ents} {}
 				virtual bool ReportFixture(b2Fixture* fixture) override {
-					const auto* eid = fixture->GetBody()->GetUserData(); // TODO: switch to storing whole entities instead of eid
-					if (eid) { // TODO: this isnt correct. How do we get userdata for ent 0?
-						const auto& ud = world.getSystem<PhysicsSystem>().getUserData(eid);
-						if (!ents.has(ud.ent)) {
-							ents.add(ud.ent);
-						}
+					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
+					if (!ents.has(ent)) {
+						ents.add(ent);
 					}
 					return true;
 				}

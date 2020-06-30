@@ -1,8 +1,7 @@
 #pragma once
 
-
-// Game
-#include <Game/PhysicsUserData.hpp>
+// Engine
+#include <Engine/ECS/Entity.hpp>
 
 
 namespace Game {
@@ -14,18 +13,14 @@ namespace Game {
 			virtual ~PhysicsListener() {};
 
 			/**
-			 * Called when contact begins.
-			 * @param[in] dataA The first user data.
-			 * @param[in] dataB The second user data.
+			 * Called two entities begin contact.
 			 */
-			virtual void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) {};
+			virtual void beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) {};
 
 			/**
-			 * Called when contact ends.
-			 * @param[in] dataA The first user data.
-			 * @param[in] dataB The second user data.
+			 * Called two entities end contact.
 			 */
-			virtual void endContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) {};
+			virtual void endContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) {};
 
 			//TODO: virtual void preSolve() {};
 

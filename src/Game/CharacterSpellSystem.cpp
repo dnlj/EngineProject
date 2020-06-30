@@ -92,9 +92,7 @@ namespace Game {
 		}
 	}
 
-	void CharacterSpellSystem::beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) {
-		const auto entA = dataA.ent;
-		const auto entB = dataB.ent;
+	void CharacterSpellSystem::beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) {
 		const auto minEnt = missles.front();
 		const auto maxEnt = missles.back();
 

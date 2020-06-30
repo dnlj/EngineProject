@@ -20,7 +20,7 @@ namespace Game {
 			void fireMissile(const b2Vec2& pos, const b2Vec2& dir);
 
 		private:
-			void beginContact(const PhysicsUserData& dataA, const PhysicsUserData& dataB) override;
+			void beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) override;
 			void detonateMissle(Engine::ECS::Entity ent);
 
 			std::vector<Engine::ECS::Entity> missles;
