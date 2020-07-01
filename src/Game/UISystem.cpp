@@ -1,6 +1,7 @@
 // STD
 #include <regex>
 #include <algorithm>
+#include <cstdio>
 
 // Game
 #include <Game/UISystem.hpp>
@@ -80,6 +81,7 @@ namespace Game {
 		Engine::ImGui::newFrame();
 
 		if constexpr (ENGINE_CLIENT) {
+			ImGui::ShowDemoWindow();
 			ui_connect();
 		}
 
@@ -119,6 +121,7 @@ namespace Game {
 
 		ui_coordinates();
 		ui_network();
+		ui_entities();
 
 		ImGui::End();
 	}
@@ -190,7 +193,7 @@ namespace Game {
 	}
 
 	void UISystem::ui_coordinates() {
-		if (!ImGui::CollapsingHeader("Coordinates", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+		if (!ImGui::CollapsingHeader("Coordinates")) { return; }
 		if (activePlayerFilter.empty()) { return; }
 
 		auto& mapSys = world.getSystem<Game::MapSystem>();
@@ -235,7 +238,7 @@ namespace Game {
 	}
 
 	void UISystem::ui_network() {
-		if (!ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+		if (!ImGui::CollapsingHeader("Networking")) { return; }
 		auto& [fd, now] = frameData.front();
 
 		for (const auto ent : connFilter) {
@@ -318,5 +321,31 @@ namespace Game {
 		}
 
 		return {Engine::Clock::Seconds{curr->second.time_since_epoch()}.count(), curr->first.netstats[I].diff};
+	}
+
+	
+	void UISystem::ui_entities() {
+		if (!ImGui::CollapsingHeader("Entities", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+		for (const auto& [ent, state] : world.getEntities()) {
+			ImGui::PushID(ent.id);
+
+			if (ImGui::TreeNode("Title", "Entity(%i, %i)", ent.id, ent.gen)) {
+				constexpr auto size = Engine::ECS::ComponentBitset::capacity();
+				static char comps[size] = {};
+				const auto& bits = world.getComponentsBitset(ent);
+
+				for (int i = 0; i < size; ++i) {
+					comps[i] = bits.test(size - i - 1) ? '1' : '0';
+				}
+
+				// TODO: more detailed component inspection
+
+				ImGui::LabelText("", "Components: %s", comps);
+				ImGui::TreePop();
+			}
+
+			ImGui::PopID();
+		}
 	}
 }

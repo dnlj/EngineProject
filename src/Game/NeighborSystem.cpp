@@ -10,7 +10,6 @@ namespace Game {
 
 	void NeighborSystem::tick(float32 dt) {
 		for (const auto ent : neighborFilter) {
-			std::cout << "=========================================================" << ent << "\n";
 			auto& neighComp = world.getComponent<NeighborsComponent>(ent);
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			auto& added = neighComp.addedNeighbors;
@@ -46,24 +45,12 @@ namespace Game {
 					removed.add(lent.first);
 				}
 			}
+
 			for (const auto cent : current) {
 				if (!last.has(cent.first)) {
 					added.add(cent.first);
 				}
 			}
-
-			const auto printCont = [](auto& c) -> auto& {
-				for (const auto& e : c) {
-					std::cout << " " << e.first;
-				}
-				return std::cout;
-			};
-
-			std::cout
-				<< "Curr: " << current.size(); printCont(current)
-				<< "\nAdded: " << added.size(); printCont(added)
-				<< "\nRemoved: " << removed.size(); printCont(removed)
-				<< "\n\n";
 		}
 	}
 }

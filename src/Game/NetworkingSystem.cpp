@@ -139,6 +139,14 @@ namespace Game {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
 		}
 	}
+	
+	template<>
+	void NetworkingSystem::handleMessageType<MessageType::ECS_ENT_CREATE>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	}
+
+	template<>
+	void NetworkingSystem::handleMessageType<MessageType::ECS_ENT_DESTROY>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	}
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
