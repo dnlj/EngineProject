@@ -81,7 +81,7 @@ namespace Game {
 		Engine::ImGui::newFrame();
 
 		if constexpr (ENGINE_CLIENT) {
-			ImGui::ShowDemoWindow();
+			//ImGui::ShowDemoWindow();
 			ui_connect();
 		}
 
@@ -325,7 +325,7 @@ namespace Game {
 
 	
 	void UISystem::ui_entities() {
-		if (!ImGui::CollapsingHeader("Entities", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+		if (!ImGui::CollapsingHeader("Entities")) { return; }
 
 		for (const auto& [ent, state] : world.getEntities()) {
 			ImGui::PushID(ent.id);

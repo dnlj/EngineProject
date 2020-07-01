@@ -142,10 +142,25 @@ namespace Game {
 	
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_ENT_CREATE>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		auto* remote = from.reader.read<Engine::ECS::Entity>();
+		if (!remote) { return; }
+
+		auto& local = entToLocal[*remote];
+		if (local == Engine::ECS::INVALID_ENTITY) {
+			local = world.createEntity();
+		}
 	}
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_ENT_DESTROY>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		auto* remote = from.reader.read<Engine::ECS::Entity>();
+		if (!remote) { return; }
+
+		auto found = entToLocal.find(*remote);
+		if (found != entToLocal.end()) {
+			world.destroyEntity(found->second);
+			entToLocal.erase(found);
+		}
 	}
 
 	template<>
@@ -263,8 +278,21 @@ namespace Game {
 		const auto now = Engine::Clock::now();
 
 		if constexpr (ENGINE_SERVER) {
-			/*for (auto& ply : connFilter) {
+			for (auto& ply : connFilter) {
 				auto& neighComp = world.getComponent<NeighborsComponent>(ply);
+				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+
+				for (const auto& pair : neighComp.addedNeighbors) {
+					std::cout << "Added: " << pair.first << "\n";
+					conn.writer.next(MessageType::ECS_ENT_CREATE, Engine::Net::Channel::RELIABLE);
+					conn.writer.write(pair.first);
+				}
+
+				for (const auto& pair : neighComp.removedNeighbors) {
+					std::cout << "Removed: " << pair.first << "\n";
+					conn.writer.next(MessageType::ECS_ENT_DESTROY, Engine::Net::Channel::RELIABLE);
+					conn.writer.write(pair.first);
+				}
 
 				// TODO: figure out which entities are relevant to this ply
 				// TODO: handle entities without phys comp?
@@ -272,8 +300,7 @@ namespace Game {
 				// TODO: figure out which entities have been updated
 				// TODO: prioritize entities
 				// TODO: figure out which comps on those entities have been updated
-				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-				auto& writer = conn.writer;
+				/*auto& writer = conn.writer;
 				ForEachIn<ComponentsSet>::call([&]<class C>(){
 					if constexpr (IsNetworkedComponent<C>) {
 						for (const auto ent : entities) {
@@ -296,8 +323,8 @@ namespace Game {
 					writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
 					writer.write(ent);
 					writer.write(FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size});
-				}
-			}*/
+				}*/
+			}
 		}
 
 		if constexpr (ENGINE_CLIENT) {

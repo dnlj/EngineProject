@@ -51,6 +51,8 @@ namespace Game {
 					added.add(cent.first);
 				}
 			}
+
+			// TODO: disabled vs destroyed
 		}
 	}
 }
