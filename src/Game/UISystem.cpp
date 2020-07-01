@@ -328,6 +328,7 @@ namespace Game {
 		if (!ImGui::CollapsingHeader("Entities")) { return; }
 
 		for (const auto& [ent, state] : world.getEntities()) {
+			if (!world.isAlive(ent)) { continue; }
 			ImGui::PushID(ent.id);
 
 			if (ImGui::TreeNode("Title", "Entity(%i, %i)", ent.id, ent.gen)) {
