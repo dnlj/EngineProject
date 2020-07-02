@@ -13,6 +13,7 @@ namespace Game {
 		, activePlayerFilter{world.getFilterFor<Game::ActivePlayerFlag>()} {
 		static_assert(World::orderAfter<CameraTrackingSystem, CharacterMovementSystem>());
 		static_assert(World::orderAfter<CameraTrackingSystem, PhysicsSystem>());
+		engine.camera.setPosition({0,0});
 	}
 
 	void CameraTrackingSystem::run(float dt) {

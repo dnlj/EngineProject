@@ -341,10 +341,10 @@ namespace Game {
 				}
 
 				for (const auto& pair : neighComp.currentNeighbors) {
+					const auto ent = pair.first;
 					ForEachIn<ComponentsSet>::call([&]<class C>() {
 						// TODO: Note: this only updates components not flags. Still need to network flags.
 						if constexpr (IsNetworkedComponent<C>) {
-							const auto ent = pair.first;
 							if (!world.hasComponent<C>(ent)) { return; }
 
 							const auto& comp = world.getComponent<C>(ent);
@@ -374,12 +374,11 @@ namespace Game {
 						}
 					});
 
-					// TODO: Flags
-					/*for (const auto ent : entities) {
-						writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
-						writer.write(ent);
-						writer.write(FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size});
-					}*/
+					// TODO: flags
+					// TODO: only send on change
+					//conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
+					//conn.writer.write(ent);
+					//conn.writer.write(FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size});
 				}
 			}
 

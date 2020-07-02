@@ -48,7 +48,6 @@ namespace Game {
 
 	void PhysicsComponent::netTo(Engine::Net::PacketWriter& writer) const {
 		writer.write(body->GetTransform());
-		std::cout << "Write: " << body->GetTransform().p.x << " " << body->GetTransform().p.y << "\n";
 	}
 
 	void PhysicsComponent::netToInit(World& world, Engine::ECS::Entity ent, Engine::Net::PacketWriter& writer) const {
@@ -59,7 +58,6 @@ namespace Game {
 		const auto trans = reader.read<b2Transform>();
 		// TODO: why doesnt update just take a transform?
 		updateTransform(trans->p, trans->q.GetAngle());
-		std::cout << "Read: " << trans->p.x << " " << trans->p.y << "\n";
 	}
 
 	void PhysicsComponent::netFromInit(World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader) {
