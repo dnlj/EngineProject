@@ -1,5 +1,6 @@
 // Game
 #include <Game/PhysicsComponent.hpp>
+#include <Game/World.hpp>
 
 
 namespace Game {
@@ -42,15 +43,29 @@ namespace Game {
 	}
 	
 	Engine::Net::Replication PhysicsComponent::netRepl() const {
-		return body->GetType() == b2_staticBody ? Engine::Net::Replication::UPDATE : Engine::Net::Replication::ALWAYS;
+		return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::UPDATE : Engine::Net::Replication::ALWAYS;
 	}
 
-	void PhysicsComponent::netTo(Engine::Net::Connection& conn) const {
-		conn.writer.write(body->GetTransform());
+	void PhysicsComponent::netTo(Engine::Net::PacketWriter& writer) const {
+		writer.write(body->GetTransform());
+		std::cout << "Write: " << body->GetTransform().p.x << " " << body->GetTransform().p.y << "\n";
 	}
 
-	void PhysicsComponent::netFrom(Engine::Net::Connection& conn) {
-		const auto trans = conn.reader.read<b2Transform>();
+	void PhysicsComponent::netToInit(World& world, Engine::ECS::Entity ent, Engine::Net::PacketWriter& writer) const {
+		netTo(writer);
+	}
+
+	void PhysicsComponent::netFrom(Engine::Net::PacketReader& reader) {
+		const auto trans = reader.read<b2Transform>();
+		// TODO: why doesnt update just take a transform?
 		updateTransform(trans->p, trans->q.GetAngle());
+		std::cout << "Read: " << trans->p.x << " " << trans->p.y << "\n";
+	}
+
+	void PhysicsComponent::netFromInit(World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader) {
+		auto& physSys = world.getSystem<PhysicsSystem>();
+		// TODO: actual shape
+		body = physSys.createPhysicsCircle(ent);
+		netFrom(reader);
 	}
 }

@@ -15,10 +15,18 @@ namespace {
 	using FlagsBitset = Engine::Bitset<Game::FlagsSet::size, Engine::byte>;
 
 	template<class T>
-	concept IsNetworkedComponent = requires (T t, Engine::Net::Connection& msg) {
+	concept IsNetworkedComponent = requires (
+			T t,
+			Engine::Net::PacketWriter& writer,
+			Engine::Net::PacketReader& reader,
+			Game::World& world,
+			Engine::ECS::Entity ent
+		) {
 		Engine::Net::Replication{t.netRepl()};
-		t.netTo(msg);
-		t.netFrom(msg);
+		t.netTo(writer);
+		t.netToInit(world, ent, writer);
+		t.netFrom(reader);
+		t.netFromInit(world, ent, reader);
 	};
 
 	// TODO: would probably be easier to just have a base class instead of all these type traits
@@ -142,6 +150,7 @@ namespace Game {
 	
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_ENT_CREATE>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		// TODO: this message should be client only
 		auto* remote = from.reader.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
 
@@ -149,10 +158,13 @@ namespace Game {
 		if (local == Engine::ECS::INVALID_ENTITY) {
 			local = world.createEntity();
 		}
+
+		// TODO: components init
 	}
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_ENT_DESTROY>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		// TODO: this message should be client only
 		auto* remote = from.reader.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
 
@@ -164,31 +176,48 @@ namespace Game {
 	}
 
 	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
-		if constexpr (ENGINE_SERVER) { return; }
+	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP_ADD>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		// TODO: this message should be client only
+		const auto* remote = from.reader.read<Engine::ECS::Entity>();
+		const auto* cid = from.reader.read<Engine::ECS::ComponentId>();
+		if (!remote || !cid) { return; }
 
-		const auto& remote = *from.reader.read<Engine::ECS::Entity>();
-		const auto cid = *from.reader.read<Engine::ECS::ComponentId>();
-		auto& local = entToLocal[remote];
+		auto found = entToLocal.find(*remote);
+		if (found == entToLocal.end()) { return; }
+		auto local = found->second;
 
-		if (local == Engine::ECS::INVALID_ENTITY) {
-			// Create
-			local = world.createEntity();
-			puts("CREATE!!!!!!!!!!!!!!!!!!!!!!!!!");
-		}
-
-		// update
-		return;
-		world.callWithComponent(local, cid, [&]<class C>(){
+		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
-				C* comp;
 				if (!world.hasComponent<C>(local)) {
-					puts("not has comp");
-					comp = &world.addComponent<C>(local);
-				} else {
-					comp = &world.getComponent<C>(local);
+					puts("ECS_COMP_ALWAYS > Add Component");
+					auto& comp = world.addComponent<C>(local);
+					comp.netFromInit(world, local, from.reader);
 				}
-				comp->netFrom(from);
+			} else {
+				ENGINE_WARN("Attemping to network non-network component");
+			}
+		});
+	}
+
+	template<>
+	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP_ALWAYS>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		// TODO: this message should be client only
+		const auto* remote = from.reader.read<Engine::ECS::Entity>();
+		const auto* cid = from.reader.read<Engine::ECS::ComponentId>();
+		if (!remote || !cid) { return; }
+
+		auto found = entToLocal.find(*remote);
+		if (found == entToLocal.end()) { return; }
+		auto local = found->second;
+
+		// TODO: What if we get an older message after a newer message?
+		world.callWithComponent(*cid, [&]<class C>(){
+			if constexpr (IsNetworkedComponent<C>) {
+				if (world.hasComponent<C>(local)) {
+					world.getComponent<C>(local).netFrom(from.reader);
+				}
+			} else {
+				ENGINE_WARN("Attemping to network non-network component");
 			}
 		});
 	}
@@ -278,53 +307,83 @@ namespace Game {
 		const auto now = Engine::Clock::now();
 
 		if constexpr (ENGINE_SERVER) {
+			if (world.getAllComponentBitsets().size() > lastCompsBitsets.size()) {
+				lastCompsBitsets.resize(world.getAllComponentBitsets().size());
+			}
+
 			for (auto& ply : connFilter) {
 				auto& neighComp = world.getComponent<NeighborsComponent>(ply);
 				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
-				for (const auto& pair : neighComp.addedNeighbors) {
-					std::cout << "Added: " << pair.first << "\n";
-					conn.writer.next(MessageType::ECS_ENT_CREATE, Engine::Net::Channel::RELIABLE);
-					conn.writer.write(pair.first);
-				}
-
-				for (const auto& pair : neighComp.removedNeighbors) {
-					std::cout << "Removed: " << pair.first << "\n";
-					conn.writer.next(MessageType::ECS_ENT_DESTROY, Engine::Net::Channel::RELIABLE);
-					conn.writer.write(pair.first);
-				}
-
-				// TODO: figure out which entities are relevant to this ply
 				// TODO: handle entities without phys comp?
-
 				// TODO: figure out which entities have been updated
 				// TODO: prioritize entities
 				// TODO: figure out which comps on those entities have been updated
-				/*auto& writer = conn.writer;
-				ForEachIn<ComponentsSet>::call([&]<class C>(){
-					if constexpr (IsNetworkedComponent<C>) {
-						for (const auto ent : entities) {
-							auto& comp = world.getComponent<C>(ent);
-							const auto repl = comp.netRepl();
 
-							if (repl == Engine::Net::Replication::ALWAYS) {
-									//writer.next(MessageType::ECS_COMP, Engine::Net::Channel::UNRELIABLE);
-									//writer.write(ent);
-									//writer.write(world.getComponentId<C>());
-									//world.getComponent<C>(ent).toNetwork(conn);
-							} else if (repl == Engine::Net::Replication::UPDATE) {
-								// TODO: impl
+				for (const auto& pair : neighComp.addedNeighbors) {
+					const auto& ent = pair.first;
+					conn.writer.next(MessageType::ECS_ENT_CREATE, Engine::Net::Channel::ORDERED);
+					conn.writer.write(ent);
+
+					ForEachIn<ComponentsSet>::call([&]<class C>() {
+						if constexpr (IsNetworkedComponent<C>) {
+							conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
+							conn.writer.write(ent);
+							conn.writer.write(world.getComponentId<C>());
+							world.getComponent<C>(ent).netToInit(world, ent, conn.writer);
+						}
+					});
+				}
+
+				for (const auto& pair : neighComp.removedNeighbors) {
+					conn.writer.next(MessageType::ECS_ENT_DESTROY, Engine::Net::Channel::ORDERED);
+					conn.writer.write(pair.first);
+				}
+
+				for (const auto& pair : neighComp.currentNeighbors) {
+					ForEachIn<ComponentsSet>::call([&]<class C>() {
+						// TODO: Note: this only updates components not flags. Still need to network flags.
+						if constexpr (IsNetworkedComponent<C>) {
+							const auto ent = pair.first;
+							if (!world.hasComponent<C>(ent)) { return; }
+
+							const auto& comp = world.getComponent<C>(ent);
+							const auto cid = world.getComponentId<C>();
+							const auto repl = comp.netRepl();
+							const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
+
+							if (diff < 0) { // Component Added
+								// TODO: comp added
+								// TODO: currently this is duplicate with addedNeighbors init
+								//conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
+								//conn.writer.write(cid);
+								//comp.netToInit(world, ent, conn.writer);
+							} else if (diff > 0) { // Component Removed
+								// TODO: comp removed
+							} else { // Component Updated
+								// TODO: check if comp updated
+								if (repl == Engine::Net::Replication::ALWAYS) {
+									conn.writer.next(MessageType::ECS_COMP_ALWAYS, Engine::Net::Channel::UNRELIABLE);
+									conn.writer.write(ent);
+									conn.writer.write(cid);
+									comp.netTo(conn.writer);
+								} else if (repl == Engine::Net::Replication::UPDATE) {
+									// TODO: impl
+								}
 							}
 						}
-					}
-				});
+					});
 
-				for (const auto ent : entities) {
-					writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
-					writer.write(ent);
-					writer.write(FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size});
-				}*/
+					// TODO: Flags
+					/*for (const auto ent : entities) {
+						writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
+						writer.write(ent);
+						writer.write(FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size});
+					}*/
+				}
 			}
+
+			lastCompsBitsets = world.getAllComponentBitsets();
 		}
 
 		if constexpr (ENGINE_CLIENT) {
@@ -484,9 +543,14 @@ namespace Game {
 			const byte* stop = reinterpret_cast<const byte*>(head) + sizeof(*head) + head->size;
 			const byte* curr = static_cast<const byte*>(from.reader.read(0));
 			const auto rem = stop - curr;
+			constexpr auto msgToStr = [](const Engine::Net::MessageType& type) -> const char* {
+				#define X(name) if (type == MessageType::name) { return #name; }
+				#include <Game/MessageType.xpp>
+				return "UNKNOWN";
+			};
 
 			if (rem > 0) {
-				ENGINE_WARN("Incomplete read of network message (", rem, " bytes remaining). Ignoring.");
+				ENGINE_WARN("Incomplete read of network message ", msgToStr(head->type), " (", rem, " bytes remaining). Ignoring.");
 				from.reader.read(rem);
 			} else if (rem < 0) {
 				ENGINE_WARN("Network message read past message end (", rem, " bytes remaining).");

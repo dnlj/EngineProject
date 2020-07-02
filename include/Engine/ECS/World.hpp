@@ -275,6 +275,11 @@ namespace Engine::ECS {
 			 */
 			const ComponentBitset& getComponentsBitset(Entity ent) const;
 
+			/**
+			 * Gets the components bitset for all entities. Sorted by entity id. 
+			 */
+			const auto& getAllComponentBitsets() const;
+
 			// TODO: Doc
 			template<class... Components>
 			Filter& getFilterFor();
@@ -322,7 +327,7 @@ namespace Engine::ECS {
 
 			// TODO: doc
 			template<class Callable>
-			void callWithComponent(Entity ent, ComponentId cid, Callable&& callable);
+			void callWithComponent(ComponentId cid, Callable&& callable);
 
 			/**
 			 * Helper to cast from `this` to CRTP derived class.

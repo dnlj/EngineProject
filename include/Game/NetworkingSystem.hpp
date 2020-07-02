@@ -5,6 +5,7 @@
 #include <Engine/Net/Connection.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Engine.hpp>
+#include <Engine/ECS/Common.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -31,12 +32,14 @@ namespace Game {
 			Engine::Net::UDPSocket socket;
 			EntityFilter& connFilter;
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> ipToPlayer;
+			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
 			Engine::Net::IPv4Address address;
 			Engine::Net::Packet packet = {};
 			Engine::Net::Connection anyConn; // Used for unconnected messages
 			const Engine::Net::IPv4Address group;
 
+			// TODO: at some point we probably want to shrink this
 			Engine::FlatHashMap<Engine::ECS::Entity, Engine::ECS::Entity> entToLocal;
 
 

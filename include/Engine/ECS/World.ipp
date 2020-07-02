@@ -253,6 +253,11 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
+	const auto& WORLD_CLASS::getAllComponentBitsets() const {
+		return compBitsets;
+	}
+
+	WORLD_TPARAMS
 	template<class... Components>
 	auto WORLD_CLASS::getFilterFor() -> Filter& {
 		return fm.getFilterFor(self(), getBitsetForComponents<Components...>());
@@ -297,7 +302,7 @@ namespace Engine::ECS {
 	
 	WORLD_TPARAMS
 	template<class Callable>
-	void WORLD_CLASS::callWithComponent(Entity ent, ComponentId cid, Callable&& callable) {
+	void WORLD_CLASS::callWithComponent(ComponentId cid, Callable&& callable) {
 		using Caller = void(Callable::*)(void) const;
 		constexpr Caller callers[]{ &Callable::operator()<Cs>... };
 		return (callable.*callers[cid])();
