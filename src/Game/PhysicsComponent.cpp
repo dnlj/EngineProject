@@ -4,6 +4,23 @@
 
 
 namespace Game {
+	PhysicsComponent::~PhysicsComponent() {
+		if (body) {
+			body->GetWorld()->DestroyBody(body);
+		}
+	}
+
+	PhysicsComponent::PhysicsComponent(PhysicsComponent&& other) {
+		*this = std::move(other);
+	}
+
+	void PhysicsComponent::operator=(PhysicsComponent&& other) {
+		using std::swap;
+		prevTransform = other.prevTransform;
+		interpTransform = other.interpTransform;
+		swap(body, other.body); // We need to swap to ensure our old body* gets destroyed
+	}
+
 	void PhysicsComponent::setBody(b2Body* body) {
 		this->body = body;
 	}

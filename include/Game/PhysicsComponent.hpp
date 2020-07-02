@@ -21,6 +21,11 @@ namespace Game {
 			b2Body* body = nullptr;
 
 		public:
+			PhysicsComponent() = default;
+			~PhysicsComponent();
+			PhysicsComponent(PhysicsComponent&& other);
+			void operator=(PhysicsComponent&& other);
+
 			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent
 			b2Body& getBody();
 			b2World* getWorld();

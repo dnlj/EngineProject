@@ -167,9 +167,9 @@ namespace Game {
 		// TODO: this message should be client only
 		auto* remote = from.reader.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
-
 		auto found = entToLocal.find(*remote);
 		if (found != entToLocal.end()) {
+			puts("ECS_ENT_DESTROY");
 			world.destroyEntity(found->second);
 			entToLocal.erase(found);
 		}
@@ -189,7 +189,7 @@ namespace Game {
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
-					puts("ECS_COMP_ALWAYS > Add Component");
+					puts("ECS_COMP_ADD");
 					auto& comp = world.addComponent<C>(local);
 					comp.netFromInit(world, local, from.reader);
 				}
