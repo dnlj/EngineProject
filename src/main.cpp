@@ -367,7 +367,6 @@ void run(int argc, char* argv[]) {
 	Game::World& world = *worldStorage.get();
 	TempWorldEngineWrapper wrapper{engine, world};
 	windowCallbacks.userdata = &wrapper;
-	const auto player = world.createEntity();
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
