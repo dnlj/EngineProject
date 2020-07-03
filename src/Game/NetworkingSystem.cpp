@@ -229,6 +229,7 @@ namespace Game {
 		auto found = entToLocal.find(*remote);
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
+		// TODO :this doesnt work because it doesnt update filters
 		world.setFlags(local, *flags);
 	}
 

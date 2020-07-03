@@ -176,7 +176,7 @@ namespace Engine::ECS {
 			container.add(ent.id, std::forward<Args>(args)...);
 			return container[ent.id];
 		} else {
-			return compBitsets[ent.id].set(cid);
+			return compBitsets[ent.id].set(cid); // TODO: isnt this redundant with above?
 		}
 	}
 

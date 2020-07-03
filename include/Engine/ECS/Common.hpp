@@ -8,6 +8,7 @@
 #include <Engine/ECS/Entity.hpp>
 #include <Engine/SparseSet.hpp>
 #include <Engine/Bitset.hpp>
+#include <Engine/IsComplete.hpp>
 
 namespace Engine::ECS {
 	/** The maximum number of components registrable. Ideally this would be exactly the number of components used. */
@@ -28,9 +29,21 @@ namespace Engine::ECS {
 	/** The bitset type used for storing system priorites. */
 	using SystemBitset = Bitset<MAX_SYSTEMS>;
 
-	/** The type used for storing components. */
+	/** Determiens if a component is a flag component */ // TODO: doc flag components somewhere.
+	template<class T, class = void>
+	struct IsFlagComponent : std::true_type {};
+
+	/** @see IsFlagComponent */
 	template<class T>
-	using ComponentContainer = SparseSet<decltype(Entity::id), T>;
+	struct IsFlagComponent<T, std::enable_if_t<IsComplete<T>::value>> : std::is_empty<T> {};
+
+	/** The stored data type for a given component */
+	template<class T>
+	using ComponentData = std::conditional_t<IsFlagComponent<T>::value, void, T>;
+
+	/** The type used for storing components. */
+	template<class T> // TODO: Entity instead of Entity:id
+	struct ComponentContainer : SparseSet<decltype(Entity::id), ComponentData<T>> {};
 }
 
 // Asserts

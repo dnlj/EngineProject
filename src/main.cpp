@@ -529,51 +529,6 @@ int entry(int argc, char* argv[]) {
 	ENGINE_WARN("This is a test of the", "console ouput");
 	//ENGINE_ERROR("This is a test of the", "console ouput");
 
-	/*{ // TODO: bitset testing
-		Engine::Bitset<64> a = 0b10000000'10000000'10000000'10000000'10000000'10000000'10000000'10000000ull;
-		const auto b = ~a;
-		std::cout << "A: " << a << "\n";
-		std::cout << "B: " << b << "\n";
-		std::cout << "|: " << (b | a) << "\n";
-		std::cout << "&: " << (b & a) << "\n";
-		std::cout << "^: " << (b ^ a) << "\n";
-
-		std::cout << "\n";
-		std::cout << "  A: " << a << "\n";
-		std::cout << "  9: " << Engine::Bitset<9, uint8>{a} << "\n";
-		std::cout << " 32: " << Engine::Bitset<32, uint8>{a} << "\n";
-		std::cout << " 64: " << Engine::Bitset<64, uint8>{a} << "\n";
-		std::cout << " 70: " << Engine::Bitset<70, uint8>{a} << "\n";
-		std::cout << "128: " << Engine::Bitset<128, uint8>{a} << "\n";
-
-		Engine::Bitset<128> z;
-		z.set(127);
-		std::cout << "\n";
-		std::cout << "  Z: " << z << "\n";
-		std::cout << "  1: " << (z >> 1) << "\n";
-		std::cout << "  4: " << (z >> 4) << "\n";
-		std::cout << "  8: " << (z >> 8) << "\n";
-		std::cout << " 63: " << (z >> 63) << "\n";
-		std::cout << " 64: " << (z >> 64) << "\n";
-		std::cout << "127: " << (z >> 127) << "\n";
-		std::cout << "128: " << (z >> 128) << "\n";
-
-		Engine::Bitset<128> y;
-		y.set(0);
-		std::cout << "\n";
-		std::cout << "  Y: " << y << "\n";
-		std::cout << "  1: " << (y << 1) << "\n";
-		std::cout << "  4: " << (y << 4) << "\n";
-		std::cout << "  8: " << (y << 8) << "\n";
-		std::cout << " 63: " << (y << 63) << "\n";
-		std::cout << " 64: " << (y << 64) << "\n";
-		std::cout << "127: " << (y << 127) << "\n";
-		std::cout << "128: " << (y << 128) << "\n";
-
-		__debugbreak();
-		return 0;
-	}/**/
-
 	std::atexit([](){
 	});
 

@@ -28,9 +28,7 @@
 #include <Game/PhysicsComponent.hpp>
 #include <Game/SpriteComponent.hpp>
 #include <Game/CharacterMovementComponent.hpp>
-#include <Game/CharacterSpellComponent.hpp> // TODO: flag
 #include <Game/ActionComponent.hpp>
-#include <Game/PlayerComponent.hpp> // TODO: flag
 #include <Game/ConnectionComponent.hpp>
 #include <Game/NeighborsComponent.hpp>
 
@@ -58,15 +56,15 @@ namespace Game {
 		PhysicsComponent,
 		SpriteComponent,
 		CharacterMovementComponent,
-		CharacterSpellComponent,
+		struct CharacterSpellComponent, // TODO: rn xFlag?
 		ActionComponent,
-		PlayerComponent,
+		struct PlayerComponent, // TODO: rn xFlag?
 		ConnectionComponent,
 		NeighborsComponent
 	>;
 
 	using FlagsSet = Meta::TypeSet::TypeSet<
-		class ActivePlayerFlag
+		class ActivePlayerFlag // TODO: rm flags. Use flag components
 	>;
 
 	// TODO: we could get rid of CRTP here by forward declaring all systems/components/flags...
