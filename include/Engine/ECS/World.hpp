@@ -53,6 +53,7 @@ namespace Engine::ECS {
 		static_assert(sizeof...(Cs) + sizeof...(Fs) <= MAX_COMPONENTS);
 		public:
 			using Filter = EntityFilter<Derived>;
+			using FlagsBitset = Bitset<sizeof...(Fs)>;
 
 		private:
 			// TODO: Since we are wrapping all of these operations is there any real benefit to splitting into XYZManagers?
@@ -279,6 +280,13 @@ namespace Engine::ECS {
 			 * Gets the components bitset for all entities. Sorted by entity id. 
 			 */
 			const auto& getAllComponentBitsets() const;
+
+			/**
+			 * Gets the flags for an entity.
+			 */
+			FlagsBitset getFlags(Entity ent) const;
+
+			void setFlags(Entity ent, const FlagsBitset& flags);
 
 			// TODO: Doc
 			template<class... Components>

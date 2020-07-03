@@ -258,6 +258,16 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
+	auto WORLD_CLASS::getFlags(Entity ent) const -> FlagsBitset {
+		return getComponentsBitset(ent) >> sizeof...(Cs);
+	}
+
+	WORLD_TPARAMS
+	void WORLD_CLASS::setFlags(Entity ent, const FlagsBitset& flags) {
+		compBitsets[ent.id] |= ComponentBitset{flags} << sizeof...(Cs);
+	}
+
+	WORLD_TPARAMS
 	template<class... Components>
 	auto WORLD_CLASS::getFilterFor() -> Filter& {
 		return fm.getFilterFor(self(), getBitsetForComponents<Components...>());

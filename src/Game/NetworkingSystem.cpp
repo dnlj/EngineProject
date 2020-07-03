@@ -12,8 +12,6 @@
 #include <Game/ConnectionComponent.hpp>
 
 namespace {
-	using FlagsBitset = Engine::Bitset<Game::FlagsSet::size, Engine::byte>;
-
 	template<class T>
 	concept IsNetworkedComponent = requires (
 			T t,
@@ -225,13 +223,13 @@ namespace Game {
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_FLAG>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
 		const auto remote = from.reader.read<Engine::ECS::Entity>();
-		const auto flags = from.reader.read<FlagsBitset>();
+		const auto flags = from.reader.read<World::FlagsBitset>();
 		if (!remote || !flags) { return; }
 
-		//auto& local = entToLocal[remote]; // TODO: prob put this into func
-		//if (flags && *flags) {
-		//	std::cout << "FLAGS: " << remote << " - " << *flags << "\n";
-		//}
+		auto found = entToLocal.find(*remote);
+		if (found == entToLocal.end()) { return; }
+		auto local = found->second;
+		world.setFlags(local, *flags);
 	}
 
 	template<>
@@ -376,9 +374,9 @@ namespace Game {
 
 					// TODO: flags
 					// TODO: only send on change
-					//conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
-					//conn.writer.write(ent);
-					//conn.writer.write(FlagsBitset{world.getComponentsBitset(ent) >> ComponentsSet::size});
+					conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
+					conn.writer.write(ent);
+					conn.writer.write(world.getFlags(ent));
 				}
 			}
 
