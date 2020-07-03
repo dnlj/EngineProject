@@ -153,31 +153,15 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	template<class F>
-	constexpr static bool WORLD_CLASS::isFlag() {
-		return (std::is_same_v<F, Fs> || ...);
-	}
-
-	WORLD_TPARAMS
-	template<class C>
-	constexpr static bool WORLD_CLASS::isComponent() {
-		return (std::is_same_v<C, Cs> || ...);
-	}
-
-	WORLD_TPARAMS
 	template<class Component, class... Args>
 	decltype(auto) WORLD_CLASS::addComponent(Entity ent, Args&&... args) {
 		constexpr auto cid = getComponentId<Component>();
 		compBitsets[ent.id].set(cid);
 		fm.onComponentAdded(ent, cid, compBitsets[ent.id]);
 
-		if constexpr (isComponent<Component>()) {
-			auto& container = getComponentContainer<Component>();
-			container.add(ent.id, std::forward<Args>(args)...);
-			return container[ent.id];
-		} else {
-			return compBitsets[ent.id].set(cid); // TODO: isnt this redundant with above?
-		}
+		auto& container = getComponentContainer<Component>();
+		container.add(ent.id, std::forward<Args>(args)...);
+		return container[ent.id];
 	}
 
 	WORLD_TPARAMS
@@ -219,7 +203,7 @@ namespace Engine::ECS {
 	void WORLD_CLASS::removeComponents(Entity ent) {
 		compBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
 
-		((isComponent<Components>() && (getComponentContainer<Components>().remove(ent.id), true)), ...);
+		(getComponentContainer<Components>().remove(ent.id), ...);
 
 		// TODO: Make filter manager take bitset?
 		(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);
@@ -234,7 +218,7 @@ namespace Engine::ECS {
 	template<class Component>
 	Component& WORLD_CLASS::getComponent(Entity ent) {
 		// TODO: why is this not a compile error? this should need `decltype(auto)` return type?
-		if constexpr (isFlag<Component>()) {
+		if constexpr (IsFlagComponent<Component>::value) {
 			return compBitsets[ent][getComponentId<Component>()];
 		} else {
 			return getComponentContainer<Component>()[ent.id];
@@ -255,16 +239,6 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	const auto& WORLD_CLASS::getAllComponentBitsets() const {
 		return compBitsets;
-	}
-
-	WORLD_TPARAMS
-	auto WORLD_CLASS::getFlags(Entity ent) const -> FlagsBitset {
-		return getComponentsBitset(ent) >> sizeof...(Cs);
-	}
-
-	WORLD_TPARAMS
-	void WORLD_CLASS::setFlags(Entity ent, const FlagsBitset& flags) {
-		compBitsets[ent.id] |= ComponentBitset{flags} << sizeof...(Cs);
 	}
 
 	WORLD_TPARAMS

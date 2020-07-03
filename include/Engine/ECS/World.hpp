@@ -17,9 +17,8 @@ namespace Engine::ECS {
 	 * @tparam TickRate The tick rate of the world.
 	 * @tparam SystemsSet The systems for this world to have.
 	 * @tparam ComponentsSet The components for entities in this world to have.
-	 * @tparam FlagsSet The flags for entities in this world to have.
 	 */
-	template<class Derived, int64 TickRate, class SystemsSet, class ComponentsSet, class FlagsSet>
+	template<class Derived, int64 TickRate, class SystemsSet, class ComponentsSet>
 	class World;
 
 	#define WORLD_TPARAMS template<\
@@ -28,12 +27,10 @@ namespace Engine::ECS {
 		class... Ss,\
 		template<class...> class SystemsSet,\
 		class... Cs,\
-		template<class...> class ComponentsSet,\
-		class... Fs,\
-		template<class...> class FlagsSet\
+		template<class...> class ComponentsSet\
 	>
 
-	#define WORLD_CLASS World<Derived, TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>>
+	#define WORLD_CLASS World<Derived, TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
 	
 	class EntityState {
 		public:
@@ -50,10 +47,9 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	class WORLD_CLASS {
-		static_assert(sizeof...(Cs) + sizeof...(Fs) <= MAX_COMPONENTS);
+		static_assert(sizeof...(Cs) <= MAX_COMPONENTS);
 		public:
 			using Filter = EntityFilter<Derived>;
-			using FlagsBitset = Bitset<sizeof...(Fs)>;
 
 		private:
 			// TODO: Since we are wrapping all of these operations is there any real benefit to splitting into XYZManagers?
@@ -169,18 +165,6 @@ namespace Engine::ECS {
 			void destroyEntity(Entity ent);
 			
 			/**
-			 * Checks if a type is a flag.
-			 */
-			template<class F>
-			constexpr static bool isFlag();
-
-			/**
-			 * Checks if a type is a component.
-			 */
-			template<class C>
-			constexpr static bool isComponent();
-
-			/**
 			 * Adds a component to an entity.
 			 * @param ent The entity.
 			 * @param args The arguments to pass to the constructor of the component.
@@ -280,13 +264,6 @@ namespace Engine::ECS {
 			 * Gets the components bitset for all entities. Sorted by entity id. 
 			 */
 			const auto& getAllComponentBitsets() const;
-
-			/**
-			 * Gets the flags for an entity.
-			 */
-			FlagsBitset getFlags(Entity ent) const;
-
-			void setFlags(Entity ent, const FlagsBitset& flags);
 
 			// TODO: Doc
 			template<class... Components>

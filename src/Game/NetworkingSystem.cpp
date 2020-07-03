@@ -222,15 +222,15 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_FLAG>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
-		const auto remote = from.reader.read<Engine::ECS::Entity>();
-		const auto flags = from.reader.read<World::FlagsBitset>();
-		if (!remote || !flags) { return; }
-
-		auto found = entToLocal.find(*remote);
-		if (found == entToLocal.end()) { return; }
-		auto local = found->second;
-		// TODO :this doesnt work because it doesnt update filters
-		world.setFlags(local, *flags);
+		//const auto remote = from.reader.read<Engine::ECS::Entity>();
+		//const auto flags = from.reader.read<World::FlagsBitset>();
+		//if (!remote || !flags) { return; }
+		//
+		//auto found = entToLocal.find(*remote);
+		//if (found == entToLocal.end()) { return; }
+		//auto local = found->second;
+		//// TODO :this doesnt work because it doesnt update filters
+		//world.setFlags(local, *flags);
 	}
 
 	template<>
@@ -375,9 +375,9 @@ namespace Game {
 
 					// TODO: flags
 					// TODO: only send on change
-					conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
-					conn.writer.write(ent);
-					conn.writer.write(world.getFlags(ent));
+					//conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
+					//conn.writer.write(ent);
+					//conn.writer.write(world.getFlags(ent));
 				}
 			}
 
