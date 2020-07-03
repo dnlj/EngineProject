@@ -42,8 +42,8 @@ namespace Engine::ECS {
 	using ComponentData = std::conditional_t<IsFlagComponent<T>::value, void, T>;
 
 	/** The type used for storing components. */
-	template<class T> // TODO: Entity instead of Entity:id
-	struct ComponentContainer : SparseSet<decltype(Entity::id), ComponentData<T>> {};
+	template<class T>
+	struct ComponentContainer : SparseSet<Entity, ComponentData<T>> {};
 }
 
 // Asserts

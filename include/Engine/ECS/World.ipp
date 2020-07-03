@@ -160,8 +160,8 @@ namespace Engine::ECS {
 		fm.onComponentAdded(ent, cid, compBitsets[ent.id]);
 
 		auto& container = getComponentContainer<Component>();
-		container.add(ent.id, std::forward<Args>(args)...);
-		return container[ent.id];
+		container.add(ent, std::forward<Args>(args)...);
+		return container[ent];
 	}
 
 	WORLD_TPARAMS
@@ -203,7 +203,7 @@ namespace Engine::ECS {
 	void WORLD_CLASS::removeComponents(Entity ent) {
 		compBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
 
-		(getComponentContainer<Components>().remove(ent.id), ...);
+		(getComponentContainer<Components>().remove(ent), ...);
 
 		// TODO: Make filter manager take bitset?
 		(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);
@@ -221,7 +221,7 @@ namespace Engine::ECS {
 		if constexpr (IsFlagComponent<Component>::value) {
 			return compBitsets[ent][getComponentId<Component>()];
 		} else {
-			return getComponentContainer<Component>()[ent.id];
+			return getComponentContainer<Component>()[ent];
 		}
 	}
 

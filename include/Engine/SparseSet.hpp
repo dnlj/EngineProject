@@ -146,7 +146,7 @@ namespace Engine {
 
 			ENGINE_INLINE void remove(const Key& key) {
 				const auto i = hash(key);
-				sparse[dense.back().first] = sparse[i];
+				sparse[hash(dense.back().first)] = sparse[i];
 				dense[sparse[i]] = std::move(dense.back());
 				sparse[i] = invalid;
 				dense.pop_back();
