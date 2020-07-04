@@ -199,10 +199,9 @@ namespace Game {
 		auto& mapSys = world.getSystem<Game::MapSystem>();
 
 		auto& actC = world.getComponent<Game::ActionComponent>(*activePlayerFilter.begin());
-		auto screenMousePos = actC.getValue<float32>(targetIds);
-		ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
+		// TODO: reimplement - ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
-		auto worldMousePos = engine.camera.screenToWorld(screenMousePos);
+		auto worldMousePos = actC.getValue<float32>(targetIds);
 		ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
 			
 		auto blockMousePos = mapSys.worldToBlock(worldMousePos);

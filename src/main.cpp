@@ -421,11 +421,17 @@ void run(int argc, char* argv[]) {
 				InputId{InputType::MOUSE, 0, 1}
 			}, [&](Value curr, Value prev){ pa(Edit_Remove, curr); });
 			im.addBind(InputSequence{
-				InputId{InputType::MOUSE_AXIS, 0, 0}
-			}, [&](Value curr, Value prev){ pa(Target_X, curr); });
+					InputId{InputType::MOUSE_AXIS, 0, 0}
+				}, [&](Value curr, Value prev){
+					curr.valuef = engine.camera.screenToWorld({curr.valuef, 0.0f}).x;
+					pa(Target_X, curr);
+			});
 			im.addBind(InputSequence{
-				InputId{InputType::MOUSE_AXIS, 0, 1}
-			}, [&](Value curr, Value prev){ pa(Target_Y, curr); });
+					InputId{InputType::MOUSE_AXIS, 0, 1}
+				}, [&](Value curr, Value prev){
+					curr.valuef = engine.camera.screenToWorld({0.0f, curr.valuef}).y;
+					pa(Target_Y, curr);
+			});
 		}
 
 		as.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world});
