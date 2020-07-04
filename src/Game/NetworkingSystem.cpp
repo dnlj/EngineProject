@@ -222,6 +222,7 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_FLAG>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+		// TODO: this message should be client only
 		const auto remote = from.reader.read<Engine::ECS::Entity>();
 		const auto flags = from.reader.read<Engine::ECS::ComponentBitset>();
 		if (!remote || !flags) { return; }
@@ -230,23 +231,19 @@ namespace Game {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
-		for (Engine::ECS::ComponentId cid = 0; cid < flags->size(); ++cid) {
-			if (!flags->test(cid)) { continue; }
+		ForEachIn<ComponentsSet>::call([&]<class C>() {
+			constexpr auto cid = world.getComponentId<C>();
+			if constexpr (!Engine::ECS::IsFlagComponent<C>::value) { return; }
+			if (!flags->test(cid)) { return; }
 
-			world.callWithComponent(cid, [&]<class C>(){
-				if constexpr (Engine::ECS::IsFlagComponent<C>::value) {
-					if (world.hasComponent<C>(local)) {
-						world.removeComponent<C>(local);
-						ENGINE_LOG("Remove component ", local, cid);
-					} else {
-						world.addComponent<C>(local);
-						ENGINE_LOG("Add component ", local, cid);
-					}
-				} else {
-					ENGINE_WARN("Attemping to network non-flag component");
-				}
-			});
-		}
+			if (world.hasComponent<C>(local)) {
+				world.removeComponent<C>(local);
+				ENGINE_LOG("Remove component ", local, cid);
+			} else {
+				world.addComponent<C>(local);
+				ENGINE_LOG("Add component ", local, cid);
+			}
+		});
 	}
 
 	template<>
