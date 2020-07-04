@@ -362,6 +362,22 @@ void run(int argc, char* argv[]) {
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Resources
+	{
+		const std::string textures[] = {
+			"../assets/player.png",
+			"../assets/fire.png",
+			"../assets/test.png",
+		};
+		const std::string shaders[] = {
+			"shaders/box2d_debug",
+			"shaders/terrain",
+			"shaders/sprite",
+		};
+		for (const auto& path : textures) { engine.textureManager.add(path); }
+		for (const auto& path : shaders) { engine.shaderManager.add(path); }
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	// World
 	auto worldStorage = std::make_unique<Game::World>(engine);
 	Game::World& world = *worldStorage.get();

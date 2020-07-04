@@ -18,5 +18,5 @@ namespace Engine {
 			void unload(GLuint texture);
 	};
 
-	using Texture = TextureManager::ResourceType;
+	using Texture = TextureManager::Resource;
 }

@@ -18,5 +18,5 @@ namespace Engine {
 			void unload(GLuint shader);
 	};
 
-	using Shader = ShaderManager::ResourceType;
+	using Shader = ShaderManager::Resource;
 }
