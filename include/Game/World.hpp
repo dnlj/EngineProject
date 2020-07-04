@@ -56,12 +56,11 @@ namespace Game {
 		PhysicsComponent,
 		SpriteComponent,
 		CharacterMovementComponent,
-		struct CharacterSpellComponent, // TODO: rn xFlag?
 		ActionComponent,
-		struct PlayerComponent, // TODO: rn xFlag?
 		ConnectionComponent,
 		NeighborsComponent,
-		struct ActivePlayerFlag
+		struct CharacterSpellComponent, // TODO: rn xFlag?
+		struct PlayerFlag
 	>;
 
 	// TODO: we could get rid of CRTP here by forward declaring all systems/components/flags...

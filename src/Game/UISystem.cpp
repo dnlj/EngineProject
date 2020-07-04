@@ -51,8 +51,8 @@ namespace {
 namespace Game {
 	UISystem::UISystem(SystemArg arg)
 		: System{arg}
-		, connFilter{world.getFilterFor<Game::ConnectionComponent>()}
-		, activePlayerFilter{world.getFilterFor<Game::ActivePlayerFlag>()} {
+		, connFilter{world.getFilterFor<ConnectionComponent>()}
+		, activePlayerFilter{world.getFilterFor<PlayerFlag>()} {
 	}
 
 	void UISystem::setup() {

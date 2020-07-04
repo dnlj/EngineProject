@@ -17,7 +17,7 @@
 namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
 		: System{arg}
-		, playerFilter{world.getFilterFor<PlayerComponent, PhysicsComponent>()} {
+		, playerFilter{world.getFilterFor<PlayerFlag, PhysicsComponent>()} {
 		static_assert(World::orderAfter<MapSystem, CameraTrackingSystem>());
 
 		for (auto& t : threads) {

@@ -506,15 +506,13 @@ namespace Game {
 
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
-			// TODO: why do we have PlayerComponent and ActivePlayerFlag?
-			world.addComponent<PlayerComponent>(ply);
+			world.addComponent<PlayerFlag>(ply);
 			world.addComponent<MapEditComponent>(ply);
 			world.addComponent<SpriteComponent>(ply).texture = engine.textureManager.get("../assets/player.png");
 			world.addComponent<PhysicsComponent>(ply).setBody(physSys.createPhysicsCircle(ply));
 			world.addComponent<CharacterMovementComponent>(ply);
 			world.addComponent<CharacterSpellComponent>(ply);
 			world.addComponent<ActionComponent>(ply).grow(world.getSystem<ActionSystem>().count());
-			world.addComponent<ActivePlayerFlag>(ply);
 			world.addComponent<NeighborsComponent>(ply);
 		}
 
