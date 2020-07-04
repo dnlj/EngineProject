@@ -187,7 +187,7 @@ namespace Game {
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
-					puts("ECS_COMP_ADD");
+					ENGINE_LOG("ECS_COMP_ADD ", local, " ", *cid);
 					auto& comp = world.addComponent<C>(local);
 					comp.netFromInit(world, local, from.reader);
 				}
@@ -222,15 +222,31 @@ namespace Game {
 
 	template<>
 	void NetworkingSystem::handleMessageType<MessageType::ECS_FLAG>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
-		//const auto remote = from.reader.read<Engine::ECS::Entity>();
-		//const auto flags = from.reader.read<World::FlagsBitset>();
-		//if (!remote || !flags) { return; }
-		//
-		//auto found = entToLocal.find(*remote);
-		//if (found == entToLocal.end()) { return; }
-		//auto local = found->second;
-		//// TODO :this doesnt work because it doesnt update filters
-		//world.setFlags(local, *flags);
+		const auto remote = from.reader.read<Engine::ECS::Entity>();
+		const auto flags = from.reader.read<Engine::ECS::ComponentBitset>();
+		if (!remote || !flags) { return; }
+
+		auto found = entToLocal.find(*remote);
+		if (found == entToLocal.end()) { return; }
+		auto local = found->second;
+
+		for (Engine::ECS::ComponentId cid = 0; cid < flags->size(); ++cid) {
+			if (!flags->test(cid)) { continue; }
+
+			world.callWithComponent(cid, [&]<class C>(){
+				if constexpr (Engine::ECS::IsFlagComponent<C>::value) {
+					if (world.hasComponent<C>(local)) {
+						world.removeComponent<C>(local);
+						ENGINE_LOG("Remove component ", local, cid);
+					} else {
+						world.addComponent<C>(local);
+						ENGINE_LOG("Add component ", local, cid);
+					}
+				} else {
+					ENGINE_WARN("Attemping to network non-flag component");
+				}
+			});
+		}
 	}
 
 	template<>
@@ -341,13 +357,14 @@ namespace Game {
 
 				for (const auto& pair : neighComp.currentNeighbors) {
 					const auto ent = pair.first;
+					Engine::ECS::ComponentBitset flagComps;
+
 					ForEachIn<ComponentsSet>::call([&]<class C>() {
 						// TODO: Note: this only updates components not flags. Still need to network flags.
+						constexpr auto cid = world.getComponentId<C>();
 						if constexpr (IsNetworkedComponent<C>) {
 							if (!world.hasComponent<C>(ent)) { return; }
-
 							const auto& comp = world.getComponent<C>(ent);
-							const auto cid = world.getComponentId<C>();
 							const auto repl = comp.netRepl();
 							const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
 
@@ -370,14 +387,20 @@ namespace Game {
 									// TODO: impl
 								}
 							}
+						} else if constexpr (Engine::ECS::IsFlagComponent<C>::value) {
+							const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
+							if (diff) {
+								flagComps.set(cid);
+							}
 						}
 					});
 
-					// TODO: flags
-					// TODO: only send on change
-					//conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::UNRELIABLE);
-					//conn.writer.write(ent);
-					//conn.writer.write(world.getFlags(ent));
+					if (flagComps) {
+						// TODO: we shouldnt have had to change the filters on all those systems because we are using ordered... Look into this.
+						conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::ORDERED);
+						conn.writer.write(ent);
+						conn.writer.write(flagComps);
+					}
 				}
 			}
 
@@ -483,6 +506,7 @@ namespace Game {
 
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
+			// TODO: why do we have PlayerComponent and ActivePlayerFlag?
 			world.addComponent<PlayerComponent>(ply);
 			world.addComponent<MapEditComponent>(ply);
 			world.addComponent<SpriteComponent>(ply).texture = engine.textureManager.get("../assets/player.png");

@@ -24,10 +24,10 @@ namespace Engine::ECS {
 	using SystemId = uint16;
 
 	/** The bitset type used for storing what components an entity has. */
-	using ComponentBitset = Bitset<MAX_COMPONENTS>;
+	using ComponentBitset = Bitset<MAX_COMPONENTS>; // TODO: is there a reason this isnt a member of World?
 
 	/** The bitset type used for storing system priorites. */
-	using SystemBitset = Bitset<MAX_SYSTEMS>;
+	using SystemBitset = Bitset<MAX_SYSTEMS>; // TODO: is there a reason this isnt a member of World?
 
 	/** Determiens if a component is a flag component */ // TODO: doc flag components somewhere.
 	template<class T, class = void>

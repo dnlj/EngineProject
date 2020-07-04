@@ -17,7 +17,7 @@
 namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
 		: System{arg}
-		, playerFilter{world.getFilterFor<PlayerComponent>()} {
+		, playerFilter{world.getFilterFor<PlayerComponent, PhysicsComponent>()} {
 		static_assert(World::orderAfter<MapSystem, CameraTrackingSystem>());
 
 		for (auto& t : threads) {
@@ -82,10 +82,12 @@ namespace Game {
 			}
 		};
 
-		for (auto& ply : playerFilter) {
-			auto& me = world.getComponent<MapEditComponent>(ply);
-			if (me.place) { makeEdit(ply, 1); }
-			if (me.remove) { makeEdit(ply, 0); }
+		if (ENGINE_SERVER) {
+			for (auto& ply : playerFilter) {
+				auto& me = world.getComponent<MapEditComponent>(ply);
+				if (me.place) { makeEdit(ply, 1); }
+				if (me.remove) { makeEdit(ply, 0); }
+			}
 		}
 	}
 
