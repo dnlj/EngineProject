@@ -505,7 +505,7 @@ namespace Game {
 			auto& physSys = world.getSystem<PhysicsSystem>();
 			world.addComponent<PlayerFlag>(ply);
 			world.addComponent<MapEditComponent>(ply);
-			world.addComponent<SpriteComponent>(ply).texture = engine.textureManager.get("../assets/player.png");
+			world.addComponent<SpriteComponent>(ply).texture = engine.textureManager.get("assets/player.png");
 			world.addComponent<PhysicsComponent>(ply).setBody(physSys.createPhysicsCircle(ply));
 			world.addComponent<CharacterMovementComponent>(ply);
 			world.addComponent<CharacterSpellComponent>(ply);

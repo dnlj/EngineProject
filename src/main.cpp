@@ -365,9 +365,9 @@ void run(int argc, char* argv[]) {
 	// Resources
 	{
 		const std::string textures[] = {
-			"../assets/player.png",
-			"../assets/fire.png",
-			"../assets/test.png",
+			"assets/player.png",
+			"assets/fire.png",
+			"assets/test.png",
 		};
 		const std::string shaders[] = {
 			"shaders/box2d_debug",
@@ -463,27 +463,6 @@ void run(int argc, char* argv[]) {
 	#if defined (DEBUG_PHYSICS)
 		world.getSystem<Game::PhysicsSystem>().getDebugDraw().setup(engine.camera);
 	#endif
-
-	{ // TODO: is there a better way to handle these setup functions? This seems dumb.
-		//auto& physSys = world.getSystem<Game::PhysicsSystem>();
-		//
-		//// Player
-		//ENGINE_LOG("PlayerId: ", player);
-		//world.addComponent<Game::PlayerComponent>(player);
-		//world.addComponent<Game::MapEditComponent>(player);
-		//world.addComponent<Game::SpriteComponent>(player).texture = engine.textureManager.get("../assets/player.png");
-		//world.addComponent<Game::PhysicsComponent>(player).setBody(physSys.createPhysicsCircle(player));
-		//world.addComponent<Game::CharacterMovementComponent>(player);
-		//world.addComponent<Game::CharacterSpellComponent>(player);
-		//world.addComponent<Game::ActivePlayerComponent>(player);
-		//
-		//// TODO: cleaner way to do this. constructor args?
-		//world.addComponent<Game::ActionComponent>(player).grow(world.getSystem<Game::ActionSystem>().count());
-	}
-
-	//// ImGui callbacks
-	// TODO: glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-	// TODO: glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 
 	// Procedural test
 	//mapTest();

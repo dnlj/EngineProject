@@ -178,7 +178,7 @@ project("*")
 		"src/glloadgen/**",
 	}
 	
-	debugdir "src"
+	debugdir(os.getcwd())
 
 	filter "configurations:Debug*"
 		conan_setup_build_info(CONAN_BUILD_INFO["debug"])

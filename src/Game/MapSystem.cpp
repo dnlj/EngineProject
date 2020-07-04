@@ -36,7 +36,7 @@ namespace Game {
 
 	void MapSystem::setup() {
 		shader = engine.shaderManager.get("shaders/terrain");
-		texture = engine.textureManager.get("../assets/test.png");
+		texture = engine.textureManager.get("assets/test.png");
 		auto& physSys = world.getSystem<PhysicsSystem>();
 
 		// Active Area stuff

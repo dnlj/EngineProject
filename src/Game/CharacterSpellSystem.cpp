@@ -53,7 +53,7 @@ namespace Game {
 				physComp.getBody().SetActive(false);
 			}
 
-			spriteComp.texture = engine.textureManager.get("../assets/fire.png");
+			spriteComp.texture = engine.textureManager.get("assets/fire.png");
 			world.setEnabled(ent, false);
 		}
 	}
