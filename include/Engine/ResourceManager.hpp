@@ -19,54 +19,48 @@ namespace Engine {
 
 			class Resource {
 				private:
-					struct Storage* storage = nullptr;
-					void inc() { ++storage->refCount; }
-					void dec() { ++storage->refCount; }
+					struct ResourceInfo* info = nullptr;
+					void inc() { ++info->refCount; }
+					void dec() { ++info->refCount; }
 
 				public:
 					Resource() = default;
-					Resource(Storage* s) : storage{s} {};
+					Resource(ResourceInfo* s) : info{s} {};
 					~Resource() { dec(); }
 					Resource(const Resource& other) { *this = other; }
 					Resource& operator=(const Resource& other) {
 						if (this == &other) { return *this; }
-						storage = other.storage;
+						info = other.info;
 						inc();
 						return *this;
 					}
-					const T& get() const { return storage->data; }
+					const auto& get() const { return info->data; }
+					const auto& path() const { return info->path; }
+					const auto& id() const { return info->id; }
 			};
 
 		private:
-			struct Storage {
-				T data;
-				int32 refCount = 0;
-			};
-
 			struct ResourceInfo {
-				std::string path;
-				Storage* storage;
+				const std::string path;
+				const ResourceId id;
+				int32 refCount = 0;
+				T data;
 			};
 
 			ResourceManager() = default;
 			Engine::FlatHashMap<std::string, ResourceId> resMap;
-			std::vector<ResourceInfo> resInfo;
+			std::vector<std::unique_ptr<ResourceInfo>> resInfo;
 
 		public:
-			~ResourceManager() {
-				for (const auto& info : resInfo) {
-					delete info.storage;
-				}
-			};
+			~ResourceManager() {};
 
-			ResourceId add(const std::string& path) {
+			void add(const std::string& path) {
 				auto [it, succ] = resMap.try_emplace(path, static_cast<ResourceId>(resInfo.size()));
 				if (succ) {
-					resInfo.push_back({path});
+					resInfo.emplace_back();
 				} else {
 					ENGINE_WARN("Attempting to add duplicate resource: ", path);
 				}
-				return it->second;
 			}
 
 			// TODO: canonicalize + normalize paths to avoid duplicates
@@ -75,17 +69,21 @@ namespace Engine {
 				if (found == resMap.end()) {
 					ENGINE_ERROR("Unable to load invalid resource: ", path);
 				}
-				return get(found->second);
+
+				auto& info = resInfo[found->second];
+				if (!info) {
+					info.reset(new ResourceInfo{
+						.path = path,
+						.id = found->second,
+						.data = std::move(self().load(path)),
+					});
+				}
+
+				return info.get();
 			}
 
 			Resource get(ResourceId rid) {
-				auto& info = resInfo[rid];
-
-				if (info.storage == nullptr) {
-					info.storage = new Storage{self().load(info.path)};
-				}
-				
-				return info.storage;
+				return resInfo[rid].get();
 			};
 
 			// TODO: cleanup unreferenced resources
