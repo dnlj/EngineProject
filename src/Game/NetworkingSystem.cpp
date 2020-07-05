@@ -311,118 +311,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::run(float32 dt) {
-		const auto now = Engine::Clock::now();
-
-		// TODO: should be configurable somewhere
-		// TODO: we probably want read every time. Only limit writes.
-		if (now - lastUpdate < std::chrono::milliseconds{1000 / 20}) { return; }
-		lastUpdate = now;
-
-		if constexpr (ENGINE_SERVER) {
-			updateNeighbors();
-			if (world.getAllComponentBitsets().size() > lastCompsBitsets.size()) {
-				lastCompsBitsets.resize(world.getAllComponentBitsets().size());
-			}
-
-			for (auto& ply : connFilter) {
-				auto& neighComp = world.getComponent<NeighborsComponent>(ply);
-				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-
-				// TODO: handle entities without phys comp?
-				// TODO: figure out which entities have been updated
-				// TODO: prioritize entities
-				// TODO: figure out which comps on those entities have been updated
-
-				for (const auto& pair : neighComp.addedNeighbors) {
-					const auto& ent = pair.first;
-					conn.writer.next(MessageType::ECS_ENT_CREATE, Engine::Net::Channel::ORDERED);
-					conn.writer.write(ent);
-
-					ForEachIn<ComponentsSet>::call([&]<class C>() {
-						if constexpr (IsNetworkedComponent<C>) {
-							if (!world.hasComponent<C>(ent)) { return; }
-							conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
-							conn.writer.write(ent);
-							conn.writer.write(world.getComponentId<C>());
-							world.getComponent<C>(ent).netToInit(engine, world, ent, conn.writer);
-						}
-					});
-				}
-
-				for (const auto& pair : neighComp.removedNeighbors) {
-					conn.writer.next(MessageType::ECS_ENT_DESTROY, Engine::Net::Channel::ORDERED);
-					conn.writer.write(pair.first);
-				}
-
-				for (const auto& pair : neighComp.currentNeighbors) {
-					const auto ent = pair.first;
-					Engine::ECS::ComponentBitset flagComps;
-
-					ForEachIn<ComponentsSet>::call([&]<class C>() {
-						// TODO: Note: this only updates components not flags. Still need to network flags.
-						constexpr auto cid = world.getComponentId<C>();
-						if constexpr (IsNetworkedComponent<C>) {
-							if (!world.hasComponent<C>(ent)) { return; }
-							const auto& comp = world.getComponent<C>(ent);
-							const auto repl = comp.netRepl();
-							const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
-
-							// TODO: repl then diff. not diff then repl
-
-							if (diff < 0) { // Component Added
-								// TODO: comp added
-								// TODO: currently this is duplicate with addedNeighbors init
-								//conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
-								//conn.writer.write(cid);
-								//comp.netToInit(world, ent, conn.writer);
-							} else if (diff > 0) { // Component Removed
-								// TODO: comp removed
-							} else { // Component Updated
-								// TODO: check if comp updated
-								if (repl == Engine::Net::Replication::ALWAYS) {
-									conn.writer.next(MessageType::ECS_COMP_ALWAYS, Engine::Net::Channel::UNRELIABLE);
-									conn.writer.write(ent);
-									conn.writer.write(cid);
-									comp.netTo(conn.writer);
-								} else if (repl == Engine::Net::Replication::UPDATE) {
-									// TODO: impl
-								}
-							}
-						} else if constexpr (Engine::ECS::IsFlagComponent<C>::value) {
-							const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
-							if (diff) {
-								flagComps.set(cid);
-							}
-						}
-					});
-
-					if (flagComps) {
-						// TODO: we shouldnt have had to change the filters on all those systems because we are using ordered... Look into this.
-						conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::ORDERED);
-						conn.writer.write(ent);
-						conn.writer.write(flagComps);
-					}
-				}
-			}
-
-			lastCompsBitsets = world.getAllComponentBitsets();
-		}
-
-		if constexpr (ENGINE_CLIENT) {
-			static auto next = now;
-			if (next <= now) {
-				next = now + std::chrono::seconds{1};
-
-				for (auto& ply : connFilter) {
-					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-					if (conn.writer.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
-						conn.writer.write(true);
-					} else {
-						ENGINE_WARN("TODO: how to handle unsendable messages");
-					}
-				}
-			}
-		}
+		now = Engine::Clock::now();
 
 		// Recv messages
 		int32 sz;
@@ -451,28 +340,148 @@ namespace Game {
 			}
 		}
 
+		// Send messages
+		// TODO: rate should be configurable somewhere
+		// TODO: send acks instantly? idk
+		const bool shouldUpdate = now - lastUpdate >= std::chrono::milliseconds{1000 / 32};
+		if (shouldUpdate) {
+			lastUpdate = now;
+			if constexpr (ENGINE_SERVER) { runServer(); }
+			if constexpr (ENGINE_CLIENT) { runClient(); }
+
+			// Timeout
+			for (auto& ply : connFilter) {
+				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+				const auto diff = now - conn.lastMessageTime;
+				if (diff > timeout) {
+					std::cout << "Timeout: " << ply << "\n";
+					disconnect(ply);
+					break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
+				}
+			}
+		}
+
 		// Send Ack messages & unacked
 		anyConn.writer.flush();
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
 			for (Engine::Net::Channel ch{0}; ch <= Engine::Net::Channel::ORDERED; ++ch) {
+				// TODO: only send acks if there are acks to send
 				conn.writer.next(MessageType::ACK, Engine::Net::Channel::UNRELIABLE);
 				conn.writeRecvAcks(ch);
-				conn.writer.writeUnacked(ch); // TODO: re-write unacked messages only every x frames (seconds?)
+
+				if (shouldUpdate) {
+					conn.writer.writeUnacked(ch);
+				}
 			}
 
 			conn.writer.flush();
 		}
+	}
 
-		// Timeout
+	void NetworkingSystem::runServer() {
+		updateNeighbors();
+		if (world.getAllComponentBitsets().size() > lastCompsBitsets.size()) {
+			lastCompsBitsets.resize(world.getAllComponentBitsets().size());
+		}
+
+		for (auto& ply : connFilter) {
+			auto& neighComp = world.getComponent<NeighborsComponent>(ply);
+			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+
+			// TODO: handle entities without phys comp?
+			// TODO: figure out which entities have been updated
+			// TODO: prioritize entities
+			// TODO: figure out which comps on those entities have been updated
+
+			for (const auto& pair : neighComp.addedNeighbors) {
+				const auto& ent = pair.first;
+				conn.writer.next(MessageType::ECS_ENT_CREATE, Engine::Net::Channel::ORDERED);
+				conn.writer.write(ent);
+
+				ForEachIn<ComponentsSet>::call([&]<class C>() {
+					if constexpr (IsNetworkedComponent<C>) {
+						if (!world.hasComponent<C>(ent)) { return; }
+						conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
+						conn.writer.write(ent);
+						conn.writer.write(world.getComponentId<C>());
+						world.getComponent<C>(ent).netToInit(engine, world, ent, conn.writer);
+					}
+				});
+			}
+
+			for (const auto& pair : neighComp.removedNeighbors) {
+				conn.writer.next(MessageType::ECS_ENT_DESTROY, Engine::Net::Channel::ORDERED);
+				conn.writer.write(pair.first);
+			}
+
+			for (const auto& pair : neighComp.currentNeighbors) {
+				const auto ent = pair.first;
+				Engine::ECS::ComponentBitset flagComps;
+
+				ForEachIn<ComponentsSet>::call([&]<class C>() {
+					// TODO: Note: this only updates components not flags. Still need to network flags.
+					constexpr auto cid = world.getComponentId<C>();
+					if constexpr (IsNetworkedComponent<C>) {
+						if (!world.hasComponent<C>(ent)) { return; }
+						const auto& comp = world.getComponent<C>(ent);
+						const auto repl = comp.netRepl();
+						const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
+
+						// TODO: repl then diff. not diff then repl
+
+						if (diff < 0) { // Component Added
+							// TODO: comp added
+							// TODO: currently this is duplicate with addedNeighbors init
+							//conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
+							//conn.writer.write(cid);
+							//comp.netToInit(world, ent, conn.writer);
+						} else if (diff > 0) { // Component Removed
+							// TODO: comp removed
+						} else { // Component Updated
+							// TODO: check if comp updated
+							if (repl == Engine::Net::Replication::ALWAYS) {
+								conn.writer.next(MessageType::ECS_COMP_ALWAYS, Engine::Net::Channel::UNRELIABLE);
+								conn.writer.write(ent);
+								conn.writer.write(cid);
+								comp.netTo(conn.writer);
+							} else if (repl == Engine::Net::Replication::UPDATE) {
+								// TODO: impl
+							}
+						}
+					} else if constexpr (Engine::ECS::IsFlagComponent<C>::value) {
+						const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
+						if (diff) {
+							flagComps.set(cid);
+						}
+					}
+				});
+
+				if (flagComps) {
+					// TODO: we shouldnt have had to change the filters on all those systems because we are using ordered... Look into this.
+					conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::ORDERED);
+					conn.writer.write(ent);
+					conn.writer.write(flagComps);
+				}
+			}
+		}
+
+		lastCompsBitsets = world.getAllComponentBitsets();
+	}
+
+	
+	void NetworkingSystem::runClient() {
+		static auto next = now;
+		if (next > now) { return; }
+		next = now + std::chrono::seconds{1};
+
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-			const auto diff = now - conn.lastMessageTime;
-			if (diff > timeout) {
-				std::cout << "Timeout: " << ply << "\n";
-				disconnect(ply);
-				break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
+			if (conn.writer.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
+				conn.writer.write(true);
+			} else {
+				ENGINE_WARN("TODO: how to handle unsendable messages");
 			}
 		}
 	}

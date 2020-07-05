@@ -39,6 +39,7 @@ namespace Game {
 			Engine::Net::Packet packet = {};
 			Engine::Net::Connection anyConn; // Used for unconnected messages
 			const Engine::Net::IPv4Address group;
+			Engine::Clock::TimePoint now = {};
 			Engine::Clock::TimePoint lastUpdate = {};
 			NeighborsComponent::Set lastNeighbors;
 
@@ -60,6 +61,8 @@ namespace Game {
 
 			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);
 			void updateNeighbors();
+			void runServer();
+			void runClient();
 
 			template<MessageType::Type Type>
 			void handleMessageType(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
