@@ -168,7 +168,6 @@ namespace Game {
 		if (!remote) { return; }
 		auto found = entToLocal.find(*remote);
 		if (found != entToLocal.end()) {
-			puts("ECS_ENT_DESTROY");
 			world.destroyEntity(found->second);
 			entToLocal.erase(found);
 		}
@@ -188,7 +187,6 @@ namespace Game {
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
-					ENGINE_LOG("ECS_COMP_ADD ", local, " ", *cid);
 					auto& comp = world.addComponent<C>(local);
 					comp.netFromInit(engine, world, local, from.reader);
 				}
@@ -386,7 +384,6 @@ namespace Game {
 									comp.netTo(conn.writer);
 								} else if (repl == Engine::Net::Replication::UPDATE) {
 									// TODO: impl
-									ENGINE_WARN("TODO: impl - Engine::Net::Replication::UPDATE");
 								}
 							}
 						} else if constexpr (Engine::ECS::IsFlagComponent<C>::value) {

@@ -386,6 +386,9 @@ void run(int argc, char* argv[]) {
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
+	const auto pa = [&](auto action, auto curr){
+		world.getSystem<Game::ActionSystem>().processAction(action, curr);
+	};
 	{
 		using namespace Engine::Input;
 		auto& im = engine.inputManager;
@@ -402,9 +405,6 @@ void run(int argc, char* argv[]) {
 		const auto Target_Y = as.create("Target_Y");
 		
 		if constexpr (ENGINE_CLIENT) {
-			const auto pa = [&](auto action, auto curr){
-				as.processAction(action, curr);
-			};
 
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL

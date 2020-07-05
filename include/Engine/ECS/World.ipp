@@ -14,7 +14,6 @@ namespace Engine::ECS {
 		: systems((sizeof(Ss*), arg) ...)
 		, beginTime{Clock::now()}
 		, tickTime{beginTime} {
-
 		(getSystem<Ss>().setup(), ...);
 	}
 

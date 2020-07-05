@@ -84,6 +84,7 @@ namespace Engine {
 				auto& info = resInfo[rid];
 				if (!info->data) {
 					info->data = std::make_unique<T>(self().load(info->path));
+					puts("LOAD");
 				}
 				return info.get();
 			};
