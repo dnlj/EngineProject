@@ -17,14 +17,15 @@ namespace {
 			T t,
 			Engine::Net::PacketWriter& writer,
 			Engine::Net::PacketReader& reader,
+			Engine::EngineInstance& engine,
 			Game::World& world,
 			Engine::ECS::Entity ent
 		) {
 		Engine::Net::Replication{t.netRepl()};
-		t.netTo(writer);
-		t.netToInit(world, ent, writer);
-		t.netFrom(reader);
-		t.netFromInit(world, ent, reader);
+		t.netTo(writer); // TODO: only call if exists?
+		t.netToInit(engine, world, ent, writer); // TODO: only call if exists?
+		t.netFrom(reader); // TODO: only call if exists?
+		t.netFromInit(engine, world, ent, reader); // TODO: only call if exists?
 	};
 
 	// TODO: would probably be easier to just have a base class instead of all these type traits
@@ -189,7 +190,7 @@ namespace Game {
 				if (!world.hasComponent<C>(local)) {
 					ENGINE_LOG("ECS_COMP_ADD ", local, " ", *cid);
 					auto& comp = world.addComponent<C>(local);
-					comp.netFromInit(world, local, from.reader);
+					comp.netFromInit(engine, world, local, from.reader);
 				}
 			} else {
 				ENGINE_WARN("Attemping to network non-network component");
@@ -339,10 +340,11 @@ namespace Game {
 
 					ForEachIn<ComponentsSet>::call([&]<class C>() {
 						if constexpr (IsNetworkedComponent<C>) {
+							if (!world.hasComponent<C>(ent)) { return; }
 							conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
 							conn.writer.write(ent);
 							conn.writer.write(world.getComponentId<C>());
-							world.getComponent<C>(ent).netToInit(world, ent, conn.writer);
+							world.getComponent<C>(ent).netToInit(engine, world, ent, conn.writer);
 						}
 					});
 				}
@@ -365,6 +367,8 @@ namespace Game {
 							const auto repl = comp.netRepl();
 							const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
 
+							// TODO: repl then diff. not diff then repl
+
 							if (diff < 0) { // Component Added
 								// TODO: comp added
 								// TODO: currently this is duplicate with addedNeighbors init
@@ -382,6 +386,7 @@ namespace Game {
 									comp.netTo(conn.writer);
 								} else if (repl == Engine::Net::Replication::UPDATE) {
 									// TODO: impl
+									ENGINE_WARN("TODO: impl - Engine::Net::Replication::UPDATE");
 								}
 							}
 						} else if constexpr (Engine::ECS::IsFlagComponent<C>::value) {

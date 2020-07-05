@@ -67,7 +67,7 @@ namespace Game {
 		writer.write(body->GetTransform());
 	}
 
-	void PhysicsComponent::netToInit(World& world, Engine::ECS::Entity ent, Engine::Net::PacketWriter& writer) const {
+	void PhysicsComponent::netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketWriter& writer) const {
 		netTo(writer);
 	}
 
@@ -77,7 +77,7 @@ namespace Game {
 		updateTransform(trans->p, trans->q.GetAngle());
 	}
 
-	void PhysicsComponent::netFromInit(World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader) {
+	void PhysicsComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader) {
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		// TODO: actual shape
 		body = physSys.createPhysicsCircle(ent);

@@ -24,17 +24,18 @@ namespace Engine {
 					void dec() { ++info->refCount; }
 
 				public:
+					using Id = ResourceId;
 					Resource() = default;
-					Resource(ResourceInfo* s) : info{s} {};
+					Resource(ResourceInfo* s) : info{s} { inc(); };
 					~Resource() { dec(); }
-					Resource(const Resource& other) { *this = other; }
+					Resource(const Resource& other) { *this = other; inc(); }
 					Resource& operator=(const Resource& other) {
 						if (this == &other) { return *this; }
 						info = other.info;
 						inc();
 						return *this;
 					}
-					const auto& get() const { return info->data; }
+					const auto& get() const { return *info->data; }
 					const auto& path() const { return info->path; }
 					const auto& id() const { return info->id; }
 			};
@@ -44,11 +45,15 @@ namespace Engine {
 				const std::string path;
 				const ResourceId id;
 				int32 refCount = 0;
-				T data;
+				std::unique_ptr<T> data;
 			};
 
 			ResourceManager() = default;
 			Engine::FlatHashMap<std::string, ResourceId> resMap;
+
+			// TODO: make this a fixed array so we dont have ptr->ptr->data.
+			// TODO: cont. We shouldnt be adding new resources after init anyways.
+			// TODO: cont. If we did then ids would desync between client and server.
 			std::vector<std::unique_ptr<ResourceInfo>> resInfo;
 
 		public:
@@ -57,7 +62,10 @@ namespace Engine {
 			void add(const std::string& path) {
 				auto [it, succ] = resMap.try_emplace(path, static_cast<ResourceId>(resInfo.size()));
 				if (succ) {
-					resInfo.emplace_back();
+					resInfo.emplace_back(new ResourceInfo{
+						.path = path,
+						.id = it->second,
+					});
 				} else {
 					ENGINE_WARN("Attempting to add duplicate resource: ", path);
 				}
@@ -69,21 +77,15 @@ namespace Engine {
 				if (found == resMap.end()) {
 					ENGINE_ERROR("Unable to load invalid resource: ", path);
 				}
-
-				auto& info = resInfo[found->second];
-				if (!info) {
-					info.reset(new ResourceInfo{
-						.path = path,
-						.id = found->second,
-						.data = std::move(self().load(path)),
-					});
-				}
-
-				return info.get();
+				return get(found->second);
 			}
 
 			Resource get(ResourceId rid) {
-				return resInfo[rid].get();
+				auto& info = resInfo[rid];
+				if (!info->data) {
+					info->data = std::make_unique<T>(self().load(info->path));
+				}
+				return info.get();
 			};
 
 			// TODO: cleanup unreferenced resources

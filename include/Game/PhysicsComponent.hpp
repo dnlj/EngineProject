@@ -39,8 +39,8 @@ namespace Game {
 
 			Engine::Net::Replication netRepl() const;
 			void netTo(Engine::Net::PacketWriter& writer) const;
-			void netToInit(World& world, Engine::ECS::Entity ent, Engine::Net::PacketWriter& writer) const;
+			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketWriter& writer) const;
 			void netFrom(Engine::Net::PacketReader& reader);
-			void netFromInit(World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader);
+			void netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader);
 	};
 }
