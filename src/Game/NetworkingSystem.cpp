@@ -155,7 +155,6 @@ namespace Game {
 
 		auto& local = entToLocal[*remote];
 		if (local == Engine::ECS::INVALID_ENTITY) {
-			ENGINE_LOG("ECS_ENT_CREATE");
 			local = world.createEntity();
 		}
 
@@ -169,7 +168,6 @@ namespace Game {
 		if (!remote) { return; }
 		auto found = entToLocal.find(*remote);
 		if (found != entToLocal.end()) {
-			ENGINE_LOG("ECS_ENT_DESTROY");
 			world.destroyEntity(found->second);
 			entToLocal.erase(found);
 		}
@@ -186,7 +184,6 @@ namespace Game {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
-		ENGINE_LOG("ECS_COMP_ADD: ", local, " ", *cid, " ", head.sequence, " ", head.channel);
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
@@ -239,10 +236,8 @@ namespace Game {
 
 			if (world.hasComponent<C>(local)) {
 				world.removeComponent<C>(local);
-				ENGINE_LOG("Remove component ", local, cid);
 			} else {
 				world.addComponent<C>(local);
-				ENGINE_LOG("Add component ", local, cid);
 			}
 		});
 	}
@@ -320,7 +315,7 @@ namespace Game {
 
 		// TODO: should be configurable somewhere
 		// TODO: we probably want read every time. Only limit writes.
-		//if (now - last < std::chrono::milliseconds{1000 / 20}) { return; }
+		if (now - lastUpdate < std::chrono::milliseconds{1000 / 20}) { return; }
 		lastUpdate = now;
 
 		if constexpr (ENGINE_SERVER) {
