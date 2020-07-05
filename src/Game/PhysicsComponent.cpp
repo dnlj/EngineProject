@@ -60,7 +60,7 @@ namespace Game {
 	}
 	
 	Engine::Net::Replication PhysicsComponent::netRepl() const {
-		return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::UPDATE : Engine::Net::Replication::ALWAYS;
+		return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::NONE : Engine::Net::Replication::ALWAYS;
 	}
 
 	void PhysicsComponent::netTo(Engine::Net::PacketWriter& writer) const {
@@ -80,6 +80,7 @@ namespace Game {
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		// TODO: actual shape
 		body = physSys.createPhysicsCircle(ent);
+		body->SetType(b2_staticBody);
 		netFrom(reader);
 	}
 }

@@ -15,7 +15,7 @@ namespace Game {
 		public:
 			Engine::Texture texture;
 
-			constexpr static auto netRepl() { return Engine::Net::Replication::NONE; };
+			constexpr static auto netRepl() { return Engine::Net::Replication::ONCE; };
 			
 			void netTo(Engine::Net::PacketWriter& writer) const {}
 

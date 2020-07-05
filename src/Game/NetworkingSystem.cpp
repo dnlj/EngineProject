@@ -403,10 +403,14 @@ namespace Game {
 				ForEachIn<ComponentsSet>::call([&]<class C>() {
 					if constexpr (IsNetworkedComponent<C>) {
 						if (!world.hasComponent<C>(ent)) { return; }
+
+						auto& comp = world.getComponent<C>(ent);
+						if (comp.netRepl() == Engine::Net::Replication::NONE) { return; }
+
 						conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
 						conn.writer.write(ent);
 						conn.writer.write(world.getComponentId<C>());
-						world.getComponent<C>(ent).netToInit(engine, world, ent, conn.writer);
+						comp.netToInit(engine, world, ent, conn.writer);
 					}
 				});
 			}
