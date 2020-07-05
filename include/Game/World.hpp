@@ -15,7 +15,6 @@
 #include <Game/CharacterMovementSystem.hpp>
 #include <Game/PhysicsOriginShiftSystem.hpp>
 #include <Game/PhysicsSystem.hpp>
-#include <Game/NeighborSystem.hpp>
 #include <Game/CharacterSpellSystem.hpp>
 #include <Game/CameraTrackingSystem.hpp>
 #include <Game/SubWorldSystem.hpp>
@@ -40,7 +39,6 @@ namespace Game {
 		CharacterMovementSystem,
 		PhysicsOriginShiftSystem,
 		PhysicsSystem,
-		NeighborSystem,
 		CharacterSpellSystem,
 		CameraTrackingSystem,
 		//SubWorldSystem,

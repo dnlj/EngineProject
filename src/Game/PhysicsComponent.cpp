@@ -73,7 +73,6 @@ namespace Game {
 
 	void PhysicsComponent::netFrom(Engine::Net::PacketReader& reader) {
 		const auto trans = reader.read<b2Transform>();
-		// TODO: why doesnt update just take a transform?
 		updateTransform(trans->p, trans->q.GetAngle());
 	}
 

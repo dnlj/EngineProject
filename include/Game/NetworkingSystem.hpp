@@ -11,6 +11,7 @@
 #include <Game/System.hpp>
 #include <Game/EntityFilter.hpp>
 #include <Game/MessageType.hpp>
+#include <Game/NeighborsComponent.hpp>
 
 
 namespace Game {
@@ -38,6 +39,8 @@ namespace Game {
 			Engine::Net::Packet packet = {};
 			Engine::Net::Connection anyConn; // Used for unconnected messages
 			const Engine::Net::IPv4Address group;
+			Engine::Clock::TimePoint lastUpdate = {};
+			NeighborsComponent::Set lastNeighbors;
 
 			// TODO: at some point we probably want to shrink this
 			Engine::FlatHashMap<Engine::ECS::Entity, Engine::ECS::Entity> entToLocal;
@@ -47,7 +50,7 @@ namespace Game {
 			NetworkingSystem(SystemArg arg);
 			void setup();
 			void broadcastDiscover(); // TODO: better way to handle messages
-			void tick(float32 dt);
+			void run(float32 dt);
 			int32 connectionsCount() const;
 			void connectTo(const Engine::Net::IPv4Address& addr);
 			void disconnect(Engine::ECS::Entity ent);
@@ -56,6 +59,7 @@ namespace Game {
 			Engine::Net::Connection& addConnection(const Engine::Net::IPv4Address& addr);
 
 			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);
+			void updateNeighbors();
 
 			template<MessageType::Type Type>
 			void handleMessageType(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {

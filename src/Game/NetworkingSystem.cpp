@@ -155,6 +155,7 @@ namespace Game {
 
 		auto& local = entToLocal[*remote];
 		if (local == Engine::ECS::INVALID_ENTITY) {
+			ENGINE_LOG("ECS_ENT_CREATE");
 			local = world.createEntity();
 		}
 
@@ -168,6 +169,7 @@ namespace Game {
 		if (!remote) { return; }
 		auto found = entToLocal.find(*remote);
 		if (found != entToLocal.end()) {
+			ENGINE_LOG("ECS_ENT_DESTROY");
 			world.destroyEntity(found->second);
 			entToLocal.erase(found);
 		}
@@ -184,6 +186,7 @@ namespace Game {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
+		ENGINE_LOG("ECS_COMP_ADD: ", local, " ", *cid, " ", head.sequence, " ", head.channel);
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
@@ -206,7 +209,6 @@ namespace Game {
 		auto found = entToLocal.find(*remote);
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
-
 		// TODO: What if we get an older message after a newer message?
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
@@ -313,11 +315,16 @@ namespace Game {
 		#endif
 	}
 
-	// TODO: should be in update, not tick
-	void NetworkingSystem::tick(float32 dt) {
+	void NetworkingSystem::run(float32 dt) {
 		const auto now = Engine::Clock::now();
 
+		// TODO: should be configurable somewhere
+		// TODO: we probably want read every time. Only limit writes.
+		//if (now - last < std::chrono::milliseconds{1000 / 20}) { return; }
+		lastUpdate = now;
+
 		if constexpr (ENGINE_SERVER) {
+			updateNeighbors();
 			if (world.getAllComponentBitsets().size() > lastCompsBitsets.size()) {
 				lastCompsBitsets.resize(world.getAllComponentBitsets().size());
 			}
@@ -419,23 +426,10 @@ namespace Game {
 						ENGINE_WARN("TODO: how to handle unsendable messages");
 					}
 				}
-
-				//for (auto& ply : connFilter) {
-				//	auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-				//
-				//	// TODO: test that mixing works using channel reliable
-				//	for (int i = 0; i < 10; ++i) {
-				//		conn.writer.flush();
-				//		if (conn.writer.next(MessageType::TEST, Engine::Net::Channel::ORDERED)) {
-				//			conn.writer.send();
-				//		} else {
-				//			ENGINE_WARN("TODO: how to handle unsendable messages");
-				//		}
-				//	}
-				//}
 			}
 		}
 
+		// Recv messages
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
 			auto found = ipToPlayer.find(address);
@@ -462,6 +456,7 @@ namespace Game {
 			}
 		}
 
+		// Send Ack messages & unacked
 		anyConn.writer.flush();
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
@@ -475,6 +470,7 @@ namespace Game {
 			conn.writer.flush();
 		}
 
+		// Timeout
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			const auto diff = now - conn.lastMessageTime;
@@ -574,6 +570,54 @@ namespace Game {
 			} else if (rem < 0) {
 				ENGINE_WARN("Network message read past message end (", rem, " bytes remaining).");
 			}
+		}
+	}
+
+	void NetworkingSystem::updateNeighbors() {
+		for (const auto ent : connFilter) {
+			auto& neighComp = world.getComponent<NeighborsComponent>(ent);
+			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			auto& added = neighComp.addedNeighbors;
+			auto& current = neighComp.currentNeighbors;
+			auto& removed = neighComp.removedNeighbors;
+			{using std::swap; swap(lastNeighbors, current);};
+			added.clear();
+			current.clear();
+			removed.clear();
+
+			struct QueryCallback : b2QueryCallback {
+				decltype(current)& ents;
+				World& world;
+				QueryCallback(World& world, decltype(ents) ents) : world{world}, ents{ents} {}
+				virtual bool ReportFixture(b2Fixture* fixture) override {
+					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
+					if (!ents.has(ent)) {
+						ents.add(ent);
+					}
+					return true;
+				}
+			} queryCallback(world, current);
+
+			const auto& pos = physComp.getPosition();
+			constexpr float32 range = 5; // TODO: what range?
+			physComp.getWorld()->QueryAABB(&queryCallback, b2AABB{
+				{pos.x - range, pos.y - range},
+				{pos.x + range, pos.y + range},
+			});
+
+			for (const auto lent : lastNeighbors) {
+				if (!current.has(lent.first)) {
+					removed.add(lent.first);
+				}
+			}
+
+			for (const auto cent : current) {
+				if (!lastNeighbors.has(cent.first)) {
+					added.add(cent.first);
+				}
+			}
+
+			// TODO: disabled vs destroyed
 		}
 	}
 }
