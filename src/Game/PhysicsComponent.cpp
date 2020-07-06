@@ -80,7 +80,7 @@ namespace Game {
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		// TODO: actual shape
 		body = physSys.createPhysicsCircle(ent);
-		body->SetType(b2_staticBody);
+		//body->SetType(b2_staticBody);
 		netFrom(reader);
 	}
 }

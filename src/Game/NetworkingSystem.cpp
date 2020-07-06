@@ -341,7 +341,7 @@ namespace Game {
 		// Send messages
 		// TODO: rate should be configurable somewhere
 		// TODO: send acks instantly? idk
-		const bool shouldUpdate = now - lastUpdate >= std::chrono::milliseconds{1000 / 32};
+		const bool shouldUpdate = now - lastUpdate >= std::chrono::milliseconds{1000 / 20};
 		if (shouldUpdate) {
 			lastUpdate = now;
 			if constexpr (ENGINE_SERVER) { runServer(); }
@@ -365,7 +365,7 @@ namespace Game {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
 			for (Engine::Net::Channel ch{0}; ch <= Engine::Net::Channel::ORDERED; ++ch) {
-				// TODO: only send acks if there are acks to send
+				// TODO: how frequently should we ack? Should atleast pit a timer on it even if its faster than normal net update. Dont want tied to fps.
 				conn.writer.next(MessageType::ACK, Engine::Net::Channel::UNRELIABLE);
 				conn.writeRecvAcks(ch);
 
@@ -508,19 +508,20 @@ namespace Game {
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
 			world.setNetworked(ent, true);
-			world.addComponent<NeighborsComponent>(ent);
 			world.addComponent<PlayerFlag>(ent);
-			world.addComponent<MapEditComponent>(ent);
-			world.addComponent<ActionComponent>(ent).grow(world.getSystem<ActionSystem>().count());
-			world.addComponent<PhysicsComponent>(ent).setBody(physSys.createPhysicsCircle(ent));
-			world.addComponent<CharacterMovementComponent>(ent);
-			world.addComponent<CharacterSpellComponent>(ent);
+			world.addComponent<NeighborsComponent>(ent);
 			world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
+			world.addComponent<PhysicsComponent>(ent).setBody(physSys.createPhysicsCircle(ent));
 		}
 
 		if constexpr (ENGINE_CLIENT) {
 			ENGINE_DEBUG_ASSERT(ipToPlayer.size() == 1, "A Client should not be connected to more than one server.");
 		}
+
+		world.addComponent<ActionComponent>(ent).grow(world.getSystem<ActionSystem>().count());
+		world.addComponent<MapEditComponent>(ent);
+		world.addComponent<CharacterSpellComponent>(ent);
+		world.addComponent<CharacterMovementComponent>(ent);
 
 		return {ent, *connComp.conn};
 	}
