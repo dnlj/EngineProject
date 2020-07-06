@@ -533,9 +533,8 @@ int entry(int argc, char* argv[]) {
 	std::atexit([](){
 	});
 
-	{ // Position the console
-		auto window = GetConsoleWindow();
-
+	// Position the console
+	if (HWND window; window = GetConsoleWindow()) {
 		if constexpr (ENGINE_CLIENT) {
 			SetWindowPos(window, HWND_TOP, 0, 0, 1000, 500, 0);
 			SetWindowTextW(window, L"Client");
@@ -554,7 +553,7 @@ int entry(int argc, char* argv[]) {
 	// Function Breakpoints: assert, _wassert, abort, exit
 	// --------------------------
 	//_set_error_mode(_OUT_TO_MSGBOX);
-	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW);
+	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW | _CRTDBG_MODE_DEBUG);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	run(argc, argv);

@@ -35,7 +35,7 @@ namespace Game {
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> ipToPlayer;
 			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
-			Engine::Net::IPv4Address address;
+			Engine::Net::IPv4Address address;	
 			Engine::Net::Packet packet = {};
 			Engine::Net::Connection anyConn; // Used for unconnected messages
 			const Engine::Net::IPv4Address group;
@@ -57,7 +57,11 @@ namespace Game {
 			void disconnect(Engine::ECS::Entity ent);
 
 		private:
-			Engine::Net::Connection& addConnection(const Engine::Net::IPv4Address& addr);
+			struct AddConnRes {
+				Engine::ECS::Entity ent;
+				Engine::Net::Connection& conn;
+			};
+			AddConnRes addConnection(const Engine::Net::IPv4Address& addr);
 
 			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);
 			void updateNeighbors();

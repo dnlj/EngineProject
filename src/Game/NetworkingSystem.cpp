@@ -87,13 +87,12 @@ namespace {
 }
 
 
+#define HandleMessageDef(MsgType) template<> void NetworkingSystem::handleMessageType<MsgType>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt)
 namespace Game {
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::UNKNOWN>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::UNKNOWN) {
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::DISCOVER_SERVER>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::DISCOVER_SERVER) {
 		constexpr auto size = sizeof(DISCOVER_SERVER_DATA);
 
 		// TODO: rate limit per ip (longer if invalid packet)
@@ -104,8 +103,7 @@ namespace Game {
 		}
 	}
 	
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::SERVER_INFO>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::SERVER_INFO) {
 		#if ENGINE_CLIENT
 			auto& info = servers[from.address()];
 			info.name = from.reader.read<char*>();
@@ -113,28 +111,34 @@ namespace Game {
 		#endif
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::CONNECT>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::CONNECT) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
 		ENGINE_LOG("MessageType::CONNECT from ", from.address());
-		auto& conn = addConnection(from.address());
+		auto& [ent, conn] = addConnection(from.address());
+
 		conn.writer.next(MessageType::CONNECT_CONFIRM, Engine::Net::Channel::RELIABLE);
+		conn.writer.write(ent);
+		conn.writer.send();
 	}
 	
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::CONNECT_CONFIRM>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
-		// TODO: server has acknowledged connection.
-		ENGINE_WARN("TODO: Server has acknowledged connection.");
+	HandleMessageDef(MessageType::CONNECT_CONFIRM) {
+		auto* remote = from.reader.read<Engine::ECS::Entity>();
+
+		if (!remote) {
+			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
+			return;
+		}
+
+		entToLocal[*remote] = fromEnt;
+		ENGINE_LOG("Connection established. Remote: ", *remote, " Local: ", fromEnt);
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::DISCONNECT>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::DISCONNECT) {
 		puts("MessageType::DISCONNECT");
-		disconnect(ent);
+		disconnect(fromEnt);
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::PING>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::PING) {
 		if (*from.reader.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
 			if (from.writer.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
@@ -147,8 +151,7 @@ namespace Game {
 		}
 	}
 	
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_ENT_CREATE>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::ECS_ENT_CREATE) {
 		// TODO: this message should be client only
 		auto* remote = from.reader.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
@@ -158,11 +161,12 @@ namespace Game {
 			local = world.createEntity();
 		}
 
+		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", *remote, " Local: ", local);
+
 		// TODO: components init
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_ENT_DESTROY>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::ECS_ENT_DESTROY) {
 		// TODO: this message should be client only
 		auto* remote = from.reader.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
@@ -173,8 +177,7 @@ namespace Game {
 		}
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP_ADD>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::ECS_COMP_ADD) {
 		// TODO: this message should be client only
 		const auto* remote = from.reader.read<Engine::ECS::Entity>();
 		const auto* cid = from.reader.read<Engine::ECS::ComponentId>();
@@ -196,8 +199,7 @@ namespace Game {
 		});
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_COMP_ALWAYS>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::ECS_COMP_ALWAYS) {
 		// TODO: this message should be client only
 		const auto* remote = from.reader.read<Engine::ECS::Entity>();
 		const auto* cid = from.reader.read<Engine::ECS::ComponentId>();
@@ -218,8 +220,7 @@ namespace Game {
 		});
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ECS_FLAG>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::ECS_FLAG) {
 		// TODO: this message should be client only
 		const auto remote = from.reader.read<Engine::ECS::Entity>();
 		const auto flags = from.reader.read<Engine::ECS::ComponentBitset>();
@@ -242,19 +243,17 @@ namespace Game {
 		});
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ACTION>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::ACTION) {
 		const auto* aid = from.reader.read<Engine::Input::ActionId>();
 		const auto* val = from.reader.read<Engine::Input::Value>();
 
 		if (aid && val) {
 			// TODO: sanity check inputs
-			world.getSystem<ActionSystem>().processAction(ent, *aid, *val);
+			world.getSystem<ActionSystem>().processAction(fromEnt, *aid, *val);
 		}
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::ACK>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::ACK) {
 		const auto& chan = *from.reader.read<Engine::Net::Channel>();
 		const auto& next = *from.reader.read<Engine::Net::SequenceNumber>();
 		const auto& acks = *from.reader.read<uint64>();
@@ -267,12 +266,11 @@ namespace Game {
 		from.writer.updateSentAcks(chan, next, acks);
 	}
 
-	template<>
-	void NetworkingSystem::handleMessageType<MessageType::TEST>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+	HandleMessageDef(MessageType::TEST) {
 		std::cout << "***** TEST: " << head.sequence << "\n";
 	}
 }
-
+#undef HandleMessageDef
 
 namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
@@ -495,35 +493,35 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		auto& conn = addConnection(addr);
+		auto& [ent, conn] = addConnection(addr);
 		conn.writer.next(MessageType::CONNECT, Engine::Net::Channel::UNRELIABLE);
 		conn.writer.flush();
 	}
 
-	Engine::Net::Connection& NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {
+	auto NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) -> AddConnRes {
 		// TODO: i feel like this should be handled elsewhere. Where?
-		auto& ply = world.createEntity();
-		ipToPlayer.emplace(addr, ply);
-		auto& connComp = world.addComponent<ConnectionComponent>(ply);
+		auto& ent = world.createEntity();
+		ipToPlayer.emplace(addr, ent);
+		auto& connComp = world.addComponent<ConnectionComponent>(ent);
 		connComp.conn = std::make_unique<Engine::Net::Connection>(socket, addr, Engine::Clock::now());
 
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
-			world.addComponent<PlayerFlag>(ply);
-			world.addComponent<MapEditComponent>(ply);
-			world.addComponent<SpriteComponent>(ply).texture = engine.textureManager.get("assets/player.png");
-			world.addComponent<PhysicsComponent>(ply).setBody(physSys.createPhysicsCircle(ply));
-			world.addComponent<CharacterMovementComponent>(ply);
-			world.addComponent<CharacterSpellComponent>(ply);
-			world.addComponent<ActionComponent>(ply).grow(world.getSystem<ActionSystem>().count());
-			world.addComponent<NeighborsComponent>(ply);
+			world.addComponent<NeighborsComponent>(ent);
+			world.addComponent<PlayerFlag>(ent);
+			world.addComponent<MapEditComponent>(ent);
+			world.addComponent<ActionComponent>(ent).grow(world.getSystem<ActionSystem>().count());
+			world.addComponent<PhysicsComponent>(ent).setBody(physSys.createPhysicsCircle(ent));
+			world.addComponent<CharacterMovementComponent>(ent);
+			world.addComponent<CharacterSpellComponent>(ent);
+			world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
 		}
 
 		if constexpr (ENGINE_CLIENT) {
 			ENGINE_DEBUG_ASSERT(ipToPlayer.size() == 1, "A Client should not be connected to more than one server.");
 		}
 
-		return *connComp.conn;
+		return {ent, *connComp.conn};
 	}
 
 	void NetworkingSystem::disconnect(Engine::ECS::Entity ent) {

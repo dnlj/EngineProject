@@ -17,8 +17,6 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::setup() {
-		if constexpr (ENGINE_CLIENT) { return; } // TODO: rm once sided systems are added
-
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		physSys.addListener(this);
 

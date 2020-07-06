@@ -70,6 +70,4 @@ namespace Game {
 				: Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet>(std::tie(*this, engine)) {
 			}
 	};
-
-
 }
