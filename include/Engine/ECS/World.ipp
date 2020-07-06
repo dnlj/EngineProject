@@ -61,6 +61,17 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
+	bool WORLD_CLASS::isNetworked(Entity ent) const {
+		return entities[ent.id].state & EntityState::Network;
+	}
+
+	WORLD_TPARAMS
+	void WORLD_CLASS::setNetworked(Entity ent, bool enabled) {
+		auto& state = entities[ent.id].state;
+		state = (state & ~EntityState::Network) | (enabled ? EntityState::Network : EntityState::Dead);
+	}
+
+	WORLD_TPARAMS
 	auto& WORLD_CLASS::getEntities() const {
 		return entities;
 	}

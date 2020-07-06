@@ -87,7 +87,6 @@ namespace Game {
 		}
 	}
 
-	// TODO: should probably be tick
 	void MapSystem::run(float32 dt) {
 		for (auto& ply : playerFilter) {
 			auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsComponent>(ply).getPosition());

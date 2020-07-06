@@ -35,9 +35,10 @@ namespace Engine::ECS {
 	class EntityState {
 		public:
 			enum State : uint8 {
-				Dead = 0 << 0,
-				Alive =  1 << 0,
+				Dead    = 0 << 0,
+				Alive   = 1 << 0,
 				Enabled = 1 << 1,
+				Network = 1 << 2,
 			};
 
 			EntityState(Entity ent, State state) : ent{ent}, state{state} {}
@@ -115,6 +116,16 @@ namespace Engine::ECS {
 			 * Checks if an entity is enabled.
 			 */
 			bool isEnabled(Entity ent) const;
+
+			/**
+			 * Checks if an entity should be networked.
+			 */
+			bool isNetworked(Entity ent) const;
+			
+			/**
+			 * Enables or disables entity networking.
+			 */
+			void setNetworked(Entity ent, bool enabled);
 
 			/**
 			 * Gets all entities.

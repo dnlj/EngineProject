@@ -507,6 +507,7 @@ namespace Game {
 
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
+			world.setNetworked(ent, true);
 			world.addComponent<NeighborsComponent>(ent);
 			world.addComponent<PlayerFlag>(ent);
 			world.addComponent<MapEditComponent>(ent);
@@ -597,9 +598,8 @@ namespace Game {
 				QueryCallback(World& world, decltype(ents) ents) : world{world}, ents{ents} {}
 				virtual bool ReportFixture(b2Fixture* fixture) override {
 					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
-					if (!ents.has(ent)) {
-						ents.add(ent);
-					}
+					if (!world.isNetworked(ent)) { return true; }
+					if (!ents.has(ent)) { ents.add(ent); }
 					return true;
 				}
 			} queryCallback(world, current);
