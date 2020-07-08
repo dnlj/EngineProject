@@ -161,6 +161,9 @@ namespace Game {
 			local = world.createEntity();
 		}
 
+		world.setNetworked(local, true);
+		ENGINE_LOG("Networked: ", local, world.isNetworked(local));
+
 		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", *remote, " Local: ", local);
 
 		// TODO: components init
@@ -209,6 +212,7 @@ namespace Game {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 		// TODO: What if we get an older message after a newer message?
+		//ENGINE_LOG("Update: ", head.sequence);
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (world.hasComponent<C>(local)) {

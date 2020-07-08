@@ -21,6 +21,28 @@ namespace Game {
 		for (auto ent : filter) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			physComp.prevTransform = physComp.body->GetTransform();
+
+			if constexpr (ENGINE_CLIENT && false) { // TODO: split interp into own comp?
+				if (!world.isNetworked(ent)) { continue; }
+
+				// TODO: angle
+				const auto& pos = physComp.body->GetTransform().p;
+				auto next = physComp.remoteTransform.p - pos;
+				const auto len = next.Normalize();
+				const float32 inc = 0.05f / (tickrate/5); // TODO: figure out good step size once world scale is fixed
+				const float32 snap = 0.50f;
+
+				if (len <= 0.00001f) { // Close enough // TODO: FLT_epsilon?
+					continue;
+				} else if (len < inc || len >= snap) { // TODO: find good snap dist
+					next = physComp.remoteTransform.p;
+				} else {
+					//ENGINE_LOG("Len: ", len, " (", physComp.remoteTransform.p.x, ", ", physComp.remoteTransform.p.y, ")");
+					next = pos + (inc * next);
+				}
+
+				physComp.updateTransform(next, 0);
+			}
 		}
 
 		physWorld.Step(dt, 8, 3);

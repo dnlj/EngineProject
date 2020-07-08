@@ -18,6 +18,7 @@ namespace Game {
 			friend class PhysicsSystem;
 			b2Transform prevTransform;
 			b2Transform interpTransform;
+			b2Transform remoteTransform;
 			b2Body* body = nullptr;
 
 		public:

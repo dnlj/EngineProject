@@ -18,6 +18,7 @@ namespace Game {
 		using std::swap;
 		prevTransform = other.prevTransform;
 		interpTransform = other.interpTransform;
+		remoteTransform = other.remoteTransform;
 		swap(body, other.body); // We need to swap to ensure our old body* gets destroyed
 	}
 
@@ -65,6 +66,7 @@ namespace Game {
 
 	void PhysicsComponent::netTo(Engine::Net::PacketWriter& writer) const {
 		writer.write(body->GetTransform());
+		writer.write(body->GetLinearVelocity());
 	}
 
 	void PhysicsComponent::netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketWriter& writer) const {
@@ -74,6 +76,10 @@ namespace Game {
 	void PhysicsComponent::netFrom(Engine::Net::PacketReader& reader) {
 		const auto trans = reader.read<b2Transform>();
 		updateTransform(trans->p, trans->q.GetAngle());
+		//remoteTransform = *trans;
+
+		const auto vel = reader.read<b2Vec2>();
+		body->SetLinearVelocity(*vel);
 	}
 
 	void PhysicsComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader) {
