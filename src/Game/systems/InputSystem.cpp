@@ -1,5 +1,5 @@
 // Game
-#include <Game/InputSystem.hpp>
+#include <Game/systems/InputSystem.hpp>
 #include <Game/World.hpp>
 
 

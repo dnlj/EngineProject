@@ -2,9 +2,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 // Game
-#include <Game/CameraTrackingSystem.hpp>
-#include <Game/PhysicsSystem.hpp>
-#include <Game/PhysicsComponent.hpp>
+#include <Game/systems/CameraTrackingSystem.hpp>
+#include <Game/systems/PhysicsSystem.hpp>
+#include <Game/comps/PhysicsComponent.hpp>
 #include <Game/World.hpp>
 
 namespace Game {

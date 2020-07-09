@@ -4,7 +4,7 @@
 #include <cstdio>
 
 // Game
-#include <Game/UISystem.hpp>
+#include <Game/systems/UISystem.hpp>
 #include <Game/World.hpp>
 
 namespace {

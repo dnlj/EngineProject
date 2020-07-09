@@ -2,10 +2,10 @@
 #include <algorithm>
 
 // Game
-#include <Game/CharacterSpellSystem.hpp>
-#include <Game/PhysicsSystem.hpp>
-#include <Game/PhysicsComponent.hpp>
-#include <Game/SpriteComponent.hpp>
+#include <Game/systems/CharacterSpellSystem.hpp>
+#include <Game/systems/PhysicsSystem.hpp>
+#include <Game/comps/PhysicsComponent.hpp>
+#include <Game/comps/SpriteComponent.hpp>
 #include <Game/World.hpp>
 
 

@@ -7,7 +7,7 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Game
-#include <Game/NetworkComponent.hpp>
+#include <Game/comps/NetworkComponent.hpp>
 
 
 namespace Game {

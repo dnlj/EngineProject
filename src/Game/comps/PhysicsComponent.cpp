@@ -1,5 +1,5 @@
 // Game
-#include <Game/PhysicsComponent.hpp>
+#include <Game/comps/PhysicsComponent.hpp>
 #include <Game/World.hpp>
 
 

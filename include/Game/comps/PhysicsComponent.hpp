@@ -9,7 +9,7 @@
 
 // Game
 #include <Game/Common.hpp>
-#include <Game/PhysicsSystem.hpp>
+#include <Game/systems/PhysicsSystem.hpp>
 
 
 namespace Game {

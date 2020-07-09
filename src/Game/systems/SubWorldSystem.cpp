@@ -1,7 +1,7 @@
 // Game
 #include <Game/World.hpp>
-#include <Game/SubWorldSystem.hpp>
-#include <Game/CharacterMovementComponent.hpp>
+#include <Game/systems/SubWorldSystem.hpp>
+#include <Game/comps/CharacterMovementComponent.hpp>
 
 
 namespace {

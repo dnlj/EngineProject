@@ -1,6 +1,6 @@
 // Game
 #include <Game/World.hpp>
-#include <Game/PhysicsSystem.hpp>
+#include <Game/systems/PhysicsSystem.hpp>
 
 namespace Game {
 	PhysicsSystem::PhysicsSystem(SystemArg arg)

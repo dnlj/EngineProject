@@ -1,5 +1,5 @@
 // Game
-#include <Game/ActionComponent.hpp>
+#include <Game/comps/ActionComponent.hpp>
 
 
 namespace Game {

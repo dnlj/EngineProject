@@ -1,7 +1,7 @@
 // Game
-#include <Game/ActionSystem.hpp>
+#include <Game/systems/ActionSystem.hpp>
 #include <Game/World.hpp>
-#include <Game/ActionComponent.hpp>
+#include <Game/comps/ActionComponent.hpp>
 
 
 namespace Game {

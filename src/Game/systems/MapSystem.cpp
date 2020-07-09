@@ -6,12 +6,12 @@
 #include <Engine/Glue/glm.hpp>
 
 // Game
-#include <Game/MapSystem.hpp>
-#include <Game/PhysicsSystem.hpp>
-#include <Game/SpriteSystem.hpp>
-#include <Game/CameraTrackingSystem.hpp>
+#include <Game/systems/MapSystem.hpp>
+#include <Game/systems/PhysicsSystem.hpp>
+#include <Game/systems/SpriteSystem.hpp>
+#include <Game/systems/CameraTrackingSystem.hpp>
 #include <Game/World.hpp>
-#include <Game/PhysicsOriginShiftSystem.hpp>
+#include <Game/systems/PhysicsOriginShiftSystem.hpp>
 
 
 namespace Game {

@@ -11,7 +11,7 @@
 #include <Game/System.hpp>
 #include <Game/EntityFilter.hpp>
 #include <Game/MessageType.hpp>
-#include <Game/NeighborsComponent.hpp>
+#include <Game/comps/NeighborsComponent.hpp>
 
 
 namespace Game {

@@ -6,9 +6,9 @@
 #include <Engine/ECS/EntityFilter.hpp>
 
 // Game
-#include <Game/SpriteSystem.hpp>
-#include <Game/PhysicsComponent.hpp>
-#include <Game/SpriteComponent.hpp>
+#include <Game/systems/SpriteSystem.hpp>
+#include <Game/comps/PhysicsComponent.hpp>
+#include <Game/comps/SpriteComponent.hpp>
 #include <Game/World.hpp>
 
 namespace Game {

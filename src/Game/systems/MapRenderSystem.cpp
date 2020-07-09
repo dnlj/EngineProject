@@ -6,8 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 // Game
-#include <Game/MapSystem.hpp>
-#include <Game/MapRenderSystem.hpp>
+#include <Game/systems/MapSystem.hpp>
+#include <Game/systems/MapRenderSystem.hpp>
 #include <Game/World.hpp>
 
 

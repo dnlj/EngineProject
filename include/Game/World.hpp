@@ -10,26 +10,26 @@
 // Game
 #include <Game/Common.hpp>
 
-#include <Game/InputSystem.hpp>
-#include <Game/ActionSystem.hpp>
-#include <Game/CharacterMovementSystem.hpp>
-#include <Game/PhysicsOriginShiftSystem.hpp>
-#include <Game/PhysicsSystem.hpp>
-#include <Game/CharacterSpellSystem.hpp>
-#include <Game/CameraTrackingSystem.hpp>
-#include <Game/SubWorldSystem.hpp>
-#include <Game/MapSystem.hpp>
-#include <Game/MapRenderSystem.hpp>
-#include <Game/SpriteSystem.hpp>
-#include <Game/NetworkingSystem.hpp>
-#include <Game/UISystem.hpp>
+#include <Game/systems/InputSystem.hpp>
+#include <Game/systems/ActionSystem.hpp>
+#include <Game/systems/CharacterMovementSystem.hpp>
+#include <Game/systems/PhysicsOriginShiftSystem.hpp>
+#include <Game/systems/PhysicsSystem.hpp>
+#include <Game/systems/CharacterSpellSystem.hpp>
+#include <Game/systems/CameraTrackingSystem.hpp>
+#include <Game/systems/SubWorldSystem.hpp>
+#include <Game/systems/MapSystem.hpp>
+#include <Game/systems/MapRenderSystem.hpp>
+#include <Game/systems/SpriteSystem.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
+#include <Game/systems/UISystem.hpp>
 
-#include <Game/PhysicsComponent.hpp>
-#include <Game/SpriteComponent.hpp>
-#include <Game/CharacterMovementComponent.hpp>
-#include <Game/ActionComponent.hpp>
-#include <Game/ConnectionComponent.hpp>
-#include <Game/NeighborsComponent.hpp>
+#include <Game/comps/PhysicsComponent.hpp>
+#include <Game/comps/SpriteComponent.hpp>
+#include <Game/comps/CharacterMovementComponent.hpp>
+#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/ConnectionComponent.hpp>
+#include <Game/comps/NeighborsComponent.hpp>
 
 
 namespace Game {

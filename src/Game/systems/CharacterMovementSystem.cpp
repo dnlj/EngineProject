@@ -2,9 +2,9 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Game
-#include <Game/CharacterMovementSystem.hpp>
-#include <Game/PhysicsComponent.hpp>
-#include <Game/CharacterMovementComponent.hpp>
+#include <Game/systems/CharacterMovementSystem.hpp>
+#include <Game/comps/PhysicsComponent.hpp>
+#include <Game/comps/CharacterMovementComponent.hpp>
 #include <Game/World.hpp>
 
 

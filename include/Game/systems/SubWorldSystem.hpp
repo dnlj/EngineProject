@@ -9,8 +9,8 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/EntityFilter.hpp>
-#include <Game/PhysicsComponent.hpp>
-#include <Game/MapSystem.hpp>
+#include <Game/comps/PhysicsComponent.hpp>
+#include <Game/systems/MapSystem.hpp>
 
 
 namespace Game {

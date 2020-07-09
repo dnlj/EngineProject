@@ -8,7 +8,7 @@
 
 // Game
 #include <Game/MapBlock.hpp>
-#include <Game/PhysicsSystem.hpp>
+#include <Game/systems/PhysicsSystem.hpp>
 
 
 // TODO: Doc

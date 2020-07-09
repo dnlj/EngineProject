@@ -8,8 +8,8 @@
 
 // Game
 #include <Game/World.hpp>
-#include <Game/NetworkingSystem.hpp>
-#include <Game/ConnectionComponent.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
+#include <Game/comps/ConnectionComponent.hpp>
 
 namespace {
 	template<class T>

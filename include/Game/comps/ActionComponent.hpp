@@ -68,4 +68,4 @@ namespace Game {
 	};
 }
 
-#include <Game/ActionComponent.ipp>
+#include <Game/comps/ActionComponent.ipp>
