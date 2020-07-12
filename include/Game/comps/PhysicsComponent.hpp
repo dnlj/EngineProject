@@ -15,7 +15,7 @@
 namespace Game {
 	class PhysicsComponent {
 		public:
-			constexpr static bool isRollbackState = true;
+			constexpr static bool isSnapshotRelevant = true;
 
 		private:
 			friend class PhysicsSystem;

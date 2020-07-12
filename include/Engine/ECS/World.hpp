@@ -46,13 +46,12 @@ namespace Engine::ECS {
 			uint8 state;
 	};
 
-
 	// TODO: move
 	template<class T, class = void>
-	struct IsRollbackState : std::false_type {};
+	struct IsSnapshotRelevant : std::false_type {};
 
 	template<class T>
-	struct IsRollbackState<T, std::enable_if_t<T::isRollbackState>> : std::true_type {};
+	struct IsSnapshotRelevant<T, std::enable_if_t<T::isSnapshotRelevant>> : std::true_type {};
 
 	WORLD_TPARAMS
 	class WORLD_CLASS {
@@ -79,6 +78,9 @@ namespace Engine::ECS {
 			/** How long between each tick. */
 			constexpr static Clock::Duration tickInterval{Clock::Period::den / TickRate};
 			static_assert(tickInterval < maxDelay, "Tick interval must be less than the maximum accumulable tick duration.");
+
+			/** The tick interval in floating point seconds. */
+			constexpr static float32 tickDeltaTime = Clock::Seconds{tickInterval}.count();
 			
 			/** Time it took to process the last run. */
 			float32 deltaTime = 0.0f;
@@ -114,7 +116,7 @@ namespace Engine::ECS {
 
 				std::tuple<
 					// TODO: dont store non rollback relevant comps at all
-					std::conditional_t<IsRollbackState<Cs>::value, ComponentContainer<Cs>, bool>...
+					std::conditional_t<IsSnapshotRelevant<Cs>::value, ComponentContainer<Cs>, bool>...
 				> compContainers;
 			};
 
@@ -363,6 +365,8 @@ namespace Engine::ECS {
 			decltype(auto) self() const { return reinterpret_cast<const Derived&>(*this); }
 
 		private:
+			void tickSystems();
+
 			/**
 			 * Destroys and entity, freeing its id to be recycled.
 			 */

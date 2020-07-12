@@ -36,20 +36,29 @@ namespace Engine::ECS {
 		}
 		
 		while (tickTime + tickInterval <= beginTime) {
-			constexpr auto tickDelta = Clock::Seconds{tickInterval}.count();
-			(getSystem<Ss>().tick(tickDelta), ...);
-			storeSnapshot();
-			markedForDeath.clear();
+			tickSystems();
 			tickTime += tickInterval;
-			++currTick;
 		}
 
 		if (currTick > 64*5 && currTick % 128 == 0) {
+			const auto realTick = currTick;
 			loadSnapshot(snapshotBuffer[(currTick - 64) % TickRate]);
-			// TODO: tick forward until caught up.
+
+			while (currTick < realTick) {
+				tickSystems();
+			}
 		}
 		
 		(getSystem<Ss>().run(deltaTime), ...);
+	}
+
+	WORLD_TPARAMS
+	void WORLD_CLASS::tickSystems() {
+		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
+		(getSystem<Ss>().tick(tickDeltaTime), ...);
+		storeSnapshot();
+		markedForDeath.clear();
+		++currTick;
 	}
 
 	WORLD_TPARAMS
@@ -342,7 +351,7 @@ namespace Engine::ECS {
 		snap.compBitsets = compBitsets;
 
 		const auto& storeComps = [&]<class C>(){
-			if constexpr (IsRollbackState<C>::value) {
+			if constexpr (IsSnapshotRelevant<C>::value) {
 				constexpr auto cid = getComponentId<C>();
 				std::get<cid>(snap.compContainers) = std::get<cid>(compContainers);
 			}
@@ -362,7 +371,7 @@ namespace Engine::ECS {
 		compBitsets = snap.compBitsets;
 
 		const auto& loadComps = [&]<class C>(){
-			if constexpr (IsRollbackState<C>::value) {
+			if constexpr (IsSnapshotRelevant<C>::value) {
 				constexpr auto cid = getComponentId<C>();
 				std::get<cid>(compContainers) = std::get<cid>(snap.compContainers);
 			}
