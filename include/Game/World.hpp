@@ -34,7 +34,6 @@
 
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
-		PhysicsSystemLoad,
 		InputSystem,
 		ActionSystem,
 		CharacterMovementSystem,
@@ -47,9 +46,7 @@ namespace Game {
 		MapRenderSystem,
 		SpriteSystem,
 		NetworkingSystem,
-		UISystem,
-		PhysicsSystemStore
-
+		UISystem
 	>;
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<

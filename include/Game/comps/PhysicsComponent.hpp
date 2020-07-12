@@ -19,11 +19,6 @@ namespace Game {
 
 		private:
 			friend class PhysicsSystem;
-
-			// TODO: these store/load systems seem kinda hacky. is there a better way to handle this?
-			// TODO: cont. Maybe have a pre-snapshot-store and post-snapshot-load funcs on systems?
-			friend class PhysicsSystemStore;
-			friend class PhysicsSystemLoad;
 			
 			// TODO: split into dynamic and static comps.
 			// TODO: split interp stuff into own comp.

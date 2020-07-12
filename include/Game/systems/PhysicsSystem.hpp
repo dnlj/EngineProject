@@ -19,6 +19,8 @@ namespace Game {
 
 			void tick(float dt);
 			void run(float dt);
+			void preStoreSnapshot();
+			void postLoadSnapshot();
 
 			/**
 			 * Creates a box2d body and associates an entity with it.
@@ -105,21 +107,5 @@ namespace Game {
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D debugDraw;
 			#endif
-	};
-
-	class PhysicsSystemStore : public System {
-		private:
-			EntityFilter& filter;
-		public:
-			PhysicsSystemStore(SystemArg arg);
-			void tick(float dt);
-	};
-
-	class PhysicsSystemLoad : public System {
-		private:
-			EntityFilter& filter;
-		public:
-			PhysicsSystemLoad(SystemArg arg);
-			void tick(float dt);
 	};
 }

@@ -4,35 +4,6 @@
 
 
 namespace Game {
-	PhysicsSystemStore::PhysicsSystemStore(SystemArg arg)
-		: System{arg}
-		, filter{world.getFilterFor<PhysicsComponent>()} {
-	}
-
-	void PhysicsSystemStore::tick(float dt) {
-		for (auto ent : filter) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			physComp.storeBody();
-		}
-	}
-
-	PhysicsSystemLoad::PhysicsSystemLoad(SystemArg arg)
-		: System{arg}
-		, filter{world.getFilterFor<PhysicsComponent>()} {
-	}
-
-	void PhysicsSystemLoad::tick(float dt) {
-		for (auto ent : filter) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			if (physComp.getBody().GetType() == b2_dynamicBody) {
-				physComp.loadBody();
-			}
-		}
-	}
-}
-
-
-namespace Game {
 	PhysicsSystem::PhysicsSystem(SystemArg arg)
 		: System{arg}
 		, physWorld{b2Vec2_zero}
@@ -104,6 +75,23 @@ namespace Game {
 			debugDraw.reset();
 			physWorld.DrawDebugData();
 		#endif
+	}
+
+	
+	void PhysicsSystem::preStoreSnapshot() {
+		for (auto ent : filter) {
+			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			physComp.storeBody();
+		}
+	}
+
+	void PhysicsSystem::postLoadSnapshot() {
+		for (auto ent : filter) {
+			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			if (physComp.getBody().GetType() == b2_dynamicBody) {
+				physComp.loadBody();
+			}
+		}
 	}
 
 	b2Body* PhysicsSystem::createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef) {

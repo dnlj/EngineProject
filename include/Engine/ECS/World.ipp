@@ -319,6 +319,9 @@ namespace Engine::ECS {
 	void WORLD_CLASS::storeSnapshot() {
 		// TODO: delta compression?
 		// TODO: Make sure we are storing all tick time info at the correct time: currentTick, beginTime, tickTime, etc.
+
+		(getSystem<Ss>().preStoreSnapshot(), ...);
+
 		auto& snap = snapshotBuffer[currentTick % TickRate];
 		snap.entities = entities;
 		snap.deadEntities = deadEntities;
@@ -349,5 +352,6 @@ namespace Engine::ECS {
 		};
 		
 		(loadComps.operator()<Cs>(), ...);
+		(getSystem<Ss>().postLoadSnapshot(), ...);
 	}
 }
