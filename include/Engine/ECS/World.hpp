@@ -71,7 +71,7 @@ namespace Engine::ECS {
 			Clock::TimePoint tickTime;
 
 			/** The current tick being run */
-			uint32 currentTick = 0;
+			uint32 currTick = 0;
 
 			/** Maximum tick delay to accumulate */
 			constexpr static Clock::Duration maxDelay = std::chrono::milliseconds{250};
@@ -99,12 +99,17 @@ namespace Engine::ECS {
 			std::vector<Entity> deadEntities;
 
 			/** TODO: doc */
+			std::vector<Entity> markedForDeath;
+
+			/** TODO: doc */
 			std::vector<EntityState> entities;
 
-			// TODO: move
+			// TODO: move?
 			struct Snapshot {
+				decltype(currTick) currTick;
 				decltype(entities) entities;
 				decltype(deadEntities) deadEntities;
+				decltype(markedForDeath) markedForDeath;
 				decltype(compBitsets) compBitsets;
 
 				std::tuple<
@@ -194,12 +199,13 @@ namespace Engine::ECS {
 			 * @param forceNew Disables recycling entity ids.
 			 */
 			Entity createEntity(bool forceNew = false);
-
-			/**
-			 * Destroys and entity, freeing its id to be recycled.
-			 */
-			void destroyEntity(Entity ent);
 			
+			/**
+			 * Marks an Entity to be destroyed once it is out of rollback scope.
+			 * Until the Enttiy is destroyed it is disabled.
+			 */
+			void deferedDestroyEntity(Entity ent);
+
 			/**
 			 * Adds a component to an entity.
 			 * @param ent The entity.
@@ -357,6 +363,11 @@ namespace Engine::ECS {
 			decltype(auto) self() const { return reinterpret_cast<const Derived&>(*this); }
 
 		private:
+			/**
+			 * Destroys and entity, freeing its id to be recycled.
+			 */
+			void destroyEntity(Entity ent);
+
 			/**
 			 * Get the container for components of type @p Component.
 			 * @tparam Component The type of the component.

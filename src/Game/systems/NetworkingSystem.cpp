@@ -175,7 +175,7 @@ namespace Game {
 		if (!remote) { return; }
 		auto found = entToLocal.find(*remote);
 		if (found != entToLocal.end()) {
-			world.destroyEntity(found->second);
+			world.deferedDestroyEntity(found->second);
 			entToLocal.erase(found);
 		}
 	}
@@ -543,7 +543,7 @@ namespace Game {
 		conn.writer.flush();
 
 		ipToPlayer.erase(addr);
-		world.destroyEntity(ent);
+		world.deferedDestroyEntity(ent);
 	}
 
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {

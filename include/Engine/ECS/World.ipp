@@ -39,12 +39,13 @@ namespace Engine::ECS {
 			constexpr auto tickDelta = Clock::Seconds{tickInterval}.count();
 			(getSystem<Ss>().tick(tickDelta), ...);
 			storeSnapshot();
+			markedForDeath.clear();
 			tickTime += tickInterval;
-			++currentTick;
+			++currTick;
 		}
 
-		if (currentTick > 64*5 && currentTick % 128 == 0) {
-			loadSnapshot(snapshotBuffer[(currentTick - 64) % TickRate]);
+		if (currTick > 64*5 && currTick % 128 == 0) {
+			loadSnapshot(snapshotBuffer[(currTick - 64) % TickRate]);
 			// TODO: tick forward until caught up.
 		}
 		
@@ -143,6 +144,12 @@ namespace Engine::ECS {
 		}
 
 		return es->ent;
+	}
+	
+	WORLD_TPARAMS
+	void WORLD_CLASS::deferedDestroyEntity(Entity ent) {
+		setEnabled(ent, false); // TODO: Will we need a component callback for onDisabled to handle things like physics bodies?
+		markedForDeath.push_back(ent);
 	}
 
 	WORLD_TPARAMS
@@ -322,9 +329,16 @@ namespace Engine::ECS {
 
 		(getSystem<Ss>().preStoreSnapshot(), ...);
 
-		auto& snap = snapshotBuffer[currentTick % TickRate];
+		auto& snap = snapshotBuffer[currTick % TickRate];
+
+		for (const auto ent : snap.markedForDeath) {
+			destroyEntity(ent);
+		}
+
+		snap.currTick = currTick;
 		snap.entities = entities;
 		snap.deadEntities = deadEntities;
+		snap.markedForDeath = markedForDeath;
 		snap.compBitsets = compBitsets;
 
 		const auto& storeComps = [&]<class C>(){
@@ -336,12 +350,15 @@ namespace Engine::ECS {
 		
 		(storeComps.operator()<Cs>(), ...);
 	}
+
 	WORLD_TPARAMS
 	void WORLD_CLASS::loadSnapshot(const Snapshot& snap) {
 		// TODO: This breaks filters. Need to rework them or also rollback them
 
+		currTick = snap.currTick;
 		entities = snap.entities;
 		deadEntities = snap.deadEntities;
+		markedForDeath = snap.markedForDeath;
 		compBitsets = snap.compBitsets;
 
 		const auto& loadComps = [&]<class C>(){
