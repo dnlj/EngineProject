@@ -14,17 +14,23 @@
 
 namespace Game {
 	class PhysicsComponent {
+		public:
+			constexpr static bool isRollbackState = true;
+
 		private:
 			friend class PhysicsSystem;
 			b2Transform prevTransform;
 			b2Transform interpTransform;
 			b2Transform remoteTransform;
 			b2Body* body = nullptr;
+			int* count = nullptr;
 
 		public:
 			PhysicsComponent() = default;
 			~PhysicsComponent();
+			PhysicsComponent(const PhysicsComponent& other);
 			PhysicsComponent(PhysicsComponent&& other);
+			void operator=(const PhysicsComponent& other);
 			void operator=(PhysicsComponent&& other);
 
 			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent

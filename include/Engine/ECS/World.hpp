@@ -42,9 +42,17 @@ namespace Engine::ECS {
 			};
 
 			EntityState(Entity ent, State state) : ent{ent}, state{state} {}
-			Entity ent;
+			Entity ent; // TODO: could just store generation instead of whole id to save space int state snapshots
 			uint8 state;
 	};
+
+
+	// TODO: move
+	template<class T, class = void>
+	struct IsRollbackState : std::false_type {};
+
+	template<class T>
+	struct IsRollbackState<T, std::enable_if_t<T::isRollbackState>> : std::true_type {};
 
 	WORLD_TPARAMS
 	class WORLD_CLASS {
@@ -61,6 +69,9 @@ namespace Engine::ECS {
 
 			/** Time currently being ticked */
 			Clock::TimePoint tickTime;
+
+			/** The current tick being run */
+			uint32 currentTick = 0;
 
 			/** Maximum tick delay to accumulate */
 			constexpr static Clock::Duration maxDelay = std::chrono::milliseconds{250};
@@ -89,6 +100,20 @@ namespace Engine::ECS {
 
 			/** TODO: doc */
 			std::vector<EntityState> entities;
+
+			// TODO: move
+			struct Snapshot {
+				decltype(entities) entities;
+				decltype(deadEntities) deadEntities;
+				decltype(compBitsets) compBitsets;
+
+				std::tuple<
+					// TODO: dont store non rollback relevant comps at all
+					std::conditional_t<IsRollbackState<Cs>::value, ComponentContainer<Cs>, bool>...
+				> compContainers;
+			};
+
+			Snapshot snapshotBuffer[TickRate];
 
 		public:
 			// TODO: doc
@@ -339,6 +364,8 @@ namespace Engine::ECS {
 			 */
 			template<class Component>
 			ComponentContainer<Component>& getComponentContainer();
+
+			void storeSnapshot();
 	};
 }
 

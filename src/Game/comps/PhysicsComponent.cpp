@@ -5,13 +5,30 @@
 
 namespace Game {
 	PhysicsComponent::~PhysicsComponent() {
-		if (body) {
+		// TODO: need to handle when removed from ent: body->setActive(false);
+		// TODO: this wont work with copy constructor (rollback buffer)
+		// TODO: better way to handle this
+		if (body && --*count == 0) {
 			body->GetWorld()->DestroyBody(body);
+			delete count;
 		}
+	}
+	
+	PhysicsComponent::PhysicsComponent(const PhysicsComponent& other) {
+		*this = other;
 	}
 
 	PhysicsComponent::PhysicsComponent(PhysicsComponent&& other) {
 		*this = std::move(other);
+	}
+
+	void PhysicsComponent::operator=(const PhysicsComponent& other) {
+		prevTransform = other.prevTransform;
+		interpTransform = other.interpTransform;
+		remoteTransform = other.remoteTransform;
+		body = other.body;
+		count = other.count;
+		++*count;
 	}
 
 	void PhysicsComponent::operator=(PhysicsComponent&& other) {
@@ -19,11 +36,16 @@ namespace Game {
 		prevTransform = other.prevTransform;
 		interpTransform = other.interpTransform;
 		remoteTransform = other.remoteTransform;
+		count = other.count;
+		++*count;
 		swap(body, other.body); // We need to swap to ensure our old body* gets destroyed
 	}
 
 	void PhysicsComponent::setBody(b2Body* body) {
 		this->body = body;
+		ENGINE_DEBUG_ASSERT(count == nullptr);
+
+		count = new int{1};
 	}
 
 	b2Body& PhysicsComponent::getBody() {
@@ -85,7 +107,7 @@ namespace Game {
 	void PhysicsComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader) {
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		// TODO: actual shape
-		body = physSys.createPhysicsCircle(ent);
+		setBody(physSys.createPhysicsCircle(ent));
 		//body->SetType(b2_staticBody);
 		netFrom(reader);
 	}

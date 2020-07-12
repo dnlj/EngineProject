@@ -38,7 +38,9 @@ namespace Engine::ECS {
 		while (tickTime + tickInterval <= beginTime) {
 			constexpr auto tickDelta = Clock::Seconds{tickInterval}.count();
 			(getSystem<Ss>().tick(tickDelta), ...);
+			storeSnapshot();
 			tickTime += tickInterval;
+			++currentTick;
 		}
 		
 		(getSystem<Ss>().run(deltaTime), ...);
@@ -306,5 +308,24 @@ namespace Engine::ECS {
 	template<class Component>
 	ComponentContainer<Component>& WORLD_CLASS::getComponentContainer() {
 		return std::get<ComponentContainer<Component>>(compContainers);
+	}
+	
+	WORLD_TPARAMS
+	void WORLD_CLASS::storeSnapshot() {
+		// TODO: delta compression?
+		// TODO: Make sure we are storing all tick time info at the correct time: currentTick, beginTime, tickTime, etc.
+		auto& buff = snapshotBuffer[currentTick % TickRate];
+		buff.entities = entities;
+		buff.deadEntities = deadEntities;
+		buff.compBitsets = compBitsets;
+
+		const auto& storeComps = [&]<class C>(){
+			if constexpr (IsRollbackState<C>::value) {
+				constexpr auto cid = getComponentId<C>();
+				std::get<cid>(buff.compContainers) = std::get<cid>(compContainers);
+			}
+		};
+		
+		(storeComps.operator()<Cs>(), ...);
 	}
 }
