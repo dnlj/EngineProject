@@ -19,11 +19,38 @@ namespace Game {
 
 		private:
 			friend class PhysicsSystem;
+
+			// TODO: these store/load systems seem kinda hacky. is there a better way to handle this?
+			// TODO: cont. Maybe have a pre-snapshot-store and post-snapshot-load funcs on systems?
+			friend class PhysicsSystemStore;
+			friend class PhysicsSystemLoad;
+			
+			// TODO: split into dynamic and static comps.
+			// TODO: split interp stuff into own comp.
+
+			b2Transform storedTransform;
+			b2Vec2 storedVelocity;
+			float32 storedAngularVelocity;
+
 			b2Transform prevTransform;
 			b2Transform interpTransform;
 			b2Transform remoteTransform;
 			b2Body* body = nullptr;
 			int* count = nullptr;
+
+			void loadBody() {
+				// TODO: better way to set this?
+				// TODO: check before set to avoid waking
+				body->SetTransform(storedTransform.p, storedTransform.q.GetAngle());
+				body->SetLinearVelocity(storedVelocity);
+				body->SetAngularVelocity(storedAngularVelocity);
+			}
+
+			void storeBody() {
+				storedTransform = body->GetTransform();
+				storedVelocity = body->GetLinearVelocity();
+				storedAngularVelocity = body->GetAngularVelocity();
+			}
 
 		public:
 			PhysicsComponent() = default;
@@ -34,6 +61,8 @@ namespace Game {
 			void operator=(PhysicsComponent&& other);
 
 			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent
+
+			// TODO: we should get rid of these. Should write wrappers for any funcs we want.
 			b2Body& getBody();
 			b2World* getWorld();
 

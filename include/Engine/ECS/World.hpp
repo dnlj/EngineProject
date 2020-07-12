@@ -366,6 +366,7 @@ namespace Engine::ECS {
 			ComponentContainer<Component>& getComponentContainer();
 
 			void storeSnapshot();
+			void loadSnapshot(const Snapshot& snap);
 	};
 }
 

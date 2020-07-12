@@ -23,6 +23,9 @@ namespace Game {
 	}
 
 	void PhysicsComponent::operator=(const PhysicsComponent& other) {
+		storedTransform = other.storedTransform;
+		storedVelocity = other.storedVelocity;
+		storedAngularVelocity = other.storedAngularVelocity;
 		prevTransform = other.prevTransform;
 		interpTransform = other.interpTransform;
 		remoteTransform = other.remoteTransform;
@@ -33,6 +36,9 @@ namespace Game {
 
 	void PhysicsComponent::operator=(PhysicsComponent&& other) {
 		using std::swap;
+		storedTransform = other.storedTransform;
+		storedVelocity = other.storedVelocity;
+		storedAngularVelocity = other.storedAngularVelocity;
 		prevTransform = other.prevTransform;
 		interpTransform = other.interpTransform;
 		remoteTransform = other.remoteTransform;
@@ -69,7 +75,7 @@ namespace Game {
 	}
 
 	void PhysicsComponent::setTransform(const b2Vec2& pos, float32 ang) {
-		body->SetTransform(pos, ang);
+		updateTransform(pos, ang);
 		prevTransform = body->GetTransform();
 		interpTransform = prevTransform;
 	}
@@ -96,12 +102,8 @@ namespace Game {
 	}
 
 	void PhysicsComponent::netFrom(Engine::Net::PacketReader& reader) {
-		const auto trans = reader.read<b2Transform>();
-		updateTransform(trans->p, trans->q.GetAngle());
-		//remoteTransform = *trans;
-
-		const auto vel = reader.read<b2Vec2>();
-		body->SetLinearVelocity(*vel);
+		updateTransform(*reader.read<b2Transform>());
+		body->SetLinearVelocity(*reader.read<b2Vec2>());
 	}
 
 	void PhysicsComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader) {

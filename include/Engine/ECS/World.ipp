@@ -42,6 +42,11 @@ namespace Engine::ECS {
 			tickTime += tickInterval;
 			++currentTick;
 		}
+
+		if (currentTick > 64*5 && currentTick % 128 == 0) {
+			loadSnapshot(snapshotBuffer[(currentTick - 64) % TickRate]);
+			// TODO: tick forward until caught up.
+		}
 		
 		(getSystem<Ss>().run(deltaTime), ...);
 	}
@@ -314,18 +319,35 @@ namespace Engine::ECS {
 	void WORLD_CLASS::storeSnapshot() {
 		// TODO: delta compression?
 		// TODO: Make sure we are storing all tick time info at the correct time: currentTick, beginTime, tickTime, etc.
-		auto& buff = snapshotBuffer[currentTick % TickRate];
-		buff.entities = entities;
-		buff.deadEntities = deadEntities;
-		buff.compBitsets = compBitsets;
+		auto& snap = snapshotBuffer[currentTick % TickRate];
+		snap.entities = entities;
+		snap.deadEntities = deadEntities;
+		snap.compBitsets = compBitsets;
 
 		const auto& storeComps = [&]<class C>(){
 			if constexpr (IsRollbackState<C>::value) {
 				constexpr auto cid = getComponentId<C>();
-				std::get<cid>(buff.compContainers) = std::get<cid>(compContainers);
+				std::get<cid>(snap.compContainers) = std::get<cid>(compContainers);
 			}
 		};
 		
 		(storeComps.operator()<Cs>(), ...);
+	}
+	WORLD_TPARAMS
+	void WORLD_CLASS::loadSnapshot(const Snapshot& snap) {
+		// TODO: This breaks filters. Need to rework them or also rollback them
+
+		entities = snap.entities;
+		deadEntities = snap.deadEntities;
+		compBitsets = snap.compBitsets;
+
+		const auto& loadComps = [&]<class C>(){
+			if constexpr (IsRollbackState<C>::value) {
+				constexpr auto cid = getComponentId<C>();
+				std::get<cid>(compContainers) = std::get<cid>(snap.compContainers);
+			}
+		};
+		
+		(loadComps.operator()<Cs>(), ...);
 	}
 }

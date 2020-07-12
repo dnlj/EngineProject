@@ -106,4 +106,20 @@ namespace Game {
 				Engine::Debug::DebugDrawBox2D debugDraw;
 			#endif
 	};
+
+	class PhysicsSystemStore : public System {
+		private:
+			EntityFilter& filter;
+		public:
+			PhysicsSystemStore(SystemArg arg);
+			void tick(float dt);
+	};
+
+	class PhysicsSystemLoad : public System {
+		private:
+			EntityFilter& filter;
+		public:
+			PhysicsSystemLoad(SystemArg arg);
+			void tick(float dt);
+	};
 }
