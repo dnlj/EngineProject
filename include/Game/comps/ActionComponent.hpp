@@ -6,6 +6,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Input/Action.hpp>
+#include <Engine/StaticRingBuffer.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -13,8 +14,14 @@
 
 namespace Game {
 	class ActionComponent {
+		public:
+			// TODO: this wont work. Inputs for the following ticks is lost.
+			constexpr static bool isSnapshotRelevant = true;
+
 		private:
+			friend class ActionSystem;
 			std::vector<Engine::Input::Action> actions;
+			Engine::RingBuffer<Engine::Input::Action> actionQueue;
 
 		public:
 			void grow(Engine::Input::ActionId size);

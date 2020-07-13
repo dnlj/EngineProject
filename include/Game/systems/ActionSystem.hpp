@@ -21,10 +21,11 @@ namespace Game {
 
 		public:
 			ActionSystem(SystemArg arg);
+			void tick(float32 dt);
 
 		public:
-			void processAction(Engine::Input::ActionId aid, Engine::Input::Value curr);
-			void processAction(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr);
+			void queueAction(Engine::Input::ActionId aid, Engine::Input::Value curr);
+			void queueAction(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr);
 
 			/**
 			 * Creates a new action with a name.

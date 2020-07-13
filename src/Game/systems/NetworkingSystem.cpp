@@ -253,7 +253,7 @@ namespace Game {
 
 		if (aid && val) {
 			// TODO: sanity check inputs
-			world.getSystem<ActionSystem>().processAction(fromEnt, *aid, *val);
+			world.getSystem<ActionSystem>().queueAction(fromEnt, *aid, *val);
 		}
 	}
 

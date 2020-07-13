@@ -9,13 +9,11 @@ namespace Engine::Input {
 		public:
 			ActionId aid;
 			Value state;
-			std::string name; // TODO: rm
 
 		public:
-			Action(ActionId aid, Value state = {}, std::string name = {})
+			Action(ActionId aid, Value state = {})
 				: aid{aid}
-				, state{state}
-				, name{std::move(name)} {
+				, state{state} {
 			}
 			Action(const Action&) = delete;
 			Action(Action&& other) = default;

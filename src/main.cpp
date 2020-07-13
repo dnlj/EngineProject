@@ -386,8 +386,8 @@ void run(int argc, char* argv[]) {
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
-	const auto pa = [&](auto action, auto curr){
-		world.getSystem<Game::ActionSystem>().processAction(action, curr);
+	const auto queueAction = [&](auto action, auto curr){
+		world.getSystem<Game::ActionSystem>().queueAction(action, curr);
 	};
 	{
 		using namespace Engine::Input;
@@ -409,44 +409,44 @@ void run(int argc, char* argv[]) {
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 1, 46}, // C
-				}, [&](Value curr, Value prev){ pa(Spell_1, curr); });
+				}, [&](Value curr, Value prev){ queueAction(Spell_1, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 1, 56}, // ALT
 				InputId{InputType::KEYBOARD, 1, 16}, // Q
-			}, [&](Value curr, Value prev){ pa(Spell_1, curr); });
+			}, [&](Value curr, Value prev){ queueAction(Spell_1, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 57}
-			}, [&](Value curr, Value prev){ pa(Spell_1, curr); });
+			}, [&](Value curr, Value prev){ queueAction(Spell_1, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 17}
-			}, [&](Value curr, Value prev){ pa(Move_Up, curr); });
+			}, [&](Value curr, Value prev){ queueAction(Move_Up, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 31}
-			}, [&](Value curr, Value prev){ pa(Move_Down, curr); });
+			}, [&](Value curr, Value prev){ queueAction(Move_Down, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 30}
-			}, [&](Value curr, Value prev){ pa(Move_Left, curr); });
+			}, [&](Value curr, Value prev){ queueAction(Move_Left, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 32}
-			}, [&](Value curr, Value prev){ pa(Move_Right, curr); });
+			}, [&](Value curr, Value prev){ queueAction(Move_Right, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE, 0, 0}
-			}, [&](Value curr, Value prev){ pa(Edit_Place, curr); });
+			}, [&](Value curr, Value prev){ queueAction(Edit_Place, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::MOUSE, 0, 1}
-			}, [&](Value curr, Value prev){ pa(Edit_Remove, curr); });
+			}, [&](Value curr, Value prev){ queueAction(Edit_Remove, curr); });
 			im.addBind(InputSequence{
 					InputId{InputType::MOUSE_AXIS, 0, 0}
 				}, [&](Value curr, Value prev){
 					curr.valuef = engine.camera.screenToWorld({curr.valuef, 0.0f}).x;
-					pa(Target_X, curr);
+					queueAction(Target_X, curr);
 			});
 			im.addBind(InputSequence{
 					InputId{InputType::MOUSE_AXIS, 0, 1}
 				}, [&](Value curr, Value prev){
 					curr.valuef = engine.camera.screenToWorld({0.0f, curr.valuef}).y;
-					pa(Target_Y, curr);
+					queueAction(Target_Y, curr);
 			});
 		}
 
