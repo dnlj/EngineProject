@@ -87,19 +87,19 @@ namespace Engine {
 					friend auto operator+(IteratorBase it, Index n) { return it += n; }
 					friend auto operator-(IteratorBase it, Index n) { return it -= n; }
 
-					friend auto operator+(Index n, IteratorBase it) { return it + n; }
-					friend auto operator-(Index n, IteratorBase it) { return it - n; }
+					friend auto operator+(Index n, IteratorBase it) { return it += n; }
+					friend auto operator-(Index n, IteratorBase it) { return it -= n; }
 
 					auto operator-(const IteratorBase& it) { return curr - it.curr; }
 
-					void operator++() { ++curr; }
-					void operator--() { ++curr; }
+					auto& operator++() { ++curr; return *this; }
+					auto& operator--() { --curr; return *this; }
 
 					auto operator++(int) { return *this + 1; }
 					auto operator--(int) { return *this - 1; }
 
 					auto& operator*() const { return reinterpret_cast<AccessType&>(*curr); }
-					auto* operator->() const { return &*this; }
+					auto* operator->() const { return &**this; }
 					auto& operator[](Index n) const { return *(*this + n); }
 
 					bool operator==(const IteratorBase& other) const { return curr == other.curr; }
