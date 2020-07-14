@@ -49,7 +49,7 @@ namespace Engine::detail {
 
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::begin() noexcept -> Iterator {
-		return {*this, start};
+		return {this, 0};
 	}
 
 	template<class T, uint32 Size>
@@ -59,7 +59,7 @@ namespace Engine::detail {
 
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::cbegin() const noexcept -> ConstIterator {
-		return {*this, start};
+		return {this, 0};
 	}
 	
 	template<class T, uint32 Size>
@@ -93,7 +93,7 @@ namespace Engine::detail {
 
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::end() noexcept -> Iterator {
-		return {*this, stop};
+		return {this, size()};
 	}
 
 	template<class T, uint32 Size>
@@ -103,7 +103,7 @@ namespace Engine::detail {
 
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::cend() const noexcept -> ConstIterator {
-		return {*this, stop};
+		return {this, size()};
 	}
 
 	template<class T, uint32 Size>

@@ -19,14 +19,21 @@ namespace Engine {
 				class IteratorBase {
 					private:
 						using Index = int32;
-						RingBufferImpl& rb;
+						RingBufferImpl* rb;
 						SizeType i;
 
 					public:
-						IteratorBase(RingBufferImpl& rb, SizeType i) : rb{rb}, i{i} {}
+						using value_type = T;
+						using difference_type = Index;
+						using reference = T&;
+						using pointer = T*;
+						using iterator_category = std::random_access_iterator_tag;
+
+					public:
+						IteratorBase(RingBufferImpl* rb, SizeType i) : rb{rb}, i{i} {}
 						~IteratorBase() = default;
 
-						auto& operator+=(Index n) { i = rb.wrapIndex(i + n); return *this; }
+						auto& operator+=(Index n) { i += n; return *this; }
 						auto& operator-=(Index n) { return *this += -n; }
 
 						friend auto operator+(IteratorBase it, Index n) { return it += n; }
@@ -35,7 +42,7 @@ namespace Engine {
 						friend auto operator+(Index n, IteratorBase it) { return it += n; }
 						friend auto operator-(Index n, IteratorBase it) { return it -= n; }
 
-						auto operator-(const IteratorBase& it) { return i - it.i; }
+						friend auto operator-(const IteratorBase& a, const IteratorBase& b) { return a.i - b.i; }
 
 						auto& operator++() { return *this += 1; }
 						auto& operator--() { return *this -= 1; }
@@ -43,16 +50,16 @@ namespace Engine {
 						auto operator++(int) { return *this + 1; }
 						auto operator--(int) { return *this - 1; }
 
-						T& operator*() const { return rb.dataT()[i]; }
+						T& operator*() const { return (*rb)[i]; }
 						T* operator->() const { return &**this; }
 						T& operator[](Index n) const { return *(*this + n); }
 
-						bool operator==(const IteratorBase& other) { return (&rb == &other.rb) && (i == other.i); }
-						bool operator!=(const IteratorBase& other) { return !(*this == other); }
-						// TODO: bool operator<(const IteratorBase& other) const { return ; }
-						// TODO: bool operator<=(const IteratorBase& other) const { return ; }
-						// TODO: bool operator>=(const IteratorBase& other) const { return ; }
-						// TODO: bool operator>(const IteratorBase& other) const { return ; }
+						bool operator==(const IteratorBase& other) const { return i == other.i; }
+						bool operator!=(const IteratorBase& other) const { return !(*this == other); }
+						bool operator<(const IteratorBase& other) const { return i < other.i; }
+						bool operator<=(const IteratorBase& other) const { return i <= other.i; }
+						bool operator>=(const IteratorBase& other) const { return i >= other.i; }
+						bool operator>(const IteratorBase& other) const { return i > other.i; }
 				};
 
 				using Iterator = IteratorBase<T>;
