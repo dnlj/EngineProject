@@ -5,7 +5,6 @@
 
 
 namespace Engine {
-	// TODO: largely untested
 	// TODO: doc all
 	namespace detail {
 		template<class T, uint32 Size = 0>

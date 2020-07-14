@@ -547,13 +547,14 @@ int entry(int argc, char* argv[]) {
 	ENGINE_INFO("Working Directory: ", std::filesystem::current_path().generic_string());
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// At seemingly random the debugger decides to not work for STL code. Enable, run, disable, run seems to fix this for some reason.
+	// At seemingly random the debugger decides to not work. Enable, run, disable, run seems to fix this for some reason.
 	// Other times spam clicking on Visual Studio while the program launches fixes this. 10/10.
+	// Minimizing the server window before crash seems to help
 	// --------------------------
 	// Function Breakpoints: assert, _wassert, abort, exit
 	// --------------------------
 	//_set_error_mode(_OUT_TO_MSGBOX);
-	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW | _CRTDBG_MODE_DEBUG);
+	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW | _CRTDBG_MODE_DEBUG);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	run(argc, argv);

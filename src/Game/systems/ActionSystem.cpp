@@ -13,17 +13,38 @@ namespace Game {
 
 	
 	void ActionSystem::tick(float32 dt) {
+		const auto currTick = world.getTick();
+		const auto minTick = currTick - 64;
 		for (const auto ent : actionFilter) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
-			while (!actComp.actionQueue.empty()) {
-				auto& curr = actComp.actionQueue.back();
+			auto& queue = actComp.actionQueue;
+			const auto histCurr = currTick % std::extent_v<decltype(actComp.actionHistory)>;
+			const auto histNext = (currTick + 1) % std::extent_v<decltype(actComp.actionHistory)>;
+			actComp.actions = actComp.actionHistory[histCurr];
+
+			// TODO: store a flag and only sort if new inputs
+			std::sort(queue.begin(), queue.end(), [](const auto& a, const auto& b){
+				return a.tick < b.tick;
+			});
+
+			while (!queue.empty() && queue.back().tick < minTick) {
+				queue.pop();
+			}
+
+			// TODO: could do a binary search to jump to currTick
+			for (const auto& curr : queue) {
+				const auto diff = curr.tick - currTick;
+				if (diff < 0) { continue; }
+				if (diff > 0) { break; }
+
 				auto& prev = actComp.get(curr.aid);
 				for (auto& l : actionIdToListeners[curr.aid]) {
 					l(ent, curr.aid, curr.state, prev.state);
 				}
 				prev.state = curr.state;
-				actComp.actionQueue.pop();
 			}
+
+			actComp.actionHistory[histNext] = actComp.actions;
 		}
 	}
 
@@ -38,6 +59,7 @@ namespace Game {
 			queueAction(ent, aid, curr);
 		}
 
+		// TODO: only send actions at end of frame. Pack into one message.
 		for (const auto ent : connFilter) {
 			// TODO: we probably dont want to be sending every axis input to the server. just once every tick or something.
 			auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
@@ -49,8 +71,8 @@ namespace Game {
 
 	void ActionSystem::queueAction(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr) {
 		ENGINE_DEBUG_ASSERT(aid < count(), "Attempting to process invalid action");
-		auto& actionComp = world.getComponent<ActionComponent>(ent);
-		actionComp.actionQueue.push({aid, curr});
+		auto& queue = world.getComponent<ActionComponent>(ent).actionQueue;
+		queue.push({aid, curr, world.getTick()});
 	}
 
 	Engine::Input::ActionId ActionSystem::create(const std::string& name) {

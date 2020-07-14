@@ -1,6 +1,7 @@
 #pragma once
 
 // Engine
+#include <Engine/ECS/Common.hpp>
 #include <Engine/Input/ActionListener.hpp>
 
 
@@ -9,13 +10,13 @@ namespace Engine::Input {
 		public:
 			ActionId aid;
 			Value state;
+			ECS::Tick tick;
 
 		public:
-			Action(ActionId aid, Value state = {})
+			Action(ActionId aid, Value state = {}, ECS::Tick tick = {})
 				: aid{aid}
-				, state{state} {
+				, state{state}
+				, tick{tick} {
 			}
-			Action(const Action&) = delete;
-			Action(Action&& other) = default;
 	};
 }

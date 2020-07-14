@@ -81,6 +81,8 @@ namespace Engine {
 					static_assert(offsetof(Elem, second) == offsetof(AccessType, second));
 
 				public:
+					// TODO: iterator_traits
+					
 					auto& operator+=(Index i) { curr += i; return *this; }
 					auto& operator-=(Index i) { curr -= i; return *this; }
 

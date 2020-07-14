@@ -6,6 +6,7 @@
 namespace Game {
 	class CharacterMovementComponent {
 		public:
+			constexpr static bool isSnapshotRelevant = true;
 			glm::ivec2 dir;
 	};
 }

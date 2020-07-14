@@ -14,13 +14,10 @@
 
 namespace Game {
 	class ActionComponent {
-		public:
-			// TODO: this wont work. Inputs for the following ticks is lost.
-			constexpr static bool isSnapshotRelevant = true;
-
 		private:
 			friend class ActionSystem;
 			std::vector<Engine::Input::Action> actions;
+			std::vector<Engine::Input::Action> actionHistory[64 + 1]; // TODO: World::snapshotCount + 1
 			Engine::RingBuffer<Engine::Input::Action> actionQueue;
 
 		public:

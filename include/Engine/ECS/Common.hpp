@@ -1,14 +1,11 @@
 #pragma once
 
-// STD
-#include <bitset>
-#include <vector>
-
 // Engine
 #include <Engine/ECS/Entity.hpp>
 #include <Engine/SparseSet.hpp>
 #include <Engine/Bitset.hpp>
 #include <Engine/IsComplete.hpp>
+
 
 namespace Engine::ECS {
 	/** The maximum number of components registrable. Ideally this would be exactly the number of components used. */
@@ -16,6 +13,9 @@ namespace Engine::ECS {
 
 	/** The maximum number of systems registrable. Ideally this would be exactly the number of systems used. */
 	constexpr size_t MAX_SYSTEMS = 64;
+
+	/** The type used to store tick numbers */
+	using Tick = int32;
 
 	/** The type to use for component ids. */
 	using ComponentId = uint16;

@@ -70,7 +70,7 @@ namespace Engine::ECS {
 			Clock::TimePoint tickTime;
 
 			/** The current tick being run */
-			uint32 currTick = 0;
+			Tick currTick = 0;
 
 			/** Maximum tick delay to accumulate */
 			constexpr static Clock::Duration maxDelay = std::chrono::milliseconds{250};
@@ -316,6 +316,11 @@ namespace Engine::ECS {
 			//template<>
 			//EntityFilter& getFilterFor() = delete;
 			
+			/**
+			 * Gets the current tick.
+			 */
+			auto getTick() const { return currTick; }
+
 			/**
 			 * Gets the tick interval.
 			 */
