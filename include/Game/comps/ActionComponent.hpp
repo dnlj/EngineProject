@@ -13,12 +13,19 @@
 
 
 namespace Game {
+	class ActionQueueComponent {
+		public:
+			Engine::RingBuffer<Engine::Input::Action> actionQueue;
+	};
+
 	class ActionComponent {
+		public:
+			constexpr static bool isSnapshotRelevant = true;
+
 		private:
 			friend class ActionSystem;
 			std::vector<Engine::Input::Action> actions;
-			std::vector<Engine::Input::Action> actionHistory[64 + 1]; // TODO: World::snapshotCount + 1
-			Engine::RingBuffer<Engine::Input::Action> actionQueue;
+			//std::vector<Engine::Input::Action> actionHistory[64 + 1]; // TODO: World::snapshotCount + 1
 
 		public:
 			void grow(Engine::Input::ActionId size);

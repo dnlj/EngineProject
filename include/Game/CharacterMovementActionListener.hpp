@@ -14,6 +14,8 @@ namespace Game {
 			const glm::ivec2 move;
 
 			bool operator()(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr, Engine::Input::Value prev) {
+				ENGINE_LOG("Mov: ", curr.value, " ", prev.value, " ", world.getTick(), " (", move.x, ", ", move.y, ")");
+
 				if (curr && !prev) {
 					auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(ent);
 					moveComp.dir += move;

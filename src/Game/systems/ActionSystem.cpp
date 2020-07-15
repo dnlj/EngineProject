@@ -17,10 +17,10 @@ namespace Game {
 		const auto minTick = currTick - 64;
 		for (const auto ent : actionFilter) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
-			auto& queue = actComp.actionQueue;
-			const auto histCurr = currTick % std::extent_v<decltype(actComp.actionHistory)>;
-			const auto histNext = (currTick + 1) % std::extent_v<decltype(actComp.actionHistory)>;
-			actComp.actions = actComp.actionHistory[histCurr];
+			auto& queue = world.getComponent<ActionQueueComponent>(ent).actionQueue;
+			//const auto histCurr = currTick % std::extent_v<decltype(actComp.actionHistory)>;
+			//const auto histNext = (currTick + 1) % std::extent_v<decltype(actComp.actionHistory)>;
+			//actComp.actions = actComp.actionHistory[histCurr];
 
 			// TODO: store a flag and only sort if new inputs
 			std::sort(queue.begin(), queue.end(), [](const auto& a, const auto& b){
@@ -37,6 +37,10 @@ namespace Game {
 				if (diff < 0) { continue; }
 				if (diff > 0) { break; }
 
+				if (curr.aid > 1) {
+					ENGINE_LOG("Act: ", curr.aid, " ", curr.state.value, " ", curr.tick);
+				}
+
 				auto& prev = actComp.get(curr.aid);
 				for (auto& l : actionIdToListeners[curr.aid]) {
 					l(ent, curr.aid, curr.state, prev.state);
@@ -44,7 +48,7 @@ namespace Game {
 				prev.state = curr.state;
 			}
 
-			actComp.actionHistory[histNext] = actComp.actions;
+			//actComp.actionHistory[histNext] = actComp.actions;
 		}
 	}
 
@@ -71,7 +75,7 @@ namespace Game {
 
 	void ActionSystem::queueAction(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr) {
 		ENGINE_DEBUG_ASSERT(aid < count(), "Attempting to process invalid action");
-		auto& queue = world.getComponent<ActionComponent>(ent).actionQueue;
+		auto& queue = world.getComponent<ActionQueueComponent>(ent).actionQueue;
 		queue.push({aid, curr, world.getTick()});
 	}
 

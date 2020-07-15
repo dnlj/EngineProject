@@ -252,6 +252,10 @@ namespace Game {
 		const auto* val = from.reader.read<Engine::Input::Value>();
 
 		if (aid && val) {
+			if (*aid > 1) {
+				ENGINE_LOG("Net: ", *aid, " ", val->value, " ", world.getTick());
+			}
+
 			// TODO: sanity check inputs
 			world.getSystem<ActionSystem>().queueAction(fromEnt, *aid, *val);
 		}
@@ -523,6 +527,7 @@ namespace Game {
 		}
 
 		world.addComponent<ActionComponent>(ent).grow(world.getSystem<ActionSystem>().count());
+		world.addComponent<ActionQueueComponent>(ent);
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);
 		world.addComponent<CharacterMovementComponent>(ent);

@@ -54,6 +54,7 @@ namespace Game {
 		PhysicsComponent,
 		SpriteComponent,
 		CharacterMovementComponent,
+		ActionQueueComponent,
 		ActionComponent,
 		ConnectionComponent,
 		NeighborsComponent,

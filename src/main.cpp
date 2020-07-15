@@ -471,6 +471,11 @@ void run(int argc, char* argv[]) {
 	size_t deltaIndex = 0;
 	window.show();
 	window.center();
+
+	if constexpr (ENGINE_SERVER) {
+		window.setPosSize(3440, 0, 1920, 1080);
+	}
+
 	while (!window.shouldClose()) {
 		window.poll();
 

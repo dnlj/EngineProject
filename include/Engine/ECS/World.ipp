@@ -41,12 +41,14 @@ namespace Engine::ECS {
 		}
 
 		if (currTick > 64*5 && currTick % 128 == 0) {
+			puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 			const auto realTick = currTick;
 			loadSnapshot(snapshotBuffer[(currTick - 64) % TickRate]);
 
 			while (currTick < realTick) {
 				tickSystems();
 			}
+			puts("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 		}
 		
 		(getSystem<Ss>().run(deltaTime), ...);
@@ -55,8 +57,8 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	void WORLD_CLASS::tickSystems() {
 		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
-		(getSystem<Ss>().tick(tickDeltaTime), ...);
 		storeSnapshot();
+		(getSystem<Ss>().tick(tickDeltaTime), ...);
 		markedForDeath.clear();
 		++currTick;
 	}

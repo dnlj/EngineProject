@@ -5,14 +5,9 @@
 namespace Game {
 	void ActionComponent::grow(Engine::Input::ActionId size) {
 		// TODO: fix. this is dumb.
-		const auto g = [&](auto& v){
-			while (v.size() != size) {
-				v.emplace_back(static_cast<Engine::Input::ActionId>(v.size()));
-			}
-		};
-
-		g(actions);
-		for (auto& v : actionHistory) { g(v); }
+		while (actions.size() != size) {
+			actions.emplace_back(static_cast<Engine::Input::ActionId>(actions.size()));
+		}
 	}
 
 	Engine::Input::Action& ActionComponent::get(Engine::Input::ActionId aid) {
