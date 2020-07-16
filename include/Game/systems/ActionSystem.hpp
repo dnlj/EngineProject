@@ -11,11 +11,11 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/EntityFilter.hpp>
+#include <Game/comps/ActionComponent.hpp>
 
 namespace Game {
 	class ActionSystem : public System {
 		private:
-			Engine::FlatHashMap<std::string, Engine::Input::ActionId> actionNameToId;
 			std::vector<std::vector<Engine::Input::ActionListener>> actionIdToListeners;
 			EntityFilter& actionFilter;
 			EntityFilter& connFilter;
@@ -24,24 +24,11 @@ namespace Game {
 			ActionSystem(SystemArg arg);
 			void tick(float32 dt);
 
-			void queueAction(Engine::Input::ActionId aid, Engine::Input::Value curr);
-			void queueAction(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr, Engine::ECS::Tick tick);
+			void updateButtonState(Button btn, bool val);
+			void updateButtonState(Engine::ECS::Entity ent, Button btn, bool val);
 
-			/**
-			 * Creates a new action with a name.
-			 */
-			Engine::Input::ActionId create(const std::string& name);
-
-			/**
-			 * Gets the id of an action.
-			 */
-			Engine::Input::ActionId getId(const std::string& name);
-
-			/**
-			 * Gets the id of multiple actions.
-			 */
-			template<class... String>
-			auto getId(const std::string& name1, const std::string& name2, String&&... nameN);
+			void updateAxisState(Axis axis, float32 val);
+			void updateAxisState(Engine::ECS::Entity ent, Axis axis, float32 val);
 
 			template<class Listener>
 			void addListener(Engine::Input::ActionId aid, Listener&& listener);

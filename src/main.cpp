@@ -49,7 +49,6 @@
 #include <Game/Common.hpp>
 #include <Game/World.hpp>
 #include <Game/CharacterSpellActionListener.hpp>
-#include <Game/CharacterMovementActionListener.hpp>
 #include <Game/MapGenerator.hpp>
 
 
@@ -386,77 +385,72 @@ void run(int argc, char* argv[]) {
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
-	const auto queueAction = [&](auto action, auto curr){
-		world.getSystem<Game::ActionSystem>().queueAction(action, curr);
+	const auto updateButtonState = [&](auto action, auto curr){
+		world.getSystem<Game::ActionSystem>().updateButtonState(action, curr);
+	};
+	const auto updateAxisState = [&](auto action, auto curr){
+		world.getSystem<Game::ActionSystem>().updateAxisState(action, curr);
 	};
 	{
 		using namespace Engine::Input;
 		auto& im = engine.inputManager;
 		auto& as = world.getSystem<Game::ActionSystem>();
-
-		const auto Spell_1 = as.create("Spell_1");
-		const auto Move_Up = as.create("Move_Up");
-		const auto Move_Down = as.create("Move_Down");
-		const auto Move_Left = as.create("Move_Left");
-		const auto Move_Right = as.create("Move_Right");
-		const auto Edit_Place = as.create("Edit_Place");
-		const auto Edit_Remove = as.create("Edit_Remove");
-		const auto Target_X = as.create("Target_X");
-		const auto Target_Y = as.create("Target_Y");
 		
 		if constexpr (ENGINE_CLIENT) {
-
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 1, 46}, // C
-				}, [&](Value curr, Value prev){ queueAction(Spell_1, curr); });
+				}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 1, 56}, // ALT
 				InputId{InputType::KEYBOARD, 1, 16}, // Q
-			}, [&](Value curr, Value prev){ queueAction(Spell_1, curr); });
+			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 57}
-			}, [&](Value curr, Value prev){ queueAction(Spell_1, curr); });
+			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 17}
-			}, [&](Value curr, Value prev){ queueAction(Move_Up, curr); });
+			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveUp, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 31}
-			}, [&](Value curr, Value prev){ queueAction(Move_Down, curr); });
+			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveDown, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 30}
-			}, [&](Value curr, Value prev){ queueAction(Move_Left, curr); });
+			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveLeft, curr); });
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 32}
-			}, [&](Value curr, Value prev){ queueAction(Move_Right, curr); });
-			im.addBind(InputSequence{
-				InputId{InputType::MOUSE, 0, 0}
-			}, [&](Value curr, Value prev){ queueAction(Edit_Place, curr); });
-			im.addBind(InputSequence{
-				InputId{InputType::MOUSE, 0, 1}
-			}, [&](Value curr, Value prev){ queueAction(Edit_Remove, curr); });
+			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveRight, curr); });
+
+			// TODO: these should just use attack1/attack2. dont need own action
+			//im.addBind(InputSequence{
+			//	InputId{InputType::MOUSE, 0, 0}
+			//}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Edit_Place, curr); });
+			//im.addBind(InputSequence{
+			//	InputId{InputType::MOUSE, 0, 1}
+			//}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Edit_Remove, curr); });
+
 			im.addBind(InputSequence{
 					InputId{InputType::MOUSE_AXIS, 0, 0}
 				}, [&](Value curr, Value prev){
 					curr.valuef = engine.camera.screenToWorld({curr.valuef, 0.0f}).x;
-					queueAction(Target_X, curr);
+					updateAxisState(Game::Axis::TargetX, curr);
 			});
 			im.addBind(InputSequence{
 					InputId{InputType::MOUSE_AXIS, 0, 1}
 				}, [&](Value curr, Value prev){
 					curr.valuef = engine.camera.screenToWorld({0.0f, curr.valuef}).y;
-					queueAction(Target_Y, curr);
+					updateAxisState(Game::Axis::TargetY, curr);
 			});
 		}
 
-		as.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world});
-		as.addListener(Move_Up, Game::CharacterMovementActionListener{world, glm::ivec2{0, 1}});
-		as.addListener(Move_Down, Game::CharacterMovementActionListener{world, glm::ivec2{0, -1}});
-		as.addListener(Move_Left, Game::CharacterMovementActionListener{world, glm::ivec2{-1, 0}});
-		as.addListener(Move_Right, Game::CharacterMovementActionListener{world, glm::ivec2{1, 0}});
-		as.addListener(Edit_Remove, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).remove = curr && !prev; return false; });
-		as.addListener(Edit_Place, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).place = curr && !prev; return false; });
+		//as.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world});
+		//as.addListener(Move_Up, Game::CharacterMovementActionListener{world, glm::ivec2{0, 1}});
+		//as.addListener(Move_Down, Game::CharacterMovementActionListener{world, glm::ivec2{0, -1}});
+		//as.addListener(Move_Left, Game::CharacterMovementActionListener{world, glm::ivec2{-1, 0}});
+		//as.addListener(Move_Right, Game::CharacterMovementActionListener{world, glm::ivec2{1, 0}});
+		//as.addListener(Edit_Remove, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).remove = curr && !prev; return false; });
+		//as.addListener(Edit_Place, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).place = curr && !prev; return false; });
 	}
 
 	// More engine stuff

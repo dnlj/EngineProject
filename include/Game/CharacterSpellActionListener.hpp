@@ -12,15 +12,13 @@ namespace Game {
 		private:
 			Engine::EngineInstance& engine;
 			World& world;
-			std::array<Engine::Input::ActionId, 2> targetIds;
 
 		public:
 			CharacterSpellActionListener::CharacterSpellActionListener(
 				Engine::EngineInstance& engine,
 				World& world)
 				: engine{engine}
-				, world{world}
-				, targetIds{world.getSystem<ActionSystem>().getId("Target_X", "Target_Y")} {
+				, world{world} {
 			}
 
 			bool CharacterSpellActionListener::operator()(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr, Engine::Input::Value prev) {
@@ -31,7 +29,7 @@ namespace Game {
 
 				auto& [physComp, actComp] = world.getComponents<PhysicsComponent, ActionComponent>(ent);
 				const auto& pos = physComp.getPosition();
-				const auto mousePos = actComp.getValue<float32>(targetIds);
+				const glm::vec2 mousePos = {actComp.getAxis(Axis::TargetX), actComp.getAxis(Axis::TargetY)};
 				auto dir = Engine::Glue::as<b2Vec2>(mousePos) - pos;
 				dir.Normalize();
 		

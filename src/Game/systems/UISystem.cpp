@@ -56,8 +56,6 @@ namespace Game {
 	}
 
 	void UISystem::setup() {
-		// TODO: handle errors Engine::Input errors better than just spamming console.
-		targetIds = world.getSystem<Game::ActionSystem>().getId("Target_X", "Target_Y");
 	}
 
 	void UISystem::run(float32 dt) {
@@ -201,7 +199,7 @@ namespace Game {
 		auto& actC = world.getComponent<Game::ActionComponent>(*activePlayerFilter.begin());
 		// TODO: reimplement - ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
-		auto worldMousePos = actC.getValue<float32>(targetIds);
+		const glm::vec2 worldMousePos = {actC.getAxis(Axis::TargetX), actC.getAxis(Axis::TargetY)};
 		ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
 			
 		auto blockMousePos = mapSys.worldToBlock(worldMousePos);

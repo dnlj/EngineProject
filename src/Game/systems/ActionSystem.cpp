@@ -13,46 +13,16 @@ namespace Game {
 
 	
 	void ActionSystem::tick(float32 dt) {
+		// TODO: On server - nothing - we get input updates from network system.
+		// TODO: On client - we get input updates from input system
+		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
+
 		const auto currTick = world.getTick();
 		const auto minTick = currTick - 64;
 		for (const auto ent : actionFilter) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 			auto& actQueueComp = world.getComponent<ActionQueueComponent>(ent);
-			//auto& queue = actQueueComp.actionQueue;
-			//const auto offset = actQueueComp.offset + actQueueComp.bufferSize + ENGINE_SERVER;
 
-			/*
-			// TODO: store a flag and only sort if new inputs
-			std::sort(queue.begin(), queue.end(), [](const auto& a, const auto& b){
-				return a.tick < b.tick;
-			});
-
-			// TODO: need server tick offset + buffer
-			while (!queue.empty() && queue.back().tick + offset < minTick) {
-				queue.pop();
-			}
-
-			// TODO: SERVER - if no input for expected tick increase aqc.bufferSize. Will need to track next expected client tick - and - deal with rollback
-			// TODO: if we are shrinking bufferSize try to play multiple ticks per server tick? Not sure how else to deal with this.
-
-			// TODO: could do a binary search to jump to currTick
-			for (const auto& curr : queue) {
-				//const auto diff = curr.tick - currTick;
-				const auto diff = curr.tick + offset - currTick;
-
-				if (diff < 0) { continue; }
-				if (diff > 0) { break; }
-
-				if (curr.aid > 1) {
-					ENGINE_LOG("Act: ", (int)curr.aid, " ", curr.state.value, " ", curr.tick);
-				}
-
-				auto& prev = actComp.get(curr.aid);
-				for (auto& l : actionIdToListeners[curr.aid]) {
-					l(ent, curr.aid, curr.state, prev.state);
-				}
-				prev.state = curr.state;
-			}*/
 
 			if constexpr (ENGINE_SERVER) { // ========================================================================
 				auto& state = actQueueComp.states[world.getTick() % 64];
@@ -80,7 +50,6 @@ namespace Game {
 			auto& writer = world.getComponent<ConnectionComponent>(ent).conn->writer;
 			writer.next(MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
 			writer.write(world.getTick());
-
 		}
 	}
 
@@ -126,54 +95,29 @@ namespace Game {
 		aqc.states[tick % 64].recvTick = recvTick;
 	}
 
-	void ActionSystem::queueAction(Engine::Input::ActionId aid, Engine::Input::Value curr) {
-		if constexpr (ENGINE_SERVER) {
-			ENGINE_ASSERT("Should not be called on server. This is a bug.");
-			return;
-		}
-
+	void ActionSystem::updateButtonState(Button btn, bool val) {
 		for (const auto& ent : actionFilter) {
-			auto& actionComp = world.getComponent<ActionComponent>(ent);
-			queueAction(ent, aid, curr, world.getTick());
+			updateButtonState(ent, btn, val);
 		}
 	}
 
-	void ActionSystem::queueAction(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr, Engine::ECS::Tick tick) {
-		ENGINE_DEBUG_ASSERT(aid < count(), "Attempting to process invalid action");
-		auto& queue = world.getComponent<ActionQueueComponent>(ent).actionQueue;
-		queue.emplace(aid, curr, tick);
+	void ActionSystem::updateButtonState(Engine::ECS::Entity ent, Button btn, bool val) {
+		auto& actComp = world.getComponent<ActionComponent>(ent);
+		auto& value = actComp.state.buttons[static_cast<int32>(btn)];
+		value.pressCount += val;
+		value.releaseCount += !val;
+		value.latest = val;
+		ENGINE_LOG("UPDATE: ", (int32)btn, " ", val);
 	}
-
-	Engine::Input::ActionId ActionSystem::create(const std::string& name) {
-		auto found = actionNameToId.find(name);
-		if (found == actionNameToId.end()) {
-			const auto next = actionNameToId.size();
-			found = actionNameToId.emplace(name, static_cast<Engine::Input::ActionId>(next)).first;
-			actionIdToListeners.emplace_back();
-
-			for (const auto ent : actionFilter) {
-				auto& actC = world.getComponent<ActionComponent>(ent);
-				actC.grow(static_cast<Engine::Input::ActionId>(next + 1));
-			}
-		} else {
-			ENGINE_WARN("Attempting to create action that already exists: ", name);
-		}
-
-		return found->second;
-	}
-
-	Engine::Input::ActionId ActionSystem::getId(const std::string& name) {
-		auto found = actionNameToId.find(name);
-		if (found == actionNameToId.end()) {
-			ENGINE_WARN("Attempting to get the id of a nonexistent action: ", name);
-			return create(name);
-		}
-
-		return found->second;
-	}
-
 	
-	Engine::Input::ActionId ActionSystem::count() const {
-		return static_cast<Engine::Input::ActionId>(actionNameToId.size());
+	void ActionSystem::updateAxisState(Axis axis, float32 val) {
+		for (const auto& ent : actionFilter) {
+			updateAxisState(ent, axis, val);
+		}
+	}
+
+	void ActionSystem::updateAxisState(Engine::ECS::Entity ent, Axis axis, float32 val) {
+		auto& actComp = world.getComponent<ActionComponent>(ent);
+		actComp.state.axes[static_cast<int32>(axis)] = val;
 	}
 }

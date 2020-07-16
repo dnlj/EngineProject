@@ -224,7 +224,7 @@ namespace Game {
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (world.hasComponent<C>(local)) {
-					world.getComponent<C>(local).netFrom(from.reader);
+					// TODO: re-enable - world.getComponent<C>(local).netFrom(from.reader);
 				}
 			} else {
 				ENGINE_WARN("Attemping to network non-network component");
@@ -537,11 +537,10 @@ namespace Game {
 			ENGINE_DEBUG_ASSERT(ipToPlayer.size() == 1, "A Client should not be connected to more than one server.");
 		}
 
-		world.addComponent<ActionComponent>(ent).grow(world.getSystem<ActionSystem>().count());
+		world.addComponent<ActionComponent>(ent);
 		world.addComponent<ActionQueueComponent>(ent);
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);
-		world.addComponent<CharacterMovementComponent>(ent);
 
 		return {ent, *connComp.conn};
 	}

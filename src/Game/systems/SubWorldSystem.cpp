@@ -1,7 +1,6 @@
 // Game
 #include <Game/World.hpp>
 #include <Game/systems/SubWorldSystem.hpp>
-#include <Game/comps/CharacterMovementComponent.hpp>
 
 
 namespace {
@@ -45,7 +44,7 @@ namespace {
 namespace Game {
 	SubWorldSystem::SubWorldSystem(SystemArg arg)
 		: System{arg}
-		, playerFilter{world.getFilterFor<CharacterMovementComponent, PhysicsComponent>()} { // TODO: add own comp (flag comp?) to id players
+		, playerFilter{world.getFilterFor<PhysicsComponent>()} { // TODO: add own comp (flag comp?) to id players
 	};
 
 	void SubWorldSystem::tick(float32 dt) {

@@ -2,9 +2,6 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Game
-#include <Game/systems/CharacterMovementSystem.hpp>
-#include <Game/comps/PhysicsComponent.hpp>
-#include <Game/comps/CharacterMovementComponent.hpp>
 #include <Game/World.hpp>
 
 
@@ -12,8 +9,8 @@ namespace Game {
 	CharacterMovementSystem::CharacterMovementSystem(SystemArg arg)
 		: System{arg}
 		, filter{world.getFilterFor<
-			Game::PhysicsComponent,
-			Game::CharacterMovementComponent
+			PhysicsComponent,
+			ActionComponent
 		>()} {
 
 		static_assert(World::orderBefore<CharacterMovementSystem, PhysicsSystem>());
@@ -22,14 +19,17 @@ namespace Game {
 	void CharacterMovementSystem::tick(float dt) {
 		constexpr float speed = 1.0f * 4;
 		for (auto ent : filter) {
-			auto& physComp = world.getComponent<Game::PhysicsComponent>(ent);
-			auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(ent);
+			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			const auto& actComp = world.getComponent<ActionComponent>(ent);
+			// TODO: should we use press count here?
+			const bool up = actComp.getButton(Button::MoveUp).latest;
+			const bool down = actComp.getButton(Button::MoveDown).latest;
+			const bool left = actComp.getButton(Button::MoveLeft).latest;
+			const bool right = actComp.getButton(Button::MoveRight).latest;
+			const b2Vec2 move = {static_cast<float32>(right - left), static_cast<float32>(up - down)};
 
-			if (moveComp.dir.x != 0 || moveComp.dir.y != 0) {
-				physComp.getBody().ApplyLinearImpulseToCenter(
-					dt * speed * b2Vec2{static_cast<float>(moveComp.dir.x), static_cast<float>(moveComp.dir.y)},
-					true
-				);
+			if (move != b2Vec2_zero) {
+				physComp.getBody().ApplyLinearImpulseToCenter(dt * speed * move, true);
 			}
 		}
 	}

@@ -26,7 +26,6 @@
 
 #include <Game/comps/PhysicsComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
-#include <Game/comps/CharacterMovementComponent.hpp>
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/ConnectionComponent.hpp>
 #include <Game/comps/NeighborsComponent.hpp>
@@ -35,6 +34,7 @@
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
 		InputSystem,
+		NetworkingSystem,
 		ActionSystem,
 		CharacterMovementSystem,
 		PhysicsOriginShiftSystem,
@@ -45,7 +45,6 @@ namespace Game {
 		MapSystem,
 		MapRenderSystem,
 		SpriteSystem,
-		NetworkingSystem,
 		UISystem
 	>;
 	
@@ -53,7 +52,6 @@ namespace Game {
 		MapEditComponent,
 		PhysicsComponent,
 		SpriteComponent,
-		CharacterMovementComponent,
 		ActionQueueComponent,
 		ActionComponent,
 		ConnectionComponent,

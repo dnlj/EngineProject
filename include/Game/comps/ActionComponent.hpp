@@ -13,18 +13,44 @@
 
 
 namespace Game {
+	class ButtonValue {
+		public:
+			uint8 pressCount;
+			uint8 releaseCount;
+			bool latest;
+	};
+
+	using AxisValue = float32;
+
+	enum class Button : uint8 {
+		MoveUp,
+		MoveDown,
+		MoveLeft,
+		MoveRight,
+		Attack1,
+		Attack2,
+		_COUNT,
+	};
+
+	enum class Axis : uint8 {
+		TargetX,
+		TargetY,
+		_COUNT,
+	};
+
 	class ActionState {
 		public:
 			Engine::ECS::Tick recvTick;
+
+			ButtonValue buttons[static_cast<int32>(Button::_COUNT)];
+
+			// TODO: should be able to compress these quite a bit if we make them offsets from the player and as such have a limited range.
+			AxisValue axes[static_cast<int32>(Axis::_COUNT)];
 	};
 
 	class ActionQueueComponent {
 		public:
 			ActionState states[64];
-			Engine::RingBuffer<Engine::Input::Action> actionQueue;
-			Engine::ECS::Tick bufferSize = 0; // TODO: dynamically tune based on missed ticks, RTT, dropped packets, etc.
-			Engine::ECS::Tick offset = 0;
-			Engine::ECS::Tick latest = 0;
 	};
 
 	class ActionComponent {
@@ -33,58 +59,15 @@ namespace Game {
 
 		private:
 			friend class ActionSystem;
-			std::vector<Engine::Input::Action> actions;
+			ActionState state;
 
 		public:
-			void grow(Engine::Input::ActionId size);
+			const ButtonValue& getButton(Button btn) const {
+				return state.buttons[static_cast<int32>(btn)];
+			}
 
-			/**
-			 * Gets the action associated with an id.
-			 */
-			Engine::Input::Action& get(Engine::Input::ActionId aid);
-
-			/**
-			 * Gets the value of the an action by id.
-			 */
-			Engine::Input::Value getValue(Engine::Input::ActionId aid);
-
-			/**
-			 * Gets the value of an action by id.
-			 * @tparam T The type to interpret the value as.
-			 */
-			template<class T>
-			T getValue(Engine::Input::ActionId aid);
-
-			/**
-			 * Gets the value of multiple actions.
-			 */
-			template<class T, class... ActionIdN>
-			auto getValue(Engine::Input::ActionId aid1, Engine::Input::ActionId aid2, ActionIdN... aidN);
-
-			/** @see getValue */
-			template<class T, class... ActionIdN, int32... Is>
-			auto getValue(const std::tuple<ActionIdN...>& aidN, std::index_sequence<Is...>);
-			
-			/** @see getValue */
-			template<class T, class... ActionIdN>
-			auto getValue(const std::tuple<ActionIdN...>& aidN);
-			
-			/** @see getValue */
-			template<class T, int32 N, int32... Is>
-			auto getValue(const std::array<Engine::Input::ActionId, N>& aidN, std::index_sequence<Is...>);
-			
-			/** @see getValue */
-			template<class T, int32 N>
-			auto getValue(const std::array<Engine::Input::ActionId, N>& aidN);
-			
-			/** @see getValue */
-			template<class T, int32 N, int32... Is>
-			auto getValue(const Engine::Input::ActionId (&ids)[N], std::index_sequence<Is...>);
-			
-			/** @see getValue */
-			template<class T, int32 N>
-			auto getValue(const Engine::Input::ActionId (&ids)[N]);
+			const AxisValue& getAxis(Axis axis) const {
+				return state.axes[static_cast<int32>(axis)];
+			}
 	};
 }
-
-#include <Game/comps/ActionComponent.ipp>

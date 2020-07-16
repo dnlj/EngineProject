@@ -65,8 +65,7 @@ namespace Game {
 		// TODO: move
 		const auto makeEdit = [&](Engine::ECS::Entity ent, int value){
 			auto& actionComp = world.getComponent<ActionComponent>(ent);
-			// TODO: store ids somewhere
-			const auto mousePos = actionComp.getValue<float32>(world.getSystem<ActionSystem>().getId("Target_X", "Target_Y"));
+			const glm::vec2 mousePos = {actionComp.getAxis(Axis::TargetX), actionComp.getAxis(Axis::TargetY)};
 
 			for (int x = -1; x < 2; ++x) {
 				for (int y = -1; y < 2; ++y) {

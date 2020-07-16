@@ -57,7 +57,6 @@ namespace Game {
 			template<int32 I>
 			static ImVec2 netGetDiff(void* data, int idx);
 
-			std::array<Engine::Input::ActionId, 2> targetIds;
 			EntityFilter& connFilter;
 			EntityFilter& activePlayerFilter;
 	};
