@@ -116,18 +116,26 @@ namespace Game {
 		ENGINE_LOG("MessageType::CONNECT from ", from.address());
 		auto& [ent, conn] = addConnection(from.address());
 
+		const auto* tick = from.reader.read<Engine::ECS::Tick>();
+
 		conn.writer.next(MessageType::CONNECT_CONFIRM, Engine::Net::Channel::RELIABLE);
 		conn.writer.write(ent);
+		conn.writer.write(world.getTick());
+		conn.writer.write(*tick);
 		conn.writer.send();
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CONFIRM) {
 		auto* remote = from.reader.read<Engine::ECS::Entity>();
+		auto* rtick = from.reader.read<Engine::ECS::Tick>();
+		auto* ltick = from.reader.read<Engine::ECS::Tick>();
 
 		if (!remote) {
 			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
 			return;
 		}
+
+		ENGINE_LOG("Ticks: ", *rtick, " ", *ltick);
 
 		entToLocal[*remote] = fromEnt;
 		ENGINE_LOG("Connection established. Remote: ", *remote, " Local: ", fromEnt);
@@ -505,6 +513,7 @@ namespace Game {
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		auto& [ent, conn] = addConnection(addr);
 		conn.writer.next(MessageType::CONNECT, Engine::Net::Channel::UNRELIABLE);
+		conn.writer.write(world.getTick());
 		conn.writer.flush();
 	}
 
@@ -562,6 +571,7 @@ namespace Game {
 
 		const auto* head = from.reader.read<Engine::Net::MessageHeader>();
 		from.reader.setMessageSize(head->size);
+		//ENGINE_LOG("Read message: ", msgToStr(head->type), " ", head->channel, " ", head->size);
 		ENGINE_DEBUG_ASSERT(head != nullptr);
 
 		// TODO: from unconnected players we only want to process connect and discover messages

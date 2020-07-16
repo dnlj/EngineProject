@@ -19,10 +19,19 @@ namespace Game {
 				if (curr && !prev) {
 					auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(ent);
 					moveComp.dir += move;
+
+					if (moveComp.dir.x > move.x || moveComp.dir.y > move.y) {
+						ENGINE_LOG("Woopsies1");
+					}
 				} else {
 					auto& moveComp = world.getComponent<Game::CharacterMovementComponent>(ent);
 					moveComp.dir -= move;
+
+					if (moveComp.dir.x > move.x || moveComp.dir.y > move.y) {
+						ENGINE_LOG("Woopsies2");
+					}
 				}
+
 
 				return false;
 			};

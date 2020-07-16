@@ -6,6 +6,7 @@
 #include <Engine/Clock.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Input/ActionListener.hpp>
+#include <Engine/Net/Connection.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -23,9 +24,8 @@ namespace Game {
 			ActionSystem(SystemArg arg);
 			void tick(float32 dt);
 
-		public:
 			void queueAction(Engine::Input::ActionId aid, Engine::Input::Value curr);
-			void queueAction(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr);
+			void queueAction(Engine::ECS::Entity ent, Engine::Input::ActionId aid, Engine::Input::Value curr, Engine::ECS::Tick tick);
 
 			/**
 			 * Creates a new action with a name.
@@ -47,6 +47,12 @@ namespace Game {
 			void addListener(Engine::Input::ActionId aid, Listener&& listener);
 
 			Engine::Input::ActionId count() const;
+
+		public:
+			void sendActions();
+			void recvActions(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
+			void recvActionsClient(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
+			void recvActionsServer(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
 	};
 }
 

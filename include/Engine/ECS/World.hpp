@@ -75,6 +75,10 @@ namespace Engine::ECS {
 			/** Maximum tick delay to accumulate */
 			constexpr static Clock::Duration maxDelay = std::chrono::milliseconds{250};
 
+			// TODO: not public
+			/** TODO: doc */
+			public: float32 tickScale = 1.0f; private:
+
 			/** How long between each tick. */
 			constexpr static Clock::Duration tickInterval{Clock::Period::den / TickRate};
 			static_assert(tickInterval < maxDelay, "Tick interval must be less than the maximum accumulable tick duration.");

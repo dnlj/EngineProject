@@ -13,19 +13,27 @@
 
 
 namespace Game {
+	class ActionState {
+		public:
+			Engine::ECS::Tick recvTick;
+	};
+
 	class ActionQueueComponent {
 		public:
+			ActionState states[64];
 			Engine::RingBuffer<Engine::Input::Action> actionQueue;
+			Engine::ECS::Tick bufferSize = 0; // TODO: dynamically tune based on missed ticks, RTT, dropped packets, etc.
+			Engine::ECS::Tick offset = 0;
+			Engine::ECS::Tick latest = 0;
 	};
 
 	class ActionComponent {
 		public:
-			constexpr static bool isSnapshotRelevant = true;
+			constexpr static bool isSnapshotRelezvant = true;
 
 		private:
 			friend class ActionSystem;
 			std::vector<Engine::Input::Action> actions;
-			//std::vector<Engine::Input::Action> actionHistory[64 + 1]; // TODO: World::snapshotCount + 1
 
 		public:
 			void grow(Engine::Input::ActionId size);

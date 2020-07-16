@@ -37,25 +37,31 @@ namespace Engine::ECS {
 		
 		while (tickTime + tickInterval <= beginTime) {
 			tickSystems();
-			tickTime += tickInterval;
+			//printf("******************\n\t%I64u\n\t%.16f\n\t%I64u\n",
+			//	tickInterval.count(),
+			//	(tickInterval * tickScale).count(),
+			//	std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale).count()
+			//);
+			tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
 		}
 
-		if (currTick > 64*5 && currTick % 128 == 0) {
-			puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-			const auto realTick = currTick;
-			loadSnapshot(snapshotBuffer[(currTick - 64) % TickRate]);
-
-			while (currTick < realTick) {
-				tickSystems();
-			}
-			puts("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-		}
+		//if (currTick > 64*5 && currTick % 128 == 0) {
+		//	puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+		//	const auto realTick = currTick;
+		//	loadSnapshot(snapshotBuffer[(currTick - 64) % TickRate]);
+		//
+		//	while (currTick < realTick) {
+		//		tickSystems();
+		//	}
+		//	puts("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+		//}
 		
 		(getSystem<Ss>().run(deltaTime), ...);
 	}
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::tickSystems() {
+		//ENGINE_INFO("Tick: ", getTick());
 		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
 		storeSnapshot();
 		(getSystem<Ss>().tick(tickDeltaTime), ...);

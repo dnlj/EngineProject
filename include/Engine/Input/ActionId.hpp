@@ -5,5 +5,5 @@
 
 
 namespace Engine::Input {
-	using ActionId = uint16;
+	using ActionId = uint8;
 }
