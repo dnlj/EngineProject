@@ -33,7 +33,7 @@ namespace Engine::detail {
 
 	template<class T, uint32 Size>
 	const T& RingBufferImpl<T, Size>::operator[](SizeType i) const {
-		return reinterpret_cast<RingBufferImpl&>(*this)[i];
+		return const_cast<RingBufferImpl&>(*this)[i];
 	}
 
 	template<class T, uint32 Size>

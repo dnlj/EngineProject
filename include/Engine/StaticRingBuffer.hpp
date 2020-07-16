@@ -18,7 +18,8 @@ namespace Engine {
 				class IteratorBase {
 					private:
 						using Index = int32;
-						RingBufferImpl* rb;
+						using Buff = std::conditional_t<std::is_const_v<T>, const RingBufferImpl, RingBufferImpl>;
+						Buff* rb;
 						SizeType i;
 
 					public:
@@ -29,7 +30,7 @@ namespace Engine {
 						using iterator_category = std::random_access_iterator_tag;
 
 					public:
-						IteratorBase(RingBufferImpl* rb, SizeType i) : rb{rb}, i{i} {}
+						IteratorBase(Buff* rb, SizeType i) : rb{rb}, i{i} {}
 						~IteratorBase() = default;
 
 						auto& operator+=(Index n) { i += n; return *this; }
