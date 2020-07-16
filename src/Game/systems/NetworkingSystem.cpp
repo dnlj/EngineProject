@@ -248,17 +248,19 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ACTION) {
-		const auto* aid = from.reader.read<Engine::Input::ActionId>();
-		const auto* val = from.reader.read<Engine::Input::Value>();
-
-		if (aid && val) {
-			if (*aid > 1) {
-				ENGINE_LOG("Net: ", *aid, " ", val->value, " ", world.getTick());
-			}
-
-			// TODO: sanity check inputs
-			world.getSystem<ActionSystem>().queueAction(fromEnt, *aid, *val);
-		}
+		world.getSystem<ActionSystem>().recvActions(from, head, fromEnt);
+		//
+		//const auto* aid = from.reader.read<Engine::Input::ActionId>();
+		//const auto* val = from.reader.read<Engine::Input::Value>();
+		//
+		//if (aid && val) {
+		//	if (*aid > 1) {
+		//		ENGINE_LOG("Net: ", *aid, " ", val->value, " ", world.getTick());
+		//	}
+		//
+		//	// TODO: sanity check inputs
+		//	world.getSystem<ActionSystem>().queueAction(fromEnt, *aid, *val);
+		//}
 	}
 
 	HandleMessageDef(MessageType::ACK) {
@@ -552,7 +554,14 @@ namespace Game {
 	}
 
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+		constexpr auto msgToStr = [](const Engine::Net::MessageType& type) -> const char* {
+			#define X(name) if (type == MessageType::name) { return #name; }
+			#include <Game/MessageType.xpp>
+			return "UNKNOWN";
+		};
+
 		const auto* head = from.reader.read<Engine::Net::MessageHeader>();
+		from.reader.setMessageSize(head->size);
 		ENGINE_DEBUG_ASSERT(head != nullptr);
 
 		// TODO: from unconnected players we only want to process connect and discover messages
@@ -575,17 +584,12 @@ namespace Game {
 			const byte* stop = reinterpret_cast<const byte*>(head) + sizeof(*head) + head->size;
 			const byte* curr = static_cast<const byte*>(from.reader.read(0));
 			const auto rem = stop - curr;
-			constexpr auto msgToStr = [](const Engine::Net::MessageType& type) -> const char* {
-				#define X(name) if (type == MessageType::name) { return #name; }
-				#include <Game/MessageType.xpp>
-				return "UNKNOWN";
-			};
 
 			if (rem > 0) {
 				ENGINE_WARN("Incomplete read of network message ", msgToStr(head->type), " (", rem, " bytes remaining). Ignoring.");
 				from.reader.read(rem);
 			} else if (rem < 0) {
-				ENGINE_WARN("Network message read past message end (", rem, " bytes remaining).");
+				ENGINE_WARN("Read past end of network messge type ", msgToStr(head->type)," (", rem, " bytes remaining).");
 			}
 		}
 	}

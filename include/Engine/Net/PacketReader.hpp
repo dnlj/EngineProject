@@ -9,8 +9,15 @@
 namespace Engine::Net {
 	class PacketReader {
 		private:
+			/** The current position in the packet. */
 			char* curr = nullptr;
+
+			/** End of message. Set by user. */
+			char* stop = nullptr;
+
+			/** End of packet */
 			char* last = nullptr;
+
 			AckData channelAckData[2] = {};
 			uint64 bytesRead = 0;
 
@@ -22,6 +29,7 @@ namespace Engine::Net {
 			uint64 totalBytesRead() const { return bytesRead; }
 
 			void set(char* curr, char* last);
+			void setMessageSize(int32 sz) { stop = curr + sz; }
 
 			/**
 			 * Updates message acknowledgements.
@@ -44,9 +52,14 @@ namespace Engine::Net {
 			 * Checks if there are any messages to read.
 			 */
 			bool next();
+			
+			/**
+			 * The number of bytes remaining in the current message.
+			 */
+			int32 messageSize() const { return static_cast<int32>(stop - curr); };
 
 			/**
-			 * Gets the size of the current message.
+			 * The number of bytes remaining in the current packet.
 			 */
 			int32 size() const;
 
