@@ -538,7 +538,6 @@ namespace Game {
 		}
 
 		world.addComponent<ActionComponent>(ent);
-		world.addComponent<ActionQueueComponent>(ent);
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);
 

@@ -8,6 +8,7 @@ namespace Game {
 	}
 
 	void InputSystem::tick(float32 dt) {
+		// TODO: only if not performing rollback. Maybe add a way for systems to opt out instead of if-ing every system
 		const auto curTime = world.getTickTime();
 		const auto nextTime = curTime + world.getTickInterval();
 

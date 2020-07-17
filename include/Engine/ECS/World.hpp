@@ -15,22 +15,24 @@ namespace Engine::ECS {
 	/**
 	 * @tparam Derived CRTP dervied class. Needed for EntityFilter<Derived>.
 	 * @tparam TickRate The tick rate of the world.
+	 * @tparam SnapshotCount The number of snapshots to keep for rollback.
 	 * @tparam SystemsSet The systems for this world to have.
 	 * @tparam ComponentsSet The components for entities in this world to have.
 	 */
-	template<class Derived, int64 TickRate, class SystemsSet, class ComponentsSet>
+	template<class Derived, int64 TickRate, int64 SnapshotCount, class SystemsSet, class ComponentsSet>
 	class World;
 
 	#define WORLD_TPARAMS template<\
 		class Derived,\
 		int64 TickRate,\
+		int64 SnapshotCount,\
 		class... Ss,\
 		template<class...> class SystemsSet,\
 		class... Cs,\
 		template<class...> class ComponentsSet\
 	>
 
-	#define WORLD_CLASS World<Derived, TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
+	#define WORLD_CLASS World<Derived, TickRate, SnapshotCount, SystemsSet<Ss...>, ComponentsSet<Cs...>>
 	
 	class EntityState {
 		public:
@@ -109,6 +111,9 @@ namespace Engine::ECS {
 
 			/** TODO: doc */
 			std::vector<EntityState> entities;
+
+			/** TODO: doc */
+			bool performingRollback = false;
 
 			// TODO: move?
 			struct Snapshot {
@@ -372,6 +377,10 @@ namespace Engine::ECS {
 			 */
 			decltype(auto) self() { return reinterpret_cast<Derived&>(*this); }
 			decltype(auto) self() const { return reinterpret_cast<const Derived&>(*this); }
+
+			bool isPerformingRollback() { return performingRollback; }
+
+			constexpr auto getSnapshotCount() { return SnapshotCount; }
 
 		private:
 			void tickSystems();

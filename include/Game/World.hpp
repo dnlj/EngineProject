@@ -34,7 +34,6 @@
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
 		InputSystem,
-		NetworkingSystem,
 		ActionSystem,
 		CharacterMovementSystem,
 		PhysicsOriginShiftSystem,
@@ -45,6 +44,7 @@ namespace Game {
 		MapSystem,
 		MapRenderSystem,
 		SpriteSystem,
+		NetworkingSystem,
 		UISystem
 	>;
 	
@@ -52,7 +52,6 @@ namespace Game {
 		MapEditComponent,
 		PhysicsComponent,
 		SpriteComponent,
-		ActionQueueComponent,
 		ActionComponent,
 		ConnectionComponent,
 		NeighborsComponent,
@@ -63,10 +62,10 @@ namespace Game {
 	// TODO: we could get rid of CRTP here by forward declaring all systems/components/flags...
 	// TODO: cont. - (effectively forward decl the sets) and making World a typedef and templating the ECS::World constructor...
 	// TODO: cont. - Would need to move the set defs into own file then. Not sure if worth. Probably is. CRTP is a little stinky.
-	class World : public Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet> {
+	class World : public Engine::ECS::World<World, tickrate, snapshots, SystemsSet, ComponentsSet> {
 		public:
 			World(Engine::EngineInstance& engine)
-				: Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet>(std::tie(*this, engine)) {
+				: Engine::ECS::World<World, tickrate, snapshots, SystemsSet, ComponentsSet>(std::tie(*this, engine)) {
 			}
 	};
 }

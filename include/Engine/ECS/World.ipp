@@ -46,6 +46,7 @@ namespace Engine::ECS {
 		}
 
 		//if (currTick > 64*5 && currTick % 128 == 0) {
+		//	performingRollback = true;
 		//	puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 		//	const auto realTick = currTick;
 		//	loadSnapshot(snapshotBuffer[(currTick - 64) % TickRate]);
@@ -54,6 +55,7 @@ namespace Engine::ECS {
 		//		tickSystems();
 		//	}
 		//	puts("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+		//	performingRollback = false;
 		//}
 		
 		(getSystem<Ss>().run(deltaTime), ...);
@@ -64,7 +66,9 @@ namespace Engine::ECS {
 		//ENGINE_INFO("Tick: ", getTick());
 		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
 		storeSnapshot();
+		(getSystem<Ss>().preTick(), ...);
 		(getSystem<Ss>().tick(tickDeltaTime), ...);
+		(getSystem<Ss>().postTick(), ...);
 		markedForDeath.clear();
 		++currTick;
 	}

@@ -31,8 +31,13 @@ namespace Game {
 			};
 
 			void setup() {}
+
+			void preTick() {}
 			void tick(float32 dt) {}
+			void postTick() {}
+
 			void run(float32 dt) {}
+
 			void preStoreSnapshot() {}
 			void postLoadSnapshot() {}
 	};

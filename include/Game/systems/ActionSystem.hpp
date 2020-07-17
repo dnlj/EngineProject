@@ -22,6 +22,8 @@ namespace Game {
 
 		public:
 			ActionSystem(SystemArg arg);
+
+			void preTick();
 			void tick(float32 dt);
 
 			void updateButtonState(Button btn, bool val);

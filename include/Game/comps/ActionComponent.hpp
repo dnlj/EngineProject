@@ -48,17 +48,10 @@ namespace Game {
 			AxisValue axes[static_cast<int32>(Axis::_COUNT)];
 	};
 
-	class ActionQueueComponent {
-		public:
-			ActionState states[64];
-	};
-
 	class ActionComponent {
-		public:
-			constexpr static bool isSnapshotRelezvant = true;
-
 		private:
 			friend class ActionSystem;
+			ActionState states[snapshots];
 			ActionState state;
 
 		public:

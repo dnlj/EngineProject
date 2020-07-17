@@ -11,7 +11,16 @@ namespace Game {
 		, connFilter{world.getFilterFor<ConnectionComponent>()} {
 	}
 
-	
+	void ActionSystem::preTick() {
+		for (const auto ent : actionFilter) {
+			auto& actComp = world.getComponent<ActionComponent>(ent);
+			for (auto& btnState : actComp.state.buttons) {
+				btnState.pressCount = 0;
+				btnState.releaseCount = 0;
+			}
+		}
+	}
+
 	void ActionSystem::tick(float32 dt) {
 		// TODO: On server - nothing - we get input updates from network system.
 		// TODO: On client - we get input updates from input system
@@ -21,22 +30,29 @@ namespace Game {
 		const auto minTick = currTick - 64;
 		for (const auto ent : actionFilter) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
-			auto& actQueueComp = world.getComponent<ActionQueueComponent>(ent);
+			auto& curr = actComp.state;
+			auto& stored = actComp.states[currTick % snapshots];
 
-
-			if constexpr (ENGINE_SERVER) { // ========================================================================
-				auto& state = actQueueComp.states[world.getTick() % 64];
+			if constexpr (ENGINE_CLIENT) {
+				if (world.isPerformingRollback()) {
+					curr = stored;
+				} else {
+					stored = curr;
+				}
+			} else if constexpr (ENGINE_SERVER) {
+				curr = stored;
 				auto& writer = world.getComponent<ConnectionComponent>(ent).conn->writer;
 				writer.next(MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
-				writer.write(world.getTick());
-				writer.write(state.recvTick);
+				writer.write(currTick);
+				writer.write(curr.recvTick);
 
-				if (state.recvTick == 0) {
-					ENGINE_LOG("Missing input for tick ", world.getTick());
+				if (curr.recvTick == 0) {
+					ENGINE_LOG("Missing input for tick ", currTick);
+					// TODO: duplicate and decay last input?
 				}
 
-				// TODO: need to deal with rollback
-				state.recvTick = 0;
+				// If we ever add lag compensation we will need to handle server rollback here.
+				curr.recvTick = 0;
 			}
 		}
 
@@ -85,14 +101,16 @@ namespace Game {
 		auto& reader = from.reader;
 		const auto tick = *reader.read<Engine::ECS::Tick>();
 		const auto recvTick = world.getTick();
+
+		// TODO: verfiy this is the correct rnage. should use snapshots
 		const auto minTick = recvTick + 1;
 		const auto maxTick = minTick + 64 - 1;
 
 		if (tick < minTick || tick > maxTick) { return; }
 
-		auto& aqc = world.getComponent<ActionQueueComponent>(fromEnt);
+		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
 		// TODO: if we dont get a message we will have old data in the buffer. fixxxxx
-		aqc.states[tick % 64].recvTick = recvTick;
+		actComp.states[tick % snapshots].recvTick = recvTick;
 	}
 
 	void ActionSystem::updateButtonState(Button btn, bool val) {
