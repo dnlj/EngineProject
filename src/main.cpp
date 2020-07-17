@@ -48,7 +48,6 @@
 // Game
 #include <Game/Common.hpp>
 #include <Game/World.hpp>
-#include <Game/CharacterSpellActionListener.hpp>
 #include <Game/MapGenerator.hpp>
 
 

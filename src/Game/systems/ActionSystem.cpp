@@ -12,22 +12,21 @@ namespace Game {
 	}
 
 	void ActionSystem::preTick() {
-		for (const auto ent : actionFilter) {
-			auto& actComp = world.getComponent<ActionComponent>(ent);
-			for (auto& btnState : actComp.state.buttons) {
-				btnState.pressCount = 0;
-				btnState.releaseCount = 0;
+		if constexpr (ENGINE_CLIENT) {
+			for (const auto ent : actionFilter) {
+				auto& actComp = world.getComponent<ActionComponent>(ent);
+				for (auto& btnState : actComp.state.buttons) {
+					btnState.pressCount = 0;
+					btnState.releaseCount = 0;
+				}
 			}
 		}
 	}
 
 	void ActionSystem::tick(float32 dt) {
-		// TODO: On server - nothing - we get input updates from network system.
-		// TODO: On client - we get input updates from input system
 		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
 
 		const auto currTick = world.getTick();
-		const auto minTick = currTick - 64;
 		for (const auto ent : actionFilter) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 			auto& curr = actComp.state;
@@ -52,7 +51,7 @@ namespace Game {
 				}
 
 				// If we ever add lag compensation we will need to handle server rollback here.
-				curr.recvTick = 0;
+				stored.recvTick = 0;
 			}
 		}
 
@@ -63,9 +62,11 @@ namespace Game {
 
 	void ActionSystem::sendActions() {
 		for (const auto& ent : actionFilter) {
+			const auto& actComp = world.getComponent<ActionComponent>(ent);
 			auto& writer = world.getComponent<ConnectionComponent>(ent).conn->writer;
 			writer.next(MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
 			writer.write(world.getTick());
+			writer.write(actComp.state);
 		}
 	}
 
@@ -86,7 +87,7 @@ namespace Game {
 		// TODO: if to far behind snap to correct tick
 		// TODO: if to far ahead scale more aggressively. Probably based on number of ticks/sec
 		// TODO: send tick for last input we got so we can determine how far off we are
-		if (recvTick == 0) {
+		if (recvTick == 0 || buffSize < 1) {
 			world.tickScale = 0.8f;
 		} else if (buffSize > 5) {
 			world.tickScale = 1.1f;
@@ -100,17 +101,29 @@ namespace Game {
 	void ActionSystem::recvActionsServer(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
 		auto& reader = from.reader;
 		const auto tick = *reader.read<Engine::ECS::Tick>();
+		const auto state = reader.read<ActionState>();
 		const auto recvTick = world.getTick();
 
-		// TODO: verfiy this is the correct rnage. should use snapshots
 		const auto minTick = recvTick + 1;
-		const auto maxTick = minTick + 64 - 1;
+		const auto maxTick = recvTick + snapshots - 1;
 
-		if (tick < minTick || tick > maxTick) { return; }
+		// TODO: if tick < minTick tell client to fast
+		// TODO: if tick > maxTick tell client to slow
+		if (tick < minTick || tick > maxTick) {
+			ENGINE_WARN("Out of window input received.");
+			return;
+		}
 
 		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
-		// TODO: if we dont get a message we will have old data in the buffer. fixxxxx
-		actComp.states[tick % snapshots].recvTick = recvTick;
+		auto& stored = actComp.states[tick % snapshots];
+
+		if (stored.recvTick) {
+			ENGINE_WARN("Duplicate input for tick ", tick, ". Ignoring.");
+			return;
+		}
+
+		stored = *state;
+		stored.recvTick = recvTick;
 	}
 
 	void ActionSystem::updateButtonState(Button btn, bool val) {

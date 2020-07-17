@@ -109,6 +109,7 @@ namespace Game {
 		}
 
 		ImGui::Text("Avg FPS %f (%f)", fps, 1.0f / fps);
+		ImGui::Text("Tick %i", world.getTick());
 
 		if (ImGui::Button("Disconnect")) {
 			std::vector<Engine::ECS::Entity> ents = {connFilter.cbegin(), connFilter.cend()};
