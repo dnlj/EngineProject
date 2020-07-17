@@ -9,6 +9,7 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/PhysicsListener.hpp>
+#include <Game/EntityFilter.hpp>
 
 
 namespace Game {
@@ -22,7 +23,7 @@ namespace Game {
 		private:
 			void beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) override;
 			void detonateMissle(Engine::ECS::Entity ent);
-
+			EntityFilter& filter;
 			std::vector<Engine::ECS::Entity> missles;
 			std::vector<Engine::ECS::Entity> toDestroy;
 			size_t currentMissle = 0;

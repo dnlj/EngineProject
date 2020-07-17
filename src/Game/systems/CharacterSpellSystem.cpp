@@ -11,7 +11,8 @@
 
 namespace Game {
 	CharacterSpellSystem::CharacterSpellSystem(SystemArg arg)
-		: System{arg} {
+		: System{arg}
+		, filter{world.getFilterFor<PhysicsComponent, ActionComponent>()} {
 		static_assert(World::orderAfter<CharacterSpellSystem, CharacterMovementSystem>());
 		static_assert(World::orderAfter<CharacterSpellSystem, PhysicsSystem>());
 	}
@@ -77,6 +78,21 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::tick(float dt) {
+
+		for (const auto ent : filter) {
+			auto& actComp = world.getComponent<ActionComponent>(ent);
+
+			if (actComp.getButton(Button::Attack1).pressCount) {
+				auto& physComp = world.getComponent<PhysicsComponent>(ent);
+				const auto pos = physComp.getPosition();
+				const b2Vec2 target = {actComp.getAxis(Axis::TargetX), actComp.getAxis(Axis::TargetY)};
+				auto dir = target - pos;
+				dir.Normalize();
+
+				fireMissile(pos + 0.3f * dir, dir);
+			}
+		}
+
 		if (toDestroy.empty()) { return; }
 
 		std::sort(toDestroy.begin(), toDestroy.end());
