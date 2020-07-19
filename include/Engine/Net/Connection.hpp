@@ -16,16 +16,37 @@
 
 
 namespace Engine::Net {
+	using SeqNum = uint32;
+
+	constexpr inline int32 MAX_PACKET_SIZE = 512;
+	class Packet2 {
+		public:
+			byte head[6] = {0b0110, 0b1001, 0b1001, 0b0110};
+			byte body[MAX_PACKET_SIZE - sizeof(head)];
+
+		public:
+			auto& getProtocol() { return *reinterpret_cast<uint16*>(&head[0]); }
+			auto& getProtocol() const { return *reinterpret_cast<const uint16*>(&head[0]); }
+			void setProtocol(uint16 p) { getProtocol() = p; }
+
+			auto& getSeqNum() { return *reinterpret_cast<SeqNum*>(&head[2]); }
+			auto& getSeqNum() const { return *reinterpret_cast<const SeqNum*>(&head[2]); }
+			void setSeqNum(SeqNum n) { getSeqNum() = n; }
+	};
+	static_assert(sizeof(Packet2) == MAX_PACKET_SIZE);
+
 	class PacketNode {
 		public:
+			PacketNode() = default;
 			PacketNode(const PacketNode&) = delete; // Would break curr/last ptrs
 			std::unique_ptr<PacketNode> next = nullptr;
 			byte* curr;
 			byte* last;
-			Packet packet;
+
+			Packet2 packet;
 
 			void clear() {
-				curr = packet.data;
+				curr = packet.body;
 				last = curr;
 			}
 
@@ -52,16 +73,30 @@ namespace Engine::Net {
 	template<class... Cs>
 	class Connection2 {
 		private:
+			using NodePtr = std::unique_ptr<PacketNode>;
+
 			struct ChannelInfo {
 				SequenceNumber nextSeq;
 			};
 
-			using NodePtr = std::unique_ptr<PacketNode>;
+			struct PacketInfo {
+				SequenceNumber nextSeq;
+				// TODO: only need this for reliable flag
+				SequenceNumber lastAck;
+				NodePtr packets[64]; // TODO: if not nullptr then unacked
+			};
+
 			ChannelInfo channelInfo[sizeof...(Cs)];
+			PacketInfo packetInfo[4];
 			NodePtr activePackets[4];
 			NodePtr pool;
-			SequenceNumber nextSeq = 0;
-			PacketNode* currPacket;
+			PacketNode* currNode;
+			const IPv4Address addr;
+
+			template<class C>
+			constexpr static ChannelId getChannelId() {
+				return Meta::IndexOf<C, Cs>::value;
+			}
 
 			NodePtr getOrAllocPacketFromPool() {
 				if (!pool) { return std::make_unique<PacketNode>(); }
@@ -72,39 +107,59 @@ namespace Engine::Net {
 			}
 
 			PacketNode& getOrAllocPacket(ChannelFlags flags) {
-				auto& node = active[static_cast<int32>(flags)];
+				auto& node = activePackets[static_cast<int32>(flags)];
 				if (!node) {
 					node = getOrAllocPacketFromPool();
 					node->clear();
 				}
 
 				auto* curr = node.get();
-				while(curr->next) { curr = curr->next; }
+				while(curr->next) { curr = curr->next.get(); }
 				return *curr;
 			}
 			
 		public:
 			// TODO: ping
 			// TODO: packet loss
-			// TODO: bandwidth in/out
+			// TODO: bandwidth in/out. Could do per packet type (4)
+
+			void send(UDPSocket& sock) {
+				for (int32 i = 0; i < std::size(activePackets); ++i) {
+					PacketNode* p = activePackets[i];
+					if (!p) { continue; }
+					while (p) {
+						auto& info = packetInfo[i];
+						p->packet.setSeqNum(info.nextSeq);
+						++info.nextSeq;
+
+						// TODO: send packet
+						const auto sz = p->packet.head - p->last;
+						sock.send(p->packet.head, sz, addr);
+
+						auto old = p;
+						p = p->next;
+						old->next = pool;
+						pool = old;
+					}
+				}
+			}
 			
 			template<class C>
 			void beginMessage(MessageType type, const C&) {
 				auto& node = getOrAllocPacket(C::flags);
-				currPacket = &node;
+				currNode = &node;
 				write(MessageHeader{
 					.type = type,
-					.channel = getChannelId<C>(),
-					.size = 0,
+					.channel = Channel::UNRELIABLE, // TODO: getChannelId<C>()
 					.sequence = 0, // TODO: impl
 				});
 			}
 
 			void endMessage() {
-				auto* head = reinterpret_cast<MessageHeader*>(currPacket->curr);
-				head->size = currPacket->size();
-				currPacket->curr = currPacket->last;
-				currPacket = nullptr;
+				auto* head = reinterpret_cast<MessageHeader*>(currNode->curr);
+				head->size = currNode->size();
+				currNode->curr = currNode->last;
+				currNode = nullptr;
 			}
 
 			/**
@@ -113,14 +168,14 @@ namespace Engine::Net {
 			void write(const void* t, size_t sz) {
 				ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
 
-				if (currPacket->last + sz <= currPacket->data + sizeof(packet->data)) {
-					memcpy(currPacket->last, t, sz);
-					currPacket->last += sz;
+				if (currNode->last + sz <= currNode->packet.body + sizeof(currNode->packet.body)) {
+					memcpy(currNode->last, t, sz);
+					currNode->last += sz;
 				} else {
-					ENGINE_DEBUG_ASSERT(currPacket->next == nullptr);
-					auto old = currPacket;
-					currPacket->next = getOrAllocPacketFromPool();
-					currPacket = currPacket->next;
+					ENGINE_DEBUG_ASSERT(currNode->next == nullptr);
+					auto old = currNode;
+					currNode->next = getOrAllocPacketFromPool();
+					currNode = currNode->next.get();
 					write(old->curr, old->last - old->curr);
 					write(t, sz);
 					old->last = old->curr;

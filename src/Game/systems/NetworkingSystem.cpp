@@ -503,6 +503,13 @@ namespace Game {
 			} else {
 				ENGINE_WARN("TODO: how to handle unsendable messages");
 			}
+
+			{ // TODO: rm - testing
+				auto& conn = world.getComponent<ConnectionComponent>(ply).conn2;
+				conn.beginMessage(MessageType::PING, TestChannel1);
+				conn.write(1234);
+				conn.endMessage();
+			}
 		}
 	}
 
