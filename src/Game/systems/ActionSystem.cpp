@@ -40,10 +40,11 @@ namespace Game {
 				}
 			} else if constexpr (ENGINE_SERVER) {
 				curr = stored;
-				auto& writer = world.getComponent<ConnectionComponent>(ent).conn->writer;
-				writer.next(MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
-				writer.write(currTick);
-				writer.write(curr.recvTick);
+				auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
+				conn.msgBegin(MessageType::ACTION, General_UU);
+				conn.write(currTick);
+				conn.write(curr.recvTick);
+				conn.msgEnd();
 
 				if (curr.recvTick == 0) {
 					ENGINE_LOG("Missing input for tick ", currTick);
@@ -63,14 +64,15 @@ namespace Game {
 	void ActionSystem::sendActions() {
 		for (const auto& ent : actionFilter) {
 			const auto& actComp = world.getComponent<ActionComponent>(ent);
-			auto& writer = world.getComponent<ConnectionComponent>(ent).conn->writer;
-			writer.next(MessageType::ACTION, Engine::Net::Channel::UNRELIABLE);
-			writer.write(world.getTick());
-			writer.write(actComp.state);
+			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
+			conn.msgBegin(MessageType::ACTION, General_UU);
+			conn.write(world.getTick());
+			conn.write(actComp.state);
+			conn.msgEnd();
 		}
 	}
 
-	void ActionSystem::recvActions(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
+	void ActionSystem::recvActions(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
 		if constexpr (ENGINE_SERVER) {
 			recvActionsServer(from, head, fromEnt);
 		} else {
@@ -78,10 +80,9 @@ namespace Game {
 		}
 	}
 
-	void ActionSystem::recvActionsClient(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
-		auto& reader = from.reader;
-		const auto tick = *reader.read<Engine::ECS::Tick>();
-		const auto recvTick = *reader.read<Engine::ECS::Tick>();
+	void ActionSystem::recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
+		const auto tick = *from.read<Engine::ECS::Tick>();
+		const auto recvTick = *from.read<Engine::ECS::Tick>();
 		const auto buffSize = tick - recvTick;
 
 		// TODO: if to far behind snap to correct tick
@@ -98,10 +99,9 @@ namespace Game {
 		ENGINE_LOG("Feedback: ", tick, " ", recvTick, " ", world.tickScale, " ", buffSize);
 	}
 
-	void ActionSystem::recvActionsServer(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
-		auto& reader = from.reader;
-		const auto tick = *reader.read<Engine::ECS::Tick>();
-		const auto state = reader.read<ActionState>();
+	void ActionSystem::recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
+		const auto tick = *from.read<Engine::ECS::Tick>();
+		const auto state = from.read<ActionState>();
 		const auto recvTick = world.getTick();
 
 		const auto minTick = recvTick + 1;

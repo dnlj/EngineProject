@@ -12,6 +12,7 @@
 #include <Game/System.hpp>
 #include <Game/EntityFilter.hpp>
 #include <Game/comps/ActionComponent.hpp>
+#include <Game/Connection.hpp>
 
 namespace Game {
 	class ActionSystem : public System {
@@ -39,9 +40,9 @@ namespace Game {
 
 		public:
 			void sendActions();
-			void recvActions(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
-			void recvActionsClient(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
-			void recvActionsServer(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
+			void recvActions(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
+			void recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
+			void recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
 	};
 }
 

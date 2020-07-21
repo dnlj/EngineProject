@@ -92,25 +92,25 @@ namespace Game {
 		return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::NONE : Engine::Net::Replication::ALWAYS;
 	}
 
-	void PhysicsComponent::netTo(Engine::Net::PacketWriter& writer) const {
-		writer.write(body->GetTransform());
-		writer.write(body->GetLinearVelocity());
+	void PhysicsComponent::netTo(Connection& conn) const {
+		conn.write(body->GetTransform());
+		conn.write(body->GetLinearVelocity());
 	}
 
-	void PhysicsComponent::netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketWriter& writer) const {
-		netTo(writer);
+	void PhysicsComponent::netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const {
+		netTo(conn);
 	}
 
-	void PhysicsComponent::netFrom(Engine::Net::PacketReader& reader) {
-		updateTransform(*reader.read<b2Transform>());
-		body->SetLinearVelocity(*reader.read<b2Vec2>());
+	void PhysicsComponent::netFrom(Connection& conn) {
+		updateTransform(*conn.read<b2Transform>());
+		body->SetLinearVelocity(*conn.read<b2Vec2>());
 	}
 
-	void PhysicsComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::PacketReader& reader) {
+	void PhysicsComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		// TODO: actual shape
 		setBody(physSys.createPhysicsCircle(ent));
 		//body->SetType(b2_staticBody);
-		netFrom(reader);
+		netFrom(conn);
 	}
 }

@@ -242,13 +242,14 @@ namespace Game {
 		for (const auto ent : connFilter) {
 			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 
-			const auto& dt = Engine::Clock::Seconds{now - conn.connectTime}.count();
-			fd.netstats[0].total = conn.writer.totalBytesWritten();
-			fd.netstats[1].total = conn.reader.totalBytesRead();
-			ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s",
-				fd.netstats[0].total, fd.netstats[0].total / dt,
-				fd.netstats[1].total, fd.netstats[1].total / dt
-			);
+			// TODO: enable: 
+			//const auto& dt = Engine::Clock::Seconds{now - conn.connectTime}.count();
+			//fd.netstats[0].total = conn.totalBytesWritten();
+			//fd.netstats[1].total = conn.totalBytesRead();
+			//ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s",
+			//	fd.netstats[0].total, fd.netstats[0].total / dt,
+			//	fd.netstats[1].total, fd.netstats[1].total / dt
+			//);
 
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
 			const auto begin = Engine::Clock::Seconds{rollingWindow.time_since_epoch()}.count();

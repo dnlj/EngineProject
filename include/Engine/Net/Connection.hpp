@@ -34,6 +34,7 @@ namespace Engine::Net {
 			void setSeqNum(SeqNum n) { getSeqNum() = n; }
 	};
 	static_assert(sizeof(Packet2) == MAX_PACKET_SIZE);
+	inline constexpr int32 MAX_MESSAGE_SIZE2 = sizeof(Packet2::body) - sizeof(MessageHeader);
 
 	class PacketNode {
 		public:
@@ -56,6 +57,7 @@ namespace Engine::Net {
 	using ChannelId = uint8;
 
 	enum class ChannelFlags : ChannelId {
+		None		= 0 << 0,
 		Reliable	= 1 << 0,
 		Ordered		= 1 << 1,
 	};
@@ -86,12 +88,26 @@ namespace Engine::Net {
 				NodePtr packets[64]; // TODO: if not nullptr then unacked
 			};
 
+			const IPv4Address addr;
 			ChannelInfo channelInfo[sizeof...(Cs)];
 			PacketInfo packetInfo[4];
 			NodePtr activePackets[4];
 			NodePtr pool;
-			PacketNode* currNode;
-			const IPv4Address addr;
+			PacketNode* currNode = nullptr;
+
+			struct {
+				/** The first byte in the recv packet */
+				const byte* first;
+
+				/** One past the last byte in the recv packet */
+				const byte* last;
+
+				/** The current position in the recv packet */
+				const byte* curr;
+
+				/** One past the last byte in the current message */
+				const byte* msgLast;
+			} rdat;
 
 			template<class C>
 			constexpr static ChannelId getChannelId() {
@@ -99,10 +115,14 @@ namespace Engine::Net {
 			}
 
 			NodePtr getOrAllocPacketFromPool() {
-				if (!pool) { return std::make_unique<PacketNode>(); }
+				if (!pool) {
+					auto ptr = std::make_unique<PacketNode>();
+					ptr->clear();
+					return ptr;
+				}
 				auto old = std::move(pool);
-				pool = std::move(pool->next);
-				old->next = nullptr;
+				pool.swap(old->next);
+				old->clear();
 				return old;
 			}
 
@@ -110,7 +130,6 @@ namespace Engine::Net {
 				auto& node = activePackets[static_cast<int32>(flags)];
 				if (!node) {
 					node = getOrAllocPacketFromPool();
-					node->clear();
 				}
 
 				auto* curr = node.get();
@@ -123,31 +142,98 @@ namespace Engine::Net {
 			// TODO: packet loss
 			// TODO: bandwidth in/out. Could do per packet type (4)
 
+			Connection2(IPv4Address addr) : addr{addr} {
+			}
+
+			const auto& address() const { return addr; }
+
+			// TODO: doc
+			void recv(const Packet2& pkt, int32 sz) {
+				rdat.first = pkt.head;
+				rdat.last = rdat.first + sz;
+				rdat.curr = pkt.body;
+				rdat.msgLast = rdat.curr;
+
+				// TODO: packet header info
+			}
+
+			// TODO: doc
+			const MessageHeader* recvNext() {
+				if (rdat.curr >= rdat.last) { return nullptr; }
+				ENGINE_DEBUG_ASSERT(rdat.curr == rdat.msgLast, "Incomplete read of network message");
+				const auto* hdr = read<MessageHeader>();
+				ENGINE_DEBUG_ASSERT(hdr->size <= MAX_MESSAGE_SIZE2, "Invalid network message length");
+				rdat.msgLast = rdat.curr + hdr->size;
+				return hdr;
+			}
+
+			/**
+			 * The number of bytes remaining in the current recv message.
+			 */
+			auto recvMsgSize() const { return static_cast<int32>(rdat.msgLast - rdat.curr); }
+
+			/**
+			 * The number of byte reminaing in the current recv packet.
+			 */
+			auto recvSize() const { return static_cast<int32>(rdat.last - rdat.curr); }
+
+			/**
+			 * Reads a specific number of bytes from the current message.
+			 */
+			const void* read(size_t sz) {
+				ENGINE_DEBUG_ASSERT(rdat.curr + sz <= rdat.last, "Insufficient space remaining to read");
+				if (rdat.curr + sz > rdat.last) { return nullptr; }
+
+				const void* temp = rdat.curr;
+				rdat.curr += sz;
+				// TODO: bandwidth recv
+				return temp;
+			}
+			
+			/**
+			 * Reads an object from the current message.
+			 */
+			template<class T>
+			decltype(auto) read() {
+				if constexpr (std::is_same_v<T, char*> || std::is_same_v<T, const char*>) {
+					return reinterpret_cast<const char*>(read(strlen(rdat.curr) + 1));
+				} else {
+					return reinterpret_cast<const T*>(read(sizeof(T)));
+				}
+			}
+
 			void send(UDPSocket& sock) {
 				for (int32 i = 0; i < std::size(activePackets); ++i) {
-					PacketNode* p = activePackets[i];
-					if (!p) { continue; }
+					auto& p = activePackets[i];
 					while (p) {
 						auto& info = packetInfo[i];
 						p->packet.setSeqNum(info.nextSeq);
 						++info.nextSeq;
 
-						// TODO: send packet
-						const auto sz = p->packet.head - p->last;
-						sock.send(p->packet.head, sz, addr);
+						const auto sz = static_cast<int32>(p->last - p->packet.head);
+						if (sz > sizeof(p->packet.head)) {
+							ENGINE_LOG("Send: ", sz);
+							sock.send(p->packet.head, sz, addr);
+						}
 
-						auto old = p;
-						p = p->next;
-						old->next = pool;
-						pool = old;
+						NodePtr old = std::move(p);
+						p.swap(old->next);
+						old->next.swap(pool);
+						pool.swap(old);
 					}
 				}
 			}
-			
+
+			// TODO: writeBegin/writeEnd? name?
 			template<class C>
-			void beginMessage(MessageType type, const C&) {
+			void msgBegin(MessageType type, const C&) {
+				static_assert((std::is_same_v<C, Cs> || ...), "Invalid network connection channel");
+				// TODO: check that currNode is empty
+				ENGINE_DEBUG_ASSERT(currNode == nullptr, "Attempting to begin new message without ending the previous message.");
 				auto& node = getOrAllocPacket(C::flags);
 				currNode = &node;
+
+				// TODO: does this write to pkt.head? check
 				write(MessageHeader{
 					.type = type,
 					.channel = Channel::UNRELIABLE, // TODO: getChannelId<C>()
@@ -155,9 +241,10 @@ namespace Engine::Net {
 				});
 			}
 
-			void endMessage() {
+			void msgEnd() {
 				auto* head = reinterpret_cast<MessageHeader*>(currNode->curr);
-				head->size = currNode->size();
+				// TODO: size shouldnt include MessageHeader size
+				head->size = static_cast<decltype(head->size)>(currNode->size() - sizeof(*head));
 				currNode->curr = currNode->last;
 				currNode = nullptr;
 			}
@@ -166,7 +253,8 @@ namespace Engine::Net {
 			 * Writes a specific number of bytes to the current message.
 			 */
 			void write(const void* t, size_t sz) {
-				ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
+				//ENGINE_LOG("Write: ", sz); __debugbreak();
+				ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE2, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE2, " bytes.");
 
 				if (currNode->last + sz <= currNode->packet.body + sizeof(currNode->packet.body)) {
 					memcpy(currNode->last, t, sz);
@@ -176,7 +264,9 @@ namespace Engine::Net {
 					auto old = currNode;
 					currNode->next = getOrAllocPacketFromPool();
 					currNode = currNode->next.get();
-					write(old->curr, old->last - old->curr);
+					// TODO: set currNode ptrs? i think
+					puts("***************************************");
+					write(old->curr, old->size());
 					write(t, sz);
 					old->last = old->curr;
 				}
@@ -188,32 +278,30 @@ namespace Engine::Net {
 			template<class T>
 			void write(const T& t) { write(&t, sizeof(T)); };
 
-	};
-
-	// TODO: rm
-	struct MyChannel_1_Tag : Channel2<ChannelFlags::Reliable | ChannelFlags::Ordered> {} constexpr MyChannel_1;
-	struct MyChannel_2_Tag : Channel2<ChannelFlags::Reliable | ChannelFlags::Ordered> {} constexpr MyChannel_2;
-	using MyConnection = Connection2<MyChannel_1_Tag, MyChannel_2_Tag>;
-
-
-	class Connection {
-		public:
-			PacketReader reader;
-			PacketWriter writer;
-			Clock::TimePoint lastMessageTime;
-			const Clock::TimePoint connectTime;
-
-		public:
-			Connection(UDPSocket& sock, IPv4Address addr = {}, Clock::TimePoint lastMessageTime = {});
-			Connection(const Connection&) = delete;
-			Connection(const Connection&&) = delete;
-
-			void writeRecvAcks(Channel ch);
-
 			/**
-			 * Gets the most recently associated address.
-			 * Set from either #reset or #recv.
+			 * Writes a string to the current message.
 			 */
-			IPv4Address address() const;
+			void write(const char* t) { write(t, strlen(t) + 1); }
 	};
+
+	//class Connection {
+	//	public:
+	//		PacketReader reader;
+	//		PacketWriter writer;
+	//		Clock::TimePoint lastMessageTime;
+	//		const Clock::TimePoint connectTime;
+	//
+	//	public:
+	//		Connection(UDPSocket& sock, IPv4Address addr = {}, Clock::TimePoint lastMessageTime = {});
+	//		Connection(const Connection&) = delete;
+	//		Connection(const Connection&&) = delete;
+	//
+	//		void writeRecvAcks(Channel ch);
+	//
+	//		/**
+	//		 * Gets the most recently associated address.
+	//		 * Set from either #reset or #recv.
+	//		 */
+	//		IPv4Address address() const;
+	//};
 }

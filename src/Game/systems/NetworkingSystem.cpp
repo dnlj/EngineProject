@@ -50,7 +50,7 @@ namespace {
 	};
 
 	// TODO: figure out a good pattern
-	constexpr uint8 DISCOVER_SERVER_DATA[Engine::Net::MAX_MESSAGE_SIZE] = {
+	constexpr uint8 DISCOVER_SERVER_DATA[Engine::Net::MAX_MESSAGE_SIZE2] = {
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
@@ -82,12 +82,12 @@ namespace {
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
-		0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
+		0x00, 0x11,
 	};
 }
 
 
-#define HandleMessageDef(MsgType) template<> void NetworkingSystem::handleMessageType<MsgType>(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt)
+#define HandleMessageDef(MsgType) template<> void NetworkingSystem::handleMessageType<MsgType>(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt)
 namespace Game {
 	HandleMessageDef(MessageType::UNKNOWN) {
 	}
@@ -97,16 +97,17 @@ namespace Game {
 
 		// TODO: rate limit per ip (longer if invalid packet)
 
-		if (from.reader.size() == size && !memcmp(from.reader.read(size), DISCOVER_SERVER_DATA, size)) {
-			from.writer.next(MessageType::SERVER_INFO, Engine::Net::Channel::UNRELIABLE);
-			from.writer.write("This is the name of the server");
+		if (from.recvMsgSize() == size && !memcmp(from.read(size), DISCOVER_SERVER_DATA, size)) {
+			from.msgBegin(MessageType::SERVER_INFO, General_UU);
+			from.write("This is the name of the server");
+			from.msgEnd();
 		}
 	}
 	
 	HandleMessageDef(MessageType::SERVER_INFO) {
 		#if ENGINE_CLIENT
 			auto& info = servers[from.address()];
-			info.name = from.reader.read<char*>();
+			info.name = from.read<char*>();
 			info.lastUpdate = Engine::Clock::now();
 		#endif
 	}
@@ -114,21 +115,23 @@ namespace Game {
 	HandleMessageDef(MessageType::CONNECT) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
 		ENGINE_LOG("MessageType::CONNECT from ", from.address());
-		auto& [ent, conn] = addConnection(from.address());
+		auto& [ent, conn] = addConnection2(from.address());
+		addPlayer(ent);
 
-		const auto* tick = from.reader.read<Engine::ECS::Tick>();
+		const auto* tick = from.read<Engine::ECS::Tick>();
 
-		conn.writer.next(MessageType::CONNECT_CONFIRM, Engine::Net::Channel::RELIABLE);
-		conn.writer.write(ent);
-		conn.writer.write(world.getTick());
-		conn.writer.write(*tick);
-		conn.writer.send();
+		conn.msgBegin(MessageType::CONNECT_CONFIRM, General_RU);
+		conn.write(ent);
+		conn.write(world.getTick());
+		conn.write(*tick);
+		conn.msgEnd();
+		// TODO: conn.writer.send();
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CONFIRM) {
-		auto* remote = from.reader.read<Engine::ECS::Entity>();
-		auto* rtick = from.reader.read<Engine::ECS::Tick>();
-		auto* ltick = from.reader.read<Engine::ECS::Tick>();
+		auto* remote = from.read<Engine::ECS::Entity>();
+		auto* rtick = from.read<Engine::ECS::Tick>();
+		auto* ltick = from.read<Engine::ECS::Tick>();
 
 		if (!remote) {
 			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
@@ -147,13 +150,12 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::PING) {
-		if (*from.reader.read<bool>()) {
+		// TODO: nullptr check
+		if (*from.read<bool>()) {
 			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
-			if (from.writer.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
-				from.writer.write(false);
-			} else {
-				ENGINE_WARN("TODO: how to handle unsendable messages");
-			}
+			from.msgBegin(MessageType::PING, General_RU);
+			from.write(false);
+			from.msgEnd();
 		} else {
 			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
 		}
@@ -161,7 +163,7 @@ namespace Game {
 	
 	HandleMessageDef(MessageType::ECS_ENT_CREATE) {
 		// TODO: this message should be client only
-		auto* remote = from.reader.read<Engine::ECS::Entity>();
+		auto* remote = from.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
 
 		auto& local = entToLocal[*remote];
@@ -179,7 +181,7 @@ namespace Game {
 
 	HandleMessageDef(MessageType::ECS_ENT_DESTROY) {
 		// TODO: this message should be client only
-		auto* remote = from.reader.read<Engine::ECS::Entity>();
+		auto* remote = from.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
 		auto found = entToLocal.find(*remote);
 		if (found != entToLocal.end()) {
@@ -190,8 +192,8 @@ namespace Game {
 
 	HandleMessageDef(MessageType::ECS_COMP_ADD) {
 		// TODO: this message should be client only
-		const auto* remote = from.reader.read<Engine::ECS::Entity>();
-		const auto* cid = from.reader.read<Engine::ECS::ComponentId>();
+		const auto* remote = from.read<Engine::ECS::Entity>();
+		const auto* cid = from.read<Engine::ECS::ComponentId>();
 		if (!remote || !cid) { return; }
 
 		auto found = entToLocal.find(*remote);
@@ -202,7 +204,7 @@ namespace Game {
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
 					auto& comp = world.addComponent<C>(local);
-					comp.netFromInit(engine, world, local, from.reader);
+					comp.netFromInit(engine, world, local, from);
 				}
 			} else {
 				ENGINE_WARN("Attemping to network non-network component");
@@ -212,8 +214,8 @@ namespace Game {
 
 	HandleMessageDef(MessageType::ECS_COMP_ALWAYS) {
 		// TODO: this message should be client only
-		const auto* remote = from.reader.read<Engine::ECS::Entity>();
-		const auto* cid = from.reader.read<Engine::ECS::ComponentId>();
+		const auto* remote = from.read<Engine::ECS::Entity>();
+		const auto* cid = from.read<Engine::ECS::ComponentId>();
 		if (!remote || !cid) { return; }
 
 		auto found = entToLocal.find(*remote);
@@ -224,7 +226,7 @@ namespace Game {
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (world.hasComponent<C>(local)) {
-					// TODO: re-enable - world.getComponent<C>(local).netFrom(from.reader);
+					world.getComponent<C>(local).netFrom(from);
 				}
 			} else {
 				ENGINE_WARN("Attemping to network non-network component");
@@ -234,8 +236,8 @@ namespace Game {
 
 	HandleMessageDef(MessageType::ECS_FLAG) {
 		// TODO: this message should be client only
-		const auto remote = from.reader.read<Engine::ECS::Entity>();
-		const auto flags = from.reader.read<Engine::ECS::ComponentBitset>();
+		const auto remote = from.read<Engine::ECS::Entity>();
+		const auto flags = from.read<Engine::ECS::ComponentBitset>();
 		if (!remote || !flags) { return; }
 
 		auto found = entToLocal.find(*remote);
@@ -272,16 +274,16 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ACK) {
-		const auto& chan = *from.reader.read<Engine::Net::Channel>();
-		const auto& next = *from.reader.read<Engine::Net::SequenceNumber>();
-		const auto& acks = *from.reader.read<uint64>();
+		const auto& chan = *from.read<Engine::Net::Channel>();
+		const auto& next = *from.read<Engine::Net::SequenceNumber>();
+		const auto& acks = *from.read<uint64>();
 
 		if (chan > Engine::Net::Channel::ORDERED) {
 			ENGINE_WARN("Received ACK message for invalid channel ", static_cast<int32>(head.channel));
 			return;
 		}
 
-		from.writer.updateSentAcks(chan, next, acks);
+		// TODO: from.writer.updateSentAcks(chan, next, acks);
 	}
 
 	HandleMessageDef(MessageType::TEST) {
@@ -294,7 +296,6 @@ namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
 		, socket{ENGINE_SERVER ? *engine.commandLineArgs.get<uint16>("port") : 0}
-		, anyConn{socket}
 		, connFilter{world.getFilterFor<ConnectionComponent>()}
 		, group{*engine.commandLineArgs.get<Engine::Net::IPv4Address>("group")} {
 
@@ -310,6 +311,22 @@ namespace Game {
 	void NetworkingSystem::setup() {
 	}
 
+	
+	auto NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) -> AddConnRes {
+		Connection* conn;
+		Engine::ECS::Entity ent;
+		const auto found = ipToPlayer.find(group);
+		if (found == ipToPlayer.end()) {
+			auto& [e, c] = addConnection2(group);
+			ent = e;
+			conn = &c;
+		} else {
+			ent = found->second;
+			conn = world.getComponent<ConnectionComponent>(ent).conn.get();
+		}
+		return {ent, *conn};
+	}
+
 	void NetworkingSystem::broadcastDiscover() {
 		#if ENGINE_CLIENT
 			const auto now = Engine::Clock::now();
@@ -319,10 +336,12 @@ namespace Game {
 				}
 			}
 
-			anyConn.writer.addr = group;
-			anyConn.writer.next(MessageType::DISCOVER_SERVER, Engine::Net::Channel::UNRELIABLE);
-			anyConn.writer.write(DISCOVER_SERVER_DATA);
-			anyConn.writer.flush(); // TODO: test if getting on other systems
+			auto& [ent, conn] = getOrCreateConnection(group);
+			conn.msgBegin(MessageType::DISCOVER_SERVER, General_UU);
+			conn.write(DISCOVER_SERVER_DATA);
+			conn.msgEnd();
+
+			// TODO: impl - conn.flush(); // TODO: test if getting on other systems
 		#endif
 	}
 
@@ -332,27 +351,14 @@ namespace Game {
 		// Recv messages
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
-			auto found = ipToPlayer.find(address);
-			Engine::Net::Connection* conn;
-			Engine::ECS::Entity ent;
+			ENGINE_LOG("RECV SZ: ", sz);
+			auto& [ent, conn] = getOrCreateConnection(address);
+			conn.recv(packet, sz);
 
-			if (found != ipToPlayer.end()) {
-				ent = found->second;
-				conn = &*world.getComponent<ConnectionComponent>(ent).conn;
-				conn->lastMessageTime = now;
-			} else {
-				ent = Engine::ECS::INVALID_ENTITY;
-				anyConn.writer.flush();
-				anyConn.writer.addr = address;
-				conn = &anyConn;
-			}
-
-			sz -= sizeof(Engine::Net::PacketHeader);
-			char* start = reinterpret_cast<char*>(&packet.data);
-			conn->reader.set(start, start + sz);
-
-			while (conn->reader.next()) {
-				dispatchMessage(ent, *conn);
+			const Engine::Net::MessageHeader* hdr; 
+			while (hdr = conn.recvNext()) {
+				puts("disp");
+				dispatchMessage(ent, conn, hdr);
 			}
 		}
 
@@ -366,33 +372,34 @@ namespace Game {
 			if constexpr (ENGINE_CLIENT) { runClient(); }
 
 			// Timeout
-			for (auto& ply : connFilter) {
-				auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-				const auto diff = now - conn.lastMessageTime;
-				if (diff > timeout) {
-					std::cout << "Timeout: " << ply << "\n";
-					disconnect(ply);
-					break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
-				}
-			}
+			// TODO: impl
+			//for (auto& ply : connFilter) {
+			//	auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+			//	const auto diff = now - conn.lastMessageTime;
+			//	if (diff > timeout) {
+			//		std::cout << "Timeout: " << ply << "\n";
+			//		disconnect(ply);
+			//		break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
+			//	}
+			//}
 		}
 
 		// Send Ack messages & unacked
-		anyConn.writer.flush();
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
-			for (Engine::Net::Channel ch{0}; ch <= Engine::Net::Channel::ORDERED; ++ch) {
-				// TODO: how frequently should we ack? Should atleast pit a timer on it even if its faster than normal net update. Dont want tied to fps.
-				conn.writer.next(MessageType::ACK, Engine::Net::Channel::UNRELIABLE);
-				conn.writeRecvAcks(ch);
+			// TODO: impl
+			//for (Engine::Net::Channel ch{0}; ch <= Engine::Net::Channel::ORDERED; ++ch) {
+			//	// TODO: how frequently should we ack? Should atleast pit a timer on it even if its faster than normal net update. Dont want tied to fps.
+			//	conn.writer.next(MessageType::ACK, Engine::Net::Channel::UNRELIABLE);
+			//	conn.writeRecvAcks(ch);
+			//
+			//	if (shouldUpdate) {
+			//		conn.writer.writeUnacked(ch);
+			//	}
+			//}
 
-				if (shouldUpdate) {
-					conn.writer.writeUnacked(ch);
-				}
-			}
-
-			conn.writer.flush();
+			conn.send(socket);
 		}
 	}
 
@@ -413,8 +420,9 @@ namespace Game {
 
 			for (const auto& pair : neighComp.addedNeighbors) {
 				const auto& ent = pair.first;
-				conn.writer.next(MessageType::ECS_ENT_CREATE, Engine::Net::Channel::ORDERED);
-				conn.writer.write(ent);
+				conn.msgBegin(MessageType::ECS_ENT_CREATE, General_RO);
+				conn.write(ent);
+				conn.msgEnd();
 
 				ForEachIn<ComponentsSet>::call([&]<class C>() {
 					if constexpr (IsNetworkedComponent<C>) {
@@ -423,17 +431,19 @@ namespace Game {
 						auto& comp = world.getComponent<C>(ent);
 						if (comp.netRepl() == Engine::Net::Replication::NONE) { return; }
 
-						conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
-						conn.writer.write(ent);
-						conn.writer.write(world.getComponentId<C>());
+						conn.msgBegin(MessageType::ECS_COMP_ADD, General_RO);
+						conn.write(ent);
+						conn.write(world.getComponentId<C>());
+						conn.msgEnd();
 						comp.netToInit(engine, world, ent, conn.writer);
 					}
 				});
 			}
 
 			for (const auto& pair : neighComp.removedNeighbors) {
-				conn.writer.next(MessageType::ECS_ENT_DESTROY, Engine::Net::Channel::ORDERED);
-				conn.writer.write(pair.first);
+				conn.msgBegin(MessageType::ECS_ENT_DESTROY, General_RO);
+				conn.write(pair.first);
+				conn.msgEnd();
 			}
 
 			for (const auto& pair : neighComp.currentNeighbors) {
@@ -462,7 +472,7 @@ namespace Game {
 						} else { // Component Updated
 							// TODO: check if comp updated
 							if (repl == Engine::Net::Replication::ALWAYS) {
-								conn.writer.next(MessageType::ECS_COMP_ALWAYS, Engine::Net::Channel::UNRELIABLE);
+								conn.writer.next(MessageType::ECS_COMP_ALWAYS, General_UU);
 								conn.writer.write(ent);
 								conn.writer.write(cid);
 								comp.netTo(conn.writer);
@@ -480,9 +490,10 @@ namespace Game {
 
 				if (flagComps) {
 					// TODO: we shouldnt have had to change the filters on all those systems because we are using ordered... Look into this.
-					conn.writer.next(MessageType::ECS_FLAG, Engine::Net::Channel::ORDERED);
-					conn.writer.write(ent);
-					conn.writer.write(flagComps);
+					conn.msgBegin(MessageType::ECS_FLAG, General_RO);
+					conn.write(ent);
+					conn.write(flagComps);
+					conn.msgEnd();
 				}
 			}
 		}
@@ -498,18 +509,9 @@ namespace Game {
 
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-			if (conn.writer.next(MessageType::PING, Engine::Net::Channel::RELIABLE)) {
-				conn.writer.write(true);
-			} else {
-				ENGINE_WARN("TODO: how to handle unsendable messages");
-			}
-
-			{ // TODO: rm - testing
-				auto& conn = world.getComponent<ConnectionComponent>(ply).conn2;
-				conn.beginMessage(MessageType::PING, TestChannel1);
-				conn.write(1234);
-				conn.endMessage();
-			}
+			conn.msgBegin(MessageType::PING, General_RU);
+			conn.write(true);
+			conn.msgEnd();
 		}
 	}
 
@@ -518,18 +520,23 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		auto& [ent, conn] = addConnection(addr);
-		conn.writer.next(MessageType::CONNECT, Engine::Net::Channel::UNRELIABLE);
-		conn.writer.write(world.getTick());
-		conn.writer.flush();
+		auto& [ent, conn] = addConnection2(addr);
+		conn.msgBegin(MessageType::CONNECT, General_UU);
+		conn.write(world.getTick());
+		conn.msgEnd();
+		// TODO: impl - conn.flush();
 	}
 
-	auto NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) -> AddConnRes {
-		// TODO: i feel like this should be handled elsewhere. Where?
+	auto NetworkingSystem::addConnection2(const Engine::Net::IPv4Address& addr) -> AddConnRes {
 		auto& ent = world.createEntity();
 		ipToPlayer.emplace(addr, ent);
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
-		connComp.conn = std::make_unique<Engine::Net::Connection>(socket, addr, Engine::Clock::now());
+		connComp.conn = std::make_unique<Connection>(addr);
+		return {ent, *connComp.conn};
+	}
+
+	void NetworkingSystem::addPlayer(const Engine::ECS::Entity ent) {
+		// TODO: i feel like this should be handled elsewhere. Where?
 
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
@@ -547,8 +554,6 @@ namespace Game {
 		world.addComponent<ActionComponent>(ent);
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);
-
-		return {ent, *connComp.conn};
 	}
 
 	void NetworkingSystem::disconnect(Engine::ECS::Entity ent) {
@@ -559,52 +564,54 @@ namespace Game {
 		auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 		const auto addr = conn.address();
 		ENGINE_LOG("Disconnecting ", ent, " ", addr);
-		conn.writer.flush();
-		conn.writer.next(MessageType::DISCONNECT, Engine::Net::Channel::UNRELIABLE);
-		conn.writer.flush();
+		// TODO: really this should be a reliable message with timeout
+		conn.msgBegin(MessageType::DISCONNECT, General_UU);
+		conn.msgEnd();
 
 		ipToPlayer.erase(addr);
 		world.deferedDestroyEntity(ent);
 	}
 
-	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from) {
+	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader* hdr) {
 		constexpr auto msgToStr = [](const Engine::Net::MessageType& type) -> const char* {
 			#define X(name) if (type == MessageType::name) { return #name; }
 			#include <Game/MessageType.xpp>
 			return "UNKNOWN";
 		};
 
-		const auto* head = from.reader.read<Engine::Net::MessageHeader>();
-		from.reader.setMessageSize(head->size);
+		//const auto* head = from.read<Engine::Net::MessageHeader>();
+		//from.setMessageSize(head->size);
 		//ENGINE_LOG("Read message: ", msgToStr(head->type), " ", head->channel, " ", head->size);
-		ENGINE_DEBUG_ASSERT(head != nullptr);
+		//ENGINE_DEBUG_ASSERT(head != nullptr);
 
 		// TODO: from unconnected players we only want to process connect and discover messages
-		if (head->channel <= Engine::Net::Channel::ORDERED) {
-			if (!from.reader.updateRecvAcks(*head)) {
-				from.reader.read(head->size);
-				return;
-			}
-		}
+		// TODO: impl
+		//if (head->channel <= Engine::Net::Channel::ORDERED) {
+		//	if (!from.reader.updateRecvAcks(*head)) {
+		//		from.reader.read(head->size);
+		//		return;
+		//	}
+		//}
 
-		switch(head->type) {
-			#define X(name) case MessageType::name: { handleMessageType<MessageType::name>(from, *head, ent); break; };
+		switch(hdr->type) {
+			#define X(name) case MessageType::name: { handleMessageType<MessageType::name>(from, *hdr, ent); break; };
 			#include <Game/MessageType.xpp>
 			default: {
-				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(head->type));
+				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(hdr->type));
 			}
 		}
 
 		if constexpr (ENGINE_DEBUG) {
-			const byte* stop = reinterpret_cast<const byte*>(head) + sizeof(*head) + head->size;
-			const byte* curr = static_cast<const byte*>(from.reader.read(0));
+			const byte* stop = reinterpret_cast<const byte*>(hdr) + sizeof(*hdr) + hdr->size;
+			const byte* curr = static_cast<const byte*>(from.read(0));
 			const auto rem = stop - curr;
 
+			// TODO: we should probably abort the whole packet if there is an error.
 			if (rem > 0) {
-				ENGINE_WARN("Incomplete read of network message ", msgToStr(head->type), " (", rem, " bytes remaining). Ignoring.");
-				from.reader.read(rem);
+				ENGINE_WARN("Incomplete read of network message ", msgToStr(hdr->type), " (", rem, " bytes remaining). Ignoring.");
+				from.read(rem);
 			} else if (rem < 0) {
-				ENGINE_WARN("Read past end of network messge type ", msgToStr(head->type)," (", rem, " bytes remaining).");
+				ENGINE_WARN("Read past end of network messge type ", msgToStr(hdr->type)," (", rem, " bytes remaining).");
 			}
 		}
 	}

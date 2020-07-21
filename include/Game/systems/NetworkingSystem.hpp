@@ -36,8 +36,7 @@ namespace Game {
 			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
 			Engine::Net::IPv4Address address;	
-			Engine::Net::Packet packet = {};
-			Engine::Net::Connection anyConn; // Used for unconnected messages
+			Engine::Net::Packet2 packet = {};
 			const Engine::Net::IPv4Address group;
 			Engine::Clock::TimePoint now = {};
 			Engine::Clock::TimePoint lastUpdate = {};
@@ -59,17 +58,21 @@ namespace Game {
 		private:
 			struct AddConnRes {
 				Engine::ECS::Entity ent;
-				Engine::Net::Connection& conn;
+				Connection& conn;
 			};
-			AddConnRes addConnection(const Engine::Net::IPv4Address& addr);
+			AddConnRes addConnection2(const Engine::Net::IPv4Address& addr);
+			void addPlayer(const Engine::ECS::Entity ent);
 
-			void dispatchMessage(Engine::ECS::Entity ent, Engine::Net::Connection& from);
+			AddConnRes getOrCreateConnection(const Engine::Net::IPv4Address& addr);
+
+
+			void dispatchMessage(Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader* hdr);
 			void updateNeighbors();
 			void runServer();
 			void runClient();
 
 			template<MessageType::Type Type>
-			void handleMessageType(Engine::Net::Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+			void handleMessageType(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
 				static_assert(Type != Type, "Unhandled network message type.");
 			};
 	};
