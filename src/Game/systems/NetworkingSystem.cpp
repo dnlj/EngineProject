@@ -15,17 +15,16 @@ namespace {
 	template<class T>
 	concept IsNetworkedComponent = requires (
 			T t,
-			Engine::Net::PacketWriter& writer,
-			Engine::Net::PacketReader& reader,
+			Game::Connection& conn,
 			Engine::EngineInstance& engine,
 			Game::World& world,
 			Engine::ECS::Entity ent
 		) {
 		Engine::Net::Replication{t.netRepl()};
-		t.netTo(writer); // TODO: only call if exists?
-		t.netToInit(engine, world, ent, writer); // TODO: only call if exists?
-		t.netFrom(reader); // TODO: only call if exists?
-		t.netFromInit(engine, world, ent, reader); // TODO: only call if exists?
+		t.netTo(conn); // TODO: only call if exists?
+		t.netToInit(engine, world, ent, conn); // TODO: only call if exists?
+		t.netFrom(conn); // TODO: only call if exists?
+		t.netFromInit(engine, world, ent, conn); // TODO: only call if exists?
 	};
 
 	// TODO: would probably be easier to just have a base class instead of all these type traits
@@ -124,7 +123,6 @@ namespace Game {
 		from.write(world.getTick());
 		from.write(*tick);
 		from.msgEnd();
-		// TODO: conn.writer.send();
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CONFIRM) {
@@ -207,6 +205,7 @@ namespace Game {
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
 					auto& comp = world.addComponent<C>(local);
+					ENGINE_WARN("**** ECS_COMP_ADD ", *cid, " ****");
 					comp.netFromInit(engine, world, local, from);
 				}
 			} else {
@@ -238,6 +237,7 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_FLAG) {
+		puts("FLAGS FLAGS FLAGS FLAGS FLAGS FLAGS FLAGS FLAGS FLAGS ");
 		// TODO: this message should be client only
 		const auto remote = from.read<Engine::ECS::Entity>();
 		const auto flags = from.read<Engine::ECS::ComponentBitset>();
@@ -344,8 +344,6 @@ namespace Game {
 			conn.msgBegin(MessageType::DISCOVER_SERVER, General_UU);
 			conn.write(DISCOVER_SERVER_DATA);
 			conn.msgEnd();
-
-			// TODO: impl - conn.flush(); // TODO: test if getting on other systems
 		#endif
 	}
 
@@ -356,7 +354,7 @@ namespace Game {
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
 			auto& [ent, conn] = getOrCreateConnection(address);
-			conn.recv(packet, sz);
+			conn.recv(packet, sz, now);
 
 			const Engine::Net::MessageHeader* hdr; 
 			while (hdr = conn.recvNext()) {
@@ -374,16 +372,15 @@ namespace Game {
 			if constexpr (ENGINE_CLIENT) { runClient(); }
 
 			// Timeout
-			// TODO: impl
-			//for (auto& ply : connFilter) {
-			//	auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-			//	const auto diff = now - conn.lastMessageTime;
-			//	if (diff > timeout) {
-			//		std::cout << "Timeout: " << ply << "\n";
-			//		disconnect(ply);
-			//		break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
-			//	}
-			//}
+			for (auto& ent : connFilter) {
+				auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
+				const auto diff = now - conn.recvTime();
+				if (diff > timeout) {
+					ENGINE_LOG("Connection for ", ent ," (", conn.address(), ") timed out.");
+					disconnect(ent);
+					break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
+				}
+			}
 		}
 
 		// Send Ack messages & unacked
@@ -436,8 +433,8 @@ namespace Game {
 						conn.msgBegin(MessageType::ECS_COMP_ADD, General_RO);
 						conn.write(ent);
 						conn.write(world.getComponentId<C>());
+						comp.netToInit(engine, world, ent, conn);
 						conn.msgEnd();
-						comp.netToInit(engine, world, ent, conn.writer);
 					}
 				});
 			}
@@ -474,10 +471,11 @@ namespace Game {
 						} else { // Component Updated
 							// TODO: check if comp updated
 							if (repl == Engine::Net::Replication::ALWAYS) {
-								conn.writer.next(MessageType::ECS_COMP_ALWAYS, General_UU);
-								conn.writer.write(ent);
-								conn.writer.write(cid);
-								comp.netTo(conn.writer);
+								conn.msgBegin(MessageType::ECS_COMP_ALWAYS, General_UU);
+								conn.write(ent);
+								conn.write(cid);
+								comp.netTo(conn);
+								conn.msgEnd();
 							} else if (repl == Engine::Net::Replication::UPDATE) {
 								// TODO: impl
 							}
@@ -530,7 +528,6 @@ namespace Game {
 		conn.msgBegin(MessageType::CONNECT, General_UU);
 		conn.write(world.getTick());
 		conn.msgEnd();
-		// TODO: impl - conn.flush();
 	}
 
 	auto NetworkingSystem::addConnection2(const Engine::Net::IPv4Address& addr) -> AddConnRes {
@@ -538,17 +535,18 @@ namespace Game {
 		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
 		ipToPlayer.emplace(addr, ent);
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
-		connComp.conn = std::make_unique<Connection>(addr);
+		connComp.conn = std::make_unique<Connection>(addr, now);
 		return {ent, *connComp.conn};
 	}
 
 	void NetworkingSystem::addPlayer(const Engine::ECS::Entity ent) {
 		// TODO: i feel like this should be handled elsewhere. Where?
 
+		ENGINE_INFO("Add player: ", ent, " ", world.hasComponent<PlayerFlag>(ent));
+
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
 			world.setNetworked(ent, true);
-			ENGINE_INFO("Add player: ", ent, " ", world.hasComponent<PlayerFlag>(ent));
 			world.addComponent<PlayerFlag>(ent);
 			world.addComponent<NeighborsComponent>(ent);
 			world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");

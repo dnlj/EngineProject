@@ -94,8 +94,12 @@ namespace Engine::Net {
 			NodePtr activePackets[4];
 			NodePtr pool;
 			PacketNode* currNode = nullptr;
+			Engine::Clock::TimePoint lastRecvTime;
 
 			struct {
+				/** The time the message was received */
+				Engine::Clock::TimePoint time;
+
 				/** The first byte in the recv packet */
 				const byte* first;
 
@@ -142,13 +146,15 @@ namespace Engine::Net {
 			// TODO: packet loss
 			// TODO: bandwidth in/out. Could do per packet type (4)
 
-			Connection2(IPv4Address addr) : addr{addr} {
+			Connection2(IPv4Address addr, Engine::Clock::TimePoint time) : addr{addr} {
+				rdat.time = time;
 			}
 
 			const auto& address() const { return addr; }
 
 			// TODO: doc
-			void recv(const Packet2& pkt, int32 sz) {
+			void recv(const Packet2& pkt, int32 sz, Engine::Clock::TimePoint time) {
+				rdat.time = time;
 				rdat.first = pkt.head;
 				rdat.last = rdat.first + sz;
 				rdat.curr = pkt.body;
@@ -156,6 +162,8 @@ namespace Engine::Net {
 
 				// TODO: packet header info
 			}
+
+			auto recvTime() const { return rdat.time; }
 
 			// TODO: doc
 			const MessageHeader* recvNext() {
@@ -250,6 +258,7 @@ namespace Engine::Net {
 			 * Writes a specific number of bytes to the current message.
 			 */
 			void write(const void* t, size_t sz) {
+				ENGINE_DEBUG_ASSERT(currNode != nullptr, "No network message active.");
 				//ENGINE_LOG("Write: ", sz); __debugbreak();
 				ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE2, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE2, " bytes.");
 
@@ -262,7 +271,7 @@ namespace Engine::Net {
 					currNode->next = getOrAllocPacketFromPool();
 					currNode = currNode->next.get();
 					// TODO: set currNode ptrs? i think
-					puts("***************************************");
+					ENGINE_WARN("Network message rollover. This code is untested.");
 					write(old->curr, old->size());
 					write(t, sz);
 					old->last = old->curr;
@@ -280,25 +289,4 @@ namespace Engine::Net {
 			 */
 			void write(const char* t) { write(t, strlen(t) + 1); }
 	};
-
-	//class Connection {
-	//	public:
-	//		PacketReader reader;
-	//		PacketWriter writer;
-	//		Clock::TimePoint lastMessageTime;
-	//		const Clock::TimePoint connectTime;
-	//
-	//	public:
-	//		Connection(UDPSocket& sock, IPv4Address addr = {}, Clock::TimePoint lastMessageTime = {});
-	//		Connection(const Connection&) = delete;
-	//		Connection(const Connection&&) = delete;
-	//
-	//		void writeRecvAcks(Channel ch);
-	//
-	//		/**
-	//		 * Gets the most recently associated address.
-	//		 * Set from either #reset or #recv.
-	//		 */
-	//		IPv4Address address() const;
-	//};
 }
