@@ -23,7 +23,6 @@ namespace Game {
 
 			void netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
 				const auto* tex = conn.read<Engine::Texture::Id>();
-				ENGINE_WARN("**** SPRITE *********************");
 				if (!tex) { return; }
 				texture = engine.textureManager.get(*tex);
 			}

@@ -13,18 +13,8 @@
 
 namespace {
 	template<class T>
-	concept IsNetworkedComponent = requires (
-			T t,
-			Game::Connection& conn,
-			Engine::EngineInstance& engine,
-			Game::World& world,
-			Engine::ECS::Entity ent
-		) {
+	concept IsNetworkedComponent = requires (T t) {
 		Engine::Net::Replication{t.netRepl()};
-		t.netTo(conn); // TODO: only call if exists?
-		t.netToInit(engine, world, ent, conn); // TODO: only call if exists?
-		t.netFrom(conn); // TODO: only call if exists?
-		t.netFromInit(engine, world, ent, conn); // TODO: only call if exists?
 	};
 
 	// TODO: would probably be easier to just have a base class instead of all these type traits
@@ -205,7 +195,6 @@ namespace Game {
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
 					auto& comp = world.addComponent<C>(local);
-					ENGINE_WARN("**** ECS_COMP_ADD ", *cid, " ****");
 					comp.netFromInit(engine, world, local, from);
 				}
 			} else {
@@ -237,7 +226,6 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_FLAG) {
-		puts("FLAGS FLAGS FLAGS FLAGS FLAGS FLAGS FLAGS FLAGS FLAGS ");
 		// TODO: this message should be client only
 		const auto remote = from.read<Engine::ECS::Entity>();
 		const auto flags = from.read<Engine::ECS::ComponentBitset>();
@@ -425,6 +413,7 @@ namespace Game {
 
 				ForEachIn<ComponentsSet>::call([&]<class C>() {
 					if constexpr (IsNetworkedComponent<C>) {
+						ENGINE_LOG("IsNetworkedComponent ", world.getComponentId<C>());
 						if (!world.hasComponent<C>(ent)) { return; }
 
 						auto& comp = world.getComponent<C>(ent);
@@ -434,6 +423,7 @@ namespace Game {
 						conn.write(ent);
 						conn.write(world.getComponentId<C>());
 						comp.netToInit(engine, world, ent, conn);
+						// TODO: why sprite comp not being sent?
 						conn.msgEnd();
 					}
 				});
