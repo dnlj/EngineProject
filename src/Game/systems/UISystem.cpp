@@ -127,7 +127,7 @@ namespace Game {
 
 	void UISystem::ui_connect() {
 		auto& netSys = world.getSystem<Game::NetworkingSystem>();
-		if (netSys.connectionsCount()) { return; }
+		if (netSys.playerCount()) { return; }
 
 		auto& io = ImGui::GetIO();
 		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;

@@ -41,6 +41,7 @@ namespace Game {
 			} else if constexpr (ENGINE_SERVER) {
 				curr = stored;
 				auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
+				ENGINE_LOG("Send Action Server");
 				conn.msgBegin(MessageType::ACTION, General_UU);
 				conn.write(currTick);
 				conn.write(curr.recvTick);
@@ -63,12 +64,14 @@ namespace Game {
 
 	void ActionSystem::sendActions() {
 		for (const auto& ent : actionFilter) {
+			ENGINE_LOG("Send Action Client");
 			const auto& actComp = world.getComponent<ActionComponent>(ent);
 			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 			conn.msgBegin(MessageType::ACTION, General_UU);
 			conn.write(world.getTick());
 			conn.write(actComp.state);
 			conn.msgEnd();
+
 		}
 	}
 

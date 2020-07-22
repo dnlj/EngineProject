@@ -201,6 +201,7 @@ namespace Engine::ECS {
 	template<class Component, class... Args>
 	decltype(auto) WORLD_CLASS::addComponent(Entity ent, Args&&... args) {
 		constexpr auto cid = getComponentId<Component>();
+		ENGINE_DEBUG_ASSERT(!hasComponent<Component>(ent), "Attempting to add duplicate component (", cid ,") to ", ent);
 		compBitsets[ent.id].set(cid);
 		fm.onComponentAdded(ent, cid, compBitsets[ent.id]);
 
@@ -266,6 +267,7 @@ namespace Engine::ECS {
 		if constexpr (IsFlagComponent<Component>::value) {
 			return compBitsets[ent][getComponentId<Component>()];
 		} else {
+			ENGINE_DEBUG_ASSERT(hasComponent<Component>(ent), "Attempting to get a component that an entity doesn't have.");
 			return getComponentContainer<Component>()[ent];
 		}
 	}

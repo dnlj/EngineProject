@@ -32,6 +32,7 @@ namespace Game {
 			static constexpr auto timeout = std::chrono::milliseconds{10'000};
 			Engine::Net::UDPSocket socket;
 			EntityFilter& connFilter;
+			EntityFilter& plyFilter;
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> ipToPlayer;
 			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
@@ -52,6 +53,7 @@ namespace Game {
 			void broadcastDiscover(); // TODO: better way to handle messages
 			void run(float32 dt);
 			int32 connectionsCount() const;
+			int32 playerCount() const;
 			void connectTo(const Engine::Net::IPv4Address& addr);
 			void disconnect(Engine::ECS::Entity ent);
 

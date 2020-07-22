@@ -164,6 +164,8 @@ namespace Engine::Net {
 				const auto* hdr = read<MessageHeader>();
 				ENGINE_DEBUG_ASSERT(hdr->size <= MAX_MESSAGE_SIZE2, "Invalid network message length");
 				rdat.msgLast = rdat.curr + hdr->size;
+				// TODO: we seem to be receiving our own messages for some reason.
+				ENGINE_LOG("recvNext: ", (int)hdr->type, " ", (int)hdr->channel, " ", (int)hdr->size, " ", (int)hdr->sequence);
 				return hdr;
 			}
 
@@ -239,14 +241,15 @@ namespace Engine::Net {
 					.channel = Channel::UNRELIABLE, // TODO: getChannelId<C>()
 					.sequence = 0, // TODO: impl
 				});
+				ENGINE_LOG("Begin: ", (int)type, " ");
 			}
 
 			void msgEnd() {
 				auto* head = reinterpret_cast<MessageHeader*>(currNode->curr);
-				// TODO: size shouldnt include MessageHeader size
 				head->size = static_cast<decltype(head->size)>(currNode->size() - sizeof(*head));
 				currNode->curr = currNode->last;
 				currNode = nullptr;
+				ENGINE_LOG("End: ", (int)head->type, " ", (int)head->size);
 			}
 
 			/**

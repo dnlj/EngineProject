@@ -115,16 +115,15 @@ namespace Game {
 	HandleMessageDef(MessageType::CONNECT) {
 		// TODO: since messages arent reliable do connect/disconnect really make any sense?
 		ENGINE_LOG("MessageType::CONNECT from ", from.address());
-		auto& [ent, conn] = addConnection2(from.address());
-		addPlayer(ent);
+		addPlayer(fromEnt);
 
 		const auto* tick = from.read<Engine::ECS::Tick>();
 
-		conn.msgBegin(MessageType::CONNECT_CONFIRM, General_RU);
-		conn.write(ent);
-		conn.write(world.getTick());
-		conn.write(*tick);
-		conn.msgEnd();
+		from.msgBegin(MessageType::CONNECT_CONFIRM, General_RU);
+		from.write(fromEnt);
+		from.write(world.getTick());
+		from.write(*tick);
+		from.msgEnd();
 		// TODO: conn.writer.send();
 	}
 	
@@ -142,6 +141,10 @@ namespace Game {
 
 		entToLocal[*remote] = fromEnt;
 		ENGINE_LOG("Connection established. Remote: ", *remote, " Local: ", fromEnt);
+
+		if constexpr (ENGINE_CLIENT) {
+			addPlayer(fromEnt);
+		}
 	}
 
 	HandleMessageDef(MessageType::DISCONNECT) {
@@ -297,6 +300,7 @@ namespace Game {
 		: System{arg}
 		, socket{ENGINE_SERVER ? *engine.commandLineArgs.get<uint16>("port") : 0}
 		, connFilter{world.getFilterFor<ConnectionComponent>()}
+		, plyFilter{world.getFilterFor<PlayerFlag>()}
 		, group{*engine.commandLineArgs.get<Engine::Net::IPv4Address>("group")} {
 
 		ENGINE_LOG("Listening on port ", socket.getAddress().port);
@@ -315,9 +319,9 @@ namespace Game {
 	auto NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) -> AddConnRes {
 		Connection* conn;
 		Engine::ECS::Entity ent;
-		const auto found = ipToPlayer.find(group);
+		const auto found = ipToPlayer.find(addr);
 		if (found == ipToPlayer.end()) {
-			auto& [e, c] = addConnection2(group);
+			auto& [e, c] = addConnection2(addr);
 			ent = e;
 			conn = &c;
 		} else {
@@ -357,7 +361,6 @@ namespace Game {
 
 			const Engine::Net::MessageHeader* hdr; 
 			while (hdr = conn.recvNext()) {
-				puts("disp");
 				dispatchMessage(ent, conn, hdr);
 			}
 		}
@@ -409,7 +412,7 @@ namespace Game {
 			lastCompsBitsets.resize(world.getAllComponentBitsets().size());
 		}
 
-		for (auto& ply : connFilter) {
+		for (auto& ply : plyFilter) {
 			auto& neighComp = world.getComponent<NeighborsComponent>(ply);
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
@@ -507,7 +510,7 @@ namespace Game {
 		if (next > now) { return; }
 		next = now + std::chrono::seconds{1};
 
-		for (auto& ply : connFilter) {
+		for (auto& ply : plyFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			conn.msgBegin(MessageType::PING, General_RU);
 			conn.write(true);
@@ -519,8 +522,12 @@ namespace Game {
 		return static_cast<int32>(connFilter.size());
 	}
 
+	int32 NetworkingSystem::playerCount() const {
+		return static_cast<int32>(plyFilter.size());
+	}
+
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		auto& [ent, conn] = addConnection2(addr);
+		auto& [ent, conn] = getOrCreateConnection(addr);
 		conn.msgBegin(MessageType::CONNECT, General_UU);
 		conn.write(world.getTick());
 		conn.msgEnd();
@@ -529,6 +536,7 @@ namespace Game {
 
 	auto NetworkingSystem::addConnection2(const Engine::Net::IPv4Address& addr) -> AddConnRes {
 		auto& ent = world.createEntity();
+		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
 		ipToPlayer.emplace(addr, ent);
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
 		connComp.conn = std::make_unique<Connection>(addr);
@@ -541,14 +549,11 @@ namespace Game {
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
 			world.setNetworked(ent, true);
+			ENGINE_INFO("Add player: ", ent, " ", world.hasComponent<PlayerFlag>(ent));
 			world.addComponent<PlayerFlag>(ent);
 			world.addComponent<NeighborsComponent>(ent);
 			world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
 			world.addComponent<PhysicsComponent>(ent).setBody(physSys.createPhysicsCircle(ent));
-		}
-
-		if constexpr (ENGINE_CLIENT) {
-			ENGINE_DEBUG_ASSERT(ipToPlayer.size() == 1, "A Client should not be connected to more than one server.");
 		}
 
 		world.addComponent<ActionComponent>(ent);
@@ -617,7 +622,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::updateNeighbors() {
-		for (const auto ent : connFilter) {
+		for (const auto ent : plyFilter) {
 			auto& neighComp = world.getComponent<NeighborsComponent>(ent);
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			auto& added = neighComp.addedNeighbors;
