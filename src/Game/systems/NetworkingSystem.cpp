@@ -355,7 +355,6 @@ namespace Game {
 		// Recv messages
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
-			ENGINE_LOG("RECV SZ: ", sz);
 			auto& [ent, conn] = getOrCreateConnection(address);
 			conn.recv(packet, sz);
 

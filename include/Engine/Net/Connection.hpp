@@ -164,8 +164,6 @@ namespace Engine::Net {
 				const auto* hdr = read<MessageHeader>();
 				ENGINE_DEBUG_ASSERT(hdr->size <= MAX_MESSAGE_SIZE2, "Invalid network message length");
 				rdat.msgLast = rdat.curr + hdr->size;
-				// TODO: we seem to be receiving our own messages for some reason.
-				ENGINE_LOG("recvNext: ", (int)hdr->type, " ", (int)hdr->channel, " ", (int)hdr->size, " ", (int)hdr->sequence);
 				return hdr;
 			}
 
@@ -214,7 +212,6 @@ namespace Engine::Net {
 
 						const auto sz = static_cast<int32>(p->last - p->packet.head);
 						if (sz > sizeof(p->packet.head)) {
-							ENGINE_LOG("Send: ", sz);
 							sock.send(p->packet.head, sz, addr);
 						}
 
@@ -226,7 +223,6 @@ namespace Engine::Net {
 				}
 			}
 
-			// TODO: writeBegin/writeEnd? name?
 			template<class C>
 			void msgBegin(MessageType type, const C&) {
 				static_assert((std::is_same_v<C, Cs> || ...), "Invalid network connection channel");
@@ -241,7 +237,6 @@ namespace Engine::Net {
 					.channel = Channel::UNRELIABLE, // TODO: getChannelId<C>()
 					.sequence = 0, // TODO: impl
 				});
-				ENGINE_LOG("Begin: ", (int)type, " ");
 			}
 
 			void msgEnd() {
@@ -249,7 +244,6 @@ namespace Engine::Net {
 				head->size = static_cast<decltype(head->size)>(currNode->size() - sizeof(*head));
 				currNode->curr = currNode->last;
 				currNode = nullptr;
-				ENGINE_LOG("End: ", (int)head->type, " ", (int)head->size);
 			}
 
 			/**
