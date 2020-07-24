@@ -1,6 +1,7 @@
 // STD
 #include <set>
 #include <concepts>
+#include <iomanip>
 
 // Engine
 #include <Engine/Clock.hpp>
@@ -71,7 +72,7 @@ namespace {
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
-		0x00, 0x11,
+		0x00,
 	};
 }
 
@@ -142,13 +143,24 @@ namespace Game {
 
 	HandleMessageDef(MessageType::PING) {
 		// TODO: nullptr check
-		if (*from.read<bool>()) {
-			ENGINE_LOG("recv ping @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
-			from.msgBegin(MessageType::PING, General_RU);
-			from.write(false);
-			from.msgEnd();
+		const auto ping = *from.read<uint8>();
+		if (ping & 0x80) {
+			ENGINE_LOG("recv pong @ ",
+				std::fixed, std::setprecision(2),
+				Engine::Clock::now().time_since_epoch().count() / 1E9,
+				" from ", from.address(),
+				" ", static_cast<int32>(ping & 0x7F)
+			);
 		} else {
-			ENGINE_LOG("recv pong @ ", Engine::Clock::now().time_since_epoch().count() / 1E9, " from ", from.address());
+			ENGINE_LOG("recv ping @ ",
+				std::fixed, std::setprecision(2),
+				Engine::Clock::now().time_since_epoch().count() / 1E9,
+				" from ", from.address(),
+				" ", static_cast<int32>(ping)
+			);
+			from.msgBegin(MessageType::PING, General_RU);
+			from.write(static_cast<uint8>(ping | 0x80));
+			from.msgEnd();
 		}
 	}
 	
@@ -265,16 +277,14 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ACK) {
-		const auto& chan = *from.read<Engine::Net::Channel>();
-		const auto& next = *from.read<Engine::Net::SequenceNumber>();
-		const auto& acks = *from.read<uint64>();
+		const auto next = from.read<Engine::Net::SequenceNumber>();
+		const auto acks = from.read<Engine::Net::AckBitset>();
 
-		if (chan > Engine::Net::Channel::ORDERED) {
-			ENGINE_WARN("Received ACK message for invalid channel ", static_cast<int32>(head.channel));
-			return;
+		if (next && acks) {
+			from.updateSentAcks(*next, *acks);
+		} else {
+			ENGINE_WARN("Incorrect ACK network message.");
 		}
-
-		// TODO: from.writer.updateSentAcks(chan, next, acks);
 	}
 
 	HandleMessageDef(MessageType::TEST) {
@@ -342,13 +352,18 @@ namespace Game {
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
 			auto& [ent, conn] = getOrCreateConnection(address);
-			conn.recv(packet, sz, now);
+			if (!conn.recv(packet, sz, now)) {
+				ENGINE_WARN("**** Duplicate message! ", packet.getSeqNum()); // TODO: rm - for debugging
+				continue;
+			}
 
 			const Engine::Net::MessageHeader* hdr; 
 			while (hdr = conn.recvNext()) {
 				dispatchMessage(ent, conn, hdr);
 			}
 		}
+
+		// TODO: instead of sending all connections on every X. Send a smaller number every frame to distribute load.
 
 		// Send messages
 		// TODO: rate should be configurable somewhere
@@ -359,7 +374,6 @@ namespace Game {
 			if constexpr (ENGINE_SERVER) { runServer(); }
 			if constexpr (ENGINE_CLIENT) { runClient(); }
 
-			// Timeout
 			for (auto& ent : connFilter) {
 				auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 				const auto diff = now - conn.recvTime();
@@ -368,24 +382,20 @@ namespace Game {
 					disconnect(ent);
 					break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
 				}
+
+				conn.msgBegin(MessageType::ACK, General_UU);
+				conn.write(conn.getRecvNextAck());
+				conn.write(conn.getRecvAcks());
+				conn.msgEnd();
+
+				conn.sendUnacked(socket);
 			}
 		}
 
+		// TODO: why dont we just merge with loop above?
 		// Send Ack messages & unacked
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-
-			// TODO: impl
-			//for (Engine::Net::Channel ch{0}; ch <= Engine::Net::Channel::ORDERED; ++ch) {
-			//	// TODO: how frequently should we ack? Should atleast pit a timer on it even if its faster than normal net update. Dont want tied to fps.
-			//	conn.writer.next(MessageType::ACK, Engine::Net::Channel::UNRELIABLE);
-			//	conn.writeRecvAcks(ch);
-			//
-			//	if (shouldUpdate) {
-			//		conn.writer.writeUnacked(ch);
-			//	}
-			//}
-
 			conn.send(socket);
 		}
 	}
@@ -493,14 +503,15 @@ namespace Game {
 
 	
 	void NetworkingSystem::runClient() {
+		static uint8 ping = 0;
 		static auto next = now;
 		if (next > now) { return; }
-		next = now + std::chrono::seconds{1};
+		next = now + std::chrono::milliseconds{10};
 
 		for (auto& ply : plyFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			conn.msgBegin(MessageType::PING, General_RU);
-			conn.write(true);
+			conn.write(static_cast<uint8>(++ping & 0x7F));
 			conn.msgEnd();
 		}
 	}
