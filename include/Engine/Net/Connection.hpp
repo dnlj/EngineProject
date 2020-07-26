@@ -4,17 +4,14 @@
 #include <memory>
 
 // Engine
-// TODO: cleanup includes
 #include <Engine/Engine.hpp>
-#include <Engine/Net/AckData.hpp>
-#include <Engine/Net/IPv4Address.hpp>
 #include <Engine/Net/MessageHeader.hpp>
+#include <Engine/Net/IPv4Address.hpp>
+#include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Net/Net.hpp>
-#include <Engine/Net/PacketWriter.hpp>
-#include <Engine/Net/PacketReader.hpp>
-#include <Engine/Clock.hpp>
 #include <Engine/StaticVector.hpp>
 #include <Engine/Bitset.hpp>
+#include <Engine/Clock.hpp>
 
 
 namespace Engine::Net {
@@ -22,7 +19,7 @@ namespace Engine::Net {
 	using SeqNum = uint32;
 
 	constexpr inline int32 MAX_PACKET_SIZE = 512;
-	class Packet2 {
+	class Packet {
 		public:
 			// 2 bytes protocol
 			// 4 bytes seq num // TODO: look into seq num wrapping
@@ -43,8 +40,8 @@ namespace Engine::Net {
 			auto& getReliable() const { return *reinterpret_cast<const bool*>(&head[6]); }
 			void setReliable(bool r) { getReliable() = r; }
 	};
-	static_assert(sizeof(Packet2) == MAX_PACKET_SIZE);
-	inline constexpr int32 MAX_MESSAGE_SIZE2 = sizeof(Packet2::body) - sizeof(MessageHeader);
+	static_assert(sizeof(Packet) == MAX_PACKET_SIZE);
+	inline constexpr int32 MAX_MESSAGE_SIZE2 = sizeof(Packet::body) - sizeof(MessageHeader);
 
 	class PacketNode {
 		public:
@@ -54,7 +51,7 @@ namespace Engine::Net {
 			byte* curr;
 			byte* last;
 
-			Packet2 packet;
+			Packet packet;
 
 			void clear() {
 				curr = packet.body;
@@ -86,7 +83,7 @@ namespace Engine::Net {
 	}
 
 	template<ChannelFlags Flags>
-	class Channel2 {
+	class Channel {
 		public:
 			constexpr static auto flags = Flags;
 	};
@@ -94,7 +91,7 @@ namespace Engine::Net {
 	// TODO: dont ordered messages need to be done on the message level instead of packet?
 	// TODO: cont. Reliability is packet level ordering is message level
 	template<class... Cs>
-	class Connection2 {
+	class Connection {
 		private:
 			using NodePtr = std::unique_ptr<PacketNode>;
 
@@ -137,7 +134,7 @@ namespace Engine::Net {
 			} rdat;
 
 			template<class C>
-			constexpr static ChannelId getChannelId() { return Meta::IndexOf<C, Cs>::value; }
+			constexpr static ChannelId getChannelId() { return Meta::IndexOf<C, Cs...>::value; }
 
 			NodePtr getOrAllocPacketFromPool() {
 				if (!pool) {
@@ -185,7 +182,7 @@ namespace Engine::Net {
 			// TODO: packet loss
 			// TODO: bandwidth in/out. Could do per packet type (4)
 
-			Connection2(IPv4Address addr, Engine::Clock::TimePoint time) : addr{addr} {
+			Connection(IPv4Address addr, Engine::Clock::TimePoint time) : addr{addr} {
 				rdat.time = time;
 			}
 
@@ -193,7 +190,7 @@ namespace Engine::Net {
 
 			// TODO: doc
 			[[nodiscard]]
-			bool recv(const Packet2& pkt, int32 sz, Engine::Clock::TimePoint time) {
+			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
 				if (pkt.getProtocol() != protocol) {
 					ENGINE_WARN("Incorrect network protocol");
 					return false;
@@ -378,7 +375,7 @@ namespace Engine::Net {
 				// TODO: does this write to pkt.head? check
 				write(MessageHeader{
 					.type = type,
-					.channel = Channel::UNRELIABLE, // TODO: getChannelId<C>()
+					.channel = getChannelId<C>(),
 					.sequence = 0, // TODO: impl
 				});
 			}

@@ -37,7 +37,7 @@ namespace Game {
 			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
 			Engine::Net::IPv4Address address;	
-			Engine::Net::Packet2 packet = {};
+			Engine::Net::Packet packet = {};
 			const Engine::Net::IPv4Address group;
 			Engine::Clock::TimePoint now = {};
 			Engine::Clock::TimePoint lastUpdate = {};
