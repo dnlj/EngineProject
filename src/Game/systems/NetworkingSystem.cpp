@@ -384,7 +384,7 @@ namespace Game {
 			if constexpr (ENGINE_SERVER) { runServer(); }
 			if constexpr (ENGINE_CLIENT) { runClient(); }
 
-			for (auto& ent : connFilter) {
+			for (auto& ent : connFilter) { // TODO: time is connections. reliable is plys
 				auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 				const auto diff = now - conn.recvTime();
 				if (diff > timeout) {
@@ -393,14 +393,14 @@ namespace Game {
 					break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
 				}
 
-				conn.msgBegin(MessageType::ACK, General_UU);
-				// TODO: some connections should be entities... just complicates things
-				ENGINE_LOG("???? ", ent, " ", conn.address(), " ", conn.getRecvNextAck()); // TODO: why do we get this twice????
-				conn.write(conn.getRecvNextAck());
-				conn.write(conn.getRecvAcks());
-				conn.msgEnd();
+				if (world.hasComponent<PlayerFlag>(ent)) {
+					conn.msgBegin(MessageType::ACK, General_UU);
+					conn.write(conn.getRecvNextAck());
+					conn.write(conn.getRecvAcks());
+					conn.msgEnd();
 
-				conn.sendUnacked(socket);
+					conn.sendUnacked(socket);
+				}
 			}
 		}
 
