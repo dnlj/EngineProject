@@ -9,39 +9,15 @@
 #include <Engine/Net/IPv4Address.hpp>
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Net/Net.hpp>
+#include <Engine/Net/Packet.hpp>
 #include <Engine/StaticVector.hpp>
 #include <Engine/Bitset.hpp>
 #include <Engine/Clock.hpp>
+#include <Engine/Utility/Utility.hpp>
 
 
 namespace Engine::Net {
 	using AckBitset = Engine::Bitset<64, uint64>;
-	using SeqNum = uint32;
-
-	constexpr inline int32 MAX_PACKET_SIZE = 512;
-	class Packet {
-		public:
-			// 2 bytes protocol
-			// 4 bytes seq num // TODO: look into seq num wrapping
-			// 1 byte reliable info (only needs 1 bit)
-			byte head[7] = {};
-			byte body[MAX_PACKET_SIZE - sizeof(head)];
-
-		public:
-			auto& getProtocol() { return *reinterpret_cast<uint16*>(&head[0]); }
-			auto& getProtocol() const { return *reinterpret_cast<const uint16*>(&head[0]); }
-			void setProtocol(uint16 p) { getProtocol() = p; }
-
-			auto& getSeqNum() { return *reinterpret_cast<SeqNum*>(&head[2]); }
-			auto& getSeqNum() const { return *reinterpret_cast<const SeqNum*>(&head[2]); }
-			void setSeqNum(SeqNum n) { getSeqNum() = n; }
-
-			auto& getReliable() { return *reinterpret_cast<bool*>(&head[6]); }
-			auto& getReliable() const { return *reinterpret_cast<const bool*>(&head[6]); }
-			void setReliable(bool r) { getReliable() = r; }
-	};
-	static_assert(sizeof(Packet) == MAX_PACKET_SIZE);
-	inline constexpr int32 MAX_MESSAGE_SIZE2 = sizeof(Packet::body) - sizeof(MessageHeader);
 
 	class PacketNode {
 		public:
@@ -88,26 +64,19 @@ namespace Engine::Net {
 			constexpr static auto flags = Flags;
 	};
 
-	// TODO: dont ordered messages need to be done on the message level instead of packet?
-	// TODO: cont. Reliability is packet level ordering is message level
 	template<class... Cs>
 	class Connection {
 		private:
 			using NodePtr = std::unique_ptr<PacketNode>;
 
-			struct ChannelInfo {
-				SequenceNumber nextSeq;
-			};
-			ChannelInfo channelInfo[sizeof...(Cs)];
-
 			constexpr static uint16 protocol = 0b0'0110'1001'1001'0110;
 
 			const IPv4Address addr = {};
-			SequenceNumber nextPacketSeqUnrel = 0;
-			SequenceNumber nextPacketSeqRel = 0;
+			SeqNum nextPacketSeqUnrel = 0;
+			SeqNum nextPacketSeqRel = 0;
 
-			SequenceNumber nextSentAck = 0; /** The next ack we are expecting */
-			SequenceNumber nextRecvAck = 0;
+			SeqNum nextSentAck = 0; /** The next ack we are expecting */
+			SeqNum nextRecvAck = 0;
 			AckBitset recvAcks = {};
 
 			NodePtr unsentPackets[2];
@@ -162,13 +131,13 @@ namespace Engine::Net {
 				return *curr;
 			}
 			
-			ENGINE_INLINE constexpr static SequenceNumber seqToIndex(SequenceNumber seq) {
+			ENGINE_INLINE constexpr static SeqNum seqToIndex(SeqNum seq) {
 				constexpr auto maxUnacked = AckBitset::size();
 				static_assert(Engine::Utility::isPowerOfTwo(maxUnacked));
 				return seq & (maxUnacked - 1);
 			}
 
-			void freeAck(SequenceNumber seq) {
+			void freeAck(SeqNum seq) {
 				auto& node = unacked[seqToIndex(seq)];
 				if (!node) { return; }
 				ENGINE_DEBUG_ASSERT(node->next == nullptr);
@@ -188,7 +157,6 @@ namespace Engine::Net {
 
 			const auto& address() const { return addr; }
 
-			// TODO: doc
 			[[nodiscard]]
 			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
 				if (pkt.getProtocol() != protocol) {
@@ -214,7 +182,7 @@ namespace Engine::Net {
 						recvAcks.set(i);
 					}
 
-					for (SequenceNumber i; recvAcks.test(i = seqToIndex(nextRecvAck));) {
+					for (SeqNum i; recvAcks.test(i = seqToIndex(nextRecvAck));) {
 						recvAcks.reset(i);
 						++nextRecvAck;
 					}
@@ -223,11 +191,12 @@ namespace Engine::Net {
 				return true;
 			}
 
-			// TODO: finish doc
 			/**
-			 * Updates the acks for packets this connection has sent
+			 * Updates the acks for packets this connection has sent.
+			 * @param first The sequence number of the first ack.
+			 * @params acks The bitset indicating if packet `first + i` has been received.
 			 */
-			void updateSentAcks(SequenceNumber first, AckBitset acks) {
+			void updateSentAcks(SeqNum first, AckBitset acks) {
 				// TODO: need to guard against `first > nextPacketSeqRel`
 				if (first < nextSentAck) { ENGINE_LOG("================== OH BOY! =================="); }
 				//if (first >= nextPacketSeqRel) { return; }
@@ -257,12 +226,14 @@ namespace Engine::Net {
 
 			auto recvTime() const { return rdat.time; }
 
-			// TODO: doc
+			/**
+			 * Read the next message from the packet set by recv.
+			 */
 			const MessageHeader* recvNext() {
 				if (rdat.curr >= rdat.last) { return nullptr; }
 				ENGINE_DEBUG_ASSERT(rdat.curr == rdat.msgLast, "Incomplete read of network message");
 				const auto* hdr = read<MessageHeader>();
-				ENGINE_DEBUG_ASSERT(hdr->size <= MAX_MESSAGE_SIZE2, "Invalid network message length");
+				ENGINE_DEBUG_ASSERT(hdr->size <= MAX_MESSAGE_SIZE, "Invalid network message length");
 				rdat.msgLast = rdat.curr + hdr->size;
 				return hdr;
 			}
@@ -321,7 +292,6 @@ namespace Engine::Net {
 					}
 				}
 
-				// TODO: add function for resend rel packets
 				{ // Reliable
 					auto& node = unsentPackets[1];
 					while (node) {
@@ -353,7 +323,7 @@ namespace Engine::Net {
 			}
 
 			void sendUnacked(UDPSocket& sock) {
-				ENGINE_DEBUG_ASSERT(nextPacketSeqRel - nextSentAck <= static_cast<SequenceNumber>(AckBitset::size()));
+				ENGINE_DEBUG_ASSERT(nextPacketSeqRel - nextSentAck <= static_cast<SeqNum>(AckBitset::size()));
 				for (auto i = nextSentAck; i < nextPacketSeqRel; ++i) {
 					auto& node = unacked[seqToIndex(i)];
 					if (node) {
@@ -372,7 +342,6 @@ namespace Engine::Net {
 				auto& node = getOrAllocPacket<C>();
 				currNode = &node;
 
-				// TODO: does this write to pkt.head? check
 				write(MessageHeader{
 					.type = type,
 					.channel = getChannelId<C>(),
@@ -393,7 +362,7 @@ namespace Engine::Net {
 			void write(const void* t, size_t sz) {
 				ENGINE_DEBUG_ASSERT(currNode != nullptr, "No network message active.");
 				//ENGINE_LOG("Write: ", sz); __debugbreak();
-				ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE2, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE2, " bytes.");
+				ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
 
 				if (currNode->last + sz <= currNode->packet.body + sizeof(currNode->packet.body)) {
 					memcpy(currNode->last, t, sz);

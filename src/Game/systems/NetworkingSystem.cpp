@@ -40,7 +40,7 @@ namespace {
 	};
 
 	// TODO: figure out a good pattern
-	constexpr uint8 DISCOVER_SERVER_DATA[Engine::Net::MAX_MESSAGE_SIZE2] = {
+	constexpr uint8 DISCOVER_SERVER_DATA[Engine::Net::MAX_MESSAGE_SIZE] = {
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
@@ -287,7 +287,7 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ACK) {
-		const auto next = from.read<Engine::Net::SequenceNumber>();
+		const auto next = from.read<Engine::Net::SeqNum>();
 		const auto acks = from.read<Engine::Net::AckBitset>();
 
 		if (next && acks) {
@@ -374,7 +374,6 @@ namespace Game {
 
 		// Send messages
 		// TODO: rate should be configurable somewhere
-		// TODO: send acks instantly? idk
 		const bool shouldUpdate = now - lastUpdate >= std::chrono::milliseconds{1000 / 20};
 		if (shouldUpdate) {
 			lastUpdate = now;
@@ -401,7 +400,6 @@ namespace Game {
 			}
 		}
 
-		// TODO: why dont we just merge with loop above?
 		// Send Ack messages & unacked
 		for (auto& ply : connFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;

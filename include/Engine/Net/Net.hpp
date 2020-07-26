@@ -17,9 +17,4 @@ namespace Engine::Net {
 
 	// TODO: Doc
 	IPv4Address hostToAddress(const std::string& uri);
-
-	// TODO: Doc
-	ENGINE_INLINE constexpr SequenceNumber seqToIndex(SequenceNumber seq);
 }
-
-#include <Engine/Net/Net.ipp>
