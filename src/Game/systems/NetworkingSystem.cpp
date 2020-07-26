@@ -362,10 +362,7 @@ namespace Game {
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
 			auto& [ent, conn] = getOrCreateConnection(address);
-			if (!conn.recv(packet, sz, now)) {
-				ENGINE_WARN("**** Duplicate message! ", packet.getSeqNum(), " ", packet.getReliable()); // TODO: rm - for debugging
-				continue;
-			}
+			if (!conn.recv(packet, sz, now)) { continue; }
 
 			const Engine::Net::MessageHeader* hdr; 
 			while (hdr = conn.recvNext()) {
@@ -445,7 +442,6 @@ namespace Game {
 						conn.write(ent);
 						conn.write(world.getComponentId<C>());
 						comp.netToInit(engine, world, ent, conn);
-						// TODO: why sprite comp not being sent?
 						conn.msgEnd();
 					}
 				});
@@ -518,7 +514,7 @@ namespace Game {
 		static uint8 ping = 0;
 		static auto next = now;
 		if (next > now) { return; }
-		next = now + std::chrono::milliseconds{10};
+		next = now + std::chrono::milliseconds{1000};
 
 		for (auto& ply : plyFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;

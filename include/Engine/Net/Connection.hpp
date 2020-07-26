@@ -27,7 +27,7 @@ namespace Engine::Net {
 			// 2 bytes protocol
 			// 4 bytes seq num // TODO: look into seq num wrapping
 			// 1 byte reliable info (only needs 1 bit)
-			byte head[7] = {0b0110, 0b1001, 0b1001, 0b0110};
+			byte head[7] = {};
 			byte body[MAX_PACKET_SIZE - sizeof(head)];
 
 		public:
@@ -103,6 +103,8 @@ namespace Engine::Net {
 			};
 			ChannelInfo channelInfo[sizeof...(Cs)];
 
+			constexpr static uint16 protocol = 0b0'0110'1001'1001'0110;
+
 			const IPv4Address addr = {};
 			SequenceNumber nextPacketSeqUnrel = 0;
 			SequenceNumber nextPacketSeqRel = 0;
@@ -141,6 +143,7 @@ namespace Engine::Net {
 				if (!pool) {
 					auto ptr = std::make_unique<PacketNode>();
 					ptr->clear();
+					ptr->packet.setProtocol(protocol);
 					return ptr;
 				}
 				auto old = std::move(pool);
@@ -171,7 +174,6 @@ namespace Engine::Net {
 			void freeAck(SequenceNumber seq) {
 				auto& node = unacked[seqToIndex(seq)];
 				if (!node) { return; }
-				ENGINE_LOG("ACK: ", seq);
 				ENGINE_DEBUG_ASSERT(node->next == nullptr);
 				node->next = std::move(pool);
 				pool = std::move(node);
@@ -192,7 +194,11 @@ namespace Engine::Net {
 			// TODO: doc
 			[[nodiscard]]
 			bool recv(const Packet2& pkt, int32 sz, Engine::Clock::TimePoint time) {
-				// TODO: check protocol? or do that in net sys?
+				if (pkt.getProtocol() != protocol) {
+					ENGINE_WARN("Incorrect network protocol");
+					return false;
+				}
+
 				rdat.time = time;
 				rdat.first = pkt.head;
 				rdat.last = rdat.first + sz;
