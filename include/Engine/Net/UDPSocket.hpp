@@ -23,7 +23,7 @@ namespace Engine::Net {
 
 			~UDPSocket();
 
-			int32 send(const char* data, int32 size, const IPv4Address& address) const;
+			int32 send(const void* data, int32 size, const IPv4Address& address) const;
 
 			int32 recv(void* data, int32 size, IPv4Address& address) const;
 

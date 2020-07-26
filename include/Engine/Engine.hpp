@@ -18,7 +18,8 @@ namespace Engine::Types { // TODO: C++20: namespace Engine::inline Types {
 
 	// TODO: index or size type would be useful
 
-	using byte = char;
+	using byte = unsigned char;
+	// TODO: enum byte : uint8_t {};
 
 	using int8 = int8_t;
 	using int16 = int16_t;

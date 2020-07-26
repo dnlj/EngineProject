@@ -142,24 +142,34 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::PING) {
+		static uint8 last = 0;
 		// TODO: nullptr check
-		const auto ping = *from.read<uint8>();
-		if (ping & 0x80) {
+		const auto data = *from.read<uint8>();
+		const bool pong = data & 0x80;
+		const int32 val = data & 0x7F;
+
+		if (val != ((last + 1) & 0x7F)) {
+			ENGINE_WARN("\n\n**** OUT OF ORDER ****\n\n");
+			//__debugbreak();
+		}
+		last = val;
+
+		if (pong) {
 			ENGINE_LOG("recv pong @ ",
 				std::fixed, std::setprecision(2),
 				Engine::Clock::now().time_since_epoch().count() / 1E9,
 				" from ", from.address(),
-				" ", static_cast<int32>(ping & 0x7F)
+				" ", val
 			);
 		} else {
 			ENGINE_LOG("recv ping @ ",
 				std::fixed, std::setprecision(2),
 				Engine::Clock::now().time_since_epoch().count() / 1E9,
 				" from ", from.address(),
-				" ", static_cast<int32>(ping)
+				" ", val
 			);
 			from.msgBegin(MessageType::PING, General_RU);
-			from.write(static_cast<uint8>(ping | 0x80));
+			from.write(static_cast<uint8>(val | 0x80));
 			from.msgEnd();
 		}
 	}
@@ -353,7 +363,7 @@ namespace Game {
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
 			auto& [ent, conn] = getOrCreateConnection(address);
 			if (!conn.recv(packet, sz, now)) {
-				ENGINE_WARN("**** Duplicate message! ", packet.getSeqNum()); // TODO: rm - for debugging
+				ENGINE_WARN("**** Duplicate message! ", packet.getSeqNum(), " ", packet.getReliable()); // TODO: rm - for debugging
 				continue;
 			}
 
@@ -384,6 +394,8 @@ namespace Game {
 				}
 
 				conn.msgBegin(MessageType::ACK, General_UU);
+				// TODO: some connections should be entities... just complicates things
+				ENGINE_LOG("???? ", ent, " ", conn.address(), " ", conn.getRecvNextAck()); // TODO: why do we get this twice????
 				conn.write(conn.getRecvNextAck());
 				conn.write(conn.getRecvAcks());
 				conn.msgEnd();

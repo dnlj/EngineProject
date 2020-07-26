@@ -30,9 +30,9 @@ namespace Engine::Net {
 		closesocket(handle);
 	};
 
-	int32 UDPSocket::send(const char* data, int32 size, const IPv4Address& address) const {
+	int32 UDPSocket::send(const void* data, int32 size, const IPv4Address& address) const {
 		const auto saddr = address.getSocketAddress();
-		const auto sent = sendto(handle, data, size, 0, &saddr, sizeof(saddr));
+		const auto sent = sendto(handle, reinterpret_cast<const char*>(data), size, 0, &saddr, sizeof(saddr));
 
 		#ifdef DEBUG
 			if (sent != size) {

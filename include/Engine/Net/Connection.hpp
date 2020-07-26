@@ -170,6 +170,8 @@ namespace Engine::Net {
 
 			void freeAck(SequenceNumber seq) {
 				auto& node = unacked[seqToIndex(seq)];
+				if (!node) { return; }
+				ENGINE_LOG("ACK: ", seq);
 				ENGINE_DEBUG_ASSERT(node->next == nullptr);
 				node->next = std::move(pool);
 				pool = std::move(node);
@@ -177,6 +179,7 @@ namespace Engine::Net {
 
 		public:
 			// TODO: ping
+			// TODO: jitter
 			// TODO: packet loss
 			// TODO: bandwidth in/out. Could do per packet type (4)
 
@@ -222,20 +225,28 @@ namespace Engine::Net {
 			 * Updates the acks for packets this connection has sent
 			 */
 			void updateSentAcks(SequenceNumber first, AckBitset acks) {
+				// TODO: need to guard against `first > nextPacketSeqRel`
+				if (first < nextSentAck) { ENGINE_LOG("================== OH BOY! =================="); }
+				//if (first >= nextPacketSeqRel) { return; }
 				while (nextSentAck < first) {
 					freeAck(nextSentAck);
 					++nextSentAck;
 				}
 
+				// The 0th elem should always be false or else first would be larger
+				const auto TEMP_RM = acks.test(seqToIndex(first));
+				ENGINE_DEBUG_ASSERT(TEMP_RM == false, "The first elem of acks should always be zero.");
+				ENGINE_DEBUG_ASSERT(nextSentAck <= first + acks.size(), "nextSentAck is to large. (or first is to small)");
+
 				// This should be safe since `nextSentAck >= first` always. (because of above loop)
-				const auto diff = nextSentAck - first;
-				for (auto i = diff; i < static_cast<SequenceNumber>(acks.size()); ++i) {
-					if (acks.test(i)) {
-						freeAck(first + i);
+				const auto start = nextSentAck;
+				const auto stop = std::min(first + acks.size(), nextPacketSeqRel);
+				for (auto i = start; i < stop; ++i) {
+					// TODO: based on recv above. acks isnt frist + 0, 1, 2 etc. it uses seqToIndex starting at first.
+					if (acks.test(seqToIndex(i))) { // TODO: could incorperate seqToIndex into start/stop
+						freeAck(i);
 					}
 				}
-
-				// TODO: also need to advance nextSentAck based on nullptrs in unacked?
 			}
 
 			auto getRecvNextAck() const { return nextRecvAck; }
@@ -282,7 +293,9 @@ namespace Engine::Net {
 			template<class T>
 			decltype(auto) read() {
 				if constexpr (std::is_same_v<T, char*> || std::is_same_v<T, const char*>) {
-					return reinterpret_cast<const char*>(read(strlen(rdat.curr) + 1));
+					return reinterpret_cast<const char*>(
+						read(strlen(reinterpret_cast<const char*>(rdat.curr)) + 1)
+					);
 				} else {
 					return reinterpret_cast<const T*>(read(sizeof(T)));
 				}
@@ -323,6 +336,13 @@ namespace Engine::Net {
 						} else {
 							// TODO: to many unacked
 							ENGINE_WARN("TODO: to many unacked packets");
+
+							for (auto i = nextSentAck; i < nextPacketSeqRel; ++i) {
+								auto* node = unacked[seqToIndex(i)].get();
+								std::cout << i << " " << node << " " << (node ? node->packet.getSeqNum() : 0) << "\n";
+							}
+
+							__debugbreak();
 							break;
 						}
 					}
@@ -330,7 +350,7 @@ namespace Engine::Net {
 			}
 
 			void sendUnacked(UDPSocket& sock) {
-				ENGINE_DEBUG_ASSERT(nextPacketSeqRel - nextSentAck < static_cast<SequenceNumber>(AckBitset::size()));
+				ENGINE_DEBUG_ASSERT(nextPacketSeqRel - nextSentAck <= static_cast<SequenceNumber>(AckBitset::size()));
 				for (auto i = nextSentAck; i < nextPacketSeqRel; ++i) {
 					auto& node = unacked[seqToIndex(i)];
 					if (node) {
