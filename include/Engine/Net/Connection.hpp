@@ -17,8 +17,6 @@
 
 
 namespace Engine::Net {
-	using AckBitset = Engine::Bitset<64, uint64>;
-
 	class PacketNode {
 		public:
 			PacketNode() = default;
@@ -75,15 +73,39 @@ namespace Engine::Net {
 			SeqNum nextPacketSeqUnrel = 0;
 			SeqNum nextPacketSeqRel = 0;
 
-			SeqNum nextSentAck = 0; /** The next ack we are expecting */
+			struct UnreliableAckData {
+				Engine::Clock::TimePoint sendTime;
+				Engine::Clock::TimePoint recvTime;
+			};
+			/** Data for the last N unreliable packets we have sent. */
+			UnreliableAckData unrelAckData[AckBitset::size()] = {};
+
+			/** The latest packet seq num we have received */
+			SeqNum lastRecvAckUnrel = {};
+
+			/** Acks for the prev N packets before lastRecvAckUnrel */
+			AckBitset recvAcksUnrel = {};
+
+			/** The next ack we are expecting */
+			SeqNum nextSentAck = 0;
+
+			/** Data for the last N reliable packets we have sent */
+			NodePtr unacked[AckBitset::size()];
+
+			/** The next seq num we are expecting to receive */
 			SeqNum nextRecvAck = 0;
+
+			/** The acks for the next N seq num we are expecting to receive */
 			AckBitset recvAcks = {};
 
+			/** Packets to send next send() */
 			NodePtr unsentPackets[2];
-			NodePtr unacked[AckBitset::size()];
+
+			/** Unused packets */
 			NodePtr pool;
+
+			/** The current packet we are writing to */
 			PacketNode* currNode = nullptr;
-			Engine::Clock::TimePoint lastRecvTime;
 
 			struct {
 				/** The time the message was received */
@@ -172,8 +194,12 @@ namespace Engine::Net {
 
 				// TODO: packet header info
 
+				const auto& init = pkt.getInitAck();
+				const auto& acks = pkt.getAcks();
+				const auto seq = pkt.getSeqNum();
+
 				if (pkt.getReliable()) {
-					const auto seq = pkt.getSeqNum();
+					// TODO: move into func
 					if (seq < nextRecvAck || seq >= (nextRecvAck + recvAcks.size())) { return false; }
 	
 					if (const auto i = seqToIndex(seq); recvAcks.test(i)) {
@@ -186,7 +212,48 @@ namespace Engine::Net {
 						recvAcks.reset(i);
 						++nextRecvAck;
 					}
+
+					// TODO: updateSentAcks(init, acks);
+				} else {
+					{ // TODO: move into func
+						int32 diff = seq - lastRecvAckUnrel;
+						if (diff > 0) {
+							lastRecvAckUnrel = seq;
+							recvAcksUnrel << diff;
+							recvAcksUnrel.set(0);
+						} else if (diff < 0) {
+							diff = -diff;
+							if (diff < AckBitset::size()) {
+								recvAcksUnrel.set(diff);
+							}
+						} // If equal then it should have been already acked
+					}
+
+					{// TODO: move into func
+						// Unsigned subtraction is fine here since it would still be > max size
+						const auto lastSent = nextPacketSeqUnrel - 1;
+						const auto diff = lastSent - init;
+						if (diff <= static_cast<SeqNum>(AckBitset::size())) {
+							auto curr = lastSent - acks.size();
+							const auto stop = init;
+
+							for (;curr <= stop; ++curr) {
+								if (!acks.test(init - curr)) { continue; }
+
+								const auto i = seqToIndex(curr);
+								auto& data = unrelAckData[i];
+								if (data.recvTime != Engine::Clock::TimePoint{}) { continue; }
+
+								data.recvTime = time;
+
+								ENGINE_LOG("RECV ACK: ", curr, " in ",
+									Engine::Clock::Seconds{data.recvTime - data.sendTime}.count(), "s"
+								);
+							}
+						}
+					}
 				}
+
 
 				return true;
 			}
@@ -199,7 +266,7 @@ namespace Engine::Net {
 			void updateSentAcks(SeqNum first, AckBitset acks) {
 				// TODO: need to guard against `first > nextPacketSeqRel`
 				if (first < nextSentAck) { ENGINE_LOG("================== OH BOY! =================="); }
-				//if (first >= nextPacketSeqRel) { return; }
+				// TODO: if (first >= nextPacketSeqRel) { return; }
 				while (nextSentAck < first) {
 					freeAck(nextSentAck);
 					++nextSentAck;
@@ -276,12 +343,26 @@ namespace Engine::Net {
 			}
 
 			void send(UDPSocket& sock) {
+				const auto now = Engine::Clock::now();
 				{ // Unreliable
 					auto& node = unsentPackets[0];
 					while (node) {
-						node->packet.setSeqNum(nextPacketSeqUnrel++);
+						const auto i = seqToIndex(nextPacketSeqUnrel);
+						auto& data = unrelAckData[i];
 
-						// TODO: bandwidth
+						// TODO: rm - debug
+						if (data.recvTime == Engine::Clock::TimePoint{}) {
+							ENGINE_WARN("NO ACK FOR ", nextPacketSeqUnrel - 64);
+						}
+
+						data = {
+							.sendTime = now,
+						};
+
+						node->packet.setSeqNum(nextPacketSeqUnrel++);
+						node->packet.setInitAck(lastRecvAckUnrel);
+						node->packet.setAcks(recvAcksUnrel);
+
 						const auto sz = static_cast<int32>(node->last - node->packet.head);
 						sock.send(node->packet.head, sz, addr);
 
@@ -300,7 +381,6 @@ namespace Engine::Net {
 						if (store == nullptr) {
 							node->packet.setSeqNum(nextPacketSeqRel++);
 
-							// TODO: bandwidth
 							const auto sz = static_cast<int32>(node->last - node->packet.head);
 							sock.send(node->packet.head, sz, addr);
 

@@ -6,6 +6,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Bit/Bit.hpp>
+#include <Engine/Hash.hpp>
 
 
 namespace Engine {
