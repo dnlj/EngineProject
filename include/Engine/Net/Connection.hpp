@@ -219,7 +219,7 @@ namespace Engine::Net {
 						int32 diff = seq - lastRecvAckUnrel;
 						if (diff > 0) {
 							lastRecvAckUnrel = seq;
-							recvAcksUnrel << diff;
+							recvAcksUnrel <<= diff;
 							recvAcksUnrel.set(0);
 						} else if (diff < 0) {
 							diff = -diff;
