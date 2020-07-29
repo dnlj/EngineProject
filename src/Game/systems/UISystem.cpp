@@ -91,7 +91,7 @@ namespace Game {
 		Engine::ImGui::draw();
 	}
 
-	void UISystem::tick(float32 dt) {
+	void UISystem::tick() {
 	}
 
 	void UISystem::ui_debug() {

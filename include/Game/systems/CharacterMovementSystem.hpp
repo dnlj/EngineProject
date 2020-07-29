@@ -9,7 +9,7 @@ namespace Game {
 	class CharacterMovementSystem : public System {
 		public:
 			CharacterMovementSystem(SystemArg arg);
-			void tick(float dt);
+			void tick();
 
 		private:
 			EntityFilter& filter;

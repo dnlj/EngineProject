@@ -50,7 +50,7 @@ namespace Game {
 		public:
 			SubWorldSystem(SystemArg arg);
 
-			void tick(float32 dt);
+			void tick();
 
 		private:
 			void mergePlayer(PlayerData& ply, b2World* world);

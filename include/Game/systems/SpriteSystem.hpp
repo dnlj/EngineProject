@@ -42,7 +42,7 @@ namespace Game {
 			SpriteSystem(SystemArg arg);
 			~SpriteSystem();
 
-			void run(float dt);
+			void run(float32 dt);
 
 			void addSprite(Sprite sprite);
 

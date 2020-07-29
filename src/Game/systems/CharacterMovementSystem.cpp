@@ -16,7 +16,7 @@ namespace Game {
 		static_assert(World::orderBefore<CharacterMovementSystem, PhysicsSystem>());
 	}
 
-	void CharacterMovementSystem::tick(float dt) {
+	void CharacterMovementSystem::tick() {
 		constexpr float speed = 1.0f * 4;
 		for (auto ent : filter) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
@@ -29,7 +29,7 @@ namespace Game {
 			const b2Vec2 move = {static_cast<float32>(right - left), static_cast<float32>(up - down)};
 
 			if (move != b2Vec2_zero) {
-				physComp.getBody().ApplyLinearImpulseToCenter(dt * speed * move, true);
+				physComp.getBody().ApplyLinearImpulseToCenter(world.getTickDelta() * speed * move, true);
 			}
 		}
 	}

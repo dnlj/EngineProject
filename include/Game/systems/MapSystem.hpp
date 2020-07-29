@@ -79,7 +79,7 @@ namespace Game {
 			~MapSystem();
 
 			void setup();
-			void tick(float32 dt);
+			void tick();
 			void run(float32 dt);
 			void ensurePlayAreaLoaded(glm::ivec2 chunkPos);
 

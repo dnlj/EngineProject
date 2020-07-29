@@ -77,7 +77,7 @@ namespace Game {
 		world.getComponent<Game::PhysicsComponent>(ent).getBody().SetActive(false);
 	}
 
-	void CharacterSpellSystem::tick(float dt) {
+	void CharacterSpellSystem::tick() {
 
 		for (const auto ent : filter) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);

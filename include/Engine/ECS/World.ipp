@@ -67,7 +67,7 @@ namespace Engine::ECS {
 		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
 		storeSnapshot();
 		(getSystem<Ss>().preTick(), ...);
-		(getSystem<Ss>().tick(tickDeltaTime), ...);
+		(getSystem<Ss>().tick(), ...);
 		(getSystem<Ss>().postTick(), ...);
 		markedForDeath.clear();
 		++currTick;

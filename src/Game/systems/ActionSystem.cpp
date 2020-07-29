@@ -23,7 +23,7 @@ namespace Game {
 		}
 	}
 
-	void ActionSystem::tick(float32 dt) {
+	void ActionSystem::tick() {
 		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
 
 		const auto currTick = world.getTick();

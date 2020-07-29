@@ -33,7 +33,7 @@ namespace Game {
 			void setup() {}
 
 			void preTick() {}
-			void tick(float32 dt) {}
+			void tick() {}
 			void postTick() {}
 
 			void run(float32 dt) {}

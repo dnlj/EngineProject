@@ -47,7 +47,7 @@ namespace Game {
 		, playerFilter{world.getFilterFor<PhysicsComponent>()} { // TODO: add own comp (flag comp?) to id players
 	};
 
-	void SubWorldSystem::tick(float32 dt) {
+	void SubWorldSystem::tick() {
 		// TODO: Lots can be improved here.
 
 		// TODO: shoudl be able to do this whenever we merge/split so we dont need an extra iteration

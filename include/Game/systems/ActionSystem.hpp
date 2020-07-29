@@ -25,7 +25,7 @@ namespace Game {
 			ActionSystem(SystemArg arg);
 
 			void preTick();
-			void tick(float32 dt);
+			void tick();
 
 			void updateButtonState(Button btn, bool val);
 			void updateButtonState(Engine::ECS::Entity ent, Button btn, bool val);

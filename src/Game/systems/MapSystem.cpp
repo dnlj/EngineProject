@@ -61,7 +61,7 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::tick(float32 dt) {
+	void MapSystem::tick() {
 		// TODO: move
 		const auto makeEdit = [&](Engine::ECS::Entity ent, int value){
 			auto& actionComp = world.getComponent<ActionComponent>(ent);

@@ -18,7 +18,7 @@ namespace Game {
 		#endif
 	}
 
-	void PhysicsSystem::tick(float dt) {
+	void PhysicsSystem::tick() {
 		for (auto ent : filter) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			physComp.prevTransform = physComp.getBody().GetTransform();
@@ -47,7 +47,7 @@ namespace Game {
 		}
 		
 		// TODO: look into SetAutoClearForces
-		physWorld.Step(dt, 8, 3);
+		physWorld.Step(world.getTickDelta(), 8, 3);
 	}
 
 	void PhysicsSystem::run(float dt) {

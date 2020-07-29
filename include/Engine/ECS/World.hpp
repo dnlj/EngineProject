@@ -336,6 +336,11 @@ namespace Engine::ECS {
 			auto getTickInterval() const;
 
 			/**
+			 * Gets the tick delta.
+			 */
+			auto getTickDelta() const { return tickDeltaTime; }
+
+			/**
 			 * Current time being ticked.
 			 */
 			Clock::TimePoint getTickTime() const;

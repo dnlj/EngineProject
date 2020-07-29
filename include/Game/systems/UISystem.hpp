@@ -19,7 +19,7 @@ namespace Game {
 
 			void setup();
 			void run(float32 dt);
-			void tick(float32 dt);
+			void tick();
 
 		private:
 			Engine::Clock::TimePoint now;
