@@ -44,6 +44,8 @@ namespace Engine::Net {
 		return a -= 1;
 	}
 
+	// TODO: just use free standing functions instead of enum and overloads?
+	// TODO: change to use a < b && ... || b < a && ...; This handels the 0x8000 case better https://github.com/networkprotocol/reliable/blob/master/reliable.c#L125
 	ENGINE_INLINE constexpr bool operator<=(SeqNum2 a, SeqNum2 b) noexcept {
 		using U = std::underlying_type_t<SeqNum2>;
 		constexpr U m = std::numeric_limits<U>::max();

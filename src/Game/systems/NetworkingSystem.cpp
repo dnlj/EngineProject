@@ -87,9 +87,9 @@ namespace Game {
 		// TODO: rate limit per ip (longer if invalid packet)
 
 		if (from.recvMsgSize() == size && !memcmp(from.read(size), DISCOVER_SERVER_DATA, size)) {
-			from.msgBegin(MessageType::SERVER_INFO, General_UU);
+			from.msgBegin<MessageType::SERVER_INFO>();
 			from.write("This is the name of the server");
-			from.msgEnd();
+			from.msgEnd<MessageType::SERVER_INFO>();
 		}
 	}
 	
@@ -108,11 +108,11 @@ namespace Game {
 
 		const auto* tick = from.read<Engine::ECS::Tick>();
 
-		from.msgBegin(MessageType::CONNECT_CONFIRM, General_RU);
+		from.msgBegin<MessageType::CONNECT_CONFIRM>();
 		from.write(fromEnt);
 		from.write(world.getTick());
 		from.write(*tick);
-		from.msgEnd();
+		from.msgEnd<MessageType::CONNECT_CONFIRM>();
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CONFIRM) {
@@ -167,9 +167,9 @@ namespace Game {
 				" from ", from.address(),
 				" ", val
 			);
-			from.msgBegin(MessageType::PING, General_RU);
+			from.msgBegin<MessageType::PING>();
 			from.write(static_cast<uint8>(val | 0x80));
-			from.msgEnd();
+			from.msgEnd<MessageType::PING>();
 		}
 	}
 	
@@ -290,14 +290,14 @@ namespace Game {
 		const auto acks = from.read<Engine::Net::AckBitset>();
 
 		if (next && acks) {
-			from.updateSentAcks(*next, *acks);
+			// TODO: from.updateSentAcks(*next, *acks);
 		} else {
 			ENGINE_WARN("Incorrect ACK network message.");
 		}
 	}
 
 	HandleMessageDef(MessageType::TEST) {
-		std::cout << "***** TEST: " << head.sequence << "\n";
+		std::cout << "***** TEST: " << head.seq << "\n";
 	}
 }
 #undef HandleMessageDef
@@ -348,9 +348,9 @@ namespace Game {
 			}
 
 			auto& [ent, conn] = getOrCreateConnection(group);
-			conn.msgBegin(MessageType::DISCOVER_SERVER, General_UU);
+			conn.msgBegin<MessageType::DISCOVER_SERVER>();
 			conn.write(DISCOVER_SERVER_DATA);
-			conn.msgEnd();
+			conn.msgEnd<MessageType::DISCOVER_SERVER>();
 		#endif
 	}
 
@@ -389,12 +389,12 @@ namespace Game {
 				}
 
 				if (world.hasComponent<PlayerFlag>(ent)) {
-					conn.msgBegin(MessageType::ACK, General_UU);
+					conn.msgBegin<MessageType::ACK>();
 					conn.write(conn.getRecvNextAck());
 					conn.write(conn.getRecvAcks());
-					conn.msgEnd();
+					conn.msgEnd<MessageType::ACK>();
 
-					conn.sendUnacked(socket);
+					// TODO: conn.sendUnacked(socket);
 				}
 			}
 		}
@@ -423,9 +423,9 @@ namespace Game {
 
 			for (const auto& pair : neighComp.addedNeighbors) {
 				const auto& ent = pair.first;
-				conn.msgBegin(MessageType::ECS_ENT_CREATE, General_RO);
+				conn.msgBegin<MessageType::ECS_ENT_CREATE>(); // TODO: General_RO;
 				conn.write(ent);
-				conn.msgEnd();
+				conn.msgEnd<MessageType::ECS_ENT_CREATE>();
 
 				ForEachIn<ComponentsSet>::call([&]<class C>() {
 					if constexpr (IsNetworkedComponent<C>) {
@@ -435,19 +435,19 @@ namespace Game {
 						auto& comp = world.getComponent<C>(ent);
 						if (comp.netRepl() == Engine::Net::Replication::NONE) { return; }
 
-						conn.msgBegin(MessageType::ECS_COMP_ADD, General_RO);
+						conn.msgBegin<MessageType::ECS_COMP_ADD>();//, General_RO);
 						conn.write(ent);
 						conn.write(world.getComponentId<C>());
 						comp.netToInit(engine, world, ent, conn);
-						conn.msgEnd();
+						conn.msgEnd<MessageType::ECS_COMP_ADD>();
 					}
 				});
 			}
 
 			for (const auto& pair : neighComp.removedNeighbors) {
-				conn.msgBegin(MessageType::ECS_ENT_DESTROY, General_RO);
+				conn.msgBegin<MessageType::ECS_ENT_DESTROY>(); // TODO: General_RO;
 				conn.write(pair.first);
-				conn.msgEnd();
+				conn.msgEnd<MessageType::ECS_ENT_DESTROY>();
 			}
 
 			for (const auto& pair : neighComp.currentNeighbors) {
@@ -476,11 +476,11 @@ namespace Game {
 						} else { // Component Updated
 							// TODO: check if comp updated
 							if (repl == Engine::Net::Replication::ALWAYS) {
-								conn.msgBegin(MessageType::ECS_COMP_ALWAYS, General_UU);
+								conn.msgBegin<MessageType::ECS_COMP_ALWAYS>(); //, General_UU);
 								conn.write(ent);
 								conn.write(cid);
 								comp.netTo(conn);
-								conn.msgEnd();
+								conn.msgEnd<MessageType::ECS_COMP_ALWAYS>();
 							} else if (repl == Engine::Net::Replication::UPDATE) {
 								// TODO: impl
 							}
@@ -495,10 +495,10 @@ namespace Game {
 
 				if (flagComps) {
 					// TODO: we shouldnt have had to change the filters on all those systems because we are using ordered... Look into this.
-					conn.msgBegin(MessageType::ECS_FLAG, General_RO);
+					conn.msgBegin<MessageType::ECS_FLAG>(); // TODO: General_RO
 					conn.write(ent);
 					conn.write(flagComps);
-					conn.msgEnd();
+					conn.msgEnd<MessageType::ECS_FLAG>();
 				}
 			}
 		}
@@ -515,9 +515,9 @@ namespace Game {
 
 		for (auto& ply : plyFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-			conn.msgBegin(MessageType::PING, General_RU);
+			conn.msgBegin<MessageType::PING>();
 			conn.write(static_cast<uint8>(++ping & 0x7F));
-			conn.msgEnd();
+			conn.msgEnd<MessageType::PING>();
 		}
 	}
 
@@ -531,9 +531,9 @@ namespace Game {
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		auto& [ent, conn] = getOrCreateConnection(addr);
-		conn.msgBegin(MessageType::CONNECT, General_UU);
+		conn.msgBegin<MessageType::CONNECT>();
 		conn.write(world.getTick());
-		conn.msgEnd();
+		conn.msgEnd<MessageType::CONNECT>();
 	}
 
 	auto NetworkingSystem::addConnection2(const Engine::Net::IPv4Address& addr) -> AddConnRes {
@@ -573,8 +573,8 @@ namespace Game {
 		const auto addr = conn.address();
 		ENGINE_LOG("Disconnecting ", ent, " ", addr);
 		// TODO: really this should be a reliable message with timeout
-		conn.msgBegin(MessageType::DISCONNECT, General_UU);
-		conn.msgEnd();
+		conn.msgBegin<MessageType::DISCONNECT>();
+		conn.msgEnd<MessageType::DISCONNECT>();
 
 		ipToPlayer.erase(addr);
 		world.deferedDestroyEntity(ent);

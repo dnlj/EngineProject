@@ -18,6 +18,8 @@ namespace Engine::Net {
 			byte body[MAX_PACKET_SIZE - sizeof(head)];
 
 		public:
+			// TODO: look into alignment/access rules. May need to memcpy.
+			
 			auto& getProtocol() { return *reinterpret_cast<uint16*>(&head[0]); }
 			auto& getProtocol() const { return *reinterpret_cast<const uint16*>(&head[0]); }
 			void setProtocol(uint16 p) { getProtocol() = p; }
@@ -26,6 +28,7 @@ namespace Engine::Net {
 			auto& getSeqNum() const { return *reinterpret_cast<const SeqNum*>(&head[2]); }
 			void setSeqNum(SeqNum n) { getSeqNum() = n; }
 
+			// TODO: remove this field. Unused
 			auto& getReliable() { return *reinterpret_cast<bool*>(&head[6]); }
 			auto& getReliable() const { return *reinterpret_cast<const bool*>(&head[6]); }
 			void setReliable(bool r) { getReliable() = r; }

@@ -9,7 +9,7 @@
 #include <Engine/Net/IPv4Address.hpp>
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Net/Net.hpp>
-#include <Engine/Net/Packet.hpp>
+#include <Engine/Net/PacketWriter.hpp>
 #include <Engine/StaticVector.hpp>
 #include <Engine/Bitset.hpp>
 #include <Engine/Clock.hpp>
@@ -17,24 +17,6 @@
 
 
 namespace Engine::Net {
-	class PacketNode {
-		public:
-			PacketNode() = default;
-			PacketNode(const PacketNode&) = delete; // Would break curr/last ptrs
-			std::unique_ptr<PacketNode> next = nullptr;
-			byte* curr;
-			byte* last;
-
-			Packet packet;
-
-			void clear() {
-				curr = packet.body;
-				last = curr;
-			}
-
-			int32 size() { return static_cast<int32>(last - curr); }
-	};
-
 	using ChannelId = uint8;
 
 	enum class ChannelFlags : ChannelId {
@@ -60,14 +42,17 @@ namespace Engine::Net {
 	class Channel {
 		public:
 			constexpr static auto flags = Flags;
+
 	};
 
+	
 	template<class... Cs>
 	class Connection {
 		private:
-			using NodePtr = std::unique_ptr<PacketNode>;
+			// TODO: static_assert that no two channels handle the same messages.
+			// TODO: checks in recv to make sure that the message type is valid (handles by one of Cs)
 
-			constexpr static uint16 protocol = 0b0'0110'1001'1001'0110;
+			using NodePtr = std::unique_ptr<PacketNode>;
 
 			const IPv4Address addr = {};
 			SeqNum nextPacketSeqUnrel = 0;
@@ -98,15 +83,6 @@ namespace Engine::Net {
 			/** The acks for the next N seq num we are expecting to receive */
 			AckBitset recvAcks = {};
 
-			/** Packets to send next send() */
-			NodePtr unsentPackets[2];
-
-			/** Unused packets */
-			NodePtr pool;
-
-			/** The current packet we are writing to */
-			PacketNode* currNode = nullptr;
-
 			struct {
 				/** The time the message was received */
 				Engine::Clock::TimePoint time;
@@ -124,34 +100,11 @@ namespace Engine::Net {
 				const byte* msgLast;
 			} rdat;
 
+			PacketWriter packetWriter;
+
 			template<class C>
 			constexpr static ChannelId getChannelId() { return Meta::IndexOf<C, Cs...>::value; }
 
-			NodePtr getOrAllocPacketFromPool() {
-				if (!pool) {
-					auto ptr = std::make_unique<PacketNode>();
-					ptr->clear();
-					ptr->packet.setProtocol(protocol);
-					return ptr;
-				}
-				auto old = std::move(pool);
-				pool.swap(old->next);
-				old->clear();
-				return old;
-			}
-
-			template<class C>
-			PacketNode& getOrAllocPacket() {
-				constexpr bool rel = static_cast<bool>(C::flags & ChannelFlags::Reliable);
-				auto& node = unsentPackets[rel];
-				if (!node) {
-					node = getOrAllocPacketFromPool();
-					node->packet.setReliable(rel);
-				}
-				auto* curr = node.get();
-				while(curr->next) { curr = curr->next.get(); }
-				return *curr;
-			}
 			
 			ENGINE_INLINE constexpr static SeqNum seqToIndex(SeqNum seq) {
 				constexpr auto maxUnacked = AckBitset::size();
@@ -167,6 +120,28 @@ namespace Engine::Net {
 				pool = std::move(node);
 			}
 
+			///////////////////////////////////////////////////////////////////////////////////////////
+			std::tuple<Cs...> channels;
+
+			template<class C>
+			C& getChannel() {
+				return std::get<C>(channels);
+			}
+
+			template<auto M>
+			auto& getChannelForMessage() {
+				constexpr auto i = ((Cs::handlesMessageType<M>() ? getChannelId<Cs>() : 0) + ...);
+				static_assert(i >= 0 && i <= std::tuple_size_v<decltype(channels)>);
+				return std::get<i>(channels);
+			}
+
+			//template<class M>
+			//constexpr static ChannelId getChannelIdForMessageType() {
+			//	getChannelForMessageType<M>()
+			//	return 0;
+			//}
+
+
 		public:
 			// TODO: ping
 			// TODO: jitter
@@ -181,10 +156,11 @@ namespace Engine::Net {
 
 			[[nodiscard]]
 			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
-				if (pkt.getProtocol() != protocol) {
-					ENGINE_WARN("Incorrect network protocol");
-					return false;
-				}
+				// TODO:
+				//if (pkt.getProtocol() != protocol) {
+				//	ENGINE_WARN("Incorrect network protocol");
+				//	return false;
+				//}
 
 				rdat.time = time;
 				rdat.first = pkt.head;
@@ -263,7 +239,7 @@ namespace Engine::Net {
 			 * @param first The sequence number of the first ack.
 			 * @params acks The bitset indicating if packet `first + i` has been received.
 			 */
-			void updateSentAcks(SeqNum first, AckBitset acks) {
+			/*void updateSentAcks(SeqNum first, AckBitset acks) {
 				// TODO: need to guard against `first > nextPacketSeqRel`
 				if (first < nextSentAck) { ENGINE_LOG("================== OH BOY! =================="); }
 				// TODO: if (first >= nextPacketSeqRel) { return; }
@@ -286,7 +262,7 @@ namespace Engine::Net {
 						freeAck(i);
 					}
 				}
-			}
+			}*/
 
 			auto getRecvNextAck() const { return nextRecvAck; }
 			auto getRecvAcks() const { return recvAcks; }
@@ -345,35 +321,30 @@ namespace Engine::Net {
 			void send(UDPSocket& sock) {
 				const auto now = Engine::Clock::now();
 				{ // Unreliable
-					auto& node = unsentPackets[0];
-					while (node) {
-						const auto i = seqToIndex(nextPacketSeqUnrel);
+					while (auto node = packetWriter.pop()) {
+						node->packet.setSeqNum(nextPacketSeqUnrel++);
+						const auto seq = node->packet.getSeqNum();
+						const auto i = seqToIndex(seq);
 						auto& data = unrelAckData[i];
 
 						// TODO: rm - debug
 						if (data.recvTime == Engine::Clock::TimePoint{}) {
-							ENGINE_WARN("NO ACK FOR ", nextPacketSeqUnrel - 64);
+							ENGINE_WARN("NO ACK FOR ", seq - 64);
 						}
 
 						data = {
 							.sendTime = now,
 						};
 
-						node->packet.setSeqNum(nextPacketSeqUnrel++);
 						node->packet.setInitAck(lastRecvAckUnrel);
 						node->packet.setAcks(recvAcksUnrel);
 
 						const auto sz = static_cast<int32>(node->last - node->packet.head);
 						sock.send(node->packet.head, sz, addr);
-
-						NodePtr old = std::move(node);
-						node.swap(old->next);
-						old->next.swap(pool);
-						pool.swap(old);
 					}
 				}
-
-				{ // Reliable
+				
+				/*{ // Reliable
 					auto& node = unsentPackets[1];
 					while (node) {
 						auto& store = unacked[seqToIndex(nextPacketSeqRel)];
@@ -399,76 +370,48 @@ namespace Engine::Net {
 							break;
 						}
 					}
-				}
+				}*/
 			}
 
-			void sendUnacked(UDPSocket& sock) {
-				ENGINE_DEBUG_ASSERT(nextPacketSeqRel - nextSentAck <= static_cast<SeqNum>(AckBitset::size()));
-				for (auto i = nextSentAck; i < nextPacketSeqRel; ++i) {
-					auto& node = unacked[seqToIndex(i)];
-					if (node) {
-						// TODO: bandwidth
-						const auto sz = static_cast<int32>(node->last - node->packet.head);
-						sock.send(node->packet.head, sz, addr);
-					}
-				}
-			}
+			// TODO: should msgBegin/End be on packetwriter? somewhat makes sense since because we modify node->curr/last
+			template<auto M>
+			bool msgBegin() {
+				if (!getChannelForMessage<M>().canWriteMessage()) { return false; }
 
-			template<class C>
-			void msgBegin(MessageType type, const C&) {
-				static_assert((std::is_same_v<C, Cs> || ...), "Invalid network connection channel");
-				// TODO: check that currNode is empty
-				ENGINE_DEBUG_ASSERT(currNode == nullptr, "Attempting to begin new message without ending the previous message.");
-				auto& node = getOrAllocPacket<C>();
-				currNode = &node;
+				packetWriter.ensurePacketAvailable();
 
 				write(MessageHeader{
-					.type = type,
-					.channel = getChannelId<C>(),
-					.sequence = 0, // TODO: impl
-				});
+					.type = M,
+					.channel = 0, // TODO: impl
+				}); 
+
+				return true;
 			}
 
+			template<auto M>
 			void msgEnd() {
-				auto* head = reinterpret_cast<MessageHeader*>(currNode->curr);
-				head->size = static_cast<decltype(head->size)>(currNode->size() - sizeof(*head));
-				currNode->curr = currNode->last;
-				currNode = nullptr;
+				static_assert(sizeof(M) == sizeof(MessageHeader::type));
+
+				auto node = packetWriter.back();
+				ENGINE_DEBUG_ASSERT(node, "Unmatched Connection::msgEnd<", static_cast<int>(M), "> call.");
+
+				auto* hdr = reinterpret_cast<MessageHeader*>(node->curr);
+				ENGINE_DEBUG_ASSERT(hdr->type == M, "Mismatched msgBegin/End calls.");
+
+				hdr->size = static_cast<decltype(hdr->size)>(node->size() - sizeof(*hdr));
+
+				getChannelForMessage<M>().msgEnd(node->packet.getSeqNum(), *hdr);
+
+				node->curr = node->last;
 			}
 
 			/**
-			 * Writes a specific number of bytes to the current message.
+			 * Writes data to the current message.
+			 * @see PacketWriter::write
 			 */
-			void write(const void* t, size_t sz) {
-				ENGINE_DEBUG_ASSERT(currNode != nullptr, "No network message active.");
-				//ENGINE_LOG("Write: ", sz); __debugbreak();
-				ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
-
-				if (currNode->last + sz <= currNode->packet.body + sizeof(currNode->packet.body)) {
-					memcpy(currNode->last, t, sz);
-					currNode->last += sz;
-				} else {
-					ENGINE_DEBUG_ASSERT(currNode->next == nullptr);
-					auto old = currNode;
-					currNode->next = getOrAllocPacketFromPool();
-					currNode = currNode->next.get();
-					// TODO: set currNode ptrs? i think
-					ENGINE_WARN("Network message rollover. This code is untested.");
-					write(old->curr, old->size());
-					write(t, sz);
-					old->last = old->curr;
-				}
+			template<class... Args>
+			decltype(auto) write(Args&&... args) {
+				return packetWriter.write(std::forward<Args>(args)...);
 			}
-
-			/**
-			 * Writes an object to the current message.
-			 */
-			template<class T>
-			void write(const T& t) { write(&t, sizeof(T)); };
-
-			/**
-			 * Writes a string to the current message.
-			 */
-			void write(const char* t) { write(t, strlen(t) + 1); }
 	};
 }

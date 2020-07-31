@@ -41,10 +41,10 @@ namespace Game {
 			} else if constexpr (ENGINE_SERVER) {
 				curr = stored;
 				auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-				conn.msgBegin(MessageType::ACTION, General_UU);
+				conn.msgBegin<MessageType::ACTION>();
 				conn.write(currTick);
 				conn.write(curr.recvTick);
-				conn.msgEnd();
+				conn.msgEnd<MessageType::ACTION>();
 
 				if (curr.recvTick == 0) {
 					// TODO: enable - ENGINE_LOG("Missing input for tick ", currTick);
@@ -65,10 +65,10 @@ namespace Game {
 		for (const auto& ent : actionFilter) {
 			const auto& actComp = world.getComponent<ActionComponent>(ent);
 			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-			conn.msgBegin(MessageType::ACTION, General_UU);
+			conn.msgBegin<MessageType::ACTION>();
 			conn.write(world.getTick());
 			conn.write(actComp.state);
-			conn.msgEnd();
+			conn.msgEnd<MessageType::ACTION>();
 
 		}
 	}
