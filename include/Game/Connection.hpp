@@ -15,10 +15,13 @@ namespace Game {
 		MessageType::CONNECT,		  // TODO: Move into channel for valid unconnected messages?
 		MessageType::CONNECT_CONFIRM, // TODO: Move into channel for valid unconnected messages?
 		MessageType::DISCONNECT,
-		MessageType::PING,
 		MessageType::ACK,
 		MessageType::TEST,
 		MessageType::ACTION // TODO: one of these things is not like the others
+	> {};
+
+	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
+		MessageType::PING
 	> {};
 
 	struct Channel_ECS : Engine::Net::Channel_UnreliableUnordered<
@@ -31,6 +34,7 @@ namespace Game {
 
 	using Connection = Engine::Net::Connection<
 		Channel_General,
+		Channel_General_RU,
 		Channel_ECS
 	>;
 }

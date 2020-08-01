@@ -13,6 +13,7 @@ namespace Engine::Net {
 			NodePtr pool = nullptr;
 			NodePtr first = nullptr;
 			PacketNode* last = nullptr;
+			SeqNum nextSeq = 0;
 
 			NodePtr getOrAllocPacketFromPool() {
 				if (!pool) {
@@ -24,6 +25,7 @@ namespace Engine::Net {
 				auto old = std::move(pool);
 				pool.swap(old->next);
 				old->clear();
+				old->packet.setSeqNum(nextSeq++);
 				return old;
 			}
 
@@ -37,6 +39,8 @@ namespace Engine::Net {
 			}
 
 		public:
+			auto getNextSeq() const { return nextSeq; }
+
 			void ensurePacketAvailable() {
 				getOrAllocPacket();
 			}

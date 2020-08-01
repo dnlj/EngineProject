@@ -55,8 +55,8 @@ namespace Engine::Net {
 			using NodePtr = std::unique_ptr<PacketNode>;
 
 			const IPv4Address addr = {};
-			SeqNum nextPacketSeqUnrel = 0;
-			SeqNum nextPacketSeqRel = 0;
+			// TODO: rm - SeqNum nextPacketSeqUnrel = 0;
+			// TODO: rm - SeqNum nextPacketSeqRel = 0;
 
 			struct UnreliableAckData {
 				Engine::Clock::TimePoint sendTime;
@@ -207,7 +207,7 @@ namespace Engine::Net {
 
 					{// TODO: move into func
 						// Unsigned subtraction is fine here since it would still be > max size
-						const auto lastSent = nextPacketSeqUnrel - 1;
+						const auto lastSent = packetWriter.getNextSeq() - 1;
 						const auto diff = lastSent - init;
 						if (diff <= static_cast<SeqNum>(AckBitset::size())) {
 							auto curr = lastSent - acks.size();
@@ -222,9 +222,12 @@ namespace Engine::Net {
 
 								data.recvTime = time;
 
-								ENGINE_LOG("RECV ACK: ", curr, " in ",
-									Engine::Clock::Seconds{data.recvTime - data.sendTime}.count(), "s"
-								);
+								(getChannel<Cs>().recvPacketAck(curr), ...);
+
+								// TODO: rm
+								//ENGINE_LOG("RECV ACK: ", curr, " in ",
+								//	Engine::Clock::Seconds{data.recvTime - data.sendTime}.count(), "s"
+								//);
 							}
 						}
 					}
@@ -321,8 +324,11 @@ namespace Engine::Net {
 			void send(UDPSocket& sock) {
 				const auto now = Engine::Clock::now();
 				{ // Unreliable
+
+					// TODO: this should probably be in its own function. Only fill empty space in packets. etc.
+					(getChannel<Cs>().writeUnacked(packetWriter), ...);
+
 					while (auto node = packetWriter.pop()) {
-						node->packet.setSeqNum(nextPacketSeqUnrel++);
 						const auto seq = node->packet.getSeqNum();
 						const auto i = seqToIndex(seq);
 						auto& data = unrelAckData[i];
@@ -376,7 +382,10 @@ namespace Engine::Net {
 			// TODO: should msgBegin/End be on packetwriter? somewhat makes sense since because we modify node->curr/last
 			template<auto M>
 			bool msgBegin() {
-				if (!getChannelForMessage<M>().canWriteMessage()) { return false; }
+				if (!getChannelForMessage<M>().canWriteMessage()) {
+					__debugbreak(); // TODO: rm
+					return false;
+				}
 
 				packetWriter.ensurePacketAvailable();
 
@@ -400,6 +409,7 @@ namespace Engine::Net {
 
 				hdr->size = static_cast<decltype(hdr->size)>(node->size() - sizeof(*hdr));
 
+				// TODO: i dont think seqNum is actually set at this point. It is set in send?
 				getChannelForMessage<M>().msgEnd(node->packet.getSeqNum(), *hdr);
 
 				node->curr = node->last;

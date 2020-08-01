@@ -511,7 +511,7 @@ namespace Game {
 		static uint8 ping = 0;
 		static auto next = now;
 		if (next > now) { return; }
-		next = now + std::chrono::milliseconds{1000};
+		next = now + std::chrono::milliseconds{-1000};
 
 		for (auto& ply : plyFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
