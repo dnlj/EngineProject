@@ -285,17 +285,6 @@ namespace Game {
 		//}
 	}
 
-	HandleMessageDef(MessageType::ACK) {
-		const auto next = from.read<Engine::Net::SeqNum>();
-		const auto acks = from.read<Engine::Net::AckBitset>();
-
-		if (next && acks) {
-			// TODO: from.updateSentAcks(*next, *acks);
-		} else {
-			ENGINE_WARN("Incorrect ACK network message.");
-		}
-	}
-
 	HandleMessageDef(MessageType::TEST) {
 		std::cout << "***** TEST: " << head.seq << "\n";
 	}
@@ -389,10 +378,10 @@ namespace Game {
 				}
 
 				if (world.hasComponent<PlayerFlag>(ent)) {
-					conn.msgBegin<MessageType::ACK>();
-					conn.write(conn.getRecvNextAck());
-					conn.write(conn.getRecvAcks());
-					conn.msgEnd<MessageType::ACK>();
+					//conn.msgBegin<MessageType::ACK>();
+					//conn.write(conn.getRecvNextAck());
+					//conn.write(conn.getRecvAcks());
+					//conn.msgEnd<MessageType::ACK>();
 
 					// TODO: conn.sendUnacked(socket);
 				}

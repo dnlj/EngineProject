@@ -189,7 +189,9 @@ namespace Engine::Net {
 				for (SeqNum s : pkt->messages) {
 					if (msgData.find(s)) {
 						msgData.remove(s);
-						ENGINE_LOG("RU - ACK: ", pktSeq, " ", s, " ", msgData.max() - msgData.min());
+						ENGINE_LOG("RU - ACK: ", pktSeq, " ", s, " ", msgData.min(), " ", msgData.max());
+					} else {
+						ENGINE_LOG("RU - DUP: ", pktSeq, " ", s, " ", msgData.min(), " ", msgData.max());
 					}
 				}
 
@@ -198,7 +200,7 @@ namespace Engine::Net {
 
 			
 			bool shouldProcess(const MessageHeader& hdr) const {
-				return msgData.find(hdr.seq);
+				return msgData.contains(hdr.seq);
 			}
 
 			// TODO: also want some kind of fill-rest-of-packet function

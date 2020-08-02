@@ -51,13 +51,10 @@ namespace Engine::Net {
 		private:
 			// TODO: static_assert that no two channels handle the same messages.
 			// TODO: checks in recv to make sure that the message type is valid (handles by one of Cs)
-
-			using NodePtr = std::unique_ptr<PacketNode>;
-
+			
 			const IPv4Address addr = {};
-			// TODO: rm - SeqNum nextPacketSeqUnrel = 0;
-			// TODO: rm - SeqNum nextPacketSeqRel = 0;
 
+			// TODO: replace all this ack stuff with a seq buffer
 			struct UnreliableAckData {
 				Engine::Clock::TimePoint sendTime;
 				Engine::Clock::TimePoint recvTime;
@@ -70,18 +67,6 @@ namespace Engine::Net {
 
 			/** Acks for the prev N packets before lastRecvAckUnrel */
 			AckBitset recvAcksUnrel = {};
-
-			/** The next ack we are expecting */
-			SeqNum nextSentAck = 0;
-
-			/** Data for the last N reliable packets we have sent */
-			NodePtr unacked[AckBitset::size()];
-
-			/** The next seq num we are expecting to receive */
-			SeqNum nextRecvAck = 0;
-
-			/** The acks for the next N seq num we are expecting to receive */
-			AckBitset recvAcks = {};
 
 			struct {
 				/** The time the message was received */
@@ -181,65 +166,46 @@ namespace Engine::Net {
 				const auto& acks = pkt.getAcks();
 				const auto seq = pkt.getSeqNum();
 
-				if (pkt.getReliable()) {
-					// TODO: move into func
-					if (seq < nextRecvAck || seq >= (nextRecvAck + recvAcks.size())) { return false; }
-	
-					if (const auto i = seqToIndex(seq); recvAcks.test(i)) {
-						return false;
-					} else {
-						recvAcks.set(i);
-					}
+				{ // TODO: move into func
+					int32 diff = seq - lastRecvAckUnrel;
+					if (diff > 0) {
+						lastRecvAckUnrel = seq;
+						recvAcksUnrel <<= diff;
+						recvAcksUnrel.set(0);
+					} else if (diff < 0) {
+						diff = -diff;
+						if (diff < AckBitset::size()) {
+							recvAcksUnrel.set(diff);
+						}
+					} // If equal then it should have been already acked
+				}
 
-					for (SeqNum i; recvAcks.test(i = seqToIndex(nextRecvAck));) {
-						recvAcks.reset(i);
-						++nextRecvAck;
-					}
+				{// TODO: move into func
+					// Unsigned subtraction is fine here since it would still be > max size
+					const auto lastSent = packetWriter.getNextSeq() - 1;
+					const auto diff = lastSent - init;
+					if (diff <= static_cast<SeqNum>(AckBitset::size())) {
+						auto curr = lastSent - acks.size();
+						const auto stop = init;
 
-					// TODO: updateSentAcks(init, acks);
-				} else {
-					{ // TODO: move into func
-						int32 diff = seq - lastRecvAckUnrel;
-						if (diff > 0) {
-							lastRecvAckUnrel = seq;
-							recvAcksUnrel <<= diff;
-							recvAcksUnrel.set(0);
-						} else if (diff < 0) {
-							diff = -diff;
-							if (diff < AckBitset::size()) {
-								recvAcksUnrel.set(diff);
-							}
-						} // If equal then it should have been already acked
-					}
+						for (;curr <= stop; ++curr) {
+							if (!acks.test(init - curr)) { continue; }
 
-					{// TODO: move into func
-						// Unsigned subtraction is fine here since it would still be > max size
-						const auto lastSent = packetWriter.getNextSeq() - 1;
-						const auto diff = lastSent - init;
-						if (diff <= static_cast<SeqNum>(AckBitset::size())) {
-							auto curr = lastSent - acks.size();
-							const auto stop = init;
+							const auto i = seqToIndex(curr);
+							auto& data = unrelAckData[i];
+							if (data.recvTime != Engine::Clock::TimePoint{}) { continue; }
 
-							for (;curr <= stop; ++curr) {
-								if (!acks.test(init - curr)) { continue; }
+							data.recvTime = time;
 
-								const auto i = seqToIndex(curr);
-								auto& data = unrelAckData[i];
-								if (data.recvTime != Engine::Clock::TimePoint{}) { continue; }
+							(getChannel<Cs>().recvPacketAck(curr), ...);
 
-								data.recvTime = time;
-
-								(getChannel<Cs>().recvPacketAck(curr), ...);
-
-								// TODO: rm
-								//ENGINE_LOG("RECV ACK: ", curr, " in ",
-								//	Engine::Clock::Seconds{data.recvTime - data.sendTime}.count(), "s"
-								//);
-							}
+							// TODO: rm
+							//ENGINE_LOG("RECV ACK: ", curr, " in ",
+							//	Engine::Clock::Seconds{data.recvTime - data.sendTime}.count(), "s"
+							//);
 						}
 					}
 				}
-
 
 				return true;
 			}
@@ -273,9 +239,6 @@ namespace Engine::Net {
 					}
 				}
 			}*/
-
-			auto getRecvNextAck() const { return nextRecvAck; }
-			auto getRecvAcks() const { return recvAcks; }
 
 			auto recvTime() const { return rdat.time; }
 

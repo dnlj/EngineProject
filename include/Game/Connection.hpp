@@ -15,7 +15,6 @@ namespace Game {
 		MessageType::CONNECT,		  // TODO: Move into channel for valid unconnected messages?
 		MessageType::CONNECT_CONFIRM, // TODO: Move into channel for valid unconnected messages?
 		MessageType::DISCONNECT,
-		MessageType::ACK,
 		MessageType::TEST,
 		MessageType::ACTION // TODO: one of these things is not like the others
 	> {};
