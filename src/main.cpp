@@ -37,7 +37,6 @@
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/Noise/WorleyNoise.hpp>
 #include <Engine/Net/Net.hpp>
-#include <Engine/Net/SeqNum.hpp>
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Win32/Win32.hpp>
 #include <Engine/WindowCallbacks.hpp>

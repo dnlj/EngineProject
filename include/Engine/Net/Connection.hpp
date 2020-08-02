@@ -105,6 +105,10 @@ namespace Engine::Net {
 			template<class C>
 			constexpr static ChannelId getChannelId() { return Meta::IndexOf<C, Cs...>::value; }
 
+			constexpr static MessageType maxMessageType() {
+				return 14; // TODO: dont hard code.
+			}
+
 			
 			ENGINE_INLINE constexpr static SeqNum seqToIndex(SeqNum seq) {
 				constexpr auto maxUnacked = AckBitset::size();
@@ -130,17 +134,20 @@ namespace Engine::Net {
 
 			template<auto M>
 			auto& getChannelForMessage() {
+				// TODO: static assert for invalid messages (M)
 				constexpr auto i = ((Cs::handlesMessageType<M>() ? getChannelId<Cs>() : 0) + ...);
 				static_assert(i >= 0 && i <= std::tuple_size_v<decltype(channels)>);
 				return std::get<i>(channels);
 			}
 
-			//template<class M>
-			//constexpr static ChannelId getChannelIdForMessageType() {
-			//	getChannelForMessageType<M>()
-			//	return 0;
-			//}
-
+			template<class Func>
+			void callWithChannelForMessage(const MessageType m, Func&& func) {
+				([&]<class T, T... Is>(std::integer_sequence<T, Is...>){
+					using F = void(Func::*)(void) const;
+					constexpr F fs[] = {&Func::operator()<std::decay_t<decltype(std::declval<Connection>().getChannelForMessage<Is>())>>...};
+					(func.*fs[m])();
+				})(std::make_integer_sequence<MessageType, maxMessageType() + 1>{});
+			}
 
 		public:
 			// TODO: ping
@@ -280,8 +287,26 @@ namespace Engine::Net {
 				ENGINE_DEBUG_ASSERT(rdat.curr == rdat.msgLast, "Incomplete read of network message");
 				const auto* hdr = read<MessageHeader>();
 				ENGINE_DEBUG_ASSERT(hdr->size <= MAX_MESSAGE_SIZE, "Invalid network message length");
+
+				// TODO: need to check with channel if we should process this message or skip and read next
+
+				//GetChannelForMessage{ hdr->
+				//};
+				bool process = true;
+				callWithChannelForMessage(hdr->type, [&]<class C>(){
+					auto& ch = getChannel<C>();
+					process = ch.shouldProcess(*hdr);
+				});
+
 				rdat.msgLast = rdat.curr + hdr->size;
-				return hdr;
+
+				if (process) {
+					return hdr;
+				} else {
+					ENGINE_LOG("Duplicate message ", (int)hdr->type, " ", (int)hdr->seq);
+					rdat.curr += hdr->size;
+					return recvNext();
+				}
 			}
 
 			/**
@@ -325,6 +350,7 @@ namespace Engine::Net {
 				const auto now = Engine::Clock::now();
 				{ // Unreliable
 
+					// TODO: the problem is that there is noe message active yet sometimes 
 					// TODO: this should probably be in its own function. Only fill empty space in packets. etc.
 					(getChannel<Cs>().writeUnacked(packetWriter), ...);
 

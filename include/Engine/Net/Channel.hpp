@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Net/MessageHeader.hpp>
 #include <Engine/Net/PacketWriter.hpp>
+#include <Engine/Clock.hpp>
 
 
 namespace Engine::Net::Detail {
@@ -77,8 +78,7 @@ namespace Engine::Net {
 				if (seqGreater(seq + 1, next)) { next = seq + 1; }
 
 				// TODO: this could also just be done with one or two memsets
-				while (seqLess(lowest + capacity() - 1, seq)) {
-					// TODO: BUG: currently we call remove even if no entry exists atm
+				while (seqLess(lowest + capacity(), next)) {
 					remove(lowest);
 				}
 
@@ -100,10 +100,17 @@ namespace Engine::Net {
 				}
 			}
 
-			T* find(S seq) {
-				const auto i = index(seq);
-				const auto& e = entries[i];
-				return (e.valid && (e.seq == seq)) ? &storage[i] : nullptr;
+			ENGINE_INLINE bool contains(S seq) const {
+				const auto& e = entries[index(seq)];
+				return (e.valid && (e.seq == seq));
+			}
+
+			ENGINE_INLINE T* find(S seq) {
+				return contains(seq) ? &get(seq) : nullptr;
+			}
+
+			ENGINE_INLINE const T* find(S seq) const {
+				return const_cast<SeqBuffer*>(this)->find(seq);
 			}
 
 			ENGINE_INLINE T& get(S seq) {
@@ -125,6 +132,10 @@ namespace Engine::Net {
 				return true;
 			}
 
+			constexpr static bool shouldProcess(const MessageHeader& hdr) noexcept {
+				return true;
+			}
+
 			void msgEnd(SeqNum pktSeq, MessageHeader& hdr) {
 				hdr.seq = ++nextSeq;
 			}
@@ -137,14 +148,21 @@ namespace Engine::Net {
 			SeqNum nextSeq = 0;
 
 			struct MsgData {
+				Engine::Clock::TimePoint lastSendTime;
 				std::vector<byte> data;
 			};
-			SeqBuffer<SeqNum, MsgData, 64> msgData;
+			SeqBuffer<SeqNum, MsgData, 64> msgData; // TODO: ideal size?
 
 			struct PacketData {
 				std::vector<SeqNum> messages;
 			};
-			SeqBuffer<SeqNum, PacketData, 64> pktData;
+			SeqBuffer<SeqNum, PacketData, 64> pktData; // TODO: ideal size?
+
+			void addMessageToPacket(SeqNum pktSeq, SeqNum msgSeq) {
+				auto* pkt = pktData.find(pktSeq);
+				if (!pkt) { pkt = &pktData.insert(pktSeq); }
+				pkt->messages.push_back(msgSeq);
+			}
 
 		public:
 			bool canWriteMessage() const {
@@ -154,15 +172,14 @@ namespace Engine::Net {
 			void msgEnd(SeqNum pktSeq, MessageHeader& hdr) {
 				hdr.seq = nextSeq++;
 
-				// TODO: need msgData.insert
+				ENGINE_DEBUG_ASSERT(msgData.spaceFor(hdr.seq));
 				auto& msg = msgData.insert(hdr.seq);
-				msg.data.assign(reinterpret_cast<byte*>(&hdr), reinterpret_cast<byte*>(&hdr) + hdr.size);
+				msg.data.assign(reinterpret_cast<byte*>(&hdr), reinterpret_cast<byte*>(&hdr) + sizeof(hdr) + hdr.size);
+				msg.lastSendTime = Engine::Clock::now();
 
-				auto* pkt = pktData.find(pktSeq);
-				if (!pkt) { pkt = &pktData.insert(pktSeq); }
-				pkt->messages.push_back(hdr.seq);
+				addMessageToPacket(pktSeq, hdr.seq);
 
-				ENGINE_LOG("RU: ", pktSeq, " ", hdr.seq);
+				ENGINE_LOG("RU - msgEnd: ", pktSeq, " ", hdr.seq);
 			}
 
 			void recvPacketAck(SeqNum pktSeq) {
@@ -170,23 +187,33 @@ namespace Engine::Net {
 				if (!pkt) { return; }
 
 				for (SeqNum s : pkt->messages) {
-					auto& m = msgData.get(s);
 					if (msgData.find(s)) {
 						msgData.remove(s);
-						ENGINE_LOG("RU ACK: ", pktSeq, " ", s);
+						ENGINE_LOG("RU - ACK: ", pktSeq, " ", s, " ", msgData.max() - msgData.min());
 					}
 				}
 
 				pktData.remove(pktSeq);
 			}
 
+			
+			bool shouldProcess(const MessageHeader& hdr) const {
+				return msgData.find(hdr.seq);
+			}
+
 			// TODO: also want some kind of fill-rest-of-packet function
 			void writeUnacked(PacketWriter& packetWriter) {
-				for (auto s = msgData.min(); seqLess(s, msgData.max()); ++s) {
-					auto* msg = msgData.find(s);
-					if (msg) {
-						ENGINE_LOG("RESEND ");
+				const auto now = Engine::Clock::now();
+				// TODO: BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
+				for (auto seq = msgData.min(); seqLess(seq, msgData.max() + 1); ++seq) {
+					auto* msg = msgData.find(seq);
+
+					// TODO: resend time should be configurable
+					if (msg && (now < msg->lastSendTime + std::chrono::milliseconds{50})) {
+						//ENGINE_LOG("RU - resend: ", seq);
+						packetWriter.ensurePacketAvailable(); // TODO: seems kinda hacky
 						packetWriter.write(msg->data.data(), msg->data.size());
+						addMessageToPacket(packetWriter.getNextSeq() - 1, seq);
 					}
 				}
 			}

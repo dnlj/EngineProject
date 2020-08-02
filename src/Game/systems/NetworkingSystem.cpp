@@ -148,7 +148,7 @@ namespace Game {
 		const int32 val = data & 0x7F;
 
 		if (val != ((last + 1) & 0x7F)) {
-			ENGINE_WARN("\n\n**** OUT OF ORDER ****\n\n");
+			ENGINE_WARN("\n\n**** OUT OF ORDER ****\n");
 			//__debugbreak();
 		}
 		last = val;
@@ -511,7 +511,7 @@ namespace Game {
 		static uint8 ping = 0;
 		static auto next = now;
 		if (next > now) { return; }
-		next = now + std::chrono::milliseconds{-1000};
+		next = now + std::chrono::milliseconds{50};
 
 		for (auto& ply : plyFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
