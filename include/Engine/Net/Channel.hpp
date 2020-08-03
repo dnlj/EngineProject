@@ -4,6 +4,7 @@
 #include <Engine/Net/MessageHeader.hpp>
 #include <Engine/Net/PacketWriter.hpp>
 #include <Engine/Clock.hpp>
+#include <Engine/SequenceBuffer.hpp>
 
 
 namespace Engine::Net::Detail {
@@ -26,102 +27,6 @@ namespace Engine::Net::Detail {
 }
 
 namespace Engine::Net {
-	template<class I> // TODO: move
-	ENGINE_INLINE constexpr bool seqGreater(I a, I b) noexcept {
-		constexpr auto half = std::numeric_limits<I>::max() / 2 + 1;
-		return ((a > b) && (a - b <= half))
-			|| ((a < b) && (b - a >  half));
-	}
-
-	template<class I> // TODO: move
-	ENGINE_INLINE constexpr bool seqLess(I a, I b) noexcept {
-		return seqGreater<I>(b, a);
-	}
-
-	// TODO: move
-	// TODO: doc
-	template<class S, class T, int32 N> // TODO: Doc destructive to old entities as new are inserted
-	class SeqBuffer { // Almost SparseSet + RingBuffer. Not quite.
-		private:
-			struct Entry {
-				S seq;
-				bool valid = false;
-			};
-
-			S lowest = 0;
-			S next = 0;
-			Entry entries[N] = {};
-			T storage[N];
-
-			constexpr static auto index(S seq) noexcept { return seq % N; }
-
-			ENGINE_INLINE auto& getEntry(S seq) { return entries[index(seq)]; }
-			ENGINE_INLINE const auto& getEntry(S seq) const { return const_cast<SeqBuffer*>(this)->getEntry(seq); }
-
-		public:
-			constexpr static auto capacity() noexcept { return N; }
-
-			auto min() const { return lowest; }
-			auto max() const { return next - 1; }
-
-			void clear() {
-				memset(&entries, 0, sizeof(entries));
-			}
-
-			bool spaceFor(S seq) const {
-				return !getEntry(seq).valid;
-			}
-			
-			T& insert(S seq) {
-				// TODO: seq < min check
-
-				if (seqGreater(seq + 1, next)) { next = seq + 1; }
-
-				// TODO: this could also just be done with one or two memsets
-				while (seqLess(lowest + capacity(), next)) {
-					remove(lowest);
-				}
-
-				getEntry(seq) = {
-					.seq = seq,
-					.valid = true,
-				};
-
-				auto& data = get(seq);
-				data = {}; // TODO: do we want this?
-				return data;
-			}
-
-			void remove(S seq) {
-				getEntry(seq).valid = false;
-
-				while (seqLess(lowest, next) && !getEntry(lowest).valid) {
-					++lowest;
-				}
-			}
-
-			ENGINE_INLINE bool contains(S seq) const {
-				const auto& e = entries[index(seq)];
-				return (e.valid && (e.seq == seq));
-			}
-
-			ENGINE_INLINE T* find(S seq) {
-				return contains(seq) ? &get(seq) : nullptr;
-			}
-
-			ENGINE_INLINE const T* find(S seq) const {
-				return const_cast<SeqBuffer*>(this)->find(seq);
-			}
-
-			ENGINE_INLINE T& get(S seq) {
-				return storage[index(seq)];
-			}
-
-			ENGINE_INLINE const T& get(S seq) const {
-				return const_cast<SeqBuffer*>(this)->get(seq);
-			}
-	};
-
 	template<MessageType... Ms>
 	class Channel_UnreliableUnordered : public Detail::Channel_Base<Ms...> { // TODO: name?
 		private:
@@ -132,7 +37,7 @@ namespace Engine::Net {
 				return true;
 			}
 
-			constexpr static bool shouldProcess(const MessageHeader& hdr) noexcept {
+			constexpr static bool recv(const MessageHeader& hdr) noexcept {
 				return true;
 			}
 
@@ -151,12 +56,15 @@ namespace Engine::Net {
 				Engine::Clock::TimePoint lastSendTime;
 				std::vector<byte> data;
 			};
-			SeqBuffer<SeqNum, MsgData, 64> msgData; // TODO: ideal size?
+			SequenceBuffer<SeqNum, MsgData, 64> msgData; // TODO: ideal size?
 
 			struct PacketData {
 				std::vector<SeqNum> messages;
 			};
-			SeqBuffer<SeqNum, PacketData, 64> pktData; // TODO: ideal size?
+			SequenceBuffer<SeqNum, PacketData, 64> pktData; // TODO: ideal size?
+
+			// TODO: specialize for void data type
+			SequenceBuffer<SeqNum, bool, decltype(msgData)::capacity()> recvData;
 
 			void addMessageToPacket(SeqNum pktSeq, SeqNum msgSeq) {
 				auto* pkt = pktData.find(pktSeq);
@@ -166,13 +74,13 @@ namespace Engine::Net {
 
 		public:
 			bool canWriteMessage() const {
-				return msgData.spaceFor(nextSeq);
+				return !msgData.entryAt(nextSeq);
 			}
 
 			void msgEnd(SeqNum pktSeq, MessageHeader& hdr) {
 				hdr.seq = nextSeq++;
 
-				ENGINE_DEBUG_ASSERT(msgData.spaceFor(hdr.seq));
+				ENGINE_DEBUG_ASSERT(msgData.canInsert(hdr.seq));
 				auto& msg = msgData.insert(hdr.seq);
 				msg.data.assign(reinterpret_cast<byte*>(&hdr), reinterpret_cast<byte*>(&hdr) + sizeof(hdr) + hdr.size);
 				msg.lastSendTime = Engine::Clock::now();
@@ -189,9 +97,9 @@ namespace Engine::Net {
 				for (SeqNum s : pkt->messages) {
 					if (msgData.find(s)) {
 						msgData.remove(s);
-						ENGINE_LOG("RU - ACK: ", pktSeq, " ", s, " ", msgData.min(), " ", msgData.max());
+						ENGINE_LOG("RU - ACK: ", pktSeq, " ", s, " ", msgData.minValid(), " ", msgData.max());
 					} else {
-						ENGINE_LOG("RU - DUP: ", pktSeq, " ", s, " ", msgData.min(), " ", msgData.max());
+						ENGINE_LOG("RU - DUP: ", pktSeq, " ", s, " ", msgData.minValid(), " ", msgData.max());
 					}
 				}
 
@@ -199,15 +107,24 @@ namespace Engine::Net {
 			}
 
 			
-			bool shouldProcess(const MessageHeader& hdr) const {
-				return msgData.contains(hdr.seq);
+			bool recv(const MessageHeader& hdr) {
+				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
+					recvData.insert(hdr.seq);
+					// TODO: rm ENGINE_LOG("RU - recv: ack ", hdr.seq);
+					return true;
+				}
+
+				// TODO: rm ENGINE_LOG("RU - recv: dup ", hdr.seq);
+
+				return false;
 			}
 
 			// TODO: also want some kind of fill-rest-of-packet function
+
 			void writeUnacked(PacketWriter& packetWriter) {
 				const auto now = Engine::Clock::now();
 				// TODO: BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
-				for (auto seq = msgData.min(); seqLess(seq, msgData.max() + 1); ++seq) {
+				for (auto seq = msgData.minValid(); seqLess(seq, msgData.max() + 1); ++seq) {
 					auto* msg = msgData.find(seq);
 
 					// TODO: resend time should be configurable

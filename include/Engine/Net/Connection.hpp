@@ -14,6 +14,7 @@
 #include <Engine/Bitset.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/Utility/Utility.hpp>
+#include <Engine/SequenceBuffer.hpp>
 
 
 namespace Engine::Net {
@@ -54,13 +55,13 @@ namespace Engine::Net {
 			
 			const IPv4Address addr = {};
 
-			// TODO: replace all this ack stuff with a seq buffer
-			struct UnreliableAckData {
+			// TODO: rename - AckData - PacketData - etc
+			struct PacketData {
 				Engine::Clock::TimePoint sendTime;
 				Engine::Clock::TimePoint recvTime;
 			};
-			/** Data for the last N unreliable packets we have sent. */
-			UnreliableAckData unrelAckData[AckBitset::size()] = {};
+
+			SequenceBuffer<SeqNum, PacketData, AckBitset::size()> packetData;
 
 			/** The latest packet seq num we have received */
 			SeqNum lastRecvAckUnrel = {};
@@ -92,21 +93,6 @@ namespace Engine::Net {
 
 			constexpr static MessageType maxMessageType() {
 				return 14; // TODO: dont hard code.
-			}
-
-			
-			ENGINE_INLINE constexpr static SeqNum seqToIndex(SeqNum seq) {
-				constexpr auto maxUnacked = AckBitset::size();
-				static_assert(Engine::Utility::isPowerOfTwo(maxUnacked));
-				return seq & (maxUnacked - 1);
-			}
-
-			void freeAck(SeqNum seq) {
-				auto& node = unacked[seqToIndex(seq)];
-				if (!node) { return; }
-				ENGINE_DEBUG_ASSERT(node->next == nullptr);
-				node->next = std::move(pool);
-				pool = std::move(node);
 			}
 
 			///////////////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +148,6 @@ namespace Engine::Net {
 
 				// TODO: packet header info
 
-				const auto& init = pkt.getInitAck();
 				const auto& acks = pkt.getAcks();
 				const auto seq = pkt.getSeqNum();
 
@@ -177,68 +162,32 @@ namespace Engine::Net {
 						if (diff < AckBitset::size()) {
 							recvAcksUnrel.set(diff);
 						}
+					// TODO: is this true?
 					} // If equal then it should have been already acked
 				}
 
-				{// TODO: move into func
-					// Unsigned subtraction is fine here since it would still be > max size
-					const auto lastSent = packetWriter.getNextSeq() - 1;
-					const auto diff = lastSent - init;
-					if (diff <= static_cast<SeqNum>(AckBitset::size())) {
-						auto curr = lastSent - acks.size();
-						const auto stop = init;
+				{
+					const auto& init = pkt.getInitAck(); // TODO: bad name.
 
-						for (;curr <= stop; ++curr) {
-							if (!acks.test(init - curr)) { continue; }
+					// TODO: could limit to nextSseq - 64
+					const auto first = init - AckBitset::size();
 
-							const auto i = seqToIndex(curr);
-							auto& data = unrelAckData[i];
-							if (data.recvTime != Engine::Clock::TimePoint{}) { continue; }
+					// TODO: limit by packetData.minValid() and remove after ack
+					for (auto i = 0; i < acks.size(); ++i) {
+						if (!acks.test(i)) { continue; }
 
-							data.recvTime = time;
+						const auto s = init - i;
+						auto* data = packetData.find(s);
+						if (!data || data->recvTime != Engine::Clock::TimePoint{}) { continue; }
 
-							(getChannel<Cs>().recvPacketAck(curr), ...);
-
-							// TODO: rm
-							//ENGINE_LOG("RECV ACK: ", curr, " in ",
-							//	Engine::Clock::Seconds{data.recvTime - data.sendTime}.count(), "s"
-							//);
-						}
+						data->recvTime = time;
+						ENGINE_LOG("Get ack for packet: ", s);
+						(getChannel<Cs>().recvPacketAck(s), ...);
 					}
 				}
 
 				return true;
 			}
-
-			/**
-			 * Updates the acks for packets this connection has sent.
-			 * @param first The sequence number of the first ack.
-			 * @params acks The bitset indicating if packet `first + i` has been received.
-			 */
-			/*void updateSentAcks(SeqNum first, AckBitset acks) {
-				// TODO: need to guard against `first > nextPacketSeqRel`
-				if (first < nextSentAck) { ENGINE_LOG("================== OH BOY! =================="); }
-				// TODO: if (first >= nextPacketSeqRel) { return; }
-				while (nextSentAck < first) {
-					freeAck(nextSentAck);
-					++nextSentAck;
-				}
-
-				// The 0th elem should always be false or else first would be larger
-				const auto TEMP_RM = acks.test(seqToIndex(first));
-				ENGINE_DEBUG_ASSERT(TEMP_RM == false, "The first elem of acks should always be zero.");
-				ENGINE_DEBUG_ASSERT(nextSentAck <= first + acks.size(), "nextSentAck is to large. (or first is to small)");
-
-				// This should be safe since `nextSentAck >= first` always. (because of above loop)
-				const auto start = nextSentAck;
-				const auto stop = std::min(first + acks.size(), nextPacketSeqRel);
-				for (auto i = start; i < stop; ++i) {
-					// TODO: based on recv above. acks isnt frist + 0, 1, 2 etc. it uses seqToIndex starting at first.
-					if (acks.test(seqToIndex(i))) { // TODO: could incorperate seqToIndex into start/stop
-						freeAck(i);
-					}
-				}
-			}*/
 
 			auto recvTime() const { return rdat.time; }
 
@@ -251,22 +200,19 @@ namespace Engine::Net {
 				const auto* hdr = read<MessageHeader>();
 				ENGINE_DEBUG_ASSERT(hdr->size <= MAX_MESSAGE_SIZE, "Invalid network message length");
 
-				// TODO: need to check with channel if we should process this message or skip and read next
-
-				//GetChannelForMessage{ hdr->
-				//};
 				bool process = true;
 				callWithChannelForMessage(hdr->type, [&]<class C>(){
 					auto& ch = getChannel<C>();
-					process = ch.shouldProcess(*hdr);
+					process = ch.recv(*hdr);
 				});
 
 				rdat.msgLast = rdat.curr + hdr->size;
 
 				if (process) {
+					// TODO: rm ENGINE_LOG("Process message: ", (int)hdr->type, " ", (int)hdr->seq);
 					return hdr;
 				} else {
-					ENGINE_LOG("Duplicate message ", (int)hdr->type, " ", (int)hdr->seq);
+					// TODO: rm ENGINE_LOG("Duplicate message: ", (int)hdr->type, " ", (int)hdr->seq);
 					rdat.curr += hdr->size;
 					return recvNext();
 				}
@@ -311,66 +257,31 @@ namespace Engine::Net {
 
 			void send(UDPSocket& sock) {
 				const auto now = Engine::Clock::now();
-				{ // Unreliable
 
-					// TODO: the problem is that there is noe message active yet sometimes 
-					// TODO: this should probably be in its own function. Only fill empty space in packets. etc.
-					(getChannel<Cs>().writeUnacked(packetWriter), ...);
+				// TODO: the problem is that there is noe message active yet sometimes 
+				// TODO: this should probably be in its own function. Only fill empty space in packets. etc.
+				(getChannel<Cs>().writeUnacked(packetWriter), ...);
 
-					while (auto node = packetWriter.pop()) {
-						const auto seq = node->packet.getSeqNum();
-						const auto i = seqToIndex(seq);
-						auto& data = unrelAckData[i];
+				while (auto node = packetWriter.pop()) {
+					const auto seq = node->packet.getSeqNum();
+					auto& data = packetData.insert(seq);
 
-						// TODO: rm - debug
-						if (data.recvTime == Engine::Clock::TimePoint{}) {
-							ENGINE_WARN("NO ACK FOR ", seq - 64);
-						}
-
-						data = {
-							.sendTime = now,
-						};
-
-						node->packet.setInitAck(lastRecvAckUnrel);
-						node->packet.setAcks(recvAcksUnrel);
-
-						const auto sz = static_cast<int32>(node->last - node->packet.head);
-						sock.send(node->packet.head, sz, addr);
-					}
+					data = {
+						.sendTime = now,
+					};
+					
+					node->packet.setInitAck(lastRecvAckUnrel);
+					node->packet.setAcks(recvAcksUnrel);
+					
+					const auto sz = static_cast<int32>(node->last - node->packet.head);
+					sock.send(node->packet.head, sz, addr);
 				}
-				
-				/*{ // Reliable
-					auto& node = unsentPackets[1];
-					while (node) {
-						auto& store = unacked[seqToIndex(nextPacketSeqRel)];
-
-						if (store == nullptr) {
-							node->packet.setSeqNum(nextPacketSeqRel++);
-
-							const auto sz = static_cast<int32>(node->last - node->packet.head);
-							sock.send(node->packet.head, sz, addr);
-
-							store = std::move(node);
-							node.swap(store->next);
-						} else {
-							// TODO: to many unacked
-							ENGINE_WARN("TODO: to many unacked packets");
-
-							for (auto i = nextSentAck; i < nextPacketSeqRel; ++i) {
-								auto* node = unacked[seqToIndex(i)].get();
-								std::cout << i << " " << node << " " << (node ? node->packet.getSeqNum() : 0) << "\n";
-							}
-
-							__debugbreak();
-							break;
-						}
-					}
-				}*/
 			}
 
 			// TODO: should msgBegin/End be on packetwriter? somewhat makes sense since because we modify node->curr/last
 			template<auto M>
 			bool msgBegin() {
+				// TODO: the problem is we arnt getting an ack for packet zero some times. Idk why.
 				if (!getChannelForMessage<M>().canWriteMessage()) {
 					__debugbreak(); // TODO: rm
 					return false;
