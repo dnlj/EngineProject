@@ -40,7 +40,7 @@ namespace Engine {
 			constexpr static auto capacity() noexcept { return N; }
 
 			ENGINE_INLINE auto max() const { return next - 1; }
-			ENGINE_INLINE auto min() const { return max() - capacity(); }
+			ENGINE_INLINE auto min() const { return next - capacity(); }
 			ENGINE_INLINE auto minValid() const { return lowest; }
 
 			// TODO: max - N vs lowest

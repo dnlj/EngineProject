@@ -63,11 +63,11 @@ namespace Engine::Net {
 
 			SequenceBuffer<SeqNum, PacketData, AckBitset::size()> packetData;
 
-			/** The latest packet seq num we have received */
-			SeqNum lastRecvAckUnrel = {};
+			/** The next recv ack we are expecting */
+			SeqNum nextRecvAck = {};
 
-			/** Acks for the prev N packets before lastRecvAckUnrel */
-			AckBitset recvAcksUnrel = {};
+			/** Acks for the prev N packets before nextRecvAck */
+			AckBitset recvAcks = {};
 
 			struct {
 				/** The time the message was received */
@@ -151,37 +151,33 @@ namespace Engine::Net {
 				const auto& acks = pkt.getAcks();
 				const auto seq = pkt.getSeqNum();
 
-				{ // TODO: move into func
-					int32 diff = seq - lastRecvAckUnrel;
-					if (diff > 0) {
-						lastRecvAckUnrel = seq;
-						recvAcksUnrel <<= diff;
-						recvAcksUnrel.set(0);
-					} else if (diff < 0) {
-						diff = -diff;
-						if (diff < AckBitset::size()) {
-							recvAcksUnrel.set(diff);
-						}
-					// TODO: is this true?
-					} // If equal then it should have been already acked
-				}
+				do { // TODO: move into func
+					// TODO: we could use SeqBUffer here but then we would have to convert it every time we send a packet.
+					const auto min = nextRecvAck - acks.size();
+					if (seqLess(seq, min))  { continue; }
 
-				{
-					const auto& init = pkt.getInitAck(); // TODO: bad name.
+					while (seqLess(nextRecvAck, seq + 1)) {
+						recvAcks.reset(++nextRecvAck  % recvAcks.size());
+					}
+
+					recvAcks.set(seq % recvAcks.size());
+				} while(0);
+
+				{ // TODO: move into func
+					const auto& next = pkt.getInitAck(); // TODO: bad name.
 
 					// TODO: could limit to nextSseq - 64
-					const auto first = init - AckBitset::size();
+					const auto min = next - AckBitset::size();
 
 					// TODO: limit by packetData.minValid() and remove after ack
-					for (auto i = 0; i < acks.size(); ++i) {
-						if (!acks.test(i)) { continue; }
+					for (auto s = min; seqLess(s, next); ++s) {
+						if (!acks.test(s % acks.size())) { continue; }
 
-						const auto s = init - i;
 						auto* data = packetData.find(s);
 						if (!data || data->recvTime != Engine::Clock::TimePoint{}) { continue; }
 
 						data->recvTime = time;
-						ENGINE_LOG("Get ack for packet: ", s);
+						ENGINE_LOG("Get ack for packet: ", s, " @ ", time.time_since_epoch().count());
 						(getChannel<Cs>().recvPacketAck(s), ...);
 					}
 				}
@@ -270,8 +266,8 @@ namespace Engine::Net {
 						.sendTime = now,
 					};
 					
-					node->packet.setInitAck(lastRecvAckUnrel);
-					node->packet.setAcks(recvAcksUnrel);
+					node->packet.setInitAck(nextRecvAck);
+					node->packet.setAcks(recvAcks);
 					
 					const auto sz = static_cast<int32>(node->last - node->packet.head);
 					sock.send(node->packet.head, sz, addr);
