@@ -111,6 +111,12 @@ namespace Game {
 		ImGui::Text("Avg FPS %f (%f)", fps, 1.0f / fps);
 		ImGui::Text("Tick %i", world.getTick());
 
+		
+		for (const auto ent : connFilter) {
+			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+			ImGui::Text("Ping %.2fms", Engine::Clock::Seconds{conn.getPing()}.count() * 1000.0f);
+		}
+
 		if (ImGui::Button("Disconnect")) {
 			std::vector<Engine::ECS::Entity> ents = {connFilter.cbegin(), connFilter.cend()};
 			for (const auto ent : ents) {

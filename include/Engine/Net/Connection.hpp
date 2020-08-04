@@ -66,6 +66,9 @@ namespace Engine::Net {
 			/** Acks for the prev N packets before nextRecvAck */
 			AckBitset recvAcks = {};
 
+			constexpr static double pingSmoothing = 0.01; // TODO: ideal?
+			Engine::Clock::Duration ping = {};
+
 			struct {
 				/** The time the message was received */
 				Engine::Clock::TimePoint time;
@@ -133,6 +136,8 @@ namespace Engine::Net {
 
 			const auto& address() const { return addr; }
 
+			const auto getPing() const { return ping; }
+
 			[[nodiscard]]
 			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
 				// TODO:
@@ -174,6 +179,12 @@ namespace Engine::Net {
 						if (!data || data->recvTime != Engine::Clock::TimePoint{}) { continue; }
 
 						data->recvTime = time;
+
+						// Exponential smoothing
+						ping += std::chrono::duration_cast<Engine::Clock::Duration>(
+							((data->recvTime - data->sendTime) - ping) * pingSmoothing
+						);
+
 						(getChannel<Cs>().recvPacketAck(s), ...);
 					}
 				}
