@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <algorithm>
+
 // Engine
 #include <Engine/Net/MessageHeader.hpp>
 #include <Engine/Net/PacketWriter.hpp>
@@ -10,10 +13,24 @@
 namespace Engine::Net::Detail {
 	template<MessageType... Ms>
 	class Channel_Base { // TODO: name?
-		// TODO: static_assert that all messages ids are continuous
+		private:
+			static_assert(sizeof...(Ms) >= 1, "A channel must handle at least one message type.");
+			constexpr static bool contiguous() {
+				constexpr MessageType arr[] = {Ms...};
+				for (int i = 1; i < sizeof...(Ms); ++i) {
+					if (arr[i] != arr[i-1] + 1) { return false; }
+				}
+				return true;
+			}
+			static_assert(contiguous(), "The messages handled by a channel must be contiguous.");
+
 		public:
 			Channel_Base() = default;
 			Channel_Base(const Channel_Base&) = delete;
+
+			constexpr static auto getHandledMessageTypes() {
+				return {Ms ...};
+			}
 
 			template<auto M>
 			constexpr static bool handlesMessageType() {

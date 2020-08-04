@@ -50,9 +50,6 @@ namespace Engine::Net {
 	template<class... Cs>
 	class Connection {
 		private:
-			// TODO: static_assert that no two channels handle the same messages.
-			// TODO: checks in recv to make sure that the message type is valid (handles by one of Cs)
-			
 			const IPv4Address addr = {};
 
 			struct PacketData {
@@ -106,6 +103,7 @@ namespace Engine::Net {
 			auto& getChannelForMessage() {
 				static_assert(M <= maxMessageType(), "Invalid message type.");
 				static_assert((Cs::handlesMessageType<M>() || ...), "No channel handles this message type.");
+				static_assert((Cs::handlesMessageType<M>() + ...) == 1, "No two channels may handle the same message type.");
 
 				constexpr auto i = ((Cs::handlesMessageType<M>() ? getChannelId<Cs>() : 0) + ...);
 				static_assert(i >= 0 && i <= std::tuple_size_v<decltype(channels)>);
