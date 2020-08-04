@@ -86,8 +86,6 @@ namespace Engine::Net {
 				msg.lastSendTime = Engine::Clock::now();
 
 				addMessageToPacket(pktSeq, hdr.seq);
-
-				ENGINE_LOG("RU - msgEnd: ", pktSeq, " ", hdr.seq);
 			}
 
 			void recvPacketAck(SeqNum pktSeq) {
@@ -97,9 +95,6 @@ namespace Engine::Net {
 				for (SeqNum s : pkt->messages) {
 					if (msgData.find(s)) {
 						msgData.remove(s);
-						ENGINE_LOG("RU - ACK: ", pktSeq, " ", s, " ", msgData.minValid(), " ", msgData.max());
-					} else {
-						ENGINE_LOG("RU - DUP: ", pktSeq, " ", s, " ", msgData.minValid(), " ", msgData.max());
 					}
 				}
 
@@ -110,11 +105,8 @@ namespace Engine::Net {
 			bool recv(const MessageHeader& hdr) {
 				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
 					recvData.insert(hdr.seq);
-					// TODO: rm ENGINE_LOG("RU - recv: ack ", hdr.seq);
 					return true;
 				}
-
-				// TODO: rm ENGINE_LOG("RU - recv: dup ", hdr.seq);
 
 				return false;
 			}
@@ -132,7 +124,6 @@ namespace Engine::Net {
 						msg->lastSendTime = now;
 						packetWriter.ensurePacketAvailable(); // TODO: seems kinda hacky
 						packetWriter.write(msg->data.data(), msg->data.size());
-						ENGINE_LOG("RU - resend: ", (packetWriter.getNextSeq() - 1), " ", seq, " ", now.time_since_epoch().count());
 						addMessageToPacket(packetWriter.getNextSeq() - 1, seq);
 					}
 				}

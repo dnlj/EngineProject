@@ -6,10 +6,10 @@
 
 
 namespace Engine::Net {
+	// TODO: pack
 	class MessageHeader {
 		public:
 			MessageType type;
-			uint8 channel; // TODO: typedef? ChannelId?
 			// TODO: we only need bits for size since we limit messages to 512
 			// TODO: name? this is really data size (size - sizeof(header))
 			uint16 size;

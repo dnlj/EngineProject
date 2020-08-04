@@ -55,7 +55,6 @@ namespace Engine::Net {
 			
 			const IPv4Address addr = {};
 
-			// TODO: rename - AckData - PacketData - etc
 			struct PacketData {
 				Engine::Clock::TimePoint sendTime;
 				Engine::Clock::TimePoint recvTime;
@@ -177,7 +176,6 @@ namespace Engine::Net {
 						if (!data || data->recvTime != Engine::Clock::TimePoint{}) { continue; }
 
 						data->recvTime = time;
-						ENGINE_LOG("Get ack for packet: ", s, " @ ", time.time_since_epoch().count());
 						(getChannel<Cs>().recvPacketAck(s), ...);
 					}
 				}
@@ -205,10 +203,8 @@ namespace Engine::Net {
 				rdat.msgLast = rdat.curr + hdr->size;
 
 				if (process) {
-					// TODO: rm ENGINE_LOG("Process message: ", (int)hdr->type, " ", (int)hdr->seq);
 					return hdr;
 				} else {
-					// TODO: rm ENGINE_LOG("Duplicate message: ", (int)hdr->type, " ", (int)hdr->seq);
 					rdat.curr += hdr->size;
 					return recvNext();
 				}
@@ -277,7 +273,6 @@ namespace Engine::Net {
 			// TODO: should msgBegin/End be on packetwriter? somewhat makes sense since because we modify node->curr/last
 			template<auto M>
 			bool msgBegin() {
-				// TODO: the problem is we arnt getting an ack for packet zero some times. Idk why.
 				if (!getChannelForMessage<M>().canWriteMessage()) {
 					__debugbreak(); // TODO: rm
 					return false;
@@ -287,7 +282,6 @@ namespace Engine::Net {
 
 				write(MessageHeader{
 					.type = M,
-					.channel = 0, // TODO: impl
 				}); 
 
 				return true;
