@@ -1,6 +1,7 @@
 #pragma once
 
 // STD
+#include <algorithm>
 #include <memory>
 
 // Engine
@@ -87,8 +88,8 @@ namespace Engine::Net {
 			template<class C>
 			constexpr static ChannelId getChannelId() { return Meta::IndexOf<C, Cs...>::value; }
 
-			constexpr static MessageType maxMessageType() {
-				return 13; // TODO: dont hard code.
+			constexpr static auto maxMessageType() noexcept {
+				return std::max({Cs::getMaxHandledMessageType() ...});
 			}
 
 			///////////////////////////////////////////////////////////////////////////////////////////

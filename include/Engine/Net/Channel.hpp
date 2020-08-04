@@ -1,8 +1,5 @@
 #pragma once
 
-// STD
-#include <algorithm>
-
 // Engine
 #include <Engine/Net/MessageHeader.hpp>
 #include <Engine/Net/PacketWriter.hpp>
@@ -15,7 +12,7 @@ namespace Engine::Net::Detail {
 	class Channel_Base { // TODO: name?
 		private:
 			static_assert(sizeof...(Ms) >= 1, "A channel must handle at least one message type.");
-			constexpr static bool contiguous() {
+			constexpr static bool contiguous() noexcept {
 				constexpr MessageType arr[] = {Ms...};
 				for (int i = 1; i < sizeof...(Ms); ++i) {
 					if (arr[i] != arr[i-1] + 1) { return false; }
@@ -28,12 +25,13 @@ namespace Engine::Net::Detail {
 			Channel_Base() = default;
 			Channel_Base(const Channel_Base&) = delete;
 
-			constexpr static auto getHandledMessageTypes() {
-				return {Ms ...};
+			constexpr static auto getMaxHandledMessageType() noexcept {
+				// Doing `(0, Ms)` instead of just `Ms` is a work around for an internal compiler error.
+				return ((0, Ms), ...);
 			}
 
 			template<auto M>
-			constexpr static bool handlesMessageType() {
+			constexpr static bool handlesMessageType() noexcept {
 				return ((M == Ms) || ...);
 			}
 
