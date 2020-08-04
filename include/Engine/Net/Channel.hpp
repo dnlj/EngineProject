@@ -43,7 +43,7 @@ namespace Engine::Net::Detail {
 
 namespace Engine::Net {
 	template<MessageType... Ms>
-	class Channel_UnreliableUnordered : public Detail::Channel_Base<Ms...> { // TODO: name?
+	class Channel_UnreliableUnordered : public Detail::Channel_Base<Ms...> {
 		private:
 			SeqNum nextSeq = -1;
 
@@ -61,8 +61,34 @@ namespace Engine::Net {
 			}
 	};
 
+	template<MessageType... Ms> // TODO: only lightly tested
+	class Channel_UnreliableOrdered : public Detail::Channel_Base<Ms...> {
+		private:
+			SeqNum nextSeq = -1;
+			SeqNum lastSeq = -1;
+
+		public:
+			constexpr static bool canWriteMessage() noexcept {
+				return true;
+			}
+
+			bool recv(const MessageHeader& hdr) noexcept {
+				if (seqGreater(hdr.seq, lastSeq)) {
+					lastSeq = hdr.seq;
+					return true;
+				}
+
+				ENGINE_WARN("Old message"); // TODO: rm
+				return false;
+			}
+
+			void msgEnd(SeqNum pktSeq, MessageHeader& hdr) {
+				hdr.seq = ++nextSeq;
+			}
+	};
+
 	template<MessageType... Ms>
-	class Channel_ReliableUnordered : public Detail::Channel_Base<Ms...> { // TODO: name?
+	class Channel_ReliableUnordered : public Detail::Channel_Base<Ms...> {
 		private:
 			/** The sequence number to use for the next message */
 			SeqNum nextSeq = 0;

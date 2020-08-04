@@ -164,7 +164,7 @@ namespace Engine::Net {
 
 				// Update sent packet info
 				{
-					const auto& next = pkt.getInitAck(); // TODO: bad name.
+					const auto& next = pkt.getNextAck();
 					const auto min = next - AckBitset::size();
 
 					for (auto s = min; seqLess(s, next); ++s) {
@@ -248,7 +248,6 @@ namespace Engine::Net {
 			void send(UDPSocket& sock) {
 				const auto now = Engine::Clock::now();
 
-				// TODO: the problem is that there is noe message active yet sometimes 
 				// TODO: this should probably be in its own function. Only fill empty space in packets. etc.
 				(getChannel<Cs>().writeUnacked(packetWriter), ...);
 
@@ -260,7 +259,7 @@ namespace Engine::Net {
 						.sendTime = now,
 					};
 					
-					node->packet.setInitAck(nextRecvAck);
+					node->packet.setNextAck(nextRecvAck);
 					node->packet.setAcks(recvAcks);
 					
 					const auto sz = static_cast<int32>(node->last - node->packet.head);

@@ -27,9 +27,9 @@ namespace Engine::Net {
 			auto& getSeqNum() const { return *reinterpret_cast<const SeqNum*>(&head[2]); }
 			void setSeqNum(SeqNum n) { getSeqNum() = n; }
 
-			auto& getInitAck() { return *reinterpret_cast<SeqNum*>(&head[4]); }
-			auto& getInitAck() const { return *reinterpret_cast<const SeqNum*>(&head[4]); }
-			void setInitAck(SeqNum s) { getInitAck() = s; }
+			auto& getNextAck() { return *reinterpret_cast<SeqNum*>(&head[4]); }
+			auto& getNextAck() const { return *reinterpret_cast<const SeqNum*>(&head[4]); }
+			void setNextAck(SeqNum s) { getNextAck() = s; }
 
 			auto& getAcks() { return *reinterpret_cast<AckBitset*>(&head[6]); }
 			auto& getAcks() const { return *reinterpret_cast<const AckBitset*>(&head[6]); }
