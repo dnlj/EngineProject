@@ -10,6 +10,7 @@
 
 namespace Game {
 	struct Channel_General : Engine::Net::Channel_UnreliableUnordered<
+		MessageType::UNKNOWN,
 		MessageType::DISCOVER_SERVER, // TODO: Move into channel for valid unconnected messages?
 		MessageType::SERVER_INFO,	  // TODO: Move into channel for valid unconnected messages?
 		MessageType::CONNECT,		  // TODO: Move into channel for valid unconnected messages?

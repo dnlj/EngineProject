@@ -91,7 +91,7 @@ namespace Engine::Net {
 			constexpr static ChannelId getChannelId() { return Meta::IndexOf<C, Cs...>::value; }
 
 			constexpr static MessageType maxMessageType() {
-				return 14; // TODO: dont hard code.
+				return 13; // TODO: dont hard code.
 			}
 
 			///////////////////////////////////////////////////////////////////////////////////////////
@@ -104,9 +104,12 @@ namespace Engine::Net {
 
 			template<auto M>
 			auto& getChannelForMessage() {
-				// TODO: static assert for invalid messages (M)
+				static_assert(M <= maxMessageType(), "Invalid message type.");
+				static_assert((Cs::handlesMessageType<M>() || ...), "No channel handles this message type.");
+
 				constexpr auto i = ((Cs::handlesMessageType<M>() ? getChannelId<Cs>() : 0) + ...);
 				static_assert(i >= 0 && i <= std::tuple_size_v<decltype(channels)>);
+
 				return std::get<i>(channels);
 			}
 
@@ -145,13 +148,11 @@ namespace Engine::Net {
 				rdat.curr = pkt.body;
 				rdat.msgLast = rdat.curr;
 
-				// TODO: packet header info
-
 				const auto& acks = pkt.getAcks();
 				const auto seq = pkt.getSeqNum();
 
-				do { // TODO: move into func
-					// TODO: we could use SeqBUffer here but then we would have to convert it every time we send a packet.
+				// Update recv packet info
+				do { 
 					const auto min = nextRecvAck - acks.size();
 					if (seqLess(seq, min))  { continue; }
 
@@ -162,13 +163,11 @@ namespace Engine::Net {
 					recvAcks.set(seq % recvAcks.size());
 				} while(0);
 
-				{ // TODO: move into func
+				// Update sent packet info
+				{
 					const auto& next = pkt.getInitAck(); // TODO: bad name.
-
-					// TODO: could limit to nextSseq - 64
 					const auto min = next - AckBitset::size();
 
-					// TODO: limit by packetData.minValid() and remove after ack
 					for (auto s = min; seqLess(s, next); ++s) {
 						if (!acks.test(s % acks.size())) { continue; }
 
