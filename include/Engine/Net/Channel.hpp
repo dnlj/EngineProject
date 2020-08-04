@@ -127,11 +127,12 @@ namespace Engine::Net {
 				for (auto seq = msgData.minValid(); seqLess(seq, msgData.max() + 1); ++seq) {
 					auto* msg = msgData.find(seq);
 
-					// TODO: resend time should be configurable
-					if (msg && (now < msg->lastSendTime + std::chrono::milliseconds{50})) {
-						//ENGINE_LOG("RU - resend: ", seq);
+					// TODO: resend time should be configurable per channel
+					if (msg && (now > msg->lastSendTime + std::chrono::milliseconds{50})) {
+						msg->lastSendTime = now;
 						packetWriter.ensurePacketAvailable(); // TODO: seems kinda hacky
 						packetWriter.write(msg->data.data(), msg->data.size());
+						ENGINE_LOG("RU - resend: ", (packetWriter.getNextSeq() - 1), " ", seq, " ", now.time_since_epoch().count());
 						addMessageToPacket(packetWriter.getNextSeq() - 1, seq);
 					}
 				}
