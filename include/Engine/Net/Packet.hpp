@@ -10,10 +10,10 @@ namespace Engine::Net {
 	class Packet {
 		public:
 			// 2 bytes protocol
-			// 4 bytes seq num // TODO: look into seq num wrapping
-			// 4 bytes init ack
+			// 2 bytes seq num // TODO: look into seq num wrapping
+			// 2 bytes init ack
 			// 8 bytes ack bitset
-			byte head[2 + 4 + 4 + 8] = {};
+			byte head[2 + 2 + 2 + 8] = {};
 			byte body[MAX_PACKET_SIZE - sizeof(head)];
 
 		public:
@@ -27,12 +27,12 @@ namespace Engine::Net {
 			auto& getSeqNum() const { return *reinterpret_cast<const SeqNum*>(&head[2]); }
 			void setSeqNum(SeqNum n) { getSeqNum() = n; }
 
-			auto& getInitAck() { return *reinterpret_cast<SeqNum*>(&head[6]); }
-			auto& getInitAck() const { return *reinterpret_cast<const SeqNum*>(&head[6]); }
+			auto& getInitAck() { return *reinterpret_cast<SeqNum*>(&head[4]); }
+			auto& getInitAck() const { return *reinterpret_cast<const SeqNum*>(&head[4]); }
 			void setInitAck(SeqNum s) { getInitAck() = s; }
 
-			auto& getAcks() { return *reinterpret_cast<AckBitset*>(&head[10]); }
-			auto& getAcks() const { return *reinterpret_cast<const AckBitset*>(&head[10]); }
+			auto& getAcks() { return *reinterpret_cast<AckBitset*>(&head[6]); }
+			auto& getAcks() const { return *reinterpret_cast<const AckBitset*>(&head[6]); }
 			void setAcks(const AckBitset& a) { getAcks() = a; }
 	};
 	static_assert(sizeof(Packet) == MAX_PACKET_SIZE);

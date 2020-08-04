@@ -15,5 +15,5 @@ namespace Engine::Net {
 			uint16 size;
 			SeqNum seq; // TODO: look into wrapping sequence numbers
 	};
-	static_assert(sizeof(MessageHeader) == 8);
+	static_assert(sizeof(MessageHeader) == 6);
 }

@@ -6,14 +6,14 @@
 
 namespace Engine {
 	template<class I> // TODO: move
-	ENGINE_INLINE constexpr bool seqGreater(I a, I b) noexcept {
+	ENGINE_INLINE constexpr bool seqGreater(I a, decltype(a) b) noexcept {
 		constexpr auto half = std::numeric_limits<I>::max() / 2 + 1;
 		return ((a > b) && (a - b <= half))
 			|| ((a < b) && (b - a >  half));
 	}
 
 	template<class I> // TODO: move
-	ENGINE_INLINE constexpr bool seqLess(I a, I b) noexcept {
+	ENGINE_INLINE constexpr bool seqLess(I a, decltype(a) b) noexcept {
 		return seqGreater<I>(b, a);
 	}
 

@@ -7,7 +7,7 @@
 
 namespace Engine::Net {
 	using MessageType = uint8;
-	using SeqNum = uint32; // TODO: look into warpped seq nums
+	using SeqNum = uint16;
 
 	using AckBitset = Bitset<64, uint64>;
 }
