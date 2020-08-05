@@ -115,6 +115,7 @@ namespace Game {
 		for (const auto ent : connFilter) {
 			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 			ImGui::Text("Ping %.2fms", Engine::Clock::Seconds{conn.getPing()}.count() * 1000.0f);
+			ImGui::Text("Loss %.4f", conn.getLoss() * 100.0f);
 		}
 
 		if (ImGui::Button("Disconnect")) {

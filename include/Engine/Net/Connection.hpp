@@ -40,8 +40,12 @@ namespace Engine::Net {
 			/** Acks for the prev N packets before nextRecvAck */
 			AckBitset recvAcks = {};
 
-			constexpr static double pingSmoothing = 0.01; // TODO: ideal?
+			constexpr static float64 pingSmoothing = 0.01; // TODO: ideal?
 			Engine::Clock::Duration ping = {};
+
+			
+			constexpr static float32 lossSmoothing = 0.01f; // TODO: ideal?
+			float loss = {};
 
 			struct {
 				/** The time the message was received */
@@ -111,6 +115,7 @@ namespace Engine::Net {
 			const auto& address() const { return addr; }
 
 			const auto getPing() const { return ping; }
+			const auto getLoss() const { return loss; }
 
 			[[nodiscard]]
 			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
@@ -145,7 +150,6 @@ namespace Engine::Net {
 				{
 					const auto& next = pkt.getNextAck();
 					const auto min = next - AckBitset::size();
-
 					for (auto s = min; seqLess(s, next); ++s) {
 						if (!acks.test(s % acks.size())) { continue; }
 
@@ -154,7 +158,6 @@ namespace Engine::Net {
 
 						data->recvTime = time;
 
-						// Exponential smoothing
 						ping += std::chrono::duration_cast<Engine::Clock::Duration>(
 							((data->recvTime - data->sendTime) - ping) * pingSmoothing
 						);
@@ -249,6 +252,10 @@ namespace Engine::Net {
 
 				while (auto node = packetWriter.pop()) {
 					const auto seq = node->packet.getSeqNum();
+					{
+						const float32 val = packetData.get(seq).recvTime == Engine::Clock::TimePoint{};
+						loss += (val - loss) * lossSmoothing;
+					}
 					auto& data = packetData.insert(seq);
 
 					data = {
