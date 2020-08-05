@@ -198,7 +198,18 @@ namespace Engine::Net {
 			 * Read the next message from the packet set by recv.
 			 */
 			const MessageHeader* recvNext() {
-				if (rdat.curr >= rdat.last) { return nullptr; }
+				if (rdat.curr >= rdat.last) {
+					const MessageHeader* hdr = nullptr;
+					((hdr = getChannel<Cs>().recvNext()) || ...); // Takes advantage of || short circuit
+					if (hdr) {
+						rdat.first = reinterpret_cast<const byte*>(hdr);
+						rdat.curr = rdat.first + sizeof(*hdr);
+						rdat.last = rdat.curr + hdr->size;
+						rdat.msgLast = rdat.last;
+					}
+					return hdr;
+				}
+
 				ENGINE_DEBUG_ASSERT(rdat.curr == rdat.msgLast, "Incomplete read of network message");
 				const auto* hdr = read<MessageHeader>();
 				ENGINE_DEBUG_ASSERT(hdr->size <= MAX_MESSAGE_SIZE, "Invalid network message length");

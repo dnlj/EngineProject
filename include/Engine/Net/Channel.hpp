@@ -7,7 +7,8 @@
 #include <Engine/SequenceBuffer.hpp>
 
 
-namespace Engine::Net::Detail {
+namespace Engine::Net {
+	// TODO: doc all tehse functions
 	template<MessageType... Ms>
 	class Channel_Base { // TODO: name?
 		private:
@@ -35,15 +36,14 @@ namespace Engine::Net::Detail {
 				return ((M == Ms) || ...);
 			}
 
-			void recvPacketAck(SeqNum seq) {}
-			void writeUnacked(PacketWriter& packetWriter) {}
-
+			constexpr static void recvPacketAck(SeqNum seq) noexcept {}
+			constexpr static void writeUnacked(PacketWriter& packetWriter) noexcept {}
+			
+			constexpr static const MessageHeader* recvNext() noexcept { return nullptr; }
 	};
-}
 
-namespace Engine::Net {
 	template<MessageType... Ms>
-	class Channel_UnreliableUnordered : public Detail::Channel_Base<Ms...> {
+	class Channel_UnreliableUnordered : public Channel_Base<Ms...> {
 		private:
 			SeqNum nextSeq = -1;
 
@@ -62,7 +62,7 @@ namespace Engine::Net {
 	};
 
 	template<MessageType... Ms> // TODO: only lightly tested
-	class Channel_UnreliableOrdered : public Detail::Channel_Base<Ms...> {
+	class Channel_UnreliableOrdered : public Channel_Base<Ms...> {
 		private:
 			SeqNum nextSeq = -1;
 			SeqNum lastSeq = -1;
@@ -88,8 +88,8 @@ namespace Engine::Net {
 	};
 
 	template<MessageType... Ms>
-	class Channel_ReliableUnordered : public Detail::Channel_Base<Ms...> {
-		private:
+	class Channel_ReliableSender : public Channel_Base<Ms...> {
+		protected:
 			/** The sequence number to use for the next message */
 			SeqNum nextSeq = 0;
 
@@ -103,9 +103,6 @@ namespace Engine::Net {
 				std::vector<SeqNum> messages;
 			};
 			SequenceBuffer<SeqNum, PacketData, 64> pktData; // TODO: ideal size?
-
-			// TODO: specialize for void data type
-			SequenceBuffer<SeqNum, bool, decltype(msgData)::capacity()> recvData;
 
 			void addMessageToPacket(SeqNum pktSeq, SeqNum msgSeq) {
 				auto* pkt = pktData.find(pktSeq);
@@ -142,16 +139,6 @@ namespace Engine::Net {
 				pktData.remove(pktSeq);
 			}
 
-			
-			bool recv(const MessageHeader& hdr) {
-				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
-					recvData.insert(hdr.seq);
-					return true;
-				}
-
-				return false;
-			}
-
 			// TODO: also want some kind of fill-rest-of-packet function
 
 			void writeUnacked(PacketWriter& packetWriter) {
@@ -168,6 +155,54 @@ namespace Engine::Net {
 						addMessageToPacket(packetWriter.getNextSeq() - 1, seq);
 					}
 				}
+			}
+	};
+
+	template<MessageType... Ms>
+	class Channel_ReliableUnordered : public Channel_ReliableSender<Ms...> {
+		private:
+			// TODO: specialize for void data type
+			SequenceBuffer<SeqNum, bool, decltype(msgData)::capacity()> recvData;
+
+		public:
+			bool recv(const MessageHeader& hdr) {
+				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
+					recvData.insert(hdr.seq);
+					return true;
+				}
+
+				return false;
+			}
+	};
+
+	template<MessageType... Ms>
+	class Channel_ReliableOrdered : public Channel_ReliableSender<Ms...> {
+		private:
+			SeqNum nextRecvSeq = 0;
+
+			struct RecvData {
+				std::vector<byte> data;
+			};
+			SequenceBuffer<SeqNum, RecvData, decltype(msgData)::capacity()> recvData;
+
+		public:
+			bool recv(const MessageHeader& hdr) {
+				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
+					auto& rcv = recvData.insert(hdr.seq);
+					rcv.data.assign(reinterpret_cast<const byte*>(&hdr), reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size);
+				}
+				return false;
+			}
+
+			const MessageHeader* recvNext() {
+				auto* found = recvData.find(nextRecvSeq);
+
+				if (found) {
+					++nextRecvSeq;
+					return reinterpret_cast<MessageHeader*>(found->data.data());
+				}
+
+				return nullptr;
 			}
 	};
 }

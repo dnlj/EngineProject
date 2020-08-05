@@ -82,6 +82,7 @@ namespace Engine {
 				return data;
 			}
 
+			// TODO: doc that data is not removed until overwritten
 			ENGINE_INLINE void remove(S seq) {
 				getEntry(seq).valid = false;
 
