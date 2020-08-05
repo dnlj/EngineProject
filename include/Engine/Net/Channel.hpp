@@ -8,11 +8,15 @@
 
 
 namespace Engine::Net {
-	// TODO: doc all tehse functions
+	/**
+	 * The base class used by all channels.
+	 * @tparam Ms... A sequential list of messages handled by this channel.
+	 */
 	template<MessageType... Ms>
-	class Channel_Base { // TODO: name?
+	class Channel_Base {
 		private:
 			static_assert(sizeof...(Ms) >= 1, "A channel must handle at least one message type.");
+
 			constexpr static bool contiguous() noexcept {
 				constexpr MessageType arr[] = {Ms...};
 				for (int i = 1; i < sizeof...(Ms); ++i) {
@@ -26,22 +30,65 @@ namespace Engine::Net {
 			Channel_Base() = default;
 			Channel_Base(const Channel_Base&) = delete;
 
+			/**
+			 * Get the maximum message type handled by this channel.
+			 */
 			constexpr static auto getMaxHandledMessageType() noexcept {
 				// Doing `(0, Ms)` instead of just `Ms` is a work around for an internal compiler error.
 				return ((0, Ms), ...);
 			}
 
+			/**
+			 * Checks if a message is handled by this channel.
+			 * @tparam M The message to check.
+			 */
 			template<auto M>
 			constexpr static bool handlesMessageType() noexcept {
 				return ((M == Ms) || ...);
 			}
 
+			/**
+			 * Called the first time a connection receives an ack for a packet sequence number.
+			 * Usually used for implementing message level reliability.
+			 * @param seq The packet sequence number.
+			 */
 			constexpr static void recvPacketAck(SeqNum seq) noexcept {}
+
+			/**
+			 * Writes any messages that need (re)sending.
+			 */
 			constexpr static void writeUnacked(PacketWriter& packetWriter) noexcept {}
-			
+
+			/**
+			 * Checks if this channel can have messages written to it.
+			 */
+			bool canWriteMessage() = delete;
+
+			/**
+			 * Determines if a message should be processed by a connection.
+			 * @param hdr The header for the message.
+			 * @return True if the messages should be processed.
+			 */
+			bool recv(const MessageHeader& hdr) = delete;
+
+			/**
+			 * Called once a message has been written.
+			 * @param pktSeq The sequence number for the packet the message was written to.
+			 * @param hdr The header for the message that was written.
+			 */
+			void msgEnd(SeqNum pktSeq, MessageHeader& hdr) = delete;
+
+			/**
+			 * Gets any messages that need to be processed from this channel.
+			 * @return A pointer to the header of the message to process. If there is no message to process nullptr should be returned.
+			 */
 			constexpr static const MessageHeader* recvNext() noexcept { return nullptr; }
 	};
 
+	/**
+	 * A unreliable unordered network channel.
+	 * @see Channel_Base
+	 */
 	template<MessageType... Ms>
 	class Channel_UnreliableUnordered : public Channel_Base<Ms...> {
 		private:
@@ -60,8 +107,12 @@ namespace Engine::Net {
 				hdr.seq = ++nextSeq;
 			}
 	};
-
-	template<MessageType... Ms> // TODO: only lightly tested
+	
+	/**
+	 * A unreliable ordered network channel.
+	 * @see Channel_Base
+	 */
+	template<MessageType... Ms>
 	class Channel_UnreliableOrdered : public Channel_Base<Ms...> {
 		private:
 			SeqNum nextSeq = -1;
@@ -86,7 +137,11 @@ namespace Engine::Net {
 				hdr.seq = ++nextSeq;
 			}
 	};
-
+	
+	/**
+	 * Implements the sending portion of a reliable network channel.
+	 * @see Channel_Base
+	 */
 	template<MessageType... Ms>
 	class Channel_ReliableSender : public Channel_Base<Ms...> {
 		protected:
@@ -157,7 +212,11 @@ namespace Engine::Net {
 				}
 			}
 	};
-
+	
+	/**
+	 * A reliable unordered network channel.
+	 * @see Channel_Base
+	 */
 	template<MessageType... Ms>
 	class Channel_ReliableUnordered : public Channel_ReliableSender<Ms...> {
 		private:
@@ -174,7 +233,11 @@ namespace Engine::Net {
 				return false;
 			}
 	};
-
+	
+	/**
+	 * A reliable ordered network channel.
+	 * @see Channel_Base
+	 */
 	template<MessageType... Ms>
 	class Channel_ReliableOrdered : public Channel_ReliableSender<Ms...> {
 		private:

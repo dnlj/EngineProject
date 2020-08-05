@@ -19,38 +19,12 @@
 
 
 namespace Engine::Net {
-	using ChannelId = uint8;
 
-	enum class ChannelFlags : ChannelId {
-		None		= 0 << 0,
-		Reliable	= 1 << 0,
-		Ordered		= 1 << 1,
-	};
-
-	ENGINE_INLINE constexpr ChannelFlags operator|(ChannelFlags a, ChannelFlags b) {
-		return static_cast<ChannelFlags>(static_cast<ChannelId>(a) | static_cast<ChannelId>(b));
-	}
-
-	ENGINE_INLINE constexpr ChannelFlags operator&(ChannelFlags a, ChannelFlags b) {
-		return static_cast<ChannelFlags>(static_cast<ChannelId>(a) & static_cast<ChannelId>(b));
-	}
-
-	ENGINE_INLINE ChannelFlags& operator++(ChannelFlags& a) {
-		++reinterpret_cast<ChannelId&>(a);
-		return a;
-	}
-
-	template<ChannelFlags Flags>
-	class Channel {
-		public:
-			constexpr static auto flags = Flags;
-
-	};
-
-	
 	template<class... Cs>
 	class Connection {
 		private:
+			using ChannelId = uint8;
+
 			const IPv4Address addr = {};
 
 			struct PacketData {
