@@ -18,7 +18,7 @@ namespace Engine {
 	}
 
 	// TODO: doc
-	template<class S, class T, int32 N> // TODO: Doc destructive to old entities as new are inserted
+	template<class S, class T, S N> // TODO: Doc destructive to old entities as new are inserted
 	class SequenceBuffer { // Almost SparseSet + RingBuffer. Not quite.
 		private:
 			struct Entry {
@@ -31,17 +31,17 @@ namespace Engine {
 			Entry entries[N] = {};
 			T storage[N];
 
-			constexpr static auto index(S seq) noexcept { return seq % N; }
+			constexpr static S index(S seq) noexcept { return seq % N; }
 
 			ENGINE_INLINE auto& getEntry(S seq) { return entries[index(seq)]; }
 			ENGINE_INLINE const auto& getEntry(S seq) const { return const_cast<SequenceBuffer*>(this)->getEntry(seq); }
 
 		public:
-			constexpr static auto capacity() noexcept { return N; }
+			constexpr static S capacity() noexcept { return N; }
 
-			ENGINE_INLINE auto max() const { return next - 1; }
-			ENGINE_INLINE auto min() const { return next - capacity(); }
-			ENGINE_INLINE auto minValid() const { return lowest; }
+			ENGINE_INLINE S max() const { return next - 1; }
+			ENGINE_INLINE S min() const { return next - capacity(); }
+			ENGINE_INLINE S minValid() const { return lowest; }
 
 			// TODO: max - N vs lowest
 
@@ -60,8 +60,8 @@ namespace Engine {
 			T& insert(S seq) {
 				ENGINE_DEBUG_ASSERT(canInsert(seq), "Attempting to insert invalid entry.");
 
-				if (const auto n = seq + 1; seqGreater(n, next)) {
-					for (auto s = next; seqLess(s, n); ++s) {
+				if (const S n = seq + 1; seqGreater(n, next)) {
+					for (S s = next; seqLess(s, n); ++s) {
 						remove(s);
 					}
 					next = n;
