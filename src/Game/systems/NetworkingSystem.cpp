@@ -363,10 +363,13 @@ namespace Game {
 		// Send messages
 		// TODO: rate should be configurable somewhere
 		const bool shouldUpdate = now - lastUpdate >= std::chrono::milliseconds{1000 / 20};
+		// TODO: move back into if. Just for testing
+		if constexpr (ENGINE_CLIENT) { runClient(); }
+
 		if (shouldUpdate) {
 			lastUpdate = now;
 			if constexpr (ENGINE_SERVER) { runServer(); }
-			if constexpr (ENGINE_CLIENT) { runClient(); }
+			//if constexpr (ENGINE_CLIENT) { runClient(); }
 
 			for (auto& ent : connFilter) { // TODO: time is connections. reliable is plys
 				auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
@@ -500,7 +503,7 @@ namespace Game {
 		static uint8 ping = 0;
 		static auto next = now;
 		if (next > now) { return; }
-		next = now + std::chrono::milliseconds{50};
+		next = now + std::chrono::milliseconds{10};
 
 		for (auto& ply : plyFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;

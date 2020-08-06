@@ -44,11 +44,53 @@ namespace Engine::Net {
 		return sent;
 	}
 
-	int32 UDPSocket::recv(void* data, int32 size, IPv4Address& address) const {
+	int32 UDPSocket::recv(void* data, int32 size, IPv4Address& address) {
 		sockaddr_in from;
 		int fromlen = sizeof(from);
 		int32 len = recvfrom(handle, static_cast<char*>(data), size, 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
 		address = from;
+
+		#ifdef ENGINE_UDP_NETWORK_SIM
+		{
+			// TODO: imgui sliders?
+			const auto now = Engine::Clock::now();
+
+			if (len > -1) {
+				// Ping var is total variance so between ping +- pingVar/2
+				const float64 r = -1 + 2 * random();
+				const auto var = std::chrono::duration_cast<Engine::Clock::Duration>(halfPingAdd * (jitter * 0.5 * r));
+
+				if (random() < loss) {
+					return -1;
+				}
+
+				auto pkt = PacketData{
+					.time = now + halfPingAdd + var,
+					.from = from,
+					.data = {reinterpret_cast<byte*>(data), reinterpret_cast<byte*>(data) + len},
+				};
+
+				if (random() < duplicate) {
+					packetBuffer.push(pkt);
+				}
+
+				packetBuffer.push(std::move(pkt));
+			}
+
+			if (packetBuffer.size()) {
+				const auto& top = packetBuffer.top();
+				if (top.time < now) {
+					memcpy(data, top.data.data(), top.data.size());
+					len = static_cast<int32>(top.data.size());
+					address = top.from;
+					packetBuffer.pop();
+					return len;
+				}
+			}
+			return -1;
+		}
+		#endif
+
 		return len;
 	}
 
