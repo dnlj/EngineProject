@@ -13,8 +13,8 @@
 namespace Engine::ECS {
 	class Entity {
 		public:
-			uint16 id = -1;
-			uint16 gen = -1;
+			uint16 id = static_cast<uint16>(-1);
+			uint16 gen = static_cast<uint16>(-1);
 	};
 
 	static_assert(sizeof(Entity) == 4);

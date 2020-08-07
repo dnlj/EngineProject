@@ -40,7 +40,7 @@ namespace {
 	};
 
 	// TODO: figure out a good pattern
-	constexpr uint8 DISCOVER_SERVER_DATA[Engine::Net::MAX_MESSAGE_SIZE] = {
+	constexpr uint8 MESSAGE_PADDING_DATA[Engine::Net::MAX_MESSAGE_SIZE] = {
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
@@ -82,11 +82,9 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::DISCOVER_SERVER) {
-		constexpr auto size = sizeof(DISCOVER_SERVER_DATA);
-
 		// TODO: rate limit per ip (longer if invalid packet)
-
-		if (from.recvMsgSize() == size && !memcmp(from.read(size), DISCOVER_SERVER_DATA, size)) {
+		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
+		if (from.recvMsgSize() == size && !memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
 			from.msgBegin<MessageType::SERVER_INFO>();
 			from.write("This is the name of the server");
 			from.msgEnd<MessageType::SERVER_INFO>();
@@ -101,37 +99,54 @@ namespace Game {
 		#endif
 	}
 
-	HandleMessageDef(MessageType::CONNECT) {
-		// TODO: since messages arent reliable do connect/disconnect really make any sense?
-		ENGINE_LOG("MessageType::CONNECT from ", from.address());
-		addPlayer(fromEnt);
-
-		const auto* tick = from.read<Engine::ECS::Tick>();
-
-		from.msgBegin<MessageType::CONNECT_CONFIRM>();
-		from.write(fromEnt);
-		from.write(world.getTick());
-		from.write(*tick);
-		from.msgEnd<MessageType::CONNECT_CONFIRM>();
-	}
-	
-	HandleMessageDef(MessageType::CONNECT_CONFIRM) {
-		auto* remote = from.read<Engine::ECS::Entity>();
-		auto* rtick = from.read<Engine::ECS::Tick>();
-		auto* ltick = from.read<Engine::ECS::Tick>();
-
-		if (!remote) {
-			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
+	HandleMessageDef(MessageType::CONNECT_REQUEST) {
+		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
+		if (from.recvMsgSize() != size || memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
+			ENGINE_WARN("Got invalid connection request from ", from.address());
+			// TODO: rate limit connections with invalid messages
 			return;
 		}
 
-		ENGINE_LOG("Ticks: ", *rtick, " ", *ltick);
+		from.msgBegin<MessageType::CONNECT_CHALLENGE>();
+		const auto key = getConnectionKey(from.address());
+		from.write(key);
+		from.msgEnd<MessageType::CONNECT_CHALLENGE>();
+	}
+	
+	HandleMessageDef(MessageType::CONNECT_CHALLENGE) {
+		// TODO: since messages arent reliable do connect/disconnect really make any sense?
+		ENGINE_LOG("MessageType::CONNECT from ", from.address());
+		const auto& key = *from.read<uint64>();
+		from.msgBegin<MessageType::CONNECT_CONFIRM>();
+		from.write(key);
+		from.msgEnd<MessageType::CONNECT_CONFIRM>();
+	}
 
-		entToLocal[*remote] = fromEnt;
-		ENGINE_LOG("Connection established. Remote: ", *remote, " Local: ", fromEnt);
-
+	HandleMessageDef(MessageType::CONNECT_CONFIRM) {
+		// TODO: need to handle duplicate confirms
 		if constexpr (ENGINE_CLIENT) {
+			auto* remote = from.read<Engine::ECS::Entity>();
+
+			if (!remote) {
+				ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
+				return;
+			}
+
+			entToLocal[*remote] = fromEnt;
+			ENGINE_LOG("Connection established. Remote: ", *remote, " Local: ", fromEnt);
+
 			addPlayer(fromEnt);
+		} else {
+			const auto keyA = getConnectionKey(from.address());
+			const auto keyB = *from.read<uint64>();
+			if (keyA != keyB) {
+				ENGINE_WARN("Received invalid connection key from ", from.address());
+				return;
+			}
+			addPlayer(fromEnt);
+			from.msgBegin<MessageType::CONNECT_CONFIRM>();
+			from.write(fromEnt);
+			from.msgEnd<MessageType::CONNECT_CONFIRM>();
 		}
 	}
 
@@ -321,10 +336,18 @@ namespace Game {
 			ent = e;
 			conn = &c;
 		} else {
-			ent = found->second;
+			ent = found->second.ent;
 			conn = world.getComponent<ConnectionComponent>(ent).conn.get();
 		}
 		return {ent, *conn};
+	}
+
+	uint64 NetworkingSystem::getConnectionKey(const Engine::Net::IPv4Address& addr) {
+		const auto found = ipToPlayer.find(addr);
+		auto& key = found->second.key;
+		// TODO: pcg. not crypto secure, but this doesnt need to be. We arnt encrypting anything.
+		if (!key) { key = rand(); }
+		return key;
 	}
 
 	void NetworkingSystem::broadcastDiscover() {
@@ -338,7 +361,7 @@ namespace Game {
 
 			auto& [ent, conn] = getOrCreateConnection(group);
 			conn.msgBegin<MessageType::DISCOVER_SERVER>();
-			conn.write(DISCOVER_SERVER_DATA);
+			conn.write(MESSAGE_PADDING_DATA);
 			conn.msgEnd<MessageType::DISCOVER_SERVER>();
 		#endif
 	}
@@ -503,7 +526,7 @@ namespace Game {
 		static uint8 ping = 0;
 		static auto next = now;
 		if (next > now) { return; }
-		next = now + std::chrono::milliseconds{10};
+		next = now + std::chrono::milliseconds{1000};
 
 		for (auto& ply : plyFilter) {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
@@ -523,15 +546,16 @@ namespace Game {
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		auto& [ent, conn] = getOrCreateConnection(addr);
-		conn.msgBegin<MessageType::CONNECT>();
-		conn.write(world.getTick());
-		conn.msgEnd<MessageType::CONNECT>();
+
+		conn.msgBegin<MessageType::CONNECT_REQUEST>();
+		conn.write(MESSAGE_PADDING_DATA);
+		conn.msgEnd<MessageType::CONNECT_REQUEST>();
 	}
 
 	auto NetworkingSystem::addConnection2(const Engine::Net::IPv4Address& addr) -> AddConnRes {
 		auto& ent = world.createEntity();
 		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
-		ipToPlayer.emplace(addr, ent);
+		ipToPlayer.emplace(addr, ConnInfo{ent, 0});
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
 		connComp.conn = std::make_unique<Connection>(addr, now);
 		return {ent, *connComp.conn};

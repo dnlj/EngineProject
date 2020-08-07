@@ -44,7 +44,7 @@ namespace Engine::Net {
 			Engine::Clock::Duration ping = {};
 
 			
-			constexpr static float32 lossSmoothing = 0.01f; // TODO: ideal?
+			constexpr static float32 lossSmoothing = 0.05f; // TODO: ideal?
 			float loss = {};
 
 			struct {

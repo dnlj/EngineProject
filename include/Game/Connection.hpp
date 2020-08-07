@@ -11,16 +11,21 @@
 namespace Game {
 	struct Channel_General : Engine::Net::Channel_UnreliableUnordered<
 		MessageType::UNKNOWN,
-		MessageType::DISCOVER_SERVER, // TODO: Move into channel for valid unconnected messages?
-		MessageType::SERVER_INFO,	  // TODO: Move into channel for valid unconnected messages?
-		MessageType::CONNECT,		  // TODO: Move into channel for valid unconnected messages?
-		MessageType::CONNECT_CONFIRM, // TODO: Move into channel for valid unconnected messages?
+
+		MessageType::DISCOVER_SERVER,   // TODO: client only
+		MessageType::SERVER_INFO,	    // TODO: server only
+		// TODO: client only
+		// TODO: pad out packet for ddos protec
+		MessageType::CONNECT_REQUEST,
+		MessageType::CONNECT_CHALLENGE, // TODO: server only
 		MessageType::DISCONNECT,
+
 		MessageType::TEST,
 		MessageType::ACTION // TODO: one of these things is not like the others
 	> {};
 
 	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
+		MessageType::CONNECT_CONFIRM, // TODO: server only
 		MessageType::PING
 	> {};
 
