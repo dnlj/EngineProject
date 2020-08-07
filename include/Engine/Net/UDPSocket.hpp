@@ -7,7 +7,7 @@
 	#error Not yet implemented for this operating system.
 #endif
 
-#define ENGINE_UDP_NETWORK_SIM_
+#define ENGINE_UDP_NETWORK_SIM
 #ifdef ENGINE_UDP_NETWORK_SIM
 #include <queue>
 #include <Engine/Clock.hpp>
@@ -46,7 +46,7 @@ namespace Engine::Net {
 				constexpr static Engine::Clock::Duration halfPingAdd = std::chrono::milliseconds{50};
 				constexpr static float64 jitter = 0.75;
 				constexpr static float64 duplicate = 0.01;
-				constexpr static float64 loss = 0.00;
+				constexpr static float64 loss = 0.25;
 				uint64 seed = 0xAAAA'BBBB'CCCC'DDDD;
 				std::mt19937 mt{std::random_device{}()}; // TODO: bad seeding. MT is huge. switch to other rng.
 				float64 random() { // TODO: pcg?

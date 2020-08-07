@@ -28,19 +28,17 @@ namespace Game {
 			#endif
 
 		private:
+			using ConnState = Engine::Net::ConnState::Type;
 			static constexpr auto timeout = std::chrono::milliseconds{10'000};
 			Engine::Net::UDPSocket socket;
 			EntityFilter& connFilter;
 			EntityFilter& plyFilter;
 
 			// TODO: should this be part of Connection?
-			//enum class ConnectionState {
-				//
-			//};
 			struct ConnInfo {
-
 				Engine::ECS::Entity ent = {};
 				uint64 key = 0; // TODO: if we want to do this correctly we need to support it at a lower level. would need to be part of packet header + crc.
+				ConnState state = Engine::Net::ConnState::Disconnected;
 			};
 			Engine::FlatHashMap<Engine::Net::IPv4Address, ConnInfo> ipToPlayer; // TODO: name
 
@@ -69,21 +67,20 @@ namespace Game {
 
 		private:
 			struct AddConnRes {
-				Engine::ECS::Entity ent;
+				ConnInfo& info;
 				Connection& conn;
 			};
 			AddConnRes addConnection2(const Engine::Net::IPv4Address& addr);
 			void addPlayer(const Engine::ECS::Entity ent);
 			AddConnRes getOrCreateConnection(const Engine::Net::IPv4Address& addr);
-			uint64 getConnectionKey(const Engine::Net::IPv4Address& addr);
 
-			void dispatchMessage(Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader* hdr);
+			bool dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr);
 			void updateNeighbors();
 			void runServer();
 			void runClient();
 
 			template<MessageType::Type Type>
-			void handleMessageType(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity ent) {
+			void handleMessageType(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader& head) {
 				static_assert(Type != Type, "Unhandled network message type.");
 			};
 	};

@@ -43,8 +43,6 @@ namespace Engine { using namespace Engine::Types; }
 
 namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
 	constexpr float32 PI = 3.141592653589793238462643383279502884197169f;
-	constexpr int32 ServerSide = 1 << 0;
-	constexpr int32 ClientSide = 1 << 1;
 
 	// TODO: move into own ns?
 	constexpr std::string_view ASCII_BLACK        = "\033[30m";
@@ -78,6 +76,7 @@ namespace Engine { using namespace Engine::Constants; }
 
 #define ENGINE_SIDE_SERVER 1
 #define ENGINE_SIDE_CLIENT 2
+#define ENGINE_SIDE_BOTH (ENGINE_SIDE_SERVER | ENGINE_SIDE_CLIENT)
 #define ENGINE_SERVER (ENGINE_SIDE == ENGINE_SIDE_SERVER)
 #define ENGINE_CLIENT (ENGINE_SIDE == ENGINE_SIDE_CLIENT)
 

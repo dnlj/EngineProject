@@ -12,12 +12,11 @@ namespace Game {
 	struct Channel_General : Engine::Net::Channel_UnreliableUnordered<
 		MessageType::UNKNOWN,
 
-		MessageType::DISCOVER_SERVER,   // TODO: client only
-		MessageType::SERVER_INFO,	    // TODO: server only
-		// TODO: client only
-		// TODO: pad out packet for ddos protec
+		MessageType::DISCOVER_SERVER,
+		MessageType::SERVER_INFO,
 		MessageType::CONNECT_REQUEST,
-		MessageType::CONNECT_CHALLENGE, // TODO: server only
+		MessageType::CONNECT_CHALLENGE,
+		MessageType::CONNECT_CONFIRM,
 		MessageType::DISCONNECT,
 
 		MessageType::TEST,
@@ -25,7 +24,6 @@ namespace Game {
 	> {};
 
 	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
-		MessageType::CONNECT_CONFIRM, // TODO: server only
 		MessageType::PING
 	> {};
 
