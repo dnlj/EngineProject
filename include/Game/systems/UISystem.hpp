@@ -52,10 +52,10 @@ namespace Game {
 			void ui_entities();
 
 			template<int32 I>
-			static ImVec2 netGetPointAvg(void* data, int idx);
+			static ImPlotPoint netGetPointAvg(void* data, int idx);
 
 			template<int32 I>
-			static ImVec2 netGetDiff(void* data, int idx);
+			static ImPlotPoint netGetDiff(void* data, int idx);
 
 			EntityFilter& connFilter;
 			EntityFilter& activePlayerFilter;

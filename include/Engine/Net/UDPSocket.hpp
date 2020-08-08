@@ -7,7 +7,7 @@
 	#error Not yet implemented for this operating system.
 #endif
 
-#define ENGINE_UDP_NETWORK_SIM
+#define ENGINE_UDP_NETWORK_SIM_
 #ifdef ENGINE_UDP_NETWORK_SIM
 #include <queue>
 #include <Engine/Clock.hpp>

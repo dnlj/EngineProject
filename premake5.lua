@@ -40,11 +40,13 @@ CONAN_PACKAGES = { -- TODO: Name?
 		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
 		"glm/0.9.9.7@dnlj/wobbly",
 		"imgui/1.75@dnlj/wobbly",
-		"implot/master@dnlj/wobbly",
+		"implot/0.3@dnlj/wobbly",
 		"meta/master@dnlj/wobbly",
 		"premake5/latest@dnlj/wobbly",
 		"robin_hood/master@dnlj/wobbly",
-		"soil/latest@dnlj/wobbly", -- TODO: Look into soil2 or other image loading lib. We dont use any of the opengl features of soil.
+		"soil_littlstar/master@dnlj/wobbly",
+		--"soil/latest@dnlj/wobbly", -- TODO: Look into soil2 or other image loading lib. We dont use any of the opengl features of soil.
+		
 	},
 	["generators"] = {
 		"premake5",

@@ -285,7 +285,7 @@ namespace Game {
 				};
 
 				ImPlot::SetPlotYAxis(0);
-				ImPlot::SetPalette(colors, sizeof(colors));
+				ImPlot::SetColormap(colors, sizeof(colors));
 				// TODO: thickness?
 				ImPlot::PlotLine("Avg Sent (Bytes / Second)", netGetPointAvg<0>, this, frameData.size(), 0);
 				ImPlot::PlotLine("Avg Recv (Bytes / Second)", netGetPointAvg<1>, this, frameData.size(), 0);
@@ -295,13 +295,13 @@ namespace Game {
 				ImPlot::PlotBars("Recv (Bytes)", netGetDiff<1>, this, frameData.size(), 1.0f / tickrate, 0);
 
 				ImPlot::EndPlot();
-				ImPlot::RestorePalette();
+				ImPlot::SetColormap(ImPlotColormap_Default);
 			}
 		}
 	}
 
 	template<int32 I>
-	ImVec2 UISystem::netGetPointAvg(void* data, int idx) {
+	ImPlotPoint UISystem::netGetPointAvg(void* data, int idx) {
 		auto& self = *reinterpret_cast<UISystem*>(data);
 		auto curr = self.frameData.begin() + idx;
 
@@ -316,7 +316,7 @@ namespace Game {
 	};
 
 	template<int32 I>
-	ImVec2 UISystem::netGetDiff(void* data, int idx) {
+	ImPlotPoint UISystem::netGetDiff(void* data, int idx) {
 		auto& self = *reinterpret_cast<UISystem*>(data);
 		auto curr = self.frameData.begin() + idx;
 
