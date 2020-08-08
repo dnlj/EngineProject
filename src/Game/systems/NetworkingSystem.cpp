@@ -75,11 +75,10 @@ namespace {
 	};
 }
 
-
 #define HandleMessageDef(MsgType)\
 	template<> void NetworkingSystem::handleMessageType<MsgType>(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader& head) {\
 	if constexpr (!(MessageType_Traits<MsgType>::side & ENGINE_SIDE)) { ENGINE_WARN("HandleMessageDef Abort A"); return; }\
-	if (!(MessageType_Traits<MsgType>::state & info.state)) { ENGINE_WARN("HandleMessageDef Abort B"); return; }
+	if (!(MessageType_Traits<MsgType>::state & info.state)) { from.read(from.recvMsgSize()); ENGINE_WARN("HandleMessageDef Abort B: ", (int)head.type); return; }
 
 namespace Game {
 	HandleMessageDef(MessageType::UNKNOWN)
@@ -106,12 +105,12 @@ namespace Game {
 	HandleMessageDef(MessageType::CONNECT_REQUEST)
 		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
 		if (from.recvMsgSize() != size || memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
-			ENGINE_WARN("Got invalid connection request from ", from.address());
 			// TODO: rate limit connections with invalid messages
+			ENGINE_WARN("Got invalid connection request from ", from.address());
 			return;
 		}
 
-		info.state = std::max(info.state, Engine::Net::ConnState::Connecting);
+		info.state = std::max(info.state, ConnState::Connecting);
 		info.key = info.key ? info.key : rand(); // TODO: pcg.
 		from.msgBegin<MessageType::CONNECT_CHALLENGE>();
 		from.write(info.key);
@@ -130,17 +129,17 @@ namespace Game {
 	HandleMessageDef(MessageType::CONNECT_CONFIRM)
 		// TODO: need to handle duplicate confirms
 		if constexpr (ENGINE_CLIENT) {
-			if (info.state != ConnState::Connecting) {
-				ENGINE_LOG("CLIENT MessageType::CONNECT_CONFIRM 0");
-				return;
-			}
-			ENGINE_LOG("CLIENT MessageType::CONNECT_CONFIRM 1");
-
 			auto* remote = from.read<Engine::ECS::Entity>();
 			if (!remote) {
 				ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
 				return;
 			}
+
+			if (info.state != ConnState::Connecting) {
+				ENGINE_LOG("CLIENT MessageType::CONNECT_CONFIRM 0");
+				return;
+			}
+			ENGINE_LOG("CLIENT MessageType::CONNECT_CONFIRM 1");
 
 			entToLocal[*remote] = info.ent;
 			ENGINE_LOG("Connection established. Remote: ", *remote, " Local: ", info.ent);
@@ -386,7 +385,7 @@ namespace Game {
 
 			const Engine::Net::MessageHeader* hdr; 
 			while (hdr = conn.recvNext()) {
-				if (dispatchMessage(info, conn, hdr)) { break; };
+				dispatchMessage(info, conn, hdr);
 			}
 		}
 
@@ -534,20 +533,20 @@ namespace Game {
 			if (info.state == ConnState::Connecting) {
 				connectTo(addr);
 				break;
+			} else if (info.state == ConnState::Connected) {
+				static uint8 ping = 0;
+				static auto next = now;
+				if (next > now) { return; }
+				next = now + std::chrono::milliseconds{1000};
+		
+				for (auto& ply : plyFilter) {
+					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+					conn.msgBegin<MessageType::PING>();
+					conn.write(static_cast<uint8>(++ping & 0x7F));
+					conn.msgEnd<MessageType::PING>();
+				}
 			}
 		}
-		//
-		//static uint8 ping = 0;
-		//static auto next = now;
-		//if (next > now) { return; }
-		//next = now + std::chrono::milliseconds{1000};
-		//
-		//for (auto& ply : plyFilter) {
-		//	auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-		//	conn.msgBegin<MessageType::PING>();
-		//	conn.write(static_cast<uint8>(++ping & 0x7F));
-		//	conn.msgEnd<MessageType::PING>();
-		//}
 	}
 
 	int32 NetworkingSystem::connectionsCount() const {
@@ -615,7 +614,7 @@ namespace Game {
 		world.deferedDestroyEntity(ent);
 	}
 
-	bool NetworkingSystem::dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr) {
+	void NetworkingSystem::dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr) {
 		constexpr auto msgToStr = [](const Engine::Net::MessageType& type) -> const char* {
 			#define X(Name, Side, State) if (type == MessageType::Name) { return #Name; }
 			#include <Game/MessageType.xpp>
@@ -634,19 +633,12 @@ namespace Game {
 		const byte* curr = static_cast<const byte*>(from.read(0));
 		const auto rem = stop - curr;
 
-		if constexpr (ENGINE_DEBUG) {
-			// TODO: we should probably abort the whole packet if there is an error.
-			if (rem > 0) {
-				ENGINE_WARN("Incomplete read of network message ", msgToStr(hdr->type), " (", rem, " bytes remaining). Ignoring.");
-				from.read(rem);
-			} else if (rem < 0) {
-				ENGINE_WARN("Read past end of network messge type ", msgToStr(hdr->type)," (", rem, " bytes remaining).");
-			}
+		if (rem > 0) {
+			ENGINE_WARN("Incomplete read of network message ", msgToStr(hdr->type), " (", rem, " bytes remaining). Ignoring.");
+			from.read(rem);
+		} else if (rem < 0) {
+			ENGINE_WARN("Read past end of network messge type ", msgToStr(hdr->type)," (", rem, " bytes remaining).");
 		}
-
-		// TODO: if a message is aborted because of the wrong/old info.state we drop the whole packet. this could (has) cause issues.
-		// Abort this packet if we incorrectly read the message
-		return rem != 0;
 	}
 
 	void NetworkingSystem::updateNeighbors() {

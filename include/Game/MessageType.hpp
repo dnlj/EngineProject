@@ -20,7 +20,6 @@ namespace Game {
 	struct MessageType_Traits {
 	};
 
-	
 	#define X(Name, Side, State)\
 	template<> struct MessageType_Traits<MessageType::Name> {\
 		constexpr static auto side = Side;\

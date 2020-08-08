@@ -168,6 +168,7 @@ namespace Engine::Net {
 
 						data->recvTime = time;
 
+						// TODO: subtrackt 1/tickrate 
 						ping += std::chrono::duration_cast<Engine::Clock::Duration>(
 							((data->recvTime - data->sendTime) - ping) * pingSmoothing
 						);

@@ -74,7 +74,7 @@ namespace Game {
 			void addPlayer(const Engine::ECS::Entity ent);
 			AddConnRes getOrCreateConnection(const Engine::Net::IPv4Address& addr);
 
-			bool dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr);
+			void dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr);
 			void updateNeighbors();
 			void runServer();
 			void runClient();
