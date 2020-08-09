@@ -121,7 +121,7 @@ namespace Game {
 		if (ImGui::Button("Disconnect")) {
 			for (const auto& ent : connFilter) {
 				const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
-				world.getSystem<NetworkingSystem>().disconnect(addr, true);
+				world.getSystem<NetworkingSystem>().requestDisconnect(addr);
 			}
 		}
 

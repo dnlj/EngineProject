@@ -175,6 +175,7 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::destroyEntity(Entity ent) {
+		ENGINE_WARN("DESTROY ENTITY: ", ent);
 		removeAllComponents(ent);
 		
 		#if defined(DEBUG)

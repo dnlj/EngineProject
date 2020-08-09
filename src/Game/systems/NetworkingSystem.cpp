@@ -167,8 +167,8 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::DISCONNECT)
-		puts("MessageType::DISCONNECT");
-		disconnect(from.address(), false);
+		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", info.ent);
+		info.disconnectAt = Engine::Clock::now() - std::chrono::milliseconds{1000};
 	}
 
 	HandleMessageDef(MessageType::PING)
@@ -399,22 +399,42 @@ namespace Game {
 			if constexpr (ENGINE_SERVER) { runServer(); }
 			if constexpr (ENGINE_CLIENT) { runClient(); }
 
-			for (const auto& [addr, info] : connections) {
+			for (auto& [addr, info] : connections) {
 				auto& conn = *world.getComponent<ConnectionComponent>(info.ent).conn;
 				const auto diff = now - conn.recvTime();
 				if (diff > timeout) {
 					ENGINE_LOG("Connection for ", info.ent ," (", conn.address(), ") timed out.");
-					disconnect(addr, true);
-					break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
+					info.disconnectAt = now - std::chrono::milliseconds{1000};
 				}
 			}
 		}
 
 		// Send Ack messages & unacked
-		for (const auto& [addr, info] : connections) {
+		for (auto it = connections.begin(); it != connections.end();) {
+		//for (const auto& [addr, info] : connections) {
+			auto& [addr, info] = *it;
 			const auto ply = info.ent;
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+			
+			if (info.disconnectAt != Engine::Clock::TimePoint{}) {
+				conn.msgBegin<MessageType::DISCONNECT>();
+				conn.msgEnd<MessageType::DISCONNECT>();
+
+				if (info.disconnectAt < now) {
+					conn.send(socket);
+					info.key = 0;
+					info.state = Engine::Net::ConnState::Disconnected;
+
+					ENGINE_LOG("Disconnecting ", info.ent, " ", addr);
+					// TODO: world.removeComponent<ConnectionComponent>(info.ent);
+					world.deferedDestroyEntity(info.ent);
+					it = connections.erase(it);
+					continue;
+				}
+			}
+
 			conn.send(socket);
+			++it;
 		}
 	}
 
@@ -506,7 +526,6 @@ namespace Game {
 				});
 
 				if (flagComps) {
-					// TODO: we shouldnt have had to change the filters on all those systems because we are using ordered... Look into this.
 					conn.msgBegin<MessageType::ECS_FLAG>(); // TODO: General_RO
 					conn.write(ent);
 					conn.write(flagComps);
@@ -589,34 +608,10 @@ namespace Game {
 		world.addComponent<CharacterSpellComponent>(ent);
 	}
 
-	void NetworkingSystem::disconnect(const Engine::Net::IPv4Address& addr, bool send) {
+	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
 		auto& [info, conn] = getOrCreateConnection(addr);
-		info.key = 0;
-		info.state = Engine::Net::ConnState::Disconnected;
-
-		// TODO: disconnect loop like we have for connect?
-		if (send) {
-			conn.msgBegin<MessageType::DISCONNECT>();
-			conn.msgEnd<MessageType::DISCONNECT>();
-		}
-
-		/////////////////////////////////
-		/////////////////////////////////
-		/////////////////////////////////
-		/////////////////////////////////
-		/////////////////////////////////
-		/////////////////////////////////
-		// TODO: why no work.
-		/////////////////////////////////
-		/////////////////////////////////
-		/////////////////////////////////
-		/////////////////////////////////
-		/////////////////////////////////
-
-		ENGINE_LOG("Disconnecting ", info.ent, " ", addr);
-		//world.removeComponent<ConnectionComponent>(info.ent);
-		world.deferedDestroyEntity(info.ent);
-		connections.erase(addr);
+		info.disconnectAt = Engine::Clock::now() + std::chrono::milliseconds{1000};
+		ENGINE_INFO("Request disconnect ", addr, " ", info.ent);
 	}
 
 	void NetworkingSystem::dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr) {

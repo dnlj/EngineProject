@@ -29,13 +29,14 @@ namespace Game {
 
 		private:
 			using ConnState = Engine::Net::ConnState::Type;
-			static constexpr auto timeout = std::chrono::milliseconds{10'000};
+			static constexpr auto timeout = std::chrono::milliseconds{5000};
 			Engine::Net::UDPSocket socket;
 			EntityFilter& plyFilter;
 
 			// TODO: should this be part of Connection?
 			struct ConnInfo {
 				Engine::ECS::Entity ent = {};
+				Engine::Clock::TimePoint disconnectAt = {};
 				uint64 key = 0; // TODO: if we want to do this correctly we need to support it at a lower level. would need to be part of packet header + crc.
 				ConnState state = Engine::Net::ConnState::Disconnected;
 			};
@@ -43,7 +44,7 @@ namespace Game {
 
 			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
-			Engine::Net::IPv4Address address;	
+			Engine::Net::IPv4Address address;
 			Engine::Net::Packet packet = {};
 			const Engine::Net::IPv4Address group;
 			Engine::Clock::TimePoint now = {};
@@ -62,7 +63,7 @@ namespace Game {
 			int32 connectionsCount() const;
 			int32 playerCount() const;
 			void connectTo(const Engine::Net::IPv4Address& addr);
-			void disconnect(const Engine::Net::IPv4Address& addr, bool send);
+			void requestDisconnect(const Engine::Net::IPv4Address& addr);
 
 		private:
 			struct AddConnRes {

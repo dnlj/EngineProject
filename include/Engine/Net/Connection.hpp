@@ -23,10 +23,10 @@ namespace Engine::Net {
 	struct ConnState {
 		enum Type : uint8 {
 			None         = 0,
-			Disconnected = 1 << 0,
-			Connecting   = 1 << 1,
-			Connected    = 1 << 2,
-			Any          = Disconnected | Connecting | Connected,
+			Disconnected  = 1 << 0,
+			Connecting    = 1 << 1,
+			Connected     = 1 << 2,
+			Any           = Disconnected | Connecting | Connected,
 		};
 	};
 
