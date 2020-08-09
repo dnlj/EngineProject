@@ -7,8 +7,7 @@
 namespace Game {
 	ActionSystem::ActionSystem(SystemArg arg)
 		: System{arg}
-		, actionFilter{world.getFilterFor<ActionComponent>()}
-		, connFilter{world.getFilterFor<ConnectionComponent>()} {
+		, actionFilter{world.getFilterFor<ActionComponent>()} {
 	}
 
 	void ActionSystem::preTick() {

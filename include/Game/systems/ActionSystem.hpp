@@ -19,7 +19,6 @@ namespace Game {
 		private:
 			std::vector<std::vector<Engine::Input::ActionListener>> actionIdToListeners;
 			EntityFilter& actionFilter;
-			EntityFilter& connFilter;
 
 		public:
 			ActionSystem(SystemArg arg);

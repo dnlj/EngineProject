@@ -119,9 +119,9 @@ namespace Game {
 		}
 
 		if (ImGui::Button("Disconnect")) {
-			std::vector<Engine::ECS::Entity> ents = {connFilter.cbegin(), connFilter.cend()};
-			for (const auto ent : ents) {
-				world.getSystem<Game::NetworkingSystem>().disconnect(ent);
+			for (const auto& ent : connFilter) {
+				const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
+				world.getSystem<NetworkingSystem>().disconnect(addr, true);
 			}
 		}
 

@@ -168,7 +168,7 @@ namespace Game {
 
 	HandleMessageDef(MessageType::DISCONNECT)
 		puts("MessageType::DISCONNECT");
-		disconnect(info.ent);
+		disconnect(from.address(), false);
 	}
 
 	HandleMessageDef(MessageType::PING)
@@ -326,7 +326,6 @@ namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
 		, socket{ENGINE_SERVER ? *engine.commandLineArgs.get<uint16>("port") : 0}
-		, connFilter{world.getFilterFor<ConnectionComponent>()}
 		, plyFilter{world.getFilterFor<PlayerFlag>()}
 		, group{*engine.commandLineArgs.get<Engine::Net::IPv4Address>("group")} {
 
@@ -346,8 +345,8 @@ namespace Game {
 	auto NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) -> AddConnRes {
 		ConnInfo* info;
 		Connection* conn;
-		const auto found = ipToPlayer.find(addr);
-		if (found == ipToPlayer.end()) {
+		const auto found = connections.find(addr);
+		if (found == connections.end()) {
 			auto& [i, c] = addConnection2(addr);
 			info = &i;
 			conn = &c;
@@ -400,28 +399,20 @@ namespace Game {
 			if constexpr (ENGINE_SERVER) { runServer(); }
 			if constexpr (ENGINE_CLIENT) { runClient(); }
 
-			for (auto& ent : connFilter) { // TODO: time is connections. reliable is plys
-				auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
+			for (const auto& [addr, info] : connections) {
+				auto& conn = *world.getComponent<ConnectionComponent>(info.ent).conn;
 				const auto diff = now - conn.recvTime();
 				if (diff > timeout) {
-					ENGINE_LOG("Connection for ", ent ," (", conn.address(), ") timed out.");
-					disconnect(ent);
+					ENGINE_LOG("Connection for ", info.ent ," (", conn.address(), ") timed out.");
+					disconnect(addr, true);
 					break; // Work around for not having an `it = container.erase(it)` alternative. Just check the rest next frame.
-				}
-
-				if (world.hasComponent<PlayerFlag>(ent)) {
-					//conn.msgBegin<MessageType::ACK>();
-					//conn.write(conn.getRecvNextAck());
-					//conn.write(conn.getRecvAcks());
-					//conn.msgEnd<MessageType::ACK>();
-
-					// TODO: conn.sendUnacked(socket);
 				}
 			}
 		}
 
 		// Send Ack messages & unacked
-		for (auto& ply : connFilter) {
+		for (const auto& [addr, info] : connections) {
+			const auto ply = info.ent;
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			conn.send(socket);
 		}
@@ -529,7 +520,7 @@ namespace Game {
 
 	
 	void NetworkingSystem::runClient() {
-		for (auto& [addr, info] : ipToPlayer) {
+		for (auto& [addr, info] : connections) {
 			if (info.state == ConnState::Connecting) {
 				connectTo(addr);
 				break;
@@ -550,7 +541,7 @@ namespace Game {
 	}
 
 	int32 NetworkingSystem::connectionsCount() const {
-		return static_cast<int32>(connFilter.size());
+		return static_cast<int32>(connections.size());
 	}
 
 	int32 NetworkingSystem::playerCount() const {
@@ -569,7 +560,7 @@ namespace Game {
 	auto NetworkingSystem::addConnection2(const Engine::Net::IPv4Address& addr) -> AddConnRes {
 		auto& ent = world.createEntity();
 		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
-		auto [it, suc] = ipToPlayer.emplace(addr, ConnInfo{
+		auto [it, suc] = connections.emplace(addr, ConnInfo{
 			.ent = ent,
 			.key = 0,
 			.state = ConnState::Disconnected,
@@ -598,20 +589,34 @@ namespace Game {
 		world.addComponent<CharacterSpellComponent>(ent);
 	}
 
-	void NetworkingSystem::disconnect(Engine::ECS::Entity ent) {
-		if (ent == Engine::ECS::INVALID_ENTITY) {
-			return;
+	void NetworkingSystem::disconnect(const Engine::Net::IPv4Address& addr, bool send) {
+		auto& [info, conn] = getOrCreateConnection(addr);
+		info.key = 0;
+		info.state = Engine::Net::ConnState::Disconnected;
+
+		// TODO: disconnect loop like we have for connect?
+		if (send) {
+			conn.msgBegin<MessageType::DISCONNECT>();
+			conn.msgEnd<MessageType::DISCONNECT>();
 		}
 
-		auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-		const auto addr = conn.address();
-		ENGINE_LOG("Disconnecting ", ent, " ", addr);
-		// TODO: really this should be a reliable message with timeout
-		conn.msgBegin<MessageType::DISCONNECT>();
-		conn.msgEnd<MessageType::DISCONNECT>();
+		/////////////////////////////////
+		/////////////////////////////////
+		/////////////////////////////////
+		/////////////////////////////////
+		/////////////////////////////////
+		/////////////////////////////////
+		// TODO: why no work.
+		/////////////////////////////////
+		/////////////////////////////////
+		/////////////////////////////////
+		/////////////////////////////////
+		/////////////////////////////////
 
-		ipToPlayer.erase(addr);
-		world.deferedDestroyEntity(ent);
+		ENGINE_LOG("Disconnecting ", info.ent, " ", addr);
+		//world.removeComponent<ConnectionComponent>(info.ent);
+		world.deferedDestroyEntity(info.ent);
+		connections.erase(addr);
 	}
 
 	void NetworkingSystem::dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr) {
