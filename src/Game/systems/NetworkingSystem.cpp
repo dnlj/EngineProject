@@ -419,8 +419,10 @@ namespace Game {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			
 			if (info.disconnectAt != Engine::Clock::TimePoint{}) {
-				conn.msgBegin<MessageType::DISCONNECT>();
-				conn.msgEnd<MessageType::DISCONNECT>();
+				if (info.key) {
+					conn.msgBegin<MessageType::DISCONNECT>();
+					conn.msgEnd<MessageType::DISCONNECT>();
+				}
 
 				if (info.disconnectAt < now) {
 					conn.send(socket);
