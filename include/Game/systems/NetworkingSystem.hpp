@@ -38,7 +38,6 @@ namespace Game {
 			struct ConnInfo {
 				Engine::ECS::Entity ent = {};
 				Engine::Clock::TimePoint disconnectAt = {};
-				uint64 key = 0; // TODO: if we want to do this correctly we need to support it at a lower level. would need to be part of packet header + crc.
 				ConnState state = Engine::Net::ConnState::Disconnected;
 			};
 			Engine::FlatHashMap<Engine::Net::IPv4Address, ConnInfo> connections; // TODO: name

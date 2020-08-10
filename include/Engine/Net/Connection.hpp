@@ -36,6 +36,7 @@ namespace Engine::Net {
 			using ChannelId = uint8;
 
 			const IPv4Address addr = {};
+			uint16 key = 0;
 
 			struct PacketData {
 				Engine::Clock::TimePoint sendTime;
@@ -124,17 +125,14 @@ namespace Engine::Net {
 
 			const auto& address() const { return addr; }
 
-			const auto getPing() const { return ping; }
-			const auto getLoss() const { return loss; }
+			auto getPing() const { return ping; }
+			auto getLoss() const { return loss; }
+
+			void setKey(decltype(key) key) { this->key = key; }
+			auto getKey() const { return key; }
 
 			[[nodiscard]]
 			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
-				// TODO:
-				//if (pkt.getProtocol() != protocol) {
-				//	ENGINE_WARN("Incorrect network protocol");
-				//	return false;
-				//}
-
 				rdat.time = time;
 				rdat.first = pkt.head;
 				rdat.last = rdat.first + sz;
@@ -272,7 +270,8 @@ namespace Engine::Net {
 					data = {
 						.sendTime = now,
 					};
-					
+
+					node->packet.setKey(key);
 					node->packet.setNextAck(nextRecvAck);
 					node->packet.setAcks(recvAcks);
 					

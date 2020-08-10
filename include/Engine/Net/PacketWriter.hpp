@@ -7,8 +7,6 @@
 namespace Engine::Net {
 	class PacketWriter {
 		private:
-			constexpr static uint16 protocol = 0b0'0110'1001'1001'0110;
-
 			using NodePtr = std::unique_ptr<PacketNode>;
 			NodePtr pool = nullptr;
 			NodePtr first = nullptr;

@@ -9,6 +9,8 @@
 #include <Engine/Net/IPv4Address.hpp>
 
 namespace Engine::Net {
+	constexpr static uint16 protocol = 0b0'0110'1001'1001'0110;
+
 	// TODO: Doc
 	bool startup();
 

@@ -111,15 +111,18 @@ namespace Game {
 		}
 
 		info.state = std::max(info.state, ConnState::Connecting);
-		info.key = info.key ? info.key : rand(); // TODO: pcg.
+		if (!from.getKey()) {
+			from.setKey(rand()); // TODO: pcg
+		}
 		from.msgBegin<MessageType::CONNECT_CHALLENGE>();
-		from.write(info.key);
+		from.write(from.getKey());
 		from.msgEnd<MessageType::CONNECT_CHALLENGE>();
-		ENGINE_LOG("MessageType::CONNECT_REQUEST ", info.key," ", (int)info.state);
+		ENGINE_LOG("MessageType::CONNECT_REQUEST ", from.getKey()," ", (int)info.state);
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CHALLENGE)
-		const auto& key = *from.read<uint64>();
+		const auto& key = *from.read<uint16>();
+		from.setKey(key);
 		from.msgBegin<MessageType::CONNECT_CONFIRM>();
 		from.write(key);
 		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", key);
@@ -147,8 +150,8 @@ namespace Game {
 			info.state = ConnState::Connected;
 			addPlayer(info.ent);
 		} else {
-			const auto keyA = info.key;
-			const auto keyB = *from.read<uint64>();
+			const auto keyA = from.getKey();
+			const auto keyB = *from.read<uint16>();
 			if (keyA != keyB) {
 				ENGINE_WARN("Received invalid connection key from ", from.address());
 				return;
@@ -382,6 +385,15 @@ namespace Game {
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
 			auto& [info, conn] = getOrCreateConnection(address);
+			// TODO: move back to connection
+			if (packet.getProtocol() != Engine::Net::protocol) {
+				ENGINE_WARN("Invalid protocol"); // TODO: rm
+				continue;
+			}
+			if (conn.getKey() != packet.getKey() && info.state == Engine::Net::ConnState::Connected) {
+				ENGINE_WARN("Invalid key"); // TODO: rm
+				continue;
+			}
 			if (!conn.recv(packet, sz, now)) { continue; }
 
 			const Engine::Net::MessageHeader* hdr; 
@@ -419,14 +431,14 @@ namespace Game {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			
 			if (info.disconnectAt != Engine::Clock::TimePoint{}) {
-				if (info.key) {
+				if (conn.getKey()) {
 					conn.msgBegin<MessageType::DISCONNECT>();
 					conn.msgEnd<MessageType::DISCONNECT>();
 				}
 
 				if (info.disconnectAt < now) {
 					conn.send(socket);
-					info.key = 0;
+					conn.setKey(0);
 					info.state = Engine::Net::ConnState::Disconnected;
 
 					ENGINE_LOG("Disconnecting ", info.ent, " ", addr);
@@ -585,7 +597,6 @@ namespace Game {
 		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
 		auto [it, suc] = connections.emplace(addr, ConnInfo{
 			.ent = ent,
-			.key = 0,
 			.state = ConnState::Disconnected,
 		});
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
