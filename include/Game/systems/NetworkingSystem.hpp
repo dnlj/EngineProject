@@ -25,6 +25,7 @@ namespace Game {
 					// TODO: name, player count, ping, private, tags, etc.
 				};
 				Engine::FlatHashMap<Engine::Net::IPv4Address, ServerInfo> servers;
+				void broadcastDiscover();
 			#endif
 
 		private:
@@ -58,7 +59,6 @@ namespace Game {
 		public:
 			NetworkingSystem(SystemArg arg);
 			void setup();
-			void broadcastDiscover(); // TODO: better way to handle messages
 			void run(float32 dt);
 			int32 connectionsCount() const;
 			int32 playerCount() const;

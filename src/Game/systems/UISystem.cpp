@@ -133,6 +133,7 @@ namespace Game {
 	}
 
 	void UISystem::ui_connect() {
+		#if ENGINE_CLIENT
 		auto& netSys = world.getSystem<Game::NetworkingSystem>();
 		if (netSys.playerCount()) { return; }
 
@@ -165,7 +166,6 @@ namespace Game {
 		ImGui::Separator();
 		ImGui::Columns(4);
 
-		#if ENGINE_CLIENT
 		for (const auto& [addr, info] : netSys.servers) {
 			int c = 0;
 			ImGui::Text(info.name.c_str());
@@ -182,7 +182,6 @@ namespace Game {
 			}
 			ImGui::NextColumn();
 		}
-		#endif
 
 		ImGui::Columns(1);
 
@@ -196,6 +195,7 @@ namespace Game {
 		};
 
 		ImGui::End();
+		#endif
 	}
 
 	void UISystem::ui_coordinates() {

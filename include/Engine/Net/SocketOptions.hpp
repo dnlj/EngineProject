@@ -11,6 +11,6 @@ namespace Engine::Net {
 	enum class SocketOption : int {
 		BROADCAST,
 		MULTICAST_JOIN,
-		// TODO: others
+		MULTICAST_LEAVE,
 	};
 }

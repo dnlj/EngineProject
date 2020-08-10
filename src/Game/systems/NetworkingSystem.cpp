@@ -331,10 +331,12 @@ namespace Game {
 
 		ENGINE_LOG("Listening on port ", socket.getAddress().port);
 
-		if (socket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(group)) {
-			ENGINE_LOG("LAN server discovery is available. Joining multicast group ", group);
-		} else {
-			ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", group);
+		if constexpr (ENGINE_SERVER) {
+			if (socket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(group)) {
+				ENGINE_LOG("LAN server discovery is available. Joining multicast group ", group);
+			} else {
+				ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", group);
+			}
 		}
 	}
 
@@ -357,21 +359,21 @@ namespace Game {
 		return {*info, *conn};
 	}
 
+	#if ENGINE_CLIENT
 	void NetworkingSystem::broadcastDiscover() {
-		#if ENGINE_CLIENT
-			const auto now = Engine::Clock::now();
-			for (auto it = servers.begin(); it != servers.end(); ++it) {
-				if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
-					servers.erase(it);
-				}
+		const auto now = Engine::Clock::now();
+		for (auto it = servers.begin(); it != servers.end(); ++it) {
+			if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
+				servers.erase(it);
 			}
+		}
 
-			auto& [info, conn] = getOrCreateConnection(group);
-			conn.msgBegin<MessageType::DISCOVER_SERVER>();
-			conn.write(MESSAGE_PADDING_DATA);
-			conn.msgEnd<MessageType::DISCOVER_SERVER>();
-		#endif
+		auto& [info, conn] = getOrCreateConnection(group);
+		conn.msgBegin<MessageType::DISCOVER_SERVER>();
+		conn.write(MESSAGE_PADDING_DATA);
+		conn.msgEnd<MessageType::DISCOVER_SERVER>();
 	}
+	#endif
 
 	void NetworkingSystem::run(float32 dt) {
 		now = Engine::Clock::now();
