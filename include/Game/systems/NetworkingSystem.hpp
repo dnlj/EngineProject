@@ -1,5 +1,8 @@
 #pragma once
 
+// PCG
+#include <pcg_random.hpp>
+
 // Engine
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Net/Connection.hpp>
@@ -44,6 +47,7 @@ namespace Game {
 
 			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
+			pcg32 rng;
 			Engine::Net::IPv4Address address;
 			Engine::Net::Packet packet = {};
 			const Engine::Net::IPv4Address group;

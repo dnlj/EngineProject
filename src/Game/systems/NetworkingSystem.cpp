@@ -2,6 +2,7 @@
 #include <set>
 #include <concepts>
 #include <iomanip>
+#include <random>
 
 // Engine
 #include <Engine/Clock.hpp>
@@ -112,7 +113,7 @@ namespace Game {
 
 		info.state = std::max(info.state, ConnState::Connecting);
 		if (!from.getKey()) {
-			from.setKey(rand()); // TODO: pcg
+			from.setKey(static_cast<uint16>(rng()));
 		}
 		from.msgBegin<MessageType::CONNECT_CHALLENGE>();
 		from.write(from.getKey());
@@ -330,7 +331,8 @@ namespace Game {
 		: System{arg}
 		, socket{ENGINE_SERVER ? *engine.commandLineArgs.get<uint16>("port") : 0}
 		, plyFilter{world.getFilterFor<PlayerFlag>()}
-		, group{*engine.commandLineArgs.get<Engine::Net::IPv4Address>("group")} {
+		, group{*engine.commandLineArgs.get<Engine::Net::IPv4Address>("group")}
+		, rng{pcg_extras::seed_seq_from<std::random_device>{}} {
 
 		ENGINE_LOG("Listening on port ", socket.getAddress().port);
 
