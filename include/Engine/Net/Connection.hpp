@@ -58,7 +58,17 @@ namespace Engine::Net {
 			Engine::Clock::Duration jitter = {};
 
 			constexpr static float32 lossSmoothing = 0.05f;
-			float loss = {};
+			float32 loss = {};
+
+			constexpr static float32 bandwidthSmoothing = 0.002f;
+			float32 packetSendBandwidth = {};
+			int32 packetRecvBandwidthAccum = 0;
+			float32 packetRecvBandwidth = {};
+			uint64 totalBytesSent = 0;
+			uint64 totalBytesRecv = 0;
+			// TODO: channel - float32 sendBandwidth[sizeof...(Cs)] = {};
+			// TODO: channel - float32 recvBandwidth[sizeof...(Cs)] = {};
+
 
 			struct {
 				/** The time the message was received */
@@ -116,10 +126,7 @@ namespace Engine::Net {
 			}
 
 		public:
-			// TODO: ping
-			// TODO: jitter
-			// TODO: packet loss
-			// TODO: bandwidth in/out. Could do per packet type (4)
+			Engine::Clock::TimePoint connectTime = Engine::Clock::now(); // TODO: rm - temp for UI test
 
 			Connection(IPv4Address addr, Engine::Clock::TimePoint time) : addr{addr} {
 				rdat.time = time;
@@ -130,6 +137,8 @@ namespace Engine::Net {
 			auto getPing() const { return ping; }
 			auto getLoss() const { return loss; }
 			auto getJitter() const { return jitter; }
+			auto getSendBandwidth() const { return packetSendBandwidth; }
+			auto getRecvBandwidth() const { return packetRecvBandwidth; }
 
 			void setKey(decltype(key) key) { this->key = key; }
 			auto getKey() const { return key; }
@@ -144,6 +153,7 @@ namespace Engine::Net {
 
 				const auto& acks = pkt.getAcks();
 				const auto seq = pkt.getSeqNum();
+				packetRecvBandwidthAccum += recvSize();
 
 				// Update recv packet info
 				do { 
@@ -244,7 +254,6 @@ namespace Engine::Net {
 
 				const void* temp = rdat.curr;
 				rdat.curr += sz;
-				// TODO: bandwidth recv
 				return temp;
 			}
 			
@@ -268,6 +277,7 @@ namespace Engine::Net {
 				// TODO: this should probably be in its own function. Only fill empty space in packets. etc.
 				(getChannel<Cs>().writeUnacked(packetWriter), ...);
 
+				int32 bwAccum = 0;
 				while (auto node = packetWriter.pop()) {
 					const auto seq = node->packet.getSeqNum();
 					{
@@ -285,9 +295,20 @@ namespace Engine::Net {
 					node->packet.setAcks(recvAcks);
 					
 					const auto sz = static_cast<int32>(node->last - node->packet.head);
+					bwAccum += sz;
 					sock.send(node->packet.head, sz, addr);
 				}
+
+				// TODO: these numbers dont quite match up...
+				packetSendBandwidth += (bwAccum - packetSendBandwidth) * bandwidthSmoothing;
+				packetRecvBandwidth += (packetRecvBandwidthAccum - packetRecvBandwidth) * bandwidthSmoothing;
+				totalBytesSent += bwAccum;
+				totalBytesRecv += packetRecvBandwidthAccum;
+				packetRecvBandwidthAccum = 0;
 			}
+
+			auto totalBytesWritten() const { return totalBytesSent; } // TODO: name?
+			auto totalBytesRead() const { return totalBytesRecv; } // TODO: name?
 
 			// TODO: should msgBegin/End be on packetwriter? somewhat makes sense since because we modify node->curr/last
 			template<auto M>
