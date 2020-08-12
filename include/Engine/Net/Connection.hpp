@@ -51,11 +51,13 @@ namespace Engine::Net {
 			/** Acks for the prev N packets before nextRecvAck */
 			AckBitset recvAcks = {};
 
-			constexpr static float64 pingSmoothing = 0.01; // TODO: ideal?
+			constexpr static float64 pingSmoothing = 0.02;
 			Engine::Clock::Duration ping = {};
-
 			
-			constexpr static float32 lossSmoothing = 0.05f; // TODO: ideal?
+			constexpr static float64 jitterSmoothing = 0.09;
+			Engine::Clock::Duration jitter = {};
+
+			constexpr static float32 lossSmoothing = 0.05f;
 			float loss = {};
 
 			struct {
@@ -127,6 +129,7 @@ namespace Engine::Net {
 
 			auto getPing() const { return ping; }
 			auto getLoss() const { return loss; }
+			auto getJitter() const { return jitter; }
 
 			void setKey(decltype(key) key) { this->key = key; }
 			auto getKey() const { return key; }
@@ -165,10 +168,16 @@ namespace Engine::Net {
 						if (!data || data->recvTime != Engine::Clock::TimePoint{}) { continue; }
 
 						data->recvTime = time;
+						
+						const auto pktPing = data->recvTime - data->sendTime;
+
+						jitter += std::chrono::duration_cast<Engine::Clock::Duration>(
+							(std::chrono::abs(pktPing - ping) - jitter) * jitterSmoothing
+						);
 
 						// TODO: subtrackt 1/tickrate 
 						ping += std::chrono::duration_cast<Engine::Clock::Duration>(
-							((data->recvTime - data->sendTime) - ping) * pingSmoothing
+							(pktPing - ping) * pingSmoothing
 						);
 
 						(getChannel<Cs>().recvPacketAck(s), ...);
