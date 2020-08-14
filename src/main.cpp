@@ -467,6 +467,8 @@ void run(int argc, char* argv[]) {
 
 	if constexpr (ENGINE_SERVER) {
 		window.setPosSize(3440, 0, 1920, 1080);
+	} else {
+		window.setPosSize(900, 32, 1200, 800);
 	}
 
 	while (!window.shouldClose()) {

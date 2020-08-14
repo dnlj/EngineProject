@@ -118,8 +118,8 @@ namespace Game {
 			ImGui::Text("Jitter %.2fms", Engine::Clock::Seconds{conn.getJitter()}.count() * 1000.0f);
 			ImGui::Text("Loss %.4f", conn.getLoss() * 100.0f);
 			// TODO: units
-			ImGui::Text("Send Bandwith %.2f", conn.getSendBandwidth() * tickrate);
-			ImGui::Text("Recv Bandwith %.2f", conn.getRecvBandwidth() * tickrate);
+			ImGui::Text("Send Bandwith %.2f", conn.getSendBandwidth());
+			ImGui::Text("Recv Bandwith %.2f", conn.getRecvBandwidth());
 		}
 
 		if (ImGui::Button("Disconnect")) {
@@ -247,19 +247,15 @@ namespace Game {
 	}
 
 	void UISystem::ui_network() {
-		if (!ImGui::CollapsingHeader("Networking")) { return; }
+		if (!ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 		auto& [fd, now] = frameData.front();
 
 		for (const auto ent : connFilter) {
 			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 
-			// TODO: enable: 
-			const auto& dt = Engine::Clock::Seconds{now - conn.connectTime}.count();
-			fd.netstats[0].total = conn.totalBytesWritten();
-			fd.netstats[1].total = conn.totalBytesRead();
 			ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s",
-				fd.netstats[0].total, fd.netstats[0].total / dt,
-				fd.netstats[1].total, fd.netstats[1].total / dt
+				fd.netstats[0].total, conn.getSendBandwidth(),
+				fd.netstats[1].total, conn.getRecvBandwidth()
 			);
 
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();

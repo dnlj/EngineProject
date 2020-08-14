@@ -39,8 +39,8 @@ CONAN_PACKAGES = { -- TODO: Name?
 	["requires"] = {
 		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
 		"glm/0.9.9.7@dnlj/wobbly",
-		"imgui/1.75@dnlj/wobbly",
-		"implot/0.3@dnlj/wobbly",
+		"imgui/1.77@dnlj/wobbly",
+		"implot/0.4@dnlj/wobbly",
 		"meta/master@dnlj/wobbly",
 		"pcg/master@dnlj/wobbly",
 		"premake5/latest@dnlj/wobbly",
