@@ -66,6 +66,9 @@ namespace Engine::Net {
 			float32 packetSentBandwidthAccum = 0;
 			float32 packetRecvBandwidth = 0;
 			float32 packetRecvBandwidthAccum = 0;
+			uint32 packetTotalBytesSent = 0;
+			uint32 packetTotalBytesRecv = 0;
+
 
 			// TODO: channel - float32 sendBandwidth[sizeof...(Cs)] = {};
 			// TODO: channel - float32 recvBandwidth[sizeof...(Cs)] = {};
@@ -138,6 +141,8 @@ namespace Engine::Net {
 			auto getJitter() const { return jitter; }
 			auto getSendBandwidth() const { return packetSendBandwidth; }
 			auto getRecvBandwidth() const { return packetRecvBandwidth; }
+			auto getTotalBytesSent() const { return packetTotalBytesSent; }
+			auto getTotalBytesRecv() const { return packetTotalBytesRecv; }
 
 			void setKey(decltype(key) key) { this->key = key; }
 			auto getKey() const { return key; }
@@ -302,6 +307,8 @@ namespace Engine::Net {
 				Engine::Clock::Seconds sec = diff;
 				packetSendBandwidth += (packetSentBandwidthAccum / sec.count() - packetSendBandwidth) * bandwidthSmoothing;
 				packetRecvBandwidth += (packetRecvBandwidthAccum / sec.count() - packetRecvBandwidth) * bandwidthSmoothing;
+				packetTotalBytesSent += static_cast<int32>(packetSentBandwidthAccum);
+				packetTotalBytesRecv += static_cast<int32>(packetRecvBandwidthAccum);
 				packetRecvBandwidthAccum = 0;
 				packetSentBandwidthAccum = 0;
 			}

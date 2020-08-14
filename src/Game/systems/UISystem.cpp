@@ -253,9 +253,13 @@ namespace Game {
 		for (const auto ent : connFilter) {
 			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 
+			fd.netstats[0].avg = conn.getSendBandwidth();
+			fd.netstats[1].avg = conn.getRecvBandwidth();
+			fd.netstats[0].total = conn.getTotalBytesSent();
+			fd.netstats[1].total = conn.getTotalBytesRecv();
 			ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s",
-				fd.netstats[0].total, conn.getSendBandwidth(),
-				fd.netstats[1].total, conn.getRecvBandwidth()
+				fd.netstats[0].total, fd.netstats[0].avg,
+				fd.netstats[1].total, fd.netstats[1].avg
 			);
 
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
@@ -304,14 +308,6 @@ namespace Game {
 	ImPlotPoint UISystem::netGetPointAvg(void* data, int idx) {
 		auto& self = *reinterpret_cast<UISystem*>(data);
 		auto curr = self.frameData.begin() + idx;
-
-		if (isnan(curr->first.netstats[I].avg)) {
-			auto last = curr - std::max(0, idx - 5);
-			auto ydiff = static_cast<float32>(curr->first.netstats[I].total - last->first.netstats[I].total);
-			auto xdiff = Engine::Clock::Seconds{curr->second - last->second}.count();
-			curr->first.netstats[I].avg = ydiff / xdiff;
-		}
-
 		return {Engine::Clock::Seconds{curr->second.time_since_epoch()}.count(), curr->first.netstats[I].avg};
 	};
 
