@@ -50,11 +50,11 @@ namespace Game {
 
 		public:
 			PhysicsComponent() = default;
-			~PhysicsComponent();
-			PhysicsComponent(const PhysicsComponent& other);
-			PhysicsComponent(PhysicsComponent&& other);
-			void operator=(const PhysicsComponent& other);
-			void operator=(PhysicsComponent&& other);
+			~PhysicsComponent() noexcept;
+			PhysicsComponent(const PhysicsComponent& other) noexcept;
+			PhysicsComponent(PhysicsComponent&& other) noexcept;
+			void operator=(const PhysicsComponent& other) noexcept;
+			void operator=(PhysicsComponent&& other) noexcept;
 
 			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent
 

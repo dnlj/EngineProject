@@ -4,37 +4,40 @@
 
 
 namespace Game {
-	PhysicsComponent::~PhysicsComponent() {
+	PhysicsComponent::~PhysicsComponent() noexcept {
 		// TODO: need to handle when removed from ent: body->setActive(false);
 		// TODO: this wont work with copy constructor (rollback buffer)
 		// TODO: better way to handle this
-		if (body && --*count == 0) {
+
+		if (count && --*count == 0) {
+			ENGINE_DEBUG_ASSERT(body, "Incorrect reference counting. PhysicsComponent::body was nullptr.");
 			body->GetWorld()->DestroyBody(body);
 			delete count;
 		}
 	}
 	
-	PhysicsComponent::PhysicsComponent(const PhysicsComponent& other) {
-		*this = other;
-	}
-
-	PhysicsComponent::PhysicsComponent(PhysicsComponent&& other) {
-		*this = std::move(other);
-	}
-
-	void PhysicsComponent::operator=(const PhysicsComponent& other) {
+	PhysicsComponent::PhysicsComponent(const PhysicsComponent& other) noexcept {
 		storedTransform = other.storedTransform;
 		storedVelocity = other.storedVelocity;
 		storedAngularVelocity = other.storedAngularVelocity;
 		prevTransform = other.prevTransform;
 		interpTransform = other.interpTransform;
 		remoteTransform = other.remoteTransform;
-		body = other.body;
 		count = other.count;
-		++*count;
+		body = other.body;
+		if (count) { ++*count; }
 	}
 
-	void PhysicsComponent::operator=(PhysicsComponent&& other) {
+	PhysicsComponent::PhysicsComponent(PhysicsComponent&& other) noexcept {
+		*this = std::move(other);
+	}
+
+	void PhysicsComponent::operator=(const PhysicsComponent& other) noexcept {
+		auto copy{other};
+		*this = std::move(copy);
+	}
+
+	void PhysicsComponent::operator=(PhysicsComponent&& other) noexcept {
 		using std::swap;
 		storedTransform = other.storedTransform;
 		storedVelocity = other.storedVelocity;
@@ -42,9 +45,8 @@ namespace Game {
 		prevTransform = other.prevTransform;
 		interpTransform = other.interpTransform;
 		remoteTransform = other.remoteTransform;
-		count = other.count;
-		++*count;
-		swap(body, other.body); // We need to swap to ensure our old body* gets destroyed
+		swap(count, other.count);
+		swap(body, other.body);
 	}
 
 	void PhysicsComponent::setBody(b2Body* body) {
