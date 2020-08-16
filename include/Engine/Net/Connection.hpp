@@ -60,7 +60,7 @@ namespace Engine::Net {
 			constexpr static float32 lossSmoothing = 0.05f;
 			float32 loss = {};
 
-			constexpr static float32 bandwidthSmoothing = 0.05f;
+			constexpr static float32 bandwidthSmoothing = 0.1f;
 			Engine::Clock::TimePoint lastBandwidthUpdate = {};
 			float32 packetSendBandwidth = 0;
 			float32 packetSentBandwidthAccum = 0;

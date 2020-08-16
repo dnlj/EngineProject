@@ -111,9 +111,12 @@ namespace Game {
 		ImGui::Text("Avg FPS %f (%f)", fps, 1.0f / fps);
 		ImGui::Text("Tick %i", world.getTick());
 
-		
+		// TODO: move into netgraph
 		for (const auto ent : connFilter) {
 			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+			const auto& addr = conn.address();
+			ImGui::NewLine();
+			ImGui::Text("%i.%i.%i.%i:%i", addr.a, addr.b, addr.c, addr.d, addr.port);
 			ImGui::Text("Ping %.2fms", Engine::Clock::Seconds{conn.getPing()}.count() * 1000.0f);
 			ImGui::Text("Jitter %.2fms", Engine::Clock::Seconds{conn.getJitter()}.count() * 1000.0f);
 			ImGui::Text("Loss %.4f", conn.getLoss() * 100.0f);
@@ -248,18 +251,42 @@ namespace Game {
 
 	void UISystem::ui_network() {
 		if (!ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-		auto& [fd, now] = frameData.front();
 
-		for (const auto ent : connFilter) {
+		for (auto ent : connFilter) {
+			if (!world.hasComponent<NetworkStatsComponent>(ent)) {
+				world.addComponent<NetworkStatsComponent>(ent);
+			}
+			auto& statsComp = world.getComponent<NetworkStatsComponent>(ent);
 			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+			auto& buff = statsComp.buffer;
 
-			fd.netstats[0].avg = conn.getSendBandwidth();
-			fd.netstats[1].avg = conn.getRecvBandwidth();
-			fd.netstats[0].total = conn.getTotalBytesSent();
-			fd.netstats[1].total = conn.getTotalBytesRecv();
+			// TODO: why is graph randomly cleared?
+			while (!buff.empty() && buff.front().time < rollingWindow) {
+				buff.pop();
+			}
+
+			const auto totalBytesSent = conn.getTotalBytesSent();
+			const auto totalBytesRecv = conn.getTotalBytesRecv();
+
+			buff.push({
+				.time = now,
+				.sent = {
+					.diff = static_cast<float32>(totalBytesSent - statsComp.lastTotalBytesSent),
+					.avg  = conn.getSendBandwidth(),
+				},
+				.recv = {
+					.diff = static_cast<float32>(totalBytesRecv - statsComp.lastTotalBytesRecv),
+					.avg  = conn.getRecvBandwidth(),
+				},
+			});
+
+			statsComp.lastTotalBytesSent = totalBytesSent;
+			statsComp.lastTotalBytesRecv = totalBytesRecv;
+
+			const auto& data = buff.back();
 			ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s",
-				fd.netstats[0].total, fd.netstats[0].avg,
-				fd.netstats[1].total, fd.netstats[1].avg
+				totalBytesSent, data.sent.avg,
+				totalBytesRecv, data.recv.avg
 			);
 
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
@@ -291,12 +318,12 @@ namespace Game {
 				ImPlot::SetPlotYAxis(0);
 				ImPlot::SetColormap(colors, sizeof(colors));
 				// TODO: thickness?
-				ImPlot::PlotLine("Avg Sent (Bytes / Second)", netGetPointAvg<0>, this, frameData.size(), 0);
-				ImPlot::PlotLine("Avg Recv (Bytes / Second)", netGetPointAvg<1>, this, frameData.size(), 0);
+				ImPlot::PlotLine("Avg Sent (Bytes / Second)", netGetPointAvg<0>, &buff, buff.size(), 0);
+				ImPlot::PlotLine("Avg Recv (Bytes / Second)", netGetPointAvg<1>, &buff, buff.size(), 0);
 
-				ImPlot::SetPlotYAxis(1);
-				ImPlot::PlotBars("Sent (Bytes)", netGetDiff<0>, this, frameData.size(), 1.0f / tickrate, 0);
-				ImPlot::PlotBars("Recv (Bytes)", netGetDiff<1>, this, frameData.size(), 1.0f / tickrate, 0);
+				//ImPlot::SetPlotYAxis(1);
+				//ImPlot::PlotBars("Sent (Bytes)", netGetDiff<0>, this, frameData.size(), 1.0f / tickrate, 0);
+				//ImPlot::PlotBars("Recv (Bytes)", netGetDiff<1>, this, frameData.size(), 1.0f / tickrate, 0);
 
 				ImPlot::EndPlot();
 				ImPlot::SetColormap(ImPlotColormap_Default);
@@ -304,24 +331,20 @@ namespace Game {
 		}
 	}
 
-	template<int32 I>
+	template<bool B>
 	ImPlotPoint UISystem::netGetPointAvg(void* data, int idx) {
-		auto& self = *reinterpret_cast<UISystem*>(data);
-		auto curr = self.frameData.begin() + idx;
-		return {Engine::Clock::Seconds{curr->second.time_since_epoch()}.count(), curr->first.netstats[I].avg};
+		const auto& buff = *reinterpret_cast<decltype(NetworkStatsComponent::buffer)*>(data);
+		const auto& stats = buff[idx];
+		return {
+			Engine::Clock::Seconds{stats.time.time_since_epoch()}.count(),
+			B ? stats.sent.avg : stats.recv.avg
+		};
 	};
 
 	template<int32 I>
 	ImPlotPoint UISystem::netGetDiff(void* data, int idx) {
 		auto& self = *reinterpret_cast<UISystem*>(data);
 		auto curr = self.frameData.begin() + idx;
-
-		if (isnan(curr->first.netstats[I].diff) && (idx > 0)){
-			auto last = curr - 1;
-			curr->first.netstats[I].diff = static_cast<float32>(curr->first.netstats[I].total - last->first.netstats[I].total);
-
-		}
-
 		return {Engine::Clock::Seconds{curr->second.time_since_epoch()}.count(), curr->first.netstats[I].diff};
 	}
 

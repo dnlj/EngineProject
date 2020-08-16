@@ -434,6 +434,7 @@ namespace Game {
 			
 			if (info.disconnectAt != Engine::Clock::TimePoint{}) {
 				if (conn.getKey()) {
+					ENGINE_LOG("Send MessageType::DISCONNECT to ", addr);
 					conn.msgBegin<MessageType::DISCONNECT>();
 					conn.msgEnd<MessageType::DISCONNECT>();
 				}

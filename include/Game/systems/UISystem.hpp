@@ -33,12 +33,6 @@ namespace Game {
 			// TODO: rm RollingData for consistency with above
 			struct FrameData {
 				float32 dt = 0.0f;
-
-				struct {
-					uint64 total = 0;
-					float32 diff = NAN;
-					float32 avg = NAN;
-				} netstats[2];
 			};
 			Engine::RingBuffer<std::pair<FrameData, Engine::Clock::TimePoint>> frameData;
 
@@ -51,7 +45,7 @@ namespace Game {
 			void ui_network();
 			void ui_entities();
 
-			template<int32 I>
+			template<bool B>
 			static ImPlotPoint netGetPointAvg(void* data, int idx);
 
 			template<int32 I>

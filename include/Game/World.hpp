@@ -29,6 +29,7 @@
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/ConnectionComponent.hpp>
 #include <Game/comps/NeighborsComponent.hpp>
+#include <Game/comps/NetworkStatsComponent.hpp>
 
 
 namespace Game {
@@ -55,6 +56,7 @@ namespace Game {
 		ActionComponent,
 		ConnectionComponent,
 		NeighborsComponent,
+		NetworkStatsComponent,
 		struct CharacterSpellComponent, // TODO: rn xFlag?
 		struct PlayerFlag
 	>;
