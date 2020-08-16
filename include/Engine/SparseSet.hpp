@@ -71,7 +71,11 @@ namespace Engine {
 			class IteratorBase {
 				private:
 					friend class SparseSet;
-					using AccessType = typename Elem::Public;
+					// TODO: create a copy_cv<A, B> type trait
+					using AccessType = std::conditional_t<
+						std::is_const_v<Elem>,
+						const typename Elem::Public,
+						typename Elem::Public>;
 					Elem* curr;
 					IteratorBase(Elem* init) : curr{init} {}
 
