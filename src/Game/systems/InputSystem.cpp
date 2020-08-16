@@ -13,7 +13,7 @@ namespace Game {
 		const auto nextTime = curTime + world.getTickInterval();
 
 		while (!buffer.empty()) {
-			auto& ie = buffer.back();
+			auto& ie = buffer.front();
 
 			if (ie.time < nextTime) {
 				engine.inputManager.processInput(ie.state);
