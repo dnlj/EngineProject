@@ -48,7 +48,7 @@ namespace Game {
 			template<bool B>
 			static ImPlotPoint netGetPointAvg(void* data, int idx);
 
-			template<int32 I>
+			template<bool B>
 			static ImPlotPoint netGetDiff(void* data, int idx);
 
 			EntityFilter& connFilter;

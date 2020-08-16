@@ -321,9 +321,9 @@ namespace Game {
 				ImPlot::PlotLine("Avg Sent (Bytes / Second)", netGetPointAvg<0>, &buff, buff.size(), 0);
 				ImPlot::PlotLine("Avg Recv (Bytes / Second)", netGetPointAvg<1>, &buff, buff.size(), 0);
 
-				//ImPlot::SetPlotYAxis(1);
-				//ImPlot::PlotBars("Sent (Bytes)", netGetDiff<0>, this, frameData.size(), 1.0f / tickrate, 0);
-				//ImPlot::PlotBars("Recv (Bytes)", netGetDiff<1>, this, frameData.size(), 1.0f / tickrate, 0);
+				ImPlot::SetPlotYAxis(1);
+				ImPlot::PlotBars("Sent (Bytes)", netGetDiff<0>, &buff, buff.size(), 1.0f / tickrate, 0);
+				ImPlot::PlotBars("Recv (Bytes)", netGetDiff<1>, &buff, buff.size(), 1.0f / tickrate, 0);
 
 				ImPlot::EndPlot();
 				ImPlot::SetColormap(ImPlotColormap_Default);
@@ -341,11 +341,14 @@ namespace Game {
 		};
 	};
 
-	template<int32 I>
+	template<bool B>
 	ImPlotPoint UISystem::netGetDiff(void* data, int idx) {
-		auto& self = *reinterpret_cast<UISystem*>(data);
-		auto curr = self.frameData.begin() + idx;
-		return {Engine::Clock::Seconds{curr->second.time_since_epoch()}.count(), curr->first.netstats[I].diff};
+		const auto& buff = *reinterpret_cast<decltype(NetworkStatsComponent::buffer)*>(data);
+		const auto& stats = buff[idx];
+		return {
+			Engine::Clock::Seconds{stats.time.time_since_epoch()}.count(),
+			B ? stats.sent.diff : stats.recv.diff
+		};
 	}
 
 	
