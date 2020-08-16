@@ -76,7 +76,7 @@ namespace Engine::detail {
 	template<class T, uint32 Size>
 	T& RingBufferImpl<T, Size>::back() noexcept {
 		ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::back called on empty buffer");
-		return dataT()[start];
+		return dataT()[wrapIndex(stop - 1)];
 	}
 
 	template<class T, uint32 Size>
@@ -146,7 +146,7 @@ namespace Engine::detail {
 	template<class T, uint32 Size>
 	T& RingBufferImpl<T, Size>::front() noexcept {
 		ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::front called on empty buffer");
-		return dataT()[wrapIndex(stop - 1)];
+		return dataT()[start];
 	}
 
 	template<class T, uint32 Size>
