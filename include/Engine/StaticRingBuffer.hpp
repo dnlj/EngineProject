@@ -74,6 +74,11 @@ namespace Engine {
 
 				~RingBufferImpl();
 
+				RingBufferImpl(const RingBufferImpl& other);
+				RingBufferImpl(RingBufferImpl&& other);
+				auto& operator=(const RingBufferImpl& other);
+				auto& operator=(RingBufferImpl&& other);
+
 				T& operator[](SizeType i);
 
 				const T& operator[](SizeType i) const;
@@ -116,7 +121,6 @@ namespace Engine {
 				void swap(RingBufferImpl& other);
 
 			private:
-				// TODO: we need to store size somewhere
 				std::conditional_t<IsStatic,
 					char[sizeof(T) * Size],
 					std::pair<char*, SizeType> // TODO: unique_ptr

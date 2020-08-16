@@ -25,6 +25,43 @@ namespace Engine::detail {
 			delete[] data.first;
 		}
 	}
+	
+	template<class T, uint32 Size>
+	RingBufferImpl<T, Size>::RingBufferImpl(const RingBufferImpl& other) {
+		if constexpr (!IsStatic) {
+			data.second = other.data.second;
+			data.first = new char[sizeof(T) * data.second];
+		}
+
+		for (const auto& v : other) {
+			push(v);
+		}
+	}
+	
+	template<class T, uint32 Size>
+	RingBufferImpl<T, Size>::RingBufferImpl(RingBufferImpl&& other) {
+		*this = other;
+	}
+	
+	template<class T, uint32 Size>
+	auto& RingBufferImpl<T, Size>::operator=(const RingBufferImpl& other) {
+		auto cpy = other;
+		*this = std::move(cpy);
+		return *this;
+	}
+	
+	template<class T, uint32 Size>
+	auto& RingBufferImpl<T, Size>::operator=(RingBufferImpl&& other) {
+		if constexpr (IsStatic) {
+			start = other.start;
+			stop = other.stop;
+			isEmpty = other.isEmpty;
+			data = other.data;
+		} else {
+			swap(other);
+		}
+		return *this;
+	}
 
 	template<class T, uint32 Size>
 	T& RingBufferImpl<T, Size>::operator[](SizeType i) {
@@ -191,9 +228,10 @@ namespace Engine::detail {
 				pop();
 			}
 
-			swap(other);
+			*this = std::move(other);
 		}
 	}
+
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::wrapIndex(SizeType i) -> SizeType {
 		const auto c = capacity();
