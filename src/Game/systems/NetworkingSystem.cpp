@@ -172,7 +172,8 @@ namespace Game {
 
 	HandleMessageDef(MessageType::DISCONNECT)
 		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", info.ent);
-		info.disconnectAt = Engine::Clock::now() - std::chrono::milliseconds{1000};
+		info.disconnectAt = Engine::Clock::now() + disconnectTime;
+		info.state = Engine::Net::ConnState::Disconnected;
 	}
 
 	HandleMessageDef(MessageType::PING)
@@ -420,7 +421,8 @@ namespace Game {
 				const auto diff = now - conn.recvTime();
 				if (diff > timeout) {
 					ENGINE_LOG("Connection for ", info.ent ," (", conn.address(), ") timed out.");
-					info.disconnectAt = now - std::chrono::milliseconds{1000};
+					info.disconnectAt = Engine::Clock::now() - disconnectTime;
+					info.state = Engine::Net::ConnState::Disconnected;
 				}
 			}
 		}
@@ -433,7 +435,9 @@ namespace Game {
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 			
 			if (info.disconnectAt != Engine::Clock::TimePoint{}) {
-				if (conn.getKey()) {
+				// TODO: remove all comps but connection
+
+				if (info.state == Engine::Net::ConnState::Connected) {
 					ENGINE_LOG("Send MessageType::DISCONNECT to ", addr);
 					conn.msgBegin<MessageType::DISCONNECT>();
 					conn.msgEnd<MessageType::DISCONNECT>();
@@ -628,7 +632,7 @@ namespace Game {
 
 	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
 		auto& [info, conn] = getOrCreateConnection(addr);
-		info.disconnectAt = Engine::Clock::now() + std::chrono::milliseconds{1000};
+		info.disconnectAt = Engine::Clock::now() + disconnectTime;
 		ENGINE_INFO("Request disconnect ", addr, " ", info.ent);
 	}
 

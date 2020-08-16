@@ -34,6 +34,7 @@ namespace Game {
 		private:
 			using ConnState = Engine::Net::ConnState::Type;
 			static constexpr auto timeout = std::chrono::milliseconds{5000};
+			static constexpr auto disconnectTime = std::chrono::milliseconds{500};
 			Engine::Net::UDPSocket socket;
 			EntityFilter& plyFilter;
 
