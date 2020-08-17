@@ -25,9 +25,11 @@ namespace Game {
 	void ActionSystem::tick() {
 		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
 
+		// TODO: dont resend actions when performing rollback
 		const auto currTick = world.getTick();
 		for (const auto ent : actionFilter) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
+			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 			auto& curr = actComp.state;
 			auto& stored = actComp.states[currTick % snapshots];
 
@@ -37,9 +39,12 @@ namespace Game {
 				} else {
 					stored = curr;
 				}
+				conn.msgBegin<MessageType::ACTION>();
+				conn.write(world.getTick());
+				conn.write(actComp.state);
+				conn.msgEnd<MessageType::ACTION>();
 			} else if constexpr (ENGINE_SERVER) {
 				curr = stored;
-				auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 				conn.msgBegin<MessageType::ACTION>();
 				conn.write(currTick);
 				conn.write(curr.recvTick);
@@ -53,22 +58,6 @@ namespace Game {
 				// If we ever add lag compensation we will need to handle server rollback here.
 				stored.recvTick = 0;
 			}
-		}
-
-		if constexpr (ENGINE_CLIENT) {
-			sendActions();
-		}
-	}
-
-	void ActionSystem::sendActions() {
-		for (const auto& ent : actionFilter) {
-			const auto& actComp = world.getComponent<ActionComponent>(ent);
-			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-			conn.msgBegin<MessageType::ACTION>();
-			conn.write(world.getTick());
-			conn.write(actComp.state);
-			conn.msgEnd<MessageType::ACTION>();
-
 		}
 	}
 
@@ -85,10 +74,15 @@ namespace Game {
 		const auto recvTick = *from.read<Engine::ECS::Tick>();
 		const auto buffSize = tick - recvTick;
 
+		if (recvTick == 0) { // TODO: how to handle 
+			ENGINE_WARN("MISSED INPUT");
+			return;
+		}
+
 		// TODO: if to far behind snap to correct tick
 		// TODO: if to far ahead scale more aggressively. Probably based on number of ticks/sec
 		// TODO: send tick for last input we got so we can determine how far off we are
-		if (recvTick == 0 || buffSize < 1) {
+		if (buffSize < 1) {
 			world.tickScale = 0.8f;
 		} else if (buffSize > 5) {
 			world.tickScale = 1.1f;
@@ -110,7 +104,7 @@ namespace Game {
 		// TODO: if tick < minTick tell client to fast
 		// TODO: if tick > maxTick tell client to slow
 		if (tick < minTick || tick > maxTick) {
-			// TODO: enable - ENGINE_WARN("Out of window input received.");
+			ENGINE_WARN("Out of window input received. ", tick < minTick, " ", tick > maxTick);
 			return;
 		}
 

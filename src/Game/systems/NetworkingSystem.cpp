@@ -134,8 +134,15 @@ namespace Game {
 		// TODO: need to handle duplicate confirms
 		if constexpr (ENGINE_CLIENT) {
 			auto* remote = from.read<Engine::ECS::Entity>();
+			auto* tick = from.read<Engine::ECS::Tick>();
+
 			if (!remote) {
 				ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
+				return;
+			}
+
+			if (!tick) {
+				ENGINE_WARN("Unable to sync ticks.");
 				return;
 			}
 
@@ -150,6 +157,9 @@ namespace Game {
 
 			info.state = ConnState::Connected;
 			addPlayer(info.ent);
+
+			// TODO: use ping, loss, etc to pick good offset value.
+			world.setTick(*tick + 5);
 		} else {
 			const auto keyA = from.getKey();
 			const auto keyB = *from.read<uint16>();
@@ -166,6 +176,7 @@ namespace Game {
 			ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM");
 			from.msgBegin<MessageType::CONNECT_CONFIRM>();
 			from.write(info.ent);
+			from.write(world.getTick());
 			from.msgEnd<MessageType::CONNECT_CONFIRM>();
 		}
 	}
