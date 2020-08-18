@@ -220,11 +220,11 @@ namespace Engine::detail {
 	void RingBufferImpl<T, Size>::ensureSpace() {
 		if constexpr (!IsStatic) {
 			if (!full()) { return; }
-			const auto sz = data.second * 2; // TODO: look into ideal growth factor
+			const auto sz = data.second + (data.second / 2); // 1.5 Growth factor
 			RingBufferImpl<T, Size> other{sz};
 
 			while (!empty()) {
-				other.push(std::move(back()));
+				other.push(std::move(front()));
 				pop();
 			}
 

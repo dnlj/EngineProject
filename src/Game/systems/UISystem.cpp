@@ -72,7 +72,7 @@ namespace Game {
 		}, now);
 
 		// Cull old data
-		while(!frameData.empty() && frameData.back().second < rollingWindow) {
+		while(!frameData.empty() && frameData.front().second < rollingWindow) {
 			frameData.pop();
 		}
 
@@ -260,11 +260,9 @@ namespace Game {
 			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 			auto& buff = statsComp.buffer;
 
-			// TODO: why is graph randomly cleared?
 			while (!buff.empty() && buff.front().time < rollingWindow) {
 				buff.pop();
 			}
-
 			const auto totalBytesSent = conn.getTotalBytesSent();
 			const auto totalBytesRecv = conn.getTotalBytesRecv();
 
