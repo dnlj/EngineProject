@@ -11,52 +11,58 @@ namespace Game {
 	}
 
 	void ActionSystem::preTick() {
-		if constexpr (ENGINE_CLIENT) {
-			for (const auto ent : actionFilter) {
-				auto& actComp = world.getComponent<ActionComponent>(ent);
-				for (auto& btnState : actComp.state.buttons) {
+		for (const auto ent : actionFilter) {
+			const auto tick = world.getTick();
+			auto& actComp = world.getComponent<ActionComponent>(ent);
+			if constexpr (ENGINE_CLIENT) {
+				const auto& last = actComp.states.get(tick - 1);
+				actComp.state = &actComp.states.insert(tick);
+				*actComp.state = last;
+				for (auto& btnState : actComp.state->buttons) {
 					btnState.pressCount = 0;
 					btnState.releaseCount = 0;
 				}
+			} else {
+				actComp.state = actComp.states.find(world.getTick());
 			}
 		}
 	}
 
 	void ActionSystem::tick() {
 		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
-
 		// TODO: dont resend actions when performing rollback
 		const auto currTick = world.getTick();
 		for (const auto ent : actionFilter) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-			auto& curr = actComp.state;
-			auto& stored = actComp.states[currTick % snapshots];
+			auto* state = actComp.state;
 
 			if constexpr (ENGINE_CLIENT) {
-				if (world.isPerformingRollback()) {
-					curr = stored;
-				} else {
-					stored = curr;
-				}
-				conn.msgBegin<MessageType::ACTION>();
-				conn.write(world.getTick());
-				conn.write(actComp.state);
-				conn.msgEnd<MessageType::ACTION>();
-			} else if constexpr (ENGINE_SERVER) {
-				curr = stored;
 				conn.msgBegin<MessageType::ACTION>();
 				conn.write(currTick);
-				conn.write(curr.recvTick);
+				// TODO: send past X states
+				conn.write(*state);
+				//const auto min = (snapshots + currTick - (snapshots / 2)) % snapshots;
+				//for (auto i = currTick; ) {
+				//	auto& state = actComp.states[
+				//	// TODO: write compressed
+				//}
+
+				constexpr auto a = sizeof(ActionState);
+				conn.msgEnd<MessageType::ACTION>();
+			} else if constexpr (ENGINE_SERVER) {
+				conn.msgBegin<MessageType::ACTION>();
+				conn.write(currTick);
+				conn.write(state ? state->recvTick : 0);
 				conn.msgEnd<MessageType::ACTION>();
 
-				if (curr.recvTick == 0) {
-					// TODO: enable - ENGINE_LOG("Missing input for tick ", currTick);
+				if (!state) {
+					ENGINE_LOG("Missing input for tick ", currTick);
 					// TODO: duplicate and decay last input?
+					actComp.state = &(actComp.states.insert(currTick) = {});
 				}
 
 				// If we ever add lag compensation we will need to handle server rollback here.
-				stored.recvTick = 0;
 			}
 		}
 	}
@@ -77,11 +83,11 @@ namespace Game {
 		const auto idealTickLead = [&](){
 			constexpr auto tickDur = World::getTickInterval();
 			const auto p2 = from.getPing().count() * 0.5f; // One way trip
-			const auto j2 = from.getJitter().count() * 0.5f; // Half since jitter is + or -
+			const auto j2 = from.getJitter().count() * 1.0f;
 			const auto avgTripTime = p2 * (1.0f + from.getLoss()) + j2;
 			const auto avgTicksPerTrip = std::ceil(avgTripTime / tickDur.count());
 			// TODO: probably also want to track a stat of how many inputs we have missed in the last X seconds. (exp avg would be fine)
-			return avgTicksPerTrip + 2;
+			return avgTicksPerTrip + 1;
 		};
 
 		const auto ideal = idealTickLead();
@@ -120,7 +126,7 @@ namespace Game {
 		const auto recvTick = world.getTick();
 
 		const auto minTick = recvTick + 1;
-		const auto maxTick = recvTick + snapshots - 1;
+		const auto maxTick = recvTick + snapshots - 1 - 1; // Keep last input so we can duplicate if we need to
 
 		// TODO: if tick < minTick tell client to fast
 		// TODO: if tick > maxTick tell client to slow
@@ -130,15 +136,17 @@ namespace Game {
 		}
 
 		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
-		auto& stored = actComp.states[tick % snapshots];
+		auto* found = actComp.states.find(tick);
 
-		if (stored.recvTick) {
+		if (found) {
 			ENGINE_WARN("Duplicate input for tick ", tick, ". Ignoring.");
 			return;
+		} else {
+			found = &actComp.states.insert(tick);
 		}
 
-		stored = *state;
-		stored.recvTick = recvTick;
+		*found = *state;
+		found->recvTick = recvTick;
 	}
 
 	void ActionSystem::updateButtonState(Button btn, bool val) {
@@ -149,7 +157,7 @@ namespace Game {
 
 	void ActionSystem::updateButtonState(Engine::ECS::Entity ent, Button btn, bool val) {
 		auto& actComp = world.getComponent<ActionComponent>(ent);
-		auto& value = actComp.state.buttons[static_cast<int32>(btn)];
+		auto& value = actComp.state->buttons[static_cast<int32>(btn)];
 		value.pressCount += val;
 		value.releaseCount += !val;
 		value.latest = val;
@@ -164,6 +172,6 @@ namespace Game {
 
 	void ActionSystem::updateAxisState(Engine::ECS::Entity ent, Axis axis, float32 val) {
 		auto& actComp = world.getComponent<ActionComponent>(ent);
-		actComp.state.axes[static_cast<int32>(axis)] = val;
+		actComp.state->axes[static_cast<int32>(axis)] = val;
 	}
 }

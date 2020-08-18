@@ -6,7 +6,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Input/Action.hpp>
-#include <Engine/StaticRingBuffer.hpp>
+#include <Engine/SequenceBuffer.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -51,16 +51,19 @@ namespace Game {
 	class ActionComponent {
 		private:
 			friend class ActionSystem;
-			ActionState states[snapshots];
-			ActionState state;
+			//ActionState states[snapshots];
+			// TODO: tick is currently signed. Why?? SequenceBuffer expects unsigned
+			Engine::SequenceBuffer<Engine::ECS::Tick, ActionState, snapshots> states;
+			ActionState* state;
 
 		public:
+		// TODO: are these called on server? nullptr check
 			const ButtonValue& getButton(Button btn) const {
-				return state.buttons[static_cast<int32>(btn)];
+				return state->buttons[static_cast<int32>(btn)];
 			}
 
 			const AxisValue& getAxis(Axis axis) const {
-				return state.axes[static_cast<int32>(axis)];
+				return state->axes[static_cast<int32>(axis)];
 			}
 	};
 }
