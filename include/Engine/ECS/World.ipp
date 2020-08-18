@@ -294,12 +294,7 @@ namespace Engine::ECS {
 	auto WORLD_CLASS::getFilterFor() -> Filter& {
 		return fm.getFilterFor(self(), getBitsetForComponents<Components...>());
 	}
-	
-	WORLD_TPARAMS
-	auto WORLD_CLASS::getTickInterval() const {
-		return tickInterval;
-	}
-	
+
 	WORLD_TPARAMS
 	Clock::TimePoint WORLD_CLASS::getTickTime() const {
 		return tickTime;

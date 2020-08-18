@@ -74,21 +74,42 @@ namespace Game {
 		const auto recvTick = *from.read<Engine::ECS::Tick>();
 		const auto buffSize = tick - recvTick;
 
+		const auto idealTickLead = [&](){
+			constexpr auto tickDur = World::getTickInterval();
+			const auto p2 = from.getPing().count() * 0.5f; // One way trip
+			const auto j2 = from.getJitter().count() * 0.5f; // Half since jitter is + or -
+			const auto avgTripTime = p2 * (1.0f + from.getLoss()) + j2;
+			const auto avgTicksPerTrip = std::ceil(avgTripTime / tickDur.count());
+			// TODO: probably also want to track a stat of how many inputs we have missed in the last X seconds. (exp avg would be fine)
+			return avgTicksPerTrip + 2;
+		};
+
+		const auto ideal = idealTickLead();
+
+		ENGINE_LOG("idealTickLead = ", ideal);
 		if (recvTick == 0) { // TODO: how to handle 
 			ENGINE_WARN("MISSED INPUT");
 			return;
 		}
 
-		// TODO: if to far behind snap to correct tick
-		// TODO: if to far ahead scale more aggressively. Probably based on number of ticks/sec
-		// TODO: send tick for last input we got so we can determine how far off we are
-		if (buffSize < 1) {
+		if (buffSize < ideal) {
 			world.tickScale = 0.8f;
-		} else if (buffSize > 5) {
+		} else if (buffSize > ideal) {
 			world.tickScale = 1.1f;
 		} else {
 			world.tickScale = 1.0f;
 		}
+
+		// TODO: if to far behind snap to correct tick
+		// TODO: if to far ahead scale more aggressively. Probably based on number of ticks/sec
+		// TODO: send tick for last input we got so we can determine how far off we are
+		//if (buffSize < 1) {
+		//	world.tickScale = 0.8f;
+		//} else if (buffSize > 5) {
+		//	world.tickScale = 1.1f;
+		//} else {
+		//	world.tickScale = 1.0f;
+		//}
 
 		// TODO: enable - ENGINE_LOG("Feedback: ", tick, " ", recvTick, " ", world.tickScale, " ", buffSize);
 	}

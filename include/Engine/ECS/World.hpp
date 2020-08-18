@@ -336,13 +336,14 @@ namespace Engine::ECS {
 
 			/**
 			 * Gets the tick interval.
+			 * @see tickInterval
 			 */
-			auto getTickInterval() const;
+			constexpr static auto getTickInterval() { return tickInterval; };
 
 			/**
 			 * Gets the tick delta.
 			 */
-			auto getTickDelta() const { return tickDeltaTime; }
+			constexpr static auto getTickDelta() { return tickDeltaTime; }
 
 			/**
 			 * Current time being ticked.
