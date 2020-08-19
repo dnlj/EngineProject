@@ -62,6 +62,12 @@ namespace Game {
 					actComp.state = &(actComp.states.insert(currTick) = {});
 				}
 
+				actComp.states.remove(currTick - 1);
+
+				//ENGINE_LOG("Buffer size: ",
+				//	actComp.states.capacity(), " | ",
+				//	actComp.states.max(), " ", actComp.states.minValid(), " = ",
+				//	actComp.states.max() - actComp.states.minValid());
 				// If we ever add lag compensation we will need to handle server rollback here.
 			}
 		}
@@ -76,6 +82,7 @@ namespace Game {
 	}
 
 	void ActionSystem::recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
+		// TODO: we dont actually use tick/recvTick. just nw buffsize
 		const auto tick = *from.read<Engine::ECS::Tick>();
 		const auto recvTick = *from.read<Engine::ECS::Tick>();
 		const auto buffSize = tick - recvTick;
@@ -83,7 +90,7 @@ namespace Game {
 		const auto idealTickLead = [&](){
 			constexpr auto tickDur = World::getTickInterval();
 			const auto p2 = from.getPing().count() * 0.5f; // One way trip
-			const auto j2 = from.getJitter().count() * 1.0f;
+			const auto j2 = static_cast<float32>(from.getJitter().count());
 			const auto avgTripTime = p2 * (1.0f + from.getLoss()) + j2;
 			const auto avgTicksPerTrip = std::ceil(avgTripTime / tickDur.count());
 			// TODO: probably also want to track a stat of how many inputs we have missed in the last X seconds. (exp avg would be fine)
@@ -126,7 +133,7 @@ namespace Game {
 		const auto recvTick = world.getTick();
 
 		const auto minTick = recvTick + 1;
-		const auto maxTick = recvTick + snapshots - 1 - 1; // Keep last input so we can duplicate if we need to
+		const auto maxTick = recvTick + decltype(ActionComponent::states)::capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
 
 		// TODO: if tick < minTick tell client to fast
 		// TODO: if tick > maxTick tell client to slow

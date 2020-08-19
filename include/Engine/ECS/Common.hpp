@@ -15,7 +15,7 @@ namespace Engine::ECS {
 	constexpr size_t MAX_SYSTEMS = 64;
 
 	/** The type used to store tick numbers */
-	using Tick = int32;
+	using Tick = uint32;
 
 	/** The type to use for component ids. */
 	using ComponentId = uint16;
