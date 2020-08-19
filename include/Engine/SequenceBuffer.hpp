@@ -61,10 +61,12 @@ namespace Engine {
 				ENGINE_DEBUG_ASSERT(canInsert(seq), "Attempting to insert invalid entry.");
 
 				if (const S n = seq + 1; seqGreater(n, next)) {
-					for (S s = next; seqLess(s, n); ++s) {
-						remove(s);
-					}
+					S s = next;
 					next = n;
+					while (seqLess(s, n)) {
+						remove(s);
+						++s;
+					}
 				}
 
 				// TODO: what if there are zero entries? lowest == max() but lowest isnt valid
