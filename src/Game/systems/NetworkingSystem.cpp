@@ -431,7 +431,7 @@ namespace Game {
 				auto& conn = *world.getComponent<ConnectionComponent>(info.ent).conn;
 				const auto diff = now - conn.recvTime();
 				if (diff > timeout) {
-					ENGINE_LOG("Connection for ", info.ent ," (", conn.address(), ") timed out.");
+					ENGINE_LOG("Connection for ", info.ent ," (", addr, ") timed out.");
 					info.disconnectAt = Engine::Clock::now() - disconnectTime;
 					info.state = Engine::Net::ConnState::Disconnected;
 				}

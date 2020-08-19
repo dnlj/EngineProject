@@ -28,7 +28,7 @@ namespace Engine::ECS {
 			ENGINE_WARN("World tick falling behind by ",
 				Clock::Seconds{beginTime - tickTime - maxDelay}.count(), "s"
 			);
-
+		
 			// We could instead limit the number of ticks in the while loop
 			// which would have the effect of slowing down the world instead of
 			// throwing away time like this does

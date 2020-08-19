@@ -54,6 +54,7 @@ namespace Game {
 				conn.msgBegin<MessageType::ACTION>();
 				conn.write(currTick);
 				conn.write(state ? state->recvTick : 0);
+				conn.write(actComp.tickTrend); // TODO: int8 ify
 				conn.msgEnd<MessageType::ACTION>();
 
 				if (!state) {
@@ -82,9 +83,11 @@ namespace Game {
 	}
 
 	void ActionSystem::recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
+		// TODO: what about ordering?
 		// TODO: we dont actually use tick/recvTick. just nw buffsize
 		const auto tick = *from.read<Engine::ECS::Tick>();
 		const auto recvTick = *from.read<Engine::ECS::Tick>();
+		const auto trend = *from.read<float32>();
 		const auto buffSize = tick - recvTick;
 
 		const auto idealTickLead = [&](){
@@ -98,31 +101,30 @@ namespace Game {
 		};
 
 		const auto ideal = idealTickLead();
+		ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
 
-		ENGINE_LOG("idealTickLead = ", ideal);
-		if (recvTick == 0) { // TODO: how to handle 
+		// If we sending to soon or to late (according to the server)
+		// Then slow down/speed up
+		// Otherwise adjust based on or estimated ideal lead time
+		constexpr float32 tol = 1.0f;
+		constexpr float32 faster = 0.8f;
+		constexpr float32 slower = 1.1f;
+		// TODO: scale speed with trend-tol & buffSize - ideal
+		// TODO: if we are doing trend binary like this (just > or <) we could just send inc or dec instead of the float
+		if (trend < -tol) {
+			world.tickScale = faster;
+		} else if (trend > tol) {
+			world.tickScale = slower;
+		} else if (recvTick == 0) {
 			ENGINE_WARN("MISSED INPUT");
-			return;
-		}
-
-		if (buffSize < ideal) {
-			world.tickScale = 0.8f;
-		} else if (buffSize > ideal) {
-			world.tickScale = 1.1f;
+			// TODO: need to rollback and simulate loss on client side
+		} else if (buffSize < ideal) { 
+			world.tickScale = faster;
+		} else if (buffSize > ideal) { 
+			world.tickScale = slower;
 		} else {
 			world.tickScale = 1.0f;
 		}
-
-		// TODO: if to far behind snap to correct tick
-		// TODO: if to far ahead scale more aggressively. Probably based on number of ticks/sec
-		// TODO: send tick for last input we got so we can determine how far off we are
-		//if (buffSize < 1) {
-		//	world.tickScale = 0.8f;
-		//} else if (buffSize > 5) {
-		//	world.tickScale = 1.1f;
-		//} else {
-		//	world.tickScale = 1.0f;
-		//}
 
 		// TODO: enable - ENGINE_LOG("Feedback: ", tick, " ", recvTick, " ", world.tickScale, " ", buffSize);
 	}
@@ -131,18 +133,20 @@ namespace Game {
 		const auto tick = *from.read<Engine::ECS::Tick>();
 		const auto state = from.read<ActionState>();
 		const auto recvTick = world.getTick();
+		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
 
 		const auto minTick = recvTick + 1;
-		const auto maxTick = recvTick + decltype(ActionComponent::states)::capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
+		const auto maxTick = recvTick + actComp.states.capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
 
 		// TODO: if tick < minTick tell client to fast
 		// TODO: if tick > maxTick tell client to slow
-		if (tick < minTick || tick > maxTick) {
-			ENGINE_WARN("Out of window input received. ", tick < minTick, " ", tick > maxTick);
+		const float32 off = tick < minTick ? -1.0f * (minTick-tick) : (tick > maxTick ? tick - maxTick : 0.0f);
+		actComp.tickTrend += (off - actComp.tickTrend) * actComp.tickTrendSmoothing;
+		if (off) {
+			//ENGINE_WARN("Out of window input received. ", tick < minTick, " ", tick > maxTick, " (", minTick, ", ", tick, ", ", maxTick, ")");
 			return;
 		}
 
-		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
 		auto* found = actComp.states.find(tick);
 
 		if (found) {
