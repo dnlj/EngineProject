@@ -87,11 +87,10 @@ namespace Engine::Net {
 			 * Writes an object to the current message.
 			 */
 			template<class T>
-			auto write(const T& t) { return static_cast<T*>(write(&t, sizeof(T))); };
+			auto write(const T& t) {
+				static_assert(!std::is_pointer_v<T>, "Can't write pointers to packet.");
+				return static_cast<T*>(write(&t, sizeof(T)));
+			};
 
-			/**
-			 * Writes a string to the current message.
-			 */
-			auto write(const char* t) { return static_cast<char*>(write(t, strlen(t) + 1)); }
 	};
 }

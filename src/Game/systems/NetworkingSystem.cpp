@@ -90,7 +90,9 @@ namespace Game {
 		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
 		if (from.recvMsgSize() == size && !memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
 			from.msgBegin<MessageType::SERVER_INFO>();
-			from.write("This is the name of the server");
+			constexpr char name[] = "This is the name of the server";
+			from.write<int>(sizeof(name) - 1);
+			from.write(name, sizeof(name) - 1);
 			from.msgEnd<MessageType::SERVER_INFO>();
 		}
 	}
@@ -98,7 +100,9 @@ namespace Game {
 	HandleMessageDef(MessageType::SERVER_INFO)
 		#if ENGINE_CLIENT
 			auto& servInfo = servers[from.address()];
-			servInfo.name = from.read<char*>();
+			const auto* len = from.read<int>();
+			const char* name = static_cast<const char*>(from.read(*len));
+			servInfo.name.assign(name, *len);
 			servInfo.lastUpdate = Engine::Clock::now();
 		#endif
 	}
