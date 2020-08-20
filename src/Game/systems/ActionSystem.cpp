@@ -40,13 +40,13 @@ namespace Game {
 			if constexpr (ENGINE_CLIENT) {
 				conn.msgBegin<MessageType::ACTION>();
 				conn.write(currTick);
-				// TODO: send past X states
+				// TODO: how many to send?
+				// TODO: pack
+				for (auto t = currTick - (actComp.states.capacity() / 2); t < currTick;++t) {
+					conn.write(actComp.states.get(t));
+				}
+
 				conn.write(*state);
-				//const auto min = (snapshots + currTick - (snapshots / 2)) % snapshots;
-				//for (auto i = currTick; ) {
-				//	auto& state = actComp.states[
-				//	// TODO: write compressed
-				//}
 
 				constexpr auto a = sizeof(ActionState);
 				conn.msgEnd<MessageType::ACTION>();
@@ -131,15 +131,25 @@ namespace Game {
 
 	void ActionSystem::recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
 		const auto tick = *from.read<Engine::ECS::Tick>();
-		const auto state = from.read<ActionState>();
 		const auto recvTick = world.getTick();
 		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
 
 		const auto minTick = recvTick + 1;
 		const auto maxTick = recvTick + actComp.states.capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
 
-		// TODO: if tick < minTick tell client to fast
-		// TODO: if tick > maxTick tell client to slow
+		for (auto t = tick - (actComp.states.capacity() / 2); t <= tick; ++t) {
+			const auto* s = from.read<ActionState>();
+			if (t < minTick || t > maxTick) { continue; }
+			if (!actComp.states.contains(t)) {
+				if (t != tick) {
+					ENGINE_INFO("Oh boy. Back filled tick: ", t, " ", tick);
+				} else {
+					ENGINE_WARN("Oh boy.", t);
+				}
+				(actComp.states.insert(t) = *s).recvTick = recvTick;
+			}
+		}
+
 		const float32 off = tick < minTick ? -1.0f * (minTick-tick) : (tick > maxTick ? tick - maxTick : 0.0f);
 		actComp.tickTrend += (off - actComp.tickTrend) * actComp.tickTrendSmoothing;
 		if (off) {
@@ -147,17 +157,17 @@ namespace Game {
 			return;
 		}
 
-		auto* found = actComp.states.find(tick);
-
-		if (found) {
-			ENGINE_WARN("Duplicate input for tick ", tick, ". Ignoring.");
-			return;
-		} else {
-			found = &actComp.states.insert(tick);
-		}
-
-		*found = *state;
-		found->recvTick = recvTick;
+		//auto* found = actComp.states.find(tick);
+		//
+		//if (found) {
+		//	ENGINE_WARN("Duplicate input for tick ", tick, ". Ignoring.");
+		//	return;
+		//} else {
+		//	found = &actComp.states.insert(tick);
+		//}
+		//
+		//*found = *state;
+		//found->recvTick = recvTick;
 	}
 
 	void ActionSystem::updateButtonState(Button btn, bool val) {

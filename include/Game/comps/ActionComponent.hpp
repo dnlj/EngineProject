@@ -15,9 +15,10 @@
 namespace Game {
 	class ButtonValue {
 		public:
-			uint8 pressCount;
-			uint8 releaseCount;
-			bool latest;
+			// TODO: dont use bitfields. Pack over network
+			uint8 pressCount : 2;
+			uint8 releaseCount : 2;
+			uint8 latest : 1;
 	};
 
 	using AxisValue = float32;
