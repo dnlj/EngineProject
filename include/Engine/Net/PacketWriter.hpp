@@ -12,6 +12,8 @@ namespace Engine::Net {
 			NodePtr first = nullptr;
 			PacketNode* last = nullptr;
 			SeqNum nextSeq = 0;
+			int bitCount = 0;
+			uint64 bitStore = 0;
 
 			NodePtr getOrAllocPacketFromPool() {
 				if (!pool) {
@@ -92,5 +94,25 @@ namespace Engine::Net {
 				return static_cast<T*>(write(&t, sizeof(T)));
 			};
 
+			// TODO: add version for more than 32 bits?
+			template<int N>
+			void write(uint32 t) {
+				bitStore |= uint64{t} << bitCount;
+				bitCount += N;
+				while (bitCount >= 8) {
+					write(static_cast<uint8>(bitStore));
+					bitStore >>= 8;
+					bitCount -= 8;
+				}
+			}
+
+			void writeFlushBits() {
+				while (bitCount > 0) {
+					write(static_cast<uint8>(bitStore));
+					bitStore >>= 8;
+					bitCount -= 8;
+				}
+				bitCount = 0;
+			}
 	};
 }

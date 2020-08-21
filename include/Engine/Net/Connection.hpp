@@ -256,6 +256,7 @@ namespace Engine::Net {
 				ENGINE_DEBUG_ASSERT(rdat.curr + sz <= rdat.last, "Insufficient space remaining to read");
 				if (rdat.curr + sz > rdat.last) { return nullptr; }
 
+				// TODO: will this have alignment issues?
 				const void* temp = rdat.curr;
 				rdat.curr += sz;
 				return temp;
@@ -266,6 +267,8 @@ namespace Engine::Net {
 			 */
 			template<class T>
 			decltype(auto) read() {
+				ENGINE_DEBUG_ASSERT(bitCount == 0, "Incomplete read of packed bits");
+				// TODO: this should be changed since we dont support char* anymore
 				if constexpr (std::is_same_v<T, char*> || std::is_same_v<T, const char*>) {
 					return reinterpret_cast<const char*>(
 						read(strlen(reinterpret_cast<const char*>(rdat.curr)) + 1)
@@ -273,6 +276,30 @@ namespace Engine::Net {
 				} else {
 					return reinterpret_cast<const T*>(read(sizeof(T)));
 				}
+			}
+
+			// TODo: move to top
+			uint64 bitStore = 0;
+			int bitCount = 0;
+			template<int N>
+			uint32 read() {
+				// TODO: add version for > 32
+				static_assert(N <= 32);
+				while (bitCount < N) {
+					bitStore |= uint64{*rdat.curr} << bitCount;
+					rdat.curr += 1;
+					bitCount += 8;
+				}
+
+				uint32 val = bitStore & ((1ull << N) - 1);
+				bitStore >>= N;
+				bitCount -= N;
+				return val;
+			}
+
+			void readFlushBits() { // TODO: name.
+				bitStore = 0;
+				bitCount = 0;
 			}
 
 			void send(UDPSocket& sock) {
@@ -355,6 +382,16 @@ namespace Engine::Net {
 			template<class... Args>
 			decltype(auto) write(Args&&... args) {
 				return packetWriter.write(std::forward<Args>(args)...);
+			}
+
+			// TODO: add version with limits?
+			template<int N>
+			void write(uint32 t) {
+				packetWriter.write<N>(t);
+			}
+
+			void writeFlushBits() {
+				packetWriter.writeFlushBits();
 			}
 	};
 }

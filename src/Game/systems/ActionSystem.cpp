@@ -40,13 +40,27 @@ namespace Game {
 			if constexpr (ENGINE_CLIENT) {
 				conn.msgBegin<MessageType::ACTION>();
 				conn.write(currTick);
-				// TODO: how many to send?
-				// TODO: pack
-				for (auto t = currTick - (actComp.states.capacity() / 2); t < currTick;++t) {
-					conn.write(actComp.states.get(t));
-				}
 
-				conn.write(*state);
+				// TODO: how many to send?
+				for (auto t = currTick - (actComp.states.capacity() / 2); t <= currTick; ++t) {
+					const auto& s = actComp.states.get(t);
+					//conn.write(actComp.states.get(t));
+
+					for (auto b : s.buttons) {
+						conn.write<2>(b.pressCount);
+						conn.write<2>(b.releaseCount);
+						conn.write<1>(b.latest);
+					}
+
+					//conn.writeFlushBits();
+
+					for (auto a : s.axes) { // TODO: compress
+						conn.write<32>(reinterpret_cast<uint32&>(a));
+					}
+				}
+				conn.writeFlushBits();
+
+				//conn.write(*state);
 
 				constexpr auto a = sizeof(ActionState);
 				conn.msgEnd<MessageType::ACTION>();
@@ -101,14 +115,14 @@ namespace Game {
 		};
 
 		const auto ideal = idealTickLead();
-		ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
+		//ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
 
 		// If we sending to soon or to late (according to the server)
 		// Then slow down/speed up
 		// Otherwise adjust based on or estimated ideal lead time
 		constexpr float32 tol = 1.0f;
-		constexpr float32 faster = 0.8f;
-		constexpr float32 slower = 1.1f;
+		constexpr float32 faster = 0.6f;
+		constexpr float32 slower = 1.4f;
 		// TODO: scale speed with trend-tol & buffSize - ideal
 		// TODO: if we are doing trend binary like this (just > or <) we could just send inc or dec instead of the float
 		if (trend < -tol) {
@@ -138,17 +152,35 @@ namespace Game {
 		const auto maxTick = recvTick + actComp.states.capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
 
 		for (auto t = tick - (actComp.states.capacity() / 2); t <= tick; ++t) {
-			const auto* s = from.read<ActionState>();
+			ActionState s = {};
+
+			for (auto& b : s.buttons) {
+				// TODO: better interface for reading bits.
+				b.pressCount = static_cast<decltype(b.pressCount)>(from.read<2>());
+				b.releaseCount = static_cast<decltype(b.releaseCount)>(from.read<2>());
+				b.latest = static_cast<decltype(b.latest)>(from.read<1>());
+			}
+
+			//from.readFlushBits();
+
+			for (auto& a : s.axes) { // TODO: pack
+				const auto f = from.read<32>();
+				a = reinterpret_cast<const float32&>(f);
+			}
+
 			if (t < minTick || t > maxTick) { continue; }
 			if (!actComp.states.contains(t)) {
 				if (t != tick) {
 					ENGINE_INFO("Oh boy. Back filled tick: ", t, " ", tick);
 				} else {
-					ENGINE_WARN("Oh boy.", t);
+					//ENGINE_WARN("Oh boy.", t);
 				}
-				(actComp.states.insert(t) = *s).recvTick = recvTick;
+
+				s.recvTick = recvTick;
+				actComp.states.insert(t) = s;
 			}
 		}
+		from.readFlushBits();
 
 		const float32 off = tick < minTick ? -1.0f * (minTick-tick) : (tick > maxTick ? tick - maxTick : 0.0f);
 		actComp.tickTrend += (off - actComp.tickTrend) * actComp.tickTrendSmoothing;
