@@ -267,15 +267,9 @@ namespace Engine::Net {
 			 */
 			template<class T>
 			decltype(auto) read() {
+				static_assert(!std::is_pointer_v<T>, "Cannot read pointers from network connection.");
 				ENGINE_DEBUG_ASSERT(bitCount == 0, "Incomplete read of packed bits");
-				// TODO: this should be changed since we dont support char* anymore
-				if constexpr (std::is_same_v<T, char*> || std::is_same_v<T, const char*>) {
-					return reinterpret_cast<const char*>(
-						read(strlen(reinterpret_cast<const char*>(rdat.curr)) + 1)
-					);
-				} else {
-					return reinterpret_cast<const T*>(read(sizeof(T)));
-				}
+				return reinterpret_cast<const T*>(read(sizeof(T)));
 			}
 
 			// TODo: move to top
