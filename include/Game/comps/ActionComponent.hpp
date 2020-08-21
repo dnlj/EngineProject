@@ -55,7 +55,7 @@ namespace Game {
 			// TODO: tick is currently signed. Why?? SequenceBuffer expects unsigned
 			Engine::SequenceBuffer<Engine::ECS::Tick, ActionState, snapshots> states;
 			ActionState* state;
-			float32 tickTrendSmoothing = 0.5f;
+			float32 tickTrendSmoothing = 0.2f;
 			float32 tickTrend = 0;
 
 		public:

@@ -44,25 +44,18 @@ namespace Game {
 				// TODO: how many to send?
 				for (auto t = currTick - (actComp.states.capacity() / 2); t <= currTick; ++t) {
 					const auto& s = actComp.states.get(t);
-					//conn.write(actComp.states.get(t));
-
+					
 					for (auto b : s.buttons) {
 						conn.write<2>(b.pressCount);
 						conn.write<2>(b.releaseCount);
 						conn.write<1>(b.latest);
 					}
-
-					//conn.writeFlushBits();
-
+					
 					for (auto a : s.axes) { // TODO: compress
 						conn.write<32>(reinterpret_cast<uint32&>(a));
 					}
 				}
 				conn.writeFlushBits();
-
-				//conn.write(*state);
-
-				constexpr auto a = sizeof(ActionState);
 				conn.msgEnd<MessageType::ACTION>();
 			} else if constexpr (ENGINE_SERVER) {
 				conn.msgBegin<MessageType::ACTION>();
@@ -115,14 +108,14 @@ namespace Game {
 		};
 
 		const auto ideal = idealTickLead();
-		//ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
+		ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
 
 		// If we sending to soon or to late (according to the server)
 		// Then slow down/speed up
 		// Otherwise adjust based on or estimated ideal lead time
 		constexpr float32 tol = 1.0f;
-		constexpr float32 faster = 0.6f;
-		constexpr float32 slower = 1.4f;
+		constexpr float32 faster = 0.8f;
+		constexpr float32 slower = 1.2f;
 		// TODO: scale speed with trend-tol & buffSize - ideal
 		// TODO: if we are doing trend binary like this (just > or <) we could just send inc or dec instead of the float
 		if (trend < -tol) {
@@ -153,16 +146,14 @@ namespace Game {
 
 		for (auto t = tick - (actComp.states.capacity() / 2); t <= tick; ++t) {
 			ActionState s = {};
-
+			
 			for (auto& b : s.buttons) {
 				// TODO: better interface for reading bits.
 				b.pressCount = static_cast<decltype(b.pressCount)>(from.read<2>());
 				b.releaseCount = static_cast<decltype(b.releaseCount)>(from.read<2>());
 				b.latest = static_cast<decltype(b.latest)>(from.read<1>());
 			}
-
-			//from.readFlushBits();
-
+			
 			for (auto& a : s.axes) { // TODO: pack
 				const auto f = from.read<32>();
 				a = reinterpret_cast<const float32&>(f);
