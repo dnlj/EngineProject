@@ -69,6 +69,9 @@ namespace Engine::Net {
 			uint32 packetTotalBytesSent = 0;
 			uint32 packetTotalBytesRecv = 0;
 
+			uint64 bitStore = 0;
+			int bitCount = 0;
+
 
 			// TODO: channel - float32 sendBandwidth[sizeof...(Cs)] = {};
 			// TODO: channel - float32 recvBandwidth[sizeof...(Cs)] = {};
@@ -272,9 +275,6 @@ namespace Engine::Net {
 				return reinterpret_cast<const T*>(read(sizeof(T)));
 			}
 
-			// TODo: move to top
-			uint64 bitStore = 0;
-			int bitCount = 0;
 			template<int N>
 			uint32 read() {
 				// TODO: add version for > 32
@@ -291,7 +291,7 @@ namespace Engine::Net {
 				return val;
 			}
 
-			void readFlushBits() { // TODO: name.
+			void readFlushBits() {
 				bitStore = 0;
 				bitCount = 0;
 			}

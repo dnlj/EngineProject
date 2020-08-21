@@ -42,7 +42,7 @@ namespace Game {
 				conn.write(currTick);
 
 				// TODO: how many to send?
-				for (auto t = currTick - (actComp.states.capacity() / 2); t <= currTick; ++t) {
+				for (auto t = currTick - (actComp.states.capacity() / 4); t <= currTick; ++t) {
 					const auto& s = actComp.states.get(t);
 					
 					for (auto b : s.buttons) {
@@ -144,7 +144,7 @@ namespace Game {
 		const auto minTick = recvTick + 1;
 		const auto maxTick = recvTick + actComp.states.capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
 
-		for (auto t = tick - (actComp.states.capacity() / 2); t <= tick; ++t) {
+		for (auto t = tick - (actComp.states.capacity() / 4); t <= tick; ++t) {
 			ActionState s = {};
 			
 			for (auto& b : s.buttons) {
