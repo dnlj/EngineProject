@@ -108,7 +108,7 @@ namespace Game {
 		};
 
 		const auto ideal = idealTickLead();
-		ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
+		//ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
 
 		// If we sending to soon or to late (according to the server)
 		// Then slow down/speed up

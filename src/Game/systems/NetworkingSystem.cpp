@@ -41,7 +41,7 @@ namespace {
 	};
 
 	// TODO: figure out a good pattern
-	constexpr uint8 MESSAGE_PADDING_DATA[Engine::Net::MAX_MESSAGE_SIZE] = {
+	constexpr uint8 MESSAGE_PADDING_DATA[Engine::Net::MAX_MESSAGE_SIZE - sizeof(uint16)] = {
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
@@ -72,7 +72,7 @@ namespace {
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
-		0x00, 0x11, 0x22, 0x33, 0x44,
+		0x00, 0x11, 0x22,
 	};
 }
 
@@ -109,29 +109,33 @@ namespace Game {
 
 	HandleMessageDef(MessageType::CONNECT_REQUEST)
 		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
-		if (from.recvMsgSize() != size || memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
+		if (from.recvMsgSize() != size + sizeof(uint16) || memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
 			// TODO: rate limit connections with invalid messages
 			ENGINE_WARN("Got invalid connection request from ", from.address());
 			return;
 		}
 
 		info.state = std::max(info.state, ConnState::Connecting);
-		if (!from.getKey()) {
-			from.setKey(static_cast<uint16>(rng()));
+		const auto keySend = *from.read<uint16>();
+		if (!from.getKeySend()) {
+			from.setKeySend(keySend);
+		}
+		if (!from.getKeyRecv()) {
+			from.setKeyRecv(static_cast<uint16>(rng()));
 		}
 		from.msgBegin<MessageType::CONNECT_CHALLENGE>();
-		from.write(from.getKey());
+		from.write(from.getKeyRecv());
 		from.msgEnd<MessageType::CONNECT_CHALLENGE>();
-		ENGINE_LOG("MessageType::CONNECT_REQUEST ", from.getKey()," ", (int)info.state);
+		ENGINE_LOG("MessageType::CONNECT_REQUEST ", from.getKeyRecv(), " ", (int)info.state);
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CHALLENGE)
-		const auto& key = *from.read<uint16>();
-		from.setKey(key);
+		const auto& keySend = *from.read<uint16>();
+		from.setKeySend(keySend);
 		from.msgBegin<MessageType::CONNECT_CONFIRM>();
-		from.write(key);
-		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", key);
+		from.write(keySend);
 		from.msgEnd<MessageType::CONNECT_CONFIRM>();
+		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
 	}
 
 	HandleMessageDef(MessageType::CONNECT_CONFIRM)
@@ -165,9 +169,8 @@ namespace Game {
 			// TODO: use ping, loss, etc to pick good offset value.
 			world.setTick(*tick + 5);
 		} else {
-			const auto keyA = from.getKey();
-			const auto keyB = *from.read<uint16>();
-			if (keyA != keyB) {
+			const auto keyRecv = *from.read<uint16>();
+			if (keyRecv != from.getKeyRecv()) {
 				ENGINE_WARN("Received invalid connection key from ", from.address());
 				return;
 			}
@@ -408,7 +411,7 @@ namespace Game {
 				ENGINE_WARN("Invalid protocol"); // TODO: rm
 				continue;
 			}
-			if (conn.getKey() != packet.getKey() && info.state == Engine::Net::ConnState::Connected) {
+			if (conn.getKeyRecv() != packet.getKey() && info.state != Engine::Net::ConnState::Disconnected) {
 				ENGINE_WARN("Invalid key"); // TODO: rm
 				continue;
 			}
@@ -460,7 +463,8 @@ namespace Game {
 
 				if (info.disconnectAt < now) {
 					conn.send(socket);
-					conn.setKey(0);
+					conn.setKeySend(0);
+					conn.setKeyRecv(0);
 					info.state = Engine::Net::ConnState::Disconnected;
 
 					ENGINE_LOG("Disconnecting ", info.ent, " ", addr);
@@ -609,8 +613,14 @@ namespace Game {
 		ENGINE_LOG("TRY CONNECT TO: ", addr);
 		auto& [info, conn] = getOrCreateConnection(addr);
 		info.state = ConnState::Connecting;
+
+		if (!conn.getKeyRecv()) {
+			conn.setKeyRecv(static_cast<uint16>(rng()));
+		}
+
 		conn.msgBegin<MessageType::CONNECT_REQUEST>();
 		conn.write(MESSAGE_PADDING_DATA);
+		conn.write(conn.getKeyRecv());
 		conn.msgEnd<MessageType::CONNECT_REQUEST>();
 	}
 

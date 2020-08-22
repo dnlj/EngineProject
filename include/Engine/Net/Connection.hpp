@@ -36,7 +36,8 @@ namespace Engine::Net {
 			using ChannelId = uint8;
 
 			const IPv4Address addr = {};
-			uint16 key = 0;
+			uint16 keySend = 0;
+			uint16 keyRecv = 0;
 
 			struct PacketData {
 				Engine::Clock::TimePoint sendTime;
@@ -135,6 +136,7 @@ namespace Engine::Net {
 		public:
 			Connection(IPv4Address addr, Engine::Clock::TimePoint time) : addr{addr} {
 				rdat.time = time;
+				ENGINE_LOG("NRA: ", nextRecvAck);
 			}
 
 			const auto& address() const { return addr; }
@@ -147,8 +149,11 @@ namespace Engine::Net {
 			auto getTotalBytesSent() const { return packetTotalBytesSent; }
 			auto getTotalBytesRecv() const { return packetTotalBytesRecv; }
 
-			void setKey(decltype(key) key) { this->key = key; }
-			auto getKey() const { return key; }
+			void setKeySend(decltype(keySend) keySend) { this->keySend = keySend; }
+			auto getKeySend() const { return keySend; }
+
+			void setKeyRecv(decltype(keyRecv) keyRecv) { this->keyRecv = keyRecv; }
+			auto getKeyRecv() const { return keyRecv; }
 
 			[[nodiscard]]
 			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
@@ -299,6 +304,7 @@ namespace Engine::Net {
 			void send(UDPSocket& sock) {
 				const auto now = Engine::Clock::now();
 
+				/////////////////
 				// TODO: this should probably be in its own function. Only fill empty space in packets. etc.
 				(getChannel<Cs>().writeUnacked(packetWriter), ...);
 				while (auto node = packetWriter.pop()) {
@@ -314,10 +320,10 @@ namespace Engine::Net {
 						.sendTime = now,
 					};
 
-					node->packet.setKey(key);
+					node->packet.setKey(keySend);
 					node->packet.setNextAck(nextRecvAck);
 					node->packet.setAcks(recvAcks);
-					
+					// TODO: rm ENGINE_LOG("PDAT: ", (int)key, " ", (int)nextRecvAck, " ", (int)recvAcks);
 					const auto sz = static_cast<int32>(node->last - node->packet.head);
 					packetSentBandwidthAccum += sz;
 					sock.send(node->packet.head, sz, addr);
