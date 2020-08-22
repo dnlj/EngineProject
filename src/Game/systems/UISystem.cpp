@@ -335,7 +335,7 @@ namespace Game {
 		const auto& stats = buff[idx];
 		return {
 			Engine::Clock::Seconds{stats.time.time_since_epoch()}.count(),
-			B ? stats.sent.avg : stats.recv.avg
+			B ? stats.recv.avg : stats.sent.avg
 		};
 	};
 

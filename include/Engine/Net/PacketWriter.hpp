@@ -20,7 +20,7 @@ namespace Engine::Net {
 					auto ptr = std::make_unique<PacketNode>();
 					ptr->clear();
 					ptr->packet.setProtocol(protocol); // TODO: implicit protocol
-					return ptr;
+					pool = std::move(ptr);
 				}
 				auto old = std::move(pool);
 				pool.swap(old->next);
