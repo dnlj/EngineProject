@@ -301,12 +301,14 @@ namespace Engine::Net {
 				bitCount = 0;
 			}
 
+			void writeUnacked(UDPSocket& sock) {
+				// TODO: version that fills rest of packet?
+				(getChannel<Cs>().writeUnacked(packetWriter), ...);
+			}
+
 			void send(UDPSocket& sock) {
 				const auto now = Engine::Clock::now();
 
-				/////////////////
-				// TODO: this should probably be in its own function. Only fill empty space in packets. etc.
-				(getChannel<Cs>().writeUnacked(packetWriter), ...);
 				while (auto node = packetWriter.pop()) {
 					const auto seq = node->packet.getSeqNum();
 					{

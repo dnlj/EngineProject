@@ -131,9 +131,11 @@ namespace Game {
 	
 	HandleMessageDef(MessageType::CONNECT_CHALLENGE)
 		const auto& keySend = *from.read<uint16>();
-		from.setKeySend(keySend);
+		if (!from.getKeySend()) {
+			from.setKeySend(keySend);
+		}
 		from.msgBegin<MessageType::CONNECT_CONFIRM>();
-		from.write(keySend);
+		from.write(from.getKeySend());
 		from.msgEnd<MessageType::CONNECT_CONFIRM>();
 		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
 	}
@@ -190,6 +192,8 @@ namespace Game {
 
 	HandleMessageDef(MessageType::DISCONNECT)
 		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", info.ent);
+		if (info.state != Engine::Net::ConnState::Connected) { return; }
+		if (info.disconnectAt != Engine::Clock::TimePoint{}) { return; }
 		info.disconnectAt = Engine::Clock::now() + disconnectTime;
 		info.state = Engine::Net::ConnState::Disconnected;
 	}
@@ -411,10 +415,17 @@ namespace Game {
 				ENGINE_WARN("Invalid protocol"); // TODO: rm
 				continue;
 			}
-			if (conn.getKeyRecv() != packet.getKey() && info.state != Engine::Net::ConnState::Disconnected) {
-				ENGINE_WARN("Invalid key"); // TODO: rm
-				continue;
+
+			if (conn.getKeyRecv() != packet.getKey()) {
+				// Need to allow mismatched keys on the server to allow clients to connect.
+				if (ENGINE_CLIENT || (info.state != Engine::Net::ConnState::Disconnected)) {
+					ENGINE_WARN("Invalid key"); // TODO: rm
+					continue;
+				}
 			}
+
+			// ENGINE_LOG("****** ", conn.getKeySend(), " ", conn.getKeyRecv(), " ", packet.getKey(), " ", packet.getSeqNum());
+
 			if (!conn.recv(packet, sz, now)) { continue; }
 
 			const Engine::Net::MessageHeader* hdr; 
@@ -473,6 +484,8 @@ namespace Game {
 					it = connections.erase(it);
 					continue;
 				}
+			} else if (shouldUpdate) {
+				conn.writeUnacked(socket);
 			}
 
 			conn.send(socket);
