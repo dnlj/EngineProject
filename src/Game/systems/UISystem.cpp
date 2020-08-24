@@ -111,20 +111,6 @@ namespace Game {
 		ImGui::Text("Avg FPS %f (%f)", fps, 1.0f / fps);
 		ImGui::Text("Tick %i", world.getTick());
 
-		// TODO: move into netgraph
-		for (const auto ent : connFilter) {
-			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
-			const auto& addr = conn.address();
-			ImGui::NewLine();
-			ImGui::Text("%i.%i.%i.%i:%i", addr.a, addr.b, addr.c, addr.d, addr.port);
-			ImGui::Text("Ping %.2fms", Engine::Clock::Seconds{conn.getPing()}.count() * 1000.0f);
-			ImGui::Text("Jitter %.2fms", Engine::Clock::Seconds{conn.getJitter()}.count() * 1000.0f);
-			ImGui::Text("Loss %.4f", conn.getLoss() * 100.0f);
-			// TODO: units
-			ImGui::Text("Send Bandwith %.2f", conn.getSendBandwidth());
-			ImGui::Text("Recv Bandwith %.2f", conn.getRecvBandwidth());
-		}
-
 		if (ImGui::Button("Disconnect")) {
 			for (const auto& ent : connFilter) {
 				const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
@@ -282,9 +268,26 @@ namespace Game {
 			statsComp.lastTotalBytesRecv = totalBytesRecv;
 
 			const auto& data = buff.back();
-			ImGui::Text("Sent: %i %.1fb/s     Recv: %i %.1fb/s",
-				totalBytesSent, data.sent.avg,
-				totalBytesRecv, data.recv.avg
+
+			if (update) {
+				statsComp.displaySentTotal = totalBytesSent; 
+				statsComp.displayRecvTotal = totalBytesRecv;
+				statsComp.displaySentAvg = data.sent.avg;
+				statsComp.displayRecvAvg = data.recv.avg;
+
+				statsComp.displayPing = Engine::Clock::Seconds{conn.getPing()}.count() * 1000.0f;
+				statsComp.displayJitter = Engine::Clock::Seconds{conn.getJitter()}.count() * 1000.0f;
+				statsComp.displayLoss = conn.getLoss();
+			}
+
+			ImGui::Text(
+				"Ping: %.1fms          Jitter: %.1fms\n"
+				"Sent: %ib %.1fb/s     Recv: %ib %.1fb/s     Loss: %.2f"
+				,
+				statsComp.displayPing, statsComp.displayJitter,
+				statsComp.displaySentTotal, statsComp.displaySentAvg,
+				statsComp.displayRecvTotal, statsComp.displayRecvAvg,
+				statsComp.displayLoss
 			);
 
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
@@ -293,7 +296,7 @@ namespace Game {
 			constexpr auto yAxisflags = ImPlotAxisFlags_Auxiliary;
 			constexpr auto y2Axisflags = yAxisflags;
 			constexpr auto xAxisflags = yAxisflags & ~ImPlotAxisFlags_TickLabels;
-			constexpr float32 yScale = 250.0f;
+			constexpr auto yScale = 500.0f;
 			ImPlot::SetNextPlotLimitsX(begin, end, ImGuiCond_Always);
 			ImPlot::SetNextPlotLimitsY(0.0f, yScale * tickrate * 0.333f, ImGuiCond_Once, 0);
 			ImPlot::SetNextPlotLimitsY(0.0f, yScale, ImGuiCond_Once, 1);

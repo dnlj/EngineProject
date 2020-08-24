@@ -21,5 +21,13 @@ namespace Game {
 			Engine::RingBuffer<Stats> buffer;
 			uint64 lastTotalBytesSent;
 			uint64 lastTotalBytesRecv;
+
+			uint64 displaySentTotal;
+			uint64 displayRecvTotal;
+			float32 displaySentAvg;
+			float32 displayRecvAvg;
+			float32 displayPing;
+			float32 displayJitter;
+			float32 displayLoss;
 	};
 }
