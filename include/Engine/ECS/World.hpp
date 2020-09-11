@@ -330,6 +330,7 @@ namespace Engine::ECS {
 			 */
 			auto getTick() const { return currTick; }
 
+			// TODO: also need to clear rollback history
 			// TODO: should this be setNextTick? might help avoid bugs if we wait till all systems are done before we adjust.
 			// TODO: doc
 			void setTick(Tick tick) { currTick = tick; }

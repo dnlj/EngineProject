@@ -61,7 +61,8 @@ namespace Game {
 				conn.msgBegin<MessageType::ACTION>();
 				conn.write(currTick);
 				conn.write(state ? state->recvTick : 0);
-				conn.write(actComp.tickTrend); // TODO: int8 ify
+				int8 trend = std::max(-128, std::min(static_cast<int32>(actComp.tickTrend), 127));
+				conn.write(trend);
 				conn.msgEnd<MessageType::ACTION>();
 
 				if (!state) {
@@ -94,7 +95,7 @@ namespace Game {
 		// TODO: we dont actually use tick/recvTick. just nw buffsize
 		const auto tick = *from.read<Engine::ECS::Tick>();
 		const auto recvTick = *from.read<Engine::ECS::Tick>();
-		const auto trend = *from.read<float32>();
+		const float32 trend = *from.read<int8>();
 		const auto buffSize = tick - recvTick;
 
 		const auto idealTickLead = [&](){
@@ -110,30 +111,32 @@ namespace Game {
 		const auto ideal = idealTickLead();
 		ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
 
+
+		// Used to adjust tickScale when based on trend. Scaled in range [trendAdjust, maxTrendScale + trendAdjust]
+		constexpr float32 trendAdjust = 1.1f;
+		constexpr float32 maxTrendScale = 8.0f;
+		constexpr float32 maxBufferSize = static_cast<float32>(decltype(ActionComponent::states)::capacity());
+
 		// If we sending to soon or to late (according to the server)
 		// Then slow down/speed up
 		// Otherwise adjust based on or estimated ideal lead time
-		constexpr float32 tol = 1.0f;
-		constexpr float32 faster = 0.8f;
-		constexpr float32 slower = 1.2f;
-		// TODO: scale speed with trend-tol & buffSize - ideal
-		// TODO: if we are doing trend binary like this (just > or <) we could just send inc or dec instead of the float
-		if (trend < -tol) {
-			world.tickScale = faster;
-		} else if (trend > tol) {
-			world.tickScale = slower;
+
+		// TODo: add trend and buffSize to network metrics
+
+		// TODO: not really happy with this. we really should use some kind of smoothed adjustment since
+		// TODO: cont. we rely on server supplied metrics. Or is this not a problem? needs more testing.
+		if (trend < 0) {
+			world.tickScale = 1.0f / (trendAdjust - trend * ((maxTrendScale - 1.0f) / 128));
+		} else if (trend > 0) {
+			world.tickScale = trendAdjust + trend * ((maxTrendScale - 1.0f) / 127);
 		} else if (recvTick == 0) {
 			ENGINE_WARN("MISSED INPUT");
 			// TODO: need to rollback and simulate loss on client side
-		} else if (buffSize < ideal) { 
-			world.tickScale = faster;
-		} else if (buffSize > ideal) { 
-			world.tickScale = slower;
+		} else if (buffSize != ideal) {
+			world.tickScale = std::max(0.1f, 1.0f + (buffSize - ideal) * (1.0f / maxBufferSize));
 		} else {
 			world.tickScale = 1.0f;
 		}
-
-		// TODO: enable - ENGINE_LOG("Feedback: ", tick, " ", recvTick, " ", world.tickScale, " ", buffSize);
 	}
 
 	void ActionSystem::recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
