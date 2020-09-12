@@ -57,20 +57,20 @@ namespace Engine::Net {
 
 			if (len > -1) {
 				// Ping var is total variance so between ping +- pingVar/2
-				const float64 r = -1 + 2 * random();
-				const auto var = std::chrono::duration_cast<Engine::Clock::Duration>(halfPingAdd * (jitter * 0.5 * r));
+				const float32 r = -1 + 2 * random();
+				const auto var = std::chrono::duration_cast<Engine::Clock::Duration>(simSettings.halfPingAdd * (simSettings.jitter * 0.5f * r));
 
-				if (random() < loss) {
+				if (random() < simSettings.loss) {
 					return -1;
 				}
 
 				auto pkt = PacketData{
-					.time = now + halfPingAdd + var,
+					.time = now + simSettings.halfPingAdd + var,
 					.from = from,
 					.data = {reinterpret_cast<byte*>(data), reinterpret_cast<byte*>(data) + len},
 				};
 
-				if (random() < duplicate) {
+				if (random() < simSettings.duplicate) {
 					packetBuffer.push(pkt);
 				}
 

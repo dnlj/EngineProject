@@ -108,6 +108,7 @@ namespace Game {
 			return avgTicksPerTrip + 1;
 		};
 
+		// TODO: ideal should be smoothed over time
 		const auto ideal = idealTickLead();
 		ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
 

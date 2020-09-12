@@ -69,6 +69,8 @@ namespace Game {
 			void connectTo(const Engine::Net::IPv4Address& addr);
 			void requestDisconnect(const Engine::Net::IPv4Address& addr);
 
+			auto& getSocket() noexcept { return socket; }
+
 		private:
 			struct AddConnRes {
 				ConnInfo& info;

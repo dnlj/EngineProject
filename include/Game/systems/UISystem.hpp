@@ -42,6 +42,7 @@ namespace Game {
 			void ui_connect();
 			void ui_debug();
 			void ui_coordinates();
+			void ui_netsim();
 			void ui_network();
 			void ui_entities();
 

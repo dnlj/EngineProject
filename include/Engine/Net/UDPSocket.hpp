@@ -7,7 +7,7 @@
 	#error Not yet implemented for this operating system.
 #endif
 
-#define ENGINE_UDP_NETWORK_SIM_
+#define ENGINE_UDP_NETWORK_SIM
 #ifdef ENGINE_UDP_NETWORK_SIM
 #include <queue>
 #include <Engine/Clock.hpp>
@@ -42,37 +42,49 @@ namespace Engine::Net {
 		private:
 			SOCKET handle;
 
-			#ifdef ENGINE_UDP_NETWORK_SIM
-				constexpr static Engine::Clock::Duration halfPingAdd = std::chrono::milliseconds{50};
-				constexpr static float64 jitter = 0.75;
-				constexpr static float64 duplicate = 0.01;
-				constexpr static float64 loss = 0.25;
-				uint64 seed = 0xAAAA'BBBB'CCCC'DDDD;
-				std::mt19937 mt{std::random_device{}()}; // TODO: bad seeding. MT is huge. switch to other rng.
-				float64 random() { // TODO: pcg?
-					//seed = Noise::lcg(seed);
-					//return static_cast<float64>(seed) / std::numeric_limits<decltype(seed)>::max();
-					std::uniform_real_distribution<float64> dist{0.0, std::nextafter(1.0, 2.0)};
-					return dist(mt);
-				}
-				struct PacketData {
-					Engine::Clock::TimePoint time;
-					IPv4Address from;
-					std::vector<byte> data;
-					bool operator>(const PacketData& other) const { return time > other.time; }
-				};
-				std::priority_queue<
-					PacketData,
-					std::vector<PacketData>,
-					std::greater<PacketData>
-				> packetBuffer;
-			#endif
-
 			/**
 			 * Gets the error string (utf-8) for the given error code.
 			 * @see https://docs.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
 			 */
 			std::string getWindowsErrorMessage(int err) const;
+
+	#ifdef ENGINE_UDP_NETWORK_SIM
+		private:
+			// TODO: doc
+			struct SimSettings {
+				// TODO: better name for hpa? delay? similar?
+				Engine::Clock::Duration halfPingAdd = std::chrono::milliseconds{50};
+				float32 jitter = 0.75f;
+				float32 duplicate = 0.01f;
+				float32 loss = 0.25f;
+			};
+			SimSettings simSettings;
+
+			uint64 seed = 0xAAAA'BBBB'CCCC'DDDD;
+			// TODO: PCG
+			std::mt19937 mt{std::random_device{}()};
+
+			float32 random() { // TODO: pcg?
+				std::uniform_real_distribution<float32> dist{0.0f, std::nextafter(1.0f, 2.0f)};
+				return dist(mt);
+			}
+
+			struct PacketData {
+				Engine::Clock::TimePoint time;
+				IPv4Address from;
+				std::vector<byte> data;
+				bool operator>(const PacketData& other) const { return time > other.time; }
+			};
+
+			std::priority_queue<
+				PacketData,
+				std::vector<PacketData>,
+				std::greater<PacketData>
+			> packetBuffer;
+
+		public:
+			auto& getSimSettings() noexcept { return simSettings; }
+	#endif
 	};
 }
 
