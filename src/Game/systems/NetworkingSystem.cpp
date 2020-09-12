@@ -490,7 +490,15 @@ namespace Game {
 
 			conn.send(socket);
 			++it;
+
+			#ifdef ENGINE_UDP_NETWORK_SIM
+				socket.simPacketSend();
+			#endif
 		}
+
+		#ifdef ENGINE_UDP_NETWORK_SIM
+			socket.simPacketSend();
+		#endif
 	}
 
 	void NetworkingSystem::runServer() {

@@ -1,6 +1,10 @@
 // Engine
 #include <Engine/Net/UDPSocket.hpp>
 
+namespace {
+	
+}
+
 
 namespace Engine::Net {
 	UDPSocket::UDPSocket(const uint16 port) {
@@ -30,8 +34,16 @@ namespace Engine::Net {
 		closesocket(handle);
 	};
 
-	int32 UDPSocket::send(const void* data, int32 size, const IPv4Address& address) const {
+	int32 UDPSocket::send(const void* data, int32 size, const IPv4Address& address) {
 		const auto saddr = address.getSocketAddress();
+		
+		#ifdef ENGINE_UDP_NETWORK_SIM
+		{
+			simPacket(sendBuffer, saddr, data, size);
+			return size;
+		}
+		#endif
+
 		const auto sent = sendto(handle, reinterpret_cast<const char*>(data), size, 0, &saddr, sizeof(saddr));
 
 		#ifdef DEBUG
@@ -51,42 +63,20 @@ namespace Engine::Net {
 		address = from;
 
 		#ifdef ENGINE_UDP_NETWORK_SIM
-		{
-			// TODO: imgui sliders?
-			const auto now = Engine::Clock::now();
+		if (len > -1) {
+			simPacket(recvBuffer, from, data, len);
 
-			if (len > -1) {
-				// Ping var is total variance so between ping +- pingVar/2
-				const float32 r = -1 + 2 * random();
-				const auto var = std::chrono::duration_cast<Engine::Clock::Duration>(simSettings.halfPingAdd * (simSettings.jitter * 0.5f * r));
-
-				if (random() < simSettings.loss) {
-					return -1;
-				}
-
-				auto pkt = PacketData{
-					.time = now + simSettings.halfPingAdd + var,
-					.from = from,
-					.data = {reinterpret_cast<byte*>(data), reinterpret_cast<byte*>(data) + len},
-				};
-
-				if (random() < simSettings.duplicate) {
-					packetBuffer.push(pkt);
-				}
-
-				packetBuffer.push(std::move(pkt));
-			}
-
-			if (packetBuffer.size()) {
-				const auto& top = packetBuffer.top();
-				if (top.time < now) {
+			if (recvBuffer.size()) {
+				const auto& top = recvBuffer.top();
+				if (top.time <= Engine::Clock::now()) {
 					memcpy(data, top.data.data(), top.data.size());
 					len = static_cast<int32>(top.data.size());
-					address = top.from;
-					packetBuffer.pop();
+					address = top.addr;
+					recvBuffer.pop();
 					return len;
 				}
 			}
+
 			return -1;
 		}
 		#endif

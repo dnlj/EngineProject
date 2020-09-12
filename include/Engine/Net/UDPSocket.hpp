@@ -7,18 +7,20 @@
 	#error Not yet implemented for this operating system.
 #endif
 
+// Engine
+#include <Engine/Engine.hpp>
+#include <Engine/Net/IPv4Address.hpp>
+#include <Engine/Net/SocketOptions.hpp>
+
+#if ENGINE_CLIENT
 #define ENGINE_UDP_NETWORK_SIM
+#endif
 #ifdef ENGINE_UDP_NETWORK_SIM
 #include <queue>
 #include <Engine/Clock.hpp>
 #include <Engine/Noise/Noise.hpp>
 #include <random>
 #endif
-
-// Engine
-#include <Engine/Engine.hpp>
-#include <Engine/Net/IPv4Address.hpp>
-#include <Engine/Net/SocketOptions.hpp>
 
 
 namespace Engine::Net {
@@ -30,7 +32,7 @@ namespace Engine::Net {
 
 			~UDPSocket();
 
-			int32 send(const void* data, int32 size, const IPv4Address& address) const;
+			int32 send(const void* data, int32 size, const IPv4Address& address);
 
 			int32 recv(void* data, int32 size, IPv4Address& address);
 
@@ -69,20 +71,56 @@ namespace Engine::Net {
 				return dist(mt);
 			}
 
+
 			struct PacketData {
 				Engine::Clock::TimePoint time;
-				IPv4Address from;
+				IPv4Address addr;
 				std::vector<byte> data;
 				bool operator>(const PacketData& other) const { return time > other.time; }
 			};
 
-			std::priority_queue<
+			using Queue = std::priority_queue<
 				PacketData,
 				std::vector<PacketData>,
 				std::greater<PacketData>
-			> packetBuffer;
+			>;
+			Queue sendBuffer;
+			Queue recvBuffer;
+
+			void simPacket(Queue& buff, const IPv4Address& addr, const void* data, int32 size) {
+				if (random() < simSettings.loss) { return; }
+				const auto now = Engine::Clock::now();
+
+				// Ping var is total variance so between ping +- pingVar/2
+				const float32 r = -1 + 2 * random();
+				const auto var = std::chrono::duration_cast<Engine::Clock::Duration>(
+					simSettings.halfPingAdd * (simSettings.jitter * 0.5f * r)
+				);
+
+				auto pkt = PacketData{
+					.time = now + simSettings.halfPingAdd + var,
+					.addr = addr,
+					.data = {static_cast<const byte*>(data), static_cast<const byte*>(data) + size},
+				};
+
+				if (random() < simSettings.duplicate) {
+					buff.push(pkt);
+				}
+
+				buff.push(std::move(pkt));
+			}
 
 		public:
+			void simPacketSend() {
+				while (sendBuffer.size()) {
+					const auto& top = sendBuffer.top();
+					if (top.time > Engine::Clock::now()) { return; }
+					const auto saddr = top.addr.getSocketAddress();
+					sendto(handle, reinterpret_cast<const char*>(top.data.data()), static_cast<int>(top.data.size()), 0, &saddr, sizeof(saddr));
+					sendBuffer.pop();
+				}
+			}
+
 			auto& getSimSettings() noexcept { return simSettings; }
 	#endif
 	};
