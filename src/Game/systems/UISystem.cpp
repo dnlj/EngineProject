@@ -306,14 +306,14 @@ namespace Game {
 
 			ImGui::Text(
 				"Ping: %.1fms          Jitter: %.1fms\n"
-				"Sent: %ib %.1fb/s     Recv: %ib %.1fb/s     Loss: %.2f\n"
-				"Trend: %.4f           Buffer Size: %i     Ideal: %.2f"
+				"Trend: %.3f           Buffer Size: %i     Ideal: %.3f\n"
+				"Sent: %ib %.1fb/s     Recv: %ib %.1fb/s     Loss: %.3f"
 				,
 				// TODO: pretty sure this ping calc is wrong. shows ~31ms even when on same machine. 31ms = 2*1/tickrate. coincidence? before it was showing about 8ms.
 				statsComp.displayPing, statsComp.displayJitter,
+				statsComp.displayTrend, statsComp.displayInputBufferSize, statsComp.displayIdealInputBufferSize,
 				statsComp.displaySentTotal, statsComp.displaySentAvg,
-				statsComp.displayRecvTotal, statsComp.displayRecvAvg, statsComp.displayLoss,
-				statsComp.displayTrend, statsComp.displayInputBufferSize, statsComp.displayIdealInputBufferSize
+				statsComp.displayRecvTotal, statsComp.displayRecvAvg, statsComp.displayLoss
 			);
 
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
