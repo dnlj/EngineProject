@@ -21,6 +21,9 @@ namespace Game {
 			Engine::RingBuffer<Stats> buffer;
 			uint64 lastTotalBytesSent;
 			uint64 lastTotalBytesRecv;
+			float32 trend = 0.0f;
+			int32 inputBufferSize = 0;
+			float32 idealInputBufferSize = 0;
 
 			uint64 displaySentTotal;
 			uint64 displayRecvTotal;
@@ -29,5 +32,8 @@ namespace Game {
 			float32 displayPing;
 			float32 displayJitter;
 			float32 displayLoss;
+			float32 displayTrend;
+			int32 displayInputBufferSize;
+			float32 displayIdealInputBufferSize;
 	};
 }

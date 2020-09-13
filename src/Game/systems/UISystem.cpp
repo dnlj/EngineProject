@@ -110,6 +110,7 @@ namespace Game {
 
 		ImGui::Text("Avg FPS %f (%f)", fps, 1.0f / fps);
 		ImGui::Text("Tick %i", world.getTick());
+		ImGui::Text("Tick Scale: %.4f", world.tickScale);
 
 		if (ImGui::Button("Disconnect")) {
 			for (const auto& ent : connFilter) {
@@ -297,17 +298,22 @@ namespace Game {
 				statsComp.displayPing = Engine::Clock::Seconds{conn.getPing()}.count() * 1000.0f;
 				statsComp.displayJitter = Engine::Clock::Seconds{conn.getJitter()}.count() * 1000.0f;
 				statsComp.displayLoss = conn.getLoss();
+
+				statsComp.displayTrend = statsComp.trend;
+				statsComp.displayInputBufferSize = statsComp.inputBufferSize;
+				statsComp.displayIdealInputBufferSize = statsComp.idealInputBufferSize;
 			}
 
 			ImGui::Text(
 				"Ping: %.1fms          Jitter: %.1fms\n"
-				"Sent: %ib %.1fb/s     Recv: %ib %.1fb/s     Loss: %.2f"
+				"Sent: %ib %.1fb/s     Recv: %ib %.1fb/s     Loss: %.2f\n"
+				"Trend: %.4f           Buffer Size: %i     Ideal: %.2f"
 				,
 				// TODO: pretty sure this ping calc is wrong. shows ~31ms even when on same machine. 31ms = 2*1/tickrate. coincidence? before it was showing about 8ms.
 				statsComp.displayPing, statsComp.displayJitter,
 				statsComp.displaySentTotal, statsComp.displaySentAvg,
-				statsComp.displayRecvTotal, statsComp.displayRecvAvg,
-				statsComp.displayLoss
+				statsComp.displayRecvTotal, statsComp.displayRecvAvg, statsComp.displayLoss,
+				statsComp.displayTrend, statsComp.displayInputBufferSize, statsComp.displayIdealInputBufferSize
 			);
 
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();

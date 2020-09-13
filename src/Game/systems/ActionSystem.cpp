@@ -73,6 +73,14 @@ namespace Game {
 
 				actComp.states.remove(currTick - 1);
 
+				if constexpr (ENGINE_DEBUG) {
+					if (world.hasComponent<NetworkStatsComponent>(ent)) {
+						auto& netStatsComp = world.getComponent<NetworkStatsComponent>(ent);
+						netStatsComp.trend = actComp.tickTrend;
+						netStatsComp.inputBufferSize = actComp.states.max() - actComp.states.minValid();
+					}
+				}
+
 				//ENGINE_LOG("Buffer size: ",
 				//	actComp.states.capacity(), " | ",
 				//	actComp.states.max(), " ", actComp.states.minValid(), " = ",
@@ -122,8 +130,6 @@ namespace Game {
 		// Then slow down/speed up
 		// Otherwise adjust based on or estimated ideal lead time
 
-		// TODo: add trend and buffSize to network metrics
-
 		// TODO: not really happy with this. we really should use some kind of smoothed adjustment since
 		// TODO: cont. we rely on server supplied metrics. Or is this not a problem? needs more testing.
 		if (trend < 0) {
@@ -137,6 +143,15 @@ namespace Game {
 			world.tickScale = std::max(0.1f, 1.0f + (buffSize - ideal) * (1.0f / maxBufferSize));
 		} else {
 			world.tickScale = 1.0f;
+		}
+
+		if constexpr (ENGINE_DEBUG) {
+			if (world.hasComponent<NetworkStatsComponent>(fromEnt)) {
+				auto& netStatsComp = world.getComponent<NetworkStatsComponent>(fromEnt);
+				netStatsComp.trend = trend;
+				netStatsComp.inputBufferSize = static_cast<int32>(buffSize);
+				netStatsComp.idealInputBufferSize = ideal;
+			}
 		}
 	}
 
@@ -179,6 +194,7 @@ namespace Game {
 
 		const float32 off = tick < minTick ? -1.0f * (minTick-tick) : (tick > maxTick ? tick - maxTick : 0.0f);
 		actComp.tickTrend += (off - actComp.tickTrend) * actComp.tickTrendSmoothing;
+
 		if (off) {
 			//ENGINE_WARN("Out of window input received. ", tick < minTick, " ", tick > maxTick, " (", minTick, ", ", tick, ", ", maxTick, ")");
 			return;
