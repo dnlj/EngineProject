@@ -63,8 +63,10 @@ namespace Engine::Net {
 		address = from;
 
 		#ifdef ENGINE_UDP_NETWORK_SIM
-		if (len > -1) {
-			simPacket(recvBuffer, from, data, len);
+		{
+			if (len > -1) {
+				simPacket(recvBuffer, from, data, len);
+			}
 
 			if (recvBuffer.size()) {
 				const auto& top = recvBuffer.top();

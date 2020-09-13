@@ -55,10 +55,16 @@ namespace Engine::Net {
 			// TODO: doc
 			struct SimSettings {
 				// TODO: better name for hpa? delay? similar?
-				Engine::Clock::Duration halfPingAdd = std::chrono::milliseconds{50};
-				float32 jitter = 0.5f;
-				float32 duplicate = 0.01f;
-				float32 loss = 0.01f;
+				//Engine::Clock::Duration halfPingAdd = std::chrono::milliseconds{50};
+				//float32 jitter = 0.5f;
+				//float32 duplicate = 0.01f;
+				//float32 loss = 0.01f;
+
+				// TODO: really it may be better to use ticks instead of ms. Since it wont be re-checked until next tick the min time is 1/tickrate.
+				Engine::Clock::Duration halfPingAdd = std::chrono::milliseconds{0};
+				float32 jitter = 0.0f;
+				float32 duplicate = 0.0f;
+				float32 loss = 0.0f;
 			};
 			SimSettings simSettings;
 
@@ -87,7 +93,6 @@ namespace Engine::Net {
 
 			void simPacket(Queue& buff, const IPv4Address& addr, const void* data, int32 size) {
 				if (random() < simSettings.loss) { return; }
-				const auto now = Engine::Clock::now();
 
 				// Ping var is total variance so between ping +- pingVar/2
 				const float32 r = -1 + 2 * random();
@@ -95,6 +100,7 @@ namespace Engine::Net {
 					simSettings.halfPingAdd * (simSettings.jitter * 0.5f * r)
 				);
 
+				const auto now = Engine::Clock::now();
 				auto pkt = PacketData{
 					.time = now + simSettings.halfPingAdd + var,
 					.addr = addr,
