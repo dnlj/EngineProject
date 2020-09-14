@@ -464,6 +464,7 @@ void run(int argc, char* argv[]) {
 	size_t deltaIndex = 0;
 	window.show();
 	window.center();
+	window.swapInterval(0);
 
 	if constexpr (ENGINE_SERVER) {
 		window.setPosSize(3440, 32, 1920, 1080);

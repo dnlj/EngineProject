@@ -404,7 +404,7 @@ namespace Engine::Win32 {
 namespace Engine::Win32 {
 	OpenGLWindow::OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat, WindowCallbackFunctions& callbacks)
 		: callbacks{callbacks} {
-		static const WGLPointers ptrs = OpenGLWindow::init();
+		wglPtrs = OpenGLWindow::init();
 
 		windowHandle = CreateWindowExW(
 			0, // TODO:
@@ -450,7 +450,7 @@ namespace Engine::Win32 {
 		// TODO: glfw manually chooses pixel format - wglGetPixelFormatAttribivARB, WGL_NUMBER_PIXEL_FORMATS_ARB
 		// TODO: do we want multiple results?
 		// TODO: verify chosen pixel format
-		ENGINE_ASSERT(ptrs.wglChoosePixelFormatARB(deviceContext, pixelAttributes, nullptr, 1, &winPixelFormat, &numFormats),
+		ENGINE_ASSERT(wglPtrs.wglChoosePixelFormatARB(deviceContext, pixelAttributes, nullptr, 1, &winPixelFormat, &numFormats),
 			"Unable to find suitable pixel format - ", getLastErrorMessage()
 		);
 
@@ -472,7 +472,7 @@ namespace Engine::Win32 {
 			0
 		};
 	
-		renderContext = ptrs.wglCreateContextAttribsARB(deviceContext, nullptr, contextAttributes);
+		renderContext = wglPtrs.wglCreateContextAttribsARB(deviceContext, nullptr, contextAttributes);
 		ENGINE_ASSERT(renderContext, "Unable to create WGL render context - ", getLastErrorMessage());
 
 		UINT numDevices;
@@ -543,6 +543,10 @@ namespace Engine::Win32 {
 
 	void OpenGLWindow::swapBuffers() {
 		SwapBuffers(deviceContext);
+	}
+
+	void OpenGLWindow::swapInterval(int interval) {
+		wglPtrs.wglSwapIntervalEXT(0);
 	}
 
 	HWND OpenGLWindow::getWin32WindowHandle() const {
@@ -688,10 +692,12 @@ namespace Engine::Win32 {
 		);
 
 		WGLPointers pointers = {
+			// If you ever have issues getting a function pointer make sure to check caps. EXT not Ext etc.
 			.wglChoosePixelFormatARB = getFunctionPointerGL<PFNWGLCHOOSEPIXELFORMATARBPROC>("wglChoosePixelFormatARB"),
 			.wglCreateContextAttribsARB = getFunctionPointerGL<PFNWGLCREATECONTEXTATTRIBSARBPROC>("wglCreateContextAttribsARB"),
+			.wglSwapIntervalEXT = getFunctionPointerGL<PFNWGLSWAPINTERVALEXTPROC>("wglSwapIntervalEXT"),
 		};
-
+		
 		ENGINE_ASSERT(wglMakeCurrent(nullptr, nullptr), "Unable to make WGL render context non-current - ", getLastErrorMessage());
 		ENGINE_ASSERT(wglDeleteContext(tempRenderContext), "Unable to delete temporary WGL render context - ", getLastErrorMessage());
 		ReleaseDC(tempWindow, tempDeviceContext);

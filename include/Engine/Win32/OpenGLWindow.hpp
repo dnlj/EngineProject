@@ -15,7 +15,6 @@
 
 
 namespace Engine::Win32 {
-	// TODO: vsync support
 	// TODO: GLFW_OPENGL_DEBUG_CONTEXT
 	// TODO: GLFW_SRGB_CAPABLE
 	// TODO: name?
@@ -26,7 +25,10 @@ namespace Engine::Win32 {
 			struct WGLPointers {
 				PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
 				PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
+				PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 			};
+
+			WGLPointers wglPtrs;
 
 			struct KeyBoardState {
 				// We use 0xAA as a custom prefix to denote that the stored code is actually a virtual key (Win32 VK_* enum).
@@ -71,6 +73,8 @@ namespace Engine::Win32 {
 			void poll();
 
 			void swapBuffers();
+
+			void swapInterval(int interval);
 
 			HWND getWin32WindowHandle() const;
 
