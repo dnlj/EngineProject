@@ -55,7 +55,7 @@ namespace Engine::Net {
 			constexpr static float64 pingSmoothing = 0.02;
 			Engine::Clock::Duration ping = {};
 			
-			constexpr static float64 jitterSmoothing = 0.09;
+			constexpr static float64 jitterSmoothing = 0.02;
 			Engine::Clock::Duration jitter = {};
 
 			constexpr static float32 lossSmoothing = 0.01f;
@@ -192,7 +192,7 @@ namespace Engine::Net {
 						data->recvTime = time;
 						
 						const auto pktPing = data->recvTime - data->sendTime;
-
+						
 						jitter += std::chrono::duration_cast<Engine::Clock::Duration>(
 							(std::chrono::abs(pktPing - ping) - jitter) * jitterSmoothing
 						);
@@ -325,7 +325,6 @@ namespace Engine::Net {
 					node->packet.setKey(keySend);
 					node->packet.setNextAck(nextRecvAck);
 					node->packet.setAcks(recvAcks);
-					// TODO: rm ENGINE_LOG("PDAT: ", (int)key, " ", (int)nextRecvAck, " ", (int)recvAcks);
 					const auto sz = static_cast<int32>(node->last - node->packet.head);
 					packetSentBandwidthAccum += sz;
 					sock.send(node->packet.head, sz, addr);
@@ -354,7 +353,7 @@ namespace Engine::Net {
 
 				write(MessageHeader{
 					.type = M,
-				}); 
+				});
 
 				return true;
 			}
@@ -367,7 +366,10 @@ namespace Engine::Net {
 				ENGINE_DEBUG_ASSERT(node, "Unmatched Connection::msgEnd<", static_cast<int>(M), "> call.");
 
 				auto* hdr = reinterpret_cast<MessageHeader*>(node->curr);
-				ENGINE_DEBUG_ASSERT(hdr->type == M, "Mismatched msgBegin/End calls.");
+				ENGINE_DEBUG_ASSERT(hdr->type == M,
+					"Mismatched msgBegin/End calls. ",
+					static_cast<int64>(hdr->type), " != ", static_cast<int64>(M)
+				);
 
 				hdr->size = static_cast<decltype(hdr->size)>(node->size() - sizeof(*hdr));
 

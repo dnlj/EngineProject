@@ -97,6 +97,7 @@ namespace Engine::Net {
 				// Ping var is total variance so between ping +- pingVar/2
 				const float32 r = -1 + 2 * random();
 				const auto var = std::chrono::duration_cast<Engine::Clock::Duration>(
+					// TODO: this def of jitter is idff than we use in Connection. should be +- jitter not +- 0.5 jitter
 					simSettings.halfPingAdd * (simSettings.jitter * 0.5f * r)
 				);
 

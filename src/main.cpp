@@ -494,6 +494,7 @@ void run(int argc, char* argv[]) {
 			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw();
 		#endif
 
+		window.swapInterval(0);
 		window.swapBuffers();
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}

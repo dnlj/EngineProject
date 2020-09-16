@@ -198,7 +198,7 @@ namespace Engine::Net {
 
 			void writeUnacked(PacketWriter& packetWriter) {
 				const auto now = Engine::Clock::now();
-				// TODO: BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
+				// BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
 				for (auto seq = msgData.minValid(); seqLess(seq, msgData.max() + 1); ++seq) {
 					auto* msg = msgData.find(seq);
 

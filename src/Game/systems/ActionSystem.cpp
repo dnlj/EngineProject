@@ -118,8 +118,6 @@ namespace Game {
 
 		// TODO: ideal should be smoothed over time
 		const auto ideal = idealTickLead();
-		ENGINE_LOG("idealTickLead = ", ideal, " | ", buffSize, " | ", trend);
-
 
 		// Used to adjust tickScale when based on trend. Scaled in range [trendAdjust, maxTrendScale + trendAdjust]
 		constexpr float32 trendAdjust = 1.1f;

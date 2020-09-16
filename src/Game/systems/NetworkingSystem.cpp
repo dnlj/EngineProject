@@ -344,7 +344,7 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::TEST)
-		std::cout << "***** TEST: " << head.seq << "\n";
+		//std::cout << "***** TEST: " << head.seq << "\n";
 	}
 }
 #undef HandleMessageDef
@@ -458,10 +458,15 @@ namespace Game {
 
 		// Send Ack messages & unacked
 		for (auto it = connections.begin(); it != connections.end();) {
-		//for (const auto& [addr, info] : connections) {
 			auto& [addr, info] = *it;
 			const auto ply = info.ent;
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+
+			// TODO: why does moving this to right before send (under writeUnacked?) cause a crash?c
+			//if (info.state == Engine::Net::ConnState::Connected) {
+			//	conn.msgBegin<MessageType::TEST>();
+			//	conn.msgEnd<MessageType::TEST>();
+			//}
 			
 			if (info.disconnectAt != Engine::Clock::TimePoint{}) {
 				// TODO: remove all comps but connection
@@ -490,10 +495,6 @@ namespace Game {
 
 			conn.send(socket);
 			++it;
-
-			#ifdef ENGINE_UDP_NETWORK_SIM
-				socket.simPacketSend();
-			#endif
 		}
 
 		#ifdef ENGINE_UDP_NETWORK_SIM
