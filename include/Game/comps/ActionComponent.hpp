@@ -56,14 +56,12 @@ namespace Game {
 			Engine::SequenceBuffer<Engine::ECS::Tick, ActionState, snapshots> states;
 			ActionState* state;
 
-			// TODO: server only
-			/** Estimate of how far outside the input buffer we are receiving client inputs. */
-			float32 tickTrend = 0;
-
-			/** Exponential smoothing factor for tickTrend. */
-			float32 tickTrendSmoothing = 0.2f;
+			// TODo: rn. use tickTrend
+			public: float32 estBufferSize = 0.0f;
 
 		public:
+			constexpr static int32 maxStates = decltype(states)::capacity();
+
 		// TODO: are these called on server? nullptr check
 			const ButtonValue& getButton(Button btn) const {
 				return state->buttons[static_cast<int32>(btn)];

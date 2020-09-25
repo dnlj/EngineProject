@@ -299,19 +299,23 @@ namespace Game {
 				statsComp.displayJitter = Engine::Clock::Seconds{conn.getJitter()}.count() * 1000.0f;
 				statsComp.displayLoss = conn.getLoss();
 
-				statsComp.displayTrend = statsComp.trend;
 				statsComp.displayInputBufferSize = statsComp.inputBufferSize;
 				statsComp.displayIdealInputBufferSize = statsComp.idealInputBufferSize;
 			}
 
+
+			float32 estbuff = 0;
+			if (world.hasComponent<ActionComponent>(ent)) {
+				estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
+			}
 			ImGui::Text(
-				"Ping: %.1fms          Jitter: %.1fms\n"
-				"Trend: %.3f           Buffer Size: %i     Ideal: %.3f\n"
+				"Ping: %.1fms          Jitter: %.1fms    Est. Buffer: %.2f\n"
+				"Buffer Size: %i     Ideal: %.3f\n"
 				"Sent: %ib %.1fb/s     Recv: %ib %.1fb/s     Loss: %.3f"
 				,
 				// TODO: pretty sure this ping calc is wrong. shows ~31ms even when on same machine. 31ms = 2*1/tickrate. coincidence? before it was showing about 8ms.
-				statsComp.displayPing, statsComp.displayJitter,
-				statsComp.displayTrend, statsComp.displayInputBufferSize, statsComp.displayIdealInputBufferSize,
+				statsComp.displayPing, statsComp.displayJitter, estbuff,
+				statsComp.displayInputBufferSize, statsComp.displayIdealInputBufferSize,
 				statsComp.displaySentTotal, statsComp.displaySentAvg,
 				statsComp.displayRecvTotal, statsComp.displayRecvAvg, statsComp.displayLoss
 			);

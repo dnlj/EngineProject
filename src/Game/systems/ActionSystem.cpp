@@ -4,6 +4,23 @@
 #include <Game/comps/ActionComponent.hpp>
 
 
+namespace {
+	using namespace Game;
+	using EstBuffSize = uint8;
+	constexpr int32 tmax = std::numeric_limits<EstBuffSize>::max();
+	constexpr int32 range = (tmax - ActionComponent::maxStates) / 2;
+
+	constexpr EstBuffSize estBuffSizeToNet(const float32 v) noexcept {
+		auto t = static_cast<int32>(v) + range;
+		return std::max(0, std::min(t, tmax));
+	};
+
+	constexpr float32 estBuffSizeFromNet(EstBuffSize v) noexcept {
+		return static_cast<float32>(v - range);
+	};
+}
+
+
 namespace Game {
 	ActionSystem::ActionSystem(SystemArg arg)
 		: System{arg}
@@ -61,8 +78,7 @@ namespace Game {
 				conn.msgBegin<MessageType::ACTION>();
 				conn.write(currTick);
 				conn.write(state ? state->recvTick : 0);
-				int8 trend = std::max(-128, std::min(static_cast<int32>(actComp.tickTrend), 127));
-				conn.write(trend);
+				conn.write(estBuffSizeToNet(actComp.estBufferSize));
 				conn.msgEnd<MessageType::ACTION>();
 
 				if (!state) {
@@ -76,7 +92,7 @@ namespace Game {
 				if constexpr (ENGINE_DEBUG) {
 					if (world.hasComponent<NetworkStatsComponent>(ent)) {
 						auto& netStatsComp = world.getComponent<NetworkStatsComponent>(ent);
-						netStatsComp.trend = actComp.tickTrend;
+						//netStatsComp.trend = actComp.tickTrend;
 						netStatsComp.inputBufferSize = actComp.states.max() - actComp.states.minValid();
 					}
 				}
@@ -103,9 +119,20 @@ namespace Game {
 		// TODO: we dont actually use tick/recvTick. just nw buffsize
 		const auto tick = *from.read<Engine::ECS::Tick>();
 		const auto recvTick = *from.read<Engine::ECS::Tick>();
-		const float32 trend = *from.read<int8>();
 		const auto buffSize = tick - recvTick;
 
+		if (!world.hasComponent<ActionComponent>(fromEnt)) { // TODO: rm
+			ENGINE_WARN("OH NO! Its not here!");
+		}
+
+		// TODO: scale smoothing with ping
+		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
+		{
+			const auto est = estBuffSizeFromNet(*from.read<uint8>());
+			actComp.estBufferSize += (est - actComp.estBufferSize) * 0.1f;
+		}
+
+		// TODO: this is ideal buffer size not tick lead...
 		const auto idealTickLead = [&](){
 			constexpr auto tickDur = World::getTickInterval();
 			const auto p2 = from.getPing().count() * 0.5f; // One way trip
@@ -120,33 +147,35 @@ namespace Game {
 		const auto ideal = idealTickLead();
 
 		// Used to adjust tickScale when based on trend. Scaled in range [trendAdjust, maxTrendScale + trendAdjust]
-		constexpr float32 trendAdjust = 1.1f;
-		constexpr float32 maxTrendScale = 8.0f;
+		constexpr float32 maxTickScale = 8.0f;
 		constexpr float32 maxBufferSize = static_cast<float32>(decltype(ActionComponent::states)::capacity());
 
-		// If we sending to soon or to late (according to the server)
-		// Then slow down/speed up
-		// Otherwise adjust based on or estimated ideal lead time
+		const float32 diff = actComp.estBufferSize - ideal;
 
-		// TODO: not really happy with this. we really should use some kind of smoothed adjustment since
-		// TODO: cont. we rely on server supplied metrics. Or is this not a problem? needs more testing.
-		if (trend < 0) {
-			world.tickScale = 1.0f / (trendAdjust - trend * ((maxTrendScale - 1.0f) / 128));
-		} else if (trend > 0) {
-			world.tickScale = trendAdjust + trend * ((maxTrendScale - 1.0f) / 127);
-		} else if (recvTick == 0) {
-			ENGINE_WARN("MISSED INPUT");
-			// TODO: need to rollback and simulate loss on client side
-		} else if (buffSize != ideal) {
-			world.tickScale = std::max(0.1f, 1.0f + (buffSize - ideal) * (1.0f / maxBufferSize));
+		const auto calcTickScale = [&](const float32 diff){
+			constexpr float32 scale = (maxTickScale/range);
+			float32 d = diff * scale;
+			return 1.0f + d;
+		};
+
+		// TODO: doc what this is doing
+		// TODO: this hsould be over max over/under [0,32] not buffer size
+		constexpr float32 eps = 0.5f;
+		if (diff < -eps) {
+			ENGINE_LOG("++scale ", diff);
+			world.tickScale = 1.0f / calcTickScale(std::abs(diff));
+		} else if (diff > eps) {
+			ENGINE_LOG("--scale ", diff);
+			world.tickScale = calcTickScale(diff);
 		} else {
 			world.tickScale = 1.0f;
 		}
 
+		world.tickScale = std::min(world.tickScale, maxTickScale);
+
 		if constexpr (ENGINE_DEBUG) {
 			if (world.hasComponent<NetworkStatsComponent>(fromEnt)) {
 				auto& netStatsComp = world.getComponent<NetworkStatsComponent>(fromEnt);
-				netStatsComp.trend = trend;
 				netStatsComp.inputBufferSize = static_cast<int32>(buffSize);
 				netStatsComp.idealInputBufferSize = ideal;
 			}
@@ -190,12 +219,10 @@ namespace Game {
 		}
 		from.readFlushBits();
 
-		const float32 off = tick < minTick ? -1.0f * (minTick-tick) : (tick > maxTick ? tick - maxTick : 0.0f);
-		actComp.tickTrend += (off - actComp.tickTrend) * actComp.tickTrendSmoothing;
-
-		if (off) {
-			//ENGINE_WARN("Out of window input received. ", tick < minTick, " ", tick > maxTick, " (", minTick, ", ", tick, ", ", maxTick, ")");
-			return;
+		{
+			const float32 off = tick < recvTick ? -static_cast<float32>(recvTick - tick) : static_cast<float32>(tick - recvTick);
+			// TODO: need to handle negative values. tick-recv vs recv-tick then cast to float and neg
+			actComp.estBufferSize += (off - actComp.estBufferSize) * 0.2f;
 		}
 
 		//auto* found = actComp.states.find(tick);
