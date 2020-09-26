@@ -117,19 +117,26 @@ namespace Game {
 	void ActionSystem::recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
 		// TODO: what about ordering?
 		// TODO: we dont actually use tick/recvTick. just nw buffsize
+		constexpr float32 maxStates = static_cast<float32>(decltype(ActionComponent::states)::capacity());
 		const auto tick = *from.read<Engine::ECS::Tick>();
 		const auto recvTick = *from.read<Engine::ECS::Tick>();
 		const auto buffSize = tick - recvTick;
 
-		if (!world.hasComponent<ActionComponent>(fromEnt)) { // TODO: rm
-			ENGINE_WARN("OH NO! Its not here!");
-		}
-
-		// TODO: scale smoothing with ping
 		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
 		{
 			const auto est = estBuffSizeFromNet(*from.read<uint8>());
-			actComp.estBufferSize += (est - actComp.estBufferSize) * 0.1f;
+
+			// NOTE: seems to work fine without this.
+			//float32 ping = std::chrono::duration<float32, std::milli>{from.getPing()}.count();
+			//float32 ticksPerPing = Engine::Clock::Milliseconds{from.getPing()} / Engine::Clock::Milliseconds{World::getTickInterval()};
+			//
+			//// Interpolate between 0.2 and 0.01 based on ping
+			//constexpr float32 m = (0.01f - 0.2f) / (maxStates - 1.0f);
+			//constexpr float32 b = (-maxStates * m) + 0.01f;
+			//float32 smoothing = m * ticksPerPing + b;
+
+			//actComp.estBufferSize += (est - actComp.estBufferSize) * smoothing;
+			actComp.estBufferSize = est;
 		}
 
 		// TODO: this is ideal buffer size not tick lead...
@@ -148,30 +155,50 @@ namespace Game {
 
 		// Used to adjust tickScale when based on trend. Scaled in range [trendAdjust, maxTrendScale + trendAdjust]
 		constexpr float32 maxTickScale = 8.0f;
-		constexpr float32 maxBufferSize = static_cast<float32>(decltype(ActionComponent::states)::capacity());
+		constexpr float32 maxBufferSize = maxStates;
 
-		const float32 diff = actComp.estBufferSize - ideal;
+		float32 diff = actComp.estBufferSize - ideal;
 
 		const auto calcTickScale = [&](const float32 diff){
-			constexpr float32 scale = (maxTickScale/range);
-			float32 d = diff * scale;
-			return 1.0f + d;
+			float32 scale = (maxTickScale/(range + maxStates));
+			const auto ping = from.getPing();
+
+			// Be more conservative at larger pings to prevent bouncing between too high and too low due to slower feedback
+			if (ping > std::chrono::milliseconds{350}) {
+				scale *= 0.25f;
+			} else if (ping > std::chrono::milliseconds{250}) {
+				scale *= 0.50f;
+			} else if (ping > std::chrono::milliseconds{100}) {
+				scale *= 0.75f;
+			} else if (ping > std::chrono::milliseconds{50}) {
+				scale *= 0.95f;
+			}
+
+			return 1.0f + (diff * scale);
 		};
 
-		// TODO: doc what this is doing
-		// TODO: this hsould be over max over/under [0,32] not buffer size
-		constexpr float32 eps = 0.5f;
+		// NOTE: seems to work fine without this
+		// Prevent large changes from ping spikes
+		//if (from.getJitter() > std::chrono::milliseconds{50}) {
+		//	diff *= 0.25f;
+		//}
+
+		// Slow down when we are close to the correct value
+		if (std::abs(diff) < ideal + 8.0f) {
+			diff *= 0.75f;
+		}
+
+		// Determine the tick scale
+		constexpr float32 eps = 0.8f;
 		if (diff < -eps) {
-			ENGINE_LOG("++scale ", diff);
 			world.tickScale = 1.0f / calcTickScale(std::abs(diff));
+			ENGINE_LOG("++scale ", diff, " ", world.tickScale);
 		} else if (diff > eps) {
-			ENGINE_LOG("--scale ", diff);
 			world.tickScale = calcTickScale(diff);
+			ENGINE_LOG("--scale ", diff, " ", world.tickScale);
 		} else {
 			world.tickScale = 1.0f;
 		}
-
-		world.tickScale = std::min(world.tickScale, maxTickScale);
 
 		if constexpr (ENGINE_DEBUG) {
 			if (world.hasComponent<NetworkStatsComponent>(fromEnt)) {

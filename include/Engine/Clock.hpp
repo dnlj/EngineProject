@@ -11,12 +11,12 @@ namespace Engine {
 	class Clock {
 		public:
 			using Seconds = std::chrono::duration<float32, std::ratio<1, 1>>;
-			using Nanoseconds = std::chrono::duration<int64, std::nano>;
+			using Milliseconds = std::chrono::duration<float32, std::milli>;
 			
 			// For std compatibility
 			using rep = int64;
 			using period = std::nano;
-			using duration = Nanoseconds;
+			using duration = std::chrono::nanoseconds;
 			using time_point = std::chrono::time_point<Clock>;
 			constexpr static bool is_steady = true;
 
