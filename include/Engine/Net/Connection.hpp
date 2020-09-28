@@ -53,7 +53,7 @@ namespace Engine::Net {
 			AckBitset recvAcks = {};
 
 			constexpr static float64 pingSmoothing = 0.02;
-			Engine::Clock::Duration ping = {};
+			Engine::Clock::Duration ping = std::chrono::milliseconds{50};
 			
 			constexpr static float64 jitterSmoothing = 0.02;
 			Engine::Clock::Duration jitter = {};

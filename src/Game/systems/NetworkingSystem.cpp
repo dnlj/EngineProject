@@ -135,7 +135,6 @@ namespace Game {
 			from.setKeySend(keySend);
 		}
 		from.msgBegin<MessageType::CONNECT_CONFIRM>();
-		from.write(from.getKeySend());
 		from.msgEnd<MessageType::CONNECT_CONFIRM>();
 		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
 	}
@@ -163,26 +162,20 @@ namespace Game {
 			ENGINE_LOG("CLIENT MessageType::CONNECT_CONFIRM 1");
 
 			entToLocal[*remote] = info.ent;
-			ENGINE_LOG("Connection established. Remote: ", *remote, " Local: ", info.ent);
+			ENGINE_LOG("Connection established. Remote: ", *remote, " Local: ", info.ent, " Tick: ", world.getTick());
 
 			info.state = ConnState::Connected;
 			addPlayer(info.ent);
 
-			// TODO: use ping, loss, etc to pick good offset value.
+			// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
 			world.setTick(*tick + 5);
 		} else {
-			const auto keyRecv = *from.read<uint16>();
-			if (keyRecv != from.getKeyRecv()) {
-				ENGINE_WARN("Received invalid connection key from ", from.address());
-				return;
-			}
-
 			if (info.state == ConnState::Connecting) {
 				info.state = ConnState::Connected;
 				addPlayer(info.ent);
 			}
 
-			ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM");
+			ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM", " Tick: ", world.getTick());
 			from.msgBegin<MessageType::CONNECT_CONFIRM>();
 			from.write(info.ent);
 			from.write(world.getTick());
@@ -244,12 +237,12 @@ namespace Game {
 		world.setNetworked(local, true);
 		ENGINE_LOG("Networked: ", local, world.isNetworked(local));
 
-		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", *remote, " Local: ", local);
+		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", *remote, " Local: ", local, " Tick: ", world.getTick());
 
 		// TODO: components init
 	}
 
-	HandleMessageDef(MessageType::ECS_ENT_DESTROY)
+	HandleMessageDef(MessageType::ECS_ENT_DESTROY) 
 		// TODO: this message should be client only
 		auto* remote = from.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
@@ -297,7 +290,32 @@ namespace Game {
 			if constexpr (IsNetworkedComponent<C>) {
 				if (world.hasComponent<C>(local)) {
 					world.getComponent<C>(local).netFrom(from);
-				}
+				} else {
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					// i Think this is the issue
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					//////////////////////////
+					ENGINE_WARN("NO COMP ", " Tick: ", world.getTick());
+				} 
 			} else {
 				ENGINE_WARN("Attemping to network non-network component");
 			}
@@ -417,9 +435,8 @@ namespace Game {
 			}
 
 			if (conn.getKeyRecv() != packet.getKey()) {
-				// Need to allow mismatched keys on the server to allow clients to connect.
-				if (ENGINE_CLIENT || (info.state != Engine::Net::ConnState::Disconnected)) {
-					ENGINE_WARN("Invalid key"); // TODO: rm
+				if (info.state != Engine::Net::ConnState::Disconnected) {
+					ENGINE_WARN("Invalid key for ", conn.address(), " ", packet.getKey(), " != ", conn.getKeyRecv());
 					continue;
 				}
 			}
@@ -632,13 +649,13 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		ENGINE_LOG("TRY CONNECT TO: ", addr);
 		auto& [info, conn] = getOrCreateConnection(addr);
 		info.state = ConnState::Connecting;
 
 		if (!conn.getKeyRecv()) {
 			conn.setKeyRecv(static_cast<uint16>(rng()));
 		}
+		ENGINE_LOG("TRY CONNECT TO: ", addr, " ", conn.getKeyRecv(), " Tick: ", world.getTick());
 
 		conn.msgBegin<MessageType::CONNECT_REQUEST>();
 		conn.write(MESSAGE_PADDING_DATA);
@@ -661,7 +678,7 @@ namespace Game {
 	void NetworkingSystem::addPlayer(const Engine::ECS::Entity ent) {
 		// TODO: i feel like this should be handled elsewhere. Where?
 
-		ENGINE_INFO("Add player: ", ent, " ", world.hasComponent<PlayerFlag>(ent));
+		ENGINE_INFO("Add player: ", ent, " ", world.hasComponent<PlayerFlag>(ent), " Tick: ", world.getTick());
 
 		if constexpr (ENGINE_SERVER) {
 			auto& physSys = world.getSystem<PhysicsSystem>();
