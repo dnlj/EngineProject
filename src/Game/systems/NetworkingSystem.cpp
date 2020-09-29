@@ -288,32 +288,7 @@ namespace Game {
 			if constexpr (IsNetworkedComponent<C>) {
 				if (world.hasComponent<C>(local)) {
 					world.getComponent<C>(local).netFrom(from);
-				} else {
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					// TODO:  i Think this is the issue
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					//////////////////////////
-					ENGINE_WARN("NO COMP ", " Tick: ", world.getTick());
-				} 
+				}
 			} else {
 				ENGINE_WARN("Attemping to network non-network component");
 			}
@@ -428,7 +403,7 @@ namespace Game {
 			auto& [info, conn] = getOrCreateConnection(address);
 			// TODO: move back to connection
 			if (packet.getProtocol() != Engine::Net::protocol) {
-				ENGINE_WARN("Invalid protocol"); // TODO: rm
+				ENGINE_WARN("Invalid protocol"); // TODO: rm - could be used for lag/dos?
 				continue;
 			}
 
