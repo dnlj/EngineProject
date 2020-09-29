@@ -121,7 +121,7 @@ namespace Game {
 			from.setKeySend(keySend);
 		}
 		if (!from.getKeyRecv()) {
-			from.setKeyRecv(static_cast<uint16>(rng()));
+			from.setKeyRecv(genKey());
 		}
 		from.msgBegin<MessageType::CONNECT_CHALLENGE>();
 		from.write(from.getKeyRecv());
@@ -135,52 +135,50 @@ namespace Game {
 			from.setKeySend(keySend);
 		}
 		from.msgBegin<MessageType::CONNECT_CONFIRM>();
+		from.write(from.getKeySend());
 		from.msgEnd<MessageType::CONNECT_CONFIRM>();
+		info.state = ConnState::Connected;
+		addPlayer(info.ent);
 		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
 	}
 
 	HandleMessageDef(MessageType::CONNECT_CONFIRM)
-		// TODO: need to handle duplicate confirms
-		if constexpr (ENGINE_CLIENT) {
-			auto* remote = from.read<Engine::ECS::Entity>();
-			auto* tick = from.read<Engine::ECS::Tick>();
-
-			if (!remote) {
-				ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
-				return;
-			}
-
-			if (!tick) {
-				ENGINE_WARN("Unable to sync ticks.");
-				return;
-			}
-
-			if (info.state != ConnState::Connecting) {
-				ENGINE_LOG("CLIENT MessageType::CONNECT_CONFIRM 0");
-				return;
-			}
-			ENGINE_LOG("CLIENT MessageType::CONNECT_CONFIRM 1");
-
-			entToLocal[*remote] = info.ent;
-			ENGINE_LOG("Connection established. Remote: ", *remote, " Local: ", info.ent, " Tick: ", world.getTick());
-
-			info.state = ConnState::Connected;
-			addPlayer(info.ent);
-
-			// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
-			world.setTick(*tick + 5);
-		} else {
-			if (info.state == ConnState::Connecting) {
-				info.state = ConnState::Connected;
-				addPlayer(info.ent);
-			}
-
-			ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM", " Tick: ", world.getTick());
-			from.msgBegin<MessageType::CONNECT_CONFIRM>();
-			from.write(info.ent);
-			from.write(world.getTick());
-			from.msgEnd<MessageType::CONNECT_CONFIRM>();
+		const auto key = *from.read<uint16>();
+		if (key != from.getKeyRecv()) {
+			ENGINE_WARN("CONNECT_CONFIRM: Invalid recv key ", key, " != ", from.getKeyRecv());
+			return;
 		}
+
+		info.state = ConnState::Connected;
+		addPlayer(info.ent);
+
+		ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM", " Tick: ", world.getTick());
+		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
+		from.msgBegin<MessageType::ECS_INIT>();
+		from.write(info.ent);
+		from.write(world.getTick());
+		from.msgEnd<MessageType::ECS_INIT>();
+	}
+
+	HandleMessageDef(MessageType::ECS_INIT)
+		auto* remote = from.read<Engine::ECS::Entity>();
+		auto* tick = from.read<Engine::ECS::Tick>();
+
+		if (!remote) {
+			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
+			return;
+		}
+
+		if (!tick) {
+			ENGINE_WARN("Unable to sync ticks.");
+			return;
+		}
+
+		entToLocal[*remote] = info.ent;
+		ENGINE_LOG("ECS_INIT - Remote: ", *remote, " Local: ", info.ent, " Tick: ", world.getTick());
+
+		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
+		world.setTick(*tick + 5);
 	}
 
 	HandleMessageDef(MessageType::DISCONNECT)
@@ -301,7 +299,7 @@ namespace Game {
 					//////////////////////////
 					//////////////////////////
 					//////////////////////////
-					// i Think this is the issue
+					// TODO:  i Think this is the issue
 					//////////////////////////
 					//////////////////////////
 					//////////////////////////
@@ -435,7 +433,7 @@ namespace Game {
 			}
 
 			if (conn.getKeyRecv() != packet.getKey()) {
-				if (info.state != Engine::Net::ConnState::Disconnected) {
+				if (info.state == Engine::Net::ConnState::Connected) {
 					ENGINE_WARN("Invalid key for ", conn.address(), " ", packet.getKey(), " != ", conn.getKeyRecv());
 					continue;
 				}
@@ -653,9 +651,9 @@ namespace Game {
 		info.state = ConnState::Connecting;
 
 		if (!conn.getKeyRecv()) {
-			conn.setKeyRecv(static_cast<uint16>(rng()));
+			conn.setKeyRecv(genKey());
 		}
-		ENGINE_LOG("TRY CONNECT TO: ", addr, " ", conn.getKeyRecv(), " Tick: ", world.getTick());
+		ENGINE_LOG("TRY CONNECT TO: ", addr, " rkey: ", conn.getKeyRecv(), " skey: ",  conn.getKeySend(), " Tick: ", world.getTick());
 
 		conn.msgBegin<MessageType::CONNECT_REQUEST>();
 		conn.write(MESSAGE_PADDING_DATA);

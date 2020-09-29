@@ -210,7 +210,7 @@ namespace Engine::Net {
 
 						const auto TODO_rm = offsetof(MessageHeader, type);
 						const auto type = *static_cast<MessageType*>(msg->data.data() + TODO_rm);
-						ENGINE_LOG("MSG2: ", (int)type, " ", msg->data.size(), " ", packetWriter.getNextSeq() - 1);
+						ENGINE_LOG("MSG2: ", (int)type, " ", msg->data.size(), " ", seq, " ", packetWriter.getNextSeq() - 1);
 						addMessageToPacket(packetWriter.getNextSeq() - 1, seq);
 					}
 				}

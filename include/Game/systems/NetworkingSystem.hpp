@@ -49,6 +49,11 @@ namespace Game {
 			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
 			pcg32 rng;
+			uint16 genKey() {
+				uint16 v;
+				while (!(v = rng())) {}
+				return v;
+			} 
 			Engine::Net::IPv4Address address;
 			Engine::Net::Packet packet = {};
 			const Engine::Net::IPv4Address group;

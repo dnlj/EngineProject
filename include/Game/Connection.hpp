@@ -16,7 +16,6 @@ namespace Game {
 		MessageType::SERVER_INFO,
 		MessageType::CONNECT_REQUEST,
 		MessageType::CONNECT_CHALLENGE,
-		MessageType::CONNECT_CONFIRM,
 		MessageType::DISCONNECT,
 
 		MessageType::TEST,
@@ -24,10 +23,12 @@ namespace Game {
 	> {};
 
 	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
+		MessageType::CONNECT_CONFIRM,
 		MessageType::PING
 	> {};
 
-	struct Channel_ECS : Engine::Net::Channel_UnreliableUnordered<
+	struct Channel_ECS : Engine::Net::Channel_ReliableOrdered<
+		MessageType::ECS_INIT,
 		MessageType::ECS_ENT_CREATE,
 		MessageType::ECS_ENT_DESTROY,
 		MessageType::ECS_COMP_ADD,
