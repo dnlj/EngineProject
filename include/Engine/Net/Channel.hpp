@@ -207,6 +207,7 @@ namespace Engine::Net {
 						msg->lastSendTime = now;
 						packetWriter.ensurePacketAvailable(); // TODO: seems kinda hacky
 						packetWriter.write(msg->data.data(), msg->data.size());
+						packetWriter.advance();
 
 						const auto TODO_rm = offsetof(MessageHeader, type);
 						const auto type = *static_cast<MessageType*>(msg->data.data() + TODO_rm);

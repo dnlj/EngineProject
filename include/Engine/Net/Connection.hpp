@@ -375,8 +375,7 @@ namespace Engine::Net {
 
 				// TODO: i dont think seqNum is actually set at this point. It is set in send?
 				getChannelForMessage<M>().msgEnd(node->packet.getSeqNum(), *hdr);
-
-				node->curr = node->last;
+				packetWriter.advance();
 			}
 
 			/**

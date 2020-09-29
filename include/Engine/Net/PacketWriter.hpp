@@ -45,6 +45,10 @@ namespace Engine::Net {
 				getOrAllocPacket();
 			}
 
+			void advance() {
+				last->curr = last->last;
+			}
+
 			PacketNode* pop() {
 				if (!first) { return nullptr; }
 				if (last == first.get()) { last = nullptr; }
@@ -76,7 +80,7 @@ namespace Engine::Net {
 					last->next = getOrAllocPacketFromPool();
 					last = last->next.get();
 					// TODO: set curr ptrs? i think
-					ENGINE_WARN("Network message rollover. This code is untested.");
+					ENGINE_WARN("Network message rollover. This code is untested. ", old->last - old->curr + sz);
 					write(old->curr, old->size());
 					write(t, sz);
 					old->last = old->curr;
