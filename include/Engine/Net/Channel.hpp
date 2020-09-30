@@ -209,9 +209,9 @@ namespace Engine::Net {
 						packetWriter.write(msg->data.data(), msg->data.size());
 						packetWriter.advance();
 
-						const auto TODO_rm = offsetof(MessageHeader, type);
-						const auto type = *static_cast<MessageType*>(msg->data.data() + TODO_rm);
-						ENGINE_LOG("MSG2: ", (int)type, " ", msg->data.size(), " ", seq, " ", packetWriter.getNextSeq() - 1);
+						//const auto TODO_rm = offsetof(MessageHeader, type);
+						//const auto type = *static_cast<MessageType*>(msg->data.data() + TODO_rm);
+						//ENGINE_LOG("MSG2: ", (int)type, " ", msg->data.size(), " ", seq, " ", packetWriter.getNextSeq() - 1);
 						addMessageToPacket(packetWriter.getNextSeq() - 1, seq);
 					}
 				}

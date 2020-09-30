@@ -45,18 +45,20 @@ namespace Engine::ECS {
 			tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
 		}
 
-		//if (currTick > 64*5 && currTick % 128 == 0) {
-		//	performingRollback = true;
-		//	puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-		//	const auto realTick = currTick;
-		//	loadSnapshot(snapshotBuffer[(currTick - 64) % TickRate]);
-		//
-		//	while (currTick < realTick) {
-		//		tickSystems();
-		//	}
-		//	puts("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-		//	performingRollback = false;
-		//}
+		if constexpr (ENGINE_CLIENT) {
+			if (currTick > 64*10 && currTick % 128 == 0) {
+				performingRollback = true;
+				puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+				const auto realTick = currTick;
+				loadSnapshot(snapshotBuffer[(currTick - SnapshotCount) % TickRate]);
+		
+				while (currTick < realTick) {
+					tickSystems();
+				}
+				puts("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+				performingRollback = false;
+			}
+		}
 		
 		(getSystem<Ss>().run(deltaTime), ...);
 	}

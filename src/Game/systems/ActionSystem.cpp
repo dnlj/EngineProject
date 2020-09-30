@@ -33,6 +33,11 @@ namespace Game {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 			if (ENGINE_SERVER || world.isPerformingRollback()) {
 				actComp.state = actComp.states.find(world.getTick());
+
+				// TODO: rm this
+				if (actComp.state == nullptr && world.isPerformingRollback()) {
+					ENGINE_LOG("Oh no!");
+				}
 			} else {
 				const auto& last = actComp.states.get(tick - 1);
 				actComp.state = &actComp.states.insert(tick);
@@ -46,7 +51,8 @@ namespace Game {
 	}
 
 	void ActionSystem::tick() {
-		if (ENGINE_CLIENT && world.isPerformingRollback()) { return; }
+		if (world.isPerformingRollback()) { return; }
+
 		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
 		// TODO: dont resend actions when performing rollback
 		const auto currTick = world.getTick();

@@ -389,7 +389,7 @@ namespace Engine::ECS {
 			decltype(auto) self() { return reinterpret_cast<Derived&>(*this); }
 			decltype(auto) self() const { return reinterpret_cast<const Derived&>(*this); }
 
-			bool isPerformingRollback() { return performingRollback; }
+			ENGINE_INLINE bool isPerformingRollback() const noexcept { return performingRollback; }
 
 			constexpr auto getSnapshotCount() { return SnapshotCount; }
 
