@@ -31,7 +31,9 @@ namespace Game {
 		for (const auto ent : actionFilter) {
 			const auto tick = world.getTick();
 			auto& actComp = world.getComponent<ActionComponent>(ent);
-			if constexpr (ENGINE_CLIENT) {
+			if (ENGINE_SERVER || world.isPerformingRollback()) {
+				actComp.state = actComp.states.find(world.getTick());
+			} else {
 				const auto& last = actComp.states.get(tick - 1);
 				actComp.state = &actComp.states.insert(tick);
 				*actComp.state = last;
@@ -39,13 +41,12 @@ namespace Game {
 					btnState.pressCount = 0;
 					btnState.releaseCount = 0;
 				}
-			} else {
-				actComp.state = actComp.states.find(world.getTick());
 			}
 		}
 	}
 
 	void ActionSystem::tick() {
+		if (ENGINE_CLIENT && world.isPerformingRollback()) { return; }
 		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
 		// TODO: dont resend actions when performing rollback
 		const auto currTick = world.getTick();
@@ -87,13 +88,11 @@ namespace Game {
 					actComp.state = &(actComp.states.insert(currTick) = {});
 				}
 
-				actComp.states.remove(currTick - 1);
-
 				if constexpr (ENGINE_DEBUG) {
 					if (world.hasComponent<NetworkStatsComponent>(ent)) {
 						auto& netStatsComp = world.getComponent<NetworkStatsComponent>(ent);
-						//netStatsComp.trend = actComp.tickTrend;
-						netStatsComp.inputBufferSize = actComp.states.max() - actComp.states.minValid();
+						// This should be `ceil(estBuffSize) + 1` the + 1 since we also keep last tick for duplication
+						netStatsComp.inputBufferSize = actComp.states.max() - currTick + 2; // max - (cur - 1) + 1 = max - cur + 2
 					}
 				}
 
@@ -207,13 +206,14 @@ namespace Game {
 				netStatsComp.idealInputBufferSize = ideal;
 			}
 		}
-	}
+	} 
 
 	void ActionSystem::recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
 		const auto tick = *from.read<Engine::ECS::Tick>();
 		const auto recvTick = world.getTick();
 		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
 
+		// These are inclusive
 		const auto minTick = recvTick + 1;
 		const auto maxTick = recvTick + actComp.states.capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
 
