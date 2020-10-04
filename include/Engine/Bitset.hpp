@@ -158,10 +158,24 @@ namespace Engine {
 	template<auto I, class T> struct Hash<Bitset<I, T>> {
 		uint64 operator()(const Bitset<I, T>& v) const noexcept {
 			uint64 seed = 0;
-			for (Bitset<I, T>::SizeType i = 0; i < v.dataSize(); ++i) {
-				hashCombine(seed, v.data()[i]);
+			using st = Bitset<I, T>::SizeType;
+
+			if constexpr (v.dataSize() % 8 == 0) {
+				for (st i = 0; i < v.dataSize(); i += 8) {
+					hashCombine(seed, reinterpret_cast<const uint64&>(v.data()[i]));
+				}
+				return seed;
+			} else if constexpr (v.dataSize() % 4 == 0) {
+				for (st i = 0; i < v.dataSize(); i += 4) {
+					hashCombine(seed, reinterpret_cast<const uint32&>(v.data()[i]));
+				}
+				return seed;
+			} else {
+				for (Bitset<I, T>::SizeType i = 0; i < v.dataSize(); ++i) {
+					hashCombine(seed, v.data()[i]);
+				}
+				return seed;
 			}
-			return seed;
 		}
 	};
 }
