@@ -9,6 +9,8 @@
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/FilterManager.hpp>
+#include <Engine/ECS/Snapshot.hpp>
+#include <Engine/SequenceBuffer.hpp>
 
 
 namespace Engine::ECS {
@@ -34,20 +36,6 @@ namespace Engine::ECS {
 
 	#define WORLD_CLASS World<Derived, TickRate, SnapshotCount, SystemsSet<Ss...>, ComponentsSet<Cs...>>
 	
-	class EntityState {
-		public:
-			enum State : uint8 {
-				Dead    = 0 << 0,
-				Alive   = 1 << 0,
-				Enabled = 1 << 1,
-				Network = 1 << 2,
-			};
-
-			EntityState(Entity ent, State state) : ent{ent}, state{state} {}
-			Entity ent; // TODO: could just store generation instead of whole id to save space int state snapshots
-			uint8 state;
-	};
-
 	// TODO: move
 	template<class T, class = void>
 	struct IsSnapshotRelevant : std::false_type {};
@@ -68,15 +56,10 @@ namespace Engine::ECS {
 			/** Beginning of last run. */
 			Clock::TimePoint beginTime;
 
-			/** Time currently being ticked */
-			Clock::TimePoint tickTime;
-
-			/** The current tick being run */
-			Tick currTick = 0;
-
 			/** Maximum tick delay to accumulate */
 			constexpr static Clock::Duration maxDelay = std::chrono::milliseconds{250};
 
+			// TODO: shouldnt this be part of snapshot? that would fix our issue with correct tickTime i think
 			// TODO: not public
 			/** TODO: doc */
 			public: float32 tickScale = 1.0f; private:
@@ -94,42 +77,17 @@ namespace Engine::ECS {
 			/** Delta time in nanoseconds. @see deltaTime */
 			Clock::Duration deltaTimeNS{0};
 
-			/** The containers for storing components. */
-			std::tuple<ComponentContainer<Cs>...> compContainers;
-
-			/** The bitsets for storing what components entities have. */
-			std::vector<ComponentBitset> compBitsets;
-
 			/** All the systems in this world. */
 			std::tuple<Ss...> systems;
 
 			/** TODO: doc */
-			std::vector<Entity> deadEntities;
-
-			/** TODO: doc */
-			std::vector<Entity> markedForDeath;
-
-			/** TODO: doc */
-			std::vector<EntityState> entities;
-
-			/** TODO: doc */
 			bool performingRollback = false;
 
-			// TODO: move?
-			struct Snapshot {
-				decltype(currTick) currTick;
-				decltype(entities) entities;
-				decltype(deadEntities) deadEntities;
-				decltype(markedForDeath) markedForDeath;
-				decltype(compBitsets) compBitsets;
-
-				std::tuple<
-					// TODO: dont store non rollback relevant comps at all
-					std::conditional_t<IsSnapshotRelevant<Cs>::value, ComponentContainer<Cs>, bool>...
-				> compContainers;
-			};
-
-			Snapshot snapshotBuffer[TickRate];
+			template<class T> struct AlwaysTrue : std::true_type {};
+			using ActiveSnapshot = Snapshot<AlwaysTrue, Cs...>;
+			using RollbackSnapshot = Snapshot<IsSnapshotRelevant, Cs...>;
+			ActiveSnapshot activeSnap;
+			SequenceBuffer<Tick, RollbackSnapshot, SnapshotCount> snapBuffer;
 
 		public:
 			// TODO: doc
@@ -146,46 +104,40 @@ namespace Engine::ECS {
 			/**
 			 * Checks if an entity is alive.
 			 */
-			bool isAlive(Entity ent) const;
+			ENGINE_INLINE bool isAlive(Entity ent) const noexcept { return activeSnap.isEnabled(ent); };
 
 			/**
 			 * Enables or disables and entity.
 			 */
-			void setEnabled(Entity ent, bool enabled);
+			ENGINE_INLINE void setEnabled(Entity ent, bool enabled) { return activeSnap.setEnabled(ent, enabled); };
 
 			/**
 			 * Checks if an entity is enabled.
 			 */
-			bool isEnabled(Entity ent) const;
+			ENGINE_INLINE bool isEnabled(Entity ent) const noexcept { return activeSnap.isEnabled(ent); };
 
 			/**
 			 * Checks if an entity should be networked.
 			 */
-			bool isNetworked(Entity ent) const;
+			ENGINE_INLINE bool isNetworked(Entity ent) const noexcept { return activeSnap.isNetworked(ent); };
 			
 			/**
 			 * Enables or disables entity networking.
 			 */
-			void setNetworked(Entity ent, bool enabled);
+			ENGINE_INLINE void setNetworked(Entity ent, bool enabled) noexcept { return activeSnap.setNetworked(ent, enabled); };
 
 			/**
 			 * Gets all entities.
 			 */
-			auto& getEntities() const;
-			
-			/**
-			 * Gets the bitset with the bits that correspond to the ids of the given components set.
-			 */
-			template<class... ComponentN>
-			ComponentBitset getBitsetForComponents() const; // TODO: constexpr, noexcept
+			ENGINE_INLINE auto& getEntities() const noexcept { return activeSnap.getEntities(); };
 			
 			/**
 			 * Get the ComponentId associated with a component.
 			 * @tparam Component The component.
-			 * @return The id of @p Component.
+			 * @return The id of @p C.
 			 */
-			template<class Component>
-			constexpr static ComponentId getComponentId() noexcept;
+			template<class C>
+			constexpr static auto getComponentId() noexcept { return ActiveSnapshot::getComponentId<C>(); };
 
 			/**
 			 * Gets the id of a system.
@@ -209,23 +161,27 @@ namespace Engine::ECS {
 			 * Creates an entity.
 			 * @param forceNew Disables recycling entity ids.
 			 */
-			Entity createEntity(bool forceNew = false);
+			Entity createEntity(bool forceNew = false) { return activeSnap.createEntity(forceNew); };
 			
 			/**
 			 * Marks an Entity to be destroyed once it is out of rollback scope.
 			 * Until the Enttiy is destroyed it is disabled.
 			 */
-			void deferedDestroyEntity(Entity ent);
+			void deferedDestroyEntity(Entity ent) { activeSnap.deferedDestroyEntity(ent); };
 
 			/**
 			 * Adds a component to an entity.
 			 * @param ent The entity.
 			 * @param args The arguments to pass to the constructor of the component.
-			 * @tparam Component The component.
+			 * @tparam C The component.
 			 * @return A reference to the added component.
 			 */
-			template<class Component, class... Args>
-			decltype(auto) addComponent(Entity ent, Args&&... args);
+			template<class C, class... Args>
+			decltype(auto) addComponent(Entity ent, Args&&... args) {
+				auto& c = activeSnap.addComponent<C>(ent, args...);
+				fm.onComponentAdded(ent, getComponentId<C>(), activeSnap.compBitsets[ent.id]);
+				return c;
+			}
 
 			/**
 			 * Adds components to an entity.
@@ -234,7 +190,7 @@ namespace Engine::ECS {
 			 * @return A tuple of references to the added components.
 			 */
 			template<class... Components>
-			std::tuple<Components&...> addComponents(Entity ent);
+			decltype(auto) addComponents(Entity ent) { return std::forward_as_tuple(addComponent<Components>(ent) ...); };
 
 			/**
 			 * Checks if an entity has a component.
@@ -242,7 +198,7 @@ namespace Engine::ECS {
 			 * @param[in] cid The id of the component.
 			 * @return True if the entity has the component; otherwise false.
 			 */
-			bool hasComponent(Entity ent, ComponentId cid);
+			bool hasComponent(Entity ent, ComponentId cid) { return activeSnape.hasComponent(ent, cid); };
 
 			/**
 			 * Checks if an entity has a component.
@@ -250,33 +206,16 @@ namespace Engine::ECS {
 			 * @tparam Component The component type.
 			 * @return True if the entity has the component; otherwise false.
 			 */
-			template<class Component>
-			bool hasComponent(Entity ent);
-
-			/**
-			 * Checks if an entity has components.
-			 * @param[in] ent The entity.
-			 * @param[in] cbits The bitset of components.
-			 * @return True if the entity has the components; otherwise false.
-			 */
-			bool hasComponents(Entity ent, ComponentBitset cbits);
-
-			/**
-			 * Checks if an entity has the components.
-			 * @param[in] ent The entity.
-			 * @tparam Components The components.
-			 * @return True if the entity has the components; otherwise false.
-			 */
-			template<class... Components>
-			bool hasComponents(Entity ent);
+			template<class C>
+			bool hasComponent(Entity ent) { return activeSnap.hasComponent<C>(ent); };
 
 			/**
 			 * Removes a component from an entity.
 			 * @param[in] ent The entity.
-			 * @tparam Component The component.
+			 * @tparam C The component.
 			 */
-			template<class Component>
-			void removeComponent(Entity ent);
+			template<class C>
+			void removeComponent(Entity ent) { removeComponents<C>(ent); };
 
 			/**
 			 * Removes components from an entity.
@@ -284,18 +223,21 @@ namespace Engine::ECS {
 			 * @tparam Components The components.
 			 */
 			template<class... Components>
-			void removeComponents(Entity ent);
+			void removeComponents(Entity ent) {
+				activeSnap.removeComponents<Components...>(ent);
+				(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);
+			};
 
 			/**
 			 * Removes all components from an entity.
 			 */
-			void removeAllComponents(Entity ent);
+			void removeAllComponents(Entity ent) { ((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...); };
 
 			/**
 			 * Gets a reference to the component instance associated with an entity.
 			 */
-			template<class Component>
-			Component& getComponent(Entity ent);
+			template<class C>
+			decltype(auto) getComponent(Entity ent) { return activeSnap.getComponent<C>(ent); };
 
 			/**
 			 * Gets a reference the components associated with an entity.
@@ -304,19 +246,19 @@ namespace Engine::ECS {
 			 * @return A tuple of references to the components.
 			 */
 			template<class... Components>
-			std::tuple<Components&...> getComponents(Entity ent);
+			decltype(auto) getComponents(Entity ent) { return getComponents<Components...>(ent); };
 
 			/**
 			 * Gets the components bitset for an entity.
 			 * @param[in] ent The entity.
 			 * @return The components bitset for the entity
 			 */
-			const ComponentBitset& getComponentsBitset(Entity ent) const;
+			decltype(auto) getComponentsBitset(Entity ent) const noexcept { return activeSnap.getComponentsBitset(ent); }
 
 			/**
 			 * Gets the components bitset for all entities. Sorted by entity id. 
 			 */
-			const auto& getAllComponentBitsets() const;
+			const auto& getAllComponentBitsets() const { return activeSnap.compBitsets; };
 
 			// TODO: Doc
 			template<class... Components>
@@ -328,12 +270,12 @@ namespace Engine::ECS {
 			/**
 			 * Gets the current tick.
 			 */
-			auto getTick() const { return currTick; }
+			auto getTick() const { return activeSnap.currTick; }
 
 			// TODO: also need to clear rollback history
 			// TODO: should this be setNextTick? might help avoid bugs if we wait till all systems are done before we adjust.
 			// TODO: doc
-			void setTick(Tick tick) { currTick = tick; }
+			void setTick(Tick tick) { activeSnap.currTick = tick; }
 
 			/**
 			 * Gets the tick interval.
@@ -349,7 +291,7 @@ namespace Engine::ECS {
 			/**
 			 * Current time being ticked.
 			 */
-			Clock::TimePoint getTickTime() const;
+			ENGINE_INLINE Clock::TimePoint getTickTime() const noexcept { return activeSnap.tickTime; };
 			
 			/**
 			 * Gets tick accumulation divided by tick interval.
@@ -401,16 +343,8 @@ namespace Engine::ECS {
 			 */
 			void destroyEntity(Entity ent);
 
-			/**
-			 * Get the container for components of type @p Component.
-			 * @tparam Component The type of the component.
-			 * @return A reference to the container associated with @p Component.
-			 */
-			template<class Component>
-			ComponentContainer<Component>& getComponentContainer();
-
-			void storeSnapshot();
-			void loadSnapshot(const Snapshot& snap);
+			//void storeSnapshot();
+			//void loadSnapshot(const RollbackSnapshot& snap);
 	};
 }
 

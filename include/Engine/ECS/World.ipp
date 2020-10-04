@@ -12,8 +12,8 @@ namespace Engine::ECS {
 	template<class Arg>
 	WORLD_CLASS::World(Arg& arg)
 		: systems((sizeof(Ss*), arg) ...)
-		, beginTime{Clock::now()}
-		, tickTime{beginTime} {
+		, beginTime{Clock::now()} {
+		activeSnap.tickTime = beginTime;
 		(getSystem<Ss>().setup(), ...);
 	}
 
@@ -24,42 +24,49 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		if (beginTime - tickTime > maxDelay) {
+		// TODO: shouldnt this be after rollback code?
+		if (beginTime - activeSnap.tickTime > maxDelay) {
 			ENGINE_WARN("World tick falling behind by ",
-				Clock::Seconds{beginTime - tickTime - maxDelay}.count(), "s"
+				Clock::Seconds{beginTime - activeSnap.tickTime - maxDelay}.count(), "s"
 			);
 		
 			// We could instead limit the number of ticks in the while loop
 			// which would have the effect of slowing down the world instead of
 			// throwing away time like this does
-			tickTime = beginTime - maxDelay;
-		}
-		
-		while (tickTime + tickInterval <= beginTime) {
-			tickSystems();
-			//printf("******************\n\t%I64u\n\t%.16f\n\t%I64u\n",
-			//	tickInterval.count(),
-			//	(tickInterval * tickScale).count(),
-			//	std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale).count()
-			//);
-			tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
+			activeSnap.tickTime = beginTime - maxDelay;
 		}
 
+		/*
 		if constexpr (ENGINE_CLIENT) {
-			if (currTick > 64*10 && currTick % 128 == 0) {
+			if (activeSnap.currTick > 64*10 && activeSnap.currTick % 128 == 0 && !performingRollback) {
+				ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", activeSnap.currTick);
+				const auto oldTick = activeSnap.currTick;
+				const auto oldTime = activeSnap.tickTime;
+
+				const auto& snap = snapBuffer.get(currTick - SnapshotCount);
+				loadSnapshot(snap);
+
 				performingRollback = true;
-				puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-				const auto realTick = currTick;
-				loadSnapshot(snapshotBuffer[(currTick - SnapshotCount) % TickRate]);
-		
-				while (currTick < realTick) {
+				while (activeSnap.currTick < oldTick) {
 					tickSystems();
+					// TODO: need to increment tick time. use values from snapshotbuffer
 				}
-				puts("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-				performingRollback = false;
+
+				activeSnap.tickTime = oldTime;
+
+				ENGINE_ASSERT(oldTick == currTick);
+				ENGINE_ASSERT(oldTime == tickTime);
+
+				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
 			}
+		}*/
+
+		while (activeSnap.tickTime + tickInterval <= beginTime) {
+			performingRollback = false; // TODO this reall should be right after the rollback loop but it is here temp
+			tickSystems();
+			activeSnap.tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
 		}
-		
+
 		(getSystem<Ss>().run(deltaTime), ...);
 	}
 
@@ -67,62 +74,12 @@ namespace Engine::ECS {
 	void WORLD_CLASS::tickSystems() {
 		//ENGINE_INFO("Tick: ", getTick());
 		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
-		storeSnapshot();
+		//storeSnapshot();
 		(getSystem<Ss>().preTick(), ...);
 		(getSystem<Ss>().tick(), ...);
 		(getSystem<Ss>().postTick(), ...);
-		markedForDeath.clear();
-		++currTick;
-	}
-
-	WORLD_TPARAMS
-	bool WORLD_CLASS::isAlive(Entity ent) const {
-		return entities[ent.id].state & EntityState::Alive;
-	}
-
-	WORLD_TPARAMS
-	void WORLD_CLASS::setEnabled(Entity ent, bool enabled) {
-		auto& state = entities[ent.id].state;
-		state = (state & ~EntityState::Enabled) | (enabled ? EntityState::Enabled : EntityState::Dead);
-	}
-
-	WORLD_TPARAMS
-	bool WORLD_CLASS::isEnabled(Entity ent) const {
-		return entities[ent.id].state & EntityState::Enabled;
-	}
-
-	WORLD_TPARAMS
-	bool WORLD_CLASS::isNetworked(Entity ent) const {
-		return entities[ent.id].state & EntityState::Network;
-	}
-
-	WORLD_TPARAMS
-	void WORLD_CLASS::setNetworked(Entity ent, bool enabled) {
-		auto& state = entities[ent.id].state;
-		state = (state & ~EntityState::Network) | (enabled ? EntityState::Network : EntityState::Dead);
-	}
-
-	WORLD_TPARAMS
-	auto& WORLD_CLASS::getEntities() const {
-		return entities;
-	}
-
-	WORLD_TPARAMS
-	template<class... ComponentN>
-	ComponentBitset WORLD_CLASS::getBitsetForComponents() const {
-		ComponentBitset value;
-		(value.set(getComponentId<ComponentN>()), ...);
-		return value;
-	}
-	
-	WORLD_TPARAMS
-	template<class Component>
-	constexpr static ComponentId WORLD_CLASS::getComponentId() noexcept {
-		if constexpr ((std::is_same_v<Cs, Component> || ...)) {
-			return Meta::IndexOf<Component, Cs...>::value;
-		} else {
-			return sizeof...(Cs) + Meta::IndexOf<Component, Fs...>::value;
-		}
+		activeSnap.markedForDeath.clear();
+		++activeSnap.currTick;
 	}
 
 	WORLD_TPARAMS
@@ -144,36 +101,6 @@ namespace Engine::ECS {
 		((value[getSystemId<SystemN>()] = true), ...);
 		return value;
 	};
-
-	WORLD_TPARAMS
-	Entity WORLD_CLASS::createEntity(bool forceNew) {
-		EntityState* es;
-
-		if (!forceNew && !deadEntities.empty()) {
-			const auto i = deadEntities.back().id;
-			deadEntities.pop_back();
-			es = &entities[i];
-		} else {
-			es = &entities.emplace_back(Entity{static_cast<decltype(Entity::id)>(entities.size()), 0}, EntityState::Dead);
-		}
-
-		++es->ent.gen;
-		es->state = EntityState::Alive | EntityState::Enabled;
-
-		if (es->ent.id >= compBitsets.size()) {
-			compBitsets.resize(es->ent.id + 1); // TODO: Is one really the best increment size? Doesnt seem right.
-		} else {
-			compBitsets[es->ent.id].reset();
-		}
-
-		return es->ent;
-	}
-	
-	WORLD_TPARAMS
-	void WORLD_CLASS::deferedDestroyEntity(Entity ent) {
-		setEnabled(ent, false); // TODO: Will we need a component callback for onDisabled to handle things like physics bodies?
-		markedForDeath.push_back(ent);
-	}
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::destroyEntity(Entity ent) {
@@ -201,110 +128,15 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	template<class Component, class... Args>
-	decltype(auto) WORLD_CLASS::addComponent(Entity ent, Args&&... args) {
-		constexpr auto cid = getComponentId<Component>();
-		ENGINE_DEBUG_ASSERT(!hasComponent<Component>(ent), "Attempting to add duplicate component (", cid ,") to ", ent);
-		compBitsets[ent.id].set(cid);
-		fm.onComponentAdded(ent, cid, compBitsets[ent.id]);
-
-		auto& container = getComponentContainer<Component>();
-		container.add(ent, std::forward<Args>(args)...);
-		return container[ent];
-	}
-
-	WORLD_TPARAMS
-	template<class... Components>
-	std::tuple<Components&...> WORLD_CLASS::addComponents(Entity ent) {
-		return std::forward_as_tuple(addComponent<Components>(ent) ...);
-	}
-
-	WORLD_TPARAMS
-	bool WORLD_CLASS::hasComponent(Entity ent, ComponentId cid) {
-		return compBitsets[ent.id].test(cid);
-	}
-
-	WORLD_TPARAMS
-	template<class Component>
-	bool WORLD_CLASS::hasComponent(Entity ent) {
-		return hasComponent(ent, getComponentId<Component>());
-	}
-
-	WORLD_TPARAMS
-	bool WORLD_CLASS::hasComponents(Entity ent, ComponentBitset cbits) {
-		return (compBitsets[ent.id] & cbits) == cbits;
-	}
-
-	WORLD_TPARAMS
-	template<class... Components>
-	bool WORLD_CLASS::hasComponents(Entity ent) {
-		return hasComponents(ent, getBitsetForComponents<Components...>());
-	}
-
-	WORLD_TPARAMS
-	template<class Component>
-	void WORLD_CLASS::removeComponent(Entity ent) {
-		removeComponents<Component>(ent);
-	}
-
-	WORLD_TPARAMS
-	template<class... Components>
-	void WORLD_CLASS::removeComponents(Entity ent) {
-		compBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
-
-		(getComponentContainer<Components>().remove(ent), ...);
-
-		// TODO: Make filter manager take bitset?
-		(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);
-	}
-	
-	WORLD_TPARAMS
-	void WORLD_CLASS::removeAllComponents(Entity ent) {
-		((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...);
-	}
-
-	WORLD_TPARAMS
-	template<class Component>
-	Component& WORLD_CLASS::getComponent(Entity ent) {
-		// TODO: why is this not a compile error? this should need `decltype(auto)` return type?
-		if constexpr (IsFlagComponent<Component>::value) {
-			return compBitsets[ent][getComponentId<Component>()];
-		} else {
-			ENGINE_DEBUG_ASSERT(hasComponent<Component>(ent), "Attempting to get a component that an entity doesn't have.");
-			return getComponentContainer<Component>()[ent];
-		}
-	}
-
-	WORLD_TPARAMS
-	template<class... Components>
-	std::tuple<Components&...> WORLD_CLASS::getComponents(Entity ent) {
-		return std::forward_as_tuple(getComponent<Components>(ent) ...);
-	}
-
-	WORLD_TPARAMS
-	const ComponentBitset& WORLD_CLASS::getComponentsBitset(Entity ent) const {
-		return compBitsets[ent.id];
-	}
-
-	WORLD_TPARAMS
-	const auto& WORLD_CLASS::getAllComponentBitsets() const {
-		return compBitsets;
-	}
-
-	WORLD_TPARAMS
 	template<class... Components>
 	auto WORLD_CLASS::getFilterFor() -> Filter& {
-		return fm.getFilterFor(self(), getBitsetForComponents<Components...>());
-	}
-
-	WORLD_TPARAMS
-	Clock::TimePoint WORLD_CLASS::getTickTime() const {
-		return tickTime;
+		return fm.getFilterFor(self(), activeSnap.getBitsetForComponents<Components...>());
 	}
 
 	WORLD_TPARAMS
 	float32 WORLD_CLASS::getTickRatio() const {
-		return (beginTime - tickTime).count() / static_cast<float32>(tickInterval.count());
+		// TODO: is this correct? dont think so
+		return (activeSnap.tickTime - beginTime).count() / static_cast<float32>(tickInterval.count());
 	}
 
 	WORLD_TPARAMS
@@ -337,12 +169,7 @@ namespace Engine::ECS {
 		return (callable.*callers[cid])();
 	}
 
-	WORLD_TPARAMS
-	template<class Component>
-	ComponentContainer<Component>& WORLD_CLASS::getComponentContainer() {
-		return std::get<ComponentContainer<Component>>(compContainers);
-	}
-	
+	/*
 	WORLD_TPARAMS
 	void WORLD_CLASS::storeSnapshot() {
 		// TODO: delta compression?
@@ -350,12 +177,13 @@ namespace Engine::ECS {
 
 		(getSystem<Ss>().preStoreSnapshot(), ...);
 
-		auto& snap = snapshotBuffer[currTick % TickRate];
+		auto& snap = snapBuffer.insert(currTick);
 
 		for (const auto ent : snap.markedForDeath) {
 			destroyEntity(ent);
 		}
 
+		snap.tickTime = tickTime;
 		snap.currTick = currTick;
 		snap.entities = entities;
 		snap.deadEntities = deadEntities;
@@ -373,9 +201,10 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	void WORLD_CLASS::loadSnapshot(const Snapshot& snap) {
+	void WORLD_CLASS::loadSnapshot(const RollbackSnapshot& snap) {
 		// TODO: This breaks filters. Need to rework them or also rollback them
 
+		tickTime = snap.tickTime;
 		currTick = snap.currTick;
 		entities = snap.entities;
 		deadEntities = snap.deadEntities;
@@ -391,5 +220,5 @@ namespace Engine::ECS {
 		
 		(loadComps.operator()<Cs>(), ...);
 		(getSystem<Ss>().postLoadSnapshot(), ...);
-	}
+	}*/
 }

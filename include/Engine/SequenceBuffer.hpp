@@ -54,7 +54,7 @@ namespace Engine {
 			}
 
 			ENGINE_INLINE bool canInsert(S seq) const {
-				return seqGreater(seq, min());
+				return seqGreater(seq, min()) || seq == min();
 			}
 			
 			T& insert(S seq) {

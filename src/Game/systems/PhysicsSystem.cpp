@@ -54,6 +54,12 @@ namespace Game {
 		const float32 a = world.getTickRatio();
 		const float32 b = 1.0f - a;
 
+		if (world.getTick() > 1024) {
+			// TODO: This shouldnt ever be hit? why.
+			//ENGINE_DEBUG_ASSERT(a < 1.0f);
+			//ENGINE_DEBUG_ASSERT(b < 1.0f);
+		}
+
 		// TODO: isnt this wrong? wont we still see a jump if we tick twice in a frame?
 		for (auto ent : filter) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
@@ -69,6 +75,8 @@ namespace Game {
 			const float32 mag = lerpTrans.q.c * lerpTrans.q.c + lerpTrans.q.s * lerpTrans.q.s;
 			lerpTrans.q.c /= mag;
 			lerpTrans.q.s /= mag;
+
+			lerpTrans = nextTrans; // TODO: rm
 		}
 
 		#if defined(DEBUG_PHYSICS)
@@ -77,7 +85,6 @@ namespace Game {
 		#endif
 	}
 
-	
 	void PhysicsSystem::preStoreSnapshot() {
 		for (auto ent : filter) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);

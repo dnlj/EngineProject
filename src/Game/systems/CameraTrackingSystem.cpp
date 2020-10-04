@@ -15,7 +15,7 @@ namespace Game {
 		static_assert(World::orderAfter<CameraTrackingSystem, PhysicsSystem>());
 		engine.camera.setPosition({0,0});
 	}
-
+	
 	void CameraTrackingSystem::run(float dt) {
 		for (auto ent : activePlayerFilter) {
 			const auto focusPos = world.getComponent<PhysicsComponent>(ent).getInterpPosition();

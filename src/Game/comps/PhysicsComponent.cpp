@@ -17,12 +17,9 @@ namespace Game {
 	}
 	
 	PhysicsComponent::PhysicsComponent(const PhysicsComponent& other) noexcept {
-		storedTransform = other.storedTransform;
-		storedVelocity = other.storedVelocity;
-		storedAngularVelocity = other.storedAngularVelocity;
+		stored = other.stored;
 		prevTransform = other.prevTransform;
 		interpTransform = other.interpTransform;
-		remoteTransform = other.remoteTransform;
 		count = other.count;
 		body = other.body;
 		if (count) { ++*count; }
@@ -39,12 +36,9 @@ namespace Game {
 
 	void PhysicsComponent::operator=(PhysicsComponent&& other) noexcept {
 		using std::swap;
-		storedTransform = other.storedTransform;
-		storedVelocity = other.storedVelocity;
-		storedAngularVelocity = other.storedAngularVelocity;
+		stored = other.stored;
 		prevTransform = other.prevTransform;
 		interpTransform = other.interpTransform;
-		remoteTransform = other.remoteTransform;
 		swap(count, other.count);
 		swap(body, other.body);
 	}

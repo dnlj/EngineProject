@@ -21,31 +21,43 @@ namespace Game {
 		private:
 			friend class PhysicsSystem;
 			
-			// TODO: split into dynamic and static comps.
+			// TODO: split into dynamic and static comps?
 			// TODO: split interp stuff into own comp.
 
-			b2Transform storedTransform;
-			b2Vec2 storedVelocity;
-			float32 storedAngularVelocity;
+			struct PhysData {
+				b2Transform trans;
+				b2Vec2 vel;
+				float32 angVel;
+
+				ENGINE_INLINE void to(b2Body* body) const {
+					body->SetTransform(trans.p, trans.q.GetAngle());
+					body->SetLinearVelocity(vel);
+					body->SetAngularVelocity(angVel);
+				}
+
+				ENGINE_INLINE void from(b2Body* body) {
+					trans = body->GetTransform();
+					vel = body->GetLinearVelocity();
+					angVel = body->GetAngularVelocity();
+				}
+			};
+
+			PhysData stored;
 
 			b2Transform prevTransform;
 			b2Transform interpTransform;
-			b2Transform remoteTransform;
+
 			b2Body* body = nullptr;
 			int* count = nullptr;
 
 			void loadBody() {
 				// TODO: better way to set this?
 				// TODO: check before set to avoid waking
-				body->SetTransform(storedTransform.p, storedTransform.q.GetAngle());
-				body->SetLinearVelocity(storedVelocity);
-				body->SetAngularVelocity(storedAngularVelocity);
+				stored.to(body);
 			}
 
 			void storeBody() {
-				storedTransform = body->GetTransform();
-				storedVelocity = body->GetLinearVelocity();
-				storedAngularVelocity = body->GetAngularVelocity();
+				stored.from(body);
 			}
 
 		public:
