@@ -4,21 +4,23 @@
 // Game
 #include <Game/World.hpp>
 
+namespace {
+	using Filter = Engine::ECS::EntityFilterList<
+			Game::PhysicsComponent,
+			Game::ActionComponent
+	>;
+}
 
 namespace Game {
 	CharacterMovementSystem::CharacterMovementSystem(SystemArg arg)
-		: System{arg}
-		, filter{world.getFilterFor<
-			PhysicsComponent,
-			ActionComponent
-		>()} {
+		: System{arg} {
 
 		static_assert(World::orderBefore<CharacterMovementSystem, PhysicsSystem>());
 	}
 
 	void CharacterMovementSystem::tick() {
 		constexpr float speed = 1.0f * 4;
-		for (auto ent : filter) {
+		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			const auto& actComp = world.getComponent<ActionComponent>(ent);
 			// TODO: should we use press count here?

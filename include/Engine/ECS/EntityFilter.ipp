@@ -2,40 +2,40 @@
 
 
 namespace Engine::ECS {
-	template<class World>
+	template<class Snap>
 	template<class T>
-	EntityFilter<World>::Iterator<T>::Iterator(const EntityFilter& filter, ItType it)
+	EntityFilter<Snap>::Iterator<T>::Iterator(const EntityFilter& filter, ItType it)
 		: filter(filter)
 		, it(it) {
 	}
 
-	template<class World>
+	template<class Snap>
 	template<class T>
-	T& EntityFilter<World>::Iterator<T>::operator*() {
+	T& EntityFilter<Snap>::Iterator<T>::operator*() {
 		return **const_cast<const Iterator*>(this);
 	};
 
-	template<class World>
+	template<class Snap>
 	template<class T>
-	T& EntityFilter<World>::Iterator<T>::operator*() const {
+	T& EntityFilter<Snap>::Iterator<T>::operator*() const {
 		return *it;
 	}
 
-	template<class World>
+	template<class Snap>
 	template<class T>
-	T* EntityFilter<World>::Iterator<T>::operator->() {
+	T* EntityFilter<Snap>::Iterator<T>::operator->() {
 		return const_cast<const Iterator*>(this)->operator->();
 	}
 
-	template<class World>
+	template<class Snap>
 	template<class T>
-	T* EntityFilter<World>::Iterator<T>::operator->() const {
+	T* EntityFilter<Snap>::Iterator<T>::operator->() const {
 		return &*it;
 	}
 
-	template<class World>
+	template<class Snap>
 	template<class T>
-	auto EntityFilter<World>::Iterator<T>::operator++() -> Iterator& {
+	auto EntityFilter<Snap>::Iterator<T>::operator++() -> Iterator& {
 		auto end = filter.end();
 
 		#if defined(DEBUG)
@@ -44,15 +44,15 @@ namespace Engine::ECS {
 			}
 		#endif
 
-		while ((++it, *this) != end && !filter.world.isEnabled(*it)) {
+		while ((++it, *this) != end && !filter.snap.isEnabled(*it)) {
 		}
 
 		return *this;
 	}
 
-	template<class World>
+	template<class Snap>
 	template<class T>
-	auto EntityFilter<World>::Iterator<T>::operator--() -> Iterator& {
+	auto EntityFilter<Snap>::Iterator<T>::operator--() -> Iterator& {
 		auto begin = filter.begin();
 
 		#if defined(DEBUG)
@@ -61,36 +61,39 @@ namespace Engine::ECS {
 			}
 		#endif
 
-		while ((--it, *this) != begin && !filter.world.isEnabled(*it)) {
+		while ((--it, *this) != begin && !filter.snap.isEnabled(*it)) {
 		}
 
 		return *this;
 	}
 
-	template<class World>
+	template<class Snap>
 	template<class T>
-	auto EntityFilter<World>::Iterator<T>::operator++(int) -> Iterator {
+	auto EntityFilter<Snap>::Iterator<T>::operator++(int) -> Iterator {
 		auto temp = *this;
 		++*this;
 		return temp;
 	}
 
-	template<class World>
+	template<class Snap>
 	template<class T>
-	auto EntityFilter<World>::Iterator<T>::operator--(int) -> Iterator {
+	auto EntityFilter<Snap>::Iterator<T>::operator--(int) -> Iterator {
 		auto temp = *this;
 		--*this;
 		return temp;
 	}
 	
-	template<class World>
-	EntityFilter<World>::EntityFilter(const World& world)
-		: world{world} {
+	template<class Snap>
+	EntityFilter<Snap>::EntityFilter(const Snap& snap, const ComponentBitset cbits)
+		: snap{snap}
+		, componentsBits{cbits} {
 	}
 	
-	template<class World>
-	void EntityFilter<World>::add(Entity ent, const ComponentBitset& cbits) {
+	template<class Snap>
+	void EntityFilter<Snap>::add(Entity ent, const ComponentBitset& cbits) {
+		ENGINE_INFO("Attempting to add ", ent, " ", cbits, " to ", componentsBits);
 		if ((cbits & componentsBits) == componentsBits) {
+			ENGINE_INFO("add ", ent, " ", cbits);
 			auto pos = std::lower_bound(entities.begin(), entities.end(), ent);
 
 			#if defined(DEBUG)
@@ -103,48 +106,50 @@ namespace Engine::ECS {
 		}
 	}
 	
-	template<class World>
-	void EntityFilter<World>::remove(Entity ent) {
+	template<class Snap>
+	void EntityFilter<Snap>::remove(Entity ent) {
 		auto pos = std::lower_bound(entities.cbegin(), entities.cend(), ent);
 
+		ENGINE_INFO("Attempting to remove ", ent);
 		if (pos != entities.cend() && *pos == ent) {
+			ENGINE_INFO("remove ", ent);
 			entities.erase(pos);
 		}
 	}
 	
-	template<class World>
-	std::size_t EntityFilter<World>::size() const {
+	template<class Snap>
+	std::size_t EntityFilter<Snap>::size() const {
 		return std::distance(begin(), end());
 	}
 	
-	template<class World>
-	bool EntityFilter<World>::empty() const {
+	template<class Snap>
+	bool EntityFilter<Snap>::empty() const {
 		return size() == 0; // TODO: begin != end would be cheaper. Is there a reason we did this? i dont think so.
 	}
 	
-	template<class World>
-	auto EntityFilter<World>::begin() const -> ConstIterator {
+	template<class Snap>
+	auto EntityFilter<Snap>::begin() const -> ConstIterator {
 		auto it = ConstIterator(*this, entities.begin());
 
-		if (!entities.empty() && !world.isEnabled(*it)) {
+		if (!entities.empty() && !snap.isEnabled(*it)) {
 			++it;
 		}
 
 		return it;
 	}
 	
-	template<class World>
-	auto EntityFilter<World>::end() const -> ConstIterator {
+	template<class Snap>
+	auto EntityFilter<Snap>::end() const -> ConstIterator {
 		return ConstIterator(*this, entities.end());
 	}
 	
-	template<class World>
-	auto EntityFilter<World>::cbegin() const -> ConstIterator {
+	template<class Snap>
+	auto EntityFilter<Snap>::cbegin() const -> ConstIterator {
 		return begin();
 	}
 	
-	template<class World>
-	auto EntityFilter<World>::cend() const -> ConstIterator {
+	template<class Snap>
+	auto EntityFilter<Snap>::cend() const -> ConstIterator {
 		return end();
 	}
 }

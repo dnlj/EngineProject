@@ -128,12 +128,6 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	template<class... Components>
-	auto WORLD_CLASS::getFilterFor() -> Filter& {
-		return fm.getFilterFor(self(), activeSnap.getBitsetForComponents<Components...>());
-	}
-
-	WORLD_TPARAMS
 	float32 WORLD_CLASS::getTickRatio() const {
 		// TODO: is this correct? dont think so
 		return (activeSnap.tickTime - beginTime).count() / static_cast<float32>(tickInterval.count());

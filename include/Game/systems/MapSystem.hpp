@@ -19,7 +19,6 @@
 
 // Game
 #include <Game/Common.hpp>
-#include <Game/EntityFilter.hpp>
 #include <Game/MapChunk.hpp>
 #include <Game/MapGenerator.hpp>
 
@@ -198,7 +197,6 @@ namespace Game {
 			Engine::FlatHashMap<glm::ivec2, std::unique_ptr<MapRegion>> regions;
 
 			Engine::ECS::Entity mapEntity;
-			EntityFilter& playerFilter;
 
 			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;

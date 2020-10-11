@@ -10,7 +10,6 @@
 
 // Game
 #include <Game/System.hpp>
-#include <Game/EntityFilter.hpp>
 
 namespace Game {
 	class UISystem : public System {
@@ -51,8 +50,5 @@ namespace Game {
 
 			template<bool B>
 			static ImPlotPoint netGetDiff(void* data, int idx);
-
-			EntityFilter& connFilter;
-			EntityFilter& activePlayerFilter;
 	};
 }

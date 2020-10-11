@@ -2,13 +2,17 @@
 #include <Game/World.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
 
+namespace {
+	using Filter = Engine::ECS::EntityFilterList<
+		Game::PhysicsComponent
+	>;
+}
 
 namespace Game {
 	PhysicsSystem::PhysicsSystem(SystemArg arg)
 		: System{arg}
 		, physWorld{b2Vec2_zero}
-		, contactListener{*this}
-		, filter{world.getFilterFor<PhysicsComponent>()} {
+		, contactListener{*this} {
 
 		physWorld.SetContactListener(&contactListener);
 
@@ -19,7 +23,7 @@ namespace Game {
 	}
 
 	void PhysicsSystem::tick() {
-		for (auto ent : filter) {
+		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			physComp.prevTransform = physComp.getBody().GetTransform();
 
@@ -61,7 +65,7 @@ namespace Game {
 		}
 
 		// TODO: isnt this wrong? wont we still see a jump if we tick twice in a frame?
-		for (auto ent : filter) {
+		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			const auto& prevTrans = physComp.prevTransform;
 			const auto& nextTrans = physComp.getBody().GetTransform();
@@ -86,14 +90,14 @@ namespace Game {
 	}
 
 	void PhysicsSystem::preStoreSnapshot() {
-		for (auto ent : filter) {
+		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			physComp.storeBody();
 		}
 	}
 
 	void PhysicsSystem::postLoadSnapshot() {
-		for (auto ent : filter) {
+		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			if (physComp.getBody().GetType() == b2_dynamicBody) {
 				physComp.loadBody();
@@ -119,7 +123,7 @@ namespace Game {
 	void PhysicsSystem::shiftOrigin(const b2Vec2& newOrigin) {
 		physWorld.ShiftOrigin(newOrigin);
 
-		for (auto& ent : filter) {
+		for (auto& ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			physComp.setTransform(physComp.body->GetTransform());
 		}

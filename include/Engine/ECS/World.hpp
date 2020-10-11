@@ -177,11 +177,7 @@ namespace Engine::ECS {
 			 * @return A reference to the added component.
 			 */
 			template<class C, class... Args>
-			decltype(auto) addComponent(Entity ent, Args&&... args) {
-				auto& c = activeSnap.addComponent<C>(ent, args...);
-				fm.onComponentAdded(ent, getComponentId<C>(), activeSnap.compBitsets[ent.id]);
-				return c;
-			}
+			decltype(auto) addComponent(Entity ent, Args&&... args) { return activeSnap.addComponent<C>(ent, args...); }
 
 			/**
 			 * Adds components to an entity.
@@ -223,10 +219,7 @@ namespace Engine::ECS {
 			 * @tparam Components The components.
 			 */
 			template<class... Components>
-			void removeComponents(Entity ent) {
-				activeSnap.removeComponents<Components...>(ent);
-				(fm.onComponentRemoved(ent, getComponentId<Components>()), ...);
-			};
+			void removeComponents(Entity ent) { activeSnap.removeComponents<Components...>(ent); };
 
 			/**
 			 * Removes all components from an entity.
@@ -260,9 +253,25 @@ namespace Engine::ECS {
 			 */
 			const auto& getAllComponentBitsets() const { return activeSnap.compBitsets; };
 
-			// TODO: Doc
-			template<class... Components>
-			Filter& getFilterFor();
+			// TODO: rm
+			//template<class... Components>
+			//Filter& getFilterFor();
+			//WORLD_TPARAMS
+			//template<class... Components>
+			//auto WORLD_CLASS::getFilterFor() -> Filter& {
+			//	return fm.getFilterFor(self(), activeSnap.getBitsetForComponents<Components...>());
+			//}
+
+			template<class C, class... Comps>
+			decltype(auto) getFilter() {
+				if constexpr(IsEntityFilterList<C>::value) {
+					return [&]<class... Ds>(EntityFilterList<Ds...>) -> decltype(auto) {
+						return activeSnap.getFilter<Ds...>();
+					}(C{});
+				} else {
+					return activeSnap.getFilter<C, Comps...>();
+				}
+			};
 
 			//template<>
 			//EntityFilter& getFilterFor() = delete;

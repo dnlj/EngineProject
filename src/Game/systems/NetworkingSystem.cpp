@@ -14,6 +14,8 @@
 #include <Game/comps/ConnectionComponent.hpp>
 
 namespace {
+	using PlayerFilter = Engine::ECS::EntityFilterList<Game::PlayerFlag>;
+
 	template<class T>
 	concept IsNetworkedComponent = requires (T t) {
 		Engine::Net::Replication{t.netRepl()};
@@ -344,7 +346,6 @@ namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
 		, socket{ENGINE_SERVER ? *engine.commandLineArgs.get<uint16>("port") : 0}
-		, plyFilter{world.getFilterFor<PlayerFlag>()}
 		, group{*engine.commandLineArgs.get<Engine::Net::IPv4Address>("group")}
 		, rng{pcg_extras::seed_seq_from<std::random_device>{}} {
 
@@ -498,7 +499,7 @@ namespace Game {
 			lastCompsBitsets.resize(world.getAllComponentBitsets().size());
 		}
 
-		for (auto& ply : plyFilter) {
+		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			auto& neighComp = world.getComponent<NeighborsComponent>(ply);
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
@@ -603,7 +604,7 @@ namespace Game {
 				if (next > now) { return; }
 				next = now + std::chrono::milliseconds{1000};
 		
-				for (auto& ply : plyFilter) {
+				for (auto& ply : world.getFilter<PlayerFilter>()) {
 					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 					conn.msgBegin<MessageType::PING>();
 					conn.write(static_cast<uint8>(++ping & 0x7F));
@@ -618,7 +619,7 @@ namespace Game {
 	}
 
 	int32 NetworkingSystem::playerCount() const {
-		return static_cast<int32>(plyFilter.size());
+		return static_cast<int32>(world.getFilter<PlayerFilter>().size());
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
@@ -701,7 +702,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::updateNeighbors() {
-		for (const auto ent : plyFilter) {
+		for (const auto ent : world.getFilter<PlayerFilter>()) {
 			auto& neighComp = world.getComponent<NeighborsComponent>(ent);
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			auto& added = neighComp.addedNeighbors;

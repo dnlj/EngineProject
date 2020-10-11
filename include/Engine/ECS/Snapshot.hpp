@@ -1,15 +1,119 @@
 #pragma once
 
 // Engine
+#include <Engine/FlatHashMap.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/EntityState.hpp>
 
 
 namespace Engine::ECS {
+	// TODO: move
+	// TODO: make copy constructor on this and EntityFilter private
+	template<class C, class Snap>
+	class SingleComponentFilter {
+		private:
+			using Cont = ComponentContainer<C>;
+			using It = decltype(std::declval<Cont>().begin());
+			using CIt = decltype(std::declval<Cont>().cbegin());
+			Snap& snap;
+			ENGINE_INLINE auto& getCont() { return snap.getComponentContainer<C>(); }
+			// TODO: do we also want to check if enabled? maybe filters need some way to specify what flags an entity should/shouoldnt have
+			ENGINE_INLINE bool canUse(Entity ent) const { return snap.isAlive(ent); }
+
+			class Iter {
+				private:
+					friend class SingleComponentFilter;
+					using I = int32;
+					It it;
+					SingleComponentFilter& filter;
+
+					void stepNextValid() {
+						const auto end = filter.getCont().end();
+						while (it != end && !filter.canUse(it->first)) {
+							++it;
+						}
+					}
+
+					void stepPrevValid() {
+						const auto begin = filter.getCont().begin();
+						while (it != begin && !filter.canUse(it->first)) {
+							--it;
+						}
+					}
+
+				public:
+					Iter(It it, SingleComponentFilter& filter) : it{it}, filter{filter} {}
+
+					// TODO: need to check that ent is enabled
+					auto& operator++() {
+						const auto end = filter.getCont().end();
+						if (it != end) { ++it; }
+						stepNextValid();
+						return *this;
+					}
+
+					auto& operator--() {
+						const auto begin = filter.getCont().begin();
+						if (it != begin) { --it; }
+						stepPrevValid();
+						return *this;
+					}
+
+					auto& operator*() {
+						ENGINE_DEBUG_ASSERT(filter.canUse(it->first), "Attempt to dereference invalid iterator.");
+						return it->first;
+					}
+
+					decltype(auto) operator->() {
+						return &**this;
+					}
+
+					bool operator==(const Iter& other) const noexcept { return it == other.it; }
+					bool operator!=(const Iter& other) const noexcept { return !(*this == other); }
+			};
+		public:
+			SingleComponentFilter(Snap& snap) : snap{snap} {}
+
+			Iter begin() {
+				Iter it{getCont().begin(), *this};
+				it.stepNextValid();
+				return it;
+			}
+
+			Iter end() {
+				return {getCont().end(), *this};
+			}
+
+			auto size() {
+				int32 i = 0;
+				for (auto it = begin(); it != end(); ++it, ++i) {}
+				return i;
+			}
+
+			bool empty() { return begin() == end(); }
+	};
+
+	// TODO: move
+	template<class...>
+	struct EntityFilterList {};
+
+	template<class T>
+	struct IsEntityFilterList : std::false_type {};
+
+	template<class... Cs>
+	struct IsEntityFilterList<EntityFilterList<Cs...>> : std::true_type {};
+
 	// TODO: move docs from World. Add @copydoc to World defs
 	template<template<class> class ShouldStore, class... Cs>
 	class Snapshot {
+		private:
+			template<class,class> friend class SingleComponentFilter;
+
+			std::vector<EntityFilter<Snapshot>> filters;
+			FlatHashMap<ComponentBitset, int32> cbitsToFilter;
+			std::vector<int32> compToFilter[sizeof...(Cs)];
+
 		public: // TODO: private
 			/** Time currently being ticked */
 			Clock::TimePoint tickTime = {};
@@ -41,6 +145,32 @@ namespace Engine::ECS {
 			//	// TODO: untested
 			//	((ShouldStore<Cs>::value && ShouldStore2<Cs>::value ? getComponentContainer<Cs> = other.getComponentContainer<Cs>() : void), ...);
 			//}
+			
+			template<class C, class... Comps>
+			decltype(auto) getFilter() {
+				if constexpr (sizeof...(Comps) == 0) {
+					// TODO: this should be errror since SingleCompFilter doesnt ahve add/remove but we never check for that in addComp/rmComp. Easy fix but why is this not a compile error?
+					ENGINE_INFO("SingleComponentFilter");
+					return SingleComponentFilter<C, Snapshot>{*this};
+				} else {
+					const auto cbits = getBitsetForComponents<C, Comps...>();
+					auto found = cbitsToFilter.find(cbits);
+					if (found != cbitsToFilter.end()) { return filters[found->second]; }
+					ENGINE_INFO("Creating filter for ", cbits); // TODO: rm
+
+					const auto idx = static_cast<int32>(filters.size());
+					auto& filter = filters.emplace_back(*this, cbits);
+					for (const auto& ent : getFilter<C>()) {
+						if (!isAlive(ent)) { continue; }
+						filter.add(ent, getComponentsBitset(ent));
+					}
+
+					cbitsToFilter[cbits] = idx;
+					compToFilter[getComponentId<C>()].push_back(idx);
+					(compToFilter[getComponentId<Comps>()].push_back(idx), ...);
+					return filter;
+				}
+			}
 
 			Entity createEntity(bool forceNew) {
 				EntityState* es;
@@ -69,6 +199,8 @@ namespace Engine::ECS {
 				setEnabled(ent, false); // TODO: Will we need a component callback for onDisabled to handle things like physics bodies?
 				markedForDeath.push_back(ent);
 			}
+
+			// TODO: add destroyuEntity for world to call. Update filters.
 
 			ENGINE_INLINE bool isAlive(Entity ent) const noexcept {
 				return entities[ent.id].state & EntityState::Alive;
@@ -119,10 +251,21 @@ namespace Engine::ECS {
 			decltype(auto) addComponent(Entity ent, Args&&... args) {
 				constexpr auto cid = getComponentId<C>();
 				ENGINE_DEBUG_ASSERT(!hasComponent<C>(ent), "Attempting to add duplicate component (", cid ,") to ", ent);
-				compBitsets[ent.id].set(cid);
+				auto& cbits = getComponentsBitset(ent);
+				cbits.set(cid);
 
 				auto& container = getComponentContainer<C>();
 				container.add(ent, std::forward<Args>(args)...);
+
+				// Update filters
+				for (const auto i : compToFilter[cid]) {
+					auto& filter = filters[i];
+					filter.add(ent, cbits);
+
+					// TODO: rm
+					ENGINE_INFO("Adding ", ent, " to filter ", i, " ( C = ", getComponentId<C>(), ")");
+				}
+
 				return container[ent];
 			}
 
@@ -155,10 +298,19 @@ namespace Engine::ECS {
 				return hasComponent(ent, getComponentId<C>());
 			}
 
-			template<class... Components>
+			template<class... Comps>
 			void removeComponents(Entity ent) {
-				compBitsets[ent.id] &= ~getBitsetForComponents<Components...>();
-				(getComponentContainer<Components>().remove(ent), ...);
+				compBitsets[ent.id] &= ~getBitsetForComponents<Comps...>();
+				(getComponentContainer<Comps>().remove(ent), ...);
+
+				// Update filters
+				const auto& rm = [&](const auto& is){
+					for (auto i : is) {
+						filters[i].remove(ent);
+						ENGINE_INFO("Removing ", ent, " from filter ", i); // TODO: rm
+					}
+				};
+				(rm(compToFilter[getComponentId<Comps>()]), ...);
 			}
 
 		private:
@@ -170,6 +322,11 @@ namespace Engine::ECS {
 			template<class C>
 			ENGINE_INLINE ComponentContainer<C>& getComponentContainer() {
 				return std::get<ComponentContainer<C>>(compContainers);
+			}
+
+			
+			ComponentBitset& getComponentsBitset(Entity ent) noexcept {
+				return compBitsets[ent.id];
 			}
 
 	};

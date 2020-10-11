@@ -6,7 +6,6 @@
 
 // Game
 #include <Game/System.hpp>
-#include <Game/EntityFilter.hpp>
 
 
 namespace Game {
@@ -14,8 +13,5 @@ namespace Game {
 		public:
 			CameraTrackingSystem(SystemArg arg);
 			void run(float dt);
-
-		private:
-			EntityFilter& activePlayerFilter;
 	};
 }

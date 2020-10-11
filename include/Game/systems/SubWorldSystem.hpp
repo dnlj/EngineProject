@@ -8,7 +8,6 @@
 
 // Game
 #include <Game/System.hpp>
-#include <Game/EntityFilter.hpp>
 #include <Game/comps/PhysicsComponent.hpp>
 #include <Game/systems/MapSystem.hpp>
 
@@ -41,8 +40,6 @@ namespace Game {
 			std::vector<PlayerData> playerData;
 			std::vector<std::unique_ptr<b2World>> worlds; // TODO: who should own worlds? physics sys?
 			std::vector<b2World*> freeWorlds;
-
-			EntityFilter& playerFilter;
 
 			std::vector<Group> groups;
 			robin_hood::unordered_flat_set<b2Body*> bodies; // TODO: add engine type

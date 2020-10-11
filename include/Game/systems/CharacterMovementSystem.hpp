@@ -2,7 +2,6 @@
 
 // Game
 #include <Game/System.hpp>
-#include <Game/EntityFilter.hpp>
 
 
 namespace Game {
@@ -10,8 +9,5 @@ namespace Game {
 		public:
 			CharacterMovementSystem(SystemArg arg);
 			void tick();
-
-		private:
-			EntityFilter& filter;
 	};
 }

@@ -18,17 +18,18 @@ namespace {
 	constexpr float32 estBuffSizeFromNet(EstBuffSize v) noexcept {
 		return static_cast<float32>(v - range);
 	};
+
+	using Filter = Engine::ECS::EntityFilterList<ActionComponent>;
 }
 
 
 namespace Game {
 	ActionSystem::ActionSystem(SystemArg arg)
-		: System{arg}
-		, actionFilter{world.getFilterFor<ActionComponent>()} {
+		: System{arg} {
 	}
 
 	void ActionSystem::preTick() {
-		for (const auto ent : actionFilter) {
+		for (const auto ent : world.getFilter<Filter>()) {
 			const auto tick = world.getTick();
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 			if (ENGINE_SERVER || world.isPerformingRollback()) {
@@ -56,7 +57,7 @@ namespace Game {
 		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
 		// TODO: dont resend actions when performing rollback
 		const auto currTick = world.getTick();
-		for (const auto ent : actionFilter) {
+		for (const auto ent : world.getFilter<Filter>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 			auto* state = actComp.state;
@@ -272,7 +273,7 @@ namespace Game {
 	}
 
 	void ActionSystem::updateButtonState(Button btn, bool val) {
-		for (const auto& ent : actionFilter) {
+		for (const auto& ent : world.getFilter<Filter>()) {
 			updateButtonState(ent, btn, val);
 		}
 	}
@@ -287,7 +288,7 @@ namespace Game {
 	}
 	
 	void ActionSystem::updateAxisState(Axis axis, float32 val) {
-		for (const auto& ent : actionFilter) {
+		for (const auto& ent : world.getFilter<Filter>()) {
 			updateAxisState(ent, axis, val);
 		}
 	}

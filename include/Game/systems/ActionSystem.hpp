@@ -10,7 +10,6 @@
 
 // Game
 #include <Game/System.hpp>
-#include <Game/EntityFilter.hpp>
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/Connection.hpp>
 
@@ -18,7 +17,6 @@ namespace Game {
 	class ActionSystem : public System {
 		private:
 			std::vector<std::vector<Engine::Input::ActionListener>> actionIdToListeners;
-			EntityFilter& actionFilter;
 
 		public:
 			ActionSystem(SystemArg arg);

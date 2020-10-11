@@ -11,14 +11,17 @@
 #include <Game/comps/SpriteComponent.hpp>
 #include <Game/World.hpp>
 
+
+namespace {
+	using Filter = Engine::ECS::EntityFilterList<
+		Game::SpriteComponent,
+		Game::PhysicsComponent
+	>;
+}
+
 namespace Game {
 	SpriteSystem::SpriteSystem(SystemArg arg)
-		: System{arg}
-		, filter{world.getFilterFor<
-			Game::SpriteComponent,
-			Game::PhysicsComponent>()
-		} {
-
+		: System{arg} {
 		static_assert(World::orderAfter<SpriteSystem, PhysicsSystem>());
 		
 		// TODO: Split into multiple functions?
@@ -102,6 +105,7 @@ namespace Game {
 	}
 
 	void SpriteSystem::run(float dt) {
+		auto& filter = world.getFilter<Filter>();
 		if (filter.empty()) { return; }
 
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)

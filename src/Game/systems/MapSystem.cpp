@@ -14,10 +14,17 @@
 #include <Game/systems/PhysicsOriginShiftSystem.hpp>
 
 
+namespace {
+	using PlayerFilter = Engine::ECS::EntityFilterList<
+		Game::PlayerFlag,
+		Game::PhysicsComponent
+	>;
+}
+
+
 namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
-		: System{arg}
-		, playerFilter{world.getFilterFor<PlayerFlag, PhysicsComponent>()} {
+		: System{arg} {
 		static_assert(World::orderAfter<MapSystem, CameraTrackingSystem>());
 
 		for (auto& t : threads) {
@@ -77,7 +84,7 @@ namespace Game {
 			}
 		};
 
-		for (auto& ply : playerFilter) {
+		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			auto& me = world.getComponent<MapEditComponent>(ply);
 			if (me.place) { makeEdit(ply, 1); }
 			if (me.remove) { makeEdit(ply, 0); }
@@ -85,7 +92,7 @@ namespace Game {
 	}
 
 	void MapSystem::run(float32 dt) {
-		for (auto& ply : playerFilter) {
+		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsComponent>(ply).getPosition());
 			ensurePlayAreaLoaded(worldToBlock(pos));
 		}

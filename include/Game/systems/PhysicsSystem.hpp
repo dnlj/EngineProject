@@ -8,7 +8,6 @@
 
 // Game
 #include <Game/System.hpp>
-#include <Game/EntityFilter.hpp>
 #include <Game/PhysicsListener.hpp>
 
 
@@ -100,9 +99,6 @@ namespace Game {
 
 			/** The box2d contact listener */
 			ContactListener contactListener;
-
-			// TODO:Doc
-			EntityFilter& filter;
 
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D debugDraw;

@@ -50,9 +50,7 @@ namespace {
 
 namespace Game {
 	UISystem::UISystem(SystemArg arg)
-		: System{arg}
-		, connFilter{world.getFilterFor<ConnectionComponent>()}
-		, activePlayerFilter{world.getFilterFor<PlayerFlag>()} {
+		: System{arg} {
 	}
 
 	void UISystem::setup() {
@@ -113,7 +111,7 @@ namespace Game {
 		ImGui::Text("Tick Scale: %.4f", world.tickScale);
 
 		if (ImGui::Button("Disconnect")) {
-			for (const auto& ent : connFilter) {
+			for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 				const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
 				world.getSystem<NetworkingSystem>().requestDisconnect(addr);
 			}
@@ -195,6 +193,8 @@ namespace Game {
 
 	void UISystem::ui_coordinates() {
 		if (!ImGui::CollapsingHeader("Coordinates")) { return; }
+
+		auto& activePlayerFilter = world.getFilter<PlayerFlag>();
 		if (activePlayerFilter.empty()) { return; }
 
 		auto& mapSys = world.getSystem<Game::MapSystem>();
@@ -258,7 +258,7 @@ namespace Game {
 	void UISystem::ui_network() {
 		if (!ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
 
-		for (auto ent : connFilter) {
+		for (auto ent : world.getFilter<ConnectionComponent>()) {
 			if (!world.hasComponent<NetworkStatsComponent>(ent)) {
 				world.addComponent<NetworkStatsComponent>(ent);
 			}

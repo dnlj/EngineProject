@@ -12,7 +12,6 @@
 
 // Game
 #include <Game/System.hpp>
-#include <Game/EntityFilter.hpp>
 #include <Game/MessageType.hpp>
 #include <Game/comps/NeighborsComponent.hpp>
 
@@ -36,7 +35,6 @@ namespace Game {
 			static constexpr auto timeout = std::chrono::milliseconds{5000};
 			static constexpr auto disconnectTime = std::chrono::milliseconds{500};
 			Engine::Net::UDPSocket socket;
-			EntityFilter& plyFilter;
 
 			// TODO: should this be part of Connection?
 			struct ConnInfo {

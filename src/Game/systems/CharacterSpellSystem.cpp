@@ -11,8 +11,7 @@
 
 namespace Game {
 	CharacterSpellSystem::CharacterSpellSystem(SystemArg arg)
-		: System{arg}
-		, filter{world.getFilterFor<PhysicsComponent, ActionComponent>()} {
+		: System{arg} {
 		static_assert(World::orderAfter<CharacterSpellSystem, CharacterMovementSystem>());
 		static_assert(World::orderAfter<CharacterSpellSystem, PhysicsSystem>());
 	}
@@ -79,7 +78,7 @@ namespace Game {
 
 	void CharacterSpellSystem::tick() {
 
-		for (const auto ent : filter) {
+		for (const auto ent : world.getFilter<PhysicsComponent, ActionComponent>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 
 			if (actComp.getButton(Button::Attack1).pressCount) {

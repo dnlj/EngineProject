@@ -43,8 +43,7 @@ namespace {
 
 namespace Game {
 	SubWorldSystem::SubWorldSystem(SystemArg arg)
-		: System{arg}
-		, playerFilter{world.getFilterFor<PhysicsComponent>()} { // TODO: add own comp (flag comp?) to id players
+		: System{arg} { // TODO: add own comp (flag comp?) to id players
 	};
 
 	void SubWorldSystem::tick() {
@@ -52,7 +51,7 @@ namespace Game {
 
 		// TODO: shoudl be able to do this whenever we merge/split so we dont need an extra iteration
 		playerData.clear();
-		for (auto ent : playerFilter) {
+		for (auto ent : world.getFilter<PhysicsComponent>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			playerData.push_back({
 				.ent = ent,
