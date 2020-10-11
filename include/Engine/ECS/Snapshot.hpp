@@ -5,6 +5,7 @@
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ECS/EntityState.hpp>
+#include <Engine/ECS/EntityFilter.hpp>
 
 
 namespace Engine::ECS {
@@ -149,8 +150,6 @@ namespace Engine::ECS {
 			template<class C, class... Comps>
 			decltype(auto) getFilter() {
 				if constexpr (sizeof...(Comps) == 0) {
-					// TODO: this should be errror since SingleCompFilter doesnt ahve add/remove but we never check for that in addComp/rmComp. Easy fix but why is this not a compile error?
-					ENGINE_INFO("SingleComponentFilter");
 					return SingleComponentFilter<C, Snapshot>{*this};
 				} else {
 					const auto cbits = getBitsetForComponents<C, Comps...>();

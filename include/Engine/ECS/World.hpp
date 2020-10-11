@@ -8,7 +8,6 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
-#include <Engine/ECS/FilterManager.hpp>
 #include <Engine/ECS/Snapshot.hpp>
 #include <Engine/SequenceBuffer.hpp>
 
@@ -50,9 +49,6 @@ namespace Engine::ECS {
 			using Filter = EntityFilter<Derived>;
 
 		private:
-			// TODO: Since we are wrapping all of these operations is there any real benefit to splitting into XYZManagers?
-			FilterManager<Derived> fm;
-
 			/** Beginning of last run. */
 			Clock::TimePoint beginTime;
 
