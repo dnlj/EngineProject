@@ -91,9 +91,7 @@ namespace Engine::ECS {
 	
 	template<class Snap>
 	void EntityFilter<Snap>::add(Entity ent, const ComponentBitset& cbits) {
-		ENGINE_INFO("Attempting to add ", ent, " ", cbits, " to ", componentsBits);
 		if ((cbits & componentsBits) == componentsBits) {
-			ENGINE_INFO("add ", ent, " ", cbits);
 			auto pos = std::lower_bound(entities.begin(), entities.end(), ent);
 
 			#if defined(DEBUG)
@@ -110,9 +108,7 @@ namespace Engine::ECS {
 	void EntityFilter<Snap>::remove(Entity ent) {
 		auto pos = std::lower_bound(entities.cbegin(), entities.cend(), ent);
 
-		ENGINE_INFO("Attempting to remove ", ent);
 		if (pos != entities.cend() && *pos == ent) {
-			ENGINE_INFO("remove ", ent);
 			entities.erase(pos);
 		}
 	}

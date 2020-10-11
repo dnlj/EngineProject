@@ -155,7 +155,6 @@ namespace Engine::ECS {
 					const auto cbits = getBitsetForComponents<C, Comps...>();
 					auto found = cbitsToFilter.find(cbits);
 					if (found != cbitsToFilter.end()) { return filters[found->second]; }
-					ENGINE_INFO("Creating filter for ", cbits); // TODO: rm
 
 					const auto idx = static_cast<int32>(filters.size());
 					auto& filter = filters.emplace_back(*this, cbits);
