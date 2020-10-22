@@ -74,11 +74,10 @@ namespace Engine::ECS {
 	void WORLD_CLASS::tickSystems() {
 		//ENGINE_INFO("Tick: ", getTick());
 		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
-		//storeSnapshot();
+		storeSnapshot();
 		(getSystem<Ss>().preTick(), ...);
 		(getSystem<Ss>().tick(), ...);
 		(getSystem<Ss>().postTick(), ...);
-		activeSnap.markedForDeath.clear();
 		++activeSnap.currTick;
 	}
 
@@ -101,31 +100,6 @@ namespace Engine::ECS {
 		((value[getSystemId<SystemN>()] = true), ...);
 		return value;
 	};
-
-	WORLD_TPARAMS
-	void WORLD_CLASS::destroyEntity(Entity ent) {
-		ENGINE_WARN("DESTROY ENTITY: ", ent);
-		removeAllComponents(ent);
-		
-		#if defined(DEBUG)
-			if (!isAlive(ent)) {
-				ENGINE_ERROR("Attempting to destroy an already dead entity \"", ent, "\"");
-			} else if (entities[ent.id].ent.gen != ent.gen) {
-				ENGINE_ERROR(
-					"Attempting to destroy an old generation entity. Current generation is ",
-					entities[ent.id].ent.gen,
-					" attempted to delete ",
-					ent.gen
-				);
-			}
-		#endif
-
-		deadEntities.push_back(ent);
-		entities[ent.id].state = EntityState::Dead;
-
-		// TODO: shouldnt this be called before the entity is actually destroyed? bitset will be empty at this time.
-		fm.onEntityDestroyed(ent, compBitsets[ent.id]);
-	}
 
 	WORLD_TPARAMS
 	float32 WORLD_CLASS::getTickRatio() const {
@@ -163,56 +137,26 @@ namespace Engine::ECS {
 		return (callable.*callers[cid])();
 	}
 
-	/*
 	WORLD_TPARAMS
 	void WORLD_CLASS::storeSnapshot() {
 		// TODO: delta compression?
 		// TODO: Make sure we are storing all tick time info at the correct time: currentTick, beginTime, tickTime, etc.
 
 		(getSystem<Ss>().preStoreSnapshot(), ...);
-
-		auto& snap = snapBuffer.insert(currTick);
-
-		for (const auto ent : snap.markedForDeath) {
-			destroyEntity(ent);
+		const auto oldSeq = tick() - snapBuffer.capacity();
+		const auto* found = snapBuffer.find(oldSeq);
+		if (found) {
+			activeSnap.destroyEntities(found->markedForDeath);
+			//snapBuffer.remove(oldSeq); // TODO: should be rm when we insert over it? yes?
 		}
 
-		snap.tickTime = tickTime;
-		snap.currTick = currTick;
-		snap.entities = entities;
-		snap.deadEntities = deadEntities;
-		snap.markedForDeath = markedForDeath;
-		snap.compBitsets = compBitsets;
-
-		const auto& storeComps = [&]<class C>(){
-			if constexpr (IsSnapshotRelevant<C>::value) {
-				constexpr auto cid = getComponentId<C>();
-				std::get<cid>(snap.compContainers) = std::get<cid>(compContainers);
-			}
-		};
-		
-		(storeComps.operator()<Cs>(), ...);
+		auto& snap = snapBuffer.insert(tick());
+		snap = activeSnap;
 	}
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::loadSnapshot(const RollbackSnapshot& snap) {
-		// TODO: This breaks filters. Need to rework them or also rollback them
-
-		tickTime = snap.tickTime;
-		currTick = snap.currTick;
-		entities = snap.entities;
-		deadEntities = snap.deadEntities;
-		markedForDeath = snap.markedForDeath;
-		compBitsets = snap.compBitsets;
-
-		const auto& loadComps = [&]<class C>(){
-			if constexpr (IsSnapshotRelevant<C>::value) {
-				constexpr auto cid = getComponentId<C>();
-				std::get<cid>(compContainers) = std::get<cid>(snap.compContainers);
-			}
-		};
-		
-		(loadComps.operator()<Cs>(), ...);
+		activeSnap = snap;
 		(getSystem<Ss>().postLoadSnapshot(), ...);
-	}*/
+	}
 }

@@ -5,6 +5,7 @@
 #include <Engine/SparseSet.hpp>
 #include <Engine/Bitset.hpp>
 #include <Engine/IsComplete.hpp>
+#include <Engine/ECS/EntityState.hpp>
 
 
 namespace Engine::ECS {
@@ -44,6 +45,8 @@ namespace Engine::ECS {
 	/** The type used for storing components. */
 	template<class T>
 	struct ComponentContainer : SparseSet<Entity, ComponentData<T>> {};
+	
+	using EntityStates = std::vector<EntityState>;
 }
 
 // Asserts

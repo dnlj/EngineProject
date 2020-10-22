@@ -14,7 +14,7 @@
 
 namespace Engine::ECS {
 	/**
-	 * @tparam Derived CRTP dervied class. Needed for EntityFilter<Derived>.
+	 * @tparam Derived CRTP dervied class. Needed for EntityFilter<Derived>. // TODO: this may no longer be needed? dont think its used anymore since filter rework.
 	 * @tparam TickRate The tick rate of the world.
 	 * @tparam SnapshotCount The number of snapshots to keep for rollback.
 	 * @tparam SystemsSet The systems for this world to have.
@@ -46,7 +46,7 @@ namespace Engine::ECS {
 	class WORLD_CLASS {
 		static_assert(sizeof...(Cs) <= MAX_COMPONENTS);
 		public:
-			using Filter = EntityFilter<Derived>;
+			using Filter = EntityFilter; // TODO: now unneeded. use EntityFilter direct
 
 		private:
 			/** Beginning of last run. */
@@ -91,6 +91,11 @@ namespace Engine::ECS {
 			World(Arg& arg);
 
 			World(const World&) = delete;
+
+			/**
+			 * Gets the tick being simulated.
+			 */
+			ENGINE_INLINE auto tick() const noexcept { return activeSnap.currTick; }
 
 			/**
 			 * Advances simulation time and calls the `tick` and `run` members of systems.
@@ -343,13 +348,8 @@ namespace Engine::ECS {
 		private:
 			void tickSystems();
 
-			/**
-			 * Destroys and entity, freeing its id to be recycled.
-			 */
-			void destroyEntity(Entity ent);
-
-			//void storeSnapshot();
-			//void loadSnapshot(const RollbackSnapshot& snap);
+			void storeSnapshot();
+			void loadSnapshot(const RollbackSnapshot& snap);
 	};
 }
 

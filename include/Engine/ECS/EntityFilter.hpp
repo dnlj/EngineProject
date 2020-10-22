@@ -11,11 +11,10 @@
 
 // TODO: Doc
 namespace Engine::ECS {
-	template<class Snap>
 	class EntityFilter {
 		private:
 			std::vector<Entity> entities;
-			const Snap& snap;
+			const EntityStates& states;
 			ComponentBitset componentsBits;
 
 		private:
@@ -62,8 +61,8 @@ namespace Engine::ECS {
 		public:
 			using ConstIterator = Iterator<const Entity>;
 
-			EntityFilter(const Snap& snap, const ComponentBitset cbits);
-			EntityFilter(const EntityFilter&) = delete;
+			EntityFilter(const EntityStates& states, const ComponentBitset cbits);
+			EntityFilter(const EntityFilter&) = default;
 			EntityFilter(EntityFilter&&) = default;
 
 			void add(Entity ent, const ComponentBitset& cbits);
@@ -77,6 +76,11 @@ namespace Engine::ECS {
 
 			ConstIterator cbegin() const;
 			ConstIterator cend() const;
+
+		private:
+			ENGINE_INLINE bool isEnabled(Entity ent) const {
+				return states[ent.id].state & EntityState::Enabled;
+			}
 	};
 }
 

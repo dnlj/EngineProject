@@ -109,11 +109,15 @@ namespace Engine::ECS {
 	template<template<class> class ShouldStore, class... Cs>
 	class Snapshot {
 		private:
-			template<class,class> friend class SingleComponentFilter;
+			template<template<class> class, class...>
+			friend class Snapshot;
 
-			std::vector<EntityFilter<Snapshot>> filters;
+			template<class,class>
+			friend class SingleComponentFilter;
+
+			std::vector<EntityFilter> filters;
 			FlatHashMap<ComponentBitset, int32> cbitsToFilter;
-			std::vector<int32> compToFilter[sizeof...(Cs)];
+			std::array<std::vector<int32>, sizeof...(Cs)> compToFilter;
 
 		public: // TODO: private
 			/** Time currently being ticked */
@@ -123,7 +127,7 @@ namespace Engine::ECS {
 			Tick currTick = 0;
 				
 			/** TODO: doc */
-			std::vector<EntityState> entities;
+			EntityStates entities;
 				
 			/** TODO: doc */
 			std::vector<Entity> deadEntities;
@@ -141,11 +145,28 @@ namespace Engine::ECS {
 			> compContainers;
 
 		public:
-			//template<template<class> class ShouldStore2>
-			//Snapshot(const Snapshot<ShouldStore2, Cs...>& other) {
-			//	// TODO: untested
-			//	((ShouldStore<Cs>::value && ShouldStore2<Cs>::value ? getComponentContainer<Cs> = other.getComponentContainer<Cs>() : void), ...);
-			//}
+			Snapshot() = default;
+			
+			template<class C, template<class> class ShouldStore2>
+			void copyComponentContainerIf(const Snapshot<ShouldStore2, Cs...>& other) {
+				if constexpr (ShouldStore<C>::value && ShouldStore2<C>::value) {
+					getComponentContainer<C>() = other.getComponentContainer<C>();
+				}
+			}
+
+			template<template<class> class ShouldStore2>
+			Snapshot(const Snapshot<ShouldStore2, Cs...>& other)
+				: filters(other.filters)
+				, cbitsToFilter(other.cbitsToFilter)
+				, compToFilter(other.compToFilter)
+				, tickTime(other.tickTime)
+				, currTick(other.currTick)
+				, entities(other.entities)
+				, deadEntities(other.deadEntities)
+				, markedForDeath(other.markedForDeath)
+				, compBitsets(other.compBitsets) {
+				(copyComponentContainerIf<Cs>(other), ...);
+			}
 			
 			template<class C, class... Comps>
 			decltype(auto) getFilter() {
@@ -157,7 +178,7 @@ namespace Engine::ECS {
 					if (found != cbitsToFilter.end()) { return filters[found->second]; }
 
 					const auto idx = static_cast<int32>(filters.size());
-					auto& filter = filters.emplace_back(*this, cbits);
+					auto& filter = filters.emplace_back(entities, cbits);
 					for (const auto& ent : getFilter<C>()) {
 						if (!isAlive(ent)) { continue; }
 						filter.add(ent, getComponentsBitset(ent));
@@ -195,10 +216,35 @@ namespace Engine::ECS {
 
 			void deferedDestroyEntity(Entity ent) {
 				setEnabled(ent, false); // TODO: Will we need a component callback for onDisabled to handle things like physics bodies?
-				markedForDeath.push_back(ent);
+				// TODO: would it be better to sort the list afterward (in World::storeSnapshot for example)? instead of while inserting
+				markedForDeath.insert(std::lower_bound(markedForDeath.cbegin(), markedForDeath.cend(), ent), ent);
+				ENGINE_LOG("deferedDestroyEntity: ", ent);
 			}
 
-			// TODO: add destroyuEntity for world to call. Update filters.
+			void destroyEntities(const decltype(markedForDeath)& ents) {
+				if (!ents.size() || !markedForDeath.size()) { return; }
+				const auto aEnd = ents.end();
+				auto bEnd = markedForDeath.end();
+				auto a = ents.begin();
+				auto b = markedForDeath.begin();
+
+				for (;b < bEnd; ++b) {
+					while (a < aEnd && *a < *b) { ++a; }
+					if (a == aEnd) {
+						break;
+					}
+					if (*a != *b || !isAlive(*b)) {
+						ENGINE_LOG("destroyEntities - skip: ", *b);
+						continue;
+					}
+					ENGINE_LOG("destroyEntities - dest: ", *b);
+					destroyEntity(*b);
+					--bEnd;
+					std::swap(*b, *bEnd);
+				}
+
+				markedForDeath.erase(bEnd, markedForDeath.end());
+			}
 
 			ENGINE_INLINE bool isAlive(Entity ent) const noexcept {
 				return entities[ent.id].state & EntityState::Alive;
@@ -311,6 +357,11 @@ namespace Engine::ECS {
 				(rm(compToFilter[getComponentId<Comps>()]), ...);
 			}
 
+			template<class C>
+			ENGINE_INLINE const ComponentContainer<C>& getComponentContainer() const {
+				return std::get<ComponentContainer<C>>(compContainers);
+			}
+
 		private:
 			/**
 			 * Get the container for components of type @p Component.
@@ -325,6 +376,30 @@ namespace Engine::ECS {
 			
 			ComponentBitset& getComponentsBitset(Entity ent) noexcept {
 				return compBitsets[ent.id];
+			}
+
+			/**
+			 * Destroys and entity, freeing its id to be recycled.
+			 */
+			void destroyEntity(Entity ent) {
+				ENGINE_WARN("destroyEntity: ", ent);
+				((hasComponent<Cs>(ent) && (removeComponents<Cs>(ent), 0)), ...);
+		
+				#if defined(DEBUG)
+					if (!isAlive(ent)) {
+						ENGINE_ERROR("Attempting to destroy an already dead entity \"", ent, "\"");
+					} else if (entities[ent.id].ent.gen != ent.gen) {
+						ENGINE_ERROR(
+							"Attempting to destroy an old generation entity. Current generation is ",
+							entities[ent.id].ent.gen,
+							" attempted to delete ",
+							ent.gen
+						);
+					}
+				#endif
+
+				deadEntities.push_back(ent);
+				entities[ent.id].state = EntityState::Dead;
 			}
 
 	};
