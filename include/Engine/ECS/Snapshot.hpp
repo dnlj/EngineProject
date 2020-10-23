@@ -146,6 +146,7 @@ namespace Engine::ECS {
 
 		public:
 			Snapshot() = default;
+			Snapshot(const Snapshot& other) = delete;
 			
 			template<class C, template<class> class ShouldStore2>
 			void copyComponentContainerIf(const Snapshot<ShouldStore2, Cs...>& other) {
@@ -154,17 +155,18 @@ namespace Engine::ECS {
 				}
 			}
 
+			// TODO: assign is a strange name since we may have less/more mebers than `other`. some comps may persist while others are copied.
 			template<template<class> class ShouldStore2>
-			Snapshot(const Snapshot<ShouldStore2, Cs...>& other)
-				: filters(other.filters)
-				, cbitsToFilter(other.cbitsToFilter)
-				, compToFilter(other.compToFilter)
-				, tickTime(other.tickTime)
-				, currTick(other.currTick)
-				, entities(other.entities)
-				, deadEntities(other.deadEntities)
-				, markedForDeath(other.markedForDeath)
-				, compBitsets(other.compBitsets) {
+			void assign(const Snapshot<ShouldStore2, Cs...>& other) {
+				filters = other.filters;
+				cbitsToFilter = other.cbitsToFilter;
+				compToFilter = other.compToFilter;
+				tickTime = other.tickTime;
+				currTick = other.currTick;
+				entities = other.entities;
+				deadEntities = other.deadEntities;
+				markedForDeath = other.markedForDeath;
+				compBitsets = other.compBitsets;
 				(copyComponentContainerIf<Cs>(other), ...);
 			}
 			
@@ -175,7 +177,9 @@ namespace Engine::ECS {
 				} else {
 					const auto cbits = getBitsetForComponents<C, Comps...>();
 					auto found = cbitsToFilter.find(cbits);
-					if (found != cbitsToFilter.end()) { return filters[found->second]; }
+
+					// TODO: maybe having EntityFilter be more of a "view" class would be better to avoid this `.with` stuff and the accidental copy conern.
+					if (found != cbitsToFilter.end()) { return filters[found->second].with(entities); }
 
 					const auto idx = static_cast<int32>(filters.size());
 					auto& filter = filters.emplace_back(entities, cbits);
@@ -187,7 +191,7 @@ namespace Engine::ECS {
 					cbitsToFilter[cbits] = idx;
 					compToFilter[getComponentId<C>()].push_back(idx);
 					(compToFilter[getComponentId<Comps>()].push_back(idx), ...);
-					return filter;
+					return static_cast<const EntityFilter&>(filter);
 				}
 			}
 

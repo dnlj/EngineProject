@@ -14,7 +14,7 @@ namespace Engine::ECS {
 	class EntityFilter {
 		private:
 			std::vector<Entity> entities;
-			const EntityStates& states;
+			const EntityStates* states;
 			ComponentBitset componentsBits;
 
 		private:
@@ -62,8 +62,11 @@ namespace Engine::ECS {
 			using ConstIterator = Iterator<const Entity>;
 
 			EntityFilter(const EntityStates& states, const ComponentBitset cbits);
-			EntityFilter(const EntityFilter&) = default;
-			EntityFilter(EntityFilter&&) = default;
+
+			const EntityFilter& with(const EntityStates& ss) {
+				states = &ss;
+				return *this;
+			}
 
 			void add(Entity ent, const ComponentBitset& cbits);
 			void remove(Entity ent);
@@ -79,7 +82,7 @@ namespace Engine::ECS {
 
 		private:
 			ENGINE_INLINE bool isEnabled(Entity ent) const {
-				return states[ent.id].state & EntityState::Enabled;
+				return (*states)[ent.id].state & EntityState::Enabled;
 			}
 	};
 }

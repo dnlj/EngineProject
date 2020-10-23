@@ -36,16 +36,15 @@ namespace Engine::ECS {
 			activeSnap.tickTime = beginTime - maxDelay;
 		}
 
-		/*
 		if constexpr (ENGINE_CLIENT) {
 			if (activeSnap.currTick > 64*10 && activeSnap.currTick % 128 == 0 && !performingRollback) {
 				ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", activeSnap.currTick);
 				const auto oldTick = activeSnap.currTick;
 				const auto oldTime = activeSnap.tickTime;
 
-				const auto& snap = snapBuffer.get(currTick - SnapshotCount);
+				const auto& snap = snapBuffer.get(activeSnap.currTick - SnapshotCount);
 				loadSnapshot(snap);
-
+				
 				performingRollback = true;
 				while (activeSnap.currTick < oldTick) {
 					tickSystems();
@@ -53,13 +52,13 @@ namespace Engine::ECS {
 				}
 
 				activeSnap.tickTime = oldTime;
-
-				ENGINE_ASSERT(oldTick == currTick);
-				ENGINE_ASSERT(oldTime == tickTime);
+				
+				ENGINE_ASSERT(oldTick == activeSnap.currTick);
+				ENGINE_ASSERT(oldTime == activeSnap.tickTime);
 
 				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
 			}
-		}*/
+		}
 
 		while (activeSnap.tickTime + tickInterval <= beginTime) {
 			performingRollback = false; // TODO this reall should be right after the rollback loop but it is here temp
@@ -76,6 +75,16 @@ namespace Engine::ECS {
 		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
 		storeSnapshot();
 		(getSystem<Ss>().preTick(), ...);
+
+
+		//auto&& tickSystem = [&]<class S>(){
+		//	if (performingRollback) {
+		//		ENGINE_LOG("Running system: ", typeid(S).name());
+		//		//__debugbreak();
+		//	}
+		//	getSystem<S>().tick();
+		//}; (tickSystem.operator()<Ss>(), ...);
+
 		(getSystem<Ss>().tick(), ...);
 		(getSystem<Ss>().postTick(), ...);
 		++activeSnap.currTick;
@@ -140,7 +149,6 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	void WORLD_CLASS::storeSnapshot() {
 		// TODO: delta compression?
-		// TODO: Make sure we are storing all tick time info at the correct time: currentTick, beginTime, tickTime, etc.
 
 		(getSystem<Ss>().preStoreSnapshot(), ...);
 		const auto oldSeq = tick() - snapBuffer.capacity();
@@ -151,12 +159,12 @@ namespace Engine::ECS {
 		}
 
 		auto& snap = snapBuffer.insert(tick());
-		snap = activeSnap;
+		snap.assign(activeSnap);
 	}
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::loadSnapshot(const RollbackSnapshot& snap) {
-		activeSnap = snap;
+		activeSnap.assign(snap);
 		(getSystem<Ss>().postLoadSnapshot(), ...);
 	}
 }

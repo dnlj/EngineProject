@@ -4,7 +4,7 @@
 
 namespace Engine::ECS {
 	EntityFilter::EntityFilter(const EntityStates& states, const ComponentBitset cbits)
-		: states{states}
+		: states{&states}
 		, componentsBits{cbits} {
 	}
 	
