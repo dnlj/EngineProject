@@ -29,14 +29,14 @@ namespace Engine::ECS {
 					It it;
 					SingleComponentFilter& filter;
 
-					void stepNextValid() {
+					ENGINE_INLINE void stepNextValid() {
 						const auto end = filter.getCont().end();
 						while (it != end && !filter.canUse(it->first)) {
 							++it;
 						}
 					}
 
-					void stepPrevValid() {
+					ENGINE_INLINE void stepPrevValid() {
 						const auto begin = filter.getCont().begin();
 						while (it != begin && !filter.canUse(it->first)) {
 							--it;
@@ -61,17 +61,17 @@ namespace Engine::ECS {
 						return *this;
 					}
 
-					auto& operator*() {
+					ENGINE_INLINE auto& operator*() {
 						ENGINE_DEBUG_ASSERT(filter.canUse(it->first), "Attempt to dereference invalid iterator.");
 						return it->first;
 					}
 
-					decltype(auto) operator->() {
+					ENGINE_INLINE decltype(auto) operator->() {
 						return &**this;
 					}
 
-					bool operator==(const Iter& other) const noexcept { return it == other.it; }
-					bool operator!=(const Iter& other) const noexcept { return !(*this == other); }
+					ENGINE_INLINE bool operator==(const Iter& other) const noexcept { return it == other.it; }
+					ENGINE_INLINE bool operator!=(const Iter& other) const noexcept { return !(*this == other); }
 			};
 		public:
 			SingleComponentFilter(Snap& snap) : snap{snap} {}
@@ -149,7 +149,7 @@ namespace Engine::ECS {
 			Snapshot(const Snapshot& other) = delete;
 			
 			template<class C, template<class> class ShouldStore2>
-			void copyComponentContainerIf(const Snapshot<ShouldStore2, Cs...>& other) {
+			ENGINE_INLINE void copyComponentContainerIf(const Snapshot<ShouldStore2, Cs...>& other) {
 				if constexpr (ShouldStore<C>::value && ShouldStore2<C>::value) {
 					getComponentContainer<C>() = other.getComponentContainer<C>();
 				}
@@ -218,7 +218,7 @@ namespace Engine::ECS {
 				return es->ent;
 			}
 
-			void deferedDestroyEntity(Entity ent) {
+			ENGINE_INLINE void deferedDestroyEntity(Entity ent) {
 				setEnabled(ent, false); // TODO: Will we need a component callback for onDisabled to handle things like physics bodies?
 				// TODO: would it be better to sort the list afterward (in World::storeSnapshot for example)? instead of while inserting
 				markedForDeath.insert(std::lower_bound(markedForDeath.cbegin(), markedForDeath.cend(), ent), ent);
@@ -277,7 +277,7 @@ namespace Engine::ECS {
 			}
 			
 			template<class Component>
-			constexpr static ComponentId getComponentId() noexcept {
+			ENGINE_INLINE constexpr static ComponentId getComponentId() noexcept {
 				if constexpr ((std::is_same_v<Cs, Component> || ...)) {
 					return Meta::IndexOf<Component, Cs...>::value;
 				} else {
@@ -289,7 +289,7 @@ namespace Engine::ECS {
 			 * Gets the bitset with the bits that correspond to the ids of the given components set.
 			 */
 			template<class... Components>
-			constexpr static ComponentBitset getBitsetForComponents() noexcept {
+			ENGINE_INLINE constexpr static ComponentBitset getBitsetForComponents() noexcept {
 				ComponentBitset value;
 				(value.set(getComponentId<Components>()), ...);
 				return value;
@@ -317,12 +317,12 @@ namespace Engine::ECS {
 				return container[ent];
 			}
 
-			const ComponentBitset& getComponentsBitset(Entity ent) const noexcept {
+			ENGINE_INLINE const ComponentBitset& getComponentsBitset(Entity ent) const noexcept {
 				return compBitsets[ent.id];
 			}
 
 			template<class Component>
-			Component& getComponent(Entity ent) {
+			ENGINE_INLINE Component& getComponent(Entity ent) {
 				// TODO: why is this not a compile error? this should need `decltype(auto)` return type?
 				if constexpr (IsFlagComponent<Component>::value) {
 					return compBitsets[ent][getComponentId<Component>()];
@@ -333,16 +333,16 @@ namespace Engine::ECS {
 			}
 
 			template<class... Components>
-			std::tuple<Components&...> getComponents(Entity ent) {
+			ENGINE_INLINE std::tuple<Components&...> getComponents(Entity ent) {
 				return std::forward_as_tuple(getComponent<Components>(ent) ...);
 			}
 
-			bool hasComponent(Entity ent, ComponentId cid) {
+			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) {
 				return compBitsets[ent.id].test(cid);
 			}
 
 			template<class C>
-			bool hasComponent(Entity ent) {
+			ENGINE_INLINE bool hasComponent(Entity ent) {
 				return hasComponent(ent, getComponentId<C>());
 			}
 
@@ -378,7 +378,7 @@ namespace Engine::ECS {
 			}
 
 			
-			ComponentBitset& getComponentsBitset(Entity ent) noexcept {
+			ENGINE_INLINE ComponentBitset& getComponentsBitset(Entity ent) noexcept {
 				return compBitsets[ent.id];
 			}
 

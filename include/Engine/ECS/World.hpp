@@ -138,7 +138,7 @@ namespace Engine::ECS {
 			 * @return The id of @p C.
 			 */
 			template<class C>
-			constexpr static auto getComponentId() noexcept { return ActiveSnapshot::getComponentId<C>(); };
+			ENGINE_INLINE constexpr static auto getComponentId() noexcept { return ActiveSnapshot::getComponentId<C>(); };
 
 			/**
 			 * Gets the id of a system.
@@ -162,13 +162,13 @@ namespace Engine::ECS {
 			 * Creates an entity.
 			 * @param forceNew Disables recycling entity ids.
 			 */
-			Entity createEntity(bool forceNew = false) { return activeSnap.createEntity(forceNew); };
+			ENGINE_INLINE Entity createEntity(bool forceNew = false) { return activeSnap.createEntity(forceNew); };
 			
 			/**
 			 * Marks an Entity to be destroyed once it is out of rollback scope.
 			 * Until the Enttiy is destroyed it is disabled.
 			 */
-			void deferedDestroyEntity(Entity ent) { activeSnap.deferedDestroyEntity(ent); };
+			ENGINE_INLINE void deferedDestroyEntity(Entity ent) { activeSnap.deferedDestroyEntity(ent); };
 
 			/**
 			 * Adds a component to an entity.
@@ -178,7 +178,7 @@ namespace Engine::ECS {
 			 * @return A reference to the added component.
 			 */
 			template<class C, class... Args>
-			decltype(auto) addComponent(Entity ent, Args&&... args) { return activeSnap.addComponent<C>(ent, args...); }
+			ENGINE_INLINE decltype(auto) addComponent(Entity ent, Args&&... args) { return activeSnap.addComponent<C>(ent, args...); }
 
 			/**
 			 * Adds components to an entity.
@@ -187,7 +187,7 @@ namespace Engine::ECS {
 			 * @return A tuple of references to the added components.
 			 */
 			template<class... Components>
-			decltype(auto) addComponents(Entity ent) { return std::forward_as_tuple(addComponent<Components>(ent) ...); };
+			ENGINE_INLINE decltype(auto) addComponents(Entity ent) { return std::forward_as_tuple(addComponent<Components>(ent) ...); };
 
 			/**
 			 * Checks if an entity has a component.
@@ -195,7 +195,7 @@ namespace Engine::ECS {
 			 * @param[in] cid The id of the component.
 			 * @return True if the entity has the component; otherwise false.
 			 */
-			bool hasComponent(Entity ent, ComponentId cid) { return activeSnape.hasComponent(ent, cid); };
+			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) { return activeSnape.hasComponent(ent, cid); };
 
 			/**
 			 * Checks if an entity has a component.
@@ -204,7 +204,7 @@ namespace Engine::ECS {
 			 * @return True if the entity has the component; otherwise false.
 			 */
 			template<class C>
-			bool hasComponent(Entity ent) { return activeSnap.hasComponent<C>(ent); };
+			ENGINE_INLINE bool hasComponent(Entity ent) { return activeSnap.hasComponent<C>(ent); };
 
 			/**
 			 * Removes a component from an entity.
@@ -212,7 +212,7 @@ namespace Engine::ECS {
 			 * @tparam C The component.
 			 */
 			template<class C>
-			void removeComponent(Entity ent) { removeComponents<C>(ent); };
+			ENGINE_INLINE void removeComponent(Entity ent) { removeComponents<C>(ent); };
 
 			/**
 			 * Removes components from an entity.
@@ -220,18 +220,18 @@ namespace Engine::ECS {
 			 * @tparam Components The components.
 			 */
 			template<class... Components>
-			void removeComponents(Entity ent) { activeSnap.removeComponents<Components...>(ent); };
+			ENGINE_INLINE void removeComponents(Entity ent) { activeSnap.removeComponents<Components...>(ent); };
 
 			/**
 			 * Removes all components from an entity.
 			 */
-			void removeAllComponents(Entity ent) { ((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...); };
+			ENGINE_INLINE void removeAllComponents(Entity ent) { ((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...); };
 
 			/**
 			 * Gets a reference to the component instance associated with an entity.
 			 */
 			template<class C>
-			decltype(auto) getComponent(Entity ent) { return activeSnap.getComponent<C>(ent); };
+			ENGINE_INLINE decltype(auto) getComponent(Entity ent) { return activeSnap.getComponent<C>(ent); };
 
 			/**
 			 * Gets a reference the components associated with an entity.
@@ -240,19 +240,19 @@ namespace Engine::ECS {
 			 * @return A tuple of references to the components.
 			 */
 			template<class... Components>
-			decltype(auto) getComponents(Entity ent) { return getComponents<Components...>(ent); };
+			ENGINE_INLINE decltype(auto) getComponents(Entity ent) { return getComponents<Components...>(ent); };
 
 			/**
 			 * Gets the components bitset for an entity.
 			 * @param[in] ent The entity.
 			 * @return The components bitset for the entity
 			 */
-			decltype(auto) getComponentsBitset(Entity ent) const noexcept { return activeSnap.getComponentsBitset(ent); }
+			ENGINE_INLINE decltype(auto) getComponentsBitset(Entity ent) const noexcept { return activeSnap.getComponentsBitset(ent); }
 
 			/**
 			 * Gets the components bitset for all entities. Sorted by entity id. 
 			 */
-			const auto& getAllComponentBitsets() const { return activeSnap.compBitsets; };
+			ENGINE_INLINE const auto& getAllComponentBitsets() const { return activeSnap.compBitsets; };
 
 			// TODO: rm
 			//template<class... Components>
@@ -280,23 +280,23 @@ namespace Engine::ECS {
 			/**
 			 * Gets the current tick.
 			 */
-			auto getTick() const { return activeSnap.currTick; }
+			ENGINE_INLINE auto getTick() const { return activeSnap.currTick; }
 
 			// TODO: also need to clear rollback history
 			// TODO: should this be setNextTick? might help avoid bugs if we wait till all systems are done before we adjust.
 			// TODO: doc
-			void setTick(Tick tick) { activeSnap.currTick = tick; }
+			ENGINE_INLINE void setTick(Tick tick) { activeSnap.currTick = tick; }
 
 			/**
 			 * Gets the tick interval.
 			 * @see tickInterval
 			 */
-			constexpr static auto getTickInterval() { return tickInterval; };
+			ENGINE_INLINE constexpr static auto getTickInterval() { return tickInterval; };
 
 			/**
 			 * Gets the tick delta.
 			 */
-			constexpr static auto getTickDelta() { return tickDeltaTime; }
+			ENGINE_INLINE constexpr static auto getTickDelta() { return tickDeltaTime; }
 
 			/**
 			 * Current time being ticked.
