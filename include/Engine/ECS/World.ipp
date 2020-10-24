@@ -24,7 +24,6 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		// TODO: shouldnt this be after rollback code?
 		if (beginTime - activeSnap.tickTime > maxDelay) {
 			ENGINE_WARN("World tick falling behind by ",
 				Clock::Seconds{beginTime - activeSnap.tickTime - maxDelay}.count(), "s"
@@ -37,31 +36,37 @@ namespace Engine::ECS {
 		}
 
 		if constexpr (ENGINE_CLIENT) {
-			if (activeSnap.currTick > 64*10 && activeSnap.currTick % 128 == 0 && !performingRollback) {
+			static Tick last = 0; // TODO: rm
+			if (activeSnap.currTick > 64*10 && activeSnap.currTick % 128 == 0 && last != activeSnap.currTick) {
+				last = activeSnap.currTick;
 				ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", activeSnap.currTick);
 				const auto oldTick = activeSnap.currTick;
 				const auto oldTime = activeSnap.tickTime;
 
-				const auto& snap = snapBuffer.get(activeSnap.currTick - SnapshotCount);
+				const auto& snap = snapBuffer.get(activeSnap.currTick - SnapshotCount + 1);
 				loadSnapshot(snap);
-				
+
+				const auto startTime = Clock::now();
 				performingRollback = true;
 				while (activeSnap.currTick < oldTick) {
+					const auto& found = snapBuffer.get(activeSnap.currTick + 1);
+					const auto nextTickTime = found.tickTime;
 					tickSystems();
-					// TODO: need to increment tick time. use values from snapshotbuffer
+					activeSnap.tickTime = nextTickTime;
 				}
-
+				performingRollback = false;
 				activeSnap.tickTime = oldTime;
-				
-				ENGINE_ASSERT(oldTick == activeSnap.currTick);
-				ENGINE_ASSERT(oldTime == activeSnap.tickTime);
+
+				const auto diff = Clock::Milliseconds{Clock::now() - startTime}.count();
+				ENGINE_LOG("Rollback took: ", (diff < (1000.0 / TickRate) ? Engine::ASCII_SUCCESS : Engine::ASCII_ERROR), diff, "ms");
+				ENGINE_DEBUG_ASSERT(oldTick == activeSnap.currTick);
+				ENGINE_DEBUG_ASSERT(oldTime == activeSnap.tickTime);
 
 				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
 			}
 		}
 
 		while (activeSnap.tickTime + tickInterval <= beginTime) {
-			performingRollback = false; // TODO this reall should be right after the rollback loop but it is here temp
 			tickSystems();
 			activeSnap.tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
 		}
@@ -71,6 +76,8 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::tickSystems() {
+		++activeSnap.currTick;
+
 		//ENGINE_INFO("Tick: ", getTick());
 		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
 		storeSnapshot();
@@ -87,7 +94,6 @@ namespace Engine::ECS {
 
 		(getSystem<Ss>().tick(), ...);
 		(getSystem<Ss>().postTick(), ...);
-		++activeSnap.currTick;
 	}
 
 	WORLD_TPARAMS

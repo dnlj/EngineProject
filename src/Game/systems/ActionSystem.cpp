@@ -284,7 +284,6 @@ namespace Game {
 		value.pressCount += val;
 		value.releaseCount += !val;
 		value.latest = val;
-		ENGINE_LOG("UPDATE: ", (int32)btn, " ", val);
 	}
 	
 	void ActionSystem::updateAxisState(Axis axis, float32 val) {

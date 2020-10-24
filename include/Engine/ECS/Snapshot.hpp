@@ -124,7 +124,7 @@ namespace Engine::ECS {
 			Clock::TimePoint tickTime = {};
 
 			/** The current tick being run */
-			Tick currTick = 0;
+			Tick currTick = -1;
 				
 			/** TODO: doc */
 			EntityStates entities;
