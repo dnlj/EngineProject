@@ -52,6 +52,12 @@ namespace Game {
 		
 		// TODO: look into SetAutoClearForces
 		physWorld.Step(world.getTickDelta(), 8, 3);
+
+		for (const auto& ent : world.getFilter<PlayerFlag>()) {
+			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			auto pos = physComp.getBody().GetPosition();
+			ENGINE_LOG("p(", world.getTick(), ") = (", pos.x, ", ", pos.y, ")");
+		}
 	}
 
 	void PhysicsSystem::run(float dt) {
@@ -79,6 +85,7 @@ namespace Game {
 			const float32 mag = lerpTrans.q.c * lerpTrans.q.c + lerpTrans.q.s * lerpTrans.q.s;
 			lerpTrans.q.c /= mag;
 			lerpTrans.q.s /= mag;
+
 
 			lerpTrans = nextTrans; // TODO: rm
 		}

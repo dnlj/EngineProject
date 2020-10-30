@@ -83,6 +83,11 @@ namespace Engine::ECS {
 			using ActiveSnapshot = Snapshot<AlwaysTrue, Cs...>;
 			using RollbackSnapshot = Snapshot<IsSnapshotRelevant, Cs...>;
 			ActiveSnapshot activeSnap;
+
+			struct {
+				Engine::ECS::Tick tick = -1;
+				Clock::TimePoint time = {};
+			} rollbackData;
 			SequenceBuffer<Tick, RollbackSnapshot, SnapshotCount> snapBuffer;
 
 		public:
@@ -91,6 +96,8 @@ namespace Engine::ECS {
 			World(Arg& arg);
 
 			World(const World&) = delete;
+
+			ENGINE_INLINE void scheduleRollback(Engine::ECS::Tick t) { rollbackData.tick = t; }
 
 			/**
 			 * Gets the tick being simulated.
@@ -195,7 +202,7 @@ namespace Engine::ECS {
 			 * @param[in] cid The id of the component.
 			 * @return True if the entity has the component; otherwise false.
 			 */
-			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) { return activeSnape.hasComponent(ent, cid); };
+			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) { return activeSnap.hasComponent(ent, cid); };
 
 			/**
 			 * Checks if an entity has a component.
@@ -254,15 +261,7 @@ namespace Engine::ECS {
 			 */
 			ENGINE_INLINE const auto& getAllComponentBitsets() const { return activeSnap.compBitsets; };
 
-			// TODO: rm
-			//template<class... Components>
-			//Filter& getFilterFor();
-			//WORLD_TPARAMS
-			//template<class... Components>
-			//auto WORLD_CLASS::getFilterFor() -> Filter& {
-			//	return fm.getFilterFor(self(), activeSnap.getBitsetForComponents<Components...>());
-			//}
-
+			// TODO: doc
 			template<class C, class... Comps>
 			decltype(auto) getFilter() {
 				if constexpr(IsEntityFilterList<C>::value) {
@@ -273,9 +272,6 @@ namespace Engine::ECS {
 					return activeSnap.getFilter<C, Comps...>();
 				}
 			};
-
-			//template<>
-			//EntityFilter& getFilterFor() = delete;
 			
 			/**
 			 * Gets the current tick.
@@ -344,6 +340,9 @@ namespace Engine::ECS {
 			ENGINE_INLINE bool isPerformingRollback() const noexcept { return performingRollback; }
 
 			constexpr auto getSnapshotCount() { return SnapshotCount; }
+
+			ENGINE_INLINE auto* getSnapshot(Tick t) { return snapBuffer.find(t); }
+			ENGINE_INLINE const auto* getSnapshot(Tick t) const { return snapBuffer.find(t); }
 
 		private:
 			void tickSystems();

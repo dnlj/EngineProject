@@ -280,17 +280,24 @@ namespace Game {
 		const auto* remote = from.read<Engine::ECS::Entity>();
 		const auto* cid = from.read<Engine::ECS::ComponentId>();
 		if (!remote || !cid) { return; }
-
+		
 		auto found = entToLocal.find(*remote);
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
-		// TODO: What if we get an older message after a newer message?
-		//ENGINE_LOG("Update: ", head.sequence);
+
+		if (!world.isAlive(local)) {
+			ENGINE_WARN("Attempting to update dead entitiy ", local);
+			return;
+		}
+
+		if (!world.hasComponent(local, *cid)) {
+			ENGINE_WARN(local, " does not have component ", *cid);
+			return;
+		}
+
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
-				if (world.hasComponent<C>(local)) {
-					world.getComponent<C>(local).netFrom(from);
-				}
+				world.getComponent<C>(local).netFrom(from);
 			} else {
 				ENGINE_WARN("Attemping to network non-network component");
 			}
@@ -318,6 +325,47 @@ namespace Game {
 				world.addComponent<C>(local);
 			}
 		});
+	}
+	
+	HandleMessageDef(MessageType::PLAYER_DATA)
+		const auto* tick = from.read<Engine::ECS::Tick>();
+		const auto* trans = from.read<b2Transform>();
+		const auto* vel = from.read<b2Vec2>();
+
+		if (!tick || !trans || !vel) {
+			ENGINE_WARN("Invalid PLAYER_DATA network message");
+			return;
+		}
+
+		auto* snap = world.getSnapshot(*tick);
+		if (!snap) {
+			ENGINE_WARN("Unable to get snapshot for tick: ", *tick);
+			return;
+		}
+
+		if (!snap->hasComponent<PhysicsComponent>(info.ent)) {
+			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsComponent");
+			return;
+		}
+		auto& tmp = snap->getComponent<PhysicsComponent>(info.ent);
+		auto& stored = tmp.getStored();
+		const auto diff = stored.trans.p - trans->p;
+		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
+		// TODO: why does this ever happen with only one player connected?
+		if (diff.LengthSquared() > 0.0f) { // TODO: also check q
+			ENGINE_INFO(
+				"Oh boy a mishap has occured on tick ", *tick, " = ", snap->currTick,
+				" (<", stored.trans.p.x, ", ", stored.trans.p.y, "> - <",
+				trans->p.x, ", ", trans->p.y, "> = <",
+				diff.x, ", ", diff.y,
+				">)"
+			);
+			stored.trans = *trans;
+			stored.vel = *vel;
+			world.scheduleRollback(*tick);
+		}
+
+		// TODO: vel
 	}
 
 	HandleMessageDef(MessageType::ACTION)
@@ -503,6 +551,18 @@ namespace Game {
 			auto& neighComp = world.getComponent<NeighborsComponent>(ply);
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
+			// TODO: network ply special
+			// TODO: does neighComp contain ply? shouldnt
+			{ // TODO: player data should be sent every tick along with actions/inputs
+				auto& physComp = world.getComponent<PhysicsComponent>(ply);
+				conn.msgBegin<MessageType::PLAYER_DATA>();
+				conn.write(world.getTick());
+				conn.write(physComp.getTransform());
+				conn.write(physComp.getVelocity());
+				conn.msgEnd<MessageType::PLAYER_DATA>();
+			}
+
+
 			// TODO: handle entities without phys comp?
 			// TODO: figure out which entities have been updated
 			// TODO: prioritize entities
@@ -561,9 +621,8 @@ namespace Game {
 						} else if (diff > 0) { // Component Removed
 							// TODO: comp removed
 						} else { // Component Updated
-							// TODO: check if comp updated
 							if (repl == Engine::Net::Replication::ALWAYS) {
-								conn.msgBegin<MessageType::ECS_COMP_ALWAYS>(); //, General_UU);
+								conn.msgBegin<MessageType::ECS_COMP_ALWAYS>();
 								conn.write(ent);
 								conn.write(cid);
 								comp.netTo(conn);
@@ -702,9 +761,9 @@ namespace Game {
 	}
 
 	void NetworkingSystem::updateNeighbors() {
-		for (const auto ent : world.getFilter<PlayerFilter>()) {
-			auto& neighComp = world.getComponent<NeighborsComponent>(ent);
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+		for (const auto ply : world.getFilter<PlayerFilter>()) {
+			auto& neighComp = world.getComponent<NeighborsComponent>(ply);
+			auto& physComp = world.getComponent<PhysicsComponent>(ply);
 			auto& added = neighComp.addedNeighbors;
 			auto& current = neighComp.currentNeighbors;
 			auto& removed = neighComp.removedNeighbors;
@@ -725,6 +784,11 @@ namespace Game {
 				}
 			} queryCallback(world, current);
 
+			//current.remove(ply);
+			if (current.has(ply)) {
+				current.remove(ply);
+			}
+
 			const auto& pos = physComp.getPosition();
 			constexpr float32 range = 5; // TODO: what range?
 			physComp.getWorld()->QueryAABB(&queryCallback, b2AABB{
@@ -734,12 +798,14 @@ namespace Game {
 
 			for (const auto lent : lastNeighbors) {
 				if (!current.has(lent.first)) {
+					ENGINE_LOG("removed: ", lent.first);
 					removed.add(lent.first);
 				}
 			}
 
 			for (const auto cent : current) {
 				if (!lastNeighbors.has(cent.first)) {
+					ENGINE_LOG("removed: ", cent.first);
 					added.add(cent.first);
 				}
 			}

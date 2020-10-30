@@ -24,20 +24,37 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		if (beginTime - activeSnap.tickTime > maxDelay) {
-			ENGINE_WARN("World tick falling behind by ",
-				Clock::Seconds{beginTime - activeSnap.tickTime - maxDelay}.count(), "s"
-			);
-		
-			// We could instead limit the number of ticks in the while loop
-			// which would have the effect of slowing down the world instead of
-			// throwing away time like this does
-			activeSnap.tickTime = beginTime - maxDelay;
-		}
+		//if (beginTime - activeSnap.tickTime > maxDelay) {
+		//	ENGINE_WARN("World tick falling behind by ",
+		//		Clock::Seconds{beginTime - activeSnap.tickTime - maxDelay}.count(), "s"
+		//	);
+		//
+		//	// We could instead limit the number of ticks in the while loop
+		//	// which would have the effect of slowing down the world instead of
+		//	// throwing away time like this does
+		//	activeSnap.tickTime = beginTime - maxDelay;
+		//}
 
 		if constexpr (ENGINE_CLIENT) {
-			static Tick last = 0; // TODO: rm
-			if (activeSnap.currTick > 64*10 && activeSnap.currTick % 128 == 0 && last != activeSnap.currTick) {
+			if (rollbackData.tick != -1 && !performingRollback) {
+				const auto oldTick = activeSnap.currTick;
+				const auto oldTime = activeSnap.tickTime;
+
+				const auto* snap = snapBuffer.find(rollbackData.tick);
+				if (!snap) {
+					ENGINE_WARN("Unable to perform world rollback to tick ", rollbackData.tick);
+					rollbackData.tick = -1;
+					return;
+				}
+
+				rollbackData.tick = activeSnap.currTick;
+				rollbackData.time = activeSnap.tickTime;
+				performingRollback = true;
+				ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", activeSnap.currTick);
+				loadSnapshot(*snap);
+			}
+
+			/*if (activeSnap.currTick > 64*10 && activeSnap.currTick % 128 == 0 && last != activeSnap.currTick) {
 				last = activeSnap.currTick;
 				ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", activeSnap.currTick);
 				const auto oldTick = activeSnap.currTick;
@@ -63,14 +80,31 @@ namespace Engine::ECS {
 				ENGINE_DEBUG_ASSERT(oldTime == activeSnap.tickTime);
 
 				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
+			}*/
+		}
+
+		if (ENGINE_CLIENT && performingRollback) {
+			while (activeSnap.currTick < rollbackData.tick) {
+				const auto& found = snapBuffer.get(activeSnap.currTick + 1);
+				const auto nextTickTime = found.tickTime;
+				tickSystems();
+				ENGINE_LOG("Rollback: ", activeSnap.currTick);
+				activeSnap.tickTime = nextTickTime;
+			}
+
+			if (activeSnap.currTick == rollbackData.tick) {
+				activeSnap.tickTime = rollbackData.time;
+				performingRollback = false;
+				rollbackData.tick = -1;
+				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
+			}
+		} else {
+			while (activeSnap.tickTime + tickInterval <= beginTime) {
+				tickSystems();
+				activeSnap.tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
 			}
 		}
-
-		while (activeSnap.tickTime + tickInterval <= beginTime) {
-			tickSystems();
-			activeSnap.tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
-		}
-
+		
 		(getSystem<Ss>().run(deltaTime), ...);
 	}
 

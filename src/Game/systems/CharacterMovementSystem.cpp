@@ -21,7 +21,6 @@ namespace Game {
 	void CharacterMovementSystem::tick() {
 		constexpr float speed = 1.0f * 4;
 
-
 		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			const auto& actComp = world.getComponent<ActionComponent>(ent);
@@ -33,6 +32,7 @@ namespace Game {
 			const b2Vec2 move = {static_cast<float32>(right - left), static_cast<float32>(up - down)};
 
 			if (move != b2Vec2_zero) {
+				ENGINE_LOG("Move: ", up, " ", down, " ", left, " ", right);
 				physComp.getBody().ApplyLinearImpulseToCenter(world.getTickDelta() * speed * move, true);
 			}
 		}

@@ -23,6 +23,7 @@ namespace Game {
 
 			void preTick();
 			void tick();
+			void postTick();
 
 			void updateButtonState(Button btn, bool val);
 			void updateButtonState(Engine::ECS::Entity ent, Button btn, bool val);

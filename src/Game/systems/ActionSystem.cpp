@@ -33,12 +33,7 @@ namespace Game {
 			const auto tick = world.getTick();
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 			if (ENGINE_SERVER || world.isPerformingRollback()) {
-				actComp.state = actComp.states.find(world.getTick());
-
-				// TODO: rm this
-				if (actComp.state == nullptr && world.isPerformingRollback()) {
-					ENGINE_LOG("Oh no!");
-				}
+				actComp.state = actComp.states.find(tick);
 			} else {
 				const auto& last = actComp.states.get(tick - 1);
 				actComp.state = &actComp.states.insert(tick);
@@ -108,6 +103,27 @@ namespace Game {
 				//	actComp.states.max(), " ", actComp.states.minValid(), " = ",
 				//	actComp.states.max() - actComp.states.minValid());
 				// If we ever add lag compensation we will need to handle server rollback here.
+			}
+		}
+	}
+
+	void ActionSystem::postTick() {
+		for (const auto ent : world.getFilter<Filter>()) {
+			const auto tick = world.getTick();
+			auto& actComp = world.getComponent<ActionComponent>(ent);
+			if (actComp.state) {
+				std::string btns;
+				btns.reserve(256);
+				for (const auto& s : actComp.state->buttons) {
+					btns += " (";
+					btns += std::to_string((int)s.pressCount);
+					btns += " ";
+					btns += std::to_string((int)s.releaseCount);
+					btns += " ";
+					btns += std::to_string((int)s.latest);
+					btns += ")";
+				}
+				//ENGINE_LOG(tick, " ActionSystem - ", ent, " - ", btns);
 			}
 		}
 	}

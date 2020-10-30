@@ -332,17 +332,22 @@ namespace Engine::ECS {
 				}
 			}
 
+			template<class Component>
+			ENGINE_INLINE const Component& getComponent(Entity ent) const {
+				return const_cast<Snapshot*>(this)->getComponent<Component>(ent);
+			}
+
 			template<class... Components>
 			ENGINE_INLINE std::tuple<Components&...> getComponents(Entity ent) {
 				return std::forward_as_tuple(getComponent<Components>(ent) ...);
 			}
 
-			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) {
+			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) const {
 				return compBitsets[ent.id].test(cid);
 			}
 
 			template<class C>
-			ENGINE_INLINE bool hasComponent(Entity ent) {
+			ENGINE_INLINE bool hasComponent(Entity ent) const {
 				return hasComponent(ent, getComponentId<C>());
 			}
 

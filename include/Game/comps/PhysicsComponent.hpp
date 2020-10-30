@@ -80,8 +80,14 @@ namespace Game {
 			void setTransform(const b2Vec2& pos, float32 ang);
 			const b2Vec2& getPosition() const;
 			const b2Vec2& getInterpPosition() const;
+			ENGINE_INLINE const auto& getTransform() const { return body->GetTransform(); }
+			ENGINE_INLINE const auto& getVelocity() const { return body->GetLinearVelocity(); }
+			ENGINE_INLINE auto& getStored() { return stored; }
+			ENGINE_INLINE const auto& getStored() const { return stored; }
+
 
 			Engine::Net::Replication netRepl() const;
+
 			void netTo(Connection& conn) const;
 			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const;
 			void netFrom(Connection& conn);

@@ -394,7 +394,7 @@ void run(int argc, char* argv[]) {
 		using namespace Engine::Input;
 		auto& im = engine.inputManager;
 		auto& as = world.getSystem<Game::ActionSystem>();
-		
+
 		if constexpr (ENGINE_CLIENT) {
 			im.addBind(InputSequence{
 				InputId{InputType::KEYBOARD, 1, 29}, // CTRL
@@ -538,10 +538,10 @@ int entry(int argc, char* argv[]) {
 	// Position the console
 	if (HWND window; window = GetConsoleWindow()) {
 		if constexpr (ENGINE_CLIENT) {
-			SetWindowPos(window, HWND_TOP, 0, 0, 1000, 500, 0);
+			SetWindowPos(window, HWND_TOP, 0, 0, 1500, 500, 0);
 			SetWindowTextW(window, L"Client");
 		} else if constexpr (ENGINE_SERVER) {
-			SetWindowPos(window, HWND_TOP, 0, 500, 1000, 500, 0);
+			SetWindowPos(window, HWND_TOP, 0, 500, 1500, 500, 0);
 			SetWindowTextW(window, L"Server");
 		}
 	}
