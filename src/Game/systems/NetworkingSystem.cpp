@@ -332,10 +332,13 @@ namespace Game {
 		const auto* trans = from.read<b2Transform>();
 		const auto* vel = from.read<b2Vec2>();
 
+
 		if (!tick || !trans || !vel) {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
+
+		ENGINE_LOG("Recv PLAYER_DATA for ", *tick); // TODO: rm
 
 		auto* snap = world.getSnapshot(*tick);
 		if (!snap) {
@@ -350,10 +353,11 @@ namespace Game {
 		auto& tmp = snap->getComponent<PhysicsComponent>(info.ent);
 		auto& stored = tmp.getStored();
 		const auto diff = stored.trans.p - trans->p;
+		const float32 eps = 0.00001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
 		// TODO: why does this ever happen with only one player connected?
-		if (diff.LengthSquared() > 0.0f) { // TODO: also check q
-			ENGINE_INFO(
+		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
+			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(stored.trans.p.x)>::max_digits10),
 				"Oh boy a mishap has occured on tick ", *tick, " = ", snap->currTick,
 				" (<", stored.trans.p.x, ", ", stored.trans.p.y, "> - <",
 				trans->p.x, ", ", trans->p.y, "> = <",
@@ -556,10 +560,11 @@ namespace Game {
 			{ // TODO: player data should be sent every tick along with actions/inputs
 				auto& physComp = world.getComponent<PhysicsComponent>(ply);
 				conn.msgBegin<MessageType::PLAYER_DATA>();
-				conn.write(world.getTick());
+				conn.write(world.getTick() + 1); // TODO: since this is in `run` and not before `tick` we are sending on tick off. +1 is temp fix
 				conn.write(physComp.getTransform());
 				conn.write(physComp.getVelocity());
 				conn.msgEnd<MessageType::PLAYER_DATA>();
+				ENGINE_LOG("Send PLAYER_DATA for ", world.getTick() + 1); // TODO: rm
 			}
 
 

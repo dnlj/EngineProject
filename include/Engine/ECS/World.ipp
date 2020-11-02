@@ -97,6 +97,7 @@ namespace Engine::ECS {
 				performingRollback = false;
 				rollbackData.tick = -1;
 				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
+				__debugbreak();
 			}
 		} else {
 			while (activeSnap.tickTime + tickInterval <= beginTime) {
@@ -112,8 +113,6 @@ namespace Engine::ECS {
 	void WORLD_CLASS::tickSystems() {
 		++activeSnap.currTick;
 
-		//ENGINE_INFO("Tick: ", getTick());
-		// TODO: do we actually use tickDeltaTime in any systems? maybe just make an accessor/var on world
 		storeSnapshot();
 		(getSystem<Ss>().preTick(), ...);
 
@@ -206,5 +205,6 @@ namespace Engine::ECS {
 	void WORLD_CLASS::loadSnapshot(const RollbackSnapshot& snap) {
 		activeSnap.assign(snap);
 		(getSystem<Ss>().postLoadSnapshot(), ...);
+		--activeSnap.currTick; // We need to do this because tickSystems increments tick.
 	}
 }

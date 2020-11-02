@@ -2,6 +2,7 @@
 
 // STD
 #include <vector>
+#include <iostream>
 
 // Engine
 #include <Engine/Engine.hpp>
@@ -46,7 +47,25 @@ namespace Game {
 
 			// TODO: should be able to compress these quite a bit if we make them offsets from the player and as such have a limited range.
 			AxisValue axes[static_cast<int32>(Axis::_COUNT)];
+
+			friend std::ostream& operator<<(std::ostream& os, const ActionState& s) {
+				os << "ActionState(";
+				for (const auto& b : s.buttons) {
+					os
+						<< " <" << static_cast<int>(b.pressCount)
+						<< ", " << static_cast<int>(b.releaseCount)
+						<< ", " << static_cast<int>(b.latest)
+						<< ">";
+				}
+				for (const auto& a : s.axes) {
+					os << " " << a;
+				}
+				os << " )";
+				return os;
+			}
 	};
+
+
 
 	class ActionComponent {
 		private:

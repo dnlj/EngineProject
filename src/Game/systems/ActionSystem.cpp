@@ -55,7 +55,6 @@ namespace Game {
 		for (const auto ent : world.getFilter<Filter>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-			auto* state = actComp.state;
 
 			if constexpr (ENGINE_CLIENT) {
 				conn.msgBegin<MessageType::ACTION>();
@@ -78,6 +77,8 @@ namespace Game {
 				conn.writeFlushBits();
 				conn.msgEnd<MessageType::ACTION>();
 			} else if constexpr (ENGINE_SERVER) {
+				auto* state = actComp.state;
+
 				conn.msgBegin<MessageType::ACTION>();
 				conn.write(currTick);
 				conn.write(state ? state->recvTick : 0);
@@ -85,9 +86,10 @@ namespace Game {
 				conn.msgEnd<MessageType::ACTION>();
 
 				if (!state) {
-					ENGINE_LOG("Missing input for tick ", currTick);
 					// TODO: duplicate and decay last input?
-					actComp.state = &(actComp.states.insert(currTick) = {});
+					state = actComp.states.find(currTick - 1);
+					actComp.state = &(actComp.states.insert(currTick) = (state ? *state : ActionState{}));
+					ENGINE_LOG("Missing input for tick ", currTick, state ? " - using previous input" : " - unable to duplicate previous input"); // TODO: message about duplicate or zero
 				}
 
 				if constexpr (ENGINE_DEBUG) {
@@ -104,26 +106,13 @@ namespace Game {
 				//	actComp.states.max() - actComp.states.minValid());
 				// If we ever add lag compensation we will need to handle server rollback here.
 			}
-		}
-	}
 
-	void ActionSystem::postTick() {
-		for (const auto ent : world.getFilter<Filter>()) {
-			const auto tick = world.getTick();
-			auto& actComp = world.getComponent<ActionComponent>(ent);
-			if (actComp.state) {
-				std::string btns;
-				btns.reserve(256);
-				for (const auto& s : actComp.state->buttons) {
-					btns += " (";
-					btns += std::to_string((int)s.pressCount);
-					btns += " ";
-					btns += std::to_string((int)s.releaseCount);
-					btns += " ";
-					btns += std::to_string((int)s.latest);
-					btns += ")";
+			// TODO: rm
+			{
+				auto* state = actComp.state;
+				if (state) {
+					ENGINE_LOG(currTick, " - ", *state);
 				}
-				//ENGINE_LOG(tick, " ActionSystem - ", ent, " - ", btns);
 			}
 		}
 	}

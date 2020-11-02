@@ -36,28 +36,6 @@ namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
 		// Inputs
 		InputSystem,
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		// TODO: this may be the problem. We want ot run network before action so that we get all inputs.
-		// but we also want ot run action before networking so we send the latest info...
-		// I guess we could read in pre tick and write in post tick?
-		// but dont we network in `run`? so it is always after anyways?????
-		// This is likely the issue. Figure out when to run networking code.
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		////////////////
-		NetworkingSystem, // Needs to be before any game logic since we sync state at start of frame.
 		ActionSystem,
 
 		// Game Logic
@@ -72,7 +50,10 @@ namespace Game {
 		// Rendering
 		MapRenderSystem,
 		SpriteSystem,
-		UISystem
+		UISystem,
+
+		// Networking
+		NetworkingSystem
 	>;
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<

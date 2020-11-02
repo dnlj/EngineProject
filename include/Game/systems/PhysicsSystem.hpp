@@ -16,7 +16,9 @@ namespace Game {
 		public:
 			PhysicsSystem(SystemArg arg);
 
+			void preTick(); // TODO: rm. just for debugging
 			void tick();
+			void postTick(); // TODO: rm
 			void run(float32 dt);
 			void preStoreSnapshot();
 			void postLoadSnapshot();
