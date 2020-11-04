@@ -106,14 +106,6 @@ namespace Game {
 				//	actComp.states.max() - actComp.states.minValid());
 				// If we ever add lag compensation we will need to handle server rollback here.
 			}
-
-			// TODO: rm
-			{
-				auto* state = actComp.state;
-				if (state) {
-					ENGINE_LOG(currTick, " - ", *state);
-				}
-			}
 		}
 	}
 

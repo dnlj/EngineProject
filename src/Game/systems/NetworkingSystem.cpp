@@ -338,8 +338,6 @@ namespace Game {
 			return;
 		}
 
-		ENGINE_LOG("Recv PLAYER_DATA for ", *tick); // TODO: rm
-
 		auto* snap = world.getSnapshot(*tick);
 		if (!snap) {
 			ENGINE_WARN("Unable to get snapshot for tick: ", *tick);
@@ -555,18 +553,14 @@ namespace Game {
 			auto& neighComp = world.getComponent<NeighborsComponent>(ply);
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
-			// TODO: network ply special
-			// TODO: does neighComp contain ply? shouldnt
 			{ // TODO: player data should be sent every tick along with actions/inputs
 				auto& physComp = world.getComponent<PhysicsComponent>(ply);
 				conn.msgBegin<MessageType::PLAYER_DATA>();
-				conn.write(world.getTick() + 1); // TODO: since this is in `run` and not before `tick` we are sending on tick off. +1 is temp fix
+				conn.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
 				conn.write(physComp.getTransform());
 				conn.write(physComp.getVelocity());
 				conn.msgEnd<MessageType::PLAYER_DATA>();
-				ENGINE_LOG("Send PLAYER_DATA for ", world.getTick() + 1); // TODO: rm
 			}
-
 
 			// TODO: handle entities without phys comp?
 			// TODO: figure out which entities have been updated
@@ -789,7 +783,6 @@ namespace Game {
 				}
 			} queryCallback(world, current);
 
-			//current.remove(ply);
 			if (current.has(ply)) {
 				current.remove(ply);
 			}

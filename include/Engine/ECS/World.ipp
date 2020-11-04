@@ -53,34 +53,6 @@ namespace Engine::ECS {
 				ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", activeSnap.currTick);
 				loadSnapshot(*snap);
 			}
-
-			/*if (activeSnap.currTick > 64*10 && activeSnap.currTick % 128 == 0 && last != activeSnap.currTick) {
-				last = activeSnap.currTick;
-				ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", activeSnap.currTick);
-				const auto oldTick = activeSnap.currTick;
-				const auto oldTime = activeSnap.tickTime;
-
-				const auto& snap = snapBuffer.get(activeSnap.currTick - SnapshotCount + 1);
-				loadSnapshot(snap);
-
-				const auto startTime = Clock::now();
-				performingRollback = true;
-				while (activeSnap.currTick < oldTick) {
-					const auto& found = snapBuffer.get(activeSnap.currTick + 1);
-					const auto nextTickTime = found.tickTime;
-					tickSystems();
-					activeSnap.tickTime = nextTickTime;
-				}
-				performingRollback = false;
-				activeSnap.tickTime = oldTime;
-
-				const auto diff = Clock::Milliseconds{Clock::now() - startTime}.count();
-				ENGINE_LOG("Rollback took: ", (diff < (1000.0 / TickRate) ? Engine::ASCII_SUCCESS : Engine::ASCII_ERROR), diff, "ms");
-				ENGINE_DEBUG_ASSERT(oldTick == activeSnap.currTick);
-				ENGINE_DEBUG_ASSERT(oldTime == activeSnap.tickTime);
-
-				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
-			}*/
 		}
 
 		if (ENGINE_CLIENT && performingRollback) {
@@ -97,7 +69,6 @@ namespace Engine::ECS {
 				performingRollback = false;
 				rollbackData.tick = -1;
 				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
-				__debugbreak();
 			}
 		} else {
 			while (activeSnap.tickTime + tickInterval <= beginTime) {

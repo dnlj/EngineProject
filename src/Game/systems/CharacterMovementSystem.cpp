@@ -34,9 +34,6 @@ namespace Game {
 			if (move != b2Vec2_zero) {
 				physComp.getBody().ApplyLinearImpulseToCenter(world.getTickDelta() * speed * move, true);
 			}
-
-			// TODO: rm
-			ENGINE_LOG("b(", world.getTick(), ") = (", physComp.getPosition().x, ", ", physComp.getPosition().y, ")");
 		}
 	}
 }

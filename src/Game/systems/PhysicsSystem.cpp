@@ -22,24 +22,6 @@ namespace Game {
 		#endif
 	}
 
-	void PhysicsSystem::preTick() { // TODO: rm - ju8st for debugging
-		ENGINE_LOG("---------------------------------------------------");
-		for (const auto& ent : world.getFilter<PlayerFlag>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			auto pos = physComp.getBody().GetPosition();
-			ENGINE_DEBUG_ASSERT(pos == physComp.getStored().trans.p);
-			ENGINE_LOG("a(", world.getTick(), ") = (", pos.x, ", ", pos.y, ")");
-		}
-	}
-
-	void PhysicsSystem::postTick() { // TODO: rm - ju8st for debugging
-		for (const auto& ent : world.getFilter<PlayerFlag>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			auto pos = physComp.getBody().GetPosition();
-			ENGINE_LOG("d(", world.getTick(), ") = (", pos.x, ", ", pos.y, ")");
-		}
-	}
-
 	void PhysicsSystem::tick() {
 		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
@@ -70,12 +52,6 @@ namespace Game {
 		
 		// TODO: look into SetAutoClearForces
 		physWorld.Step(world.getTickDelta(), 8, 3);
-
-		// TODO: rm - ju8st for debugging
-		for (const auto& ent : world.getFilter<PlayerFlag>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			ENGINE_LOG("c(", world.getTick(), ") = (", physComp.getPosition().x, ", ", physComp.getPosition().y, ")");
-		}
 	}
 
 	void PhysicsSystem::run(float dt) {
@@ -117,24 +93,14 @@ namespace Game {
 	void PhysicsSystem::preStoreSnapshot() {
 		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			if (world.hasComponent<PlayerFlag>(ent)) {
-				ENGINE_LOG("w(", world.getTick(), ") = (", physComp.getPosition().x, ", ", physComp.getPosition().y, ")");
-				ENGINE_LOG("x(", world.getTick(), ") = (", physComp.getStored().trans.p.x, ", ", physComp.getStored().trans.p.y, ")");
-			}
 			physComp.storeBody();
-			if (world.hasComponent<PlayerFlag>(ent)) {
-				ENGINE_LOG("y(", world.getTick(), ") = (", physComp.getPosition().x, ", ", physComp.getPosition().y, ")");
-				ENGINE_LOG("z(", world.getTick(), ") = (", physComp.getStored().trans.p.x, ", ", physComp.getStored().trans.p.y, ")");
-			}
 		}
 	}
 
 	void PhysicsSystem::postLoadSnapshot() {
 		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			//if (physComp.getBody().GetType() == b2_dynamicBody) {
-				physComp.loadBody();
-			//}
+			physComp.loadBody();
 		}
 	}
 
