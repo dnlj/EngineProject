@@ -17,7 +17,8 @@
 namespace {
 	using PlayerFilter = Engine::ECS::EntityFilterList<
 		Game::PlayerFlag,
-		Game::PhysicsComponent
+		Game::PhysicsComponent,
+		Game::ConnectionComponent
 	>;
 }
 

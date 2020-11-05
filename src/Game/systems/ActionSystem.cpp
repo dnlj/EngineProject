@@ -50,7 +50,6 @@ namespace Game {
 		if (world.isPerformingRollback()) { return; }
 
 		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
-		// TODO: dont resend actions when performing rollback
 		const auto currTick = world.getTick();
 		for (const auto ent : world.getFilter<Filter>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
@@ -124,6 +123,20 @@ namespace Game {
 		const auto tick = *from.read<Engine::ECS::Tick>();
 		const auto recvTick = *from.read<Engine::ECS::Tick>();
 		const auto buffSize = tick - recvTick;
+
+		if (recvTick == 0) { // TODO: The server should probably send a bitset of the recvs it has received each time so it can be redundant like the client side inputs are.
+			auto& actComp = world.getComponent<ActionComponent>(fromEnt);
+			auto* state = actComp.states.find(tick);
+			if (state) {
+				auto* prev = actComp.states.find(tick - 1);
+				if (prev) {
+					*state = *prev;
+					ENGINE_WARN("Server missed input for ", tick, " - duplicating last input");
+				} else {
+					ENGINE_WARN("Server missed input for ", tick, " - unable to duplicate last input");
+				}
+			}
+		}
 
 		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
 		{

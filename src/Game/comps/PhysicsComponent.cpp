@@ -98,12 +98,12 @@ namespace Game {
 	}
 
 	void PhysicsComponent::netFrom(Connection& conn) {
-		//updateTransform(*conn.read<b2Transform>());
-		//body->SetLinearVelocity(*conn.read<b2Vec2>());
+		updateTransform(*conn.read<b2Transform>());
+		body->SetLinearVelocity(*conn.read<b2Vec2>());
 
 		// TODO: this is temp fix for PlayerFlag entities. Other entiteis will desync.
-		conn.read<b2Transform>();
-		conn.read<b2Vec2>();
+		//conn.read<b2Transform>();
+		//conn.read<b2Vec2>();
 	}
 
 	void PhysicsComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {

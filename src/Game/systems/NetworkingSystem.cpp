@@ -5,6 +5,7 @@
 #include <random>
 
 // Engine
+#include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Entity.hpp>
 
@@ -14,7 +15,10 @@
 #include <Game/comps/ConnectionComponent.hpp>
 
 namespace {
-	using PlayerFilter = Engine::ECS::EntityFilterList<Game::PlayerFlag>;
+	using PlayerFilter = Engine::ECS::EntityFilterList<
+		Game::PlayerFlag,
+		Game::ConnectionComponent
+	>;
 
 	template<class T>
 	concept IsNetworkedComponent = requires (T t) {
@@ -77,11 +81,32 @@ namespace {
 		0x00, 0x11, 0x22,
 	};
 }
+#if DEBUG
+namespace {
+	struct HandleMessageDef_DebugBreak_Struct {
+		const Engine::Net::MessageHeader* hdr;
+		Game::Connection& from;
+		const char* msgType = nullptr;
+
+		~HandleMessageDef_DebugBreak_Struct() {
+			using byte = Engine::byte;
+			const byte* stop = reinterpret_cast<const byte*>(hdr) + sizeof(*hdr) + hdr->size;
+			const byte* curr = static_cast<const byte*>(from.read(0));
+			const auto rem = stop - curr;
+			if (rem != 0) { __debugbreak(); }
+		}
+	};
+}
+#define HandleMessageDef_DebugBreak(MsgType) HandleMessageDef_DebugBreak_Struct _ENGINE_temp_object_for_HandleMessageDef_DebugBreak_Struct{&head, from, MsgType}
+#else
+#define HandleMessageDef_DebugBreak(...)
+#endif
 
 #define HandleMessageDef(MsgType)\
 	template<> void NetworkingSystem::handleMessageType<MsgType>(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader& head) {\
 	if constexpr (!(MessageType_Traits<MsgType>::side & ENGINE_SIDE)) { ENGINE_WARN("HandleMessageDef Abort A"); return; }\
-	if (!(MessageType_Traits<MsgType>::state & info.state)) { from.read(from.recvMsgSize()); ENGINE_WARN("HandleMessageDef Abort B: ", (int)head.type); return; }
+	if (!(MessageType_Traits<MsgType>::state & info.state)) { from.read(from.recvMsgSize()); ENGINE_WARN("HandleMessageDef Abort B: ", (int)head.type); return; }\
+	HandleMessageDef_DebugBreak(#MsgType);
 
 namespace Game {
 	HandleMessageDef(MessageType::UNKNOWN)
@@ -351,7 +376,7 @@ namespace Game {
 		auto& tmp = snap->getComponent<PhysicsComponent>(info.ent);
 		auto& stored = tmp.getStored();
 		const auto diff = stored.trans.p - trans->p;
-		const float32 eps = 0.00001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
+		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
 		// TODO: why does this ever happen with only one player connected?
 		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
@@ -553,7 +578,8 @@ namespace Game {
 			auto& neighComp = world.getComponent<NeighborsComponent>(ply);
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
-			{ // TODO: player data should be sent every tick along with actions/inputs
+			{ // TODO: player data should be sent every tick along with actions/inputs.
+			// TODO: cont.  Should it? every few frames is probably fine for keeping it in sync. Although when it does desync it will be a larger rollback.
 				auto& physComp = world.getComponent<PhysicsComponent>(ply);
 				conn.msgBegin<MessageType::PLAYER_DATA>();
 				conn.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
@@ -568,7 +594,9 @@ namespace Game {
 			// TODO: figure out which comps on those entities have been updated
 
 			for (const auto& pair : neighComp.addedNeighbors) {
+				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
 				const auto& ent = pair.first;
+
 				conn.msgBegin<MessageType::ECS_ENT_CREATE>(); // TODO: General_RO;
 				conn.write(ent);
 				conn.msgEnd<MessageType::ECS_ENT_CREATE>();
@@ -591,12 +619,14 @@ namespace Game {
 			}
 
 			for (const auto& pair : neighComp.removedNeighbors) {
+				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
 				conn.msgBegin<MessageType::ECS_ENT_DESTROY>(); // TODO: General_RO;
 				conn.write(pair.first);
 				conn.msgEnd<MessageType::ECS_ENT_DESTROY>();
 			}
 
 			for (const auto& pair : neighComp.currentNeighbors) {
+				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
 				const auto ent = pair.first;
 				Engine::ECS::ComponentBitset flagComps;
 
@@ -711,16 +741,16 @@ namespace Game {
 		// TODO: i feel like this should be handled elsewhere. Where?
 
 		ENGINE_INFO("Add player: ", ent, " ", world.hasComponent<PlayerFlag>(ent), " Tick: ", world.getTick());
+		auto& physSys = world.getSystem<PhysicsSystem>();
 
 		if constexpr (ENGINE_SERVER) {
-			auto& physSys = world.getSystem<PhysicsSystem>();
 			world.setNetworked(ent, true);
-			world.addComponent<PlayerFlag>(ent);
 			world.addComponent<NeighborsComponent>(ent);
-			world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
-			world.addComponent<PhysicsComponent>(ent).setBody(physSys.createPhysicsCircle(ent));
 		}
 
+		world.addComponent<PlayerFlag>(ent);
+		world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
+		world.addComponent<PhysicsComponent>(ent).setBody(physSys.createPhysicsCircle(ent));
 		world.addComponent<ActionComponent>(ent);
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);
@@ -783,16 +813,16 @@ namespace Game {
 				}
 			} queryCallback(world, current);
 
-			if (current.has(ply)) {
-				current.remove(ply);
-			}
-
 			const auto& pos = physComp.getPosition();
 			constexpr float32 range = 5; // TODO: what range?
 			physComp.getWorld()->QueryAABB(&queryCallback, b2AABB{
 				{pos.x - range, pos.y - range},
 				{pos.x + range, pos.y + range},
 			});
+
+			if (current.has(ply)) {
+				current.remove(ply);
+			}
 
 			for (const auto lent : lastNeighbors) {
 				if (!current.has(lent.first)) {
