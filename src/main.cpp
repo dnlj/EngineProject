@@ -396,6 +396,7 @@ void run(int argc, char* argv[]) {
 		for (const auto& path : textures) { engine.textureManager.add(path); }
 		for (const auto& path : shaders) { engine.shaderManager.add(path); }
 	}
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// World
 	auto worldStorage = std::make_unique<Game::World>(engine);

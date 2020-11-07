@@ -30,7 +30,7 @@ namespace Engine::CommandLine::detail {
 			}
 
 			virtual ~ArgumentBase() = default;
-			virtual void store(const std::string& arg) = 0;
+			virtual bool store(const std::string& arg) = 0;
 			virtual void* get() = 0;
 			bool hasBeenSet() const { return set; }
 			void setHasBeenSet(bool s) { set = s; }
@@ -56,9 +56,12 @@ namespace Engine::CommandLine {
 		public:
 			using ArgumentGeneric::ArgumentGeneric;
 
-			virtual void store(const std::string& arg) override {
-				ArgumentConverter<T>{}(arg, storage);
-				set = true;
+			virtual bool store(const std::string& arg) override {
+				if (ArgumentConverter<T>{}(arg, storage)) {
+					set = true;
+					return true;
+				}
+				return false;
 			};
 	};
 
@@ -67,9 +70,10 @@ namespace Engine::CommandLine {
 		public:
 			using ArgumentGeneric::ArgumentGeneric;
 
-			virtual void store(const std::string&  arg) override {
+			virtual bool store(const std::string& arg) override {
 				// TODO: impl
 				set = true;
+				return false;
 			};
 	};
 }

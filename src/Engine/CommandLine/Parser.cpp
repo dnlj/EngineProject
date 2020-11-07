@@ -68,9 +68,13 @@ namespace Engine::CommandLine {
 
 			// Store the value if there is one. I there isnt one assume it is a boolean flag argument.
 			if ((i < last) && !args[i+1].starts_with("-")) {
-				ptr->store(args[++i]);
+				if (!ptr->store(args[++i])) {
+					ENGINE_ERROR("Unable to convert command line argument: ", arg, "=", args[i]);
+				}
 			} else {
-				ptr->store("1");
+				if (!ptr->store("1")) {
+					ENGINE_ERROR("Incorrect type for command line flag: ", arg);
+				}
 			}
 		}
 	}

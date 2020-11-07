@@ -11,43 +11,47 @@
 namespace Engine::CommandLine {
 	template<class T>
 	class ArgumentConverter {
-		public: void operator()(const std::string& str, T& storage) {
+		public: bool operator()(const std::string& str, T& storage) {
 			static_assert(!std::is_same_v<T, T>, "Unable to find ArgumentConverter for T");
 		}
 	};
 
 	template<std::integral T>
 	class ArgumentConverter<T> {
-		public: void operator()(const std::string& str, T& storage) {
-			std::from_chars(str.data(), str.data() + str.size(), storage);
+		public: bool operator()(const std::string& str, T& storage) {
+			return std::from_chars(str.data(), str.data() + str.size(), storage).ec == std::errc{};
 		}
 	};
 	
 	template<std::floating_point T>
 	class ArgumentConverter<T> {
-		public: void operator()(const std::string& str, T& storage) {
-			std::from_chars(str.data(), str.data() + str.size(), storage);
+		public: bool operator()(const std::string& str, T& storage) {
+			return std::from_chars(str.data(), str.data() + str.size(), storage).ec == == std::errc{};
 		}
 	};
 	
 	template<>
 	class ArgumentConverter<bool> {
-		public: void operator()(const std::string& str, bool& storage) {
+		public: bool operator()(const std::string& str, bool& storage) {
 			storage = (str.size() > 0) && (str[0] != '0') && (str[0] != 'f') && (str[0] != 'F');
+			return true;
 		}
 	};
 
 	template<>
 	class ArgumentConverter<std::string> {
-		public: void operator()(const std::string& str, std::string& storage) {
+		public: bool operator()(const std::string& str, std::string& storage) {
 			storage = str;
+			return true;
 		}
 	};
 
 	template<>
 	class ArgumentConverter<Net::IPv4Address> {
-		public: void operator()(const std::string& str, Net::IPv4Address& storage) {
+		public: bool operator()(const std::string& str, Net::IPv4Address& storage) {
+			// TODO: this should have some error checking????
 			storage = Net::hostToAddress(str);
+			return true;
 		}
 	};
 }
