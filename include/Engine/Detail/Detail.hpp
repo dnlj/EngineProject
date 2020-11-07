@@ -11,37 +11,47 @@
 #include <io.h>
 #endif
 
+// Engine
+#include <Engine/ASCIIColorString.hpp>
+
 namespace Engine::Detail {
 	// TODO: C++20: Use std <format> and fallback to operator<< if no format found.
 	template<class... Args>
 	void log(
-		FILE* out,
 		std::string_view prefix,
-		std::string_view color,
+		ASCIIColorString color,
 		std::string_view file,
 		int line,
 		Args&&... args) {
 
+		const auto& gc = Engine::getGlobalConfig();
 		const auto date = getDateTimeString();
-		const auto shortDate = std::string_view{date}.substr(11,8);
-		const auto isTerminal = isatty(fileno(out));
-		const auto useColor = isTerminal;
-		const auto useShort = isTerminal;
 
 		std::ostringstream stream;
+		const auto&& filter = [&](const auto& value){
+			if constexpr (std::is_same_v<std::decay_t<decltype(value)>, ASCIIColorString>) {
+				if (gc.logColor) {
+					return value.str;
+				} else {
+					return "";
+				}
+			} else {
+				return value;
+			}
+		};
 
 		stream
-			<< (useColor ? color : "")
-			<< "[" << (useShort ? shortDate : date) << "]"
+			<< filter(color)
+			<< "[" << (gc.logTimeOnly ? std::string_view{date}.substr(11,8) : date) << "]"
 			<< "[" << file << ":" << line << "]"
 			<< prefix
-			<< (useColor ? Engine::ASCII_RESET : "")
+			<< filter(Engine::ASCII_RESET)
 			<< " ";
 		(stream << ... << std::forward<Args>(args));
 		stream << '\n';
 
 		// TODO: C++20 ostringstream.view() to avoid copy
-		fputs(stream.str().c_str(), out);
+		fputs(stream.str().c_str(), gc.log.get());
 
 		// TODO: cmd line option for if should also log to file
 		// TODO: when logging to file use full date and no color

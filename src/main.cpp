@@ -352,11 +352,32 @@ void run(int argc, char* argv[]) {
 				"The port to listen on.")
 			.add<IPv4Address>("group", 'g', {224,0,0,212, 21212},
 				"The multicast group to join for server discovery.")
-			.add<std::string>("log", 'l', "", // TODO: impl
+			.add<std::string>("log", 'l', "",
 				"The file to use for logging.")
+			.add<bool>("logColor",
+				"Enable or disable color log output.")
+			.add<bool>("logTimeOnly",
+				"Show only time stamps instead of full dates in log output.")
 		;
 
 		parser.parse(argc - 1, argv + 1);
+
+		{ // Setup global engine config
+			const auto* log = parser.get<std::string>("log");
+			const auto* logColor = parser.get<bool>("logColor");
+			const auto* logTimeOnly = parser.get<bool>("logTimeOnly");
+
+			auto& cfg = Engine::getGlobalConfig<true>();
+
+			if (log && !log->empty()) {
+				cfg.log = {fopen(log->c_str(), "a"), &fclose};
+			}
+
+			const bool isTerminal = isatty(fileno(cfg.log.get()));
+			cfg.logColor = logColor ? *logColor : isTerminal;
+			cfg.logTimeOnly = logTimeOnly ? *logTimeOnly : isTerminal;
+		}
+
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -511,6 +532,8 @@ void run(int argc, char* argv[]) {
 
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
 int entry(int argc, char* argv[]) {
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Configure Console
 	if(!AllocConsole()) {
 		ENGINE_ERROR("Unable to allocate console window - ", Engine::Win32::getLastErrorMessage());
 	} else {
@@ -520,20 +543,11 @@ int entry(int argc, char* argv[]) {
 		freopen_s(&unused, "CONOUT$", "w", stderr);
 	}
 
-	const auto console = GetStdHandle(STD_OUTPUT_HANDLE);
-
-	if (!SetConsoleMode(console, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+	
+	if (auto console = GetStdHandle(STD_OUTPUT_HANDLE);
+		!console || !SetConsoleMode(console, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
 		ENGINE_WARN(Engine::Win32::getLastErrorMessage());
 	}
-
-	ENGINE_LOG("This is a test of the", "console ouput");
-	ENGINE_INFO("This is a test of the", "console ouput");
-	ENGINE_SUCCESS("This is a test of the", "console ouput");
-	ENGINE_WARN("This is a test of the", "console ouput");
-	//ENGINE_ERROR("This is a test of the", "console ouput");
-
-	std::atexit([](){
-	});
 
 	// Position the console
 	if (HWND window; window = GetConsoleWindow()) {
@@ -546,6 +560,8 @@ int entry(int argc, char* argv[]) {
 		}
 	}
 
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Other
 	ENGINE_INFO("Working Directory: ", std::filesystem::current_path().generic_string());
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

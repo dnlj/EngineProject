@@ -6,7 +6,7 @@ namespace Engine::CommandLine {
 	// TODO: positional arg types?
 	void Parser::parse(int argc, char* argv[]) {
 		std::vector<std::string> args;
-		args.reserve(2 * argc);
+		args.reserve(2ll * argc);
 
 		for (int i = 0; i < argc; ++i) {
 			std::string arg = argv[i];
@@ -37,6 +37,7 @@ namespace Engine::CommandLine {
 			auto& arg = args[i];
 			detail::ArgumentBase* ptr = nullptr;
 
+			// Explicit positional arguments
 			if (arg == "--") {
 				for (int j = i + 1; j <= last; ++j) {
 					positional.emplace_back(std::move(args[j]));
@@ -44,27 +45,28 @@ namespace Engine::CommandLine {
 				break;
 			}
 
-			if (arg.starts_with("--")) {
+			if (arg.starts_with("--")) { // Full arguments
 				const auto full = arg.substr(2);
 				auto found = params.find(full);
 				if (found == params.end()) {
 					ENGINE_WARN("Unknown command line argument: ", arg);
-					found = params.emplace(full, std::make_unique<Argument<std::string>>(0, "", "<invalid argument>")).first;
+					found = params.emplace(full, std::make_unique<Argument<std::string>>(0, "", "<invalid argument>", true)).first;
 				}
 				ptr = found->second.get();
-			} else if (arg.starts_with("-")) {
+			} else if (arg.starts_with("-")) { // Abrev aguments
 				auto found = abbrToFull.find(arg[1]);
 				if (found == abbrToFull.end()) {
 					ENGINE_WARN("Unkown abbreviated command line argument: ", arg);
-					const auto [it, _] = params.emplace("<invalid> " + arg, std::make_unique<Argument<std::string>>(0, "", "<invalid argument>"));
+					const auto [it, _] = params.emplace("<invalid> " + arg, std::make_unique<Argument<std::string>>(0, "", "<invalid argument>", true));
 					found = abbrToFull.emplace(arg[1], it->second.get()).first;
 				}
 				ptr = found->second;
-			} else {
+			} else { // Implicit positional arguments
 				positional.emplace_back(std::move(arg));
 				continue;
 			}
 
+			// Store the value if there is one. I there isnt one assume it is a boolean flag argument.
 			if ((i < last) && !args[i+1].starts_with("-")) {
 				ptr->store(args[++i]);
 			} else {

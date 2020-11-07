@@ -21,14 +21,19 @@ namespace Engine::CommandLine::detail {
 			const std::string help;
 			const TypeId typeId;
 
+		protected:
+			bool set;
+
 		public:
-			ArgumentBase(const char abbr, std::string help, TypeId typeId)
-				: abbr{abbr}, help{std::move(help)}, typeId{typeId} {
+			ArgumentBase(const char abbr, std::string help, TypeId typeId, bool set = false)
+				: abbr{abbr}, help{std::move(help)}, typeId{typeId}, set{set} {
 			}
 
 			virtual ~ArgumentBase() = default;
 			virtual void store(const std::string& arg) = 0;
 			virtual void* get() = 0;
+			bool hasBeenSet() const { return set; }
+			void setHasBeenSet(bool s) { set = s; }
 	};
 
 	template<class T>
@@ -38,8 +43,8 @@ namespace Engine::CommandLine::detail {
 			virtual void* get() override { return &storage; }
 
 		public:
-			ArgumentGeneric(const char abbr, T value, std::string help)
-				: ArgumentBase(abbr, std::move(help), getTypeId<T>())
+			ArgumentGeneric(const char abbr, T value, std::string help, bool set = false)
+				: ArgumentBase(abbr, std::move(help), getTypeId<T>(), set)
 				, storage{std::move(value)} {
 			}
 	};
@@ -50,8 +55,10 @@ namespace Engine::CommandLine {
 	class Argument : public detail::ArgumentGeneric<T> {
 		public:
 			using ArgumentGeneric::ArgumentGeneric;
+
 			virtual void store(const std::string& arg) override {
 				ArgumentConverter<T>{}(arg, storage);
+				set = true;
 			};
 	};
 
@@ -62,6 +69,7 @@ namespace Engine::CommandLine {
 
 			virtual void store(const std::string&  arg) override {
 				// TODO: impl
+				set = true;
 			};
 	};
 }

@@ -11,7 +11,9 @@
 
 // Engine
 #include <Engine/Detail/Detail.hpp>
+#include <Engine/GlobalConfig.hpp>
 #include <Engine/FatalException.hpp>
+#include <Engine/ASCIIColorString.hpp>
 
 namespace Engine::Types { // TODO: C++20: namespace Engine::inline Types {
 	static_assert(std::numeric_limits<char>::digits + std::numeric_limits<char>::is_signed == 8, "This program assumes an 8 bit byte.");
@@ -42,36 +44,49 @@ namespace Engine::Types { // TODO: C++20: namespace Engine::inline Types {
 namespace Engine { using namespace Engine::Types; }
 
 namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
-	constexpr float32 PI = 3.141592653589793238462643383279502884197169f;
+	constexpr inline float32 PI = 3.141592653589793238462643383279502884197169f;
 
 	// TODO: move into own ns?
-	constexpr std::string_view ASCII_BLACK        = "\033[30m";
-	constexpr std::string_view ASCII_RED          = "\033[31m";
-	constexpr std::string_view ASCII_GREEN        = "\033[32m";
-	constexpr std::string_view ASCII_YELLOW       = "\033[33m";
-	constexpr std::string_view ASCII_BLUE         = "\033[34m";
-	constexpr std::string_view ASCII_MAGENTA      = "\033[35m";
-	constexpr std::string_view ASCII_CYAN         = "\033[36m";
-	constexpr std::string_view ASCII_WHITE        = "\033[37m";
-	constexpr std::string_view ASCII_BLACK_BOLD   = "\033[1;30m";
-	constexpr std::string_view ASCII_RED_BOLD     = "\033[1;31m";
-	constexpr std::string_view ASCII_GREEN_BOLD   = "\033[1;32m";
-	constexpr std::string_view ASCII_YELLOW_BOLD  = "\033[1;33m";
-	constexpr std::string_view ASCII_BLUE_BOLD    = "\033[1;34m";
-	constexpr std::string_view ASCII_MAGENTA_BOLD = "\033[1;35m";
-	constexpr std::string_view ASCII_CYAN_BOLD    = "\033[1;36m";
-	constexpr std::string_view ASCII_WHITE_BOLD   = "\033[1;37m";
-	constexpr std::string_view ASCII_RESET        = "\033[0m";
+	constexpr inline ASCIIColorString ASCII_BLACK        = "\033[30m";
+	constexpr inline ASCIIColorString ASCII_RED          = "\033[31m";
+	constexpr inline ASCIIColorString ASCII_GREEN        = "\033[32m";
+	constexpr inline ASCIIColorString ASCII_YELLOW       = "\033[33m";
+	constexpr inline ASCIIColorString ASCII_BLUE         = "\033[34m";
+	constexpr inline ASCIIColorString ASCII_MAGENTA      = "\033[35m";
+	constexpr inline ASCIIColorString ASCII_CYAN         = "\033[36m";
+	constexpr inline ASCIIColorString ASCII_WHITE        = "\033[37m";
+	constexpr inline ASCIIColorString ASCII_BLACK_BOLD   = "\033[1;30m";
+	constexpr inline ASCIIColorString ASCII_RED_BOLD     = "\033[1;31m";
+	constexpr inline ASCIIColorString ASCII_GREEN_BOLD   = "\033[1;32m";
+	constexpr inline ASCIIColorString ASCII_YELLOW_BOLD  = "\033[1;33m";
+	constexpr inline ASCIIColorString ASCII_BLUE_BOLD    = "\033[1;34m";
+	constexpr inline ASCIIColorString ASCII_MAGENTA_BOLD = "\033[1;35m";
+	constexpr inline ASCIIColorString ASCII_CYAN_BOLD    = "\033[1;36m";
+	constexpr inline ASCIIColorString ASCII_WHITE_BOLD   = "\033[1;37m";
+	constexpr inline ASCIIColorString ASCII_RESET        = "\033[0m";
 
-	constexpr std::string_view ASCII_INFO     = ASCII_BLUE;
-	constexpr std::string_view ASCII_SUCCESS  = ASCII_GREEN;
-	constexpr std::string_view ASCII_WARN     = ASCII_YELLOW;
-	constexpr std::string_view ASCII_ERROR    = ASCII_RED;
-	constexpr std::string_view ASCII_FG       = ASCII_WHITE;
-	constexpr std::string_view ASCII_FG2      = ASCII_BLACK_BOLD;
+	constexpr inline ASCIIColorString ASCII_INFO         = ASCII_BLUE;
+	constexpr inline ASCIIColorString ASCII_SUCCESS      = ASCII_GREEN;
+	constexpr inline ASCIIColorString ASCII_WARN         = ASCII_YELLOW;
+	constexpr inline ASCIIColorString ASCII_ERROR        = ASCII_RED;
+	constexpr inline ASCIIColorString ASCII_FG           = ASCII_WHITE;
+	constexpr inline ASCIIColorString ASCII_FG2          = ASCII_BLACK_BOLD;
 
 }
 namespace Engine { using namespace Engine::Constants; }
+
+namespace Engine {
+	namespace Detail { inline auto& getRealGlobalConfig() { static GlobalConfig c; return c; } }
+
+	template<bool Editable = false>
+	auto& getGlobalConfig() {
+		if constexpr (Editable) {
+			return Detail::getRealGlobalConfig();
+		} else {
+			return static_cast<const GlobalConfig&>(Detail::getRealGlobalConfig());
+		}
+	}
+}
 
 
 #define ENGINE_SIDE_SERVER 1
@@ -92,19 +107,19 @@ namespace Engine { using namespace Engine::Constants; }
 #define ENGINE_INLINE __forceinline
 
 // TODO: replace macros with source_location?
-#define _ENGINE_CREATE_LOG_LAMBDA(File, Prefix, Color, Other)\
+#define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Color, Other)\
 	([](auto&&... args){\
-		::Engine::Detail::log(File, Prefix, Color,\
+		::Engine::Detail::log(Prefix, Color,\
 			(__FILE__ + sizeof(ENGINE_BASE_PATH)), __LINE__,\
 			std::forward<decltype(args)>(args) ...\
 		);\
 		Other;\
 	})
 
-#define _ENGINE_CREATE_ASSERT_LAMBDA(File, Prefix, Color, Other)\
+#define _ENGINE_CREATE_ASSERT_LAMBDA(Prefix, Color, Other)\
 	([](bool cond, auto&&... args){\
 		if (!cond) {\
-			_ENGINE_CREATE_LOG_LAMBDA(File, Prefix, Color, Other)(std::forward<decltype(args)>(args)...);\
+			_ENGINE_CREATE_LOG_LAMBDA(Prefix, Color, Other)(std::forward<decltype(args)>(args)...);\
 		}\
 	})
 
@@ -114,14 +129,14 @@ namespace Engine { using namespace Engine::Constants; }
 	#define ENGINE_DIE ::std::terminate();
 #endif
 
-#define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA(stdout, "[LOG]", Engine::ASCII_FG2, 0)
-#define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA(stdout, "[INFO]", Engine::ASCII_INFO, 0)
-#define ENGINE_SUCCESS _ENGINE_CREATE_LOG_LAMBDA(stdout, "[SUCCESS]", Engine::ASCII_SUCCESS, 0)
-#define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA(stderr, "[WARN]", Engine::ASCII_WARN, 0)
-#define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA(stderr, "[ERROR]", Engine::ASCII_ERROR, ENGINE_DIE)
+#define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA("[LOG]", Engine::ASCII_FG2, 0)
+#define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA("[INFO]", Engine::ASCII_INFO, 0)
+#define ENGINE_SUCCESS _ENGINE_CREATE_LOG_LAMBDA("[SUCCESS]", Engine::ASCII_SUCCESS, 0)
+#define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA("[WARN]", Engine::ASCII_WARN, 0)
+#define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA("[ERROR]", Engine::ASCII_ERROR, ENGINE_DIE)
 
-#define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA(stderr, "[ERROR]", Engine::ASCII_ERROR, ENGINE_DIE)
-#define ENGINE_ASSERT_WARN _ENGINE_CREATE_ASSERT_LAMBDA(stderr, "[WARN]", Engine::ASCII_WARN, 0)
+#define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA("[ERROR]", Engine::ASCII_ERROR, ENGINE_DIE)
+#define ENGINE_ASSERT_WARN _ENGINE_CREATE_ASSERT_LAMBDA("[WARN]", Engine::ASCII_WARN, 0)
 
 #if defined(DEBUG)
 	#define ENGINE_DEBUG_ASSERT ENGINE_ASSERT

@@ -7,6 +7,7 @@
 // Engine
 #include <Engine/Net/Net.hpp>
 
+
 namespace Engine::CommandLine {
 	template<class T>
 	class ArgumentConverter {
@@ -28,7 +29,7 @@ namespace Engine::CommandLine {
 			std::from_chars(str.data(), str.data() + str.size(), storage);
 		}
 	};
-
+	
 	template<>
 	class ArgumentConverter<bool> {
 		public: void operator()(const std::string& str, bool& storage) {

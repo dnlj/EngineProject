@@ -19,9 +19,19 @@ namespace Engine::CommandLine {
 
 		public:
 			void parse(int argc, char* argv[]);
+			
+			template<class T>
+			Parser& add(std::string full, std::string help) {
+				return add<T>(std::move(full), {}, {}, std::move(help), false);
+			};
 
 			template<class T>
-			Parser& add(std::string full, char abbr, T default, std::string help);
+			Parser& add(std::string full, T default, std::string help) {
+				return add<T>(std::move(full), 0, std::move(default), std::move(help));
+			};
+
+			template<class T>
+			Parser& add(std::string full, char abbr, T default, std::string help, bool useDefault = true);
 
 			template<class T>
 			const T* get(const std::string& full) const;

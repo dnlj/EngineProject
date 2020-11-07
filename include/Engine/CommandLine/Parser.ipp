@@ -6,7 +6,7 @@
 
 namespace Engine::CommandLine {
 	template<class T>
-	auto Parser::add(std::string full, char abbr, T default, std::string help) -> Parser& {
+	auto Parser::add(std::string full, char abbr, T default, std::string help, bool useDefault) -> Parser& {
 		if (abbr == '-') {
 			abbr = 0;
 			ENGINE_WARN("Command line abbreviation for '", full, "' may not be the character '-'. Ignoring.");
@@ -32,6 +32,10 @@ namespace Engine::CommandLine {
 			abbrToFull.emplace(abbr, it->second.get());
 		}
 
+		if (useDefault) {
+			it->second->setHasBeenSet(true);
+		}
+
 		return *this;
 	}
 
@@ -46,6 +50,10 @@ namespace Engine::CommandLine {
 
 		if (detail::getTypeId<T>() != found->second->typeId) {
 			ENGINE_WARN("Attempting to get command line argument with incorrect type '", full, "'");
+			return nullptr;
+		}
+
+		if (!found->second->hasBeenSet()) {
 			return nullptr;
 		}
 
