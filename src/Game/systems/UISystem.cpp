@@ -257,7 +257,7 @@ namespace Game {
 
 	void UISystem::ui_network() {
 		if (!ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-		ImGui::ShowMetricsWindow();
+		
 		for (auto ent : world.getFilter<ConnectionComponent>()) {
 			if (!world.hasComponent<NetworkStatsComponent>(ent)) {
 				world.addComponent<NetworkStatsComponent>(ent);
@@ -381,7 +381,7 @@ namespace Game {
 		const auto& stats = buff[idx];
 		return {
 			Engine::Clock::Seconds{stats.time.time_since_epoch()}.count(),
-			B ? stats.sent.diff : stats.recv.diff
+			B ? stats.recv.diff : stats.sent.diff
 		};
 	}
 
