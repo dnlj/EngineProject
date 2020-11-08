@@ -24,17 +24,6 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		//if (beginTime - activeSnap.tickTime > maxDelay) {
-		//	ENGINE_WARN("World tick falling behind by ",
-		//		Clock::Seconds{beginTime - activeSnap.tickTime - maxDelay}.count(), "s"
-		//	);
-		//
-		//	// We could instead limit the number of ticks in the while loop
-		//	// which would have the effect of slowing down the world instead of
-		//	// throwing away time like this does
-		//	activeSnap.tickTime = beginTime - maxDelay;
-		//}
-
 		if constexpr (ENGINE_CLIENT) {
 			if (rollbackData.tick != -1 && !performingRollback) {
 				const auto oldTick = activeSnap.currTick;
@@ -71,7 +60,9 @@ namespace Engine::ECS {
 				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
 			}
 		} else {
-			while (activeSnap.tickTime + tickInterval <= beginTime) {
+			constexpr auto maxTickCount = 6;
+			int tickCount = -1;
+			while (activeSnap.tickTime + tickInterval <= beginTime && ++tickCount < maxTickCount) {
 				tickSystems();
 				activeSnap.tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
 			}
@@ -177,5 +168,13 @@ namespace Engine::ECS {
 		activeSnap.assign(snap);
 		(getSystem<Ss>().postLoadSnapshot(), ...);
 		--activeSnap.currTick; // We need to do this because tickSystems increments tick.
+	}
+
+	WORLD_TPARAMS
+	void WORLD_CLASS::setNextTick(Tick tick) {
+		// TODO: defer this till next `run`
+		activeSnap.currTick = tick - 1;
+		activeSnap.tickTime = Clock::now();
+		snapBuffer.clear();
 	}
 }

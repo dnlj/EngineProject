@@ -19,7 +19,7 @@ namespace {
 		return static_cast<float32>(v - range);
 	};
 
-	using Filter = Engine::ECS::EntityFilterList<ActionComponent>;
+	using Filter = Engine::ECS::EntityFilterList<ActionComponent, ConnectionComponent>;
 }
 
 
@@ -60,7 +60,7 @@ namespace Game {
 				conn.write(currTick);
 
 				// TODO: how many to send?
-				for (auto t = currTick - (actComp.states.capacity() / 4); t <= currTick; ++t) {
+				for (auto t = currTick + 1 - (actComp.states.capacity() / 4); t <= currTick; ++t) {
 					const auto& s = actComp.states.get(t);
 					
 					for (auto b : s.buttons) {
@@ -73,6 +73,7 @@ namespace Game {
 						conn.write<32>(reinterpret_cast<uint32&>(a));
 					}
 				}
+
 				conn.writeFlushBits();
 				conn.msgEnd<MessageType::ACTION>();
 			} else if constexpr (ENGINE_SERVER) {
@@ -170,7 +171,7 @@ namespace Game {
 		const auto ideal = idealTickLead();
 
 		// Used to adjust tickScale when based on trend. Scaled in range [trendAdjust, maxTrendScale + trendAdjust]
-		constexpr float32 maxTickScale = 8.0f;
+		constexpr float32 maxTickScale = 2.0f;
 		constexpr float32 maxBufferSize = maxStates;
 
 		float32 diff = actComp.estBufferSize - ideal;
@@ -232,7 +233,7 @@ namespace Game {
 		const auto minTick = recvTick + 1;
 		const auto maxTick = recvTick + actComp.states.capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
 
-		for (auto t = tick - (actComp.states.capacity() / 4); t <= tick; ++t) {
+		for (auto t = tick + 1 - (actComp.states.capacity() / 4); t <= tick; ++t) {
 			ActionState s = {};
 			
 			for (auto& b : s.buttons) {

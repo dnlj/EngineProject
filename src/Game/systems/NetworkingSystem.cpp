@@ -165,7 +165,6 @@ namespace Game {
 		from.write(from.getKeySend());
 		from.msgEnd<MessageType::CONNECT_CONFIRM>();
 		info.state = ConnState::Connected;
-		addPlayer(info.ent);
 		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
 	}
 
@@ -201,11 +200,12 @@ namespace Game {
 			return;
 		}
 
+		addPlayer(info.ent);
 		entToLocal[*remote] = info.ent;
-		ENGINE_LOG("ECS_INIT - Remote: ", *remote, " Local: ", info.ent, " Tick: ", world.getTick());
+		ENGINE_LOG("ECS_INIT - Remote: ", *remote, " Local: ", info.ent, " Tick: ", world.getTick(), " - ", *tick);
 
 		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
-		world.setTick(*tick + 5);
+		world.setNextTick(*tick + 16);
 	}
 
 	HandleMessageDef(MessageType::DISCONNECT)

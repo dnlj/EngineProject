@@ -52,9 +52,6 @@ namespace Engine::ECS {
 			/** Beginning of last run. */
 			Clock::TimePoint beginTime;
 
-			/** Maximum tick delay to accumulate */
-			constexpr static Clock::Duration maxDelay = std::chrono::milliseconds{250};
-
 			// TODO: shouldnt this be part of snapshot? that would fix our issue with correct tickTime i think
 			// TODO: not public
 			/** TODO: doc */
@@ -62,7 +59,6 @@ namespace Engine::ECS {
 
 			/** How long between each tick. */
 			constexpr static Clock::Duration tickInterval{Clock::Period::den / TickRate};
-			static_assert(tickInterval < maxDelay, "Tick interval must be less than the maximum accumulable tick duration.");
 
 			/** The tick interval in floating point seconds. */
 			constexpr static float32 tickDeltaTime = Clock::Seconds{tickInterval}.count();
@@ -281,7 +277,7 @@ namespace Engine::ECS {
 			// TODO: also need to clear rollback history
 			// TODO: should this be setNextTick? might help avoid bugs if we wait till all systems are done before we adjust.
 			// TODO: doc
-			ENGINE_INLINE void setTick(Tick tick) { activeSnap.currTick = tick; }
+			void setNextTick(Tick tick);
 
 			/**
 			 * Gets the tick interval.
