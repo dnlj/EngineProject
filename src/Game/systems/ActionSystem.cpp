@@ -208,10 +208,8 @@ namespace Game {
 		constexpr float32 eps = 0.8f;
 		if (diff < -eps) {
 			world.tickScale = 1.0f / calcTickScale(std::abs(diff));
-			ENGINE_LOG("++scale ", diff, " ", world.tickScale);
 		} else if (diff > eps) {
 			world.tickScale = calcTickScale(diff);
-			ENGINE_LOG("--scale ", diff, " ", world.tickScale);
 		} else {
 			world.tickScale = 1.0f;
 		}

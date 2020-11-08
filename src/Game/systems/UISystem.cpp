@@ -257,7 +257,7 @@ namespace Game {
 
 	void UISystem::ui_network() {
 		if (!ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-
+		ImGui::ShowMetricsWindow();
 		for (auto ent : world.getFilter<ConnectionComponent>()) {
 			if (!world.hasComponent<NetworkStatsComponent>(ent)) {
 				world.addComponent<NetworkStatsComponent>(ent);
@@ -303,11 +303,11 @@ namespace Game {
 				statsComp.displayIdealInputBufferSize = statsComp.idealInputBufferSize;
 			}
 
-
 			float32 estbuff = 0;
 			if (world.hasComponent<ActionComponent>(ent)) {
 				estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
 			}
+
 			ImGui::Text(
 				"Ping: %.1fms          Jitter: %.1fms    Est. Buffer: %.2f\n"
 				"Buffer Size: %i     Ideal: %.3f\n"
@@ -330,6 +330,7 @@ namespace Game {
 			ImPlot::SetNextPlotLimitsX(begin, end, ImGuiCond_Always);
 			ImPlot::SetNextPlotLimitsY(0.0f, yScale * tickrate * 0.333f, ImGuiCond_Once, 0);
 			ImPlot::SetNextPlotLimitsY(0.0f, yScale, ImGuiCond_Once, 1);
+			ImGui::PushID(ent.id);
 			if (ImPlot::BeginPlot(
 				"##Netgraph", nullptr, nullptr, ImVec2(-1,200),
 				ImPlotFlags_Default | ImPlotFlags_YAxis2,
@@ -358,7 +359,9 @@ namespace Game {
 
 				ImPlot::EndPlot();
 				ImPlot::SetColormap(ImPlotColormap_Default);
+				ImGui::Separator();
 			}
+			ImGui::PopID();
 		}
 	}
 
