@@ -296,12 +296,6 @@ namespace Engine::ECS {
 			ENGINE_INLINE Clock::TimePoint getTickTime() const noexcept { return activeSnap.tickTime; };
 			
 			/**
-			 * Gets tick accumulation divided by tick interval.
-			 * Useful for interpolation.
-			 */
-			float32 getTickRatio() const;
-
-			/**
 			 * Gets the time (in seconds) last update took to run.
 			 */
 			float32 getDeltaTime() const;

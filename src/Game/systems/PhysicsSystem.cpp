@@ -54,35 +54,6 @@ namespace Game {
 	}
 
 	void PhysicsSystem::run(float dt) { // TODO: rm
-		const float32 a = world.getTickRatio();
-		const float32 b = 1.0f - a;
-
-		if (world.getTick() > 1024) {
-			// TODO: This shouldnt ever be hit? why.
-			//ENGINE_DEBUG_ASSERT(a < 1.0f);
-			//ENGINE_DEBUG_ASSERT(b < 1.0f);
-		}
-
-		// TODO: isnt this wrong? wont we still see a jump if we tick twice in a frame?
-		/*for (auto ent : world.getFilter<Filter>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			const auto& prevTrans = physComp.prevTransform;
-			const auto& nextTrans = physComp.getBody().GetTransform();
-			auto& lerpTrans = physComp.interpTransform;
-
-			lerpTrans.p = a * nextTrans.p + b * prevTrans.p;
-
-			// Normalized lerp - really should use slerp but since the delta is small nlerp is close to slerp
-			lerpTrans.q.c = a * nextTrans.q.c + b * prevTrans.q.c;
-			lerpTrans.q.s = a * nextTrans.q.s + b * prevTrans.q.s;
-			const float32 mag = lerpTrans.q.c * lerpTrans.q.c + lerpTrans.q.s * lerpTrans.q.s;
-			lerpTrans.q.c /= mag;
-			lerpTrans.q.s /= mag;
-
-
-			lerpTrans = nextTrans; // TODO: rm
-		}*/
-
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.reset();
 			physWorld.DrawDebugData();
@@ -93,6 +64,7 @@ namespace Game {
 		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			physComp.storeBody();
+			physComp.snap = false; 
 		}
 	}
 

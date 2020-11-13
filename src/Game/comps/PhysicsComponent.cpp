@@ -59,6 +59,7 @@ namespace Game {
 	}
 
 	void PhysicsComponent::setTransform2(const b2Vec2& pos, float32 ang) {
+		snap = true;
 		body->SetTransform(pos, ang);
 	}
 

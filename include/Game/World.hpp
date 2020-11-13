@@ -44,10 +44,10 @@ namespace Game {
 		CharacterMovementSystem,
 		PhysicsOriginShiftSystem,
 		PhysicsSystem,
-		PhysicsInterpSystem,
 		CharacterSpellSystem,
-		CameraTrackingSystem,
 		//SubWorldSystem,
+		PhysicsInterpSystem,
+		CameraTrackingSystem,
 		MapSystem,
 
 		// Rendering

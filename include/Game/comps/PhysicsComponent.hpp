@@ -17,6 +17,7 @@ namespace Game {
 	class PhysicsComponent {
 		public:
 			constexpr static bool isSnapshotRelevant = true;
+			bool snap = false;
 
 		private:
 			friend class PhysicsSystem;
@@ -25,9 +26,9 @@ namespace Game {
 			// TODO: split interp stuff into own comp.
 
 			struct PhysData {
-				b2Transform trans;
-				b2Vec2 vel;
-				float32 angVel;
+				b2Transform trans = {};
+				b2Vec2 vel = {};
+				float32 angVel = {};
 
 				ENGINE_INLINE void to(b2Body* body) const {
 					body->SetTransform(trans.p, trans.q.GetAngle());
@@ -42,7 +43,7 @@ namespace Game {
 				}
 			};
 
-			PhysData stored;
+			PhysData stored = {};
 
 			b2Body* body = nullptr;
 			int* count = nullptr;
