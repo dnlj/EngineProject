@@ -25,9 +25,10 @@ namespace Game {
 		
 		for (int i = 0; i < count; ++i) {
 			auto ent = missles.emplace_back(world.createEntity(true));
-			auto& [spriteComp, physComp] = world.addComponents<
+			auto& [spriteComp, physComp, physInterpComp] = world.addComponents<
 				Game::SpriteComponent,
-				Game::PhysicsComponent
+				Game::PhysicsComponent,
+				Game::PhysicsInterpComponent
 			>(ent);
 
 			{
@@ -61,7 +62,7 @@ namespace Game {
 
 		world.setEnabled(missle, true);
 		auto& physComp = world.getComponent<Game::PhysicsComponent>(missle);
-		physComp.setTransform(pos, 0);
+		physComp.setTransform2(pos, 0);
 
 		auto& body = physComp.getBody();
 		body.SetActive(true);

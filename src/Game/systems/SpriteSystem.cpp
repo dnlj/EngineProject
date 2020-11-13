@@ -111,7 +111,7 @@ namespace Game {
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
 
 		for (const auto& ent : filter) {
-			const auto pos = world.getComponent<Game::PhysicsComponent>(ent).getInterpPosition();
+			const auto pos = world.getComponent<Game::PhysicsInterpComponent>(ent).getPosition();
 			sprites.push_back({
 				world.getComponent<Game::SpriteComponent>(ent).texture.get(),
 				{pos.x, pos.y, 0.0f}

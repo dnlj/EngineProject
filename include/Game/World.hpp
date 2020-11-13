@@ -15,6 +15,7 @@
 #include <Game/systems/CharacterMovementSystem.hpp>
 #include <Game/systems/PhysicsOriginShiftSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
+#include <Game/systems/PhysicsInterpSystem.hpp>
 #include <Game/systems/CharacterSpellSystem.hpp>
 #include <Game/systems/CameraTrackingSystem.hpp>
 #include <Game/systems/SubWorldSystem.hpp>
@@ -25,6 +26,7 @@
 #include <Game/systems/UISystem.hpp>
 
 #include <Game/comps/PhysicsComponent.hpp>
+#include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/ConnectionComponent.hpp>
@@ -42,6 +44,7 @@ namespace Game {
 		CharacterMovementSystem,
 		PhysicsOriginShiftSystem,
 		PhysicsSystem,
+		PhysicsInterpSystem,
 		CharacterSpellSystem,
 		CameraTrackingSystem,
 		//SubWorldSystem,
@@ -59,6 +62,7 @@ namespace Game {
 	using ComponentsSet = Meta::TypeSet::TypeSet<
 		MapEditComponent,
 		PhysicsComponent,
+		PhysicsInterpComponent,
 		SpriteComponent,
 		ActionComponent,
 		ConnectionComponent,

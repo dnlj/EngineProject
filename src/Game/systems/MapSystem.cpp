@@ -63,6 +63,10 @@ namespace Game {
 				auto& data = activeAreaData[x][y];
 				data.ent = world.createEntity(true);
 				auto& physComp = world.addComponent<PhysicsComponent>(data.ent);
+
+				// TODO: Dont actually need interp comp on these. they dont move.
+				world.addComponent<PhysicsInterpComponent>(data.ent);
+
 				physComp.setBody(physSys.createBody(data.ent, bodyDef));
 				data.mesh.setBufferFormat(vertexFormat);
 			}
@@ -266,7 +270,7 @@ namespace Game {
 		{ // Physics stuff
 			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(data.chunkPos)));
 			auto& physComp = world.getComponent<PhysicsComponent>(data.ent);
-			physComp.setTransform(pos, 0);
+			physComp.setTransform2(pos, 0);
 			auto& body = physComp.getBody();
 
 			// TODO: Look into edge and chain shapes

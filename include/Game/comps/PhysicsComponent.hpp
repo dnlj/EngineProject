@@ -44,9 +44,6 @@ namespace Game {
 
 			PhysData stored;
 
-			b2Transform prevTransform;
-			b2Transform interpTransform;
-
 			b2Body* body = nullptr;
 			int* count = nullptr;
 
@@ -74,12 +71,11 @@ namespace Game {
 			b2Body& getBody();
 			b2World* getWorld();
 
-			void updateTransform(const b2Transform& trans);
-			void updateTransform(const b2Vec2& pos, float32 ang);
-			void setTransform(const b2Transform& trans);
-			void setTransform(const b2Vec2& pos, float32 ang);
-			const b2Vec2& getPosition() const;
-			const b2Vec2& getInterpPosition() const;
+			// TODO: rename - rm 2
+			ENGINE_INLINE void setTransform2(const b2Transform& trans);
+			ENGINE_INLINE void setTransform2(const b2Vec2& pos, float32 ang);
+			
+			ENGINE_INLINE const b2Vec2& getPosition() const { return body->GetPosition(); };
 			ENGINE_INLINE const auto& getTransform() const { return body->GetTransform(); }
 			ENGINE_INLINE const auto& getVelocity() const { return body->GetLinearVelocity(); }
 			ENGINE_INLINE auto& getStored() { return stored; }

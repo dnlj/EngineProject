@@ -250,6 +250,10 @@ namespace Engine::ECS {
 				markedForDeath.erase(bEnd, markedForDeath.end());
 			}
 
+			ENGINE_INLINE bool isValid(Entity ent) const noexcept {
+				return ent.id < entities.size();
+			}
+
 			ENGINE_INLINE bool isAlive(Entity ent) const noexcept {
 				return entities[ent.id].state & EntityState::Alive;
 			}
@@ -343,6 +347,7 @@ namespace Engine::ECS {
 			}
 
 			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) const {
+				//ENGINE_LOG("??? - ", ent, " ", cid);
 				return compBitsets[ent.id].test(cid);
 			}
 

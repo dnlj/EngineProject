@@ -23,9 +23,8 @@ namespace Game {
 	}
 
 	void PhysicsSystem::tick() {
-		for (auto ent : world.getFilter<Filter>()) {
+		/*for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			physComp.prevTransform = physComp.getBody().GetTransform();
 
 			//if constexpr (ENGINE_CLIENT && false) { // TODO: split interp into own comp?
 			//	if (!world.isNetworked(ent)) { continue; }
@@ -48,13 +47,13 @@ namespace Game {
 			//
 			//	physComp.updateTransform(next, 0);
 			//}
-		}
+		}*/
 		
 		// TODO: look into SetAutoClearForces
 		physWorld.Step(world.getTickDelta(), 8, 3);
 	}
 
-	void PhysicsSystem::run(float dt) {
+	void PhysicsSystem::run(float dt) { // TODO: rm
 		const float32 a = world.getTickRatio();
 		const float32 b = 1.0f - a;
 
@@ -65,7 +64,7 @@ namespace Game {
 		}
 
 		// TODO: isnt this wrong? wont we still see a jump if we tick twice in a frame?
-		for (auto ent : world.getFilter<Filter>()) {
+		/*for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			const auto& prevTrans = physComp.prevTransform;
 			const auto& nextTrans = physComp.getBody().GetTransform();
@@ -82,7 +81,7 @@ namespace Game {
 
 
 			lerpTrans = nextTrans; // TODO: rm
-		}
+		}*/
 
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.reset();
@@ -124,7 +123,7 @@ namespace Game {
 
 		for (auto& ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			physComp.setTransform(physComp.body->GetTransform());
+			physComp.setTransform2(physComp.body->GetTransform());
 		}
 	}
 

@@ -746,7 +746,10 @@ namespace Game {
 		if constexpr (ENGINE_SERVER) {
 			world.setNetworked(ent, true);
 			world.addComponent<NeighborsComponent>(ent);
+		} else {
 		}
+		// TODO: client only
+		world.addComponent<PhysicsInterpComponent>(ent);
 
 		world.addComponent<PlayerFlag>(ent);
 		world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
