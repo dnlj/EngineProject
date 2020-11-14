@@ -308,12 +308,14 @@ namespace Game {
 				estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
 			}
 
+			const auto& addr = conn.address();
 			ImGui::Text(
+				"%i.%i.%i.%i:%i\n"
 				"Ping: %.1fms          Jitter: %.1fms    Est. Buffer: %.2f\n"
 				"Buffer Size: %i     Ideal: %.3f\n"
 				"Sent: %ib %.1fb/s     Recv: %ib %.1fb/s     Loss: %.3f"
 				,
-				// TODO: pretty sure this ping calc is wrong. shows ~31ms even when on same machine. 31ms = 2*1/tickrate. coincidence? before it was showing about 8ms.
+				addr.a, addr.b, addr.c, addr.d, addr.port,
 				statsComp.displayPing, statsComp.displayJitter, estbuff,
 				statsComp.displayInputBufferSize, statsComp.displayIdealInputBufferSize,
 				statsComp.displaySentTotal, statsComp.displaySentAvg,
