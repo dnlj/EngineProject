@@ -73,8 +73,8 @@ namespace Game {
 			b2World* getWorld();
 
 			// TODO: rename - rm 2
-			ENGINE_INLINE void setTransform2(const b2Transform& trans);
-			ENGINE_INLINE void setTransform2(const b2Vec2& pos, float32 ang);
+			ENGINE_INLINE void setTransform2(const b2Vec2& pos, float32 ang) { snap = true; body->SetTransform(pos, ang); }
+			ENGINE_INLINE void setTransform2(const b2Transform& trans) { setTransform2(trans.p, trans.q.GetAngle()); };
 			
 			ENGINE_INLINE const b2Vec2& getPosition() const { return body->GetPosition(); };
 			ENGINE_INLINE const auto& getTransform() const { return body->GetTransform(); }

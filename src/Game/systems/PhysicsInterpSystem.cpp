@@ -15,9 +15,9 @@ namespace Game {
 
 		// TODO: how are we getting negative numbers????
 		if (a < 0.0f || a > 1.0f) {
-			ENGINE_WARN("This should never happen: ",
-				"(", now.time_since_epoch().count(), " - ", tickTime.time_since_epoch().count(), ") / ", interval.count(), " = ", a,
-				"\n\n\n\n");
+			//ENGINE_WARN("This should never happen: ",
+			//	"(", now.time_since_epoch().count(), " - ", tickTime.time_since_epoch().count(), ") / ", interval.count(), " = ", a,
+			//	"\n\n\n\n");
 		}
 
 		a = std::min(1.0f, std::max(0.0f, a));
@@ -29,6 +29,7 @@ namespace Game {
 			auto& lerpTrans = physInterpComp.trans;
 
 			const auto* lastSnap = world.getSnapshot(world.getTick() - 1);
+
 			if (physComp.snap || !lastSnap || !lastSnap->isValid(ent) || !lastSnap->hasComponent<PhysicsComponent>(ent)) {
 				lerpTrans = physComp.getTransform();
 			} else {

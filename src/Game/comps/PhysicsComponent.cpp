@@ -54,15 +54,6 @@ namespace Game {
 		return body->GetWorld();
 	}
 
-	void PhysicsComponent::setTransform2(const b2Transform& trans) {
-		setTransform2(trans.p, trans.q.GetAngle());
-	}
-
-	void PhysicsComponent::setTransform2(const b2Vec2& pos, float32 ang) {
-		snap = true;
-		body->SetTransform(pos, ang);
-	}
-
 	Engine::Net::Replication PhysicsComponent::netRepl() const {
 		return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::NONE : Engine::Net::Replication::ALWAYS;
 	}
@@ -79,8 +70,6 @@ namespace Game {
 	void PhysicsComponent::netFrom(Connection& conn) {
 		setTransform2(*conn.read<b2Transform>());
 		body->SetLinearVelocity(*conn.read<b2Vec2>());
-
-		// TODO: this is temp fix for PlayerFlag entities. Other entiteis will desync.
 		//conn.read<b2Transform>();
 		//conn.read<b2Vec2>();
 	}

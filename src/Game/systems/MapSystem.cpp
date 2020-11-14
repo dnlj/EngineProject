@@ -64,9 +64,6 @@ namespace Game {
 				data.ent = world.createEntity(true);
 				auto& physComp = world.addComponent<PhysicsComponent>(data.ent);
 
-				// TODO: Dont actually need interp comp on these. they dont move.
-				world.addComponent<PhysicsInterpComponent>(data.ent);
-
 				physComp.setBody(physSys.createBody(data.ent, bodyDef));
 				data.mesh.setBufferFormat(vertexFormat);
 			}
