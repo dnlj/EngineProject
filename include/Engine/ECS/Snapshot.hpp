@@ -282,11 +282,10 @@ namespace Engine::ECS {
 			
 			template<class Component>
 			ENGINE_INLINE constexpr static ComponentId getComponentId() noexcept {
-				if constexpr ((std::is_same_v<Cs, Component> || ...)) {
-					return Meta::IndexOf<Component, Cs...>::value;
-				} else {
-					return sizeof...(Cs) + Meta::IndexOf<Component, Fs...>::value;
-				}
+				static_assert((std::is_same_v<Cs, Component> || ...),
+					"Attempting to get component id of type that is not in the component list. Did you forget to add it?"
+				);
+				return Meta::IndexOf<Component, Cs...>::value;
 			}
 			
 			/**
