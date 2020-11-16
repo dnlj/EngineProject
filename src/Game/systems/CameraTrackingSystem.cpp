@@ -16,7 +16,7 @@ namespace Game {
 	}
 	
 	void CameraTrackingSystem::run(float dt) {
-		for (auto ent : world.getFilter<PlayerFlag, PhysicsComponent>()) {
+		for (auto ent : world.getFilter<LocalPlayerFlag, PlayerFlag, PhysicsComponent>()) {
 			const auto focusPos = world.getComponent<PhysicsInterpComponent>(ent).getPosition();
 			engine.camera.setPosition(glm::vec2{focusPos.x, focusPos.y});
 		}

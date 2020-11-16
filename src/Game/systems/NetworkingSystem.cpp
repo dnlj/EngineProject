@@ -747,6 +747,7 @@ namespace Game {
 			world.setNetworked(ent, true);
 			world.addComponent<NeighborsComponent>(ent);
 		} else {
+			world.addComponent<LocalPlayerFlag>(ent);
 		}
 		// TODO: client only
 		world.addComponent<PhysicsInterpComponent>(ent);

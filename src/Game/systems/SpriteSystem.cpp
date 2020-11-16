@@ -12,13 +12,6 @@
 #include <Game/World.hpp>
 
 
-namespace {
-	using Filter = Engine::ECS::EntityFilterList<
-		Game::SpriteComponent,
-		Game::PhysicsComponent
-	>;
-}
-
 namespace Game {
 	SpriteSystem::SpriteSystem(SystemArg arg)
 		: System{arg} {
@@ -105,7 +98,11 @@ namespace Game {
 	}
 
 	void SpriteSystem::run(float dt) {
-		auto& filter = world.getFilter<Filter>();
+		auto& filter = world.getFilter<
+			Game::SpriteComponent,
+			Game::PhysicsComponent,
+			Game::PhysicsInterpComponent
+		>();
 		if (filter.empty()) { return; }
 
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
