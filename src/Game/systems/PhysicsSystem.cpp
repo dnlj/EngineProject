@@ -63,8 +63,20 @@ namespace Game {
 	void PhysicsSystem::preStoreSnapshot() {
 		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			physComp.storeBody();
-			physComp.snap = false; 
+			physComp.snap = false;
+			physComp.rollbackOverride = false;
+
+			if (world.isPerformingRollback()) {
+				const auto* snap = world.getSnapshot(world.getTick());
+				if (!snap || !snap->hasComponent<PhysicsComponent>(ent)) { continue; }
+				const auto& physComp2 = snap->getComponent<PhysicsComponent>(ent);
+				if (physComp2.rollbackOverride) {
+					physComp.stored = physComp2.stored;
+					ENGINE_INFO("Rollback override!!!!!!!!"); // TODO: rm once done with testing
+				}
+			} else {
+				physComp.storeBody();
+			}
 		}
 	}
 

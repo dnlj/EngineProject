@@ -70,6 +70,7 @@ namespace Game {
 	void PhysicsComponent::netFrom(Connection& conn) {
 		setTransform2(*conn.read<b2Transform>());
 		body->SetLinearVelocity(*conn.read<b2Vec2>());
+		rollbackOverride = true;
 		//conn.read<b2Transform>();
 		//conn.read<b2Vec2>();
 	}

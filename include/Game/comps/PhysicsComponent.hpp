@@ -18,6 +18,7 @@ namespace Game {
 		public:
 			constexpr static bool isSnapshotRelevant = true;
 			bool snap = false;
+			bool rollbackOverride = false;
 
 		private:
 			friend class PhysicsSystem;

@@ -365,7 +365,7 @@ namespace Game {
 
 		auto* snap = world.getSnapshot(*tick);
 		if (!snap) {
-			ENGINE_WARN("Unable to get snapshot for tick: ", *tick);
+			// ENGINE_WARN("Unable to get snapshot for tick: ", *tick);
 			return;
 		}
 
