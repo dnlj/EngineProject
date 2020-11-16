@@ -28,15 +28,16 @@ namespace Engine::Detail {
 		const auto date = getDateTimeString();
 
 		std::ostringstream stream;
-		const auto&& filter = [&](const auto& value){
-			if constexpr (std::is_same_v<std::decay_t<decltype(value)>, ASCIIColorString>) {
+		const auto&& filter = [&](auto&& value){
+			using V = decltype(value);
+			if constexpr (std::is_same_v<std::decay_t<V>, ASCIIColorString>) {
 				if (gc.logColor) {
 					return value.str;
 				} else {
 					return "";
 				}
 			} else {
-				return value;
+				return std::forward<V>(value);
 			}
 		};
 
@@ -47,7 +48,7 @@ namespace Engine::Detail {
 			<< prefix
 			<< filter(Engine::ASCII_RESET)
 			<< " ";
-		(stream << ... << std::forward<Args>(args));
+		(stream << ... << filter(std::forward<Args>(args)));
 		stream << '\n';
 
 		// TODO: C++20 ostringstream.view() to avoid copy
