@@ -64,7 +64,6 @@ namespace Game {
 		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			physComp.snap = false;
-			physComp.rollbackOverride = false;
 
 			if (world.isPerformingRollback()) {
 				const auto* snap = world.getSnapshot(world.getTick());
@@ -74,8 +73,10 @@ namespace Game {
 					physComp.stored = physComp2.stored;
 					ENGINE_INFO("Rollback override!!!!!!!!"); // TODO: rm once done with testing
 				}
+				physComp.rollbackOverride = physComp2.rollbackOverride;
 			} else {
 				physComp.storeBody();
+				physComp.rollbackOverride = false;
 			}
 		}
 	}
