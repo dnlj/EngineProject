@@ -31,13 +31,21 @@ namespace Game {
 		a = std::min(1.0f, std::max(0.0f, a));
 		const float32 b = 1.0f - a;*/
 
+		int buffSize = 0;
+		Engine::Clock::Duration ping = {};
+		for (const auto& ply : world.getFilter<ActionComponent, ConnectionComponent>()) {
+			const auto& connComp = world.getComponent<ConnectionComponent>(ply);
+			const auto& actComp = world.getComponent<ActionComponent>(ply);
+			buffSize = static_cast<int>(actComp.estBufferSize) + 1;
+			ping = connComp.conn->getPing() + connComp.conn->getJitter();
+			break;
+		}
+
 		for (const auto& ent : world.getFilter<PhysicsInterpComponent, PhysicsComponent>()) {
 			const auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
 			
 			Engine::Clock::Duration step = {};
-			Engine::ECS::Tick nextTick = 0; // TODO: rm - unused
-			Engine::ECS::Tick prevTick = 0; // TODO: rm - unused
 			Engine::Clock::TimePoint nextTime;
 			Engine::Clock::TimePoint prevTime;
 			auto interpTime = now;
@@ -47,16 +55,29 @@ namespace Game {
 				physInterpComp.trans = physComp.getTransform();
 				continue;
 			} else if (physInterpComp.onlyUserVerified) {
-				step = Engine::Clock::Duration{std::chrono::milliseconds{200}}; // TODO: dont hard code. figure out a good number. 
-				//step += 3*world.getTickInterval();
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				// Explanation for time offset calculation
+				//
+				//
+				// Total = DeJitter + RTT + NetRate + TickInterval + InputBuffer
+				// DeJitterBuffer is a user tuneable variable. Smaller is more responsive but larger is more resilient to network condition variations.
+				//
+				//              DeJitterBuffer >      . RecvUpdate                            . ClientTick
+				// Client: <-------------------|------|---------------------------------------|---------> Time
+				//                          RTT/2 ---> \                                     /  <--- RTT/2
+				//                                      \                                   /             
+				// Server: <-----------------------------|----------|.....|----------------|------------>
+				//                               NetRate >          >     < ServerTick     < InputBuffer
+				//                                                  . ServerTick Complete
+				//
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+				constexpr auto dejitter = World::getTickInterval(); // TODO: make cvar
+				constexpr auto netrate = std::chrono::milliseconds{51}; // TODO: dont hardcode. cvar/cmdlline
+				constexpr auto serverTickTime = World::getTickInterval();
+				step = dejitter + ping + netrate + serverTickTime + World::getTickInterval() * buffSize;
 
 				interpTime = now - step;
-
-				// TODO: check active comp
-				//if (physComp.rollbackOverride) {
-				//	nextTrans = &physComp.getStored().trans;
-				//	nextTime = world.getTickTime();
-				//}
 
 				// TODO: this isnt great on the ECS/snapshot memory layout
 				for (Engine::ECS::Tick t = world.getTick() - 1; t > world.getTick() - world.getSnapshotCount(); --t) {
@@ -68,14 +89,28 @@ namespace Game {
 						if (snap->tickTime >= interpTime) {
 							nextTrans = &pc.getStored().trans;
 							nextTime = snap->tickTime;
-							nextTick = t;
 						} else {
 							prevTrans = &pc.getStored().trans;
 							prevTime = snap->tickTime;
-							prevTick = t;
 							break;
 						}
 					}
+				}
+
+				if (!nextTrans) {
+					ENGINE_WARN("nextTrans not found!");
+					if (prevTrans) {
+						physInterpComp.trans = *prevTrans;
+					}
+					continue;
+				}
+
+				if (!prevTrans) {
+					ENGINE_WARN("prevTrans not found!");
+					if (nextTrans) {
+						physInterpComp.trans = *nextTrans;
+					}
+					continue;
 				}
 			} else {
 				prevTrans = &physComp.getStored().trans;
@@ -85,37 +120,32 @@ namespace Game {
 				nextTime = prevTime + world.getTickInterval();
 			}
 
-			if (!nextTrans) { continue; }
-			if (!prevTrans) { prevTrans = nextTrans; }
-
-
-			// TODO: would the variation in diff be the reason for the stutter?
 			const auto diff = nextTime - prevTime;
-			float32 a = (interpTime - prevTime).count() / static_cast<float32>(diff.count());
-			if (a < 0.0f || a > 1.0f) { ENGINE_WARN("This should never happen: ", a); }
-			a = std::min(1.0f, std::max(a, 0.0f));
-			const float32 b = 1 - a;
+			auto a = (interpTime - prevTime).count() / static_cast<float64>(diff.count());
+			if (a < 0 || a > 1) { ENGINE_WARN("This should never happen: ", a); }
+			const auto rm_a = a;
+			a = std::min(1.0, std::max(a, 0.0));
+			const auto b = 1 - a;
 
-			if (step != decltype(step){}) {
-				ENGINE_LOG("Interp: ", a, " ", b,
-					"\n\t       step: ", step.count(),
-					"\n\t   prevTime: ", prevTime.time_since_epoch().count(), " - ", prevTick,
-					"\n\t   nextTime: ", nextTime.time_since_epoch().count(), " - ", nextTick,
-					"\n\t interpTime: ", interpTime.time_since_epoch().count(),
-					"\n\t        now: ", now.time_since_epoch().count(), " - ", world.getTick(),
-					"\n\t       diff: ", diff.count()
-				);
+			if (rm_a != a) {
+				ENGINE_LOG(Engine::ASCII_BLUE_BOLD, "Interp values a = ", a, "      b = ", b, "     rm_a = ", rm_a);
 			}
 
-			auto& lerpTrans = physInterpComp.trans;
-			lerpTrans.p = a * nextTrans->p + b * prevTrans->p;
+			float32 a2 = static_cast<float32>(a);
+			float32 b2 = static_cast<float32>(b);
+			{
+				float32 a = a2;
+				float32 b = b2;
+				auto& lerpTrans = physInterpComp.trans;
+				lerpTrans.p = a * nextTrans->p + b * prevTrans->p;
 
-			// Normalized lerp - really should use slerp but since the delta is small nlerp is close to slerp
-			lerpTrans.q.c = a * nextTrans->q.c + b * prevTrans->q.c;
-			lerpTrans.q.s = a * nextTrans->q.s + b * prevTrans->q.s;
-			const float32 mag = lerpTrans.q.c * lerpTrans.q.c + lerpTrans.q.s * lerpTrans.q.s;
-			lerpTrans.q.c /= mag;
-			lerpTrans.q.s /= mag;
+				// Normalized lerp - really should use slerp but since the delta is small nlerp is close to slerp
+				lerpTrans.q.c = a * nextTrans->q.c + b * prevTrans->q.c;
+				lerpTrans.q.s = a * nextTrans->q.s + b * prevTrans->q.s;
+				const float32 mag = lerpTrans.q.c * lerpTrans.q.c + lerpTrans.q.s * lerpTrans.q.s;
+				lerpTrans.q.c /= mag;
+				lerpTrans.q.s /= mag;
+			}
 		}
 	}
 }

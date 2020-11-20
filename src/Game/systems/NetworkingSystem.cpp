@@ -330,12 +330,14 @@ namespace Game {
 						return;
 					}
 
+
 					auto* snap = world.getSnapshot(*tick);
 					if (!snap || !snap->hasComponent<C>(local)) {
 						ENGINE_WARN("Unable to get snapshot for tick ", *tick);
 						return;
 					}
 
+					ENGINE_LOG("Recv update for tick ", *tick, " @ ", Engine::Clock::now().time_since_epoch().count(), " - ticked @ ", snap->tickTime.time_since_epoch().count());
 					snap->getComponent<C>(local).netFrom(from);
 				} else {
 					world.getComponent<C>(local).netFrom(from);
@@ -589,6 +591,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::runServer() {
+		ENGINE_LOG("Sending Update for ", world.getTick(), " @ ", Engine::Clock::now().time_since_epoch().count());
 		updateNeighbors();
 		if (world.getAllComponentBitsets().size() > lastCompsBitsets.size()) {
 			lastCompsBitsets.resize(world.getAllComponentBitsets().size());
