@@ -250,16 +250,22 @@ namespace Engine::ECS {
 				markedForDeath.erase(bEnd, markedForDeath.end());
 			}
 
+			// TODO: shouldnt all the isXYZ entity functions also check generation?
 			ENGINE_INLINE bool isValid(Entity ent) const noexcept {
-				return ent.id < entities.size();
+				return (ent.id < entities.size())
+					&& (ent.gen <= entities[ent.id].ent.gen);
 			}
 
 			ENGINE_INLINE bool isAlive(Entity ent) const noexcept {
-				return entities[ent.id].state & EntityState::Alive;
+				const auto& es = entities[ent.id];
+				return (es.ent.gen == ent.gen)
+					&& (es.state & EntityState::Alive);
 			}
 
 			ENGINE_INLINE bool isEnabled(Entity ent) const noexcept {
-				return entities[ent.id].state & EntityState::Enabled;
+				const auto& es = entities[ent.id];
+				return (es.ent.gen == ent.gen)
+					&& (es.state & EntityState::Enabled);
 			}
 
 			ENGINE_INLINE void setEnabled(Entity ent, bool enabled) noexcept {
@@ -268,7 +274,9 @@ namespace Engine::ECS {
 			}
 
 			ENGINE_INLINE bool isNetworked(Entity ent) const noexcept {
-				return entities[ent.id].state & EntityState::Network;
+				const auto& es = entities[ent.id];
+				return (es.ent.gen == ent.gen)
+					&& (es.state & EntityState::Network);
 			}
 
 			ENGINE_INLINE void setNetworked(Entity ent, bool enabled) noexcept {
