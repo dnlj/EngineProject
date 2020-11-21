@@ -44,8 +44,7 @@ namespace Game {
 		for (const auto& ent : world.getFilter<PhysicsInterpComponent, PhysicsComponent>()) {
 			const auto& physComp = world.getComponent<PhysicsComponent>(ent);
 			auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
-			
-			Engine::Clock::Duration step = {};
+
 			Engine::Clock::TimePoint nextTime;
 			Engine::Clock::TimePoint prevTime;
 			auto interpTime = now;
@@ -75,8 +74,7 @@ namespace Game {
 				constexpr auto dejitter = World::getTickInterval(); // TODO: make cvar
 				constexpr auto netrate = std::chrono::milliseconds{51}; // TODO: dont hardcode. cvar/cmdlline
 				constexpr auto serverTickTime = World::getTickInterval();
-				step = dejitter + ping + netrate + serverTickTime + World::getTickInterval() * buffSize;
-
+				const auto step = dejitter + ping + netrate + serverTickTime + World::getTickInterval() * buffSize;
 				interpTime = now - step;
 
 				// TODO: this isnt great on the ECS/snapshot memory layout
@@ -122,14 +120,8 @@ namespace Game {
 
 			const auto diff = nextTime - prevTime;
 			auto a = (interpTime - prevTime).count() / static_cast<float64>(diff.count());
-			if (a < 0 || a > 1) { ENGINE_WARN("This should never happen: ", a); }
-			const auto rm_a = a;
 			a = std::min(1.0, std::max(a, 0.0));
 			const auto b = 1 - a;
-
-			if (rm_a != a) {
-				ENGINE_LOG(Engine::ASCII_BLUE_BOLD, "Interp values a = ", a, "      b = ", b, "     rm_a = ", rm_a);
-			}
 
 			float32 a2 = static_cast<float32>(a);
 			float32 b2 = static_cast<float32>(b);
