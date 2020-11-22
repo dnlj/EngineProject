@@ -105,10 +105,12 @@ namespace Engine::ECS {
 			 */
 			void run();
 
+			ENGINE_INLINE bool isValid(Entity ent) const noexcept { return activeSnap.isValid(ent); };
+
 			/**
 			 * Checks if an entity is alive.
 			 */
-			ENGINE_INLINE bool isAlive(Entity ent) const noexcept { return activeSnap.isEnabled(ent); };
+			ENGINE_INLINE bool isAlive(Entity ent) const noexcept { return activeSnap.isAlive(ent); };
 
 			/**
 			 * Enables or disables and entity.
@@ -119,17 +121,17 @@ namespace Engine::ECS {
 			 * Checks if an entity is enabled.
 			 */
 			ENGINE_INLINE bool isEnabled(Entity ent) const noexcept { return activeSnap.isEnabled(ent); };
-
-			/**
-			 * Checks if an entity should be networked.
-			 */
-			ENGINE_INLINE bool isNetworked(Entity ent) const noexcept { return activeSnap.isNetworked(ent); };
 			
 			/**
 			 * Enables or disables entity networking.
 			 */
 			ENGINE_INLINE void setNetworked(Entity ent, bool enabled) noexcept { return activeSnap.setNetworked(ent, enabled); };
 
+			/**
+			 * Checks if an entity should be networked.
+			 */
+			ENGINE_INLINE bool isNetworked(Entity ent) const noexcept { return activeSnap.isNetworked(ent); };
+			
 			/**
 			 * Gets all entities.
 			 */
