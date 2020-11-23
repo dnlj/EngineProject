@@ -38,7 +38,7 @@ namespace Game {
 		for (int x = 0; x < MapSystem::activeAreaSize.x; ++x) {
 			for (int y = 0; y < MapSystem::activeAreaSize.y; ++y) {
 				const auto& data = mapSys.activeAreaData[x][y];
-				const auto pos = world.getComponent<PhysicsComponent>(data.ent).getPosition();
+				const auto pos = world.getComponent<PhysicsProxyComponent>(data.ent).trans.p;
 				const auto mvp = glm::translate(vp, glm::vec3(pos.x, pos.y, 0.0f));
 
 				glUniformMatrix4fv(1, 1, GL_FALSE, &mvp[0][0]);

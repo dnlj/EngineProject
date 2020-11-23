@@ -41,8 +41,8 @@ namespace Game {
 			break;
 		}
 
-		for (const auto& ent : world.getFilter<PhysicsInterpComponent, PhysicsComponent>()) {
-			const auto& physComp = world.getComponent<PhysicsComponent>(ent);
+		for (const auto& ent : world.getFilter<PhysicsInterpComponent, PhysicsBodyComponent>()) {
+			const auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
 			auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
 
 			Engine::Clock::TimePoint nextTime;
@@ -50,8 +50,8 @@ namespace Game {
 			auto interpTime = now;
 			const b2Transform* nextTrans = nullptr;
 			const b2Transform* prevTrans = nullptr;
-			if (physComp.snap) {
-				physInterpComp.trans = physComp.getTransform();
+			if (physProxyComp.snap) {
+				physInterpComp.trans = physProxyComp.trans;
 				continue;
 			} else if (physInterpComp.onlyUserVerified) {
 				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,15 +80,15 @@ namespace Game {
 				// TODO: this isnt great on the ECS/snapshot memory layout
 				for (Engine::ECS::Tick t = world.getTick() - 1; t > world.getTick() - world.getSnapshotCount(); --t) {
 					const auto* snap = world.getSnapshot(t);
-					if (!snap || !snap->hasComponent<PhysicsComponent>(ent)) { break; }
+					if (!snap || !snap->hasComponent<PhysicsProxyComponent>(ent)) { break; }
 
-					const auto& pc = snap->getComponent<PhysicsComponent>(ent);
-					if (pc.rollbackOverride) {
+					const auto& physProxyComp2 = snap->getComponent<PhysicsProxyComponent>(ent);
+					if (physProxyComp2.rollbackOverride) {
 						if (snap->tickTime >= interpTime) {
-							nextTrans = &pc.getStored().trans;
+							nextTrans = &physProxyComp2.trans;
 							nextTime = snap->tickTime;
 						} else {
-							prevTrans = &pc.getStored().trans;
+							prevTrans = &physProxyComp2.trans;
 							prevTime = snap->tickTime;
 							break;
 						}
@@ -111,9 +111,9 @@ namespace Game {
 					continue;
 				}
 			} else {
-				prevTrans = &physComp.getStored().trans;
+				prevTrans = &physProxyComp.trans;
 
-				nextTrans = &physComp.getTransform();
+				nextTrans = &physProxyComp.trans;
 				prevTime = world.getTickTime();
 				nextTime = prevTime + world.getTickInterval();
 			}

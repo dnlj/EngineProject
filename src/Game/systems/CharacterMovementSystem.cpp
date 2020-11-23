@@ -6,7 +6,7 @@
 
 namespace {
 	using Filter = Engine::ECS::EntityFilterList<
-			Game::PhysicsComponent,
+			Game::PhysicsBodyComponent,
 			Game::ActionComponent
 	>;
 }
@@ -22,7 +22,7 @@ namespace Game {
 		constexpr float speed = 1.0f * 4;
 
 		for (auto ent : world.getFilter<Filter>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 			const auto& actComp = world.getComponent<ActionComponent>(ent);
 			// TODO: should we use press count here?
 			const bool up = actComp.getButton(Button::MoveUp).latest;

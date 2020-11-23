@@ -25,7 +25,8 @@
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/UISystem.hpp>
 
-#include <Game/comps/PhysicsComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/PhysicsProxyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
 #include <Game/comps/ActionComponent.hpp>
@@ -61,7 +62,8 @@ namespace Game {
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<
 		MapEditComponent,
-		PhysicsComponent,
+		PhysicsBodyComponent,
+		PhysicsProxyComponent,
 		PhysicsInterpComponent,
 		SpriteComponent,
 		ActionComponent,

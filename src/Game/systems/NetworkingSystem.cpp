@@ -388,30 +388,28 @@ namespace Game {
 			return;
 		}
 
-		if (!snap->hasComponent<PhysicsComponent>(info.ent)) {
+		if (!snap->hasComponent<PhysicsBodyComponent>(info.ent)) {
 			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsComponent");
 			return;
 		}
-		auto& tmp = snap->getComponent<PhysicsComponent>(info.ent);
-		auto& stored = tmp.getStored();
-		const auto diff = stored.trans.p - trans->p;
+		auto& physProxyComp = snap->getComponent<PhysicsProxyComponent>(info.ent);
+		const auto diff = physProxyComp.trans.p - trans->p;
 		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
 		// TODO: why does this ever happen with only one player connected?
 		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
-			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(stored.trans.p.x)>::max_digits10),
+			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physProxyComp.trans.p.x)>::max_digits10),
 				"Oh boy a mishap has occured on tick ", *tick, " = ", snap->currTick,
-				" (<", stored.trans.p.x, ", ", stored.trans.p.y, "> - <",
+				" (<", physProxyComp.trans.p.x, ", ", physProxyComp.trans.p.y, "> - <",
 				trans->p.x, ", ", trans->p.y, "> = <",
 				diff.x, ", ", diff.y,
 				">)"
 			);
-			stored.trans = *trans;
-			stored.vel = *vel;
+			physProxyComp.trans = *trans;
+			physProxyComp.vel = *vel;
+			physProxyComp.rollbackOverride = true;
 
-			if (world.getTick() > 2000) {// TODO: rm check
-				world.scheduleRollback(*tick);
-			}
+			world.scheduleRollback(*tick);
 		}
 
 		// TODO: vel
@@ -591,7 +589,6 @@ namespace Game {
 	}
 
 	void NetworkingSystem::runServer() {
-		ENGINE_LOG("Sending Update for ", world.getTick(), " @ ", Engine::Clock::now().time_since_epoch().count());
 		updateNeighbors();
 		if (world.getAllComponentBitsets().size() > lastCompsBitsets.size()) {
 			lastCompsBitsets.resize(world.getAllComponentBitsets().size());
@@ -603,7 +600,7 @@ namespace Game {
 
 			{ // TODO: player data should be sent every tick along with actions/inputs.
 			// TODO: cont.  Should it? every few frames is probably fine for keeping it in sync. Although when it does desync it will be a larger rollback.
-				auto& physComp = world.getComponent<PhysicsComponent>(ply);
+				auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 				conn.msgBegin<MessageType::PLAYER_DATA>();
 				conn.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
 				conn.write(physComp.getTransform());
@@ -780,7 +777,8 @@ namespace Game {
 
 		world.addComponent<PlayerFlag>(ent);
 		world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
-		world.addComponent<PhysicsComponent>(ent).setBody(physSys.createPhysicsCircle(ent));
+		world.addComponent<PhysicsBodyComponent>(ent).setBody(physSys.createPhysicsCircle(ent));
+		world.addComponent<PhysicsProxyComponent>(ent);
 		world.addComponent<ActionComponent>(ent);
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);
@@ -822,7 +820,7 @@ namespace Game {
 	void NetworkingSystem::updateNeighbors() {
 		for (const auto ply : world.getFilter<PlayerFilter>()) {
 			auto& neighComp = world.getComponent<NeighborsComponent>(ply);
-			auto& physComp = world.getComponent<PhysicsComponent>(ply);
+			auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 			auto& added = neighComp.addedNeighbors;
 			auto& current = neighComp.currentNeighbors;
 			auto& removed = neighComp.removedNeighbors;

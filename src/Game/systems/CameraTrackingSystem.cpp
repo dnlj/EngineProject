@@ -3,8 +3,7 @@
 
 // Game
 #include <Game/systems/CameraTrackingSystem.hpp>
-#include <Game/systems/PhysicsSystem.hpp>
-#include <Game/comps/PhysicsComponent.hpp>
+#include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/World.hpp>
 
 namespace Game {
@@ -16,7 +15,7 @@ namespace Game {
 	}
 	
 	void CameraTrackingSystem::run(float dt) {
-		for (auto ent : world.getFilter<LocalPlayerFlag, PlayerFlag, PhysicsComponent>()) {
+		for (auto ent : world.getFilter<LocalPlayerFlag, PlayerFlag, PhysicsInterpComponent>()) {
 			const auto focusPos = world.getComponent<PhysicsInterpComponent>(ent).getPosition();
 			engine.camera.setPosition(glm::vec2{focusPos.x, focusPos.y});
 		}

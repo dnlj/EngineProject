@@ -17,7 +17,7 @@
 namespace {
 	using PlayerFilter = Engine::ECS::EntityFilterList<
 		Game::PlayerFlag,
-		Game::PhysicsComponent,
+		Game::PhysicsBodyComponent,
 		Game::ConnectionComponent
 	>;
 }
@@ -62,9 +62,10 @@ namespace Game {
 			for (int y = 0; y < activeAreaSize.y; ++y) {
 				auto& data = activeAreaData[x][y];
 				data.ent = world.createEntity(true);
-				auto& physComp = world.addComponent<PhysicsComponent>(data.ent);
+				auto& physBodyComp = world.addComponent<PhysicsBodyComponent>(data.ent);
+				world.addComponent<PhysicsProxyComponent>(data.ent);
 
-				physComp.setBody(physSys.createBody(data.ent, bodyDef));
+				physBodyComp.setBody(physSys.createBody(data.ent, bodyDef));
 				data.mesh.setBufferFormat(vertexFormat);
 			}
 		}
@@ -95,7 +96,7 @@ namespace Game {
 
 	void MapSystem::run(float32 dt) {
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
-			auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsComponent>(ply).getPosition());
+			auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsProxyComponent>(ply).trans.p);
 			ensurePlayAreaLoaded(worldToBlock(pos));
 		}
 
@@ -266,9 +267,11 @@ namespace Game {
 
 		{ // Physics stuff
 			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(data.chunkPos)));
-			auto& physComp = world.getComponent<PhysicsComponent>(data.ent);
-			physComp.setTransform2(pos, 0);
-			auto& body = physComp.getBody();
+			auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(data.ent);
+			auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(data.ent);
+			physProxyComp.trans.p = pos;
+			physProxyComp.snap = true;
+			auto& body = physBodyComp.getBody();
 
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures

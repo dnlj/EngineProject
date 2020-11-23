@@ -7,7 +7,6 @@
 
 // Game
 #include <Game/systems/SpriteSystem.hpp>
-#include <Game/comps/PhysicsComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
 #include <Game/World.hpp>
 
@@ -100,7 +99,6 @@ namespace Game {
 	void SpriteSystem::run(float dt) {
 		auto& filter = world.getFilter<
 			Game::SpriteComponent,
-			Game::PhysicsComponent,
 			Game::PhysicsInterpComponent
 		>();
 		if (filter.empty()) { return; }

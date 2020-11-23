@@ -3,6 +3,13 @@
 // Box2D
 #include <box2d/b2_body.h>
 
+// Engine
+#include <Engine/Net/Connection.hpp>
+#include <Engine/Net/Replication.hpp>
+
+// Game
+#include <Game/Connection.hpp>
+
 
 namespace Game {
 	class PhysicsInterpComponent {

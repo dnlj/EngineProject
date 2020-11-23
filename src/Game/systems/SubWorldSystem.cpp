@@ -51,8 +51,8 @@ namespace Game {
 
 		// TODO: shoudl be able to do this whenever we merge/split so we dont need an extra iteration
 		playerData.clear();
-		for (auto ent : world.getFilter<PhysicsComponent>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+		for (auto ent : world.getFilter<PhysicsBodyComponent>()) {
+			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 			playerData.push_back({
 				.ent = ent,
 				.physComp = &physComp,
@@ -149,7 +149,7 @@ namespace Game {
 		for (auto* body : bodies) {
 			Engine::ECS::Entity ent{static_cast<uint16>(reinterpret_cast<uintptr_t>(body->GetUserData())), 0};
 			auto* newBody = copyBodyToWorld(body, world);
-			this->world.getComponent<PhysicsComponent>(ent).setBody(newBody);
+			this->world.getComponent<PhysicsBodyComponent>(ent).setBody(newBody);
 		}
 
 		// TODO: if oldW has no players add it to usable list for splitting

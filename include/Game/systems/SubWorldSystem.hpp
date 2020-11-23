@@ -8,7 +8,7 @@
 
 // Game
 #include <Game/System.hpp>
-#include <Game/comps/PhysicsComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/systems/MapSystem.hpp>
 
 
@@ -32,7 +32,7 @@ namespace Game {
 
 			struct PlayerData {
 				Engine::ECS::Entity ent;
-				PhysicsComponent* physComp;
+				PhysicsBodyComponent* physComp;
 				b2Vec2 pos;
 				Group* group = nullptr;
 				bool shouldSplit = false;

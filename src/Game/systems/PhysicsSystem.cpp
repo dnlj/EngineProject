@@ -4,7 +4,7 @@
 
 namespace {
 	using Filter = Engine::ECS::EntityFilterList<
-		Game::PhysicsComponent
+		Game::PhysicsBodyComponent
 	>;
 }
 
@@ -22,35 +22,27 @@ namespace Game {
 		#endif
 	}
 
-	void PhysicsSystem::tick() {
-		/*for (auto ent : world.getFilter<Filter>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+	void PhysicsSystem::preTick() {
+		for (const auto ent : world.getFilter<Filter>()) {
+			const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
+			const auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
 
-			//if constexpr (ENGINE_CLIENT && false) { // TODO: split interp into own comp?
-			//	if (!world.isNetworked(ent)) { continue; }
-			//
-			//	// TODO: angle
-			//	const auto& pos = physComp.body->GetTransform().p;
-			//	auto next = physComp.remoteTransform.p - pos;
-			//	const auto len = next.Normalize();
-			//	const float32 inc = 0.05f / (tickrate/5); // TODO: figure out good step size once world scale is fixed
-			//	const float32 snap = 0.50f;
-			//
-			//	if (len <= 0.00001f) { // Close enough // TODO: FLT_epsilon?
-			//		continue;
-			//	} else if (len < inc || len >= snap) { // TODO: find good snap dist
-			//		next = physComp.remoteTransform.p;
-			//	} else {
-			//		//ENGINE_LOG("Len: ", len, " (", physComp.remoteTransform.p.x, ", ", physComp.remoteTransform.p.y, ")");
-			//		next = pos + (inc * next);
-			//	}
-			//
-			//	physComp.updateTransform(next, 0);
-			//}
-		}*/
-		
+			physProxyComp.apply(*physBodyComp.body);
+		}
+	}
+
+	void PhysicsSystem::tick() {
 		// TODO: look into SetAutoClearForces
 		physWorld.Step(world.getTickDelta(), 8, 3);
+	}
+
+	void PhysicsSystem::postTick() {
+		for (const auto ent : world.getFilter<Filter>()) {
+			const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
+			auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
+
+			physProxyComp.store(*physBodyComp.body);
+		}
 	}
 
 	void PhysicsSystem::run(float dt) { // TODO: rm
@@ -61,31 +53,30 @@ namespace Game {
 	}
 
 	void PhysicsSystem::preStoreSnapshot() {
-		for (auto ent : world.getFilter<Filter>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			physComp.snap = false;
+		auto& filter = world.getFilter<Filter>();
+		for (const auto ent : filter) {
+			auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
+			physProxyComp.snap = false;
+			physProxyComp.rollbackOverride = false;
 
 			if (world.isPerformingRollback()) {
 				const auto* snap = world.getSnapshot(world.getTick());
-				if (!snap || !snap->hasComponent<PhysicsComponent>(ent)) { continue; }
-				const auto& physComp2 = snap->getComponent<PhysicsComponent>(ent);
-				if (physComp2.rollbackOverride) {
-					physComp.stored = physComp2.stored;
+				if (!snap || !snap->hasComponent<PhysicsProxyComponent>(ent)) { continue; }
+
+				const auto& physProxyComp2 = snap->getComponent<PhysicsProxyComponent>(ent);
+				if (physProxyComp2.rollbackOverride) {
+					physProxyComp = physProxyComp2;
 					ENGINE_INFO("Rollback override!!!!!!!!"); // TODO: rm once done with testing
 				}
-				physComp.rollbackOverride = physComp2.rollbackOverride;
-			} else {
-				physComp.storeBody();
-				physComp.rollbackOverride = false;
 			}
 		}
 	}
 
 	void PhysicsSystem::postLoadSnapshot() {
-		for (auto ent : world.getFilter<Filter>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
-			physComp.loadBody();
-		}
+		//for (auto ent : world.getFilter<Filter>()) {
+		//	auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
+		//	physComp.loadBody();
+		//}
 	}
 
 	b2Body* PhysicsSystem::createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef) {
@@ -107,7 +98,7 @@ namespace Game {
 		physWorld.ShiftOrigin(newOrigin);
 
 		for (auto& ent : world.getFilter<Filter>()) {
-			auto& physComp = world.getComponent<PhysicsComponent>(ent);
+			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 			physComp.setTransform2(physComp.body->GetTransform());
 		}
 	}
