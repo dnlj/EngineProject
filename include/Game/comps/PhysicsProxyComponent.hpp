@@ -60,11 +60,6 @@ namespace Game {
 			}
 
 			void netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
-				//auto& physSys = world.getSystem<PhysicsSystem>();
-				//// TODO: actual shape
-				//setBody(physSys.createPhysicsCircle(ent));
-				////body->SetType(b2_staticBody);
-				//netFrom(conn);
 				netFrom(conn);
 			}
 	};

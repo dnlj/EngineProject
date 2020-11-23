@@ -42,5 +42,17 @@ namespace Game {
 			ENGINE_INLINE const b2Vec2& getPosition() const { return body->GetPosition(); };
 			ENGINE_INLINE const auto& getTransform() const { return body->GetTransform(); }
 			ENGINE_INLINE const auto& getVelocity() const { return body->GetLinearVelocity(); }
+
+			Engine::Net::Replication netRepl() const {
+				return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::NONE : Engine::Net::Replication::ALWAYS;
+			}
+
+			void netTo(Connection& conn) const {};
+
+			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const {}
+
+			void netFrom(Connection& conn) {}
+
+			void netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn);
 	};
 }

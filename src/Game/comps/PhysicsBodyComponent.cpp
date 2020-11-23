@@ -51,4 +51,10 @@ namespace Game {
 	b2World* PhysicsBodyComponent::getWorld() {
 		return body->GetWorld();
 	}
+
+	void PhysicsBodyComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
+		auto& physSys = world.getSystem<PhysicsSystem>();
+		setBody(physSys.createPhysicsCircle(ent));
+		netFrom(conn);
+	}
 }

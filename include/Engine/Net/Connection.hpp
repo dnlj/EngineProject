@@ -345,7 +345,7 @@ namespace Engine::Net {
 			template<auto M>
 			bool msgBegin() {
 				if (!getChannelForMessage<M>().canWriteMessage()) {
-					__debugbreak(); // TODO: rm
+					//__debugbreak(); // TODO: rm
 					return false;
 				}
 

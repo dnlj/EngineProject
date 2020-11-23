@@ -56,7 +56,7 @@ namespace Game {
 			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 
 			if constexpr (ENGINE_CLIENT) {
-				conn.msgBegin<MessageType::ACTION>();
+				if (!conn.msgBegin<MessageType::ACTION>()) { continue; };
 				conn.write(currTick);
 
 				// TODO: how many to send?
@@ -79,7 +79,7 @@ namespace Game {
 			} else if constexpr (ENGINE_SERVER) {
 				auto* state = actComp.state;
 
-				conn.msgBegin<MessageType::ACTION>();
+				if (!conn.msgBegin<MessageType::ACTION>()) { continue; }
 				conn.write(currTick);
 				conn.write(state ? state->recvTick : 0);
 				conn.write(estBuffSizeToNet(actComp.estBufferSize));

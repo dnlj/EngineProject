@@ -116,11 +116,12 @@ namespace Game {
 		// TODO: rate limit per ip (longer if invalid packet)
 		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
 		if (from.recvMsgSize() == size && !memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
-			from.msgBegin<MessageType::SERVER_INFO>();
-			constexpr char name[] = "This is the name of the server";
-			from.write<int>(sizeof(name) - 1);
-			from.write(name, sizeof(name) - 1);
-			from.msgEnd<MessageType::SERVER_INFO>();
+			if (from.msgBegin<MessageType::SERVER_INFO>()) {
+				constexpr char name[] = "This is the name of the server";
+				from.write<int>(sizeof(name) - 1);
+				from.write(name, sizeof(name) - 1);
+				from.msgEnd<MessageType::SERVER_INFO>();
+			}
 		}
 	}
 	
@@ -150,10 +151,11 @@ namespace Game {
 		if (!from.getKeyRecv()) {
 			from.setKeyRecv(genKey());
 		}
-		from.msgBegin<MessageType::CONNECT_CHALLENGE>();
-		from.write(from.getKeyRecv());
-		from.msgEnd<MessageType::CONNECT_CHALLENGE>();
-		ENGINE_LOG("MessageType::CONNECT_REQUEST ", from.getKeyRecv(), " ", (int)info.state);
+		if (from.msgBegin<MessageType::CONNECT_CHALLENGE>()) {
+			from.write(from.getKeyRecv());
+			from.msgEnd<MessageType::CONNECT_CHALLENGE>();
+			ENGINE_LOG("MessageType::CONNECT_REQUEST ", from.getKeyRecv(), " ", (int)info.state);
+		}
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CHALLENGE)
@@ -161,10 +163,11 @@ namespace Game {
 		if (!from.getKeySend()) {
 			from.setKeySend(keySend);
 		}
-		from.msgBegin<MessageType::CONNECT_CONFIRM>();
-		from.write(from.getKeySend());
-		from.msgEnd<MessageType::CONNECT_CONFIRM>();
-		info.state = ConnState::Connected;
+		if (from.msgBegin<MessageType::CONNECT_CONFIRM>()) {
+			from.write(from.getKeySend());
+			from.msgEnd<MessageType::CONNECT_CONFIRM>();
+			info.state = ConnState::Connected;
+		}
 		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
 	}
 
@@ -180,10 +183,11 @@ namespace Game {
 
 		ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM", " Tick: ", world.getTick());
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
-		from.msgBegin<MessageType::ECS_INIT>();
-		from.write(info.ent);
-		from.write(world.getTick());
-		from.msgEnd<MessageType::ECS_INIT>();
+		if (from.msgBegin<MessageType::ECS_INIT>()) {
+			from.write(info.ent);
+			from.write(world.getTick());
+			from.msgEnd<MessageType::ECS_INIT>();
+		}
 	}
 
 	HandleMessageDef(MessageType::ECS_INIT)
@@ -243,9 +247,10 @@ namespace Game {
 				" from ", from.address(),
 				" ", val
 			);
-			from.msgBegin<MessageType::PING>();
-			from.write(static_cast<uint8>(val | 0x80));
-			from.msgEnd<MessageType::PING>();
+			if (from.msgBegin<MessageType::PING>()) {
+				from.write(static_cast<uint8>(val | 0x80));
+				from.msgEnd<MessageType::PING>();
+			}
 		}
 	}
 	
@@ -337,7 +342,6 @@ namespace Game {
 						return;
 					}
 
-					ENGINE_LOG("Recv update for tick ", *tick, " @ ", Engine::Clock::now().time_since_epoch().count(), " - ticked @ ", snap->tickTime.time_since_epoch().count());
 					snap->getComponent<C>(local).netFrom(from);
 				} else {
 					world.getComponent<C>(local).netFrom(from);
@@ -409,7 +413,9 @@ namespace Game {
 			physProxyComp.vel = *vel;
 			physProxyComp.rollbackOverride = true;
 
-			world.scheduleRollback(*tick);
+			if (world.getTick() > 2000) { // TODO: rm
+				world.scheduleRollback(*tick);
+			}
 		}
 
 		// TODO: vel
@@ -484,9 +490,10 @@ namespace Game {
 		}
 
 		auto& [info, conn] = getOrCreateConnection(group);
-		conn.msgBegin<MessageType::DISCOVER_SERVER>();
-		conn.write(MESSAGE_PADDING_DATA);
-		conn.msgEnd<MessageType::DISCOVER_SERVER>();
+		if (conn.msgBegin<MessageType::DISCOVER_SERVER>()) {
+			conn.write(MESSAGE_PADDING_DATA);
+			conn.msgEnd<MessageType::DISCOVER_SERVER>();
+		}
 	}
 	#endif
 
@@ -601,11 +608,12 @@ namespace Game {
 			{ // TODO: player data should be sent every tick along with actions/inputs.
 			// TODO: cont.  Should it? every few frames is probably fine for keeping it in sync. Although when it does desync it will be a larger rollback.
 				auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-				conn.msgBegin<MessageType::PLAYER_DATA>();
-				conn.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
-				conn.write(physComp.getTransform());
-				conn.write(physComp.getVelocity());
-				conn.msgEnd<MessageType::PLAYER_DATA>();
+				if (conn.msgBegin<MessageType::PLAYER_DATA>()) {
+					conn.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
+					conn.write(physComp.getTransform());
+					conn.write(physComp.getVelocity());
+					conn.msgEnd<MessageType::PLAYER_DATA>();
+				}
 			}
 
 			// TODO: handle entities without phys comp?
@@ -617,9 +625,10 @@ namespace Game {
 				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
 				const auto& ent = pair.first;
 
-				conn.msgBegin<MessageType::ECS_ENT_CREATE>(); // TODO: General_RO;
-				conn.write(ent);
-				conn.msgEnd<MessageType::ECS_ENT_CREATE>();
+				if (conn.msgBegin<MessageType::ECS_ENT_CREATE>()) { // TODO: General_RO;
+					conn.write(ent);
+					conn.msgEnd<MessageType::ECS_ENT_CREATE>();
+				}
 
 				ForEachIn<ComponentsSet>::call([&]<class C>() {
 					if constexpr (IsNetworkedComponent<C>) {
@@ -629,20 +638,22 @@ namespace Game {
 						auto& comp = world.getComponent<C>(ent);
 						if (comp.netRepl() == Engine::Net::Replication::NONE) { return; }
 
-						conn.msgBegin<MessageType::ECS_COMP_ADD>();//, General_RO);
-						conn.write(ent);
-						conn.write(world.getComponentId<C>());
-						comp.netToInit(engine, world, ent, conn);
-						conn.msgEnd<MessageType::ECS_COMP_ADD>();
+						if (conn.msgBegin<MessageType::ECS_COMP_ADD>()) {//, General_RO);
+							conn.write(ent);
+							conn.write(world.getComponentId<C>());
+							comp.netToInit(engine, world, ent, conn);
+							conn.msgEnd<MessageType::ECS_COMP_ADD>();
+						}
 					}
 				});
 			}
 
 			for (const auto& pair : neighComp.removedNeighbors) {
 				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
-				conn.msgBegin<MessageType::ECS_ENT_DESTROY>(); // TODO: General_RO;
-				conn.write(pair.first);
-				conn.msgEnd<MessageType::ECS_ENT_DESTROY>();
+				if (conn.msgBegin<MessageType::ECS_ENT_DESTROY>()) { // TODO: General_RO;
+					conn.write(pair.first);
+					conn.msgEnd<MessageType::ECS_ENT_DESTROY>();
+				}
 			}
 
 			for (const auto& pair : neighComp.currentNeighbors) {
@@ -671,7 +682,7 @@ namespace Game {
 							// TODO: comp removed
 						} else { // Component Updated
 							if (repl == Engine::Net::Replication::ALWAYS) {
-								conn.msgBegin<MessageType::ECS_COMP_ALWAYS>();
+								if (!conn.msgBegin<MessageType::ECS_COMP_ALWAYS>()) { return; }
 								conn.write(ent);
 								conn.write(cid);
 								if (Engine::ECS::IsSnapshotRelevant<C>::value) {
@@ -692,10 +703,11 @@ namespace Game {
 				});
 
 				if (flagComps) {
-					conn.msgBegin<MessageType::ECS_FLAG>(); // TODO: General_RO
-					conn.write(ent);
-					conn.write(flagComps);
-					conn.msgEnd<MessageType::ECS_FLAG>();
+					if (conn.msgBegin<MessageType::ECS_FLAG>()) { // TODO: General_RO
+						conn.write(ent);
+						conn.write(flagComps);
+						conn.msgEnd<MessageType::ECS_FLAG>();
+					}
 				}
 			}
 		}
@@ -717,9 +729,10 @@ namespace Game {
 		
 				for (auto& ply : world.getFilter<PlayerFilter>()) {
 					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-					conn.msgBegin<MessageType::PING>();
-					conn.write(static_cast<uint8>(++ping & 0x7F));
-					conn.msgEnd<MessageType::PING>();
+					if (conn.msgBegin<MessageType::PING>()) {
+						conn.write(static_cast<uint8>(++ping & 0x7F));
+						conn.msgEnd<MessageType::PING>();
+					}
 				}
 			}
 		}
@@ -742,10 +755,11 @@ namespace Game {
 		}
 		ENGINE_LOG("TRY CONNECT TO: ", addr, " rkey: ", conn.getKeyRecv(), " skey: ",  conn.getKeySend(), " Tick: ", world.getTick());
 
-		conn.msgBegin<MessageType::CONNECT_REQUEST>();
-		conn.write(MESSAGE_PADDING_DATA);
-		conn.write(conn.getKeyRecv());
-		conn.msgEnd<MessageType::CONNECT_REQUEST>();
+		if (conn.msgBegin<MessageType::CONNECT_REQUEST>()) {
+			conn.write(MESSAGE_PADDING_DATA);
+			conn.write(conn.getKeyRecv());
+			conn.msgEnd<MessageType::CONNECT_REQUEST>();
+		}
 	}
 
 	auto NetworkingSystem::addConnection2(const Engine::Net::IPv4Address& addr) -> AddConnRes {
