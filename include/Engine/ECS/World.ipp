@@ -12,8 +12,8 @@ namespace Engine::ECS {
 	template<class Arg>
 	WORLD_CLASS::World(Arg& arg)
 		: systems((sizeof(Ss*), arg) ...)
-		, beginTime{Clock::now()} {
-		activeSnap.tickTime = beginTime;
+		, beginTime{Clock::now()}
+		, tickTime{beginTime} {
 		(getSystem<Ss>().setup(), ...);
 	}
 
@@ -24,58 +24,22 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		if constexpr (ENGINE_CLIENT) {
-			if (rollbackData.tick != -1 && !performingRollback) {
-				const auto oldTick = activeSnap.currTick;
-				const auto oldTime = activeSnap.tickTime;
-
-				const auto* snap = snapBuffer.find(rollbackData.tick);
-				if (!snap) {
-					ENGINE_WARN("Unable to perform world rollback to tick ", rollbackData.tick);
-					rollbackData.tick = -1;
-					return;
-				}
-
-				rollbackData.tick = activeSnap.currTick;
-				rollbackData.time = activeSnap.tickTime;
-				performingRollback = true;
-				ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", activeSnap.currTick);
-				loadSnapshot(*snap);
-			}
-		}
-
-		if (ENGINE_CLIENT && performingRollback) {
-			while (activeSnap.currTick < rollbackData.tick) {
-				const auto& found = snapBuffer.get(activeSnap.currTick + 1);
-				const auto nextTickTime = found.tickTime;
-				tickSystems();
-				ENGINE_LOG("Rollback: ", activeSnap.currTick);
-				activeSnap.tickTime = nextTickTime;
-			}
-
-			if (activeSnap.currTick == rollbackData.tick) {
-				activeSnap.tickTime = rollbackData.time;
-				performingRollback = false;
-				rollbackData.tick = -1;
-				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", activeSnap.currTick);
-			}
-		} else {
-			constexpr auto maxTickCount = 6;
-			int tickCount = -1;
-			while (activeSnap.tickTime + tickInterval <= beginTime && ++tickCount < maxTickCount) {
-				tickSystems();
-				activeSnap.tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
-			}
+		constexpr auto maxTickCount = 6;
+		int tickCount = -1;
+		while (tickTime + tickInterval <= beginTime && ++tickCount < maxTickCount) {
+			tickSystems();
+			tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
 		}
 		
 		(getSystem<Ss>().run(deltaTime), ...);
+
+		// TODO: rollback update: delete markedForDeath entities
 	}
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::tickSystems() {
-		++activeSnap.currTick;
+		++currTick;
 
-		storeSnapshot();
 		(getSystem<Ss>().preTick(), ...);
 
 
@@ -142,33 +106,9 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	void WORLD_CLASS::storeSnapshot() {
-		// TODO: delta compression?
-
-		(getSystem<Ss>().preStoreSnapshot(), ...);
-		const auto oldSeq = tick() - snapBuffer.capacity();
-		const auto* found = snapBuffer.find(oldSeq);
-		if (found) {
-			activeSnap.destroyEntities(found->markedForDeath);
-			//snapBuffer.remove(oldSeq); // TODO: should be rm when we insert over it? yes?
-		}
-
-		auto& snap = snapBuffer.insert(tick());
-		snap.assign(activeSnap);
-	}
-
-	WORLD_TPARAMS
-	void WORLD_CLASS::loadSnapshot(const RollbackSnapshot& snap) {
-		activeSnap.assign(snap);
-		(getSystem<Ss>().postLoadSnapshot(), ...);
-		--activeSnap.currTick; // We need to do this because tickSystems increments tick.
-	}
-
-	WORLD_TPARAMS
 	void WORLD_CLASS::setNextTick(Tick tick) {
 		// TODO: defer this till next `run`
-		activeSnap.currTick = tick - 1;
-		activeSnap.tickTime = Clock::now();
-		snapBuffer.clear();
+		currTick = tick - 1;
+		tickTime = Clock::now();
 	}
 }

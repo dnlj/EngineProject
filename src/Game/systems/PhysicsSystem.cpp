@@ -59,16 +59,17 @@ namespace Game {
 			physProxyComp.snap = false;
 			physProxyComp.rollbackOverride = false;
 
-			if (world.isPerformingRollback()) {
-				const auto* snap = world.getSnapshot(world.getTick());
-				if (!snap || !snap->hasComponent<PhysicsProxyComponent>(ent)) { continue; }
-
-				const auto& physProxyComp2 = snap->getComponent<PhysicsProxyComponent>(ent);
-				if (physProxyComp2.rollbackOverride) {
-					physProxyComp = physProxyComp2;
-					ENGINE_INFO("Rollback override!!!!!!!!"); // TODO: rm once done with testing
-				}
-			}
+			// TODO: rollback update
+			//if (world.isPerformingRollback()) {
+			//	const auto* snap = world.getSnapshot(world.getTick());
+			//	if (!snap || !snap->hasComponent<PhysicsProxyComponent>(ent)) { continue; }
+			//
+			//	const auto& physProxyComp2 = snap->getComponent<PhysicsProxyComponent>(ent);
+			//	if (physProxyComp2.rollbackOverride) {
+			//		physProxyComp = physProxyComp2;
+			//		ENGINE_INFO("Rollback override!!!!!!!!"); // TODO: rm once done with testing
+			//	}
+			//}
 		}
 	}
 

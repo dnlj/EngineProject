@@ -8,9 +8,107 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
-#include <Engine/ECS/Snapshot.hpp>
 #include <Engine/SequenceBuffer.hpp>
+#include <Engine/ECS/EntityFilter.hpp>
+#include <Engine/FlatHashMap.hpp>
 
+namespace Engine::ECS {
+	// TODO: move
+	// TODO: make copy constructor on this and EntityFilter private
+	template<class C, class World>
+	class SingleComponentFilter {
+		private:
+			using Cont = ComponentContainer<C>;
+			using It = decltype(std::declval<Cont>().begin());
+			using CIt = decltype(std::declval<Cont>().cbegin());
+			World& world;
+			ENGINE_INLINE auto& getCont() { return world.getComponentContainer<C>(); }
+			// TODO: do we also want to check if enabled? maybe filters need some way to specify what flags an entity should/shouoldnt have
+			ENGINE_INLINE bool canUse(Entity ent) const { return world.isAlive(ent); }
+
+			class Iter {
+				private:
+					friend class SingleComponentFilter;
+					using I = int32;
+					It it;
+					SingleComponentFilter& filter;
+
+					ENGINE_INLINE void stepNextValid() {
+						const auto end = filter.getCont().end();
+						while (it != end && !filter.canUse(it->first)) {
+							++it;
+						}
+					}
+
+					ENGINE_INLINE void stepPrevValid() {
+						const auto begin = filter.getCont().begin();
+						while (it != begin && !filter.canUse(it->first)) {
+							--it;
+						}
+					}
+
+				public:
+					Iter(It it, SingleComponentFilter& filter) : it{it}, filter{filter} {}
+
+					// TODO: need to check that ent is enabled
+					auto& operator++() {
+						const auto end = filter.getCont().end();
+						if (it != end) { ++it; }
+						stepNextValid();
+						return *this;
+					}
+
+					auto& operator--() {
+						const auto begin = filter.getCont().begin();
+						if (it != begin) { --it; }
+						stepPrevValid();
+						return *this;
+					}
+
+					ENGINE_INLINE auto& operator*() {
+						ENGINE_DEBUG_ASSERT(filter.canUse(it->first), "Attempt to dereference invalid iterator.");
+						return it->first;
+					}
+
+					ENGINE_INLINE decltype(auto) operator->() {
+						return &**this;
+					}
+
+					ENGINE_INLINE bool operator==(const Iter& other) const noexcept { return it == other.it; }
+					ENGINE_INLINE bool operator!=(const Iter& other) const noexcept { return !(*this == other); }
+			};
+		public:
+			SingleComponentFilter(World& world) : world{world} {}
+
+			Iter begin() {
+				Iter it{getCont().begin(), *this};
+				it.stepNextValid();
+				return it;
+			}
+
+			Iter end() {
+				return {getCont().end(), *this};
+			}
+
+			auto size() {
+				int32 i = 0;
+				for (auto it = begin(); it != end(); ++it, ++i) {}
+				return i;
+			}
+
+			bool empty() { return begin() == end(); }
+	};
+
+	// TODO: move
+	template<class...>
+	struct EntityFilterList {};
+
+	template<class T>
+	struct IsEntityFilterList : std::false_type {};
+
+	template<class... Cs>
+	struct IsEntityFilterList<EntityFilterList<Cs...>> : std::true_type {};
+}
 
 namespace Engine::ECS {
 	/**
@@ -35,13 +133,6 @@ namespace Engine::ECS {
 
 	#define WORLD_CLASS World<Derived, TickRate, SnapshotCount, SystemsSet<Ss...>, ComponentsSet<Cs...>>
 	
-	// TODO: move
-	template<class T, class = void>
-	struct IsSnapshotRelevant : std::false_type {};
-
-	template<class T>
-	struct IsSnapshotRelevant<T, std::enable_if_t<T::isSnapshotRelevant>> : std::true_type {};
-
 	WORLD_TPARAMS
 	class WORLD_CLASS {
 		static_assert(sizeof...(Cs) <= MAX_COMPONENTS);
@@ -72,20 +163,38 @@ namespace Engine::ECS {
 			/** All the systems in this world. */
 			std::tuple<Ss...> systems;
 
+		////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////
+		private: // TODO: sort
+			template<class,class>
+			friend class SingleComponentFilter;
+
+			std::vector<EntityFilter> filters;
+			FlatHashMap<ComponentBitset, int32> cbitsToFilter;
+			std::array<std::vector<int32>, sizeof...(Cs)> compToFilter;
+
+			/** Time currently being ticked */
+			Clock::TimePoint tickTime = {};
+
+			/** The current tick being run */
+			Tick currTick = -1;
+				
 			/** TODO: doc */
-			bool performingRollback = false;
+			EntityStates entities;
+				
+			/** TODO: doc */
+			std::vector<Entity> deadEntities;
 
-			template<class T> struct AlwaysTrue : std::true_type {};
-			using ActiveSnapshot = Snapshot<AlwaysTrue, Cs...>;
-			using RollbackSnapshot = Snapshot<IsSnapshotRelevant, Cs...>;
-			ActiveSnapshot activeSnap;
+			/** TODO: doc */
+			std::vector<Entity> markedForDeath;
 
-			struct {
-				Engine::ECS::Tick tick = -1;
-				Clock::TimePoint time = {};
-			} rollbackData;
-			SequenceBuffer<Tick, RollbackSnapshot, SnapshotCount> snapBuffer;
+			/** The bitsets for storing what components entities have. */
+			std::vector<ComponentBitset> compBitsets;
 
+			/** The containers for storing components. */
+			std::tuple<ComponentContainer<Cs>...> compContainers;
+			
 		public:
 			// TODO: doc
 			template<class Arg>
@@ -93,58 +202,100 @@ namespace Engine::ECS {
 
 			World(const World&) = delete;
 
-			ENGINE_INLINE void scheduleRollback(Engine::ECS::Tick t) { rollbackData.tick = t; }
-
+			// TODO: rm. we have getTick. why do we have this.
 			/**
 			 * Gets the tick being simulated.
 			 */
-			ENGINE_INLINE auto tick() const noexcept { return activeSnap.currTick; }
+			ENGINE_INLINE auto tick() const noexcept { return currTick; }
 
 			/**
 			 * Advances simulation time and calls the `tick` and `run` members of systems.
 			 */
 			void run();
-
-			ENGINE_INLINE bool isValid(Entity ent) const noexcept { return activeSnap.isValid(ent); };
-
-			/**
-			 * Checks if an entity is alive.
-			 */
-			ENGINE_INLINE bool isAlive(Entity ent) const noexcept { return activeSnap.isAlive(ent); };
-
-			/**
-			 * Enables or disables and entity.
-			 */
-			ENGINE_INLINE void setEnabled(Entity ent, bool enabled) { return activeSnap.setEnabled(ent, enabled); };
-
-			/**
-			 * Checks if an entity is enabled.
-			 */
-			ENGINE_INLINE bool isEnabled(Entity ent) const noexcept { return activeSnap.isEnabled(ent); };
 			
-			/**
-			 * Enables or disables entity networking.
-			 */
-			ENGINE_INLINE void setNetworked(Entity ent, bool enabled) noexcept { return activeSnap.setNetworked(ent, enabled); };
+			////////////////////////////////////////////////////////////////////////////////
+			// Entity Functions
+			////////////////////////////////////////////////////////////////////////////////
+			// TODO: Doc. valid vs alive vs enabled
+			ENGINE_INLINE bool isValid(Entity ent) const noexcept {
+				return (ent.id < entities.size())
+					&& (ent.gen <= entities[ent.id].ent.gen);
+			}
+
+			ENGINE_INLINE bool isAlive(Entity ent) const noexcept {
+				const auto& es = entities[ent.id];
+				return (es.ent.gen == ent.gen)
+					&& (es.state & EntityState::Alive);
+			}
+
+			ENGINE_INLINE bool isEnabled(Entity ent) const noexcept {
+				const auto& es = entities[ent.id];
+				return (es.ent.gen == ent.gen)
+					&& (es.state & EntityState::Enabled);
+			}
+
+			ENGINE_INLINE void setEnabled(Entity ent, bool enabled) noexcept {
+				auto& state = entities[ent.id].state;
+				state = (state & ~EntityState::Enabled) | (enabled ? EntityState::Enabled : EntityState::Dead);
+			}
+
+			ENGINE_INLINE bool isNetworked(Entity ent) const noexcept {
+				const auto& es = entities[ent.id];
+				return (es.ent.gen == ent.gen)
+					&& (es.state & EntityState::Network);
+			}
+
+			ENGINE_INLINE void setNetworked(Entity ent, bool enabled) noexcept {
+				auto& state = entities[ent.id].state;
+				state = (state & ~EntityState::Network) | (enabled ? EntityState::Network : EntityState::Dead);
+			}
 
 			/**
-			 * Checks if an entity should be networked.
+			 * Creates an entity.
+			 * @param forceNew Disables recycling entity ids.
 			 */
-			ENGINE_INLINE bool isNetworked(Entity ent) const noexcept { return activeSnap.isNetworked(ent); };
+			Entity createEntity(bool forceNew = false) { // TODO: split
+				EntityState* es;
+
+				if (!forceNew && !deadEntities.empty()) {
+					const auto i = deadEntities.back().id;
+					deadEntities.pop_back();
+					es = &entities[i];
+				} else {
+					es = &entities.emplace_back(Entity{static_cast<decltype(Entity::id)>(entities.size()), 0}, EntityState::Dead);
+				}
+
+				++es->ent.gen;
+				es->state = EntityState::Alive | EntityState::Enabled;
+
+				if (es->ent.id >= compBitsets.size()) {
+					compBitsets.resize(es->ent.id + 1); // TODO: Is one really the best increment size? Doesnt seem right.
+				} else {
+					compBitsets[es->ent.id].reset();
+				}
+
+				return es->ent;
+			}
+
+			/**
+			 * Marks an Entity to be destroyed once it is out of rollback scope.
+			 * Until the Enttiy is destroyed it is disabled.
+			 */
+			ENGINE_INLINE void deferedDestroyEntity(Entity ent) {
+				setEnabled(ent, false); // TODO: Will we need a component callback for onDisabled to handle things like physics bodies?
+				// TODO: would it be better to sort the list afterward (in World::storeSnapshot for example)? instead of while inserting
+				markedForDeath.insert(std::lower_bound(markedForDeath.cbegin(), markedForDeath.cend(), ent), ent);
+				ENGINE_LOG("deferedDestroyEntity: ", ent);
+			}
 			
 			/**
 			 * Gets all entities.
 			 */
-			ENGINE_INLINE auto& getEntities() const noexcept { return activeSnap.getEntities(); };
-			
-			/**
-			 * Get the ComponentId associated with a component.
-			 * @tparam Component The component.
-			 * @return The id of @p C.
-			 */
-			template<class C>
-			ENGINE_INLINE constexpr static auto getComponentId() noexcept { return ActiveSnapshot::getComponentId<C>(); };
+			ENGINE_INLINE auto& getEntities() const noexcept { return entities; };
 
+			////////////////////////////////////////////////////////////////////////////////
+			// System Functions
+			////////////////////////////////////////////////////////////////////////////////
 			/**
 			 * Gets the id of a system.
 			 */
@@ -163,17 +314,31 @@ namespace Engine::ECS {
 			template<class... SystemN>
 			SystemBitset getBitsetForSystems() const; // TODO: constexpr, noexcept
 
+			////////////////////////////////////////////////////////////////////////////////
+			// Component Functions
+			////////////////////////////////////////////////////////////////////////////////
 			/**
-			 * Creates an entity.
-			 * @param forceNew Disables recycling entity ids.
+			 * Get the ComponentId associated with a component.
+			 * @tparam Component The component.
+			 * @return The id of @p C.
 			 */
-			ENGINE_INLINE Entity createEntity(bool forceNew = false) { return activeSnap.createEntity(forceNew); };
-			
+			template<class Component>
+			ENGINE_INLINE constexpr static ComponentId getComponentId() noexcept {
+				static_assert((std::is_same_v<Cs, Component> || ...),
+					"Attempting to get component id of type that is not in the component list. Did you forget to add it?"
+				);
+				return Meta::IndexOf<Component, Cs...>::value;
+			}
+
 			/**
-			 * Marks an Entity to be destroyed once it is out of rollback scope.
-			 * Until the Enttiy is destroyed it is disabled.
+			 * Gets the bitset with the bits that correspond to the ids of the given components set.
 			 */
-			ENGINE_INLINE void deferedDestroyEntity(Entity ent) { activeSnap.deferedDestroyEntity(ent); };
+			template<class... Components>
+			ENGINE_INLINE constexpr static ComponentBitset getBitsetForComponents() noexcept {
+				ComponentBitset value;
+				(value.set(getComponentId<Components>()), ...);
+				return value;
+			}
 
 			/**
 			 * Adds a component to an entity.
@@ -183,7 +348,26 @@ namespace Engine::ECS {
 			 * @return A reference to the added component.
 			 */
 			template<class C, class... Args>
-			ENGINE_INLINE decltype(auto) addComponent(Entity ent, Args&&... args) { return activeSnap.addComponent<C>(ent, args...); }
+			decltype(auto) addComponent(Entity ent, Args&&... args) { // TODO: split
+				constexpr auto cid = getComponentId<C>();
+				ENGINE_DEBUG_ASSERT(!hasComponent<C>(ent), "Attempting to add duplicate component (", cid ,") to ", ent);
+				auto& cbits = compBitsets[ent.id];
+				cbits.set(cid);
+
+				auto& container = getComponentContainer<C>();
+				container.add(ent, std::forward<Args>(args)...);
+
+				// Update filters
+				for (const auto i : compToFilter[cid]) {
+					auto& filter = filters[i];
+					filter.add(ent, cbits);
+
+					// TODO: rm
+					ENGINE_INFO("Adding ", ent, " to filter ", i, " ( C = ", getComponentId<C>(), ")");
+				}
+
+				return container[ent];
+			}
 
 			/**
 			 * Adds components to an entity.
@@ -200,7 +384,8 @@ namespace Engine::ECS {
 			 * @param[in] cid The id of the component.
 			 * @return True if the entity has the component; otherwise false.
 			 */
-			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) { return activeSnap.hasComponent(ent, cid); };
+			// TODO: use getComponentsBitset
+			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) const { return compBitsets[ent.id].test(cid); }
 
 			/**
 			 * Checks if an entity has a component.
@@ -209,7 +394,7 @@ namespace Engine::ECS {
 			 * @return True if the entity has the component; otherwise false.
 			 */
 			template<class C>
-			ENGINE_INLINE bool hasComponent(Entity ent) { return activeSnap.hasComponent<C>(ent); };
+			ENGINE_INLINE bool hasComponent(Entity ent) const { return hasComponent(ent, getComponentId<C>()); }
 
 			/**
 			 * Removes a component from an entity.
@@ -224,8 +409,20 @@ namespace Engine::ECS {
 			 * @param[in] ent The entity.
 			 * @tparam Components The components.
 			 */
-			template<class... Components>
-			ENGINE_INLINE void removeComponents(Entity ent) { activeSnap.removeComponents<Components...>(ent); };
+			template<class... Comps>
+			void removeComponents(Entity ent) {
+				compBitsets[ent.id] &= ~getBitsetForComponents<Comps...>();
+				(getComponentContainer<Comps>().remove(ent), ...);
+
+				// Update filters
+				const auto& rm = [&](const auto& is){
+					for (auto i : is) {
+						filters[i].remove(ent);
+						ENGINE_INFO("Removing ", ent, " from filter ", i); // TODO: rm
+					}
+				};
+				(rm(compToFilter[getComponentId<Comps>()]), ...);
+			}
 
 			/**
 			 * Removes all components from an entity.
@@ -235,8 +432,21 @@ namespace Engine::ECS {
 			/**
 			 * Gets a reference to the component instance associated with an entity.
 			 */
-			template<class C>
-			ENGINE_INLINE decltype(auto) getComponent(Entity ent) { return activeSnap.getComponent<C>(ent); };
+			template<class Component>
+			ENGINE_INLINE Component& getComponent(Entity ent) {
+				// TODO: why is this not a compile error? this should need `decltype(auto)` return type?
+				if constexpr (IsFlagComponent<Component>::value) {
+					return compBitsets[ent][getComponentId<Component>()];
+				} else {
+					ENGINE_DEBUG_ASSERT(hasComponent<Component>(ent), "Attempting to get a component that an entity doesn't have.");
+					return getComponentContainer<Component>()[ent];
+				}
+			}
+
+			template<class Component>
+			ENGINE_INLINE const Component& getComponent(Entity ent) const {
+				return const_cast<World*>(this)->getComponent<Component>(ent);
+			}
 
 			/**
 			 * Gets a reference the components associated with an entity.
@@ -245,36 +455,61 @@ namespace Engine::ECS {
 			 * @return A tuple of references to the components.
 			 */
 			template<class... Components>
-			ENGINE_INLINE decltype(auto) getComponents(Entity ent) { return getComponents<Components...>(ent); };
+			ENGINE_INLINE std::tuple<Components&...> getComponents(Entity ent) {
+				return std::forward_as_tuple(getComponent<Components>(ent) ...);
+			}
+
+			template<class... Components>
+			ENGINE_INLINE std::tuple<const Components&...> getComponents(Entity ent) const {
+				return std::forward_as_tuple(getComponent<Components>(ent) ...);
+			}
 
 			/**
 			 * Gets the components bitset for an entity.
 			 * @param[in] ent The entity.
 			 * @return The components bitset for the entity
 			 */
-			ENGINE_INLINE decltype(auto) getComponentsBitset(Entity ent) const noexcept { return activeSnap.getComponentsBitset(ent); }
+			ENGINE_INLINE decltype(auto) getComponentsBitset(Entity ent) const noexcept { return compBitsets[ent.id]; }
 
 			/**
 			 * Gets the components bitset for all entities. Sorted by entity id. 
 			 */
-			ENGINE_INLINE const auto& getAllComponentBitsets() const { return activeSnap.compBitsets; };
+			ENGINE_INLINE const auto& getAllComponentBitsets() const { return compBitsets; };
 
 			// TODO: doc
 			template<class C, class... Comps>
 			decltype(auto) getFilter() {
-				if constexpr(IsEntityFilterList<C>::value) {
+				if constexpr (IsEntityFilterList<C>::value) {
 					return [&]<class... Ds>(EntityFilterList<Ds...>) -> decltype(auto) {
-						return activeSnap.getFilter<Ds...>();
+						return getFilter<Ds...>();
 					}(C{});
+				} else if constexpr (sizeof...(Comps) == 0) {
+					return SingleComponentFilter<C, World>{*this};
 				} else {
-					return activeSnap.getFilter<C, Comps...>();
+					const auto cbits = getBitsetForComponents<C, Comps...>();
+					auto found = cbitsToFilter.find(cbits);
+
+					// TODO: maybe having EntityFilter be more of a "view" class would be better to avoid this `.with` stuff and the accidental copy conern.
+					if (found != cbitsToFilter.end()) { return filters[found->second].with(entities); }
+
+					const auto idx = static_cast<int32>(filters.size());
+					auto& filter = filters.emplace_back(entities, cbits);
+					for (const auto& ent : getFilter<C>()) {
+						if (!isAlive(ent)) { continue; }
+						filter.add(ent, getComponentsBitset(ent));
+					}
+
+					cbitsToFilter[cbits] = idx;
+					compToFilter[getComponentId<C>()].push_back(idx);
+					(compToFilter[getComponentId<Comps>()].push_back(idx), ...);
+					return static_cast<const EntityFilter&>(filter);
 				}
-			};
+			}
 			
 			/**
 			 * Gets the current tick.
 			 */
-			ENGINE_INLINE auto getTick() const { return activeSnap.currTick; }
+			ENGINE_INLINE auto getTick() const { return currTick; }
 
 			// TODO: also need to clear rollback history
 			// TODO: should this be setNextTick? might help avoid bugs if we wait till all systems are done before we adjust.
@@ -295,7 +530,7 @@ namespace Engine::ECS {
 			/**
 			 * Current time being ticked.
 			 */
-			ENGINE_INLINE Clock::TimePoint getTickTime() const noexcept { return activeSnap.tickTime; };
+			ENGINE_INLINE Clock::TimePoint getTickTime() const noexcept { return tickTime; };
 			
 			/**
 			 * Gets the time (in seconds) last update took to run.
@@ -329,18 +564,44 @@ namespace Engine::ECS {
 			decltype(auto) self() { return reinterpret_cast<Derived&>(*this); }
 			decltype(auto) self() const { return reinterpret_cast<const Derived&>(*this); }
 
-			ENGINE_INLINE bool isPerformingRollback() const noexcept { return performingRollback; }
-
-			constexpr auto getSnapshotCount() { return SnapshotCount; }
-
-			ENGINE_INLINE auto* getSnapshot(Tick t) { return snapBuffer.find(t); }
-			ENGINE_INLINE const auto* getSnapshot(Tick t) const { return snapBuffer.find(t); }
-
 		private:
 			void tickSystems();
 
-			void storeSnapshot();
-			void loadSnapshot(const RollbackSnapshot& snap);
+			/**
+			 * Get the container for components of type @p Component.
+			 * @tparam C The type of the component.
+			 * @return A reference to the container associated with @p Component.
+			 */
+			template<class C>
+			ENGINE_INLINE ComponentContainer<C>& getComponentContainer() {
+				// Enabling this assert seems to cause compile errors with some of the `if constexpr` stuff
+				//static_assert(!IsFlagComponent<C>::value, "Attempting to get the container for a flag component.");
+				return std::get<ComponentContainer<C>>(compContainers);
+			}
+
+			/**
+			 * Destroys and entity, freeing its id to be recycled.
+			 */
+			void destroyEntity(Entity ent) {
+				ENGINE_WARN("destroyEntity: ", ent);
+				((hasComponent<Cs>(ent) && (removeComponents<Cs>(ent), 0)), ...);
+		
+				#if defined(DEBUG)
+					if (!isAlive(ent)) {
+						ENGINE_ERROR("Attempting to destroy an already dead entity \"", ent, "\"");
+					} else if (entities[ent.id].ent.gen != ent.gen) {
+						ENGINE_ERROR(
+							"Attempting to destroy an old generation entity. Current generation is ",
+							entities[ent.id].ent.gen,
+							" attempted to delete ",
+							ent.gen
+						);
+					}
+				#endif
+
+				deadEntities.push_back(ent);
+				entities[ent.id].state = EntityState::Dead;
+			}
 	};
 }
 

@@ -327,25 +327,25 @@ namespace Game {
 
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
-				// TODO: this is a somewhat strange way to handle this
-				if constexpr (Engine::ECS::IsSnapshotRelevant<C>::value) {
-					const auto* tick = from.read<Engine::ECS::Tick>();
-					if (!tick) {
-						ENGINE_WARN("No tick specified for snapshot component in ECS_COMP_ALWAYS");
-						return;
-					}
-
-
-					auto* snap = world.getSnapshot(*tick);
-					if (!snap || !snap->hasComponent<C>(local)) {
-						ENGINE_WARN("Unable to get snapshot for tick ", *tick);
-						return;
-					}
-
-					snap->getComponent<C>(local).netFrom(from);
-				} else {
+				// TODO: rollback update
+				//if constexpr (Engine::ECS::IsSnapshotRelevant<C>::value) {
+				//	const auto* tick = from.read<Engine::ECS::Tick>();
+				//	if (!tick) {
+				//		ENGINE_WARN("No tick specified for snapshot component in ECS_COMP_ALWAYS");
+				//		return;
+				//	}
+					//
+					//
+				//	auto* snap = world.getSnapshot(*tick);
+				//	if (!snap || !snap->hasComponent<C>(local)) {
+				//		ENGINE_WARN("Unable to get snapshot for tick ", *tick);
+				//		return;
+				//	}
+					//
+				//	snap->getComponent<C>(local).netFrom(from);
+				//} else {
 					world.getComponent<C>(local).netFrom(from);
-				}
+				//}
 			} else {
 				ENGINE_WARN("Attemping to network non-network component");
 			}
@@ -385,7 +385,8 @@ namespace Game {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
-
+		// TODO: rollback update
+		/*
 		auto* snap = world.getSnapshot(*tick);
 		if (!snap) {
 			// ENGINE_WARN("Unable to get snapshot for tick: ", *tick);
@@ -418,7 +419,7 @@ namespace Game {
 			}
 		}
 
-		// TODO: vel
+		// TODO: vel*/
 	}
 
 	HandleMessageDef(MessageType::ACTION)
@@ -685,9 +686,10 @@ namespace Game {
 								if (!conn.msgBegin<MessageType::ECS_COMP_ALWAYS>()) { return; }
 								conn.write(ent);
 								conn.write(cid);
-								if (Engine::ECS::IsSnapshotRelevant<C>::value) {
-									conn.write(world.getTick());
-								}
+								// TODO: rollback update
+								//if (Engine::ECS::IsSnapshotRelevant<C>::value) {
+								//	conn.write(world.getTick());
+								//}
 								comp.netTo(conn);
 								conn.msgEnd<MessageType::ECS_COMP_ALWAYS>();
 							} else if (repl == Engine::Net::Replication::UPDATE) {
