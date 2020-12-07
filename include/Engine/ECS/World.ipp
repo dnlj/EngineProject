@@ -173,10 +173,9 @@ namespace Engine::ECS {
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::setNextTick(Tick tick) {
-		// TODO: rollback update
-		//// TODO: defer this till next `run`
-		//currTick = tick - 1;
-		//tickTime = Clock::now();
-		//snapBuffer.clear();
+		// TODO: defer this till next `run`
+		currTick = tick - 1;
+		tickTime = Clock::now();
+		history.clear();
 	}
 }

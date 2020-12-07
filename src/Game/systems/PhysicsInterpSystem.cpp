@@ -78,12 +78,12 @@ namespace Game {
 				interpTime = now - step;
 				
 				// TODO: this isnt great on the ECS/snapshot memory layout
-				for (Engine::ECS::Tick t = world.getTick() - 1; world.hasHistory(t); --t) {
-					// TODO: idealy this would have hasComponent(ent, tick) check
+				for (Engine::ECS::Tick t = world.getTick() - 1; t > world.getTick() - tickrate; --t) {
+					if (!world.hasComponent<PhysicsProxyComponent>(ent, t)) { continue; }
 
 					const auto& physProxyComp2 = world.getComponent<PhysicsProxyComponent>(ent, t);
 					if (physProxyComp2.rollbackOverride) {
-						const auto tickTime = world.getTickTime();
+						const auto tickTime = world.getTickTime(t);
 						if (tickTime >= interpTime) {
 							nextTrans = &physProxyComp2.trans;
 							nextTime = tickTime;

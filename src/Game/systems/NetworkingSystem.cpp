@@ -335,7 +335,11 @@ namespace Game {
 						return;
 					}
 
-					// TODO: idealy this would have hasComponent(ent, tick) check
+					if (!world.hasComponent<C>(local, *tick)) {
+						ENGINE_WARN("Received update on tick ", *tick," for a component(", world.getComponentId<C>(), ") which ", local, " does not have.");
+						return;
+					}
+
 					auto& comp = world.getComponent<C>(local, *tick);
 					comp.netFrom(from);
 				} else {

@@ -518,8 +518,7 @@ namespace Engine::ECS {
 				);
 				ENGINE_DEBUG_ASSERT(hasComponent<C>(ent, tick), "Attempting to get component that an entity does not have.");
 				auto& snap = history.get(tick);
-				auto& cont = snap.getComponentContainer<C>();
-				return cont[ent];
+				return snap.getComponentContainer<C>()[ent];
 			}
 
 			template<class Component>
@@ -610,6 +609,7 @@ namespace Engine::ECS {
 			 * Current time being ticked.
 			 */
 			ENGINE_INLINE Clock::TimePoint getTickTime() const noexcept { return tickTime; };
+			ENGINE_INLINE Clock::TimePoint getTickTime(Tick tick) const noexcept { return history.get(tick).tickTime; };
 			
 			/**
 			 * Gets the time (in seconds) last update took to run.
