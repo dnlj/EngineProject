@@ -12,8 +12,8 @@ namespace Engine::ECS {
 	template<class Arg>
 	WORLD_CLASS::World(Arg& arg)
 		: systems((sizeof(Ss*), arg) ...)
-		, beginTime{Clock::now()}
-		, tickTime{beginTime} {
+		, beginTime{Clock::now()} {
+		tickTime = beginTime;
 		(getSystem<Ss>().setup(), ...);
 	}
 
@@ -24,22 +24,56 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		constexpr auto maxTickCount = 6;
-		int tickCount = -1;
-		while (tickTime + tickInterval <= beginTime && ++tickCount < maxTickCount) {
-			tickSystems();
-			tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
+		if constexpr (ENGINE_CLIENT) {
+			if (rollbackData.tick != -1 && !performingRollback) {
+				const auto oldTick = currTick;
+				const auto oldTime = tickTime;
+
+				if (loadSnapshot(rollbackData.tick)) {
+					rollbackData.tick = oldTick;
+					rollbackData.time = oldTime;
+					performingRollback = true;
+					ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", currTick);
+				} else {
+					ENGINE_WARN("Unable to perform world rollback to tick ", rollbackData.tick);
+					rollbackData.tick = -1;
+					return;
+				}
+			}
+		}
+
+		if (ENGINE_CLIENT && performingRollback) {
+			while (currTick < rollbackData.tick) {
+				const auto& found = history.get(currTick + 1);
+				const auto nextTickTime = found.tickTime;
+				tickSystems();
+				ENGINE_LOG("Rollback: ", currTick);
+				tickTime = nextTickTime;
+			}
+
+			if (currTick == rollbackData.tick) {
+				tickTime = rollbackData.time;
+				performingRollback = false;
+				rollbackData.tick = -1;
+				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", currTick);
+			}
+		} else {
+			constexpr auto maxTickCount = 6;
+			int tickCount = -1;
+			while (tickTime + tickInterval <= beginTime && ++tickCount < maxTickCount) {
+				tickSystems();
+				tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
+			}
 		}
 		
 		(getSystem<Ss>().run(deltaTime), ...);
-
-		// TODO: rollback update: delete markedForDeath entities
 	}
 
 	WORLD_TPARAMS
 	void WORLD_CLASS::tickSystems() {
 		++currTick;
 
+		storeSnapshot();
 		(getSystem<Ss>().preTick(), ...);
 
 
@@ -106,9 +140,43 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	void WORLD_CLASS::setNextTick(Tick tick) {
-		// TODO: defer this till next `run`
+	void WORLD_CLASS::storeSnapshot() {
+		(getSystem<Ss>().preStoreSnapshot(), ...);
+
+		auto& snap = history.insert(currTick);
+		snap.tickTime = tickTime;
+		snap.compBitsets = compBitsets;
+		ForEach<Cs...>::call([&]<class C>{
+			if constexpr (IsSnapshotRelevant<C>::value) {
+				snap.getComponentContainer<C>() = getComponentContainer<C>();
+			}
+		});
+	}
+
+	WORLD_TPARAMS
+	bool WORLD_CLASS::loadSnapshot(Tick tick) {
+		if (!history.contains(tick)) { return false; }
+
+		auto& snap = history.get(tick);
+		ForEach<Cs...>::call([&]<class C>{
+			if constexpr (IsSnapshotRelevant<C>::value) {
+				getComponentContainer<C>() = snap.getComponentContainer<C>();
+			}
+		});
+
 		currTick = tick - 1;
-		tickTime = Clock::now();
+		tickTime = snap.tickTime;
+
+		(getSystem<Ss>().postLoadSnapshot(), ...);
+		return true;
+	}
+
+	WORLD_TPARAMS
+	void WORLD_CLASS::setNextTick(Tick tick) {
+		// TODO: rollback update
+		//// TODO: defer this till next `run`
+		//currTick = tick - 1;
+		//tickTime = Clock::now();
+		//snapBuffer.clear();
 	}
 }

@@ -12,6 +12,18 @@
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/FlatHashMap.hpp>
 
+// TODO: move
+// TODO: namespace?
+namespace Engine {
+	template<class... Cs>
+	struct ForEach {
+		template<class F>
+		ENGINE_INLINE static void call(F&& func) {
+			(func.operator()<Cs>(), ...);
+		}
+	};
+}
+
 namespace Engine::ECS {
 	// TODO: move
 	// TODO: make copy constructor on this and EntityFilter private
@@ -108,30 +120,35 @@ namespace Engine::ECS {
 
 	template<class... Cs>
 	struct IsEntityFilterList<EntityFilterList<Cs...>> : std::true_type {};
+	
+	// TODO: move
+	template<class T, class = void>
+	struct IsSnapshotRelevant : std::false_type {};
+
+	template<class T>
+	struct IsSnapshotRelevant<T, std::enable_if_t<T::isSnapshotRelevant>> : std::true_type {};
 }
 
 namespace Engine::ECS {
 	/**
 	 * @tparam Derived CRTP dervied class. Needed for EntityFilter<Derived>. // TODO: this may no longer be needed? dont think its used anymore since filter rework.
 	 * @tparam TickRate The tick rate of the world.
-	 * @tparam SnapshotCount The number of snapshots to keep for rollback.
 	 * @tparam SystemsSet The systems for this world to have.
 	 * @tparam ComponentsSet The components for entities in this world to have.
 	 */
-	template<class Derived, int64 TickRate, int64 SnapshotCount, class SystemsSet, class ComponentsSet>
+	template<class Derived, int64 TickRate, class SystemsSet, class ComponentsSet>
 	class World;
 
 	#define WORLD_TPARAMS template<\
 		class Derived,\
 		int64 TickRate,\
-		int64 SnapshotCount,\
 		class... Ss,\
 		template<class...> class SystemsSet,\
 		class... Cs,\
 		template<class...> class ComponentsSet\
 	>
 
-	#define WORLD_CLASS World<Derived, TickRate, SnapshotCount, SystemsSet<Ss...>, ComponentsSet<Cs...>>
+	#define WORLD_CLASS World<Derived, TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
 	
 	WORLD_TPARAMS
 	class WORLD_CLASS {
@@ -140,6 +157,9 @@ namespace Engine::ECS {
 			using Filter = EntityFilter; // TODO: now unneeded. use EntityFilter direct
 
 		private:
+			/** TODO: doc */
+			bool performingRollback = false;
+
 			/** Beginning of last run. */
 			Clock::TimePoint beginTime;
 
@@ -194,6 +214,39 @@ namespace Engine::ECS {
 
 			/** The containers for storing components. */
 			std::tuple<ComponentContainer<Cs>...> compContainers;
+
+			struct {
+				Engine::ECS::Tick tick = -1;
+				Clock::TimePoint time = {};
+			} rollbackData;
+
+			struct Snapshot {
+				Clock::TimePoint tickTime = {};
+				std::tuple<
+					std::conditional_t<
+						IsSnapshotRelevant<Cs>::value,
+						ComponentContainer<Cs>,
+						bool // TODO: dont store anything non-snapshot comps
+					>...
+				> compConts;
+
+				decltype(compBitsets) compBitsets;
+
+				template<class C>
+				ENGINE_INLINE auto& getComponentContainer() {
+					static_assert(IsSnapshotRelevant<C>::value,
+						"Attempting to get component container for non-snapshot relevant component."
+					);
+
+					return std::get<ComponentContainer<C>>(compConts);
+				}
+
+				template<class C>
+				ENGINE_INLINE const auto& getComponentContainer() const { return const_cast<Snapshot*>(this)->getComponentContainer<C>(); }
+
+			};
+
+			SequenceBuffer<Tick, Snapshot, TickRate> history;
 			
 		public:
 			// TODO: doc
@@ -202,16 +255,14 @@ namespace Engine::ECS {
 
 			World(const World&) = delete;
 
-			// TODO: rm. we have getTick. why do we have this.
-			/**
-			 * Gets the tick being simulated.
-			 */
-			ENGINE_INLINE auto tick() const noexcept { return currTick; }
-
 			/**
 			 * Advances simulation time and calls the `tick` and `run` members of systems.
 			 */
 			void run();
+
+			ENGINE_INLINE bool isPerformingRollback() const noexcept { return performingRollback; }
+			ENGINE_INLINE void scheduleRollback(Tick t) { rollbackData.tick = t; }
+			ENGINE_INLINE bool hasHistory(Tick tick) const { return history.contains(tick); }
 			
 			////////////////////////////////////////////////////////////////////////////////
 			// Entity Functions
@@ -395,6 +446,14 @@ namespace Engine::ECS {
 			 */
 			template<class C>
 			ENGINE_INLINE bool hasComponent(Entity ent) const { return hasComponent(ent, getComponentId<C>()); }
+			
+			// TODO: doc
+			template<class C>
+			ENGINE_INLINE bool hasComponent(Entity ent, Tick tick) const {
+				// TODO: also need to make sure it is the same ent generation
+				const auto* snap = history.find(tick);
+				return snap && ent.id < snap->compBitsets.size() && compBitsets[ent.id].test(getComponentId<C>());
+			}
 
 			/**
 			 * Removes a component from an entity.
@@ -446,6 +505,26 @@ namespace Engine::ECS {
 			template<class Component>
 			ENGINE_INLINE const Component& getComponent(Entity ent) const {
 				return const_cast<World*>(this)->getComponent<Component>(ent);
+			}
+
+			// TODO: Doc
+			/**
+			 * 
+			 */
+			template<class C>
+			ENGINE_INLINE C& getComponent(Entity ent, Tick tick) {
+				static_assert(IsSnapshotRelevant<C>::value,
+					"Attempting to get component from snapshot for non-snapshot relevant component."
+				);
+				ENGINE_DEBUG_ASSERT(hasComponent<C>(ent, tick), "Attempting to get component that an entity does not have.");
+				auto& snap = history.get(tick);
+				auto& cont = snap.getComponentContainer<C>();
+				return cont[ent];
+			}
+
+			template<class Component>
+			ENGINE_INLINE const Component& getComponent(Entity ent, Tick tick) const {
+				return const_cast<World*>(this)->getComponent<Component>(ent, tick);
 			}
 
 			/**
@@ -565,6 +644,8 @@ namespace Engine::ECS {
 			decltype(auto) self() const { return reinterpret_cast<const Derived&>(*this); }
 
 		private:
+			void storeSnapshot();
+			bool loadSnapshot(Tick tick);
 			void tickSystems();
 
 			/**

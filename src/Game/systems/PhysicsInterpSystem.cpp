@@ -5,17 +5,31 @@
 
 
 namespace Game {
-	// TODO: rollback update
-	void PhysicsInterpSystem::run(float32 dt) {
-		for (const auto& ent : world.getFilter<PhysicsInterpComponent, PhysicsBodyComponent>()) {
-			const auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
-			auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
-			physInterpComp.trans = physProxyComp.trans;
-		}
-	}
-	/*
 	void PhysicsInterpSystem::run(float32 dt) {
 		const auto now = Engine::Clock::now();
+		/*float32 a = timeDiff.count() / static_cast<float32>(interval.count());
+		//float32 a = (Engine::Clock::now() - world.getTickTime()).count() / static_cast<float32>(world.getTickInterval().count());
+
+		// TODO: how are we getting negative numbers????
+		if (a < 0.0f || a > 1.0f) {
+			//ENGINE_WARN("This should never happen: ",
+			//	"(", now.time_since_epoch().count(), " - ", tickTime.time_since_epoch().count(), ") / ", interval.count(), " = ", a,
+			//	"\n\n\n\n");
+		}
+
+		////////////////////////
+		////////////////////////
+		////////////////////////
+		////////////////////////
+		// TODO: this will be wrong for multi frame interp for remote entities
+		////////////////////////
+		////////////////////////
+		////////////////////////
+		////////////////////////
+		////////////////////////
+		////////////////////////
+		a = std::min(1.0f, std::max(0.0f, a));
+		const float32 b = 1.0f - a;*/
 
 		int buffSize = 0;
 		Engine::Clock::Duration ping = {};
@@ -62,20 +76,20 @@ namespace Game {
 				constexpr auto serverTickTime = World::getTickInterval();
 				const auto step = dejitter + ping + netrate + serverTickTime + World::getTickInterval() * buffSize;
 				interpTime = now - step;
-
+				
 				// TODO: this isnt great on the ECS/snapshot memory layout
-				for (Engine::ECS::Tick t = world.getTick() - 1; t > world.getTick() - world.getSnapshotCount(); --t) {
-					const auto* snap = world.getSnapshot(t);
-					if (!snap || !snap->hasComponent<PhysicsProxyComponent>(ent)) { break; }
+				for (Engine::ECS::Tick t = world.getTick() - 1; world.hasHistory(t); --t) {
+					// TODO: idealy this would have hasComponent(ent, tick) check
 
-					const auto& physProxyComp2 = snap->getComponent<PhysicsProxyComponent>(ent);
+					const auto& physProxyComp2 = world.getComponent<PhysicsProxyComponent>(ent, t);
 					if (physProxyComp2.rollbackOverride) {
-						if (snap->tickTime >= interpTime) {
+						const auto tickTime = world.getTickTime();
+						if (tickTime >= interpTime) {
 							nextTrans = &physProxyComp2.trans;
-							nextTime = snap->tickTime;
+							nextTime = tickTime;
 						} else {
 							prevTrans = &physProxyComp2.trans;
-							prevTime = snap->tickTime;
+							prevTime = tickTime;
 							break;
 						}
 					}
@@ -125,5 +139,5 @@ namespace Game {
 				lerpTrans.q.s /= mag;
 			}
 		}
-	}*/
+	}
 }

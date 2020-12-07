@@ -72,7 +72,7 @@ namespace Game {
 			friend class ActionSystem;
 			//ActionState states[snapshots];
 			// TODO: tick is currently signed. Why?? SequenceBuffer expects unsigned
-			Engine::SequenceBuffer<Engine::ECS::Tick, ActionState, snapshots> states;
+			Engine::SequenceBuffer<Engine::ECS::Tick, ActionState, tickrate> states;
 			ActionState* state;
 
 			// TODo: rn. use tickTrend

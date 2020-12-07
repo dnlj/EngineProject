@@ -327,25 +327,20 @@ namespace Game {
 
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
-				// TODO: rollback update
-				//if constexpr (Engine::ECS::IsSnapshotRelevant<C>::value) {
-				//	const auto* tick = from.read<Engine::ECS::Tick>();
-				//	if (!tick) {
-				//		ENGINE_WARN("No tick specified for snapshot component in ECS_COMP_ALWAYS");
-				//		return;
-				//	}
-					//
-					//
-				//	auto* snap = world.getSnapshot(*tick);
-				//	if (!snap || !snap->hasComponent<C>(local)) {
-				//		ENGINE_WARN("Unable to get snapshot for tick ", *tick);
-				//		return;
-				//	}
-					//
-				//	snap->getComponent<C>(local).netFrom(from);
-				//} else {
+				// TODO: this is a somewhat strange way to handle this
+				if constexpr (Engine::ECS::IsSnapshotRelevant<C>::value) {
+					const auto* tick = from.read<Engine::ECS::Tick>();
+					if (!tick) {
+						ENGINE_WARN("No tick specified for snapshot component in ECS_COMP_ALWAYS");
+						return;
+					}
+
+					// TODO: idealy this would have hasComponent(ent, tick) check
+					auto& comp = world.getComponent<C>(local, *tick);
+					comp.netFrom(from);
+				} else {
 					world.getComponent<C>(local).netFrom(from);
-				//}
+				}
 			} else {
 				ENGINE_WARN("Attemping to network non-network component");
 			}
@@ -385,26 +380,20 @@ namespace Game {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
-		// TODO: rollback update
-		/*
-		auto* snap = world.getSnapshot(*tick);
-		if (!snap) {
-			// ENGINE_WARN("Unable to get snapshot for tick: ", *tick);
+
+		if (!world.hasComponent<PhysicsProxyComponent>(info.ent, *tick)) {
+			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsProxyComponent");
 			return;
 		}
 
-		if (!snap->hasComponent<PhysicsBodyComponent>(info.ent)) {
-			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsComponent");
-			return;
-		}
-		auto& physProxyComp = snap->getComponent<PhysicsProxyComponent>(info.ent);
+		auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(info.ent, *tick);
 		const auto diff = physProxyComp.trans.p - trans->p;
 		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
 		// TODO: why does this ever happen with only one player connected?
 		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
 			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physProxyComp.trans.p.x)>::max_digits10),
-				"Oh boy a mishap has occured on tick ", *tick, " = ", snap->currTick,
+				"Oh boy a mishap has occured on tick ", *tick,
 				" (<", physProxyComp.trans.p.x, ", ", physProxyComp.trans.p.y, "> - <",
 				trans->p.x, ", ", trans->p.y, "> = <",
 				diff.x, ", ", diff.y,
@@ -414,12 +403,12 @@ namespace Game {
 			physProxyComp.vel = *vel;
 			physProxyComp.rollbackOverride = true;
 
-			if (world.getTick() > 2000) { // TODO: rm
+			//if (world.getTick() > 2000) { // TODO: rm
 				world.scheduleRollback(*tick);
-			}
+			//}
 		}
 
-		// TODO: vel*/
+		// TODO: vel
 	}
 
 	HandleMessageDef(MessageType::ACTION)
@@ -686,10 +675,9 @@ namespace Game {
 								if (!conn.msgBegin<MessageType::ECS_COMP_ALWAYS>()) { return; }
 								conn.write(ent);
 								conn.write(cid);
-								// TODO: rollback update
-								//if (Engine::ECS::IsSnapshotRelevant<C>::value) {
-								//	conn.write(world.getTick());
-								//}
+								if (Engine::ECS::IsSnapshotRelevant<C>::value) {
+									conn.write(world.getTick());
+								}
 								comp.netTo(conn);
 								conn.msgEnd<MessageType::ECS_COMP_ALWAYS>();
 							} else if (repl == Engine::Net::Replication::UPDATE) {
