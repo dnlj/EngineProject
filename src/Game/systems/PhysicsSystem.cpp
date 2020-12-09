@@ -24,8 +24,19 @@ namespace Game {
 
 	void PhysicsSystem::preTick() {
 		for (const auto ent : world.getFilter<Filter>()) {
-			const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
+			auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
 			const auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
+
+			if (world.hasComponent<RemotePhysicsFlag>(ent)) {
+				ENGINE_DEBUG_ASSERT(physBodyComp.getBody().GetType() == b2_staticBody,
+					"Incorrect body type for a remote physics entity"
+				);
+				// TODO: interp
+
+
+
+				//physBodyComp.getBody().SetTransform();
+			}
 
 			physProxyComp.apply(*physBodyComp.body);
 		}
@@ -71,13 +82,6 @@ namespace Game {
 				}
 			}
 		}
-	}
-
-	void PhysicsSystem::postLoadSnapshot() {
-		//for (auto ent : world.getFilter<Filter>()) {
-		//	auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
-		//	physComp.loadBody();
-		//}
 	}
 
 	b2Body* PhysicsSystem::createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef) {

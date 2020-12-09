@@ -145,7 +145,6 @@ namespace Engine::ECS {
 
 		auto& snap = history.insert(currTick);
 		snap.tickTime = tickTime;
-		snap.compBitsets = compBitsets;
 		ForEach<Cs...>::call([&]<class C>{
 			if constexpr (IsSnapshotRelevant<C>::value) {
 				snap.getComponentContainer<C>() = getComponentContainer<C>();

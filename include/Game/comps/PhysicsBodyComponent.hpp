@@ -31,9 +31,13 @@ namespace Game {
 
 			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent
 
+			// TODO: why does one return pointer and the other ref. Make both ref or pointer.
 			// TODO: we should get rid of these. Should write wrappers for any funcs we want.
-			b2Body& getBody();
-			b2World* getWorld();
+			b2Body& getBody() { return *body; }
+			const b2Body& getBody() const { return *body; }
+
+			b2World* getWorld() { return body->GetWorld(); }
+			const b2World* getWorld() const { return body->GetWorld(); }
 
 			// TODO: rename - rm 2
 			ENGINE_INLINE void setTransform2(const b2Vec2& pos, float32 ang) { body->SetTransform(pos, ang); }

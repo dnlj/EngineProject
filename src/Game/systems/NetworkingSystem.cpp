@@ -335,11 +335,6 @@ namespace Game {
 						return;
 					}
 
-					if (!world.hasComponent<C>(local, *tick)) {
-						ENGINE_WARN("Received update on tick ", *tick," for a component(", world.getComponentId<C>(), ") which ", local, " does not have.");
-						return;
-					}
-
 					auto& comp = world.getComponent<C>(local, *tick);
 					comp.netFrom(from);
 				} else {
@@ -379,13 +374,12 @@ namespace Game {
 		const auto* trans = from.read<b2Transform>();
 		const auto* vel = from.read<b2Vec2>();
 
-
 		if (!tick || !trans || !vel) {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
 
-		if (!world.hasComponent<PhysicsProxyComponent>(info.ent, *tick)) {
+		if (!world.hasComponent<PhysicsProxyComponent>(info.ent)) {
 			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsProxyComponent");
 			return;
 		}

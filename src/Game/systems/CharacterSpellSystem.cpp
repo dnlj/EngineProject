@@ -20,10 +20,10 @@ namespace Game {
 		physSys.addListener(this);
 
 		constexpr std::size_t count = 10;
-		missles.reserve(count);
+		missiles.reserve(count);
 		
 		for (int i = 0; i < count; ++i) {
-			auto ent = missles.emplace_back(world.createEntity(true));
+			auto ent = missiles.emplace_back(world.createEntity(true));
 			auto& [spriteComp, physBodyComp, physProxyComp, physInterpComp] = world.addComponents<
 				Game::SpriteComponent,
 				Game::PhysicsBodyComponent,
@@ -58,20 +58,22 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::fireMissile(const b2Vec2& pos, const b2Vec2& dir) {
-		auto missle = missles[currentMissle];
+		auto missile = missiles[currentMissile];
 
-		world.setEnabled(missle, true);
-		auto& physComp = world.getComponent<PhysicsBodyComponent>(missle);
-		physComp.setTransform2(pos, 0);
+		world.setEnabled(missile, true);
+		auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(missile);
+		auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(missile);
+		physProxyComp.snap = true;
+		physBodyComp.setTransform2(pos, 0);
 
-		auto& body = physComp.getBody();
+		auto& body = physBodyComp.getBody();
 		body.SetActive(true);
 		body.SetLinearVelocity(4.0f * dir);
 
-		currentMissle = (currentMissle + 1) % missles.size();
+		currentMissile = (currentMissile + 1) % missiles.size();
 	}
 
-	void CharacterSpellSystem::detonateMissle(Engine::ECS::Entity ent) {
+	void CharacterSpellSystem::detonateMissile(Engine::ECS::Entity ent) {
 		std::cout << "Boom: " << ent << "\n";
 		world.setEnabled(ent, false);
 		world.getComponent<PhysicsBodyComponent>(ent).getBody().SetActive(false);
@@ -100,7 +102,7 @@ namespace Game {
 		while (!toDestroy.empty()) {
 			auto ent = toDestroy.back();
 			toDestroy.pop_back();
-			detonateMissle(ent);
+			detonateMissile(ent);
 
 			while(!toDestroy.empty() && toDestroy.back() == ent) {
 				toDestroy.pop_back();
@@ -109,8 +111,8 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) {
-		const auto minEnt = missles.front();
-		const auto maxEnt = missles.back();
+		const auto minEnt = missiles.front();
+		const auto maxEnt = missiles.back();
 
 		if (entA <= maxEnt && entA >= minEnt) {
 			toDestroy.push_back(entA);

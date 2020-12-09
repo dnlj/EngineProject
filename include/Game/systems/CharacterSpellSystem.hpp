@@ -21,9 +21,9 @@ namespace Game {
 
 		private:
 			void beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) override;
-			void detonateMissle(Engine::ECS::Entity ent);
-			std::vector<Engine::ECS::Entity> missles;
+			void detonateMissile(Engine::ECS::Entity ent);
+			std::vector<Engine::ECS::Entity> missiles;
 			std::vector<Engine::ECS::Entity> toDestroy;
-			size_t currentMissle = 0;
+			size_t currentMissile = 0;
 	};
 }

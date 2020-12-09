@@ -21,7 +21,6 @@ namespace Game {
 			void postTick();
 			void run(float32 dt);
 			void preStoreSnapshot();
-			void postLoadSnapshot();
 
 			/**
 			 * Creates a box2d body and associates an entity with it.

@@ -41,13 +41,13 @@ namespace Game {
 			break;
 		}
 
-		for (const auto& ent : world.getFilter<PhysicsInterpComponent, PhysicsBodyComponent>()) {
+		for (const auto& ent : world.getFilter<PhysicsInterpComponent, PhysicsProxyComponent>()) {
 			const auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
 			auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
 
 			Engine::Clock::TimePoint nextTime;
 			Engine::Clock::TimePoint prevTime;
-			auto interpTime = now;
+			Engine::Clock::TimePoint interpTime;
 			const b2Transform* nextTrans = nullptr;
 			const b2Transform* prevTrans = nullptr;
 			if (physProxyComp.snap) {
@@ -79,8 +79,6 @@ namespace Game {
 				
 				// TODO: this isnt great on the ECS/snapshot memory layout
 				for (Engine::ECS::Tick t = world.getTick() - 1; t > world.getTick() - tickrate; --t) {
-					if (!world.hasComponent<PhysicsProxyComponent>(ent, t)) { continue; }
-
 					const auto& physProxyComp2 = world.getComponent<PhysicsProxyComponent>(ent, t);
 					if (physProxyComp2.rollbackOverride) {
 						const auto tickTime = world.getTickTime(t);
@@ -111,11 +109,20 @@ namespace Game {
 					continue;
 				}
 			} else {
-				prevTrans = &physProxyComp.trans;
+				const auto tick = world.getTick();
+				if (!world.hadComponent<PhysicsProxyComponent>(ent, tick)) {
+					physInterpComp.trans = physProxyComp.trans;
+					continue;
+				}
+
+				const auto& physProxyComp2 = world.getComponent<PhysicsProxyComponent>(ent, tick);
+				prevTrans = &physProxyComp2.trans;
+				prevTime = world.getTickTime(tick);
 
 				nextTrans = &physProxyComp.trans;
-				prevTime = world.getTickTime();
-				nextTime = prevTime + world.getTickInterval();
+				nextTime = world.getTickTime();
+
+				interpTime = now - world.getTickInterval();
 			}
 
 			const auto diff = nextTime - prevTime;

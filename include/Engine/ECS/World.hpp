@@ -230,8 +230,6 @@ namespace Engine::ECS {
 					>...
 				> compConts;
 
-				decltype(compBitsets) compBitsets;
-
 				template<class C>
 				ENGINE_INLINE auto& getComponentContainer() {
 					static_assert(IsSnapshotRelevant<C>::value,
@@ -447,14 +445,6 @@ namespace Engine::ECS {
 			template<class C>
 			ENGINE_INLINE bool hasComponent(Entity ent) const { return hasComponent(ent, getComponentId<C>()); }
 			
-			// TODO: doc
-			template<class C>
-			ENGINE_INLINE bool hasComponent(Entity ent, Tick tick) const {
-				// TODO: also need to make sure it is the same ent generation
-				const auto* snap = history.find(tick);
-				return snap && ent.id < snap->compBitsets.size() && compBitsets[ent.id].test(getComponentId<C>());
-			}
-
 			/**
 			 * Removes a component from an entity.
 			 * @param[in] ent The entity.
@@ -494,17 +484,22 @@ namespace Engine::ECS {
 			template<class Component>
 			ENGINE_INLINE Component& getComponent(Entity ent) {
 				// TODO: why is this not a compile error? this should need `decltype(auto)` return type?
-				if constexpr (IsFlagComponent<Component>::value) {
-					return compBitsets[ent][getComponentId<Component>()];
-				} else {
-					ENGINE_DEBUG_ASSERT(hasComponent<Component>(ent), "Attempting to get a component that an entity doesn't have.");
-					return getComponentContainer<Component>()[ent];
-				}
+				static_assert(!IsFlagComponent<Component>::value,
+					"Calling World::getComponent on a flag component is not allowed. Use World::hasComponent instead."
+				);
+
+				ENGINE_DEBUG_ASSERT(hasComponent<Component>(ent), "Attempting to get a component that an entity doesn't have.");
+				return getComponentContainer<Component>()[ent];
 			}
 
 			template<class Component>
 			ENGINE_INLINE const Component& getComponent(Entity ent) const {
 				return const_cast<World*>(this)->getComponent<Component>(ent);
+			}
+
+			template<class C>
+			ENGINE_INLINE bool hadComponent(Entity ent, Tick tick) const {
+				return history.get(tick).getComponentContainer<C>().has(ent);
 			}
 
 			// TODO: Doc
@@ -516,9 +511,14 @@ namespace Engine::ECS {
 				static_assert(IsSnapshotRelevant<C>::value,
 					"Attempting to get component from snapshot for non-snapshot relevant component."
 				);
-				ENGINE_DEBUG_ASSERT(hasComponent<C>(ent, tick), "Attempting to get component that an entity does not have.");
+
 				auto& snap = history.get(tick);
-				return snap.getComponentContainer<C>()[ent];
+				auto& cont = snap.getComponentContainer<C>();
+				if (!cont.has(ent)) {
+					ENGINE_LOG("Add historic component ", getComponentId<C>(), " to ", ent, " on tick ", tick);
+					cont.add(ent);
+				}
+				return cont[ent];
 			}
 
 			template<class Component>
