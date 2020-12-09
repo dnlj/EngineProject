@@ -37,7 +37,6 @@ namespace Engine::ECS {
 				} else {
 					ENGINE_WARN("Unable to perform world rollback to tick ", rollbackData.tick);
 					rollbackData.tick = -1;
-					return;
 				}
 			}
 		}
