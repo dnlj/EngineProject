@@ -4,6 +4,9 @@
 #include <tuple>
 #include <type_traits>
 
+// Meta
+#include <Meta/IndexOf.hpp>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
@@ -34,7 +37,7 @@ namespace Engine::ECS {
 			using It = decltype(std::declval<Cont>().begin());
 			using CIt = decltype(std::declval<Cont>().cbegin());
 			World& world;
-			ENGINE_INLINE auto& getCont() { return world.getComponentContainer<C>(); }
+			ENGINE_INLINE auto& getCont() const { return world.template getComponentContainer<C>(); }
 			// TODO: do we also want to check if enabled? maybe filters need some way to specify what flags an entity should/shouoldnt have
 			ENGINE_INLINE bool canUse(Entity ent) const { return world.isAlive(ent); }
 
@@ -43,7 +46,7 @@ namespace Engine::ECS {
 					friend class SingleComponentFilter;
 					using I = int32;
 					It it;
-					SingleComponentFilter& filter;
+					const SingleComponentFilter& filter;
 
 					ENGINE_INLINE void stepNextValid() {
 						const auto end = filter.getCont().end();
@@ -60,7 +63,7 @@ namespace Engine::ECS {
 					}
 
 				public:
-					Iter(It it, SingleComponentFilter& filter) : it{it}, filter{filter} {}
+					Iter(It it, const SingleComponentFilter& filter) : it{it}, filter{filter} {}
 
 					// TODO: need to check that ent is enabled
 					auto& operator++() {
@@ -92,23 +95,23 @@ namespace Engine::ECS {
 		public:
 			SingleComponentFilter(World& world) : world{world} {}
 
-			Iter begin() {
+			Iter begin() const {
 				Iter it{getCont().begin(), *this};
 				it.stepNextValid();
 				return it;
 			}
 
-			Iter end() {
+			Iter end() const {
 				return {getCont().end(), *this};
 			}
 
-			auto size() {
+			auto size() const {
 				int32 i = 0;
 				for (auto it = begin(); it != end(); ++it, ++i) {}
 				return i;
 			}
 
-			bool empty() { return begin() == end(); }
+			bool empty() const { return begin() == end(); }
 	};
 
 	// TODO: move
@@ -249,7 +252,7 @@ namespace Engine::ECS {
 		public:
 			// TODO: doc
 			template<class Arg>
-			World(Arg& arg);
+			World(Arg&& arg);
 
 			World(const World&) = delete;
 
@@ -376,7 +379,7 @@ namespace Engine::ECS {
 				static_assert((std::is_same_v<Cs, Component> || ...),
 					"Attempting to get component id of type that is not in the component list. Did you forget to add it?"
 				);
-				return Meta::IndexOf<Component, Cs...>::value;
+				return Meta::IndexOf<Component, Cs ...>::value;
 			}
 
 			/**

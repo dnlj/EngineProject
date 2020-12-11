@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <memory>
 
+// Meta
+#include <Meta/IndexOf.hpp>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Net/MessageHeader.hpp>
@@ -115,10 +118,10 @@ namespace Engine::Net {
 			template<auto M>
 			auto& getChannelForMessage() {
 				static_assert(M <= maxMessageType(), "Invalid message type.");
-				static_assert((Cs::handlesMessageType<M>() || ...), "No channel handles this message type.");
-				static_assert((Cs::handlesMessageType<M>() + ...) == 1, "No two channels may handle the same message type.");
+				static_assert((Cs::template handlesMessageType<M>() || ...), "No channel handles this message type.");
+				static_assert((Cs::template handlesMessageType<M>() + ...) == 1, "No two channels may handle the same message type.");
 
-				constexpr auto i = ((Cs::handlesMessageType<M>() ? getChannelId<Cs>() : 0) + ...);
+				constexpr auto i = ((Cs::template handlesMessageType<M>() ? getChannelId<Cs>() : 0) + ...);
 				static_assert(i >= 0 && i <= std::tuple_size_v<decltype(channels)>);
 
 				return std::get<i>(channels);
@@ -128,7 +131,7 @@ namespace Engine::Net {
 			void callWithChannelForMessage(const MessageType m, Func&& func) {
 				([&]<class T, T... Is>(std::integer_sequence<T, Is...>){
 					using F = void(Func::*)(void) const;
-					constexpr F fs[] = {&Func::operator()<std::decay_t<decltype(std::declval<Connection>().getChannelForMessage<Is>())>>...};
+					constexpr F fs[] = {&Func::template operator()<std::decay_t<decltype(std::declval<Connection>().getChannelForMessage<Is>())>>...};
 					(func.*fs[m])();
 				})(std::make_integer_sequence<MessageType, maxMessageType() + 1>{});
 			}

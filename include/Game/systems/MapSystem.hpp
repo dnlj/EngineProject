@@ -132,7 +132,7 @@ namespace Game {
 			/**
 			 * Converts from a region to an index wrapped at increments of regionSize.
 			 */
-			glm::ivec2 MapSystem::regionToIndex(const glm::ivec2 region) const;
+			glm::ivec2 regionToIndex(const glm::ivec2 region) const;
 
 		private:
 			// TODO: split?

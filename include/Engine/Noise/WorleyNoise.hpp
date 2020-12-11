@@ -105,7 +105,7 @@ namespace Engine::Noise {
 
 			// TODO: Doc
 			template<class PointProcessor>
-			void evaluate(const Float x, const Float y, PointProcessor& pp) const {
+			void evaluate(const Float x, const Float y, PointProcessor&& pp) const {
 				// Figure out which base unit square we are in
 				Int baseX = floorTo<Int>(x);
 				Int baseY = floorTo<Int>(y);
@@ -133,7 +133,7 @@ namespace Engine::Noise {
 	template<auto* Dist>
 	class WorleyNoiseFrom : public WorleyNoiseGeneric<decltype(*Dist)> {
 		public:
-			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric{seed, *Dist} {
+			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<decltype(*Dist)>{seed, *Dist} {
 			}
 	};
 

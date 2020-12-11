@@ -28,7 +28,7 @@ namespace Engine {
 			 * @param[in] filter The filter mode.
 			 * @param[in] mipmap Should mipmaps be generated.
 			 */
-			TextureOptions::TextureOptions(TextureWrap wrap, TextureFilter filter, bool mipmap);
+			TextureOptions(TextureWrap wrap, TextureFilter filter, bool mipmap);
 
 			/**
 			 * @brief Sets the wrap mode.

@@ -35,13 +35,13 @@ namespace {
 	template<class ComponentsSet>
 	struct ForEachIn {
 		template<class Func>
-		static void call(Func& func) {};
+		static void call(Func&& func) {};
 	};
 
 	template<template<class...> class ComponentsSet, class... Components>
 	struct ForEachIn<ComponentsSet<Components...>> {
 		template<class Func>
-		static void call(Func& func) {
+		static void call(Func&& func) {
 			(func.operator()<Components>(), ...);
 		}
 	};
@@ -458,7 +458,7 @@ namespace Game {
 		Connection* conn;
 		const auto found = connections.find(addr);
 		if (found == connections.end()) {
-			auto& [i, c] = addConnection2(addr);
+			const auto& [i, c] = addConnection2(addr);
 			info = &i;
 			conn = &c;
 		} else {
@@ -477,7 +477,7 @@ namespace Game {
 			}
 		}
 
-		auto& [info, conn] = getOrCreateConnection(group);
+		const auto& [info, conn] = getOrCreateConnection(group);
 		if (conn.msgBegin<MessageType::DISCOVER_SERVER>()) {
 			conn.write(MESSAGE_PADDING_DATA);
 			conn.msgEnd<MessageType::DISCOVER_SERVER>();
@@ -491,7 +491,7 @@ namespace Game {
 		// Recv messages
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
-			auto& [info, conn] = getOrCreateConnection(address);
+			const auto& [info, conn] = getOrCreateConnection(address);
 			// TODO: move back to connection
 			if (packet.getProtocol() != Engine::Net::protocol) {
 				ENGINE_WARN("Invalid protocol"); // TODO: rm - could be used for lag/dos?
@@ -735,7 +735,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		auto& [info, conn] = getOrCreateConnection(addr);
+		const auto& [info, conn] = getOrCreateConnection(addr);
 		info.state = ConnState::Connecting;
 
 		if (!conn.getKeyRecv()) {
@@ -751,7 +751,7 @@ namespace Game {
 	}
 
 	auto NetworkingSystem::addConnection2(const Engine::Net::IPv4Address& addr) -> AddConnRes {
-		auto& ent = world.createEntity();
+		auto ent = world.createEntity();
 		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
 		auto [it, suc] = connections.emplace(addr, ConnInfo{
 			.ent = ent,
@@ -787,7 +787,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
-		auto& [info, conn] = getOrCreateConnection(addr);
+		const auto& [info, conn] = getOrCreateConnection(addr);
 		info.disconnectAt = Engine::Clock::now() + disconnectTime;
 		ENGINE_INFO("Request disconnect ", addr, " ", info.ent);
 	}

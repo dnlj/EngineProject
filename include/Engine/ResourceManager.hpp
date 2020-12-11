@@ -14,9 +14,26 @@ namespace Engine {
 	template<class Manager, class T>
 	class ResourceManager {
 		friend Manager;
+		
 		public:
 			using ResourceId = int32;
 
+		private:
+			struct ResourceInfo {
+				const std::string path;
+				const ResourceId id;
+				int32 refCount = 0;
+				std::unique_ptr<T> data;
+			};
+
+			Engine::FlatHashMap<std::string, ResourceId> resMap;
+
+			// TODO: make this a fixed array so we dont have ptr->ptr->data.
+			// TODO: cont. We shouldnt be adding new resources after init anyways.
+			// TODO: cont. If we did then ids would desync between client and server.
+			std::vector<std::unique_ptr<ResourceInfo>> resInfo;
+
+		public:
 			class Resource {
 				private:
 					struct ResourceInfo* info = nullptr;
@@ -26,7 +43,7 @@ namespace Engine {
 				public:
 					using Id = ResourceId;
 					Resource() = default;
-					Resource(ResourceInfo* s) : info{s} { inc(); };
+					Resource(ResourceInfo& i) : info{&i} { inc(); };
 					~Resource() { dec(); }
 					Resource(const Resource& other) { *this = other; inc(); }
 					Resource& operator=(const Resource& other) {
@@ -41,20 +58,7 @@ namespace Engine {
 			};
 
 		private:
-			struct ResourceInfo {
-				const std::string path;
-				const ResourceId id;
-				int32 refCount = 0;
-				std::unique_ptr<T> data;
-			};
-
 			ResourceManager() = default;
-			Engine::FlatHashMap<std::string, ResourceId> resMap;
-
-			// TODO: make this a fixed array so we dont have ptr->ptr->data.
-			// TODO: cont. We shouldnt be adding new resources after init anyways.
-			// TODO: cont. If we did then ids would desync between client and server.
-			std::vector<std::unique_ptr<ResourceInfo>> resInfo;
 
 		public:
 			~ResourceManager() {};
@@ -85,7 +89,8 @@ namespace Engine {
 				if (!info->data) {
 					info->data = std::make_unique<T>(self().load(info->path));
 				}
-				return info.get();
+
+				return *info;
 			};
 
 			// TODO: cleanup unreferenced resources

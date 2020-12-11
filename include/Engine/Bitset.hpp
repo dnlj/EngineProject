@@ -158,7 +158,7 @@ namespace Engine {
 	template<auto I, class T> struct Hash<Bitset<I, T>> {
 		uint64 operator()(const Bitset<I, T>& v) const noexcept {
 			uint64 seed = 0;
-			using st = Bitset<I, T>::SizeType;
+			using st = typename Bitset<I, T>::SizeType;
 
 			if constexpr (v.dataSize() % 8 == 0) {
 				for (st i = 0; i < v.dataSize(); i += 8) {
@@ -171,7 +171,7 @@ namespace Engine {
 				}
 				return seed;
 			} else {
-				for (Bitset<I, T>::SizeType i = 0; i < v.dataSize(); ++i) {
+				for (st i = 0; i < v.dataSize(); ++i) {
 					hashCombine(seed, v.data()[i]);
 				}
 				return seed;

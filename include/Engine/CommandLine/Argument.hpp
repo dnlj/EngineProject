@@ -54,11 +54,11 @@ namespace Engine::CommandLine {
 	template<class T>
 	class Argument : public detail::ArgumentGeneric<T> {
 		public:
-			using ArgumentGeneric::ArgumentGeneric;
+			using detail::ArgumentGeneric<T>::ArgumentGeneric;
 
 			virtual bool store(const std::string& arg) override {
-				if (ArgumentConverter<T>{}(arg, storage)) {
-					set = true;
+				if (ArgumentConverter<T>{}(arg, this->storage)) {
+					this->set = true;
 					return true;
 				}
 				return false;
@@ -68,11 +68,11 @@ namespace Engine::CommandLine {
 	template<class T>
 	class Argument<std::vector<T>> : public detail::ArgumentGeneric<std::vector<T>> {
 		public:
-			using ArgumentGeneric::ArgumentGeneric;
+			using detail::ArgumentGeneric<std::vector<T>>::ArgumentGeneric;
 
 			virtual bool store(const std::string& arg) override {
 				// TODO: impl
-				set = true;
+				this->set = true;
 				return false;
 			};
 	};

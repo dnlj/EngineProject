@@ -44,6 +44,7 @@
 #include <Engine/ImGui/ImGui.hpp>
 #include <Engine/Input/InputSequence.hpp>
 #include <Engine/CommandLine/Parser.hpp>
+#include <Engine/Debug/GL/GL.hpp>
 
 // Game
 #include <Game/Common.hpp>

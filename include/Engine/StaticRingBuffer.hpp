@@ -147,12 +147,12 @@ namespace Engine {
 
 	template<class T>
 	class RingBuffer : public detail::RingBufferImpl<T> {
-		using RingBufferImpl::RingBufferImpl;
+		using detail::RingBufferImpl<T>::RingBufferImpl;
 	};
 
 	template<class T, uint32 Size>
 	class StaticRingBuffer : public detail::RingBufferImpl<T, Size> {
-		using RingBufferImpl::RingBufferImpl;
+		using detail::RingBufferImpl<T, Size>::RingBufferImpl;
 	};
 
 

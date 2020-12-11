@@ -17,4 +17,14 @@ namespace Engine {
 			bool logColor = false;
 			bool logTimeOnly = false;
 	};
+
+	namespace Detail { static GlobalConfig globalConfig = {}; }
+	template<bool Editable = false>
+	auto& getGlobalConfig() {
+		if constexpr (Editable) {
+			return Detail::globalConfig;
+		} else {
+			return static_cast<const GlobalConfig&>(Detail::globalConfig);
+		}
+	}
 };

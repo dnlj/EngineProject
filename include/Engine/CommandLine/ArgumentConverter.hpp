@@ -26,7 +26,7 @@ namespace Engine::CommandLine {
 	template<std::floating_point T>
 	class ArgumentConverter<T> {
 		public: bool operator()(const std::string& str, T& storage) {
-			return std::from_chars(str.data(), str.data() + str.size(), storage).ec == == std::errc{};
+			return std::from_chars(str.data(), str.data() + str.size(), storage).ec == std::errc{};
 		}
 	};
 	

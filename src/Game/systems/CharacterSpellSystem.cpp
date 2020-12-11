@@ -24,7 +24,7 @@ namespace Game {
 		
 		for (int i = 0; i < count; ++i) {
 			auto ent = missiles.emplace_back(world.createEntity(true));
-			auto& [spriteComp, physBodyComp, physProxyComp, physInterpComp] = world.addComponents<
+			const auto& [spriteComp, physBodyComp, physProxyComp, physInterpComp] = world.addComponents<
 				Game::SpriteComponent,
 				Game::PhysicsBodyComponent,
 				Game::PhysicsProxyComponent,

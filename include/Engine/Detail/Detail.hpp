@@ -13,8 +13,12 @@
 
 // Engine
 #include <Engine/ASCIIColorString.hpp>
+#include <Engine/GlobalConfig.hpp>
+#include <Engine/Constants.hpp>
 
 namespace Engine::Detail {
+	std::string getDateTimeString();
+
 	// TODO: C++20: Use std <format> and fallback to operator<< if no format found.
 	template<class... Args>
 	void log(
@@ -58,5 +62,4 @@ namespace Engine::Detail {
 		// TODO: when logging to file use full date and no color
 	}
 
-	std::string getDateTimeString();
 }

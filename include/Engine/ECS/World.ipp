@@ -10,8 +10,8 @@
 namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class Arg>
-	WORLD_CLASS::World(Arg& arg)
-		: systems((sizeof(Ss*), arg) ...)
+	WORLD_CLASS::World(Arg&& arg)
+		: systems((sizeof(Ss*), std::forward<Arg>(arg)) ...)
 		, beginTime{Clock::now()} {
 		tickTime = beginTime;
 		(getSystem<Ss>().setup(), ...);
@@ -134,7 +134,7 @@ namespace Engine::ECS {
 	template<class Callable>
 	void WORLD_CLASS::callWithComponent(ComponentId cid, Callable&& callable) {
 		using Caller = void(Callable::*)(void) const;
-		constexpr Caller callers[]{ &Callable::operator()<Cs>... };
+		constexpr Caller callers[]{ &Callable::template operator()<Cs>... };
 		return (callable.*callers[cid])();
 	}
 

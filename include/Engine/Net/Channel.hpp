@@ -8,6 +8,9 @@
 
 
 namespace Engine::Net {
+	// TODO: make MAX_ACTIVE_MESSAGES_PER_CHANNEL a template argument of Channel_ReliableSender instead of global?
+	constexpr inline int MAX_ACTIVE_MESSAGES_PER_CHANNEL = 64;
+
 	/**
 	 * The base class used by all channels.
 	 * @tparam Ms... A sequential list of messages handled by this channel.
@@ -137,7 +140,7 @@ namespace Engine::Net {
 				hdr.seq = ++nextSeq;
 			}
 	};
-	
+
 	/**
 	 * Implements the sending portion of a reliable network channel.
 	 * @see Channel_Base
@@ -152,12 +155,12 @@ namespace Engine::Net {
 				Engine::Clock::TimePoint lastSendTime;
 				std::vector<byte> data;
 			};
-			SequenceBuffer<SeqNum, MsgData, 64> msgData; // TODO: ideal size?
+			SequenceBuffer<SeqNum, MsgData, MAX_ACTIVE_MESSAGES_PER_CHANNEL> msgData; // TODO: ideal size?
 
 			struct PacketData {
 				std::vector<SeqNum> messages;
 			};
-			SequenceBuffer<SeqNum, PacketData, 64> pktData; // TODO: ideal size?
+			SequenceBuffer<SeqNum, PacketData, MAX_ACTIVE_MESSAGES_PER_CHANNEL> pktData; // TODO: ideal size?
 
 			void addMessageToPacket(SeqNum pktSeq, SeqNum msgSeq) {
 				auto* pkt = pktData.find(pktSeq);
@@ -225,8 +228,9 @@ namespace Engine::Net {
 	template<MessageType... Ms>
 	class Channel_ReliableUnordered : public Channel_ReliableSender<Ms...> {
 		private:
+			using Base = Channel_ReliableSender<Ms...>;
 			// TODO: specialize for void data type
-			SequenceBuffer<SeqNum, bool, decltype(msgData)::capacity()> recvData;
+			SequenceBuffer<SeqNum, bool, MAX_ACTIVE_MESSAGES_PER_CHANNEL> recvData;
 
 		public:
 			bool recv(const MessageHeader& hdr) {
@@ -246,12 +250,13 @@ namespace Engine::Net {
 	template<MessageType... Ms>
 	class Channel_ReliableOrdered : public Channel_ReliableSender<Ms...> {
 		private:
+			using Base = Channel_ReliableSender<Ms...>;
 			SeqNum nextRecvSeq = 0;
 
 			struct RecvData {
 				std::vector<byte> data;
 			};
-			SequenceBuffer<SeqNum, RecvData, decltype(msgData)::capacity()> recvData;
+			SequenceBuffer<SeqNum, RecvData, MAX_ACTIVE_MESSAGES_PER_CHANNEL> recvData;
 
 		public:
 			bool recv(const MessageHeader& hdr) {

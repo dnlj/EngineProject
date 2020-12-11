@@ -13,81 +13,8 @@
 #include <Engine/Detail/Detail.hpp>
 #include <Engine/GlobalConfig.hpp>
 #include <Engine/FatalException.hpp>
-#include <Engine/ASCIIColorString.hpp>
-
-namespace Engine::Types { // TODO: C++20: namespace Engine::inline Types {
-	static_assert(std::numeric_limits<char>::digits + std::numeric_limits<char>::is_signed == 8, "This program assumes an 8 bit byte.");
-
-	// TODO: index or size type would be useful
-
-	using byte = unsigned char;
-	// TODO: enum byte : uint8_t {};
-
-	using int8 = int8_t;
-	using int16 = int16_t;
-	using int32 = int32_t;
-	using int64 = int64_t;
-
-	using uint8 = uint8_t;
-	using uint16 = uint16_t;
-	using uint32 = uint32_t;
-	using uint64 = uint64_t;
-
-	using float32 = float;
-	static_assert(sizeof(float32) == 4, "float32 is an incorrect number of bytes.");
-	static_assert(std::numeric_limits<float32>::is_iec559, "float32 is not IEEE 754 single-precision (binary32) format.");
-
-	using float64 = double;
-	static_assert(sizeof(float64) == 8, "float64 is an incorrect number of bytes.");
-	static_assert(std::numeric_limits<float64>::is_iec559, "float64 is not IEEE 754 double-precision (binary64) format.");
-}
-namespace Engine { using namespace Engine::Types; }
-
-namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
-	constexpr inline float32 PI = 3.141592653589793238462643383279502884197169f;
-
-	// TODO: move into own ns?
-	constexpr inline ASCIIColorString ASCII_BLACK        = "\033[30m";
-	constexpr inline ASCIIColorString ASCII_RED          = "\033[31m";
-	constexpr inline ASCIIColorString ASCII_GREEN        = "\033[32m";
-	constexpr inline ASCIIColorString ASCII_YELLOW       = "\033[33m";
-	constexpr inline ASCIIColorString ASCII_BLUE         = "\033[34m";
-	constexpr inline ASCIIColorString ASCII_MAGENTA      = "\033[35m";
-	constexpr inline ASCIIColorString ASCII_CYAN         = "\033[36m";
-	constexpr inline ASCIIColorString ASCII_WHITE        = "\033[37m";
-	constexpr inline ASCIIColorString ASCII_BLACK_BOLD   = "\033[1;30m";
-	constexpr inline ASCIIColorString ASCII_RED_BOLD     = "\033[1;31m";
-	constexpr inline ASCIIColorString ASCII_GREEN_BOLD   = "\033[1;32m";
-	constexpr inline ASCIIColorString ASCII_YELLOW_BOLD  = "\033[1;33m";
-	constexpr inline ASCIIColorString ASCII_BLUE_BOLD    = "\033[1;34m";
-	constexpr inline ASCIIColorString ASCII_MAGENTA_BOLD = "\033[1;35m";
-	constexpr inline ASCIIColorString ASCII_CYAN_BOLD    = "\033[1;36m";
-	constexpr inline ASCIIColorString ASCII_WHITE_BOLD   = "\033[1;37m";
-	constexpr inline ASCIIColorString ASCII_RESET        = "\033[0m";
-
-	constexpr inline ASCIIColorString ASCII_INFO         = ASCII_BLUE;
-	constexpr inline ASCIIColorString ASCII_SUCCESS      = ASCII_GREEN;
-	constexpr inline ASCIIColorString ASCII_WARN         = ASCII_YELLOW;
-	constexpr inline ASCIIColorString ASCII_ERROR        = ASCII_RED;
-	constexpr inline ASCIIColorString ASCII_FG           = ASCII_WHITE;
-	constexpr inline ASCIIColorString ASCII_FG2          = ASCII_BLACK_BOLD;
-
-}
-namespace Engine { using namespace Engine::Constants; }
-
-namespace Engine {
-	namespace Detail { inline auto& getRealGlobalConfig() { static GlobalConfig c; return c; } }
-
-	template<bool Editable = false>
-	auto& getGlobalConfig() {
-		if constexpr (Editable) {
-			return Detail::getRealGlobalConfig();
-		} else {
-			return static_cast<const GlobalConfig&>(Detail::getRealGlobalConfig());
-		}
-	}
-}
-
+#include <Engine/Constants.hpp>
+#include <Engine/Types.hpp>
 
 #define ENGINE_SIDE_SERVER 1
 #define ENGINE_SIDE_CLIENT 2

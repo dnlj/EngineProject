@@ -194,7 +194,7 @@ namespace Game {
 	void UISystem::ui_coordinates() {
 		if (!ImGui::CollapsingHeader("Coordinates")) { return; }
 
-		auto& activePlayerFilter = world.getFilter<PlayerFlag>();
+		const auto& activePlayerFilter = world.getFilter<PlayerFlag>();
 		if (activePlayerFilter.empty()) { return; }
 
 		auto& mapSys = world.getSystem<Game::MapSystem>();

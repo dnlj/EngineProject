@@ -6,7 +6,7 @@
 
 namespace Engine::CommandLine {
 	template<class T>
-	auto Parser::add(std::string full, char abbr, T default, std::string help, bool useDefault) -> Parser& {
+	auto Parser::add(std::string full, char abbr, T def, std::string help, bool useDefault) -> Parser& {
 		if (abbr == '-') {
 			abbr = 0;
 			ENGINE_WARN("Command line abbreviation for '", full, "' may not be the character '-'. Ignoring.");
@@ -27,7 +27,7 @@ namespace Engine::CommandLine {
 			return *this;
 		}
 
-		const auto [it, _] = params.emplace(std::move(full), std::make_unique<Argument<T>>(abbr, std::move(default), std::move(help)));
+		const auto [it, _] = params.emplace(std::move(full), std::make_unique<Argument<T>>(abbr, std::move(def), std::move(help)));
 		if (abbr != 0) {
 			abbrToFull.emplace(abbr, it->second.get());
 		}

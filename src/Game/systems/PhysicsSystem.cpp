@@ -1,5 +1,6 @@
 // Game
 #include <Game/World.hpp>
+#include <Game/Math.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
 
 namespace {
@@ -33,8 +34,8 @@ namespace Game {
 				);
 				// TODO: interp
 
-
-
+				constexpr auto a = Math::lerp(2.0f, 3.0f, 0.25f);
+				ENGINE_LOG(a);
 				//physBodyComp.getBody().SetTransform();
 			}
 
@@ -64,7 +65,7 @@ namespace Game {
 	}
 
 	void PhysicsSystem::preStoreSnapshot() {
-		auto& filter = world.getFilter<Filter>();
+		const auto& filter = world.getFilter<Filter>();
 		for (const auto ent : filter) {
 			auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
 			physProxyComp.snap = false;
@@ -78,7 +79,6 @@ namespace Game {
 				const auto& physProxyComp2 = world.getComponent<PhysicsProxyComponent>(ent, tick);
 				if (physProxyComp2.rollbackOverride) {
 					physProxyComp = physProxyComp2;
-					ENGINE_INFO("Rollback override!!!!!!!!"); // TODO: rm once done with testing
 				}
 			}
 		}
