@@ -18,7 +18,7 @@ namespace Engine {
 			bool logTimeOnly = false;
 	};
 
-	namespace Detail { static GlobalConfig globalConfig = {}; }
+	namespace Detail { inline GlobalConfig globalConfig = {}; }
 	template<bool Editable = false>
 	auto& getGlobalConfig() {
 		if constexpr (Editable) {
