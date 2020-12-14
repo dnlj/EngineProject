@@ -7,6 +7,6 @@
 namespace Engine::Math {
 	template<class T, std::floating_point F>
 	ENGINE_INLINE constexpr T lerp(T a, T b, F t) {
-		return t * b + (F{1} - t) * b;
+		return t * a + (F{1} - t) * b;
 	}
 }

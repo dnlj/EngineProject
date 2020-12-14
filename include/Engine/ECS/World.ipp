@@ -30,10 +30,10 @@ namespace Engine::ECS {
 				const auto oldTime = tickTime;
 
 				if (loadSnapshot(rollbackData.tick)) {
+					ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", rollbackData.tick, " ", currTick);
 					rollbackData.tick = oldTick;
 					rollbackData.time = oldTime;
 					performingRollback = true;
-					ENGINE_LOG(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", currTick);
 				} else {
 					ENGINE_WARN("Unable to perform world rollback to tick ", rollbackData.tick);
 					rollbackData.tick = -1;
@@ -46,7 +46,7 @@ namespace Engine::ECS {
 				const auto& found = history.get(currTick + 1);
 				const auto nextTickTime = found.tickTime;
 				tickSystems();
-				ENGINE_LOG("Rollback: ", currTick);
+				ENGINE_LOG("Rollback2: ", currTick);
 				tickTime = nextTickTime;
 			}
 
@@ -74,16 +74,6 @@ namespace Engine::ECS {
 
 		storeSnapshot();
 		(getSystem<Ss>().preTick(), ...);
-
-
-		//auto&& tickSystem = [&]<class S>(){
-		//	if (performingRollback) {
-		//		ENGINE_LOG("Running system: ", typeid(S).name());
-		//		//__debugbreak();
-		//	}
-		//	getSystem<S>().tick();
-		//}; (tickSystem.operator()<Ss>(), ...);
-
 		(getSystem<Ss>().tick(), ...);
 		(getSystem<Ss>().postTick(), ...);
 	}

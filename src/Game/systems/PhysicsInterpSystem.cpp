@@ -8,16 +8,6 @@ namespace Game {
 	void PhysicsInterpSystem::run(float32 dt) {
 		const auto now = Engine::Clock::now();
 
-		int buffSize = 0;
-		Engine::Clock::Duration ping = {};
-		for (const auto& ply : world.getFilter<ActionComponent, ConnectionComponent>()) {
-			const auto& connComp = world.getComponent<ConnectionComponent>(ply);
-			const auto& actComp = world.getComponent<ActionComponent>(ply);
-			buffSize = static_cast<int>(actComp.estBufferSize) + 1;
-			ping = connComp.conn->getPing() + connComp.conn->getJitter();
-			break;
-		}
-
 		for (const auto& ent : world.getFilter<PhysicsInterpComponent, PhysicsProxyComponent>()) {
 			const auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
 			auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
@@ -31,61 +21,6 @@ namespace Game {
 			if (physProxyComp.snap) {
 				physInterpComp.trans = physProxyComp.trans;
 				continue;
-			} else if (physInterpComp.onlyUserVerified) {
-				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				// Explanation for time offset calculation
-				//
-				//
-				// Total = DeJitter + RTT + NetRate + TickInterval + InputBuffer
-				// DeJitterBuffer is a user tuneable variable. Smaller is more responsive but larger is more resilient to network condition variations.
-				//
-				//              DeJitterBuffer >      . RecvUpdate                            . ClientTick
-				// Client: <-------------------|------|---------------------------------------|---------> Time
-				//                          RTT/2 ---> \                                     /  <--- RTT/2
-				//                                      \                                   /             
-				// Server: <-----------------------------|----------|.....|----------------|------------>
-				//                               NetRate >          >     < ServerTick     < InputBuffer
-				//                                                  . ServerTick Complete
-				//
-				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-				constexpr auto dejitter = World::getTickInterval(); // TODO: make cvar
-				constexpr auto netrate = std::chrono::milliseconds{51}; // TODO: dont hardcode. cvar/cmdlline
-				constexpr auto serverTickTime = World::getTickInterval();
-				const auto step = dejitter + ping + netrate + serverTickTime + World::getTickInterval() * buffSize;
-				interpTime = now - step;
-				
-				// TODO: this isnt great on the ECS/snapshot memory layout
-				for (Engine::ECS::Tick t = world.getTick() - 1; t > world.getTick() - tickrate; --t) {
-					const auto& physProxyComp2 = world.getComponent<PhysicsProxyComponent>(ent, t);
-					if (physProxyComp2.rollbackOverride) {
-						const auto tickTime = world.getTickTime(t);
-						if (tickTime >= interpTime) {
-							nextTrans = &physProxyComp2.trans;
-							nextTime = tickTime;
-						} else {
-							prevTrans = &physProxyComp2.trans;
-							prevTime = tickTime;
-							break;
-						}
-					}
-				}
-
-				if (!nextTrans) {
-					ENGINE_WARN("nextTrans not found!");
-					if (prevTrans) {
-						physInterpComp.trans = *prevTrans;
-					}
-					continue;
-				}
-
-				if (!prevTrans) {
-					ENGINE_WARN("prevTrans not found!");
-					if (nextTrans) {
-						physInterpComp.trans = *nextTrans;
-					}
-					continue;
-				}
 			} else {
 				const auto tick = world.getTick();
 				if (!world.hadComponent<PhysicsProxyComponent>(ent, tick)) {
@@ -103,6 +38,7 @@ namespace Game {
 				interpTime = now - world.getTickInterval();
 			}
 
+			// TODO: use calcInterpValue and Math::lerp
 			const auto diff = nextTime - prevTime;
 			auto a = (interpTime - prevTime).count() / static_cast<float64>(diff.count());
 			a = std::min(1.0, std::max(a, 0.0));
