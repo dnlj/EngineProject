@@ -38,8 +38,11 @@ namespace Engine::ECS {
 			using CIt = decltype(std::declval<Cont>().cbegin());
 			World& world;
 			ENGINE_INLINE auto& getCont() const { return world.template getComponentContainer<C>(); }
+
 			// TODO: do we also want to check if enabled? maybe filters need some way to specify what flags an entity should/shouoldnt have
-			ENGINE_INLINE bool canUse(Entity ent) const { return world.isAlive(ent); }
+			ENGINE_INLINE bool canUse(Entity ent) const {
+				return world.isAlive(ent) && world.isEnabled(ent);
+			}
 
 			class Iter {
 				private:
@@ -575,7 +578,8 @@ namespace Engine::ECS {
 
 					const auto idx = static_cast<int32>(filters.size());
 					auto& filter = filters.emplace_back(entities, cbits);
-					for (const auto& ent : getFilter<C>()) {
+					for (const auto& pair : getComponentContainer<C>()) {
+						const auto& ent = pair.first;
 						if (!isAlive(ent)) { continue; }
 						filter.add(ent, getComponentsBitset(ent));
 					}
@@ -685,6 +689,13 @@ namespace Engine::ECS {
 
 				deadEntities.push_back(ent);
 				entities[ent.id].state = EntityState::Dead;
+			}
+
+			ENGINE_INLINE void destroyMarkedEntities() {
+				for (auto ent : markedForDeath) {
+					destroyEntity(ent);
+				}
+				markedForDeath.clear();
 			}
 	};
 }

@@ -59,7 +59,6 @@ namespace Game {
 
 	void CharacterSpellSystem::fireMissile(const b2Vec2& pos, const b2Vec2& dir) {
 		auto missile = missiles[currentMissile];
-
 		world.setEnabled(missile, true);
 		auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(missile);
 		auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(missile);

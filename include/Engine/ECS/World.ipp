@@ -64,8 +64,9 @@ namespace Engine::ECS {
 				tickTime += std::chrono::duration_cast<Clock::Duration>(tickInterval * tickScale);
 			}
 		}
-		
+
 		(getSystem<Ss>().run(deltaTime), ...);
+		destroyMarkedEntities();
 	}
 
 	WORLD_TPARAMS
