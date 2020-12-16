@@ -43,10 +43,22 @@ namespace Game {
 
 		count = new int{1};
 	}
+	
+	void PhysicsBodyComponent::netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const {
+		conn.write(type);
+	}
 
 	void PhysicsBodyComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
+		const auto* type = conn.read<PhysicsType>();
+		if (!type) {
+			ENGINE_WARN("Unable to read physics type from network.");
+			return;
+		}
+
 		auto& physSys = world.getSystem<PhysicsSystem>();
-		setBody(physSys.createPhysicsCircle(ent));
+		setBody(physSys.createPhysicsCircle(ent, {}, -+*type));
+		this->type = *type;
+
 		netFrom(conn);
 	}
 }

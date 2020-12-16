@@ -53,7 +53,7 @@ namespace Game {
 			#endif
 
 			// TODO: rm - temp
-			b2Body* createPhysicsCircle(Engine::ECS::Entity ent, b2Vec2 position = b2Vec2_zero) {
+			b2Body* createPhysicsCircle(Engine::ECS::Entity ent, b2Vec2 position = b2Vec2_zero, int filter = 0) {
 				b2BodyDef bodyDef;
 				bodyDef.type = b2_dynamicBody;
 				bodyDef.position = position;
@@ -66,6 +66,7 @@ namespace Game {
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &shape;
 				fixtureDef.density = 1.0f;
+				fixtureDef.filter.groupIndex = filter;
 
 				body->CreateFixture(&fixtureDef);
 				body->SetLinearDamping(10.0f);

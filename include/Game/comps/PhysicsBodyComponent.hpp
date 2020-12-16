@@ -14,12 +14,20 @@
 
 
 namespace Game {
+	enum PhysicsType : uint8 {
+		Default,
+		Player,
+	};
+
 	class PhysicsBodyComponent {
 		private:
 			friend class PhysicsSystem;
 
 			b2Body* body = nullptr;
 			int* count = nullptr;
+
+		public:
+			PhysicsType type = {};
 
 		public:
 			PhysicsBodyComponent() = default;
@@ -47,13 +55,24 @@ namespace Game {
 			ENGINE_INLINE const auto& getTransform() const { return body->GetTransform(); }
 			ENGINE_INLINE const auto& getVelocity() const { return body->GetLinearVelocity(); }
 
+			void setType(PhysicsType t) {
+				b2Filter filter;
+				filter.groupIndex = t;
+
+				auto fix = body->GetFixtureList();
+				while (fix) {
+					fix->SetFilterData(filter);
+					fix = fix->GetNext();
+				}
+			}
+
 			Engine::Net::Replication netRepl() const {
 				return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::NONE : Engine::Net::Replication::ALWAYS;
 			}
 
 			void netTo(Connection& conn) const {};
 
-			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const {}
+			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const;
 
 			void netFrom(Connection& conn) {}
 

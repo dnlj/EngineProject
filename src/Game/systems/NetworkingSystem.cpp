@@ -779,7 +779,11 @@ namespace Game {
 
 		world.addComponent<PlayerFlag>(ent);
 		world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
-		world.addComponent<PhysicsBodyComponent>(ent).setBody(physSys.createPhysicsCircle(ent));
+
+		auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
+		physComp.setBody(physSys.createPhysicsCircle(ent, {}, -+PhysicsType::Player));
+		physComp.type = PhysicsType::Player;
+
 		world.addComponent<PhysicsProxyComponent>(ent);
 		world.addComponent<ActionComponent>(ent);
 		world.addComponent<MapEditComponent>(ent);
