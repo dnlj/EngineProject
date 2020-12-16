@@ -264,8 +264,8 @@ namespace Game {
 			local = world.createEntity();
 		}
 
-		world.setNetworked(local, true);
-		ENGINE_LOG("Networked: ", local, world.isNetworked(local));
+		world.addComponent<NetworkedFlag>(local);
+		ENGINE_LOG("Networked: ", local, world.hasComponent<NetworkedFlag>(local));
 
 		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", *remote, " Local: ", local, " Tick: ", world.getTick());
 
@@ -769,7 +769,7 @@ namespace Game {
 		auto& physSys = world.getSystem<PhysicsSystem>();
 
 		if constexpr (ENGINE_SERVER) {
-			world.setNetworked(ent, true);
+			world.addComponent<NetworkedFlag>(ent);
 			world.addComponent<NeighborsComponent>(ent);
 		} else {
 			world.addComponent<LocalPlayerFlag>(ent);
@@ -841,7 +841,7 @@ namespace Game {
 				QueryCallback(World& world, decltype(ents) ents) : world{world}, ents{ents} {}
 				virtual bool ReportFixture(b2Fixture* fixture) override {
 					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
-					if (!world.isNetworked(ent)) { return true; }
+					if (!world.hasComponent<NetworkedFlag>(ent)) { return true; }
 					if (!ents.has(ent)) { ents.add(ent); }
 					return true;
 				}

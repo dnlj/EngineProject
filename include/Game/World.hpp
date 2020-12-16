@@ -73,6 +73,7 @@ namespace Game {
 		struct CharacterSpellComponent, // TODO: rn xFlag?
 		struct LocalPlayerFlag,
 		struct PlayerFlag,
+		struct NetworkedFlag,
 		struct RemotePhysicsFlag
 	>;
 

@@ -294,17 +294,6 @@ namespace Engine::ECS {
 				state = (state & ~EntityState::Enabled) | (enabled ? EntityState::Enabled : EntityState::Dead);
 			}
 
-			ENGINE_INLINE bool isNetworked(Entity ent) const noexcept {
-				const auto& es = entities[ent.id];
-				return (es.ent.gen == ent.gen)
-					&& (es.state & EntityState::Network);
-			}
-
-			ENGINE_INLINE void setNetworked(Entity ent, bool enabled) noexcept {
-				auto& state = entities[ent.id].state;
-				state = (state & ~EntityState::Network) | (enabled ? EntityState::Network : EntityState::Dead);
-			}
-
 			/**
 			 * Creates an entity.
 			 * @param forceNew Disables recycling entity ids.

@@ -11,7 +11,6 @@ namespace Engine::ECS {
 				Dead    = 0 << 0,
 				Alive   = 1 << 0,
 				Enabled = 1 << 1,
-				Network = 1 << 2,
 			};
 
 			EntityState(Entity ent, State state) : ent{ent}, state{state} {}
