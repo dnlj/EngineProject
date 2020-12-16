@@ -13,7 +13,7 @@ namespace Engine {
 			GlobalConfig(const GlobalConfig&) = delete;
 			GlobalConfig(GlobalConfig&&) = delete;
 
-			UniqueFilePointer log{stdout, &fclose};
+			UniqueFilePointer log{stdout, [](FILE*)->int{ return 0; }};
 			bool logColor = false;
 			bool logTimeOnly = false;
 	};

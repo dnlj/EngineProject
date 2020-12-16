@@ -37,7 +37,7 @@ namespace {
 				}
 
 				Engine::Net::IPv4Address addr{*ptr->ai_addr};
-				std::cout << "Address: " << addr << "\n";
+				ENGINE_LOG("Address: ", addr);
 				world.getSystem<Game::NetworkingSystem>().connectTo(addr);
 			}
 		}

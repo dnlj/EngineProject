@@ -73,8 +73,7 @@ namespace Game {
 		struct CharacterSpellComponent, // TODO: rn xFlag?
 		struct LocalPlayerFlag,
 		struct PlayerFlag,
-		struct NetworkedFlag,
-		struct RemotePhysicsFlag
+		struct NetworkedFlag
 	>;
 
 	// TODO: we could get rid of CRTP here by forward declaring all systems/components/flags...

@@ -371,7 +371,14 @@ void run(int argc, char* argv[]) {
 			auto& cfg = Engine::getGlobalConfig<true>();
 
 			if (log && !log->empty()) {
-				cfg.log = {fopen(log->c_str(), "a"), &fclose};
+				std::cout << "Log file: " << *log << std::endl;
+				auto old = std::move(cfg.log);
+				cfg.log = {fopen(log->c_str(), "ab"), &fclose};
+
+				if (!cfg.log) {
+					cfg.log = std::move(cfg.log);
+					ENGINE_WARN("Failed to open log file: ", *log);
+				}
 			}
 
 			const bool isTerminal = isatty(fileno(cfg.log.get()));
@@ -380,6 +387,11 @@ void run(int argc, char* argv[]) {
 		}
 
 	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Other
+	ENGINE_INFO("Starting ", ENGINE_SERVER ? "Server" : "Client");
+	ENGINE_INFO("Working Directory: ", std::filesystem::current_path().generic_string());
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Resources
@@ -562,9 +574,6 @@ int entry(int argc, char* argv[]) {
 		}
 	}
 
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Other
-	ENGINE_INFO("Working Directory: ", std::filesystem::current_path().generic_string());
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// At seemingly random the debugger decides to not work. Enable, run, disable, run seems to fix this for some reason.
