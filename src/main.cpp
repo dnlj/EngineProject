@@ -2,6 +2,8 @@
 #include <Windows.h>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <io.h>
+#include <fcntl.h>
 
 // STD
 #include <algorithm>
@@ -11,6 +13,8 @@
 #include <filesystem>
 #include <regex>
 #include <iterator>
+#include <csignal>
+#include <exception>
 
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
@@ -245,6 +249,12 @@ namespace {
 
 		return body;
 	}
+
+	
+	void performExit(const char* reason) {
+		ENGINE_LOG("Shutting down: ", reason, "\n\n");
+		fclose(Engine::getGlobalConfig().log.get());
+	};
 }
 
 namespace {
@@ -340,58 +350,6 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Engine
 	Engine::EngineInstance engine;
-	
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Command Line
-	{
-		using namespace Engine::CommandLine;
-		using namespace Engine::Net;
-		auto& parser = engine.commandLineArgs;
-
-		parser
-			.add<uint16>("port", 'p', 21212,
-				"The port to listen on.")
-			.add<IPv4Address>("group", 'g', {224,0,0,212, 21212},
-				"The multicast group to join for server discovery.")
-			.add<std::string>("log", 'l', "",
-				"The file to use for logging.")
-			.add<bool>("logColor",
-				"Enable or disable color log output.")
-			.add<bool>("logTimeOnly",
-				"Show only time stamps instead of full dates in log output.")
-		;
-
-		parser.parse(argc - 1, argv + 1);
-
-		{ // Setup global engine config
-			const auto* log = parser.get<std::string>("log");
-			const auto* logColor = parser.get<bool>("logColor");
-			const auto* logTimeOnly = parser.get<bool>("logTimeOnly");
-
-			auto& cfg = Engine::getGlobalConfig<true>();
-
-			if (log && !log->empty()) {
-				std::cout << "Log file: " << *log << std::endl;
-				auto old = std::move(cfg.log);
-				cfg.log = {fopen(log->c_str(), "ab"), &fclose};
-
-				if (!cfg.log) {
-					cfg.log = std::move(cfg.log);
-					ENGINE_WARN("Failed to open log file: ", *log);
-				}
-			}
-
-			const bool isTerminal = isatty(fileno(cfg.log.get()));
-			cfg.logColor = logColor ? *logColor : isTerminal;
-			cfg.logTimeOnly = logTimeOnly ? *logTimeOnly : isTerminal;
-		}
-
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Other
-	ENGINE_INFO("Starting ", ENGINE_SERVER ? "Server" : "Client");
-	ENGINE_INFO("Working Directory: ", std::filesystem::current_path().generic_string());
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Resources
@@ -547,9 +505,50 @@ void run(int argc, char* argv[]) {
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
 int entry(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Command Line
+	Engine::CommandLine::Parser parser;
+
+	{
+		using namespace Engine::CommandLine;
+		using namespace Engine::Net;
+		//auto& parser = ;
+
+		parser
+			.add<uint16>("port", 'p', 21212,
+				"The port to listen on.")
+			.add<IPv4Address>("group", 'g', {224,0,0,212, 21212},
+				"The multicast group to join for server discovery.")
+			.add<std::string>("log", 'l', "",
+				"The file to use for logging.")
+			.add<bool>("logColor",
+				"Enable or disable color log output.")
+			.add<bool>("logTimeOnly",
+				"Show only time stamps instead of full dates in log output.")
+		;
+
+		parser.parse(argc - 1, argv + 1);
+		auto& cfg = Engine::getGlobalConfig<true>();
+
+		{ // Setup first part of global log config
+			const auto* log = parser.get<std::string>("log");
+
+			if (log && !log->empty()) {
+				std::cout << "Log file: " << *log << std::endl;
+				auto old = std::move(cfg.log);
+				cfg.log = {fopen(log->c_str(), "ab+"), &fclose};
+
+				if (!cfg.log) {
+					cfg.log = std::move(cfg.log);
+					ENGINE_WARN("Failed to open log file: ", *log);
+				}
+			}
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure Console
 	if(!AllocConsole()) {
-		ENGINE_ERROR("Unable to allocate console window - ", Engine::Win32::getLastErrorMessage());
+		ENGINE_WARN("Unable to allocate console window - ", Engine::Win32::getLastErrorMessage());
 	} else {
 		FILE* unused;
 		freopen_s(&unused, "CONIN$", "r", stdin);
@@ -573,7 +572,66 @@ int entry(int argc, char* argv[]) {
 			SetWindowTextW(window, L"Server");
 		}
 	}
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Setup global config
+	// Win32: This must be after AllocConsole and SetConsoleMode or else isatty wont work
+	{ 
+		auto& cfg = Engine::getGlobalConfig<true>();
 
+		{ // Setup second part of global log config
+			const auto* logColor = parser.get<bool>("logColor");
+			const auto* logTimeOnly = parser.get<bool>("logTimeOnly");
+			const bool isTerminal = isatty(fileno(cfg.log.get()));
+			cfg.logColor = logColor ? *logColor : isTerminal;
+			cfg.logTimeOnly = logTimeOnly ? *logTimeOnly : isTerminal;
+		}
+
+		{ // Setup global network config
+			const auto* port = parser.get<uint16>("port");
+			if (port) { cfg.port = *port; }
+
+			const auto* group = parser.get<Engine::Net::IPv4Address>("group");
+			if (group) { cfg.group = *group; }
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Other
+	ENGINE_INFO("Starting ", ENGINE_SERVER ? "Server" : "Client");
+	ENGINE_INFO("Working Directory: ", std::filesystem::current_path().generic_string());
+
+	signal(SIGABRT, [](int){ performExit("abort signal received"); });
+	signal(SIGTERM, [](int){ performExit("terminate signal received"); });
+
+	#ifdef ENGINE_OS_WINDOWS
+		SetConsoleCtrlHandler([](DWORD ctrlType) -> BOOL {
+			const char* type = nullptr;
+
+			switch(ctrlType) {
+				case CTRL_C_EVENT: { type = "CTRL_C_EVENT"; break; }
+				case CTRL_BREAK_EVENT: { type = "CTRL_BREAK_EVENT"; break; }
+				case CTRL_CLOSE_EVENT: { type = "CTRL_CLOSE_EVENT"; break; }
+				case CTRL_LOGOFF_EVENT: { type = "CTRL_LOGOFF_EVENT"; break; }
+				case CTRL_SHUTDOWN_EVENT: { type = "CTRL_SHUTDOWN_EVENT"; break; }
+			}
+
+			if (type) {
+				std::string msg = "win32 control handler called with ";
+				msg += type;
+				performExit(msg.c_str());
+			}
+
+			return false;
+		}, true);
+	#endif
+
+	std::atexit([]{ performExit("exit requested"); });
+	std::at_quick_exit([]{ performExit("quick exit requested"); });
+	std::set_terminate([]{ performExit("terminate handler called"); });
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Run
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// At seemingly random the debugger decides to not work. Enable, run, disable, run seems to fix this for some reason.
@@ -588,7 +646,6 @@ int entry(int argc, char* argv[]) {
 
 	run(argc, argv);
 
-	std::cout << "Done." << std::endl;
 	return EXIT_SUCCESS;
 }
 

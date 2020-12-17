@@ -434,8 +434,8 @@ namespace Game {
 namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
-		, socket{ENGINE_SERVER ? *engine.commandLineArgs.get<uint16>("port") : 0}
-		, group{*engine.commandLineArgs.get<Engine::Net::IPv4Address>("group")}
+		, socket{ENGINE_SERVER ? Engine::getGlobalConfig().port : 0}
+		, group{Engine::getGlobalConfig().group}
 		, rng{pcg_extras::seed_seq_from<std::random_device>{}} {
 
 		ENGINE_LOG("Listening on port ", socket.getAddress().port);
@@ -449,10 +449,6 @@ namespace Game {
 		}
 	}
 
-	void NetworkingSystem::setup() {
-	}
-
-	
 	auto NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) -> AddConnRes {
 		ConnInfo* info;
 		Connection* conn;

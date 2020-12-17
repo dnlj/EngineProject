@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <memory>
 
+// Engine
+#include <Engine/Types.hpp>
+#include <Engine/Net/IPv4Address.hpp>
+
 
 namespace Engine {
 	class GlobalConfig {
@@ -16,6 +20,9 @@ namespace Engine {
 			UniqueFilePointer log{stdout, [](FILE*)->int{ return 0; }};
 			bool logColor = false;
 			bool logTimeOnly = false;
+
+			uint16 port = 0;
+			Net::IPv4Address group = {};
 	};
 
 	namespace Detail { inline GlobalConfig globalConfig = {}; }

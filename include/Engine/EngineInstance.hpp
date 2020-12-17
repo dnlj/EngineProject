@@ -14,6 +14,5 @@ namespace Engine {
 			TextureManager textureManager;
 			ShaderManager shaderManager;
 			Camera camera;
-			CommandLine::Parser commandLineArgs;
 	};
 }
