@@ -49,6 +49,7 @@
 #include <Engine/Input/InputSequence.hpp>
 #include <Engine/CommandLine/Parser.hpp>
 #include <Engine/Debug/GL/GL.hpp>
+#include <Engine/ConfigParser.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -644,8 +645,11 @@ int entry(int argc, char* argv[]) {
 	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW | _CRTDBG_MODE_DEBUG);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	run(argc, argv);
-
+	Engine::ConfigParser cfg;
+	cfg.loadAndParse("example.cfg");
+	ENGINE_LOG("Done.");
+	//run(argc, argv);
+	getchar();
 	return EXIT_SUCCESS;
 }
 
