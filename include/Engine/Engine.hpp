@@ -34,19 +34,19 @@
 #define ENGINE_INLINE __forceinline
 
 // TODO: replace macros with source_location?
-#define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Color, Other)\
+#define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)\
 	([](auto&&... args){\
-		::Engine::Detail::log(Prefix, Color,\
+		::Engine::Detail::log<Decorate>(Prefix, Color,\
 			(__FILE__ + sizeof(ENGINE_BASE_PATH)), __LINE__,\
 			std::forward<decltype(args)>(args) ...\
 		);\
 		Other;\
 	})
 
-#define _ENGINE_CREATE_ASSERT_LAMBDA(Prefix, Color, Other)\
+#define _ENGINE_CREATE_ASSERT_LAMBDA(Prefix, Decorate, Color, Other)\
 	([](bool cond, auto&&... args){\
 		if (!cond) {\
-			_ENGINE_CREATE_LOG_LAMBDA(Prefix, Color, Other)(std::forward<decltype(args)>(args)...);\
+			_ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)(std::forward<decltype(args)>(args)...);\
 		}\
 	})
 
@@ -55,15 +55,16 @@
 #else
 	#define ENGINE_DIE ::std::terminate();
 #endif
+	
+#define ENGINE_RAW_TEXT _ENGINE_CREATE_LOG_LAMBDA("[TEXT]", false, Engine::ASCII_FG2, 0)
+#define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA("[LOG]", true, Engine::ASCII_FG2, 0)
+#define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA("[INFO]", true, Engine::ASCII_INFO, 0)
+#define ENGINE_SUCCESS _ENGINE_CREATE_LOG_LAMBDA("[SUCCESS]", true, Engine::ASCII_SUCCESS, 0)
+#define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA("[WARN]", true, Engine::ASCII_WARN, 0)
+#define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA("[ERROR]", true, Engine::ASCII_ERROR, ENGINE_DIE)
 
-#define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA("[LOG]", Engine::ASCII_FG2, 0)
-#define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA("[INFO]", Engine::ASCII_INFO, 0)
-#define ENGINE_SUCCESS _ENGINE_CREATE_LOG_LAMBDA("[SUCCESS]", Engine::ASCII_SUCCESS, 0)
-#define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA("[WARN]", Engine::ASCII_WARN, 0)
-#define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA("[ERROR]", Engine::ASCII_ERROR, ENGINE_DIE)
-
-#define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA("[ERROR]", Engine::ASCII_ERROR, ENGINE_DIE)
-#define ENGINE_ASSERT_WARN _ENGINE_CREATE_ASSERT_LAMBDA("[WARN]", Engine::ASCII_WARN, 0)
+#define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA("[ERROR]", true, Engine::ASCII_ERROR, ENGINE_DIE)
+#define ENGINE_ASSERT_WARN _ENGINE_CREATE_ASSERT_LAMBDA("[WARN]", true, Engine::ASCII_WARN, 0)
 
 #if defined(DEBUG)
 	#define ENGINE_DEBUG_ASSERT ENGINE_ASSERT

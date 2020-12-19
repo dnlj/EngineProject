@@ -20,7 +20,7 @@ namespace Engine::Detail {
 	std::string getDateTimeString();
 
 	// TODO: C++20: Use std <format> and fallback to operator<< if no format found.
-	template<class... Args>
+	template<bool decorate, class... Args>
 	void log(
 		std::string_view prefix,
 		ASCIIColorString color,
@@ -45,13 +45,16 @@ namespace Engine::Detail {
 			}
 		};
 
-		stream
-			<< filter(color)
-			<< "[" << (gc.logTimeOnly ? std::string_view{date}.substr(11,8) : date) << "]"
-			<< "[" << file << ":" << line << "]"
-			<< prefix
-			<< filter(Engine::ASCII_RESET)
-			<< " ";
+		if constexpr (decorate) {
+			stream
+				<< filter(color)
+				<< "[" << (gc.logTimeOnly ? std::string_view{date}.substr(11,8) : date) << "]"
+				<< "[" << file << ":" << line << "]"
+				<< prefix
+				<< filter(Engine::ASCII_RESET)
+				<< " ";
+		}
+
 		(stream << ... << filter(std::forward<Args>(args)));
 		stream << '\n';
 

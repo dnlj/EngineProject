@@ -102,20 +102,41 @@ namespace Engine {
 				}
 
 				for (const auto& tkn : tokens) {
-					std::cout << "Token(" << (int)tkn.type << "): |" << tkn.view(data) << "|\n";
+					ENGINE_RAW_TEXT("Token(", (int)tkn.type, "): |", tkn.view(data), "|\n");
 				}
 
 				if (err) {
-					ENGINE_WARN("Error parsing config \n",
+
+					Index newlineCount = 0;
+					Index errorIndex = i;
+					constexpr auto prevLinesToDisplay = 2;
+
+					while (i > 0) {
+						if (isNewline() && (++newlineCount > prevLinesToDisplay)) {
+							++i;
+							break;
+						};
+
+						--i;
+					}
+
+					Token tkn;
+					tkn.reset(i);
+					i = errorIndex;
+					while (++i, !isEOF()) {
+						if (i > errorIndex && isNewline()) { --i; break; }
+					}
+
+					tkn.stop = i;
+
+					ENGINE_WARN("Error parsing config\n",
 						file, ":", line + 1, ":", i - lineStart + 1, ": ",
-						err, area ? " in " : "", area ? area : "", "\n"
+						err, area ? " in " : "", area ? area : "", '\n',
+						std::string(80, '-'), '\n',
+						tkn.view(data), '\n',
+						std::string(errorIndex - lineStart, ' '), "^\n"
+						//, std::string(80, '-'), '\n'
 					);
-					// TODO: get python like errors:
-					//
-					// File "<string>", line 3
-					//     print("Hello world
-                    //                      ^
-					//
 				} else {
 					ENGINE_INFO("Parsed with no errors and ", tokens.size(), " tokens");
 				}
