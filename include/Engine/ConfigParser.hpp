@@ -106,7 +106,6 @@ namespace Engine {
 				}
 
 				if (err) {
-
 					Index newlineCount = 0;
 					Index errorIndex = i;
 					constexpr auto prevLinesToDisplay = 2;
@@ -171,6 +170,11 @@ namespace Engine {
 
 			ENGINE_INLINE bool isEOF() const noexcept {
 				return i >= size;
+			}
+			
+			ENGINE_INLINE bool isSign() const noexcept {
+				const auto c = data[i];
+				return c == '-' || c == '+';
 			}
 
 			ENGINE_INLINE bool isDigit() const noexcept {
@@ -318,22 +322,7 @@ namespace Engine {
 				return true;
 			}
 
-			bool eatInteger() {
-				// TODO: support hex 0x1234
-				Token tkn;
-				tkn.reset(i);
-				// TODO: handle negative
-				while (!isEOF() && isDigit()) { ++i; }
-				tkn.stop = i;
-			}
-
-			bool eatFloat() {
-				// TODO: decimal, exponent
-				// TODO: impl
-				return false;
-			}
-
-			bool eatBinaryNumber() {
+			bool eatBinInteger() {
 				if (!isSpaceRemaining(3)) {
 					err = "Invalid binary number";
 					return false;
@@ -362,7 +351,7 @@ namespace Engine {
 				return true;
 			}
 
-			bool eatHexNumber() {
+			bool eatHexInteger() {
 				if (!isSpaceRemaining(3)) {
 					err = "Invalid hexadecimal number";
 					return false;
@@ -391,12 +380,95 @@ namespace Engine {
 				return true;
 			}
 
-			bool eatDecimalNumber() {
+			bool eatDecInteger() {
+				if (data[i] == '0') {
+					err = "Decimal numbers may not have leading zeros";
+					return false;
+				}
+
+				Token tkn;
+				tkn.reset(i);
+				while (!isEOF() && isDigit()) { ++i; }
+				tkn.stop = i - 1;
+
+				if (tkn.size() <= 0) {
+					err = "Invalid decimal digit";
+					return false;
+				}
+
+				tkn.type = Token::Type::DecLiteral;
+				tokens.push_back(tkn);
+				return true;
 			}
 
 			bool eatBool() {
-				// TODO: impl
+				Token tkn;
+				tkn.reset(i);
+				bool succ = true;
+
+				if (isSpaceRemaining(5)) {
+					for (const auto c : {'f', 'a', 'l', 's', 'e'}) {
+						if (c != tolower(data[i])) { succ = false; break; }
+						++i;
+					}
+
+				}
+
+				if (!succ && isSpaceRemaining(4)) {
+					i = tkn.start;
+					succ = true;
+
+					for (const auto c : {'t', 'r', 'u', 'e'}) {
+						if (c != tolower(data[i])) { succ = false; break; }
+						++i;
+					}
+				}
+
+				if (succ) {
+					tkn.stop = i - 1;
+					tokens.push_back(tkn);
+					return true;
+				}
+
+				err = "Invalid boolean value";
 				return false;
+			}
+
+			bool eatDecFloat() {
+				Token tkn;
+				tkn.reset(i);
+
+				if (isSign()) { ++i; }
+
+				// Integer part
+				if (isEOF() || !isDigit()) { err = "Expected digit"; return false; }
+				++i;
+				while (!isEOF() && isDigit()) { ++i; };
+
+				// Fraction part
+				if (!isEOF() && data[i] == '.') {
+					++i;
+					const auto fractStart = i;
+					while (!isEOF() && isDigit()) { ++i; };
+					if (i == fractStart) { err = "Expected fractional digit"; return false; }
+				}
+
+				// Exponent part
+				if (!isEOF()) {
+					if (const auto c = data[i]; c == 'e' || c == 'E' || c == 'p' || c == 'P') {
+						++i;
+						if (!isEOF() && isSign()) { ++i; }
+						// TODO: exponent sign
+						const auto expStart = i;
+						while (!isEOF() && isDigit()) { ++i; };
+						if (i == expStart) { err = "Expected exponent digit"; return false; }
+					}
+				}
+
+				tkn.stop = i - 1;
+				tokens.push_back(tkn);
+
+				return true;
 			}
 
 			bool eatString() {
@@ -407,14 +479,28 @@ namespace Engine {
 			bool eatValue() {
 				const Index pre = i;
 
-				if (eatBinaryNumber()) { return true; }
+				// TODO: negatives...
+				
+				if (eatDecFloat()) { return true; }
 				i = pre;
 				err = nullptr;
 
-				if (eatHexNumber()) { return true; }
+				if (eatBinInteger()) { return true; }
 				i = pre;
 				err = nullptr;
 
+				if (eatHexInteger()) { return true; }
+				i = pre;
+				err = nullptr;
+
+				if (eatDecInteger()) { return true; }
+				i = pre;
+				err = nullptr;
+
+				if (eatBool()) { return true; }
+				i = pre;
+				err = nullptr;
+				
 				err = "Unable to parse value";
 				return false;
 			}
