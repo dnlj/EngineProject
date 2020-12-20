@@ -332,6 +332,7 @@ namespace Engine {
 
 				Token tkn;
 				tkn.reset(i);
+				if (isSign()) { ++i; }
 
 				if (data[i] != '0' || (data[++i] != 'b' && data[i] != 'B')) {
 					err = "binary numbers must have format 0b????";
@@ -361,6 +362,7 @@ namespace Engine {
 
 				Token tkn;
 				tkn.reset(i);
+				if (isSign()) { ++i; }
 
 				if (data[i] != '0' || (data[++i] != 'x' && data[i] != 'X')) {
 					err = "hexadecimal numbers must have format 0x????";
@@ -383,13 +385,15 @@ namespace Engine {
 			}
 
 			bool eatDecInteger() {
+				Token tkn;
+				tkn.reset(i);
+				if (isSign()) { ++i; }
+
 				if (data[i] == '0') {
 					err = "Decimal numbers may not have leading zeros";
 					return false;
 				}
 
-				Token tkn;
-				tkn.reset(i);
 				while (!isEOF() && isDigit()) { ++i; }
 				tkn.stop = i - 1;
 
