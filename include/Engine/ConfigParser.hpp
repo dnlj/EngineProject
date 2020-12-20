@@ -29,6 +29,7 @@ namespace Engine {
 					FloatLiteral,
 					BoolLiteral,
 					StringLiteral,
+					_COUNT,
 				};
 				Type type;
 				Index start;
@@ -98,7 +99,19 @@ namespace Engine {
 					eatInlineFill();
 					if (!isEOF() && !isNewline()) {
 						area = nullptr;
-						err = "Unexpected symbols after value definition";
+
+						#define GENERR(T) case Token::Type::T: { err = "Unexpected symbols after " #T " value definition"; break; }
+						switch (tokens.back().type) {
+							GENERR(BinLiteral);
+							GENERR(HexLiteral);
+							GENERR(DecLiteral);
+							GENERR(FloatLiteral);
+							GENERR(BoolLiteral);
+							GENERR(StringLiteral);
+							default: { err = "Unexpected symbols after value definition"; }
+
+						}
+						#undef GENERR
 						break;
 					}
 				}
@@ -511,9 +524,6 @@ namespace Engine {
 			bool eatValue() {
 				const Index pre = i;
 
-				// TODO: better error tracking
-				// TODO: negatives...
-				
 				if (eatBinInteger()) { return true; }
 				i = pre;
 				err = nullptr;
