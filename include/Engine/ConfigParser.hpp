@@ -23,10 +23,12 @@ namespace Engine {
 					Section,
 					Key,
 					Assign,
-					Value,
 					BinLiteral,
 					HexLiteral,
 					DecLiteral,
+					FloatLiteral,
+					BoolLiteral,
+					StringLiteral,
 				};
 				Type type;
 				Index start;
@@ -133,7 +135,7 @@ namespace Engine {
 						err, area ? " in " : "", area ? area : "", '\n',
 						std::string(80, '-'), '\n',
 						tkn.view(data), '\n',
-						std::string(errorIndex - lineStart, ' '), "^\n"
+						std::string(std::max(0, errorIndex - lineStart), ' '), "^\n"
 						//, std::string(80, '-'), '\n'
 					);
 				} else {
@@ -171,7 +173,7 @@ namespace Engine {
 			ENGINE_INLINE bool isEOF() const noexcept {
 				return i >= size;
 			}
-			
+
 			ENGINE_INLINE bool isSign() const noexcept {
 				const auto c = data[i];
 				return c == '-' || c == '+';
@@ -426,6 +428,7 @@ namespace Engine {
 
 				if (succ) {
 					tkn.stop = i - 1;
+					tkn.type = Token::Type::BoolLiteral;
 					tokens.push_back(tkn);
 					return true;
 				}
@@ -466,30 +469,56 @@ namespace Engine {
 				}
 
 				tkn.stop = i - 1;
+				tkn.type = Token::Type::FloatLiteral;
 				tokens.push_back(tkn);
 
 				return true;
 			}
 
 			bool eatString() {
-				// TODO: impl
-				return false;
+				if (data[i] != '"') { err = "Invalid quote character"; return false; }
+				Token tkn;
+				tkn.reset(i);
+
+				constexpr const char* eofErr = "Reached end of file before finding string terminator";
+
+				bool escaped = false;
+				while (true) {
+					++i;
+					if (isEOF()) { err = eofErr; return false; }
+					if (!escaped) {
+						if (data[i] == '\\') { escaped = true; continue; }
+						if (data[i] == '"') { break; }
+					}
+					if (isNewline()) {
+						++line;
+						lineStart = i + 1;
+					}
+					escaped = false;
+				}
+
+				tkn.stop = i;
+				++i;
+				tkn.type = Token::Type::StringLiteral;
+				tokens.push_back(tkn);
+				return true;
 			}
 			
 			bool eatValue() {
 				const Index pre = i;
 
+				// TODO: better error tracking
 				// TODO: negatives...
 				
-				if (eatDecFloat()) { return true; }
-				i = pre;
-				err = nullptr;
-
 				if (eatBinInteger()) { return true; }
 				i = pre;
 				err = nullptr;
 
 				if (eatHexInteger()) { return true; }
+				i = pre;
+				err = nullptr;
+
+				if (eatDecFloat()) { return true; }
 				i = pre;
 				err = nullptr;
 
@@ -501,6 +530,15 @@ namespace Engine {
 				i = pre;
 				err = nullptr;
 				
+				const Index preLine = line;
+				const Index preLineStart = lineStart;
+				if (eatString()) { return true; }
+				i = pre;
+				line = preLine;
+				lineStart = preLineStart;
+				err = nullptr;
+
+
 				err = "Unable to parse value";
 				return false;
 			}
