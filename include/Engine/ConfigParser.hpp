@@ -7,9 +7,46 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Utility/Utility.hpp>
+#include <Engine/FlatHashMap.hpp>
+#include <Engine/StringConverter.hpp>
 
 
 namespace Engine {
+	class AbstractGenericValue {
+		public:
+			virtual ~AbstractGenericValue() {}
+			virtual bool set(std::string_view str) = 0;
+			virtual std::string get() const = 0;
+
+			template<class T>
+			T& getValue() { return *reinterpret_cast<T*>(stored()); }
+
+		private:
+			virtual void* stored() = 0;
+
+	};
+	
+	template<class T, class Converter = StringConverter<T>>
+	class GenericValueStore final : public AbstractGenericValue {
+		private:
+			T value;
+			virtual void* stored() { return &value; }
+
+		public:
+			GenericValueStore(std::string_view str) {
+				set(str);
+			}
+
+			virtual bool set(std::string_view str) override {
+				return Converter{}(str, value);
+			}
+
+			virtual std::string get() const override {
+				std::string str;
+				Converter{}(value, str);
+				return str;
+			}
+	};
 
 	class ConfigParser {
 		private:
@@ -49,8 +86,21 @@ namespace Engine {
 
 			std::vector<Token> tokens;
 
+			std::vector<std::string> parts;
+
+			/** Provides a stable reference to strings in `parts` */
+			std::vector<Index> stable;
+
+			struct KeyValuePair {
+				Index key = -1;
+				Index value = -1;
+				std::unique_ptr<AbstractGenericValue> store;
+			};
+
+			FlatHashMap<std::string, KeyValuePair> keyLookup;
+
 		public:
-			void loadAndParse(const std::string& file) {
+			void loadAndTokenize(const std::string& file) {
 				tokens.clear();
 				tokens.reserve(256);
 				i = 0;
@@ -116,9 +166,10 @@ namespace Engine {
 					}
 				}
 
-				for (const auto& tkn : tokens) {
-					ENGINE_RAW_TEXT("Token(", (int)tkn.type, "): |", tkn.view(data), "|\n");
-				}
+				// TODO: rm
+				//for (const auto& tkn : tokens) {
+				//	ENGINE_RAW_TEXT("Token(", (int)tkn.type, "): |", tkn.view(data), "|\n");
+				//}
 
 				if (err) {
 					Index newlineCount = 0;
@@ -153,6 +204,58 @@ namespace Engine {
 					);
 				} else {
 					ENGINE_INFO("Parsed with no errors and ", tokens.size(), " tokens");
+
+					// TODO: move into own function?
+					// TODO: just store strings in tokens directly instead of start/stop?
+					std::string section;
+					const auto sz = tokens.size();
+					decltype(keyLookup)::iterator last;
+					for (Index i = 0; i < sz; ++i) {
+						const auto& tkn = tokens[i];
+						const auto& str = parts.emplace_back(&data[tkn.start], &data[tkn.stop + 1]);
+						stable.push_back(i);
+
+						if (tkn.type == Token::Type::Section) {
+							const auto ss = str.size();
+							if (ss > 2) {
+								section.reserve(str.size() - 1);
+								section.assign(++str.cbegin(), --str.cend());
+								section += ".";
+							} else {
+								section.clear();
+							}
+						} else if (tkn.type == Token::Type::Key) {
+							const auto key = section.empty() ? str : section + str;
+							const auto [it, inserted] = keyLookup.emplace(section + str, KeyValuePair{
+								.key = i,
+							});
+
+							if (!inserted) {
+								ENGINE_WARN("Duplicate entry found for key \"", key, "\"");
+							}
+
+							last = it;
+							std::cout << str << " = ";
+						} else if (tkn.type > Token::Type::Assign) {
+							last->second.value = i;
+
+							#define GEN(Enum, Type) case Enum: { last->second.store = std::make_unique<GenericValueStore<Type>>(str); break; }
+							switch (tkn.type) {
+								GEN(Token::Type::BinLiteral, int64)
+								GEN(Token::Type::HexLiteral, int64)
+								GEN(Token::Type::DecLiteral, int64)
+								GEN(Token::Type::FloatLiteral, float64)
+								GEN(Token::Type::BoolLiteral, bool)
+								GEN(Token::Type::StringLiteral, std::string)
+								default: {
+									ENGINE_ERROR("Unknown value type: ", static_cast<int>(tkn.type));
+								}
+							}
+							#undef GEN
+							
+							std::cout << str << "\n";
+						}
+					}
 				}
 			}
 
@@ -454,9 +557,10 @@ namespace Engine {
 				return false;
 			}
 
-			bool eatDecFloat() {
+			bool eatDecNumber() {
 				Token tkn;
 				tkn.reset(i);
+				tkn.type = Token::Type::DecLiteral;
 
 				if (isSign()) { ++i; }
 
@@ -471,6 +575,7 @@ namespace Engine {
 					const auto fractStart = i;
 					while (!isEOF() && isDigit()) { ++i; };
 					if (i == fractStart) { err = "Expected fractional digit"; return false; }
+					tkn.type = Token::Type::FloatLiteral;
 				}
 
 				// Exponent part
@@ -478,15 +583,14 @@ namespace Engine {
 					if (const auto c = data[i]; c == 'e' || c == 'E' || c == 'p' || c == 'P') {
 						++i;
 						if (!isEOF() && isSign()) { ++i; }
-						// TODO: exponent sign
 						const auto expStart = i;
 						while (!isEOF() && isDigit()) { ++i; };
 						if (i == expStart) { err = "Expected exponent digit"; return false; }
+						tkn.type = Token::Type::FloatLiteral;
 					}
 				}
 
 				tkn.stop = i - 1;
-				tkn.type = Token::Type::FloatLiteral;
 				tokens.push_back(tkn);
 
 				return true;
@@ -531,12 +635,8 @@ namespace Engine {
 				if (eatHexInteger()) { return true; }
 				i = pre;
 				err = nullptr;
-
-				if (eatDecFloat()) { return true; }
-				i = pre;
-				err = nullptr;
-
-				if (eatDecInteger()) { return true; }
+				
+				if (eatDecNumber()) { return true; }
 				i = pre;
 				err = nullptr;
 

@@ -646,7 +646,7 @@ int entry(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	Engine::ConfigParser cfg;
-	cfg.loadAndParse("example.cfg");
+	cfg.loadAndTokenize("example.cfg");
 	ENGINE_LOG("Done.");
 	//run(argc, argv);
 	getchar();
