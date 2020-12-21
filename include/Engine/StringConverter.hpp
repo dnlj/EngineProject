@@ -46,8 +46,11 @@ namespace Engine {
 				int base = 10;
 				const char* start = &*str.cbegin();
 				const char* const stop = start + str.size();
+				T sign = 1;
 
-				if (*start == '+') { ++start; }
+				if (*start == '+') { ++start;}
+				else if (*start == '-') { sign = -1; ++start; }
+
 				while (stop - start > 2) {
 					if (*start != '0') { break; }
 					++start;
@@ -56,7 +59,9 @@ namespace Engine {
 					base = 8; break;
 				}
 
-				return std::from_chars(start, stop, val, base).ec == std::errc{};
+				const auto res = std::from_chars(start, stop, val, base);
+				val *= sign;
+				return res.ec == std::errc{};
 			}
 
 			template<StringFormat format = StringFormat::Default>
