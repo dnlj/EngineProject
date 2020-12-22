@@ -21,6 +21,9 @@ namespace Engine {
 			template<class T>
 			T& getValue() { return *reinterpret_cast<T*>(stored()); }
 
+			template<class T>
+			const T& getValue() const { return *reinterpret_cast<const T*>(stored()); }
+
 		private:
 			virtual void* stored() = 0;
 
@@ -98,8 +101,42 @@ namespace Engine {
 			};
 
 			FlatHashMap<std::string, KeyValuePair> keyLookup;
+			FlatHashMap<std::string, Index> sectionLookup;
 
 		public:
+			template<class T>
+			T* get(const std::string& key) {
+				// TODO: need to handle captialization while maintaining format
+				const auto found = keyLookup.find(key);
+				if (found == keyLookup.cend()) { return nullptr; }
+				return &found->second.store->getValue<T>();
+			}
+
+			/*template<class T>
+			T& insert(const std::string& key, const T& value) {
+				auto found = keyLookup.find(key);
+				if (found == keyLookup.cend()) {
+					auto last = std::string::npos;
+					while ((last = key.find_last_of('.', last)) != std::string::npos) {
+						// TODO: need to handle captialization while maintaining format
+						const auto& sec = key.substr(0, last);
+						const auto secFound = sectionLookup.find(sec);
+						if (secFound != sectionLookup.cend()) {
+							// TODO: append to END of section
+							secFound->second;
+
+							// TODO: to append ot end of section we need token info. Fix tokens to store str first.
+						}
+					}
+
+					// TODO: what if no section found? insert after []? create section?
+					if (last == std::string::npos) {
+						found = keyLookup.insert(key, {}).first;
+					}
+				}
+				return it->second.store->getValue<T>();
+			}*/
+
 			void loadAndTokenize(const std::string& file) {
 				tokens.clear();
 				tokens.reserve(256);
@@ -217,6 +254,17 @@ namespace Engine {
 
 						if (tkn.type == Token::Type::Section) {
 							const auto ss = str.size();
+
+							///
+							///
+							///
+							///
+							/// TODO: update section lookup
+							///
+							///
+							///
+							///
+
 							if (ss > 2) {
 								section.reserve(str.size() - 1);
 								section.assign(++str.cbegin(), --str.cend());
@@ -235,7 +283,6 @@ namespace Engine {
 							}
 
 							last = it;
-							std::cout << str << " = ";
 						} else if (tkn.type > Token::Type::Assign) {
 							last->second.value = i;
 
@@ -252,8 +299,6 @@ namespace Engine {
 								}
 							}
 							#undef GEN
-							
-							std::cout << str << "\n";
 						}
 					}
 				}
