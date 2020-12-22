@@ -32,13 +32,14 @@ namespace Engine::Detail {
 		const auto date = getDateTimeString();
 
 		std::ostringstream stream;
-		const auto&& filter = [&](auto&& value){
+		decltype(auto) filter = [&](auto&& value) -> decltype(auto) {
 			using V = decltype(value);
 			if constexpr (std::is_same_v<std::decay_t<V>, ASCIIColorString>) {
 				if (gc.logColor) {
 					return value.str;
 				} else {
-					return "";
+					constexpr const char* const empty = "";
+					return empty;
 				}
 			} else {
 				return std::forward<V>(value);
