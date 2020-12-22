@@ -55,6 +55,16 @@ namespace Engine {
 		private:
 			using Index = int32;
 
+			struct Range {
+				Index start;
+				Index stop;
+				ENGINE_INLINE Range(Index i) { reset(i); }
+				ENGINE_INLINE Index size() const noexcept { return stop - start + 1; }
+				ENGINE_INLINE void reset(Index i) noexcept { start = i; stop = i - 1; }
+				ENGINE_INLINE std::string_view view(const std::string& data) const { return std::string_view(&data[start], size()); };
+				ENGINE_INLINE std::string string(const std::string data) const { return std::string{&data[start], &data[stop] + 1}; }
+			};
+
 			struct Token {
 				enum class Type : int8 {
 					Unknown = 0,
@@ -72,11 +82,7 @@ namespace Engine {
 					_COUNT,
 				};
 				Type type;
-				Index start;
-				Index stop;
-				ENGINE_INLINE Index size() const noexcept { return stop - start + 1; }
-				ENGINE_INLINE void reset(Index i) noexcept { start = i; stop = i - 1; }
-				std::string_view view(const std::string& data) const { return std::string_view(&data[start], size()); };
+				std::string data;
 			};
 
 		private:
@@ -89,9 +95,7 @@ namespace Engine {
 
 			std::vector<Token> tokens;
 
-			std::vector<std::string> parts;
-
-			/** Provides a stable reference to strings in `parts` */
+			/** Provides a stable reference to strings in @ref tokens */
 			std::vector<Index> stable;
 
 			struct KeyValuePair {
@@ -222,20 +226,19 @@ namespace Engine {
 						--i;
 					}
 
-					Token tkn;
-					tkn.reset(i);
+					Range rng = i;
 					i = errorIndex;
 					while (++i, !isEOF()) {
 						if (i > errorIndex && isNewline()) { --i; break; }
 					}
 
-					tkn.stop = i;
+					rng.stop = i;
 
 					ENGINE_WARN("Error parsing config\n",
 						file, ":", line + 1, ":", i - lineStart + 1, ": ",
 						err, area ? " in " : "", area ? area : "", '\n',
 						std::string(80, '-'), '\n',
-						tkn.view(data), '\n',
+						rng.view(data), '\n',
 						std::string(std::max(0, errorIndex - lineStart), ' '), "^\n"
 						//, std::string(80, '-'), '\n'
 					);
@@ -243,17 +246,15 @@ namespace Engine {
 					ENGINE_INFO("Parsed with no errors and ", tokens.size(), " tokens");
 
 					// TODO: move into own function?
-					// TODO: just store strings in tokens directly instead of start/stop?
 					std::string section;
 					const auto sz = tokens.size();
 					decltype(keyLookup)::iterator last;
 					for (Index i = 0; i < sz; ++i) {
 						const auto& tkn = tokens[i];
-						const auto& str = parts.emplace_back(&data[tkn.start], &data[tkn.stop + 1]);
 						stable.push_back(i);
 
 						if (tkn.type == Token::Type::Section) {
-							const auto ss = str.size();
+							const auto ss = tkn.data.size();
 
 							///
 							///
@@ -266,15 +267,15 @@ namespace Engine {
 							///
 
 							if (ss > 2) {
-								section.reserve(str.size() - 1);
-								section.assign(++str.cbegin(), --str.cend());
+								section.reserve(ss - 1);
+								section.assign(++tkn.data.cbegin(), --tkn.data.cend());
 								section += ".";
 							} else {
 								section.clear();
 							}
 						} else if (tkn.type == Token::Type::Key) {
-							const auto key = section.empty() ? str : section + str;
-							const auto [it, inserted] = keyLookup.emplace(section + str, KeyValuePair{
+							const auto key = section.empty() ? tkn.data : section + tkn.data;
+							const auto [it, inserted] = keyLookup.emplace(section + tkn.data, KeyValuePair{
 								.key = i,
 							});
 
@@ -286,7 +287,7 @@ namespace Engine {
 						} else if (tkn.type > Token::Type::Assign) {
 							last->second.value = i;
 
-							#define GEN(Enum, Type) case Enum: { last->second.store = std::make_unique<GenericValueStore<Type>>(str); break; }
+							#define GEN(Enum, Type) case Enum: { last->second.store = std::make_unique<GenericValueStore<Type>>(tkn.data); break; }
 							switch (tkn.type) {
 								GEN(Token::Type::BinLiteral, int64)
 								GEN(Token::Type::HexLiteral, int64)
@@ -376,21 +377,21 @@ namespace Engine {
 			}
 
 			bool eatInlineWhitespace() {
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 
 				while (!isEOF() && isInlineWhitespace()) { ++i; }
-				tkn.stop = i - 1;
+				rng.stop = i - 1;
 
-				if (tkn.size() <= 0) { return false; }
+				if (rng.size() <= 0) { return false; }
+				Token tkn;
+				tkn.data = rng.string(data);
 				tkn.type = Token::Type::Whitespace;
 				tokens.push_back(tkn);
 				return true;
 			}
 
 			bool eatWhitespace() {
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 
 				while (!isEOF()) {
 					if (isNewline()) {
@@ -402,9 +403,11 @@ namespace Engine {
 						break;
 					}
 				}
-				tkn.stop = i - 1;
+				rng.stop = i - 1;
 
-				if (tkn.size() <= 0) { return false; }
+				if (rng.size() <= 0) { return false; }
+				Token tkn;
+				tkn.data = rng.string(data);
 				tkn.type = Token::Type::Whitespace;
 				tokens.push_back(tkn);
 				return true;
@@ -412,10 +415,12 @@ namespace Engine {
 
 			bool eatComment() {
 				if (data[i] != '#') { return false; }
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 				while (!isEOF() && !isNewline()) { ++i; }
-				tkn.stop = i - 1;
+				rng.stop = i - 1;
+
+				Token tkn;
+				tkn.data = rng.string(data);
 				tkn.type = Token::Type::Comment;
 				tokens.push_back(tkn);
 				return true;
@@ -435,20 +440,21 @@ namespace Engine {
 			}
 
 			bool eatSection() {
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 				while (++i) {
 					if (isEOF()) { err = "Unexpected end of file"; return false; }
 					if (data[i] == ']') { break; }
 					if (isNewline()) { err = "Unexpected new line"; return false; }
 				}
-				tkn.stop = i;
+				rng.stop = i;
 
-				if (tkn.size() < 2) {
+				if (rng.size() < 2) {
 					err = "Incomplete section";
 					return false;
 				}
-				
+
+				Token tkn;
+				tkn.data = rng.string(data);
 				tkn.type = Token::Type::Section;
 				tokens.push_back(tkn);
 				++i;
@@ -456,16 +462,17 @@ namespace Engine {
 			}
 
 			bool eatKey() {
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 
 				while (!isWhitespace() && !isEOF()) { ++i; }
-				tkn.stop = i - 1;
-				if (tkn.size() <= 0) {
+				rng.stop = i - 1;
+				if (rng.size() <= 0) {
 					err = "No key name given";
 					return false;
 				}
-				
+
+				Token tkn;
+				tkn.data = rng.string(data);
 				tkn.type = Token::Type::Key;
 				tokens.push_back(tkn);
 				return true;
@@ -476,11 +483,10 @@ namespace Engine {
 					err = "Expected assignment operator";
 					return false;
 				}
-				Token tkn;
-				tkn.reset(i);
-				tkn.stop = i;
-				tkn.type = Token::Type::Assign;
 				++i;
+				Token tkn;
+				tkn.data = '=';
+				tkn.type = Token::Type::Assign;
 				tokens.push_back(tkn);
 				return true;
 			}
@@ -491,8 +497,7 @@ namespace Engine {
 					return false;
 				}
 
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 				if (isSign()) { ++i; }
 
 				if (data[i] != '0' || (data[++i] != 'b' && data[i] != 'B')) {
@@ -503,13 +508,15 @@ namespace Engine {
 				while (++i, !isEOF() && !isWhitespace()) {
 					if (!isBinaryDigit()) { break; }
 				}
-				tkn.stop = i - 1;
+				rng.stop = i - 1;
 
-				if (tkn.size() < 3) {
+				if (rng.size() < 3) {
 					err = "Invalid binary digit";
 					return false;
 				}
 
+				Token tkn;
+				tkn.data = rng.string(data);
 				tkn.type = Token::Type::BinLiteral;
 				tokens.push_back(tkn);
 				return true;
@@ -521,8 +528,7 @@ namespace Engine {
 					return false;
 				}
 
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 				if (isSign()) { ++i; }
 
 				if (data[i] != '0' || (data[++i] != 'x' && data[i] != 'X')) {
@@ -533,21 +539,22 @@ namespace Engine {
 				while (++i, !isEOF() && !isWhitespace()) {
 					if (!isHexDigit()) { break; }
 				}
-				tkn.stop = i - 1;
+				rng.stop = i - 1;
 
-				if (tkn.size() < 3) {
+				if (rng.size() < 3) {
 					err = "Invalid binary digit";
 					return false;
 				}
 
+				Token tkn;
+				tkn.data = rng.string(data);
 				tkn.type = Token::Type::HexLiteral;
 				tokens.push_back(tkn);
 				return true;
 			}
 
 			bool eatDecInteger() {
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 				if (isSign()) { ++i; }
 
 				if (data[i] == '0') {
@@ -556,21 +563,22 @@ namespace Engine {
 				}
 
 				while (!isEOF() && isDigit()) { ++i; }
-				tkn.stop = i - 1;
+				rng.stop = i - 1;
 
-				if (tkn.size() <= 0) {
+				if (rng.size() <= 0) {
 					err = "Invalid decimal digit";
 					return false;
 				}
 
+				Token tkn;
+				tkn.data = rng.string(data);
 				tkn.type = Token::Type::DecLiteral;
 				tokens.push_back(tkn);
 				return true;
 			}
 
 			bool eatBool() {
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 				bool succ = true;
 
 				if (isSpaceRemaining(5)) {
@@ -582,7 +590,7 @@ namespace Engine {
 				}
 
 				if (!succ && isSpaceRemaining(4)) {
-					i = tkn.start;
+					i = rng.start;
 					succ = true;
 
 					for (const auto c : {'t', 'r', 'u', 'e'}) {
@@ -592,7 +600,10 @@ namespace Engine {
 				}
 
 				if (succ) {
-					tkn.stop = i - 1;
+					rng.stop = i - 1;
+
+					Token tkn;
+					tkn.data = rng.string(data);
 					tkn.type = Token::Type::BoolLiteral;
 					tokens.push_back(tkn);
 					return true;
@@ -603,8 +614,9 @@ namespace Engine {
 			}
 
 			bool eatDecNumber() {
+				Range rng = i;
+
 				Token tkn;
-				tkn.reset(i);
 				tkn.type = Token::Type::DecLiteral;
 
 				if (isSign()) { ++i; }
@@ -635,7 +647,8 @@ namespace Engine {
 					}
 				}
 
-				tkn.stop = i - 1;
+				rng.stop = i - 1;
+				tkn.data = rng.string(data);
 				tokens.push_back(tkn);
 
 				return true;
@@ -643,8 +656,7 @@ namespace Engine {
 
 			bool eatString() {
 				if (data[i] != '"') { err = "Invalid quote character"; return false; }
-				Token tkn;
-				tkn.reset(i);
+				Range rng = i;
 
 				constexpr const char* eofErr = "Reached end of file before finding string terminator";
 
@@ -663,8 +675,11 @@ namespace Engine {
 					escaped = false;
 				}
 
-				tkn.stop = i;
+				rng.stop = i;
 				++i;
+
+				Token tkn;
+				tkn.data = rng.string(data);
 				tkn.type = Token::Type::StringLiteral;
 				tokens.push_back(tkn);
 				return true;

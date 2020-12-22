@@ -650,11 +650,13 @@ int entry(int argc, char* argv[]) {
 	{
 		const std::string key = "DecIntegers.ValueDec3";
 		const auto* val = cfg.get<int64>(key);
+		ENGINE_ASSERT(val);
 		ENGINE_LOG(key, " = ", *val);
 	}
 	{
 		const std::string key = "Floats.ValueFloat3";
 		const auto* val = cfg.get<float64>(key);
+		ENGINE_ASSERT(val);
 		ENGINE_LOG(key, " = ", *val);
 	}
 	ENGINE_LOG("Done.");
