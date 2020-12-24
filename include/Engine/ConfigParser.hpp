@@ -36,6 +36,7 @@ namespace Engine {
 			virtual void* stored() { return &value; }
 
 		public:
+			GenericValueStore() = default;
 			GenericValueStore(std::string_view str) {
 				set(str);
 			}
@@ -81,11 +82,12 @@ namespace Engine {
 					StringLiteral,
 					_COUNT,
 				};
-				Type type;
 				std::string data;
+				Type type;
 			};
 
 		private:
+			// TODO: maybe ptr? once we are done loading the file we dont need this second copy;
 			std::string data;
 			Index size;
 			Index i;
@@ -108,6 +110,33 @@ namespace Engine {
 			FlatHashMap<std::string, Index> sectionLookup;
 
 		public:
+			void print() const {
+				std::cout << "=================================================\n";
+				std::string sec;
+				std::string key;
+				for (const auto& t : tokens) {
+					if (t.type == Token::Type::Key) {
+						key = sec + t.data;
+					} else if (t.type == Token::Type::Section) {
+						if (t.data.empty()) {
+							sec = "";
+						} else {
+							sec = {t.data.begin() + 1, t.data.end() - 1};
+							sec += ".";
+						}
+					}
+
+					if (t.type > Token::Type::Assign) {
+						const auto found = keyLookup.find(key);
+						ENGINE_DEBUG_ASSERT(found != keyLookup.end());
+						std::cout << found->second.store->get();
+					} else {
+						std::cout << t.data;
+					}
+				}
+				std::cout << "=================================================\n";
+			}
+
 			template<class T>
 			T* get(const std::string& key) {
 				// TODO: need to handle captialization while maintaining format
@@ -116,30 +145,120 @@ namespace Engine {
 				return &found->second.store->getValue<T>();
 			}
 
-			/*template<class T>
+			template<class T>
 			T& insert(const std::string& key, const T& value) {
 				auto found = keyLookup.find(key);
 				if (found == keyLookup.cend()) {
 					auto last = std::string::npos;
-					while ((last = key.find_last_of('.', last)) != std::string::npos) {
+					Index insertAt = -1;
+					std::string shortKey;
+
+					while ((last = key.rfind('.', last)) != std::string::npos) {
 						// TODO: need to handle captialization while maintaining format
 						const auto& sec = key.substr(0, last);
+						shortKey = {key.cbegin() + last + 1, key.cend()};
+						--last;
+
+						ENGINE_LOG("Checking [", sec ,"] ", shortKey);
 						const auto secFound = sectionLookup.find(sec);
 						if (secFound != sectionLookup.cend()) {
-							// TODO: append to END of section
-							secFound->second;
-
-							// TODO: to append ot end of section we need token info. Fix tokens to store str first.
+							ENGINE_LOG("Found!");
+							insertAt = secFound->second + 1;
+							const auto sz = tokens.size();
+							for (; insertAt < sz; ++insertAt) {
+								const auto& tkn = tokens[insertAt];
+								if (tkn.type != Token::Type::Whitespace
+									&& tkn.type != Token::Type::Comment) {
+									break;
+								}
+							}
+							break;
 						}
 					}
 
-					// TODO: what if no section found? insert after []? create section?
 					if (last == std::string::npos) {
-						found = keyLookup.insert(key, {}).first;
+						//found = keyLookup.insert(key, {}).first;
+						last = key.rfind('.');
+						if (last == std::string::npos) {
+							// No section. Add to start of file.
+							shortKey = key;
+							insertAt = 0;
+						} else {
+							addSection(key.substr(0, last));
+							insertAt = static_cast<Index>(tokens.size());
+						}
 					}
+
+					// TODO: check that shortKey is valid
+					ENGINE_INFO(shortKey.size());
+
+					return addPairAt(insertAt, key, shortKey, value);
 				}
+
+				return found->second.store->getValue<T>();
+			}
+
+			// TODO: private
+			void addSection(std::string sec) {
+				tokens.emplace_back("\n", Token::Type::Whitespace);
+				sectionLookup[sec] = static_cast<Index>(tokens.size());
+				tokens.emplace_back(std::move(sec), Token::Type::Section);
+				tokens.emplace_back("\n", Token::Type::Whitespace);
+			}
+
+			// TODO: private
+			template<class T>
+			T& addPairAt(Index idx, const std::string& key, std::string shortKey, const T& value) {
+				Token tkns[6];
+
+				tkns[0].data = std::move(shortKey);
+				tkns[0].type = Token::Type::Key;
+
+				tkns[1].data = " ";
+				tkns[1].type = Token::Type::Whitespace;
+
+				tkns[2].data = "=";
+				tkns[2].type = Token::Type::Assign;
+
+				tkns[3].data = " ";
+				tkns[3].type = Token::Type::Whitespace;
+
+				// tkns[4] is handled below
+
+				tkns[5].data = "\n";
+				tkns[5].type = Token::Type::Whitespace;
+
+				// TODO: should probably convert T to int64/float64 here what if store int32 then get int64. Need stable types
+				if constexpr (std::is_same_v<T, bool>) {
+					tkns[4].type = Token::Type::BoolLiteral;
+				} else if constexpr (std::is_integral_v<T>) {
+					tkns[4].type = Token::Type::DecLiteral;
+				} else if constexpr (std::is_floating_point_v<T>) {
+					tkns[4].type = Token::Type::FloatLiteral;
+				} else if constexpr (std::is_convertible_v<T, std::string>) { // TODO: should i also check is_constructible? is_assignable?
+					// TODO: test with char*
+					// TODO: test with std::string
+					// TODO: test with string_view
+					tkns[4].type = Token::Type::StringLiteral;
+				}
+
+				for (auto& v : stable) {
+					if (v > idx) { v += static_cast<Index>(std::ssize(tkns)); }
+				}
+
+				KeyValuePair pair;
+				pair.store = std::make_unique<GenericValueStore<T>>();
+				pair.store->getValue<T>() = value;
+				pair.key = static_cast<Index>(stable.size());
+				pair.value = pair.key + 4;
+
+				tokens.insert(tokens.begin() + idx, &tkns[0], &tkns[0] + std::size(tkns));
+				stable.insert(stable.cend(), {idx + 0, idx + 1, idx + 2, idx + 3, idx + 4, idx + 5});
+
+				auto [it, _] = keyLookup.emplace(key, std::move(pair));
+
 				return it->second.store->getValue<T>();
-			}*/
+			}
 
 			void loadAndTokenize(const std::string& file) {
 				tokens.clear();
@@ -256,26 +375,19 @@ namespace Engine {
 						if (tkn.type == Token::Type::Section) {
 							const auto ss = tkn.data.size();
 
-							///
-							///
-							///
-							///
-							/// TODO: update section lookup
-							///
-							///
-							///
-							///
+							ENGINE_DEBUG_ASSERT(ss > 1); // By this point all sections should already be validated.
 
-							if (ss > 2) {
-								section.reserve(ss - 1);
-								section.assign(++tkn.data.cbegin(), --tkn.data.cend());
-								section += ".";
-							} else {
-								section.clear();
-							}
+							section.reserve(ss - 1);
+							section.assign(++tkn.data.cbegin(), --tkn.data.cend());
+
+							// In case of duplicates we only store the last one
+							sectionLookup[section] = i;
+
+							if (ss > 2) { section += "."; }
+
 						} else if (tkn.type == Token::Type::Key) {
 							const auto key = section.empty() ? tkn.data : section + tkn.data;
-							const auto [it, inserted] = keyLookup.emplace(section + tkn.data, KeyValuePair{
+							const auto [it, inserted] = keyLookup.emplace(key, KeyValuePair{
 								.key = i,
 							});
 
