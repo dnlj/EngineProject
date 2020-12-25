@@ -11,11 +11,11 @@
 #include <Engine/Types.hpp>
 
 namespace Engine {
-	enum class StringFormat : uint64 {
+	enum StringFormatOptions : uint64 {
 		Default = 0,
-		HexInteger,
-		BinInteger,
-		DecInteger,
+		HexInteger = 1 << 0,
+		BinInteger = 1 << 1,
+		DecInteger = 1 << 2,
 	};
 
 	template<class T>
@@ -31,9 +31,9 @@ namespace Engine {
 				return std::from_chars(start, stop, val).ec == std::errc{};
 			}
 			
-			ENGINE_INLINE bool operator()(const T& val, std::string& str) noexcept {
+			ENGINE_INLINE bool operator()(const T& val, std::string& str, StringFormatOptions opts) noexcept {
 				str.resize(16); // TODO: what size to use?
-				const auto res = std::to_chars(&*str.begin(), &*str.end(), val);
+				const auto res = std::to_chars(&*str.begin(), &*str.begin() + str.size(), val);
 				str.resize(res.ptr - &*str.begin());
 				return res.ec == std::errc{};
 			}
@@ -46,10 +46,10 @@ namespace Engine {
 				int base = 10;
 				const char* start = &*str.cbegin();
 				const char* const stop = start + str.size();
-				T sign = 1;
+				bool neg = false;
 
-				if (*start == '+') { ++start;}
-				else if (*start == '-') { sign = -1; ++start; }
+				if (*start == '+') { ++start; }
+				else if (*start == '-') { neg = true; ++start; }
 
 				while (stop - start > 2) {
 					if (*start != '0') { break; }
@@ -60,15 +60,14 @@ namespace Engine {
 				}
 
 				const auto res = std::from_chars(start, stop, val, base);
-				val *= sign;
+				if (neg) { val = -val; }
 				return res.ec == std::errc{};
 			}
 
-			template<StringFormat format = StringFormat::Default>
-			bool operator()(T val, std::string& str) noexcept {
+			bool operator()(T val, std::string& str, StringFormatOptions opts) noexcept {
 				int base = 10;
 
-				if constexpr (sizeof(T) * 8 <= 32 && format != StringFormat::BinInteger) {
+				if (sizeof(T) * 8 <= 32 && (opts & StringFormatOptions::BinInteger)) {
 					str.resize(16);
 				} else {
 					static_assert(sizeof(T) * 8 <= 64); // Types larger than 64 bits will require more space
@@ -77,26 +76,27 @@ namespace Engine {
 
 				char* start = &*str.begin();
 
-				if constexpr (format == StringFormat::HexInteger) {
+				if (opts & StringFormatOptions::HexInteger) {
 					base = 16;
 					*start = '0'; ++start;
 					*start = 'x'; ++start;
-				} else if constexpr (format == StringFormat::BinInteger) {
+				} else if (opts & StringFormatOptions::BinInteger) {
 					base = 2;
 					*start = '0'; ++start;
 					*start = 'b'; ++start;
 				}
 
-				const auto res = std::to_chars(start, &*str.end(), std::abs(val), base);
-				str.resize(res.ptr - &*str.begin());
+				const auto res = std::to_chars(start, &*str.begin() + str.size(), val, base);
 
-				if (res.ec != std::errc{}) {
+				if (res.ec == std::errc{}) {
 					// Fix negative in hex and binary numbers
 					if (str[2] == '-') {
 						str[2] = str[1];
 						str[1] = str[0];
 						str[0] = '-';
 					}
+
+					str.resize(res.ptr - &*str.begin());
 					return true;
 				}
 				return false;
@@ -111,7 +111,7 @@ namespace Engine {
 				return true;
 			}
 			
-			ENGINE_INLINE bool operator()(const bool& val, std::string& str) noexcept {
+			ENGINE_INLINE bool operator()(const bool& val, std::string& str, StringFormatOptions opts) noexcept {
 				str = val ? "true" : "false";
 				return true;
 			}
@@ -125,7 +125,7 @@ namespace Engine {
 				return true;
 			}
 			
-			ENGINE_INLINE bool operator()(const std::string& val, std::string& str) noexcept {
+			ENGINE_INLINE bool operator()(const std::string& val, std::string& str, StringFormatOptions opts) noexcept {
 				str = val;
 				return true;
 			}

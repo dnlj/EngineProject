@@ -659,6 +659,35 @@ int entry(int argc, char* argv[]) {
 		ENGINE_ASSERT(val);
 		ENGINE_LOG(key, " = ", *val);
 	}
+	{
+		const std::string key = "Floats.baz";
+		const auto* res = cfg.insert(key, 123);
+		const auto* val = cfg.get<int>(key);
+		ENGINE_ASSERT(val);
+		ENGINE_LOG(key, " = ", *val);
+	}
+	{
+		const std::string key = "baz";
+		const auto* res = cfg.insert(key, 123);
+		const auto* val = cfg.get<int>(key);
+		ENGINE_ASSERT(val);
+		ENGINE_LOG(key, " = ", *val);
+	}
+	{
+		const std::string key = "strTest";
+		const auto* res = cfg.insert(key, "This is a test");
+		const auto* val = cfg.get<std::string>(key);
+		ENGINE_ASSERT(val);
+		ENGINE_LOG(key, " = ", *val);
+	}
+	{
+		const std::string key = "strTest2";
+		const auto* res = cfg.insert(key, std::string{"This is a test"});
+		const auto* val = cfg.get<std::string>(key);
+		ENGINE_ASSERT(val);
+		ENGINE_LOG(key, " = ", *val);
+	}
+	cfg.print();
 	ENGINE_LOG("Done.");
 	//run(argc, argv);
 	getchar();

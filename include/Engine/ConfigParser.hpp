@@ -16,7 +16,7 @@ namespace Engine {
 		public:
 			virtual ~AbstractGenericValue() {}
 			virtual bool set(std::string_view str) = 0;
-			virtual std::string get() const = 0;
+			virtual std::string get(StringFormatOptions opts = {}) const = 0;
 
 			template<class T>
 			T& getValue() { return *reinterpret_cast<T*>(stored()); }
@@ -45,9 +45,9 @@ namespace Engine {
 				return Converter{}(str, value);
 			}
 
-			virtual std::string get() const override {
+			virtual std::string get(StringFormatOptions opts) const override {
 				std::string str;
-				Converter{}(value, str);
+				Converter{}(value, str, opts);
 				return str;
 			}
 	};
@@ -84,6 +84,33 @@ namespace Engine {
 				};
 				std::string data;
 				Type type;
+			};
+
+			template<class T>
+			struct SetupStorageToken;
+			
+			template<std::same_as<bool> T>
+			struct SetupStorageToken<T> {
+				using Type = bool;
+				static ENGINE_INLINE void setup(Token& tkn) { tkn.type = Token::Type::BoolLiteral; }
+			};
+
+			template<std::integral T>
+			struct SetupStorageToken<T> {
+				using Type = int64;
+				static ENGINE_INLINE void setup(Token& tkn) { tkn.type = Token::Type::DecLiteral; }
+			};
+
+			template<std::floating_point T>
+			struct SetupStorageToken<T> {
+				using Type = float64;
+				static ENGINE_INLINE void setup(Token& tkn) { tkn.type = Token::Type::FloatLiteral; }
+			};
+
+			template<std::convertible_to<std::string> T>
+			struct SetupStorageToken<T> {
+				using Type = std::string;
+				static ENGINE_INLINE void setup(Token& tkn) { tkn.type = Token::Type::StringLiteral; }
 			};
 
 		private:
@@ -129,7 +156,22 @@ namespace Engine {
 					if (t.type > Token::Type::Assign) {
 						const auto found = keyLookup.find(key);
 						ENGINE_DEBUG_ASSERT(found != keyLookup.end());
-						std::cout << found->second.store->get();
+
+						if (t.type == Token::Type::BinLiteral) {
+							std::cout << found->second.store->get(StringFormatOptions::BinInteger);
+						} else if (t.type == Token::Type::HexLiteral) {
+							std::cout << found->second.store->get(StringFormatOptions::HexInteger);
+						} else if (t.type == Token::Type::DecLiteral) {
+							std::cout << found->second.store->get(StringFormatOptions::DecInteger);
+						} else if (t.type == Token::Type::FloatLiteral) {
+							std::cout << found->second.store->get();
+						} else if (t.type == Token::Type::BoolLiteral) {
+							std::cout << found->second.store->get();
+						} else if (t.type == Token::Type::StringLiteral) {
+							std::cout << found->second.store->get();
+						} else {
+							std::cout << found->second.store->get();
+						}
 					} else {
 						std::cout << t.data;
 					}
@@ -146,56 +188,53 @@ namespace Engine {
 			}
 
 			template<class T>
-			T& insert(const std::string& key, const T& value) {
+			auto insert(const std::string& key, const T& value) -> typename SetupStorageToken<T>::Type* {
 				auto found = keyLookup.find(key);
-				if (found == keyLookup.cend()) {
-					auto last = std::string::npos;
-					Index insertAt = -1;
-					std::string shortKey;
+				if (found != keyLookup.cend()) { return nullptr; }
 
-					while ((last = key.rfind('.', last)) != std::string::npos) {
-						// TODO: need to handle captialization while maintaining format
-						const auto& sec = key.substr(0, last);
-						shortKey = {key.cbegin() + last + 1, key.cend()};
-						--last;
+				auto last = std::string::npos;
+				Index insertAt = -1;
+				std::string shortKey;
 
-						ENGINE_LOG("Checking [", sec ,"] ", shortKey);
-						const auto secFound = sectionLookup.find(sec);
-						if (secFound != sectionLookup.cend()) {
-							ENGINE_LOG("Found!");
-							insertAt = secFound->second + 1;
-							const auto sz = tokens.size();
-							for (; insertAt < sz; ++insertAt) {
-								const auto& tkn = tokens[insertAt];
-								if (tkn.type != Token::Type::Whitespace
-									&& tkn.type != Token::Type::Comment) {
-									break;
-								}
+				while ((last = key.rfind('.', last)) != std::string::npos) {
+					// TODO: need to handle captialization while maintaining format
+					const auto& sec = key.substr(0, last);
+					shortKey = {key.cbegin() + last + 1, key.cend()};
+					--last;
+
+					ENGINE_LOG("Checking [", sec ,"] ", shortKey);
+					const auto secFound = sectionLookup.find(sec);
+					if (secFound != sectionLookup.cend()) {
+						insertAt = secFound->second + 1;
+						const auto sz = tokens.size();
+						for (; insertAt < sz; ++insertAt) {
+							const auto& tkn = tokens[insertAt];
+							if (tkn.type != Token::Type::Whitespace
+								&& tkn.type != Token::Type::Comment) {
+								break;
 							}
-							break;
 						}
+						break;
 					}
-
-					if (last == std::string::npos) {
-						//found = keyLookup.insert(key, {}).first;
-						last = key.rfind('.');
-						if (last == std::string::npos) {
-							// No section. Add to start of file.
-							shortKey = key;
-							insertAt = 0;
-						} else {
-							addSection(key.substr(0, last));
-							insertAt = static_cast<Index>(tokens.size());
-						}
-					}
-
-					// TODO: check that shortKey is valid
-					ENGINE_INFO(shortKey.size());
-
-					return addPairAt(insertAt, key, shortKey, value);
 				}
 
-				return found->second.store->getValue<T>();
+				if (last == std::string::npos) {
+					//found = keyLookup.insert(key, {}).first;
+					last = key.rfind('.');
+					if (last == std::string::npos) {
+						// No section. Add to start of file.
+						shortKey = key;
+						insertAt = 0;
+					} else {
+						addSection(key.substr(0, last));
+						insertAt = static_cast<Index>(tokens.size());
+					}
+				}
+
+				// TODO: check that shortKey is valid
+				ENGINE_INFO(shortKey.size());
+
+				return &addPairAt(insertAt, key, shortKey, value);
 			}
 
 			// TODO: private
@@ -206,9 +245,13 @@ namespace Engine {
 				tokens.emplace_back("\n", Token::Type::Whitespace);
 			}
 
+
 			// TODO: private
 			template<class T>
-			T& addPairAt(Index idx, const std::string& key, std::string shortKey, const T& value) {
+			auto& addPairAt(Index idx, const std::string& key, std::string shortKey, const T& value) {
+				using Setup = SetupStorageToken<T>;
+				using Stored = typename Setup::Type;
+
 				Token tkns[6];
 
 				tkns[0].data = std::move(shortKey);
@@ -223,32 +266,18 @@ namespace Engine {
 				tkns[3].data = " ";
 				tkns[3].type = Token::Type::Whitespace;
 
-				// tkns[4] is handled below
+				Setup::setup(tkns[4]);
 
 				tkns[5].data = "\n";
 				tkns[5].type = Token::Type::Whitespace;
 
-				// TODO: should probably convert T to int64/float64 here what if store int32 then get int64. Need stable types
-				if constexpr (std::is_same_v<T, bool>) {
-					tkns[4].type = Token::Type::BoolLiteral;
-				} else if constexpr (std::is_integral_v<T>) {
-					tkns[4].type = Token::Type::DecLiteral;
-				} else if constexpr (std::is_floating_point_v<T>) {
-					tkns[4].type = Token::Type::FloatLiteral;
-				} else if constexpr (std::is_convertible_v<T, std::string>) { // TODO: should i also check is_constructible? is_assignable?
-					// TODO: test with char*
-					// TODO: test with std::string
-					// TODO: test with string_view
-					tkns[4].type = Token::Type::StringLiteral;
-				}
-
 				for (auto& v : stable) {
-					if (v > idx) { v += static_cast<Index>(std::ssize(tkns)); }
+					if (v > idx) { v += static_cast<Index>(std::size(tkns)); }
 				}
 
 				KeyValuePair pair;
-				pair.store = std::make_unique<GenericValueStore<T>>();
-				pair.store->getValue<T>() = value;
+				pair.store = std::make_unique<GenericValueStore<Stored>>();
+				pair.store->getValue<Stored>() = value;
 				pair.key = static_cast<Index>(stable.size());
 				pair.value = pair.key + 4;
 
@@ -257,7 +286,7 @@ namespace Engine {
 
 				auto [it, _] = keyLookup.emplace(key, std::move(pair));
 
-				return it->second.store->getValue<T>();
+				return it->second.store->getValue<Stored>();
 			}
 
 			void loadAndTokenize(const std::string& file) {
@@ -399,6 +428,7 @@ namespace Engine {
 						} else if (tkn.type > Token::Type::Assign) {
 							last->second.value = i;
 
+							// TODO: strip string quotes
 							#define GEN(Enum, Type) case Enum: { last->second.store = std::make_unique<GenericValueStore<Type>>(tkn.data); break; }
 							switch (tkn.type) {
 								GEN(Token::Type::BinLiteral, int64)
@@ -431,7 +461,7 @@ namespace Engine {
 
 			/**
 			 * Checks if the character is inline whitespace.
-			 * Currently only tabs spaces and newlines are considered whitespace.
+			 * Currently only tabs spaces are considered inline whitespace.
 			 * @see isNewLine
 			 * @see https://en.wikipedia.org/wiki/Whitespace_character
 			 */
