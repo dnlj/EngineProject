@@ -662,14 +662,14 @@ int entry(int argc, char* argv[]) {
 	{
 		const std::string key = "Floats.baz";
 		const auto* res = cfg.insert(key, 123);
-		const auto* val = cfg.get<int>(key);
+		const auto* val = cfg.get<int64>(key);
 		ENGINE_ASSERT(val);
 		ENGINE_LOG(key, " = ", *val);
 	}
 	{
 		const std::string key = "baz";
 		const auto* res = cfg.insert(key, 123);
-		const auto* val = cfg.get<int>(key);
+		const auto* val = cfg.get<int64>(key);
 		ENGINE_ASSERT(val);
 		ENGINE_LOG(key, " = ", *val);
 	}
@@ -686,6 +686,28 @@ int entry(int argc, char* argv[]) {
 		const auto* val = cfg.get<std::string>(key);
 		ENGINE_ASSERT(val);
 		ENGINE_LOG(key, " = ", *val);
+	}
+	{
+		const std::string key = "DecIntegers.ValueDec3";
+		cfg.remove(key);
+	}
+	{
+		const std::string key = "DecIntegers.dectest";
+		const auto* res = cfg.insert(key, 123);
+		const auto* val = cfg.get<int64>(key);
+		ENGINE_ASSERT(val);
+		ENGINE_LOG(key, " = ", *val);
+	}
+	{
+		const std::string key = "Booleans.booltest";
+		const auto* res = cfg.insert(key, 123);
+		const auto* val = cfg.get<bool>(key);
+		ENGINE_ASSERT(val);
+		ENGINE_LOG(key, " = ", *val);
+	}
+	{
+		const std::string key = "DecIntegers.ValueDec6";
+		cfg.remove(key);
 	}
 	cfg.print();
 	ENGINE_LOG("Done.");

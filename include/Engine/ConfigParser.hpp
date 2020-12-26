@@ -205,7 +205,8 @@ namespace Engine {
 					ENGINE_LOG("Checking [", sec ,"] ", shortKey);
 					const auto secFound = sectionLookup.find(sec);
 					if (secFound != sectionLookup.cend()) {
-						insertAt = secFound->second + 1;
+						/// TODO: this need to index of stable. not directly
+						insertAt = stable[secFound->second] + 1;
 						const auto sz = tokens.size();
 						for (; insertAt < sz; ++insertAt) {
 							const auto& tkn = tokens[insertAt];
@@ -235,6 +236,29 @@ namespace Engine {
 				ENGINE_INFO(shortKey.size());
 
 				return &addPairAt(insertAt, key, shortKey, value);
+			}
+
+			void remove(const std::string& key) {
+				const auto found = keyLookup.find(key);
+				if (found == keyLookup.cend()) { return; }
+				const auto start = stable[found->second.key];
+				auto stop = start;
+
+				for (; stop < tokens.size(); ++stop) {
+					const auto& tkn = tokens[stop];
+					if (tkn.type > Token::Type::Assign) {
+						++stop; break;
+					}
+				}
+
+				ENGINE_INFO("Remove: [", start, ", ", stop, ")");
+				const auto count = stop - start;
+				for (auto& idx : stable) {
+					if (idx >= stop) { idx -= count; }
+				}
+
+				tokens.erase(tokens.cbegin() + start, tokens.cbegin() + stop);
+				keyLookup.erase(found);
 			}
 
 			// TODO: private
