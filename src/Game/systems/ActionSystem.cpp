@@ -49,13 +49,18 @@ namespace Game {
 	void ActionSystem::tick() {
 		if (world.isPerformingRollback()) { return; }
 
-		// TODO: On client - If server didnt get correct input we need to rollback and mirror that loss on our side or we will desync
 		const auto currTick = world.getTick();
 		for (const auto ent : world.getFilter<Filter>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 
 			if constexpr (ENGINE_CLIENT) {
+				// Hey! are you wondering why the client sends so much data again?
+				// Well let me save you some time. This code sends about
+				// 12288 bytes per second assuming 64 tick and 64 action history states (sending 1/4 of that).
+				// If we want to do better we need to compress this or send fewer states.
+				// Check trello for more complete explanation. https://trello.com/c/O3oJLMde
+
 				if (!conn.msgBegin<MessageType::ACTION>()) { continue; };
 				conn.write(currTick);
 

@@ -645,75 +645,9 @@ int entry(int argc, char* argv[]) {
 	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW | _CRTDBG_MODE_DEBUG);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	Engine::ConfigParser cfg;
-	cfg.loadAndTokenize("example.cfg");
-	{
-		const std::string key = "DecIntegers.ValueDec3";
-		const auto* val = cfg.get<int64>(key);
-		ENGINE_ASSERT(val);
-		ENGINE_LOG(key, " = ", *val);
-	}
-	{
-		const std::string key = "Floats.ValueFloat3";
-		const auto* val = cfg.get<float64>(key);
-		ENGINE_ASSERT(val);
-		ENGINE_LOG(key, " = ", *val);
-	}
-	{
-		const std::string key = "Floats.baz";
-		const auto* res = cfg.insert(key, 123);
-		const auto* val = cfg.get<int64>(key);
-		ENGINE_ASSERT(val);
-		ENGINE_LOG(key, " = ", *val);
-	}
-	{
-		const std::string key = "baz";
-		const auto* res = cfg.insert(key, 123);
-		const auto* val = cfg.get<int64>(key);
-		ENGINE_ASSERT(val);
-		ENGINE_LOG(key, " = ", *val);
-	}
-	{
-		const std::string key = "strTest";
-		const auto* res = cfg.insert(key, "This is a test");
-		const auto* val = cfg.get<std::string>(key);
-		ENGINE_ASSERT(val);
-		ENGINE_LOG(key, " = ", *val);
-	}
-	{
-		const std::string key = "strTest2";
-		const auto* res = cfg.insert(key, std::string{"This is a test"});
-		const auto* val = cfg.get<std::string>(key);
-		ENGINE_ASSERT(val);
-		ENGINE_LOG(key, " = ", *val);
-	}
-	{
-		const std::string key = "DecIntegers.ValueDec3";
-		cfg.remove(key);
-	}
-	{
-		const std::string key = "DecIntegers.dectest";
-		const auto* res = cfg.insert(key, 123);
-		const auto* val = cfg.get<int64>(key);
-		ENGINE_ASSERT(val);
-		ENGINE_LOG(key, " = ", *val);
-	}
-	{
-		const std::string key = "Booleans.booltest";
-		const auto* res = cfg.insert(key, 123);
-		const auto* val = cfg.get<bool>(key);
-		ENGINE_ASSERT(val);
-		ENGINE_LOG(key, " = ", *val);
-	}
-	{
-		const std::string key = "DecIntegers.ValueDec6";
-		cfg.remove(key);
-	}
-	cfg.print();
-	//cfg.save("save_example.cfg");
+	run(argc, argv);
+
 	ENGINE_LOG("Done.");
-	//run(argc, argv);
-	getchar();
 	return EXIT_SUCCESS;
 }
 
