@@ -12,49 +12,14 @@
 
 
 namespace Engine {
-	class AbstractGenericValue {
-		public:
-			virtual ~AbstractGenericValue() {}
-			virtual bool set(std::string_view str) = 0;
-			virtual std::string get(StringFormatOptions opts = {}) const = 0;
-
-			template<class T>
-			T& getValue() { return *reinterpret_cast<T*>(stored()); }
-
-			template<class T>
-			const T& getValue() const { return *reinterpret_cast<const T*>(stored()); }
-
-		private:
-			virtual void* stored() = 0;
-
-	};
-	
-	template<class T, class Converter = StringConverter<T>>
-	class GenericValueStore final : public AbstractGenericValue {
-		private:
-			T value;
-			virtual void* stored() { return &value; }
-
-		public:
-			GenericValueStore() = default;
-			GenericValueStore(std::string_view str) {
-				set(str);
-			}
-
-			virtual bool set(std::string_view str) override {
-				return Converter{}(str, value);
-			}
-
-			virtual std::string get(StringFormatOptions opts) const override {
-				std::string str;
-				Converter{}(value, str, opts);
-				return str;
-			}
-	};
-
 	class ConfigParser {
 		private:
 			using Index = int32;
+
+			using Bool = bool;
+			using Int = int64;
+			using Float = float64;
+			using String = std::string;
 
 			struct Range {
 				Index start;
@@ -67,6 +32,8 @@ namespace Engine {
 			};
 
 			struct Token {
+
+				// TODO: change literal order so all string types are packed
 				enum class Type : int8 {
 					Unknown = 0,
 					Whitespace,
@@ -82,35 +49,98 @@ namespace Engine {
 					StringLiteral,
 					_COUNT,
 				};
-				std::string data;
-				Type type;
+
+				ENGINE_INLINE Type getType() const noexcept { return type; }
+
+				template<class T>
+				ENGINE_INLINE T& getData() noexcept { return data2.as<T>(); }
+
+				template<class T>
+				ENGINE_INLINE const T& getData() const noexcept { return const_cast<Token*>(this)->getData<T>(); }
+
+				ENGINE_INLINE static bool isStringType(Type t) noexcept { return (t != Type::Unknown) && (t <= Type::Assign || t == Type::StringLiteral); }
+
+				Token(Type t) { setType(t); }
+
+				Token(Token&& other) { *this = std::move(other); }
+
+				Token& operator=(Token&& other) {
+					setType(other.type);
+					if (isStringType(other.type)) {
+						getData<String>() = std::move(other.getData<String>());
+					} else {
+						memcpy(&data2, &other.data2, sizeof(data2));
+					}
+					return *this;
+				}
+
+				~Token() {
+					if (isStringType(type)) { data2.as<String>().~String(); }
+				};
+
+				private:
+					void setType(Type t) {
+						if (isStringType(t) && !isStringType(type)) { new (&data2.as<String>()) String{}; }
+						type = t;
+					}
+
+					union Data {
+						public:
+							Data() {}
+							~Data() {}
+
+							template<class T>
+							T& as() {
+								if constexpr (std::is_same_v<T, Bool>) {
+									return asBool;
+								}
+								if constexpr (std::is_same_v<T, Int>) {
+									return asInt;
+								}
+								if constexpr (std::is_same_v<T, Float>) {
+									return asFloat;
+								}
+								if constexpr (std::is_same_v<T, String>) {
+									return asString;
+								}
+							}
+
+						private:
+							Bool asBool;
+							Int asInt;
+							Float asFloat;
+							String asString;
+					};
+
+					Type type = Type::Unknown;
+					Data data2; // TODO: rename
 			};
 
 			template<class T>
 			struct SetupStorageToken;
-			
-			template<std::same_as<bool> T>
-			struct SetupStorageToken<T> {
-				using Type = bool;
-				static ENGINE_INLINE void setup(Token& tkn) { tkn.type = Token::Type::BoolLiteral; }
-			};
 
 			template<std::integral T>
 			struct SetupStorageToken<T> {
-				using Type = int64;
-				static ENGINE_INLINE void setup(Token& tkn) { tkn.type = Token::Type::DecLiteral; }
+				using Type = Int;
+				static ENGINE_INLINE void setup(Token& tkn) { tkn = Token::Type::DecLiteral; }
 			};
 
 			template<std::floating_point T>
 			struct SetupStorageToken<T> {
-				using Type = float64;
-				static ENGINE_INLINE void setup(Token& tkn) { tkn.type = Token::Type::FloatLiteral; }
+				using Type = Float;
+				static ENGINE_INLINE void setup(Token& tkn) { tkn = Token::Type::FloatLiteral; }
+			};
+			
+			template<>
+			struct SetupStorageToken<bool> {
+				using Type = bool;
+				static ENGINE_INLINE void setup(Token& tkn) { tkn = Token::Type::BoolLiteral; }
 			};
 
 			template<std::convertible_to<std::string> T>
 			struct SetupStorageToken<T> {
-				using Type = std::string;
-				static ENGINE_INLINE void setup(Token& tkn) { tkn.type = Token::Type::StringLiteral; }
+				using Type = String;
+				static ENGINE_INLINE void setup(Token& tkn) { tkn = Token::Type::StringLiteral; }
 			};
 
 		private:
@@ -130,7 +160,6 @@ namespace Engine {
 			struct KeyValuePair {
 				Index key = -1;
 				Index value = -1;
-				std::unique_ptr<AbstractGenericValue> store;
 			};
 
 			FlatHashMap<std::string, KeyValuePair> keyLookup;
@@ -141,50 +170,57 @@ namespace Engine {
 				std::cout << "=================================================\n";
 				std::string sec;
 				std::string key;
+				std::string val;
+				val.reserve(128);
+
 				for (const auto& t : tokens) {
-					if (t.type == Token::Type::Key) {
-						key = sec + t.data;
-					} else if (t.type == Token::Type::Section) {
-						if (t.data.empty()) {
+					if (t.getType() == Token::Type::Key) {
+						key = sec + t.getData<String>();
+					} else if (t.getType() == Token::Type::Section) {
+						const auto& str = t.getData<String>();
+						if (str.empty()) {
 							sec = "";
 						} else {
-							sec = {t.data.begin() + 1, t.data.end() - 1};
+							sec = {str.cbegin() + 1, str.cend() - 1};
 							sec += ".";
 						}
 					}
 
-					if (t.type > Token::Type::Assign) {
+					if (t.getType() > Token::Type::Assign) {
 						const auto found = keyLookup.find(key);
 						ENGINE_DEBUG_ASSERT(found != keyLookup.end());
 
-						if (t.type == Token::Type::BinLiteral) {
-							std::cout << found->second.store->get(StringFormatOptions::BinInteger);
-						} else if (t.type == Token::Type::HexLiteral) {
-							std::cout << found->second.store->get(StringFormatOptions::HexInteger);
-						} else if (t.type == Token::Type::DecLiteral) {
-							std::cout << found->second.store->get(StringFormatOptions::DecInteger);
-						} else if (t.type == Token::Type::FloatLiteral) {
-							std::cout << found->second.store->get();
-						} else if (t.type == Token::Type::BoolLiteral) {
-							std::cout << found->second.store->get();
-						} else if (t.type == Token::Type::StringLiteral) {
-							std::cout << found->second.store->get();
-						} else {
-							std::cout << found->second.store->get();
+						const auto& tkn = tokens[stable[found->second.value]];
+
+						#define GEN(Enum, Type, Flag) { case Enum: StringConverter<Type>{}(tkn.getData<Type>(), val, Flag); break; }
+						switch (t.getType()) {
+							GEN(Token::Type::BinLiteral, Int, StringFormatOptions::BinInteger);
+							GEN(Token::Type::HexLiteral, Int, StringFormatOptions::HexInteger);
+							GEN(Token::Type::DecLiteral, Int, StringFormatOptions::DecInteger);
+							GEN(Token::Type::FloatLiteral, Float, {});
+							GEN(Token::Type::BoolLiteral, Bool, {});
+							GEN(Token::Type::StringLiteral, String, {});
+							default: {
+								ENGINE_WARN("Unknown token type. Skipping.");
+								continue;
+							}
 						}
+						std::cout << val;
 					} else {
-						std::cout << t.data;
+						std::cout << t.getData<String>();
 					}
 				}
 				std::cout << "=================================================\n";
 			}
 
 			template<class T>
-			T* get(const std::string& key) {
+			auto* get(const std::string& key) {
+				using Stored = typename SetupStorageToken<T>::Type;
 				// TODO: need to handle captialization while maintaining format
 				const auto found = keyLookup.find(key);
-				if (found == keyLookup.cend()) { return nullptr; }
-				return &found->second.store->getValue<T>();
+				if (found == keyLookup.cend()) { return static_cast<Stored*>(nullptr); }
+				auto& val = tokens[stable[found->second.value]].getData<Stored>();
+				return &val;
 			}
 
 			template<class T>
@@ -205,13 +241,12 @@ namespace Engine {
 					ENGINE_LOG("Checking [", sec ,"] ", shortKey);
 					const auto secFound = sectionLookup.find(sec);
 					if (secFound != sectionLookup.cend()) {
-						/// TODO: this need to index of stable. not directly
 						insertAt = stable[secFound->second] + 1;
 						const auto sz = tokens.size();
 						for (; insertAt < sz; ++insertAt) {
 							const auto& tkn = tokens[insertAt];
-							if (tkn.type != Token::Type::Whitespace
-								&& tkn.type != Token::Type::Comment) {
+							if (tkn.getType() != Token::Type::Whitespace
+								&& tkn.getType() != Token::Type::Comment) {
 								break;
 							}
 						}
@@ -232,9 +267,6 @@ namespace Engine {
 					}
 				}
 
-				// TODO: check that shortKey is valid
-				ENGINE_INFO(shortKey.size());
-
 				return &addPairAt(insertAt, key, shortKey, value);
 			}
 
@@ -246,7 +278,7 @@ namespace Engine {
 
 				for (; stop < tokens.size(); ++stop) {
 					const auto& tkn = tokens[stop];
-					if (tkn.type > Token::Type::Assign) {
+					if (tkn.getType() > Token::Type::Assign) {
 						++stop; break;
 					}
 				}
@@ -263,10 +295,21 @@ namespace Engine {
 
 			// TODO: private
 			void addSection(std::string sec) {
-				tokens.emplace_back("\n", Token::Type::Whitespace);
-				sectionLookup[sec] = static_cast<Index>(tokens.size());
-				tokens.emplace_back(std::move(sec), Token::Type::Section);
-				tokens.emplace_back("\n", Token::Type::Whitespace);
+				sectionLookup[sec] = static_cast<Index>(tokens.size() + 1);
+
+				Token tkns[3] = {
+					Token::Type::Whitespace,
+					Token::Type::Section,
+					Token::Type::Whitespace,
+				};
+
+				tkns[0].getData<String>() = "\n";
+				tkns[1].getData<String>() = std::move(sec);
+				tkns[2].getData<String>() = "\n";
+
+				tokens.push_back(std::move(tkns[0]));
+				tokens.push_back(std::move(tkns[1]));
+				tokens.push_back(std::move(tkns[2]));
 			}
 
 
@@ -276,41 +319,40 @@ namespace Engine {
 				using Setup = SetupStorageToken<T>;
 				using Stored = typename Setup::Type;
 
-				Token tkns[6];
+				Token tkns[6] = {
+					Token::Type::Key,
+					Token::Type::Whitespace,
+					Token::Type::Assign,
+					Token::Type::Whitespace,
+					Token::Type::BinLiteral,
+					Token::Type::Whitespace,
+				};
 
-				tkns[0].data = std::move(shortKey);
-				tkns[0].type = Token::Type::Key;
-
-				tkns[1].data = " ";
-				tkns[1].type = Token::Type::Whitespace;
-
-				tkns[2].data = "=";
-				tkns[2].type = Token::Type::Assign;
-
-				tkns[3].data = " ";
-				tkns[3].type = Token::Type::Whitespace;
-
+				tkns[0].getData<String>() = std::move(shortKey);
+				tkns[1].getData<String>() = " ";
+				tkns[2].getData<String>() = "=";
+				tkns[3].getData<String>() = " ";
 				Setup::setup(tkns[4]);
-
-				tkns[5].data = "\n";
-				tkns[5].type = Token::Type::Whitespace;
+				tkns[5].getData<String>() = "\n";
 
 				for (auto& v : stable) {
 					if (v > idx) { v += static_cast<Index>(std::size(tkns)); }
 				}
 
 				KeyValuePair pair;
-				pair.store = std::make_unique<GenericValueStore<Stored>>();
-				pair.store->getValue<Stored>() = value;
 				pair.key = static_cast<Index>(stable.size());
 				pair.value = pair.key + 4;
+				ENGINE_LOG("Add pair: ", pair.key, " ", pair.value);
 
-				tokens.insert(tokens.begin() + idx, &tkns[0], &tkns[0] + std::size(tkns));
+				auto it = 4 + tokens.insert(
+					tokens.begin() + idx,
+					std::make_move_iterator(&tkns[0]),
+					std::make_move_iterator(&tkns[0] + std::size(tkns))
+				);
 				stable.insert(stable.cend(), {idx + 0, idx + 1, idx + 2, idx + 3, idx + 4, idx + 5});
+				keyLookup.emplace(key, std::move(pair));
 
-				auto [it, _] = keyLookup.emplace(key, std::move(pair));
-
-				return it->second.store->getValue<Stored>();
+				return it->getData<Stored>() = value;
 			}
 
 			void loadAndTokenize(const std::string& file) {
@@ -364,7 +406,7 @@ namespace Engine {
 						area = nullptr;
 
 						#define GENERR(T) case Token::Type::T: { err = "Unexpected symbols after " #T " value definition"; break; }
-						switch (tokens.back().type) {
+						switch (tokens.back().getType()) {
 							GENERR(BinLiteral);
 							GENERR(HexLiteral);
 							GENERR(DecLiteral);
@@ -425,21 +467,23 @@ namespace Engine {
 						const auto& tkn = tokens[i];
 						stable.push_back(i);
 
-						if (tkn.type == Token::Type::Section) {
-							const auto ss = tkn.data.size();
+						if (tkn.getType() == Token::Type::Section) {
+							const auto& str = tkn.getData<String>();
+							const auto ss = str.size();
 
 							ENGINE_DEBUG_ASSERT(ss > 1); // By this point all sections should already be validated.
 
 							section.reserve(ss - 1);
-							section.assign(++tkn.data.cbegin(), --tkn.data.cend());
+							section.assign(++str.cbegin(), --str.cend());
 
 							// In case of duplicates we only store the last one
 							sectionLookup[section] = i;
 
 							if (ss > 2) { section += "."; }
 
-						} else if (tkn.type == Token::Type::Key) {
-							const auto key = section.empty() ? tkn.data : section + tkn.data;
+						} else if (tkn.getType() == Token::Type::Key) {
+							const auto& str = tkn.getData<String>();
+							const auto key = section.empty() ? str : section + str;
 							const auto [it, inserted] = keyLookup.emplace(key, KeyValuePair{
 								.key = i,
 							});
@@ -449,23 +493,25 @@ namespace Engine {
 							}
 
 							last = it;
-						} else if (tkn.type > Token::Type::Assign) {
+						} else if (tkn.getType() > Token::Type::Assign) {
 							last->second.value = i;
-
-							// TODO: strip string quotes
-							#define GEN(Enum, Type) case Enum: { last->second.store = std::make_unique<GenericValueStore<Type>>(tkn.data); break; }
-							switch (tkn.type) {
-								GEN(Token::Type::BinLiteral, int64)
-								GEN(Token::Type::HexLiteral, int64)
-								GEN(Token::Type::DecLiteral, int64)
-								GEN(Token::Type::FloatLiteral, float64)
-								GEN(Token::Type::BoolLiteral, bool)
-								GEN(Token::Type::StringLiteral, std::string)
-								default: {
-									ENGINE_ERROR("Unknown value type: ", static_cast<int>(tkn.type));
-								}
-							}
-							#undef GEN
+							// TODO: rm - this is done during token creation now
+							//auto& val = tokens[stable[last->second.value]].data2;
+							//// TODO: strip string quotes
+							//StringConverter<Type>{}(tkn.)
+							//#define GEN(Enum, Type) case Enum: { last->second.store = std::make_unique<GenericValueStore<Type>>(tkn.data); break; }
+							//switch (tkn.type) {
+							//	GEN(Token::Type::BinLiteral, Int)
+							//	GEN(Token::Type::HexLiteral, Int)
+							//	GEN(Token::Type::DecLiteral, Int)
+							//	GEN(Token::Type::FloatLiteral, Float)
+							//	GEN(Token::Type::BoolLiteral, Bool)
+							//	GEN(Token::Type::StringLiteral, String)
+							//	default: {
+							//		ENGINE_ERROR("Unknown value type: ", static_cast<int>(tkn.type));
+							//	}
+							//}
+							//#undef GEN
 						}
 					}
 				}
@@ -549,10 +595,9 @@ namespace Engine {
 				rng.stop = i - 1;
 
 				if (rng.size() <= 0) { return false; }
-				Token tkn;
-				tkn.data = rng.string(data);
-				tkn.type = Token::Type::Whitespace;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::Whitespace};
+				tkn.getData<String>() = rng.string(data);
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 
@@ -572,10 +617,9 @@ namespace Engine {
 				rng.stop = i - 1;
 
 				if (rng.size() <= 0) { return false; }
-				Token tkn;
-				tkn.data = rng.string(data);
-				tkn.type = Token::Type::Whitespace;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::Whitespace};
+				tkn.getData<String>() = rng.string(data);
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 
@@ -585,10 +629,9 @@ namespace Engine {
 				while (!isEOF() && !isNewline()) { ++i; }
 				rng.stop = i - 1;
 
-				Token tkn;
-				tkn.data = rng.string(data);
-				tkn.type = Token::Type::Comment;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::Comment};
+				tkn.getData<String>() = rng.string(data);
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 
@@ -619,10 +662,9 @@ namespace Engine {
 					return false;
 				}
 
-				Token tkn;
-				tkn.data = rng.string(data);
-				tkn.type = Token::Type::Section;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::Section};
+				tkn.getData<String>() = rng.string(data);
+				tokens.push_back(std::move(tkn));
 				++i;
 				return true;
 			}
@@ -637,10 +679,9 @@ namespace Engine {
 					return false;
 				}
 
-				Token tkn;
-				tkn.data = rng.string(data);
-				tkn.type = Token::Type::Key;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::Key};
+				tkn.getData<String>() = rng.string(data);
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 
@@ -650,10 +691,9 @@ namespace Engine {
 					return false;
 				}
 				++i;
-				Token tkn;
-				tkn.data = '=';
-				tkn.type = Token::Type::Assign;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::Assign};
+				tkn.getData<String>() = '=';
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 
@@ -681,10 +721,11 @@ namespace Engine {
 					return false;
 				}
 
-				Token tkn;
-				tkn.data = rng.string(data);
-				tkn.type = Token::Type::BinLiteral;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::BinLiteral};
+				Int val;
+				if (!StringConverter<Int>{}(rng.string(data), val)) { return false; }
+				tkn.getData<Int>() = val;
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 
@@ -712,13 +753,15 @@ namespace Engine {
 					return false;
 				}
 
-				Token tkn;
-				tkn.data = rng.string(data);
-				tkn.type = Token::Type::HexLiteral;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::HexLiteral};
+				Int val;
+				if (!StringConverter<Int>{}(rng.string(data), val)) { return false; }
+				tkn.getData<Int>() = val;
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 
+			// TODO: is this unused? see eatDecNumber
 			bool eatDecInteger() {
 				Range rng = i;
 				if (isSign()) { ++i; }
@@ -736,10 +779,11 @@ namespace Engine {
 					return false;
 				}
 
-				Token tkn;
-				tkn.data = rng.string(data);
-				tkn.type = Token::Type::DecLiteral;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::DecLiteral};
+				Int val;
+				if (!StringConverter<Int>{}(rng.string(data), val)) { return false; }
+				tkn.getData<Int>() = val;
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 
@@ -768,10 +812,11 @@ namespace Engine {
 				if (succ) {
 					rng.stop = i - 1;
 
-					Token tkn;
-					tkn.data = rng.string(data);
-					tkn.type = Token::Type::BoolLiteral;
-					tokens.push_back(tkn);
+					Token tkn{Token::Type::BoolLiteral};
+					Bool val;
+					if (!StringConverter<Bool>{}(rng.string(data), val)) { return false; }
+					tkn.getData<Bool>() = val;
+					tokens.push_back(std::move(tkn));
 					return true;
 				}
 
@@ -782,8 +827,7 @@ namespace Engine {
 			bool eatDecNumber() {
 				Range rng = i;
 
-				Token tkn;
-				tkn.type = Token::Type::DecLiteral;
+				Token tkn{Token::Type::DecLiteral};
 
 				if (isSign()) { ++i; }
 
@@ -798,7 +842,7 @@ namespace Engine {
 					const auto fractStart = i;
 					while (!isEOF() && isDigit()) { ++i; };
 					if (i == fractStart) { err = "Expected fractional digit"; return false; }
-					tkn.type = Token::Type::FloatLiteral;
+					tkn = Token{Token::Type::FloatLiteral};
 				}
 
 				// Exponent part
@@ -809,22 +853,31 @@ namespace Engine {
 						const auto expStart = i;
 						while (!isEOF() && isDigit()) { ++i; };
 						if (i == expStart) { err = "Expected exponent digit"; return false; }
-						tkn.type = Token::Type::FloatLiteral;
+						tkn = Token{Token::Type::FloatLiteral};
 					}
 				}
 
 				rng.stop = i - 1;
-				tkn.data = rng.string(data);
-				tokens.push_back(tkn);
 
+				if (tkn.getType() == Token::Type::FloatLiteral) {
+					Float val;
+					if (!StringConverter<Float>{}(rng.string(data), val)) { return false; }
+					tkn.getData<Float>() = val;
+				} else {
+					Int val;
+					if (!StringConverter<Int>{}(rng.string(data), val)) { return false; }
+					tkn.getData<Int>() = val;
+				}
+
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 
 			bool eatString() {
+				constexpr const char* eofErr = "Reached end of file before finding string terminator";
+
 				if (data[i] != '"') { err = "Invalid quote character"; return false; }
 				Range rng = i;
-
-				constexpr const char* eofErr = "Reached end of file before finding string terminator";
 
 				bool escaped = false;
 				while (true) {
@@ -844,10 +897,9 @@ namespace Engine {
 				rng.stop = i;
 				++i;
 
-				Token tkn;
-				tkn.data = rng.string(data);
-				tkn.type = Token::Type::StringLiteral;
-				tokens.push_back(tkn);
+				Token tkn{Token::Type::StringLiteral};
+				tkn.getData<String>() = rng.string(data);
+				tokens.push_back(std::move(tkn));
 				return true;
 			}
 			

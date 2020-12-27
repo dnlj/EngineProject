@@ -647,6 +647,7 @@ int entry(int argc, char* argv[]) {
 
 	Engine::ConfigParser cfg;
 	cfg.loadAndTokenize("example.cfg");
+	cfg.print();
 	{
 		const std::string key = "DecIntegers.ValueDec3";
 		const auto* val = cfg.get<int64>(key);
