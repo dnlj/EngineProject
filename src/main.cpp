@@ -710,7 +710,7 @@ int entry(int argc, char* argv[]) {
 		cfg.remove(key);
 	}
 	cfg.print();
-	cfg.save("save_example.cfg");
+	//cfg.save("save_example.cfg");
 	ENGINE_LOG("Done.");
 	//run(argc, argv);
 	getchar();

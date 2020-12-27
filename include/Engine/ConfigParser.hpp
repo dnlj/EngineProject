@@ -134,7 +134,6 @@ namespace Engine {
 			};
 
 		private:
-			// TODO: maybe ptr? once we are done loading the file we dont need this second copy;
 			std::string data;
 			Index size;
 			Index i;
@@ -502,6 +501,9 @@ namespace Engine {
 						}
 					}
 				}
+
+				data.clear();
+				data.shrink_to_fit();
 			}
 
 		private:
