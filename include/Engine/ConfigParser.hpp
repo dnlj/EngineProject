@@ -32,8 +32,6 @@ namespace Engine {
 			};
 
 			struct Token {
-
-				// TODO: change literal order so all string types are packed
 				enum class Type : int8 {
 					Unknown = 0,
 					Whitespace,
@@ -41,24 +39,24 @@ namespace Engine {
 					Section,
 					Key,
 					Assign,
+					StringLiteral,
 					BinLiteral,
 					HexLiteral,
 					DecLiteral,
 					FloatLiteral,
 					BoolLiteral,
-					StringLiteral,
 					_COUNT,
 				};
 
 				ENGINE_INLINE Type getType() const noexcept { return type; }
 
 				template<class T>
-				ENGINE_INLINE T& getData() noexcept { return data2.as<T>(); }
+				ENGINE_INLINE T& getData() noexcept { return data.as<T>(); }
 
 				template<class T>
 				ENGINE_INLINE const T& getData() const noexcept { return const_cast<Token*>(this)->getData<T>(); }
 
-				ENGINE_INLINE static bool isStringType(Type t) noexcept { return (t != Type::Unknown) && (t <= Type::Assign || t == Type::StringLiteral); }
+				ENGINE_INLINE static bool isStringType(Type t) noexcept { return (t <= Type::StringLiteral) && (t != Type::Unknown); }
 
 				Token(Type t) { setType(t); }
 
@@ -69,18 +67,18 @@ namespace Engine {
 					if (isStringType(other.type)) {
 						getData<String>() = std::move(other.getData<String>());
 					} else {
-						memcpy(&data2, &other.data2, sizeof(data2));
+						memcpy(&data, &other.data, sizeof(data));
 					}
 					return *this;
 				}
 
 				~Token() {
-					if (isStringType(type)) { data2.as<String>().~String(); }
+					if (isStringType(type)) { data.as<String>().~String(); }
 				};
 
 				private:
 					void setType(Type t) {
-						if (isStringType(t) && !isStringType(type)) { new (&data2.as<String>()) String{}; }
+						if (isStringType(t) && !isStringType(type)) { new (&data.as<String>()) String{}; }
 						type = t;
 					}
 
@@ -91,18 +89,10 @@ namespace Engine {
 
 							template<class T>
 							T& as() {
-								if constexpr (std::is_same_v<T, Bool>) {
-									return asBool;
-								}
-								if constexpr (std::is_same_v<T, Int>) {
-									return asInt;
-								}
-								if constexpr (std::is_same_v<T, Float>) {
-									return asFloat;
-								}
-								if constexpr (std::is_same_v<T, String>) {
-									return asString;
-								}
+								if constexpr (std::is_same_v<T, Bool>) { return asBool; }
+								if constexpr (std::is_same_v<T, Int>) { return asInt; }
+								if constexpr (std::is_same_v<T, Float>) { return asFloat; }
+								if constexpr (std::is_same_v<T, String>) { return asString; }
 							}
 
 						private:
@@ -113,7 +103,7 @@ namespace Engine {
 					};
 
 					Type type = Type::Unknown;
-					Data data2; // TODO: rename
+					Data data;
 			};
 
 			template<class T>
@@ -166,11 +156,12 @@ namespace Engine {
 			FlatHashMap<std::string, Index> sectionLookup;
 
 		public:
-			void print() const {
-				std::cout << "=================================================\n";
+			std::string toString() const {
+				std::string res;
 				std::string sec;
 				std::string key;
 				std::string val;
+				res.reserve(tokens.size() * 8); // Assume avg 8 chars per token
 				val.reserve(128);
 
 				for (const auto& t : tokens) {
@@ -194,23 +185,42 @@ namespace Engine {
 
 						#define GEN(Enum, Type, Flag) { case Enum: StringConverter<Type>{}(tkn.getData<Type>(), val, Flag); break; }
 						switch (t.getType()) {
+							GEN(Token::Type::StringLiteral, String, {});
 							GEN(Token::Type::BinLiteral, Int, StringFormatOptions::BinInteger);
 							GEN(Token::Type::HexLiteral, Int, StringFormatOptions::HexInteger);
 							GEN(Token::Type::DecLiteral, Int, StringFormatOptions::DecInteger);
 							GEN(Token::Type::FloatLiteral, Float, {});
 							GEN(Token::Type::BoolLiteral, Bool, {});
-							GEN(Token::Type::StringLiteral, String, {});
 							default: {
 								ENGINE_WARN("Unknown token type. Skipping.");
 								continue;
 							}
 						}
-						std::cout << val;
+						res += val;
 					} else {
-						std::cout << t.getData<String>();
+						res += t.getData<String>();
 					}
 				}
+
+				return res;
+			}
+
+			void print() {
 				std::cout << "=================================================\n";
+				std::cout << toString();
+				std::cout << "=================================================\n";
+			}
+
+			void save(const std::string& path) const {
+				std::fstream file{path, std::ios::out | std::ios::binary};
+
+				if (!file) {
+					ENGINE_WARN("Unable to write config to \"", path, "\"");
+					return;
+				}
+
+				const auto& str = toString();
+				file.write(str.data(), str.size());
 			}
 
 			template<class T>
@@ -407,12 +417,12 @@ namespace Engine {
 
 						#define GENERR(T) case Token::Type::T: { err = "Unexpected symbols after " #T " value definition"; break; }
 						switch (tokens.back().getType()) {
+							GENERR(StringLiteral);
 							GENERR(BinLiteral);
 							GENERR(HexLiteral);
 							GENERR(DecLiteral);
 							GENERR(FloatLiteral);
 							GENERR(BoolLiteral);
-							GENERR(StringLiteral);
 							default: { err = "Unexpected symbols after value definition"; }
 
 						}
@@ -420,11 +430,6 @@ namespace Engine {
 						break;
 					}
 				}
-
-				// TODO: rm
-				//for (const auto& tkn : tokens) {
-				//	ENGINE_RAW_TEXT("Token(", (int)tkn.type, "): |", tkn.view(data), "|\n");
-				//}
 
 				if (err) {
 					Index newlineCount = 0;
@@ -454,7 +459,6 @@ namespace Engine {
 						std::string(80, '-'), '\n',
 						rng.view(data), '\n',
 						std::string(std::max(0, errorIndex - lineStart), ' '), "^\n"
-						//, std::string(80, '-'), '\n'
 					);
 				} else {
 					ENGINE_INFO("Parsed with no errors and ", tokens.size(), " tokens");
@@ -495,23 +499,6 @@ namespace Engine {
 							last = it;
 						} else if (tkn.getType() > Token::Type::Assign) {
 							last->second.value = i;
-							// TODO: rm - this is done during token creation now
-							//auto& val = tokens[stable[last->second.value]].data2;
-							//// TODO: strip string quotes
-							//StringConverter<Type>{}(tkn.)
-							//#define GEN(Enum, Type) case Enum: { last->second.store = std::make_unique<GenericValueStore<Type>>(tkn.data); break; }
-							//switch (tkn.type) {
-							//	GEN(Token::Type::BinLiteral, Int)
-							//	GEN(Token::Type::HexLiteral, Int)
-							//	GEN(Token::Type::DecLiteral, Int)
-							//	GEN(Token::Type::FloatLiteral, Float)
-							//	GEN(Token::Type::BoolLiteral, Bool)
-							//	GEN(Token::Type::StringLiteral, String)
-							//	default: {
-							//		ENGINE_ERROR("Unknown value type: ", static_cast<int>(tkn.type));
-							//	}
-							//}
-							//#undef GEN
 						}
 					}
 				}
@@ -754,32 +741,6 @@ namespace Engine {
 				}
 
 				Token tkn{Token::Type::HexLiteral};
-				Int val;
-				if (!StringConverter<Int>{}(rng.string(data), val)) { return false; }
-				tkn.getData<Int>() = val;
-				tokens.push_back(std::move(tkn));
-				return true;
-			}
-
-			// TODO: is this unused? see eatDecNumber
-			bool eatDecInteger() {
-				Range rng = i;
-				if (isSign()) { ++i; }
-
-				if (data[i] == '0') {
-					err = "Decimal numbers may not have leading zeros";
-					return false;
-				}
-
-				while (!isEOF() && isDigit()) { ++i; }
-				rng.stop = i - 1;
-
-				if (rng.size() <= 0) {
-					err = "Invalid decimal digit";
-					return false;
-				}
-
-				Token tkn{Token::Type::DecLiteral};
 				Int val;
 				if (!StringConverter<Int>{}(rng.string(data), val)) { return false; }
 				tkn.getData<Int>() = val;
