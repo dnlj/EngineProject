@@ -56,10 +56,18 @@ namespace Game {
 			world.setEnabled(ent, false);
 		}
 	}
+	
+	void CharacterSpellSystem::queueMissile(const b2Vec2& pos, const b2Vec2& dir) {
+		events.push_back(FireEvent{
+			.pos = pos,
+			.dir = dir,
+		});
+	}
 
 	void CharacterSpellSystem::fireMissile(const b2Vec2& pos, const b2Vec2& dir) {
 		auto missile = missiles[currentMissile];
 		world.setEnabled(missile, true);
+
 		auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(missile);
 		auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(missile);
 		physProxyComp.snap = true;
@@ -79,7 +87,6 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::tick() {
-
 		for (const auto ent : world.getFilter<PhysicsBodyComponent, ActionComponent>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 
@@ -90,23 +97,43 @@ namespace Game {
 				auto dir = target - pos;
 				dir.Normalize();
 
-				fireMissile(pos + 0.3f * dir, dir);
+				queueMissile(pos + 0.3f * dir, dir);
+				events.back().ent = ent;
 			}
 		}
 
-		if (toDestroy.empty()) { return; }
+		if (!toDestroy.empty()) {
+			std::sort(toDestroy.begin(), toDestroy.end());
 
-		std::sort(toDestroy.begin(), toDestroy.end());
-
-		while (!toDestroy.empty()) {
-			auto ent = toDestroy.back();
-			toDestroy.pop_back();
-			detonateMissile(ent);
-
-			while(!toDestroy.empty() && toDestroy.back() == ent) {
+			while (!toDestroy.empty()) {
+				auto ent = toDestroy.back();
 				toDestroy.pop_back();
+				detonateMissile(ent);
+
+				while(!toDestroy.empty() && toDestroy.back() == ent) {
+					toDestroy.pop_back();
+				}
 			}
 		}
+
+		for (const auto& event : events) {
+			fireMissile(event.pos, event.dir);
+
+			if constexpr (ENGINE_SERVER) {
+				for (const auto ply : world.getFilter<PlayerFlag>()) {
+					if (ply == event.ent) { continue; }
+					auto& connComp = world.getComponent<ConnectionComponent>(ply);
+					auto& conn = *connComp.conn;
+					conn.msgBegin<MessageType::SPELL>();
+					// TODO: need to take tick into account
+					//conn.write(world.getTick());
+					conn.write(event.pos);
+					conn.write(event.dir);
+					conn.msgEnd<MessageType::SPELL>();
+				}
+			}
+		}
+		events.clear();
 	}
 
 	void CharacterSpellSystem::beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) {

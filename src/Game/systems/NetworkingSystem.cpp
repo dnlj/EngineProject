@@ -428,6 +428,15 @@ namespace Game {
 	HandleMessageDef(MessageType::TEST)
 		//std::cout << "***** TEST: " << head.seq << "\n";
 	}
+
+	HandleMessageDef(MessageType::SPELL)
+		//std::cout << "***** TEST: " << head.seq << "\n";
+		auto& spellSys = world.getSystem<CharacterSpellSystem>();
+		const auto* pos = from.read<b2Vec2>();
+		const auto* dir = from.read<b2Vec2>();
+		if (!pos || !dir) { return; }
+		spellSys.queueMissile(*pos, *dir);
+	}
 }
 #undef HandleMessageDef
 

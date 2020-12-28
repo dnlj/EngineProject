@@ -17,13 +17,21 @@ namespace Game {
 			CharacterSpellSystem(SystemArg arg);
 			void setup();
 			void tick();
-			void fireMissile(const b2Vec2& pos, const b2Vec2& dir);
+			void queueMissile(const b2Vec2& pos, const b2Vec2& dir);
 
 		private:
+			struct FireEvent {
+				Engine::ECS::Entity ent;
+				b2Vec2 pos;
+				b2Vec2 dir;
+			};
+
+			void fireMissile(const b2Vec2& pos, const b2Vec2& dir);
 			void beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) override;
 			void detonateMissile(Engine::ECS::Entity ent);
 			std::vector<Engine::ECS::Entity> missiles;
 			std::vector<Engine::ECS::Entity> toDestroy;
+			std::vector<FireEvent> events;
 			size_t currentMissile = 0;
 	};
 }

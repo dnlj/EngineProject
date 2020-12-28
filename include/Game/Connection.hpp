@@ -25,7 +25,8 @@ namespace Game {
 	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
 		MessageType::CONNECT_CONFIRM,
 		MessageType::PING,
-		MessageType::PLAYER_DATA
+		MessageType::PLAYER_DATA,
+		MessageType::SPELL
 	> {};
 
 	struct Channel_ECS : Engine::Net::Channel_ReliableOrdered<
