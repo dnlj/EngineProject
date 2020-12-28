@@ -6,7 +6,7 @@
 
 
 namespace Engine::Net {
-	constexpr inline int32 MAX_PACKET_SIZE = 512;
+	constexpr inline int32 MAX_PACKET_SIZE = 1024;
 	class Packet {
 		public:
 			// 2 bytes protocol
