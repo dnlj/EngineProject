@@ -226,11 +226,6 @@ namespace Game {
 		const auto data = *from.read<uint8>();
 		const bool pong = data & 0x80;
 		const int32 val = data & 0x7F;
-
-		//if (val != ((last + 1) & 0x7F)) {
-		//	ENGINE_WARN("\n\n**** OUT OF ORDER ****\n");
-		//	//__debugbreak();
-		//}
 		last = val;
 
 		if (pong) {
@@ -255,7 +250,6 @@ namespace Game {
 	}
 	
 	HandleMessageDef(MessageType::ECS_ENT_CREATE)
-		// TODO: this message should be client only
 		auto* remote = from.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
 
@@ -273,7 +267,6 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_ENT_DESTROY) 
-		// TODO: this message should be client only
 		auto* remote = from.read<Engine::ECS::Entity>();
 		if (!remote) { return; }
 		auto found = entToLocal.find(*remote);
@@ -284,7 +277,6 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_COMP_ADD)
-		// TODO: this message should be client only
 		const auto* remote = from.read<Engine::ECS::Entity>();
 		const auto* cid = from.read<Engine::ECS::ComponentId>();
 		if (!remote || !cid) { return; }
@@ -306,7 +298,6 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_COMP_ALWAYS)
-		// TODO: this message should be client only
 		const auto* remote = from.read<Engine::ECS::Entity>();
 		const auto* cid = from.read<Engine::ECS::ComponentId>();
 		if (!remote || !cid) { return; }
@@ -347,7 +338,6 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_FLAG)
-		// TODO: this message should be client only
 		const auto remote = from.read<Engine::ECS::Entity>();
 		const auto flags = from.read<Engine::ECS::ComponentBitset>();
 		if (!remote || !flags) { return; }
@@ -401,9 +391,7 @@ namespace Game {
 			physProxyComp.vel = *vel;
 			physProxyComp.rollbackOverride = true;
 
-			//if (world.getTick() > 2000) { // TODO: rm
-				world.scheduleRollback(*tick);
-			//}
+			world.scheduleRollback(*tick);
 		}
 
 		// TODO: vel
@@ -411,26 +399,12 @@ namespace Game {
 
 	HandleMessageDef(MessageType::ACTION)
 		world.getSystem<ActionSystem>().recvActions(from, head, info.ent);
-		//
-		//const auto* aid = from.reader.read<Engine::Input::ActionId>();
-		//const auto* val = from.reader.read<Engine::Input::Value>();
-		//
-		//if (aid && val) {
-		//	if (*aid > 1) {
-		//		ENGINE_LOG("Net: ", *aid, " ", val->value, " ", world.getTick());
-		//	}
-		//
-		//	// TODO: sanity check inputs
-		//	world.getSystem<ActionSystem>().queueAction(fromEnt, *aid, *val);
-		//}
 	}
 
 	HandleMessageDef(MessageType::TEST)
-		//std::cout << "***** TEST: " << head.seq << "\n";
 	}
 
 	HandleMessageDef(MessageType::SPELL)
-		//std::cout << "***** TEST: " << head.seq << "\n";
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();
 		const auto* pos = from.read<b2Vec2>();
 		const auto* dir = from.read<b2Vec2>();
