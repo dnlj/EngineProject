@@ -415,13 +415,12 @@ void run(int argc, char* argv[]) {
 				InputId{InputType::KEYBOARD, 1, 32}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveRight, curr); });
 
-			// TODO: these should just use attack1/attack2. dont need own action
-			//im.addBind(InputSequence{
-			//	InputId{InputType::MOUSE, 0, 0}
-			//}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Edit_Place, curr); });
-			//im.addBind(InputSequence{
-			//	InputId{InputType::MOUSE, 0, 1}
-			//}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Edit_Remove, curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::MOUSE, 0, 0}
+			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
+			im.addBind(InputSequence{
+				InputId{InputType::MOUSE, 0, 1}
+			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack2, curr); });
 
 			im.addBind(InputSequence{
 					InputId{InputType::MOUSE_AXIS, 0, 0}

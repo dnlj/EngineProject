@@ -73,14 +73,11 @@ namespace Game {
 
 	void MapSystem::tick() {
 		// TODO: move
-		const auto makeEdit = [&](Engine::ECS::Entity ent, int value){
-			auto& actionComp = world.getComponent<ActionComponent>(ent);
-			const glm::vec2 mousePos = {actionComp.getAxis(Axis::TargetX), actionComp.getAxis(Axis::TargetY)};
-
+		const auto makeEdit = [&](int value, const glm::vec2 mouse) {
 			for (int x = -1; x < 2; ++x) {
 				for (int y = -1; y < 2; ++y) {
 					setValueAt(
-						mousePos + glm::vec2{x * MapChunk::blockSize, y * MapChunk::blockSize},
+						mouse + glm::vec2{x * MapChunk::blockSize, y * MapChunk::blockSize},
 						value
 					);
 				}
@@ -88,9 +85,13 @@ namespace Game {
 		};
 
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
-			auto& me = world.getComponent<MapEditComponent>(ply);
-			if (me.place) { makeEdit(ply, 1); }
-			if (me.remove) { makeEdit(ply, 0); }
+			const auto& actComp = world.getComponent<ActionComponent>(ply);
+			if (actComp.getButton(Button::Attack1).latest) {
+				makeEdit(1, {actComp.getAxis(Axis::TargetX), actComp.getAxis(Axis::TargetY)});
+			}
+			if (actComp.getButton(Button::Attack2).latest) {
+				makeEdit(0, {actComp.getAxis(Axis::TargetX), actComp.getAxis(Axis::TargetY)});
+			}
 		}
 	}
 
