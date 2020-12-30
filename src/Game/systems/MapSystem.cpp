@@ -180,42 +180,6 @@ namespace Game {
 		return glm::vec2{block - getBlockOffset()} * MapChunk::blockSize;
 	}
 
-	glm::ivec2 MapSystem::blockToChunk(const glm::ivec2 block) const {
-		// Integer division + floor
-		auto d = block / MapChunk::size;
-		d.x = d.x * MapChunk::size.x == block.x ? d.x : d.x - (block.x < 0);
-		d.y = d.y * MapChunk::size.y == block.y ? d.y : d.y - (block.y < 0);
-		return d;
-	}
-
-	glm::ivec2 MapSystem::chunkToBlock(const glm::ivec2 chunk) const {
-		return chunk * MapChunk::size;
-	}
-
-	glm::ivec2 MapSystem::chunkToRegion(const glm::ivec2 chunk) const {
-		// Integer division + floor
-		auto d = chunk / regionSize;
-		d.x = d.x * regionSize.x == chunk.x ? d.x : d.x - (chunk.x < 0);
-		d.y = d.y * regionSize.y == chunk.y ? d.y : d.y - (chunk.y < 0);
-		return d;
-	}
-
-	glm::ivec2 MapSystem::chunkToRegionIndex(const glm::ivec2 chunk) const {
-		return (MapRegion::size + chunk % MapRegion::size) % MapRegion::size;
-	}
-
-	glm::ivec2 MapSystem::chunkToActiveIndex(const glm::ivec2 chunk) const {
-		return (activeAreaSize + chunk % activeAreaSize) % activeAreaSize;
-	}
-
-	glm::ivec2 MapSystem::regionToChunk(const glm::ivec2 region) const {
-		return region * regionSize;
-	}
-
-	glm::ivec2 MapSystem::regionToIndex(const glm::ivec2 region) const {
-		return (regionCount + region % regionCount) % regionCount;
-	}
-
 	// TODO: thread this. Not sure how nice box2d will play with it.
 	void MapSystem::buildActiveChunkData(ActiveChunkData& data, const MapChunk& chunk) {
 		// TODO: simplify. currently have two mostly duplicate sections.

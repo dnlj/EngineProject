@@ -102,37 +102,59 @@ namespace Game {
 			/**
 			 * Converts from block coordinates to chunk coordinates.
 			 */
-			glm::ivec2 blockToChunk(const glm::ivec2 block) const;
+			ENGINE_INLINE constexpr static glm::ivec2 blockToChunk(const glm::ivec2 block) noexcept {
+				// Integer division + floor
+				auto d = block / MapChunk::size;
+				d.x = d.x * MapChunk::size.x == block.x ? d.x : d.x - (block.x < 0);
+				d.y = d.y * MapChunk::size.y == block.y ? d.y : d.y - (block.y < 0);
+				return d;
+			}
 
 			/**
 			 * Converts from chunk coordinates to block coordinates.
 			 */
-			glm::ivec2 chunkToBlock(const glm::ivec2 chunk) const;
+			ENGINE_INLINE constexpr static glm::ivec2 chunkToBlock(const glm::ivec2 chunk) noexcept {
+				return chunk * MapChunk::size;
+			}
 
 			/**
 			 * Converts from chunk coordinates to region coordinates.
 			 */
-			glm::ivec2 chunkToRegion(const glm::ivec2 chunk) const;
+			ENGINE_INLINE constexpr static glm::ivec2 chunkToRegion(const glm::ivec2 chunk) noexcept {
+				// Integer division + floor
+				auto d = chunk / regionSize;
+				d.x = d.x * regionSize.x == chunk.x ? d.x : d.x - (chunk.x < 0);
+				d.y = d.y * regionSize.y == chunk.y ? d.y : d.y - (chunk.y < 0);
+				return d;
+			}
 
 			/**
 			 * Converts from chunk coordinates to an index wrapped at increments of MapRegion::size.
 			 */
-			glm::ivec2 chunkToRegionIndex(const glm::ivec2 chunk) const;
+			ENGINE_INLINE constexpr static glm::ivec2 chunkToRegionIndex(const glm::ivec2 chunk) noexcept {
+				return (MapRegion::size + chunk % MapRegion::size) % MapRegion::size;
+			}
 
 			/**
 			 * Converts from chunk coordinates to an index wrapped at increments of activeAreaSize.
 			 */
-			glm::ivec2 chunkToActiveIndex(const glm::ivec2 chunk) const;
+			ENGINE_INLINE constexpr static glm::ivec2 chunkToActiveIndex(const glm::ivec2 chunk) noexcept {
+				return (activeAreaSize + chunk % activeAreaSize) % activeAreaSize;
+			}
 
 			/**
 			 * Converts from region coordinates to chunk coordinates.
 			 */
-			glm::ivec2 regionToChunk(const glm::ivec2 region) const;
+			ENGINE_INLINE constexpr static glm::ivec2 regionToChunk(const glm::ivec2 region) noexcept {
+				return region * regionSize;
+			}
 
 			/**
 			 * Converts from a region to an index wrapped at increments of regionSize.
 			 */
-			glm::ivec2 regionToIndex(const glm::ivec2 region) const;
+			ENGINE_INLINE constexpr static glm::ivec2 regionToIndex(const glm::ivec2 region) noexcept {
+				return (regionCount + region % regionCount) % regionCount;
+			}
 
 		private:
 			// TODO: split?
