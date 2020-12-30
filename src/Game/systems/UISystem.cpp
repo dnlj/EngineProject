@@ -199,10 +199,10 @@ namespace Game {
 
 		auto& mapSys = world.getSystem<Game::MapSystem>();
 
-		auto& actC = world.getComponent<Game::ActionComponent>(*activePlayerFilter.begin());
+		const auto& actC = world.getComponent<Game::ActionComponent>(*activePlayerFilter.begin());
 		// TODO: reimplement - ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
-		const glm::vec2 worldMousePos = {actC.getAxis(Axis::TargetX), actC.getAxis(Axis::TargetY)};
+		const glm::vec2 worldMousePos = actC.getTarget();
 		ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
 			
 		auto blockMousePos = mapSys.worldToBlock(worldMousePos);

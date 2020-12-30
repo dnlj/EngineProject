@@ -220,11 +220,12 @@ namespace Engine::Win32 {
 
 		UINT size = std::extent_v<decltype(rawInputBuffer)>;
 
-		#ifdef ENGINE_DEBUG
+		#if ENGINE_DEBUG
 			GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
 			ENGINE_ASSERT(size <= std::extent_v<decltype(rawInputBuffer)>, "Raw input buffer to small. Needs at least ", size);
 		#endif
 
+		// TODO: dont we need to check for buffer size? See ms docs for GetRawInputData
 		GetRawInputData(
 			reinterpret_cast<HRAWINPUT>(lParam),
 			RID_INPUT,

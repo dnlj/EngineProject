@@ -86,11 +86,16 @@ namespace Game {
 
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			const auto& actComp = world.getComponent<ActionComponent>(ply);
+
 			if (actComp.getButton(Button::Attack1).latest) {
-				makeEdit(1, {actComp.getAxis(Axis::TargetX), actComp.getAxis(Axis::TargetY)});
+				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
+				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
+				makeEdit(1, pos + actComp.getTarget());
 			}
 			if (actComp.getButton(Button::Attack2).latest) {
-				makeEdit(0, {actComp.getAxis(Axis::TargetX), actComp.getAxis(Axis::TargetY)});
+				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
+				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
+				makeEdit(0, pos + actComp.getTarget());
 			}
 		}
 	}

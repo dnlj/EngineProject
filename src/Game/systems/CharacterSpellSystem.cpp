@@ -1,6 +1,9 @@
 // STD
 #include <algorithm>
 
+// Engine
+#include <Engine/Glue/Box2D.hpp>
+
 // Game
 #include <Game/systems/CharacterSpellSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
@@ -93,8 +96,7 @@ namespace Game {
 			if (actComp.getButton(Button::Attack1).pressCount) {
 				auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 				const auto pos = physComp.getPosition();
-				const b2Vec2 target = {actComp.getAxis(Axis::TargetX), actComp.getAxis(Axis::TargetY)};
-				auto dir = target - pos;
+				auto dir = Engine::Glue::as<b2Vec2>(actComp.getTarget());
 				dir.Normalize();
 
 				queueMissile(pos + 0.3f * dir, dir);

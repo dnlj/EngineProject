@@ -55,6 +55,16 @@ namespace Game {
 			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 
 			if constexpr (ENGINE_CLIENT) {
+				// TODO: update cursor axis locations
+				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
+				const auto& pos = physComp.getPosition();
+				auto& state = *actComp.state;
+				const auto& tpos = engine.camera.screenToWorld(state.screenTarget);
+				state.target.x = tpos.x - pos.x;
+				state.target.y = tpos.y - pos.y;
+			}
+
+			if constexpr (ENGINE_CLIENT) {
 				// Hey! are you wondering why the client sends so much data again?
 				// Well let me save you some time. This code sends about
 				// 12288 bytes per second assuming 64 tick and 64 action history states (sending 1/4 of that).
@@ -67,16 +77,7 @@ namespace Game {
 				// TODO: how many to send?
 				for (auto t = currTick + 1 - (actComp.states.capacity() / 4); t <= currTick; ++t) {
 					const auto& s = actComp.states.get(t);
-					
-					for (auto b : s.buttons) {
-						conn.write<2>(b.pressCount);
-						conn.write<2>(b.releaseCount);
-						conn.write<1>(b.latest);
-					}
-					
-					for (auto a : s.axes) { // TODO: compress
-						conn.write<32>(reinterpret_cast<uint32&>(a));
-					}
+					s.netWrite(conn);
 				}
 
 				conn.writeFlushBits();
@@ -240,18 +241,7 @@ namespace Game {
 
 		for (auto t = tick + 1 - (actComp.states.capacity() / 4); t <= tick; ++t) {
 			ActionState s = {};
-			
-			for (auto& b : s.buttons) {
-				// TODO: better interface for reading bits.
-				b.pressCount = static_cast<decltype(b.pressCount)>(from.read<2>());
-				b.releaseCount = static_cast<decltype(b.releaseCount)>(from.read<2>());
-				b.latest = static_cast<decltype(b.latest)>(from.read<1>());
-			}
-			
-			for (auto& a : s.axes) { // TODO: pack
-				const auto f = from.read<32>();
-				a = reinterpret_cast<const float32&>(f);
-			}
+			s.netRead(from);
 
 			if (t < minTick || t > maxTick) { continue; }
 			if (!actComp.states.contains(t)) {
@@ -300,14 +290,14 @@ namespace Game {
 		value.latest = val;
 	}
 	
-	void ActionSystem::updateAxisState(Axis axis, float32 val) {
+	void ActionSystem::updateTarget(int axis, float32 val) {
 		for (const auto& ent : world.getFilter<Filter>()) {
-			updateAxisState(ent, axis, val);
+			updateTarget(ent, axis, val);
 		}
 	}
 
-	void ActionSystem::updateAxisState(Engine::ECS::Entity ent, Axis axis, float32 val) {
+	void ActionSystem::updateTarget(Engine::ECS::Entity ent, int axis, float32 val) {
 		auto& actComp = world.getComponent<ActionComponent>(ent);
-		actComp.state->axes[static_cast<int32>(axis)] = val;
+		actComp.state->screenTarget[axis] = val;
 	}
 }

@@ -11,6 +11,7 @@
 
 // Game
 #include <Game/Common.hpp>
+#include <Game/Connection.hpp>
 
 
 namespace Game {
@@ -20,8 +21,6 @@ namespace Game {
 			uint8 releaseCount;
 			bool latest;
 	};
-
-	using AxisValue = float32;
 
 	enum class Button : uint8 {
 		MoveUp,
@@ -33,20 +32,39 @@ namespace Game {
 		_COUNT,
 	};
 
-	enum class Axis : uint8 {
-		TargetX,
-		TargetY,
-		_COUNT,
-	};
-
 	class ActionState {
 		public:
 			Engine::ECS::Tick recvTick;
-
 			ButtonValue buttons[static_cast<int32>(Button::_COUNT)];
+			glm::vec2 screenTarget; // TODO: client only
+			glm::vec2 target;
 
-			// TODO: should be able to compress these quite a bit if we make them offsets from the player and as such have a limited range.
-			AxisValue axes[static_cast<int32>(Axis::_COUNT)];
+			void netWrite(Connection& conn) const {
+				for (auto b : buttons) {
+					conn.write<2>(b.pressCount);
+					conn.write<2>(b.releaseCount);
+					conn.write<1>(b.latest);
+				}
+
+				// TODO: compress. we dont need 32 bits here.
+				// TODO: if you compress this make sure to replicate on client to remain in sync
+				conn.write<32>(reinterpret_cast<const uint32&>(target.x));
+				conn.write<32>(reinterpret_cast<const uint32&>(target.y));
+			}
+
+			void netRead(Connection& conn) {
+				for (auto& b : buttons) {
+					// TODO: better interface for reading bits.
+					b.pressCount = static_cast<decltype(b.pressCount)>(conn.read<2>());
+					b.releaseCount = static_cast<decltype(b.releaseCount)>(conn.read<2>());
+					b.latest = static_cast<decltype(b.latest)>(conn.read<1>());
+				}
+
+				const auto x = conn.read<32>();
+				const auto y = conn.read<32>();
+				target.x = reinterpret_cast<const float32&>(x);
+				target.y = reinterpret_cast<const float32&>(y);
+			}
 
 			friend std::ostream& operator<<(std::ostream& os, const ActionState& s) {
 				os << "ActionState(";
@@ -57,15 +75,11 @@ namespace Game {
 						<< ", " << static_cast<int>(b.latest)
 						<< ">";
 				}
-				for (const auto& a : s.axes) {
-					os << " " << a;
-				}
+				// TODO: target
 				os << " )";
 				return os;
 			}
 	};
-
-
 
 	class ActionComponent {
 		private:
@@ -81,13 +95,13 @@ namespace Game {
 		public:
 			constexpr static int32 maxStates = decltype(states)::capacity();
 
-		// TODO: are these called on server? nullptr check
-			const ButtonValue& getButton(Button btn) const {
+			// TODO: are these called on server? nullptr check
+			ENGINE_INLINE const ButtonValue& getButton(Button btn) const {
 				return state->buttons[static_cast<int32>(btn)];
 			}
 
-			const AxisValue& getAxis(Axis axis) const {
-				return state->axes[static_cast<int32>(axis)];
+			ENGINE_INLINE const auto& getTarget() const {
+				return state->target;
 			}
 	};
 }

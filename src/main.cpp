@@ -381,8 +381,8 @@ void run(int argc, char* argv[]) {
 	const auto updateButtonState = [&](auto action, auto curr){
 		world.getSystem<Game::ActionSystem>().updateButtonState(action, curr);
 	};
-	const auto updateAxisState = [&](auto action, auto curr){
-		world.getSystem<Game::ActionSystem>().updateAxisState(action, curr);
+	const auto updateTargetState = [&](auto action, auto curr){
+		world.getSystem<Game::ActionSystem>().updateTarget(action, curr);
 	};
 	{
 		using namespace Engine::Input;
@@ -425,14 +425,12 @@ void run(int argc, char* argv[]) {
 			im.addBind(InputSequence{
 					InputId{InputType::MOUSE_AXIS, 0, 0}
 				}, [&](Value curr, Value prev){
-					curr.valuef = engine.camera.screenToWorld({curr.valuef, 0.0f}).x;
-					updateAxisState(Game::Axis::TargetX, curr);
+					updateTargetState(0, curr);
 			});
 			im.addBind(InputSequence{
 					InputId{InputType::MOUSE_AXIS, 0, 1}
 				}, [&](Value curr, Value prev){
-					curr.valuef = engine.camera.screenToWorld({0.0f, curr.valuef}).y;
-					updateAxisState(Game::Axis::TargetY, curr);
+					updateTargetState(1, curr);
 			});
 		}
 
