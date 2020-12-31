@@ -194,7 +194,6 @@ namespace Game {
 			void queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region);
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
-			glm::ivec2 activeAreaOrigin = {0, 0};
 			ActiveChunkData activeAreaData[activeAreaSize.x][activeAreaSize.y];
 			Engine::Shader shader;
 			Engine::Texture texture;

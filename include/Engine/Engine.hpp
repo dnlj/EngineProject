@@ -23,9 +23,9 @@
 #define ENGINE_CLIENT (ENGINE_SIDE == ENGINE_SIDE_CLIENT)
 
 #ifdef DEBUG
-	constexpr bool ENGINE_DEBUG = true;
+	#define ENGINE_DEBUG true
 #else
-	constexpr bool ENGINE_DEBUG = false;
+	#define ENGINE_DEBUG false
 #endif
 
 // TODO: move all this macro stuff into files?
@@ -50,7 +50,7 @@
 		}\
 	})
 
-#ifdef DEBUG
+#if ENGINE_DEBUG
 	#define ENGINE_DIE __debugbreak(); ::std::terminate();
 #else
 	#define ENGINE_DIE ::std::terminate();
@@ -67,7 +67,7 @@
 #define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA("[ERROR][ASSERT]", true, Engine::ASCII_ERROR, ENGINE_DIE)
 #define ENGINE_ASSERT_WARN _ENGINE_CREATE_ASSERT_LAMBDA("[WARN][ASSERT]", true, Engine::ASCII_WARN, 0)
 
-#if defined(DEBUG)
+#if ENGINE_DEBUG
 	#define ENGINE_DEBUG_ASSERT ENGINE_ASSERT
 #else
 	#define ENGINE_DEBUG_ASSERT(...)
