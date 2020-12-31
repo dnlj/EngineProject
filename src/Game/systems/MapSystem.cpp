@@ -97,15 +97,15 @@ namespace Game {
 				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
 				makeEdit(0, pos + actComp.getTarget());
 			}
+
+			if (!world.isPerformingRollback()) {
+				auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsBodyComponent>(ply).getPosition());
+				ensurePlayAreaLoaded(worldToBlock(pos));
+			}
 		}
 	}
 
 	void MapSystem::run(float32 dt) {
-		for (auto& ply : world.getFilter<PlayerFilter>()) {
-			auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsProxyComponent>(ply).trans.p);
-			ensurePlayAreaLoaded(worldToBlock(pos));
-		}
-
 		auto timeout = world.getTickTime() - std::chrono::seconds{10};
 		for (auto it = regions.begin(); it != regions.end();) {
 			if (it->second->lastUsed < timeout) {
@@ -183,7 +183,7 @@ namespace Game {
 	// TODO: thread this. Not sure how nice box2d will play with it.
 	void MapSystem::buildActiveChunkData(ActiveChunkData& data, const MapChunk& chunk) {
 		// TODO: simplify. currently have two mostly duplicate sections.
-
+		
 		{ // Render stuff
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};
 
@@ -250,6 +250,8 @@ namespace Game {
 				body.DestroyFixture(fixture);
 				fixture = next;
 			}
+
+			body.SetTransform(pos, 0);
 
 			b2PolygonShape shape;
 			b2FixtureDef fixtureDef;
