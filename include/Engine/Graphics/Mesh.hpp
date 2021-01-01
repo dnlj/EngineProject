@@ -50,12 +50,22 @@ namespace Engine::Graphics {
 		public:
 			Mesh();
 			Mesh(const Mesh&) = delete;
-			// TODO: Mesh(Mesh&&) = delete;
-
-			~Mesh();
+			Mesh(Mesh&& other) { swap(*this, other); };
 
 			Mesh& operator=(const Mesh&) = delete;
-			// TODO: Mesh& operator=(Mesh&&) = delete;
+			Mesh& operator=(Mesh&& other) {
+				vao = other.vao;
+				eboCount = other.eboCount;
+				vbo = other.vbo;
+				ebo = other.ebo;
+				other.vao = 0;
+				other.eboCount = 0;
+				other.vbo = 0;
+				other.ebo = 0;
+				return *this;
+			}
+
+			~Mesh();
 
 			template<int32 AttributeCount>
 			void setBufferFormat(const VertexFormat<AttributeCount>& format);
@@ -66,6 +76,14 @@ namespace Engine::Graphics {
 			void setBufferData(const void* vertexData, GLsizei vertexDataSize, const void* elementData, GLsizei elementDataSize, GLsizei elementCount);
 
 			void draw() const;
+
+			ENGINE_INLINE friend void swap(Mesh& a, Mesh& b) noexcept {
+				using std::swap;
+				swap(a.vao, b.vao);
+				swap(a.eboCount, b.eboCount);
+				swap(a.vbo, b.vbo);
+				swap(a.ebo, b.ebo);
+			}
 
 		private:
 			GLuint vao = 0;

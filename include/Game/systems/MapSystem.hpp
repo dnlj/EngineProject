@@ -16,6 +16,7 @@
 #include <Engine/ShaderManager.hpp>
 #include <Engine/Graphics/Mesh.hpp>
 #include <Engine/Clock.hpp>
+#include <Engine/ECS/Common.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -136,13 +137,6 @@ namespace Game {
 			}
 
 			/**
-			 * Converts from chunk coordinates to an index wrapped at increments of activeAreaSize.
-			 */
-			ENGINE_INLINE constexpr static glm::ivec2 chunkToActiveIndex(const glm::ivec2 chunk) noexcept {
-				return (activeAreaSize + chunk % activeAreaSize) % activeAreaSize;
-			}
-
-			/**
 			 * Converts from region coordinates to chunk coordinates.
 			 */
 			ENGINE_INLINE constexpr static glm::ivec2 regionToChunk(const glm::ivec2 region) noexcept {
@@ -156,47 +150,17 @@ namespace Game {
 				return (regionCount + region % regionCount) % regionCount;
 			}
 
-		private:
-			// TODO: split?
-			struct Vertex {
-				glm::vec2 pos;
-				//GLuint texture = 0; // TODO: probably doesnt need to be 32bit
-			};
-
-			struct ActiveChunkData {
-				ActiveChunkData() = default;
-				ActiveChunkData(const ActiveChunkData&) = delete;
-				ActiveChunkData& operator=(const ActiveChunkData&) = delete;
-
-				glm::ivec2 chunkPos;
-				Engine::ECS::Entity ent;
-				Engine::Graphics::Mesh mesh; // TODO: move to comp?
-			};
-
-			// TODO: Doc
-			void buildActiveChunkData(ActiveChunkData& data, const MapChunk& chunk);
-
-			/**
-			 * Gets a region if it is already loaded; otherwise queues the region for loading.
-			 * @see MapRegion::loading
-			 * @see queueRegionToLoad
-			 * @see loadChunk
-			 */
-			MapRegion& ensureRegionLoaded(const glm::ivec2 regionPos);
-			
-			// TODO: Doc
-			void loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk);
-
-			// TODO: Doc
-			void loadChunkAsyncWorker();
-
-			// TODO: Doc
-			void queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region);
-
 		public: // TODO: make proper accessors if we actually end up needing this stuff
-			ActiveChunkData activeAreaData[activeAreaSize.x][activeAreaSize.y];
 			Engine::Shader shader;
 			Engine::Texture texture;
+
+			struct TestData { // TODO: rename
+				b2Body* body;
+				Engine::Graphics::Mesh mesh;
+				Engine::ECS::Tick lastTouched;
+			};
+
+			Engine::FlatHashMap<glm::ivec2, TestData> activeChunks;
 
 		private:
 			std::condition_variable condv;
@@ -219,6 +183,11 @@ namespace Game {
 
 			Engine::ECS::Entity mapEntity;
 
+			struct Vertex {
+				glm::vec2 pos;
+				//GLuint texture = 0; // TODO: probably doesnt need to be 32bit
+			};
+
 			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;
 
@@ -226,5 +195,30 @@ namespace Game {
 				Game::BiomeA,
 				Game::BiomeC
 			> mgen{12345};
+
+			// TODO: recycle old bodies?
+			b2Body* createBody();
+
+			void setupMesh(Engine::Graphics::Mesh& mesh) const;
+
+			// TODO: Doc
+			void buildActiveChunkData(TestData& data, const MapChunk& chunk, glm::ivec2 chunkPos);
+
+			/**
+			 * Gets a region if it is already loaded; otherwise queues the region for loading.
+			 * @see MapRegion::loading
+			 * @see queueRegionToLoad
+			 * @see loadChunk
+			 */
+			MapRegion& ensureRegionLoaded(const glm::ivec2 regionPos);
+			
+			// TODO: Doc
+			void loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk);
+
+			// TODO: Doc
+			void loadChunkAsyncWorker();
+
+			// TODO: Doc
+			void queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region);
 	};
 }

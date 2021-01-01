@@ -4,6 +4,7 @@
 
 namespace Engine::Graphics {
 	Mesh::Mesh() {
+		// TODO: dont create these here. Maybe in setBufferData or setBufferFormat
 		glCreateVertexArrays(1, &vao);
 		glCreateBuffers(bufferCount, buffers);
 		glVertexArrayElementBuffer(vao, ebo);

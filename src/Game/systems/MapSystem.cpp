@@ -43,32 +43,26 @@ namespace Game {
 	}
 
 	void MapSystem::setup() {
+		mapEntity = world.createEntity();
 		shader = engine.shaderManager.get("shaders/terrain");
 		texture = engine.textureManager.get("assets/test.png");
-		auto& physSys = world.getSystem<PhysicsSystem>();
+	}
 
-		// Active Area stuff
+	b2Body* MapSystem::createBody() {
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_staticBody;
 		bodyDef.awake = false;
 		bodyDef.fixedRotation = true;
+		return world.getSystem<PhysicsSystem>().createBody(mapEntity, bodyDef);
+	}
 
+	void MapSystem::setupMesh(Engine::Graphics::Mesh& mesh) const {
 		constexpr Engine::Graphics::VertexFormat<1> vertexFormat = {
 			sizeof(Vertex),
 			{{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)}}
 		};
 
-		for (int x = 0; x < activeAreaSize.x; ++x) {
-			for (int y = 0; y < activeAreaSize.y; ++y) {
-				auto& data = activeAreaData[x][y];
-				data.ent = world.createEntity(true);
-				auto& physBodyComp = world.addComponent<PhysicsBodyComponent>(data.ent);
-				world.addComponent<PhysicsProxyComponent>(data.ent);
-
-				physBodyComp.setBody(physSys.createBody(data.ent, bodyDef));
-				data.mesh.setBufferFormat(vertexFormat);
-			}
-		}
+		mesh.setBufferFormat(vertexFormat);
 	}
 
 	void MapSystem::tick() {
@@ -120,8 +114,6 @@ namespace Game {
 	void MapSystem::ensurePlayAreaLoaded(glm::ivec2 blockPos) {
 		const auto minChunk = blockToChunk(blockPos) - glm::ivec2{2,2};
 		const auto maxChunk = blockToChunk(blockPos) + glm::ivec2{2,2};
-		const auto minRegion = chunkToRegion(minChunk);
-		const auto maxRegion = chunkToRegion(maxChunk);
 
 		for (auto chunkPos = minChunk; chunkPos.x <= maxChunk.x; ++chunkPos.x) {
 			for (chunkPos.y = minChunk.y; chunkPos.y <= maxChunk.y; ++chunkPos.y) {
@@ -132,13 +124,22 @@ namespace Game {
 				const auto idx = chunkToRegionIndex(chunkPos);
 				auto& chunk = region.data[idx.x][idx.y];
 
-				const auto aIdx = chunkToActiveIndex(chunkPos);
-				auto& data = activeAreaData[aIdx.x][aIdx.y];
-				if (chunk.updated || data.chunkPos != chunkPos) {
-					chunk.updated = false;
-					data.chunkPos = chunkPos;
-					buildActiveChunkData(data, chunk);
+				// TODO: at no point are active chunks cleaned up atm
+				auto it = activeChunks.find(chunkPos);
+				if (it == activeChunks.end()) {
+					it = activeChunks.emplace(chunkPos, TestData{}).first;
+
+					// TODO: these need to be freed when destructing
+					it->second.body = createBody();
+					setupMesh(it->second.mesh);
 				}
+
+				if (chunk.updated) {
+					chunk.updated = false;
+					buildActiveChunkData(it->second, chunk, chunkPos);
+				}
+
+				it->second.lastTouched = world.getTick();
 			}
 		}
 	}
@@ -181,7 +182,7 @@ namespace Game {
 	}
 
 	// TODO: thread this. Not sure how nice box2d will play with it.
-	void MapSystem::buildActiveChunkData(ActiveChunkData& data, const MapChunk& chunk) {
+	void MapSystem::buildActiveChunkData(TestData& data, const MapChunk& chunk, glm::ivec2 chunkPos) {
 		// TODO: simplify. currently have two mostly duplicate sections.
 		
 		{ // Render stuff
@@ -236,12 +237,8 @@ namespace Game {
 		}
 
 		{ // Physics stuff
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(data.chunkPos)));
-			auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(data.ent);
-			auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(data.ent);
-			physProxyComp.trans.p = pos;
-			physProxyComp.snap = true;
-			auto& body = physBodyComp.getBody();
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos)));
+			auto& body = *data.body;
 
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures
