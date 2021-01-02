@@ -751,7 +751,7 @@ namespace Game {
 			world.addComponent<NetworkedFlag>(ent);
 			world.addComponent<NeighborsComponent>(ent);
 		} else {
-			world.addComponent<LocalPlayerFlag>(ent);
+			world.addComponent<CameraTargetFlag>(ent);
 		}
 		// TODO: client only
 		world.addComponent<PhysicsInterpComponent>(ent);

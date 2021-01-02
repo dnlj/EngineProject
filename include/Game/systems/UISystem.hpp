@@ -21,6 +21,8 @@ namespace Game {
 			void tick();
 
 		private:
+			std::stringstream ss;
+
 			Engine::Clock::TimePoint now;
 			Engine::Clock::TimePoint lastUpdate;
 			Engine::Clock::Duration updateRate = std::chrono::milliseconds{100};
@@ -41,6 +43,7 @@ namespace Game {
 			void ui_connect();
 			void ui_debug();
 			void ui_coordinates();
+			void ui_camera();
 			void ui_netsim();
 			void ui_network();
 			void ui_entities();

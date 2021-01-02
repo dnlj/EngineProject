@@ -71,8 +71,8 @@ namespace Game {
 		NeighborsComponent,
 		NetworkStatsComponent,
 		struct CharacterSpellComponent, // TODO: rn xFlag?
-		struct LocalPlayerFlag,
 		struct PlayerFlag,
+		struct CameraTargetFlag,
 		struct NetworkedFlag
 	>;
 

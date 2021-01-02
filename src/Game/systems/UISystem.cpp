@@ -118,6 +118,7 @@ namespace Game {
 		}
 
 		ui_coordinates();
+		ui_camera();
 		ui_netsim();
 		ui_network();
 		ui_entities();
@@ -235,6 +236,28 @@ namespace Game {
 			auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
 			ImGui::Text("Physics Debug Verts: (%i)", physDebug.getVertexCount());
 		#endif
+	}
+
+	void UISystem::ui_camera() {
+		if constexpr (!ENGINE_SERVER) { return; }
+		if (!ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+		for (const auto ply : world.getFilter<PlayerFlag>()) {
+			if (world.hasComponent<CameraTargetFlag>(ply)) {}
+			ImGui::PushID(ply.id);
+
+			ss.str("");
+			ss << ply;
+			if (ImGui::Button(ss.str().c_str())) {
+				for (const auto ply2 : world.getFilter<PlayerFlag>()) {
+					if (world.hasComponent<CameraTargetFlag>(ply2)) {
+						world.removeComponent<CameraTargetFlag>(ply2);
+					}
+				}
+				world.addComponent<CameraTargetFlag>(ply);
+			};
+
+			ImGui::PopID();
+		}
 	}
 
 	void UISystem::ui_netsim() {
