@@ -157,7 +157,7 @@ namespace Game {
 			struct TestData { // TODO: rename
 				b2Body* body;
 				Engine::Graphics::Mesh mesh;
-				Engine::ECS::Tick lastTouched;
+				Engine::Clock::TimePoint lastUsed;
 			};
 
 			Engine::FlatHashMap<glm::ivec2, TestData> activeChunks;
@@ -204,14 +204,6 @@ namespace Game {
 			// TODO: Doc
 			void buildActiveChunkData(TestData& data, const MapChunk& chunk, glm::ivec2 chunkPos);
 
-			/**
-			 * Gets a region if it is already loaded; otherwise queues the region for loading.
-			 * @see MapRegion::loading
-			 * @see queueRegionToLoad
-			 * @see loadChunk
-			 */
-			MapRegion& ensureRegionLoaded(const glm::ivec2 regionPos);
-			
 			// TODO: Doc
 			void loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk);
 

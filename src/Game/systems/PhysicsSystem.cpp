@@ -173,6 +173,7 @@ namespace Game {
 	}
 
 	void PhysicsSystem::destroyBody(b2Body* body) {
+		ENGINE_DEBUG_ASSERT(body != nullptr, "Attempting to destroy null b2Body");
 		physWorld.DestroyBody(body);
 	}
 

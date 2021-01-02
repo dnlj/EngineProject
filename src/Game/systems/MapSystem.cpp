@@ -101,10 +101,23 @@ namespace Game {
 
 	void MapSystem::run(float32 dt) {
 		auto timeout = world.getTickTime() - std::chrono::seconds{10};
+
+		// Unload regions
 		for (auto it = regions.begin(); it != regions.end();) {
 			if (it->second->lastUsed < timeout) {
-				std::cout << "Unloading region: " << it->first.x << ", " << it->first.y << "\n";
+				ENGINE_LOG("Unloading region: ", it->first.x, ", ", it->first.y);
 				it = regions.erase(it);
+			} else {
+				++it;
+			}
+		}
+
+		// Unload active chunks
+		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
+			if (it->second.lastUsed < timeout) {
+				ENGINE_LOG("Unloading chunk: ", it->first.x, ", ", it->first.y);
+				world.getSystem<PhysicsSystem>().destroyBody(it->second.body);
+				it = activeChunks.erase(it);
 			} else {
 				++it;
 			}
@@ -112,26 +125,59 @@ namespace Game {
 	}
 
 	void MapSystem::ensurePlayAreaLoaded(glm::ivec2 blockPos) {
-		const auto minChunk = blockToChunk(blockPos) - glm::ivec2{2,2};
-		const auto maxChunk = blockToChunk(blockPos) + glm::ivec2{2,2};
+		// How large of an area to load around the chunk blockPos is in.
+		constexpr auto areaSize = glm::ivec2{2, 2};
 
-		for (auto chunkPos = minChunk; chunkPos.x <= maxChunk.x; ++chunkPos.x) {
-			for (chunkPos.y = minChunk.y; chunkPos.y <= maxChunk.y; ++chunkPos.y) {
-				auto& region = ensureRegionLoaded(chunkToRegion(chunkPos));
-				if (region.loading()) { continue; }
-				region.lastUsed = world.getTickTime();
+		// How large of a buffer around areaSize to wait befor unloading areas.
+		// We want a larger unload area so that we arent constantly loading/unloading
+		// when a player is near a chunk border
+		constexpr auto buffSize = glm::ivec2{2, 2}; // TODO: i think we may want this mouse around 3-5 range
 
-				const auto idx = chunkToRegionIndex(chunkPos);
-				auto& chunk = region.data[idx.x][idx.y];
+		const auto minAreaChunk = blockToChunk(blockPos) - areaSize;
+		const auto maxAreaChunk = blockToChunk(blockPos) + areaSize;
+		const auto minBuffChunk = minAreaChunk - buffSize;
+		const auto maxBuffChunk = maxAreaChunk + buffSize;
 
-				// TODO: at no point are active chunks cleaned up atm
+		const auto&& isBufferChunk = [&](glm::ivec2 pos){
+			return (pos.x < minAreaChunk.x || pos.x > maxAreaChunk.x)
+				|| (pos.y < minAreaChunk.y || pos.y > maxAreaChunk.y);
+		};
+
+		for (auto chunkPos = minBuffChunk; chunkPos.x <= maxBuffChunk.x; ++chunkPos.x) {
+			for (chunkPos.y = minBuffChunk.y; chunkPos.y <= maxBuffChunk.y; ++chunkPos.y) {
+				const auto isBufferChunk = chunkPos.x < minAreaChunk.x
+					|| chunkPos.x > maxAreaChunk.x
+					|| chunkPos.y < minAreaChunk.y
+					|| chunkPos.y > maxAreaChunk.y;
+
+				const auto regionPos = chunkToRegion(chunkPos);
+				auto regionIt = regions.find(regionPos);
+
+				if (regionIt == regions.end()) {
+					if (!isBufferChunk) {
+						const auto it = regions.emplace(regionPos, new MapRegion{
+							.lastUsed = world.getTickTime(),
+						}).first;
+						queueRegionToLoad(regionPos, *it->second);
+					}
+					continue;
+				}
+
+				const auto& region = regionIt->second;
+				if (region->loading()) { continue; }
+				region->lastUsed = world.getTickTime();
+
+				const auto chunkIdx = chunkToRegionIndex(chunkPos);
+				auto& chunk = region->data[chunkIdx.x][chunkIdx.y];
+
 				auto it = activeChunks.find(chunkPos);
 				if (it == activeChunks.end()) {
+					if (isBufferChunk) { continue; }
 					it = activeChunks.emplace(chunkPos, TestData{}).first;
-
-					// TODO: these need to be freed when destructing
 					it->second.body = createBody();
 					setupMesh(it->second.mesh);
+					ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", chunk.updated ? "fresh" : "stale", ")");
+					chunk.updated = true;
 				}
 
 				if (chunk.updated) {
@@ -139,7 +185,7 @@ namespace Game {
 					buildActiveChunkData(it->second, chunk, chunkPos);
 				}
 
-				it->second.lastTouched = world.getTick();
+				it->second.lastUsed = world.getTickTime();
 			}
 		}
 	}
@@ -159,17 +205,14 @@ namespace Game {
 		const glm::ivec2 chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
 		const auto chunkPos = blockToChunk(getBlockOffset()) + chunkOffset;
 		const auto chunkIndex = chunkToRegionIndex(chunkPos);
-		auto& region = ensureRegionLoaded(chunkToRegion(chunkPos));
 
-		// TODO: should we wait/spin till load?
-		if (region.loading()) [[unlikely]] { return; }
+		const auto regionPos = chunkToRegion(chunkPos);
+		const auto regionIt = regions.find(regionPos);
+		if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
 
-		auto& chunk = region.data[chunkIndex.x][chunkIndex.y];
+		auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
 		chunk.data[blockIndex.x][blockIndex.y] = value;
 		chunk.updated = true;
-
-		// TODO: we really only want to generate once if we the chunk has been changed since last frame.
-		// TODO: as it is now we generate once per edit, which could be many times per frame
 	}
 	
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 world) const {
@@ -291,17 +334,6 @@ namespace Game {
 		}
 	}
 
-	MapRegion& MapSystem::ensureRegionLoaded(const glm::ivec2 regionPos) {
-		auto it = regions.find(regionPos);
-		if (it == regions.end()) {
-			it = regions.emplace(regionPos, new MapRegion{
-				.lastUsed = world.getTickTime(),
-			}).first;
-			queueRegionToLoad(regionPos, *it->second);
-		}
-		return *it->second;
-	}
-
 	void MapSystem::loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk) {
 		const auto chunkBlockPos = chunkToBlock(chunkPos);
 
@@ -315,7 +347,7 @@ namespace Game {
 				}
 
 				chunk.data[bpos.x][bpos.y] = block;
-				//chunk.data[bpos.x][bpos.y] = bpos.x == 0 || bpos.y == 0;
+				//chunk.data[bpos.x][bpos.y] = (bpos.x == 0) ^ (bpos.y == 0);
 				//chunk.data[bpos.x][bpos.y] = bpos.x & 1 || bpos.y & 1;
 			}
 		}
