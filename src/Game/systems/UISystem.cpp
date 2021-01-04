@@ -3,6 +3,10 @@
 #include <algorithm>
 #include <cstdio>
 
+// Engine
+#include <Engine/Glue/Box2D.hpp>
+#include <Engine/Glue/glm.hpp>
+
 // Game
 #include <Game/systems/UISystem.hpp>
 #include <Game/World.hpp>
@@ -197,38 +201,44 @@ namespace Game {
 
 		const auto& activePlayerFilter = world.getFilter<PlayerFlag>();
 		if (activePlayerFilter.empty()) { return; }
+		const auto ply = *activePlayerFilter.begin();
 
 		auto& mapSys = world.getSystem<Game::MapSystem>();
 
-		const auto& actC = world.getComponent<Game::ActionComponent>(*activePlayerFilter.begin());
+		const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
 		// TODO: reimplement - ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
-		const glm::vec2 worldMousePos = actC.getTarget();
+		const auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ply);
+
+		const auto offsetMousePos = actComp.getTarget();
+		ImGui::Text("Mouse (offset): (%f, %f)", offsetMousePos.x, offsetMousePos.y);
+
+		const auto worldMousePos = offsetMousePos + Engine::Glue::as<glm::vec2>(physProxyComp.trans.p);
 		ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
 			
-		auto blockMousePos = mapSys.worldToBlock(worldMousePos);
+		const auto blockMousePos = mapSys.worldToBlock(worldMousePos);
 		ImGui::Text("Mouse (block): (%i, %i)", blockMousePos.x, blockMousePos.y);
 
-		auto blockWorldMousePos = mapSys.blockToWorld(blockMousePos);
+		const auto blockWorldMousePos = mapSys.blockToWorld(blockMousePos);
 		ImGui::Text("Mouse (block-world): (%f, %f)", blockWorldMousePos.x, blockWorldMousePos.y);
 
-		auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
-		auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
+		const auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
+		const auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
 		ImGui::Text("Mouse (chunk): (%i, %i) (%i, %i)", chunkMousePos.x, chunkMousePos.y, chunkBlockMousePos.x, chunkBlockMousePos.y);
 
 		const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);
 		ImGui::Text("Mouse (region): (%i, %i)", regionMousePos.x, regionMousePos.y);
 			
-		auto camPos = engine.camera.getPosition();
+		const auto camPos = engine.camera.getPosition();
 		ImGui::Text("Camera: (%f, %f, %f)", camPos.x, camPos.y, camPos.z);
 
-		auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
+		const auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
 		ImGui::Text("Map Offset: (%i, %i)", mapOffset.x, mapOffset.y);
 
-		auto mapBlockOffset = mapSys.getBlockOffset();
+		const auto mapBlockOffset = mapSys.getBlockOffset();
 		ImGui::Text("Map Offset (block): (%i, %i)", mapBlockOffset.x, mapBlockOffset.y);
 
-		auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
+		const auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
 		ImGui::Text("Map Offset (chunk): (%i, %i)", mapChunkOffset.x, mapChunkOffset.y);
 
 
