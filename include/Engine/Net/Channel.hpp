@@ -11,6 +11,44 @@ namespace Engine::Net {
 	// TODO: make MAX_ACTIVE_MESSAGES_PER_CHANNEL a template argument of Channel_ReliableSender instead of global?
 	constexpr inline int MAX_ACTIVE_MESSAGES_PER_CHANNEL = 64;
 
+	template<class Channel, auto M>
+	class MessageWriter {
+		private:
+			Channel& channel;
+			PacketWriter* packetWriter = nullptr;
+
+		public:
+			MessageWriter(Channel& channel, PacketWriter* packetWriter)
+				: channel{channel}
+				, packetWriter{packetWriter} {
+			}
+
+			~MessageWriter() {
+				if (!*this) { return; }
+				auto node = packetWriter->back();
+				auto* hdr = reinterpret_cast<MessageHeader*>(node->curr);
+				hdr->size = static_cast<decltype(hdr->size)>(node->size() - sizeof(*hdr));
+				channel.msgEnd(node->packet.getSeqNum(), *hdr);
+				packetWriter->advance();
+			}
+
+			ENGINE_INLINE operator bool() const noexcept { return packetWriter; }
+
+			template<class... Args>
+			ENGINE_INLINE void write(Args&&... args) {
+				packetWriter->write(std::forward<Args>(args)...);
+			}
+
+			template<int N>
+			ENGINE_INLINE void write(uint32 t) {
+				packetWriter->write<N>(t);
+			}
+
+			ENGINE_INLINE void writeFlushBits() {
+				packetWriter->writeFlushBits();
+			}
+	};
+
 	/**
 	 * The base class used by all channels.
 	 * @tparam Ms... A sequential list of messages handled by this channel.
@@ -28,6 +66,7 @@ namespace Engine::Net {
 				return true;
 			}
 			static_assert(contiguous(), "The messages handled by a channel must be contiguous.");
+		public:
 
 		public:
 			Channel_Base() = default;
@@ -66,6 +105,13 @@ namespace Engine::Net {
 			 * Checks if this channel can have messages written to it.
 			 */
 			bool canWriteMessage() = delete;
+
+			// TODO: doc
+			template<auto M, class Channel>
+			[[nodiscard]]
+			auto beginMessage(Channel& channel, PacketWriter* packetWriter) {
+				return MessageWriter<Channel, M>(channel, packetWriter);
+			}
 
 			/**
 			 * Determines if a message should be processed by a connection.

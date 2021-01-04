@@ -696,10 +696,15 @@ namespace Game {
 		
 				for (auto& ply : world.getFilter<PlayerFilter>()) {
 					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-					if (conn.msgBegin<MessageType::PING>()) {
-						conn.write(static_cast<uint8>(++ping & 0x7F));
-						conn.msgEnd<MessageType::PING>();
+
+					if (auto msg = conn.beginMessage<MessageType::PING>()) {
+						msg.write(static_cast<uint8>(++ping & 0x7F));
 					}
+
+					//if (conn.msgBegin<MessageType::PING>()) {
+					//	conn.write(static_cast<uint8>(++ping & 0x7F));
+					//	conn.msgEnd<MessageType::PING>();
+					//}
 				}
 			}
 		}

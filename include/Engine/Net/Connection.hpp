@@ -361,6 +361,80 @@ namespace Engine::Net {
 				return true;
 			}
 
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			// TODO: remove the old msgBegin/msgEnd once large messagewriter is impl
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			/////////////////
+			template<auto M>
+			[[nodiscard]]
+			ENGINE_INLINE decltype(auto) beginMessage() {
+				// TODO: check that no other message is active
+				auto& channel = getChannelForMessage<M>();
+
+				if (channel.canWriteMessage()) {
+					///////////
+					///////////
+					///////////
+					///////////
+					///////////
+					// TODO: should this be in MessageWriter? how will we handle split messages?
+					// seems like it should
+					///////////
+					///////////
+					///////////
+					///////////
+					///////////
+					///////////
+					packetWriter.ensurePacketAvailable();
+					write(MessageHeader{
+						.type = M,
+					});
+				}
+
+				return channel.beginMessage<M>(
+					channel,
+					channel.canWriteMessage() ? &packetWriter : nullptr
+				);
+			}
+			
+			template<auto M>
+			void endMessage() {
+				static_assert(sizeof(M) == sizeof(MessageHeader::type));
+
+				auto node = packetWriter.back();
+				ENGINE_DEBUG_ASSERT(node, "Unmatched Connection::endMessage<", static_cast<int>(M), "> call.");
+
+				auto* hdr = reinterpret_cast<MessageHeader*>(node->curr);
+				ENGINE_DEBUG_ASSERT(hdr->type == M,
+					"Mismatched message being/end calls. ",
+					static_cast<int64>(hdr->type), " != ", static_cast<int64>(M)
+				);
+
+				hdr->size = static_cast<decltype(hdr->size)>(node->size() - sizeof(*hdr));
+
+				getChannelForMessage<M>().msgEnd(node->packet.getSeqNum(), *hdr);
+				packetWriter.advance();
+			}
+
 			template<auto M>
 			void msgEnd() {
 				static_assert(sizeof(M) == sizeof(MessageHeader::type));
