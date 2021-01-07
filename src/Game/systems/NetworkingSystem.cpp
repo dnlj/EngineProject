@@ -404,6 +404,13 @@ namespace Game {
 	HandleMessageDef(MessageType::TEST)
 	}
 
+	HandleMessageDef(MessageType::MAP_CHUNK)
+		std::cout << "=========================================================\n";
+		std::cout << "Map chunk: " << (int)head.seq << " " << (int)head.size << " " << (int)head.type << "\n";
+		std::cout << "=========================================================\n";
+	}
+
+	// TODO: unsued?
 	HandleMessageDef(MessageType::SPELL)
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();
 		const auto* pos = from.read<b2Vec2>();
@@ -692,7 +699,7 @@ namespace Game {
 				static uint8 ping = 0;
 				static auto next = now;
 				if (next > now) { return; }
-				next = now + std::chrono::milliseconds{1000};
+				next = now + std::chrono::milliseconds{5000};
 		
 				for (auto& ply : world.getFilter<PlayerFilter>()) {
 					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
@@ -701,10 +708,10 @@ namespace Game {
 						msg.write(static_cast<uint8>(++ping & 0x7F));
 					}
 
-					//if (conn.msgBegin<MessageType::PING>()) {
-					//	conn.write(static_cast<uint8>(++ping & 0x7F));
-					//	conn.msgEnd<MessageType::PING>();
-					//}
+					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
+						constexpr static byte blob[16] = {1,2,3,4,5,6,7};
+						msg.writeBlob(blob, sizeof(blob));
+					}
 				}
 			}
 		}

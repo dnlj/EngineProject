@@ -64,6 +64,12 @@ namespace Engine::Net {
 				return last;
 			}
 
+			int32 space() const noexcept {
+				const auto stop = last->packet.body + sizeof(last->packet.body);
+				const auto curr = last->last;
+				return static_cast<int32>(stop - curr);
+			}
+
 			/**
 			 * Writes a specific number of bytes to the current message.
 			 */

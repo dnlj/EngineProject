@@ -11,17 +11,28 @@ namespace Engine::Net {
 	// TODO: make MAX_ACTIVE_MESSAGES_PER_CHANNEL a template argument of Channel_ReliableSender instead of global?
 	constexpr inline int MAX_ACTIVE_MESSAGES_PER_CHANNEL = 64;
 
-	template<class Channel, auto M>
+	template<class Channel>
 	class MessageWriter {
 		private:
 			Channel& channel;
 			PacketWriter* packetWriter = nullptr;
+			MessageType type;
 
 		public:
-			MessageWriter(Channel& channel, PacketWriter* packetWriter)
+			MessageWriter(Channel& channel, PacketWriter* packetWriter, MessageType type)
 				: channel{channel}
-				, packetWriter{packetWriter} {
+				, packetWriter{packetWriter}
+				, type{type} {
+
+				if (packetWriter) {
+					packetWriter->ensurePacketAvailable();
+					write(MessageHeader{
+						.type = type,
+					});
+				}
 			}
+
+			MessageWriter(const MessageWriter&) = delete;
 
 			~MessageWriter() {
 				if (!*this) { return; }
@@ -107,10 +118,10 @@ namespace Engine::Net {
 			bool canWriteMessage() = delete;
 
 			// TODO: doc
-			template<auto M, class Channel>
+			template<class Channel>
 			[[nodiscard]]
-			auto beginMessage(Channel& channel, PacketWriter* packetWriter) {
-				return MessageWriter<Channel, M>(channel, packetWriter);
+			auto beginMessage(Channel& channel, PacketWriter* packetWriter, MessageType type) {
+				return MessageWriter<Channel>(channel, packetWriter, type);
 			}
 
 			/**
@@ -284,7 +295,6 @@ namespace Engine::Net {
 					recvData.insert(hdr.seq);
 					return true;
 				}
-
 				return false;
 			}
 	};
@@ -322,6 +332,200 @@ namespace Engine::Net {
 				}
 
 				return nullptr;
+			}
+	};
+
+	constexpr int32 MAX_MESSAGE_BLOB_SIZE = 0x7FFFFFFF;
+
+	template<class Channel>
+	class MessageBlobWriter {
+		private:
+			Channel& channel;
+			PacketWriter* packetWriter = nullptr;
+			MessageType type;
+
+		public:
+			MessageBlobWriter(Channel& channel, PacketWriter* packetWriter, MessageType type)
+				: channel{channel}
+				, packetWriter{packetWriter}
+				, type{type} {
+			}
+
+			~MessageBlobWriter() {
+				// TODO: attempt to write this this message
+			}
+
+			ENGINE_INLINE operator bool() const noexcept { return packetWriter; }
+
+			ENGINE_INLINE void writeBlob(const byte* data, int32 size) {
+				ENGINE_DEBUG_ASSERT(size <= MAX_MESSAGE_BLOB_SIZE, "Attempting to send too much data");
+				channel.writeBlob(*packetWriter, type, data, size);
+			}
+	};
+
+	// TODO: update desc for Channel_LargeReliableOrdered
+	/**
+	 * A reliable ordered network channel.
+	 * @see Channel_Base
+	 */
+	template<MessageType... Ms>
+	class Channel_LargeReliableOrdered : public Channel_ReliableSender<Ms...> {
+		private:
+			using Base = Channel_ReliableSender<Ms...>;
+			SeqNum nextRecvSeq = 0;
+			SeqNum nextBlob = 0;
+
+			SequenceBuffer<SeqNum, bool, MAX_ACTIVE_MESSAGES_PER_CHANNEL> recvData;
+
+			struct WriteBlob {
+				int32 curr = 0;
+				std::vector<byte> data;
+				MessageType type;
+				const int32 remaining() const noexcept { return static_cast<int32>(data.size()) - curr; }
+			};
+
+			struct RecvBlob {
+				int32 total = 0;
+				std::vector<byte> data;
+
+				ENGINE_INLINE bool complete() const noexcept {
+					return total && (total == data.size() - sizeof(MessageHeader));
+				}
+
+				void insert(int32 i, const byte* start, const byte* stop) {
+					i = i + sizeof(MessageHeader);
+					const auto len = stop - start;
+					if (static_cast<int32>(data.size()) < i + len) {
+						data.resize(i + len);
+					}
+					ENGINE_LOG("Insert: ", len, " ", data.size());
+					memcpy(&data[i], start, len);
+				}
+			};
+
+			SequenceBuffer<SeqNum, WriteBlob, 8> writeBlobs;
+			SequenceBuffer<SeqNum, RecvBlob, 8> recvBlobs;
+
+			struct BlobHeader {
+				constexpr static int32 LEN_MASK = 0x7FFFFFFF;
+				int32 start;
+				SeqNum seq;
+			};
+
+		public:
+			bool canWriteMessage() const noexcept {
+				return !writeBlobs.entryAt(nextBlob);
+			};
+
+			void writeBlob(PacketWriter& packetWriter, MessageType type, const byte* data, int32 size) {
+				auto& blob = writeBlobs.insert(nextBlob);
+				blob.type = type;
+				blob.data.assign(data, data + size);
+				attemptWriteBlob(packetWriter, nextBlob);
+				++nextBlob;
+			}
+
+			bool recv(const MessageHeader& hdr) {
+				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
+					recvData.insert(hdr.seq);
+
+					const byte* dataBegin = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr);
+
+					const auto& info = *reinterpret_cast<const BlobHeader*>(dataBegin);
+					dataBegin += sizeof(info);
+
+					auto found = recvBlobs.find(info.seq);
+					if (found == nullptr) {
+						found = &recvBlobs.insert(info.seq);
+						MessageHeader fake{
+							.type = hdr.type,
+						};
+						found->insert(
+							-static_cast<int32>(sizeof(fake)),
+							reinterpret_cast<byte*>(&fake),
+							reinterpret_cast<byte*>(&fake) + sizeof(fake)
+						);
+					}
+
+					if (info.start & ~BlobHeader::LEN_MASK) {
+						found->total = *reinterpret_cast<const int32*>(dataBegin);
+						dataBegin += sizeof(found->total);
+					}
+
+					const auto dataEnd = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size;
+
+					// TODO: rm
+					ENGINE_INFO("recv blob part: ", hdr.seq, " ", info.seq, " ", dataEnd - dataBegin);
+
+					found->insert(info.start & BlobHeader::LEN_MASK, dataBegin, dataEnd);
+					
+					// TODO: rm
+					if (found->complete()) {
+						ENGINE_LOG("Blob ", info.seq, " complete!");
+					}
+				}
+
+				return false;
+			}
+
+			void attemptWriteBlob(PacketWriter& packetWriter, SeqNum seq) {
+				auto* blob = writeBlobs.find(seq);
+				if (!blob) { return; }
+				
+				packetWriter.ensurePacketAvailable();
+
+				while (Base::canWriteMessage() && blob->remaining()) {
+					const auto space = packetWriter.space();
+					if (space < sizeof(BlobHeader) + 16) { // Arbitrary minimum data size
+						// TODO: actually want to adv packet yes?
+						return;
+					}
+
+					auto msg = Base::beginMessage(*static_cast<Base*>(this), &packetWriter, blob->type);
+					const int32 len = std::min(space - static_cast<int32>(sizeof(BlobHeader)), blob->remaining());
+
+					msg.write(BlobHeader{
+						.start = blob->curr | (blob->curr > 0 ? 0 : ~BlobHeader::LEN_MASK),
+						.seq = seq,
+					});
+
+					if (blob->curr == 0) {
+						msg.write(static_cast<int32>(blob->data.size()));
+					}
+
+					msg.write(blob->data.data() + blob->curr, len);
+					blob->curr += len;
+				}
+			}
+
+			void writeUnacked(PacketWriter& packetWriter) {
+				for (auto seq = writeBlobs.minValid(); seqLess(seq, writeBlobs.max() + 1); ++seq) {
+					attemptWriteBlob(packetWriter, seq);
+				}
+
+				Base::writeUnacked(packetWriter);
+			}
+
+			const MessageHeader* recvNext() {
+				for (auto seq = recvBlobs.minValid(); seqLess(seq, recvBlobs.max() + 1); ++seq) {
+					auto* blob = recvBlobs.find(seq);
+
+					if (blob && blob->complete()) {
+						recvBlobs.remove(seq);
+						auto head = reinterpret_cast<MessageHeader*>(blob->data.data());
+						head->size = blob->total;
+						head->seq = seq;
+						return head;
+					}
+				}
+
+				return nullptr;
+			}
+
+			template<class Channel>
+			[[nodiscard]]
+			auto beginMessage(Channel& channel, PacketWriter* packetWriter, MessageType type) {
+				return MessageBlobWriter<Channel>(channel, packetWriter, type);
 			}
 	};
 }

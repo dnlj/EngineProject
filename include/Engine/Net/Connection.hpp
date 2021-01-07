@@ -158,6 +158,7 @@ namespace Engine::Net {
 			void setKeyRecv(decltype(keyRecv) keyRecv) { this->keyRecv = keyRecv; }
 			auto getKeyRecv() const { return keyRecv; }
 
+			// TODO: why does this have a return value? isnt it always true?
 			[[nodiscard]]
 			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
 				rdat.time = time;
@@ -389,30 +390,10 @@ namespace Engine::Net {
 			ENGINE_INLINE decltype(auto) beginMessage() {
 				// TODO: check that no other message is active
 				auto& channel = getChannelForMessage<M>();
-
-				if (channel.canWriteMessage()) {
-					///////////
-					///////////
-					///////////
-					///////////
-					///////////
-					// TODO: should this be in MessageWriter? how will we handle split messages?
-					// seems like it should
-					///////////
-					///////////
-					///////////
-					///////////
-					///////////
-					///////////
-					packetWriter.ensurePacketAvailable();
-					write(MessageHeader{
-						.type = M,
-					});
-				}
-
-				return channel.beginMessage<M>(
+				return channel.beginMessage(
 					channel,
-					channel.canWriteMessage() ? &packetWriter : nullptr
+					channel.canWriteMessage() ? &packetWriter : nullptr,
+					M
 				);
 			}
 			
