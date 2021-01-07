@@ -474,15 +474,29 @@ namespace Engine::Net {
 				
 				packetWriter.ensurePacketAvailable();
 
-				while (Base::canWriteMessage() && blob->remaining()) {
-					const auto space = packetWriter.space();
+				while (Base::canWriteMessage()) {
+					if (blob->remaining() == 0) {
+						writeBlobs.remove(seq);
+						return;
+					}
+
+					const auto space = std::max(0,
+						packetWriter.space()
+						- static_cast<int32>(sizeof(MessageHeader))
+						- static_cast<int32>(sizeof(BlobHeader))
+						- static_cast<int32>(sizeof(int32)) // Optional size field
+					);
 					if (space < sizeof(BlobHeader) + 16) { // Arbitrary minimum data size
 						// TODO: actually want to adv packet yes?
 						return;
 					}
 
 					auto msg = Base::beginMessage(*static_cast<Base*>(this), &packetWriter, blob->type);
-					const int32 len = std::min(space - static_cast<int32>(sizeof(BlobHeader)), blob->remaining());
+
+					// TODO: rm
+					const auto b = blob->remaining();
+
+					const int32 len = std::min(space, blob->remaining());
 
 					msg.write(BlobHeader{
 						.start = blob->curr | (blob->curr > 0 ? 0 : ~BlobHeader::LEN_MASK),
@@ -491,6 +505,7 @@ namespace Engine::Net {
 
 					if (blob->curr == 0) {
 						msg.write(static_cast<int32>(blob->data.size()));
+
 					}
 
 					msg.write(blob->data.data() + blob->curr, len);

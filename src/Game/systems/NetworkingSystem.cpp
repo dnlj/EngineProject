@@ -408,6 +408,12 @@ namespace Game {
 		std::cout << "=========================================================\n";
 		std::cout << "Map chunk: " << (int)head.seq << " " << (int)head.size << " " << (int)head.type << "\n";
 		std::cout << "=========================================================\n";
+		constexpr auto sz = 1024 * 16;
+		const byte (&data)[sz] = *(const byte(*)[sz])from.read(sz);
+
+		for (int i = 0; i < sz; ++i) {
+			ENGINE_ASSERT((byte)i == data[i]);
+		}
 	}
 
 	// TODO: unsued?
@@ -709,7 +715,12 @@ namespace Game {
 					}
 
 					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
-						constexpr static byte blob[16] = {1,2,3,4,5,6,7};
+						static byte blob[1024 * 16] = {};
+						
+						for (int i = 0; i < sizeof(blob); ++i) {
+							blob[i] = i;
+						}
+
 						msg.writeBlob(blob, sizeof(blob));
 					}
 				}
