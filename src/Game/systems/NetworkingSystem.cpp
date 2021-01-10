@@ -409,10 +409,15 @@ namespace Game {
 		std::cout << "Map chunk: " << (int)head.seq << " " << (int)head.size << " " << (int)head.type << "\n";
 		std::cout << "=========================================================\n";
 		constexpr auto sz = 1024 * 16;
-		const byte (&data)[sz] = *(const byte(*)[sz])from.read(sz);
+		//const byte (&data)[sz] = *(const byte(*)[sz])from.read(sz);
+		byte data[sz] = {};
+		memset(data, 'z', sizeof(sz));
+		memcpy(data, from.read(sz), sz);
 
 		for (int i = 0; i < sz; ++i) {
-			ENGINE_ASSERT((byte)i == data[i]);
+			const byte a = i;
+			const byte b = data[i];
+			ENGINE_ASSERT(a == b, "corrupt message ", (int)a, " ", (int)b);
 		}
 	}
 
@@ -716,7 +721,9 @@ namespace Game {
 
 					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
 						static byte blob[1024 * 16] = {};
-						
+
+						memset(blob, 'z', sizeof(blob));
+
 						for (int i = 0; i < sizeof(blob); ++i) {
 							blob[i] = i;
 						}

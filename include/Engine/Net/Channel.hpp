@@ -408,9 +408,17 @@ namespace Engine::Net {
 
 			struct BlobHeader {
 				constexpr static int32 LEN_MASK = 0x7FFFFFFF;
-				int32 start;
-				SeqNum seq;
+				// 4 bytes start
+				// 2 bytes seqnum
+				byte data[4 + 2];
+
+				int32& start() { return *reinterpret_cast<int32*>(data); }
+				const int32& start() const { return const_cast<BlobHeader*>(this)->start(); }
+
+				SeqNum& seq() { return *reinterpret_cast<SeqNum*>(data + 4); }
+				const SeqNum& seq() const { return const_cast<BlobHeader*>(this)->seq(); }
 			};
+			static_assert(sizeof(BlobHeader) == 4 + 2);
 
 		public:
 			bool canWriteMessage() const noexcept {
@@ -434,9 +442,9 @@ namespace Engine::Net {
 					const auto& info = *reinterpret_cast<const BlobHeader*>(dataBegin);
 					dataBegin += sizeof(info);
 
-					auto found = recvBlobs.find(info.seq);
+					auto found = recvBlobs.find(info.seq());
 					if (found == nullptr) {
-						found = &recvBlobs.insert(info.seq);
+						found = &recvBlobs.insert(info.seq());
 						MessageHeader fake{
 							.type = hdr.type,
 						};
@@ -447,7 +455,7 @@ namespace Engine::Net {
 						);
 					}
 
-					if (info.start & ~BlobHeader::LEN_MASK) {
+					if (info.start() & ~BlobHeader::LEN_MASK) {
 						found->total = *reinterpret_cast<const int32*>(dataBegin);
 						dataBegin += sizeof(found->total);
 					}
@@ -455,13 +463,13 @@ namespace Engine::Net {
 					const auto dataEnd = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size;
 
 					// TODO: rm
-					ENGINE_INFO("recv blob part: ", hdr.seq, " ", info.seq, " ", dataEnd - dataBegin);
+					ENGINE_INFO("recv blob part: ", hdr.seq, " ", info.seq(), " ", dataEnd - dataBegin);
 
-					found->insert(info.start & BlobHeader::LEN_MASK, dataBegin, dataEnd);
+					found->insert(info.start() & BlobHeader::LEN_MASK, dataBegin, dataEnd);
 					
 					// TODO: rm
 					if (found->complete()) {
-						ENGINE_LOG("Blob ", info.seq, " complete!");
+						ENGINE_LOG("Blob ", info.seq(), " complete!");
 					}
 				}
 
@@ -486,28 +494,24 @@ namespace Engine::Net {
 						- static_cast<int32>(sizeof(BlobHeader))
 						- static_cast<int32>(sizeof(int32)) // Optional size field
 					);
-					if (space < sizeof(BlobHeader) + 16) { // Arbitrary minimum data size
+
+					if (space < 32) { // Arbitrary minimum data size
 						// TODO: actually want to adv packet yes?
 						return;
 					}
 
 					auto msg = Base::beginMessage(*static_cast<Base*>(this), &packetWriter, blob->type);
 
-					// TODO: rm
-					const auto b = blob->remaining();
-
-					const int32 len = std::min(space, blob->remaining());
-
-					msg.write(BlobHeader{
-						.start = blob->curr | (blob->curr > 0 ? 0 : ~BlobHeader::LEN_MASK),
-						.seq = seq,
-					});
+					BlobHeader head;
+					head.start() = blob->curr | (blob->curr > 0 ? 0 : ~BlobHeader::LEN_MASK);
+					head.seq() = seq;
+					msg.write(head);
 
 					if (blob->curr == 0) {
 						msg.write(static_cast<int32>(blob->data.size()));
-
 					}
 
+					const int32 len = std::min(space, blob->remaining());
 					msg.write(blob->data.data() + blob->curr, len);
 					blob->curr += len;
 				}

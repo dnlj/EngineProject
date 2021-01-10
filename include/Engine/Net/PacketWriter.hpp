@@ -75,7 +75,7 @@ namespace Engine::Net {
 			 */
 			void* write(const void* t, size_t sz) {
 				ENGINE_DEBUG_ASSERT(last != nullptr, "No network message active.");
-				ENGINE_DEBUG_ASSERT(sz <= MAX_MESSAGE_SIZE, "Message data exceeds MAX_MESSAGE_SIZE = ", MAX_MESSAGE_SIZE, " bytes.");
+				ENGINE_DEBUG_ASSERT(sz <= sizeof(Packet::body), "Message data ", sz," exceeds sizeof(Packet::body) = ", sizeof(Packet::body), " bytes.");
 
 				if (last->last + sz <= last->packet.body + sizeof(last->packet.body)) {
 					memcpy(last->last, t, sz);
