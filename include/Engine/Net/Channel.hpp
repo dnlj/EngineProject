@@ -377,6 +377,16 @@ namespace Engine::Net {
 
 			SequenceBuffer<SeqNum, bool, MAX_ACTIVE_MESSAGES_PER_CHANNEL> recvData;
 
+			struct Range {
+				int32 start;
+				int32 stop;
+
+				ENGINE_INLINE int32 size() const noexcept { return stop - start; }
+				ENGINE_INLINE bool operator<(const Range& other) const noexcept {
+					return start < other.start;
+				}
+			};
+
 			struct WriteBlob {
 				int32 curr = 0;
 				std::vector<byte> data;
@@ -387,19 +397,43 @@ namespace Engine::Net {
 			struct RecvBlob {
 				int32 total = 0;
 				std::vector<byte> data;
+				std::vector<Range> parts;
 
 				ENGINE_INLINE bool complete() const noexcept {
-					return total && (total == data.size() - sizeof(MessageHeader));
+					return (parts.size() == 1) && (parts.begin()->size() == total + sizeof(MessageHeader));
+					//return total && (total == data.size() - sizeof(MessageHeader));
 				}
 
 				void insert(int32 i, const byte* start, const byte* stop) {
 					i = i + sizeof(MessageHeader);
-					const auto len = stop - start;
+					const int32 len = static_cast<int32>(stop - start);
 					if (static_cast<int32>(data.size()) < i + len) {
 						data.resize(i + len);
 					}
 					ENGINE_LOG("Insert: ", len, " ", data.size());
 					memcpy(&data[i], start, len);
+
+					const Range range {i, i + len};
+					auto found = std::upper_bound(parts.begin(), parts.end(), range);
+
+					// Merge with after
+					if (found != parts.cend() && range.stop == found->start) {
+						ENGINE_LOG("Merge after: (", range.start, ", ", range.stop, ") U (", found->start, ", ", found->stop, ")");
+						found->start = range.start;
+					} else {
+						found = parts.insert(found, range);
+					}
+
+					// Merge with before
+					if (found > parts.cbegin()) {
+						auto prev = found - 1;
+						if (prev->stop == found->start) {
+							ENGINE_LOG("Merge before: (", prev->start, ", ", prev->stop, ") U (", found->start, ", ", found->stop, ")");
+							prev->stop = found->stop;
+							parts.erase(found);
+							found = prev;
+						}
+					}
 				}
 			};
 
@@ -426,6 +460,7 @@ namespace Engine::Net {
 			};
 
 			void writeBlob(PacketWriter& packetWriter, MessageType type, const byte* data, int32 size) {
+				ENGINE_DEBUG_ASSERT(canWriteMessage(), "Unable to write message");
 				auto& blob = writeBlobs.insert(nextBlob);
 				blob.type = type;
 				blob.data.assign(data, data + size);
@@ -478,6 +513,8 @@ namespace Engine::Net {
 
 			void attemptWriteBlob(PacketWriter& packetWriter, SeqNum seq) {
 				auto* blob = writeBlobs.find(seq);
+
+				ENGINE_DEBUG_ASSERT(blob, "Blob not found ", seq);
 				if (!blob) { return; }
 				
 				packetWriter.ensurePacketAvailable();
