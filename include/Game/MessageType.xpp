@@ -16,6 +16,6 @@ X(ECS_ENT_DESTROY,    ENGINE_SIDE_CLIENT, Engine::Net::ConnState::Connected)
 X(ECS_COMP_ADD,       ENGINE_SIDE_CLIENT, Engine::Net::ConnState::Connected)
 X(ECS_COMP_ALWAYS,    ENGINE_SIDE_CLIENT, Engine::Net::ConnState::Connected)
 X(ECS_FLAG,           ENGINE_SIDE_CLIENT, Engine::Net::ConnState::Connected)
-X(MAP_CHUNK,          ENGINE_SIDE_SERVER, Engine::Net::ConnState::Connected)
+X(MAP_CHUNK,          ENGINE_SIDE_CLIENT, Engine::Net::ConnState::Connected)
 
 #undef X

@@ -513,8 +513,6 @@ namespace Engine::Net {
 
 			void attemptWriteBlob(PacketWriter& packetWriter, SeqNum seq) {
 				auto* blob = writeBlobs.find(seq);
-
-				ENGINE_DEBUG_ASSERT(blob, "Blob not found ", seq);
 				if (!blob) { return; }
 				
 				packetWriter.ensurePacketAvailable();

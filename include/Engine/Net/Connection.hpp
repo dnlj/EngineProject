@@ -64,7 +64,7 @@ namespace Engine::Net {
 			constexpr static float32 lossSmoothing = 0.01f;
 			float32 loss = {};
 
-			constexpr static float32 bandwidthSmoothing = 0.1f;
+			constexpr static float32 bandwidthSmoothing = 0.01f;
 			Engine::Clock::TimePoint lastBandwidthUpdate = {};
 			float32 packetSendBandwidth = 0;
 			float32 packetSentBandwidthAccum = 0;
@@ -79,7 +79,6 @@ namespace Engine::Net {
 
 			// TODO: channel - float32 sendBandwidth[sizeof...(Cs)] = {};
 			// TODO: channel - float32 recvBandwidth[sizeof...(Cs)] = {};
-
 
 			struct {
 				/** The time the message was received */

@@ -32,45 +32,47 @@ namespace Game {
 			BlockId data[size.x][size.y] = {};
 			Engine::ECS::Tick updated = {};
 			Engine::ECS::Tick lastEncoding = {};
-			std::vector<RLEPair> encoding;
+			std::vector<byte> encoding;
 
-			// TODO: untested
 			void toRLE() {
 				if (lastEncoding == updated) { return; }
 				lastEncoding = updated;
 				encoding.clear();
 
+				// Reserve space for position data
+				encoding.insert(encoding.end(), sizeof(size), 0);
+
 				constexpr auto sz = size.x * size.y;
 				const BlockId* linear = &data[0][0];
 
-				RLEPair pair = {linear[0], 1};
+				RLEPair* pair = reinterpret_cast<RLEPair*>(&*encoding.insert(encoding.end(), sizeof(RLEPair), 0));
+				pair->bid = linear[0];
+				pair->count = 1;
 				for (int i = 1; i < sz; ++i) {
 					const auto& bid = linear[i];
-					if (bid == pair.bid) {
-						++pair.count;
+					if (bid == pair->bid) {
+						++pair->count;
 					} else {
-						encoding.push_back(pair);
-						pair.bid = bid;
-						pair.count = 1;
+						pair = reinterpret_cast<RLEPair*>(&*encoding.insert(encoding.end(), sizeof(RLEPair), 0));
+						pair->bid = bid;
+						pair->count = 1;
 					}
 				}
 			}
 			
-			// TODO: untested
-			void fromRLE(RLEPair* begin, const RLEPair* end) {
+			void fromRLE(const RLEPair* begin, const RLEPair* end) {
 				constexpr auto sz = size.x * size.y;
 				BlockId* linear = &data[0][0];
-
-				RLEPair pair = {linear[0], 1};
+				RLEPair pair;
 				int i = 0;
 				while (begin != end) {
-					linear[i] = pair.bid;
-					++i;
-					--pair.count;
-					if (pair.count == 0) {
-						++begin;
-						pair = *begin;
+					pair = *begin;
+					while (pair.count) {
+						linear[i] = pair.bid;
+						++i;
+						--pair.count;
 					}
+					++begin;
 				}
 			}
 	};

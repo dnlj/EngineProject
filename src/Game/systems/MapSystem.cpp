@@ -93,11 +93,34 @@ namespace Game {
 			}
 
 			if (!world.isPerformingRollback()) {
-				//auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsBodyComponent>(ply).getPosition());
-				//ensurePlayAreaLoaded(worldToBlock(pos));
 				ensurePlayAreaLoaded(ply);
 			}
 		}
+	}
+
+	void MapSystem::chunkFromNet(Connection& from, const Engine::Net::MessageHeader& head) {
+		const byte* begin = reinterpret_cast<const byte*>(from.read(head.size));
+		const byte* end = begin + head.size;
+		glm::ivec2 chunkPos;
+
+		memcpy(&chunkPos.x, begin, sizeof(chunkPos.x));
+		begin += sizeof(chunkPos.x);
+		
+		memcpy(&chunkPos.y, begin, sizeof(chunkPos.y));
+		begin += sizeof(chunkPos.y);
+
+		ENGINE_LOG("Recv chunk ", head.seq, " (", chunkPos.x, ", ", chunkPos.y, ")");
+
+		const auto regionPos = chunkToRegion(chunkPos);
+		auto regionIt = regions.find(regionPos);
+		const auto chunkIdx = chunkToRegionIndex(chunkPos);
+		auto& chunk = regionIt->second->data[chunkIdx.x][chunkIdx.y];
+
+		chunk.fromRLE(
+			reinterpret_cast<const MapChunk::RLEPair*>(begin),
+			reinterpret_cast<const MapChunk::RLEPair*>(end)
+		);
+		chunk.updated = world.getTick() + 1;
 	}
 
 	void MapSystem::run(float32 dt) {
@@ -126,8 +149,28 @@ namespace Game {
 
 				if (meta.last != chunk.updated) {
 					chunk.toRLE();
-					ENGINE_LOG("Send Chunk: ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", chunk.encoding.size());
 					meta.last = chunk.updated;
+
+					auto& connComp = world.getComponent<ConnectionComponent>(ent);
+					auto& conn = *connComp.conn;
+					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
+						const auto size = static_cast<int32>(chunk.encoding.size() * sizeof(chunk.encoding[0]));
+						byte* data = reinterpret_cast<byte*>(chunk.encoding.data());
+						ENGINE_LOG("Send Chunk: ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
+
+						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
+						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
+						msg.writeBlob(data, size);
+						//static byte blob[1024 * 16] = {};
+						//
+						//memset(blob, 'z', sizeof(blob));
+						//
+						//for (int i = 0; i < sizeof(blob); ++i) {
+						//	blob[i] = i;
+						//}
+						//
+						//msg.writeBlob(blob, sizeof(blob));
+					}
 				}
 
 				++it;
@@ -203,7 +246,10 @@ namespace Game {
 						const auto it = regions.emplace(regionPos, new MapRegion{
 							.lastUsed = world.getTickTime(),
 						}).first;
-						queueRegionToLoad(regionPos, *it->second);
+
+						if constexpr (ENGINE_SERVER) {
+							queueRegionToLoad(regionPos, *it->second);
+						}
 					}
 					continue;
 				}

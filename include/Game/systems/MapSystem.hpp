@@ -22,6 +22,7 @@
 #include <Game/Common.hpp>
 #include <Game/MapChunk.hpp>
 #include <Game/MapGenerator.hpp>
+#include <Game/Connection.hpp>
 
 // TODO: Document the different coordinate systems and terms used here.
 // TODO: convert to use sized types - int32, float32, etc.
@@ -46,6 +47,10 @@ namespace Game {
 
 			bool loading() const {
 				// TODO: look into which memory order is needed
+				if constexpr (ENGINE_CLIENT) {
+					return false;
+				}
+
 				return loadedChunks.load() != size.x * size.y;
 			}
 			static_assert(decltype(loadedChunks)::is_always_lock_free);
@@ -82,6 +87,8 @@ namespace Game {
 			void tick();
 			void run(float32 dt);
 			void ensurePlayAreaLoaded(Engine::ECS::Entity ply);
+
+			void chunkFromNet(Connection& from, const Engine::Net::MessageHeader& head);
 
 			// TODO: Name? this isnt consistent with our other usage of offset
 			// TODO: Doc. Gets the size of the current offset in blocks coordinates
