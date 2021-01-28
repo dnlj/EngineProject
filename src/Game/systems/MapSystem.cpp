@@ -161,30 +161,10 @@ namespace Game {
 						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
 						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
 						msg.writeBlob(data, size);
-						//static byte blob[1024 * 16] = {};
-						//
-						//memset(blob, 'z', sizeof(blob));
-						//
-						//for (int i = 0; i < sizeof(blob); ++i) {
-						//	blob[i] = i;
-						//}
-						//
-						//msg.writeBlob(blob, sizeof(blob));
 					}
 				}
 
 				++it;
-			}
-
-			for (const auto pair : mapAreaComp.updates) {
-
-				const auto& meta = pair.second;
-				// TODO: erase, cant use range for loops
-				if (meta.tick != tick) {
-
-					ENGINE_LOG("MapArea: (", pair.first.x, ", ", pair.first.y, ") ", pair.second.tick, " ", tick);
-				}
-
 			}
 		}
 

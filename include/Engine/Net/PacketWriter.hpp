@@ -85,8 +85,6 @@ namespace Engine::Net {
 					auto old = last;
 					last->next = getOrAllocPacketFromPool();
 					last = last->next.get();
-					// TODO: set curr ptrs? i think
-					ENGINE_WARN("Network message rollover. This code is untested. ", old->last - old->curr + sz);
 					write(old->curr, old->size());
 					write(t, sz);
 					old->last = old->curr;
