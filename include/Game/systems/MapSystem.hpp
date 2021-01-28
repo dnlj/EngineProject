@@ -81,7 +81,7 @@ namespace Game {
 			void setup();
 			void tick();
 			void run(float32 dt);
-			void ensurePlayAreaLoaded(glm::ivec2 chunkPos);
+			void ensurePlayAreaLoaded(Engine::ECS::Entity ply);
 
 			// TODO: Name? this isnt consistent with our other usage of offset
 			// TODO: Doc. Gets the size of the current offset in blocks coordinates

@@ -30,15 +30,18 @@ namespace Game {
 
 		public:
 			BlockId data[size.x][size.y] = {};
-			bool updated = false;
+			Engine::ECS::Tick updated = {};
+			Engine::ECS::Tick lastEncoding = {};
+			std::vector<RLEPair> encoding;
 
-			/*
 			// TODO: untested
-			void toRLE() const {
+			void toRLE() {
+				if (lastEncoding == updated) { return; }
+				lastEncoding = updated;
+				encoding.clear();
+
 				constexpr auto sz = size.x * size.y;
 				const BlockId* linear = &data[0][0];
-
-				std::vector<RLEPair> encoding;
 
 				RLEPair pair = {linear[0], 1};
 				for (int i = 1; i < sz; ++i) {
@@ -46,11 +49,10 @@ namespace Game {
 					if (bid == pair.bid) {
 						++pair.count;
 					} else {
-						// TODO: insert into list
+						encoding.push_back(pair);
 						pair.bid = bid;
 						pair.count = 1;
 					}
-					encoding.push_back(pair);
 				}
 			}
 			
@@ -65,8 +67,11 @@ namespace Game {
 					linear[i] = pair.bid;
 					++i;
 					--pair.count;
-					if (pair.count == 0) { ++begin; }
+					if (pair.count == 0) {
+						++begin;
+						pair = *begin;
+					}
 				}
-			}*/
+			}
 	};
 }

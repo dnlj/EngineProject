@@ -93,14 +93,57 @@ namespace Game {
 			}
 
 			if (!world.isPerformingRollback()) {
-				auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsBodyComponent>(ply).getPosition());
-				ensurePlayAreaLoaded(worldToBlock(pos));
+				//auto pos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsBodyComponent>(ply).getPosition());
+				//ensurePlayAreaLoaded(worldToBlock(pos));
+				ensurePlayAreaLoaded(ply);
 			}
 		}
 	}
 
 	void MapSystem::run(float32 dt) {
+		const auto tick = world.getTick();
 		auto timeout = world.getTickTime() - std::chrono::seconds{10};
+
+		for (auto ent : world.getFilter<MapAreaComponent>()) {
+			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ent);
+			const auto begin = mapAreaComp.updates.begin();
+			const auto end = mapAreaComp.updates.end();
+
+			for (auto it = begin; it != end;) {
+				const auto& chunkPos = it->first;
+				auto& meta = it->second;
+
+				if (meta.tick != tick) {
+					ENGINE_LOG("Remove: ", chunkPos.x, " ", chunkPos.y);
+					it = mapAreaComp.updates.erase(it);
+					continue;
+				}
+				
+				const auto regionPos = chunkToRegion(chunkPos);
+				auto regionIt = regions.find(regionPos);
+				const auto chunkIdx = chunkToRegionIndex(chunkPos);
+				auto& chunk = regionIt->second->data[chunkIdx.x][chunkIdx.y];
+
+				if (meta.last != chunk.updated) {
+					chunk.toRLE();
+					ENGINE_LOG("Send Chunk: ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", chunk.encoding.size());
+					meta.last = chunk.updated;
+				}
+
+				++it;
+			}
+
+			for (const auto pair : mapAreaComp.updates) {
+
+				const auto& meta = pair.second;
+				// TODO: erase, cant use range for loops
+				if (meta.tick != tick) {
+
+					ENGINE_LOG("MapArea: (", pair.first.x, ", ", pair.first.y, ") ", pair.second.tick, " ", tick);
+				}
+
+			}
+		}
 
 		// Unload regions
 		for (auto it = regions.begin(); it != regions.end();) {
@@ -124,7 +167,14 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::ensurePlayAreaLoaded(glm::ivec2 blockPos) {
+	void MapSystem::ensurePlayAreaLoaded(Engine::ECS::Entity ply) {
+		#if ENGINE_SERVER
+			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ply);
+		#endif
+		const auto tick = world.getTick();
+		const auto plyPos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsBodyComponent>(ply).getPosition());
+		const auto blockPos = worldToBlock(plyPos);
+
 		// How large of an area to load around the chunk blockPos is in.
 		constexpr auto areaSize = glm::ivec2{2, 2};
 
@@ -137,11 +187,6 @@ namespace Game {
 		const auto maxAreaChunk = blockToChunk(blockPos) + areaSize;
 		const auto minBuffChunk = minAreaChunk - buffSize;
 		const auto maxBuffChunk = maxAreaChunk + buffSize;
-
-		const auto&& isBufferChunk = [&](glm::ivec2 pos){
-			return (pos.x < minAreaChunk.x || pos.x > maxAreaChunk.x)
-				|| (pos.y < minAreaChunk.y || pos.y > maxAreaChunk.y);
-		};
 
 		for (auto chunkPos = minBuffChunk; chunkPos.x <= maxBuffChunk.x; ++chunkPos.x) {
 			for (chunkPos.y = minBuffChunk.y; chunkPos.y <= maxBuffChunk.y; ++chunkPos.y) {
@@ -167,6 +212,15 @@ namespace Game {
 				if (region->loading()) { continue; }
 				region->lastUsed = world.getTickTime();
 
+				#if ENGINE_SERVER
+				{
+					const auto found = mapAreaComp.updates.contains(chunkPos);
+					if (!isBufferChunk || found) {
+						mapAreaComp.updates[chunkPos].tick = world.getTick();
+					}
+				}
+				#endif
+
 				const auto chunkIdx = chunkToRegionIndex(chunkPos);
 				auto& chunk = region->data[chunkIdx.x][chunkIdx.y];
 
@@ -176,12 +230,11 @@ namespace Game {
 					it = activeChunks.emplace(chunkPos, TestData{}).first;
 					it->second.body = createBody();
 					setupMesh(it->second.mesh);
-					ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", chunk.updated ? "fresh" : "stale", ")");
-					chunk.updated = true;
+					ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (chunk.updated == tick) ? "fresh" : "stale", ")");
+					chunk.updated = tick;
 				}
 
-				if (chunk.updated) {
-					chunk.updated = false;
+				if (chunk.updated == tick) {
 					buildActiveChunkData(it->second, chunk, chunkPos);
 				}
 
@@ -211,8 +264,11 @@ namespace Game {
 		if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
 
 		auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
-		chunk.data[blockIndex.x][blockIndex.y] = value;
-		chunk.updated = true;
+
+		if (chunk.data[blockIndex.x][blockIndex.y] != value) {
+			chunk.data[blockIndex.x][blockIndex.y] = value;
+			chunk.updated = world.getTick();
+		}
 	}
 	
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 world) const {
@@ -352,7 +408,7 @@ namespace Game {
 			}
 		}
 
-		chunk.updated = true;
+		chunk.updated = world.getTick();
 	}
 
 	void MapSystem::loadChunkAsyncWorker() {
