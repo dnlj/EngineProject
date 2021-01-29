@@ -71,17 +71,28 @@ namespace Game {
 				// If we want to do better we need to compress this or send fewer states.
 				// Check trello for more complete explanation. https://trello.com/c/O3oJLMde
 
-				if (!conn.msgBegin<MessageType::ACTION>()) { continue; };
-				conn.write(currTick);
+				//if (!conn.msgBegin<MessageType::ACTION>()) { continue; };
+				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
+					msg.write(currTick);
 
-				// TODO: how many to send?
-				for (auto t = currTick + 1 - (actComp.states.capacity() / 4); t <= currTick; ++t) {
-					const auto& s = actComp.states.get(t);
-					s.netWrite(conn);
+					// TODO: how many to send?
+					for (auto t = currTick + 1 - (actComp.states.capacity() / 4); t <= currTick; ++t) {
+						const auto& s = actComp.states.get(t);
+						for (auto b : s.buttons) {
+							msg.write<2>(b.pressCount);
+							msg.write<2>(b.releaseCount);
+							msg.write<1>(b.latest);
+						}
+
+						// TODO: compress. we dont need 32 bits here.
+						// TODO: if you compress this make sure to replicate on client to remain in sync
+						msg.write<32>(reinterpret_cast<const uint32&>(s.target.x));
+						msg.write<32>(reinterpret_cast<const uint32&>(s.target.y));
+					}
+
+					msg.writeFlushBits();
 				}
-
-				conn.writeFlushBits();
-				conn.msgEnd<MessageType::ACTION>();
+				//conn.msgEnd<MessageType::ACTION>();
 			} else if constexpr (ENGINE_SERVER) {
 				auto* state = actComp.state;
 

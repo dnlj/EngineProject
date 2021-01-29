@@ -48,6 +48,7 @@ namespace Engine::Net {
 			};
 
 			SequenceBuffer<SeqNum, PacketData, AckBitset::size()> packetData;
+			byte msgWriteBuffer[sizeof(Packet::body)];
 
 			/** The next recv ack we are expecting */
 			SeqNum nextRecvAck = {};
@@ -389,11 +390,13 @@ namespace Engine::Net {
 			ENGINE_INLINE decltype(auto) beginMessage() {
 				// TODO: check that no other message is active
 				auto& channel = getChannelForMessage<M>();
+				//return channel.beginMessage(BufferWriter{msgWriteBuffer}, channel, M);
 				return channel.beginMessage(
 					channel,
 					channel.canWriteMessage() ? &packetWriter : nullptr,
 					M
 				);
+
 			}
 			
 			template<auto M>

@@ -39,19 +39,6 @@ namespace Game {
 			glm::vec2 screenTarget; // TODO: client only
 			glm::vec2 target;
 
-			void netWrite(Connection& conn) const {
-				for (auto b : buttons) {
-					conn.write<2>(b.pressCount);
-					conn.write<2>(b.releaseCount);
-					conn.write<1>(b.latest);
-				}
-
-				// TODO: compress. we dont need 32 bits here.
-				// TODO: if you compress this make sure to replicate on client to remain in sync
-				conn.write<32>(reinterpret_cast<const uint32&>(target.x));
-				conn.write<32>(reinterpret_cast<const uint32&>(target.y));
-			}
-
 			void netRead(Connection& conn) {
 				for (auto& b : buttons) {
 					// TODO: better interface for reading bits.
