@@ -116,11 +116,10 @@ namespace Game {
 		// TODO: rate limit per ip (longer if invalid packet)
 		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
 		if (from.recvMsgSize() == size && !memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
-			if (from.msgBegin<MessageType::SERVER_INFO>()) {
+			if (auto msg = from.beginMessage<MessageType::SERVER_INFO>()) {
 				constexpr char name[] = "This is the name of the server";
-				from.write<int>(sizeof(name) - 1);
-				from.write(name, sizeof(name) - 1);
-				from.msgEnd<MessageType::SERVER_INFO>();
+				msg.write<int>(sizeof(name) - 1);
+				msg.write(name, sizeof(name) - 1);
 			}
 		}
 	}
@@ -151,9 +150,8 @@ namespace Game {
 		if (!from.getKeyRecv()) {
 			from.setKeyRecv(genKey());
 		}
-		if (from.msgBegin<MessageType::CONNECT_CHALLENGE>()) {
-			from.write(from.getKeyRecv());
-			from.msgEnd<MessageType::CONNECT_CHALLENGE>();
+		if (auto msg = from.beginMessage<MessageType::CONNECT_CHALLENGE>()) {
+			msg.write(from.getKeyRecv());
 			ENGINE_LOG("MessageType::CONNECT_REQUEST ", from.getKeyRecv(), " ", (int)info.state);
 		}
 	}
@@ -163,9 +161,8 @@ namespace Game {
 		if (!from.getKeySend()) {
 			from.setKeySend(keySend);
 		}
-		if (from.msgBegin<MessageType::CONNECT_CONFIRM>()) {
-			from.write(from.getKeySend());
-			from.msgEnd<MessageType::CONNECT_CONFIRM>();
+		if (auto msg = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
+			msg.write(from.getKeySend());
 			info.state = ConnState::Connected;
 		}
 		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
@@ -183,10 +180,9 @@ namespace Game {
 
 		ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM", " Tick: ", world.getTick());
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
-		if (from.msgBegin<MessageType::ECS_INIT>()) {
-			from.write(info.ent);
-			from.write(world.getTick());
-			from.msgEnd<MessageType::ECS_INIT>();
+		if (auto msg = from.beginMessage<MessageType::ECS_INIT>()) {
+			msg.write(info.ent);
+			msg.write(world.getTick());
 		}
 	}
 
@@ -242,9 +238,8 @@ namespace Game {
 				" from ", from.address(),
 				" ", val
 			);
-			if (from.msgBegin<MessageType::PING>()) {
-				from.write(static_cast<uint8>(val | 0x80));
-				from.msgEnd<MessageType::PING>();
+			if (auto msg = from.beginMessage<MessageType::PING>()) {
+				msg.write(static_cast<uint8>(val | 0x80));
 			}
 		}
 	}
@@ -462,9 +457,8 @@ namespace Game {
 		}
 
 		const auto& [info, conn] = getOrCreateConnection(group);
-		if (conn.msgBegin<MessageType::DISCOVER_SERVER>()) {
-			conn.write(MESSAGE_PADDING_DATA);
-			conn.msgEnd<MessageType::DISCOVER_SERVER>();
+		if (auto msg = conn.beginMessage<MessageType::DISCOVER_SERVER>()) {
+			msg.write(MESSAGE_PADDING_DATA);
 		}
 	}
 	#endif
@@ -538,8 +532,8 @@ namespace Game {
 
 				if (info.state == Engine::Net::ConnState::Connected) {
 					ENGINE_LOG("Send MessageType::DISCONNECT to ", addr);
-					conn.msgBegin<MessageType::DISCONNECT>();
-					conn.msgEnd<MessageType::DISCONNECT>();
+					if (auto msg = conn.beginMessage<MessageType::DISCONNECT>()) {
+					}
 				}
 
 				if (info.disconnectAt < now) {
@@ -580,11 +574,10 @@ namespace Game {
 			{ // TODO: player data should be sent every tick along with actions/inputs.
 			// TODO: cont.  Should it? every few frames is probably fine for keeping it in sync. Although when it does desync it will be a larger rollback.
 				auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-				if (conn.msgBegin<MessageType::PLAYER_DATA>()) {
-					conn.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
-					conn.write(physComp.getTransform());
-					conn.write(physComp.getVelocity());
-					conn.msgEnd<MessageType::PLAYER_DATA>();
+				if (auto msg = conn.beginMessage<MessageType::PLAYER_DATA>()) {
+					msg.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
+					msg.write(physComp.getTransform());
+					msg.write(physComp.getVelocity());
 				}
 			}
 
@@ -597,9 +590,8 @@ namespace Game {
 				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
 				const auto& ent = pair.first;
 
-				if (conn.msgBegin<MessageType::ECS_ENT_CREATE>()) { // TODO: General_RO;
-					conn.write(ent);
-					conn.msgEnd<MessageType::ECS_ENT_CREATE>();
+				if (auto msg = conn.beginMessage<MessageType::ECS_ENT_CREATE>()) { // TODO: General_RO;
+					msg.write(ent);
 				}
 
 				ForEachIn<ComponentsSet>::call([&]<class C>() {
@@ -610,11 +602,12 @@ namespace Game {
 						auto& comp = world.getComponent<C>(ent);
 						if (comp.netRepl() == Engine::Net::Replication::NONE) { return; }
 
-						if (conn.msgBegin<MessageType::ECS_COMP_ADD>()) {//, General_RO);
-							conn.write(ent);
-							conn.write(world.getComponentId<C>());
-							comp.netToInit(engine, world, ent, conn);
-							conn.msgEnd<MessageType::ECS_COMP_ADD>();
+						if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ADD>()) {//, General_RO);
+							msg.write(ent);
+							msg.write(world.getComponentId<C>());
+							
+							assert(false); // TODO: this neededs updated
+							comp.netToInit(engine, world, ent, conn); // TODO: how to handle with messages? just byte writer?
 						}
 					}
 				});
@@ -622,9 +615,8 @@ namespace Game {
 
 			for (const auto& pair : neighComp.removedNeighbors) {
 				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
-				if (conn.msgBegin<MessageType::ECS_ENT_DESTROY>()) { // TODO: General_RO;
-					conn.write(pair.first);
-					conn.msgEnd<MessageType::ECS_ENT_DESTROY>();
+				if (auto msg = conn.beginMessage<MessageType::ECS_ENT_DESTROY>()) { // TODO: General_RO;
+					msg.write(pair.first);
 				}
 			}
 
@@ -654,14 +646,16 @@ namespace Game {
 							// TODO: comp removed
 						} else { // Component Updated
 							if (repl == Engine::Net::Replication::ALWAYS) {
-								if (!conn.msgBegin<MessageType::ECS_COMP_ALWAYS>()) { return; }
-								conn.write(ent);
-								conn.write(cid);
-								if (Engine::ECS::IsSnapshotRelevant<C>::value) {
-									conn.write(world.getTick());
+								if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ALWAYS>()) {
+									msg.write(ent);
+									msg.write(cid);
+									if (Engine::ECS::IsSnapshotRelevant<C>::value) {
+										msg.write(world.getTick());
+									}
+									
+									assert(false); // TODO: this needs updated
+									comp.netTo(conn);
 								}
-								comp.netTo(conn);
-								conn.msgEnd<MessageType::ECS_COMP_ALWAYS>();
 							} else if (repl == Engine::Net::Replication::UPDATE) {
 								// TODO: impl
 							}
@@ -675,10 +669,9 @@ namespace Game {
 				});
 
 				if (flagComps) {
-					if (conn.msgBegin<MessageType::ECS_FLAG>()) { // TODO: General_RO
-						conn.write(ent);
-						conn.write(flagComps);
-						conn.msgEnd<MessageType::ECS_FLAG>();
+					if (auto msg = conn.beginMessage<MessageType::ECS_FLAG>()) { // TODO: General_RO
+						msg.write(ent);
+						msg.write(flagComps);
 					}
 				}
 			}
@@ -727,10 +720,9 @@ namespace Game {
 		}
 		ENGINE_LOG("TRY CONNECT TO: ", addr, " rkey: ", conn.getKeyRecv(), " skey: ",  conn.getKeySend(), " Tick: ", world.getTick());
 
-		if (conn.msgBegin<MessageType::CONNECT_REQUEST>()) {
-			conn.write(MESSAGE_PADDING_DATA);
-			conn.write(conn.getKeyRecv());
-			conn.msgEnd<MessageType::CONNECT_REQUEST>();
+		if (auto msg = conn.beginMessage<MessageType::CONNECT_REQUEST>()) {
+			msg.write(MESSAGE_PADDING_DATA);
+			msg.write(conn.getKeyRecv());
 		}
 	}
 

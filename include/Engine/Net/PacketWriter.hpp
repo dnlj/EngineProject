@@ -5,7 +5,7 @@
 
 
 namespace Engine::Net {
-	class BufferWriter {
+	class BufferWriter { // TODO: move into Engine instead of Engine::Net
 		private:
 			byte* curr = nullptr;
 			byte* const start = nullptr;
@@ -75,7 +75,7 @@ namespace Engine::Net {
 			}
 	};
 
-	class PacketWriter {
+	class PacketWriter { // TODO: rm
 		private:
 			using NodePtr = std::unique_ptr<PacketNode>;
 			NodePtr pool = nullptr;

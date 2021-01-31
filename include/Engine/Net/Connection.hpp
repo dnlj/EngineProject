@@ -345,46 +345,6 @@ namespace Engine::Net {
 				packetSentBandwidthAccum = 0;
 			}
 
-			// TODO: should msgBegin/End be on packetwriter? somewhat makes sense since because we modify node->curr/last
-			template<auto M>
-			bool msgBegin() {
-				if (!getChannelForMessage<M>().canWriteMessage()) {
-					//__debugbreak(); // TODO: rm
-					return false;
-				}
-
-				packetWriter.ensurePacketAvailable();
-
-				write(MessageHeader{
-					.type = M,
-				});
-
-				return true;
-			}
-
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			// TODO: remove the old msgBegin/msgEnd once large messagewriter is impl
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
-			/////////////////
 			template<auto M>
 			[[nodiscard]]
 			ENGINE_INLINE decltype(auto) beginMessage() {
@@ -418,42 +378,25 @@ namespace Engine::Net {
 				packetWriter.advance();
 			}
 
-			template<auto M>
-			void msgEnd() {
-				static_assert(sizeof(M) == sizeof(MessageHeader::type));
-
-				auto node = packetWriter.back();
-				ENGINE_DEBUG_ASSERT(node, "Unmatched Connection::msgEnd<", static_cast<int>(M), "> call.");
-
-				auto* hdr = reinterpret_cast<MessageHeader*>(node->curr);
-				ENGINE_DEBUG_ASSERT(hdr->type == M,
-					"Mismatched msgBegin/End calls. ",
-					static_cast<int64>(hdr->type), " != ", static_cast<int64>(M)
-				);
-
-				hdr->size = static_cast<decltype(hdr->size)>(node->size() - sizeof(*hdr));
-
-				// TODO: i dont think seqNum is actually set at this point. It is set in send?
-				getChannelForMessage<M>().msgEnd(node->packet.getSeqNum(), *hdr);
-				packetWriter.advance();
-			}
-
 			/**
 			 * Writes data to the current message.
 			 * @see PacketWriter::write
 			 */
 			template<class... Args>
 			decltype(auto) write(Args&&... args) {
+				assert(false); // TODO: rm this function
 				return packetWriter.write(std::forward<Args>(args)...);
 			}
 
 			// TODO: add version with limits?
 			template<int N>
 			void write(uint32 t) {
+				assert(false); // TODO: rm this function
 				packetWriter.write<N>(t);
 			}
 
 			void writeFlushBits() {
+				assert(false); // TODO: rm this function
 				packetWriter.writeFlushBits();
 			}
 	};

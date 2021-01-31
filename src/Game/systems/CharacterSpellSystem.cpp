@@ -126,12 +126,11 @@ namespace Game {
 					if (ply == event.ent) { continue; }
 					auto& connComp = world.getComponent<ConnectionComponent>(ply);
 					auto& conn = *connComp.conn;
-					conn.msgBegin<MessageType::SPELL>();
-					// TODO: need to take tick into account
-					//conn.write(world.getTick());
-					conn.write(event.pos);
-					conn.write(event.dir);
-					conn.msgEnd<MessageType::SPELL>();
+
+					if (auto msg = conn.beginMessage<MessageType::SPELL>()) {
+						conn.write(event.pos);
+						conn.write(event.dir);
+					}
 				}
 			}
 		}

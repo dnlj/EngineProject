@@ -71,7 +71,6 @@ namespace Game {
 				// If we want to do better we need to compress this or send fewer states.
 				// Check trello for more complete explanation. https://trello.com/c/O3oJLMde
 
-				//if (!conn.msgBegin<MessageType::ACTION>()) { continue; };
 				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
 					msg.write(currTick);
 
@@ -92,15 +91,14 @@ namespace Game {
 
 					msg.writeFlushBits();
 				}
-				//conn.msgEnd<MessageType::ACTION>();
 			} else if constexpr (ENGINE_SERVER) {
 				auto* state = actComp.state;
 
-				if (!conn.msgBegin<MessageType::ACTION>()) { continue; }
-				conn.write(currTick);
-				conn.write(state ? state->recvTick : 0);
-				conn.write(estBuffSizeToNet(actComp.estBufferSize));
-				conn.msgEnd<MessageType::ACTION>();
+				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
+					msg.write(currTick);
+					msg.write(state ? state->recvTick : 0);
+					msg.write(estBuffSizeToNet(actComp.estBufferSize));
+				}
 
 				if (!state) {
 					// TODO: duplicate and decay last input?
