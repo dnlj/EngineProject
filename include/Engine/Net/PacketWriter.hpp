@@ -84,7 +84,7 @@ namespace Engine::Net {
 			NodePtr pool = nullptr;
 			NodePtr first = nullptr;
 			PacketNode* last = nullptr;
-			SeqNum nextSeq = 0;
+			SeqNum& nextSeq;
 			int bitCount = 0;
 			uint64 bitStore = 0;
 
@@ -112,6 +112,9 @@ namespace Engine::Net {
 			}
 
 		public:
+			PacketWriter(SeqNum& nextSeqNum) : nextSeq{nextSeqNum} {
+			}
+
 			auto getNextSeq() const { return nextSeq; }
 
 			void ensurePacketAvailable() {

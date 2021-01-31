@@ -38,14 +38,14 @@ namespace Game {
 		MessageType::ECS_FLAG
 	> {};
 
-	struct Channel_Map_Blob : Engine::Net::Channel_LargeReliableOrdered<
-		MessageType::MAP_CHUNK
-	> {};
+	//struct Channel_Map_Blob : Engine::Net::Channel_LargeReliableOrdered<
+	//	MessageType::MAP_CHUNK
+	//> {};
 
 	using Connection = Engine::Net::Connection<
 		Channel_General,
 		Channel_General_RU,
-		Channel_ECS,
-		Channel_Map_Blob
+		Channel_ECS
+		//Channel_Map_Blob // TODO: enable
 	>;
 }

@@ -126,7 +126,7 @@ namespace Engine::Net {
 
 
 			// TODO: rm temp while changing to new message writer;
-			void fill(BufferWriter& writer) {};
+			void fill(SeqNum pktSeq, BufferWriter& writer) {};
 
 			/**
 			 * Determines if a message should be processed by a connection.
@@ -201,7 +201,7 @@ namespace Engine::Net {
 	template<MessageType... Ms>
 	class Channel_UnreliableUnordered : public Channel_Base<Ms...> {
 		private:
-			SeqNum nextSeq = -1;
+			SeqNum nextSeq = 0;
 			std::vector<std::vector<byte>> messages;
 
 		public:
@@ -212,19 +212,21 @@ namespace Engine::Net {
 			constexpr static bool recv(const MessageHeader& hdr) noexcept {
 				return true;
 			}
-
+			
+			static constexpr bool has_beginMessage2 = true;
+			template<class Channel> // TODO: rm: once conversion is done should be moved into Channel_Base
 			[[nodiscard]]
-			auto beginMessage2(Channel_UnreliableUnordered& channel, MessageType type, BufferWriter& writer) {
-				return MessageWriter2<Channel_UnreliableUnordered>{channel, type, &writer};
+			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& writer) {
+				return MessageWriter2<Channel>{channel, type, &writer};
 			}
 
 			void endMessage2(BufferWriter& writer) {
 				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
-				hdr->seq = ++nextSeq;
+				hdr->seq = nextSeq++;
 				messages.emplace_back(writer.cbegin(), writer.cend());
 			}
 			
-			void fill(BufferWriter& writer) {
+			void fill(SeqNum pktSeq, BufferWriter& writer) {
 				while (messages.size()) {
 					const auto& msg = messages.back();
 					if (writer.write(msg.data(), msg.size())) {
@@ -245,7 +247,7 @@ namespace Engine::Net {
 	template<MessageType... Ms>
 	class Channel_UnreliableOrdered : public Channel_Base<Ms...> {
 		private:
-			SeqNum nextSeq = -1;
+			SeqNum nextSeq = 0;
 			SeqNum lastSeq = -1;
 			std::vector<std::vector<byte>> messages;
 
@@ -264,18 +266,20 @@ namespace Engine::Net {
 				return false;
 			}
 
+			static constexpr bool has_beginMessage2 = true;
+			template<class Channel> // TODO: rm: once conversion is done should be moved into Channel_Base
 			[[nodiscard]]
-			auto beginMessage2(Channel_UnreliableOrdered& channel, MessageType type, BufferWriter& writer) {
-				return MessageWriter2<Channel_UnreliableOrdered>{channel, type, &writer};
+			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& writer) {
+				return MessageWriter2<Channel>{channel, type, &writer};
 			}
 
 			void endMessage2(BufferWriter& writer) {
 				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
-				hdr->seq = ++nextSeq;
+				hdr->seq = nextSeq++;
 				messages.emplace_back(writer.cbegin(), writer.cend());
 			}
 			
-			void fill(BufferWriter& writer) {
+			void fill(SeqNum pktSeq, BufferWriter& writer) {
 				while (messages.size()) {
 					const auto& msg = messages.back();
 					if (writer.write(msg.data(), msg.size())) {
@@ -321,16 +325,52 @@ namespace Engine::Net {
 				return !msgData.entryAt(nextSeq);
 			}
 
-			void msgEnd(SeqNum pktSeq, MessageHeader& hdr) {
-				hdr.seq = nextSeq++;
+			/////////////////////////////////////////////////
+			static constexpr bool has_beginMessage2 = true;
+			template<class Channel> // TODO: rm: once conversion is done should be moved into Channel_Base
+			[[nodiscard]]
+			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& writer) {
+				return MessageWriter2<Channel>{channel, type, &writer};
+			}
 
+			void endMessage2(BufferWriter& writer) {
+				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
+				hdr->seq = nextSeq++;
+
+				ENGINE_DEBUG_ASSERT(msgData.canInsert(hdr->seq));
+				auto& msg = msgData.insert(hdr->seq);
+				msg.data.assign(writer.cbegin(), writer.cend());
+				msg.lastSendTime = {};
+			}
+			
+			void fill(SeqNum pktSeq, BufferWriter& writer) {
+				const auto now = Engine::Clock::now();
+				// BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
+				for (auto seq = msgData.minValid(); seqLess(seq, msgData.max() + 1); ++seq) {
+					auto* msg = msgData.find(seq);
+
+					// TODO: resend time should be configurable per channel
+					if (msg && (now > msg->lastSendTime + std::chrono::milliseconds{50})) {
+						if (writer.write(msg->data.data(), msg->data.size())) {
+							msg->lastSendTime = now;
+							addMessageToPacket(pktSeq, seq);
+						}
+					}
+				}
+			}
+			/////////////////////////////////////////////////
+			
+			// TODO: rm once blob writer is converted
+			/*void msgEnd(SeqNum pktSeq, MessageHeader& hdr) {
+				hdr.seq = nextSeq++;
+				
 				ENGINE_DEBUG_ASSERT(msgData.canInsert(hdr.seq));
 				auto& msg = msgData.insert(hdr.seq);
 				msg.data.assign(reinterpret_cast<byte*>(&hdr), reinterpret_cast<byte*>(&hdr) + sizeof(hdr) + hdr.size);
 				msg.lastSendTime = Engine::Clock::now();
-
+				
 				addMessageToPacket(pktSeq, hdr.seq);
-			}
+			}*/
 
 			void recvPacketAck(SeqNum pktSeq) {
 				auto* pkt = pktData.find(pktSeq);
@@ -347,7 +387,8 @@ namespace Engine::Net {
 
 			// TODO: also want some kind of fill-rest-of-packet function
 
-			void writeUnacked(PacketWriter& packetWriter) {
+			// TODO: rm once blob writer is converted
+			/*void writeUnacked(PacketWriter& packetWriter) {
 				const auto now = Engine::Clock::now();
 				// BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
 				for (auto seq = msgData.minValid(); seqLess(seq, msgData.max() + 1); ++seq) {
@@ -366,7 +407,7 @@ namespace Engine::Net {
 						addMessageToPacket(packetWriter.getNextSeq() - 1, seq);
 					}
 				}
-			}
+			}*/
 	};
 	
 	/**
@@ -428,249 +469,251 @@ namespace Engine::Net {
 
 	constexpr int32 MAX_MESSAGE_BLOB_SIZE = 0x7FFFFFFF;
 
-	template<class Channel>
-	class MessageBlobWriter {
-		private:
-			Channel& channel;
-			PacketWriter* packetWriter = nullptr;
-			MessageType type;
+	//template<class Channel>
+	//class MessageBlobWriter {
+	//	private:
+	//		Channel& channel;
+	//		PacketWriter* packetWriter = nullptr;
+	//		MessageType type;
 
-		public:
-			MessageBlobWriter(Channel& channel, PacketWriter* packetWriter, MessageType type)
-				: channel{channel}
-				, packetWriter{packetWriter}
-				, type{type} {
-			}
+	//	public:
+	//		MessageBlobWriter(Channel& channel, PacketWriter* packetWriter, MessageType type)
+	//			: channel{channel}
+	//			, packetWriter{packetWriter}
+	//			, type{type} {
+	//		}
 
-			~MessageBlobWriter() {
-				// TODO: attempt to write this this message
-			}
+	//		~MessageBlobWriter() {
+	//			// TODO: attempt to write this this message
+	//		}
 
-			ENGINE_INLINE operator bool() const noexcept { return packetWriter; }
+	//		ENGINE_INLINE operator bool() const noexcept { return packetWriter; }
 
-			ENGINE_INLINE void writeBlob(const byte* data, int32 size) {
-				ENGINE_DEBUG_ASSERT(size <= MAX_MESSAGE_BLOB_SIZE, "Attempting to send too much data");
-				channel.writeBlob(*packetWriter, type, data, size);
-			}
-	};
+	//		ENGINE_INLINE void writeBlob(const byte* data, int32 size) {
+	//			ENGINE_DEBUG_ASSERT(size <= MAX_MESSAGE_BLOB_SIZE, "Attempting to send too much data");
+	//			channel.writeBlob(*packetWriter, type, data, size);
+	//		}
+	//};
 
-	// TODO: update desc for Channel_LargeReliableOrdered
-	/**
-	 * A reliable ordered network channel.
-	 * @see Channel_Base
-	 */
-	template<MessageType... Ms>
-	class Channel_LargeReliableOrdered : public Channel_ReliableSender<Ms...> {
-		private:
-			using Base = Channel_ReliableSender<Ms...>;
-			SeqNum nextRecvSeq = 0;
-			SeqNum nextBlob = 0;
+	//// TODO: update desc for Channel_LargeReliableOrdered
+	///**
+	// * A reliable ordered network channel.
+	// * @see Channel_Base
+	// */
+	//template<MessageType... Ms>
+	//class Channel_LargeReliableOrdered : public Channel_ReliableSender<Ms...> {
+	//	private:
+	//		using Base = Channel_ReliableSender<Ms...>;
+	//		SeqNum nextRecvSeq = 0;
+	//		SeqNum nextBlob = 0;
 
-			SequenceBuffer<SeqNum, bool, MAX_ACTIVE_MESSAGES_PER_CHANNEL> recvData;
+	//		SequenceBuffer<SeqNum, bool, MAX_ACTIVE_MESSAGES_PER_CHANNEL> recvData;
 
-			struct Range {
-				int32 start;
-				int32 stop;
+	//		struct Range {
+	//			int32 start;
+	//			int32 stop;
 
-				ENGINE_INLINE int32 size() const noexcept { return stop - start; }
-				ENGINE_INLINE bool operator<(const Range& other) const noexcept {
-					return start < other.start;
-				}
-			};
+	//			ENGINE_INLINE int32 size() const noexcept { return stop - start; }
+	//			ENGINE_INLINE bool operator<(const Range& other) const noexcept {
+	//				return start < other.start;
+	//			}
+	//		};
 
-			struct WriteBlob {
-				int32 curr = 0;
-				std::vector<byte> data;
-				MessageType type;
-				const int32 remaining() const noexcept { return static_cast<int32>(data.size()) - curr; }
-			};
+	//		struct WriteBlob {
+	//			int32 curr = 0;
+	//			std::vector<byte> data;
+	//			MessageType type;
+	//			const int32 remaining() const noexcept { return static_cast<int32>(data.size()) - curr; }
+	//		};
 
-			struct RecvBlob {
-				int32 total = 0;
-				std::vector<byte> data;
-				std::vector<Range> parts;
+	//		struct RecvBlob {
+	//			int32 total = 0;
+	//			std::vector<byte> data;
+	//			std::vector<Range> parts;
 
-				ENGINE_INLINE bool complete() const noexcept {
-					return (parts.size() == 1) && (parts.begin()->size() == total + sizeof(MessageHeader));
-					//return total && (total == data.size() - sizeof(MessageHeader));
-				}
+	//			ENGINE_INLINE bool complete() const noexcept {
+	//				return (parts.size() == 1) && (parts.begin()->size() == total + sizeof(MessageHeader));
+	//				//return total && (total == data.size() - sizeof(MessageHeader));
+	//			}
 
-				void insert(int32 i, const byte* start, const byte* stop) {
-					i = i + sizeof(MessageHeader);
-					const int32 len = static_cast<int32>(stop - start);
-					if (static_cast<int32>(data.size()) < i + len) {
-						data.resize(i + len);
-					}
-					ENGINE_LOG("Insert: ", len, " ", data.size());
-					memcpy(&data[i], start, len);
+	//			void insert(int32 i, const byte* start, const byte* stop) {
+	//				i = i + sizeof(MessageHeader);
+	//				const int32 len = static_cast<int32>(stop - start);
+	//				if (static_cast<int32>(data.size()) < i + len) {
+	//					data.resize(i + len);
+	//				}
+	//				ENGINE_LOG("Insert: ", len, " ", data.size());
+	//				memcpy(&data[i], start, len);
 
-					const Range range {i, i + len};
-					auto found = std::upper_bound(parts.begin(), parts.end(), range);
+	//				const Range range {i, i + len};
+	//				auto found = std::upper_bound(parts.begin(), parts.end(), range);
 
-					// Merge with after
-					if (found != parts.cend() && range.stop == found->start) {
-						ENGINE_LOG("Merge after: (", range.start, ", ", range.stop, ") U (", found->start, ", ", found->stop, ")");
-						found->start = range.start;
-					} else {
-						found = parts.insert(found, range);
-					}
+	//				// Merge with after
+	//				if (found != parts.cend() && range.stop == found->start) {
+	//					ENGINE_LOG("Merge after: (", range.start, ", ", range.stop, ") U (", found->start, ", ", found->stop, ")");
+	//					found->start = range.start;
+	//				} else {
+	//					found = parts.insert(found, range);
+	//				}
 
-					// Merge with before
-					if (found > parts.cbegin()) {
-						auto prev = found - 1;
-						if (prev->stop == found->start) {
-							ENGINE_LOG("Merge before: (", prev->start, ", ", prev->stop, ") U (", found->start, ", ", found->stop, ")");
-							prev->stop = found->stop;
-							parts.erase(found);
-							found = prev;
-						}
-					}
-				}
-			};
+	//				// Merge with before
+	//				if (found > parts.cbegin()) {
+	//					auto prev = found - 1;
+	//					if (prev->stop == found->start) {
+	//						ENGINE_LOG("Merge before: (", prev->start, ", ", prev->stop, ") U (", found->start, ", ", found->stop, ")");
+	//						prev->stop = found->stop;
+	//						parts.erase(found);
+	//						found = prev;
+	//					}
+	//				}
+	//			}
+	//		};
 
-			SequenceBuffer<SeqNum, WriteBlob, 8> writeBlobs;
-			SequenceBuffer<SeqNum, RecvBlob, 8> recvBlobs;
+	//		SequenceBuffer<SeqNum, WriteBlob, 8> writeBlobs;
+	//		SequenceBuffer<SeqNum, RecvBlob, 8> recvBlobs;
 
-			struct BlobHeader {
-				constexpr static int32 LEN_MASK = 0x7FFFFFFF;
-				// 4 bytes start
-				// 2 bytes seqnum
-				byte data[4 + 2];
+	//		struct BlobHeader {
+	//			constexpr static int32 LEN_MASK = 0x7FFFFFFF;
+	//			// 4 bytes start
+	//			// 2 bytes seqnum
+	//			byte data[4 + 2];
 
-				int32& start() { return *reinterpret_cast<int32*>(data); }
-				const int32& start() const { return const_cast<BlobHeader*>(this)->start(); }
+	//			int32& start() { return *reinterpret_cast<int32*>(data); }
+	//			const int32& start() const { return const_cast<BlobHeader*>(this)->start(); }
 
-				SeqNum& seq() { return *reinterpret_cast<SeqNum*>(data + 4); }
-				const SeqNum& seq() const { return const_cast<BlobHeader*>(this)->seq(); }
-			};
-			static_assert(sizeof(BlobHeader) == 4 + 2);
+	//			SeqNum& seq() { return *reinterpret_cast<SeqNum*>(data + 4); }
+	//			const SeqNum& seq() const { return const_cast<BlobHeader*>(this)->seq(); }
+	//		};
+	//		static_assert(sizeof(BlobHeader) == 4 + 2);
 
-		public:
-			bool canWriteMessage() const noexcept {
-				return !writeBlobs.entryAt(nextBlob);
-			};
+	//	public:
+	//		static constexpr bool has_beginMessage2 = false;
 
-			void writeBlob(PacketWriter& packetWriter, MessageType type, const byte* data, int32 size) {
-				ENGINE_DEBUG_ASSERT(canWriteMessage(), "Unable to write message");
-				auto& blob = writeBlobs.insert(nextBlob);
-				blob.type = type;
-				blob.data.assign(data, data + size);
-				attemptWriteBlob(packetWriter, nextBlob);
-				++nextBlob;
-			}
+	//		bool canWriteMessage() const noexcept {
+	//			return !writeBlobs.entryAt(nextBlob);
+	//		};
 
-			bool recv(const MessageHeader& hdr) {
-				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
-					recvData.insert(hdr.seq);
+	//		void writeBlob(PacketWriter& packetWriter, MessageType type, const byte* data, int32 size) {
+	//			ENGINE_DEBUG_ASSERT(canWriteMessage(), "Unable to write message");
+	//			auto& blob = writeBlobs.insert(nextBlob);
+	//			blob.type = type;
+	//			blob.data.assign(data, data + size);
+	//			attemptWriteBlob(packetWriter, nextBlob);
+	//			++nextBlob;
+	//		}
 
-					const byte* dataBegin = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr);
+	//		bool recv(const MessageHeader& hdr) {
+	//			if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
+	//				recvData.insert(hdr.seq);
 
-					const auto& info = *reinterpret_cast<const BlobHeader*>(dataBegin);
-					dataBegin += sizeof(info);
+	//				const byte* dataBegin = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr);
 
-					auto found = recvBlobs.find(info.seq());
-					if (found == nullptr) {
-						found = &recvBlobs.insert(info.seq());
-						MessageHeader fake{
-							.type = hdr.type,
-						};
-						found->insert(
-							-static_cast<int32>(sizeof(fake)),
-							reinterpret_cast<byte*>(&fake),
-							reinterpret_cast<byte*>(&fake) + sizeof(fake)
-						);
-					}
+	//				const auto& info = *reinterpret_cast<const BlobHeader*>(dataBegin);
+	//				dataBegin += sizeof(info);
 
-					if (info.start() & ~BlobHeader::LEN_MASK) {
-						found->total = *reinterpret_cast<const int32*>(dataBegin);
-						dataBegin += sizeof(found->total);
-					}
+	//				auto found = recvBlobs.find(info.seq());
+	//				if (found == nullptr) {
+	//					found = &recvBlobs.insert(info.seq());
+	//					MessageHeader fake{
+	//						.type = hdr.type,
+	//					};
+	//					found->insert(
+	//						-static_cast<int32>(sizeof(fake)),
+	//						reinterpret_cast<byte*>(&fake),
+	//						reinterpret_cast<byte*>(&fake) + sizeof(fake)
+	//					);
+	//				}
 
-					const auto dataEnd = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size;
+	//				if (info.start() & ~BlobHeader::LEN_MASK) {
+	//					found->total = *reinterpret_cast<const int32*>(dataBegin);
+	//					dataBegin += sizeof(found->total);
+	//				}
 
-					// TODO: rm
-					ENGINE_INFO("recv blob part: ", hdr.seq, " ", info.seq(), " ", dataEnd - dataBegin);
+	//				const auto dataEnd = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size;
 
-					found->insert(info.start() & BlobHeader::LEN_MASK, dataBegin, dataEnd);
-					
-					// TODO: rm
-					if (found->complete()) {
-						ENGINE_LOG("Blob ", info.seq(), " complete!");
-					}
-				}
+	//				// TODO: rm
+	//				ENGINE_INFO("recv blob part: ", hdr.seq, " ", info.seq(), " ", dataEnd - dataBegin);
 
-				return false;
-			}
+	//				found->insert(info.start() & BlobHeader::LEN_MASK, dataBegin, dataEnd);
+	//				
+	//				// TODO: rm
+	//				if (found->complete()) {
+	//					ENGINE_LOG("Blob ", info.seq(), " complete!");
+	//				}
+	//			}
 
-			void attemptWriteBlob(PacketWriter& packetWriter, SeqNum seq) {
-				auto* blob = writeBlobs.find(seq);
-				if (!blob) { return; }
-				
-				packetWriter.ensurePacketAvailable();
+	//			return false;
+	//		}
 
-				while (Base::canWriteMessage()) {
-					if (blob->remaining() == 0) {
-						writeBlobs.remove(seq);
-						return;
-					}
+	//		void attemptWriteBlob(PacketWriter& packetWriter, SeqNum seq) {
+	//			auto* blob = writeBlobs.find(seq);
+	//			if (!blob) { return; }
+	//			
+	//			packetWriter.ensurePacketAvailable();
 
-					const auto space = std::max(0,
-						packetWriter.space()
-						- static_cast<int32>(sizeof(MessageHeader))
-						- static_cast<int32>(sizeof(BlobHeader))
-						- static_cast<int32>(sizeof(int32)) // Optional size field
-					);
+	//			while (Base::canWriteMessage()) {
+	//				if (blob->remaining() == 0) {
+	//					writeBlobs.remove(seq);
+	//					return;
+	//				}
 
-					if (space < 32) { // Arbitrary minimum data size
-						// TODO: actually want to adv packet yes?
-						return;
-					}
+	//				const auto space = std::max(0,
+	//					packetWriter.space()
+	//					- static_cast<int32>(sizeof(MessageHeader))
+	//					- static_cast<int32>(sizeof(BlobHeader))
+	//					- static_cast<int32>(sizeof(int32)) // Optional size field
+	//				);
 
-					auto msg = Base::beginMessage(*static_cast<Base*>(this), &packetWriter, blob->type);
+	//				if (space < 32) { // Arbitrary minimum data size
+	//					// TODO: actually want to adv packet yes?
+	//					return;
+	//				}
 
-					BlobHeader head;
-					head.start() = blob->curr | (blob->curr > 0 ? 0 : ~BlobHeader::LEN_MASK);
-					head.seq() = seq;
-					msg.write(head);
+	//				auto msg = Base::beginMessage(*static_cast<Base*>(this), &packetWriter, blob->type);
 
-					if (blob->curr == 0) {
-						msg.write(static_cast<int32>(blob->data.size()));
-					}
+	//				BlobHeader head;
+	//				head.start() = blob->curr | (blob->curr > 0 ? 0 : ~BlobHeader::LEN_MASK);
+	//				head.seq() = seq;
+	//				msg.write(head);
 
-					const int32 len = std::min(space, blob->remaining());
-					msg.write(blob->data.data() + blob->curr, len);
-					blob->curr += len;
-				}
-			}
+	//				if (blob->curr == 0) {
+	//					msg.write(static_cast<int32>(blob->data.size()));
+	//				}
 
-			void writeUnacked(PacketWriter& packetWriter) {
-				for (auto seq = writeBlobs.minValid(); seqLess(seq, writeBlobs.max() + 1); ++seq) {
-					attemptWriteBlob(packetWriter, seq);
-				}
+	//				const int32 len = std::min(space, blob->remaining());
+	//				msg.write(blob->data.data() + blob->curr, len);
+	//				blob->curr += len;
+	//			}
+	//		}
 
-				Base::writeUnacked(packetWriter);
-			}
+	//		void writeUnacked(PacketWriter& packetWriter) {
+	//			for (auto seq = writeBlobs.minValid(); seqLess(seq, writeBlobs.max() + 1); ++seq) {
+	//				attemptWriteBlob(packetWriter, seq);
+	//			}
 
-			const MessageHeader* recvNext() {
-				for (auto seq = recvBlobs.minValid(); seqLess(seq, recvBlobs.max() + 1); ++seq) {
-					auto* blob = recvBlobs.find(seq);
+	//			Base::writeUnacked(packetWriter);
+	//		}
 
-					if (blob && blob->complete()) {
-						recvBlobs.remove(seq);
-						auto head = reinterpret_cast<MessageHeader*>(blob->data.data());
-						head->size = blob->total;
-						head->seq = seq;
-						return head;
-					}
-				}
+	//		const MessageHeader* recvNext() {
+	//			for (auto seq = recvBlobs.minValid(); seqLess(seq, recvBlobs.max() + 1); ++seq) {
+	//				auto* blob = recvBlobs.find(seq);
 
-				return nullptr;
-			}
+	//				if (blob && blob->complete()) {
+	//					recvBlobs.remove(seq);
+	//					auto head = reinterpret_cast<MessageHeader*>(blob->data.data());
+	//					head->size = blob->total;
+	//					head->seq = seq;
+	//					return head;
+	//				}
+	//			}
 
-			template<class Channel>
-			[[nodiscard]]
-			auto beginMessage(Channel& channel, PacketWriter* packetWriter, MessageType type) {
-				return MessageBlobWriter<Channel>(channel, packetWriter, type);
-			}
-	};
+	//			return nullptr;
+	//		}
+
+	//		template<class Channel>
+	//		[[nodiscard]]
+	//		auto beginMessage(Channel& channel, PacketWriter* packetWriter, MessageType type) {
+	//			return MessageBlobWriter<Channel>(channel, packetWriter, type);
+	//		}
+	//};
 }

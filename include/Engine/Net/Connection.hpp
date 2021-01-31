@@ -99,7 +99,8 @@ namespace Engine::Net {
 				const byte* msgLast;
 			} rdat;
 
-			PacketWriter packetWriter;
+			SeqNum nextSeqNum = 0;
+			PacketWriter packetWriter{nextSeqNum};
 
 			template<class C>
 			constexpr static ChannelId getChannelId() { return Meta::IndexOf<C, Cs...>::value; }
@@ -337,20 +338,32 @@ namespace Engine::Net {
 
 				{ // TODO: temp while switching to new messagewriter
 					while (true) {
+						const auto seq = nextSeqNum++;
 						Packet pkt; // TODO: if we keep this move to be a member variable instead;
 						pkt.setKey(keySend);
 						pkt.setNextAck(nextRecvAck);
 						pkt.setAcks(recvAcks);
 						pkt.setProtocol(protocol);
-						msgBufferWriter = pkt.body;
+						pkt.setSeqNum(seq);
 
-						(getChannel<Cs>().fill(msgBufferWriter), ...);
+						{
+							const float32 val = packetData.get(seq).recvTime == Engine::Clock::TimePoint{};
+							loss += (val - loss) * lossSmoothing;
+						}
+
+						packetData.insert(seq) = {
+							.sendTime = now,
+						};
+
+						msgBufferWriter = pkt.body;
+						(getChannel<Cs>().fill(seq, msgBufferWriter), ...);
 
 						if (msgBufferWriter.size()) {
 							const auto sz = sizeof(pkt.head) + msgBufferWriter.size();
 							packetSentBandwidthAccum += sz;
 							sock.send(&pkt, (int32)sz, addr);
 						} else {
+							--nextSeqNum;
 							break;
 						}
 					}
@@ -379,7 +392,7 @@ namespace Engine::Net {
 			};
 
 			template<class T>
-			struct BeginSelector<T, std::void_t<decltype(&std::declval<T&>().beginMessage2)>> {
+			struct BeginSelector<T, std::enable_if_t<T::has_beginMessage2>> {
 				constexpr static bool value = true;
 
 				template<class... Args>
@@ -395,7 +408,7 @@ namespace Engine::Net {
 				auto& channel = getChannelForMessage<M>();
 
 				msgBufferWriter = msgBuffer;
-				using T = BeginSelector<decltype(channel)>;
+				using T = BeginSelector<std::decay_t<decltype(channel)>>;
 				if constexpr (T::value) {
 					return T::call(channel, channel, M, msgBufferWriter);
 				} else {
