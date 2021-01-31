@@ -410,6 +410,7 @@ namespace Engine::Net {
 				msgBufferWriter = msgBuffer;
 				using T = BeginSelector<std::decay_t<decltype(channel)>>;
 				if constexpr (T::value) {
+					// TODO: pass bufferwriter by ptr. we convert ot pointer anyways. makes it clearer
 					return T::call(channel, channel, M, msgBufferWriter);
 				} else {
 					return T::call(

@@ -153,8 +153,7 @@ namespace Game {
 
 					auto& connComp = world.getComponent<ConnectionComponent>(ent);
 					auto& conn = *connComp.conn;
-					// TODO: enable
-					/*if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
+					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
 						const auto size = static_cast<int32>(chunk.encoding.size() * sizeof(chunk.encoding[0]));
 						byte* data = reinterpret_cast<byte*>(chunk.encoding.data());
 						ENGINE_LOG("Send Chunk: ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
@@ -162,7 +161,7 @@ namespace Game {
 						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
 						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
 						msg.writeBlob(data, size);
-					}*/
+					}
 				}
 
 				++it;

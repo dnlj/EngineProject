@@ -30,7 +30,7 @@ namespace Engine::Net {
 
 			ENGINE_INLINE auto size() const noexcept { return curr - start; }
 			ENGINE_INLINE auto capacity() const noexcept { return stop - start; }
-			ENGINE_INLINE auto space() const noexcept { return size() - capacity(); }
+			ENGINE_INLINE auto space() const noexcept { return capacity() - size(); }
 			ENGINE_INLINE const byte* data() const noexcept { return start; }
 			ENGINE_INLINE byte* data() noexcept { return start; }
 
