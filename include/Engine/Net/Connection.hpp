@@ -307,11 +307,6 @@ namespace Engine::Net {
 				bitCount = 0;
 			}
 
-			void writeUnacked(UDPSocket& sock) {
-				// TODO: version that fills rest of packet?
-				(getChannel<Cs>().writeUnacked(packetWriter), ...);
-			}
-
 			void send(UDPSocket& sock) {
 				const auto now = Engine::Clock::now();
 
@@ -340,10 +335,10 @@ namespace Engine::Net {
 					while (true) {
 						const auto seq = nextSeqNum++;
 						Packet pkt; // TODO: if we keep this move to be a member variable instead;
-						pkt.setKey(keySend);
+						pkt.setKey(keySend); // TODO: should just be set once after packet is changed to member variable
 						pkt.setNextAck(nextRecvAck);
 						pkt.setAcks(recvAcks);
-						pkt.setProtocol(protocol);
+						pkt.setProtocol(protocol); // TODO: should just be set once after packet is changed to member variable
 						pkt.setSeqNum(seq);
 
 						{
@@ -380,27 +375,6 @@ namespace Engine::Net {
 				packetSentBandwidthAccum = 0;
 			}
 
-			
-			template<class T, class = void> // TODO: rm: temp during transition to MessageWriter2 scheme
-			struct BeginSelector {
-				constexpr static bool value = false;
-
-				template<class... Args>
-				static decltype(auto) call(T& t, Args&&... args) {
-					return t.beginMessage(std::forward<Args>(args)...);
-				}
-			};
-
-			template<class T>
-			struct BeginSelector<T, std::enable_if_t<T::has_beginMessage2>> {
-				constexpr static bool value = true;
-
-				template<class... Args>
-				static decltype(auto) call(T& t, Args&&... args) {
-					return t.beginMessage2(std::forward<Args>(args)...);
-				}
-			};
-
 			template<auto M>
 			[[nodiscard]]
 			ENGINE_INLINE decltype(auto) beginMessage() {
@@ -408,18 +382,8 @@ namespace Engine::Net {
 				auto& channel = getChannelForMessage<M>();
 
 				msgBufferWriter = msgBuffer;
-				using T = BeginSelector<std::decay_t<decltype(channel)>>;
-				if constexpr (T::value) {
-					// TODO: pass bufferwriter by ptr. we convert ot pointer anyways. makes it clearer
-					return T::call(channel, channel, M, msgBufferWriter);
-				} else {
-					return T::call(
-						channel,
-						channel,
-						channel.canWriteMessage() ? &packetWriter : nullptr,
-						M
-					);
-				}
+				// TODO: pass bufferwriter by ptr. we convert ot pointer anyways. makes it clearer
+				return channel.beginMessage2(channel, M, msgBufferWriter);
 			}
 
 			/**

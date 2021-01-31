@@ -521,7 +521,6 @@ namespace Game {
 			const auto ply = info.ent;
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
-			// TODO: why does moving this to right before send (under writeUnacked?) cause a crash?c
 			//if (info.state == Engine::Net::ConnState::Connected) {
 			//	conn.msgBegin<MessageType::TEST>();
 			//	conn.msgEnd<MessageType::TEST>();
@@ -548,8 +547,6 @@ namespace Game {
 					it = connections.erase(it);
 					continue;
 				}
-			} else if (shouldUpdate) {
-				conn.writeUnacked(socket);
 			}
 
 			conn.send(socket);

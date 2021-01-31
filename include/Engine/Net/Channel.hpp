@@ -12,51 +12,47 @@ namespace Engine::Net {
 	constexpr inline int MAX_ACTIVE_MESSAGES_PER_CHANNEL = 64;
 
 	template<class Channel>
-	class MessageWriter {
+	class MessageWriter2 {
 		private:
+			BufferWriter* writer;
 			Channel& channel;
-			PacketWriter* packetWriter = nullptr;
-			MessageType type;
 
 		public:
-			MessageWriter(Channel& channel, PacketWriter* packetWriter, MessageType type)
+			MessageWriter2(Channel& channel, MessageType type, BufferWriter* writer)
 				: channel{channel}
-				, packetWriter{packetWriter}
-				, type{type} {
+				, writer{writer} {
 
-				if (packetWriter) {
-					packetWriter->ensurePacketAvailable();
-					write(MessageHeader{
+				if (writer) {
+					writer->write(MessageHeader{
 						.type = type,
 					});
 				}
 			}
 
-			MessageWriter(const MessageWriter&) = delete;
-
-			~MessageWriter() {
-				if (!*this) { return; }
-				auto node = packetWriter->back();
-				auto* hdr = reinterpret_cast<MessageHeader*>(node->curr);
-				hdr->size = static_cast<decltype(hdr->size)>(node->size() - sizeof(*hdr));
-				channel.msgEnd(node->packet.getSeqNum(), *hdr);
-				packetWriter->advance();
+			~MessageWriter2() {
+				if (writer) {
+					auto* hdr = reinterpret_cast<MessageHeader*>(writer->data());
+					hdr->size = static_cast<uint16>(writer->size() - sizeof(MessageHeader));
+					channel.endMessage2(*writer);
+				}
 			}
 
-			ENGINE_INLINE operator bool() const noexcept { return packetWriter; }
+			ENGINE_INLINE operator bool() const noexcept {
+				return writer;
+			}
 
 			template<class... Args>
-			ENGINE_INLINE void write(Args&&... args) {
-				packetWriter->write(std::forward<Args>(args)...);
+			ENGINE_INLINE decltype(auto) write(Args&&... args) {
+				return writer->write(std::forward<Args>(args)...);
 			}
 
 			template<int N>
 			ENGINE_INLINE void write(uint32 t) {
-				packetWriter->write<N>(t);
+				return writer->write<N>(t);
 			}
 
 			ENGINE_INLINE void writeFlushBits() {
-				packetWriter->writeFlushBits();
+				writer->writeFlushBits();
 			}
 	};
 
@@ -108,11 +104,6 @@ namespace Engine::Net {
 			constexpr static void recvPacketAck(SeqNum seq) noexcept {}
 
 			/**
-			 * Writes any messages that need (re)sending.
-			 */
-			constexpr static void writeUnacked(PacketWriter& packetWriter) noexcept {}
-
-			/**
 			 * Checks if this channel can have messages written to it.
 			 */
 			bool canWriteMessage() = delete;
@@ -120,13 +111,18 @@ namespace Engine::Net {
 			// TODO: doc
 			template<class Channel>
 			[[nodiscard]]
-			auto beginMessage(Channel& channel, PacketWriter* packetWriter, MessageType type) {
-				return MessageWriter<Channel>(channel, packetWriter, type);
+			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& buff) {
+				return MessageWriter2<Channel>{channel, type, channel.canWriteMessage() ? &buff : nullptr};
 			}
 
+			/**
+			 * Called once a message returned by beginMessage is complete.
+			 * @param buff The buffer the message was written to.
+			 */
+			void endMessage(BufferWriter& buff) = delete;
 
-			// TODO: rm temp while changing to new message writer;
-			void fill(SeqNum pktSeq, BufferWriter& writer) {};
+			// TODO: doc
+			void fill(SeqNum pktSeq, BufferWriter& writer) = delete;
 
 			/**
 			 * Determines if a message should be processed by a connection.
@@ -136,62 +132,10 @@ namespace Engine::Net {
 			bool recv(const MessageHeader& hdr) = delete;
 
 			/**
-			 * Called once a message has been written.
-			 * @param pktSeq The sequence number for the packet the message was written to.
-			 * @param hdr The header for the message that was written.
-			 */
-			void msgEnd(SeqNum pktSeq, MessageHeader& hdr) = delete;
-
-			/**
 			 * Gets any messages that need to be processed from this channel.
 			 * @return A pointer to the header of the message to process. If there is no message to process nullptr should be returned.
 			 */
 			constexpr static const MessageHeader* recvNext() noexcept { return nullptr; }
-	};
-
-	template<class Channel>
-	class MessageWriter2 {
-		private:
-			BufferWriter* writer;
-			Channel& channel;
-
-		public:
-			MessageWriter2(Channel& channel, MessageType type, BufferWriter* writer)
-				: channel{channel}
-				, writer{writer} {
-
-				if (writer) {
-					writer->write(MessageHeader{
-						.type = type,
-					});
-				}
-			}
-
-			~MessageWriter2() {
-				if (writer) {
-					auto* hdr = reinterpret_cast<MessageHeader*>(writer->data());
-					hdr->size = static_cast<uint16>(writer->size() - sizeof(MessageHeader));
-					channel.endMessage2(*writer);
-				}
-			}
-
-			ENGINE_INLINE operator bool() const noexcept {
-				return writer;
-			}
-
-			template<class... Args>
-			ENGINE_INLINE decltype(auto) write(Args&&... args) {
-				return writer->write(std::forward<Args>(args)...);
-			}
-
-			template<int N>
-			ENGINE_INLINE void write(uint32 t) {
-				return writer->write<N>(t);
-			}
-
-			ENGINE_INLINE void writeFlushBits() {
-				writer->writeFlushBits();
-			}
 	};
 
 	/**
@@ -213,13 +157,6 @@ namespace Engine::Net {
 				return true;
 			}
 			
-			static constexpr bool has_beginMessage2 = true;
-			template<class Channel> // TODO: rm: once conversion is done should be moved into Channel_Base
-			[[nodiscard]]
-			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& writer) {
-				return MessageWriter2<Channel>{channel, type, &writer};
-			}
-
 			void endMessage2(BufferWriter& writer) {
 				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
 				hdr->seq = nextSeq++;
@@ -264,13 +201,6 @@ namespace Engine::Net {
 
 				ENGINE_WARN("Old message"); // TODO: rm
 				return false;
-			}
-
-			static constexpr bool has_beginMessage2 = true;
-			template<class Channel> // TODO: rm: once conversion is done should be moved into Channel_Base
-			[[nodiscard]]
-			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& writer) {
-				return MessageWriter2<Channel>{channel, type, &writer};
 			}
 
 			void endMessage2(BufferWriter& writer) {
@@ -325,14 +255,6 @@ namespace Engine::Net {
 				return !msgData.entryAt(nextSeq);
 			}
 
-			/////////////////////////////////////////////////
-			static constexpr bool has_beginMessage2 = true;
-			template<class Channel> // TODO: rm: once conversion is done should be moved into Channel_Base
-			[[nodiscard]]
-			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& writer) {
-				return MessageWriter2<Channel>{channel, type, canWriteMessage() ? &writer : nullptr};
-			}
-
 			void endMessage2(BufferWriter& writer) {
 				ENGINE_DEBUG_ASSERT(canWriteMessage());
 				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
@@ -359,19 +281,6 @@ namespace Engine::Net {
 					}
 				}
 			}
-			/////////////////////////////////////////////////
-			
-			// TODO: rm once blob writer is converted
-			/*void msgEnd(SeqNum pktSeq, MessageHeader& hdr) {
-				hdr.seq = nextSeq++;
-				
-				ENGINE_DEBUG_ASSERT(msgData.canInsert(hdr.seq));
-				auto& msg = msgData.insert(hdr.seq);
-				msg.data.assign(reinterpret_cast<byte*>(&hdr), reinterpret_cast<byte*>(&hdr) + sizeof(hdr) + hdr.size);
-				msg.lastSendTime = Engine::Clock::now();
-				
-				addMessageToPacket(pktSeq, hdr.seq);
-			}*/
 
 			void recvPacketAck(SeqNum pktSeq) {
 				auto* pkt = pktData.find(pktSeq);
@@ -385,30 +294,6 @@ namespace Engine::Net {
 
 				pktData.remove(pktSeq);
 			}
-
-			// TODO: also want some kind of fill-rest-of-packet function
-
-			// TODO: rm once blob writer is converted
-			/*void writeUnacked(PacketWriter& packetWriter) {
-				const auto now = Engine::Clock::now();
-				// BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
-				for (auto seq = msgData.minValid(); seqLess(seq, msgData.max() + 1); ++seq) {
-					auto* msg = msgData.find(seq);
-
-					// TODO: resend time should be configurable per channel
-					if (msg && (now > msg->lastSendTime + std::chrono::milliseconds{50})) {
-						msg->lastSendTime = now;
-						packetWriter.ensurePacketAvailable(); // TODO: seems kinda hacky
-						packetWriter.write(msg->data.data(), msg->data.size());
-						packetWriter.advance();
-
-						//const auto TODO_rm = offsetof(MessageHeader, type);
-						//const auto type = *static_cast<MessageType*>(msg->data.data() + TODO_rm);
-						//ENGINE_LOG("MSG2: ", (int)type, " ", msg->data.size(), " ", seq, " ", packetWriter.getNextSeq() - 1);
-						addMessageToPacket(packetWriter.getNextSeq() - 1, seq);
-					}
-				}
-			}*/
 	};
 	
 	/**
@@ -588,11 +473,16 @@ namespace Engine::Net {
 			static_assert(sizeof(BlobHeader) == 4 + 2);
 
 		public:
-			static constexpr bool has_beginMessage2 = true;
 
 			bool canWriteMessage() const noexcept {
 				return !writeBlobs.entryAt(nextBlob);
 			};
+
+			template<class Channel>
+			[[nodiscard]]
+			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& buff) {
+				return MessageBlobWriter<Channel>{channel, type, canWriteMessage() ? &buff : nullptr};
+			}
 
 			void writeBlob(BufferWriter& buff, MessageType type, const byte* data, int32 size) {
 				ENGINE_DEBUG_ASSERT(canWriteMessage(), "Unable to write message");
@@ -707,12 +597,6 @@ namespace Engine::Net {
 				}
 
 				return nullptr;
-			}
-
-			template<class Channel>
-			[[nodiscard]]
-			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& buff) {
-				return MessageBlobWriter<Channel>{channel, type, canWriteMessage() ? &buff : nullptr};
 			}
 	};
 }
