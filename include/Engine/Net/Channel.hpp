@@ -247,6 +247,7 @@ namespace Engine::Net {
 		private:
 			SeqNum nextSeq = -1;
 			SeqNum lastSeq = -1;
+			std::vector<std::vector<byte>> messages;
 
 		public:
 			constexpr static bool canWriteMessage() noexcept {
@@ -263,8 +264,28 @@ namespace Engine::Net {
 				return false;
 			}
 
-			void msgEnd(SeqNum pktSeq, MessageHeader& hdr) {
-				hdr.seq = ++nextSeq;
+			[[nodiscard]]
+			auto beginMessage2(Channel_UnreliableOrdered& channel, MessageType type, BufferWriter& writer) {
+				return MessageWriter2<Channel_UnreliableOrdered>{channel, type, &writer};
+			}
+
+			void endMessage2(BufferWriter& writer) {
+				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
+				hdr->seq = ++nextSeq;
+				messages.emplace_back(writer.cbegin(), writer.cend());
+			}
+			
+			void fill(BufferWriter& writer) {
+				while (messages.size()) {
+					const auto& msg = messages.back();
+					if (writer.write(msg.data(), msg.size())) {
+						messages.pop_back();
+					} else {
+						break;
+					}
+				}
+
+				messages.clear();
 			}
 	};
 

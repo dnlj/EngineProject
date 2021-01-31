@@ -397,7 +397,6 @@ namespace Engine::Net {
 				msgBufferWriter = msgBuffer;
 				using T = BeginSelector<decltype(channel)>;
 				if constexpr (T::value) {
-					ENGINE_LOG("\n=== Message 2 === \n");
 					return T::call(channel, channel, M, msgBufferWriter);
 				} else {
 					return T::call(
