@@ -48,7 +48,8 @@ namespace Engine::Net {
 			};
 
 			SequenceBuffer<SeqNum, PacketData, AckBitset::size()> packetData;
-			byte msgWriteBuffer[sizeof(Packet::body)];
+			byte msgBuffer[sizeof(Packet::body)];
+			BufferWriter msgBufferWriter;
 
 			/** The next recv ack we are expecting */
 			SeqNum nextRecvAck = {};
@@ -334,6 +335,27 @@ namespace Engine::Net {
 					sock.send(node->packet.head, sz, addr);
 				}
 
+				{ // TODO: temp while switching to new messagewriter
+					while (true) {
+						Packet pkt; // TODO: if we keep this move to be a member variable instead;
+						pkt.setKey(keySend);
+						pkt.setNextAck(nextRecvAck);
+						pkt.setAcks(recvAcks);
+						pkt.setProtocol(protocol);
+						msgBufferWriter = pkt.body;
+
+						(getChannel<Cs>().fill(msgBufferWriter), ...);
+
+						if (msgBufferWriter.size()) {
+							const auto sz = sizeof(pkt.head) + msgBufferWriter.size();
+							packetSentBandwidthAccum += sz;
+							sock.send(&pkt, (int32)sz, addr);
+						} else {
+							break;
+						}
+					}
+				}
+
 				const auto diff = now - lastBandwidthUpdate;
 				lastBandwidthUpdate = now;
 				Engine::Clock::Seconds sec = diff;
@@ -345,18 +367,46 @@ namespace Engine::Net {
 				packetSentBandwidthAccum = 0;
 			}
 
+			
+			template<class T, class = void> // TODO: rm: temp during transition to MessageWriter2 scheme
+			struct BeginSelector {
+				constexpr static bool value = false;
+
+				template<class... Args>
+				static decltype(auto) call(T& t, Args&&... args) {
+					return t.beginMessage(std::forward<Args>(args)...);
+				}
+			};
+
+			template<class T>
+			struct BeginSelector<T, std::void_t<decltype(&std::declval<T&>().beginMessage2)>> {
+				constexpr static bool value = true;
+
+				template<class... Args>
+				static decltype(auto) call(T& t, Args&&... args) {
+					return t.beginMessage2(std::forward<Args>(args)...);
+				}
+			};
+
 			template<auto M>
 			[[nodiscard]]
 			ENGINE_INLINE decltype(auto) beginMessage() {
 				// TODO: check that no other message is active
 				auto& channel = getChannelForMessage<M>();
-				//return channel.beginMessage(BufferWriter{msgWriteBuffer}, channel, M);
-				return channel.beginMessage(
-					channel,
-					channel.canWriteMessage() ? &packetWriter : nullptr,
-					M
-				);
 
+				msgBufferWriter = msgBuffer;
+				using T = BeginSelector<decltype(channel)>;
+				if constexpr (T::value) {
+					ENGINE_LOG("\n=== Message 2 === \n");
+					return T::call(channel, channel, M, msgBufferWriter);
+				} else {
+					return T::call(
+						channel,
+						channel,
+						channel.canWriteMessage() ? &packetWriter : nullptr,
+						M
+					);
+				}
 			}
 
 			/**

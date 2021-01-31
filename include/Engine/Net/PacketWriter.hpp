@@ -7,23 +7,25 @@
 namespace Engine::Net {
 	class BufferWriter { // TODO: move into Engine instead of Engine::Net
 		private:
+			byte* start = nullptr;
 			byte* curr = nullptr;
-			byte* const start = nullptr;
-			byte* const stop = nullptr;
+			byte* stop = nullptr;
 			int bitCount = 0;
 			uint64 bitStore = 0;
 
 		public:
+			BufferWriter() = default;
+
 			// TODO: couldnt this just be done with CTAD?
 			template<auto N>
 			BufferWriter(byte (&arr)[N])
 				: BufferWriter{arr, N} {
 			}
 			
-			BufferWriter(void* data, int64 size)
+			BufferWriter(void* data, int64 sz)
 				: start{static_cast<byte*>(data)}
 				, curr{start}
-				, stop{start + size} {
+				, stop{start + sz} {
 			}
 
 			ENGINE_INLINE auto size() const noexcept { return curr - start; }
@@ -42,6 +44,7 @@ namespace Engine::Net {
 			ENGINE_INLINE const byte* cend() const noexcept { return curr; }
 
 			ENGINE_INLINE bool write(const void* src, int64 sz) {
+				ENGINE_DEBUG_ASSERT(sz > 0);
 				if (curr + sz > stop) { return false; }
 				memcpy(curr, src, sz);
 				curr += sz;

@@ -124,6 +124,10 @@ namespace Engine::Net {
 				return MessageWriter<Channel>(channel, packetWriter, type);
 			}
 
+
+			// TODO: rm temp while changing to new message writer;
+			void fill(BufferWriter& writer) {};
+
 			/**
 			 * Determines if a message should be processed by a connection.
 			 * @param hdr The header for the message.
@@ -145,58 +149,50 @@ namespace Engine::Net {
 			constexpr static const MessageHeader* recvNext() noexcept { return nullptr; }
 	};
 
-	/*
 	template<class Channel>
 	class MessageWriter2 {
 		private:
-			BufferWriter writer;
+			BufferWriter* writer;
 			Channel& channel;
 
 		public:
-			////////////////////
-			////////////////////
-			////////////////////
-			////////////////////
-			////////////////////
-			////////////////////
-			////////////////////
-			// TODO: just share a buffer writer between all writers. we never write more than one message at a tiem
-			////////////////////
-			////////////////////
-			////////////////////
-			////////////////////
-			////////////////////
-			////////////////////
-			////////////////////
-			////////////////////
-			MessageWriter2(BufferWriter& writer, Channel& channel, MessageType type)
-				: writer{writer}
-				, channel{channel} {
-				writer.write(MessageHeader{
-					.type = type,
-				});
+			MessageWriter2(Channel& channel, MessageType type, BufferWriter* writer)
+				: channel{channel}
+				, writer{writer} {
+
+				if (writer) {
+					writer->write(MessageHeader{
+						.type = type,
+					});
+				}
 			}
 
 			~MessageWriter2() {
-				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
-				hdr->size = writer.size() - sizeof(MessageHeader);
-				channel.endOfMessage(writer);
+				if (writer) {
+					auto* hdr = reinterpret_cast<MessageHeader*>(writer->data());
+					hdr->size = static_cast<uint16>(writer->size() - sizeof(MessageHeader));
+					channel.endMessage2(*writer);
+				}
+			}
+
+			ENGINE_INLINE operator bool() const noexcept {
+				return writer;
 			}
 
 			template<class... Args>
-			ENGINE_INLINE decltype(auto) write(Args... args) {
-				return writer.write(std::forward<Args>(args)...);
+			ENGINE_INLINE decltype(auto) write(Args&&... args) {
+				return writer->write(std::forward<Args>(args)...);
 			}
 
 			template<int N>
 			ENGINE_INLINE void write(uint32 t) {
-				return writer.write<N>(t);
+				return writer->write<N>(t);
 			}
 
 			ENGINE_INLINE void writeFlushBits() {
-				writer.writeFlushBits();
+				writer->writeFlushBits();
 			}
-	};*/
+	};
 
 	/**
 	 * A unreliable unordered network channel.
@@ -206,7 +202,7 @@ namespace Engine::Net {
 	class Channel_UnreliableUnordered : public Channel_Base<Ms...> {
 		private:
 			SeqNum nextSeq = -1;
-			//std::vector<std::vector<byte>> messages;
+			std::vector<std::vector<byte>> messages;
 
 		public:
 			constexpr static bool canWriteMessage() noexcept {
@@ -216,26 +212,29 @@ namespace Engine::Net {
 			constexpr static bool recv(const MessageHeader& hdr) noexcept {
 				return true;
 			}
-			//
-			//void endOfMessage(BufferWriter& writer) {
-			//	auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
-			//	hdr->seq = ++nextSeq;
-			//	messages.emplace_back(writer.cbegin(), writer.cend());
-			//}
-			//
-			//void write(BufferWriter& writer) {
-			//	while (messages.size()) {
-			//		const auto& msg = messages.back();
-			//		if (writer.write(msg.data(), msg.size())) {
-			//			messages.pop_back();
-			//		} else {
-			//			break;
-			//		}
-			//	}
-			//}
 
-			void msgEnd(SeqNum pktSeq, MessageHeader& hdr) {
-				hdr.seq = ++nextSeq;
+			[[nodiscard]]
+			auto beginMessage2(Channel_UnreliableUnordered& channel, MessageType type, BufferWriter& writer) {
+				return MessageWriter2<Channel_UnreliableUnordered>{channel, type, &writer};
+			}
+
+			void endMessage2(BufferWriter& writer) {
+				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
+				hdr->seq = ++nextSeq;
+				messages.emplace_back(writer.cbegin(), writer.cend());
+			}
+			
+			void fill(BufferWriter& writer) {
+				while (messages.size()) {
+					const auto& msg = messages.back();
+					if (writer.write(msg.data(), msg.size())) {
+						messages.pop_back();
+					} else {
+						break;
+					}
+				}
+
+				messages.clear();
 			}
 	};
 	
