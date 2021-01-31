@@ -358,25 +358,6 @@ namespace Engine::Net {
 				);
 
 			}
-			
-			template<auto M>
-			void endMessage() {
-				static_assert(sizeof(M) == sizeof(MessageHeader::type));
-
-				auto node = packetWriter.back();
-				ENGINE_DEBUG_ASSERT(node, "Unmatched Connection::endMessage<", static_cast<int>(M), "> call.");
-
-				auto* hdr = reinterpret_cast<MessageHeader*>(node->curr);
-				ENGINE_DEBUG_ASSERT(hdr->type == M,
-					"Mismatched message being/end calls. ",
-					static_cast<int64>(hdr->type), " != ", static_cast<int64>(M)
-				);
-
-				hdr->size = static_cast<decltype(hdr->size)>(node->size() - sizeof(*hdr));
-
-				getChannelForMessage<M>().msgEnd(node->packet.getSeqNum(), *hdr);
-				packetWriter.advance();
-			}
 
 			/**
 			 * Writes data to the current message.
