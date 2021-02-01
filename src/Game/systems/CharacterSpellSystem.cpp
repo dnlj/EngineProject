@@ -128,8 +128,8 @@ namespace Game {
 					auto& conn = *connComp.conn;
 
 					if (auto msg = conn.beginMessage<MessageType::SPELL>()) {
-						conn.write(event.pos);
-						conn.write(event.dir);
+						msg.write(event.pos);
+						msg.write(event.dir);
 					}
 				}
 			}

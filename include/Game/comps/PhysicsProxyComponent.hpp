@@ -3,6 +3,9 @@
 // Box2D
 #include <box2d/b2_body.h>
 
+// Engine
+#include <Engine/Net/PacketWriter.hpp>
+
 // Game
 #include <Game/Common.hpp>
 
@@ -44,13 +47,13 @@ namespace Game {
 				return Engine::Net::Replication::ALWAYS;
 			}
 
-			void netTo(Connection& conn) const {
-				conn.write(trans);
-				conn.write(vel);
+			void netTo(Engine::Net::BufferWriter& buff) const {
+				buff.write(trans);
+				buff.write(vel);
 			}
 
-			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const {
-				netTo(conn);
+			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
+				netTo(buff);
 			}
 
 			void netFrom(Connection& conn) {

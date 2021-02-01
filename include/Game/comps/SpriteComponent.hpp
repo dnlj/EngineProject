@@ -17,8 +17,8 @@ namespace Game {
 
 			constexpr static auto netRepl() { return Engine::Net::Replication::ONCE; };
 
-			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const {
-				conn.write(texture.id());
+			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
+				buff.write(texture.id());
 			}
 
 			void netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {

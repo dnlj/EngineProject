@@ -44,8 +44,8 @@ namespace Game {
 		count = new int{1};
 	}
 	
-	void PhysicsBodyComponent::netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const {
-		conn.write(type);
+	void PhysicsBodyComponent::netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
+		buff.write(type);
 	}
 
 	void PhysicsBodyComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {

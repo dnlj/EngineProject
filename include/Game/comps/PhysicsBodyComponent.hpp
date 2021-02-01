@@ -70,9 +70,9 @@ namespace Game {
 				return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::NONE : Engine::Net::Replication::ALWAYS;
 			}
 
-			void netTo(Connection& conn) const {};
+			void netTo(Engine::Net::BufferWriter& buff) const {};
 
-			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) const;
+			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const;
 
 			void netFrom(Connection& conn) {}
 

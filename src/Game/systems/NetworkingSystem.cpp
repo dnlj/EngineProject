@@ -603,8 +603,7 @@ namespace Game {
 							msg.write(ent);
 							msg.write(world.getComponentId<C>());
 							
-							assert(false); // TODO: this neededs updated
-							comp.netToInit(engine, world, ent, conn); // TODO: how to handle with messages? just byte writer?
+							comp.netToInit(engine, world, ent, msg.getBufferWriter()); // TODO: how to handle with messages? just byte writer?
 						}
 					}
 				});
@@ -650,8 +649,7 @@ namespace Game {
 										msg.write(world.getTick());
 									}
 									
-									assert(false); // TODO: this needs updated
-									comp.netTo(conn);
+									comp.netTo(msg.getBufferWriter());
 								}
 							} else if (repl == Engine::Net::Replication::UPDATE) {
 								// TODO: impl

@@ -41,6 +41,11 @@ namespace Engine::Net {
 				return writer;
 			}
 
+			ENGINE_INLINE BufferWriter& getBufferWriter() noexcept {
+				ENGINE_DEBUG_ASSERT(writer);
+				return *writer;
+			}
+
 			template<class... Args>
 			ENGINE_INLINE decltype(auto) write(Args&&... args) {
 				return writer->write(std::forward<Args>(args)...);

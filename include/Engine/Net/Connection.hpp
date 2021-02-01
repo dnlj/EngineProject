@@ -100,7 +100,6 @@ namespace Engine::Net {
 			} rdat;
 
 			SeqNum nextSeqNum = 0;
-			PacketWriter packetWriter{nextSeqNum};
 
 			template<class C>
 			constexpr static ChannelId getChannelId() { return Meta::IndexOf<C, Cs...>::value; }
@@ -310,57 +309,34 @@ namespace Engine::Net {
 			void send(UDPSocket& sock) {
 				const auto now = Engine::Clock::now();
 
-				while (auto node = packetWriter.pop()) {
-					const auto seq = node->packet.getSeqNum();
+				while (true) {
+					const auto seq = nextSeqNum++;
+					Packet pkt; // TODO: if we keep this move to be a member variable instead;
+					pkt.setKey(keySend); // TODO: should just be set once after packet is changed to member variable
+					pkt.setNextAck(nextRecvAck);
+					pkt.setAcks(recvAcks);
+					pkt.setProtocol(protocol); // TODO: should just be set once after packet is changed to member variable
+					pkt.setSeqNum(seq);
+
 					{
 						const float32 val = packetData.get(seq).recvTime == Engine::Clock::TimePoint{};
 						loss += (val - loss) * lossSmoothing;
 					}
 
-					auto& data = packetData.insert(seq);
-
-					data = {
+					packetData.insert(seq) = {
 						.sendTime = now,
 					};
 
-					node->packet.setKey(keySend);
-					node->packet.setNextAck(nextRecvAck);
-					node->packet.setAcks(recvAcks);
-					const auto sz = static_cast<int32>(node->last - node->packet.head);
-					packetSentBandwidthAccum += sz;
-					sock.send(node->packet.head, sz, addr);
-				}
+					msgBufferWriter = pkt.body;
+					(getChannel<Cs>().fill(seq, msgBufferWriter), ...);
 
-				{ // TODO: temp while switching to new messagewriter
-					while (true) {
-						const auto seq = nextSeqNum++;
-						Packet pkt; // TODO: if we keep this move to be a member variable instead;
-						pkt.setKey(keySend); // TODO: should just be set once after packet is changed to member variable
-						pkt.setNextAck(nextRecvAck);
-						pkt.setAcks(recvAcks);
-						pkt.setProtocol(protocol); // TODO: should just be set once after packet is changed to member variable
-						pkt.setSeqNum(seq);
-
-						{
-							const float32 val = packetData.get(seq).recvTime == Engine::Clock::TimePoint{};
-							loss += (val - loss) * lossSmoothing;
-						}
-
-						packetData.insert(seq) = {
-							.sendTime = now,
-						};
-
-						msgBufferWriter = pkt.body;
-						(getChannel<Cs>().fill(seq, msgBufferWriter), ...);
-
-						if (msgBufferWriter.size()) {
-							const auto sz = sizeof(pkt.head) + msgBufferWriter.size();
-							packetSentBandwidthAccum += sz;
-							sock.send(&pkt, (int32)sz, addr);
-						} else {
-							--nextSeqNum;
-							break;
-						}
+					if (msgBufferWriter.size()) {
+						const auto sz = sizeof(pkt.head) + msgBufferWriter.size();
+						packetSentBandwidthAccum += sz;
+						sock.send(&pkt, (int32)sz, addr);
+					} else {
+						--nextSeqNum;
+						break;
 					}
 				}
 
@@ -384,28 +360,6 @@ namespace Engine::Net {
 				msgBufferWriter = msgBuffer;
 				// TODO: pass bufferwriter by ptr. we convert ot pointer anyways. makes it clearer
 				return channel.beginMessage2(channel, M, msgBufferWriter);
-			}
-
-			/**
-			 * Writes data to the current message.
-			 * @see PacketWriter::write
-			 */
-			template<class... Args>
-			decltype(auto) write(Args&&... args) {
-				assert(false); // TODO: rm this function
-				return packetWriter.write(std::forward<Args>(args)...);
-			}
-
-			// TODO: add version with limits?
-			template<int N>
-			void write(uint32 t) {
-				assert(false); // TODO: rm this function
-				packetWriter.write<N>(t);
-			}
-
-			void writeFlushBits() {
-				assert(false); // TODO: rm this function
-				packetWriter.writeFlushBits();
 			}
 	};
 }
