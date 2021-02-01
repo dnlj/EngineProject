@@ -779,6 +779,9 @@ FILE_PATTERNS          = *.c \
                          *.cpp \
 						 *.tpp \
                          *.c++ \
+						 *.xpp \
+						 *.x++ \
+						 *.xmacro \
                          *.java \
                          *.ii \
                          *.ixx \

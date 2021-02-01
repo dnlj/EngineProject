@@ -113,7 +113,12 @@ namespace Engine::Net {
 			 */
 			bool canWriteMessage() = delete;
 
-			// TODO: doc
+			/**
+			 * Returns a new message object used to write to this channel.
+			 * @param channel The channel on which this is being called.
+			 * @param type The type of the message. @see MessageHeader
+			 * @param buff The buffer writer used to build the message.
+			 */
 			template<class Channel>
 			[[nodiscard]]
 			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& buff) {
@@ -126,8 +131,12 @@ namespace Engine::Net {
 			 */
 			void endMessage(BufferWriter& buff) = delete;
 
-			// TODO: doc
-			void fill(SeqNum pktSeq, BufferWriter& writer) = delete;
+			/**
+			 * Fills the given packet/buffer with messages from this channel.
+			 * @param pktSeq The sequence number of the packet to fill.
+			 * @param buff The buffer to write the messages to.
+			 */
+			void fill(SeqNum pktSeq, BufferWriter& buff) = delete;
 
 			/**
 			 * Determines if a message should be processed by a connection.
@@ -162,16 +171,16 @@ namespace Engine::Net {
 				return true;
 			}
 			
-			void endMessage2(BufferWriter& writer) {
-				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
+			void endMessage2(BufferWriter& buff) {
+				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
-				messages.emplace_back(writer.cbegin(), writer.cend());
+				messages.emplace_back(buff.cbegin(), buff.cend());
 			}
 			
-			void fill(SeqNum pktSeq, BufferWriter& writer) {
+			void fill(SeqNum pktSeq, BufferWriter& buff) {
 				while (messages.size()) {
 					const auto& msg = messages.back();
-					if (writer.write(msg.data(), msg.size())) {
+					if (buff.write(msg.data(), msg.size())) {
 						messages.pop_back();
 					} else {
 						break;
@@ -204,20 +213,19 @@ namespace Engine::Net {
 					return true;
 				}
 
-				ENGINE_WARN("Old message"); // TODO: rm
 				return false;
 			}
 
-			void endMessage2(BufferWriter& writer) {
-				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
+			void endMessage2(BufferWriter& buff) {
+				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
-				messages.emplace_back(writer.cbegin(), writer.cend());
+				messages.emplace_back(buff.cbegin(), buff.cend());
 			}
 			
-			void fill(SeqNum pktSeq, BufferWriter& writer) {
+			void fill(SeqNum pktSeq, BufferWriter& buff) {
 				while (messages.size()) {
 					const auto& msg = messages.back();
-					if (writer.write(msg.data(), msg.size())) {
+					if (buff.write(msg.data(), msg.size())) {
 						messages.pop_back();
 					} else {
 						break;
@@ -260,18 +268,18 @@ namespace Engine::Net {
 				return !msgData.entryAt(nextSeq);
 			}
 
-			void endMessage2(BufferWriter& writer) {
+			void endMessage2(BufferWriter& buff) {
 				ENGINE_DEBUG_ASSERT(canWriteMessage());
-				auto* hdr = reinterpret_cast<MessageHeader*>(writer.data());
+				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
 
 				ENGINE_DEBUG_ASSERT(msgData.canInsert(hdr->seq));
 				auto& msg = msgData.insert(hdr->seq);
-				msg.data.assign(writer.cbegin(), writer.cend());
+				msg.data.assign(buff.cbegin(), buff.cend());
 				msg.lastSendTime = {};
 			}
 			
-			void fill(SeqNum pktSeq, BufferWriter& writer) {
+			void fill(SeqNum pktSeq, BufferWriter& buff) {
 				const auto now = Engine::Clock::now();
 				// BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
 				for (auto seq = msgData.minValid(); seqLess(seq, msgData.max() + 1); ++seq) {
@@ -279,7 +287,7 @@ namespace Engine::Net {
 
 					// TODO: resend time should be configurable per channel
 					if (msg && (now > msg->lastSendTime + std::chrono::milliseconds{50})) {
-						if (writer.write(msg->data.data(), msg->data.size())) {
+						if (buff.write(msg->data.data(), msg->data.size())) {
 							msg->lastSendTime = now;
 							addMessageToPacket(pktSeq, seq);
 						}
@@ -526,16 +534,7 @@ namespace Engine::Net {
 					}
 
 					const auto dataEnd = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size;
-
-					// TODO: rm
-					ENGINE_INFO("recv blob part: ", hdr.seq, " ", info.seq(), " ", dataEnd - dataBegin);
-
 					found->insert(info.start() & BlobHeader::LEN_MASK, dataBegin, dataEnd);
-					
-					// TODO: rm
-					if (found->complete()) {
-						ENGINE_LOG("Blob ", info.seq(), " complete!");
-					}
 				}
 
 				return false;
@@ -580,7 +579,6 @@ namespace Engine::Net {
 			}
 
 			void fill(SeqNum pktSeq, BufferWriter& buff) {
-				// TODO: where should this go now?
 				for (auto seq = writeBlobs.minValid(); seqLess(seq, writeBlobs.max() + 1); ++seq) {
 					attemptWriteBlob(buff, seq);
 				}
