@@ -359,7 +359,7 @@ namespace Engine::Net {
 
 				msgBufferWriter = msgBuffer;
 				// TODO: pass bufferwriter by ptr. we convert ot pointer anyways. makes it clearer
-				return channel.beginMessage2(channel, M, msgBufferWriter);
+				return channel.beginMessage(channel, M, msgBufferWriter);
 			}
 	};
 }

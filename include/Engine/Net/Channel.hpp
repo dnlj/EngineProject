@@ -12,52 +12,52 @@ namespace Engine::Net {
 	constexpr inline int MAX_ACTIVE_MESSAGES_PER_CHANNEL = 64;
 
 	template<class Channel>
-	class MessageWriter2 {
+	class MessageWriter {
 		private:
-			BufferWriter* writer;
+			BufferWriter* buff;
 			Channel& channel;
 
 		public:
-			MessageWriter2(Channel& channel, MessageType type, BufferWriter* writer)
+			MessageWriter(Channel& channel, MessageType type, BufferWriter* buff)
 				: channel{channel}
-				, writer{writer} {
+				, buff{buff} {
 
-				if (writer) {
-					writer->write(MessageHeader{
+				if (buff) {
+					buff->write(MessageHeader{
 						.type = type,
 					});
 				}
 			}
 
-			~MessageWriter2() {
-				if (writer) {
-					auto* hdr = reinterpret_cast<MessageHeader*>(writer->data());
-					hdr->size = static_cast<uint16>(writer->size() - sizeof(MessageHeader));
-					channel.endMessage2(*writer);
+			~MessageWriter() {
+				if (buff) {
+					auto* hdr = reinterpret_cast<MessageHeader*>(buff->data());
+					hdr->size = static_cast<uint16>(buff->size() - sizeof(MessageHeader));
+					channel.endMessage(*buff);
 				}
 			}
 
 			ENGINE_INLINE operator bool() const noexcept {
-				return writer;
+				return buff;
 			}
 
 			ENGINE_INLINE BufferWriter& getBufferWriter() noexcept {
-				ENGINE_DEBUG_ASSERT(writer);
-				return *writer;
+				ENGINE_DEBUG_ASSERT(buff);
+				return *buff;
 			}
 
 			template<class... Args>
 			ENGINE_INLINE decltype(auto) write(Args&&... args) {
-				return writer->write(std::forward<Args>(args)...);
+				return buff->write(std::forward<Args>(args)...);
 			}
 
 			template<int N>
 			ENGINE_INLINE void write(uint32 t) {
-				return writer->write<N>(t);
+				return buff->write<N>(t);
 			}
 
 			ENGINE_INLINE void writeFlushBits() {
-				writer->writeFlushBits();
+				buff->writeFlushBits();
 			}
 	};
 
@@ -121,8 +121,8 @@ namespace Engine::Net {
 			 */
 			template<class Channel>
 			[[nodiscard]]
-			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& buff) {
-				return MessageWriter2<Channel>{channel, type, channel.canWriteMessage() ? &buff : nullptr};
+			auto beginMessage(Channel& channel, MessageType type, BufferWriter& buff) {
+				return MessageWriter<Channel>{channel, type, channel.canWriteMessage() ? &buff : nullptr};
 			}
 
 			/**
@@ -171,7 +171,7 @@ namespace Engine::Net {
 				return true;
 			}
 			
-			void endMessage2(BufferWriter& buff) {
+			void endMessage(BufferWriter& buff) {
 				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
 				messages.emplace_back(buff.cbegin(), buff.cend());
@@ -216,7 +216,7 @@ namespace Engine::Net {
 				return false;
 			}
 
-			void endMessage2(BufferWriter& buff) {
+			void endMessage(BufferWriter& buff) {
 				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
 				messages.emplace_back(buff.cbegin(), buff.cend());
@@ -268,7 +268,7 @@ namespace Engine::Net {
 				return !msgData.entryAt(nextSeq);
 			}
 
-			void endMessage2(BufferWriter& buff) {
+			void endMessage(BufferWriter& buff) {
 				ENGINE_DEBUG_ASSERT(canWriteMessage());
 				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
@@ -493,7 +493,7 @@ namespace Engine::Net {
 
 			template<class Channel>
 			[[nodiscard]]
-			auto beginMessage2(Channel& channel, MessageType type, BufferWriter& buff) {
+			auto beginMessage(Channel& channel, MessageType type, BufferWriter& buff) {
 				return MessageBlobWriter<Channel>{channel, type, canWriteMessage() ? &buff : nullptr};
 			}
 
@@ -561,7 +561,7 @@ namespace Engine::Net {
 						return;
 					}
 
-					auto msg = Base::beginMessage2(*static_cast<Base*>(this), blob->type, buff);
+					auto msg = Base::beginMessage(*static_cast<Base*>(this), blob->type, buff);
 
 					BlobHeader head;
 					head.start() = blob->curr | (blob->curr > 0 ? 0 : ~BlobHeader::LEN_MASK);
