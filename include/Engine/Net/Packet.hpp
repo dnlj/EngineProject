@@ -7,7 +7,11 @@
 
 
 namespace Engine::Net {
-	constexpr inline int32 MAX_PACKET_SIZE = 1024;
+	constexpr inline int32 ASSUMED_MIN_MTU = 1200; // "Exploring usable Path MTU in the Internet"
+	constexpr inline int32 MAX_IP_HEADER_SIZE = 60; // IPv6 = 40, IPv4 w/ options = 60
+	constexpr inline int32 UDP_HEADER_SIZE = 8;
+	constexpr inline int32 MAX_PACKET_SIZE = ASSUMED_MIN_MTU - MAX_IP_HEADER_SIZE - UDP_HEADER_SIZE;
+
 	class Packet {
 		public:
 			// 2 bytes protocol
@@ -42,5 +46,4 @@ namespace Engine::Net {
 			void setAcks(const AckBitset& a) { getAcks() = a; }
 	};
 	static_assert(sizeof(Packet) == MAX_PACKET_SIZE);
-	inline constexpr int32 MAX_MESSAGE_SIZE = sizeof(Packet::body) - sizeof(MessageHeader);
 }

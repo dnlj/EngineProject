@@ -234,7 +234,9 @@ namespace Engine::Net {
 
 				ENGINE_DEBUG_ASSERT(rdat.curr == rdat.msgLast, "Incomplete read of network message");
 				const auto* hdr = read<MessageHeader>();
-				ENGINE_DEBUG_ASSERT(hdr->size <= MAX_MESSAGE_SIZE, "Invalid network message length");
+				ENGINE_DEBUG_ASSERT(hdr->size <= sizeof(Packet::body) - sizeof(MessageHeader),
+					"Invalid network message length"
+				);
 
 				bool process = true;
 				callWithChannelForMessage(hdr->type, [&]<class C>(){
