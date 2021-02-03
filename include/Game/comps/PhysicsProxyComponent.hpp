@@ -4,7 +4,7 @@
 #include <box2d/b2_body.h>
 
 // Engine
-#include <Engine/Net/PacketWriter.hpp>
+#include <Engine/Net/BufferWriter.hpp>
 
 // Game
 #include <Game/Common.hpp>

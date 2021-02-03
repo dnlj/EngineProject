@@ -13,12 +13,13 @@
 #include <Engine/Net/IPv4Address.hpp>
 #include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Net/Net.hpp>
-#include <Engine/Net/PacketWriter.hpp>
+#include <Engine/Net/BufferWriter.hpp>
 #include <Engine/StaticVector.hpp>
 #include <Engine/Bitset.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/Utility/Utility.hpp>
 #include <Engine/SequenceBuffer.hpp>
+#include <Engine/Net/Packet.hpp>
 
 
 namespace Engine::Net {

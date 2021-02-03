@@ -2,7 +2,7 @@
 
 // Engine
 #include <Engine/Net/MessageHeader.hpp>
-#include <Engine/Net/PacketWriter.hpp>
+#include <Engine/Net/BufferWriter.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/SequenceBuffer.hpp>
 
