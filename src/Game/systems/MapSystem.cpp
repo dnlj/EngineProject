@@ -116,10 +116,7 @@ namespace Game {
 		const auto chunkIdx = chunkToRegionIndex(chunkPos);
 		auto& chunk = regionIt->second->data[chunkIdx.x][chunkIdx.y];
 
-		chunk.fromRLE(
-			reinterpret_cast<const MapChunk::RLEPair*>(begin),
-			reinterpret_cast<const MapChunk::RLEPair*>(end)
-		);
+		chunk.fromRLE(begin, end);
 		chunk.updated = world.getTick() + 1;
 	}
 

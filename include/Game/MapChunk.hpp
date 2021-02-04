@@ -21,6 +21,7 @@ namespace Game {
 		public:
 			constexpr static glm::ivec2 size = {32, 32};
 			constexpr static auto blockSize = 1.0f/6.0f;
+			constexpr static BlockId RLE_COUNT_BIT = static_cast<BlockId>(1ll << ((sizeof(BlockId) * 8) - 1));
 
 			struct RLEPair {
 				BlockId bid;
@@ -45,34 +46,61 @@ namespace Game {
 				constexpr auto sz = size.x * size.y;
 				const BlockId* linear = &data[0][0];
 
-				RLEPair* pair = reinterpret_cast<RLEPair*>(&*encoding.insert(encoding.end(), sizeof(RLEPair), 0));
-				pair->bid = linear[0];
-				pair->count = 1;
+				RLEPair pair = {
+					.bid = linear[0],
+					.count = 1,
+				};
+
+				 auto&& insert = [&]{
+					if (pair.count == 1) {
+						BlockId bid = pair.bid | RLE_COUNT_BIT;
+						const byte* start = reinterpret_cast<const byte*>(&bid);
+						const byte* stop = start + sizeof(bid);
+						encoding.insert(encoding.cend(), start, stop);
+					} else {
+						const byte* start = reinterpret_cast<const byte*>(&pair);
+						const byte* stop = start + sizeof(pair);
+						encoding.insert(encoding.cend(), start, stop);
+					}
+				};
+
 				for (int i = 1; i < sz; ++i) {
 					const auto& bid = linear[i];
-					if (bid == pair->bid) {
-						++pair->count;
+					if (bid == pair.bid) {
+						++pair.count;
 					} else {
-						pair = reinterpret_cast<RLEPair*>(&*encoding.insert(encoding.end(), sizeof(RLEPair), 0));
-						pair->bid = bid;
-						pair->count = 1;
+						insert();
+						pair.bid = bid;
+						pair.count = 1;
 					}
 				}
+				insert();
 			}
 			
-			void fromRLE(const RLEPair* begin, const RLEPair* end) {
+			void fromRLE(const byte* begin, const byte* end) {
 				constexpr auto sz = size.x * size.y;
 				BlockId* linear = &data[0][0];
 				RLEPair pair;
+
 				int i = 0;
 				while (begin != end) {
-					pair = *begin;
+
+					pair.bid = *reinterpret_cast<const decltype(pair.bid)*>(begin);
+					begin += sizeof(pair.bid);
+
+					if (pair.bid & RLE_COUNT_BIT) {
+						pair.bid ^= RLE_COUNT_BIT;
+						pair.count = 1;
+					} else {
+						pair.count = *reinterpret_cast<const decltype(pair.count)*>(begin);
+						begin += sizeof(pair.count);
+					}
+
 					while (pair.count) {
 						linear[i] = pair.bid;
 						++i;
 						--pair.count;
 					}
-					++begin;
 				}
 			}
 	};
