@@ -164,10 +164,12 @@ namespace Game {
 			struct TestData { // TODO: rename
 				b2Body* body;
 				Engine::Graphics::Mesh mesh;
-				Engine::Clock::TimePoint lastUsed;
+				Engine::Clock::TimePoint lastUsed; // TODO: rm - dont think this is used anywhere
+				Engine::ECS::Tick updated = {};
 			};
 
 			Engine::FlatHashMap<glm::ivec2, TestData> activeChunks;
+			Engine::FlatHashMap<glm::ivec2, MapChunk> chunkEdits;
 
 		private:
 			std::condition_variable condv;

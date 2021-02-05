@@ -66,6 +66,8 @@ namespace Game {
 	}
 
 	void MapSystem::tick() {
+		const auto currTick = world.getTick();
+
 		// TODO: move
 		const auto makeEdit = [&](int value, const glm::vec2 mouse) {
 			for (int x = -1; x < 2; ++x) {
@@ -78,24 +80,69 @@ namespace Game {
 			}
 		};
 
+		chunkEdits.clear();
+
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			const auto& actComp = world.getComponent<ActionComponent>(ply);
 
 			if (actComp.getButton(Button::Attack1).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
-				makeEdit(1, pos + actComp.getTarget());
+				makeEdit(MapChunk::DIRT.id, pos + actComp.getTarget());
 			}
 			if (actComp.getButton(Button::Attack2).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
-				makeEdit(0, pos + actComp.getTarget());
+				makeEdit(MapChunk::AIR.id, pos + actComp.getTarget());
 			}
 
 			if (!world.isPerformingRollback()) {
 				ensurePlayAreaLoaded(ply);
 			}
 		}
+
+		// Apply edits
+		for (auto& [chunkPos, edit] : chunkEdits) {
+			const auto regionPos = chunkToRegion(chunkPos);
+			const auto regionIt = regions.find(regionPos);
+			if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { continue; }
+
+			const auto chunkIndex = chunkToRegionIndex(chunkPos);
+			auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
+
+			if (chunk.apply(edit)) {
+				const auto found = activeChunks.find(chunkPos);
+				if (found != activeChunks.end()) {
+					found->second.updated = currTick;
+				}
+			}
+		}
+
+		for (auto& [chunkPos, activeData] : activeChunks) {
+			if (activeData.updated == currTick) {
+				// TODO: why dont we just move this chunk finding stuff into buildAtivechunkdata and just pass chunkPos in. Would simplify things
+				const auto regionPos = chunkToRegion(chunkPos);
+				const auto regionIt = regions.find(regionPos);
+				if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { continue; }
+				
+				const auto chunkIndex = chunkToRegionIndex(chunkPos);
+				auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
+
+				buildActiveChunkData(activeData, chunk, chunkPos);
+				chunk.toRLE();
+			}
+		}
+
+		//////////
+		//////////
+		//////////
+		//////////
+		//////////
+		// TODO: still need to network the edits
+		//////////
+		//////////
+		//////////
+		//////////
 	}
 
 	void MapSystem::chunkFromNet(Connection& from, const Engine::Net::MessageHeader& head) {
@@ -117,7 +164,11 @@ namespace Game {
 		auto& chunk = regionIt->second->data[chunkIdx.x][chunkIdx.y];
 
 		chunk.fromRLE(begin, end);
-		chunk.updated = world.getTick() + 1;
+
+		const auto found = activeChunks.find(chunkPos);
+		if (found != activeChunks.end()) {
+			found->second.updated = world.getTick() + 1;
+		}
 	}
 
 	void MapSystem::run(float32 dt) {
@@ -144,9 +195,14 @@ namespace Game {
 				const auto chunkIdx = chunkToRegionIndex(chunkPos);
 				auto& chunk = regionIt->second->data[chunkIdx.x][chunkIdx.y];
 
-				if (meta.last != chunk.updated) {
+				
+				const auto found = activeChunks.find(chunkPos);
+				if (found == activeChunks.end()) { continue; }
+				auto& activeData = found->second;
+
+				if (meta.last != activeData.updated) {
 					chunk.toRLE();
-					meta.last = chunk.updated;
+					meta.last = activeData.updated;
 
 					auto& connComp = world.getComponent<ConnectionComponent>(ent);
 					auto& conn = *connComp.conn;
@@ -253,12 +309,8 @@ namespace Game {
 					it = activeChunks.emplace(chunkPos, TestData{}).first;
 					it->second.body = createBody();
 					setupMesh(it->second.mesh);
-					ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (chunk.updated == tick) ? "fresh" : "stale", ")");
-					chunk.updated = tick;
-				}
-
-				if (chunk.updated == tick) {
-					buildActiveChunkData(it->second, chunk, chunkPos);
+					ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
+					it->second.updated = tick;
 				}
 
 				it->second.lastUsed = world.getTickTime();
@@ -280,18 +332,9 @@ namespace Game {
 
 		const glm::ivec2 chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
 		const auto chunkPos = blockToChunk(getBlockOffset()) + chunkOffset;
-		const auto chunkIndex = chunkToRegionIndex(chunkPos);
 
-		const auto regionPos = chunkToRegion(chunkPos);
-		const auto regionIt = regions.find(regionPos);
-		if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
-
-		auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
-
-		if (chunk.data[blockIndex.x][blockIndex.y] != value) {
-			chunk.data[blockIndex.x][blockIndex.y] = value;
-			chunk.updated = world.getTick();
-		}
+		auto& edit = chunkEdits[chunkPos];
+		edit.data[blockIndex.x][blockIndex.y] = value;
 	}
 	
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 world) const {
@@ -311,7 +354,7 @@ namespace Game {
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};
 
 			const auto usable = [&](const glm::ivec2 pos, const int blockType) {
-				return !used[pos.x][pos.y] && chunk.data[pos.x][pos.y] == blockType;
+				return blockType != MapChunk::NONE.id && !used[pos.x][pos.y] && chunk.data[pos.x][pos.y] == blockType;
 			};
 
 			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {  
@@ -380,7 +423,7 @@ namespace Game {
 
 			// TODO: For collision we only want to check if a block is solid or not. We dont care about type.
 			const auto usable = [&](const glm::ivec2 pos, const int blockType) {
-				return !used[pos.x][pos.y] && chunk.data[pos.x][pos.y] == blockType;
+				return blockType != MapChunk::NONE.id && !used[pos.x][pos.y] && chunk.data[pos.x][pos.y] == blockType;
 			};
 			
 			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {
@@ -419,10 +462,10 @@ namespace Game {
 		for (glm::ivec2 bpos = {0, 0}; bpos.x < MapChunk::size.x; ++bpos.x) {
 			for (bpos.y = 0; bpos.y < MapChunk::size.y; ++bpos.y) {
 				const auto absPos = chunkBlockPos + bpos;
-				int block = 0;
+				int block = MapChunk::AIR.id;
 		
 				if (0 < mgen.value(absPos.x, absPos.y)) {
-					block = 1;
+					block = MapChunk::DIRT.id;
 				}
 
 				chunk.data[bpos.x][bpos.y] = block;
@@ -430,8 +473,6 @@ namespace Game {
 				//chunk.data[bpos.x][bpos.y] = bpos.x & 1 || bpos.y & 1;
 			}
 		}
-
-		chunk.updated = world.getTick();
 	}
 
 	void MapSystem::loadChunkAsyncWorker() {

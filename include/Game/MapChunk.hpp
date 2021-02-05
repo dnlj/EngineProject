@@ -15,8 +15,9 @@
 namespace Game {
 	class MapChunk {
 		public:
-			constexpr static MapBlock AIR{0, false};
-			constexpr static MapBlock DIRT{1, true};
+			constexpr static MapBlock NONE{0, false};
+			constexpr static MapBlock AIR{1, false};
+			constexpr static MapBlock DIRT{2, true};
 
 		public:
 			constexpr static glm::ivec2 size = {32, 32};
@@ -31,13 +32,30 @@ namespace Game {
 
 		public:
 			BlockId data[size.x][size.y] = {};
-			Engine::ECS::Tick updated = {};
-			Engine::ECS::Tick lastEncoding = {};
 			std::vector<byte> encoding;
+			
+			bool apply(const MapChunk& edit) {
+				bool editMade = false;
 
+				for (int x = 0; x < size.x; ++x) {
+					for (int y = 0; y < size.y; ++y) {
+						const auto& ed = edit.data[x][y];
+						if (ed == NONE.id) { continue; }
+
+						auto& cd = data[x][y];
+						if (cd == ed) { continue; }
+
+						editMade = true;
+						cd = ed;
+						ENGINE_LOG("YEET");
+					}
+				}
+
+				return editMade;
+			}
+
+			// TODO: move RLE data to active chunk data instead on MapChunk. we only need it if it is active.
 			void toRLE() {
-				if (lastEncoding == updated) { return; }
-				lastEncoding = updated;
 				encoding.clear();
 
 				// Reserve space for position data
