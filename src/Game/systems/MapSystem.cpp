@@ -120,16 +120,7 @@ namespace Game {
 
 		for (auto& [chunkPos, activeData] : activeChunks) {
 			if (activeData.updated == currTick) {
-				// TODO: why dont we just move this chunk finding stuff into buildAtivechunkdata and just pass chunkPos in. Would simplify things
-				const auto regionPos = chunkToRegion(chunkPos);
-				const auto regionIt = regions.find(regionPos);
-				if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { continue; }
-				
-				const auto chunkIndex = chunkToRegionIndex(chunkPos);
-				auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
-
-				buildActiveChunkData(activeData, chunk, chunkPos);
-				chunk.toRLE();
+				buildActiveChunkData(activeData, chunkPos);
 			}
 		}
 
@@ -201,7 +192,6 @@ namespace Game {
 				auto& activeData = found->second;
 
 				if (meta.last != activeData.updated) {
-					chunk.toRLE();
 					meta.last = activeData.updated;
 
 					auto& connComp = world.getComponent<ConnectionComponent>(ent);
@@ -347,8 +337,15 @@ namespace Game {
 	}
 
 	// TODO: thread this. Not sure how nice box2d will play with it.
-	void MapSystem::buildActiveChunkData(TestData& data, const MapChunk& chunk, glm::ivec2 chunkPos) {
+	void MapSystem::buildActiveChunkData(TestData& data, glm::ivec2 chunkPos) {
 		// TODO: simplify. currently have two mostly duplicate sections.
+		const auto regionPos = chunkToRegion(chunkPos);
+		const auto regionIt = regions.find(regionPos);
+		if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
+				
+		const auto chunkIndex = chunkToRegionIndex(chunkPos);
+		auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
+		chunk.toRLE();
 		
 		{ // Render stuff
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};

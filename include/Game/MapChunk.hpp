@@ -47,7 +47,6 @@ namespace Game {
 
 						editMade = true;
 						cd = ed;
-						ENGINE_LOG("YEET");
 					}
 				}
 

@@ -164,7 +164,7 @@ namespace Game {
 			struct TestData { // TODO: rename
 				b2Body* body;
 				Engine::Graphics::Mesh mesh;
-				Engine::Clock::TimePoint lastUsed; // TODO: rm - dont think this is used anywhere
+				Engine::Clock::TimePoint lastUsed;
 				Engine::ECS::Tick updated = {};
 			};
 
@@ -211,7 +211,7 @@ namespace Game {
 			void setupMesh(Engine::Graphics::Mesh& mesh) const;
 
 			// TODO: Doc
-			void buildActiveChunkData(TestData& data, const MapChunk& chunk, glm::ivec2 chunkPos);
+			void buildActiveChunkData(TestData& data, glm::ivec2 chunkPos);
 
 			// TODO: Doc
 			void loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk);
