@@ -80,8 +80,6 @@ namespace Game {
 			}
 		};
 
-		chunkEdits.clear();
-
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			const auto& actComp = world.getComponent<ActionComponent>(ply);
 
@@ -115,6 +113,9 @@ namespace Game {
 				if (found != activeChunks.end()) {
 					found->second.updated = currTick;
 				}
+				ENGINE_LOG("*** Edit with change!");
+			} else {
+				ENGINE_LOG("*** Edit but no change!");
 			}
 		}
 
@@ -124,16 +125,7 @@ namespace Game {
 			}
 		}
 
-		//////////
-		//////////
-		//////////
-		//////////
-		//////////
-		// TODO: still need to network the edits
-		//////////
-		//////////
-		//////////
-		//////////
+		chunkEdits.clear();
 	}
 
 	void MapSystem::chunkFromNet(Connection& from, const Engine::Net::MessageHeader& head) {
@@ -149,16 +141,9 @@ namespace Game {
 
 		ENGINE_LOG("Recv chunk ", head.seq, " (", chunkPos.x, ", ", chunkPos.y, ")");
 
-		const auto regionPos = chunkToRegion(chunkPos);
-		auto regionIt = regions.find(regionPos);
-		const auto chunkIdx = chunkToRegionIndex(chunkPos);
-		auto& chunk = regionIt->second->data[chunkIdx.x][chunkIdx.y];
-
-		chunk.fromRLE(begin, end);
-
 		const auto found = activeChunks.find(chunkPos);
 		if (found != activeChunks.end()) {
-			found->second.updated = world.getTick() + 1;
+			chunkEdits[chunkPos].fromRLE(begin, end);
 		}
 	}
 
@@ -181,24 +166,51 @@ namespace Game {
 					continue;
 				}
 				
-				const auto regionPos = chunkToRegion(chunkPos);
-				auto regionIt = regions.find(regionPos);
-				const auto chunkIdx = chunkToRegionIndex(chunkPos);
-				auto& chunk = regionIt->second->data[chunkIdx.x][chunkIdx.y];
-
-				
 				const auto found = activeChunks.find(chunkPos);
 				if (found == activeChunks.end()) { continue; }
 				auto& activeData = found->second;
 
 				if (meta.last != activeData.updated) {
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					// TODO: if `meta.last == 0` then send full chunk to this player only
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+					/////////////
+
 					meta.last = activeData.updated;
+
+					if (activeData.rle.empty()) {
+						// TODO: i dont think this case should be hit?
+						ENGINE_WARN("No RLE data for chunk");
+						continue;
+					}
 
 					auto& connComp = world.getComponent<ConnectionComponent>(ent);
 					auto& conn = *connComp.conn;
 					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
-						const auto size = static_cast<int32>(chunk.encoding.size() * sizeof(chunk.encoding[0]));
-						byte* data = reinterpret_cast<byte*>(chunk.encoding.data());
+						const auto size = static_cast<int32>(activeData.rle.size() * sizeof(activeData.rle[0]));
+						byte* data = reinterpret_cast<byte*>(activeData.rle.data());
 						ENGINE_LOG("Send Chunk: ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
 
 						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
@@ -345,7 +357,18 @@ namespace Game {
 				
 		const auto chunkIndex = chunkToRegionIndex(chunkPos);
 		auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
-		chunk.toRLE();
+
+		if constexpr (ENGINE_SERVER) { // Build edits
+			const auto found = chunkEdits.find(chunkPos);
+			if (found == chunkEdits.end()) {
+				data.rle.clear();
+
+				// TODO: i dont think this should ever happen because the only time we call this function is when we have an update?
+				ENGINE_WARN("No chunk edits.");
+			} else {
+				found->second.toRLE(data.rle);
+			}
+		}
 		
 		{ // Render stuff
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};

@@ -166,6 +166,7 @@ namespace Game {
 				Engine::Graphics::Mesh mesh;
 				Engine::Clock::TimePoint lastUsed;
 				Engine::ECS::Tick updated = {};
+				std::vector<byte> rle;
 			};
 
 			Engine::FlatHashMap<glm::ivec2, TestData> activeChunks;

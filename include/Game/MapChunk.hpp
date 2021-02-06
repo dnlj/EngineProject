@@ -32,7 +32,6 @@ namespace Game {
 
 		public:
 			BlockId data[size.x][size.y] = {};
-			std::vector<byte> encoding;
 			
 			bool apply(const MapChunk& edit) {
 				bool editMade = false;
@@ -54,7 +53,7 @@ namespace Game {
 			}
 
 			// TODO: move RLE data to active chunk data instead on MapChunk. we only need it if it is active.
-			void toRLE() {
+			void toRLE(std::vector<byte>& encoding) const {
 				encoding.clear();
 
 				// Reserve space for position data
@@ -94,14 +93,14 @@ namespace Game {
 				insert();
 			}
 			
-			void fromRLE(const byte* begin, const byte* end) {
+			bool fromRLE(const byte* begin, const byte* end) {
+				bool editMade = false;
 				constexpr auto sz = size.x * size.y;
 				BlockId* linear = &data[0][0];
 				RLEPair pair;
 
 				int i = 0;
 				while (begin != end) {
-
 					pair.bid = *reinterpret_cast<const decltype(pair.bid)*>(begin);
 					begin += sizeof(pair.bid);
 
@@ -114,11 +113,17 @@ namespace Game {
 					}
 
 					while (pair.count) {
-						linear[i] = pair.bid;
+						if (pair.bid != NONE.id) {
+							editMade = editMade || (linear[i] == pair.bid);
+							linear[i] = pair.bid;
+						}
+
 						++i;
 						--pair.count;
 					}
 				}
+
+				return editMade;
 			}
 	};
 }
