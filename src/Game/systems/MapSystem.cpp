@@ -103,7 +103,10 @@ namespace Game {
 		for (auto& [chunkPos, edit] : chunkEdits) {
 			const auto regionPos = chunkToRegion(chunkPos);
 			const auto regionIt = regions.find(regionPos);
-			if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { continue; }
+			if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] {
+				ENGINE_WARN("Attempting to edit unloaded chunk/region");
+				continue;
+			}
 
 			const auto chunkIndex = chunkToRegionIndex(chunkPos);
 			auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
@@ -141,10 +144,7 @@ namespace Game {
 
 		ENGINE_LOG("Recv chunk ", head.seq, " (", chunkPos.x, ", ", chunkPos.y, ")");
 
-		const auto found = activeChunks.find(chunkPos);
-		if (found != activeChunks.end()) {
-			chunkEdits[chunkPos].fromRLE(begin, end);
-		}
+		chunkEdits[chunkPos].fromRLE(begin, end);
 	}
 
 	void MapSystem::run(float32 dt) {
@@ -171,51 +171,44 @@ namespace Game {
 				auto& activeData = found->second;
 
 				if (meta.last != activeData.updated) {
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					// TODO: if `meta.last == 0` then send full chunk to this player only
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
-					/////////////
 
-					meta.last = activeData.updated;
+					if (meta.last == 0) {
+						auto& connComp = world.getComponent<ConnectionComponent>(ent);
+						auto& conn = *connComp.conn;
 
-					if (activeData.rle.empty()) {
+						const auto regionPos = chunkToRegion(chunkPos);
+						const auto regionIt = regions.find(regionPos);
+						if (regionIt != regions.end() && !regionIt->second->loading()) {
+							const auto chunkIndex = chunkToRegionIndex(chunkPos);
+							auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
+							rleTemp.clear();
+							chunk.toRLE(rleTemp);
+							
+							if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
+								meta.last = activeData.updated;
+								const auto size = static_cast<int32>(rleTemp.size() * sizeof(rleTemp[0]));
+								byte* data = reinterpret_cast<byte*>(rleTemp.data());
+								ENGINE_LOG("Send Chunk (fresh): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
+								memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
+								memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
+								msg.writeBlob(data, size);
+							}
+						}
+					} else if (activeData.rle.empty()) {
 						// TODO: i dont think this case should be hit?
 						ENGINE_WARN("No RLE data for chunk");
-						continue;
-					}
-
-					auto& connComp = world.getComponent<ConnectionComponent>(ent);
-					auto& conn = *connComp.conn;
-					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
-						const auto size = static_cast<int32>(activeData.rle.size() * sizeof(activeData.rle[0]));
-						byte* data = reinterpret_cast<byte*>(activeData.rle.data());
-						ENGINE_LOG("Send Chunk: ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
-
-						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
-						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
-						msg.writeBlob(data, size);
+					} else {
+						auto& connComp = world.getComponent<ConnectionComponent>(ent);
+						auto& conn = *connComp.conn;
+						if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
+							meta.last = activeData.updated;
+							const auto size = static_cast<int32>(activeData.rle.size() * sizeof(activeData.rle[0]));
+							byte* data = reinterpret_cast<byte*>(activeData.rle.data());
+							ENGINE_LOG("Send Chunk (edit): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
+							memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
+							memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
+							msg.writeBlob(data, size);
+						}
 					}
 				}
 
@@ -297,14 +290,11 @@ namespace Game {
 				{
 					const auto found = mapAreaComp.updates.contains(chunkPos);
 					if (!isBufferChunk || found) {
-						mapAreaComp.updates[chunkPos].tick = world.getTick();
+						mapAreaComp.updates[chunkPos].tick = tick;
 					}
 				}
 				#endif
-
-				const auto chunkIdx = chunkToRegionIndex(chunkPos);
-				auto& chunk = region->data[chunkIdx.x][chunkIdx.y];
-
+				
 				auto it = activeChunks.find(chunkPos);
 				if (it == activeChunks.end()) {
 					if (isBufferChunk) { continue; }
@@ -314,7 +304,7 @@ namespace Game {
 					ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
 					it->second.updated = tick;
 				}
-
+				
 				it->second.lastUsed = world.getTickTime();
 			}
 		}

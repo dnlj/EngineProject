@@ -177,6 +177,9 @@ namespace Game {
 			std::thread threads[ENGINE_DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
 			std::mutex chunksToLoadMutex;
 
+			/** Used for sending full RLE chunk updates */
+			std::vector<byte> rleTemp;
+
 			// TODO: C++20: use atomic_flag since it now has a `test` member function.
 			std::atomic<bool> threadsShouldExit = false;
 			static_assert(decltype(threadsShouldExit)::is_always_lock_free);
