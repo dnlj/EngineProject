@@ -11,8 +11,8 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class Arg>
 	WORLD_CLASS::World(Arg&& arg)
-		: systems((sizeof(Ss*), std::forward<Arg>(arg)) ...)
-		, beginTime{Clock::now()} {
+		: beginTime{Clock::now()} 
+		, systems((sizeof(Ss*), std::forward<Arg>(arg)) ...) {
 		tickTime = beginTime;
 		(getSystem<Ss>().setup(), ...);
 	}

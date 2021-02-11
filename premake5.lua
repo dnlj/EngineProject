@@ -127,6 +127,7 @@ workspace(PROJECT_NAME .."Workspace")
 	filter "action:vs*"
 		buildoptions{
 			"/wd4996", -- Disable some warnings about things Visual Studio has taken apon itself to deem "deprecated"
+			"/w15038", -- Enable out of order initialization warnings. Bugs related to this can be tricky to track down.
 		}
 
 	filter "platforms:Windows_x64"

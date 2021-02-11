@@ -11,7 +11,7 @@ namespace Engine::Net {
 	}
 
 	constexpr IPv4Address::IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint32 port)
-		: a{a}, b{b}, c{c}, d{d}
+		: d{d}, c{c}, b{b}, a{a}
 		, port{port} {
 	}
 }

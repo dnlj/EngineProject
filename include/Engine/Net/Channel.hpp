@@ -19,8 +19,8 @@ namespace Engine::Net {
 
 		public:
 			MessageWriter(Channel& channel, MessageType type, BufferWriter* buff)
-				: channel{channel}
-				, buff{buff} {
+				: buff{buff} 
+				, channel{channel} {
 
 				if (buff) {
 					buff->write(MessageHeader{

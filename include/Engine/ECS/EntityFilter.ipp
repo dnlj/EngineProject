@@ -4,8 +4,8 @@
 namespace Engine::ECS {
 	template<class T>
 	EntityFilter::Iterator<T>::Iterator(const EntityFilter& filter, ItType it)
-		: filter(filter)
-		, it(it) {
+		: it(it)
+		, filter(filter) {
 	}
 
 	template<class T>

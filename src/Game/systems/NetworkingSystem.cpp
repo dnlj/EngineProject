@@ -457,8 +457,8 @@ namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
 		, socket{ENGINE_SERVER ? Engine::getGlobalConfig().port : 0}
-		, group{Engine::getGlobalConfig().group}
-		, rng{pcg_extras::seed_seq_from<std::random_device>{}} {
+		, rng{pcg_extras::seed_seq_from<std::random_device>{}}
+		, group{Engine::getGlobalConfig().group} {
 
 		ENGINE_LOG("Listening on port ", socket.getAddress().port);
 
@@ -847,8 +847,8 @@ namespace Game {
 			removed.clear();
 
 			struct QueryCallback : b2QueryCallback {
-				decltype(current)& ents;
 				World& world;
+				decltype(current)& ents;
 				QueryCallback(World& world, decltype(ents) ents) : world{world}, ents{ents} {}
 				virtual bool ReportFixture(b2Fixture* fixture) override {
 					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
