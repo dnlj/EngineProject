@@ -257,14 +257,16 @@ namespace Engine::Win32 {
 			}
 
 			if (buttons) {
+				const auto device = window.getDeviceId(raw.header.hDevice);
+
 				// Windows only recognizes up to five mouse buttons. See RAWMOUSE struct and RI_MOUSE_BUTTON_* constants.
 				// https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse
-				constexpr int maxButton = 1 << (5*2); // Five buttons * press/release
-				for (int i = 0; i < 5*2; ++i) {
+				for (int i = 0; i < 5*2; ++i) { // Five buttons * press/release
 					if (buttons & (1 << i)) {
 						const Input::InputEvent event = {
 							.state = {
-								.id = {.type = Input::InputType::MOUSE, .device = 0, .code = static_cast<uint16>(i >> 1)}, // TODO: device id
+								.id = { .type = Input::InputType::MOUSE, .device = device, .code = static_cast<uint16>(i >> 1),
+								},
 								.value = !(i & 1),
 							},
 							.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
@@ -289,9 +291,9 @@ namespace Engine::Win32 {
 			const auto& data = raw.data.keyboard;
 			if (data.VKey == 0xFF) { return 0; }
 
-			const auto device = window.getKeyboardId(raw.header.hDevice);
+			const auto device = window.getDeviceId(raw.header.hDevice);
 			const auto scancode = getScancode(data);
-			auto& pressed = window.keyboardData[device].state[getScancodeIndex(scancode)];
+			auto& pressed = window.getKeyboardState(device).state[getScancodeIndex(scancode)];
 			const auto wasPressed = pressed;
 			pressed = !(data.Flags & RI_KEY_BREAK);
 
@@ -451,52 +453,70 @@ namespace Engine::Win32 {
 		renderContext = wglPtrs.wglCreateContextAttribsARB(deviceContext, nullptr, contextAttributes);
 		ENGINE_ASSERT(renderContext, "Unable to create WGL render context - ", getLastErrorMessage());
 
-		UINT numDevices;
-		ENGINE_ASSERT(GetRawInputDeviceList(nullptr, &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
-			"Unable to get number of input devices - ", getLastErrorMessage()
-		);
+		{ // Setup device ids
+			UINT numDevices;
+			ENGINE_ASSERT(GetRawInputDeviceList(nullptr, &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
+				"Unable to get number of input devices - ", getLastErrorMessage()
+			);
 
-		//std::vector<RAWINPUTDEVICELIST> deviceList(numDevices);
-		//ENGINE_ASSERT(GetRawInputDeviceList(deviceList.data(), &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
-		//	"Unable to get input devices - ", getLastErrorMessage()
-		//);
+			std::vector<RAWINPUTDEVICELIST> deviceList(numDevices);
+			ENGINE_ASSERT(GetRawInputDeviceList(deviceList.data(), &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
+				"Unable to get input devices - ", getLastErrorMessage()
+			);
 
-		// On-Screen Keyboard and other software inputs use device 0
-		keyboardHandleToIndex.reserve(numDevices + 1);
-		keyboardHandleToIndex.push_back(0);
-		keyboardData.resize(1);
-		keyboardData.shrink_to_fit();
+			// On-Screen Keyboard and other software inputs use device 0
+			deviceHandleToId.reserve(numDevices + 1);
+			keyboardData.resize(numDevices + 1);
+			deviceHandleToId.push_back(0);
+			keyboardData[0].reset(new KeyboardState{});
 
-		// Setup raw input
-		RAWINPUTDEVICE devices[] = {
-			{ // Mouse
-				.usUsagePage = 0x01,
-				.usUsage = 0x02,
-				.dwFlags = RIDEV_INPUTSINK,  // We still need legacy messages for correct cursor w/ ballistics
-				.hwndTarget = windowHandle,
-			},
-			// TODO: Gamepad
-			//{ // Gamepad
-			//	.usUsagePage = 0x01,
-			//	.usUsage = 0x05,
-			//	.dwFlags = 0,
-			//	.hwndTarget = nullptr,
-			//},
-			{ // Keyboard
-				.usUsagePage = 0x01,
-				.usUsage = 0x06,
-				.dwFlags = RIDEV_INPUTSINK | RIDEV_NOLEGACY | RIDEV_NOHOTKEYS,
-				.hwndTarget = windowHandle,
-			},
-		};
+			size_t lastKeyboard = 0;
+			for (const auto& dev : deviceList) {
+				const auto id = deviceHandleToId.size();
+				deviceHandleToId.push_back(dev.hDevice);
+
+				if (dev.dwType == RIM_TYPEKEYBOARD) {
+					keyboardData[id].reset(new KeyboardState{});
+					lastKeyboard = id;
+				}
+			}
+
+			keyboardData.resize(lastKeyboard + 1);
+			deviceHandleToId.shrink_to_fit();
+			keyboardData.shrink_to_fit();
+		}
+
+		{ // Register raw input
+			RAWINPUTDEVICE devices[] = {
+				{ // Mouse
+					.usUsagePage = 0x01,
+					.usUsage = 0x02,
+					.dwFlags = RIDEV_INPUTSINK,  // We still need legacy messages for correct cursor w/ ballistics
+					.hwndTarget = windowHandle,
+				},
+				// TODO: Gamepad
+				//{ // Gamepad
+				//	.usUsagePage = 0x01,
+				//	.usUsage = 0x05,
+				//	.dwFlags = 0,
+				//	.hwndTarget = nullptr,
+				//},
+				{ // Keyboard
+					.usUsagePage = 0x01,
+					.usUsage = 0x06,
+					.dwFlags = RIDEV_INPUTSINK | RIDEV_NOLEGACY | RIDEV_NOHOTKEYS,
+					.hwndTarget = windowHandle,
+				},
+			};
 		
-		//ENGINE_ASSERT(RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0])),
-		//	"Unable to register input devices - ", getLastErrorMessage()
-		//);
+			//ENGINE_ASSERT(RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0])),
+			//	"Unable to register input devices - ", getLastErrorMessage()
+			//);
 
 		
-		if (!RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0]))) {
-			ENGINE_ERROR("Unable to register input devices - ", getLastErrorMessage());
+			if (!RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0]))) {
+				ENGINE_ERROR("Unable to register input devices - ", getLastErrorMessage());
+			}
 		}
 	}
 
@@ -544,22 +564,22 @@ namespace Engine::Win32 {
 		return glm::ivec2{rect.right, rect.bottom};
 	}
 
-	uint8 OpenGLWindow::getKeyboardId(HANDLE handle) {
-		uint8 device = 0;
-		const auto size = keyboardHandleToIndex.size();
-
-		for (;device < size; ++device) {
-			if (keyboardHandleToIndex[device] == handle) {
-				break;
+	Input::DeviceId OpenGLWindow::getDeviceId(HANDLE handle) {
+		const auto max = static_cast<Input::DeviceId>(deviceHandleToId.size());
+		for (Input::DeviceId i = 0; i < max; ++i) {
+			if (handle == deviceHandleToId[i]) {
+				return i;
 			}
 		}
 
-		if (device == size) {
-			keyboardData.resize(size + 1);
-			keyboardHandleToIndex.resize(size + 1, handle);
-		}
+		[[unlikely]]
+		ENGINE_WARN("Unknown hardware device <-> id mapping (", handle, ")");
+		return 0;
+	}
 
-		return device;
+	
+	auto OpenGLWindow::getKeyboardState(Input::DeviceId id) -> KeyboardState& {
+		return *keyboardData[id];
 	}
 
 	void OpenGLWindow::setPosition(int32 x, int32 y) {

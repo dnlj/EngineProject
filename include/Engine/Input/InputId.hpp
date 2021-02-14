@@ -9,11 +9,11 @@
 // TODO: Doc
 // TODO: split
 namespace Engine::Input {
-	// TODO: This cannot distinguish between two devices
+	using DeviceId = uint8;
 	class InputId {
 		public:
 			InputType type = InputType::UNKNOWN;
-			uint8 device = 0;
+			DeviceId device = 0;
 			uint16 code = 0;
 
 			constexpr bool isAxis() const {

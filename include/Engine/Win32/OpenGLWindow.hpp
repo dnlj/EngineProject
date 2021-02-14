@@ -30,7 +30,7 @@ namespace Engine::Win32 {
 
 			WGLPointers wglPtrs;
 
-			struct KeyBoardState {
+			struct KeyboardState {
 				// We use 0xAA as a custom prefix to denote that the stored code is actually a virtual key (Win32 VK_* enum).
 				// This is needed because some keys don't produce a scancode (RAWKEYBOARD::MakeCode)
 				// but do produce a virtual key (RAWKEYBOARD::VKey). One example of this is WASD Code V2B media keys.
@@ -55,8 +55,8 @@ namespace Engine::Win32 {
 			BYTE rawInputBuffer[128];
 
 			// TODO: if we want to save key bindings to a config file we will need a way to back to HANDLE and use RIDI_DEVICENAME to save
-			std::vector<HANDLE> keyboardHandleToIndex;
-			std::vector<KeyBoardState> keyboardData;
+			std::vector<HANDLE> deviceHandleToId;
+			std::vector<std::unique_ptr<KeyboardState>> keyboardData;
 
 		public:
 			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat, WindowCallbackFunctions& callbacks);
@@ -85,7 +85,7 @@ namespace Engine::Win32 {
 			// TODO: std::string getClipboardText() const;
 			// TODO: void setClipboardText
 
-			uint8 getKeyboardId(HANDLE handle);
+			Input::DeviceId getDeviceId(HANDLE handle);
 
 			void setPosition(int32 x, int32 y);
 			void setSize(int32 w, int32 h);
@@ -99,5 +99,7 @@ namespace Engine::Win32 {
 
 			template<UINT Msg>
 			static LRESULT processMessage(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) = delete;
+
+			KeyboardState& getKeyboardState(Input::DeviceId id);
 	};
 }
