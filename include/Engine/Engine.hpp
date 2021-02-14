@@ -44,7 +44,7 @@
 	})
 
 #define _ENGINE_CREATE_ASSERT_LAMBDA(Prefix, Decorate, Color, Other)\
-	([](bool cond, auto&&... args){\
+	([](auto cond, auto&&... args){\
 		if (!cond) {\
 			_ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)(std::forward<decltype(args)>(args)...);\
 		}\

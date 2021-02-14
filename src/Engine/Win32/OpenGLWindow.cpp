@@ -217,7 +217,6 @@ namespace Engine::Win32 {
 		// Scancode info: https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html and https://www.win.tue.nl/~aeb/linux/kbd/scancodes.html
 		// USB Vendor Ids: http://www.linux-usb.org/usb.ids and http://www.linux-usb.org/usb-ids.html
 		// If raw.hDevice == 0 then it is a virtual device such as On-Screen Keyboard or other software.
-
 		UINT size = std::extent_v<decltype(rawInputBuffer)>;
 
 		if constexpr (ENGINE_DEBUG) {
@@ -234,14 +233,52 @@ namespace Engine::Win32 {
 			sizeof(RAWINPUTHEADER)
 		);
 
-		const auto& raw = *reinterpret_cast<const RAWINPUT*>(window.rawInputBuffer);
+		const auto& raw = *reinterpret_cast<RAWINPUT*>(window.rawInputBuffer);
 
 		// TODO: split into functions like we did for WM_* messages.
 		if (raw.header.dwType == RIM_TYPEMOUSE) {
 			// If the cursor is visible we should use WM_MOUSEMOVE so we maintain cursor ballistics.
 			// Although if you use WM_MOUSEMOVE you cannot distinguish between multiple mice.
-			// TODO: impl mouse delta when cursor hidden.
-			//printRawMouse(raw);
+			// printRawMouse(raw);
+
+			// TODO: switch to this atleast for mouse button presses. Not sure why we dont already.
+			const auto& data = raw.data.mouse;
+			static_assert(sizeof(data.usButtonFlags) <= sizeof(int));
+			int buttons = data.usButtonFlags;
+
+			// TODO: mouse wheel
+			// Don't process mouse wheel events
+			buttons &= ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL);
+
+			// Background event
+			if (wParam == RIM_INPUTSINK) {
+				// Only process release events when in the background
+				buttons &= RI_MOUSE_BUTTON_1_UP | RI_MOUSE_BUTTON_2_UP | RI_MOUSE_BUTTON_3_UP | RI_MOUSE_BUTTON_4_UP | RI_MOUSE_BUTTON_5_UP;
+			} else {
+				// Only process cursor events in foreground
+				// TODO: impl mouse delta when cursor hidden. FPS games for example.
+				// ENGINE_LOG("Move: ", data.usFlags, " ", data.lLastX, " ", data.lLastY);
+			}
+
+			if (buttons) {
+				// Windows only recognizes up to five mouse buttons. See RAWMOUSE struct and RI_MOUSE_BUTTON_* constants.
+				// https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse
+				constexpr int maxButton = 1 << (5*2); // Five buttons * press/release
+				for (int i = 0; i < 5*2; ++i) {
+					if (buttons & (1 << i)) {
+						// TODO: send event
+						const Input::InputEvent event = {
+							.state = {
+								.id = {.type = Input::InputType::MOUSE, .device = 0, .code = static_cast<uint16>(i >> 1)}, // TODO: device id
+								.value = !(i & 1),
+							},
+							.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+						};
+						ENGINE_LOG("Mouse button: ", i, " - ", event.state.id.code, " - ", event.state.value);
+						window.callbacks.mouseButtonCallback(event);
+					}
+				}
+			}
 		} else if (raw.header.dwType == RIM_TYPEKEYBOARD) {
 			const auto& data = raw.data.keyboard;
 			if (data.VKey == 0xFF) { return 0; }
@@ -320,62 +357,6 @@ namespace Engine::Win32 {
 			window.callbacks.mouseMoveCallback(event);
 		}
 
-		return 0;
-	}
-
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_LBUTTONDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		// TODO: we currently don't distinguish between mouse devices
-		const Input::InputEvent event = {
-			.state = {
-				.id = {Input::InputType::MOUSE, 0, 0},
-				.value = true,
-			},
-			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
-		};
-		window.callbacks.mouseButtonCallback(event);
-		return 0;
-	}
-
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_LBUTTONUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		// TODO: we currently don't distinguish between mouse devices
-		const Input::InputEvent event = {
-			.state = {
-				.id = {Input::InputType::MOUSE, 0, 0},
-				.value = false,
-			},
-			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
-		};
-		window.callbacks.mouseButtonCallback(event);
-		return 0;
-	}
-
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_RBUTTONDOWN>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		// TODO: we currently don't distinguish between mouse devices
-		const Input::InputEvent event = {
-			.state = {
-				.id = {Input::InputType::MOUSE, 0, 1},
-				.value = true,
-			},
-			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
-		};
-		window.callbacks.mouseButtonCallback(event);
-		return 0;
-	}
-
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_RBUTTONUP>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		// TODO: we currently don't distinguish between mouse devices
-		const Input::InputEvent event = {
-			.state = {
-				.id = {Input::InputType::MOUSE, 0, 1},
-				.value = false,
-			},
-			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
-		};
-		window.callbacks.mouseButtonCallback(event);
 		return 0;
 	}
 
@@ -497,8 +478,8 @@ namespace Engine::Win32 {
 			{ // Mouse
 				.usUsagePage = 0x01,
 				.usUsage = 0x02,
-				.dwFlags = 0,
-				.hwndTarget = nullptr,
+				.dwFlags = RIDEV_INPUTSINK,  // We still need legacy messages for correct cursor w/ ballistics
+				.hwndTarget = windowHandle,
 			},
 			// TODO: Gamepad
 			//{ // Gamepad
@@ -510,14 +491,19 @@ namespace Engine::Win32 {
 			{ // Keyboard
 				.usUsagePage = 0x01,
 				.usUsage = 0x06,
-				.dwFlags = 0,
-				.hwndTarget = nullptr,
+				.dwFlags = RIDEV_INPUTSINK | RIDEV_NOLEGACY | RIDEV_NOHOTKEYS,
+				.hwndTarget = windowHandle,
 			},
 		};
 		
-		ENGINE_ASSERT(RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0])),
-			"Unable to register input devices - ", getLastErrorMessage()
-		);
+		//ENGINE_ASSERT(RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0])),
+		//	"Unable to register input devices - ", getLastErrorMessage()
+		//);
+
+		
+		if (!RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0]))) {
+			ENGINE_ERROR("Unable to register input devices - ", getLastErrorMessage());
+		}
 	}
 
 	OpenGLWindow::~OpenGLWindow() {
@@ -722,10 +708,6 @@ namespace Engine::Win32 {
 			HANDLE_MESSAGE(WM_INPUT);
 			HANDLE_MESSAGE(WM_CHAR);
 			HANDLE_MESSAGE(WM_MOUSEMOVE);
-			HANDLE_MESSAGE(WM_LBUTTONDOWN);
-			HANDLE_MESSAGE(WM_LBUTTONUP);
-			HANDLE_MESSAGE(WM_RBUTTONDOWN);
-			HANDLE_MESSAGE(WM_RBUTTONUP);
 			HANDLE_MESSAGE(WM_MOUSEWHEEL);
 			HANDLE_MESSAGE(WM_MOUSEHWHEEL);
 			HANDLE_MESSAGE(WM_MOUSELEAVE);
