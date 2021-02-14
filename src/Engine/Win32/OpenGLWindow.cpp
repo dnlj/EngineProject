@@ -244,11 +244,7 @@ namespace Engine::Win32 {
 			// TODO: switch to this atleast for mouse button presses. Not sure why we dont already.
 			const auto& data = raw.data.mouse;
 			static_assert(sizeof(data.usButtonFlags) <= sizeof(int));
-			int buttons = data.usButtonFlags;
-
-			// TODO: mouse wheel
-			// Don't process mouse wheel events
-			buttons &= ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL);
+			int buttons = data.usButtonFlags & ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL); // Don't process mouse wheel events
 
 			// Background event
 			if (wParam == RIM_INPUTSINK) {
@@ -266,7 +262,6 @@ namespace Engine::Win32 {
 				constexpr int maxButton = 1 << (5*2); // Five buttons * press/release
 				for (int i = 0; i < 5*2; ++i) {
 					if (buttons & (1 << i)) {
-						// TODO: send event
 						const Input::InputEvent event = {
 							.state = {
 								.id = {.type = Input::InputType::MOUSE, .device = 0, .code = static_cast<uint16>(i >> 1)}, // TODO: device id
@@ -274,9 +269,20 @@ namespace Engine::Win32 {
 							},
 							.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 						};
-						ENGINE_LOG("Mouse button: ", i, " - ", event.state.id.code, " - ", event.state.value);
+
 						window.callbacks.mouseButtonCallback(event);
 					}
+				}
+			}
+
+			if (data.usButtonData) {
+				float32 scroll = static_cast<float32>(static_cast<SHORT>(data.usButtonData));
+				scroll /= WHEEL_DELTA;
+
+				if (data.usButtonFlags & RI_MOUSE_WHEEL) {
+					window.callbacks.mouseWheelCallback(0.0f, scroll);
+				} else if (data.usButtonFlags & RI_MOUSE_HWHEEL) {
+					window.callbacks.mouseWheelCallback(scroll, 0.0f);
 				}
 			}
 		} else if (raw.header.dwType == RIM_TYPEKEYBOARD) {
@@ -357,18 +363,6 @@ namespace Engine::Win32 {
 			window.callbacks.mouseMoveCallback(event);
 		}
 
-		return 0;
-	}
-
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_MOUSEWHEEL>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) { // TODO: Make axis
-		window.callbacks.mouseWheelCallback(0.0f, GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA));
-		return 0;
-	}
-
-	template<>
-	LRESULT OpenGLWindow::processMessage<WM_MOUSEHWHEEL>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) { // TODO: Make axis
-		window.callbacks.mouseWheelCallback(GET_WHEEL_DELTA_WPARAM(wParam) / static_cast<float32>(WHEEL_DELTA), 0.0f);
 		return 0;
 	}
 
@@ -708,8 +702,6 @@ namespace Engine::Win32 {
 			HANDLE_MESSAGE(WM_INPUT);
 			HANDLE_MESSAGE(WM_CHAR);
 			HANDLE_MESSAGE(WM_MOUSEMOVE);
-			HANDLE_MESSAGE(WM_MOUSEWHEEL);
-			HANDLE_MESSAGE(WM_MOUSEHWHEEL);
 			HANDLE_MESSAGE(WM_MOUSELEAVE);
 			default: return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 		}
