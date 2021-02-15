@@ -273,6 +273,7 @@ namespace {
 		}
 
 		void keyCallback(Engine::Input::InputEvent event) override {
+			event.state.id.device = 0;
 			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::keyCallback(event.state);
 		}
@@ -282,16 +283,19 @@ namespace {
 		}
 
 		void mouseButtonCallback(Engine::Input::InputEvent event) override {
+			event.state.id.device = 0;
 			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::mouseButtonCallback(event.state);
 		}
 
 		void mouseWheelCallback(Engine::Input::InputEvent event) override {
+			event.state.id.device = 0;
 			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::scrollCallback(event.state);
 		}
 
 		void mouseMoveCallback(Engine::Input::InputEvent event) override {
+			event.state.id.device = 0;
 			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::mouseMoveCallback(event.state);
 		}
@@ -391,37 +395,36 @@ void run(int argc, char* argv[]) {
 		auto& as = world.getSystem<Game::ActionSystem>();
 
 		if constexpr (ENGINE_CLIENT) {
-			// TODO: this is kinda dumb. add a way to bind multiple devices to the same bind
 			im.addBind(InputSequence{
-				InputId{InputType::KEYBOARD, 3, 29}, // CTRL
-				InputId{InputType::KEYBOARD, 3, 46}, // C
+				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
+				InputId{InputType::KEYBOARD, 0, 46}, // C
 				}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
 			im.addBind(InputSequence{
-				InputId{InputType::KEYBOARD, 3, 29}, // CTRL
-				InputId{InputType::KEYBOARD, 3, 56}, // ALT
-				InputId{InputType::KEYBOARD, 3, 16}, // Q
+				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
+				InputId{InputType::KEYBOARD, 0, 56}, // ALT
+				InputId{InputType::KEYBOARD, 0, 16}, // Q
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
 			im.addBind(InputSequence{
-				InputId{InputType::KEYBOARD, 3, 57}
+				InputId{InputType::KEYBOARD, 0, 57}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
 			im.addBind(InputSequence{
-				InputId{InputType::KEYBOARD, 3, 17}
+				InputId{InputType::KEYBOARD, 0, 17}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveUp, curr); });
 			im.addBind(InputSequence{
-				InputId{InputType::KEYBOARD, 3, 31}
+				InputId{InputType::KEYBOARD, 0, 31}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveDown, curr); });
 			im.addBind(InputSequence{
-				InputId{InputType::KEYBOARD, 3, 30}
+				InputId{InputType::KEYBOARD, 0, 30}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveLeft, curr); });
 			im.addBind(InputSequence{
-				InputId{InputType::KEYBOARD, 3, 32}
+				InputId{InputType::KEYBOARD, 0, 32}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveRight, curr); });
 
 			im.addBind(InputSequence{
-				InputId{InputType::MOUSE, 5, 0}
+				InputId{InputType::MOUSE, 0, 0}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
 			im.addBind(InputSequence{
-				InputId{InputType::MOUSE, 5, 1}
+				InputId{InputType::MOUSE, 0, 1}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack2, curr); });
 
 			im.addBind(InputSequence{

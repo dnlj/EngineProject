@@ -116,9 +116,6 @@ namespace Game {
 				if (found != activeChunks.end()) {
 					found->second.updated = currTick;
 				}
-				ENGINE_LOG("*** Edit with change!");
-			} else {
-				ENGINE_LOG("*** Edit but no change!");
 			}
 		}
 
@@ -141,8 +138,6 @@ namespace Game {
 		
 		memcpy(&chunkPos.y, begin, sizeof(chunkPos.y));
 		begin += sizeof(chunkPos.y);
-
-		ENGINE_LOG("Recv chunk ", head.seq, " (", chunkPos.x, ", ", chunkPos.y, ")");
 
 		chunkEdits[chunkPos].fromRLE(begin, end);
 	}
@@ -172,7 +167,7 @@ namespace Game {
 
 				if (meta.last != activeData.updated) {
 
-					if (meta.last == 0) {
+					if (meta.last == 0) { // Fresh chunk
 						auto& connComp = world.getComponent<ConnectionComponent>(ent);
 						auto& conn = *connComp.conn;
 
@@ -188,7 +183,7 @@ namespace Game {
 								meta.last = activeData.updated;
 								const auto size = static_cast<int32>(rleTemp.size() * sizeof(rleTemp[0]));
 								byte* data = reinterpret_cast<byte*>(rleTemp.data());
-								ENGINE_LOG("Send Chunk (fresh): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
+								// ENGINE_LOG("Send Chunk (fresh): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
 								memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
 								memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
 								msg.writeBlob(data, size);
@@ -197,14 +192,14 @@ namespace Game {
 					} else if (activeData.rle.empty()) {
 						// TODO: i dont think this case should be hit?
 						ENGINE_WARN("No RLE data for chunk");
-					} else {
+					} else { // Chunk edit
 						auto& connComp = world.getComponent<ConnectionComponent>(ent);
 						auto& conn = *connComp.conn;
 						if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
 							meta.last = activeData.updated;
 							const auto size = static_cast<int32>(activeData.rle.size() * sizeof(activeData.rle[0]));
 							byte* data = reinterpret_cast<byte*>(activeData.rle.data());
-							ENGINE_LOG("Send Chunk (edit): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
+							// ENGINE_LOG("Send Chunk (edit): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
 							memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
 							memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
 							msg.writeBlob(data, size);

@@ -441,7 +441,7 @@ namespace Engine::Net {
 					if (static_cast<int32>(data.size()) < i + len) {
 						data.resize(i + len);
 					}
-					ENGINE_LOG("Insert: ", len, " ", data.size());
+					// ENGINE_LOG("Insert: ", len, " ", data.size());
 					memcpy(&data[i], start, len);
 
 					const Range range {i, i + len};
@@ -449,7 +449,7 @@ namespace Engine::Net {
 
 					// Merge with after
 					if (found != parts.cend() && range.stop == found->start) {
-						ENGINE_LOG("Merge after: (", range.start, ", ", range.stop, ") U (", found->start, ", ", found->stop, ")");
+						// ENGINE_LOG("Merge after: (", range.start, ", ", range.stop, ") U (", found->start, ", ", found->stop, ")");
 						found->start = range.start;
 					} else {
 						found = parts.insert(found, range);
@@ -459,7 +459,7 @@ namespace Engine::Net {
 					if (found > parts.cbegin()) {
 						auto prev = found - 1;
 						if (prev->stop == found->start) {
-							ENGINE_LOG("Merge before: (", prev->start, ", ", prev->stop, ") U (", found->start, ", ", found->stop, ")");
+							// ENGINE_LOG("Merge before: (", prev->start, ", ", prev->stop, ") U (", found->start, ", ", found->stop, ")");
 							prev->stop = found->stop;
 							parts.erase(found);
 							found = prev;
