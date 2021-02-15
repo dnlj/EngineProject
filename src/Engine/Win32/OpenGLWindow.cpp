@@ -288,14 +288,12 @@ namespace Engine::Win32 {
 				}
 			}
 		} else if (raw.header.dwType == RIM_TYPEKEYBOARD) {
-			const auto& data = raw.data.keyboard;
-			if (data.VKey == 0xFF) { return 0; } // TODO: why? couldnt we still use scancode?
-
 			const auto device = window.getDeviceId(raw.header.hDevice);
+			const auto& data = raw.data.keyboard;
 			const auto scancode = getScancode(data);
 			auto& wasPressed = window.getKeyboardState(device).state[getScancodeIndex(scancode)];
 			const bool pressed = !(data.Flags & RI_KEY_BREAK);
-
+			
 			// Don't record background presses
 			if (wParam == RIM_INPUTSINK && (pressed || !wasPressed)) { return 0; }
 
