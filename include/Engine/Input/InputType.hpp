@@ -9,6 +9,7 @@ namespace Engine::Input {
 		UNKNOWN = 0,
 		KEYBOARD,
 		MOUSE,
+		MOUSE_WHEEL,
 		GAMEPAD,
 
 		KEYBOARD_AXIS = -KEYBOARD,

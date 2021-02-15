@@ -359,10 +359,14 @@ namespace Engine::ImGui {
 		::ImGui::GetIO().MousePos[is.id.code] = is.valuef;
 	}
 
-	void scrollCallback(float xoffset, float yoffset) {
+	void scrollCallback(const Engine::Input::InputState& is) {
 		ImGuiIO& io = ::ImGui::GetIO();
-		io.MouseWheelH += xoffset;
-		io.MouseWheel += yoffset;
+
+		if (is.id.code == 1) {
+			io.MouseWheelH += is.valuef;
+		} else {
+			io.MouseWheel +=  is.valuef;
+		}
 	}
 
 	void keyCallback(const Engine::Input::InputState& is) {

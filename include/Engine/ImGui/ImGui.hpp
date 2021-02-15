@@ -19,7 +19,7 @@ namespace Engine::ImGui {
 
 	void mouseButtonCallback(const Engine::Input::InputState& is);
 	void mouseMoveCallback(const Engine::Input::InputState& is);
-	void scrollCallback(float xoffset, float yoffset);
+	void scrollCallback(const Engine::Input::InputState& is);
 	void keyCallback(const Engine::Input::InputState& is);
 	void charCallback(unsigned int c);
 	void mouseEnterCallback();

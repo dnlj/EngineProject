@@ -256,22 +256,21 @@ namespace Engine::Win32 {
 				// ENGINE_LOG("Move: ", data.usFlags, " ", data.lLastX, " ", data.lLastY);
 			}
 
-			if (buttons) {
-				const auto device = window.getDeviceId(raw.header.hDevice);
+			const auto device = window.getDeviceId(raw.header.hDevice);
+			const auto time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}};
 
+			if (buttons) {
 				// Windows only recognizes up to five mouse buttons. See RAWMOUSE struct and RI_MOUSE_BUTTON_* constants.
 				// https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse
 				for (int i = 0; i < 5*2; ++i) { // Five buttons * press/release
 					if (buttons & (1 << i)) {
 						const Input::InputEvent event = {
 							.state = {
-								.id = { .type = Input::InputType::MOUSE, .device = device, .code = static_cast<uint16>(i >> 1),
-								},
+								.id = { .type = Input::InputType::MOUSE, .device = device, .code = static_cast<uint16>(i >> 1) },
 								.value = !(i & 1),
 							},
-							.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+							.time = time,
 						};
-
 						window.callbacks.mouseButtonCallback(event);
 					}
 				}
@@ -280,11 +279,20 @@ namespace Engine::Win32 {
 			if (data.usButtonData) {
 				float32 scroll = static_cast<float32>(static_cast<SHORT>(data.usButtonData));
 				scroll /= WHEEL_DELTA;
+				
+				Input::InputEvent event = {
+					.state = {
+						.id = { .type = Input::InputType::MOUSE_WHEEL, .device = device, .code = 0 },
+						.valuef = scroll,
+					},
+					.time = time,
+				};
 
 				if (data.usButtonFlags & RI_MOUSE_WHEEL) {
-					window.callbacks.mouseWheelCallback(0.0f, scroll);
+					window.callbacks.mouseWheelCallback(event);
 				} else if (data.usButtonFlags & RI_MOUSE_HWHEEL) {
-					window.callbacks.mouseWheelCallback(scroll, 0.0f);
+					event.state.id.code = 1;
+					window.callbacks.mouseWheelCallback(event);
 				}
 			}
 		} else if (raw.header.dwType == RIM_TYPEKEYBOARD) {

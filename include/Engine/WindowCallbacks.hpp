@@ -13,7 +13,7 @@ namespace Engine {
 			virtual void keyCallback(Engine::Input::InputEvent event) = 0;
 			virtual void charCallback(wchar_t character) = 0;
 			virtual void mouseButtonCallback(Engine::Input::InputEvent event) = 0;
-			virtual void mouseWheelCallback(float32 x, float32 y) = 0;
+			virtual void mouseWheelCallback(Engine::Input::InputEvent event) = 0;
 			virtual void mouseMoveCallback(Engine::Input::InputEvent event) = 0;
 			virtual void mouseLeaveCallback() = 0;
 			virtual void mouseEnterCallback() = 0;

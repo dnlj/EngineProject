@@ -286,8 +286,8 @@ namespace {
 			Engine::ImGui::mouseButtonCallback(event.state);
 		}
 
-		void mouseWheelCallback(float32 x, float32 y) override {
-			Engine::ImGui::scrollCallback(x, y);
+		void mouseWheelCallback(Engine::Input::InputEvent event) override {
+			Engine::ImGui::scrollCallback(event.state);
 		}
 
 		void mouseMoveCallback(Engine::Input::InputEvent event) override {
