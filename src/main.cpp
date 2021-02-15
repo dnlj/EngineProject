@@ -287,6 +287,7 @@ namespace {
 		}
 
 		void mouseWheelCallback(Engine::Input::InputEvent event) override {
+			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::scrollCallback(event.state);
 		}
 
