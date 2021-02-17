@@ -52,6 +52,15 @@ namespace Engine::Net {
 			byte msgBuffer[sizeof(Packet::body)];
 			BufferWriter msgBufferWriter;
 
+			/** How many packets per second we can send */
+			float32 packetRate = 16.0f;
+
+			/** Current maximum number of packet we can send */
+			float32 packetBudget = 0;
+
+			/** Last time we updated the packet budget */
+			Clock::TimePoint lastBudgetUpdate = {};
+
 			/** The next recv ack we are expecting */
 			SeqNum nextRecvAck = {};
 
@@ -144,21 +153,25 @@ namespace Engine::Net {
 				ENGINE_LOG("NRA: ", nextRecvAck);
 			}
 
-			const auto& address() const { return addr; }
+			ENGINE_INLINE const auto& address() const { return addr; }
 
-			auto getPing() const { return ping; }
-			auto getLoss() const { return loss; }
-			auto getJitter() const { return jitter; }
-			auto getSendBandwidth() const { return packetSendBandwidth; }
-			auto getRecvBandwidth() const { return packetRecvBandwidth; }
-			auto getTotalBytesSent() const { return packetTotalBytesSent; }
-			auto getTotalBytesRecv() const { return packetTotalBytesRecv; }
+			ENGINE_INLINE auto getPacketBudget() const noexcept { return packetBudget; }
+			ENGINE_INLINE auto getPacketRate() const noexcept { return packetRate; }
+			ENGINE_INLINE auto setPacketRate(float32 r) noexcept { packetRate = r; }
 
-			void setKeySend(decltype(keySend) keySend) { this->keySend = keySend; }
-			auto getKeySend() const { return keySend; }
+			ENGINE_INLINE auto getPing() const noexcept { return ping; }
+			ENGINE_INLINE auto getLoss() const noexcept { return loss; }
+			ENGINE_INLINE auto getJitter() const noexcept { return jitter; }
+			ENGINE_INLINE auto getSendBandwidth() const noexcept { return packetSendBandwidth; }
+			ENGINE_INLINE auto getRecvBandwidth() const noexcept { return packetRecvBandwidth; }
+			ENGINE_INLINE auto getTotalBytesSent() const noexcept { return packetTotalBytesSent; }
+			ENGINE_INLINE auto getTotalBytesRecv() const noexcept { return packetTotalBytesRecv; }
 
-			void setKeyRecv(decltype(keyRecv) keyRecv) { this->keyRecv = keyRecv; }
-			auto getKeyRecv() const { return keyRecv; }
+			ENGINE_INLINE void setKeySend(decltype(keySend) keySend) noexcept { this->keySend = keySend; }
+			ENGINE_INLINE auto getKeySend() const noexcept { return keySend; }
+
+			ENGINE_INLINE void setKeyRecv(decltype(keyRecv) keyRecv) noexcept { this->keyRecv = keyRecv; }
+			ENGINE_INLINE auto getKeyRecv() const noexcept { return keyRecv; }
 
 			// TODO: why does this have a return value? isnt it always true?
 			[[nodiscard]]
@@ -312,7 +325,13 @@ namespace Engine::Net {
 			void send(UDPSocket& sock) {
 				const auto now = Engine::Clock::now();
 
-				while (true) {
+				// Update packet budget
+				packetBudget += Clock::Seconds{now - lastBudgetUpdate}.count() * packetRate;
+				packetBudget = std::min(packetBudget, packetRate);
+				lastBudgetUpdate = now;
+
+				// Write + send packets
+				while (packetBudget >= 1) {
 					const auto seq = nextSeqNum++;
 					Packet pkt; // TODO: if we keep this move to be a member variable instead;
 					pkt.setKey(keySend); // TODO: should just be set once after packet is changed to member variable
@@ -337,6 +356,7 @@ namespace Engine::Net {
 						const auto sz = sizeof(pkt.head) + msgBufferWriter.size();
 						packetSentBandwidthAccum += sz;
 						sock.send(&pkt, (int32)sz, addr);
+						packetBudget -= 1;
 					} else {
 						--nextSeqNum;
 						break;

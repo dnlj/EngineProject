@@ -296,7 +296,7 @@ namespace Game {
 				world.addComponent<NetworkStatsComponent>(ent);
 			}
 			auto& statsComp = world.getComponent<NetworkStatsComponent>(ent);
-			const auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+			auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 			auto& buff = statsComp.buffer;
 
 			while (!buff.empty() && buff.front().time < rollingWindow) {
@@ -347,13 +347,21 @@ namespace Game {
 				"Ping: %.1fms          Jitter: %.1fms    Est. Buffer: %.2f\n"
 				"Buffer Size: %i     Ideal: %.3f\n"
 				"Sent: %ib %.1fb/s     Recv: %ib %.1fb/s     Loss: %.3f"
+				"\nBudget: %.2f"
 				,
 				addr.a, addr.b, addr.c, addr.d, addr.port,
 				statsComp.displayPing, statsComp.displayJitter, estbuff,
 				statsComp.displayInputBufferSize, statsComp.displayIdealInputBufferSize,
 				statsComp.displaySentTotal, statsComp.displaySentAvg,
-				statsComp.displayRecvTotal, statsComp.displayRecvAvg, statsComp.displayLoss
+				statsComp.displayRecvTotal, statsComp.displayRecvAvg, statsComp.displayLoss,
+				conn.getPacketBudget()
 			);
+
+			{
+				float32 rate = conn.getPacketRate();
+				ImGui::SliderFloat("Packet Rate", &rate, 1.0f, 256.0f);
+				conn.setPacketRate(rate);
+			}
 
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
 			const auto begin = Engine::Clock::Seconds{rollingWindow.time_since_epoch()}.count();
