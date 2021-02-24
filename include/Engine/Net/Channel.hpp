@@ -150,6 +150,11 @@ namespace Engine::Net {
 			 * @return A pointer to the header of the message to process. If there is no message to process nullptr should be returned.
 			 */
 			constexpr static const MessageHeader* recvNext() noexcept { return nullptr; }
+
+			/**
+			 * Gets the number of messages waiting to be sent.
+			 */
+			int32 getQueueSize() = delete;
 	};
 
 	/**
@@ -188,6 +193,10 @@ namespace Engine::Net {
 				}
 
 				messages.clear();
+			}
+
+			int32 getQueueSize() const noexcept {
+				return static_cast<int32>(messages.size());
 			}
 	};
 	
@@ -234,6 +243,10 @@ namespace Engine::Net {
 
 				messages.clear();
 			}
+
+			int32 getQueueSize() const noexcept {
+				return messages.size();
+			}
 	};
 
 	/**
@@ -264,6 +277,10 @@ namespace Engine::Net {
 			}
 
 		public:
+			int32 getQueueSize() const noexcept {
+				return msgData.span();
+			}
+
 			bool canWriteMessage() const {
 				return !msgData.entryAt(nextSeq);
 			}

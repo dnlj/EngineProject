@@ -46,6 +46,7 @@ namespace Game {
 			void ui_camera();
 			void ui_netsim();
 			void ui_network();
+			void ui_nethealth();
 			void ui_entities();
 
 			template<bool B>

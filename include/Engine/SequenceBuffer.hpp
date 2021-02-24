@@ -39,9 +39,10 @@ namespace Engine {
 		public:
 			constexpr static S capacity() noexcept { return N; }
 
-			ENGINE_INLINE S max() const { return next - 1; }
-			ENGINE_INLINE S min() const { return next - capacity(); }
-			ENGINE_INLINE S minValid() const { return lowest; }
+			ENGINE_INLINE S max() const noexcept { return next - 1; }
+			ENGINE_INLINE S min() const noexcept { return next - capacity(); }
+			ENGINE_INLINE S minValid() const noexcept { return lowest; }
+			ENGINE_INLINE S span() const noexcept { return max() - minValid() + 1; }
 
 			// TODO: max - N vs lowest
 

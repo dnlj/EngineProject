@@ -124,6 +124,7 @@ namespace Game {
 		ui_coordinates();
 		ui_camera();
 		ui_netsim();
+		ui_nethealth();
 		ui_network();
 		ui_entities();
 
@@ -428,7 +429,6 @@ namespace Game {
 		};
 	}
 
-	
 	void UISystem::ui_entities() {
 		if (!ImGui::CollapsingHeader("Entities")) { return; }
 
@@ -452,6 +452,29 @@ namespace Game {
 			}
 
 			ImGui::PopID();
+		}
+	}
+
+	void UISystem::ui_nethealth() {
+		if (ImGui::CollapsingHeader("Network Health")) { return; }
+		int connection = 0;
+
+		for (auto ent : world.getFilter<ConnectionComponent>()) {
+			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
+			const auto& addr = conn.address();
+
+			if (connection) {
+				ImGui::Separator();
+			}
+
+			ImGui::Text("%i.%i.%i.%i:%i", addr.a, addr.b, addr.c, addr.d, addr.port);
+			for (int32 c = 0; true; ++c) {
+				const auto s = conn.getChannelQueueSize(c);
+				if (s < 0) { break; }
+				ImGui::Text("Channel%i: %i", c, s);
+			}
+
+			++connection;
 		}
 	}
 }

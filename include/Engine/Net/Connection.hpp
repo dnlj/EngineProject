@@ -173,6 +173,11 @@ namespace Engine::Net {
 			ENGINE_INLINE void setKeyRecv(decltype(keyRecv) keyRecv) noexcept { this->keyRecv = keyRecv; }
 			ENGINE_INLINE auto getKeyRecv() const noexcept { return keyRecv; }
 
+			int32 getChannelQueueSize(int32 c) {
+				int32 sizes[] = {getChannel<Cs>().getQueueSize()...};
+				return (c < std::size(sizes)) ? sizes[c] : -1;
+			}
+
 			// TODO: why does this have a return value? isnt it always true?
 			[[nodiscard]]
 			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
