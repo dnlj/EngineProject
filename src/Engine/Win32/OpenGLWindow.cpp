@@ -247,7 +247,7 @@ namespace Engine::Win32 {
 			int buttons = data.usButtonFlags & ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL); // Don't process mouse wheel events
 
 			// Background event
-			if (wParam == RIM_INPUTSINK) {
+			if (wParam == RIM_INPUTSINK || !window.mouseInWindow) {
 				// Only process release events when in the background
 				buttons &= RI_MOUSE_BUTTON_1_UP | RI_MOUSE_BUTTON_2_UP | RI_MOUSE_BUTTON_3_UP | RI_MOUSE_BUTTON_4_UP | RI_MOUSE_BUTTON_5_UP;
 			} else {
