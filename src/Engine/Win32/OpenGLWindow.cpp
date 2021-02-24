@@ -514,7 +514,7 @@ namespace Engine::Win32 {
 				{ // Keyboard
 					.usUsagePage = 0x01,
 					.usUsage = 0x06,
-					.dwFlags = RIDEV_INPUTSINK | RIDEV_NOHOTKEYS, // TODO: RIDEV_NOLEGACY once we have scancode -> unicode to replace WM_CHAR
+					.dwFlags = RIDEV_INPUTSINK, // TODO: RIDEV_NOLEGACY once we have scancode -> unicode to replace WM_CHAR
 					.hwndTarget = windowHandle,
 				},
 			};
