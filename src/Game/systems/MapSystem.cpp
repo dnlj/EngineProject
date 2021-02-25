@@ -166,7 +166,6 @@ namespace Game {
 				auto& activeData = found->second;
 
 				if (meta.last != activeData.updated) {
-
 					if (meta.last == 0) { // Fresh chunk
 						auto& connComp = world.getComponent<ConnectionComponent>(ent);
 						auto& conn = *connComp.conn;

@@ -439,6 +439,7 @@ namespace Engine::Net {
 				int32 curr = 0;
 				std::vector<byte> data;
 				MessageType type;
+				SeqNum parts;
 				const int32 remaining() const noexcept { return static_cast<int32>(data.size()) - curr; }
 			};
 
@@ -562,10 +563,7 @@ namespace Engine::Net {
 				if (!blob) { return; }
 				
 				while (Base::canWriteMessage()) {
-					if (blob->remaining() == 0) {
-						writeBlobs.remove(seq);
-						return;
-					}
+					if (blob->remaining() == 0) { return; }
 
 					const auto space = std::max(0,
 						static_cast<int32>(buff.space())
@@ -592,6 +590,7 @@ namespace Engine::Net {
 					const int32 len = std::min(space, blob->remaining());
 					msg.write(blob->data.data() + blob->curr, len);
 					blob->curr += len;
+					++blob->parts;
 				}
 			}
 
@@ -617,6 +616,36 @@ namespace Engine::Net {
 				}
 
 				return nullptr;
+			}
+
+			void recvPacketAck(SeqNum pktSeq) {
+				// TODO: why did we inherit. This is dumb.
+				auto* pkt = Base::pktData.find(pktSeq);
+				if (!pkt) { return; }
+
+				for (SeqNum s : pkt->messages) {
+					if (auto* data = Base::msgData.find(s)) {
+						Base::msgData.remove(s);
+
+						// Now remove blobs
+						const byte* start = data->data.data();
+						start += sizeof(MessageHeader);
+
+						const auto* head = reinterpret_cast<const BlobHeader*>(start);
+						const auto seq = head->seq();
+
+						auto* blob = writeBlobs.find(seq);
+						if (blob) {
+							--blob->parts;
+							if (blob->parts == 0 && blob->remaining() == 0) {
+								writeBlobs.remove(seq);
+								// ENGINE_LOG("Blob complete! ", seq);
+							}
+						}
+					}
+				}
+
+				Base::pktData.remove(pktSeq);
 			}
 	};
 }

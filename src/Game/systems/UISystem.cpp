@@ -272,7 +272,7 @@ namespace Game {
 	}
 
 	void UISystem::ui_netsim() {
-		if (!ImGui::CollapsingHeader("Network Conditions", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+		if (!ImGui::CollapsingHeader("Network Conditions", 0/* | ImGuiTreeNodeFlags_DefaultOpen */)) { return; }
 		#ifndef ENGINE_UDP_NETWORK_SIM
 			ImGui::Text("%s", "Network simulation disabled.");
 		#else
@@ -456,7 +456,7 @@ namespace Game {
 	}
 
 	void UISystem::ui_nethealth() {
-		if (ImGui::CollapsingHeader("Network Health")) { return; }
+		if (!ImGui::CollapsingHeader("Network Health")) { return; }
 		int connection = 0;
 
 		for (auto ent : world.getFilter<ConnectionComponent>()) {
