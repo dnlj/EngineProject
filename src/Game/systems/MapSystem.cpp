@@ -334,7 +334,6 @@ namespace Game {
 
 	// TODO: thread this. Not sure how nice box2d will play with it.
 	void MapSystem::buildActiveChunkData(TestData& data, glm::ivec2 chunkPos) {
-		// TODO: simplify. currently have two mostly duplicate sections.
 		const auto regionPos = chunkToRegion(chunkPos);
 		const auto regionIt = regions.find(regionPos);
 		if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
@@ -353,22 +352,18 @@ namespace Game {
 				found->second.toRLE(data.rle);
 			}
 		}
-		
-		{ // Render stuff
-			bool used[MapChunk::size.x][MapChunk::size.y] = {};
 
-			const auto usable = [&](const glm::ivec2 pos, const int blockType) {
-				return blockType != MapChunk::NONE.id && !used[pos.x][pos.y] && chunk.data[pos.x][pos.y] == blockType;
-			};
+		decltype(auto) greedyExpand = [&chunk](auto usable, auto submitArea){
+			bool used[MapChunk::size.x][MapChunk::size.y] = {};
 
 			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {  
 				for (begin.y = 0; begin.y < MapChunk::size.y; ++begin.y) {
-					// Greedy expand
-					const auto blockType = chunk.data[begin.x][begin.y];
-					if (blockType == MapChunk::AIR.id || !usable(begin, blockType)) { continue; }
+					const auto& blockType = chunk.data[begin.x][begin.y];
+					// TODO: rm - old - if (blockType == MapChunk::AIR.id || !usable(begin, blockType)) { continue; }
+					if (used[begin.x][begin.y] || !usable(begin, blockType)) { continue; }
 					auto end = begin;
 
-					while (end.y < MapChunk::size.y && usable(end, blockType)) { ++end.y; }
+					while (end.y < MapChunk::size.y && !used[begin.x][begin.y] && usable(end, blockType)) { ++end.y; }
 
 					for (bool cond = true; cond;) {
 						std::fill(&used[end.x][begin.y], &used[end.x][end.y], true);
@@ -376,36 +371,46 @@ namespace Game {
 
 						if (end.x == MapChunk::size.x) { break; }
 						for (int y = begin.y; y < end.y; ++y) {
-							if (!usable({end.x, y}, blockType)) { cond = false; break; }
+							if (used[begin.x][begin.y] || !usable(glm::ivec2{end.x, y}, blockType)) { cond = false; break; }
 						}
 					}
 
-					// Add buffer data
-					glm::vec2 origin = glm::vec2{begin} * MapChunk::blockSize;
-					glm::vec2 size = glm::vec2{end - begin} * MapChunk::blockSize;
-					const auto vertexCount = static_cast<GLushort>(buildVBOData.size());
-
-					buildVBOData.push_back({origin});
-					buildVBOData.push_back({origin + glm::vec2{size.x, 0}});
-					buildVBOData.push_back({origin + size});
-					buildVBOData.push_back({origin + glm::vec2{0, size.y}});
-
-					buildEBOData.push_back(vertexCount + 0);
-					buildEBOData.push_back(vertexCount + 1);
-					buildEBOData.push_back(vertexCount + 2);
-					buildEBOData.push_back(vertexCount + 2);
-					buildEBOData.push_back(vertexCount + 3);
-					buildEBOData.push_back(vertexCount + 0);
+					submitArea(begin, end);
 				}
 			}
+		};
+
+		{ // Render
+			greedyExpand([&](const auto& pos, const auto& blockType){
+				return blockType != MapChunk::NONE.id
+					&& blockType != MapChunk::AIR.id
+					&& chunk.data[pos.x][pos.y] == blockType;
+			}, [&](const auto& begin, const auto& end){
+				// Add buffer data
+				glm::vec2 origin = glm::vec2{begin} * MapChunk::blockSize;
+				glm::vec2 size = glm::vec2{end - begin} * MapChunk::blockSize;
+				const auto vertexCount = static_cast<GLushort>(buildVBOData.size());
+
+				buildVBOData.push_back({origin});
+				buildVBOData.push_back({origin + glm::vec2{size.x, 0}});
+				buildVBOData.push_back({origin + size});
+				buildVBOData.push_back({origin + glm::vec2{0, size.y}});
+
+				buildEBOData.push_back(vertexCount + 0);
+				buildEBOData.push_back(vertexCount + 1);
+				buildEBOData.push_back(vertexCount + 2);
+				buildEBOData.push_back(vertexCount + 2);
+				buildEBOData.push_back(vertexCount + 3);
+				buildEBOData.push_back(vertexCount + 0);
+			});
 
 			data.mesh.setBufferData(buildVBOData, buildEBOData);
 
 			buildVBOData.clear();
 			buildEBOData.clear();
 		}
-
-		{ // Physics stuff
+		
+		{ // Physics
 			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos)));
 			auto& body = *data.body;
 
@@ -423,40 +428,17 @@ namespace Game {
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &shape;
 
-			bool used[MapChunk::size.x][MapChunk::size.y]{};
-
-			// TODO: For collision we only want to check if a block is solid or not. We dont care about type.
-			const auto usable = [&](const glm::ivec2 pos, const int blockType) {
-				return blockType != MapChunk::NONE.id && !used[pos.x][pos.y] && chunk.data[pos.x][pos.y] == blockType;
-			};
-			
-			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {
-				for (begin.y = 0; begin.y < MapChunk::size.y; ++begin.y) {
-					// Greedy expand
-					const auto blockType = chunk.data[begin.x][begin.y];
-					if (blockType == MapChunk::AIR.id || !usable(begin, blockType)) { continue; }
-					auto end = begin;
-
-					while (end.y < MapChunk::size.y && usable(end, blockType)) { ++end.y; }
-
-					for (bool cond = true; cond;) {
-						std::fill(&used[end.x][begin.y], &used[end.x][end.y], true);
-						++end.x;
-
-						if (end.x == MapChunk::size.x) { break; }
-						for (int y = begin.y; y < end.y; ++y) {
-							if (!usable({end.x, y}, blockType)) { cond = false; break; }
-						}
-					}
-
-					// Add physics data
-					const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
-					const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
-
-					shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
-					body.CreateFixture(&fixtureDef);
-				}
-			}
+			greedyExpand([&](const auto& pos, const auto& blockType){
+				// TODO: For collision we only want to check if a block is solid or not. We dont care about type.
+				return blockType != MapChunk::NONE.id
+					&& blockType != MapChunk::AIR.id
+					&& chunk.data[pos.x][pos.y] == blockType;
+			}, [&](const auto& begin, const auto& end){
+				const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
+				const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
+				shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
+				body.CreateFixture(&fixtureDef);
+			});
 		}
 	}
 
