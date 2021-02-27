@@ -1,0 +1,5 @@
+// Name, Solid?
+X(None, false)
+X(Air, false)
+X(Dirt, true)
+#undef X

@@ -358,12 +358,12 @@ namespace Game {
 
 			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {  
 				for (begin.y = 0; begin.y < MapChunk::size.y; ++begin.y) {
-					const auto& blockType = chunk.data[begin.x][begin.y];
+					const auto& blockMeta = getBlockMeta(chunk.data[begin.x][begin.y]);
 					// TODO: rm - old - if (blockType == MapChunk::AIR.id || !usable(begin, blockType)) { continue; }
-					if (used[begin.x][begin.y] || !usable(begin, blockType)) { continue; }
+					if (used[begin.x][begin.y] || !usable(begin, blockMeta)) { continue; }
 					auto end = begin;
 
-					while (end.y < MapChunk::size.y && !used[begin.x][begin.y] && usable(end, blockType)) { ++end.y; }
+					while (end.y < MapChunk::size.y && !used[begin.x][begin.y] && usable(end, blockMeta)) { ++end.y; }
 
 					for (bool cond = true; cond;) {
 						std::fill(&used[end.x][begin.y], &used[end.x][end.y], true);
@@ -371,7 +371,7 @@ namespace Game {
 
 						if (end.x == MapChunk::size.x) { break; }
 						for (int y = begin.y; y < end.y; ++y) {
-							if (used[begin.x][begin.y] || !usable(glm::ivec2{end.x, y}, blockType)) { cond = false; break; }
+							if (used[begin.x][begin.y] || !usable(glm::ivec2{end.x, y}, blockMeta)) { cond = false; break; }
 						}
 					}
 
@@ -381,10 +381,10 @@ namespace Game {
 		};
 
 		{ // Render
-			greedyExpand([&](const auto& pos, const auto& blockType){
-				return blockType != MapChunk::NONE.id
-					&& blockType != MapChunk::AIR.id
-					&& chunk.data[pos.x][pos.y] == blockType;
+			greedyExpand([&](const auto& pos, const auto& blockMeta){
+				return blockMeta.id != MapChunk::NONE.id
+					&& blockMeta.id != MapChunk::AIR.id
+					&& chunk.data[pos.x][pos.y] == blockMeta.id;
 			}, [&](const auto& begin, const auto& end){
 				// Add buffer data
 				glm::vec2 origin = glm::vec2{begin} * MapChunk::blockSize;
@@ -428,11 +428,11 @@ namespace Game {
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &shape;
 
-			greedyExpand([&](const auto& pos, const auto& blockType){
+			greedyExpand([&](const auto& pos, const auto& blockMeta){
 				// TODO: For collision we only want to check if a block is solid or not. We dont care about type.
-				return blockType != MapChunk::NONE.id
-					&& blockType != MapChunk::AIR.id
-					&& chunk.data[pos.x][pos.y] == blockType;
+				return blockMeta.id != MapChunk::NONE.id
+					&& blockMeta.id != MapChunk::AIR.id
+					&& chunk.data[pos.x][pos.y] == blockMeta.id;
 			}, [&](const auto& begin, const auto& end){
 				const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
 				const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;

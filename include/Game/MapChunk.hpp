@@ -13,12 +13,31 @@
 
 // TODO: Doc
 namespace Game {
-	class MapChunk {
-		public:
-			constexpr static MapBlock NONE{0, false};
-			constexpr static MapBlock AIR{1, false};
-			constexpr static MapBlock DIRT{2, true};
+	// TODO: move
+	struct BlockMeta {
+		const BlockId id = -1;
+		const char* const name = nullptr;
+		const bool solid = false;
+	};
 
+	enum BlockEnum : BlockId {
+		#define X(Name, Solid) Name,
+		#include <Game/Blocks.xpp>
+		_COUNT,
+	};
+
+	namespace Detail {
+		constexpr inline BlockMeta getBlockMetaLookupArray[] = {
+			#define X(Name, Solid) BlockMeta{.id = BlockEnum::Name, .name = #Name, .solid = Solid},
+			#include <Game/Blocks.xpp>
+		};
+	}
+
+	ENGINE_INLINE constexpr const BlockMeta& getBlockMeta(BlockId bid) noexcept {
+		return Detail::getBlockMetaLookupArray[bid];
+	}
+
+	class MapChunk {
 		public:
 			constexpr static glm::ivec2 size = {32, 32};
 			constexpr static auto blockSize = 1.0f/6.0f;
@@ -39,7 +58,7 @@ namespace Game {
 				for (int x = 0; x < size.x; ++x) {
 					for (int y = 0; y < size.y; ++y) {
 						const auto& ed = edit.data[x][y];
-						if (ed == NONE.id) { continue; }
+						if (ed == BlockEnum::None) { continue; }
 
 						auto& cd = data[x][y];
 						if (cd == ed) { continue; }
@@ -113,7 +132,7 @@ namespace Game {
 					}
 
 					while (pair.count) {
-						if (pair.bid != NONE.id) {
+						if (pair.bid != BlockEnum::None) {
 							editMade = editMade || (linear[i] == pair.bid);
 							linear[i] = pair.bid;
 						}
