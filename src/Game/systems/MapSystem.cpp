@@ -86,12 +86,12 @@ namespace Game {
 			if (actComp.getButton(Button::Attack1).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
-				makeEdit(MapChunk::DIRT.id, pos + actComp.getTarget());
+				makeEdit(BlockEnum::Dirt, pos + actComp.getTarget());
 			}
 			if (actComp.getButton(Button::Attack2).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
-				makeEdit(MapChunk::AIR.id, pos + actComp.getTarget());
+				makeEdit(BlockEnum::Air, pos + actComp.getTarget());
 			}
 
 			if (!world.isPerformingRollback()) {
@@ -382,8 +382,8 @@ namespace Game {
 
 		{ // Render
 			greedyExpand([&](const auto& pos, const auto& blockMeta){
-				return blockMeta.id != MapChunk::NONE.id
-					&& blockMeta.id != MapChunk::AIR.id
+				return blockMeta.id != BlockEnum::None
+					&& blockMeta.id != BlockEnum::Air
 					&& chunk.data[pos.x][pos.y] == blockMeta.id;
 			}, [&](const auto& begin, const auto& end){
 				// Add buffer data
@@ -430,8 +430,8 @@ namespace Game {
 
 			greedyExpand([&](const auto& pos, const auto& blockMeta){
 				// TODO: For collision we only want to check if a block is solid or not. We dont care about type.
-				return blockMeta.id != MapChunk::NONE.id
-					&& blockMeta.id != MapChunk::AIR.id
+				return blockMeta.id != BlockEnum::None
+					&& blockMeta.id != BlockEnum::Air
 					&& chunk.data[pos.x][pos.y] == blockMeta.id;
 			}, [&](const auto& begin, const auto& end){
 				const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
@@ -448,10 +448,10 @@ namespace Game {
 		for (glm::ivec2 bpos = {0, 0}; bpos.x < MapChunk::size.x; ++bpos.x) {
 			for (bpos.y = 0; bpos.y < MapChunk::size.y; ++bpos.y) {
 				const auto absPos = chunkBlockPos + bpos;
-				int block = MapChunk::AIR.id;
+				int block = BlockEnum::Air;
 		
 				if (0 < mgen.value(absPos.x, absPos.y)) {
-					block = MapChunk::DIRT.id;
+					block = BlockEnum::Dirt;
 				}
 
 				chunk.data[bpos.x][bpos.y] = block;
