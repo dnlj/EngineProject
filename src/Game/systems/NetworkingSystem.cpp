@@ -3,6 +3,7 @@
 #include <concepts>
 #include <iomanip>
 #include <random>
+#include <algorithm>
 
 // Engine
 #include <Engine/Engine.hpp>
@@ -223,6 +224,10 @@ namespace Game {
 			msg.write(info.ent);
 			msg.write(world.getTick());
 		}
+
+		if (auto msg = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
+			msg.write(from.getPacketRecvRate());
+		}
 	}
 
 	HandleMessageDef(MessageType::ECS_INIT)
@@ -298,6 +303,30 @@ namespace Game {
 		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", *remote, " Local: ", local, " Tick: ", world.getTick());
 
 		// TODO: components init
+	}
+
+	HandleMessageDef(MessageType::CONFIG_NETWORK)
+		const auto* rate = from.read<float32>();
+		if (!rate) { return; }
+
+		if constexpr (ENGINE_CLIENT) {
+			if (auto msg = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
+				msg.write(from.getPacketRecvRate());
+			}
+		}
+
+		// TODO: these values should be configured by convar/config
+		constexpr float32 maxSendRate = 256;
+		constexpr float32 minSendRate = 8;
+		float32 r2 = *rate;
+
+		// We need this check because MSVC does not handle comparisons correctly for non-finite values even when is_iec559 is true.
+		if (!std::isfinite(r2)) {
+			r2 = minSendRate;
+		}
+
+		ENGINE_LOG("Network send rate updated: ", r2);
+		from.setPacketSendRate(std::max(minSendRate, std::min(r2, maxSendRate)));
 	}
 
 	HandleMessageDef(MessageType::ECS_ENT_DESTROY) 

@@ -355,13 +355,22 @@ namespace Game {
 				statsComp.displayInputBufferSize, statsComp.displayIdealInputBufferSize,
 				statsComp.displaySentTotal, statsComp.displaySentAvg,
 				statsComp.displayRecvTotal, statsComp.displayRecvAvg, statsComp.displayLoss,
-				conn.getPacketBudget()
+				conn.getPacketSendBudget()
 			);
 
 			{
-				float32 rate = conn.getPacketRate();
-				ImGui::SliderFloat("Packet Rate", &rate, 1.0f, 256.0f);
-				conn.setPacketRate(rate);
+				const float32 r1 = conn.getPacketRecvRate();
+				auto r2 = r1;
+				ImGui::SliderFloat("Packet Recv Rate", &r2, 1.0f, 256.0f);
+
+				if (r2 != r1) {
+					if (auto msg = conn.beginMessage<MessageType::CONFIG_NETWORK>()) {
+						conn.setPacketRecvRate(r2);
+						msg.write(r2);
+					} else {
+						ENGINE_WARN("Unable to set network recv rate!");
+					}
+				}
 			}
 
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();

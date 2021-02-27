@@ -30,6 +30,7 @@ namespace Game {
 	> {};
 
 	struct Channel_ECS : Engine::Net::Channel_ReliableOrdered<
+		MessageType::CONFIG_NETWORK,
 		MessageType::ECS_INIT,
 		MessageType::ECS_ENT_CREATE,
 		MessageType::ECS_ENT_DESTROY,

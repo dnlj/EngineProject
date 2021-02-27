@@ -53,10 +53,13 @@ namespace Engine::Net {
 			BufferWriter msgBufferWriter;
 
 			/** How many packets per second we can send */
-			float32 packetRate = 16.0f;
+			float32 packetSendRate = 16.0f;
+
+			/** How many packets per second we can recv. Not used locally. Should be networked to server. */
+			float32 packetRecvRate = 16.0f;
 
 			/** Current maximum number of packet we can send */
-			float32 packetBudget = 0;
+			float32 packetSendBudget = 0;
 
 			/** Last time we updated the packet budget */
 			Clock::TimePoint lastBudgetUpdate = {};
@@ -155,9 +158,13 @@ namespace Engine::Net {
 
 			ENGINE_INLINE const auto& address() const { return addr; }
 
-			ENGINE_INLINE auto getPacketBudget() const noexcept { return packetBudget; }
-			ENGINE_INLINE auto getPacketRate() const noexcept { return packetRate; }
-			ENGINE_INLINE auto setPacketRate(float32 r) noexcept { packetRate = r; }
+			ENGINE_INLINE auto getPacketSendBudget() const noexcept { return packetSendBudget; }
+
+			ENGINE_INLINE auto getPacketSendRate() const noexcept { return packetSendRate; }
+			ENGINE_INLINE auto setPacketSendRate(float32 r) noexcept { packetSendRate = r; }
+
+			ENGINE_INLINE auto getPacketRecvRate() const noexcept { return packetRecvRate; }
+			ENGINE_INLINE auto setPacketRecvRate(float32 r) noexcept { packetRecvRate = r; }
 
 			ENGINE_INLINE auto getPing() const noexcept { return ping; }
 			ENGINE_INLINE auto getLoss() const noexcept { return loss; }
@@ -331,12 +338,12 @@ namespace Engine::Net {
 				const auto now = Engine::Clock::now();
 
 				// Update packet budget
-				packetBudget += Clock::Seconds{now - lastBudgetUpdate}.count() * packetRate;
-				packetBudget = std::min(packetBudget, packetRate);
+				packetSendBudget += Clock::Seconds{now - lastBudgetUpdate}.count() * packetSendRate;
+				packetSendBudget = std::min(packetSendBudget, packetSendRate);
 				lastBudgetUpdate = now;
 
 				// Write + send packets
-				while (packetBudget >= 1) {
+				while (packetSendBudget >= 1) {
 					const auto seq = nextSeqNum++;
 					Packet pkt; // TODO: if we keep this move to be a member variable instead;
 					pkt.setKey(keySend); // TODO: should just be set once after packet is changed to member variable
@@ -361,7 +368,7 @@ namespace Engine::Net {
 						const auto sz = sizeof(pkt.head) + msgBufferWriter.size();
 						packetSentBandwidthAccum += sz;
 						sock.send(&pkt, (int32)sz, addr);
-						packetBudget -= 1;
+						packetSendBudget -= 1;
 					} else {
 						--nextSeqNum;
 						break;
