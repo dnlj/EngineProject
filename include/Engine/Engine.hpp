@@ -28,10 +28,10 @@
 	#define ENGINE_DEBUG false
 #endif
 
-// TODO: move all this macro stuff into files?
-
 // TODO: cross platform inline
 #define ENGINE_INLINE __forceinline
+#define ENGINE_INLINE_LAMBDA [[msvc::forceinline]]
+
 
 // TODO: replace macros with source_location?
 #define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)\

@@ -353,7 +353,7 @@ namespace Game {
 			}
 		}
 
-		decltype(auto) greedyExpand = [&chunk](auto usable, auto submitArea) {
+		decltype(auto) greedyExpand = [&chunk](auto usable, auto submitArea) ENGINE_INLINE_LAMBDA {
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};
 
 			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {  
@@ -381,11 +381,11 @@ namespace Game {
 		};
 
 		{ // Render
-			greedyExpand([&](const auto& pos, const auto& blockMeta){
+			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE_LAMBDA {
 				return blockMeta.id != BlockEnum::None
 					&& blockMeta.id != BlockEnum::Air
 					&& chunk.data[pos.x][pos.y] == blockMeta.id;
-			}, [&](const auto& begin, const auto& end){
+			}, [&](const auto& begin, const auto& end) ENGINE_INLINE_LAMBDA {
 				// Add buffer data
 				glm::vec2 origin = glm::vec2{begin} * MapChunk::blockSize;
 				glm::vec2 size = glm::vec2{end - begin} * MapChunk::blockSize;
@@ -428,9 +428,9 @@ namespace Game {
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &shape;
 
-			greedyExpand([&](const auto& pos, const auto& blockMeta){
+			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE_LAMBDA {
 				return getBlockMeta(chunk.data[pos.x][pos.y]).solid;
-			}, [&](const auto& begin, const auto& end){
+			}, [&](const auto& begin, const auto& end) ENGINE_INLINE_LAMBDA {
 				const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
 				const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
 				shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
