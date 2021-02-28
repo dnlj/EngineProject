@@ -353,7 +353,7 @@ namespace Game {
 			}
 		}
 
-		decltype(auto) greedyExpand = [&chunk](auto usable, auto submitArea){
+		decltype(auto) greedyExpand = [&chunk](auto usable, auto submitArea) {
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};
 
 			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {  
@@ -429,10 +429,7 @@ namespace Game {
 			fixtureDef.shape = &shape;
 
 			greedyExpand([&](const auto& pos, const auto& blockMeta){
-				// TODO: For collision we only want to check if a block is solid or not. We dont care about type.
-				return blockMeta.id != BlockEnum::None
-					&& blockMeta.id != BlockEnum::Air
-					&& chunk.data[pos.x][pos.y] == blockMeta.id;
+				return getBlockMeta(chunk.data[pos.x][pos.y]).solid;
 			}, [&](const auto& begin, const auto& end){
 				const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
 				const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
