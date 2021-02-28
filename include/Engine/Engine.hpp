@@ -28,9 +28,31 @@
 	#define ENGINE_DEBUG false
 #endif
 
-// TODO: cross platform inline
-#define ENGINE_INLINE __forceinline
-#define ENGINE_INLINE_LAMBDA [[msvc::forceinline]]
+// TODO: look into other inline options
+// GCC: https://gcc.gnu.org/onlinedocs/gcc-4.7.2/gcc/Function-Attributes.html
+// CLANG: https://clang.llvm.org/docs/AttributeReference.html
+// MSVC: https://www.reddit.com/r/programming/comments/g9inos/smarter_cc_inlining_with_attribute_flatten/foyoq62/
+// 
+// We have always had __forceinline, and I just added four attributes in this area,
+// 
+//     [[msvc::forceinline]] - same as __forceinline on a function definition),
+//     [[msvc::noinline]] - same as declspec(noinline) on a function,
+//     [[msvc::forceinline_calls]] - goes on statements or statement blocks, and attempts to forceinline all calls in that block,
+//     [[msvc::noinline_calls]] - don't inline any function calls in this block
+// 
+// Nothing like flatten (msvc::forceinline_calls isn't recursive, it only does "one level"), although that would be easy to implement
+//
+
+/**
+ * Attempts to force a function to be inlined.
+ */
+#define ENGINE_INLINE [[msvc::forceinline]] // TODO: cross platform: [[gnu::always_inline]]
+
+/**
+ * Attempts to force inline all function calls in a block or statement.
+ */
+#define ENGINE_INLINE_CALLS [[msvc::forceinline_calls]] // TODO: cross platform: [[gnu::flatten]]
+
 
 
 // TODO: replace macros with source_location?

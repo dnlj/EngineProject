@@ -112,25 +112,25 @@ namespace Engine {
 			template<std::integral T>
 			struct SetupStorageToken<T> {
 				using Type = Int;
-				static ENGINE_INLINE void setup(Token& tkn) { tkn = Token::Type::DecLiteral; }
+				ENGINE_INLINE static void setup(Token& tkn) { tkn = Token::Type::DecLiteral; }
 			};
 
 			template<std::floating_point T>
 			struct SetupStorageToken<T> {
 				using Type = Float;
-				static ENGINE_INLINE void setup(Token& tkn) { tkn = Token::Type::FloatLiteral; }
+				ENGINE_INLINE static void setup(Token& tkn) { tkn = Token::Type::FloatLiteral; }
 			};
 			
 			template<>
 			struct SetupStorageToken<bool> {
 				using Type = bool;
-				static ENGINE_INLINE void setup(Token& tkn) { tkn = Token::Type::BoolLiteral; }
+				ENGINE_INLINE static void setup(Token& tkn) { tkn = Token::Type::BoolLiteral; }
 			};
 
 			template<std::convertible_to<std::string> T>
 			struct SetupStorageToken<T> {
 				using Type = String;
-				static ENGINE_INLINE void setup(Token& tkn) { tkn = Token::Type::StringLiteral; }
+				ENGINE_INLINE static void setup(Token& tkn) { tkn = Token::Type::StringLiteral; }
 			};
 
 		private:
