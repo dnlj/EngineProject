@@ -95,7 +95,7 @@ namespace Game {
 			glm::ivec2 getBlockOffset() const;
 			
 			// TODO: Doc
-			void setValueAt(const glm::vec2 wpos, int value);
+			void setValueAt(const glm::vec2 wpos, BlockId bid);
 
 			/**
 			 * Converts from world coordinates to block coordinates.

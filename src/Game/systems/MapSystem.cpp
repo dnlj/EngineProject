@@ -69,12 +69,12 @@ namespace Game {
 		const auto currTick = world.getTick();
 
 		// TODO: move
-		const auto makeEdit = [&](int value, const glm::vec2 mouse) {
+		const auto makeEdit = [&](BlockId bid, const glm::vec2 mouse) {
 			for (int x = -1; x < 2; ++x) {
 				for (int y = -1; y < 2; ++y) {
 					setValueAt(
 						mouse + glm::vec2{x * MapChunk::blockSize, y * MapChunk::blockSize},
-						value
+						bid
 					);
 				}
 			}
@@ -86,12 +86,12 @@ namespace Game {
 			if (actComp.getButton(Button::Attack1).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
-				makeEdit(BlockEnum::Dirt, pos + actComp.getTarget());
+				makeEdit(BlockId::Dirt, pos + actComp.getTarget());
 			}
 			if (actComp.getButton(Button::Attack2).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
-				makeEdit(BlockEnum::Air, pos + actComp.getTarget());
+				makeEdit(BlockId::Air, pos + actComp.getTarget());
 			}
 
 			if (!world.isPerformingRollback()) {
@@ -310,7 +310,7 @@ namespace Game {
 		return blocksPerShift * world.getSystem<PhysicsOriginShiftSystem>().getOffset();
 	}
 
-	void MapSystem::setValueAt(const glm::vec2 wpos, int value) {
+	void MapSystem::setValueAt(const glm::vec2 wpos, BlockId bid) {
 		// TODO: Make conversion functions for all of these? Better names
 
 		const auto blockOffset = glm::floor(wpos / MapChunk::blockSize);
@@ -320,7 +320,7 @@ namespace Game {
 		const auto chunkPos = blockToChunk(getBlockOffset()) + chunkOffset;
 
 		auto& edit = chunkEdits[chunkPos];
-		edit.data[blockIndex.x][blockIndex.y] = value;
+		edit.data[blockIndex.x][blockIndex.y] = bid;
 	}
 	
 	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 world) const {
@@ -382,8 +382,8 @@ namespace Game {
 
 		{ // Render
 			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE {
-				return blockMeta.id != BlockEnum::None
-					&& blockMeta.id != BlockEnum::Air
+				return blockMeta.id != BlockId::None
+					&& blockMeta.id != BlockId::Air
 					&& chunk.data[pos.x][pos.y] == blockMeta.id;
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
 				// Add buffer data
@@ -445,10 +445,10 @@ namespace Game {
 		for (glm::ivec2 bpos = {0, 0}; bpos.x < MapChunk::size.x; ++bpos.x) {
 			for (bpos.y = 0; bpos.y < MapChunk::size.y; ++bpos.y) {
 				const auto absPos = chunkBlockPos + bpos;
-				int block = BlockEnum::Air;
+				BlockId block = BlockId::Air;
 		
 				if (0 < mgen.value(absPos.x, absPos.y)) {
-					block = BlockEnum::Dirt;
+					block = BlockId::Dirt;
 				}
 
 				chunk.data[bpos.x][bpos.y] = block;
