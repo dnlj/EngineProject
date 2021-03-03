@@ -26,10 +26,10 @@ namespace Game {
 		auto& shader = mapSys.shader;
 		auto& texture = mapSys.texture;
 
-		glUseProgram(shader.get());
+		glUseProgram(*shader);
 
 		// Setup Texture
-		glBindTextureUnit(0, texture.get());
+		glBindTextureUnit(0, texture->get());
 		glUniform1i(5, 0);
 
 		const auto vp = engine.camera.getProjection() * engine.camera.getView();

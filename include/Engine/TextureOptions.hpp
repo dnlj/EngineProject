@@ -4,13 +4,13 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 namespace Engine {
-	enum class TextureWrap : GLint {
+	enum class TextureWrap : GLint { // TODO: GLenum
 			REPEAT = GL_REPEAT,
 			MIRRORED_REPEAT = GL_MIRRORED_REPEAT,
 			CLAMP_TO_EDGE = GL_CLAMP_TO_EDGE,
 	};
 
-	enum class TextureFilter : GLint {
+	enum class TextureFilter : GLint { // TODO: GLenum
 		NEAREST,
 		BILINEAR,
 		TRILINEAR,

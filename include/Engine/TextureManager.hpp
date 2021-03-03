@@ -3,20 +3,18 @@
 // STD
 #include <unordered_map>
 
-// glLoadGen
-#include <glloadgen/gl_core_4_5.hpp>
-
 // Engine
 #include <Engine/ResourceManager.hpp>
+#include <Engine/Graphics/Texture.hpp>
 
-// TODO: Document
+
 namespace Engine {
-	class TextureManager : public Engine::ResourceManager<TextureManager, GLuint> {
-		friend class Engine::ResourceManager<TextureManager, GLuint>;
+	class TextureManager : public Engine::ResourceManager<TextureManager, Texture> {
+		friend class Engine::ResourceManager<TextureManager, Texture>;
 		private:
-			GLuint load(const std::string& path);
-			void unload(GLuint texture);
+			Texture load(const std::string& path);
+			void unload(Texture tex) {}
 	};
 
-	using Texture = TextureManager::Resource;
+	using TextureRef = TextureManager::Resource;
 }

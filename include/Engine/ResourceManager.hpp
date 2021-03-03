@@ -36,7 +36,7 @@ namespace Engine {
 		public:
 			class Resource {
 				private:
-					struct ResourceInfo* info = nullptr;
+					ResourceInfo* info = nullptr;
 					void inc() { ++info->refCount; }
 					void dec() { ++info->refCount; }
 
@@ -52,9 +52,13 @@ namespace Engine {
 						inc();
 						return *this;
 					}
-					const auto& get() const { return *info->data; }
+
+					const auto* get() const { return info->data.get(); }
 					const auto& path() const { return info->path; }
 					const auto& id() const { return info->id; }
+
+					const auto* operator->() const { return get(); }
+					const auto& operator*() const { return *get(); }
 			};
 
 		private:

@@ -108,7 +108,7 @@ namespace Game {
 		for (const auto& ent : filter) {
 			const auto pos = world.getComponent<Game::PhysicsInterpComponent>(ent).getPosition();
 			sprites.push_back({
-				world.getComponent<Game::SpriteComponent>(ent).texture.get(),
+				world.getComponent<Game::SpriteComponent>(ent).texture->get(),
 				{pos.x, pos.y, 0.0f}
 			});
 		}
@@ -146,7 +146,7 @@ namespace Game {
 
 		// VAO / Program
 		glBindVertexArray(vao);
-		glUseProgram(shader.get());
+		glUseProgram(*shader);
 
 		// Draw
 		for (std::size_t i = 1; i < spriteGroups.size(); ++i) {

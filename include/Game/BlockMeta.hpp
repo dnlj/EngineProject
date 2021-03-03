@@ -1,8 +1,6 @@
 #pragma once
 
 
-
-
 namespace Game {
 	enum BlockId : int16 {
 		#define X(Name, Solid) Name,

@@ -59,7 +59,10 @@ namespace Game {
 	void MapSystem::setupMesh(Engine::Graphics::Mesh& mesh) const {
 		constexpr Engine::Graphics::VertexFormat<1> vertexFormat = {
 			sizeof(Vertex),
-			{{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)}}
+			{
+				{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)},
+				//{.location = ???, .size = 1, .type = GL_UNSIGNED_BYTE, .offset = offsetof(Vertex, pos)},
+			}
 		};
 
 		mesh.setBufferFormat(vertexFormat);

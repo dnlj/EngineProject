@@ -13,7 +13,7 @@
 namespace Game {
 	class SpriteComponent : public NetworkComponent {
 		public:
-			Engine::Texture texture;
+			Engine::TextureRef texture;
 
 			constexpr static auto netRepl() { return Engine::Net::Replication::ONCE; };
 
@@ -22,7 +22,7 @@ namespace Game {
 			}
 
 			void netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
-				const auto* tex = conn.read<Engine::Texture::Id>();
+				const auto* tex = conn.read<Engine::TextureRef::Id>();
 				if (!tex) { return; }
 				texture = engine.textureManager.get(*tex);
 			}

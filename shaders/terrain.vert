@@ -1,10 +1,8 @@
 #version 450 core
 
 layout (location = 0) in vec2 vertPosition;
-
-out vec2 fragPosition;
-
 layout (location = 1) uniform mat4 mvp;
+out vec2 fragPosition;
 
 void main() {
 	fragPosition = vertPosition;

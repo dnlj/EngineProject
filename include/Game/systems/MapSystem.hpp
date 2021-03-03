@@ -159,7 +159,7 @@ namespace Game {
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			Engine::Shader shader;
-			Engine::Texture texture;
+			Engine::TextureRef texture;
 
 			struct TestData { // TODO: rename
 				b2Body* body;
@@ -198,7 +198,7 @@ namespace Game {
 
 			struct Vertex {
 				glm::vec2 pos;
-				//GLuint texture = 0; // TODO: probably doesnt need to be 32bit
+				GLubyte texIdx;
 			};
 
 			std::vector<Vertex> buildVBOData;

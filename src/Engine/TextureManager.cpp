@@ -10,18 +10,13 @@
 #include <soil/SOIL.h>
 
 namespace Engine {
-	GLuint TextureManager::load(const std::string& path) {
-		GLuint texture = 0;
-
-		Engine::TextureOptions options{Engine::TextureWrap::REPEAT, Engine::TextureFilter::NEAREST, false};
-
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
-
+	Texture TextureManager::load(const std::string& path) {
 		int width;
 		int height;
 		int channels;
 		auto image = SOIL_load_image(path.c_str(), &width, &height, &channels, SOIL_LOAD_RGBA);
+
+		Texture tex;
 
 		if (image == nullptr) {
 			auto res = SOIL_last_result();
@@ -30,16 +25,14 @@ namespace Engine {
 
 			width = 2;
 			height = 2;
-			image = new GLubyte[4 * 4]{
-				255, 000, 000, 255,    000, 255, 000, 255,
-				000, 255, 000, 255,    255, 000, 000, 255,
+			image = new GLubyte[2 * 2 * 3] {
+				255, 000, 000,    000, 255, 000,
+				000, 255, 000,    255, 000, 000,
 			};
 
-			options.setFilter(TextureFilter::NEAREST);
-			options.setWrap(TextureWrap::REPEAT);
-			options.setMipmap(false);
+			tex.setStorage(TextureFormat::SRGB8, 1, {width, height});
+			tex.setSubImage(1, {0, 0}, {width, height}, PixelFormat::RGB8, image);
 
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 			delete[] image;
 		} else {
 			// Flip Y
@@ -51,27 +44,15 @@ namespace Engine {
 					image + (height - y - 1) * rowLength
 				);
 			}
-
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+					
+			tex.setStorage(TextureFormat::SRGBA8, 1, {width, height});
+			tex.setSubImage(0, {0, 0}, {width, height}, PixelFormat::RGBA8, image);
 			SOIL_free_image_data(image);
 		}
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, options.getGLWrap());
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, options.getGLWrap());
+		tex.setFilter(TextureFilter::NEAREST);
+		tex.setWrap(TextureWrap::REPEAT);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, options.getGLFilterMin());
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, options.getGLFilterMag());
-
-		if (options.getMipmap()) {
-			glGenerateMipmap(GL_TEXTURE_2D);
-		}
-
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		return texture;
-	}
-
-	void TextureManager::unload(GLuint texture) {
-		glDeleteTextures(1, &texture);
+		return tex;
 	}
 }
