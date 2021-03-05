@@ -9,24 +9,11 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/TextureOptions.hpp>
+#include <Engine/Graphics/Image.hpp>
+#include <Engine/Graphics/TextureFormat.hpp>
+
 
 namespace Engine {
-	// TODO: maybe rework texture options? some things need to be set at creation others can be set with texture parameters. kinda silly to group them.
-	// TODO: move to TextureOptions?
-	enum class TextureFormat : GLenum {
-		RGB8 = GL_RGB8,
-		RGBA8 = GL_RGBA8,
-		SRGB8 = GL_SRGB8,
-		SRGBA8 = GL_SRGB8_ALPHA8, // sRGB w/ linear alpha. 8 bits per channel.
-	};
-
-	enum class PixelFormat : GLenum {
-		RGB8 = GL_RGB,
-		RGBA8 = GL_RGBA,
-	};
-
-	// TODO: add Image/Bitmap class? w/ PixelFormat
-
 	class Texture { // TODO: rename
 		private:
 			GLuint tex = 0;
@@ -49,13 +36,22 @@ namespace Engine {
 				if (tex == 0) { glCreateTextures(GL_TEXTURE_2D, 1, &tex); }
 				glTextureStorage2D(tex, levels, static_cast<GLenum>(format), size.x, size.y);
 			}
+			
+			void setSubImage(int level, const Image& img) {
+				setSubImage(level, {0, 0}, img);
+			}
+
+			void setSubImage(int level, glm::ivec2 offset, const Image& img) {
+				setSubImage(level, offset, img.size(), img.format(), img.data());
+			}
 
 			void setSubImage(int level, glm::ivec2 offset, glm::ivec2 size, PixelFormat format, const void* data) {
 				ENGINE_DEBUG_ASSERT(tex != 0, "Attempting to set data of uninitialized texture.");
 				// TODO: GL_UNSIGNED_BYTE will need to be a switch or something when we add more pixel formats
+				const auto& pixInfo = getPixelFormatInfo(format);
 				glTextureSubImage2D(tex, level,
 					offset.x, offset.y, size.x, size.y,
-					static_cast<GLenum>(format), GL_UNSIGNED_BYTE, data
+					pixInfo.glFormat, GL_UNSIGNED_BYTE, data
 				);
 			}
 
