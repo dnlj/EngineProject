@@ -32,24 +32,28 @@ namespace Engine {
 				glDeleteTextures(1, &tex);
 			}
 
-			void setStorage(TextureFormat format, int levels, glm::ivec2 size) {
+			void setStorage(TextureFormat format, glm::ivec2 size, int mips = 1) {
 				if (tex == 0) { glCreateTextures(GL_TEXTURE_2D, 1, &tex); }
-				glTextureStorage2D(tex, levels, static_cast<GLenum>(format), size.x, size.y);
+				glTextureStorage2D(tex, mips, static_cast<GLenum>(format), size.x, size.y);
 			}
 			
-			void setSubImage(int level, const Image& img) {
-				setSubImage(level, {0, 0}, img);
+			void setImage(const Image& img) {
+				setSubImage(0, img);
 			}
 
-			void setSubImage(int level, glm::ivec2 offset, const Image& img) {
-				setSubImage(level, offset, img.size(), img.format(), img.data());
+			void setSubImage(int mip, const Image& img) {
+				setSubImage(mip, {0, 0}, img);
 			}
 
-			void setSubImage(int level, glm::ivec2 offset, glm::ivec2 size, PixelFormat format, const void* data) {
+			void setSubImage(int mip, glm::ivec2 offset, const Image& img) {
+				setSubImage(mip, offset, img.size(), img.format(), img.data());
+			}
+
+			void setSubImage(int mip, glm::ivec2 offset, glm::ivec2 size, PixelFormat format, const void* data) {
 				ENGINE_DEBUG_ASSERT(tex != 0, "Attempting to set data of uninitialized texture.");
 				// TODO: GL_UNSIGNED_BYTE will need to be a switch or something when we add more pixel formats
 				const auto& pixInfo = getPixelFormatInfo(format);
-				glTextureSubImage2D(tex, level,
+				glTextureSubImage2D(tex, mip,
 					offset.x, offset.y, size.x, size.y,
 					pixInfo.glFormat, GL_UNSIGNED_BYTE, data
 				);
