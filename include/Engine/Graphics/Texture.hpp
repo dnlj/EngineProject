@@ -14,8 +14,11 @@
 
 
 namespace Engine {
-	class Texture { // TODO: rename
+	template<int32 D, GLenum Target>
+	class Texture {
 		private:
+			static_assert(1 <= D && D <= 3, "Invalid texture dimensions");
+			using Vec = glm::vec<D, glm::i32, glm::defaultp>;
 			GLuint tex = 0;
 
 		public:
@@ -32,31 +35,62 @@ namespace Engine {
 				glDeleteTextures(1, &tex);
 			}
 
-			void setStorage(TextureFormat format, glm::ivec2 size, int mips = 1) {
-				if (tex == 0) { glCreateTextures(GL_TEXTURE_2D, 1, &tex); }
-				glTextureStorage2D(tex, mips, static_cast<GLenum>(format), size.x, size.y);
+			void setStorage(TextureFormat format, Vec size, int mips = 1) {
+				if (tex == 0) {
+					glCreateTextures(Target, 1, &tex);
+				}
+
+				if constexpr (D == 1) {
+					// TODO: 1D	
+					ENGINE_ERROR("1D Textures are untested.");
+					glTextureStorage1D(tex, mips, static_cast<GLenum>(format), size.x);
+				} else if constexpr (D == 2) {
+					glTextureStorage2D(tex, mips, static_cast<GLenum>(format), size.x, size.y);
+				} else if constexpr (D == 3) {
+					glTextureStorage3D(tex, mips, static_cast<GLenum>(format), size.x, size.y, size.z);
+				}
 			}
 			
 			void setImage(const Image& img) {
 				setSubImage(0, img);
 			}
 
-			void setSubImage(int mip, const Image& img) {
-				setSubImage(mip, {0, 0}, img);
+			void setSubImage(int32 mip, const Image& img) {
+				setSubImage(mip, {}, img);
 			}
 
-			void setSubImage(int mip, glm::ivec2 offset, const Image& img) {
+			void setSubImage(int32 mip, Vec offset, const Image& img) {
 				setSubImage(mip, offset, img.size(), img.format(), img.data());
 			}
 
-			void setSubImage(int mip, glm::ivec2 offset, glm::ivec2 size, PixelFormat format, const void* data) {
+			void setSubImage(int32 mip, Vec offset, Vec size, const Image& img) {
+				setSubImage(mip, offset, size, img.format(), img.data());
+			}
+
+			void setSubImage(int32 mip, Vec offset, Vec size, PixelFormat format, const void* data) {
 				ENGINE_DEBUG_ASSERT(tex != 0, "Attempting to set data of uninitialized texture.");
 				// TODO: GL_UNSIGNED_BYTE will need to be a switch or something when we add more pixel formats
 				const auto& pixInfo = getPixelFormatInfo(format);
-				glTextureSubImage2D(tex, mip,
-					offset.x, offset.y, size.x, size.y,
-					pixInfo.glFormat, GL_UNSIGNED_BYTE, data
-				);
+
+				if constexpr (D == 1) {
+					// TODO: 1D	
+					ENGINE_ERROR("1D Textures are untested.");
+					glTextureSubImage1D(tex, mip, offset.x, size.x,
+						pixInfo.glFormat, GL_UNSIGNED_BYTE, data
+					);
+				} else if constexpr (D == 2) {
+					glTextureSubImage2D(tex, mip,
+						offset.x, offset.y,
+						size.x, size.y,
+						pixInfo.glFormat, GL_UNSIGNED_BYTE, data
+					);
+				} else if constexpr (D == 3) {
+					glTextureSubImage3D(tex, mip,
+						offset.x, offset.y, offset.z,
+						size.x, size.y, size.z,
+						pixInfo.glFormat, GL_UNSIGNED_BYTE, data
+					);
+				}
 			}
 
 			void setMinFilter(TextureFilter filter) {
@@ -103,6 +137,7 @@ namespace Engine {
 			void setWrap(TextureWrap wrap) {
 				glTextureParameteri(tex, GL_TEXTURE_WRAP_S, static_cast<GLenum>(wrap));
 				glTextureParameteri(tex, GL_TEXTURE_WRAP_T, static_cast<GLenum>(wrap));
+				glTextureParameteri(tex, GL_TEXTURE_WRAP_R, static_cast<GLenum>(wrap));
 			}
 
 			void generateMipmaps() {
@@ -112,4 +147,11 @@ namespace Engine {
 
 			ENGINE_INLINE auto get() const noexcept { return tex; }
 	};
+
+	// TODO: untested - using Texture1D = Texture<1, GL_TEXTURE_1D>;
+	using Texture2D = Texture<2, GL_TEXTURE_2D>;
+	// TODO: untested - using Texture3D = Texture<3, GL_TEXTURE_3D>;
+	// TODO: untested - using TextureArray1D = Texture<2, GL_TEXTURE_1D_ARRAY>;
+	using TextureArray2D = Texture<3, GL_TEXTURE_2D_ARRAY>;
+	// TODO: cubemap
 }
