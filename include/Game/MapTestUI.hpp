@@ -3,26 +3,18 @@
 // Engine
 #include <Engine/Clock.hpp>
 #include <Engine/ImGui/ImGui.hpp>
+#include <imgui_node_editor.h>
 
 
 namespace Game {
 	class MapTestUI {
 		private:
-			Engine::Clock::TimePoint startTime;
-			Engine::Clock::TimePoint stopTime;
+			ax::NodeEditor::EditorContext* ctx;
+
 		public:
-			MapTestUI() = default;
-
-			void generate() {
-				startTime = Engine::Clock::now();
-				stopTime = Engine::Clock::now();
-			}
-
-			void render() {
-				// TODO: imgui
-				if (!ImGui::Begin("Map Playground", nullptr, ImGuiWindowFlags_None)) { ImGui::End(); return; }
-				ImGui::Text("Test!");
-				ImGui::End();
-			}
+			MapTestUI();
+			~MapTestUI();
+			void generate();
+			void render();
 	};
 }

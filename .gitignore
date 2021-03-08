@@ -11,6 +11,7 @@ conan_build
 
 # ImGui
 **/imgui.ini
+NodeEditor.json
 
 # VS Stuff
 *.vcxproj
