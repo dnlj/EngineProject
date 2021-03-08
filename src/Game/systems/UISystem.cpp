@@ -82,6 +82,7 @@ namespace Game {
 
 		if constexpr (ENGINE_CLIENT) {
 			//ImGui::ShowDemoWindow();
+			mapTestUI.render();
 			ui_connect();
 		}
 

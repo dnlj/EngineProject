@@ -65,7 +65,7 @@ namespace Engine::Noise {
 			Result valueD2(Float x, Float y) const {
 				Result result;
 
-				evaluate(x, y, [&](Float x, Float y, Float px, Float py, Int cx, Int cy, Int ci) {
+				evaluate(x, y, [&](Float x, Float y, Float px, Float py, Int cx, Int cy, Int ci) ENGINE_INLINE {
 					const Float diffX = px - x;
 					const Float diffY = py - y;
 					const Float d2 = (diffX * diffX) + (diffY * diffY);
@@ -83,7 +83,7 @@ namespace Engine::Noise {
 				Result result1;
 				Result result2;
 
-				evaluate(x, y, [&](Float x, Float y, Float px, Float py, Int cx, Int cy, Int ci) {
+				evaluate(x, y, [&](Float x, Float y, Float px, Float py, Int cx, Int cy, Int ci) ENGINE_INLINE {
 					const Float diffX = px - x;
 					const Float diffY = py - y;
 					const Float d2 = (diffX * diffX) + (diffY * diffY);

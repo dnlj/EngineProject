@@ -455,6 +455,7 @@ void run(int argc, char* argv[]) {
 
 	// Procedural test
 	//mapTest();
+
 	// Main loop
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;

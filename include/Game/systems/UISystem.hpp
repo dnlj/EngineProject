@@ -10,6 +10,7 @@
 
 // Game
 #include <Game/System.hpp>
+#include <Game/MapTestUI.hpp>
 
 namespace Game {
 	class UISystem : public System {
@@ -22,6 +23,7 @@ namespace Game {
 
 		private:
 			std::stringstream ss;
+			MapTestUI mapTestUI;
 
 			Engine::Clock::TimePoint now;
 			Engine::Clock::TimePoint lastUpdate;
