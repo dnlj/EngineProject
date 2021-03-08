@@ -8,8 +8,9 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/TextureOptions.hpp>
 #include <Engine/Graphics/Image.hpp>
+#include <Engine/Graphics/TextureWrap.hpp>
+#include <Engine/Graphics/TextureFilter.hpp>
 #include <Engine/Graphics/TextureFormat.hpp>
 
 

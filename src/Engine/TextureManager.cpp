@@ -4,7 +4,6 @@
 // Engine
 #include <Engine/TextureManager.hpp>
 #include <Engine/Engine.hpp>
-#include <Engine/TextureOptions.hpp>
 #include <Engine/Graphics/Image.hpp>
 
 // SOIL
