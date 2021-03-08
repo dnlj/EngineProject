@@ -11,11 +11,11 @@
 #include <soil/SOIL.h>
 
 namespace Engine {
-	Texture TextureManager::load(const std::string& path) {
+	Texture2D TextureManager::load(const std::string& path) {
 		Image img = path;
 		img.flipY(); // TODO: idealy just fix in model uv coords
 
-		Texture tex;
+		Texture2D tex;
 		tex.setStorage(TextureFormat::SRGBA8, img.size());
 		tex.setImage(img);
 		tex.setFilter(TextureFilter::NEAREST);

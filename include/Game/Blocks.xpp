@@ -2,4 +2,5 @@
 X(None, false)
 X(Air, false)
 X(Dirt, true)
+X(Grass, true)
 #undef X

@@ -9,11 +9,11 @@
 
 
 namespace Engine {
-	class TextureManager : public Engine::ResourceManager<TextureManager, Texture> {
-		friend class Engine::ResourceManager<TextureManager, Texture>;
+	class TextureManager : public Engine::ResourceManager<TextureManager, Texture2D> {
+		friend class Engine::ResourceManager<TextureManager, Texture2D>;
 		private:
-			Texture load(const std::string& path);
-			void unload(Texture tex) {}
+			Texture2D load(const std::string& path);
+			void unload(Texture2D tex) {}
 	};
 
 	using TextureRef = TextureManager::Resource;

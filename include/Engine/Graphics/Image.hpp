@@ -49,6 +49,8 @@ namespace Engine {
 				ENGINE_LOG("Img: ", path, " ", dims.x, " ", dims.y);
 			}
 
+			ENGINE_INLINE operator bool() const noexcept { return fmt != PixelFormat::NONE; }
+
 			ENGINE_INLINE const auto format() const noexcept { return fmt; }
 			ENGINE_INLINE const auto& size() const noexcept { return dims; }
 			ENGINE_INLINE const byte* data() const noexcept { return storage.data(); }

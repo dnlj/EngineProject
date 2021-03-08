@@ -45,7 +45,21 @@ namespace Game {
 	void MapSystem::setup() {
 		mapEntity = world.createEntity();
 		shader = engine.shaderManager.get("shaders/terrain");
-		texture = engine.textureManager.get("assets/test.png");
+
+		const char* textures[] = {
+			"assets/test.png",
+			"assets/test2.png",
+		};
+
+		// TODO: really no reason to use RGBA here. we dont use alpha
+		texArr.setStorage(Engine::TextureFormat::SRGBA8, {32, 32, std::size(textures)});
+
+		Engine::Image img;
+		for (int i = 0; auto path : textures) {
+			img = path;
+			img.flipY();
+			texArr.setSubImage(0, {0, 0, i++}, {img.size(), 1}, img);
+		}
 	}
 
 	b2Body* MapSystem::createBody() {
@@ -57,11 +71,11 @@ namespace Game {
 	}
 
 	void MapSystem::setupMesh(Engine::Graphics::Mesh& mesh) const {
-		constexpr Engine::Graphics::VertexFormat<1> vertexFormat = {
+		constexpr Engine::Graphics::VertexFormat<2> vertexFormat = {
 			sizeof(Vertex),
 			{
 				{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)},
-				//{.location = ???, .size = 1, .type = GL_UNSIGNED_BYTE, .offset = offsetof(Vertex, pos)},
+				{.location = 1, .size = 1, .type = GL_UNSIGNED_BYTE, .offset = offsetof(Vertex, tex)},
 			}
 		};
 
@@ -394,10 +408,14 @@ namespace Game {
 				glm::vec2 size = glm::vec2{end - begin} * MapChunk::blockSize;
 				const auto vertexCount = static_cast<GLushort>(buildVBOData.size());
 
-				buildVBOData.push_back({origin});
-				buildVBOData.push_back({origin + glm::vec2{size.x, 0}});
-				buildVBOData.push_back({origin + size});
-				buildVBOData.push_back({origin + glm::vec2{0, size.y}});
+				static_assert(BlockId::_COUNT <= 255,
+					"Texture index is a byte. You will need to change its type if you now have more than 255 blocks."
+				);
+				const GLubyte tex = chunk.data[begin.x][begin.y] - 2; // TODO: -2 for None and Air. Handle this better.
+				buildVBOData.push_back({.pos = origin, .tex = tex});
+				buildVBOData.push_back({.pos = origin + glm::vec2{size.x, 0}, .tex = tex});
+				buildVBOData.push_back({.pos = origin + size, .tex = tex});
+				buildVBOData.push_back({.pos = origin + glm::vec2{0, size.y}, .tex = tex});
 
 				buildEBOData.push_back(vertexCount + 0);
 				buildEBOData.push_back(vertexCount + 1);
@@ -412,7 +430,7 @@ namespace Game {
 			buildVBOData.clear();
 			buildEBOData.clear();
 		}
-		
+
 		{ // Physics
 			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos)));
 			auto& body = *data.body;
@@ -451,7 +469,11 @@ namespace Game {
 				BlockId block = BlockId::Air;
 		
 				if (0 < mgen.value(absPos.x, absPos.y)) {
-					block = BlockId::Dirt;
+					if ((bpos.x == 0) ^ (bpos.y == 0)) {
+						block = BlockId::Grass;
+					} else {
+						block = BlockId::Dirt;
+					}
 				}
 
 				chunk.data[bpos.x][bpos.y] = block;

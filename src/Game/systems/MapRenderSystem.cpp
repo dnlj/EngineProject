@@ -22,18 +22,16 @@ namespace Game {
 	// TODO: this should probably be part of a more generic render system.
 	void MapRenderSystem::run(float dt) {
 		const auto& mapSys = world.getSystem<MapSystem>();
-		// TODO: these should be part of model/mesh
+		// TODO: these should be part of model/mesh or maprendersystem. why are they on mapsystem
 		auto& shader = mapSys.shader;
-		auto& texture = mapSys.texture;
 
 		glUseProgram(*shader);
 
 		// Setup Texture
-		glBindTextureUnit(0, texture->get());
-		glUniform1i(5, 0);
+		glBindTextureUnit(0, mapSys.texArr.get());
+		glUniform1i(4, 0);
 
 		const auto vp = engine.camera.getProjection() * engine.camera.getView();
-
 
 		const auto bounds = engine.camera.getWorldScreenBounds();
 		const auto minChunk = MapSystem::blockToChunk(mapSys.worldToBlock(bounds.min));
@@ -46,7 +44,7 @@ namespace Game {
 
 				const auto pos = found->second.body->GetPosition();
 				const auto mvp = glm::translate(vp, glm::vec3(pos.x, pos.y, 0.0f));
-				glUniformMatrix4fv(1, 1, GL_FALSE, &mvp[0][0]);
+				glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 				found->second.mesh.draw();
 			}
 		}
