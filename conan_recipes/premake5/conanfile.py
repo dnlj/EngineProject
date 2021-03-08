@@ -66,6 +66,21 @@ class premake5(model.Generator):
 
 		parts.append("local conan = {}\n\n")
 
+		parts.append(divider("Helpers"))
+		parts.append("\n".join([
+			'function conan.setup()',
+			'	for _, p in pairs(conan.src_paths) do',
+			'		files(path.join(p, "**"))',
+			'	end',
+			'	',
+			'	includedirs(conan.include_paths)',
+			'	libdirs(conan.lib_paths)',
+			'	links(conan.libs)',
+			'	bindirs(conan.bin_paths)',
+			'	defines(conan.defines)',
+			'end\n\n',
+		]))
+
 		parts.append(divider("Settings"))
 		parts.extend(toLua(self.settings, 0, "conan"))
 		parts.append("\n")

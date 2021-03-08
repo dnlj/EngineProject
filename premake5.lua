@@ -30,6 +30,11 @@ CLEAN_PATTERNS = {
 --------------------------------------------------------------------------------
 CONAN_USER_HOME = os.getcwd()
 
+function conan_setup(cfg)
+	if not cfg or not CONAN_BUILD_INFO or not CONAN_BUILD_INFO[cfg] then return end
+	CONAN_BUILD_INFO[cfg].setup()
+end
+
 CONAN_REMOTES = {
 	-- ["conan-center"] = "https://api.bintray.com/conan/conan/conan-center",
 	-- ["bincrafters"] = "https://api.bintray.com/conan/bincrafters/public-conan",
@@ -186,9 +191,9 @@ project("*")
 	debugdir(os.getcwd())
 
 	filter "configurations:Debug*"
-		conan_setup_build_info(CONAN_BUILD_INFO["debug"])
+		conan_setup("debug")
 	filter "configurations:Release*"
-		conan_setup_build_info(CONAN_BUILD_INFO["release"])
+		conan_setup("release")
 	filter {}
 
 	includedirs {
