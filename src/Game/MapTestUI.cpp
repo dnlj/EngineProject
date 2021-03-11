@@ -4,23 +4,6 @@
 namespace ImNode = ax::NodeEditor;
 
 namespace {
-	void drawNode(Game::MapTestUI::Id id, const char* title) {
-		ImNode::BeginNode(id);
-			ImGui::Text(title);
-			id.pin1.pin = 1;
-			ImNode::BeginPin(id, ImNode::PinKind::Input);
-				ImGui::Text("Input 1");
-			ImNode::EndPin();
-			
-			ImGui::SameLine();
-			
-			id.pin1.pin = 2;
-			ImNode::BeginPin(id, ImNode::PinKind::Output);
-				ImGui::Text("Output 1");
-			ImNode::EndPin();
-		ImNode::EndNode();
-	}
-
 	void setStyle() {
 		//ImNode::PushStyleColor(ImNode::StyleColor_NodeBg, ImColor(127, 0, 0, 255));
 		//ImNode::PushStyleVar(ImNode::StyleVar_NodeRounding, 1.0f);
@@ -28,9 +11,37 @@ namespace {
 }
 
 namespace Game {
+	void MapTestUI::Node::render(MapTestUI::Id id) {
+		ImNode::BeginNode(id);
+		ImGui::Text("This is a node!");
+		int i = 0;
+		std::string title;
+
+		while (i < 6) {
+			id.pin1.pin = ++i;
+			ImNode::BeginPin(id, ImNode::PinKind::Input);
+				title = "Input " + std::to_string(i);
+				ImGui::Text(title.c_str());
+			ImNode::EndPin();
+
+			ImGui::SameLine();
+			id.pin1.pin = ++i;
+			ImNode::BeginPin(id, ImNode::PinKind::Output);
+				title = "Output " + std::to_string(i);
+				ImGui::Text(title.c_str());
+			ImNode::EndPin();
+		}
+
+		ImNode::EndNode();
+	}
+}
+
+namespace Game {
 	MapTestUI::MapTestUI() {
 		//ImNode::Config cfg; // TODO: file, save/load
 		ctx = ImNode::CreateEditor(nullptr);
+		result = ++lastNodeId.node;
+		nodes[result] = std::make_unique<Node>();
 	};
 
 	MapTestUI::~MapTestUI() {
@@ -47,17 +58,11 @@ namespace Game {
 		setStyle();
 		ImNode::Begin("Test Editor");
 
-		// TODO: add nodes: BeginPopupContextWindow
-
-		//int id = 0;
-		//drawNode(id, "First node");
-		//drawNode(id, "Second node");
-
 		if (ImNode::BeginCreate()) {
-			ImNode::PinId pinFromId;
-			if (ImNode::QueryNewNode(&pinFromId)) {
+			ImNode::PinId pin1;
+			if (ImNode::QueryNewNode(&pin1)) {
 				if (ImNode::AcceptNewItem()) {
-					ENGINE_LOG("Create Node! ", pinFromId.Get());
+					ENGINE_LOG("Create Node! ", pin1.Get());
 					
 					ImNode::Suspend();
 					ImGui::OpenPopup("New Node");
@@ -65,13 +70,14 @@ namespace Game {
 				}
 			}
 
-			ImNode::PinId pinToId;
-			if (ImNode::QueryNewLink(&pinFromId, &pinToId)) {
-				// TODO: that one id is an input and the other is an output
+			ImNode::PinId pin2;
+			if (ImNode::QueryNewLink(&pin1, &pin2)) {
+				//
+				// TODO: that one id is an input and the other is an output. sort correctly
 				if (ImNode::AcceptNewItem()) {
-					Id link{pinFromId, pinToId};
+					Id link{pin2, pin1};
 					ENGINE_LOG("New Link! ", link.string());
-					links.emplace(link, Link{});
+					links[pin2] = pin1;
 				}
 			}
 		}
@@ -80,15 +86,18 @@ namespace Game {
 		if (ImNode::BeginDelete()) {
 			ImNode::NodeId nodeId;
 			while (ImNode::QueryDeletedNode(&nodeId)) {
-				ENGINE_LOG("Delete node!");
+				if (result == Id{nodeId}) {
+					ENGINE_LOG("DELETE REJECT");
+					ImNode::RejectDeletedItem();
+					continue;
+				}
 				nodes.erase(nodeId);
 			}
 
 			ImNode::LinkId linkId;
 			while (ImNode::QueryDeletedLink(&linkId)) {
-				ENGINE_LOG("Delete Link!");
 				if (ImNode::AcceptDeletedItem()) {
-					links.erase(linkId);
+					links.erase(Id{linkId}.pin1);
 				}
 			}
 		}
@@ -97,14 +106,13 @@ namespace Game {
 		// Render nodes
 		// Nodes must be rendered BEFORE links
 		for (auto& [id, node] : nodes) {
-			std::string label = "Node " + std::to_string(id);
-			drawNode(id, label.c_str());
+			node->render(id);
 		}
 
 		// Render links
 		// Links must be rendered AFTER nodes
-		for (auto& [id, link] : links) {
-			ImNode::Link(id, id.pin1, id.pin2);
+		for (auto& [in, out] : links) {
+			ImNode::Link(Id{in, out}, out, in);
 		}
 
 		// Context Menus
@@ -130,7 +138,7 @@ namespace Game {
 				if (ImGui::Button("Create Node")) {
 					ImGui::CloseCurrentPopup();
 					++lastNodeId.node;
-					nodes[lastNodeId] = {};
+					nodes[lastNodeId] = std::make_unique<Node>();
 				}
 
 				ImGui::EndPopup();

@@ -56,6 +56,7 @@ namespace Game {
 
 				Id() : full{} {}
 				Id(uint64 id) : full{id} {}
+				Id(PinId id) : pin1{id}, pin2{} {}
 				Id(const ax::NodeEditor::NodeId& id) : full{id.Get()} {}
 				Id(const ax::NodeEditor::LinkId& id) : full{id.Get()} {}
 				Id(const ax::NodeEditor::PinId& id) : full{id.Get()} {}
@@ -75,26 +76,73 @@ namespace Game {
 					}
 				};
 			}; static_assert(sizeof(Id) == 8, "This type is assumed to be tightly packed.");
+			
+			enum class PinType {
+				Invalid = 0,
+				Bool,
+				Int32,
+				Float32,
+				Vec2,
+				Vec3,
+				Vec4,
+				_COUNT,
+			};
 
-			struct Pin {
-				bool output = false;
+			enum class PinDirection {
+				Invalid = 0,
+				Input,
+				Output,
+				_COUNT,
+			};
+
+			struct PinMeta {
+				PinDirection dir;
+				PinType type;
+
+			};
+
+			struct PinValue {
+				PinType type;
+				union {
+					bool asBool;
+					int32 asInt32;
+					float32 asFloat32;
+					glm::vec2 asVec2;
+					glm::vec3 asVec3;
+					glm::vec4 asVec4;
+				};
 			};
 
 			struct Node {
 				// Input and output pins share the same id sequence
-				std::vector<Pin> pins;
-				std::vector<Id> links;
-			};
+				MapTestUI* ctx = nullptr;
+				std::vector<PinMeta> pins;
+				~Node() {}
 
-			struct Link {
+				virtual bool getOutputPinValue(Id pin, PinValue& val) {
+					return false;
+				};
+
+				virtual bool getInputPinValue(Id pin, PinValue& val) {
+					auto link = ctx->links.find(pin);
+					if (link == ctx->links.end()) { return false; }
+
+					Id out = link->second;
+					auto& node = ctx->nodes[out.node];
+					return node->getOutputPinValue(out, val);
+				}
+
+				virtual void render(MapTestUI::Id id);
 			};
 
 		private:
 			ax::NodeEditor::EditorContext* ctx;
 			Id lastNodeId = 0;
+			Id result;
 
-			Engine::FlatHashMap<Id, Link, Id::Hash> links;
-			Engine::FlatHashMap<Id, Node, Id::Hash> nodes;
+			/** Stores input pin -> output pin pairs. */
+			Engine::FlatHashMap<Id, Id, Id::Hash> links;
+			Engine::FlatHashMap<Id, std::unique_ptr<Node>, Id::Hash> nodes;
 
 		public:
 			MapTestUI();
