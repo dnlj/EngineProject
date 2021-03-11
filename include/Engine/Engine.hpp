@@ -54,14 +54,40 @@
 #define ENGINE_INLINE_CALLS [[msvc::forceinline_calls]] // TODO: cross platform: [[gnu::flatten]]
 
 #define ENGINE_BUILD_BIN_OP(T, O) \
-	ENGINE_INLINE constexpr T operator O(const T& a, const T& b) noexcept { \
+	ENGINE_INLINE constexpr decltype(auto) operator O(const T& a, const T& b) noexcept { \
 		return static_cast<T>(static_cast<std::underlying_type_t<T>>(a) O static_cast<std::underlying_type_t<T>>(b)); \
+	}
+
+#define ENGINE_BUILD_UNARY_OP(T, O) \
+	ENGINE_INLINE constexpr decltype(auto) operator O(const T& a) noexcept { \
+		return static_cast<T>(O static_cast<std::underlying_type_t<T>>(a)); \
+	}
+
+#define ENGINE_BUILD_UNARY_OP_REF(T, O) \
+	ENGINE_INLINE constexpr decltype(auto) operator O(T& a) noexcept { \
+		auto tmp = static_cast<std::underlying_type_t<T>>(a);\
+		return a = static_cast<T>(O tmp);\
+	}
+
+#define ENGINE_BUILD_UNARY_OP_INT(T, O) \
+	ENGINE_INLINE constexpr decltype(auto) operator O(T& a, int) noexcept { \
+		const auto tmp = a;\
+		O a;\
+		return tmp;\
 	}
 
 #define ENGINE_BUILD_ASSIGN_BIN_OP(T, O) \
 	ENGINE_INLINE constexpr decltype(auto) operator O=(T& a, const T& b) noexcept { return a = a O b; }
 
-#define ENGINE_BUILD_ALL_BIN_OPS(T) \
+#define ENGINE_BUILD_ALL_OPS(T) \
+	ENGINE_BUILD_UNARY_OP(T, ~); \
+	ENGINE_BUILD_UNARY_OP(T, !); \
+	ENGINE_BUILD_UNARY_OP(T, +); \
+	ENGINE_BUILD_UNARY_OP(T, -); \
+	ENGINE_BUILD_UNARY_OP_REF(T, ++); \
+	ENGINE_BUILD_UNARY_OP_REF(T, --); \
+	ENGINE_BUILD_UNARY_OP_INT(T, ++); \
+	ENGINE_BUILD_UNARY_OP_INT(T, --); \
 	ENGINE_BUILD_BIN_OP(T, |); \
 	ENGINE_BUILD_BIN_OP(T, &); \
 	ENGINE_BUILD_BIN_OP(T, ^); \
