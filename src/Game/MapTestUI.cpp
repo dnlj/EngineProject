@@ -35,14 +35,41 @@ namespace Game {
 
 		ImNode::EndNode();
 	}
+	
+	struct MapTestUI::NodeDisplay : MapTestUI::Node {
+		virtual void render(Id id) {
+			ImNode::BeginNode(id);
+
+			id.pin1.pin = 1;
+			ImNode::BeginPin(id, ImNode::PinKind::Input);
+				ImGui::Text("> In");
+			ImNode::EndPin();
+
+			if (PinValue val; getInputPinValue(id, val)) {
+				switch (val.type) {
+					case PinType::Bool: { ImGui::Text("Input: %i", val.asBool); break; }
+					case PinType::Int32: { ImGui::Text("Input: %i", val.asInt32); break; }
+					case PinType::Float32: { ImGui::Text("Input: %1.3f", val.asFloat32); break; }
+					case PinType::Vec2: { ImGui::Text("Input: <%1.3f, %1.3f>", val.asVec2.x, val.asVec2.y); break; }
+					case PinType::Vec3: { ImGui::Text("Input: <%1.3f, %1.3f, %1.3f>", val.asVec3.x, val.asVec3.y, val.asVec3.z); break; }
+					case PinType::Vec4: { ImGui::Text("Input: <%1.3f, %1.3f, %1.3f, %1.3f>", val.asVec4.x, val.asVec4.y, val.asVec4.z, val.asVec4.w); break; }
+					default: { ImGui::Text("Invalid input"); }
+				}
+			} else {
+				ImGui::Text("No Input");
+			}
+
+			ImNode::EndNode();
+		}
+	};
 
 	struct MapTestUI::NodeConstant : MapTestUI::Node {
 		PinValue value;
-		NodeConstant(float32 val) : value{.type = PinType::Float32, .asFloat32 = val} {};
+		NodeConstant(PinValue val) : value{val} {};
 
 		virtual bool getOutputPinValue(Id pin, PinValue& val) {
 			val = value;
-			return true;
+			return val.type != PinType::Invalid;
 		}
 		
 		virtual void render(Id id) {
@@ -180,26 +207,52 @@ namespace Game {
 			}
 
 			if (ImGui::BeginPopup("New Node")) {
+				if (ImGui::Button("Display")) {
+					++lastNodeId.node;
+					auto& node = nodes[lastNodeId];
+					node = std::make_unique<NodeDisplay>();
+					node->ctx = this;
+				}
 				if (ImGui::Button("Constant")) {
 					++lastNodeId.node;
-					nodes[lastNodeId] = std::make_unique<NodeConstant>(1.0f);
+					auto& node = nodes[lastNodeId];
+					node = std::make_unique<NodeConstant>(1.0f);
+					node->ctx = this;
 				}
-				ImGui::Button("Gradient");
-				ImGui::Button("Worley Noise");
-				ImGui::Button("Open Simplex Noise");
-				ImGui::Button("White Noise");
+				if (ImGui::Button("Gradient")) {
+				}
+				if (ImGui::Button("Worley Noise")) {
+				}
+				if (ImGui::Button("Open Simplex Noise")) {
+				}
+				if (ImGui::Button("White Noise")) {
+				}
+
 				ImGui::Separator();
-				ImGui::Button("Add");
-				ImGui::Button("Subtract");
-				ImGui::Button("Multiply");
-				ImGui::Button("Divide");
-				ImGui::Button("Modulus");
-				ImGui::Button("DivMod");
+
+				if (ImGui::Button("Add")) {
+				}
+				if (ImGui::Button("Subtract")) {
+				}
+				if (ImGui::Button("Multiply")) {
+				}
+				if (ImGui::Button("Divide")) {
+				}
+				if (ImGui::Button("Modulus")) {
+				}
+				if (ImGui::Button("DivMod")) {
+				}
+
 				ImGui::Separator();
-				ImGui::Button("Min");
-				ImGui::Button("Max");
-				ImGui::Button("Abs");
-				ImGui::Button("Lerp");
+
+				if (ImGui::Button("Min")) {
+				}
+				if (ImGui::Button("Max")) {
+				}
+				if (ImGui::Button("Abs")) {
+				}
+				if (ImGui::Button("Lerp")) {
+				}
 				ImGui::EndPopup();
 			}
 		}

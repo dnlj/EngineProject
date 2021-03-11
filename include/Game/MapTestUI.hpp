@@ -111,6 +111,14 @@ namespace Game {
 					glm::vec3 asVec3;
 					glm::vec4 asVec4;
 				};
+
+				PinValue() : type{} {}
+				PinValue(bool val) : type{PinType::Bool}, asBool{val} {}
+				PinValue(int32 val) : type{PinType::Int32}, asInt32{val} {}
+				PinValue(float32 val) : type{PinType::Float32}, asFloat32{val} {}
+				PinValue(glm::vec2 val) : type{PinType::Vec2}, asVec2{val} {}
+				PinValue(glm::vec3 val) : type{PinType::Vec3}, asVec3{val} {}
+				PinValue(glm::vec4 val) : type{PinType::Vec4}, asVec4{val} {}
 			};
 
 			struct Node {
@@ -135,6 +143,7 @@ namespace Game {
 				virtual void render(Id id);
 			};
 
+			struct NodeDisplay;
 			struct NodeConstant;
 			struct NodeAdd;
 		private:
