@@ -117,7 +117,7 @@ namespace Game {
 				// Input and output pins share the same id sequence
 				MapTestUI* ctx = nullptr;
 				std::vector<PinMeta> pins;
-				~Node() {}
+				virtual ~Node() {}
 
 				virtual bool getOutputPinValue(Id pin, PinValue& val) {
 					return false;
@@ -132,9 +132,11 @@ namespace Game {
 					return node->getOutputPinValue(out, val);
 				}
 
-				virtual void render(MapTestUI::Id id);
+				virtual void render(Id id);
 			};
 
+			struct NodeConstant;
+			struct NodeAdd;
 		private:
 			ax::NodeEditor::EditorContext* ctx;
 			Id lastNodeId = 0;

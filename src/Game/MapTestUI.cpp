@@ -8,6 +8,7 @@ namespace {
 		//ImNode::PushStyleColor(ImNode::StyleColor_NodeBg, ImColor(127, 0, 0, 255));
 		//ImNode::PushStyleVar(ImNode::StyleVar_NodeRounding, 1.0f);
 	}
+
 }
 
 namespace Game {
@@ -34,6 +35,38 @@ namespace Game {
 
 		ImNode::EndNode();
 	}
+
+	struct MapTestUI::NodeConstant : MapTestUI::Node {
+		PinValue value;
+		NodeConstant(float32 val) : value{.type = PinType::Float32, .asFloat32 = val} {};
+
+		virtual bool getOutputPinValue(Id pin, PinValue& val) {
+			val = value;
+			return true;
+		}
+		
+		virtual void render(Id id) {
+			ImNode::BeginNode(id);
+
+			ImGui::SetNextItemWidth(64);
+			ImGui::DragFloat("Value", &value.asFloat32);
+
+			ImGui::SameLine();
+
+			id.pin1.pin = 1;
+			ImNode::BeginPin(id, ImNode::PinKind::Output);
+				ImGui::Text("Out >");
+			ImNode::EndPin();
+
+			ImNode::EndNode();
+		}
+	};
+
+//	struct MapTestUI::NodeAdd : MapTestUI::Node {
+//		virtual bool getOutputPinValue(Id pin, PinValue& val) {
+//
+//		}
+//	};
 }
 
 namespace Game {
@@ -106,7 +139,9 @@ namespace Game {
 		// Render nodes
 		// Nodes must be rendered BEFORE links
 		for (auto& [id, node] : nodes) {
+			ImGui::PushID(id.node);
 			node->render(id);
+			ImGui::PopID();
 		}
 
 		// Render links
@@ -129,7 +164,7 @@ namespace Game {
 				ImGui::OpenPopup("Test Popup");
 			} else if (ImNode::ShowBackgroundContextMenu()) {
 				ENGINE_LOG("Background context");
-				ImGui::OpenPopup("Test Popup");
+				ImGui::OpenPopup("New Node");
 			}
 
 			if (ImGui::BeginPopup("Test Popup")) {
@@ -145,7 +180,10 @@ namespace Game {
 			}
 
 			if (ImGui::BeginPopup("New Node")) {
-				ImGui::Button("Constant");
+				if (ImGui::Button("Constant")) {
+					++lastNodeId.node;
+					nodes[lastNodeId] = std::make_unique<NodeConstant>(1.0f);
+				}
 				ImGui::Button("Gradient");
 				ImGui::Button("Worley Noise");
 				ImGui::Button("Open Simplex Noise");
