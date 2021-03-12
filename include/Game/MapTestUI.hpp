@@ -161,7 +161,9 @@ namespace Game {
 
 			struct NodeDisplay;
 			struct NodeConstant;
-			struct NodeAdd;
+
+			template<auto Name, class Op>
+			struct NodeBinOp;
 		private:
 			ax::NodeEditor::EditorContext* ctx;
 			Id lastNodeId = 0;

@@ -130,11 +130,58 @@ namespace Game {
 		}
 	};
 
-//	struct MapTestUI::NodeAdd : MapTestUI::Node {
-//		virtual bool getOutputPinValue(Id pin, PinValue& val) {
-//
-//		}
-//	};
+	template<auto Name, class Op>
+	struct MapTestUI::NodeBinOp : MapTestUI::Node {
+		virtual bool getOutputPinValue(Id pin, PinValue& val) {
+			pin.pin1.pin = 1;
+			PinValue a;
+			if (!getInputPinValue(pin, a)) { return false; }
+
+			pin.pin1.pin = 2;
+			PinValue b;
+			if (!getInputPinValue(pin, b)) { return false; }
+
+			if (a.type != b.type) { return false; }
+
+			val.type = a.type;
+			switch (a.type) {
+				//case PinType::Bool: { return Op{}(a.asBool, b.asBool, val.asBool); }
+				case PinType::Int32: { return Op{}(a.asInt32, b.asInt32, val.asInt32); }
+				case PinType::Float32: { return Op{}(a.asFloat32, b.asFloat32, val.asFloat32); }
+				case PinType::Vec2: { return Op{}(a.asVec2, b.asVec2, val.asVec2); }
+				case PinType::Vec3: { return Op{}(a.asVec3, b.asVec3, val.asVec3); }
+				case PinType::Vec4: { return Op{}(a.asVec4, b.asVec4, val.asVec4); }
+			}
+
+			val.type = PinType::Invalid;
+			return false;
+		}
+
+		virtual void render(Id id) {
+			ImNode::BeginNode(id);
+
+			ImGui::Text(Name);
+
+			id.pin1.pin = 1;
+			ImNode::BeginPin(id, ImNode::PinKind::Input);
+				ImGui::Text("> A");
+			ImNode::EndPin();
+
+			ImGui::SameLine();
+
+			id.pin1.pin = 3;
+			ImNode::BeginPin(id, ImNode::PinKind::Output);
+				ImGui::Text("Result >");
+			ImNode::EndPin();
+			
+			id.pin1.pin = 2;
+			ImNode::BeginPin(id, ImNode::PinKind::Input);
+				ImGui::Text("> B");
+			ImNode::EndPin();
+
+			ImNode::EndNode();
+		}
+	};
 }
 
 namespace Game {
@@ -174,7 +221,6 @@ namespace Game {
 
 			ImNode::PinId pin2;
 			if (ImNode::QueryNewLink(&pin1, &pin2)) {
-				//
 				// TODO: that one id is an input and the other is an output. sort correctly
 				if (ImNode::AcceptNewItem()) {
 					Id link{pin2, pin1};
@@ -272,18 +318,20 @@ namespace Game {
 
 				ImGui::Separator();
 
-				if (ImGui::Button("Add")) {
+				#define PASTE_NODE_BIN_OP(N, O)\
+				if (ImGui::Button(N)) {\
+					++lastNodeId.node;\
+					auto& node = nodes[lastNodeId];\
+					constexpr static const char Name[] = N;\
+					node = std::make_unique<NodeBinOp<Name, O>>();\
+					node->ctx = this;\
 				}
-				if (ImGui::Button("Subtract")) {
-				}
-				if (ImGui::Button("Multiply")) {
-				}
-				if (ImGui::Button("Divide")) {
-				}
-				if (ImGui::Button("Modulus")) {
-				}
-				if (ImGui::Button("DivMod")) {
-				}
+
+				PASTE_NODE_BIN_OP("Add", decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a + b; return true; }));
+				PASTE_NODE_BIN_OP("Sub", decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a - b; return true; }));
+				PASTE_NODE_BIN_OP("Mul", decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a * b; return true; }));
+				PASTE_NODE_BIN_OP("Div", decltype([](const auto& a, const auto& b, auto& c) -> bool { return (b != decltype(b){}) && (c = a / b, true); }));
+				#undef PASTE_NODE_BIN_OP
 
 				ImGui::Separator();
 
