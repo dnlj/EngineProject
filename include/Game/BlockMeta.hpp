@@ -7,7 +7,7 @@ namespace Game {
 		#include <Game/Blocks.xpp>
 		_COUNT,
 	};
-	ENGINE_BUILD_ALL_BIN_OPS(BlockId);
+	ENGINE_BUILD_ALL_OPS(BlockId);
 
 	struct BlockMeta {
 		const BlockId id = BlockId::None;

@@ -4,6 +4,7 @@
 #include <vector>
 
 // Engine
+#include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ImGui/ImGui.hpp>
 #include <Engine/FlatHashMap.hpp>
@@ -88,6 +89,14 @@ namespace Game {
 				_COUNT,
 			};
 
+			// TODO: move to xmacro. its the simpleest solution
+			constexpr static const char* pinTypeToString(PinType type) noexcept {
+				const int i = static_cast<int>(type);
+				constexpr const char* names[] = {"Invalid","Bool","Int32","Float32","Vec2","Vec3","Vec4"};
+				if (i < 0 || i >= std::size(names)) { return names[0]; }
+				return names[i];
+			}
+
 			enum class PinDirection {
 				Invalid = 0,
 				Input,
@@ -119,6 +128,13 @@ namespace Game {
 				PinValue(glm::vec2 val) : type{PinType::Vec2}, asVec2{val} {}
 				PinValue(glm::vec3 val) : type{PinType::Vec3}, asVec3{val} {}
 				PinValue(glm::vec4 val) : type{PinType::Vec4}, asVec4{val} {}
+
+				// TODO: toString()
+
+				void zero() {
+					constexpr auto sz = sizeof(PinValue) - offsetof(PinValue, type) - sizeof(type);
+					memset(reinterpret_cast<byte*>(&type) + sizeof(type), 0, sz);
+				}
 			};
 
 			struct Node {
@@ -162,3 +178,6 @@ namespace Game {
 			void render();
 	};
 }
+
+// TODO: move pin type into own file.
+ENGINE_BUILD_ALL_OPS(::Game::MapTestUI::PinType);

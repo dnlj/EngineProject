@@ -37,6 +37,11 @@ namespace Game {
 	}
 	
 	struct MapTestUI::NodeDisplay : MapTestUI::Node {
+		virtual bool getOutputPinValue(Id pin, PinValue& val) {
+			pin.pin1.pin = 1;
+			return getInputPinValue(pin, val);
+		};
+
 		virtual void render(Id id) {
 			ImNode::BeginNode(id);
 
@@ -45,20 +50,28 @@ namespace Game {
 				ImGui::Text("> In");
 			ImNode::EndPin();
 
+			ImGui::SameLine();
+			
 			if (PinValue val; getInputPinValue(id, val)) {
 				switch (val.type) {
-					case PinType::Bool: { ImGui::Text("Input: %i", val.asBool); break; }
-					case PinType::Int32: { ImGui::Text("Input: %i", val.asInt32); break; }
-					case PinType::Float32: { ImGui::Text("Input: %1.3f", val.asFloat32); break; }
-					case PinType::Vec2: { ImGui::Text("Input: <%1.3f, %1.3f>", val.asVec2.x, val.asVec2.y); break; }
-					case PinType::Vec3: { ImGui::Text("Input: <%1.3f, %1.3f, %1.3f>", val.asVec3.x, val.asVec3.y, val.asVec3.z); break; }
-					case PinType::Vec4: { ImGui::Text("Input: <%1.3f, %1.3f, %1.3f, %1.3f>", val.asVec4.x, val.asVec4.y, val.asVec4.z, val.asVec4.w); break; }
+					case PinType::Bool: { ImGui::Text("%i", val.asBool); break; }
+					case PinType::Int32: { ImGui::Text("%i", val.asInt32); break; }
+					case PinType::Float32: { ImGui::Text("%1.3f", val.asFloat32); break; }
+					case PinType::Vec2: { ImGui::Text("{ %1.3f, %1.3f }", val.asVec2.x, val.asVec2.y); break; }
+					case PinType::Vec3: { ImGui::Text("{ %1.3f, %1.3f, %1.3f }", val.asVec3.x, val.asVec3.y, val.asVec3.z); break; }
+					case PinType::Vec4: { ImGui::Text("{ %1.3f, %1.3f, %1.3f, %1.3f }", val.asVec4.x, val.asVec4.y, val.asVec4.z, val.asVec4.w); break; }
 					default: { ImGui::Text("Invalid input"); }
 				}
 			} else {
 				ImGui::Text("No Input");
 			}
 
+			ImGui::SameLine();
+
+			id.pin1.pin = 2;
+			ImNode::BeginPin(id, ImNode::PinKind::Output);
+				ImGui::Text("Out >");
+			ImNode::EndPin();
 			ImNode::EndNode();
 		}
 	};
@@ -75,8 +88,21 @@ namespace Game {
 		virtual void render(Id id) {
 			ImNode::BeginNode(id);
 
-			ImGui::SetNextItemWidth(64);
-			ImGui::DragFloat("Value", &value.asFloat32);
+			// Combo boxes don't work in nodes.
+			if (ImGui::Button(pinTypeToString(value.type))) {
+				ImGui::OpenPopup("SelectType");
+			}
+
+			ImGui::SetNextItemWidth(150);
+			switch (value.type) {
+				case PinType::Bool: { ImGui::Checkbox("Value", &value.asBool); break; }
+				case PinType::Int32: { ImGui::DragInt("Value", &value.asInt32); break; }
+				case PinType::Float32: { ImGui::DragFloat("Value", &value.asFloat32); break; }
+				case PinType::Vec2: { ImGui::DragFloat2("Value", &value.asVec2[0]); break; }
+				case PinType::Vec3: { ImGui::DragFloat3("Value", &value.asVec3[0]); break; }
+				case PinType::Vec4: { ImGui::DragFloat4("Value", &value.asVec4[0]); break; }
+				default: { ImGui::Text("Invalid input"); }
+			}
 
 			ImGui::SameLine();
 
@@ -86,6 +112,21 @@ namespace Game {
 			ImNode::EndPin();
 
 			ImNode::EndNode();
+
+			ImNode::Suspend();
+			if (ImGui::BeginPopup("SelectType")) {
+				for (PinType i = {}; i < PinType::_COUNT; ++i) {
+					if (ImGui::Button(pinTypeToString(i))) {
+						ENGINE_LOG("Selected! ", (int)i);
+						value.zero();
+						value.type = i;
+						ImGui::CloseCurrentPopup();
+						break;
+					}
+				}
+				ImGui::EndPopup();
+			}
+			ImNode::Resume();
 		}
 	};
 
@@ -98,8 +139,9 @@ namespace Game {
 
 namespace Game {
 	MapTestUI::MapTestUI() {
-		//ImNode::Config cfg; // TODO: file, save/load
-		ctx = ImNode::CreateEditor(nullptr);
+		ImNode::Config cfg = {};
+		//cfg.SettingsFile = nullptr;
+		ctx = ImNode::CreateEditor(&cfg);
 		result = ++lastNodeId.node;
 		nodes[result] = std::make_unique<Node>();
 	};
