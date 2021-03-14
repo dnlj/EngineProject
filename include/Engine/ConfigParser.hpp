@@ -271,7 +271,7 @@ namespace Engine {
 						shortKey = key;
 						insertAt = 0;
 					} else {
-						addSection(key.substr(0, last));
+						addSection("[" + key.substr(0, last) + "]"); // TODO: should we append [] inside addSection?
 						insertAt = static_cast<Index>(tokens.size());
 					}
 				}
