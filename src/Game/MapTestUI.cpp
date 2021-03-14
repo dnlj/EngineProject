@@ -19,18 +19,19 @@ namespace Game {
 		std::string title;
 
 		while (i < 6) {
-			id.pin1.pin = ++i;
+			id.input.pin = ++i;
 			ImNode::BeginPin(id, ImNode::PinKind::Input);
 				title = "Input " + std::to_string(i);
 				ImGui::Text(title.c_str());
 			ImNode::EndPin();
 
 			ImGui::SameLine();
-			id.pin1.pin = ++i;
+			id.rotate(++i);
 			ImNode::BeginPin(id, ImNode::PinKind::Output);
 				title = "Output " + std::to_string(i);
 				ImGui::Text(title.c_str());
 			ImNode::EndPin();
+			id.rotate();
 		}
 
 		ImNode::EndNode();
@@ -38,20 +39,20 @@ namespace Game {
 	
 	struct MapTestUI::NodeDisplay : MapTestUI::Node {
 		virtual bool getOutputPinValue(Id pin, PinValue& val) {
-			pin.pin1.pin = 1;
+			pin.rotate(1);
 			return getInputPinValue(pin, val);
 		};
 
 		virtual void render(Id id) {
 			ImNode::BeginNode(id);
 
-			id.pin1.pin = 1;
+			id.input.pin = 1;
 			ImNode::BeginPin(id, ImNode::PinKind::Input);
 				ImGui::Text("> In");
 			ImNode::EndPin();
 
 			ImGui::SameLine();
-			
+
 			if (PinValue val; getInputPinValue(id, val)) {
 				switch (val.type) {
 					case PinType::Bool: { ImGui::Text("%i", val.asBool); break; }
@@ -68,7 +69,7 @@ namespace Game {
 
 			ImGui::SameLine();
 
-			id.pin1.pin = 2;
+			id.rotate(2);
 			ImNode::BeginPin(id, ImNode::PinKind::Output);
 				ImGui::Text("Out >");
 			ImNode::EndPin();
@@ -106,7 +107,7 @@ namespace Game {
 
 			ImGui::SameLine();
 
-			id.pin1.pin = 1;
+			id.rotate(1);
 			ImNode::BeginPin(id, ImNode::PinKind::Output);
 				ImGui::Text("Out >");
 			ImNode::EndPin();
@@ -133,16 +134,17 @@ namespace Game {
 	template<auto Name, class Op>
 	struct MapTestUI::NodeBinOp : MapTestUI::Node {
 		virtual bool getOutputPinValue(Id pin, PinValue& val) {
-			pin.pin1.pin = 1;
+			pin.rotate(1);
 			PinValue a;
 			if (!getInputPinValue(pin, a)) { return false; }
 
-			pin.pin1.pin = 2;
+			pin.input.pin = 2;
 			PinValue b;
 			if (!getInputPinValue(pin, b)) { return false; }
 
 			if (a.type != b.type) { return false; }
 
+			// TODO: need to handle type combos. i want to be able to write vec4*int and similar
 			val.type = a.type;
 			switch (a.type) {
 				//case PinType::Bool: { return Op{}(a.asBool, b.asBool, val.asBool); }
@@ -162,19 +164,19 @@ namespace Game {
 
 			ImGui::Text(Name);
 
-			id.pin1.pin = 1;
+			id.input.pin = 1;
 			ImNode::BeginPin(id, ImNode::PinKind::Input);
 				ImGui::Text("> A");
 			ImNode::EndPin();
 
 			ImGui::SameLine();
 
-			id.pin1.pin = 3;
+			id.rotate(3);
 			ImNode::BeginPin(id, ImNode::PinKind::Output);
 				ImGui::Text("Result >");
 			ImNode::EndPin();
 			
-			id.pin1.pin = 2;
+			id.rotate(2);
 			ImNode::BeginPin(id, ImNode::PinKind::Input);
 				ImGui::Text("> B");
 			ImNode::EndPin();
@@ -221,11 +223,16 @@ namespace Game {
 
 			ImNode::PinId pin2;
 			if (ImNode::QueryNewLink(&pin1, &pin2)) {
-				// TODO: that one id is an input and the other is an output. sort correctly
 				if (ImNode::AcceptNewItem()) {
-					Id link{pin2, pin1};
-					ENGINE_LOG("New Link! ", link.string());
-					links[pin2] = pin1;
+					Id out = pin1;
+					Id in = pin2;
+					if (out.input && in.input || out.output && in.output) {
+						ImNode::RejectNewItem();
+					} else {
+						if (out.input) { std::swap(out, in); }
+						ENGINE_LOG("New Link! ", Id{in, out}.string());
+						links[in] = out;
+					}
 				}
 			}
 		}
@@ -245,7 +252,7 @@ namespace Game {
 			ImNode::LinkId linkId;
 			while (ImNode::QueryDeletedLink(&linkId)) {
 				if (ImNode::AcceptDeletedItem()) {
-					links.erase(Id{linkId}.pin1);
+					links.erase(Id{linkId}.input);
 				}
 			}
 		}

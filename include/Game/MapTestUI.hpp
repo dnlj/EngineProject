@@ -21,7 +21,8 @@ namespace Game {
 			 * Bit layout of ids.
 			 * Ids are divided into two 32 bit node-pin pairs.
 			 * If both pairs are present then this is a link id.
-			 * If only the lower pair is present then this is a pin id.
+			 * If only the lower pair is present then this is a input pin id.
+			 * If only the high pair is present then this is a output pin id.
 			 * If only the lower node id is present then this is a node id.
 			 * If only the pin part of either pair is present then this is an invalid id.
 			 * If any node/pin/link id is zero it is an invalid/none id. All id sequences begin at one.
@@ -51,17 +52,18 @@ namespace Game {
 				uint64 full;
 				uint16 node;
 				struct {
-					PinId pin1;
-					PinId pin2;
+					PinId input;
+					PinId output;
 				};
 
 				Id() : full{} {}
 				Id(uint64 id) : full{id} {}
-				Id(PinId id) : pin1{id}, pin2{} {}
+				Id(PinId in, PinId out = {}) : input{in}, output{out} {}
+				Id(Id in, Id out) : input{in.input}, output{out.output} {}
 				Id(const ax::NodeEditor::NodeId& id) : full{id.Get()} {}
 				Id(const ax::NodeEditor::LinkId& id) : full{id.Get()} {}
 				Id(const ax::NodeEditor::PinId& id) : full{id.Get()} {}
-				Id(const ax::NodeEditor::PinId& p1, const ax::NodeEditor::PinId& p2) : pin1{p1.Get()}, pin2{p2.Get()} {}
+				//Id(const ax::NodeEditor::PinId& p1, const ax::NodeEditor::PinId& p2) : input{p1.Get()}, output{p2.Get()} {}
 
 				operator ax::NodeEditor::NodeId() const { return full; }
 				operator ax::NodeEditor::LinkId() const { return full; }
@@ -69,7 +71,17 @@ namespace Game {
 
 				operator uint64() const { return full; }
 
-				std::string string() const { return "[("+ std::to_string(pin2.pin) + ", "+ std::to_string(pin2.node) + "), (" + std::to_string(pin1.pin) + ", "+ std::to_string(pin1.node) + ")]"; }
+				void rotate(uint16 pid = 0) {
+					if (input) {
+						full <<= 32;
+						if (pid) { output.pin = pid; }
+					} else {
+						full >>= 32;
+						if (pid) { input.pin = pid; }
+					}
+				}
+
+				std::string string() const { return "[("+ std::to_string(output.pin) + ", "+ std::to_string(output.node) + "), (" + std::to_string(input.pin) + ", "+ std::to_string(input.node) + ")]"; }
 
 				struct Hash {
 					ENGINE_INLINE size_t operator()(const Id& id) const noexcept {
@@ -152,7 +164,7 @@ namespace Game {
 					if (link == ctx->links.end()) { return false; }
 
 					Id out = link->second;
-					auto& node = ctx->nodes[out.node];
+					auto& node = ctx->nodes[out.output.node];
 					return node->getOutputPinValue(out, val);
 				}
 
