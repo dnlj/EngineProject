@@ -16,6 +16,7 @@ namespace Engine {
 		HexInteger = 1 << 0,
 		BinInteger = 1 << 1,
 		DecInteger = 1 << 2,
+		QuoteEscapeASCII = 1 << 3,
 	};
 
 	template<class T>
@@ -126,7 +127,28 @@ namespace Engine {
 			}
 			
 			ENGINE_INLINE bool operator()(const std::string& val, std::string& str, StringFormatOptions opts) noexcept {
-				str = val;
+				if (opts & StringFormatOptions::QuoteEscapeASCII) {
+					str.resize(val.size() * 2 + 2);
+					auto out = str.begin();
+					*out++ = '"';
+					auto curr = val.cbegin();
+					auto last = curr;
+					const auto stop = val.cend();
+
+					while (curr != stop) {
+						switch (*curr) {
+							case '\\': { out = std::copy(last, curr, out); *out++ = '\\'; last = curr; break; }
+							case '"': { out = std::copy(last, curr, out); *out++ = '\\'; last = curr; break; }
+						}
+						++curr;
+					}
+
+					out = std::copy(last, curr, out);
+					*out++ = '"';
+					str.resize(out - str.begin());
+				} else {
+					str = val;
+				}
 				return true;
 			}
 	};

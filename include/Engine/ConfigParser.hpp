@@ -184,7 +184,7 @@ namespace Engine {
 
 						#define GEN(Enum, Type, Flag) { case Enum: StringConverter<Type>{}(tkn.getData<Type>(), val, Flag); break; }
 						switch (t.getType()) {
-							GEN(Token::Type::StringLiteral, String, {});
+							GEN(Token::Type::StringLiteral, String, StringFormatOptions::QuoteEscapeASCII);
 							GEN(Token::Type::BinLiteral, Int, StringFormatOptions::BinInteger);
 							GEN(Token::Type::HexLiteral, Int, StringFormatOptions::HexInteger);
 							GEN(Token::Type::DecLiteral, Int, StringFormatOptions::DecInteger);
