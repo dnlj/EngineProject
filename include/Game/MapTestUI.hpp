@@ -9,6 +9,7 @@
 #include <Engine/ImGui/ImGui.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <imgui_node_editor.h>
+#include <Engine/ConfigParser.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -169,13 +170,27 @@ namespace Game {
 				}
 
 				virtual void render(Id id);
+
+				virtual void toConfig(Engine::ConfigParser& cfg, const std::string& pre) {
+				}
 			};
 
-			struct NodeDisplay;
-			struct NodeConstant;
+			//struct NodeDisplay;
+			//struct NodeConstant;
+			//
+			//template<auto Name, class Op>
+			//struct NodeBinOp;
+			
+			enum class NodeType : int {
+				None,
+				Display,
+				Constant,
+				Add,
+				Sub,
+				Mul,
+				Div,
+			};
 
-			template<auto Name, class Op>
-			struct NodeBinOp;
 		private:
 			ax::NodeEditor::EditorContext* ctx;
 			Id lastNodeId = 0;
@@ -184,6 +199,8 @@ namespace Game {
 			/** Stores input pin -> output pin pairs. */
 			Engine::FlatHashMap<Id, Id, Id::Hash> links;
 			Engine::FlatHashMap<Id, std::unique_ptr<Node>, Id::Hash> nodes;
+
+			void addNode(NodeType type);
 
 		public:
 			MapTestUI();

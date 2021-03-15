@@ -405,9 +405,7 @@ namespace Engine::ECS {
 				for (const auto i : compToFilter[cid]) {
 					auto& filter = filters[i];
 					filter.add(ent, cbits);
-
-					// TODO: rm
-					ENGINE_INFO("Adding ", ent, " to filter ", i, " ( C = ", getComponentId<C>(), ")");
+					// ENGINE_INFO("Adding ", ent, " to filter ", i, " ( C = ", getComponentId<C>(), ")");
 				}
 
 				return container[ent];
@@ -462,7 +460,7 @@ namespace Engine::ECS {
 				const auto& rm = [&](const auto& is){
 					for (auto i : is) {
 						filters[i].remove(ent);
-						ENGINE_INFO("Removing ", ent, " from filter ", i); // TODO: rm
+						// ENGINE_INFO("Removing ", ent, " from filter ", i);
 					}
 				};
 				(rm(compToFilter[getComponentId<Comps>()]), ...);

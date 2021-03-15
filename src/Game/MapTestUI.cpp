@@ -1,4 +1,9 @@
+// Engine
+#include <Engine/ConfigParser.hpp>
+
+// Game
 #include <Game/MapTestUI.hpp>
+
 #include <imgui_node_editor_internal.h> // TODO: rm for debugging
 
 namespace ImNode = ax::NodeEditor;
@@ -8,10 +13,13 @@ namespace {
 		//ImNode::PushStyleColor(ImNode::StyleColor_NodeBg, ImColor(127, 0, 0, 255));
 		//ImNode::PushStyleVar(ImNode::StyleVar_NodeRounding, 1.0f);
 	}
-
 }
 
 namespace Game {
+	using Id = MapTestUI::Id;
+	using PinValue = MapTestUI::PinValue;
+	using PinType = MapTestUI::PinType;
+
 	void MapTestUI::Node::render(MapTestUI::Id id) {
 		ImNode::BeginNode(id);
 		ImGui::Text("This is a node!");
@@ -37,13 +45,13 @@ namespace Game {
 		ImNode::EndNode();
 	}
 	
-	struct MapTestUI::NodeDisplay : MapTestUI::Node {
-		virtual bool getOutputPinValue(Id pin, PinValue& val) {
+	struct NodeDisplay : MapTestUI::Node {
+		virtual bool getOutputPinValue(Id pin, PinValue& val) override {
 			pin.rotate(1);
 			return getInputPinValue(pin, val);
 		};
 
-		virtual void render(Id id) {
+		virtual void render(Id id) override {
 			ImNode::BeginNode(id);
 
 			id.input.pin = 1;
@@ -77,20 +85,19 @@ namespace Game {
 		}
 	};
 
-	struct MapTestUI::NodeConstant : MapTestUI::Node {
+	struct NodeConstant : MapTestUI::Node {
 		PinValue value;
-		NodeConstant(PinValue val) : value{val} {};
 
-		virtual bool getOutputPinValue(Id pin, PinValue& val) {
+		virtual bool getOutputPinValue(Id pin, PinValue& val) override {
 			val = value;
 			return val.type != PinType::Invalid;
 		}
 		
-		virtual void render(Id id) {
+		virtual void render(Id id) override {
 			ImNode::BeginNode(id);
 
 			// Combo boxes don't work in nodes.
-			if (ImGui::Button(pinTypeToString(value.type))) {
+			if (ImGui::Button(MapTestUI::pinTypeToString(value.type))) {
 				ImGui::OpenPopup("SelectType");
 			}
 
@@ -117,7 +124,7 @@ namespace Game {
 			ImNode::Suspend();
 			if (ImGui::BeginPopup("SelectType")) {
 				for (PinType i = {}; i < PinType::_COUNT; ++i) {
-					if (ImGui::Button(pinTypeToString(i))) {
+					if (ImGui::Button(MapTestUI::pinTypeToString(i))) {
 						ENGINE_LOG("Selected! ", (int)i);
 						value.zero();
 						value.type = i;
@@ -132,8 +139,8 @@ namespace Game {
 	};
 
 	template<auto Name, class Op>
-	struct MapTestUI::NodeBinOp : MapTestUI::Node {
-		virtual bool getOutputPinValue(Id pin, PinValue& val) {
+	struct NodeBinOp : MapTestUI::Node {
+		virtual bool getOutputPinValue(Id pin, PinValue& val) override {
 			pin.rotate(1);
 			PinValue a;
 			if (!getInputPinValue(pin, a)) { return false; }
@@ -159,7 +166,7 @@ namespace Game {
 			return false;
 		}
 
-		virtual void render(Id id) {
+		virtual void render(Id id) override {
 			ImNode::BeginNode(id);
 
 			ImGui::Text(Name);
@@ -184,10 +191,39 @@ namespace Game {
 			ImNode::EndNode();
 		}
 	};
+
+	
+	#define PASTE_NODE_BIN_OP(N, O)\
+		constexpr static const char _name_for_node_##N[] = #N;\
+		using Node##N = NodeBinOp<_name_for_node_##N, O>;
+	PASTE_NODE_BIN_OP(Add, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a + b; return true; }));
+	PASTE_NODE_BIN_OP(Sub, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a - b; return true; }));
+	PASTE_NODE_BIN_OP(Mul, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a * b; return true; }));
+	PASTE_NODE_BIN_OP(Div, decltype([](const auto& a, const auto& b, auto& c) -> bool { return (b != decltype(b){}) && (c = a / b, true); }));
+	#undef PASTE_NODE_BIN_OP
 }
 
 namespace Game {
 	MapTestUI::MapTestUI() {
+		/////
+		/////
+		/////
+		/////
+		/////
+		/////
+		// TODO: deserialize `links` aad `nodes`
+		// TODO: init lastNodeId
+		/////
+		/////
+		/////
+		/////
+		/////
+		/////
+
+		Engine::ConfigParser save;
+		save.loadAndTokenize("node_test.dat");
+		save.print();
+
 		ImNode::Config cfg = {};
 		//cfg.SettingsFile = nullptr;
 		ctx = ImNode::CreateEditor(&cfg);
@@ -197,6 +233,20 @@ namespace Game {
 
 	MapTestUI::~MapTestUI() {
 		ImNode::DestroyEditor(ctx);
+
+		ENGINE_LOG("Saving nodes...");
+		Engine::ConfigParser cfg;
+
+		std::string pre;
+		for (auto& [id, node] : nodes) {
+			pre = "N" + std::to_string(id.full);
+			cfg.insert(pre + ".id", id.full);
+			cfg.insert(pre + ".type", 0);
+			node->toConfig(cfg, pre);
+		}
+
+		cfg.save("node_test.dat");
+		ENGINE_LOG("Done saving nodes.");
 	}
 
 	void MapTestUI::generate() {
@@ -303,16 +353,10 @@ namespace Game {
 
 			if (ImGui::BeginPopup("New Node")) {
 				if (ImGui::Button("Display")) {
-					++lastNodeId.node;
-					auto& node = nodes[lastNodeId];
-					node = std::make_unique<NodeDisplay>();
-					node->ctx = this;
+					addNode(NodeType::Display);
 				}
 				if (ImGui::Button("Constant")) {
-					++lastNodeId.node;
-					auto& node = nodes[lastNodeId];
-					node = std::make_unique<NodeConstant>(1.0f);
-					node->ctx = this;
+					addNode(NodeType::Constant);
 				}
 				if (ImGui::Button("Gradient")) {
 				}
@@ -325,20 +369,18 @@ namespace Game {
 
 				ImGui::Separator();
 
-				#define PASTE_NODE_BIN_OP(N, O)\
-				if (ImGui::Button(N)) {\
-					++lastNodeId.node;\
-					auto& node = nodes[lastNodeId];\
-					constexpr static const char Name[] = N;\
-					node = std::make_unique<NodeBinOp<Name, O>>();\
-					node->ctx = this;\
+				if (ImGui::Button("Add")) {
+					addNode(NodeType::Add);
 				}
-
-				PASTE_NODE_BIN_OP("Add", decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a + b; return true; }));
-				PASTE_NODE_BIN_OP("Sub", decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a - b; return true; }));
-				PASTE_NODE_BIN_OP("Mul", decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a * b; return true; }));
-				PASTE_NODE_BIN_OP("Div", decltype([](const auto& a, const auto& b, auto& c) -> bool { return (b != decltype(b){}) && (c = a / b, true); }));
-				#undef PASTE_NODE_BIN_OP
+				if (ImGui::Button("Sub")) {
+					addNode(NodeType::Sub);
+				}
+				if (ImGui::Button("Mul")) {
+					addNode(NodeType::Mul);
+				}
+				if (ImGui::Button("Div")) {
+					addNode(NodeType::Div);
+				}
 
 				ImGui::Separator();
 
@@ -358,5 +400,29 @@ namespace Game {
 		ImNode::End();
 		ImNode::SetCurrentEditor(nullptr);
 		ImGui::End();
+	}
+
+	void MapTestUI::addNode(NodeType type) {
+		#define CASE(E, T) \
+			case NodeType:: E: { \
+				++lastNodeId.node; \
+				auto& node = nodes[lastNodeId]; \
+				node = std::make_unique<T>(); \
+				node->ctx = this; \
+				break; \
+			}
+
+		switch(type) {
+			CASE(None, Node);
+			CASE(Display, NodeDisplay);
+			CASE(Constant, NodeConstant);
+			CASE(Add, NodeAdd);
+			CASE(Sub, NodeSub);
+			CASE(Mul, NodeMul);
+			CASE(Div, NodeDiv);
+			default: { ENGINE_ERROR("Unknown node type ", static_cast<int>(type)); }
+		}
+
+		#undef CASE
 	}
 }

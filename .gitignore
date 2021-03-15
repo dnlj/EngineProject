@@ -5,6 +5,9 @@
 *.dll
 /_TEMP_*_
 
+# EngineProject save files
+node_test.dat
+
 # Conan
 .conan
 conan_build
