@@ -166,17 +166,20 @@ namespace Engine {
 				for (const auto& t : tokens) {
 					if (t.getType() == Token::Type::Key) {
 						key = sec + t.getData<String>();
+						res += t.getData<String>();
 					} else if (t.getType() == Token::Type::Section) {
 						const auto& str = t.getData<String>();
 						if (str.empty()) {
 							sec = "";
 						} else {
-							sec = {str.cbegin() + 1, str.cend() - 1};
+							sec = {str.cbegin(), str.cend()};
 							sec += ".";
 						}
-					}
 
-					if (t.getType() > Token::Type::Assign) {
+						res += "[";
+						res += t.getData<String>();
+						res += "]";
+					} else  if (t.getType() > Token::Type::Assign) {
 						const auto found = keyLookup.find(key);
 						ENGINE_DEBUG_ASSERT(found != keyLookup.end());
 
@@ -278,7 +281,7 @@ namespace Engine {
 						shortKey = key;
 						insertAt = 0;
 					} else {
-						addSection("[" + key.substr(0, last) + "]"); // TODO: should we append [] inside addSection?
+						addSection(key.substr(0, last));
 						insertAt = static_cast<Index>(tokens.size());
 					}
 				}
@@ -311,7 +314,9 @@ namespace Engine {
 
 			// TODO: private
 			void addSection(std::string sec) {
-				sectionLookup[sec] = static_cast<Index>(tokens.size() + 1);
+				const auto idx = static_cast<Index>(tokens.size());
+				sectionLookup[sec] = static_cast<Index>(stable.size() + 1);
+				stable.insert(stable.cend(), {idx + 0, idx + 1, idx + 2});
 
 				Token tkns[3] = {
 					Token::Type::Whitespace,
@@ -319,7 +324,7 @@ namespace Engine {
 					Token::Type::Whitespace,
 				};
 
-				tkns[0].getData<String>() = "\n";
+				tkns[0].getData<String>() = idx == 0 ? "" : "\n";
 				tkns[1].getData<String>() = std::move(sec);
 				tkns[2].getData<String>() = "\n";
 
@@ -352,7 +357,7 @@ namespace Engine {
 				tkns[5].getData<String>() = "\n";
 
 				for (auto& v : stable) {
-					if (v > idx) { v += static_cast<Index>(std::size(tkns)); }
+					if (v >= idx) { v += static_cast<Index>(std::size(tkns)); }
 				}
 
 				KeyValuePair pair;
@@ -484,7 +489,7 @@ namespace Engine {
 							ENGINE_DEBUG_ASSERT(ss > 1); // By this point all sections should already be validated.
 
 							section.reserve(ss - 1);
-							section.assign(++str.cbegin(), --str.cend());
+							section.assign(str.cbegin(), str.cend());
 
 							// In case of duplicates we only store the last one
 							sectionLookup[section] = i;
@@ -645,15 +650,15 @@ namespace Engine {
 			}
 
 			bool eatSection() {
-				Range rng = i;
+				Range rng = i + 1;
 				while (++i) {
 					if (isEOF()) { err = "Unexpected end of file"; return false; }
 					if (data[i] == ']') { break; }
 					if (isNewline()) { err = "Unexpected new line"; return false; }
 				}
-				rng.stop = i;
+				rng.stop = i - 1;
 
-				if (rng.size() < 2) {
+				if (rng.size() <= 0) {
 					err = "Incomplete section";
 					return false;
 				}
