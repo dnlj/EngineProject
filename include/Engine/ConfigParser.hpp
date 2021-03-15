@@ -182,7 +182,14 @@ namespace Engine {
 
 						const auto& tkn = tokens[stable[found->second.value]];
 
-						#define GEN(Enum, Type, Flag) { case Enum: StringConverter<Type>{}(tkn.getData<Type>(), val, Flag); break; }
+						#define GEN(Enum, Type, Flag) { case Enum: \
+							if (!StringConverter<Type>{}(tkn.getData<Type>(), val, Flag)) { \
+								ENGINE_WARN("Unable to convert value \"", tkn.getData<Type>(), "\", using default."); \
+								val = "~ INVALID VALUE ~ # There was an error saving this value to file."; \
+							}; \
+							break; \
+						}
+
 						switch (t.getType()) {
 							GEN(Token::Type::StringLiteral, String, StringFormatOptions::QuoteEscapeASCII);
 							GEN(Token::Type::BinLiteral, Int, StringFormatOptions::BinInteger);

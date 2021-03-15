@@ -33,7 +33,7 @@ namespace Engine {
 			}
 			
 			ENGINE_INLINE bool operator()(const T& val, std::string& str, StringFormatOptions opts) noexcept {
-				str.resize(16); // TODO: what size to use?
+				str.resize(std::numeric_limits<T>::max_digits10 + 1);
 				const auto res = std::to_chars(&*str.begin(), &*str.begin() + str.size(), val);
 				str.resize(res.ptr - &*str.begin());
 				return res.ec == std::errc{};
