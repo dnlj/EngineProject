@@ -205,48 +205,88 @@ namespace Game {
 
 namespace Game {
 	MapTestUI::MapTestUI() {
-		/////
-		/////
-		/////
-		/////
-		/////
-		/////
-		// TODO: deserialize `links` aad `nodes`
-		// TODO: init lastNodeId
-		/////
-		/////
-		/////
-		/////
-		/////
-		/////
-
-		Engine::ConfigParser save;
-		save.loadAndTokenize("node_test.dat");
-		save.print();
-
 		ImNode::Config cfg = {};
 		//cfg.SettingsFile = nullptr;
 		ctx = ImNode::CreateEditor(&cfg);
 		result = ++lastNodeId.node;
 		nodes[result] = std::make_unique<Node>();
+
+		
+		Engine::ConfigParser save;
+		save.loadAndTokenize("node_test.dat");
+
+		if (auto* val = save.get<uint64>("Settings.last_node_id"); val) {
+			lastNodeId = *val;
+		} else {
+			ENGINE_WARN("Unable to get last node id");
+		}
+
+		std::vector<std::string> prefixes;
+		if (auto* val = save.get<std::string>("Settings.id_list"); val) {
+			auto curr = val->data();
+			auto last = curr + val->size();
+			Id id = {};
+
+			while (curr < last) {
+				auto start = curr;
+				while (curr < last && *curr != ',') { ++curr; }
+				prefixes.emplace_back(start, curr);
+				++curr;
+			}
+		} else {
+			ENGINE_WARN("Unable to get id list");
+		}
+
+		ImNode::SetCurrentEditor(ctx);
+		for (const auto& pre : prefixes) {
+			const auto* y = save.get<float64>(pre + ".y");
+			const auto* x = save.get<float64>(pre + ".x");
+			const auto* type = save.get<int>(pre + ".type");
+			const auto* id = save.get<uint64>(pre + ".id");
+
+			if (!y || !x || !type || !id) {
+				ENGINE_WARN("Unable to build node. Skipping.");
+				continue;
+			}
+
+			auto& node = addNode(static_cast<NodeType>(*type), *id);
+			ImNode::SetNodePosition(*id, {static_cast<float32>(*x), static_cast<float32>(*y)});
+			node->fromConfig(save, pre);
+		}
+		ImNode::SetCurrentEditor(nullptr);
 	};
 
 	MapTestUI::~MapTestUI() {
-		ImNode::DestroyEditor(ctx);
-
+		ImNode::SetCurrentEditor(ctx);
 		ENGINE_LOG("Saving nodes...");
 		Engine::ConfigParser cfg;
+
+		std::string nodeList = "";
+		nodeList.reserve(nodes.size() * 4); // Assume we usually have id < 999 plus comma for each node
 
 		std::string pre;
 		for (auto& [id, node] : nodes) {
 			pre = "N" + std::to_string(id.full);
-			cfg.insert(pre + ".id", id.full);
-			cfg.insert(pre + ".type", 0);
+			nodeList += pre;
+			nodeList += ",";
+
+			const auto pos = ImNode::GetNodePosition(id);
 			node->toConfig(cfg, pre);
+			cfg.insert(pre + ".y", pos.y);
+			cfg.insert(pre + ".x", pos.x);
+			cfg.insert(pre + ".type", static_cast<int>(node->type));
+			cfg.insert(pre + ".id", id.full);
 		}
+
+		nodeList.pop_back();
+		cfg.insert("Settings.id_list", nodeList);
+		cfg.insert("Settings.last_node_id", lastNodeId.full);
 
 		cfg.save("node_test.dat");
 		ENGINE_LOG("Done saving nodes.");
+
+		ImNode::SetCurrentEditor(nullptr);
+		ImNode::DestroyEditor(ctx);
 	}
 
 	void MapTestUI::generate() {
@@ -402,13 +442,15 @@ namespace Game {
 		ImGui::End();
 	}
 
-	void MapTestUI::addNode(NodeType type) {
+	auto MapTestUI::addNode(NodeType type, Id id) -> NodePtr& {
+		if (!id.full) {
+			id = ++lastNodeId.node;
+		}
+		auto& node = nodes[id];
+
 		#define CASE(E, T) \
 			case NodeType:: E: { \
-				++lastNodeId.node; \
-				auto& node = nodes[lastNodeId]; \
 				node = std::make_unique<T>(); \
-				node->ctx = this; \
 				break; \
 			}
 
@@ -424,5 +466,9 @@ namespace Game {
 		}
 
 		#undef CASE
+
+		node->ctx = this;
+		node->type = type;
+		return node;
 	}
 }

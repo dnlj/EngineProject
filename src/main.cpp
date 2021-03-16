@@ -648,6 +648,10 @@ int entry(int argc, char* argv[]) {
 	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW | _CRTDBG_MODE_DEBUG);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	//Engine::ConfigParser cfg;
+	//cfg.loadAndTokenize("example.cfg");
+	//cfg.print();
+
 	run(argc, argv);
 
 	ENGINE_LOG("Done.");

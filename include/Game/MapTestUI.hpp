@@ -149,11 +149,22 @@ namespace Game {
 					memset(reinterpret_cast<byte*>(&type) + sizeof(type), 0, sz);
 				}
 			};
+			
+			enum class NodeType : int {
+				None,
+				Display,
+				Constant,
+				Add,
+				Sub,
+				Mul,
+				Div,
+			};
 
 			struct Node {
 				// Input and output pins share the same id sequence
 				MapTestUI* ctx = nullptr;
 				std::vector<PinMeta> pins;
+				NodeType type;
 				virtual ~Node() {}
 
 				virtual bool getOutputPinValue(Id pin, PinValue& val) {
@@ -171,24 +182,8 @@ namespace Game {
 
 				virtual void render(Id id);
 
-				virtual void toConfig(Engine::ConfigParser& cfg, const std::string& pre) {
-				}
-			};
-
-			//struct NodeDisplay;
-			//struct NodeConstant;
-			//
-			//template<auto Name, class Op>
-			//struct NodeBinOp;
-			
-			enum class NodeType : int {
-				None,
-				Display,
-				Constant,
-				Add,
-				Sub,
-				Mul,
-				Div,
+				virtual void toConfig(Engine::ConfigParser& cfg, const std::string& pre) {}
+				virtual void fromConfig(Engine::ConfigParser& cfg, const std::string& pre) {}
 			};
 
 		private:
@@ -198,9 +193,11 @@ namespace Game {
 
 			/** Stores input pin -> output pin pairs. */
 			Engine::FlatHashMap<Id, Id, Id::Hash> links;
-			Engine::FlatHashMap<Id, std::unique_ptr<Node>, Id::Hash> nodes;
 
-			void addNode(NodeType type);
+			using NodePtr = std::unique_ptr<Node>;
+			Engine::FlatHashMap<Id, NodePtr, Id::Hash> nodes;
+
+			NodePtr& addNode(NodeType type, Id id = {});
 
 		public:
 			MapTestUI();
