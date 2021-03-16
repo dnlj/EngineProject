@@ -23,7 +23,7 @@ namespace Engine {
 
 			struct Range {
 				Index start;
-				Index stop;
+				Index stop; // TODO: make non-inclusive. we do i - 1 almost everywhere and it would be more consistent with standard c++
 				ENGINE_INLINE Range(Index i) { reset(i); }
 				ENGINE_INLINE Index size() const noexcept { return stop - start + 1; }
 				ENGINE_INLINE void reset(Index i) noexcept { start = i; stop = i - 1; }
@@ -515,19 +515,9 @@ namespace Engine {
 						stable.push_back(i);
 
 						if (tkn.getType() == Token::Type::Section) {
-							const auto& str = tkn.getData<String>();
-							const auto ss = str.size();
-
-							ENGINE_DEBUG_ASSERT(ss > 1); // By this point all sections should already be validated.
-
-							section.reserve(ss - 1);
-							section.assign(str.cbegin(), str.cend());
-
 							// In case of duplicates we only store the last one
+							section = tkn.getData<String>();
 							sectionLookup[section] = i;
-
-							if (ss > 2) { section += "."; }
-
 						} else if (tkn.getType() == Token::Type::Key) {
 							const auto& str = tkn.getData<String>();
 							const auto key = section.empty() ? str : section + "." + str;
