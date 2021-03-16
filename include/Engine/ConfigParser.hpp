@@ -880,7 +880,7 @@ namespace Engine {
 				constexpr const char* eofErr = "Reached end of file before finding string terminator";
 
 				if (data[i] != '"') { err = "Invalid quote character"; return false; }
-				Range rng = i;
+				Range rng = i + 1;
 
 				bool escaped = false;
 				while (true) {
@@ -897,9 +897,8 @@ namespace Engine {
 					escaped = false;
 				}
 
-				rng.stop = i;
+				rng.stop = i - 1;
 				++i;
-
 				Token tkn{Token::Type::StringLiteral};
 				tkn.getData<String>() = rng.string(data);
 				tokens.push_back(std::move(tkn));
