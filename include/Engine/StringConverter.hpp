@@ -17,6 +17,7 @@ namespace Engine {
 		BinInteger = 1 << 1,
 		DecInteger = 1 << 2,
 		QuoteEscapeASCII = 1 << 3,
+		FloatSuffix = 1 << 4,
 	};
 
 	template<class T>
@@ -33,8 +34,9 @@ namespace Engine {
 			}
 			
 			ENGINE_INLINE bool operator()(const T& val, std::string& str, StringFormatOptions opts) noexcept {
-				str.resize(std::numeric_limits<T>::max_digits10 + 1);
-				const auto res = std::to_chars(&*str.begin(), &*str.begin() + str.size(), val);
+				str.resize(std::numeric_limits<T>::max_digits10 + 1 + 1); // sz + suffix + null
+				auto res = std::to_chars(&*str.begin(), &*str.begin() + str.size(), val);
+				if (opts & StringFormatOptions::FloatSuffix) { *res.ptr++ = 'f'; }
 				str.resize(res.ptr - &*str.begin());
 				return res.ec == std::errc{};
 			}
@@ -126,7 +128,7 @@ namespace Engine {
 				return true;
 			}
 			
-			ENGINE_INLINE bool operator()(const std::string& val, std::string& str, StringFormatOptions opts) noexcept {
+			bool operator()(const std::string& val, std::string& str, StringFormatOptions opts) noexcept {
 				if (opts & StringFormatOptions::QuoteEscapeASCII) {
 					str.resize(val.size() * 2 + 2);
 					auto out = str.begin();

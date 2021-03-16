@@ -154,6 +154,34 @@ namespace Engine {
 			FlatHashMap<std::string, KeyValuePair> keyLookup;
 			FlatHashMap<std::string, Index> sectionLookup;
 
+			class KeyIter {
+				private:
+					using It = decltype(keyLookup)::const_iterator;
+					It it;
+
+				public:
+					KeyIter(It it) : it{it} {}
+					bool operator==(KeyIter& other) const { return it == other.it; }
+					bool operator!=(KeyIter& other) const { return !(*this == other); }
+					KeyIter& operator++() { ++it; return *this; }
+					KeyIter operator++(int) { auto cpy = *this; ++it; return cpy; }
+					const std::string& operator*() const { return it->first; }
+					const std::string* operator->() const { return &operator*(); }
+			};
+
+			class Keys {
+				private:
+					KeyIter start;
+					KeyIter stop;
+
+				public:
+					Keys(KeyIter start, KeyIter stop) : start{start}, stop{stop} {}
+					auto begin() const { return start; }
+					auto end() const { return stop; }
+					auto cbegin() const { return start; }
+					auto cend() const { return stop; }
+			};
+
 		public:
 			std::string toString() const {
 				std::string res;
@@ -198,7 +226,7 @@ namespace Engine {
 							GEN(Token::Type::BinLiteral, Int, StringFormatOptions::BinInteger);
 							GEN(Token::Type::HexLiteral, Int, StringFormatOptions::HexInteger);
 							GEN(Token::Type::DecLiteral, Int, StringFormatOptions::DecInteger);
-							GEN(Token::Type::FloatLiteral, Float, {});
+							GEN(Token::Type::FloatLiteral, Float, StringFormatOptions::FloatSuffix);
 							GEN(Token::Type::BoolLiteral, Bool, {});
 							default: {
 								ENGINE_WARN("Unknown token type. Skipping.");
@@ -212,6 +240,10 @@ namespace Engine {
 				}
 
 				return res;
+			}
+
+			Keys keys() {
+				return Keys{keyLookup.cbegin(), keyLookup.cend()};
 			}
 
 			void print() {
@@ -498,7 +530,7 @@ namespace Engine {
 
 						} else if (tkn.getType() == Token::Type::Key) {
 							const auto& str = tkn.getData<String>();
-							const auto key = section.empty() ? str : section + str;
+							const auto key = section.empty() ? str : section + "." + str;
 							const auto [it, inserted] = keyLookup.emplace(key, KeyValuePair{
 								.key = i,
 							});
@@ -833,6 +865,12 @@ namespace Engine {
 				}
 
 				rng.stop = i - 1;
+
+				// Suffix
+				if (data[i] == 'f' || data[i] == 'F') {
+					++i;
+					tkn = Token::Type::FloatLiteral;
+				}
 
 				if (tkn.getType() == Token::Type::FloatLiteral) {
 					Float val;
