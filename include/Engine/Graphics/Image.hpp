@@ -25,6 +25,11 @@ namespace Engine {
 		public:
 			Image() = default;
 
+			Image(const PixelFormat fmt, const glm::ivec2 dims) : fmt{fmt}, dims{dims} {
+				const auto& info = getPixelFormatInfo(fmt);
+				storage.resize(dims.x * dims.y * info.channels);
+			}
+
 			Image(const std::string& path) : Image{path.c_str()} {
 			}
 
@@ -54,6 +59,7 @@ namespace Engine {
 			ENGINE_INLINE const auto format() const noexcept { return fmt; }
 			ENGINE_INLINE const auto& size() const noexcept { return dims; }
 			ENGINE_INLINE const byte* data() const noexcept { return storage.data(); }
+			ENGINE_INLINE byte* data() noexcept { return storage.data(); }
 
 			void flipY() {
 				const auto& info = getPixelFormatInfo(fmt);
