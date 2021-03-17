@@ -50,6 +50,7 @@
 #include <Engine/CommandLine/Parser.hpp>
 #include <Engine/Debug/GL/GL.hpp>
 #include <Engine/ConfigParser.hpp>
+#include <Engine/Base16.hpp>
 
 // Game
 #include <Game/Common.hpp>

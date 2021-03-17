@@ -1,5 +1,6 @@
 // Engine
 #include <Engine/ConfigParser.hpp>
+#include <Engine/Base16.hpp>
 
 // Game
 #include <Game/MapTestUI.hpp>
@@ -135,6 +136,23 @@ namespace Game {
 				ImGui::EndPopup();
 			}
 			ImNode::Resume();
+		}
+		
+		virtual void toConfig(Engine::ConfigParser& cfg, const std::string& pre) override {
+			cfg.insert(pre + ".ptype", static_cast<int>(value.type));
+			cfg.insert(pre + ".data", Engine::Base16::encode(value.data(), value.size()));
+		}
+
+		virtual void fromConfig(Engine::ConfigParser& cfg, const std::string& pre) override {
+			const auto* data = cfg.get<std::string>(pre + ".data");
+			const auto* ptype = cfg.get<int>(pre + ".ptype");
+			if (!data || !ptype) {
+				ENGINE_WARN("Unable to read node data");
+				return;
+			}
+
+			value.type = static_cast<PinType>(*ptype);
+			Engine::Base16::decode(*data, value.data());
 		}
 	};
 

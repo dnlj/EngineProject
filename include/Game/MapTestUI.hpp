@@ -126,6 +126,7 @@ namespace Game {
 			struct PinValue {
 				PinType type;
 				union {
+					byte asByte;
 					bool asBool;
 					int32 asInt32;
 					float32 asFloat32;
@@ -143,10 +144,13 @@ namespace Game {
 				PinValue(glm::vec4 val) : type{PinType::Vec4}, asVec4{val} {}
 
 				// TODO: toString()
+				
+				const byte* data() const noexcept { return &asByte; }
+				byte* data() noexcept { return &asByte; }
+				constexpr static size_t size() noexcept { return sizeof(PinValue) - offsetof(PinValue, asByte); }
 
 				void zero() {
-					constexpr auto sz = sizeof(PinValue) - offsetof(PinValue, type) - sizeof(type);
-					memset(reinterpret_cast<byte*>(&type) + sizeof(type), 0, sz);
+					memset(data(), 0, size());
 				}
 			};
 			
