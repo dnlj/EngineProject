@@ -240,7 +240,7 @@ namespace Game {
 		}
 
 		std::vector<std::string> prefixes;
-		if (auto* val = save.get<std::string>("Settings.id_list"); val) {
+		if (auto* val = save.get<std::string>("Settings.node_id_list"); val) {
 			auto curr = val->data();
 			auto last = curr + val->size();
 			Id id = {};
@@ -252,7 +252,24 @@ namespace Game {
 				++curr;
 			}
 		} else {
-			ENGINE_WARN("Unable to get id list");
+			ENGINE_WARN("Unable to get node id list");
+		}
+
+		
+		std::vector<std::string> linkIds;
+		if (auto* val = save.get<std::string>("Settings.link_id_list"); val) {
+			auto curr = val->data();
+			auto last = curr + val->size();
+			Id id = {};
+
+			while (curr < last) {
+				auto start = curr;
+				while (curr < last && *curr != ',') { ++curr; }
+				linkIds.emplace_back(start, curr);
+				++curr;
+			}
+		} else {
+			ENGINE_WARN("Unable to get link id list");
 		}
 
 		ImNode::SetCurrentEditor(ctx);
@@ -271,6 +288,15 @@ namespace Game {
 			ImNode::SetNodePosition(*id, {static_cast<float32>(*x), static_cast<float32>(*y)});
 			node->fromConfig(save, pre);
 		}
+		for (const auto& id : linkIds) {
+			const auto* out = save.get<uint64>("Links." + id);
+			Id in;
+			if (!out || (std::from_chars(id.data(), id.data() + id.size(), in.full).ec != std::errc{})) {
+				ENGINE_WARN("Unable to build link. Skipping.");
+				continue;
+			}
+			links[in] = *out;
+		}
 		ImNode::SetCurrentEditor(nullptr);
 	};
 
@@ -279,26 +305,41 @@ namespace Game {
 		ENGINE_LOG("Saving nodes...");
 		Engine::ConfigParser cfg;
 
-		std::string nodeList = "";
-		nodeList.reserve(nodes.size() * 4); // Assume we usually have id < 999 plus comma for each node
+		{ // Save nodes
+			std::string nodeList = "";
+			nodeList.reserve(nodes.size() * 4); // Assume we usually have id < 999 plus comma for each node
 
-		std::string pre;
-		for (auto& [id, node] : nodes) {
-			pre = "N" + std::to_string(id.full);
-			nodeList += pre;
-			nodeList += ",";
+			std::string pre;
+			for (auto& [id, node] : nodes) {
+				pre = "N" + std::to_string(id.full);
+				nodeList += pre;
+				nodeList += ",";
 
-			const auto pos = ImNode::GetNodePosition(id);
-			node->toConfig(cfg, pre);
-			cfg.insert(pre + ".y", pos.y);
-			cfg.insert(pre + ".x", pos.x);
-			cfg.insert(pre + ".type", static_cast<int>(node->type));
-			cfg.insert(pre + ".id", id.full);
+				const auto pos = ImNode::GetNodePosition(id);
+				node->toConfig(cfg, pre);
+				cfg.insert(pre + ".y", pos.y);
+				cfg.insert(pre + ".x", pos.x);
+				cfg.insert(pre + ".type", static_cast<int>(node->type));
+				cfg.insert(pre + ".id", id.full);
+			}
+
+			if (nodeList.size()) { nodeList.pop_back(); }
+			cfg.insert("Settings.node_id_list", nodeList);
+			cfg.insert("Settings.last_node_id", lastNodeId.full);
 		}
 
-		nodeList.pop_back();
-		cfg.insert("Settings.id_list", nodeList);
-		cfg.insert("Settings.last_node_id", lastNodeId.full);
+		{ // Save links
+			std::string linkList = "";
+			std::string instr;
+			for (auto& [in, out] : links) {
+				instr = std::to_string(in.full);
+				cfg.insert("Links." + instr, out.full);
+				linkList += instr;
+				linkList += ",";
+			}
+			if (linkList.size()) { linkList.pop_back(); };
+			cfg.insert("Settings.link_id_list", linkList);
+		}
 
 		cfg.save("node_test.dat");
 		ENGINE_LOG("Done saving nodes.");
