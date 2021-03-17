@@ -289,7 +289,6 @@ namespace Engine {
 					shortKey = {key.cbegin() + last + 1, key.cend()};
 					--last;
 
-					ENGINE_LOG("Checking [", sec ,"] ", shortKey);
 					const auto secFound = sectionLookup.find(sec);
 					if (secFound != sectionLookup.cend()) {
 						insertAt = stable[secFound->second] + 1;
@@ -395,7 +394,6 @@ namespace Engine {
 				KeyValuePair pair;
 				pair.key = static_cast<Index>(stable.size());
 				pair.value = pair.key + 4;
-				ENGINE_LOG("Add pair: ", pair.key, " ", pair.value);
 
 				auto it = 4 + tokens.insert(
 					tokens.begin() + idx,
