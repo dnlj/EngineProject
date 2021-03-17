@@ -5,7 +5,6 @@
 // Game
 #include <Game/MapTestUI.hpp>
 
-#include <imgui_node_editor_internal.h> // TODO: rm for debugging
 
 namespace ImNode = ax::NodeEditor;
 
@@ -45,7 +44,19 @@ namespace Game {
 
 		ImNode::EndNode();
 	}
-	
+
+	struct NodeFinal : MapTestUI::Node {
+		virtual void render(Id id) override {
+			ImNode::BeginNode(id);
+
+			id.input.pin = 1;
+			ImNode::BeginPin(id, ImNode::PinKind::Input);
+				ImGui::Text("> In");
+			ImNode::EndPin();
+			ImNode::EndNode();
+		}
+	};
+
 	struct NodeDisplay : MapTestUI::Node {
 		virtual bool getOutputPinValue(Id pin, PinValue& val) override {
 			pin.rotate(1);
@@ -224,10 +235,9 @@ namespace Game {
 namespace Game {
 	MapTestUI::MapTestUI() {
 		ImNode::Config cfg = {};
-		//cfg.SettingsFile = nullptr;
 		ctx = ImNode::CreateEditor(&cfg);
 		result = ++lastNodeId.node;
-		nodes[result] = std::make_unique<Node>();
+		addNode(NodeType::Final, result);
 
 		
 		Engine::ConfigParser save;
@@ -298,6 +308,13 @@ namespace Game {
 			links[in] = *out;
 		}
 		ImNode::SetCurrentEditor(nullptr);
+
+		{ // Init Texture
+			img = {Engine::PixelFormat::RGB8, {512, 512}};
+			texture.setStorage(Engine::TextureFormat::RGB8, img.size());
+			texture.setFilter(Engine::TextureFilter::NEAREST);
+			buildTexture();
+		}
 	};
 
 	MapTestUI::~MapTestUI() {
@@ -499,8 +516,42 @@ namespace Game {
 		ImNode::End();
 		ImNode::SetCurrentEditor(nullptr);
 		ImGui::End();
+
+		if (ImGui::Begin("Display")) {
+			if (ImGui::Button("Refresh")) {
+				buildTexture();
+			}
+			ImGui::Text("This is the display window");
+			// TODO: zoom / pan
+			const ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(texture.get()));
+			ImGui::Image(tid, ImVec2(static_cast<float32>(img.size().x), static_cast<float32>(img.size().y)));
+		}
+		ImGui::End();
 	}
 
+	void MapTestUI::buildTexture() {
+		const auto& sz = img.size();
+		const auto& fmt = Engine::getPixelFormatInfo(img.format());
+		const auto& node = nodes[result];
+
+		Id pin = result;
+		pin.input.pin = 1;
+
+		PinValue val = {};
+
+		for (int y = 0; y < sz.y; ++y) {
+			for (int x = 0; x < sz.x; ++x) {
+				if (!node->getInputPinValue(pin, val)) { continue; }
+				if (val.type != PinType::Float32) { continue; }
+
+				const auto i = (y * sz.x + x) * fmt.channels;
+				img.data()[i + 0] = static_cast<byte>(val.asFloat32 * 255);
+				img.data()[i + 1] = 0;
+				img.data()[i + 2] = 0;
+			}
+		}
+		texture.setImage(img);
+	}
 	auto MapTestUI::addNode(NodeType type, Id id) -> NodePtr& {
 		if (!id.full) {
 			id = ++lastNodeId.node;
@@ -515,6 +566,7 @@ namespace Game {
 
 		switch(type) {
 			CASE(None, Node);
+			CASE(Final, NodeFinal);
 			CASE(Display, NodeDisplay);
 			CASE(Constant, NodeConstant);
 			CASE(Add, NodeAdd);

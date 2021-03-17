@@ -10,6 +10,7 @@
 #include <Engine/FlatHashMap.hpp>
 #include <imgui_node_editor.h>
 #include <Engine/ConfigParser.hpp>
+#include <Engine/Graphics/Texture.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -156,6 +157,7 @@ namespace Game {
 			
 			enum class NodeType : int {
 				None,
+				Final,
 				Display,
 				Constant,
 				Add,
@@ -194,6 +196,8 @@ namespace Game {
 			ax::NodeEditor::EditorContext* ctx;
 			Id lastNodeId = 0;
 			Id result;
+			Engine::Image img;
+			Engine::Texture2D texture;
 
 			/** Stores input pin -> output pin pairs. */
 			Engine::FlatHashMap<Id, Id, Id::Hash> links;
@@ -201,6 +205,7 @@ namespace Game {
 			using NodePtr = std::unique_ptr<Node>;
 			Engine::FlatHashMap<Id, NodePtr, Id::Hash> nodes;
 
+			void buildTexture();
 			NodePtr& addNode(NodeType type, Id id = {});
 
 		public:
