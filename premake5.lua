@@ -133,6 +133,7 @@ workspace(PROJECT_NAME .."Workspace")
 	filter "action:vs*"
 		buildoptions{
 			"/wd4996", -- Disable some warnings about things Visual Studio has taken apon itself to deem "deprecated"
+			"/wd4103", -- Work around for MSVC bug. TODO: remove when fixed - https://developercommunity.visualstudio.com/t/Warning-C4103-in-Visual-Studio-166-Upda/1057589
 			"/w15038", -- Enable out of order initialization warnings. Bugs related to this can be tricky to track down.
 		}
 
