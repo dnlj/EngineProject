@@ -1,6 +1,7 @@
 // Engine
 #include <Engine/ConfigParser.hpp>
 #include <Engine/Base16.hpp>
+#include <Engine/Noise/WorleyNoise.hpp>
 
 // Game
 #include <Game/MapTestUI.hpp>
@@ -230,6 +231,60 @@ namespace Game {
 	PASTE_NODE_BIN_OP(Mul, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a * b; return true; }));
 	PASTE_NODE_BIN_OP(Div, decltype([](const auto& a, const auto& b, auto& c) -> bool { return (b != decltype(b){}) && (c = a / b, true); }));
 	#undef PASTE_NODE_BIN_OP
+
+	
+	struct NodeNoise : MapTestUI::Node {
+		private:
+			Id imgId;
+			Engine::Noise::WorleyNoise noise;
+
+		public:
+			NodeNoise() : noise{42} {
+			}
+			~NodeNoise() {
+				if (imgId.full) { ctx->images.erase(imgId); }
+			}
+
+			virtual bool getOutputPinValue(Id pin, PinValue& val) override {
+				if (!imgId.full) {
+					imgId = pin;
+
+					auto& img = ctx->images[imgId];
+					img = ctx->img;
+					const auto& fmt = Engine::getPixelFormatInfo(img.format());
+					auto& sz = img.size();
+					for (int y = 0; y < sz.y; ++y) {
+						for (int x = 0; x < sz.x; ++x) {
+							const auto i = (y * sz.x + x) * fmt.channels;
+							const float32 s = 0.01f;
+							const float32 xs = s * static_cast<float32>(x);
+							const float32 ys = s * static_cast<float32>(y);
+							const byte v = static_cast<byte>(noise.valueF2F1(xs, ys).value * 255.0f);
+							img.data()[i + 0] = v;
+							img.data()[i + 1] = v;
+							img.data()[i + 2] = v;
+						}
+					}
+				}
+
+				val.type = PinType::Image;
+				val.asImageId = imgId;
+				return true;
+			};
+
+			virtual void render(Id id) override {
+				ImNode::BeginNode(id);
+				ImGui::Text("Worley Noise");
+				// TODO: input pin seed
+				ImGui::SameLine();
+
+				id.rotate(1);
+				ImNode::BeginPin(id, ImNode::PinKind::Output);
+					ImGui::Text("Out >");
+				ImNode::EndPin();
+				ImNode::EndNode();
+			}
+	};
 }
 
 namespace Game {
@@ -477,6 +532,7 @@ namespace Game {
 				if (ImGui::Button("Gradient")) {
 				}
 				if (ImGui::Button("Worley Noise")) {
+					addNode(NodeType::WorleyNoise);
 				}
 				if (ImGui::Button("Open Simplex Noise")) {
 				}
@@ -539,18 +595,29 @@ namespace Game {
 
 		PinValue val = {};
 
-		for (int y = 0; y < sz.y; ++y) {
+		/*for (int y = 0; y < sz.y; ++y) {
 			for (int x = 0; x < sz.x; ++x) {
 				if (!node->getInputPinValue(pin, val)) { continue; }
-				if (val.type != PinType::Float32) { continue; }
-
-				const auto i = (y * sz.x + x) * fmt.channels;
-				img.data()[i + 0] = static_cast<byte>(val.asFloat32 * 255);
-				img.data()[i + 1] = 0;
-				img.data()[i + 2] = 0;
+				if (val.type != PinType::Image) { continue; }
+				//if (val.type != PinType::Float32) { continue; }
+				//
+				//const auto i = (y * sz.x + x) * fmt.channels;
+				//img.data()[i + 0] = static_cast<byte>(val.asFloat32 * 255);
+				//img.data()[i + 1] = 0;
+				//img.data()[i + 2] = 0;
 			}
+		}*/
+
+		if (!node->getInputPinValue(pin, val)) {
+			ENGINE_WARN("Unable to get pin output.");
+			return;
 		}
-		texture.setImage(img);
+		if (val.type != PinType::Image) {
+			ENGINE_WARN("Output is not an image.");
+			return;
+		}
+
+		texture.setImage(images[val.asImageId]);
 	}
 	auto MapTestUI::addNode(NodeType type, Id id) -> NodePtr& {
 		if (!id.full) {
@@ -573,6 +640,7 @@ namespace Game {
 			CASE(Sub, NodeSub);
 			CASE(Mul, NodeMul);
 			CASE(Div, NodeDiv);
+			CASE(WorleyNoise, NodeNoise);
 			default: { ENGINE_ERROR("Unknown node type ", static_cast<int>(type)); }
 		}
 

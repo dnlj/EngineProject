@@ -91,7 +91,7 @@ namespace Game {
 					}
 				};
 			}; static_assert(sizeof(Id) == 8, "This type is assumed to be tightly packed.");
-			
+
 			enum class PinType {
 				Invalid = 0,
 				Bool,
@@ -100,6 +100,7 @@ namespace Game {
 				Vec2,
 				Vec3,
 				Vec4,
+				Image,
 				_COUNT,
 			};
 
@@ -134,6 +135,7 @@ namespace Game {
 					glm::vec2 asVec2;
 					glm::vec3 asVec3;
 					glm::vec4 asVec4;
+					Id asImageId;
 				};
 
 				PinValue() : type{} {}
@@ -164,6 +166,7 @@ namespace Game {
 				Sub,
 				Mul,
 				Div,
+				WorleyNoise,
 			};
 
 			struct Node {
@@ -196,7 +199,6 @@ namespace Game {
 			ax::NodeEditor::EditorContext* ctx;
 			Id lastNodeId = 0;
 			Id result;
-			Engine::Image img;
 			Engine::Texture2D texture;
 
 			/** Stores input pin -> output pin pairs. */
@@ -204,6 +206,12 @@ namespace Game {
 
 			using NodePtr = std::unique_ptr<Node>;
 			Engine::FlatHashMap<Id, NodePtr, Id::Hash> nodes;
+
+			/** Images used by nodes */
+		public: // TODO: not public
+			Engine::Image img;
+			Engine::FlatHashMap<Id, Engine::Image, Id::Hash> images;
+		private:
 
 			void buildTexture();
 			NodePtr& addNode(NodeType type, Id id = {});
