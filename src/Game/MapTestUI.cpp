@@ -76,8 +76,6 @@ namespace Game {
 
 			if (PinValue val; getInputPinValue(id, val)) {
 				switch (val.type) {
-					case PinType::Bool: { ImGui::Text("%i", val.asBool); break; }
-					case PinType::Int32: { ImGui::Text("%i", val.asInt32); break; }
 					case PinType::Float32: { ImGui::Text("%1.3f", val.asFloat32); break; }
 					case PinType::Vec2: { ImGui::Text("{ %1.3f, %1.3f }", val.asVec2.x, val.asVec2.y); break; }
 					case PinType::Vec3: { ImGui::Text("{ %1.3f, %1.3f, %1.3f }", val.asVec3.x, val.asVec3.y, val.asVec3.z); break; }
@@ -116,8 +114,6 @@ namespace Game {
 
 			ImGui::SetNextItemWidth(150);
 			switch (value.type) {
-				case PinType::Bool: { ImGui::Checkbox("Value", &value.asBool); break; }
-				case PinType::Int32: { ImGui::DragInt("Value", &value.asInt32); break; }
 				case PinType::Float32: { ImGui::DragFloat("Value", &value.asFloat32); break; }
 				case PinType::Vec2: { ImGui::DragFloat2("Value", &value.asVec2[0]); break; }
 				case PinType::Vec3: { ImGui::DragFloat3("Value", &value.asVec3[0]); break; }
@@ -333,7 +329,8 @@ namespace Game {
 							const float32 s = 0.01f;
 							const float32 xs = s * static_cast<float32>(x);
 							const float32 ys = s * static_cast<float32>(y);
-							const byte v = static_cast<byte>(noise.valueF2F1(xs, ys).value * 255.0f);
+							//const byte v = static_cast<byte>(noise.valueF2F1(xs, ys).value * 255.0f);
+							const byte v = static_cast<byte>(noise.valueD2(xs, ys).value * 255.0f);
 							img.data()[i + 0] = v;
 							img.data()[i + 1] = v;
 							img.data()[i + 2] = v;
@@ -351,7 +348,6 @@ namespace Game {
 				ImGui::Text("Worley Noise");
 				// TODO: input pin seed
 				ImGui::SameLine();
-
 				id.rotate(1);
 				ImNode::BeginPin(id, ImNode::PinKind::Output);
 					ImGui::Text("Out >");

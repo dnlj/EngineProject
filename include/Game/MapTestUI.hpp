@@ -94,8 +94,6 @@ namespace Game {
 
 			enum PinType {
 				Invalid = 0,
-				Bool, // TODO: rm? we dont really use bools and would simplify code.
-				Int32, // TODO: rm? dont think we really need ints and would simplify code
 				Float32,
 				Vec2,
 				Vec3,
@@ -107,7 +105,7 @@ namespace Game {
 			// TODO: move to xmacro. its the simpleest solution
 			constexpr static const char* pinTypeToString(PinType type) noexcept {
 				const int i = static_cast<int>(type);
-				constexpr const char* names[] = {"Invalid","Bool","Int32","Float32","Vec2","Vec3","Vec4"};
+				constexpr const char* names[] = {"Invalid","Float32","Vec2","Vec3","Vec4"};
 				if (i < 0 || i >= std::size(names)) { return names[0]; }
 				return names[i];
 			}
@@ -129,8 +127,6 @@ namespace Game {
 				PinType type;
 				union {
 					byte asByte;
-					bool asBool;
-					int32 asInt32;
 					float32 asFloat32;
 					glm::vec2 asVec2;
 					glm::vec3 asVec3;
@@ -139,8 +135,6 @@ namespace Game {
 				};
 
 				PinValue() : type{} {}
-				PinValue(bool val) : type{PinType::Bool}, asBool{val} {}
-				PinValue(int32 val) : type{PinType::Int32}, asInt32{val} {}
 				PinValue(float32 val) : type{PinType::Float32}, asFloat32{val} {}
 				PinValue(glm::vec2 val) : type{PinType::Vec2}, asVec2{val} {}
 				PinValue(glm::vec3 val) : type{PinType::Vec3}, asVec3{val} {}
