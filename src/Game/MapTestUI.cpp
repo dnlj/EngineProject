@@ -170,6 +170,15 @@ namespace Game {
 
 	template<auto Name, class Op>
 	struct NodeBinOp : MapTestUI::Node {
+		/////
+		/////
+		/////
+		/////
+		// TODO: cleanup output img in destructor
+		/////
+		/////
+		/////
+		/////
 		virtual bool getOutputPinValue(const Id pin, PinValue& val) override {
 			auto in = pin;
 			in.rotate(1);
@@ -214,6 +223,8 @@ namespace Game {
 		using Func = bool(*)(const PinValue& left, const PinValue& right, PinValue& out, Id outId, MapTestUI& ctx);
 		struct Lookup { Func arr[PinType::_COUNT][PinType::_COUNT] = {}; };
 		#define FUNC [](const PinValue& left, const PinValue& right, PinValue& out, Id outId, MapTestUI& ctx) -> bool
+		#define LAZY(L, R) lookup.arr[PinType::L][PinType::R] = FUNC 
+		#define EZ(L, R, Op) LAZY(L, R) { out = Op{}(left.as ##L, right.as ##R); return true; };
 
 		template<class LookupImpl>
 		struct OpOutline {
@@ -236,59 +247,64 @@ namespace Game {
 			};
 		};
 
-		struct Div : OpOutline<Div> {
+		template<class Op>
+		struct CommonOp : OpOutline<CommonOp<Op>> {
 			consteval static void build(Lookup& lookup) noexcept {
-				#define LAZY(L, R) lookup.arr[PinType::L][PinType::R] = FUNC 
-				#define EZ(L, R) LAZY(L, R) { out = left.as ##L / right.as ##R; return true; };
-
-				EZ(Float32, Float32);
-				EZ(Vec2, Float32);
-				EZ(Vec3, Float32);
-				EZ(Vec4, Float32);
+				EZ(Float32, Float32, Op);
+				EZ(Vec2, Float32, Op);
+				EZ(Vec2, Vec2, Op);
+				EZ(Vec3, Float32, Op);
+				EZ(Vec3, Vec3, Op);
+				EZ(Vec4, Float32, Op);
+				EZ(Vec4, Vec4, Op);
+			
 				LAZY(Image, Float32) {
-					auto& iimg = ctx.images[left.asImageId];
+					auto& limg = ctx.images[left.asImageId];
 					auto& oimg = ctx.images[outId];
-					oimg.copySettings(iimg);
+					oimg.copySettings(limg);
 				
 					const auto sz = oimg.size().x * oimg.size().y * Engine::getPixelFormatInfo(oimg.format()).channels;
-					auto* idat = iimg.data();
-					auto* odat = oimg.data();
 					for (size_t i = 0; i < sz; ++i) {
-						odat[i] = static_cast<byte>(idat[i] / right.asFloat32);
+						oimg.data()[i] = static_cast<byte>(Op{}(static_cast<float32>(limg.data()[i]), right.asFloat32));
 					}
-
-					ENGINE_LOG("Image / Float32 : ", sz);
-
+				
 					out.type = PinType::Image;
 					out.asImageId = outId;
 					return true;
 				};
-
-				#undef EZ
-				#undef LAZY
+			
+				LAZY(Image, Image) {
+					auto& limg = ctx.images[left.asImageId];
+					auto& rimg = ctx.images[right.asImageId];
+					if (limg.format() != rimg.format() || limg.size() != rimg.size()) { return false; }
+				
+					auto& oimg = ctx.images[outId];
+					oimg.copySettings(limg);
+				
+					const auto sz = oimg.size().x * oimg.size().y * Engine::getPixelFormatInfo(oimg.format()).channels;
+					for (size_t i = 0; i < sz; ++i) {
+						oimg.data()[i] = static_cast<byte>(Op{}(static_cast<float32>(limg.data()[i]), static_cast<float32>(rimg.data()[i])));
+					}
+				
+					out.type = PinType::Image;
+					out.asImageId = outId;
+					return true;
+				};
 			}
 		};
 
+		#undef EZ
+		#undef LAZY
 		#undef FUNC
 	}
 	
-	//#define PASTE_NODE_BIN_OP(N, O)\
-	//	constexpr static const char _name_for_node_##N[] = #N;\
-	//	using Node##N = NodeBinOp<_name_for_node_##N, O>;
-	//PASTE_NODE_BIN_OP(Add, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a + b; return true; }));
-	//PASTE_NODE_BIN_OP(Sub, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a - b; return true; }));
-	//PASTE_NODE_BIN_OP(Mul, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a * b; return true; }));
-	//PASTE_NODE_BIN_OP(Div, decltype([](const auto& a, const auto& b, auto& c) -> bool { return (b != decltype(b){}) && (c = a / b, true); }));
-	//#undef PASTE_NODE_BIN_OP
-
-
-	#define PASTE_NODE_BIN_OP(N)\
+	#define PASTE_NODE_BIN_OP(N, O)\
 		constexpr static const char _name_for_node_##N[] = #N;\
-		using Node##N = NodeBinOp<_name_for_node_##N, Detail::Ops::N>;
-	//PASTE_NODE_BIN_OP(Add, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a + b; return true; }));
-	//PASTE_NODE_BIN_OP(Sub, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a - b; return true; }));
-	//PASTE_NODE_BIN_OP(Mul, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a * b; return true; }));
-	PASTE_NODE_BIN_OP(Div);
+		using Node##N = NodeBinOp<_name_for_node_##N, Detail::Ops::CommonOp<O>>;
+	PASTE_NODE_BIN_OP(Add, decltype([](const auto& a, const auto& b) { return a + b; }));
+	PASTE_NODE_BIN_OP(Sub, decltype([](const auto& a, const auto& b) { return a - b; }));
+	PASTE_NODE_BIN_OP(Mul, decltype([](const auto& a, const auto& b) { return a * b; }));
+	PASTE_NODE_BIN_OP(Div, decltype([](const auto& a, const auto& b) { return a / b; }));
 	#undef PASTE_NODE_BIN_OP
 
 	
@@ -681,9 +697,9 @@ namespace Game {
 			CASE(Final, NodeFinal);
 			CASE(Display, NodeDisplay);
 			CASE(Constant, NodeConstant);
-			//CASE(Add, NodeAdd);
-			//CASE(Sub, NodeSub);
-			//CASE(Mul, NodeMul);
+			CASE(Add, NodeAdd);
+			CASE(Sub, NodeSub);
+			CASE(Mul, NodeMul);
 			CASE(Div, NodeDiv);
 			CASE(WorleyNoise, NodeNoise);
 			default: { ENGINE_ERROR("Unknown node type ", static_cast<int>(type)); }
