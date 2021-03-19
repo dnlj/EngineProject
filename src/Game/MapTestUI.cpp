@@ -302,16 +302,17 @@ namespace Game {
 	PASTE_NODE_BIN_OP(Div, decltype([](const auto& a, const auto& b) { return a / b; }));
 	#undef PASTE_NODE_BIN_OP
 
-	
-	struct NodeNoise : MapTestUI::Node {
+
+	template<int Type>
+	struct NodeWorleyNoise : MapTestUI::Node {
 		private:
 			Id imgId;
 			Engine::Noise::WorleyNoise noise;
 
 		public:
-			NodeNoise() : noise{42} {
+			NodeWorleyNoise() : noise{42} {
 			}
-			~NodeNoise() {
+			~NodeWorleyNoise() {
 				if (imgId.full) { ctx->images.erase(imgId); }
 			}
 
@@ -329,8 +330,14 @@ namespace Game {
 							const float32 s = 0.01f;
 							const float32 xs = s * static_cast<float32>(x);
 							const float32 ys = s * static_cast<float32>(y);
-							//const byte v = static_cast<byte>(noise.valueF2F1(xs, ys).value * 255.0f);
-							const byte v = static_cast<byte>(noise.valueD2(xs, ys).value * 255.0f);
+							byte v;
+							if constexpr (Type == 0) {
+								v = static_cast<byte>(noise.valueD2(xs, ys).value * 255.0f);
+							} else if constexpr (Type == 1) {
+								v = static_cast<byte>(noise.valueF2F1(xs, ys).value * 255.0f);
+							} else {
+								static_assert(false, "Invalid noise type.");
+							}
 							img.data()[i + 0] = v;
 							img.data()[i + 1] = v;
 							img.data()[i + 2] = v;
@@ -604,6 +611,9 @@ namespace Game {
 				if (ImGui::Button("Worley Noise")) {
 					addNode(NodeType::WorleyNoise);
 				}
+				if (ImGui::Button("Worley Noise 2")) {
+					addNode(NodeType::WorleyNoise2);
+				}
 				if (ImGui::Button("Open Simplex Noise")) {
 				}
 				if (ImGui::Button("White Noise")) {
@@ -696,7 +706,8 @@ namespace Game {
 			CASE(Sub, NodeSub);
 			CASE(Mul, NodeMul);
 			CASE(Div, NodeDiv);
-			CASE(WorleyNoise, NodeNoise);
+			CASE(WorleyNoise, NodeWorleyNoise<0>);
+			CASE(WorleyNoise2, NodeWorleyNoise<1>);
 			default: { ENGINE_ERROR("Unknown node type ", static_cast<int>(type)); }
 		}
 

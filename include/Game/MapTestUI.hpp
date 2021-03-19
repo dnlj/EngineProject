@@ -161,6 +161,7 @@ namespace Game {
 				Mul,
 				Div,
 				WorleyNoise,
+				WorleyNoise2,
 			};
 
 			struct Node {
