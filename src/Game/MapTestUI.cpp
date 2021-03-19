@@ -170,30 +170,17 @@ namespace Game {
 
 	template<auto Name, class Op>
 	struct NodeBinOp : MapTestUI::Node {
-		virtual bool getOutputPinValue(Id pin, PinValue& val) override {
-			pin.rotate(1);
+		virtual bool getOutputPinValue(const Id pin, PinValue& val) override {
+			auto in = pin;
+			in.rotate(1);
 			PinValue a;
-			if (!getInputPinValue(pin, a)) { return false; }
+			if (!getInputPinValue(in, a)) { return false; }
 
-			pin.input.pin = 2;
+			in.input.pin = 2;
 			PinValue b;
-			if (!getInputPinValue(pin, b)) { return false; }
+			if (!getInputPinValue(in, b)) { return false; }
 
-			if (a.type != b.type) { return false; }
-
-			// TODO: need to handle type combos. i want to be able to write vec4*int and similar
-			val.type = a.type;
-			switch (a.type) {
-				//case PinType::Bool: { return Op{}(a.asBool, b.asBool, val.asBool); }
-				case PinType::Int32: { return Op{}(a.asInt32, b.asInt32, val.asInt32); }
-				case PinType::Float32: { return Op{}(a.asFloat32, b.asFloat32, val.asFloat32); }
-				case PinType::Vec2: { return Op{}(a.asVec2, b.asVec2, val.asVec2); }
-				case PinType::Vec3: { return Op{}(a.asVec3, b.asVec3, val.asVec3); }
-				case PinType::Vec4: { return Op{}(a.asVec4, b.asVec4, val.asVec4); }
-			}
-
-			val.type = PinType::Invalid;
-			return false;
+			return Op{}(a, b, val, pin, *ctx);
 		}
 
 		virtual void render(Id id) override {
@@ -222,14 +209,86 @@ namespace Game {
 		}
 	};
 
+
+	namespace Detail::Ops {
+		using Func = bool(*)(const PinValue& left, const PinValue& right, PinValue& out, Id outId, MapTestUI& ctx);
+		struct Lookup { Func arr[PinType::_COUNT][PinType::_COUNT] = {}; };
+		#define FUNC [](const PinValue& left, const PinValue& right, PinValue& out, Id outId, MapTestUI& ctx) -> bool
+
+		template<class LookupImpl>
+		struct OpOutline {
+			consteval static Lookup buildLookup() noexcept {
+				Lookup tmp;
+				constexpr auto invalid = FUNC { ENGINE_WARN("Invalid Op"); return false; };
+				for (int x = 0; x < std::size(tmp.arr); ++x) {
+					for (int y = 0; y < std::size(tmp.arr[0]); ++y) {
+						tmp.arr[x][y] = invalid;
+					}
+				}
+				LookupImpl::build(tmp);
+				return tmp;
+			}
+
+			bool operator()(const PinValue& left, const PinValue& right, PinValue& out, Id outId, MapTestUI& ctx) {
+				constexpr static Lookup lookup = buildLookup();
+				const auto& func = lookup.arr[static_cast<int>(left.type)][static_cast<int>(right.type)];
+				return func(left, right, out, outId, ctx);
+			};
+		};
+
+		struct Div : OpOutline<Div> {
+			consteval static void build(Lookup& lookup) noexcept {
+				#define LAZY(L, R) lookup.arr[PinType::L][PinType::R] = FUNC 
+				#define EZ(L, R) LAZY(L, R) { out = left.as ##L / right.as ##R; return true; };
+
+				EZ(Float32, Float32);
+				EZ(Vec2, Float32);
+				EZ(Vec3, Float32);
+				EZ(Vec4, Float32);
+				LAZY(Image, Float32) {
+					auto& iimg = ctx.images[left.asImageId];
+					auto& oimg = ctx.images[outId];
+					oimg.copySettings(iimg);
+				
+					const auto sz = oimg.size().x * oimg.size().y * Engine::getPixelFormatInfo(oimg.format()).channels;
+					auto* idat = iimg.data();
+					auto* odat = oimg.data();
+					for (size_t i = 0; i < sz; ++i) {
+						odat[i] = static_cast<byte>(idat[i] / right.asFloat32);
+					}
+
+					ENGINE_LOG("Image / Float32 : ", sz);
+
+					out.type = PinType::Image;
+					out.asImageId = outId;
+					return true;
+				};
+
+				#undef EZ
+				#undef LAZY
+			}
+		};
+
+		#undef FUNC
+	}
 	
-	#define PASTE_NODE_BIN_OP(N, O)\
+	//#define PASTE_NODE_BIN_OP(N, O)\
+	//	constexpr static const char _name_for_node_##N[] = #N;\
+	//	using Node##N = NodeBinOp<_name_for_node_##N, O>;
+	//PASTE_NODE_BIN_OP(Add, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a + b; return true; }));
+	//PASTE_NODE_BIN_OP(Sub, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a - b; return true; }));
+	//PASTE_NODE_BIN_OP(Mul, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a * b; return true; }));
+	//PASTE_NODE_BIN_OP(Div, decltype([](const auto& a, const auto& b, auto& c) -> bool { return (b != decltype(b){}) && (c = a / b, true); }));
+	//#undef PASTE_NODE_BIN_OP
+
+
+	#define PASTE_NODE_BIN_OP(N)\
 		constexpr static const char _name_for_node_##N[] = #N;\
-		using Node##N = NodeBinOp<_name_for_node_##N, O>;
-	PASTE_NODE_BIN_OP(Add, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a + b; return true; }));
-	PASTE_NODE_BIN_OP(Sub, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a - b; return true; }));
-	PASTE_NODE_BIN_OP(Mul, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a * b; return true; }));
-	PASTE_NODE_BIN_OP(Div, decltype([](const auto& a, const auto& b, auto& c) -> bool { return (b != decltype(b){}) && (c = a / b, true); }));
+		using Node##N = NodeBinOp<_name_for_node_##N, Detail::Ops::N>;
+	//PASTE_NODE_BIN_OP(Add, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a + b; return true; }));
+	//PASTE_NODE_BIN_OP(Sub, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a - b; return true; }));
+	//PASTE_NODE_BIN_OP(Mul, decltype([](const auto& a, const auto& b, auto& c) -> bool { c = a * b; return true; }));
+	PASTE_NODE_BIN_OP(Div);
 	#undef PASTE_NODE_BIN_OP
 
 	
@@ -250,7 +309,7 @@ namespace Game {
 					imgId = pin;
 
 					auto& img = ctx->images[imgId];
-					img = ctx->img;
+					img.copySettings(ctx->img);
 					const auto& fmt = Engine::getPixelFormatInfo(img.format());
 					auto& sz = img.size();
 					for (int y = 0; y < sz.y; ++y) {
@@ -594,20 +653,6 @@ namespace Game {
 		pin.input.pin = 1;
 
 		PinValue val = {};
-
-		/*for (int y = 0; y < sz.y; ++y) {
-			for (int x = 0; x < sz.x; ++x) {
-				if (!node->getInputPinValue(pin, val)) { continue; }
-				if (val.type != PinType::Image) { continue; }
-				//if (val.type != PinType::Float32) { continue; }
-				//
-				//const auto i = (y * sz.x + x) * fmt.channels;
-				//img.data()[i + 0] = static_cast<byte>(val.asFloat32 * 255);
-				//img.data()[i + 1] = 0;
-				//img.data()[i + 2] = 0;
-			}
-		}*/
-
 		if (!node->getInputPinValue(pin, val)) {
 			ENGINE_WARN("Unable to get pin output.");
 			return;
@@ -636,9 +681,9 @@ namespace Game {
 			CASE(Final, NodeFinal);
 			CASE(Display, NodeDisplay);
 			CASE(Constant, NodeConstant);
-			CASE(Add, NodeAdd);
-			CASE(Sub, NodeSub);
-			CASE(Mul, NodeMul);
+			//CASE(Add, NodeAdd);
+			//CASE(Sub, NodeSub);
+			//CASE(Mul, NodeMul);
 			CASE(Div, NodeDiv);
 			CASE(WorleyNoise, NodeNoise);
 			default: { ENGINE_ERROR("Unknown node type ", static_cast<int>(type)); }

@@ -92,10 +92,10 @@ namespace Game {
 				};
 			}; static_assert(sizeof(Id) == 8, "This type is assumed to be tightly packed.");
 
-			enum class PinType {
+			enum PinType {
 				Invalid = 0,
-				Bool,
-				Int32,
+				Bool, // TODO: rm? we dont really use bools and would simplify code.
+				Int32, // TODO: rm? dont think we really need ints and would simplify code
 				Float32,
 				Vec2,
 				Vec3,

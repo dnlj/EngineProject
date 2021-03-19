@@ -61,7 +61,11 @@ namespace Engine::Noise {
 			}
 
 			// TODO: doc
-			// TODO: name
+			// TODO: name? F1Squared would be more standard
+			/**
+			 * TODO: finish doc
+			 * In this case Result::value is the squared distance to the nearest point.
+			 */
 			Result valueD2(Float x, Float y) const {
 				Result result;
 
@@ -79,6 +83,11 @@ namespace Engine::Noise {
 
 			// TODO: doc
 			// TODO: name
+			/**
+			 * TODO: finish doc
+			 * TODO: typically F2-F1 is with the distances not the squared distances
+			 * In this case Result::value is difference between the squared distance to the two nearest point.
+			 */
 			Result valueF2F1(Float x, Float y) const {
 				Result result1;
 				Result result2;

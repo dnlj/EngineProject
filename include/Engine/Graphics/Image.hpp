@@ -61,6 +61,12 @@ namespace Engine {
 			ENGINE_INLINE const byte* data() const noexcept { return storage.data(); }
 			ENGINE_INLINE byte* data() noexcept { return storage.data(); }
 
+			void copySettings(const Image& other) {
+				fmt = other.fmt;
+				dims = other.dims;
+				storage.resize(other.storage.size());
+			}
+
 			void flipY() {
 				const auto& info = getPixelFormatInfo(fmt);
 				const auto rowLength = dims.x * info.channels;
