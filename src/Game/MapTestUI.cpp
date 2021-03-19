@@ -170,15 +170,13 @@ namespace Game {
 
 	template<auto Name, class Op>
 	struct NodeBinOp : MapTestUI::Node {
-		/////
-		/////
-		/////
-		/////
-		// TODO: cleanup output img in destructor
-		/////
-		/////
-		/////
-		/////
+		Id outPin;
+
+		~NodeBinOp() {
+			auto found = ctx->images.find(outPin);
+			if (found != ctx->images.end()) { ctx->images.erase(outPin); }
+		}
+
 		virtual bool getOutputPinValue(const Id pin, PinValue& val) override {
 			auto in = pin;
 			in.rotate(1);
@@ -189,6 +187,7 @@ namespace Game {
 			PinValue b;
 			if (!getInputPinValue(in, b)) { return false; }
 
+			outPin = pin;
 			return Op{}(a, b, val, pin, *ctx);
 		}
 
