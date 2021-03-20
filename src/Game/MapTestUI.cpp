@@ -2,6 +2,7 @@
 #include <Engine/ConfigParser.hpp>
 #include <Engine/Base16.hpp>
 #include <Engine/Noise/WorleyNoise.hpp>
+#include <Engine/Noise/OpenSimplexNoise.hpp>
 
 // Game
 #include <Game/MapTestUI.hpp>
@@ -418,7 +419,7 @@ namespace Game {
 				ImGui::SameLine();
 				id.rotate(3);
 				ImNode::BeginPin(id, ImNode::PinKind::Output);
-					ImGui::Text("Out >");
+					ImGui::Text("Out >32");
 				ImNode::EndPin();
 				ImNode::EndNode();
 			}
@@ -448,6 +449,26 @@ namespace Game {
 				noise.setSeed(reinterpret_cast<const int32&>(seed));
 			}
 	};
+
+	
+	class NodeSimplexNoise : public NodeScaleSeedNoise<NodeSimplexNoise> {
+		private:
+			Engine::Noise::OpenSimplexNoise noise;
+
+		public:
+			NodeSimplexNoise() : noise{reinterpret_cast<const int32&>(this->seed)} {
+				this->title = "Simplex Noise";
+			}
+
+			glm::u8vec3 valueAt(const float32 x, const float32 y) const {
+				auto rescale = (1.0f + noise.value(x, y)) * (255.0f / 2.0f);
+				return glm::u8vec3{static_cast<glm::u8>(rescale)};
+			}
+
+			void setSeed(float32 seed) {
+				noise.setSeed(reinterpret_cast<const int32&>(seed));
+			}
+	};
 }
 
 namespace Game {
@@ -457,7 +478,6 @@ namespace Game {
 		result = ++lastNodeId.node;
 		addNode(NodeType::Final, result);
 
-		
 		Engine::ConfigParser save;
 		save.loadAndTokenize("node_test.dat");
 
@@ -529,7 +549,7 @@ namespace Game {
 
 		{ // Init Texture
 			img = {Engine::PixelFormat::RGB8, {512, 512}};
-			texture.setStorage(Engine::TextureFormat::RGB8, img.size());
+			texture.setStorage(Engine::TextureFormat::SRGB8, img.size());
 			texture.setFilter(Engine::TextureFilter::NEAREST);
 			buildTexture();
 		}
@@ -700,7 +720,8 @@ namespace Game {
 				if (ImGui::Button("Worley Noise 2")) {
 					addNode(NodeType::WorleyNoise2);
 				}
-				if (ImGui::Button("Open Simplex Noise")) {
+				if (ImGui::Button("Simplex Noise")) {
+					addNode(NodeType::SimplexNoise);
 				}
 				if (ImGui::Button("White Noise")) {
 				}
@@ -794,6 +815,7 @@ namespace Game {
 			CASE(Div, NodeDiv);
 			CASE(WorleyNoise, NodeWorleyNoise<0>);
 			CASE(WorleyNoise2, NodeWorleyNoise<1>);
+			CASE(SimplexNoise, NodeSimplexNoise);
 			default: { ENGINE_ERROR("Unknown node type ", static_cast<int>(type)); }
 		}
 

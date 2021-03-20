@@ -162,6 +162,7 @@ namespace Game {
 				Div,
 				WorleyNoise,
 				WorleyNoise2,
+				SimplexNoise,
 			};
 
 			struct Node {

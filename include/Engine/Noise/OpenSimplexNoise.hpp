@@ -19,8 +19,12 @@ namespace Engine::Noise {
 			OpenSimplexNoise(int64 seed) : perm{seed} {
 			}
 
+			void setSeed(int64 seed) {
+				perm = seed;
+			}
+
 			// 2D OpenSimplex Noise.
-			Float value(Float x, Float y) {
+			Float value(Float x, Float y) const {
 
 				// Place input coordinates onto grid.
 				Float stretchOffset = (x + y) * STRETCH_CONSTANT_2D;
