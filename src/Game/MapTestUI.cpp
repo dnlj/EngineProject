@@ -322,10 +322,8 @@ namespace Game {
 
 			virtual bool getOutputPinValue(Id pin, PinValue& val) override {
 				static_cast<Derived*>(this)->pre(pin);
-
 				if (!imgId.full) {
 					imgId = pin;
-
 					auto& img = ctx->images[imgId];
 					img.copySettings(ctx->img);
 					const auto& fmt = Engine::getPixelFormatInfo(img.format());
@@ -347,19 +345,16 @@ namespace Game {
 			};
 	};
 
-	template<int Type>
-	class NodeWorleyNoise : public NodeBitmap<NodeWorleyNoise<Type>> {
-		private:
+	template<class Derived>
+	class NodeScaleSeedNoise : public NodeBitmap<NodeScaleSeedNoise<Derived>> {
+		protected:
+			const char* title = "## TITLE ##";
 			float32 oldseed = 3.14159265f;
 			float32 seed = oldseed;
 			float32 oldscale = 0.01f;
 			float32 scale = oldscale;
-			Engine::Noise::WorleyNoise noise;
 
 		public:
-			NodeWorleyNoise() : noise{reinterpret_cast<const int32&>(seed)} {
-			}
-
 			void pre(Id id) {
 				PinValue val;
 
@@ -382,7 +377,7 @@ namespace Game {
 
 				if (seed != oldseed) {
 					this->cleanup();
-					noise.setSeed(reinterpret_cast<const int32&>(seed));
+					static_cast<Derived*>(this)->setSeed(seed);
 					oldseed = seed;
 				}
 			}
@@ -390,19 +385,12 @@ namespace Game {
 			glm::u8vec3 valueAt(int x, int y) const {
 				const float32 xs = scale * static_cast<float32>(x);
 				const float32 ys = scale * static_cast<float32>(y);
-
-				if constexpr (Type == 0) {
-					return glm::u8vec3{static_cast<glm::u8>(noise.valueD2(xs, ys).value * 255.0f)};
-				} else if constexpr (Type == 1) {
-					return glm::u8vec3{static_cast<glm::u8>(noise.valueF2F1(xs, ys).value * 255.0f)};
-				} else {
-					static_assert(false, "Invalid noise type.");
-				}
+				return static_cast<const Derived*>(this)->valueAt(xs, ys);
 			};
 
 			virtual void render(Id id) override {
 				ImNode::BeginNode(id);
-				ImGui::Text("Worley Noise");
+				ImGui::Text(title);
 
 				id.input.pin = 1;
 				ImNode::BeginPin(id, ImNode::PinKind::Input);
@@ -433,6 +421,31 @@ namespace Game {
 					ImGui::Text("Out >");
 				ImNode::EndPin();
 				ImNode::EndNode();
+			}
+	};
+
+	template<int Type>
+	class NodeWorleyNoise : public NodeScaleSeedNoise<NodeWorleyNoise<Type>> {
+		private:
+			Engine::Noise::WorleyNoise noise;
+
+		public:
+			NodeWorleyNoise() : noise{reinterpret_cast<const int32&>(this->seed)} {
+				this->title = "Worley Noise 1234";
+			}
+
+			glm::u8vec3 valueAt(const float32 x, const float32 y) const {
+				if constexpr (Type == 0) {
+					return glm::u8vec3{static_cast<glm::u8>(noise.valueD2(x, y).value * 255.0f)};
+				} else if constexpr (Type == 1) {
+					return glm::u8vec3{static_cast<glm::u8>(noise.valueF2F1(x, y).value * 255.0f)};
+				} else {
+					static_assert(false, "Invalid noise type.");
+				}
+			}
+
+			void setSeed(float32 seed) {
+				noise.setSeed(reinterpret_cast<const int32&>(seed));
 			}
 	};
 }
