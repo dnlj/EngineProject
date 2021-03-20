@@ -190,7 +190,7 @@ namespace Game {
 				virtual void fromConfig(Engine::ConfigParser& cfg, const std::string& pre) {}
 			};
 
-		private:
+		public: // TODO: not public
 			ax::NodeEditor::EditorContext* ctx;
 			Id lastNodeId = 0;
 			Id result;
@@ -203,10 +203,8 @@ namespace Game {
 			Engine::FlatHashMap<Id, NodePtr, Id::Hash> nodes;
 
 			/** Images used by nodes */
-		public: // TODO: not public
 			Engine::Image img;
 			Engine::FlatHashMap<Id, Engine::Image, Id::Hash> images;
-		private:
 
 			void buildTexture();
 			NodePtr& addNode(NodeType type, Id id = {});

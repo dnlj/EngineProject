@@ -60,6 +60,10 @@ namespace Engine::Noise {
 			WorleyNoiseGeneric(int64 seed, const Dist& dist) : perm{seed}, dist{dist} {
 			}
 
+			void setSeed(int64 seed) {
+				perm = seed;
+			}
+
 			// TODO: doc
 			// TODO: name? F1Squared would be more standard
 			/**

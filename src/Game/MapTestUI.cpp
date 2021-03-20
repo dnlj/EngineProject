@@ -302,21 +302,27 @@ namespace Game {
 	PASTE_NODE_BIN_OP(Div, decltype([](const auto& a, const auto& b) { return a / b; }));
 	#undef PASTE_NODE_BIN_OP
 
-
-	template<int Type>
-	struct NodeWorleyNoise : MapTestUI::Node {
+	
+	template<class Derived>
+	class NodeBitmap : public MapTestUI::Node {
 		private:
 			Id imgId;
-			Engine::Noise::WorleyNoise noise;
 
 		public:
-			NodeWorleyNoise() : noise{42} {
+			~NodeBitmap() {
+				cleanup();
 			}
-			~NodeWorleyNoise() {
-				if (imgId.full) { ctx->images.erase(imgId); }
+
+			void cleanup() {
+				if (imgId.full) {
+					ctx->images.erase(imgId);
+					imgId = {};
+				}
 			}
 
 			virtual bool getOutputPinValue(Id pin, PinValue& val) override {
+				static_cast<Derived*>(this)->pre(pin);
+
 				if (!imgId.full) {
 					imgId = pin;
 
@@ -327,20 +333,10 @@ namespace Game {
 					for (int y = 0; y < sz.y; ++y) {
 						for (int x = 0; x < sz.x; ++x) {
 							const auto i = (y * sz.x + x) * fmt.channels;
-							const float32 s = 0.01f;
-							const float32 xs = s * static_cast<float32>(x);
-							const float32 ys = s * static_cast<float32>(y);
-							byte v;
-							if constexpr (Type == 0) {
-								v = static_cast<byte>(noise.valueD2(xs, ys).value * 255.0f);
-							} else if constexpr (Type == 1) {
-								v = static_cast<byte>(noise.valueF2F1(xs, ys).value * 255.0f);
-							} else {
-								static_assert(false, "Invalid noise type.");
-							}
-							img.data()[i + 0] = v;
-							img.data()[i + 1] = v;
-							img.data()[i + 2] = v;
+							const glm::u8vec3 res = static_cast<Derived*>(this)->valueAt(x, y);
+							img.data()[i + 0] = res.r;
+							img.data()[i + 1] = res.g;
+							img.data()[i + 2] = res.b;
 						}
 					}
 				}
@@ -349,13 +345,90 @@ namespace Game {
 				val.asImageId = imgId;
 				return true;
 			};
+	};
+
+	template<int Type>
+	class NodeWorleyNoise : public NodeBitmap<NodeWorleyNoise<Type>> {
+		private:
+			float32 oldseed = 3.14159265f;
+			float32 seed = oldseed;
+			float32 oldscale = 0.01f;
+			float32 scale = oldscale;
+			Engine::Noise::WorleyNoise noise;
+
+		public:
+			NodeWorleyNoise() : noise{reinterpret_cast<const int32&>(seed)} {
+			}
+
+			void pre(Id id) {
+				PinValue val;
+
+				id.rotate(1);
+				if(this->getInputPinValue(id, val)) {
+					if (val.type != PinType::Float32) { return; }
+					seed = val.asFloat32;
+				}
+
+				id.input.pin = 2;
+				if(this->getInputPinValue(id, val)) {
+					if (val.type != PinType::Float32) { return; }
+					scale = val.asFloat32;
+				}
+
+				if (scale != oldscale) {
+					oldscale = scale;
+					this->cleanup();
+				};
+
+				if (seed != oldseed) {
+					this->cleanup();
+					noise.setSeed(reinterpret_cast<const int32&>(seed));
+					oldseed = seed;
+				}
+			}
+
+			glm::u8vec3 valueAt(int x, int y) const {
+				const float32 xs = scale * static_cast<float32>(x);
+				const float32 ys = scale * static_cast<float32>(y);
+
+				if constexpr (Type == 0) {
+					return glm::u8vec3{static_cast<glm::u8>(noise.valueD2(xs, ys).value * 255.0f)};
+				} else if constexpr (Type == 1) {
+					return glm::u8vec3{static_cast<glm::u8>(noise.valueF2F1(xs, ys).value * 255.0f)};
+				} else {
+					static_assert(false, "Invalid noise type.");
+				}
+			};
 
 			virtual void render(Id id) override {
 				ImNode::BeginNode(id);
 				ImGui::Text("Worley Noise");
-				// TODO: input pin seed
+
+				id.input.pin = 1;
+				ImNode::BeginPin(id, ImNode::PinKind::Input);
+					ImGui::Text("Seed >");
+				ImNode::EndPin();
+
+				const auto& links = this->ctx->links;
+				if (links.find(id) == links.end()) {
+					ImGui::SameLine();
+					ImGui::SetNextItemWidth(64);
+					ImGui::DragFloat("##seed", &seed);
+				}
+				
+				id.input.pin = 2;
+				ImNode::BeginPin(id, ImNode::PinKind::Input);
+					ImGui::Text("Scale >");
+				ImNode::EndPin();
+
+				if (links.find(id) == links.end()) {
+					ImGui::SameLine();
+					ImGui::SetNextItemWidth(64);
+					ImGui::DragFloat("##scale", &scale, 0.001f);
+				}
+
 				ImGui::SameLine();
-				id.rotate(1);
+				id.rotate(3);
 				ImNode::BeginPin(id, ImNode::PinKind::Output);
 					ImGui::Text("Out >");
 				ImNode::EndPin();
