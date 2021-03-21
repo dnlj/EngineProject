@@ -65,14 +65,14 @@ namespace {
 	double avgDeltaTime = 0.0;
 
 	struct {
-		constexpr static int w = 512;
-		constexpr static int h = 512;
+		constexpr static int w = 256;
+		constexpr static int h = 256;
 		GLuint tex = 0;
 	} map;
 	
 	void mapTest() {
 		struct Color {
-			uint8_t r = 255;
+			uint8_t r = 0;
 			uint8_t g = 0;
 			uint8_t b = 0;
 
@@ -102,7 +102,7 @@ namespace {
 		//	//Game::BiomeB,
 		//	Game::BiomeC
 		//> mgen{1234};
-		Game::MapGenerator2 mgen{12345};
+		Game::MapGenerator2 mgen{1234};
 
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
 			if (y < min || y >= max) { return v; }
@@ -116,17 +116,16 @@ namespace {
 		};
 
 		Color blockToColor[Game::BlockId::_COUNT] = {
-			{}, {}, {255, 0, 0}, {0, 255, 0}
+			{0, 0, 0}, {0, 0, 0}, {0, 0, 200}, {200, 0, 0}
 		};
 
 		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < map.h; ++y) {
 			for (int x = 0; x < map.w; ++x) {
-				const auto v = mgen.value(x,y);
+				const auto v = mgen.value(x, y);
 				data[y][x] = blockToColor[v];
 			}
 		}
-
 		const auto end = std::chrono::high_resolution_clock::now();
 
 		std::cout << "Map Time (ms): " << std::chrono::duration<long double, std::milli>{end - begin}.count() << "\n";
@@ -429,7 +428,7 @@ void run(int argc, char* argv[]) {
 
 		if (ImGui::Begin("Map Test")) {
 			const ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
-			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w), static_cast<float32>(map.h)));
+			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*4), static_cast<float32>(map.h * 4)), {0,1}, {1,0});
 		}
 		ImGui::End();
 		Engine::ImGui::draw();
