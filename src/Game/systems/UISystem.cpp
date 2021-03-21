@@ -78,8 +78,6 @@ namespace Game {
 			frameData.pop();
 		}
 
-		Engine::ImGui::newFrame();
-
 		if constexpr (ENGINE_CLIENT) {
 			//ImGui::ShowDemoWindow();
 			//mapTestUI.render();
@@ -90,8 +88,6 @@ namespace Game {
 		}
 
 		ui_debug();
-
-		Engine::ImGui::draw();
 	}
 
 	void UISystem::tick() {

@@ -62,8 +62,13 @@ namespace {
 	using namespace Engine::Types;
 	constexpr int32 OPENGL_VERSION_MAJOR = 4;
 	constexpr int32 OPENGL_VERSION_MINOR = 5;
-	GLuint mapTexture = 0;
 	double avgDeltaTime = 0.0;
+
+	struct {
+		constexpr static int w = 512;
+		constexpr static int h = 512;
+		GLuint tex = 0;
+	} map;
 	
 	void mapTest() {
 		struct Color {
@@ -72,9 +77,8 @@ namespace {
 			uint8_t b = 0;
 
 			Color() = default;
-			explicit Color(uint32_t value) {
-				*this = value;
-			}
+			Color(int r, int g, int b) : r{static_cast<uint8_t>(r)}, g{static_cast<uint8_t>(g)}, b{static_cast<uint8_t>(b)} {}
+			explicit Color(uint32_t value) { *this = value; }
 
 			Color& operator=(uint32_t value) {
 				r = (value & 0x00FF0000) >> 16;
@@ -88,42 +92,17 @@ namespace {
 			}
 		};
 
-		constexpr int w = 512;
-		constexpr int h = 512;
-		//constexpr int w = 128;
-		//constexpr int h = 128;
+		Color data[map.h][map.w];
 
-		Color map[h][w];
-
-		Engine::Noise::OpenSimplexNoise simplex{1234};
-		Engine::Noise::WorleyNoise worley{1234};
-		Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
-		Game::MapGenerator<
-			Game::BiomeA,
-			//Game::BiomeB,
-			Game::BiomeC
-		> mgen{1234};
-
-		/*{
-			srand((unsigned)time(NULL));
-			Engine::Noise::WorleyNoise worley{rand()};
-			int w = 1 << 10;
-			int h = w;
-			double max = 0;
-			double min = 0;
-			for (int y = 0; y < h; ++y) {
-				for (int x = 0; x < w; ++x) {
-					const auto v = (double)worley.at((float)x,(float)y);
-					max = std::max(max, v);
-					min = std::min(min, v);
-				}
-			}
-
-			// 1.08485
-			std::cout << "Max: " << max << "\n";
-			std::cout << "Min: " << min << "\n";
-		}*/
-
+		//Engine::Noise::OpenSimplexNoise simplex{1234};
+		//Engine::Noise::WorleyNoise worley{1234};
+		//Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
+		//Game::MapGenerator<
+		//	Game::BiomeA,
+		//	//Game::BiomeB,
+		//	Game::BiomeC
+		//> mgen{1234};
+		Game::MapGenerator2 mgen{12345};
 
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
 			if (y < min || y >= max) { return v; }
@@ -136,62 +115,15 @@ namespace {
 			return fv;
 		};
 
+		Color blockToColor[Game::BlockId::_COUNT] = {
+			{}, {}, {255, 0, 0}, {0, 255, 0}
+		};
+
 		const auto begin = std::chrono::high_resolution_clock::now();
-		for (int y = 0; y < h; ++y) {
-			for (int x = 0; x < w; ++x) {
-				float v = 0.0f;
-				
-				{ // Cave structure
-					float s = 0.051f;
-
-					//s *= 2;
-					//v += simplex.value(x * s, y * s) / 2;
-					
-					//s *= 2;
-					//v += simplex.value(x * s, y * s) / 4;
-					//
-					//s *= 2;
-					//v += simplex.value(x * s, y * s) / 8;
-					//
-					//s *= 2;
-					//v += simplex.value(x * s, y * s) / 16;
-				}
-
-				/*
-				{ // Surface
-					constexpr int begin = 100;
-					constexpr int mid = begin + 40;
-					constexpr int end = mid + 30;
-					v = gradient(v, y, begin, mid, -1.0f, 1.0f);
-					v = gradient(v, y, mid, end, 1.0f, 0.0f);
-					v = fill(v, y, 0, begin, -1.0f);
-				}
-				*/
-				
-				{ // Worley testing
-					float s = 0.01f;
-					//v = sqrt(worley.value(x * s, y * s).distanceSquared);
-					//v = sqrt(worley.valueD2(x * s, y * s).value);
-					//v = worley1.valueF2F1(x * s, y * s).value;
-					v = mgen.value(x, y);
-				}
-
-				// Step
-				v = v < 0.0f ? -1.0f : 1.0f;
-
-				// Convert to color map
-				const auto y2 = h - y - 1;
-				map[y2][x].gray(static_cast<uint8_t>(roundf(std::max(std::min(
-					(v + 1.0f) * 0.5f * 255.0f
-					//v * 255.0f
-					//(1 - v) * 255.0f
-				, 255.0f), 0.0f))));
-
-				if (x < 10 && y < 20) {
-					map[y2][x].r = 255;
-					map[y2][x].g = 0;
-					map[y2][x].b = 0;
-				}
+		for (int y = 0; y < map.h; ++y) {
+			for (int x = 0; x < map.w; ++x) {
+				const auto v = mgen.value(x,y);
+				data[y][x] = blockToColor[v];
 			}
 		}
 
@@ -199,8 +131,8 @@ namespace {
 
 		std::cout << "Map Time (ms): " << std::chrono::duration<long double, std::milli>{end - begin}.count() << "\n";
 
-		glGenTextures(1, &mapTexture);
-		glBindTexture(GL_TEXTURE_2D, mapTexture);
+		glGenTextures(1, &map.tex);
+		glBindTexture(GL_TEXTURE_2D, map.tex);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -208,7 +140,7 @@ namespace {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, map);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, map.w, map.h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
@@ -455,7 +387,9 @@ void run(int argc, char* argv[]) {
 	#endif
 
 	// Procedural test
-	//mapTest();
+	if (ENGINE_CLIENT) {
+		mapTest();
+	}
 
 	// Main loop
 	std::array<float, 64> deltas = {};
@@ -476,6 +410,7 @@ void run(int argc, char* argv[]) {
 		// Rendering
 		glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		Engine::ImGui::newFrame();
 
 		// ECS
 		world.run();
@@ -492,12 +427,18 @@ void run(int argc, char* argv[]) {
 			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw();
 		#endif
 
+		if (ImGui::Begin("Map Test")) {
+			const ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
+			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w), static_cast<float32>(map.h)));
+		}
+		ImGui::End();
+		Engine::ImGui::draw();
 		window.swapInterval(0);
 		window.swapBuffers();
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
 
-	glDeleteTextures(1, &mapTexture);
+	glDeleteTextures(1, &map.tex);
 
 	// UI cleanup
 	Engine::ImGui::shutdown();
