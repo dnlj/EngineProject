@@ -467,17 +467,20 @@ namespace Game {
 		for (glm::ivec2 bpos = {0, 0}; bpos.x < MapChunk::size.x; ++bpos.x) {
 			for (bpos.y = 0; bpos.y < MapChunk::size.y; ++bpos.y) {
 				const auto absPos = chunkBlockPos + bpos;
-				BlockId block = BlockId::Air;
-		
-				if (0 < mgen.value(absPos.x, absPos.y)) {
-					if ((bpos.x == 0) ^ (bpos.y == 0)) {
-						block = BlockId::Grass;
-					} else {
-						block = BlockId::Dirt;
-					}
-				}
 
-				chunk.data[bpos.x][bpos.y] = block;
+				chunk.data[bpos.x][bpos.y] = mgen.value(absPos.x, absPos.y);
+
+				//BlockId block = BlockId::Air;
+				//
+				//if (0 < mgen.value(absPos.x, absPos.y)) {
+				//	if ((bpos.x == 0) ^ (bpos.y == 0)) {
+				//		block = BlockId::Grass;
+				//	} else {
+				//		block = BlockId::Dirt;
+				//	}
+				//}
+				//
+				//chunk.data[bpos.x][bpos.y] = block;
 				//chunk.data[bpos.x][bpos.y] = (bpos.x == 0) ^ (bpos.y == 0);
 				//chunk.data[bpos.x][bpos.y] = bpos.x & 1 || bpos.y & 1;
 			}

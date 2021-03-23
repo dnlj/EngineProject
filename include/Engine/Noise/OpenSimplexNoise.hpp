@@ -22,6 +22,7 @@ namespace Engine::Noise {
 			void setSeed(int64 seed) {
 				perm = seed;
 			}
+
 			/**
 			 * Scaled output roughly to [-1, 1]
 			 */

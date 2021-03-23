@@ -22,6 +22,7 @@
 #include <Game/Common.hpp>
 #include <Game/MapChunk.hpp>
 #include <Game/MapGenerator.hpp>
+#include <Game/MapGenerator2.hpp>
 #include <Game/Connection.hpp>
 
 // TODO: Document the different coordinate systems and terms used here.
@@ -204,10 +205,11 @@ namespace Game {
 			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;
 
-			Game::MapGenerator<
-				Game::BiomeA,
-				Game::BiomeC
-			> mgen{12345};
+			//Game::MapGenerator<
+			//	Game::BiomeA,
+			//	Game::BiomeC
+			//> mgen{12345};
+			MapGenerator2 mgen{12345};
 
 			// TODO: recycle old bodies?
 			b2Body* createBody();

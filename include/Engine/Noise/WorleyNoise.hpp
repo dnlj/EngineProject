@@ -31,6 +31,7 @@ namespace Engine::Noise {
 	// TODO: For large step sizes (>10ish. very noticeable at 100) we can start to notice repetitions in the noise. I suspect this this correlates with the perm table size.
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
 	// TODO: Version/setting for distance type (Euclidean, Manhattan, Chebyshev, Minkowski)
+	// TODO: Multiple types. Some common: F1Squared, F1, F2, F2 - F1, F2 + F1
 	template<class Dist>
 	class WorleyNoiseGeneric {
 		public:
@@ -70,7 +71,7 @@ namespace Engine::Noise {
 			 * TODO: finish doc
 			 * In this case Result::value is the squared distance to the nearest point.
 			 */
-			Result valueD2(Float x, Float y) const {
+			Result valueD2(Float x, Float y) const noexcept {
 				Result result;
 
 				evaluate(x, y, [&](Float x, Float y, Float px, Float py, Int cx, Int cy, Int ci) ENGINE_INLINE {
@@ -92,7 +93,7 @@ namespace Engine::Noise {
 			 * TODO: typically F2-F1 is with the distances not the squared distances
 			 * In this case Result::value is difference between the squared distance to the two nearest point.
 			 */
-			Result valueF2F1(Float x, Float y) const {
+			Result valueF2F1(Float x, Float y) const noexcept {
 				Result result1;
 				Result result2;
 

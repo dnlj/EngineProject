@@ -106,7 +106,7 @@ namespace Game {
 
 			std::tuple<Biomes...> biomeStorage;
 			Biome* biomes[BIOME_COUNT] = { &std::get<Biomes>(biomeStorage) ... };
-			Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley; // TODO: if we just used packed circles on a grid we would probably get similar results much faster. Consider?
+			Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley;
 			Engine::Noise::RangePermutation<BIOME_COUNT> biome;
 
 			class BiomeValue {

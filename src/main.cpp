@@ -65,8 +65,8 @@ namespace {
 	double avgDeltaTime = 0.0;
 
 	struct {
-		constexpr static int w = 256;
-		constexpr static int h = 256;
+		constexpr static int w = 512;
+		constexpr static int h = 512;
 		GLuint tex = 0;
 	} map;
 	
@@ -94,7 +94,63 @@ namespace {
 
 		Color data[map.h][map.w];
 
-		//Engine::Noise::OpenSimplexNoise simplex{1234};
+		/*
+		ENGINE_INLINE_CALLS {
+			std::ios_base::sync_with_stdio(false);
+			Engine::Noise::OpenSimplexNoise simplex{1234};
+			constexpr float32 r = 10000;
+			float32 min = FLT_MAX;
+			float32 max = FLT_MIN;
+			uint8 p = 0;
+
+			float32 scales[] = {
+				11.168912f,
+				11.1234f,
+				11.123f,
+				11.12f,
+				11.1f,
+				11.0f,
+				10.0f,
+				7.0f,
+				5.0f,
+				3.0f,
+				2.0f,
+				1.0f,
+				0.75f,
+				0.71f,
+				0.701f,
+				0.7f,
+				0.5f,
+				0.4f,
+				0.3f,
+				0.2f,
+				0.1f,
+				0.011f,
+				0.0013f,
+				0.0012f,
+				0.0006f,
+				0.0005f,
+				0.0004f,
+				0.0003f,
+				0.0002f,
+				0.0001f,
+			};
+
+			for (const auto s : scales) {
+				for (float32 x = -r; x < r; ++x) {
+					for (float32 y = -r; y < r; ++y) {
+						auto v = simplex.value(x, y);
+						min = v < min ? v : min;
+						max = v > max ? v : max;
+					}
+					if (!++p) { ENGINE_INFO("Range: [", min, ", ", max, "] @ ", s); }
+				}
+			}
+			ENGINE_INFO("\n\n===================================================");
+			ENGINE_INFO("Range: [", min, ", ", max, "]");
+			ENGINE_INFO("===================================================\n");
+			std::ios_base::sync_with_stdio(true);
+		}*/
 		//Engine::Noise::WorleyNoise worley{1234};
 		//Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
 		//Game::MapGenerator<
@@ -102,7 +158,10 @@ namespace {
 		//	//Game::BiomeB,
 		//	Game::BiomeC
 		//> mgen{1234};
-		Game::MapGenerator2 mgen{1234};
+		Game::MapGenerator2 mgen{12345};
+
+
+
 
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
 			if (y < min || y >= max) { return v; }
@@ -122,7 +181,7 @@ namespace {
 		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < map.h; ++y) {
 			for (int x = 0; x < map.w; ++x) {
-				const auto v = mgen.value(x, y);
+				const auto v = mgen.value(x - map.w/2, y - map.h/2);
 				data[y][x] = blockToColor[v];
 			}
 		}
@@ -426,11 +485,14 @@ void run(int argc, char* argv[]) {
 			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw();
 		#endif
 
-		if (ImGui::Begin("Map Test")) {
-			const ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
-			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*4), static_cast<float32>(map.h * 4)), {0,1}, {1,0});
+		if constexpr (ENGINE_CLIENT) {
+			if (ImGui::Begin("Map Test")) {
+				const ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
+				ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
+			}
+			ImGui::End();
 		}
-		ImGui::End();
+
 		Engine::ImGui::draw();
 		window.swapInterval(0);
 		window.swapBuffers();

@@ -2,12 +2,13 @@
 
 
 namespace Game {
-	enum BlockId : int16 {
+	enum BlockId : uint16 {
 		#define X(Name, Solid, Path) Name,
 		#include <Game/Blocks.xpp>
 		_COUNT,
 	};
 	ENGINE_BUILD_ALL_OPS(BlockId);
+
 
 	struct BlockMeta {
 		const BlockId id = BlockId::None;
@@ -24,6 +25,6 @@ namespace Game {
 	}
 
 	ENGINE_INLINE constexpr const BlockMeta& getBlockMeta(BlockId bid) noexcept {
-		return Detail::getBlockMetaLookupArray[bid];
+		return Detail::getBlockMetaLookupArray[static_cast<std::underlying_type_t<BlockId>>(bid)];
 	}
 }
