@@ -22,9 +22,16 @@ namespace Engine::Noise {
 			void setSeed(int64 seed) {
 				perm = seed;
 			}
+			/**
+			 * Scaled output roughly to [-1, 1]
+			 */
+			ENGINE_INLINE Float scaled(const Float x, const Float y) const noexcept {
+				// Experimentally obtained range is +-0.8644
+				return value(x, y) * (1.0f / 0.87f);
+			}
 
 			// 2D OpenSimplex Noise.
-			Float value(Float x, Float y) const {
+			Float value(Float x, Float y) const noexcept {
 
 				// Place input coordinates onto grid.
 				Float stretchOffset = (x + y) * STRETCH_CONSTANT_2D;
