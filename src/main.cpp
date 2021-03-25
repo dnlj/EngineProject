@@ -39,6 +39,7 @@
 #include <Engine/Camera.hpp>
 #include <Engine/ResourceManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
+#include <Engine/Noise/SimplexNoise.hpp>
 #include <Engine/Noise/WorleyNoise.hpp>
 #include <Engine/Net/Net.hpp>
 #include <Engine/Net/UDPSocket.hpp>
@@ -66,8 +67,11 @@ namespace {
 
 	struct {
 		constexpr static int w = 512;
-		constexpr static int h = 512;
+		constexpr static int h = 128;
 		GLuint tex = 0;
+		GLuint tex2 = 0;
+		float32 data2[w] = {};
+		float32 data[w] = {};
 	} map;
 	
 	void mapTest() {
@@ -93,12 +97,13 @@ namespace {
 		};
 
 		Color data[map.h][map.w];
-
-		/*
-		ENGINE_INLINE_CALLS {
+		Color data2[map.h][map.w];
+		
+		/*ENGINE_INLINE_CALLS {
 			std::ios_base::sync_with_stdio(false);
-			Engine::Noise::OpenSimplexNoise simplex{1234};
-			constexpr float32 r = 10000;
+			Engine::Noise::SimplexNoise simplex{1234};
+			//Engine::Noise::OpenSimplexNoise simplex{1234};
+			constexpr float32 r = 100000;
 			float32 min = FLT_MAX;
 			float32 max = FLT_MIN;
 			uint8 p = 0;
@@ -138,11 +143,16 @@ namespace {
 
 			for (const auto s : scales) {
 				for (float32 x = -r; x < r; ++x) {
-					for (float32 y = -r; y < r; ++y) {
-						auto v = simplex.value(x, y);
-						min = v < min ? v : min;
-						max = v > max ? v : max;
-					}
+					//for (float32 y = -r; y < r; ++y) {
+					//	auto v = simplex.value(x*s, y*s);
+					//	min = v < min ? v : min;
+					//	max = v > max ? v : max;
+					//}
+
+					auto v = simplex.value1D(x * s);
+					min = v < min ? v : min;
+					max = v > max ? v : max;
+
 					if (!++p) { ENGINE_INFO("Range: [", min, ", ", max, "] @ ", s); }
 				}
 			}
@@ -150,18 +160,12 @@ namespace {
 			ENGINE_INFO("Range: [", min, ", ", max, "]");
 			ENGINE_INFO("===================================================\n");
 			std::ios_base::sync_with_stdio(true);
-		}*/
+		}/**/
 		//Engine::Noise::WorleyNoise worley{1234};
 		//Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
-		//Game::MapGenerator<
-		//	Game::BiomeA,
-		//	//Game::BiomeB,
-		//	Game::BiomeC
-		//> mgen{1234};
+		Engine::Noise::SimplexNoise simplex{(uint64)(srand((uint32)time(0)), rand())};
+		Engine::Noise::OpenSimplexNoise simplex2{(uint64)(srand((uint32)time(0)), rand())};
 		Game::MapGenerator2 mgen{12345};
-
-
-
 
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
 			if (y < min || y >= max) { return v; }
@@ -181,8 +185,14 @@ namespace {
 		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < map.h; ++y) {
 			for (int x = 0; x < map.w; ++x) {
-				const auto v = mgen.value(x - map.w/2, y - map.h/2);
-				data[y][x] = blockToColor[v];
+				//const auto v = mgen.value(x - map.w/2, y - map.h/2);
+				//data[y][x] = blockToColor[v];
+				
+				map.data[x] = simplex.value1D(x * 0.1f);
+				map.data2[x] = simplex2.scaled(x * 0.15f, 42.0f);
+
+				data[y][x].gray((uint8)std::clamp((1 + map.data[x]) * 0.5f * 255.0f, 0.0f, 255.0f));
+				data2[y][x].gray((uint8)std::clamp((1 + map.data2[x]) * 0.5f * 255.0f, 0.0f, 255.0f));
 			}
 		}
 		const auto end = std::chrono::high_resolution_clock::now();
@@ -191,16 +201,44 @@ namespace {
 
 		glGenTextures(1, &map.tex);
 		glBindTexture(GL_TEXTURE_2D, map.tex);
-
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, map.w, map.h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
+		
+		glGenTextures(1, &map.tex2);
+		glBindTexture(GL_TEXTURE_2D, map.tex2);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, map.w, map.h, 0, GL_RGB, GL_UNSIGNED_BYTE, data2);
+
 		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	void mapUI() {
+		if (ImGui::Begin("Map Test")) {
+			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
+			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
+
+			tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex2));
+			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
+			
+			ImPlot::SetNextPlotLimitsY(-1.0f, 1.0f);
+			ImPlot::SetNextPlotLimitsX(0, map.w);
+			ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2{});
+			if (ImPlot::BeginPlot(
+				"##noisegraph", nullptr, nullptr, ImVec2(map.w * 2, 200),
+				ImPlotFlags_CanvasOnly, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_NoDecorations)) {
+				ImPlot::PlotLine("N1", map.data, (int)std::size(map.data));
+				ImPlot::PlotLine("N2", map.data2, (int)std::size(map.data2));
+			}
+			ImPlot::EndPlot();
+		}
+		ImGui::End();
 	}
 
 	void initializeOpenGL() {
@@ -340,7 +378,6 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// UI
 	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
 	Engine::ImGui::init(window);
 	ImGui::StyleColorsDark();
 
@@ -485,13 +522,7 @@ void run(int argc, char* argv[]) {
 			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw();
 		#endif
 
-		if constexpr (ENGINE_CLIENT) {
-			if (ImGui::Begin("Map Test")) {
-				const ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
-				ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
-			}
-			ImGui::End();
-		}
+		if constexpr (ENGINE_CLIENT) { mapUI(); }
 
 		Engine::ImGui::draw();
 		window.swapInterval(0);
@@ -500,10 +531,10 @@ void run(int argc, char* argv[]) {
 	}
 
 	glDeleteTextures(1, &map.tex);
+	glDeleteTextures(1, &map.tex2);
 
 	// UI cleanup
 	Engine::ImGui::shutdown();
-	ImGui::DestroyContext();
 
 	// Network cleanup
 	Engine::Net::shutdown();
