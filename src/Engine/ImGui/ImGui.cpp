@@ -387,6 +387,8 @@ namespace Engine::ImGui {
 	}
 
 	bool init(Engine::Window& window) {
+		::ImGui::CreateContext();
+		::ImPlot::CreateContext();
 		ImGui_ImplOpenGL3_Init();
 
 		g_Window = &window;
@@ -439,6 +441,8 @@ namespace Engine::ImGui {
 
 	void shutdown() {
 		ImGui_ImplOpenGL3_DestroyDeviceObjects();
+		::ImPlot::DestroyContext();
+		::ImGui::DestroyContext();
 	}
 
 	void newFrame() {

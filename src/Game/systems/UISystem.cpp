@@ -373,17 +373,17 @@ namespace Game {
 			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
 			const auto begin = Engine::Clock::Seconds{rollingWindow.time_since_epoch()}.count();
 
-			constexpr auto yAxisflags = ImPlotAxisFlags_Auxiliary;
+			constexpr auto yAxisflags = ImPlotAxisFlags_NoGridLines;
 			constexpr auto y2Axisflags = yAxisflags;
-			constexpr auto xAxisflags = yAxisflags & ~ImPlotAxisFlags_TickLabels;
+			constexpr auto xAxisflags = yAxisflags & ImPlotAxisFlags_NoTickLabels;
 			constexpr auto yScale = 500.0f;
+			ImGui::PushID(ent.id);
 			ImPlot::SetNextPlotLimitsX(begin, end, ImGuiCond_Always);
 			ImPlot::SetNextPlotLimitsY(0.0f, yScale * tickrate * 0.333f, ImGuiCond_Once, 0);
 			ImPlot::SetNextPlotLimitsY(0.0f, yScale, ImGuiCond_Once, 1);
-			ImGui::PushID(ent.id);
 			if (ImPlot::BeginPlot(
 				"##Netgraph", nullptr, nullptr, ImVec2(-1,200),
-				ImPlotFlags_Default | ImPlotFlags_YAxis2,
+				ImPlotFlags_YAxis2,
 				xAxisflags, yAxisflags, y2Axisflags)) {
 
 				// ImGui doesn't handle color correctly so we need to convert it
@@ -398,17 +398,17 @@ namespace Game {
 				};
 
 				ImPlot::SetPlotYAxis(0);
-				ImPlot::SetColormap(colors, sizeof(colors));
+				// TODO: update - ImPlot::SetColormap(colors, sizeof(colors));
 				// TODO: thickness?
-				ImPlot::PlotLine("Avg Sent (Bytes / Second)", netGetPointAvg<0>, &buff, buff.size(), 0);
-				ImPlot::PlotLine("Avg Recv (Bytes / Second)", netGetPointAvg<1>, &buff, buff.size(), 0);
+				ImPlot::PlotLineG("Avg Sent (Bytes / Second)", netGetPointAvg<0>, &buff, buff.size(), 0);
+				ImPlot::PlotLineG("Avg Recv (Bytes / Second)", netGetPointAvg<1>, &buff, buff.size(), 0);
 
 				ImPlot::SetPlotYAxis(1);
-				ImPlot::PlotBars("Sent (Bytes)", netGetDiff<0>, &buff, buff.size(), 1.0f / tickrate, 0);
-				ImPlot::PlotBars("Recv (Bytes)", netGetDiff<1>, &buff, buff.size(), 1.0f / tickrate, 0);
+				ImPlot::PlotBarsG("Sent (Bytes)", netGetDiff<0>, &buff, buff.size(), 1.0f / tickrate, 0);
+				ImPlot::PlotBarsG("Recv (Bytes)", netGetDiff<1>, &buff, buff.size(), 1.0f / tickrate, 0);
 
 				ImPlot::EndPlot();
-				ImPlot::SetColormap(ImPlotColormap_Default);
+				// TODO: update - ImPlot::SetColormap(ImPlotColormap_Default);
 				ImGui::Separator();
 			}
 			ImGui::PopID();
