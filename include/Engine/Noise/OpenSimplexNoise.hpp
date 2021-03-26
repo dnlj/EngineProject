@@ -26,12 +26,14 @@ namespace Engine::Noise {
 			/**
 			 * Scaled output roughly to [-1, 1]
 			 */
+			[[nodiscard]]
 			ENGINE_INLINE Float scaled(const Float x, const Float y) const noexcept {
 				// Experimentally obtained range is +-0.865921
 				return value(x, y) * (1.0f / 0.87f);
 			}
 
 			// 2D OpenSimplex Noise.
+			[[nodiscard]]
 			Float value(Float x, Float y) const noexcept {
 				// Place input coordinates onto grid.
 				Float stretchOffset = (x + y) * STRETCH_CONSTANT_2D;
@@ -164,7 +166,8 @@ namespace Engine::Noise {
 				 5, -2,		 2, -5,
 				-5, -2,		-2, -5,
 			};
-
+			
+			[[nodiscard]]
 			ENGINE_INLINE Float extrapolate(Int xsb, Int ysb, Float dx, Float dy) const noexcept {
 				int index = perm.value(xsb, ysb) & 0x0E;
 				return gradients2D[index] * dx + gradients2D[index + 1] * dy;

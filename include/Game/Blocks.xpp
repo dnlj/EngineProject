@@ -1,6 +1,8 @@
 // Name, Solid, Path
 X(None, false, nullptr)
 X(Air, false, nullptr)
-X(Dirt, true, "assets/test.png")
-X(Grass, true, "assets/test2.png")
+X(Dirt, true, "assets/dirt.png")
+X(Grass, true, "assets/grass.png")
+X(Iron, true, "assets/iron.png")
+X(Gold, true, "assets/gold.png")
 #undef X

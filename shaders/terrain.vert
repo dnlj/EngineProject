@@ -1,10 +1,10 @@
 #version 450 core
 
 layout (location = 0) in vec2 vertPosition;
-layout (location = 1) in int vertTexLayer;
+layout (location = 1) in float vertTexLayer;
 
 out vec2 fragPosition;
-out int fragTexLayer;
+out float fragTexLayer;
 
 layout (location = 0) uniform mat4 mvp;
 

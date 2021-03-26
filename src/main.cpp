@@ -67,11 +67,11 @@ namespace {
 
 	struct {
 		constexpr static int w = 512;
-		constexpr static int h = 128;
+		constexpr static int h = 512;
 		GLuint tex = 0;
-		GLuint tex2 = 0;
-		float32 data2[w] = {};
-		float32 data[w] = {};
+		//GLuint tex2 = 0;
+		//float32 data2[w] = {};
+		//float32 data[w] = {};
 	} map;
 	
 	void mapTest() {
@@ -97,7 +97,7 @@ namespace {
 		};
 
 		Color data[map.h][map.w];
-		Color data2[map.h][map.w];
+		//Color data2[map.h][map.w];
 		
 		/*ENGINE_INLINE_CALLS {
 			std::ios_base::sync_with_stdio(false);
@@ -179,20 +179,22 @@ namespace {
 		};
 
 		Color blockToColor[Game::BlockId::_COUNT] = {
-			{0, 0, 0}, {0, 0, 0}, {0, 0, 200}, {200, 0, 0}
+			{0, 0, 0}, {0, 0, 0},
+			{0, 0, 200}, {200, 0, 0},
+			{100, 100, 100}, {200, 100, 0},
 		};
 
 		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < map.h; ++y) {
 			for (int x = 0; x < map.w; ++x) {
-				//const auto v = mgen.value(x - map.w/2, y - map.h/2);
-				//data[y][x] = blockToColor[v];
+				const auto v = mgen.value(x - map.w/2, y - map.h/2);
+				data[y][x] = blockToColor[v];
 				
-				map.data[x] = simplex.value1D(x * 0.1f);
-				map.data2[x] = simplex2.scaled(x * 0.15f, 42.0f);
-
-				data[y][x].gray((uint8)std::clamp((1 + map.data[x]) * 0.5f * 255.0f, 0.0f, 255.0f));
-				data2[y][x].gray((uint8)std::clamp((1 + map.data2[x]) * 0.5f * 255.0f, 0.0f, 255.0f));
+				//map.data[x] = simplex.value1D(x * 0.1f);
+				//map.data2[x] = simplex2.scaled(x * 0.15f, 42.0f);
+				//
+				//data[y][x].gray((uint8)std::clamp((1 + map.data[x]) * 0.5f * 255.0f, 0.0f, 255.0f));
+				//data2[y][x].gray((uint8)std::clamp((1 + map.data2[x]) * 0.5f * 255.0f, 0.0f, 255.0f));
 			}
 		}
 		const auto end = std::chrono::high_resolution_clock::now();
@@ -208,13 +210,13 @@ namespace {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, map.w, map.h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
 		
-		glGenTextures(1, &map.tex2);
-		glBindTexture(GL_TEXTURE_2D, map.tex2);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, map.w, map.h, 0, GL_RGB, GL_UNSIGNED_BYTE, data2);
+		//glGenTextures(1, &map.tex2);
+		//glBindTexture(GL_TEXTURE_2D, map.tex2);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		//glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, map.w, map.h, 0, GL_RGB, GL_UNSIGNED_BYTE, data2);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
@@ -223,7 +225,7 @@ namespace {
 		if (ImGui::Begin("Map Test")) {
 			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
 			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
-
+			/*
 			tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex2));
 			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
 			
@@ -236,7 +238,7 @@ namespace {
 				ImPlot::PlotLine("N1", map.data, (int)std::size(map.data));
 				ImPlot::PlotLine("N2", map.data2, (int)std::size(map.data2));
 			}
-			ImPlot::EndPlot();
+			ImPlot::EndPlot();*/
 		}
 		ImGui::End();
 	}
@@ -531,7 +533,7 @@ void run(int argc, char* argv[]) {
 	}
 
 	glDeleteTextures(1, &map.tex);
-	glDeleteTextures(1, &map.tex2);
+	//glDeleteTextures(1, &map.tex2);
 
 	// UI cleanup
 	Engine::ImGui::shutdown();

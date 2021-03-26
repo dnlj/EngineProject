@@ -57,6 +57,7 @@ namespace Game {
 
 		Engine::Image img;
 		for (int i = 0; auto path : textures) {
+			ENGINE_LOG("Setup: ", path, " = ", i);
 			img = path;
 			img.flipY();
 			texArr.setSubImage(0, {0, 0, i++}, {img.size(), 1}, img);
@@ -76,7 +77,7 @@ namespace Game {
 			sizeof(Vertex),
 			{
 				{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)},
-				{.location = 1, .size = 1, .type = GL_UNSIGNED_BYTE, .offset = offsetof(Vertex, tex)},
+				{.location = 1, .size = 1, .type = GL_FLOAT, .offset = offsetof(Vertex, tex)},
 			}
 		};
 
@@ -412,7 +413,7 @@ namespace Game {
 				static_assert(BlockId::_COUNT <= 255,
 					"Texture index is a byte. You will need to change its type if you now have more than 255 blocks."
 				);
-				const GLubyte tex = chunk.data[begin.x][begin.y] - 2; // TODO: -2 for None and Air. Handle this better.
+				const auto tex = static_cast<GLfloat>(chunk.data[begin.x][begin.y] - 2); // TODO: -2 for None and Air. Handle this better.
 				buildVBOData.push_back({.pos = origin, .tex = tex});
 				buildVBOData.push_back({.pos = origin + glm::vec2{size.x, 0}, .tex = tex});
 				buildVBOData.push_back({.pos = origin + size, .tex = tex});
@@ -467,22 +468,7 @@ namespace Game {
 		for (glm::ivec2 bpos = {0, 0}; bpos.x < MapChunk::size.x; ++bpos.x) {
 			for (bpos.y = 0; bpos.y < MapChunk::size.y; ++bpos.y) {
 				const auto absPos = chunkBlockPos + bpos;
-
 				chunk.data[bpos.x][bpos.y] = mgen.value(absPos.x, absPos.y);
-
-				//BlockId block = BlockId::Air;
-				//
-				//if (0 < mgen.value(absPos.x, absPos.y)) {
-				//	if ((bpos.x == 0) ^ (bpos.y == 0)) {
-				//		block = BlockId::Grass;
-				//	} else {
-				//		block = BlockId::Dirt;
-				//	}
-				//}
-				//
-				//chunk.data[bpos.x][bpos.y] = block;
-				//chunk.data[bpos.x][bpos.y] = (bpos.x == 0) ^ (bpos.y == 0);
-				//chunk.data[bpos.x][bpos.y] = bpos.x & 1 || bpos.y & 1;
 			}
 		}
 	}

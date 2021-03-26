@@ -22,6 +22,7 @@ namespace Game {
 			BlockId value(const int32 x, const int32 y) const noexcept;
 
 		private:
+			BlockId resource(const glm::vec2 pos) const noexcept;
 			float32 basis(const glm::vec2 pos) const noexcept;
 	};
 }

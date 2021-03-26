@@ -199,8 +199,9 @@ namespace Game {
 
 			struct Vertex {
 				glm::vec2 pos;
-				GLubyte tex;
+				GLfloat tex;
 			};
+			static_assert(sizeof(Vertex) == 3*sizeof(GLfloat), "Unexpected vertex size.");
 
 			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;

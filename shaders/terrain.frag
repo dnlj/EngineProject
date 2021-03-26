@@ -1,7 +1,7 @@
 #version 450 core
 
 in vec2 fragPosition;
-flat in int fragTexLayer;
+in float fragTexLayer;
 
 out vec4 finalColor;
 

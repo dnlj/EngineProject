@@ -12,6 +12,15 @@ namespace Engine::Graphics {
 
 		for (const auto& attrib : format.attributes) {
 			glEnableVertexArrayAttrib(vao, attrib.location);
+
+			ENGINE_DEBUG_ASSERT(attrib.type == GL_FLOAT,
+				// TODO: implement for non float types.
+				// See: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glVertexAttribFormat.xhtml
+				// Will need to check attrib.type and select one of:
+				// glVertexArrayAttribFormat, glVertexArrayAttribIFormat, or glVertexArrayAttribLFormat
+				"TODO: implement for non GLfloat types. Currently only GL_FLOAT is implemented."
+			);
+
 			glVertexArrayAttribFormat(vao, attrib.location, attrib.size, attrib.type, GL_FALSE, attrib.offset);
 			glVertexArrayAttribBinding(vao, attrib.location, bufferBindingIndex);
 		}
