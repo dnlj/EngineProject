@@ -820,11 +820,17 @@ namespace Game {
 		world.addComponent<PlayerFlag>(ent);
 		world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
 
-		auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
-		physComp.setBody(physSys.createPhysicsCircle(ent, {}, -+PhysicsType::Player));
-		physComp.type = PhysicsType::Player;
+		{
+			const auto& mapSys = world.getSystem<MapSystem>();
+			// TODO: query map system and find good spawn location
+			const b2Vec2 pos = {0, 3};
+			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
+			physComp.setBody(physSys.createPhysicsCircle(ent, pos, -+PhysicsType::Player));
+			physComp.type = PhysicsType::Player;
 
-		world.addComponent<PhysicsProxyComponent>(ent);
+			world.addComponent<PhysicsProxyComponent>(ent).store(physComp.getBody());
+		}
+
 		world.addComponent<ActionComponent>(ent);
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);

@@ -158,6 +158,10 @@ namespace Game {
 				return (regionCount + region % regionCount) % regionCount;
 			}
 
+			// TODO: how to handle this since chunk data is loaded async?
+			//[[nodiscard]]
+			//const MapChunk* getChunkData(const glm::ivec2 chunk, bool load = false);
+
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			Engine::Shader shader;
 			Engine::TextureArray2D texArr;
@@ -191,10 +195,7 @@ namespace Game {
 				MapChunk& chunk;
 			};
 			std::queue<Job> chunksToLoad;
-
-			// TODO: atm we never unload regions
 			Engine::FlatHashMap<glm::ivec2, std::unique_ptr<MapRegion>> regions;
-
 			Engine::ECS::Entity mapEntity;
 
 			struct Vertex {

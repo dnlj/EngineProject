@@ -57,7 +57,6 @@ namespace Game {
 
 		Engine::Image img;
 		for (int i = 0; auto path : textures) {
-			ENGINE_LOG("Setup: ", path, " = ", i);
 			img = path;
 			img.flipY();
 			texArr.setSubImage(0, {0, 0, i++}, {img.size(), 1}, img);
@@ -508,4 +507,20 @@ namespace Game {
 		lock.unlock();
 		condv.notify_all();
 	}
+
+	/*
+	const MapChunk* MapSystem::getChunkData(const glm::ivec2 chunk, bool load) {
+		const auto region = chunkToRegion(chunk);
+		auto found = regions.find(region);
+
+		if (found == regions.cend()) {
+			if (load) {
+				// TODO: load regions
+			} else {
+				return nullptr;
+			}
+		}
+		const auto chunkIndex = chunkToRegionIndex(chunk);
+		return &found->second->data[chunkIndex.x][chunkIndex.y];
+	}*/
 }

@@ -501,11 +501,11 @@ void run(int argc, char* argv[]) {
 		window.setPosSize(900, 32, 1500, 1400);
 	}
 
+	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 	while (!window.shouldClose()) {
 		window.poll();
 
 		// Rendering
-		glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		Engine::ImGui::newFrame();
 
