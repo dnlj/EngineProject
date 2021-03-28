@@ -554,7 +554,7 @@ namespace Game {
 			// ENGINE_LOG("****** ", conn.getKeySend(), " ", conn.getKeyRecv(), " ", packet.getKey(), " ", packet.getSeqNum());
 
 			if (!conn.recv(packet, sz, now)) { continue; }
-
+			// ENGINE_SUCCESS(" New Packet ===================================");
 			const Engine::Net::MessageHeader* hdr; 
 			while (hdr = conn.recvNext()) {
 				dispatchMessage(info, conn, hdr);
@@ -850,7 +850,9 @@ namespace Game {
 		};
 
 		switch(hdr->type) {
-			#define X(Name, Side, State) case MessageType::Name: { handleMessageType<MessageType::Name>(info, from, *hdr); break; };
+			#define X(Name, Side, State) case MessageType::Name: {\
+				/*ENGINE_LOG("MESSAGE: ", #Name, " ", hdr->seq, " ", hdr->size);/**/\
+				handleMessageType<MessageType::Name>(info, from, *hdr); break; };
 			#include <Game/MessageType.xpp>
 			default: {
 				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(hdr->type));

@@ -16,6 +16,7 @@ namespace Engine::Net {
 		private:
 			BufferWriter* buff;
 			Channel& channel;
+			int64 startSize;
 
 		public:
 			MessageWriter(Channel& channel, MessageType type, BufferWriter* buff)
@@ -23,6 +24,7 @@ namespace Engine::Net {
 				, channel{channel} {
 
 				if (buff) {
+					ENGINE_DEBUG_ASSERT(buff->size() == 0, "Non-empty buffer given to MessageWriter.");
 					buff->write(MessageHeader{
 						.type = type,
 					});
@@ -400,7 +402,6 @@ namespace Engine::Net {
 			}
 
 			~MessageBlobWriter() {
-				// TODO: attempt to write this this message
 			}
 
 			ENGINE_INLINE operator bool() const noexcept { return buff; }
@@ -459,7 +460,7 @@ namespace Engine::Net {
 					if (static_cast<int32>(data.size()) < i + len) {
 						data.resize(i + len);
 					}
-					// ENGINE_LOG("Insert: ", len, " ", data.size());
+					ENGINE_LOG("Insert: ", len, " ", data.size());
 					memcpy(&data[i], start, len);
 
 					const Range range {i, i + len};
@@ -467,7 +468,7 @@ namespace Engine::Net {
 
 					// Merge with after
 					if (found != parts.cend() && range.stop == found->start) {
-						// ENGINE_LOG("Merge after: (", range.start, ", ", range.stop, ") U (", found->start, ", ", found->stop, ")");
+						ENGINE_LOG("Merge after: (", range.start, ", ", range.stop, ") U (", found->start, ", ", found->stop, ")");
 						found->start = range.start;
 					} else {
 						found = parts.insert(found, range);
@@ -477,7 +478,7 @@ namespace Engine::Net {
 					if (found > parts.cbegin()) {
 						auto prev = found - 1;
 						if (prev->stop == found->start) {
-							// ENGINE_LOG("Merge before: (", prev->start, ", ", prev->stop, ") U (", found->start, ", ", found->stop, ")");
+							ENGINE_LOG("Merge before: (", prev->start, ", ", prev->stop, ") U (", found->start, ", ", found->stop, ")");
 							prev->stop = found->stop;
 							parts.erase(found);
 							found = prev;
@@ -486,8 +487,9 @@ namespace Engine::Net {
 				}
 			};
 
-			SequenceBuffer<SeqNum, WriteBlob, 8> writeBlobs;
-			SequenceBuffer<SeqNum, RecvBlob, 8> recvBlobs;
+			constexpr static int MAX_BLOBS = 64; // TODO: reduce back to 8
+			SequenceBuffer<SeqNum, WriteBlob, MAX_BLOBS> writeBlobs;
+			SequenceBuffer<SeqNum, RecvBlob, MAX_BLOBS> recvBlobs;
 
 			struct BlobHeader {
 				constexpr static int32 LEN_MASK = 0x7FFFFFFF;
@@ -552,6 +554,7 @@ namespace Engine::Net {
 					}
 
 					const auto dataEnd = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size;
+					ENGINE_INFO("Recv blob part: ", info.seq(), " ", hdr.size);
 					found->insert(info.start() & BlobHeader::LEN_MASK, dataBegin, dataEnd);
 				}
 
@@ -561,6 +564,9 @@ namespace Engine::Net {
 			void attemptWriteBlob(BufferWriter& buff, SeqNum seq) {
 				auto* blob = writeBlobs.find(seq);
 				if (!blob) { return; }
+
+				// TODO: rm
+				if (!Base::canWriteMessage()) { ENGINE_FAIL("Cannot write message! ", this->nextSeq, " ", this->nextSeq - 64); }
 				
 				while (Base::canWriteMessage()) {
 					if (blob->remaining() == 0) { return; }
@@ -576,21 +582,36 @@ namespace Engine::Net {
 						return;
 					}
 
-					auto msg = Base::beginMessage(*static_cast<Base*>(this), blob->type, buff);
+					// We need to use an alias because beginMessage expects an "empty" buffer
+					auto alias = buff.alias();
+					if (auto msg = Base::beginMessage(*static_cast<Base*>(this), blob->type, alias)) {
+						BlobHeader head;
+						head.start() = blob->curr | (blob->curr > 0 ? 0 : ~BlobHeader::LEN_MASK);
+						head.seq() = seq;
+						msg.write(head);
 
-					BlobHeader head;
-					head.start() = blob->curr | (blob->curr > 0 ? 0 : ~BlobHeader::LEN_MASK);
-					head.seq() = seq;
-					msg.write(head);
+						if (blob->curr == 0) {
+							msg.write(static_cast<int32>(blob->data.size()));
+						}
 
-					if (blob->curr == 0) {
-						msg.write(static_cast<int32>(blob->data.size()));
+						const int32 len = std::min(space, blob->remaining());
+						msg.write(blob->data.data() + blob->curr, len);
+						ENGINE_LOG("Write blob part: ", head.seq(), " = ", seq, " ", len);
+						blob->curr += len;
+						++blob->parts;
+						buff.advance(alias.size());
+					} else {
+						ENGINE_DEBUG_ASSERT(false, "Unable to write to underlying channel. This should not occur.");
 					}
 
-					const int32 len = std::min(space, blob->remaining());
-					msg.write(blob->data.data() + blob->curr, len);
-					blob->curr += len;
-					++blob->parts;
+					// TODO: rm
+					{
+						const auto& data = Base::msgData.get(Base::msgData.max());
+						const byte* curr = data.data.data();
+						curr += sizeof(MessageHeader);
+						const auto* head = reinterpret_cast<const BlobHeader*>(curr);
+						ENGINE_INFO("Wrote data part: ", head->seq(), " = ", seq);
+					}
 				}
 			}
 
@@ -639,8 +660,11 @@ namespace Engine::Net {
 							--blob->parts;
 							if (blob->parts == 0 && blob->remaining() == 0) {
 								writeBlobs.remove(seq);
-								// ENGINE_LOG("Blob complete! ", seq);
+								ENGINE_SUCCESS("Blob complete! ", seq);
 							}
+						} else {
+							// TODO: this shouldnt happen?
+							ENGINE_FAIL("Blob not found! ", seq);
 						}
 					}
 				}

@@ -16,7 +16,6 @@ namespace Engine::Net {
 		public:
 			BufferWriter() = default;
 
-			// TODO: couldnt this just be done with CTAD?
 			template<auto N>
 			BufferWriter(byte (&arr)[N])
 				: BufferWriter{arr, N} {
@@ -42,6 +41,19 @@ namespace Engine::Net {
 			ENGINE_INLINE const byte* cend() noexcept { return curr; }
 			ENGINE_INLINE const byte* cbegin() const noexcept { return start; }
 			ENGINE_INLINE const byte* cend() const noexcept { return curr; }
+
+			/**
+			 * Advance the current position in the buffer without writing to it.
+			 */
+			ENGINE_INLINE void advance(const int64 count) noexcept { curr += count; }
+
+			/**
+			 * Creates a new unrelated BufferWriter using the remaining space in the current BufferWriter.
+			 * The created writer is unrelated to the aliased writer. Writing to one will not update
+			 * the position of the other. If you want to emulate this behavior you will need to manually
+			 * call `advance`.
+			 */
+			ENGINE_INLINE auto alias() const noexcept { return BufferWriter{curr, space()}; }
 
 			ENGINE_INLINE bool write(const void* src, int64 sz) {
 				ENGINE_DEBUG_ASSERT(sz > 0);
