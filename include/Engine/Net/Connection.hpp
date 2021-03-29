@@ -344,8 +344,14 @@ namespace Engine::Net {
 
 				// Write + send packets
 				while (packetSendBudget >= 1) {
-					const auto seq = nextSeqNum++;
-					Packet pkt; // TODO: if we keep this move to be a member variable instead;
+					const auto seq = nextSeqNum;
+
+					Packet pkt; // TODO: if we keep this move to be a member variable instead; - should be able to merge with msgBuffer?
+					msgBufferWriter = pkt.body;
+					(getChannel<Cs>().fill(seq, msgBufferWriter), ...);
+					if (msgBufferWriter.size() == 0) { break; }
+					++nextSeqNum;
+
 					pkt.setKey(keySend); // TODO: should just be set once after packet is changed to member variable
 					pkt.setNextAck(nextRecvAck);
 					pkt.setAcks(recvAcks);
@@ -357,22 +363,12 @@ namespace Engine::Net {
 						loss += (val - loss) * lossSmoothing;
 					}
 
-					packetData.insert(seq) = {
-						.sendTime = now,
-					};
+					packetData.insert(seq) = { .sendTime = now, };
 
-					msgBufferWriter = pkt.body;
-					(getChannel<Cs>().fill(seq, msgBufferWriter), ...);
-
-					if (msgBufferWriter.size()) {
-						const auto sz = sizeof(pkt.head) + msgBufferWriter.size();
-						packetSentBandwidthAccum += sz;
-						sock.send(&pkt, (int32)sz, addr);
-						packetSendBudget -= 1;
-					} else {
-						--nextSeqNum;
-						break;
-					}
+					const auto sz = sizeof(pkt.head) + msgBufferWriter.size();
+					packetSentBandwidthAccum += sz;
+					sock.send(&pkt, (int32)sz, addr);
+					packetSendBudget -= 1;
 				}
 
 				const auto diff = now - lastBandwidthUpdate;

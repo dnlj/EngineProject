@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Net/MessageHeader.hpp>
 #include <Engine/Net/BufferWriter.hpp>
+#include <Engine/Net/Packet.hpp> // TODO: once we have configurable limits this isnt needed
 #include <Engine/Clock.hpp>
 #include <Engine/SequenceBuffer.hpp>
 
@@ -292,6 +293,15 @@ namespace Engine::Net {
 				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
 
+				
+				// TODO: rm
+				if (((((int)Ms) == 19) || ...)) {
+					const byte* curr = buff.data();
+					curr += sizeof(MessageHeader);
+					curr += 4;
+					ENGINE_INFO("End underlying message: ", hdr->seq, " ", *((uint16*)(curr)));
+				}
+
 				ENGINE_DEBUG_ASSERT(msgData.canInsert(hdr->seq));
 				auto& msg = msgData.insert(hdr->seq);
 				msg.data.assign(buff.cbegin(), buff.cend());
@@ -309,6 +319,22 @@ namespace Engine::Net {
 						if (buff.write(msg->data.data(), msg->data.size())) {
 							msg->lastSendTime = now;
 							addMessageToPacket(pktSeq, seq);
+
+							// TODO: rm
+							if (((((int)Ms) == 19) || ...)) {
+								const byte* curr = msg->data.data();
+								curr += sizeof(MessageHeader);
+								curr += 4;
+								ENGINE_INFO("Add underlying: ", pktSeq, " ", seq, " ", *((uint16*)(curr)));
+							}
+						} else {
+							// TODO: rm? better message
+							if(((((int)Ms) == 19) || ...)) {
+								const byte* curr = msg->data.data();
+								curr += sizeof(MessageHeader);
+								curr += 4;
+								ENGINE_FAIL("Failed to write message: ", pktSeq, " ", seq, " ", *((uint16*)(curr)), " ", buff.capacity(), " ", buff.space());
+							}
 						}
 					}
 				}
@@ -554,7 +580,7 @@ namespace Engine::Net {
 					}
 
 					const auto dataEnd = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size;
-					ENGINE_INFO("Recv blob part: ", info.seq(), " ", hdr.size);
+					ENGINE_INFO("Recv blob part: ", info.seq(), " ", dataEnd - dataBegin, " ", info.start() & BlobHeader::LEN_MASK);
 					found->insert(info.start() & BlobHeader::LEN_MASK, dataBegin, dataEnd);
 				}
 
@@ -571,12 +597,15 @@ namespace Engine::Net {
 				while (Base::canWriteMessage()) {
 					if (blob->remaining() == 0) { return; }
 
-					const auto space = std::max(0,
+					// TODO: this should be configurable some where
+					// Always leave some room for other messages.
+					constexpr static int32 maxPacketUsage = sizeof(Packet::body) - 128;
+					const auto space = std::min(maxPacketUsage, std::max(0,
 						static_cast<int32>(buff.space())
 						- static_cast<int32>(sizeof(MessageHeader))
 						- static_cast<int32>(sizeof(BlobHeader))
 						- static_cast<int32>(sizeof(int32)) // Optional size field
-					);
+					));
 
 					if (space < 32) { // Arbitrary minimum data size
 						return;
@@ -596,21 +625,12 @@ namespace Engine::Net {
 
 						const int32 len = std::min(space, blob->remaining());
 						msg.write(blob->data.data() + blob->curr, len);
-						ENGINE_LOG("Write blob part: ", head.seq(), " = ", seq, " ", len);
+						ENGINE_INFO("Write blob part: ", head.seq(), " = ", seq, " ", len);
 						blob->curr += len;
 						++blob->parts;
 						buff.advance(alias.size());
 					} else {
 						ENGINE_DEBUG_ASSERT(false, "Unable to write to underlying channel. This should not occur.");
-					}
-
-					// TODO: rm
-					{
-						const auto& data = Base::msgData.get(Base::msgData.max());
-						const byte* curr = data.data.data();
-						curr += sizeof(MessageHeader);
-						const auto* head = reinterpret_cast<const BlobHeader*>(curr);
-						ENGINE_INFO("Wrote data part: ", head->seq(), " = ", seq);
 					}
 				}
 			}
@@ -658,6 +678,7 @@ namespace Engine::Net {
 						auto* blob = writeBlobs.find(seq);
 						if (blob) {
 							--blob->parts;
+							ENGINE_INFO("Blob part ack: ", pktSeq, " ", s, " ", seq, " ", blob->parts);
 							if (blob->parts == 0 && blob->remaining() == 0) {
 								writeBlobs.remove(seq);
 								ENGINE_SUCCESS("Blob complete! ", seq);

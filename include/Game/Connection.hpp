@@ -47,6 +47,12 @@ namespace Game {
 		Channel_General,
 		Channel_General_RU,
 		Channel_ECS,
-		Channel_Map_Blob // TODO: enable
+
+		// One problem with having this last is that we can never use a full packet
+		// On the other hand we dont want map data to eat 100% bandwidth and cause
+		// jumpy gameplay. Currently the solution is to limit the maximum use of Channel_LargeReliableOrdered.
+		// Doing this we need to make sure we never send more than this maximum EVERY frame (such as ACTION messages)
+		// or else they will never be sent.
+		Channel_Map_Blob 
 	>;
 }

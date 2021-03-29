@@ -57,6 +57,8 @@ namespace Engine::Net {
 
 			ENGINE_INLINE bool write(const void* src, int64 sz) {
 				ENGINE_DEBUG_ASSERT(sz > 0);
+				ENGINE_DEBUG_ASSERT(sz <= capacity());
+
 				if (curr + sz > stop) { return false; }
 				memcpy(curr, src, sz);
 				curr += sz;
