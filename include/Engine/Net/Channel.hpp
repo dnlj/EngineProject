@@ -293,15 +293,6 @@ namespace Engine::Net {
 				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
 
-				
-				// TODO: rm
-				if (((((int)Ms) == 19) || ...)) {
-					const byte* curr = buff.data();
-					curr += sizeof(MessageHeader);
-					curr += 4;
-					ENGINE_INFO("End underlying message: ", hdr->seq, " ", *((uint16*)(curr)));
-				}
-
 				ENGINE_DEBUG_ASSERT(msgData.canInsert(hdr->seq));
 				auto& msg = msgData.insert(hdr->seq);
 				msg.data.assign(buff.cbegin(), buff.cend());
@@ -319,22 +310,6 @@ namespace Engine::Net {
 						if (buff.write(msg->data.data(), msg->data.size())) {
 							msg->lastSendTime = now;
 							addMessageToPacket(pktSeq, seq);
-
-							// TODO: rm
-							if (((((int)Ms) == 19) || ...)) {
-								const byte* curr = msg->data.data();
-								curr += sizeof(MessageHeader);
-								curr += 4;
-								ENGINE_INFO("Add underlying: ", pktSeq, " ", seq, " ", *((uint16*)(curr)));
-							}
-						} else {
-							// TODO: rm? better message
-							if(((((int)Ms) == 19) || ...)) {
-								const byte* curr = msg->data.data();
-								curr += sizeof(MessageHeader);
-								curr += 4;
-								ENGINE_FAIL("Failed to write message: ", pktSeq, " ", seq, " ", *((uint16*)(curr)), " ", buff.capacity(), " ", buff.space());
-							}
 						}
 					}
 				}
@@ -486,7 +461,7 @@ namespace Engine::Net {
 					if (static_cast<int32>(data.size()) < i + len) {
 						data.resize(i + len);
 					}
-					ENGINE_LOG("Insert: ", len, " ", data.size());
+					// ENGINE_LOG("Insert: ", len, " ", data.size());
 					memcpy(&data[i], start, len);
 
 					const Range range {i, i + len};
@@ -494,7 +469,7 @@ namespace Engine::Net {
 
 					// Merge with after
 					if (found != parts.cend() && range.stop == found->start) {
-						ENGINE_LOG("Merge after: (", range.start, ", ", range.stop, ") U (", found->start, ", ", found->stop, ")");
+						// ENGINE_LOG("Merge after: (", range.start, ", ", range.stop, ") U (", found->start, ", ", found->stop, ")");
 						found->start = range.start;
 					} else {
 						found = parts.insert(found, range);
@@ -504,7 +479,7 @@ namespace Engine::Net {
 					if (found > parts.cbegin()) {
 						auto prev = found - 1;
 						if (prev->stop == found->start) {
-							ENGINE_LOG("Merge before: (", prev->start, ", ", prev->stop, ") U (", found->start, ", ", found->stop, ")");
+							// ENGINE_LOG("Merge before: (", prev->start, ", ", prev->stop, ") U (", found->start, ", ", found->stop, ")");
 							prev->stop = found->stop;
 							parts.erase(found);
 							found = prev;
@@ -513,7 +488,7 @@ namespace Engine::Net {
 				}
 			};
 
-			constexpr static int MAX_BLOBS = 64; // TODO: reduce back to 8
+			constexpr static int MAX_BLOBS = 8; // TODO: this should be configurable
 			SequenceBuffer<SeqNum, WriteBlob, MAX_BLOBS> writeBlobs;
 			SequenceBuffer<SeqNum, RecvBlob, MAX_BLOBS> recvBlobs;
 
@@ -580,7 +555,7 @@ namespace Engine::Net {
 					}
 
 					const auto dataEnd = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size;
-					ENGINE_INFO("Recv blob part: ", info.seq(), " ", dataEnd - dataBegin, " ", info.start() & BlobHeader::LEN_MASK);
+					// ENGINE_INFO("Recv blob part: ", info.seq(), " ", dataEnd - dataBegin, " ", info.start() & BlobHeader::LEN_MASK);
 					found->insert(info.start() & BlobHeader::LEN_MASK, dataBegin, dataEnd);
 				}
 
@@ -591,9 +566,6 @@ namespace Engine::Net {
 				auto* blob = writeBlobs.find(seq);
 				if (!blob) { return; }
 
-				// TODO: rm
-				if (!Base::canWriteMessage()) { ENGINE_FAIL("Cannot write message! ", this->nextSeq, " ", this->nextSeq - 64); }
-				
 				while (Base::canWriteMessage()) {
 					if (blob->remaining() == 0) { return; }
 
@@ -625,7 +597,7 @@ namespace Engine::Net {
 
 						const int32 len = std::min(space, blob->remaining());
 						msg.write(blob->data.data() + blob->curr, len);
-						ENGINE_INFO("Write blob part: ", head.seq(), " = ", seq, " ", len);
+						// ENGINE_INFO("Write blob part: ", head.seq(), " = ", seq, " ", len);
 						blob->curr += len;
 						++blob->parts;
 						buff.advance(alias.size());
@@ -678,13 +650,13 @@ namespace Engine::Net {
 						auto* blob = writeBlobs.find(seq);
 						if (blob) {
 							--blob->parts;
-							ENGINE_INFO("Blob part ack: ", pktSeq, " ", s, " ", seq, " ", blob->parts);
+							// ENGINE_INFO("Blob part ack: ", pktSeq, " ", s, " ", seq, " ", blob->parts);
 							if (blob->parts == 0 && blob->remaining() == 0) {
 								writeBlobs.remove(seq);
-								ENGINE_SUCCESS("Blob complete! ", seq);
+								// ENGINE_SUCCESS("Blob complete! ", seq);
 							}
 						} else {
-							// TODO: this shouldnt happen?
+							// This shouldn't happen?
 							ENGINE_FAIL("Blob not found! ", seq);
 						}
 					}
