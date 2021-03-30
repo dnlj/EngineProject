@@ -90,9 +90,12 @@ namespace Engine::Win32 {
 			void setPosition(int32 x, int32 y);
 			void setSize(int32 w, int32 h);
 			void setPosSize(int32 x, int32 y, int32 w, int32 h);
+			void setClientArea(int32 w, int32 h);
 			void center();
 
 		private:
+			void setPosSize(int32 x, int32 y, int32 w, int32 h, UINT flags);
+
 			static WGLPointers init();
 
 			static LRESULT windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

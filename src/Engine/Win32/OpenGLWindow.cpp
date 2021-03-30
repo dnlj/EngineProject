@@ -593,15 +593,37 @@ namespace Engine::Win32 {
 	}
 
 	void OpenGLWindow::setPosition(int32 x, int32 y) {
-		SetWindowPos(windowHandle, HWND_TOP, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+		setPosSize(x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 	}
 
 	void OpenGLWindow::setSize(int32 w, int32 h) {
-		SetWindowPos(windowHandle, HWND_TOP, 0, 0, w, h, SWP_NOREPOSITION | SWP_NOZORDER);
+		setPosSize(0, 0, w, h, SWP_NOMOVE | SWP_NOZORDER);
 	}
 
 	void OpenGLWindow::setPosSize(int32 x, int32 y, int32 w, int32 h) {
-		SetWindowPos(windowHandle, HWND_TOP, x, y, w, h, SWP_NOZORDER);
+		setPosSize(x, y, w, h, SWP_NOZORDER);
+	}
+
+	void OpenGLWindow::setPosSize(int32 x, int32 y, int32 w, int32 h, UINT flags) {
+		RECT off = {};
+		AdjustWindowRectEx(&off, GetWindowStyle(windowHandle), false,  GetWindowExStyle(windowHandle));
+		SetWindowPos(windowHandle, HWND_TOP,
+			x + off.left,
+			y - 1,
+			w - off.left + off.right,
+			h + off.bottom + 1,
+			flags
+		);
+	}
+
+	void OpenGLWindow::setClientArea(int32 w, int32 h) {
+		RECT off = {};
+		AdjustWindowRectEx(&off, GetWindowStyle(windowHandle), false,  GetWindowExStyle(windowHandle));
+		SetWindowPos(windowHandle, HWND_TOP, 0,0,
+			w - off.left + off.right,
+			h - off.top + off.bottom,
+			SWP_NOMOVE | SWP_NOZORDER
+		);
 	}
 
 	void OpenGLWindow::center() {
