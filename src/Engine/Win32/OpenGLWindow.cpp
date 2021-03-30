@@ -556,8 +556,10 @@ namespace Engine::Win32 {
 		SwapBuffers(deviceContext);
 	}
 
-	void OpenGLWindow::swapInterval(int interval) {
-		wglPtrs.wglSwapIntervalEXT(0);
+	void OpenGLWindow::setSwapInterval(int interval) {
+		if (!wglPtrs.wglSwapIntervalEXT(interval)) {
+			ENGINE_WARN("Unable to set swap interval to ", interval, ". Current swap interval is ", wglPtrs.wglGetSwapIntervalEXT(), ".");
+		}
 	}
 
 	HWND OpenGLWindow::getWin32WindowHandle() const {
@@ -729,6 +731,7 @@ namespace Engine::Win32 {
 			.wglChoosePixelFormatARB = getFunctionPointerGL<PFNWGLCHOOSEPIXELFORMATARBPROC>("wglChoosePixelFormatARB"),
 			.wglCreateContextAttribsARB = getFunctionPointerGL<PFNWGLCREATECONTEXTATTRIBSARBPROC>("wglCreateContextAttribsARB"),
 			.wglSwapIntervalEXT = getFunctionPointerGL<PFNWGLSWAPINTERVALEXTPROC>("wglSwapIntervalEXT"),
+			.wglGetSwapIntervalEXT = getFunctionPointerGL<PFNWGLGETSWAPINTERVALEXTPROC>("wglGetSwapIntervalEXT"),
 		};
 		
 		ENGINE_ASSERT(wglMakeCurrent(nullptr, nullptr), "Unable to make WGL render context non-current - ", getLastErrorMessage());

@@ -26,6 +26,7 @@ namespace Engine::Win32 {
 				PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
 				PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
 				PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
+				PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT;
 			};
 
 			WGLPointers wglPtrs;
@@ -74,7 +75,7 @@ namespace Engine::Win32 {
 
 			void swapBuffers();
 
-			void swapInterval(int interval);
+			void setSwapInterval(int interval);
 
 			HWND getWin32WindowHandle() const;
 

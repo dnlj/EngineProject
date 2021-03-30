@@ -493,8 +493,6 @@ void run(int argc, char* argv[]) {
 	// Main loop
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;
-	window.show();
-	window.swapInterval(0);
 
 	if constexpr (ENGINE_SERVER) {
 		window.setPosSize(3440, 0, 1920, 1080);
@@ -502,6 +500,9 @@ void run(int argc, char* argv[]) {
 		window.setClientArea(1920, 1080);
 		window.center();
 	}
+
+	window.setSwapInterval(0);
+	window.show();
 
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 	while (!window.shouldClose()) {
@@ -529,7 +530,6 @@ void run(int argc, char* argv[]) {
 		if constexpr (ENGINE_CLIENT) { mapUI(); }
 
 		Engine::ImGui::draw();
-		window.swapInterval(0);
 		window.swapBuffers();
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
