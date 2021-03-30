@@ -19,7 +19,7 @@ namespace Game {
 	}
 
 	void CharacterMovementSystem::tick() {
-		constexpr float speed = 1.0f * 4;
+		constexpr float speed = 1.0f * 200;
 
 		for (auto ent : world.getFilter<Filter>()) {
 			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);

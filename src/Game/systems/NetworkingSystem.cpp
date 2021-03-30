@@ -554,7 +554,7 @@ namespace Game {
 			// ENGINE_LOG("****** ", conn.getKeySend(), " ", conn.getKeyRecv(), " ", packet.getKey(), " ", packet.getSeqNum());
 
 			if (!conn.recv(packet, sz, now)) { continue; }
-			// ENGINE_SUCCESS(" New Packet ===================================");
+
 			const Engine::Net::MessageHeader* hdr; 
 			while (hdr = conn.recvNext()) {
 				dispatchMessage(info, conn, hdr);
@@ -823,7 +823,7 @@ namespace Game {
 		{
 			const auto& mapSys = world.getSystem<MapSystem>();
 			// TODO: query map system and find good spawn location
-			const b2Vec2 pos = {0, 3};
+			const b2Vec2 pos = {0, 5};
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
 			physComp.setBody(physSys.createPhysicsCircle(ent, pos, -+PhysicsType::Player));
 			physComp.type = PhysicsType::Player;

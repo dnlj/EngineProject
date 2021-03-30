@@ -56,7 +56,6 @@
 // Game
 #include <Game/Common.hpp>
 #include <Game/World.hpp>
-#include <Game/MapGenerator.hpp>
 
 
 namespace {
@@ -299,8 +298,11 @@ namespace {
 	// TODO: move into file
 	class WindowCallbacks final : public Engine::WindowCallbacks<TempWorldEngineWrapper> {
 		void resizeCallback(int32 w, int32 h) override {
+			ENGINE_LOG("Resize: ", w, " ", h);
 			glViewport(0, 0, w, h);
-			userdata->engine.camera.setAsOrtho(w, h, 1.0f / 250.0f);
+			// TODO: probably define this scale stuff somewhere so other systems can use it.
+			// 4 blocks per meter - 8 pixels per block - 300% zoom
+			userdata->engine.camera.setAsOrtho(w, h, 1.0f / (4 * 8 * 2));
 		}
 
 		void keyCallback(Engine::Input::InputEvent event) override {
@@ -492,13 +494,13 @@ void run(int argc, char* argv[]) {
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;
 	window.show();
-	window.center();
 	window.swapInterval(0);
 
 	if constexpr (ENGINE_SERVER) {
-		window.setPosSize(3440, 32, 1920, 1080);
+		window.setPosSize(3440, 0, 1920, 1080);
 	} else {
-		window.setPosSize(900, 32, 1500, 1400);
+		window.setClientArea(1920, 1080);
+		window.center();
 	}
 
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);

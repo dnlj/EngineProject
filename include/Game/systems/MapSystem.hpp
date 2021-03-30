@@ -21,7 +21,6 @@
 // Game
 #include <Game/Common.hpp>
 #include <Game/MapChunk.hpp>
-#include <Game/MapGenerator.hpp>
 #include <Game/MapGenerator2.hpp>
 #include <Game/Connection.hpp>
 

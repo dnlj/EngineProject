@@ -7,11 +7,7 @@
 
 // Game
 #include <Game/systems/MapSystem.hpp>
-#include <Game/systems/PhysicsSystem.hpp>
-#include <Game/systems/SpriteSystem.hpp>
-#include <Game/systems/CameraTrackingSystem.hpp>
 #include <Game/World.hpp>
-#include <Game/systems/PhysicsOriginShiftSystem.hpp>
 
 
 namespace {
@@ -21,7 +17,6 @@ namespace {
 		Game::ConnectionComponent
 	>;
 }
-
 
 namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
@@ -88,8 +83,8 @@ namespace Game {
 
 		// TODO: move
 		const auto makeEdit = [&](BlockId bid, const glm::vec2 mouse) {
-			for (int x = -1; x < 2; ++x) {
-				for (int y = -1; y < 2; ++y) {
+			for (int x = -2; x < 3; ++x) {
+				for (int y = -2; y < 3; ++y) {
 					setValueAt(
 						mouse + glm::vec2{x * MapChunk::blockSize, y * MapChunk::blockSize},
 						bid
@@ -157,6 +152,7 @@ namespace Game {
 		memcpy(&chunkPos.y, begin, sizeof(chunkPos.y));
 		begin += sizeof(chunkPos.y);
 
+		ENGINE_INFO("Recv chunk from net: ", chunkPos.x, " ", chunkPos.y, " ", head.size);
 		chunkEdits[chunkPos].fromRLE(begin, end);
 	}
 
@@ -200,10 +196,12 @@ namespace Game {
 								meta.last = activeData.updated;
 								const auto size = static_cast<int32>(rleTemp.size() * sizeof(rleTemp[0]));
 								byte* data = reinterpret_cast<byte*>(rleTemp.data());
-								// ENGINE_LOG("Send Chunk (fresh): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
 								memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
 								memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
 								msg.writeBlob(data, size);
+								//ENGINE_INFO("Send Chunk (fresh): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
+							} else {
+								//ENGINE_WARN("Unable to begin MAP_CHUNK message.");
 							}
 						}
 					} else if (activeData.rle.empty()) {
@@ -216,10 +214,12 @@ namespace Game {
 							meta.last = activeData.updated;
 							const auto size = static_cast<int32>(activeData.rle.size() * sizeof(activeData.rle[0]));
 							byte* data = reinterpret_cast<byte*>(activeData.rle.data());
-							// ENGINE_LOG("Send Chunk (edit): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
 							memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
 							memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
 							msg.writeBlob(data, size);
+							//ENGINE_INFO("Send Chunk (edit): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
+						} else {
+							//ENGINE_WARN("Unable to begin MAP_CHUNK message.");
 						}
 					}
 				}
@@ -264,7 +264,7 @@ namespace Game {
 		// How large of a buffer around areaSize to wait befor unloading areas.
 		// We want a larger unload area so that we arent constantly loading/unloading
 		// when a player is near a chunk border
-		constexpr auto buffSize = glm::ivec2{2, 2}; // TODO: i think we may want this mouse around 3-5 range
+		constexpr auto buffSize = glm::ivec2{2, 2}; // TODO: i think we may want this more around 5-7 range
 
 		const auto minAreaChunk = blockToChunk(blockPos) - areaSize;
 		const auto maxAreaChunk = blockToChunk(blockPos) + areaSize;
@@ -283,9 +283,16 @@ namespace Game {
 
 				if (regionIt == regions.end()) {
 					if (!isBufferChunk) {
-						const auto it = regions.emplace(regionPos, new MapRegion{
-							.lastUsed = world.getTickTime(),
-						}).first;
+						//const auto it = regions.emplace(regionPos, new MapRegion{
+						//	.lastUsed = world.getTickTime(),
+						//}).first;
+						// 
+						// Work around for MSVC compiler heap bug.
+						// If we use the above RAM usage hits +8GB (runs out of memory, error).
+						// With below it hits +2GB at most.
+						auto ptr = std::make_unique<MapRegion>();
+						ptr->lastUsed = world.getTickTime();
+						const auto it = regions.emplace(regionPos, std::move(ptr)).first;
 
 						if constexpr (ENGINE_SERVER) {
 							queueRegionToLoad(regionPos, *it->second);

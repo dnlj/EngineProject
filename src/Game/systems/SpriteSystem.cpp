@@ -122,7 +122,7 @@ namespace Game {
 
 		for (auto& sprite : sprites) {
 			// Set camera uniform
-			auto model = glm::translate(glm::mat4{1.0f}, sprite.position) * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/4});
+			auto model = glm::translate(glm::mat4{1.0f}, sprite.position); // * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/4});
 			glm::mat4 mvp = engine.camera.getProjection() * engine.camera.getView() * model;
 			
 			auto& group = spriteGroups.back();

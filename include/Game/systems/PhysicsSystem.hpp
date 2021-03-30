@@ -61,7 +61,7 @@ namespace Game {
 				b2Body* body = createBody(ent, bodyDef);
 
 				b2CircleShape shape;
-				shape.m_radius = 1.0f/8;
+				shape.m_radius = 0.49f;
 
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &shape;

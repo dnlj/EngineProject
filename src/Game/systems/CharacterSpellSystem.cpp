@@ -42,7 +42,7 @@ namespace Game {
 				physBodyComp.setBody(physSys.createBody(ent, bodyDef));
 
 				b2CircleShape shape;
-				shape.m_radius = 1.0f/8;
+				shape.m_radius = 0.5f;
 
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &shape;
@@ -99,7 +99,7 @@ namespace Game {
 				auto dir = Engine::Glue::as<b2Vec2>(actComp.getTarget());
 				dir.Normalize();
 
-				queueMissile(pos + 0.3f * dir, dir);
+				queueMissile(pos + 1.3f * dir, 4.0f * dir);
 				events.back().ent = ent;
 			}
 		}
