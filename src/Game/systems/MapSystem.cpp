@@ -48,7 +48,8 @@ namespace Game {
 		}
 
 		// TODO: really no reason to use RGBA here. we dont use alpha
-		texArr.setStorage(Engine::TextureFormat::SRGBA8, {32, 32, std::size(textures)});
+		texArr.setStorage(Engine::TextureFormat::SRGBA8, {8, 8, std::size(textures)});
+		texArr.setFilter(Engine::TextureFilter::NEAREST);
 
 		Engine::Image img;
 		for (int i = 0; auto path : textures) {
@@ -259,12 +260,12 @@ namespace Game {
 		const auto blockPos = worldToBlock(plyPos);
 
 		// How large of an area to load around the chunk blockPos is in.
-		constexpr auto areaSize = glm::ivec2{2, 2};
+		constexpr auto areaSize = glm::ivec2{2, 2}; // TODO: this should probably be 3 or 4 ishs
 
 		// How large of a buffer around areaSize to wait befor unloading areas.
 		// We want a larger unload area so that we arent constantly loading/unloading
 		// when a player is near a chunk border
-		constexpr auto buffSize = glm::ivec2{2, 2}; // TODO: i think we may want this more around 5-7 range
+		constexpr auto buffSize = glm::ivec2{7, 7}; // TODO: i think we may want this more around 5-7 range
 
 		const auto minAreaChunk = blockToChunk(blockPos) - areaSize;
 		const auto maxAreaChunk = blockToChunk(blockPos) + areaSize;
@@ -380,27 +381,27 @@ namespace Game {
 
 		decltype(auto) greedyExpand = [&chunk](auto usable, auto submitArea) ENGINE_INLINE {
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};
-
+			
 			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {  
-				for (begin.y = 0; begin.y < MapChunk::size.y; ++begin.y) {
+				for (begin.y = 0; begin.y < MapChunk::size.y;) {
 					const auto& blockMeta = getBlockMeta(chunk.data[begin.x][begin.y]);
-					// TODO: rm - old - if (blockType == MapChunk::AIR.id || !usable(begin, blockType)) { continue; }
-					if (used[begin.x][begin.y] || !usable(begin, blockMeta)) { continue; }
 					auto end = begin;
-
-					while (end.y < MapChunk::size.y && !used[begin.x][begin.y] && usable(end, blockMeta)) { ++end.y; }
+					while (end.y < MapChunk::size.y && !used[end.x][end.y] && usable(end, blockMeta)) { ++end.y; }
+					if (end.y == begin.y) { ++begin.y; continue; }
 
 					for (bool cond = true; cond;) {
-						std::fill(&used[end.x][begin.y], &used[end.x][end.y], true);
+						//std::fill(&used[end.x][begin.y], &used[end.x][end.y], true);
+						memset(&used[end.x][begin.y], 1, end.y - begin.y);
 						++end.x;
 
 						if (end.x == MapChunk::size.x) { break; }
 						for (int y = begin.y; y < end.y; ++y) {
-							if (used[begin.x][begin.y] || !usable(glm::ivec2{end.x, y}, blockMeta)) { cond = false; break; }
+							if (used[end.x][y] || !usable(glm::ivec2{end.x, y}, blockMeta)) { cond = false; break; }
 						}
 					}
 
 					submitArea(begin, end);
+					begin.y = end.y;
 				}
 			}
 		};
@@ -460,6 +461,7 @@ namespace Game {
 			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE {
 				return getBlockMeta(chunk.data[pos.x][pos.y]).solid;
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
+				// ENGINE_LOG("Physics: (", begin.x, ", ", begin.y, ") ", "(", end.x, ", ", end.y, ")");
 				const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
 				const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
 				shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
@@ -474,7 +476,12 @@ namespace Game {
 		for (glm::ivec2 bpos = {0, 0}; bpos.x < MapChunk::size.x; ++bpos.x) {
 			for (bpos.y = 0; bpos.y < MapChunk::size.y; ++bpos.y) {
 				const auto absPos = chunkBlockPos + bpos;
+
 				chunk.data[bpos.x][bpos.y] = mgen.value(absPos.x, absPos.y);
+
+				if (chunk.data[bpos.x][bpos.y] > BlockId::Air && (bpos.x == 0 || bpos.y == 0)) {
+					chunk.data[bpos.x][bpos.y] = BlockId::Debug;
+				}
 			}
 		}
 	}

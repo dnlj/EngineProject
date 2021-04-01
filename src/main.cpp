@@ -301,7 +301,7 @@ namespace {
 			ENGINE_LOG("Resize: ", w, " ", h);
 			glViewport(0, 0, w, h);
 			// TODO: probably define this scale stuff somewhere so other systems can use it.
-			// 4 blocks per meter - 8 pixels per block - 300% zoom
+			// 4 blocks per meter - 8 pixels per block - 200% zoom
 			userdata->engine.camera.setAsOrtho(w, h, 1.0f / (4 * 8 * 2));
 		}
 

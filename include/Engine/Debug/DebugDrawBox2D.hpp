@@ -76,16 +76,16 @@ namespace Engine::Debug {
 		private:
 			// TODO: Make these constructor arguments instead of constants
 			/** The thickness of lines and borders */
-			static constexpr float LINE_SIZE = 0.008f;
+			static constexpr float LINE_SIZE = 0.03f; // 0.008f
 
 			/** The size of the axis lines when drawing a transform */
-			static constexpr float AXIS_SIZE = 0.1f;
+			static constexpr float AXIS_SIZE = 0.5f;
 
 			/** The multiplier to use for fill colors */
 			static constexpr float FILL_COLOR_MULT = 0.5f;
 
 			/** The maximum distance from the line between two vertices and the true circle */
-			static constexpr float MAX_CIRCLE_ERROR = 0.005f;
+			static constexpr float MAX_CIRCLE_ERROR = 0.01f; // 0.005f;
 
 			/** The minimum number of vertices to have in a circle */
 			static constexpr unsigned int MIN_CIRCLE_VERTICES = 8;

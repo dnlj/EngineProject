@@ -41,7 +41,6 @@ namespace Game {
 		if (v < s) {
 			return BlockId::Air;
 		} else {
-
 			// Add grass to "top" layer
 			if (pos.y > 0) { // TODO: This doesnt really work. Think about overhangs.
 				if ((basis({pos.x, pos.y + 1}) < s) ||
