@@ -73,7 +73,7 @@ namespace {
 		//float32 data[w] = {};
 	} map;
 	
-	void mapTest() {
+	void mapTest(int xOffset = 0, int yOffset = 0) {
 		struct Color {
 			uint8_t r = 0;
 			uint8_t g = 0;
@@ -177,16 +177,17 @@ namespace {
 			return fv;
 		};
 
-		Color blockToColor[Game::BlockId::_COUNT] = {
-			{0, 0, 0}, {0, 0, 0},
-			{0, 0, 200}, {200, 0, 0},
-			{100, 100, 100}, {200, 100, 0},
-		};
+		Color blockToColor[Game::BlockId::_COUNT] = {};
+		blockToColor[Game::BlockId::Debug]	= {255, 0, 0};
+		blockToColor[Game::BlockId::Dirt]	= {158, 98, 33};
+		blockToColor[Game::BlockId::Grass]	= {67, 226, 71};
+		blockToColor[Game::BlockId::Iron]	= {144, 144, 144};
+		blockToColor[Game::BlockId::Gold]	= {255, 235, 65};
 
 		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < map.h; ++y) {
 			for (int x = 0; x < map.w; ++x) {
-				const auto v = mgen.value(x - map.w/2, y - map.h/2);
+				const auto v = mgen.value(x + xOffset - map.w/2, y + yOffset - map.h/2);
 				data[y][x] = blockToColor[v];
 				
 				//map.data[x] = simplex.value1D(x * 0.1f);
@@ -222,8 +223,24 @@ namespace {
 
 	void mapUI() {
 		if (ImGui::Begin("Map Test")) {
+			static int yOffset = 0;
+			static int xOffset = 0;
+
+			ImGui::PushItemWidth(256);
+			
+			ImGui::DragInt("X Offset", &xOffset);
+			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset); }
+
+			ImGui::SameLine();
+
+			ImGui::DragInt("Y Offset", &yOffset);
+			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset); }
+
+			ImGui::PopItemWidth();
+
 			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
 			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
+
 			/*
 			tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex2));
 			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
