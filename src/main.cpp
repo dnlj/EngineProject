@@ -73,7 +73,7 @@ namespace {
 		//float32 data[w] = {};
 	} map;
 	
-	void mapTest(int xOffset = 0, int yOffset = 0, float32 zoom = 1.0f) {
+	void mapTest(int xOffset = 0, int yOffset = 0, float32 xZoom = 1.0f, float32 yZoom = 1.0f) {
 		struct Color {
 			uint8_t r = 0;
 			uint8_t g = 0;
@@ -187,8 +187,8 @@ namespace {
 		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < map.h; ++y) {
 			for (int x = 0; x < map.w; ++x) {
-				const float32 xm = (x + xOffset - map.w/2) * zoom;
-				const float32 ym = (y + yOffset - map.h/2) * zoom;
+				const float32 xm = (x + xOffset - map.w/2) * xZoom;
+				const float32 ym = (y + yOffset - map.h/2) * yZoom;
 				const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
 				data[y][x] = blockToColor[v];
 				
@@ -227,22 +227,22 @@ namespace {
 		if (ImGui::Begin("Map Test")) {
 			static int yOffset = 0;
 			static int xOffset = 0;
-			static float zoom = 1.0f;
+			static float xZoom = 1.0f;
 
 			ImGui::PushItemWidth(256);
 			
 			ImGui::DragInt("X Offset", &xOffset);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, zoom); }
+			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom); }
 
 			ImGui::SameLine();
 
 			ImGui::DragInt("Y Offset", &yOffset);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, zoom); }
+			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom); }
 			
 			ImGui::SameLine();
 
-			ImGui::DragFloat("Zoom", &zoom, 0.05f, 0.0f, 100.0f);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, zoom); }
+			ImGui::DragFloat("X Zoom", &xZoom, 0.05f, 0.1f, FLT_MAX);
+			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom); }
 
 			ImGui::PopItemWidth();
 

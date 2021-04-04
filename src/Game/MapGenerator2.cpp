@@ -97,6 +97,8 @@ namespace Game {
 			};
 
 			float32 h = 0.0f;
+
+			// TODO: this may be to much variation? Might make it hard to do anything in the sky. Then again we could just offset by `basis + #`
 			h += octave(0.0001f, 500.0f, 1 * 999.0f, 1.0f);
 			h += octave(0.005f, 50.0f, 2 * 999.0f);
 			h += octave(0.05f, 5.0f, 3 * 999.0f);
