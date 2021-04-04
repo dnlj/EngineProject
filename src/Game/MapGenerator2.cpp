@@ -34,7 +34,8 @@ namespace Game {
 
 		// Cave size
 		const float32 s = gradient(pos.y, {
-			{ -50.0f,  0.0f},
+			// TODO:
+			{ -100.0f,  0.25f},
 			{-1000.0f,  0.25f},
 		});
 
@@ -48,7 +49,10 @@ namespace Game {
 					(basis({pos.x - 1, pos.y}) < s)) {
 					return BlockId::Grass;
 				}
-			} else if (const auto r = resource(pos)) {
+			}
+
+			// Add resources
+			if (const auto r = resource(pos)) {
 				return r;
 			}
 
@@ -86,24 +90,31 @@ namespace Game {
 	float32 MapGenerator2::basis(const glm::vec2 pos) const noexcept {
 		float32 v = 0.0f;
 
-		{ // Main caves
-			auto p = pos;
-			p *= 0.05f;
-			v += simplex.value(p.x, p.y);
+		if (pos.y > 0) {
+			auto octave = [&](const float32 xs, const float32 ys, const float32 off, const float32 one = 0.0f) ENGINE_INLINE {
+				// TODO: use 1d simplex when you get it workign correctly
+				return ys * 0.5f * (one + simplex.value(xs * (pos.x + off), 0));
+			};
 
-			p *= 2.0f;
-			v += simplex.value(p.x + 9999.0f, p.y + 9999.0f);
-		
-			p *= 1.25f;
-			v += simplex.value(p.x - 9999.0f, p.y - 9999.0f);
+			float32 h = 0.0f;
+			h += octave(0.0001f, 500.0f, 1 * 999.0f, 1.0f);
+			h += octave(0.005f, 50.0f, 2 * 999.0f);
+			h += octave(0.05f, 5.0f, 3 * 999.0f);
+			h += octave(0.75f, 2.0f, 4 * 999.0f);
+
+			v = pos.y < h;
+		} else {
+			v = 1.0f;
 		}
 
+		// TODO: caves
+
 		// Ground gradient
-		v += gradient(pos.y, {
-			{ 25.0f, -3.0f},
-			{  0.0f,  3.0f},
-			{-50.0f,  0.0f},
-		});
+		//v += gradient(pos.y, {
+		//	{ 25.0f, -3.0f},
+		//	{  0.0f,  3.0f},
+		//	{-50.0f,  0.0f},
+		//});
 
 		return v;
 	}
