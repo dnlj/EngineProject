@@ -30,7 +30,7 @@ namespace Game {
 
 	MapSystem::~MapSystem() {
 		threadsShouldExit = true;
-		condv.notify_all();
+		chunkQueue.notify();
 
 		for (auto& t : threads) {
 			t.join();
@@ -470,37 +470,24 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk) {
+	void MapSystem::loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk) const noexcept {
 		const auto chunkBlockPos = chunkToBlock(chunkPos);
+		mgen.init(chunkBlockPos, chunk);
+		// TODO: should regions store a ChunkInfo struct for checking state instead of puting it on MapChunk directly?
+		// TODO: store a ChunkInfo for state would also allow us to store a atomic<State>::is_lock_free for neighbor checking
 
-		for (glm::ivec2 bpos = {0, 0}; bpos.x < MapChunk::size.x; ++bpos.x) {
-			for (bpos.y = 0; bpos.y < MapChunk::size.y; ++bpos.y) {
-				const auto absPos = chunkBlockPos + bpos;
-
-				chunk.data[bpos.x][bpos.y] = mgen.value(absPos.x, absPos.y);
-
-				if (chunk.data[bpos.x][bpos.y] > BlockId::Air && (bpos.x == 0 || bpos.y == 0)) {
-					chunk.data[bpos.x][bpos.y] = BlockId::Debug;
-				}
-			}
-		}
+		// TODO: queue any neighbors that should move to next stage
+		// TODO: cont.  on second thought it is probably better to have stages queued up separately. how will we handle border chunks?
+		// TODO: cont.  i guess we will need to queue any neighbor REGIONS when we load a new region to fill in their border chunks?
 	}
 
 	void MapSystem::loadChunkAsyncWorker() {
-		while(true) {
-			std::unique_lock lock{chunksToLoadMutex};
-
-			while (chunksToLoad.empty()) {
-				condv.wait(lock);
-				if (threadsShouldExit) { return; }
+		Job job = {};
+		while (!threadsShouldExit) {
+			if (chunkQueue.popOrWait(job)) {
+				loadChunk(job.chunkPos, *job.chunk);
+				++job.region->loadedChunks;
 			}
-
-			const auto job = chunksToLoad.front();
-			chunksToLoad.pop();
-			lock.unlock();
-
-			loadChunk(job.chunkPos, job.chunk);
-			++job.region.loadedChunks;
 		}
 	}
 
@@ -508,18 +495,18 @@ namespace Game {
 		std::cout << "Queue region: " << regionPos.x << " " << regionPos.y << "\n";
 		const auto regionStart = regionToChunk(regionPos);
 
-		std::unique_lock lock{chunksToLoadMutex};
-
+		auto lock = chunkQueue.lock();
 		for (int x = 0; x < regionSize.x; ++x) {
 			for (int y = 0; y < regionSize.y; ++y) {
-				const auto chunkPos = regionStart + glm::ivec2{x, y};
-				auto& chunk = region.data[x][y];
-				chunksToLoad.push({chunkPos, region, chunk});
+				chunkQueue.unsafeEmplace(
+					regionStart + glm::ivec2{x, y},
+					&region,
+					&region.data[x][y]
+				);
 			}
 		}
-
 		lock.unlock();
-		condv.notify_all();
+		chunkQueue.notify();
 	}
 
 	/*

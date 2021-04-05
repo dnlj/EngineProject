@@ -1,4 +1,5 @@
 #include <Game/MapGenerator2.hpp>
+#include <Game/MapChunk.hpp>
 
 namespace {
 	using namespace Engine::Types;
@@ -28,6 +29,30 @@ namespace {
 }
 
 namespace Game {
+	void MapGenerator2::init(const glm::ivec2 pos, MapChunk& chunk) const noexcept {
+		for (int x = 0; x < MapChunk::size.x; ++x) {
+			for (int y = 0; y < MapChunk::size.y; ++y) {
+				chunk.data[x][y] = value(x + pos.x, y + pos.y);
+				if (chunk.data[x][y] > BlockId::Air && (x == 0 || y == 0)) {
+					chunk.data[x][y] = BlockId::Debug;
+				}
+			}
+		}
+
+		chunk.pass = Pass::Basis;
+	}
+
+	void MapGenerator2::advance(const glm::ivec2 pos, MapChunk& chunk, const MapChunk& top, const MapChunk& right, const MapChunk& bottom, const MapChunk& left) {
+		switch (chunk.pass) {
+			case Pass::Basis: { return; }
+			case Pass::Foliage: { return; }
+			default: {
+				ENGINE_WARN("Unknown chunk pass ", static_cast<int>(chunk.pass));
+				return;
+			}
+		}
+	}
+
 	BlockId MapGenerator2::value(const int32 x, const int32 y) const noexcept {
 		const glm::vec2 pos = {static_cast<float32>(x), static_cast<float32>(y)};
 		float32 v = basis(pos);

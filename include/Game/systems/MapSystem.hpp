@@ -17,6 +17,7 @@
 #include <Engine/Graphics/Mesh.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
+#include <Engine/ThreadSafeQueue.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -177,9 +178,7 @@ namespace Game {
 			Engine::FlatHashMap<glm::ivec2, MapChunk> chunkEdits;
 
 		private:
-			std::condition_variable condv;
 			std::thread threads[ENGINE_DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
-			std::mutex chunksToLoadMutex;
 
 			/** Used for sending full RLE chunk updates */
 			std::vector<byte> rleTemp;
@@ -189,11 +188,12 @@ namespace Game {
 			static_assert(decltype(threadsShouldExit)::is_always_lock_free);
 
 			struct Job { // TODO: replace with actual job system in EngineInstance
-				glm::ivec2 chunkPos;
-				MapRegion& region;
-				MapChunk& chunk;
+				glm::ivec2 chunkPos = {};
+				MapRegion* region = nullptr;
+				MapChunk* chunk = nullptr;
 			};
-			std::queue<Job> chunksToLoad;
+
+			Engine::ThreadSafeQueue<Job> chunkQueue;
 			Engine::FlatHashMap<glm::ivec2, std::unique_ptr<MapRegion>> regions;
 			Engine::ECS::Entity mapEntity;
 
@@ -206,10 +206,6 @@ namespace Game {
 			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;
 
-			//Game::MapGenerator<
-			//	Game::BiomeA,
-			//	Game::BiomeC
-			//> mgen{12345};
 			MapGenerator2 mgen{12345};
 
 			// TODO: recycle old bodies?
@@ -221,7 +217,7 @@ namespace Game {
 			void buildActiveChunkData(TestData& data, glm::ivec2 chunkPos);
 
 			// TODO: Doc
-			void loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk);
+			void loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk) const noexcept;
 
 			// TODO: Doc
 			void loadChunkAsyncWorker();
