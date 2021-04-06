@@ -187,12 +187,7 @@ namespace Game {
 			std::atomic<bool> threadsShouldExit = false;
 			static_assert(decltype(threadsShouldExit)::is_always_lock_free);
 
-			struct Job { // TODO: replace with actual job system in EngineInstance
-				glm::ivec2 chunkPos = {};
-				MapRegion* region = nullptr;
-				MapChunk* chunk = nullptr;
-			};
-
+			using Job = std::function<void()>;
 			Engine::ThreadSafeQueue<Job> chunkQueue;
 			Engine::FlatHashMap<glm::ivec2, std::unique_ptr<MapRegion>> regions;
 			Engine::ECS::Entity mapEntity;

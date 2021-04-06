@@ -14,18 +14,16 @@ namespace Game {
 
 	class MapGenerator2 {
 		private:
+			// TODO: add impl that takes perm array ref instead of seed so we can share
 			Engine::Noise::OpenSimplexNoise simplex;
 			Engine::Noise::WorleyNoise worley;
+			Engine::Noise::RangePermutation<256> treePerm;
 
 		public:
-			enum class Pass {
-				None = 0,
-				Basis,
-				Foliage,
-			};
-
-		public:
-			MapGenerator2(const int64 seed) : simplex{seed}, worley{seed} {
+			MapGenerator2(const int64 seed)
+				: simplex{seed}
+				, worley{seed}
+				, treePerm{seed} {
 			}
 
 			BlockId value(const int32 x, const int32 y) const noexcept;
@@ -40,6 +38,6 @@ namespace Game {
 
 		private:
 			BlockId resource(const glm::vec2 pos) const noexcept;
-			float32 basis(const glm::vec2 pos) const noexcept;
+			int32 height(const glm::vec2 pos) const noexcept;
 	};
 }

@@ -473,36 +473,34 @@ namespace Game {
 	void MapSystem::loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk) const noexcept {
 		const auto chunkBlockPos = chunkToBlock(chunkPos);
 		mgen.init(chunkBlockPos, chunk);
-		// TODO: should regions store a ChunkInfo struct for checking state instead of puting it on MapChunk directly?
-		// TODO: store a ChunkInfo for state would also allow us to store a atomic<State>::is_lock_free for neighbor checking
-
-		// TODO: queue any neighbors that should move to next stage
-		// TODO: cont.  on second thought it is probably better to have stages queued up separately. how will we handle border chunks?
-		// TODO: cont.  i guess we will need to queue any neighbor REGIONS when we load a new region to fill in their border chunks?
 	}
 
 	void MapSystem::loadChunkAsyncWorker() {
-		Job job = {};
+		Job job;
 		while (!threadsShouldExit) {
 			if (chunkQueue.popOrWait(job)) {
-				loadChunk(job.chunkPos, *job.chunk);
-				++job.region->loadedChunks;
+				job();
 			}
 		}
 	}
 
 	void MapSystem::queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region) {
 		std::cout << "Queue region: " << regionPos.x << " " << regionPos.y << "\n";
+		constexpr auto totalSize = MapRegion::size.x * MapRegion::size.y;
 		const auto regionStart = regionToChunk(regionPos);
 
 		auto lock = chunkQueue.lock();
 		for (int x = 0; x < regionSize.x; ++x) {
 			for (int y = 0; y < regionSize.y; ++y) {
-				chunkQueue.unsafeEmplace(
-					regionStart + glm::ivec2{x, y},
-					&region,
-					&region.data[x][y]
-				);
+				// TODO: maybe have each thred do a whole row of a region? per chunk seems to granular
+				chunkQueue.unsafeEmplace([this,
+						chunkPos = regionStart + glm::ivec2{x, y},
+						&region,
+						&chunk = region.data[x][y]
+					] {
+					loadChunk(chunkPos, chunk);
+					++region.loadedChunks;
+				});
 			}
 		}
 		lock.unlock();

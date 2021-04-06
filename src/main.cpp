@@ -179,6 +179,7 @@ namespace {
 
 		Color blockToColor[Game::BlockId::_COUNT] = {};
 		blockToColor[Game::BlockId::Debug]	= {255, 0, 0};
+		blockToColor[Game::BlockId::Debug2]	= {200, 26, 226};
 		blockToColor[Game::BlockId::Dirt]	= {158, 98, 33};
 		blockToColor[Game::BlockId::Grass]	= {67, 226, 71};
 		blockToColor[Game::BlockId::Iron]	= {144, 144, 144};

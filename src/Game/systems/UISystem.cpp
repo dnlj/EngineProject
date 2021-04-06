@@ -287,7 +287,7 @@ namespace Game {
 	}
 
 	void UISystem::ui_network() {
-		if (!ImGui::CollapsingHeader("Networking", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+		if (!ImGui::CollapsingHeader("Networking")) { return; }
 		
 		for (auto ent : world.getFilter<ConnectionComponent>()) {
 			if (!world.hasComponent<NetworkStatsComponent>(ent)) {

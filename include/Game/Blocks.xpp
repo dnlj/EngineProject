@@ -1,9 +1,10 @@
 // Name, Solid, Path
 X(None, false, nullptr)
 X(Air, false, nullptr)
-X(Debug, true, "assets/debug2.bmp")
-X(Dirt, true, "assets/dirt2.bmp")
-X(Grass, true, "assets/grass2.bmp")
-X(Iron, true, "assets/iron2.bmp")
-X(Gold, true, "assets/gold2.bmp")
+X(Debug, true, "assets/block_debug.bmp")
+X(Debug2, false, "assets/block_debug2.bmp")
+X(Dirt, true, "assets/block_dirt.bmp")
+X(Grass, true, "assets/block_grass.bmp")
+X(Iron, true, "assets/block_iron.bmp")
+X(Gold, true, "assets/block_gold.bmp")
 #undef X

@@ -9,7 +9,6 @@
 // Game
 #include <Game/BlockMeta.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
-#include <Game/MapGenerator2.hpp>
 
 
 // TODO: Doc
@@ -27,7 +26,6 @@ namespace Game {
 			static_assert(sizeof(RLEPair) == 4); // Ensure tight packing
 
 		public:
-			MapGenerator2::Pass pass = {};
 			BlockId data[size.x][size.y] = {};
 			
 			bool apply(const MapChunk& edit) {
