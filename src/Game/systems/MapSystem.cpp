@@ -153,7 +153,7 @@ namespace Game {
 		memcpy(&chunkPos.y, begin, sizeof(chunkPos.y));
 		begin += sizeof(chunkPos.y);
 
-		ENGINE_INFO("Recv chunk from net: ", chunkPos.x, " ", chunkPos.y, " ", head.size);
+		// ENGINE_INFO("Recv chunk from net: ", chunkPos.x, " ", chunkPos.y, " ", head.size);
 		chunkEdits[chunkPos].fromRLE(begin, end);
 	}
 
@@ -260,12 +260,12 @@ namespace Game {
 		const auto blockPos = worldToBlock(plyPos);
 
 		// How large of an area to load around the chunk blockPos is in.
-		constexpr auto areaSize = glm::ivec2{2, 2}; // TODO: this should probably be 3 or 4 ishs
+		constexpr auto areaSize = glm::ivec2{5, 5};
 
 		// How large of a buffer around areaSize to wait befor unloading areas.
 		// We want a larger unload area so that we arent constantly loading/unloading
 		// when a player is near a chunk border
-		constexpr auto buffSize = glm::ivec2{7, 7}; // TODO: i think we may want this more around 5-7 range
+		constexpr auto buffSize = glm::ivec2{7, 7};
 
 		const auto minAreaChunk = blockToChunk(blockPos) - areaSize;
 		const auto maxAreaChunk = blockToChunk(blockPos) + areaSize;
