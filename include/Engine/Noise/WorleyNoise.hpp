@@ -28,6 +28,8 @@ namespace Engine::Noise {
 
 	const static inline auto constant1 = ConstantDistribution<1>{};
 
+	// TODO: make perm and dist functors so they can be either hash functions or 
+	// TODO: use EBO for perm, dist, and metric functions - __declspec(empty_bases) - no_unique_address doesnt work on MSVC yet. See: https://devblogs.microsoft.com/cppblog/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
 	// TODO: Split? Inline?
 	// TODO: Vectorify?
 	// TODO: There seems to be some diag artifacts (s = 0.91) in the noise (existed pre RangePermutation)
@@ -35,10 +37,12 @@ namespace Engine::Noise {
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
 	// TODO: Version/setting for distance type (Euclidean, Manhattan, Chebyshev, Minkowski)
 	// TODO: Multiple types. Some common: F1Squared, F1, F2, F2 - F1, F2 + F1
-	template<bool DistRef, class Dist>
+	template<bool PermRef, class Perm, bool DistRef, class Dist>
 	class WorleyNoiseGeneric {
 		protected:
-			RangePermutation<256> perm;
+			using PermType = std::decay_t<Perm>;
+			using PermStore = std::conditional_t<PermRef, const PermType&, PermType>;
+			const PermStore perm;
 
 			using DistType = std::decay_t<Dist>;
 			using DistStore = std::conditional_t<DistRef, const DistType&, DistType>;
@@ -67,12 +71,12 @@ namespace Engine::Noise {
 
 			// TODO: This code makes some assumptions about `Distribution`. We should probably note those or enforce those somewhere.
 			// TODO: make the point distribution a arg or calc in construct
-			WorleyNoiseGeneric(int64 seed, DistStore& dist) : perm{seed}, dist{dist} {
+			WorleyNoiseGeneric(const PermStore& perm, const DistStore& dist) : perm{perm}, dist{dist} {
 			}
 
-			void setSeed(int64 seed) {
-				perm = seed;
-			}
+			//void setSeed(int64 seed) {
+			//	perm = seed;
+			//}
 
 			// TODO: doc
 			// TODO: name? F1Squared would be more standard
@@ -144,11 +148,13 @@ namespace Engine::Noise {
 			}
 	};
 
+	inline static const RangePermutation<256> TODO_rm_perm = 1234567890;
+
 	// TODO: Doc
 	template<auto* Dist>
-	class WorleyNoiseFrom : public WorleyNoiseGeneric<true, decltype(*Dist)> {
+	class WorleyNoiseFrom : public WorleyNoiseGeneric<false, decltype(TODO_rm_perm), true, decltype(*Dist)> {
 		public:
-			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<true, decltype(*Dist)>{seed, *Dist} {
+			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<false, decltype(TODO_rm_perm), true, decltype(*Dist)>{seed, *Dist} {
 			}
 	};
 

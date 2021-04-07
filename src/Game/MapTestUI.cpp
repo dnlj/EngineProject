@@ -446,7 +446,8 @@ namespace Game {
 			}
 
 			void setSeed(float32 seed) {
-				noise.setSeed(reinterpret_cast<const int32&>(seed));
+				assert(false); // TODO: impl
+				//noise.setSeed(reinterpret_cast<const int32&>(seed));
 			}
 	};
 
