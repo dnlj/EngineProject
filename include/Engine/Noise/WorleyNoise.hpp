@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <array>
 
+// GLM
+#include <glm/gtx/norm.hpp>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Noise/Noise.hpp>
@@ -32,21 +35,27 @@ namespace Engine::Noise {
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
 	// TODO: Version/setting for distance type (Euclidean, Manhattan, Chebyshev, Minkowski)
 	// TODO: Multiple types. Some common: F1Squared, F1, F2, F2 - F1, F2 + F1
-	template<class Dist>
+	template<bool DistRef, class Dist>
 	class WorleyNoiseGeneric {
+		protected:
+			RangePermutation<256> perm;
+
+			using DistType = std::decay_t<Dist>;
+			using DistStore = std::conditional_t<DistRef, const DistType&, DistType>;
+			const DistStore dist;
+
 		public:
 			// For easy changing later
 			// TODO: template params?
 			using Float = float32;
 			using Int = int32;
+			using IVec = glm::vec<2, Int>;
+			using FVec = glm::vec<2, Float>;
 
 			class Result {
 				public:
-					/** The x coordinate of the cell the closest point is in. */
-					Int x;
-
-					/** The y coordinate of the cell the closest point is in. */
-					Int y;
+					/** The coordinate of the cell the point is in. */
+					IVec cell;
 
 					/** The number of the point in the cell. */
 					Int n;
@@ -58,7 +67,7 @@ namespace Engine::Noise {
 
 			// TODO: This code makes some assumptions about `Distribution`. We should probably note those or enforce those somewhere.
 			// TODO: make the point distribution a arg or calc in construct
-			WorleyNoiseGeneric(int64 seed, const Dist& dist) : perm{seed}, dist{dist} {
+			WorleyNoiseGeneric(int64 seed, DistStore& dist) : perm{seed}, dist{dist} {
 			}
 
 			void setSeed(int64 seed) {
@@ -74,12 +83,10 @@ namespace Engine::Noise {
 			Result valueD2(Float x, Float y) const noexcept {
 				Result result;
 
-				evaluate(x, y, [&](Float x, Float y, Float px, Float py, Int cx, Int cy, Int ci) ENGINE_INLINE {
-					const Float diffX = px - x;
-					const Float diffY = py - y;
-					const Float d2 = (diffX * diffX) + (diffY * diffY);
+				evaluate({x, y}, [&](const FVec pos, const FVec point, const IVec cell, Int ci) ENGINE_INLINE {
+					const Float d2 = glm::length2(point - pos);
 					if (d2 < result.value) {
-						result = {cx, cy, ci, d2};
+						result = {cell, ci, d2};
 					}
 				});
 
@@ -97,15 +104,14 @@ namespace Engine::Noise {
 				Result result1;
 				Result result2;
 
-				evaluate(x, y, [&](Float x, Float y, Float px, Float py, Int cx, Int cy, Int ci) ENGINE_INLINE {
-					const Float diffX = px - x;
-					const Float diffY = py - y;
-					const Float d2 = (diffX * diffX) + (diffY * diffY);
+				evaluate({x, y}, [&](const FVec pos, const FVec point, const IVec cell, Int ci) ENGINE_INLINE {
+					const Float d2 = glm::length2(point - pos);
+					
 					if (d2 < result1.value) {
 						result2 = result1;
-						result1 = {cx, cy, ci, d2};
+						result1 = {cell, ci, d2};
 					} else if (d2 < result2.value) {
-						result2 = {cx, cy, ci, d2};
+						result2 = {cell, ci, d2};
 					}
 				});
 
@@ -114,44 +120,40 @@ namespace Engine::Noise {
 			}
 
 		protected:
-			RangePermutation<256> perm;
-			Dist dist;
-
 			// TODO: Doc
 			template<class PointProcessor>
-			void evaluate(const Float x, const Float y, PointProcessor&& pp) const {
+			void evaluate(const FVec pos, PointProcessor&& pp) const {
 				// Figure out which base unit square we are in
-				Int baseX = floorTo<Int>(x);
-				Int baseY = floorTo<Int>(y);
+				const IVec base = { floorTo<Int>(pos.x), floorTo<Int>(pos.y) };
 
 				// TODO: check boundary cubes. Based on our closest point we can cull rows/cols
-				for (int offsetY = -1; offsetY < 2; ++offsetY) {
-					for (int offsetX = -1; offsetX < 2; ++offsetX) {
+				for (IVec offset{-1}; offset.y < 2; ++offset.y) {
+					for (offset.x = -1; offset.x < 2; ++offset.x) {
 						// Position and points in this cell
-						const Int cellX = baseX + offsetX;
-						const Int cellY = baseY + offsetY;
-						const int numPoints = dist[perm.value(cellX, cellY)];
+						const IVec cell = base + offset;
+						const int numPoints = dist[perm.value(cell.x, cell.y)];
 
-						// Find the smallest squared distance in this cell
+						// Find the best point in this cell
 						for (int i = 0; i < numPoints; ++i) {
-							const Float pointX = cellX + perm.value(cellX, cellY, +i) / Float{255};
-							const Float pointY = cellY + perm.value(cellX, cellY, -i) / Float{255};
-							pp(x, y, pointX, pointY, cellX, cellY, i);
+							const FVec poff = FVec{ perm.value(cell.x, cell.y, +i), perm.value(cell.x, cell.y, -i) } * (Float{1} / Float{255});
+							const FVec point = FVec{cell} + poff;
+							pp(pos, point, cell, i);
 						}
 					}
 				}
 			}
 	};
-	
+
 	// TODO: Doc
 	template<auto* Dist>
-	class WorleyNoiseFrom : public WorleyNoiseGeneric<decltype(*Dist)> {
+	class WorleyNoiseFrom : public WorleyNoiseGeneric<true, decltype(*Dist)> {
 		public:
-			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<decltype(*Dist)>{seed, *Dist} {
+			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<true, decltype(*Dist)>{seed, *Dist} {
 			}
 	};
 
 	// TODO: doc
 	class WorleyNoise : public WorleyNoiseFrom<&poisson3> {
 	};
+
 }

@@ -160,7 +160,7 @@ namespace {
 			ENGINE_INFO("===================================================\n");
 			std::ios_base::sync_with_stdio(true);
 		}/**/
-		//Engine::Noise::WorleyNoise worley{1234};
+		Engine::Noise::WorleyNoise worley{1234};
 		//Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
 		Engine::Noise::SimplexNoise simplex{(uint64)(srand((uint32)time(0)), rand())};
 		Engine::Noise::OpenSimplexNoise simplex2{(uint64)(srand((uint32)time(0)), rand())};
@@ -190,8 +190,20 @@ namespace {
 			for (int x = 0; x < map.w; ++x) {
 				const float32 xm = (x + xOffset - map.w/2) * xZoom;
 				const float32 ym = (y + yOffset - map.h/2) * yZoom;
-				const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
-				data[y][x] = blockToColor[v];
+				//const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
+				//data[y][x] = blockToColor[v];
+
+				if constexpr (true) {
+					// TODO: dither edges for rough surface
+					const auto off1 = 0.0f;// simplex2.value(xm * 0.021f, ym * 0.021f);
+					const auto off2 = 0.0f;// simplex2.value(xm * 0.21f, ym * 0.21f);
+					const auto x2 = xm * 0.01f + off1 * 0.2f + off2 * 0.05f;
+					const auto y2 = ym * 0.01f + off1 * 0.2f + off2 * 0.05f;
+					data[y][x].gray((uint8)std::clamp(
+						//worley.valueF2F1(x2, y2).value > 0.02f ? 255.0f : 0.0f
+						worley.valueF2F1(x2, y2).value * (255.0f / 0.8f)
+					, 0.0f, 255.0f));
+				}
 				
 				//map.data[x] = simplex.value1D(x * 0.1f);
 				//map.data2[x] = simplex2.scaled(x * 0.15f, 42.0f);
@@ -202,6 +214,7 @@ namespace {
 		}
 		const auto end = std::chrono::high_resolution_clock::now();
 
+		ENGINE_LOG("Size: ", sizeof(Engine::Noise::WorleyNoise));
 		std::cout << "Map Time (ms): " << std::chrono::duration<long double, std::milli>{end - begin}.count() << "\n";
 
 		glGenTextures(1, &map.tex);
