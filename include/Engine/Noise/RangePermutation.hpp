@@ -44,6 +44,9 @@ namespace Engine::Noise {
 				}
 			}
 
+			template<class... Args>
+			ENGINE_INLINE int32 operator()(Args... args) const { return value(args...); }
+
 			ENGINE_INLINE int32 value(int32 x) const {
 				if constexpr (isPowerOfTwo) {
 					// Some reason this isnt automatically done by the compiler
@@ -63,6 +66,7 @@ namespace Engine::Noise {
 			}
 
 		private:
+			static_assert(Size <= 256, "Values are currently stored as uint8.");
 			uint8 perm[Size];
 	};
 }

@@ -14,6 +14,42 @@
 #include <Engine/Noise/PoissonDistribution.hpp>
 
 
+namespace Engine {// TODO: move
+	/**
+	 * When inherited from, uses empty base optimization (ebo) to provide a member of type @p T.
+	 * The dervied type may need to use #ENGINE_EMPTY_BASE for empty bases to be optimized.
+	 * @see ENGINE_EMPTY_BASE
+	 */
+	template<class T>
+	class ENGINE_EMPTY_BASE BaseMember {
+		private:
+			T value;
+
+		public:
+			BaseMember() {}
+
+			template<class... Args>
+			BaseMember(Args... args) : value(std::forward<Args>(args)...) {}
+
+			[[nodiscard]] ENGINE_INLINE T& get() { return value; }
+			[[nodiscard]] ENGINE_INLINE const T& get() const { return value; }
+	};
+
+	/** @see BaseMember */
+	template<class T>
+	requires std::is_empty_v<T>
+	class ENGINE_EMPTY_BASE BaseMember<T> : public T {
+		public:
+			BaseMember() {}
+
+			template<class... Args>
+			BaseMember(Args... args) {}
+
+			[[nodiscard]] ENGINE_INLINE T& get() { return *this; }
+			[[nodiscard]] ENGINE_INLINE const T& get() const { return *this; }
+	};
+}
+
 // TOOD: Look at "Implementation of Fast and Adaptive Procedural Cellular Noise" http://www.jcgt.org/published/0008/01/02/paper.pdf
 namespace Engine::Noise {
 	// TODO: move
@@ -28,6 +64,7 @@ namespace Engine::Noise {
 
 	const static inline auto constant1 = ConstantDistribution<1>{};
 
+
 	// TODO: make perm and dist functors so they can be either hash functions or 
 	// TODO: use EBO for perm, dist, and metric functions - __declspec(empty_bases) - no_unique_address doesnt work on MSVC yet. See: https://devblogs.microsoft.com/cppblog/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
 	// TODO: Split? Inline?
@@ -37,16 +74,16 @@ namespace Engine::Noise {
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
 	// TODO: Version/setting for distance type (Euclidean, Manhattan, Chebyshev, Minkowski)
 	// TODO: Multiple types. Some common: F1Squared, F1, F2, F2 - F1, F2 + F1
-	template<bool PermRef, class Perm, bool DistRef, class Dist>
-	class WorleyNoiseGeneric {
+	template<class Perm, class Dist>
+	class WorleyNoiseGeneric : protected BaseMember<Perm>, BaseMember<Dist> {
 		protected:
-			using PermType = std::decay_t<Perm>;
-			using PermStore = std::conditional_t<PermRef, const PermType&, PermType>;
-			const PermStore perm;
+			//using PermType = std::decay_t<Perm>;
+			//using PermStore = std::conditional_t<PermRef, const PermType&, PermType>;
+			//const PermStore perm;
 
-			using DistType = std::decay_t<Dist>;
-			using DistStore = std::conditional_t<DistRef, const DistType&, DistType>;
-			const DistStore dist;
+			//using DistType = std::decay_t<Dist>;
+			//using DistStore = std::conditional_t<DistRef, const DistType&, DistType>;
+			//const DistStore dist;
 
 		public:
 			// For easy changing later
@@ -69,14 +106,13 @@ namespace Engine::Noise {
 					Float value = std::numeric_limits<Float>::max();
 			};
 
+			// TODO: make cosntructor that takes std::piecewise_construct
 			// TODO: This code makes some assumptions about `Distribution`. We should probably note those or enforce those somewhere.
 			// TODO: make the point distribution a arg or calc in construct
-			WorleyNoiseGeneric(const PermStore& perm, const DistStore& dist) : perm{perm}, dist{dist} {
+			WorleyNoiseGeneric(Perm perm, Dist dist)
+				: BaseMember<Perm>{std::move(perm)}
+				, BaseMember<Dist>{std::move(dist)} {
 			}
-
-			//void setSeed(int64 seed) {
-			//	perm = seed;
-			//}
 
 			// TODO: doc
 			// TODO: name? F1Squared would be more standard
@@ -124,6 +160,11 @@ namespace Engine::Noise {
 			}
 
 		protected:
+			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() { return BaseMember<Dist>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() const { return BaseMember<Dist>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) perm() { return BaseMember<Perm>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) perm() const { return BaseMember<Perm>::get(); }
+
 			// TODO: Doc
 			template<class PointProcessor>
 			void evaluate(const FVec pos, PointProcessor&& pp) const {
@@ -135,11 +176,11 @@ namespace Engine::Noise {
 					for (offset.x = -1; offset.x < 2; ++offset.x) {
 						// Position and points in this cell
 						const IVec cell = base + offset;
-						const int numPoints = dist[perm.value(cell.x, cell.y)];
+						const int numPoints = dist()[perm()(cell.x, cell.y)];
 
 						// Find the best point in this cell
 						for (int i = 0; i < numPoints; ++i) {
-							const FVec poff = FVec{ perm.value(cell.x, cell.y, +i), perm.value(cell.x, cell.y, -i) } * (Float{1} / Float{255});
+							const FVec poff = FVec{ perm()(cell.x, cell.y, +i), perm()(cell.x, cell.y, -i) } * (Float{1} / Float{255});
 							const FVec point = FVec{cell} + poff;
 							pp(pos, point, cell, i);
 						}
@@ -152,9 +193,9 @@ namespace Engine::Noise {
 
 	// TODO: Doc
 	template<auto* Dist>
-	class WorleyNoiseFrom : public WorleyNoiseGeneric<false, decltype(TODO_rm_perm), true, decltype(*Dist)> {
+	class WorleyNoiseFrom : public WorleyNoiseGeneric<decltype(TODO_rm_perm), decltype(*Dist)> {
 		public:
-			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<false, decltype(TODO_rm_perm), true, decltype(*Dist)>{seed, *Dist} {
+			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<decltype(TODO_rm_perm), decltype(*Dist)>{seed, *Dist} {
 			}
 	};
 

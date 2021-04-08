@@ -166,6 +166,23 @@ namespace {
 		Engine::Noise::OpenSimplexNoise simplex2{(uint64)(srand((uint32)time(0)), rand())};
 		Game::MapGenerator2 mgen{12345};
 
+		{ // TODO: rm
+			using namespace Engine;
+			auto func = []{ return 323232; };
+			using Func = decltype(func);
+			struct Foo : BaseMember<int>, BaseMember<float>, BaseMember<Func> {
+				int a;
+				Foo(Func f) : BaseMember<int>{777}, BaseMember<Func>{} {}
+			};
+			constexpr auto todo_rm_sz = sizeof(Foo);
+			Foo foo = func;
+			ENGINE_LOG("Foo: ", sizeof(foo), " ", foo.a, " ", foo.BaseMember<int>::get(), " ", foo.BaseMember<float>::get(), " ", foo.BaseMember<Func>::get()());
+			foo.a = 1234;
+			foo.BaseMember<int>::get() = 5678;
+			foo.BaseMember<float>::get() = 3.14159f;
+			ENGINE_LOG("Foo: ", sizeof(foo), " ", foo.a, " ", foo.BaseMember<int>::get(), " ", foo.BaseMember<float>::get(), " ", foo.BaseMember<Func>::get()());
+		}
+
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
 			if (y < min || y >= max) { return v; }
 			float p = static_cast<float>(y - min) / static_cast<float>(max - min); // Get precent

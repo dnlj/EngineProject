@@ -105,6 +105,17 @@
 	ENGINE_BUILD_ASSIGN_BIN_OP(T, /); \
 	ENGINE_BUILD_ASSIGN_BIN_OP(T, %); \
 
+/**
+ * @def ENGINE_EMPTY_BASE
+ * Enables more broad use of empty base optmization on MSVC
+ * @see https://devblogs.microsoft.com/cppblog/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
+ */
+#if ENGINE_OS_WINDOWS
+	#define ENGINE_EMPTY_BASE __declspec(empty_bases)
+#else
+	#define ENGINE_EMPTY_BASE
+#endif
+
 // TODO: replace macros with source_location?
 #define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)\
 	([](auto&&... args){\
