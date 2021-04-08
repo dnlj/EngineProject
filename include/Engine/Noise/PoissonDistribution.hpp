@@ -66,6 +66,9 @@ namespace Engine::Noise {
 				ENGINE_DEBUG_ASSERT(remaining == 0, "No remaining expected.");
 			}
 
+			template<class... Args>
+			ENGINE_INLINE decltype(auto) operator()(Args&&... args) const { return operator[](std::forward<Args>(args)...); }
+
 			ENGINE_INLINE int32 operator[](const int i) const {
 				return data[i];
 			}

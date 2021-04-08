@@ -161,27 +161,31 @@ namespace {
 			std::ios_base::sync_with_stdio(true);
 		}/**/
 		Engine::Noise::WorleyNoise worley{1234};
+		//Engine::Noise::WorleyNoiseGeneric worley2{
+		//	[p=Engine::Noise::RangePermutation<256>{1234}](auto... as){ return p(as...); },
+		//	//[d=&Engine::Noise::poisson3](auto... as){ return (*d)(as...); },
+		//	[](auto...){ return 1; },
+		//};
+
+
+		//using Perm = Engine::Noise::RangePermutation<256>;
+		//using Dist = decltype([](auto...){ return 1; });
+		//Engine::Noise::WorleyNoiseGeneric<Perm, Dist> worley2{
+		//	std::piecewise_construct,
+		//	std::forward_as_tuple(1234),
+		//	std::forward_as_tuple()
+		//};
+		
+
+		Engine::Noise::RangePermutation<256> realPerm = 1234;
+		auto perm = [&](auto... as){ return realPerm(as...); };
+		auto dist = [](auto...) { return 1; }; // TODO: cosntexpr SFINAE possible with consteval?
+		Engine::Noise::WorleyNoiseGeneric worley2{perm, dist};
+		
 		//Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
 		Engine::Noise::SimplexNoise simplex{(uint64)(srand((uint32)time(0)), rand())};
 		Engine::Noise::OpenSimplexNoise simplex2{(uint64)(srand((uint32)time(0)), rand())};
 		Game::MapGenerator2 mgen{12345};
-
-		{ // TODO: rm
-			using namespace Engine;
-			auto func = []{ return 323232; };
-			using Func = decltype(func);
-			struct Foo : BaseMember<int>, BaseMember<float>, BaseMember<Func> {
-				int a;
-				Foo(Func f) : BaseMember<int>{777}, BaseMember<Func>{} {}
-			};
-			constexpr auto todo_rm_sz = sizeof(Foo);
-			Foo foo = func;
-			ENGINE_LOG("Foo: ", sizeof(foo), " ", foo.a, " ", foo.BaseMember<int>::get(), " ", foo.BaseMember<float>::get(), " ", foo.BaseMember<Func>::get()());
-			foo.a = 1234;
-			foo.BaseMember<int>::get() = 5678;
-			foo.BaseMember<float>::get() = 3.14159f;
-			ENGINE_LOG("Foo: ", sizeof(foo), " ", foo.a, " ", foo.BaseMember<int>::get(), " ", foo.BaseMember<float>::get(), " ", foo.BaseMember<Func>::get()());
-		}
 
 		const auto gradient = [](float v, int y, int min, int max, float from, float to){
 			if (y < min || y >= max) { return v; }
@@ -218,7 +222,8 @@ namespace {
 					const auto y2 = ym * 0.01f + off1 * 0.2f + off2 * 0.05f;
 					data[y][x].gray((uint8)std::clamp(
 						//worley.valueF2F1(x2, y2).value > 0.02f ? 255.0f : 0.0f
-						worley.valueF2F1(x2, y2).value * (255.0f / 0.8f)
+						//worley.valueF2F1(x2, y2).value * (255.0f / 0.8f)
+						worley2.valueF2F1(x2, y2).value * (255.0f / 0.8f)
 					, 0.0f, 255.0f));
 				}
 				
@@ -231,7 +236,8 @@ namespace {
 		}
 		const auto end = std::chrono::high_resolution_clock::now();
 
-		ENGINE_LOG("Size: ", sizeof(Engine::Noise::WorleyNoise));
+		ENGINE_LOG("Size1: ", sizeof(worley));
+		ENGINE_LOG("Size2: ", sizeof(worley2));
 		std::cout << "Map Time (ms): " << std::chrono::duration<long double, std::milli>{end - begin}.count() << "\n";
 
 		glGenTextures(1, &map.tex);

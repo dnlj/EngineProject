@@ -75,16 +75,7 @@ namespace Engine::Noise {
 	// TODO: Version/setting for distance type (Euclidean, Manhattan, Chebyshev, Minkowski)
 	// TODO: Multiple types. Some common: F1Squared, F1, F2, F2 - F1, F2 + F1
 	template<class Perm, class Dist>
-	class WorleyNoiseGeneric : protected BaseMember<Perm>, BaseMember<Dist> {
-		protected:
-			//using PermType = std::decay_t<Perm>;
-			//using PermStore = std::conditional_t<PermRef, const PermType&, PermType>;
-			//const PermStore perm;
-
-			//using DistType = std::decay_t<Dist>;
-			//using DistStore = std::conditional_t<DistRef, const DistType&, DistType>;
-			//const DistStore dist;
-
+	class ENGINE_EMPTY_BASE WorleyNoiseGeneric : protected BaseMember<Perm>, BaseMember<Dist> {
 		public:
 			// For easy changing later
 			// TODO: template params?
@@ -106,12 +97,18 @@ namespace Engine::Noise {
 					Float value = std::numeric_limits<Float>::max();
 			};
 
-			// TODO: make cosntructor that takes std::piecewise_construct
+			template<class PermTuple, class DistTuple>
+			WorleyNoiseGeneric(std::piecewise_construct_t, PermTuple&& permTuple, DistTuple&& distTuple)
+				// This is fine, even for large objects, due to guaranteed copy elision. See C++ Standard [tuple.apply]
+				: BaseMember<Perm>(std::make_from_tuple<BaseMember<Perm>>(std::forward<PermTuple>(permTuple)))
+				, BaseMember<Dist>(std::make_from_tuple<BaseMember<Dist>>(std::forward<DistTuple>(distTuple))) {
+			}
+			
 			// TODO: This code makes some assumptions about `Distribution`. We should probably note those or enforce those somewhere.
 			// TODO: make the point distribution a arg or calc in construct
 			WorleyNoiseGeneric(Perm perm, Dist dist)
-				: BaseMember<Perm>{std::move(perm)}
-				, BaseMember<Dist>{std::move(dist)} {
+				: BaseMember<Perm>(std::move(perm))
+				, BaseMember<Dist>(std::move(dist)) {
 			}
 
 			// TODO: doc
@@ -176,7 +173,7 @@ namespace Engine::Noise {
 					for (offset.x = -1; offset.x < 2; ++offset.x) {
 						// Position and points in this cell
 						const IVec cell = base + offset;
-						const int numPoints = dist()[perm()(cell.x, cell.y)];
+						const int numPoints = dist()(perm()(cell.x, cell.y));
 
 						// Find the best point in this cell
 						for (int i = 0; i < numPoints; ++i) {
