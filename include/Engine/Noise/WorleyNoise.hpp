@@ -64,18 +64,14 @@ namespace Engine::Noise {
 
 	const static inline auto constant1 = ConstantDistribution<1>{};
 
-
-	// TODO: make perm and dist functors so they can be either hash functions or 
-	// TODO: use EBO for perm, dist, and metric functions - __declspec(empty_bases) - no_unique_address doesnt work on MSVC yet. See: https://devblogs.microsoft.com/cppblog/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
-	// TODO: Split? Inline?
 	// TODO: Vectorify?
 	// TODO: There seems to be some diag artifacts (s = 0.91) in the noise (existed pre RangePermutation)
 	// TODO: For large step sizes (>10ish. very noticeable at 100) we can start to notice repetitions in the noise. I suspect this this correlates with the perm table size.
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
 	// TODO: Version/setting for distance type (Euclidean, Manhattan, Chebyshev, Minkowski)
 	// TODO: Multiple types. Some common: F1Squared, F1, F2, F2 - F1, F2 + F1
-	template<class Perm, class Dist>
-	class ENGINE_EMPTY_BASE WorleyNoiseGeneric : protected BaseMember<Perm>, BaseMember<Dist> {
+	template<class Perm, class Dist, class Metric>
+	class ENGINE_EMPTY_BASE WorleyNoiseGeneric : protected BaseMember<Perm>, BaseMember<Dist>, BaseMember<Metric> {
 		public:
 			// For easy changing later
 			// TODO: template params?
@@ -97,18 +93,19 @@ namespace Engine::Noise {
 					Float value = std::numeric_limits<Float>::max();
 			};
 
-			template<class PermTuple, class DistTuple>
-			WorleyNoiseGeneric(std::piecewise_construct_t, PermTuple&& permTuple, DistTuple&& distTuple)
+			template<class PermTuple, class DistTuple, class MetricTuple>
+			WorleyNoiseGeneric(std::piecewise_construct_t, PermTuple&& permTuple, DistTuple&& distTuple, MetricTuple&& metricTuple)
 				// This is fine, even for large objects, due to guaranteed copy elision. See C++ Standard [tuple.apply]
 				: BaseMember<Perm>(std::make_from_tuple<BaseMember<Perm>>(std::forward<PermTuple>(permTuple)))
-				, BaseMember<Dist>(std::make_from_tuple<BaseMember<Dist>>(std::forward<DistTuple>(distTuple))) {
+				, BaseMember<Dist>(std::make_from_tuple<BaseMember<Dist>>(std::forward<DistTuple>(distTuple)))
+				, BaseMember<Metric>(std::make_from_tuple<BaseMember<Metric>>(std::forward<MetricTuple>(metricTuple))) {
 			}
 			
 			// TODO: This code makes some assumptions about `Distribution`. We should probably note those or enforce those somewhere.
-			// TODO: make the point distribution a arg or calc in construct
-			WorleyNoiseGeneric(Perm perm, Dist dist)
+			WorleyNoiseGeneric(Perm perm, Dist dist, Metric metric)
 				: BaseMember<Perm>(std::move(perm))
-				, BaseMember<Dist>(std::move(dist)) {
+				, BaseMember<Dist>(std::move(dist))
+				, BaseMember<Metric>(std::move(metric)) {
 			}
 
 			// TODO: doc
@@ -121,9 +118,10 @@ namespace Engine::Noise {
 				Result result;
 
 				evaluate({x, y}, [&](const FVec pos, const FVec point, const IVec cell, Int ci) ENGINE_INLINE {
-					const Float d2 = glm::length2(point - pos);
-					if (d2 < result.value) {
-						result = {cell, ci, d2};
+					const auto m = metric()(pos, point);
+					//const Float d2 = glm::length2(point - pos); // TODO: rm
+					if (m < result.value) {
+						result = {cell, ci, m};
 					}
 				});
 
@@ -142,13 +140,14 @@ namespace Engine::Noise {
 				Result result2;
 
 				evaluate({x, y}, [&](const FVec pos, const FVec point, const IVec cell, Int ci) ENGINE_INLINE {
-					const Float d2 = glm::length2(point - pos);
+					const auto m = metric()(pos, point);
+					//const Float d2 = glm::length2(point - pos); // TODO: rm
 					
-					if (d2 < result1.value) {
+					if (m < result1.value) {
 						result2 = result1;
-						result1 = {cell, ci, d2};
-					} else if (d2 < result2.value) {
-						result2 = {cell, ci, d2};
+						result1 = {cell, ci, m};
+					} else if (m < result2.value) {
+						result2 = {cell, ci, m};
 					}
 				});
 
@@ -157,10 +156,14 @@ namespace Engine::Noise {
 			}
 
 		protected:
-			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() { return BaseMember<Dist>::get(); }
-			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() const { return BaseMember<Dist>::get(); }
 			[[nodiscard]] ENGINE_INLINE decltype(auto) perm() { return BaseMember<Perm>::get(); }
 			[[nodiscard]] ENGINE_INLINE decltype(auto) perm() const { return BaseMember<Perm>::get(); }
+
+			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() { return BaseMember<Dist>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() const { return BaseMember<Dist>::get(); }
+			
+			[[nodiscard]] ENGINE_INLINE decltype(auto) metric() { return BaseMember<Metric>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) metric() const { return BaseMember<Metric>::get(); }
 
 			// TODO: Doc
 			template<class PointProcessor>
@@ -187,12 +190,12 @@ namespace Engine::Noise {
 	};
 
 	inline static const RangePermutation<256> TODO_rm_perm = 1234567890;
-
+	inline static const auto TODO_rm_metric = [](auto&& pos, auto&& point) ENGINE_INLINE { return glm::length2(point - pos); };
 	// TODO: Doc
 	template<auto* Dist>
-	class WorleyNoiseFrom : public WorleyNoiseGeneric<decltype(TODO_rm_perm), decltype(*Dist)> {
+	class WorleyNoiseFrom : public WorleyNoiseGeneric<decltype(TODO_rm_perm), decltype(*Dist), decltype(TODO_rm_metric)> {
 		public:
-			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<decltype(TODO_rm_perm), decltype(*Dist)>{seed, *Dist} {
+			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<decltype(TODO_rm_perm), decltype(*Dist), decltype(TODO_rm_metric)>{seed, *Dist, TODO_rm_metric} {
 			}
 	};
 

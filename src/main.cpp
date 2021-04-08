@@ -180,7 +180,8 @@ namespace {
 		Engine::Noise::RangePermutation<256> realPerm = 1234;
 		auto perm = [&](auto... as){ return realPerm(as...); };
 		auto dist = [](auto...) { return 1; }; // TODO: cosntexpr SFINAE possible with consteval?
-		Engine::Noise::WorleyNoiseGeneric worley2{perm, dist};
+		auto metric = Engine::Noise::TODO_rm_metric;
+		Engine::Noise::WorleyNoiseGeneric worley2{perm, dist, metric};
 		
 		//Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
 		Engine::Noise::SimplexNoise simplex{(uint64)(srand((uint32)time(0)), rand())};

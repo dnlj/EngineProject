@@ -173,6 +173,7 @@ workspace(PROJECT_NAME .."Workspace")
 		
 	filter "configurations:Release_Debug"
 		symbols "On"
+		-- TODO: look into MSVC /Zo
 		
 --------------------------------------------------------------------------------
 -- Engine
