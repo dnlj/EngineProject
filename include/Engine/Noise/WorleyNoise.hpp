@@ -6,46 +6,11 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/BaseMember.hpp>
 #include <Engine/Noise/Noise.hpp>
 #include <Engine/Noise/RangePermutation.hpp>
 #include <Engine/Noise/Metric.hpp>
 
-
-namespace Engine {// TODO: move
-	/**
-	 * When inherited from, uses empty base optimization (ebo) to provide a member of type @p T.
-	 * The dervied type may need to use #ENGINE_EMPTY_BASE for empty bases to be optimized.
-	 * @see ENGINE_EMPTY_BASE
-	 */
-	template<class T>
-	class ENGINE_EMPTY_BASE BaseMember {
-		private:
-			T value;
-
-		public:
-			BaseMember() {}
-
-			template<class... Args>
-			BaseMember(Args... args) : value(std::forward<Args>(args)...) {}
-
-			[[nodiscard]] ENGINE_INLINE T& get() noexcept { return value; }
-			[[nodiscard]] ENGINE_INLINE const T& get() const noexcept { return value; }
-	};
-
-	/** @see BaseMember */
-	template<class T>
-	requires std::is_empty_v<T>
-	class ENGINE_EMPTY_BASE BaseMember<T> : public T {
-		public:
-			BaseMember() {}
-
-			template<class... Args>
-			BaseMember(Args... args) {}
-
-			[[nodiscard]] ENGINE_INLINE T& get() noexcept { return *this; }
-			[[nodiscard]] ENGINE_INLINE const T& get() const noexcept { return *this; }
-	};
-}
 
 // TOOD: Look at "Implementation of Fast and Adaptive Procedural Cellular Noise" http://www.jcgt.org/published/0008/01/02/paper.pdf
 namespace Engine::Noise {
@@ -191,6 +156,7 @@ namespace Engine::Noise {
 
 						// Find the best point in this cell
 						for (int i = 0; i < numPoints; ++i) {
+							// TODO: this make assumptions about perm output range... either doc or make a getter
 							const FVec poff = FVec{ perm()(cell.x, cell.y, +i), perm()(cell.x, cell.y, -i) } * (Float{1} / Float{255});
 							const FVec point = FVec{cell} + poff;
 							pp(pos, point, cell, i);
