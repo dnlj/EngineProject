@@ -77,8 +77,8 @@ namespace Engine::Noise {
 			int8 data[Count];
 	};
 
-	const static inline auto poisson2 = PoissonDistribution<256, 2, 1, 10>{};
-	const static inline auto poisson3 = PoissonDistribution<256, 3, 1, 10>{};
-	const static inline auto poisson4 = PoissonDistribution<256, 4, 1, 10>{};
+	//const static inline auto poisson2 = PoissonDistribution<256, 2, 1, 10>{};
+	//const static inline auto poisson3 = PoissonDistribution<256, 3, 1, 10>{};
+	//const static inline auto poisson4 = PoissonDistribution<256, 4, 1, 10>{};
 }
 

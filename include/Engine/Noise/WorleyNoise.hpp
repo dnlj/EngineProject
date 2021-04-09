@@ -8,7 +8,6 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Noise/Noise.hpp>
 #include <Engine/Noise/RangePermutation.hpp>
-#include <Engine/Noise/PoissonDistribution.hpp>
 #include <Engine/Noise/Metric.hpp>
 
 
@@ -55,7 +54,7 @@ namespace Engine::Noise {
 	template<int32 Value>
 	class ConstantDistribution {
 		public:
-			constexpr int32 operator[](const int i) const {
+			ENGINE_INLINE constexpr int32 operator()(const int i) const noexcept {
 				return Value;
 			}
 	};
@@ -65,10 +64,26 @@ namespace Engine::Noise {
 
 	// TODO: edges? https://www.iquilezles.org/www/articles/voronoilines/voronoilines.htm
 	// TODO: Vectorify?
+	// TODO: 1d, 3d, 4d, versions
 	// TODO: There seems to be some diag artifacts (s = 0.91) in the noise (existed pre RangePermutation)
 	// TODO: For large step sizes (>10ish. very noticeable at 100) we can start to notice repetitions in the noise. I suspect this this correlates with the perm table size.
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
 	// TODO: Multiple types. Some common: F1Squared, F1, F2, F2 - F1, F2 + F1
+	/**
+	 * Used to generate Worley noise.
+	 * 
+	 * The output Worley noise can be influence by a number of parameters:
+	 * - The permutation function - maps expected values to pseudo random values.
+	 * - The distribution function - controls how many feature points each cell has.
+	 * - The metric function - controls what metric is used to determine the smallest value based on surrounding feature points.
+	 * 
+	 * @see PoissonDistribution
+	 * @see ConstantDistribution
+	 * @see MetricEuclidean2
+	 * @see MetricManhattan
+	 * @see MetricChebyshev
+	 * @see MetricMinkowski
+	 */
 	template<class Perm, class Dist, class Metric>
 	class ENGINE_EMPTY_BASE WorleyNoiseGeneric : protected BaseMember<Perm>, BaseMember<Dist>, BaseMember<Metric> {
 		public:
@@ -99,8 +114,7 @@ namespace Engine::Noise {
 				, BaseMember<Dist>(std::make_from_tuple<BaseMember<Dist>>(std::forward<DistTuple>(distTuple)))
 				, BaseMember<Metric>(std::make_from_tuple<BaseMember<Metric>>(std::forward<MetricTuple>(metricTuple))) {
 			}
-			
-			// TODO: This code makes some assumptions about `Distribution`. We should probably note those or enforce those somewhere.
+
 			WorleyNoiseGeneric(Perm perm, Dist dist, Metric metric)
 				: BaseMember<Perm>(std::move(perm))
 				, BaseMember<Dist>(std::move(dist))
@@ -196,8 +210,14 @@ namespace Engine::Noise {
 			}
 	};
 
-	// TODO: doc
-	class WorleyNoise : public WorleyNoiseFrom<&poisson3> {
+	class WorleyNoise2 : public WorleyNoiseGeneric<RangePermutation<256>, ConstantDistribution<1>, MetricEuclidean2> {
+		public:
+			WorleyNoise2(int64 seed) : WorleyNoiseGeneric{seed, {}, {}} {
+			}
 	};
+
+	// TODO: doc
+	//class WorleyNoise : public WorleyNoiseFrom<&poisson3> {
+	//};
 
 }

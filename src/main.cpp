@@ -160,7 +160,7 @@ namespace {
 			ENGINE_INFO("===================================================\n");
 			std::ios_base::sync_with_stdio(true);
 		}/**/
-		Engine::Noise::WorleyNoise worley{1234};
+		Engine::Noise::WorleyNoise2 worley{1234};
 		//Engine::Noise::WorleyNoiseGeneric worley2{
 		//	[p=Engine::Noise::RangePermutation<256>{1234}](auto... as){ return p(as...); },
 		//	//[d=&Engine::Noise::poisson3](auto... as){ return (*d)(as...); },
@@ -177,13 +177,15 @@ namespace {
 		//};
 		
 
-		Engine::Noise::RangePermutation<256> realPerm = 1234;
+		const Engine::Noise::RangePermutation<256> realPerm = 1234;
 		auto perm = [&](auto... as){ return realPerm(as...); };
-		auto dist = [](auto...) { return 1; }; // TODO: cosntexpr SFINAE possible with consteval?
-		//auto metric = Engine::Noise::MetricEuclidean2{};
-		auto metric = Engine::Noise::MetricManhattan{};
+		//auto dist = [](auto...) { return 1; }; // TODO: cosntexpr SFINAE possible with consteval?
+		auto dist = Engine::Noise::ConstantDistribution<1>{};
+		auto metric = Engine::Noise::MetricEuclidean2{};
+		//auto metric = Engine::Noise::MetricManhattan{};
 		//auto metric = Engine::Noise::MetricChebyshev{};
 		Engine::Noise::WorleyNoiseGeneric worley2{perm, dist, metric};
+		//Engine::Noise::WorleyNoise2 worley2{1234556};
 		
 		//Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
 		Engine::Noise::SimplexNoise simplex{(uint64)(srand((uint32)time(0)), rand())};

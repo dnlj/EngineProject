@@ -16,7 +16,7 @@ namespace Game {
 		private:
 			// TODO: add impl that takes perm array ref instead of seed so we can share
 			Engine::Noise::OpenSimplexNoise simplex;
-			Engine::Noise::WorleyNoise worley;
+			Engine::Noise::WorleyNoise2 worley;
 			Engine::Noise::RangePermutation<256> treePerm;
 
 		public:
