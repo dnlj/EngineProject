@@ -200,24 +200,9 @@ namespace Engine::Noise {
 			}
 	};
 
-	inline static const RangePermutation<256> TODO_rm_perm = 1234567890;
-	inline static const auto TODO_rm_metric = [](auto&& pos, auto&& point) ENGINE_INLINE { return glm::length2(point - pos); };
-	// TODO: Doc
-	template<auto* Dist>
-	class WorleyNoiseFrom : public WorleyNoiseGeneric<decltype(TODO_rm_perm), decltype(*Dist), decltype(TODO_rm_metric)> {
+	class WorleyNoise : public WorleyNoiseGeneric<RangePermutation<256>, ConstantDistribution<1>, MetricEuclidean2> {
 		public:
-			WorleyNoiseFrom(int64 seed) : WorleyNoiseGeneric<decltype(TODO_rm_perm), decltype(*Dist), decltype(TODO_rm_metric)>{seed, *Dist, TODO_rm_metric} {
+			WorleyNoise(int64 seed) : WorleyNoiseGeneric{seed, {}, {}} {
 			}
 	};
-
-	class WorleyNoise2 : public WorleyNoiseGeneric<RangePermutation<256>, ConstantDistribution<1>, MetricEuclidean2> {
-		public:
-			WorleyNoise2(int64 seed) : WorleyNoiseGeneric{seed, {}, {}} {
-			}
-	};
-
-	// TODO: doc
-	//class WorleyNoise : public WorleyNoiseFrom<&poisson3> {
-	//};
-
 }

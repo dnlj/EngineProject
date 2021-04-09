@@ -160,7 +160,7 @@ namespace {
 			ENGINE_INFO("===================================================\n");
 			std::ios_base::sync_with_stdio(true);
 		}/**/
-		Engine::Noise::WorleyNoise2 worley{1234};
+		Engine::Noise::WorleyNoise worley{1234};
 		//Engine::Noise::WorleyNoiseGeneric worley2{
 		//	[p=Engine::Noise::RangePermutation<256>{1234}](auto... as){ return p(as...); },
 		//	//[d=&Engine::Noise::poisson3](auto... as){ return (*d)(as...); },

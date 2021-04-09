@@ -428,7 +428,7 @@ namespace Game {
 	template<int Type>
 	class NodeWorleyNoise : public NodeScaleSeedNoise<NodeWorleyNoise<Type>> {
 		private:
-			Engine::Noise::WorleyNoise2 noise;
+			Engine::Noise::WorleyNoise noise;
 
 		public:
 			NodeWorleyNoise() : noise{reinterpret_cast<const int32&>(this->seed)} {
