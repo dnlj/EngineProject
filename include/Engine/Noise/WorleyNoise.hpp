@@ -4,14 +4,12 @@
 #include <algorithm>
 #include <array>
 
-// GLM
-#include <glm/gtx/norm.hpp>
-
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Noise/Noise.hpp>
 #include <Engine/Noise/RangePermutation.hpp>
 #include <Engine/Noise/PoissonDistribution.hpp>
+#include <Engine/Noise/Metric.hpp>
 
 
 namespace Engine {// TODO: move
@@ -31,8 +29,8 @@ namespace Engine {// TODO: move
 			template<class... Args>
 			BaseMember(Args... args) : value(std::forward<Args>(args)...) {}
 
-			[[nodiscard]] ENGINE_INLINE T& get() { return value; }
-			[[nodiscard]] ENGINE_INLINE const T& get() const { return value; }
+			[[nodiscard]] ENGINE_INLINE T& get() noexcept { return value; }
+			[[nodiscard]] ENGINE_INLINE const T& get() const noexcept { return value; }
 	};
 
 	/** @see BaseMember */
@@ -45,8 +43,8 @@ namespace Engine {// TODO: move
 			template<class... Args>
 			BaseMember(Args... args) {}
 
-			[[nodiscard]] ENGINE_INLINE T& get() { return *this; }
-			[[nodiscard]] ENGINE_INLINE const T& get() const { return *this; }
+			[[nodiscard]] ENGINE_INLINE T& get() noexcept { return *this; }
+			[[nodiscard]] ENGINE_INLINE const T& get() const noexcept { return *this; }
 	};
 }
 
@@ -64,11 +62,12 @@ namespace Engine::Noise {
 
 	const static inline auto constant1 = ConstantDistribution<1>{};
 
+
+	// TODO: edges? https://www.iquilezles.org/www/articles/voronoilines/voronoilines.htm
 	// TODO: Vectorify?
 	// TODO: There seems to be some diag artifacts (s = 0.91) in the noise (existed pre RangePermutation)
 	// TODO: For large step sizes (>10ish. very noticeable at 100) we can start to notice repetitions in the noise. I suspect this this correlates with the perm table size.
 	// TODO: Do those artifacts show up with simplex as well? - They are. But only for whole numbers? If i do 500.02 instead of 500 they are almost imperceptible.
-	// TODO: Version/setting for distance type (Euclidean, Manhattan, Chebyshev, Minkowski)
 	// TODO: Multiple types. Some common: F1Squared, F1, F2, F2 - F1, F2 + F1
 	template<class Perm, class Dist, class Metric>
 	class ENGINE_EMPTY_BASE WorleyNoiseGeneric : protected BaseMember<Perm>, BaseMember<Dist>, BaseMember<Metric> {
@@ -119,7 +118,6 @@ namespace Engine::Noise {
 
 				evaluate({x, y}, [&](const FVec pos, const FVec point, const IVec cell, Int ci) ENGINE_INLINE {
 					const auto m = metric()(pos, point);
-					//const Float d2 = glm::length2(point - pos); // TODO: rm
 					if (m < result.value) {
 						result = {cell, ci, m};
 					}
@@ -141,7 +139,6 @@ namespace Engine::Noise {
 
 				evaluate({x, y}, [&](const FVec pos, const FVec point, const IVec cell, Int ci) ENGINE_INLINE {
 					const auto m = metric()(pos, point);
-					//const Float d2 = glm::length2(point - pos); // TODO: rm
 					
 					if (m < result1.value) {
 						result2 = result1;
@@ -156,14 +153,14 @@ namespace Engine::Noise {
 			}
 
 		protected:
-			[[nodiscard]] ENGINE_INLINE decltype(auto) perm() { return BaseMember<Perm>::get(); }
-			[[nodiscard]] ENGINE_INLINE decltype(auto) perm() const { return BaseMember<Perm>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) perm() noexcept { return BaseMember<Perm>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) perm() const noexcept { return BaseMember<Perm>::get(); }
 
-			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() { return BaseMember<Dist>::get(); }
-			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() const { return BaseMember<Dist>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() noexcept { return BaseMember<Dist>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) dist() const noexcept { return BaseMember<Dist>::get(); }
 			
-			[[nodiscard]] ENGINE_INLINE decltype(auto) metric() { return BaseMember<Metric>::get(); }
-			[[nodiscard]] ENGINE_INLINE decltype(auto) metric() const { return BaseMember<Metric>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) metric() noexcept { return BaseMember<Metric>::get(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) metric() const noexcept { return BaseMember<Metric>::get(); }
 
 			// TODO: Doc
 			template<class PointProcessor>

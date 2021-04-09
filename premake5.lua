@@ -127,7 +127,7 @@ workspace(PROJECT_NAME .."Workspace")
 	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
 	startproject(PROJECT_NAME)
 	defines {
-		"GLM_FORCE_PURE" -- TODO: Remove. See https://github.com/g-truc/glm/issues/841
+		"GLM_FORCE_PURE", -- TODO: Remove. Link dead. Think it had something to do with constexpr See https://github.com/g-truc/glm/issues/841
 	}
 
 	filter "action:vs*"

@@ -180,7 +180,9 @@ namespace {
 		Engine::Noise::RangePermutation<256> realPerm = 1234;
 		auto perm = [&](auto... as){ return realPerm(as...); };
 		auto dist = [](auto...) { return 1; }; // TODO: cosntexpr SFINAE possible with consteval?
-		auto metric = Engine::Noise::TODO_rm_metric;
+		//auto metric = Engine::Noise::MetricEuclidean2{};
+		auto metric = Engine::Noise::MetricManhattan{};
+		//auto metric = Engine::Noise::MetricChebyshev{};
 		Engine::Noise::WorleyNoiseGeneric worley2{perm, dist, metric};
 		
 		//Engine::Noise::WorleyNoiseFrom<&Engine::Noise::constant1> worley1{1234};
@@ -217,10 +219,11 @@ namespace {
 
 				if constexpr (true) {
 					// TODO: dither edges for rough surface
-					const auto off1 = 0.0f;// simplex2.value(xm * 0.021f, ym * 0.021f);
-					const auto off2 = 0.0f;// simplex2.value(xm * 0.21f, ym * 0.21f);
+					const auto off1 = 0;//simplex2.value(xm * 0.021f, ym * 0.021f);
+					const auto off2 = 0;//simplex2.value(xm * 0.21f, ym * 0.21f);
 					const auto x2 = xm * 0.01f + off1 * 0.2f + off2 * 0.05f;
 					const auto y2 = ym * 0.01f + off1 * 0.2f + off2 * 0.05f;
+
 					data[y][x].gray((uint8)std::clamp(
 						//worley.valueF2F1(x2, y2).value > 0.02f ? 255.0f : 0.0f
 						//worley.valueF2F1(x2, y2).value * (255.0f / 0.8f)
