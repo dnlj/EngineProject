@@ -274,28 +274,32 @@ namespace {
 			static float yZoom = 10.0f;
 
 			ImGui::PushItemWidth(256);
+
+			auto buildMap = [&]{
+				mapTest(xOffset, yOffset, xZoom, yZoom);
+			};
 			
 			ImGui::DragInt("X Offset", &xOffset);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom, yZoom); }
+			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
 
 			ImGui::SameLine();
 
 			ImGui::DragInt("Y Offset", &yOffset);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom, yZoom); }
+			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
 			
 			ImGui::DragFloat("X Zoom", &xZoom, 0.05f, 0.1f, FLT_MAX);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom, yZoom); }
+			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
 
 			ImGui::SameLine();
 
 			ImGui::DragFloat("Y Zoom", &yZoom, 0.05f, 0.1f, FLT_MAX);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, yZoom, yZoom); }
+			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
 
 			ImGui::PopItemWidth();
 
 			const glm::vec2 cpos = {ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y};
 			constexpr float32 scale = 2;
-			if (map.tex == 0) { mapTest(xOffset, yOffset, xZoom, yZoom); }
+			if (map.tex == 0) { buildMap(); }
 			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
 			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w * scale), static_cast<float32>(map.h * scale)), {0,1}, {1,0});
 
@@ -308,9 +312,20 @@ namespace {
 				ImGui::BeginTooltip();
 				ImGui::Text("%.0f, %.0f", bpos.x, bpos.y);
 				ImGui::EndTooltip();
-			} 
+			}
 
-			//ENGINE_LOG(ImGui::GetCursorScreenPos().x);
+			constexpr int dragButton = 1;
+			if (ImGui::IsMouseReleased(dragButton)) {
+				const auto delta = ImGui::GetMouseDragDelta(dragButton);
+				if (delta.x || delta.y) {
+					const auto xdiff = static_cast<int>(round(delta.x / scale));
+					const auto ydiff = static_cast<int>(round(delta.y / scale));
+					ENGINE_LOG(delta.x, " ", delta.y, " - ", xdiff, " ", ydiff);
+					xOffset -= xdiff;
+					yOffset += ydiff;
+					buildMap();
+				}
+			}
 
 			/*
 			tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex2));
