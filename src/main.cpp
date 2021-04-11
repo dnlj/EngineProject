@@ -308,37 +308,39 @@ namespace {
 			if (ImGui::IsItemHovered()) {
 				const glm::vec2 mpos = {ImGui::GetMousePos().x, ImGui::GetMousePos().y};
 				const glm::vec2 moff = mpos - cpos;
-				const glm::vec2 isize = {map.w, map.h};
-				const glm::vec2 ioff = moff - isize * scale * 0.5f;
+				const glm::vec2 isize = glm::vec2{map.w, map.h} * scale;
+				const glm::vec2 ioff = glm::vec2{moff.x, -moff.y} - isize * glm::vec2{0.5f, -0.5f};
 				const glm::vec2 bpos = glm::vec2{xOffset, yOffset} + ioff * (glm::vec2{xZoom, yZoom} / scale);
+
 				ImGui::BeginTooltip();
 				ImGui::Text("%.0f, %.0f", bpos.x, bpos.y);
 				ImGui::EndTooltip();
-			}
 
-			if (const auto s = ImGui::GetIO().MouseWheel) {
-				scroll += s;
-				scrollCooldown = Engine::Clock::now();
-			} else if (scroll && (Engine::Clock::now() - scrollCooldown) >= std::chrono::milliseconds{500}) {
-				const auto z = std::min(scroll * 0.25f, 0.75f); // Limit max zoom
-				xZoom -= xZoom * z;
-				yZoom -= yZoom * z;
-				xZoom = std::max(xZoom, 0.05f);
-				yZoom = std::max(yZoom, 0.05f);
-				scroll = 0;
-				buildMap();
-			}
-
-			constexpr int dragButton = 1;
-			if (ImGui::IsMouseReleased(dragButton)) {
-				const auto delta = ImGui::GetMouseDragDelta(dragButton);
-				if (delta.x || delta.y) {
-					const auto xdiff = static_cast<int>(round(delta.x / scale));
-					const auto ydiff = static_cast<int>(round(delta.y / scale));
-					ENGINE_LOG(delta.x, " ", delta.y, " - ", xdiff, " ", ydiff);
-					xOffset -= xdiff;
-					yOffset += ydiff;
+				if (const auto s = ImGui::GetIO().MouseWheel) {
+					scroll += s;
+					scrollCooldown = Engine::Clock::now();
+				} else if (scroll && (Engine::Clock::now() - scrollCooldown) >= std::chrono::milliseconds{500}) {
+					const auto z = std::min(scroll * 0.25f, 0.75f); // Limit max zoom
+					xZoom -= xZoom * z;
+					yZoom -= yZoom * z;
+					xZoom = std::max(xZoom, 0.05f);
+					yZoom = std::max(yZoom, 0.05f);
+					// TODO: need to adjust offsets to maintain center
+					scroll = 0;
 					buildMap();
+				}
+
+				constexpr int dragButton = 1;
+				if (ImGui::IsMouseReleased(dragButton)) {
+					const auto delta = ImGui::GetMouseDragDelta(dragButton);
+					if (delta.x || delta.y) {
+						const auto xdiff = static_cast<int>(round(delta.x / scale));
+						const auto ydiff = static_cast<int>(round(delta.y / scale));
+						ENGINE_LOG(delta.x, " ", delta.y, " - ", xdiff, " ", ydiff);
+						xOffset -= xdiff;
+						yOffset += ydiff;
+						buildMap();
+					}
 				}
 			}
 
