@@ -160,13 +160,6 @@ namespace {
 			ENGINE_INFO("===================================================\n");
 			std::ios_base::sync_with_stdio(true);
 		}/**/
-		Engine::Noise::WorleyNoise worley{1234};
-		//Engine::Noise::WorleyNoiseGeneric worley2{
-		//	[p=Engine::Noise::RangePermutation<256>{1234}](auto... as){ return p(as...); },
-		//	//[d=&Engine::Noise::poisson3](auto... as){ return (*d)(as...); },
-		//	[](auto...){ return 1; },
-		//};
-
 
 		//using Perm = Engine::Noise::RangePermutation<256>;
 		//using Dist = decltype([](auto...){ return 1; });
@@ -206,6 +199,7 @@ namespace {
 		Color blockToColor[Game::BlockId::_COUNT] = {};
 		blockToColor[Game::BlockId::Debug]	= {255, 0, 0};
 		blockToColor[Game::BlockId::Debug2]	= {200, 26, 226};
+		blockToColor[Game::BlockId::Debug3]	= {226, 26, 162};
 		blockToColor[Game::BlockId::Dirt]	= {158, 98, 33};
 		blockToColor[Game::BlockId::Grass]	= {67, 226, 71};
 		blockToColor[Game::BlockId::Iron]	= {144, 144, 144};
@@ -216,21 +210,28 @@ namespace {
 			for (int x = 0; x < map.w; ++x) {
 				const float32 xm = (x + xOffset - map.w/2) * xZoom;
 				const float32 ym = (y + yOffset - map.h/2) * yZoom;
-				//const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
-				//data[y][x] = blockToColor[v];
+				const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
+				data[y][x] = blockToColor[v];
 
-				if constexpr (true) {
-					// TODO: dither edges for rough surface
-					const auto off1 = 0;//simplex2.value(xm * 0.021f, ym * 0.021f);
-					const auto off2 = 0;//simplex2.value(xm * 0.21f, ym * 0.21f);
-					const auto x2 = xm * 0.01f + off1 * 0.2f + off2 * 0.05f;
-					const auto y2 = ym * 0.01f + off1 * 0.2f + off2 * 0.05f;
+				if constexpr (false) {
+					const auto off1 = simplex2.value(xm * 0.021f, ym * 0.021f);
+					const float32 o1 = 0.4f;
+					const auto x2 = xm * 0.01f + off1 * o1;
+					const auto y2 = ym * 0.01f + off1 * o1;
 
-					data[y][x].gray((uint8)std::clamp(
-						//worley.valueF2F1(x2, y2).value > 0.02f ? 255.0f : 0.0f
-						//worley.valueF2F1(x2, y2).value * (255.0f / 0.8f)
-						worley2.valueF2F1(x2, y2).value * (255.0f / 0.8f)
-					, 0.0f, 255.0f));
+					auto m = simplex2.value(xm*0.3f, ym*0.3f);
+					//m += simplex2.value(xm*0.15f, ym*0.15f);
+					const auto wv = worley2.valueF2F1(x2, y2);
+					auto w = wv.value * (1.0f/0.8f);
+					auto v = w - m * 0.15f;
+					auto a = (uint8)std::clamp(
+						(v > 0.2f ? 1.0f : 0.0f)
+						* 255.0f
+					, 0.0f, 255.0f);
+					//w += 0.2f;
+					data[y][x].r = perm(wv.cell.x, wv.cell.y) * a;
+					data[y][x].g = perm(wv.cell.y, wv.cell.x) * a;
+					data[y][x].b = perm(wv.cell.x + 5, wv.cell.y - 5) * a;
 				}
 				
 				//map.data[x] = simplex.value1D(x * 0.1f);
@@ -242,7 +243,6 @@ namespace {
 		}
 		const auto end = std::chrono::high_resolution_clock::now();
 
-		ENGINE_LOG("Size1: ", sizeof(worley));
 		ENGINE_LOG("Size2: ", sizeof(worley2));
 		std::cout << "Map Time (ms): " << std::chrono::duration<long double, std::milli>{end - begin}.count() << "\n";
 
@@ -270,27 +270,47 @@ namespace {
 		if (ImGui::Begin("Map Test")) {
 			static int yOffset = 0;
 			static int xOffset = 0;
-			static float xZoom = 1.0f;
+			static float xZoom = 10.0f;
+			static float yZoom = 10.0f;
 
 			ImGui::PushItemWidth(256);
 			
 			ImGui::DragInt("X Offset", &xOffset);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom); }
+			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom, yZoom); }
 
 			ImGui::SameLine();
 
 			ImGui::DragInt("Y Offset", &yOffset);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom); }
+			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom, yZoom); }
 			
+			ImGui::DragFloat("X Zoom", &xZoom, 0.05f, 0.1f, FLT_MAX);
+			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom, yZoom); }
+
 			ImGui::SameLine();
 
-			ImGui::DragFloat("X Zoom", &xZoom, 0.05f, 0.1f, FLT_MAX);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, xZoom); }
+			ImGui::DragFloat("Y Zoom", &yZoom, 0.05f, 0.1f, FLT_MAX);
+			if (ImGui::IsItemDeactivatedAfterEdit()) { mapTest(xOffset, yOffset, yZoom, yZoom); }
 
 			ImGui::PopItemWidth();
 
+			const glm::vec2 cpos = {ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y};
+			constexpr float32 scale = 2;
+			if (map.tex == 0) { mapTest(xOffset, yOffset, xZoom, yZoom); }
 			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
-			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
+			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w * scale), static_cast<float32>(map.h * scale)), {0,1}, {1,0});
+
+			if (ImGui::IsItemHovered()) {
+				const glm::vec2 mpos = {ImGui::GetMousePos().x, ImGui::GetMousePos().y};
+				const glm::vec2 moff = mpos - cpos;
+				const glm::vec2 isize = {map.w, map.h};
+				const glm::vec2 ioff = moff - isize * scale * 0.5f;
+				const glm::vec2 bpos = glm::vec2{xOffset, yOffset} + ioff * (glm::vec2{xZoom, yZoom} / scale);
+				ImGui::BeginTooltip();
+				ImGui::Text("%.0f, %.0f", bpos.x, bpos.y);
+				ImGui::EndTooltip();
+			} 
+
+			//ENGINE_LOG(ImGui::GetCursorScreenPos().x);
 
 			/*
 			tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex2));
@@ -552,11 +572,6 @@ void run(int argc, char* argv[]) {
 	#if defined (DEBUG_PHYSICS)
 		world.getSystem<Game::PhysicsSystem>().getDebugDraw().setup(engine.camera);
 	#endif
-
-	// Procedural test
-	if (ENGINE_CLIENT) {
-		mapTest();
-	}
 
 	// Main loop
 	std::array<float, 64> deltas = {};
