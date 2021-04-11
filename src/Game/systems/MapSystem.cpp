@@ -231,7 +231,7 @@ namespace Game {
 
 		// Unload regions
 		for (auto it = regions.begin(); it != regions.end();) {
-			if (it->second->lastUsed < timeout) {
+			if (it->second->lastUsed < timeout && !it->second->loading()) {
 				ENGINE_LOG("Unloading region: ", it->first.x, ", ", it->first.y);
 				it = regions.erase(it);
 			} else {
