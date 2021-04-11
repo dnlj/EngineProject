@@ -73,7 +73,7 @@ namespace {
 		//float32 data[w] = {};
 	} map;
 	
-	void mapTest(int xOffset = 0, int yOffset = 0, float32 xZoom = 1.0f, float32 yZoom = 1.0f) {
+	void mapTest(float32 xOffset = 0, float32 yOffset = 0, float32 xZoom = 1.0f, float32 yZoom = 1.0f) {
 		struct Color {
 			uint8_t r = 0;
 			uint8_t g = 0;
@@ -208,8 +208,8 @@ namespace {
 		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < map.h; ++y) {
 			for (int x = 0; x < map.w; ++x) {
-				const float32 xm = (x + xOffset - map.w/2) * xZoom;
-				const float32 ym = (y + yOffset - map.h/2) * yZoom;
+				const float32 xm = (x - map.w/2) * xZoom + xOffset;
+				const float32 ym = (y - map.h/2) * yZoom + yOffset;
 				const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
 				data[y][x] = blockToColor[v];
 
@@ -268,7 +268,7 @@ namespace {
 
 	void mapUI() {
 		if (ImGui::Begin("Map Test")) {
-			static glm::ivec2 offset = {};
+			static glm::vec2 offset = {};
 			static glm::vec2 zoom = {10, 10};
 			static float scroll = 0;
 			static Engine::Clock::TimePoint scrollCooldown = {};
@@ -279,12 +279,12 @@ namespace {
 				mapTest(offset.x, offset.y, zoom.x, zoom.y);
 			};
 			
-			ImGui::DragInt("X Offset", &offset.x);
+			ImGui::DragFloat("X Offset", &offset.x, 1.0f);
 			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
 
 			ImGui::SameLine();
 
-			ImGui::DragInt("Y Offset", &offset.y);
+			ImGui::DragFloat("Y Offset", &offset.y, 1.0f);
 			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
 			
 			ImGui::DragFloat("X Zoom", &zoom.x, 0.05f, 0.1f, FLT_MAX);
@@ -311,6 +311,7 @@ namespace {
 				const glm::vec2 bpos = glm::vec2{offset.x, offset.y} + ioff * (glm::vec2{zoom.x, zoom.y} / scale);
 
 				ImGui::BeginTooltip();
+				ImGui::Text("%.0f, %.0f", ioff.x, ioff.y);
 				ImGui::Text("%.0f, %.0f", bpos.x, bpos.y);
 				ImGui::EndTooltip();
 
@@ -318,10 +319,10 @@ namespace {
 					scroll += s;
 					scrollCooldown = Engine::Clock::now();
 				} else if (scroll && (Engine::Clock::now() - scrollCooldown) >= std::chrono::milliseconds{500}) {
-					const auto z = std::min(scroll * 0.25f, 0.75f); // Limit max zoom
+					auto z = std::clamp(scroll * 0.2f, -0.9f, 0.9f); // Limit max zoom
+					const auto old = zoom;
 					zoom -= zoom * z;
 					zoom = glm::max(zoom, 0.05f);
-					// TODO: need to adjust offsets to maintain center
 					scroll = 0;
 					buildMap();
 				}
@@ -330,7 +331,7 @@ namespace {
 				if (ImGui::IsMouseReleased(dragButton)) {
 					const glm::vec2 delta = {-ImGui::GetMouseDragDelta(dragButton).x, ImGui::GetMouseDragDelta(dragButton).y};
 					if (delta.x || delta.y) {
-						const glm::ivec2 diff = glm::round(delta / scale);
+						const glm::ivec2 diff = glm::round(delta * zoom / scale);
 						offset += diff;
 						buildMap();
 					}
