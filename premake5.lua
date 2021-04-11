@@ -150,6 +150,7 @@ workspace(PROJECT_NAME .."Workspace")
 		symbols "On"
 		defines {"DEBUG"}
 		inlining "Explicit"
+		editandcontinue "Off" -- As of Visual Studio 16.7 MSVC uses /ZI (capital i) by default which prevents /Ob1 (__forceinline) from working. See https://developercommunity.visualstudio.com/t/major-debug-performance-regression-ob1-no-longer-w/1177277#T-N1188009
 		
 	filter "configurations:Debug_All"
 		defines {"DEBUG_ALL"}

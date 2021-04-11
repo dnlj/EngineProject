@@ -56,7 +56,7 @@ namespace Engine::Net {
 			float32 packetSendRate = 16.0f;
 
 			/** How many packets per second we can recv. Not used locally. Should be networked to server. */
-			float32 packetRecvRate = 16.0f;
+			float32 packetRecvRate = 32.0f;
 
 			/** Current maximum number of packet we can send */
 			float32 packetSendBudget = 0;

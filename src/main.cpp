@@ -311,7 +311,7 @@ namespace {
 				const glm::vec2 bpos = glm::vec2{offset.x, offset.y} + ioff * (glm::vec2{zoom.x, zoom.y} / scale);
 
 				ImGui::BeginTooltip();
-				ImGui::Text("%.0f, %.0f", ioff.x, ioff.y);
+				//ImGui::Text("%.0f, %.0f", ioff.x, ioff.y);
 				ImGui::Text("%.0f, %.0f", bpos.x, bpos.y);
 				ImGui::EndTooltip();
 
