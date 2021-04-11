@@ -272,6 +272,8 @@ namespace {
 			static int xOffset = 0;
 			static float xZoom = 10.0f;
 			static float yZoom = 10.0f;
+			static float scroll = 0;
+			static Engine::Clock::TimePoint scrollCooldown = {};
 
 			ImGui::PushItemWidth(256);
 
@@ -312,6 +314,19 @@ namespace {
 				ImGui::BeginTooltip();
 				ImGui::Text("%.0f, %.0f", bpos.x, bpos.y);
 				ImGui::EndTooltip();
+			}
+
+			if (const auto s = ImGui::GetIO().MouseWheel) {
+				scroll += s;
+				scrollCooldown = Engine::Clock::now();
+			} else if (scroll && (Engine::Clock::now() - scrollCooldown) >= std::chrono::milliseconds{500}) {
+				const auto z = std::min(scroll * 0.25f, 0.75f); // Limit max zoom
+				xZoom -= xZoom * z;
+				yZoom -= yZoom * z;
+				xZoom = std::max(xZoom, 0.05f);
+				yZoom = std::max(yZoom, 0.05f);
+				scroll = 0;
+				buildMap();
 			}
 
 			constexpr int dragButton = 1;
