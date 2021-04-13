@@ -200,6 +200,7 @@ namespace {
 		blockToColor[Game::BlockId::Debug]	= {255, 0, 0};
 		blockToColor[Game::BlockId::Debug2]	= {200, 26, 226};
 		blockToColor[Game::BlockId::Debug3]	= {226, 26, 162};
+		blockToColor[Game::BlockId::Debug4]	= {226, 26, 111};
 		blockToColor[Game::BlockId::Dirt]	= {158, 98, 33};
 		blockToColor[Game::BlockId::Grass]	= {67, 226, 71};
 		blockToColor[Game::BlockId::Iron]	= {144, 144, 144};
@@ -210,8 +211,44 @@ namespace {
 			for (int x = 0; x < map.w; ++x) {
 				const float32 xm = (x - map.w/2) * xZoom + xOffset;
 				const float32 ym = (y - map.h/2) * yZoom + yOffset;
-				const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
-				data[y][x] = blockToColor[v];
+
+				if constexpr (false) {
+					const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
+					data[y][x] = blockToColor[v];
+				}
+
+				if constexpr (true) {
+					constexpr float32 ps = 0.03f;
+					auto p = 50*simplex2.value(ps*x,ps*y);
+					//p += 10*simplex2.value(4*ps*x,4*ps*y);
+
+					glm::vec2 pos = glm::vec2{x+p, y+p};
+					constexpr glm::vec2 center = {map.w * 0.5f, map.h * 0.5f};
+					const auto diff = center - pos;
+
+					constexpr float32 r = 5.5f;
+					const auto off = r*glm::normalize(diff);
+
+					auto v = glm::length(diff);
+
+					float32 f = 0.75f;
+					float32 l = 1 / f;
+					constexpr float32 i = 32;
+
+					v += i * l * simplex2.value(f * off.x, f * off.y);
+					f *= 2.0f;
+					l *= 0.5f;
+					v += i * l * simplex2.value(f * off.x, f * off.y);
+					f *= 2.0f;
+					l *= 0.5f;
+
+					v += 30*simplex2.value(0.1f*x, 0.1f*y);
+					v += 15*simplex2.value(0.3f*x, 0.3f*y);
+
+					v = (v < 150) * 255.0f;
+					//v = v / 300;
+					data[y][x].gray(static_cast<uint8>(std::clamp(v, 0.0f, 255.0f)));
+				}
 
 				if constexpr (false) {
 					const auto off1 = simplex2.value(xm * 0.021f, ym * 0.021f);

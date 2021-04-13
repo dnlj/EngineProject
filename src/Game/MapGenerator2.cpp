@@ -49,8 +49,9 @@ namespace Game {
 		const glm::vec2 pos = {static_cast<float32>(x), static_cast<float32>(y)};
 		const int32 h = height(pos);
 
-		const auto b = biome(pos);
-		if (b && b < 40) { return BlockId::Debug2; }
+		const auto b = biome2(pos);
+		//if (b && b < 40) { return BlockId::Debug2; }
+		if (b != BlockId::None) { return b; }
 
 		if (pos.y > h) {
 			constexpr float32 treeSpacing = 11; // Average spacing between tree centers
@@ -141,6 +142,26 @@ namespace Game {
 	}
 
 	
+	BlockId MapGenerator2::biome2(const glm::vec2 pos) const noexcept {
+		constexpr float32 scales[] = { // Multiples of two
+			1.0f / 8000,
+			1.0f / 4000,
+			1.0f / 2000,
+			1.0f / 1000,
+		};
+
+		for (int l = 0; l < std::size(scales); ++l) {
+			// Shift y zo that zero (~surface level) is not right on the edge of a biome
+			// Using half the height of the smallest grid size so that it works for all biomes
+			const glm::ivec2 cell = glm::floor(glm::vec2{pos.x, pos.y - 500} * scales[l]);
+			if (perm(cell.x, cell.y) < 10) {
+				return BlockId::Debug + static_cast<BlockId>(l);
+			}
+		}
+
+		return BlockId::None;
+	}
+
 	int32 MapGenerator2::biome(const glm::vec2 pos) const noexcept {
 		// Perturb
 		const auto p = simplex.value(pos.x * 0.0006f, pos.y * 0.0006f);
