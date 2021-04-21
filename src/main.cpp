@@ -212,12 +212,12 @@ namespace {
 				const float32 xm = (x - map.w/2) * xZoom + xOffset;
 				const float32 ym = (y - map.h/2) * yZoom + yOffset;
 
-				if constexpr (false) {
+				if constexpr (true) {
 					const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
 					data[y][x] = blockToColor[v];
 				}
 
-				if constexpr (true) {
+				if constexpr (false) {
 					constexpr float32 ps = 0.03f;
 					auto p = 50*simplex2.value(ps*x,ps*y);
 					//p += 10*simplex2.value(4*ps*x,4*ps*y);
@@ -305,8 +305,8 @@ namespace {
 
 	void mapUI() {
 		if (ImGui::Begin("Map Test")) {
-			static glm::vec2 offset = {};
-			static glm::vec2 zoom = {10, 10};
+			static glm::vec2 offset = {8000, 2300};
+			static glm::vec2 zoom = {20, 20};
 			static float scroll = 0;
 			static Engine::Clock::TimePoint scrollCooldown = {};
 
@@ -355,7 +355,7 @@ namespace {
 				if (const auto s = ImGui::GetIO().MouseWheel) {
 					scroll += s;
 					scrollCooldown = Engine::Clock::now();
-				} else if (scroll && (Engine::Clock::now() - scrollCooldown) >= std::chrono::milliseconds{500}) {
+				} else if (scroll && (Engine::Clock::now() - scrollCooldown) >= std::chrono::milliseconds{200}) {
 					auto z = std::clamp(scroll * 0.2f, -0.9f, 0.9f); // Limit max zoom
 					const auto old = zoom;
 					zoom -= zoom * z;

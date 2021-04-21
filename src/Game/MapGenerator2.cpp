@@ -1,9 +1,13 @@
+// GLM
+#include <glm/glm.hpp>
+
 // Engine
 #include <Engine/Noise/Noise.hpp>
 
 // Game
 #include <Game/MapGenerator2.hpp>
 #include <Game/MapChunk.hpp>
+
 
 namespace {
 	using namespace Engine::Types;
@@ -47,12 +51,94 @@ namespace Game {
 
 	BlockId MapGenerator2::value(const int32 x, const int32 y) const noexcept {
 		const glm::vec2 pos = {static_cast<float32>(x), static_cast<float32>(y)};
-		const int32 h = height(pos);
 
 		const auto b = biome2(pos);
 		//if (b && b < 40) { return BlockId::Debug2; }
-		if (b != BlockId::None) { return b; }
+		//if (b != BlockId::None) { return b; }
+		//if (b.depth >= 0) {
+		//	return BlockId::Debug + static_cast<BlockId>(b.depth);
+		//}
 
+		/*
+		auto test = [&]() -> float32 { // TODO: make independant of size and scale output
+			constexpr float32 maxPerturb = 25;
+
+			const auto sz = biomeScales[b.depth];
+			const float32 pv = 20.0f / sz; // How detailed
+			const float32 ps = sz * 0.002f; // How strong
+			auto px = ps * maxPerturb * simplex.scaled(pv*x,pv*y);
+			auto py = ps * maxPerturb * simplex.scaled(pv*-x,pv*-y);
+
+			const auto cellf = glm::vec2{b.cell};
+			const auto diff = (cellf + 0.5f) * sz + biomeOffset - pos + glm::vec2{px,py}; // pos relative to center of biome
+
+			const auto off = glm::normalize(diff);
+
+			const auto waveHeight = sz * 0.1f;
+			float32 f = 4.0f;
+			float32 l = waveHeight;
+
+			const auto coff = cellf * 2.0f;
+			auto v = glm::length(diff);
+			v += l * simplex.scaled(coff.x + f * off.x, coff.y + f * off.y);
+			//f *= 5.0f;
+			//l *= 1.0f/5;
+			//v += l * simplex.scaled(coff.x + f * off.x, coff.y + f * off.y);
+			
+			v += 100*simplex.scaled(0.08f*x, 0.08f*y);
+			//v += 100*simplex.scaled(0.3f*x, 0.3f*y);
+
+			//v = (v < 150) * 255.0f;
+			const auto maxValue = sz * 0.5f - maxPerturb - waveHeight;
+			//ENGINE_LOG(v / (sz * 0.5f));
+			return v;
+			//if (v < maxValue) {
+			//	return BlockId::Debug + static_cast<BlockId>(b.depth);
+			//}
+		};
+
+		if (test() > 0) {
+			return BlockId::Debug + static_cast<BlockId>(b.depth);
+		}*/
+
+		if (true && b.depth >= 0) {
+			constexpr float32 maxPerturb = 25;
+
+			const auto sz = biomeScales[b.depth];
+			const float32 pv = 20.0f / sz; // How detailed
+			const float32 ps = sz * 0.002f; // How strong
+			auto px = ps * maxPerturb * simplex.value(pv*x,pv*y);
+			auto py = ps * maxPerturb * simplex.value(pv*-x,pv*-y);
+
+			const auto cellf = glm::vec2{b.cell};
+			// TODO: we want ot offset by cell or something or else we always get same shape
+			const auto diff = (cellf + 0.5f) * sz + biomeOffset - pos + glm::vec2{px,py}; // pos relative to center of biome
+
+			const auto off = glm::normalize(diff);
+
+			const auto waveHeight = sz * 0.1f;
+			float32 f = 4.0f;
+			float32 l = waveHeight;
+
+			const auto coff = cellf * 2.0f;
+			auto v = glm::length(diff);
+			v += l * simplex.value(coff.x + f * off.x, coff.y + f * off.y);
+			//f *= 5.0f;
+			//l *= 1.0f/5;
+			//v += l * simplex.value(coff.x + f * off.x, coff.y + f * off.y);
+			
+			v += 100*simplex.value(0.08f*x, 0.08f*y);
+			//v += 100*simplex.value(0.3f*x, 0.3f*y);
+
+			//v = (v < 150) * 255.0f;
+			const auto maxValue = sz * 0.5f - maxPerturb - waveHeight;
+			if (v < maxValue) {
+				return BlockId::Debug + static_cast<BlockId>(b.depth);
+			}
+		}
+
+		// TODO: why did moving this under biome stuff change output to be almsot flat?
+		const int32 h = height(pos);
 		if (pos.y > h) {
 			constexpr float32 treeSpacing = 11; // Average spacing between tree centers
 			constexpr int32 treeThresh = 200; // Chance for a tree to exist at this spacing out of 255
@@ -141,25 +227,25 @@ namespace Game {
 		return static_cast<int32>(h);
 	}
 
-	
-	BlockId MapGenerator2::biome2(const glm::vec2 pos) const noexcept {
-		constexpr float32 scales[] = { // Multiples of two
-			1.0f / 8000,
-			1.0f / 4000,
-			1.0f / 2000,
-			1.0f / 1000,
-		};
+	auto MapGenerator2::biome2(const glm::vec2 pos) const noexcept -> BiomeBounds {
+		constexpr auto scales = []{
+			std::array<float32, std::size(biomeScales)> inv;
+			for (int i = 0; const auto s : biomeScales) {
+				inv[i++] = 1.0f / s;
+			}
+			return inv;
+		}();
 
 		for (int l = 0; l < std::size(scales); ++l) {
-			// Shift y zo that zero (~surface level) is not right on the edge of a biome
-			// Using half the height of the smallest grid size so that it works for all biomes
-			const glm::ivec2 cell = glm::floor(glm::vec2{pos.x, pos.y - 500} * scales[l]);
+			const glm::ivec2 cell = glm::floor((pos - biomeOffset) * scales[l]);
 			if (perm(cell.x, cell.y) < 10) {
-				return BlockId::Debug + static_cast<BlockId>(l);
+				//return BlockId::Debug + static_cast<BlockId>(l);
+				return {l, cell};
 			}
 		}
 
-		return BlockId::None;
+		//return BlockId::None;
+		return {-1};
 	}
 
 	int32 MapGenerator2::biome(const glm::vec2 pos) const noexcept {

@@ -16,7 +16,7 @@ namespace Game {
 	 * Potential biomes
 	 * - Forest
 	 * - Jungle
-	 * - Tiaga
+	 * - Taiga
 	 * - Desert
 	 * - Savanna
 	 * - Ocean
@@ -44,6 +44,23 @@ namespace Game {
 	 * 
 	 */
 
+
+	class NoiseBase {
+	};
+
+	class Biome {
+		public:
+			/**
+			 * @param nb The set of noise objects to use.
+			 * @param pos The position to check.
+			 * @param origin The bottom left position of the biome.
+			 * @param size The size of the biome.
+			 */
+			[[nodiscard]]
+			float32 strength(const NoiseBase& nb, const glm::ivec2 pos, glm::ivec2 origin, glm::ivec2 size) const noexcept {
+			};
+	};
+
 	/**
 	 * 
 	 */
@@ -53,6 +70,25 @@ namespace Game {
 			Engine::Noise::OpenSimplexNoise simplex;
 			Engine::Noise::WorleyNoise worley;
 			Engine::Noise::RangePermutation<256> perm;
+
+			struct BiomeBounds {
+				int depth;
+				glm::ivec2 cell;
+			};
+
+			constexpr static float32 biomeScales[] = { // Must be divisible by the previous depth
+				// We want to use divisions by three so that each biome can potentially spawn
+				// at surface level. If we use two then only the first depth will be at surface
+				// level and all others will be above or below it.
+				9000,
+				3000,
+				1000,
+			};
+
+			// Offset used so that biomes are roughly centered at ground level
+			constexpr static glm::vec2 biomeOffset = {0,
+				biomeScales[0] / 2.0f - 200 // Experimentally terrain surface is around 100-300
+			};
 
 		public:
 			MapGenerator2(const int64 seed)
@@ -79,7 +115,7 @@ namespace Game {
 			int32 height(const glm::vec2 pos) const noexcept;
 			
 			[[nodiscard]]
-			BlockId biome2(const glm::vec2 pos) const noexcept;
+			BiomeBounds biome2(const glm::vec2 pos) const noexcept;
 
 			[[nodiscard]]
 			int32 biome(const glm::vec2 pos) const noexcept;
