@@ -59,7 +59,7 @@ namespace Game {
 		//	return BlockId::Debug + static_cast<BlockId>(b.depth);
 		//}
 
-		auto test = [&](const glm::vec2 p0, const glm::vec2 shift){
+		auto test = [&](const glm::vec2 p0, const glm::vec2 shift) -> float32 {
 			// Controls how warped the shape looks
 			const float32 ppv = 10.0f;
 			const float32 pps = 0.1f;
@@ -91,19 +91,24 @@ namespace Game {
 			v += n2 * simplex.scaled(s2 * pos);
 
 			// Rescale output
-			// TODO: -1, 1 instead
 			constexpr auto max = 1.0f - a1 - a2 - n1 - n2;
+			static_assert(max > 0);
+
 			if (v < max) {
-				return BlockId::Debug + static_cast<BlockId>(b.depth);
+				constexpr auto m = 1.0f / max;
+				return 1.0f - v * m;
 			}
-			return BlockId{};
+
+			return 0.0f;
 		};
 
 		{
 			const auto sz = biomeScales[b.depth];
 			const auto cellf = glm::vec2{b.cell};
 			const auto rel = cellf * sz + biomeOffset - pos;
-			if (auto r = test(rel / sz, cellf); r) { return r; }
+			if (auto r = test(rel / sz, cellf); r > 0.0f) {
+				return BlockId::Debug + static_cast<BlockId>(b.depth);
+			}
 		}
 
 		// TODO: why did moving this under biome stuff change output to be almsot flat?
