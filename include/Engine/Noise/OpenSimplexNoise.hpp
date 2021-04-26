@@ -3,6 +3,9 @@
 // TODO: move to namespace
 // TODO: Cleanup
 
+// GLM
+#include <glm/fwd.hpp>
+
 // Engine
 #include <Engine/Noise/Noise.hpp>
 #include <Engine/Noise/RangePermutation.hpp>
@@ -15,12 +18,18 @@ namespace Engine::Noise {
 			// TODO: template params?
 			using Int = int32;
 			using Float = float32;
+			using FVec2 = glm::vec<2, Float>;
 
 			OpenSimplexNoise(int64 seed) : perm{seed} {
 			}
 
 			void setSeed(int64 seed) {
 				perm = seed;
+			}
+			
+			[[nodiscard]]
+			ENGINE_INLINE Float scaled(const FVec2 p) const noexcept {
+				return scaled(p.x, p.y);
 			}
 
 			/**

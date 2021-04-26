@@ -87,7 +87,7 @@ namespace Game {
 
 			// Offset used so that biomes are roughly centered at ground level
 			constexpr static glm::vec2 biomeOffset = {0,
-				biomeScales[0] / 2.0f - 200 // Experimentally terrain surface is around 100-300
+				biomeScales[0] / 2.0f + 200 // Experimentally terrain surface is around 100-300
 			};
 
 		public:

@@ -59,82 +59,51 @@ namespace Game {
 		//	return BlockId::Debug + static_cast<BlockId>(b.depth);
 		//}
 
-		/*
-		auto test = [&]() -> float32 { // TODO: make independant of size and scale output
-			constexpr float32 maxPerturb = 25;
+		auto test = [&](const glm::vec2 p0, const glm::vec2 shift){
+			// Controls how warped the shape looks
+			const float32 ppv = 10.0f;
+			const float32 pps = 0.1f;
+			const auto ppi = ppv * p0;
+			const auto ppr = pps * glm::vec2{simplex.scaled(ppi), simplex.scaled(-ppi)};
 
-			const auto sz = biomeScales[b.depth];
-			const float32 pv = 20.0f / sz; // How detailed
-			const float32 ps = sz * 0.002f; // How strong
-			auto px = ps * maxPerturb * simplex.scaled(pv*x,pv*y);
-			auto py = ps * maxPerturb * simplex.scaled(pv*-x,pv*-y);
+			// offset from center [-pps, pps]
+			const auto off = 2.0f * p0 + 1.0f + ppr;
+			const auto nOff = glm::normalize(off) + shift;
+			auto v = glm::length(off);
 
-			const auto cellf = glm::vec2{b.cell};
-			const auto diff = (cellf + 0.5f) * sz + biomeOffset - pos + glm::vec2{px,py}; // pos relative to center of biome
+			// Controls width(f) and depth(a) of tendrils
+			constexpr float32 f1 = 4.0f;
+			constexpr float32 a1 = 0.2f;
+			constexpr float32 f2 = f1 * 5;
+			constexpr float32 a2 = a1 / 2;
 
-			const auto off = glm::normalize(diff);
+			v += a1 * simplex.scaled(f1 * nOff);
+			v += a2 * simplex.scaled(f2 * nOff);
 
-			const auto waveHeight = sz * 0.1f;
-			float32 f = 4.0f;
-			float32 l = waveHeight;
+			// Controls scale(s) and size(n) of dithering
+			constexpr float32 s1 = 0.02f;
+			constexpr float32 n1 = 0.07f;
+			constexpr float32 s2 = 0.3f;
+			constexpr float32 n2 = 0.09f;
 
-			const auto coff = cellf * 2.0f;
-			auto v = glm::length(diff);
-			v += l * simplex.scaled(coff.x + f * off.x, coff.y + f * off.y);
-			//f *= 5.0f;
-			//l *= 1.0f/5;
-			//v += l * simplex.scaled(coff.x + f * off.x, coff.y + f * off.y);
-			
-			v += 100*simplex.scaled(0.08f*x, 0.08f*y);
-			//v += 100*simplex.scaled(0.3f*x, 0.3f*y);
+			// TODO: could probably get away with only one layer of a in-between size/strength
+			v += n1 * simplex.scaled(s1 * pos);
+			v += n2 * simplex.scaled(s2 * pos);
 
-			//v = (v < 150) * 255.0f;
-			const auto maxValue = sz * 0.5f - maxPerturb - waveHeight;
-			//ENGINE_LOG(v / (sz * 0.5f));
-			return v;
-			//if (v < maxValue) {
-			//	return BlockId::Debug + static_cast<BlockId>(b.depth);
-			//}
-		};
-
-		if (test() > 0) {
-			return BlockId::Debug + static_cast<BlockId>(b.depth);
-		}*/
-
-		if (true && b.depth >= 0) {
-			constexpr float32 maxPerturb = 25;
-
-			const auto sz = biomeScales[b.depth];
-			const float32 pv = 20.0f / sz; // How detailed
-			const float32 ps = sz * 0.002f; // How strong
-			auto px = ps * maxPerturb * simplex.value(pv*x,pv*y);
-			auto py = ps * maxPerturb * simplex.value(pv*-x,pv*-y);
-
-			const auto cellf = glm::vec2{b.cell};
-			// TODO: we want ot offset by cell or something or else we always get same shape
-			const auto diff = (cellf + 0.5f) * sz + biomeOffset - pos + glm::vec2{px,py}; // pos relative to center of biome
-
-			const auto off = glm::normalize(diff);
-
-			const auto waveHeight = sz * 0.1f;
-			float32 f = 4.0f;
-			float32 l = waveHeight;
-
-			const auto coff = cellf * 2.0f;
-			auto v = glm::length(diff);
-			v += l * simplex.value(coff.x + f * off.x, coff.y + f * off.y);
-			//f *= 5.0f;
-			//l *= 1.0f/5;
-			//v += l * simplex.value(coff.x + f * off.x, coff.y + f * off.y);
-			
-			v += 100*simplex.value(0.08f*x, 0.08f*y);
-			//v += 100*simplex.value(0.3f*x, 0.3f*y);
-
-			//v = (v < 150) * 255.0f;
-			const auto maxValue = sz * 0.5f - maxPerturb - waveHeight;
-			if (v < maxValue) {
+			// Rescale output
+			// TODO: -1, 1 instead
+			constexpr auto max = 1.0f - a1 - a2 - n1 - n2;
+			if (v < max) {
 				return BlockId::Debug + static_cast<BlockId>(b.depth);
 			}
+			return BlockId{};
+		};
+
+		{
+			const auto sz = biomeScales[b.depth];
+			const auto cellf = glm::vec2{b.cell};
+			const auto rel = cellf * sz + biomeOffset - pos;
+			if (auto r = test(rel / sz, cellf); r) { return r; }
 		}
 
 		// TODO: why did moving this under biome stuff change output to be almsot flat?
