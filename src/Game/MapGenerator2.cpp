@@ -59,7 +59,12 @@ namespace Game {
 		//	return BlockId::Debug + static_cast<BlockId>(b.depth);
 		//}
 
-		auto test = [&](const glm::vec2 p0, const glm::vec2 shift) -> float32 {
+		struct BiomeSample {
+			float32 basis;
+			BlockId block;
+		};
+
+		auto biome2 = [&](const glm::vec2 p0, const glm::vec2 shift) -> BiomeSample {
 			// Controls how warped the shape looks
 			const float32 ppv = 10.0f;
 			const float32 pps = 0.1f;
@@ -96,66 +101,93 @@ namespace Game {
 
 			if (v < max) {
 				constexpr auto m = 1.0f / max;
-				return 1.0f - v * m;
+				//return 1.0f - v * m;
+				return {
+					.basis = 1.0f - v * m,
+					.block = BlockId::Debug + static_cast<BlockId>(b.depth),
+				};
 			}
 
-			return 0.0f;
+			return {
+				.basis = 0.0f,
+				.block = BlockId::Air,
+			};
 		};
 
 		{
 			const auto sz = biomeScales[b.depth];
 			const auto cellf = glm::vec2{b.cell};
 			const auto rel = cellf * sz + biomeOffset - pos;
-			if (auto r = test(rel / sz, cellf); r > 0.0f) {
-				return BlockId::Debug + static_cast<BlockId>(b.depth);
+			const auto r = biome2(rel / sz, cellf);
+			if (r.basis > 0) {
+				return r.block;
 			}
 		}
 
-		// TODO: why did moving this under biome stuff change output to be almsot flat?
-		const int32 h = height(pos);
-		if (pos.y > h) {
-			constexpr float32 treeSpacing = 11; // Average spacing between tree centers
-			constexpr int32 treeThresh = 200; // Chance for a tree to exist at this spacing out of 255
-			const auto left = Engine::Noise::floorTo<int32>(x * (1.0f / treeSpacing)); // Use the left grid cell to determine trees
+		auto biome1 = [&]() -> BiomeSample {
+			const int32 h = height(pos);
+			if (pos.y > h) {
+				constexpr float32 treeSpacing = 11; // Average spacing between tree centers
+				constexpr int32 treeThresh = 200; // Chance for a tree to exist at this spacing out of 255
+				const auto left = Engine::Noise::floorTo<int32>(x * (1.0f / treeSpacing)); // Use the left grid cell to determine trees
 
-			if (perm.value(left) < treeThresh) {
-				const int32 height = h + 25 + static_cast<int32>(perm.value(left - 321) * (50.0f/255.0f));
-				if (pos.y < height) {
-					constexpr int32 trunkD = 3; // Trunk width // TODO: doesnt work correctly for even width.
-					constexpr int32 trunkR = (trunkD / 2) + (trunkD / 2.0f != trunkD / 2);
-					constexpr float32 pad = (0 + trunkR) * (1.0f/treeSpacing);
+				if (perm.value(left) < treeThresh) {
+					const int32 height = h + 25 + static_cast<int32>(perm.value(left - 321) * (50.0f/255.0f));
+					if (pos.y < height) {
+						constexpr int32 trunkD = 3; // Trunk width // TODO: doesnt work correctly for even width.
+						constexpr int32 trunkR = (trunkD / 2) + (trunkD / 2.0f != trunkD / 2);
+						constexpr float32 pad = (0 + trunkR) * (1.0f/treeSpacing);
 
-					// If the padding is near 0.5 you might as well use fixed spacing
-					static_assert(pad < 0.45f, "Tree width is to large relative to tree spacing");
+						// If the padding is near 0.5 you might as well use fixed spacing
+						static_assert(pad < 0.45f, "Tree width is to large relative to tree spacing");
 
-					const float32 a = left + pad;
-					const float32 b = left + 1.0f - pad;
-					const float32 off = perm.value(left + 321) * (1.0f/255.0f);
-					const int32 wpos = Engine::Noise::floorTo<int32>((a + off * (b - a)) * treeSpacing);
-					if (x < (wpos + trunkR) && x > (wpos - trunkR)) {
-						return BlockId::Debug2;
+						const float32 a = left + pad;
+						const float32 b = left + 1.0f - pad;
+						const float32 off = perm.value(left + 321) * (1.0f/255.0f);
+						const int32 wpos = Engine::Noise::floorTo<int32>((a + off * (b - a)) * treeSpacing);
+						if (x < (wpos + trunkR) && x > (wpos - trunkR)) {
+							return {
+								.basis = 0.0f,
+								.block = BlockId::Debug2,
+							};
+						}
 					}
 				}
-			}
-
-			return BlockId::Air;
-		} else {
-			// Add grass to "top" layer
-			if (y > 0) { // TODO: This doesnt really work. Think about overhangs.
-				if ((height({x, y + 1}) < y + 1) ||
-					(height({x + 1, y}) < y) ||
-					(height({x - 1, y}) < y)) {
-					return BlockId::Grass;
+				
+				return {
+					.basis = 0.0f,
+					.block = BlockId::Air,
+				};
+			} else {
+				// Add grass to "top" layer
+				if (y > 0) { // TODO: This doesnt really work. Think about overhangs.
+					if ((height({x, y + 1}) < y + 1) ||
+						(height({x + 1, y}) < y) ||
+						(height({x - 1, y}) < y)) {
+						return {
+							.basis = 1.0f,
+							.block = BlockId::Grass,
+						};
+					}
 				}
-			}
 
-			// Add resources
-			if (const auto r = resource(pos)) {
-				return r;
-			}
+				// Add resources
+				if (const auto r = resource(pos)) {
+					return {
+						.basis = 1.0f,
+						.block = r,
+					};
+				}
 
-			return BlockId::Dirt;
-		}
+				return {
+					.basis = 1.0f,
+					.block = BlockId::Dirt,
+				};
+			}
+		};
+
+		const auto base = biome1();
+		return base.block;
 	}
 
 	BlockId MapGenerator2::resource(const glm::vec2 pos) const noexcept {
