@@ -1,11 +1,18 @@
 #pragma once
 
+#include <numbers>
 // Engine
 #include <Engine/Types.hpp>
 #include <Engine/ASCIIColorString.hpp>
 
 namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
 	constexpr inline float32 PI = 3.141592653589793238462643383279502884197169f;
+
+	template<class T>
+	constexpr inline T Sqrt2 = static_cast<T>(1.41421356237309504880168872420969807);
+
+	template<class T>
+	constexpr inline T InvSqrt2 = static_cast<T>(0.707106781186547524400844362104849039284);
 
 	// TODO: move into own ns?
 	constexpr inline ASCIIColorString ASCII_BLACK        = "\033[30m";

@@ -52,7 +52,7 @@ namespace Game {
 	BlockId MapGenerator2::value(const int32 x, const int32 y) const noexcept {
 		const glm::vec2 pos = {static_cast<float32>(x), static_cast<float32>(y)};
 
-		const auto b = biome2(pos);
+		const auto biome = biomeAt(pos);
 		//if (b && b < 40) { return BlockId::Debug2; }
 		//if (b != BlockId::None) { return b; }
 		//if (b.depth >= 0) {
@@ -60,20 +60,22 @@ namespace Game {
 		//}
 
 		struct BiomeSample {
+			float32 strength;
 			float32 basis;
 			BlockId block;
 		};
 
-		auto biome2 = [&](const glm::vec2 p0, const glm::vec2 shift) -> BiomeSample {
+		// TODO: this is strength not basis
+		auto testBasis = [&](const glm::vec2 p0, const glm::vec2 shift) -> float32 {
 			// Controls how warped the shape looks
 			const float32 ppv = 10.0f;
 			const float32 pps = 0.1f;
 			const auto ppi = ppv * p0;
 			const auto ppr = pps * glm::vec2{simplex.scaled(ppi), simplex.scaled(-ppi)};
 
-			// offset from center [-pps, pps]
-			const auto off = 2.0f * p0 + 1.0f + ppr;
-			const auto nOff = glm::normalize(off) + shift;
+			// offset from center
+			const auto off = 2.0f * p0 - 1.0f;
+			const auto nOff = glm::normalize(off + ppr) + shift;
 			auto v = glm::length(off);
 
 			// Controls width(f) and depth(a) of tendrils
@@ -96,33 +98,38 @@ namespace Game {
 			v += n2 * simplex.scaled(s2 * pos);
 
 			// Rescale output
-			constexpr auto max = 1.0f - a1 - a2 - n1 - n2;
-			static_assert(max > 0);
+			constexpr auto lim = 1.0f - a1 - a2 - n1 - n2;
+			static_assert(lim > 0);
 
-			if (v < max) {
-				constexpr auto m = 1.0f / max;
-				//return 1.0f - v * m;
-				return {
-					.basis = 1.0f - v * m,
-					.block = BlockId::Debug + static_cast<BlockId>(b.depth),
-				};
-			}
+			// TODO: probably need check for `result < -1 ? -1 : result` so we dont have very low numbers at edge/corner
+			//constexpr auto max = Engine::Sqrt2<float32> + a1 + a2 + n1 + n2;
+			//if (v < max) {
+			//	constexpr auto m = 2.0f / max;
+			//	return 1.0f - v * m;
+			//}
+			//return 0.0f;
 
-			return {
-				.basis = 0.0f,
-				.block = BlockId::Air,
-			};
+			constexpr auto m = 1.0f / lim;
+			return 1.0f - v * m;
 		};
 
-		{
-			const auto sz = biomeScales[b.depth];
-			const auto cellf = glm::vec2{b.cell};
-			const auto rel = cellf * sz + biomeOffset - pos;
-			const auto r = biome2(rel / sz, cellf);
-			if (r.basis > 0) {
-				return r.block;
-			}
-		}
+		auto biome2 = [&]() -> BiomeSample {
+			const auto sz = biomeScalesInv[biome.depth];
+			const auto cellf = glm::vec2{biome.cell};
+			//const auto rel = cellf * sz + biomeOffset - pos;
+			const auto rel = (pos - biomeOffset) * sz - cellf;
+			ENGINE_ASSERT(glm::length(rel) <= Engine::Sqrt2<float32>); // TODO: shouldnt this be sqrt(2)?
+
+			// TODO: need to incorporate biome.depth or else we get the same biome layouts for each depth, just at different scales
+			const auto s = testBasis(rel, cellf);
+
+			//ENGINE_DEBUG_ASSERT(-1 <= r && r <= 1, "Unexpected basis value: ", r);
+			return {
+				.strength = s,
+				.basis = 1,
+				.block = BlockId::Debug + static_cast<BlockId>(biome.depth),
+			};
+		};
 
 		auto biome1 = [&]() -> BiomeSample {
 			const int32 h = height(pos);
@@ -147,7 +154,8 @@ namespace Game {
 						const int32 wpos = Engine::Noise::floorTo<int32>((a + off * (b - a)) * treeSpacing);
 						if (x < (wpos + trunkR) && x > (wpos - trunkR)) {
 							return {
-								.basis = 0.0f,
+								.strength = 1.0f,
+								.basis = -1.0f,
 								.block = BlockId::Debug2,
 							};
 						}
@@ -155,7 +163,8 @@ namespace Game {
 				}
 				
 				return {
-					.basis = 0.0f,
+					.strength = 0.0f,
+					.basis = -1.0f,
 					.block = BlockId::Air,
 				};
 			} else {
@@ -165,6 +174,7 @@ namespace Game {
 						(height({x + 1, y}) < y) ||
 						(height({x - 1, y}) < y)) {
 						return {
+							.strength = 1.0f,
 							.basis = 1.0f,
 							.block = BlockId::Grass,
 						};
@@ -174,20 +184,34 @@ namespace Game {
 				// Add resources
 				if (const auto r = resource(pos)) {
 					return {
+						.strength = 1.0f,
 						.basis = 1.0f,
 						.block = r,
 					};
 				}
 
 				return {
+					.strength = 1.0f,
 					.basis = 1.0f,
 					.block = BlockId::Dirt,
 				};
 			}
 		};
 
-		const auto base = biome1();
-		return base.block;
+		const auto a = biome1();
+
+		if (biome.depth != -1) {
+			const auto b = biome2();
+			if (b.strength > 0) {
+				const auto basis = a.basis + b.basis;
+				if (basis < 0) {
+					return BlockId::Air;
+				}
+				return b.block;
+			}
+		}
+
+		return a.block;
 	}
 
 	BlockId MapGenerator2::resource(const glm::vec2 pos) const noexcept {
@@ -233,17 +257,9 @@ namespace Game {
 		return static_cast<int32>(h);
 	}
 
-	auto MapGenerator2::biome2(const glm::vec2 pos) const noexcept -> BiomeBounds {
-		constexpr auto scales = []{
-			std::array<float32, std::size(biomeScales)> inv;
-			for (int i = 0; const auto s : biomeScales) {
-				inv[i++] = 1.0f / s;
-			}
-			return inv;
-		}();
-
-		for (int l = 0; l < std::size(scales); ++l) {
-			const glm::ivec2 cell = glm::floor((pos - biomeOffset) * scales[l]);
+	auto MapGenerator2::biomeAt(const glm::vec2 pos) const noexcept -> BiomeBounds {
+		for (int l = 0; l < std::size(biomeScales); ++l) {
+			const glm::ivec2 cell = glm::floor((pos - biomeOffset) * biomeScalesInv[l]);
 			if (perm(cell.x, cell.y) < 10) {
 				//return BlockId::Debug + static_cast<BlockId>(l);
 				return {l, cell};

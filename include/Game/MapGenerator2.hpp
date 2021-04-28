@@ -85,6 +85,14 @@ namespace Game {
 				1000,
 			};
 
+			constexpr static auto biomeScalesInv = []{
+				std::array<float32, std::size(biomeScales)> inv;
+				for (int i = 0; const auto s : biomeScales) {
+					inv[i++] = 1.0f / s;
+				}
+				return inv;
+			}();
+
 			// Offset used so that biomes are roughly centered at ground level
 			constexpr static glm::vec2 biomeOffset = {0,
 				biomeScales[0] / 2.0f + 200 // Experimentally terrain surface is around 100-300
@@ -115,7 +123,7 @@ namespace Game {
 			int32 height(const glm::vec2 pos) const noexcept;
 			
 			[[nodiscard]]
-			BiomeBounds biome2(const glm::vec2 pos) const noexcept;
+			BiomeBounds biomeAt(const glm::vec2 pos) const noexcept;
 
 			[[nodiscard]]
 			int32 biome(const glm::vec2 pos) const noexcept;
