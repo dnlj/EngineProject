@@ -60,9 +60,9 @@ namespace Game {
 		//}
 
 		struct BiomeSample {
-			float32 strength;
-			float32 basis;
-			BlockId block;
+			float32 strength; // [0, 1]
+			float32 basis; // ~[-1, 1]
+			BlockId block; // block enum
 		};
 
 		// TODO: this is strength not basis
@@ -76,7 +76,9 @@ namespace Game {
 			// offset from center
 			const auto off = 2.0f * p0 - 1.0f;
 			const auto nOff = glm::normalize(off + ppr) + shift;
-			auto v = glm::length(off);
+
+			// We want to rescale before adjustments to avoid issues around zero/center
+			auto v = (1.0f - glm::length(off)) * (1.0f / 0.5f); // TODO: length2
 
 			// Controls width(f) and depth(a) of tendrils
 			constexpr float32 f1 = 4.0f;
@@ -88,29 +90,17 @@ namespace Game {
 			v += a2 * simplex.scaled(f2 * nOff);
 
 			// Controls scale(s) and size(n) of dithering
-			constexpr float32 s1 = 0.02f;
-			constexpr float32 n1 = 0.07f;
+			constexpr float32 s1 = 0.07f;
+			constexpr float32 n1 = 0.09f;
 			constexpr float32 s2 = 0.3f;
 			constexpr float32 n2 = 0.09f;
 
-			// TODO: could probably get away with only one layer of a in-between size/strength
 			v += n1 * simplex.scaled(s1 * pos);
-			v += n2 * simplex.scaled(s2 * pos);
+			//v += n2 * simplex.scaled(s2 * pos);
 
 			// Rescale output
-			constexpr auto lim = 1.0f - a1 - a2 - n1 - n2;
-			static_assert(lim > 0);
-
-			// TODO: probably need check for `result < -1 ? -1 : result` so we dont have very low numbers at edge/corner
-			//constexpr auto max = Engine::Sqrt2<float32> + a1 + a2 + n1 + n2;
-			//if (v < max) {
-			//	constexpr auto m = 2.0f / max;
-			//	return 1.0f - v * m;
-			//}
-			//return 0.0f;
-
-			constexpr auto m = 1.0f / lim;
-			return 1.0f - v * m;
+			constexpr auto zero = a1 + a2 + n1;
+			return v - zero;
 		};
 
 		auto biome2 = [&]() -> BiomeSample {
@@ -124,9 +114,11 @@ namespace Game {
 			const auto s = testBasis(rel, cellf);
 
 			//ENGINE_DEBUG_ASSERT(-1 <= r && r <= 1, "Unexpected basis value: ", r);
+			// TODO: only if s > 0
+			const auto v = simplex.scaled(pos * 0.04f);
 			return {
 				.strength = s,
-				.basis = 1,
+				.basis = v,
 				.block = BlockId::Debug + static_cast<BlockId>(biome.depth),
 			};
 		};
@@ -155,7 +147,7 @@ namespace Game {
 						if (x < (wpos + trunkR) && x > (wpos - trunkR)) {
 							return {
 								.strength = 1.0f,
-								.basis = -1.0f,
+								.basis = 0.0f,
 								.block = BlockId::Debug2,
 							};
 						}
@@ -163,7 +155,7 @@ namespace Game {
 				}
 				
 				return {
-					.strength = 0.0f,
+					.strength = 1.0f,
 					.basis = -1.0f,
 					.block = BlockId::Air,
 				};
@@ -181,37 +173,49 @@ namespace Game {
 					}
 				}
 
+				const auto v = simplex.scaled(pos * 0.02f);
+
 				// Add resources
 				if (const auto r = resource(pos)) {
 					return {
 						.strength = 1.0f,
-						.basis = 1.0f,
+						.basis = v,
 						.block = r,
 					};
 				}
 
 				return {
 					.strength = 1.0f,
-					.basis = 1.0f,
+					.basis = v,
 					.block = BlockId::Dirt,
 				};
 			}
 		};
 
 		const auto a = biome1();
+		auto s = a;
 
 		if (biome.depth != -1) {
 			const auto b = biome2();
 			if (b.strength > 0) {
-				const auto basis = a.basis + b.basis;
-				if (basis < 0) {
-					return BlockId::Air;
+				//ENGINE_DEBUG_ASSERT(b.strength < 1.2f);
+				//ENGINE_LOG(b.strength);
+
+				if (b.strength > 0.99f) {
+					//ENGINE_LOG(b.strength);
 				}
-				return b.block;
+
+				const auto p = b.strength < 0 ? 0 : (b.strength > 1 ? 1 : b.strength);
+				s.basis = a.basis + p * (b.basis - a.basis);
+				s.block = b.block;
 			}
 		}
 
-		return a.block;
+		if (s.basis < 0) {
+			return BlockId::Air;
+		}
+
+		return s.block;
 	}
 
 	BlockId MapGenerator2::resource(const glm::vec2 pos) const noexcept {
