@@ -52,13 +52,6 @@ namespace Game {
 	BlockId MapGenerator2::value(const int32 x, const int32 y) const noexcept {
 		const glm::vec2 pos = {static_cast<float32>(x), static_cast<float32>(y)};
 
-		const auto biome = biomeAt(pos);
-		//if (b && b < 40) { return BlockId::Debug2; }
-		//if (b != BlockId::None) { return b; }
-		//if (b.depth >= 0) {
-		//	return BlockId::Debug + static_cast<BlockId>(b.depth);
-		//}
-
 		struct BiomeSample {
 			float32 strength; // [0, 1]
 			float32 basis; // ~[-1, 1]
@@ -66,7 +59,7 @@ namespace Game {
 		};
 
 		// TODO: this is strength not basis
-		auto testBasis = [&](const glm::vec2 p0, const glm::vec2 shift) -> float32 {
+		auto biome2_strength = [&](const glm::vec2 p0, const glm::vec2 shift) -> float32 {
 			// Controls how warped the shape looks
 			const float32 ppv = 10.0f;
 			const float32 pps = 0.1f;
@@ -103,6 +96,11 @@ namespace Game {
 			return v - zero;
 		};
 
+		auto biome2_basis = [&](glm::vec2 p0) -> float32 {
+			//return simplex.scaled(p0 * 0.04f);
+			return 1.0f;
+		};
+
 		auto biome2 = [&]() -> BiomeSample {
 			const auto sz = biomeScalesInv[biome.depth];
 			const auto cellf = glm::vec2{biome.cell};
@@ -111,14 +109,11 @@ namespace Game {
 			ENGINE_ASSERT(glm::length(rel) <= Engine::Sqrt2<float32>); // TODO: shouldnt this be sqrt(2)?
 
 			// TODO: need to incorporate biome.depth or else we get the same biome layouts for each depth, just at different scales
-			const auto s = testBasis(rel, cellf);
+			//const auto s = biome1_strength(rel, cellf);
 
-			//ENGINE_DEBUG_ASSERT(-1 <= r && r <= 1, "Unexpected basis value: ", r);
-			// TODO: only if s > 0
-			const auto v = simplex.scaled(pos * 0.04f);
 			return {
-				.strength = s,
-				.basis = v,
+				.strength = biome2_strength(rel, cellf),
+				.basis = biome2_basis(pos),
 				.block = BlockId::Debug + static_cast<BlockId>(biome.depth),
 			};
 		};
@@ -173,7 +168,11 @@ namespace Game {
 					}
 				}
 
-				const auto v = simplex.scaled(pos * 0.02f);
+				// TODO: we really want this to be a very large gradient so caves get larger with depth
+				constexpr float32 groundScale = 1.0f / 100.0f;
+				const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
+				const auto v = simplex.scaled(pos * 0.06f) + groundGrad;
+
 
 				// Add resources
 				if (const auto r = resource(pos)) {
@@ -192,7 +191,7 @@ namespace Game {
 			}
 		};
 
-		const auto a = biome1();
+		/*const auto a = biome1();
 		auto s = a;
 
 		if (biome.depth != -1) {
@@ -215,7 +214,52 @@ namespace Game {
 			return BlockId::Air;
 		}
 
-		return s.block;
+		return s.block;*/
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		const auto biome = biomeAt(pos);
+
+		auto biome1_heightOffset = [&]() -> float32 {
+			return 15 * simplex.scaled(pos.x * 0.05f, 0); // TODO: 1d simplex
+		};
+
+		auto biome2_heightOffset = [&]() -> float32 {
+			return 85 * simplex.scaled(pos.x * 0.01f, 0); // TODO: 1d simplex
+		};
+
+		auto biome2_heightStrength = [&]() -> float32 {
+			const auto s = biomeScales[biome.depth];
+			const auto center = (biome.cell.x + 0.5f) * s;
+			const auto off = 0.5f * s - std::abs(center - pos.x + biomeOffset.x);
+			constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
+			return std::min(1.0f, off * tDist);
+		};
+
+		// TODO: skew biome sampling by this value so we always have suface level centered on a biome.
+		// Underlying height variation in terrain
+		const auto b0h = 1000.0f * simplex.scaled(0.00005f * pos.x, 0); // TODO: 1d simplex
+
+		// Default biome
+		const auto b1h = biome1_heightOffset();
+		auto h = b1h;
+		auto b = BlockId::Dirt;
+
+		if (biome.depth >= 0) {
+			const auto b2h = biome2_heightOffset();
+			const auto b2s = biome2_heightStrength();
+			h = b1h + b2s * (b2h - b1h);
+			b = BlockId::Debug + (BlockId)biome.depth;
+		}
+
+		h += b0h;
+
+		if (h < pos.y) {
+			return BlockId::Air;
+		};
+
+		return b;
 	}
 
 	BlockId MapGenerator2::resource(const glm::vec2 pos) const noexcept {

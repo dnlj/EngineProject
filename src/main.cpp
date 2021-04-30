@@ -305,8 +305,10 @@ namespace {
 
 	void mapUI() {
 		if (ImGui::Begin("Map Test")) {
-			static glm::vec2 offset = {10500, 180};
-			static glm::vec2 zoom = {7, 7};
+			//static glm::vec2 offset = {10500, 180};
+			//static glm::vec2 zoom = {7, 7};
+			static glm::vec2 offset = {9010.0f, 5.0f};
+			static glm::vec2 zoom = {1.3f, 1.3f};
 			static float scroll = 0;
 			static Engine::Clock::TimePoint scrollCooldown = {};
 
