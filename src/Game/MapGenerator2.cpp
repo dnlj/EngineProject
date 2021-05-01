@@ -221,12 +221,12 @@ namespace Game {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-		auto biome1_heightOffset = [&]() -> float32 {
-			return 15 * simplex.scaled(pos.x * 0.05f, 0); // TODO: 1d simplex
+		auto biome1_heightOffset = [&](const float32 x) -> float32 {
+			return 15 * simplex.scaled(x * 0.05f, 0); // TODO: 1d simplex
 		};
 
-		auto biome2_heightOffset = [&]() -> float32 {
-			return 85 * simplex.scaled(pos.x * 0.01f, 0); // TODO: 1d simplex
+		auto biome2_heightOffset = [&](const float32 x) -> float32 {
+			return 85 * simplex.scaled(x * 0.01f, 0); // TODO: 1d simplex
 		};
 
 		
@@ -248,21 +248,21 @@ namespace Game {
 			return std::min(1.0f, off * tDist);
 		};
 
-		auto height = [&](const float32 x) -> float32{
-			const auto b1h = biome1_heightOffset();
+		auto height = [&](const float32 x) -> int32 {
+			const auto b1h = biome1_heightOffset(x);
 			auto h = b1h;
 
 			if (biome.depth >= 0) {
-				const auto b2h = biome2_heightOffset();
+				const auto b2h = biome2_heightOffset(x);
 				const auto b2s = biome2_heightStrength();
 				h = b1h + b2s * (b2h - b1h);
 			}
 
-			return h + height0(x);
+			return static_cast<int32>(h + height0(x));
 		};
 
 		/////////////////////////////////////////////////////////////////////////////
-		auto h = height(pos.x);
+		const auto h = height(pos.x);
 
 		auto biome1_basis = [&]() -> float32 {
 			if (pos.y > h) { return -1; }
@@ -290,11 +290,6 @@ namespace Game {
 			return glm::compMin(glm::min(off * tDist, 1.0f));
 		};
 
-		auto biome1_block = [&]{ return BlockId::Dirt; };
-		auto biome2_block = [&]{ return BlockId::Debug + (BlockId)biome.depth; };
-
-		auto block = biome.depth < 0 ? biome1_block() : biome2_block(); // TODO: select based on biome2_strength
-
 		auto basis = [&]{
 			if (biome.depth >= 0) {
 				const auto p = biome2_basisStrength();
@@ -311,8 +306,26 @@ namespace Game {
 		if (basis() <= 0) {
 			return BlockId::Air;
 		};
+		
+		auto biome1_block = [&]{
+			// Add grass to "top" layer
+			if (pos.y > -heightVar) {
+				if ((h == y) || (height(pos.x - 1) < y) || (height(pos.x + 1) < y)) {
+					return BlockId::Grass;
+				}
+			}
+			return BlockId::Dirt;
+		};
 
-		return block;
+		auto biome2_block = [&]{
+			return BlockId::Debug + (BlockId)biome.depth;
+		};
+
+		auto block = [&]{
+			return biome.depth < 0 ? biome1_block() : biome2_block();
+		}; // TODO: select based on biome2_strength
+
+		return block();
 	}
 
 	BlockId MapGenerator2::resource(const glm::vec2 pos) const noexcept {
