@@ -52,6 +52,7 @@ namespace Game {
 	BlockId MapGenerator2::value(const int32 x, const int32 y) const noexcept {
 		const glm::vec2 pos = {static_cast<float32>(x), static_cast<float32>(y)};
 
+		/*
 		struct BiomeSample {
 			float32 strength; // [0, 1]
 			float32 basis; // ~[-1, 1]
@@ -59,7 +60,7 @@ namespace Game {
 		};
 
 		// TODO: this is strength not basis
-		auto biome2_strength = [&](const glm::vec2 p0, const glm::vec2 shift) -> float32 {
+		/*auto biome2_strength = [&](const glm::vec2 p0, const glm::vec2 shift) -> float32 {
 			// Controls how warped the shape looks
 			const float32 ppv = 10.0f;
 			const float32 pps = 0.1f;
@@ -99,8 +100,8 @@ namespace Game {
 		auto biome2_basis = [&](glm::vec2 p0) -> float32 {
 			//return simplex.scaled(p0 * 0.04f);
 			return 1.0f;
-		};
-
+		};*/
+		/*
 		auto biome2 = [&]() -> BiomeSample {
 			const auto sz = biomeScalesInv[biome.depth];
 			const auto cellf = glm::vec2{biome.cell};
@@ -190,7 +191,7 @@ namespace Game {
 				};
 			}
 		};
-
+		*/
 		/*const auto a = biome1();
 		auto s = a;
 
@@ -219,8 +220,7 @@ namespace Game {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		const auto biome = biomeAt(pos);
-
+		
 		auto biome1_heightOffset = [&]() -> float32 {
 			return 15 * simplex.scaled(pos.x * 0.05f, 0); // TODO: 1d simplex
 		};
@@ -228,6 +228,17 @@ namespace Game {
 		auto biome2_heightOffset = [&]() -> float32 {
 			return 85 * simplex.scaled(pos.x * 0.01f, 0); // TODO: 1d simplex
 		};
+
+		
+		constexpr float32 heightVar = 5000.0f;
+		auto height0 = [&](const float32 x) -> float32 {
+			return heightVar * simplex.scaled(0.000005f * x, 0); // TODO: 1d simplex
+		};
+
+		// Underlying height variation in terrain
+		const auto b0h = height0(pos.x);
+		const auto posAdj = pos - glm::vec2{0, b0h};
+		const auto biome = biomeAt(posAdj);
 
 		auto biome2_heightStrength = [&]() -> float32 {
 			const auto s = biomeScales[biome.depth];
@@ -237,29 +248,66 @@ namespace Game {
 			return std::min(1.0f, off * tDist);
 		};
 
-		// TODO: skew biome sampling by this value so we always have suface level centered on a biome.
-		// Underlying height variation in terrain
-		const auto b0h = 1000.0f * simplex.scaled(0.00005f * pos.x, 0); // TODO: 1d simplex
+		auto height = [&](const float32 x) -> float32{
+			const auto b1h = biome1_heightOffset();
+			auto h = b1h;
 
-		// Default biome
-		const auto b1h = biome1_heightOffset();
-		auto h = b1h;
-		auto b = BlockId::Dirt;
+			if (biome.depth >= 0) {
+				const auto b2h = biome2_heightOffset();
+				const auto b2s = biome2_heightStrength();
+				h = b1h + b2s * (b2h - b1h);
+			}
+
+			return h + height0(x);
+		};
+
+		/////////////////////////////////////////////////////////////////////////////
+		auto h = height(pos.x);
+
+		auto biome1_basis = [&]() -> float32 {
+			if (pos.y > h) { return -1; }
+
+			// TODO: we really want this to be a very large gradient so caves get larger with depth
+			constexpr float32 groundScale = 1.0f / 100.0f;
+			const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
+			return simplex.scaled(pos * 0.06f) + groundGrad;
+		};
+
+		auto biome2_basis = [&]() -> float32 {
+			if (pos.y > h) { return -1; }
+
+			// TODO: we really want this to be a very large gradient so caves get larger with depth
+			constexpr float32 groundScale = 1.0f / 100.0f;
+			const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
+			return simplex.scaled(pos * 0.01f) + groundGrad;
+		};
+
+		auto biome2_basisStrength = [&]() -> float32 {
+			const auto s = biomeScales[biome.depth];
+			const auto center = (glm::vec2{biome.cell} + 0.5f) * s;
+			const auto off = 0.5f * s - glm::abs(center - posAdj + biomeOffset);
+			constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
+			return glm::compMin(glm::min(off * tDist, 1.0f));
+		};
+
+		auto biome1_block = [&]{ return BlockId::Dirt; };
+		auto biome2_block = [&]{ return BlockId::Debug + (BlockId)biome.depth; };
+
+		auto basis = biome1_basis(); // TODO: only call if biome2_basisStrength < 1;
+		auto block = biome.depth < 0 ? biome1_block() : biome2_block(); // TODO: select based on biome2_strength
 
 		if (biome.depth >= 0) {
-			const auto b2h = biome2_heightOffset();
-			const auto b2s = biome2_heightStrength();
-			h = b1h + b2s * (b2h - b1h);
-			b = BlockId::Debug + (BlockId)biome.depth;
+			// TODO: only if p < 1
+			const auto b2 = biome2_basis();
+			const auto p = biome2_basisStrength();
+			basis = basis + p * (b2 - basis);
 		}
 
-		h += b0h;
-
-		if (h < pos.y) {
+		if (basis <= 0) {
 			return BlockId::Air;
 		};
 
-		return b;
+		return block;
 	}
 
 	BlockId MapGenerator2::resource(const glm::vec2 pos) const noexcept {
@@ -289,6 +337,7 @@ namespace Game {
 		return BlockId::None;
 	}
 
+	/*
 	int32 MapGenerator2::height(const glm::vec2 pos) const noexcept {
 		auto octave = [&](const float32 xs, const float32 ys, const float32 off, const float32 one = 0.0f) ENGINE_INLINE {
 			// TODO: use 1d simplex when you get it workign correctly
@@ -303,7 +352,7 @@ namespace Game {
 		h += octave(0.05f, 5.0f, 3 * 999.0f);
 		h += octave(0.75f, 2.0f, 4 * 999.0f);
 		return static_cast<int32>(h);
-	}
+	}*/
 
 	auto MapGenerator2::biomeAt(const glm::vec2 pos) const noexcept -> BiomeBounds {
 		for (int l = 0; l < std::size(biomeScales); ++l) {

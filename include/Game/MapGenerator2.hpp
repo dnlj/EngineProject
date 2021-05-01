@@ -119,8 +119,8 @@ namespace Game {
 			[[nodiscard]]
 			BlockId resource(const glm::vec2 pos) const noexcept;
 
-			[[nodiscard]]
-			int32 height(const glm::vec2 pos) const noexcept;
+			//[[nodiscard]]
+			//int32 height(const glm::vec2 pos) const noexcept;
 			
 			[[nodiscard]]
 			BiomeBounds biomeAt(const glm::vec2 pos) const noexcept;
