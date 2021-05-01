@@ -293,17 +293,22 @@ namespace Game {
 		auto biome1_block = [&]{ return BlockId::Dirt; };
 		auto biome2_block = [&]{ return BlockId::Debug + (BlockId)biome.depth; };
 
-		auto basis = biome1_basis(); // TODO: only call if biome2_basisStrength < 1;
 		auto block = biome.depth < 0 ? biome1_block() : biome2_block(); // TODO: select based on biome2_strength
 
-		if (biome.depth >= 0) {
-			// TODO: only if p < 1
-			const auto b2 = biome2_basis();
-			const auto p = biome2_basisStrength();
-			basis = basis + p * (b2 - basis);
-		}
+		auto basis = [&]{
+			if (biome.depth >= 0) {
+				const auto p = biome2_basisStrength();
+				const auto b2 = biome2_basis();
+				if (p >= 1.0f) { return b2; }
 
-		if (basis <= 0) {
+				const auto b1 = biome1_basis();
+				return b1 + p * (b2 - b1);
+			}
+
+			return biome1_basis();
+		};
+
+		if (basis() <= 0) {
 			return BlockId::Air;
 		};
 
