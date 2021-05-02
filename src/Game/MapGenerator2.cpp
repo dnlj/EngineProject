@@ -41,12 +41,21 @@ namespace {
 	[[nodiscard]]\
 	ENGINE_INLINE float32 MapGenerator2::biomeHeightOffset<I>(const float32 x) const noexcept
 
+#define DEF_BIOME_HEIGHT_STRENGTH(I)\
+	template<>\
+	[[nodiscard]]\
+	ENGINE_INLINE float32 MapGenerator2::biomeHeightStrength<I>(const float32 x, const BiomeBounds bounds) const noexcept
+
 ////////////////////////////////////////////////////////////////////////////////
 // Biome 0
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_BIOME_HEIGHT_OFFSET(0) {
 		return 15 * simplex.scaled(x * 0.05f, 0); // TODO: 1d simplex
+	}
+
+	DEF_BIOME_HEIGHT_STRENGTH(0) {
+		return 1.0f;
 	}
 }
 
@@ -57,9 +66,19 @@ namespace Game {
 	DEF_BIOME_HEIGHT_OFFSET(1) {
 		return 85 * simplex.scaled(x * 0.01f, 0); // TODO: 1d simplex
 	}
+
+	DEF_BIOME_HEIGHT_STRENGTH(1) {
+		// TODO: we use this radius/offset type logic in a number of places. Probably extract and pass as args.
+		const auto s = biomeScales[bounds.depth];
+		const auto center = (bounds.cell.x + 0.5f) * s;
+		const auto off = 0.5f * s - std::abs(center - x + biomeOffset.x);
+		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
+		return std::min(1.0f, off * tDist);
+	}
 }
 
 #undef DEF_BIOME_HEIGHT_OFFSET
+#undef DEF_BIOME_HEIGHT_STRENGTH
 
 namespace Game {
 	void MapGenerator2::init(const glm::ivec2 pos, MapChunk& chunk) const noexcept {
@@ -247,22 +266,14 @@ namespace Game {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		constexpr float32 heightVar = 5000.0f;
-		auto height0 = [&](const float32 x) -> float32 {
+		auto height0 = [&](const float32 x) ENGINE_INLINE -> float32 {
 			return heightVar * simplex.scaled(0.000005f * x, 0); // TODO: 1d simplex
 		};
 
 		// Underlying height variation in terrain
 		const auto b0h = height0(pos.x);
 		const auto posAdj = pos - glm::vec2{0, b0h};
-		const auto biome = biomeAt(posAdj);
-
-		auto biome2_heightStrength = [&]() -> float32 {
-			const auto s = biomeScales[biome.depth];
-			const auto center = (biome.cell.x + 0.5f) * s;
-			const auto off = 0.5f * s - std::abs(center - pos.x + biomeOffset.x);
-			constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
-			return std::min(1.0f, off * tDist);
-		};
+		const auto biome = biomeAt(posAdj); // TODO: rn - bounds
 
 		auto height = [&](const float32 x) -> int32 {
 			const auto hOff1 = biomeHeightOffset<0>(x);
@@ -270,7 +281,7 @@ namespace Game {
 
 			if (biome.depth >= 0) {
 				const auto hOff2 = biomeHeightOffset<1>(x);
-				const auto b2s = biome2_heightStrength();
+				const auto b2s = biomeHeightStrength<1>(x, biome);
 				h = hOff1 + b2s * (hOff2 - hOff1);
 			}
 
