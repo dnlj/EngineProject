@@ -51,6 +51,11 @@ namespace {
 	[[nodiscard]]\
 	ENGINE_INLINE float32 MapGenerator2::biomeBasis<I>(const glm::vec2 pos, const int32 height) const noexcept
 
+#define DEF_BIOME_BASIS_STRENGTH(I)\
+	template<>\
+	[[nodiscard]]\
+	ENGINE_INLINE float32 MapGenerator2::biomeBasisStrength<I>(const glm::vec2 posAdj, const BiomeBounds bounds) const noexcept
+
 ////////////////////////////////////////////////////////////////////////////////
 // Biome 0
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,6 +75,10 @@ namespace Game {
 		constexpr float32 groundScale = 1.0f / 100.0f;
 		const float32 groundGrad = std::max(0.0f, 1.0f - (height - pos.y) * groundScale);
 		return simplex.scaled(pos * 0.06f) + groundGrad;
+	}
+
+	DEF_BIOME_BASIS_STRENGTH(0) {
+		return 1;
 	}
 }
 
@@ -98,11 +107,20 @@ namespace Game {
 		const float32 groundGrad = std::max(0.0f, 1.0f - (height - pos.y) * groundScale);
 		return simplex.scaled(pos * 0.01f) + groundGrad;
 	}
+
+	DEF_BIOME_BASIS_STRENGTH(1) {
+		const auto s = biomeScales[bounds.depth];
+		const auto center = (glm::vec2{bounds.cell} + 0.5f) * s;
+		const auto off = 0.5f * s - glm::abs(center - posAdj + biomeOffset);
+		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
+		return glm::compMin(glm::min(off * tDist, 1.0f));
+	}
 }
 
 #undef DEF_BIOME_HEIGHT_OFFSET
 #undef DEF_BIOME_HEIGHT_STRENGTH
 #undef DEF_BIOME_BASIS
+#undef DEF_BIOME_BASIS_STRENGTH
 
 namespace Game {
 	void MapGenerator2::init(const glm::ivec2 pos, MapChunk& chunk) const noexcept {
@@ -315,18 +333,10 @@ namespace Game {
 		/////////////////////////////////////////////////////////////////////////////
 		const auto h = height(pos.x);
 
-		auto biome2_basisStrength = [&]() -> float32 {
-			const auto s = biomeScales[biome.depth];
-			const auto center = (glm::vec2{biome.cell} + 0.5f) * s;
-			const auto off = 0.5f * s - glm::abs(center - posAdj + biomeOffset);
-			constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
-			return glm::compMin(glm::min(off * tDist, 1.0f));
-		};
-
 		float32 b2bs = 0.0f;
 		auto basis = [&]{
 			if (biome.depth >= 0) {
-				b2bs = biome2_basisStrength();
+				b2bs = biomeBasisStrength<1>(posAdj, biome);
 				const auto b2 = biomeBasis<1>(pos, h);
 				if (b2bs >= 1.0f) { return b2; }
 
