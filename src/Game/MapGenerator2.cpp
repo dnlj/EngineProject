@@ -36,6 +36,31 @@ namespace {
 	}
 }
 
+#define DEF_BIOME_HEIGHT_OFFSET(I)\
+	template<>\
+	[[nodiscard]]\
+	ENGINE_INLINE float32 MapGenerator2::biomeHeightOffset<I>(const float32 x) const noexcept
+
+////////////////////////////////////////////////////////////////////////////////
+// Biome 0
+////////////////////////////////////////////////////////////////////////////////
+namespace Game {
+	DEF_BIOME_HEIGHT_OFFSET(0) {
+		return 15 * simplex.scaled(x * 0.05f, 0); // TODO: 1d simplex
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Biome 1
+////////////////////////////////////////////////////////////////////////////////
+namespace Game {
+	DEF_BIOME_HEIGHT_OFFSET(1) {
+		return 85 * simplex.scaled(x * 0.01f, 0); // TODO: 1d simplex
+	}
+}
+
+#undef DEF_BIOME_HEIGHT_OFFSET
+
 namespace Game {
 	void MapGenerator2::init(const glm::ivec2 pos, MapChunk& chunk) const noexcept {
 		for (int x = 0; x < MapChunk::size.x; ++x) {
@@ -221,15 +246,6 @@ namespace Game {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-		auto biome1_heightOffset = [&](const float32 x) -> float32 {
-			return 15 * simplex.scaled(x * 0.05f, 0); // TODO: 1d simplex
-		};
-
-		auto biome2_heightOffset = [&](const float32 x) -> float32 {
-			return 85 * simplex.scaled(x * 0.01f, 0); // TODO: 1d simplex
-		};
-
-		
 		constexpr float32 heightVar = 5000.0f;
 		auto height0 = [&](const float32 x) -> float32 {
 			return heightVar * simplex.scaled(0.000005f * x, 0); // TODO: 1d simplex
@@ -249,13 +265,13 @@ namespace Game {
 		};
 
 		auto height = [&](const float32 x) -> int32 {
-			const auto b1h = biome1_heightOffset(x);
-			auto h = b1h;
+			const auto hOff1 = biomeHeightOffset<0>(x);
+			auto h = hOff1;
 
 			if (biome.depth >= 0) {
-				const auto b2h = biome2_heightOffset(x);
+				const auto hOff2 = biomeHeightOffset<1>(x);
 				const auto b2s = biome2_heightStrength();
-				h = b1h + b2s * (b2h - b1h);
+				h = hOff1 + b2s * (hOff2 - hOff1);
 			}
 
 			return static_cast<int32>(h + height0(x));
@@ -290,14 +306,15 @@ namespace Game {
 			return glm::compMin(glm::min(off * tDist, 1.0f));
 		};
 
+		float32 b2bs = 0.0f;
 		auto basis = [&]{
 			if (biome.depth >= 0) {
-				const auto p = biome2_basisStrength();
+				b2bs = biome2_basisStrength();
 				const auto b2 = biome2_basis();
-				if (p >= 1.0f) { return b2; }
+				if (b2bs >= 1.0f) { return b2; }
 
 				const auto b1 = biome1_basis();
-				return b1 + p * (b2 - b1);
+				return b1 + b2bs * (b2 - b1);
 			}
 
 			return biome1_basis();
@@ -314,16 +331,30 @@ namespace Game {
 					return BlockId::Grass;
 				}
 			}
+
+			if (const auto r = resource(pos)) {
+				return r;
+			}
+
 			return BlockId::Dirt;
 		};
+
 
 		auto biome2_block = [&]{
 			return BlockId::Debug + (BlockId)biome.depth;
 		};
 
+		auto biome2_blockStrength = [&]() -> bool {
+			return 0.5f < b2bs;
+		};
+
 		auto block = [&]{
-			return biome.depth < 0 ? biome1_block() : biome2_block();
-		}; // TODO: select based on biome2_strength
+			if (biome.depth >= 0 && biome2_blockStrength()) {
+				return biome2_block();
+			} else {
+				return biome1_block();
+			}
+		};
 
 		return block();
 	}

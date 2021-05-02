@@ -127,5 +127,11 @@ namespace Game {
 
 			[[nodiscard]]
 			int32 biome(const glm::vec2 pos) const noexcept;
+
+			template<int I>
+			[[nodiscard]]
+			ENGINE_INLINE float32 biomeHeightOffset(const float32 x) const noexcept {
+				static_assert(I == I, "No specialization given for this type.");
+			}
 	};
 }
