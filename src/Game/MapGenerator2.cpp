@@ -46,6 +46,11 @@ namespace {
 	[[nodiscard]]\
 	ENGINE_INLINE float32 MapGenerator2::biomeHeightStrength<I>(const float32 x, const BiomeBounds bounds) const noexcept
 
+#define DEF_BIOME_BASIS(I)\
+	template<>\
+	[[nodiscard]]\
+	ENGINE_INLINE float32 MapGenerator2::biomeBasis<I>(const glm::vec2 pos, const int32 height) const noexcept
+
 ////////////////////////////////////////////////////////////////////////////////
 // Biome 0
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,6 +61,15 @@ namespace Game {
 
 	DEF_BIOME_HEIGHT_STRENGTH(0) {
 		return 1.0f;
+	}
+
+	DEF_BIOME_BASIS(0) {
+		if (pos.y > height) { return -1; }
+
+		// TODO: we really want this to be a very large gradient so caves get larger with depth
+		constexpr float32 groundScale = 1.0f / 100.0f;
+		const float32 groundGrad = std::max(0.0f, 1.0f - (height - pos.y) * groundScale);
+		return simplex.scaled(pos * 0.06f) + groundGrad;
 	}
 }
 
@@ -75,10 +89,20 @@ namespace Game {
 		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
 		return std::min(1.0f, off * tDist);
 	}
+
+	DEF_BIOME_BASIS(1) {
+		if (pos.y > height) { return -1; }
+
+		// TODO: we really want this to be a very large gradient so caves get larger with depth
+		constexpr float32 groundScale = 1.0f / 100.0f;
+		const float32 groundGrad = std::max(0.0f, 1.0f - (height - pos.y) * groundScale);
+		return simplex.scaled(pos * 0.01f) + groundGrad;
+	}
 }
 
 #undef DEF_BIOME_HEIGHT_OFFSET
 #undef DEF_BIOME_HEIGHT_STRENGTH
+#undef DEF_BIOME_BASIS
 
 namespace Game {
 	void MapGenerator2::init(const glm::ivec2 pos, MapChunk& chunk) const noexcept {
@@ -291,24 +315,6 @@ namespace Game {
 		/////////////////////////////////////////////////////////////////////////////
 		const auto h = height(pos.x);
 
-		auto biome1_basis = [&]() -> float32 {
-			if (pos.y > h) { return -1; }
-
-			// TODO: we really want this to be a very large gradient so caves get larger with depth
-			constexpr float32 groundScale = 1.0f / 100.0f;
-			const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-			return simplex.scaled(pos * 0.06f) + groundGrad;
-		};
-
-		auto biome2_basis = [&]() -> float32 {
-			if (pos.y > h) { return -1; }
-
-			// TODO: we really want this to be a very large gradient so caves get larger with depth
-			constexpr float32 groundScale = 1.0f / 100.0f;
-			const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-			return simplex.scaled(pos * 0.01f) + groundGrad;
-		};
-
 		auto biome2_basisStrength = [&]() -> float32 {
 			const auto s = biomeScales[biome.depth];
 			const auto center = (glm::vec2{biome.cell} + 0.5f) * s;
@@ -321,14 +327,14 @@ namespace Game {
 		auto basis = [&]{
 			if (biome.depth >= 0) {
 				b2bs = biome2_basisStrength();
-				const auto b2 = biome2_basis();
+				const auto b2 = biomeBasis<1>(pos, h);
 				if (b2bs >= 1.0f) { return b2; }
 
-				const auto b1 = biome1_basis();
+				const auto b1 = biomeBasis<0>(pos, h);
 				return b1 + b2bs * (b2 - b1);
 			}
 
-			return biome1_basis();
+			return biomeBasis<0>(pos, h);
 		};
 
 		if (basis() <= 0) {
