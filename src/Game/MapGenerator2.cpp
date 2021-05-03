@@ -49,12 +49,12 @@ namespace {
 #define DEF_BIOME_BASIS(I)\
 	template<>\
 	[[nodiscard]]\
-	ENGINE_INLINE float32 MapGenerator2::biomeBasis<I>(const glm::vec2 pos, const int32 h) const noexcept
+	ENGINE_INLINE float32 MapGenerator2::biomeBasis<I>(const BiomeParams_Basis& params) const noexcept
 
 #define DEF_BIOME_BASIS_STRENGTH(I)\
 	template<>\
 	[[nodiscard]]\
-	ENGINE_INLINE float32 MapGenerator2::biomeBasisStrength<I>(const glm::vec2 posAdj, const BiomeBounds bounds) const noexcept
+	ENGINE_INLINE float32 MapGenerator2::biomeBasisStrength<I>(const BiomeParams_BasisStrength& params) const noexcept
 
 #define DEF_BIOME_BLOCK(I)\
 	template<>\
@@ -79,12 +79,12 @@ namespace Game {
 	}
 
 	DEF_BIOME_BASIS(0) {
-		if (pos.y > h) { return -1; }
+		if (params.pos.y > params.h) { return -1; }
 
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
 		constexpr float32 groundScale = 1.0f / 100.0f;
-		const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-		return simplex.scaled(pos * 0.06f) + groundGrad;
+		const float32 groundGrad = std::max(0.0f, 1.0f - (params.h - params.pos.y) * groundScale);
+		return simplex.scaled(params.pos * 0.06f) + groundGrad;
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(0) {
@@ -131,18 +131,18 @@ namespace Game {
 	}
 
 	DEF_BIOME_BASIS(1) {
-		if (pos.y > h) { return -1; }
+		if (params.pos.y > params.h) { return -1; }
 
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
 		constexpr float32 groundScale = 1.0f / 100.0f;
-		const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-		return simplex.scaled(pos * 0.01f) + groundGrad;
+		const float32 groundGrad = std::max(0.0f, 1.0f - (params.h - params.pos.y) * groundScale);
+		return simplex.scaled(params.pos * 0.01f) + groundGrad;
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(1) {
-		const auto s = biomeScales[bounds.depth];
-		const auto center = (glm::vec2{bounds.cell} + 0.5f) * s;
-		const auto off = 0.5f * s - glm::abs(center - posAdj + biomeOffset);
+		const auto s = biomeScales[params.bounds.depth];
+		const auto center = (glm::vec2{params.bounds.cell} + 0.5f) * s;
+		const auto off = 0.5f * s - glm::abs(center - params.posBiome + biomeOffset);
 		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
 		return glm::compMin(glm::min(off * tDist, 1.0f));
 	}
@@ -359,19 +359,19 @@ namespace Game {
 		params.bounds = biomeAt(params.posBiome); // TODO: rn - bounds
 
 		/////////////////////////////////////////////////////////////////////////////
-		const auto h = height(params);
+		params.h = height(params);
 
 		auto basis = [&]{
 			if (params.bounds.depth >= 0) {
-				params.basisStrength = biomeBasisStrength<1>(params.posBiome, params.bounds);
-				const auto b2 = biomeBasis<1>(pos, h);
+				params.basisStrength = biomeBasisStrength<1>(params);
+				const auto b2 = biomeBasis<1>(params);
 				if (params.basisStrength >= 1.0f) { return b2; }
 
-				const auto b1 = biomeBasis<0>(pos, h);
+				const auto b1 = biomeBasis<0>(params);
 				return b1 + params.basisStrength * (b2 - b1);
 			}
 
-			return biomeBasis<0>(pos, h);
+			return biomeBasis<0>(params);
 		};
 
 		if (basis() <= 0) {

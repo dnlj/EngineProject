@@ -135,12 +135,13 @@ namespace Game {
 			};
 
 			struct BiomeParams_Basis : BiomeParams_Height {
+				int32 h; // The surface level of terrain
 			};
 
 			struct BiomeParams_BasisStrength : BiomeParams_Basis {
 			};
 
-			struct BiomeParams_Block : BiomeParams_Height {
+			struct BiomeParams_Block : BiomeParams_BasisStrength {
 				float32 basisStrength;
 			};
 
@@ -186,14 +187,14 @@ namespace Game {
 			// TODO: Doc - range ~[-1, 1]
 			template<int I>
 			[[nodiscard]]
-			ENGINE_INLINE float32 biomeBasis(const glm::vec2 pos, const int32 h) const noexcept {
+			ENGINE_INLINE float32 biomeBasis(const BiomeParams_Basis& params) const noexcept {
 				static_assert(I != I, "Missing specialization for biome.");
 			}
 
 			// TODO: Doc - range ~[0, 1]
 			template<int I>
 			[[nodiscard]]
-			ENGINE_INLINE float32 biomeBasisStrength(const glm::vec2 posAdj, const BiomeBounds bounds) const noexcept {
+			ENGINE_INLINE float32 biomeBasisStrength(const BiomeParams_BasisStrength& params) const noexcept {
 				static_assert(I != I, "Missing specialization for biome.");
 			}
 
