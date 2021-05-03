@@ -128,7 +128,7 @@ namespace Game {
 			ENGINE_INLINE float32 height0(const float32 x) const noexcept;
 
 			[[nodiscard]]
-			int32 height(const float32 x, const BiomeBounds& bounds) const noexcept;
+			int32 height(const float32 x, const BiomeBounds bounds) const noexcept;
 
 			[[nodiscard]]
 			BiomeBounds biomeAt(const glm::vec2 pos) const noexcept;
@@ -153,7 +153,7 @@ namespace Game {
 			// TODO: Doc - range ~[-1, 1]
 			template<int I>
 			[[nodiscard]]
-			ENGINE_INLINE float32 biomeBasis(const glm::vec2 pos, const int32 height) const noexcept {
+			ENGINE_INLINE float32 biomeBasis(const glm::vec2 pos, const int32 h) const noexcept {
 				static_assert(I != I, "Missing specialization for biome.");
 			}
 
@@ -167,7 +167,14 @@ namespace Game {
 			// TODO: Doc - range ~[0, 1]
 			template<int I>
 			[[nodiscard]]
-			ENGINE_INLINE float32 biomeBlock(const glm::vec2 pos, const int32 height) const noexcept {
+			ENGINE_INLINE BlockId biomeBlock(const glm::vec2 pos, const int32 h, const BiomeBounds bounds) const noexcept {
+				static_assert(I != I, "Missing specialization for biome.");
+			}
+
+			// TODO: Doc - range ~[0, 1]
+			template<int I>
+			[[nodiscard]]
+			ENGINE_INLINE float32 biomeBlockStrength(const float32 str) const noexcept {
 				static_assert(I != I, "Missing specialization for biome.");
 			}
 	};

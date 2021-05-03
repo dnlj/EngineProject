@@ -49,7 +49,7 @@ namespace {
 #define DEF_BIOME_BASIS(I)\
 	template<>\
 	[[nodiscard]]\
-	ENGINE_INLINE float32 MapGenerator2::biomeBasis<I>(const glm::vec2 pos, const int32 height) const noexcept
+	ENGINE_INLINE float32 MapGenerator2::biomeBasis<I>(const glm::vec2 pos, const int32 h) const noexcept
 
 #define DEF_BIOME_BASIS_STRENGTH(I)\
 	template<>\
@@ -59,7 +59,12 @@ namespace {
 #define DEF_BIOME_BLOCK(I)\
 	template<>\
 	[[nodiscard]]\
-	ENGINE_INLINE float32 MapGenerator2::biomeBlock<I>(const glm::vec2 pos, const int32 height) const noexcept
+	ENGINE_INLINE BlockId MapGenerator2::biomeBlock<I>(const glm::vec2 pos, const int32 h, const BiomeBounds bounds) const noexcept
+
+#define DEF_BIOME_BLOCK_STRENGTH(I)\
+	template<>\
+	[[nodiscard]]\
+	ENGINE_INLINE float32 MapGenerator2::biomeBlockStrength<I>(const float32 str) const noexcept
 
 ////////////////////////////////////////////////////////////////////////////////
 // Biome 0
@@ -74,11 +79,11 @@ namespace Game {
 	}
 
 	DEF_BIOME_BASIS(0) {
-		if (pos.y > height) { return -1; }
+		if (pos.y > h) { return -1; }
 
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
 		constexpr float32 groundScale = 1.0f / 100.0f;
-		const float32 groundGrad = std::max(0.0f, 1.0f - (height - pos.y) * groundScale);
+		const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
 		return simplex.scaled(pos * 0.06f) + groundGrad;
 	}
 
@@ -87,7 +92,24 @@ namespace Game {
 	}
 
 	DEF_BIOME_BLOCK(0) {
-		return 0;
+		// Add grass to "top" layer
+		if (pos.y > -heightVar) {
+			// TODO: integer pos should be passed when we get stage data working
+			const int y = (int)pos.y;
+			if ((h == y) || (height(pos.x - 1, bounds) < y) || (height(pos.x + 1, bounds) < y)) {
+				return BlockId::Grass;
+			}
+		}
+
+		if (const auto r = resource(pos)) {
+			return r;
+		}
+
+		return BlockId::Dirt;
+	}
+
+	DEF_BIOME_BLOCK_STRENGTH(0) {
+		return 1.0f;
 	}
 }
 
@@ -109,11 +131,11 @@ namespace Game {
 	}
 
 	DEF_BIOME_BASIS(1) {
-		if (pos.y > height) { return -1; }
+		if (pos.y > h) { return -1; }
 
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
 		constexpr float32 groundScale = 1.0f / 100.0f;
-		const float32 groundGrad = std::max(0.0f, 1.0f - (height - pos.y) * groundScale);
+		const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
 		return simplex.scaled(pos * 0.01f) + groundGrad;
 	}
 
@@ -126,7 +148,11 @@ namespace Game {
 	}
 
 	DEF_BIOME_BLOCK(1) {
-		return 0;
+		return BlockId::Debug + (BlockId)bounds.depth;
+	}
+
+	DEF_BIOME_BLOCK_STRENGTH(1) {
+		return 0.5f < str;
 	}
 }
 
@@ -135,6 +161,7 @@ namespace Game {
 #undef DEF_BIOME_BASIS
 #undef DEF_BIOME_BASIS_STRENGTH
 #undef DEF_BIOME_BLOCK
+#undef DEF_BIOME_BLOCK_STRENGTH
 
 namespace Game {
 	void MapGenerator2::init(const glm::ivec2 pos, MapChunk& chunk) const noexcept {
@@ -347,35 +374,15 @@ namespace Game {
 			return BlockId::Air;
 		};
 
-		auto biome1_block = [&]{
-			// Add grass to "top" layer
-			if (pos.y > -heightVar) {
-				if ((h == y) || (height(pos.x - 1, biome) < y) || (height(pos.x + 1, biome) < y)) {
-					return BlockId::Grass;
-				}
-			}
-
-			if (const auto r = resource(pos)) {
-				return r;
-			}
-
-			return BlockId::Dirt;
-		};
-
-		auto biome2_block = [&]{
-			return BlockId::Debug + (BlockId)biome.depth;
-		};
-
 		auto biome2_blockStrength = [&]() -> bool {
 			return 0.5f < b2bs;
 		};
 
 		auto block = [&]{
-			if (biome.depth >= 0 && biome2_blockStrength()) {
-				return biome2_block();
+			if (biome.depth >= 0 && biomeBlockStrength<1>(b2bs)) {
+				return biomeBlock<1>(pos, h, biome);
 			} else {
-				return biome1_block();
-				//return biomeBlock<0>(pos, h);
+				return biomeBlock<0>(pos, h, biome);
 			}
 		};
 
