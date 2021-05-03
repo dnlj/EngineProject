@@ -96,9 +96,10 @@ namespace Game {
 		if (pos.y > -heightVar) {
 			// TODO: integer pos should be passed when we get stage data working
 			const int y = (int)pos.y;
-			if ((h == y) || (height(pos.x - 1, bounds) < y) || (height(pos.x + 1, bounds) < y)) {
-				return BlockId::Grass;
-			}
+			// TODO: enable
+			//if ((h == y) || (height(pos.x - 1, bounds) < y) || (height(pos.x + 1, bounds) < y)) {
+			//	return BlockId::Grass;
+			//}
 		}
 
 		if (const auto r = resource(pos)) {
@@ -347,19 +348,24 @@ namespace Game {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
+
+		BiomeParams params;
+		params.ipos = {x, y};
+		params.pos = {static_cast<float32>(x), static_cast<float32>(y)};
+
 		// Underlying height variation in terrain
-		const auto b0h = height0(pos.x);
-		const auto posAdj = pos - glm::vec2{0, b0h};
-		const auto biome = biomeAt(posAdj); // TODO: rn - bounds
+		//params.h0 = height0(static_cast<BiomeParams_Height0&>(params));
+		params.h0 = height0(params);
+		params.posBiome = pos - glm::vec2{0, params.h0};
+		params.bounds = biomeAt(params.posBiome); // TODO: rn - bounds
 
 		/////////////////////////////////////////////////////////////////////////////
-		const auto h = height(pos.x, biome);
+		const auto h = height(params);
 
 		float32 b2bs = 0.0f;
 		auto basis = [&]{
-			if (biome.depth >= 0) {
-				b2bs = biomeBasisStrength<1>(posAdj, biome);
+			if (params.bounds.depth >= 0) {
+				b2bs = biomeBasisStrength<1>(params.posBiome, params.bounds);
 				const auto b2 = biomeBasis<1>(pos, h);
 				if (b2bs >= 1.0f) { return b2; }
 
@@ -379,10 +385,10 @@ namespace Game {
 		};
 
 		auto block = [&]{
-			if (biome.depth >= 0 && biomeBlockStrength<1>(b2bs)) {
-				return biomeBlock<1>(pos, h, biome);
+			if (params.bounds.depth >= 0 && biomeBlockStrength<1>(b2bs)) {
+				return biomeBlock<1>(params.pos, h, params.bounds);
 			} else {
-				return biomeBlock<0>(pos, h, biome);
+				return biomeBlock<0>(params.pos, h, params.bounds);
 			}
 		};
 
@@ -433,21 +439,21 @@ namespace Game {
 		return static_cast<int32>(h);
 	}*/
 
-	float32 MapGenerator2::height0(const float32 x) const noexcept {
-		return heightVar * simplex.scaled(0.000005f * x, 0); // TODO: 1d simplex
+	float32 MapGenerator2::height0(const BiomeParams_Height0& params) const noexcept {
+		return heightVar * simplex.scaled(0.000005f * params.pos.x, 0); // TODO: 1d simplex
 	}
 
-	int32 MapGenerator2::height(const float32 x, const BiomeBounds bounds) const noexcept {
-		const auto hOff1 = biomeHeightOffset<0>(x);
+	int32 MapGenerator2::height(const BiomeParams_Height& params) const noexcept {
+		const auto hOff1 = biomeHeightOffset<0>(params.pos.x);
 		auto h = hOff1;
 
-		if (bounds.depth >= 0) {
-			const auto hOff2 = biomeHeightOffset<1>(x);
-			const auto b2s = biomeHeightStrength<1>(x, bounds);
+		if (params.bounds.depth >= 0) {
+			const auto hOff2 = biomeHeightOffset<1>(params.pos.x);
+			const auto b2s = biomeHeightStrength<1>(params.pos.x, params.bounds);
 			h = hOff1 + b2s * (hOff2 - hOff1);
 		}
 
-		return static_cast<int32>(h + height0(x));
+		return static_cast<int32>(h + height0(params));
 	}
 
 	auto MapGenerator2::biomeAt(const glm::vec2 pos) const noexcept -> BiomeBounds {

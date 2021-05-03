@@ -118,6 +118,20 @@ namespace Game {
 			void advance(const glm::ivec2 pos, MapChunk& chunk, const MapChunk& top, const MapChunk& right, const MapChunk& bottom, const MapChunk& left);
 
 		private:
+			struct BiomeParams_Height0 {
+				glm::ivec2 ipos; // Block position as int
+				glm::vec2 pos; // Block position as float
+			};
+
+			struct BiomeParams_Height : BiomeParams_Height0 {
+				float32 h0; // The underlying height variation of terrain
+				glm::vec2 posBiome; // Block position adjusted for biome sampling
+				BiomeBounds bounds; // The bounds of the current biome
+			};
+
+			struct BiomeParams : BiomeParams_Height {
+			};
+
 			[[nodiscard]]
 			BlockId resource(const glm::vec2 pos) const noexcept;
 
@@ -125,11 +139,11 @@ namespace Game {
 			//int32 height(const glm::vec2 pos) const noexcept;
 			
 			[[nodiscard]]
-			ENGINE_INLINE float32 height0(const float32 x) const noexcept;
+			ENGINE_INLINE float32 height0(const BiomeParams_Height0& params) const noexcept;
 
 			[[nodiscard]]
-			int32 height(const float32 x, const BiomeBounds bounds) const noexcept;
-
+			int32 height(const BiomeParams_Height& params) const noexcept;
+			
 			[[nodiscard]]
 			BiomeBounds biomeAt(const glm::vec2 pos) const noexcept;
 
