@@ -59,12 +59,12 @@ namespace {
 #define DEF_BIOME_BLOCK(I)\
 	template<>\
 	[[nodiscard]]\
-	ENGINE_INLINE BlockId MapGenerator2::biomeBlock<I>(const glm::vec2 pos, const int32 h, const BiomeBounds bounds) const noexcept
+	ENGINE_INLINE BlockId MapGenerator2::biomeBlock<I>(const BiomeParams_Block& params) const noexcept
 
 #define DEF_BIOME_BLOCK_STRENGTH(I)\
 	template<>\
 	[[nodiscard]]\
-	ENGINE_INLINE float32 MapGenerator2::biomeBlockStrength<I>(const float32 str) const noexcept
+	ENGINE_INLINE float32 MapGenerator2::biomeBlockStrength<I>(const BiomeParams_BlockStrength& params) const noexcept
 
 ////////////////////////////////////////////////////////////////////////////////
 // Biome 0
@@ -93,16 +93,15 @@ namespace Game {
 
 	DEF_BIOME_BLOCK(0) {
 		// Add grass to "top" layer
-		if (pos.y > -heightVar) {
+		if (params.pos.y > -heightVar) {
 			// TODO: integer pos should be passed when we get stage data working
-			const int y = (int)pos.y;
 			// TODO: enable
-			//if ((h == y) || (height(pos.x - 1, bounds) < y) || (height(pos.x + 1, bounds) < y)) {
+			//if ((h == params.ipos.y) || (height(pos.x - 1, bounds) < params.ipos.y) || (height(pos.x + 1, bounds) < params.ipos.y)) {
 			//	return BlockId::Grass;
 			//}
 		}
 
-		if (const auto r = resource(pos)) {
+		if (const auto r = resource(params.pos)) {
 			return r;
 		}
 
@@ -149,11 +148,11 @@ namespace Game {
 	}
 
 	DEF_BIOME_BLOCK(1) {
-		return BlockId::Debug + (BlockId)bounds.depth;
+		return BlockId::Debug + (BlockId)params.bounds.depth;
 	}
 
 	DEF_BIOME_BLOCK_STRENGTH(1) {
-		return 0.5f < str;
+		return 0.5f < params.basisStrength;
 	}
 }
 
@@ -362,15 +361,14 @@ namespace Game {
 		/////////////////////////////////////////////////////////////////////////////
 		const auto h = height(params);
 
-		float32 b2bs = 0.0f;
 		auto basis = [&]{
 			if (params.bounds.depth >= 0) {
-				b2bs = biomeBasisStrength<1>(params.posBiome, params.bounds);
+				params.basisStrength = biomeBasisStrength<1>(params.posBiome, params.bounds);
 				const auto b2 = biomeBasis<1>(pos, h);
-				if (b2bs >= 1.0f) { return b2; }
+				if (params.basisStrength >= 1.0f) { return b2; }
 
 				const auto b1 = biomeBasis<0>(pos, h);
-				return b1 + b2bs * (b2 - b1);
+				return b1 + params.basisStrength * (b2 - b1);
 			}
 
 			return biomeBasis<0>(pos, h);
@@ -381,14 +379,14 @@ namespace Game {
 		};
 
 		auto biome2_blockStrength = [&]() -> bool {
-			return 0.5f < b2bs;
+			return 0.5f < params.basisStrength;
 		};
 
 		auto block = [&]{
-			if (params.bounds.depth >= 0 && biomeBlockStrength<1>(b2bs)) {
-				return biomeBlock<1>(params.pos, h, params.bounds);
+			if (params.bounds.depth >= 0 && biomeBlockStrength<1>(params)) {
+				return biomeBlock<1>(params);
 			} else {
-				return biomeBlock<0>(params.pos, h, params.bounds);
+				return biomeBlock<0>(params);
 			}
 		};
 

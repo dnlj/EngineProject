@@ -118,7 +118,12 @@ namespace Game {
 			void advance(const glm::ivec2 pos, MapChunk& chunk, const MapChunk& top, const MapChunk& right, const MapChunk& bottom, const MapChunk& left);
 
 		private:
-			struct BiomeParams_Height0 {
+			struct BiomeParams_ {
+				BiomeParams_() {};
+				BiomeParams_(const BiomeParams_&) = delete;
+			};
+
+			struct BiomeParams_Height0 : BiomeParams_ {
 				glm::ivec2 ipos; // Block position as int
 				glm::vec2 pos; // Block position as float
 			};
@@ -129,7 +134,21 @@ namespace Game {
 				BiomeBounds bounds; // The bounds of the current biome
 			};
 
-			struct BiomeParams : BiomeParams_Height {
+			struct BiomeParams_Basis : BiomeParams_Height {
+			};
+
+			struct BiomeParams_BasisStrength : BiomeParams_Basis {
+			};
+
+			struct BiomeParams_Block : BiomeParams_Height {
+				float32 basisStrength;
+			};
+
+			struct BiomeParams_BlockStrength : BiomeParams_Block {
+			};
+
+			struct BiomeParams : BiomeParams_BlockStrength {
+				BiomeParams() {}
 			};
 
 			[[nodiscard]]
@@ -181,14 +200,14 @@ namespace Game {
 			// TODO: Doc - range ~[0, 1]
 			template<int I>
 			[[nodiscard]]
-			ENGINE_INLINE BlockId biomeBlock(const glm::vec2 pos, const int32 h, const BiomeBounds bounds) const noexcept {
+			ENGINE_INLINE BlockId biomeBlock(const BiomeParams_Block& params) const noexcept {
 				static_assert(I != I, "Missing specialization for biome.");
 			}
 
 			// TODO: Doc - range ~[0, 1]
 			template<int I>
 			[[nodiscard]]
-			ENGINE_INLINE float32 biomeBlockStrength(const float32 str) const noexcept {
+			ENGINE_INLINE float32 biomeBlockStrength(const BiomeParams_BlockStrength& params) const noexcept {
 				static_assert(I != I, "Missing specialization for biome.");
 			}
 	};
