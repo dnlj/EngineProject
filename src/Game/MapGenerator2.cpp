@@ -56,6 +56,11 @@ namespace {
 	[[nodiscard]]\
 	ENGINE_INLINE float32 MapGenerator2::biomeBasisStrength<I>(const glm::vec2 posAdj, const BiomeBounds bounds) const noexcept
 
+#define DEF_BIOME_BLOCK(I)\
+	template<>\
+	[[nodiscard]]\
+	ENGINE_INLINE float32 MapGenerator2::biomeBlock<I>(const glm::vec2 pos, const int32 height) const noexcept
+
 ////////////////////////////////////////////////////////////////////////////////
 // Biome 0
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,6 +84,10 @@ namespace Game {
 
 	DEF_BIOME_BASIS_STRENGTH(0) {
 		return 1;
+	}
+
+	DEF_BIOME_BLOCK(0) {
+		return 0;
 	}
 }
 
@@ -115,12 +124,17 @@ namespace Game {
 		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
 		return glm::compMin(glm::min(off * tDist, 1.0f));
 	}
+
+	DEF_BIOME_BLOCK(1) {
+		return 0;
+	}
 }
 
 #undef DEF_BIOME_HEIGHT_OFFSET
 #undef DEF_BIOME_HEIGHT_STRENGTH
 #undef DEF_BIOME_BASIS
 #undef DEF_BIOME_BASIS_STRENGTH
+#undef DEF_BIOME_BLOCK
 
 namespace Game {
 	void MapGenerator2::init(const glm::ivec2 pos, MapChunk& chunk) const noexcept {
@@ -307,31 +321,13 @@ namespace Game {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-		constexpr float32 heightVar = 5000.0f;
-		auto height0 = [&](const float32 x) ENGINE_INLINE -> float32 {
-			return heightVar * simplex.scaled(0.000005f * x, 0); // TODO: 1d simplex
-		};
-
 		// Underlying height variation in terrain
 		const auto b0h = height0(pos.x);
 		const auto posAdj = pos - glm::vec2{0, b0h};
 		const auto biome = biomeAt(posAdj); // TODO: rn - bounds
 
-		auto height = [&](const float32 x) -> int32 {
-			const auto hOff1 = biomeHeightOffset<0>(x);
-			auto h = hOff1;
-
-			if (biome.depth >= 0) {
-				const auto hOff2 = biomeHeightOffset<1>(x);
-				const auto b2s = biomeHeightStrength<1>(x, biome);
-				h = hOff1 + b2s * (hOff2 - hOff1);
-			}
-
-			return static_cast<int32>(h + height0(x));
-		};
-
 		/////////////////////////////////////////////////////////////////////////////
-		const auto h = height(pos.x);
+		const auto h = height(pos.x, biome);
 
 		float32 b2bs = 0.0f;
 		auto basis = [&]{
@@ -350,11 +346,11 @@ namespace Game {
 		if (basis() <= 0) {
 			return BlockId::Air;
 		};
-		
+
 		auto biome1_block = [&]{
 			// Add grass to "top" layer
 			if (pos.y > -heightVar) {
-				if ((h == y) || (height(pos.x - 1) < y) || (height(pos.x + 1) < y)) {
+				if ((h == y) || (height(pos.x - 1, biome) < y) || (height(pos.x + 1, biome) < y)) {
 					return BlockId::Grass;
 				}
 			}
@@ -365,7 +361,6 @@ namespace Game {
 
 			return BlockId::Dirt;
 		};
-
 
 		auto biome2_block = [&]{
 			return BlockId::Debug + (BlockId)biome.depth;
@@ -380,6 +375,7 @@ namespace Game {
 				return biome2_block();
 			} else {
 				return biome1_block();
+				//return biomeBlock<0>(pos, h);
 			}
 		};
 
@@ -429,6 +425,23 @@ namespace Game {
 		h += octave(0.75f, 2.0f, 4 * 999.0f);
 		return static_cast<int32>(h);
 	}*/
+
+	float32 MapGenerator2::height0(const float32 x) const noexcept {
+		return heightVar * simplex.scaled(0.000005f * x, 0); // TODO: 1d simplex
+	}
+
+	int32 MapGenerator2::height(const float32 x, const BiomeBounds bounds) const noexcept {
+		const auto hOff1 = biomeHeightOffset<0>(x);
+		auto h = hOff1;
+
+		if (bounds.depth >= 0) {
+			const auto hOff2 = biomeHeightOffset<1>(x);
+			const auto b2s = biomeHeightStrength<1>(x, bounds);
+			h = hOff1 + b2s * (hOff2 - hOff1);
+		}
+
+		return static_cast<int32>(h + height0(x));
+	}
 
 	auto MapGenerator2::biomeAt(const glm::vec2 pos) const noexcept -> BiomeBounds {
 		for (int l = 0; l < std::size(biomeScales); ++l) {

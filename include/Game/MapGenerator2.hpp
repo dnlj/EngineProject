@@ -76,6 +76,8 @@ namespace Game {
 				glm::ivec2 cell;
 			};
 
+			/** Variance in underlying terrain height */
+			constexpr static float32 heightVar = 5000.0f; // 
 			constexpr static float32 biomeScales[] = { // Must be divisible by the previous depth
 				// We want to use divisions by three so that each biome can potentially spawn
 				// at surface level. If we use two then only the first depth will be at surface
@@ -123,6 +125,12 @@ namespace Game {
 			//int32 height(const glm::vec2 pos) const noexcept;
 			
 			[[nodiscard]]
+			ENGINE_INLINE float32 height0(const float32 x) const noexcept;
+
+			[[nodiscard]]
+			int32 height(const float32 x, const BiomeBounds& bounds) const noexcept;
+
+			[[nodiscard]]
 			BiomeBounds biomeAt(const glm::vec2 pos) const noexcept;
 
 			[[nodiscard]]
@@ -153,6 +161,13 @@ namespace Game {
 			template<int I>
 			[[nodiscard]]
 			ENGINE_INLINE float32 biomeBasisStrength(const glm::vec2 posAdj, const BiomeBounds bounds) const noexcept {
+				static_assert(I != I, "Missing specialization for biome.");
+			}
+
+			// TODO: Doc - range ~[0, 1]
+			template<int I>
+			[[nodiscard]]
+			ENGINE_INLINE float32 biomeBlock(const glm::vec2 pos, const int32 height) const noexcept {
 				static_assert(I != I, "Missing specialization for biome.");
 			}
 	};
