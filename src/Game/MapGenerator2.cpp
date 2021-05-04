@@ -95,6 +95,8 @@ namespace Game {
 		// Add grass to "top" layer
 		if (pos.y > -heightVar) {
 			if ((h == ipos.y)
+				// Really this should resample biomes to get correct bounds.
+				// But this is much cheaper and works basically all the time anyways.
 				|| (height(pos.x - 1, bounds, height0(pos.x - 1)) < ipos.y)
 				|| (height(pos.x + 1, bounds, height0(pos.x - 1)) < ipos.y)) {
 				return BlockId::Grass;
@@ -348,40 +350,19 @@ namespace Game {
 
 		const glm::vec2 ipos = glm::ivec2{x, y};
 		const glm::vec2 pos = glm::vec2{static_cast<float32>(x), static_cast<float32>(y)};
-
-		// Underlying height variation in terrain
 		const auto h0 = height0(pos.x);
 		const auto posBiome = pos - glm::vec2{0, h0};
-		const auto bounds = biomeAt(posBiome); // TODO: rn - bounds
+		const auto bounds = biomeAt(posBiome);
 		const auto h = height(pos.x, bounds, h0);
+		const auto bstr = basisStrength(pos, posBiome, bounds);
+		const auto b = basis(pos, h, bstr);
 
-		/////////////////////////////////////////////////////////////////////////////
-
-		float32 basisStrength;
-		auto basis = [&]{
-			if (bounds.depth >= 0) {
-				basisStrength = biomeBasisStrength<1>(pos, posBiome, bounds);
-				const auto b2 = biomeBasis<1>(pos, h);
-				if (basisStrength >= 1.0f) { return b2; }
-
-				const auto b1 = biomeBasis<0>(pos, h);
-				return b1 + basisStrength * (b2 - b1);
-			}
-
-			return biomeBasis<0>(pos, h);
-		};
-
-		const auto b = basis();
 		if (b <= 0.0f) {
 			return BlockId::Air;
 		};
 
-		auto biome2_blockStrength = [&]() -> bool {
-			return 0.5f < basisStrength;
-		};
-
 		auto block = [&]{
-			if (bounds.depth >= 0 && biomeBlockStrength<1>(basisStrength)) {
+			if (bounds.depth >= 0 && biomeBlockStrength<1>(bstr)) {
 				return biomeBlock<1>(pos, ipos, h, bounds);
 			} else {
 				return biomeBlock<0>(pos, ipos, h, bounds);
@@ -435,6 +416,19 @@ namespace Game {
 		return static_cast<int32>(h);
 	}*/
 
+	auto MapGenerator2::biomeAt(const glm::vec2 pos) const noexcept -> BiomeBounds {
+		for (int l = 0; l < std::size(biomeScales); ++l) {
+			const glm::ivec2 cell = glm::floor((pos - biomeOffset) * biomeScalesInv[l]);
+			if (perm(cell.x, cell.y) < 10) {
+				//return BlockId::Debug + static_cast<BlockId>(l);
+				return {l, cell};
+			}
+		}
+
+		//return BlockId::None;
+		return {-1};
+	}
+
 	float32 MapGenerator2::height0(const float32 x) const noexcept {
 		return heightVar * simplex.scaled(0.000005f * x, 0); // TODO: 1d simplex
 	}
@@ -451,18 +445,24 @@ namespace Game {
 
 		return static_cast<int32>(h + h0);
 	}
+	
+	float32 MapGenerator2::basisStrength(const glm::vec2 pos, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
+		if (bounds.depth >= 0) {
+			return biomeBasisStrength<1>(pos, posBiome, bounds);
+		}
+		return 0.0f;
+	}
 
-	auto MapGenerator2::biomeAt(const glm::vec2 pos) const noexcept -> BiomeBounds {
-		for (int l = 0; l < std::size(biomeScales); ++l) {
-			const glm::ivec2 cell = glm::floor((pos - biomeOffset) * biomeScalesInv[l]);
-			if (perm(cell.x, cell.y) < 10) {
-				//return BlockId::Debug + static_cast<BlockId>(l);
-				return {l, cell};
-			}
+	float32 MapGenerator2::basis(const glm::vec2 pos, const int32 h, const float32 bstr) const noexcept {
+		if (bstr > 0.0f) {
+			const auto b2 = biomeBasis<1>(pos, h);
+			if (bstr >= 1.0f) { return b2; }
+
+			const auto b1 = biomeBasis<0>(pos, h);
+			return b1 + bstr * (b2 - b1);
 		}
 
-		//return BlockId::None;
-		return {-1};
+		return biomeBasis<0>(pos, h);
 	}
 
 	int32 MapGenerator2::biome(const glm::vec2 pos) const noexcept {
