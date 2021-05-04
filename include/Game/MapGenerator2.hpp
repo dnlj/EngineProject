@@ -131,6 +131,9 @@ namespace Game {
 
 			[[nodiscard]]
 			int32 height(const float32 x, const BiomeBounds bounds, const float32 h0) const noexcept;
+
+			[[nodiscard]]
+			ENGINE_INLINE BlockId landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept;
 			
 			[[nodiscard]]
 			ENGINE_INLINE float32 basisStrength(const glm::vec2 pos, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept;

@@ -354,6 +354,11 @@ namespace Game {
 		const auto posBiome = pos - glm::vec2{0, h0};
 		const auto bounds = biomeAt(posBiome);
 		const auto h = height(pos.x, bounds, h0);
+
+		if (const auto l = landmark(pos, ipos, h); l) {
+			return l;
+		}
+
 		const auto bstr = basisStrength(pos, posBiome, bounds);
 		const auto b = basis(pos, h, bstr);
 
@@ -437,6 +442,37 @@ namespace Game {
 		return static_cast<int32>(h + h0);
 	}
 	
+	BlockId MapGenerator2::landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
+		// TODO: select on biome
+		if (ipos.y <= h) { return BlockId::None; }
+
+		constexpr float32 treeSpacing = 11; // Average spacing between tree centers
+		constexpr int32 treeThresh = 200; // Chance for a tree to exist at this spacing out of 255
+		const auto left = Engine::Noise::floorTo<int32>(ipos.x * (1.0f / treeSpacing)); // Use the left grid cell to determine trees
+
+		if (perm.value(left) < treeThresh) {
+			const int32 treeH = h + 25 + static_cast<int32>(perm.value(left - 321) * (50.0f/255.0f));
+			if (ipos.y < treeH) {
+				constexpr int32 trunkD = 3; // Trunk width // TODO: doesnt work correctly for even width.
+				constexpr int32 trunkR = (trunkD / 2) + (trunkD / 2.0f != trunkD / 2);
+				constexpr float32 pad = (0 + trunkR) * (1.0f/treeSpacing);
+
+				// If the padding is near 0.5 you might as well use fixed spacing
+				static_assert(pad < 0.45f, "Tree width is to large relative to tree spacing");
+
+				const float32 a = left + pad;
+				const float32 b = left + 1.0f - pad;
+				const float32 off = perm.value(left + 321) * (1.0f/255.0f);
+				const int32 wpos = Engine::Noise::floorTo<int32>((a + off * (b - a)) * treeSpacing);
+				if (ipos.x < (wpos + trunkR) && ipos.x > (wpos - trunkR)) {
+					return BlockId::Debug2;
+				}
+			}
+		}
+				
+		return BlockId::None;
+	}
+
 	float32 MapGenerator2::basisStrength(const glm::vec2 pos, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
 		if (bounds.depth >= 0) {
 			return biomeBasisStrength<1>(pos, posBiome, bounds);
