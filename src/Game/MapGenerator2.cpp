@@ -59,7 +59,7 @@ namespace {
 #define DEF_BIOME_BLOCK(I)\
 	template<>\
 	[[nodiscard]]\
-	ENGINE_INLINE BlockId MapGenerator2::biomeBlock<I>(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h, const BiomeBounds bounds) const noexcept
+	ENGINE_INLINE BlockId MapGenerator2::biomeBlock<I>(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h, const float32 h0, const BiomeBounds bounds) const noexcept
 
 #define DEF_BIOME_BLOCK_STRENGTH(I)\
 	template<>\
@@ -95,10 +95,10 @@ namespace Game {
 		// Add grass to "top" layer
 		if (pos.y > -heightVar) {
 			if ((h == ipos.y)
-				// Really this should resample biomes to get correct bounds.
+				// Really this should resample biomes and h0 to get correct bounds.
 				// But this is much cheaper and works basically all the time anyways.
-				|| (height(pos.x - 1, bounds, height0(pos.x - 1)) < ipos.y)
-				|| (height(pos.x + 1, bounds, height0(pos.x - 1)) < ipos.y)) {
+				|| (height(pos.x - 1, bounds, h0) < ipos.y)
+				|| (height(pos.x + 1, bounds, h0) < ipos.y)) {
 				return BlockId::Grass;
 			}
 		}
@@ -361,7 +361,7 @@ namespace Game {
 			return BlockId::Air;
 		};
 
-		return block(pos, ipos, h, bounds, bstr);
+		return block(pos, ipos, h, h0, bounds, bstr);
 	}
 
 	BlockId MapGenerator2::resource(const glm::vec2 pos) const noexcept {
@@ -417,7 +417,6 @@ namespace Game {
 			}
 		}
 
-		//return BlockId::None;
 		return {-1};
 	}
 
@@ -457,11 +456,11 @@ namespace Game {
 		return biomeBasis<0>(pos, h);
 	}
 
-	BlockId MapGenerator2::block(const glm::vec2 pos, const glm::vec2 ipos, const int32 h, const BiomeBounds bounds, const float32 bstr) const noexcept {
+	BlockId MapGenerator2::block(const glm::vec2 pos, const glm::vec2 ipos, const int32 h, const float32 h0, const BiomeBounds bounds, const float32 bstr) const noexcept {
 		if (bounds.depth >= 0 && biomeBlockStrength<1>(bstr)) {
-			return biomeBlock<1>(pos, ipos, h, bounds);
+			return biomeBlock<1>(pos, ipos, h, h0, bounds);
 		} else {
-			return biomeBlock<0>(pos, ipos, h, bounds);
+			return biomeBlock<0>(pos, ipos, h, h0, bounds);
 		}
 	}
 
