@@ -361,15 +361,7 @@ namespace Game {
 			return BlockId::Air;
 		};
 
-		auto block = [&]{
-			if (bounds.depth >= 0 && biomeBlockStrength<1>(bstr)) {
-				return biomeBlock<1>(pos, ipos, h, bounds);
-			} else {
-				return biomeBlock<0>(pos, ipos, h, bounds);
-			}
-		};
-
-		return block();
+		return block(pos, ipos, h, bounds, bstr);
 	}
 
 	BlockId MapGenerator2::resource(const glm::vec2 pos) const noexcept {
@@ -463,6 +455,14 @@ namespace Game {
 		}
 
 		return biomeBasis<0>(pos, h);
+	}
+
+	BlockId MapGenerator2::block(const glm::vec2 pos, const glm::vec2 ipos, const int32 h, const BiomeBounds bounds, const float32 bstr) const noexcept {
+		if (bounds.depth >= 0 && biomeBlockStrength<1>(bstr)) {
+			return biomeBlock<1>(pos, ipos, h, bounds);
+		} else {
+			return biomeBlock<0>(pos, ipos, h, bounds);
+		}
 	}
 
 	int32 MapGenerator2::biome(const glm::vec2 pos) const noexcept {

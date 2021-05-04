@@ -124,7 +124,7 @@ namespace Game {
 			BlockId resource(const glm::vec2 pos) const noexcept;
 			
 			[[nodiscard]]
-			BiomeBounds biomeAt(const glm::vec2 pos) const noexcept;
+			ENGINE_INLINE BiomeBounds biomeAt(const glm::vec2 pos) const noexcept;
 
 			[[nodiscard]]
 			ENGINE_INLINE float32 height0(const float32 x) const noexcept;
@@ -136,7 +136,10 @@ namespace Game {
 			ENGINE_INLINE float32 basisStrength(const glm::vec2 pos, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept;
 
 			[[nodiscard]]
-			float32 basis(const glm::vec2 pos, const int32 h, const float32 bstr) const noexcept;
+			ENGINE_INLINE float32 basis(const glm::vec2 pos, const int32 h, const float32 bstr) const noexcept;
+
+			[[nodiscard]]
+			ENGINE_INLINE BlockId block(const glm::vec2 pos, const glm::vec2 ipos, const int32 h, const BiomeBounds bounds, const float32 bstr) const noexcept;
 
 			[[nodiscard]]
 			int32 biome(const glm::vec2 pos) const noexcept;
