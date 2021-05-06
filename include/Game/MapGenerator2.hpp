@@ -45,26 +45,20 @@ namespace Game {
 	 */
 
 
-	class NoiseBase {
-	};
-
-	class Biome {
-		public:
-			/**
-			 * @param nb The set of noise objects to use.
-			 * @param pos The position to check.
-			 * @param origin The bottom left position of the biome.
-			 * @param size The size of the biome.
-			 */
-			[[nodiscard]]
-			float32 strength(const NoiseBase& nb, const glm::ivec2 pos, glm::ivec2 origin, glm::ivec2 size) const noexcept {
-			};
-	};
-
 	/**
 	 * 
 	 */
 	class MapGenerator2 {
+		public:
+			enum class Biome {
+				Forest,
+				Jungle,
+				Taiga,
+				Desert,
+				Savanna,
+				Ocean,
+			};
+
 		private:
 			// TODO: add impl that takes perm array ref instead of seed so we can share
 			Engine::Noise::OpenSimplexNoise simplex;
@@ -74,6 +68,14 @@ namespace Game {
 			struct BiomeBounds {
 				int depth;
 				glm::ivec2 cell;
+			};
+
+			struct BiomeStages {
+				using HeightOffsetFunc = void(*)();
+				using BasisFunc = void(*)();
+				using BasisStrengthFunc = void(*)();
+				using BlockFunc = void(*)();
+				using BlockStrengthFunc = void(*)();
 			};
 
 			/** Variance in underlying terrain height */
@@ -109,6 +111,7 @@ namespace Game {
 
 			BlockId value(const int32 x, const int32 y) const noexcept;
 
+
 			/**
 			 * @param pos The position of the chunk in block coordinates.
 			 * @param chunk The chunk to store the data in.
@@ -120,6 +123,9 @@ namespace Game {
 		private:
 			// TODO: doc stages
 			
+			template<Biome B>
+			BlockId calc(const int32 x, const int32 y) const noexcept;
+			
 			[[nodiscard]]
 			BlockId resource(const glm::vec2 pos) const noexcept;
 			
@@ -128,65 +134,70 @@ namespace Game {
 
 			[[nodiscard]]
 			ENGINE_INLINE float32 height0(const float32 x) const noexcept;
-
+			
+			template<Biome B>
 			[[nodiscard]]
 			int32 height(const float32 x, const BiomeBounds bounds, const float32 h0) const noexcept;
 
 			[[nodiscard]]
 			ENGINE_INLINE BlockId landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept;
 			
+			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE float32 basisStrength(const glm::vec2 pos, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept;
 
+			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE float32 basis(const glm::vec2 pos, const int32 h, const float32 bstr) const noexcept;
 
+			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE BlockId block(const glm::vec2 pos, const glm::vec2 ipos, const int32 h, const float32 h0, const BiomeBounds bounds, const float32 bstr) const noexcept;
 
+			/*
 			[[nodiscard]]
-			int32 biome(const glm::vec2 pos) const noexcept;
+			int32 biome(const glm::vec2 pos) const noexcept;*/
 
 			// TODO: Doc
-			template<int I>
+			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE float32 biomeHeightOffset(const float32 x) const noexcept {
-				static_assert(I != I, "Missing specialization for biome.");
+				static_assert(B != B, "Missing specialization for biome.");
 			}
 
 			// TODO: Doc - range ~[0, 1]
-			template<int I>
+			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE float32 biomeHeightStrength(const float32 x, const BiomeBounds bounds) const noexcept {
-				static_assert(I != I, "Missing specialization for biome.");
+				static_assert(B != B, "Missing specialization for biome.");
 			}
 
 			// TODO: Doc - range ~[-1, 1]
-			template<int I>
+			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE float32 biomeBasis(const glm::vec2 pos, const int32 h) const noexcept {
-				static_assert(I != I, "Missing specialization for biome.");
+				static_assert(B != B, "Missing specialization for biome.");
 			}
 
 			// TODO: Doc - range ~[0, 1]
-			template<int I>
+			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE float32 biomeBasisStrength(const glm::vec2 pos, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
-				static_assert(I != I, "Missing specialization for biome.");
+				static_assert(B != B, "Missing specialization for biome.");
 			}
 
 			// TODO: Doc
-			template<int I>
+			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE BlockId biomeBlock(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h, const float32 h0, const BiomeBounds bounds) const noexcept {
-				static_assert(I != I, "Missing specialization for biome.");
+				static_assert(B != B, "Missing specialization for biome.");
 			}
 
 			// TODO: Doc - range ~[0, 1]
-			template<int I>
+			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE float32 biomeBlockStrength(const float32 basisStrength) const noexcept {
-				static_assert(I != I, "Missing specialization for biome.");
+				static_assert(B != B, "Missing specialization for biome.");
 			}
 	};
 }
