@@ -44,13 +44,13 @@ namespace Game {
 	 * 
 	 */
 
-
 	/**
 	 * 
 	 */
 	class MapGenerator2 {
 		public:
 			enum class Biome {
+				Default,
 				Forest,
 				Jungle,
 				Taiga,
@@ -124,7 +124,7 @@ namespace Game {
 			// TODO: doc stages
 			
 			template<Biome B>
-			BlockId calc(const int32 x, const int32 y) const noexcept;
+			ENGINE_INLINE BlockId calc(const glm::ivec2 ipos, const glm::vec2 pos, const float32 h0, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept;
 			
 			[[nodiscard]]
 			BlockId resource(const glm::vec2 pos) const noexcept;

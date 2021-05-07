@@ -70,15 +70,15 @@ namespace {
 // Biome 0
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
-	DEF_BIOME_HEIGHT_OFFSET(Forest) {
+	DEF_BIOME_HEIGHT_OFFSET(Default) {
 		return 15 * simplex.scaled(x * 0.05f, 0); // TODO: 1d simplex
 	}
 
-	DEF_BIOME_HEIGHT_STRENGTH(Forest) {
+	DEF_BIOME_HEIGHT_STRENGTH(Default) {
 		return 1.0f;
 	}
 
-	DEF_BIOME_BASIS(Forest) {
+	DEF_BIOME_BASIS(Default) {
 		if (pos.y > h) { return -1; }
 
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
@@ -87,11 +87,11 @@ namespace Game {
 		return simplex.scaled(pos * 0.06f) + groundGrad;
 	}
 
-	DEF_BIOME_BASIS_STRENGTH(Forest) {
+	DEF_BIOME_BASIS_STRENGTH(Default) {
 		return 1;
 	}
 
-	DEF_BIOME_BLOCK(Forest) {
+	DEF_BIOME_BLOCK(Default) {
 		// Add grass to "top" layer
 		if (pos.y > -heightVar) {
 			if ((h == ipos.y)
@@ -111,13 +111,56 @@ namespace Game {
 		return BlockId::Dirt;
 	}
 
-	DEF_BIOME_BLOCK_STRENGTH(Forest) {
+	DEF_BIOME_BLOCK_STRENGTH(Default) {
 		return 1.0f;
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Biome 1
+////////////////////////////////////////////////////////////////////////////////
+namespace Game {
+	DEF_BIOME_HEIGHT_OFFSET(Forest) {
+		return 85 * simplex.scaled(x * 0.01f, 0); // TODO: 1d simplex
+	}
+
+	DEF_BIOME_HEIGHT_STRENGTH(Forest) {
+		// TODO: we use this radius/offset type logic in a number of places. Probably extract and pass as args.
+		const auto s = biomeScales[bounds.depth];
+		const auto center = (bounds.cell.x + 0.5f) * s;
+		const auto off = 0.5f * s - std::abs(center - x + biomeOffset.x);
+		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
+		return std::min(1.0f, off * tDist);
+	}
+
+	DEF_BIOME_BASIS(Forest) {
+		if (pos.y > h) { return -1; }
+
+		// TODO: we really want this to be a very large gradient so caves get larger with depth
+		constexpr float32 groundScale = 1.0f / 100.0f;
+		const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
+		return simplex.scaled(pos * 0.01f) + groundGrad;
+	}
+
+	DEF_BIOME_BASIS_STRENGTH(Forest) {
+		const auto s = biomeScales[bounds.depth];
+		const auto center = (glm::vec2{bounds.cell} + 0.5f) * s;
+		const auto off = 0.5f * s - glm::abs(center - posBiome + biomeOffset);
+		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
+		return glm::compMin(glm::min(off * tDist, 1.0f));
+	}
+
+	DEF_BIOME_BLOCK(Forest) {
+		return BlockId::Debug + (BlockId)bounds.depth;
+	}
+
+	DEF_BIOME_BLOCK_STRENGTH(Forest) {
+		return 0.5f < basisStrength;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Biome 2
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_BIOME_HEIGHT_OFFSET(Jungle) {
@@ -139,7 +182,7 @@ namespace Game {
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
 		constexpr float32 groundScale = 1.0f / 100.0f;
 		const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-		return simplex.scaled(pos * 0.01f) + groundGrad;
+		return simplex.scaled(pos * 0.005f) + groundGrad;
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Jungle) {
@@ -158,7 +201,6 @@ namespace Game {
 		return 0.5f < basisStrength;
 	}
 }
-
 #undef DEF_BIOME_HEIGHT_OFFSET
 #undef DEF_BIOME_HEIGHT_STRENGTH
 #undef DEF_BIOME_BASIS
@@ -185,25 +227,38 @@ namespace Game {
 		const auto h0 = height0(pos.x);
 		const auto posBiome = pos - glm::vec2{0, h0};
 		const auto bounds = biomeAt(posBiome);
-		const auto h = height<Biome::Jungle>(pos.x, bounds, h0);
+
+		const Biome b = static_cast<Biome>(perm(bounds.cell.x, bounds.cell.y) % (static_cast<int>(Biome::Jungle) + 1));
+
+		#define CASE(B) case B: { return calc<B>(ipos, pos, h0, posBiome, bounds); };
+		switch (b) {
+			CASE(Biome::Default)
+			CASE(Biome::Forest)
+			CASE(Biome::Jungle)
+			default: {
+				ENGINE_WARN("Unknown biome ", static_cast<int>(b));
+				return BlockId::Debug;
+			}
+		}
+		#undef CASE
+	}
+
+	template<MapGenerator2::Biome B>
+	BlockId MapGenerator2::calc(const glm::ivec2 ipos, const glm::vec2 pos, const float32 h0, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
+		const auto h = height<B>(pos.x, bounds, h0);
 
 		if (const auto l = landmark(pos, ipos, h); l) {
 			return l;
 		}
 
-		const auto bstr = basisStrength<Biome::Jungle>(pos, posBiome, bounds);
-		const auto b = basis<Biome::Jungle>(pos, h, bstr);
+		const auto bstr = basisStrength<B>(pos, posBiome, bounds);
+		const auto b = basis<B>(pos, h, bstr);
 
 		if (b <= 0.0f) {
 			return BlockId::Air;
 		};
 
-		return block<Biome::Jungle>(pos, ipos, h, h0, bounds, bstr);
-	}
-	
-	template<MapGenerator2::Biome B>
-	BlockId MapGenerator2::calc(const int32 x, const int32 y) const noexcept {
-
+		return block<B>(pos, ipos, h, h0, bounds, bstr);
 	}
 
 	BlockId MapGenerator2::resource(const glm::vec2 pos) const noexcept {
@@ -268,13 +323,15 @@ namespace Game {
 	
 	template<MapGenerator2::Biome B>
 	int32 MapGenerator2::height(const float32 x, const BiomeBounds bounds, const float32 h0) const noexcept {
-		const auto hOff1 = biomeHeightOffset<Biome::Forest>(x);
+		const auto hOff1 = biomeHeightOffset<Biome::Default>(x);
 		auto h = hOff1;
 
-		if (bounds.depth >= 0) {
-			const auto hOff2 = biomeHeightOffset<B>(x);
-			const auto b2s = biomeHeightStrength<B>(x, bounds);
-			h = hOff1 + b2s * (hOff2 - hOff1);
+		if constexpr (B != Biome::Default) {
+			if (bounds.depth >= 0) {
+				const auto hOff2 = biomeHeightOffset<B>(x);
+				const auto b2s = biomeHeightStrength<B>(x, bounds);
+				h = hOff1 + b2s * (hOff2 - hOff1);
+			}
 		}
 
 		return static_cast<int32>(h + h0);
@@ -313,32 +370,38 @@ namespace Game {
 	
 	template<MapGenerator2::Biome B>
 	float32 MapGenerator2::basisStrength(const glm::vec2 pos, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
-		if (bounds.depth >= 0) {
-			return biomeBasisStrength<B>(pos, posBiome, bounds);
+		if constexpr (B != Biome::Default) {
+			if (bounds.depth >= 0) {
+				return biomeBasisStrength<B>(pos, posBiome, bounds);
+			}
 		}
 		return 0.0f;
 	}
 	
 	template<MapGenerator2::Biome B>
 	float32 MapGenerator2::basis(const glm::vec2 pos, const int32 h, const float32 bstr) const noexcept {
-		if (bstr > 0.0f) {
-			const auto b2 = biomeBasis<B>(pos, h);
-			if (bstr >= 1.0f) { return b2; }
+		if constexpr (B != Biome::Default) {
+			if (bstr > 0.0f) {
+				const auto b2 = biomeBasis<B>(pos, h);
+				if (bstr >= 1.0f) { return b2; }
 
-			const auto b1 = biomeBasis<Biome::Forest>(pos, h);
-			return b1 + bstr * (b2 - b1);
+				const auto b1 = biomeBasis<Biome::Default>(pos, h);
+				return b1 + bstr * (b2 - b1);
+			}
 		}
 
-		return biomeBasis<Biome::Forest>(pos, h);
+		return biomeBasis<Biome::Default>(pos, h);
 	}
 	
 	template<MapGenerator2::Biome B>
 	BlockId MapGenerator2::block(const glm::vec2 pos, const glm::vec2 ipos, const int32 h, const float32 h0, const BiomeBounds bounds, const float32 bstr) const noexcept {
-		if (bounds.depth >= 0 && biomeBlockStrength<B>(bstr)) {
-			return biomeBlock<B>(pos, ipos, h, h0, bounds);
-		} else {
-			return biomeBlock<Biome::Forest>(pos, ipos, h, h0, bounds);
+		if constexpr (B != Biome::Default) {
+			if (bounds.depth >= 0 && biomeBlockStrength<B>(bstr)) {
+				return biomeBlock<B>(pos, ipos, h, h0, bounds);
+			}
 		}
+
+		return biomeBlock<Biome::Default>(pos, ipos, h, h0, bounds);
 	}
 
 	/*
