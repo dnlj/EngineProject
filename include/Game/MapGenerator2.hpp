@@ -84,12 +84,9 @@ namespace Game {
 				glm::ivec2 cell;
 			};
 
-			struct BiomeStages {
-				using HeightOffsetFunc = void(*)();
-				using BasisFunc = void(*)();
-				using BasisStrengthFunc = void(*)();
-				using BlockFunc = void(*)();
-				using BlockStrengthFunc = void(*)();
+			struct LandmarkSample {
+				float32 basis;
+				BlockId block;
 			};
 
 			/** Variance in underlying terrain height */
@@ -155,7 +152,7 @@ namespace Game {
 			
 			template<Biome B>
 			[[nodiscard]]
-			ENGINE_INLINE BlockId landmark2(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept;
+			ENGINE_INLINE LandmarkSample landmark2(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept;
 
 			[[nodiscard]]
 			ENGINE_INLINE BlockId landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept;
@@ -175,21 +172,26 @@ namespace Game {
 			/*
 			[[nodiscard]]
 			int32 biome(const glm::vec2 pos) const noexcept;*/
-
-
+			
+			////////////////////////////////////////////////////////////////////////////////
+			// Landmark specialization functions
+			////////////////////////////////////////////////////////////////////////////////
+			
 			template<Landmark L>
-			[[nodiscard]] // TODO: name
+			[[nodiscard]]
 			ENGINE_INLINE float32 landmarkBasis(const glm::vec2 pos, const glm::ivec2 ipos) const noexcept {
 				static_assert(L != L, "Missing specialization.");
 			}
 
 			template<Landmark L>
-			[[nodiscard]] // TODO: name
+			[[nodiscard]]
 			ENGINE_INLINE BlockId landmarkBlock(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
 				static_assert(L != L, "Missing specialization.");
 			}
 
-
+			////////////////////////////////////////////////////////////////////////////////
+			// Biome specialization functions
+			////////////////////////////////////////////////////////////////////////////////
 
 			// TODO: Doc
 			template<Biome B>

@@ -221,7 +221,7 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_LANDMARK_BASIS(TreeDefault) {
-		return 0.0f;
+		return NAN;
 	}
 
 	DEF_LANDMARK_BLOCK(TreeDefault) {
@@ -234,7 +234,7 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_LANDMARK_BASIS(TreeForest) {
-		return 0.0f;
+		return NAN;
 	}
 
 	DEF_LANDMARK_BLOCK(TreeForest) {
@@ -262,13 +262,13 @@ namespace Game {
 		const auto cell = glm::floor(scaled);
 		// TODO: we will want this to be a much smaller than 1%. Is there a function we could use instead of a perm table?
 		// TODO: cont. Could we just use a LCG and seed from cell.x and cell.y? look into other hash functions
-		if (perm(static_cast<int>(cell.x), static_cast<int>(cell.y)) > 5) { return 0.0f; }
+		if (perm(static_cast<int>(cell.x), static_cast<int>(cell.y)) > 5) { return NAN; }
 		//const auto off = (scaled - cell) * d;
 		return 1.0f;
 	}
 
 	DEF_LANDMARK_BLOCK(BossPortal) {
-		return BlockId::None;
+		return BlockId::Debug4;
 	}
 }
 
@@ -315,7 +315,7 @@ namespace Game {
 		const auto h = height<B>(pos.x, bounds, h0);
 		
 		const auto l2 = landmark2<B>(pos, ipos, h);
-		if (l2) { return l2; }
+		if (l2.block) { return l2.block; }
 
 		if (const auto l = landmark(pos, ipos, h); l) {
 			return l;
@@ -408,13 +408,23 @@ namespace Game {
 	}
 	
 	template<MapGenerator2::Biome B>
-	BlockId MapGenerator2::landmark2(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
-		auto func = [&]<class T, T... Is>(std::integer_sequence<T, Is...>){
-			float32 v;
-			((v = landmarkBasis<landmarksByBiome<B>[Is]>(pos, ipos)) || ...);
-			return v ? BlockId::Debug4 : BlockId::None;
+	auto MapGenerator2::landmark2(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept -> LandmarkSample {
+		LandmarkSample res = {};
+
+		const auto sample = [&]<Landmark L>() ENGINE_INLINE {
+			res.basis = landmarkBasis<L>(pos, ipos);
+
+			if (!std::isnan(res.basis)) {
+				res.block = landmarkBlock<L>(pos, ipos, h);
+			}
 		};
-		return func(std::make_index_sequence<landmarksByBiome<B>.size()>{});
+
+		constexpr auto iter = [&]<class T, T... Is>(std::integer_sequence<T, Is...>) ENGINE_INLINE {
+			((sample.template operator()<landmarksByBiome<B>[Is]>(), res.block) || ...);
+		};
+
+		iter(std::make_index_sequence<landmarksByBiome<B>.size()>{});
+		return res;
 	}
 
 	BlockId MapGenerator2::landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
