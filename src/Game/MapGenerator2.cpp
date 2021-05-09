@@ -208,6 +208,73 @@ namespace Game {
 #undef DEF_BIOME_BLOCK
 #undef DEF_BIOME_BLOCK_STRENGTH
 
+#define DEF_LANDMARK_BASIS(L)\
+	template<>\
+	float32 MapGenerator2::landmarkBasis<MapGenerator2::Landmark:: L>(const glm::vec2 pos, const glm::ivec2 ipos) const noexcept
+
+#define DEF_LANDMARK_BLOCK(L)\
+	template<>\
+	BlockId MapGenerator2::landmarkBlock<MapGenerator2::Landmark:: L>(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept
+
+////////////////////////////////////////////////////////////////////////////////
+// Landmark 0
+////////////////////////////////////////////////////////////////////////////////
+namespace Game {
+	DEF_LANDMARK_BASIS(TreeDefault) {
+		return 0.0f;
+	}
+
+	DEF_LANDMARK_BLOCK(TreeDefault) {
+		return BlockId::None;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Landmark 1
+////////////////////////////////////////////////////////////////////////////////
+namespace Game {
+	DEF_LANDMARK_BASIS(TreeForest) {
+		return 0.0f;
+	}
+
+	DEF_LANDMARK_BLOCK(TreeForest) {
+		return BlockId::None;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Landmark 2
+////////////////////////////////////////////////////////////////////////////////
+namespace Game {
+	//DEF_LANDMARK_BLOCK(TreeJungle) {
+	//	return BlockId::None;
+	//}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Landmark 3
+////////////////////////////////////////////////////////////////////////////////
+namespace Game {
+	DEF_LANDMARK_BASIS(BossPortal) {
+		constexpr int32 w = 20;
+		constexpr float32 d = 1.0f / w;
+		const auto scaled = pos * d;
+		const auto cell = glm::floor(scaled);
+		// TODO: we will want this to be a much smaller than 1%. Is there a function we could use instead of a perm table?
+		// TODO: cont. Could we just use a LCG and seed from cell.x and cell.y? look into other hash functions
+		if (perm(static_cast<int>(cell.x), static_cast<int>(cell.y)) > 5) { return 0.0f; }
+		//const auto off = (scaled - cell) * d;
+		return 1.0f;
+	}
+
+	DEF_LANDMARK_BLOCK(BossPortal) {
+		return BlockId::None;
+	}
+}
+
+#undef DEF_LANDMARK_BASIS
+#undef DEF_LANDMARK_BLOCK
+
 namespace Game {
 	void MapGenerator2::init(const glm::ivec2 pos, MapChunk& chunk) const noexcept {
 		for (int x = 0; x < MapChunk::size.x; ++x) {
@@ -228,8 +295,8 @@ namespace Game {
 		const auto posBiome = pos - glm::vec2{0, h0};
 		const auto bounds = biomeAt(posBiome);
 
-		const Biome b = static_cast<Biome>(perm(bounds.cell.x, bounds.cell.y) % (static_cast<int>(Biome::Jungle) + 1));
-
+		const Biome b = bounds.depth < 0 ? Biome::Default : static_cast<Biome>(perm(bounds.cell.x, bounds.cell.y) % (static_cast<int>(Biome::Jungle) + 1));
+		
 		#define CASE(B) case B: { return calc<B>(ipos, pos, h0, posBiome, bounds); };
 		switch (b) {
 			CASE(Biome::Default)
@@ -246,6 +313,9 @@ namespace Game {
 	template<MapGenerator2::Biome B>
 	BlockId MapGenerator2::calc(const glm::ivec2 ipos, const glm::vec2 pos, const float32 h0, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
 		const auto h = height<B>(pos.x, bounds, h0);
+		
+		const auto l2 = landmark2<B>(pos, ipos, h);
+		if (l2) { return l2; }
 
 		if (const auto l = landmark(pos, ipos, h); l) {
 			return l;
@@ -337,6 +407,16 @@ namespace Game {
 		return static_cast<int32>(h + h0);
 	}
 	
+	template<MapGenerator2::Biome B>
+	BlockId MapGenerator2::landmark2(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
+		auto func = [&]<class T, T... Is>(std::integer_sequence<T, Is...>){
+			float32 v;
+			((v = landmarkBasis<landmarksByBiome<B>[Is]>(pos, ipos)) || ...);
+			return v ? BlockId::Debug4 : BlockId::None;
+		};
+		return func(std::make_index_sequence<landmarksByBiome<B>.size()>{});
+	}
+
 	BlockId MapGenerator2::landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
 		// TODO: select on biome
 		if (ipos.y <= h) { return BlockId::None; }

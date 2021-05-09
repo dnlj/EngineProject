@@ -59,6 +59,20 @@ namespace Game {
 				Ocean,
 			};
 
+			enum class Landmark {
+				TreeDefault,
+				TreeForest,
+				TreeJungle,
+				BossPortal,
+			};
+
+			template<Biome B>
+			constexpr static auto landmarksByBiome = []{static_assert(B!=B, "No specialization for biome found.");}();
+			
+			template<> constexpr static std::array landmarksByBiome<Biome::Default> = {Landmark::TreeDefault, Landmark::BossPortal};
+			template<> constexpr static std::array landmarksByBiome<Biome::Forest> = {Landmark::TreeForest, Landmark::BossPortal};
+			template<> constexpr static std::array landmarksByBiome<Biome::Jungle> = {Landmark::BossPortal};
+
 		private:
 			// TODO: add impl that takes perm array ref instead of seed so we can share
 			Engine::Noise::OpenSimplexNoise simplex;
@@ -138,6 +152,10 @@ namespace Game {
 			template<Biome B>
 			[[nodiscard]]
 			int32 height(const float32 x, const BiomeBounds bounds, const float32 h0) const noexcept;
+			
+			template<Biome B>
+			[[nodiscard]]
+			ENGINE_INLINE BlockId landmark2(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept;
 
 			[[nodiscard]]
 			ENGINE_INLINE BlockId landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept;
@@ -157,6 +175,21 @@ namespace Game {
 			/*
 			[[nodiscard]]
 			int32 biome(const glm::vec2 pos) const noexcept;*/
+
+
+			template<Landmark L>
+			[[nodiscard]] // TODO: name
+			ENGINE_INLINE float32 landmarkBasis(const glm::vec2 pos, const glm::ivec2 ipos) const noexcept {
+				static_assert(L != L, "Missing specialization.");
+			}
+
+			template<Landmark L>
+			[[nodiscard]] // TODO: name
+			ENGINE_INLINE BlockId landmarkBlock(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
+				static_assert(L != L, "Missing specialization.");
+			}
+
+
 
 			// TODO: Doc
 			template<Biome B>
