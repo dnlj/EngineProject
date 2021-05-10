@@ -210,7 +210,7 @@ namespace Game {
 
 #define DEF_LANDMARK_BASIS(L)\
 	template<>\
-	auto MapGenerator2::landmarkBasis<MapGenerator2::Landmark:: L>(const glm::vec2 pos, const glm::ivec2 ipos) const noexcept -> LandmarkSample
+	auto MapGenerator2::landmarkBasis<MapGenerator2::Landmark:: L>(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept -> LandmarkSample
 
 #define DEF_LANDMARK_BLOCK(L)\
 	template<>\
@@ -221,12 +221,34 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_LANDMARK_BASIS(TreeDefault) {
-		constexpr int32 w = 25;
-		constexpr float32 d = 1.0f / w;
-		const auto scaled = pos * d;
-		const auto cell = glm::floor(scaled);
-		if (perm(static_cast<int>(cell.x), static_cast<int>(cell.y), static_cast<int>(Landmark::TreeDefault)) > 5) { return { .exists = false }; }
-		return { .basis = 1.0f };
+		// TODO: select on biome
+		if (ipos.y <= h) { return { .exists = false }; }
+
+		constexpr float32 treeSpacing = 11; // Average spacing between tree centers
+		constexpr int32 treeThresh = 200; // Chance for a tree to exist at this spacing out of 255
+		const auto left = Engine::Noise::floorTo<int32>(ipos.x * (1.0f / treeSpacing)); // Use the left grid cell to determine trees
+
+		if (perm.value(left) < treeThresh) {
+			const int32 treeH = h + 25 + static_cast<int32>(perm.value(left - 321) * (50.0f/255.0f));
+			if (ipos.y < treeH) {
+				constexpr int32 trunkD = 3; // Trunk width // TODO: doesnt work correctly for even width.
+				constexpr int32 trunkR = (trunkD / 2) + (trunkD / 2.0f != trunkD / 2);
+				constexpr float32 pad = (0 + trunkR) * (1.0f/treeSpacing);
+
+				// If the padding is near 0.5 you might as well use fixed spacing
+				static_assert(pad < 0.45f, "Tree width is to large relative to tree spacing");
+
+				const float32 a = left + pad;
+				const float32 b = left + 1.0f - pad;
+				const float32 off = perm.value(left + 321) * (1.0f/255.0f);
+				const int32 wpos = Engine::Noise::floorTo<int32>((a + off * (b - a)) * treeSpacing);
+				if (ipos.x < (wpos + trunkR) && ipos.x > (wpos - trunkR)) {
+					return { .exists = true, .basis = 1.0f, .block = BlockId::Debug2 };
+				}
+			}
+		}
+				
+		return { .exists = false };
 	}
 
 	DEF_LANDMARK_BLOCK(TreeDefault) {
@@ -329,14 +351,10 @@ namespace Game {
 	BlockId MapGenerator2::calc(const glm::ivec2 ipos, const glm::vec2 pos, const float32 h0, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
 		const auto h = height<B>(pos.x, bounds, h0);
 		
-		if (const auto l = landmark(pos, ipos, h); l) {
-			return l;
-		}
-
 		const auto bstr = basisStrength<B>(pos, posBiome, bounds);
 		const auto b = basis<B>(pos, h, bstr);
 
-
+		// TODO: move before basis stuff if we have l2.block != None
 		const auto l2 = landmark2<B>(pos, ipos, h);
 		if (l2.exists) {
 			const auto b2 = b + l2.basis;
@@ -436,7 +454,7 @@ namespace Game {
 		LandmarkSample res = {};
 
 		const auto sample = [&]<Landmark L>() ENGINE_INLINE {
-			res = landmarkBasis<L>(pos, ipos);
+			res = landmarkBasis<L>(pos, ipos, h);
 		};
 
 		constexpr auto iter = [&]<class T, T... Is>(std::integer_sequence<T, Is...>) ENGINE_INLINE {
@@ -447,37 +465,6 @@ namespace Game {
 		return res;
 	}
 
-	BlockId MapGenerator2::landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
-		// TODO: select on biome
-		if (ipos.y <= h) { return BlockId::None; }
-
-		constexpr float32 treeSpacing = 11; // Average spacing between tree centers
-		constexpr int32 treeThresh = 200; // Chance for a tree to exist at this spacing out of 255
-		const auto left = Engine::Noise::floorTo<int32>(ipos.x * (1.0f / treeSpacing)); // Use the left grid cell to determine trees
-
-		if (perm.value(left) < treeThresh) {
-			const int32 treeH = h + 25 + static_cast<int32>(perm.value(left - 321) * (50.0f/255.0f));
-			if (ipos.y < treeH) {
-				constexpr int32 trunkD = 3; // Trunk width // TODO: doesnt work correctly for even width.
-				constexpr int32 trunkR = (trunkD / 2) + (trunkD / 2.0f != trunkD / 2);
-				constexpr float32 pad = (0 + trunkR) * (1.0f/treeSpacing);
-
-				// If the padding is near 0.5 you might as well use fixed spacing
-				static_assert(pad < 0.45f, "Tree width is to large relative to tree spacing");
-
-				const float32 a = left + pad;
-				const float32 b = left + 1.0f - pad;
-				const float32 off = perm.value(left + 321) * (1.0f/255.0f);
-				const int32 wpos = Engine::Noise::floorTo<int32>((a + off * (b - a)) * treeSpacing);
-				if (ipos.x < (wpos + trunkR) && ipos.x > (wpos - trunkR)) {
-					return BlockId::Debug2;
-				}
-			}
-		}
-				
-		return BlockId::None;
-	}
-	
 	template<MapGenerator2::Biome B>
 	float32 MapGenerator2::basisStrength(const glm::vec2 pos, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
 		if constexpr (B != Biome::Default) {
