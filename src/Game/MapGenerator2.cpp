@@ -210,7 +210,7 @@ namespace Game {
 
 #define DEF_LANDMARK_BASIS(L)\
 	template<>\
-	float32 MapGenerator2::landmarkBasis<MapGenerator2::Landmark:: L>(const glm::vec2 pos, const glm::ivec2 ipos) const noexcept
+	auto MapGenerator2::landmarkBasis<MapGenerator2::Landmark:: L>(const glm::vec2 pos, const glm::ivec2 ipos) const noexcept -> LandmarkSample
 
 #define DEF_LANDMARK_BLOCK(L)\
 	template<>\
@@ -221,11 +221,16 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_LANDMARK_BASIS(TreeDefault) {
-		return NAN;
+		constexpr int32 w = 25;
+		constexpr float32 d = 1.0f / w;
+		const auto scaled = pos * d;
+		const auto cell = glm::floor(scaled);
+		if (perm(static_cast<int>(cell.x), static_cast<int>(cell.y), static_cast<int>(Landmark::TreeDefault)) > 5) { return { .exists = false }; }
+		return { .basis = 1.0f };
 	}
 
 	DEF_LANDMARK_BLOCK(TreeDefault) {
-		return BlockId::None;
+		return BlockId::Debug3;
 	}
 }
 
@@ -234,7 +239,7 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_LANDMARK_BASIS(TreeForest) {
-		return NAN;
+		return { .exists = false };
 	}
 
 	DEF_LANDMARK_BLOCK(TreeForest) {
@@ -256,15 +261,25 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_LANDMARK_BASIS(BossPortal) {
-		constexpr int32 w = 20;
+		constexpr int32 w = 50;
 		constexpr float32 d = 1.0f / w;
 		const auto scaled = pos * d;
 		const auto cell = glm::floor(scaled);
 		// TODO: we will want this to be a much smaller than 1%. Is there a function we could use instead of a perm table?
 		// TODO: cont. Could we just use a LCG and seed from cell.x and cell.y? look into other hash functions
-		if (perm(static_cast<int>(cell.x), static_cast<int>(cell.y)) > 5) { return NAN; }
-		//const auto off = (scaled - cell) * d;
-		return 1.0f;
+		if (perm(static_cast<int>(cell.x), static_cast<int>(cell.y), static_cast<int>(Landmark::BossPortal)) > 5) { return { .exists = false }; }
+		const auto offC = 2.0f * (scaled - cell) - 1.0f; // Offset from center [-1, 1]
+		const auto grad = 2 * glm::min(glm::length2(offC)*glm::length2(offC), 1.0f); // Circle grad [0, 2]
+
+		// floor level
+		if (offC.y > -0.3f) {
+			if (offC.y < 0.5f && offC.x < 0.2f && offC.x > -0.2f) {
+				return {.exists = true, .basis = 1.0f, .block = BlockId::Debug4 };
+			}
+			return {.exists = true, .basis = grad - 2.0f, .block = BlockId::None };
+		}
+		// TODO: we would really like some blending around left and right sides for larger values
+		return {.exists = true, .basis = 2.0f - grad, .block = BlockId::None };
 	}
 
 	DEF_LANDMARK_BLOCK(BossPortal) {
@@ -314,15 +329,24 @@ namespace Game {
 	BlockId MapGenerator2::calc(const glm::ivec2 ipos, const glm::vec2 pos, const float32 h0, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
 		const auto h = height<B>(pos.x, bounds, h0);
 		
-		const auto l2 = landmark2<B>(pos, ipos, h);
-		if (l2.block) { return l2.block; }
-
 		if (const auto l = landmark(pos, ipos, h); l) {
 			return l;
 		}
 
 		const auto bstr = basisStrength<B>(pos, posBiome, bounds);
 		const auto b = basis<B>(pos, h, bstr);
+
+
+		const auto l2 = landmark2<B>(pos, ipos, h);
+		if (l2.exists) {
+			const auto b2 = b + l2.basis;
+			if (b2 < 0.0f) {
+				//return BlockId::Debug2;
+				return BlockId::Air;
+			} else {
+				return l2.block ? l2.block : block<B>(pos, ipos, h, h0, bounds, bstr);
+			}
+		}
 
 		if (b <= 0.0f) {
 			return BlockId::Air;
@@ -412,15 +436,11 @@ namespace Game {
 		LandmarkSample res = {};
 
 		const auto sample = [&]<Landmark L>() ENGINE_INLINE {
-			res.basis = landmarkBasis<L>(pos, ipos);
-
-			if (!std::isnan(res.basis)) {
-				res.block = landmarkBlock<L>(pos, ipos, h);
-			}
+			res = landmarkBasis<L>(pos, ipos);
 		};
 
 		constexpr auto iter = [&]<class T, T... Is>(std::integer_sequence<T, Is...>) ENGINE_INLINE {
-			((sample.template operator()<landmarksByBiome<B>[Is]>(), res.block) || ...);
+			((sample.template operator()<landmarksByBiome<B>[Is]>(), res.exists) || ...);
 		};
 
 		iter(std::make_index_sequence<landmarksByBiome<B>.size()>{});

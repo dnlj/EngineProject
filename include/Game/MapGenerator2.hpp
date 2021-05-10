@@ -60,17 +60,17 @@ namespace Game {
 			};
 
 			enum class Landmark {
+				BossPortal,
 				TreeDefault,
 				TreeForest,
 				TreeJungle,
-				BossPortal,
 			};
 
 			template<Biome B>
 			constexpr static auto landmarksByBiome = []{static_assert(B!=B, "No specialization for biome found.");}();
 			
-			template<> constexpr static std::array landmarksByBiome<Biome::Default> = {Landmark::TreeDefault, Landmark::BossPortal};
-			template<> constexpr static std::array landmarksByBiome<Biome::Forest> = {Landmark::TreeForest, Landmark::BossPortal};
+			template<> constexpr static std::array landmarksByBiome<Biome::Default> = {Landmark::BossPortal, Landmark::TreeDefault};
+			template<> constexpr static std::array landmarksByBiome<Biome::Forest> = {Landmark::BossPortal, Landmark::TreeForest};
 			template<> constexpr static std::array landmarksByBiome<Biome::Jungle> = {Landmark::BossPortal};
 
 		private:
@@ -85,6 +85,7 @@ namespace Game {
 			};
 
 			struct LandmarkSample {
+				bool exists;
 				float32 basis;
 				BlockId block;
 			};
@@ -179,7 +180,7 @@ namespace Game {
 			
 			template<Landmark L>
 			[[nodiscard]]
-			ENGINE_INLINE float32 landmarkBasis(const glm::vec2 pos, const glm::ivec2 ipos) const noexcept {
+			ENGINE_INLINE LandmarkSample landmarkBasis(const glm::vec2 pos, const glm::ivec2 ipos) const noexcept {
 				static_assert(L != L, "Missing specialization.");
 			}
 
