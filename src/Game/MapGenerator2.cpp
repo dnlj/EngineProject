@@ -208,20 +208,15 @@ namespace Game {
 #undef DEF_BIOME_BLOCK
 #undef DEF_BIOME_BLOCK_STRENGTH
 
-#define DEF_LANDMARK_BASIS(L)\
+#define DEF_LANDMARK_SAMPLE(L)\
 	template<>\
-	auto MapGenerator2::landmarkBasis<MapGenerator2::Landmark:: L>(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept -> LandmarkSample
-
-#define DEF_LANDMARK_BLOCK(L)\
-	template<>\
-	BlockId MapGenerator2::landmarkBlock<MapGenerator2::Landmark:: L>(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept
+	auto MapGenerator2::landmarkSample<MapGenerator2::Landmark:: L>(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept -> LandmarkSample
 
 ////////////////////////////////////////////////////////////////////////////////
 // Landmark 0
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
-	DEF_LANDMARK_BASIS(TreeDefault) {
-		// TODO: select on biome
+	DEF_LANDMARK_SAMPLE(TreeDefault) {
 		if (ipos.y <= h) { return { .exists = false }; }
 
 		constexpr float32 treeSpacing = 11; // Average spacing between tree centers
@@ -250,22 +245,14 @@ namespace Game {
 				
 		return { .exists = false };
 	}
-
-	DEF_LANDMARK_BLOCK(TreeDefault) {
-		return BlockId::Debug3;
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Landmark 1
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
-	DEF_LANDMARK_BASIS(TreeForest) {
+	DEF_LANDMARK_SAMPLE(TreeForest) {
 		return { .exists = false };
-	}
-
-	DEF_LANDMARK_BLOCK(TreeForest) {
-		return BlockId::None;
 	}
 }
 
@@ -273,16 +260,13 @@ namespace Game {
 // Landmark 2
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
-	//DEF_LANDMARK_BLOCK(TreeJungle) {
-	//	return BlockId::None;
-	//}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Landmark 3
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
-	DEF_LANDMARK_BASIS(BossPortal) {
+	DEF_LANDMARK_SAMPLE(BossPortal) {
 		constexpr int32 w = 50;
 		constexpr float32 d = 1.0f / w;
 		const auto scaled = pos * d;
@@ -303,14 +287,9 @@ namespace Game {
 		// TODO: we would really like some blending around left and right sides for larger values
 		return {.exists = true, .basis = 2.0f - grad, .block = BlockId::None };
 	}
-
-	DEF_LANDMARK_BLOCK(BossPortal) {
-		return BlockId::Debug4;
-	}
 }
 
-#undef DEF_LANDMARK_BASIS
-#undef DEF_LANDMARK_BLOCK
+#undef DEF_LANDMARK_SAMPLE
 
 namespace Game {
 	void MapGenerator2::init(const glm::ivec2 pos, MapChunk& chunk) const noexcept {
@@ -350,12 +329,12 @@ namespace Game {
 	template<MapGenerator2::Biome B>
 	BlockId MapGenerator2::calc(const glm::ivec2 ipos, const glm::vec2 pos, const float32 h0, const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
 		const auto h = height<B>(pos.x, bounds, h0);
-		
+
 		const auto bstr = basisStrength<B>(pos, posBiome, bounds);
 		const auto b = basis<B>(pos, h, bstr);
 
 		// TODO: move before basis stuff if we have l2.block != None
-		const auto l2 = landmark2<B>(pos, ipos, h);
+		const auto l2 = landmark<B>(pos, ipos, h);
 		if (l2.exists) {
 			const auto b2 = b + l2.basis;
 			if (b2 < 0.0f) {
@@ -450,11 +429,11 @@ namespace Game {
 	}
 	
 	template<MapGenerator2::Biome B>
-	auto MapGenerator2::landmark2(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept -> LandmarkSample {
+	auto MapGenerator2::landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept -> LandmarkSample {
 		LandmarkSample res = {};
 
 		const auto sample = [&]<Landmark L>() ENGINE_INLINE {
-			res = landmarkBasis<L>(pos, ipos, h);
+			res = landmarkSample<L>(pos, ipos, h);
 		};
 
 		constexpr auto iter = [&]<class T, T... Is>(std::integer_sequence<T, Is...>) ENGINE_INLINE {

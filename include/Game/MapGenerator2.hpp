@@ -153,7 +153,7 @@ namespace Game {
 			
 			template<Biome B>
 			[[nodiscard]]
-			ENGINE_INLINE LandmarkSample landmark2(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept;
+			ENGINE_INLINE LandmarkSample landmark(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept;
 
 			template<Biome B>
 			[[nodiscard]]
@@ -177,13 +177,7 @@ namespace Game {
 			
 			template<Landmark L>
 			[[nodiscard]]
-			ENGINE_INLINE LandmarkSample landmarkBasis(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
-				static_assert(L != L, "Missing specialization.");
-			}
-
-			template<Landmark L>
-			[[nodiscard]]
-			ENGINE_INLINE BlockId landmarkBlock(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
+			ENGINE_INLINE LandmarkSample landmarkSample(const glm::vec2 pos, const glm::ivec2 ipos, const int32 h) const noexcept {
 				static_assert(L != L, "Missing specialization.");
 			}
 
