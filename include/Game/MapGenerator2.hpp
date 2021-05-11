@@ -184,6 +184,15 @@ namespace Game {
 			////////////////////////////////////////////////////////////////////////////////
 			// Biome specialization functions
 			////////////////////////////////////////////////////////////////////////////////
+			
+			[[nodiscard]]
+			ENGINE_INLINE float32 genericBiomeHeightStrength(const float32 x, const BiomeBounds bounds) const noexcept;
+
+			[[nodiscard]]
+			ENGINE_INLINE float32 genericBiomeBasisStrength(const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept;
+
+			[[nodiscard]]
+			ENGINE_INLINE float32 genericBiomeBlockStrength(const glm::vec2 pos, const float32 basisStrength) const noexcept;
 
 			// TODO: Doc
 			template<Biome B>

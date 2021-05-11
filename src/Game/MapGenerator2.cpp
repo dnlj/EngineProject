@@ -125,12 +125,7 @@ namespace Game {
 	}
 
 	DEF_BIOME_HEIGHT_STRENGTH(Forest) {
-		// TODO: we use this radius/offset type logic in a number of places. Probably extract and pass as args.
-		const auto s = biomeScales[bounds.depth];
-		const auto center = (bounds.cell.x + 0.5f) * s;
-		const auto off = 0.5f * s - std::abs(center - x);
-		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
-		return std::min(1.0f, off * tDist);
+		return genericBiomeHeightStrength(x, bounds);
 	}
 
 	DEF_BIOME_BASIS(Forest) {
@@ -143,25 +138,16 @@ namespace Game {
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Forest) {
-		// Could do circle instead if that looks better - `1 - length(off)` instead of compMin 
-		const auto s = biomeScales[bounds.depth];
-		const auto center = (glm::vec2{bounds.cell} + 0.5f) * s;
-		const auto off = 0.5f * s - glm::abs(center - posBiome);
-		// TODO: adjust transition distance based on bounds.depth. Currently small biomes its to large and large biomes its to small. probably want something like 200, and 600
-		// TODO: we use this same tDist in height str. probably want it in a central location.
-		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
-		return glm::compMin(off * tDist);
+		return genericBiomeBasisStrength(posBiome, bounds);
 	}
 
 	DEF_BIOME_BLOCK(Forest) {
+		return BlockId::Iron;
 		return BlockId::Debug + (BlockId)bounds.depth;
 	}
 
 	DEF_BIOME_BLOCK_STRENGTH(Forest) {
-		auto adj = basisStrength;
-		adj += 0.3f * simplex.scaled(0.03f * pos);
-		adj += 0.3f * simplex.scaled(0.09f * pos);
-		return 0.5f < adj;
+		return genericBiomeBlockStrength(pos, basisStrength);
 	}
 }
 
@@ -174,12 +160,7 @@ namespace Game {
 	}
 
 	DEF_BIOME_HEIGHT_STRENGTH(Jungle) {
-		// TODO: we use this radius/offset type logic in a number of places. Probably extract and pass as args.
-		const auto s = biomeScales[bounds.depth];
-		const auto center = (bounds.cell.x + 0.5f) * s;
-		const auto off = 0.5f * s - std::abs(center - x);
-		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
-		return std::min(1.0f, off * tDist);
+		return genericBiomeHeightStrength(x, bounds);
 	}
 
 	DEF_BIOME_BASIS(Jungle) {
@@ -192,19 +173,16 @@ namespace Game {
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Jungle) {
-		const auto s = biomeScales[bounds.depth];
-		const auto center = (glm::vec2{bounds.cell} + 0.5f) * s;
-		const auto off = 0.5f * s - glm::abs(center - posBiome);
-		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
-		return glm::compMin(glm::min(off * tDist, 1.0f));
+		return genericBiomeBasisStrength(posBiome, bounds);
 	}
 
 	DEF_BIOME_BLOCK(Jungle) {
-		return BlockId::Debug + (BlockId)bounds.depth;
+		//return BlockId::Debug + (BlockId)bounds.depth;
+		return BlockId::Gold;
 	}
 
 	DEF_BIOME_BLOCK_STRENGTH(Jungle) {
-		return 0.5f < basisStrength;
+		return genericBiomeBlockStrength(pos, basisStrength);
 	}
 }
 #undef DEF_BIOME_HEIGHT_OFFSET
@@ -503,4 +481,31 @@ namespace Game {
 
 		return v < 0.2f ? 0 : perm(wv.cell.x, wv.cell.y);
 	}*/
+
+	float32 MapGenerator2::genericBiomeHeightStrength(const float32 x, const BiomeBounds bounds) const noexcept {
+		// TODO: we use this radius/offset type logic in a number of places. Probably extract and pass as args.
+		const auto s = biomeScales[bounds.depth];
+		const auto center = (bounds.cell.x + 0.5f) * s;
+		const auto off = 0.5f * s - std::abs(center - x);
+		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
+		return std::min(1.0f, off * tDist);
+	}
+
+	float32 MapGenerator2::genericBiomeBasisStrength(const glm::vec2 posBiome, const BiomeBounds bounds) const noexcept {
+		// Could do circle instead if that looks better - `1 - length(off)` instead of compMin 
+		const auto s = biomeScales[bounds.depth];
+		const auto center = (glm::vec2{bounds.cell} + 0.5f) * s;
+		const auto off = 0.5f * s - glm::abs(center - posBiome);
+		// TODO: adjust transition distance based on bounds.depth. Currently small biomes its to large and large biomes its to small. probably want something like 200, and 600
+		// TODO: we use this same tDist in height str. probably want it in a central location.
+		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
+		return glm::compMin(off * tDist);
+	}
+	
+	float32 MapGenerator2::genericBiomeBlockStrength(const glm::vec2 pos, const float32 basisStrength) const noexcept {
+		auto adj = basisStrength;
+		adj += 0.3f * simplex.scaled(0.03f * pos);
+		adj += 0.3f * simplex.scaled(0.09f * pos);
+		return 0.5f < adj;
+	}
 }
