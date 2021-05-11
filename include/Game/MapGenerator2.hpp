@@ -223,7 +223,7 @@ namespace Game {
 			// TODO: Doc - range ~[0, 1]
 			template<Biome B>
 			[[nodiscard]]
-			ENGINE_INLINE float32 biomeBlockStrength(const float32 basisStrength) const noexcept {
+			ENGINE_INLINE float32 biomeBlockStrength(const glm::vec2 pos, const float32 basisStrength) const noexcept {
 				static_assert(B != B, "Missing specialization for biome.");
 			}
 	};

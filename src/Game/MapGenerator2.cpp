@@ -64,7 +64,7 @@ namespace {
 #define DEF_BIOME_BLOCK_STRENGTH(B)\
 	template<>\
 	[[nodiscard]]\
-	ENGINE_INLINE float32 MapGenerator2::biomeBlockStrength<MapGenerator2::Biome:: B>(const float32 basisStrength) const noexcept
+	ENGINE_INLINE float32 MapGenerator2::biomeBlockStrength<MapGenerator2::Biome:: B>(const glm::vec2 pos, const float32 basisStrength) const noexcept
 
 ////////////////////////////////////////////////////////////////////////////////
 // Biome 0
@@ -128,13 +128,13 @@ namespace Game {
 		// TODO: we use this radius/offset type logic in a number of places. Probably extract and pass as args.
 		const auto s = biomeScales[bounds.depth];
 		const auto center = (bounds.cell.x + 0.5f) * s;
-		const auto off = 0.5f * s - std::abs(center - x + biomeOffset.x);
+		const auto off = 0.5f * s - std::abs(center - x);
 		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
 		return std::min(1.0f, off * tDist);
 	}
 
 	DEF_BIOME_BASIS(Forest) {
-		if (pos.y > h) { return -1; }
+		if (pos.y > h) { return -1.0f; }
 
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
 		constexpr float32 groundScale = 1.0f / 100.0f;
@@ -143,11 +143,14 @@ namespace Game {
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Forest) {
+		// Could do circle instead if that looks better - `1 - length(off)` instead of compMin 
 		const auto s = biomeScales[bounds.depth];
 		const auto center = (glm::vec2{bounds.cell} + 0.5f) * s;
-		const auto off = 0.5f * s - glm::abs(center - posBiome + biomeOffset);
+		const auto off = 0.5f * s - glm::abs(center - posBiome);
+		// TODO: adjust transition distance based on bounds.depth. Currently small biomes its to large and large biomes its to small. probably want something like 200, and 600
+		// TODO: we use this same tDist in height str. probably want it in a central location.
 		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
-		return glm::compMin(glm::min(off * tDist, 1.0f));
+		return glm::compMin(off * tDist);
 	}
 
 	DEF_BIOME_BLOCK(Forest) {
@@ -155,7 +158,10 @@ namespace Game {
 	}
 
 	DEF_BIOME_BLOCK_STRENGTH(Forest) {
-		return 0.5f < basisStrength;
+		auto adj = basisStrength;
+		adj += 0.3f * simplex.scaled(0.03f * pos);
+		adj += 0.3f * simplex.scaled(0.09f * pos);
+		return 0.5f < adj;
 	}
 }
 
@@ -171,7 +177,7 @@ namespace Game {
 		// TODO: we use this radius/offset type logic in a number of places. Probably extract and pass as args.
 		const auto s = biomeScales[bounds.depth];
 		const auto center = (bounds.cell.x + 0.5f) * s;
-		const auto off = 0.5f * s - std::abs(center - x + biomeOffset.x);
+		const auto off = 0.5f * s - std::abs(center - x);
 		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
 		return std::min(1.0f, off * tDist);
 	}
@@ -188,7 +194,7 @@ namespace Game {
 	DEF_BIOME_BASIS_STRENGTH(Jungle) {
 		const auto s = biomeScales[bounds.depth];
 		const auto center = (glm::vec2{bounds.cell} + 0.5f) * s;
-		const auto off = 0.5f * s - glm::abs(center - posBiome + biomeOffset);
+		const auto off = 0.5f * s - glm::abs(center - posBiome);
 		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
 		return glm::compMin(glm::min(off * tDist, 1.0f));
 	}
@@ -308,7 +314,7 @@ namespace Game {
 		const glm::vec2 ipos = glm::ivec2{x, y};
 		const glm::vec2 pos = glm::vec2{static_cast<float32>(x), static_cast<float32>(y)};
 		const auto h0 = height0(pos.x);
-		const auto posBiome = pos - glm::vec2{0, h0};
+		const auto posBiome = pos - glm::vec2{0, h0} - biomeOffset;
 		const auto bounds = biomeAt(posBiome);
 
 		const Biome b = bounds.depth < 0 ? Biome::Default : static_cast<Biome>(perm(bounds.cell.x, bounds.cell.y) % (static_cast<int>(Biome::Jungle) + 1));
@@ -398,7 +404,7 @@ namespace Game {
 
 	auto MapGenerator2::biomeAt(const glm::vec2 pos) const noexcept -> BiomeBounds {
 		for (int l = 0; l < std::size(biomeScales); ++l) {
-			const glm::ivec2 cell = glm::floor((pos - biomeOffset) * biomeScalesInv[l]);
+			const glm::ivec2 cell = glm::floor(pos * biomeScalesInv[l]);
 			if (perm(cell.x, cell.y) < 10) {
 				//return BlockId::Debug + static_cast<BlockId>(l);
 				return {l, cell};
@@ -472,7 +478,7 @@ namespace Game {
 	template<MapGenerator2::Biome B>
 	BlockId MapGenerator2::block(const glm::vec2 pos, const glm::vec2 ipos, const int32 h, const float32 h0, const BiomeBounds bounds, const float32 bstr) const noexcept {
 		if constexpr (B != Biome::Default) {
-			if (bounds.depth >= 0 && biomeBlockStrength<B>(bstr)) {
+			if (bounds.depth >= 0 && biomeBlockStrength<B>(pos, bstr)) {
 				return biomeBlock<B>(pos, ipos, h, h0, bounds);
 			}
 		}
