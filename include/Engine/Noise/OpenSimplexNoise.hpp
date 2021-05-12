@@ -28,17 +28,8 @@ namespace Engine::Noise {
 			}
 			
 			[[nodiscard]]
-			ENGINE_INLINE Float scaled(const FVec2 p) const noexcept {
-				return scaled(p.x, p.y);
-			}
-
-			/**
-			 * Scaled output roughly to [-1, 1]
-			 */
-			[[nodiscard]]
-			ENGINE_INLINE Float scaled(const Float x, const Float y) const noexcept {
-				// Experimentally obtained range is +-0.865921
-				return value(x, y) * (1.0f / 0.87f);
+			ENGINE_INLINE Float value(const FVec2 p) const noexcept {
+				return value(p.x, p.y);
 			}
 
 			// 2D OpenSimplex Noise.
@@ -153,8 +144,10 @@ namespace Engine::Noise {
 					value += attn_ext * attn_ext * extrapolate(xsv_ext, ysv_ext, dx_ext, dy_ext);
 				}
 
-				return value / NORM_CONSTANT_2D;
+				// Original: return value / NORM_CONSTANT_2D;
+				return value * RescaleMult2D;
 			}
+
 		private:
 			constexpr static Float STRETCH_CONSTANT_2D	= Float(-0.211324865405187); // (1/sqrt(2+1)-1)/2;
 			constexpr static Float SQUISH_CONSTANT_2D	= Float(0.366025403784439);  // (sqrt(2+1)-1)/2;
@@ -165,6 +158,10 @@ namespace Engine::Noise {
 			constexpr static Float NORM_CONSTANT_2D		= Float(47.0);
 			constexpr static Float NORM_CONSTANT_3D		= Float(103.0);
 			constexpr static Float NORM_CONSTANT_4D		= Float(30.0);
+
+			// Experimentally obtained range is +-0.865921
+			constexpr static Float RescaleMult2D = Float(1.0 / (NORM_CONSTANT_2D * 0.87));
+
 			RangePermutation<256> perm;
 
 			// Gradients for 2D. They approximate the directions to the

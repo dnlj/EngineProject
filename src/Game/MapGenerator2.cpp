@@ -71,7 +71,7 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_BIOME_HEIGHT_OFFSET(Default) {
-		return 15 * simplex.scaled(x * 0.05f, 0); // TODO: 1d simplex
+		return 15 * simplex.value(x * 0.05f, 0); // TODO: 1d simplex
 	}
 
 	DEF_BIOME_HEIGHT_STRENGTH(Default) {
@@ -84,7 +84,7 @@ namespace Game {
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
 		constexpr float32 groundScale = 1.0f / 100.0f;
 		const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-		return simplex.scaled(pos * 0.06f) + groundGrad;
+		return simplex.value(pos * 0.06f) + groundGrad;
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Default) {
@@ -121,7 +121,7 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_BIOME_HEIGHT_OFFSET(Forest) {
-		return 85 * simplex.scaled(x * 0.01f, 0); // TODO: 1d simplex
+		return 85 * simplex.value(x * 0.01f, 0); // TODO: 1d simplex
 	}
 
 	DEF_BIOME_HEIGHT_STRENGTH(Forest) {
@@ -134,7 +134,7 @@ namespace Game {
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
 		constexpr float32 groundScale = 1.0f / 100.0f;
 		const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-		return simplex.scaled(pos * 0.01f) + groundGrad;
+		return simplex.value(pos * 0.01f) + groundGrad;
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Forest) {
@@ -142,7 +142,6 @@ namespace Game {
 	}
 
 	DEF_BIOME_BLOCK(Forest) {
-		return BlockId::Iron;
 		return BlockId::Debug + (BlockId)bounds.depth;
 	}
 
@@ -156,7 +155,7 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_BIOME_HEIGHT_OFFSET(Jungle) {
-		return 85 * simplex.scaled(x * 0.01f, 0); // TODO: 1d simplex
+		return 85 * simplex.value(x * 0.01f, 0); // TODO: 1d simplex
 	}
 
 	DEF_BIOME_HEIGHT_STRENGTH(Jungle) {
@@ -169,7 +168,7 @@ namespace Game {
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
 		constexpr float32 groundScale = 1.0f / 100.0f;
 		const float32 groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-		return simplex.scaled(pos * 0.005f) + groundGrad;
+		return simplex.value(pos * 0.005f) + groundGrad;
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Jungle) {
@@ -177,8 +176,7 @@ namespace Game {
 	}
 
 	DEF_BIOME_BLOCK(Jungle) {
-		//return BlockId::Debug + (BlockId)bounds.depth;
-		return BlockId::Gold;
+		return BlockId::Debug + (BlockId)bounds.depth;
 	}
 
 	DEF_BIOME_BLOCK_STRENGTH(Jungle) {
@@ -393,7 +391,7 @@ namespace Game {
 	}
 
 	float32 MapGenerator2::height0(const float32 x) const noexcept {
-		return heightVar * simplex.scaled(0.000005f * x, 0); // TODO: 1d simplex
+		return heightVar * simplex.value(0.000005f * x, 0); // TODO: 1d simplex
 	}
 	
 	template<MapGenerator2::Biome B>
@@ -504,8 +502,8 @@ namespace Game {
 	
 	float32 MapGenerator2::genericBiomeBlockStrength(const glm::vec2 pos, const float32 basisStrength) const noexcept {
 		auto adj = basisStrength;
-		adj += 0.3f * simplex.scaled(0.03f * pos);
-		adj += 0.3f * simplex.scaled(0.09f * pos);
+		adj += 0.3f * simplex.value(0.03f * pos);
+		adj += 0.3f * simplex.value(0.09f * pos);
 		return 0.5f < adj;
 	}
 }
