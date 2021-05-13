@@ -115,7 +115,7 @@ namespace Game {
 			}();
 
 			// Offset used so that biomes are roughly centered at ground level
-			constexpr static glm::vec2 biomeOffset = {0,
+			constexpr static FVec2 biomeOffset = {0,
 				biomeScales[0] / 2.0 + 200.0 // Experimentally terrain surface is around 100-300
 			};
 
@@ -152,7 +152,7 @@ namespace Game {
 			
 			template<Biome B>
 			[[nodiscard]]
-			int32 height(const Float x, const BiomeBounds bounds, const Float h0) const noexcept;
+			Int height(const Float x, const BiomeBounds bounds, const Float h0) const noexcept;
 			
 			template<Biome B>
 			[[nodiscard]]
@@ -214,7 +214,7 @@ namespace Game {
 			// TODO: Doc - range ~[-1, 1]
 			template<Biome B>
 			[[nodiscard]]
-			ENGINE_INLINE Float biomeBasis(const FVec2 pos, const int32 h) const noexcept {
+			ENGINE_INLINE Float biomeBasis(const FVec2 pos, const Int h) const noexcept {
 				static_assert(B != B, "Missing specialization for biome.");
 			}
 
