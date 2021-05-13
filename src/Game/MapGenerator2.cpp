@@ -34,6 +34,10 @@ namespace {
 
 		return max->y;
 	}
+
+	ENGINE_INLINE constexpr Game::MapGenerator2::Float operator""_f(const long double v) noexcept {
+		return static_cast<Game::MapGenerator2::Float>(v);
+	}
 }
 
 #define DEF_BIOME_HEIGHT_OFFSET(B)\
@@ -71,20 +75,20 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_BIOME_HEIGHT_OFFSET(Default) {
-		return 15 * simplex.value(x * 0.05f, 0); // TODO: 1d simplex
+		return 15 * simplex.value(x * 0.05_f, 0); // TODO: 1d simplex
 	}
 
 	DEF_BIOME_HEIGHT_STRENGTH(Default) {
-		return 1.0f;
+		return 1.0_f;
 	}
 
 	DEF_BIOME_BASIS(Default) {
 		if (pos.y > h) { return -1; }
 
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
-		constexpr Float groundScale = 1.0f / 100.0f;
-		const Float groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-		return simplex.value(pos * 0.06f) + groundGrad;
+		constexpr Float groundScale = 1.0_f / 100.0_f;
+		const Float groundGrad = std::max(0.0_f, 1.0_f - (h - pos.y) * groundScale);
+		return simplex.value(pos * 0.06_f) + groundGrad;
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Default) {
@@ -112,7 +116,7 @@ namespace Game {
 	}
 
 	DEF_BIOME_BLOCK_STRENGTH(Default) {
-		return 1.0f;
+		return 1.0_f;
 	}
 }
 
@@ -121,7 +125,7 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_BIOME_HEIGHT_OFFSET(Forest) {
-		return 85 * simplex.value(x * 0.01f, 0); // TODO: 1d simplex
+		return 85 * simplex.value(x * 0.01_f, 0); // TODO: 1d simplex
 	}
 
 	DEF_BIOME_HEIGHT_STRENGTH(Forest) {
@@ -129,12 +133,12 @@ namespace Game {
 	}
 
 	DEF_BIOME_BASIS(Forest) {
-		if (pos.y > h) { return -1.0f; }
+		if (pos.y > h) { return -1.0_f; }
 
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
-		constexpr Float groundScale = 1.0f / 100.0f;
-		const Float groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-		return simplex.value(pos * 0.01f) + groundGrad;
+		constexpr Float groundScale = 1.0_f / 100.0_f;
+		const Float groundGrad = std::max(0.0_f, 1.0_f - (h - pos.y) * groundScale);
+		return simplex.value(pos * 0.01_f) + groundGrad;
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Forest) {
@@ -155,7 +159,7 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 namespace Game {
 	DEF_BIOME_HEIGHT_OFFSET(Jungle) {
-		return 85 * simplex.value(x * 0.01f, 0); // TODO: 1d simplex
+		return 85 * simplex.value(x * 0.01_f, 0); // TODO: 1d simplex
 	}
 
 	DEF_BIOME_HEIGHT_STRENGTH(Jungle) {
@@ -166,9 +170,9 @@ namespace Game {
 		if (pos.y > h) { return -1; }
 
 		// TODO: we really want this to be a very large gradient so caves get larger with depth
-		constexpr Float groundScale = 1.0f / 100.0f;
-		const Float groundGrad = std::max(0.0f, 1.0f - (h - pos.y) * groundScale);
-		return simplex.value(pos * 0.005f) + groundGrad;
+		constexpr Float groundScale = 1.0_f / 100.0_f;
+		const Float groundGrad = std::max(0.0_f, 1.0_f - (h - pos.y) * groundScale);
+		return simplex.value(pos * 0.005_f) + groundGrad;
 	}
 
 	DEF_BIOME_BASIS_STRENGTH(Jungle) {
@@ -203,24 +207,24 @@ namespace Game {
 
 		constexpr Float treeSpacing = 11; // Average spacing between tree centers
 		constexpr Int treeThresh = 200; // Chance for a tree to exist at this spacing out of 255
-		const auto left = Engine::Noise::floorTo<Int>(ipos.x * (1.0f / treeSpacing)); // Use the left grid cell to determine trees
+		const auto left = Engine::Noise::floorTo<Int>(ipos.x * (1.0_f / treeSpacing)); // Use the left grid cell to determine trees
 
 		if (perm.value(left) < treeThresh) {
-			const Int treeH = h + 25 + static_cast<Int>(perm.value(left - 321) * (50.0f/255.0f));
+			const Int treeH = h + 25 + static_cast<Int>(perm.value(left - 321) * (50.0_f/255.0_f));
 			if (ipos.y < treeH) {
 				constexpr Int trunkD = 3; // Trunk width // TODO: doesnt work correctly for even width.
-				constexpr Int trunkR = (trunkD / 2) + (trunkD / 2.0f != trunkD / 2);
-				constexpr Float pad = (0 + trunkR) * (1.0f/treeSpacing);
+				constexpr Int trunkR = (trunkD / 2) + (trunkD / 2.0_f != trunkD / 2);
+				constexpr Float pad = (0 + trunkR) * (1.0_f/treeSpacing);
 
 				// If the padding is near 0.5 you might as well use fixed spacing
-				static_assert(pad < 0.45f, "Tree width is to large relative to tree spacing");
+				static_assert(pad < 0.45_f, "Tree width is to large relative to tree spacing");
 
 				const Float a = left + pad;
-				const Float b = left + 1.0f - pad;
-				const Float off = perm.value(left + 321) * (1.0f/255.0f);
+				const Float b = left + 1.0_f - pad;
+				const Float off = perm.value(left + 321) * (1.0_f/255.0_f);
 				const Int wpos = Engine::Noise::floorTo<Int>((a + off * (b - a)) * treeSpacing);
 				if (ipos.x < (wpos + trunkR) && ipos.x > (wpos - trunkR)) {
-					return { .exists = true, .basis = 1.0f, .block = BlockId::Debug2 };
+					return { .exists = true, .basis = 1.0_f, .block = BlockId::Debug2 };
 				}
 			}
 		}
@@ -250,24 +254,24 @@ namespace Game {
 namespace Game {
 	DEF_LANDMARK_SAMPLE(BossPortal) {
 		constexpr Int w = 50;
-		constexpr Float d = 1.0f / w;
+		constexpr Float d = 1.0_f / w;
 		const auto scaled = pos * d;
 		const auto cell = glm::floor(scaled);
 		// TODO: we will want this to be a much smaller than 1%. Is there a function we could use instead of a perm table?
 		// TODO: cont. Could we just use a LCG and seed from cell.x and cell.y? look into other hash functions
 		if (perm(static_cast<int>(cell.x), static_cast<int>(cell.y), static_cast<int>(Landmark::BossPortal)) > 5) { return { .exists = false }; }
-		const auto offC = 2.0f * (scaled - cell) - 1.0f; // Offset from center [-1, 1]
-		const auto grad = 2 * glm::min(glm::length2(offC)*glm::length2(offC), 1.0f); // Circle grad [0, 2]
+		const auto offC = 2.0_f * (scaled - cell) - 1.0_f; // Offset from center [-1, 1]
+		const auto grad = 2 * glm::min(glm::length2(offC)*glm::length2(offC), 1.0_f); // Circle grad [0, 2]
 
 		// floor level
-		if (offC.y > -0.3f) {
-			if (offC.y < 0.5f && offC.x < 0.2f && offC.x > -0.2f) {
-				return {.exists = true, .basis = 1.0f, .block = BlockId::Debug4 };
+		if (offC.y > -0.3_f) {
+			if (offC.y < 0.5_f && offC.x < 0.2_f && offC.x > -0.2_f) {
+				return {.exists = true, .basis = 1.0_f, .block = BlockId::Debug4 };
 			}
-			return {.exists = true, .basis = grad - 2.0f, .block = BlockId::None };
+			return {.exists = true, .basis = grad - 2.0_f, .block = BlockId::None };
 		}
 		// TODO: we would really like some blending around left and right sides for larger values
-		return {.exists = true, .basis = 2.0f - grad, .block = BlockId::None };
+		return {.exists = true, .basis = 2.0_f - grad, .block = BlockId::None };
 	}
 }
 
@@ -319,7 +323,7 @@ namespace Game {
 		const auto l2 = landmark<B>(pos, ipos, h);
 		if (l2.exists) {
 			const auto b2 = b + l2.basis;
-			if (b2 < 0.0f) {
+			if (b2 < 0.0_f) {
 				//return BlockId::Debug2;
 				return BlockId::Air;
 			} else {
@@ -327,7 +331,7 @@ namespace Game {
 			}
 		}
 
-		if (b <= 0.0f) {
+		if (b <= 0.0_f) {
 			return BlockId::Air;
 		};
 
@@ -337,18 +341,18 @@ namespace Game {
 	BlockId MapGenerator2::resource(const FVec2 pos) const noexcept {
 		struct ResourceSpec {
 			consteval ResourceSpec(BlockId b, Float s, Float d)
-				: block{b}, scale{1.0f/s}, density{d * 2.0f - 1.0f} {
+				: block{b}, scale{1.0_f/s}, density{d * 2.0_f - 1.0_f} {
 			}
 
 			BlockId block = BlockId::None;
-			Float scale = 1.0f;
-			Float density = 0.0f;
+			Float scale = 1.0_f;
+			Float density = 0.0_f;
 		};
 
 		// TODO: will probably want to be able to set biome/depth requirements
 		constexpr ResourceSpec ores[] = {
-			{BlockId::Gold, 7.0f, 0.11f},
-			{BlockId::Iron, 5.0f, 0.2f},
+			{BlockId::Gold, 7.0_f, 0.11_f},
+			{BlockId::Iron, 5.0_f, 0.2_f},
 		};
 
 		for (const auto& ore : ores) {
@@ -363,18 +367,18 @@ namespace Game {
 
 	/*
 	Int MapGenerator2::height(const FVec2 pos) const noexcept {
-		auto octave = [&](const Float xs, const Float ys, const Float off, const Float one = 0.0f) ENGINE_INLINE {
+		auto octave = [&](const Float xs, const Float ys, const Float off, const Float one = 0.0_f) ENGINE_INLINE {
 			// TODO: use 1d simplex when you get it workign correctly
-			return ys * 0.5f * (one + simplex.value(xs * (pos.x + off), 0));
+			return ys * 0.5_f * (one + simplex.value(xs * (pos.x + off), 0));
 		};
 
-		Float h = 0.0f;
+		Float h = 0.0_f;
 
 		// TODO: this may be to much variation? Might make it hard to do anything in the sky. Then again we could just offset by `basis + #`
-		h += octave(0.0001f, 500.0f, 1 * 999.0f, 1.0f);
-		h += octave(0.005f, 50.0f, 2 * 999.0f);
-		h += octave(0.05f, 5.0f, 3 * 999.0f);
-		h += octave(0.75f, 2.0f, 4 * 999.0f);
+		h += octave(0.0001_f, 500.0_f, 1 * 999.0_f, 1.0_f);
+		h += octave(0.005_f, 50.0_f, 2 * 999.0_f);
+		h += octave(0.05_f, 5.0_f, 3 * 999.0_f);
+		h += octave(0.75_f, 2.0_f, 4 * 999.0_f);
 		return static_cast<Int>(h);
 	}*/
 
@@ -391,7 +395,7 @@ namespace Game {
 	}
 
 	auto MapGenerator2::height0(const Float x) const noexcept -> Float {
-		return heightVar * simplex.value(0.000005f * x, 0); // TODO: 1d simplex
+		return heightVar * simplex.value(0.000005_f * x, 0); // TODO: 1d simplex
 	}
 	
 	template<MapGenerator2::Biome B>
@@ -433,15 +437,15 @@ namespace Game {
 				return biomeBasisStrength<B>(pos, posBiome, bounds);
 			}
 		}
-		return 0.0f;
+		return 0.0_f;
 	}
 	
 	template<MapGenerator2::Biome B>
 	auto MapGenerator2::basis(const FVec2 pos, const Int h, const Float bstr) const noexcept -> Float {
 		if constexpr (B != Biome::Default) {
-			if (bstr > 0.0f) {
+			if (bstr > 0.0_f) {
 				const auto b2 = biomeBasis<B>(pos, h);
-				if (bstr >= 1.0f) { return b2; }
+				if (bstr >= 1.0_f) { return b2; }
 
 				const auto b1 = biomeBasis<Biome::Default>(pos, h);
 				return b1 + bstr * (b2 - b1);
@@ -465,45 +469,45 @@ namespace Game {
 	/*
 	Int MapGenerator2::biome(const FVec2 pos) const noexcept {
 		// Perturb
-		const auto p = simplex.value(pos.x * 0.0006f, pos.y * 0.0006f);
-		const auto p2 = pos * 0.0003f + p * 0.3f;
+		const auto p = simplex.value(pos.x * 0.0006_f, pos.y * 0.0006_f);
+		const auto p2 = pos * 0.0003_f + p * 0.3_f;
 
 		// Edge noise
-		const auto m = simplex.value(pos.x * 0.3f, pos.y * 0.3f);
+		const auto m = simplex.value(pos.x * 0.3_f, pos.y * 0.3_f);
 
 		// Main shape
 		const auto wv = worley.valueF2F1(p2.x, p2.y);
 
 		// Combine
-		const auto v = wv.value - m * 0.08f;
+		const auto v = wv.value - m * 0.08_f;
 
-		return v < 0.2f ? 0 : perm(wv.cell.x, wv.cell.y);
+		return v < 0.2_f ? 0 : perm(wv.cell.x, wv.cell.y);
 	}*/
 
 	auto MapGenerator2::genericBiomeHeightStrength(const Float x, const BiomeBounds bounds) const noexcept -> Float {
 		// TODO: we use this radius/offset type logic in a number of places. Probably extract and pass as args.
 		const auto s = biomeScales[bounds.depth];
-		const auto center = (bounds.cell.x + 0.5f) * s;
-		const auto off = 0.5f * s - std::abs(center - x);
-		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
-		return std::min(1.0f, off * tDist);
+		const auto center = (bounds.cell.x + 0.5_f) * s;
+		const auto off = 0.5_f * s - std::abs(center - x);
+		constexpr auto tDist = 1.0_f / 350.0_f; // 1 / transition distance in blocks
+		return std::min(1.0_f, off * tDist);
 	}
 
 	auto MapGenerator2::genericBiomeBasisStrength(const FVec2 posBiome, const BiomeBounds bounds) const noexcept -> Float {
 		// Could do circle instead if that looks better - `1 - length(off)` instead of compMin 
 		const auto s = biomeScales[bounds.depth];
-		const auto center = (FVec2{bounds.cell} + 0.5f) * s;
-		const auto off = 0.5f * s - glm::abs(center - posBiome);
+		const auto center = (FVec2{bounds.cell} + 0.5_f) * s;
+		const auto off = 0.5_f * s - glm::abs(center - posBiome);
 		// TODO: adjust transition distance based on bounds.depth. Currently small biomes its to large and large biomes its to small. probably want something like 200, and 600
 		// TODO: we use this same tDist in height str. probably want it in a central location.
-		constexpr auto tDist = 1.0f / 350.0f; // 1 / transition distance in blocks
+		constexpr auto tDist = 1.0_f / 350.0_f; // 1 / transition distance in blocks
 		return glm::compMin(off * tDist);
 	}
 	
 	auto MapGenerator2::genericBiomeBlockStrength(const FVec2 pos, const Float basisStrength) const noexcept -> Float {
 		auto adj = basisStrength;
-		adj += 0.3f * simplex.value(0.03f * pos);
-		adj += 0.3f * simplex.value(0.09f * pos);
-		return 0.5f < adj;
+		adj += 0.3_f * simplex.value(0.03_f * pos);
+		adj += 0.3_f * simplex.value(0.09_f * pos);
+		return 0.5_f < adj;
 	}
 }
