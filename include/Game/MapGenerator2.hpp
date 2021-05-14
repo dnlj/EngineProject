@@ -80,9 +80,9 @@ namespace Game {
 
 		private:
 			// TODO: add impl that takes perm array ref instead of seed so we can share
-			Engine::Noise::OpenSimplexNoise simplex;
+			Engine::Noise::OpenSimplexNoiseGeneric<Float, Int> simplex;
 			Engine::Noise::WorleyNoise worley;
-			Engine::Noise::RangePermutation<256> perm;
+			Engine::Noise::RangePermutation<256, Int> perm;
 
 			struct BiomeBounds {
 				Int depth;

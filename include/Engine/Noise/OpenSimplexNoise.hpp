@@ -13,14 +13,12 @@
 
 namespace Engine::Noise {
 	// Originally from: https://gist.github.com/KdotJPG/b1270127455a94ac5d19
-	class OpenSimplexNoise {
+	template<std::floating_point Float, std::integral Int>
+	class OpenSimplexNoiseGeneric {
 		public:
-			// TODO: template params?
-			using Int = int32;
-			using Float = float32;
 			using FVec2 = glm::vec<2, Float>;
 
-			OpenSimplexNoise(int64 seed) : perm{seed} {
+			OpenSimplexNoiseGeneric(int64 seed) : perm{seed} {
 			}
 
 			void setSeed(int64 seed) {
@@ -162,7 +160,7 @@ namespace Engine::Noise {
 			// Experimentally obtained range is +-0.865921
 			constexpr static Float RescaleMult2D = Float(1.0 / (NORM_CONSTANT_2D * 0.87));
 
-			RangePermutation<256> perm;
+			RangePermutation<256, Int> perm;
 
 			// Gradients for 2D. They approximate the directions to the
 			// vertices of an octagon from the center.
@@ -180,4 +178,6 @@ namespace Engine::Noise {
 			}
 
 	};
+
+	struct OpenSimplexNoise : OpenSimplexNoiseGeneric<float32, int32> {};
 }
