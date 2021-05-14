@@ -49,13 +49,9 @@ namespace Engine::Noise {
 	 * @see MetricChebyshev
 	 * @see MetricMinkowski
 	 */
-	template<class Perm, class Dist, class Metric>
+	template<class Perm, class Dist, class Metric, std::floating_point Float = float32, std::integral Int = int32>
 	class ENGINE_EMPTY_BASE WorleyNoiseGeneric : protected BaseMember<Perm>, BaseMember<Dist>, BaseMember<Metric> {
 		public:
-			// For easy changing later
-			// TODO: template params?
-			using Float = float32;
-			using Int = int32;
 			using IVec = glm::vec<2, Int>;
 			using FVec = glm::vec<2, Float>;
 
@@ -166,7 +162,7 @@ namespace Engine::Noise {
 			}
 	};
 
-	class WorleyNoise : public WorleyNoiseGeneric<RangePermutation<256>, ConstantDistribution<1>, MetricEuclidean2> {
+	class WorleyNoise : public WorleyNoiseGeneric<RangePermutation<256>, ConstantDistribution<1>, MetricEuclidean2, float32, int32> {
 		public:
 			WorleyNoise(int64 seed) : WorleyNoiseGeneric{seed, {}, {}} {
 			}
