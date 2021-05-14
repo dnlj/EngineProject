@@ -68,7 +68,7 @@ namespace {
 #define DEF_BIOME_BLOCK_STRENGTH(B)\
 	template<>\
 	[[nodiscard]]\
-	ENGINE_INLINE auto MapGenerator2::biomeBlockStrength<MapGenerator2::Biome:: B>(const FVec2 pos, const Float basisStrength) const noexcept -> Float
+	ENGINE_INLINE auto MapGenerator2::biomeBlockStrength<MapGenerator2::Biome:: B>(const FVec2 pos, const Float basisStrength) const noexcept -> bool
 
 ////////////////////////////////////////////////////////////////////////////////
 // Biome 0
@@ -504,7 +504,7 @@ namespace Game {
 		return glm::compMin(off * tDist);
 	}
 	
-	auto MapGenerator2::genericBiomeBlockStrength(const FVec2 pos, const Float basisStrength) const noexcept -> Float {
+	auto MapGenerator2::genericBiomeBlockStrength(const FVec2 pos, const Float basisStrength) const noexcept -> bool {
 		auto adj = basisStrength;
 		adj += 0.3_f * simplex.value(0.03_f * pos);
 		adj += 0.3_f * simplex.value(0.09_f * pos);

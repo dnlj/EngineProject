@@ -81,7 +81,6 @@ namespace Game {
 		private:
 			// TODO: add impl that takes perm array ref instead of seed so we can share
 			Engine::Noise::OpenSimplexNoiseGeneric<Float, Int> simplex;
-			Engine::Noise::WorleyNoise worley;
 			Engine::Noise::RangePermutation<256, Int> perm;
 
 			struct BiomeBounds {
@@ -122,7 +121,6 @@ namespace Game {
 		public:
 			MapGenerator2(const int64 seed)
 				: simplex{seed}
-				, worley{seed}
 				, perm{seed} {
 			}
 
@@ -195,47 +193,62 @@ namespace Game {
 			ENGINE_INLINE Float genericBiomeBasisStrength(const FVec2 posBiome, const BiomeBounds bounds) const noexcept;
 
 			[[nodiscard]]
-			ENGINE_INLINE Float genericBiomeBlockStrength(const FVec2 pos, const Float basisStrength) const noexcept;
+			ENGINE_INLINE bool genericBiomeBlockStrength(const FVec2 pos, const Float basisStrength) const noexcept;
 
-			// TODO: Doc
+			/**
+			 * Gets the offset from the base height curve at the location.
+			 */
 			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE Float biomeHeightOffset(const Float x) const noexcept {
 				static_assert(B != B, "Missing specialization for biome.");
 			}
 
-			// TODO: Doc - range ~[0, 1]
+			/**
+			 * Gets the strength of the biome at this location. Used for biome transitions.
+			 * @return Range of approx [0, 1]
+			 */
 			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE Float biomeHeightStrength(const Float x, const BiomeBounds bounds) const noexcept {
 				static_assert(B != B, "Missing specialization for biome.");
 			}
 
-			// TODO: Doc - range ~[-1, 1]
+			/**
+			 * Gets the depth of terrain at this location.
+			 * @return Range of approx [-1, 1]
+			 */
 			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE Float biomeBasis(const FVec2 pos, const Int h) const noexcept {
 				static_assert(B != B, "Missing specialization for biome.");
 			}
 
-			// TODO: Doc - range ~[0, 1]
+			/**
+			 * Gets the strength of the terrain at this location. Used for biome transitions
+			 * @return Range of approx [0, 1]
+			 */
 			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE Float biomeBasisStrength(const FVec2 pos, const FVec2 posBiome, const BiomeBounds bounds) const noexcept {
 				static_assert(B != B, "Missing specialization for biome.");
 			}
 
-			// TODO: Doc
+			/**
+			 * Gets the block at this location.
+			 */
 			template<Biome B>
 			[[nodiscard]]
 			ENGINE_INLINE BlockId biomeBlock(const FVec2 pos, const IVec2 ipos, const Int h, const Float h0, const BiomeBounds bounds) const noexcept {
 				static_assert(B != B, "Missing specialization for biome.");
 			}
 
-			// TODO: Doc - range ~[0, 1]
+			/**
+			 * Gets the strength of the biome at this location. Used for biome block blending.
+			 */
 			template<Biome B>
 			[[nodiscard]]
-			ENGINE_INLINE Float biomeBlockStrength(const FVec2 pos, const Float basisStrength) const noexcept {
+			ENGINE_INLINE bool biomeBlockStrength(const FVec2 pos, const Float basisStrength) const noexcept {
 				static_assert(B != B, "Missing specialization for biome.");
 			}
 	};
