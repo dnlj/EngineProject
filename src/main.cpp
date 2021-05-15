@@ -197,6 +197,7 @@ namespace {
 		};
 
 		Color blockToColor[Game::BlockId::_COUNT] = {};
+		blockToColor[Game::BlockId::Entity]	= {0, 120, 189};
 		blockToColor[Game::BlockId::Debug]	= {255, 0, 0};
 		blockToColor[Game::BlockId::Debug2]	= {200, 26, 226};
 		blockToColor[Game::BlockId::Debug3]	= {226, 26, 162};
@@ -206,6 +207,8 @@ namespace {
 		blockToColor[Game::BlockId::Iron]	= {144, 144, 144};
 		blockToColor[Game::BlockId::Gold]	= {255, 235, 65};
 
+		Game::MapGenerator2::BlockEntityData discard;
+
 		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < map.h; ++y) {
 			for (int x = 0; x < map.w; ++x) {
@@ -213,7 +216,7 @@ namespace {
 				const float32 ym = (y - map.h/2) * yZoom + yOffset;
 
 				if constexpr (true) {
-					const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym));
+					const auto v = mgen.value(static_cast<int32>(xm), static_cast<int32>(ym), discard);
 					data[y][x] = blockToColor[v];
 				}
 
@@ -307,8 +310,8 @@ namespace {
 		if (ImGui::Begin("Map Test")) {
 			//static glm::vec2 offset = {11481.000, -1485.000};
 			//static glm::vec2 zoom = {20, 20};
-			static glm::vec2 offset = {9100, -205.000};
-			static glm::vec2 zoom = {2, 2};
+			static glm::vec2 offset = {8933, -185.000};
+			static glm::vec2 zoom = {0.5, 0.5};
 			static float scroll = 0;
 			static Engine::Clock::TimePoint scrollCooldown = {};
 

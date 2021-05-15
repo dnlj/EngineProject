@@ -1,6 +1,7 @@
 // Name, Solid, Path
 X(None, false, nullptr)
 X(Air, false, nullptr)
+X(Entity, false, "assets/block_entity.bmp")
 X(Debug, false, "assets/block_debug.bmp")
 X(Debug2, false, "assets/block_debug2.bmp")
 X(Debug3, false, "assets/block_debug3.bmp")

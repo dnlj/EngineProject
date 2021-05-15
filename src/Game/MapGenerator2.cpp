@@ -196,7 +196,7 @@ namespace Game {
 
 #define DEF_LANDMARK_SAMPLE(L)\
 	template<>\
-	auto MapGenerator2::landmarkSample<MapGenerator2::Landmark:: L>(const FVec2 pos, const IVec2 ipos, const Int h) const noexcept -> LandmarkSample
+	auto MapGenerator2::landmarkSample<MapGenerator2::Landmark:: L>(const FVec2 pos, const IVec2 ipos, const Int h, BlockEntityData& bed) const noexcept -> LandmarkSample
 
 ////////////////////////////////////////////////////////////////////////////////
 // Landmark 0
@@ -224,6 +224,10 @@ namespace Game {
 				const Float off = perm.value(left + 321) * (1.0_f/255.0_f);
 				const Int wpos = Engine::Noise::floorTo<Int>((a + off * (b - a)) * treeSpacing);
 				if (ipos.x < (wpos + trunkR) && ipos.x > (wpos - trunkR)) {
+					if (ipos.x == wpos && ipos.y == h + 1) {
+						bed.test = 1;
+					}
+
 					return { .exists = true, .basis = 1.0_f, .block = BlockId::Debug2 };
 				}
 			}
@@ -279,9 +283,18 @@ namespace Game {
 
 namespace Game {
 	void MapGenerator2::init(const IVec2 pos, MapChunk& chunk) const noexcept {
+		BlockEntityData bed = {};
+
 		for (int x = 0; x < MapChunk::size.x; ++x) {
 			for (int y = 0; y < MapChunk::size.y; ++y) {
-				chunk.data[x][y] = value(x + pos.x, y + pos.y);
+				const auto v = value(x + pos.x, y + pos.y, bed);
+
+				if (bed.test) {
+					chunk.data[x][y] = BlockId::Entity;
+					bed = {};
+				} else {
+					chunk.data[x][y] = v;
+				}
 
 				if (chunk.data[x][y] > BlockId::Air && (x == 0 || y == 0) && chunk.data[x][y] != BlockId::Debug2) {
 					chunk.data[x][y] = BlockId::Debug;
@@ -290,7 +303,7 @@ namespace Game {
 		}
 	}
 
-	BlockId MapGenerator2::value(const Int x, const Int y) const noexcept {
+	BlockId MapGenerator2::value(const Int x, const Int y, BlockEntityData& bed) const noexcept {
 		const FVec2 ipos = IVec2{x, y};
 		const FVec2 pos = FVec2{static_cast<Float>(x), static_cast<Float>(y)};
 		const auto h0 = height0(pos.x);
@@ -299,7 +312,7 @@ namespace Game {
 
 		const Biome b = bounds.depth < 0 ? Biome::Default : static_cast<Biome>(perm(bounds.cell.x, bounds.cell.y) % (static_cast<int>(Biome::Jungle) + 1));
 		
-		#define CASE(B) case B: { return calc<B>(ipos, pos, h0, posBiome, bounds); };
+		#define CASE(B) case B: { return calc<B>(ipos, pos, h0, posBiome, bounds, bed); };
 		switch (b) {
 			CASE(Biome::Default)
 			CASE(Biome::Forest)
@@ -313,14 +326,14 @@ namespace Game {
 	}
 
 	template<MapGenerator2::Biome B>
-	BlockId MapGenerator2::calc(const IVec2 ipos, const FVec2 pos, const Float h0, const FVec2 posBiome, const BiomeBounds bounds) const noexcept {
+	BlockId MapGenerator2::calc(const IVec2 ipos, const FVec2 pos, const Float h0, const FVec2 posBiome, const BiomeBounds bounds, BlockEntityData& bed) const noexcept {
 		const auto h = height<B>(pos.x, bounds, h0);
 
 		const auto bstr = basisStrength<B>(pos, posBiome, bounds);
 		const auto b = basis<B>(pos, h, bstr);
 
 		// TODO: move before basis stuff if we have l2.block != None
-		const auto l2 = landmark<B>(pos, ipos, h);
+		const auto l2 = landmark<B>(pos, ipos, h, bed);
 		if (l2.exists) {
 			const auto b2 = b + l2.basis;
 			if (b2 < 0.0_f) {
@@ -415,11 +428,11 @@ namespace Game {
 	}
 	
 	template<MapGenerator2::Biome B>
-	auto MapGenerator2::landmark(const FVec2 pos, const IVec2 ipos, const Int h) const noexcept -> LandmarkSample {
+	auto MapGenerator2::landmark(const FVec2 pos, const IVec2 ipos, const Int h, BlockEntityData& bed) const noexcept -> LandmarkSample {
 		LandmarkSample res = {};
 
 		const auto sample = [&]<Landmark L>() ENGINE_INLINE {
-			res = landmarkSample<L>(pos, ipos, h);
+			res = landmarkSample<L>(pos, ipos, h, bed);
 		};
 
 		constexpr auto iter = [&]<class T, T... Is>(std::integer_sequence<T, Is...>) ENGINE_INLINE {

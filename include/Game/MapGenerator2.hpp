@@ -78,6 +78,10 @@ namespace Game {
 			template<> constexpr static std::array landmarksByBiome<Biome::Forest> = {Landmark::BossPortal, Landmark::TreeForest};
 			template<> constexpr static std::array landmarksByBiome<Biome::Jungle> = {Landmark::BossPortal};
 
+			struct BlockEntityData {
+				int test;
+			};
+
 		private:
 			// TODO: add impl that takes perm array ref instead of seed so we can share
 			Engine::Noise::OpenSimplexNoiseGeneric<Float, Int> simplex;
@@ -124,7 +128,7 @@ namespace Game {
 				, perm{seed} {
 			}
 
-			BlockId value(const Int x, const Int y) const noexcept;
+			BlockId value(const Int x, const Int y, BlockEntityData& bed) const noexcept;
 
 
 			/**
@@ -137,7 +141,7 @@ namespace Game {
 			// TODO: doc stages
 			
 			template<Biome B>
-			ENGINE_INLINE BlockId calc(const IVec2 ipos, const FVec2 pos, const Float h0, const FVec2 posBiome, const BiomeBounds bounds) const noexcept;
+			ENGINE_INLINE BlockId calc(const IVec2 ipos, const FVec2 pos, const Float h0, const FVec2 posBiome, const BiomeBounds bounds, BlockEntityData& bed) const noexcept;
 			
 			[[nodiscard]]
 			BlockId resource(const FVec2 pos) const noexcept;
@@ -154,7 +158,7 @@ namespace Game {
 			
 			template<Biome B>
 			[[nodiscard]]
-			ENGINE_INLINE LandmarkSample landmark(const FVec2 pos, const IVec2 ipos, const Int h) const noexcept;
+			ENGINE_INLINE LandmarkSample landmark(const FVec2 pos, const IVec2 ipos, const Int h, BlockEntityData& bed) const noexcept;
 
 			template<Biome B>
 			[[nodiscard]]
@@ -178,7 +182,7 @@ namespace Game {
 			
 			template<Landmark L>
 			[[nodiscard]]
-			ENGINE_INLINE LandmarkSample landmarkSample(const FVec2 pos, const IVec2 ipos, const Int h) const noexcept {
+			ENGINE_INLINE LandmarkSample landmarkSample(const FVec2 pos, const IVec2 ipos, const Int h, BlockEntityData& bed) const noexcept {
 				static_assert(L != L, "Missing specialization.");
 			}
 
