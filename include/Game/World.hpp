@@ -22,6 +22,7 @@
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/MapRenderSystem.hpp>
 #include <Game/systems/SpriteSystem.hpp>
+#include <Game/systems/EntityNetworkingSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/UISystem.hpp>
 
@@ -39,6 +40,7 @@
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
 		// Networking
+		EntityNetworkingSystem,
 		NetworkingSystem,
 
 		// Inputs

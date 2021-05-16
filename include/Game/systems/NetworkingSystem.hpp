@@ -13,7 +13,6 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/MessageType.hpp>
-#include <Game/comps/NeighborsComponent.hpp>
 
 
 namespace Game {
@@ -57,11 +56,9 @@ namespace Game {
 			const Engine::Net::IPv4Address group;
 			Engine::Clock::TimePoint now = {};
 			Engine::Clock::TimePoint lastUpdate = {};
-			NeighborsComponent::Set lastNeighbors;
 
 			// TODO: at some point we probably want to shrink this
 			Engine::FlatHashMap<Engine::ECS::Entity, Engine::ECS::Entity> entToLocal;
-
 
 		public:
 			NetworkingSystem(SystemArg arg);
@@ -83,7 +80,6 @@ namespace Game {
 			AddConnRes getOrCreateConnection(const Engine::Net::IPv4Address& addr);
 
 			void dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr);
-			void updateNeighbors();
 			void runServer();
 			void runClient();
 
