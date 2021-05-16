@@ -11,8 +11,14 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class Arg>
 	WORLD_CLASS::World(Arg&& arg)
-		: beginTime{Clock::now()} 
+		: beginTime{Clock::now()}
+		// TODO: add static_assert with requires statement to check this and give nice error message. Currently requires is not correctly supported on MSVC. See https://developercommunity.visualstudio.com/t/Keyword-requires-within-if-statement-d/1287202
+		// 
+		// If you are here from a compile error make sure your system has the correct constructor. Usually `using System::System` will work fine.
+		// You might be seeing this because you just added a member to an otherwise empty system.
+		//
 		, systems((sizeof(Ss*), std::forward<Arg>(arg)) ...) {
+
 		tickTime = beginTime;
 		(getSystem<Ss>().setup(), ...);
 	}
