@@ -41,8 +41,13 @@
 namespace Game {
 	class MapRegion {
 		public:
+			struct ChunkInfo {
+				MapChunk chunk;
+				MapGenerator2::ChunkEntityData entData;
+			};
+
 			constexpr static glm::ivec2 size = {16, 16};
-			MapChunk data[size.x][size.y];
+			ChunkInfo data[size.x][size.y];
 			std::atomic<int32> loadedChunks = 0;
 			Engine::Clock::TimePoint lastUsed;
 
@@ -172,6 +177,9 @@ namespace Game {
 				Engine::Clock::TimePoint lastUsed;
 				Engine::ECS::Tick updated = {};
 				std::vector<byte> rle;
+
+				// TODO: need to serialize for unloaded/inactive chunks. Just a vector<byte> should work?
+				std::vector<Engine::ECS::Entity> blockEntities;
 			};
 
 			Engine::FlatHashMap<glm::ivec2, TestData> activeChunks;
@@ -212,7 +220,7 @@ namespace Game {
 			void buildActiveChunkData(TestData& data, glm::ivec2 chunkPos);
 
 			// TODO: Doc
-			void loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk) const noexcept;
+			void loadChunk(const glm::ivec2 chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;
 
 			// TODO: Doc
 			void loadChunkAsyncWorker();

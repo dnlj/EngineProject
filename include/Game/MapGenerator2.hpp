@@ -79,8 +79,11 @@ namespace Game {
 			template<> constexpr static std::array landmarksByBiome<Biome::Jungle> = {Landmark::BossPortal};
 
 			struct BlockEntityData {
+				IVec2 pos;
 				int test;
 			};
+
+			using ChunkEntityData = std::vector<BlockEntityData>;
 
 		private:
 			// TODO: add impl that takes perm array ref instead of seed so we can share
@@ -135,7 +138,7 @@ namespace Game {
 			 * @param pos The position of the chunk in block coordinates.
 			 * @param chunk The chunk to store the data in.
 			 */
-			void init(const IVec2 pos, MapChunk& chunk) const noexcept;
+			void init(const IVec2 pos, MapChunk& chunk, ChunkEntityData& entData) const noexcept;
 
 		private:
 			// TODO: doc stages

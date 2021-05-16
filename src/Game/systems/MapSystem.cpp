@@ -123,7 +123,7 @@ namespace Game {
 			}
 
 			const auto chunkIndex = chunkToRegionIndex(chunkPos);
-			auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
+			auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y].chunk;
 
 			if (chunk.apply(edit)) {
 				const auto found = activeChunks.find(chunkPos);
@@ -189,9 +189,9 @@ namespace Game {
 						const auto regionIt = regions.find(regionPos);
 						if (regionIt != regions.end() && !regionIt->second->loading()) {
 							const auto chunkIndex = chunkToRegionIndex(chunkPos);
-							auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
+							auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
 							rleTemp.clear();
-							chunk.toRLE(rleTemp);
+							chunkInfo.chunk.toRLE(rleTemp);
 							
 							if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
 								meta.last = activeData.updated;
@@ -321,6 +321,29 @@ namespace Game {
 					it = activeChunks.emplace(chunkPos, TestData{}).first;
 					it->second.body = createBody();
 					setupMesh(it->second.mesh);
+
+					const auto chunkIndex = chunkToRegionIndex(chunkPos);
+					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
+
+					if constexpr (ENGINE_SERVER) {
+						// TODO: not networked atm
+						for (const auto& entData : chunkInfo.entData) {
+							const auto ent = world.createEntity();
+							
+							auto& spriteComp = world.addComponent<SpriteComponent>(ent);
+							spriteComp.texture = engine.textureManager.get("assets/test_tree.png");
+							
+							auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
+							physInterpComp.trans.p = {0, 0}; // TODO: block pos
+
+							// TODO: these shouldnt be needed?
+							physInterpComp.nextTrans = physInterpComp.trans;
+							physInterpComp.prevTrans = physInterpComp.trans;
+							
+							it->second.blockEntities.push_back(ent);
+						}
+					}
+
 					ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
 					it->second.updated = tick;
 				}
@@ -365,7 +388,7 @@ namespace Game {
 		if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
 				
 		const auto chunkIndex = chunkToRegionIndex(chunkPos);
-		auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y];
+		auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
 
 		if constexpr (ENGINE_SERVER) { // Build edits
 			const auto found = chunkEdits.find(chunkPos);
@@ -379,12 +402,12 @@ namespace Game {
 			}
 		}
 
-		decltype(auto) greedyExpand = [&chunk](auto usable, auto submitArea) ENGINE_INLINE {
+		decltype(auto) greedyExpand = [&chunkInfo](auto usable, auto submitArea) ENGINE_INLINE {
 			bool used[MapChunk::size.x][MapChunk::size.y] = {};
 			
 			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {  
 				for (begin.y = 0; begin.y < MapChunk::size.y;) {
-					const auto& blockMeta = getBlockMeta(chunk.data[begin.x][begin.y]);
+					const auto& blockMeta = getBlockMeta(chunkInfo.chunk.data[begin.x][begin.y]);
 					auto end = begin;
 					while (end.y < MapChunk::size.y && !used[end.x][end.y] && usable(end, blockMeta)) { ++end.y; }
 					if (end.y == begin.y) { ++begin.y; continue; }
@@ -410,7 +433,7 @@ namespace Game {
 			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE {
 				return blockMeta.id != BlockId::None
 					&& blockMeta.id != BlockId::Air
-					&& chunk.data[pos.x][pos.y] == blockMeta.id;
+					&& chunkInfo.chunk.data[pos.x][pos.y] == blockMeta.id;
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
 				// Add buffer data
 				glm::vec2 origin = glm::vec2{begin} * MapChunk::blockSize;
@@ -420,7 +443,7 @@ namespace Game {
 				static_assert(BlockId::_COUNT <= 255,
 					"Texture index is a byte. You will need to change its type if you now have more than 255 blocks."
 				);
-				const auto tex = static_cast<GLfloat>(chunk.data[begin.x][begin.y] - 2); // TODO: -2 for None and Air. Handle this better.
+				const auto tex = static_cast<GLfloat>(chunkInfo.chunk.data[begin.x][begin.y] - 2); // TODO: -2 for None and Air. Handle this better.
 				buildVBOData.push_back({.pos = origin, .tex = tex});
 				buildVBOData.push_back({.pos = origin + glm::vec2{size.x, 0}, .tex = tex});
 				buildVBOData.push_back({.pos = origin + size, .tex = tex});
@@ -459,7 +482,7 @@ namespace Game {
 			fixtureDef.shape = &shape;
 
 			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE {
-				return getBlockMeta(chunk.data[pos.x][pos.y]).solid;
+				return getBlockMeta(chunkInfo.chunk.data[pos.x][pos.y]).solid;
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
 				// ENGINE_LOG("Physics: (", begin.x, ", ", begin.y, ") ", "(", end.x, ", ", end.y, ")");
 				const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
@@ -470,9 +493,9 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::loadChunk(const glm::ivec2 chunkPos, MapChunk& chunk) const noexcept {
+	void MapSystem::loadChunk(const glm::ivec2 chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept {
 		const auto chunkBlockPos = chunkToBlock(chunkPos);
-		mgen.init(chunkBlockPos, chunk);
+		mgen.init(chunkBlockPos, chunkInfo.chunk, chunkInfo.entData);
 	}
 
 	void MapSystem::loadChunkAsyncWorker() {
@@ -496,9 +519,9 @@ namespace Game {
 				chunkQueue.unsafeEmplace([this,
 						chunkPos = regionStart + glm::ivec2{x, y},
 						&region,
-						&chunk = region.data[x][y]
+						&chunkInfo = region.data[x][y]
 					] {
-					loadChunk(chunkPos, chunk);
+					loadChunk(chunkPos, chunkInfo);
 					++region.loadedChunks;
 				});
 			}

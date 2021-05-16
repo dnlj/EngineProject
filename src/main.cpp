@@ -552,6 +552,7 @@ void run(int argc, char* argv[]) {
 			"assets/player.png",
 			"assets/fire.png",
 			"assets/test.png",
+			"assets/test_tree.png",
 		};
 		const std::string shaders[] = {
 			"shaders/box2d_debug",

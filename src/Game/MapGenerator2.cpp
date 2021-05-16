@@ -282,14 +282,18 @@ namespace Game {
 #undef DEF_LANDMARK_SAMPLE
 
 namespace Game {
-	void MapGenerator2::init(const IVec2 pos, MapChunk& chunk) const noexcept {
+	void MapGenerator2::init(const IVec2 pos, MapChunk& chunk, ChunkEntityData& entData) const noexcept {
 		BlockEntityData bed = {};
+		//std::vector<BlockEntityData> bedItems;
 
 		for (int x = 0; x < MapChunk::size.x; ++x) {
 			for (int y = 0; y < MapChunk::size.y; ++y) {
 				const auto v = value(x + pos.x, y + pos.y, bed);
 
 				if (bed.test) {
+					bed.pos = pos;
+					//bedItems.push_back(bed);
+					entData.push_back(bed);
 					chunk.data[x][y] = BlockId::Entity;
 					bed = {};
 				} else {
@@ -301,6 +305,11 @@ namespace Game {
 				}
 			}
 		}
+
+
+		//if (!bedItems.empty()) {s
+		//	// TODO: build component data
+		//}
 	}
 
 	BlockId MapGenerator2::value(const Int x, const Int y, BlockEntityData& bed) const noexcept {
