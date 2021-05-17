@@ -10,8 +10,17 @@ namespace Game {
 		private:
 			NeighborsComponent::Set lastNeighbors;
 
+			// TODO: we should probably have something like this in ecs instead
+			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
+
+			Engine::Clock::TimePoint nextUpdate = {};
+
 		public:
 			using System::System;
 			void tick();
+			void run(float32 dt);
+
+		private:
+			void updateNeighbors();
 	};
 }

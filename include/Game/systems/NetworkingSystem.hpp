@@ -43,8 +43,6 @@ namespace Game {
 			};
 			Engine::FlatHashMap<Engine::Net::IPv4Address, ConnInfo> connections; // TODO: name
 
-			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
-
 			pcg32 rng;
 			uint16 genKey() {
 				uint16 v;
@@ -80,7 +78,6 @@ namespace Game {
 			AddConnRes getOrCreateConnection(const Engine::Net::IPv4Address& addr);
 
 			void dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr);
-			void runServer();
 			void runClient();
 
 			template<MessageType::Type Type>

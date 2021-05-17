@@ -569,7 +569,6 @@ namespace Game {
 
 		if (shouldUpdate) {
 			lastUpdate = now;
-			if constexpr (ENGINE_SERVER) { runServer(); }
 			if constexpr (ENGINE_CLIENT) { runClient(); }
 
 			for (auto& [addr, info] : connections) {
@@ -626,123 +625,6 @@ namespace Game {
 		#endif
 	}
 
-	void NetworkingSystem::runServer() {
-		if (world.getAllComponentBitsets().size() > lastCompsBitsets.size()) {
-			lastCompsBitsets.resize(world.getAllComponentBitsets().size());
-		}
-
-		for (auto& ply : world.getFilter<PlayerFilter>()) {
-			auto& neighComp = world.getComponent<NeighborsComponent>(ply);
-			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-
-			{ // TODO: player data should be sent every tick along with actions/inputs.
-			// TODO: cont.  Should it? every few frames is probably fine for keeping it in sync. Although when it does desync it will be a larger rollback.
-				auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-				if (auto msg = conn.beginMessage<MessageType::PLAYER_DATA>()) {
-					msg.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
-					msg.write(physComp.getTransform());
-					msg.write(physComp.getVelocity());
-				}
-			}
-
-			// TODO: handle entities without phys comp?
-			// TODO: figure out which entities have been updated
-			// TODO: prioritize entities
-			// TODO: figure out which comps on those entities have been updated
-
-			for (const auto& pair : neighComp.addedNeighbors) {
-				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
-				const auto& ent = pair.first;
-
-				if (auto msg = conn.beginMessage<MessageType::ECS_ENT_CREATE>()) { // TODO: General_RO;
-					msg.write(ent);
-				}
-
-				ForEachIn<ComponentsSet>::call([&]<class C>() {
-					if constexpr (IsNetworkedComponent<C>) {
-						ENGINE_LOG("IsNetworkedComponent ", world.getComponentId<C>());
-						if (!world.hasComponent<C>(ent)) { return; }
-
-						auto& comp = world.getComponent<C>(ent);
-						if (comp.netRepl() == Engine::Net::Replication::NONE) { return; }
-
-						if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ADD>()) {//, General_RO);
-							msg.write(ent);
-							msg.write(world.getComponentId<C>());
-							
-							comp.netToInit(engine, world, ent, msg.getBufferWriter()); // TODO: how to handle with messages? just byte writer?
-						}
-					}
-				});
-			}
-
-			for (const auto& pair : neighComp.removedNeighbors) {
-				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
-				if (auto msg = conn.beginMessage<MessageType::ECS_ENT_DESTROY>()) { // TODO: General_RO;
-					msg.write(pair.first);
-				}
-			}
-
-			for (const auto& pair : neighComp.currentNeighbors) {
-				ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
-				const auto ent = pair.first;
-				Engine::ECS::ComponentBitset flagComps;
-
-				ForEachIn<ComponentsSet>::call([&]<class C>() {
-					// TODO: Note: this only updates components not flags. Still need to network flags.
-					constexpr auto cid = world.getComponentId<C>();
-					if constexpr (IsNetworkedComponent<C>) {
-						if (!world.hasComponent<C>(ent)) { return; }
-						const auto& comp = world.getComponent<C>(ent);
-						const auto repl = comp.netRepl();
-						const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
-
-						// TODO: repl then diff. not diff then repl
-
-						if (diff < 0) { // Component Added
-							// TODO: comp added
-							// TODO: currently this is duplicate with addedNeighbors init
-							//conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
-							//conn.writer.write(cid);
-							//comp.netToInit(world, ent, conn.writer);
-						} else if (diff > 0) { // Component Removed
-							// TODO: comp removed
-						} else { // Component Updated
-							if (repl == Engine::Net::Replication::ALWAYS) {
-								if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ALWAYS>()) {
-									msg.write(ent);
-									msg.write(cid);
-									if (Engine::ECS::IsSnapshotRelevant<C>::value) {
-										msg.write(world.getTick());
-									}
-									
-									comp.netTo(msg.getBufferWriter());
-								}
-							} else if (repl == Engine::Net::Replication::UPDATE) {
-								// TODO: impl
-							}
-						}
-					} else if constexpr (Engine::ECS::IsFlagComponent<C>::value) {
-						const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
-						if (diff) {
-							flagComps.set(cid);
-						}
-					}
-				});
-
-				if (flagComps) {
-					if (auto msg = conn.beginMessage<MessageType::ECS_FLAG>()) { // TODO: General_RO
-						msg.write(ent);
-						msg.write(flagComps);
-					}
-				}
-			}
-		}
-
-		lastCompsBitsets = world.getAllComponentBitsets();
-	}
-
-	
 	void NetworkingSystem::runClient() {
 		for (auto& [addr, info] : connections) {
 			if (info.state == ConnState::Connecting) {
