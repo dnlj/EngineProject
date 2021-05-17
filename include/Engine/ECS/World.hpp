@@ -371,7 +371,7 @@ namespace Engine::ECS {
 				static_assert((std::is_same_v<Cs, Component> || ...),
 					"Attempting to get component id of type that is not in the component list. Did you forget to add it?"
 				);
-				return Meta::IndexOf<Component, Cs ...>::value;
+				return ::Meta::IndexOf<Component, Cs ...>::value;
 			}
 
 			/**

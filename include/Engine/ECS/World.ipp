@@ -88,7 +88,7 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class System>
 	constexpr static SystemId WORLD_CLASS::getSystemId() noexcept {
-		return Meta::IndexOf<System, Ss...>::value;
+		return ::Meta::IndexOf<System, Ss...>::value;
 	}
 
 	WORLD_TPARAMS
@@ -118,7 +118,7 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	template<class SystemA, class SystemB>
 	constexpr static bool WORLD_CLASS::orderBefore() {
-		return Meta::IndexOf<SystemA, Ss...>::value < Meta::IndexOf<SystemB, Ss...>::value;
+		return ::Meta::IndexOf<SystemA, Ss...>::value < ::Meta::IndexOf<SystemB, Ss...>::value;
 	}
 
 	WORLD_TPARAMS

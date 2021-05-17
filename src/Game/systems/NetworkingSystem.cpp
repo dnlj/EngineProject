@@ -9,6 +9,7 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Entity.hpp>
+#include <Engine/Meta/ForEach.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -30,21 +31,6 @@ namespace {
 	template<class T, class = void>
 	struct GetComponentReplication {
 		constexpr static auto value = Engine::Net::Replication::NONE;
-	};
-
-	// TODO: move into meta
-	template<class ComponentsSet>
-	struct ForEachIn {
-		template<class Func>
-		static void call(Func&& func) {};
-	};
-
-	template<template<class...> class ComponentsSet, class... Components>
-	struct ForEachIn<ComponentsSet<Components...>> {
-		template<class Func>
-		static void call(Func&& func) {
-			(func.operator()<Components>(), ...);
-		}
 	};
 
 	// TODO: figure out a good pattern
@@ -409,7 +395,7 @@ namespace Game {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
-		ForEachIn<ComponentsSet>::call([&]<class C>() {
+		Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
 			constexpr auto cid = world.getComponentId<C>();
 			if constexpr (!Engine::ECS::IsFlagComponent<C>::value) { return; }
 			if (!flags->test(cid)) { return; }

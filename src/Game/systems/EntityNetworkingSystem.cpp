@@ -1,6 +1,9 @@
 // STD
 #include <chrono>
 
+// Engine
+#include <Engine/Meta/ForEach.hpp>
+
 // Game
 #include <Game/World.hpp>
 #include <Game/systems/EntityNetworkingSystem.hpp>
@@ -17,22 +20,6 @@ namespace {
 	concept IsNetworkedComponent = requires (T t) {
 		Engine::Net::Replication{t.netRepl()};
 	};
-
-	// TODO: move into own class
-	// TODO: add version for Ts... and unpack<Set>
-	template<class ComponentsSet>
-	struct ForEachIn {
-		template<class Func>
-		static void call(Func&& func) {};
-	};
-
-	template<template<class...> class ComponentsSet, class... Components>
-	struct ForEachIn<ComponentsSet<Components...>> {
-		template<class Func>
-		static void call(Func&& func) {
-			(func.operator()<Components>(), ...);
-		}
-	};
 }
 
 namespace Game {
@@ -43,10 +30,8 @@ namespace Game {
 
 	void EntityNetworkingSystem::run(float32 dt) {
 		if constexpr (ENGINE_CLIENT) { return; }
-
-
 		const auto now = Engine::Clock::now();
-		if (nextUpdate < now) { return; }
+		if (now < nextUpdate) { return; }
 
 		// TODO: config for this
 		nextUpdate = now + std::chrono::milliseconds{1000 / 20};
@@ -82,7 +67,7 @@ namespace Game {
 					msg.write(ent);
 				}
 
-				ForEachIn<ComponentsSet>::call([&]<class C>() {
+				Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
 					if constexpr (IsNetworkedComponent<C>) {
 						ENGINE_LOG("IsNetworkedComponent ", world.getComponentId<C>());
 						if (!world.hasComponent<C>(ent)) { return; }
@@ -112,7 +97,7 @@ namespace Game {
 				const auto ent = pair.first;
 				Engine::ECS::ComponentBitset flagComps;
 
-				ForEachIn<ComponentsSet>::call([&]<class C>() {
+				Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
 					// TODO: Note: this only updates components not flags. Still need to network flags.
 					constexpr auto cid = world.getComponentId<C>();
 					if constexpr (IsNetworkedComponent<C>) {

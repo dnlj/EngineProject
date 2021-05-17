@@ -115,7 +115,7 @@ namespace Engine::Net {
 			SeqNum nextSeqNum = 0;
 
 			template<class C>
-			constexpr static ChannelId getChannelId() { return Meta::IndexOf<C, Cs...>::value; }
+			constexpr static ChannelId getChannelId() { return ::Meta::IndexOf<C, Cs...>::value; }
 
 			constexpr static auto maxMessageType() noexcept {
 				return std::max({Cs::getMaxHandledMessageType() ...});
