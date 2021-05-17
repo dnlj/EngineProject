@@ -23,11 +23,6 @@ namespace {
 }
 
 namespace Game {
-	void EntityNetworkingSystem::tick() {
-		if constexpr (ENGINE_CLIENT) { return; }
-		updateNeighbors();
-	}
-
 	void EntityNetworkingSystem::run(float32 dt) {
 		if constexpr (ENGINE_CLIENT) { return; }
 		const auto now = Engine::Clock::now();
@@ -35,6 +30,8 @@ namespace Game {
 
 		// TODO: config for this
 		nextUpdate = now + std::chrono::milliseconds{1000 / 20};
+
+		updateNeighbors();
 
 		if (world.getAllComponentBitsets().size() > lastCompsBitsets.size()) {
 			lastCompsBitsets.resize(world.getAllComponentBitsets().size());

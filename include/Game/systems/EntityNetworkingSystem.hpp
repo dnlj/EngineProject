@@ -17,7 +17,6 @@ namespace Game {
 
 		public:
 			using System::System;
-			void tick();
 			void run(float32 dt);
 
 		private:
