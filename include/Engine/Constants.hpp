@@ -6,7 +6,8 @@
 #include <Engine/ASCIIColorString.hpp>
 
 namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
-	constexpr inline float32 PI = 3.141592653589793238462643383279502884197169f;
+	template<class T>
+	constexpr inline T Pi = static_cast<T>(3.141592653589793238462643383279502884197169);
 
 	template<class T>
 	constexpr inline T Sqrt2 = static_cast<T>(1.41421356237309504880168872420969807);
