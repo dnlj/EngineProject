@@ -4,7 +4,7 @@
 #include <Engine/ECS/Entity.hpp>
 #include <Engine/SparseSet.hpp>
 #include <Engine/Bitset.hpp>
-#include <Engine/IsComplete.hpp>
+#include <Engine/Meta/IsComplete.hpp>
 #include <Engine/ECS/EntityState.hpp>
 
 
@@ -36,7 +36,7 @@ namespace Engine::ECS {
 
 	/** @see IsFlagComponent */
 	template<class T>
-	struct IsFlagComponent<T, std::enable_if_t<IsComplete<T>::value>> : std::is_empty<T> {};
+	struct IsFlagComponent<T, std::enable_if_t<Meta::IsComplete<T>::value>> : std::is_empty<T> {};
 
 	/** The stored data type for a given component */
 	template<class T>

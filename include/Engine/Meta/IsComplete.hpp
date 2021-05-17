@@ -4,7 +4,7 @@
 #include <type_traits>
 
 // TODO: move this into Meta? Own namespace?
-namespace Engine {
+namespace Engine::Meta {
 	template<class T, class = void>
 	struct IsComplete : std::false_type {};
 
