@@ -4,8 +4,9 @@
 #include <Game/systems/PhysicsSystem.hpp>
 
 namespace {
-	using Filter = Engine::ECS::EntityFilterList<
-		Game::PhysicsBodyComponent
+	using ProxyFilter = Engine::ECS::EntityFilterList<
+		Game::PhysicsBodyComponent,
+		Game::PhysicsProxyComponent
 	>;
 }
 
@@ -24,7 +25,7 @@ namespace Game {
 	}
 
 	void PhysicsSystem::preTick() {
-		for (const auto ent : world.getFilter<Filter>()) {
+		for (const auto ent : world.getFilter<ProxyFilter>()) {
 			auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
 			auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
 			physProxyComp.apply(*physBodyComp.body);
@@ -44,16 +45,8 @@ namespace Game {
 			break;
 		}
 
-		for (const auto ent : world.getFilter<Filter>()) {
-			//if (world.hasComponent<RemotePhysicsFlag>(ent)) {
-			// TODO: rm. use RemotePhysicsFlag
-			if (world.hasComponent<PhysicsInterpComponent>(ent) && world.getComponent<PhysicsInterpComponent>(ent).onlyUserVerified) {
-				auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
-
-				//ENGINE_DEBUG_ASSERT(physBodyComp.getBody().GetType() == b2_staticBody,
-				//	"Incorrect body type for a remote physics entity"
-				//);
-
+		for (const auto ent : world.getFilter<PhysicsProxyComponent, PhysicsInterpComponent>()) {
+			if (world.getComponent<PhysicsInterpComponent>(ent).onlyUserVerified) {
 				auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
 				physInterpComp.nextTime = {};
 				physInterpComp.prevTime = {};
@@ -132,7 +125,7 @@ namespace Game {
 	}
 
 	void PhysicsSystem::postTick() {
-		for (const auto ent : world.getFilter<Filter>()) {
+		for (const auto ent : world.getFilter<ProxyFilter>()) {
 			const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
 			auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
 
@@ -148,7 +141,7 @@ namespace Game {
 	}
 
 	void PhysicsSystem::preStoreSnapshot() {
-		for (const auto ent : world.getFilter<Filter>()) {
+		for (const auto ent : world.getFilter<PhysicsProxyComponent>()) {
 			auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
 			physProxyComp.snap = false;
 			physProxyComp.rollbackOverride = false;
@@ -184,7 +177,7 @@ namespace Game {
 	void PhysicsSystem::shiftOrigin(const b2Vec2& newOrigin) {
 		physWorld.ShiftOrigin(newOrigin);
 
-		for (auto& ent : world.getFilter<Filter>()) {
+		for (auto& ent : world.getFilter<PhysicsBodyComponent>()) {
 			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 			physComp.setTransform2(physComp.body->GetTransform());
 		}
