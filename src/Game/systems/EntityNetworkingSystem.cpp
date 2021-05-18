@@ -14,12 +14,6 @@ namespace {
 		Game::PlayerFlag,
 		Game::ConnectionComponent
 	>;
-
-	// TODO: move to central location. Copied from networkingsystem.cpp
-	template<class T>
-	concept IsNetworkedComponent = requires (T t) {
-		Engine::Net::Replication{t.netRepl()};
-	};
 }
 
 namespace Game {
@@ -65,7 +59,7 @@ namespace Game {
 				}
 
 				Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
-					if constexpr (IsNetworkedComponent<C>) {
+					if constexpr (Engine::Net::IsNetworkedComponent<C>) {
 						ENGINE_LOG("IsNetworkedComponent ", world.getComponentId<C>());
 						if (!world.hasComponent<C>(ent)) { return; }
 
@@ -97,7 +91,7 @@ namespace Game {
 				Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
 					// TODO: Note: this only updates components not flags. Still need to network flags.
 					constexpr auto cid = world.getComponentId<C>();
-					if constexpr (IsNetworkedComponent<C>) {
+					if constexpr (Engine::Net::IsNetworkedComponent<C>) {
 						if (!world.hasComponent<C>(ent)) { return; }
 						const auto& comp = world.getComponent<C>(ent);
 						const auto repl = comp.netRepl();

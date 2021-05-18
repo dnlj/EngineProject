@@ -22,11 +22,6 @@ namespace {
 		Game::ConnectionComponent
 	>;
 
-	template<class T>
-	concept IsNetworkedComponent = requires (T t) {
-		Engine::Net::Replication{t.netRepl()};
-	};
-
 	// TODO: would probably be easier to just have a base class instead of all these type traits
 	template<class T, class = void>
 	struct GetComponentReplication {
@@ -335,7 +330,7 @@ namespace Game {
 		auto local = found->second;
 
 		world.callWithComponent(*cid, [&]<class C>(){
-			if constexpr (IsNetworkedComponent<C>) {
+			if constexpr (Engine::Net::IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
 					auto& comp = world.addComponent<C>(local);
 					comp.netFromInit(engine, world, local, from);
@@ -366,7 +361,7 @@ namespace Game {
 		}
 
 		world.callWithComponent(*cid, [&]<class C>(){
-			if constexpr (IsNetworkedComponent<C>) {
+			if constexpr (Engine::Net::IsNetworkedComponent<C>) {
 				// TODO: this is a somewhat strange way to handle this
 				if constexpr (Engine::ECS::IsSnapshotRelevant<C>::value) {
 					const auto* tick = from.read<Engine::ECS::Tick>();
