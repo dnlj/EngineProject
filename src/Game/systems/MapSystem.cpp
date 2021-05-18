@@ -326,15 +326,25 @@ namespace Game {
 					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
 
 					if constexpr (ENGINE_SERVER) {
-						// TODO: not networked atm
 						for (const auto& entData : chunkInfo.entData) {
+							const b2Vec2 pos = {0, 0};
 							const auto ent = world.createEntity();
-							
+
+							world.addComponent<NetworkedFlag>(ent);
+
 							auto& spriteComp = world.addComponent<SpriteComponent>(ent);
 							spriteComp.texture = engine.textureManager.get("assets/test_tree.png");
+
+							// TODO: we need better networking for different body types - also need to deal with all the physics components.
+							auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
+							auto& physSys = world.getSystem<PhysicsSystem>();
+							// TODO: actual bounding box
+							physComp.setBody(physSys.createPhysicsCircle(ent));
+
 							
+							world.addComponent<PhysicsProxyComponent>(ent).store(physComp.getBody()); // TODO: we shouldnt need this since it is static
 							auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
-							physInterpComp.trans.p = {0, 0}; // TODO: block pos
+							physInterpComp.trans.p = pos; // TODO: block pos
 
 							// TODO: these shouldnt be needed?
 							physInterpComp.nextTrans = physInterpComp.trans;
