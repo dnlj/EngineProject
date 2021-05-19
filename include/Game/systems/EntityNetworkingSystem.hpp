@@ -21,5 +21,9 @@ namespace Game {
 
 		private:
 			void updateNeighbors();
+
+			void processAddedNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp);
+			void processRemovedNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp);
+			void processCurrentNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp);
 	};
 }
