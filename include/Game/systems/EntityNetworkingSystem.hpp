@@ -25,5 +25,9 @@ namespace Game {
 			void processAddedNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp);
 			void processRemovedNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp);
 			void processCurrentNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp);
+
+			template<class C>
+			[[nodiscard]]
+			bool networkComponent(const Engine::ECS::Entity ent, Connection& conn) const;
 	};
 }

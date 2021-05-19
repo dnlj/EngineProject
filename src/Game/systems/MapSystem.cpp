@@ -346,10 +346,6 @@ namespace Game {
 							auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
 							physInterpComp.trans.p = pos; // TODO: block pos
 
-							// TODO: these shouldnt be needed?
-							physInterpComp.nextTrans = physInterpComp.trans;
-							physInterpComp.prevTrans = physInterpComp.trans;
-							
 							it->second.blockEntities.push_back(ent);
 						}
 					}

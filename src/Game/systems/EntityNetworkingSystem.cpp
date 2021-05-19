@@ -58,6 +58,22 @@ namespace Game {
 		lastCompsBitsets = world.getAllComponentBitsets();
 	}
 
+	
+	template<class C>
+	bool EntityNetworkingSystem::networkComponent(const Engine::ECS::Entity ent, Connection& conn) const {
+		auto& comp = world.getComponent<C>(ent);
+		if (comp.netRepl() == Engine::Net::Replication::NONE) { return true; }
+
+		if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ADD>()) {
+			msg.write(ent);
+			msg.write(world.getComponentId<C>());
+			comp.netToInit(engine, world, ent, msg.getBufferWriter()); // TODO: how to handle with messages? just byte writer?
+			return true;
+		}
+
+		return false;
+	}
+
 	void EntityNetworkingSystem::processAddedNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp) {
 		for (const auto& pair : neighComp.addedNeighbors) {
 			ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
@@ -66,19 +82,12 @@ namespace Game {
 			if (auto msg = conn.beginMessage<MessageType::ECS_ENT_CREATE>()) {
 				msg.write(ent);
 			}
-
 			Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
 				if constexpr (Engine::Net::IsNetworkedComponent<C>) {
 					if (!world.hasComponent<C>(ent)) { return; }
-
-					auto& comp = world.getComponent<C>(ent);
-					if (comp.netRepl() == Engine::Net::Replication::NONE) { return; }
-
-					if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ADD>()) {
-						msg.write(ent);
-						msg.write(world.getComponentId<C>());
-							
-						comp.netToInit(engine, world, ent, msg.getBufferWriter()); // TODO: how to handle with messages? just byte writer?
+					if (!networkComponent<C>(ent, conn)) {
+						// TODO: need to handle this case or else replication once doesn't work.
+						ENGINE_WARN("Unable network component add. INIT");
 					}
 				}
 			});
@@ -97,6 +106,7 @@ namespace Game {
 	void EntityNetworkingSystem::processCurrentNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp) {
 		for (const auto& pair : neighComp.currentNeighbors) {
 			ENGINE_DEBUG_ASSERT(pair.first != ply, "A player is not their own neighbor");
+
 			const auto ent = pair.first;
 			Engine::ECS::ComponentBitset flagComps;
 
@@ -106,39 +116,41 @@ namespace Game {
 				if constexpr (Engine::Net::IsNetworkedComponent<C>) {
 					if (!world.hasComponent<C>(ent)) { return; }
 					const auto& comp = world.getComponent<C>(ent);
+
 					const auto repl = comp.netRepl();
+					if (repl == Engine::Net::Replication::NONE) { return; }
+
 					const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
 
-					// TODO: repl then diff. not diff then repl
-
 					if (diff < 0) { // Component Added
-						// TODO: comp added
-						// TODO: currently this is duplicate with addedNeighbors init
-						//conn.writer.next(MessageType::ECS_COMP_ADD, Engine::Net::Channel::ORDERED);
-						//conn.writer.write(cid);
-						//comp.netToInit(world, ent, conn.writer);
+						if (neighComp.addedNeighbors.has(ent)) { return; }
+						ENGINE_LOG("Component added: ", ent, " ", world.getComponentId<C>());
+
+						if (!networkComponent<C>(ent, conn)) {
+							// TODO: we really need some whay to handle this.
+							// TODO: cont. maybe remove from lastCompsBitsets so it gets sent again next frame?
+							// TODO: cont. We really need a lastCompsBitset per connection then.
+							ENGINE_WARN("Unable network component add. UPDATE");
+						}
 					} else if (diff > 0) { // Component Removed
 						// TODO: comp removed
-					} else { // Component Updated
-						if (repl == Engine::Net::Replication::ALWAYS) {
-							if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ALWAYS>()) {
-								msg.write(ent);
-								msg.write(cid);
-								if (Engine::ECS::IsSnapshotRelevant<C>::value) {
-									msg.write(world.getTick());
-								}
-									
-								comp.netTo(msg.getBufferWriter());
+					} else if (repl == Engine::Net::Replication::ALWAYS) {
+						if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ALWAYS>()) {
+							msg.write(ent);
+							msg.write(cid);
+							if (Engine::ECS::IsSnapshotRelevant<C>::value) {
+								msg.write(world.getTick());
 							}
-						} else if (repl == Engine::Net::Replication::UPDATE) {
-							// TODO: impl
+									
+							comp.netTo(msg.getBufferWriter());
 						}
+					} else if (repl == Engine::Net::Replication::UPDATE) {
+						ENGINE_DEBUG_ASSERT("TODO: Update replication is not yet implemented");
+						// TODO: impl
 					}
 				} else if constexpr (Engine::ECS::IsFlagComponent<C>::value) {
 					const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
-					if (diff) {
-						flagComps.set(cid);
-					}
+					if (diff) { flagComps.set(cid); }
 				}
 			});
 
@@ -146,9 +158,13 @@ namespace Game {
 				if (auto msg = conn.beginMessage<MessageType::ECS_FLAG>()) {
 					msg.write(ent);
 					msg.write(flagComps);
+				} else {
+					// TODO: we either need to always network all flags or have a way to handle this
+					// TODO: if we network all flags we probably want a way to tell it to only network certain ones for security/cheat reasons
+					ENGINE_WARN("Unable to network entity flags");
 				}
 			}
-			}
+		}
 	}
 
 	void EntityNetworkingSystem::updateNeighbors() {

@@ -67,7 +67,7 @@ namespace Game {
 			}
 
 			Engine::Net::Replication netRepl() const {
-				return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::NONE : Engine::Net::Replication::ALWAYS;
+				return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::NONE : Engine::Net::Replication::ONCE;
 			}
 
 			void netTo(Engine::Net::BufferWriter& buff) const {};
