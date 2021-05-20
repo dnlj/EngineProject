@@ -671,7 +671,7 @@ namespace Game {
 
 		if constexpr (ENGINE_SERVER) {
 			world.addComponent<NetworkedFlag>(ent);
-			world.addComponent<NeighborsComponent>(ent);
+			world.addComponent<ECSNetworkingComponent>(ent);
 			world.addComponent<MapAreaComponent>(ent);
 		} else {
 			world.addComponent<CameraTargetFlag>(ent);

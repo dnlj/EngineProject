@@ -32,7 +32,7 @@
 #include <Game/comps/SpriteComponent.hpp>
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/ConnectionComponent.hpp>
-#include <Game/comps/NeighborsComponent.hpp>
+#include <Game/comps/ECSNetworkingComponent.hpp>
 #include <Game/comps/NetworkStatsComponent.hpp>
 #include <Game/comps/MapAreaComponent.hpp>
 
@@ -71,7 +71,7 @@ namespace Game {
 		SpriteComponent,
 		ActionComponent,
 		ConnectionComponent,
-		NeighborsComponent,
+		ECSNetworkingComponent,
 		NetworkStatsComponent,
 		MapAreaComponent,
 		struct CharacterSpellComponent, // TODO: rn xFlag?

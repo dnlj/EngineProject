@@ -2,16 +2,16 @@
 
 // Game
 #include <Game/System.hpp>
-#include <Game/comps/NeighborsComponent.hpp>
+#include <Game/comps/ECSNetworkingComponent.hpp>
 
 
 namespace Game {
 	class EntityNetworkingSystem : public System {
 		private:
-			NeighborsComponent::Set lastNeighbors;
+			//ECSNetworkingComponent::Set lastNeighbors;
 
 			// TODO: we should probably have something like this in ecs instead
-			std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
+			// TODO: rm - std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
 			Engine::Clock::TimePoint nextUpdate = {};
 
@@ -22,9 +22,9 @@ namespace Game {
 		private:
 			void updateNeighbors();
 
-			void processAddedNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp);
-			void processRemovedNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp);
-			void processCurrentNeighbors(const Engine::ECS::Entity ply, Connection& conn, NeighborsComponent& neighComp);
+			void processAddedNeighbors(const Engine::ECS::Entity ply, Connection& conn, ECSNetworkingComponent& ecsNetComp);
+			void processRemovedNeighbors(const Engine::ECS::Entity ply, Connection& conn, ECSNetworkingComponent& ecsNetComp);
+			void processCurrentNeighbors(const Engine::ECS::Entity ply, Connection& conn, ECSNetworkingComponent& ecsNetComp);
 
 			template<class C>
 			[[nodiscard]]
