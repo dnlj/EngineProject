@@ -27,11 +27,6 @@ namespace Game {
 
 		updateNeighbors();
 
-		// TODO: rm
-		//if (world.getAllComponentBitsets().size() > lastCompsBitsets.size()) {
-		//	lastCompsBitsets.resize(world.getAllComponentBitsets().size());
-		//}
-
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
@@ -50,13 +45,12 @@ namespace Game {
 			// TODO: handle entities without phys comp?
 			// TODO: figure out which entities have been updated
 			// TODO: prioritize entities
-			// TODO: figure out which comps on those entities have been updated
+
+			// Order is important here since some failed writes change neighbor states
 			processAddedNeighbors(ply, conn, ecsNetComp);
 			processRemovedNeighbors(ply, conn, ecsNetComp);
 			processCurrentNeighbors(ply, conn, ecsNetComp);
 		}
-
-		// TODO: rm - lastCompsBitsets = world.getAllComponentBitsets();
 	}
 
 	
@@ -76,49 +70,42 @@ namespace Game {
 	}
 
 	void EntityNetworkingSystem::processAddedNeighbors(const Engine::ECS::Entity ply, Connection& conn, ECSNetworkingComponent& ecsNetComp) {
-		for (const auto& [ent, data] : ecsNetComp.neighbors) {
+		for (auto& [ent, data] : ecsNetComp.neighbors) {
 			ENGINE_DEBUG_ASSERT(ent != ply, "A player is not their own neighbor");
 			if (data.state != ECSNetworkingComponent::NeighborState::Added) { continue; }
 
 			if (auto msg = conn.beginMessage<MessageType::ECS_ENT_CREATE>()) {
 				msg.write(ent);
+			} else {
+				data.state = ECSNetworkingComponent::NeighborState::None;
+				ENGINE_WARN("Unable to network entity create.");
 			}
-
-			// TODO: we should be able to get rid of this and have it handled in processCurrentNeighbors? could use bitflags for state enum to make it easier
-			Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
-				if constexpr (Engine::Net::IsNetworkedComponent<C>) {
-					if (!world.hasComponent<C>(ent)) { return; }
-					if (!networkComponent<C>(ent, conn)) {
-						// TODO: we are hitting this. causing errors
-						// TODO: need to handle this case or else replication once doesn't work.
-						ENGINE_WARN("Unable network component add. INIT");
-					}
-				}
-			});
 		}
 	}
 
 	void EntityNetworkingSystem::processRemovedNeighbors(const Engine::ECS::Entity ply, Connection& conn, ECSNetworkingComponent& ecsNetComp) {
-		for (const auto& [ent, data] : ecsNetComp.neighbors) {
+		for (auto& [ent, data] : ecsNetComp.neighbors) {
 			ENGINE_DEBUG_ASSERT(ent != ply, "A player is not their own neighbor");
 			if (data.state != ECSNetworkingComponent::NeighborState::Removed) { continue; }
 			if (auto msg = conn.beginMessage<MessageType::ECS_ENT_DESTROY>()) {
 				msg.write(ent);
+			} else {
+				data.state = ECSNetworkingComponent::NeighborState::None;
+				ENGINE_WARN("Unable to network entity destroy.");
 			}
 		}
 	}
 	
 	void EntityNetworkingSystem::processCurrentNeighbors(const Engine::ECS::Entity ply, Connection& conn, ECSNetworkingComponent& ecsNetComp) {
-		for (const auto& [ent, data] : ecsNetComp.neighbors) {
+		for (auto& [ent, data] : ecsNetComp.neighbors) {
 			ENGINE_DEBUG_ASSERT(ent != ply, "A player is not their own neighbor");
-			if (data.state != ECSNetworkingComponent::NeighborState::Current) { continue; }
+			if (data.state != ECSNetworkingComponent::NeighborState::Added
+				&& data.state != ECSNetworkingComponent::NeighborState::Current) {
+				continue;
+			}
 
 			Engine::ECS::ComponentBitset flagComps;
-
 			const auto compsCurr = world.getComponentsBitset(ent);
-			// TODO: rm - const auto compsAdd = ~data.comps & compsCurr;
-			// TODO: rm - const auto compsRem = data.comps & ~compsCurr;
-
 
 			Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
 				// TODO: Note: this only updates components not flags. Still need to network flags.
@@ -130,16 +117,14 @@ namespace Game {
 					const auto repl = comp.netRepl();
 					if (repl == Engine::Net::Replication::NONE) { return; }
 
-					// TODO: rm - const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
 					const int32 diff = data.comps.test(cid) - world.getComponentsBitset(ent).test(cid);
 
 					if (diff < 0) { // Component Added
 						ENGINE_LOG("Component added: ", ent, " ", world.getComponentId<C>());
 
-						if (!networkComponent<C>(ent, conn)) {
-							// TODO: we really need some whay to handle this.
-							// TODO: cont. maybe remove from lastCompsBitsets so it gets sent again next frame?
-							// TODO: cont. We really need a lastCompsBitset per connection then.
+						if (networkComponent<C>(ent, conn)) {
+							data.comps.set(cid);
+						} else {
 							ENGINE_WARN("Unable network component add. UPDATE");
 						}
 					} else if (diff > 0) { // Component Removed
@@ -159,7 +144,6 @@ namespace Game {
 						// TODO: impl
 					}
 				} else if constexpr (Engine::ECS::IsFlagComponent<C>::value) {
-					// TODO: rm - const int32 diff = lastCompsBitsets[ent.id].test(cid) - world.getComponentsBitset(ent).test(cid);
 					const int32 diff = data.comps.test(cid) - world.getComponentsBitset(ent).test(cid);
 					if (diff) { flagComps.set(cid); }
 				}
@@ -182,56 +166,6 @@ namespace Game {
 		for (const auto ply : world.getFilter<PlayerFilter>()) {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
 			auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-
-			/*
-			auto& added = ecsNetComp.addedNeighbors;
-			auto& current = ecsNetComp.currentNeighbors;
-			auto& removed = ecsNetComp.removedNeighbors;
-			{using std::swap; swap(lastNeighbors, current);};
-			added.clear();
-			current.clear();
-			removed.clear();
-
-			struct QueryCallback : b2QueryCallback {
-				World& world;
-				decltype(current)& ents;
-				QueryCallback(World& world, decltype(ents) ents) : world{world}, ents{ents} {}
-				virtual bool ReportFixture(b2Fixture* fixture) override {
-					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
-					if (!world.hasComponent<NetworkedFlag>(ent)) { return true; }
-					if (!ents.has(ent)) { ents.add(ent); }
-					return true;
-				}
-			} queryCallback(world, current);
-
-			const auto& pos = physComp.getPosition();
-			constexpr float32 range = 5; // TODO: what range?
-			physComp.getWorld()->QueryAABB(&queryCallback, b2AABB{
-				{pos.x - range, pos.y - range},
-				{pos.x + range, pos.y + range},
-			});
-
-			if (current.has(ply)) {
-				current.remove(ply);
-			}
-
-			for (const auto lent : lastNeighbors) {
-				if (!current.has(lent.first)) {
-					ENGINE_LOG("removed: ", lent.first);
-					removed.add(lent.first);
-				}
-			}
-
-			for (const auto cent : current) {
-				if (!lastNeighbors.has(cent.first)) {
-					ENGINE_LOG("added: ", cent.first);
-					added.add(cent.first);
-				}
-			}
-
-			// TODO: disabled vs destroyed
-			*/
-
 
 			ecsNetComp.neighbors.eraseRemove([](auto& pair){
 				if (pair.second.state == ECSNetworkingComponent::NeighborState::Removed) {
@@ -258,9 +192,7 @@ namespace Game {
 					if (ecsNetComp.neighbors.has(ent)) {
 						ecsNetComp.neighbors.get(ent).state = ECSNetworkingComponent::NeighborState::Current;
 					} else if (ent != ply) {
-						ecsNetComp.neighbors.add(ent,
-							ECSNetworkingComponent::NeighborState::Added
-						);
+						ecsNetComp.neighbors.add(ent, ECSNetworkingComponent::NeighborState::Added);
 					}
 					return true;
 				}

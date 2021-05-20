@@ -14,8 +14,8 @@ namespace Game {
 			enum class NeighborState {
 				None,
 				Added,
-				Removed,
 				Current,
+				Removed,
 			};
 
 			struct NeighborData {
