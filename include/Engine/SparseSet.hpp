@@ -67,6 +67,10 @@ namespace Engine {
 			std::vector<Index> sparse;
 			std::vector<KeyVal> dense;
 
+			// TODO: it looks like we should be able case 2 (tuple like) to simplify and avoid reinterpret_cast?
+			// TODO: cont.  https://en.cppreference.com/w/cpp/language/structured_binding
+			// TODO: cont. https://devblogs.microsoft.com/oldnewthing/20201015-00/?p=104369
+			// TODO: if we try to modify this container with iterators it will be incorrect because we dont update the sparse part.
 			template<class Elem>
 			class IteratorBase {
 				private:
@@ -120,6 +124,7 @@ namespace Engine {
 			using ConstIterator = IteratorBase<const KeyVal>;
 
 		public:
+			// TODO: EBO hash with Engine::BaseMember
 			SparseSet(const Hash& hash = Hash()) : hash{hash} {}
 
 			ENGINE_INLINE Val& operator[](Key key) {
@@ -158,21 +163,52 @@ namespace Engine {
 				dense.pop_back();
 			}
 
+			// TODO: rename to contains to be consistent with STL
 			ENGINE_INLINE bool has(const Key& key) const {
 				const auto i = hash(key);
 				return i < sparse.size() && sparse[i] != invalid;
 			}
 
-			ENGINE_INLINE Val& get(const Key& key) {
+			Val& get(const Key& key) {
 				return dense[sparse[hash(key)]].second;
 			}
 
-			ENGINE_INLINE Val& get(const Key& key) const {
+			ENGINE_INLINE const Val& get(const Key& key) const {
 				return dense[sparse[hash(key)]].second;
 			}
 
 			ENGINE_INLINE Index size() const {
 				return static_cast<Index>(dense.size());
+			}
+
+			// TODO: split into erase and remove once we fix iterators
+			/**
+			 * TODO: desc
+			 * Guaranteed to call the predicate on each element exactly once.
+			 * @param pred The predicate check against.
+			 */
+			template<class Pred>
+			void eraseRemove(Pred&& pred) {
+				// TODO: use our own iterators once we fix the move issues
+				const auto b = dense.begin();
+				const auto e = dense.end();
+
+				auto curr = b;
+				auto stop = e;
+
+				while (curr < stop) {
+					if (pred(*curr)) {
+						--stop;
+						auto& spc = sparse[hash(curr->first)];
+						sparse[hash(stop->first)] = spc;
+						spc = invalid;
+						*curr = std::move(*stop);
+					} else {
+						++curr;
+					}
+				}
+
+				dense.erase(stop, e);
 			}
 
 			// TODO: sort
