@@ -288,10 +288,11 @@ namespace Game {
 
 		for (int x = 0; x < MapChunk::size.x; ++x) {
 			for (int y = 0; y < MapChunk::size.y; ++y) {
-				const auto v = value(x + pos.x, y + pos.y, bed);
+				const auto blockPos = pos + IVec2{x,y};
+				const auto v = value(blockPos.x, blockPos.y, bed);
 
 				if (bed.test) {
-					bed.pos = pos;
+					bed.pos = blockPos;
 					//bedItems.push_back(bed);
 					entData.push_back(bed);
 					chunk.data[x][y] = BlockId::Entity;

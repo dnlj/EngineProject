@@ -326,20 +326,43 @@ namespace Game {
 					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
 
 					if constexpr (ENGINE_SERVER) {
+						b2BodyDef bodyDef;
+						bodyDef.type = b2_staticBody;
+
+						b2CircleShape shape;
+						shape.m_radius = 0.49f;
+
+						b2FixtureDef fixtureDef;
+						fixtureDef.shape = &shape;
+						fixtureDef.density = 1.0f;
+						fixtureDef.filter.maskBits = 0; // Disable collision
+
 						for (const auto& entData : chunkInfo.entData) {
-							const b2Vec2 pos = {0, 0};
+							const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(entData.pos));
 							const auto ent = world.createEntity();
 
 							world.addComponent<NetworkedFlag>(ent);
 
+							// TODO: we really shouldnt need this on the server
 							auto& spriteComp = world.addComponent<SpriteComponent>(ent);
 							spriteComp.texture = engine.textureManager.get("assets/test_tree.png");
 
 							// TODO: we need better networking for different body types - also need to deal with all the physics components.
 							auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
 							auto& physSys = world.getSystem<PhysicsSystem>();
+
 							// TODO: actual bounding box
-							physComp.setBody(physSys.createPhysicsCircle(ent));
+
+							{
+								bodyDef.position = pos;
+								b2Body* body = physSys.createBody(ent, bodyDef);
+								body->CreateFixture(&fixtureDef);
+								body->SetLinearDamping(10.0f);
+								body->SetFixedRotation(true);
+
+								physComp.setBody(body);
+							}
+
 
 							
 							world.addComponent<PhysicsProxyComponent>(ent).store(physComp.getBody()); // TODO: we shouldnt need this since it is static
