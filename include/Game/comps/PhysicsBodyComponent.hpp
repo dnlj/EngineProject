@@ -85,6 +85,11 @@ namespace Game {
 				angVel = body->GetAngularVelocity();
 			};
 
+			ENGINE_INLINE void applyLinearImpulse(const b2Vec2 imp, const bool wake) noexcept {
+				body->ApplyLinearImpulseToCenter(imp, wake);
+				vel = body->GetLinearVelocity();
+			}
+
 
 			void toBody();
 			void fromBody();

@@ -32,7 +32,7 @@ namespace Game {
 			const b2Vec2 move = {static_cast<float32>(right - left), static_cast<float32>(up - down)};
 
 			if (move != b2Vec2_zero) {
-				physComp.getBody().ApplyLinearImpulseToCenter(world.getTickDelta() * speed * move, true);
+				physComp.applyLinearImpulse(world.getTickDelta() * speed * move, true);
 			}
 		}
 	}

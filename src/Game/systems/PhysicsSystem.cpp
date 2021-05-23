@@ -25,15 +25,6 @@ namespace Game {
 		#endif
 	}
 
-	// TODO: rm
-	void PhysicsSystem::preTick() {
-	//	for (const auto ent : world.getFilter<ProxyFilter>()) {
-	//		auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
-	//		auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
-	//		physProxyComp.apply(*physBodyComp.body);
-	//	}
-	}
-
 	void PhysicsSystem::tick() {
 		if constexpr (ENGINE_CLIENT || ENGINE_SERVER) { // TODO: this should be client only correct?
 			Engine::Clock::TimePoint interpTime;
@@ -139,16 +130,6 @@ namespace Game {
 		}
 	}
 
-	// TODO: rm
-	void PhysicsSystem::postTick() {
-		//for (const auto ent : world.getFilter<ProxyFilter>()) {
-		//	const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
-		//	auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
-		//
-		//	physProxyComp.store(*physBodyComp.body);
-		//}
-	}
-
 	void PhysicsSystem::run(float dt) { // TODO: rm
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.reset();
@@ -157,24 +138,6 @@ namespace Game {
 	}
 
 	void PhysicsSystem::preStoreSnapshot() {
-		// TODO: rm
-		/*
-		for (const auto ent : world.getFilter<PhysicsProxyComponent>()) {
-			auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
-			physProxyComp.snap = false;
-			physProxyComp.rollbackOverride = false;
-
-			if (world.isPerformingRollback()) {
-				const auto tick = world.getTick();
-				if (world.hasComponent(ent, tick)) {
-					const auto& physProxyComp2 = world.getComponent<PhysicsProxyComponent>(ent, tick);
-					if (physProxyComp2.rollbackOverride) {
-						physProxyComp = physProxyComp2;
-					}
-				}
-			}
-		}*/
-
 		// TODO: client only?
 		for (const auto ent : world.getFilter<PhysicsBodyComponent>()) {
 			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
