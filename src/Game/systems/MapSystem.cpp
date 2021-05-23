@@ -363,11 +363,8 @@ namespace Game {
 								physComp.setBody(body);
 							}
 
-
-							
-							world.addComponent<PhysicsProxyComponent>(ent).store(physComp.getBody()); // TODO: we shouldnt need this since it is static
 							auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
-							physInterpComp.trans.p = pos; // TODO: block pos
+							physInterpComp.trans.p = pos;
 
 							it->second.blockEntities.push_back(ent);
 						}

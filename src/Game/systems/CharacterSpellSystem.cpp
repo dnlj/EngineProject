@@ -27,10 +27,9 @@ namespace Game {
 		
 		for (int i = 0; i < count; ++i) {
 			auto ent = missiles.emplace_back(world.createEntity(true));
-			const auto& [spriteComp, physBodyComp, physProxyComp, physInterpComp] = world.addComponents<
+			const auto& [spriteComp, physBodyComp, physInterpComp] = world.addComponents<
 				Game::SpriteComponent,
 				Game::PhysicsBodyComponent,
-				Game::PhysicsProxyComponent,
 				Game::PhysicsInterpComponent
 			>(ent);
 
@@ -71,14 +70,13 @@ namespace Game {
 		auto missile = missiles[currentMissile];
 		world.setEnabled(missile, true);
 
-		auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(missile);
-		auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(missile);
-		physProxyComp.snap = true;
-		physBodyComp.setTransform2(pos, 0);
+		auto& physComp = world.getComponent<PhysicsBodyComponent>(missile);
+		physComp.snap = true;
+		physComp.setTransform(pos, 0);
 
-		auto& body = physBodyComp.getBody();
-		body.SetActive(true);
-		body.SetLinearVelocity(4.0f * dir);
+		auto& body = physComp.getBody();
+		body.SetActive(true); // TODO: use physComp instead
+		physComp.setVelocity(4.0f * dir);
 
 		currentMissile = (currentMissile + 1) % missiles.size();
 	}
@@ -94,7 +92,7 @@ namespace Game {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 
 			if (actComp.getButton(Button::Attack1).pressCount) {
-				auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
+				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 				const auto pos = physComp.getPosition();
 				auto dir = Engine::Glue::as<b2Vec2>(actComp.getTarget());
 				dir.Normalize();

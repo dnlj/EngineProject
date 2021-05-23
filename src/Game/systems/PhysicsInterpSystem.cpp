@@ -8,8 +8,8 @@ namespace Game {
 	void PhysicsInterpSystem::run(float32 dt) {
 		const auto now = Engine::Clock::now();
 
-		for (const auto& ent : world.getFilter<PhysicsInterpComponent, PhysicsProxyComponent>()) {
-			const auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ent);
+		for (const auto& ent : world.getFilter<PhysicsBodyComponent, PhysicsInterpComponent>()) {
+			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 			auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
 
 			Engine::Clock::TimePoint nextTime;
@@ -18,21 +18,21 @@ namespace Game {
 			const b2Transform* nextTrans = nullptr;
 			const b2Transform* prevTrans = nullptr;
 
-			if (physProxyComp.snap) {
-				physInterpComp.trans = physProxyComp.trans;
+			if (physComp.snap) {
+				physInterpComp.trans = physComp.getTransform();
 				continue;
 			} else {
 				const auto tick = world.getTick();
-				if (!world.hadComponent<PhysicsProxyComponent>(ent, tick)) {
-					physInterpComp.trans = physProxyComp.trans;
+				if (!world.hadComponent<PhysicsBodyComponent>(ent, tick)) {
+					physInterpComp.trans = physComp.getTransform();
 					continue;
 				}
 
-				const auto& physProxyComp2 = world.getComponent<PhysicsProxyComponent>(ent, tick);
-				prevTrans = &physProxyComp2.trans;
+				const auto& physProxyComp2 = world.getComponent<PhysicsBodyComponent>(ent, tick);
+				prevTrans = &physProxyComp2.getTransform();
 				prevTime = world.getTickTime(tick);
 
-				nextTrans = &physProxyComp.trans;
+				nextTrans = &physComp.getTransform();
 				nextTime = world.getTickTime();
 
 				interpTime = now - world.getTickInterval();

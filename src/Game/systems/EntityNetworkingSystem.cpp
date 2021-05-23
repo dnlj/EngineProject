@@ -34,7 +34,7 @@ namespace Game {
 			// TODO: move elsewhere, this isnt really related to ECS networking
 			{ // TODO: player data should be sent every tick along with actions/inputs.
 			// TODO: cont.  Should it? every few frames is probably fine for keeping it in sync. Although when it does desync it will be a larger rollback.
-				auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 				if (auto msg = conn.beginMessage<MessageType::PLAYER_DATA>()) {
 					msg.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
 					msg.write(physComp.getTransform());
@@ -165,7 +165,7 @@ namespace Game {
 	void EntityNetworkingSystem::updateNeighbors() {
 		for (const auto ply : world.getFilter<PlayerFilter>()) {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
-			auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 
 			ecsNetComp.neighbors.eraseRemove([](auto& pair){
 				if (pair.second.state == ECSNetworkingComponent::NeighborState::Removed) {

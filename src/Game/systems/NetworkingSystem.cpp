@@ -404,36 +404,39 @@ namespace Game {
 	}
 	
 	HandleMessageDef(MessageType::PLAYER_DATA)
+		ENGINE_DEBUG_ASSERT(!ENGINE_SERVER, "This message is not for the server."); // TODO: rm - debugging
 		const auto* tick = from.read<Engine::ECS::Tick>();
 		const auto* trans = from.read<b2Transform>();
 		const auto* vel = from.read<b2Vec2>();
+		// TODO: angVel
 
 		if (!tick || !trans || !vel) {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
 
-		if (!world.hasComponent<PhysicsProxyComponent>(info.ent)) {
-			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsProxyComponent");
+		if (!world.hasComponent<PhysicsBodyComponent>(info.ent)) {
+			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsBodyComponent");
 			return;
 		}
 
-		auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(info.ent, *tick);
-		const auto diff = physProxyComp.trans.p - trans->p;
+		auto& physComp = world.getComponent<PhysicsBodyComponent>(info.ent, *tick);
+		const auto diff = physComp.getPosition() - trans->p;
 		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
 		// TODO: why does this ever happen with only one player connected?
 		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
-			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physProxyComp.trans.p.x)>::max_digits10),
+			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physComp.getPosition().x)>::max_digits10),
 				"Oh boy a mishap has occured on tick ", *tick,
-				" (<", physProxyComp.trans.p.x, ", ", physProxyComp.trans.p.y, "> - <",
+				" (<", physComp.getPosition().x, ", ", physComp.getPosition().y, "> - <",
 				trans->p.x, ", ", trans->p.y, "> = <",
 				diff.x, ", ", diff.y,
 				">)"
 			);
-			physProxyComp.trans = *trans;
-			physProxyComp.vel = *vel;
-			physProxyComp.rollbackOverride = true;
+
+			physComp.trans = *trans;
+			physComp.vel = *vel;
+			physComp.rollbackOverride = true;
 
 			world.scheduleRollback(*tick);
 		}
@@ -689,8 +692,6 @@ namespace Game {
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
 			physComp.setBody(physSys.createPhysicsCircle(ent, pos, -+PhysicsType::Player));
 			physComp.type = PhysicsType::Player;
-
-			world.addComponent<PhysicsProxyComponent>(ent).store(physComp.getBody());
 		}
 
 		world.addComponent<ActionComponent>(ent);

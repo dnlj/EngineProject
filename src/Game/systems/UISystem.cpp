@@ -206,12 +206,12 @@ namespace Game {
 		const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
 		// TODO: reimplement - ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
-		const auto& physProxyComp = world.getComponent<PhysicsProxyComponent>(ply);
+		const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 
 		const auto offsetMousePos = actComp.getTarget();
 		ImGui::Text("Mouse (offset): (%f, %f)", offsetMousePos.x, offsetMousePos.y);
 
-		const auto worldMousePos = offsetMousePos + Engine::Glue::as<glm::vec2>(physProxyComp.trans.p);
+		const auto worldMousePos = offsetMousePos + Engine::Glue::as<glm::vec2>(physComp.getPosition());
 		ImGui::Text("Mouse (world): (%f, %f)", worldMousePos.x, worldMousePos.y);
 			
 		const auto blockMousePos = mapSys.worldToBlock(worldMousePos);

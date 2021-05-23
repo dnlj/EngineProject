@@ -9,7 +9,8 @@
 // Game
 #include <Game/Common.hpp>
 
-
+// TODO: rm
+/*
 namespace Game {
 	class PhysicsProxyComponent {
 		public:
@@ -67,3 +68,4 @@ namespace Game {
 			}
 	};
 }
+*/
