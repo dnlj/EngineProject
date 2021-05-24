@@ -453,52 +453,30 @@ namespace Engine::ECS {
 			 * @tparam C The component.
 			 */
 			template<class C>
-			ENGINE_INLINE void removeComponent(Entity ent) { removeComponents<C>(ent); };
+			ENGINE_INLINE void removeComponent(Entity ent) {
+				C* comp = nullptr;
 
-			/**
-			 * Removes components from an entity.
-			 * @param[in] ent The entity.
-			 * @tparam Components The components.
-			 */
-			template<class... Comps>
-			void removeComponents(Entity ent) {
-				// TODO: since we ended up doing things this way we should re-implement this in terms of singular version
-				Meta::ForEach<Comps...>::call([&]<class C>() ENGINE_INLINE {
-					C* comp = nullptr;
+				if constexpr (!IsFlagComponent<C>::value) {
+					comp = &getComponent<C>(ent);
+				}
 
-					if constexpr (!IsFlagComponent<C>::value) {
-						comp = &getComponent<C>(ent);
-					}
-
-					// Callbacks
-					Meta::ForEach<Ss...>::call([&]<class S>() ENGINE_INLINE {
-						if constexpr (HasComponentRemovedCallbackFor<S, C>) {
-							getSystem<S>().onComponentRemoved(ent, *comp);
-						}
-					});
-
-					// Remove
-					compBitsets[ent.id] &= ~getBitsetForComponents<C>();
-					getComponentContainer<C>().remove(ent);
-
-					// Update Filters
-					auto& is = compToFilter[getComponentId<C>()];
-					for (auto i : is) {
-						filters[i].remove(ent);
+				// Callbacks
+				Meta::ForEach<Ss...>::call([&]<class S>() ENGINE_INLINE {
+					if constexpr (HasComponentRemovedCallbackFor<S, C>) {
+						getSystem<S>().onComponentRemoved(ent, *comp);
 					}
 				});
-				/*
-				(getComponentContainer<Comps>().remove(ent), ...);
 
-				// Update filters
-				const auto& rm = [&](const auto& is){
-					for (auto i : is) {
-						filters[i].remove(ent);
-						// ENGINE_INFO("Removing ", ent, " from filter ", i);
-					}
-				};
-				(rm(compToFilter[getComponentId<Comps>()]), ...);*/
-			}
+				// Remove
+				compBitsets[ent.id] &= ~getBitsetForComponents<C>();
+				getComponentContainer<C>().remove(ent);
+
+				// Update Filters
+				auto& is = compToFilter[getComponentId<C>()];
+				for (auto i : is) {
+					filters[i].remove(ent);
+				}
+			};
 
 			/**
 			 * Removes all components from an entity.
@@ -693,7 +671,7 @@ namespace Engine::ECS {
 			 */
 			void destroyEntity(Entity ent) {
 				ENGINE_WARN("destroyEntity: ", ent);
-				((hasComponent<Cs>(ent) && (removeComponents<Cs>(ent), 0)), ...);
+				((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 0)), ...);
 		
 				#if defined(DEBUG)
 					if (!isAlive(ent)) {
