@@ -29,10 +29,6 @@ namespace Game {
 			b2Body* body = nullptr;
 			int* count = nullptr; // TODO: is this actually used? since we dont do rollback for this?
 
-			b2Transform trans = {}; // We store pos/ang as transform since we do frequent comparisons with box2d state and would otherwise be making constant trig calls
-			b2Vec2 vel = {};
-			float32 angVel = {};
-
 		public:
 			PhysicsType type = {}; // TODO: why is this public?
 
@@ -55,9 +51,9 @@ namespace Game {
 
 			operator SnapshotData() const noexcept {
 				return {
-					.trans = trans,
-					.vel = vel,
-					.angVel = angVel,
+					.trans = body->GetTransform(),
+					.vel = body->GetLinearVelocity(),
+					.angVel = body->GetAngularVelocity(),
 					.rollbackOverride = rollbackOverride,
 				};
 			}
@@ -68,11 +64,10 @@ namespace Game {
 			PhysicsBodyComponent(const PhysicsBodyComponent& other) noexcept;
 
 			PhysicsBodyComponent& operator=(const SnapshotData& other) noexcept {
-				trans = other.trans;
-				vel = other.vel;
-				angVel = other.angVel;
+				setTransform(other.trans.p, other.trans.q.GetAngle());
+				setVelocity(other.vel);
+				setAngularVelocity(other.angVel);
 				rollbackOverride = other.rollbackOverride;
-				toBody();
 				return *this;
 			}
 
@@ -91,43 +86,22 @@ namespace Game {
 			b2World* getWorld() { return body->GetWorld(); }
 			const b2World* getWorld() const { return body->GetWorld(); }
 
-			ENGINE_INLINE const auto& getTransform() const noexcept { return trans; }
-			ENGINE_INLINE void setTransform(const b2Vec2& pos, const float32 ang) {
-				body->SetTransform(pos, ang);
-				trans = body->GetTransform();
-			}
+			ENGINE_INLINE const auto& getTransform() const noexcept { return body->GetTransform(); }
+			ENGINE_INLINE void setTransform(const b2Vec2& pos, const float32 ang) { body->SetTransform(pos, ang); }
 
-			ENGINE_INLINE auto getPosition() const noexcept { return trans.p; };
-			ENGINE_INLINE void setPosition(const b2Vec2 p) noexcept {
-				setTransform(p, trans.q.GetAngle());
-			};
+			ENGINE_INLINE auto getPosition() const noexcept { return body->GetPosition(); };
+			ENGINE_INLINE void setPosition(const b2Vec2 p) noexcept { setTransform(p, getAngle()); };
 
-			ENGINE_INLINE auto getAngle() const noexcept { return trans.q.GetAngle(); };
-			ENGINE_INLINE void setAngle(const float32 a) noexcept {
-				setTransform(trans.p, a);
-			};
+			ENGINE_INLINE float32 getAngle() const noexcept { return body->GetAngle(); };
+			ENGINE_INLINE void setAngle(const float32 a) noexcept { setTransform(getPosition(), a); };
 
-			ENGINE_INLINE auto getVelocity() const noexcept { return vel; };
-			ENGINE_INLINE auto setVelocity(const b2Vec2 v) noexcept {
-				body->SetLinearVelocity(v);
-				vel = body->GetLinearVelocity();
-			};
+			ENGINE_INLINE auto getVelocity() const noexcept { return body->GetLinearVelocity(); };
+			ENGINE_INLINE void setVelocity(const b2Vec2 v) noexcept { body->SetLinearVelocity(v); };
 
-			ENGINE_INLINE auto getAngularVelocity() const noexcept { return angVel; };
-			ENGINE_INLINE auto setAngularVelocity(const float32 av) noexcept {
-				body->SetAngularVelocity(av);
-				angVel = body->GetAngularVelocity();
-			};
+			ENGINE_INLINE auto getAngularVelocity() const noexcept { return body->GetAngularVelocity(); };
+			ENGINE_INLINE void setAngularVelocity(const float32 av) noexcept { body->SetAngularVelocity(av); };
 
-			ENGINE_INLINE void applyLinearImpulse(const b2Vec2 imp, const bool wake) noexcept {
-				body->ApplyLinearImpulseToCenter(imp, wake);
-				vel = body->GetLinearVelocity();
-			}
-
-
-			void toBody();
-			void fromBody();
-
+			ENGINE_INLINE void applyLinearImpulse(const b2Vec2 imp, const bool wake) noexcept { body->ApplyLinearImpulseToCenter(imp, wake); }
 
 			void setType(PhysicsType t) {
 				b2Filter filter;

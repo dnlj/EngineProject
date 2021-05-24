@@ -115,19 +115,8 @@ namespace Game {
 			}
 		}
 
-		// TODO: can probably combine with loop above
-		for (const auto ent : world.getFilter<ProxyFilter>()) {
-			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
-			physComp.toBody();
-		}
-
 		// TODO: look into SetAutoClearForces
 		physWorld.Step(world.getTickDelta(), 8, 3);
-
-		for (const auto ent : world.getFilter<ProxyFilter>()) {
-			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
-			physComp.fromBody();
-		}
 	}
 
 	void PhysicsSystem::run(float dt) { // TODO: rm
