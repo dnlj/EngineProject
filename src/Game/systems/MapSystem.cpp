@@ -337,6 +337,7 @@ namespace Game {
 						fixtureDef.density = 1.0f;
 						fixtureDef.filter.maskBits = 0; // Disable collision
 
+						// TODO: these entities are never cleaned up - they live forever - big problem
 						for (const auto& entData : chunkInfo.entData) {
 							const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(entData.pos));
 							const auto ent = world.createEntity();

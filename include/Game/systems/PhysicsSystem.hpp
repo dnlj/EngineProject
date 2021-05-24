@@ -20,6 +20,14 @@ namespace Game {
 			void run(float32 dt);
 			void preStoreSnapshot();
 
+			void onComponentAdded(const Engine::ECS::Entity ent, class PhysicsBodyComponent& comp) {
+				ENGINE_INFO(" PhysicsSystem - component added to ", ent);
+			};
+
+			void onComponentRemoved(const Engine::ECS::Entity ent, class PhysicsBodyComponent& comp) {
+				ENGINE_INFO(" PhysicsSystem - component removed from ", ent);
+			};
+
 			/**
 			 * Creates a box2d body and associates an entity with it.
 			 * @param[in] ent The entity.

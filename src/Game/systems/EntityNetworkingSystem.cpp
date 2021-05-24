@@ -120,8 +120,6 @@ namespace Game {
 					const int32 diff = data.comps.test(cid) - world.getComponentsBitset(ent).test(cid);
 
 					if (diff < 0) { // Component Added
-						ENGINE_LOG("Component added: ", ent, " ", world.getComponentId<C>());
-
 						if (networkComponent<C>(ent, conn)) {
 							data.comps.set(cid);
 						} else {

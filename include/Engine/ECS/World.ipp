@@ -5,7 +5,6 @@
 
 // Engine
 #include <Engine/ECS/World.hpp>
-#include <Engine/Meta/ForEach.hpp>
 
 
 namespace Engine::ECS {

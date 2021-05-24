@@ -14,6 +14,7 @@
 #include <Engine/SequenceBuffer.hpp>
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/FlatHashMap.hpp>
+#include <Engine/Meta/ForEach.hpp>
 
 
 namespace Engine::ECS {
@@ -122,6 +123,18 @@ namespace Engine::ECS {
 
 	template<class T>
 	struct IsSnapshotRelevant<T, std::void_t<typename T::SnapshotData>> : std::true_type {};
+
+	// TODO: rm - work around for requires clauses not working in `if constexpr` on msvc
+	template<class Sys, class Comp>
+	concept HasComponentAddedCallbackFor = requires (Sys sys, Engine::ECS::Entity ent, Comp comp) {
+		sys.onComponentAdded(ent, comp);
+	};
+
+	// TODO: rm - work around for requires clauses not working in `if constexpr` on msvc
+	template<class Sys, class Comp>
+	concept HasComponentRemovedCallbackFor = requires (Sys sys, Engine::ECS::Entity ent, Comp comp) {
+		sys.onComponentRemoved(ent, comp);
+	};
 }
 
 namespace Engine::ECS {
@@ -389,7 +402,7 @@ namespace Engine::ECS {
 				cbits.set(cid);
 
 				auto& container = getComponentContainer<C>();
-				container.add(ent, std::forward<Args>(args)...);
+				auto& comp = container.add(ent, std::forward<Args>(args)...);
 
 				// Update filters
 				for (const auto i : compToFilter[cid]) {
@@ -398,7 +411,13 @@ namespace Engine::ECS {
 					// ENGINE_INFO("Adding ", ent, " to filter ", i, " ( C = ", getComponentId<C>(), ")");
 				}
 
-				return container[ent];
+				Meta::ForEach<Ss...>::call([&]<class S>() ENGINE_INLINE {
+					if constexpr (HasComponentAddedCallbackFor<S, C>) {
+						getSystem<S>().onComponentAdded(ent, comp);
+					}
+				});
+
+				return comp;
 			}
 
 			/**
@@ -443,7 +462,32 @@ namespace Engine::ECS {
 			 */
 			template<class... Comps>
 			void removeComponents(Entity ent) {
-				compBitsets[ent.id] &= ~getBitsetForComponents<Comps...>();
+				// TODO: since we ended up doing things this way we should re-implement this in terms of singular version
+				Meta::ForEach<Comps...>::call([&]<class C>() ENGINE_INLINE {
+					C* comp = nullptr;
+
+					if constexpr (!IsFlagComponent<C>::value) {
+						comp = &getComponent<C>(ent);
+					}
+
+					// Callbacks
+					Meta::ForEach<Ss...>::call([&]<class S>() ENGINE_INLINE {
+						if constexpr (HasComponentRemovedCallbackFor<S, C>) {
+							getSystem<S>().onComponentRemoved(ent, *comp);
+						}
+					});
+
+					// Remove
+					compBitsets[ent.id] &= ~getBitsetForComponents<C>();
+					getComponentContainer<C>().remove(ent);
+
+					// Update Filters
+					auto& is = compToFilter[getComponentId<C>()];
+					for (auto i : is) {
+						filters[i].remove(ent);
+					}
+				});
+				/*
 				(getComponentContainer<Comps>().remove(ent), ...);
 
 				// Update filters
@@ -453,7 +497,7 @@ namespace Engine::ECS {
 						// ENGINE_INFO("Removing ", ent, " from filter ", i);
 					}
 				};
-				(rm(compToFilter[getComponentId<Comps>()]), ...);
+				(rm(compToFilter[getComponentId<Comps>()]), ...);*/
 			}
 
 			/**
