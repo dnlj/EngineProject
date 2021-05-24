@@ -15,17 +15,6 @@
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/FlatHashMap.hpp>
 
-// TODO: move
-// TODO: namespace?
-namespace Engine {
-	template<class... Cs>
-	struct ForEach {
-		template<class F>
-		ENGINE_INLINE static void call(F&& func) {
-			(func.operator()<Cs>(), ...);
-		}
-	};
-}
 
 namespace Engine::ECS {
 	// TODO: move
@@ -192,7 +181,7 @@ namespace Engine::ECS {
 		////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////
-		private: // TODO: sort
+		private:
 			template<class,class>
 			friend class SingleComponentFilter;
 
@@ -236,24 +225,14 @@ namespace Engine::ECS {
 				template<class T>
 				struct CompCont<T, std::enable_if_t<IsSnapshotRelevant<T>::value>> { using Type = SparseSet<Entity, typename T::SnapshotData>; };
 
-
-				std::tuple<typename CompCont<Cs>::Type ...> compConts2;
-				// TODO: rm
-				//std::tuple<
-				//	std::conditional_t<
-				//		IsSnapshotRelevant<Cs>::value,
-				//		ComponentContainer<Cs>,
-				//		bool // TODO: dont store anything non-snapshot comps
-				//	>...
-				//> compConts;
-
+				std::tuple<typename CompCont<Cs>::Type ...> compConts;
 				template<class C>
 				ENGINE_INLINE auto& getComponentContainer() {
 					static_assert(IsSnapshotRelevant<C>::value,
 						"Attempting to get component container for non-snapshot relevant component."
 					);
 
-					return std::get<getComponentId<C>()>(compConts2);
+					return std::get<getComponentId<C>()>(compConts);
 				}
 
 				template<class C>

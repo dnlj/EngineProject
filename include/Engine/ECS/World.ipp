@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/ECS/World.hpp>
+#include <Engine/Meta/ForEach.hpp>
 
 
 namespace Engine::ECS {
@@ -141,7 +142,7 @@ namespace Engine::ECS {
 
 		auto& snap = history.insert(currTick);
 		snap.tickTime = tickTime;
-		ForEach<Cs...>::call([&]<class C>{
+		Meta::ForEach<Cs...>::call([&]<class C>{
 			if constexpr (IsSnapshotRelevant<C>::value) {
 				auto& cont = getComponentContainer<C>();
 				auto& scont = snap.getComponentContainer<C>();
@@ -158,7 +159,7 @@ namespace Engine::ECS {
 		if (!history.contains(tick)) { return false; }
 
 		auto& snap = history.get(tick);
-		ForEach<Cs...>::call([&]<class C>{
+		Meta::ForEach<Cs...>::call([&]<class C>{
 			if constexpr (IsSnapshotRelevant<C>::value) {
 				auto& cont = getComponentContainer<C>();
 				auto& scont = snap.getComponentContainer<C>();
