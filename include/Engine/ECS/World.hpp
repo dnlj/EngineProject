@@ -132,7 +132,7 @@ namespace Engine::ECS {
 	struct IsSnapshotRelevant : std::false_type {};
 
 	template<class T>
-	struct IsSnapshotRelevant<T, std::enable_if_t<T::isSnapshotRelevant>> : std::true_type {};
+	struct IsSnapshotRelevant<T, std::void_t<typename T::SnapshotData>> : std::true_type {};
 }
 
 namespace Engine::ECS {
@@ -228,13 +228,24 @@ namespace Engine::ECS {
 
 			struct Snapshot {
 				Clock::TimePoint tickTime = {};
-				std::tuple<
-					std::conditional_t<
-						IsSnapshotRelevant<Cs>::value,
-						ComponentContainer<Cs>,
-						bool // TODO: dont store anything non-snapshot comps
-					>...
-				> compConts;
+
+				// TODO: how should we handle flag components?
+				template<class T, class = void>
+				struct CompCont { using Type = bool; };
+
+				template<class T>
+				struct CompCont<T, std::enable_if_t<IsSnapshotRelevant<T>::value>> { using Type = SparseSet<Entity, typename T::SnapshotData>; };
+
+
+				std::tuple<typename CompCont<Cs>::Type ...> compConts2;
+				// TODO: rm
+				//std::tuple<
+				//	std::conditional_t<
+				//		IsSnapshotRelevant<Cs>::value,
+				//		ComponentContainer<Cs>,
+				//		bool // TODO: dont store anything non-snapshot comps
+				//	>...
+				//> compConts;
 
 				template<class C>
 				ENGINE_INLINE auto& getComponentContainer() {
@@ -242,7 +253,7 @@ namespace Engine::ECS {
 						"Attempting to get component container for non-snapshot relevant component."
 					);
 
-					return std::get<ComponentContainer<C>>(compConts);
+					return std::get<getComponentId<C>()>(compConts2);
 				}
 
 				template<class C>
@@ -500,7 +511,7 @@ namespace Engine::ECS {
 			 * 
 			 */
 			template<class C>
-			ENGINE_INLINE C& getComponent(Entity ent, Tick tick) {
+			ENGINE_INLINE auto& getComponentState(Entity ent, Tick tick) {
 				static_assert(IsSnapshotRelevant<C>::value,
 					"Attempting to get component from snapshot for non-snapshot relevant component."
 				);
@@ -515,8 +526,8 @@ namespace Engine::ECS {
 			}
 
 			template<class Component>
-			ENGINE_INLINE const Component& getComponent(Entity ent, Tick tick) const {
-				return const_cast<World*>(this)->getComponent<Component>(ent, tick);
+			ENGINE_INLINE const auto& getComponentState(Entity ent, Tick tick) const {
+				return const_cast<World*>(this)->getComponentState<Component>(ent, tick);
 			}
 
 			/**

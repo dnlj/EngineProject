@@ -69,14 +69,14 @@ namespace Game {
 
 					// TODO: this isnt great on the ECS/snapshot memory layout
 					for (Engine::ECS::Tick t = world.getTick(); t > world.getTick() - tickrate; --t) {
-						const auto& physComp = world.getComponent<PhysicsBodyComponent>(ent, t);
-						if (physComp.rollbackOverride) {
+						const auto& physCompState = world.getComponentState<PhysicsBodyComponent>(ent, t);
+						if (physCompState.rollbackOverride) {
 							const auto tickTime = world.getTickTime(t);
 							if (tickTime >= interpTime) {
-								physInterpComp.nextTrans.Set(physComp.getPosition(), physComp.getAngle());
+								physInterpComp.nextTrans = physCompState.trans;
 								physInterpComp.nextTime = tickTime;
 							} else {
-								physInterpComp.prevTrans.Set(physComp.getPosition(), physComp.getAngle());
+								physInterpComp.prevTrans = physCompState.trans;
 								physInterpComp.prevTime = tickTime;
 								break;
 							}
@@ -148,10 +148,9 @@ namespace Game {
 			if (world.isPerformingRollback()) {
 				const auto tick = world.getTick();
 				if (world.hasComponent(ent, tick)) {
-					const auto& physComp2 = world.getComponent<PhysicsBodyComponent>(ent, tick);
-					if (physComp2.rollbackOverride) {
-						physComp = physComp2;
-						ENGINE_WARN(" TODO: RM -------------------------------------------");
+					const auto& physCompState2 = world.getComponentState<PhysicsBodyComponent>(ent, tick);
+					if (physCompState2.rollbackOverride) {
+						physComp = physCompState2;
 					}
 				}
 			}

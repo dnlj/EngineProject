@@ -28,8 +28,8 @@ namespace Game {
 					continue;
 				}
 
-				const auto& physProxyComp2 = world.getComponent<PhysicsBodyComponent>(ent, tick);
-				prevTrans = &physProxyComp2.getTransform();
+				const auto& physCompState2 = world.getComponentState<PhysicsBodyComponent>(ent, tick);
+				prevTrans = &physCompState2.trans;
 				prevTime = world.getTickTime(tick);
 
 				nextTrans = &physComp.getTransform();

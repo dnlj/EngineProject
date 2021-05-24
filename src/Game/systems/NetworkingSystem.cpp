@@ -370,8 +370,8 @@ namespace Game {
 						return;
 					}
 
-					auto& comp = world.getComponent<C>(local, *tick);
-					comp.netFrom(from);
+					auto& state = world.getComponentState<C>(local, *tick);
+					state.netFrom(from);
 				} else {
 					world.getComponent<C>(local).netFrom(from);
 				}
@@ -420,23 +420,23 @@ namespace Game {
 			return;
 		}
 
-		auto& physComp = world.getComponent<PhysicsBodyComponent>(info.ent, *tick);
-		const auto diff = physComp.getPosition() - trans->p;
+		auto& physCompState = world.getComponentState<PhysicsBodyComponent>(info.ent, *tick);
+		const auto diff = physCompState.trans.p - trans->p;
 		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
 		// TODO: why does this ever happen with only one player connected?
 		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
-			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physComp.getPosition().x)>::max_digits10),
+			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physCompState.trans.p.x)>::max_digits10),
 				"Oh boy a mishap has occured on tick ", *tick,
-				" (<", physComp.getPosition().x, ", ", physComp.getPosition().y, "> - <",
+				" (<", physCompState.trans.p.x, ", ", physCompState.trans.p.y, "> - <",
 				trans->p.x, ", ", trans->p.y, "> = <",
 				diff.x, ", ", diff.y,
 				">)"
 			);
 
-			physComp.trans = *trans;
-			physComp.vel = *vel;
-			physComp.rollbackOverride = true;
+			physCompState.trans = *trans;
+			physCompState.vel = *vel;
+			physCompState.rollbackOverride = true;
 
 			world.scheduleRollback(*tick);
 		}

@@ -28,24 +28,58 @@ namespace Game {
 			// Hello! Did you modify/add/remove a member variable of this class? Make sure to update the move/copy/assignment functions.
 			b2Body* body = nullptr;
 			int* count = nullptr; // TODO: is this actually used? since we dont do rollback for this?
+
 			b2Transform trans = {}; // We store pos/ang as transform since we do frequent comparisons with box2d state and would otherwise be making constant trig calls
 			b2Vec2 vel = {};
 			float32 angVel = {};
 
 		public:
-			constexpr static bool isSnapshotRelevant = true;
 			PhysicsType type = {}; // TODO: why is this public?
 
-			bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
 			bool snap = false; // TODO: this should probably be on the interp component?
+			bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
+
+			struct SnapshotData {
+				b2Transform trans = {};
+				b2Vec2 vel = {};
+				float32 angVel = {};
+				bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
+
+				
+				void netFrom(Connection& conn) { // TODO: not sure how to handle this and keep in sync with phys comp. There is probably a better solution
+					trans = *conn.read<b2Transform>();
+					vel = *conn.read<b2Vec2>();
+					rollbackOverride = true;
+				}
+			};
+
+			operator SnapshotData() const noexcept {
+				return {
+					.trans = trans,
+					.vel = vel,
+					.angVel = angVel,
+					.rollbackOverride = rollbackOverride,
+				};
+			}
 
 		public:
 			PhysicsBodyComponent() = default;
 			~PhysicsBodyComponent() noexcept;
 			PhysicsBodyComponent(const PhysicsBodyComponent& other) noexcept;
+
+			PhysicsBodyComponent& operator=(const SnapshotData& other) noexcept {
+				trans = other.trans;
+				vel = other.vel;
+				angVel = other.angVel;
+				rollbackOverride = other.rollbackOverride;
+				toBody();
+				return *this;
+			}
+
 			PhysicsBodyComponent(PhysicsBodyComponent&& other) noexcept;
-			void operator=(const PhysicsBodyComponent& other) noexcept;
-			void operator=(PhysicsBodyComponent&& other) noexcept;
+			void operator=(const PhysicsBodyComponent& other) noexcept;// TODO: should return ref
+			void operator=(PhysicsBodyComponent&& other) noexcept;// TODO: should return ref
+
 
 			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent
 

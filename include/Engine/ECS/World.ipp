@@ -41,7 +41,7 @@ namespace Engine::ECS {
 					rollbackData.time = oldTime;
 					performingRollback = true;
 				} else {
-					ENGINE_WARN("Unable to perform world rollback to tick ", rollbackData.tick);
+					ENGINE_WARN("Unable to perform world rollback to tick ", rollbackData.tick, " ", oldTick);
 					rollbackData.tick = -1;
 				}
 			}
@@ -143,7 +143,12 @@ namespace Engine::ECS {
 		snap.tickTime = tickTime;
 		ForEach<Cs...>::call([&]<class C>{
 			if constexpr (IsSnapshotRelevant<C>::value) {
-				snap.getComponentContainer<C>() = getComponentContainer<C>();
+				auto& cont = getComponentContainer<C>();
+				auto& scont = snap.getComponentContainer<C>();
+				scont.clear();
+				for (const auto& [ent, comp] : cont) {
+					scont.add(ent, comp);
+				}
 			}
 		});
 	}
@@ -155,7 +160,13 @@ namespace Engine::ECS {
 		auto& snap = history.get(tick);
 		ForEach<Cs...>::call([&]<class C>{
 			if constexpr (IsSnapshotRelevant<C>::value) {
-				getComponentContainer<C>() = snap.getComponentContainer<C>();
+				auto& cont = getComponentContainer<C>();
+				auto& scont = snap.getComponentContainer<C>();
+				for (auto& [ent, comp] : scont) {
+					if (cont.has(ent)) {
+						cont.get(ent) = comp;
+					}
+				}
 			}
 		});
 
