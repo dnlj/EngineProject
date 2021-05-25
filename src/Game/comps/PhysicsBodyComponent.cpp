@@ -71,8 +71,11 @@ namespace Game {
 						}
 					}
 
-					// TODO: uint8 max size is b2_maxPolygonVertices - static assert
-					buff.write(shape->m_count);
+					static_assert(b2_maxPolygonVertices < std::numeric_limits<uint8>::max());
+					ENGINE_DEBUG_ASSERT(shape->m_count > 0);
+					ENGINE_DEBUG_ASSERT(shape->m_count < std::numeric_limits<uint8>::max());
+					buff.write(static_cast<uint8>(shape->m_count));
+
 					for (int i = 0; i < shape->m_count; ++i) {
 						const auto v = shape->m_vertices[i];
 						buff.write(v);
@@ -128,8 +131,6 @@ namespace Game {
 			setBody(physSys.createBody(ent, bodyDef));
 		}
 
-		// TODO: make some functinos for toNet and fromNet in a anon namespace at top for networking this stuff. this is way to tedious.
-		
 		b2FixtureDef fixDef;
 		fixDef.filter.groupIndex = -+type;
 
@@ -150,7 +151,7 @@ namespace Game {
 				break;
 			}
 			case b2Shape::Type::e_polygon: {
-				const auto* count = conn.read<int32>();
+				const auto* count = conn.read<uint8>();
 				if (!count) {
 					ENGINE_WARN("Unable to read physics fixture count from network.");
 					return;
