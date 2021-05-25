@@ -20,6 +20,7 @@ namespace Game {
 		if (const auto* fix = body->GetFixtureList()) {
 			const auto ftype = fix->GetType();
 			buff.write(ftype);
+			buff.write(fix->GetFilterData().maskBits);
 
 			switch (ftype) {
 				case b2Shape::Type::e_circle: {
@@ -85,6 +86,12 @@ namespace Game {
 			return;
 		}
 
+		const auto* mask = conn.read<uint16>();
+		if (!mask) {
+			ENGINE_WARN("Unable to read physics filter mask from network");
+			return;
+		}
+
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		{
 			b2BodyDef bodyDef;
@@ -98,6 +105,7 @@ namespace Game {
 
 		b2FixtureDef fixDef;
 		fixDef.filter.groupIndex = -+type;
+		fixDef.filter.maskBits = *mask;
 
 		switch (*ftype) {
 			case b2Shape::Type::e_circle: {
