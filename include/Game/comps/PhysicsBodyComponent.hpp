@@ -27,7 +27,7 @@ namespace Game {
 
 			// Hello! Did you modify/add/remove a member variable of this class? Make sure to update the move/copy/assignment functions.
 			b2Body* body = nullptr;
-			int* count = nullptr; // TODO: is this actually used? since we dont do rollback for this?
+			// TODO: rm - int* count = nullptr; // TODO: is this actually used? since we dont do rollback for this?
 
 			//PhysicsShape shape;
 
@@ -61,9 +61,6 @@ namespace Game {
 
 		public:
 			PhysicsBodyComponent() = default;
-			~PhysicsBodyComponent() noexcept;
-			PhysicsBodyComponent(const PhysicsBodyComponent& other) noexcept;
-
 			PhysicsBodyComponent& operator=(const SnapshotData& other) noexcept {
 				setTransform(other.trans.p, other.trans.q.GetAngle());
 				setVelocity(other.vel);
@@ -72,12 +69,7 @@ namespace Game {
 				return *this;
 			}
 
-			PhysicsBodyComponent(PhysicsBodyComponent&& other) noexcept;
-			void operator=(const PhysicsBodyComponent& other) noexcept;// TODO: should return ref
-			void operator=(PhysicsBodyComponent&& other) noexcept;// TODO: should return ref
-
-
-			void setBody(b2Body* body); // TODO: add constructor arguments world.addComponent
+			void setBody(b2Body* body);
 
 			// TODO: why does one return pointer and the other ref. Make both ref or pointer.
 			// TODO: we should get rid of these. Should write wrappers for any funcs we want.
