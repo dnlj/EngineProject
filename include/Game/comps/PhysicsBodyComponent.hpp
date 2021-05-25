@@ -14,7 +14,7 @@
 
 
 namespace Game {
-	enum PhysicsType : uint8 {
+	enum PhysicsType : uint8 { // TODO: should probably rename filter/collision type or similar
 		Default,
 		Player,
 	};
@@ -29,6 +29,8 @@ namespace Game {
 			b2Body* body = nullptr;
 			int* count = nullptr; // TODO: is this actually used? since we dont do rollback for this?
 
+			//PhysicsShape shape;
+
 		public:
 			PhysicsType type = {}; // TODO: why is this public?
 
@@ -41,7 +43,6 @@ namespace Game {
 				float32 angVel = {};
 				bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
 
-				
 				void netFrom(Connection& conn) { // TODO: not sure how to handle this and keep in sync with phys comp. There is probably a better solution
 					trans = *conn.read<b2Transform>();
 					vel = *conn.read<b2Vec2>();
@@ -115,7 +116,7 @@ namespace Game {
 			}
 
 			Engine::Net::Replication netRepl() const {
-				return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::NONE : Engine::Net::Replication::ALWAYS;
+				return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::ONCE : Engine::Net::Replication::ALWAYS;
 			}
 
 			void netTo(Engine::Net::BufferWriter& buff) const;

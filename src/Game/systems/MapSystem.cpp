@@ -328,13 +328,11 @@ namespace Game {
 					if constexpr (ENGINE_SERVER) {
 						b2BodyDef bodyDef;
 						bodyDef.type = b2_staticBody;
-
-						b2CircleShape shape;
-						shape.m_radius = 0.49f;
+						bodyDef.fixedRotation = true;
+						bodyDef.linearDamping = 10.0f;
 
 						b2FixtureDef fixtureDef;
-						fixtureDef.shape = &shape;
-						fixtureDef.density = 1.0f;
+						//fixtureDef.density = 1.0f;
 						fixtureDef.filter.maskBits = 0; // Disable collision
 
 						// TODO: these entities are never cleaned up - they live forever - big problem
@@ -352,14 +350,20 @@ namespace Game {
 							auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
 							auto& physSys = world.getSystem<PhysicsSystem>();
 
-							// TODO: actual bounding box
 
 							{
 								bodyDef.position = pos;
 								b2Body* body = physSys.createBody(ent, bodyDef);
+
+								// TODO: actual bounding box
+								//b2PolygonShape shape;
+								//shape.SetAsBox(0.5f, 0.5f);
+
+								b2CircleShape shape;
+								shape.m_radius = 0.5f;
+
+								fixtureDef.shape = &shape;
 								body->CreateFixture(&fixtureDef);
-								body->SetLinearDamping(10.0f);
-								body->SetFixedRotation(true);
 
 								physComp.setBody(body);
 							}

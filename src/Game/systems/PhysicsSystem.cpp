@@ -25,6 +25,15 @@ namespace Game {
 		#endif
 	}
 
+	
+	void PhysicsSystem::onComponentAdded(const Engine::ECS::Entity ent, PhysicsBodyComponent& comp) {
+		ENGINE_INFO(" PhysicsSystem - component added to ", ent);
+	};
+
+	void PhysicsSystem::onComponentRemoved(const Engine::ECS::Entity ent, PhysicsBodyComponent& comp) {
+		ENGINE_INFO(" PhysicsSystem - component removed from ", ent);
+	};
+
 	void PhysicsSystem::tick() {
 		if constexpr (ENGINE_CLIENT || ENGINE_SERVER) { // TODO: this should be client only correct?
 			Engine::Clock::TimePoint interpTime;
@@ -40,8 +49,12 @@ namespace Game {
 			}
 
 			for (const auto ent : world.getFilter<PhysicsBodyComponent, PhysicsInterpComponent>()) {
-				if (world.getComponent<PhysicsInterpComponent>(ent).onlyUserVerified) {
-					auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
+				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
+				auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
+				if (!physInterpComp.onlyUserVerified || physBodyComp.getBody().GetType() == b2_staticBody) {
+					// TODO: static bodies shouldnt neeed interp. should handle this in a waay that only dynamic bodies have a interp comp.
+					physInterpComp.trans = physBodyComp.getTransform();
+				} else {
 					physInterpComp.nextTime = {};
 					physInterpComp.prevTime = {};
 
@@ -85,7 +98,7 @@ namespace Game {
 
 					constexpr auto zero = Engine::Clock::TimePoint{};
 					if (physInterpComp.nextTime == zero) {
-						ENGINE_WARN("nextTrans not found! ", world.getTick());
+						// TODO: enable - ENGINE_WARN("nextTrans not found! ", world.getTick());
 						if (physInterpComp.prevTime != zero) {
 							physInterpComp.nextTrans = physInterpComp.prevTrans;
 							physInterpComp.nextTime = physInterpComp.prevTime;
@@ -95,7 +108,7 @@ namespace Game {
 					}
 
 					if (physInterpComp.prevTime == zero) {
-						ENGINE_WARN("prevTrans not found!");
+						// TODO: enable - ENGINE_WARN("prevTrans not found!");
 						if (physInterpComp.nextTime != zero) {
 							physInterpComp.prevTrans = physInterpComp.nextTrans;
 							physInterpComp.prevTime = physInterpComp.nextTime;

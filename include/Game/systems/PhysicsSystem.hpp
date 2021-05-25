@@ -20,13 +20,8 @@ namespace Game {
 			void run(float32 dt);
 			void preStoreSnapshot();
 
-			void onComponentAdded(const Engine::ECS::Entity ent, class PhysicsBodyComponent& comp) {
-				ENGINE_INFO(" PhysicsSystem - component added to ", ent);
-			};
-
-			void onComponentRemoved(const Engine::ECS::Entity ent, class PhysicsBodyComponent& comp) {
-				ENGINE_INFO(" PhysicsSystem - component removed from ", ent);
-			};
+			void onComponentAdded(const Engine::ECS::Entity ent, class PhysicsBodyComponent& comp);
+			void onComponentRemoved(const Engine::ECS::Entity ent, class PhysicsBodyComponent& comp);
 
 			/**
 			 * Creates a box2d body and associates an entity with it.
@@ -63,6 +58,8 @@ namespace Game {
 				b2BodyDef bodyDef;
 				bodyDef.type = b2_dynamicBody;
 				bodyDef.position = position;
+				bodyDef.linearDamping = 10.0f;
+				bodyDef.fixedRotation = true;
 
 				b2Body* body = createBody(ent, bodyDef);
 
@@ -75,9 +72,6 @@ namespace Game {
 				fixtureDef.filter.groupIndex = filter;
 
 				body->CreateFixture(&fixtureDef);
-				body->SetLinearDamping(10.0f);
-				body->SetFixedRotation(true);
-
 				return body;
 			}
 
