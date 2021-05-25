@@ -52,10 +52,7 @@ namespace Game {
 			for (const auto ent : world.getFilter<PhysicsBodyComponent, PhysicsInterpComponent>()) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
 				auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
-				if (!physInterpComp.onlyUserVerified || physBodyComp.getBody().GetType() == b2_staticBody) {
-					// TODO: static bodies shouldnt neeed interp. should handle this in a waay that only dynamic bodies have a interp comp.
-					physInterpComp.trans = physBodyComp.getTransform();
-				} else {
+				if (physInterpComp.onlyUserVerified && physBodyComp.getBody().GetType() != b2_staticBody) {
 					physInterpComp.nextTime = {};
 					physInterpComp.prevTime = {};
 
