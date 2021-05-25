@@ -71,8 +71,10 @@ namespace Game {
 						}
 					}
 
+					// TODO: uint8 max size is b2_maxPolygonVertices - static assert
 					buff.write(shape->m_count);
-					for (const b2Vec2 v : shape->m_vertices) {
+					for (int i = 0; i < shape->m_count; ++i) {
+						const auto v = shape->m_vertices[i];
 						buff.write(v);
 					}
 					break;
@@ -129,7 +131,7 @@ namespace Game {
 		// TODO: make some functinos for toNet and fromNet in a anon namespace at top for networking this stuff. this is way to tedious.
 		
 		b2FixtureDef fixDef;
-		//fixDef.filter.groupIndex = -+type;
+		fixDef.filter.groupIndex = -+type;
 
 		switch (*ftype) {
 			case b2Shape::Type::e_circle: {
@@ -183,6 +185,5 @@ namespace Game {
 		}
 
 		netFrom(conn);
-		ENGINE_LOG("FROM DONE: ", ent);
 	}
 }

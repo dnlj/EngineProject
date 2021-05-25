@@ -356,11 +356,11 @@ namespace Game {
 								b2Body* body = physSys.createBody(ent, bodyDef);
 
 								// TODO: actual bounding box
-								//b2PolygonShape shape;
-								//shape.SetAsBox(0.5f, 0.5f);
+								b2PolygonShape shape;
+								shape.SetAsBox(0.5f, 0.5f);
 
-								b2CircleShape shape;
-								shape.m_radius = 0.5f;
+								//b2CircleShape shape;
+								//shape.m_radius = 0.5f;
 
 								fixtureDef.shape = &shape;
 								body->CreateFixture(&fixtureDef);

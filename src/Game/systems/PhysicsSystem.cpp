@@ -98,7 +98,7 @@ namespace Game {
 
 					constexpr auto zero = Engine::Clock::TimePoint{};
 					if (physInterpComp.nextTime == zero) {
-						// TODO: enable - ENGINE_WARN("nextTrans not found! ", world.getTick());
+						ENGINE_WARN("nextTrans not found! ", world.getTick());
 						if (physInterpComp.prevTime != zero) {
 							physInterpComp.nextTrans = physInterpComp.prevTrans;
 							physInterpComp.nextTime = physInterpComp.prevTime;
@@ -108,7 +108,7 @@ namespace Game {
 					}
 
 					if (physInterpComp.prevTime == zero) {
-						// TODO: enable - ENGINE_WARN("prevTrans not found!");
+						ENGINE_WARN("prevTrans not found!");
 						if (physInterpComp.nextTime != zero) {
 							physInterpComp.prevTrans = physInterpComp.nextTrans;
 							physInterpComp.prevTime = physInterpComp.nextTime;
