@@ -226,6 +226,10 @@ namespace Game {
 				if (ipos.x < (wpos + trunkR) && ipos.x > (wpos - trunkR)) {
 					if (ipos.x == wpos && ipos.y == h + 1) {
 						bed.test = 1;
+						bed.treeSize = {
+							trunkD,
+							treeH - h,
+						};
 					}
 
 					return { .exists = true, .basis = 1.0_f, .block = BlockId::Debug2 };

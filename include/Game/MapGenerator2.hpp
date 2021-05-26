@@ -81,6 +81,7 @@ namespace Game {
 			struct BlockEntityData {
 				IVec2 pos;
 				int test;
+				FVec2 treeSize;
 			};
 
 			using ChunkEntityData = std::vector<BlockEntityData>;

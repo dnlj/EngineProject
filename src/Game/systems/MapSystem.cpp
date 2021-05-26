@@ -350,18 +350,13 @@ namespace Game {
 							auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
 							auto& physSys = world.getSystem<PhysicsSystem>();
 
-
 							{
 								bodyDef.position = pos;
 								b2Body* body = physSys.createBody(ent, bodyDef);
 
-								// TODO: actual bounding box
 								b2PolygonShape shape;
-								shape.SetAsBox(0.5f, 0.5f);
-
-								//b2CircleShape shape;
-								//shape.m_radius = 0.5f;
-
+								const b2Vec2 tsize = 0.5f * MapChunk::blockSize * Engine::Glue::as<b2Vec2>(entData.treeSize);
+								shape.SetAsBox(tsize.x, tsize.y, {0.5f * MapChunk::blockSize, tsize.y}, 0);
 								fixtureDef.shape = &shape;
 								body->CreateFixture(&fixtureDef);
 
