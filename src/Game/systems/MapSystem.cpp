@@ -345,6 +345,18 @@ namespace Game {
 							// TODO: we really shouldnt need this on the server
 							auto& spriteComp = world.addComponent<SpriteComponent>(ent);
 							spriteComp.texture = engine.textureManager.get("assets/test_tree.png");
+							//spriteComp.texture = engine.textureManager.get("assets/large_sprite_test.png");
+							{
+								// TODO: we should pull these values from a central location.
+								constexpr auto pxPerBlock = 8.0f;
+								// TODO: why do we need zoom here? this should be handled by camera?
+								constexpr auto zoom = 2.0f;
+
+								const auto& sz = spriteComp.texture.get()->size;
+								spriteComp.scale = {pxPerBlock*zoom, pxPerBlock*zoom};
+								spriteComp.position.x += MapChunk::blockSize * 0.5f;
+								spriteComp.position.y += sz.y * (0.5f / (pxPerBlock * zoom));
+							}
 
 							// TODO: we need better networking for different body types - also need to deal with all the physics components.
 							auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);

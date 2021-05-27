@@ -34,7 +34,7 @@ namespace Game {
 		public:
 			struct Sprite {
 				GLuint texture;
-				glm::vec3 position;
+				glm::mat4 trans;
 			};
 
 		public:

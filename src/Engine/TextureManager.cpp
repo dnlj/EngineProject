@@ -10,16 +10,17 @@
 #include <soil/SOIL.h>
 
 namespace Engine {
-	Texture2D TextureManager::load(const std::string& path) {
+	TextureInfo TextureManager::load(const std::string& path) {
 		Image img = path;
 		img.flipY(); // TODO: idealy just fix in model uv coords
 
-		Texture2D tex;
-		tex.setStorage(TextureFormat::SRGBA8, img.size());
-		tex.setImage(img);
-		tex.setFilter(TextureFilter::NEAREST);
-		tex.setWrap(TextureWrap::REPEAT);
+		TextureInfo res;
+		res.size = img.size();
+		res.tex.setStorage(TextureFormat::SRGBA8, img.size());
+		res.tex.setImage(img);
+		res.tex.setFilter(TextureFilter::NEAREST);
+		res.tex.setWrap(TextureWrap::REPEAT);
 
-		return tex;
+		return res;
 	}
 }

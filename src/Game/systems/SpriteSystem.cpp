@@ -1,9 +1,13 @@
 // GLM
 #include <glm/gtc/matrix_transform.hpp>
 
+// Box2D
+#include <Box2D/b2_math.h>
+
 // Engine
 #include <Engine/Utility/Utility.hpp>
 #include <Engine/ECS/EntityFilter.hpp>
+#include <Engine/Glue/glm.hpp>
 
 // Game
 #include <Game/systems/SpriteSystem.hpp>
@@ -106,10 +110,15 @@ namespace Game {
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
 
 		for (const auto& ent : filter) {
-			const auto pos = world.getComponent<Game::PhysicsInterpComponent>(ent).getPosition();
+			const glm::vec3 pos = {Engine::Glue::as<glm::vec2>(world.getComponent<Game::PhysicsInterpComponent>(ent).getPosition()), 0.0f};
+			const auto& spriteComp = world.getComponent<Game::SpriteComponent>(ent);
+
 			sprites.push_back({
-				world.getComponent<Game::SpriteComponent>(ent).texture->get(),
-				{pos.x, pos.y, 0.0f}
+				.texture = spriteComp.texture->tex.get(),
+				.trans = glm::scale(
+					glm::translate(glm::mat4{1.0f}, pos + glm::vec3{spriteComp.position, 0.0f}),
+					glm::vec3{spriteComp.scale, 1.0f}
+				),
 			});
 		}
 
@@ -120,10 +129,9 @@ namespace Game {
 		// Populate data
 		spriteGroups.emplace_back();
 
-		for (auto& sprite : sprites) {
+		for (const auto& sprite : sprites) {
 			// Set camera uniform
-			auto model = glm::translate(glm::mat4{1.0f}, sprite.position); // * glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f/4});
-			glm::mat4 mvp = engine.camera.getProjection() * engine.camera.getView() * model;
+			glm::mat4 mvp = engine.camera.getProjection() * engine.camera.getView() * sprite.trans;
 			
 			auto& group = spriteGroups.back();
 			if (group.texture == sprite.texture) {

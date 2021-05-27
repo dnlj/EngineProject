@@ -19,6 +19,7 @@ namespace Engine {
 			using ResourceId = int32;
 
 		private:
+			// TODO: Dont use ptr if T is < some size
 			struct ResourceInfo {
 				const std::string path;
 				const ResourceId id;
@@ -27,10 +28,6 @@ namespace Engine {
 			};
 
 			Engine::FlatHashMap<std::string, ResourceId> resMap;
-
-			// TODO: make this a fixed array so we dont have ptr->ptr->data.
-			// TODO: cont. We shouldnt be adding new resources after init anyways.
-			// TODO: cont. If we did then ids would desync between client and server.
 			std::vector<std::unique_ptr<ResourceInfo>> resInfo;
 
 		public:
