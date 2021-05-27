@@ -349,13 +349,13 @@ namespace Game {
 							{
 								// TODO: we should pull these values from a central location.
 								constexpr auto pxPerBlock = 8.0f;
-								// TODO: why do we need zoom here? this should be handled by camera?
-								constexpr auto zoom = 2.0f;
+								constexpr auto blocksPerMeter = 4.0f;
+								constexpr auto pxPerMeter = pxPerBlock * blocksPerMeter;
 
 								const auto& sz = spriteComp.texture.get()->size;
-								spriteComp.scale = {pxPerBlock*zoom, pxPerBlock*zoom};
-								spriteComp.position.x += MapChunk::blockSize * 0.5f;
-								spriteComp.position.y += sz.y * (0.5f / (pxPerBlock * zoom));
+								spriteComp.scale = {pxPerBlock, pxPerBlock};
+								spriteComp.position.x = MapChunk::blockSize * 0.5f;
+								spriteComp.position.y = sz.y * (0.5f / pxPerMeter);
 							}
 
 							// TODO: we need better networking for different body types - also need to deal with all the physics components.
