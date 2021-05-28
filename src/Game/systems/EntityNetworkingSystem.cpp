@@ -174,33 +174,59 @@ namespace Game {
 				return false;
 			});
 
+			struct QueryCallbackLarge : b2QueryCallback {
+				World& world;
+				ECSNetworkingComponent& ecsNetComp;
 
-			struct QueryCallback : b2QueryCallback {
+				QueryCallbackLarge(World& world, ECSNetworkingComponent& ecsNetComp)
+					: world{world}, ecsNetComp{ecsNetComp} {
+				}
+
+				virtual bool ReportFixture(b2Fixture* fixture) override {
+					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
+					if (ecsNetComp.neighbors.has(ent)) {
+						ecsNetComp.neighbors.get(ent).state = ECSNetworkingComponent::NeighborState::Current;
+					}
+					return true;
+				}
+			} queryCallbackLarge(world, ecsNetComp);
+
+			
+			struct QueryCallbackSmall : b2QueryCallback {
 				const Engine::ECS::Entity ply;
 				World& world;
 				ECSNetworkingComponent& ecsNetComp;
 
-				QueryCallback(Engine::ECS::Entity ply, World& world, ECSNetworkingComponent& ecsNetComp)
+				QueryCallbackSmall(Engine::ECS::Entity ply, World& world, ECSNetworkingComponent& ecsNetComp)
 					: ply{ply}, world{world}, ecsNetComp{ecsNetComp} {
 				}
 
 				virtual bool ReportFixture(b2Fixture* fixture) override {
 					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
 					if (!world.hasComponent<NetworkedFlag>(ent)) { return true; }
-					if (ecsNetComp.neighbors.has(ent)) {
-						ecsNetComp.neighbors.get(ent).state = ECSNetworkingComponent::NeighborState::Current;
-					} else if (ent != ply) {
+					if (!ecsNetComp.neighbors.has(ent) && ent != ply) {
 						ecsNetComp.neighbors.add(ent, ECSNetworkingComponent::NeighborState::Added);
 					}
 					return true;
 				}
-			} queryCallback(ply, world, ecsNetComp);
+			} queryCallbackSmall(ply, world, ecsNetComp);
 
+
+			// We keep objects loaded in a larger area than we initially load them so that
+			// if an object is near the edge it doesnt get constantly created and destroyed
+			// as a player moves a small amount
 			const auto& pos = physComp.getPosition();
-			constexpr float32 range = 5; // TODO: what range?
-			physComp.getWorld()->QueryAABB(&queryCallback, b2AABB{
-				{pos.x - range, pos.y - range},
-				{pos.x + range, pos.y + range},
+			constexpr float32 rangeSmall = 5; // TODO: what range?
+			constexpr float32 rangeLarge = 20; // TODO: what range?
+
+			physComp.getWorld()->QueryAABB(&queryCallbackLarge, b2AABB{
+				{pos.x - rangeLarge, pos.y - rangeLarge},
+				{pos.x + rangeLarge, pos.y + rangeLarge},
+			});
+
+			physComp.getWorld()->QueryAABB(&queryCallbackSmall, b2AABB{
+				{pos.x - rangeSmall, pos.y - rangeSmall},
+				{pos.x + rangeSmall, pos.y + rangeSmall},
 			});
 		}
 	}
