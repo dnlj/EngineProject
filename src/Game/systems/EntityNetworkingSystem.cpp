@@ -151,6 +151,7 @@ namespace Game {
 				if (auto msg = conn.beginMessage<MessageType::ECS_FLAG>()) {
 					msg.write(ent);
 					msg.write(flagComps);
+					data.comps |= flagComps;
 				} else {
 					// TODO: we either need to always network all flags or have a way to handle this
 					// TODO: if we network all flags we probably want a way to tell it to only network certain ones for security/cheat reasons
