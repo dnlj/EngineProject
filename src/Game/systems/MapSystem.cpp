@@ -159,7 +159,7 @@ namespace Game {
 
 	void MapSystem::run(float32 dt) {
 		const auto tick = world.getTick();
-		auto timeout = world.getTickTime() - std::chrono::seconds{10};
+		auto timeout = world.getTickTime() - std::chrono::seconds{10}; // TODO: how long? 30s?
 
 		for (auto ent : world.getFilter<MapAreaComponent>()) {
 			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ent);
@@ -244,6 +244,24 @@ namespace Game {
 			if (it->second.lastUsed < timeout) {
 				ENGINE_LOG("Unloading chunk: ", it->first.x, ", ", it->first.y);
 				world.getSystem<PhysicsSystem>().destroyBody(it->second.body);
+
+				// TODO: entity saving
+				//const auto regionPos = chunkToRegion(it->first);
+				//const auto regionIt = regions.find(regionPos);
+				//if (regionIt == regions.end() || regionIt->second->loading()) {
+				//	ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
+				//	continue;
+				//}
+				//const auto& region = *regionIt->second;
+				//const auto chunkIndex = chunkToRegionIndex(it->first);
+				//auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
+				//chunkData.entData = // TODO: unload entities.
+
+				for (const auto ent : it->second.blockEntities) {
+					world.deferedDestroyEntity(ent);
+					ENGINE_LOG("Destroy block entity: ", ent);
+				}
+
 				it = activeChunks.erase(it);
 			} else {
 				++it;
