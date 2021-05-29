@@ -34,6 +34,7 @@
 #include <Game/comps/ECSNetworkingComponent.hpp>
 #include <Game/comps/NetworkStatsComponent.hpp>
 #include <Game/comps/MapAreaComponent.hpp>
+#include <Game/comps/BlockEntityComponent.hpp>
 
 
 namespace Game {
@@ -72,6 +73,7 @@ namespace Game {
 		ECSNetworkingComponent,
 		NetworkStatsComponent,
 		MapAreaComponent,
+		BlockEntityComponent,
 		struct CharacterSpellComponent, // TODO: rn xFlag?
 		struct PlayerFlag,
 		struct CameraTargetFlag,

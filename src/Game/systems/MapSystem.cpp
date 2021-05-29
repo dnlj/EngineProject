@@ -259,7 +259,6 @@ namespace Game {
 
 				for (const auto ent : it->second.blockEntities) {
 					world.deferedDestroyEntity(ent);
-					ENGINE_LOG("Destroy block entity: ", ent);
 				}
 
 				it = activeChunks.erase(it);
