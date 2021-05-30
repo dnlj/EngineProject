@@ -1,14 +1,13 @@
 #pragma once
 
+// Game
+#include <Game/BlockEntityData.hpp>
+
 
 namespace Game {
-	enum class BlockEntityType {
-		None,
-		Tree,
-	};
-
 	class BlockEntityComponent {
 		public:
-			
+			glm::ivec2 block;
+			BlockEntityData data;
 	};
 }

@@ -196,7 +196,7 @@ namespace Game {
 
 #define DEF_LANDMARK_SAMPLE(L)\
 	template<>\
-	auto MapGenerator2::landmarkSample<MapGenerator2::Landmark:: L>(const FVec2 pos, const IVec2 ipos, const Int h, BlockEntityData& bed) const noexcept -> LandmarkSample
+	auto MapGenerator2::landmarkSample<MapGenerator2::Landmark:: L>(const FVec2 pos, const IVec2 ipos, const Int h, BlockGenData& bgd) const noexcept -> LandmarkSample
 
 ////////////////////////////////////////////////////////////////////////////////
 // Landmark 0
@@ -225,8 +225,9 @@ namespace Game {
 				const Int wpos = Engine::Noise::floorTo<Int>((a + off * (b - a)) * treeSpacing);
 				if (ipos.x < (wpos + trunkR) && ipos.x > (wpos - trunkR)) {
 					if (ipos.x == wpos && ipos.y == h + 1) {
-						bed.test = 1;
-						bed.treeSize = {
+						bgd.exists = true;
+						bgd.desc.data.type = BlockEntityType::Tree;
+						bgd.desc.data.asTree.size = {
 							trunkD,
 							treeH - h,
 						};
@@ -286,21 +287,19 @@ namespace Game {
 #undef DEF_LANDMARK_SAMPLE
 
 namespace Game {
-	void MapGenerator2::init(const IVec2 pos, MapChunk& chunk, ChunkEntityData& entData) const noexcept {
-		BlockEntityData bed = {};
-		//std::vector<BlockEntityData> bedItems;
+	void MapGenerator2::init(const IVec2 pos, MapChunk& chunk, std::vector<BlockEntityDesc>& entData) const noexcept {
+		BlockGenData bgd = { .exists = false };
 
 		for (int x = 0; x < MapChunk::size.x; ++x) {
 			for (int y = 0; y < MapChunk::size.y; ++y) {
 				const auto blockPos = pos + IVec2{x,y};
-				const auto v = value(blockPos.x, blockPos.y, bed);
+				const auto v = value(blockPos.x, blockPos.y, bgd);
 
-				if (bed.test) {
-					bed.pos = blockPos;
-					//bedItems.push_back(bed);
-					entData.push_back(bed);
+				if (bgd.exists) {
+					bgd.desc.pos = blockPos;
+					entData.push_back(bgd.desc);
 					chunk.data[x][y] = BlockId::Entity;
-					bed = {};
+					bgd.exists = false;
 				} else {
 					chunk.data[x][y] = v;
 				}
@@ -310,14 +309,9 @@ namespace Game {
 				}
 			}
 		}
-
-
-		//if (!bedItems.empty()) {s
-		//	// TODO: build component data
-		//}
 	}
 
-	BlockId MapGenerator2::value(const Int x, const Int y, BlockEntityData& bed) const noexcept {
+	BlockId MapGenerator2::value(const Int x, const Int y, BlockGenData& bgd) const noexcept {
 		const FVec2 ipos = IVec2{x, y};
 		const FVec2 pos = FVec2{static_cast<Float>(x), static_cast<Float>(y)};
 		const auto h0 = height0(pos.x);
@@ -326,7 +320,7 @@ namespace Game {
 
 		const Biome b = bounds.depth < 0 ? Biome::Default : static_cast<Biome>(perm(bounds.cell.x, bounds.cell.y) % (static_cast<int>(Biome::Jungle) + 1));
 		
-		#define CASE(B) case B: { return calc<B>(ipos, pos, h0, posBiome, bounds, bed); };
+		#define CASE(B) case B: { return calc<B>(ipos, pos, h0, posBiome, bounds, bgd); };
 		switch (b) {
 			CASE(Biome::Default)
 			CASE(Biome::Forest)
@@ -340,14 +334,14 @@ namespace Game {
 	}
 
 	template<MapGenerator2::Biome B>
-	BlockId MapGenerator2::calc(const IVec2 ipos, const FVec2 pos, const Float h0, const FVec2 posBiome, const BiomeBounds bounds, BlockEntityData& bed) const noexcept {
+	BlockId MapGenerator2::calc(const IVec2 ipos, const FVec2 pos, const Float h0, const FVec2 posBiome, const BiomeBounds bounds, BlockGenData& bgd) const noexcept {
 		const auto h = height<B>(pos.x, bounds, h0);
 
 		const auto bstr = basisStrength<B>(pos, posBiome, bounds);
 		const auto b = basis<B>(pos, h, bstr);
 
 		// TODO: move before basis stuff if we have l2.block != None
-		const auto l2 = landmark<B>(pos, ipos, h, bed);
+		const auto l2 = landmark<B>(pos, ipos, h, bgd);
 		if (l2.exists) {
 			const auto b2 = b + l2.basis;
 			if (b2 < 0.0_f) {
@@ -442,11 +436,11 @@ namespace Game {
 	}
 	
 	template<MapGenerator2::Biome B>
-	auto MapGenerator2::landmark(const FVec2 pos, const IVec2 ipos, const Int h, BlockEntityData& bed) const noexcept -> LandmarkSample {
+	auto MapGenerator2::landmark(const FVec2 pos, const IVec2 ipos, const Int h, BlockGenData& bgd) const noexcept -> LandmarkSample {
 		LandmarkSample res = {};
 
 		const auto sample = [&]<Landmark L>() ENGINE_INLINE {
-			res = landmarkSample<L>(pos, ipos, h, bed);
+			res = landmarkSample<L>(pos, ipos, h, bgd);
 		};
 
 		constexpr auto iter = [&]<class T, T... Is>(std::integer_sequence<T, Is...>) ENGINE_INLINE {

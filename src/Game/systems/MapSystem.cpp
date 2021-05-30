@@ -377,7 +377,7 @@ namespace Game {
 								b2Body* body = physSys.createBody(ent, bodyDef);
 
 								b2PolygonShape shape;
-								const b2Vec2 tsize = 0.5f * MapChunk::blockSize * Engine::Glue::as<b2Vec2>(entData.treeSize);
+								const b2Vec2 tsize = 0.5f * MapChunk::blockSize * Engine::Glue::as<b2Vec2>(entData.data.asTree.size);
 								shape.SetAsBox(tsize.x, tsize.y, {0.5f * MapChunk::blockSize, tsize.y}, 0);
 								fixtureDef.shape = &shape;
 								body->CreateFixture(&fixtureDef);

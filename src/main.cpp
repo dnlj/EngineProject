@@ -207,7 +207,7 @@ namespace {
 		blockToColor[Game::BlockId::Iron]	= {144, 144, 144};
 		blockToColor[Game::BlockId::Gold]	= {255, 235, 65};
 
-		Game::MapGenerator2::BlockEntityData discard;
+		Game::MapGenerator2::BlockGenData discard;
 
 		const auto begin = std::chrono::high_resolution_clock::now();
 		for (int y = 0; y < map.h; ++y) {

@@ -7,6 +7,7 @@
 // Game
 #include <Game/Common.hpp>
 #include <Game/BlockMeta.hpp>
+#include <Game/BlockEntityData.hpp>
 
 
 namespace Game {
@@ -78,13 +79,10 @@ namespace Game {
 			template<> constexpr static std::array landmarksByBiome<Biome::Forest> = {Landmark::BossPortal, Landmark::TreeForest};
 			template<> constexpr static std::array landmarksByBiome<Biome::Jungle> = {Landmark::BossPortal};
 
-			struct BlockEntityData {
-				IVec2 pos;
-				int test;
-				FVec2 treeSize;
+			struct BlockGenData {
+				bool exists;
+				BlockEntityDesc desc;
 			};
-
-			using ChunkEntityData = std::vector<BlockEntityData>;
 
 		private:
 			// TODO: add impl that takes perm array ref instead of seed so we can share
@@ -132,20 +130,20 @@ namespace Game {
 				, perm{seed} {
 			}
 
-			BlockId value(const Int x, const Int y, BlockEntityData& bed) const noexcept;
+			BlockId value(const Int x, const Int y, BlockGenData& bgd) const noexcept;
 
 
 			/**
 			 * @param pos The position of the chunk in block coordinates.
 			 * @param chunk The chunk to store the data in.
 			 */
-			void init(const IVec2 pos, MapChunk& chunk, ChunkEntityData& entData) const noexcept;
+			void init(const IVec2 pos, MapChunk& chunk, std::vector<BlockEntityDesc>& entData) const noexcept;
 
 		private:
 			// TODO: doc stages
 			
 			template<Biome B>
-			ENGINE_INLINE BlockId calc(const IVec2 ipos, const FVec2 pos, const Float h0, const FVec2 posBiome, const BiomeBounds bounds, BlockEntityData& bed) const noexcept;
+			ENGINE_INLINE BlockId calc(const IVec2 ipos, const FVec2 pos, const Float h0, const FVec2 posBiome, const BiomeBounds bounds, BlockGenData& bgd) const noexcept;
 			
 			[[nodiscard]]
 			BlockId resource(const FVec2 pos) const noexcept;
@@ -162,7 +160,7 @@ namespace Game {
 			
 			template<Biome B>
 			[[nodiscard]]
-			ENGINE_INLINE LandmarkSample landmark(const FVec2 pos, const IVec2 ipos, const Int h, BlockEntityData& bed) const noexcept;
+			ENGINE_INLINE LandmarkSample landmark(const FVec2 pos, const IVec2 ipos, const Int h, BlockGenData& bgd) const noexcept;
 
 			template<Biome B>
 			[[nodiscard]]
@@ -186,7 +184,7 @@ namespace Game {
 			
 			template<Landmark L>
 			[[nodiscard]]
-			ENGINE_INLINE LandmarkSample landmarkSample(const FVec2 pos, const IVec2 ipos, const Int h, BlockEntityData& bed) const noexcept {
+			ENGINE_INLINE LandmarkSample landmarkSample(const FVec2 pos, const IVec2 ipos, const Int h, BlockGenData& bgd) const noexcept {
 				static_assert(L != L, "Missing specialization.");
 			}
 

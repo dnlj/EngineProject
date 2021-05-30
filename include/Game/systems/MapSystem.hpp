@@ -43,7 +43,7 @@ namespace Game {
 		public:
 			struct ChunkInfo {
 				MapChunk chunk;
-				MapGenerator2::ChunkEntityData entData;
+				std::vector<BlockEntityDesc> entData;
 			};
 
 			constexpr static glm::ivec2 size = {16, 16};
