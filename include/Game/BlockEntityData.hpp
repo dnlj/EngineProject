@@ -48,12 +48,12 @@ namespace Game {
 			BlockEntityType type;
 
 			template<BlockEntityType T>
-			BlockEntityTypeData<T>& as() noexcept { static_assert(T != T, "Missing specialization for type."); }
+			ENGINE_INLINE BlockEntityTypeData<T>& as() noexcept { static_assert(T != T, "Missing specialization for type."); }
 
 			template<BlockEntityType T>
-			const BlockEntityTypeData<T>& as() const noexcept { return const_cast<BlockEntityData*>(this)->as<T>(); }
+			ENGINE_INLINE const BlockEntityTypeData<T>& as() const noexcept { return const_cast<BlockEntityData*>(this)->as<T>(); }
 
-			#define X(Name) template<> BlockEntityTypeData<BlockEntityType::Name>& as<BlockEntityType::Name>() noexcept { return as##Name; }
+			#define X(Name) template<> ENGINE_INLINE BlockEntityTypeData<BlockEntityType::Name>& as<BlockEntityType::Name>() noexcept { return as##Name; }
 			#include <Game/BlockEntityType.xpp>
 
 			// if we need non trivial types we will have to implement move/copy/assign/~/etc. and switch (with) based ont type.
@@ -78,7 +78,18 @@ namespace Game {
 			*/
 
 			template<class Func>
-			void with(Func&& func) {
+			ENGINE_INLINE void with(Func&& func) {
+				switch(type) {
+					#define X(Name) case BlockEntityType::Name: { func.operator()<BlockEntityType::Name>(as##Name); break; }
+					#include<Game/BlockEntityType.xpp>
+					default: {
+						ENGINE_WARN("Unknown BlockEntityType. Ignoring.");
+					}
+				}
+			}
+
+			template<class Func>
+			ENGINE_INLINE void with(Func&& func) const {
 				switch(type) {
 					#define X(Name) case BlockEntityType::Name: { func.operator()<BlockEntityType::Name>(as##Name); break; }
 					#include<Game/BlockEntityType.xpp>

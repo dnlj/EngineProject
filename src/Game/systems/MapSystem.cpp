@@ -19,6 +19,66 @@ namespace {
 }
 
 namespace Game {
+	template<>
+	Engine::ECS::Entity MapSystem::buildBlockEntity<BlockEntityType::None>(const BlockEntityDesc& desc) {
+		return Engine::ECS::INVALID_ENTITY;
+	}
+
+	template<>
+	Engine::ECS::Entity MapSystem::buildBlockEntity<BlockEntityType::Tree>(const BlockEntityDesc& desc) {
+		b2BodyDef bodyDef;
+		bodyDef.type = b2_staticBody;
+		bodyDef.fixedRotation = true;
+		bodyDef.linearDamping = 10.0f;
+
+		b2FixtureDef fixtureDef;
+		//fixtureDef.density = 1.0f;
+		fixtureDef.filter.maskBits = 0; // Disable collision
+
+		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos));
+		const auto ent = world.createEntity();
+
+		world.addComponent<NetworkedFlag>(ent);
+
+		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
+		spriteComp.texture = engine.textureManager.get("assets/test_tree.png");
+		//spriteComp.texture = engine.textureManager.get("assets/large_sprite_test.png");
+		{
+			const auto& sz = spriteComp.texture.get()->size;
+			spriteComp.scale = {pixelsPerBlock, pixelsPerBlock};
+			spriteComp.position.x = MapChunk::blockSize * 0.5f;
+			spriteComp.position.y = sz.y * (0.5f / pixelsPerMeter);
+		}
+
+		auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
+		auto& physSys = world.getSystem<PhysicsSystem>();
+
+		{
+			bodyDef.position = pos;
+			b2Body* body = physSys.createBody(ent, bodyDef);
+
+			b2PolygonShape shape;
+			const b2Vec2 tsize = 0.5f * MapChunk::blockSize * Engine::Glue::as<b2Vec2>(desc.data.asTree.size);
+			shape.SetAsBox(tsize.x, tsize.y, {0.5f * MapChunk::blockSize, tsize.y}, 0);
+			fixtureDef.shape = &shape;
+			body->CreateFixture(&fixtureDef);
+
+			physComp.setBody(body);
+		}
+
+		auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
+		physInterpComp.trans.p = pos;
+
+		return ent;
+	}
+
+	template<>
+	Engine::ECS::Entity MapSystem::buildBlockEntity<BlockEntityType::Portal>(const BlockEntityDesc& desc) {
+		return Engine::ECS::INVALID_ENTITY;
+	}
+}
+
+namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
 		: System{arg} {
 		static_assert(World::orderAfter<MapSystem, CameraTrackingSystem>());
@@ -343,52 +403,18 @@ namespace Game {
 					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
 
 					if constexpr (ENGINE_SERVER) {
-						b2BodyDef bodyDef;
-						bodyDef.type = b2_staticBody;
-						bodyDef.fixedRotation = true;
-						bodyDef.linearDamping = 10.0f;
+						for (const auto& desc : chunkInfo.entData) {
+							Engine::ECS::Entity ent;
 
-						b2FixtureDef fixtureDef;
-						//fixtureDef.density = 1.0f;
-						fixtureDef.filter.maskBits = 0; // Disable collision
+							desc.data.with([&]<auto Type>(auto& data) ENGINE_INLINE {
+								ent = buildBlockEntity<Type>(desc);
+							});
 
-						// TODO: these entities are never cleaned up - they live forever - big problem
-						for (const auto& entData : chunkInfo.entData) {
-							const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(entData.pos));
-							const auto ent = world.createEntity();
-
-							world.addComponent<NetworkedFlag>(ent);
-
-							auto& spriteComp = world.addComponent<SpriteComponent>(ent);
-							spriteComp.texture = engine.textureManager.get("assets/test_tree.png");
-							//spriteComp.texture = engine.textureManager.get("assets/large_sprite_test.png");
-							{
-								const auto& sz = spriteComp.texture.get()->size;
-								spriteComp.scale = {pixelsPerBlock, pixelsPerBlock};
-								spriteComp.position.x = MapChunk::blockSize * 0.5f;
-								spriteComp.position.y = sz.y * (0.5f / pixelsPerMeter);
+							if (ent != Engine::ECS::INVALID_ENTITY) {
+								it->second.blockEntities.push_back(ent);
+							} else {
+								ENGINE_WARN("Attempting to create invalid block entity.");
 							}
-
-							auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
-							auto& physSys = world.getSystem<PhysicsSystem>();
-
-							{
-								bodyDef.position = pos;
-								b2Body* body = physSys.createBody(ent, bodyDef);
-
-								b2PolygonShape shape;
-								const b2Vec2 tsize = 0.5f * MapChunk::blockSize * Engine::Glue::as<b2Vec2>(entData.data.asTree.size);
-								shape.SetAsBox(tsize.x, tsize.y, {0.5f * MapChunk::blockSize, tsize.y}, 0);
-								fixtureDef.shape = &shape;
-								body->CreateFixture(&fixtureDef);
-
-								physComp.setBody(body);
-							}
-
-							auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
-							physInterpComp.trans.p = pos;
-
-							it->second.blockEntities.push_back(ent);
 						}
 					}
 

@@ -227,5 +227,10 @@ namespace Game {
 
 			// TODO: Doc
 			void queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region);
+
+			template<BlockEntityType Type>
+			Engine::ECS::Entity buildBlockEntity(const BlockEntityDesc& data) {
+				static_assert(Type != Type, "Missing specialization.");
+			}
 	};
 }
