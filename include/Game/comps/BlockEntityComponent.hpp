@@ -7,7 +7,6 @@
 namespace Game {
 	class BlockEntityComponent {
 		public:
-			glm::ivec2 block;
-			BlockEntityData data;
+			BlockEntityType type;
 	};
 }

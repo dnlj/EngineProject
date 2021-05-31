@@ -18,14 +18,20 @@ namespace {
 	>;
 }
 
+
+#define BUILD_BLOCK_ENTITY(Type) template<> Engine::ECS::Entity MapSystem::buildBlockEntity<BlockEntityType::Type>(const BlockEntityDesc& desc)
+#define STORE_BLOCK_ENTITY(Type) template<> void MapSystem::storeBlockEntity<BlockEntityType::Type>(BlockEntityTypeData<BlockEntityType::Type>& data, const Engine::ECS::Entity ent)
+
 namespace Game {
-	template<>
-	Engine::ECS::Entity MapSystem::buildBlockEntity<BlockEntityType::None>(const BlockEntityDesc& desc) {
+	BUILD_BLOCK_ENTITY(None) {
 		return Engine::ECS::INVALID_ENTITY;
 	}
 
-	template<>
-	Engine::ECS::Entity MapSystem::buildBlockEntity<BlockEntityType::Tree>(const BlockEntityDesc& desc) {
+	STORE_BLOCK_ENTITY(None) {
+		ENGINE_WARN("TODO: Store None"); // TODO: impl
+	}
+
+	BUILD_BLOCK_ENTITY(Tree) {
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_staticBody;
 		bodyDef.fixedRotation = true;
@@ -72,11 +78,23 @@ namespace Game {
 		return ent;
 	}
 
-	template<>
-	Engine::ECS::Entity MapSystem::buildBlockEntity<BlockEntityType::Portal>(const BlockEntityDesc& desc) {
+	STORE_BLOCK_ENTITY(Tree) {
+		ENGINE_WARN("TODO: Store Tree"); // TODO: impl
+	}
+
+	BUILD_BLOCK_ENTITY(Portal) {
 		return Engine::ECS::INVALID_ENTITY;
 	}
+
+	STORE_BLOCK_ENTITY(Portal) {
+		ENGINE_WARN("TODO: Store Portal"); // TODO: impl
+	}
 }
+
+
+#undef BUILD_BLOCK_ENTITY
+#undef STORE_BLOCK_ENTITY
+
 
 namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
@@ -305,19 +323,23 @@ namespace Game {
 				ENGINE_LOG("Unloading chunk: ", it->first.x, ", ", it->first.y);
 				world.getSystem<PhysicsSystem>().destroyBody(it->second.body);
 
-				// TODO: entity saving
-				//const auto regionPos = chunkToRegion(it->first);
-				//const auto regionIt = regions.find(regionPos);
-				//if (regionIt == regions.end() || regionIt->second->loading()) {
-				//	ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
-				//	continue;
-				//}
-				//const auto& region = *regionIt->second;
-				//const auto chunkIndex = chunkToRegionIndex(it->first);
-				//auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
-				//chunkData.entData = // TODO: unload entities.
+				const auto regionPos = chunkToRegion(it->first);
+				const auto regionIt = regions.find(regionPos);
+				if (regionIt == regions.end() || regionIt->second->loading()) {
+					ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
+					continue;
+				}
+				auto& region = *regionIt->second;
+				const auto chunkIndex = chunkToRegionIndex(it->first);
+				auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
 
 				for (const auto ent : it->second.blockEntities) {
+					auto& desc = chunkData.entData.emplace_back();
+					const auto& beComp = world.getComponent<BlockEntityComponent>(ent);
+					desc.data.type = beComp.type;
+					desc.data.with([&]<auto Type>(auto& data){
+						storeBlockEntity<Type>(data, ent);
+					});
 					world.deferedDestroyEntity(ent);
 				}
 
@@ -408,13 +430,14 @@ namespace Game {
 
 							desc.data.with([&]<auto Type>(auto& data) ENGINE_INLINE {
 								ent = buildBlockEntity<Type>(desc);
+								if (ent != Engine::ECS::INVALID_ENTITY) {
+									auto& beComp = world.addComponent<BlockEntityComponent>(ent);
+									beComp.type = desc.data.type;
+									it->second.blockEntities.push_back(ent);
+								} else {
+									ENGINE_WARN("Attempting to create invalid block entity.");
+								}
 							});
-
-							if (ent != Engine::ECS::INVALID_ENTITY) {
-								it->second.blockEntities.push_back(ent);
-							} else {
-								ENGINE_WARN("Attempting to create invalid block entity.");
-							}
 						}
 					}
 
@@ -468,9 +491,6 @@ namespace Game {
 			const auto found = chunkEdits.find(chunkPos);
 			if (found == chunkEdits.end()) {
 				data.rle.clear();
-
-				// TODO: i dont think this should ever happen because the only time we call this function is when we have an update?
-				ENGINE_WARN("No chunk edits.");
 			} else {
 				found->second.toRLE(data.rle);
 			}

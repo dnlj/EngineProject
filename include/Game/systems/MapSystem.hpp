@@ -232,5 +232,10 @@ namespace Game {
 			Engine::ECS::Entity buildBlockEntity(const BlockEntityDesc& data) {
 				static_assert(Type != Type, "Missing specialization.");
 			}
+
+			template<BlockEntityType Type>
+			void storeBlockEntity(BlockEntityTypeData<Type>& data, const Engine::ECS::Entity ent) {
+				static_assert(Type != Type, "Missing specialization.");
+			}
 	};
 }
