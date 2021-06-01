@@ -204,6 +204,7 @@ namespace Game {
 		auto& mapSys = world.getSystem<Game::MapSystem>();
 
 		const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
+		if (!actComp.valid()) { return; }
 		// TODO: reimplement - ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 
 		const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);

@@ -71,16 +71,16 @@ namespace Game {
 	class ActionComponent {
 		private:
 			friend class ActionSystem;
-			//ActionState states[snapshots];
-			// TODO: tick is currently signed. Why?? SequenceBuffer expects unsigned
 			Engine::SequenceBuffer<Engine::ECS::Tick, ActionState, tickrate> states;
 			ActionState* state;
 
-			// TODo: rn. use tickTrend
+			// TODo: rename. use tickTrend
 			public: float32 estBufferSize = 0.0f;
 
 		public:
 			constexpr static int32 maxStates = decltype(states)::capacity();
+
+			ENGINE_INLINE bool valid() const noexcept { return state != nullptr; }
 
 			// TODO: are these called on server? nullptr check
 			ENGINE_INLINE const ButtonValue& getButton(Button btn) const {
