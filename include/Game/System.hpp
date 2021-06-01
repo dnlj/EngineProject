@@ -8,6 +8,7 @@
 
 // Game
 #include <Game/Common.hpp>
+#include <Game/RenderLayer.hpp>
 
 
 namespace Game {
@@ -30,15 +31,16 @@ namespace Game {
 				, engine{std::get<Engine::EngineInstance&>(arg)} {
 			};
 
-			void setup() {}
+			ENGINE_INLINE void setup() {}
 
-			void preTick() {}
-			void tick() {}
-			void postTick() {}
+			ENGINE_INLINE void preTick() {}
+			ENGINE_INLINE void tick() {}
+			ENGINE_INLINE void postTick() {}
 
-			void run(float32 dt) {}
+			ENGINE_INLINE void run(float32 dt) {}
+			ENGINE_INLINE void render(const RenderLayer layer) {}
 
-			void preStoreSnapshot() {}
-			void postLoadSnapshot() {}
+			ENGINE_INLINE void preStoreSnapshot() {}
+			ENGINE_INLINE void postLoadSnapshot() {}
 	};
 }

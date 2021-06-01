@@ -353,7 +353,7 @@ namespace Engine::ECS {
 			 * Gets the instance of the system for this world.
 			 */
 			template<class System>
-			System& getSystem();
+			ENGINE_INLINE System& getSystem() { return std::get<System>(systems); }
 
 			/**
 			 * Gets a bitset with the bits for the given systems set.

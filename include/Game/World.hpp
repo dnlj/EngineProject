@@ -25,6 +25,7 @@
 #include <Game/systems/EntityNetworkingSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/UISystem.hpp>
+#include <Game/systems/RenderPassSystem.hpp>
 
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
@@ -60,6 +61,7 @@ namespace Game {
 		// Rendering
 		MapRenderSystem,
 		SpriteSystem,
+		RenderPassSystem,
 		UISystem
 	>;
 	

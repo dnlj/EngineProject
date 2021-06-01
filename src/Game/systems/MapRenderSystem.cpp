@@ -49,4 +49,8 @@ namespace Game {
 			}
 		}
 	}
+
+	void MapRenderSystem::render(const RenderLayer layer) {
+		ENGINE_LOG("MapRenderSystem::render ", (int)layer);
+	}
 }

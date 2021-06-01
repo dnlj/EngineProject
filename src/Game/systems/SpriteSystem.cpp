@@ -61,7 +61,7 @@ namespace Game {
 			glVertexArrayElementBuffer(vao, ebo);
 		}
 
-		{ // Vertex attributes
+		{
 			// Vertex attributes
 			glEnableVertexArrayAttrib(vao, 0);
 			glEnableVertexArrayAttrib(vao, 1);
@@ -107,6 +107,11 @@ namespace Game {
 		>();
 		if (filter.empty()) { return; }
 
+		// Cleanup
+		sprites.clear();
+		instanceData.clear();
+		spriteGroups.clear();
+
 		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
 
 		for (const auto& ent : filter) {
@@ -118,7 +123,7 @@ namespace Game {
 				.trans = glm::scale(
 					glm::translate(glm::mat4{1.0f}, pos + glm::vec3{spriteComp.position, 0.0f}),
 					glm::vec3{spriteComp.scale, 1.0f}
-				),
+				),	
 			});
 		}
 
@@ -128,20 +133,23 @@ namespace Game {
 
 		// Populate data
 		spriteGroups.emplace_back();
-
+		//ENGINE_LOG("===============");
 		for (const auto& sprite : sprites) {
 			// Set camera uniform
 			glm::mat4 mvp = engine.camera.getProjection() * engine.camera.getView() * sprite.trans;
 			
 			auto& group = spriteGroups.back();
 			if (group.texture == sprite.texture) {
+				//ENGINE_LOG("inc");
 				++group.count;
 			} else {
+				//ENGINE_LOG("new");
 				spriteGroups.push_back({sprite.texture, 1, static_cast<GLuint>(instanceData.size())});
 			}
 
 			instanceData.push_back(InstanceData{mvp});
 		}
+		//ENGINE_LOG("***************");
 
 		#if defined(DEBUG_GRAPHICS)
 			if (instanceData.size() >= MAX_SPRITES) {
@@ -151,27 +159,26 @@ namespace Game {
 
 		// Update data
 		glNamedBufferSubData(ivbo, 0, instanceData.size() * sizeof(InstanceData), instanceData.data());
+	}
 
-		// VAO / Program
-		glBindVertexArray(vao);
-		glUseProgram(*shader);
+	void SpriteSystem::render(const RenderLayer layer) {
+		if (layer == RenderLayer::Default) {
+			// VAO / Program
+			glBindVertexArray(vao);
+			glUseProgram(*shader);
 
-		// Draw
-		for (std::size_t i = 1; i < spriteGroups.size(); ++i) {
-			const auto& group = spriteGroups[i];
+			// Draw
+			for (std::size_t i = 1; i < spriteGroups.size(); ++i) {
+				const auto& group = spriteGroups[i];
 
-			// Set texture
-			glBindTextureUnit(0, group.texture);
-			glUniform1i(6, 0);
+				// Set texture
+				glBindTextureUnit(0, group.texture);
+				glUniform1i(6, 0);
 
-			// Draw our sprites
-			glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0, group.count, group.base);
+				// Draw our sprites
+				glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0, group.count, group.base);
+			}
 		}
-
-		// Cleanup
-		sprites.clear();
-		instanceData.clear();
-		spriteGroups.clear();
 	}
 
 	void SpriteSystem::addSprite(Sprite sprite) {

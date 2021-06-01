@@ -92,12 +92,6 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	template<class System>
-	System& WORLD_CLASS::getSystem() {
-		return std::get<System>(systems);
-	}
-
-	WORLD_TPARAMS
 	template<class... SystemN>
 	SystemBitset WORLD_CLASS::getBitsetForSystems() const {
 		SystemBitset value;

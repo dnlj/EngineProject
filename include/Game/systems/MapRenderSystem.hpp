@@ -13,7 +13,6 @@
 #include <Game/MapChunk.hpp>
 
 
-// TODO: Doc
 namespace Game {
 	class MapRenderSystem : public System {
 		public:
@@ -21,5 +20,6 @@ namespace Game {
 			~MapRenderSystem();
 
 			void run(float dt);
+			void render(const RenderLayer layer);
 	};
 }

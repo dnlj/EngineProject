@@ -42,7 +42,7 @@ namespace Game {
 			~SpriteSystem();
 
 			void run(float32 dt);
-
+			void render(const RenderLayer layer);
 			void addSprite(Sprite sprite);
 
 		private:
