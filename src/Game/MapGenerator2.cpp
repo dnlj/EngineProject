@@ -227,6 +227,7 @@ namespace Game {
 					if (ipos.x == wpos && ipos.y == h + 1) {
 						bgd.exists = true;
 						bgd.desc.data.type = BlockEntityType::Tree;
+						bgd.desc.data.asTree.type = perm(ipos.x) % 3;
 						bgd.desc.data.asTree.size = {
 							trunkD,
 							treeH - h,

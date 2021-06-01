@@ -550,6 +550,9 @@ void run(int argc, char* argv[]) {
 		const std::string textures[] = {
 			"assets/player.png",
 			"assets/fire.png",
+			"assets/tree1.png",
+			"assets/tree2.png",
+			"assets/tree3.png",
 			"assets/test.png",
 			"assets/test_tree.png",
 			"assets/large_sprite_test.png",

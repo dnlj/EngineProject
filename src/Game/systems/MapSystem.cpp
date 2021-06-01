@@ -45,9 +45,21 @@ namespace Game {
 		const auto ent = world.createEntity();
 
 		world.addComponent<NetworkedFlag>(ent);
+		
+		constexpr const char* texStr[] = {
+			"assets/tree1.png",
+			"assets/tree2.png",
+			"assets/tree3.png",
+		};
+
+		int texIdx = desc.data.asTree.type;
+		if (texIdx >= std::size(texStr)) {
+			ENGINE_WARN("Attempting to create tree with invalid type.");
+			texIdx = 0;
+		}
 
 		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
-		spriteComp.texture = engine.textureManager.get("assets/test_tree.png");
+		spriteComp.texture = engine.textureManager.get(texStr[texIdx]);
 		//spriteComp.texture = engine.textureManager.get("assets/large_sprite_test.png");
 		{
 			const auto& sz = spriteComp.texture.get()->size;
