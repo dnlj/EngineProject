@@ -92,6 +92,8 @@ namespace Game {
 
 	STORE_BLOCK_ENTITY(Tree) {
 		ENGINE_WARN("TODO: Store Tree"); // TODO: impl
+		data.type = 1;
+		data.size = {1,20};
 	}
 
 	BUILD_BLOCK_ENTITY(Portal) {
@@ -334,10 +336,13 @@ namespace Game {
 						auto& region = *regionIt->second;
 						const auto chunkIndex = chunkToRegionIndex(it->first);
 						auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
+						chunkData.entData.clear();
+
 						for (const auto ent : it->second.blockEntities) {
 							auto& desc = chunkData.entData.emplace_back();
 							const auto& beComp = world.getComponent<BlockEntityComponent>(ent);
 							desc.data.type = beComp.type;
+							desc.pos = beComp.block;
 							desc.data.with([&]<auto Type>(auto& data){
 								storeBlockEntity<Type>(data, ent);
 							});
@@ -447,6 +452,7 @@ namespace Game {
 								if (ent != Engine::ECS::INVALID_ENTITY) {
 									auto& beComp = world.addComponent<BlockEntityComponent>(ent);
 									beComp.type = desc.data.type;
+									beComp.block = desc.pos;
 									it->second.blockEntities.push_back(ent);
 								} else {
 									ENGINE_WARN("Attempting to create invalid block entity.");
