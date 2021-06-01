@@ -307,43 +307,45 @@ namespace Game {
 			}
 		}
 
-		// Unload regions
-		for (auto it = regions.begin(); it != regions.end();) {
-			if (it->second->lastUsed < timeout && !it->second->loading()) {
-				ENGINE_LOG("Unloading region: ", it->first.x, ", ", it->first.y);
-				it = regions.erase(it);
+		// Unload active chunks
+		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
+			if (it->second.lastUsed < timeout) {
+				ENGINE_LOG("Unloading chunk: ", it->first.x, ", ", it->first.y);
+
+				// Store block entities
+				if constexpr (ENGINE_SERVER) {
+					const auto regionPos = chunkToRegion(it->first);
+					const auto regionIt = regions.find(regionPos);
+					if (regionIt == regions.end() || regionIt->second->loading()) {
+						ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
+					} else {
+						auto& region = *regionIt->second;
+						const auto chunkIndex = chunkToRegionIndex(it->first);
+						auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
+						for (const auto ent : it->second.blockEntities) {
+							auto& desc = chunkData.entData.emplace_back();
+							const auto& beComp = world.getComponent<BlockEntityComponent>(ent);
+							desc.data.type = beComp.type;
+							desc.data.with([&]<auto Type>(auto& data){
+								storeBlockEntity<Type>(data, ent);
+							});
+							world.deferedDestroyEntity(ent);
+						}
+					}
+				}
+
+				world.getSystem<PhysicsSystem>().destroyBody(it->second.body);
+				it = activeChunks.erase(it);
 			} else {
 				++it;
 			}
 		}
 
-		// Unload active chunks
-		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
-			if (it->second.lastUsed < timeout) {
-				ENGINE_LOG("Unloading chunk: ", it->first.x, ", ", it->first.y);
-				world.getSystem<PhysicsSystem>().destroyBody(it->second.body);
-
-				const auto regionPos = chunkToRegion(it->first);
-				const auto regionIt = regions.find(regionPos);
-				if (regionIt == regions.end() || regionIt->second->loading()) {
-					ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
-					continue;
-				}
-				auto& region = *regionIt->second;
-				const auto chunkIndex = chunkToRegionIndex(it->first);
-				auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
-
-				for (const auto ent : it->second.blockEntities) {
-					auto& desc = chunkData.entData.emplace_back();
-					const auto& beComp = world.getComponent<BlockEntityComponent>(ent);
-					desc.data.type = beComp.type;
-					desc.data.with([&]<auto Type>(auto& data){
-						storeBlockEntity<Type>(data, ent);
-					});
-					world.deferedDestroyEntity(ent);
-				}
-
-				it = activeChunks.erase(it);
+		// Unload regions
+		for (auto it = regions.begin(); it != regions.end();) {
+			if (it->second->lastUsed < timeout && !it->second->loading()) {
+				ENGINE_LOG("Unloading region: ", it->first.x, ", ", it->first.y);
+				it = regions.erase(it);
 			} else {
 				++it;
 			}

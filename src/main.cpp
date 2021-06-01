@@ -649,8 +649,10 @@ void run(int argc, char* argv[]) {
 	if constexpr (ENGINE_SERVER) {
 		window.setPosSize(3440, 0, 1920, 1080);
 	} else {
+		//window.setClientArea(1920, 1080);
+		//window.center();
 		window.setClientArea(1920, 1080);
-		window.center();
+		window.setPosition(1250, 100);
 	}
 
 	window.setSwapInterval(0);
