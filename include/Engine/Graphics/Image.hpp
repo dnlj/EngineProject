@@ -47,11 +47,12 @@ namespace Engine {
 						255, 000, 000,    000, 255, 000,
 						000, 255, 000,    255, 000, 000,
 					};
+				} else {
+					storage.assign(image, image + dims.x * dims.y * channels);
+					SOIL_free_image_data(image);
 				}
 
 				ENGINE_LOG("Img: ", path, " ", dims.x, " ", dims.y);
-				storage.assign(image, image + dims.x * dims.y * channels);
-				SOIL_free_image_data(image);
 			}
 
 			ENGINE_INLINE operator bool() const noexcept { return fmt != PixelFormat::NONE; }
