@@ -159,7 +159,7 @@ namespace Game {
 	}
 
 	void SpriteSystem::render(const RenderLayer layer) {
-		if (layer == RenderLayer::Default) {
+		if (layer == RenderLayer::Main) {
 			// VAO / Program
 			glBindVertexArray(vao);
 			glUseProgram(*shader);

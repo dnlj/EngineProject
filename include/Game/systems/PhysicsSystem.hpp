@@ -17,7 +17,7 @@ namespace Game {
 			PhysicsSystem(SystemArg arg);
 
 			void tick();
-			void run(float32 dt);
+			void render(const RenderLayer layer);
 			void preStoreSnapshot();
 
 			void onComponentAdded(const Engine::ECS::Entity ent, class PhysicsBodyComponent& comp);

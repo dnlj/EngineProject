@@ -130,10 +130,12 @@ namespace Game {
 		physWorld.Step(world.getTickDelta(), 8, 3);
 	}
 
-	void PhysicsSystem::run(float dt) { // TODO: rm
+	void PhysicsSystem::render(const RenderLayer layer) {
 		#if defined(DEBUG_PHYSICS)
+		if (layer == RenderLayer::PhysicsDebug) {
 			debugDraw.reset();
 			physWorld.DrawDebugData();
+		}
 		#endif
 	}
 

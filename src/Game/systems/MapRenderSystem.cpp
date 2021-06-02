@@ -19,8 +19,11 @@ namespace Game {
 	MapRenderSystem::~MapRenderSystem() {
 	}
 
-	// TODO: this should probably be part of a more generic render system.
 	void MapRenderSystem::run(float dt) {
+	}
+
+	void MapRenderSystem::render(const RenderLayer layer) {
+		if (layer != RenderLayer::Terrain) { return; }
 		const auto& mapSys = world.getSystem<MapSystem>();
 		// TODO: these should be part of model/mesh or maprendersystem. why are they on mapsystem
 		auto& shader = mapSys.shader;
@@ -48,9 +51,5 @@ namespace Game {
 				found->second.mesh.draw();
 			}
 		}
-	}
-
-	void MapRenderSystem::render(const RenderLayer layer) {
-		ENGINE_LOG("MapRenderSystem::render ", (int)layer);
 	}
 }
