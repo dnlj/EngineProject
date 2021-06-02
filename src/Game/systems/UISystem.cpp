@@ -119,6 +119,7 @@ namespace Game {
 		}
 
 		ui_coordinates();
+		ui_render();
 		ui_camera();
 		ui_netsim();
 		ui_nethealth();
@@ -245,6 +246,20 @@ namespace Game {
 			auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
 			ImGui::Text("Physics Debug Verts: (%i)", physDebug.getVertexCount());
 		#endif
+	}
+	
+	void UISystem::ui_render() {
+		if (!ImGui::CollapsingHeader("Render")) { return; }
+		const auto& spriteSys = world.getSystem<SpriteSystem>();
+		ImGui::Text("Sprites: %i", spriteSys.totalSprites());
+		ImGui::Text("Sprite Groups: %i", spriteSys.totalSpriteGroups());
+
+		if (ImGui::TreeNode("Groups")) {
+			for (const auto& group : spriteSys.getSpriteGroups()) {
+				ImGui::Text("L: %i    T: %i    C: %i", group.layer, group.texture, group.count);
+			}
+			ImGui::TreePop();
+		}
 	}
 
 	void UISystem::ui_camera() {
