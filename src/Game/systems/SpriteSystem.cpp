@@ -132,24 +132,21 @@ namespace Game {
 		});
 
 		// Populate data
-		spriteGroups.emplace_back();
-		//ENGINE_LOG("===============");
+		spriteGroups.emplace_back().texture = sprites.back().texture;
+
 		for (const auto& sprite : sprites) {
 			// Set camera uniform
 			glm::mat4 mvp = engine.camera.getProjection() * engine.camera.getView() * sprite.trans;
 			
 			auto& group = spriteGroups.back();
 			if (group.texture == sprite.texture) {
-				//ENGINE_LOG("inc");
 				++group.count;
 			} else {
-				//ENGINE_LOG("new");
 				spriteGroups.push_back({sprite.texture, 1, static_cast<GLuint>(instanceData.size())});
 			}
 
 			instanceData.push_back(InstanceData{mvp});
 		}
-		//ENGINE_LOG("***************");
 
 		#if defined(DEBUG_GRAPHICS)
 			if (instanceData.size() >= MAX_SPRITES) {
@@ -168,9 +165,7 @@ namespace Game {
 			glUseProgram(*shader);
 
 			// Draw
-			for (std::size_t i = 1; i < spriteGroups.size(); ++i) {
-				const auto& group = spriteGroups[i];
-
+			for (const auto& group : spriteGroups) {
 				// Set texture
 				glBindTextureUnit(0, group.texture);
 				glUniform1i(6, 0);
