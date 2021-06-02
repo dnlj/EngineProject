@@ -133,7 +133,13 @@ namespace Game {
 		});
 
 		// Populate data
-		spriteGroups.emplace_back().texture = sprites.back().texture;
+		{
+			const auto& sprite = sprites.front();
+			spriteGroups.push_back({
+				.layer = sprite.layer,
+				.texture = sprite.texture,
+			});
+		}
 
 		for (const auto& sprite : sprites) {
 			// Set camera uniform

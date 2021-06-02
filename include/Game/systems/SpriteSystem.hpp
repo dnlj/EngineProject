@@ -61,5 +61,6 @@ namespace Game {
 			void addSprite(Sprite sprite);
 			ENGINE_INLINE auto totalSprites() const noexcept { return sprites.size(); }
 			ENGINE_INLINE auto totalSpriteGroups() const noexcept { return spriteGroups.size(); }
+			ENGINE_INLINE const auto& getSpriteGroups() const noexcept { return spriteGroups; }
 	};
 }
