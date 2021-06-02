@@ -60,6 +60,7 @@ namespace Game {
 
 		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
 		spriteComp.texture = engine.textureManager.get(texStr[texIdx]);
+		spriteComp.layer = RenderLayer::Background;
 		//spriteComp.texture = engine.textureManager.get("assets/large_sprite_test.png");
 		{
 			const auto& sz = spriteComp.texture.get()->size;

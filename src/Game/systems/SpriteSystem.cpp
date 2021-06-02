@@ -119,16 +119,17 @@ namespace Game {
 			const auto& spriteComp = world.getComponent<Game::SpriteComponent>(ent);
 
 			sprites.push_back({
+				.layer = spriteComp.layer,
 				.texture = spriteComp.texture->tex.get(),
 				.trans = glm::scale(
 					glm::translate(glm::mat4{1.0f}, pos + glm::vec3{spriteComp.position, 0.0f}),
 					glm::vec3{spriteComp.scale, 1.0f}
-				),	
+				),
 			});
 		}
 
-		std::sort(sprites.begin(), sprites.end(), [](const Sprite& a, const Sprite& b) {
-			return a.texture < b.texture;
+		std::sort(sprites.begin(), sprites.end(), [](const Sprite& a, const Sprite& b) ENGINE_INLINE {
+			return (a.layer < b.layer) || (a.layer == b.layer && a.texture < b.texture);
 		});
 
 		// Populate data
@@ -139,13 +140,18 @@ namespace Game {
 			glm::mat4 mvp = engine.camera.getProjection() * engine.camera.getView() * sprite.trans;
 			
 			auto& group = spriteGroups.back();
-			if (group.texture == sprite.texture) {
+			if (group.layer == sprite.layer && group.texture == sprite.texture) {
 				++group.count;
 			} else {
-				spriteGroups.push_back({sprite.texture, 1, static_cast<GLuint>(instanceData.size())});
+				spriteGroups.push_back({
+					.layer = sprite.layer,
+					.texture = sprite.texture,
+					.count = 1,
+					.base = static_cast<GLuint>(instanceData.size()),
+				});
 			}
 
-			instanceData.push_back(InstanceData{mvp});
+			instanceData.emplace_back(mvp);
 		}
 
 		#if defined(DEBUG_GRAPHICS)
@@ -156,22 +162,36 @@ namespace Game {
 
 		// Update data
 		glNamedBufferSubData(ivbo, 0, instanceData.size() * sizeof(InstanceData), instanceData.data());
+		nextGroup = 0;
+		nextLayer = spriteGroups.front().layer;
 	}
 
 	void SpriteSystem::render(const RenderLayer layer) {
-		if (layer == RenderLayer::Main) {
-			// VAO / Program
-			glBindVertexArray(vao);
-			glUseProgram(*shader);
+		if (layer != nextLayer) { return; }
 
-			// Draw
-			for (const auto& group : spriteGroups) {
-				// Set texture
-				glBindTextureUnit(0, group.texture);
-				glUniform1i(6, 0);
+		// VAO / Program
+		glBindVertexArray(vao);
+		glUseProgram(*shader);
 
-				// Draw our sprites
-				glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0, group.count, group.base);
+		const auto size = spriteGroups.size();
+		const SpriteGroup* group = &spriteGroups[nextGroup];
+		while (true) {
+			// Set texture
+			glBindTextureUnit(0, group->texture);
+			glUniform1i(6, 0);
+
+			// Draw our sprites
+			glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0, group->count, group->base);
+
+			if (++nextGroup == size) {
+				nextLayer = RenderLayer::_COUNT;
+				return;
+			}
+
+			group = &spriteGroups[nextGroup];
+			if (group->layer != layer) {
+				nextLayer = group->layer;
+				return;
 			}
 		}
 	}
