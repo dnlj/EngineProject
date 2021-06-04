@@ -39,7 +39,9 @@ namespace Game {
 			};
 
 		private:
-			constexpr static std::size_t MAX_SPRITES = 1024;
+			constexpr static GLuint dataBindingIndex = 0;
+			constexpr static GLuint instBindingIndex = 1;
+
 			std::vector<InstanceData> instanceData;
 			std::vector<SpriteGroup> spriteGroups;
 			std::vector<Sprite> sprites;
@@ -51,6 +53,9 @@ namespace Game {
 			GLuint vbo = 0;
 			GLuint ivbo = 0;
 			GLuint ebo = 0;
+
+		private:
+			void resizeInstanceData();
 
 		public:
 			SpriteSystem(SystemArg arg);

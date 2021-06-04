@@ -19,8 +19,6 @@ namespace Game {
 	SpriteSystem::SpriteSystem(SystemArg arg)
 		: System{arg} {
 		static_assert(World::orderAfter<SpriteSystem, PhysicsSystem>());
-		
-		// TODO: Split into multiple functions?
 
 		shader = engine.shaderManager.get("shaders/sprite");
 
@@ -28,7 +26,6 @@ namespace Game {
 			glCreateVertexArrays(1, &vao);
 		}
 
-		GLuint dataBindingIndex = 0;
 		{ // Vertex buffer
 			Vertex data[] = {
 				Vertex{glm::vec2{-0.5f, +0.5f},   glm::vec2{+0.0f, +1.0f}},
@@ -42,12 +39,10 @@ namespace Game {
 			glVertexArrayVertexBuffer(vao, dataBindingIndex, vbo, 0, sizeof(Vertex));
 		}
 
-		GLuint instanceBindingIndex = 1;
 		{ // Instance vertex buffer
 			glCreateBuffers(1, &ivbo);
-			glNamedBufferData(ivbo, MAX_SPRITES * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
-			glVertexArrayVertexBuffer(vao, instanceBindingIndex, ivbo, 0, sizeof(InstanceData));
-			instanceData.reserve(MAX_SPRITES);
+			instanceData.reserve(128);
+			resizeInstanceData();
 		}
 
 		{ // Element buffer
@@ -74,6 +69,8 @@ namespace Game {
 
 
 			// Instance attributes
+			glVertexArrayBindingDivisor(vao, instBindingIndex, 1);
+
 			glEnableVertexArrayAttrib(vao, 2);
 			glEnableVertexArrayAttrib(vao, 3);
 			glEnableVertexArrayAttrib(vao, 4);
@@ -84,12 +81,10 @@ namespace Game {
 			glVertexArrayAttribFormat(vao, 4, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) +  8 * sizeof(GLfloat));
 			glVertexArrayAttribFormat(vao, 5, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) + 12 * sizeof(GLfloat));
 
-			glVertexArrayAttribBinding(vao, 2, instanceBindingIndex);
-			glVertexArrayAttribBinding(vao, 3, instanceBindingIndex);
-			glVertexArrayAttribBinding(vao, 4, instanceBindingIndex);
-			glVertexArrayAttribBinding(vao, 5, instanceBindingIndex);
-
-			glVertexArrayBindingDivisor(vao, instanceBindingIndex, 1);
+			glVertexArrayAttribBinding(vao, 2, instBindingIndex);
+			glVertexArrayAttribBinding(vao, 3, instBindingIndex);
+			glVertexArrayAttribBinding(vao, 4, instBindingIndex);
+			glVertexArrayAttribBinding(vao, 5, instBindingIndex);
 		}
 	}
 
@@ -100,6 +95,12 @@ namespace Game {
 		glDeleteBuffers(1, &ebo);
 	}
 
+	void SpriteSystem::resizeInstanceData() {
+		const auto size = instanceData.capacity();
+		glNamedBufferData(ivbo, size * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
+		glVertexArrayVertexBuffer(vao, instBindingIndex, ivbo, 0, sizeof(InstanceData));
+	}
+
 	void SpriteSystem::run(float dt) {
 		auto& filter = world.getFilter<
 			Game::SpriteComponent,
@@ -108,6 +109,7 @@ namespace Game {
 		if (filter.empty()) { return; }
 
 		// Cleanup
+		const auto oldInstCap = instanceData.capacity();
 		sprites.clear();
 		instanceData.clear();
 		spriteGroups.clear();
@@ -160,11 +162,10 @@ namespace Game {
 			instanceData.emplace_back(mvp);
 		}
 
-		#if defined(DEBUG_GRAPHICS)
-			if (instanceData.size() >= MAX_SPRITES) {
-				ENGINE_WARN("Increase SpriteSystem::MAX_SPRITES. Attempting to draw ", instanceData.size(), " while MAX_SPRITES = ", MAX_SPRITES);
-			}
-		#endif
+		if (instanceData.capacity() > oldInstCap) {
+			ENGINE_INFO("Resizing sprite instance buffer: ", oldInstCap, " > ", instanceData.capacity(), ")");
+			resizeInstanceData();
+		}
 
 		// Update data
 		glNamedBufferSubData(ivbo, 0, instanceData.size() * sizeof(InstanceData), instanceData.data());
