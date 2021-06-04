@@ -10,12 +10,33 @@ namespace Game {
 		: System{arg} {
 
 		shader = engine.shaderManager.get("shaders/parallax");
-		texture = engine.textureManager.get("assets/para_test_0.png");
+		
+		layers.push_back({
+			.texture = engine.textureManager.get("assets/para_test_2.png"),
+			.speedScale = 0.05f,
+		});
+
+		layers.push_back({
+			.texture = engine.textureManager.get("assets/para_test_1.png"),
+			.speedScale = 0.15f,
+		});
+
+		layers.push_back({
+			.texture = engine.textureManager.get("assets/para_test_0.png"),
+			.speedScale = 0.3f,
+		});
+		
+		layers.push_back({
+			.texture = engine.textureManager.get("assets/large_sprite_test.png"),
+			.speedScale = 1.0f,
+		});
+
+		instData.resize(layers.size());
 
 		glCreateVertexArrays(1, &vao);
 
 		glCreateBuffers(1, &vbo);
-		glNamedBufferData(vbo, sizeof(rect) + sizeof(InstData), nullptr, GL_DYNAMIC_DRAW);
+		glNamedBufferData(vbo, sizeof(rect) + instData.size() * sizeof(InstData), nullptr, GL_DYNAMIC_DRAW);
 		glNamedBufferSubData(vbo, 0, sizeof(rect), &rect);
 		glVertexArrayVertexBuffer(vao, rectBindingIndex, vbo, 0, sizeof(rect[0]));
 		glVertexArrayVertexBuffer(vao, instBindingIndex, vbo, sizeof(rect), sizeof(InstData));
@@ -42,28 +63,36 @@ namespace Game {
 		glDeleteVertexArrays(1, &vao);
 	}
 
-	// TODO: user setting for parallax strength
+	void ParallaxBackgroundSystem::run(const float32 dt) {
+		const auto& cam = engine.camera;
+
+		const auto size = instData.size();
+		for (int i = 0; i < size; ++i) {
+			auto& inst = instData[i];
+			const auto& layer = layers[i];
+
+			constexpr GLfloat strength = 1.0f; // TODO: user setting for parallax strength
+			const GLfloat worldToTexCoords = static_cast<GLfloat>(pixelsPerMeter) / layer.texture->size.x;
+			const glm::vec2 pos = engine.camera.getPosition();
+
+			inst.scale = glm::vec2{layer.texture->size} * (2.0f / glm::vec2{engine.camera.getScreenSize()});
+			inst.xoff = pos.x * worldToTexCoords * layer.speedScale * strength;
+		}
+
+		glNamedBufferSubData(vbo, sizeof(rect), size * sizeof(InstData), instData.data());
+	}
+
 	void ParallaxBackgroundSystem::render(const RenderLayer layer) {
 		if (layer != RenderLayer::Parallax_Background) { return; }
 
-		const auto& cam = engine.camera;
-		const GLfloat scrollScale = 0.5f;
-		const GLfloat worldToTexCoords = static_cast<GLfloat>(pixelsPerMeter) / texture->size.x;
-		const glm::vec2 pos = engine.camera.getPosition();
-
-		InstData data;
-		data.scale = glm::vec2{texture->size} * (2.0f / glm::vec2{engine.camera.getScreenSize()});
-		data.xoff = pos.x * worldToTexCoords * scrollScale;
-
-		glNamedBufferSubData(vbo, sizeof(rect), sizeof(InstData), &data);
-
 		glBindVertexArray(vao);
 		glUseProgram(*shader);
-
-		glBindTextureUnit(0, texture->tex.get());
 		glUniform1i(0, 0);
 
-		// Draw
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1);
+		for (int i = 0; const auto& layer : layers) {
+			glBindTextureUnit(0, layer.texture->tex.get());
+			glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, i);
+			++i;
+		}
 	}
 }

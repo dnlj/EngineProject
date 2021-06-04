@@ -15,11 +15,18 @@ namespace Game {
 				GLfloat xoff;
 			}; static_assert(sizeof(InstData) == 3 * sizeof(GLfloat), "Assumed to be tightly packed");
 
+			struct Layer {
+				Engine::TextureRef texture;
+				float32 speedScale;
+			};
+
 		private:
 			GLuint vao = 0;
 			GLuint vbo = 0;
 			Engine::Shader shader;
-			Engine::TextureRef texture;
+
+			std::vector<InstData> instData;
+			std::vector<Layer> layers;
 
 			constexpr static GLuint rectBindingIndex = 0;
 			constexpr static GLuint instBindingIndex = 1;
@@ -36,6 +43,7 @@ namespace Game {
 		public:
 			ParallaxBackgroundSystem(SystemArg arg);
 			~ParallaxBackgroundSystem();
+			void run(const float32 dt);
 			void render(const RenderLayer layer);
 	};
 }
