@@ -547,6 +547,7 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Resources
 	{
+		// TODO: these should probably be loaded in a manifest file or something.
 		const std::string textures[] = {
 			"assets/player.png",
 			"assets/fire.png",
@@ -556,6 +557,10 @@ void run(int argc, char* argv[]) {
 			"assets/test.png",
 			"assets/test_tree.png",
 			"assets/large_sprite_test.png",
+			"assets/para_test_0.png",
+			"assets/para_test_1.png",
+			"assets/para_test_2.png",
+			"assets/para_test_outline.png",
 		};
 		const std::string shaders[] = {
 			"shaders/box2d_debug",

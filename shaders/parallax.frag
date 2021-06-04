@@ -4,12 +4,10 @@ in vec2 fragTexCoord;
 
 out vec4 finalColor;
 
-layout (location = 1) uniform sampler2D tex;
-layout (location = 2) uniform float xoff;
-
+layout (location = 0) uniform sampler2D tex;
 
 void main() {
-	finalColor = texture(tex, vec2(fragTexCoord.x + xoff, fragTexCoord.y));
+	finalColor = texture(tex, fragTexCoord);
 
 	if (finalColor.a < 0.5) {
 		discard;
