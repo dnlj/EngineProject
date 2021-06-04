@@ -264,7 +264,7 @@ namespace Game {
 				auto& meta = it->second;
 
 				if (meta.tick != tick) {
-					ENGINE_LOG("Remove: ", chunkPos.x, " ", chunkPos.y);
+					// ENGINE_LOG("Remove: ", chunkPos.x, " ", chunkPos.y);
 					it = mapAreaComp.updates.erase(it);
 					continue;
 				}
@@ -325,7 +325,7 @@ namespace Game {
 		// Unload active chunks
 		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
 			if (it->second.lastUsed < timeout) {
-				ENGINE_LOG("Unloading chunk: ", it->first.x, ", ", it->first.y);
+				// ENGINE_LOG("Unloading chunk: ", it->first.x, ", ", it->first.y);
 
 				// Store block entities
 				if constexpr (ENGINE_SERVER) {
@@ -462,7 +462,7 @@ namespace Game {
 						}
 					}
 
-					ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
+					// ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
 					it->second.updated = tick;
 				}
 				

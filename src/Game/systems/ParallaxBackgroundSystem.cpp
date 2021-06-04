@@ -26,10 +26,10 @@ namespace Game {
 			.speedScale = 0.3f,
 		});
 		
-		layers.push_back({
-			.texture = engine.textureManager.get("assets/large_sprite_test.png"),
-			.speedScale = 1.0f,
-		});
+		//layers.push_back({
+		//	.texture = engine.textureManager.get("assets/large_sprite_test.png"),
+		//	.speedScale = 1.0f,
+		//});
 
 		instData.resize(layers.size());
 

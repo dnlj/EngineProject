@@ -332,7 +332,6 @@ namespace Engine::ECS {
 				setEnabled(ent, false); // TODO: Will we need a component callback for onDisabled to handle things like physics bodies?
 				// TODO: would it be better to sort the list afterward (in World::storeSnapshot for example)? instead of while inserting
 				markedForDeath.insert(std::lower_bound(markedForDeath.cbegin(), markedForDeath.cend(), ent), ent);
-				ENGINE_LOG("deferedDestroyEntity: ", ent);
 			}
 			
 			/**
@@ -670,7 +669,6 @@ namespace Engine::ECS {
 			 * Destroys and entity, freeing its id to be recycled.
 			 */
 			void destroyEntity(Entity ent) {
-				ENGINE_WARN("destroyEntity: ", ent);
 				((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 0)), ...);
 		
 				#if defined(DEBUG)

@@ -7,7 +7,6 @@ namespace {
 	// TODO: rm or rename
 	using ProxyFilter = Engine::ECS::EntityFilterList<
 		Game::PhysicsBodyComponent
-		// TODO: rm - Game::PhysicsProxyComponent
 	>;
 }
 
@@ -27,11 +26,11 @@ namespace Game {
 
 	
 	void PhysicsSystem::onComponentAdded(const Engine::ECS::Entity ent, PhysicsBodyComponent& comp) {
-		ENGINE_INFO(" PhysicsSystem - component added to ", ent);
+		// ENGINE_INFO(" PhysicsSystem - component added to ", ent);
 	};
 
 	void PhysicsSystem::onComponentRemoved(const Engine::ECS::Entity ent, PhysicsBodyComponent& comp) {
-		ENGINE_INFO(" PhysicsSystem - component removed from ", ent);
+		// ENGINE_INFO(" PhysicsSystem - component removed from ", ent);
 		physWorld.DestroyBody(comp.body);
 	};
 

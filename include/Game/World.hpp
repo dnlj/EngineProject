@@ -60,7 +60,7 @@ namespace Game {
 		MapSystem,
 
 		// Rendering
-		ParallaxBackgroundSystem,
+		//ParallaxBackgroundSystem,
 		MapRenderSystem,
 		SpriteSystem,
 		RenderPassSystem,
