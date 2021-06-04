@@ -3,6 +3,7 @@
 
 namespace Game {
 	enum class RenderLayer {
+		Parallax_Background,
 		Background,
 		Terrain,
 		Main,

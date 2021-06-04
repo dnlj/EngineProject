@@ -26,6 +26,7 @@
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/UISystem.hpp>
 #include <Game/systems/RenderPassSystem.hpp>
+#include <Game/systems/ParallaxBackgroundSystem.hpp>
 
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
@@ -59,6 +60,7 @@ namespace Game {
 		MapSystem,
 
 		// Rendering
+		ParallaxBackgroundSystem,
 		MapRenderSystem,
 		SpriteSystem,
 		RenderPassSystem,

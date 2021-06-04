@@ -561,6 +561,7 @@ void run(int argc, char* argv[]) {
 			"shaders/box2d_debug",
 			"shaders/terrain",
 			"shaders/sprite",
+			"shaders/parallax",
 		};
 		for (const auto& path : textures) { engine.textureManager.add(path); }
 		for (const auto& path : shaders) { engine.shaderManager.add(path); }
