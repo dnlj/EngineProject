@@ -249,6 +249,7 @@ project("Server")
 project("Bench")
 	uuid "71611229-1162-4773-AC04-0B86A3FE1AD0"
 	kind "ConsoleApp"
+	flags { "ExcludeFromBuild" }
 	files {
 		"bench/**",
 	}
