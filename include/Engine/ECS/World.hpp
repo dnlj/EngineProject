@@ -468,7 +468,7 @@ namespace Engine::ECS {
 
 				// Remove
 				compBitsets[ent.id] &= ~getBitsetForComponents<C>();
-				getComponentContainer<C>().remove(ent);
+				getComponentContainer<C>().erase(ent);
 
 				// Update Filters
 				auto& is = compToFilter[getComponentId<C>()];
@@ -503,7 +503,7 @@ namespace Engine::ECS {
 
 			template<class C>
 			ENGINE_INLINE bool hadComponent(Entity ent, Tick tick) const {
-				return history.get(tick).getComponentContainer<C>().has(ent);
+				return history.get(tick).getComponentContainer<C>().contains(ent);
 			}
 
 			// TODO: Doc
@@ -518,7 +518,7 @@ namespace Engine::ECS {
 
 				auto& snap = history.get(tick);
 				auto& cont = snap.getComponentContainer<C>();
-				if (!cont.has(ent)) {
+				if (!cont.contains(ent)) {
 					ENGINE_LOG("Add historic component ", getComponentId<C>(), " to ", ent, " on tick ", tick);
 					cont.add(ent);
 				}

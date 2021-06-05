@@ -157,7 +157,7 @@ namespace Engine::ECS {
 				auto& cont = getComponentContainer<C>();
 				auto& scont = snap.getComponentContainer<C>();
 				for (auto& [ent, comp] : scont) {
-					if (cont.has(ent)) {
+					if (cont.contains(ent)) {
 						cont.get(ent) = comp;
 					}
 				}

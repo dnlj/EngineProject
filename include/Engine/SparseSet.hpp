@@ -131,6 +131,7 @@ namespace Engine {
 				return get(key);
 			}
 
+			// We call this add because it is subtly different then the usage patterns of insert/emplace (see: std::unordered_map)
 			template<class... Args>
 			auto& add(const Key& key, Args&&... args) {
 				const auto i = hash(key);
@@ -155,7 +156,7 @@ namespace Engine {
 				dense.clear();
 			}
 
-			ENGINE_INLINE void remove(const Key& key) {
+			ENGINE_INLINE void erase(const Key& key) {
 				const auto i = hash(key);
 				sparse[hash(dense.back().first)] = sparse[i];
 				dense[sparse[i]] = std::move(dense.back());
@@ -163,8 +164,7 @@ namespace Engine {
 				dense.pop_back();
 			}
 
-			// TODO: rename to contains to be consistent with STL
-			ENGINE_INLINE bool has(const Key& key) const {
+			ENGINE_INLINE bool contains(const Key& key) const {
 				const auto i = hash(key);
 				return i < sparse.size() && sparse[i] != invalid;
 			}
@@ -181,7 +181,7 @@ namespace Engine {
 				return static_cast<Index>(dense.size());
 			}
 
-			// TODO: split into erase and remove once we fix iterators
+			// TODO: split into erase and remove once we fix iterators (probably after we have other sorting functions implemented)
 			/**
 			 * TODO: desc
 			 * Guaranteed to call the predicate on each element exactly once.

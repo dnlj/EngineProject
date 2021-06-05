@@ -185,7 +185,7 @@ namespace Game {
 
 				virtual bool ReportFixture(b2Fixture* fixture) override {
 					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
-					if (ecsNetComp.neighbors.has(ent)) {
+					if (ecsNetComp.neighbors.contains(ent)) {
 						ecsNetComp.neighbors.get(ent).state = ECSNetworkingComponent::NeighborState::Current;
 					}
 					return true;
@@ -205,7 +205,7 @@ namespace Game {
 				virtual bool ReportFixture(b2Fixture* fixture) override {
 					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
 					if (!world.hasComponent<NetworkedFlag>(ent)) { return true; }
-					if (!ecsNetComp.neighbors.has(ent) && ent != ply) {
+					if (!ecsNetComp.neighbors.contains(ent) && ent != ply) {
 						ecsNetComp.neighbors.add(ent, ECSNetworkingComponent::NeighborState::Added);
 					}
 					return true;
