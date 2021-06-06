@@ -67,10 +67,6 @@ namespace Engine {
 			std::vector<Index> sparse;
 			std::vector<KeyVal> dense;
 
-			// TODO: it looks like we should be able case 2 (tuple like) to simplify and avoid reinterpret_cast?
-			// TODO: cont.  https://en.cppreference.com/w/cpp/language/structured_binding
-			// TODO: cont. https://devblogs.microsoft.com/oldnewthing/20201015-00/?p=104369
-			// TODO: if we try to modify this container with iterators it will be incorrect because we dont update the sparse part.
 			template<class Elem>
 			class IteratorBase {
 				private:
