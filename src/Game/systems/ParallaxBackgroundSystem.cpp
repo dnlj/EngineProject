@@ -64,8 +64,6 @@ namespace Game {
 	}
 
 	void ParallaxBackgroundSystem::run(const float32 dt) {
-		const auto& cam = engine.camera;
-
 		const auto size = instData.size();
 		for (int i = 0; i < size; ++i) {
 			auto& inst = instData[i];

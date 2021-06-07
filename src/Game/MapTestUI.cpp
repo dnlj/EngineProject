@@ -774,8 +774,6 @@ namespace Game {
 	}
 
 	void MapTestUI::buildTexture() {
-		const auto& sz = img.size();
-		const auto& fmt = Engine::getPixelFormatInfo(img.format());
 		const auto& node = nodes[result];
 
 		Id pin = result;

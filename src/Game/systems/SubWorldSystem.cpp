@@ -101,7 +101,6 @@ namespace Game {
 			group.world = std::max_element(group.worlds.begin(), group.worlds.end(), [](const auto& a, const auto& b){
 				return a.second < b.second;
 			})->first;
-			int a = 1;
 		}
 		// TODO: unused worlds arent freed
 

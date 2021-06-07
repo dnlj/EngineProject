@@ -686,7 +686,6 @@ namespace Game {
 		world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
 
 		{
-			const auto& mapSys = world.getSystem<MapSystem>();
 			// TODO: query map system and find good spawn location
 			const b2Vec2 pos = {0, 62};
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);

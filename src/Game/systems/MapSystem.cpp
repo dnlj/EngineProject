@@ -211,6 +211,8 @@ namespace Game {
 			const auto regionPos = chunkToRegion(chunkPos);
 			const auto regionIt = regions.find(regionPos);
 			if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] {
+				// I think we could hit this if we get a chunk from the network before we have that area loaded on the client.
+				// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
 				ENGINE_WARN("Attempting to edit unloaded chunk/region");
 				continue;
 			}

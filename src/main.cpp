@@ -578,7 +578,6 @@ void run(int argc, char* argv[]) {
 	Game::World& world = *worldStorage.get();
 	TempWorldEngineWrapper wrapper{engine, world};
 	windowCallbacks.userdata = &wrapper;
-	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
 	const auto updateButtonState = [&](auto action, auto curr){
@@ -590,7 +589,6 @@ void run(int argc, char* argv[]) {
 	{
 		using namespace Engine::Input;
 		auto& im = engine.inputManager;
-		auto& as = world.getSystem<Game::ActionSystem>();
 
 		if constexpr (ENGINE_CLIENT) {
 			im.addBind(InputSequence{

@@ -164,7 +164,6 @@ namespace Game {
 		ImGui::Columns(4);
 
 		for (const auto& [addr, info] : netSys.servers) {
-			int c = 0;
 			ImGui::Text(info.name.c_str());
 
 			ImGui::NextColumn();
