@@ -44,17 +44,15 @@ namespace Game {
 			a = std::min(1.0, std::max(a, 0.0));
 			const auto b = 1 - a;
 
-			float32 a2 = static_cast<float32>(a);
-			float32 b2 = static_cast<float32>(b);
 			{
-				float32 a = a2;
-				float32 b = b2;
+				const float32 a2 = static_cast<float32>(a);
+				const float32 b2 = static_cast<float32>(b);
 				auto& lerpTrans = physInterpComp.trans;
-				lerpTrans.p = a * nextTrans->p + b * prevTrans->p;
+				lerpTrans.p = a2 * nextTrans->p + b2 * prevTrans->p;
 
 				// Normalized lerp - really should use slerp but since the delta is small nlerp is close to slerp
-				lerpTrans.q.c = a * nextTrans->q.c + b * prevTrans->q.c;
-				lerpTrans.q.s = a * nextTrans->q.s + b * prevTrans->q.s;
+				lerpTrans.q.c = a2 * nextTrans->q.c + b2 * prevTrans->q.c;
+				lerpTrans.q.s = a2 * nextTrans->q.s + b2 * prevTrans->q.s;
 				const float32 mag = lerpTrans.q.c * lerpTrans.q.c + lerpTrans.q.s * lerpTrans.q.s;
 				lerpTrans.q.c /= mag;
 				lerpTrans.q.s /= mag;

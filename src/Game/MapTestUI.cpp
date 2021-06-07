@@ -680,13 +680,13 @@ namespace Game {
 		// Context Menus
 		ImNode::Suspend();
 		{
-			if (ImNode::NodeId id; ImNode::ShowNodeContextMenu(&id)) {
+			if (ImNode::NodeId nid; ImNode::ShowNodeContextMenu(&nid)) {
 				ENGINE_LOG("Node context");
 				ImGui::OpenPopup("Test Popup");
-			} else if (ImNode::PinId id; ImNode::ShowPinContextMenu(&id)) {
+			} else if (ImNode::PinId pid; ImNode::ShowPinContextMenu(&pid)) {
 				ENGINE_LOG("Pin context");
 				ImGui::OpenPopup("Test Popup");
-			} else if (ImNode::LinkId id; ImNode::ShowLinkContextMenu(&id)) {
+			} else if (ImNode::LinkId lid; ImNode::ShowLinkContextMenu(&lid)) {
 				ENGINE_LOG("Link context");
 				ImGui::OpenPopup("Test Popup");
 			} else if (ImNode::ShowBackgroundContextMenu()) {

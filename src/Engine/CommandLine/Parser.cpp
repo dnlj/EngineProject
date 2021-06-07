@@ -20,8 +20,8 @@ namespace Engine::CommandLine {
 			auto found = arg.find('=');
 			if (found == std::string::npos) {
 				if (arg.size() > 1 && arg[0] == '-' && arg[1] != '-') {
-					for (int i = 1; i < arg.size(); ++i) {
-						args.emplace_back("-") += arg[i];
+					for (int j = 1; j < arg.size(); ++j) {
+						args.emplace_back("-") += arg[j];
 					}
 				} else {
 					args.push_back(arg);

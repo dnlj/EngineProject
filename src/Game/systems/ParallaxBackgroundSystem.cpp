@@ -87,8 +87,8 @@ namespace Game {
 		glUseProgram(*shader);
 		glUniform1i(0, 0);
 
-		for (int i = 0; const auto& layer : layers) {
-			glBindTextureUnit(0, layer.texture->tex.get());
+		for (int i = 0; const auto& l : layers) {
+			glBindTextureUnit(0, l.texture->tex.get());
 			glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, i);
 			++i;
 		}

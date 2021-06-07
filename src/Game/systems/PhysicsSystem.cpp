@@ -49,7 +49,7 @@ namespace Game {
 			}
 
 			for (const auto ent : world.getFilter<PhysicsBodyComponent, PhysicsInterpComponent>()) {
-				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
+				auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
 				auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
 				if (physInterpComp.onlyUserVerified && physBodyComp.getBody().GetType() != b2_staticBody) {
 					physInterpComp.nextTime = {};
@@ -115,7 +115,6 @@ namespace Game {
 					}
 
 					const auto i = static_cast<float32>(std::min(1.0, std::max(0.0, physInterpComp.calcInterpValue(interpTime))));
-					auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
 					physBodyComp.setTransform(
 						Math::lerp(physInterpComp.nextTrans.p, physInterpComp.prevTrans.p, i),
 						0
