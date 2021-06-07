@@ -134,7 +134,18 @@ workspace(PROJECT_NAME .."Workspace")
 		buildoptions{
 			"/wd4996", -- Disable some warnings about things Visual Studio has taken apon itself to deem "deprecated"
 			"/wd4103", -- Work around for MSVC bug. TODO: remove when fixed - https://developercommunity.visualstudio.com/t/Warning-C4103-in-Visual-Studio-166-Upda/1057589
-			"/w15038", -- Enable out of order initialization warnings. Bugs related to this can be tricky to track down.
+			--"/w14061", -- Not enabled because of enum count cases. Enable: missing switch case for enum
+			--"/w14062", -- Not enabled because of enum count cases. Enable: missing switch case for enum, and no default
+			--"/w14127", -- Not enabled because of inconsistent results when mixing both constexpr and non-constexpr statements in the same statement. Enable: use of constant expression in non-constexpr context
+			"/w14132", -- Enable: const object should be initialized
+			"/w14189", -- Enable: local variable is initialized but not referenced
+			"/w14456", -- Enable: declaration hides previous local declaration
+			"/w14457", -- Enable: declaration hides function parameter
+			"/w14700", -- Enable: uninitialized local variable used
+			"/w14701", -- Enable: potentially uninitialized local variable 'name' used
+			--"/w14710", -- Enable: function marked as inline not inlined
+			"/w14714", -- Enable: function marked as __forceinline not inlined
+			"/w15038", -- Enable: out of order initialization warnings. Bugs related to this can be tricky to track down.
 		}
 
 	filter "platforms:Windows_x64"
