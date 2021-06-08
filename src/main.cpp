@@ -52,6 +52,7 @@
 #include <Engine/Debug/GL/GL.hpp>
 #include <Engine/ConfigParser.hpp>
 #include <Engine/Base16.hpp>
+#include <Engine/Gui/Context.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -567,6 +568,7 @@ void run(int argc, char* argv[]) {
 			"shaders/terrain",
 			"shaders/sprite",
 			"shaders/parallax",
+			"shaders/gui",
 		};
 		for (const auto& path : textures) { engine.textureManager.add(path); }
 		for (const auto& path : shaders) { engine.shaderManager.add(path); }
@@ -665,6 +667,8 @@ void run(int argc, char* argv[]) {
 	window.setSwapInterval(0);
 	window.show();
 
+	Engine::Gui::Context guiCtx{engine}; // TODO: rm - testing
+
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 	while (!window.shouldClose()) {
 		window.poll();
@@ -691,6 +695,14 @@ void run(int argc, char* argv[]) {
 		if constexpr (ENGINE_CLIENT) { mapUI(); }
 
 		Engine::ImGui::draw();
+
+		{
+			guiCtx.addRect({10, 10}, {512, 512});
+			guiCtx.addRect({10, 10}, {256, 256});
+			guiCtx.addRect({10, 10}, {128, 128});
+			guiCtx.render();
+		}
+
 		window.swapBuffers();
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
