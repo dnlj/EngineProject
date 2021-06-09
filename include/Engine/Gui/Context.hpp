@@ -11,12 +11,21 @@
 
 // Engine
 #include <Engine/EngineInstance.hpp>
+#include <Engine/Gui/Panel.hpp>
 
 
 namespace Engine::Gui {
 	class Context {
 		private:
+			struct BFSStateData {
+				glm::vec2 offset;
+				const Panel* first;
+			};
+
+		private:
 			std::vector<glm::vec2> verts;
+			std::vector<BFSStateData> bfsCurr;
+			std::vector<BFSStateData> bfsNext;
 
 			constexpr static GLuint vertBindingIndex = 0;
 			GLuint vao = 0;
@@ -25,6 +34,9 @@ namespace Engine::Gui {
 			Shader shader;
 
 			glm::vec2 view;
+			glm::vec2 offset;
+
+			Panel* panel; // TODO: how do we want to store/alloc panels?
 
 		public:
 			// TODO: split shader into own class so we dont depend on engine

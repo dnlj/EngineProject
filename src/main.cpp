@@ -697,9 +697,9 @@ void run(int argc, char* argv[]) {
 		Engine::ImGui::draw();
 
 		{
-			guiCtx.addRect({10, 10}, {512, 512});
-			guiCtx.addRect({10, 10}, {256, 256});
-			guiCtx.addRect({10, 10}, {128, 128});
+			//guiCtx.addRect({10, 10}, {512, 512});
+			//guiCtx.addRect({10, 10}, {256, 256});
+			//guiCtx.addRect({10, 10}, {128, 128});
 			guiCtx.render();
 		}
 
