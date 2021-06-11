@@ -12,6 +12,7 @@
 // Engine
 #include <Engine/EngineInstance.hpp>
 #include <Engine/Gui/Panel.hpp>
+#include <Engine/Input/InputEvent.hpp>
 
 
 namespace Engine::Gui {
@@ -19,7 +20,7 @@ namespace Engine::Gui {
 		private:
 			struct BFSStateData {
 				glm::vec2 offset;
-				const Panel* first;
+				const Panel* panel;
 			};
 
 		private:
@@ -36,7 +37,7 @@ namespace Engine::Gui {
 			glm::vec2 view;
 			glm::vec2 offset;
 
-			Panel* panel; // TODO: how do we want to store/alloc panels?
+			Panel* root;
 
 		public:
 			// TODO: split shader into own class so we dont depend on engine
@@ -44,6 +45,33 @@ namespace Engine::Gui {
 			~Context();
 			void render();
 			void addRect(const glm::vec2 pos, const glm::vec2 size);
-			// TODO: inputs
+
+			/**
+			 * @return Indicate if the input was consumed.
+			 */
+			bool onMouse(const Engine::Input::InputEvent event);
+
+			/**
+			 * @return Indicate if the input was consumed.
+			 */
+			bool onMouseMove(const Engine::Input::InputEvent event);
+
+			/**
+			 * @return Indicate if the input was consumed.
+			 */
+			bool onMouseWheel(const Engine::Input::InputEvent event);
+			
+			/**
+			 * @return Indicate if the input was consumed.
+			 */
+			bool onKey(const Engine::Input::InputEvent event);
+			
+			/**
+			 * @return Indicate if the input was consumed.
+			 */
+			bool onChar(const wchar_t ch);// TODO: How to support full unicode and "Win + ." emoji picker? Look into WM_IME_* messages
+
+			void onResize(const int32 w, const int32 h);
+			void onFocus(const bool has);
 	};
 }

@@ -1,7 +1,6 @@
 #version 450 core
 
 layout (location = 0) in vec2 vertPos;
-
 layout (location = 0) uniform vec2 viewSize;
 
 void main() {

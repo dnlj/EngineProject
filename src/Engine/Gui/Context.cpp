@@ -8,27 +8,28 @@ namespace Engine::Gui {
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
 		glCreateVertexArrays(1, &vao);
-
 		glCreateBuffers(1, &vbo);
 		glVertexArrayVertexBuffer(vao, vertBindingIndex, vbo, 0, sizeof(verts[0]));
 
-		// Vertex attributes
+		// Vertex
 		glEnableVertexArrayAttrib(vao, 0);
-		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
 		glVertexArrayAttribBinding(vao, 0, vertBindingIndex);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
 
-		panel = new Panel{};
-		panel->setPos({25, 50});
-		panel->setSize({512, 256});
+		ENGINE_LOG("View: ", view.x, " ", view.y);
+
+		root = new Panel{};
+		root->setPos({25, 50});
+		root->setSize({512, 256});
 
 		{
-			auto child = panel->addChild(new Panel{});
+			auto child = root->addChild(new Panel{});
 			child->setPos({5, 5});
 			child->setSize({64, 64});
 		}
 		
 		{
-			auto child = panel->addChild(new Panel{});
+			auto child = root->addChild(new Panel{});
 			child->setPos({20, 25});
 			child->setSize({32, 64});
 		}
@@ -37,13 +38,11 @@ namespace Engine::Gui {
 	Context::~Context() {
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
-
-		// TODO: walk all panels
-		delete panel;
+		delete root;
 	}
 
 	void Context::render() {
-		const Panel* curr = panel;
+		const Panel* curr = root;
 		offset = {};
 		//int depth = 0; // TODO: rm
 
@@ -68,7 +67,7 @@ namespace Engine::Gui {
 			}
 
 			const auto& back = bfsCurr.back();
-			curr = back.first;
+			curr = back.panel;
 			offset = back.offset;
 			bfsCurr.pop_back();
 		}
@@ -104,4 +103,39 @@ namespace Engine::Gui {
 		verts.push_back(offset + pos + glm::vec2{size.x, 0});
 		verts.push_back(offset + pos);
 	}
+
+	bool Context::onMouse(const Engine::Input::InputEvent event) {
+		// ENGINE_LOG("onMouse: ", event.state.value, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
+		return false;
+	}
+
+	bool Context::onMouseMove(const Engine::Input::InputEvent event) {
+		// ENGINE_LOG("onMouseMove: ", event.state.value, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
+		return false;
+	}
+
+	bool Context::onMouseWheel(const Engine::Input::InputEvent event) {
+		// ENGINE_LOG("onMouseWheel: ", event.state.value, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
+		return false;
+	}
+
+	bool Context::onKey(const Engine::Input::InputEvent event) {
+		// ENGINE_LOG("onKey: ", event.state.value, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
+		return false;
+	}
+
+	bool Context::onChar(const wchar_t ch) {
+		// ENGINE_LOG("onChar: ", (int)ch);
+		return false;
+	}
+
+	void Context::onResize(const int32 w, const int32 h) {
+		// ENGINE_LOG("onResize: ", w, " ", h);
+		view = {w, h};
+	}
+
+	void Context::onFocus(const bool has) {
+		// ENGINE_LOG("onFocus: ", has);
+	}
+
 }

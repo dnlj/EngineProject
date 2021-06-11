@@ -450,6 +450,7 @@ namespace {
 	struct TempWorldEngineWrapper {
 		Engine::EngineInstance& engine;
 		Game::World& world;
+		Engine::Gui::Context& guiContext;
 	};
 
 	// TODO: move into file
@@ -459,32 +460,38 @@ namespace {
 			glViewport(0, 0, w, h);
 			// blocks per meter - pixels per block - 200% zoom
 			userdata->engine.camera.setAsOrtho(w, h, 1.0f / (Game::pixelsPerBlock * Game::blocksPerMeter * 2.0f));
+			userdata->guiContext.onResize(w, h);
 		}
 
 		void keyCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
+			if (userdata->guiContext.onKey(event)) { return; }
 			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::keyCallback(event.state);
 		}
 
-		void charCallback(wchar_t character) {
-			Engine::ImGui::charCallback(character);
+		void charCallback(wchar_t ch) {
+			if (userdata->guiContext.onChar(ch)) { return; }
+			Engine::ImGui::charCallback(ch);
 		}
 
 		void mouseButtonCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
+			if (userdata->guiContext.onMouse(event)) { return; }
 			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::mouseButtonCallback(event.state);
 		}
 
 		void mouseWheelCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
+			if (userdata->guiContext.onMouseWheel(event)) { return; }
 			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::scrollCallback(event.state);
 		}
 
 		void mouseMoveCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
+			if (userdata->guiContext.onMouseMove(event)) { return; }
 			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::mouseMoveCallback(event.state);
 		}
@@ -578,7 +585,8 @@ void run(int argc, char* argv[]) {
 	// World
 	auto worldStorage = std::make_unique<Game::World>(engine);
 	Game::World& world = *worldStorage.get();
-	TempWorldEngineWrapper wrapper{engine, world};
+	Engine::Gui::Context guiContext{engine};
+	TempWorldEngineWrapper wrapper{engine, world, guiContext};
 	windowCallbacks.userdata = &wrapper;
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
@@ -667,8 +675,6 @@ void run(int argc, char* argv[]) {
 	window.setSwapInterval(0);
 	window.show();
 
-	Engine::Gui::Context guiCtx{engine}; // TODO: rm - testing
-
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 	while (!window.shouldClose()) {
 		window.poll();
@@ -695,14 +701,7 @@ void run(int argc, char* argv[]) {
 		if constexpr (ENGINE_CLIENT) { mapUI(); }
 
 		Engine::ImGui::draw();
-
-		{
-			//guiCtx.addRect({10, 10}, {512, 512});
-			//guiCtx.addRect({10, 10}, {256, 256});
-			//guiCtx.addRect({10, 10}, {128, 128});
-			guiCtx.render();
-		}
-
+		guiContext.render();
 		window.swapBuffers();
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
