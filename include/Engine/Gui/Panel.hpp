@@ -85,15 +85,15 @@ namespace Engine::Gui {
 			 * Called when this panel or any child panel are hovered.
 			 * @return True to prevent this event from propagating to children.
 			 */
-			virtual bool onBeginHover(Panel* target) { return false; };
-			virtual bool onEndHover(Panel* target) { return false; };
+			virtual bool onBeginHover(Panel* target) { ENGINE_LOG("Begin Hover: ", this); return false; };
+			virtual bool onEndHover(Panel* target) { ENGINE_LOG("End Hover: ", this); return false; };
 
 			/**
 			 * Called when this panel or any child panel are focused.
 			 * @return True to prevent this event from propagating to children.
 			 */
-			virtual bool onBeginFocus(Panel* target) { ENGINE_LOG("Gain Focus: ", this); return false; };
-			virtual bool onEndFocus(Panel* target) { ENGINE_LOG("Lose Focus: ", this); return false; };
+			virtual bool onBeginFocus(Panel* target) { return false; };
+			virtual bool onEndFocus(Panel* target) { return false; };
 
 			/**
 			 * Determines if this panel can gain focus.

@@ -48,15 +48,15 @@ namespace Engine::Gui {
 	}
 
 	void Context::render() {
-		if (!focusValid) {
-			updateFocus();
-			focusValid = true;
+		if (!hoverValid) {
+			updateHover();
+			hoverValid = true;
 		}
 
 		const Panel* curr = root;
 		offset = {};
 		//int depth = 0; // TODO: rm
-		const auto focus = getFocus();
+		const auto focus = getHover();
 
 		// Breadth first traversal
 		while (true) {
@@ -117,9 +117,8 @@ namespace Engine::Gui {
 		verts.push_back({.color = color, .pos = offset + pos});
 	}
 
-	// TODO: this is actually hover not focus...
-	void Context::updateFocus() {
-		Panel* const lastFocus = getFocus();
+	void Context::updateHover() {
+		Panel* const lastHover = getHover();
 		glm::vec2 off = {};
 		Panel* curr = nullptr;
 
@@ -133,7 +132,7 @@ namespace Engine::Gui {
 		// End focus callbacks should return void not bool. Canceling an end of focus callback doesnt really make sense.
 
 		// Rebuild offset and find where our old focus stack loses focus
-		for (auto it = focusStack.begin(), end = focusStack.end(); it != end; ++it) {
+		for (auto it = hoverStack.begin(), end = hoverStack.end(); it != end; ++it) {
 			auto* panel = *it;
 
 			if (panel->parent == curr && (panel->getBounds() + off).contains(cursor)) {
@@ -145,12 +144,12 @@ namespace Engine::Gui {
 		}
 
 		// Unwind out of focus panels
-		while (!focusStack.empty()) {
-			auto* back = focusStack.back();
+		while (!hoverStack.empty()) {
+			auto* back = hoverStack.back();
 			if (back == curr) { break; }
 			// TODO: if we do want to pass through parents first we can steal the it ptr from the above for loop
-			back->onEndFocus(lastFocus); // TODO: this isnt passed through parents first. May need to rethink how we handle callbacks.
-			focusStack.pop_back();
+			back->onEndFocus(lastHover); // TODO: this isnt passed through parents first. May need to rethink how we handle callbacks.
+			hoverStack.pop_back();
 		}
 
 		// Setup the next panel to check
@@ -160,20 +159,20 @@ namespace Engine::Gui {
 		while (curr) {
 			if ((curr->getBounds() + off).contains(cursor)) {
 				off += curr->getPos();
-				focusStack.push_back(curr);
+				hoverStack.push_back(curr);
 				curr = curr->firstChild;
 			} else {
 				curr = curr->nextSibling;
 			}
 		}
 
-		if (focusStack.empty()) { return; }
+		if (hoverStack.empty()) { return; }
 
-		Panel* const target = focusStack.back();
-		if (target == lastFocus) { return; } // No change
+		Panel* const target = hoverStack.back();
+		if (target == lastHover) { return; } // No change
 
-		if (lastFocus) { lastFocus->onEndFocus(lastFocus); }
-		for (Panel* panel : focusStack) {
+		if (lastHover) { lastHover->onEndFocus(lastHover); }
+		for (Panel* panel : hoverStack) {
 			// TODO: do we want to cull the rest of the focus stack if we cancel early?
 			// TODO: maybe it would be worth having separate onChild* callbacks. How often will we really want to intercept child callbacks?
 			if (panel->onBeginFocus(target)) { break; }
@@ -193,7 +192,7 @@ namespace Engine::Gui {
 		} else {
 			cursor.y = event.state.valuef;
 		}
-		focusValid = false;
+		hoverValid = false;
 		return false;
 	}
 

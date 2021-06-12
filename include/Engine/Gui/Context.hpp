@@ -29,7 +29,7 @@ namespace Engine::Gui {
 			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6);
 
 		private:
-			std::vector<Panel*> focusStack;
+			std::vector<Panel*> hoverStack;
 			std::vector<Vertex> verts;
 			std::vector<BFSStateData> bfsCurr;
 			std::vector<BFSStateData> bfsNext;
@@ -46,7 +46,7 @@ namespace Engine::Gui {
 			glm::vec2 cursor = {};
 
 			Panel* root;
-			bool focusValid = false;
+			bool hoverValid = false;
 
 		public:
 			// TODO: split shader into own class so we dont depend on engine
@@ -54,13 +54,13 @@ namespace Engine::Gui {
 			~Context();
 			void render();
 			void addRect(const glm::vec2 pos, const glm::vec2 size);
-			void updateFocus();
+			void updateHover();
 
 			/**
-			 * Gets the most focused panel.
+			 * Gets the most hovered panel.
 			 */
-			ENGINE_INLINE Panel* getFocus() noexcept { return focusStack.empty() ? nullptr : focusStack.back(); }
-			ENGINE_INLINE const Panel* getFocus() const noexcept { return const_cast<Context*>(this)->getFocus(); }
+			ENGINE_INLINE Panel* getHover() noexcept { return hoverStack.empty() ? nullptr : hoverStack.back(); }
+			ENGINE_INLINE const Panel* getHover() const noexcept { return const_cast<Context*>(this)->getHover(); }
 
 			/**
 			 * @return Indicate if the input was consumed.
