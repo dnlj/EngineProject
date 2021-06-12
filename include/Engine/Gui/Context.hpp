@@ -23,8 +23,13 @@ namespace Engine::Gui {
 				const Panel* panel;
 			};
 
+			struct Vertex {
+				glm::vec4 color;
+				glm::vec2 pos;
+			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6);
+
 		private:
-			std::vector<glm::vec2> verts;
+			std::vector<Vertex> verts;
 			std::vector<BFSStateData> bfsCurr;
 			std::vector<BFSStateData> bfsNext;
 

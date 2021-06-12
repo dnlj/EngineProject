@@ -14,7 +14,11 @@ namespace Engine::Gui {
 		// Vertex
 		glEnableVertexArrayAttrib(vao, 0);
 		glVertexArrayAttribBinding(vao, 0, vertBindingIndex);
-		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribFormat(vao, 0, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, color));
+
+		glEnableVertexArrayAttrib(vao, 1);
+		glVertexArrayAttribBinding(vao, 1, vertBindingIndex);
+		glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
 
 		ENGINE_LOG("View: ", view.x, " ", view.y);
 
@@ -95,13 +99,15 @@ namespace Engine::Gui {
 	}
 
 	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {
-		verts.push_back(offset + pos);
-		verts.push_back(offset + pos + glm::vec2{0, size.y});
-		verts.push_back(offset + pos + size);
+		const glm::vec4 c = {1.0f, 0.0f, 1.0f, 0.2f};
 
-		verts.push_back(offset + pos + size);
-		verts.push_back(offset + pos + glm::vec2{size.x, 0});
-		verts.push_back(offset + pos);
+		verts.push_back({.color = c, .pos = offset + pos});
+		verts.push_back({.color = c, .pos = offset + pos + glm::vec2{0, size.y}});
+		verts.push_back({.color = c, .pos = offset + pos + size});
+
+		verts.push_back({.color = c, .pos = offset + pos + size});
+		verts.push_back({.color = c, .pos = offset + pos + glm::vec2{size.x, 0}});
+		verts.push_back({.color = c, .pos = offset + pos});
 	}
 
 	bool Context::onMouse(const Engine::Input::InputEvent event) {
