@@ -48,7 +48,10 @@ namespace Engine::Gui {
 	}
 
 	void Context::render() {
-		if (!focusValid) { updateFocus(); }
+		if (!focusValid) {
+			updateFocus();
+			focusValid = true;
+		}
 
 		const Panel* curr = root;
 		offset = {};
@@ -114,13 +117,46 @@ namespace Engine::Gui {
 		verts.push_back({.color = color, .pos = offset + pos});
 	}
 
+	// TODO: this is actually hover not focus...
 	void Context::updateFocus() {
-		// TODO: we never call Panel::onEndFocus
-		// TODO: would it be worth work DOWN the current focus stack before rebuilding? It might since 99% of mouse moves the focus wont change (will stay in same panel)
-		focusStack.clear();
-		Panel* curr = root;
+		Panel* const lastFocus = getFocus();
 		glm::vec2 off = {};
+		Panel* curr = nullptr;
 
+		// TODO: we have a number of things to think about regarding the begin/end callbacks
+		// Do we want separate onBeginChildFocus/onEndChildFocus callbacks? I think so.
+		//
+		// 
+		// AGAIN: THIS FUNCTION SHOULD BE NAMED HOVER. MOVE THIS FOCUS STUFF ELSEWHERE.
+		// We need to be able to both intercept focus and reject focus. maybe have a separate can be focused callback? looks like we already thought of that.
+		// If a child rejects beginFocus it should fall back to the parent (no change if the parent was already focused, nothing should be called)
+		// End focus callbacks should return void not bool. Canceling an end of focus callback doesnt really make sense.
+
+		// Rebuild offset and find where our old focus stack loses focus
+		for (auto it = focusStack.begin(), end = focusStack.end(); it != end; ++it) {
+			auto* panel = *it;
+
+			if (panel->parent == curr && (panel->getBounds() + off).contains(cursor)) {
+				off += panel->getPos();
+				curr = panel;
+			} else {
+				break;
+			}
+		}
+
+		// Unwind out of focus panels
+		while (!focusStack.empty()) {
+			auto* back = focusStack.back();
+			if (back == curr) { break; }
+			// TODO: if we do want to pass through parents first we can steal the it ptr from the above for loop
+			back->onEndFocus(lastFocus); // TODO: this isnt passed through parents first. May need to rethink how we handle callbacks.
+			focusStack.pop_back();
+		}
+
+		// Setup the next panel to check
+		curr = curr ? curr->firstChild : root;
+		
+		// Add any new panels to focus stack
 		while (curr) {
 			if ((curr->getBounds() + off).contains(cursor)) {
 				off += curr->getPos();
@@ -134,6 +170,9 @@ namespace Engine::Gui {
 		if (focusStack.empty()) { return; }
 
 		Panel* const target = focusStack.back();
+		if (target == lastFocus) { return; } // No change
+
+		if (lastFocus) { lastFocus->onEndFocus(lastFocus); }
 		for (Panel* panel : focusStack) {
 			// TODO: do we want to cull the rest of the focus stack if we cancel early?
 			// TODO: maybe it would be worth having separate onChild* callbacks. How often will we really want to intercept child callbacks?

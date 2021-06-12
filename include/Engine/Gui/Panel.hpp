@@ -56,6 +56,8 @@ namespace Engine::Gui {
 					ENGINE_DEBUG_ASSERT(firstChild == nullptr);
 					firstChild = child;
 				}
+
+				child->parent = this;
 				lastChild = child;
 				return child;
 			}
@@ -90,8 +92,8 @@ namespace Engine::Gui {
 			 * Called when this panel or any child panel are focused.
 			 * @return True to prevent this event from propagating to children.
 			 */
-			virtual bool onBeginFocus(Panel* target) { return false; };
-			virtual bool onEndFocus(Panel* target) { return false; };
+			virtual bool onBeginFocus(Panel* target) { ENGINE_LOG("Gain Focus: ", this); return false; };
+			virtual bool onEndFocus(Panel* target) { ENGINE_LOG("Lose Focus: ", this); return false; };
 
 			/**
 			 * Determines if this panel can gain focus.
