@@ -10,6 +10,26 @@
 namespace Engine::Gui {
 	class Context; // Forward decl
 
+	class Bounds { // TODO: move
+		public:
+			glm::vec2 topLeft;
+			glm::vec2 bottomRight;
+
+			ENGINE_INLINE bool contains(const glm::vec2 point) const noexcept {
+				return point.x >= topLeft.x
+					&& point.y >= topLeft.y
+					&& point.x <= bottomRight.x
+					&& point.y <= bottomRight.y;
+			}
+
+			ENGINE_INLINE friend Bounds operator+(const Bounds& a, const glm::vec2 b) noexcept {
+				auto res = a;
+				res.topLeft += b;
+				res.bottomRight += b;
+				return res;
+			}
+	};
+
 	class Panel {
 		friend class Context;
 		private:
@@ -51,6 +71,11 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void setSize(const glm::vec2 sz) noexcept { size = glm::clamp(sz, minSize, maxSize); };
 			ENGINE_INLINE auto getSize() const noexcept { return size; }
+
+			/**
+			 * Gets the axis aligned bounding box for this panel.
+			 */
+			ENGINE_INLINE Bounds getBounds() const noexcept { return {pos, pos + size}; }
 
 			void render(Context& ctx) const;
 

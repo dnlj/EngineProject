@@ -20,8 +20,6 @@ namespace Engine::Gui {
 		glVertexArrayAttribBinding(vao, 1, vertBindingIndex);
 		glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
 
-		ENGINE_LOG("View: ", view.x, " ", view.y);
-
 		root = new Panel{};
 		root->setPos({25, 50});
 		root->setSize({512, 256});
@@ -30,11 +28,15 @@ namespace Engine::Gui {
 			auto child = root->addChild(new Panel{});
 			child->setPos({5, 5});
 			child->setSize({64, 64});
+
+			auto childChild = child->addChild(new Panel{});
+			childChild->setPos({5, 5});
+			childChild->setSize({32, 32});
 		}
 		
 		{
 			auto child = root->addChild(new Panel{});
-			child->setPos({20, 25});
+			child->setPos({128, 5});
 			child->setSize({32, 64});
 		}
 	}
@@ -46,9 +48,12 @@ namespace Engine::Gui {
 	}
 
 	void Context::render() {
+		if (!focusValid) { updateFocus(); }
+
 		const Panel* curr = root;
 		offset = {};
 		//int depth = 0; // TODO: rm
+		const auto focus = getFocus();
 
 		// Breadth first traversal
 		while (true) {
@@ -60,6 +65,7 @@ namespace Engine::Gui {
 					);
 				}
 
+				color.g = curr == focus ? 1.0f : 0.0f;
 				curr->render(*this);
 				curr = curr->nextSibling;
 			}
@@ -99,15 +105,40 @@ namespace Engine::Gui {
 	}
 
 	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {
-		const glm::vec4 c = {1.0f, 0.0f, 1.0f, 0.2f};
+		verts.push_back({.color = color, .pos = offset + pos});
+		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{0, size.y}});
+		verts.push_back({.color = color, .pos = offset + pos + size});
 
-		verts.push_back({.color = c, .pos = offset + pos});
-		verts.push_back({.color = c, .pos = offset + pos + glm::vec2{0, size.y}});
-		verts.push_back({.color = c, .pos = offset + pos + size});
+		verts.push_back({.color = color, .pos = offset + pos + size});
+		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{size.x, 0}});
+		verts.push_back({.color = color, .pos = offset + pos});
+	}
 
-		verts.push_back({.color = c, .pos = offset + pos + size});
-		verts.push_back({.color = c, .pos = offset + pos + glm::vec2{size.x, 0}});
-		verts.push_back({.color = c, .pos = offset + pos});
+	void Context::updateFocus() {
+		// TODO: we never call Panel::onEndFocus
+		// TODO: would it be worth work DOWN the current focus stack before rebuilding? It might since 99% of mouse moves the focus wont change (will stay in same panel)
+		focusStack.clear();
+		Panel* curr = root;
+		glm::vec2 off = {};
+
+		while (curr) {
+			if ((curr->getBounds() + off).contains(cursor)) {
+				off += curr->getPos();
+				focusStack.push_back(curr);
+				curr = curr->firstChild;
+			} else {
+				curr = curr->nextSibling;
+			}
+		}
+
+		if (focusStack.empty()) { return; }
+
+		Panel* const target = focusStack.back();
+		for (Panel* panel : focusStack) {
+			// TODO: do we want to cull the rest of the focus stack if we cancel early?
+			// TODO: maybe it would be worth having separate onChild* callbacks. How often will we really want to intercept child callbacks?
+			if (panel->onBeginFocus(target)) { break; }
+		}
 	}
 
 	bool Context::onMouse(const Engine::Input::InputEvent event) {
@@ -116,7 +147,14 @@ namespace Engine::Gui {
 	}
 
 	bool Context::onMouseMove(const Engine::Input::InputEvent event) {
-		// ENGINE_LOG("onMouseMove: ", event.state.value, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
+		// ENGINE_LOG("onMouseMove:", " ", event.state.id.code, " ", event.state.valuef, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
+
+		if (event.state.id.code == 0) {
+			cursor.x = event.state.valuef;
+		} else {
+			cursor.y = event.state.valuef;
+		}
+		focusValid = false;
 		return false;
 	}
 

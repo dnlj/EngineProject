@@ -29,6 +29,7 @@ namespace Engine::Gui {
 			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6);
 
 		private:
+			std::vector<Panel*> focusStack;
 			std::vector<Vertex> verts;
 			std::vector<BFSStateData> bfsCurr;
 			std::vector<BFSStateData> bfsNext;
@@ -38,11 +39,14 @@ namespace Engine::Gui {
 			GLuint vbo = 0;
 			GLsizei vboCapacity = 0;
 			Shader shader;
+			glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
 
 			glm::vec2 view;
 			glm::vec2 offset;
+			glm::vec2 cursor = {};
 
 			Panel* root;
+			bool focusValid = false;
 
 		public:
 			// TODO: split shader into own class so we dont depend on engine
@@ -50,6 +54,13 @@ namespace Engine::Gui {
 			~Context();
 			void render();
 			void addRect(const glm::vec2 pos, const glm::vec2 size);
+			void updateFocus();
+
+			/**
+			 * Gets the most focused panel.
+			 */
+			ENGINE_INLINE Panel* getFocus() noexcept { return focusStack.empty() ? nullptr : focusStack.back(); }
+			ENGINE_INLINE const Panel* getFocus() const noexcept { return const_cast<Context*>(this)->getFocus(); }
 
 			/**
 			 * @return Indicate if the input was consumed.
