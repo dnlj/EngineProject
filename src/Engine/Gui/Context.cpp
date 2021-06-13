@@ -203,7 +203,7 @@ namespace Engine::Gui {
 	}
 
 	bool Context::onMouseMove(const Engine::Input::InputEvent event) {
-		ENGINE_LOG("onMouseMove:", " ", event.state.id.code, " ", event.state.valuef, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
+		//ENGINE_LOG("onMouseMove:", " ", event.state.id.code, " ", event.state.valuef, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
 		if (event.state.id.code == 0) {
 			cursor.x = event.state.valuef;
 		} else {

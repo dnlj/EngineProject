@@ -240,6 +240,7 @@ namespace Engine::Win32 {
 			// If the cursor is visible we should use WM_MOUSEMOVE so we maintain cursor ballistics.
 			// Although if you use WM_MOUSEMOVE you cannot distinguish between multiple mice.
 			// printRawMouse(raw);
+			//ENGINE_LOG("RIM_TYPEMOUSE");
 
 			// TODO: switch to this atleast for mouse button presses. Not sure why we dont already.
 			const auto& data = raw.data.mouse;
@@ -253,7 +254,7 @@ namespace Engine::Win32 {
 			} else {
 				// Only process cursor events in foreground
 				// TODO: impl mouse delta when cursor hidden. FPS games for example.
-				// ENGINE_LOG("Move: ", data.usFlags, " ", data.lLastX, " ", data.lLastY);
+				//ENGINE_LOG("Move: ", data.usFlags, " ", data.lLastX, " ", data.lLastY);
 			}
 
 			const auto device = window.getDeviceId(raw.header.hDevice);
@@ -333,7 +334,6 @@ namespace Engine::Win32 {
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_MOUSEMOVE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-
 		if (!window.mouseInWindow) {
 			TRACKMOUSEEVENT event = {
 				.cbSize = sizeof(event),
@@ -348,6 +348,8 @@ namespace Engine::Win32 {
 
 		const int32 x = GET_X_LPARAM(lParam);
 		const int32 y = GET_Y_LPARAM(lParam);
+
+		//ENGINE_LOG("Move: ", x, " ", y);
 
 		if (x != window.lastMousePos.x) {
 			// TODO: we currently don't distinguish between mouse devices
@@ -380,6 +382,24 @@ namespace Engine::Win32 {
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_MOUSELEAVE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		//
+		// BUG: If you press a mouse button and then move the mouse on to
+		// an overlapping window without leaving the current window (alt tabbing for example)
+		// we will not receive a WM_MOUSELEAVE until the button has been
+		// released AND we move the mouse.
+		//
+		// Multiple people have claimed that this is because the
+		// default handlers for WM_*MOUSE* press events call SetCapture. However,
+		// even if we handle all WM_*MOUSE* events and do not call SetCapture
+		// this behaviour still occurs.
+		//
+		// The solution for this would be to handle all WM_*MOUSE* press/release events (or handle them in WM_INPUT)
+		// and manually call SetCapture/ReleaseCapture so that we get WM_MOUSEMOVE
+		// events even when the mouse is not in our window. After that we would then
+		// get rid of WM_MOUSELEAVE/TrackMouseEvent/TME_LEAVE all together and
+		// manually check the cursor position againt our client area.
+		//
+
 		window.mouseInWindow = false;
 		window.callbacks.mouseLeaveCallback();
 		return 0;
@@ -518,12 +538,7 @@ namespace Engine::Win32 {
 					.hwndTarget = windowHandle,
 				},
 			};
-		
-			//ENGINE_ASSERT(RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0])),
-			//	"Unable to register input devices - ", getLastErrorMessage()
-			//);
 
-		
 			if (!RegisterRawInputDevices(devices, std::extent_v<decltype(devices)>, sizeof(devices[0]))) {
 				ENGINE_ERROR("Unable to register input devices - ", getLastErrorMessage());
 			}
@@ -758,10 +773,9 @@ namespace Engine::Win32 {
 			HANDLE_MESSAGE(WM_CHAR);
 			HANDLE_MESSAGE(WM_MOUSEMOVE);
 			HANDLE_MESSAGE(WM_MOUSELEAVE);
-			default: return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 		}
-
 		#undef HANDLE_MESSAGE
-		return 0;
+
+		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
 }
