@@ -15,7 +15,7 @@ namespace Engine {
 	class ShaderManager : public Engine::ResourceManager<ShaderManager, Graphics::Shader> {
 		friend class Engine::ResourceManager<ShaderManager, Graphics::Shader>;
 		private:
-			Graphics::Shader load(const std::string& path);
+			StorePtr load(const std::string& path) { return std::make_unique<Graphics::Shader>(path); };
 			void unload(Graphics::Shader shader);
 	};
 

@@ -14,9 +14,9 @@ namespace Engine {
 	template<class Manager, class T>
 	class ResourceManager {
 		friend Manager;
-		
 		public:
 			using ResourceId = int32;
+			using StorePtr = std::unique_ptr<T>;
 
 		private:
 			// TODO: Dont use ptr if T is < some size
@@ -24,7 +24,7 @@ namespace Engine {
 				const std::string path;
 				const ResourceId id;
 				int32 refCount = 0;
-				std::unique_ptr<T> data;
+				StorePtr data;
 			};
 
 			Engine::FlatHashMap<std::string, ResourceId> resMap;
@@ -58,9 +58,6 @@ namespace Engine {
 					const auto& operator*() const { return *get(); }
 			};
 
-		private:
-			ResourceManager() = default;
-
 		public:
 			~ResourceManager() {};
 
@@ -88,8 +85,7 @@ namespace Engine {
 			Resource get(ResourceId rid) {
 				auto& info = resInfo[rid];
 				if (!info->data) {
-					// TODO: change load to just return a ptr. currently we copy.
-					info->data = std::make_unique<T>(self().load(info->path));
+					info->data = std::move(self().load(info->path));
 				}
 
 				return *info;
@@ -109,6 +105,7 @@ namespace Engine {
 			//	}
 			//}
 		private:
+			ResourceManager() = default;
 			Manager& self() { return static_cast<Manager&>(*this); }
 	};
 }

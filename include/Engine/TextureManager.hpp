@@ -17,7 +17,7 @@ namespace Engine {
 	class TextureManager : public Engine::ResourceManager<TextureManager, TextureInfo> {
 		friend class Engine::ResourceManager<TextureManager, TextureInfo>;
 		private:
-			TextureInfo load(const std::string& path);
+			StorePtr load(const std::string& path);
 			void unload(TextureInfo tex);
 	};
 
