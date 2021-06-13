@@ -80,13 +80,21 @@ namespace Engine::Gui {
 			ENGINE_INLINE Bounds getBounds() const noexcept { return {pos, pos + size}; }
 
 			void render(Context& ctx) const;
-
+			
 			/**
-			 * Called when this panel or any child panel are hovered.
-			 * @return True to prevent this event from propagating to children.
+			 * Called when this panel is hovered.
 			 */
-			virtual bool onBeginHover(Panel* target) { ENGINE_LOG("Begin Hover: ", this); return false; };
-			virtual bool onEndHover(Panel* target) { ENGINE_LOG("End Hover: ", this); return false; };
+			virtual void onBeginHover() { ENGINE_LOG("Begin Hover: ", this); };
+			virtual void onEndHover() { ENGINE_LOG("End Hover: ", this); };
+			virtual bool canHover() const { return true; }
+			
+			/**
+			 * Called when any descendant panel is hovered.
+			 * @param child The direct child that is, or is a parent of, the hovered panel.
+			 * @return True to intercept this event and prevent it from propagating to children.
+			 */
+			virtual bool onBeginChildHover(Panel* child) { ENGINE_LOG("Begin Child Hover: ", this, " ", child); return false; };
+			virtual void onEndChildHover(Panel* child) { ENGINE_LOG("End Child Hover: ", this, " ", child); };
 
 			/**
 			 * Called when this panel or any child panel are focused.
