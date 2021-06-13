@@ -497,9 +497,11 @@ namespace {
 		}
 
 		void mouseLeaveCallback() override {
+			userdata->guiContext.onFocus(false);
 		}
 
 		void mouseEnterCallback() override {
+			userdata->guiContext.onFocus(true);
 			Engine::ImGui::mouseEnterCallback();
 		}
 	};

@@ -203,7 +203,7 @@ namespace Engine::Gui {
 	}
 
 	bool Context::onMouseMove(const Engine::Input::InputEvent event) {
-		// ENGINE_LOG("onMouseMove:", " ", event.state.id.code, " ", event.state.valuef, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
+		ENGINE_LOG("onMouseMove:", " ", event.state.id.code, " ", event.state.valuef, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
 		if (event.state.id.code == 0) {
 			cursor.x = event.state.valuef;
 		} else {
@@ -234,7 +234,29 @@ namespace Engine::Gui {
 	}
 
 	void Context::onFocus(const bool has) {
-		// ENGINE_LOG("onFocus: ", has);
+		ENGINE_LOG("onFocus: ", has);
+
+		if (!has) {
+			hoverValid = true;
+
+			// Remove any hovers
+			if (!hoverStack.empty()) {
+				auto it = hoverStack.begin();
+				auto end = hoverStack.end();
+				auto next = it + 1;
+
+				while (next != end) {
+					(*it)->onEndChildHover(*next);
+					it = next;
+					++next;
+				}
+
+				(*it)->onEndHover();
+				hoverStack.clear();
+			}
+		} else {
+			hoverValid = false;
+		}
 	}
 
 }

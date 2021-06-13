@@ -84,8 +84,8 @@ namespace Engine::Gui {
 			/**
 			 * Called when this panel is hovered.
 			 */
-			virtual void onBeginHover() { ENGINE_LOG("Begin Hover: ", this); };
-			virtual void onEndHover() { ENGINE_LOG("End Hover: ", this); };
+			virtual void onBeginHover() {};
+			virtual void onEndHover() {};
 			virtual bool canHover() const { return true; }
 			
 			/**
@@ -93,8 +93,8 @@ namespace Engine::Gui {
 			 * @param child The direct child that is, or is a parent of, the hovered panel.
 			 * @return True to intercept this event and prevent it from propagating to children.
 			 */
-			virtual bool onBeginChildHover(Panel* child) { ENGINE_LOG("Begin Child Hover: ", this, " ", child); return false; };
-			virtual void onEndChildHover(Panel* child) { ENGINE_LOG("End Child Hover: ", this, " ", child); };
+			virtual bool onBeginChildHover(Panel* child) { return false; };
+			virtual void onEndChildHover(Panel* child) {};
 
 			/**
 			 * Called when this panel or any child panel are focused.
@@ -113,7 +113,7 @@ namespace Engine::Gui {
 			 * @return True to prevent this event from propagating to children.
 			 */
 			// TODO: do we make this more generic? we could have more than simply mouse input
-			virtual bool onBeginActivate() { ENGINE_LOG("onBeginActivate: ", this); return false; };
-			virtual bool onEndActivate() { ENGINE_LOG("onEndActivate: ", this); return false; };
+			virtual bool onBeginActivate() { return false; };
+			virtual bool onEndActivate() { return false; };
 	};	
 }
