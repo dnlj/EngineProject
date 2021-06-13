@@ -97,7 +97,7 @@ namespace Engine::Gui {
 		}
 
 		glBindVertexArray(vao);
-		glUseProgram(*shader);
+		glUseProgram(shader->get());
 		glUniform2fv(0, 1, &view.x);
 
 		glEnable(GL_BLEND);

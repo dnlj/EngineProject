@@ -9,7 +9,6 @@
 
 
 namespace Engine {
-
 	struct TextureInfo {
 		Texture2D tex;
 		glm::ivec2 size;

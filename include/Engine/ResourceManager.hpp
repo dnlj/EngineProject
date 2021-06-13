@@ -88,6 +88,7 @@ namespace Engine {
 			Resource get(ResourceId rid) {
 				auto& info = resInfo[rid];
 				if (!info->data) {
+					// TODO: change load to just return a ptr. currently we copy.
 					info->data = std::make_unique<T>(self().load(info->path));
 				}
 

@@ -168,7 +168,7 @@ namespace Game {
 			//const MapChunk* getChunkData(const glm::ivec2 chunk, bool load = false);
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
-			Engine::Shader shader;
+			Engine::ShaderRef shader;
 			Engine::TextureArray2D texArr;
 
 			struct TestData { // TODO: rename

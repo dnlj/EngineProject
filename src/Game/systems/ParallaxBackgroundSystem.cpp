@@ -84,7 +84,7 @@ namespace Game {
 		if (layer != RenderLayer::Parallax_Background) { return; }
 
 		glBindVertexArray(vao);
-		glUseProgram(*shader);
+		glUseProgram(shader->get());
 		glUniform1i(0, 0);
 
 		for (int i = 0; const auto& l : layers) {

@@ -48,7 +48,7 @@ namespace Game {
 
 			int nextGroup = 0;
 			RenderLayer nextLayer = RenderLayer::_COUNT;
-			Engine::Shader shader;
+			Engine::ShaderRef shader;
 			GLuint vao = 0;
 			GLuint vbo = 0;
 			GLuint ivbo = 0;

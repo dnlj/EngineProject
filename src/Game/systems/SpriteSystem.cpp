@@ -178,7 +178,7 @@ namespace Game {
 
 		// VAO / Program
 		glBindVertexArray(vao);
-		glUseProgram(*shader);
+		glUseProgram(shader->get());
 
 		const auto size = spriteGroups.size();
 		const SpriteGroup* group = &spriteGroups[nextGroup];

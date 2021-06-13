@@ -8,15 +8,16 @@
 
 // Engine
 #include <Engine/ResourceManager.hpp>
+#include <Engine/Graphics/Shader.hpp>
 
 // TODO: Document
 namespace Engine {
-	class ShaderManager : public Engine::ResourceManager<ShaderManager, GLuint> {
-		friend class Engine::ResourceManager<ShaderManager, GLuint>;
+	class ShaderManager : public Engine::ResourceManager<ShaderManager, Graphics::Shader> {
+		friend class Engine::ResourceManager<ShaderManager, Graphics::Shader>;
 		private:
-			GLuint load(const std::string& path);
-			void unload(GLuint shader);
+			Graphics::Shader load(const std::string& path);
+			void unload(Graphics::Shader shader);
 	};
 
-	using Shader = ShaderManager::Resource;
+	using ShaderRef = ShaderManager::Resource;
 }

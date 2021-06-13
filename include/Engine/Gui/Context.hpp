@@ -38,7 +38,7 @@ namespace Engine::Gui {
 			GLuint vao = 0;
 			GLuint vbo = 0;
 			GLsizei vboCapacity = 0;
-			Shader shader;
+			ShaderRef shader;
 			glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
 
 			glm::vec2 view;

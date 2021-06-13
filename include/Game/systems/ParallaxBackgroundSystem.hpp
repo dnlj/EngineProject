@@ -23,7 +23,7 @@ namespace Game {
 		private:
 			GLuint vao = 0;
 			GLuint vbo = 0;
-			Engine::Shader shader;
+			Engine::ShaderRef shader;
 
 			std::vector<InstData> instData;
 			std::vector<Layer> layers;

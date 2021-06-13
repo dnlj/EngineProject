@@ -28,7 +28,7 @@ namespace Game {
 		// TODO: these should be part of model/mesh or maprendersystem. why are they on mapsystem
 		auto& shader = mapSys.shader;
 
-		glUseProgram(*shader);
+		glUseProgram(shader->get());
 
 		// Setup Texture
 		glBindTextureUnit(0, mapSys.texArr.get());
