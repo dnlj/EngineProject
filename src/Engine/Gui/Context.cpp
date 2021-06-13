@@ -55,7 +55,8 @@ namespace Engine::Gui {
 
 		const Panel* curr = root;
 		offset = {};
-
+		multiDrawData.first.emplace_back() = 0;
+		
 		// Breadth first traversal
 		while (true) {
 			while (curr) {
@@ -76,9 +77,13 @@ namespace Engine::Gui {
 			}
 
 			if (bfsCurr.empty()) {
+				const auto vsz = static_cast<GLint>(verts.size());
+				multiDrawData.count.emplace_back() = vsz - multiDrawData.first.back();
+
 				bfsCurr.swap(bfsNext);
 				if (bfsCurr.empty()) { break; }
-				// ENGINE_LOG("GUI: depth++ ", ++depth);
+
+				multiDrawData.first.emplace_back() = vsz;
 			}
 
 			const auto& back = bfsCurr.back();
@@ -103,10 +108,19 @@ namespace Engine::Gui {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
+		// If we dont care about clipping we can just do
+		//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
+
+		glMultiDrawArrays(GL_TRIANGLES,
+			multiDrawData.first.data(),
+			multiDrawData.count.data(),
+			static_cast<GLsizei>(multiDrawData.count.size())
+		);
 
 		glDisable(GL_BLEND);
 		verts.clear();
+		multiDrawData.first.clear();
+		multiDrawData.count.clear();
 	}
 
 	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {

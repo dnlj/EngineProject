@@ -27,10 +27,15 @@ namespace Engine::Gui {
 				glm::vec4 color;
 				glm::vec2 pos;
 			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6);
-
+			
+			struct MultiDrawData {
+				std::vector<GLint> first;
+				std::vector<GLsizei> count;
+			};
 		private:
 			std::vector<Panel*> hoverStack;
 			std::vector<Vertex> verts;
+			MultiDrawData multiDrawData;
 			std::vector<BFSStateData> bfsCurr;
 			std::vector<BFSStateData> bfsNext;
 
