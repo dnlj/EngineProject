@@ -46,6 +46,7 @@ namespace Engine::Gui {
 			glm::vec2 cursor = {};
 
 			Panel* root;
+			Panel* active = nullptr;
 			bool hoverValid = false;
 
 		public:
@@ -61,6 +62,18 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE Panel* getHover() noexcept { return hoverStack.empty() ? nullptr : hoverStack.back(); }
 			ENGINE_INLINE const Panel* getHover() const noexcept { return const_cast<Context*>(this)->getHover(); }
+
+			/**
+			 * Gets the most focused panel.
+			 */
+			ENGINE_INLINE Panel* getFocus() noexcept { return getHover(); } // TODO: actual focus logic.
+			ENGINE_INLINE const Panel* getFocus() const noexcept { return getHover(); }
+			
+			/**
+			 * Gets the active panel.
+			 */
+			ENGINE_INLINE Panel* getActive() noexcept { return active; }
+			ENGINE_INLINE const Panel* getActive() const noexcept { return active; }
 
 			/**
 			 * @return Indicate if the input was consumed.

@@ -113,7 +113,7 @@ namespace Engine::Gui {
 			 * @return True to prevent this event from propagating to children.
 			 */
 			// TODO: do we make this more generic? we could have more than simply mouse input
-			virtual bool onBeginActivate() { return false; };
-			virtual bool onEndActivate() { return false; };
+			virtual bool onBeginActivate() { ENGINE_LOG("onBeginActivate: ", this); return false; };
+			virtual bool onEndActivate() { ENGINE_LOG("onEndActivate: ", this); return false; };
 	};	
 }

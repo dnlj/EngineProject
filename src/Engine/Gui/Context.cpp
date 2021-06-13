@@ -55,8 +55,6 @@ namespace Engine::Gui {
 
 		const Panel* curr = root;
 		offset = {};
-		//int depth = 0; // TODO: rm
-		const auto focus = getHover();
 
 		// Breadth first traversal
 		while (true) {
@@ -68,7 +66,11 @@ namespace Engine::Gui {
 					);
 				}
 
-				color.g = curr == focus ? 1.0f : 0.0f;
+				if (false) {}
+				else if (curr == getActive()) { color = glm::vec4{1, 0, 1, 0.2}; }
+				else if (curr == getHover()) { color = glm::vec4{1, 1, 0, 0.2}; }
+				else { color = glm::vec4{1, 0, 0, 0.2}; }
+
 				curr->render(*this);
 				curr = curr->nextSibling;
 			}
@@ -176,13 +178,32 @@ namespace Engine::Gui {
 	}
 
 	bool Context::onMouse(const Engine::Input::InputEvent event) {
-		// ENGINE_LOG("onMouse: ", event.state.value, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
+		//ENGINE_LOG("onMouse:",
+		//	" ", event.state.value,
+		//	" ", (int)event.state.id.code,
+		//	" ", (int)event.state.id.type,
+		//	" ", (int)event.state.id.device,
+		//	" @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count()
+		//);
+		if (event.state.id.code == 0) {
+			if (event.state.value) {
+				ENGINE_DEBUG_ASSERT(active == nullptr);
+				auto focus = getFocus();
+				if (!focus) { return false; }
+				focus->onBeginActivate();
+				active = focus;
+			} else if (active) {
+				active->onEndActivate();
+				active = nullptr;
+			}
+
+			return true;
+		}
 		return false;
 	}
 
 	bool Context::onMouseMove(const Engine::Input::InputEvent event) {
 		// ENGINE_LOG("onMouseMove:", " ", event.state.id.code, " ", event.state.valuef, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
-
 		if (event.state.id.code == 0) {
 			cursor.x = event.state.valuef;
 		} else {
