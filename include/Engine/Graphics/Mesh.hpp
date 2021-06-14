@@ -70,10 +70,15 @@ namespace Engine::Graphics {
 			template<int32 AttributeCount>
 			void setBufferFormat(const VertexFormat<AttributeCount>& format);
 
+			void setBufferData(const void* vertexData, GLsizei vertexDataSize, const void* elementData, GLsizei elementDataSize, GLsizei elementCount);
+
 			template<class Vertex, class Element>
 			void setBufferData(std::vector<Vertex> vertexData, std::vector<Element> elementData);
 
-			void setBufferData(const void* vertexData, GLsizei vertexDataSize, const void* elementData, GLsizei elementDataSize, GLsizei elementCount);
+			template<class Vertex, class Element, GLsizei VertexCount, GLsizei ElementCount>
+			ENGINE_INLINE void setBufferData(const Vertex (&vertexData)[VertexCount], const Element (&elementData)[ElementCount]) {
+				setBufferData(&vertexData, VertexCount, &elementData, ElementCount);
+			}
 
 			void draw() const;
 
