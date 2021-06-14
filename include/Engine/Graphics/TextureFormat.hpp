@@ -14,5 +14,6 @@ namespace Engine {
 		RGBA8 = GL_RGBA8,
 		SRGB8 = GL_SRGB8,
 		SRGBA8 = GL_SRGB8_ALPHA8, // sRGB w/ linear alpha. 8 bits per channel.
+		R32U = GL_R32UI,
 	};
 }

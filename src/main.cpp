@@ -578,6 +578,7 @@ void run(int argc, char* argv[]) {
 			"shaders/sprite",
 			"shaders/parallax",
 			"shaders/gui",
+			"shaders/fullscreen_passthrough",
 		};
 		for (const auto& path : textures) { engine.textureManager.add(path); }
 		for (const auto& path : shaders) { engine.shaderManager.add(path); }

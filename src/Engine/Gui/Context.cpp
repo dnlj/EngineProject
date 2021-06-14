@@ -7,11 +7,29 @@ namespace Engine::Gui {
 		shader = engine.shaderManager.get("shaders/gui");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
+		{
+			quadShader = engine.shaderManager.get("shaders/fullscreen_passthrough");
+			const glm::vec2 quadData[] = {
+				{1,1}, {-1,1}, {-1,-1},
+				{-1,-1}, {1,-1}, {1,1},
+			};
+
+			// TODO: passthrough prgoram
+			glCreateBuffers(1, &quadVBO);
+			glNamedBufferData(quadVBO, sizeof(quadData), &quadData, GL_STATIC_DRAW);
+
+			glCreateVertexArrays(1, &quadVAO);
+			glVertexArrayVertexBuffer(quadVAO, 0, quadVBO, 0, sizeof(quadData[0]));
+			glEnableVertexArrayAttrib(quadVAO, 0);
+			glVertexArrayAttribBinding(quadVAO, 0, 0);
+			glVertexArrayAttribFormat(quadVAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		}
+
 		glCreateFramebuffers(1, &fbo);
 
 		glCreateVertexArrays(1, &vao);
 		glCreateBuffers(1, &vbo);
-		glVertexArrayVertexBuffer(vao, vertBindingIndex, vbo, 0, sizeof(verts[0]));
+		glVertexArrayVertexBuffer(vao, vertBindingIndex, vbo, 0, sizeof(Vertex));
 
 		// Vertex
 		glEnableVertexArrayAttrib(vao, 0);
@@ -21,6 +39,14 @@ namespace Engine::Gui {
 		glEnableVertexArrayAttrib(vao, 1);
 		glVertexArrayAttribBinding(vao, 1, vertBindingIndex);
 		glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+
+		//glEnableVertexArrayAttrib(vao, 2);
+		//glVertexArrayAttribBinding(vao, 2, vertBindingIndex);
+		//glVertexArrayAttribFormat(vao, 2, 1, GL_UNSIGNED_SHORT, GL_FALSE, offsetof(Vertex, id));
+		//
+		//glEnableVertexArrayAttrib(vao, 3);
+		//glVertexArrayAttribBinding(vao, 3, vertBindingIndex);
+		//glVertexArrayAttribFormat(vao, 3, 1, GL_UNSIGNED_SHORT, GL_FALSE, offsetof(Vertex, pid));
 
 		root = new Panel{};
 		root->setPos({25, 50});
@@ -44,6 +70,9 @@ namespace Engine::Gui {
 	}
 
 	Context::~Context() {
+		glDeleteVertexArrays(1, &quadVAO);
+		glDeleteBuffers(1, &quadVBO);
+
 		glDeleteFramebuffers(1, &fbo);
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
@@ -109,22 +138,31 @@ namespace Engine::Gui {
 		glUniform2fv(0, 1, &view.x);
 
 		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 		// If we dont care about clipping we can just do
 		//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
 
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+
+		const glm::vec4 clear = {0,0,0,0};
+		glClearNamedFramebufferfv(fbo, GL_COLOR, 0, &clear.x);
+		// TODO: clear cliptext
+		// TODO: do we really need a second pass even? cant we just use multiple render targest to have the second texture?
+
 		glMultiDrawArrays(GL_TRIANGLES,
 			multiDrawData.first.data(),
 			multiDrawData.count.data(),
 			static_cast<GLsizei>(multiDrawData.count.size())
 		);
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-		//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
-
+		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		glBindVertexArray(quadVAO);
+		glUseProgram(quadShader->get());
+		glBindTextureUnit(0, clipTex.get());
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glDisable(GL_BLEND);
 		verts.clear();
@@ -256,7 +294,8 @@ namespace Engine::Gui {
 		if (w == view.x && h == view.y) { return; }
 		view = {w, h};
 		// TODO: see if there are WM_* messages for end drag or something so we dont call this 100 times when resizing.
-		clipTex.setStorage(TextureFormat::RGB8, view);
+		//clipTex.setStorage(TextureFormat::R32U, view);
+		clipTex.setStorage(TextureFormat::RGBA8, view);
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, clipTex.get(), 0);
 		ENGINE_LOG("glCheckFramebufferStatus: ", glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 	}

@@ -26,7 +26,9 @@ namespace Engine::Gui {
 			struct Vertex {
 				glm::vec4 color;
 				glm::vec2 pos;
-			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6);
+				uint16 id;
+				uint16 pid;
+			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6 + sizeof(uint16) * 2);
 			
 			struct MultiDrawData {
 				std::vector<GLint> first;
@@ -47,6 +49,10 @@ namespace Engine::Gui {
 			ShaderRef shader;
 			Texture2D clipTex;
 			glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
+
+			ShaderRef quadShader;
+			GLuint quadVAO;
+			GLuint quadVBO;
 
 			glm::vec2 view;
 			glm::vec2 offset;
