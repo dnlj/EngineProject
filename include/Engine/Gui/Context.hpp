@@ -65,9 +65,14 @@ namespace Engine::Gui {
 			void updateHover();
 
 			/**
+			 * Checks if we are hovering any panel.
+			 */
+			ENGINE_INLINE bool isHoverAny() const noexcept { return !hoverStack.empty(); }
+
+			/**
 			 * Gets the most hovered panel.
 			 */
-			ENGINE_INLINE Panel* getHover() noexcept { return hoverStack.empty() ? nullptr : hoverStack.back(); }
+			ENGINE_INLINE Panel* getHover() noexcept { return isHoverAny() ? hoverStack.back() : nullptr; }
 			ENGINE_INLINE const Panel* getHover() const noexcept { return const_cast<Context*>(this)->getHover(); }
 
 			/**

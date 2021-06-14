@@ -209,18 +209,18 @@ namespace Engine::Gui {
 		//	" @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count()
 		//);
 		if (event.state.id.code == 0) {
-			if (event.state.value) {
+			if (event.state.value && isHoverAny()) {
 				ENGINE_DEBUG_ASSERT(active == nullptr);
 				auto focus = getFocus();
 				if (!focus) { return false; }
 				focus->onBeginActivate();
 				active = focus;
+				return true;
 			} else if (active) {
 				active->onEndActivate();
 				active = nullptr;
+				return true;
 			}
-
-			return true;
 		}
 		return false;
 	}
@@ -233,7 +233,7 @@ namespace Engine::Gui {
 			cursor.y = event.state.valuef;
 		}
 		hoverValid = false;
-		return false;
+		return isHoverAny();
 	}
 
 	bool Context::onMouseWheel(const Engine::Input::InputEvent event) {
