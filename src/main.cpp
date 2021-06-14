@@ -537,7 +537,7 @@ void run(int argc, char* argv[]) {
 	initializeOpenGL();
 	
 	// OpenGL debug message
-	#if defined(DEBUG_GRAPHICS)
+	#if defined(DEBUG)
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(Engine::Debug::GL::debugMessageCallback, nullptr);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);

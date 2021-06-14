@@ -37,9 +37,11 @@ namespace Engine {
 			}
 
 			void setStorage(TextureFormat format, Vec size, int mips = 1) {
-				if (tex == 0) {
-					glCreateTextures(Target, 1, &tex);
-				}
+				// TODO: would it be better to just use glTexImage instead of glTextureStorage?
+				// TODO: cont. Then we dont need to delete/create texutre before new storage?
+				// TODO: cont. not sure which would be better.
+				glDeleteTextures(1, &tex);
+				glCreateTextures(Target, 1, &tex);
 
 				if constexpr (D == 1) {
 					// TODO: 1D	

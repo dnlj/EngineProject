@@ -7,6 +7,8 @@ namespace Engine::Gui {
 		shader = engine.shaderManager.get("shaders/gui");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
+		glCreateFramebuffers(1, &fbo);
+
 		glCreateVertexArrays(1, &vao);
 		glCreateBuffers(1, &vbo);
 		glVertexArrayVertexBuffer(vao, vertBindingIndex, vbo, 0, sizeof(verts[0]));
@@ -42,6 +44,7 @@ namespace Engine::Gui {
 	}
 
 	Context::~Context() {
+		glDeleteFramebuffers(1, &fbo);
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
 		delete root;
@@ -111,11 +114,17 @@ namespace Engine::Gui {
 		// If we dont care about clipping we can just do
 		//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
 
+		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 		glMultiDrawArrays(GL_TRIANGLES,
 			multiDrawData.first.data(),
 			multiDrawData.count.data(),
 			static_cast<GLsizei>(multiDrawData.count.size())
 		);
+		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+
+		//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
+
 
 		glDisable(GL_BLEND);
 		verts.clear();
@@ -244,12 +253,16 @@ namespace Engine::Gui {
 
 	void Context::onResize(const int32 w, const int32 h) {
 		// ENGINE_LOG("onResize: ", w, " ", h);
+		if (w == view.x && h == view.y) { return; }
 		view = {w, h};
+		// TODO: see if there are WM_* messages for end drag or something so we dont call this 100 times when resizing.
+		clipTex.setStorage(TextureFormat::RGB8, view);
+		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, clipTex.get(), 0);
+		ENGINE_LOG("glCheckFramebufferStatus: ", glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 	}
 
 	void Context::onFocus(const bool has) {
-		ENGINE_LOG("onFocus: ", has);
-
+		//ENGINE_LOG("onFocus: ", has);
 		if (!has) {
 			hoverValid = true;
 

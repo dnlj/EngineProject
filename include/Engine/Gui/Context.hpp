@@ -40,10 +40,12 @@ namespace Engine::Gui {
 			std::vector<BFSStateData> bfsNext;
 
 			constexpr static GLuint vertBindingIndex = 0;
+			GLuint fbo = 0;
 			GLuint vao = 0;
 			GLuint vbo = 0;
 			GLsizei vboCapacity = 0;
 			ShaderRef shader;
+			Texture2D clipTex;
 			glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
 
 			glm::vec2 view;
