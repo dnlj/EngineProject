@@ -4,7 +4,7 @@
 
 namespace Engine::Gui {
 	Context::Context(Engine::EngineInstance& engine) {
-		shader = engine.shaderManager.get("shaders/gui");
+		shader = engine.shaderManager.get("shaders/gui_clip");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
 		{
@@ -40,32 +40,40 @@ namespace Engine::Gui {
 		glVertexArrayAttribBinding(vao, 1, vertBindingIndex);
 		glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
 
-		//glEnableVertexArrayAttrib(vao, 2);
-		//glVertexArrayAttribBinding(vao, 2, vertBindingIndex);
-		//glVertexArrayAttribFormat(vao, 2, 1, GL_UNSIGNED_SHORT, GL_FALSE, offsetof(Vertex, id));
-		//
-		//glEnableVertexArrayAttrib(vao, 3);
-		//glVertexArrayAttribBinding(vao, 3, vertBindingIndex);
-		//glVertexArrayAttribFormat(vao, 3, 1, GL_UNSIGNED_SHORT, GL_FALSE, offsetof(Vertex, pid));
+		glEnableVertexArrayAttrib(vao, 2);
+		glVertexArrayAttribBinding(vao, 2, vertBindingIndex);
+		glVertexArrayAttribFormat(vao, 2, 1, GL_FLOAT, GL_FALSE, offsetof(Vertex, id));
+		//glVertexArrayAttribIFormat(vao, 2, 1, GL_UNSIGNED_INT, offsetof(Vertex, id));
+		
+		glEnableVertexArrayAttrib(vao, 3);
+		glVertexArrayAttribBinding(vao, 3, vertBindingIndex);
+		glVertexArrayAttribFormat(vao, 3, 1, GL_FLOAT, GL_FALSE, offsetof(Vertex, pid));
+		//glVertexArrayAttribIFormat(vao, 3, 1, GL_UNSIGNED_INT, offsetof(Vertex, pid));
+
+		registerPanel(nullptr); // register before everything else so nullptr = id 0
 
 		root = new Panel{};
 		root->setPos({25, 50});
 		root->setSize({512, 256});
+		registerPanel(root);
 
 		{
 			auto child = root->addChild(new Panel{});
 			child->setPos({0, 0});
-			child->setSize({64, 64});
+			child->setSize({64, 300});
+			registerPanel(child);
 
 			auto childChild = child->addChild(new Panel{});
 			childChild->setPos({0, 0});
 			childChild->setSize({32, 32});
+			registerPanel(childChild);
 		}
 		
 		{
 			auto child = root->addChild(new Panel{});
 			child->setPos({128, 5});
 			child->setSize({32, 64});
+			registerPanel(child);
 		}
 	}
 
@@ -76,6 +84,7 @@ namespace Engine::Gui {
 		glDeleteFramebuffers(1, &fbo);
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
+
 		delete root;
 	}
 
@@ -100,10 +109,11 @@ namespace Engine::Gui {
 				}
 
 				if (false) {}
-				else if (curr == getActive()) { color = glm::vec4{1, 0, 1, 0.2}; }
-				else if (curr == getHover()) { color = glm::vec4{1, 1, 0, 0.2}; }
-				else { color = glm::vec4{1, 0, 0, 0.2}; }
+				else if (curr == getActive()) { currRenderState.color = glm::vec4{1, 0, 1, 0.2}; }
+				else if (curr == getHover()) { currRenderState.color = glm::vec4{1, 1, 0, 0.2}; }
+				else { currRenderState.color = glm::vec4{1, 0, 0, 0.2}; }
 
+				currRenderState.current = curr;
 				curr->render(*this);
 				curr = curr->nextSibling;
 			}
@@ -136,32 +146,43 @@ namespace Engine::Gui {
 		glBindVertexArray(vao);
 		glUseProgram(shader->get());
 		glUniform2fv(0, 1, &view.x);
+		glBindTextureUnit(0, clipTex.get());
 
 		glEnable(GL_BLEND);
-		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunci(1, GL_ONE, GL_ZERO);
 
 		// If we dont care about clipping we can just do
 		//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
 
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
-		const glm::vec4 clear = {0,0,0,0};
-		glClearNamedFramebufferfv(fbo, GL_COLOR, 0, &clear.x);
-		// TODO: clear cliptext
-		// TODO: do we really need a second pass even? cant we just use multiple render targest to have the second texture?
+		const glm::vec4 clearfv = {0,0,0,0};
+		glClearNamedFramebufferfv(fbo, GL_COLOR, 0, &clearfv.x);
+		glClearNamedFramebufferfv(fbo, GL_COLOR, 1, &clearfv.x);
+		//const PanelId cleari = 0;
+		//glClearNamedFramebufferuiv(fbo, GL_COLOR, 1, &cleari);
 
-		glMultiDrawArrays(GL_TRIANGLES,
-			multiDrawData.first.data(),
-			multiDrawData.count.data(),
-			static_cast<GLsizei>(multiDrawData.count.size())
-		);
-
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		//glMultiDrawArrays(GL_TRIANGLES,
+		//	multiDrawData.first.data(),
+		//	multiDrawData.count.data(),
+		//	static_cast<GLsizei>(multiDrawData.count.size())
+		//);
+		// This doesnt seem to help.Appears to be an issue with read/write to the same texture.
+		// Look into ping/pong and NV texture barrier
+		// Although with ping/pong we have an extra darw between layers to update back buffer....
+		// Maybe go back to drawing board
+		for (int i = 0; i < multiDrawData.first.size(); ++i) {
+			const auto first = multiDrawData.first[i];
+			const auto count = multiDrawData.count[i];
+			glDrawArrays(GL_TRIANGLES, first, count);
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		glBindVertexArray(quadVAO);
 		glUseProgram(quadShader->get());
-		glBindTextureUnit(0, clipTex.get());
+		glBindTextureUnit(0, colorTex.get());
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glDisable(GL_BLEND);
@@ -171,13 +192,17 @@ namespace Engine::Gui {
 	}
 
 	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {
-		verts.push_back({.color = color, .pos = offset + pos});
-		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{0, size.y}});
-		verts.push_back({.color = color, .pos = offset + pos + size});
+		const PanelId id = getPanelId(currRenderState.current);
+		const PanelId pid = getPanelId(currRenderState.current->parent);
+		const auto color = currRenderState.color;
 
-		verts.push_back({.color = color, .pos = offset + pos + size});
-		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{size.x, 0}});
-		verts.push_back({.color = color, .pos = offset + pos});
+		verts.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
+		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{0, size.y}, .id = id, .pid = pid});
+		verts.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
+
+		verts.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
+		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{size.x, 0}, .id = id, .pid = pid});
+		verts.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
 	}
 
 	void Context::updateHover() {
@@ -295,9 +320,12 @@ namespace Engine::Gui {
 		view = {w, h};
 		// TODO: see if there are WM_* messages for end drag or something so we dont call this 100 times when resizing.
 		//clipTex.setStorage(TextureFormat::R32U, view);
-		clipTex.setStorage(TextureFormat::RGBA8, view);
-		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, clipTex.get(), 0);
-		ENGINE_LOG("glCheckFramebufferStatus: ", glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+		colorTex.setStorage(TextureFormat::RGBA8, view);
+		clipTex.setStorage(TextureFormat::R32, view);
+		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
+		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT1, clipTex.get(), 0);
+		const GLenum buffs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+		glNamedFramebufferDrawBuffers(fbo, 2, &buffs[0]);
 	}
 
 	void Context::onFocus(const bool has) {
