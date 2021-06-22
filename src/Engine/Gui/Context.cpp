@@ -146,7 +146,6 @@ namespace Engine::Gui {
 		glBindVertexArray(vao);
 		glUseProgram(shader->get());
 		glUniform2fv(0, 1, &view.x);
-		glBindTextureUnit(0, clipTex.get());
 
 		glEnable(GL_BLEND);
 		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -155,27 +154,23 @@ namespace Engine::Gui {
 		// If we dont care about clipping we can just do
 		//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
 
+		glClearTexImage(colorTex.get(), 0, GL_RGB, GL_FLOAT, 0);
+		glClearTexImage(clipTex1.get(), 0, GL_RGB, GL_FLOAT, 0);
+		glClearTexImage(clipTex2.get(), 0, GL_RGB, GL_FLOAT, 0);
 
-		const glm::vec4 clearfv = {0,0,0,0};
-		glClearNamedFramebufferfv(fbo, GL_COLOR, 0, &clearfv.x);
-		glClearNamedFramebufferfv(fbo, GL_COLOR, 1, &clearfv.x);
-		//const PanelId cleari = 0;
-		//glClearNamedFramebufferuiv(fbo, GL_COLOR, 1, &cleari);
-
+		// We cant use glMultiDrawArrays because you can not read/write
+		// the same texture. It may be possible to work around this
+		// with glTextureBarrier but that isnt as widely supported.
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		//glMultiDrawArrays(GL_TRIANGLES,
-		//	multiDrawData.first.data(),
-		//	multiDrawData.count.data(),
-		//	static_cast<GLsizei>(multiDrawData.count.size())
-		//);
-		// This doesnt seem to help.Appears to be an issue with read/write to the same texture.
-		// Look into ping/pong and NV texture barrier
-		// Although with ping/pong we have an extra darw between layers to update back buffer....
-		// Maybe go back to drawing board
 		for (int i = 0; i < multiDrawData.first.size(); ++i) {
 			const auto first = multiDrawData.first[i];
 			const auto count = multiDrawData.count[i];
+
+			const GLenum buffs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 + activeClipTex};
+			glNamedFramebufferDrawBuffers(fbo, 2, &buffs[0]);
+			glBindTextureUnit(0, activeClipTex ? clipTex1.get() : clipTex2.get());
 			glDrawArrays(GL_TRIANGLES, first, count);
+			activeClipTex = !activeClipTex;
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -315,17 +310,18 @@ namespace Engine::Gui {
 	}
 
 	void Context::onResize(const int32 w, const int32 h) {
-		// ENGINE_LOG("onResize: ", w, " ", h);
 		if (w == view.x && h == view.y) { return; }
+		ENGINE_LOG("onResize: ", w, " ", h);
 		view = {w, h};
-		// TODO: see if there are WM_* messages for end drag or something so we dont call this 100 times when resizing.
-		//clipTex.setStorage(TextureFormat::R32U, view);
+
+		// TODO: can we use a u16 for clip textures?
 		colorTex.setStorage(TextureFormat::RGBA8, view);
-		clipTex.setStorage(TextureFormat::R32, view);
+		clipTex1.setStorage(TextureFormat::R32, view);
+		clipTex2.setStorage(TextureFormat::R32, view);
+
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
-		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT1, clipTex.get(), 0);
-		const GLenum buffs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-		glNamedFramebufferDrawBuffers(fbo, 2, &buffs[0]);
+		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT1, clipTex1.get(), 0);
+		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT2, clipTex2.get(), 0);
 	}
 
 	void Context::onFocus(const bool has) {

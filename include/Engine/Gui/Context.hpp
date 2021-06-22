@@ -51,7 +51,9 @@ namespace Engine::Gui {
 			GLsizei vboCapacity = 0;
 			ShaderRef shader;
 			Texture2D colorTex;
-			Texture2D clipTex;
+			Texture2D clipTex1;
+			Texture2D clipTex2;
+			GLenum activeClipTex = 0;
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
