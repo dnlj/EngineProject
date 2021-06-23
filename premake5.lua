@@ -52,6 +52,7 @@ CONAN_PACKAGES = { -- TODO: Name?
 		"premake5/latest@dnlj/wobbly",
 		"robin_hood/master@dnlj/wobbly",
 		"soil_littlstar/master@dnlj/wobbly",
+		"freetype/VER-2-10-4@dnlj/wobbly",
 		--"soil/latest@dnlj/wobbly", -- TODO: Look into soil2 or other image loading lib. We dont use any of the opengl features of soil.
 		
 	},

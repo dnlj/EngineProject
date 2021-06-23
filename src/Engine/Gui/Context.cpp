@@ -1,3 +1,7 @@
+// FreeType
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 // Engine
 #include <Engine/Gui/Context.hpp>
 
