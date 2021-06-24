@@ -27,12 +27,20 @@ namespace Engine {
 
 			Texture(const Texture&) = delete;
 
-			Texture(Texture&& other) {
-				tex = other.tex;
-				other.tex = 0;
+			ENGINE_INLINE Texture(Texture&& other) {
+				*this = std::move(other);
 			}
 
-			~Texture() {
+			ENGINE_INLINE Texture& operator=(Texture&& other) {
+				swap(*this, other);
+				return *this;
+			}
+
+			ENGINE_INLINE friend void swap(Texture& a, Texture& b) {
+				std::swap(a.tex, b.tex);
+			}
+
+			ENGINE_INLINE ~Texture() {
 				glDeleteTextures(1, &tex);
 			}
 

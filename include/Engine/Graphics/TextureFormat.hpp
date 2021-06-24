@@ -10,9 +10,10 @@
 namespace Engine {
 	enum class TextureFormat : GLenum {
 		NONE = 0,
-		R16 = GL_R16F,
-		R32 = GL_R32F,
+		R16F = GL_R16F,
+		R32F = GL_R32F,
 
+		R8 = GL_R8,
 		RGB8 = GL_RGB8,
 		RGBA8 = GL_RGBA8,
 

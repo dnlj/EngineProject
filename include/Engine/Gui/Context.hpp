@@ -37,6 +37,14 @@ namespace Engine::Gui {
 				std::vector<GLint> first;
 				std::vector<GLsizei> count;
 			};
+
+			struct CharData {
+				Texture2D tex;
+				glm::vec2 size;
+				glm::vec2 bearing;
+				float32 advance; // TODO: do we ever need vertical advance?
+			};
+
 		private:
 			std::vector<Panel*> hoverStack;
 			std::vector<Vertex> verts;
@@ -54,6 +62,14 @@ namespace Engine::Gui {
 			Texture2D clipTex1;
 			Texture2D clipTex2;
 			GLenum activeClipTex = 0;
+
+			FlatHashMap<uint8, CharData> charDataMap; // TODO: texture atlas as needed w/ SubImage
+			ShaderRef textShader;
+
+			// TODO: rm when done with testing
+			GLuint textVBO = 0;
+			GLuint textVAO = 0;
+			void renderText(const std::string_view view); 
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};

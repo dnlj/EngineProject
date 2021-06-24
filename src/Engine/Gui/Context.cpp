@@ -9,7 +9,65 @@
 namespace Engine::Gui {
 	Context::Context(Engine::EngineInstance& engine) {
 		shader = engine.shaderManager.get("shaders/gui_clip");
+		textShader = engine.shaderManager.get("shaders/gui_text");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
+
+		{
+			FT_Library ftlib;
+			if (const auto err = FT_Init_FreeType(&ftlib)) {
+				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			}
+
+			FT_Face face;
+			if (const auto err = FT_New_Face(ftlib, "assets/arial.ttf", 0, &face)) {
+				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			}
+
+			if (const auto err = FT_Set_Pixel_Sizes(face, 0, 32)) {
+				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			}
+
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			for (uint8 c = ' '; c <= '~'; ++c) {
+				if (const auto err = FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+					ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+				}
+				constexpr float32 metricScale = 1.0f/64;
+				CharData& data = charDataMap[c];
+				// TODO: size and bearing should be pulled from glyph->metrics * scale not bitmap.
+				// TODO: need to handle chars like space that dont have a visual component like space
+				data.size = {face->glyph->bitmap.width, face->glyph->bitmap.rows};
+				data.bearing = {face->glyph->bitmap_left, face->glyph->bitmap_top};
+				data.advance = face->glyph->advance.x * metricScale;
+				data.tex.setStorage(TextureFormat::R8, data.size);
+				if (face->glyph->bitmap.width) {
+					data.tex.setSubImage(0, {}, data.size, PixelFormat::R8, face->glyph->bitmap.buffer);
+				}
+			}
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+
+			if (const auto err = FT_Done_Face(face)) {
+				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			}
+			
+			if (const auto err = FT_Done_FreeType(ftlib)) {
+				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			}
+			
+			glCreateBuffers(1, &textVBO);
+			glNamedBufferData(textVBO, 6 * 4 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
+
+			glCreateVertexArrays(1, &textVAO);
+			glVertexArrayVertexBuffer(textVAO, 0, textVBO, 0, 4 * sizeof(GLfloat));
+
+			glEnableVertexArrayAttrib(textVAO, 0);
+			glVertexArrayAttribBinding(textVAO, 0, 0);
+			glVertexArrayAttribFormat(textVAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+
+			glEnableVertexArrayAttrib(textVAO, 1);
+			glVertexArrayAttribBinding(textVAO, 1, 0);
+			glVertexArrayAttribFormat(textVAO, 1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat));
+		}
 
 		{
 			quadShader = engine.shaderManager.get("shaders/fullscreen_passthrough");
@@ -89,7 +147,52 @@ namespace Engine::Gui {
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
 
+		glDeleteVertexArrays(1, &textVAO);
+		glDeleteBuffers(1, &textVBO);
+
 		delete root;
+	}
+
+	void Context::renderText(const std::string_view str) {
+		struct Vert {
+			glm::vec2 pos;
+			glm::vec2 texCoord;
+		} verts[6] = {
+			{{0.0f, 0.0f}, {0.0f, 1.0f}},
+			{{0.0f, 1.0f}, {0.0f, 0.0f}},
+			{{1.0f, 0.0f}, {1.0f, 1.0f}},
+
+			{{0.0f, 1.0f}, {0.0f, 0.0f}},
+			{{1.0f, 1.0f}, {1.0f, 0.0f}},
+			{{1.0f, 0.0f}, {1.0f, 1.0f}},
+		};
+
+		glm::vec2 p = {64,512};
+
+		glBindVertexArray(textVAO);
+		glUseProgram(textShader->get());
+		glUniform2fv(0, 1, &view.x);
+		glUniform1i(1, 0);
+
+		for (const uint8 c : str) {
+			const auto& data = charDataMap[c];
+
+			// TODO: bearing y is not handled correctly. See https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html
+			p.x += data.bearing.x;
+
+			verts[0] = {{p.x, p.y}, {0.0f, 0.0f}};
+			verts[1] = {{p.x, p.y + data.size.y}, {0.0f, 1.0f}};
+			verts[2] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
+			verts[3] = {{p.x, p.y + data.size.y}, {0.0f, 1.0f}};
+			verts[4] = {{p.x + data.size.x, p.y + data.size.y}, {1.0f, 1.0f}};
+			verts[5] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
+
+			p.x += data.advance;
+
+			glNamedBufferSubData(textVBO, 0, sizeof(verts), &verts[0]);
+			glBindTextureUnit(0, data.tex.get());
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 	}
 
 	void Context::render() {
@@ -188,6 +291,10 @@ namespace Engine::Gui {
 		verts.clear();
 		multiDrawData.first.clear();
 		multiDrawData.count.clear();
+
+		//renderText("Hello, world!");
+		//renderText("abc123abc123");
+		renderText("abc123 abc123");
 	}
 
 	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {
@@ -320,8 +427,8 @@ namespace Engine::Gui {
 
 		// TODO: can we use a u16 for clip textures?
 		colorTex.setStorage(TextureFormat::RGBA8, view);
-		clipTex1.setStorage(TextureFormat::R32, view);
-		clipTex2.setStorage(TextureFormat::R32, view);
+		clipTex1.setStorage(TextureFormat::R32F, view);
+		clipTex2.setStorage(TextureFormat::R32F, view);
 
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT1, clipTex1.get(), 0);
