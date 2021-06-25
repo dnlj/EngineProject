@@ -42,7 +42,7 @@ namespace Engine::Gui {
 				Texture2D tex;
 				glm::vec2 size;
 				glm::vec2 bearing;
-				glm::vec2 advance;
+				float32 advance;
 			};
 
 		private:

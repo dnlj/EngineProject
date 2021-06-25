@@ -32,16 +32,19 @@ namespace Engine::Gui {
 				if (const auto err = FT_Load_Char(face, c, FT_LOAD_RENDER)) {
 					ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 				}
-				constexpr float32 metricScale = 1.0f/64;
-				CharData& data = charDataMap[c];
-				// TODO: size and bearing should be pulled from glyph->metrics * scale not bitmap.
+				constexpr float32 mscale = 1.0f/64;
+				const auto& glyph = *face->glyph;
+				const auto& metrics = glyph.metrics;
+
 				// TODO: need to handle chars like space that dont have a visual component like space
-				data.size = {face->glyph->bitmap.width, face->glyph->bitmap.rows};
-				data.bearing = {face->glyph->bitmap_left, -face->glyph->bitmap_top};
-				data.advance = {face->glyph->metrics.horiAdvance * metricScale, face->glyph->metrics.vertAdvance * metricScale};
-				data.tex.setStorage(TextureFormat::R8, data.size);
-				if (face->glyph->bitmap.width) {
-					data.tex.setSubImage(0, {}, data.size, PixelFormat::R8, face->glyph->bitmap.buffer);
+				// We currently only support horizontal bearing/advance
+				CharData& data = charDataMap[c];
+				data.size = {metrics.width * mscale, metrics.height * mscale};
+				data.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
+				data.advance = metrics.horiAdvance * mscale;
+				if (glyph.bitmap.width) {
+					data.tex.setStorage(TextureFormat::R8, data.size);
+					data.tex.setSubImage(0, {}, data.size, PixelFormat::R8, glyph.bitmap.buffer);
 				}
 			}
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -189,7 +192,7 @@ namespace Engine::Gui {
 			verts[5] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
 
 			// Assume we want a horizontal layout
-			base.x += data.advance.x;
+			base.x += data.advance;
 
 			glNamedBufferSubData(textVBO, 0, sizeof(verts), &verts[0]);
 			glBindTextureUnit(0, data.tex.get());
