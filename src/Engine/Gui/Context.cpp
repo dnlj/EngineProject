@@ -36,7 +36,6 @@ namespace Engine::Gui {
 				const auto& glyph = *face->glyph;
 				const auto& metrics = glyph.metrics;
 
-				// TODO: need to handle chars like space that dont have a visual component like space
 				// We currently only support horizontal bearing/advance
 				CharData& data = charDataMap[c];
 				data.size = {metrics.width * mscale, metrics.height * mscale};
@@ -180,23 +179,23 @@ namespace Engine::Gui {
 		for (const uint8 c : str) {
 			const auto& data = charDataMap[c];
 
-			// TODO: bearing y is not handled correctly. See https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html
+			if (data.tex.get()) {
+				auto p = base + data.bearing;
 
-			auto p = base + data.bearing;
+				verts[0] = {{p.x, p.y}, {0.0f, 0.0f}};
+				verts[1] = {{p.x, p.y + data.size.y}, {0.0f, 1.0f}};
+				verts[2] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
+				verts[3] = {{p.x, p.y + data.size.y}, {0.0f, 1.0f}};
+				verts[4] = {{p.x + data.size.x, p.y + data.size.y}, {1.0f, 1.0f}};
+				verts[5] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
 
-			verts[0] = {{p.x, p.y}, {0.0f, 0.0f}};
-			verts[1] = {{p.x, p.y + data.size.y}, {0.0f, 1.0f}};
-			verts[2] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
-			verts[3] = {{p.x, p.y + data.size.y}, {0.0f, 1.0f}};
-			verts[4] = {{p.x + data.size.x, p.y + data.size.y}, {1.0f, 1.0f}};
-			verts[5] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
+				glNamedBufferSubData(textVBO, 0, sizeof(verts), &verts[0]);
+				glBindTextureUnit(0, data.tex.get());
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
 
 			// Assume we want a horizontal layout
 			base.x += data.advance;
-
-			glNamedBufferSubData(textVBO, 0, sizeof(verts), &verts[0]);
-			glBindTextureUnit(0, data.tex.get());
-			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 	}
 
@@ -297,8 +296,7 @@ namespace Engine::Gui {
 		multiDrawData.first.clear();
 		multiDrawData.count.clear();
 
-		//renderText("Hello, world!");
-		renderText("abc123abc123");
+		renderText("Hello, world!");
 	}
 
 	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {
