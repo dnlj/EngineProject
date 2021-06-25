@@ -23,7 +23,7 @@ namespace Engine::Gui {
 				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 			}
 
-			if (const auto err = FT_Set_Pixel_Sizes(face, 0, 32)) {
+			if (const auto err = FT_Set_Pixel_Sizes(face, 0, 64)) {
 				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 			}
 
@@ -37,8 +37,8 @@ namespace Engine::Gui {
 				// TODO: size and bearing should be pulled from glyph->metrics * scale not bitmap.
 				// TODO: need to handle chars like space that dont have a visual component like space
 				data.size = {face->glyph->bitmap.width, face->glyph->bitmap.rows};
-				data.bearing = {face->glyph->bitmap_left, face->glyph->bitmap_top};
-				data.advance = face->glyph->advance.x * metricScale;
+				data.bearing = {face->glyph->bitmap_left, -face->glyph->bitmap_top};
+				data.advance = {face->glyph->metrics.horiAdvance * metricScale, face->glyph->metrics.vertAdvance * metricScale};
 				data.tex.setStorage(TextureFormat::R8, data.size);
 				if (face->glyph->bitmap.width) {
 					data.tex.setSubImage(0, {}, data.size, PixelFormat::R8, face->glyph->bitmap.buffer);
@@ -167,7 +167,7 @@ namespace Engine::Gui {
 			{{1.0f, 0.0f}, {1.0f, 1.0f}},
 		};
 
-		glm::vec2 p = {64,512};
+		glm::vec2 base = {64, 512};
 
 		glBindVertexArray(textVAO);
 		glUseProgram(textShader->get());
@@ -178,7 +178,8 @@ namespace Engine::Gui {
 			const auto& data = charDataMap[c];
 
 			// TODO: bearing y is not handled correctly. See https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html
-			p.x += data.bearing.x;
+
+			auto p = base + data.bearing;
 
 			verts[0] = {{p.x, p.y}, {0.0f, 0.0f}};
 			verts[1] = {{p.x, p.y + data.size.y}, {0.0f, 1.0f}};
@@ -187,7 +188,8 @@ namespace Engine::Gui {
 			verts[4] = {{p.x + data.size.x, p.y + data.size.y}, {1.0f, 1.0f}};
 			verts[5] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
 
-			p.x += data.advance;
+			// Assume we want a horizontal layout
+			base.x += data.advance.x;
 
 			glNamedBufferSubData(textVBO, 0, sizeof(verts), &verts[0]);
 			glBindTextureUnit(0, data.tex.get());
@@ -293,8 +295,7 @@ namespace Engine::Gui {
 		multiDrawData.count.clear();
 
 		//renderText("Hello, world!");
-		//renderText("abc123abc123");
-		renderText("abc123 abc123");
+		renderText("abc123abc123");
 	}
 
 	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {

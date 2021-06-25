@@ -42,7 +42,7 @@ namespace Engine::Gui {
 				Texture2D tex;
 				glm::vec2 size;
 				glm::vec2 bearing;
-				float32 advance; // TODO: do we ever need vertical advance?
+				glm::vec2 advance;
 			};
 
 		private:
