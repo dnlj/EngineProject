@@ -65,6 +65,7 @@ namespace Engine::Gui {
 
 			FlatHashMap<uint8, CharData> charDataMap; // TODO: texture atlas as needed w/ SubImage
 			ShaderRef textShader;
+			Texture2D fontTex;
 
 			// TODO: rm when done with testing
 			GLuint textVBO = 0;
