@@ -578,7 +578,8 @@ void run(int argc, char* argv[]) {
 			"shaders/sprite",
 			"shaders/parallax",
 			"shaders/gui_clip",
-			"shaders/gui_text",
+			"shaders/gui_text", // TODO: rm
+			"shaders/gui_text2",
 			"shaders/fullscreen_passthrough",
 		};
 		for (const auto& path : textures) { engine.textureManager.add(path); }
@@ -704,8 +705,8 @@ void run(int argc, char* argv[]) {
 
 		if constexpr (ENGINE_CLIENT) { mapUI(); }
 
-		Engine::ImGui::draw();
 		guiContext.render();
+		Engine::ImGui::draw();
 		window.swapBuffers();
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}

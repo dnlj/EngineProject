@@ -6,11 +6,15 @@
 // Engine
 #include <Engine/Gui/Context.hpp>
 
+// TODO: rm
+#include <imgui.h>
+
 
 namespace Engine::Gui {
 	Context::Context(Engine::EngineInstance& engine) {
 		shader = engine.shaderManager.get("shaders/gui_clip");
 		textShader = engine.shaderManager.get("shaders/gui_text");
+		textShader2 = engine.shaderManager.get("shaders/gui_text2");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
 		{
@@ -71,30 +75,63 @@ namespace Engine::Gui {
 				//
 				// Although the size difference doesnt seem to be that large. Maybe its not worth doing?
 				//
-				const glm::vec2 maxFace = glm::ceil(glm::vec2{
+				maxFace = glm::ceil(glm::vec2{
 					FT_MulFix(face->bbox.xMax - face->bbox.xMin, face->size->metrics.x_scale) * mscale,
 					FT_MulFix(face->bbox.yMax - face->bbox.yMin, face->size->metrics.y_scale) * mscale
 				});
 
-				glm::vec2 maxGlyph = {};
+				//glm::vec2 maxGlyph = {};
+				//const auto startT = Clock::now();
+				//for (int i = 0; FT_Load_Glyph(face, i, FT_LOAD_DEFAULT) == 0; ++i) {
+				//	FT_Glyph glyph;
+				//	FT_BBox bbox;
+				//	if (FT_Get_Glyph(face->glyph, &glyph)) { ENGINE_WARN("Oh no!"); break; }
+				//	FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_GRIDFIT, &bbox);
+				//	FT_Done_Glyph(glyph);
+				//	maxGlyph.x = std::max(maxGlyph.x, (bbox.xMax - bbox.xMin) * mscale);
+				//	maxGlyph.y = std::max(maxGlyph.y, (bbox.yMax - bbox.yMin) * mscale);
+				//}
+				//const auto endT = Clock::now();
+				//ENGINE_LOG("Time: ", Clock::Milliseconds{endT-startT}.count());
+				//ENGINE_LOG("Max Glyph: ", maxGlyph.x, ", ", maxGlyph.y);
+				//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
 
-				const auto startT = Clock::now();
-				for (int i = 0; FT_Load_Glyph(face, i, FT_LOAD_DEFAULT) == 0; ++i) {
-					FT_Glyph glyph;
-					FT_BBox bbox;
-					if (FT_Get_Glyph(face->glyph, &glyph)) { ENGINE_WARN("Oh no!"); break; }
-					FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_GRIDFIT, &bbox);
-					FT_Done_Glyph(glyph);
-					maxGlyph.x = std::max(maxGlyph.x, (bbox.xMax - bbox.xMin) * mscale);
-					maxGlyph.y = std::max(maxGlyph.y, (bbox.yMax - bbox.yMin) * mscale);
+				indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxFace);
+				
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+				fontTex.setStorage(TextureFormat::R8, {texSize, texSize});
+				for (uint8 c = ' '; c <= '~'; ++c) {
+					if (const auto err = FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+						ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+					}
+					const auto& glyph = *face->glyph;
+					const auto& metrics = glyph.metrics;
+
+					// We currently only support horizontal bearing/advance
+					CharData2& data = charDataMap2[c];
+					data.size = {metrics.width * mscale, metrics.height * mscale};
+					data.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
+					data.advance = metrics.horiAdvance * mscale;
+					data.index = nextGlyphIndex;
+					++nextGlyphIndex;
+
+					if (glyph.bitmap.width) {
+						const glm::vec2 index = {
+							data.index % indexBounds.x,
+							data.index / indexBounds.x,
+						};
+						const glm::ivec2 offset = index * maxFace;
+
+						ENGINE_DEBUG_ASSERT(index.x <= indexBounds.x);
+						ENGINE_DEBUG_ASSERT(index.y <= indexBounds.y);
+
+						ENGINE_LOG("C: ", c, " - ", index.x, ",", index.y, " - ", offset.x, ",", offset.y);
+
+						fontTex.setSubImage(0, offset, data.size, PixelFormat::R8, glyph.bitmap.buffer);
+					}
 				}
-				const auto endT = Clock::now();
-				ENGINE_LOG("Time: ", Clock::Milliseconds{endT-startT}.count());
-				ENGINE_LOG("Max Glyph: ", maxGlyph.x, ", ", maxGlyph.y);
-				ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
 			}
 
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			for (uint8 c = ' '; c <= '~'; ++c) {
 				if (const auto err = FT_Load_Char(face, c, FT_LOAD_RENDER)) {
 					ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
@@ -220,6 +257,52 @@ namespace Engine::Gui {
 
 		delete root;
 	}
+	
+	void Context::renderText2(const std::string_view str) {
+		struct Vert {
+			glm::vec2 pos;
+			glm::vec2 texCoord;
+		} verts[6];
+
+		glm::vec2 base = {64, 500};
+
+		glBindVertexArray(textVAO);
+		glUseProgram(textShader2->get());
+		glBindTextureUnit(0, fontTex.get());
+		glUniform2fv(0, 1, &view.x);
+		glUniform1i(1, 0);
+
+		for (const uint8 c : str) {
+			const auto& data = charDataMap2[c];
+
+			// TODO: dont draw whitespace
+			auto p = base + data.bearing;
+
+			// TODO: probably just store offset or uvs in char data
+			const glm::vec2 index = { 
+				data.index % indexBounds.x,
+				data.index / indexBounds.x,
+			};
+			const glm::vec2 offset = index * maxFace;
+
+			glm::vec2 uvBegin = offset / 4096.0f;
+			glm::vec2 uvEnd = uvBegin + (data.size / 4096.0f);
+
+			verts[0] = {{p.x, p.y}, {uvBegin.x, uvBegin.y}};
+			verts[1] = {{p.x, p.y + data.size.y}, {uvBegin.x, uvEnd.y}};
+			verts[2] = {{p.x + data.size.x, p.y}, {uvEnd.x, uvBegin.y}};
+			verts[3] = {{p.x, p.y + data.size.y}, {uvBegin.x, uvEnd.y}};
+			verts[4] = {{p.x + data.size.x, p.y + data.size.y}, {uvEnd.x, uvEnd.y}};
+			verts[5] = {{p.x + data.size.x, p.y}, {uvEnd.x, uvBegin.y}};
+
+			// TODO: batch all verts
+			glNamedBufferSubData(textVBO, 0, sizeof(verts), &verts[0]);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+
+			// Assume we want a horizontal layout
+			base.x += data.advance;
+		}
+	}
 
 	void Context::renderText(const std::string_view str) {
 		struct Vert {
@@ -235,7 +318,7 @@ namespace Engine::Gui {
 			{{1.0f, 0.0f}, {1.0f, 1.0f}},
 		};
 
-		glm::vec2 base = {64, 512};
+		glm::vec2 base = {64, 700};
 
 		glBindVertexArray(textVAO);
 		glUseProgram(textShader->get());
@@ -270,6 +353,15 @@ namespace Engine::Gui {
 			updateHover();
 			hoverValid = true;
 		}
+
+
+		// TODO: rm - for debugging NSight
+		if (ImGui::Begin("Test")) {
+			ImGui::Text("Hello!");
+			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(fontTex.get()));
+			//ImGui::Image(tid, ImVec2(static_cast<float32>(512), static_cast<float32>(512)), {0,1}, {1,0});
+			ImGui::Image(tid, ImVec2(static_cast<float32>(4096), static_cast<float32>(4096)));
+		} ImGui::End();
 
 		const Panel* curr = root;
 		offset = {};
@@ -363,6 +455,7 @@ namespace Engine::Gui {
 		multiDrawData.count.clear();
 
 		renderText("Hello, world!");
+		renderText2("Hello, world! 2");
 	}
 
 	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {

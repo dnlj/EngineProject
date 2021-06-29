@@ -44,6 +44,13 @@ namespace Engine::Gui {
 				glm::vec2 bearing;
 				float32 advance;
 			};
+			
+			struct CharData2 {
+				uint32 index;
+				glm::vec2 size;
+				glm::vec2 bearing;
+				float32 advance;
+			};
 
 		private:
 			std::vector<Panel*> hoverStack;
@@ -64,13 +71,19 @@ namespace Engine::Gui {
 			GLenum activeClipTex = 0;
 
 			FlatHashMap<uint8, CharData> charDataMap; // TODO: texture atlas as needed w/ SubImage
+			FlatHashMap<uint8, CharData2> charDataMap2;
 			ShaderRef textShader;
+			ShaderRef textShader2;
 			Texture2D fontTex;
+			glm::vec2 maxFace;
+			glm::ivec2 indexBounds;
+			int nextGlyphIndex = 0; // TODO: glyph index recycling
 
 			// TODO: rm when done with testing
 			GLuint textVBO = 0;
 			GLuint textVAO = 0;
 			void renderText(const std::string_view view); 
+			void renderText2(const std::string_view view); 
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
