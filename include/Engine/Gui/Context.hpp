@@ -45,9 +45,13 @@ namespace Engine::Gui {
 				float32 advance;
 			};
 			
-			struct CharData2 {
-				uint32 index;
+			struct GlyphData {
 				glm::vec2 size;
+				int32 index;
+			}; static_assert(sizeof(GlyphData) == 12);
+
+			struct GlyphMetrics {
+				// These are both for horizontal layout. For vertical layout we would need separate fields.
 				glm::vec2 bearing;
 				float32 advance;
 			};
@@ -71,7 +75,9 @@ namespace Engine::Gui {
 			GLenum activeClipTex = 0;
 
 			FlatHashMap<uint8, CharData> charDataMap; // TODO: texture atlas as needed w/ SubImage
-			FlatHashMap<uint8, CharData2> charDataMap2;
+			FlatHashMap<uint8, int32> charToIndex;
+			std::vector<GlyphData> glyphData;
+			std::vector<GlyphMetrics> glyphMetrics;
 			ShaderRef textShader;
 			ShaderRef textShader2;
 			Texture2D fontTex;

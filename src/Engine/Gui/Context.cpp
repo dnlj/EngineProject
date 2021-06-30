@@ -107,27 +107,29 @@ namespace Engine::Gui {
 					const auto& glyph = *face->glyph;
 					const auto& metrics = glyph.metrics;
 
-					// We currently only support horizontal bearing/advance
-					CharData2& data = charDataMap2[c];
-					data.size = {metrics.width * mscale, metrics.height * mscale};
-					data.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
-					data.advance = metrics.horiAdvance * mscale;
-					data.index = nextGlyphIndex;
+					auto& dat = glyphData.emplace_back();
+					dat.size = {metrics.width * mscale, metrics.height * mscale};
+					dat.index = nextGlyphIndex;
+					charToIndex[c] = dat.index;
 					++nextGlyphIndex;
+
+					auto& met = glyphMetrics.emplace_back();
+					met.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
+					met.advance = metrics.horiAdvance * mscale;
 
 					if (glyph.bitmap.width) {
 						const glm::vec2 index = {
-							data.index % indexBounds.x,
-							data.index / indexBounds.x,
+							dat.index % indexBounds.x,
+							dat.index / indexBounds.x,
 						};
 						const glm::ivec2 offset = index * maxFace;
 
 						ENGINE_DEBUG_ASSERT(index.x <= indexBounds.x);
 						ENGINE_DEBUG_ASSERT(index.y <= indexBounds.y);
 
-						ENGINE_LOG("C: ", c, " - ", index.x, ",", index.y, " - ", offset.x, ",", offset.y);
+						//ENGINE_LOG("C: ", c, " - ", index.x, ",", index.y, " - ", offset.x, ",", offset.y);
 
-						fontTex.setSubImage(0, offset, data.size, PixelFormat::R8, glyph.bitmap.buffer);
+						fontTex.setSubImage(0, offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
 					}
 				}
 			}
@@ -273,34 +275,36 @@ namespace Engine::Gui {
 		glUniform1i(1, 0);
 
 		for (const uint8 c : str) {
-			const auto& data = charDataMap2[c];
+			const auto i = charToIndex[c];
+			const auto& dat = glyphData[i];
+			const auto& met = glyphMetrics[i];
 
 			// TODO: dont draw whitespace
-			auto p = base + data.bearing;
+			auto p = base + met.bearing;
 
-			// TODO: probably just store offset or uvs in char data
+			// TODO: probably just store offset or uvs in glyph met
 			const glm::vec2 index = { 
-				data.index % indexBounds.x,
-				data.index / indexBounds.x,
+				dat.index % indexBounds.x,
+				dat.index / indexBounds.x,
 			};
 			const glm::vec2 offset = index * maxFace;
 
 			glm::vec2 uvBegin = offset / 4096.0f;
-			glm::vec2 uvEnd = uvBegin + (data.size / 4096.0f);
+			glm::vec2 uvEnd = uvBegin + (dat.size / 4096.0f);
 
 			verts[0] = {{p.x, p.y}, {uvBegin.x, uvBegin.y}};
-			verts[1] = {{p.x, p.y + data.size.y}, {uvBegin.x, uvEnd.y}};
-			verts[2] = {{p.x + data.size.x, p.y}, {uvEnd.x, uvBegin.y}};
-			verts[3] = {{p.x, p.y + data.size.y}, {uvBegin.x, uvEnd.y}};
-			verts[4] = {{p.x + data.size.x, p.y + data.size.y}, {uvEnd.x, uvEnd.y}};
-			verts[5] = {{p.x + data.size.x, p.y}, {uvEnd.x, uvBegin.y}};
+			verts[1] = {{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}};
+			verts[2] = {{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}};
+			verts[3] = {{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}};
+			verts[4] = {{p.x + dat.size.x, p.y + dat.size.y}, {uvEnd.x, uvEnd.y}};
+			verts[5] = {{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}};
 
 			// TODO: batch all verts
 			glNamedBufferSubData(textVBO, 0, sizeof(verts), &verts[0]);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
 			// Assume we want a horizontal layout
-			base.x += data.advance;
+			base.x += met.advance;
 		}
 	}
 
