@@ -162,7 +162,8 @@ namespace Engine::Gui {
 			}
 			
 			glCreateBuffers(1, &textVBO);
-			glNamedBufferData(textVBO, 6 * 4 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
+			textVBOSize = 6 * 4 * sizeof(GLfloat);
+			glNamedBufferData(textVBO, textVBOSize, nullptr, GL_DYNAMIC_DRAW);
 
 			glCreateVertexArrays(1, &textVAO);
 			glVertexArrayVertexBuffer(textVAO, 0, textVBO, 0, 4 * sizeof(GLfloat));
@@ -261,18 +262,7 @@ namespace Engine::Gui {
 	}
 	
 	void Context::renderText2(const std::string_view str) {
-		struct Vert {
-			glm::vec2 pos;
-			glm::vec2 texCoord;
-		} verts[6];
-
 		glm::vec2 base = {64, 500};
-
-		glBindVertexArray(textVAO);
-		glUseProgram(textShader2->get());
-		glBindTextureUnit(0, fontTex.get());
-		glUniform2fv(0, 1, &view.x);
-		glUniform1i(1, 0);
 
 		for (const uint8 c : str) {
 			const auto i = charToIndex[c];
@@ -292,16 +282,12 @@ namespace Engine::Gui {
 			glm::vec2 uvBegin = offset / 4096.0f;
 			glm::vec2 uvEnd = uvBegin + (dat.size / 4096.0f);
 
-			verts[0] = {{p.x, p.y}, {uvBegin.x, uvBegin.y}};
-			verts[1] = {{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}};
-			verts[2] = {{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}};
-			verts[3] = {{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}};
-			verts[4] = {{p.x + dat.size.x, p.y + dat.size.y}, {uvEnd.x, uvEnd.y}};
-			verts[5] = {{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}};
-
-			// TODO: batch all verts
-			glNamedBufferSubData(textVBO, 0, sizeof(verts), &verts[0]);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glyphVertexData.push_back({{p.x, p.y}, {uvBegin.x, uvBegin.y}});
+			glyphVertexData.push_back({{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}});
+			glyphVertexData.push_back({{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}});
+			glyphVertexData.push_back({{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}});
+			glyphVertexData.push_back({{p.x + dat.size.x, p.y + dat.size.y}, {uvEnd.x, uvEnd.y}});
+			glyphVertexData.push_back({{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}});
 
 			// Assume we want a horizontal layout
 			base.x += met.advance;
@@ -460,6 +446,25 @@ namespace Engine::Gui {
 
 		renderText("Hello, world!");
 		renderText2("Hello, world! 2");
+		{
+			glBindVertexArray(textVAO);
+			glUseProgram(textShader2->get());
+			glBindTextureUnit(0, fontTex.get());
+			glUniform2fv(0, 1, &view.x);
+			glUniform1i(1, 0);
+
+			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
+
+			if (newSize > textVBOSize) {
+				textVBOSize = newSize;
+				ENGINE_INFO("Text resize: ", newSize);
+				glNamedBufferData(textVBO, textVBOSize, nullptr, GL_DYNAMIC_DRAW);
+			}
+
+			glNamedBufferSubData(textVBO, 0, newSize, &glyphVertexData[0]); // TODO: .data?
+			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(glyphVertexData.size()));
+			glyphVertexData.clear();
+		}
 	}
 
 	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {

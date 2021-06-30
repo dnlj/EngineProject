@@ -56,6 +56,11 @@ namespace Engine::Gui {
 				float32 advance;
 			};
 
+			struct GlyphVertex {
+				glm::vec2 pos;
+				glm::vec2 texCoord;
+			}; static_assert(sizeof(GlyphVertex) == 2*sizeof(glm::vec2));
+
 		private:
 			std::vector<Panel*> hoverStack;
 			std::vector<Vertex> verts;
@@ -78,6 +83,7 @@ namespace Engine::Gui {
 			FlatHashMap<uint8, int32> charToIndex;
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
+			std::vector<GlyphVertex> glyphVertexData;
 			ShaderRef textShader;
 			ShaderRef textShader2;
 			Texture2D fontTex;
@@ -88,6 +94,7 @@ namespace Engine::Gui {
 			// TODO: rm when done with testing
 			GLuint textVBO = 0;
 			GLuint textVAO = 0;
+			GLsizei textVBOSize = 0;
 			void renderText(const std::string_view view); 
 			void renderText2(const std::string_view view); 
 
