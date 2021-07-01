@@ -13,8 +13,7 @@
 namespace Engine::Gui {
 	Context::Context(Engine::EngineInstance& engine) {
 		shader = engine.shaderManager.get("shaders/gui_clip");
-		textShader = engine.shaderManager.get("shaders/gui_text");
-		textShader2 = engine.shaderManager.get("shaders/gui_text2");
+		glyphShader = engine.shaderManager.get("shaders/gui_text2");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
 		{
@@ -29,7 +28,7 @@ namespace Engine::Gui {
 				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 			}
 
-			if (const auto err = FT_Set_Pixel_Sizes(face, 0, 96)) {
+			if (const auto err = FT_Set_Pixel_Sizes(face, 0, 32)) {
 				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 			}
 
@@ -43,97 +42,62 @@ namespace Engine::Gui {
 			// It would be better to use a packing algorithm, but then we would want
 			// to periodically repack (glCopy*, not reload) as glyphs are unloaded which complicates things.
 			// Still very doable. Just requires more work.
-			{
-				// TODO:
-				GLint texSize;
-				glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texSize);
-				ENGINE_INFO("Maximum texture size: ", texSize);
+			GLint texSize;
+			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texSize);
+			ENGINE_INFO("Maximum texture size: ", texSize);
 
-				// TODO: may want to limit base on face size? for small font sizes 4096 might be excessive.
-				texSize = std::min(texSize, 4096);
+			// TODO: may want to limit base on face size? for small font sizes 4096 might be excessive.
+			texSize = std::min(texSize, 4096);
 
-				// TODO: i think this may be subtly incorrect.
-				// 
-				// I think this is the bounding box that could fit ALL glyphs at the same
-				// time. Not a box that is large enough to contain any given glyph.
-				// 
-				// For example:
-				// We have one glyph whos outline is bound by [0, 10] (10u wide).
-				// We have another glyph whos outline is not positioned at the origin
-				// so it is bound by [80, 100] (20u wide).
-				// The bbox needed to contain these is only 20u wide, but the bbox
-				// needed to contain BOTH is [0, 100] (100u wide).
-				// I think this is what face->bbox is?
-				// 
-				// After some testing the above does appear to be correct.
-				// To calc the bbox that we need (maximum size of any single glyph) takes
-				// 250ms/150ms (debug/release) per 4000 glyphs with a 5820k @ 4.1GHz.
-				// The max number of glyphs a font can have is 65,535 which would take ~4.1s
-				//
-				// If we calc the bbox in font units we should be able to only do
-				// it once per font and then scale by pixel size (face.size.metrics.x/y_scale?)
-				//
-				// Although the size difference doesnt seem to be that large. Maybe its not worth doing?
-				//
-				maxFace = glm::ceil(glm::vec2{
-					FT_MulFix(face->bbox.xMax - face->bbox.xMin, face->size->metrics.x_scale) * mscale,
-					FT_MulFix(face->bbox.yMax - face->bbox.yMin, face->size->metrics.y_scale) * mscale
-				});
+			// TODO: i think this may be subtly incorrect.
+			// 
+			// I think this is the bounding box that could fit ALL glyphs at the same
+			// time. Not a box that is large enough to contain any given glyph.
+			// 
+			// For example:
+			// We have one glyph whos outline is bound by [0, 10] (10u wide).
+			// We have another glyph whos outline is not positioned at the origin
+			// so it is bound by [80, 100] (20u wide).
+			// The bbox needed to contain these is only 20u wide, but the bbox
+			// needed to contain BOTH is [0, 100] (100u wide).
+			// I think this is what face->bbox is?
+			// 
+			// After some testing the above does appear to be correct.
+			// To calc the bbox that we need (maximum size of any single glyph) takes
+			// 250ms/150ms (debug/release) per 4000 glyphs with a 5820k @ 4.1GHz.
+			// The max number of glyphs a font can have is 65,535 which would take ~4.1s
+			//
+			// If we calc the bbox in font units we should be able to only do
+			// it once per font and then scale by pixel size (face.size.metrics.x/y_scale?)
+			//
+			// Although the size difference doesnt seem to be that large. Maybe its not worth doing?
+			//
+			maxFace = glm::ceil(glm::vec2{
+				FT_MulFix(face->bbox.xMax - face->bbox.xMin, face->size->metrics.x_scale) * mscale,
+				FT_MulFix(face->bbox.yMax - face->bbox.yMin, face->size->metrics.y_scale) * mscale
+			});
 
-				//glm::vec2 maxGlyph = {};
-				//const auto startT = Clock::now();
-				//for (int i = 0; FT_Load_Glyph(face, i, FT_LOAD_DEFAULT) == 0; ++i) {
-				//	FT_Glyph glyph;
-				//	FT_BBox bbox;
-				//	if (FT_Get_Glyph(face->glyph, &glyph)) { ENGINE_WARN("Oh no!"); break; }
-				//	FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_GRIDFIT, &bbox);
-				//	FT_Done_Glyph(glyph);
-				//	maxGlyph.x = std::max(maxGlyph.x, (bbox.xMax - bbox.xMin) * mscale);
-				//	maxGlyph.y = std::max(maxGlyph.y, (bbox.yMax - bbox.yMin) * mscale);
-				//}
-				//const auto endT = Clock::now();
-				//ENGINE_LOG("Time: ", Clock::Milliseconds{endT-startT}.count());
-				//ENGINE_LOG("Max Glyph: ", maxGlyph.x, ", ", maxGlyph.y);
-				//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
+			//glm::vec2 maxGlyph = {};
+			//const auto startT = Clock::now();
+			//for (int i = 0; FT_Load_Glyph(face, i, FT_LOAD_DEFAULT) == 0; ++i) {
+			//	FT_Glyph glyph;
+			//	FT_BBox bbox;
+			//	if (FT_Get_Glyph(face->glyph, &glyph)) { ENGINE_WARN("Oh no!"); break; }
+			//	FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_GRIDFIT, &bbox);
+			//	FT_Done_Glyph(glyph);
+			//	maxGlyph.x = std::max(maxGlyph.x, (bbox.xMax - bbox.xMin) * mscale);
+			//	maxGlyph.y = std::max(maxGlyph.y, (bbox.yMax - bbox.yMin) * mscale);
+			//}
+			//const auto endT = Clock::now();
+			//ENGINE_LOG("Time: ", Clock::Milliseconds{endT-startT}.count());
+			//ENGINE_LOG("Max Glyph: ", maxGlyph.x, ", ", maxGlyph.y);
+			//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
 
-				indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxFace);
+			indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxFace);
 				
-				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-				fontTex.setStorage(TextureFormat::R8, {texSize, texSize});
-				for (uint8 c = ' '; c <= '~'; ++c) {
-					if (const auto err = FT_Load_Char(face, c, FT_LOAD_RENDER)) {
-						ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-					}
-					const auto& glyph = *face->glyph;
-					const auto& metrics = glyph.metrics;
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-					auto& dat = glyphData.emplace_back();
-					dat.size = {metrics.width * mscale, metrics.height * mscale};
-					dat.index = nextGlyphIndex;
-					charToIndex[c] = dat.index;
-					++nextGlyphIndex;
-
-					auto& met = glyphMetrics.emplace_back();
-					met.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
-					met.advance = metrics.horiAdvance * mscale;
-
-					if (glyph.bitmap.width) {
-						const glm::vec2 index = {
-							dat.index % indexBounds.x,
-							dat.index / indexBounds.x,
-						};
-						const glm::ivec2 offset = index * maxFace;
-
-						ENGINE_DEBUG_ASSERT(index.x <= indexBounds.x);
-						ENGINE_DEBUG_ASSERT(index.y <= indexBounds.y);
-
-						//ENGINE_LOG("C: ", c, " - ", index.x, ",", index.y, " - ", offset.x, ",", offset.y);
-
-						fontTex.setSubImage(0, offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
-					}
-				}
-			}
-
+			glyphTex.setStorage(TextureFormat::R8, {texSize, texSize});
 			for (uint8 c = ' '; c <= '~'; ++c) {
 				if (const auto err = FT_Load_Char(face, c, FT_LOAD_RENDER)) {
 					ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
@@ -141,16 +105,32 @@ namespace Engine::Gui {
 				const auto& glyph = *face->glyph;
 				const auto& metrics = glyph.metrics;
 
-				// We currently only support horizontal bearing/advance
-				CharData& data = charDataMap[c];
-				data.size = {metrics.width * mscale, metrics.height * mscale};
-				data.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
-				data.advance = metrics.horiAdvance * mscale;
+				auto& dat = glyphData.emplace_back();
+				dat.size = {metrics.width * mscale, metrics.height * mscale};
+				dat.index = nextGlyphIndex;
+				charToIndex[c] = dat.index;
+				++nextGlyphIndex;
+
+				auto& met = glyphMetrics.emplace_back();
+				met.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
+				met.advance = metrics.horiAdvance * mscale;
+
 				if (glyph.bitmap.width) {
-					data.tex.setStorage(TextureFormat::R8, data.size);
-					data.tex.setSubImage(0, {}, data.size, PixelFormat::R8, glyph.bitmap.buffer);
+					const glm::vec2 index = {
+						dat.index % indexBounds.x,
+						dat.index / indexBounds.x,
+					};
+					const glm::ivec2 offset = index * maxFace;
+
+					ENGINE_DEBUG_ASSERT(index.x <= indexBounds.x);
+					ENGINE_DEBUG_ASSERT(index.y <= indexBounds.y);
+
+					//ENGINE_LOG("C: ", c, " - ", index.x, ",", index.y, " - ", offset.x, ",", offset.y);
+
+					glyphTex.setSubImage(0, offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
 				}
 			}
+
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
 			if (const auto err = FT_Done_Face(face)) {
@@ -161,20 +141,20 @@ namespace Engine::Gui {
 				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 			}
 			
-			glCreateBuffers(1, &textVBO);
-			textVBOSize = 6 * 4 * sizeof(GLfloat);
-			glNamedBufferData(textVBO, textVBOSize, nullptr, GL_DYNAMIC_DRAW);
+			glCreateBuffers(1, &glyphVBO);
+			glyphVBOSize = 6 * sizeof(GlyphVertex);
+			glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
 
-			glCreateVertexArrays(1, &textVAO);
-			glVertexArrayVertexBuffer(textVAO, 0, textVBO, 0, 4 * sizeof(GLfloat));
+			glCreateVertexArrays(1, &glyphVAO);
+			glVertexArrayVertexBuffer(glyphVAO, 0, glyphVBO, 0, sizeof(GlyphVertex));
 
-			glEnableVertexArrayAttrib(textVAO, 0);
-			glVertexArrayAttribBinding(textVAO, 0, 0);
-			glVertexArrayAttribFormat(textVAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+			glEnableVertexArrayAttrib(glyphVAO, 0);
+			glVertexArrayAttribBinding(glyphVAO, 0, 0);
+			glVertexArrayAttribFormat(glyphVAO, 0, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
 
-			glEnableVertexArrayAttrib(textVAO, 1);
-			glVertexArrayAttribBinding(textVAO, 1, 0);
-			glVertexArrayAttribFormat(textVAO, 1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat));
+			glEnableVertexArrayAttrib(glyphVAO, 1);
+			glVertexArrayAttribBinding(glyphVAO, 1, 0);
+			glVertexArrayAttribFormat(glyphVAO, 1, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, texCoord));
 		}
 
 		{
@@ -255,15 +235,13 @@ namespace Engine::Gui {
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
 
-		glDeleteVertexArrays(1, &textVAO);
-		glDeleteBuffers(1, &textVBO);
+		glDeleteVertexArrays(1, &glyphVAO);
+		glDeleteBuffers(1, &glyphVBO);
 
 		delete root;
 	}
 	
-	void Context::renderText2(const std::string_view str) {
-		glm::vec2 base = {64, 500};
-
+	void Context::renderText2(const std::string_view str, glm::vec2 base) {
 		for (const uint8 c : str) {
 			const auto i = charToIndex[c];
 			const auto& dat = glyphData[i];
@@ -294,50 +272,6 @@ namespace Engine::Gui {
 		}
 	}
 
-	void Context::renderText(const std::string_view str) {
-		struct Vert {
-			glm::vec2 pos;
-			glm::vec2 texCoord;
-		} verts[6] = {
-			{{0.0f, 0.0f}, {0.0f, 1.0f}},
-			{{0.0f, 1.0f}, {0.0f, 0.0f}},
-			{{1.0f, 0.0f}, {1.0f, 1.0f}},
-
-			{{0.0f, 1.0f}, {0.0f, 0.0f}},
-			{{1.0f, 1.0f}, {1.0f, 0.0f}},
-			{{1.0f, 0.0f}, {1.0f, 1.0f}},
-		};
-
-		glm::vec2 base = {64, 700};
-
-		glBindVertexArray(textVAO);
-		glUseProgram(textShader->get());
-		glUniform2fv(0, 1, &view.x);
-		glUniform1i(1, 0);
-
-		for (const uint8 c : str) {
-			const auto& data = charDataMap[c];
-
-			if (data.tex.get()) {
-				auto p = base + data.bearing;
-
-				verts[0] = {{p.x, p.y}, {0.0f, 0.0f}};
-				verts[1] = {{p.x, p.y + data.size.y}, {0.0f, 1.0f}};
-				verts[2] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
-				verts[3] = {{p.x, p.y + data.size.y}, {0.0f, 1.0f}};
-				verts[4] = {{p.x + data.size.x, p.y + data.size.y}, {1.0f, 1.0f}};
-				verts[5] = {{p.x + data.size.x, p.y}, {1.0f, 0.0f}};
-
-				glNamedBufferSubData(textVBO, 0, sizeof(verts), &verts[0]);
-				glBindTextureUnit(0, data.tex.get());
-				glDrawArrays(GL_TRIANGLES, 0, 6);
-			}
-
-			// Assume we want a horizontal layout
-			base.x += data.advance;
-		}
-	}
-
 	void Context::render() {
 		if (!hoverValid) {
 			updateHover();
@@ -348,7 +282,7 @@ namespace Engine::Gui {
 		// TODO: rm - for debugging NSight
 		if (ImGui::Begin("Test")) {
 			ImGui::Text("Hello!");
-			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(fontTex.get()));
+			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(glyphTex.get()));
 			//ImGui::Image(tid, ImVec2(static_cast<float32>(512), static_cast<float32>(512)), {0,1}, {1,0});
 			ImGui::Image(tid, ImVec2(static_cast<float32>(4096), static_cast<float32>(4096)));
 		} ImGui::End();
@@ -444,26 +378,94 @@ namespace Engine::Gui {
 		multiDrawData.first.clear();
 		multiDrawData.count.clear();
 
-		renderText("Hello, world!");
-		renderText2("Hello, world! 2");
+		constexpr const char* lines[] = {
+			R"(Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she)",
+			R"(had peeped into the book her sister was reading, but it had no pictures or conversations in it, "and what is the use of a)",
+			R"(book," thought Alice, "without pictures or conversations?" So she was considering in her own mind, (as well as she could,)",
+			R"(for the hot day made her feel very sleepy and stupid,) whether the pleasure of making a daisy-chain would be worth the trouble)",
+			R"(of getting up and picking the daisies, when suddenly a white rabbit with pink eyes ran close by her. There was nothing so)",
+			R"(very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, "Oh dear! Oh)",
+			R"(dear! I shall be too late!" (when she thought it over afterwards, it occurred to her that she ought to have wondered at this,)",
+			R"(but at the time it all seemed quite natural;) but when the Rabbit actually took a watch out of its waistcoat-pocket, and)",
+			R"(looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen)",
+			R"(a rabbit with either a waistcoat-pocket, or a watch to take out of it, and, burning with curiosity, she ran across the field)",
+			R"(after it, and was just in time to see it pop down a large rabbit-hole under the hedge. In another moment down went Alice)",
+			R"(after it, never once considering how in the world she was to get out again. The rabbit-hole went straight on like a tunnel)",
+			R"(for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before)",
+			R"(she found herself falling down what seemed to be a very deep well. Either the well was very deep, or she fell very slowly,)",
+			R"(for she had plenty of time as she went down to look about her, and to wonder what was going to happen next. First, she tried)",
+			R"(to look down and make out what she was coming to, but it was too dark to see anything: then she looked at the sides of the)",
+			R"(well, and noticed that they were filled with cupboards and book-shelves: here and there she saw maps and pictures hung upon)",
+			R"(pegs. She took down a jar from one of the shelves as she passed; it was labelled "ORANGE MARMALADE," but to her great disappointment)",
+			R"(it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of)",
+			R"(the cupboards as she fell past it. "Well!" thought Alice to herself, "after such a fall as this, I shall think nothing of)",
+			R"(tumbling down stairs! How brave they'll all think me at home! Why, I wouldn't say anything about it, even if I fell off the)",
+			R"(top of the house!" (Which was very likely true.) Down, down, down. Would the fall never come to an end! "I wonder how many)",
+			R"(miles I've fallen by this time'?" she said aloud. "I must be getting somewhere near the centre of the earth. Let me see:)",
+			R"(that would be four thousand miles down, I think—" (for, you see, Alice had learnt several things of this sort in her lessons)",
+			R"(in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to)",
+			R"(listen to her, still it was good practice to say it over) "—yes, that's about the right distance—but then I wonder what Latitude)",
+			R"(or Longitude I've got to?" (Alice had not the slightest idea what Latitude was, or Longitude either, but she thought they)",
+			R"(were nice grand words to say.) Presently she began again. "I wonder if I shall fall right through the earth! How funny it'll)",
+			R"(seem to come out among the people that walk with their heads downwards! The Antipathies, I think—" (she was rather glad there)",
+			R"(was no one listening, this time, as it didn't sound at all the right word) "—but I shall have to ask them what the name of)",
+			R"(the country is, you know. Please, Ma'am, is this New Zealand or Australia?" (and she tried to curtsey as she spoke—fancy)",
+			R"(curtseying as you're falling through the air! Do you think you could manage it?) "And what an ignorant little girl she'll)",
+			R"(think me for asking! No, it'll never do to ask: perhaps I shall see it written up somewhere." Down, down, down. There was)",
+			R"(nothing else to do, so Alice soon began talking again. "Dinah'll miss me very much to-night, I should think!" (Dinah was)",
+			R"(the cat.) "I hope they'll remember her saucer of milk at tea-time. Dinah, my dear! I wish you were down here with me! There)",
+			R"(are no mice in the air, I'm afraid, but you might catch a bat, and that's very like a mouse, you know. But do cats eat bats,)",
+/*			R"(I wonder?" And here Alice began to get rather sleepy, and went on saying to herself, in a dreamy sort of way, "Do cats eat)",
+			R"(bats? Do cats eat bats?" and sometimes, "Do bats eat cats?" for, you see, as she couldn't answer either question, it didn't)",
+			R"(much matter which way she put it. She felt that she was dozing off, and had just begun to dream that she was walking hand)",
+			R"(in hand with Dinah, and was saying to her very earnestly, "Now, Dinah, tell me the truth: did you ever eat a bat?" when suddenly,)",
+			R"(thump! thump! down she came upon a heap of sticks and dry leaves, and the fall was over. Alice was not a bit hurt, and she)",
+			R"(jumped up on to her feet in a moment: she looked up, but it was all dark overhead; before her was another long passage, and)",
+			R"(the White Rabbit was still in sight, hurrying down it. There was not a moment to be lost: away went Alice like the wind,)",
+			R"(and was just in time to hear it say, as it turned a corner, "Oh my ears and whiskers, how late it's getting!" She was close)",
+			R"(behind it when she turned the corner, but the Rabbit was no longer to be seen: she found herself in a long, low hall, which)",
+			R"(was lit up by a row of lamps hanging from the roof. There were doors all round the hall, but they were all locked; and when)",
+			R"(Alice had been all the way down one side and up the other, trying every door, she walked sadly down the middle, wondering)",
+			R"(how she was ever to get out again. Suddenly she came upon a little three-legged table, all made of solid glass; there was)",
+			R"(nothing on it but a tiny golden key, and Alice's first idea was that this might belong to one of the doors of the hall; but,)",
+			R"(alas! either the locks were too large, or the key was too small, but at any rate it would not open any of them. However,)",
+			R"(on the second time round, she came upon a low curtain she had not noticed before, and behind it was a little door about fifteen)",
+			R"(inches high: she tried the little golden key in the lock, and to her great delight it fitted! Alice opened the door and found)",
+			R"(that it led into a small passage, not much larger than a rat-hole: she knelt down and looked along the passage into the loveliest)",
+		*/};
+
+		static Clock::duration avg = {};
+		static int avgCounter = {};
+		const auto startT = Clock::now();
+		for (int n = 0; auto text : lines) {
+			renderText2(text, {10, 32 * ++n});
+		}
 		{
-			glBindVertexArray(textVAO);
-			glUseProgram(textShader2->get());
-			glBindTextureUnit(0, fontTex.get());
+			glBindVertexArray(glyphVAO);
+			glUseProgram(glyphShader->get());
+			glBindTextureUnit(0, glyphTex.get());
 			glUniform2fv(0, 1, &view.x);
 			glUniform1i(1, 0);
 
 			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
 
-			if (newSize > textVBOSize) {
-				textVBOSize = newSize;
+			if (newSize > glyphVBOSize) {
+				glyphVBOSize = newSize;
 				ENGINE_INFO("Text resize: ", newSize);
-				glNamedBufferData(textVBO, textVBOSize, nullptr, GL_DYNAMIC_DRAW);
+				glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
 			}
 
-			glNamedBufferSubData(textVBO, 0, newSize, &glyphVertexData[0]); // TODO: .data?
+			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
 			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(glyphVertexData.size()));
 			glyphVertexData.clear();
+		}
+		const auto endT = Clock::now();
+		const auto diff = endT - startT;
+		avg += diff;
+		if (++avgCounter == 100) {
+			avg /= 100;
+			ENGINE_LOG("Glyph time: ", Clock::Milliseconds{avg}.count());
+			avgCounter = 0;
 		}
 	}
 

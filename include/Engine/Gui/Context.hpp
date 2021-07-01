@@ -79,24 +79,21 @@ namespace Engine::Gui {
 			Texture2D clipTex2;
 			GLenum activeClipTex = 0;
 
-			FlatHashMap<uint8, CharData> charDataMap; // TODO: texture atlas as needed w/ SubImage
 			FlatHashMap<uint8, int32> charToIndex;
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
 			std::vector<GlyphVertex> glyphVertexData;
-			ShaderRef textShader;
-			ShaderRef textShader2;
-			Texture2D fontTex;
+			ShaderRef glyphShader;
+			Texture2D glyphTex;
 			glm::vec2 maxFace;
 			glm::ivec2 indexBounds;
 			int nextGlyphIndex = 0; // TODO: glyph index recycling
 
 			// TODO: rm when done with testing
-			GLuint textVBO = 0;
-			GLuint textVAO = 0;
-			GLsizei textVBOSize = 0;
-			void renderText(const std::string_view view); 
-			void renderText2(const std::string_view view); 
+			GLuint glyphVBO = 0;
+			GLuint glyphVAO = 0;
+			GLsizei glyphVBOSize = 0;
+			void renderText2(const std::string_view view, glm::vec2 base); 
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};

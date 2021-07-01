@@ -578,7 +578,6 @@ void run(int argc, char* argv[]) {
 			"shaders/sprite",
 			"shaders/parallax",
 			"shaders/gui_clip",
-			"shaders/gui_text", // TODO: rm
 			"shaders/gui_text2",
 			"shaders/fullscreen_passthrough",
 		};
