@@ -105,29 +105,29 @@ namespace Engine::Gui {
 				const auto& glyph = *face->glyph;
 				const auto& metrics = glyph.metrics;
 
-				auto& dat = glyphData.emplace_back();
-				dat.size = {metrics.width * mscale, metrics.height * mscale};
-				dat.index = nextGlyphIndex;
-				charToIndex[c] = dat.index;
-				++nextGlyphIndex;
-
 				auto& met = glyphMetrics.emplace_back();
+				met.index = nextGlyphIndex;
 				met.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
 				met.advance = metrics.horiAdvance * mscale;
 
+				auto& dat = glyphData.emplace_back();
+				dat.size = {metrics.width * mscale, metrics.height * mscale};
+				charToIndex[c] = nextGlyphIndex;
+				++nextGlyphIndex;
+
 				if (glyph.bitmap.width) {
 					const glm::vec2 index = {
-						dat.index % indexBounds.x,
-						dat.index / indexBounds.x,
+						met.index % indexBounds.x,
+						met.index / indexBounds.x,
 					};
-					const glm::ivec2 offset = index * maxFace;
+					dat.offset = glm::vec3{index * maxFace, 0};
 
 					ENGINE_DEBUG_ASSERT(index.x <= indexBounds.x);
 					ENGINE_DEBUG_ASSERT(index.y <= indexBounds.y);
 
 					//ENGINE_LOG("C: ", c, " - ", index.x, ",", index.y, " - ", offset.x, ",", offset.y);
 
-					glyphTex.setSubImage(0, offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
+					glyphTex.setSubImage(0, dat.offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
 				}
 			}
 
@@ -141,8 +141,9 @@ namespace Engine::Gui {
 				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 			}
 			
+			glCreateBuffers(1, &glyphSSBO);
 			glCreateBuffers(1, &glyphVBO);
-			glyphVBOSize = 6 * sizeof(GlyphVertex);
+			glyphVBOSize = 6 * sizeof(GlyphVertex); // TODO: just leave empty?
 			glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
 
 			glCreateVertexArrays(1, &glyphVAO);
@@ -154,7 +155,8 @@ namespace Engine::Gui {
 
 			glEnableVertexArrayAttrib(glyphVAO, 1);
 			glVertexArrayAttribBinding(glyphVAO, 1, 0);
-			glVertexArrayAttribFormat(glyphVAO, 1, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, texCoord));
+			glVertexArrayAttribIFormat(glyphVAO, 1, 2, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
+
 		}
 
 		{
@@ -237,6 +239,7 @@ namespace Engine::Gui {
 
 		glDeleteVertexArrays(1, &glyphVAO);
 		glDeleteBuffers(1, &glyphVBO);
+		glDeleteBuffers(1, &glyphSSBO);
 
 		delete root;
 	}
@@ -244,28 +247,30 @@ namespace Engine::Gui {
 	void Context::renderText2(const std::string_view str, glm::vec2 base) {
 		for (const uint8 c : str) {
 			const auto i = charToIndex[c];
-			const auto& dat = glyphData[i];
+			//const auto& dat = glyphData[i];
 			const auto& met = glyphMetrics[i];
 
 			// TODO: dont draw whitespace
 			auto p = base + met.bearing;
 
+			// TODO: rm
 			// TODO: probably just store offset or uvs in glyph met
-			const glm::vec2 index = { 
-				dat.index % indexBounds.x,
-				dat.index / indexBounds.x,
-			};
-			const glm::vec2 offset = index * maxFace;
-
-			glm::vec2 uvBegin = offset / 4096.0f;
-			glm::vec2 uvEnd = uvBegin + (dat.size / 4096.0f);
-
-			glyphVertexData.push_back({{p.x, p.y}, {uvBegin.x, uvBegin.y}});
-			glyphVertexData.push_back({{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}});
-			glyphVertexData.push_back({{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}});
-			glyphVertexData.push_back({{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}});
-			glyphVertexData.push_back({{p.x + dat.size.x, p.y + dat.size.y}, {uvEnd.x, uvEnd.y}});
-			glyphVertexData.push_back({{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}});
+			//const glm::vec2 index = { 
+			//	dat.index % indexBounds.x,
+			//	dat.index / indexBounds.x,
+			//};
+			//const glm::vec2 offset = index * maxFace;
+			//
+			//glm::vec2 uvBegin = offset / 4096.0f;
+			//glm::vec2 uvEnd = uvBegin + (dat.size / 4096.0f);
+			//
+			//glyphVertexData.push_back({{p.x, p.y}, {uvBegin.x, uvBegin.y}});
+			//glyphVertexData.push_back({{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}});
+			//glyphVertexData.push_back({{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}});
+			//glyphVertexData.push_back({{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}});
+			//glyphVertexData.push_back({{p.x + dat.size.x, p.y + dat.size.y}, {uvEnd.x, uvEnd.y}});
+			//glyphVertexData.push_back({{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}});
+			glyphVertexData.push_back({{p.x, p.y}, met.index});
 
 			// Assume we want a horizontal layout
 			base.x += met.advance;
@@ -438,33 +443,48 @@ namespace Engine::Gui {
 		static int avgCounter = {};
 		const auto startT = Clock::now();
 		for (int n = 0; auto text : lines) {
-			renderText2(text, {10, 32 * ++n});
+			//renderText2(text, {10, 32 * ++n});
+			n;text;
 		}
+		renderText2("Hello, world!", {32, 512});
 		{
 			glBindVertexArray(glyphVAO);
 			glUseProgram(glyphShader->get());
 			glBindTextureUnit(0, glyphTex.get());
 			glUniform2fv(0, 1, &view.x);
 			glUniform1i(1, 0);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glyphSSBO);
 
-			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
-
-			if (newSize > glyphVBOSize) {
-				glyphVBOSize = newSize;
-				ENGINE_INFO("Text resize: ", newSize);
-				glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
+			{
+				const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
+				if (newSize > glyphVBOSize) {
+					ENGINE_INFO("glyphVBO resize: ", newSize);
+					glyphVBOSize = newSize;
+					glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
+				}
+				glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
 			}
 
-			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
-			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(glyphVertexData.size()));
+			{ // TODO: we should know when this is resized. just do this then?
+				const GLsizei newSize = static_cast<GLsizei>(glyphData.size() * sizeof(glyphData[0]));
+				if (newSize > glyphSSBOSize) {
+					ENGINE_INFO("glyphSSBO resize: ", newSize, " ", glyphSSBO);
+					glyphSSBOSize = newSize;
+					glNamedBufferData(glyphSSBO, glyphSSBOSize, nullptr, GL_DYNAMIC_DRAW); // TODO: what storge type?
+					glNamedBufferSubData(glyphSSBO, 0, newSize, glyphData.data());
+				}
+			}
+
+			//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(glyphVertexData.size()));
+			glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(glyphVertexData.size()));
 			glyphVertexData.clear();
 		}
 		const auto endT = Clock::now();
 		const auto diff = endT - startT;
 		avg += diff;
 		if (++avgCounter == 100) {
-			avg /= 100;
-			ENGINE_LOG("Glyph time: ", Clock::Milliseconds{avg}.count());
+			avg /= avgCounter;
+			ENGINE_LOG("Glyph time: ", Clock::Milliseconds{avg}.count(), "ms");
 			avgCounter = 0;
 		}
 	}

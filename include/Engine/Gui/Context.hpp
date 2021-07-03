@@ -44,22 +44,27 @@ namespace Engine::Gui {
 				glm::vec2 bearing;
 				float32 advance;
 			};
-			
+
 			struct GlyphData {
+				// Make sure to consider GLSL alignment rules
 				glm::vec2 size;
-				int32 index;
-			}; static_assert(sizeof(GlyphData) == 12);
+				float32 _size_padding[2];
+
+				glm::vec3 offset;
+				float32 _offset_padding[1];
+			}; static_assert(sizeof(GlyphData) == sizeof(float32) * 8);
 
 			struct GlyphMetrics {
 				// These are both for horizontal layout. For vertical layout we would need separate fields.
 				glm::vec2 bearing;
 				float32 advance;
+				uint32 index;
 			};
 
 			struct GlyphVertex {
 				glm::vec2 pos;
-				glm::vec2 texCoord;
-			}; static_assert(sizeof(GlyphVertex) == 2*sizeof(glm::vec2));
+				uint32 index; // TODO: uint16?
+			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32));
 
 		private:
 			std::vector<Panel*> hoverStack;
@@ -79,7 +84,9 @@ namespace Engine::Gui {
 			Texture2D clipTex2;
 			GLenum activeClipTex = 0;
 
-			FlatHashMap<uint8, int32> charToIndex;
+			GLuint glyphSSBO = 0;
+			GLsizei glyphSSBOSize = 0;
+			FlatHashMap<uint8, uint32> charToIndex;
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
 			std::vector<GlyphVertex> glyphVertexData;
