@@ -9,7 +9,10 @@ namespace Engine::Utility {
 	std::string readFile(const std::string& path) {
 		std::ifstream file{path, std::ios::binary | std::ios::in};
 
-		ENGINE_ASSERT(!!file, "Unable to read file: ", path);
+		if (!file) {
+			ENGINE_WARN("Unable to read file: ", path);
+			return {};
+		}
 
 		std::string content;
 		file.seekg(0, std::ios::end);
