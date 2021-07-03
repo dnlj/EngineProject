@@ -120,7 +120,7 @@ namespace Engine::Gui {
 						met.index % indexBounds.x,
 						met.index / indexBounds.x,
 					};
-					dat.offset = glm::vec3{index * maxFace, 0};
+					dat.offset = glm::vec3{index * maxFace, 0 };
 
 					ENGINE_DEBUG_ASSERT(index.x <= indexBounds.x);
 					ENGINE_DEBUG_ASSERT(index.y <= indexBounds.y);

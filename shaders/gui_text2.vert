@@ -6,8 +6,8 @@ layout (location = 1) in uint vertIndex;
 layout (location = 0) uniform vec2 viewSize;
 
 out vec2 geomSize;
-out vec2 geomTexCoord;
-out vec3 geomOffset;
+out vec2 geomTexSize;
+out vec3 geomTexOffset;
 
 struct GlyphData {
 	vec2 size;
@@ -26,6 +26,6 @@ void main() {
 
 	const vec2 glyphSize = glyphData[vertIndex].size;
 	geomSize = (glyphSize / viewSize) * 2;
-	geomTexCoord = glyphSize / 4096; // TODO: dont hardcode?
-	geomOffset = glyphData[vertIndex].offset;
+	geomTexSize = glyphSize / 4096; // TODO: dont hardcode?
+	geomTexOffset = glyphData[vertIndex].offset / 4096;
 }
