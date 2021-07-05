@@ -149,10 +149,17 @@ function subCommands.install()
 				local tbl = {}
 				for k,v in pairs(dat) do
 					table.insert(tbl, arg)
+					
 					if key then
 						table.insert(tbl, k)
 						table.insert(tbl, "=")
 					end
+					
+					-- TODO: temp work around for https://github.com/conan-io/conan/issues/3620
+					if type(v) == "boolean" then
+						v = v and "True" or "False"
+					end
+					
 					table.insert(tbl, v)
 				end
 				return table.concat(tbl)

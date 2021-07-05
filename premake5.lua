@@ -40,7 +40,7 @@ CONAN_REMOTES = {
 	-- ["bincrafters"] = "https://api.bintray.com/conan/bincrafters/public-conan",
 }
 
-CONAN_PACKAGES = { -- TODO: Name?
+CONAN_PACKAGES = {
 	["requires"] = {
 		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
 		"glm/0.9.9.7@dnlj/wobbly",
@@ -53,6 +53,7 @@ CONAN_PACKAGES = { -- TODO: Name?
 		"robin_hood/master@dnlj/wobbly",
 		"soil_littlstar/master@dnlj/wobbly",
 		"freetype/VER-2-10-4@dnlj/wobbly",
+		"harfbuzz/2.8.1@dnlj/wobbly",
 		--"soil/latest@dnlj/wobbly", -- TODO: Look into soil2 or other image loading lib. We dont use any of the opengl features of soil.
 		
 	},
@@ -68,7 +69,9 @@ CONAN_PROFILES = {
 		settings = {
 			arch = "x86_64",
 		},
-		options = {},
+		options = {
+			["harfbuzz:with_freetype"] = true,
+		},
 		env = {},
 	},
 	release = {
