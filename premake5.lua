@@ -123,15 +123,21 @@ workspace(PROJECT_NAME .."Workspace")
 	systemversion "latest"
 	rtti "Off"
 	warnings "Default"
+	targetdir "./bin/%{cfg.buildcfg}_%{cfg.platform}"
+	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
+	startproject(PROJECT_NAME)
+	
 	flags {
 		"FatalWarnings",
 		"MultiProcessorCompile",
 	}
-	targetdir "./bin/%{cfg.buildcfg}_%{cfg.platform}"
-	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
-	startproject(PROJECT_NAME)
+	
 	defines {
 		"GLM_FORCE_PURE", -- TODO: Remove. Link dead. Think it had something to do with constexpr See https://github.com/g-truc/glm/issues/841
+		"HB_NO_MT", -- Harfbuzz: Disable thread safety
+		"HB_LEAN", -- Harfbuzz: Disable lots of non critical and deprecated functions
+		"HB_MINI", -- Harfbuzz: Disable AAT and legacy fonts
+		"__OPTIMIZE_SIZE__" -- Harfbuzz: Seems to only effect sorting function selection
 	}
 
 	filter "action:vs*"
