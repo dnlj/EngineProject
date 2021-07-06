@@ -26,12 +26,13 @@ class Recipe(ConanFile):
 	def build(self):
 		cmake = CMake(self)
 		cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
+		cmake.definitions["HB_BUILD_SUBSET"] = False
 		cmake.definitions["CMAKE_PREFIX_PATH"] = ";".join(self.deps_cpp_info.builddirs).replace("\\", "/")
 		cmake.configure(build_folder="build")
 		cmake.build()
 		
 	def package(self):
-		self.copy("*.h", src="include", dst="include", keep_path=True)
+		self.copy("*.h", src="src", dst="include", keep_path=True)
 		self.copy("*.lib", src="", dst="lib", keep_path=False)
 		self.copy("*.a", src="", dst="lib", keep_path=False)
 		
