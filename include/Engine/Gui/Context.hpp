@@ -15,6 +15,84 @@
 #include <Engine/Input/InputEvent.hpp>
 #include <Engine/FlatHashMap.hpp>
 
+// TODO: move to ShapedString file? cpp?
+// Harfbuzz
+#include <hb.h>
+#include <hb-ft.h>
+
+// TODO: move
+namespace Engine::Gui {
+	class ShapedString {
+		public:
+			class ShapeData {
+				public:
+					const hb_glyph_info_t& info;
+					const hb_glyph_position_t& pos;
+			};
+
+			// TODO: begin/end so we can loop
+			class ShapeDataArray {
+				public:
+					const uint32 sz;
+					const hb_glyph_info_t* infoArr;
+					const hb_glyph_position_t* posArr;
+
+				public:
+					ENGINE_INLINE ShapeData operator[](const uint32 i) const noexcept {
+						return {
+							.info = infoArr[i],
+							.pos = posArr[i],
+						};
+					}
+			};
+
+		private:
+			std::string str;
+			// TODO: add own ShapeMetrics class so we dont have to `x / 64` 4 times per glyph per string per frame.
+			hb_buffer_t* buff = nullptr;
+
+		public:
+			ShapedString() = default;
+
+			ShapedString(ShapedString&& other) {
+				str = std::move(other.str);
+				std::swap(buff, other.buff);
+			}
+
+			~ShapedString() {
+				if (buff) { hb_buffer_destroy(buff); }
+			}
+
+			ENGINE_INLINE void clear() {
+				if (buff) { hb_buffer_clear_contents(buff); }
+			}
+
+			ENGINE_INLINE void shape(hb_font_t* font) {
+				if (!buff) {
+					buff = hb_buffer_create();
+				} else {
+					hb_buffer_clear_contents(buff);
+				}
+
+				hb_buffer_add_utf8(buff, str.data(), -1, 0, -1);
+				hb_buffer_guess_segment_properties(buff); // TODO: Should we handle this ourself?
+				hb_shape(font, buff, nullptr, 0);
+			}
+
+			ENGINE_INLINE ShapeDataArray getShapeData() const noexcept {
+				return {
+					.sz = hb_buffer_get_length(buff),
+					.infoArr = hb_buffer_get_glyph_infos(buff, nullptr),
+					.posArr = hb_buffer_get_glyph_positions(buff, nullptr),
+				};
+			}
+
+			ENGINE_INLINE ShapedString& operator=(const char* other) { str = other; return *this; }
+			ENGINE_INLINE ShapedString& operator=(std::string_view other) { str = other; return *this; }
+			ENGINE_INLINE ShapedString& operator=(const std::string& other) { str = other; return *this; }
+			ENGINE_INLINE ShapedString& operator=(std::string&& other) { str = std::move(other); return *this; }
+	};
+}
 
 namespace Engine::Gui {
 	class Context {
@@ -36,13 +114,6 @@ namespace Engine::Gui {
 			struct MultiDrawData {
 				std::vector<GLint> first;
 				std::vector<GLsizei> count;
-			};
-
-			struct CharData {
-				Texture2D tex;
-				glm::vec2 size;
-				glm::vec2 bearing;
-				float32 advance;
 			};
 
 			struct GlyphData {
@@ -84,16 +155,18 @@ namespace Engine::Gui {
 			Texture2D clipTex2;
 			GLenum activeClipTex = 0;
 
+			// TODO: this should probably be moved into a font/glyph set class
+			ShapedString testString; // TODO: rm
 			GLuint glyphSSBO = 0;
 			GLsizei glyphSSBOSize = 0;
 			FlatHashMap<uint8, uint32> charToIndex;
+			FlatHashMap<uint32, uint32> glyphIndexToLoadedIndex;
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
 			std::vector<GlyphVertex> glyphVertexData;
 			ShaderRef glyphShader;
 			Texture2D glyphTex;
 			glm::vec2 maxFace;
-			glm::ivec2 indexBounds;
 			int nextGlyphIndex = 0; // TODO: glyph index recycling
 
 			// TODO: rm when done with testing
@@ -101,6 +174,7 @@ namespace Engine::Gui {
 			GLuint glyphVAO = 0;
 			GLsizei glyphVBOSize = 0;
 			void renderText2(const std::string_view view, glm::vec2 base); 
+			void renderText3(const ShapedString& str, glm::vec2 base); 
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};

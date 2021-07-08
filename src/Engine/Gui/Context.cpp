@@ -16,6 +16,7 @@ namespace Engine::Gui {
 		glyphShader = engine.shaderManager.get("shaders/gui_text2");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
+
 		{
 			constexpr float32 mscale = 1.0f/64;
 			FT_Library ftlib;
@@ -37,6 +38,56 @@ namespace Engine::Gui {
 			ENGINE_LOG("FaceXPx: ", FT_MulFix(face->bbox.xMax - face->bbox.xMin, face->size->metrics.x_scale) * (1.0/64));
 			ENGINE_LOG("FaceYPx: ", FT_MulFix(face->bbox.yMax - face->bbox.yMin, face->size->metrics.y_scale) * (1.0/64));
 			ENGINE_LOG("UPM: ", face->units_per_EM);
+			
+			{ // Harfbuzz stuff
+				std::string text = "bb͜b";
+
+				hb_font_t* font = hb_ft_font_create_referenced(face);
+				hb_buffer_t* buffer = hb_buffer_create();
+
+				hb_buffer_add_utf8(buffer, text.data(), -1, 0, -1);
+				hb_buffer_guess_segment_properties(buffer); // TODO: probably should handle these things yourself
+				hb_shape(font, buffer, nullptr, 0); // TODO: what are features?
+
+				const auto len = hb_buffer_get_length(buffer);
+				const auto* infoArr = hb_buffer_get_glyph_infos(buffer, nullptr);
+				const auto* posArr = hb_buffer_get_glyph_positions(buffer, nullptr);
+
+				{
+					FT_Load_Glyph(face, 3053, 0);
+					const auto& met = face->glyph->metrics;
+					
+					ENGINE_LOG("FT - width: ", met.width);
+					ENGINE_LOG("FT - height: ", met.height);
+					ENGINE_LOG("FT - horiBearingX: ", met.horiBearingX);
+					ENGINE_LOG("FT - horiBearingY: ", met.horiBearingY);
+					ENGINE_LOG("FT - horiAdvance: ", met.horiAdvance);
+					ENGINE_LOG("FT - vertBearingX: ", met.vertBearingX);
+					ENGINE_LOG("FT - vertBearingY: ", met.vertBearingY);
+					ENGINE_LOG("FT - vertAdvance: ", met.vertAdvance);
+				}
+
+				//int x = 0;
+				//int y = 0;
+				for (uint32 i = 0; i < len; ++i) {
+					const auto& info = infoArr[i];
+					const auto& pos = posArr[i];
+					//x += pos.x_
+
+					ENGINE_INFO(
+						"Glyph: ", info.codepoint,
+						"\n\tAdv: ", pos.x_advance, ", ", pos.y_advance,
+						"\n\tOff: ", pos.x_offset, ", ", pos.y_offset
+						//"\n\tAbs: ", pos.x_offset, ", ", pos.y_offset,
+					);
+				}
+
+				testString = "Hello, world!";
+				testString.shape(font);
+
+				hb_buffer_destroy(buffer);
+				hb_font_destroy(font);
+			}
 
 			// In practice most glyphs are much smaller than `face->bbox` (every ascii char is < 1/2 the size depending on font)
 			// It would be better to use a packing algorithm, but then we would want
@@ -77,6 +128,7 @@ namespace Engine::Gui {
 				FT_MulFix(face->bbox.yMax - face->bbox.yMin, face->size->metrics.y_scale) * mscale
 			});
 
+			// Find minimum bounding box that can contain any glyph
 			//glm::vec2 maxGlyph = {};
 			//const auto startT = Clock::now();
 			//for (int i = 0; FT_Load_Glyph(face, i, FT_LOAD_DEFAULT) == 0; ++i) {
@@ -93,7 +145,7 @@ namespace Engine::Gui {
 			//ENGINE_LOG("Max Glyph: ", maxGlyph.x, ", ", maxGlyph.y);
 			//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
 
-			indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxFace);
+			glm::ivec2 indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxFace);
 				
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
@@ -113,6 +165,7 @@ namespace Engine::Gui {
 				auto& dat = glyphData.emplace_back();
 				dat.size = {metrics.width * mscale, metrics.height * mscale};
 				charToIndex[c] = nextGlyphIndex;
+				glyphIndexToLoadedIndex[FT_Get_Char_Index(face, c)] = nextGlyphIndex;
 				++nextGlyphIndex;
 
 				if (glyph.bitmap.width) {
@@ -274,6 +327,20 @@ namespace Engine::Gui {
 
 			// Assume we want a horizontal layout
 			base.x += met.advance;
+		}
+	}
+	
+	void Context::renderText3(const ShapedString& str, glm::vec2 base) {
+		const auto shapeDataArr = str.getShapeData();
+
+		for (uint32 i = 0; i < shapeDataArr.sz; ++i) {
+			auto data = shapeDataArr[i];
+			const uint32 index = glyphIndexToLoadedIndex[data.info.codepoint]; // .codepoint is a glyph index not a codepoint
+			const auto& met = glyphMetrics[index];
+			//ENGINE_DEBUG_ASSERT(index);
+			auto p = base + (glm::vec2{data.pos.x_offset, data.pos.y_offset} * (1.0f / 64)) + met.bearing;
+			glyphVertexData.push_back({p, index});
+			base += glm::vec2{data.pos.x_advance, data.pos.y_advance} * (1.0f / 64);
 		}
 	}
 
@@ -444,9 +511,9 @@ namespace Engine::Gui {
 		const auto startT = Clock::now();
 		for (int n = 0; auto text : lines) {
 			//renderText2(text, {10, 32 * ++n});
-			n;text;
+			n,text;
 		}
-		renderText2("Hello, world!", {32, 512});
+		renderText3(testString, {32, 512});
 		{
 			glBindVertexArray(glyphVAO);
 			glUseProgram(glyphShader->get());
