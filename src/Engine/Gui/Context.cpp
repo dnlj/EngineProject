@@ -15,16 +15,15 @@ namespace Engine::Gui {
 		shader = engine.shaderManager.get("shaders/gui_clip");
 		glyphShader = engine.shaderManager.get("shaders/gui_text2");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
-
+		shapingBuffer = hb_buffer_create();
 
 		{
 			constexpr float32 mscale = 1.0f/64;
-			FT_Library ftlib;
+
 			if (const auto err = FT_Init_FreeType(&ftlib)) {
 				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 			}
 
-			FT_Face face;
 			if (const auto err = FT_New_Face(ftlib, "assets/arial.ttf", 0, &face)) {
 				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 			}
@@ -42,7 +41,7 @@ namespace Engine::Gui {
 			{ // Harfbuzz stuff
 				std::string text = "bb͜b";
 
-				hb_font_t* font = hb_ft_font_create_referenced(face);
+				font = hb_ft_font_create_referenced(face);
 				hb_buffer_t* buffer = hb_buffer_create();
 
 				hb_buffer_add_utf8(buffer, text.data(), -1, 0, -1);
@@ -82,11 +81,7 @@ namespace Engine::Gui {
 					);
 				}
 
-				testString = "Hello, world!";
-				testString.shape(font);
-
 				hb_buffer_destroy(buffer);
-				hb_font_destroy(font);
 			}
 
 			// In practice most glyphs are much smaller than `face->bbox` (every ascii char is < 1/2 the size depending on font)
@@ -186,13 +181,6 @@ namespace Engine::Gui {
 
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
-			if (const auto err = FT_Done_Face(face)) {
-				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-			}
-			
-			if (const auto err = FT_Done_FreeType(ftlib)) {
-				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-			}
 			
 			glCreateBuffers(1, &glyphSSBO);
 			glCreateBuffers(1, &glyphVBO);
@@ -280,6 +268,10 @@ namespace Engine::Gui {
 			child->setSize({32, 64});
 			registerPanel(child);
 		}
+
+		
+		testString = "Hello, world!";
+		shapeString(testString);
 	}
 
 	Context::~Context() {
@@ -293,6 +285,18 @@ namespace Engine::Gui {
 		glDeleteVertexArrays(1, &glyphVAO);
 		glDeleteBuffers(1, &glyphVBO);
 		glDeleteBuffers(1, &glyphSSBO);
+
+		
+		hb_buffer_destroy(shapingBuffer);
+		hb_font_destroy(font);
+
+		if (const auto err = FT_Done_Face(face)) {
+			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+		}
+			
+		if (const auto err = FT_Done_FreeType(ftlib)) {
+			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+		}
 
 		delete root;
 	}
@@ -331,16 +335,13 @@ namespace Engine::Gui {
 	}
 	
 	void Context::renderText3(const ShapedString& str, glm::vec2 base) {
-		const auto shapeDataArr = str.getShapeData();
+		const auto glyphShapeData = str.getGlyphShapeData();
 
-		for (uint32 i = 0; i < shapeDataArr.sz; ++i) {
-			auto data = shapeDataArr[i];
-			const uint32 index = glyphIndexToLoadedIndex[data.info.codepoint]; // .codepoint is a glyph index not a codepoint
-			const auto& met = glyphMetrics[index];
-			//ENGINE_DEBUG_ASSERT(index);
-			auto p = base + (glm::vec2{data.pos.x_offset, data.pos.y_offset} * (1.0f / 64)) + met.bearing;
+		for (const auto& data : glyphShapeData) {
+			const uint32 index = glyphIndexToLoadedIndex[data.index];
+			auto p = base + data.offset;
 			glyphVertexData.push_back({p, index});
-			base += glm::vec2{data.pos.x_advance, data.pos.y_advance} * (1.0f / 64);
+			base += data.advance;
 		}
 	}
 
@@ -568,6 +569,33 @@ namespace Engine::Gui {
 		verts.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
 		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{size.x, 0}, .id = id, .pid = pid});
 		verts.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
+	}
+
+	void Context::shapeString(ShapedString& str) {
+		hb_buffer_add_utf8(shapingBuffer, str.getString().data(), -1, 0, -1);
+		hb_buffer_guess_segment_properties(shapingBuffer); // TODO: Should we handle this ourself?
+		hb_shape(font, shapingBuffer, nullptr, 0);
+
+		const auto sz = hb_buffer_get_length(shapingBuffer);
+		const auto infoArr = hb_buffer_get_glyph_infos(shapingBuffer, nullptr);
+		const auto posArr = hb_buffer_get_glyph_positions(shapingBuffer, nullptr);
+		auto& data = str.getGlyphShapeDataMutable();
+		data.clear();
+
+		for (uint32 i = 0; i < sz; ++i) {
+			const auto& info = infoArr[i];
+			const auto& pos = posArr[i];
+			const auto gi = glyphIndexToLoadedIndex[info.codepoint];
+			const auto& met = glyphMetrics[gi];
+
+			data.push_back({
+				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
+				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing, // TODO: + bearing
+				.advance = glm::vec2{pos.x_advance, pos.y_advance} * (1.0f/64),
+			});
+		}
+
+		hb_buffer_clear_contents(shapingBuffer);
 	}
 
 	void Context::updateHover() {

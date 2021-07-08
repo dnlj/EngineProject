@@ -22,75 +22,30 @@
 
 // TODO: move
 namespace Engine::Gui {
-	class ShapedString {
+	class ShapeGlyph {
 		public:
-			class ShapeData {
-				public:
-					const hb_glyph_info_t& info;
-					const hb_glyph_position_t& pos;
-			};
+			uint32 index;
+			glm::vec2 offset;
+			glm::vec2 advance;
+	};
 
-			// TODO: begin/end so we can loop
-			class ShapeDataArray {
-				public:
-					const uint32 sz;
-					const hb_glyph_info_t* infoArr;
-					const hb_glyph_position_t* posArr;
-
-				public:
-					ENGINE_INLINE ShapeData operator[](const uint32 i) const noexcept {
-						return {
-							.info = infoArr[i],
-							.pos = posArr[i],
-						};
-					}
-			};
-
+	class ShapedString {
 		private:
 			std::string str;
-			// TODO: add own ShapeMetrics class so we dont have to `x / 64` 4 times per glyph per string per frame.
-			hb_buffer_t* buff = nullptr;
+			std::vector<ShapeGlyph> glyphs;
 
 		public:
 			ShapedString() = default;
+			ShapedString(const ShapedString&) = delete;
 
-			ShapedString(ShapedString&& other) {
-				str = std::move(other.str);
-				std::swap(buff, other.buff);
-			}
-
-			~ShapedString() {
-				if (buff) { hb_buffer_destroy(buff); }
-			}
-
-			ENGINE_INLINE void clear() {
-				if (buff) { hb_buffer_clear_contents(buff); }
-			}
-
-			ENGINE_INLINE void shape(hb_font_t* font) {
-				if (!buff) {
-					buff = hb_buffer_create();
-				} else {
-					hb_buffer_clear_contents(buff);
-				}
-
-				hb_buffer_add_utf8(buff, str.data(), -1, 0, -1);
-				hb_buffer_guess_segment_properties(buff); // TODO: Should we handle this ourself?
-				hb_shape(font, buff, nullptr, 0);
-			}
-
-			ENGINE_INLINE ShapeDataArray getShapeData() const noexcept {
-				return {
-					.sz = hb_buffer_get_length(buff),
-					.infoArr = hb_buffer_get_glyph_infos(buff, nullptr),
-					.posArr = hb_buffer_get_glyph_positions(buff, nullptr),
-				};
-			}
+			ENGINE_INLINE const auto& getGlyphShapeData() const noexcept { return glyphs; }
+			ENGINE_INLINE auto& getGlyphShapeDataMutable() noexcept { return glyphs; }
 
 			ENGINE_INLINE ShapedString& operator=(const char* other) { str = other; return *this; }
 			ENGINE_INLINE ShapedString& operator=(std::string_view other) { str = other; return *this; }
 			ENGINE_INLINE ShapedString& operator=(const std::string& other) { str = other; return *this; }
 			ENGINE_INLINE ShapedString& operator=(std::string&& other) { str = std::move(other); return *this; }
+			ENGINE_INLINE const std::string& getString() const noexcept { return str; }
 	};
 }
 
@@ -118,17 +73,17 @@ namespace Engine::Gui {
 
 			struct GlyphData {
 				// Make sure to consider GLSL alignment rules
-				glm::vec2 size;
+				glm::vec2 size; // Size in texels
 				float32 _size_padding[2];
 
-				glm::vec3 offset;
+				glm::vec3 offset; // Offset in texels
 				float32 _offset_padding[1];
 			}; static_assert(sizeof(GlyphData) == sizeof(float32) * 8);
 
 			struct GlyphMetrics {
 				// These are both for horizontal layout. For vertical layout we would need separate fields.
 				glm::vec2 bearing;
-				float32 advance;
+				float32 advance; // TODO: rm - unused
 				uint32 index;
 			};
 
@@ -155,7 +110,14 @@ namespace Engine::Gui {
 			Texture2D clipTex2;
 			GLenum activeClipTex = 0;
 
+
+			// TODO: should probably be part of same type
+			FT_Library ftlib;
+			FT_Face face;
+			hb_font_t* font;
+
 			// TODO: this should probably be moved into a font/glyph set class
+			hb_buffer_t* shapingBuffer;
 			ShapedString testString; // TODO: rm
 			GLuint glyphSSBO = 0;
 			GLsizei glyphSSBOSize = 0;
@@ -286,5 +248,7 @@ namespace Engine::Gui {
 				}
 				return ++nextPanelId;
 			}
+
+			void shapeString(ShapedString& str);
 	};
 }
