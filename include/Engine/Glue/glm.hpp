@@ -9,6 +9,7 @@
 // GLM
 #include <glm/vec2.hpp>
 
+struct b2Vec2; // Forward decl
 
 namespace Engine::Glue::_impl {
 	template<class From>

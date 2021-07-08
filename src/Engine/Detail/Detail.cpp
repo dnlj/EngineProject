@@ -6,6 +6,11 @@
 // Engine
 #include <Engine/Detail/Detail.hpp>
 
+namespace Engine {
+	void LogFormatter<glm::vec2>::format(std::ostream& stream, const glm::vec2& val) {
+		stream << "glm::vec2(" << val.x << ", " << val.y << ")";
+	}
+}
 
 namespace Engine::Detail {
 	// TODO: look into C++20 chrono and std::formatter/<format>
