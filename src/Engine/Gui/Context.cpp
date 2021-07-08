@@ -339,8 +339,7 @@ namespace Engine::Gui {
 
 		for (const auto& data : glyphShapeData) {
 			const uint32 index = glyphIndexToLoadedIndex[data.index];
-			auto p = base + data.offset;
-			glyphVertexData.push_back({p, index});
+			glyphVertexData.push_back({glm::round(base + data.offset), index});
 			base += data.advance;
 		}
 	}
@@ -350,7 +349,6 @@ namespace Engine::Gui {
 			updateHover();
 			hoverValid = true;
 		}
-
 
 		// TODO: rm - for debugging NSight
 		if (ImGui::Begin("Test")) {
@@ -507,14 +505,21 @@ namespace Engine::Gui {
 			R"(that it led into a small passage, not much larger than a rat-hole: she knelt down and looked along the passage into the loveliest)",
 		*/};
 
+		static ShapedString shapedLines[std::size(lines)];
+		static int initShapedLines = [&](){
+			for (int i = 0; i < std::size(shapedLines); ++i) {
+				shapeString(shapedLines[i] = lines[i]);
+			}
+			return 0;
+		}();
+
 		static Clock::duration avg = {};
 		static int avgCounter = {};
 		const auto startT = Clock::now();
-		for (int n = 0; auto text : lines) {
-			//renderText2(text, {10, 32 * ++n});
-			n,text;
+		for (int n = 0; const auto& text : shapedLines) {
+			renderText3(text, {10, 32 * ++n});
 		}
-		renderText3(testString, {32, 512});
+		//renderText3(testString, {32, 512});
 		{
 			glBindVertexArray(glyphVAO);
 			glUseProgram(glyphShader->get());
