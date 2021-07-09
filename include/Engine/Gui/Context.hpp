@@ -67,20 +67,6 @@ namespace Engine::Gui {
 				std::vector<GLsizei> count;
 			};
 
-			struct GlyphData {
-				// Make sure to consider GLSL alignment rules
-				glm::vec2 size; // Size in texels
-				float32 _size_padding[2];
-
-				glm::vec3 offset; // Offset in texels
-				float32 _offset_padding[1];
-			}; static_assert(sizeof(GlyphData) == sizeof(float32) * 8);
-
-			struct GlyphMetrics {
-				glm::vec2 bearing;
-				uint32 index;
-			};
-
 			struct GlyphVertex {
 				glm::vec2 pos;
 				uint32 index; // TODO: uint16?
@@ -105,19 +91,9 @@ namespace Engine::Gui {
 			GLenum activeClipTex = 0;
 
 			FontManager fontManager;
-
-			// TODO: this should probably be moved into a font/glyph set class
 			hb_buffer_t* shapingBuffer;
-			GLuint glyphSSBO = 0;
-			GLsizei glyphSSBOSize = 0;
-			FlatHashMap<uint32, uint32> glyphIndexToLoadedIndex;
-			std::vector<GlyphData> glyphData;
-			std::vector<GlyphMetrics> glyphMetrics;
 			std::vector<GlyphVertex> glyphVertexData;
 			ShaderRef glyphShader;
-			Texture2D glyphTex;
-			glm::vec2 maxFace;
-			int nextGlyphIndex = 0; // TODO: glyph index recycling
 
 			// TODO: rm when done with testing
 			GLuint glyphVBO = 0;

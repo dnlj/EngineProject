@@ -6,9 +6,6 @@
 // Engine
 #include <Engine/Gui/Context.hpp>
 
-// TODO: rm
-#include <imgui.h>
-
 
 namespace Engine::Gui {
 	Context::Context(Engine::EngineInstance& engine) {
@@ -18,158 +15,6 @@ namespace Engine::Gui {
 		shapingBuffer = hb_buffer_create();
 
 		{
-			constexpr float32 mscale = 1.0f/64;
-			auto& face = fontManager.face;
-
-			ENGINE_LOG("FaceX: ", face->bbox.xMax - face->bbox.xMin);
-			ENGINE_LOG("FaceY: ", face->bbox.yMax - face->bbox.yMin);
-			ENGINE_LOG("FaceXPx: ", FT_MulFix(face->bbox.xMax - face->bbox.xMin, face->size->metrics.x_scale) * (1.0/64));
-			ENGINE_LOG("FaceYPx: ", FT_MulFix(face->bbox.yMax - face->bbox.yMin, face->size->metrics.y_scale) * (1.0/64));
-			ENGINE_LOG("UPM: ", face->units_per_EM);
-			
-			{ // Harfbuzz stuff
-				std::string text = "bb͜b";
-				auto& font = fontManager.font;
-
-				hb_buffer_t* buffer = hb_buffer_create();
-
-				hb_buffer_add_utf8(buffer, text.data(), -1, 0, -1);
-				hb_buffer_guess_segment_properties(buffer); // TODO: probably should handle these things yourself
-				hb_shape(font, buffer, nullptr, 0); // TODO: what are features?
-
-				const auto len = hb_buffer_get_length(buffer);
-				const auto* infoArr = hb_buffer_get_glyph_infos(buffer, nullptr);
-				const auto* posArr = hb_buffer_get_glyph_positions(buffer, nullptr);
-
-				{
-					FT_Load_Glyph(face, 3053, 0);
-					const auto& met = face->glyph->metrics;
-					
-					ENGINE_LOG("FT - width: ", met.width);
-					ENGINE_LOG("FT - height: ", met.height);
-					ENGINE_LOG("FT - horiBearingX: ", met.horiBearingX);
-					ENGINE_LOG("FT - horiBearingY: ", met.horiBearingY);
-					ENGINE_LOG("FT - horiAdvance: ", met.horiAdvance);
-					ENGINE_LOG("FT - vertBearingX: ", met.vertBearingX);
-					ENGINE_LOG("FT - vertBearingY: ", met.vertBearingY);
-					ENGINE_LOG("FT - vertAdvance: ", met.vertAdvance);
-				}
-
-				//int x = 0;
-				//int y = 0;
-				for (uint32 i = 0; i < len; ++i) {
-					const auto& info = infoArr[i];
-					const auto& pos = posArr[i];
-					//x += pos.x_
-
-					ENGINE_INFO(
-						"Glyph: ", info.codepoint,
-						"\n\tAdv: ", pos.x_advance, ", ", pos.y_advance,
-						"\n\tOff: ", pos.x_offset, ", ", pos.y_offset
-						//"\n\tAbs: ", pos.x_offset, ", ", pos.y_offset,
-					);
-				}
-
-				hb_buffer_destroy(buffer);
-			}
-
-			// In practice most glyphs are much smaller than `face->bbox` (every ascii char is < 1/2 the size depending on font)
-			// It would be better to use a packing algorithm, but then we would want
-			// to periodically repack (glCopy*, not reload) as glyphs are unloaded which complicates things.
-			// Still very doable. Just requires more work.
-			GLint texSize;
-			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texSize);
-			ENGINE_INFO("Maximum texture size: ", texSize);
-
-			// TODO: may want to limit base on face size? for small font sizes 4096 might be excessive.
-			texSize = std::min(texSize, 4096);
-
-			// TODO: i think this may be subtly incorrect.
-			// 
-			// I think this is the bounding box that could fit ALL glyphs at the same
-			// time. Not a box that is large enough to contain any given glyph.
-			// 
-			// For example:
-			// We have one glyph whos outline is bound by [0, 10] (10u wide).
-			// We have another glyph whos outline is not positioned at the origin
-			// so it is bound by [80, 100] (20u wide).
-			// The bbox needed to contain these is only 20u wide, but the bbox
-			// needed to contain BOTH is [0, 100] (100u wide).
-			// I think this is what face->bbox is?
-			// 
-			// After some testing the above does appear to be correct.
-			// To calc the bbox that we need (maximum size of any single glyph) takes
-			// 250ms/150ms (debug/release) per 4000 glyphs with a 5820k @ 4.1GHz.
-			// The max number of glyphs a font can have is 65,535 which would take ~4.1s
-			//
-			// If we calc the bbox in font units we should be able to only do
-			// it once per font and then scale by pixel size (face.size.metrics.x/y_scale?)
-			//
-			// Although the size difference doesnt seem to be that large. Maybe its not worth doing?
-			//
-			maxFace = glm::ceil(glm::vec2{
-				FT_MulFix(face->bbox.xMax - face->bbox.xMin, face->size->metrics.x_scale) * mscale,
-				FT_MulFix(face->bbox.yMax - face->bbox.yMin, face->size->metrics.y_scale) * mscale
-			});
-
-			// Find minimum bounding box that can contain any glyph
-			//glm::vec2 maxGlyph = {};
-			//const auto startT = Clock::now();
-			//for (int i = 0; FT_Load_Glyph(face, i, FT_LOAD_DEFAULT) == 0; ++i) {
-			//	FT_Glyph glyph;
-			//	FT_BBox bbox;
-			//	if (FT_Get_Glyph(face->glyph, &glyph)) { ENGINE_WARN("Oh no!"); break; }
-			//	FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_GRIDFIT, &bbox);
-			//	FT_Done_Glyph(glyph);
-			//	maxGlyph.x = std::max(maxGlyph.x, (bbox.xMax - bbox.xMin) * mscale);
-			//	maxGlyph.y = std::max(maxGlyph.y, (bbox.yMax - bbox.yMin) * mscale);
-			//}
-			//const auto endT = Clock::now();
-			//ENGINE_LOG("Time: ", Clock::Milliseconds{endT-startT}.count());
-			//ENGINE_LOG("Max Glyph: ", maxGlyph.x, ", ", maxGlyph.y);
-			//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
-
-			glm::ivec2 indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxFace);
-				
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-			glyphTex.setStorage(TextureFormat::R8, {texSize, texSize});
-			for (uint8 c = ' '; c <= '~'; ++c) {
-				if (const auto err = FT_Load_Char(face, c, FT_LOAD_RENDER)) {
-					ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-				}
-				const auto& glyph = *face->glyph;
-				const auto& metrics = glyph.metrics;
-
-				auto& met = glyphMetrics.emplace_back();
-				met.index = nextGlyphIndex;
-				met.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
-
-				auto& dat = glyphData.emplace_back();
-				dat.size = {metrics.width * mscale, metrics.height * mscale};
-				glyphIndexToLoadedIndex[FT_Get_Char_Index(face, c)] = nextGlyphIndex;
-				++nextGlyphIndex;
-
-				if (glyph.bitmap.width) {
-					const glm::vec2 index = {
-						met.index % indexBounds.x,
-						met.index / indexBounds.x,
-					};
-					dat.offset = glm::vec3{index * maxFace, 0 };
-
-					ENGINE_DEBUG_ASSERT(index.x <= indexBounds.x);
-					ENGINE_DEBUG_ASSERT(index.y <= indexBounds.y);
-
-					//ENGINE_LOG("C: ", c, " - ", index.x, ",", index.y, " - ", offset.x, ",", offset.y);
-
-					glyphTex.setSubImage(0, dat.offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
-				}
-			}
-
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-
-			
-			glCreateBuffers(1, &glyphSSBO);
 			glCreateBuffers(1, &glyphVBO);
 			glyphVBOSize = 6 * sizeof(GlyphVertex); // TODO: just leave empty?
 			glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
@@ -184,7 +29,6 @@ namespace Engine::Gui {
 			glEnableVertexArrayAttrib(glyphVAO, 1);
 			glVertexArrayAttribBinding(glyphVAO, 1, 0);
 			glVertexArrayAttribIFormat(glyphVAO, 1, 2, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
-
 		}
 
 		{
@@ -267,7 +111,6 @@ namespace Engine::Gui {
 
 		glDeleteVertexArrays(1, &glyphVAO);
 		glDeleteBuffers(1, &glyphVBO);
-		glDeleteBuffers(1, &glyphSSBO);
 
 		hb_buffer_destroy(shapingBuffer);
 
@@ -278,7 +121,7 @@ namespace Engine::Gui {
 		const auto glyphShapeData = str.getGlyphShapeData();
 
 		for (const auto& data : glyphShapeData) {
-			const uint32 index = glyphIndexToLoadedIndex[data.index];
+			const uint32 index = fontManager.glyphIndexToLoadedIndex[data.index];
 			glyphVertexData.push_back({glm::round(base + data.offset), index});
 			base += data.advance;
 		}
@@ -289,14 +132,6 @@ namespace Engine::Gui {
 			updateHover();
 			hoverValid = true;
 		}
-
-		// TODO: rm - for debugging NSight
-		if (ImGui::Begin("Test")) {
-			ImGui::Text("Hello!");
-			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(glyphTex.get()));
-			//ImGui::Image(tid, ImVec2(static_cast<float32>(512), static_cast<float32>(512)), {0,1}, {1,0});
-			ImGui::Image(tid, ImVec2(static_cast<float32>(4096), static_cast<float32>(4096)));
-		} ImGui::End();
 
 		const Panel* curr = root;
 		offset = {};
@@ -465,10 +300,10 @@ namespace Engine::Gui {
 		{
 			glBindVertexArray(glyphVAO);
 			glUseProgram(glyphShader->get());
-			glBindTextureUnit(0, glyphTex.get());
+			glBindTextureUnit(0, fontManager.glyphTex.get());
 			glUniform2fv(0, 1, &view.x);
 			glUniform1i(1, 0);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glyphSSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontManager.glyphSSBO);
 
 			{
 				const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
@@ -480,13 +315,14 @@ namespace Engine::Gui {
 				glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
 			}
 
+			// TODO: this should be part of fontmanager
 			{ // TODO: we should know when this is resized. just do this then?
-				const GLsizei newSize = static_cast<GLsizei>(glyphData.size() * sizeof(glyphData[0]));
-				if (newSize > glyphSSBOSize) {
-					ENGINE_INFO("glyphSSBO resize: ", newSize, " ", glyphSSBO);
-					glyphSSBOSize = newSize;
-					glNamedBufferData(glyphSSBO, glyphSSBOSize, nullptr, GL_DYNAMIC_DRAW); // TODO: what storge type?
-					glNamedBufferSubData(glyphSSBO, 0, newSize, glyphData.data());
+				const GLsizei newSize = static_cast<GLsizei>(fontManager.glyphData.size() * sizeof(fontManager.glyphData[0]));
+				if (newSize > fontManager.glyphSSBOSize) {
+					ENGINE_INFO("glyphSSBO resize: ", newSize, " ", fontManager.glyphSSBO);
+					fontManager.glyphSSBOSize = newSize;
+					glNamedBufferData(fontManager.glyphSSBO, fontManager.glyphSSBOSize, nullptr, GL_DYNAMIC_DRAW); // TODO: what storge type?
+					glNamedBufferSubData(fontManager.glyphSSBO, 0, newSize, fontManager.glyphData.data());
 				}
 			}
 
@@ -533,8 +369,8 @@ namespace Engine::Gui {
 		for (uint32 i = 0; i < sz; ++i) {
 			const auto& info = infoArr[i];
 			const auto& pos = posArr[i];
-			const auto gi = glyphIndexToLoadedIndex[info.codepoint];
-			const auto& met = glyphMetrics[gi];
+			const auto gi = fontManager.glyphIndexToLoadedIndex[info.codepoint];
+			const auto& met = fontManager.glyphMetrics[gi];
 
 			data.push_back({
 				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
