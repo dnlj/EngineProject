@@ -19,18 +19,7 @@ namespace Engine::Gui {
 
 		{
 			constexpr float32 mscale = 1.0f/64;
-
-			if (const auto err = FT_Init_FreeType(&ftlib)) {
-				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-			}
-
-			if (const auto err = FT_New_Face(ftlib, "assets/arial.ttf", 0, &face)) {
-				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-			}
-
-			if (const auto err = FT_Set_Pixel_Sizes(face, 0, 32)) {
-				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-			}
+			auto& face = fontManager.face;
 
 			ENGINE_LOG("FaceX: ", face->bbox.xMax - face->bbox.xMin);
 			ENGINE_LOG("FaceY: ", face->bbox.yMax - face->bbox.yMin);
@@ -40,8 +29,8 @@ namespace Engine::Gui {
 			
 			{ // Harfbuzz stuff
 				std::string text = "bb͜b";
+				auto& font = fontManager.font;
 
-				font = hb_ft_font_create_referenced(face);
 				hb_buffer_t* buffer = hb_buffer_create();
 
 				hb_buffer_add_utf8(buffer, text.data(), -1, 0, -1);
@@ -155,11 +144,9 @@ namespace Engine::Gui {
 				auto& met = glyphMetrics.emplace_back();
 				met.index = nextGlyphIndex;
 				met.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
-				met.advance = metrics.horiAdvance * mscale;
 
 				auto& dat = glyphData.emplace_back();
 				dat.size = {metrics.width * mscale, metrics.height * mscale};
-				charToIndex[c] = nextGlyphIndex;
 				glyphIndexToLoadedIndex[FT_Get_Char_Index(face, c)] = nextGlyphIndex;
 				++nextGlyphIndex;
 
@@ -268,10 +255,6 @@ namespace Engine::Gui {
 			child->setSize({32, 64});
 			registerPanel(child);
 		}
-
-		
-		testString = "Hello, world!";
-		shapeString(testString);
 	}
 
 	Context::~Context() {
@@ -286,52 +269,9 @@ namespace Engine::Gui {
 		glDeleteBuffers(1, &glyphVBO);
 		glDeleteBuffers(1, &glyphSSBO);
 
-		
 		hb_buffer_destroy(shapingBuffer);
-		hb_font_destroy(font);
-
-		if (const auto err = FT_Done_Face(face)) {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-		}
-			
-		if (const auto err = FT_Done_FreeType(ftlib)) {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-		}
 
 		delete root;
-	}
-	
-	void Context::renderText2(const std::string_view str, glm::vec2 base) {
-		for (const uint8 c : str) {
-			const auto i = charToIndex[c];
-			//const auto& dat = glyphData[i];
-			const auto& met = glyphMetrics[i];
-
-			// TODO: dont draw whitespace
-			auto p = base + met.bearing;
-
-			// TODO: rm
-			// TODO: probably just store offset or uvs in glyph met
-			//const glm::vec2 index = { 
-			//	dat.index % indexBounds.x,
-			//	dat.index / indexBounds.x,
-			//};
-			//const glm::vec2 offset = index * maxFace;
-			//
-			//glm::vec2 uvBegin = offset / 4096.0f;
-			//glm::vec2 uvEnd = uvBegin + (dat.size / 4096.0f);
-			//
-			//glyphVertexData.push_back({{p.x, p.y}, {uvBegin.x, uvBegin.y}});
-			//glyphVertexData.push_back({{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}});
-			//glyphVertexData.push_back({{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}});
-			//glyphVertexData.push_back({{p.x, p.y + dat.size.y}, {uvBegin.x, uvEnd.y}});
-			//glyphVertexData.push_back({{p.x + dat.size.x, p.y + dat.size.y}, {uvEnd.x, uvEnd.y}});
-			//glyphVertexData.push_back({{p.x + dat.size.x, p.y}, {uvEnd.x, uvBegin.y}});
-			glyphVertexData.push_back({{p.x, p.y}, met.index});
-
-			// Assume we want a horizontal layout
-			base.x += met.advance;
-		}
 	}
 	
 	void Context::renderText3(const ShapedString& str, glm::vec2 base) {
@@ -519,7 +459,9 @@ namespace Engine::Gui {
 		for (int n = 0; const auto& text : shapedLines) {
 			renderText3(text, {10, 32 * ++n});
 		}
+
 		//renderText3(testString, {32, 512});
+
 		{
 			glBindVertexArray(glyphVAO);
 			glUseProgram(glyphShader->get());
@@ -576,10 +518,11 @@ namespace Engine::Gui {
 		verts.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
 	}
 
+	// TODO: should this be part of font manager? string class? context?
 	void Context::shapeString(ShapedString& str) {
 		hb_buffer_add_utf8(shapingBuffer, str.getString().data(), -1, 0, -1);
 		hb_buffer_guess_segment_properties(shapingBuffer); // TODO: Should we handle this ourself?
-		hb_shape(font, shapingBuffer, nullptr, 0);
+		hb_shape(fontManager.font, shapingBuffer, nullptr, 0);
 
 		const auto sz = hb_buffer_get_length(shapingBuffer);
 		const auto infoArr = hb_buffer_get_glyph_infos(shapingBuffer, nullptr);

@@ -14,11 +14,7 @@
 #include <Engine/Gui/Panel.hpp>
 #include <Engine/Input/InputEvent.hpp>
 #include <Engine/FlatHashMap.hpp>
-
-// TODO: move to ShapedString file? cpp?
-// Harfbuzz
-#include <hb.h>
-#include <hb-ft.h>
+#include <Engine/Gui/FontManager.hpp>
 
 // TODO: move
 namespace Engine::Gui {
@@ -81,9 +77,7 @@ namespace Engine::Gui {
 			}; static_assert(sizeof(GlyphData) == sizeof(float32) * 8);
 
 			struct GlyphMetrics {
-				// These are both for horizontal layout. For vertical layout we would need separate fields.
 				glm::vec2 bearing;
-				float32 advance; // TODO: rm - unused
 				uint32 index;
 			};
 
@@ -110,18 +104,12 @@ namespace Engine::Gui {
 			Texture2D clipTex2;
 			GLenum activeClipTex = 0;
 
-
-			// TODO: should probably be part of same type
-			FT_Library ftlib;
-			FT_Face face;
-			hb_font_t* font;
+			FontManager fontManager;
 
 			// TODO: this should probably be moved into a font/glyph set class
 			hb_buffer_t* shapingBuffer;
-			ShapedString testString; // TODO: rm
 			GLuint glyphSSBO = 0;
 			GLsizei glyphSSBOSize = 0;
-			FlatHashMap<uint8, uint32> charToIndex;
 			FlatHashMap<uint32, uint32> glyphIndexToLoadedIndex;
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
@@ -135,7 +123,6 @@ namespace Engine::Gui {
 			GLuint glyphVBO = 0;
 			GLuint glyphVAO = 0;
 			GLsizei glyphVBOSize = 0;
-			void renderText2(const std::string_view view, glm::vec2 base); 
 			void renderText3(const ShapedString& str, glm::vec2 base); 
 
 			struct {
