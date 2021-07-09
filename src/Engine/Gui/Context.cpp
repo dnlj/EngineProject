@@ -121,7 +121,7 @@ namespace Engine::Gui {
 		const auto glyphShapeData = str.getGlyphShapeData();
 
 		for (const auto& data : glyphShapeData) {
-			const uint32 index = fontManager.glyphIndexToLoadedIndex[data.index];
+			const uint32 index = fontManager.font.glyphIndexToLoadedIndex[data.index];
 			glyphVertexData.push_back({glm::round(base + data.offset), index});
 			base += data.advance;
 		}
@@ -300,10 +300,10 @@ namespace Engine::Gui {
 		{
 			glBindVertexArray(glyphVAO);
 			glUseProgram(glyphShader->get());
-			glBindTextureUnit(0, fontManager.glyphTex.get());
+			glBindTextureUnit(0, fontManager.font.glyphTex.get());
 			glUniform2fv(0, 1, &view.x);
 			glUniform1i(1, 0);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontManager.glyphSSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontManager.font.glyphSSBO);
 
 			{
 				const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
@@ -317,12 +317,12 @@ namespace Engine::Gui {
 
 			// TODO: this should be part of fontmanager
 			{ // TODO: we should know when this is resized. just do this then?
-				const GLsizei newSize = static_cast<GLsizei>(fontManager.glyphData.size() * sizeof(fontManager.glyphData[0]));
-				if (newSize > fontManager.glyphSSBOSize) {
-					ENGINE_INFO("glyphSSBO resize: ", newSize, " ", fontManager.glyphSSBO);
-					fontManager.glyphSSBOSize = newSize;
-					glNamedBufferData(fontManager.glyphSSBO, fontManager.glyphSSBOSize, nullptr, GL_DYNAMIC_DRAW); // TODO: what storge type?
-					glNamedBufferSubData(fontManager.glyphSSBO, 0, newSize, fontManager.glyphData.data());
+				const GLsizei newSize = static_cast<GLsizei>(fontManager.font.glyphData.size() * sizeof(fontManager.font.glyphData[0]));
+				if (newSize > fontManager.font.glyphSSBOSize) {
+					ENGINE_INFO("glyphSSBO resize: ", newSize, " ", fontManager.font.glyphSSBO);
+					fontManager.font.glyphSSBOSize = newSize;
+					glNamedBufferData(fontManager.font.glyphSSBO, fontManager.font.glyphSSBOSize, nullptr, GL_DYNAMIC_DRAW); // TODO: what storge type?
+					glNamedBufferSubData(fontManager.font.glyphSSBO, 0, newSize, fontManager.font.glyphData.data());
 				}
 			}
 
@@ -358,7 +358,7 @@ namespace Engine::Gui {
 	void Context::shapeString(ShapedString& str) {
 		hb_buffer_add_utf8(shapingBuffer, str.getString().data(), -1, 0, -1);
 		hb_buffer_guess_segment_properties(shapingBuffer); // TODO: Should we handle this ourself?
-		hb_shape(fontManager.font, shapingBuffer, nullptr, 0);
+		hb_shape(fontManager.font.font, shapingBuffer, nullptr, 0);
 
 		const auto sz = hb_buffer_get_length(shapingBuffer);
 		const auto infoArr = hb_buffer_get_glyph_infos(shapingBuffer, nullptr);
@@ -369,8 +369,8 @@ namespace Engine::Gui {
 		for (uint32 i = 0; i < sz; ++i) {
 			const auto& info = infoArr[i];
 			const auto& pos = posArr[i];
-			const auto gi = fontManager.glyphIndexToLoadedIndex[info.codepoint];
-			const auto& met = fontManager.glyphMetrics[gi];
+			const auto gi = fontManager.font.glyphIndexToLoadedIndex[info.codepoint];
+			const auto& met = fontManager.font.glyphMetrics[gi];
 
 			data.push_back({
 				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
