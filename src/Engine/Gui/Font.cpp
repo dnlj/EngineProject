@@ -44,46 +44,42 @@ namespace Engine::Gui {
 		// TODO: may want to limit base on face size? for small font sizes 4096 might be excessive.
 		texSize = std::min(texSize, 4096);
 		
-		glm::ivec2 indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxFace);
-				
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
+		indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxFace);
+		
 		glyphTex.setStorage(TextureFormat::R8, {texSize, texSize});
-		for (uint8 c = ' '; c <= '~'; ++c) {
-			if (const auto err = FT_Load_Char(face, c, FT_LOAD_RENDER)) {
-				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-			}
-			const auto& glyph = *face->glyph;
-			const auto& metrics = glyph.metrics;
-
-			auto& met = glyphMetrics.emplace_back();
-			met.index = nextGlyphIndex;
-			met.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
-
-			auto& dat = glyphData.emplace_back();
-			dat.size = {metrics.width * mscale, metrics.height * mscale};
-			glyphIndexToLoadedIndex[FT_Get_Char_Index(face, c)] = nextGlyphIndex;
-			++nextGlyphIndex;
-
-			if (glyph.bitmap.width) {
-				const glm::vec2 index = {
-					met.index % indexBounds.x,
-					met.index / indexBounds.x,
-				};
-				dat.offset = glm::vec3{index * maxFace, 0 };
-
-				ENGINE_DEBUG_ASSERT(index.x <= indexBounds.x);
-				ENGINE_DEBUG_ASSERT(index.y <= indexBounds.y);
-
-				//ENGINE_LOG("C: ", c, " - ", index.x, ",", index.y, " - ", offset.x, ",", offset.y);
-
-				glyphTex.setSubImage(0, dat.offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
-			}
-		}
-
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
 		glCreateBuffers(1, &glyphSSBO);
+	}
+
+	void Font::loadGlyph(const uint32 index) {
+		// TODO: make sure we dont overflow max glyphs per texture. will need to add another layer to texture array.
+		if (const auto err = FT_Load_Glyph(face, index, FT_LOAD_RENDER)) [[unlikely]] {
+			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+		}
+		
+		const auto& glyph = *face->glyph;
+		const auto& metrics = glyph.metrics;
+
+		auto& met = glyphMetrics.emplace_back();
+		met.index = nextGlyphIndex;
+		met.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
+
+		auto& dat = glyphData.emplace_back();
+		dat.size = {metrics.width * mscale, metrics.height * mscale};
+		glyphIndexToLoadedIndex[index] = nextGlyphIndex;
+		++nextGlyphIndex;
+
+		if (glyph.bitmap.width) {
+			const glm::vec2 i = {
+				met.index % indexBounds.x,
+				met.index / indexBounds.x,
+			};
+			dat.offset = glm::vec3{i * maxFace, 0};
+
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			glyphTex.setSubImage(0, dat.offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		}
 	}
 
 	void Font::initMaxGlyphSize() {

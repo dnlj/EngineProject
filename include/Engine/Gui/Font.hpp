@@ -1,4 +1,5 @@
 #pragma once
+
 // STD
 #include <vector>
 
@@ -49,6 +50,7 @@ namespace Engine::Gui {
 			
 			Texture2D glyphTex;
 			glm::vec2 maxFace; // TODO: rename - maxGlyphSize
+			glm::ivec2 indexBounds;
 			int nextGlyphIndex = 0; // TODO: glyph index recycling
 
 		public:
@@ -59,6 +61,9 @@ namespace Engine::Gui {
 			~Font();
 
 			void init(FT_Library ftlib);
+			void loadGlyph(const uint32 index);
+			ENGINE_INLINE bool isGlyphLoaded(const uint32 index) const noexcept { return glyphIndexToLoadedIndex.contains(index); };
+			ENGINE_INLINE void ensureGlyphLoaded(const uint32 index) { if (!isGlyphLoaded(index)) { loadGlyph(index); } }
 
 		private:
 			void initMaxGlyphSize();

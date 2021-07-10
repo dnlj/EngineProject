@@ -243,6 +243,8 @@ namespace Engine::Gui {
 			R"(to look down and make out what she was coming to, but it was too dark to see anything: then she looked at the sides of the)",
 			R"(well, and noticed that they were filled with cupboards and book-shelves: here and there she saw maps and pictures hung upon)",
 			R"(pegs. She took down a jar from one of the shelves as she passed; it was labelled "ORANGE MARMALADE," but to her great disappointment)",
+			R"----(T̴̖̀è̴̖s̴̖̀t̴̖̀)----",
+			R"----(😀👍)----",
 			R"(it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of)",
 			R"(the cupboards as she fell past it. "Well!" thought Alice to herself, "after such a fall as this, I shall think nothing of)",
 			R"(tumbling down stairs! How brave they'll all think me at home! Why, I wouldn't say anything about it, even if I fell off the)",
@@ -282,6 +284,7 @@ namespace Engine::Gui {
 
 		static ShapedString shapedLines[std::size(lines)];
 		static int initShapedLines = [&](){
+			ENGINE_LOG("initShapedLines");
 			for (int i = 0; i < std::size(shapedLines); ++i) {
 				shapeString(shapedLines[i] = lines[i]);
 			}
@@ -369,6 +372,13 @@ namespace Engine::Gui {
 		for (uint32 i = 0; i < sz; ++i) {
 			const auto& info = infoArr[i];
 			const auto& pos = posArr[i];
+
+			if (!info.codepoint) {
+				ENGINE_WARN("Missing one or more glyphs for character at index ", info.cluster, " = ", str.getString()[info.cluster]);
+			}
+
+			fontManager.font.ensureGlyphLoaded(info.codepoint);
+
 			const auto gi = fontManager.font.glyphIndexToLoadedIndex[info.codepoint];
 			const auto& met = fontManager.font.glyphMetrics[gi];
 
