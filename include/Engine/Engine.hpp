@@ -1,14 +1,6 @@
 #pragma once
 
 
-// TODO: trim includes
-// STD
-#include <cstdint>
-#include <iostream>
-#include <limits>
-#include <string>
-#include <ctime>
-
 // Engine
 #include <Engine/Detail/Detail.hpp>
 #include <Engine/GlobalConfig.hpp>

@@ -1,20 +1,13 @@
 #pragma once
 
 // STD
-#include <iostream>
-#include <string>
 #include <sstream>
-#include <string_view>
 #include <ostream>
 
-#ifdef ENGINE_OS_WINDOWS
-#include <io.h>
-#endif
-
 // Engine
-#include <Engine/ASCIIColorString.hpp>
 #include <Engine/GlobalConfig.hpp>
 #include <Engine/Constants.hpp>
+
 
 // TODO: where to put this stuff? we should make something include glm/box2d if they dont use it. May need some kind of integrations/glm.hpp or similar. Glue?
 namespace Engine {

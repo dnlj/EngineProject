@@ -1,7 +1,11 @@
 #pragma once
 
-// TODO: Doc
+
 namespace Engine {
+	/**
+	 * Thrown on an unrecoverable error.
+	 * Calls std::terminate on destruction.
+	 */
 	class FatalException {
 		public:
 			FatalException();

@@ -1,5 +1,6 @@
 #pragma once
 
+
 namespace Engine::Types { // TODO: C++20: namespace Engine::inline Types {
 	static_assert(std::numeric_limits<char>::digits + std::numeric_limits<char>::is_signed == 8, "This program assumes an 8 bit byte.");
 

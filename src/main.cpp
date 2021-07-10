@@ -1,48 +1,21 @@
 // Windows
 #include <Windows.h>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
 #include <io.h>
-#include <fcntl.h>
 
 // STD
-#include <algorithm>
 #include <iostream>
-#include <cmath>
 #include <numeric>
 #include <filesystem>
-#include <regex>
-#include <iterator>
 #include <csignal>
-#include <exception>
-
-// glLoadGen
-#include <glloadgen/gl_core_4_5.hpp>
-
-// SOIL
-#include <soil/SOIL.h>
-
-// GLM
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-// Meta
-#include <Meta/TypeSet/TypeSet.hpp>
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Debug/Debug.hpp>
 #include <Engine/TextureManager.hpp>
-#include <Engine/Utility/Utility.hpp>
-#include <Engine/ECS/World.hpp>
 #include <Engine/EngineInstance.hpp>
-#include <Engine/Camera.hpp>
 #include <Engine/ResourceManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/Noise/SimplexNoise.hpp>
 #include <Engine/Noise/WorleyNoise.hpp>
-#include <Engine/Net/Net.hpp>
-#include <Engine/Net/UDPSocket.hpp>
 #include <Engine/Win32/Win32.hpp>
 #include <Engine/WindowCallbacks.hpp>
 #include <Engine/Window.hpp>
@@ -51,7 +24,6 @@
 #include <Engine/CommandLine/Parser.hpp>
 #include <Engine/Debug/GL/GL.hpp>
 #include <Engine/ConfigParser.hpp>
-#include <Engine/Base16.hpp>
 #include <Engine/Gui/Context.hpp>
 
 // Game

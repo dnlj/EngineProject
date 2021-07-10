@@ -1,9 +1,8 @@
 #pragma once
 
-#include <numbers>
 // Engine
-#include <Engine/Types.hpp>
 #include <Engine/ASCIIColorString.hpp>
+
 
 namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
 	template<class T>
