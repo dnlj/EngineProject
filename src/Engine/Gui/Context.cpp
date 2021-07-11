@@ -123,6 +123,8 @@ namespace Engine::Gui {
 		for (const auto& data : glyphShapeData) {
 			const uint32 index = fontManager.font.glyphIndexToLoadedIndex[data.index];
 			glyphVertexData.push_back({glm::round(base + data.offset), index});
+			//glyphVertexData.push_back({glm::floor(base + data.offset), index});
+			//glyphVertexData.push_back({(base + data.offset), index});
 			base += data.advance;
 		}
 	}

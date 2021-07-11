@@ -49,7 +49,7 @@ namespace Engine::Gui {
 			std::vector<GlyphMetrics> glyphMetrics;
 			
 			Texture2D glyphTex;
-			glm::vec2 maxFace; // TODO: rename - maxGlyphSize
+			glm::vec2 maxGlyphSize;
 			glm::ivec2 indexBounds;
 			int nextGlyphIndex = 0; // TODO: glyph index recycling
 

@@ -44,7 +44,7 @@ namespace Engine::Gui {
 		// TODO: may want to limit base on face size? for small font sizes 4096 might be excessive.
 		texSize = std::min(texSize, 4096);
 		
-		indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxFace);
+		indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxGlyphSize);
 		
 		glyphTex.setStorage(TextureFormat::R8, {texSize, texSize});
 
@@ -52,7 +52,6 @@ namespace Engine::Gui {
 	}
 
 	void Font::loadGlyph(const uint32 index) {
-		// TODO: make sure we dont overflow max glyphs per texture. will need to add another layer to texture array.
 		if (const auto err = FT_Load_Glyph(face, index, FT_LOAD_RENDER)) [[unlikely]] {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 		}
@@ -74,7 +73,9 @@ namespace Engine::Gui {
 				met.index % indexBounds.x,
 				met.index / indexBounds.x,
 			};
-			dat.offset = glm::vec3{i * maxFace, 0};
+			dat.offset = glm::vec3{i * maxGlyphSize, 0};
+
+			ENGINE_DEBUG_ASSERT(i.y < indexBounds.y, "Glyph texture index is out of bounds. Should rollover to next texture layer in array.");
 
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			glyphTex.setSubImage(0, dat.offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
@@ -111,7 +112,7 @@ namespace Engine::Gui {
 		//
 		// Although the size difference doesnt seem to be that large. Maybe its not worth doing?
 		//
-		maxFace = glm::ceil(glm::vec2{
+		maxGlyphSize = glm::ceil(glm::vec2{
 			FT_MulFix(face->bbox.xMax - face->bbox.xMin, face->size->metrics.x_scale) * mscale,
 			FT_MulFix(face->bbox.yMax - face->bbox.yMin, face->size->metrics.y_scale) * mscale
 		});
