@@ -37,6 +37,9 @@ namespace {
 	constexpr int32 OPENGL_VERSION_MINOR = 5;
 	double avgDeltaTime = 0.0;
 
+	static Engine::Clock::TimePoint launchTime;
+	static Engine::Clock::TimePoint startTime;
+
 	struct {
 		constexpr static int w = 512;
 		constexpr static int h = 512;
@@ -651,6 +654,12 @@ void run(int argc, char* argv[]) {
 	window.setSwapInterval(0);
 	window.show();
 
+	{
+		const auto endTime = Engine::Clock::now();
+		ENGINE_INFO("Launch Time: ", Engine::Clock::Milliseconds{endTime - launchTime}.count(), "ms");
+		ENGINE_INFO("Start Time: ", Engine::Clock::Milliseconds{endTime - startTime}.count(), "ms");
+	}
+
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 	while (!window.shouldClose()) {
 		window.poll();
@@ -838,6 +847,7 @@ int entry(int argc, char* argv[]) {
 	//cfg.loadAndTokenize("example.cfg");
 	//cfg.print();
 
+	startTime = Engine::Clock::now();
 	run(argc, argv);
 
 	ENGINE_LOG("Done.");
@@ -846,6 +856,7 @@ int entry(int argc, char* argv[]) {
 
 #ifdef ENGINE_OS_WINDOWS
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nCmdShow) {
+	launchTime = Engine::Clock::now();
 	return entry(__argc, __argv);
 }
 #else
