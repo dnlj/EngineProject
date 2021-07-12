@@ -64,6 +64,8 @@ namespace Engine::Gui {
 			GLenum activeClipTex = 0;
 
 			FontManager fontManager;
+			FontId fontId;
+			FontGlyphSet* fontGlyphSet; // TODO: rm - temp for testing
 			hb_buffer_t* shapingBuffer;
 			std::vector<GlyphVertex> glyphVertexData;
 			ShaderRef glyphShader;

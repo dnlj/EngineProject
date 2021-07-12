@@ -1,40 +1,53 @@
+// FreeType
+#include <freetype/ftsizes.h>
+
 // Harfbuzz
 #include <hb-ft.h>
 
 // Engine
-#include <Engine/Gui/Font.hpp>
+#include <Engine/Gui/FontGlyphSet.hpp>
 
 
 namespace Engine::Gui {
-	Font::Font() {
+	FontGlyphSet::FontGlyphSet() {
 	}
 
-	Font::Font(FT_Library ftlib) {
-		init(ftlib);
-	}
-
-	Font::~Font() {
+	FontGlyphSet::~FontGlyphSet() {
 		glDeleteBuffers(1, &glyphSSBO);
 
-		hb_font_destroy(font);
+		hb_font_destroy(hbFont);
+		
+		if (const auto err = FT_Done_Size(ftSize)) [[unlikely]] {
+			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+		}
 
-		if (const auto err = FT_Done_Face(face)) {
+		if (const auto err = FT_Done_Face(ftFace)) [[unlikely]] {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 		}
 	}
 
-	
-	void Font::init(FT_Library ftlib) {
-		if (const auto err = FT_New_Face(ftlib, "assets/arial.ttf", 0, &face)) {
+	void FontGlyphSet::init(FT_Face face, int32 size) {
+		// Setup FreeType
+		FT_Reference_Face(face);
+		ftFace = face;
+
+		if (const auto err = FT_New_Size(face, &ftSize)) [[unlikely]] {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 		}
 
-		if (const auto err = FT_Set_Pixel_Sizes(face, 0, 32)) {
+		if (const auto err = FT_Activate_Size(ftSize)) [[unlikely]] {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 		}
 
-		font = hb_ft_font_create_referenced(face);
+		if (const auto err = FT_Set_Pixel_Sizes(face, size, size)) [[unlikely]] {
+			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+		}
 
+		// Setup HarfBuzz
+		// TODO: i dont think we actually need referenced her since we manage lifetime ourself
+		hbFont = hb_ft_font_create_referenced(face);
+
+		// Setup OpenGL
 		GLint texSize;
 		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texSize);
 		ENGINE_INFO("Maximum texture size: ", texSize);
@@ -51,12 +64,18 @@ namespace Engine::Gui {
 		glCreateBuffers(1, &glyphSSBO);
 	}
 
-	void Font::loadGlyph(const uint32 index) {
-		if (const auto err = FT_Load_Glyph(face, index, FT_LOAD_RENDER)) [[unlikely]] {
+	void FontGlyphSet::loadGlyph(const uint32 index) {
+		// TODO: we can also just do ftFace->size = ftSize; if we know that face and size are valid (they should be by this point)
+		//ftFace->size = ftSize;
+		if (const auto err = FT_Activate_Size(ftSize)) [[unlikely]] {
+			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+		}
+
+		if (const auto err = FT_Load_Glyph(ftFace, index, FT_LOAD_RENDER)) [[unlikely]] {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 		}
 		
-		const auto& glyph = *face->glyph;
+		const auto& glyph = *ftFace->glyph;
 		const auto& metrics = glyph.metrics;
 
 		auto& met = glyphMetrics.emplace_back();
@@ -83,7 +102,7 @@ namespace Engine::Gui {
 		}
 	}
 
-	void Font::initMaxGlyphSize() {
+	void FontGlyphSet::initMaxGlyphSize() {
 		// In practice most glyphs are much smaller than `face->bbox` (every ascii char is < 1/2 the size depending on font)
 		// It would be better to use a packing algorithm, but then we would want
 		// to periodically repack (glCopy*, not reload) as glyphs are unloaded which complicates things.
@@ -113,8 +132,8 @@ namespace Engine::Gui {
 		// Although the size difference doesnt seem to be that large. Maybe its not worth doing?
 		//
 		maxGlyphSize = glm::ceil(glm::vec2{
-			FT_MulFix(face->bbox.xMax - face->bbox.xMin, face->size->metrics.x_scale) * mscale,
-			FT_MulFix(face->bbox.yMax - face->bbox.yMin, face->size->metrics.y_scale) * mscale
+			FT_MulFix(ftFace->bbox.xMax - ftFace->bbox.xMin, ftFace->size->metrics.x_scale) * mscale,
+			FT_MulFix(ftFace->bbox.yMax - ftFace->bbox.yMin, ftFace->size->metrics.y_scale) * mscale
 		});
 
 		// Find minimum bounding box that can contain any glyph

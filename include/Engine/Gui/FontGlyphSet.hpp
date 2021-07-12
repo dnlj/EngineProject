@@ -19,7 +19,10 @@
 
 
 namespace Engine::Gui {
-	class Font {
+	/**
+	 * TODO: doc.
+	 */
+	class FontGlyphSet {
 		private:
 			constexpr static float32 mscale = 1.0f / 64;
 
@@ -33,15 +36,15 @@ namespace Engine::Gui {
 			}; static_assert(sizeof(GlyphData) == sizeof(float32) * 8);
 
 			struct GlyphMetrics {
-				glm::vec2 bearing;
+				glm::vec2 bearing;	
 				uint32 index;
 			};
 
 		public:
-			// TODO: private
-			FT_Face face = nullptr;
-			hb_font_t* font = nullptr;
-			
+			FT_Face ftFace;
+			hb_font_t* hbFont;
+			FT_Size ftSize;
+
 			GLuint glyphSSBO = 0;
 			GLsizei glyphSSBOSize = 0;
 			FlatHashMap<uint32, uint32> glyphIndexToLoadedIndex;
@@ -54,15 +57,17 @@ namespace Engine::Gui {
 			int nextGlyphIndex = 0; // TODO: glyph index recycling
 
 		public:
-			Font();
-			Font(FT_Library ftlib);
-			Font(const Font&) = delete;
-			Font(Font&&) = delete;
-			~Font();
+			FontGlyphSet();
+			FontGlyphSet(const FontGlyphSet&) = delete;
+			FontGlyphSet(FontGlyphSet&&) = delete;
+			~FontGlyphSet();
 
-			void init(FT_Library ftlib);
+			void init(FT_Face face, int32 size);
+
 			void loadGlyph(const uint32 index);
+
 			ENGINE_INLINE bool isGlyphLoaded(const uint32 index) const noexcept { return glyphIndexToLoadedIndex.contains(index); };
+
 			ENGINE_INLINE void ensureGlyphLoaded(const uint32 index) { if (!isGlyphLoaded(index)) { loadGlyph(index); } }
 
 		private:
