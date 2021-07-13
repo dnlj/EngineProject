@@ -186,7 +186,5 @@ namespace Engine::Gui {
 				}
 				return ++nextPanelId;
 			}
-
-			void shapeString(ShapedString& str);
 	};
 }

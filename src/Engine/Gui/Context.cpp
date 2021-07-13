@@ -291,7 +291,7 @@ namespace Engine::Gui {
 		static int initShapedLines = [&](){
 			ENGINE_LOG("initShapedLines");
 			for (int i = 0; i < std::size(shapedLines); ++i) {
-				shapeString(shapedLines[i] = lines[i]);
+				fontGlyphSet->shapeString(shapedLines[i] = lines[i]);
 			}
 			return 0;
 		}();
@@ -308,10 +308,10 @@ namespace Engine::Gui {
 		{
 			glBindVertexArray(glyphVAO);
 			glUseProgram(glyphShader->get());
-			glBindTextureUnit(0, fontGlyphSet->glyphTex.get());
+			glBindTextureUnit(0, fontGlyphSet->getGlyphTexture().get());
 			glUniform2fv(0, 1, &view.x);
 			glUniform1i(1, 0);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontGlyphSet->glyphSSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontGlyphSet->getGlyphDataBuffer());
 
 			{
 				const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
@@ -323,16 +323,7 @@ namespace Engine::Gui {
 				glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
 			}
 
-			// TODO: this should be part of fontmanager
-			{ // TODO: we should know when this is resized. just do this then?
-				const GLsizei newSize = static_cast<GLsizei>(fontGlyphSet->glyphData.size() * sizeof(fontGlyphSet->glyphData[0]));
-				if (newSize > fontGlyphSet->glyphSSBOSize) {
-					ENGINE_INFO("glyphSSBO resize: ", newSize, " ", fontGlyphSet->glyphSSBO);
-					fontGlyphSet->glyphSSBOSize = newSize;
-					glNamedBufferData(fontGlyphSet->glyphSSBO, fontGlyphSet->glyphSSBOSize, nullptr, GL_DYNAMIC_DRAW); // TODO: what storge type?
-					glNamedBufferSubData(fontGlyphSet->glyphSSBO, 0, newSize, fontGlyphSet->glyphData.data());
-				}
-			}
+			fontGlyphSet->updateDataBuffer();
 
 			//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(glyphVertexData.size()));
 			glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(glyphVertexData.size()));
@@ -360,41 +351,6 @@ namespace Engine::Gui {
 		verts.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
 		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{size.x, 0}, .id = id, .pid = pid});
 		verts.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
-	}
-
-	// TODO: should this be part of font manager? string class? context?
-	void Context::shapeString(ShapedString& str) {
-		hb_buffer_add_utf8(shapingBuffer, str.getString().data(), -1, 0, -1);
-		hb_buffer_guess_segment_properties(shapingBuffer); // TODO: Should we handle this ourself?
-		hb_shape(fontGlyphSet->hbFont, shapingBuffer, nullptr, 0);
-
-		const auto sz = hb_buffer_get_length(shapingBuffer);
-		const auto infoArr = hb_buffer_get_glyph_infos(shapingBuffer, nullptr);
-		const auto posArr = hb_buffer_get_glyph_positions(shapingBuffer, nullptr);
-		auto& data = str.getGlyphShapeDataMutable();
-		data.clear();
-
-		for (uint32 i = 0; i < sz; ++i) {
-			const auto& info = infoArr[i];
-			const auto& pos = posArr[i];
-
-			if (!info.codepoint) {
-				ENGINE_WARN("Missing one or more glyphs for character at index ", info.cluster, " = ", str.getString()[info.cluster]);
-			}
-
-			fontGlyphSet->ensureGlyphLoaded(info.codepoint);
-
-			const auto gi = fontGlyphSet->glyphIndexToLoadedIndex[info.codepoint];
-			const auto& met = fontGlyphSet->glyphMetrics[gi];
-
-			data.push_back({
-				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
-				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing, // TODO: + bearing
-				.advance = glm::vec2{pos.x_advance, pos.y_advance} * (1.0f/64),
-			});
-		}
-
-		hb_buffer_clear_contents(shapingBuffer);
 	}
 
 	void Context::updateHover() {

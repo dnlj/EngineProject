@@ -34,6 +34,7 @@ namespace Engine::Gui {
 	class FontManager {
 		public: // TODO: private
 			FT_Library ftlib;
+			hb_buffer_t* workingBuffer;
 
 		private:
 			FlatHashMap<std::string, FT_Face> pathToFace;

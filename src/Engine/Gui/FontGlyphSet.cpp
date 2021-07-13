@@ -26,10 +26,11 @@ namespace Engine::Gui {
 		}
 	}
 
-	void FontGlyphSet::init(FT_Face face, int32 size) {
+	void FontGlyphSet::init(FT_Face face, int32 size, hb_buffer_t* buff) {
 		// Setup FreeType
 		FT_Reference_Face(face);
 		ftFace = face;
+		workingBuffer = buff;
 
 		if (const auto err = FT_New_Size(face, &ftSize)) [[unlikely]] {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
@@ -44,8 +45,7 @@ namespace Engine::Gui {
 		}
 
 		// Setup HarfBuzz
-		// TODO: i dont think we actually need referenced her since we manage lifetime ourself
-		hbFont = hb_ft_font_create_referenced(face);
+		hbFont = hb_ft_font_create(face, nullptr);
 
 		// Setup OpenGL
 		GLint texSize;
@@ -152,5 +152,52 @@ namespace Engine::Gui {
 		//ENGINE_LOG("Time: ", Clock::Milliseconds{endT-startT}.count());
 		//ENGINE_LOG("Max Glyph: ", maxGlyph.x, ", ", maxGlyph.y);
 		//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
+	}
+
+	void FontGlyphSet::shapeString(ShapedString& str) {
+		// TODO: to we need to activate size here? i dont think so?
+
+		hb_buffer_add_utf8(workingBuffer, str.getString().data(), -1, 0, -1);
+		hb_buffer_guess_segment_properties(workingBuffer); // TODO: Should we handle this ourself?
+		hb_shape(hbFont, workingBuffer, nullptr, 0);
+
+		const auto sz = hb_buffer_get_length(workingBuffer);
+		const auto infoArr = hb_buffer_get_glyph_infos(workingBuffer, nullptr);
+		const auto posArr = hb_buffer_get_glyph_positions(workingBuffer, nullptr);
+		auto& data = str.getGlyphShapeDataMutable();
+		data.clear();
+
+		for (uint32 i = 0; i < sz; ++i) {
+			const auto& info = infoArr[i];
+			const auto& pos = posArr[i];
+
+			if (!info.codepoint) {
+				ENGINE_WARN("Missing one or more glyphs for character at index ", info.cluster, " = ", str.getString()[info.cluster]);
+			}
+
+			ensureGlyphLoaded(info.codepoint);
+
+			const auto gi = glyphIndexToLoadedIndex[info.codepoint];
+			const auto& met = glyphMetrics[gi];
+
+			data.push_back({
+				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
+				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing, // TODO: + bearing
+				.advance = glm::vec2{pos.x_advance, pos.y_advance} * (1.0f/64),
+			});
+		}
+
+		hb_buffer_clear_contents(workingBuffer);
+	}
+	
+	void FontGlyphSet::updateDataBuffer() {
+		// TODO: we should know when this is resized. just do this then?
+		const GLsizei newSize = static_cast<GLsizei>(glyphData.size() * sizeof(glyphData[0]));
+		if (newSize > glyphSSBOSize) {
+			ENGINE_INFO("glyphSSBO resize: ", newSize, " ", glyphSSBO);
+			glyphSSBOSize = newSize;
+			glNamedBufferData(glyphSSBO, glyphSSBOSize, nullptr, GL_DYNAMIC_DRAW); // TODO: what storge type?
+			glNamedBufferSubData(glyphSSBO, 0, newSize, glyphData.data());
+		}
 	}
 }

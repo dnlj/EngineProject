@@ -16,12 +16,16 @@ namespace Engine::Gui {
 		if (const auto err = FT_Init_FreeType(&ftlib)) {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 		}
+
+		workingBuffer = hb_buffer_create();
 	}
 
 	FontManager::~FontManager() {
 		if (const auto err = FT_Done_FreeType(ftlib)) {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 		}
+
+		hb_buffer_destroy(workingBuffer);
 	}
 
 	FontId FontManager::createFont(const std::string& path, int32 size) {
@@ -54,7 +58,7 @@ namespace Engine::Gui {
 			if (found == fontIdToGlyphSet.end()) {
 				auto [it, _] = fontIdToGlyphSet.insert({id, std::make_unique<FontGlyphSet>()});
 				found = it;
-				found->second->init(face, size);
+				found->second->init(face, size, workingBuffer);
 			}
 		}
 
