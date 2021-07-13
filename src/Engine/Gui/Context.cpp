@@ -12,7 +12,6 @@ namespace Engine::Gui {
 		shader = engine.shaderManager.get("shaders/gui_clip");
 		glyphShader = engine.shaderManager.get("shaders/gui_text2");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
-		shapingBuffer = hb_buffer_create();
 
 		{
 			glCreateBuffers(1, &glyphVBO);
@@ -100,8 +99,11 @@ namespace Engine::Gui {
 			registerPanel(child);
 		}
 
-		fontId = fontManager.createFont("assets/arial.ttf", 32);
-		fontGlyphSet = fontManager.getFontGlyphSet(fontId).get(); // TODO: dont do this
+		fontId_a = fontManager.createFont("assets/arial.ttf", 32);
+		fontGlyphSet_a = fontManager.getFontGlyphSet(fontId_a).get(); // TODO: dont do this
+
+		fontId_b = fontManager.createFont("assets/consola.ttf", 32);
+		fontGlyphSet_b = fontManager.getFontGlyphSet(fontId_b).get(); // TODO: dont do this
 	}
 
 	Context::~Context() {
@@ -115,16 +117,14 @@ namespace Engine::Gui {
 		glDeleteVertexArrays(1, &glyphVAO);
 		glDeleteBuffers(1, &glyphVBO);
 
-		hb_buffer_destroy(shapingBuffer);
-
 		delete root;
 	}
 	
-	void Context::renderText3(const ShapedString& str, glm::vec2 base) {
+	void Context::renderText3(const ShapedString& str, glm::vec2 base, FontGlyphSet* font) {
 		const auto glyphShapeData = str.getGlyphShapeData();
 
 		for (const auto& data : glyphShapeData) {
-			const uint32 index = fontGlyphSet->getGlyphIndex(data.index);
+			const uint32 index = font->getGlyphIndex(data.index);
 			glyphVertexData.push_back({glm::round(base + data.offset), index});
 			//glyphVertexData.push_back({glm::floor(base + data.offset), index});
 			//glyphVertexData.push_back({(base + data.offset), index});
@@ -250,24 +250,25 @@ namespace Engine::Gui {
 			R"(pegs. She took down a jar from one of the shelves as she passed; it was labelled "ORANGE MARMALADE," but to her great disappointment)",
 			R"----(T̴̖̀è̴̖s̴̖̀t̴̖̀)----",
 			R"----(😀👍)----",
-			R"(it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of)",
-			R"(the cupboards as she fell past it. "Well!" thought Alice to herself, "after such a fall as this, I shall think nothing of)",
-			R"(tumbling down stairs! How brave they'll all think me at home! Why, I wouldn't say anything about it, even if I fell off the)",
-			R"(top of the house!" (Which was very likely true.) Down, down, down. Would the fall never come to an end! "I wonder how many)",
-			R"(miles I've fallen by this time'?" she said aloud. "I must be getting somewhere near the centre of the earth. Let me see:)",
-			R"(that would be four thousand miles down, I think—" (for, you see, Alice had learnt several things of this sort in her lessons)",
-			R"(in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to)",
-			R"(listen to her, still it was good practice to say it over) "—yes, that's about the right distance—but then I wonder what Latitude)",
-			R"(or Longitude I've got to?" (Alice had not the slightest idea what Latitude was, or Longitude either, but she thought they)",
-			R"(were nice grand words to say.) Presently she began again. "I wonder if I shall fall right through the earth! How funny it'll)",
-			R"(seem to come out among the people that walk with their heads downwards! The Antipathies, I think—" (she was rather glad there)",
-			R"(was no one listening, this time, as it didn't sound at all the right word) "—but I shall have to ask them what the name of)",
-			R"(the country is, you know. Please, Ma'am, is this New Zealand or Australia?" (and she tried to curtsey as she spoke—fancy)",
-			R"(curtseying as you're falling through the air! Do you think you could manage it?) "And what an ignorant little girl she'll)",
-			R"(think me for asking! No, it'll never do to ask: perhaps I shall see it written up somewhere." Down, down, down. There was)",
-			R"(nothing else to do, so Alice soon began talking again. "Dinah'll miss me very much to-night, I should think!" (Dinah was)",
-			R"(the cat.) "I hope they'll remember her saucer of milk at tea-time. Dinah, my dear! I wish you were down here with me! There)",
-			R"(are no mice in the air, I'm afraid, but you might catch a bat, and that's very like a mouse, you know. But do cats eat bats,)",
+			//R"(it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of)",
+			//R"(the cupboards as she fell past it. "Well!" thought Alice to herself, "after such a fall as this, I shall think nothing of)",
+			//R"(tumbling down stairs! How brave they'll all think me at home! Why, I wouldn't say anything about it, even if I fell off the)",
+			//R"(top of the house!" (Which was very likely true.) Down, down, down. Would the fall never come to an end! "I wonder how many)",
+			//R"(miles I've fallen by this time'?" she said aloud. "I must be getting somewhere near the centre of the earth. Let me see:)",
+			//R"(that would be four thousand miles down, I think—" (for, you see, Alice had learnt several things of this sort in her lessons)",
+			//R"(in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to)",
+			//R"(listen to her, still it was good practice to say it over) "—yes, that's about the right distance—but then I wonder what Latitude)",
+			//R"(or Longitude I've got to?" (Alice had not the slightest idea what Latitude was, or Longitude either, but she thought they)",
+			//R"(were nice grand words to say.) Presently she began again. "I wonder if I shall fall right through the earth! How funny it'll)",
+			//R"(seem to come out among the people that walk with their heads downwards! The Antipathies, I think—" (she was rather glad there)",
+			//R"(was no one listening, this time, as it didn't sound at all the right word) "—but I shall have to ask them what the name of)",
+			//R"(the country is, you know. Please, Ma'am, is this New Zealand or Australia?" (and she tried to curtsey as she spoke—fancy)",
+			//R"(curtseying as you're falling through the air! Do you think you could manage it?) "And what an ignorant little girl she'll)",
+			//R"(think me for asking! No, it'll never do to ask: perhaps I shall see it written up somewhere." Down, down, down. There was)",
+			//R"(nothing else to do, so Alice soon began talking again. "Dinah'll miss me very much to-night, I should think!" (Dinah was)",
+			//R"(the cat.) "I hope they'll remember her saucer of milk at tea-time. Dinah, my dear! I wish you were down here with me! There)",
+			//R"(are no mice in the air, I'm afraid, but you might catch a bat, and that's very like a mouse, you know. But do cats eat bats,)",
+
 /*			R"(I wonder?" And here Alice began to get rather sleepy, and went on saying to herself, in a dreamy sort of way, "Do cats eat)",
 			R"(bats? Do cats eat bats?" and sometimes, "Do bats eat cats?" for, you see, as she couldn't answer either question, it didn't)",
 			R"(much matter which way she put it. She felt that she was dozing off, and had just begun to dream that she was walking hand)",
@@ -287,11 +288,15 @@ namespace Engine::Gui {
 			R"(that it led into a small passage, not much larger than a rat-hole: she knelt down and looked along the passage into the loveliest)",
 		*/};
 
-		static ShapedString shapedLines[std::size(lines)];
+		static ShapedString shapedLines_a[std::size(lines)];
+		static ShapedString shapedLines_b[std::size(lines)];
 		static int initShapedLines = [&](){
 			ENGINE_LOG("initShapedLines");
-			for (int i = 0; i < std::size(shapedLines); ++i) {
-				fontGlyphSet->shapeString(shapedLines[i] = lines[i]);
+			for (int i = 0; i < std::size(shapedLines_a); ++i) {
+				fontGlyphSet_a->shapeString(shapedLines_a[i] = lines[i]);
+			}
+			for (int i = 0; i < std::size(shapedLines_b); ++i) {
+				fontGlyphSet_b->shapeString(shapedLines_b[i] = lines[i]);
 			}
 			return 0;
 		}();
@@ -299,19 +304,25 @@ namespace Engine::Gui {
 		static Clock::duration avg = {};
 		static int avgCounter = {};
 		const auto startT = Clock::now();
-		for (int n = 0; const auto& text : shapedLines) {
-			renderText3(text, {10, 32 * ++n});
-		}
-
-		//renderText3(testString, {32, 512});
+		glm::ivec2 aRange = {};
+		glm::ivec2 bRange = {};
 
 		{
-			glBindVertexArray(glyphVAO);
-			glUseProgram(glyphShader->get());
-			glBindTextureUnit(0, fontGlyphSet->getGlyphTexture().get());
-			glUniform2fv(0, 1, &view.x);
-			glUniform1i(1, 0);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontGlyphSet->getGlyphDataBuffer());
+			int line = 0;
+
+			for (const auto& text : shapedLines_a) {
+				renderText3(text, {10, 32 * ++line}, fontGlyphSet_a);
+			}
+			aRange.y = static_cast<int>(glyphVertexData.size());
+
+			bRange.x = aRange.y;
+			for (const auto& text : shapedLines_b) {
+				renderText3(text, {10, 32 * ++line}, fontGlyphSet_b);
+			}
+			bRange.y = static_cast<int>(glyphVertexData.size()) - aRange.y;
+		}
+
+		{
 
 			{
 				const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
@@ -322,11 +333,23 @@ namespace Engine::Gui {
 				}
 				glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
 			}
+			
+			glBindVertexArray(glyphVAO);
+			glUseProgram(glyphShader->get());
+			glUniform2fv(0, 1, &view.x);
+			glUniform1i(1, 0);
 
-			fontGlyphSet->updateDataBuffer();
-
-			//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(glyphVertexData.size()));
-			glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(glyphVertexData.size()));
+			///////////////////////////////////////////
+			fontGlyphSet_a->updateDataBuffer();
+			glBindTextureUnit(0, fontGlyphSet_a->getGlyphTexture().get());
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontGlyphSet_a->getGlyphDataBuffer());
+			glDrawArrays(GL_POINTS, aRange.x, aRange.y);
+			///////////////////////////////////////////
+			fontGlyphSet_b->updateDataBuffer();
+			glBindTextureUnit(0, fontGlyphSet_b->getGlyphTexture().get());
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontGlyphSet_b->getGlyphDataBuffer());
+			glDrawArrays(GL_POINTS, bRange.x, bRange.y);
+			///////////////////////////////////////////
 			glyphVertexData.clear();
 		}
 		const auto endT = Clock::now();

@@ -64,9 +64,10 @@ namespace Engine::Gui {
 			GLenum activeClipTex = 0;
 
 			FontManager fontManager;
-			FontId fontId;
-			FontGlyphSet* fontGlyphSet; // TODO: rm - temp for testing
-			hb_buffer_t* shapingBuffer;
+			FontId fontId_a;
+			FontId fontId_b;
+			FontGlyphSet* fontGlyphSet_a; // TODO: rm - temp for testing
+			FontGlyphSet* fontGlyphSet_b; // TODO: rm - temp for testing
 			std::vector<GlyphVertex> glyphVertexData;
 			ShaderRef glyphShader;
 
@@ -74,7 +75,7 @@ namespace Engine::Gui {
 			GLuint glyphVBO = 0;
 			GLuint glyphVAO = 0;
 			GLsizei glyphVBOSize = 0;
-			void renderText3(const ShapedString& str, glm::vec2 base); 
+			void renderText3(const ShapedString& str, glm::vec2 base, FontGlyphSet* font);
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
