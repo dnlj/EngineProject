@@ -124,7 +124,7 @@ namespace Engine::Gui {
 		const auto glyphShapeData = str.getGlyphShapeData();
 
 		for (const auto& data : glyphShapeData) {
-			const uint32 index = fontGlyphSet->glyphIndexToLoadedIndex[data.index];
+			const uint32 index = fontGlyphSet->getGlyphIndex(data.index);
 			glyphVertexData.push_back({glm::round(base + data.offset), index});
 			//glyphVertexData.push_back({glm::floor(base + data.offset), index});
 			//glyphVertexData.push_back({(base + data.offset), index});

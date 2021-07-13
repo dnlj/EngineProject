@@ -63,7 +63,7 @@ namespace Engine::Gui {
 
 			GLuint glyphSSBO = 0;
 			GLsizei glyphSSBOSize = 0;
-		public: FlatHashMap<uint32, uint32> glyphIndexToLoadedIndex; private: // TODO: private
+			FlatHashMap<uint32, uint32> glyphIndexToLoadedIndex;
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
 			
@@ -89,6 +89,8 @@ namespace Engine::Gui {
 			ENGINE_INLINE const auto& getGlyphTexture() const noexcept { return glyphTex; }
 
 			ENGINE_INLINE const auto& getGlyphDataBuffer() const noexcept { return glyphSSBO; }
+
+			ENGINE_INLINE auto getGlyphIndex(uint32 glyph) { return glyphIndexToLoadedIndex[glyph]; }
 
 			void updateDataBuffer();
 
