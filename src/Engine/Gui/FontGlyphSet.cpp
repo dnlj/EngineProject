@@ -45,6 +45,26 @@ namespace Engine::Gui {
 		}
 
 		// Setup HarfBuzz
+		// 
+		// Ideally we would share a single hb_face_t* between all sizes of a face (cached in FT_Face::generic)
+		// Unfortunately HarfBuzz does not expose `_hb_ft_font_set_funcs` so our only options
+		// are to:
+		// 
+		//   1. Use `hb_ft_font_set_funcs`, which creates a duplicate FT_Face (completely negating our caching;
+		//      in fact would be worse than no cache)
+		//   2. Manually implement our own `hb_font_funcs_t` struct (this appears to be what chrome/skia do).
+		//   3. Use `hb_ft_font_create` which creates a duplicate `hb_face_t` per face/size combo.
+		//   4. Use a single `hb_font_t` for all face/size combos and call `hb_font_set_scale`
+		//      which negates the metric caching that hb_font_t does internally
+		//   5. Fork/PR HarfBuzz and make a public version of `_hb_ft_font_set_funcs`
+		// 
+		// At the moment this isnt a big enough issue to bother with so we will just have to pay for a
+		// duplicate `hb_face_t` per face/size combo.
+		//
+		// @See https://github.com/harfbuzz/harfbuzz/issues/651
+		// @See https://github.com/harfbuzz/harfbuzz/issues/559
+		// @See https://github.com/harfbuzz/harfbuzz/blob/main/src/hb-ft.cc
+		//
 		hbFont = hb_ft_font_create(face, nullptr);
 
 		// Setup OpenGL
@@ -65,11 +85,7 @@ namespace Engine::Gui {
 	}
 
 	void FontGlyphSet::loadGlyph(const uint32 index) {
-		// TODO: we can also just do ftFace->size = ftSize; if we know that face and size are valid (they should be by this point)
-		//ftFace->size = ftSize;
-		if (const auto err = FT_Activate_Size(ftSize)) [[unlikely]] {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
-		}
+		ftFace->size = ftSize;
 
 		if (const auto err = FT_Load_Glyph(ftFace, index, FT_LOAD_RENDER)) [[unlikely]] {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
@@ -155,7 +171,7 @@ namespace Engine::Gui {
 	}
 
 	void FontGlyphSet::shapeString(ShapedString& str) {
-		// TODO: to we need to activate size here? i dont think so?
+		ftFace->size = ftSize;
 
 		hb_buffer_add_utf8(workingBuffer, str.getString().data(), -1, 0, -1);
 		hb_buffer_guess_segment_properties(workingBuffer); // TODO: Should we handle this ourself?

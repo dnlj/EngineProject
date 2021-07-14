@@ -102,7 +102,8 @@ namespace Engine::Gui {
 		fontId_a = fontManager.createFont("assets/arial.ttf", 32);
 		fontGlyphSet_a = fontManager.getFontGlyphSet(fontId_a).get(); // TODO: dont do this
 
-		fontId_b = fontManager.createFont("assets/consola.ttf", 32);
+		//fontId_b = fontManager.createFont("assets/consola.ttf", 32);
+		fontId_b = fontManager.createFont("assets/arial.ttf", 128);
 		fontGlyphSet_b = fontManager.getFontGlyphSet(fontId_b).get(); // TODO: dont do this
 	}
 
@@ -311,19 +312,18 @@ namespace Engine::Gui {
 			int line = 0;
 
 			for (const auto& text : shapedLines_a) {
-				renderText3(text, {10, 32 * ++line}, fontGlyphSet_a);
+				renderText3(text, {10, line += 32}, fontGlyphSet_a);
 			}
 			aRange.y = static_cast<int>(glyphVertexData.size());
 
 			bRange.x = aRange.y;
 			for (const auto& text : shapedLines_b) {
-				renderText3(text, {10, 32 * ++line}, fontGlyphSet_b);
+				renderText3(text, {10, line += 128}, fontGlyphSet_b);
 			}
 			bRange.y = static_cast<int>(glyphVertexData.size()) - aRange.y;
 		}
 
 		{
-
 			{
 				const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
 				if (newSize > glyphVBOSize) {
