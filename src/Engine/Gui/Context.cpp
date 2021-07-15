@@ -100,11 +100,9 @@ namespace Engine::Gui {
 		}
 
 		fontId_a = fontManager.createFont("assets/arial.ttf", 32);
-		fontGlyphSet_a = fontManager.getFontGlyphSet(fontId_a).get(); // TODO: dont do this
 
-		//fontId_b = fontManager.createFont("assets/consola.ttf", 32);
-		fontId_b = fontManager.createFont("assets/arial.ttf", 128);
-		fontGlyphSet_b = fontManager.getFontGlyphSet(fontId_b).get(); // TODO: dont do this
+		fontId_b = fontManager.createFont("assets/consola.ttf", 128);
+		//fontId_b = fontManager.createFont("assets/arial.ttf", 128);
 	}
 
 	Context::~Context() {
@@ -131,6 +129,10 @@ namespace Engine::Gui {
 			//glyphVertexData.push_back({(base + data.offset), index});
 			base += data.advance;
 		}
+	}
+
+	void Context::drawString(glm::vec2 pos, const FontString* fstr) {
+		stringsToDraw.emplace_back(pos, fstr);
 	}
 
 	void Context::render() {
@@ -289,15 +291,22 @@ namespace Engine::Gui {
 			R"(that it led into a small passage, not much larger than a rat-hole: she knelt down and looked along the passage into the loveliest)",
 		*/};
 
-		static ShapedString shapedLines_a[std::size(lines)];
-		static ShapedString shapedLines_b[std::size(lines)];
+		static FontString fontLines_a[std::size(lines)];
+		static FontString fontLines_b[std::size(lines)];
 		static int initShapedLines = [&](){
 			ENGINE_LOG("initShapedLines");
-			for (int i = 0; i < std::size(shapedLines_a); ++i) {
-				fontGlyphSet_a->shapeString(shapedLines_a[i] = lines[i]);
+			auto* glyphSet_a = fontManager.getFontGlyphSet(fontId_a);
+			for (int i = 0; i < std::size(fontLines_a); ++i) {
+				fontLines_a[i].str = lines[i];
+				fontLines_a[i].fid = fontId_a;
+				glyphSet_a->shapeString(fontLines_a[i].str);
 			}
-			for (int i = 0; i < std::size(shapedLines_b); ++i) {
-				fontGlyphSet_b->shapeString(shapedLines_b[i] = lines[i]);
+
+			auto* glyphSet_b = fontManager.getFontGlyphSet(fontId_b);
+			for (int i = 0; i < std::size(fontLines_b); ++i) {
+				fontLines_b[i].str = lines[i];
+				fontLines_b[i].fid = fontId_b;
+				glyphSet_b->shapeString(fontLines_b[i].str);
 			}
 			return 0;
 		}();
@@ -305,22 +314,43 @@ namespace Engine::Gui {
 		static Clock::duration avg = {};
 		static int avgCounter = {};
 		const auto startT = Clock::now();
-		glm::ivec2 aRange = {};
-		glm::ivec2 bRange = {};
 
 		{
 			int line = 0;
 
-			for (const auto& text : shapedLines_a) {
-				renderText3(text, {10, line += 32}, fontGlyphSet_a);
+			for (const auto& text : fontLines_a) {
+				//renderText3(text.str, {10, line += 32}, text.fid);
+				drawString({10, line += 32}, &text);
 			}
-			aRange.y = static_cast<int>(glyphVertexData.size());
+			for (const auto& text : fontLines_b) {
+				//renderText3(text.str, {10, line += 128}, text.fid);
+				drawString({10, line += 128}, &text);
+			}
+		}
 
-			bRange.x = aRange.y;
-			for (const auto& text : shapedLines_b) {
-				renderText3(text, {10, line += 128}, fontGlyphSet_b);
+		if (!stringsToDraw.empty()){
+			std::sort(stringsToDraw.begin(), stringsToDraw.end(), [](const StringData& a, const StringData& b){
+				return a.fstr->fid.font < b.fstr->fid.font;
+			});
+
+			FontId lastFontId = stringsToDraw.front().fstr->fid;
+			StringGroup* group = &stringGroups.emplace_back();
+			group->glyphSet = fontManager.getFontGlyphSet(lastFontId);
+
+			for (const auto& strdat : stringsToDraw) {
+				if (lastFontId != strdat.fstr->fid) {
+					lastFontId = strdat.fstr->fid;
+
+					StringGroup next;
+					next.glyphSet = fontManager.getFontGlyphSet(lastFontId);
+					next.offset = group->offset + group->count;
+					next.count = 0;
+					group = &stringGroups.emplace_back(next);
+				}
+				renderText3(strdat.fstr->str, strdat.pos, group->glyphSet);
+				group->count += static_cast<int32>(strdat.fstr->str.getGlyphShapeData().size());
 			}
-			bRange.y = static_cast<int>(glyphVertexData.size()) - aRange.y;
+			stringsToDraw.clear();
 		}
 
 		{
@@ -332,6 +362,7 @@ namespace Engine::Gui {
 					glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
 				}
 				glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
+				glyphVertexData.clear();
 			}
 			
 			glBindVertexArray(glyphVAO);
@@ -339,18 +370,13 @@ namespace Engine::Gui {
 			glUniform2fv(0, 1, &view.x);
 			glUniform1i(1, 0);
 
-			///////////////////////////////////////////
-			fontGlyphSet_a->updateDataBuffer();
-			glBindTextureUnit(0, fontGlyphSet_a->getGlyphTexture().get());
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontGlyphSet_a->getGlyphDataBuffer());
-			glDrawArrays(GL_POINTS, aRange.x, aRange.y);
-			///////////////////////////////////////////
-			fontGlyphSet_b->updateDataBuffer();
-			glBindTextureUnit(0, fontGlyphSet_b->getGlyphTexture().get());
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fontGlyphSet_b->getGlyphDataBuffer());
-			glDrawArrays(GL_POINTS, bRange.x, bRange.y);
-			///////////////////////////////////////////
-			glyphVertexData.clear();
+			for (const auto& group : stringGroups) {
+				group.glyphSet->updateDataBuffer();
+				glBindTextureUnit(0, group.glyphSet->getGlyphTexture().get());
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, group.glyphSet->getGlyphDataBuffer());
+				glDrawArrays(GL_POINTS, group.offset, group.count);
+			}
+			stringGroups.clear();
 		}
 		const auto endT = Clock::now();
 		const auto diff = endT - startT;

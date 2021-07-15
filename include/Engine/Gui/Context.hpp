@@ -19,10 +19,17 @@
 
 
 namespace Engine::Gui {
+	class FontString { // TODO: just merge with ShapedString, doesnt make sense without font
+		public:
+			ShapedString str;
+			FontId fid;
+	};
+
 	class Context {
 		private:
 			using PanelId = float32; // TODO: reall would like uint16
 			
+
 			struct BFSStateData {
 				glm::vec2 offset;
 				const Panel* panel;
@@ -45,6 +52,17 @@ namespace Engine::Gui {
 				uint32 index; // TODO: uint16?
 			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32));
 
+			struct StringData {
+				glm::vec2 pos;
+				const FontString* fstr;
+			};
+
+			struct StringGroup {
+				FontGlyphSet* glyphSet = nullptr;
+				int32 offset = 0;
+				int32 count = 0;
+			};
+
 		private:
 			std::vector<Panel*> hoverStack;
 			std::vector<Vertex> verts;
@@ -64,18 +82,18 @@ namespace Engine::Gui {
 			GLenum activeClipTex = 0;
 
 			FontManager fontManager;
-			FontId fontId_a;
-			FontId fontId_b;
-			FontGlyphSet* fontGlyphSet_a; // TODO: rm - temp for testing
-			FontGlyphSet* fontGlyphSet_b; // TODO: rm - temp for testing
+			FontId fontId_a; // TODO: rm when done testing
+			FontId fontId_b; // TODO: rm when done testing
 			std::vector<GlyphVertex> glyphVertexData;
 			ShaderRef glyphShader;
 
-			// TODO: rm when done with testing
+			std::vector<StringData> stringsToDraw;
+			std::vector<StringGroup> stringGroups;
 			GLuint glyphVBO = 0;
 			GLuint glyphVAO = 0;
 			GLsizei glyphVBOSize = 0;
 			void renderText3(const ShapedString& str, glm::vec2 base, FontGlyphSet* font);
+			void drawString(glm::vec2 pos, const FontString* fstr);
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};

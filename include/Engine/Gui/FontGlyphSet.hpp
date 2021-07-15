@@ -48,15 +48,6 @@ namespace Engine::Gui {
 		private:
 			FT_Face ftFace;
 			FT_Size ftSize;
-
-			/* TODO: it looks like we should be caching a hb_face_t object and share that between multiple hb_font_t objects.
-			* since hb_face_t objects can be large
-			* 
-			* See
-			* https://harfbuzz.github.io/fonts-and-faces.html
-			* def hb_ft_font_create
-			* This seems to be what hb_ft_face_create_cached is for? we can just do it ourselfs though.
-			*/
 			hb_font_t* hbFont;
 
 			hb_buffer_t* workingBuffer; // TODO: own by font manager, shared by fonts

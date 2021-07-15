@@ -40,7 +40,6 @@ namespace Engine::Gui {
 			FlatHashMap<std::string, FT_Face> pathToFace;
 			FlatHashMap<FontId, std::unique_ptr<FontGlyphSet>> fontIdToGlyphSet;
 
-
 		public:
 			FontManager();
 			~FontManager();
@@ -48,7 +47,7 @@ namespace Engine::Gui {
 			FontId createFont(const std::string& path, int32 size);
 
 			// TODO: temp, want to use find so we dont create invalid sets
-			auto& getFontGlyphSet(FontId fid) { return fontIdToGlyphSet[fid]; }
+			auto* getFontGlyphSet(FontId fid) { return fontIdToGlyphSet[fid].get(); }
 	};
 }
 
