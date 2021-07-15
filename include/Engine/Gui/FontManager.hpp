@@ -7,18 +7,8 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Gui/FontGlyphSet.hpp>
+#include <Engine/Gui/FontId.hpp>
 
-
-namespace Engine::Gui { // TODO: move
-	struct FontId {
-		FT_Face font;
-		int32 size;
-
-		ENGINE_INLINE bool operator==(const FontId& other) const noexcept {
-			return font == other.font && size == other.size;
-		}
-	};
-}
 
 template<> 
 struct Engine::Hash<Engine::Gui::FontId> {

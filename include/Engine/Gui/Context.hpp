@@ -19,17 +19,10 @@
 
 
 namespace Engine::Gui {
-	class FontString { // TODO: just merge with ShapedString, doesnt make sense without font
-		public:
-			ShapedString str;
-			FontId fid;
-	};
-
 	class Context {
 		private:
 			using PanelId = float32; // TODO: reall would like uint16
 			
-
 			struct BFSStateData {
 				glm::vec2 offset;
 				const Panel* panel;
@@ -54,7 +47,7 @@ namespace Engine::Gui {
 
 			struct StringData {
 				glm::vec2 pos;
-				const FontString* fstr;
+				const ShapedString* str;
 			};
 
 			struct StringGroup {
@@ -92,8 +85,9 @@ namespace Engine::Gui {
 			GLuint glyphVBO = 0;
 			GLuint glyphVAO = 0;
 			GLsizei glyphVBOSize = 0;
-			void renderText3(const ShapedString& str, glm::vec2 base, FontGlyphSet* font);
-			void drawString(glm::vec2 pos, const FontString* fstr);
+
+			void renderString(const ShapedString& str, glm::vec2 base, FontGlyphSet* font);
+			void drawString(glm::vec2 pos, const ShapedString* fstr);
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
