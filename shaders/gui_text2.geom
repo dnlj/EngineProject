@@ -22,17 +22,14 @@ void main() {
 	EmitVertex();
 
 	gl_Position = geomPos + vec4(0,glyphSize.y,0,0);
-	//gl_Position = geomPos + vec4(0,s,0,0);
 	fragTexCoord = glyphTexOffset.xy + vec2(0, glyphTexSize.y);
 	EmitVertex();
 	
 	gl_Position = geomPos + vec4(glyphSize.x,0,0,0);
-	//gl_Position = geomPos + vec4(s,0,0,0);
 	fragTexCoord = glyphTexOffset.xy + vec2(glyphTexSize.x, 0);
 	EmitVertex();
 
 	gl_Position = geomPos + vec4(glyphSize,0,0);
-	//gl_Position = geomPos + vec4(vec2(s,s),0,0);
 	fragTexCoord = glyphTexOffset.xy + glyphTexSize;
 	EmitVertex();
 

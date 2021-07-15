@@ -370,12 +370,15 @@ namespace Engine::Gui {
 			glUniform2fv(0, 1, &view.x);
 			glUniform1i(1, 0);
 
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			for (const auto& group : stringGroups) {
 				group.glyphSet->updateDataBuffer();
 				glBindTextureUnit(0, group.glyphSet->getGlyphTexture().get());
 				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, group.glyphSet->getGlyphDataBuffer());
 				glDrawArrays(GL_POINTS, group.offset, group.count);
 			}
+			glDisable(GL_BLEND);
 			stringGroups.clear();
 		}
 		const auto endT = Clock::now();
