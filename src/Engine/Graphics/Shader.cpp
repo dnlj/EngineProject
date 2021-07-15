@@ -34,6 +34,11 @@ namespace Engine::Graphics {
 		auto vertShader = glCreateShader(GL_VERTEX_SHADER);
 		{
 			const auto source = Engine::Utility::readFile(vertPath);
+			
+			if (source.empty()) {
+				ENGINE_ERROR("Unable to read .vert file for shader: ", path);
+			}
+
 			const auto cstr = source.c_str();
 			glShaderSource(vertShader, 1, &cstr, nullptr);
 			glCompileShader(vertShader);
@@ -56,6 +61,11 @@ namespace Engine::Graphics {
 		auto fragShader = glCreateShader(GL_FRAGMENT_SHADER);
 		{
 			const auto source = Engine::Utility::readFile(fragPath);
+
+			if (source.empty()) {
+				ENGINE_ERROR("Unable to read .frag file for shader: ", path);
+			}
+
 			const auto cstr = source.c_str();
 			glShaderSource(fragShader, 1, &cstr, nullptr);
 			glCompileShader(fragShader);

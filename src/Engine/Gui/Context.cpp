@@ -10,7 +10,7 @@
 namespace Engine::Gui {
 	Context::Context(Engine::EngineInstance& engine) {
 		shader = engine.shaderManager.get("shaders/gui_clip");
-		glyphShader = engine.shaderManager.get("shaders/gui_text2");
+		glyphShader = engine.shaderManager.get("shaders/gui_text");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
 		{
