@@ -20,12 +20,14 @@
 
 
 namespace Engine::Gui {
-	// TODO: name?
 	/**
-	 * TODO: doc.
+	 * Supports a number of operations needed to render strings in a given font face and size on the gpu.
 	 *
-	 * It looks like we dont need activate size unless we are loading a glyph?
-	 * HarfBuzz looks like it stores its own size metrics at the time you create the font. See hb_ft_font_changed. 
+	 * - Loading glyphs into a texture.
+	 * - Providing metrics for glyph layout.
+	 * - Providing a subset of metrics on the gpu.
+	 * - Converting from strings to a positioned glyph sequence.
+	 * 
 	 */
 	class FontGlyphSet {
 		private:
@@ -86,6 +88,20 @@ namespace Engine::Gui {
 			void updateDataBuffer();
 
 			void shapeString(ShapedString& str);
+
+			/**
+			 * Gets the font specified line height.
+			 * 
+			 * This is different than the CSS line-height property which ignores
+			 * the font specified height and simply applies a multiplier of the
+			 * font size or a fixed px value.
+			 *
+			 * Example:
+			 * A 32px Arial font has a specified height of 37px, but CSS ignores this
+			 * value completely and with a line-height of 1.0 would return a line
+			 * height of 32px not 37px.
+			 */
+			ENGINE_INLINE auto getLineHeight() const noexcept { return ftSize->metrics.height * mscale; }
 
 		private:
 			void initMaxGlyphSize();

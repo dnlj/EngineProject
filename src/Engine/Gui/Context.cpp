@@ -316,15 +316,16 @@ namespace Engine::Gui {
 		const auto startT = Clock::now();
 
 		{
-			int line = 0;
+			float32 line = 0;
+
+			const auto line_a = fontManager.getFontGlyphSet(fontId_a)->getLineHeight();
+			const auto line_b = fontManager.getFontGlyphSet(fontId_b)->getLineHeight();
 
 			for (const auto& text : fontLines_a) {
-				//renderText3(text.str, {10, line += 32}, text.fid);
-				drawString({10, line += 32}, &text);
+				drawString({10, line += line_a}, &text);
 			}
 			for (const auto& text : fontLines_b) {
-				//renderText3(text.str, {10, line += 128}, text.fid);
-				drawString({10, line += 128}, &text);
+				drawString({10, line += line_b}, &text);
 			}
 		}
 
