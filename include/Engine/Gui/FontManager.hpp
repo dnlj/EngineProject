@@ -34,8 +34,14 @@ namespace Engine::Gui {
 
 			FontId createFont(const std::string& path, int32 size);
 
-			// TODO: temp, want to use find so we dont create invalid sets
-			auto* getFontGlyphSet(FontId fid) { return fontIdToGlyphSet[fid].get(); }
+			ENGINE_INLINE auto* getFontGlyphSet(FontId fid) {
+				auto found = fontIdToGlyphSet.find(fid);
+				return found == fontIdToGlyphSet.end() ? nullptr : found->second.get();
+			}
+
+			ENGINE_INLINE const auto* getFontGlyphSet(FontId fid) const {
+				return const_cast<FontManager*>(this)->getFontGlyphSet(fid);
+			}
 
 			void shapeString(ShapedString& str, FontGlyphSet* glyphSet);
 	};
