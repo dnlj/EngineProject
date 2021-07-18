@@ -52,8 +52,6 @@ namespace Engine::Gui {
 			FT_Size ftSize;
 			hb_font_t* hbFont;
 
-			hb_buffer_t* workingBuffer; // TODO: own by font manager, shared by fonts
-
 			GLuint glyphSSBO = 0;
 			GLsizei glyphSSBOSize = 0;
 			FlatHashMap<uint32, uint32> glyphIndexToLoadedIndex;
@@ -71,7 +69,7 @@ namespace Engine::Gui {
 			FontGlyphSet(FontGlyphSet&&) = delete;
 			~FontGlyphSet();
 
-			void init(FT_Face face, int32 size, hb_buffer_t* buff);
+			void init(FT_Face face, int32 size);
 
 			void loadGlyph(const uint32 index);
 
@@ -87,7 +85,7 @@ namespace Engine::Gui {
 
 			void updateDataBuffer();
 
-			void shapeString(ShapedString& str);
+			void shapeString(ShapedString& str, hb_buffer_t* buffer);
 
 			/**
 			 * Gets the font specified line height.

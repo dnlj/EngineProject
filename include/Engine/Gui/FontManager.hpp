@@ -22,11 +22,9 @@ struct Engine::Hash<Engine::Gui::FontId> {
 
 namespace Engine::Gui {
 	class FontManager {
-		public: // TODO: private
+		private:
 			FT_Library ftlib;
 			hb_buffer_t* workingBuffer;
-
-		private:
 			FlatHashMap<std::string, FT_Face> pathToFace;
 			FlatHashMap<FontId, std::unique_ptr<FontGlyphSet>> fontIdToGlyphSet;
 
@@ -38,6 +36,8 @@ namespace Engine::Gui {
 
 			// TODO: temp, want to use find so we dont create invalid sets
 			auto* getFontGlyphSet(FontId fid) { return fontIdToGlyphSet[fid].get(); }
+
+			void shapeString(ShapedString& str, FontGlyphSet* glyphSet);
 	};
 }
 

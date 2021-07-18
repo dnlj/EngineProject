@@ -26,11 +26,10 @@ namespace Engine::Gui {
 		}
 	}
 
-	void FontGlyphSet::init(FT_Face face, int32 size, hb_buffer_t* buff) {
+	void FontGlyphSet::init(FT_Face face, int32 size) {
 		// Setup FreeType
 		FT_Reference_Face(face);
 		ftFace = face;
-		workingBuffer = buff;
 
 		if (const auto err = FT_New_Size(face, &ftSize)) [[unlikely]] {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
@@ -170,16 +169,17 @@ namespace Engine::Gui {
 		//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
 	}
 
-	void FontGlyphSet::shapeString(ShapedString& str) {
+	void FontGlyphSet::shapeString(ShapedString& str, hb_buffer_t* buffer) {
 		ftFace->size = ftSize;
+		
+		hb_buffer_clear_contents(buffer);
+		hb_buffer_add_utf8(buffer, str.getString().data(), -1, 0, -1);
+		hb_buffer_guess_segment_properties(buffer); // TODO: Should we handle this ourself?
+		hb_shape(hbFont, buffer, nullptr, 0);
 
-		hb_buffer_add_utf8(workingBuffer, str.getString().data(), -1, 0, -1);
-		hb_buffer_guess_segment_properties(workingBuffer); // TODO: Should we handle this ourself?
-		hb_shape(hbFont, workingBuffer, nullptr, 0);
-
-		const auto sz = hb_buffer_get_length(workingBuffer);
-		const auto infoArr = hb_buffer_get_glyph_infos(workingBuffer, nullptr);
-		const auto posArr = hb_buffer_get_glyph_positions(workingBuffer, nullptr);
+		const auto sz = hb_buffer_get_length(buffer);
+		const auto infoArr = hb_buffer_get_glyph_infos(buffer, nullptr);
+		const auto posArr = hb_buffer_get_glyph_positions(buffer, nullptr);
 		auto& data = str.getGlyphShapeDataMutable();
 		data.clear();
 
@@ -202,8 +202,6 @@ namespace Engine::Gui {
 				.advance = glm::vec2{pos.x_advance, pos.y_advance} * (1.0f/64),
 			});
 		}
-
-		hb_buffer_clear_contents(workingBuffer);
 	}
 	
 	void FontGlyphSet::updateDataBuffer() {

@@ -67,10 +67,14 @@ namespace Engine::Gui {
 			if (found == fontIdToGlyphSet.end()) {
 				auto [it, _] = fontIdToGlyphSet.insert({id, std::make_unique<FontGlyphSet>()});
 				found = it;
-				found->second->init(face, size, workingBuffer);
+				found->second->init(face, size);
 			}
 		}
 
 		return id;
+	}
+
+	void FontManager::shapeString(ShapedString& str, FontGlyphSet* glyphSet) {
+		glyphSet->shapeString(str, workingBuffer);
 	}
 }

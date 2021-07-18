@@ -299,14 +299,14 @@ namespace Engine::Gui {
 			for (int i = 0; i < std::size(fontLines_a); ++i) {
 				fontLines_a[i] = lines[i];
 				fontLines_a[i].setFont(fontId_a);
-				glyphSet_a->shapeString(fontLines_a[i]);
+				fontManager.shapeString(fontLines_a[i], glyphSet_a);
 			}
 
 			auto* glyphSet_b = fontManager.getFontGlyphSet(fontId_b);
 			for (int i = 0; i < std::size(fontLines_b); ++i) {
 				fontLines_b[i] = lines[i];
 				fontLines_b[i].setFont(fontId_b);
-				glyphSet_b->shapeString(fontLines_b[i]);
+				fontManager.shapeString(fontLines_b[i], glyphSet_b);
 			}
 			return 0;
 		}();
