@@ -115,6 +115,8 @@ namespace Engine::Gui {
 			glyphTex.setSubImage(0, dat.offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 		}
+
+		ENGINE_INFO("Loaded glyph ", index, " = ", nextGlyphIndex-1, " @ ", dat.offset.x, ", ", dat.offset.y); // TODO: rm
 	}
 
 	void FontGlyphSet::initMaxGlyphSize() {
@@ -192,7 +194,6 @@ namespace Engine::Gui {
 			}
 
 			ensureGlyphLoaded(info.codepoint);
-
 			const auto gi = glyphIndexToLoadedIndex[info.codepoint];
 			const auto& met = glyphMetrics[gi];
 

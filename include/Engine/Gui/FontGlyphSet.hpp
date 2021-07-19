@@ -101,6 +101,8 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE auto getLineHeight() const noexcept { return ftSize->metrics.height * mscale; }
 
+			ENGINE_INLINE auto getAscent() const noexcept { return ftSize->metrics.ascender * mscale; }
+
 		private:
 			void initMaxGlyphSize();
 	};

@@ -79,7 +79,7 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE Bounds getBounds() const noexcept { return {pos, pos + size}; }
 
-			void render(Context& ctx) const;
+			virtual void render(Context& ctx) const;
 			
 			/**
 			 * Called when this panel is hovered.

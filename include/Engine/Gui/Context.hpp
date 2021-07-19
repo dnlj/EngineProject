@@ -87,7 +87,6 @@ namespace Engine::Gui {
 			GLsizei glyphVBOSize = 0;
 
 			void renderString(const ShapedString& str, glm::vec2 base, FontGlyphSet* font);
-			void drawString(glm::vec2 pos, const ShapedString* fstr);
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
@@ -116,7 +115,10 @@ namespace Engine::Gui {
 			Context(Engine::EngineInstance& engine);
 			~Context();
 			void render();
-			void addRect(const glm::vec2 pos, const glm::vec2 size);
+
+			void drawRect(const glm::vec2 pos, const glm::vec2 size);
+			void drawString(glm::vec2 pos, const ShapedString* fstr);
+
 			void updateHover();
 
 			ENGINE_INLINE PanelId getPanelId(const Panel* panel) const {

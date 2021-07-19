@@ -10,6 +10,6 @@ namespace Engine::Gui {
 	};
 
 	void Panel::render(Context& ctx) const {
-		ctx.addRect(pos, size);
+		ctx.drawRect({0,0}, size);
 	}
 }

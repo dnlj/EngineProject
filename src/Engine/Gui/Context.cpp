@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/Gui/Context.hpp>
+#include <Engine/Gui/Button.hpp> // TODO: rm
 
 
 namespace Engine::Gui {
@@ -80,6 +81,12 @@ namespace Engine::Gui {
 		root->setSize({512, 256});
 		registerPanel(root);
 
+		///////////////////////////////////////////////////////////////////////////////
+
+		fontId_a = fontManager.createFont("assets/arial.ttf", 32);
+		fontId_b = fontManager.createFont("assets/consola.ttf", 128);
+		//fontId_b = fontManager.createFont("assets/arial.ttf", 128);
+
 		{
 			auto child = root->addChild(new Panel{});
 			child->setPos({0, 0});
@@ -99,10 +106,21 @@ namespace Engine::Gui {
 			registerPanel(child);
 		}
 
-		fontId_a = fontManager.createFont("assets/arial.ttf", 32);
+		{
+			auto child = new Button{};
+			root->addChild(child);
+			child->setPos({256, 10});
+			child->setSize({128, 64});
 
-		fontId_b = fontManager.createFont("assets/consola.ttf", 128);
-		//fontId_b = fontManager.createFont("assets/arial.ttf", 128);
+			child->label = R"(This is a test button)";
+			child->label.setFont(fontId_a);
+
+			// TODO: this is way to clunky. Find a better way
+			//fontManager.shapeString(child->label, fontManager.getFontGlyphSet(child->label.getFont()));
+			fontManager.shapeString(child->label, fontManager.getFontGlyphSet(fontId_a));
+
+			registerPanel(child);
+		}
 	}
 
 	Context::~Context() {
@@ -125,14 +143,12 @@ namespace Engine::Gui {
 		for (const auto& data : glyphShapeData) {
 			const uint32 index = font->getGlyphIndex(data.index);
 			glyphVertexData.push_back({glm::round(base + data.offset), index});
-			//glyphVertexData.push_back({glm::floor(base + data.offset), index});
-			//glyphVertexData.push_back({(base + data.offset), index});
 			base += data.advance;
 		}
 	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
-		stringsToDraw.emplace_back(pos, fstr);
+		stringsToDraw.emplace_back(pos + offset, fstr);
 	}
 
 	void Context::render() {
@@ -161,7 +177,10 @@ namespace Engine::Gui {
 				else { currRenderState.color = glm::vec4{1, 0, 0, 0.2}; }
 
 				currRenderState.current = curr;
+				const auto oldOffset = offset;
+				offset += curr->getPos();
 				curr->render(*this);
+				offset = oldOffset;
 				curr = curr->nextSibling;
 			}
 
@@ -294,20 +313,20 @@ namespace Engine::Gui {
 		static ShapedString fontLines_a[std::size(lines)];
 		static ShapedString fontLines_b[std::size(lines)];
 		static int initShapedLines = [&](){
-			ENGINE_LOG("initShapedLines");
-			auto* glyphSet_a = fontManager.getFontGlyphSet(fontId_a);
-			for (int i = 0; i < std::size(fontLines_a); ++i) {
-				fontLines_a[i] = lines[i];
-				fontLines_a[i].setFont(fontId_a);
-				fontManager.shapeString(fontLines_a[i], glyphSet_a);
-			}
-
-			auto* glyphSet_b = fontManager.getFontGlyphSet(fontId_b);
-			for (int i = 0; i < std::size(fontLines_b); ++i) {
-				fontLines_b[i] = lines[i];
-				fontLines_b[i].setFont(fontId_b);
-				fontManager.shapeString(fontLines_b[i], glyphSet_b);
-			}
+			//ENGINE_LOG("initShapedLines");
+			//auto* glyphSet_a = fontManager.getFontGlyphSet(fontId_a);
+			//for (int i = 0; i < std::size(fontLines_a); ++i) {
+			//	fontLines_a[i] = lines[i];
+			//	fontLines_a[i].setFont(fontId_a);
+			//	fontManager.shapeString(fontLines_a[i], glyphSet_a);
+			//}
+			//
+			//auto* glyphSet_b = fontManager.getFontGlyphSet(fontId_b);
+			//for (int i = 0; i < std::size(fontLines_b); ++i) {
+			//	fontLines_b[i] = lines[i];
+			//	fontLines_b[i].setFont(fontId_b);
+			//	fontManager.shapeString(fontLines_b[i], glyphSet_b);
+			//}
 			return 0;
 		}();
 
@@ -315,7 +334,7 @@ namespace Engine::Gui {
 		static int avgCounter = {};
 		const auto startT = Clock::now();
 
-		{
+		/*{
 			float32 line = 0;
 
 			const auto line_a = fontManager.getFontGlyphSet(fontId_a)->getLineHeight();
@@ -327,7 +346,7 @@ namespace Engine::Gui {
 			for (const auto& text : fontLines_b) {
 				drawString({10, line += line_b}, &text);
 			}
-		}
+		}*/
 
 		if (!stringsToDraw.empty()){
 			std::sort(stringsToDraw.begin(), stringsToDraw.end(), [](const StringData& a, const StringData& b){
@@ -337,6 +356,7 @@ namespace Engine::Gui {
 			FontId lastFontId = stringsToDraw.front().str->getFont();
 			StringGroup* group = &stringGroups.emplace_back();
 			group->glyphSet = fontManager.getFontGlyphSet(lastFontId);
+			auto ascent = group->glyphSet->getAscent();
 
 			for (const auto& strdat : stringsToDraw) {
 				if (lastFontId != strdat.str->getFont()) {
@@ -347,8 +367,11 @@ namespace Engine::Gui {
 					next.offset = group->offset + group->count;
 					next.count = 0;
 					group = &stringGroups.emplace_back(next);
+					ascent = group->glyphSet->getAscent();
 				}
-				renderString(*strdat.str, strdat.pos, group->glyphSet);
+				auto pos = strdat.pos;
+				pos.y += ascent;
+				renderString(*strdat.str, pos, group->glyphSet);
 				group->count += static_cast<int32>(strdat.str->getGlyphShapeData().size());
 			}
 			stringsToDraw.clear();
@@ -392,7 +415,7 @@ namespace Engine::Gui {
 		}
 	}
 
-	void Context::addRect(const glm::vec2 pos, const glm::vec2 size) {
+	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size) {
 		const PanelId id = getPanelId(currRenderState.current);
 		const PanelId pid = getPanelId(currRenderState.current->parent);
 		const auto color = currRenderState.color;
