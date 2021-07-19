@@ -27,7 +27,7 @@ namespace Engine::Gui {
 
 			glEnableVertexArrayAttrib(glyphVAO, 1);
 			glVertexArrayAttribBinding(glyphVAO, 1, 0);
-			glVertexArrayAttribIFormat(glyphVAO, 1, 2, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
+			glVertexArrayAttribIFormat(glyphVAO, 1, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
 		}
 
 		{
