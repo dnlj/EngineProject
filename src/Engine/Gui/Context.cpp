@@ -13,7 +13,9 @@ namespace Engine::Gui {
 		quadShader = engine.shaderManager.get("shaders/fullscreen_passthrough");
 		polyShader = engine.shaderManager.get("shaders/gui_poly");
 		glyphShader = engine.shaderManager.get("shaders/gui_glyph");
-		view = engine.camera.getScreenSize(); // TODO: should update when resized
+		view = engine.camera.getScreenSize();
+
+		glProgramUniform1i(glyphShader->get(), 2, 1);
 
 		glCreateFramebuffers(1, &fbo);
 
@@ -285,14 +287,6 @@ namespace Engine::Gui {
 
 		// TODO: create constexpr constants for managing texture units, currently 0 is clip and 1 is glyphs
 
-		// TODO: use UBO so we dont have to update every time we switch programs
-		//// These are the same for poly and glyph shaders
-		//glUniform2fv(0, 1, &view.x); 
-		//glUniform1i(1, 0);
-		//
-		//// Only used by glyph shader
-		//glUniform1i(2, 1);
-
 		// We cant use glMultiDrawArrays because you can not read/write
 		// the same texture. It may be possible to work around this
 		// with glTextureBarrier but that isnt as widely supported.
@@ -308,8 +302,10 @@ namespace Engine::Gui {
 			glBindTextureUnit(0, activeClipTex ? clipTex1.get() : clipTex2.get());
 		};
 
-		// Setup clipping buffers
+		// Setup buffers and uniforms
 		swapClipBuffers();
+		glProgramUniform2fv(polyShader->get(), 0, 1, &view.x);
+		glProgramUniform2fv(glyphShader->get(), 0, 1, &view.x);
 
 		for (int32 layer = 0; layer < polyDrawGroups.size(); ++layer) {
 			const auto first = polyDrawGroups[layer].offset;
@@ -317,16 +313,10 @@ namespace Engine::Gui {
 
 			// Draw polys
 			{
-				// TODO: will need to swap program/vao/uniforms
 				if (activeStage != polyVAO) {
 					activeStage = polyVAO;
 					glBindVertexArray(polyVAO);
 					glUseProgram(polyShader->get());
-					
-					// TODO: use UBO so we dont have to update every time we switch programs
-					glUniform2fv(0, 1, &view.x); 
-					glUniform1i(1, 0);
-					//glUniform1i(2, 1);
 				}
 
 				glDrawArrays(GL_TRIANGLES, first, count);
@@ -346,11 +336,6 @@ namespace Engine::Gui {
 					activeStage = glyphVAO;
 					glBindVertexArray(glyphVAO);
 					glUseProgram(glyphShader->get());
-					
-					// TODO: use UBO so we dont have to update every time we switch programs
-					glUniform2fv(0, 1, &view.x); 
-					glUniform1i(1, 0);
-					glUniform1i(2, 1);
 				}
 
 				FontGlyphSet* activeSet = nullptr;
