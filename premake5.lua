@@ -210,6 +210,7 @@ project("*")
 		"src/Engine/**",
 		"include/glloadgen/**",
 		"src/glloadgen/**",
+		"shaders/**",
 	}
 	
 	debugdir(os.getcwd())
