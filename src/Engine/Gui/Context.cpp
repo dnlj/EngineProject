@@ -147,10 +147,6 @@ namespace Engine::Gui {
 		}
 	}
 
-	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
-		stringsToDraw.emplace_back(pos + offset, fstr);
-	}
-
 	void Context::render() {
 		if (!hoverValid) {
 			updateHover();
@@ -158,11 +154,14 @@ namespace Engine::Gui {
 		}
 
 		const Panel* curr = root;
+		layer = 0;
 		offset = {};
 		multiDrawData.first.emplace_back() = 0;
-		
+
+		// TODO: probably move to own function
 		// Breadth first traversal
 		while (true) {
+			// Traverse siblings
 			while (curr) {
 				if (curr->firstChild) {
 					bfsNext.emplace_back(
@@ -184,6 +183,7 @@ namespace Engine::Gui {
 				curr = curr->nextSibling;
 			}
 
+			// Move to next layer if needed
 			if (bfsCurr.empty()) {
 				const auto vsz = static_cast<GLint>(verts.size());
 				multiDrawData.count.emplace_back() = vsz - multiDrawData.first.back();
@@ -192,15 +192,58 @@ namespace Engine::Gui {
 				if (bfsCurr.empty()) { break; }
 
 				multiDrawData.first.emplace_back() = vsz;
+				++layer;
 			}
 
+			// Next of current layer
 			const auto& back = bfsCurr.back();
 			curr = back.panel;
 			offset = back.offset;
 			bfsCurr.pop_back();
 		}
 
-		{
+		// Build glyph vertex buffer
+		if (!stringsToDraw.empty()){
+			std::sort(stringsToDraw.begin(), stringsToDraw.end(), [](const StringData& a, const StringData& b){
+				return (a.layer < b.layer)
+					|| (a.layer == b.layer && a.str->getFont().font < b.str->getFont().font);
+			});
+
+			// Build glyph draw groups
+			int32 currLayer = stringsToDraw.front().layer;
+			FontId currFontId = stringsToDraw.front().str->getFont();
+			
+			GlyphDrawGroup* group = &glyphDrawGroups.emplace_back();
+			group->glyphSet = fontManager.getFontGlyphSet(currFontId);
+			group->layer = currLayer;
+			auto ascent = group->glyphSet->getAscent();
+
+			for (const auto& strdat : stringsToDraw) {
+				if (strdat.layer != currLayer || currFontId != strdat.str->getFont()) {
+					currLayer = strdat.layer;
+					currFontId = strdat.str->getFont();
+
+					GlyphDrawGroup next {
+						.layer = currLayer,
+						.offset = group->offset + group->count,
+						.count = 0,
+						.glyphSet = fontManager.getFontGlyphSet(currFontId),
+					};
+					group = &glyphDrawGroups.emplace_back(next);
+					ascent = group->glyphSet->getAscent();
+				}
+
+				auto pos = strdat.pos;
+				pos.y += ascent;
+				renderString(*strdat.str, pos, group->glyphSet);
+				group->count += static_cast<int32>(strdat.str->getGlyphShapeData().size());
+			}
+
+			stringsToDraw.clear();
+		}
+
+		{ // Update polygon vertex buffer
+			// TODO: idealy we would only update if the data has actually changed
 			const auto size = verts.size() * sizeof(verts[0]);
 			if (size > vboCapacity) {
 				vboCapacity = static_cast<GLsizei>(verts.capacity() * sizeof(verts[0]));
@@ -208,48 +251,126 @@ namespace Engine::Gui {
 			}
 			glNamedBufferSubData(vbo, 0, size, verts.data());
 		}
-
-		glBindVertexArray(vao);
-		glUseProgram(shader->get());
-		glUniform2fv(0, 1, &view.x);
+		
+		{ // Update glyph vertex buffer
+			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
+			if (newSize > glyphVBOSize) {
+				ENGINE_INFO("glyphVBO resize: ", newSize);
+				glyphVBOSize = newSize;
+				glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
+			}
+			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
+			glyphVertexData.clear();
+		}
 
 		glEnable(GL_BLEND);
 		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		glBlendFunci(1, GL_ONE, GL_ZERO);
 
-		// If we dont care about clipping we can just do
-		//glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
-
 		glClearTexImage(colorTex.get(), 0, GL_RGB, GL_FLOAT, 0);
 		glClearTexImage(clipTex1.get(), 0, GL_RGB, GL_FLOAT, 0);
 		glClearTexImage(clipTex2.get(), 0, GL_RGB, GL_FLOAT, 0);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+		// TODO: create constexpr constants for managing texture units, currently 0 is clip and 1 is glyphs
+
+		// TODO: use UBO so we dont have to update every time we switch programs
+		//// These are the same for poly and glyph shaders
+		//glUniform2fv(0, 1, &view.x); 
+		//glUniform1i(1, 0);
+		//
+		//// Only used by glyph shader
+		//glUniform1i(2, 1);
+
 		// We cant use glMultiDrawArrays because you can not read/write
 		// the same texture. It may be possible to work around this
 		// with glTextureBarrier but that isnt as widely supported.
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		for (int i = 0; i < multiDrawData.first.size(); ++i) {
-			const auto first = multiDrawData.first[i];
-			const auto count = multiDrawData.count[i];
 
+		auto currGlyphDrawGroup = glyphDrawGroups.data();
+		const auto lastGlyphDrawGroup = currGlyphDrawGroup + glyphDrawGroups.size();
+		GLuint activeStage = 0;
+
+		for (int32 layer = 0; layer < multiDrawData.first.size(); ++layer) {
+			const auto first = multiDrawData.first[layer];
+			const auto count = multiDrawData.count[layer];
+
+			// Setup clipping buffers
+			activeClipTex = !activeClipTex;
 			const GLenum buffs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 + activeClipTex};
 			glNamedFramebufferDrawBuffers(fbo, 2, &buffs[0]);
 			glBindTextureUnit(0, activeClipTex ? clipTex1.get() : clipTex2.get());
-			glDrawArrays(GL_TRIANGLES, first, count);
-			activeClipTex = !activeClipTex;
+
+			// Draw polys
+			{
+				// TODO: will need to swap program/vao/uniforms
+				if (activeStage != vao) {
+					activeStage = vao;
+					glBindVertexArray(vao);
+					glUseProgram(shader->get());
+					
+					// TODO: use UBO so we dont have to update every time we switch programs
+					glUniform2fv(0, 1, &view.x); 
+					glUniform1i(1, 0);
+					//glUniform1i(2, 1);
+				}
+
+				glDrawArrays(GL_TRIANGLES, first, count);
+			}
+
+			// Draw glyphs
+			{
+				if (currGlyphDrawGroup == lastGlyphDrawGroup) { continue; }
+				if (currGlyphDrawGroup->layer != layer) { continue; }
+				
+				if (activeStage != glyphVAO) {
+					activeStage = glyphVAO;
+					glBindVertexArray(glyphVAO);
+					glUseProgram(glyphShader->get());
+					
+					// TODO: use UBO so we dont have to update every time we switch programs
+					glUniform2fv(0, 1, &view.x); 
+					//glUniform1i(1, 0);
+					glUniform1i(2, 1);
+				}
+
+				FontGlyphSet* activeSet = nullptr;
+
+				while (true) {
+					if (currGlyphDrawGroup->glyphSet != activeSet) {
+						activeSet = currGlyphDrawGroup->glyphSet;
+
+						// TODO: this needs once per set not per draw (layer + group):
+						activeSet->updateDataBuffer();
+
+						glBindTextureUnit(1, activeSet->getGlyphTexture().get());
+						glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, activeSet->getGlyphDataBuffer());
+					}
+
+					//ENGINE_LOG("Draw Glyphs: layer(", currGlyphDrawGroup->layer, "), offset(", currGlyphDrawGroup->offset, ") count(", currGlyphDrawGroup->count, ")");
+					glDrawArrays(GL_POINTS, currGlyphDrawGroup->offset, currGlyphDrawGroup->count);
+
+					++currGlyphDrawGroup;
+					if (currGlyphDrawGroup == lastGlyphDrawGroup) { break; }
+					if (currGlyphDrawGroup->layer != layer) { break; }
+				}
+			}
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+		// Draw to main framebuffer
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		glBindVertexArray(quadVAO);
 		glUseProgram(quadShader->get());
 		glBindTextureUnit(0, colorTex.get());
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		// Reset buffers
 		glDisable(GL_BLEND);
 		verts.clear();
 		multiDrawData.first.clear();
 		multiDrawData.count.clear();
+		glyphDrawGroups.clear();
 
 		constexpr const char* lines[] = {
 			R"(Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she)",
@@ -290,25 +411,7 @@ namespace Engine::Gui {
 			//R"(nothing else to do, so Alice soon began talking again. "Dinah'll miss me very much to-night, I should think!" (Dinah was)",
 			//R"(the cat.) "I hope they'll remember her saucer of milk at tea-time. Dinah, my dear! I wish you were down here with me! There)",
 			//R"(are no mice in the air, I'm afraid, but you might catch a bat, and that's very like a mouse, you know. But do cats eat bats,)",
-
-/*			R"(I wonder?" And here Alice began to get rather sleepy, and went on saying to herself, in a dreamy sort of way, "Do cats eat)",
-			R"(bats? Do cats eat bats?" and sometimes, "Do bats eat cats?" for, you see, as she couldn't answer either question, it didn't)",
-			R"(much matter which way she put it. She felt that she was dozing off, and had just begun to dream that she was walking hand)",
-			R"(in hand with Dinah, and was saying to her very earnestly, "Now, Dinah, tell me the truth: did you ever eat a bat?" when suddenly,)",
-			R"(thump! thump! down she came upon a heap of sticks and dry leaves, and the fall was over. Alice was not a bit hurt, and she)",
-			R"(jumped up on to her feet in a moment: she looked up, but it was all dark overhead; before her was another long passage, and)",
-			R"(the White Rabbit was still in sight, hurrying down it. There was not a moment to be lost: away went Alice like the wind,)",
-			R"(and was just in time to hear it say, as it turned a corner, "Oh my ears and whiskers, how late it's getting!" She was close)",
-			R"(behind it when she turned the corner, but the Rabbit was no longer to be seen: she found herself in a long, low hall, which)",
-			R"(was lit up by a row of lamps hanging from the roof. There were doors all round the hall, but they were all locked; and when)",
-			R"(Alice had been all the way down one side and up the other, trying every door, she walked sadly down the middle, wondering)",
-			R"(how she was ever to get out again. Suddenly she came upon a little three-legged table, all made of solid glass; there was)",
-			R"(nothing on it but a tiny golden key, and Alice's first idea was that this might belong to one of the doors of the hall; but,)",
-			R"(alas! either the locks were too large, or the key was too small, but at any rate it would not open any of them. However,)",
-			R"(on the second time round, she came upon a low curtain she had not noticed before, and behind it was a little door about fifteen)",
-			R"(inches high: she tried the little golden key in the lock, and to her great delight it fitted! Alice opened the door and found)",
-			R"(that it led into a small passage, not much larger than a rat-hole: she knelt down and looked along the passage into the loveliest)",
-		*/};
+		};
 
 		static ShapedString fontLines_a[std::size(lines)];
 		static ShapedString fontLines_b[std::size(lines)];
@@ -348,69 +451,12 @@ namespace Engine::Gui {
 			}
 		}*/
 
-		if (!stringsToDraw.empty()){
-			std::sort(stringsToDraw.begin(), stringsToDraw.end(), [](const StringData& a, const StringData& b){
-				return a.str->getFont().font < b.str->getFont().font;
-			});
-
-			FontId lastFontId = stringsToDraw.front().str->getFont();
-			StringGroup* group = &stringGroups.emplace_back();
-			group->glyphSet = fontManager.getFontGlyphSet(lastFontId);
-			auto ascent = group->glyphSet->getAscent();
-
-			for (const auto& strdat : stringsToDraw) {
-				if (lastFontId != strdat.str->getFont()) {
-					lastFontId = strdat.str->getFont();
-
-					StringGroup next;
-					next.glyphSet = fontManager.getFontGlyphSet(lastFontId);
-					next.offset = group->offset + group->count;
-					next.count = 0;
-					group = &stringGroups.emplace_back(next);
-					ascent = group->glyphSet->getAscent();
-				}
-				auto pos = strdat.pos;
-				pos.y += ascent;
-				renderString(*strdat.str, pos, group->glyphSet);
-				group->count += static_cast<int32>(strdat.str->getGlyphShapeData().size());
-			}
-			stringsToDraw.clear();
-		}
-
-		{
-			{
-				const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
-				if (newSize > glyphVBOSize) {
-					ENGINE_INFO("glyphVBO resize: ", newSize);
-					glyphVBOSize = newSize;
-					glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
-				}
-				glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
-				glyphVertexData.clear();
-			}
-			
-			glBindVertexArray(glyphVAO);
-			glUseProgram(glyphShader->get());
-			glUniform2fv(0, 1, &view.x);
-			glUniform1i(1, 0);
-
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			for (const auto& group : stringGroups) {
-				group.glyphSet->updateDataBuffer();
-				glBindTextureUnit(0, group.glyphSet->getGlyphTexture().get());
-				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, group.glyphSet->getGlyphDataBuffer());
-				glDrawArrays(GL_POINTS, group.offset, group.count);
-			}
-			glDisable(GL_BLEND);
-			stringGroups.clear();
-		}
 		const auto endT = Clock::now();
 		const auto diff = endT - startT;
 		avg += diff;
 		if (++avgCounter == 100) {
 			avg /= avgCounter;
-			ENGINE_LOG("Glyph time: ", Clock::Milliseconds{avg}.count(), "ms");
+			//ENGINE_LOG("Glyph time: ", Clock::Milliseconds{avg}.count(), "ms");
 			avgCounter = 0;
 		}
 	}
@@ -427,6 +473,10 @@ namespace Engine::Gui {
 		verts.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
 		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{size.x, 0}, .id = id, .pid = pid});
 		verts.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
+	}
+
+	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
+		stringsToDraw.emplace_back(layer, pos + offset, fstr);
 	}
 
 	void Context::updateHover() {

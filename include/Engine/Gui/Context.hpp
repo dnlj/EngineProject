@@ -34,10 +34,18 @@ namespace Engine::Gui {
 				PanelId id;
 				PanelId pid;
 			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6 + sizeof(PanelId) * 2);
-			
+
+			// TODO: change to AoS
 			struct MultiDrawData {
 				std::vector<GLint> first;
 				std::vector<GLsizei> count;
+			};
+
+			struct GlyphDrawGroup {
+				int32 layer;
+				int32 offset;
+				int32 count;
+				FontGlyphSet* glyphSet;
 			};
 
 			struct GlyphVertex {
@@ -46,6 +54,7 @@ namespace Engine::Gui {
 			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32));
 
 			struct StringData {
+				int32 layer;
 				glm::vec2 pos;
 				const ShapedString* str;
 			};
@@ -58,21 +67,23 @@ namespace Engine::Gui {
 
 		private:
 			std::vector<Panel*> hoverStack;
-			std::vector<Vertex> verts;
-			MultiDrawData multiDrawData;
 			std::vector<BFSStateData> bfsCurr;
 			std::vector<BFSStateData> bfsNext;
 
+			std::vector<Vertex> verts;
+			MultiDrawData multiDrawData;
+			std::vector<GlyphDrawGroup> glyphDrawGroups;
+
 			constexpr static GLuint vertBindingIndex = 0;
-			GLuint fbo = 0;
-			GLuint vao = 0;
-			GLuint vbo = 0;
-			GLsizei vboCapacity = 0;
-			ShaderRef shader;
+			GLuint fbo = 0; // TODO: better names, we also have glyph stuff
+			GLuint vao = 0; // TODO: better names, we also have glyph stuff
+			GLuint vbo = 0; // TODO: better names, we also have glyph stuff
+			GLsizei vboCapacity = 0; // TODO: better names, we also have glyph stuff
+			ShaderRef shader; // TODO: better names, we also have glyph stuff
 			Texture2D colorTex;
 			Texture2D clipTex1;
 			Texture2D clipTex2;
-			GLenum activeClipTex = 0;
+			GLenum activeClipTex = 1;
 
 			FontManager fontManager;
 			FontId fontId_a; // TODO: rm when done testing
@@ -80,7 +91,7 @@ namespace Engine::Gui {
 			std::vector<GlyphVertex> glyphVertexData;
 			ShaderRef glyphShader;
 
-			std::vector<StringData> stringsToDraw;
+			std::vector<StringData> stringsToDraw; // TODO: rename -> stringsToRender for consistency
 			std::vector<StringGroup> stringGroups;
 			GLuint glyphVBO = 0;
 			GLuint glyphVAO = 0;
@@ -97,6 +108,7 @@ namespace Engine::Gui {
 			GLuint quadVAO;
 			GLuint quadVBO;
 
+			int32 layer; // TODO: rename
 			glm::vec2 view;
 			glm::vec2 offset;
 			glm::vec2 cursor = {};
