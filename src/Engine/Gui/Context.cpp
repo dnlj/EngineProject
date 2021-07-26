@@ -10,41 +10,19 @@
 
 namespace Engine::Gui {
 	Context::Context(Engine::EngineInstance& engine) {
+		quadShader = engine.shaderManager.get("shaders/fullscreen_passthrough");
 		polyShader = engine.shaderManager.get("shaders/gui_poly");
 		glyphShader = engine.shaderManager.get("shaders/gui_glyph");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
-		{
-			constexpr static GLuint bindingIndex = 0;
-
-			glCreateBuffers(1, &glyphVBO);
-			glyphVBOCapacity = 6 * sizeof(GlyphVertex); // TODO: just leave empty?
-			glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-
-			glCreateVertexArrays(1, &glyphVAO);
-			glVertexArrayVertexBuffer(glyphVAO, bindingIndex, glyphVBO, 0, sizeof(GlyphVertex));
-
-			glEnableVertexArrayAttrib(glyphVAO, bindingIndex);
-			glVertexArrayAttribBinding(glyphVAO, 0, bindingIndex);
-			glVertexArrayAttribFormat(glyphVAO, 0, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
-
-			glEnableVertexArrayAttrib(glyphVAO, 1);
-			glVertexArrayAttribBinding(glyphVAO, 1, bindingIndex);
-			glVertexArrayAttribIFormat(glyphVAO, 1, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
-
-			glEnableVertexArrayAttrib(glyphVAO, 2);
-			glVertexArrayAttribBinding(glyphVAO, 2, bindingIndex);
-			glVertexArrayAttribFormat(glyphVAO, 2, 1, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, parent));
-		}
+		glCreateFramebuffers(1, &fbo);
 
 		{
-			quadShader = engine.shaderManager.get("shaders/fullscreen_passthrough");
 			const glm::vec2 quadData[] = {
 				{1,1}, {-1,1}, {-1,-1},
 				{-1,-1}, {1,-1}, {1,1},
 			};
 
-			// TODO: passthrough prgoram
 			glCreateBuffers(1, &quadVBO);
 			glNamedBufferData(quadVBO, sizeof(quadData), &quadData, GL_STATIC_DRAW);
 
@@ -55,8 +33,6 @@ namespace Engine::Gui {
 			glVertexArrayAttribFormat(quadVAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
 		}
 
-		glCreateFramebuffers(1, &fbo);
-
 		{
 			constexpr static GLuint bindingIndex = 0;
 
@@ -64,7 +40,6 @@ namespace Engine::Gui {
 			glCreateBuffers(1, &polyVBO);
 			glVertexArrayVertexBuffer(polyVAO, bindingIndex, polyVBO, 0, sizeof(PolyVertex));
 
-			// Vertex
 			glEnableVertexArrayAttrib(polyVAO, 0);
 			glVertexArrayAttribBinding(polyVAO, 0, bindingIndex);
 			glVertexArrayAttribFormat(polyVAO, 0, 4, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, color));
@@ -84,6 +59,27 @@ namespace Engine::Gui {
 			//glVertexArrayAttribIFormat(polyVAO, 3, 1, GL_UNSIGNED_INT, offsetof(PolyVertex, pid));
 		}
 
+		{
+			constexpr static GLuint bindingIndex = 0;
+
+			glCreateBuffers(1, &glyphVBO);
+
+			glCreateVertexArrays(1, &glyphVAO);
+			glVertexArrayVertexBuffer(glyphVAO, bindingIndex, glyphVBO, 0, sizeof(GlyphVertex));
+
+			glEnableVertexArrayAttrib(glyphVAO, bindingIndex);
+			glVertexArrayAttribBinding(glyphVAO, 0, bindingIndex);
+			glVertexArrayAttribFormat(glyphVAO, 0, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
+
+			glEnableVertexArrayAttrib(glyphVAO, 1);
+			glVertexArrayAttribBinding(glyphVAO, 1, bindingIndex);
+			glVertexArrayAttribIFormat(glyphVAO, 1, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
+
+			glEnableVertexArrayAttrib(glyphVAO, 2);
+			glVertexArrayAttribBinding(glyphVAO, 2, bindingIndex);
+			glVertexArrayAttribFormat(glyphVAO, 2, 1, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, parent));
+		}
+
 		registerPanel(nullptr); // register before everything else so nullptr = id 0
 
 		root = new Panel{};
@@ -94,7 +90,7 @@ namespace Engine::Gui {
 		///////////////////////////////////////////////////////////////////////////////
 
 		fontId_a = fontManager.createFont("assets/arial.ttf", 32);
-		fontId_b = fontManager.createFont("assets/consola.ttf", 128);
+		fontId_b = fontManager.createFont("assets/consola.ttf", 12);
 		//fontId_b = fontManager.createFont("assets/arial.ttf", 128);
 
 		{
@@ -154,7 +150,6 @@ namespace Engine::Gui {
 		delete root;
 	}
 	
-
 	void Context::render() {
 		if (!hoverValid) {
 			updateHover();

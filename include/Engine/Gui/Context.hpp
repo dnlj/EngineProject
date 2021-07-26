@@ -21,11 +21,11 @@
 namespace Engine::Gui {
 	class Context {
 		private:
-			using PanelId = float32; // TODO: reall would like uint16
+			using PanelId = float32; // TODO: really would like uint16
 			
-			struct BFSStateData {
-				glm::vec2 offset;
-				const Panel* panel;
+			struct PolyDrawGroup {
+				int32 offset;
+				int32 count;
 			};
 
 			struct PolyVertex {
@@ -34,11 +34,6 @@ namespace Engine::Gui {
 				PanelId id;
 				PanelId pid;
 			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 6 + sizeof(PanelId) * 2);
-
-			struct PolyDrawGroup {
-				int32 offset;
-				int32 count;
-			};
 
 			struct GlyphDrawGroup {
 				int32 layer;
@@ -59,63 +54,70 @@ namespace Engine::Gui {
 				glm::vec2 pos;
 				const ShapedString* str;
 			};
-
-		private:
-			constexpr static PanelId invalidPanelId = -1;
-
-			std::vector<Panel*> hoverStack;
-			std::vector<BFSStateData> bfsCurr;
-			std::vector<BFSStateData> bfsNext;
-
-			std::vector<PolyDrawGroup> polyDrawGroups;
-			std::vector<GlyphDrawGroup> glyphDrawGroups;
-
-			GLuint fbo = 0;
-
-			GLuint polyVAO = 0;
-			GLuint polyVBO = 0;
-			GLsizei polyVBOCapacity = 0;
-			std::vector<PolyVertex> polyVertexData;
-			ShaderRef polyShader;
-
-			Texture2D colorTex;
-			Texture2D clipTex1;
-			Texture2D clipTex2;
-			GLenum activeClipTex = 1;
-
-			FontManager fontManager;
-			FontId fontId_a; // TODO: rm when done testing
-			FontId fontId_b; // TODO: rm when done testing
-
-			std::vector<StringData> stringsToRender;
-
-			GLuint glyphVAO = 0;
-			GLuint glyphVBO = 0;
-			GLsizei glyphVBOCapacity = 0;
-			std::vector<GlyphVertex> glyphVertexData;
-			ShaderRef glyphShader;
-
-			struct {
+			
+			struct RenderState {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
-				const Panel* current = nullptr; /* The current panel */
+				const Panel* current = nullptr; /* The current panel being rendered */
 				PanelId id = invalidPanelId; /* The id of the current panel */
 				PanelId pid = invalidPanelId; /* The parent id of the current panel */
 				int32 layer; /* The layer being rendered */
 				glm::vec2 offset; /* The offset to use for rendering */
-			} renderState;
+			};
 
-			ShaderRef quadShader;
+			struct BFSStateData {
+				glm::vec2 offset;
+				const Panel* panel;
+			};
+
+		private:
+			constexpr static PanelId invalidPanelId = -1;
+
+			/* Main framebuffer and clipping */
+			GLuint fbo = 0;
+			Texture2D colorTex;
+			Texture2D clipTex1;
+			Texture2D clipTex2;
+			GLenum activeClipTex = 1;
 			GLuint quadVAO;
 			GLuint quadVBO;
+			ShaderRef quadShader;
 
-			// TODO: should these be part of render state?
+			/* Polygon members */
+			GLuint polyVAO = 0;
+			GLuint polyVBO = 0;
+			GLsizei polyVBOCapacity = 0;
+			std::vector<PolyDrawGroup> polyDrawGroups;
+			std::vector<PolyVertex> polyVertexData;
+			ShaderRef polyShader;
+
+			/* Glyph members */
+			GLuint glyphVAO = 0;
+			GLuint glyphVBO = 0;
+			GLsizei glyphVBOCapacity = 0;
+			std::vector<GlyphDrawGroup> glyphDrawGroups;
+			std::vector<GlyphVertex> glyphVertexData;
+			ShaderRef glyphShader;
+
+			/* Text rendering helpers */
+			FontManager fontManager;
+			FontId fontId_a; // TODO: rm when done testing
+			FontId fontId_b; // TODO: rm when done testing
+			std::vector<StringData> stringsToRender;
+
+			/* Scene graph traversal */
+			RenderState renderState;
+			std::vector<BFSStateData> bfsCurr;
+			std::vector<BFSStateData> bfsNext;
+
+			/* Panel state */
+			Panel* root;
+			Panel* active = nullptr;
+			std::vector<Panel*> hoverStack;
+			bool hoverValid = false;
 			glm::vec2 view;
 			glm::vec2 cursor = {};
 
-			Panel* root;
-			Panel* active = nullptr;
-			bool hoverValid = false;
-
+			/* Panel id management */
 			FlatHashMap<const Panel*, PanelId> panelIdMap;
 			std::vector<PanelId> freePanelIds;
 			PanelId nextPanelId = invalidPanelId;
@@ -142,7 +144,6 @@ namespace Engine::Gui {
 				ENGINE_LOG("Panel Id ", panelIdMap[panel], " = ", panel);
 			}
 
-			// TODO: name?
 			ENGINE_INLINE void deregisterPanel(const Panel* panel) {
 				ENGINE_DEBUG_ASSERT(panel != nullptr, "Attempting to deregister nullptr.");
 				auto found = panelIdMap.find(panel);
