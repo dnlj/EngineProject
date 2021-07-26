@@ -184,6 +184,9 @@ namespace Engine::Gui {
 				else { currRenderState.color = glm::vec4{1, 0, 0, 0.2}; }
 
 				currRenderState.current = curr;
+				currRenderState.id = getPanelId(currRenderState.current);
+				currRenderState.pid = getPanelId(currRenderState.current->parent);
+
 				const auto oldOffset = offset;
 				offset += curr->getPos();
 				curr->render(*this);
@@ -481,9 +484,8 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size) {
-		// TODO: cache ids for active and parent?
-		const PanelId id = getPanelId(currRenderState.current);
-		const PanelId pid = getPanelId(currRenderState.current->parent);
+		const PanelId id = currRenderState.id;
+		const PanelId pid = currRenderState.pid;
 		const auto color = currRenderState.color;
 
 		polyVertexData.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
@@ -496,9 +498,7 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
-		// TODO: cache ids for active and parent?
-		const PanelId id = getPanelId(currRenderState.current);
-		stringsToRender.emplace_back(layer, id, pos + offset, fstr);
+		stringsToRender.emplace_back(layer, currRenderState.id, pos + offset, fstr);
 	}
 
 	void Context::updateHover() {

@@ -61,6 +61,8 @@ namespace Engine::Gui {
 			};
 
 		private:
+			constexpr static PanelId invalidPanelId = -1;
+
 			std::vector<Panel*> hoverStack;
 			std::vector<BFSStateData> bfsCurr;
 			std::vector<BFSStateData> bfsNext;
@@ -96,12 +98,15 @@ namespace Engine::Gui {
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
 				const Panel* current = nullptr;
+				PanelId id = invalidPanelId;
+				PanelId pid = invalidPanelId;
 			} currRenderState;
 
 			ShaderRef quadShader;
 			GLuint quadVAO;
 			GLuint quadVBO;
 
+			// TODO: should these be part of render state?
 			int32 layer; // TODO: rename
 			glm::vec2 view;
 			glm::vec2 offset;
@@ -111,7 +116,6 @@ namespace Engine::Gui {
 			Panel* active = nullptr;
 			bool hoverValid = false;
 
-			constexpr static PanelId invalidPanelId = -1;
 			FlatHashMap<const Panel*, PanelId> panelIdMap;
 			std::vector<PanelId> freePanelIds;
 			PanelId nextPanelId = invalidPanelId;
