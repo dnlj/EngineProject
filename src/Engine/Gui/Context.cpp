@@ -29,6 +29,10 @@ namespace Engine::Gui {
 			glEnableVertexArrayAttrib(glyphVAO, 1);
 			glVertexArrayAttribBinding(glyphVAO, 1, 0);
 			glVertexArrayAttribIFormat(glyphVAO, 1, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
+
+			glEnableVertexArrayAttrib(glyphVAO, 2);
+			glVertexArrayAttribBinding(glyphVAO, 2, 0);
+			glVertexArrayAttribFormat(glyphVAO, 2, 1, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, parent));
 		}
 
 		{
@@ -88,10 +92,17 @@ namespace Engine::Gui {
 		//fontId_b = fontManager.createFont("assets/arial.ttf", 128);
 
 		{
-			auto child = root->addChild(new Panel{});
+			auto child = new Button{};
+			root->addChild(child);
 			child->setPos({0, 0});
 			child->setSize({64, 300});
 			registerPanel(child);
+
+			child->label = R"(Hello, world!)";
+			child->label.setFont(fontId_b);
+
+			// TODO: this is way to clunky. Find a better way
+			fontManager.shapeString(child->label, fontManager.getFontGlyphSet(fontId_b));
 
 			auto childChild = child->addChild(new Panel{});
 			childChild->setPos({0, 0});
@@ -120,6 +131,8 @@ namespace Engine::Gui {
 			fontManager.shapeString(child->label, fontManager.getFontGlyphSet(fontId_a));
 
 			registerPanel(child);
+
+			ENGINE_WARN("Button Parent: ", getPanelId(child)); // TODO: rm
 		}
 	}
 
@@ -137,12 +150,16 @@ namespace Engine::Gui {
 		delete root;
 	}
 	
-	void Context::renderString(const ShapedString& str, glm::vec2 base, FontGlyphSet* font) {
+	void Context::renderString(const ShapedString& str, PanelId parent, glm::vec2 base, FontGlyphSet* font) {
 		const auto glyphShapeData = str.getGlyphShapeData();
 
 		for (const auto& data : glyphShapeData) {
 			const uint32 index = font->getGlyphIndex(data.index);
-			glyphVertexData.push_back({glm::round(base + data.offset), index});
+			glyphVertexData.push_back({
+				.pos = glm::round(base + data.offset),
+				.index = index,
+				.parent = parent,
+			});
 			base += data.advance;
 		}
 	}
@@ -235,7 +252,7 @@ namespace Engine::Gui {
 
 				auto pos = strdat.pos;
 				pos.y += ascent;
-				renderString(*strdat.str, pos, group->glyphSet);
+				renderString(*strdat.str, strdat.parent, pos, group->glyphSet);
 				group->count += static_cast<int32>(strdat.str->getGlyphShapeData().size());
 			}
 
@@ -255,7 +272,7 @@ namespace Engine::Gui {
 		{ // Update glyph vertex buffer
 			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
 			if (newSize > glyphVBOSize) {
-				ENGINE_INFO("glyphVBO resize: ", newSize);
+				ENGINE_INFO("glyphVBO(", glyphVBO, ") resize: ", newSize);
 				glyphVBOSize = newSize;
 				glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
 			}
@@ -291,15 +308,19 @@ namespace Engine::Gui {
 		const auto lastGlyphDrawGroup = currGlyphDrawGroup + glyphDrawGroups.size();
 		GLuint activeStage = 0;
 
-		for (int32 layer = 0; layer < multiDrawData.first.size(); ++layer) {
-			const auto first = multiDrawData.first[layer];
-			const auto count = multiDrawData.count[layer];
-
-			// Setup clipping buffers
+		auto swapClipBuffers = [&]() ENGINE_INLINE {
 			activeClipTex = !activeClipTex;
 			const GLenum buffs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 + activeClipTex};
 			glNamedFramebufferDrawBuffers(fbo, 2, &buffs[0]);
 			glBindTextureUnit(0, activeClipTex ? clipTex1.get() : clipTex2.get());
+		};
+
+		// Setup clipping buffers
+		swapClipBuffers();
+
+		for (int32 layer = 0; layer < multiDrawData.first.size(); ++layer) {
+			const auto first = multiDrawData.first[layer];
+			const auto count = multiDrawData.count[layer];
 
 			// Draw polys
 			{
@@ -318,11 +339,16 @@ namespace Engine::Gui {
 				glDrawArrays(GL_TRIANGLES, first, count);
 			}
 
+			swapClipBuffers();
+
 			// Draw glyphs
 			{
 				if (currGlyphDrawGroup == lastGlyphDrawGroup) { continue; }
 				if (currGlyphDrawGroup->layer != layer) { continue; }
-				
+
+				// Disable drawing to clip buffer
+				glBlendFunci(1, GL_ZERO, GL_ONE);
+
 				if (activeStage != glyphVAO) {
 					activeStage = glyphVAO;
 					glBindVertexArray(glyphVAO);
@@ -330,7 +356,7 @@ namespace Engine::Gui {
 					
 					// TODO: use UBO so we dont have to update every time we switch programs
 					glUniform2fv(0, 1, &view.x); 
-					//glUniform1i(1, 0);
+					glUniform1i(1, 0);
 					glUniform1i(2, 1);
 				}
 
@@ -354,6 +380,9 @@ namespace Engine::Gui {
 					if (currGlyphDrawGroup == lastGlyphDrawGroup) { break; }
 					if (currGlyphDrawGroup->layer != layer) { break; }
 				}
+
+				// Enable drawing to clip buffer
+				glBlendFunci(1, GL_ONE, GL_ZERO);
 			}
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -462,6 +491,7 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size) {
+		// TODO: cache ids for active and parent?
 		const PanelId id = getPanelId(currRenderState.current);
 		const PanelId pid = getPanelId(currRenderState.current->parent);
 		const auto color = currRenderState.color;
@@ -476,7 +506,9 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
-		stringsToDraw.emplace_back(layer, pos + offset, fstr);
+		// TODO: cache ids for active and parent?
+		const PanelId id = getPanelId(currRenderState.current);
+		stringsToDraw.emplace_back(layer, id, pos + offset, fstr);
 	}
 
 	void Context::updateHover() {

@@ -14,6 +14,7 @@ void main() {
 	const float under = texture(clipTex, fragTexCoord).r;
 	if (under != fragParent) {
 		discard; // TODO: is discard performant? could also just do:
+		// TODO: if we do one of these also update the glyph shader
 		//finalId = under;
 		//finalColor = vec4(0,0,0,0);
 	} else {

@@ -17,7 +17,6 @@ void main() {
 	fragTexCoord = vertPos / viewSize;
 	fragTexCoord.y = 1 - fragTexCoord.y;
 	gl_Position = vec4(fragTexCoord * 2 - 1, 0, 1);
-	//gl_Position.y = -gl_Position.y;
 
 	fragColor = vertColor;
 	fragId = vertId;

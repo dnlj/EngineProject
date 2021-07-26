@@ -51,10 +51,12 @@ namespace Engine::Gui {
 			struct GlyphVertex {
 				glm::vec2 pos;
 				uint32 index; // TODO: uint16?
-			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32));
+				PanelId parent;
+			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32) + sizeof(PanelId));
 
 			struct StringData {
 				int32 layer;
+				PanelId parent;
 				glm::vec2 pos;
 				const ShapedString* str;
 			};
@@ -97,7 +99,7 @@ namespace Engine::Gui {
 			GLuint glyphVAO = 0;
 			GLsizei glyphVBOSize = 0;
 
-			void renderString(const ShapedString& str, glm::vec2 base, FontGlyphSet* font);
+			void renderString(const ShapedString& str, PanelId parent, glm::vec2 base, FontGlyphSet* font);
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
