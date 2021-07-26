@@ -97,19 +97,19 @@ namespace Engine::Gui {
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
-				const Panel* current = nullptr;
-				PanelId id = invalidPanelId;
-				PanelId pid = invalidPanelId;
-			} currRenderState;
+				const Panel* current = nullptr; /* The current panel */
+				PanelId id = invalidPanelId; /* The id of the current panel */
+				PanelId pid = invalidPanelId; /* The parent id of the current panel */
+				int32 layer; /* The layer being rendered */
+				glm::vec2 offset; /* The offset to use for rendering */
+			} renderState;
 
 			ShaderRef quadShader;
 			GLuint quadVAO;
 			GLuint quadVBO;
 
 			// TODO: should these be part of render state?
-			int32 layer; // TODO: rename
 			glm::vec2 view;
-			glm::vec2 offset;
 			glm::vec2 cursor = {};
 
 			Panel* root;

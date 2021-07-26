@@ -162,8 +162,8 @@ namespace Engine::Gui {
 		}
 
 		const Panel* curr = root;
-		layer = 0;
-		offset = {};
+		renderState.layer = 0;
+		renderState.offset = {};
 		polyDrawGroups.emplace_back().offset = 0;
 
 		// TODO: probably move to own function
@@ -173,24 +173,24 @@ namespace Engine::Gui {
 			while (curr) {
 				if (curr->firstChild) {
 					bfsNext.emplace_back(
-						offset + curr->getPos(),
+						renderState.offset + curr->getPos(),
 						curr->firstChild
 					);
 				}
 
 				if (false) {}
-				else if (curr == getActive()) { currRenderState.color = glm::vec4{1, 0, 1, 0.2}; }
-				else if (curr == getHover()) { currRenderState.color = glm::vec4{1, 1, 0, 0.2}; }
-				else { currRenderState.color = glm::vec4{1, 0, 0, 0.2}; }
+				else if (curr == getActive()) { renderState.color = glm::vec4{1, 0, 1, 0.2}; }
+				else if (curr == getHover()) { renderState.color = glm::vec4{1, 1, 0, 0.2}; }
+				else { renderState.color = glm::vec4{1, 0, 0, 0.2}; }
 
-				currRenderState.current = curr;
-				currRenderState.id = getPanelId(currRenderState.current);
-				currRenderState.pid = getPanelId(currRenderState.current->parent);
+				renderState.current = curr;
+				renderState.id = getPanelId(renderState.current);
+				renderState.pid = getPanelId(renderState.current->parent);
 
-				const auto oldOffset = offset;
-				offset += curr->getPos();
+				const auto oldOffset = renderState.offset;
+				renderState.offset += curr->getPos();
 				curr->render(*this);
-				offset = oldOffset;
+				renderState.offset = oldOffset;
 				curr = curr->nextSibling;
 			}
 
@@ -203,13 +203,13 @@ namespace Engine::Gui {
 				if (bfsCurr.empty()) { break; }
 
 				polyDrawGroups.emplace_back().offset = vsz;
-				++layer;
+				++renderState.layer;
 			}
 
 			// Next of current layer
 			const auto& back = bfsCurr.back();
 			curr = back.panel;
-			offset = back.offset;
+			renderState.offset = back.offset;
 			bfsCurr.pop_back();
 		}
 
@@ -484,9 +484,10 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size) {
-		const PanelId id = currRenderState.id;
-		const PanelId pid = currRenderState.pid;
-		const auto color = currRenderState.color;
+		const PanelId id = renderState.id;
+		const PanelId pid = renderState.pid;
+		const auto color = renderState.color;
+		const auto offset = renderState.offset;
 
 		polyVertexData.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
 		polyVertexData.push_back({.color = color, .pos = offset + pos + glm::vec2{0, size.y}, .id = id, .pid = pid});
@@ -498,7 +499,7 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
-		stringsToRender.emplace_back(layer, currRenderState.id, pos + offset, fstr);
+		stringsToRender.emplace_back(renderState.layer, renderState.id, pos + renderState.offset, fstr);
 	}
 
 	void Context::updateHover() {
