@@ -558,8 +558,8 @@ void run(int argc, char* argv[]) {
 			"shaders/terrain",
 			"shaders/sprite",
 			"shaders/parallax",
-			"shaders/gui_clip",
-			"shaders/gui_text",
+			"shaders/gui_poly",
+			"shaders/gui_glyph",
 			"shaders/fullscreen_passthrough",
 		};
 		for (const auto& path : textures) { engine.textureManager.add(path); }

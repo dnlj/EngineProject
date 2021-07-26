@@ -36,9 +36,9 @@ namespace Engine::Gui {
 			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6 + sizeof(PanelId) * 2);
 
 			// TODO: change to AoS
-			struct MultiDrawData {
-				std::vector<GLint> first;
-				std::vector<GLsizei> count;
+			struct PolyDrawGroup {
+				std::vector<int32> offset;
+				std::vector<int32> count;
 			};
 
 			struct GlyphDrawGroup {
@@ -61,19 +61,13 @@ namespace Engine::Gui {
 				const ShapedString* str;
 			};
 
-			struct StringGroup {
-				FontGlyphSet* glyphSet = nullptr;
-				int32 offset = 0;
-				int32 count = 0;
-			};
-
 		private:
 			std::vector<Panel*> hoverStack;
 			std::vector<BFSStateData> bfsCurr;
 			std::vector<BFSStateData> bfsNext;
 
 			std::vector<Vertex> verts;
-			MultiDrawData multiDrawData;
+			PolyDrawGroup polyDrawGroups;
 			std::vector<GlyphDrawGroup> glyphDrawGroups;
 
 			constexpr static GLuint vertBindingIndex = 0;
@@ -81,7 +75,7 @@ namespace Engine::Gui {
 			GLuint vao = 0; // TODO: better names, we also have glyph stuff
 			GLuint vbo = 0; // TODO: better names, we also have glyph stuff
 			GLsizei vboCapacity = 0; // TODO: better names, we also have glyph stuff
-			ShaderRef shader; // TODO: better names, we also have glyph stuff
+			ShaderRef polyShader;
 			Texture2D colorTex;
 			Texture2D clipTex1;
 			Texture2D clipTex2;
@@ -90,11 +84,11 @@ namespace Engine::Gui {
 			FontManager fontManager;
 			FontId fontId_a; // TODO: rm when done testing
 			FontId fontId_b; // TODO: rm when done testing
+
 			std::vector<GlyphVertex> glyphVertexData;
 			ShaderRef glyphShader;
 
 			std::vector<StringData> stringsToDraw; // TODO: rename -> stringsToRender for consistency
-			std::vector<StringGroup> stringGroups;
 			GLuint glyphVBO = 0;
 			GLuint glyphVAO = 0;
 			GLsizei glyphVBOSize = 0;

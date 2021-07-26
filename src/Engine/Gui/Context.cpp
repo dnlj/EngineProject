@@ -10,8 +10,8 @@
 
 namespace Engine::Gui {
 	Context::Context(Engine::EngineInstance& engine) {
-		shader = engine.shaderManager.get("shaders/gui_clip");
-		glyphShader = engine.shaderManager.get("shaders/gui_text");
+		polyShader = engine.shaderManager.get("shaders/gui_poly");
+		glyphShader = engine.shaderManager.get("shaders/gui_glyph");
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
 		{
@@ -131,8 +131,6 @@ namespace Engine::Gui {
 			fontManager.shapeString(child->label, fontManager.getFontGlyphSet(fontId_a));
 
 			registerPanel(child);
-
-			ENGINE_WARN("Button Parent: ", getPanelId(child)); // TODO: rm
 		}
 	}
 
@@ -173,7 +171,7 @@ namespace Engine::Gui {
 		const Panel* curr = root;
 		layer = 0;
 		offset = {};
-		multiDrawData.first.emplace_back() = 0;
+		polyDrawGroups.offset.emplace_back() = 0;
 
 		// TODO: probably move to own function
 		// Breadth first traversal
@@ -203,12 +201,12 @@ namespace Engine::Gui {
 			// Move to next layer if needed
 			if (bfsCurr.empty()) {
 				const auto vsz = static_cast<GLint>(verts.size());
-				multiDrawData.count.emplace_back() = vsz - multiDrawData.first.back();
+				polyDrawGroups.count.emplace_back() = vsz - polyDrawGroups.offset.back();
 
 				bfsCurr.swap(bfsNext);
 				if (bfsCurr.empty()) { break; }
 
-				multiDrawData.first.emplace_back() = vsz;
+				polyDrawGroups.offset.emplace_back() = vsz;
 				++layer;
 			}
 
@@ -318,9 +316,9 @@ namespace Engine::Gui {
 		// Setup clipping buffers
 		swapClipBuffers();
 
-		for (int32 layer = 0; layer < multiDrawData.first.size(); ++layer) {
-			const auto first = multiDrawData.first[layer];
-			const auto count = multiDrawData.count[layer];
+		for (int32 layer = 0; layer < polyDrawGroups.offset.size(); ++layer) {
+			const auto first = polyDrawGroups.offset[layer];
+			const auto count = polyDrawGroups.count[layer];
 
 			// Draw polys
 			{
@@ -328,7 +326,7 @@ namespace Engine::Gui {
 				if (activeStage != vao) {
 					activeStage = vao;
 					glBindVertexArray(vao);
-					glUseProgram(shader->get());
+					glUseProgram(polyShader->get());
 					
 					// TODO: use UBO so we dont have to update every time we switch programs
 					glUniform2fv(0, 1, &view.x); 
@@ -397,8 +395,8 @@ namespace Engine::Gui {
 		// Reset buffers
 		glDisable(GL_BLEND);
 		verts.clear();
-		multiDrawData.first.clear();
-		multiDrawData.count.clear();
+		polyDrawGroups.offset.clear();
+		polyDrawGroups.count.clear();
 		glyphDrawGroups.clear();
 
 		constexpr const char* lines[] = {
