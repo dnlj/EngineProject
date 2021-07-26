@@ -15,23 +15,25 @@ namespace Engine::Gui {
 		view = engine.camera.getScreenSize(); // TODO: should update when resized
 
 		{
+			constexpr static GLuint bindingIndex = 0;
+
 			glCreateBuffers(1, &glyphVBO);
-			glyphVBOSize = 6 * sizeof(GlyphVertex); // TODO: just leave empty?
-			glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
+			glyphVBOCapacity = 6 * sizeof(GlyphVertex); // TODO: just leave empty?
+			glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 
 			glCreateVertexArrays(1, &glyphVAO);
-			glVertexArrayVertexBuffer(glyphVAO, 0, glyphVBO, 0, sizeof(GlyphVertex));
+			glVertexArrayVertexBuffer(glyphVAO, bindingIndex, glyphVBO, 0, sizeof(GlyphVertex));
 
-			glEnableVertexArrayAttrib(glyphVAO, 0);
-			glVertexArrayAttribBinding(glyphVAO, 0, 0);
+			glEnableVertexArrayAttrib(glyphVAO, bindingIndex);
+			glVertexArrayAttribBinding(glyphVAO, 0, bindingIndex);
 			glVertexArrayAttribFormat(glyphVAO, 0, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
 
 			glEnableVertexArrayAttrib(glyphVAO, 1);
-			glVertexArrayAttribBinding(glyphVAO, 1, 0);
+			glVertexArrayAttribBinding(glyphVAO, 1, bindingIndex);
 			glVertexArrayAttribIFormat(glyphVAO, 1, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
 
 			glEnableVertexArrayAttrib(glyphVAO, 2);
-			glVertexArrayAttribBinding(glyphVAO, 2, 0);
+			glVertexArrayAttribBinding(glyphVAO, 2, bindingIndex);
 			glVertexArrayAttribFormat(glyphVAO, 2, 1, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, parent));
 		}
 
@@ -55,28 +57,32 @@ namespace Engine::Gui {
 
 		glCreateFramebuffers(1, &fbo);
 
-		glCreateVertexArrays(1, &vao);
-		glCreateBuffers(1, &vbo);
-		glVertexArrayVertexBuffer(vao, vertBindingIndex, vbo, 0, sizeof(Vertex));
+		{
+			constexpr static GLuint bindingIndex = 0;
 
-		// Vertex
-		glEnableVertexArrayAttrib(vao, 0);
-		glVertexArrayAttribBinding(vao, 0, vertBindingIndex);
-		glVertexArrayAttribFormat(vao, 0, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, color));
+			glCreateVertexArrays(1, &polyVAO);
+			glCreateBuffers(1, &polyVBO);
+			glVertexArrayVertexBuffer(polyVAO, bindingIndex, polyVBO, 0, sizeof(PolyVertex));
 
-		glEnableVertexArrayAttrib(vao, 1);
-		glVertexArrayAttribBinding(vao, 1, vertBindingIndex);
-		glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+			// Vertex
+			glEnableVertexArrayAttrib(polyVAO, 0);
+			glVertexArrayAttribBinding(polyVAO, 0, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, 0, 4, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, color));
 
-		glEnableVertexArrayAttrib(vao, 2);
-		glVertexArrayAttribBinding(vao, 2, vertBindingIndex);
-		glVertexArrayAttribFormat(vao, 2, 1, GL_FLOAT, GL_FALSE, offsetof(Vertex, id));
-		//glVertexArrayAttribIFormat(vao, 2, 1, GL_UNSIGNED_INT, offsetof(Vertex, id));
+			glEnableVertexArrayAttrib(polyVAO, 1);
+			glVertexArrayAttribBinding(polyVAO, 1, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, 1, 2, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pos));
+
+			glEnableVertexArrayAttrib(polyVAO, 2);
+			glVertexArrayAttribBinding(polyVAO, 2, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, 2, 1, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, id));
+			//glVertexArrayAttribIFormat(polyVAO, 2, 1, GL_UNSIGNED_INT, offsetof(PolyVertex, id));
 		
-		glEnableVertexArrayAttrib(vao, 3);
-		glVertexArrayAttribBinding(vao, 3, vertBindingIndex);
-		glVertexArrayAttribFormat(vao, 3, 1, GL_FLOAT, GL_FALSE, offsetof(Vertex, pid));
-		//glVertexArrayAttribIFormat(vao, 3, 1, GL_UNSIGNED_INT, offsetof(Vertex, pid));
+			glEnableVertexArrayAttrib(polyVAO, 3);
+			glVertexArrayAttribBinding(polyVAO, 3, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, 3, 1, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pid));
+			//glVertexArrayAttribIFormat(polyVAO, 3, 1, GL_UNSIGNED_INT, offsetof(PolyVertex, pid));
+		}
 
 		registerPanel(nullptr); // register before everything else so nullptr = id 0
 
@@ -139,8 +145,8 @@ namespace Engine::Gui {
 		glDeleteBuffers(1, &quadVBO);
 
 		glDeleteFramebuffers(1, &fbo);
-		glDeleteVertexArrays(1, &vao);
-		glDeleteBuffers(1, &vbo);
+		glDeleteVertexArrays(1, &polyVAO);
+		glDeleteBuffers(1, &polyVBO);
 
 		glDeleteVertexArrays(1, &glyphVAO);
 		glDeleteBuffers(1, &glyphVBO);
@@ -148,19 +154,6 @@ namespace Engine::Gui {
 		delete root;
 	}
 	
-	void Context::renderString(const ShapedString& str, PanelId parent, glm::vec2 base, FontGlyphSet* font) {
-		const auto glyphShapeData = str.getGlyphShapeData();
-
-		for (const auto& data : glyphShapeData) {
-			const uint32 index = font->getGlyphIndex(data.index);
-			glyphVertexData.push_back({
-				.pos = glm::round(base + data.offset),
-				.index = index,
-				.parent = parent,
-			});
-			base += data.advance;
-		}
-	}
 
 	void Context::render() {
 		if (!hoverValid) {
@@ -200,7 +193,7 @@ namespace Engine::Gui {
 
 			// Move to next layer if needed
 			if (bfsCurr.empty()) {
-				const auto vsz = static_cast<GLint>(verts.size());
+				const auto vsz = static_cast<GLint>(polyVertexData.size());
 				polyDrawGroups.back().count = vsz - polyDrawGroups.back().offset;
 
 				bfsCurr.swap(bfsNext);
@@ -218,22 +211,22 @@ namespace Engine::Gui {
 		}
 
 		// Build glyph vertex buffer
-		if (!stringsToDraw.empty()){
-			std::sort(stringsToDraw.begin(), stringsToDraw.end(), [](const StringData& a, const StringData& b){
+		if (!stringsToRender.empty()){
+			std::sort(stringsToRender.begin(), stringsToRender.end(), [](const StringData& a, const StringData& b){
 				return (a.layer < b.layer)
 					|| (a.layer == b.layer && a.str->getFont().font < b.str->getFont().font);
 			});
 
 			// Build glyph draw groups
-			int32 currLayer = stringsToDraw.front().layer;
-			FontId currFontId = stringsToDraw.front().str->getFont();
+			int32 currLayer = stringsToRender.front().layer;
+			FontId currFontId = stringsToRender.front().str->getFont();
 			
 			GlyphDrawGroup* group = &glyphDrawGroups.emplace_back();
 			group->glyphSet = fontManager.getFontGlyphSet(currFontId);
 			group->layer = currLayer;
 			auto ascent = group->glyphSet->getAscent();
 
-			for (const auto& strdat : stringsToDraw) {
+			for (const auto& strdat : stringsToRender) {
 				if (strdat.layer != currLayer || currFontId != strdat.str->getFont()) {
 					currLayer = strdat.layer;
 					currFontId = strdat.str->getFont();
@@ -254,25 +247,26 @@ namespace Engine::Gui {
 				group->count += static_cast<int32>(strdat.str->getGlyphShapeData().size());
 			}
 
-			stringsToDraw.clear();
+			stringsToRender.clear();
 		}
 
 		{ // Update polygon vertex buffer
 			// TODO: idealy we would only update if the data has actually changed
-			const auto size = verts.size() * sizeof(verts[0]);
-			if (size > vboCapacity) {
-				vboCapacity = static_cast<GLsizei>(verts.capacity() * sizeof(verts[0]));
-				glNamedBufferData(vbo, vboCapacity, nullptr, GL_DYNAMIC_DRAW);
+			const auto size = polyVertexData.size() * sizeof(polyVertexData[0]);
+			if (size > polyVBOCapacity) {
+				polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(PolyVertex));
+				glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 			}
-			glNamedBufferSubData(vbo, 0, size, verts.data());
+			glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
+			polyVertexData.clear();
 		}
 		
 		{ // Update glyph vertex buffer
 			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
-			if (newSize > glyphVBOSize) {
+			if (newSize > glyphVBOCapacity) {
 				ENGINE_INFO("glyphVBO(", glyphVBO, ") resize: ", newSize);
-				glyphVBOSize = newSize;
-				glNamedBufferData(glyphVBO, glyphVBOSize, nullptr, GL_DYNAMIC_DRAW);
+				glyphVBOCapacity = newSize;
+				glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 			}
 			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
 			glyphVertexData.clear();
@@ -323,9 +317,9 @@ namespace Engine::Gui {
 			// Draw polys
 			{
 				// TODO: will need to swap program/vao/uniforms
-				if (activeStage != vao) {
-					activeStage = vao;
-					glBindVertexArray(vao);
+				if (activeStage != polyVAO) {
+					activeStage = polyVAO;
+					glBindVertexArray(polyVAO);
 					glUseProgram(polyShader->get());
 					
 					// TODO: use UBO so we dont have to update every time we switch programs
@@ -394,7 +388,6 @@ namespace Engine::Gui {
 
 		// Reset buffers
 		glDisable(GL_BLEND);
-		verts.clear();
 		polyDrawGroups.clear();
 		glyphDrawGroups.clear();
 
@@ -493,19 +486,19 @@ namespace Engine::Gui {
 		const PanelId pid = getPanelId(currRenderState.current->parent);
 		const auto color = currRenderState.color;
 
-		verts.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
-		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{0, size.y}, .id = id, .pid = pid});
-		verts.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
+		polyVertexData.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
+		polyVertexData.push_back({.color = color, .pos = offset + pos + glm::vec2{0, size.y}, .id = id, .pid = pid});
+		polyVertexData.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
 
-		verts.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
-		verts.push_back({.color = color, .pos = offset + pos + glm::vec2{size.x, 0}, .id = id, .pid = pid});
-		verts.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
+		polyVertexData.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
+		polyVertexData.push_back({.color = color, .pos = offset + pos + glm::vec2{size.x, 0}, .id = id, .pid = pid});
+		polyVertexData.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
 	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
 		// TODO: cache ids for active and parent?
 		const PanelId id = getPanelId(currRenderState.current);
-		stringsToDraw.emplace_back(layer, id, pos + offset, fstr);
+		stringsToRender.emplace_back(layer, id, pos + offset, fstr);
 	}
 
 	void Context::updateHover() {
@@ -563,6 +556,20 @@ namespace Engine::Gui {
 		if (target != old) {
 			if (old) { old->onEndHover(); };
 			if (target) { target->onBeginHover(); }
+		}
+	}
+
+	void Context::renderString(const ShapedString& str, PanelId parent, glm::vec2 base, FontGlyphSet* font) {
+		const auto glyphShapeData = str.getGlyphShapeData();
+
+		for (const auto& data : glyphShapeData) {
+			const uint32 index = font->getGlyphIndex(data.index);
+			glyphVertexData.push_back({
+				.pos = glm::round(base + data.offset),
+				.index = index,
+				.parent = parent,
+			});
+			base += data.advance;
 		}
 	}
 

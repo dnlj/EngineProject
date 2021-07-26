@@ -28,12 +28,12 @@ namespace Engine::Gui {
 				const Panel* panel;
 			};
 
-			struct Vertex {
+			struct PolyVertex {
 				glm::vec4 color;
 				glm::vec2 pos;
 				PanelId id;
 				PanelId pid;
-			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6 + sizeof(PanelId) * 2);
+			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 6 + sizeof(PanelId) * 2);
 
 			struct PolyDrawGroup {
 				int32 offset;
@@ -65,16 +65,17 @@ namespace Engine::Gui {
 			std::vector<BFSStateData> bfsCurr;
 			std::vector<BFSStateData> bfsNext;
 
-			std::vector<Vertex> verts;
 			std::vector<PolyDrawGroup> polyDrawGroups;
 			std::vector<GlyphDrawGroup> glyphDrawGroups;
 
-			constexpr static GLuint vertBindingIndex = 0;
-			GLuint fbo = 0; // TODO: better names, we also have glyph stuff
-			GLuint vao = 0; // TODO: better names, we also have glyph stuff
-			GLuint vbo = 0; // TODO: better names, we also have glyph stuff
-			GLsizei vboCapacity = 0; // TODO: better names, we also have glyph stuff
+			GLuint fbo = 0;
+
+			GLuint polyVAO = 0;
+			GLuint polyVBO = 0;
+			GLsizei polyVBOCapacity = 0;
+			std::vector<PolyVertex> polyVertexData;
 			ShaderRef polyShader;
+
 			Texture2D colorTex;
 			Texture2D clipTex1;
 			Texture2D clipTex2;
@@ -84,15 +85,13 @@ namespace Engine::Gui {
 			FontId fontId_a; // TODO: rm when done testing
 			FontId fontId_b; // TODO: rm when done testing
 
+			std::vector<StringData> stringsToRender;
+
+			GLuint glyphVAO = 0;
+			GLuint glyphVBO = 0;
+			GLsizei glyphVBOCapacity = 0;
 			std::vector<GlyphVertex> glyphVertexData;
 			ShaderRef glyphShader;
-
-			std::vector<StringData> stringsToDraw; // TODO: rename -> stringsToRender for consistency
-			GLuint glyphVBO = 0;
-			GLuint glyphVAO = 0;
-			GLsizei glyphVBOSize = 0;
-
-			void renderString(const ShapedString& str, PanelId parent, glm::vec2 base, FontGlyphSet* font);
 
 			struct {
 				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
@@ -112,7 +111,7 @@ namespace Engine::Gui {
 			Panel* active = nullptr;
 			bool hoverValid = false;
 
-			constexpr static PanelId invalidPanelId = -1;//std::numeric_limits<PanelId>::max();
+			constexpr static PanelId invalidPanelId = -1;
 			FlatHashMap<const Panel*, PanelId> panelIdMap;
 			std::vector<PanelId> freePanelIds;
 			PanelId nextPanelId = invalidPanelId;
@@ -208,5 +207,10 @@ namespace Engine::Gui {
 				}
 				return ++nextPanelId;
 			}
+
+			/**
+			 * Adds the glyphs needed to draw the string to the glyph vertex buffer.
+			 */
+			void renderString(const ShapedString& str, PanelId parent, glm::vec2 base, FontGlyphSet* font);
 	};
 }
