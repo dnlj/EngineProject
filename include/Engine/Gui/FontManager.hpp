@@ -44,6 +44,12 @@ namespace Engine::Gui {
 			}
 
 			void shapeString(ShapedString& str, FontGlyphSet* glyphSet);
+
+			void updateAllFontDataBuffers() {
+				for (auto& [id, set] : fontIdToGlyphSet) {
+					set->updateDataBuffer();
+				}
+			}
 	};
 }
 

@@ -270,6 +270,9 @@ namespace Engine::Gui {
 			glyphVertexData.clear();
 		}
 
+		// Update font buffers
+		fontManager.updateAllFontDataBuffers();
+
 		glEnable(GL_BLEND);
 		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		glBlendFunci(1, GL_ONE, GL_ZERO);
@@ -355,10 +358,6 @@ namespace Engine::Gui {
 				while (true) {
 					if (currGlyphDrawGroup->glyphSet != activeSet) {
 						activeSet = currGlyphDrawGroup->glyphSet;
-
-						// TODO: this needs once per set not per draw (layer + group):
-						activeSet->updateDataBuffer();
-
 						glBindTextureUnit(1, activeSet->getGlyphTexture().get());
 						glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, activeSet->getGlyphDataBuffer());
 					}
@@ -375,9 +374,9 @@ namespace Engine::Gui {
 				glBlendFunci(1, GL_ONE, GL_ZERO);
 			}
 		}
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		// Draw to main framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		glBindVertexArray(quadVAO);
 		glUseProgram(quadShader->get());
@@ -388,94 +387,6 @@ namespace Engine::Gui {
 		glDisable(GL_BLEND);
 		polyDrawGroups.clear();
 		glyphDrawGroups.clear();
-
-		constexpr const char* lines[] = {
-			R"(Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she)",
-			R"(had peeped into the book her sister was reading, but it had no pictures or conversations in it, "and what is the use of a)",
-			R"(book," thought Alice, "without pictures or conversations?" So she was considering in her own mind, (as well as she could,)",
-			R"(for the hot day made her feel very sleepy and stupid,) whether the pleasure of making a daisy-chain would be worth the trouble)",
-			R"(of getting up and picking the daisies, when suddenly a white rabbit with pink eyes ran close by her. There was nothing so)",
-			R"(very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, "Oh dear! Oh)",
-			R"(dear! I shall be too late!" (when she thought it over afterwards, it occurred to her that she ought to have wondered at this,)",
-			R"(but at the time it all seemed quite natural;) but when the Rabbit actually took a watch out of its waistcoat-pocket, and)",
-			R"(looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen)",
-			R"(a rabbit with either a waistcoat-pocket, or a watch to take out of it, and, burning with curiosity, she ran across the field)",
-			R"(after it, and was just in time to see it pop down a large rabbit-hole under the hedge. In another moment down went Alice)",
-			R"(after it, never once considering how in the world she was to get out again. The rabbit-hole went straight on like a tunnel)",
-			R"(for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before)",
-			R"(she found herself falling down what seemed to be a very deep well. Either the well was very deep, or she fell very slowly,)",
-			R"(for she had plenty of time as she went down to look about her, and to wonder what was going to happen next. First, she tried)",
-			R"(to look down and make out what she was coming to, but it was too dark to see anything: then she looked at the sides of the)",
-			R"(well, and noticed that they were filled with cupboards and book-shelves: here and there she saw maps and pictures hung upon)",
-			R"(pegs. She took down a jar from one of the shelves as she passed; it was labelled "ORANGE MARMALADE," but to her great disappointment)",
-			R"----(T̴̖̀è̴̖s̴̖̀t̴̖̀)----",
-			R"----(😀👍)----",
-			//R"(it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of)",
-			//R"(the cupboards as she fell past it. "Well!" thought Alice to herself, "after such a fall as this, I shall think nothing of)",
-			//R"(tumbling down stairs! How brave they'll all think me at home! Why, I wouldn't say anything about it, even if I fell off the)",
-			//R"(top of the house!" (Which was very likely true.) Down, down, down. Would the fall never come to an end! "I wonder how many)",
-			//R"(miles I've fallen by this time'?" she said aloud. "I must be getting somewhere near the centre of the earth. Let me see:)",
-			//R"(that would be four thousand miles down, I think—" (for, you see, Alice had learnt several things of this sort in her lessons)",
-			//R"(in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to)",
-			//R"(listen to her, still it was good practice to say it over) "—yes, that's about the right distance—but then I wonder what Latitude)",
-			//R"(or Longitude I've got to?" (Alice had not the slightest idea what Latitude was, or Longitude either, but she thought they)",
-			//R"(were nice grand words to say.) Presently she began again. "I wonder if I shall fall right through the earth! How funny it'll)",
-			//R"(seem to come out among the people that walk with their heads downwards! The Antipathies, I think—" (she was rather glad there)",
-			//R"(was no one listening, this time, as it didn't sound at all the right word) "—but I shall have to ask them what the name of)",
-			//R"(the country is, you know. Please, Ma'am, is this New Zealand or Australia?" (and she tried to curtsey as she spoke—fancy)",
-			//R"(curtseying as you're falling through the air! Do you think you could manage it?) "And what an ignorant little girl she'll)",
-			//R"(think me for asking! No, it'll never do to ask: perhaps I shall see it written up somewhere." Down, down, down. There was)",
-			//R"(nothing else to do, so Alice soon began talking again. "Dinah'll miss me very much to-night, I should think!" (Dinah was)",
-			//R"(the cat.) "I hope they'll remember her saucer of milk at tea-time. Dinah, my dear! I wish you were down here with me! There)",
-			//R"(are no mice in the air, I'm afraid, but you might catch a bat, and that's very like a mouse, you know. But do cats eat bats,)",
-		};
-
-		static ShapedString fontLines_a[std::size(lines)];
-		static ShapedString fontLines_b[std::size(lines)];
-		static int initShapedLines = [&](){
-			//ENGINE_LOG("initShapedLines");
-			//auto* glyphSet_a = fontManager.getFontGlyphSet(fontId_a);
-			//for (int i = 0; i < std::size(fontLines_a); ++i) {
-			//	fontLines_a[i] = lines[i];
-			//	fontLines_a[i].setFont(fontId_a);
-			//	fontManager.shapeString(fontLines_a[i], glyphSet_a);
-			//}
-			//
-			//auto* glyphSet_b = fontManager.getFontGlyphSet(fontId_b);
-			//for (int i = 0; i < std::size(fontLines_b); ++i) {
-			//	fontLines_b[i] = lines[i];
-			//	fontLines_b[i].setFont(fontId_b);
-			//	fontManager.shapeString(fontLines_b[i], glyphSet_b);
-			//}
-			return 0;
-		}();
-
-		static Clock::duration avg = {};
-		static int avgCounter = {};
-		const auto startT = Clock::now();
-
-		/*{
-			float32 line = 0;
-
-			const auto line_a = fontManager.getFontGlyphSet(fontId_a)->getLineHeight();
-			const auto line_b = fontManager.getFontGlyphSet(fontId_b)->getLineHeight();
-
-			for (const auto& text : fontLines_a) {
-				drawString({10, line += line_a}, &text);
-			}
-			for (const auto& text : fontLines_b) {
-				drawString({10, line += line_b}, &text);
-			}
-		}*/
-
-		const auto endT = Clock::now();
-		const auto diff = endT - startT;
-		avg += diff;
-		if (++avgCounter == 100) {
-			avg /= avgCounter;
-			//ENGINE_LOG("Glyph time: ", Clock::Milliseconds{avg}.count(), "ms");
-			avgCounter = 0;
-		}
 	}
 
 	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size) {
