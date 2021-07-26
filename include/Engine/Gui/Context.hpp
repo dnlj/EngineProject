@@ -35,10 +35,9 @@ namespace Engine::Gui {
 				PanelId pid;
 			}; static_assert(sizeof(Vertex) == sizeof(GLfloat) * 6 + sizeof(PanelId) * 2);
 
-			// TODO: change to AoS
 			struct PolyDrawGroup {
-				std::vector<int32> offset;
-				std::vector<int32> count;
+				int32 offset;
+				int32 count;
 			};
 
 			struct GlyphDrawGroup {
@@ -67,7 +66,7 @@ namespace Engine::Gui {
 			std::vector<BFSStateData> bfsNext;
 
 			std::vector<Vertex> verts;
-			PolyDrawGroup polyDrawGroups;
+			std::vector<PolyDrawGroup> polyDrawGroups;
 			std::vector<GlyphDrawGroup> glyphDrawGroups;
 
 			constexpr static GLuint vertBindingIndex = 0;

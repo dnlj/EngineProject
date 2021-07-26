@@ -171,7 +171,7 @@ namespace Engine::Gui {
 		const Panel* curr = root;
 		layer = 0;
 		offset = {};
-		polyDrawGroups.offset.emplace_back() = 0;
+		polyDrawGroups.emplace_back().offset = 0;
 
 		// TODO: probably move to own function
 		// Breadth first traversal
@@ -201,12 +201,12 @@ namespace Engine::Gui {
 			// Move to next layer if needed
 			if (bfsCurr.empty()) {
 				const auto vsz = static_cast<GLint>(verts.size());
-				polyDrawGroups.count.emplace_back() = vsz - polyDrawGroups.offset.back();
+				polyDrawGroups.back().count = vsz - polyDrawGroups.back().offset;
 
 				bfsCurr.swap(bfsNext);
 				if (bfsCurr.empty()) { break; }
 
-				polyDrawGroups.offset.emplace_back() = vsz;
+				polyDrawGroups.emplace_back().offset = vsz;
 				++layer;
 			}
 
@@ -316,9 +316,9 @@ namespace Engine::Gui {
 		// Setup clipping buffers
 		swapClipBuffers();
 
-		for (int32 layer = 0; layer < polyDrawGroups.offset.size(); ++layer) {
-			const auto first = polyDrawGroups.offset[layer];
-			const auto count = polyDrawGroups.count[layer];
+		for (int32 layer = 0; layer < polyDrawGroups.size(); ++layer) {
+			const auto first = polyDrawGroups[layer].offset;
+			const auto count = polyDrawGroups[layer].count;
 
 			// Draw polys
 			{
@@ -395,8 +395,7 @@ namespace Engine::Gui {
 		// Reset buffers
 		glDisable(GL_BLEND);
 		verts.clear();
-		polyDrawGroups.offset.clear();
-		polyDrawGroups.count.clear();
+		polyDrawGroups.clear();
 		glyphDrawGroups.clear();
 
 		constexpr const char* lines[] = {
