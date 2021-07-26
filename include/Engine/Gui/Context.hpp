@@ -21,7 +21,11 @@
 namespace Engine::Gui {
 	class Context {
 		private:
-			using PanelId = float32; // TODO: really would like uint16
+			// There is no point in using integers here because
+			// of GLSL integer requirement range limitations. In short
+			// GLSL integers may be implemented as floats with a limited range.
+			// See GLSL spec for details (4.5.2  Precision Qualifiers)
+			using PanelId = float32;
 			
 			struct PolyDrawGroup {
 				int32 offset;
