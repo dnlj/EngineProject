@@ -7,12 +7,21 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Gui/FontGlyphSet.hpp>
-#include <Engine/Gui/FontId.hpp>
 
+namespace Engine::Gui::Detail {
+	struct FontId {
+		FT_Face font;
+		int32 size;
+
+		ENGINE_INLINE bool operator==(const FontId& other) const noexcept {
+			return font == other.font && size == other.size;
+		}
+	};
+}
 
 template<> 
-struct Engine::Hash<Engine::Gui::FontId> {
-	size_t operator()(const Engine::Gui::FontId& val) const {
+struct Engine::Hash<Engine::Gui::Detail::FontId> {
+	size_t operator()(const Engine::Gui::Detail::FontId& val) const {
 		static_assert(sizeof(size_t) == sizeof(val.font));
 		size_t seed = reinterpret_cast<const size_t&>(val.font);
 		hashCombine(seed, val.size);
@@ -21,7 +30,12 @@ struct Engine::Hash<Engine::Gui::FontId> {
 };
 
 namespace Engine::Gui {
+	using Font = FontGlyphSet*;
+
 	class FontManager {
+		private:
+			using FontId = Detail::FontId;
+
 		private:
 			FT_Library ftlib;
 			hb_buffer_t* workingBuffer;
@@ -32,16 +46,7 @@ namespace Engine::Gui {
 			FontManager();
 			~FontManager();
 
-			FontId createFont(const std::string& path, int32 size);
-
-			ENGINE_INLINE auto* getFontGlyphSet(FontId fid) {
-				auto found = fontIdToGlyphSet.find(fid);
-				return found == fontIdToGlyphSet.end() ? nullptr : found->second.get();
-			}
-
-			ENGINE_INLINE const auto* getFontGlyphSet(FontId fid) const {
-				return const_cast<FontManager*>(this)->getFontGlyphSet(fid);
-			}
+			Font createFont(const std::string& path, int32 size);
 
 			void shapeString(ShapedString& str, FontGlyphSet* glyphSet);
 

@@ -104,8 +104,8 @@ namespace Engine::Gui {
 
 			/* Text rendering helpers */
 			FontManager fontManager;
-			FontId fontId_a; // TODO: rm when done testing
-			FontId fontId_b; // TODO: rm when done testing
+			Font font_a; // TODO: rm when done testing
+			Font font_b; // TODO: rm when done testing
 			std::vector<StringData> stringsToRender;
 
 			/* Scene graph traversal */

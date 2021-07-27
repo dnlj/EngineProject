@@ -91,9 +91,9 @@ namespace Engine::Gui {
 
 		///////////////////////////////////////////////////////////////////////////////
 
-		fontId_a = fontManager.createFont("assets/arial.ttf", 32);
-		fontId_b = fontManager.createFont("assets/consola.ttf", 12);
-		//fontId_b = fontManager.createFont("assets/arial.ttf", 128);
+		font_a = fontManager.createFont("assets/arial.ttf", 32);
+		font_b = fontManager.createFont("assets/consola.ttf", 12);
+		//font_b = fontManager.createFont("assets/arial.ttf", 128);
 
 		{
 			auto child = new Button{};
@@ -103,10 +103,10 @@ namespace Engine::Gui {
 			registerPanel(child);
 
 			child->label = R"(Hello, world!)";
-			child->label.setFont(fontId_b);
+			child->label.setFont(font_b);
 
 			// TODO: this is way to clunky. Find a better way
-			fontManager.shapeString(child->label, fontManager.getFontGlyphSet(fontId_b));
+			fontManager.shapeString(child->label, font_b);
 
 			auto childChild = child->addChild(new Panel{});
 			childChild->setPos({0, 0});
@@ -128,11 +128,11 @@ namespace Engine::Gui {
 			child->setSize({128, 64});
 
 			child->label = R"(This is a test button)";
-			child->label.setFont(fontId_a);
+			child->label.setFont(font_a);
 
 			// TODO: this is way to clunky. Find a better way
 			//fontManager.shapeString(child->label, fontManager.getFontGlyphSet(child->label.getFont()));
-			fontManager.shapeString(child->label, fontManager.getFontGlyphSet(fontId_a));
+			fontManager.shapeString(child->label, font_a);
 
 			registerPanel(child);
 		}
@@ -214,28 +214,28 @@ namespace Engine::Gui {
 		if (!stringsToRender.empty()){
 			std::sort(stringsToRender.begin(), stringsToRender.end(), [](const StringData& a, const StringData& b){
 				return (a.layer < b.layer)
-					|| (a.layer == b.layer && a.str->getFont().font < b.str->getFont().font);
+					|| (a.layer == b.layer && a.str->getFont() < b.str->getFont());
 			});
 
 			// Build glyph draw groups
 			int32 currLayer = stringsToRender.front().layer;
-			FontId currFontId = stringsToRender.front().str->getFont();
+			Font currFont = stringsToRender.front().str->getFont();
 			
 			GlyphDrawGroup* group = &glyphDrawGroups.emplace_back();
-			group->glyphSet = fontManager.getFontGlyphSet(currFontId);
+			group->glyphSet = currFont;
 			group->layer = currLayer;
 			auto ascent = group->glyphSet->getAscent();
 
 			for (const auto& strdat : stringsToRender) {
-				if (strdat.layer != currLayer || currFontId != strdat.str->getFont()) {
+				if (strdat.layer != currLayer || currFont != strdat.str->getFont()) {
 					currLayer = strdat.layer;
-					currFontId = strdat.str->getFont();
+					currFont = strdat.str->getFont();
 
 					GlyphDrawGroup next {
 						.layer = currLayer,
 						.offset = group->offset + group->count,
 						.count = 0,
-						.glyphSet = fontManager.getFontGlyphSet(currFontId),
+						.glyphSet = currFont,
 					};
 					group = &glyphDrawGroups.emplace_back(next);
 					ascent = group->glyphSet->getAscent();

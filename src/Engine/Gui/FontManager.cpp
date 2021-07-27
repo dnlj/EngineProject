@@ -31,7 +31,7 @@ namespace Engine::Gui {
 		hb_buffer_destroy(workingBuffer);
 	}
 
-	FontId FontManager::createFont(const std::string& path, int32 size) {
+	auto FontManager::createFont(const std::string& path, int32 size) -> Font {
 		// TODO: we realy would want to check against max texture size or similar.
 		if (size < 1 || size > 0xFFFF) [[unlikely]] {
 			ENGINE_WARN("Invalid font size ", size, ". Defaulting to 32");
@@ -65,16 +65,15 @@ namespace Engine::Gui {
 		}
 
 		FontId id = {face, size};
-		{
-			auto found = fontIdToGlyphSet.find(id);
-			if (found == fontIdToGlyphSet.end()) {
-				auto [it, _] = fontIdToGlyphSet.insert({id, std::make_unique<FontGlyphSet>()});
-				found = it;
-				found->second->init(face, size);
-			}
+
+		auto found = fontIdToGlyphSet.find(id);
+		if (found == fontIdToGlyphSet.end()) {
+			auto [it, _] = fontIdToGlyphSet.insert({id, std::make_unique<FontGlyphSet>()});
+			found = it;
+			found->second->init(face, size);
 		}
 
-		return id;
+		return found->second.get();
 	}
 
 	void FontManager::shapeString(ShapedString& str, FontGlyphSet* glyphSet) {

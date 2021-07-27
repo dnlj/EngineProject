@@ -2,10 +2,11 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Gui/FontId.hpp>
 
 
 namespace Engine::Gui {
+	using Font = class FontGlyphSet*;
+
 	class ShapeGlyph {
 		public:
 			uint32 index;
@@ -17,7 +18,7 @@ namespace Engine::Gui {
 		private:
 			std::string str;
 			std::vector<ShapeGlyph> glyphs;
-			FontId fontId;
+			Font font;
 
 		public:
 			ShapedString() = default;
@@ -32,7 +33,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE ShapedString& operator=(std::string&& other) { str = std::move(other); return *this; }
 			ENGINE_INLINE const std::string& getString() const noexcept { return str; }
 
-			ENGINE_INLINE void setFont(FontId fid) noexcept { fontId = fid; }
-			ENGINE_INLINE FontId getFont() const noexcept { return fontId; }
+			ENGINE_INLINE void setFont(Font f) noexcept { font = f; }
+			ENGINE_INLINE Font getFont() const noexcept { return font; }
 	};
 }
