@@ -405,10 +405,14 @@ namespace Engine::Gui {
 					off += panel->getPos();
 					curr = panel;
 				} else {
+					// Make sure `it` is still `curr`
+					// Only time this is the case is if the root panel fails the above test (`it` didnt get incremented)
+					if (curr != nullptr) { --it; }
 					break;
 				}
 			}
 
+			// Call onEndChildHover on the appropriate nodes
 			if (it != end) {
 				const auto start = it;
 				auto next = it + 1;
