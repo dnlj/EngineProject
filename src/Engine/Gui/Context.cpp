@@ -104,9 +104,7 @@ namespace Engine::Gui {
 
 			child->label = R"(Hello, world!)";
 			child->label.setFont(font_b);
-
-			// TODO: this is way to clunky. Find a better way
-			fontManager.shapeString(child->label, font_b);
+			fontManager.shapeString(child->label);
 
 			auto childChild = child->addChild(new Panel{});
 			childChild->setPos({0, 0});
@@ -129,10 +127,7 @@ namespace Engine::Gui {
 
 			child->label = R"(This is a test button)";
 			child->label.setFont(font_a);
-
-			// TODO: this is way to clunky. Find a better way
-			//fontManager.shapeString(child->label, fontManager.getFontGlyphSet(child->label.getFont()));
-			fontManager.shapeString(child->label, font_a);
+			fontManager.shapeString(child->label);
 
 			registerPanel(child);
 		}

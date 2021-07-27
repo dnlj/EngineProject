@@ -48,7 +48,7 @@ namespace Engine::Gui {
 
 			Font createFont(const std::string& path, int32 size);
 
-			void shapeString(ShapedString& str, FontGlyphSet* glyphSet);
+			void shapeString(ShapedString& str);
 
 			void updateAllFontDataBuffers() {
 				for (auto& [id, set] : fontIdToGlyphSet) {

@@ -76,7 +76,7 @@ namespace Engine::Gui {
 		return found->second.get();
 	}
 
-	void FontManager::shapeString(ShapedString& str, FontGlyphSet* glyphSet) {
-		glyphSet->shapeString(str, workingBuffer);
+	void FontManager::shapeString(ShapedString& str) {
+		str.getFont()->shapeString(str, workingBuffer);
 	}
 }
