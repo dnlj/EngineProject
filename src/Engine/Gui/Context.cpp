@@ -393,10 +393,19 @@ namespace Engine::Gui {
 		glm::vec2 off = {};
 		Panel* curr = nullptr;
 
+		// One of the reasons we use a hoverStack instead of just traversing `node->parent`
+		// is to ensure that if onBeginChildHover was called that onEndChildHover
+		// will always be called on the correct panel with the correct arguments.
+		// Because any panel could be move (change parent) we need to maintain that list ourself.
+		//
+		// It also allows us to elide a large number of checks every update since it
+		// is very unlikely that our whole hover stack will change on an average update.
+		// I would expect typically the last few panels change at most.
+
 		// Rebuild offset and find where our old stack ends
 		{
 			auto it = hoverStack.begin();
-			auto end = hoverStack.end();
+			const auto end = hoverStack.end();
 
 			for (; it != end; ++it) {
 				auto* panel = *it;
@@ -405,7 +414,7 @@ namespace Engine::Gui {
 					off += panel->getPos();
 					curr = panel;
 				} else {
-					// Make sure `it` is still `curr`
+					// Make sure `it` is still `curr` (cant decrement before begin, curr == nullptr)
 					// Only time this is the case is if the root panel fails the above test (`it` didnt get incremented)
 					if (curr != nullptr) { --it; }
 					break;
@@ -422,7 +431,9 @@ namespace Engine::Gui {
 					++next;
 				}
 
-				hoverStack.erase(start, end);
+				// Since we cant decrement `it` to before `begin` we have to handle that case special
+				// Ideally we would just erase [start + 1, end]
+				hoverStack.erase(start + (curr != nullptr), end);
 			}
 		}
 
