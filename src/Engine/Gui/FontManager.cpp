@@ -21,6 +21,9 @@ namespace Engine::Gui {
 	}
 
 	FontManager::~FontManager() {
+		// Need to destroy dependants before lib
+		fontIdToGlyphSet.clear();
+
 		if (const auto err = FT_Done_FreeType(ftlib)) {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
 		}
