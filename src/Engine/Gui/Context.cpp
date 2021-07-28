@@ -511,14 +511,17 @@ namespace Engine::Gui {
 
 		// Call begin events
 		if (aCurr == aEnd) {
-			if (aBegin != aEnd) {
+			if (aCurr != aBegin) {
+				// At this point we dont need to check canFocus because we would have already checked
+				// or else it wouldnt have been in the previous focus stack
 				(*(aEnd - 1))->onBeginFocus();
 			}
 		} else {
-			// TODO: i hate this flow control. ew.
+			// This flow control is kinda gross
 			do {
 				if (aCurr == aBegin) {
 					if (!(*aCurr)->canFocus()) {
+						ENGINE_INFO("Cannot focus");
 						break;
 					}
 				} else {
@@ -528,18 +531,18 @@ namespace Engine::Gui {
 				while (true) {
 					auto child = aCurr + 1;
 					if (child == aEnd) { break; }
-					if (!(*child)->canFocus()) { break; }
+					if (!(*child)->canFocus()) { ENGINE_INFO("Cannot focus ", *child); break; }
 					if ((*aCurr)->onBeginChildFocus(*child)) { break; }
 					aCurr = child;
 				}
 
+				ENGINE_INFO("-- Focus: ", *aCurr);
 				(*aCurr)->onBeginFocus();
+				++aCurr;
 			} while (false);
-		}
 
-		// TODO: erase any blocked panels from stack
-		// TODO: this part is untested
-		//focusStackBack.erase((aEnd - 1).base(), aCurr.base());
+			focusStackBack.erase(aEnd.base(), aCurr.base());
+		}
 
 		focusStack.swap(focusStackBack);
 		focusStackBack.clear();
