@@ -116,8 +116,15 @@ namespace Engine::Gui {
 			/* Panel state */
 			Panel* root;
 			Panel* active = nullptr;
+			Panel* focus = nullptr;
+			Panel* hover = nullptr; // TODO: cache hover like we do for focus
+
 			std::vector<Panel*> hoverStack;
 			bool hoverValid = false;
+
+			std::vector<Panel*> focusStack;
+			std::vector<Panel*> focusStackBack;
+
 			glm::vec2 view;
 			glm::vec2 cursor = {};
 
@@ -168,10 +175,15 @@ namespace Engine::Gui {
 			ENGINE_INLINE const Panel* getHover() const noexcept { return const_cast<Context*>(this)->getHover(); }
 
 			/**
+			 * Set the focused panel.
+			 */
+			void setFocus(Panel* panel);
+
+			/**
 			 * Gets the most focused panel.
 			 */
-			ENGINE_INLINE Panel* getFocus() noexcept { return getHover(); } // TODO: actual focus logic.
-			ENGINE_INLINE const Panel* getFocus() const noexcept { return getHover(); }
+			ENGINE_INLINE Panel* getFocus() noexcept { return focus; }
+			ENGINE_INLINE const Panel* getFocus() const noexcept { return focus; }
 			
 			/**
 			 * Gets the active panel.

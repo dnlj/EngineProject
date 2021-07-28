@@ -172,6 +172,7 @@ namespace Engine::Gui {
 
 				if (false) {}
 				else if (curr == getActive()) { renderState.color = glm::vec4{1, 0, 1, 0.2}; }
+				else if (curr == getFocus()) { renderState.color = glm::vec4{0, 1, 1, 0.2}; }
 				else if (curr == getHover()) { renderState.color = glm::vec4{1, 1, 0, 0.2}; }
 				else { renderState.color = glm::vec4{1, 0, 0, 0.2}; }
 
@@ -421,6 +422,7 @@ namespace Engine::Gui {
 				}
 			}
 
+			// TODO: it seems like we should destruct these in reverse order?
 			// Call onEndChildHover on the appropriate nodes
 			if (it != end) {
 				const auto start = it;
@@ -461,6 +463,89 @@ namespace Engine::Gui {
 		}
 	}
 
+	void Context::setFocus(Panel* panel) {
+		if (panel == focus) {
+			ENGINE_WARN("Attempting to set duplicate focus, is this intended?"); // TODO: look into
+			return;
+		}
+
+		for (auto curr = panel; curr != nullptr; curr = curr->parent) {
+			focusStackBack.push_back(curr);
+		}
+
+		const auto aBegin = focusStackBack.rbegin();
+		const auto aEnd = focusStackBack.rend();
+		auto aCurr = aBegin;
+
+		const auto bBegin = focusStack.rbegin();
+		const auto bEnd = focusStack.rend();
+		auto bCurr = bBegin;
+		
+		// Find where focus stacks diverge
+		while (aCurr != aEnd && bCurr != bEnd && *aCurr == *bCurr) {
+			++aCurr;
+			++bCurr;
+		}
+
+		// At this point aCurr and bCurr are the first element at which the stacks differ
+
+		// Call end events
+		if (bCurr == bEnd) {
+			if (bCurr != bBegin) {
+				(*(bCurr - 1))->onEndFocus();
+			}
+		} else {
+			auto bLast = bEnd - 1;
+			(*bLast)->onEndFocus();
+
+			if (bCurr != bBegin) {
+				--bCurr;
+			}
+
+			while (true) {
+				auto child = bLast;
+				if (child == bCurr) { break; }
+				(*--bLast)->onEndChildFocus(*child);
+			}
+		}
+
+		// Call begin events
+		if (aCurr == aEnd) {
+			if (aBegin != aEnd) {
+				(*(aEnd - 1))->onBeginFocus();
+			}
+		} else {
+			// TODO: i hate this flow control. ew.
+			do {
+				if (aCurr == aBegin) {
+					if (!(*aCurr)->canFocus()) {
+						break;
+					}
+				} else {
+					--aCurr;
+				}
+
+				while (true) {
+					auto child = aCurr + 1;
+					if (child == aEnd) { break; }
+					if (!(*child)->canFocus()) { break; }
+					if ((*aCurr)->onBeginChildFocus(*child)) { break; }
+					aCurr = child;
+				}
+
+				(*aCurr)->onBeginFocus();
+			} while (false);
+		}
+
+		// TODO: erase any blocked panels from stack
+		// TODO: this part is untested
+		//focusStackBack.erase((aEnd - 1).base(), aCurr.base());
+
+		focusStack.swap(focusStackBack);
+		focusStackBack.clear();
+		focus = focusStack.empty() ? nullptr : focusStack.front();
+	}
+
 	void Context::renderString(const ShapedString& str, PanelId parent, glm::vec2 base, FontGlyphSet* font) {
 		const auto glyphShapeData = str.getGlyphShapeData();
 
@@ -484,7 +569,15 @@ namespace Engine::Gui {
 		//	" @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count()
 		//);
 		if (event.state.id.code == 0) {
-			if (event.state.value && isHoverAny()) {
+			if (event.state.value) {
+				/////////////////////////////
+
+				ENGINE_LOG("--------------------------------------------");
+				auto hover = getHover();
+				setFocus(hover);
+
+				/////////////////////////////
+
 				ENGINE_DEBUG_ASSERT(active == nullptr);
 				auto focus = getFocus();
 				if (!focus) { return false; }
