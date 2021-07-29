@@ -475,6 +475,7 @@ namespace Engine::Gui {
 
 		const auto aBegin = focusStackBack.rbegin();
 		const auto aEnd = focusStackBack.rend();
+		auto aStop = aEnd;
 		auto aCurr = aBegin;
 
 		const auto bBegin = focusStack.rbegin();
@@ -488,12 +489,56 @@ namespace Engine::Gui {
 		}
 
 		// At this point aCurr and bCurr are the first element at which the stacks differ
+		const auto aDiff = aCurr;
+		const auto bDiff = bCurr;
+
+		{ // Validate the focus stack
+			if (aCurr == aBegin) {
+				// We dont need to do this because nullptr can focus all panels
+				//if (aCurr != aEnd) {
+				//	if (!(*aCurr)->canFocus()) {
+				//		// TODO: abort - nullptr focus
+				//	} else {
+				//		ENGINE_DEBUG_ASSERT(aBegin + 1 == aEnd);
+				//	}
+				//} else {
+				//	// TODO: also abort - panel == nullptr
+				//}
+			} else {
+				--aCurr;
+			}
+
+			while (true) {
+				if (aCurr == aStop) { break; }
+				auto child = aCurr + 1;
+
+				if (child == aStop) {
+					if (!(*aCurr)->canFocus()) {
+						if (aCurr == aBegin) {
+							// TODO: abort - focust stack empty - nullptr focus
+							ENGINE_WARN("TODO: abort focus");
+						} else {
+							aStop = aCurr;
+							--aCurr;
+						}
+					} else {
+						// At this point aCurr has been validated and should be the last element
+						ENGINE_DEBUG_ASSERT(child == aStop);
+						break;
+					}
+				} else {
+					if (!(*aCurr)->canFocusChild(*child)) {
+						aStop = aCurr + 1;
+					} else {
+						aCurr = child;
+					}
+				}
+			}
+		}
 
 		// Call end events
-		if (bCurr == bEnd) {
-			if (bCurr != bBegin) {
-				(*(bCurr - 1))->onEndFocus();
-			}
+		if (bBegin == bEnd) {
+			ENGINE_WARN("Empty b list"); // TODO: rm
 		} else {
 			auto bLast = bEnd - 1;
 			(*bLast)->onEndFocus();
@@ -510,40 +555,30 @@ namespace Engine::Gui {
 		}
 
 		// Call begin events
-		if (aCurr == aEnd) {
-			if (aCurr != aBegin) {
-				// At this point we dont need to check canFocus because we would have already checked
-				// or else it wouldnt have been in the previous focus stack
-				(*(aEnd - 1))->onBeginFocus();
-			}
-		} else {
-			// This flow control is kinda gross
-			do {
-				if (aCurr == aBegin) {
-					if (!(*aCurr)->canFocus()) {
-						ENGINE_INFO("Cannot focus");
-						break;
-					}
-				} else {
+		{
+			if (aBegin == aEnd) {
+				ENGINE_WARN("Empty a list"); // TODO: rm
+			} else {
+				aCurr = aStop < aDiff ? aStop : aDiff;
+
+				if (aCurr != aBegin) {
 					--aCurr;
 				}
 
 				while (true) {
 					auto child = aCurr + 1;
-					if (child == aEnd) { break; }
-					if (!(*child)->canFocus()) { ENGINE_INFO("Cannot focus ", *child); break; }
-					if ((*aCurr)->onBeginChildFocus(*child)) { break; }
+					if (child == aStop) {
+						(*aCurr)->onBeginFocus();
+						break;
+					}
+					(*aCurr)->onBeginChildFocus(*child);
 					aCurr = child;
 				}
-
-				ENGINE_INFO("-- Focus: ", *aCurr);
-				(*aCurr)->onBeginFocus();
-				++aCurr;
-			} while (false);
-
-			focusStackBack.erase(aEnd.base(), aCurr.base());
+			}
+			focusStackBack.erase(aEnd.base(), aStop.base());
 		}
 
+		// Cleanup and set state
 		focusStack.swap(focusStackBack);
 		focusStackBack.clear();
 		focus = focusStack.empty() ? nullptr : focusStack.front();

@@ -30,6 +30,10 @@ namespace Engine::Gui {
 			}
 	};
 
+	// TODO: doc states (focus, hover, active)
+	/**
+	 *
+	 */
 	class Panel {
 		friend class Context;
 		private:
@@ -84,8 +88,8 @@ namespace Engine::Gui {
 			/**
 			 * Called when this panel is hovered.
 			 */
-			virtual void onBeginHover() {};
-			virtual void onEndHover() {};
+			virtual void onBeginHover() { /*ENGINE_LOG("onBeginHover ", this); /**/};
+			virtual void onEndHover() { /*ENGINE_LOG("onEndHover ", this); /**/};
 			virtual bool canHover() const { return true; }
 			
 			/**
@@ -93,21 +97,21 @@ namespace Engine::Gui {
 			 * @param child The direct child that is, or is a parent of, the hovered panel.
 			 * @return True to intercept this event and prevent it from propagating to children.
 			 */
-			virtual bool onBeginChildHover(Panel* child) { return false; };
-			virtual void onEndChildHover(Panel* child) {};
+			virtual bool onBeginChildHover(Panel* child) { /*ENGINE_LOG("onBeginChildHover ", this, " ", child); /**/ return false;};
+			virtual void onEndChildHover(Panel* child) { /*ENGINE_LOG("onEndChildHover ", this, " ", child); /**/};
 
 			/**
-			 * Called when this panel or any child panel are focused.
-			 * @return True to prevent this event from propagating to children.
+			 * Called when this panel is focused.
 			 */
-			virtual bool onBeginFocus(Panel* target) { return false; };
-			virtual bool onEndFocus(Panel* target) { return false; };
+			virtual void onBeginFocus() { ENGINE_INFO("onBeginFocus ", this); };
+			virtual void onEndFocus() { ENGINE_INFO("onEndFocus ", this); };
+			virtual bool canFocus() const { return true; }
 
-			/**
-			 * Determines if this panel can gain focus.
-			 */
-			virtual bool canFocus() const { return false; }
-			
+			// TODO: doc
+			virtual void onBeginChildFocus(Panel* child) { ENGINE_INFO("onBeginChildFocus ", this, " ", child); };
+			virtual void onEndChildFocus(Panel* child) { ENGINE_INFO("onEndChildFocus ", this, " ", child); };
+			virtual bool canFocusChild(Panel* child) { return true; }
+
 			/**
 			 * Called when this panel or any child panel is activated.
 			 * @return True to prevent this event from propagating to children.

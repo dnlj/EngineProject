@@ -14,5 +14,8 @@ namespace Engine::Gui {
 				Panel::render(ctx);
 				ctx.drawString({0,0}, &label);
 			}
+
+			virtual bool canFocus() const override { return false; }
+			//virtual bool canHover() const override { return false; }
 	};
 }
