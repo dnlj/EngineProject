@@ -8,6 +8,17 @@
 #include <Engine/Gui/Button.hpp> // TODO: rm
 
 
+// TODO: rm
+namespace {
+	class TestPanel : public Engine::Gui::Panel {
+		public:
+			//virtual bool canFocus() const override { return true; }
+			virtual bool canFocusChild(Panel* child) const override { return false; }
+			//virtual bool canHover() const override { return false; }
+	};
+}
+
+
 namespace Engine::Gui {
 	Context::Context(Engine::EngineInstance& engine) {
 		quadShader = engine.shaderManager.get("shaders/fullscreen_passthrough");
@@ -96,15 +107,15 @@ namespace Engine::Gui {
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
 
 		{
-			auto child = new Button{};
+			auto child = new TestPanel{};
 			root->addChild(child);
 			child->setPos({0, 0});
 			child->setSize({64, 300});
 			registerPanel(child);
 
-			child->label = R"(Hello, world!)";
-			child->label.setFont(font_b);
-			fontManager.shapeString(child->label);
+			//child->label = R"(Hello, world!)";
+			//child->label.setFont(font_b);
+			//fontManager.shapeString(child->label);
 
 			auto childChild = child->addChild(new Panel{});
 			childChild->setPos({0, 0});
@@ -466,9 +477,9 @@ namespace Engine::Gui {
 	void Context::setFocus(Panel* panel) {
 		if (panel == focus) {
 			ENGINE_WARN("Attempting to set duplicate focus, is this intended?"); // TODO: look into
-			return;
 		}
 
+		focusStackBack.clear();
 		for (auto curr = panel; curr != nullptr; curr = curr->parent) {
 			focusStackBack.push_back(curr);
 		}
@@ -490,21 +501,9 @@ namespace Engine::Gui {
 
 		// At this point aCurr and bCurr are the first element at which the stacks differ
 		const auto aDiff = aCurr;
-		const auto bDiff = bCurr;
 
 		{ // Validate the focus stack
-			if (aCurr == aBegin) {
-				// We dont need to do this because nullptr can focus all panels
-				//if (aCurr != aEnd) {
-				//	if (!(*aCurr)->canFocus()) {
-				//		// TODO: abort - nullptr focus
-				//	} else {
-				//		ENGINE_DEBUG_ASSERT(aBegin + 1 == aEnd);
-				//	}
-				//} else {
-				//	// TODO: also abort - panel == nullptr
-				//}
-			} else {
+			if (aCurr != aBegin) {
 				--aCurr;
 			}
 
@@ -514,11 +513,12 @@ namespace Engine::Gui {
 
 				if (child == aStop) {
 					if (!(*aCurr)->canFocus()) {
+						aStop = aCurr;
+
 						if (aCurr == aBegin) {
 							// TODO: abort - focust stack empty - nullptr focus
 							ENGINE_WARN("TODO: abort focus");
 						} else {
-							aStop = aCurr;
 							--aCurr;
 						}
 					} else {
@@ -536,9 +536,16 @@ namespace Engine::Gui {
 			}
 		}
 
+		if (bCurr == bEnd && bCurr != bBegin && aStop != aBegin) {
+			if (*(bCurr-1) == *(aStop - 1)) {
+				//ENGINE_INFO("Same target");
+				return;
+			}
+		}
+
 		// Call end events
 		if (bBegin == bEnd) {
-			ENGINE_WARN("Empty b list"); // TODO: rm
+			//ENGINE_WARN("Empty b list");
 		} else {
 			auto bLast = bEnd - 1;
 			(*bLast)->onEndFocus();
@@ -556,8 +563,8 @@ namespace Engine::Gui {
 
 		// Call begin events
 		{
-			if (aBegin == aEnd) {
-				ENGINE_WARN("Empty a list"); // TODO: rm
+			if (aStop == aBegin) {
+				//ENGINE_WARN("Empty a list");
 			} else {
 				aCurr = aStop < aDiff ? aStop : aDiff;
 
@@ -580,7 +587,6 @@ namespace Engine::Gui {
 
 		// Cleanup and set state
 		focusStack.swap(focusStackBack);
-		focusStackBack.clear();
 		focus = focusStack.empty() ? nullptr : focusStack.front();
 	}
 
