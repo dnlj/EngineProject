@@ -56,12 +56,11 @@ namespace {
 				auto child = aCurr + 1;
 
 				if (child == aStop) {
-					//if (!(*aCurr)->canFocus()) {
 					if (!canUse(aCurr)) {
 						aStop = aCurr;
 
 						if (aCurr == aBegin) {
-							// TODO: abort - focust stack empty - nullptr focus
+							// TODO: abort - stack empty
 							ENGINE_WARN("TODO: abort focus");
 						} else {
 							--aCurr;
@@ -72,7 +71,6 @@ namespace {
 						break;
 					}
 				} else {
-					//if (!(*aCurr)->canFocusChild(*child)) {
 					if (!canUseChild(aCurr, child)) {
 						aStop = aCurr + 1;
 					} else {
@@ -94,7 +92,6 @@ namespace {
 			//ENGINE_WARN("Empty b list");
 		} else {
 			auto bLast = bEnd - 1;
-			//(*bLast)->onEndFocus();
 			endUse(bLast);
 
 			if (bCurr != bBegin) {
@@ -104,7 +101,6 @@ namespace {
 			while (true) {
 				auto child = bLast;
 				if (child == bCurr) { break; }
-				//(*--bLast)->onEndChildFocus(*child);
 				--bLast;
 				endUseChild(bLast, child);
 			}
@@ -124,11 +120,10 @@ namespace {
 				while (true) {
 					auto child = aCurr + 1;
 					if (child == aStop) {
-						//(*aCurr)->onBeginFocus();
 						beginUse(aCurr);
 						break;
 					}
-					//(*aCurr)->onBeginChildFocus(*child);
+
 					beginUseChild(aCurr, child);
 					aCurr = child;
 				}
@@ -642,7 +637,7 @@ namespace Engine::Gui {
 			cursor.y = event.state.valuef;
 		}
 		hoverValid = false;
-		return isHoverAny();
+		return hover != nullptr;
 	}
 
 	bool Context::onMouseWheel(const Engine::Input::InputEvent event) {

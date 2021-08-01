@@ -164,12 +164,6 @@ namespace Engine::Gui {
 				panelIdMap.erase(found);
 			}
 
-			// TODO: dont think this is needed anymore since we cache hover
-			/**
-			 * Checks if we are hovering any panel.
-			 */
-			ENGINE_INLINE bool isHoverAny() const noexcept { return !hoverStack.empty(); }
-
 			/**
 			 * Gets the most hovered panel.
 			 */
