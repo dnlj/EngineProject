@@ -455,7 +455,7 @@ namespace Engine::Gui {
 
 		while (curr) {
 			if (curr->canHover() && (curr->getBounds() + off).contains(cursor)) {
-				if (curr->parent && curr->parent->onBeginChildHover(curr)) {
+				if (curr->parent && !curr->parent->canHoverChild(curr)) {
 					break;
 				}
 
