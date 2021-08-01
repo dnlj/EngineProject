@@ -16,6 +16,133 @@ namespace {
 			virtual bool canFocusChild(Panel* child) const override { return false; }
 			//virtual bool canHover() const override { return false; }
 	};
+
+	template<bool Reverse, class Stack, class CanUseFunc, class CanUseChildFunc, class EndUseFunc, class EndUseChildFunc, class BeginUseFunc, class BeginUseChildFunc>
+	void updateNestedBehaviour(
+		Stack& front, Stack& back,
+		CanUseFunc&& canUse, CanUseChildFunc&& canUseChild,
+		EndUseFunc&& endUse, EndUseChildFunc&& endUseChild,
+		BeginUseFunc&& beginUse, BeginUseChildFunc&& beginUseChild
+	) {
+		auto&& begin = [](Stack& stack) ENGINE_INLINE { if constexpr(Reverse) { return stack.rbegin(); } else { return stack.begin(); } };
+		auto&& end = [](Stack& stack) ENGINE_INLINE { if constexpr(Reverse) { return stack.rend(); } else { return stack.end(); } };
+
+		const auto aBegin = begin(back);
+		const auto aEnd = end(back);
+		auto aStop = aEnd;
+		auto aCurr = aBegin;
+
+		const auto bBegin = begin(front);
+		const auto bEnd = end(front);
+		auto bCurr = bBegin;
+		
+		// Find where stacks diverge
+		while (aCurr != aEnd && bCurr != bEnd && *aCurr == *bCurr) {
+			++aCurr;
+			++bCurr;
+		}
+
+		// At this point aCurr and bCurr are the first element at which the stacks differ
+		const auto aDiff = aCurr;
+
+		{ // Validate the stack
+			if (aCurr != aBegin) {
+				--aCurr;
+			}
+
+			while (true) {
+				if (aCurr == aStop) { break; }
+				auto child = aCurr + 1;
+
+				if (child == aStop) {
+					//if (!(*aCurr)->canFocus()) {
+					if (!canUse(aCurr)) {
+						aStop = aCurr;
+
+						if (aCurr == aBegin) {
+							// TODO: abort - focust stack empty - nullptr focus
+							ENGINE_WARN("TODO: abort focus");
+						} else {
+							--aCurr;
+						}
+					} else {
+						// At this point aCurr has been validated and should be the last element
+						ENGINE_DEBUG_ASSERT(child == aStop);
+						break;
+					}
+				} else {
+					//if (!(*aCurr)->canFocusChild(*child)) {
+					if (!canUseChild(aCurr, child)) {
+						aStop = aCurr + 1;
+					} else {
+						aCurr = child;
+					}
+				}
+			}
+		}
+
+		if (bCurr == bEnd && bCurr != bBegin && aStop != aBegin) {
+			if (*(bCurr-1) == *(aStop - 1)) {
+				//ENGINE_INFO("Same target");
+				return;
+			}
+		}
+
+		// Call end events
+		if (bBegin == bEnd) {
+			//ENGINE_WARN("Empty b list");
+		} else {
+			auto bLast = bEnd - 1;
+			//(*bLast)->onEndFocus();
+			endUse(bLast);
+
+			if (bCurr != bBegin) {
+				--bCurr;
+			}
+
+			while (true) {
+				auto child = bLast;
+				if (child == bCurr) { break; }
+				//(*--bLast)->onEndChildFocus(*child);
+				--bLast;
+				endUseChild(bLast, child);
+			}
+		}
+
+		// Call begin events
+		{
+			if (aStop == aBegin) {
+				//ENGINE_WARN("Empty a list");
+			} else {
+				aCurr = aStop < aDiff ? aStop : aDiff;
+
+				if (aCurr != aBegin) {
+					--aCurr;
+				}
+
+				while (true) {
+					auto child = aCurr + 1;
+					if (child == aStop) {
+						//(*aCurr)->onBeginFocus();
+						beginUse(aCurr);
+						break;
+					}
+					//(*aCurr)->onBeginChildFocus(*child);
+					beginUseChild(aCurr, child);
+					aCurr = child;
+				}
+			}
+
+			if constexpr (Reverse) {
+				back.erase(aEnd.base(), aStop.base());
+			} else {
+				back.erase(aStop, aEnd);
+			}
+		}
+
+		// Cleanup
+		front.swap(back);
+	}
 }
 
 
@@ -484,109 +611,17 @@ namespace Engine::Gui {
 			focusStackBack.push_back(curr);
 		}
 
-		const auto aBegin = focusStackBack.rbegin();
-		const auto aEnd = focusStackBack.rend();
-		auto aStop = aEnd;
-		auto aCurr = aBegin;
+		auto&& canUse = [](auto&& it) ENGINE_INLINE { return (*it)->canFocus(); };
+		auto&& canUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->canFocusChild(*itC); };
 
-		const auto bBegin = focusStack.rbegin();
-		const auto bEnd = focusStack.rend();
-		auto bCurr = bBegin;
-		
-		// Find where focus stacks diverge
-		while (aCurr != aEnd && bCurr != bEnd && *aCurr == *bCurr) {
-			++aCurr;
-			++bCurr;
-		}
+		auto&& endUse = [](auto&& it) ENGINE_INLINE { return (*it)->onEndFocus(); };
+		auto&& endUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onEndChildFocus(*itC); };
 
-		// At this point aCurr and bCurr are the first element at which the stacks differ
-		const auto aDiff = aCurr;
+		auto&& beginUse = [](auto&& it) ENGINE_INLINE { return (*it)->onBeginFocus(); };
+		auto&& beginUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onBeginChildFocus(*itC); };
 
-		{ // Validate the focus stack
-			if (aCurr != aBegin) {
-				--aCurr;
-			}
+		updateNestedBehaviour<true>(focusStack, focusStackBack, canUse, canUseChild, endUse, endUseChild, beginUse, beginUseChild);
 
-			while (true) {
-				if (aCurr == aStop) { break; }
-				auto child = aCurr + 1;
-
-				if (child == aStop) {
-					if (!(*aCurr)->canFocus()) {
-						aStop = aCurr;
-
-						if (aCurr == aBegin) {
-							// TODO: abort - focust stack empty - nullptr focus
-							ENGINE_WARN("TODO: abort focus");
-						} else {
-							--aCurr;
-						}
-					} else {
-						// At this point aCurr has been validated and should be the last element
-						ENGINE_DEBUG_ASSERT(child == aStop);
-						break;
-					}
-				} else {
-					if (!(*aCurr)->canFocusChild(*child)) {
-						aStop = aCurr + 1;
-					} else {
-						aCurr = child;
-					}
-				}
-			}
-		}
-
-		if (bCurr == bEnd && bCurr != bBegin && aStop != aBegin) {
-			if (*(bCurr-1) == *(aStop - 1)) {
-				//ENGINE_INFO("Same target");
-				return;
-			}
-		}
-
-		// Call end events
-		if (bBegin == bEnd) {
-			//ENGINE_WARN("Empty b list");
-		} else {
-			auto bLast = bEnd - 1;
-			(*bLast)->onEndFocus();
-
-			if (bCurr != bBegin) {
-				--bCurr;
-			}
-
-			while (true) {
-				auto child = bLast;
-				if (child == bCurr) { break; }
-				(*--bLast)->onEndChildFocus(*child);
-			}
-		}
-
-		// Call begin events
-		{
-			if (aStop == aBegin) {
-				//ENGINE_WARN("Empty a list");
-			} else {
-				aCurr = aStop < aDiff ? aStop : aDiff;
-
-				if (aCurr != aBegin) {
-					--aCurr;
-				}
-
-				while (true) {
-					auto child = aCurr + 1;
-					if (child == aStop) {
-						(*aCurr)->onBeginFocus();
-						break;
-					}
-					(*aCurr)->onBeginChildFocus(*child);
-					aCurr = child;
-				}
-			}
-			focusStackBack.erase(aEnd.base(), aStop.base());
-		}
-
-		// Cleanup and set state
-		focusStack.swap(focusStackBack);
 		focus = focusStack.empty() ? nullptr : focusStack.front();
 	}
 
