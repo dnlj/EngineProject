@@ -14,7 +14,8 @@ namespace {
 		public:
 			//virtual bool canFocus() const override { return true; }
 			virtual bool canFocusChild(Panel* child) const override { return false; }
-			//virtual bool canHover() const override { return false; }
+			//virtual bool canHoverChild(Panel* child) const override { return false; }
+			virtual bool canHover() const override { return false; }
 	};
 
 	template<bool Reverse, class Stack, class CanUseFunc, class CanUseChildFunc, class EndUseFunc, class EndUseChildFunc, class BeginUseFunc, class BeginUseChildFunc>
@@ -528,77 +529,38 @@ namespace Engine::Gui {
 	}
 
 	void Context::updateHover() {
-		Panel* const old = getHover();
-		glm::vec2 off = {};
-		Panel* curr = nullptr;
+		auto&& canUse = [](auto&& it) ENGINE_INLINE { return (*it)->canHover(); };
+		auto&& canUseChild = [c=cursor](auto&& itP, auto&& itC) ENGINE_INLINE {
+			return (*itP)->canHoverChild(*itC) && (*itC)->getAbsBounds().contains(c);
+		};
 
-		// One of the reasons we use a hoverStack instead of just traversing `node->parent`
-		// is to ensure that if onBeginChildHover was called that onEndChildHover
-		// will always be called on the correct panel with the correct arguments.
-		// Because any panel could be move (change parent) we need to maintain that list ourself.
-		//
-		// It also allows us to elide a large number of checks every update since it
-		// is very unlikely that our whole hover stack will change on an average update.
-		// I would expect typically the last few panels change at most.
+		auto&& endUse = [](auto&& it) ENGINE_INLINE { return (*it)->onEndHover(); };
+		auto&& endUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onEndChildHover(*itC); };
 
-		// Rebuild offset and find where our old stack ends
-		{
-			auto it = hoverStack.begin();
-			const auto end = hoverStack.end();
+		auto&& beginUse = [](auto&& it) ENGINE_INLINE { return (*it)->onBeginHover(); };
+		auto&& beginUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onBeginChildHover(*itC); };
 
-			for (; it != end; ++it) {
-				auto* panel = *it;
+		hoverStackBack.clear();
+		auto curr = root;
 
-				if (panel->canHover() && panel->parent == curr && (panel->getBounds() + off).contains(cursor)) {
-					off += panel->getPos();
-					curr = panel;
+		// Manually check root since it doesn't have a parent (bounds checking would be skipped because of canUseChild)
+		if (curr->getAbsBounds().contains(cursor)) {
+			hoverStackBack.push_back(curr);
+			curr = curr->firstChild;
+
+			while (curr) {
+				if (curr->parent && canUseChild(&curr->parent, &curr)) {
+					hoverStackBack.push_back(curr);
+					curr = curr->firstChild;
 				} else {
-					// Make sure `it` is still `curr` (cant decrement before begin, curr == nullptr)
-					// Only time this is the case is if the root panel fails the above test (`it` didnt get incremented)
-					if (curr != nullptr) { --it; }
-					break;
+					curr = curr->nextSibling;
 				}
-			}
-
-			// TODO: it seems like we should destruct these in reverse order?
-			// Call onEndChildHover on the appropriate nodes
-			if (it != end) {
-				const auto start = it;
-				auto next = it + 1;
-				while (next != end) {
-					(*it)->onEndChildHover(*next);
-					it = next;
-					++next;
-				}
-
-				// Since we cant decrement `it` to before `begin` we have to handle that case special
-				// Ideally we would just erase [start + 1, end]
-				hoverStack.erase(start + (curr != nullptr), end);
 			}
 		}
 
-		// Setup the next panel to check
-		curr = curr ? curr->firstChild : root;
+		updateNestedBehaviour<false>(hoverStack, hoverStackBack, canUse, canUseChild, endUse, endUseChild, beginUse, beginUseChild);
 
-		while (curr) {
-			if (curr->canHover() && (curr->getBounds() + off).contains(cursor)) {
-				if (curr->parent && !curr->parent->canHoverChild(curr)) {
-					break;
-				}
-
-				off += curr->getPos();
-				hoverStack.push_back(curr);
-				curr = curr->firstChild;
-			} else {
-				curr = curr->nextSibling;
-			}
-		}
-
-		Panel* target = getHover();
-		if (target != old) {
-			if (old) { old->onEndHover(); };
-			if (target) { target->onBeginHover(); }
-		}
+		hover = hoverStack.empty() ? nullptr : hoverStack.back();
 	}
 
 	void Context::setFocus(Panel* panel) {

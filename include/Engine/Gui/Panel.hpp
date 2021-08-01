@@ -69,6 +69,11 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setPos(const glm::vec2 p) noexcept { pos = p; }
 			ENGINE_INLINE auto getPos() const noexcept { return pos; }
 
+			// TODO: it seems like we need abs pos pretty much all the time. It is probably worth storgin abs pos and getting relative if we actually need it.
+			// TODO: getting rel pos would also be cheaper than abs pos (one addition vs recursive getPos calls)
+			// TODO: why can this not be inlined? 
+			glm::vec2 getAbsPos() const noexcept { return pos + (parent ? parent->getAbsPos() : glm::vec2{}); }
+
 			ENGINE_INLINE void setMinSize(const glm::vec2 sz) noexcept { minSize = sz; }
 			ENGINE_INLINE auto getMinSize() const noexcept { return minSize; }
 
@@ -82,14 +87,15 @@ namespace Engine::Gui {
 			 * Gets the axis aligned bounding box for this panel.
 			 */
 			ENGINE_INLINE Bounds getBounds() const noexcept { return {pos, pos + size}; }
+			ENGINE_INLINE Bounds getAbsBounds() const noexcept { return {getAbsPos(), getAbsPos() + size}; }
 
 			virtual void render(Context& ctx) const;
 			
 			/**
 			 * Called when this panel is hovered.
 			 */
-			virtual void onBeginHover() { /*ENGINE_LOG("onBeginHover ", this); /**/ };
-			virtual void onEndHover() { /*ENGINE_LOG("onEndHover ", this); /**/ };
+			virtual void onBeginHover() { ENGINE_LOG("onBeginHover ", this); /**/ };
+			virtual void onEndHover() { ENGINE_LOG("onEndHover ", this); /**/ };
 			virtual bool canHover() const { return true; }
 			
 			/**
@@ -97,8 +103,8 @@ namespace Engine::Gui {
 			 * @param child The direct child that is, or is a parent of, the hovered panel.
 			 * @return True to intercept this event and prevent it from propagating to children.
 			 */
-			virtual void onBeginChildHover(Panel* child) { /*ENGINE_LOG("onBeginChildHover ", this, " ", child); /**/ };
-			virtual void onEndChildHover(Panel* child) { /*ENGINE_LOG("onEndChildHover ", this, " ", child); /**/ };
+			virtual void onBeginChildHover(Panel* child) { ENGINE_LOG("onBeginChildHover ", this, " ", child); /**/ };
+			virtual void onEndChildHover(Panel* child) { ENGINE_LOG("onEndChildHover ", this, " ", child); /**/ };
 			virtual bool canHoverChild(Panel* child) const { return true; }
 
 			/**

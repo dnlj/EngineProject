@@ -120,6 +120,7 @@ namespace Engine::Gui {
 			Panel* hover = nullptr; // TODO: cache hover like we do for focus
 
 			std::vector<Panel*> hoverStack;
+			std::vector<Panel*> hoverStackBack;
 			bool hoverValid = false;
 
 			std::vector<Panel*> focusStack;
@@ -163,6 +164,7 @@ namespace Engine::Gui {
 				panelIdMap.erase(found);
 			}
 
+			// TODO: dont think this is needed anymore since we cache hover
 			/**
 			 * Checks if we are hovering any panel.
 			 */
@@ -171,8 +173,8 @@ namespace Engine::Gui {
 			/**
 			 * Gets the most hovered panel.
 			 */
-			ENGINE_INLINE Panel* getHover() noexcept { return isHoverAny() ? hoverStack.back() : nullptr; }
-			ENGINE_INLINE const Panel* getHover() const noexcept { return const_cast<Context*>(this)->getHover(); }
+			ENGINE_INLINE Panel* getHover() noexcept { return hover; }
+			ENGINE_INLINE const Panel* getHover() const noexcept { return hover; }
 
 			/**
 			 * Set the focused panel.
