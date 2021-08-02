@@ -6,7 +6,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Gui/FontGlyphSet.hpp>
+#include <Engine/FlatHashMap.hpp>
 
 namespace Engine::Gui::Detail {
 	struct FontId {
@@ -30,7 +30,7 @@ struct Engine::Hash<Engine::Gui::Detail::FontId> {
 };
 
 namespace Engine::Gui {
-	using Font = FontGlyphSet*;
+	using Font = class FontGlyphSet*;
 
 	class FontManager {
 		private:
@@ -38,7 +38,7 @@ namespace Engine::Gui {
 
 		private:
 			FT_Library ftlib;
-			hb_buffer_t* workingBuffer;
+			struct hb_buffer_t* workingBuffer;
 			FlatHashMap<std::string, FT_Face> pathToFace;
 			FlatHashMap<FontId, std::unique_ptr<FontGlyphSet>> fontIdToGlyphSet;
 
@@ -48,13 +48,9 @@ namespace Engine::Gui {
 
 			Font createFont(const std::string& path, int32 size);
 
-			void shapeString(ShapedString& str);
+			ENGINE_INLINE auto getWorkingBuffer() const noexcept { return workingBuffer; }
 
-			void updateAllFontDataBuffers() {
-				for (auto& [id, set] : fontIdToGlyphSet) {
-					set->updateDataBuffer();
-				}
-			}
+			void updateAllFontDataBuffers();
 	};
 }
 

@@ -9,6 +9,7 @@
 
 // Engine
 #include <Engine/Gui/FontManager.hpp>
+#include <Engine/Gui/FontGlyphSet.hpp>
 
 
 namespace Engine::Gui {
@@ -51,6 +52,7 @@ namespace Engine::Gui {
 
 			FT_Done_Size(found->second->size);
 			face = found->second;
+			face->generic.data = this;
 
 			// Setup HarfBuzz face
 			// For the time being this isnt viable. See FontGlyphSet::init for details.
@@ -76,7 +78,9 @@ namespace Engine::Gui {
 		return found->second.get();
 	}
 
-	void FontManager::shapeString(ShapedString& str) {
-		str.getFont()->shapeString(str, workingBuffer);
+	void FontManager::updateAllFontDataBuffers() {
+		for (auto& [id, set] : fontIdToGlyphSet) {
+			set->updateDataBuffer();
+		}
 	}
 }

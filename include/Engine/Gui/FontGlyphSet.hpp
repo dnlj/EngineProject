@@ -16,7 +16,6 @@
 // Engine
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Graphics/Texture.hpp>
-#include <Engine/Gui/ShapedString.hpp>
 
 
 namespace Engine::Gui {
@@ -83,9 +82,14 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE auto getGlyphIndex(uint32 glyph) { return glyphIndexToLoadedIndex[glyph]; }
 
+			ENGINE_INLINE auto& getManager() const noexcept {
+				ENGINE_DEBUG_ASSERT(ftFace->generic.data, "No font manager assigned to glyph set. This is a bug.");
+				return *reinterpret_cast<class FontManager*>(ftFace->generic.data);
+			}
+
 			void updateDataBuffer();
 
-			void shapeString(ShapedString& str, hb_buffer_t* buffer);
+			void shapeString(class ShapedString& str);
 
 			/**
 			 * Gets the font specified line height.

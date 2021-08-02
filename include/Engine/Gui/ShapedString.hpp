@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Gui/FontGlyphSet.hpp>
 
 
 namespace Engine::Gui {
@@ -35,5 +36,7 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void setFont(Font f) noexcept { font = f; }
 			ENGINE_INLINE Font getFont() const noexcept { return font; }
+
+			ENGINE_INLINE void shape() { font->shapeString(*this); }
 	};
 }

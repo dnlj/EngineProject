@@ -6,6 +6,7 @@
 // Engine
 #include <Engine/Gui/Context.hpp>
 #include <Engine/Gui/Button.hpp> // TODO: rm
+#include <Engine/Gui/Label.hpp> // TODO: rm
 
 
 namespace {
@@ -261,9 +262,23 @@ namespace Engine::Gui {
 
 			child->label = R"(This is a test button)";
 			child->label.setFont(font_a);
-			fontManager.shapeString(child->label);
+			child->label.shape();
 
 			registerPanel(child);
+		}
+
+		{
+			//auto child = new Label{};
+			//root->addChild(child);
+			//child->setRelPos({256, 10});
+			//child->setSize({128, 64});
+			//
+			//child.set
+			//child->label = R"(This is a test button)";
+			//child->label.setFont(font_a);
+			//fontManager.shapeString(child->label);
+			//
+			//registerPanel(child);
 		}
 	}
 

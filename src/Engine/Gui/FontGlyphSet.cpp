@@ -5,7 +5,9 @@
 #include <hb-ft.h>
 
 // Engine
+#include <Engine/Gui/FontManager.hpp>
 #include <Engine/Gui/FontGlyphSet.hpp>
+#include <Engine/Gui/ShapedString.hpp>
 
 
 namespace Engine::Gui {
@@ -171,7 +173,8 @@ namespace Engine::Gui {
 		//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
 	}
 
-	void FontGlyphSet::shapeString(ShapedString& str, hb_buffer_t* buffer) {
+	void FontGlyphSet::shapeString(ShapedString& str) {
+		auto buffer = getManager().getWorkingBuffer();
 		ftFace->size = ftSize;
 		
 		hb_buffer_clear_contents(buffer);
