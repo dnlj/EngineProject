@@ -69,7 +69,6 @@ namespace Engine::Gui {
 			};
 
 			struct BFSStateData {
-				glm::vec2 offset;
 				const Panel* panel;
 			};
 

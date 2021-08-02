@@ -8,8 +8,8 @@
 #include <Engine/Gui/Button.hpp> // TODO: rm
 
 
-// TODO: rm
 namespace {
+	// TODO: rm
 	class TestPanel : public Engine::Gui::Panel {
 		public:
 			//virtual bool canFocus() const override { return true; }
@@ -219,7 +219,7 @@ namespace Engine::Gui {
 		registerPanel(nullptr); // register before everything else so nullptr = id 0
 
 		root = new Panel{};
-		root->setPos({25, 50});
+		root->setRelPos({25, 50});
 		root->setSize({512, 256});
 		registerPanel(root);
 
@@ -232,7 +232,7 @@ namespace Engine::Gui {
 		{
 			auto child = new TestPanel{};
 			root->addChild(child);
-			child->setPos({0, 0});
+			child->setRelPos({0, 0});
 			child->setSize({64, 300});
 			registerPanel(child);
 
@@ -241,14 +241,14 @@ namespace Engine::Gui {
 			//fontManager.shapeString(child->label);
 
 			auto childChild = child->addChild(new Panel{});
-			childChild->setPos({0, 0});
+			childChild->setRelPos({0, 0});
 			childChild->setSize({32, 32});
 			registerPanel(childChild);
 		}
 		
 		{
 			auto child = root->addChild(new Panel{});
-			child->setPos({128, 5});
+			child->setRelPos({128, 5});
 			child->setSize({32, 64});
 			registerPanel(child);
 		}
@@ -256,7 +256,7 @@ namespace Engine::Gui {
 		{
 			auto child = new Button{};
 			root->addChild(child);
-			child->setPos({256, 10});
+			child->setRelPos({256, 10});
 			child->setSize({128, 64});
 
 			child->label = R"(This is a test button)";
@@ -289,7 +289,6 @@ namespace Engine::Gui {
 
 		const Panel* curr = root;
 		renderState.layer = 0;
-		renderState.offset = {};
 		polyDrawGroups.emplace_back().offset = 0;
 
 		// TODO: probably move to own function
@@ -298,10 +297,7 @@ namespace Engine::Gui {
 			// Traverse siblings
 			while (curr) {
 				if (curr->firstChild) {
-					bfsNext.emplace_back(
-						renderState.offset + curr->getPos(),
-						curr->firstChild
-					);
+					bfsNext.emplace_back(curr->firstChild);
 				}
 
 				if (false) {}
@@ -314,10 +310,8 @@ namespace Engine::Gui {
 				renderState.id = getPanelId(renderState.current);
 				renderState.pid = getPanelId(renderState.current->parent);
 
-				const auto oldOffset = renderState.offset;
-				renderState.offset += curr->getPos();
+				renderState.offset = curr->getPos();
 				curr->render(*this);
-				renderState.offset = oldOffset;
 				curr = curr->nextSibling;
 			}
 
@@ -336,7 +330,6 @@ namespace Engine::Gui {
 			// Next of current layer
 			const auto& back = bfsCurr.back();
 			curr = back.panel;
-			renderState.offset = back.offset;
 			bfsCurr.pop_back();
 		}
 
@@ -526,7 +519,7 @@ namespace Engine::Gui {
 	void Context::updateHover() {
 		auto&& canUse = [](auto&& it) ENGINE_INLINE { return (*it)->canHover(); };
 		auto&& canUseChild = [c=cursor](auto&& itP, auto&& itC) ENGINE_INLINE {
-			return (*itP)->canHoverChild(*itC) && (*itC)->getAbsBounds().contains(c);
+			return (*itP)->canHoverChild(*itC) && (*itC)->getBounds().contains(c);
 		};
 
 		auto&& endUse = [](auto&& it) ENGINE_INLINE { return (*it)->onEndHover(); };
@@ -539,7 +532,7 @@ namespace Engine::Gui {
 		auto curr = root;
 
 		// Manually check root since it doesn't have a parent (bounds checking would be skipped because of canUseChild)
-		if (curr->getAbsBounds().contains(cursor)) {
+		if (curr->getBounds().contains(cursor)) {
 			hoverStackBack.push_back(curr);
 			curr = curr->firstChild;
 

@@ -69,10 +69,8 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setPos(const glm::vec2 p) noexcept { pos = p; }
 			ENGINE_INLINE auto getPos() const noexcept { return pos; }
 
-			// TODO: it seems like we need abs pos pretty much all the time. It is probably worth storgin abs pos and getting relative if we actually need it.
-			// TODO: getting rel pos would also be cheaper than abs pos (one addition vs recursive getPos calls)
-			// TODO: why can this not be inlined? 
-			glm::vec2 getAbsPos() const noexcept { return pos + (parent ? parent->getAbsPos() : glm::vec2{}); }
+			ENGINE_INLINE void setRelPos(const glm::vec2 p) noexcept { setPos(p + (parent ? parent->pos : glm::vec2{})); }
+			ENGINE_INLINE auto getRelPos() const noexcept { return getPos() - (parent ? parent->getPos() : glm::vec2{}); }
 
 			ENGINE_INLINE void setMinSize(const glm::vec2 sz) noexcept { minSize = sz; }
 			ENGINE_INLINE auto getMinSize() const noexcept { return minSize; }
@@ -87,7 +85,6 @@ namespace Engine::Gui {
 			 * Gets the axis aligned bounding box for this panel.
 			 */
 			ENGINE_INLINE Bounds getBounds() const noexcept { return {pos, pos + size}; }
-			ENGINE_INLINE Bounds getAbsBounds() const noexcept { return {getAbsPos(), getAbsPos() + size}; }
 
 			virtual void render(Context& ctx) const;
 			
