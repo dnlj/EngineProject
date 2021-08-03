@@ -7,7 +7,7 @@
 
 namespace Engine::Gui {
 	class Label : public Panel {
-		private:
+		protected:
 			ShapedString str;
 
 		public:
@@ -27,5 +27,8 @@ namespace Engine::Gui {
 				ctx.drawRect({0,0}, getSize(), {});
 				ctx.drawString({0,0}, &str);
 			}
+
+			virtual bool canHover() const { return false; }
+			virtual bool canFocus() const { return false; }
 	};
 }

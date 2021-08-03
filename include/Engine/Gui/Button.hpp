@@ -1,21 +1,18 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/Panel.hpp>
-#include <Engine/Gui/ShapedString.hpp>
+#include <Engine/Gui/Label.hpp>
 
 
 namespace Engine::Gui {
-	class Button : public Panel {
+	class Button : public Label {
 		public:
-			ShapedString label;
-
 			virtual void render(Context& ctx) const override {
-				Panel::render(ctx);
-				ctx.drawString({0,0}, &label);
+				ctx.drawRect({0,0}, getSize(), {1,0,0,0.2});
+				ctx.drawString({0,0}, &str);
 			}
 
-			virtual bool canFocus() const override { return false; }
-			//virtual bool canHover() const override { return false; }
+			virtual bool canHover() const { return true; }
+			virtual bool canFocus() const { return true; }
 	};
 }

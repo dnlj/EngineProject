@@ -260,9 +260,9 @@ namespace Engine::Gui {
 			child->setRelPos({256, 10});
 			child->setSize({128, 64});
 
-			child->label = R"(This is a test button)";
-			child->label.setFont(font_a);
-			child->label.shape();
+			child->setText(R"(This is a test button)");
+			child->setFont(font_a);
+			child->shape();
 
 			registerPanel(child);
 		}
@@ -270,7 +270,7 @@ namespace Engine::Gui {
 		{
 			auto child = new Label{};
 			root->addChild(child);
-			child->setRelPos({256, 64});
+			child->setRelPos({256, 80});
 			child->setSize({256, 32});
 			
 			child->setText(R"(Wooo a label!)");
