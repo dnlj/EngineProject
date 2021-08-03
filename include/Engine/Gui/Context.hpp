@@ -139,7 +139,7 @@ namespace Engine::Gui {
 			~Context();
 			void render();
 
-			void drawRect(const glm::vec2 pos, const glm::vec2 size);
+			void drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color);
 			void drawString(glm::vec2 pos, const ShapedString* fstr);
 
 			void updateHover();

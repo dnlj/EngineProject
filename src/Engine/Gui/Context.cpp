@@ -268,17 +268,16 @@ namespace Engine::Gui {
 		}
 
 		{
-			//auto child = new Label{};
-			//root->addChild(child);
-			//child->setRelPos({256, 10});
-			//child->setSize({128, 64});
-			//
-			//child.set
-			//child->label = R"(This is a test button)";
-			//child->label.setFont(font_a);
-			//fontManager.shapeString(child->label);
-			//
-			//registerPanel(child);
+			auto child = new Label{};
+			root->addChild(child);
+			child->setRelPos({256, 64});
+			child->setSize({256, 32});
+			
+			child->setText(R"(Wooo a label!)");
+			child->setFont(font_a);
+			child->shape();
+			
+			registerPanel(child);
 		}
 	}
 
@@ -316,10 +315,10 @@ namespace Engine::Gui {
 				}
 
 				if (false) {}
-				else if (curr == getActive()) { renderState.color = glm::vec4{1, 0, 1, 0.2}; }
-				else if (curr == getFocus()) { renderState.color = glm::vec4{0, 1, 1, 0.2}; }
-				else if (curr == getHover()) { renderState.color = glm::vec4{1, 1, 0, 0.2}; }
-				else { renderState.color = glm::vec4{1, 0, 0, 0.2}; }
+				else if (curr == getActive()) { renderState.color = {1, 0, 1, 0.2}; }
+				else if (curr == getFocus()) { renderState.color = {0, 1, 1, 0.2}; }
+				else if (curr == getHover()) { renderState.color = {1, 1, 0, 0.2}; }
+				else { renderState.color = {}; }
 
 				renderState.current = curr;
 				renderState.id = getPanelId(renderState.current);
@@ -512,10 +511,16 @@ namespace Engine::Gui {
 		glyphDrawGroups.clear();
 	}
 
-	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size) {
+	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color) {
 		const PanelId id = renderState.id;
 		const PanelId pid = renderState.pid;
-		const auto color = renderState.color;
+
+		// TODO: rm - just for debugging
+		if (renderState.color.a != 0) {
+			color = renderState.color;
+		}
+
+		//const auto color = renderState.color;
 		const auto offset = renderState.offset;
 
 		polyVertexData.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
