@@ -57,6 +57,9 @@ namespace Engine::Gui {
 		public:
 			virtual ~Panel();
 
+			/**
+			 * Add a child to the end of the child list.
+			 */
 			auto addChild(Panel* child) {
 				if (lastChild) {
 					ENGINE_DEBUG_ASSERT(lastChild->nextSibling == nullptr);
@@ -71,18 +74,24 @@ namespace Engine::Gui {
 				return child;
 			}
 
+			/**
+			 * Set the absolute position of this panel.
+			 */
 			ENGINE_INLINE void setPos(const glm::vec2 p) noexcept { pos = p; }
 			ENGINE_INLINE auto getPos() const noexcept { return pos; }
-
-			ENGINE_INLINE void setRelPos(const glm::vec2 p) noexcept { setPos(p + (parent ? parent->pos : glm::vec2{})); }
+			
+			/**
+			 * Set the position of this panel relative to its parent.
+			 */
+			ENGINE_INLINE void setRelPos(const glm::vec2 p) noexcept { setPos(p + (parent ? parent->getPos() : glm::vec2{})); }
 			ENGINE_INLINE auto getRelPos() const noexcept { return getPos() - (parent ? parent->getPos() : glm::vec2{}); }
-
+			
 			ENGINE_INLINE void setMinSize(const glm::vec2 sz) noexcept { minSize = sz; }
 			ENGINE_INLINE auto getMinSize() const noexcept { return minSize; }
-
+			
 			ENGINE_INLINE void setMaxSize(const glm::vec2 sz) noexcept { maxSize = sz; }
 			ENGINE_INLINE auto getMaxSize() const noexcept { return maxSize; }
-
+			
 			ENGINE_INLINE void setSize(const glm::vec2 sz) noexcept { size = glm::clamp(sz, minSize, maxSize); };
 			ENGINE_INLINE auto getSize() const noexcept { return size; }
 
@@ -91,6 +100,9 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE Bounds getBounds() const noexcept { return {pos, pos + size}; }
 
+			/**
+			 * Renders this panel.
+			 */
 			virtual void render(Context& ctx) const;
 			
 			/**
@@ -101,9 +113,8 @@ namespace Engine::Gui {
 			virtual bool canHover() const { return true; }
 			
 			/**
-			 * Called when any descendant panel is hovered.
-			 * @param child The direct child that is, or is a parent of, the hovered panel.
-			 * @return True to intercept this event and prevent it from propagating to children.
+			 * Called the first time a child or any of its descendants are hovered.
+			 * @param child The child that is, or is the parent of, the hovered panel.
 			 */
 			virtual void onBeginChildHover(Panel* child) { ENGINE_LOG("onBeginChildHover ", this, " ", child); /**/ };
 			virtual void onEndChildHover(Panel* child) { ENGINE_LOG("onEndChildHover ", this, " ", child); /**/ };
@@ -115,18 +126,19 @@ namespace Engine::Gui {
 			virtual void onBeginFocus() { ENGINE_INFO("onBeginFocus ", this); /**/ };
 			virtual void onEndFocus() { ENGINE_INFO("onEndFocus ", this); /**/ };
 			virtual bool canFocus() const { return true; }
-
-			// TODO: doc
+			
+			/**
+			 * Called the first time a child or any of its descendants are focused.
+			 * @param child The child that is, or is the parent of, the focused panel.
+			 */
 			virtual void onBeginChildFocus(Panel* child) { ENGINE_INFO("onBeginChildFocus ", this, " ", child); /**/ };
 			virtual void onEndChildFocus(Panel* child) { ENGINE_INFO("onEndChildFocus ", this, " ", child); /**/ };
 			virtual bool canFocusChild(Panel* child) const { return true; }
 
 			/**
-			 * Called when this panel or any child panel is activated.
-			 * @return True to prevent this event from propagating to children.
+			 * Called when this panel is activated.
 			 */
-			// TODO: do we make this more generic? we could have more than simply mouse input
-			virtual bool onBeginActivate() { return false; };
-			virtual bool onEndActivate() { return false; };
+			virtual void onBeginActivate() {};
+			virtual void onEndActivate() {};
 	};	
 }
