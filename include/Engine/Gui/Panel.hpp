@@ -30,9 +30,14 @@ namespace Engine::Gui {
 			}
 	};
 
-	// TODO: doc states (focus, hover, active)
 	/**
-	 *
+	 * TODO: doc
+	 * 
+	 * Panel States:
+	 * - Hover: The panel is under the cursor.
+	 * - Focus: The panel is the target of input. Ex: pressed with mouse, tab key navigation, text box input.
+	 * - Active: The panel being actived. Ex: mouse press, enter key, controller X/A.
+	 * - Default: No other state is present.
 	 */
 	class Panel {
 		friend class Context;
