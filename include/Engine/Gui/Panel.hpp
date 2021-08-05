@@ -74,6 +74,10 @@ namespace Engine::Gui {
 				return child;
 			}
 
+			ENGINE_INLINE auto getParent() noexcept { return parent; }
+			ENGINE_INLINE auto getNextSibling() noexcept { return nextSibling; }
+			ENGINE_INLINE auto getChildList() noexcept { return firstChild; }
+
 			/**
 			 * Set the absolute position of this panel.
 			 */
@@ -104,35 +108,38 @@ namespace Engine::Gui {
 			 * Renders this panel.
 			 */
 			virtual void render(Context& ctx) const;
+
+			// TODO: doc
+			virtual void layout() {}
 			
 			/**
 			 * Called when this panel is hovered.
 			 */
-			virtual void onBeginHover() { ENGINE_LOG("onBeginHover ", this); /**/ };
-			virtual void onEndHover() { ENGINE_LOG("onEndHover ", this); /**/ };
+			virtual void onBeginHover() { /*ENGINE_INFO("onBeginHover ", this); /**/ };
+			virtual void onEndHover() { /*ENGINE_INFO("onEndHover ", this); /**/ };
 			virtual bool canHover() const { return true; }
 			
 			/**
 			 * Called the first time a child or any of its descendants are hovered.
 			 * @param child The child that is, or is the parent of, the hovered panel.
 			 */
-			virtual void onBeginChildHover(Panel* child) { ENGINE_LOG("onBeginChildHover ", this, " ", child); /**/ };
-			virtual void onEndChildHover(Panel* child) { ENGINE_LOG("onEndChildHover ", this, " ", child); /**/ };
+			virtual void onBeginChildHover(Panel* child) { /*ENGINE_INFO("onBeginChildHover ", this, " ", child); /**/ };
+			virtual void onEndChildHover(Panel* child) { /*ENGINE_INFO("onEndChildHover ", this, " ", child); /**/ };
 			virtual bool canHoverChild(Panel* child) const { return true; }
 
 			/**
 			 * Called when this panel is focused.
 			 */
-			virtual void onBeginFocus() { ENGINE_INFO("onBeginFocus ", this); /**/ };
-			virtual void onEndFocus() { ENGINE_INFO("onEndFocus ", this); /**/ };
+			virtual void onBeginFocus() { /*ENGINE_INFO("onBeginFocus ", this); /**/ };
+			virtual void onEndFocus() { /*ENGINE_INFO("onEndFocus ", this); /**/ };
 			virtual bool canFocus() const { return true; }
 			
 			/**
 			 * Called the first time a child or any of its descendants are focused.
 			 * @param child The child that is, or is the parent of, the focused panel.
 			 */
-			virtual void onBeginChildFocus(Panel* child) { ENGINE_INFO("onBeginChildFocus ", this, " ", child); /**/ };
-			virtual void onEndChildFocus(Panel* child) { ENGINE_INFO("onEndChildFocus ", this, " ", child); /**/ };
+			virtual void onBeginChildFocus(Panel* child) { /*ENGINE_INFO("onBeginChildFocus ", this, " ", child); /**/ };
+			virtual void onEndChildFocus(Panel* child) { /*ENGINE_INFO("onEndChildFocus ", this, " ", child); /**/ };
 			virtual bool canFocusChild(Panel* child) const { return true; }
 
 			/**

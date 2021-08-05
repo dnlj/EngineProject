@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/Gui/Context.hpp>
+#include <Engine/Gui/DirectionalLayout.hpp>
 #include <Engine/Gui/Button.hpp> // TODO: rm
 #include <Engine/Gui/Label.hpp> // TODO: rm
 
@@ -12,11 +13,24 @@
 namespace {
 	// TODO: rm
 	class TestPanel : public Engine::Gui::Panel {
+		private:
+			using Direction = Engine::Gui::Direction; // TODO: rm
+			using Align = Engine::Gui::Align; // TODO: rm
+
+			Engine::Gui::DirectionalLayout lay;
+
 		public:
+			TestPanel() : lay{Direction::Vertical, Align::Start} {
+			}
+
 			//virtual bool canFocus() const override { return true; }
 			virtual bool canFocusChild(Panel* child) const override { return false; }
 			//virtual bool canHoverChild(Panel* child) const override { return false; }
 			virtual bool canHover() const override { return false; }
+
+			virtual void layout() override {
+				lay.layout(this);
+			}
 	};
 
 	template<bool Reverse, class Stack, class CanUseFunc, class CanUseChildFunc, class EndUseFunc, class EndUseChildFunc, class BeginUseFunc, class BeginUseChildFunc>
@@ -241,10 +255,17 @@ namespace Engine::Gui {
 			//child->label.setFont(font_b);
 			//fontManager.shapeString(child->label);
 
-			auto childChild = child->addChild(new Panel{});
-			childChild->setRelPos({0, 0});
-			childChild->setSize({32, 32});
-			registerPanel(childChild);
+			auto panelA = child->addChild(new Panel{});
+			panelA->setRelPos({0, 0});
+			panelA->setSize({32, 32});
+			registerPanel(panelA);
+			
+			auto panelB = child->addChild(new Panel{});
+			panelB->setRelPos({0, 0});
+			panelB->setSize({48, 32});
+			registerPanel(panelB);
+
+			child->layout();
 		}
 		
 		{
