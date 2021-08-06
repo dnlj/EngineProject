@@ -20,7 +20,7 @@ namespace {
 			Engine::Gui::DirectionalLayout lay;
 
 		public:
-			TestPanel() : lay{Direction::Vertical, Align::Start} {
+			TestPanel() : lay{Direction::Vertical, Align::Stretch} {
 			}
 
 			//virtual bool canFocus() const override { return true; }
@@ -262,7 +262,8 @@ namespace Engine::Gui {
 			
 			auto panelB = child->addChild(new Panel{});
 			panelB->setRelPos({0, 0});
-			panelB->setSize({48, 32});
+			panelB->setMaxSize({32, INFINITY});
+			panelB->setSize({24, 32});
 			registerPanel(panelB);
 
 			child->layout();

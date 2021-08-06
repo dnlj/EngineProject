@@ -23,12 +23,17 @@ namespace Engine::Gui {
 		private:
 			using LayoutFunc = void(DirectionalLayout::*)(Panel*);
 
+			/** The main axis */
 			Direction dir = {};
+
+			/** Alignment along the cross axis */
 			Align align = {};
 
-			LayoutFunc layoutFunc = nullptr;
-
+			/** How much of a gap to insert between panels */
 			float32 gap = 8;
+
+			/** The function called when we perform layout. Depends on dispatch. */
+			LayoutFunc layoutFunc = nullptr;
 
 		public:
 			DirectionalLayout(Direction dir, Align align)
@@ -44,21 +49,33 @@ namespace Engine::Gui {
 		private:
 			template<Direction D, Align A>
 			void layoutImpl(Panel* panel) {
+				constexpr auto cross = static_cast<uint32>(D == Direction::Horizontal ? Direction::Vertical : Direction::Horizontal);
+				const auto size = panel->getSize();
+
 				auto curr = panel->getChildList();
-				auto size = panel->getSize();
 				auto cpos = panel->getPos();
-				cpos += gap;
 
 				while (curr) {
-					curr->setPos(cpos);
+					auto pos = cpos;
+
+					if constexpr (A == Align::Stretch) {
+						auto sz = curr->getSize();
+						sz[cross] = size[cross];
+						curr->setSize(sz);
+					}
 
 					if constexpr (A == Align::Start) {
+						// Already in correct pos
 					} else if constexpr (A == Align::End) {
-					} else if constexpr (A == Align::Center) {
-					} else if constexpr (A == Align::Stretch) {
+						pos[cross] += size[cross] - curr->getSize()[cross];
+					} else if constexpr (A == Align::Center ||
+					                     A == Align::Stretch) {
+						pos[cross] += (size[cross] - curr->getSize()[cross]) * 0.5f;
 					} else {
 						static_assert(A != A, "Unknown Alignment");
 					}
+
+					curr->setPos(pos);
 
 					if constexpr (D == Direction::Horizontal) {
 						cpos.y += curr->getSize().x + gap;
