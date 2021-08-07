@@ -43,6 +43,7 @@ namespace Engine::Gui {
 		friend class Context;
 		private:
 			Panel* parent = nullptr;
+			Panel* prevSibling = nullptr;
 			Panel* nextSibling = nullptr;
 			Panel* firstChild = nullptr;
 			Panel* lastChild = nullptr;
@@ -58,12 +59,36 @@ namespace Engine::Gui {
 			virtual ~Panel();
 
 			/**
+			 * Remove a child from this panel.
+			 * This does not delete the child. You now own the removed panel.
+			 */
+			void removeChild(Panel* child) {
+				if (child->nextSibling) {
+					child->nextSibling->prevSibling = child->prevSibling;
+				}
+
+				if (child->prevSibling) {
+					child->prevSibling->nextSibling = child->nextSibling;
+				}
+
+				child->prevSibling = nullptr;
+				child->nextSibling = nullptr;
+			}
+
+			/**
 			 * Add a child to the end of the child list.
+			 * This panel now owns the child.
 			 */
 			auto addChild(Panel* child) {
+				if (child->parent) {
+					child->parent->removeChild(child);
+				}
+
 				if (lastChild) {
 					ENGINE_DEBUG_ASSERT(lastChild->nextSibling == nullptr);
+					ENGINE_DEBUG_ASSERT(child->prevSibling == nullptr);
 					lastChild->nextSibling = child;
+					child->prevSibling = lastChild;
 				} else {
 					ENGINE_DEBUG_ASSERT(firstChild == nullptr);
 					firstChild = child;
