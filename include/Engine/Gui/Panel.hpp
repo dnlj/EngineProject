@@ -63,6 +63,8 @@ namespace Engine::Gui {
 			 * This does not delete the child. You now own the removed panel.
 			 */
 			void removeChild(Panel* child) {
+				ENGINE_DEBUG_ASSERT(child->parent == this);
+
 				if (child->nextSibling) {
 					child->nextSibling->prevSibling = child->prevSibling;
 				}
@@ -71,8 +73,17 @@ namespace Engine::Gui {
 					child->prevSibling->nextSibling = child->nextSibling;
 				}
 
+				if (child == lastChild) {
+					lastChild = child->prevSibling;
+				}
+
+				if (child == firstChild) {
+					firstChild = child->nextSibling;
+				}
+
 				child->prevSibling = nullptr;
 				child->nextSibling = nullptr;
+				child->parent = nullptr;
 			}
 
 			/**

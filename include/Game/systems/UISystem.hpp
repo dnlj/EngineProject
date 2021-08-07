@@ -44,7 +44,6 @@ namespace Game {
 			Engine::Clock::Duration fpsAvgWindow = std::chrono::milliseconds{500};
 			float32 fps = 0.0f;
 
-			void ui_new();
 			void ui_connect();
 			void ui_debug();
 			void ui_coordinates();

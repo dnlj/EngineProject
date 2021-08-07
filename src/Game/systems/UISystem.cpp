@@ -81,7 +81,7 @@ namespace Game {
 		, context{std::get<Engine::EngineInstance&>(arg)} {
 
 		namespace Gui = Engine::Gui;
-		/*{
+		{
 			{
 				auto child = context.createPanel<TestPanel>();
 				child->setRelPos({0, 0});
@@ -128,7 +128,7 @@ namespace Game {
 				child->setFont(context.font_a);
 				child->shape();
 			}
-		}*/
+		}
 	}
 
 	void UISystem::setup() {
@@ -162,15 +162,9 @@ namespace Game {
 		}
 
 		ui_debug();
-
-		ui_new();
 	}
 
 	void UISystem::tick() {
-	}
-
-	void UISystem::ui_new() {
-
 	}
 
 	void UISystem::ui_debug() {
