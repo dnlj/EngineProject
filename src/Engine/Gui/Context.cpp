@@ -1,38 +1,8 @@
-// FreeType
-#include <ft2build.h>
-#include <freetype/freetype.h>
-#include <freetype/ftglyph.h>
-
 // Engine
 #include <Engine/Gui/Context.hpp>
-#include <Engine/Gui/DirectionalLayout.hpp>
-#include <Engine/Gui/Button.hpp> // TODO: rm
-#include <Engine/Gui/Label.hpp> // TODO: rm
 
 
 namespace {
-	// TODO: rm
-	class TestPanel : public Engine::Gui::Panel {
-		private:
-			using Direction = Engine::Gui::Direction; // TODO: rm
-			using Align = Engine::Gui::Align; // TODO: rm
-
-			Engine::Gui::DirectionalLayout lay;
-
-		public:
-			TestPanel() : lay{Direction::Vertical, Align::Stretch} {
-			}
-
-			//virtual bool canFocus() const override { return true; }
-			virtual bool canFocusChild(Panel* child) const override { return false; }
-			//virtual bool canHoverChild(Panel* child) const override { return false; }
-			virtual bool canHover() const override { return false; }
-
-			virtual void layout() override {
-				lay.layout(this);
-			}
-	};
-
 	template<bool Reverse, class Stack, class CanUseFunc, class CanUseChildFunc, class EndUseFunc, class EndUseChildFunc, class BeginUseFunc, class BeginUseChildFunc>
 	void updateNestedBehaviour(
 		Stack& front, Stack& back,
@@ -243,64 +213,6 @@ namespace Engine::Gui {
 		font_a = fontManager.createFont("assets/arial.ttf", 32);
 		font_b = fontManager.createFont("assets/consola.ttf", 12);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
-
-		{
-			auto child = new TestPanel{};
-			root->addChild(child);
-			child->setRelPos({0, 0});
-			child->setSize({64, 300});
-			registerPanel(child);
-
-			//child->label = R"(Hello, world!)";
-			//child->label.setFont(font_b);
-			//fontManager.shapeString(child->label);
-
-			auto panelA = child->addChild(new Panel{});
-			panelA->setRelPos({0, 0});
-			panelA->setSize({32, 32});
-			registerPanel(panelA);
-			
-			auto panelB = child->addChild(new Panel{});
-			panelB->setRelPos({0, 0});
-			panelB->setMaxSize({32, INFINITY});
-			panelB->setSize({24, 32});
-			registerPanel(panelB);
-
-			child->layout();
-		}
-		
-		{
-			auto child = root->addChild(new Panel{});
-			child->setRelPos({128, 5});
-			child->setSize({32, 64});
-			registerPanel(child);
-		}
-
-		{
-			auto child = new Button{};
-			root->addChild(child);
-			child->setRelPos({256, 10});
-			child->setSize({128, 64});
-
-			child->setText(R"(This is a test button)");
-			child->setFont(font_a);
-			child->shape();
-
-			registerPanel(child);
-		}
-
-		{
-			auto child = new Label{};
-			root->addChild(child);
-			child->setRelPos({256, 80});
-			child->setSize({256, 32});
-			
-			child->setText(R"(Wooo a label!)");
-			child->setFont(font_a);
-			child->shape();
-			
-			registerPanel(child);
-		}
 	}
 
 	Context::~Context() {
@@ -641,13 +553,8 @@ namespace Engine::Gui {
 		//);
 		if (event.state.id.code == 0) {
 			if (event.state.value) {
-				/////////////////////////////
-
-				ENGINE_LOG("--------------------------------------------");
 				auto hover = getHover();
 				setFocus(hover);
-
-				/////////////////////////////
 
 				ENGINE_DEBUG_ASSERT(active == nullptr);
 				auto focus = getFocus();

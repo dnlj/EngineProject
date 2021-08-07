@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Gui/Panel.hpp>
 
 
 namespace Engine::Gui {

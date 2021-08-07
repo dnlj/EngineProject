@@ -6,6 +6,8 @@
 // Engine
 #include <Engine/Glue/Box2D.hpp>
 #include <Engine/Glue/glm.hpp>
+#include <Engine/Gui/DirectionalLayout.hpp>
+#include <Engine/Gui/Button.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -49,12 +51,84 @@ namespace {
 		freeaddrinfo(results);
 		return true;
 	}
+	
+	// TODO: rm
+	class TestPanel : public Engine::Gui::Panel {
+		private:
+			using Direction = Engine::Gui::Direction; // TODO: rm
+			using Align = Engine::Gui::Align; // TODO: rm
 
+			Engine::Gui::DirectionalLayout lay;
+
+		public:
+			TestPanel() : lay{Direction::Vertical, Align::Stretch} {
+			}
+
+			//virtual bool canFocus() const override { return true; }
+			virtual bool canFocusChild(Panel* child) const override { return false; }
+			//virtual bool canHoverChild(Panel* child) const override { return false; }
+			virtual bool canHover() const override { return false; }
+
+			virtual void layout() override {
+				lay.layout(this);
+			}
+	};
 }
 
 namespace Game {
 	UISystem::UISystem(SystemArg arg)
-		: System{arg} {
+		: System{arg}
+		, context{std::get<Engine::EngineInstance&>(arg)} {
+
+		namespace Gui = Engine::Gui;
+		/*{
+			{
+				auto child = context.createPanel<TestPanel>();
+				child->setRelPos({0, 0});
+				child->setSize({64, 300});
+
+				//child->label = R"(Hello, world!)";
+				//child->label.setFont(font_b);
+				//fontManager.shapeString(child->label);
+
+				auto panelA = child->addChild(context.createPanel<Gui::Panel>());
+				panelA->setRelPos({0, 0});
+				panelA->setSize({32, 32});
+			
+				auto panelB = child->addChild(context.createPanel<Gui::Panel>());
+				panelB->setRelPos({0, 0});
+				panelB->setMaxSize({32, INFINITY});
+				panelB->setSize({24, 32});
+
+				child->layout();
+			}
+		
+			{
+				auto child = context.createPanel<Gui::Panel>();
+				child->setRelPos({128, 5});
+				child->setSize({32, 64});
+			}
+
+			{
+				auto child = context.createPanel<Gui::Button>();
+				child->setRelPos({256, 10});
+				child->setSize({128, 64});
+
+				child->setText(R"(This is a test button)");
+				child->setFont(context.font_a);
+				child->shape();
+			}
+
+			{
+				auto child = context.createPanel<Gui::Label>();
+				child->setRelPos({256, 80});
+				child->setSize({256, 32});
+			
+				child->setText(R"(Wooo a label!)");
+				child->setFont(context.font_a);
+				child->shape();
+			}
+		}*/
 	}
 
 	void UISystem::setup() {
@@ -88,9 +162,15 @@ namespace Game {
 		}
 
 		ui_debug();
+
+		ui_new();
 	}
 
 	void UISystem::tick() {
+	}
+
+	void UISystem::ui_new() {
+
 	}
 
 	void UISystem::ui_debug() {

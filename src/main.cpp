@@ -571,7 +571,7 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	auto worldStorage = std::make_unique<Game::World>(engine);
 	Game::World& world = *worldStorage.get();
-	Engine::Gui::Context guiContext{engine};
+	auto& guiContext = world.getSystem<Game::UISystem>().getContext();
 	TempWorldEngineWrapper wrapper{engine, world, guiContext};
 	windowCallbacks.userdata = &wrapper;
 
@@ -646,7 +646,7 @@ void run(int argc, char* argv[]) {
 	#if defined (DEBUG_PHYSICS)
 		world.getSystem<Game::PhysicsSystem>().getDebugDraw().setup(engine.camera);
 	#endif
-
+	
 	// Main loop
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;

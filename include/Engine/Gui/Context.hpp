@@ -103,8 +103,8 @@ namespace Engine::Gui {
 
 			/* Text rendering helpers */
 			FontManager fontManager;
-			Font font_a; // TODO: rm when done testing
-			Font font_b; // TODO: rm when done testing
+			public: Font font_a; private:// TODO: rm when done testing
+			public: Font font_b; private:// TODO: rm when done testing
 			std::vector<StringData> stringsToRender;
 
 			/* Scene graph traversal */
@@ -150,17 +150,16 @@ namespace Engine::Gui {
 				return found->second;
 			}
 
-			ENGINE_INLINE void registerPanel(const Panel* panel) {
-				panelIdMap[panel] = claimNextPanelId();
-				ENGINE_LOG("Panel Id ", panelIdMap[panel], " = ", panel);
-			}
+			template<class P, class... Args>
+			ENGINE_INLINE P* createPanel(Args&&... args) {
+				auto p = new P{std::forward<Args>(args)...};
 
-			ENGINE_INLINE void deregisterPanel(const Panel* panel) {
-				ENGINE_DEBUG_ASSERT(panel != nullptr, "Attempting to deregister nullptr.");
-				auto found = panelIdMap.find(panel);
-				ENGINE_DEBUG_ASSERT(found != panelIdMap.end(), "Attempting to deregister an unregistered Panel.");
-				freePanelIds.push_back(found->second);
-				panelIdMap.erase(found);
+				if (p->getParent() == nullptr) {
+					root->addChild(p);
+				}
+
+				registerPanel(p);
+				return p;
 			}
 
 			/**
@@ -222,6 +221,19 @@ namespace Engine::Gui {
 					return freePanelIds.pop_back(), id;
 				}
 				return ++nextPanelId;
+			}
+
+			ENGINE_INLINE void registerPanel(const Panel* panel) {
+				panelIdMap[panel] = claimNextPanelId();
+				ENGINE_LOG("Panel Id ", panelIdMap[panel], " = ", panel);
+			}
+
+			ENGINE_INLINE void deregisterPanel(const Panel* panel) {
+				ENGINE_DEBUG_ASSERT(panel != nullptr, "Attempting to deregister nullptr.");
+				auto found = panelIdMap.find(panel);
+				ENGINE_DEBUG_ASSERT(found != panelIdMap.end(), "Attempting to deregister an unregistered Panel.");
+				freePanelIds.push_back(found->second);
+				panelIdMap.erase(found);
 			}
 
 			/**

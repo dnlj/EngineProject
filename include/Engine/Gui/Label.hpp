@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Gui/Panel.hpp>
 #include <Engine/Gui/ShapedString.hpp>
+#include <Engine/Gui/Context.hpp>
 
 
 namespace Engine::Gui {
