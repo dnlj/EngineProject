@@ -136,6 +136,7 @@ namespace Engine::Gui {
 		public:
 			// TODO: split shader into own class so we dont depend on engine
 			Context(Engine::EngineInstance& engine);
+			Context(Context&) = delete;
 			~Context();
 			void render();
 
