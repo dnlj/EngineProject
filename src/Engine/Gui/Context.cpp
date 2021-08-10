@@ -510,10 +510,6 @@ namespace Engine::Gui {
 	}
 
 	void Context::setFocus(Panel* panel) {
-		if (panel == focus) {
-			ENGINE_WARN("Attempting to set duplicate focus, is this intended?"); // TODO: look into
-		}
-
 		focusStackBack.clear();
 		for (auto curr = panel; curr != nullptr; curr = curr->getParent()) {
 			focusStackBack.push_back(curr);

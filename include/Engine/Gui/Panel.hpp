@@ -165,7 +165,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setSize(const glm::vec2 sz) noexcept {
 				const auto old = size;
 				size = glm::clamp(sz, minSize, maxSize);
-				if (size != old) { layout(); }
+				if (size != old) { performLayout(); }
 			};
 			ENGINE_INLINE auto getSize() const noexcept { return size; }
 
@@ -175,7 +175,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setWidth(const float32 w) noexcept {
 				const auto old = size.x;
 				size.x = glm::clamp(w, minSize.x, maxSize.x);
-				if (size.x != old) { layout(); }
+				if (size.x != old) { performLayout(); }
 			}
 			ENGINE_INLINE auto getWidth() const noexcept { return size.x; }
 			
@@ -185,7 +185,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setHeight(const float32 h) noexcept {
 				const auto old = size.y;
 				size.y = glm::clamp(h, minSize.y, maxSize.y);
-				if (size.y != old) { layout(); }
+				if (size.y != old) { performLayout(); }
 			}
 			ENGINE_INLINE auto getHeight() const noexcept { return size.y; }
 
@@ -206,6 +206,13 @@ namespace Engine::Gui {
 			// TODO: doc
 			virtual void preLayout() {}
 			virtual void postLayout() {}
+
+			// TODO: doc
+			ENGINE_INLINE void performLayout() {
+				preLayout();
+				if (lay) { lay->layout(this); }
+				postLayout();
+			}
 			
 			/**
 			 * Called when this panel is hovered.
@@ -242,13 +249,5 @@ namespace Engine::Gui {
 			 */
 			virtual void onBeginActivate() {};
 			virtual void onEndActivate() {};
-
-		private:
-			// TODO: doc
-			ENGINE_INLINE void layout() {
-				preLayout();
-				if (lay) { lay->layout(this); }
-				postLayout();
-			}
 	};	
 }

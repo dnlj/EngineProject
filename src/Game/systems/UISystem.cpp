@@ -125,27 +125,31 @@ namespace Game {
 				auto child = context.createPanel<Gui::CollapsibleSection>(&context);
 				child->setRelPos({8, 480});
 				child->setSize({256, 128});
+				child->getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start});
 
 				auto fps = context.createPanel<Gui::Label>();
 				child->getContent()->addChild(fps);
 				fps->setFont(context.font_b);
 				fps->setText("FPS: 1234");
 				fps->setRelPos({0,0});
-				fps->setSize({64,64});
+				fps->setSize({128,16});
 
 				auto tick = context.createPanel<Gui::Label>();
 				child->getContent()->addChild(tick);
 				tick->setFont(context.font_b);
 				tick->setText("Tick: 8675");
 				tick->setRelPos({0,0});
-				tick->setSize({64,64});
+				tick->setSize({128,16});
 
 				auto scale = context.createPanel<Gui::Label>();
 				child->getContent()->addChild(scale);
 				scale->setFont(context.font_b);
 				scale->setText("Tick Scale: 1.01");
 				scale->setRelPos({0,0});
-				scale->setSize({64,64});
+				scale->setSize({128,16});
+
+				// TODO: shouldnt have to do this
+				child->getContent()->performLayout();
 			}
 		}
 	}
