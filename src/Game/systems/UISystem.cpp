@@ -8,6 +8,7 @@
 #include <Engine/Glue/glm.hpp>
 #include <Engine/Gui/DirectionalLayout.hpp>
 #include <Engine/Gui/Button.hpp>
+#include <Engine/Gui/CollapsibleSection.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -127,6 +128,13 @@ namespace Game {
 				child->setText(R"(Wooo a label!)");
 				child->setFont(context.font_a);
 				child->shape();
+			}
+
+			{
+				auto child = context.createPanel<Gui::CollapsibleSection>(&context);
+				child->setRelPos({8, 480});
+				child->setSize({256, 128});
+				child->layout(); // TODO: dont call this manually;
 			}
 		}
 	}

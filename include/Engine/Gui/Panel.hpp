@@ -158,7 +158,10 @@ namespace Engine::Gui {
 			ENGINE_INLINE auto getSize() const noexcept { return size; }
 
 			ENGINE_INLINE void setWidth(const float32 w) noexcept { size.x = glm::clamp(w, minSize.x, maxSize.x); }
+			ENGINE_INLINE auto getWidth() const noexcept { return size.x; }
+
 			ENGINE_INLINE void setHeight(const float32 h) noexcept { size.y = glm::clamp(h, minSize.y, maxSize.y); }
+			ENGINE_INLINE auto getHeight() const noexcept { return size.y; }
 
 			/**
 			 * Gets the axis aligned bounding box for this panel.

@@ -47,13 +47,15 @@ namespace Engine::Gui {
 				return (this->*layoutFunc)(panel);
 			}
 
+			ENGINE_INLINE auto getGap() const noexcept { return gap; }
+
 		private:
 			template<Direction D, Align A>
 			void layoutImpl(Panel* panel) {
 				constexpr auto cross = static_cast<uint32>(D == Direction::Horizontal ? Direction::Vertical : Direction::Horizontal);
 				const auto size = panel->getSize();
 
-				auto curr = panel->getChildList();
+				auto curr = panel->getFirstChild();
 				auto cpos = panel->getPos();
 
 				while (curr) {
