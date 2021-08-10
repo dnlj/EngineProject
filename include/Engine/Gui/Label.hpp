@@ -14,6 +14,7 @@ namespace Engine::Gui {
 		public:
 			ENGINE_INLINE void setText(std::string txt) {
 				str = std::move(txt);
+				if (str.getFont()) { shape(); }
 			}
 
 			ENGINE_INLINE void setFont(Font font) {
