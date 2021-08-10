@@ -134,7 +134,6 @@ namespace Game {
 				auto child = context.createPanel<Gui::CollapsibleSection>(&context);
 				child->setRelPos({8, 480});
 				child->setSize({256, 128});
-				child->layout(); // TODO: dont call this manually;
 			}
 		}
 	}

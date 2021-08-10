@@ -153,14 +153,38 @@ namespace Engine::Gui {
 			
 			ENGINE_INLINE void setMaxSize(const glm::vec2 sz) noexcept { maxSize = sz; }
 			ENGINE_INLINE auto getMaxSize() const noexcept { return maxSize; }
-			
-			ENGINE_INLINE void setSize(const glm::vec2 sz) noexcept { size = glm::clamp(sz, minSize, maxSize); };
+
+			/**
+			 * Set the size of this panel.
+			 * 
+			 * Clamped to min/max size. \n
+			 * May update panel layout.
+			 */
+			ENGINE_INLINE void setSize(const glm::vec2 sz) noexcept {
+				const auto old = size;
+				size = glm::clamp(sz, minSize, maxSize);
+				if (size != old) { layout(); }
+			};
 			ENGINE_INLINE auto getSize() const noexcept { return size; }
 
-			ENGINE_INLINE void setWidth(const float32 w) noexcept { size.x = glm::clamp(w, minSize.x, maxSize.x); }
+			/**
+			 * See @ref setSize.
+			 */
+			ENGINE_INLINE void setWidth(const float32 w) noexcept {
+				const auto old = size.x;
+				size.x = glm::clamp(w, minSize.x, maxSize.x);
+				if (size.x != old) { layout(); }
+			}
 			ENGINE_INLINE auto getWidth() const noexcept { return size.x; }
-
-			ENGINE_INLINE void setHeight(const float32 h) noexcept { size.y = glm::clamp(h, minSize.y, maxSize.y); }
+			
+			/**
+			 * See @ref setSize.
+			 */
+			ENGINE_INLINE void setHeight(const float32 h) noexcept {
+				const auto old = size.y;
+				size.y = glm::clamp(h, minSize.y, maxSize.y);
+				if (size.y != old) { layout(); }
+			}
 			ENGINE_INLINE auto getHeight() const noexcept { return size.y; }
 
 			/**

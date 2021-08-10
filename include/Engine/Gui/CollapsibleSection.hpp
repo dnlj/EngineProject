@@ -42,7 +42,6 @@ namespace Engine::Gui {
 
 				content->setEnabled(open);
 				setHeight(open ? height : btn->getHeight());
-				layout(); // TODO: layout should happen on resize anyways
 			}
 
 			virtual void render(Context& ctx) const override {
@@ -50,7 +49,6 @@ namespace Engine::Gui {
 			}
 
 			virtual void layout() override {
-				// TODO: need to resize this window
 				btn->setSize({getSize().x, 32});
 				content->setSize({getSize().x, getSize().y - btn->getSize().y - lay.getGap()});
 				lay.layout(this);
