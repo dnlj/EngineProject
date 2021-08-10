@@ -10,28 +10,21 @@
 namespace Engine::Gui {
 	class CollapsibleSection : public Panel {
 		private:
-			DirectionalLayout lay;
 			Button* btn = nullptr;
 			Panel* content = nullptr;
 			bool open = true;
-			float32 height = 128;
+			float32 height;
 
 		public:
-			CollapsibleSection(Context* ctx)
-				: lay{Direction::Vertical, Align::Start} {
+			CollapsibleSection(Context* ctx) {
+				setLayout(new DirectionalLayout{Direction::Vertical, Align::Start});
+				height = getHeight();
 
 				btn = ctx->createPanel<Button>();
 				addChild(btn);
-				btn->setText("Section Test");
 				btn->setFont(ctx->font_b); // TODO:
-				btn->shape();
-				btn->setBeginActive([&]{
-					ENGINE_LOG("Set Begin Active");
-					toggle();
-				});
-				btn->setEndActive([&]{
-					ENGINE_LOG("Set End Active");
-				});
+				btn->setText("Section Test");
+				btn->setEndActive([&]{ toggle(); });
 
 				content = ctx->createPanel<Panel>();
 				addChild(content);
@@ -44,14 +37,18 @@ namespace Engine::Gui {
 				setHeight(open ? height : btn->getHeight());
 			}
 
+			ENGINE_INLINE auto getContent() const noexcept { return content; }
+
 			virtual void render(Context& ctx) const override {
 				ctx.drawRect({0,0}, getSize(), {0,0.5,0.5,1.0});
 			}
 
-			virtual void layout() override {
+			virtual void preLayout() override {
+				if (open) { height = getHeight(); }
 				btn->setSize({getSize().x, 32});
-				content->setSize({getSize().x, getSize().y - btn->getSize().y - lay.getGap()});
-				lay.layout(this);
+
+				auto* layout = reinterpret_cast<DirectionalLayout*>(getLayout());
+				content->setSize({getSize().x, getSize().y - btn->getSize().y - layout->getGap()});
 			}
 	};
 }

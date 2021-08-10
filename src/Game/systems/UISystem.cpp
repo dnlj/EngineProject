@@ -59,20 +59,15 @@ namespace {
 			using Direction = Engine::Gui::Direction; // TODO: rm
 			using Align = Engine::Gui::Align; // TODO: rm
 
-			Engine::Gui::DirectionalLayout lay;
-
 		public:
-			TestPanel() : lay{Direction::Vertical, Align::Stretch} {
+			TestPanel() {
+				setLayout(new Engine::Gui::DirectionalLayout{Direction::Vertical, Align::Stretch});
 			}
 
 			//virtual bool canFocus() const override { return true; }
 			virtual bool canFocusChild(Panel* child) const override { return false; }
 			//virtual bool canHoverChild(Panel* child) const override { return false; }
 			virtual bool canHover() const override { return false; }
-
-			virtual void layout() override {
-				lay.layout(this);
-			}
 	};
 }
 
@@ -100,8 +95,6 @@ namespace Game {
 				panelB->setRelPos({0, 0});
 				panelB->setMaxSize({32, INFINITY});
 				panelB->setSize({24, 32});
-
-				child->layout();
 			}
 		
 			{
@@ -115,9 +108,8 @@ namespace Game {
 				child->setRelPos({256, 10});
 				child->setSize({128, 64});
 
-				child->setText(R"(This is a test button)");
 				child->setFont(context.font_a);
-				child->shape();
+				child->setText(R"(This is a test button)");
 			}
 
 			{
@@ -125,15 +117,35 @@ namespace Game {
 				child->setRelPos({256, 80});
 				child->setSize({256, 32});
 			
-				child->setText(R"(Wooo a label!)");
 				child->setFont(context.font_a);
-				child->shape();
+				child->setText(R"(Wooo a label!)");
 			}
 
 			{
 				auto child = context.createPanel<Gui::CollapsibleSection>(&context);
 				child->setRelPos({8, 480});
 				child->setSize({256, 128});
+
+				auto fps = context.createPanel<Gui::Label>();
+				child->getContent()->addChild(fps);
+				fps->setFont(context.font_b);
+				fps->setText("FPS: 1234");
+				fps->setRelPos({0,0});
+				fps->setSize({64,64});
+
+				auto tick = context.createPanel<Gui::Label>();
+				child->getContent()->addChild(tick);
+				tick->setFont(context.font_b);
+				tick->setText("Tick: 8675");
+				tick->setRelPos({0,0});
+				tick->setSize({64,64});
+
+				auto scale = context.createPanel<Gui::Label>();
+				child->getContent()->addChild(scale);
+				scale->setFont(context.font_b);
+				scale->setText("Tick Scale: 1.01");
+				scale->setRelPos({0,0});
+				scale->setSize({64,64});
 			}
 		}
 	}

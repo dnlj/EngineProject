@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Gui/Layout.hpp>
 
 
 namespace Engine::Gui {
@@ -46,6 +47,7 @@ namespace Engine::Gui {
 			Panel* nextSibling = nullptr;
 			Panel* firstChild = nullptr;
 			Panel* lastChild = nullptr;
+			Layout* lay = nullptr;
 
 			glm::vec2 minSize = {0, 0};
 			glm::vec2 maxSize = {INFINITY, INFINITY};
@@ -192,13 +194,18 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE Bounds getBounds() const noexcept { return {pos, pos + size}; }
 
+			// TODO: doc
+			ENGINE_INLINE void setLayout(Layout* l) noexcept { lay = l; }
+			ENGINE_INLINE auto getLayout() noexcept { return lay; }
+
 			/**
 			 * Renders this panel.
 			 */
 			virtual void render(Context& ctx) const;
 
 			// TODO: doc
-			virtual void layout() {}
+			virtual void preLayout() {}
+			virtual void postLayout() {}
 			
 			/**
 			 * Called when this panel is hovered.
@@ -235,5 +242,13 @@ namespace Engine::Gui {
 			 */
 			virtual void onBeginActivate() {};
 			virtual void onEndActivate() {};
+
+		private:
+			// TODO: doc
+			ENGINE_INLINE void layout() {
+				preLayout();
+				if (lay) { lay->layout(this); }
+				postLayout();
+			}
 	};	
 }

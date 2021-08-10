@@ -20,7 +20,7 @@ namespace Engine::Gui {
 		_count,
 	};
 
-	class DirectionalLayout {
+	class DirectionalLayout : public Layout {
 		private:
 			using LayoutFunc = void(DirectionalLayout::*)(Panel*);
 
@@ -42,7 +42,7 @@ namespace Engine::Gui {
 				updateDispatch();
 			}
 
-			ENGINE_INLINE decltype(auto) layout(Panel* panel) {
+			virtual void layout(Panel* panel) override {
 				ENGINE_DEBUG_ASSERT(layoutFunc, "Invalid layout function");
 				return (this->*layoutFunc)(panel);
 			}
