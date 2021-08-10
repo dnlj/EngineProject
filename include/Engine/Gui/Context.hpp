@@ -58,9 +58,12 @@ namespace Engine::Gui {
 				glm::vec2 pos;
 				const ShapedString* str;
 			};
-			
+
+			//#define DEBUG_GUI
 			struct RenderState {
-				glm::vec4 color = {1.0f, 0.0f, 0.0f, 0.2f};
+				#ifdef DEBUG_GUI
+				glm::vec4 color = {};
+				#endif
 				const Panel* current = nullptr; /* The current panel being rendered */
 				PanelId id = invalidPanelId; /* The id of the current panel */
 				PanelId pid = invalidPanelId; /* The parent id of the current panel */
@@ -153,7 +156,7 @@ namespace Engine::Gui {
 
 			template<class P, class... Args>
 			ENGINE_INLINE P* createPanel(Args&&... args) {
-				auto p = new P{std::forward<Args>(args)...};
+				auto p = new P(std::forward<Args>(args)...);
 
 				if (p->getParent() == nullptr) {
 					root->addChild(p);

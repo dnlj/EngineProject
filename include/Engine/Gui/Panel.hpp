@@ -40,7 +40,6 @@ namespace Engine::Gui {
 	 * - Default: No other state is present.
 	 */
 	class Panel {
-		friend class Context;
 		private:
 			Panel* parent = nullptr;
 			Panel* prevSibling = nullptr;
@@ -54,6 +53,8 @@ namespace Engine::Gui {
 
 			glm::vec2 pos;
 			glm::vec2 size;
+
+			bool enabled = true;
 
 		public:
 			virtual ~Panel();
@@ -110,9 +111,30 @@ namespace Engine::Gui {
 				return child;
 			}
 
-			ENGINE_INLINE auto getParent() noexcept { return parent; }
-			ENGINE_INLINE auto getNextSibling() noexcept { return nextSibling; }
-			ENGINE_INLINE auto getChildList() noexcept { return firstChild; }
+			ENGINE_INLINE auto getParent() const noexcept { return parent; }
+			
+			/**
+			 * Gets the next enabled sibling panel.
+			 */
+			ENGINE_INLINE auto getNextSibling() const noexcept {
+				auto res = nextSibling;
+				while (res && !res->enabled) { res = res->nextSibling; }
+				return (res && !res->enabled) ? nullptr : res;
+			}
+
+			/**
+			 * Gets the first enabled child panel.
+			 */
+			ENGINE_INLINE auto getFirstChild() const noexcept {
+				return (firstChild && !firstChild->enabled) ? firstChild->getNextSibling() : firstChild;
+			}
+
+			// TODO: doc
+			/**
+			 *
+			 */
+			ENGINE_INLINE void setEnabled(bool e) noexcept { enabled = e; }
+			ENGINE_INLINE auto getEnabled() const noexcept { return enabled; }
 
 			/**
 			 * Set the absolute position of this panel.
@@ -134,6 +156,9 @@ namespace Engine::Gui {
 			
 			ENGINE_INLINE void setSize(const glm::vec2 sz) noexcept { size = glm::clamp(sz, minSize, maxSize); };
 			ENGINE_INLINE auto getSize() const noexcept { return size; }
+
+			ENGINE_INLINE void setWidth(const float32 w) noexcept { size.x = glm::clamp(w, minSize.x, maxSize.x); }
+			ENGINE_INLINE void setHeight(const float32 h) noexcept { size.y = glm::clamp(h, minSize.y, maxSize.y); }
 
 			/**
 			 * Gets the axis aligned bounding box for this panel.

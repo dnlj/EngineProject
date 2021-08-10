@@ -204,8 +204,8 @@ namespace Engine::Gui {
 		registerPanel(nullptr); // register before everything else so nullptr = id 0
 
 		root = new Panel{};
-		root->setRelPos({25, 50});
-		root->setSize({512, 256});
+		root->setRelPos({25, 25});
+		root->setSize({1024, 1024});
 		registerPanel(root);
 
 		///////////////////////////////////////////////////////////////////////////////
@@ -244,23 +244,25 @@ namespace Engine::Gui {
 		while (true) {
 			// Traverse siblings
 			while (curr) {
-				if (curr->firstChild) {
-					bfsNext.emplace_back(curr->firstChild);
+				if (auto fc = curr->getFirstChild(); fc) {
+					bfsNext.emplace_back(fc);
 				}
 
+				#ifdef DEBUG_GUI
 				if (false) {}
 				else if (curr == getActive()) { renderState.color = {1, 0, 1, 0.2}; }
 				else if (curr == getFocus()) { renderState.color = {0, 1, 1, 0.2}; }
 				else if (curr == getHover()) { renderState.color = {1, 1, 0, 0.2}; }
 				else { renderState.color = {}; }
+				#endif
 
 				renderState.current = curr;
 				renderState.id = getPanelId(renderState.current);
-				renderState.pid = getPanelId(renderState.current->parent);
+				renderState.pid = getPanelId(renderState.current->getParent());
 
 				renderState.offset = curr->getPos();
 				curr->render(*this);
-				curr = curr->nextSibling;
+				curr = curr->getNextSibling();
 			}
 
 			// Move to next layer if needed
@@ -449,10 +451,11 @@ namespace Engine::Gui {
 		const PanelId id = renderState.id;
 		const PanelId pid = renderState.pid;
 
-		// TODO: rm - just for debugging
+		#ifdef DEBUG_GUI
 		if (renderState.color.a != 0) {
 			color = renderState.color;
 		}
+		#endif
 
 		//const auto color = renderState.color;
 		const auto offset = renderState.offset;
@@ -488,14 +491,15 @@ namespace Engine::Gui {
 		// Manually check root since it doesn't have a parent (bounds checking would be skipped because of canUseChild)
 		if (curr->getBounds().contains(cursor)) {
 			hoverStackBack.push_back(curr);
-			curr = curr->firstChild;
+			curr = curr->getFirstChild();
 
 			while (curr) {
-				if (curr->parent && canUseChild(&curr->parent, &curr)) {
+				auto parent = curr->getParent();
+				if (parent && canUseChild(&parent, &curr)) {
 					hoverStackBack.push_back(curr);
-					curr = curr->firstChild;
+					curr = curr->getFirstChild();
 				} else {
-					curr = curr->nextSibling;
+					curr = curr->getNextSibling();
 				}
 			}
 		}
@@ -511,7 +515,7 @@ namespace Engine::Gui {
 		}
 
 		focusStackBack.clear();
-		for (auto curr = panel; curr != nullptr; curr = curr->parent) {
+		for (auto curr = panel; curr != nullptr; curr = curr->getParent()) {
 			focusStackBack.push_back(curr);
 		}
 
