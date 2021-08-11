@@ -16,6 +16,7 @@
 // Engine
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Graphics/Texture.hpp>
+#include <Engine/Gui/Bounds.hpp>
 
 
 namespace Engine::Gui {
@@ -89,6 +90,9 @@ namespace Engine::Gui {
 
 			void updateDataBuffer();
 
+			/**
+			 * Populate a ShapedString with glyph position and bounds info.
+			 */
 			void shapeString(class ShapedString& str);
 
 			/**

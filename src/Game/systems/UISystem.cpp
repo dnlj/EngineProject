@@ -131,22 +131,25 @@ namespace Game {
 				child->getContent()->addChild(fps);
 				fps->setFont(context.font_b);
 				fps->setText("FPS: 1234");
-				fps->setRelPos({0,0});
-				fps->setSize({128,16});
+				//fps->setRelPos({0,0});
+				//fps->setSize({128,16});
+				fps->autoSize();
 
 				auto tick = context.createPanel<Gui::Label>();
 				child->getContent()->addChild(tick);
 				tick->setFont(context.font_b);
-				tick->setText("Tick: 8675");
-				tick->setRelPos({0,0});
-				tick->setSize({128,16});
+				tick->setText("gTick: 8675");
+				//tick->setRelPos({0,0});
+				//tick->setSize({128,5});
+				tick->autoSize();
 
 				auto scale = context.createPanel<Gui::Label>();
 				child->getContent()->addChild(scale);
 				scale->setFont(context.font_b);
 				scale->setText("Tick Scale: 1.01");
-				scale->setRelPos({0,0});
-				scale->setSize({128,16});
+				//scale->setRelPos({0,0});
+				//scale->setSize({128,16});
+				scale->autoSize();
 
 				// TODO: shouldnt have to do this
 				child->getContent()->performLayout();

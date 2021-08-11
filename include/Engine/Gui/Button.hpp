@@ -20,7 +20,7 @@ namespace Engine::Gui {
 
 			virtual void render(Context& ctx) const override {
 				ctx.drawRect({0,0}, getSize(), {1,0,0,0.2});
-				ctx.drawString({0,0}, &str);
+				Label::render(ctx);
 			}
 
 			virtual bool canHover() const override { return true; }

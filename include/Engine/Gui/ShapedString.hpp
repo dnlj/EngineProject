@@ -20,6 +20,7 @@ namespace Engine::Gui {
 			std::string str;
 			std::vector<ShapeGlyph> glyphs;
 			Font font;
+			Bounds bounds;
 
 		public:
 			ShapedString() = default;
@@ -36,6 +37,9 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void setFont(Font f) noexcept { font = f; }
 			ENGINE_INLINE Font getFont() const noexcept { return font; }
+
+			ENGINE_INLINE void setBounds(Bounds b) { bounds = b; }
+			ENGINE_INLINE const auto& getBounds() const noexcept { return bounds; }
 
 			ENGINE_INLINE void shape() { font->shapeString(*this); }
 	};

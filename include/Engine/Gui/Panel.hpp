@@ -6,30 +6,11 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Gui/Layout.hpp>
+#include <Engine/Gui/Bounds.hpp>
 
 
 namespace Engine::Gui {
 	class Context; // Forward decl
-
-	class Bounds { // TODO: move
-		public:
-			glm::vec2 topLeft;
-			glm::vec2 bottomRight;
-
-			ENGINE_INLINE bool contains(const glm::vec2 point) const noexcept {
-				return point.x >= topLeft.x
-					&& point.y >= topLeft.y
-					&& point.x <= bottomRight.x
-					&& point.y <= bottomRight.y;
-			}
-
-			ENGINE_INLINE friend Bounds operator+(const Bounds& a, const glm::vec2 b) noexcept {
-				auto res = a;
-				res.topLeft += b;
-				res.bottomRight += b;
-				return res;
-			}
-	};
 
 	/**
 	 * TODO: doc

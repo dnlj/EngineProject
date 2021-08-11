@@ -297,7 +297,6 @@ namespace Engine::Gui {
 			GlyphDrawGroup* group = &glyphDrawGroups.emplace_back();
 			group->glyphSet = currFont;
 			group->layer = currLayer;
-			auto ascent = group->glyphSet->getAscent();
 
 			for (const auto& strdat : stringsToRender) {
 				if (strdat.layer != currLayer || currFont != strdat.str->getFont()) {
@@ -311,12 +310,9 @@ namespace Engine::Gui {
 						.glyphSet = currFont,
 					};
 					group = &glyphDrawGroups.emplace_back(next);
-					ascent = group->glyphSet->getAscent();
 				}
 
-				auto pos = strdat.pos;
-				pos.y += ascent;
-				renderString(*strdat.str, strdat.parent, pos, group->glyphSet);
+				renderString(*strdat.str, strdat.parent, strdat.pos, group->glyphSet);
 				group->count += static_cast<int32>(strdat.str->getGlyphShapeData().size());
 			}
 

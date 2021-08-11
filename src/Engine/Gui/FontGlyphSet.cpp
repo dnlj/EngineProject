@@ -188,6 +188,9 @@ namespace Engine::Gui {
 		auto& data = str.getGlyphShapeDataMutable();
 		data.clear();
 
+		Bounds bounds = {};
+		glm::vec2 cursor = {}; // Used for calc bounds
+
 		for (uint32 i = 0; i < sz; ++i) {
 			const auto& info = infoArr[i];
 			const auto& pos = posArr[i];
@@ -202,10 +205,24 @@ namespace Engine::Gui {
 
 			data.push_back({
 				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
-				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing, // TODO: + bearing
+				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing,
 				.advance = glm::vec2{pos.x_advance, pos.y_advance} * (1.0f/64),
 			});
+
+			{ // Update bounds
+				const auto& back = data.back();
+				const auto& dat = glyphData[gi];
+				const auto min = cursor + back.offset;
+				const auto max = min + dat.size;
+
+				bounds.topLeft = glm::min(bounds.topLeft, min);
+				bounds.bottomRight = glm::max(bounds.bottomRight, max);
+
+				cursor += back.advance;
+			}
 		}
+
+		str.setBounds(bounds);
 	}
 	
 	void FontGlyphSet::updateDataBuffer() {
