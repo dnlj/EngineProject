@@ -36,7 +36,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void autoSize() {
 				const auto& bounds = str.getBounds();
 				const auto sz = bounds.getRoundSize();
-				setSize({bounds.bottomRight.x, str.getFont()->getLineHeight()});
+				setSize({bounds.max.x, str.getFont()->getLineHeight()});
 			}
 
 			virtual void render(Context& ctx) const override {

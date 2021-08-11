@@ -215,8 +215,8 @@ namespace Engine::Gui {
 				const auto min = cursor + back.offset;
 				const auto max = min + dat.size;
 
-				bounds.topLeft = glm::min(bounds.topLeft, min);
-				bounds.bottomRight = glm::max(bounds.bottomRight, max);
+				bounds.min = glm::min(bounds.min, min);
+				bounds.max = glm::max(bounds.max, max);
 
 				cursor += back.advance;
 			}
