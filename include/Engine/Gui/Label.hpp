@@ -16,6 +16,10 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setText(std::string txt) {
 				str = std::move(txt);
 				if (str.getFont()) { shape(); }
+			}
+
+			ENGINE_INLINE void setFont(Font font) {
+				str.setFont(font);
 
 				// By default we (0,0) is the text baseline so we offset to make it top left.
 				// To get the true bounds we would need to check `str.getBounds()` but that
@@ -23,10 +27,6 @@ namespace Engine::Gui {
 				//
 				// See "Glyph Metrics" illustrations at: https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html#section-3
 				offset.y = str.getFont()->getAscent();
-			}
-
-			ENGINE_INLINE void setFont(Font font) {
-				str.setFont(font);
 			}
 
 			ENGINE_INLINE void shape() {
