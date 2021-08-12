@@ -5,8 +5,9 @@
 
 namespace Engine::Gui {
 	Panel::~Panel() {
-		delete firstChild;
-		delete nextSibling;
+		ENGINE_DEBUG_ASSERT(ctx, "Panel created with invalid context (null)");
+		if (firstChild) { ctx->deletePanel(firstChild); }
+		if (nextSibling) { ctx->deletePanel(nextSibling); }
 		delete layout;
 	};
 

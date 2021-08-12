@@ -166,6 +166,11 @@ namespace Engine::Gui {
 				return p;
 			}
 
+			ENGINE_INLINE void deletePanel(Panel* panel) {
+				deregisterPanel(panel);
+				delete panel;
+			}
+
 			/**
 			 * Gets the most hovered panel.
 			 */

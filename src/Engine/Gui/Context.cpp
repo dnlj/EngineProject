@@ -226,7 +226,7 @@ namespace Engine::Gui {
 		glDeleteVertexArrays(1, &glyphVAO);
 		glDeleteBuffers(1, &glyphVBO);
 
-		delete root;
+		deletePanel(root);
 	}
 	
 	void Context::render() {
