@@ -13,6 +13,8 @@ namespace Engine::Gui {
 			glm::vec2 offset = {};
 
 		public:
+			using Panel::Panel;
+
 			ENGINE_INLINE void setText(std::string txt) {
 				str = std::move(txt);
 				if (str.getFont()) { shape(); }

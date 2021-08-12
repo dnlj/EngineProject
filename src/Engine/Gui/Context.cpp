@@ -203,7 +203,7 @@ namespace Engine::Gui {
 
 		registerPanel(nullptr); // register before everything else so nullptr = id 0
 
-		root = new Panel{};
+		root = new Panel{this};
 		root->setRelPos({25, 25});
 		root->setSize({1024, 1024});
 		registerPanel(root);

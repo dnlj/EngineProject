@@ -6,9 +6,7 @@
 // Engine
 #include <Engine/Glue/Box2D.hpp>
 #include <Engine/Glue/glm.hpp>
-#include <Engine/Gui/DirectionalLayout.hpp>
-#include <Engine/Gui/Button.hpp>
-#include <Engine/Gui/CollapsibleSection.hpp>
+#include <Engine/Gui/Window.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -61,7 +59,7 @@ namespace {
 			using Align = Engine::Gui::Align; // TODO: rm
 
 		public:
-			TestPanel() {
+			TestPanel(Engine::Gui::Context* context) : Panel{context} {
 				setLayout(new Engine::Gui::DirectionalLayout{Direction::Vertical, Align::Stretch});
 			}
 
@@ -81,23 +79,23 @@ namespace Game {
 			Gui::Label* scale = nullptr;
 
 		public:
-			InfoPane(Gui::Context& ctx) : CollapsibleSection{ctx} {
+			InfoPane(Gui::Context* context) : CollapsibleSection{context} {
 				auto* content = getContent();
 				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Stretch});
 
-				fps = ctx.createPanel<Gui::Label>();
+				fps = ctx->createPanel<Gui::Label>();
 				content->addChild(fps);
-				fps->setFont(ctx.font_b);
+				fps->setFont(ctx->font_b);
 				fps->autoSize();
 
-				tick = ctx.createPanel<Gui::Label>();
+				tick = ctx->createPanel<Gui::Label>();
 				content->addChild(tick);
-				tick->setFont(ctx.font_b);
+				tick->setFont(ctx->font_b);
 				tick->autoSize();
 
-				scale = ctx.createPanel<Gui::Label>();
+				scale = ctx->createPanel<Gui::Label>();
 				content->addChild(scale);
-				scale->setFont(ctx.font_b);
+				scale->setFont(ctx->font_b);
 				scale->autoSize();
 			}
 
@@ -134,10 +132,10 @@ namespace Game {
 namespace Game {
 	UISystem::UISystem(SystemArg arg)
 		: System{arg}
-		, context{std::get<Engine::EngineInstance&>(arg)} {
+		, ctx{std::get<Engine::EngineInstance&>(arg)} {
 		{
 			{
-				auto child = context.createPanel<TestPanel>();
+				auto child = ctx.createPanel<TestPanel>();
 				child->setRelPos({0, 0});
 				child->setSize({64, 300});
 
@@ -145,42 +143,48 @@ namespace Game {
 				//child->label.setFont(font_b);
 				//fontManager.shapeString(child->label);
 
-				auto panelA = child->addChild(context.createPanel<Gui::Panel>());
+				auto panelA = child->addChild(ctx.createPanel<Gui::Panel>());
 				panelA->setRelPos({0, 0});
 				panelA->setSize({32, 32});
 			
-				auto panelB = child->addChild(context.createPanel<Gui::Panel>());
+				auto panelB = child->addChild(ctx.createPanel<Gui::Panel>());
 				panelB->setRelPos({0, 0});
 				panelB->setMaxSize({32, INFINITY});
 				panelB->setSize({24, 32});
 			}
 		
 			{
-				auto child = context.createPanel<Gui::Panel>();
+				auto child = ctx.createPanel<Gui::Panel>();
 				child->setRelPos({128, 5});
 				child->setSize({32, 64});
 			}
 
 			{
-				auto child = context.createPanel<Gui::Button>();
+				auto child = ctx.createPanel<Gui::Button>();
 				child->setRelPos({256, 10});
 				child->setSize({128, 64});
 
-				child->setFont(context.font_a);
+				child->setFont(ctx.font_a);
 				child->setText(R"(This is a test button)");
 			}
 
 			{
-				auto child = context.createPanel<Gui::Label>();
+				auto child = ctx.createPanel<Gui::Label>();
 				child->setRelPos({256, 80});
 				child->setSize({256, 32});
 			
-				child->setFont(context.font_a);
+				child->setFont(ctx.font_a);
 				child->setText(R"(Wooo a label!)");
 			}
 
 			{
-				panels.infoPane = context.createPanel<InfoPane>(context);
+				auto window = ctx.createPanel<Gui::Window>();
+				window->setRelPos({256, 256});
+				window->setSize({256, 256});
+			}
+
+			{
+				panels.infoPane = ctx.createPanel<InfoPane>();
 				panels.infoPane->setRelPos({8, 480});
 				panels.infoPane->setSize({256, 128});
 				panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this.

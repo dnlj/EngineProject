@@ -156,7 +156,7 @@ namespace Engine::Gui {
 
 			template<class P, class... Args>
 			ENGINE_INLINE P* createPanel(Args&&... args) {
-				auto p = new P(std::forward<Args>(args)...);
+				auto p = new P(this, std::forward<Args>(args)...);
 
 				if (p->getParent() == nullptr) {
 					root->addChild(p);

@@ -7,7 +7,7 @@ namespace Engine::Gui {
 	Panel::~Panel() {
 		delete firstChild;
 		delete nextSibling;
-		delete lay;
+		delete layout;
 	};
 
 	void Panel::render(Context& ctx) const {

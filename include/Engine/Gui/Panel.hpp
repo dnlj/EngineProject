@@ -22,13 +22,17 @@ namespace Engine::Gui {
 	 * - Default: No other state is present.
 	 */
 	class Panel {
+		protected:
+			/** The Context that owns this panel. */
+			Context* ctx = nullptr;
+
 		private:
 			Panel* parent = nullptr;
 			Panel* prevSibling = nullptr;
 			Panel* nextSibling = nullptr;
 			Panel* firstChild = nullptr;
 			Panel* lastChild = nullptr;
-			Layout* lay = nullptr;
+			Layout* layout = nullptr;
 
 			glm::vec2 minSize = {0, 0};
 			glm::vec2 maxSize = {INFINITY, INFINITY};
@@ -40,6 +44,7 @@ namespace Engine::Gui {
 			bool enabled = true;
 
 		public:
+			Panel(Context* context) : ctx{context} {}
 			virtual ~Panel();
 
 			/**
@@ -176,8 +181,8 @@ namespace Engine::Gui {
 			ENGINE_INLINE Bounds getBounds() const noexcept { return {pos, pos + size}; }
 
 			// TODO: doc
-			ENGINE_INLINE void setLayout(Layout* l) noexcept { lay = l; }
-			ENGINE_INLINE auto getLayout() noexcept { return lay; }
+			ENGINE_INLINE void setLayout(Layout* l) noexcept { layout = l; }
+			ENGINE_INLINE auto getLayout() noexcept { return layout; }
 
 			/**
 			 * Renders this panel.
@@ -191,7 +196,7 @@ namespace Engine::Gui {
 			// TODO: doc
 			ENGINE_INLINE void performLayout() {
 				preLayout();
-				if (lay) { lay->layout(this); }
+				if (layout) { layout->layout(this); }
 				postLayout();
 			}
 			

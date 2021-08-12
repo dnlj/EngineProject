@@ -21,11 +21,11 @@ namespace Game {
 			void run(float32 dt);
 			void tick();
 
-			ENGINE_INLINE auto& getContext() noexcept { return context; }
+			ENGINE_INLINE auto& getContext() noexcept { return ctx; }
 
 		private:
 			std::stringstream ss;
-			Engine::Gui::Context context;
+			Engine::Gui::Context ctx;
 
 			Engine::Clock::TimePoint now;
 			Engine::Clock::TimePoint lastUpdate;

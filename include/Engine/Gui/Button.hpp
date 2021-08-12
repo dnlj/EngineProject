@@ -15,6 +15,8 @@ namespace Engine::Gui {
 			Callback endCallback;
 
 		public:
+			using Label::Label;
+
 			void setBeginActive(Callback func) { beginCallback = func; }
 			void setEndActive(Callback func) { endCallback = func; }
 
