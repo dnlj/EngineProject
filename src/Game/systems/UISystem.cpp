@@ -15,6 +15,7 @@
 #include <Game/World.hpp>
 
 namespace {
+	namespace Gui = Engine::Gui;
 	const double avgDeltaTime = 1/64.0;
 
 	bool connectTo(const std::string& uri, Engine::EngineInstance& engine, Game::World& world) {
@@ -69,14 +70,71 @@ namespace {
 			//virtual bool canHoverChild(Panel* child) const override { return false; }
 			virtual bool canHover() const override { return false; }
 	};
+
+}
+
+namespace Game {
+	class InfoPane : public Gui::CollapsibleSection {
+		private:
+			Gui::Label* fps = nullptr;
+			Gui::Label* tick = nullptr;
+			Gui::Label* scale = nullptr;
+
+		public:
+			InfoPane(Gui::Context& ctx) : CollapsibleSection{ctx} {
+				auto* content = getContent();
+				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Stretch});
+
+				fps = ctx.createPanel<Gui::Label>();
+				content->addChild(fps);
+				fps->setFont(ctx.font_b);
+				fps->autoSize();
+
+				tick = ctx.createPanel<Gui::Label>();
+				content->addChild(tick);
+				tick->setFont(ctx.font_b);
+				tick->autoSize();
+
+				scale = ctx.createPanel<Gui::Label>();
+				content->addChild(scale);
+				scale->setFont(ctx.font_b);
+				scale->autoSize();
+			}
+
+			void setFPS(float32 f) {
+				std::string str;
+				str.reserve(25);
+				// TODO: look into libfmt
+				str += "FPS: ";
+				str += std::to_string(f);
+				str += "(";
+				str += std::to_string(1/f);
+				str += ")";
+				fps->setText(str);
+			}
+
+			void setTick(Engine::ECS::Tick t) {
+				std::string str;
+				str.reserve(16);
+				str += "Tick: ";
+				str += std::to_string(t);
+				tick->setText(str);
+			}
+
+			void setTickScale(float32 s) {
+				std::string str;
+				str.reserve(16);
+				str += "Tick Scale: ";
+				str += std::to_string(s);
+				scale->setText(str);
+			}
+	};
 }
 
 namespace Game {
 	UISystem::UISystem(SystemArg arg)
 		: System{arg}
 		, context{std::get<Engine::EngineInstance&>(arg)} {
-
-		namespace Gui = Engine::Gui;
 		{
 			{
 				auto child = context.createPanel<TestPanel>();
@@ -122,31 +180,10 @@ namespace Game {
 			}
 
 			{
-				auto child = context.createPanel<Gui::CollapsibleSection>(&context);
-				child->setRelPos({8, 480});
-				child->setSize({256, 128});
-				child->getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start});
-
-				auto fps = context.createPanel<Gui::Label>();
-				child->getContent()->addChild(fps);
-				fps->setFont(context.font_b);
-				fps->setText("FPS: 1234");
-				fps->autoSize();
-
-				auto tick = context.createPanel<Gui::Label>();
-				child->getContent()->addChild(tick);
-				tick->setFont(context.font_b);
-				tick->setText("gTick: 8675");
-				tick->autoSize();
-
-				auto scale = context.createPanel<Gui::Label>();
-				child->getContent()->addChild(scale);
-				scale->setFont(context.font_b);
-				scale->setText("Tick Scale: 1.01");
-				scale->autoSize();
-
-				// TODO: shouldnt have to do this
-				child->getContent()->performLayout();
+				panels.infoPane = context.createPanel<InfoPane>(context);
+				panels.infoPane->setRelPos({8, 480});
+				panels.infoPane->setSize({256, 128});
+				panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this.
 			}
 		}
 	}
@@ -182,6 +219,16 @@ namespace Game {
 		}
 
 		ui_debug();
+
+		
+		if (panels.infoPane->getContent()->getEnabled()) {
+			if (update) {
+				panels.infoPane->setFPS(fps);
+			}
+
+			panels.infoPane->setTick(world.getTick());
+			panels.infoPane->setTickScale(world.tickScale);
+		}
 	}
 
 	void UISystem::tick() {

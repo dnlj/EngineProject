@@ -16,17 +16,17 @@ namespace Engine::Gui {
 			float32 height;
 
 		public:
-			CollapsibleSection(Context* ctx) {
+			CollapsibleSection(Context& ctx) {
 				setLayout(new DirectionalLayout{Direction::Vertical, Align::Start});
 				height = getHeight();
 
-				btn = ctx->createPanel<Button>();
+				btn = ctx.createPanel<Button>();
 				addChild(btn);
-				btn->setFont(ctx->font_b); // TODO:
+				btn->setFont(ctx.font_b); // TODO:
 				btn->setText("Section Test");
 				btn->setEndActive([&]{ toggle(); });
 
-				content = ctx->createPanel<Panel>();
+				content = ctx.createPanel<Panel>();
 				addChild(content);
 			}
 

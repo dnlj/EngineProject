@@ -44,6 +44,10 @@ namespace Game {
 			Engine::Clock::Duration fpsAvgWindow = std::chrono::milliseconds{500};
 			float32 fps = 0.0f;
 
+			struct {
+				class InfoPane* infoPane;
+			} panels;
+
 			void ui_connect();
 			void ui_debug();
 			void ui_coordinates();
