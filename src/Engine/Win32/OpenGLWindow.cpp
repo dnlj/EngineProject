@@ -268,7 +268,7 @@ namespace Engine::Win32 {
 						const Input::InputEvent event = {
 							.state = {
 								.id = { .type = Input::InputType::MOUSE, .device = device, .code = static_cast<uint16>(i >> 1) },
-								.value = !(i & 1),
+								.value = { .i32 = !(i & 1) },
 							},
 							.time = time,
 						};
@@ -312,7 +312,7 @@ namespace Engine::Win32 {
 				const Input::InputEvent event = {
 					.state = {
 						.id = {Input::InputType::KEYBOARD, device, scancode},
-						.value = pressed,
+						.value = { .i32 = pressed },
 					},
 					.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 				};
