@@ -27,8 +27,8 @@ namespace Game {
 			void updateButtonState(Button btn, bool val);
 			void updateButtonState(Engine::ECS::Entity ent, Button btn, bool val);
 
-			void updateTarget(int axis, float32 val);
-			void updateTarget(Engine::ECS::Entity ent, int axis, float32 val);
+			void updateTarget(glm::vec2 val);
+			void updateTarget(Engine::ECS::Entity ent, glm::vec2 val);
 
 			template<class Listener>
 			void addListener(Engine::Input::ActionId aid, Listener&& listener);

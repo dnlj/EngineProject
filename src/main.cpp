@@ -581,8 +581,8 @@ void run(int argc, char* argv[]) {
 	const auto updateButtonState = [&](auto action, auto curr){
 		world.getSystem<Game::ActionSystem>().updateButtonState(action, curr.i32);
 	};
-	const auto updateTargetState = [&](auto action, auto curr){
-		world.getSystem<Game::ActionSystem>().updateTarget(action, curr.f32);
+	const auto updateTargetState = [&](auto curr){
+		world.getSystem<Game::ActionSystem>().updateTarget(curr.f32v2);
 	};
 	{
 		using namespace Engine::Input;
@@ -624,12 +624,7 @@ void run(int argc, char* argv[]) {
 			im.addBind(InputSequence{
 					InputId{InputType::MOUSE_AXIS, 0, 0}
 				}, [&](Value curr, Value prev){
-					updateTargetState(0, curr);
-			});
-			im.addBind(InputSequence{
-					InputId{InputType::MOUSE_AXIS, 0, 1}
-				}, [&](Value curr, Value prev){
-					updateTargetState(1, curr);
+					updateTargetState(curr);
 			});
 		}
 

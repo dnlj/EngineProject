@@ -351,31 +351,15 @@ namespace Engine::Win32 {
 
 		//ENGINE_LOG("Move: ", x, " ", y);
 
-		if (x != window.lastMousePos.x) {
-			// TODO: we currently don't distinguish between mouse devices
-			const Input::InputEvent event = {
-				.state = {
-					.id = {Input::InputType::MOUSE_AXIS, 0, 0},
-					.value = { .f32 = static_cast<float32>(x) },
-				},
-				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
-			};
-			window.lastMousePos.x = x;
-			window.callbacks.mouseMoveCallback(event);
-		}
-
-		if (y != window.lastMousePos.y) {
-			// TODO: we currently don't distinguish between mouse devices
-			const Input::InputEvent event = {
-				.state = {
-					.id = {Input::InputType::MOUSE_AXIS, 0, 1},
-					.value = { .f32 = static_cast<float32>(y) },
-				},
-				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
-			};
-			window.lastMousePos.y = y;
-			window.callbacks.mouseMoveCallback(event);
-		}
+		// TODO: we currently don't distinguish between mouse devices
+		const Input::InputEvent event = {
+			.state = {
+				.id = {Input::InputType::MOUSE_AXIS, 0, 0},
+				.value = { .f32v2 = {x , y} },
+			},
+			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+		};
+		window.callbacks.mouseMoveCallback(event);
 
 		return 0;
 	}

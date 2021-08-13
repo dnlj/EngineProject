@@ -299,14 +299,14 @@ namespace Game {
 		value.latest = val;
 	}
 	
-	void ActionSystem::updateTarget(int axis, float32 val) {
+	void ActionSystem::updateTarget(glm::vec2 val) {
 		for (const auto& ent : world.getFilter<Filter>()) {
-			updateTarget(ent, axis, val);
+			updateTarget(ent, val);
 		}
 	}
 
-	void ActionSystem::updateTarget(Engine::ECS::Entity ent, int axis, float32 val) {
+	void ActionSystem::updateTarget(Engine::ECS::Entity ent, glm::vec2 val) {
 		auto& actComp = world.getComponent<ActionComponent>(ent);
-		actComp.state->screenTarget[axis] = val;
+		actComp.state->screenTarget = val;
 	}
 }

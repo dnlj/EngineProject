@@ -356,7 +356,8 @@ namespace Engine::ImGui {
 	}
 
 	void mouseMoveCallback(const Engine::Input::InputState& is) {
-		::ImGui::GetIO().MousePos[is.id.code] = is.value.f32;
+		::ImGui::GetIO().MousePos[0] = is.value.f32v2[0];
+		::ImGui::GetIO().MousePos[1] = is.value.f32v2[1];
 	}
 
 	void scrollCallback(const Engine::Input::InputState& is) {
