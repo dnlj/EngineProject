@@ -284,7 +284,7 @@ namespace Engine::Win32 {
 				Input::InputEvent event = {
 					.state = {
 						.id = { .type = Input::InputType::MOUSE_WHEEL, .device = device, .code = 0 },
-						.valuef = scroll,
+						.value = { .f32 = scroll },
 					},
 					.time = time,
 				};
@@ -356,7 +356,7 @@ namespace Engine::Win32 {
 			const Input::InputEvent event = {
 				.state = {
 					.id = {Input::InputType::MOUSE_AXIS, 0, 0},
-					.valuef = static_cast<float32>(x),
+					.value = { .f32 = static_cast<float32>(x) },
 				},
 				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 			};
@@ -369,7 +369,7 @@ namespace Engine::Win32 {
 			const Input::InputEvent event = {
 				.state = {
 					.id = {Input::InputType::MOUSE_AXIS, 0, 1},
-					.valuef = static_cast<float32>(y),
+					.value = { .f32 = static_cast<float32>(y) },
 				},
 				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
 			};

@@ -351,27 +351,27 @@ namespace Engine::ImGui {
 
 	void mouseButtonCallback(const Engine::Input::InputState& is) {
 		const auto btn = is.id.code;
-		::ImGui::GetIO().MouseDown[btn] = is.value;
-		g_MouseJustPressed[btn] = g_MouseJustPressed[btn] || is.value;
+		::ImGui::GetIO().MouseDown[btn] = is.value.i32;
+		g_MouseJustPressed[btn] = g_MouseJustPressed[btn] || is.value.i32;
 	}
 
 	void mouseMoveCallback(const Engine::Input::InputState& is) {
-		::ImGui::GetIO().MousePos[is.id.code] = is.valuef;
+		::ImGui::GetIO().MousePos[is.id.code] = is.value.f32;
 	}
 
 	void scrollCallback(const Engine::Input::InputState& is) {
 		ImGuiIO& io = ::ImGui::GetIO();
 
 		if (is.id.code == 1) {
-			io.MouseWheelH += is.valuef;
+			io.MouseWheelH += is.value.f32;
 		} else {
-			io.MouseWheel +=  is.valuef;
+			io.MouseWheel +=  is.value.f32;
 		}
 	}
 
 	void keyCallback(const Engine::Input::InputState& is) {
 		ImGuiIO& io = ::ImGui::GetIO();
-		io.KeysDown[is.id.code & 0xFF] = is.value;
+		io.KeysDown[is.id.code & 0xFF] = is.value.i32;
 	}
 
 	void charCallback(unsigned int c) {

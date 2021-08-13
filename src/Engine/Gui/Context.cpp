@@ -548,7 +548,7 @@ namespace Engine::Gui {
 		//	" @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count()
 		//);
 		if (event.state.id.code == 0) {
-			if (event.state.value) {
+			if (event.state.value.i32) {
 				auto hover = getHover();
 				setFocus(hover);
 
@@ -570,9 +570,9 @@ namespace Engine::Gui {
 	bool Context::onMouseMove(const Engine::Input::InputEvent event) {
 		//ENGINE_LOG("onMouseMove:", " ", event.state.id.code, " ", event.state.valuef, " @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count());
 		if (event.state.id.code == 0) {
-			cursor.x = event.state.valuef;
+			cursor.x = event.state.value.f32;
 		} else {
-			cursor.y = event.state.valuef;
+			cursor.y = event.state.value.f32;
 		}
 		hoverValid = false;
 

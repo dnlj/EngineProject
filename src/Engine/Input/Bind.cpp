@@ -22,14 +22,14 @@ namespace Engine::Input {
 				return; // There should only be one state for each input. No need to check the rest.
 			}
 
-			update = update && s.value;
+			update = update && s.value.i32;
 		}
 
 		// If we havent already returned we are dealing with the last input
 		auto& last = inputStates.back();
 		last.value = is.value;
 		if (update) {
-			state.value = last.value;
+			state.value = last.value.i32;
 		}
 	}
 
