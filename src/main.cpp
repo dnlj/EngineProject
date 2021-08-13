@@ -579,10 +579,10 @@ void run(int argc, char* argv[]) {
 	// Binds
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	const auto updateButtonState = [&](auto action, auto curr){
-		world.getSystem<Game::ActionSystem>().updateButtonState(action, curr);
+		world.getSystem<Game::ActionSystem>().updateButtonState(action, curr.i32);
 	};
 	const auto updateTargetState = [&](auto action, auto curr){
-		world.getSystem<Game::ActionSystem>().updateTarget(action, curr);
+		world.getSystem<Game::ActionSystem>().updateTarget(action, curr.f32);
 	};
 	{
 		using namespace Engine::Input;

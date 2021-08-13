@@ -14,7 +14,7 @@ namespace Engine::Input {
 			bind.processInput(is);
 			const auto post = bind.getState();
 			
-			if (pre.value != post.value) {
+			if (pre != post) {
 				bind.notify(post, pre);
 			}
 		}

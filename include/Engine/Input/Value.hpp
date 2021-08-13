@@ -6,12 +6,18 @@
 
 namespace Engine::Input {
 	union Value {
-		int32 value = 0;
-		float32 valuef;
+		int32 i64 = 0;
+		int32 i32;
+		float32 f32;
+		glm::vec2 f32v2;
 
-		operator bool() const { return value; }
-		operator int32() const { return value; }
-		operator float32() const { return valuef; }
+		/**
+		 * Check if any value is set.
+		 */
+		ENGINE_INLINE bool any() const noexcept { return i64; }
+
+		ENGINE_INLINE bool operator==(const Value& other) const noexcept { return i64 == other.i64; }
+		ENGINE_INLINE bool operator!=(const Value& other) const noexcept { return !(*this == other); }
 	};
-	static_assert(sizeof(Value) == sizeof(int32));
+	static_assert(sizeof(Value) == sizeof(int64));
 }
