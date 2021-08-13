@@ -20,6 +20,9 @@
 
 namespace Engine::Gui {
 	class Context {
+		public:
+			using MouseMoveCallback = std::function<void()>;
+
 		private:
 			// There is no point in using integers here because
 			// of GLSL integer requirement range limitations. In short
@@ -136,6 +139,9 @@ namespace Engine::Gui {
 			std::vector<PanelId> freePanelIds;
 			PanelId nextPanelId = invalidPanelId;
 
+			/* Callbacks */
+			FlatHashMap<const Panel*, MouseMoveCallback> mouseMoveCallbacks;
+
 		public:
 			// TODO: split shader into own class so we dont depend on engine
 			Context(Engine::EngineInstance& engine);
@@ -166,9 +172,19 @@ namespace Engine::Gui {
 				return p;
 			}
 
-			ENGINE_INLINE void deletePanel(Panel* panel) {
+			ENGINE_INLINE void deletePanel(const Panel* panel) {
 				deregisterPanel(panel);
+				deregisterMouseMove(panel);
 				delete panel;
+			}
+
+			void registerMouseMove(const Panel* panel, MouseMoveCallback callback) {
+				ENGINE_DEBUG_ASSERT(!mouseMoveCallbacks[panel], "Attempting to add duplicate mouse move callback.");
+				mouseMoveCallbacks[panel] = callback;
+			}
+
+			void deregisterMouseMove(const Panel* panel) {
+				mouseMoveCallbacks.erase(panel);
 			}
 
 			/**

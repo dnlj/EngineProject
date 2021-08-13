@@ -575,6 +575,11 @@ namespace Engine::Gui {
 			cursor.y = event.state.valuef;
 		}
 		hoverValid = false;
+
+		for (auto& [_, cb] : mouseMoveCallbacks) {
+			cb();
+		}
+
 		return hover != nullptr;
 	}
 
