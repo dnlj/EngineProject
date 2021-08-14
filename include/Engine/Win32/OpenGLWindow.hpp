@@ -52,8 +52,13 @@ namespace Engine::Win32 {
 			HGLRC renderContext = nullptr;
 			bool close = false;
 			bool mouseInWindow = false;
-			glm::ivec2 lastMousePos = {0, 0};
-			BYTE rawInputBuffer[128];
+
+			// Must be 8 byte aligned because of RAWINPUT. See GetRawInputBuffer docs: https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getrawinputbuffer
+			// This size is more/less arbitrary. For both mouse/keyboard version of RAWINPUT we
+			// can use a fixed sizeof(RAWINPUT), but for the hid version (controller/joystick/other) 
+			// we still need potentially arbitrary size. I guess whenever we add hid version support
+			// we should use a vector and resize when needed? Is there a better option? Maybe controllers have a maximal size?
+			alignas(8) BYTE rawInputBuffer[128] = {};
 
 			// TODO: if we want to save key bindings to a config file we will need a way to back to HANDLE and use RIDI_DEVICENAME to save
 			std::vector<HANDLE> deviceHandleToId;

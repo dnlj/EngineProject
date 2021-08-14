@@ -224,7 +224,6 @@ namespace Engine::Win32 {
 			ENGINE_ASSERT(size <= std::extent_v<decltype(rawInputBuffer)>, "Raw input buffer to small. Needs at least ", size);
 		}
 
-		// TODO: dont we need to check for buffer size? See ms docs for GetRawInputData
 		GetRawInputData(
 			reinterpret_cast<HRAWINPUT>(lParam),
 			RID_INPUT,
@@ -242,7 +241,7 @@ namespace Engine::Win32 {
 			// printRawMouse(raw);
 			//ENGINE_LOG("RIM_TYPEMOUSE");
 
-			// TODO: switch to this atleast for mouse button presses. Not sure why we dont already.
+			// TODO: switch to this at least for mouse button presses. Not sure why we dont already.
 			const auto& data = raw.data.mouse;
 			static_assert(sizeof(data.usButtonFlags) <= sizeof(int));
 			int buttons = data.usButtonFlags & ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL); // Don't process mouse wheel events
