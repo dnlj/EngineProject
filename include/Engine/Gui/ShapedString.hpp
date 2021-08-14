@@ -19,7 +19,7 @@ namespace Engine::Gui {
 		private:
 			std::string str;
 			std::vector<ShapeGlyph> glyphs;
-			Font font;
+			Font font = nullptr;
 			Bounds bounds;
 
 		public:

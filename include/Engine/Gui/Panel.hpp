@@ -124,12 +124,21 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setEnabled(bool e) noexcept { enabled = e; }
 			ENGINE_INLINE auto getEnabled() const noexcept { return enabled; }
 
+			ENGINE_INLINE auto getContext() const noexcept { return ctx; }
+
 			/**
 			 * Set the absolute position of this panel.
 			 */
-			ENGINE_INLINE void setPos(const glm::vec2 p) noexcept { pos = p; }
+			void setPos(const glm::vec2 p) noexcept {
+				auto curr = firstChild;
+				while (curr) {
+					curr->updateParentPos(p);
+					curr = curr->nextSibling;
+				}
+				pos = p;
+			}
 			ENGINE_INLINE auto getPos() const noexcept { return pos; }
-			
+
 			/**
 			 * Set the position of this panel relative to its parent.
 			 */
@@ -141,6 +150,11 @@ namespace Engine::Gui {
 			
 			ENGINE_INLINE void setMaxSize(const glm::vec2 sz) noexcept { maxSize = sz; }
 			ENGINE_INLINE auto getMaxSize() const noexcept { return maxSize; }
+
+			ENGINE_INLINE void updateParentPos(const glm::vec2 p) {
+				const auto rel = getRelPos();
+				setPos(p + rel);
+			}
 
 			/**
 			 * Set the size of this panel.

@@ -21,7 +21,7 @@
 namespace Engine::Gui {
 	class Context {
 		public:
-			using MouseMoveCallback = std::function<void()>;
+			using MouseMoveCallback = std::function<void(glm::vec2)>;
 
 		private:
 			// There is no point in using integers here because
@@ -185,6 +185,10 @@ namespace Engine::Gui {
 
 			void deregisterMouseMove(const Panel* panel) {
 				mouseMoveCallbacks.erase(panel);
+			}
+
+			ENGINE_INLINE auto getCursor() const noexcept {
+				return cursor;
 			}
 
 			/**

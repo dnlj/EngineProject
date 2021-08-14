@@ -7,6 +7,7 @@
 #include <Engine/Glue/Box2D.hpp>
 #include <Engine/Glue/glm.hpp>
 #include <Engine/Gui/Window.hpp>
+#include <Engine/Gui/CollapsibleSection.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>

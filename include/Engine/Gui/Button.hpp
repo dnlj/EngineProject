@@ -35,6 +35,5 @@ namespace Engine::Gui {
 			virtual void onEndActivate() override {
 				if (endCallback) { endCallback(); }
 			}
-
 	};
 }

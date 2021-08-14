@@ -466,6 +466,7 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
+		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");
 		stringsToRender.emplace_back(renderState.layer, renderState.id, pos + renderState.offset, fstr);
 	}
 
@@ -573,7 +574,7 @@ namespace Engine::Gui {
 		hoverValid = false;
 
 		for (auto& [_, cb] : mouseMoveCallbacks) {
-			cb();
+			cb(cursor);
 		}
 
 		return hover != nullptr;

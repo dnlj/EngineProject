@@ -31,6 +31,10 @@ namespace Engine::Gui {
 				res.max += b;
 				return res;
 			}
+			
+			ENGINE_INLINE friend Bounds operator-(const Bounds& a, const glm::vec2 b) noexcept {
+				return a + -b;
+			}
 
 	};
 }

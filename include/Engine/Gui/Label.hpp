@@ -10,6 +10,8 @@ namespace Engine::Gui {
 	class Label : public Panel {
 		protected:
 			ShapedString str;
+
+		private:
 			glm::vec2 offset = {};
 
 		public:
