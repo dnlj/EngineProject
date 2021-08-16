@@ -16,6 +16,7 @@
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Gui/FontManager.hpp>
 #include <Engine/Gui/ShapedString.hpp>
+#include <Engine/Gui/Cursor.hpp>
 
 
 namespace Engine::Gui {
@@ -76,6 +77,11 @@ namespace Engine::Gui {
 
 			struct BFSStateData {
 				const Panel* panel;
+			};
+
+			struct CursorEntry {
+				Panel* panel;
+				Cursor cursor;
 			};
 
 		private:
@@ -142,6 +148,9 @@ namespace Engine::Gui {
 			/* Callbacks */
 			FlatHashMap<const Panel*, MouseMoveCallback> mouseMoveCallbacks;
 
+			/* Cursors */
+			Cursor currentCursor = Cursor::Normal;
+
 		public:
 			// TODO: split shader into own class so we dont depend on engine
 			Context(Engine::EngineInstance& engine);
@@ -190,6 +199,13 @@ namespace Engine::Gui {
 			ENGINE_INLINE auto getCursor() const noexcept {
 				return cursor;
 			}
+
+			ENGINE_INLINE void setCursor(Cursor cursor) {
+				currentCursor = cursor;
+				updateCursor();
+			}
+
+			void updateCursor();
 
 			/**
 			 * Gets the most hovered panel.

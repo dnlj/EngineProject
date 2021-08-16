@@ -66,11 +66,6 @@ namespace Engine {
 				return storage[used - 1];
 			}
 
-			// TODO: push_back
-			// TODO: pop_back
-
-			// TODO: at
-
 			size_type size() const noexcept {
 				return used;
 			}
@@ -129,5 +124,23 @@ namespace Engine {
 			void expand(size_type n = 1) noexcept {
 				resize(size() + n);
 			}
+
+			void push_back(T t) {
+				ENGINE_DEBUG_ASSERT(size() < capacity());
+				expand();
+				back() = t;
+			}
+
+			void pop_back() {
+				ENGINE_DEBUG_ASSERT(size() > 0);
+				resize(size() - 1);
+			}
+
+			void erase(iterator it) {
+				std::move(it + 1, end(), it);
+				pop_back();
+			}
+
+			// TODO: at
 	};
 }

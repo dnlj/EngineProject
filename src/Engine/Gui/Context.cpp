@@ -229,12 +229,20 @@ namespace Engine::Gui {
 		deletePanel(root);
 	}
 	
+	void Context::updateCursor() {
+		#ifdef ENGINE_OS_WINDOWS
+			::SetCursor(::LoadCursorW(0, MAKEINTRESOURCEW(currentCursor)));
+		#else
+			#error TODO: Implement cursors for non-Windows systems
+		#endif
+	}
+	
 	void Context::render() {
 		if (!hoverValid) {
 			updateHover();
 			hoverValid = true;
 		}
-
+		
 		const Panel* curr = root;
 		renderState.layer = 0;
 		polyDrawGroups.emplace_back().offset = 0;
@@ -632,6 +640,7 @@ namespace Engine::Gui {
 			}
 		} else {
 			hoverValid = false;
+			updateCursor();
 		}
 	}
 
