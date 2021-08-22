@@ -564,13 +564,32 @@ namespace Engine::Gui {
 				ENGINE_DEBUG_ASSERT(active == nullptr);
 				auto focus = getFocus();
 				if (!focus) { return false; }
-				focus->onBeginActivate();
-				active = focus;
+
+				bool skip = false;
+
+				for (auto& [_, func] : panelBeginActivateCallbacks) {
+					if (func(focus)) {
+						skip = true;
+						break;
+					}
+				}
+
+				if (!skip) {
+					focus->onBeginActivate();
+					active = focus;
+				}
+
 				return true;
-			} else if (active) {
-				active->onEndActivate();
-				active = nullptr;
-				return true;
+			} else {
+				for (auto& [_, func] : panelEndActivateCallbacks) {
+					func(active);
+				}
+
+				if (active) {
+					active->onEndActivate();
+					active = nullptr;
+					return true;
+				}
 			}
 		}
 		return false;

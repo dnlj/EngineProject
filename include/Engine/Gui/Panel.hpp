@@ -194,6 +194,11 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE Bounds getBounds() const noexcept { return {pos, pos + size}; }
 
+			ENGINE_INLINE void setBounds(Bounds bounds) noexcept {
+				setPos(bounds.min);
+				setSize(bounds.max - bounds.min);
+			}
+
 			// TODO: doc
 			ENGINE_INLINE void setLayout(Layout* l) noexcept { layout = l; }
 			ENGINE_INLINE auto getLayout() noexcept { return layout; }

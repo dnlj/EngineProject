@@ -22,7 +22,15 @@
 namespace Engine::Gui {
 	class Context {
 		public:
+			// TODO: doc
 			using MouseMoveCallback = std::function<void(glm::vec2)>;
+
+			/**
+			 * @param panel The panel being activated
+			 * @return True if the activation has been intercepted; otherwise false.
+			 */
+			using PanelBeginActivateCallback = std::function<bool(Panel* panel)>;
+			using PanelEndActivateCallback = std::function<void(Panel* panel)>;
 
 		private:
 			// There is no point in using integers here because
@@ -147,6 +155,8 @@ namespace Engine::Gui {
 
 			/* Callbacks */
 			FlatHashMap<const Panel*, MouseMoveCallback> mouseMoveCallbacks;
+			FlatHashMap<const Panel*, PanelBeginActivateCallback> panelBeginActivateCallbacks;
+			FlatHashMap<const Panel*, PanelEndActivateCallback> panelEndActivateCallbacks;
 
 			/* Cursors */
 			Cursor currentCursor = Cursor::Normal;
@@ -196,11 +206,30 @@ namespace Engine::Gui {
 				mouseMoveCallbacks.erase(panel);
 			}
 
+			void registerBeginActivate(const Panel* panel, PanelBeginActivateCallback callback) {
+				ENGINE_DEBUG_ASSERT(!panelBeginActivateCallbacks[panel], "Attempting to add duplicate panel activate callback.");
+				panelBeginActivateCallbacks[panel] = callback;
+			}
+			
+			void deregisterBeginActivate(const Panel* panel) {
+				panelBeginActivateCallbacks.erase(panel);
+			}
+
+			void registerEndActivate(const Panel* panel, PanelEndActivateCallback callback) {
+				ENGINE_DEBUG_ASSERT(!panelEndActivateCallbacks[panel], "Attempting to add duplicate panel activate callback.");
+				panelEndActivateCallbacks[panel] = callback;
+			}
+			
+			void deregisterEndActivate(const Panel* panel) {
+				panelBeginActivateCallbacks.erase(panel);
+			}
+
 			ENGINE_INLINE auto getCursor() const noexcept {
 				return cursor;
 			}
 
 			ENGINE_INLINE void setCursor(Cursor cursor) {
+				if (cursor == currentCursor) { return; }
 				currentCursor = cursor;
 				updateCursor();
 			}
