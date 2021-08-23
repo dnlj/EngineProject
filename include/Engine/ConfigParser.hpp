@@ -45,7 +45,7 @@ namespace Engine {
 					DecLiteral,
 					FloatLiteral,
 					BoolLiteral,
-					_COUNT,
+					_count,
 				};
 
 				ENGINE_INLINE Type getType() const noexcept { return type; }

@@ -33,6 +33,7 @@ namespace Engine::Gui {
 		title->setText("Window Title");
 		title->setRelPos({0, 0});
 		title->autoSize();
+		title->setHeight(title->getHeight() + 10);
 
 
 		ctx->registerMouseMove(this, [this](glm::vec2 pos) { moveCallback(pos); });

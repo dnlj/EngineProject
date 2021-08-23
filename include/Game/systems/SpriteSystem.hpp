@@ -47,7 +47,7 @@ namespace Game {
 			std::vector<Sprite> sprites;
 
 			int nextGroup = 0;
-			RenderLayer nextLayer = RenderLayer::_COUNT;
+			RenderLayer nextLayer = RenderLayer::_count;
 			Engine::ShaderRef shader;
 			GLuint vao = 0;
 			GLuint vbo = 0;

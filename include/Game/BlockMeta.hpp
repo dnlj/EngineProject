@@ -5,7 +5,7 @@ namespace Game {
 	enum BlockId : uint16 {
 		#define X(Name, Solid, Path) Name,
 		#include <Game/Blocks.xpp>
-		_COUNT,
+		_count,
 	};
 	ENGINE_BUILD_ALL_OPS(BlockId);
 

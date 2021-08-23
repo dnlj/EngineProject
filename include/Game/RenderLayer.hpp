@@ -13,7 +13,7 @@ namespace Game {
 		PhysicsDebug,
 		#endif
 
-		_COUNT,
+		_count,
 	};
 	ENGINE_BUILD_ALL_OPS(RenderLayer)
 }

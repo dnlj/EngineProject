@@ -191,7 +191,7 @@ namespace Game {
 			glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0, group->count, group->base);
 
 			if (++nextGroup == size) {
-				nextLayer = RenderLayer::_COUNT;
+				nextLayer = RenderLayer::_count;
 				return;
 			}
 

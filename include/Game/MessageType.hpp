@@ -12,7 +12,7 @@ namespace Game {
 		enum Type : Engine::Net::MessageType {
 			#define X(Name, Side, State) Name,
 			#include <Game/MessageType.xpp>
-			_COUNT,
+			_count,
 		};
 	};
 

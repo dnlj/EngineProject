@@ -133,7 +133,7 @@ namespace Game {
 
 			ImNode::Suspend();
 			if (ImGui::BeginPopup("SelectType")) {
-				for (PinType i = {}; i < PinType::_COUNT; ++i) {
+				for (PinType i = {}; i < PinType::_count; ++i) {
 					if (ImGui::Button(MapTestUI::pinTypeToString(i))) {
 						ENGINE_LOG("Selected! ", (int)i);
 						value.zero();
@@ -217,7 +217,7 @@ namespace Game {
 
 	namespace Detail::Ops {
 		using Func = bool(*)(const PinValue& left, const PinValue& right, PinValue& out, Id outId, MapTestUI& ctx);
-		struct Lookup { Func arr[PinType::_COUNT][PinType::_COUNT] = {}; };
+		struct Lookup { Func arr[PinType::_count][PinType::_count] = {}; };
 		#define FUNC [](const PinValue& left, const PinValue& right, PinValue& out, Id outId, MapTestUI& ctx) -> bool
 		#define LAZY(L, R) lookup.arr[PinType::L][PinType::R] = FUNC 
 		#define EZ(L, R, Op) LAZY(L, R) { out = Op{}(left.as ##L, right.as ##R); return true; };

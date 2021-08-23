@@ -135,8 +135,8 @@ namespace Game {
 		shader = engine.shaderManager.get("shaders/terrain");
 
 		constexpr int32 offset = 2; // offset by 2 to skip None and Air
-		const char* textures[BlockId::_COUNT - offset] = {};
-		for (int32 i = offset; i < BlockId::_COUNT; ++i) {
+		const char* textures[BlockId::_count - offset] = {};
+		for (int32 i = offset; i < BlockId::_count; ++i) {
 			textures[i - offset] = getBlockMeta(static_cast<BlockId>(i)).path;
 		}
 
@@ -557,7 +557,7 @@ namespace Game {
 				glm::vec2 size = glm::vec2{end - begin} * MapChunk::blockSize;
 				const auto vertexCount = static_cast<GLushort>(buildVBOData.size());
 
-				static_assert(BlockId::_COUNT <= 255,
+				static_assert(BlockId::_count <= 255,
 					"Texture index is a byte. You will need to change its type if you now have more than 255 blocks."
 				);
 				const auto tex = static_cast<GLfloat>(chunkInfo.chunk.data[begin.x][begin.y] - 2); // TODO: -2 for None and Air. Handle this better.

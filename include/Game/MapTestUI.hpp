@@ -99,7 +99,7 @@ namespace Game {
 				Vec3,
 				Vec4,
 				Image,
-				_COUNT,
+				_count,
 			};
 
 			// TODO: move to xmacro. its the simpleest solution
@@ -114,7 +114,7 @@ namespace Game {
 				Invalid = 0,
 				Input,
 				Output,
-				_COUNT,
+				_count,
 			};
 
 			struct PinMeta {

@@ -17,7 +17,7 @@ namespace Game {
 			Engine::TextureRef texture;
 			glm::vec2 position = {0.0f, 0.0f};
 			glm::vec2 scale = {1.0f, 1.0f};
-			RenderLayer layer = RenderLayer::_COUNT - RenderLayer{1};
+			RenderLayer layer = RenderLayer::_count - RenderLayer{1};
 
 			constexpr static auto netRepl() { return Engine::Net::Replication::ONCE; };
 
@@ -26,7 +26,7 @@ namespace Game {
 				buff.write(position);
 				buff.write(scale);
 
-				static_assert(RenderLayer::_COUNT < RenderLayer{255}, "This code compresses layer to uint8");
+				static_assert(RenderLayer::_count < RenderLayer{255}, "This code compresses layer to uint8");
 				buff.write(static_cast<uint8>(layer));
 			}
 

@@ -29,13 +29,13 @@ namespace Game {
 		MoveRight,
 		Attack1,
 		Attack2,
-		_COUNT,
+		_count,
 	};
 
 	class ActionState {
 		public:
 			Engine::ECS::Tick recvTick;
-			ButtonValue buttons[static_cast<int32>(Button::_COUNT)];
+			ButtonValue buttons[static_cast<int32>(Button::_count)];
 			glm::vec2 screenTarget; // TODO: client only
 			glm::vec2 target;
 

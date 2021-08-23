@@ -172,7 +172,7 @@ namespace {
 			return fv;
 		};
 
-		Color blockToColor[Game::BlockId::_COUNT] = {};
+		Color blockToColor[Game::BlockId::_count] = {};
 		blockToColor[Game::BlockId::Entity]	= {0, 120, 189};
 		blockToColor[Game::BlockId::Debug]	= {255, 0, 0};
 		blockToColor[Game::BlockId::Debug2]	= {200, 26, 226};
