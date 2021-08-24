@@ -493,18 +493,22 @@ namespace Engine::Gui {
 		hoverStackBack.clear();
 		auto curr = root;
 
+		// We traverse children in reverse order so that the results match what is rendered when children overlap
 		// Manually check root since it doesn't have a parent (bounds checking would be skipped because of canUseChild)
 		if (curr->getBounds().contains(cursor)) {
 			hoverStackBack.push_back(curr);
-			curr = curr->getFirstChild();
+			//curr = curr->getFirstChild();
+			curr = curr->getLastChild();
 
 			while (curr) {
 				auto parent = curr->getParent();
 				if (parent && canUseChild(&parent, &curr)) {
 					hoverStackBack.push_back(curr);
-					curr = curr->getFirstChild();
+					//curr = curr->getFirstChild();
+					curr = curr->getLastChild();
 				} else {
-					curr = curr->getNextSibling();
+					//curr = curr->getNextSibling();
+					curr = curr->getPrevSibling();
 				}
 			}
 		}

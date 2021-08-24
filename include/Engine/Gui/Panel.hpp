@@ -109,12 +109,28 @@ namespace Engine::Gui {
 				while (res && !res->enabled) { res = res->nextSibling; }
 				return (res && !res->enabled) ? nullptr : res;
 			}
+			
+			/**
+			 * Gets the prev enabled sibling panel.
+			 */
+			ENGINE_INLINE auto getPrevSibling() const noexcept {
+				auto res = prevSibling;
+				while (res && !res->enabled) { res = res->prevSibling; }
+				return (res && !res->enabled) ? nullptr : res;
+			}
 
 			/**
 			 * Gets the first enabled child panel.
 			 */
 			ENGINE_INLINE auto getFirstChild() const noexcept {
 				return (firstChild && !firstChild->enabled) ? firstChild->getNextSibling() : firstChild;
+			}
+			
+			/**
+			 * Gets the last enabled child panel.
+			 */
+			ENGINE_INLINE auto getLastChild() const noexcept {
+				return (lastChild && !lastChild->enabled) ? lastChild->getPrevSibling() : lastChild;
 			}
 
 			// TODO: doc
