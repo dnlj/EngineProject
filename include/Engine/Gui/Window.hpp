@@ -43,12 +43,20 @@ namespace Engine::Gui {
 			Window(Context* context);
 			
 			virtual void onBeginHover() override { hoverWithin = true; };
-			virtual void onEndHover() override { hoverWithin = false; ctx->setCursor(Cursor::Normal); };
+			virtual void onEndHover() override {
+				hoverWithin = false;
+				if (!resizing) { ctx->setCursor(Cursor::Normal); }
+			};
+
 			virtual void onBeginChildHover(Panel* child) override { hoverWithin = true; };
-			virtual void onEndChildHover(Panel* child) override { hoverWithin = false; ctx->setCursor(Cursor::Normal); };
+			virtual void onEndChildHover(Panel* child) override {
+				hoverWithin = false;
+				if (!resizing) { ctx->setCursor(Cursor::Normal); }
+			};
 
 		private:
 			void moveCallback(const glm::vec2 pos);
 			bool beginActivateCallback(Panel* panel);
+			void updateResizeInfo(const glm::vec2 pos);
 	};
 }

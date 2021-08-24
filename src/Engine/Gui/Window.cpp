@@ -44,7 +44,12 @@ namespace Engine::Gui {
 			if (!resizing) { return; }
 			resizeDir = 0;
 			resizing = false;
-			ctx->setCursor(Cursor::Normal);
+
+			if (hoverWithin) {
+				updateResizeInfo(ctx->getCursor());
+			} else {
+				ctx->setCursor(Cursor::Normal);
+			}
 		});
 	}
 
@@ -99,49 +104,7 @@ namespace Engine::Gui {
 
 			setBounds(bounds);
 		} else if (hoverWithin) {
-			const auto bounds = main->getBounds();
-
-			auto cur = Cursor::Normal;
-
-			const auto left = pos.x >= bounds.min.x - outBorder && pos.x <= bounds.min.x + inBorder;
-			const auto right = pos.x <= bounds.max.x + outBorder && pos.x >= bounds.max.x - inBorder;
-			const auto top = pos.y >= bounds.min.y - outBorder && pos.y <= bounds.min.y + inBorder;
-			const auto bottom = pos.y <= bounds.max.y + outBorder && pos.y >= bounds.max.y - inBorder;
-
-			if (left) {
-				if (top) {
-					cur = Cursor::Resize_TL_BR;
-					resizeDir = 8;
-				} else if (bottom) {
-					cur = Cursor::Resize_BL_TR;
-					resizeDir = 6;
-				} else {
-					cur = Cursor::Resize_L_R;
-					resizeDir = 7;
-				}
-			} else if (right) {
-				if (top) {
-					cur = Cursor::Resize_BL_TR;
-					resizeDir = 2;
-				} else if (bottom) {
-					cur = Cursor::Resize_TL_BR;
-					resizeDir = 4;
-				} else {
-					cur = Cursor::Resize_L_R;
-					resizeDir = 3;
-				}
-			} else if (top) {
-				cur = Cursor::Resize_T_B;
-				resizeDir = 1;
-			} else if (bottom) {
-				cur = Cursor::Resize_T_B;
-				resizeDir = 5;
-			} else {
-				resizeDir = 0;
-			}
-
-			// TODO: atm this will override all other panels trying to set cursor. Go back to panel -> cursor association so we can just unset this panel.
-			ctx->setCursor(cur);
+			updateResizeInfo(pos);
 		}
 	}
 
@@ -189,5 +152,51 @@ namespace Engine::Gui {
 			}
 		}
 		return true;
+	}
+
+	void Window::updateResizeInfo(const glm::vec2 pos) {
+		const auto bounds = main->getBounds();
+
+		auto cur = Cursor::Normal;
+
+		const auto left = pos.x >= bounds.min.x - outBorder && pos.x <= bounds.min.x + inBorder;
+		const auto right = pos.x <= bounds.max.x + outBorder && pos.x >= bounds.max.x - inBorder;
+		const auto top = pos.y >= bounds.min.y - outBorder && pos.y <= bounds.min.y + inBorder;
+		const auto bottom = pos.y <= bounds.max.y + outBorder && pos.y >= bounds.max.y - inBorder;
+
+		if (left) {
+			if (top) {
+				cur = Cursor::Resize_TL_BR;
+				resizeDir = 8;
+			} else if (bottom) {
+				cur = Cursor::Resize_BL_TR;
+				resizeDir = 6;
+			} else {
+				cur = Cursor::Resize_L_R;
+				resizeDir = 7;
+			}
+		} else if (right) {
+			if (top) {
+				cur = Cursor::Resize_BL_TR;
+				resizeDir = 2;
+			} else if (bottom) {
+				cur = Cursor::Resize_TL_BR;
+				resizeDir = 4;
+			} else {
+				cur = Cursor::Resize_L_R;
+				resizeDir = 3;
+			}
+		} else if (top) {
+			cur = Cursor::Resize_T_B;
+			resizeDir = 1;
+		} else if (bottom) {
+			cur = Cursor::Resize_T_B;
+			resizeDir = 5;
+		} else {
+			resizeDir = 0;
+		}
+
+		// TODO: atm this will override all other panels trying to set cursor. Go back to panel -> cursor association so we can just unset this panel.
+		ctx->setCursor(cur);
 	}
 }
