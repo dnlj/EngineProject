@@ -28,8 +28,8 @@ namespace Engine::Gui {
 					virtual bool canFocus() const override { return true; }
 			};
 			
-			constexpr static int32 outBorder = 5;
-			constexpr static int32 inBorder = 2; // TODO: i dont think we really want an in border. just tall corners.
+			constexpr static float32 outBorder = 5;
+			constexpr static float32 inBorder = 2; // TODO: i dont think we really want an in border. just tall corners.
 
 			int resizeDir = 0; // 1 = top, then clockwise
 			bool resizing = false;

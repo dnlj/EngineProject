@@ -5,9 +5,9 @@
 namespace {
 	// TODO: Could probably be handled by directional layout - stretch items or similar
 	struct FillLayout : Engine::Gui::Layout {
-		int pad = 0;
+		Engine::float32 pad = 0;
 
-		FillLayout(int padding) : pad{padding} {}
+		FillLayout(Engine::float32 padding) : pad{padding} {}
 		virtual void layout(Engine::Gui::Panel* panel) override {
 			auto* child = panel->getFirstChild();
 			auto bounds = panel->getBounds();
@@ -58,7 +58,7 @@ namespace Engine::Gui {
 			const auto bounds = getParent()->getBounds();
 			const auto max = bounds.max - title->getSize();
 			auto p = glm::clamp(pos - offset, bounds.min, max);
-			setPos(p);
+			setPos(p - outBorder);
 		} else if (resizing) {
 			auto bounds = getBounds();
 			const auto posAdj = pos + offset;
