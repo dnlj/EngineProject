@@ -153,7 +153,6 @@ namespace Engine::Net {
 		public:
 			Connection(IPv4Address addr, Engine::Clock::TimePoint time) : addr{addr} {
 				rdat.time = time;
-				ENGINE_LOG("NRA: ", nextRecvAck);
 			}
 
 			ENGINE_INLINE const auto& address() const { return addr; }

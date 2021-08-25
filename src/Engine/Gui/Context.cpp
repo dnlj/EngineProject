@@ -351,7 +351,7 @@ namespace Engine::Gui {
 		{ // Update glyph vertex buffer
 			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
 			if (newSize > glyphVBOCapacity) {
-				ENGINE_INFO("glyphVBO(", glyphVBO, ") resize: ", newSize);
+				//ENGINE_INFO("glyphVBO(", glyphVBO, ") resize: ", newSize);
 				glyphVBOCapacity = newSize;
 				glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 			}

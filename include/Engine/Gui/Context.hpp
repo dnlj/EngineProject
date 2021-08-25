@@ -299,7 +299,6 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void registerPanel(const Panel* panel) {
 				panelIdMap[panel] = claimNextPanelId();
-				ENGINE_LOG("Panel Id ", panelIdMap[panel], " = ", panel);
 			}
 
 			ENGINE_INLINE void deregisterPanel(const Panel* panel) {

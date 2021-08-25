@@ -118,7 +118,7 @@ namespace Engine::Gui {
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 		}
 
-		ENGINE_INFO("Loaded glyph ", index, " = ", nextGlyphIndex-1, " @ ", dat.offset.x, ", ", dat.offset.y); // TODO: rm
+		//ENGINE_INFO("Loaded glyph ", index, " = ", nextGlyphIndex-1, " @ ", dat.offset.x, ", ", dat.offset.y); // TODO: rm
 	}
 
 	void FontGlyphSet::initMaxGlyphSize() {
@@ -229,7 +229,7 @@ namespace Engine::Gui {
 		// TODO: we should know when this is resized. just do this then?
 		const GLsizei newSize = static_cast<GLsizei>(glyphData.size() * sizeof(glyphData[0]));
 		if (newSize > glyphSSBOSize) {
-			ENGINE_INFO("glyphSSBO resize: ", newSize, " ", glyphSSBO);
+			//ENGINE_INFO("glyphSSBO resize: ", newSize, " ", glyphSSBO);
 			glyphSSBOSize = newSize;
 			glNamedBufferData(glyphSSBO, glyphSSBOSize, nullptr, GL_DYNAMIC_DRAW); // TODO: what storge type?
 			glNamedBufferSubData(glyphSSBO, 0, newSize, glyphData.data());
