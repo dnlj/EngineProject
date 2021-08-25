@@ -124,6 +124,16 @@ namespace {
 		// Cleanup
 		front.swap(back);
 	}
+
+	class RootPanel : public Engine::Gui::Panel {
+		public:
+			using Panel::Panel;
+
+			virtual void onBeginChildFocus(Panel* child) override {
+				// Force the child to be on top
+				addChild(child);
+			};
+	};
 }
 
 
@@ -203,7 +213,7 @@ namespace Engine::Gui {
 
 		registerPanel(nullptr); // register before everything else so nullptr = id 0
 
-		root = new Panel{this};
+		root = new RootPanel{this};
 		root->setRelPos({25, 25});
 		root->setSize({1024, 1024});
 		registerPanel(root);
