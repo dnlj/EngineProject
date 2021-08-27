@@ -24,13 +24,7 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void setFont(Font font) {
 				str.setFont(font);
-
-				// By default we (0,0) is the text baseline so we offset to make it top left.
-				// To get the true bounds we would need to check `str.getBounds()` but that
-				// would give us an inconsistent baseline.
-				//
-				// See "Glyph Metrics" illustrations at: https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html#section-3
-				offset.y = str.getFont()->getAscent();
+				postLayout();
 			}
 
 			ENGINE_INLINE void shape() {
@@ -48,7 +42,21 @@ namespace Engine::Gui {
 				ctx.drawString(offset, &str);
 			}
 
-			virtual bool canHover() const { return false; }
-			virtual bool canFocus() const { return false; }
+			virtual void postLayout() override {
+				if (const auto font = str.getFont(); font) {
+					// By default (0,0) is the text baseline so we offset to make it top left.
+					// To get the true bounds we would need to check `str.getBounds()` but that
+					// would give us an inconsistent baseline.
+					//
+					// See "Glyph Metrics" illustrations at: https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html#section-3
+					const auto offsetToTopLeft = font->getAscent();
+
+					// Baseline offset + center in panel
+					offset.y = offsetToTopLeft + 0.5f * (getHeight() - font->getLineHeight());
+				}
+			}
+
+			virtual bool canHover() const override { return false; }
+			virtual bool canFocus() const override { return false; }
 	};
 }
