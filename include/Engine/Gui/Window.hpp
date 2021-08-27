@@ -17,7 +17,7 @@ namespace Engine::Gui {
 					
 					virtual void onBeginActivate() override {
 						win->tracking = true;
-						win->offset = win->getContext()->getCursor() - win->getPos();
+						win->offset = win->getContext()->getCursor() - win->getPos() - outBorder;
 					}
 
 					virtual void onEndActivate() override {
