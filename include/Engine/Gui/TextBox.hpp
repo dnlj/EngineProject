@@ -5,12 +5,14 @@
 
 
 namespace Engine::Gui {
-	class TextBox : public Label {
+	class TextBox : public StringLine {
 		public:
-			using Label::Label;
-
-			virtual bool canHover() const override { return true; }
-			virtual bool canFocus() const override { return true; }
+			using StringLine::StringLine;
+			
+			virtual void render(Context& ctx) const override {
+				ctx.drawRect({0,0}, getSize(), {1,0,0,0.2});
+				ctx.drawString(getStringOffset(), &getShapedString());
+			}
 
 			virtual void onBeginFocus() override {
 				ctx->registerCharCallback(this, [this](wchar_t ch) {
