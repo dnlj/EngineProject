@@ -632,7 +632,12 @@ namespace Engine::Gui {
 	}
 
 	bool Context::onChar(const wchar_t ch) {
-		// ENGINE_LOG("onChar: ", (int)ch);
+		//ENGINE_LOG("onChar: ", (int)ch);
+
+		for (auto& [_, cb] : charCallbacks) {
+			if (cb(ch)) { return true; }
+		}
+
 		return false;
 	}
 

@@ -8,6 +8,7 @@
 #include <Engine/Glue/glm.hpp>
 #include <Engine/Gui/Window.hpp>
 #include <Engine/Gui/CollapsibleSection.hpp>
+#include <Engine/Gui/TextBox.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -182,6 +183,15 @@ namespace Game {
 				auto window = ctx.createPanel<Gui::Window>();
 				window->setRelPos({256, 256});
 				window->setSize({256, 256});
+
+				auto text = ctx.createPanel<Gui::TextBox>();
+				window->getContent()->addChild(text);
+				text->setFont(ctx.font_a);
+				text->setText(R"(This is a text box)");
+				text->setRelPos({0, 0});
+				text->autoSize();
+
+				window->getContent()->performLayout(); // TODO: shouldnt have to do this
 			}
 
 			{

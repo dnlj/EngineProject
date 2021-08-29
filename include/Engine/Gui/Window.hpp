@@ -37,10 +37,13 @@ namespace Engine::Gui {
 			bool hoverWithin = false;
 			glm::vec2 offset = {};
 			Title* title;
-			Panel* main;
+			Panel* content;
 
 		public:
 			Window(Context* context);
+
+			
+			ENGINE_INLINE auto getContent() const noexcept { return content; }
 			
 			virtual void onBeginHover() override { hoverWithin = true; };
 			virtual void onEndHover() override {

@@ -27,6 +27,8 @@ namespace Engine::Gui {
 				postLayout();
 			}
 
+			ENGINE_INLINE const auto& getText() const noexcept { return str.getString(); }
+
 			ENGINE_INLINE void shape() {
 				str.shape();
 			}

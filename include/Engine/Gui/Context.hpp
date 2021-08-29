@@ -32,6 +32,17 @@ namespace Engine::Gui {
 			using PanelBeginActivateCallback = std::function<bool(Panel* panel)>;
 			using PanelEndActivateCallback = std::function<void(Panel* panel)>;
 
+			// TODO: convert to utf-8. Handle conversion out side this class. Probably in WM_CHAR.
+			// TODO: we really need to rework input to correctly handle UTF-16 surrogate pairs (what WM_CHAR inputs)
+			// TODO: cont. since atm we dont have a good way to test that we just pretend they dont exists...
+			/**
+			 * @param ch The UTF-16 code unit.
+			 * @return True to consume the input; otherwise false.
+			 */
+			using CharCallback = std::function<bool(wchar_t ch)>;
+
+			using KeyCallback = std::function<bool(Engine::Input::InputEvent)>;
+
 		private:
 			// There is no point in using integers here because
 			// of GLSL integer requirement range limitations. In short
@@ -71,7 +82,7 @@ namespace Engine::Gui {
 				const ShapedString* str;
 			};
 
-			//#define DEBUG_GUI
+			#define DEBUG_GUI
 			struct RenderState {
 				#ifdef DEBUG_GUI
 				glm::vec4 color = {};
@@ -157,6 +168,8 @@ namespace Engine::Gui {
 			FlatHashMap<const Panel*, MouseMoveCallback> mouseMoveCallbacks;
 			FlatHashMap<const Panel*, PanelBeginActivateCallback> panelBeginActivateCallbacks;
 			FlatHashMap<const Panel*, PanelEndActivateCallback> panelEndActivateCallbacks;
+			FlatHashMap<const Panel*, CharCallback> charCallbacks;
+			FlatHashMap<const Panel*, KeyCallback> keyCallbacks;
 
 			/* Cursors */
 			Cursor currentCursor = Cursor::Normal;
@@ -222,6 +235,24 @@ namespace Engine::Gui {
 			
 			void deregisterEndActivate(const Panel* panel) {
 				panelBeginActivateCallbacks.erase(panel);
+			}
+			
+			void registerCharCallback(const Panel* panel, CharCallback callback) {
+				ENGINE_DEBUG_ASSERT(!charCallbacks[panel], "Attempting to add duplicate char callback.");
+				charCallbacks[panel] = callback;
+			}
+			
+			void deregisterCharCallback(const Panel* panel) {
+				charCallbacks.erase(panel);
+			}
+			
+			void registerKeyCallback(const Panel* panel, KeyCallback callback) {
+				ENGINE_DEBUG_ASSERT(!keyCallbacks[panel], "Attempting to add duplicate Key callback.");
+				keyCallbacks[panel] = callback;
+			}
+			
+			void deregisterKeyCallback(const Panel* panel) {
+				keyCallbacks.erase(panel);
 			}
 
 			ENGINE_INLINE auto getCursor() const noexcept {

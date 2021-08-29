@@ -23,12 +23,12 @@ namespace Engine::Gui {
 	Window::Window(Context* context) : Panel{context} {
 		setLayout(new FillLayout{outBorder});
 
-		main = ctx->createPanel<Panel>();
-		addChild(main);
-		main->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch});
+		content = ctx->createPanel<Panel>();
+		addChild(content);
+		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch});
 
 		title = ctx->createPanel<Title>(this);
-		main->addChild(title);
+		content->addChild(title);
 		title->setFont(ctx->font_b);
 		title->setText("Window Title");
 		title->setRelPos({0, 0});
@@ -155,7 +155,7 @@ namespace Engine::Gui {
 	}
 
 	void Window::updateResizeInfo(const glm::vec2 pos) {
-		const auto bounds = main->getBounds();
+		const auto bounds = content->getBounds();
 
 		auto cur = Cursor::Normal;
 
