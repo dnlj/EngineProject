@@ -21,6 +21,14 @@ namespace Engine::Gui {
 				return max - min;
 			}
 
+			ENGINE_INLINE auto getWidth() const noexcept {
+				return max.x - min.x;
+			}
+			
+			ENGINE_INLINE auto getHeight() const noexcept {
+				return max.y - min.y;
+			}
+
 			ENGINE_INLINE glm::vec2 getRoundSize() const noexcept {
 				return glm::ceil(max) - glm::floor(min);
 			}

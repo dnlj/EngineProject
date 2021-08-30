@@ -187,7 +187,7 @@ namespace Game {
 				auto text = ctx.createPanel<Gui::TextBox>();
 				window->getContent()->addChild(text);
 				text->setFont(ctx.font_a);
-				text->setText(R"(This is a text box)");
+				text->setText(R"(Example text)");
 				text->setRelPos({0, 0});
 				text->autoSize();
 

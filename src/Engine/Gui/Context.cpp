@@ -144,6 +144,14 @@ namespace Engine::Gui {
 		glyphShader = engine.shaderManager.get("shaders/gui_glyph");
 		view = engine.camera.getScreenSize();
 
+		#ifdef ENGINE_OS_WINDOWS
+			cursorBlinkRate = std::chrono::milliseconds{GetCaretBlinkTime()};
+			ENGINE_LOG("Blink Rate: ", Clock::Milliseconds{cursorBlinkRate}.count());
+		#else
+			#error TODO: impl for non-Windows
+			ENGINE_WARN("Cursor blink rate not implemented for non-Windows");
+		#endif
+
 		glProgramUniform1i(glyphShader->get(), 2, 1);
 
 		glCreateFramebuffers(1, &fbo);
@@ -252,7 +260,7 @@ namespace Engine::Gui {
 			updateHover();
 			hoverValid = true;
 		}
-		
+
 		const Panel* curr = root;
 		renderState.layer = 0;
 		polyDrawGroups.emplace_back().offset = 0;

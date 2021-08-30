@@ -82,7 +82,7 @@ namespace Engine::Gui {
 				const ShapedString* str;
 			};
 
-			#define DEBUG_GUI
+			//#define DEBUG_GUI
 			struct RenderState {
 				#ifdef DEBUG_GUI
 				glm::vec4 color = {};
@@ -173,6 +173,7 @@ namespace Engine::Gui {
 
 			/* Cursors */
 			Cursor currentCursor = Cursor::Normal;
+			Clock::Duration cursorBlinkRate = std::chrono::milliseconds{530}; // 530ms = default blink rate on Windows
 
 		public:
 			// TODO: split shader into own class so we dont depend on engine
@@ -180,6 +181,10 @@ namespace Engine::Gui {
 			Context(Context&) = delete;
 			~Context();
 			void render();
+
+			ENGINE_INLINE bool isBlinking() const noexcept {
+				return (Clock::now().time_since_epoch() / cursorBlinkRate) & 1;
+			}
 
 			void drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color);
 			void drawString(glm::vec2 pos, const ShapedString* fstr);

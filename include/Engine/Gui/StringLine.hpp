@@ -36,6 +36,8 @@ namespace Engine::Gui {
 				setSize({bounds.max.x, str.getFont()->getLineHeight()});
 			}
 
+			ENGINE_INLINE void offset(glm::vec2 off) { strOff += off; }
+
 			virtual void render(Context& ctx) const override = 0;
 
 			virtual void postLayout() override {
