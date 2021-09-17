@@ -5,6 +5,9 @@
 *.dll
 /_TEMP_*_
 
+# Windows Shortcuts
+*.lnk
+
 # EngineProject save files
 node_test.dat
 

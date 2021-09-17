@@ -15,9 +15,9 @@
 #include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Input/InputId.hpp>
-#include <Engine/Input/Bind.hpp>
 #include <Engine/Input/BindId.hpp>
 #include <Engine/Input/InputSequence.hpp>
+#include <Engine/Input/BindListener.hpp>
 
 
 namespace Engine::Input {
@@ -69,26 +69,10 @@ namespace Engine::Input {
 			};
 
 		public:
-			FlatHashMap<InputId, std::vector<BindId>> bindLookup;
-			std::vector<Bind> binds;
-
 			Layer layers[1]; // TODO: template param?
 			FlatHashMap<InputId, Value> inputStates;
 			
 		public:
-			/**
-			 * Applies an input to all binds.
-			 */
-			void processInput(const InputState& is);
-
-			/**
-			 * Adds a listener for a sequence of inputs.
-			 */
-			template<class Listener>
-			BindId addBind(const InputSequence& inputs, Listener&& listener);
-
-			/////////////////////////////////////////////////////////////////////////
-
 			void enableLayer(int layer);
 			void disableLayer(int layer);
 
@@ -118,5 +102,3 @@ namespace Engine::Input {
 			}
 	};
 }
-
-#include <Engine/Input/InputManager.ipp>
