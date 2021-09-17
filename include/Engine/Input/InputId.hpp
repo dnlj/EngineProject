@@ -30,16 +30,23 @@ namespace Engine::Input {
 					&& first.device == second.device;
 			};
 	};
+	static_assert(sizeof(InputId) == 4);
 }
 
 namespace Engine {
 	template<>
 	struct Hash<Input::InputId> {
 		size_t operator()(const Input::InputId& v) const {
-			auto seed = hash(v.type);
-			hashCombine(seed, hash(v.code));
-			hashCombine(seed, hash(v.device));
-			return seed;
+			static_assert(sizeof(v) == sizeof(uint32));
+			//auto seed = hash(v.type);
+			//hashCombine(seed, hash(v.code));
+			//hashCombine(seed, hash(v.device));
+			//return seed;
+			return reinterpret_cast<const uint32&>(v);
 		}
+	};
+	
+	template<> struct LogFormatter<Input::InputId> {
+		static void format(class ::std::ostream& stream, const Input::InputId& val);
 	};
 }

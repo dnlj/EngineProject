@@ -15,7 +15,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void autoSize() {
 				StringLine::autoSize();
 				StringLine::offset(pad);
-				setSize(getSize() + pad*2.0f);
+				setSize(getSize() + pad + pad);
 			}
 
 			virtual void render(Context& ctx) const override {

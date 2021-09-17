@@ -589,39 +589,47 @@ void run(int argc, char* argv[]) {
 		auto& im = engine.inputManager;
 
 		if constexpr (ENGINE_CLIENT) {
-			im.addBind(InputSequence{
+			
+			im.addBind2(0, InputSequence{
+				InputId{InputType::KEYBOARD, 0, 46}, // C
+				}, [&](Value curr, Value prev){
+					ENGINE_INFO("**** THIS IS A BUTTON PRESS! ****");
+				}
+			);
+
+			im.addBind2(0, InputSequence{
 				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 0, 46}, // C
 				}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
-			im.addBind(InputSequence{
+			im.addBind2(0, InputSequence{
 				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 0, 56}, // ALT
 				InputId{InputType::KEYBOARD, 0, 16}, // Q
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
-			im.addBind(InputSequence{
+			im.addBind2(0, InputSequence{
 				InputId{InputType::KEYBOARD, 0, 57}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
-			im.addBind(InputSequence{
+			im.addBind2(0, InputSequence{
 				InputId{InputType::KEYBOARD, 0, 17}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveUp, curr); });
-			im.addBind(InputSequence{
+			im.addBind2(0, InputSequence{
 				InputId{InputType::KEYBOARD, 0, 31}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveDown, curr); });
-			im.addBind(InputSequence{
+			im.addBind2(0, InputSequence{
 				InputId{InputType::KEYBOARD, 0, 30}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveLeft, curr); });
-			im.addBind(InputSequence{
+			im.addBind2(0, InputSequence{
 				InputId{InputType::KEYBOARD, 0, 32}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::MoveRight, curr); });
 
-			im.addBind(InputSequence{
+			im.addBind2(0, InputSequence{
 				InputId{InputType::MOUSE, 0, 0}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack1, curr); });
-			im.addBind(InputSequence{
+			im.addBind2(0, InputSequence{
 				InputId{InputType::MOUSE, 0, 1}
 			}, [&](Value curr, Value prev){ updateButtonState(Game::Button::Attack2, curr); });
 
-			im.addBind(InputSequence{
+			im.addBind2(0, InputSequence{
 					InputId{InputType::MOUSE_AXIS, 0, 0}
 				}, [&](Value curr, Value prev){
 					updateTargetState(curr);
