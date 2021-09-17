@@ -4,12 +4,6 @@
 
 namespace Engine::Input {
 	bool InputManager::Layer::processInput(const InputManager& manager, const InputState& state) {
-
-		if (state.id.type != InputType::MOUSE_AXIS) {
-			ENGINE_LOG("*** State: ", (int64)state.id.type, " ", state.id.code, " ", state.value.i32);
-		}
-
-
 		if (state.value.any()) { // Activate binds
 			auto found = lookup.find(state.id);
 			if (found == lookup.end()) { return false; }
@@ -23,12 +17,8 @@ namespace Engine::Input {
 				}
 
 				if (update) {
-					if (!bind->value.any()) {
-						//
-						// TODO: axis inputs shouldnt get added to active list.
-						//
+					if (!bind->value.any() && !isAxisInput(state.id.type)) {
 						active.push_back(bind);
-						ENGINE_LOG("Add ", active.size());
 					}
 
 					bind->listener(state.value, bind->value);
@@ -36,29 +26,15 @@ namespace Engine::Input {
 					return true;
 				}
 			}
-		} else { // Deactivate any relevant binds
-			//
-			// TODO: axis inputs shouldnt be checked since they shouldnt be in active list
-			//
+		} else if (!isAxisInput(state.id.type)) { // Deactivate any relevant binds
 			auto lastActive = active.size();
 			for (int b = 0; b < lastActive; ++b) {
 				auto& bind = active[b];
 				const auto lim = bind->inputs.size();
 				for (int i = 0; i < lim; ++i) {
-					auto x = bind->inputs[i];
-					auto y = state.id;
-					ENGINE_LOG(
-						"\n x = ", x,
-						"\n y = ", y
-					);
 					if (bind->inputs[i] == state.id) {
 						bind->listener({}, bind->value);
 						bind->value = {};
-						ENGINE_LOG("Remove ", active.size());
-
-						for (auto j : bind->inputs) {
-							ENGINE_LOG("    ", (int)j.type, " ", (int)j.code);
-						}
 						bind = active[--lastActive];
 						active.pop_back();
 						--b;
