@@ -21,11 +21,6 @@
 
 
 namespace Engine::Input {
-	enum class InputLayer {
-		GUI,
-		Game,
-	};
-
 	class Bind2 {
 		public:
 			InputSequence inputs;
@@ -46,7 +41,7 @@ namespace Engine::Input {
 					std::vector<BindList::iterator> active;
 
 					/** Is this layer enabled? */
-					bool enabled;
+					bool enabled = true;
 
 				public:
 					void addBind(const InputSequence& inputs, BindListener listener) {
@@ -69,20 +64,33 @@ namespace Engine::Input {
 			};
 
 		public:
-			Layer layers[1];
+			std::vector<Layer> layers;
 			FlatHashMap<InputId, Value> inputStates;
 			
 		public:
-			void enableLayer(int layer);
-			void disableLayer(int layer);
+			template<class L>
+			ENGINE_INLINE void setLayerEnabled(L layer, bool val) {
+				layers[static_cast<int64>(layer)].setEnabled(val);
+			}
+
+			template<class L>
+			ENGINE_INLINE bool getLayerEnabled(L layer) const noexcept {
+				return layers[static_cast<int64>(layer)].getEnabled();
+			}
 
 			ENGINE_INLINE Value getTrackedValue(const InputId id) const noexcept {
 				auto found = inputStates.find(id);
 				return found != inputStates.end() ? found->second : Value{};
 			}
 
-			void addBind(int layer, const InputSequence& inputs, BindListener listener) {
-				ENGINE_DEBUG_ASSERT(layer < std::size(layers));
+			template<class L>
+			void addBind(L layer, const InputSequence& inputs, BindListener listener) {
+				if (layer >= layers.size()) {
+					ENGINE_ASSERT_WARN(layer > layers.size() + 10, "Inserting a large number of input layers. Was this intended?");
+					layers.resize(layer + 1);
+					ENGINE_LOG("Add layer: ", layer);
+				}
+
 				auto& lay = layers[layer];
 				lay.addBind(inputs, std::move(listener));
 

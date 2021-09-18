@@ -8,6 +8,13 @@
 
 
 namespace Game {
+
+	enum class InputLayers {
+		GUI,
+		Game,
+		_count,
+	};
+
 	class EngineInstance {
 		public:
 			Engine::Input::InputManager inputManager;
