@@ -12,12 +12,12 @@
 #include <glm/vec2.hpp>
 
 // Engine
-#include <Engine/EngineInstance.hpp>
 #include <Engine/ShaderManager.hpp>
 #include <Engine/Graphics/Mesh.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ThreadSafeQueue.hpp>
+#include <Engine/Graphics/Texture.hpp>
 
 // Game
 #include <Game/Common.hpp>

@@ -113,10 +113,10 @@ namespace Game {
 
 			void netTo(Engine::Net::BufferWriter& buff) const;
 
-			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const;
+			void netToInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const;
 
 			void netFrom(Connection& conn);
 
-			void netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn);
+			void netFromInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn);
 	};
 }

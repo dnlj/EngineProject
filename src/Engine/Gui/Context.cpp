@@ -1,4 +1,5 @@
 // Engine
+#include <Engine/Camera.hpp>
 #include <Engine/Gui/Context.hpp>
 
 
@@ -138,11 +139,11 @@ namespace {
 
 
 namespace Engine::Gui {
-	Context::Context(Engine::EngineInstance& engine) {
-		quadShader = engine.shaderManager.get("shaders/fullscreen_passthrough");
-		polyShader = engine.shaderManager.get("shaders/gui_poly");
-		glyphShader = engine.shaderManager.get("shaders/gui_glyph");
-		view = engine.camera.getScreenSize();
+	Context::Context(ShaderManager& shaderManager, Camera& camera) {
+		quadShader = shaderManager.get("shaders/fullscreen_passthrough");
+		polyShader = shaderManager.get("shaders/gui_poly");
+		glyphShader = shaderManager.get("shaders/gui_glyph");
+		view = camera.getScreenSize(); // TODO: doesnt this break on resize?
 
 		#ifdef ENGINE_OS_WINDOWS
 			cursorBlinkRate = std::chrono::milliseconds{GetCaretBlinkTime()};

@@ -33,12 +33,12 @@ namespace Game {
 			constexpr static Engine::Net::Replication netRepl() { return Engine::Net::Replication::ONCE; };
 
 			ENGINE_INLINE void netTo(Engine::Net::BufferWriter& buff) const {};
-			ENGINE_INLINE void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
+			ENGINE_INLINE void netToInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
 				//buff.write(onlyUserVerified);
 			};
 
 			ENGINE_INLINE void netFrom(Connection& conn) {};
-			ENGINE_INLINE void netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
+			ENGINE_INLINE void netFromInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
 				//onlyUserVerified = conn.read<bool>();
 				onlyUserVerified = true;
 			};

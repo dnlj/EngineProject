@@ -3,19 +3,17 @@
 // STD
 #include <tuple>
 
-// Engine
-#include <Engine/EngineInstance.hpp>
-
 // Game
 #include <Game/Common.hpp>
 #include <Game/RenderLayer.hpp>
 
 
 namespace Game {
-	class World; // Forward declaration
+	class World;
+	class EngineInstance;
 
 	/** The argument type system constructors require. */
-	using SystemArg = const std::tuple<World&, Engine::EngineInstance&>&;
+	using SystemArg = const std::tuple<World&, EngineInstance&>&;
 
 	/**
 	 * A base class for game systems.
@@ -23,12 +21,12 @@ namespace Game {
 	class System {
 		protected:
 			World& world;
-			Engine::EngineInstance& engine;
+			EngineInstance& engine;
 
 		public:
 			System(SystemArg arg)
 				: world{std::get<World&>(arg)}
-				, engine{std::get<Engine::EngineInstance&>(arg)} {
+				, engine{std::get<EngineInstance&>(arg)} {
 			};
 
 			ENGINE_INLINE void setup() {}

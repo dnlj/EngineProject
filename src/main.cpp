@@ -11,7 +11,6 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/TextureManager.hpp>
-#include <Engine/EngineInstance.hpp>
 #include <Engine/ResourceManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/Noise/SimplexNoise.hpp>
@@ -423,7 +422,7 @@ namespace {
 namespace {
 	// TODO: once input is finished this should go away;
 	struct TempWorldEngineWrapper {
-		Engine::EngineInstance& engine;
+		Game::EngineInstance& engine;
 		Game::World& world;
 		Engine::Gui::Context& guiContext;
 	};
@@ -532,7 +531,7 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Engine
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	Engine::EngineInstance engine;
+	Game::EngineInstance engine;
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Resources

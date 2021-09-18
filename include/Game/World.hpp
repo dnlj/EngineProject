@@ -5,7 +5,6 @@
 
 // Engine
 #include <Engine/ECS/World.hpp>
-#include <Engine/EngineInstance.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -89,7 +88,7 @@ namespace Game {
 	// TODO: cont. - Would need to move the set defs into own file then. Not sure if worth. Probably is. CRTP is a little stinky.
 	class World : public Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet> {
 		public:
-			World(Engine::EngineInstance& engine)
+			World(EngineInstance& engine)
 				: Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet>(std::tie(*this, engine)) {
 			}
 	};

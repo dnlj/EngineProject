@@ -6,9 +6,13 @@
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
 
+// Engine
+#include <Engine/TextureManager.hpp>
+
 // Game
 #include <Game/comps/NetworkComponent.hpp>
 #include <Game/RenderLayer.hpp>
+#include <Game/EngineInstance.hpp> // TODO: split into cpp file and remove from header
 
 
 namespace Game {
@@ -21,7 +25,7 @@ namespace Game {
 
 			constexpr static auto netRepl() { return Engine::Net::Replication::ONCE; };
 
-			void netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
+			void netToInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
 				buff.write(texture.id());
 				buff.write(position);
 				buff.write(scale);
@@ -30,7 +34,7 @@ namespace Game {
 				buff.write(static_cast<uint8>(layer));
 			}
 
-			void netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
+			void netFromInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
 				const auto* tex = conn.read<Engine::TextureRef::Id>();
 				if (!tex) {
 					ENGINE_WARN("Unable to read sprite texture from network.");

@@ -4,7 +4,6 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Engine
-#include <Engine/EngineInstance.hpp>
 #include <Engine/TextureManager.hpp>
 #include <Engine/ShaderManager.hpp>
 

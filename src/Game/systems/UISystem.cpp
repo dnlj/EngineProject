@@ -18,7 +18,7 @@ namespace {
 	namespace Gui = Engine::Gui;
 	const double avgDeltaTime = 1/64.0;
 
-	bool connectTo(const std::string& uri, Engine::EngineInstance& engine, Game::World& world) {
+	bool connectTo(const std::string& uri, Game::EngineInstance& engine, Game::World& world) {
 		// TODO: use Engine::Net::hostToAddress
 		addrinfo* results = nullptr;
 		addrinfo hints = {
@@ -134,7 +134,10 @@ namespace Game {
 namespace Game {
 	UISystem::UISystem(SystemArg arg)
 		: System{arg}
-		, ctx{std::get<Engine::EngineInstance&>(arg)} {
+		, ctx{
+			std::get<EngineInstance&>(arg).shaderManager,
+			std::get<EngineInstance&>(arg).camera,
+		} {
 		{
 			{
 				auto child = ctx.createPanel<TestPanel>();

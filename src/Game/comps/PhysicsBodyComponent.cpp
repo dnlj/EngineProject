@@ -13,7 +13,7 @@ namespace Game {
 		buff.write(getVelocity());
 	}
 
-	void PhysicsBodyComponent::netToInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
+	void PhysicsBodyComponent::netToInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
 		buff.write(type);
 		buff.write(body->GetType());
 
@@ -66,7 +66,7 @@ namespace Game {
 		rollbackOverride = true;
 	}
 
-	void PhysicsBodyComponent::netFromInit(Engine::EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
+	void PhysicsBodyComponent::netFromInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
 		const auto* ptype = conn.read<PhysicsType>();
 		if (!ptype) {
 			ENGINE_WARN("Unable to read physics type from network.");

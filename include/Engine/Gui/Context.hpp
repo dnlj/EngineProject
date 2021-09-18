@@ -10,14 +10,17 @@
 #include <glm/vec2.hpp>
 
 // Engine
-#include <Engine/EngineInstance.hpp>
-#include <Engine/Gui/Panel.hpp>
-#include <Engine/Input/InputEvent.hpp>
+#include <Engine/ShaderManager.hpp>
 #include <Engine/FlatHashMap.hpp>
+#include <Engine/Input/InputEvent.hpp>
+#include <Engine/Gui/Panel.hpp>
 #include <Engine/Gui/FontManager.hpp>
 #include <Engine/Gui/ShapedString.hpp>
 #include <Engine/Gui/Cursor.hpp>
 
+namespace Engine {
+	class Camera;
+}
 
 namespace Engine::Gui {
 	class Context {
@@ -177,7 +180,7 @@ namespace Engine::Gui {
 
 		public:
 			// TODO: split shader into own class so we dont depend on engine
-			Context(Engine::EngineInstance& engine);
+			Context(ShaderManager& shaderManager, Camera& camera);
 			Context(Context&) = delete;
 			~Context();
 			void render();

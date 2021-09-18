@@ -3,9 +3,6 @@
 // Box2D
 #include <box2d/b2_math.h>
 
-// Engine
-#include <Engine/EngineInstance.hpp>
-
 // Game
 #include <Game/System.hpp>
 #include <Game/PhysicsListener.hpp>
