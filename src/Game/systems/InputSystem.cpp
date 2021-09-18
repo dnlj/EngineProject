@@ -18,8 +18,7 @@ namespace Game {
 			auto& ie = buffer.front();
 
 			if (ie.time < nextTime) {
-				// TODO: rm - engine.inputManager.processInput(ie.state);
-				engine.inputManager.processInput2(ie.state);
+				engine.inputManager.processInput(ie.state);
 				buffer.pop();
 			} else {
 				break;

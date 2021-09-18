@@ -69,7 +69,7 @@ namespace Engine::Input {
 			};
 
 		public:
-			Layer layers[1]; // TODO: template param?
+			Layer layers[1];
 			FlatHashMap<InputId, Value> inputStates;
 			
 		public:
@@ -81,7 +81,7 @@ namespace Engine::Input {
 				return found != inputStates.end() ? found->second : Value{};
 			}
 
-			void addBind2(int layer, const InputSequence& inputs, BindListener listener) {
+			void addBind(int layer, const InputSequence& inputs, BindListener listener) {
 				ENGINE_DEBUG_ASSERT(layer < std::size(layers));
 				auto& lay = layers[layer];
 				lay.addBind(inputs, std::move(listener));
@@ -90,7 +90,7 @@ namespace Engine::Input {
 				for (auto i : inputs) { inputStates[i]; }
 			}
 
-			void processInput2(const InputState& is) {
+			void processInput(const InputState& is) {
 				auto found = inputStates.find(is.id);
 				if (found == inputStates.end()) { return; }
 				found->second = is.value;
