@@ -23,19 +23,26 @@ namespace Game {
 	};
 
 	enum class Action : uint8 {
+		// Buttons
 		MoveUp,
 		MoveDown,
 		MoveLeft,
 		MoveRight,
 		Attack1,
 		Attack2,
-		_count,
+		_button_count,
+
+		// Axes
+		Target = _button_count,
+		_axis_count,
+
+		_count = _button_count + _axis_count,
 	};
 
 	class ActionState {
 		public:
 			Engine::ECS::Tick recvTick;
-			ActionValue buttons[static_cast<int32>(Action::_count)];
+			ActionValue buttons[static_cast<int32>(Action::_button_count)];
 			glm::vec2 screenTarget; // TODO: client only
 			glm::vec2 target;
 

@@ -581,106 +581,61 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	const auto updateButtonState = [&](auto action, auto curr){
+	const auto updateActionState = [&](auto action, auto curr){
 		world.getSystem<Game::ActionSystem>().updateActionState(action, curr.i32);
 	};
 	const auto updateTargetState = [&](auto curr){
 		world.getSystem<Game::ActionSystem>().updateTarget(curr.f32v2);
 	};
-	{
+	if constexpr (ENGINE_CLIENT) {
 		using namespace Engine::Input;
 		auto& im = engine.inputManager;
 		auto& is = world.getSystem<Game::InputSystem>();
 
-		if constexpr (ENGINE_CLIENT) {
+		// TODO: at this point is the input system redundant? shouldnt this stuff be part of the ActionSystem?
+		is.registerCommand(Game::Action::Attack1, [&](Value curr){ updateActionState(Game::Action::Attack1, curr); });
+		is.registerCommand(Game::Action::Attack2, [&](Value curr){ updateActionState(Game::Action::Attack2, curr); });
+		is.registerCommand(Game::Action::MoveUp, [&](Value curr){ updateActionState(Game::Action::MoveUp, curr); });
+		is.registerCommand(Game::Action::MoveDown, [&](Value curr){ updateActionState(Game::Action::MoveDown, curr); });
+		is.registerCommand(Game::Action::MoveLeft, [&](Value curr){ updateActionState(Game::Action::MoveLeft, curr); });
+		is.registerCommand(Game::Action::MoveRight, [&](Value curr){ updateActionState(Game::Action::MoveRight, curr); });
+		is.registerCommand(Game::Action::Target, [&](Value curr){ updateTargetState(curr); });
 
-			// TODO: at this point is the input system redundant? shouldnt this stuff be part of the ActionSystem?
-			is.registerCommand(Game::Action::Attack1, [&](Value curr){ updateButtonState(Game::Action::Attack1, curr); });
-			is.registerCommand(Game::Action::Attack2, [&](Value curr){ updateButtonState(Game::Action::Attack2, curr); });
-			is.registerCommand(Game::Action::MoveUp, [&](Value curr){ updateButtonState(Game::Action::MoveUp, curr); });
-			is.registerCommand(Game::Action::MoveDown, [&](Value curr){ updateButtonState(Game::Action::MoveDown, curr); });
-			is.registerCommand(Game::Action::MoveLeft, [&](Value curr){ updateButtonState(Game::Action::MoveLeft, curr); });
-			is.registerCommand(Game::Action::MoveRight, [&](Value curr){ updateButtonState(Game::Action::MoveRight, curr); });
+		im.addBind(0, InputSequence{
+			InputId{InputType::KEYBOARD, 0, 29}, // CTRL
+			InputId{InputType::KEYBOARD, 0, 46}, // C
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
+		im.addBind(0, InputSequence{
+			InputId{InputType::KEYBOARD, 0, 29}, // CTRL
+			InputId{InputType::KEYBOARD, 0, 56}, // ALT
+			InputId{InputType::KEYBOARD, 0, 16}, // Q
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
+		im.addBind(0, InputSequence{
+			InputId{InputType::KEYBOARD, 0, 57}
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
+		im.addBind(0, InputSequence{
+			InputId{InputType::KEYBOARD, 0, 17}
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveUp, time, curr); });
+		im.addBind(0, InputSequence{
+			InputId{InputType::KEYBOARD, 0, 31}
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveDown, time, curr); });
+		im.addBind(0, InputSequence{
+			InputId{InputType::KEYBOARD, 0, 30}
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveLeft, time, curr); });
+		im.addBind(0, InputSequence{
+			InputId{InputType::KEYBOARD, 0, 32}
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveRight, time, curr); });
 
-			// TODO: convert
-			//is.registerCommand(, [&](Value curr, Value prev){ updateTargetState(curr); });
+		im.addBind(0, InputSequence{
+			InputId{InputType::MOUSE, 0, 0}
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
+		im.addBind(0, InputSequence{
+			InputId{InputType::MOUSE, 0, 1}
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack2, time, curr); });
 
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
-				InputId{InputType::KEYBOARD, 0, 46}, // C
-			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
-				InputId{InputType::KEYBOARD, 0, 56}, // ALT
-				InputId{InputType::KEYBOARD, 0, 16}, // Q
-			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 57}
-			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 17}
-			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveUp, time, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 31}
-			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveDown, time, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 30}
-			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveLeft, time, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 32}
-			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveRight, time, curr); });
-
-			im.addBind(0, InputSequence{
-				InputId{InputType::MOUSE, 0, 0}
-			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::MOUSE, 0, 1}
-			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack2, time, curr); });
-
-			// TODO: convert
-			im.addBind(0, InputSequence{
-					InputId{InputType::MOUSE_AXIS, 0, 0}
-			}, [&](Value curr, Value prev, auto time){ updateTargetState(curr); });
-
-			/*
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
-				InputId{InputType::KEYBOARD, 0, 46}, // C
-				}, [&](Value curr, Value prev){ updateButtonState(Game::Action::Attack1, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
-				InputId{InputType::KEYBOARD, 0, 56}, // ALT
-				InputId{InputType::KEYBOARD, 0, 16}, // Q
-			}, [&](Value curr, Value prev){ updateButtonState(Game::Action::Attack1, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 57}
-			}, [&](Value curr, Value prev){ updateButtonState(Game::Action::Attack1, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 17}
-			}, [&](Value curr, Value prev){ updateButtonState(Game::Action::MoveUp, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 31}
-			}, [&](Value curr, Value prev){ updateButtonState(Game::Action::MoveDown, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 30}
-			}, [&](Value curr, Value prev){ updateButtonState(Game::Action::MoveLeft, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::KEYBOARD, 0, 32}
-			}, [&](Value curr, Value prev){ updateButtonState(Game::Action::MoveRight, curr); });
-
-			im.addBind(0, InputSequence{
-				InputId{InputType::MOUSE, 0, 0}
-			}, [&](Value curr, Value prev){ updateButtonState(Game::Action::Attack1, curr); });
-			im.addBind(0, InputSequence{
-				InputId{InputType::MOUSE, 0, 1}
-			}, [&](Value curr, Value prev){ updateButtonState(Game::Action::Attack2, curr); });
-
-			im.addBind(0, InputSequence{
-					InputId{InputType::MOUSE_AXIS, 0, 0}
-				}, [&](Value curr, Value prev){
-					updateTargetState(curr);
-			});*/
-		}
+		im.addBind(0, InputSequence{
+				InputId{InputType::MOUSE_AXIS, 0, 0}
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Target, time, curr); });
 	}
 
 	// More engine stuff
