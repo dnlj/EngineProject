@@ -2,8 +2,6 @@
 
 // STD
 #include <string>
-#include <fstream>
-#include <iostream>
 
 // Engine
 #include <Engine/Engine.hpp>
@@ -247,23 +245,9 @@ namespace Engine {
 				return Keys{keyLookup.cbegin(), keyLookup.cend()};
 			}
 
-			void print() {
-				std::cout << "=================================================\n";
-				std::cout << toString();
-				std::cout << "=================================================\n";
-			}
+			void print();
 
-			void save(const std::string& path) const {
-				std::fstream file{path, std::ios::out | std::ios::binary};
-
-				if (!file) {
-					ENGINE_WARN("Unable to write config to \"", path, "\"");
-					return;
-				}
-
-				const auto& str = toString();
-				file.write(str.data(), str.size());
-			}
+			void save(const std::string& path) const;
 
 			template<class T>
 			auto* get(const std::string& key) {

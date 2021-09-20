@@ -3,7 +3,6 @@
 
 // Engine
 #include <Engine/Detail/Detail.hpp>
-#include <Engine/GlobalConfig.hpp>
 #include <Engine/FatalException.hpp>
 #include <Engine/Constants.hpp>
 #include <Engine/Types.hpp>
