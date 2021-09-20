@@ -14,7 +14,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
-#include <Engine/Input/InputId.hpp>
+#include <Engine/Input/InputEvent.hpp>
 #include <Engine/Input/BindId.hpp>
 #include <Engine/Input/InputSequence.hpp>
 #include <Engine/Input/BindListener.hpp>
@@ -57,7 +57,7 @@ namespace Engine::Input {
 						});
 					}
 
-					bool processInput(const InputManager& manager, const InputState& state);
+					bool processInput(const InputManager& manager, const InputEvent& event);
 
 					ENGINE_INLINE bool getEnabled() const noexcept { return enabled; }
 					ENGINE_INLINE void setEnabled(bool val) noexcept { enabled = val; }
@@ -98,14 +98,14 @@ namespace Engine::Input {
 				for (auto i : inputs) { inputStates[i]; }
 			}
 
-			void processInput(const InputState& is) {
-				auto found = inputStates.find(is.id);
+			void processInput(const InputEvent& ie) {
+				auto found = inputStates.find(ie.state.id);
 				if (found == inputStates.end()) { return; }
-				found->second = is.value;
+				found->second = ie.state.value;
 
 				for (auto& layer : layers) {
 					if (!layer.getEnabled()) { continue; }
-					if (layer.processInput(*this, is)) { break; }
+					if (layer.processInput(*this, ie)) { break; }
 				}
 			}
 	};

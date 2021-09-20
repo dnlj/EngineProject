@@ -3,9 +3,9 @@
 
 
 namespace Engine::Input {
-	bool InputManager::Layer::processInput(const InputManager& manager, const InputState& state) {
-		if (state.value.any()) { // Activate binds
-			auto found = lookup.find(state.id);
+	bool InputManager::Layer::processInput(const InputManager& manager, const InputEvent& event) {
+		if (event.state.value.any()) { // Activate binds
+			auto found = lookup.find(event.state.id);
 			if (found == lookup.end()) { return false; }
 
 			const auto last = found->second.end();
@@ -17,23 +17,23 @@ namespace Engine::Input {
 				}
 
 				if (update) {
-					if (!bind->value.any() && !isAxisInput(state.id.type)) {
+					if (!bind->value.any() && !isAxisInput(event.state.id.type)) {
 						active.push_back(bind);
 					}
 
-					bind->listener(state.value, bind->value);
-					bind->value = state.value;
+					bind->listener(event.state.value, bind->value, event.time);
+					bind->value = event.state.value;
 					return true;
 				}
 			}
-		} else if (!isAxisInput(state.id.type)) { // Deactivate any relevant binds
+		} else if (!isAxisInput(event.state.id.type)) { // Deactivate any relevant binds
 			auto lastActive = active.size();
 			for (int b = 0; b < lastActive; ++b) {
 				auto& bind = active[b];
 				const auto lim = bind->inputs.size();
 				for (int i = 0; i < lim; ++i) {
-					if (bind->inputs[i] == state.id) {
-						bind->listener({}, bind->value);
+					if (bind->inputs[i] == event.state.id) {
+						bind->listener({}, bind->value, event.time);
 						bind->value = {};
 						bind = active[--lastActive];
 						active.pop_back();

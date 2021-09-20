@@ -18,16 +18,11 @@ namespace Game {
 			auto& ie = buffer.front();
 
 			if (ie.time < nextTime) {
-				engine.inputManager.processInput(ie.state);
+				commands[ie.command](ie.value);
 				buffer.pop();
 			} else {
 				break;
 			}
 		}
-	}
-
-	void InputSystem::queueInput(const Engine::Input::InputEvent& event) {
-		ENGINE_DEBUG_ASSERT(!buffer.full(), "Too many inputs");
-		buffer.emplace(event);
 	}
 }

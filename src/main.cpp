@@ -440,7 +440,8 @@ namespace {
 		void keyCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onKey(event)) { return; }
-			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
+			userdata->engine.inputManager.processInput(event);
+			// TODO: rm - userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::keyCallback(event.state);
 		}
 
@@ -452,21 +453,24 @@ namespace {
 		void mouseButtonCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouse(event)) { return; }
-			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
+			userdata->engine.inputManager.processInput(event);
+			// TODO: rm - userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::mouseButtonCallback(event.state);
 		}
 
 		void mouseWheelCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouseWheel(event)) { return; }
-			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
+			userdata->engine.inputManager.processInput(event);
+			// TODO: rm - userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::scrollCallback(event.state);
 		}
 
 		void mouseMoveCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouseMove(event)) { return; }
-			userdata->world.getSystem<Game::InputSystem>().queueInput(event);
+			userdata->engine.inputManager.processInput(event);
+			// TODO: rm - userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::mouseMoveCallback(event.state);
 		}
 
@@ -586,8 +590,59 @@ void run(int argc, char* argv[]) {
 	{
 		using namespace Engine::Input;
 		auto& im = engine.inputManager;
+		auto& is = world.getSystem<Game::InputSystem>();
 
 		if constexpr (ENGINE_CLIENT) {
+
+			// TODO: at this point is the input system redundant? shouldnt this stuff be part of the ActionSystem?
+			is.registerCommand(Game::Button::Attack1, [&](Value curr){ updateButtonState(Game::Button::Attack1, curr); });
+			is.registerCommand(Game::Button::Attack2, [&](Value curr){ updateButtonState(Game::Button::Attack2, curr); });
+			is.registerCommand(Game::Button::MoveUp, [&](Value curr){ updateButtonState(Game::Button::MoveUp, curr); });
+			is.registerCommand(Game::Button::MoveDown, [&](Value curr){ updateButtonState(Game::Button::MoveDown, curr); });
+			is.registerCommand(Game::Button::MoveLeft, [&](Value curr){ updateButtonState(Game::Button::MoveLeft, curr); });
+			is.registerCommand(Game::Button::MoveRight, [&](Value curr){ updateButtonState(Game::Button::MoveRight, curr); });
+
+			// TODO: convert
+			//is.registerCommand(, [&](Value curr, Value prev){ updateTargetState(curr); });
+
+			im.addBind(0, InputSequence{
+				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
+				InputId{InputType::KEYBOARD, 0, 46}, // C
+			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Button::Attack1, time, curr); });
+			im.addBind(0, InputSequence{
+				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
+				InputId{InputType::KEYBOARD, 0, 56}, // ALT
+				InputId{InputType::KEYBOARD, 0, 16}, // Q
+			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Button::Attack1, time, curr); });
+			im.addBind(0, InputSequence{
+				InputId{InputType::KEYBOARD, 0, 57}
+			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Button::Attack1, time, curr); });
+			im.addBind(0, InputSequence{
+				InputId{InputType::KEYBOARD, 0, 17}
+			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Button::MoveUp, time, curr); });
+			im.addBind(0, InputSequence{
+				InputId{InputType::KEYBOARD, 0, 31}
+			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Button::MoveDown, time, curr); });
+			im.addBind(0, InputSequence{
+				InputId{InputType::KEYBOARD, 0, 30}
+			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Button::MoveLeft, time, curr); });
+			im.addBind(0, InputSequence{
+				InputId{InputType::KEYBOARD, 0, 32}
+			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Button::MoveRight, time, curr); });
+
+			im.addBind(0, InputSequence{
+				InputId{InputType::MOUSE, 0, 0}
+			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Button::Attack1, time, curr); });
+			im.addBind(0, InputSequence{
+				InputId{InputType::MOUSE, 0, 1}
+			}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Button::Attack2, time, curr); });
+
+			// TODO: convert
+			im.addBind(0, InputSequence{
+					InputId{InputType::MOUSE_AXIS, 0, 0}
+			}, [&](Value curr, Value prev, auto time){ updateTargetState(curr); });
+
+			/*
 			im.addBind(0, InputSequence{
 				InputId{InputType::KEYBOARD, 0, 29}, // CTRL
 				InputId{InputType::KEYBOARD, 0, 46}, // C
@@ -624,16 +679,8 @@ void run(int argc, char* argv[]) {
 					InputId{InputType::MOUSE_AXIS, 0, 0}
 				}, [&](Value curr, Value prev){
 					updateTargetState(curr);
-			});
+			});*/
 		}
-
-		//as.addListener(Spell_1, Game::CharacterSpellActionListener{engine, world});
-		//as.addListener(Move_Up, Game::CharacterMovementActionListener{world, glm::ivec2{0, 1}});
-		//as.addListener(Move_Down, Game::CharacterMovementActionListener{world, glm::ivec2{0, -1}});
-		//as.addListener(Move_Left, Game::CharacterMovementActionListener{world, glm::ivec2{-1, 0}});
-		//as.addListener(Move_Right, Game::CharacterMovementActionListener{world, glm::ivec2{1, 0}});
-		//as.addListener(Edit_Remove, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).remove = curr && !prev; return false; });
-		//as.addListener(Edit_Place, [&](Engine::ECS::Entity ent, ActionId, Value curr, Value prev){ world.getComponent<Game::MapEditComponent>(ent).place = curr && !prev; return false; });
 	}
 
 	// More engine stuff
