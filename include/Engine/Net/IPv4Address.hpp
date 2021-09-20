@@ -1,13 +1,13 @@
 #pragma once
 
 #if ENGINE_OS_WINDOWS
-	#include <WinSock2.h>
+	#include <winsock2.h>
 #else
 	#error Not yet implemented for this operating system.
 #endif
 
 // STD
-#include <iostream>
+#include <iosfwd>
 
 // Engine
 #include <Engine/Types.hpp>
@@ -18,8 +18,17 @@ namespace Engine::Net {
 	class IPv4Address {
 		public:
 			IPv4Address() = default;
-			constexpr IPv4Address(uint32 address, uint32 port = 0);
-			constexpr IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint32 port = 0);
+
+			constexpr IPv4Address(uint32 address, uint32 port = 0)
+				: address{address}
+				, port{port} {
+			}
+
+			constexpr IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint32 port = 0)
+				: d{d}, c{c}, b{b}, a{a}
+				, port{port} {
+			}
+
 			IPv4Address(const sockaddr_in& saddress);
 			IPv4Address(const sockaddr& saddress);
 
@@ -54,5 +63,3 @@ namespace Engine {
 		}
 	};
 }
-
-#include <Engine/Net/IPv4Address.ipp>

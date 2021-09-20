@@ -592,7 +592,6 @@ void run(int argc, char* argv[]) {
 		auto& im = engine.inputManager;
 		auto& is = world.getSystem<Game::InputSystem>();
 
-		// TODO: at this point is the input system redundant? shouldnt this stuff be part of the ActionSystem?
 		is.registerCommand(Game::Action::Attack1, [&](Value curr){ updateActionState(Game::Action::Attack1, curr); });
 		is.registerCommand(Game::Action::Attack2, [&](Value curr){ updateActionState(Game::Action::Attack2, curr); });
 		is.registerCommand(Game::Action::MoveUp, [&](Value curr){ updateActionState(Game::Action::MoveUp, curr); });

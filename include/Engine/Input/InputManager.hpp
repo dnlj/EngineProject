@@ -2,10 +2,6 @@
 
 // STD
 #include <vector>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <tuple>
 #include <forward_list>
 
 // GLM

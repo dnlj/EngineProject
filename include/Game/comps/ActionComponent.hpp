@@ -36,11 +36,9 @@ namespace Game {
 
 	class ActionState {
 		public:
-		#if ENGINE_SERVER
-			Engine::ECS::Tick recvTick;
-		#else
-			glm::vec2 screenTarget;
-		#endif
+			Engine::ECS::Tick recvTick; // TODO: server only
+			glm::vec2 screenTarget; // TODO: client only
+
 			ActionValue buttons[static_cast<int32>(Action::_button_count)];
 			glm::vec2 target;
 

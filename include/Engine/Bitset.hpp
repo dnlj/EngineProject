@@ -1,7 +1,7 @@
 #pragma once
 
 // STD
-#include <iostream>
+#include <iosfwd>
 
 // Engine
 #include <Engine/Engine.hpp>
