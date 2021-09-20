@@ -1,12 +1,7 @@
 #pragma once
 
-// STD
-#include <vector>
-#include <iostream>
-
 // Engine
-#include <Engine/Engine.hpp>
-#include <Engine/Input/Action.hpp>
+#include <Engine/ECS/Common.hpp>
 #include <Engine/SequenceBuffer.hpp>
 
 // Game
@@ -41,9 +36,12 @@ namespace Game {
 
 	class ActionState {
 		public:
+		#if ENGINE_SERVER
 			Engine::ECS::Tick recvTick;
+		#else
+			glm::vec2 screenTarget;
+		#endif
 			ActionValue buttons[static_cast<int32>(Action::_button_count)];
-			glm::vec2 screenTarget; // TODO: client only
 			glm::vec2 target;
 
 			void netRead(Connection& conn) {
@@ -58,20 +56,6 @@ namespace Game {
 				const auto y = conn.read<32>();
 				target.x = reinterpret_cast<const float32&>(x);
 				target.y = reinterpret_cast<const float32&>(y);
-			}
-
-			friend std::ostream& operator<<(std::ostream& os, const ActionState& s) {
-				os << "ActionState(";
-				for (const auto& b : s.buttons) {
-					os
-						<< " <" << static_cast<int>(b.pressCount)
-						<< ", " << static_cast<int>(b.releaseCount)
-						<< ", " << static_cast<int>(b.latest)
-						<< ">";
-				}
-				// TODO: target
-				os << " )";
-				return os;
 			}
 	};
 
