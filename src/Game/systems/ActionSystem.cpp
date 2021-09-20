@@ -285,15 +285,15 @@ namespace Game {
 		//found->recvTick = recvTick;
 	}
 
-	void ActionSystem::updateButtonState(Button btn, bool val) {
+	void ActionSystem::updateActionState(Action act, bool val) {
 		for (const auto& ent : world.getFilter<Filter>()) {
-			updateButtonState(ent, btn, val);
+			updateActionState(ent, act, val);
 		}
 	}
 
-	void ActionSystem::updateButtonState(Engine::ECS::Entity ent, Button btn, bool val) {
+	void ActionSystem::updateActionState(Engine::ECS::Entity ent, Action act, bool val) {
 		auto& actComp = world.getComponent<ActionComponent>(ent);
-		auto& value = actComp.state->buttons[static_cast<int32>(btn)];
+		auto& value = actComp.state->buttons[static_cast<int32>(act)];
 		value.pressCount += val;
 		value.releaseCount += !val;
 		value.latest = val;

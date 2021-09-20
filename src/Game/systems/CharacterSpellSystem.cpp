@@ -91,7 +91,7 @@ namespace Game {
 		for (const auto ent : world.getFilter<PhysicsBodyComponent, ActionComponent>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 
-			if (actComp.getButton(Button::Attack1).pressCount) {
+			if (actComp.getAction(Action::Attack1).pressCount) {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 				const auto pos = physComp.getPosition();
 				auto dir = Engine::Glue::as<b2Vec2>(actComp.getTarget());

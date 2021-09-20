@@ -25,10 +25,10 @@ namespace Game {
 			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 			const auto& actComp = world.getComponent<ActionComponent>(ent);
 			// TODO: should we use press count here?
-			const bool up = actComp.getButton(Button::MoveUp).latest;
-			const bool down = actComp.getButton(Button::MoveDown).latest;
-			const bool left = actComp.getButton(Button::MoveLeft).latest;
-			const bool right = actComp.getButton(Button::MoveRight).latest;
+			const bool up = actComp.getAction(Action::MoveUp).latest;
+			const bool down = actComp.getAction(Action::MoveDown).latest;
+			const bool left = actComp.getAction(Action::MoveLeft).latest;
+			const bool right = actComp.getAction(Action::MoveRight).latest;
 			const b2Vec2 move = {static_cast<float32>(right - left), static_cast<float32>(up - down)};
 
 			if (move != b2Vec2_zero) {

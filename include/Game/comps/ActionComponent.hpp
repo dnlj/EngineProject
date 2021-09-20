@@ -15,14 +15,14 @@
 
 
 namespace Game {
-	class ButtonValue {
+	class ActionValue {
 		public:
 			uint8 pressCount;
 			uint8 releaseCount;
 			bool latest;
 	};
 
-	enum class Button : uint8 {
+	enum class Action : uint8 {
 		MoveUp,
 		MoveDown,
 		MoveLeft,
@@ -35,7 +35,7 @@ namespace Game {
 	class ActionState {
 		public:
 			Engine::ECS::Tick recvTick;
-			ButtonValue buttons[static_cast<int32>(Button::_count)];
+			ActionValue buttons[static_cast<int32>(Action::_count)];
 			glm::vec2 screenTarget; // TODO: client only
 			glm::vec2 target;
 
@@ -83,7 +83,7 @@ namespace Game {
 			ENGINE_INLINE bool valid() const noexcept { return state != nullptr; }
 
 			// TODO: are these called on server? nullptr check
-			ENGINE_INLINE const ButtonValue& getButton(Button btn) const {
+			ENGINE_INLINE const ActionValue& getAction(Action btn) const {
 				return state->buttons[static_cast<int32>(btn)];
 			}
 

@@ -190,12 +190,12 @@ namespace Game {
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			const auto& actComp = world.getComponent<ActionComponent>(ply);
 
-			if (actComp.getButton(Button::Attack1).latest) {
+			if (actComp.getAction(Action::Attack1).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
 				makeEdit(BlockId::Dirt, pos + actComp.getTarget());
 			}
-			if (actComp.getButton(Button::Attack2).latest) {
+			if (actComp.getAction(Action::Attack2).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
 				makeEdit(BlockId::Air, pos + actComp.getTarget());

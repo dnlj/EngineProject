@@ -24,8 +24,8 @@ namespace Game {
 			void preTick();
 			void tick();
 
-			void updateButtonState(Button btn, bool val);
-			void updateButtonState(Engine::ECS::Entity ent, Button btn, bool val);
+			void updateActionState(Action act, bool val);
+			void updateActionState(Engine::ECS::Entity ent, Action act, bool val);
 
 			void updateTarget(glm::vec2 val);
 			void updateTarget(Engine::ECS::Entity ent, glm::vec2 val);
