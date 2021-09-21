@@ -10,7 +10,9 @@ namespace Engine::Net {
 		static_assert(false, "Invalid SocketOption + Value combination.");
 		return false;
 	}
-	
+
+	// TODO: rm
+	/*
 	template<>
 	inline bool UDPSocket::setOption<SocketOption::BROADCAST, bool>(const bool& value) {
 		return 0 == setsockopt(handle, SOL_SOCKET, SO_BROADCAST, reinterpret_cast<const char*>(&value), sizeof(value));
@@ -31,5 +33,5 @@ namespace Engine::Net {
 			.imr_interface = 0,
 		};
 		return 0 == setsockopt(handle, IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<const char*>(&group), sizeof(group));
-	}
+	}*/
 }

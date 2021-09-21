@@ -1,3 +1,11 @@
+#if ENGINE_OS_WINDOWS
+	#include <WinSock2.h>
+	#include <Ws2tcpip.h>
+#else
+	#error Not yet implemented for this operating system.
+#endif
+
+
 // STD
 #include <regex>
 #include <algorithm>

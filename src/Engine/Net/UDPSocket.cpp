@@ -1,8 +1,36 @@
+#if ENGINE_OS_WINDOWS
+	#include <WinSock2.h>
+	#include <Ws2tcpip.h>
+#else
+	#error Not yet implemented for this operating system.
+#endif
+
+
 // Engine
 #include <Engine/Net/UDPSocket.hpp>
 
-namespace {
+namespace Engine::Net {
+	template<>
+	inline bool UDPSocket::setOption<SocketOption::BROADCAST, bool>(const bool& value) {
+		return 0 == setsockopt(handle, SOL_SOCKET, SO_BROADCAST, reinterpret_cast<const char*>(&value), sizeof(value));
+	}
 	
+	template<>
+	inline bool UDPSocket::setOption<SocketOption::MULTICAST_JOIN, IPv4Address>(const IPv4Address& groupAddr) {
+		const ip_mreq group = {
+			.imr_multiaddr = groupAddr.getAs<sockaddr_in>().sin_addr,
+			.imr_interface = 0,
+		};
+		return 0 == setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&group), sizeof(group));
+	}
+	template<>
+	inline bool UDPSocket::setOption<SocketOption::MULTICAST_LEAVE, IPv4Address>(const IPv4Address& groupAddr) {
+		const ip_mreq group = {
+			.imr_multiaddr = groupAddr.getAs<sockaddr_in>().sin_addr,
+			.imr_interface = 0,
+		};
+		return 0 == setsockopt(handle, IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<const char*>(&group), sizeof(group));
+	}
 }
 
 
@@ -111,5 +139,15 @@ namespace Engine::Net {
 		WideCharToMultiByte(CP_UTF8, 0, wmsg, -1, msg.data(), size, nullptr, nullptr);
 		LocalFree(wmsg);
 		return msg;
+	}
+
+	void UDPSocket::simPacketSend() {
+		while (sendBuffer.size()) {
+			const auto& top = sendBuffer.top();
+			if (top.time > Engine::Clock::now()) { return; }
+			const auto saddr = top.addr.getAs<sockaddr>();
+			sendto(handle, reinterpret_cast<const char*>(top.data.data()), static_cast<int>(top.data.size()), 0, &saddr, sizeof(saddr));
+			sendBuffer.pop();
+		}
 	}
 }

@@ -1,12 +1,5 @@
 #pragma once
 
-#if ENGINE_OS_WINDOWS
-	#include <WinSock2.h>
-	#include <Ws2tcpip.h>
-#else
-	#error Not yet implemented for this operating system.
-#endif
-
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Net/IPv4Address.hpp>
@@ -42,7 +35,7 @@ namespace Engine::Net {
 			bool setOption(const Value& value);
 
 		private:
-			SOCKET handle;
+			uint64 handle;
 
 			/**
 			 * Gets the error string (utf-8) for the given error code.
@@ -116,15 +109,7 @@ namespace Engine::Net {
 			}
 
 		public:
-			void simPacketSend() {
-				while (sendBuffer.size()) {
-					const auto& top = sendBuffer.top();
-					if (top.time > Engine::Clock::now()) { return; }
-					const auto saddr = top.addr.getAs<sockaddr>();
-					sendto(handle, reinterpret_cast<const char*>(top.data.data()), static_cast<int>(top.data.size()), 0, &saddr, sizeof(saddr));
-					sendBuffer.pop();
-				}
-			}
+			void simPacketSend();
 
 			auto& getSimSettings() noexcept { return simSettings; }
 	#endif
