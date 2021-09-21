@@ -54,8 +54,9 @@ CONAN_PACKAGES = {
 		"soil_littlstar/master@dnlj/wobbly",
 		"freetype/VER-2-10-4@dnlj/wobbly",
 		"harfbuzz/2.8.1@dnlj/wobbly",
+		"fmtlib/8.0.1@dnlj/wobbly",
 		--"soil/latest@dnlj/wobbly", -- TODO: Look into soil2 or other image loading lib. We dont use any of the opengl features of soil.
-		
+
 	},
 	["generators"] = {
 		"premake5",
@@ -126,12 +127,12 @@ workspace(PROJECT_NAME .."Workspace")
 	targetdir "./bin/%{cfg.buildcfg}_%{cfg.platform}"
 	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
 	startproject(PROJECT_NAME)
-	
+
 	flags {
 		"FatalWarnings",
 		"MultiProcessorCompile",
 	}
-	
+
 	defines {
 		"GLM_FORCE_PURE", -- TODO: Remove. Link dead. Think it had something to do with constexpr See https://github.com/g-truc/glm/issues/841
 		"HB_NO_MT", -- Harfbuzz: Disable thread safety
@@ -172,7 +173,7 @@ workspace(PROJECT_NAME .."Workspace")
 		defines {"DEBUG"}
 		inlining "Explicit"
 		editandcontinue "Off" -- As of Visual Studio 16.7 MSVC uses /ZI (capital i) by default which prevents /Ob1 (__forceinline) from working. See https://developercommunity.visualstudio.com/t/major-debug-performance-regression-ob1-no-longer-w/1177277#T-N1188009
-		
+
 	filter "configurations:Debug_All"
 		defines {"DEBUG_ALL"}
 
@@ -188,15 +189,15 @@ workspace(PROJECT_NAME .."Workspace")
 		inlining "Auto"
 		defines {"NDEBUG"}
 		flags {"LinkTimeOptimization"}
-		
+
 	filter {"configurations:Release*", "action:vs*"}
 		inlining "Default" -- To avoid D9025
 		buildoptions {"/Ob3"}
-		
+
 	filter "configurations:Release_Debug"
 		symbols "On"
 		-- TODO: look into MSVC /Zo
-		
+
 --------------------------------------------------------------------------------
 -- Engine
 --------------------------------------------------------------------------------
@@ -212,7 +213,7 @@ project("*")
 		"src/glloadgen/**",
 		"shaders/**",
 	}
-	
+
 	debugdir(os.getcwd())
 
 	filter "configurations:Debug*"
