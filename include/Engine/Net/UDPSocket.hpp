@@ -120,7 +120,7 @@ namespace Engine::Net {
 				while (sendBuffer.size()) {
 					const auto& top = sendBuffer.top();
 					if (top.time > Engine::Clock::now()) { return; }
-					const auto saddr = top.addr.getSocketAddress();
+					const auto saddr = top.addr.getAs<sockaddr>();
 					sendto(handle, reinterpret_cast<const char*>(top.data.data()), static_cast<int>(top.data.size()), 0, &saddr, sizeof(saddr));
 					sendBuffer.pop();
 				}

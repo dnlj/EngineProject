@@ -23,7 +23,7 @@ namespace Engine::Net {
 		}
 
 		// Bind to a port (0 = OS assigned)
-		const auto address = IPv4Address{INADDR_ANY, port}.getSocketAddress();
+		const auto address = IPv4Address{INADDR_ANY, port}.getAs<sockaddr>();
 		if (bind(handle, &address, sizeof(address))) {
 			const auto err = WSAGetLastError();
 			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
@@ -35,7 +35,7 @@ namespace Engine::Net {
 	};
 
 	int32 UDPSocket::send(const void* data, int32 size, const IPv4Address& address) {
-		const auto saddr = address.getSocketAddress();
+		const auto saddr = address.getAs<sockaddr>();
 		
 		#ifdef ENGINE_UDP_NETWORK_SIM
 		{

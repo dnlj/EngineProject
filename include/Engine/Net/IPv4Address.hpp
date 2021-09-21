@@ -1,17 +1,15 @@
 #pragma once
 
-#if ENGINE_OS_WINDOWS
-	#include <winsock2.h>
-#else
-	#error Not yet implemented for this operating system.
-#endif
-
 // STD
 #include <iosfwd>
 
 // Engine
 #include <Engine/Types.hpp>
 #include <Engine/Hash.hpp>
+
+
+struct sockaddr_in;
+struct sockaddr;
 
 
 namespace Engine::Net {
@@ -32,8 +30,8 @@ namespace Engine::Net {
 			IPv4Address(const sockaddr_in& saddress);
 			IPv4Address(const sockaddr& saddress);
 
-			sockaddr_in getInternetAddress() const;
-			sockaddr getSocketAddress() const;
+			template<class T>
+			T getAs() const noexcept;
 
 			union {
 				uint32 address = 0;

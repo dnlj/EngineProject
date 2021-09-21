@@ -1,3 +1,9 @@
+#if ENGINE_OS_WINDOWS
+	#include <winsock2.h>
+#else
+	#error Not yet implemented for this operating system.
+#endif
+
 // STD
 #include <iostream>
 
@@ -15,7 +21,8 @@ namespace Engine::Net {
 		: IPv4Address{reinterpret_cast<const sockaddr_in&>(saddress)} {
 	}
 
-	sockaddr_in IPv4Address::getInternetAddress() const {
+	template<>
+	sockaddr_in IPv4Address::getAs() const noexcept {
 		sockaddr_in saddr;
 		saddr.sin_family = AF_INET,
 		saddr.sin_port = htons(port),
@@ -23,9 +30,9 @@ namespace Engine::Net {
 		return saddr;
 	}
 
-	sockaddr IPv4Address::getSocketAddress() const {
-		const auto& tmp = getInternetAddress();
-		return reinterpret_cast<const sockaddr &>(tmp);
+	template<>
+	sockaddr IPv4Address::getAs() const noexcept {
+		return reinterpret_cast<const sockaddr&>(getAs<sockaddr_in>());
 	}
 
 	bool operator==(const IPv4Address& a, const IPv4Address& b) {

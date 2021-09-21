@@ -19,7 +19,7 @@ namespace Engine::Net {
 	template<>
 	inline bool UDPSocket::setOption<SocketOption::MULTICAST_JOIN, IPv4Address>(const IPv4Address& groupAddr) {
 		const ip_mreq group = {
-			.imr_multiaddr = groupAddr.getInternetAddress().sin_addr,
+			.imr_multiaddr = groupAddr.getAs<sockaddr_in>().sin_addr,
 			.imr_interface = 0,
 		};
 		return 0 == setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&group), sizeof(group));
@@ -27,7 +27,7 @@ namespace Engine::Net {
 	template<>
 	inline bool UDPSocket::setOption<SocketOption::MULTICAST_LEAVE, IPv4Address>(const IPv4Address& groupAddr) {
 		const ip_mreq group = {
-			.imr_multiaddr = groupAddr.getInternetAddress().sin_addr,
+			.imr_multiaddr = groupAddr.getAs<sockaddr_in>().sin_addr,
 			.imr_interface = 0,
 		};
 		return 0 == setsockopt(handle, IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<const char*>(&group), sizeof(group));
