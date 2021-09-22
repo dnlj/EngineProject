@@ -8,6 +8,10 @@
 #include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
 
+
+struct hb_buffer_t;
+
+
 namespace Engine::Gui::Detail {
 	struct FontId {
 		FT_Face font;
@@ -38,7 +42,7 @@ namespace Engine::Gui {
 
 		private:
 			FT_Library ftlib;
-			struct hb_buffer_t* workingBuffer;
+			hb_buffer_t* workingBuffer;
 			FlatHashMap<std::string, FT_Face> pathToFace;
 			FlatHashMap<FontId, std::unique_ptr<FontGlyphSet>> fontIdToGlyphSet;
 

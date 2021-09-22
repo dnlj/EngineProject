@@ -212,7 +212,13 @@ project("*")
 		"include/glloadgen/**",
 		"src/glloadgen/**",
 		"shaders/**",
+		"src/pch.cpp",
+		"include/pch.hpp",
 	}
+	
+	pchheader "pch.hpp"
+	pchsource "src/pch.cpp"
+	forceincludes "pch.hpp"
 
 	debugdir(os.getcwd())
 

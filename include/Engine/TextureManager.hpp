@@ -1,8 +1,5 @@
 #pragma once
 
-// STD
-#include <unordered_map>
-
 // Engine
 #include <Engine/ResourceManager.hpp>
 #include <Engine/Graphics/Texture.hpp>
