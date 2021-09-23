@@ -581,17 +581,21 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	const auto updateActionState = [&](auto action, auto curr){
-		world.getSystem<Game::ActionSystem>().updateActionState(action, curr.i32);
-	};
-	const auto updateTargetState = [&](auto curr){
-		world.getSystem<Game::ActionSystem>().updateTarget(curr.f32v2);
-	};
 	if constexpr (ENGINE_CLIENT) {
 		using namespace Engine::Input;
 		auto& im = engine.inputManager;
 		auto& is = world.getSystem<Game::InputSystem>();
 
+		const auto updateActionState = [&](auto action, auto curr){
+			world.getSystem<Game::ActionSystem>().updateActionState(action, curr.i32);
+		};
+		const auto updateTargetState = [&](auto curr){
+			world.getSystem<Game::ActionSystem>().updateTarget(curr.f32v2);
+		};
+
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		// Game Binds
+		////////////////////////////////////////////////////////////////////////////////////////////////
 		is.registerCommand(Game::Action::Attack1, [&](Value curr){ updateActionState(Game::Action::Attack1, curr); });
 		is.registerCommand(Game::Action::Attack2, [&](Value curr){ updateActionState(Game::Action::Attack2, curr); });
 		is.registerCommand(Game::Action::MoveUp, [&](Value curr){ updateActionState(Game::Action::MoveUp, curr); });
@@ -635,6 +639,14 @@ void run(int argc, char* argv[]) {
 		im.addBind(0, InputSequence{
 				InputId{InputType::MOUSE_AXIS, 0, 0}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Target, time, curr); });
+
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		// Interface Binds
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		im.addBind(0, InputSequence{
+			InputId{InputType::KEYBOARD, 0, 29}, // CTRL
+			InputId{InputType::KEYBOARD, 0, 46}, // C
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
 	}
 
 	// More engine stuff

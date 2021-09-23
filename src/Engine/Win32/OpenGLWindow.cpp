@@ -306,6 +306,25 @@ namespace Engine::Win32 {
 			// Don't record background presses
 			if (wParam == RIM_INPUTSINK && (pressed || !wasPressed)) { return 0; }
 
+			// Useful for debugging keys.
+			//printRawKeyboard(raw);
+			/*if (true) { // TODO: rm
+				//std::cout << static_cast<char>(0xFF & MapVirtualKeyW(MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK), MAPVK_VK_TO_CHAR));
+				{
+					LONG code = data.MakeCode << 16;
+					if (data.Flags & RI_KEY_E0) {
+						code |= 1 << 24;
+					}
+					std::string name;
+					name.resize(32);
+					GetKeyNameTextA(code, name.data(), (int)name.size());
+					std::cout << name.data();
+				}
+				std::cout << " = 0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << scancode << ",";
+				//std::cout << data.Flags;
+				std::cout << "\n";
+			}*/
+
 			if (!pressed || !wasPressed) {
 				wasPressed = pressed;
 
