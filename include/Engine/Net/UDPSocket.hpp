@@ -32,7 +32,14 @@ namespace Engine::Net {
 			IPv4Address getAddress() const;
 
 			template<SocketOption Opt, class Value>
-			bool setOption(const Value& value);
+			bool setOption(const Value& value){
+				static_assert(false, "Invalid SocketOption + Value combination.");
+				return false;
+			}
+
+			template<> bool setOption<SocketOption::BROADCAST, bool>(const bool& value);
+			template<> bool setOption<SocketOption::MULTICAST_JOIN, IPv4Address>(const IPv4Address& groupAddr);
+			template<> bool setOption<SocketOption::MULTICAST_LEAVE, IPv4Address>(const IPv4Address& groupAddr);
 
 		private:
 			uint64 handle;
@@ -115,5 +122,3 @@ namespace Engine::Net {
 	#endif
 	};
 }
-
-#include <Engine/Net/UDPSocket.ipp>
