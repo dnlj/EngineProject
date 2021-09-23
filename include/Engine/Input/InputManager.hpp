@@ -81,13 +81,15 @@ namespace Engine::Input {
 
 			template<class L>
 			void addBind(L layer, const InputSequence& inputs, BindListener listener) {
-				if (layer >= layers.size()) {
-					ENGINE_ASSERT_WARN(layer > layers.size() + 10, "Inserting a large number of input layers. Was this intended?");
-					layers.resize(layer + 1);
-					ENGINE_LOG("Add layer: ", layer);
+				using T = std::conditional_t<std::is_enum_v<L>, std::underlying_type_t<L>, L>;
+				const auto layert = static_cast<T>(layer);
+				if (layert >= layers.size()) {
+					ENGINE_ASSERT_WARN(layert < layers.size() + 10, "Inserting a large number of input layers. Was this intended?");
+					layers.resize(layert + 1);
+					ENGINE_LOG("Add layer: ", layert);
 				}
 
-				auto& lay = layers[layer];
+				auto& lay = layers[layert];
 				lay.addBind(inputs, std::move(listener));
 
 				// Make sure all values are tracked

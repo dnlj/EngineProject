@@ -24,6 +24,7 @@
 #include <Engine/Debug/GL/GL.hpp>
 #include <Engine/ConfigParser.hpp>
 #include <Engine/Gui/Context.hpp>
+#include <Engine/Input/KeyCode.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -441,7 +442,6 @@ namespace {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onKey(event)) { return; }
 			userdata->engine.inputManager.processInput(event);
-			// TODO: rm - userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::keyCallback(event.state);
 		}
 
@@ -454,7 +454,6 @@ namespace {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouse(event)) { return; }
 			userdata->engine.inputManager.processInput(event);
-			// TODO: rm - userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::mouseButtonCallback(event.state);
 		}
 
@@ -462,7 +461,6 @@ namespace {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouseWheel(event)) { return; }
 			userdata->engine.inputManager.processInput(event);
-			// TODO: rm - userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::scrollCallback(event.state);
 		}
 
@@ -470,7 +468,6 @@ namespace {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouseMove(event)) { return; }
 			userdata->engine.inputManager.processInput(event);
-			// TODO: rm - userdata->world.getSystem<Game::InputSystem>().queueInput(event);
 			Engine::ImGui::mouseMoveCallback(event.state);
 		}
 
@@ -583,6 +580,9 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	if constexpr (ENGINE_CLIENT) {
 		using namespace Engine::Input;
+		using InputLayer = Game::InputLayer;
+		using Action = Game::Action;
+
 		auto& im = engine.inputManager;
 		auto& is = world.getSystem<Game::InputSystem>();
 
@@ -596,57 +596,61 @@ void run(int argc, char* argv[]) {
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		// Game Binds
 		////////////////////////////////////////////////////////////////////////////////////////////////
-		is.registerCommand(Game::Action::Attack1, [&](Value curr){ updateActionState(Game::Action::Attack1, curr); });
-		is.registerCommand(Game::Action::Attack2, [&](Value curr){ updateActionState(Game::Action::Attack2, curr); });
-		is.registerCommand(Game::Action::MoveUp, [&](Value curr){ updateActionState(Game::Action::MoveUp, curr); });
-		is.registerCommand(Game::Action::MoveDown, [&](Value curr){ updateActionState(Game::Action::MoveDown, curr); });
-		is.registerCommand(Game::Action::MoveLeft, [&](Value curr){ updateActionState(Game::Action::MoveLeft, curr); });
-		is.registerCommand(Game::Action::MoveRight, [&](Value curr){ updateActionState(Game::Action::MoveRight, curr); });
-		is.registerCommand(Game::Action::Target, [&](Value curr){ updateTargetState(curr); });
+		is.registerCommand(Action::Attack1, [&](Value curr){ updateActionState(Action::Attack1, curr); });
+		is.registerCommand(Action::Attack2, [&](Value curr){ updateActionState(Action::Attack2, curr); });
+		is.registerCommand(Action::MoveUp, [&](Value curr){ updateActionState(Action::MoveUp, curr); });
+		is.registerCommand(Action::MoveDown, [&](Value curr){ updateActionState(Action::MoveDown, curr); });
+		is.registerCommand(Action::MoveLeft, [&](Value curr){ updateActionState(Action::MoveLeft, curr); });
+		is.registerCommand(Action::MoveRight, [&](Value curr){ updateActionState(Action::MoveRight, curr); });
+		is.registerCommand(Action::Target, [&](Value curr){ updateTargetState(curr); });
 
-		im.addBind(0, InputSequence{
+		im.addBind(InputLayer::Game, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 29}, // CTRL
 			InputId{InputType::KEYBOARD, 0, 46}, // C
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
-		im.addBind(0, InputSequence{
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); });
+		im.addBind(InputLayer::Game, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 29}, // CTRL
 			InputId{InputType::KEYBOARD, 0, 56}, // ALT
 			InputId{InputType::KEYBOARD, 0, 16}, // Q
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
-		im.addBind(0, InputSequence{
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); });
+		im.addBind(InputLayer::Game, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 57}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
-		im.addBind(0, InputSequence{
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); });
+		im.addBind(InputLayer::Game, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 17}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveUp, time, curr); });
-		im.addBind(0, InputSequence{
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveUp, time, curr); });
+		im.addBind(InputLayer::Game, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 31}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveDown, time, curr); });
-		im.addBind(0, InputSequence{
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveDown, time, curr); });
+		im.addBind(InputLayer::Game, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 30}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveLeft, time, curr); });
-		im.addBind(0, InputSequence{
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveLeft, time, curr); });
+		im.addBind(InputLayer::Game, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 32}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::MoveRight, time, curr); });
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveRight, time, curr); });
 
-		im.addBind(0, InputSequence{
+		im.addBind(InputLayer::Game, InputSequence{
 			InputId{InputType::MOUSE, 0, 0}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
-		im.addBind(0, InputSequence{
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); });
+		im.addBind(InputLayer::Game, InputSequence{
 			InputId{InputType::MOUSE, 0, 1}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack2, time, curr); });
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack2, time, curr); });
 
-		im.addBind(0, InputSequence{
+		im.addBind(InputLayer::Game, InputSequence{
 				InputId{InputType::MOUSE_AXIS, 0, 0}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Target, time, curr); });
+		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Target, time, curr); });
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		// Interface Binds
 		////////////////////////////////////////////////////////////////////////////////////////////////
-		im.addBind(0, InputSequence{
-			InputId{InputType::KEYBOARD, 0, 29}, // CTRL
-			InputId{InputType::KEYBOARD, 0, 46}, // C
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Game::Action::Attack1, time, curr); });
+		im.addBind(InputLayer::GUI, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::LCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::C},
+		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("L Copy!"); });
+		im.addBind(InputLayer::GUI, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::C},
+		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("R Copy!"); });
 	}
 
 	// More engine stuff

@@ -8,8 +8,7 @@
 
 
 namespace Game {
-
-	enum class InputLayers {
+	enum class InputLayer {
 		GUI,
 		Game,
 		_count,
