@@ -36,6 +36,7 @@
 
 /**
  * Attempts to force a function to be inlined.
+ * This does not apply the effects of the C++ `inline` keyword.
  */
 #define ENGINE_INLINE [[msvc::forceinline]] // TODO: cross platform: [[gnu::always_inline]]
 

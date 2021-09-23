@@ -1,10 +1,13 @@
 #pragma once
 
+// Engine
+#include <Engine/Engine.hpp>
 
 
 namespace Engine::Input {
 	/**
-	 * Known scancodes
+	 * Known scancodes.
+	 * These do not account for different keyboard layouts. Purely hardware postion.
 	 * 
 	 * @see https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawkeyboard
 	 * @see [USB HID to PS/2 Scan Code Translation Table](https://download.microsoft.com/download/1/6/1/161ba512-40e2-4cc9-843a-923143f3456c/translate.pdf)
@@ -12,7 +15,7 @@ namespace Engine::Input {
 	 * @see https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code/code_values
 	 * @see https://source.android.com/devices/input/keyboard-devices
 	 */
-	enum class KeyCode : uint32 {
+	enum class KeyCode : uint16 {
 		Esc = 0x0001,
 		Tab = 0x000F,
 		Backtick = 0x0029,
@@ -110,6 +113,9 @@ namespace Engine::Input {
 		X = 0x002D,
 		Y = 0x0015,
 		Z = 0x002C,
-
 	};
+
+	ENGINE_INLINE inline auto operator+(KeyCode code) noexcept {
+		return static_cast<std::underlying_type_t<KeyCode>>(code);
+	}
 }

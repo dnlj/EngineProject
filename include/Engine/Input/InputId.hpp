@@ -4,12 +4,14 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Hash.hpp>
 #include <Engine/Input/InputType.hpp>
+#include <Engine/Input/KeyCode.hpp>
 
 
 // TODO: Doc
 // TODO: split
 namespace Engine::Input {
 	using DeviceId = uint8;
+
 	class InputId {
 		public:
 			InputType type = InputType::UNKNOWN;
