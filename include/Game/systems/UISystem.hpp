@@ -7,25 +7,30 @@
 #include <Engine/Input/ActionId.hpp>
 #include <Engine/StaticRingBuffer.hpp>
 #include <Engine/ImGui/ImGui.hpp>
-#include <Engine/Gui/Context.hpp>
 
 // Game
 #include <Game/System.hpp>
+
+namespace Engine::Gui {
+	class Context;
+}
 
 namespace Game {
 	class UISystem : public System {
 		public:
 			UISystem(SystemArg arg);
+			UISystem(const UISystem&) = delete;
+			~UISystem();
 
 			void setup();
 			void run(float32 dt);
 			void tick();
 
-			ENGINE_INLINE auto& getContext() noexcept { return ctx; }
+			ENGINE_INLINE auto& getContext() noexcept { return *ctx; }
 
 		private:
 			std::stringstream ss;
-			Engine::Gui::Context ctx;
+			Engine::Gui::Context* ctx;
 
 			Engine::Clock::TimePoint now;
 			Engine::Clock::TimePoint lastUpdate;

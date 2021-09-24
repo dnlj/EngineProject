@@ -14,6 +14,7 @@
 // Engine
 #include <Engine/Glue/Box2D.hpp>
 #include <Engine/Glue/glm.hpp>
+#include <Engine/Gui/Context.hpp>
 #include <Engine/Gui/Window.hpp>
 #include <Engine/Gui/CollapsibleSection.hpp>
 #include <Engine/Gui/TextBox.hpp>
@@ -142,13 +143,14 @@ namespace Game {
 namespace Game {
 	UISystem::UISystem(SystemArg arg)
 		: System{arg}
-		, ctx{
+		, ctx{new Engine::Gui::Context{
 			std::get<EngineInstance&>(arg).shaderManager,
 			std::get<EngineInstance&>(arg).camera,
-		} {
+		}} {
 		{
+			auto& ct = *ctx;
 			{
-				auto child = ctx.createPanel<TestPanel>();
+				auto child = ct.createPanel<TestPanel>();
 				child->setRelPos({0, 0});
 				child->setSize({64, 300});
 
@@ -156,48 +158,48 @@ namespace Game {
 				//child->label.setFont(font_b);
 				//fontManager.shapeString(child->label);
 
-				auto panelA = child->addChild(ctx.createPanel<Gui::Panel>());
+				auto panelA = child->addChild(ct.createPanel<Gui::Panel>());
 				panelA->setRelPos({0, 0});
 				panelA->setSize({32, 32});
 			
-				auto panelB = child->addChild(ctx.createPanel<Gui::Panel>());
+				auto panelB = child->addChild(ct.createPanel<Gui::Panel>());
 				panelB->setRelPos({0, 0});
 				panelB->setMaxSize({32, INFINITY});
 				panelB->setSize({24, 32});
 			}
 		
 			{
-				auto child = ctx.createPanel<Gui::Panel>();
+				auto child = ct.createPanel<Gui::Panel>();
 				child->setRelPos({128, 5});
 				child->setSize({32, 64});
 			}
 
 			{
-				auto child = ctx.createPanel<Gui::Button>();
+				auto child = ct.createPanel<Gui::Button>();
 				child->setRelPos({256, 10});
 				child->setSize({128, 64});
 
-				child->setFont(ctx.font_a);
+				child->setFont(ct.font_a);
 				child->setText(R"(This is a test button)");
 			}
 
 			{
-				auto child = ctx.createPanel<Gui::Label>();
+				auto child = ct.createPanel<Gui::Label>();
 				child->setRelPos({256, 80});
 				child->setSize({256, 32});
 			
-				child->setFont(ctx.font_a);
+				child->setFont(ct.font_a);
 				child->setText(R"(Wooo a label!)");
 			}
 
 			{
-				auto window = ctx.createPanel<Gui::Window>();
+				auto window = ct.createPanel<Gui::Window>();
 				window->setRelPos({256, 256});
 				window->setSize({256, 256});
 
-				auto text = ctx.createPanel<Gui::TextBox>();
+				auto text = ct.createPanel<Gui::TextBox>();
 				window->getContent()->addChild(text);
-				text->setFont(ctx.font_a);
+				text->setFont(ct.font_a);
 				text->setText(R"(Example text)");
 				text->setRelPos({0, 0});
 				text->autoSize();
@@ -206,12 +208,16 @@ namespace Game {
 			}
 
 			{
-				panels.infoPane = ctx.createPanel<InfoPane>();
+				panels.infoPane = ct.createPanel<InfoPane>();
 				panels.infoPane->setRelPos({8, 480});
 				panels.infoPane->setSize({256, 128});
 				panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this.
 			}
 		}
+	}
+
+	UISystem::~UISystem() {
+		delete ctx;
 	}
 
 	void UISystem::setup() {

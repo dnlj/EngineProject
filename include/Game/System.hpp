@@ -29,6 +29,9 @@ namespace Game {
 				, engine{std::get<EngineInstance&>(arg)} {
 			};
 
+			// It is almost certainly a bug if this is hit
+			System(const System&) = delete;
+
 			ENGINE_INLINE void setup() {}
 
 			ENGINE_INLINE void preTick() {}
