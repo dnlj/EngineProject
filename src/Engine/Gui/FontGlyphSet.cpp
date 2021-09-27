@@ -177,7 +177,7 @@ namespace Engine::Gui {
 		auto buffer = getManager().getWorkingBuffer();
 		ftFace->size = ftSize;
 
-		// TODO: lookinto hb_buffer_set_cluster_level 
+		// TODO: lookinto hb_buffer_set_cluster_level
 		hb_buffer_clear_contents(buffer);
 		hb_buffer_add_utf8(buffer, str.getString().data(), -1, 0, -1);
 		hb_buffer_guess_segment_properties(buffer); // TODO: Should we handle this ourself?

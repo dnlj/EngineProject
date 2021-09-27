@@ -19,6 +19,9 @@ namespace Engine::Gui {
 		}
 
 		workingBuffer = hb_buffer_create();
+		//hb_buffer_set_cluster_level(workingBuffer, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_GRAPHEMES);
+		hb_buffer_set_cluster_level(workingBuffer, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
+		//hb_buffer_set_cluster_level(workingBuffer, HB_BUFFER_CLUSTER_LEVEL_CHARACTERS);
 	}
 
 	FontManager::~FontManager() {

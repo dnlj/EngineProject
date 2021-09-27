@@ -195,15 +195,17 @@ namespace Game {
 			{
 				auto window = ct.createPanel<Gui::Window>();
 				window->setRelPos({256, 256});
-				window->setSize({256, 256});
+				window->setSize({300, 256});
 
 				auto text = ct.createPanel<Gui::TextBox>();
 				window->getContent()->addChild(text);
 				text->setFont(ct.font_a);
 				text->setText(R"(Example text)");
+				//char8_t str8[] = u8"_a_\u0078\u030A\u0058\u030A_b_!=_===_0xFF_<=_||_++_/=_<<=_<=>_";
+				//std::string str = reinterpret_cast<char*>(str8);
+				//text->setText(str);
 				text->setRelPos({0, 0});
 				text->autoSize();
-
 				window->getContent()->performLayout(); // TODO: shouldnt have to do this
 			}
 

@@ -7,7 +7,7 @@
 namespace Engine::Gui {
 	class TextBox : public StringLine {
 		private:
-			int64 caret = 0;
+			uint32 caret = 0;
 			float32 caretX = 0;
 			glm::vec2 pad = {5,5}; // TODO: probably pull from font size / theme
 
@@ -52,23 +52,8 @@ namespace Engine::Gui {
 
 			virtual void onAction(Action act) override {
 				switch (act) {
-					case Action::MoveCharLeft: {
-						// TODO: we need to be able to go -1 so we can co before first char
-						if (caret > -1) {
-							--caret;
-							updateCaretPos();
-							ctx->updateBlinkTime();
-						}
-						break;
-					}
-					case Action::MoveCharRight: {
-						if (caret < static_cast<int64>(getText().size())) {
-							++caret;
-							updateCaretPos();
-							ctx->updateBlinkTime();
-						}
-						break;
-					}
+					case Action::MoveCharLeft: { moveCharLeft(); break; }
+					case Action::MoveCharRight: { moveCharRight(); break; }
 				}
 			}
 
@@ -76,6 +61,7 @@ namespace Engine::Gui {
 				ctx->registerCharCallback(this, [this](wchar_t ch) {
 					// Filter non-printable characters
 					if (ch < ' ' || ch > '~') { return true; }
+					// TODO: insert at caret
 					setText(getText() + static_cast<char>(ch));
 					return true;
 				});
@@ -86,12 +72,39 @@ namespace Engine::Gui {
 			};
 
 		private:
+			void moveCharLeft() {
+				if (caret > 0) {
+					--caret;
+					updateCaretPos();
+				}
+			}
+
+			void moveCharRight() {
+				++caret;
+				updateCaretPos();
+			}
+
 			void updateCaretPos() {
-				caretX = 0;
 				const auto& glyphs = getShapedString().getGlyphShapeData();
+				caretX = 0;
+				uint32 last = 0;
+				uint32 i = 0;
+
 				for (const auto& glyph : glyphs) {
-					if (glyph.cluster > caret) { break; }
+					if (glyph.cluster != last) {
+						++i;
+						last = glyph.cluster;
+					}
+
+					if (i == caret) { break; }
+
 					caretX += glyph.advance.x;
+				}
+
+				if (i < caret) {
+					caret = i;
+				} else {
+					ctx->updateBlinkTime();
 				}
 			}
 	};

@@ -230,6 +230,7 @@ namespace Engine::Gui {
 		///////////////////////////////////////////////////////////////////////////////
 
 		font_a = fontManager.createFont("assets/arial.ttf", 32);
+		//font_a = fontManager.createFont("assets/FiraCode-Regular.ttf", 32);
 		font_b = fontManager.createFont("assets/consola.ttf", 12);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
 	}

@@ -183,7 +183,6 @@ namespace Engine::Gui {
 			Clock::Duration cursorBlinkRate = std::chrono::milliseconds{530}; // 530ms = default blink rate on Windows
 
 		public:
-			// TODO: split shader into own class so we dont depend on engine
 			Context(ShaderManager& shaderManager, Camera& camera);
 			Context(Context&) = delete;
 			~Context();
