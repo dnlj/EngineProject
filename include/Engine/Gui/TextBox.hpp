@@ -7,7 +7,7 @@
 namespace Engine::Gui {
 	class TextBox : public StringLine {
 		private:
-			uint32 caret = 0;
+			int64 caret = 0;
 			float32 caretX = 0;
 			glm::vec2 pad = {5,5}; // TODO: probably pull from font size / theme
 
@@ -54,11 +54,19 @@ namespace Engine::Gui {
 				switch (act) {
 					case Action::MoveCharLeft: {
 						// TODO: we need to be able to go -1 so we can co before first char
-						caret -= caret > 0; updateCaretPos();
+						if (caret > -1) {
+							--caret;
+							updateCaretPos();
+							ctx->updateBlinkTime();
+						}
 						break;
 					}
 					case Action::MoveCharRight: {
-						caret += caret < static_cast<uint32>(getText().size()); updateCaretPos();
+						if (caret < static_cast<int64>(getText().size())) {
+							++caret;
+							updateCaretPos();
+							ctx->updateBlinkTime();
+						}
 						break;
 					}
 				}
@@ -76,6 +84,7 @@ namespace Engine::Gui {
 			virtual void onEndFocus() override {
 				ctx->deregisterCharCallback(this);
 			};
+
 		private:
 			void updateCaretPos() {
 				caretX = 0;

@@ -179,6 +179,7 @@ namespace Engine::Gui {
 
 			/* Cursors */
 			Cursor currentCursor = Cursor::Normal;
+			Clock::TimePoint lastBlink = {};
 			Clock::Duration cursorBlinkRate = std::chrono::milliseconds{530}; // 530ms = default blink rate on Windows
 
 		public:
@@ -189,7 +190,11 @@ namespace Engine::Gui {
 			void render();
 
 			ENGINE_INLINE bool isBlinking() const noexcept {
-				return (Clock::now().time_since_epoch() / cursorBlinkRate) & 1;
+				return (((Clock::now() - lastBlink) / cursorBlinkRate) & 1) == 0;
+			}
+
+			ENGINE_INLINE void updateBlinkTime() noexcept {
+				lastBlink = Clock::now();
 			}
 
 			void drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color);

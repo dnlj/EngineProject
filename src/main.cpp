@@ -645,7 +645,6 @@ void run(int argc, char* argv[]) {
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		using GuiAction = Engine::Gui::Action;
 
-		// TODO: need to be able to handle repeate so we can consistent results with win32
 		im.addBind(InputLayer::GUI, true, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::Left},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveCharLeft); }});
