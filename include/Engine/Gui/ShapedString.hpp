@@ -11,6 +11,7 @@ namespace Engine::Gui {
 	class ShapeGlyph {
 		public:
 			uint32 index;
+			uint32 cluster;
 			glm::vec2 offset;
 			glm::vec2 advance;
 	};

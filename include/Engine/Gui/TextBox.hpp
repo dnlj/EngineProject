@@ -7,6 +7,8 @@
 namespace Engine::Gui {
 	class TextBox : public StringLine {
 		private:
+			uint32 caret = 0;
+			float32 caretX = 0;
 			glm::vec2 pad = {5,5}; // TODO: probably pull from font size / theme
 
 		public:
@@ -33,18 +35,33 @@ namespace Engine::Gui {
 
 				pos += pad;
 
+				ctx.drawString(getStringOffset(), &getShapedString());
+
 				if (ctx.getFocus() == this && ctx.isBlinking()) {
 					const auto& str = getShapedString();
-					const auto ssize = str.getBounds().getSize();
+					//const auto ssize = str.getBounds().getSize();
 
 					ctx.drawRect(
-						pos + glm::vec2{ssize.x, 0},
+						//pos + glm::vec2{ssize.x, 0},
+						pos + glm::vec2{caretX, 0},
 						{1, str.getFont()->getLineHeight()},
 						bo
 					);
 				}
+			}
 
-				ctx.drawString(getStringOffset(), &getShapedString());
+			virtual void onAction(Action act) override {
+				switch (act) {
+					case Action::MoveCharLeft: {
+						// TODO: we need to be able to go -1 so we can co before first char
+						caret -= caret > 0; updateCaretPos();
+						break;
+					}
+					case Action::MoveCharRight: {
+						caret += caret < static_cast<uint32>(getText().size()); updateCaretPos();
+						break;
+					}
+				}
 			}
 
 			virtual void onBeginFocus() override {
@@ -59,5 +76,14 @@ namespace Engine::Gui {
 			virtual void onEndFocus() override {
 				ctx->deregisterCharCallback(this);
 			};
+		private:
+			void updateCaretPos() {
+				caretX = 0;
+				const auto& glyphs = getShapedString().getGlyphShapeData();
+				for (const auto& glyph : glyphs) {
+					if (glyph.cluster > caret) { break; }
+					caretX += glyph.advance.x;
+				}
+			}
 	};
 }

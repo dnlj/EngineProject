@@ -262,6 +262,13 @@ namespace Engine::Gui {
 			hoverValid = true;
 		}
 
+		if (auto focus = getFocus()) {
+			for (auto act : actionQueue) {
+				focus->onAction(act);
+			}
+			actionQueue.clear();
+		}
+
 		const Panel* curr = root;
 		renderState.layer = 0;
 		polyDrawGroups.emplace_back().offset = 0;
@@ -569,6 +576,10 @@ namespace Engine::Gui {
 			});
 			base += data.advance;
 		}
+	}
+
+	void Context::queueAction(Action act) {
+		actionQueue.push_back(act);
 	}
 
 	bool Context::onMouse(const Engine::Input::InputEvent event) {

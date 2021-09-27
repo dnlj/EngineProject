@@ -176,7 +176,8 @@ namespace Engine::Gui {
 	void FontGlyphSet::shapeString(ShapedString& str) {
 		auto buffer = getManager().getWorkingBuffer();
 		ftFace->size = ftSize;
-		
+
+		// TODO: lookinto hb_buffer_set_cluster_level 
 		hb_buffer_clear_contents(buffer);
 		hb_buffer_add_utf8(buffer, str.getString().data(), -1, 0, -1);
 		hb_buffer_guess_segment_properties(buffer); // TODO: Should we handle this ourself?
@@ -205,6 +206,7 @@ namespace Engine::Gui {
 
 			data.push_back({
 				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
+				.cluster = info.cluster,
 				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing,
 				.advance = glm::vec2{pos.x_advance, pos.y_advance} * (1.0f/64),
 			});

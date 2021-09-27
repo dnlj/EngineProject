@@ -17,6 +17,7 @@
 #include <Engine/Gui/FontManager.hpp>
 #include <Engine/Gui/ShapedString.hpp>
 #include <Engine/Gui/Cursor.hpp>
+#include <Engine/Gui/Action.hpp>
 
 namespace Engine {
 	class Camera;
@@ -108,6 +109,8 @@ namespace Engine::Gui {
 
 		private:
 			constexpr static PanelId invalidPanelId = -1;
+
+			std::vector<Action> actionQueue;
 
 			/* Main framebuffer and clipping */
 			GLuint fbo = 0;
@@ -297,6 +300,8 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE Panel* getActive() noexcept { return active; }
 			ENGINE_INLINE const Panel* getActive() const noexcept { return active; }
+
+			void queueAction(Action act);
 
 			/**
 			 * @return Indicate if the input was consumed.
