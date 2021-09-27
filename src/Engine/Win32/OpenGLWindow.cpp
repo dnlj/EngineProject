@@ -325,19 +325,16 @@ namespace Engine::Win32 {
 				std::cout << "\n";
 			}*/
 
-			if (!pressed || !wasPressed) {
-				wasPressed = pressed;
+			wasPressed = pressed;
+			const Input::InputEvent event = {
+				.state = {
+					.id = {Input::InputType::KEYBOARD, device, scancode},
+					.value = { .i32 = pressed },
+				},
+				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
+			};
 
-				const Input::InputEvent event = {
-					.state = {
-						.id = {Input::InputType::KEYBOARD, device, scancode},
-						.value = { .i32 = pressed },
-					},
-					.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
-				};
-
-				window.callbacks.keyCallback(event);
-			}
+			window.callbacks.keyCallback(event);
 		} else if (raw.header.dwType == RIM_TYPEHID) {
 			// TODO: Gamepad input
 		}

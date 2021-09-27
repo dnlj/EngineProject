@@ -21,9 +21,11 @@ namespace Engine::Input {
 						active.push_back(bind);
 					}
 
-					bind->listener(event.state.value, bind->value, event.time);
-					bind->value = event.state.value;
-					return true;
+					if (bind->repeat || event.state.value != bind->value) {
+						bind->listener(event.state.value, bind->value, event.time);
+						bind->value = event.state.value;
+						return true;
+					}
 				}
 			}
 		} else if (!isAxisInput(event.state.id.type)) { // Deactivate any relevant binds

@@ -22,6 +22,7 @@ namespace Engine::Input {
 			InputSequence inputs;
 			BindListener listener;
 			Value value;
+			bool repeat;
 	};
 
 	class InputManager {
@@ -40,7 +41,7 @@ namespace Engine::Input {
 					bool enabled = true;
 
 				public:
-					void addBind(const InputSequence& inputs, BindListener listener) {
+					void addBind(const InputSequence& inputs, bool repeat, BindListener listener) {
 						if (inputs.empty()) [[unlikely]] {
 							ENGINE_WARN("Attempting to add invalid bind. Ignoring.");
 							return;
@@ -50,6 +51,7 @@ namespace Engine::Input {
 							.inputs = inputs,
 							.listener = listener,
 							.value = {},
+							.repeat = repeat,
 						});
 					}
 
@@ -80,7 +82,7 @@ namespace Engine::Input {
 			}
 
 			template<class L>
-			void addBind(L layer, const InputSequence& inputs, BindListener listener) {
+			void addBind(L layer, bool repeat, const InputSequence& inputs, BindListener listener) {
 				using T = std::conditional_t<std::is_enum_v<L>, std::underlying_type_t<L>, L>;
 				const auto layert = static_cast<T>(layer);
 				if (layert >= layers.size()) {
@@ -90,7 +92,7 @@ namespace Engine::Input {
 				}
 
 				auto& lay = layers[layert];
-				lay.addBind(inputs, std::move(listener));
+				lay.addBind(inputs, repeat, std::move(listener));
 
 				// Make sure all values are tracked
 				for (auto i : inputs) { inputStates[i]; }

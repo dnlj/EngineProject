@@ -604,39 +604,39 @@ void run(int argc, char* argv[]) {
 		is.registerCommand(Action::MoveRight, [&](Value curr){ updateActionState(Action::MoveRight, curr); });
 		is.registerCommand(Action::Target, [&](Value curr){ updateTargetState(curr); });
 
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 29}, // CTRL
 			InputId{InputType::KEYBOARD, 0, 46}, // C
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); });
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 29}, // CTRL
 			InputId{InputType::KEYBOARD, 0, 56}, // ALT
 			InputId{InputType::KEYBOARD, 0, 16}, // Q
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); });
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 57}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); });
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 17}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveUp, time, curr); });
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 31}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveDown, time, curr); });
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 30}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveLeft, time, curr); });
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 32}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveRight, time, curr); });
 
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::MOUSE, 0, 0}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); });
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::MOUSE, 0, 1}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack2, time, curr); });
 
-		im.addBind(InputLayer::Game, InputSequence{
+		im.addBind(InputLayer::Game, false, InputSequence{
 				InputId{InputType::MOUSE_AXIS, 0, 0}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Target, time, curr); });
 
@@ -646,36 +646,36 @@ void run(int argc, char* argv[]) {
 		using GuiAction = Engine::Gui::Action;
 
 		// TODO: need to be able to handle repeate so we can consistent results with win32
-		im.addBind(InputLayer::GUI, InputSequence{
+		im.addBind(InputLayer::GUI, true, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::Left},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveCharLeft); }});
-		im.addBind(InputLayer::GUI, InputSequence{
+		im.addBind(InputLayer::GUI, true, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::Right},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveCharRight); }});
 
-		im.addBind(InputLayer::GUI, InputSequence{
+		im.addBind(InputLayer::GUI, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::LCtrl},
 			InputId{InputType::KEYBOARD, 0, +KeyCode::X},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("L Cut!"); });
-		im.addBind(InputLayer::GUI, InputSequence{
+		im.addBind(InputLayer::GUI, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
 			InputId{InputType::KEYBOARD, 0, +KeyCode::X},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("R Cut!"); });
 
-		im.addBind(InputLayer::GUI, InputSequence{
+		im.addBind(InputLayer::GUI, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::LCtrl},
 			InputId{InputType::KEYBOARD, 0, +KeyCode::C},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("L Copy!"); });
-		im.addBind(InputLayer::GUI, InputSequence{
+		im.addBind(InputLayer::GUI, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
 			InputId{InputType::KEYBOARD, 0, +KeyCode::C},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("R Copy!"); });
 
-		im.addBind(InputLayer::GUI, InputSequence{
+		im.addBind(InputLayer::GUI, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::LCtrl},
 			InputId{InputType::KEYBOARD, 0, +KeyCode::V},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("L Paste!"); });
-		im.addBind(InputLayer::GUI, InputSequence{
+		im.addBind(InputLayer::GUI, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
 			InputId{InputType::KEYBOARD, 0, +KeyCode::V},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("R Paste!"); });
