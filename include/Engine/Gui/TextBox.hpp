@@ -7,7 +7,8 @@
 namespace Engine::Gui {
 	class TextBox : public StringLine {
 		private:
-			uint32 caret = 0;
+			uint32 caretCluster = 0;
+			uint32 caretIndex = 0;
 			float32 caretX = 0;
 			glm::vec2 pad = {5,5}; // TODO: probably pull from font size / theme
 
@@ -61,8 +62,13 @@ namespace Engine::Gui {
 				ctx->registerCharCallback(this, [this](wchar_t ch) {
 					// Filter non-printable characters
 					if (ch < ' ' || ch > '~') { return true; }
-					// TODO: insert at caret
-					setText(getText() + static_cast<char>(ch));
+
+					// TODO: registerCharCallback should be replace with one that takes a std::string
+					std::string temp;
+					temp.push_back(static_cast<char>(ch));
+					insertText(caretIndex, temp);
+					caretCluster += static_cast<uint32>(temp.size());
+					updateCaretPos();
 					return true;
 				});
 			};
@@ -73,14 +79,14 @@ namespace Engine::Gui {
 
 		private:
 			void moveCharLeft() {
-				if (caret > 0) {
-					--caret;
+				if (caretCluster > 0) {
+					--caretCluster;
 					updateCaretPos();
 				}
 			}
 
 			void moveCharRight() {
-				++caret;
+				++caretCluster;
 				updateCaretPos();
 			}
 
@@ -89,6 +95,7 @@ namespace Engine::Gui {
 				caretX = 0;
 				uint32 last = 0;
 				uint32 i = 0;
+				caretIndex = static_cast<uint32>(getText().size());
 
 				for (const auto& glyph : glyphs) {
 					if (glyph.cluster != last) {
@@ -96,13 +103,16 @@ namespace Engine::Gui {
 						last = glyph.cluster;
 					}
 
-					if (i == caret) { break; }
+					if (i == caretCluster) {
+						caretIndex = glyph.cluster;
+						break;
+					}
 
 					caretX += glyph.advance.x;
 				}
 
-				if (i < caret) {
-					caret = i;
+				if (i < caretCluster) {
+					caretCluster = i;
 				} else {
 					ctx->updateBlinkTime();
 				}

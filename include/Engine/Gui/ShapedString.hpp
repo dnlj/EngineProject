@@ -30,11 +30,13 @@ namespace Engine::Gui {
 			ENGINE_INLINE const auto& getGlyphShapeData() const noexcept { return glyphs; }
 			ENGINE_INLINE auto& getGlyphShapeDataMutable() noexcept { return glyphs; }
 
+			// TODO: should we just make str public so we dont have to re-implement all str's functions?
 			ENGINE_INLINE ShapedString& operator=(const char* other) { str = other; return *this; }
 			ENGINE_INLINE ShapedString& operator=(std::string_view other) { str = other; return *this; }
 			ENGINE_INLINE ShapedString& operator=(const std::string& other) { str = other; return *this; }
 			ENGINE_INLINE ShapedString& operator=(std::string&& other) { str = std::move(other); return *this; }
 			ENGINE_INLINE const std::string& getString() const noexcept { return str; }
+			ENGINE_INLINE std::string& getStringMutable() noexcept { return str; }
 
 			ENGINE_INLINE void setFont(Font f) noexcept { font = f; }
 			ENGINE_INLINE Font getFont() const noexcept { return font; }
