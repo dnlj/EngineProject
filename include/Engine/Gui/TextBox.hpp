@@ -59,15 +59,14 @@ namespace Engine::Gui {
 			}
 
 			virtual void onBeginFocus() override {
-				ctx->registerCharCallback(this, [this](wchar_t ch) {
+				ctx->registerCharCallback(this, [this](std::string_view view) {
 					// Filter non-printable characters
-					if (ch < ' ' || ch > '~') { return true; }
+					//if (ch < ' ' || ch > '~') { return true; }
 
-					// TODO: registerCharCallback should be replace with one that takes a std::string
-					std::string temp;
-					temp.push_back(static_cast<char>(ch));
-					insertText(caretIndex, temp);
-					caretCluster += static_cast<uint32>(temp.size());
+					insertText(caretIndex, view);
+
+					// TODO: we need to offset by number of clusters not bytes...
+					caretCluster += static_cast<uint32>(view.size());
 					updateCaretPos();
 					return true;
 				});

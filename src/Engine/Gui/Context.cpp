@@ -230,6 +230,7 @@ namespace Engine::Gui {
 		///////////////////////////////////////////////////////////////////////////////
 
 		font_a = fontManager.createFont("assets/arial.ttf", 32);
+		//font_a = fontManager.createFont("assets/EmojiOneColor.otf", 32);
 		//font_a = fontManager.createFont("assets/FiraCode-Regular.ttf", 32);
 		font_b = fontManager.createFont("assets/consola.ttf", 12);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
@@ -652,13 +653,10 @@ namespace Engine::Gui {
 		return false;
 	}
 
-	bool Context::onChar(const wchar_t ch) {
-		//ENGINE_LOG("onChar: ", (int)ch);
-
+	bool Context::onText(std::string_view str) {
 		for (auto& [_, cb] : charCallbacks) {
-			if (cb(ch)) { return true; }
+			if (cb(str)) { return true; }
 		}
-
 		return false;
 	}
 

@@ -36,6 +36,7 @@ namespace Engine::Gui {
 			using PanelBeginActivateCallback = std::function<bool(Panel* panel)>;
 			using PanelEndActivateCallback = std::function<void(Panel* panel)>;
 
+			// TODO: update docs now that we use utf8 string_view
 			// TODO: convert to utf-8. Handle conversion out side this class. Probably in WM_CHAR.
 			// TODO: we really need to rework input to correctly handle UTF-16 surrogate pairs (what WM_CHAR inputs)
 			// TODO: cont. since atm we dont have a good way to test that we just pretend they dont exists...
@@ -43,7 +44,7 @@ namespace Engine::Gui {
 			 * @param ch The UTF-16 code unit.
 			 * @return True to consume the input; otherwise false.
 			 */
-			using CharCallback = std::function<bool(wchar_t ch)>;
+			using CharCallback = std::function<bool(std::string_view ch)>;
 
 			using KeyCallback = std::function<bool(Engine::Input::InputEvent)>;
 
@@ -326,11 +327,11 @@ namespace Engine::Gui {
 			 * @return Indicate if the input was consumed.
 			 */
 			bool onKey(const Engine::Input::InputEvent event);
-			
+
 			/**
 			 * @return Indicate if the input was consumed.
 			 */
-			bool onChar(const wchar_t ch);// TODO: How to support full unicode and "Win + ." emoji picker? Look into WM_IME_* messages
+			bool onText(std::string_view str);
 
 			void onResize(const int32 w, const int32 h);
 			void onFocus(const bool has);

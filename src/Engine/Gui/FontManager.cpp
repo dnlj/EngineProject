@@ -10,6 +10,7 @@
 // Engine
 #include <Engine/Gui/FontManager.hpp>
 #include <Engine/Gui/FontGlyphSet.hpp>
+#include <Engine/Gui/Gui.hpp>
 
 
 namespace Engine::Gui {
@@ -50,7 +51,7 @@ namespace Engine::Gui {
 
 			// Setup FreeType face
 			if (const auto err = FT_New_Face(ftlib, path.data(), 0, &found->second)) {
-				ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+				ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err)); // TODO: actual error
 			}
 
 			FT_Done_Size(found->second->size);

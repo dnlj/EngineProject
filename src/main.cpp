@@ -430,6 +430,19 @@ namespace {
 
 	// TODO: move into file
 	class WindowCallbacks final : public Engine::WindowCallbacks<TempWorldEngineWrapper> {
+		wchar_t buffer16[2] = {};
+		char buffer8[4] = {};
+		static_assert(sizeof(buffer16) == 4 && sizeof(buffer8) == 4);
+		std::string_view view;
+
+		uint32 convertBuffers(int l) {
+			return static_cast<uint32>(WideCharToMultiByte(CP_UTF8, 0,
+				buffer16, l,
+				buffer8, 4,
+				nullptr, nullptr
+			));
+		}
+
 		void resizeCallback(int32 w, int32 h) override {
 			ENGINE_LOG("Resize: ", w, " ", h);
 			glViewport(0, 0, w, h);
@@ -446,8 +459,31 @@ namespace {
 		}
 
 		void charCallback(wchar_t ch) {
-			if (userdata->guiContext.onChar(ch)) { return; }
-			Engine::ImGui::charCallback(ch);
+			// Convert from UTF-16 to UTF-8
+			// Code point that requires multiple code units (surrogate pair)
+			if (ch > 0xD7FF && ch < 0xE000) {
+				if (ch < 0xDC00) {
+					// Don't process until we get the low surrogate
+					buffer16[0] = ch;
+					return;
+				} else {
+					buffer16[1] = ch;
+				}
+				
+				view = std::string_view{buffer8, convertBuffers(2)};
+			} else {
+				buffer16[0] = ch;
+				view = std::string_view{buffer8, convertBuffers(1)};
+			}
+
+			if (userdata->guiContext.onText(view)) { return; }
+
+			if (ch > 0xD7FF && ch < 0xE000) {
+				Engine::ImGui::charCallback(buffer16[0]);
+				Engine::ImGui::charCallback(buffer16[1]);
+			} else {
+				Engine::ImGui::charCallback(ch);
+			}
 		}
 
 		void mouseButtonCallback(Engine::Input::InputEvent event) override {

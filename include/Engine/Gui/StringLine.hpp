@@ -14,7 +14,7 @@ namespace Engine::Gui {
 		public:
 			using Panel::Panel;
 
-			ENGINE_INLINE void insertText(uint32 i, const std::string& text) {
+			ENGINE_INLINE void insertText(uint32 i, std::string_view text) {
 				auto& s = str.getStringMutable();
 				s.insert(s.begin() + i, text.begin(), text.end());
 				if (str.getFont()) { shape(); }

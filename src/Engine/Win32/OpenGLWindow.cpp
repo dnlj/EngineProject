@@ -308,7 +308,7 @@ namespace Engine::Win32 {
 
 			// Useful for debugging keys.
 			//printRawKeyboard(raw);
-			/*if (true) { // TODO: rm
+			/*if (true) {
 				//std::cout << static_cast<char>(0xFF & MapVirtualKeyW(MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK), MAPVK_VK_TO_CHAR));
 				{
 					LONG code = data.MakeCode << 16;
@@ -561,7 +561,9 @@ namespace Engine::Win32 {
 	}
 
 	void OpenGLWindow::poll() {
-		for (MSG msg; PeekMessageW(&msg, windowHandle, 0, 0, PM_REMOVE);) {
+		// Don't filter by hwnd because some things can create other windows such as IME
+		// https://devblogs.microsoft.com/oldnewthing/20050209-00/?p=36493
+		for (MSG msg; PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE);) {
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
 		}

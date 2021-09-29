@@ -8,6 +8,7 @@
 #include <Engine/Gui/FontManager.hpp>
 #include <Engine/Gui/FontGlyphSet.hpp>
 #include <Engine/Gui/ShapedString.hpp>
+#include <Engine/Gui/Gui.hpp>
 
 
 namespace Engine::Gui {
@@ -34,15 +35,15 @@ namespace Engine::Gui {
 		ftFace = face;
 
 		if (const auto err = FT_New_Size(face, &ftSize)) [[unlikely]] {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err));
 		}
 
 		if (const auto err = FT_Activate_Size(ftSize)) [[unlikely]] {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err));
 		}
 
 		if (const auto err = FT_Set_Pixel_Sizes(face, size, size)) [[unlikely]] {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err));
 		}
 
 		// Setup HarfBuzz
