@@ -25,7 +25,6 @@ namespace Engine {
 
 namespace Engine::Gui {
 	class Context {
-		public:
 			// TODO: doc
 			using MouseMoveCallback = std::function<void(glm::vec2)>;
 
@@ -36,15 +35,11 @@ namespace Engine::Gui {
 			using PanelBeginActivateCallback = std::function<bool(Panel* panel)>;
 			using PanelEndActivateCallback = std::function<void(Panel* panel)>;
 
-			// TODO: update docs now that we use utf8 string_view
-			// TODO: convert to utf-8. Handle conversion out side this class. Probably in WM_CHAR.
-			// TODO: we really need to rework input to correctly handle UTF-16 surrogate pairs (what WM_CHAR inputs)
-			// TODO: cont. since atm we dont have a good way to test that we just pretend they dont exists...
 			/**
-			 * @param ch The UTF-16 code unit.
+			 * @param text The input text
 			 * @return True to consume the input; otherwise false.
 			 */
-			using CharCallback = std::function<bool(std::string_view ch)>;
+			using TextCallback = std::function<bool(std::string_view text)>;
 
 			using KeyCallback = std::function<bool(Engine::Input::InputEvent)>;
 
@@ -175,7 +170,7 @@ namespace Engine::Gui {
 			FlatHashMap<const Panel*, MouseMoveCallback> mouseMoveCallbacks;
 			FlatHashMap<const Panel*, PanelBeginActivateCallback> panelBeginActivateCallbacks;
 			FlatHashMap<const Panel*, PanelEndActivateCallback> panelEndActivateCallbacks;
-			FlatHashMap<const Panel*, CharCallback> charCallbacks;
+			FlatHashMap<const Panel*, TextCallback> textCallbacks;
 			FlatHashMap<const Panel*, KeyCallback> keyCallbacks;
 
 			/* Cursors */
@@ -253,13 +248,13 @@ namespace Engine::Gui {
 				panelBeginActivateCallbacks.erase(panel);
 			}
 			
-			void registerCharCallback(const Panel* panel, CharCallback callback) {
-				ENGINE_DEBUG_ASSERT(!charCallbacks[panel], "Attempting to add duplicate char callback.");
-				charCallbacks[panel] = callback;
+			void registerTextCallback(const Panel* panel, TextCallback callback) {
+				ENGINE_DEBUG_ASSERT(!textCallbacks[panel], "Attempting to add duplicate char callback.");
+				textCallbacks[panel] = callback;
 			}
 			
-			void deregisterCharCallback(const Panel* panel) {
-				charCallbacks.erase(panel);
+			void deregisterTextCallback(const Panel* panel) {
+				textCallbacks.erase(panel);
 			}
 			
 			void registerKeyCallback(const Panel* panel, KeyCallback callback) {

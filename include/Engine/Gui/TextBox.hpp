@@ -59,21 +59,23 @@ namespace Engine::Gui {
 			}
 
 			virtual void onBeginFocus() override {
-				ctx->registerCharCallback(this, [this](std::string_view view) {
-					// Filter non-printable characters
-					//if (ch < ' ' || ch > '~') { return true; }
-
+				ctx->registerTextCallback(this, [this](std::string_view view) { 
 					insertText(caretIndex, view);
 
-					// TODO: we need to offset by number of clusters not bytes...
-					caretCluster += static_cast<uint32>(view.size());
+					// This isnt correct since we use HarfBuzz clusters for
+					// moving the caret and this uses Unicode code points.
+					// But it gets us there in most cases and doesnt break anything.
+					for (byte b : view) {
+						caretCluster += !(b & 0b1000'0000) || ((b & 0b1100'0000) == 0b1100'0000);
+					}
+
 					updateCaretPos();
 					return true;
 				});
 			};
 
 			virtual void onEndFocus() override {
-				ctx->deregisterCharCallback(this);
+				ctx->deregisterTextCallback(this);
 			};
 
 		private:

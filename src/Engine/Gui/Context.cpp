@@ -654,7 +654,7 @@ namespace Engine::Gui {
 	}
 
 	bool Context::onText(std::string_view str) {
-		for (auto& [_, cb] : charCallbacks) {
+		for (auto& [_, cb] : textCallbacks) {
 			if (cb(str)) { return true; }
 		}
 		return false;
