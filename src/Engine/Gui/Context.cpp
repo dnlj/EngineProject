@@ -257,6 +257,31 @@ namespace Engine::Gui {
 			#error TODO: Implement cursors for non-Windows systems
 		#endif
 	}
+
+	void Context::setIMEPosition(const glm::vec2 pos) {
+		#if ENGINE_OS_WINDOWS
+			// TODO: This only works the first time the system creats an ime window after each focus.
+			// TODO: cont. to fix this i think we need to mes with WM_IME_* messages. See 04kVYW2Y for details.
+			if (!nativeHandle) { ENGINE_WARN("Unable to set IME position."); return; }
+
+			COMPOSITIONFORM comp = {};
+			comp.dwStyle = CFS_POINT;
+			comp.ptCurrentPos = {static_cast<LONG>(pos.x), static_cast<LONG>(pos.y)};
+
+			CANDIDATEFORM cand = {};
+			cand.dwStyle = CFS_EXCLUDE;
+			cand.ptCurrentPos = comp.ptCurrentPos;
+			//cand.rcArea;
+
+			const auto handle = static_cast<HWND>(nativeHandle);
+			const auto ctx = ::ImmGetContext(handle);
+			// TODO: once 04kVYW2Y is fixed: ::ImmSetCandidateWindow(ctx, &cand);
+			::ImmSetCompositionWindow(ctx, &comp);
+			::ImmReleaseContext(handle, ctx);
+		#else
+			#error TODO: implement for non-Windows
+		#endif
+	}
 	
 	void Context::render() {
 		if (!hoverValid) {

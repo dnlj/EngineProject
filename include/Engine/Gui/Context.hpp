@@ -24,6 +24,8 @@ namespace Engine {
 }
 
 namespace Engine::Gui {
+	using NativeHandle = void*;
+
 	class Context {
 			// TODO: doc
 			using MouseMoveCallback = std::function<void(glm::vec2)>;
@@ -107,6 +109,7 @@ namespace Engine::Gui {
 			constexpr static PanelId invalidPanelId = -1;
 
 			std::vector<Action> actionQueue;
+			NativeHandle nativeHandle = {};
 
 			/* Main framebuffer and clipping */
 			GLuint fbo = 0;
@@ -183,6 +186,10 @@ namespace Engine::Gui {
 			Context(Context&) = delete;
 			~Context();
 			void render();
+
+			ENGINE_INLINE void setNativeWindowHandle(const NativeHandle handle) noexcept {
+				nativeHandle = handle;
+			}
 
 			ENGINE_INLINE bool isBlinking() const noexcept {
 				return (((Clock::now() - lastBlink) / cursorBlinkRate) & 1) == 0;
@@ -277,6 +284,8 @@ namespace Engine::Gui {
 			}
 
 			void updateCursor();
+
+			void setIMEPosition(const glm::vec2 pos);
 
 			/**
 			 * Gets the most hovered panel.

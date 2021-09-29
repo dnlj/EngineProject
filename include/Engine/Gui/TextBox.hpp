@@ -59,6 +59,9 @@ namespace Engine::Gui {
 			}
 
 			virtual void onBeginFocus() override {
+				// TODO: use caret pos once correct IME position is fixed (04kVYW2Y)
+				ctx->setIMEPosition(getPos());
+
 				ctx->registerTextCallback(this, [this](std::string_view view) { 
 					insertText(caretIndex, view);
 
