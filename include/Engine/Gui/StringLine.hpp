@@ -60,6 +60,7 @@ namespace Engine::Gui {
 			}
 
 		protected:
+			ENGINE_INLINE auto& getTextMutable() noexcept { return str.getStringMutable(); }
 			ENGINE_INLINE const ShapedString& getShapedString() const { return str; }
 			ENGINE_INLINE auto getStringOffset() const { return strOff; }
 	};

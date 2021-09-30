@@ -55,6 +55,8 @@ namespace Engine::Gui {
 				switch (act) {
 					case Action::MoveCharLeft: { moveCharLeft(); break; }
 					case Action::MoveCharRight: { moveCharRight(); break; }
+					case Action::DeletePrev: { deletePrev(); break; }
+					case Action::DeleteNext: { deleteNext(); break; }
 				}
 			}
 
@@ -94,6 +96,30 @@ namespace Engine::Gui {
 				updateCaretPos();
 			}
 
+			void deletePrev() {
+				const auto& glyphs = getShapedString().getGlyphShapeData();
+				uint32 i = 0;
+				uint32 last = 0;
+
+				for (const auto& glyph : glyphs) {
+					if (glyph.cluster != last) {
+						++i;
+						last = glyph.cluster;
+					}
+
+					if (i + 1 == caretCluster) {
+						getTextMutable().erase(glyph.cluster, caretIndex - glyph.cluster);
+						shape();
+						moveCharLeft();
+						break;
+					}
+				}
+			}
+			
+			void deleteNext() {
+				ENGINE_WARN("TODO: impl");
+			}
+
 			void updateCaretPos() {
 				const auto& glyphs = getShapedString().getGlyphShapeData();
 				caretX = 0;
@@ -116,7 +142,7 @@ namespace Engine::Gui {
 				}
 
 				if (i < caretCluster) {
-					caretCluster = i;
+					caretCluster = i + 1;
 				} else {
 					ctx->updateBlinkTime();
 				}

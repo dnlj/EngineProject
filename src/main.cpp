@@ -716,6 +716,13 @@ void run(int argc, char* argv[]) {
 			InputId{InputType::KEYBOARD, 0, +KeyCode::V},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("R Paste!"); });
 
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::Backspace},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::DeletePrev); }});
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::Delete},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::DeleteNext); }});
+
 		//im.setLayerEnabled(InputLayer::GUI, false);
 	}
 
