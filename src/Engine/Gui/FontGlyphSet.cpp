@@ -198,7 +198,8 @@ namespace Engine::Gui {
 			const auto& pos = posArr[i];
 
 			if (!info.codepoint) {
-				ENGINE_WARN("Missing one or more glyphs for character at index ", info.cluster, " = ", str.getString()[info.cluster]);
+				const auto c = str.getString()[info.cluster];
+				ENGINE_WARN("Missing one or more glyphs for character at index ", info.cluster, " = ",  static_cast<int>(c)," (", c, ")");
 			}
 
 			ensureGlyphLoaded(info.codepoint);

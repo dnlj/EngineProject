@@ -110,6 +110,7 @@ namespace Engine::Gui {
 
 			std::vector<Action> actionQueue;
 			NativeHandle nativeHandle = {};
+			std::string textBuffer;
 
 			/* Main framebuffer and clipping */
 			GLuint fbo = 0;

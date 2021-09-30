@@ -679,9 +679,52 @@ namespace Engine::Gui {
 	}
 
 	bool Context::onText(std::string_view str) {
+		// Filter out non-printable ascii
+		constexpr auto isPrintable = [](char c) -> bool {
+			if (c  < 0x20 || c == 0x7F) {
+				/*switch (c) {
+					case '\n':
+					case '\r':
+					case '\t': return true;
+				}*/
+				return false;
+			}
+			return true;
+		};
+
+		if (str.size() == 1) {
+			if (!isPrintable(str[0])) {
+				return false;
+			}
+		} else {
+			auto curr = &str[0];
+			auto end = curr + str.size();
+			while (curr != end) {
+				if (isPrintable(*curr)) { ++curr; continue; }
+
+				textBuffer.clear();
+				textBuffer.append(&str[0], curr);
+
+				auto prev = ++curr;
+				while (curr != end) {
+					if (!isPrintable(*curr)) {
+						textBuffer.append(prev, curr);
+						prev = ++curr;
+						continue;
+					}
+					++curr;
+				}
+
+				textBuffer.append(prev, curr);
+				str = textBuffer;
+				break;
+			}
+		}
+
 		for (auto& [_, cb] : textCallbacks) {
 			if (cb(str)) { return true; }
 		}
+
 		return false;
 	}
 
