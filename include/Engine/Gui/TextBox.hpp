@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Gui/Label.hpp>
+#include <Engine/Unicode/UTF8.hpp>
 
 
 namespace Engine::Gui {
@@ -57,6 +58,10 @@ namespace Engine::Gui {
 					case Action::MoveCharRight: { moveCharRight(); break; }
 					case Action::DeletePrev: { deletePrev(); break; }
 					case Action::DeleteNext: { deleteNext(); break; }
+					case Action::MoveLineStart: { caretCluster = 0; updateCaretPos(); break; }
+					case Action::MoveLineEnd: { caretCluster = -1; updateCaretPos(); deleteNext(); break; }
+					case Action::MoveWordLeft: { moveWordLeft(); break; }
+					case Action::MoveWordRight: { moveWordRight(); break; }
 				}
 			}
 
@@ -84,6 +89,11 @@ namespace Engine::Gui {
 			};
 
 		private:
+			bool isWordSeparator(byte* begin, byte* end) {
+				// TODO: also ., -, etc. Does unicode have a class for these things?
+				return Unicode::UTF8::isWhitespace(begin, end);
+			}
+
 			void moveCharLeft() {
 				if (caretCluster > 0) {
 					--caretCluster;
@@ -94,6 +104,34 @@ namespace Engine::Gui {
 			void moveCharRight() {
 				++caretCluster;
 				updateCaretPos();
+			}
+
+			void moveWordLeft() {
+				byte* const begin = reinterpret_cast<byte*>(getTextMutable().data());
+				byte* const end = begin + getTextMutable().size();
+
+				while (caretIndex > 0) {
+					moveCharLeft();
+					byte* curr = begin + caretIndex;
+					if (isWordSeparator(Unicode::UTF8::prev(curr, begin), end)) {
+						break;
+					}
+				}
+			}
+
+			void moveWordRight() {
+				const auto size = static_cast<uint32>(getText().size());
+				byte* const begin = reinterpret_cast<byte*>(getTextMutable().data());
+				byte* const end = begin + size;
+
+				while (caretIndex < size) {
+					byte* curr = begin + caretIndex;
+					if (isWordSeparator(curr, end)) {
+						moveCharRight();
+						break;
+					}
+					moveCharRight();
+				}
 			}
 
 			void deleteRangeByClusterIndex(const uint32 begin, const uint32 end) {

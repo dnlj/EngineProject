@@ -22,6 +22,9 @@ namespace Engine::Gui {
 		MoveWordUp,
 		MoveWordDown,
 
+		MoveLineStart,
+		MoveLineEnd,
+
 		PanelNext,
 		PanelPrev,
 	};
