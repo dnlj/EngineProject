@@ -96,10 +96,14 @@ namespace Engine::Gui {
 				updateCaretPos();
 			}
 
-			void deletePrev() {
+			void deleteRangeByClusterIndex(const uint32 begin, const uint32 end) {
+				ENGINE_DEBUG_ASSERT(begin <= end);
 				const auto& glyphs = getShapedString().getGlyphShapeData();
 				uint32 i = 0;
 				uint32 last = 0;
+
+				uint32 endByte = 0xFFFFFFFF;
+				uint32 beginByte = endByte;
 
 				for (const auto& glyph : glyphs) {
 					if (glyph.cluster != last) {
@@ -107,17 +111,29 @@ namespace Engine::Gui {
 						last = glyph.cluster;
 					}
 
-					if (i + 1 == caretCluster) {
-						getTextMutable().erase(glyph.cluster, caretIndex - glyph.cluster);
-						shape();
-						moveCharLeft();
+					if (i == begin) {
+						beginByte = glyph.cluster;
+					} else if (i == end) {
+						endByte = glyph.cluster;
 						break;
 					}
+				}
+
+				if (beginByte < endByte) {
+					getTextMutable().erase(beginByte, endByte - beginByte);
+					shape();
+				}
+			}
+
+			void deletePrev() {
+				if (caretCluster > 0) {
+					deleteRangeByClusterIndex(caretCluster - 1, caretCluster);
+					moveCharLeft();
 				}
 			}
 			
 			void deleteNext() {
-				ENGINE_WARN("TODO: impl");
+				deleteRangeByClusterIndex(caretCluster, caretCluster + 1);
 			}
 
 			void updateCaretPos() {
