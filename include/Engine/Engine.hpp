@@ -19,6 +19,10 @@
 	#define ENGINE_DEBUG false
 #endif
 
+/**
+ * Used at the start of an union to prevent implicit conversions.
+ * @param sz The size of the enum. Needed for zero initialization.
+ */
 #define ENGINE_NO_IMPLICIT_CONVERSION(sz) enum class No_Implicit_Conversion : char {} _no_implicit_conversion[sz] = {};
 
 // TODO: look into other inline options

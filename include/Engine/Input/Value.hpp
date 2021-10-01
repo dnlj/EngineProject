@@ -6,9 +6,7 @@
 
 namespace Engine::Input {
 	union Value {
-		// TODO: use ENGINE_NO_IMPLICIT_CONVERSION
-		// Block implicit conversion while still allowing aggregate initialization
-		enum class No_Implicit_Conversion : uint8 {} _no_implicit_conversion[8] = {};
+		ENGINE_NO_IMPLICIT_CONVERSION(8);
 
 		int64 i64;
 		int32 i32;
