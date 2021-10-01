@@ -57,9 +57,17 @@ namespace Engine::Unicode {
 
 namespace Engine::Unicode::UTF32 {
 	inline constexpr bool isWhitespace(const Point32 point) noexcept {
-		// TODO: full utf-8 whitespace support
-		//https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=[:whitespace:]
-		return +point == ' ';
+		return (+point == 0x0020)
+			|| (+point == 0x0085)
+			|| (+point == 0x00A0)
+			|| (+point == 0x1680)
+			|| (+point == 0x2028)
+			|| (+point == 0x2029)
+			|| (+point == 0x202F)
+			|| (+point == 0x205F)
+			|| (+point == 0x3000)
+			|| (+point >= 0x0009 && +point <= 0x000D)
+			|| (+point >= 0x2000 && +point <= 0x200A);
 	}
 }
 
