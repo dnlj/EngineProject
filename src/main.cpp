@@ -25,6 +25,7 @@
 #include <Engine/ConfigParser.hpp>
 #include <Engine/Gui/Context.hpp>
 #include <Engine/Input/KeyCode.hpp>
+#include <Engine/Unicode/UTF8.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -969,6 +970,18 @@ int entry(int argc, char* argv[]) {
 	//Engine::ConfigParser cfg;
 	//cfg.loadAndTokenize("example.cfg");
 	//cfg.print();
+
+	{
+		//using namespace Engine::Unicode;
+		////uint8 test[4] = {0xF0, 0x9F, 0x8E, 0x82};
+		////uint8 test[3] = {0xEA, 0xB0, 0x80};
+		////uint8 test[2] = {0xD7, 0xA9};
+		//uint8 test[1] = {'X'};
+		//ENGINE_WARN("\n Point = ", std::hex,
+		//	+to32(reinterpret_cast<const Unit8*>(test))
+		//);
+		//getchar();
+	}
 
 	startTime = Engine::Clock::now();
 	run(argc, argv);

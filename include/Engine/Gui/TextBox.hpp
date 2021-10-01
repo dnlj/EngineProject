@@ -89,8 +89,13 @@ namespace Engine::Gui {
 			};
 
 		private:
-			bool isWordSeparator(byte* begin, byte* end) {
-				// TODO: also ., -, etc. Does unicode have a class for these things?
+			bool isWordSeparator(Unicode::Unit8* begin, Unicode::Unit8* end) {
+				// TODO: should probably use Unicode Character Categories for these
+				// TODO: cont. https://www.compart.com/en/unicode/category
+				// TODO: cont. http://www.unicode.org/reports/tr44/#General_Category_Values
+				for (auto c : {'.','-','_',':','/','\\','#'}) {
+					if (c == +*begin) { return true; }
+				}
 				return Unicode::UTF8::isWhitespace(begin, end);
 			}
 
@@ -107,12 +112,12 @@ namespace Engine::Gui {
 			}
 
 			void moveWordLeft() {
-				byte* const begin = reinterpret_cast<byte*>(getTextMutable().data());
-				byte* const end = begin + getTextMutable().size();
+				auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
+				auto* const end = begin + getTextMutable().size();
 
 				while (caretIndex > 0) {
 					moveCharLeft();
-					byte* curr = begin + caretIndex;
+					auto* curr = begin + caretIndex;
 					if (isWordSeparator(Unicode::UTF8::prev(curr, begin), end)) {
 						break;
 					}
@@ -121,11 +126,11 @@ namespace Engine::Gui {
 
 			void moveWordRight() {
 				const auto size = static_cast<uint32>(getText().size());
-				byte* const begin = reinterpret_cast<byte*>(getTextMutable().data());
-				byte* const end = begin + size;
+				auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
+				auto* const end = begin + size;
 
 				while (caretIndex < size) {
-					byte* curr = begin + caretIndex;
+					auto* curr = begin + caretIndex;
 					if (isWordSeparator(curr, end)) {
 						moveCharRight();
 						break;

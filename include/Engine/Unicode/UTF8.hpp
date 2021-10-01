@@ -26,7 +26,7 @@ namespace Engine::Unicode {
 	using namespace UTF8;
 	using namespace UTF32;
 
-	ENGINE_INLINE inline constexpr Point32 to32(const Unit8* begin) {
+	inline constexpr Point32 to32(const Unit8* begin) {
 		uint32 result = {};	
 		if (+*begin < 0b1000'0000) {
 			result = +*begin;

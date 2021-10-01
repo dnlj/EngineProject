@@ -19,6 +19,8 @@
 	#define ENGINE_DEBUG false
 #endif
 
+#define ENGINE_NO_IMPLICIT_CONVERSION(sz) enum class No_Implicit_Conversion : char {} _no_implicit_conversion[sz] = {};
+
 // TODO: look into other inline options
 // GCC: https://gcc.gnu.org/onlinedocs/gcc-4.7.2/gcc/Function-Attributes.html
 // CLANG: https://clang.llvm.org/docs/AttributeReference.html
