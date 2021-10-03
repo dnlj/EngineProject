@@ -76,6 +76,9 @@ namespace Engine::Gui {
 					case Action::MoveWordRight: { moveWordRight(); break; }
 					case Action::SelectBegin: { ++selecting; caretSelectIndex = caretIndex; caretX2 = caretX; break; }
 					case Action::SelectEnd: { --selecting; break; }
+					case Action::Cut: { ENGINE_WARN("TODO: Cut"); break; }
+					case Action::Copy: { actionCopy(); break; }
+					case Action::Paste: { ENGINE_WARN("TODO: Paste"); break; }
 				}
 			}
 
@@ -111,6 +114,13 @@ namespace Engine::Gui {
 					if (c == +*begin) { return true; }
 				}
 				return Unicode::UTF8::isWhitespace(begin, end);
+			}
+
+			void actionCopy() {
+				if (caretSelectIndex == caretInvalid) { return; }
+				auto base = std::min(caretIndex, caretSelectIndex);
+				auto sz = std::max(caretIndex, caretSelectIndex) - base;
+				ctx->clipboardCopy(std::string_view{getText().data() + base, sz});
 			}
 
 			void moveCharLeft() {

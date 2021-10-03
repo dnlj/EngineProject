@@ -609,6 +609,49 @@ namespace Engine::Gui {
 		actionQueue.push_back(act);
 	}
 
+	void Context::clipboardCopy(std::string_view view) {
+		#if !ENGINE_OS_WINDOWS
+			#error TODO: impl for non Windows
+		#endif
+
+		auto handle = static_cast<HWND>(nativeHandle);
+		if (!handle) {
+			ENGINE_WARN("No native handle set");
+			return;
+		}
+
+		if (!::OpenClipboard(handle)) {
+			ENGINE_WARN("Unable to open clipboard");
+			return;
+		}
+
+		::EmptyClipboard();
+
+		std::wstring convBuffer;
+		convBuffer.resize(view.size());
+		static_assert(sizeof(convBuffer[0]) == 2, "Assumes a two byte wide char");
+
+		// Convert to UTF-16
+		::MultiByteToWideChar(CP_UTF8, 0,
+			view.data(), static_cast<int>(view.size()),
+			convBuffer.data(), static_cast<int>(convBuffer.size())
+		);
+		convBuffer.resize(std::wcslen(convBuffer.data()) + 1); // + 1 for null
+		convBuffer.back() = 0;
+
+		const auto sz = convBuffer.size() * 2;
+		if (auto mem = ::GlobalAlloc(GMEM_MOVEABLE, sz)) {
+			if (auto ptr = ::GlobalLock(mem)) {
+				memcpy(ptr, convBuffer.data(), sz);
+				::GlobalUnlock(mem);
+			} else {
+				ENGINE_WARN("Unable to lock win32 memory");
+			}
+			::SetClipboardData(CF_UNICODETEXT, mem);
+		}
+		::CloseClipboard();
+	}
+
 	bool Context::onMouse(const Engine::Input::InputEvent event) {
 		//ENGINE_LOG("onMouse:",
 		//	" ", event.state.value,

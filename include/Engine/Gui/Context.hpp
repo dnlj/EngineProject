@@ -286,6 +286,10 @@ namespace Engine::Gui {
 
 			void updateCursor();
 
+			/**
+			 * Sets the position of the Input Method Editor.
+			 * Requires that setNativeWindowHandle has been called.
+			 */
 			void setIMEPosition(const glm::vec2 pos);
 
 			/**
@@ -312,6 +316,12 @@ namespace Engine::Gui {
 			ENGINE_INLINE const Panel* getActive() const noexcept { return active; }
 
 			void queueAction(Action act);
+
+			/**
+			 * Copies the text to the clipboard.
+			 * Requires that setNativeWindowHandle has been called.
+			 */
+			void clipboardCopy(std::string_view view);
 
 			/**
 			 * @return Indicate if the input was consumed.

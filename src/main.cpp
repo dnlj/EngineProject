@@ -755,7 +755,33 @@ void run(int argc, char* argv[]) {
 		im.addBind(InputLayer::GUI, true, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::RShift},
 		}, [&](Value curr, Value prev, auto time){ guiContext.queueAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd); });
-
+		
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::LCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::X},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Cut); }});
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::X},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Cut); }});
+		
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::LCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::C},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Copy); }});
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::C},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Copy); }});
+		
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::LCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::V},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Paste); }});
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::V},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Paste); }});
 		//im.setLayerEnabled(InputLayer::GUI, false);
 	}
 
