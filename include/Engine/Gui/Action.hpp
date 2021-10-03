@@ -3,8 +3,8 @@
 
 namespace Engine::Gui {
 	enum class Action {
-		CursorSelectBegin,
-		CursorSelectEnd,
+		SelectBegin,
+		SelectEnd,
 
 		Cut,
 		Copy,

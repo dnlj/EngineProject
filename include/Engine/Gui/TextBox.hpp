@@ -8,9 +8,13 @@
 namespace Engine::Gui {
 	class TextBox : public StringLine {
 		private:
+			constexpr static uint32 caretInvalid = 0xFFFFFFFF;
 			uint32 caretCluster = 0;
 			uint32 caretIndex = 0;
+			uint32 caretSelectIndex = caretInvalid;
+			uint8 selecting = 0;
 			float32 caretX = 0;
+			float32 caretX2 = 0;
 			glm::vec2 pad = {5,5}; // TODO: probably pull from font size / theme
 
 		public:
@@ -24,6 +28,7 @@ namespace Engine::Gui {
 
 			virtual void render(Context& ctx) const override {
 				glm::vec2 pos = {0,0};
+				const auto& str = getShapedString();
 				const glm::vec2 size = getSize();
 				const glm::vec4 bg = {0.3,0.3,0.3,1};
 				const glm::vec4 bo = {0,0,0,1};
@@ -37,16 +42,23 @@ namespace Engine::Gui {
 
 				pos += pad;
 
-				ctx.drawString(getStringOffset(), &getShapedString());
+				ctx.drawString(getStringOffset(), &str);
 
 				if (ctx.getFocus() == this && ctx.isBlinking()) {
-					const auto& str = getShapedString();
-					//const auto ssize = str.getBounds().getSize();
-
 					ctx.drawRect(
-						//pos + glm::vec2{ssize.x, 0},
 						pos + glm::vec2{caretX, 0},
 						{1, str.getFont()->getLineHeight()},
+						bo
+					);
+				}
+
+				if (caretSelectIndex != caretInvalid) {
+					const auto a = caretX < caretX2 ? caretX : caretX2;
+					const auto b = caretX < caretX2 ? caretX2 : caretX;
+
+					ctx.drawRect(
+						pos + glm::vec2{a, 0},
+						{b - a, str.getFont()->getLineHeight()},
 						bo
 					);
 				}
@@ -62,6 +74,8 @@ namespace Engine::Gui {
 					case Action::MoveLineEnd: { caretCluster = -1; updateCaretPos(); deleteNext(); break; }
 					case Action::MoveWordLeft: { moveWordLeft(); break; }
 					case Action::MoveWordRight: { moveWordRight(); break; }
+					case Action::SelectBegin: { ++selecting; caretSelectIndex = caretIndex; caretX2 = caretX; break; }
+					case Action::SelectEnd: { --selecting; break; }
 				}
 			}
 
@@ -180,6 +194,7 @@ namespace Engine::Gui {
 			}
 
 			void updateCaretPos() {
+				caretSelectIndex = selecting ? caretSelectIndex : caretInvalid;
 				const auto& glyphs = getShapedString().getGlyphShapeData();
 				caretX = 0;
 				uint32 last = 0;

@@ -749,6 +749,13 @@ void run(int argc, char* argv[]) {
 			InputId{InputType::KEYBOARD, 0, +KeyCode::Right},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveWordRight); }});
 
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::LShift},
+		}, [&](Value curr, Value prev, auto time){ guiContext.queueAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd); });
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::RShift},
+		}, [&](Value curr, Value prev, auto time){ guiContext.queueAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd); });
+
 		//im.setLayerEnabled(InputLayer::GUI, false);
 	}
 
