@@ -71,11 +71,11 @@ namespace Engine::Gui {
 					case Action::DeletePrev: { actionDeletePrev(); break; }
 					case Action::DeleteNext: { actionDeleteNext(); break; }
 					case Action::MoveLineStart: { caretCluster = 0; updateCaretPos(); break; }
-					case Action::MoveLineEnd: { caretCluster = -1; updateCaretPos(); actionDeleteNext(); break; }
+					case Action::MoveLineEnd: { caretCluster = -1; updateCaretPos(); break; }
 					case Action::MoveWordLeft: { moveWordLeft(); break; }
 					case Action::MoveWordRight: { moveWordRight(); break; }
 					case Action::SelectBegin: { ++selecting; caretSelectIndex = caretIndex; caretX2 = caretX; break; }
-					case Action::SelectEnd: { --selecting; break; }
+					case Action::SelectEnd: { selecting = std::max(selecting - 1, 0); ENGINE_LOG("--"); break; }
 					case Action::Cut: { actionCut(); break; }
 					case Action::Copy: { actionCopy(); break; }
 					case Action::Paste: { ENGINE_WARN("TODO: Paste"); break; }
@@ -135,13 +135,21 @@ namespace Engine::Gui {
 			}
 			
 			void actionDeletePrev() {
-				if (caretCluster > 0) {
+				if (caretSelectIndex != caretInvalid) {
+					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+				} else if (caretCluster > 0) {
+					// TODO: just delete code point instead?
 					deleteRangeByClusterIndex(caretCluster - 1, caretCluster);
 				}
 			}
 			
 			void actionDeleteNext() {
-				deleteRangeByClusterIndex(caretCluster, caretCluster + 1);
+				if (caretSelectIndex != caretInvalid) {
+					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+				} else {
+					// TODO: just delete code point instead?
+					deleteRangeByClusterIndex(caretCluster, caretCluster + 1);
+				}
 			}
 
 			void moveCharLeft() {
@@ -208,6 +216,7 @@ namespace Engine::Gui {
 						}
 					}
 
+					selecting = 0;
 					updateCaretPos();
 				}
 			}
