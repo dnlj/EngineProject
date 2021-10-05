@@ -153,14 +153,18 @@ namespace Engine::Gui {
 			}
 
 			void moveCharLeft() {
-				if (caretCluster > 0) {
-					--caretCluster;
-					updateCaretPos();
+				if (selecting || caretSelectIndex == caretInvalid) {
+					if (caretCluster > 0) {
+						--caretCluster;
+					}
 				}
+				updateCaretPos();
 			}
 
 			void moveCharRight() {
-				++caretCluster;
+				if (selecting || caretSelectIndex == caretInvalid) {
+					++caretCluster;
+				}
 				updateCaretPos();
 			}
 
