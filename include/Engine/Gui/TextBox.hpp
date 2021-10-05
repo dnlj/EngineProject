@@ -68,15 +68,15 @@ namespace Engine::Gui {
 				switch (act) {
 					case Action::MoveCharLeft: { moveCharLeft(); break; }
 					case Action::MoveCharRight: { moveCharRight(); break; }
-					case Action::DeletePrev: { deletePrev(); break; }
-					case Action::DeleteNext: { deleteNext(); break; }
+					case Action::DeletePrev: { actionDeletePrev(); break; }
+					case Action::DeleteNext: { actionDeleteNext(); break; }
 					case Action::MoveLineStart: { caretCluster = 0; updateCaretPos(); break; }
-					case Action::MoveLineEnd: { caretCluster = -1; updateCaretPos(); deleteNext(); break; }
+					case Action::MoveLineEnd: { caretCluster = -1; updateCaretPos(); actionDeleteNext(); break; }
 					case Action::MoveWordLeft: { moveWordLeft(); break; }
 					case Action::MoveWordRight: { moveWordRight(); break; }
 					case Action::SelectBegin: { ++selecting; caretSelectIndex = caretIndex; caretX2 = caretX; break; }
 					case Action::SelectEnd: { --selecting; break; }
-					case Action::Cut: { ENGINE_WARN("TODO: Cut"); break; }
+					case Action::Cut: { actionCut(); break; }
 					case Action::Copy: { actionCopy(); break; }
 					case Action::Paste: { ENGINE_WARN("TODO: Paste"); break; }
 				}
@@ -116,11 +116,32 @@ namespace Engine::Gui {
 				return Unicode::UTF8::isWhitespace(begin, end);
 			}
 
+			void actionCancel() {
+				caretSelectIndex = caretInvalid;
+			}
+
+			void actionCut() {
+				if (caretSelectIndex == caretInvalid) { return; }
+				actionCopy();
+				deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+				actionCancel();
+			}
+
 			void actionCopy() {
 				if (caretSelectIndex == caretInvalid) { return; }
 				auto base = std::min(caretIndex, caretSelectIndex);
 				auto sz = std::max(caretIndex, caretSelectIndex) - base;
 				ctx->clipboardCopy(std::string_view{getText().data() + base, sz});
+			}
+			
+			void actionDeletePrev() {
+				if (caretCluster > 0) {
+					deleteRangeByClusterIndex(caretCluster - 1, caretCluster);
+				}
+			}
+			
+			void actionDeleteNext() {
+				deleteRangeByClusterIndex(caretCluster, caretCluster + 1);
 			}
 
 			void moveCharLeft() {
@@ -163,6 +184,34 @@ namespace Engine::Gui {
 				}
 			}
 
+			void deleteRangeByIndex(const uint32 begin, const uint32 end) {
+				if (begin < end) {
+					getTextMutable().erase(begin, end - begin);
+					shape();
+
+					caretCluster = 0;
+					uint32 lastCluster = 0;
+					const auto& data = getShapedString().getGlyphShapeData();
+
+					for (auto glyph = data.begin();; ++glyph) { 
+					//for (const auto& glyph : getShapedString().getGlyphShapeData()) {
+						if (glyph == data.end()) {
+							caretCluster += lastCluster < begin;
+							break;
+						} else if (glyph->cluster > begin) {
+							break;
+						}
+
+						if (glyph->cluster != lastCluster) {
+							++caretCluster;
+							lastCluster = glyph->cluster;
+						}
+					}
+
+					updateCaretPos();
+				}
+			}
+
 			void deleteRangeByClusterIndex(const uint32 begin, const uint32 end) {
 				ENGINE_DEBUG_ASSERT(begin <= end);
 				const auto& glyphs = getShapedString().getGlyphShapeData();
@@ -186,21 +235,7 @@ namespace Engine::Gui {
 					}
 				}
 
-				if (beginByte < endByte) {
-					getTextMutable().erase(beginByte, endByte - beginByte);
-					shape();
-				}
-			}
-
-			void deletePrev() {
-				if (caretCluster > 0) {
-					deleteRangeByClusterIndex(caretCluster - 1, caretCluster);
-					moveCharLeft();
-				}
-			}
-			
-			void deleteNext() {
-				deleteRangeByClusterIndex(caretCluster, caretCluster + 1);
+				deleteRangeByIndex(beginByte, endByte);
 			}
 
 			void updateCaretPos() {
