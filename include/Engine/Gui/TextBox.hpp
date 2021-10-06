@@ -115,7 +115,7 @@ namespace Engine::Gui {
 			void actionCut() {
 				if (caretSelectIndex == caretInvalid) { return; }
 				actionCopy();
-				deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+				actionDelete();
 				actionCancel();
 			}
 
@@ -126,13 +126,17 @@ namespace Engine::Gui {
 				ctx->setClipboard(std::string_view{getText().data() + base, sz});
 			}
 
+			ENGINE_INLINE void actionDelete() {
+				deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+			}
+
 			void actionPaste() {
 				const auto text = ctx->getClipboardText();
 				if (text.empty()) { return; }
 
 				// Delete current selection
 				if (caretSelectIndex != caretInvalid) {
-					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+					actionDelete();
 				}
 
 				// Insert
@@ -142,20 +146,18 @@ namespace Engine::Gui {
 			}
 			
 			void actionDeletePrev() {
-				// TODO: this should delete code point not byte
 				if (caretSelectIndex != caretInvalid) {
-					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+					actionDelete();
 				} else if (caretIndex > 0) {
-					deleteRangeByIndex(caretIndex - 1, caretIndex);
+					deleteRangeByIndex(getIndexOfPrevCodePoint(), caretIndex);
 				}
 			}
 			
 			void actionDeleteNext() {
-				// TODO: this should delete code point not byte
 				if (caretSelectIndex != caretInvalid) {
-					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+					actionDelete();
 				} else {
-					deleteRangeByIndex(caretIndex, caretIndex + 1);
+					deleteRangeByIndex(caretIndex, getIndexOfNextCodePoint());
 				}
 			}
 
@@ -179,14 +181,17 @@ namespace Engine::Gui {
 				return static_cast<uint32>(ptr - getCodePointAtBegin());
 			}
 
+			ENGINE_INLINE uint32 getIndexOfNextCodePoint() const noexcept {
+				return codePointToIndex(Unicode::next(getCodePointAtCaret(), getCodePointAtEnd()));
+			}
+
+			ENGINE_INLINE uint32 getIndexOfPrevCodePoint() const noexcept {
+				return codePointToIndex(Unicode::prev(getCodePointAtCaret(), getCodePointAtBegin()));
+			}
+
 			void moveCharLeft() {
 				if (shouldMoveCaret()) {
-					caretIndex = codePointToIndex(
-						Unicode::prev(
-							getCodePointAtCaret(),
-							getCodePointAtBegin()
-						)
-					);
+					caretIndex = getIndexOfPrevCodePoint();
 				} else {
 					// TODO: jump to left side of selection
 				}
@@ -195,7 +200,7 @@ namespace Engine::Gui {
 
 			void moveCharRight() {
 				if (shouldMoveCaret()) {
-					caretIndex = codePointToIndex(Unicode::next(getCodePointAtCaret(), getCodePointAtEnd()));
+					caretIndex = getIndexOfNextCodePoint();
 				} else {
 					// TODO: jump to right side of selection
 				}
