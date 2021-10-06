@@ -86,9 +86,8 @@ namespace Engine::Gui {
 				ctx->setIMEPosition(getPos());
 
 				ctx->registerTextCallback(this, [this](std::string_view view) {
-					ENGINE_LOG("Insert! (", view.size(), ") ", view);
 					insertText(caretIndex, view);
-					caretIndex += static_cast<uint32>(Unicode::length8(view.data(), view.data() + view.size()));
+					caretIndex += static_cast<uint32>(view.size());
 					updateCaretPos();
 					return true;
 				});
