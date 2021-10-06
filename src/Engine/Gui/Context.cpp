@@ -609,12 +609,12 @@ namespace Engine::Gui {
 		actionQueue.push_back(act);
 	}
 
-	void Context::clipboardCopy(std::string_view view) {
+	void Context::setClipboard(std::string_view view) {
 		#if !ENGINE_OS_WINDOWS
 			#error TODO: impl for non Windows
 		#endif
 
-		auto handle = static_cast<HWND>(nativeHandle);
+		const auto handle = static_cast<HWND>(nativeHandle);
 		if (!handle) {
 			ENGINE_WARN("No native handle set");
 			return;
@@ -650,6 +650,47 @@ namespace Engine::Gui {
 			::SetClipboardData(CF_UNICODETEXT, mem);
 		}
 		::CloseClipboard();
+	}
+
+	std::string Context::getClipboardText() const {
+		#if !ENGINE_OS_WINDOWS
+			#error TODO: impl for non Windows
+		#endif
+		
+		if (!::IsClipboardFormatAvailable(CF_UNICODETEXT)) {
+			return {};
+		}
+
+		const auto handle = static_cast<HWND>(nativeHandle);
+		if (!handle) {
+			ENGINE_WARN("No native handle set");
+			return {};
+		}
+
+		if (!::OpenClipboard(handle)) {
+			ENGINE_WARN("Unable to open clipboard");
+			return {};
+		}
+
+		std::wstring temp;
+		if (const auto mem = ::GetClipboardData(CF_UNICODETEXT)) {
+			if (const auto ptr = ::GlobalLock(mem)) {
+				temp = reinterpret_cast<const WCHAR*>(ptr);
+				::GlobalUnlock(mem);
+			}
+		}
+
+		::CloseClipboard();
+
+		if (temp.empty()) { return {}; }
+
+		std::string result;
+		const auto sz = ::WideCharToMultiByte(CP_UTF8, 0, temp.data(), static_cast<int>(temp.size()), nullptr, 0, nullptr, nullptr);
+		if (sz == 0) { return {}; }
+
+		result.resize(sz);
+		::WideCharToMultiByte(CP_UTF8, 0, temp.data(), static_cast<int>(temp.size()), result.data(), static_cast<int>(result.size()), nullptr, nullptr);
+		return result;
 	}
 
 	bool Context::onMouse(const Engine::Input::InputEvent event) {

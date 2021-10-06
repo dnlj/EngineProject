@@ -78,7 +78,7 @@ namespace Engine::Gui {
 					case Action::SelectEnd: { selecting = std::max(selecting - 1, 0); ENGINE_LOG("--"); break; }
 					case Action::Cut: { actionCut(); break; }
 					case Action::Copy: { actionCopy(); break; }
-					case Action::Paste: { ENGINE_WARN("TODO: Paste"); break; }
+					case Action::Paste: { actionPaste(); break; }
 				}
 			}
 
@@ -131,14 +131,41 @@ namespace Engine::Gui {
 				if (caretSelectIndex == caretInvalid) { return; }
 				auto base = std::min(caretIndex, caretSelectIndex);
 				auto sz = std::max(caretIndex, caretSelectIndex) - base;
-				ctx->clipboardCopy(std::string_view{getText().data() + base, sz});
+				ctx->setClipboard(std::string_view{getText().data() + base, sz});
+			}
+
+			void actionPaste() {
+				const auto text = ctx->getClipboardText();
+				if (text.empty()) { return; }
+
+				// Delete current selection
+				if (caretSelectIndex != caretInvalid) {
+					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+				}
+
+				// Insert
+				insertText(caretIndex, text);
+
+				// Position at end of pasted text
+				const auto before = std::min(caretIndex, caretSelectIndex);
+				const auto after = before + text.size();
+
+				caretCluster = 0;
+				uint32 last = 0;
+				for (const auto& glyph : getShapedString().getGlyphShapeData()) {
+					if (glyph.cluster != last) {
+						++caretCluster;
+						last = glyph.cluster;
+					}
+					if (glyph.cluster >= after) { break; }
+				}
+				updateCaretPos();
 			}
 			
 			void actionDeletePrev() {
 				if (caretSelectIndex != caretInvalid) {
 					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
 				} else if (caretCluster > 0) {
-					// TODO: just delete code point instead?
 					deleteRangeByClusterIndex(caretCluster - 1, caretCluster);
 				}
 			}
@@ -147,7 +174,6 @@ namespace Engine::Gui {
 				if (caretSelectIndex != caretInvalid) {
 					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
 				} else {
-					// TODO: just delete code point instead?
 					deleteRangeByClusterIndex(caretCluster, caretCluster + 1);
 				}
 			}
@@ -205,8 +231,7 @@ namespace Engine::Gui {
 					uint32 lastCluster = 0;
 					const auto& data = getShapedString().getGlyphShapeData();
 
-					for (auto glyph = data.begin();; ++glyph) { 
-					//for (const auto& glyph : getShapedString().getGlyphShapeData()) {
+					for (auto glyph = data.begin();; ++glyph) {
 						if (glyph == data.end()) {
 							caretCluster += lastCluster < begin;
 							break;

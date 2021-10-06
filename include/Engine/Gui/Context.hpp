@@ -318,10 +318,15 @@ namespace Engine::Gui {
 			void queueAction(Action act);
 
 			/**
-			 * Copies the text to the clipboard.
+			 * Copies the UTF-8 encoded text to the clipboard.
 			 * Requires that setNativeWindowHandle has been called.
 			 */
-			void clipboardCopy(std::string_view view);
+			void setClipboard(std::string_view view);
+
+			/**
+			 * Gets the text currently in the clipboard as a UTF-8 encoded string.
+			 */
+			std::string getClipboardText() const;
 
 			/**
 			 * @return Indicate if the input was consumed.
