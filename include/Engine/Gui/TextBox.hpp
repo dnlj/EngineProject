@@ -74,8 +74,8 @@ namespace Engine::Gui {
 					case Action::MoveLineEnd: { caretCluster = -1; updateCaretPos(); break; }
 					case Action::MoveWordLeft: { moveWordLeft(); break; }
 					case Action::MoveWordRight: { moveWordRight(); break; }
-					case Action::SelectBegin: { ++selecting; caretSelectIndex = caretIndex; caretX2 = caretX; break; }
-					case Action::SelectEnd: { selecting = std::max(selecting - 1, 0); ENGINE_LOG("--"); break; }
+					case Action::SelectBegin: { ++selecting; if (selecting == 1) { caretSelectIndex = caretIndex; caretX2 = caretX;} break; }
+					case Action::SelectEnd: { if (selecting > 0) { --selecting; }; break; }
 					case Action::Cut: { actionCut(); break; }
 					case Action::Copy: { actionCopy(); break; }
 					case Action::Paste: { actionPaste(); break; }
@@ -178,18 +178,26 @@ namespace Engine::Gui {
 				}
 			}
 
+			ENGINE_INLINE bool shouldMoveCaret() const noexcept {
+				return selecting || caretSelectIndex == caretInvalid || caretSelectIndex == caretIndex;
+			}
+
 			void moveCharLeft() {
-				if (selecting || caretSelectIndex == caretInvalid) {
+				if (shouldMoveCaret()) {
 					if (caretCluster > 0) {
 						--caretCluster;
 					}
+				} else {
+					// TODO: jump to left side of selection
 				}
 				updateCaretPos();
 			}
 
 			void moveCharRight() {
-				if (selecting || caretSelectIndex == caretInvalid) {
+				if (shouldMoveCaret()) {
 					++caretCluster;
+				} else {
+					// TODO: jump to right side of selection
 				}
 				updateCaretPos();
 			}

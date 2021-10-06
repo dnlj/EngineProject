@@ -751,10 +751,10 @@ void run(int argc, char* argv[]) {
 
 		im.addBind(InputLayer::GUI, true, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::LShift},
-		}, [&](Value curr, Value prev, auto time){ guiContext.queueAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd); });
+			}, [&](Value curr, Value prev, auto time){ if (curr != prev) { guiContext.queueAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd); } });
 		im.addBind(InputLayer::GUI, true, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::RShift},
-		}, [&](Value curr, Value prev, auto time){ guiContext.queueAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd); });
+		}, [&](Value curr, Value prev, auto time){ if (curr != prev) { guiContext.queueAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd); } });
 		
 		im.addBind(InputLayer::GUI, true, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::LCtrl},
