@@ -80,13 +80,18 @@ namespace Engine::Unicode::UTF8 {
 		return UTF32::isWhitespace(to32(begin));
 	}
 
+	/**
+	 * The length in code points.
+	 */
 	ENGINE_INLINE constexpr auto length(const Unit8* begin, const Unit8* end) noexcept {
 		int64 count = 0;
 		auto curr = begin;
 		while (curr < end) { count += isStartOfCodePoint(*curr); ++curr; }
 		return count;
 	}
-
+	/**
+	 * @see length
+	 */
 	ENGINE_INLINE constexpr auto length8(const void* begin, const void* end) noexcept {
 		return length(reinterpret_cast<const Unit8*>(begin), reinterpret_cast<const Unit8*>(end));
 	}

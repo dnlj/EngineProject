@@ -229,8 +229,8 @@ namespace Engine::Gui {
 
 		///////////////////////////////////////////////////////////////////////////////
 
-		font_a = fontManager.createFont("assets/arial.ttf", 32);
-		//font_a = fontManager.createFont("assets/EmojiOneColor.otf", 32);
+		//font_a = fontManager.createFont("assets/arial.ttf", 32);
+		font_a = fontManager.createFont("assets/EmojiOneColor.otf", 32);
 		//font_a = fontManager.createFont("assets/FiraCode-Regular.ttf", 32);
 		font_b = fontManager.createFont("assets/consola.ttf", 12);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
@@ -764,7 +764,7 @@ namespace Engine::Gui {
 
 	bool Context::onText(std::string_view str) {
 		// Filter out non-printable ascii
-		constexpr auto isPrintable = [](char c) -> bool {
+		constexpr auto isPrintable = [](unsigned char c) -> bool {
 			if (c  < 0x20 || c == 0x7F) {
 				/*switch (c) {
 					case '\n':
@@ -783,26 +783,21 @@ namespace Engine::Gui {
 		} else {
 			auto curr = &str[0];
 			auto end = curr + str.size();
+
+			textBuffer.clear();
+
+			auto prev = curr;
 			while (curr != end) {
-				if (isPrintable(*curr)) { ++curr; continue; }
-
-				textBuffer.clear();
-				textBuffer.append(&str[0], curr);
-
-				auto prev = ++curr;
-				while (curr != end) {
-					if (!isPrintable(*curr)) {
-						textBuffer.append(prev, curr);
-						prev = ++curr;
-						continue;
-					}
-					++curr;
+				if (!isPrintable(*curr)) {
+					textBuffer.append(prev, curr);
+					prev = ++curr;
+					continue;
 				}
-
-				textBuffer.append(prev, curr);
-				str = textBuffer;
-				break;
+				++curr;
 			}
+
+			textBuffer.append(prev, curr);
+			str = textBuffer;
 		}
 
 		for (auto& [_, cb] : textCallbacks) {

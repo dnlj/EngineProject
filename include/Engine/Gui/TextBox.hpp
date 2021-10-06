@@ -86,7 +86,7 @@ namespace Engine::Gui {
 				ctx->setIMEPosition(getPos());
 
 				ctx->registerTextCallback(this, [this](std::string_view view) {
-					// TODO: why do we not get multi-unit input anymore? ENGINE_LOG("Insert! (", view.size(), ") ", view);
+					ENGINE_LOG("Insert! (", view.size(), ") ", view);
 					insertText(caretIndex, view);
 					caretIndex += static_cast<uint32>(Unicode::length8(view.data(), view.data() + view.size()));
 					updateCaretPos();
@@ -143,6 +143,7 @@ namespace Engine::Gui {
 			}
 			
 			void actionDeletePrev() {
+				// TODO: this should delete code point not byte
 				if (caretSelectIndex != caretInvalid) {
 					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
 				} else if (caretIndex > 0) {
@@ -151,6 +152,7 @@ namespace Engine::Gui {
 			}
 			
 			void actionDeleteNext() {
+				// TODO: this should delete code point not byte
 				if (caretSelectIndex != caretInvalid) {
 					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
 				} else {
