@@ -9,7 +9,6 @@ namespace Engine::Gui {
 	class TextBox : public StringLine {
 		private:
 			constexpr static uint32 caretInvalid = 0xFFFFFFFF;
-			uint32 caretCluster = 0;
 			uint32 caretIndex = 0;
 			uint32 caretSelectIndex = caretInvalid;
 			uint8 selecting = 0;
@@ -70,8 +69,8 @@ namespace Engine::Gui {
 					case Action::MoveCharRight: { moveCharRight(); break; }
 					case Action::DeletePrev: { actionDeletePrev(); break; }
 					case Action::DeleteNext: { actionDeleteNext(); break; }
-					case Action::MoveLineStart: { caretCluster = 0; updateCaretPos(); break; }
-					case Action::MoveLineEnd: { caretCluster = -1; updateCaretPos(); break; }
+					case Action::MoveLineStart: { caretIndex = 0; updateCaretPos(); break; }
+					case Action::MoveLineEnd: { caretIndex = static_cast<uint32>(getText().size()); updateCaretPos(); break; }
 					case Action::MoveWordLeft: { moveWordLeft(); break; }
 					case Action::MoveWordRight: { moveWordRight(); break; }
 					case Action::SelectBegin: { ++selecting; if (selecting == 1) { caretSelectIndex = caretIndex; caretX2 = caretX;} break; }
@@ -86,16 +85,10 @@ namespace Engine::Gui {
 				// TODO: use caret pos once correct IME position is fixed (04kVYW2Y)
 				ctx->setIMEPosition(getPos());
 
-				ctx->registerTextCallback(this, [this](std::string_view view) { 
+				ctx->registerTextCallback(this, [this](std::string_view view) {
+					// TODO: why do we not get multi-unit input anymore? ENGINE_LOG("Insert! (", view.size(), ") ", view);
 					insertText(caretIndex, view);
-
-					// This isnt correct since we use HarfBuzz clusters for
-					// moving the caret and this uses Unicode code points.
-					// But it gets us there in most cases and doesnt break anything.
-					for (byte b : view) {
-						caretCluster += !(b & 0b1000'0000) || ((b & 0b1100'0000) == 0b1100'0000);
-					}
-
+					caretIndex += static_cast<uint32>(Unicode::length8(view.data(), view.data() + view.size()));
 					updateCaretPos();
 					return true;
 				});
@@ -145,28 +138,15 @@ namespace Engine::Gui {
 
 				// Insert
 				insertText(caretIndex, text);
-
-				// Position at end of pasted text
-				const auto before = std::min(caretIndex, caretSelectIndex);
-				const auto after = before + text.size();
-
-				caretCluster = 0;
-				uint32 last = 0;
-				for (const auto& glyph : getShapedString().getGlyphShapeData()) {
-					if (glyph.cluster != last) {
-						++caretCluster;
-						last = glyph.cluster;
-					}
-					if (glyph.cluster >= after) { break; }
-				}
+				caretIndex += static_cast<uint32>(text.size());
 				updateCaretPos();
 			}
 			
 			void actionDeletePrev() {
 				if (caretSelectIndex != caretInvalid) {
 					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
-				} else if (caretCluster > 0) {
-					deleteRangeByClusterIndex(caretCluster - 1, caretCluster);
+				} else if (caretIndex > 0) {
+					deleteRangeByIndex(caretIndex - 1, caretIndex);
 				}
 			}
 			
@@ -174,7 +154,7 @@ namespace Engine::Gui {
 				if (caretSelectIndex != caretInvalid) {
 					deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
 				} else {
-					deleteRangeByClusterIndex(caretCluster, caretCluster + 1);
+					deleteRangeByIndex(caretIndex, caretIndex + 1);
 				}
 			}
 
@@ -182,11 +162,30 @@ namespace Engine::Gui {
 				return selecting || caretSelectIndex == caretInvalid || caretSelectIndex == caretIndex;
 			}
 
+			ENGINE_INLINE const Unicode::Unit8* getCodePointAtCaret() const {
+				return reinterpret_cast<const Unicode::Unit8*>(getText().data() + caretIndex);
+			}
+
+			ENGINE_INLINE const Unicode::Unit8* getCodePointAtBegin() const {
+				return reinterpret_cast<const Unicode::Unit8*>(getText().data());
+			}
+
+			ENGINE_INLINE const Unicode::Unit8* getCodePointAtEnd() const {
+				return reinterpret_cast<const Unicode::Unit8*>(getText().data() + getText().size());
+			}
+
+			ENGINE_INLINE uint32 codePointToIndex(const Unicode::Unit8* ptr) const {
+				return static_cast<uint32>(ptr - getCodePointAtBegin());
+			}
+
 			void moveCharLeft() {
 				if (shouldMoveCaret()) {
-					if (caretCluster > 0) {
-						--caretCluster;
-					}
+					caretIndex = codePointToIndex(
+						Unicode::prev(
+							getCodePointAtCaret(),
+							getCodePointAtBegin()
+						)
+					);
 				} else {
 					// TODO: jump to left side of selection
 				}
@@ -195,7 +194,7 @@ namespace Engine::Gui {
 
 			void moveCharRight() {
 				if (shouldMoveCaret()) {
-					++caretCluster;
+					caretIndex = codePointToIndex(Unicode::next(getCodePointAtCaret(), getCodePointAtEnd()));
 				} else {
 					// TODO: jump to right side of selection
 				}
@@ -235,80 +234,24 @@ namespace Engine::Gui {
 					getTextMutable().erase(begin, end - begin);
 					shape();
 
-					caretCluster = 0;
-					uint32 lastCluster = 0;
-					const auto& data = getShapedString().getGlyphShapeData();
-
-					for (auto glyph = data.begin();; ++glyph) {
-						if (glyph == data.end()) {
-							caretCluster += lastCluster < begin;
-							break;
-						} else if (glyph->cluster > begin) {
-							break;
-						}
-
-						if (glyph->cluster != lastCluster) {
-							++caretCluster;
-							lastCluster = glyph->cluster;
-						}
-					}
-
+					caretIndex = begin;
 					selecting = 0;
 					updateCaretPos();
 				}
 			}
 
-			void deleteRangeByClusterIndex(const uint32 begin, const uint32 end) {
-				ENGINE_DEBUG_ASSERT(begin <= end);
-				const auto& glyphs = getShapedString().getGlyphShapeData();
-				uint32 i = 0;
-				uint32 last = 0;
-
-				uint32 endByte = 0xFFFFFFFF;
-				uint32 beginByte = endByte;
-
-				for (const auto& glyph : glyphs) {
-					if (glyph.cluster != last) {
-						++i;
-						last = glyph.cluster;
-					}
-
-					if (i == begin) {
-						beginByte = glyph.cluster;
-					} else if (i == end) {
-						endByte = glyph.cluster;
-						break;
-					}
-				}
-
-				deleteRangeByIndex(beginByte, endByte);
-			}
-
 			void updateCaretPos() {
 				caretSelectIndex = selecting ? caretSelectIndex : caretInvalid;
+				const auto last = caretX;
 				const auto& glyphs = getShapedString().getGlyphShapeData();
 				caretX = 0;
-				uint32 last = 0;
-				uint32 i = 0;
-				caretIndex = static_cast<uint32>(getText().size());
 
 				for (const auto& glyph : glyphs) {
-					if (glyph.cluster != last) {
-						++i;
-						last = glyph.cluster;
-					}
-
-					if (i == caretCluster) {
-						caretIndex = glyph.cluster;
-						break;
-					}
-
+					if (glyph.cluster >= caretIndex) { break; }
 					caretX += glyph.advance.x;
 				}
 
-				if (i < caretCluster) {
-					caretCluster = i + 1;
-				} else {
+				if (caretX != last) {
 					ctx->updateBlinkTime();
 				}
 			}

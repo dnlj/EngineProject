@@ -80,13 +80,33 @@ namespace Engine::Unicode::UTF8 {
 		return UTF32::isWhitespace(to32(begin));
 	}
 
-	ENGINE_INLINE inline Unit8* prev(Unit8* curr, const Unit8* begin) {
+	ENGINE_INLINE constexpr auto length(const Unit8* begin, const Unit8* end) noexcept {
+		int64 count = 0;
+		auto curr = begin;
+		while (curr < end) { count += isStartOfCodePoint(*curr); ++curr; }
+		return count;
+	}
+
+	ENGINE_INLINE constexpr auto length8(const void* begin, const void* end) noexcept {
+		return length(reinterpret_cast<const Unit8*>(begin), reinterpret_cast<const Unit8*>(end));
+	}
+	
+	ENGINE_INLINE inline const Unit8* prev(const Unit8* curr, const Unit8* begin) {
 		while (curr > begin && !isStartOfCodePoint(*--curr)) {}
 		return curr;
 	}
 
-	ENGINE_INLINE inline Unit8* next(Unit8* curr, const Unit8* end) {
+	ENGINE_INLINE inline Unit8* prev(Unit8* curr, const Unit8* begin) {
+		return const_cast<Unit8*>(prev(const_cast<const Unit8*>(curr), begin));
+	}
+	
+	ENGINE_INLINE inline const Unit8* next(const Unit8* curr, const Unit8* end) {
+		if (curr >= end) { return end; }
 		while (++curr < end && !isStartOfCodePoint(*curr)) {}
 		return curr;
+	}
+
+	ENGINE_INLINE inline Unit8* next(Unit8* curr, const Unit8* end) {
+		return const_cast<Unit8*>(next(static_cast<const Unit8*>(curr), end));
 	}
 }
