@@ -6,14 +6,24 @@
 
 
 namespace Engine::Gui {
+	class Caret {
+		public:
+			constexpr static uint32 invalid = 0xFFFFFFFF;
+
+			uint32 index = 0;
+			float32 pos = 0;
+
+			ENGINE_INLINE Caret(const uint32 index, const float32 pos = 0) noexcept : index{index}, pos{pos} {}
+			ENGINE_INLINE bool valid() const noexcept { return index != invalid; }
+			ENGINE_INLINE friend bool operator==(const Caret& a, const Caret& b) noexcept { return a.index == b.index; }
+	};
+
 	class TextBox : public StringLine {
 		private:
-			constexpr static uint32 caretInvalid = 0xFFFFFFFF;
-			uint32 caretIndex = 0;
-			uint32 caretSelectIndex = caretInvalid;
 			uint8 selecting = 0;
-			float32 caretX = 0;
-			float32 caretX2 = 0;
+			Caret caret = 0;
+			Caret select = 0;
+
 			glm::vec2 pad = {5,5}; // TODO: probably pull from font size / theme
 
 		public:
@@ -45,15 +55,15 @@ namespace Engine::Gui {
 
 				if (ctx.getFocus() == this && ctx.isBlinking()) {
 					ctx.drawRect(
-						pos + glm::vec2{caretX, 0},
+						pos + glm::vec2{caret.pos, 0},
 						{1, str.getFont()->getLineHeight()},
 						bo
 					);
 				}
 
-				if (caretSelectIndex != caretInvalid) {
-					const auto a = caretX < caretX2 ? caretX : caretX2;
-					const auto b = caretX < caretX2 ? caretX2 : caretX;
+				if (select.valid()) {
+					const auto a = caret.pos < select.pos ? caret.pos : select.pos;
+					const auto b = caret.pos < select.pos ? select.pos : caret.pos;
 
 					ctx.drawRect(
 						pos + glm::vec2{a, 0},
@@ -69,11 +79,11 @@ namespace Engine::Gui {
 					case Action::MoveCharRight: { moveCharRight(); break; }
 					case Action::DeletePrev: { actionDeletePrev(); break; }
 					case Action::DeleteNext: { actionDeleteNext(); break; }
-					case Action::MoveLineStart: { caretIndex = 0; updateCaretPos(); break; }
-					case Action::MoveLineEnd: { caretIndex = static_cast<uint32>(getText().size()); updateCaretPos(); break; }
+					case Action::MoveLineStart: { caret.index = 0; updateCaretPos(); break; }
+					case Action::MoveLineEnd: { caret.index = static_cast<uint32>(getText().size()); updateCaretPos(); break; }
 					case Action::MoveWordLeft: { moveWordLeft(); break; }
 					case Action::MoveWordRight: { moveWordRight(); break; }
-					case Action::SelectBegin: { ++selecting; if (selecting == 1) { caretSelectIndex = caretIndex; caretX2 = caretX;} break; }
+					case Action::SelectBegin: { ++selecting; if (selecting == 1) { select = caret; } break; }
 					case Action::SelectEnd: { if (selecting > 0) { --selecting; }; break; }
 					case Action::Cut: { actionCut(); break; }
 					case Action::Copy: { actionCopy(); break; }
@@ -86,8 +96,8 @@ namespace Engine::Gui {
 				ctx->setIMEPosition(getPos());
 
 				ctx->registerTextCallback(this, [this](std::string_view view) {
-					insertText(caretIndex, view);
-					caretIndex += static_cast<uint32>(view.size());
+					insertText(caret.index, view);
+					caret.index += static_cast<uint32>(view.size());
 					updateCaretPos();
 					return true;
 				});
@@ -109,25 +119,25 @@ namespace Engine::Gui {
 			}
 
 			void actionCancel() {
-				caretSelectIndex = caretInvalid;
+				select = Caret::invalid;
 			}
 
 			void actionCut() {
-				if (caretSelectIndex == caretInvalid) { return; }
+				if (select == Caret::invalid) { return; }
 				actionCopy();
 				actionDelete();
 				actionCancel();
 			}
 
 			void actionCopy() {
-				if (caretSelectIndex == caretInvalid) { return; }
-				auto base = std::min(caretIndex, caretSelectIndex);
-				auto sz = std::max(caretIndex, caretSelectIndex) - base;
+				if (select == Caret::invalid) { return; }
+				auto base = std::min(caret.index, select.index);
+				auto sz = std::max(caret.index, select.index) - base;
 				ctx->setClipboard(std::string_view{getText().data() + base, sz});
 			}
 
 			ENGINE_INLINE void actionDelete() {
-				deleteRangeByIndex(std::min(caretIndex, caretSelectIndex), std::max(caretIndex, caretSelectIndex));
+				deleteRangeByIndex(std::min(caret.index, select.index), std::max(caret.index, select.index));
 			}
 
 			void actionPaste() {
@@ -135,38 +145,38 @@ namespace Engine::Gui {
 				if (text.empty()) { return; }
 
 				// Delete current selection
-				if (caretSelectIndex != caretInvalid) {
+				if (select != Caret::invalid) {
 					actionDelete();
 				}
 
 				// Insert
-				insertText(caretIndex, text);
-				caretIndex += static_cast<uint32>(text.size());
+				insertText(caret.index, text);
+				caret.index += static_cast<uint32>(text.size());
 				updateCaretPos();
 			}
 			
 			void actionDeletePrev() {
-				if (caretSelectIndex != caretInvalid) {
+				if (select != Caret::invalid) {
 					actionDelete();
-				} else if (caretIndex > 0) {
-					deleteRangeByIndex(getIndexOfPrevCodePoint(), caretIndex);
+				} else if (caret.index > 0) {
+					deleteRangeByIndex(getIndexOfPrevCodePoint(), caret.index);
 				}
 			}
 			
 			void actionDeleteNext() {
-				if (caretSelectIndex != caretInvalid) {
+				if (select.index != Caret::invalid) {
 					actionDelete();
 				} else {
-					deleteRangeByIndex(caretIndex, getIndexOfNextCodePoint());
+					deleteRangeByIndex(caret.index, getIndexOfNextCodePoint());
 				}
 			}
 
 			ENGINE_INLINE bool shouldMoveCaret() const noexcept {
-				return selecting || caretSelectIndex == caretInvalid || caretSelectIndex == caretIndex;
+				return selecting || select == Caret::invalid || select == caret;
 			}
 
 			ENGINE_INLINE const Unicode::Unit8* getCodePointAtCaret() const {
-				return reinterpret_cast<const Unicode::Unit8*>(getText().data() + caretIndex);
+				return reinterpret_cast<const Unicode::Unit8*>(getText().data() + caret.index);
 			}
 
 			ENGINE_INLINE const Unicode::Unit8* getCodePointAtBegin() const {
@@ -191,7 +201,7 @@ namespace Engine::Gui {
 
 			void moveCharLeft() {
 				if (shouldMoveCaret()) {
-					caretIndex = getIndexOfPrevCodePoint();
+					caret.index = getIndexOfPrevCodePoint();
 				} else {
 					// TODO: jump to left side of selection
 				}
@@ -200,7 +210,7 @@ namespace Engine::Gui {
 
 			void moveCharRight() {
 				if (shouldMoveCaret()) {
-					caretIndex = getIndexOfNextCodePoint();
+					caret.index = getIndexOfNextCodePoint();
 				} else {
 					// TODO: jump to right side of selection
 				}
@@ -211,9 +221,9 @@ namespace Engine::Gui {
 				auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
 				auto* const end = begin + getTextMutable().size();
 
-				while (caretIndex > 0) {
+				while (caret.index > 0) {
 					moveCharLeft();
-					auto* curr = begin + caretIndex;
+					auto* curr = begin + caret.index;
 					if (isWordSeparator(Unicode::UTF8::prev(curr, begin), end)) {
 						break;
 					}
@@ -225,8 +235,8 @@ namespace Engine::Gui {
 				auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
 				auto* const end = begin + size;
 
-				while (caretIndex < size) {
-					auto* curr = begin + caretIndex;
+				while (caret.index < size) {
+					auto* curr = begin + caret.index;
 					if (isWordSeparator(curr, end)) {
 						moveCharRight();
 						break;
@@ -240,24 +250,24 @@ namespace Engine::Gui {
 					getTextMutable().erase(begin, end - begin);
 					shape();
 
-					caretIndex = begin;
+					caret.index = begin;
 					selecting = 0;
 					updateCaretPos();
 				}
 			}
 
 			void updateCaretPos() {
-				caretSelectIndex = selecting ? caretSelectIndex : caretInvalid;
-				const auto last = caretX;
+				select = selecting ? select : Caret::invalid;
+				const auto last = caret.pos;
 				const auto& glyphs = getShapedString().getGlyphShapeData();
-				caretX = 0;
+				caret.pos = 0;
 
 				for (const auto& glyph : glyphs) {
-					if (glyph.cluster >= caretIndex) { break; }
-					caretX += glyph.advance.x;
+					if (glyph.cluster >= caret.index) { break; }
+					caret.pos += glyph.advance.x;
 				}
 
-				if (caretX != last) {
+				if (caret.pos != last) {
 					ctx->updateBlinkTime();
 				}
 			}
