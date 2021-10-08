@@ -265,15 +265,6 @@ namespace Engine::Gui {
 				textCallbacks.erase(panel);
 			}
 			
-			void registerKeyCallback(const Panel* panel, KeyCallback callback) {
-				ENGINE_DEBUG_ASSERT(!keyCallbacks[panel], "Attempting to add duplicate Key callback.");
-				keyCallbacks[panel] = callback;
-			}
-			
-			void deregisterKeyCallback(const Panel* panel) {
-				keyCallbacks.erase(panel);
-			}
-
 			ENGINE_INLINE auto getCursor() const noexcept {
 				return cursor;
 			}

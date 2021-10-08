@@ -13,7 +13,7 @@ namespace Engine::Gui {
 			uint32 index = 0;
 			float32 pos = 0;
 
-			ENGINE_INLINE Caret(const uint32 index, const float32 pos = 0) noexcept : index{index}, pos{pos} {}
+			ENGINE_INLINE Caret(const uint32 index = 0, const float32 pos = 0) noexcept : index{index}, pos{pos} {}
 			ENGINE_INLINE bool valid() const noexcept { return index != invalid; }
 			ENGINE_INLINE friend bool operator==(const Caret& a, const Caret& b) noexcept { return a.index == b.index; }
 	};
@@ -90,6 +90,17 @@ namespace Engine::Gui {
 					case Action::Paste: { actionPaste(); break; }
 				}
 			}
+			
+			virtual void onBeginHover() override {
+				// TODO: impl cursor. atm this is broken - see setCursor notes in gui/window.cpp
+				ENGINE_LOG("Begin Text");
+				//ctx->setCursor(Cursor::Text);
+			}
+
+			virtual void onEndHover() override {
+				ENGINE_LOG("End Text");
+				//ctx->setCursor(Cursor::Normal);
+			}
 
 			virtual void onBeginFocus() override {
 				// TODO: use caret pos once correct IME position is fixed (04kVYW2Y)
@@ -106,8 +117,41 @@ namespace Engine::Gui {
 			virtual void onEndFocus() override {
 				ctx->deregisterTextCallback(this);
 			};
+			
+			virtual void onBeginActivate() override {
+				caret = caretFromPos(ctx->getCursor().x);
+				select = Caret::invalid;
+
+				ctx->registerMouseMove(this, [this](const glm::vec2 pos) {
+					select = caretFromPos(pos.x);
+				});
+			}
+
+			virtual void onEndActivate() override {
+				ctx->deregisterMouseMove(this);
+			}
 
 		private:
+			Caret caretFromPos(const float32 pos) const noexcept {
+				const auto x = getPos().x;
+				const auto& glyphs = getShapedString().getGlyphShapeData();
+				Caret result = {};
+
+				// Use glyph advances to approximate glyph bbox.
+				// To do this "correctly" we would have to fully calculate the glyph
+				// bbox(adv+off+width), which could overlap glyphs leading to strange selections
+				// where you end up selecting a code point that occurs visually after but byte
+				// order before. Unless a problem arises, using advances is better in my opinion
+				// because of more obvious selection.
+				for (const auto& glyph : glyphs) {
+					result.index = glyph.cluster;
+					if (x + result.pos + glyph.advance.x >= pos) { break; }
+					result.pos += glyph.advance.x;
+				}
+
+				return result;
+			}
+
 			bool isWordSeparator(Unicode::Unit8* begin, Unicode::Unit8* end) {
 				// TODO: should probably use Unicode Character Categories for these
 				// TODO: cont. https://www.compart.com/en/unicode/category
