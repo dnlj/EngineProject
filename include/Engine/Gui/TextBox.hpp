@@ -203,7 +203,7 @@ namespace Engine::Gui {
 				if (shouldMoveCaret()) {
 					caret.index = getIndexOfPrevCodePoint();
 				} else {
-					// TODO: jump to left side of selection
+					caret.index = std::min(caret.index, select.index);
 				}
 				updateCaretPos();
 			}
@@ -212,7 +212,7 @@ namespace Engine::Gui {
 				if (shouldMoveCaret()) {
 					caret.index = getIndexOfNextCodePoint();
 				} else {
-					// TODO: jump to right side of selection
+					caret.index = std::max(caret.index, select.index);
 				}
 				updateCaretPos();
 			}
