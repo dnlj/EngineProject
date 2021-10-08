@@ -140,10 +140,16 @@ namespace Engine::Gui {
 				// where you end up selecting a code point that occurs visually after but byte
 				// order before. Unless a problem arises, using advances is better in my opinion
 				// because of more obvious selection.
-				for (const auto& glyph : glyphs) {
-					result.index = glyph.cluster;
-					if (x + result.pos + glyph.advance.x >= pos) { break; }
-					result.pos += glyph.advance.x;
+
+				for (auto glyph = glyphs.begin();; ++glyph) {
+					if (glyph == glyphs.end()) { ++result.index; break; }
+					result.index = glyph->cluster;
+
+					// The multipler for advance used here is just a guess based on observation and
+					// feel. A value around 0.6 feels about right. 0.5 is to small. Im not sure how other text
+					// engines handle selection. Probably worth looking into to get 100% native feel.
+					if (x + result.pos + glyph->advance.x * 0.6f > pos) { break; }
+					result.pos += glyph->advance.x;
 				}
 
 				return result;
