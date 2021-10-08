@@ -92,14 +92,11 @@ namespace Engine::Gui {
 			}
 			
 			virtual void onBeginHover() override {
-				// TODO: impl cursor. atm this is broken - see setCursor notes in gui/window.cpp
-				ENGINE_LOG("Begin Text");
-				//ctx->setCursor(Cursor::Text);
+				ctx->setCursor(Cursor::Text);
 			}
 
 			virtual void onEndHover() override {
-				ENGINE_LOG("End Text");
-				//ctx->setCursor(Cursor::Normal);
+				ctx->setCursor(Cursor::Normal);
 			}
 
 			virtual void onBeginFocus() override {

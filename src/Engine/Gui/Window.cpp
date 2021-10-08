@@ -196,7 +196,6 @@ namespace Engine::Gui {
 			resizeDir = 0;
 		}
 
-		// TODO: atm this will override all other panels trying to set cursor. Go back to panel -> cursor association so we can just unset this panel.
 		ctx->setCursor(cur);
 	}
 }
