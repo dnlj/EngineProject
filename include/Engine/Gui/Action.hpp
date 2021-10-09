@@ -5,6 +5,7 @@ namespace Engine::Gui {
 	enum class Action {
 		SelectBegin,
 		SelectEnd,
+		SelectAll,
 
 		Cut,
 		Copy,

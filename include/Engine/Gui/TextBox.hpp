@@ -75,6 +75,9 @@ namespace Engine::Gui {
 
 			virtual void onAction(Action act) override {
 				switch (act) {
+					case Action::SelectBegin: { ++selecting; if (selecting == 1) { select = caret; } break; }
+					case Action::SelectEnd: { if (selecting > 0) { --selecting; }; break; }
+					case Action::SelectAll: { actionSelectAll(); break; }
 					case Action::MoveCharLeft: { moveCharLeft(); break; }
 					case Action::MoveCharRight: { moveCharRight(); break; }
 					case Action::DeletePrev: { actionDeletePrev(); break; }
@@ -83,8 +86,6 @@ namespace Engine::Gui {
 					case Action::MoveLineEnd: { caret.index = static_cast<uint32>(getText().size()); updateCaretPos(); break; }
 					case Action::MoveWordLeft: { moveWordLeft(); break; }
 					case Action::MoveWordRight: { moveWordRight(); break; }
-					case Action::SelectBegin: { ++selecting; if (selecting == 1) { select = caret; } break; }
-					case Action::SelectEnd: { if (selecting > 0) { --selecting; }; break; }
 					case Action::Cut: { actionCut(); break; }
 					case Action::Copy: { actionCopy(); break; }
 					case Action::Paste: { actionPaste(); break; }
@@ -163,6 +164,13 @@ namespace Engine::Gui {
 					if (c == +*begin) { return true; }
 				}
 				return Unicode::UTF8::isWhitespace(begin, end);
+			}
+
+			void actionSelectAll() {
+				onAction(Action::SelectBegin);
+				onAction(Action::MoveLineEnd);
+				onAction(Action::SelectEnd);
+				select = {};
 			}
 
 			void actionCancel() {

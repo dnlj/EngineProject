@@ -782,6 +782,16 @@ void run(int argc, char* argv[]) {
 			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
 			InputId{InputType::KEYBOARD, 0, +KeyCode::V},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Paste); }});
+
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::LCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::A},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::SelectAll); }});
+		im.addBind(InputLayer::GUI, true, InputSequence{
+			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
+			InputId{InputType::KEYBOARD, 0, +KeyCode::A},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::SelectAll); }});
+
 		//im.setLayerEnabled(InputLayer::GUI, false);
 	}
 
