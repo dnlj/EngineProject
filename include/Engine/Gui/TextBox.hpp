@@ -156,14 +156,14 @@ namespace Engine::Gui {
 				return result;
 			}
 
-			bool isWordSeparator(Unicode::Unit8* begin, Unicode::Unit8* end) {
+			bool isWordSeparator(Unicode::Unit8* begin) {
 				// TODO: should probably use Unicode Character Categories for these
 				// TODO: cont. https://www.compart.com/en/unicode/category
 				// TODO: cont. http://www.unicode.org/reports/tr44/#General_Category_Values
 				for (auto c : {'.','-','_',':','/','\\','#'}) {
 					if (c == +*begin) { return true; }
 				}
-				return Unicode::UTF8::isWhitespace(begin, end);
+				return Unicode::UTF8::isWhitespace(begin);
 			}
 
 			void actionSelectAll() {
@@ -274,12 +274,11 @@ namespace Engine::Gui {
 
 			void moveWordLeft() {
 				auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
-				auto* const end = begin + getTextMutable().size();
 
 				while (caret.index > 0) {
 					moveCharLeft();
 					auto* curr = begin + caret.index;
-					if (isWordSeparator(Unicode::UTF8::prev(curr, begin), end)) {
+					if (isWordSeparator(Unicode::UTF8::prev(curr, begin))) {
 						break;
 					}
 				}
@@ -288,11 +287,10 @@ namespace Engine::Gui {
 			void moveWordRight() {
 				const auto size = static_cast<uint32>(getText().size());
 				auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
-				auto* const end = begin + size;
 
 				while (caret.index < size) {
 					auto* curr = begin + caret.index;
-					if (isWordSeparator(curr, end)) {
+					if (isWordSeparator(curr)) {
 						moveCharRight();
 						break;
 					}

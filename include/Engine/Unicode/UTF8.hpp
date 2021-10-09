@@ -76,8 +76,15 @@ namespace Engine::Unicode::UTF8 {
 		return !(+unit & 0b1000'0000) || ((+unit & 0b1100'0000) == 0b1100'0000);
 	}
 
-	ENGINE_INLINE constexpr bool isWhitespace(const Unit8* begin, const Unit8* end) noexcept {
+	/**
+	 * Checks if a code point is whitespace.
+	 */
+	ENGINE_INLINE constexpr bool isWhitespace(const Unit8* begin) noexcept {
 		return UTF32::isWhitespace(to32(begin));
+	}
+
+	ENGINE_INLINE constexpr bool isWhitespace8(const void* begin) noexcept {
+		return isWhitespace(reinterpret_cast<const Unit8*>(begin));
 	}
 
 	/**
@@ -89,13 +96,17 @@ namespace Engine::Unicode::UTF8 {
 		while (curr < end) { count += isStartOfCodePoint(*curr); ++curr; }
 		return count;
 	}
+
 	/**
 	 * @see length
 	 */
 	ENGINE_INLINE constexpr auto length8(const void* begin, const void* end) noexcept {
 		return length(reinterpret_cast<const Unit8*>(begin), reinterpret_cast<const Unit8*>(end));
 	}
-	
+
+	/**
+	 * Get the previous code point or @p begin if none found.
+	 */
 	ENGINE_INLINE inline const Unit8* prev(const Unit8* curr, const Unit8* begin) {
 		while (curr > begin && !isStartOfCodePoint(*--curr)) {}
 		return curr;
@@ -104,7 +115,18 @@ namespace Engine::Unicode::UTF8 {
 	ENGINE_INLINE inline Unit8* prev(Unit8* curr, const Unit8* begin) {
 		return const_cast<Unit8*>(prev(const_cast<const Unit8*>(curr), begin));
 	}
+
+	ENGINE_INLINE inline const Unit8* prev8(const void* curr, const void* begin) {
+		return prev(reinterpret_cast<const Unit8*>(curr), reinterpret_cast<const Unit8*>(begin));
+	}
 	
+	ENGINE_INLINE inline Unit8* prev8(void* curr, const void* begin) {
+		return prev(reinterpret_cast<Unit8*>(curr), reinterpret_cast<const Unit8*>(begin));
+	}
+
+	/**
+	 * Gets the next code point or @p end if none found.
+	 */
 	ENGINE_INLINE inline const Unit8* next(const Unit8* curr, const Unit8* end) {
 		if (curr >= end) { return end; }
 		while (++curr < end && !isStartOfCodePoint(*curr)) {}
@@ -113,5 +135,13 @@ namespace Engine::Unicode::UTF8 {
 
 	ENGINE_INLINE inline Unit8* next(Unit8* curr, const Unit8* end) {
 		return const_cast<Unit8*>(next(static_cast<const Unit8*>(curr), end));
+	}
+
+	ENGINE_INLINE inline const Unit8* next8(const void* curr, const void* end) {
+		return next(reinterpret_cast<const Unit8*>(curr), reinterpret_cast<const Unit8*>(end));
+	}
+	
+	ENGINE_INLINE inline Unit8* next8(void* curr, const void* end) {
+		return next(reinterpret_cast<Unit8*>(curr), reinterpret_cast<const Unit8*>(end));
 	}
 }
