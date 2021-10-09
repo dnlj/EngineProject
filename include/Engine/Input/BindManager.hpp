@@ -19,6 +19,7 @@ namespace Engine::Input {
 
 	using BindListener = std::function<void(Value curr, Value prev, Clock::TimePoint time)>;
 
+	// TODO: rename
 	class Bind2 {
 		public:
 			InputSequence inputs;

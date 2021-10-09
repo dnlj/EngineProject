@@ -16,7 +16,7 @@ namespace Game {
 
 	class EngineInstance {
 		public:
-			Engine::Input::BindManager inputManager;
+			Engine::Input::BindManager bindManager;
 			Engine::TextureManager textureManager;
 			Engine::ShaderManager shaderManager;
 			Engine::Camera camera;
