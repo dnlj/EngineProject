@@ -11,12 +11,14 @@
 #include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Input/InputEvent.hpp>
-#include <Engine/Input/BindId.hpp>
 #include <Engine/Input/InputSequence.hpp>
-#include <Engine/Input/BindListener.hpp>
 
 
 namespace Engine::Input {
+	enum class BindId : uint16;
+
+	using BindListener = std::function<void(Value curr, Value prev, Clock::TimePoint time)>;
+
 	class Bind2 {
 		public:
 			InputSequence inputs;
@@ -24,8 +26,8 @@ namespace Engine::Input {
 			Value value;
 			bool repeat;
 	};
-
-	class InputManager {
+	
+	class BindManager {
 		private:
 			class Layer {
 				private:
@@ -55,7 +57,7 @@ namespace Engine::Input {
 						});
 					}
 
-					bool processInput(const InputManager& manager, const InputEvent& event);
+					bool processInput(const BindManager& manager, const InputEvent& event);
 
 					ENGINE_INLINE bool getEnabled() const noexcept { return enabled; }
 					ENGINE_INLINE void setEnabled(bool val) noexcept { enabled = val; }

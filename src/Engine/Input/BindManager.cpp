@@ -1,9 +1,9 @@
 // Engine
-#include <Engine/Input/InputManager.hpp>
+#include <Engine/Input/BindManager.hpp>
 
 
 namespace Engine::Input {
-	bool InputManager::Layer::processInput(const InputManager& manager, const InputEvent& event) {
+	bool BindManager::Layer::processInput(const BindManager& manager, const InputEvent& event) {
 		if (event.state.value.any()) { // Activate binds
 			auto found = lookup.find(event.state.id);
 			if (found == lookup.end()) { return false; }
