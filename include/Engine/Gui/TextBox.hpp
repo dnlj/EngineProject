@@ -105,6 +105,7 @@ namespace Engine::Gui {
 				ctx->setIMEPosition(getPos());
 
 				ctx->registerTextCallback(this, [this](std::string_view view) {
+					if (select.valid()) { actionDelete(); }
 					insertText(caret.index, view);
 					caret.index += static_cast<uint32>(view.size());
 					updateCaretPos();
