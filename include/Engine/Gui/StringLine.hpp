@@ -43,7 +43,7 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void offset(glm::vec2 off) { strOff += off; }
 
-			virtual void render(Context& ctx) const override = 0;
+			virtual void render() const override = 0;
 
 			virtual void postLayout() override {
 				if (const auto font = str.getFont(); font) {

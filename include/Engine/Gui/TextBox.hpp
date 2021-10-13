@@ -35,26 +35,26 @@ namespace Engine::Gui {
 				setSize(getSize() + pad + pad);
 			}
 
-			virtual void render(Context& ctx) const override {
+			virtual void render() const override {
 				glm::vec2 pos = {0,0};
 				const auto& str = getShapedString();
 				const glm::vec2 size = getSize();
 				const glm::vec4 bg = {0.3,0.3,0.3,1};
 				const glm::vec4 bo = {0,0,0,1};
 
-				ctx.drawRect(pos, size, bg);
+				ctx->drawRect(pos, size, bg);
 
-				ctx.drawRect(pos, {size.x, 1}, bo);
-				ctx.drawRect(pos, {1, size.y}, bo);
-				ctx.drawRect(pos + glm::vec2{0, size.y - 1}, {size.x, 1}, bo);
-				ctx.drawRect(pos + glm::vec2{size.x - 1, 0}, {1, size.y}, bo);
+				ctx->drawRect(pos, {size.x, 1}, bo);
+				ctx->drawRect(pos, {1, size.y}, bo);
+				ctx->drawRect(pos + glm::vec2{0, size.y - 1}, {size.x, 1}, bo);
+				ctx->drawRect(pos + glm::vec2{size.x - 1, 0}, {1, size.y}, bo);
 
 				pos += pad;
 
-				ctx.drawString(getStringOffset(), &str);
+				ctx->drawString(getStringOffset(), &str);
 
-				if (ctx.getFocus() == this && ctx.isBlinking()) {
-					ctx.drawRect(
+				if (ctx->getFocus() == this && ctx->isBlinking()) {
+					ctx->drawRect(
 						pos + glm::vec2{caret.pos, 0},
 						{1, str.getFont()->getLineHeight()},
 						bo
@@ -65,7 +65,7 @@ namespace Engine::Gui {
 					const auto a = caret.pos < select.pos ? caret.pos : select.pos;
 					const auto b = caret.pos < select.pos ? select.pos : caret.pos;
 
-					ctx.drawRect(
+					ctx->drawRect(
 						pos + glm::vec2{a, 0},
 						{b - a, str.getFont()->getLineHeight()},
 						bo

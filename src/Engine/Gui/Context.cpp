@@ -322,7 +322,7 @@ namespace Engine::Gui {
 				renderState.pid = getPanelId(renderState.current->getParent());
 
 				renderState.offset = curr->getPos();
-				curr->render(*this);
+				curr->render();
 				curr = curr->getNextSibling();
 			}
 

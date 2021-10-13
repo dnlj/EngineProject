@@ -223,7 +223,7 @@ namespace Engine::Gui {
 			/**
 			 * Renders this panel.
 			 */
-			virtual void render(Context& ctx) const;
+			virtual void render() const;
 
 			// TODO: doc
 			virtual void preLayout() {}

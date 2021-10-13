@@ -10,9 +10,9 @@ namespace Engine::Gui {
 		public:
 			using StringLine::StringLine;
 
-			virtual void render(Context& ctx) const override {
-				ctx.drawRect({0,0}, getSize(), {1,0,0,0});
-				ctx.drawString(getStringOffset(), &getShapedString());
+			virtual void render() const override {
+				ctx->drawRect({0,0}, getSize(), {1,0,0,0});
+				ctx->drawString(getStringOffset(), &getShapedString());
 			}
 
 			virtual bool canHover() const override { return false; }

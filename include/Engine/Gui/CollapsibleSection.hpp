@@ -43,8 +43,8 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE auto getContent() const noexcept { return content; }
 
-			virtual void render(Context& ctx) const override {
-				ctx.drawRect({0,0}, getSize(), {0,0.5,0.5,1.0});
+			virtual void render() const override {
+				ctx->drawRect({0,0}, getSize(), {0,0.5,0.5,1.0});
 			}
 
 			virtual void preLayout() override {

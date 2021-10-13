@@ -20,9 +20,9 @@ namespace Engine::Gui {
 			void setBeginActive(Callback func) { beginCallback = func; }
 			void setEndActive(Callback func) { endCallback = func; }
 
-			virtual void render(Context& ctx) const override {
-				ctx.drawRect({0,0}, getSize(), {1,0,0,0.2});
-				ctx.drawString(getStringOffset(), &getShapedString());
+			virtual void render() const override {
+				ctx->drawRect({0,0}, getSize(), {1,0,0,0.2});
+				ctx->drawString(getStringOffset(), &getShapedString());
 			}
 
 			virtual void onBeginActivate() override {
