@@ -111,13 +111,29 @@ namespace Engine::Gui {
 					updateCaretPos();
 					return true;
 				});
+
+				ctx->registerActivate(this, [this](){
+					ENGINE_LOG("Active! ", ctx->getActivateCount());
+
+					const auto count = ctx->getActivateCount() % 2;
+					if (count == 0) {
+						// TODO: Select word
+						ENGINE_LOG("Select word");
+					} else if (count  == 1) {
+						// TODO: Select line
+						ENGINE_LOG("Select line");
+					}
+				});
 			};
 
 			virtual void onEndFocus() override {
 				ctx->deregisterTextCallback(this);
+				ctx->deregisterActivate(this);
 			};
 			
 			virtual void onBeginActivate() override {
+				if (ctx->getActive() == this) { return; }
+
 				caret = caretFromPos(ctx->getCursor().x);
 				select = Caret::invalid;
 

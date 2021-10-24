@@ -145,13 +145,7 @@ namespace Engine::Gui {
 		glyphShader = shaderManager.get("shaders/gui_glyph");
 		view = camera.getScreenSize(); // TODO: doesnt this break on resize?
 
-		#ifdef ENGINE_OS_WINDOWS
-			cursorBlinkRate = std::chrono::milliseconds{GetCaretBlinkTime()};
-			ENGINE_LOG("Blink Rate: ", Clock::Milliseconds{cursorBlinkRate}.count());
-		#else
-			#error TODO: impl for non-Windows
-			ENGINE_WARN("Cursor blink rate not implemented for non-Windows");
-		#endif
+		configUserSettings();
 
 		glProgramUniform1i(glyphShader->get(), 2, 1);
 
@@ -248,6 +242,20 @@ namespace Engine::Gui {
 		glDeleteBuffers(1, &glyphVBO);
 
 		deletePanel(root);
+	}
+
+	void Context::configUserSettings() {
+		#ifdef ENGINE_OS_WINDOWS
+			cursorBlinkRate = std::chrono::milliseconds{GetCaretBlinkTime()};
+			clickRate = std::chrono::milliseconds{GetDoubleClickTime()};
+			clickSize = {GetSystemMetrics(SM_CXDOUBLECLK), GetSystemMetrics(SM_CYDOUBLECLK)};
+			ENGINE_LOG("GUI Blink Rate: ", Clock::Milliseconds{cursorBlinkRate}.count());
+			ENGINE_LOG("GUI Click Rate: ", Clock::Milliseconds{clickRate}.count());
+			ENGINE_LOG("GUI Click Size: ", clickSize);
+		#else
+			#error TODO: impl for non-Windows
+			ENGINE_WARN("Not implemented for non-Windows");
+		#endif
 	}
 	
 	void Context::updateCursor() {
@@ -701,8 +709,33 @@ namespace Engine::Gui {
 		//	" ", (int)event.state.id.device,
 		//	" @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count()
 		//);
+
 		if (event.state.id.code == 0) {
 			if (event.state.value.i32) {
+
+				const auto isSequentialActivate = [&]() ENGINE_INLINE { // C++23: Can now omit empty params parens: [&] ENGINE_INLINE {
+					if (event.time - clickLastTime > clickRate) { return false; }
+
+					const auto diff = 2.0f * glm::abs(clickLastPos - getCursor());
+					if (diff.x >= clickSize.x && diff.y >= clickSize.y) { return false; }
+
+					return true;
+				};
+
+				if (isSequentialActivate()) {
+					++activateCount;
+				} else {
+					activateCount = 1;
+				}
+				clickLastPos = getCursor();
+				clickLastTime = event.time;
+
+				for (auto& [_, func] : activateCallbacks) {
+					func();
+				}
+
+				ENGINE_LOG("Active Count: ", activateCount);
+
 				auto hover = getHover();
 				setFocus(hover);
 

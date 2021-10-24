@@ -27,6 +27,8 @@ namespace Engine::Gui {
 	using NativeHandle = void*;
 
 	class Context {
+			using ActivateCallback = std::function<void()>;
+
 			// TODO: doc
 			using MouseMoveCallback = std::function<void(glm::vec2)>;
 
@@ -171,6 +173,7 @@ namespace Engine::Gui {
 			PanelId nextPanelId = invalidPanelId;
 
 			/* Callbacks */
+			FlatHashMap<const Panel*, ActivateCallback> activateCallbacks;
 			FlatHashMap<const Panel*, MouseMoveCallback> mouseMoveCallbacks;
 			FlatHashMap<const Panel*, PanelBeginActivateCallback> panelBeginActivateCallbacks;
 			FlatHashMap<const Panel*, PanelEndActivateCallback> panelEndActivateCallbacks;
@@ -181,12 +184,25 @@ namespace Engine::Gui {
 			Cursor currentCursor = Cursor::Normal;
 			Clock::TimePoint lastBlink = {};
 			Clock::Duration cursorBlinkRate = std::chrono::milliseconds{530}; // 530ms = default blink rate on Windows
+			int32 activateCount = 0;
+			Clock::Duration clickRate = std::chrono::milliseconds{500}; // 500ms = default double click time on Windows
+			glm::vec2 clickSize = {4, 4}; // (4, 4) = default double click rect on Windows
+			glm::vec2 clickLastPos = {};
+			Clock::TimePoint clickLastTime = {};
+
 
 		public:
 			Context(ShaderManager& shaderManager, Camera& camera);
 			Context(Context&) = delete;
 			~Context();
+
+			void configUserSettings();
+
 			void render();
+
+			ENGINE_INLINE auto getActivateCount() const noexcept {
+				return activateCount;
+			}
 
 			ENGINE_INLINE void setNativeWindowHandle(const NativeHandle handle) noexcept {
 				nativeHandle = handle;
@@ -227,6 +243,15 @@ namespace Engine::Gui {
 				deregisterPanel(panel);
 				deregisterMouseMove(panel);
 				delete panel;
+			}
+
+			void registerActivate(const Panel* panel, ActivateCallback callback) {
+				ENGINE_DEBUG_ASSERT(!activateCallbacks[panel], "Attempting to add duplicate activate callback.");
+				activateCallbacks[panel] = callback;
+			}
+
+			void deregisterActivate(const Panel* panel) {
+				activateCallbacks.erase(panel);
 			}
 
 			void registerMouseMove(const Panel* panel, MouseMoveCallback callback) {
