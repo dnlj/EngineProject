@@ -50,6 +50,7 @@ namespace Game {
 
 			struct {
 				class InfoPane* infoPane;
+				class AutoListPane* coordPane;
 			} panels;
 
 			void ui_connect();

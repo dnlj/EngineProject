@@ -11,6 +11,9 @@
 #include <algorithm>
 #include <cstdio>
 
+// FMT
+#include <fmt/core.h>
+
 // Engine
 #include <Engine/Glue/Box2D.hpp>
 #include <Engine/Glue/glm.hpp>
@@ -135,6 +138,38 @@ namespace Game {
 				scale->setText(str);
 			}
 	};
+	
+	class AutoListPane : public Gui::CollapsibleSection {
+		private:
+			std::vector<Gui::Label*> labels;
+			std::vector<std::string> formats;
+			std::string buffer;
+
+		public:
+			AutoListPane(Gui::Context* context) : CollapsibleSection{context} {
+				auto* content = getContent();
+				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Stretch});
+			}
+
+			int32 addLabel(const std::string& format) {
+				auto* content = getContent();
+				auto* panel = ctx->createPanel<Gui::Label>();
+				labels.push_back(panel);
+				formats.push_back(format);
+				content->addChild(panel);
+				return static_cast<int32>(labels.size()) - 1;
+			}
+
+			template<class T>
+			void setLabel(int32 id, const T& value) {
+				auto panel = labels[id];
+				fmt::format_to(std::back_inserter(buffer), formats[id], value);
+				panel->setText(buffer);
+				panel->autoSize();
+				buffer.clear();
+			}
+
+	};
 }
 
 namespace Game {
@@ -211,6 +246,54 @@ namespace Game {
 				panels.infoPane->setRelPos({8, 480});
 				panels.infoPane->setSize({256, 128});
 				panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this.
+			}
+
+			{
+				panels.coordPane = ct.createPanel<AutoListPane>();
+				panels.coordPane->setRelPos({8, 480 + 128 + 8});
+				panels.coordPane->setSize({512, 300});
+
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (offset): {:.3f}"),
+					glm::vec2{3.1415926535f, -5456295141.3f}
+				);
+				
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (world): {:.3f}"),
+					glm::vec2{3.1415926535f, -5456295141.3f}
+				);
+				
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (block): {:.3f}"),
+					glm::vec2{3.1415926535f, -5456295141.3f}
+				);
+				
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (block-world): {:.3f}"),
+					glm::vec2{3.1415926535f, -5456295141.3f}
+				);
+				
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (chunk): {:.3f}"),
+					glm::vec2{3.1415926535f, -5456295141.3f}
+				);
+				
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (region): {:.3f}"),
+					glm::vec2{3.1415926535f, -5456295141.3f}
+				);
+				
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Camera: {:.3f}"),
+					glm::vec3{3.1415926535f, -5456295141.3f, 32.091f}
+				);
+				
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset: {:.3f}"),
+					glm::vec2{3.1415926535f, -5456295141.3f}
+				);
+				
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset (block): {:.3f}"),
+					glm::vec2{3.1415926535f, -5456295141.3f}
+				);
+				
+				panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset (chunk): {:.3f}"),
+					glm::vec2{3.1415926535f, -5456295141.3f}
+				);
+
+				panels.coordPane->getContent()->performLayout(); // TODO: shouldnt have to do this.
 			}
 		}
 	}

@@ -4,9 +4,13 @@
 #include <sstream>
 #include <ostream>
 
+// FMT
+#include <fmt/format.h>
+
 // Engine
 #include <Engine/GlobalConfig.hpp>
 #include <Engine/Constants.hpp>
+#include <Engine/Types.hpp>
 
 
 // TODO: where to put this stuff? we should make something include glm/box2d if they dont use it. May need some kind of integrations/glm.hpp or similar. Glue?
@@ -20,6 +24,33 @@ namespace Engine {
 	template<> struct LogFormatter<glm::vec2> {
 		static void format(std::ostream& stream, const glm::vec2& val);
 	};
+};
+
+// TODO: make generic template for glm::vec<size, type, p>
+template <> struct fmt::formatter<glm::vec2> : fmt::formatter<Engine::float32> {
+	template <typename FormatContext>
+	auto format(const glm::vec2& vec, FormatContext& ctx) -> decltype(ctx.out()) {
+		fmt::format_to(ctx.out(), "(");
+		fmt::formatter<Engine::float32>::format(vec.x, ctx);
+		fmt::format_to(ctx.out(), ", ");
+		fmt::formatter<Engine::float32>::format(vec.y, ctx);
+		fmt::format_to(ctx.out(), ")");
+		return ctx.out();
+	}
+};
+
+template <> struct fmt::formatter<glm::vec3> : fmt::formatter<Engine::float32> {
+	template <typename FormatContext>
+	auto format(const glm::vec3& vec, FormatContext& ctx) -> decltype(ctx.out()) {
+		fmt::format_to(ctx.out(), "(");
+		fmt::formatter<Engine::float32>::format(vec.x, ctx);
+		fmt::format_to(ctx.out(), ", ");
+		fmt::formatter<Engine::float32>::format(vec.y, ctx);
+		fmt::format_to(ctx.out(), ", ");
+		fmt::formatter<Engine::float32>::format(vec.z, ctx);
+		fmt::format_to(ctx.out(), ")");
+		return ctx.out();
+	}
 };
 
 namespace Engine::Detail {

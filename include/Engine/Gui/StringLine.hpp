@@ -23,8 +23,8 @@ namespace Engine::Gui {
 				if (str.getFont()) { shape(); }
 			}
 
-			ENGINE_INLINE void setText(std::string txt) {
-				str = std::move(txt);
+			ENGINE_INLINE void setText(std::string_view txt) {
+				str = txt;
 				if (str.getFont()) { shape(); }
 			}
 
@@ -34,7 +34,6 @@ namespace Engine::Gui {
 				str.setFont(font);
 				postLayout();
 			}
-
 
 			ENGINE_INLINE void shape() { str.shape(); }
 

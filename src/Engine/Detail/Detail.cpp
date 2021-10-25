@@ -18,7 +18,6 @@ namespace Engine {
 	}
 }
 
-
 namespace Engine::Detail {
 	// TODO: look into C++20 chrono and std::formatter/<format>
 	std::string getDateTimeString() {
