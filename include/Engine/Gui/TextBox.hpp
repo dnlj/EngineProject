@@ -127,19 +127,14 @@ namespace Engine::Gui {
 					select = caretFromPos(pos.x);
 				});
 
-
-				/*
-				ENGINE_LOG("Active! ", ctx->getActivateCount());
-				const auto count = ctx->getActivateCount() % 2;
-				if (count == 0) {
-					// TODO: Select word
-					ENGINE_LOG("Select word");
-					actionSelectWord();
-				} else if (count  == 1) {
-					// TODO: Select line
-					ENGINE_LOG("Select line");
-					actionSelectAll();
-				}*/
+				if (auto count = ctx->getActivateCount(); count > 1) {
+					count %= 2;
+					if (count == 0) {
+						actionSelectWord();
+					} else if (count == 1) {
+						actionSelectAll();
+					}
+				}
 			}
 
 			virtual void onEndActivate() override {
@@ -183,13 +178,12 @@ namespace Engine::Gui {
 				return Unicode::UTF8::isWhitespace(begin);
 			}
 
-			//void actionSelectWord() {
-			//	ENGINE_LOG("Select Word222222222");
-			//	moveWordLeft();
-			//	onAction(Action::SelectBegin);
-			//	moveWordRight();
-			//	onAction(Action::SelectEnd);
-			//}
+			void actionSelectWord() {
+				moveWordLeft();
+				onAction(Action::SelectBegin);
+				moveWordEndRight();
+				onAction(Action::SelectEnd);
+			}
 
 			void actionSelectAll() {
 				onAction(Action::SelectBegin);
@@ -322,6 +316,16 @@ namespace Engine::Gui {
 						do { moveCharRight(); } while (isWordSeparator(begin + caret.index));
 						break;
 					}
+					moveCharRight();
+				}
+			}
+
+			void moveWordEndRight() {
+				const auto size = static_cast<uint32>(getText().size());
+				auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
+
+				while (caret.index < size) {
+					if (isWordSeparator(begin + caret.index)) { break; }
 					moveCharRight();
 				}
 			}
