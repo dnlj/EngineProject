@@ -22,7 +22,6 @@ namespace Engine::Gui {
 
 				btn = ctx->createPanel<Button>();
 				addChild(btn);
-				btn->setFont(ctx->font_b); // TODO:
 				btn->setText("Section Test");
 				btn->setEndActive([&]{ toggle(); });
 

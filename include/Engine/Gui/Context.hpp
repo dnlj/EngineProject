@@ -18,6 +18,7 @@
 #include <Engine/Gui/ShapedString.hpp>
 #include <Engine/Gui/Cursor.hpp>
 #include <Engine/Gui/Action.hpp>
+#include <Engine/Gui/Theme.hpp>
 
 namespace Engine {
 	class Camera;
@@ -142,8 +143,8 @@ namespace Engine::Gui {
 
 			/* Text rendering helpers */
 			FontManager fontManager;
-			public: Font font_a; private:// TODO: rm when done testing
-			public: Font font_b; private:// TODO: rm when done testing
+			Theme theme;
+
 			std::vector<StringData> stringsToRender;
 
 			/* Scene graph traversal */
@@ -199,6 +200,8 @@ namespace Engine::Gui {
 			void configUserSettings();
 
 			void render();
+
+			ENGINE_INLINE auto& getTheme() const noexcept { return theme; }
 
 			ENGINE_INLINE auto getActivateCount() const noexcept {
 				return activateCount;

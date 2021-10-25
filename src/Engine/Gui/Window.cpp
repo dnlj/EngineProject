@@ -29,7 +29,7 @@ namespace Engine::Gui {
 
 		title = ctx->createPanel<Title>(this);
 		content->addChild(title);
-		title->setFont(ctx->font_b);
+		title->setFont(ctx->getTheme().fonts.body);
 		title->setText("Window Title");
 		title->setRelPos({0, 0});
 		title->autoSize();

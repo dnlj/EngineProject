@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Gui/Panel.hpp>
 #include <Engine/Gui/ShapedString.hpp>
+#include <Engine/Gui/Context.hpp>
 
 
 namespace Engine::Gui {
@@ -12,7 +13,9 @@ namespace Engine::Gui {
 			glm::vec2 strOff = {};
 
 		public:
-			using Panel::Panel;
+			StringLine(Context* context) : Panel{context} {
+				setFont(ctx->getTheme().fonts.body);
+			}
 
 			ENGINE_INLINE void insertText(uint32 i, std::string_view text) {
 				auto& s = str.getStringMutable();

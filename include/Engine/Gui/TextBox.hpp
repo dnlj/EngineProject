@@ -276,7 +276,7 @@ namespace Engine::Gui {
 			void moveCharLeft() {
 				if (shouldMoveCaret()) {
 					caret.index = getIndexOfPrevCodePoint();
-				} else {
+				} else {	
 					caret.index = std::min(caret.index, select.index);
 				}
 				updateCaretPos();

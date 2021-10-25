@@ -223,10 +223,11 @@ namespace Engine::Gui {
 
 		///////////////////////////////////////////////////////////////////////////////
 
-		font_a = fontManager.createFont("assets/arial.ttf", 32);
+		// TODO: ideally these could just be "Arial" and "Consola" not actual paths.
+		theme.fonts.header = fontManager.createFont("assets/arial.ttf", 32);
+		theme.fonts.body = fontManager.createFont("assets/consola.ttf", 12);
 		//font_a = fontManager.createFont("assets/EmojiOneColor.otf", 32);
 		//font_a = fontManager.createFont("assets/FiraCode-Regular.ttf", 32);
-		font_b = fontManager.createFont("assets/consola.ttf", 12);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
 	}
 

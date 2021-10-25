@@ -96,17 +96,14 @@ namespace Game {
 
 				fps = ctx->createPanel<Gui::Label>();
 				content->addChild(fps);
-				fps->setFont(ctx->font_b);
 				fps->autoSize();
 
 				tick = ctx->createPanel<Gui::Label>();
 				content->addChild(tick);
-				tick->setFont(ctx->font_b);
 				tick->autoSize();
 
 				scale = ctx->createPanel<Gui::Label>();
 				content->addChild(scale);
-				scale->setFont(ctx->font_b);
 				scale->autoSize();
 			}
 
@@ -179,7 +176,7 @@ namespace Game {
 				child->setRelPos({256, 10});
 				child->setSize({128, 64});
 
-				child->setFont(ct.font_a);
+				child->setFont(ct.getTheme().fonts.header);
 				child->setText(R"(This is a test button)");
 			}
 
@@ -188,7 +185,7 @@ namespace Game {
 				child->setRelPos({256, 80});
 				child->setSize({256, 32});
 			
-				child->setFont(ct.font_a);
+				child->setFont(ct.getTheme().fonts.header);
 				child->setText(R"(Wooo a label!)");
 			}
 
@@ -199,7 +196,7 @@ namespace Game {
 
 				auto text = ct.createPanel<Gui::TextBox>();
 				window->getContent()->addChild(text);
-				text->setFont(ct.font_a);
+				text->setFont(ct.getTheme().fonts.header);
 				text->setText(R"(Example text)");
 				//char8_t str8[] = u8"_a_\u0078\u030A\u0058\u030A_b_!=_===_0xFF_<=_||_++_/=_<<=_<=>_";
 				//std::string str = reinterpret_cast<char*>(str8);
