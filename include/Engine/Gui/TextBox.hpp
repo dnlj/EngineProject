@@ -111,24 +111,10 @@ namespace Engine::Gui {
 					updateCaretPos();
 					return true;
 				});
-
-				ctx->registerActivate(this, [this](){
-					ENGINE_LOG("Active! ", ctx->getActivateCount());
-
-					const auto count = ctx->getActivateCount() % 2;
-					if (count == 0) {
-						// TODO: Select word
-						ENGINE_LOG("Select word");
-					} else if (count  == 1) {
-						// TODO: Select line
-						ENGINE_LOG("Select line");
-					}
-				});
 			};
 
 			virtual void onEndFocus() override {
 				ctx->deregisterTextCallback(this);
-				ctx->deregisterActivate(this);
 			};
 			
 			virtual void onBeginActivate() override {
@@ -140,6 +126,20 @@ namespace Engine::Gui {
 				ctx->registerMouseMove(this, [this](const glm::vec2 pos) {
 					select = caretFromPos(pos.x);
 				});
+
+
+				/*
+				ENGINE_LOG("Active! ", ctx->getActivateCount());
+				const auto count = ctx->getActivateCount() % 2;
+				if (count == 0) {
+					// TODO: Select word
+					ENGINE_LOG("Select word");
+					actionSelectWord();
+				} else if (count  == 1) {
+					// TODO: Select line
+					ENGINE_LOG("Select line");
+					actionSelectAll();
+				}*/
 			}
 
 			virtual void onEndActivate() override {
@@ -182,6 +182,14 @@ namespace Engine::Gui {
 				}
 				return Unicode::UTF8::isWhitespace(begin);
 			}
+
+			//void actionSelectWord() {
+			//	ENGINE_LOG("Select Word222222222");
+			//	moveWordLeft();
+			//	onAction(Action::SelectBegin);
+			//	moveWordRight();
+			//	onAction(Action::SelectEnd);
+			//}
 
 			void actionSelectAll() {
 				onAction(Action::SelectBegin);
@@ -292,12 +300,14 @@ namespace Engine::Gui {
 			void moveWordLeft() {
 				auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
 
-				while (caret.index > 0) {
+				// Start at the first non-separator
+				while (caret.index > 0 && isWordSeparator(Unicode::UTF8::prev(begin + caret.index, begin))) {
 					moveCharLeft();
-					auto* curr = begin + caret.index;
-					if (isWordSeparator(Unicode::UTF8::prev(curr, begin))) {
-						break;
-					}
+				}
+
+				// Go to start of next word
+				while (caret.index > 0 && !isWordSeparator(Unicode::UTF8::prev(begin + caret.index, begin))) {
+					moveCharLeft();
 				}
 			}
 
@@ -306,9 +316,10 @@ namespace Engine::Gui {
 				auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
 
 				while (caret.index < size) {
-					auto* curr = begin + caret.index;
-					if (isWordSeparator(curr)) {
-						moveCharRight();
+					// Found end of next word
+					if (isWordSeparator(begin + caret.index)) {
+						// Skip multiple separators
+						do { moveCharRight(); } while (isWordSeparator(begin + caret.index));
 						break;
 					}
 					moveCharRight();
