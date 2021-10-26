@@ -14,17 +14,23 @@ namespace Engine::Gui {
 	class Context; // Forward decl
 
 	/**
-	 * TODO: doc
+	 * The generic interface for all UI elements.
 	 * 
-	 * Panel States:
+	 * States:
+	 * ===========================================================================
 	 * - Hover: The panel is under the cursor.
 	 * - Focus: The panel is the target of input. Ex: pressed with mouse, tab key navigation, text box input.
 	 * - Active: The panel being actived. Ex: mouse press, enter key, controller X/A.
 	 * - Default: No other state is present.
+	 * - Enabled: When a panel is not enabled it is removed from all calculations, layout, iteration, etc.
+	 *            It still exists, is a child of its parent, and owns its children, but it is skipped during
+	 *            sibling/child iteration. The children of a disabled panel are also disabled.
+	 * - PerformingLayout: The panel is updating its layout.
 	 */
 	class Panel {
 		private:
 			struct Flag_ {
+				/** @see Panel states section */
 				enum Flag : uint32 {
 					Enabled          = 1 << 0,
 					PerformingLayout = 1 << 1,
@@ -221,7 +227,9 @@ namespace Engine::Gui {
 				setSize(bounds.max - bounds.min);
 			}
 
-			// TODO: doc
+			/**
+			 * Sets the layout for this panel to use.
+			 */
 			ENGINE_INLINE void setLayout(Layout* l) noexcept { layout = l; }
 			ENGINE_INLINE auto getLayout() noexcept { return layout; }
 
@@ -230,8 +238,14 @@ namespace Engine::Gui {
 			 */
 			virtual void render() const;
 
-			// TODO: doc
+			/**
+			 * Called before layout is performed.
+			 */
 			virtual void preLayout() {}
+
+			/**
+			 * Called after layout is performed.
+			 */
 			virtual void postLayout() {}
 
 			/**
@@ -243,7 +257,9 @@ namespace Engine::Gui {
 				}
 			}
 
-			// TODO: doc
+			/**
+			 * Causes this panel and potentially its children or parent to update their layout.
+			 */
 			ENGINE_INLINE void performLayout() {
 				preLayout();
 				setPerformingLayout(true);
@@ -253,9 +269,8 @@ namespace Engine::Gui {
 				if (parent) { parent->notifyLayout(this); }
 			}
 
-			// TODO: doc
 			/**
-			 * 
+			 * @see Flag
 			 */
 			ENGINE_INLINE void setEnabled(bool e) noexcept { setFlag(Flag::Enabled, e); }
 			ENGINE_INLINE bool isEnabled() const noexcept { return getFlag(Flag::Enabled); }
@@ -265,31 +280,31 @@ namespace Engine::Gui {
 			/**
 			 * Called when this panel is hovered.
 			 */
-			virtual void onBeginHover() { /*ENGINE_INFO("onBeginHover ", this); /**/ }
-			virtual void onEndHover() { /*ENGINE_INFO("onEndHover ", this); /**/ }
+			virtual void onBeginHover() { /*ENGINE_INFO("onBeginHover ", this); /* */ }
+			virtual void onEndHover() { /*ENGINE_INFO("onEndHover ", this); /* */ }
 			virtual bool canHover() const { return true; }
 			
 			/**
 			 * Called the first time a child or any of its descendants are hovered.
 			 * @param child The child that is, or is the parent of, the hovered panel.
 			 */
-			virtual void onBeginChildHover(Panel* child) { /*ENGINE_INFO("onBeginChildHover ", this, " ", child); /**/ }
-			virtual void onEndChildHover(Panel* child) { /*ENGINE_INFO("onEndChildHover ", this, " ", child); /**/ }
+			virtual void onBeginChildHover(Panel* child) { /*ENGINE_INFO("onBeginChildHover ", this, " ", child); /* */ }
+			virtual void onEndChildHover(Panel* child) { /*ENGINE_INFO("onEndChildHover ", this, " ", child); /* */ }
 			virtual bool canHoverChild(Panel* child) const { return true; }
 
 			/**
 			 * Called when this panel is focused.
 			 */
-			virtual void onBeginFocus() { /*ENGINE_INFO("onBeginFocus ", this); /**/ }
-			virtual void onEndFocus() { /*ENGINE_INFO("onEndFocus ", this); /**/ }
+			virtual void onBeginFocus() { /*ENGINE_INFO("onBeginFocus ", this); /* */ }
+			virtual void onEndFocus() { /*ENGINE_INFO("onEndFocus ", this); /* */ }
 			virtual bool canFocus() const { return true; }
 			
 			/**
 			 * Called the first time a child or any of its descendants are focused.
 			 * @param child The child that is, or is the parent of, the focused panel.
 			 */
-			virtual void onBeginChildFocus(Panel* child) { /*ENGINE_INFO("onBeginChildFocus ", this, " ", child); /**/ }
-			virtual void onEndChildFocus(Panel* child) { /*ENGINE_INFO("onEndChildFocus ", this, " ", child); /**/ }
+			virtual void onBeginChildFocus(Panel* child) { /*ENGINE_INFO("onBeginChildFocus ", this, " ", child); /* */ }
+			virtual void onEndChildFocus(Panel* child) { /*ENGINE_INFO("onEndChildFocus ", this, " ", child); /* */ }
 			virtual bool canFocusChild(Panel* child) const { return true; }
 
 			/**
@@ -302,6 +317,9 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setFlag(Flag f, bool e) noexcept { e ? (flags |= f) : (flags &= ~f); }
 			ENGINE_INLINE bool getFlag(Flag f) const noexcept { return flags & f; }
 
+			/**
+			 * @see Flag
+			 */
 			ENGINE_INLINE void setPerformingLayout(bool e) noexcept { setFlag(Flag::PerformingLayout, e); }
 			ENGINE_INLINE bool isPerformingLayout() const noexcept { return getFlag(Flag::PerformingLayout); }
 	};	
