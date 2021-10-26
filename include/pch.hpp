@@ -24,6 +24,7 @@
 #include <cassert>
 #include <utility>
 #include <initializer_list>
+#include <tuple>
 
 
 // Windows
@@ -36,6 +37,13 @@
 
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
+
+// FMT
+#include <fmt/core.h>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+#include <fmt/chrono.h>
+#include <fmt/compile.h>
 
 // GLM
 #include <glm/glm.hpp>
