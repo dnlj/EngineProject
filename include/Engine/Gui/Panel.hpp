@@ -23,6 +23,18 @@ namespace Engine::Gui {
 	 * - Default: No other state is present.
 	 */
 	class Panel {
+		private:
+			struct Flag_ {
+				enum Flag : uint32 {
+					Enabled          = 1 << 0,
+					PerformingLayout = 1 << 1,
+					_count,
+				};
+			};
+
+		public:
+			using Flag = Flag_::Flag;
+
 		protected:
 			/** The Context that owns this panel. */
 			Context* ctx = nullptr;
@@ -42,7 +54,7 @@ namespace Engine::Gui {
 			glm::vec2 pos;
 			glm::vec2 size;
 
-			bool enabled = true;
+			uint32 flags = Flag::Enabled;
 
 		public:
 			Panel(Context* context) : ctx{context} {}
@@ -107,8 +119,8 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE auto getNextSibling() const noexcept {
 				auto res = nextSibling;
-				while (res && !res->enabled) { res = res->nextSibling; }
-				return (res && !res->enabled) ? nullptr : res;
+				while (res && !res->isEnabled()) { res = res->nextSibling; }
+				return (res && !res->isEnabled()) ? nullptr : res;
 			}
 			
 			/**
@@ -116,30 +128,23 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE auto getPrevSibling() const noexcept {
 				auto res = prevSibling;
-				while (res && !res->enabled) { res = res->prevSibling; }
-				return (res && !res->enabled) ? nullptr : res;
+				while (res && !res->isEnabled()) { res = res->prevSibling; }
+				return (res && !res->isEnabled()) ? nullptr : res;
 			}
 
 			/**
 			 * Gets the first enabled child panel.
 			 */
 			ENGINE_INLINE auto getFirstChild() const noexcept {
-				return (firstChild && !firstChild->enabled) ? firstChild->getNextSibling() : firstChild;
+				return (firstChild && !firstChild->isEnabled()) ? firstChild->getNextSibling() : firstChild;
 			}
 			
 			/**
 			 * Gets the last enabled child panel.
 			 */
 			ENGINE_INLINE auto getLastChild() const noexcept {
-				return (lastChild && !lastChild->enabled) ? lastChild->getPrevSibling() : lastChild;
+				return (lastChild && !lastChild->isEnabled()) ? lastChild->getPrevSibling() : lastChild;
 			}
-
-			// TODO: doc
-			/**
-			 *
-			 */
-			ENGINE_INLINE void setEnabled(bool e) noexcept { enabled = e; }
-			ENGINE_INLINE auto getEnabled() const noexcept { return enabled; }
 
 			ENGINE_INLINE auto getContext() const noexcept { return ctx; }
 
@@ -229,12 +234,31 @@ namespace Engine::Gui {
 			virtual void preLayout() {}
 			virtual void postLayout() {}
 
+			/**
+			 * Called after a child panel has performed layout.
+			 */
+			void notifyLayout(Panel* child) {
+				if (!isPerformingLayout()) {
+					performLayout();
+				}
+			}
+
 			// TODO: doc
 			ENGINE_INLINE void performLayout() {
 				preLayout();
+				setPerformingLayout(true);
 				if (layout) { layout->layout(this); }
+				setPerformingLayout(false);
 				postLayout();
+				if (parent) { parent->notifyLayout(this); }
 			}
+
+			// TODO: doc
+			/**
+			 * 
+			 */
+			ENGINE_INLINE void setEnabled(bool e) noexcept { setFlag(Flag::Enabled, e); }
+			ENGINE_INLINE bool isEnabled() const noexcept { return getFlag(Flag::Enabled); }
 
 			virtual void onAction(Action act) {}
 			
@@ -273,5 +297,12 @@ namespace Engine::Gui {
 			 */
 			virtual void onBeginActivate() {}
 			virtual void onEndActivate() {}
+
+		private:
+			ENGINE_INLINE void setFlag(Flag f, bool e) noexcept { e ? (flags |= f) : (flags &= ~f); }
+			ENGINE_INLINE bool getFlag(Flag f) const noexcept { return flags & f; }
+
+			ENGINE_INLINE void setPerformingLayout(bool e) noexcept { setFlag(Flag::PerformingLayout, e); }
+			ENGINE_INLINE bool isPerformingLayout() const noexcept { return getFlag(Flag::PerformingLayout); }
 	};	
 }

@@ -12,6 +12,7 @@
 
 namespace Engine::Gui {
 	class Context;
+	class Window;
 }
 
 namespace Game {
@@ -49,6 +50,7 @@ namespace Game {
 			float32 fps = 0.0f;
 
 			struct {
+				Engine::Gui::Window* window;
 				class InfoPane* infoPane;
 				class AutoListPane* coordPane;
 			} panels;

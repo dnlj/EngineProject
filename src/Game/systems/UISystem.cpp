@@ -179,122 +179,80 @@ namespace Game {
 			std::get<EngineInstance&>(arg).shaderManager,
 			std::get<EngineInstance&>(arg).camera,
 		}} {
+		auto& ct = *ctx;
+
 		{
-			auto& ct = *ctx;
-			{
-				auto child = ct.createPanel<TestPanel>();
-				child->setRelPos({0, 0});
-				child->setSize({64, 300});
+			panels.window = ct.createPanel<Gui::Window>();
+			panels.window->setRelPos({256, 256});
+			panels.window->setSize({300, 256});
 
-				//child->label = R"(Hello, world!)";
-				//child->label.setFont(font_b);
-				//fontManager.shapeString(child->label);
+			auto text = ct.createPanel<Gui::TextBox>();
+			panels.window->getContent()->addChild(text);
+			text->setFont(ct.getTheme().fonts.header);
+			text->setText(R"(Example text)");
+			//char8_t str8[] = u8"_a_\u0078\u030A\u0058\u030A_b_!=_===_0xFF_<=_||_++_/=_<<=_<=>_";
+			//std::string str = reinterpret_cast<char*>(str8);
+			//text->setText(str);
+			text->setRelPos({0, 0});
+			text->autoSize();
+			panels.window->getContent()->performLayout(); // TODO: shouldnt have to do this
+		}
 
-				auto panelA = child->addChild(ct.createPanel<Gui::Panel>());
-				panelA->setRelPos({0, 0});
-				panelA->setSize({32, 32});
+		{
+			panels.infoPane = ct.createPanel<InfoPane>();
+			panels.window->getContent()->addChild(panels.infoPane);
+			panels.infoPane->setSize({0, 128});
+			panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this
+		}
+
+		{
+			panels.coordPane = ct.createPanel<AutoListPane>();
+			panels.window->getContent()->addChild(panels.coordPane);
+			//panels.coordPane->setRelPos({8, 480 + 128 + 8});
+			panels.coordPane->setSize({0, 300});
+
+			// TODO: fix odd line height
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (offset): {:.3f}"),
+				glm::vec2{3.1415926535f, -5456295141.3f}
+			);
 			
-				auto panelB = child->addChild(ct.createPanel<Gui::Panel>());
-				panelB->setRelPos({0, 0});
-				panelB->setMaxSize({32, INFINITY});
-				panelB->setSize({24, 32});
-			}
-		
-			{
-				auto child = ct.createPanel<Gui::Panel>();
-				child->setRelPos({128, 5});
-				child->setSize({32, 64});
-			}
-
-			{
-				auto child = ct.createPanel<Gui::Button>();
-				child->setRelPos({256, 10});
-				child->setSize({128, 64});
-
-				child->setFont(ct.getTheme().fonts.header);
-				child->setText(R"(This is a test button)");
-			}
-
-			{
-				auto child = ct.createPanel<Gui::Label>();
-				child->setRelPos({256, 80});
-				child->setSize({256, 32});
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (world): {:.3f}"),
+				glm::vec2{3.1415926535f, -5456295141.3f}
+			);
 			
-				child->setFont(ct.getTheme().fonts.header);
-				child->setText(R"(Wooo a label!)");
-			}
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (block): {:.3f}"),
+				glm::vec2{3.1415926535f, -5456295141.3f}
+			);
+			
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (block-world): {:.3f}"),
+				glm::vec2{3.1415926535f, -5456295141.3f}
+			);
+			
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (chunk): {:.3f}"),
+				glm::vec2{3.1415926535f, -5456295141.3f}
+			);
+			
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (region): {:.3f}"),
+				glm::vec2{3.1415926535f, -5456295141.3f}
+			);
+			
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Camera: {:.3f}"),
+				glm::vec3{3.1415926535f, -5456295141.3f, 32.091f}
+			);
+			
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset: {:.3f}"),
+				glm::vec2{3.1415926535f, -5456295141.3f}
+			);
+			
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset (block): {:.3f}"),
+				glm::vec2{3.1415926535f, -5456295141.3f}
+			);
+			
+			panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset (chunk): {:.3f}"),
+				glm::vec2{3.1415926535f, -5456295141.3f}
+			);
 
-			{
-				auto window = ct.createPanel<Gui::Window>();
-				window->setRelPos({256, 256});
-				window->setSize({300, 256});
-
-				auto text = ct.createPanel<Gui::TextBox>();
-				window->getContent()->addChild(text);
-				text->setFont(ct.getTheme().fonts.header);
-				text->setText(R"(Example text)");
-				//char8_t str8[] = u8"_a_\u0078\u030A\u0058\u030A_b_!=_===_0xFF_<=_||_++_/=_<<=_<=>_";
-				//std::string str = reinterpret_cast<char*>(str8);
-				//text->setText(str);
-				text->setRelPos({0, 0});
-				text->autoSize();
-				window->getContent()->performLayout(); // TODO: shouldnt have to do this
-			}
-
-			{
-				panels.infoPane = ct.createPanel<InfoPane>();
-				panels.infoPane->setRelPos({8, 480});
-				panels.infoPane->setSize({256, 128});
-				panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this.
-			}
-
-			{
-				panels.coordPane = ct.createPanel<AutoListPane>();
-				panels.coordPane->setRelPos({8, 480 + 128 + 8});
-				panels.coordPane->setSize({512, 300});
-
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (offset): {:.3f}"),
-					glm::vec2{3.1415926535f, -5456295141.3f}
-				);
-				
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (world): {:.3f}"),
-					glm::vec2{3.1415926535f, -5456295141.3f}
-				);
-				
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (block): {:.3f}"),
-					glm::vec2{3.1415926535f, -5456295141.3f}
-				);
-				
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (block-world): {:.3f}"),
-					glm::vec2{3.1415926535f, -5456295141.3f}
-				);
-				
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (chunk): {:.3f}"),
-					glm::vec2{3.1415926535f, -5456295141.3f}
-				);
-				
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (region): {:.3f}"),
-					glm::vec2{3.1415926535f, -5456295141.3f}
-				);
-				
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Camera: {:.3f}"),
-					glm::vec3{3.1415926535f, -5456295141.3f, 32.091f}
-				);
-				
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset: {:.3f}"),
-					glm::vec2{3.1415926535f, -5456295141.3f}
-				);
-				
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset (block): {:.3f}"),
-					glm::vec2{3.1415926535f, -5456295141.3f}
-				);
-				
-				panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset (chunk): {:.3f}"),
-					glm::vec2{3.1415926535f, -5456295141.3f}
-				);
-
-				panels.coordPane->getContent()->performLayout(); // TODO: shouldnt have to do this.
-			}
+			panels.coordPane->getContent()->performLayout(); // TODO: shouldnt have to do this.
 		}
 	}
 
@@ -335,7 +293,7 @@ namespace Game {
 		ui_debug();
 
 		
-		if (panels.infoPane->getContent()->getEnabled()) {
+		if (panels.infoPane->getContent()->isEnabled()) {
 			if (update) {
 				panels.infoPane->setFPS(fps);
 			}
