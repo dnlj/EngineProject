@@ -40,7 +40,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void autoSize() {
 				const auto& bounds = str.getBounds();
 				const auto sz = bounds.getRoundSize();
-				setSize({bounds.max.x, str.getFont()->getLineHeight()});
+				setSize({sz.x, str.getFont()->getLineHeight()});
 			}
 
 			ENGINE_INLINE void offset(glm::vec2 off) { strOff += off; }

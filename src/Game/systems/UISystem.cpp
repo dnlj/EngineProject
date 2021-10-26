@@ -148,7 +148,7 @@ namespace Game {
 		public:
 			AutoListPane(Gui::Context* context) : CollapsibleSection{context} {
 				auto* content = getContent();
-				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Stretch});
+				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Stretch, 2});
 			}
 
 			int32 addLabel(const std::string& format) {
@@ -183,8 +183,8 @@ namespace Game {
 
 		{
 			panels.window = ct.createPanel<Gui::Window>();
-			panels.window->setRelPos({256, 256});
-			panels.window->setSize({300, 256});
+			panels.window->setRelPos({32, 32});
+			panels.window->setSize({350, 600});
 
 			auto text = ct.createPanel<Gui::TextBox>();
 			panels.window->getContent()->addChild(text);

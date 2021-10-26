@@ -735,8 +735,6 @@ namespace Engine::Gui {
 					func();
 				}
 
-				ENGINE_LOG("Active Count: ", activateCount);
-
 				auto hover = getHover();
 				setFocus(hover);
 

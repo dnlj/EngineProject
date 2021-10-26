@@ -37,8 +37,8 @@ namespace Engine::Gui {
 			LayoutFunc layoutFunc = nullptr;
 
 		public:
-			DirectionalLayout(Direction dir, Align align)
-				: dir{dir}, align{align} {
+			DirectionalLayout(Direction dir, Align align, float32 gap = 8.0f)
+				: dir{dir}, align{align}, gap{gap} {
 				updateDispatch();
 			}
 
@@ -47,6 +47,7 @@ namespace Engine::Gui {
 				return (this->*layoutFunc)(panel);
 			}
 
+			ENGINE_INLINE void setGap(float32 g) noexcept { gap = g; }
 			ENGINE_INLINE auto getGap() const noexcept { return gap; }
 
 		private:
