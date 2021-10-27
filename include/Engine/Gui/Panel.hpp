@@ -190,30 +190,30 @@ namespace Engine::Gui {
 			 * Clamped to min/max size. \n
 			 * May update panel layout.
 			 */
-			ENGINE_INLINE void setSize(const glm::vec2 sz) noexcept {
+			void setSize(const glm::vec2 sz) noexcept {
 				const auto old = size;
 				size = glm::clamp(sz, minSize, maxSize);
-				if (size != old) { performLayout(); }
+				if (size != old) { sizeChanged(); }
 			};
 			ENGINE_INLINE auto getSize() const noexcept { return size; }
 
 			/**
 			 * See @ref setSize.
 			 */
-			ENGINE_INLINE void setWidth(const float32 w) noexcept {
+			void setWidth(const float32 w) noexcept {
 				const auto old = size.x;
 				size.x = glm::clamp(w, minSize.x, maxSize.x);
-				if (size.x != old) { performLayout(); }
+				if (size.x != old) { sizeChanged(); }
 			}
 			ENGINE_INLINE auto getWidth() const noexcept { return size.x; }
 			
 			/**
 			 * See @ref setSize.
 			 */
-			ENGINE_INLINE void setHeight(const float32 h) noexcept {
+			void setHeight(const float32 h) noexcept {
 				const auto old = size.y;
 				size.y = glm::clamp(h, minSize.y, maxSize.y);
-				if (size.y != old) { performLayout(); }
+				if (size.y != old) { sizeChanged(); }
 			}
 			ENGINE_INLINE auto getHeight() const noexcept { return size.y; }
 
@@ -248,17 +248,9 @@ namespace Engine::Gui {
 			 */
 			virtual void postLayout() {}
 
-			/**
-			 * Called after a child panel has performed layout.
-			 */
-			void notifyLayout(Panel* child) {
-				if (!isPerformingLayout()) {
-					performLayout();
-				}
-			}
 
 			/**
-			 * Causes this panel and potentially its children or parent to update their layout.
+			 * Causes this panel to update its layout.
 			 */
 			ENGINE_INLINE void performLayout() {
 				preLayout();
@@ -266,7 +258,6 @@ namespace Engine::Gui {
 				if (layout) { layout->layout(this); }
 				setPerformingLayout(false);
 				postLayout();
-				if (parent) { parent->notifyLayout(this); }
 			}
 
 			/**
@@ -322,5 +313,22 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE void setPerformingLayout(bool e) noexcept { setFlag(Flag::PerformingLayout, e); }
 			ENGINE_INLINE bool isPerformingLayout() const noexcept { return getFlag(Flag::PerformingLayout); }
+			
+			/**
+			 * Called after a child panel has changed size.
+			 */
+			void onChildSizeChanged(Panel* child) {
+				if (!isPerformingLayout()) {
+					performLayout();
+				}
+			}
+
+			/**
+			 * Notify the parent panel that this panels size has changed.
+			 */
+			ENGINE_INLINE void sizeChanged() {
+				performLayout();
+				if (parent) { parent->onChildSizeChanged(this); }
+			}
 	};	
 }

@@ -195,14 +195,14 @@ namespace Game {
 			//text->setText(str);
 			text->setRelPos({0, 0});
 			text->autoSize();
-			panels.window->getContent()->performLayout(); // TODO: shouldnt have to do this
+			panels.window->performLayout(); // TODO: shouldnt have to do this
 		}
 
 		{
 			panels.infoPane = ct.createPanel<InfoPane>();
 			panels.window->getContent()->addChild(panels.infoPane);
 			panels.infoPane->setSize({0, 128});
-			panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this
+			panels.infoPane->performLayout(); // TODO: shouldnt have to do this
 		}
 
 		{
@@ -211,7 +211,6 @@ namespace Game {
 			//panels.coordPane->setRelPos({8, 480 + 128 + 8});
 			panels.coordPane->setSize({0, 300});
 
-			// TODO: fix odd line height
 			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (offset): {:.3f}"),
 				glm::vec2{3.1415926535f, -5456295141.3f}
 			);
@@ -252,7 +251,7 @@ namespace Game {
 				glm::vec2{3.1415926535f, -5456295141.3f}
 			);
 
-			panels.coordPane->getContent()->performLayout(); // TODO: shouldnt have to do this.
+			panels.coordPane->performLayout(); // TODO: shouldnt have to do this.
 		}
 	}
 
