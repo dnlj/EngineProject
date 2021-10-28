@@ -86,59 +86,6 @@ namespace {
 }
 
 namespace Game {
-	class InfoPane : public Gui::CollapsibleSection {
-		private:
-			Gui::Label* fps = nullptr;
-			Gui::Label* tick = nullptr;
-			Gui::Label* scale = nullptr;
-
-		public:
-			InfoPane(Gui::Context* context) : CollapsibleSection{context} {
-				auto* content = getContent();
-				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Stretch});
-
-				fps = ctx->createPanel<Gui::Label>();
-				content->addChild(fps);
-				fps->autoSize();
-
-				tick = ctx->createPanel<Gui::Label>();
-				content->addChild(tick);
-				tick->autoSize();
-
-				scale = ctx->createPanel<Gui::Label>();
-				content->addChild(scale);
-				scale->autoSize();
-			}
-
-			void setFPS(float32 f) {
-				std::string str;
-				str.reserve(25);
-				// TODO: look into libfmt
-				str += "FPS: ";
-				str += std::to_string(f);
-				str += "(";
-				str += std::to_string(1/f);
-				str += ")";
-				fps->setText(str);
-			}
-
-			void setTick(Engine::ECS::Tick t) {
-				std::string str;
-				str.reserve(16);
-				str += "Tick: ";
-				str += std::to_string(t);
-				tick->setText(str);
-			}
-
-			void setTickScale(float32 s) {
-				std::string str;
-				str.reserve(16);
-				str += "Tick Scale: ";
-				str += std::to_string(s);
-				scale->setText(str);
-			}
-	};
-	
 	class AutoListPane : public Gui::CollapsibleSection {
 		private:
 			std::vector<Gui::Label*> labels;
@@ -167,6 +114,23 @@ namespace Game {
 				panel->setText(buffer);
 				panel->autoSize();
 				buffer.clear();
+			}
+	};
+	
+	class InfoPane : public AutoListPane {
+		public:
+			enum {
+				FPS,
+				Tick,
+				TickScale,
+			};
+
+			InfoPane(Gui::Context* context) : AutoListPane{context} {
+				addLabel("FPS: {:.3f} ({:.6f})");
+				addLabel("Tick: {}");
+				addLabel("Tick Scale: {:.3f}");
+				auto* ct = getContent();
+				// TODO: add dc button
 			}
 	};
 
@@ -278,14 +242,13 @@ namespace Game {
 
 		ui_debug();
 
-		
 		if (panels.infoPane->getContent()->isEnabled()) {
 			if (update) {
-				panels.infoPane->setFPS(fps);
+				panels.infoPane->setLabel(InfoPane::FPS, fps, 1.0f/fps);
 			}
 
-			panels.infoPane->setTick(world.getTick());
-			panels.infoPane->setTickScale(world.tickScale);
+			panels.infoPane->setLabel(InfoPane::Tick, world.getTick());
+			panels.infoPane->setLabel(InfoPane::TickScale, world.tickScale);
 		}
 	}
 
