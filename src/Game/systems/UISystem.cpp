@@ -160,15 +160,43 @@ namespace Game {
 				return static_cast<int32>(labels.size()) - 1;
 			}
 
-			template<class T>
-			void setLabel(int32 id, const T& value) {
+			template<class... Ts>
+			void setLabel(int32 id, const Ts&... values) {
 				auto panel = labels[id];
-				fmt::format_to(std::back_inserter(buffer), formats[id], value);
+				fmt::format_to(std::back_inserter(buffer), formats[id], values...);
 				panel->setText(buffer);
 				panel->autoSize();
 				buffer.clear();
 			}
+	};
 
+	class CoordPane : public AutoListPane {
+		public:
+			enum {
+				MouseOffset,
+				MouseWorld,
+				MouseBlock,
+				MouseBlockWorld,
+				MouseChunk,
+				MouseRegion,
+				Camera,
+				MapOffset,
+				MapOffsetBlock,
+				MapOffsetChunk,
+			};
+
+			CoordPane(Gui::Context* context) : AutoListPane{context} {
+				addLabel("Mouse (offset): {:.3f}");
+				addLabel("Mouse (world): {:.3f}");
+				addLabel("Mouse (block): {}");
+				addLabel("Mouse (block-world): {:.3f}");
+				addLabel("Mouse (chunk): {} {}");
+				addLabel("Mouse (region): {}");
+				addLabel("Camera: {:.3f}");
+				addLabel("Map Offset: {}");
+				addLabel("Map Offset (block): {}");
+				addLabel("Map Offset (chunk): {}");
+			}
 	};
 }
 
@@ -203,54 +231,13 @@ namespace Game {
 			panels.window->getContent()->addChild(panels.infoPane);
 			panels.infoPane->setSize({0, 128});
 			panels.infoPane->performLayout(); // TODO: shouldnt have to do this
+			panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this
 		}
 
 		{
-			panels.coordPane = ct.createPanel<AutoListPane>();
+			panels.coordPane = ct.createPanel<CoordPane>();
 			panels.window->getContent()->addChild(panels.coordPane);
-			//panels.coordPane->setRelPos({8, 480 + 128 + 8});
 			panels.coordPane->setSize({0, 300});
-
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (offset): {:.3f}"),
-				glm::vec2{3.1415926535f, -5456295141.3f}
-			);
-			
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (world): {:.3f}"),
-				glm::vec2{3.1415926535f, -5456295141.3f}
-			);
-			
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (block): {:.3f}"),
-				glm::vec2{3.1415926535f, -5456295141.3f}
-			);
-			
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (block-world): {:.3f}"),
-				glm::vec2{3.1415926535f, -5456295141.3f}
-			);
-			
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (chunk): {:.3f}"),
-				glm::vec2{3.1415926535f, -5456295141.3f}
-			);
-			
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Mouse (region): {:.3f}"),
-				glm::vec2{3.1415926535f, -5456295141.3f}
-			);
-			
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Camera: {:.3f}"),
-				glm::vec3{3.1415926535f, -5456295141.3f, 32.091f}
-			);
-			
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset: {:.3f}"),
-				glm::vec2{3.1415926535f, -5456295141.3f}
-			);
-			
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset (block): {:.3f}"),
-				glm::vec2{3.1415926535f, -5456295141.3f}
-			);
-			
-			panels.coordPane->setLabel(panels.coordPane->addLabel("Map Offset (chunk): {:.3f}"),
-				glm::vec2{3.1415926535f, -5456295141.3f}
-			);
-
 			panels.coordPane->performLayout(); // TODO: shouldnt have to do this.
 		}
 	}
@@ -457,6 +444,20 @@ namespace Game {
 			auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
 			ImGui::Text("Physics Debug Verts: (%i)", physDebug.getVertexCount());
 		#endif
+
+		if (panels.coordPane->getContent()->isEnabled()) {
+			// TODO: fix var names to match enum names
+			panels.coordPane->setLabel(CoordPane::MouseOffset, offsetMousePos);
+			panels.coordPane->setLabel(CoordPane::MouseWorld, worldMousePos);
+			panels.coordPane->setLabel(CoordPane::MouseBlock, blockMousePos);
+			panels.coordPane->setLabel(CoordPane::MouseBlockWorld, blockWorldMousePos);
+			panels.coordPane->setLabel(CoordPane::MouseChunk, chunkMousePos, chunkBlockMousePos);
+			panels.coordPane->setLabel(CoordPane::MouseRegion, regionMousePos);
+			panels.coordPane->setLabel(CoordPane::Camera, camPos);
+			panels.coordPane->setLabel(CoordPane::MapOffset, mapOffset);
+			panels.coordPane->setLabel(CoordPane::MapOffsetBlock, mapBlockOffset);
+			panels.coordPane->setLabel(CoordPane::MapOffsetChunk, mapChunkOffset);
+		}
 	}
 	
 	void UISystem::ui_render() {

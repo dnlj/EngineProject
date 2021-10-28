@@ -52,7 +52,7 @@ namespace Game {
 			struct {
 				Engine::Gui::Window* window;
 				class InfoPane* infoPane;
-				class AutoListPane* coordPane;
+				class CoordPane* coordPane;
 			} panels;
 
 			void ui_connect();
