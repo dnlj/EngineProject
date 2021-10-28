@@ -26,28 +26,16 @@ namespace Engine {
 	};
 };
 
-// TODO: make generic template for glm::vec<size, type, p>
-template <> struct fmt::formatter<glm::vec2> : fmt::formatter<Engine::float32> {
+template<int L, class T, glm::qualifier Q>
+struct fmt::formatter<glm::vec<L, T, Q>> : fmt::formatter<T> {
 	template <typename FormatContext>
-	auto format(const glm::vec2& vec, FormatContext& ctx) -> decltype(ctx.out()) {
+	auto format(const glm::vec<L, T, Q>& vec, FormatContext& ctx) -> decltype(ctx.out()) {
 		fmt::format_to(ctx.out(), "(");
-		fmt::formatter<Engine::float32>::format(vec.x, ctx);
-		fmt::format_to(ctx.out(), ", ");
-		fmt::formatter<Engine::float32>::format(vec.y, ctx);
-		fmt::format_to(ctx.out(), ")");
-		return ctx.out();
-	}
-};
-
-template <> struct fmt::formatter<glm::vec3> : fmt::formatter<Engine::float32> {
-	template <typename FormatContext>
-	auto format(const glm::vec3& vec, FormatContext& ctx) -> decltype(ctx.out()) {
-		fmt::format_to(ctx.out(), "(");
-		fmt::formatter<Engine::float32>::format(vec.x, ctx);
-		fmt::format_to(ctx.out(), ", ");
-		fmt::formatter<Engine::float32>::format(vec.y, ctx);
-		fmt::format_to(ctx.out(), ", ");
-		fmt::formatter<Engine::float32>::format(vec.z, ctx);
+		for (int i = 0;;) {
+			fmt::formatter<T>::format(vec[i], ctx);
+			if (++i == L) { break; }
+			fmt::format_to(ctx.out(), ", ");
+		}
 		fmt::format_to(ctx.out(), ")");
 		return ctx.out();
 	}
