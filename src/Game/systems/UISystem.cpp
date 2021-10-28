@@ -123,12 +123,17 @@ namespace Game {
 				TickScale,
 			};
 
+			Gui::Button* disconnect;
+
 			InfoPane(Gui::Context* context) : AutoListPane{context} {
 				addLabel("FPS: {:.3f} ({:.6f})");
 				addLabel("Tick: {}");
 				addLabel("Tick Scale: {:.3f}");
-				//auto* ct = getContent();
-				// TODO: add dc button
+
+				disconnect = ctx->createPanel<Gui::Button>(getContent());
+				disconnect->setText("Disconnect");
+				disconnect->autoSize();
+				disconnect->setHeight(32);
 			}
 	};
 
@@ -192,6 +197,12 @@ namespace Game {
 			panels.infoPane->setSize({0, 128});
 			panels.infoPane->performLayout(); // TODO: shouldnt have to do this
 			panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this
+			panels.infoPane->disconnect->setBeginActive([&]{
+				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
+					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
+					world.getSystem<NetworkingSystem>().requestDisconnect(addr);
+				}
+			});
 		}
 
 		{
