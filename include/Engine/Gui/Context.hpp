@@ -201,6 +201,8 @@ namespace Engine::Gui {
 
 			void render();
 
+			ENGINE_INLINE Panel* getRoot() const noexcept { return root; }
+
 			ENGINE_INLINE auto& getTheme() const noexcept { return theme; }
 
 			ENGINE_INLINE auto getActivateCount() const noexcept {
@@ -231,13 +233,10 @@ namespace Engine::Gui {
 			}
 
 			template<class P, class... Args>
-			ENGINE_INLINE P* createPanel(Args&&... args) {
+			P* createPanel(Panel* parent, Args&&... args) {
 				auto p = new P(this, std::forward<Args>(args)...);
-
-				if (p->getParent() == nullptr) {
-					root->addChild(p);
-				}
-
+				ENGINE_DEBUG_ASSERT(parent != nullptr, "Panel created without parent.");
+				parent->addChild(p);
 				registerPanel(p);
 				return p;
 			}

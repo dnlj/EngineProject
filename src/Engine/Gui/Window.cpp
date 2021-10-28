@@ -23,12 +23,10 @@ namespace Engine::Gui {
 	Window::Window(Context* context) : Panel{context} {
 		setLayout(new FillLayout{outBorder});
 
-		content = ctx->createPanel<Panel>();
-		addChild(content);
+		content = ctx->createPanel<Panel>(this);
 		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch});
 
-		title = ctx->createPanel<Title>(this);
-		content->addChild(title);
+		title = ctx->createPanel<Title>(content, this);
 		title->setFont(ctx->getTheme().fonts.body);
 		title->setText("Window Title");
 		title->setRelPos({0, 0});

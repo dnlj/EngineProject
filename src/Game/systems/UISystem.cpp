@@ -99,11 +99,9 @@ namespace Game {
 			}
 
 			int32 addLabel(const std::string& format) {
-				auto* content = getContent();
-				auto* panel = ctx->createPanel<Gui::Label>();
+				auto* panel = ctx->createPanel<Gui::Label>(getContent());
 				labels.push_back(panel);
 				formats.push_back(format);
-				content->addChild(panel);
 				return static_cast<int32>(labels.size()) - 1;
 			}
 
@@ -129,7 +127,7 @@ namespace Game {
 				addLabel("FPS: {:.3f} ({:.6f})");
 				addLabel("Tick: {}");
 				addLabel("Tick Scale: {:.3f}");
-				auto* ct = getContent();
+				//auto* ct = getContent();
 				// TODO: add dc button
 			}
 	};
@@ -174,12 +172,11 @@ namespace Game {
 		auto& ct = *ctx;
 
 		{
-			panels.window = ct.createPanel<Gui::Window>();
+			panels.window = ct.createPanel<Gui::Window>(ct.getRoot());
 			panels.window->setRelPos({32, 32});
 			panels.window->setSize({350, 600});
 
-			auto text = ct.createPanel<Gui::TextBox>();
-			panels.window->getContent()->addChild(text);
+			auto text = ct.createPanel<Gui::TextBox>(panels.window->getContent());
 			text->setFont(ct.getTheme().fonts.header);
 			text->setText(R"(Example text)");
 			//char8_t str8[] = u8"_a_\u0078\u030A\u0058\u030A_b_!=_===_0xFF_<=_||_++_/=_<<=_<=>_";
@@ -191,16 +188,14 @@ namespace Game {
 		}
 
 		{
-			panels.infoPane = ct.createPanel<InfoPane>();
-			panels.window->getContent()->addChild(panels.infoPane);
+			panels.infoPane = ct.createPanel<InfoPane>(panels.window->getContent());
 			panels.infoPane->setSize({0, 128});
 			panels.infoPane->performLayout(); // TODO: shouldnt have to do this
 			panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this
 		}
 
 		{
-			panels.coordPane = ct.createPanel<CoordPane>();
-			panels.window->getContent()->addChild(panels.coordPane);
+			panels.coordPane = ct.createPanel<CoordPane>(panels.window->getContent());
 			panels.coordPane->setSize({0, 300});
 			panels.coordPane->performLayout(); // TODO: shouldnt have to do this.
 		}
