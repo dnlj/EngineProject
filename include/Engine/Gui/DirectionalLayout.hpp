@@ -82,7 +82,7 @@ namespace Engine::Gui {
 					curr->setPos(pos);
 
 					if constexpr (D == Direction::Horizontal) {
-						cpos.y += curr->getSize().x + gap;
+						cpos.x += curr->getSize().x + gap;
 					} else if constexpr (D == Direction::Vertical) {
 						cpos.y += curr->getSize().y + gap;
 					} else {
