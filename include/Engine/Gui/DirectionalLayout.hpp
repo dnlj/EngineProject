@@ -22,117 +22,82 @@ namespace Engine::Gui {
 
 	class DirectionalLayout : public Layout {
 		private:
-			using LayoutFunc = void(DirectionalLayout::*)(Panel*);
-
 			/** The main axis */
 			Direction dir = {};
 
+			/** Alignment along the main axis */
+			Align mainAlign = Align::Start;
+
 			/** Alignment along the cross axis */
-			Align align = {};
+			Align crossAlign = {};
 
 			/** How much of a gap to insert between panels */
 			float32 gap = 8;
 
-			/** The function called when we perform layout. Depends on dispatch. */
-			LayoutFunc layoutFunc = nullptr;
-
 		public:
-			DirectionalLayout(Direction dir, Align align, float32 gap = 8.0f)
-				: dir{dir}, align{align}, gap{gap} {
-				updateDispatch();
-			}
-
-			virtual void layout(Panel* panel) override {
-				ENGINE_DEBUG_ASSERT(layoutFunc, "Invalid layout function");
-				return (this->*layoutFunc)(panel);
+			DirectionalLayout(Direction dir, Align mainAlign, Align crossAlign, float32 gap = 8.0f)
+				: dir{dir}, mainAlign{mainAlign}, crossAlign{crossAlign}, gap{gap} {
 			}
 
 			ENGINE_INLINE void setGap(float32 g) noexcept { gap = g; }
 			ENGINE_INLINE auto getGap() const noexcept { return gap; }
 
-		private:
-			template<Direction D, Align A>
-			void layoutImpl(Panel* panel) {
-				constexpr auto cross = static_cast<uint32>(D == Direction::Horizontal ? Direction::Vertical : Direction::Horizontal);
+			virtual void layout(Panel* panel) override {
+				const auto main = static_cast<uint32>(dir);
+				const auto cross = static_cast<uint32>(dir == Direction::Horizontal ? Direction::Vertical : Direction::Horizontal);
 				const auto size = panel->getSize();
 
+				auto next = &Panel::getNextSibling;
 				auto curr = panel->getFirstChild();
-				auto cpos = panel->getPos();
+				glm::vec2 cpos = panel->getPos();
 
+				if (mainAlign == Align::Start) {
+					// Already set correctly
+				} else if (mainAlign == Align::End) {
+					cpos[main] += panel->getSize()[main];
+					next = &Panel::getPrevSibling;
+					curr = panel->getLastChild();
+				} else if (mainAlign == Align::Center) {
+					ENGINE_WARN("TODO: impl Align::Center for main axis");
+				} else if (mainAlign == Align::Stretch) {
+					// Already set correctly
+				} else [[unlikely]] {
+					ENGINE_WARN("Unknown layout main axis alignment");
+				}
+
+				//auto advancePos()
+				// TODO: could we pull some of the switching out of the loop? lambda? how does that compile down?
 				while (curr) {
 					auto pos = cpos;
 
-					if constexpr (A == Align::Stretch) {
+					if (crossAlign == Align::Stretch) {
 						auto sz = curr->getSize();
 						sz[cross] = size[cross];
 						curr->setSize(sz);
 					}
 
-					if constexpr (A == Align::Start) {
+					if (crossAlign == Align::Start) {
 						// Already in correct pos
-					} else if constexpr (A == Align::End) {
+					} else if (crossAlign == Align::End) {
 						pos[cross] += size[cross] - curr->getSize()[cross];
-					} else if constexpr (A == Align::Center ||
-					                     A == Align::Stretch) {
+					} else if (crossAlign == Align::Center ||
+					           crossAlign == Align::Stretch) {
 						pos[cross] += (size[cross] - curr->getSize()[cross]) * 0.5f;
+					} else [[unlikely]] {
+						ENGINE_WARN("Unknown layout cross alignment.");
+					}
+					
+					if (mainAlign == Align::End) {
+						const auto diff = curr->getSize()[main] + gap;
+						cpos[main] -= diff;
+						pos[main] -= diff;
 					} else {
-						static_assert(A != A, "Unknown Alignment");
+						cpos[main] += curr->getSize()[main] + gap;
 					}
 
 					curr->setPos(pos);
-
-					if constexpr (D == Direction::Horizontal) {
-						cpos.x += curr->getSize().x + gap;
-					} else if constexpr (D == Direction::Vertical) {
-						cpos.y += curr->getSize().y + gap;
-					} else {
-						static_assert(D != D, "Unknown Direction");
-					}
-
-					curr = curr->getNextSibling();
+					curr = (curr->*next)();
 				}
-			}
-
-			void updateDispatch() {
-				using D = std::underlying_type_t<Direction>;
-				using A = std::underlying_type_t<Align>;
-				constexpr auto dCount = static_cast<D>(Direction::_count);
-				constexpr auto aCount = static_cast<D>(Align::_count);
-
-				constexpr LayoutFunc lookup[dCount][aCount] = {
-					{
-						{&DirectionalLayout::template layoutImpl<Direction::Horizontal, Align::Start>},
-						{&DirectionalLayout::template layoutImpl<Direction::Horizontal, Align::End>},
-						{&DirectionalLayout::template layoutImpl<Direction::Horizontal, Align::Center>},
-						{&DirectionalLayout::template layoutImpl<Direction::Horizontal, Align::Stretch>},
-					},
-					{
-						{&DirectionalLayout::template layoutImpl<Direction::Vertical, Align::Start>},
-						{&DirectionalLayout::template layoutImpl<Direction::Vertical, Align::End>},
-						{&DirectionalLayout::template layoutImpl<Direction::Vertical, Align::Center>},
-						{&DirectionalLayout::template layoutImpl<Direction::Vertical, Align::Stretch>},
-					}
-				};
-
-				constexpr bool lookup_check = [&]() {
-					for (D d = {}; d < dCount; ++d) {
-						for (A a = {}; a < aCount; ++a) {
-							if (lookup[d][a] == nullptr) {
-								throw "Missing lookup for one or more enum combination";
-							}
-						}
-					}
-					return false;
-				}();
-
-				if ((dir < Direction{} || dir > Direction::_count) ||
-					(align < Align{} || align > Align::_count)) {
-
-					layoutFunc = lookup[0][0];
-					ENGINE_WARN("Invalid directional layout");
-				}
-
-				layoutFunc = lookup[static_cast<D>(dir)][static_cast<A>(align)];
 			}
 	};
 }

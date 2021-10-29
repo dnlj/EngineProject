@@ -53,6 +53,7 @@ namespace Game {
 				Engine::Gui::Window* window;
 				class InfoPane* infoPane;
 				class CoordPane* coordPane;
+				class NetCondPane* netCondPane;
 			} panels;
 
 			void ui_connect();

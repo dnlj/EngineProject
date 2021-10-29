@@ -24,7 +24,7 @@ namespace Engine::Gui {
 		setLayout(new FillLayout{outBorder});
 
 		content = ctx->createPanel<Panel>(this);
-		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch});
+		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch});
 
 		title = ctx->createPanel<Title>(content, this);
 		title->setFont(ctx->getTheme().fonts.body);

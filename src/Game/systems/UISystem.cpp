@@ -21,6 +21,7 @@
 #include <Engine/Gui/Window.hpp>
 #include <Engine/Gui/CollapsibleSection.hpp>
 #include <Engine/Gui/TextBox.hpp>
+#include <Engine/Gui/Slider.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -74,7 +75,7 @@ namespace {
 
 		public:
 			TestPanel(Engine::Gui::Context* context) : Panel{context} {
-				setLayout(new Engine::Gui::DirectionalLayout{Direction::Vertical, Align::Stretch});
+				setLayout(new Engine::Gui::DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch});
 			}
 
 			//virtual bool canFocus() const override { return true; }
@@ -95,7 +96,7 @@ namespace Game {
 		public:
 			AutoListPane(Gui::Context* context) : CollapsibleSection{context} {
 				auto* content = getContent();
-				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Stretch, 2});
+				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 			}
 
 			int32 addLabel(const std::string& format) {
@@ -165,6 +166,38 @@ namespace Game {
 				addLabel("Map Offset (chunk): {}");
 			}
 	};
+
+	class NetCondPane : public Gui::CollapsibleSection {
+		public:
+			NetCondPane(Gui::Context* context) : CollapsibleSection{context} {
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				setTitle("Network Conditions");
+				addSlider("First slider");
+				addSlider("Second slider");
+				addSlider("Third slider");
+				addSlider("Fourth slider with longer label");
+			}
+
+			void addSlider(std::string_view txt) {
+				auto line = ctx->createPanel<Panel>(getContent());
+				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::End, Gui::Align::Center, 2});
+				line->setHeight(48); // TODO: ideally we could have some kind of auto size so panels expand by default.
+
+				auto slider = ctx->createPanel<Gui::Slider>(line);
+				slider->setWeight(2);
+				// TODO: really want percent sizing so we can say label is 30% slider is 70%
+				// TODO: cont. also be able to say if label>30% ten shrink slider
+				// TODO: cont. that would be something like (minSize = 30%; maxSize = 70%) or similar
+
+				// TODO: probably do a weight system. each panel has a weight and can either be use to do relative weight
+				// TODO: cont. or can set absolute weight on parent and be used like a percentage.
+
+				auto label = ctx->createPanel<Gui::Label>(line);
+				label->setText(txt);
+				label->autoSize();
+				label->setWeight(1);
+			}
+	};
 }
 
 namespace Game {
@@ -174,26 +207,27 @@ namespace Game {
 			std::get<EngineInstance&>(arg).shaderManager,
 			std::get<EngineInstance&>(arg).camera,
 		}} {
-		auto& ct = *ctx;
+
+		Gui::Panel* content = nullptr;
 
 		{
-			panels.window = ct.createPanel<Gui::Window>(ct.getRoot());
+			panels.window = ctx->createPanel<Gui::Window>(ctx->getRoot());
 			panels.window->setRelPos({32, 32});
-			panels.window->setSize({350, 600});
+			panels.window->setSize({350, 900});
+			content = panels.window->getContent();
 
-			auto text = ct.createPanel<Gui::TextBox>(panels.window->getContent());
-			text->setFont(ct.getTheme().fonts.header);
+			auto text = ctx->createPanel<Gui::TextBox>(content);
+			text->setFont(ctx->getTheme().fonts.header);
 			text->setText(R"(Example text)");
 			//char8_t str8[] = u8"_a_\u0078\u030A\u0058\u030A_b_!=_===_0xFF_<=_||_++_/=_<<=_<=>_";
 			//std::string str = reinterpret_cast<char*>(str8);
 			//text->setText(str);
 			text->setRelPos({0, 0});
 			text->autoSize();
-			panels.window->performLayout(); // TODO: shouldnt have to do this
 		}
 
 		{
-			panels.infoPane = ct.createPanel<InfoPane>(panels.window->getContent());
+			panels.infoPane = ctx->createPanel<InfoPane>(content);
 			panels.infoPane->setSize({0, 128});
 			panels.infoPane->performLayout(); // TODO: shouldnt have to do this
 			panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this
@@ -206,10 +240,22 @@ namespace Game {
 		}
 
 		{
-			panels.coordPane = ct.createPanel<CoordPane>(panels.window->getContent());
+			panels.coordPane = ctx->createPanel<CoordPane>(content);
 			panels.coordPane->setSize({0, 300});
 			panels.coordPane->performLayout(); // TODO: shouldnt have to do this.
 		}
+
+		{
+			panels.netCondPane = ctx->createPanel<NetCondPane>(content);
+			panels.netCondPane->setHeight(300);
+			panels.netCondPane->performLayout(); // TODO: shouldnt have to do this.
+		}
+
+		auto slider = ctx->createPanel<Gui::Slider>(content);
+		slider->performLayout();
+
+		panels.window->performLayout(); // TODO: shouldnt have to do this
+		content->performLayout(); // TODO: shouldnt have to do this
 	}
 
 	UISystem::~UISystem() {

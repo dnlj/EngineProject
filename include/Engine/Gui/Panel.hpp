@@ -59,12 +59,16 @@ namespace Engine::Gui {
 
 			glm::vec2 pos;
 			glm::vec2 size;
+			float32 weight; // TODO: separte x,y weight?
 
 			uint32 flags = Flag::Enabled;
 
 		public:
 			Panel(Context* context) : ctx{context} {}
 			virtual ~Panel();
+
+			ENGINE_INLINE void setWeight(float32 w) noexcept { weight = w; }
+			ENGINE_INLINE bool getWeight() const noexcept { return weight; }
 
 			/**
 			 * Remove a child from this panel.
@@ -230,7 +234,10 @@ namespace Engine::Gui {
 			/**
 			 * Sets the layout for this panel to use.
 			 */
-			ENGINE_INLINE void setLayout(Layout* l) noexcept { layout = l; }
+			ENGINE_INLINE void setLayout(Layout* l) noexcept {
+				if (layout) { delete layout; }
+				layout = l;
+			}
 			ENGINE_INLINE auto getLayout() noexcept { return layout; }
 
 			/**

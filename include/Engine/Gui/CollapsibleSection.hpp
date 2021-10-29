@@ -17,7 +17,7 @@ namespace Engine::Gui {
 
 		public:
 			CollapsibleSection(Context* context) : Panel{context} {
-				setLayout(new DirectionalLayout{Direction::Vertical, Align::Start});
+				setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Start});
 				height = getHeight();
 
 				btn = ctx->createPanel<Button>(this);
