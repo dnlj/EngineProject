@@ -33,7 +33,6 @@ namespace Engine::Gui {
 		title->autoSize();
 		title->setHeight(title->getHeight() + 10);
 
-
 		ctx->registerMouseMove(this, [this](glm::vec2 pos) { moveCallback(pos); });
 
 		ctx->registerBeginActivate(this, [this](Panel* panel) { return beginActivateCallback(panel); });

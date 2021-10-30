@@ -223,8 +223,6 @@ namespace Game {
 		{
 			panels.infoPane = ctx->createPanel<InfoPane>(content);
 			panels.infoPane->setSize({0, 128});
-			panels.infoPane->performLayout(); // TODO: shouldnt have to do this
-			panels.infoPane->getContent()->performLayout(); // TODO: shouldnt have to do this
 			panels.infoPane->disconnect->setBeginActive([&]{
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
@@ -236,17 +234,16 @@ namespace Game {
 		{
 			panels.coordPane = ctx->createPanel<CoordPane>(content);
 			panels.coordPane->setSize({0, 300});
-			panels.coordPane->performLayout(); // TODO: shouldnt have to do this.
 		}
 
 		{
 			panels.netCondPane = ctx->createPanel<NetCondPane>(content);
 			panels.netCondPane->setHeight(300);
-			panels.netCondPane->performLayout(); // TODO: shouldnt have to do this.
+			panels.netCondPane->performLayout();
 		}
 
-		content->performLayout(); // TODO: shouldnt have to do this
-		panels.window->performLayout(); // TODO: shouldnt have to do this
+		//content->performLayout(); // TODO: shouldnt have to do this
+		//panels.window->performLayout(); // TODO: shouldnt have to do this
 	}
 
 	UISystem::~UISystem() {

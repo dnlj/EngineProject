@@ -231,13 +231,18 @@ namespace Engine::Gui {
 				ENGINE_DEBUG_ASSERT(found != panelIdMap.end(), "Attempting to get id of unregistered Panel.");
 				return found->second;
 			}
+			
+			template<class P, class... Args>
+			P* constructPanel(Args&&... args) {
+				auto p = new P(this, std::forward<Args>(args)...);
+				registerPanel(p);
+				return p;
+			}
 
 			template<class P, class... Args>
 			P* createPanel(Panel* parent, Args&&... args) {
-				auto p = new P(this, std::forward<Args>(args)...);
-				ENGINE_DEBUG_ASSERT(parent != nullptr, "Panel created without parent.");
+				auto p = constructPanel<P>(std::forward<Args>(args)...);
 				parent->addChild(p);
-				registerPanel(p);
 				return p;
 			}
 

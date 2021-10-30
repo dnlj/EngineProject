@@ -55,11 +55,11 @@ namespace Engine::Gui {
 
 			glm::vec2 minSize = {0, 0};
 			glm::vec2 maxSize = {INFINITY, INFINITY};
-			glm::vec2 idealSize;
+			glm::vec2 idealSize = {};
 
-			glm::vec2 pos;
-			glm::vec2 size;
-			float32 weight; // TODO: separte x,y weight?
+			glm::vec2 pos = {};
+			glm::vec2 size = {};
+			float32 weight = {}; // TODO: separte x,y weight?
 
 			uint32 flags = Flag::Enabled;
 
@@ -102,7 +102,7 @@ namespace Engine::Gui {
 			 * Add a child to the end of the child list.
 			 * This panel now owns the child.
 			 */
-			auto addChild(Panel* child) {
+			ENGINE_INLINE Panel* addChild(Panel* child) {
 				if (child->parent) {
 					child->parent->removeChild(child);
 				}
@@ -121,7 +121,6 @@ namespace Engine::Gui {
 				lastChild = child;
 				return child;
 			}
-
 			ENGINE_INLINE auto getParent() const noexcept { return parent; }
 			
 			/**
@@ -255,16 +254,15 @@ namespace Engine::Gui {
 			 */
 			virtual void postLayout() {}
 
-
 			/**
 			 * Causes this panel to update its layout.
 			 */
 			ENGINE_INLINE void performLayout() {
-				preLayout();
 				setPerformingLayout(true);
+				preLayout();
 				if (layout) { layout->layout(this); }
-				setPerformingLayout(false);
 				postLayout();
+				setPerformingLayout(false);
 			}
 
 			/**

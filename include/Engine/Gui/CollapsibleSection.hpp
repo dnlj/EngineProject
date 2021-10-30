@@ -50,7 +50,6 @@ namespace Engine::Gui {
 
 				auto* layout = reinterpret_cast<DirectionalLayout*>(getLayout());
 				content->setSize({getSize().x, getSize().y - btn->getSize().y - layout->getGap()});
-				ENGINE_LOG("virtual void preLayout() override");
 			}
 	};
 }
