@@ -81,8 +81,6 @@ namespace Engine::Gui {
 					ENGINE_WARN("Unknown layout main axis alignment");
 				}
 
-				//const auto gapAdj = gap * (count - 1) / count;
-				//auto advancePos()
 				// TODO: could we pull some of the switching out of the loop? lambda? how does that compile down?
 				while (curr) {
 					auto pos = cpos;
@@ -100,6 +98,9 @@ namespace Engine::Gui {
 						// You would also need to use this new gap adjusted size to calc
 						// individual panels weight adjusted size. Overall this makes more
 						// intuitive sense but isnt necessarily more correct.
+						//
+						// The second way (removing gaps before dividing size) doesnt work
+						// well with fixed layout weighting, whereas the first does.
 						//
 						const auto w = curr->getWeight() / totalWeight;
 						auto sz = curr->getSize();
