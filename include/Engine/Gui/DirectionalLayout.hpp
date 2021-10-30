@@ -51,9 +51,13 @@ namespace Engine::Gui {
 
 				auto next = &Panel::getNextSibling;
 				auto curr = panel->getFirstChild();
-				auto totalWeight = weight;
-				auto count = 0;
 				glm::vec2 cpos = panel->getPos();
+
+				// Only used for main axis stretch.
+				// TODO: is there a better way to handle these single case variables?
+				float32 totalWeight = weight;
+				int32 count = 0;
+				float32 gapAdj = 0;
 
 				if (mainAlign == Align::Start) {
 					// Already set correctly
@@ -64,33 +68,42 @@ namespace Engine::Gui {
 				} else if (mainAlign == Align::Center) {
 					ENGINE_WARN("TODO: impl Align::Center for main axis");
 				} else if (mainAlign == Align::Stretch) {
-					// Already set correctly
-
-					if (totalWeight == 0) {
-						const auto old = curr;
-						while (curr) {
-							++count;
-							totalWeight += curr->getWeight();
-							curr = (curr->*next)();
-						}
-						curr = old;
+					const bool accum = totalWeight == 0;
+					const auto old = curr;
+					while (curr) {
+						++count;
+						totalWeight += accum ? curr->getWeight() : 0;
+						curr = (curr->*next)();
 					}
+					curr = old;
+					gapAdj = gap * (count - 1) / count;
 				} else [[unlikely]] {
 					ENGINE_WARN("Unknown layout main axis alignment");
 				}
 
+				//const auto gapAdj = gap * (count - 1) / count;
 				//auto advancePos()
 				// TODO: could we pull some of the switching out of the loop? lambda? how does that compile down?
 				while (curr) {
 					auto pos = cpos;
 
-
 					// TODO: refactor main/cross align so we dont resize twice
 					if (mainAlign == Align::Stretch) {
+						// This is arguably incorrect because we distribute the gap space
+						// evenly between all panels. This causes things to be slightly off
+						// from what you might expect. For example with two panels 2:1
+						// the panel sizes themself will not be quite 2:1. It is the total
+						// `panelSize + gap*(n-1)/n` which is 2:1.
+						//
+						// The other way to do things would be to take the total space then
+						// subtract (n-1)*gap from it then divide that between all panels.
+						// You would also need to use this new gap adjusted size to calc
+						// individual panels weight adjusted size. Overall this makes more
+						// intuitive sense but isnt necessarily more correct.
+						//
 						const auto w = curr->getWeight() / totalWeight;
-
 						auto sz = curr->getSize();
-						sz[main] = w * size[main] - (count > 1 ? gap : 0);
+						sz[main] = w * size[main] - gapAdj;
 						curr->setSize(sz);
 					}
 

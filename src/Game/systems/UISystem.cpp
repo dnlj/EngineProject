@@ -66,24 +66,6 @@ namespace {
 		freeaddrinfo(results);
 		return true;
 	}
-	
-	// TODO: rm
-	class TestPanel : public Engine::Gui::Panel {
-		private:
-			using Direction = Engine::Gui::Direction; // TODO: rm
-			using Align = Engine::Gui::Align; // TODO: rm
-
-		public:
-			TestPanel(Engine::Gui::Context* context) : Panel{context} {
-				setLayout(new Engine::Gui::DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch});
-			}
-
-			//virtual bool canFocus() const override { return true; }
-			virtual bool canFocusChild(Panel* child) const override { return false; }
-			//virtual bool canHoverChild(Panel* child) const override { return false; }
-			virtual bool canHover() const override { return false; }
-	};
-
 }
 
 namespace Game {
@@ -186,10 +168,13 @@ namespace Game {
 				auto slider = ctx->createPanel<Gui::Slider>(line);
 				slider->setWeight(2);
 
-				auto label = ctx->createPanel<Gui::Label>(line);
-				label->setText(txt);
-				label->autoSize();
-				label->setWeight(1);
+				//auto label = ctx->createPanel<Gui::Label>(line);
+				//label->setText(txt);
+				//label->autoSize();
+				//label->setWeight(1);
+
+				auto slider2 = ctx->createPanel<Gui::Slider>(line);
+				slider2->setWeight(1);
 			}
 	};
 }
@@ -241,9 +226,6 @@ namespace Game {
 			panels.netCondPane->setHeight(300);
 			panels.netCondPane->performLayout();
 		}
-
-		//content->performLayout(); // TODO: shouldnt have to do this
-		//panels.window->performLayout(); // TODO: shouldnt have to do this
 	}
 
 	UISystem::~UISystem() {

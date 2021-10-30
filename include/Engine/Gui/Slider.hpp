@@ -32,10 +32,12 @@ namespace Engine::Gui {
 			}
 
 			virtual void onBeginActivate() override {
-				ctx->registerMouseMove(this, [this](const glm::vec2 pos) {
+				const auto func = [this](const glm::vec2 pos) {
 					p = (ctx->getCursor().x - getPos().x) / getWidth();
 					p = glm::clamp(p, 0.0f, 1.0f);
-				});
+				};
+				func(ctx->getCursor());
+				ctx->registerMouseMove(this, std::move(func));
 			}
 
 			virtual void onEndActivate() override {
