@@ -34,6 +34,8 @@ namespace Engine::Gui {
 			/** How much of a gap to insert between panels */
 			float32 gap = 8;
 
+			float32 weight = 0.0f;
+
 		public:
 			DirectionalLayout(Direction dir, Align mainAlign, Align crossAlign, float32 gap = 8.0f)
 				: dir{dir}, mainAlign{mainAlign}, crossAlign{crossAlign}, gap{gap} {
@@ -49,6 +51,8 @@ namespace Engine::Gui {
 
 				auto next = &Panel::getNextSibling;
 				auto curr = panel->getFirstChild();
+				auto totalWeight = weight;
+				auto count = 0;
 				glm::vec2 cpos = panel->getPos();
 
 				if (mainAlign == Align::Start) {
@@ -61,6 +65,16 @@ namespace Engine::Gui {
 					ENGINE_WARN("TODO: impl Align::Center for main axis");
 				} else if (mainAlign == Align::Stretch) {
 					// Already set correctly
+
+					if (totalWeight == 0) {
+						const auto old = curr;
+						while (curr) {
+							++count;
+							totalWeight += curr->getWeight();
+							curr = (curr->*next)();
+						}
+						curr = old;
+					}
 				} else [[unlikely]] {
 					ENGINE_WARN("Unknown layout main axis alignment");
 				}
@@ -69,6 +83,16 @@ namespace Engine::Gui {
 				// TODO: could we pull some of the switching out of the loop? lambda? how does that compile down?
 				while (curr) {
 					auto pos = cpos;
+
+
+					// TODO: refactor main/cross align so we dont resize twice
+					if (mainAlign == Align::Stretch) {
+						const auto w = curr->getWeight() / totalWeight;
+
+						auto sz = curr->getSize();
+						sz[main] = w * size[main] - (count > 1 ? gap : 0);
+						curr->setSize(sz);
+					}
 
 					if (crossAlign == Align::Stretch) {
 						auto sz = curr->getSize();

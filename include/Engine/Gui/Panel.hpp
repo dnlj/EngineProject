@@ -68,7 +68,7 @@ namespace Engine::Gui {
 			virtual ~Panel();
 
 			ENGINE_INLINE void setWeight(float32 w) noexcept { weight = w; }
-			ENGINE_INLINE bool getWeight() const noexcept { return weight; }
+			ENGINE_INLINE auto getWeight() const noexcept { return weight; }
 
 			/**
 			 * Remove a child from this panel.

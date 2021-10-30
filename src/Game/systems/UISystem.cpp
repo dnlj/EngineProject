@@ -180,17 +180,11 @@ namespace Game {
 
 			void addSlider(std::string_view txt) {
 				auto line = ctx->createPanel<Panel>(getContent());
-				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::End, Gui::Align::Center, 2});
+				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 8});
 				line->setHeight(48); // TODO: ideally we could have some kind of auto size so panels expand by default.
 
 				auto slider = ctx->createPanel<Gui::Slider>(line);
 				slider->setWeight(2);
-				// TODO: really want percent sizing so we can say label is 30% slider is 70%
-				// TODO: cont. also be able to say if label>30% ten shrink slider
-				// TODO: cont. that would be something like (minSize = 30%; maxSize = 70%) or similar
-
-				// TODO: probably do a weight system. each panel has a weight and can either be use to do relative weight
-				// TODO: cont. or can set absolute weight on parent and be used like a percentage.
 
 				auto label = ctx->createPanel<Gui::Label>(line);
 				label->setText(txt);
@@ -251,11 +245,8 @@ namespace Game {
 			panels.netCondPane->performLayout(); // TODO: shouldnt have to do this.
 		}
 
-		auto slider = ctx->createPanel<Gui::Slider>(content);
-		slider->performLayout();
-
-		panels.window->performLayout(); // TODO: shouldnt have to do this
 		content->performLayout(); // TODO: shouldnt have to do this
+		panels.window->performLayout(); // TODO: shouldnt have to do this
 	}
 
 	UISystem::~UISystem() {
