@@ -22,7 +22,7 @@ namespace Engine::Gui {
 
 				btn = ctx->createPanel<Button>(this);
 				btn->setText("Section Test");
-				btn->setEndActive([&]{ toggle(); });
+				btn->setAction([&]{ toggle(); });
 
 				content = ctx->createPanel<Panel>(this);
 			}

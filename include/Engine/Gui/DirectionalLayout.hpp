@@ -107,6 +107,14 @@ namespace Engine::Gui {
 						sz[main] = w * size[main] - gapAdj;
 						curr->setSize(sz);
 					}
+					
+					if (mainAlign == Align::End) {
+						const auto diff = curr->getSize()[main] + gap;
+						cpos[main] -= diff;
+						pos[main] -= diff;
+					} else {
+						cpos[main] += curr->getSize()[main] + gap;
+					}
 
 					if (crossAlign == Align::Stretch) {
 						auto sz = curr->getSize();
@@ -123,14 +131,6 @@ namespace Engine::Gui {
 						pos[cross] += (size[cross] - curr->getSize()[cross]) * 0.5f;
 					} else [[unlikely]] {
 						ENGINE_WARN("Unknown layout cross alignment.");
-					}
-					
-					if (mainAlign == Align::End) {
-						const auto diff = curr->getSize()[main] + gap;
-						cpos[main] -= diff;
-						pos[main] -= diff;
-					} else {
-						cpos[main] += curr->getSize()[main] + gap;
 					}
 
 					curr->setPos(pos);

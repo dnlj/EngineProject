@@ -208,7 +208,7 @@ namespace Game {
 		{
 			panels.infoPane = ctx->createPanel<InfoPane>(content);
 			panels.infoPane->setSize({0, 128});
-			panels.infoPane->disconnect->setBeginActive([&]{
+			panels.infoPane->disconnect->setAction([&]{
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
 					world.getSystem<NetworkingSystem>().requestDisconnect(addr);
