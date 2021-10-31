@@ -9,12 +9,13 @@
 namespace Engine::Gui {
 	class Slider : public Panel {
 		private:
-			float32 p = 0.5f;
+			float64 min = 0;
+			float64 max = 1;
+			float64 p = 0.5;
 			Label* label = nullptr;
 
 		public:
-			// TODO: min, max
-			// TODO: int types, float types
+			// TODO: label string or decimal count
 			// TODO: snap intervals
 			// TODO: vertical option
 			Slider(Context* context) : Panel{context} {
@@ -24,10 +25,16 @@ namespace Engine::Gui {
 				updateLabel();
 			}
 
-			ENGINE_INLINE auto getValue() const noexcept { return p; }
+			void setLimits(float64 min, float64 max) {
+				this->min = min;
+				this->max = max;
+				updateLabel();
+			}
+
+			ENGINE_INLINE auto getValue() const noexcept { return std::lerp(min, max, p); }
 
 			ENGINE_INLINE void updateLabel() {
-				label->autoText(fmt::format("{:.3}", p));
+				label->autoText(fmt::format("{:.3}", getValue()));
 			}
 
 			virtual void render() const override {
@@ -45,7 +52,7 @@ namespace Engine::Gui {
 			virtual void onBeginActivate() override {
 				const auto func = [this](const glm::vec2 pos) {
 					p = (ctx->getCursor().x - getPos().x) / getWidth();
-					p = glm::clamp(p, 0.0f, 1.0f);
+					p = glm::clamp(p, 0.0, 1.0);
 					updateLabel();
 				};
 				func(ctx->getCursor());

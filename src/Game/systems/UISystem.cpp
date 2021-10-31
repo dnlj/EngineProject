@@ -168,6 +168,7 @@ namespace Game {
 				label->setWeight(1);
 
 				auto slider = ctx->createPanel<Gui::Slider>(line);
+				slider->setLimits(-10, 100);
 				slider->setWeight(2);
 			}
 	};
