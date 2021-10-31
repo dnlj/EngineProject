@@ -162,13 +162,13 @@ namespace Game {
 				auto line = ctx->createPanel<Panel>(getContent());
 				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 8});
 				line->setHeight(48); // TODO: ideally we could have some kind of auto size so panels expand by default.
-
-				auto slider = ctx->createPanel<Gui::Slider>(line);
-				slider->setWeight(2);
-
+				
 				auto label = ctx->createPanel<Gui::Label>(line);
 				label->autoText(txt);
 				label->setWeight(1);
+
+				auto slider = ctx->createPanel<Gui::Slider>(line);
+				slider->setWeight(2);
 			}
 	};
 }
