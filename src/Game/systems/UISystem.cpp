@@ -152,13 +152,29 @@ namespace Game {
 			NetCondPane(Gui::Context* context) : CollapsibleSection{context} {
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 				setTitle("Network Conditions");
-				addSlider("First slider");
-				addSlider("Second slider");
-				addSlider("Third slider");
-				addSlider("Fourth slider with longer label");
+				addSlider("Half Ping Add").setLimits(0, 500).setValue(0).setCallback([this](float64 v){
+					auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+					auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+					settings.halfPingAdd = std::chrono::milliseconds{static_cast<int64>(v)};
+				});
+				addSlider("Jitter").setLimits(0, 1).setValue(0).setCallback([this](float64 v){
+					auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+					auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+					settings.jitter = static_cast<float32>(v);
+				});
+				addSlider("Duplicate Chance").setLimits(0, 1).setValue(0).setCallback([this](float64 v){
+					auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+					auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+					settings.duplicate = static_cast<float32>(v);
+				});
+				addSlider("Loss").setLimits(0, 1).setValue(0).setCallback([this](float64 v){
+					auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+					auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+					settings.loss = static_cast<float32>(v);
+				});
 			}
 
-			void addSlider(std::string_view txt) {
+			Gui::Slider& addSlider(std::string_view txt) {
 				auto line = ctx->createPanel<Panel>(getContent());
 				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 8});
 				line->setHeight(48); // TODO: ideally we could have some kind of auto size so panels expand by default.
@@ -168,8 +184,8 @@ namespace Game {
 				label->setWeight(1);
 
 				auto slider = ctx->createPanel<Gui::Slider>(line);
-				slider->setLimits(-10, 100);
 				slider->setWeight(2);
+				return *slider;
 			}
 	};
 }
@@ -181,7 +197,7 @@ namespace Game {
 			std::get<EngineInstance&>(arg).shaderManager,
 			std::get<EngineInstance&>(arg).camera,
 		}} {
-
+		ctx->setUserdata(this);
 		Gui::Panel* content = nullptr;
 
 		{

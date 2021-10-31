@@ -8,10 +8,14 @@
 
 namespace Engine::Gui {
 	class Slider : public Panel {
+		public:
+			using Callback = std::function<void(float64)>;
+
 		private:
 			float64 min = 0;
 			float64 max = 1;
 			float64 p = 0.5;
+			Callback callback;
 			Label* label = nullptr;
 
 		public:
@@ -25,13 +29,32 @@ namespace Engine::Gui {
 				updateLabel();
 			}
 
-			void setLimits(float64 min, float64 max) {
+			Slider& setCallback(Callback func) {
+				callback = std::move(func);
+				return *this;
+			}
+
+			Slider& setLimits(float64 min, float64 max) {
 				this->min = min;
 				this->max = max;
 				updateLabel();
+				return *this;
 			}
 
-			ENGINE_INLINE auto getValue() const noexcept { return std::lerp(min, max, p); }
+			ENGINE_INLINE Slider& setPercentage(float64 p) {
+				p = std::clamp(p, 0.0, 1.0);
+				if (p == this->p) { return *this; }
+				this->p = p;
+				updateLabel();
+				if (callback) { callback(getValue()); }
+				return *this;
+			}
+
+			ENGINE_INLINE Slider& setValue(float64 v) {
+				return setPercentage((v - min) / (max - min));
+			}
+
+			ENGINE_INLINE float64 getValue() const noexcept { return std::lerp(min, max, p); }
 
 			ENGINE_INLINE void updateLabel() {
 				label->autoText(fmt::format("{:.3}", getValue()));
@@ -51,9 +74,8 @@ namespace Engine::Gui {
 
 			virtual void onBeginActivate() override {
 				const auto func = [this](const glm::vec2 pos) {
-					p = (ctx->getCursor().x - getPos().x) / getWidth();
-					p = glm::clamp(p, 0.0, 1.0);
-					updateLabel();
+					float32 v = (ctx->getCursor().x - getPos().x) / getWidth();
+					setPercentage(v);
 				};
 				func(ctx->getCursor());
 				ctx->registerMouseMove(this, std::move(func));

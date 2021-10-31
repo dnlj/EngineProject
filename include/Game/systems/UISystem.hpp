@@ -28,6 +28,9 @@ namespace Game {
 
 			ENGINE_INLINE auto& getContext() noexcept { return *ctx; }
 
+			ENGINE_INLINE auto& getWorld() const noexcept { return world; }
+			ENGINE_INLINE auto& getEngine() const noexcept { return engine; }
+
 		private:
 			std::stringstream ss;
 			Engine::Gui::Context* ctx;

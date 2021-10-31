@@ -114,6 +114,7 @@ namespace Engine::Gui {
 			std::vector<Action> actionQueue;
 			NativeHandle nativeHandle = {};
 			std::string textBuffer;
+			void* userdata = nullptr;
 
 			/* Main framebuffer and clipping */
 			GLuint fbo = 0;
@@ -191,11 +192,15 @@ namespace Engine::Gui {
 			glm::vec2 clickLastPos = {};
 			Clock::TimePoint clickLastTime = {};
 
-
 		public:
 			Context(ShaderManager& shaderManager, Camera& camera);
 			Context(Context&) = delete;
 			~Context();
+
+			ENGINE_INLINE void setUserdata(void* ptr) noexcept { userdata = ptr; }
+
+			template<class T>
+			ENGINE_INLINE T* getUserdata() const noexcept { return reinterpret_cast<T*>(userdata); }
 
 			void configUserSettings();
 
