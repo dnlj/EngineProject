@@ -43,6 +43,14 @@ namespace Engine::Gui {
 				setSize({sz.x, str.getFont()->getLineHeight()});
 			}
 
+			/**
+			 * Sets the text and resizes the panel to fit.
+			 */
+			ENGINE_INLINE void autoText(std::string_view txt) {
+				setText(txt);
+				autoSize();
+			}
+
 			ENGINE_INLINE void offset(glm::vec2 off) { strOff += off; }
 
 			virtual void render() const override = 0;

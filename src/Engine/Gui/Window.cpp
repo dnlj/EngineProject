@@ -28,9 +28,8 @@ namespace Engine::Gui {
 
 		title = ctx->createPanel<Title>(content, this);
 		title->setFont(ctx->getTheme().fonts.body);
-		title->setText("Window Title");
+		title->autoText("Window Title");
 		title->setRelPos({0, 0});
-		title->autoSize();
 		title->setHeight(title->getHeight() + 10);
 
 		ctx->registerMouseMove(this, [this](glm::vec2 pos) { moveCallback(pos); });

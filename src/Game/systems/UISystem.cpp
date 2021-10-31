@@ -92,8 +92,7 @@ namespace Game {
 			void setLabel(int32 id, const Ts&... values) {
 				auto panel = labels[id];
 				fmt::format_to(std::back_inserter(buffer), formats[id], values...);
-				panel->setText(buffer);
-				panel->autoSize();
+				panel->autoText(buffer);
 				buffer.clear();
 			}
 	};
@@ -114,8 +113,7 @@ namespace Game {
 				addLabel("Tick Scale: {:.3f}");
 
 				disconnect = ctx->createPanel<Gui::Button>(getContent());
-				disconnect->setText("Disconnect");
-				disconnect->autoSize();
+				disconnect->autoText("Disconnect");
 				disconnect->setHeight(32);
 			}
 	};
@@ -168,13 +166,9 @@ namespace Game {
 				auto slider = ctx->createPanel<Gui::Slider>(line);
 				slider->setWeight(2);
 
-				//auto label = ctx->createPanel<Gui::Label>(line);
-				//label->setText(txt);
-				//label->autoSize();
-				//label->setWeight(1);
-
-				auto slider2 = ctx->createPanel<Gui::Slider>(line);
-				slider2->setWeight(1);
+				auto label = ctx->createPanel<Gui::Label>(line);
+				label->autoText(txt);
+				label->setWeight(1);
 			}
 	};
 }
@@ -197,12 +191,11 @@ namespace Game {
 
 			auto text = ctx->createPanel<Gui::TextBox>(content);
 			text->setFont(ctx->getTheme().fonts.header);
-			text->setText(R"(Example text)");
+			text->autoText(R"(Example text)");
 			//char8_t str8[] = u8"_a_\u0078\u030A\u0058\u030A_b_!=_===_0xFF_<=_||_++_/=_<<=_<=>_";
 			//std::string str = reinterpret_cast<char*>(str8);
 			//text->setText(str);
 			text->setRelPos({0, 0});
-			text->autoSize();
 		}
 
 		{
