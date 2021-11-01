@@ -10,13 +10,15 @@ namespace Engine::Gui {
 	class Slider : public Panel {
 		public:
 			using Callback = std::function<void(float64)>;
+			using GetFunc = std::function<void(Slider&)>;
+			using SetFunc = std::function<void(Slider&)>;
 
 		private:
 			float64 min = 0;
 			float64 max = 1;
 			float64 p = 0.5;
-			Callback callback;
 			Label* label = nullptr;
+			SetFunc setFunc;
 
 		public:
 			// TODO: label string or decimal count
@@ -29,8 +31,9 @@ namespace Engine::Gui {
 				updateLabel();
 			}
 
-			Slider& setCallback(Callback func) {
-				callback = std::move(func);
+			Slider& bind(GetFunc get, SetFunc set) {
+				setFunc = std::move(set);
+				ctx->registerBindingGetter(this, [this, g=std::move(get)]{ g(*this); });
 				return *this;
 			}
 
@@ -46,7 +49,7 @@ namespace Engine::Gui {
 				if (p == this->p) { return *this; }
 				this->p = p;
 				updateLabel();
-				if (callback) { callback(getValue()); }
+				if (setFunc) { setFunc(*this); }
 				return *this;
 			}
 

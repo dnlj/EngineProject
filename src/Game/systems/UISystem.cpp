@@ -152,26 +152,54 @@ namespace Game {
 			NetCondPane(Gui::Context* context) : CollapsibleSection{context} {
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 				setTitle("Network Conditions");
-				addSlider("Half Ping Add").setLimits(0, 500).setValue(0).setCallback([this](float64 v){
-					auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
-					auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
-					settings.halfPingAdd = std::chrono::milliseconds{static_cast<int64>(v)};
-				});
-				addSlider("Jitter").setLimits(0, 1).setValue(0).setCallback([this](float64 v){
-					auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
-					auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
-					settings.jitter = static_cast<float32>(v);
-				});
-				addSlider("Duplicate Chance").setLimits(0, 1).setValue(0).setCallback([this](float64 v){
-					auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
-					auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
-					settings.duplicate = static_cast<float32>(v);
-				});
-				addSlider("Loss").setLimits(0, 1).setValue(0).setCallback([this](float64 v){
-					auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
-					auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
-					settings.loss = static_cast<float32>(v);
-				});
+				addSlider("Half Ping Add").setLimits(0, 500).setValue(0).bind(
+					[](Gui::Slider& s){
+						auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+						auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+						s.setValue(static_cast<float64>(std::chrono::duration_cast<std::chrono::milliseconds>(settings.halfPingAdd).count()));
+					},
+					[](Gui::Slider& s){
+						auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+						auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+						settings.halfPingAdd = std::chrono::milliseconds{static_cast<int64>(s.getValue())};
+					}
+				);
+				addSlider("Jitter").setLimits(0, 1).setValue(0).bind(
+					[](Gui::Slider& s){
+						auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+						auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+						s.setValue(settings.jitter);
+					},
+					[](Gui::Slider& s){
+						auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+						auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+						settings.jitter = static_cast<float32>(s.getValue());
+					}
+				);
+				addSlider("Duplicate Chance").setLimits(0, 1).setValue(0).bind(
+					[](Gui::Slider& s){
+						auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+						auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+						s.setValue(settings.duplicate);
+					},
+					[](Gui::Slider& s){
+						auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+						auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+						settings.duplicate = static_cast<float32>(s.getValue());
+					}
+				);
+				addSlider("Loss").setLimits(0, 1).setValue(0).bind(
+					[](Gui::Slider& s){
+						auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+						auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+						s.setValue(settings.loss);
+					},
+					[](Gui::Slider& s){
+						auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+						auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
+						settings.loss = static_cast<float32>(s.getValue());
+					}
+				);
 			}
 
 			Gui::Slider& addSlider(std::string_view txt) {

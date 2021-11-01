@@ -298,6 +298,10 @@ namespace Engine::Gui {
 			hoverValid = true;
 		}
 
+		for (auto& [p, func] : bindingGetters) {
+			if (p->isEnabled()) { func(); }
+		}
+
 		if (auto focus = getFocus()) {
 			for (auto act : actionQueue) {
 				focus->onAction(act);

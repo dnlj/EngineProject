@@ -48,6 +48,8 @@ namespace Engine::Gui {
 
 			using KeyCallback = std::function<bool(Engine::Input::InputEvent)>;
 
+			using BindingGetterWrapper = std::function<void()>;
+
 		private:
 			// There is no point in using integers here because
 			// of GLSL integer requirement range limitations. In short
@@ -181,6 +183,7 @@ namespace Engine::Gui {
 			FlatHashMap<const Panel*, PanelEndActivateCallback> panelEndActivateCallbacks;
 			FlatHashMap<const Panel*, TextCallback> textCallbacks;
 			FlatHashMap<const Panel*, KeyCallback> keyCallbacks;
+			FlatHashMap<const Panel*, BindingGetterWrapper> bindingGetters;
 
 			/* Cursors */
 			Cursor currentCursor = Cursor::Normal;
@@ -252,9 +255,23 @@ namespace Engine::Gui {
 			}
 
 			ENGINE_INLINE void deletePanel(const Panel* panel) {
-				deregisterPanel(panel);
+				deregisterBindingGetter(panel);
+				deregisterActivate(panel);
 				deregisterMouseMove(panel);
+				deregisterBeginActivate(panel);
+				deregisterEndActivate(panel);
+				deregisterTextCallback(panel);
+				deregisterPanel(panel);
 				delete panel;
+			}
+			
+			void registerBindingGetter(const Panel* panel, BindingGetterWrapper callback) {
+				ENGINE_DEBUG_ASSERT(!bindingGetters[panel], "Attempting to add duplicate binding getter.");
+				bindingGetters[panel] = callback;
+			}
+
+			void deregisterBindingGetter(const Panel* panel) {
+				bindingGetters.erase(panel);
 			}
 
 			void registerActivate(const Panel* panel, ActivateCallback callback) {
