@@ -35,6 +35,11 @@ namespace Engine::Gui {
 				setSize(getSize() + pad + pad);
 			}
 
+			ENGINE_INLINE void autoText(std::string_view txt) {
+				setText(txt);
+				autoSize();
+			}
+
 			virtual void render() const override {
 				glm::vec2 pos = {0,0};
 				const auto& str = getShapedString();
