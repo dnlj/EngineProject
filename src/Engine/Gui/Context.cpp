@@ -298,8 +298,8 @@ namespace Engine::Gui {
 			hoverValid = true;
 		}
 
-		for (auto& [p, func] : bindingGetters) {
-			if (p->isEnabled()) { func(); }
+		for (auto& [panel, func] : bindingGetters) {
+			if (panel->isEnabled()) { func(); }
 		}
 
 		if (auto focus = getFocus()) {
@@ -735,8 +735,8 @@ namespace Engine::Gui {
 				clickLastPos = getCursor();
 				clickLastTime = event.time;
 
-				for (auto& [_, func] : activateCallbacks) {
-					func();
+				for (auto& [panel, func] : activateCallbacks) {
+					if (panel->isEnabled()) { func(); }
 				}
 
 				auto hover = getHover();
@@ -748,8 +748,8 @@ namespace Engine::Gui {
 
 				bool skip = false;
 
-				for (auto& [_, func] : panelBeginActivateCallbacks) {
-					if (func(focus)) {
+				for (auto& [panel, func] : panelBeginActivateCallbacks) {
+					if (panel->isEnabled() && func(focus)) {
 						skip = true;
 						break;
 					}
@@ -762,8 +762,8 @@ namespace Engine::Gui {
 
 				return true;
 			} else {
-				for (auto& [_, func] : panelEndActivateCallbacks) {
-					func(active);
+				for (auto& [panel, func] : panelEndActivateCallbacks) {
+					if (panel->isEnabled()) { func(active); }
 				}
 
 				if (active) {
@@ -836,8 +836,8 @@ namespace Engine::Gui {
 			str = textBuffer;
 		}
 
-		for (auto& [_, cb] : textCallbacks) {
-			if (cb(str)) { return true; }
+		for (auto& [panel, cb] : textCallbacks) {
+			if (panel->isEnabled() && cb(str)) { return true; }
 		}
 
 		return false;
