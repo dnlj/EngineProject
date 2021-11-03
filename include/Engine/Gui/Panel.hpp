@@ -69,58 +69,6 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void setWeight(float32 w) noexcept { weight = w; }
 			ENGINE_INLINE auto getWeight() const noexcept { return weight; }
-
-			/**
-			 * Remove a child from this panel.
-			 * This does not delete the child. You now own the removed panel.
-			 */
-			void removeChild(Panel* child) {
-				ENGINE_DEBUG_ASSERT(child->parent == this);
-
-				if (child->nextSibling) {
-					child->nextSibling->prevSibling = child->prevSibling;
-				}
-
-				if (child->prevSibling) {
-					child->prevSibling->nextSibling = child->nextSibling;
-				}
-
-				if (child == lastChild) {
-					lastChild = child->prevSibling;
-				}
-
-				if (child == firstChild) {
-					firstChild = child->nextSibling;
-				}
-
-				child->prevSibling = nullptr;
-				child->nextSibling = nullptr;
-				child->parent = nullptr;
-			}
-
-			/**
-			 * Add a child to the end of the child list.
-			 * This panel now owns the child.
-			 */
-			ENGINE_INLINE Panel* addChild(Panel* child) {
-				if (child->parent) {
-					child->parent->removeChild(child);
-				}
-
-				if (lastChild) {
-					ENGINE_DEBUG_ASSERT(lastChild->nextSibling == nullptr);
-					ENGINE_DEBUG_ASSERT(child->prevSibling == nullptr);
-					lastChild->nextSibling = child;
-					child->prevSibling = lastChild;
-				} else {
-					ENGINE_DEBUG_ASSERT(firstChild == nullptr);
-					firstChild = child;
-				}
-
-				child->parent = this;
-				lastChild = child;
-				return child;
-			}
 			ENGINE_INLINE auto getParent() const noexcept { return parent; }
 			
 			/**
@@ -238,6 +186,60 @@ namespace Engine::Gui {
 				layout = l;
 			}
 			ENGINE_INLINE auto getLayout() noexcept { return layout; }
+
+			/**
+			 * Remove a child from this panel.
+			 * This does not delete the child. You now own the removed panel.
+			 */
+			void removeChild(Panel* child) {
+				ENGINE_DEBUG_ASSERT(child->parent == this);
+				child->setPos(child->getRelPos());
+
+				if (child->nextSibling) {
+					child->nextSibling->prevSibling = child->prevSibling;
+				}
+
+				if (child->prevSibling) {
+					child->prevSibling->nextSibling = child->nextSibling;
+				}
+
+				if (child == lastChild) {
+					lastChild = child->prevSibling;
+				}
+
+				if (child == firstChild) {
+					firstChild = child->nextSibling;
+				}
+
+				child->prevSibling = nullptr;
+				child->nextSibling = nullptr;
+				child->parent = nullptr;
+			}
+
+			/**
+			 * Add a child to the end of the child list.
+			 * This panel now owns the child.
+			 */
+			ENGINE_INLINE Panel* addChild(Panel* child) {
+				if (child->parent) {
+					child->parent->removeChild(child);
+				}
+
+				if (lastChild) {
+					ENGINE_DEBUG_ASSERT(lastChild->nextSibling == nullptr);
+					ENGINE_DEBUG_ASSERT(child->prevSibling == nullptr);
+					lastChild->nextSibling = child;
+					child->prevSibling = lastChild;
+				} else {
+					ENGINE_DEBUG_ASSERT(firstChild == nullptr);
+					firstChild = child;
+				}
+
+				child->parent = this;
+				lastChild = child;
+				child->setRelPos(child->getPos());
+				return child;
+			}
 
 			/**
 			 * Renders this panel.
