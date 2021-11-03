@@ -298,8 +298,8 @@ namespace Engine::Gui {
 			hoverValid = true;
 		}
 
-		for (auto& [panel, func] : bindingGetters) {
-			if (panel->isEnabled()) { func(); }
+		for (auto& [panel, func] : panelUpdateFunc) {
+			if (panel->isEnabled()) { func(panel); }
 		}
 
 		if (auto focus = getFocus()) {

@@ -108,6 +108,7 @@ namespace Game {
 			Gui::Button* disconnect;
 
 			InfoPane(Gui::Context* context) : AutoListPane{context} {
+				setTitle("Info");
 				addLabel("FPS: {:.3f} ({:.6f})");
 				addLabel("Tick: {}");
 				addLabel("Tick Scale: {:.3f}");
@@ -134,6 +135,7 @@ namespace Game {
 			};
 
 			CoordPane(Gui::Context* context) : AutoListPane{context} {
+				setTitle("Coordinates");
 				addLabel("Mouse (offset): {:.3f}");
 				addLabel("Mouse (world): {:.3f}");
 				addLabel("Mouse (block): {}");
@@ -216,6 +218,113 @@ namespace Game {
 				return *slider;
 			}
 	};
+
+	template<class Self, class Id>
+	class ListAdapter {
+		public:
+			using Panel = Gui::Panel; // TODO: rm
+
+			struct Store {
+				Panel* panel = nullptr;
+				uint8 iter = 0;
+			};
+
+			Engine::FlatHashMap<Id, Store> cache;
+			uint8 iter = 0;
+
+		public:
+			//Id getId(It it) = 0;
+			//Panel* getPanel(const Id& id) = 0;
+			//It begin() = 0;
+			//It end() = 0;
+			//void sort();
+			
+			ENGINE_INLINE Self& self() noexcept { return *reinterpret_cast<Self*>(this); }
+
+			void operator()(Panel* parent){
+				++iter;
+
+				for (auto it = self().begin(), e = self().end(); it != e; ++it) {
+					auto id = self().getId(it);
+					auto found = cache.find(id);
+					if (found == cache.end()) {
+						auto [f2, _] = cache.emplace(id, Store{
+							.panel = self().createPanel(id, *parent->getContext()),
+							.iter = iter,
+						});
+						found = f2;
+
+						parent->addChild(found->second.panel);
+					} else {
+						// TODO: any way to filter for update? or leave that to 
+						self().updatePanel(id, found->second.panel);
+						found->second.iter = iter;
+					}
+				}
+
+				// Remove old items
+				for (auto it = cache.begin(), e = cache.end(); it != e;) {
+					if (it->second.iter != iter) {
+						parent->getContext()->deletePanel(it->second.panel);
+						it = cache.erase(it);
+					} else {
+						++it;
+					}
+				}
+			}
+	};
+	
+	class TestListAdapter : public ListAdapter<TestListAdapter, Engine::ECS::Entity> {
+		private:
+			Game::World& world;
+
+		public:
+			using It = decltype(world.getFilter<ConnectionComponent>().begin());
+			using Id = Engine::ECS::Entity;
+
+			TestListAdapter(Game::World& world) : world{world} {}
+
+			ENGINE_INLINE auto begin() const { return world.getFilter<ConnectionComponent>().begin(); }
+			ENGINE_INLINE auto end() const { return world.getFilter<ConnectionComponent>().end(); }
+
+			ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
+
+			Panel* createPanel(Id id, Engine::Gui::Context& ctx) {
+				//auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
+				//const auto& addr = conn.address();
+
+				//auto* base = ctx.constructPanel<Panel>();
+				//base->setRelPos({});
+				//base->setSize({128,128});
+
+				//auto* ipLabel = ctx.createPanel<Gui::Label>(base);
+				auto* ipLabel = ctx.constructPanel<Gui::Label>();
+				ipLabel->autoText("TODO: ip here");
+				//ipLabel->autoText(fmt::format("{}", addr));
+				//ImGui::Text("%i.%i.%i.%i:%i", addr.a, addr.b, addr.c, addr.d, addr.port);
+
+				//for (int32 c = 0; true; ++c) {
+				//	const auto s = conn.getChannelQueueSize(c);
+				//	if (s < 0) { break; }
+				//	ImGui::Text("Channel%i: %i", c, s);
+				//}
+				return ipLabel;
+			}
+
+			void updatePanel(Id id, Panel* panel) {
+			}
+
+	};
+
+	class NetHealthPane : public Gui::CollapsibleSection {
+		public:
+			NetHealthPane(Gui::Context* context) : CollapsibleSection{context} {
+				setTitle("Network Health");
+				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+				ctx->registerPanelUpdateFunc(getContent(), TestListAdapter{world});
+				//getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+			}
+	};
 }
 
 namespace Game {
@@ -257,12 +366,18 @@ namespace Game {
 		{
 			panels.coordPane = ctx->createPanel<CoordPane>(content);
 			panels.coordPane->setSize({0, 300});
+			panels.coordPane->toggle();
 		}
 
 		{
 			panels.netCondPane = ctx->createPanel<NetCondPane>(content);
 			panels.netCondPane->setHeight(300);
 			panels.netCondPane->performLayout();
+		}
+
+		{
+			panels.netHealthPane = ctx->createPanel<NetHealthPane>(content);
+			panels.netHealthPane->setHeight(300);
 		}
 	}
 

@@ -33,7 +33,7 @@ namespace Engine::Gui {
 
 			Slider& bind(GetFunc get, SetFunc set) {
 				setFunc = std::move(set);
-				ctx->registerBindingGetter(this, [this, g=std::move(get)]{ g(*this); });
+				ctx->registerPanelUpdateFunc(this, [this, g=std::move(get)](Panel*){ g(*this); });
 				return *this;
 			}
 

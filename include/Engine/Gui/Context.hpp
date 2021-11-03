@@ -48,7 +48,7 @@ namespace Engine::Gui {
 
 			using KeyCallback = std::function<bool(Engine::Input::InputEvent)>;
 
-			using BindingGetterWrapper = std::function<void()>;
+			using PanelUpdateFunc = std::function<void(Panel*)>;
 
 		private:
 			// There is no point in using integers here because
@@ -177,13 +177,13 @@ namespace Engine::Gui {
 			PanelId nextPanelId = invalidPanelId;
 
 			/* Callbacks */
-			FlatHashMap<const Panel*, ActivateCallback> activateCallbacks;
-			FlatHashMap<const Panel*, MouseMoveCallback> mouseMoveCallbacks;
-			FlatHashMap<const Panel*, PanelBeginActivateCallback> panelBeginActivateCallbacks;
-			FlatHashMap<const Panel*, PanelEndActivateCallback> panelEndActivateCallbacks;
-			FlatHashMap<const Panel*, TextCallback> textCallbacks;
-			FlatHashMap<const Panel*, KeyCallback> keyCallbacks;
-			FlatHashMap<const Panel*, BindingGetterWrapper> bindingGetters;
+			FlatHashMap<Panel*, ActivateCallback> activateCallbacks;
+			FlatHashMap<Panel*, MouseMoveCallback> mouseMoveCallbacks;
+			FlatHashMap<Panel*, PanelBeginActivateCallback> panelBeginActivateCallbacks;
+			FlatHashMap<Panel*, PanelEndActivateCallback> panelEndActivateCallbacks;
+			FlatHashMap<Panel*, TextCallback> textCallbacks;
+			FlatHashMap<Panel*, KeyCallback> keyCallbacks;
+			FlatHashMap<Panel*, PanelUpdateFunc> panelUpdateFunc;
 
 			/* Cursors */
 			Cursor currentCursor = Cursor::Normal;
@@ -254,8 +254,8 @@ namespace Engine::Gui {
 				return p;
 			}
 
-			ENGINE_INLINE void deletePanel(const Panel* panel) {
-				deregisterBindingGetter(panel);
+			void deletePanel(Panel* panel) {
+				deregisterPanelUpdateFunc(panel);
 				deregisterActivate(panel);
 				deregisterMouseMove(panel);
 				deregisterBeginActivate(panel);
@@ -265,57 +265,57 @@ namespace Engine::Gui {
 				delete panel;
 			}
 			
-			void registerBindingGetter(const Panel* panel, BindingGetterWrapper callback) {
-				ENGINE_DEBUG_ASSERT(!bindingGetters[panel], "Attempting to add duplicate binding getter.");
-				bindingGetters[panel] = callback;
+			ENGINE_INLINE void registerPanelUpdateFunc(Panel* panel, PanelUpdateFunc func) {
+				ENGINE_DEBUG_ASSERT(!panelUpdateFunc[panel], "Attempting to add duplicate panel update function.");
+				panelUpdateFunc[panel] = func;
 			}
 
-			void deregisterBindingGetter(const Panel* panel) {
-				bindingGetters.erase(panel);
+			ENGINE_INLINE void deregisterPanelUpdateFunc(Panel* panel) {
+				panelUpdateFunc.erase(panel);
 			}
 
-			void registerActivate(const Panel* panel, ActivateCallback callback) {
+			ENGINE_INLINE void registerActivate(Panel* panel, ActivateCallback callback) {
 				ENGINE_DEBUG_ASSERT(!activateCallbacks[panel], "Attempting to add duplicate activate callback.");
 				activateCallbacks[panel] = callback;
 			}
 
-			void deregisterActivate(const Panel* panel) {
+			ENGINE_INLINE void deregisterActivate(Panel* panel) {
 				activateCallbacks.erase(panel);
 			}
 
-			void registerMouseMove(const Panel* panel, MouseMoveCallback callback) {
+			ENGINE_INLINE void registerMouseMove(Panel* panel, MouseMoveCallback callback) {
 				ENGINE_DEBUG_ASSERT(!mouseMoveCallbacks[panel], "Attempting to add duplicate mouse move callback.");
 				mouseMoveCallbacks[panel] = callback;
 			}
 
-			void deregisterMouseMove(const Panel* panel) {
+			ENGINE_INLINE void deregisterMouseMove(Panel* panel) {
 				mouseMoveCallbacks.erase(panel);
 			}
 
-			void registerBeginActivate(const Panel* panel, PanelBeginActivateCallback callback) {
+			ENGINE_INLINE void registerBeginActivate(Panel* panel, PanelBeginActivateCallback callback) {
 				ENGINE_DEBUG_ASSERT(!panelBeginActivateCallbacks[panel], "Attempting to add duplicate panel activate callback.");
 				panelBeginActivateCallbacks[panel] = callback;
 			}
 			
-			void deregisterBeginActivate(const Panel* panel) {
+			ENGINE_INLINE void deregisterBeginActivate(Panel* panel) {
 				panelBeginActivateCallbacks.erase(panel);
 			}
 
-			void registerEndActivate(const Panel* panel, PanelEndActivateCallback callback) {
+			ENGINE_INLINE void registerEndActivate(Panel* panel, PanelEndActivateCallback callback) {
 				ENGINE_DEBUG_ASSERT(!panelEndActivateCallbacks[panel], "Attempting to add duplicate panel activate callback.");
 				panelEndActivateCallbacks[panel] = callback;
 			}
 			
-			void deregisterEndActivate(const Panel* panel) {
+			ENGINE_INLINE void deregisterEndActivate(Panel* panel) {
 				panelBeginActivateCallbacks.erase(panel);
 			}
 			
-			void registerTextCallback(const Panel* panel, TextCallback callback) {
+			ENGINE_INLINE void registerTextCallback(Panel* panel, TextCallback callback) {
 				ENGINE_DEBUG_ASSERT(!textCallbacks[panel], "Attempting to add duplicate char callback.");
 				textCallbacks[panel] = callback;
 			}
 			
-			void deregisterTextCallback(const Panel* panel) {
+			ENGINE_INLINE void deregisterTextCallback(Panel* panel) {
 				textCallbacks.erase(panel);
 			}
 			
@@ -418,7 +418,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void deregisterPanel(const Panel* panel) {
 				ENGINE_DEBUG_ASSERT(panel != nullptr, "Attempting to deregister nullptr.");
 				auto found = panelIdMap.find(panel);
-				ENGINE_DEBUG_ASSERT(found != panelIdMap.end(), "Attempting to deregister an unregistered Panel.");
+				ENGINE_DEBUG_ASSERT(found != panelIdMap.end(), "Attempting to deregister an unregistered Panel (", panel, ").");
 				freePanelIds.push_back(found->second);
 				panelIdMap.erase(found);
 			}
