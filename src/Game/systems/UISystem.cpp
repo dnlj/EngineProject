@@ -219,18 +219,19 @@ namespace Game {
 			}
 	};
 
-	template<class Self, class Id>
+	template<class Self, class Id, class Checksum>
 	class ListAdapter {
 		public:
 			using Panel = Gui::Panel; // TODO: rm
 
 			struct Store {
 				Panel* panel = nullptr;
-				uint8 iter = 0;
+				Checksum checksum = 0;
+				uint32 iter = 0;
 			};
 
 			Engine::FlatHashMap<Id, Store> cache;
-			uint8 iter = 0;
+			uint32 iter2 = 0; // TODO: rename
 
 		public:
 			//Id getId(It it) = 0;
@@ -241,8 +242,8 @@ namespace Game {
 			
 			ENGINE_INLINE Self& self() noexcept { return *reinterpret_cast<Self*>(this); }
 
-			void operator()(Panel* parent){
-				++iter;
+			void operator()(Panel* parent) {
+				++iter2;
 
 				for (auto it = self().begin(), e = self().end(); it != e; ++it) {
 					auto id = self().getId(it);
@@ -250,21 +251,23 @@ namespace Game {
 					if (found == cache.end()) {
 						auto [f2, _] = cache.emplace(id, Store{
 							.panel = self().createPanel(id, *parent->getContext()),
-							.iter = iter,
+							.checksum = self().check(id),
+							.iter = iter2,
 						});
 						found = f2;
-
 						parent->addChild(found->second.panel);
 					} else {
-						// TODO: any way to filter for update? or leave that to 
-						self().updatePanel(id, found->second.panel);
-						found->second.iter = iter;
+						found->second.iter = iter2;
+						if (auto sum = self().check(id); sum != found->second.checksum) {
+							self().updatePanel(id, found->second.panel);
+							found->second.checksum = sum;
+						}
 					}
 				}
 
 				// Remove old items
 				for (auto it = cache.begin(), e = cache.end(); it != e;) {
-					if (it->second.iter != iter) {
+					if (it->second.iter != iter2) {
 						parent->getContext()->deletePanel(it->second.panel);
 						it = cache.erase(it);
 					} else {
@@ -274,7 +277,7 @@ namespace Game {
 			}
 	};
 	
-	class TestListAdapter : public ListAdapter<TestListAdapter, Engine::ECS::Entity> {
+	class TestListAdapter : public ListAdapter<TestListAdapter, Engine::ECS::Entity, uint64> {
 		private:
 			Game::World& world;
 
@@ -289,29 +292,47 @@ namespace Game {
 
 			ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
 
+			uint64 check(Id id) {
+				uint64 hash = {};
+				auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
+				for (const auto s : conn.getAllChannelQueueSizes()) {
+					Engine::hashCombine(hash, s);
+				}
+				return hash;
+			}
+
 			Panel* createPanel(Id id, Engine::Gui::Context& ctx) {
-				//auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
+				ENGINE_LOG("Create 1: ", id);
+				auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
 				//const auto& addr = conn.address();
 
-				//auto* base = ctx.constructPanel<Panel>();
-				//base->setRelPos({});
-				//base->setSize({128,128});
+				auto* base = ctx.constructPanel<Panel>();
+				base->setRelPos({});
+				base->setSize({128,128});
+				base->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 
-				//auto* ipLabel = ctx.createPanel<Gui::Label>(base);
-				auto* ipLabel = ctx.constructPanel<Gui::Label>();
+				auto* ipLabel = ctx.createPanel<Gui::Label>(base);
+				//auto* ipLabel = ctx.constructPanel<Gui::Label>();
 				ipLabel->autoText("TODO: ip here");
 				//ipLabel->autoText(fmt::format("{}", addr));
 				//ImGui::Text("%i.%i.%i.%i:%i", addr.a, addr.b, addr.c, addr.d, addr.port);
 
-				//for (int32 c = 0; true; ++c) {
-				//	const auto s = conn.getChannelQueueSize(c);
-				//	if (s < 0) { break; }
-				//	ImGui::Text("Channel%i: %i", c, s);
-				//}
-				return ipLabel;
+				for (int32 c = 0; const auto s : conn.getAllChannelQueueSizes()) {
+					auto label = ctx.createPanel<Gui::Label>(base);
+					label->autoText("Channel (TODO): TODO");
+					++c;
+					//ImGui::Text("Channel%i: %i", c, s);
+				}
+
+				return base;
 			}
 
 			void updatePanel(Id id, Panel* panel) {
+				ENGINE_LOG(" ---- Update! ", id);
+				auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
+				for (int32 c = 0; const auto s : conn.getAllChannelQueueSizes()) {
+					ENGINE_LOG("\t\t", c++, " ", s);
+				}
 			}
 
 	};

@@ -179,9 +179,15 @@ namespace Engine::Net {
 			ENGINE_INLINE void setKeyRecv(decltype(keyRecv) keyRecv) noexcept { this->keyRecv = keyRecv; }
 			ENGINE_INLINE auto getKeyRecv() const noexcept { return keyRecv; }
 
+			constexpr static auto getChannelCount() noexcept { return sizeof...(Cs); }
+
 			int32 getChannelQueueSize(int32 c) {
 				int32 sizes[] = {getChannel<Cs>().getQueueSize()...};
 				return (c < std::size(sizes)) ? sizes[c] : -1;
+			}
+
+			auto getAllChannelQueueSizes() {
+				return std::array<int32, getChannelCount()>{getChannel<Cs>().getQueueSize()...};
 			}
 
 			// TODO: why does this have a return value? isnt it always true?
