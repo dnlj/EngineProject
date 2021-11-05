@@ -302,9 +302,8 @@ namespace Game {
 			}
 
 			Panel* createPanel(Id id, Engine::Gui::Context& ctx) {
-				ENGINE_LOG("Create 1: ", id);
 				auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
-				//const auto& addr = conn.address();
+				const auto& addr = conn.address();
 
 				auto* base = ctx.constructPanel<Panel>();
 				base->setRelPos({});
@@ -312,26 +311,23 @@ namespace Game {
 				base->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 
 				auto* ipLabel = ctx.createPanel<Gui::Label>(base);
-				//auto* ipLabel = ctx.constructPanel<Gui::Label>();
-				ipLabel->autoText("TODO: ip here");
-				//ipLabel->autoText(fmt::format("{}", addr));
-				//ImGui::Text("%i.%i.%i.%i:%i", addr.a, addr.b, addr.c, addr.d, addr.port);
+				ipLabel->autoText(fmt::format("{}", addr));
 
-				for (int32 c = 0; const auto s : conn.getAllChannelQueueSizes()) {
-					auto label = ctx.createPanel<Gui::Label>(base);
-					label->autoText("Channel (TODO): TODO");
-					++c;
-					//ImGui::Text("Channel%i: %i", c, s);
+				for (const auto s : conn.getAllChannelQueueSizes()) {
+					ctx.createPanel<Gui::Label>(base);
 				}
 
+				updatePanel(id, base);
 				return base;
 			}
 
 			void updatePanel(Id id, Panel* panel) {
-				ENGINE_LOG(" ---- Update! ", id);
+				Panel* curr = panel->getFirstChild();
 				auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
 				for (int32 c = 0; const auto s : conn.getAllChannelQueueSizes()) {
-					ENGINE_LOG("\t\t", c++, " ", s);
+					curr = curr->getNextSibling();
+					Gui::Label* label = reinterpret_cast<Gui::Label*>(curr);
+					label->autoText(fmt::format("Channel {}: {}", c++, s));
 				}
 			}
 

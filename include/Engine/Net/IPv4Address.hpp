@@ -61,3 +61,18 @@ namespace Engine {
 		}
 	};
 }
+
+// TODO: where to put this so that this header doesnt depend on fmt
+template<>
+struct fmt::formatter<Engine::Net::IPv4Address> {
+	constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+		return ctx.begin();
+	}
+
+	template <typename FormatContext>
+	auto format(const Engine::Net::IPv4Address& addr, FormatContext& ctx) -> decltype(ctx.out()) {
+		fmt::format_to(ctx.out(), "{}.{}.{}.{}:{}", addr.a, addr.b, addr.c, addr.d, addr.port);
+		return ctx.out();
+	}
+};
+
