@@ -262,6 +262,7 @@ namespace Game {
 						});
 						found = f2;
 						parent->addChild(found->second.panel);
+						parent->performLayout();
 					} else {
 						found->second.iter = iter2;
 						if (auto sum = self().check(id); sum != found->second.checksum) {
@@ -345,7 +346,7 @@ namespace Game {
 				setTitle("Network Health");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->registerPanelUpdateFunc(getContent(), TestListAdapter{world});
-				//getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 			}
 	};
 }
@@ -400,7 +401,7 @@ namespace Game {
 
 		{
 			panels.netHealthPane = ctx->createPanel<NetHealthPane>(content);
-			panels.netHealthPane->setHeight(300);
+			panels.netHealthPane->setHeight(500);
 		}
 	}
 

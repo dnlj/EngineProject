@@ -249,6 +249,7 @@ namespace Engine::Gui {
 
 			template<class P, class... Args>
 			P* createPanel(Panel* parent, Args&&... args) {
+				ENGINE_DEBUG_ASSERT(parent != nullptr, "Creating a panel without a parent should be done with `constructPanel`.");
 				auto p = constructPanel<P>(std::forward<Args>(args)...);
 				parent->addChild(p);
 				return p;

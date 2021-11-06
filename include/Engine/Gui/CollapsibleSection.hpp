@@ -20,11 +20,12 @@ namespace Engine::Gui {
 				setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Start});
 				height = getHeight();
 
-				btn = ctx->createPanel<Button>(this);
+				btn = ctx->constructPanel<Button>();
 				btn->setText("Section Test");
 				btn->setAction([&]{ toggle(); });
 
-				content = ctx->createPanel<Panel>(this);
+				content = ctx->constructPanel<Panel>();
+				addChildren({btn, content});
 			}
 
 			ENGINE_INLINE void setTitle(std::string title) {

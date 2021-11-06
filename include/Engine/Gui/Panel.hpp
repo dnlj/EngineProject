@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <ranges>
+
 // GLM
 #include <glm/vec2.hpp>
 
@@ -214,31 +217,29 @@ namespace Engine::Gui {
 				child->prevSibling = nullptr;
 				child->nextSibling = nullptr;
 				child->parent = nullptr;
+
+				performLayout();
 			}
 
 			/**
 			 * Add a child to the end of the child list.
 			 * This panel now owns the child.
 			 */
-			ENGINE_INLINE Panel* addChild(Panel* child) {
-				if (child->parent) {
-					child->parent->removeChild(child);
-				}
-
-				if (lastChild) {
-					ENGINE_DEBUG_ASSERT(lastChild->nextSibling == nullptr);
-					ENGINE_DEBUG_ASSERT(child->prevSibling == nullptr);
-					lastChild->nextSibling = child;
-					child->prevSibling = lastChild;
-				} else {
-					ENGINE_DEBUG_ASSERT(firstChild == nullptr);
-					firstChild = child;
-				}
-
-				child->parent = this;
-				lastChild = child;
-				child->setRelPos(child->getPos());
+			Panel* addChild(Panel* child) {
+				appendChild(child);
+				performLayout();
 				return child;
+			}
+
+			/**
+			 * Add multiple panels as children of this panel.
+			 * Perfoms layout only once.
+			 */
+			void addChildren(std::initializer_list<Panel*> children) {
+				for (Panel* child : children) {
+					appendChild(child);
+				}
+				performLayout();
 			}
 
 			/**
@@ -336,6 +337,31 @@ namespace Engine::Gui {
 			ENGINE_INLINE void sizeChanged() {
 				performLayout();
 				if (parent) { parent->onChildSizeChanged(this); }
+			}
+
+			/**
+			 * Sets a panel as a child of this panel.
+			 * Does not perform layout.
+			 */
+			Panel* appendChild(Panel* child) {
+				if (child->parent) {
+					child->parent->removeChild(child);
+				}
+
+				if (lastChild) {
+					ENGINE_DEBUG_ASSERT(lastChild->nextSibling == nullptr);
+					ENGINE_DEBUG_ASSERT(child->prevSibling == nullptr);
+					lastChild->nextSibling = child;
+					child->prevSibling = lastChild;
+				} else {
+					ENGINE_DEBUG_ASSERT(firstChild == nullptr);
+					firstChild = child;
+				}
+
+				child->parent = this;
+				lastChild = child;
+				child->setRelPos(child->getPos());
+				return child;
 			}
 	};	
 }
