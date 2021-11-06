@@ -136,6 +136,7 @@ namespace Game {
 
 			CoordPane(Gui::Context* context) : AutoListPane{context} {
 				setTitle("Coordinates");
+
 				addLabel("Mouse (offset): {:.3f}");
 				addLabel("Mouse (world): {:.3f}");
 				addLabel("Mouse (block): {}");
@@ -146,6 +147,46 @@ namespace Game {
 				addLabel("Map Offset: {}");
 				addLabel("Map Offset (block): {}");
 				addLabel("Map Offset (chunk): {}");
+
+				ctx->registerPanelUpdateFunc(this, [](Panel* panel){
+					auto pane = reinterpret_cast<CoordPane*>(panel);
+					auto& world = panel->getContext()->getUserdata<Game::UISystem>()->getWorld();
+					auto& engine = panel->getContext()->getUserdata<Game::UISystem>()->getEngine();
+
+					const auto& activePlayerFilter = world.getFilter<PlayerFlag>();
+					if (activePlayerFilter.empty()) { return; }
+					const auto ply = *activePlayerFilter.begin();
+
+					auto& mapSys = world.getSystem<Game::MapSystem>();
+
+					const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
+					if (!actComp.valid()) { return; }
+
+					// TODO: reimplement - ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
+					const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+					const auto offsetMousePos = actComp.getTarget();
+					const auto worldMousePos = offsetMousePos + Engine::Glue::as<glm::vec2>(physComp.getPosition());
+					const auto blockMousePos = mapSys.worldToBlock(worldMousePos);
+					const auto blockWorldMousePos = mapSys.blockToWorld(blockMousePos);
+					const auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
+					const auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
+					const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);
+					const auto camPos = engine.camera.getPosition();
+					const auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
+					const auto mapBlockOffset = mapSys.getBlockOffset();
+					const auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
+
+					pane->setLabel(CoordPane::MouseOffset, offsetMousePos);
+					pane->setLabel(CoordPane::MouseWorld, worldMousePos);
+					pane->setLabel(CoordPane::MouseBlock, blockMousePos);
+					pane->setLabel(CoordPane::MouseBlockWorld, blockWorldMousePos);
+					pane->setLabel(CoordPane::MouseChunk, chunkMousePos, chunkBlockMousePos);
+					pane->setLabel(CoordPane::MouseRegion, regionMousePos);
+					pane->setLabel(CoordPane::Camera, camPos);
+					pane->setLabel(CoordPane::MapOffset, mapOffset);
+					pane->setLabel(CoordPane::MapOffsetBlock, mapBlockOffset);
+					pane->setLabel(CoordPane::MapOffsetChunk, mapChunkOffset);
+				});
 			}
 	};
 
@@ -390,7 +431,7 @@ namespace Game {
 		{
 			panels.coordPane = ctx->createPanel<CoordPane>(content);
 			panels.coordPane->setSize({0, 300});
-			panels.coordPane->toggle();
+			//panels.coordPane->toggle();
 		}
 
 		{
@@ -606,20 +647,6 @@ namespace Game {
 			auto& physDebug = world.getSystem<Game::PhysicsSystem>().getDebugDraw();
 			ImGui::Text("Physics Debug Verts: (%i)", physDebug.getVertexCount());
 		#endif
-
-		if (panels.coordPane->getContent()->isEnabled()) {
-			// TODO: fix var names to match enum names
-			panels.coordPane->setLabel(CoordPane::MouseOffset, offsetMousePos);
-			panels.coordPane->setLabel(CoordPane::MouseWorld, worldMousePos);
-			panels.coordPane->setLabel(CoordPane::MouseBlock, blockMousePos);
-			panels.coordPane->setLabel(CoordPane::MouseBlockWorld, blockWorldMousePos);
-			panels.coordPane->setLabel(CoordPane::MouseChunk, chunkMousePos, chunkBlockMousePos);
-			panels.coordPane->setLabel(CoordPane::MouseRegion, regionMousePos);
-			panels.coordPane->setLabel(CoordPane::Camera, camPos);
-			panels.coordPane->setLabel(CoordPane::MapOffset, mapOffset);
-			panels.coordPane->setLabel(CoordPane::MapOffsetBlock, mapBlockOffset);
-			panels.coordPane->setLabel(CoordPane::MapOffsetChunk, mapChunkOffset);
-		}
 	}
 	
 	void UISystem::ui_render() {
