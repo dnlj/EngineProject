@@ -249,6 +249,12 @@ namespace Game {
 						}
 					);
 				#endif
+				
+				// TODO: this really doesnt work because the interaction between this panel and its child.
+				// either need to make autoHeight virtual or give collapse section its own wrapper layout.
+				// The second one might be better
+				// Either way the way we handle resize in prelayout is prblemeativc
+				//autoHeight();
 			}
 
 			Gui::Slider& addSlider(std::string_view txt) {
@@ -419,7 +425,8 @@ namespace Game {
 
 		{
 			panels.infoPane = ctx->createPanel<InfoPane>(content);
-			panels.infoPane->setSize({0, 128});
+			// TODO: rm - panels.infoPane->setSize({0, 128});
+			panels.infoPane->setHeight(128);
 			panels.infoPane->disconnect->setAction([&]{
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
@@ -430,20 +437,21 @@ namespace Game {
 
 		{
 			panels.coordPane = ctx->createPanel<CoordPane>(content);
-			panels.coordPane->setSize({0, 300});
-			//panels.coordPane->toggle();
+			panels.coordPane->setHeight(300);
+			panels.coordPane->toggle();
 		}
 
 		{
 			panels.netCondPane = ctx->createPanel<NetCondPane>(content);
 			panels.netCondPane->setHeight(300);
-			panels.netCondPane->performLayout();
+			//panels.netCondPane->performLayout(); // TODO: shouldnt have to do this
 		}
 
 		{
 			panels.netHealthPane = ctx->createPanel<NetHealthPane>(content);
 			panels.netHealthPane->setHeight(500);
 		}
+		content->performLayout();
 	}
 
 	UISystem::~UISystem() {

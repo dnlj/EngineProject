@@ -24,6 +24,8 @@ namespace Engine::Gui {
 		setLayout(new FillLayout{outBorder});
 
 		content = ctx->createPanel<Panel>(this);
+
+		// TODO: probably shouldnt have a layout by default
 		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch});
 
 		title = ctx->createPanel<Title>(content, this);

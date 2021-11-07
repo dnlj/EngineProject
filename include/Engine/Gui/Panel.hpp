@@ -56,13 +56,13 @@ namespace Engine::Gui {
 			Panel* lastChild = nullptr;
 			Layout* layout = nullptr;
 
-			glm::vec2 minSize = {0, 0};
+			glm::vec2 minSize = {8, 8};
 			glm::vec2 maxSize = {INFINITY, INFINITY};
 			glm::vec2 idealSize = {};
 
 			glm::vec2 pos = {};
-			glm::vec2 size = {};
-			float32 weight = {}; // TODO: separte x,y weight?
+			glm::vec2 size = minSize;
+			float32 weight = 1; // TODO: separte x,y weight?
 
 			uint32 flags = Flag::Enabled;
 
@@ -137,6 +137,11 @@ namespace Engine::Gui {
 				const auto rel = getRelPos();
 				setPos(p + rel);
 			}
+
+			// TODO: remove
+			//ENGINE_INLINE void autoHeight() {
+			//	if (layout) { layout->autoHeight(this); }
+			//}
 
 			/**
 			 * Set the size of this panel.

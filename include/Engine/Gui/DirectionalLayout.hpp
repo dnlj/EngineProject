@@ -44,6 +44,39 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setGap(float32 g) noexcept { gap = g; }
 			ENGINE_INLINE auto getGap() const noexcept { return gap; }
 
+			void autoDim(Panel* panel, Direction axis) {
+				int dim = static_cast<int>(axis);
+				auto curr = panel->getFirstChild();
+				float32 val = 0;
+
+				if (axis != dir) { // Cross Axis
+					while (curr) {
+						val = std::max(val, curr->getSize()[dim]);
+						curr = curr->getNextSibling();
+					}
+				} else { // Main Axis
+					while (true) {
+						val += curr->getSize()[dim]; 
+						curr = curr->getNextSibling();
+						if (!curr) { break; }
+						val += curr ? gap : 0;
+					}
+				}
+
+				auto sz = panel->getSize();
+				sz[dim] = val;
+				panel->setSize(sz);
+				ENGINE_INFO(" ***** Auto Dim: ", dim, " ", sz);
+			}
+
+			virtual void autoHeight(Panel* panel) override {
+				autoDim(panel, Direction::Vertical);
+			}
+
+			void autoWidth() {
+				// TODO: autoDim(panel, Direction::Horizontal);
+			}
+
 			virtual void layout(Panel* panel) override {
 				const auto main = static_cast<uint32>(dir);
 				const auto cross = static_cast<uint32>(dir == Direction::Horizontal ? Direction::Vertical : Direction::Horizontal);
@@ -57,7 +90,14 @@ namespace Engine::Gui {
 				// TODO: is there a better way to handle these single case variables?
 				float32 totalWeight = weight;
 				int32 count = 0;
-				float32 gapAdj = 0;
+				// TODO: rm - no longer used - float32 gapAdj = 0;
+
+				struct StretchData {
+					float32 min = 0;
+					float32 max = 0;
+					float32 val = 0;
+					float32 weight = 0;
+				};
 
 				if (mainAlign == Align::Start) {
 					// Already set correctly
@@ -76,9 +116,60 @@ namespace Engine::Gui {
 						curr = (curr->*next)();
 					}
 					curr = old;
-					gapAdj = gap * (count - 1) / count;
+					// TODO: rm - gapAdj = gap * (count - 1) / count;
+					// TODO: rm - size[main] -= gap * (count - 1);
 				} else [[unlikely]] {
 					ENGINE_WARN("Unknown layout main axis alignment");
+				}
+					
+				// TODO: better way to handle these single use vairables
+				int stretchIndex = -1;
+				std::vector<StretchData> stretchData;
+
+				if (mainAlign == Align::Stretch) {
+					// TODO: data population could be moved above
+					stretchData.resize(count);
+					const auto old = curr;
+					for (int i = 0; curr; ++i, curr = (curr->*next)()) {
+						stretchData[i] = {
+							.min = curr->getMinSize()[main],
+							.max = curr->getMaxSize()[main],
+							.val = 0,
+							.weight = curr->getWeight(),
+						};
+					}
+					curr = old;
+
+					// TODO: move gap changes to size[main] into this calc and make size const again
+					float32 remSize = size[main] - gap * (count - 1);
+					float32 remWeight = totalWeight;
+
+					// TODO: seems like there may be an issue with needing extra iterations?
+					// TODO: resize of an empty collapsible section should only take 1 iter? it says two.
+					// TODO: resize of a slider(i think?) takes 5.
+					// TODO: i think the above was fixed by the runWeight changes. verify.
+					int iter = 0; // TODO: rm
+					// While there is space remaining distribute it between all
+					// non-max-size panels according to their relative remaining weight
+					while (remSize >= 1 && remWeight > 0) {
+						++iter;
+						ENGINE_LOG("* i ", iter, " ", remSize);
+						float32 runWeight = remWeight;
+						for (auto& d : stretchData) {
+							if (d.val == d.max) { continue; }
+							float32 w = d.weight / runWeight;
+							float32 v = w * remSize;
+							float32 b = d.val;
+							d.val = std::clamp(d.val + v, d.min, d.max);
+							remSize -= d.val - b;
+							runWeight -= d.weight;
+
+							if (d.val == d.max) {
+								remWeight -= d.weight;
+							}
+						}
+					}
+					ENGINE_LOG("Iters: ", iter, " ", panel);
 				}
 
 				// TODO: could we pull some of the switching out of the loop? lambda? how does that compile down?
@@ -102,10 +193,29 @@ namespace Engine::Gui {
 						// The second way (removing gaps before dividing size) doesnt work
 						// well with fixed layout weighting, whereas the first does.
 						//
-						const auto w = curr->getWeight() / totalWeight;
+
 						auto sz = curr->getSize();
-						sz[main] = w * size[main] - gapAdj;
+						sz[main] = stretchData[++stretchIndex].val;
 						curr->setSize(sz);
+
+						//////const auto w = curr->getWeight() / totalWeight;
+						//////auto sz = curr->getSize();
+
+						//sz[main] = w * size[main] - gapAdj;
+						//////sz[main] = w * size[main];
+						//////curr->setSize(sz);
+
+						//
+						//
+						//
+						// TODO: this still doesnt work because what if a later item has a smaller size? we dont go back and resize
+						// older elements
+						//
+						//
+						//
+
+						//////totalWeight -= curr->getWeight();
+						//////size[main] -= curr->getSize()[main];
 					}
 					
 					if (mainAlign == Align::End) {
