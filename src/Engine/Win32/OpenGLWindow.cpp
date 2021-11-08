@@ -776,6 +776,11 @@ namespace Engine::Win32 {
 			HANDLE_MESSAGE(WM_MOUSEMOVE);
 			HANDLE_MESSAGE(WM_MOUSELEAVE);
 
+			// Avoid default behaviour that causes hanging and beeps
+			case WM_SYSKEYDOWN: { return 0; };
+			case WM_SYSKEYUP: { return 0; };
+			case WM_SYSCHAR: { return 0; };
+
 			/*
 			case WM_IME_CHAR: { ENGINE_LOG("WM_IME_CHAR"); break; }
 			case WM_IME_COMPOSITION: { ENGINE_LOG("WM_IME_COMPOSITION"); break; }
