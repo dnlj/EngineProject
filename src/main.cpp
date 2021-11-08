@@ -624,23 +624,23 @@ void run(int argc, char* argv[]) {
 		auto& bm = engine.bindManager;
 		auto& is = world.getSystem<Game::InputSystem>();
 
-		const auto updateActionState = [&](auto action, auto curr){
+		constexpr auto updateActionState = [](auto& world, auto action, auto curr){
 			world.getSystem<Game::ActionSystem>().updateActionState(action, curr.i32);
 		};
-		const auto updateTargetState = [&](auto curr){
+		constexpr auto updateTargetState = [](auto& world, auto curr){
 			world.getSystem<Game::ActionSystem>().updateTarget(curr.f32v2);
 		};
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		// Game Binds
 		////////////////////////////////////////////////////////////////////////////////////////////////
-		is.registerCommand(Action::Attack1, [&](Value curr){ updateActionState(Action::Attack1, curr); });
-		is.registerCommand(Action::Attack2, [&](Value curr){ updateActionState(Action::Attack2, curr); });
-		is.registerCommand(Action::MoveUp, [&](Value curr){ updateActionState(Action::MoveUp, curr); });
-		is.registerCommand(Action::MoveDown, [&](Value curr){ updateActionState(Action::MoveDown, curr); });
-		is.registerCommand(Action::MoveLeft, [&](Value curr){ updateActionState(Action::MoveLeft, curr); });
-		is.registerCommand(Action::MoveRight, [&](Value curr){ updateActionState(Action::MoveRight, curr); });
-		is.registerCommand(Action::Target, [&](Value curr){ updateTargetState(curr); });
+		is.registerCommand(Action::Attack1, [&](Value curr){ updateActionState(world, Action::Attack1, curr); });
+		is.registerCommand(Action::Attack2, [&](Value curr){ updateActionState(world, Action::Attack2, curr); });
+		is.registerCommand(Action::MoveUp, [&](Value curr){ updateActionState(world, Action::MoveUp, curr); });
+		is.registerCommand(Action::MoveDown, [&](Value curr){ updateActionState(world, Action::MoveDown, curr); });
+		is.registerCommand(Action::MoveLeft, [&](Value curr){ updateActionState(world, Action::MoveLeft, curr); });
+		is.registerCommand(Action::MoveRight, [&](Value curr){ updateActionState(world, Action::MoveRight, curr); });
+		is.registerCommand(Action::Target, [&](Value curr){ updateTargetState(world, curr); });
 
 		bm.addBind(InputLayer::Game, false, InputSequence{
 			InputId{InputType::KEYBOARD, 0, 29}, // CTRL
