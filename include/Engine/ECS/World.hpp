@@ -27,54 +27,66 @@ namespace Engine::ECS {
 			using It = decltype(std::declval<Cont>().begin());
 			using CIt = decltype(std::declval<Cont>().cbegin());
 			World& world;
-			ENGINE_INLINE auto& getCont() const { return world.template getComponentContainer<C>(); }
-
-			// TODO: do we also want to check if enabled? maybe filters need some way to specify what flags an entity should/shouoldnt have
-			ENGINE_INLINE bool canUse(Entity ent) const {
-				return world.isAlive(ent) && world.isEnabled(ent);
-			}
 
 			class Iter {
 				private:
 					friend class SingleComponentFilter;
 					using I = int32;
 					It it;
-					const SingleComponentFilter& filter;
+					World& world;
+
+					ENGINE_INLINE static auto& getCont(World& w) { return w.template getComponentContainer<C>(); }
+					ENGINE_INLINE auto& getCont() const { return getCont(world); }
+
+					// TODO: do we also want to check if enabled? maybe filters need some way to specify what flags an entity should/shouoldnt have
+					ENGINE_INLINE bool canUse(Entity ent) const {
+						return world.isAlive(ent) && world.isEnabled(ent);
+					}
 
 					ENGINE_INLINE void stepNextValid() {
-						const auto end = filter.getCont().end();
-						while (it != end && !filter.canUse(it->first)) {
+						const auto end = getCont().end();
+						while (it != end && !canUse(it->first)) {
 							++it;
 						}
 					}
 
 					ENGINE_INLINE void stepPrevValid() {
-						const auto begin = filter.getCont().begin();
-						while (it != begin && !filter.canUse(it->first)) {
+						const auto begin = getCont().begin();
+						while (it != begin && !canUse(it->first)) {
 							--it;
 						}
 					}
 
-				public:
-					Iter(It it, const SingleComponentFilter& filter) : it{it}, filter{filter} {}
+					static Iter begin(World& w) {
+						Iter temp{getCont(w).begin(), w};
+						temp.stepNextValid();
+						return temp;
+					}
 
-					// TODO: need to check that ent is enabled
+					static Iter end(World& w) {
+						Iter temp{getCont(w).end(), w};
+						return temp;
+					}
+
+					Iter(It it, World& world) : it{it}, world{world} {}
+
+				public:
 					auto& operator++() {
-						const auto end = filter.getCont().end();
+						const auto end = getCont().end();
 						if (it != end) { ++it; }
 						stepNextValid();
 						return *this;
 					}
 
 					auto& operator--() {
-						const auto begin = filter.getCont().begin();
+						const auto begin = getCont().begin();
 						if (it != begin) { --it; }
 						stepPrevValid();
 						return *this;
 					}
 
 					ENGINE_INLINE auto& operator*() {
-						ENGINE_DEBUG_ASSERT(filter.canUse(it->first), "Attempt to dereference invalid iterator.");
+						ENGINE_DEBUG_ASSERT(canUse(it->first), "Attempt to dereference invalid iterator.");
 						return it->first;
 					}
 
@@ -88,14 +100,12 @@ namespace Engine::ECS {
 		public:
 			SingleComponentFilter(World& world) : world{world} {}
 
-			Iter begin() const {
-				Iter it{getCont().begin(), *this};
-				it.stepNextValid();
-				return it;
+			ENGINE_INLINE Iter begin() const {
+				return Iter::begin(world);
 			}
 
-			Iter end() const {
-				return {getCont().end(), *this};
+			ENGINE_INLINE Iter end() const {
+				return Iter::end(world);
 			}
 
 			auto size() const {
@@ -104,7 +114,7 @@ namespace Engine::ECS {
 				return i;
 			}
 
-			bool empty() const { return begin() == end(); }
+			ENGINE_INLINE bool empty() const { return begin() == end(); }
 	};
 
 	// TODO: move
