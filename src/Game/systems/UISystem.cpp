@@ -22,6 +22,7 @@
 #include <Engine/Gui/CollapsibleSection.hpp>
 #include <Engine/Gui/TextBox.hpp>
 #include <Engine/Gui/Slider.hpp>
+#include <Engine/Gui/DataAdapter.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -273,70 +274,13 @@ namespace Game {
 			}
 	};
 
-	template<class Self, class Id, class Checksum>
-	class ListAdapter {
-		public:
-			using Panel = Gui::Panel; // TODO: rm
-
-			struct Store {
-				Panel* panel = nullptr;
-				Checksum checksum = 0;
-				uint32 iter = 0;
-			};
-
-			Engine::FlatHashMap<Id, Store> cache;
-			uint32 iter2 = 0; // TODO: rename
-
-		public:
-			//Id getId(It it) = 0;
-			//Panel* getPanel(const Id& id) = 0;
-			//It begin() = 0;
-			//It end() = 0;
-			//void sort();
-			
-			ENGINE_INLINE Self& self() noexcept { return *reinterpret_cast<Self*>(this); }
-
-			void operator()(Panel* parent) {
-				++iter2;
-
-				for (auto it = self().begin(), e = self().end(); it != e; ++it) {
-					auto id = self().getId(it);
-					auto found = cache.find(id);
-					if (found == cache.end()) {
-						auto [f2, _] = cache.emplace(id, Store{
-							.panel = self().createPanel(id, *parent->getContext()),
-							.checksum = self().check(id),
-							.iter = iter2,
-						});
-						found = f2;
-						parent->addChild(found->second.panel);
-					} else {
-						found->second.iter = iter2;
-						if (auto sum = self().check(id); sum != found->second.checksum) {
-							self().updatePanel(id, found->second.panel);
-							found->second.checksum = sum;
-						}
-					}
-				}
-
-				// Remove old items
-				for (auto it = cache.begin(), e = cache.end(); it != e;) {
-					if (it->second.iter != iter2) {
-						parent->getContext()->deletePanel(it->second.panel);
-						it = cache.erase(it);
-					} else {
-						++it;
-					}
-				}
-
-			}
-	};
 	
-	class TestListAdapter : public ListAdapter<TestListAdapter, Engine::ECS::Entity, uint64> {
+	class TestListAdapter : public Gui::DataAdapter<TestListAdapter, Engine::ECS::Entity, uint64> {
 		private:
 			Game::World& world;
 
 		public:
+			using Panel = Gui::Panel;
 			using It = decltype(world.getFilter<ConnectionComponent>().begin());
 			using Id = Engine::ECS::Entity;
 
