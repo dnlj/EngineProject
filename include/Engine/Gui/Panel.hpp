@@ -66,6 +66,10 @@ namespace Engine::Gui {
 
 			uint32 flags = Flag::Enabled;
 
+			// TODO: maybe change to flag for diff size policies?
+			bool autoSizeHeight = false;
+			bool autoSizeWidth = false;
+
 		public:
 			Panel(Context* context) : ctx{context} {}
 			virtual ~Panel();
@@ -73,6 +77,12 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setWeight(float32 w) noexcept { weight = w; }
 			ENGINE_INLINE auto getWeight() const noexcept { return weight; }
 			ENGINE_INLINE auto getParent() const noexcept { return parent; }
+
+			ENGINE_INLINE void setAutoSizeHeight(bool v) noexcept { autoSizeHeight = v; }
+			ENGINE_INLINE bool getAutoSizeHeight() const noexcept { return autoSizeHeight; }
+
+			ENGINE_INLINE void setAutoSizeWidth(bool v) noexcept { autoSizeWidth = v; }
+			ENGINE_INLINE bool getAutoSizeWidth() const noexcept { return autoSizeWidth; }
 			
 			/**
 			 * Gets the next enabled sibling panel.
@@ -272,6 +282,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void performLayout() {
 				setPerformingLayout(true);
 				preLayout();
+				if (autoSizeHeight) { autoHeight(); } // TODO: maybe this be a panel prop?
 				if (layout) { layout->layout(this); }
 				postLayout();
 				setPerformingLayout(false);
@@ -280,7 +291,11 @@ namespace Engine::Gui {
 			/**
 			 * @see Flag
 			 */
-			ENGINE_INLINE void setEnabled(bool e) noexcept { setFlag(Flag::Enabled, e); }
+			ENGINE_INLINE void setEnabled(bool e) noexcept {
+				const auto old = isEnabled();
+				setFlag(Flag::Enabled, e);
+				if (old != e && parent) { parent->onChildChanged(this); }
+			}
 			ENGINE_INLINE bool isEnabled() const noexcept { return getFlag(Flag::Enabled); }
 
 			virtual void onAction(Action act) {}
@@ -332,9 +347,10 @@ namespace Engine::Gui {
 			ENGINE_INLINE bool isPerformingLayout() const noexcept { return getFlag(Flag::PerformingLayout); }
 			
 			/**
-			 * Called after a child panel has changed size.
+			 * Called after a child panel has changed in a way that may affect the parent.
+			 * Ex: size changed, enabled, disabled
 			 */
-			void onChildSizeChanged(Panel* child) {
+			void onChildChanged(Panel* child) {
 				if (!isPerformingLayout()) {
 					performLayout();
 				}
@@ -344,8 +360,8 @@ namespace Engine::Gui {
 			 * Notify the parent panel that this panels size has changed.
 			 */
 			ENGINE_INLINE void sizeChanged() {
-				performLayout();
-				if (parent) { parent->onChildSizeChanged(this); }
+				if (!isPerformingLayout()) { performLayout(); }
+				if (parent) { parent->onChildChanged(this); }
 			}
 
 			/**

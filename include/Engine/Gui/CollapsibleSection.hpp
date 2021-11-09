@@ -20,8 +20,9 @@ namespace Engine::Gui {
 
 				virtual float32 getAutoHeight(const Panel* panel) const override {
 					auto section = reinterpret_cast<const CollapsibleSection*>(panel);
-					auto h = section->getContent()->getAutoHeight();
-					return section->btn->getHeight() + gap + h;
+					auto content = section->getContent();
+					const auto h = content->isEnabled() ? content->getAutoHeight() + gap : 0;
+					return section->btn->getHeight() + h;
 				}
 			};
 

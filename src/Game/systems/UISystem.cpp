@@ -310,7 +310,6 @@ namespace Game {
 						});
 						found = f2;
 						parent->addChild(found->second.panel);
-						parent->performLayout();
 					} else {
 						found->second.iter = iter2;
 						if (auto sum = self().check(id); sum != found->second.checksum) {
@@ -329,6 +328,7 @@ namespace Game {
 						++it;
 					}
 				}
+
 			}
 	};
 	
@@ -395,6 +395,9 @@ namespace Game {
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->registerPanelUpdateFunc(getContent(), TestListAdapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+
+				setAutoSizeHeight(true);
+				getContent()->setAutoSizeHeight(true);
 			}
 	};
 }
@@ -449,7 +452,6 @@ namespace Game {
 
 		{
 			panels.netHealthPane = ctx->createPanel<NetHealthPane>(content);
-			panels.netHealthPane->setHeight(500);
 		}
 	}
 

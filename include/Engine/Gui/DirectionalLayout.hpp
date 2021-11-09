@@ -43,6 +43,8 @@ namespace Engine::Gui {
 			/** Total main axis stretch weight. Zero for automatic weight. */
 			float32 weight = 0.0f;
 
+			bool autoSize = false;
+
 		public:
 			DirectionalLayout(Direction dir, Align mainAlign, Align crossAlign, float32 gap = 8.0f)
 				: dir{dir}, mainAlign{mainAlign}, crossAlign{crossAlign}, gap{gap} {
@@ -62,15 +64,16 @@ namespace Engine::Gui {
 						curr = curr->getNextSibling();
 					}
 				} else { // Main Axis
-					while (true) {
-						val += curr->getSize()[dim]; 
-						curr = curr->getNextSibling();
-						if (!curr) { break; }
-						val += gap;
+					if (curr) {
+						while (true) {
+							val += curr->getSize()[dim]; 
+							curr = curr->getNextSibling();
+							if (!curr) { break; }
+							val += gap;
+						}
 					}
 				}
 
-				ENGINE_INFO(" ***** Auto Dim: ", dim, " ", val);
 				return val;
 			}
 
