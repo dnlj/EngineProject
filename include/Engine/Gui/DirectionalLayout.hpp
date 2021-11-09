@@ -27,7 +27,7 @@ namespace Engine::Gui {
 	using Align = Align_::Align;
 
 	class DirectionalLayout : public Layout {
-		private:
+		protected:
 			/** The main axis */
 			Direction dir = {};
 
@@ -51,7 +51,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setGap(float32 g) noexcept { gap = g; }
 			ENGINE_INLINE auto getGap() const noexcept { return gap; }
 
-			void autoDim(Panel* panel, Direction axis) {
+			float32 getAutoDim(const Panel* panel, Direction axis) const {
 				int dim = static_cast<int>(axis);
 				auto curr = panel->getFirstChild();
 				float32 val = 0;
@@ -66,22 +66,16 @@ namespace Engine::Gui {
 						val += curr->getSize()[dim]; 
 						curr = curr->getNextSibling();
 						if (!curr) { break; }
-						val += curr ? gap : 0;
+						val += gap;
 					}
 				}
 
-				auto sz = panel->getSize();
-				sz[dim] = val;
-				panel->setSize(sz);
-				ENGINE_INFO(" ***** Auto Dim: ", dim, " ", sz);
+				ENGINE_INFO(" ***** Auto Dim: ", dim, " ", val);
+				return val;
 			}
 
-			virtual void autoHeight(Panel* panel) override {
-				autoDim(panel, Direction::Vertical);
-			}
-
-			void autoWidth() {
-				// TODO: autoDim(panel, Direction::Horizontal);
+			virtual float32 getAutoHeight(const Panel* panel) const override {
+				return getAutoDim(panel, Direction::Vertical);
 			}
 
 			virtual void layout(Panel* panel) override {

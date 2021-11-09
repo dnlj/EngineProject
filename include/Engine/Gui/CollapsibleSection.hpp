@@ -18,16 +18,16 @@ namespace Engine::Gui {
 			struct Layout : DirectionalLayout {
 				using DirectionalLayout::DirectionalLayout;
 
-				//virtual void autoHeight(Panel* panel) override {
-				//	auto section = reinterpret_cast<CollapsibleSection*>(panel);
-				//	section->getContent()->autoHeight();
-				//	DirectionalLayout::autoHeight(panel);
-				//}
+				virtual float32 getAutoHeight(const Panel* panel) const override {
+					auto section = reinterpret_cast<const CollapsibleSection*>(panel);
+					auto h = section->getContent()->getAutoHeight();
+					return section->btn->getHeight() + gap + h;
+				}
 			};
 
 		public:
 			CollapsibleSection(Context* context) : Panel{context} {
-				setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch});
+				setLayout(new Layout{Direction::Vertical, Align::Stretch, Align::Stretch});
 				height = getHeight();
 
 				btn = ctx->constructPanel<Button>();
@@ -54,7 +54,7 @@ namespace Engine::Gui {
 				setHeight(open ? height : btn->getHeight());
 			}
 
-			ENGINE_INLINE auto getContent() const noexcept { return content; }
+			ENGINE_INLINE Panel* getContent() const noexcept { return content; }
 
 			virtual void render() const override {
 				ctx->drawRect({0,0}, getSize(), {0,0.5,0.5,1.0});

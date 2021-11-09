@@ -138,10 +138,14 @@ namespace Engine::Gui {
 				setPos(p + rel);
 			}
 
-			// TODO: remove
-			//ENGINE_INLINE void autoHeight() {
-			//	if (layout) { layout->autoHeight(this); }
-			//}
+			ENGINE_INLINE auto getAutoHeight() const {
+				if (layout) { return layout->getAutoHeight(this); }
+				return getHeight();
+			}
+
+			ENGINE_INLINE void autoHeight() {
+				setHeight(getAutoHeight());
+			}
 
 			/**
 			 * Set the size of this panel.
@@ -164,7 +168,7 @@ namespace Engine::Gui {
 				size.x = glm::clamp(w, minSize.x, maxSize.x);
 				if (size.x != old) { sizeChanged(); }
 			}
-			ENGINE_INLINE auto getWidth() const noexcept { return size.x; }
+			ENGINE_INLINE float32 getWidth() const noexcept { return size.x; }
 			
 			/**
 			 * See @ref setSize.
@@ -174,7 +178,7 @@ namespace Engine::Gui {
 				size.y = glm::clamp(h, minSize.y, maxSize.y);
 				if (size.y != old) { sizeChanged(); }
 			}
-			ENGINE_INLINE auto getHeight() const noexcept { return size.y; }
+			ENGINE_INLINE float32 getHeight() const noexcept { return size.y; }
 
 			/**
 			 * Gets the axis aligned bounding box for this panel.

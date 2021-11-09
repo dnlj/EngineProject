@@ -444,7 +444,7 @@ namespace Game {
 
 		{
 			panels.netCondPane = ctx->createPanel<NetCondPane>(content);
-			panels.netCondPane->setHeight(300);
+			panels.netCondPane->autoHeight();
 		}
 
 		{
