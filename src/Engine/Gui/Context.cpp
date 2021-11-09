@@ -544,6 +544,11 @@ namespace Engine::Gui {
 		stringsToRender.emplace_back(renderState.layer, renderState.id, pos + renderState.offset, fstr);
 	}
 
+	void Context::unsetActive() {
+		active->onEndActivate();
+		active = nullptr;
+	}
+
 	void Context::updateHover() {
 		auto&& canUse = [](auto&& it) ENGINE_INLINE { return (*it)->canHover(); };
 		auto&& canUseChild = [c=cursor](auto&& itP, auto&& itC) ENGINE_INLINE {
@@ -570,10 +575,8 @@ namespace Engine::Gui {
 				auto parent = curr->getParent();
 				if (parent && canUseChild(&parent, &curr)) {
 					hoverStackBack.push_back(curr);
-					//curr = curr->getFirstChild();
 					curr = curr->getLastChild();
 				} else {
-					//curr = curr->getNextSibling();
 					curr = curr->getPrevSibling();
 				}
 			}
@@ -767,8 +770,7 @@ namespace Engine::Gui {
 				}
 
 				if (active) {
-					active->onEndActivate();
-					active = nullptr;
+					unsetActive();
 					return true;
 				}
 			}

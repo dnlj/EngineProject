@@ -156,10 +156,11 @@ namespace Engine::Gui {
 			std::vector<BFSStateData> bfsNext;
 
 			/* Panel state */
+			// If you add any more context panel state make sure to update `deletePanel` to remove any references on delete
 			Panel* root;
 			Panel* active = nullptr;
 			Panel* focus = nullptr;
-			Panel* hover = nullptr; // TODO: cache hover like we do for focus
+			Panel* hover = nullptr;
 
 			std::vector<Panel*> hoverStack;
 			std::vector<Panel*> hoverStackBack;
@@ -232,6 +233,7 @@ namespace Engine::Gui {
 			void drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color);
 			void drawString(glm::vec2 pos, const ShapedString* fstr);
 
+			void unsetActive();
 			void updateHover();
 
 			ENGINE_INLINE PanelId getPanelId(const Panel* panel) const {
@@ -256,6 +258,11 @@ namespace Engine::Gui {
 			}
 
 			void deletePanel(Panel* panel) {
+				if (panel == active) { unsetActive(); }
+				if (panel == focus) { setFocus(panel->getParent()); }
+				panel->setEnabled(false);
+				updateHover();
+
 				deregisterPanelUpdateFunc(panel);
 				deregisterActivate(panel);
 				deregisterMouseMove(panel);
