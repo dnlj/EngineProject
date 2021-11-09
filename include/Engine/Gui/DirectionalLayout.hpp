@@ -81,6 +81,10 @@ namespace Engine::Gui {
 				return getAutoDim(panel, Direction::Vertical);
 			}
 
+			virtual float32 getAutoWidth(const Panel* panel) const override {
+				return getAutoDim(panel, Direction::Horizontal);
+			}
+
 			virtual void layout(Panel* panel) override {
 				const auto main = dir;
 				const auto cross = dir == Direction::Horizontal ? Direction::Vertical : Direction::Horizontal;

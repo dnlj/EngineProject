@@ -10,6 +10,7 @@ namespace Engine::Gui {
 
 			// TODO: should be pure
 			virtual float32 getAutoHeight(const Panel* panel) const { return 32; };
+			virtual float32 getAutoWidth(const Panel* panel) const { return 32; };
 
 			virtual void layout(Panel* panel) = 0;
 	};

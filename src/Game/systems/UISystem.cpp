@@ -429,7 +429,6 @@ namespace Game {
 
 		{
 			panels.infoPane = ctx->createPanel<InfoPane>(content);
-			// TODO: rm - panels.infoPane->setSize({0, 128});
 			panels.infoPane->setHeight(128);
 			panels.infoPane->disconnect->setAction([&]{
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {

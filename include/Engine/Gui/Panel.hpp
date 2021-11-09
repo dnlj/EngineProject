@@ -157,6 +157,15 @@ namespace Engine::Gui {
 				setHeight(getAutoHeight());
 			}
 
+			ENGINE_INLINE auto getAutoWidth() const {
+				if (layout) { return layout->getAutoWidth(this); }
+				return getHeight();
+			}
+
+			ENGINE_INLINE void autoWidth() {
+				setWidth(getAutoWidth());
+			}
+
 			/**
 			 * Set the size of this panel.
 			 * 
@@ -282,7 +291,8 @@ namespace Engine::Gui {
 			ENGINE_INLINE void performLayout() {
 				setPerformingLayout(true);
 				preLayout();
-				if (autoSizeHeight) { autoHeight(); } // TODO: maybe this be a panel prop?
+				if (autoSizeHeight) { autoHeight(); }
+				if (autoSizeWidth) { autoWidth(); }
 				if (layout) { layout->layout(this); }
 				postLayout();
 				setPerformingLayout(false);
