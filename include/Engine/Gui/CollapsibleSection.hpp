@@ -40,10 +40,6 @@ namespace Engine::Gui {
 				content = ctx->constructPanel<Panel>();
 				content->setMinSize({32,32});
 				addChildren({btn, content});
-
-				auto TODO_rm = ctx->createPanel<Panel>(this);
-				TODO_rm->setMaxSize({62, 62});
-				TODO_rm->setSize({8,8});
 			}
 
 			ENGINE_INLINE void setTitle(std::string title) {
@@ -51,6 +47,7 @@ namespace Engine::Gui {
 			}
 
 			ENGINE_INLINE void toggle() {
+				if (open) { height = getHeight(); }
 				open = !open;
 
 				content->setEnabled(open);
@@ -61,13 +58,6 @@ namespace Engine::Gui {
 
 			virtual void render() const override {
 				ctx->drawRect({0,0}, getSize(), {0,0.5,0.5,1.0});
-			}
-
-			virtual void preLayout() override {
-				if (open) { height = getHeight(); }
-
-				//auto* layout = reinterpret_cast<DirectionalLayout*>(getLayout());
-				//content->setSize({getSize().x, getSize().y - btn->getSize().y - layout->getGap()});
 			}
 	};
 }

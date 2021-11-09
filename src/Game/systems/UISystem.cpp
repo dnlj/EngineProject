@@ -258,16 +258,17 @@ namespace Game {
 			}
 
 			Gui::Slider& addSlider(std::string_view txt) {
-				auto line = ctx->createPanel<Panel>(getContent());
-				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 8});
-				line->setHeight(48); // TODO: ideally we could have some kind of auto size so panels expand by default.
-				
-				auto label = ctx->createPanel<Gui::Label>(line);
+				auto label = ctx->constructPanel<Gui::Label>();
 				label->autoText(txt);
 				label->setWeight(1);
 
-				auto slider = ctx->createPanel<Gui::Slider>(line);
+				auto slider = ctx->constructPanel<Gui::Slider>();
 				slider->setWeight(2);
+				
+				auto line = ctx->createPanel<Panel>(getContent());
+				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 8});
+				line->setHeight(48); // TODO: ideally we could have some kind of auto size so panels expand by default.
+				line->addChildren({label, slider});
 				return *slider;
 			}
 	};
@@ -444,14 +445,12 @@ namespace Game {
 		{
 			panels.netCondPane = ctx->createPanel<NetCondPane>(content);
 			panels.netCondPane->setHeight(300);
-			//panels.netCondPane->performLayout(); // TODO: shouldnt have to do this
 		}
 
 		{
 			panels.netHealthPane = ctx->createPanel<NetHealthPane>(content);
 			panels.netHealthPane->setHeight(500);
 		}
-		content->performLayout();
 	}
 
 	UISystem::~UISystem() {

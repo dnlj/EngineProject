@@ -137,16 +137,9 @@ namespace Engine::Gui {
 					if (weight) { remSize *= remWeight / weight; }
 					remSize -= gap * (count - 1);
 
-					// TODO: seems like there may be an issue with needing extra iterations?
-					// TODO: resize of an empty collapsible section should only take 1 iter? it says two.
-					// TODO: resize of a slider(i think?) takes 5.
-					// TODO: i think the above was fixed by the runWeight changes. verify.
-					int iter = 0; // TODO: rm
 					// While there is space remaining distribute it between all
 					// non-max-size panels according to their relative remaining weight
 					while (remSize >= 1 && remWeight > 0) {
-						++iter;
-						ENGINE_LOG("* i ", iter, " ", remSize);
 						float32 runWeight = remWeight;
 						for (auto& d : stretchData) {
 							if (d.val == d.max) { continue; }
@@ -162,7 +155,6 @@ namespace Engine::Gui {
 							}
 						}
 					}
-					ENGINE_LOG("Iters: ", iter, " ", panel);
 				} else [[unlikely]] {
 					ENGINE_WARN("Unknown layout main axis alignment");
 				}
