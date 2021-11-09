@@ -7,7 +7,7 @@
 
 namespace Engine::Gui {
 	struct Direction_ {
-		enum class Direction {
+		enum Direction {
 			Horizontal,
 			Vertical,
 			_count,
@@ -40,6 +40,7 @@ namespace Engine::Gui {
 			/** How much of a gap to insert between panels */
 			float32 gap = 8;
 
+			/** Total main axis stretch weight. Zero for automatic weight. */
 			float32 weight = 0.0f;
 
 		public:
@@ -84,24 +85,22 @@ namespace Engine::Gui {
 			}
 
 			virtual void layout(Panel* panel) override {
-				const auto main = static_cast<uint32>(dir);
-				const auto cross = static_cast<uint32>(dir == Direction::Horizontal ? Direction::Vertical : Direction::Horizontal);
+				const auto main = dir;
+				const auto cross = dir == Direction::Horizontal ? Direction::Vertical : Direction::Horizontal;
 				const auto size = panel->getSize();
 
 				auto next = &Panel::getNextSibling;
 				auto curr = panel->getFirstChild();
 				glm::vec2 cpos = panel->getPos();
 
-				// Only used for main axis stretch.
 				struct StretchData {
 					float32 min = 0;
 					float32 max = 0;
 					float32 val = 0;
 					float32 weight = 0;
 				};
-				// TODO: is there a better way to handle these single case variables?
-				float32 totalWeight = weight;
-				int32 count = 0;
+				
+				// Only used for main axis stretch.
 				int stretchIndex = -1;
 				std::vector<StretchData> stretchData;
 
@@ -114,10 +113,11 @@ namespace Engine::Gui {
 				} else if (mainAlign == Align::Center) {
 					ENGINE_WARN("TODO: impl Align::Center for main axis");
 				} else if (mainAlign == Align::Stretch) {
-					const bool accum = totalWeight == 0;
+					float32 remWeight = 0;
+					int32 count = 0;
 					while (curr) {
 						++count;
-						totalWeight += accum ? curr->getWeight() : 0;
+						remWeight += curr->getWeight();
 						curr = curr->getNextSibling();
 					}
 					curr = panel->getFirstChild();
@@ -127,16 +127,15 @@ namespace Engine::Gui {
 						stretchData[i] = {
 							.min = curr->getMinSize()[main],
 							.max = curr->getMaxSize()[main],
-							.val = 0, // TODO: init to min, also subtract from remSize
+							.val = 0,
 							.weight = curr->getWeight(),
 						};
 					}
 					curr = panel->getFirstChild();
-
-					float32 remSize = size[main] - gap * (count - 1);
-					float32 remWeight = totalWeight;
-
-					// TODO: Also need to check that fixed totalWeight still works
+					
+					float32 remSize = size[main];
+					if (weight) { remSize *= remWeight / weight; }
+					remSize -= gap * (count - 1);
 
 					// TODO: seems like there may be an issue with needing extra iterations?
 					// TODO: resize of an empty collapsible section should only take 1 iter? it says two.
