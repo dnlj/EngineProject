@@ -160,7 +160,10 @@ namespace Engine::Gui {
 				// because of more obvious selection.
 
 				for (auto glyph = glyphs.begin();; ++glyph) {
-					if (glyph == glyphs.end()) { ++result.index; break; }
+					if (glyph == glyphs.end()) {
+						result.index += !glyphs.empty();
+						break;
+					}
 					result.index = glyph->cluster;
 
 					// The multipler for advance used here is just a guess based on observation and
