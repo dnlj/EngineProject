@@ -15,13 +15,18 @@ namespace Engine::Gui {
 	 * - `Panel* createPanel(Id id, Context& ctx)`, Creates a panel for an item.
 	 * - `void updatePanel(Id id, Panel* panel)`, Updates an existing panel for an item.
 	 *
-	 * @tparam Self The CRTP derived class.
-	 * @tparam Id The type used to identify an item.
-	 * @tparam Checksum The checksum type used to determine if an item has changed.
+	 * @tparam Self_ The CRTP derived class.
+	 * @tparam Id_ The type used to identify an item.
+	 * @tparam Checksum_ The checksum type used to determine if an item has changed.
 	 * 
 	 */
-	template<class Self, class Id, class Checksum>
+	template<class Self_, class Id_, class Checksum_>
 	class DataAdapter {
+		public:
+			using Self = Self_;
+			using Id = Id_;
+			using Checksum = Checksum_;
+
 		private:
 			struct Store {
 				Panel* panel = nullptr;

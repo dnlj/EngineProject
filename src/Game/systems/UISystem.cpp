@@ -13,6 +13,7 @@
 
 // FMT
 #include <fmt/core.h>
+#include <fmt/ostream.h>
 
 // Engine
 #include <Engine/Glue/Box2D.hpp>
@@ -275,71 +276,112 @@ namespace Game {
 	};
 
 	
-	class TestListAdapter : public Gui::DataAdapter<TestListAdapter, Engine::ECS::Entity, uint64> {
-		private:
-			Game::World& world;
-
-		public:
-			using Panel = Gui::Panel;
-			using It = decltype(world.getFilter<ConnectionComponent>().begin());
-			using Id = Engine::ECS::Entity;
-
-			TestListAdapter(Game::World& world) : world{world} {}
-
-			ENGINE_INLINE auto begin() const { return world.getFilter<ConnectionComponent>().begin(); }
-			ENGINE_INLINE auto end() const { return world.getFilter<ConnectionComponent>().end(); }
-
-			ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
-
-			uint64 check(Id id) {
-				uint64 hash = {};
-				auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
-				for (const auto s : conn.getAllChannelQueueSizes()) {
-					Engine::hashCombine(hash, s);
-				}
-				return hash;
-			}
-
-			Panel* createPanel(Id id, Engine::Gui::Context& ctx) {
-				auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
-				const auto& addr = conn.address();
-
-				auto* base = ctx.constructPanel<Panel>();
-				base->setRelPos({});
-				base->setSize({128,128});
-				base->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
-
-				auto* ipLabel = ctx.createPanel<Gui::Label>(base);
-				ipLabel->autoText(fmt::format("{}", addr));
-
-				for (const auto s : conn.getAllChannelQueueSizes()) {
-					ctx.createPanel<Gui::Label>(base);
-				}
-
-				updatePanel(id, base);
-				return base;
-			}
-
-			void updatePanel(Id id, Panel* panel) {
-				Panel* curr = panel->getFirstChild();
-				auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
-				for (int32 c = 0; const auto s : conn.getAllChannelQueueSizes()) {
-					curr = curr->getNextSibling();
-					Gui::Label* label = reinterpret_cast<Gui::Label*>(curr);
-					label->autoText(fmt::format("Channel {}: {}", c++, s));
-				}
-			}
-
-	};
 
 	class NetHealthPane : public Gui::CollapsibleSection {
+		private:
+			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
+				private:
+					Game::World& world;
+
+				public:
+					using It = decltype(world.getFilter<ConnectionComponent>().begin());
+
+					Adapter(Game::World& world) noexcept : world{world} {}
+
+					ENGINE_INLINE auto begin() const { return world.getFilter<ConnectionComponent>().begin(); }
+					ENGINE_INLINE auto end() const { return world.getFilter<ConnectionComponent>().end(); }
+					ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
+
+					Checksum check(Id id) const {
+						uint64 hash = {};
+						auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
+						for (const auto s : conn.getAllChannelQueueSizes()) {
+							Engine::hashCombine(hash, s);
+						}
+						return hash;
+					}
+
+					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
+						auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
+						const auto& addr = conn.address();
+
+						auto* base = ctx.constructPanel<Panel>();
+						base->setRelPos({});
+						base->setSize({128,128});
+						base->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+
+						auto* ipLabel = ctx.createPanel<Gui::Label>(base);
+						ipLabel->autoText(fmt::format("{}", addr));
+
+						for (const auto s : conn.getAllChannelQueueSizes()) {
+							ctx.createPanel<Gui::Label>(base);
+						}
+
+						updatePanel(id, base);
+						return base;
+					}
+
+					void updatePanel(Id id, Panel* panel) const {
+						Panel* curr = panel->getFirstChild();
+						auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
+						for (int32 c = 0; const auto s : conn.getAllChannelQueueSizes()) {
+							curr = curr->getNextSibling();
+							Gui::Label* label = reinterpret_cast<Gui::Label*>(curr);
+							label->autoText(fmt::format("Channel {}: {}", c++, s));
+						}
+					}
+
+			};
+			
 		public:
 			NetHealthPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Network Health");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
-				ctx->registerPanelUpdateFunc(getContent(), TestListAdapter{world});
+				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 
+				setAutoSizeHeight(true);
+				getContent()->setAutoSizeHeight(true);
+			}
+	};
+
+	class EntityPane : public Gui::CollapsibleSection {
+		private:
+			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
+				private:
+					Game::World& world;
+
+				public:
+					using It = decltype(world.getEntities().begin());
+
+					Adapter(Game::World& world) noexcept : world{world} {}
+
+					ENGINE_INLINE auto begin() const { return world.getEntities().begin(); }
+					ENGINE_INLINE auto end() const { return world.getEntities().end(); }
+					ENGINE_INLINE auto getId(It it) const noexcept { return it->ent; }
+
+					Checksum check(Id id) const {
+						return *reinterpret_cast<Checksum*>(&id);
+					}
+
+					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
+						auto* base = ctx.constructPanel<Gui::Label>();
+						base->autoText(fmt::format("{}", id));
+						return base;
+					}
+
+					void updatePanel(Id id, Gui::Panel* panel) const {
+					}
+
+			};
+
+		public:
+			EntityPane(Gui::Context* context) : CollapsibleSection{context} {
+				setTitle("Entities");
+				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				
 				setAutoSizeHeight(true);
 				getContent()->setAutoSizeHeight(true);
 			}
@@ -395,6 +437,10 @@ namespace Game {
 
 		{
 			panels.netHealthPane = ctx->createPanel<NetHealthPane>(content);
+		}
+
+		{
+			panels.entityPane = ctx->createPanel<EntityPane>(content);
 		}
 	}
 

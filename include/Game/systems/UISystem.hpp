@@ -58,6 +58,7 @@ namespace Game {
 				class CoordPane* coordPane;
 				class NetCondPane* netCondPane;
 				class NetHealthPane* netHealthPane;
+				class EntityPane* entityPane;
 			} panels;
 
 			void ui_connect();
