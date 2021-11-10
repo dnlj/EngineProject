@@ -360,6 +360,10 @@ namespace Game {
 					ENGINE_INLINE auto end() const { return world.getEntities().end(); }
 					ENGINE_INLINE auto getId(It it) const noexcept { return it->ent; }
 
+					bool filter(Id id) const noexcept {
+						return world.isAlive(id);
+					}
+
 					Checksum check(Id id) const {
 						return *reinterpret_cast<Checksum*>(&id);
 					}
