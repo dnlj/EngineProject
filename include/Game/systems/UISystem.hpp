@@ -56,6 +56,7 @@ namespace Game {
 				Engine::Gui::Window* window;
 				class InfoPane* infoPane;
 				class CoordPane* coordPane;
+				class CameraPane* cameraPane;
 				class NetCondPane* netCondPane;
 				class NetHealthPane* netHealthPane;
 				class EntityPane* entityPane;

@@ -132,41 +132,6 @@ namespace Engine::Gui {
 			ENGINE_INLINE auto getPos() const noexcept { return pos; }
 
 			/**
-			 * Set the position of this panel relative to its parent.
-			 */
-			ENGINE_INLINE void setRelPos(const glm::vec2 p) noexcept { setPos(p + (parent ? parent->getPos() : glm::vec2{})); }
-			ENGINE_INLINE auto getRelPos() const noexcept { return getPos() - (parent ? parent->getPos() : glm::vec2{}); }
-			
-			ENGINE_INLINE void setMinSize(const glm::vec2 sz) noexcept { minSize = sz; }
-			ENGINE_INLINE auto getMinSize() const noexcept { return minSize; }
-			
-			ENGINE_INLINE void setMaxSize(const glm::vec2 sz) noexcept { maxSize = sz; }
-			ENGINE_INLINE auto getMaxSize() const noexcept { return maxSize; }
-
-			ENGINE_INLINE void updateParentPos(const glm::vec2 p) {
-				const auto rel = getRelPos();
-				setPos(p + rel);
-			}
-
-			ENGINE_INLINE auto getAutoHeight() const {
-				if (layout) { return layout->getAutoHeight(this); }
-				return getHeight();
-			}
-
-			ENGINE_INLINE void autoHeight() {
-				setHeight(getAutoHeight());
-			}
-
-			ENGINE_INLINE auto getAutoWidth() const {
-				if (layout) { return layout->getAutoWidth(this); }
-				return getHeight();
-			}
-
-			ENGINE_INLINE void autoWidth() {
-				setWidth(getAutoWidth());
-			}
-
-			/**
 			 * Set the size of this panel.
 			 * 
 			 * Clamped to min/max size. \n
@@ -207,6 +172,41 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setBounds(Bounds bounds) noexcept {
 				setPos(bounds.min);
 				setSize(bounds.max - bounds.min);
+			}
+
+			/**
+			 * Set the position of this panel relative to its parent.
+			 */
+			ENGINE_INLINE void setRelPos(const glm::vec2 p) noexcept { setPos(p + (parent ? parent->getPos() : glm::vec2{})); }
+			ENGINE_INLINE auto getRelPos() const noexcept { return getPos() - (parent ? parent->getPos() : glm::vec2{}); }
+			
+			ENGINE_INLINE void setMinSize(const glm::vec2 sz) noexcept { minSize = sz; setSize(getSize()); }
+			ENGINE_INLINE auto getMinSize() const noexcept { return minSize; }
+			
+			ENGINE_INLINE void setMaxSize(const glm::vec2 sz) noexcept { maxSize = sz; setSize(getSize()); }
+			ENGINE_INLINE auto getMaxSize() const noexcept { return maxSize; }
+
+			ENGINE_INLINE void updateParentPos(const glm::vec2 p) {
+				const auto rel = getRelPos();
+				setPos(p + rel);
+			}
+
+			ENGINE_INLINE auto getAutoHeight() const {
+				if (layout) { return std::max(layout->getAutoHeight(this), minSize.y); }
+				return getHeight();
+			}
+
+			ENGINE_INLINE void autoHeight() {
+				setHeight(getAutoHeight());
+			}
+
+			ENGINE_INLINE auto getAutoWidth() const {
+				if (layout) { return std::max(layout->getAutoWidth(this), minSize.x); }
+				return getHeight();
+			}
+
+			ENGINE_INLINE void autoWidth() {
+				setWidth(getAutoWidth());
 			}
 
 			/**

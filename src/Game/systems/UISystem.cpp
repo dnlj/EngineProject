@@ -355,18 +355,11 @@ namespace Game {
 					using It = decltype(world.getEntities().begin());
 
 					Adapter(Game::World& world) noexcept : world{world} {}
-
 					ENGINE_INLINE auto begin() const { return world.getEntities().begin(); }
 					ENGINE_INLINE auto end() const { return world.getEntities().end(); }
 					ENGINE_INLINE auto getId(It it) const noexcept { return it->ent; }
-
-					bool filter(Id id) const noexcept {
-						return world.isAlive(id);
-					}
-
-					Checksum check(Id id) const {
-						return *reinterpret_cast<Checksum*>(&id);
-					}
+					ENGINE_INLINE bool filter(Id id) const noexcept { return world.isAlive(id); }
+					ENGINE_INLINE Checksum check(Id id) const { return *reinterpret_cast<Checksum*>(&id);	}
 
 					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
 						auto* base = ctx.constructPanel<Gui::Label>();
@@ -374,14 +367,71 @@ namespace Game {
 						return base;
 					}
 
-					void updatePanel(Id id, Gui::Panel* panel) const {
-					}
-
 			};
 
 		public:
 			EntityPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Entities");
+				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				
+				setAutoSizeHeight(true);
+				getContent()->setAutoSizeHeight(true);
+			}
+	};
+	/*
+
+	void UISystem::ui_camera() {
+		if constexpr (!ENGINE_SERVER) { return; }
+		if (!ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
+
+		for (const auto ply : world.getFilter<PlayerFlag>()) {
+			if (world.hasComponent<CameraTargetFlag>(ply)) {}
+			ImGui::PushID(ply.id);
+
+			ss.str("");
+			ss << ply;
+			if (ImGui::Button(ss.str().c_str())) {
+				for (const auto ply2 : world.getFilter<PlayerFlag>()) {
+					if (world.hasComponent<CameraTargetFlag>(ply2)) {
+						world.removeComponent<CameraTargetFlag>(ply2);
+					}
+				}
+				world.addComponent<CameraTargetFlag>(ply);
+			};
+
+			ImGui::PopID();
+		}
+	}
+
+	*/
+	class CameraPane : public Gui::CollapsibleSection {
+		private:
+			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
+				private:
+					Game::World& world;
+
+				public:
+					using It = decltype(world.getFilter<PlayerFlag>().begin());
+
+					Adapter(Game::World& world) noexcept : world{world} {}
+					ENGINE_INLINE auto begin() const { return world.getFilter<PlayerFlag>().begin(); }
+					ENGINE_INLINE auto end() const { return world.getFilter<PlayerFlag>().end(); }
+					ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
+					ENGINE_INLINE Checksum check(Id id) const { return *reinterpret_cast<Checksum*>(&id); }
+
+					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
+						auto* base = ctx.constructPanel<Gui::Label>();
+						base->autoText(fmt::format("{}", id));
+						return base;
+					}
+
+			};
+
+		public:
+			CameraPane(Gui::Context* context) : CollapsibleSection{context} {
+				setTitle("Camera");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
@@ -429,9 +479,13 @@ namespace Game {
 		}
 
 		{
-			panels.coordPane = ctx->createPanel<CoordPane>(content);
-			panels.coordPane->setHeight(300);
-			panels.coordPane->toggle();
+			//panels.coordPane = ctx->createPanel<CoordPane>(content);
+			//panels.coordPane->setHeight(300);
+			//panels.coordPane->toggle();
+		}
+
+		if constexpr (ENGINE_SERVER) {
+			panels.cameraPane = ctx->createPanel<CameraPane>(content);
 		}
 
 		{
@@ -445,7 +499,12 @@ namespace Game {
 
 		{
 			panels.entityPane = ctx->createPanel<EntityPane>(content);
+			panels.entityPane->toggle();
 		}
+
+		panels.infoPane->toggle();
+		panels.netHealthPane->toggle();
+		panels.netCondPane->toggle();
 	}
 
 	UISystem::~UISystem() {

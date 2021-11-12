@@ -13,7 +13,7 @@ namespace Engine::Gui {
 	 * - `Id getId(It it)`, Gets the id for an item.
 	 * - `Checksum check(Id id)`, Gets the checksum for an item. Used to determine if panels need updating.
 	 * - `Panel* createPanel(Id id, Context& ctx)`, Creates a panel for an item.
-	 * - `void updatePanel(Id id, Panel* panel)`, Updates an existing panel for an item.
+	 * - `void updatePanel(Id id, Panel* panel)`, Optional. Updates an existing panel for an item.
 	 * - `bool filter(Id id)`, Optional. Determines if an item should be used.
 	 *
 	 * @tparam Self_ The CRTP derived class.
@@ -41,6 +41,7 @@ namespace Engine::Gui {
 		public:
 			ENGINE_INLINE Self& self() noexcept { return *reinterpret_cast<Self*>(this); }
 			ENGINE_INLINE bool filter(const Id&) const noexcept { return true; }
+			ENGINE_INLINE void updatePanel(Id id, Panel* panel) const noexcept {}
 
 			void operator()(Panel* parent) {
 				++iter;
