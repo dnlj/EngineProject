@@ -33,7 +33,7 @@ namespace Engine::Gui {
 
 				btn = ctx->constructPanel<Button>();
 				btn->setText("Section Test");
-				btn->setAction([&]{ toggle(); });
+				btn->setAction([&](Button*){ toggle(); });
 				btn->setMinSize({0, 32});
 				btn->setMaxSize({INFINITY, 32});
 				btn->setHeight(32);

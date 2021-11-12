@@ -380,32 +380,7 @@ namespace Game {
 				getContent()->setAutoSizeHeight(true);
 			}
 	};
-	/*
 
-	void UISystem::ui_camera() {
-		if constexpr (!ENGINE_SERVER) { return; }
-		if (!ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-
-		for (const auto ply : world.getFilter<PlayerFlag>()) {
-			if (world.hasComponent<CameraTargetFlag>(ply)) {}
-			ImGui::PushID(ply.id);
-
-			ss.str("");
-			ss << ply;
-			if (ImGui::Button(ss.str().c_str())) {
-				for (const auto ply2 : world.getFilter<PlayerFlag>()) {
-					if (world.hasComponent<CameraTargetFlag>(ply2)) {
-						world.removeComponent<CameraTargetFlag>(ply2);
-					}
-				}
-				world.addComponent<CameraTargetFlag>(ply);
-			};
-
-			ImGui::PopID();
-		}
-	}
-
-	*/
 	class CameraPane : public Gui::CollapsibleSection {
 		private:
 			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
@@ -422,8 +397,17 @@ namespace Game {
 					ENGINE_INLINE Checksum check(Id id) const { return *reinterpret_cast<Checksum*>(&id); }
 
 					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
-						auto* base = ctx.constructPanel<Gui::Label>();
+						auto* base = ctx.constructPanel<Gui::Button>();
 						base->autoText(fmt::format("{}", id));
+						base->setAction([id](Gui::Button* btn){
+							auto& world = btn->getContext()->getUserdata<Game::UISystem>()->getWorld();
+							for (const auto ply2 : world.getFilter<PlayerFlag>()) {
+								if (world.hasComponent<CameraTargetFlag>(ply2)) {
+									world.removeComponent<CameraTargetFlag>(ply2);
+								}
+							}
+							world.addComponent<CameraTargetFlag>(id);
+						});
 						return base;
 					}
 
@@ -470,7 +454,7 @@ namespace Game {
 		{
 			panels.infoPane = ctx->createPanel<InfoPane>(content);
 			panels.infoPane->setHeight(128);
-			panels.infoPane->disconnect->setAction([&]{
+			panels.infoPane->disconnect->setAction([&](Gui::Button*){
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
 					world.getSystem<NetworkingSystem>().requestDisconnect(addr);

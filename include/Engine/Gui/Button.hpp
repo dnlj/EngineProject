@@ -10,7 +10,7 @@
 namespace Engine::Gui {
 	class Button : public StringLine {
 		private:
-			using Callback = std::function<void()>;
+			using Callback = std::function<void(Button*)>;
 			Callback action;
 
 		public:
@@ -25,7 +25,7 @@ namespace Engine::Gui {
 
 			virtual void onEndActivate() override {
 				if (action && getBounds().contains(ctx->getCursor())) {
-					action();
+					action(this);
 				}
 			}
 	};
