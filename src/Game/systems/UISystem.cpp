@@ -275,8 +275,6 @@ namespace Game {
 			}
 	};
 
-	
-
 	class NetHealthPane : public Gui::CollapsibleSection {
 		private:
 			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
@@ -336,6 +334,172 @@ namespace Game {
 		public:
 			NetHealthPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Network Health");
+				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+
+				setAutoSizeHeight(true);
+				getContent()->setAutoSizeHeight(true);
+			}
+	};
+
+	class NetGraphPane : public Gui::CollapsibleSection {
+		private:
+			class Graph : public Panel {
+				private:
+					Gui::Label* buffer;
+					Gui::Label* ideal;
+					Gui::Label* estBuff;
+					Gui::Label* ping;
+					Gui::Label* jitter;
+					Gui::Label* budget;
+					Gui::Label* sent;
+					Gui::Label* recv;
+					Gui::Label* loss;
+					Gui::Slider* recvRate;
+
+				public:
+					Graph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
+						setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+						setAutoSizeHeight(true);
+
+						auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+
+						auto* addr = ctx->createPanel<Gui::Label>(this);
+						addr->autoText(fmt::format("{}", conn.address()));
+						
+						auto* row1 = ctx->createPanel<Panel>(this);
+						row1->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, 2, 3});
+						row1->setAutoSizeHeight(true);
+						buffer = ctx->createPanel<Gui::Label>(row1);
+						ideal = ctx->createPanel<Gui::Label>(row1);
+						estBuff = ctx->createPanel<Gui::Label>(row1);
+
+						auto* row2 = ctx->createPanel<Panel>(this);
+						row2->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, 2, 3});
+						row2->setAutoSizeHeight(true);
+						ping = ctx->createPanel<Gui::Label>(row2);
+						jitter = ctx->createPanel<Gui::Label>(row2);
+						budget = ctx->createPanel<Gui::Label>(row2);
+
+						auto* row3 = ctx->createPanel<Panel>(this);
+						row3->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, 2, 3});
+						row3->setAutoSizeHeight(true);
+						sent = ctx->createPanel<Gui::Label>(row3);
+						recv = ctx->createPanel<Gui::Label>(row3);
+						loss = ctx->createPanel<Gui::Label>(row3);
+
+						auto* row4 = ctx->createPanel<Panel>(this);
+						row4->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, 2, 3});
+						row4->setAutoSizeHeight(true);
+						ctx->createPanel<Gui::Label>(row4)->autoText("Packet Recv Rate");
+						recvRate = ctx->createPanel<Gui::Slider>(row4);
+						recvRate->setWeight(2);
+						recvRate->setLimits(1, 255).setValue(0).bind(
+							[ent](Gui::Slider& s){
+								auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+								// TODo: without this check we crash because the ent has already been destroyed but this is called before the DataAdapter in some cases
+								// TODO: shouldnt need this check. Split into separate create/update functions instead of just panelUpdateFunc?
+								if (world.hasComponent<Game::ConnectionComponent>(ent)) {
+									auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+									s.setValue(conn.getPacketRecvRate());
+								}
+							},
+							[ent](Gui::Slider& s){
+								auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+								auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+								if (auto msg = conn.beginMessage<MessageType::CONFIG_NETWORK>()) {
+									auto v = static_cast<float32>(s.getValue());
+									conn.setPacketRecvRate(v);
+									msg.write(v);
+								} else {
+									ENGINE_WARN("Unable to set network recv rate!");
+								}
+							}
+						);
+					}
+
+					void update(Engine::ECS::Entity ent, Game::World& world) {
+						if (!world.hasComponent<NetworkStatsComponent>(ent)) {
+							world.addComponent<NetworkStatsComponent>(ent);
+						}
+						auto& stats = world.getComponent<NetworkStatsComponent>(ent);
+						auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+
+						// TODO: need to move NetworkStatsComponent update logic here
+
+						float32 estbuff = 0;
+						if (world.hasComponent<ActionComponent>(ent)) {
+							estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
+						}
+
+						std::string buff;
+
+						buff.clear(); fmt::format_to(std::back_inserter(buff), "Buffer: {}", stats.displayInputBufferSize);
+						buffer->autoText(buff);
+						
+						buff.clear(); fmt::format_to(std::back_inserter(buff), "Ideal: {:.3f}", stats.displayIdealInputBufferSize);
+						ideal->autoText(buff);
+
+						buff.clear(); fmt::format_to(std::back_inserter(buff), "Est. Buffer: {:.2f}", estbuff);
+						estBuff->autoText(buff);
+
+						buff.clear(); fmt::format_to(std::back_inserter(buff), "Ping: {:.1f}ms", stats.displayPing);
+						ping->autoText(buff);
+						
+						buff.clear(); fmt::format_to(std::back_inserter(buff), "Jitter: {:.1f}ms", stats.displayJitter);
+						jitter->autoText(buff);
+
+						buff.clear(); fmt::format_to(std::back_inserter(buff), "Budget: {:.2f}", conn.getPacketSendBudget());
+						budget->autoText(buff);
+
+						buff.clear(); fmt::format_to(std::back_inserter(buff), "Sent: {}b {:.1f}b/s", stats.displaySentTotal, stats.displaySentAvg);
+						sent->autoText(buff);
+						
+						buff.clear(); fmt::format_to(std::back_inserter(buff), "Recv: {}b {:.1f}b/s", stats.displayRecvTotal, stats.displayRecvAvg);
+						recv->autoText(buff);
+
+						buff.clear(); fmt::format_to(std::back_inserter(buff), "Loss: {:.3f}", stats.displayLoss);
+						loss->autoText(buff);
+					}
+
+			};
+
+			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
+				private:
+					Game::World& world;
+
+				public:
+					using It = decltype(world.getFilter<ConnectionComponent>().begin());
+
+					Adapter(Game::World& world) noexcept : world{world} {}
+
+					ENGINE_INLINE auto begin() const { return world.getFilter<ConnectionComponent>().begin(); }
+					ENGINE_INLINE auto end() const { return world.getFilter<ConnectionComponent>().end(); }
+					ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
+
+					Checksum check(Id id) const {
+						//uint64 hash = {};
+						//auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
+						// TODO:
+						return rand();
+					}
+
+					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
+						auto* base = ctx.constructPanel<Graph>(id, world);
+						updatePanel(id, base);
+						return base;
+					}
+
+					void updatePanel(Id id, Panel* panel) const {
+						reinterpret_cast<Graph*>(panel)->update(id, world);
+					}
+
+			};
+			
+		public:
+			NetGraphPane(Gui::Context* context) : CollapsibleSection{context} {
+				setTitle("Network Graph");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
@@ -439,7 +603,7 @@ namespace Game {
 		{
 			panels.window = ctx->createPanel<Gui::Window>(ctx->getRoot());
 			panels.window->setRelPos({32, 32});
-			panels.window->setSize({350, 900});
+			panels.window->setSize({450, 900});
 			content = panels.window->getContent();
 
 			auto text = ctx->createPanel<Gui::TextBox>(content);
@@ -463,9 +627,8 @@ namespace Game {
 		}
 
 		{
-			//panels.coordPane = ctx->createPanel<CoordPane>(content);
-			//panels.coordPane->setHeight(300);
-			//panels.coordPane->toggle();
+			panels.coordPane = ctx->createPanel<CoordPane>(content);
+			panels.coordPane->setHeight(300);
 		}
 
 		if constexpr (ENGINE_SERVER) {
@@ -482,11 +645,16 @@ namespace Game {
 		}
 
 		{
+			panels.netGraphPane = ctx->createPanel<NetGraphPane>(content);
+		}
+
+		{
 			panels.entityPane = ctx->createPanel<EntityPane>(content);
 			panels.entityPane->toggle();
 		}
 
 		panels.infoPane->toggle();
+		panels.coordPane->toggle();
 		panels.netHealthPane->toggle();
 		panels.netCondPane->toggle();
 	}

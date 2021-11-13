@@ -46,12 +46,15 @@ namespace Engine::Gui {
 			bool autoSize = false;
 
 		public:
-			DirectionalLayout(Direction dir, Align mainAlign, Align crossAlign, float32 gap = 8.0f)
+			DirectionalLayout(Direction dir, Align mainAlign, Align crossAlign, float32 gap = 8.0f, float32 weight = 0.0f)
 				: dir{dir}, mainAlign{mainAlign}, crossAlign{crossAlign}, gap{gap} {
 			}
 
 			ENGINE_INLINE void setGap(float32 g) noexcept { gap = g; }
 			ENGINE_INLINE auto getGap() const noexcept { return gap; }
+
+			ENGINE_INLINE void setWeight(float32 w) noexcept { weight = w; }
+			ENGINE_INLINE auto getWeight() const noexcept { return weight; }
 
 			float32 getAutoDim(const Panel* panel, Direction axis) const {
 				int dim = static_cast<int>(axis);

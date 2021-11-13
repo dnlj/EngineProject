@@ -59,6 +59,7 @@ namespace Game {
 				class CameraPane* cameraPane;
 				class NetCondPane* netCondPane;
 				class NetHealthPane* netHealthPane;
+				class NetGraphPane* netGraphPane;
 				class EntityPane* entityPane;
 			} panels;
 

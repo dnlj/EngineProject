@@ -267,6 +267,7 @@ namespace Game {
 		from.readFlushBits();
 
 		{
+			// TODO: why do we do this? isnt this always `tick - recvTick`?
 			const float32 off = tick < recvTick ? -static_cast<float32>(recvTick - tick) : static_cast<float32>(tick - recvTick);
 			// TODO: need to handle negative values. tick-recv vs recv-tick then cast to float and neg
 			actComp.estBufferSize += (off - actComp.estBufferSize) * 0.2f;
