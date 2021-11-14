@@ -151,7 +151,7 @@ namespace Game {
 				addLabel("Map Offset (block): {}");
 				addLabel("Map Offset (chunk): {}");
 
-				ctx->registerPanelUpdateFunc(this, [](Panel* panel){
+				ctx->addPanelUpdateFunc(this, [](Panel* panel){
 					auto pane = reinterpret_cast<CoordPane*>(panel);
 					auto& world = panel->getContext()->getUserdata<Game::UISystem>()->getWorld();
 					auto& engine = panel->getContext()->getUserdata<Game::UISystem>()->getEngine();
@@ -336,7 +336,7 @@ namespace Game {
 			NetHealthPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Network Health");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
-				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
+				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 
 				setAutoSizeHeight(true);
@@ -504,7 +504,7 @@ namespace Game {
 			NetGraphPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Network Graph");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
-				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
+				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 
 				setAutoSizeHeight(true);
@@ -540,7 +540,7 @@ namespace Game {
 			EntityPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Entities");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
-				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
+				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 				
 				setAutoSizeHeight(true);
@@ -584,7 +584,7 @@ namespace Game {
 			CameraPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Camera");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
-				ctx->registerPanelUpdateFunc(getContent(), Adapter{world});
+				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 				
 				setAutoSizeHeight(true);

@@ -273,17 +273,15 @@ namespace Engine::Gui {
 			void deletePanel(Panel* panel, bool isChild = false);
 
 			// TODO: rename add since we have multiple now
-			ENGINE_INLINE void registerPanelUpdateFunc(Panel* panel, PanelUpdateFunc func) {
-				ENGINE_LOG("Add update func: ", panel);
+			ENGINE_INLINE void addPanelUpdateFunc(Panel* panel, PanelUpdateFunc func) {
 				panelUpdateFunc.push_back({.panel = panel, .func = func});
 			}
 
-			ENGINE_INLINE void deregisterPanelUpdateFunc(Panel* panel) {
+			ENGINE_INLINE void clearPanelUpdateFuncs(Panel* panel) {
 				for (auto i=std::ssize(panelUpdateFunc)-1; i >= 0; --i) {
 					if (panelUpdateFunc[i].panel == panel) {
 						if (i <= currPanelUpdateFunc) { --currPanelUpdateFunc; }
 						panelUpdateFunc.erase(panelUpdateFunc.begin() + i);
-						ENGINE_LOG("Remove update func: ", panel);
 					}
 				}
 			}

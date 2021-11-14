@@ -630,8 +630,6 @@ namespace Engine::Gui {
 	}
 
 	void Context::deletePanel(Panel* panel, bool isChild) {
-		ENGINE_LOG("Delete panel: ", panel);
-
 		// Clear from active
 		if (panel == active) { unsetActive(); }
 
@@ -659,7 +657,7 @@ namespace Engine::Gui {
 			child = next;
 		}
 				
-		deregisterPanelUpdateFunc(panel);
+		clearPanelUpdateFuncs(panel);
 		deregisterActivate(panel);
 		deregisterMouseMove(panel);
 		deregisterBeginActivate(panel);

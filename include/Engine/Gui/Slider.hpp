@@ -29,16 +29,11 @@ namespace Engine::Gui {
 				addChild(label);
 				setSize({32, 16});
 				updateLabel();
-				ENGINE_LOG("Create slider: ", this);
-			}
-
-			~Slider() {
-				ENGINE_LOG("Delete slider: ", this);
 			}
 
 			Slider& bind(GetFunc get, SetFunc set) {
 				setFunc = std::move(set);
-				ctx->registerPanelUpdateFunc(this, [this, g=std::move(get)](Panel*){ g(*this); });
+				ctx->addPanelUpdateFunc(this, [this, g=std::move(get)](Panel*){ g(*this); });
 				return *this;
 			}
 
