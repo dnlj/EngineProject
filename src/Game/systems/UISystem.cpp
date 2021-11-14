@@ -24,6 +24,7 @@
 #include <Engine/Gui/TextBox.hpp>
 #include <Engine/Gui/Slider.hpp>
 #include <Engine/Gui/DataAdapter.hpp>
+#include <Engine/Gui/Graph.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -345,7 +346,7 @@ namespace Game {
 
 	class NetGraphPane : public Gui::CollapsibleSection {
 		private:
-			class Graph : public Panel {
+			class NetGraph : public Panel {
 				private:
 					Gui::Label* buffer;
 					Gui::Label* ideal;
@@ -359,7 +360,7 @@ namespace Game {
 					Gui::Slider* recvRate;
 
 				public:
-					Graph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
+					NetGraph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
 						setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
 						setAutoSizeHeight(true);
 
@@ -367,7 +368,8 @@ namespace Game {
 
 						auto* addr = ctx->createPanel<Gui::Label>(this);
 						addr->autoText(fmt::format("{}", conn.address()));
-						
+
+						// TODO: if we had full flexbox style layout this would be much simpler. no need for these row containers. This would all work with weights.
 						auto* row1 = ctx->createPanel<Panel>(this);
 						row1->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, 2, 3});
 						row1->setAutoSizeHeight(true);
@@ -417,6 +419,9 @@ namespace Game {
 								}
 							}
 						);
+
+						auto* graph = ctx->createPanel<Panel>(this);
+						graph->setHeight(200);
 					}
 
 					void update(Engine::ECS::Entity ent, Game::World& world) {
@@ -486,13 +491,13 @@ namespace Game {
 					}
 
 					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
-						auto* base = ctx.constructPanel<Graph>(id, world);
+						auto* base = ctx.constructPanel<NetGraph>(id, world);
 						updatePanel(id, base);
 						return base;
 					}
 
 					void updatePanel(Id id, Panel* panel) const {
-						reinterpret_cast<Graph*>(panel)->update(id, world);
+						reinterpret_cast<NetGraph*>(panel)->update(id, world);
 					}
 
 			};
