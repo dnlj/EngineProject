@@ -83,7 +83,12 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void setAutoSizeWidth(bool v) noexcept { autoSizeWidth = v; }
 			ENGINE_INLINE bool getAutoSizeWidth() const noexcept { return autoSizeWidth; }
+
 			
+			ENGINE_INLINE auto getNextSiblingRaw() const noexcept {
+				return nextSibling;
+			}
+
 			/**
 			 * Gets the next enabled sibling panel.
 			 */
@@ -100,6 +105,10 @@ namespace Engine::Gui {
 				auto res = prevSibling;
 				while (res && !res->isEnabled()) { res = res->prevSibling; }
 				return (res && !res->isEnabled()) ? nullptr : res;
+			}
+
+			ENGINE_INLINE auto getFirstChildRaw() const noexcept {
+				return firstChild;
 			}
 
 			/**

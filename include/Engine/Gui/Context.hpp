@@ -261,12 +261,24 @@ namespace Engine::Gui {
 			}
 
 			void deletePanel(Panel* panel) {
+				ENGINE_LOG("Delete panel: ", panel);
+
 				if (panel == active) { unsetActive(); }
 				if (panel == focus) { setFocus(panel->getParent()); }
 				panel->setEnabled(false);
-				updateHover();
 
-				ENGINE_LOG("Delete panel: ", panel);
+				// TODO: this is bad because we update for every deleted panel and child/sibling panel
+				updateHover();
+				
+				// TODO: we are doing a lot of extra work by removing children this way.
+				// TODO: cont. not only updating prev/next for panels that are about to get deleted
+				// TODO: cont. but also performLayout for every panel in the tree
+				if (auto p = panel->getParent()) { p->removeChild(panel); }
+
+				while (auto child = panel->getFirstChildRaw()) {
+					deletePanel(child);
+				}
+				
 				deregisterPanelUpdateFunc(panel);
 				deregisterActivate(panel);
 				deregisterMouseMove(panel);

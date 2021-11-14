@@ -58,6 +58,7 @@ namespace Engine::Gui {
 							.iter = iter,
 						});
 						found = f2;
+						ENGINE_LOG("Add child ", parent, " ", found->second.panel);
 						parent->addChild(found->second.panel);
 					} else {
 						found->second.iter = iter;

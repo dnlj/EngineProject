@@ -400,8 +400,6 @@ namespace Game {
 						recvRate->setLimits(1, 255).setValue(0).bind(
 							[ent](Gui::Slider& s){
 								auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
-								// TODo: without this check we crash because the ent has already been destroyed but this is called before the DataAdapter in some cases
-								// TODO: shouldnt need this check. Split into separate create/update functions instead of just panelUpdateFunc?
 								if (world.hasComponent<Game::ConnectionComponent>(ent)) {
 									auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 									s.setValue(conn.getPacketRecvRate());
