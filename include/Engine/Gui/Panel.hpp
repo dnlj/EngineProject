@@ -84,7 +84,6 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setAutoSizeWidth(bool v) noexcept { autoSizeWidth = v; }
 			ENGINE_INLINE bool getAutoSizeWidth() const noexcept { return autoSizeWidth; }
 
-			
 			ENGINE_INLINE auto getNextSiblingRaw() const noexcept {
 				return nextSibling;
 			}
@@ -298,6 +297,8 @@ namespace Engine::Gui {
 			 * Causes this panel to update its layout.
 			 */
 			ENGINE_INLINE void performLayout() {
+				if (isPerformingLayout()) { return; }
+
 				setPerformingLayout(true);
 				preLayout();
 				if (autoSizeHeight) { autoHeight(); }
@@ -355,10 +356,16 @@ namespace Engine::Gui {
 			virtual void onBeginActivate() {}
 			virtual void onEndActivate() {}
 
-		private:
+			/**
+			 * Sets a Panel::Flag.
+			 * You should probably be using specific setXYZ/isXYZ functions unless you have a
+			 * good reason to use these. Could potentially modify internal flags and have
+			 * unintended consequences.
+			 */
 			ENGINE_INLINE void setFlag(Flag f, bool e) noexcept { e ? (flags |= f) : (flags &= ~f); }
 			ENGINE_INLINE bool getFlag(Flag f) const noexcept { return flags & f; }
 
+		private:
 			/**
 			 * @see Flag
 			 */
@@ -370,16 +377,14 @@ namespace Engine::Gui {
 			 * Ex: size changed, enabled, disabled
 			 */
 			void onChildChanged(Panel* child) {
-				if (!isPerformingLayout()) {
-					performLayout();
-				}
+				performLayout();
 			}
 
 			/**
 			 * Notify the parent panel that this panels size has changed.
 			 */
 			ENGINE_INLINE void sizeChanged() {
-				if (!isPerformingLayout()) { performLayout(); }
+				performLayout();
 				if (parent) { parent->onChildChanged(this); }
 			}
 

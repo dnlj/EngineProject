@@ -629,6 +629,46 @@ namespace Engine::Gui {
 		actionQueue.push_back(act);
 	}
 
+	void Context::deletePanel(Panel* panel, bool isChild) {
+		ENGINE_LOG("Delete panel: ", panel);
+
+		// Clear from active
+		if (panel == active) { unsetActive(); }
+
+		if (!isChild) {
+			// Clear from focus
+			for (auto curr = focus; curr; curr = curr->getParent()) {
+				if (curr == panel) {
+					setFocus(panel->getParent());
+					break;
+				}
+			}
+
+			// Clear from hover
+			if (auto p = panel->getParent()) {
+				p->removeChild(panel);
+			}
+			updateHover();
+		}
+
+		// Delete children
+		auto child = panel->getFirstChildRaw();
+		while (child) {
+			const auto next = child->getNextSiblingRaw();
+			deletePanel(child, true);
+			child = next;
+		}
+				
+		deregisterPanelUpdateFunc(panel);
+		deregisterActivate(panel);
+		deregisterMouseMove(panel);
+		deregisterBeginActivate(panel);
+		deregisterEndActivate(panel);
+		deregisterTextCallback(panel);
+		deregisterPanel(panel);
+		delete panel;
+	}
+
 	void Context::setClipboard(std::string_view view) {
 		#if !ENGINE_OS_WINDOWS
 			#error TODO: impl for non Windows

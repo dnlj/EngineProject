@@ -239,6 +239,11 @@ namespace Engine::Gui {
 			void unsetActive();
 			void updateHover();
 
+			ENGINE_INLINE bool isValid(const Panel* panel) const {
+				auto found = panelIdMap.find(panel);
+				return found != panelIdMap.end();
+			}
+
 			ENGINE_INLINE PanelId getPanelId(const Panel* panel) const {
 				auto found = panelIdMap.find(panel);
 				ENGINE_DEBUG_ASSERT(found != panelIdMap.end(), "Attempting to get id of unregistered Panel.");
@@ -260,34 +265,12 @@ namespace Engine::Gui {
 				return p;
 			}
 
-			void deletePanel(Panel* panel) {
-				ENGINE_LOG("Delete panel: ", panel);
-
-				if (panel == active) { unsetActive(); }
-				if (panel == focus) { setFocus(panel->getParent()); }
-				panel->setEnabled(false);
-
-				// TODO: this is bad because we update for every deleted panel and child/sibling panel
-				updateHover();
-				
-				// TODO: we are doing a lot of extra work by removing children this way.
-				// TODO: cont. not only updating prev/next for panels that are about to get deleted
-				// TODO: cont. but also performLayout for every panel in the tree
-				if (auto p = panel->getParent()) { p->removeChild(panel); }
-
-				while (auto child = panel->getFirstChildRaw()) {
-					deletePanel(child);
-				}
-				
-				deregisterPanelUpdateFunc(panel);
-				deregisterActivate(panel);
-				deregisterMouseMove(panel);
-				deregisterBeginActivate(panel);
-				deregisterEndActivate(panel);
-				deregisterTextCallback(panel);
-				deregisterPanel(panel);
-				delete panel;
-			}
+			/**
+			 * Delete a panel.
+			 * @param panel The panel to delete.
+			 * @param isChild Internal parameter used for recursive child deletion. Leave at default.
+			 */
+			void deletePanel(Panel* panel, bool isChild = false);
 
 			// TODO: rename add since we have multiple now
 			ENGINE_INLINE void registerPanelUpdateFunc(Panel* panel, PanelUpdateFunc func) {
