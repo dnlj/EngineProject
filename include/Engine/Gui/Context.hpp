@@ -184,7 +184,10 @@ namespace Engine::Gui {
 			FlatHashMap<Panel*, PanelEndActivateCallback> panelEndActivateCallbacks;
 			FlatHashMap<Panel*, TextCallback> textCallbacks;
 			FlatHashMap<Panel*, KeyCallback> keyCallbacks;
-			FlatHashMap<Panel*, PanelUpdateFunc> panelUpdateFunc;
+
+			int currPanelUpdateFunc = 0;
+			struct PanelUpdatePair { Panel* panel; PanelUpdateFunc func; };
+			std::vector<PanelUpdatePair> panelUpdateFunc;
 
 			/* Cursors */
 			Cursor currentCursor = Cursor::Normal;
@@ -263,6 +266,7 @@ namespace Engine::Gui {
 				panel->setEnabled(false);
 				updateHover();
 
+				ENGINE_LOG("Delete panel: ", panel);
 				deregisterPanelUpdateFunc(panel);
 				deregisterActivate(panel);
 				deregisterMouseMove(panel);
@@ -272,14 +276,21 @@ namespace Engine::Gui {
 				deregisterPanel(panel);
 				delete panel;
 			}
-			
+
+			// TODO: rename add since we have multiple now
 			ENGINE_INLINE void registerPanelUpdateFunc(Panel* panel, PanelUpdateFunc func) {
-				ENGINE_DEBUG_ASSERT(!panelUpdateFunc[panel], "Attempting to add duplicate panel update function.");
-				panelUpdateFunc[panel] = func;
+				ENGINE_LOG("Add update func: ", panel);
+				panelUpdateFunc.push_back({.panel = panel, .func = func});
 			}
 
 			ENGINE_INLINE void deregisterPanelUpdateFunc(Panel* panel) {
-				panelUpdateFunc.erase(panel);
+				for (auto i=std::ssize(panelUpdateFunc)-1; i >= 0; --i) {
+					if (panelUpdateFunc[i].panel == panel) {
+						if (i <= currPanelUpdateFunc) { --currPanelUpdateFunc; }
+						panelUpdateFunc.erase(panelUpdateFunc.begin() + i);
+						ENGINE_LOG("Remove update func: ", panel);
+					}
+				}
 			}
 
 			ENGINE_INLINE void registerActivate(Panel* panel, ActivateCallback callback) {

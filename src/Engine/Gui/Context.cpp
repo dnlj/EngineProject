@@ -298,9 +298,12 @@ namespace Engine::Gui {
 			hoverValid = true;
 		}
 
-		for (auto& [panel, func] : panelUpdateFunc) {
+		while (currPanelUpdateFunc < panelUpdateFunc.size()) {
+			auto& [panel, func] = panelUpdateFunc[currPanelUpdateFunc];
 			if (panel->isEnabled()) { func(panel); }
+			++currPanelUpdateFunc;
 		}
+		currPanelUpdateFunc = 0;
 
 		if (auto focus = getFocus()) {
 			for (auto act : actionQueue) {
