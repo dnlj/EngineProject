@@ -16,14 +16,14 @@ namespace Game {
 	};
 	using ConnectionState = ConnectionState_::ConnectionState;
 
-	// TODO: change to struct,enum,using style
-	struct MessageType {
-		enum Type : Engine::Net::MessageType {
+	struct MessageType_ {
+		enum MessageType : Engine::Net::MessageType {
 			#define X(Name, Side, State) Name,
 			#include <Game/MessageType.xpp>
 			_count,
 		};
 	};
+	using MessageType = MessageType_::MessageType;
 }
 
 #define X(Name, Side, State)\

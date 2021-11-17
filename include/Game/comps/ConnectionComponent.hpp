@@ -12,5 +12,6 @@ namespace Game {
 		public:
 			// TODO: does this still need to be in a ptr?
 			std::unique_ptr<Connection> conn;
+			Engine::Clock::TimePoint disconnectAt = {};
 	};
 }

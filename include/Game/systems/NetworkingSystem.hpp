@@ -16,6 +16,8 @@
 
 
 namespace Game {
+	class ConnectionComponent;
+
 	class NetworkingSystem : public System {
 		public:
 			#if ENGINE_CLIENT
@@ -37,7 +39,6 @@ namespace Game {
 			// TODO: should this be part of Connection?
 			struct ConnInfo {
 				Engine::ECS::Entity ent = {};
-				Engine::Clock::TimePoint disconnectAt = {};
 			};
 			Engine::FlatHashMap<Engine::Net::IPv4Address, ConnInfo> connections; // TODO: name
 
@@ -67,19 +68,15 @@ namespace Game {
 			auto& getSocket() noexcept { return socket; }
 
 		private:
-			struct AddConnRes {
-				ConnInfo& info;
-				Connection& conn;
-			};
-			AddConnRes addConnection2(const Engine::Net::IPv4Address& addr);
 			void addPlayer(const Engine::ECS::Entity ent);
-			AddConnRes getOrCreateConnection(const Engine::Net::IPv4Address& addr);
+			Engine::ECS::Entity addConnection2(const Engine::Net::IPv4Address& addr); // TODO: rename
+			Engine::ECS::Entity getOrCreateConnection(const Engine::Net::IPv4Address& addr); // TODO: rename to map address or similar
 
-			void dispatchMessage(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader* hdr);
+			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr);
 			void runClient();
 
-			template<MessageType::Type Type>
-			void handleMessageType(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader& head) {
+			template<MessageType Type>
+			void handleMessageType(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head) {
 				static_assert(Type != Type, "Unhandled network message type.");
 			};
 	};
