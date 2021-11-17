@@ -493,7 +493,7 @@ namespace Game {
 			}
 		}
 
-		const auto ent = getOrCreateConnection(group);
+		const auto ent = getOrCreateEntity(group);
 		const auto& conn = world.getComponent<ConnectionComponent>(ent).conn;
 		if (auto msg = conn->beginMessage<MessageType::DISCOVER_SERVER>()) {
 			msg.write(MESSAGE_PADDING_DATA);
@@ -507,7 +507,7 @@ namespace Game {
 		// Recv messages
 		int32 sz;
 		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
-			const auto ent = getOrCreateConnection(address);
+			const auto ent = getOrCreateEntity(address);
 			auto& connComp = world.getComponent<ConnectionComponent>(ent);
 			const auto& conn = connComp.conn;
 			// TODO: move back to connection
@@ -543,11 +543,11 @@ namespace Game {
 			lastUpdate = now;
 			if constexpr (ENGINE_CLIENT) { runClient(); }
 
-			for (auto& [addr, info] : connections) {
-				auto& connComp = world.getComponent<ConnectionComponent>(info.ent);
+			for (auto& [addr, ent] : addressToEntity) {
+				auto& connComp = world.getComponent<ConnectionComponent>(ent);
 				const auto diff = now - connComp.conn->recvTime();
 				if (diff > timeout) {
-					ENGINE_LOG("Connection for ", info.ent ," (", addr, ") timed out.");
+					ENGINE_LOG("Connection for ", ent ," (", addr, ") timed out.");
 					connComp.disconnectAt = Engine::Clock::now() - disconnectTime;
 					connComp.conn->setState(ConnectionState::Disconnected);
 				}
@@ -555,10 +555,9 @@ namespace Game {
 		}
 
 		// Send Ack messages & unacked
-		for (auto it = connections.begin(); it != connections.end();) {
-			auto& [addr, info] = *it;
-			const auto ply = info.ent;
-			auto& connComp = world.getComponent<ConnectionComponent>(ply);
+		for (auto it = addressToEntity.begin(); it != addressToEntity.end();) {
+			const auto& [addr, ent] = *it;
+			auto& connComp = world.getComponent<ConnectionComponent>(ent);
 			auto& conn = *connComp.conn;
 
 			//if (info.state == ConnectionState::Connected) {
@@ -581,10 +580,10 @@ namespace Game {
 					conn.setKeyRecv(0);
 					conn.setState(ConnectionState::Disconnected);
 
-					ENGINE_LOG("Disconnecting ", info.ent, " ", addr);
+					ENGINE_LOG("Disconnecting ", ent, " ", addr);
 					// TODO: world.removeComponent<ConnectionComponent>(info.ent);
-					world.deferedDestroyEntity(info.ent);
-					it = connections.erase(it);
+					world.deferedDestroyEntity(ent);
+					it = addressToEntity.erase(it);
 					continue;
 				}
 			}
@@ -599,8 +598,8 @@ namespace Game {
 	}
 
 	void NetworkingSystem::runClient() {
-		for (auto& [addr, info] : connections) {
-			const auto& conn = *world.getComponent<ConnectionComponent>(info.ent).conn;
+		for (const auto& [addr, ent] : addressToEntity) {
+			const auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 			if (conn.getState() == ConnectionState::Connecting) {
 				connectTo(addr);
 				break;
@@ -621,7 +620,7 @@ namespace Game {
 	}
 
 	int32 NetworkingSystem::connectionsCount() const {
-		return static_cast<int32>(connections.size());
+		return static_cast<int32>(addressToEntity.size());
 	}
 
 	int32 NetworkingSystem::playerCount() const {
@@ -629,7 +628,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		const auto ent = getOrCreateConnection(addr);
+		const auto ent = getOrCreateEntity(addr);
 		auto& conn = world.getComponent<ConnectionComponent>(ent).conn;
 		conn->setState(ConnectionState::Connecting);
 
@@ -676,29 +675,27 @@ namespace Game {
 		world.addComponent<CharacterSpellComponent>(ent);
 	}
 
-	Engine::ECS::Entity NetworkingSystem::addConnection2(const Engine::Net::IPv4Address& addr) {
+	Engine::ECS::Entity NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {
 		auto ent = world.createEntity();
 		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
-		auto [it, suc] = connections.emplace(addr, ConnInfo{
-			.ent = ent,
-		});
+		auto [it, suc] = addressToEntity.emplace(addr, ent);
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
 		connComp.conn = std::make_unique<Connection>(addr, now);
 		connComp.conn->setState(ConnectionState::Disconnected);
 		return ent;
 	}
 
-	Engine::ECS::Entity NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) {
-		const auto found = connections.find(addr);
-		if (found == connections.end()) {
-			return addConnection2(addr);
+	Engine::ECS::Entity NetworkingSystem::getOrCreateEntity(const Engine::Net::IPv4Address& addr) {
+		const auto found = addressToEntity.find(addr);
+		if (found == addressToEntity.end()) {
+			return addConnection(addr);
 		} else {
-			return found->second.ent;
+			return found->second;
 		}
 	}
 
 	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
-		const auto ent = getOrCreateConnection(addr);
+		const auto ent = getOrCreateEntity(addr);
 		auto& connComp = world.getComponent<ConnectionComponent>(ent);
 		connComp.disconnectAt = Engine::Clock::now() + disconnectTime;
 		ENGINE_INFO("Request disconnect ", addr, " ", ent);

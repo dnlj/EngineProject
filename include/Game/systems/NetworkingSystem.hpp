@@ -36,11 +36,7 @@ namespace Game {
 			static constexpr auto disconnectTime = std::chrono::milliseconds{500};
 			Engine::Net::UDPSocket socket;
 
-			// TODO: should this be part of Connection?
-			struct ConnInfo {
-				Engine::ECS::Entity ent = {};
-			};
-			Engine::FlatHashMap<Engine::Net::IPv4Address, ConnInfo> connections; // TODO: name
+			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> addressToEntity;
 
 			pcg32 rng;
 			uint16 genKey() {
@@ -69,8 +65,8 @@ namespace Game {
 
 		private:
 			void addPlayer(const Engine::ECS::Entity ent);
-			Engine::ECS::Entity addConnection2(const Engine::Net::IPv4Address& addr); // TODO: rename
-			Engine::ECS::Entity getOrCreateConnection(const Engine::Net::IPv4Address& addr); // TODO: rename to map address or similar
+			Engine::ECS::Entity addConnection(const Engine::Net::IPv4Address& addr);
+			Engine::ECS::Entity getOrCreateEntity(const Engine::Net::IPv4Address& addr);
 
 			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr);
 			void runClient();
