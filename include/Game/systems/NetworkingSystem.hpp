@@ -30,7 +30,6 @@ namespace Game {
 			#endif
 
 		private:
-			using ConnState = Engine::Net::ConnState::Type;
 			static constexpr auto timeout = std::chrono::milliseconds{5000};
 			static constexpr auto disconnectTime = std::chrono::milliseconds{500};
 			Engine::Net::UDPSocket socket;
@@ -39,7 +38,7 @@ namespace Game {
 			struct ConnInfo {
 				Engine::ECS::Entity ent = {};
 				Engine::Clock::TimePoint disconnectAt = {};
-				ConnState state = Engine::Net::ConnState::Disconnected;
+				ConnectionState state = ConnectionState::Disconnected;
 			};
 			Engine::FlatHashMap<Engine::Net::IPv4Address, ConnInfo> connections; // TODO: name
 

@@ -23,18 +23,7 @@
 
 
 namespace Engine::Net {
-	// TODO: where to put this.
-	struct ConnState {
-		enum Type : uint8 {
-			None         = 0,
-			Disconnected  = 1 << 0,
-			Connecting    = 1 << 1,
-			Connected     = 1 << 2,
-			Any           = Disconnected | Connecting | Connected,
-		};
-	};
-
-	template<class... Cs>
+	template<class State, class... Cs>
 	class Connection {
 		private:
 			using ChannelId = uint8;
@@ -90,6 +79,8 @@ namespace Engine::Net {
 
 			uint64 bitStore = 0;
 			int bitCount = 0;
+
+			State state = {};
 
 
 			// TODO: channel - float32 sendBandwidth[sizeof...(Cs)] = {};
@@ -189,6 +180,9 @@ namespace Engine::Net {
 			auto getAllChannelQueueSizes() {
 				return std::array<int32, getChannelCount()>{getChannel<Cs>().getQueueSize()...};
 			}
+
+			ENGINE_INLINE State getState() const noexcept { return state; }
+			ENGINE_INLINE void setState(State s) noexcept { state = s; }
 
 			// TODO: why does this have a return value? isnt it always true?
 			[[nodiscard]]

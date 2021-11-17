@@ -163,7 +163,7 @@ namespace Game {
 			return;
 		}
 
-		info.state = std::max(info.state, ConnState::Connecting);
+		info.state = std::max(info.state, ConnectionState::Connecting);
 		const auto keySend = *from.read<uint16>();
 		if (!from.getKeySend()) {
 			from.setKeySend(keySend);
@@ -184,7 +184,7 @@ namespace Game {
 		}
 		if (auto msg = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
 			msg.write(from.getKeySend());
-			info.state = ConnState::Connected;
+			info.state = ConnectionState::Connected;
 		}
 		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
 	}
@@ -196,7 +196,7 @@ namespace Game {
 			return;
 		}
 
-		info.state = ConnState::Connected;
+		info.state = ConnectionState::Connected;
 		addPlayer(info.ent);
 
 		ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM", " Tick: ", world.getTick());
@@ -235,10 +235,10 @@ namespace Game {
 
 	HandleMessageDef(MessageType::DISCONNECT)
 		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", info.ent);
-		if (info.state != Engine::Net::ConnState::Connected) { return; }
+		if (info.state != ConnectionState::Connected) { return; }
 		if (info.disconnectAt != Engine::Clock::TimePoint{}) { return; }
 		info.disconnectAt = Engine::Clock::now() + disconnectTime;
-		info.state = Engine::Net::ConnState::Disconnected;
+		info.state = ConnectionState::Disconnected;
 	}
 
 	HandleMessageDef(MessageType::PING)
@@ -529,7 +529,7 @@ namespace Game {
 			}
 
 			if (conn.getKeyRecv() != packet.getKey()) {
-				if (info.state == Engine::Net::ConnState::Connected) {
+				if (info.state == ConnectionState::Connected) {
 					ENGINE_WARN("Invalid key for ", conn.address(), " ", packet.getKey(), " != ", conn.getKeyRecv());
 					continue;
 				}
@@ -561,7 +561,7 @@ namespace Game {
 				if (diff > timeout) {
 					ENGINE_LOG("Connection for ", info.ent ," (", addr, ") timed out.");
 					info.disconnectAt = Engine::Clock::now() - disconnectTime;
-					info.state = Engine::Net::ConnState::Disconnected;
+					info.state = ConnectionState::Disconnected;
 				}
 			}
 		}
@@ -572,7 +572,7 @@ namespace Game {
 			const auto ply = info.ent;
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
-			//if (info.state == Engine::Net::ConnState::Connected) {
+			//if (info.state == ConnectionState::Connected) {
 			//	conn.msgBegin<MessageType::TEST>();
 			//	conn.msgEnd<MessageType::TEST>();
 			//}
@@ -580,7 +580,7 @@ namespace Game {
 			if (info.disconnectAt != Engine::Clock::TimePoint{}) {
 				// TODO: remove all comps but connection
 
-				if (info.state == Engine::Net::ConnState::Connected) {
+				if (info.state == ConnectionState::Connected) {
 					ENGINE_LOG("Send MessageType::DISCONNECT to ", addr);
 					if (auto msg = conn.beginMessage<MessageType::DISCONNECT>()) {
 					}
@@ -590,7 +590,7 @@ namespace Game {
 					conn.send(socket);
 					conn.setKeySend(0);
 					conn.setKeyRecv(0);
-					info.state = Engine::Net::ConnState::Disconnected;
+					info.state = ConnectionState::Disconnected;
 
 					ENGINE_LOG("Disconnecting ", info.ent, " ", addr);
 					// TODO: world.removeComponent<ConnectionComponent>(info.ent);
@@ -611,10 +611,10 @@ namespace Game {
 
 	void NetworkingSystem::runClient() {
 		for (auto& [addr, info] : connections) {
-			if (info.state == ConnState::Connecting) {
+			if (info.state == ConnectionState::Connecting) {
 				connectTo(addr);
 				break;
-			} else if (info.state == ConnState::Connected) {
+			} else if (info.state == ConnectionState::Connected) {
 				static uint8 ping = 0;
 				static auto next = now;
 				if (next > now) { return; }
@@ -641,7 +641,7 @@ namespace Game {
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		const auto& [info, conn] = getOrCreateConnection(addr);
-		info.state = ConnState::Connecting;
+		info.state = ConnectionState::Connecting;
 
 		if (!conn.getKeyRecv()) {
 			conn.setKeyRecv(genKey());
@@ -659,7 +659,7 @@ namespace Game {
 		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
 		auto [it, suc] = connections.emplace(addr, ConnInfo{
 			.ent = ent,
-			.state = ConnState::Disconnected,
+			.state = ConnectionState::Disconnected,
 		});
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
 		connComp.conn = std::make_unique<Connection>(addr, now);
