@@ -408,6 +408,10 @@ namespace Game {
 							[ent](Gui::Slider& s){
 								auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
 								auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+
+								// TODO: we really should check connection state here.
+								// TODO: cont. if disconnected still set packet rate
+
 								if (auto msg = conn.beginMessage<MessageType::CONFIG_NETWORK>()) {
 									auto v = static_cast<float32>(s.getValue());
 									conn.setPacketRecvRate(v);

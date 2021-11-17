@@ -32,6 +32,8 @@ namespace Engine::Gui {
 			}
 
 			Slider& bind(GetFunc get, SetFunc set) {
+				set = {};
+				get(*this);
 				setFunc = std::move(set);
 				ctx->addPanelUpdateFunc(this, [this, g=std::move(get)](Panel*){ g(*this); });
 				return *this;
