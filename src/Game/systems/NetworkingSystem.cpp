@@ -125,8 +125,8 @@ namespace {
 
 #define HandleMessageDef(MsgType)\
 	template<> void NetworkingSystem::handleMessageType<MsgType>(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader& head) {\
-	if constexpr (!(MessageType_Traits<MsgType>::side & ENGINE_SIDE)) { ENGINE_WARN("HandleMessageDef Abort A"); return; }\
-	if (!(MessageType_Traits<MsgType>::state & from.getState())) { from.read(from.recvMsgSize()); ENGINE_WARN("HandleMessageDef Abort B: ", (int)head.type); return; }\
+	if constexpr (!(Engine::Net::MessageTraits<MsgType>::side & ENGINE_SIDE)) { ENGINE_WARN("HandleMessageDef Abort A"); return; }\
+	if (!(Engine::Net::MessageTraits<MsgType>::state & from.getState())) { from.read(from.recvMsgSize()); ENGINE_WARN("HandleMessageDef Abort B: ", (int)head.type); return; }\
 	HandleMessageDef_DebugBreak(#MsgType);
 
 namespace Game {

@@ -10,4 +10,11 @@ namespace Engine::Net {
 	using SeqNum = uint16;
 
 	using AckBitset = Bitset<64, uint64>;
+
+	
+	template<auto M>
+	struct MessageTraits {
+		static_assert(M != M, "Unimplemented type traits for network message.");
+		// TODO: doc required members and types
+	};
 }

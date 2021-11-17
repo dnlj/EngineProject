@@ -1,3 +1,4 @@
+// Message,           Received By,        Valid Send States
 X(UNKNOWN,            ENGINE_SIDE_BOTH,   ConnectionState::Any)
 X(DISCOVER_SERVER,    ENGINE_SIDE_SERVER, ConnectionState::Any)
 X(SERVER_INFO,        ENGINE_SIDE_CLIENT, ConnectionState::Any)

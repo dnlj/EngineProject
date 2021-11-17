@@ -1,8 +1,5 @@
 #pragma once
 
-// STD
-#include <tuple>
-
 // Game
 #include <Game/Common.hpp>
 
@@ -27,15 +24,13 @@ namespace Game {
 			_count,
 		};
 	};
-
-	template<MessageType::Type type>
-	struct MessageType_Traits {
-	};
-
-	#define X(Name, Side, State)\
-	template<> struct MessageType_Traits<MessageType::Name> {\
-		constexpr static auto side = Side;\
-		constexpr static auto state = State;\
-	};
-	#include <Game/MessageType.xpp>
 }
+
+#define X(Name, Side, State)\
+template<> struct Engine::Net::MessageTraits<Game::MessageType::Name> {\
+	using ConnectionState = Game::ConnectionState;\
+	constexpr static auto side = Side;\
+	constexpr static auto state = State;\
+	constexpr static char name[] = #Name;\
+};
+#include <Game/MessageType.xpp>

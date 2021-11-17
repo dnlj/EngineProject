@@ -384,6 +384,11 @@ namespace Engine::Net {
 			template<auto M>
 			[[nodiscard]]
 			ENGINE_INLINE decltype(auto) beginMessage() {
+				if constexpr (ENGINE_DEBUG) {
+					ENGINE_DEBUG_ASSERT(state & MessageTraits<M>::state,
+						"Incorrect connection state to begin message of type ",
+						 MessageTraits<M>::name, "(", static_cast<size_t>(M), ")");
+				}
 				// TODO: check that no other message is active
 				auto& channel = getChannelForMessage<M>();
 
