@@ -284,10 +284,14 @@ namespace Engine::ECS {
 			////////////////////////////////////////////////////////////////////////////////
 			// Entity Functions
 			////////////////////////////////////////////////////////////////////////////////
-			// TODO: Doc. valid vs alive vs enabled
+			// TODO: Doc. valid vs current vs alive vs enabled
 			ENGINE_INLINE bool isValid(Entity ent) const noexcept {
 				return (ent.id < entities.size())
 					&& (ent.gen <= entities[ent.id].ent.gen);
+			}
+
+			ENGINE_INLINE bool isCurrent(Entity ent) const noexcept {
+				return ent.gen == entities[ent.id].ent.gen;
 			}
 
 			ENGINE_INLINE bool isAlive(Entity ent) const noexcept {
@@ -370,6 +374,11 @@ namespace Engine::ECS {
 			template<class... SystemN>
 			SystemBitset getBitsetForSystems() const; // TODO: constexpr, noexcept
 
+			ENGINE_INLINE void debugEntityCheck(Entity e) const {
+				ENGINE_DEBUG_ASSERT(isValid(e), "Attempting to use invalid entity");
+				ENGINE_DEBUG_ASSERT(isCurrent(e), "Attempting to use old entity");
+			}
+
 			////////////////////////////////////////////////////////////////////////////////
 			// Component Functions
 			////////////////////////////////////////////////////////////////////////////////
@@ -405,6 +414,7 @@ namespace Engine::ECS {
 			 */
 			template<class C, class... Args>
 			decltype(auto) addComponent(Entity ent, Args&&... args) { // TODO: split
+				debugEntityCheck(ent);
 				constexpr auto cid = getComponentId<C>();
 				ENGINE_DEBUG_ASSERT(!hasComponent<C>(ent), "Attempting to add duplicate component (", cid ,") to ", ent);
 				auto& cbits = compBitsets[ent.id];
@@ -436,7 +446,7 @@ namespace Engine::ECS {
 			 * @return A tuple of references to the added components.
 			 */
 			template<class... Components>
-			ENGINE_INLINE decltype(auto) addComponents(Entity ent) { return std::forward_as_tuple(addComponent<Components>(ent) ...); };
+			ENGINE_INLINE decltype(auto) addComponents(Entity ent) { debugEntityCheck(ent); return std::forward_as_tuple(addComponent<Components>(ent) ...); };
 
 			/**
 			 * Checks if an entity has a component.
@@ -445,7 +455,7 @@ namespace Engine::ECS {
 			 * @return True if the entity has the component; otherwise false.
 			 */
 			// TODO: use getComponentsBitset
-			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) const { return compBitsets[ent.id].test(cid); }
+			ENGINE_INLINE bool hasComponent(Entity ent, ComponentId cid) const { debugEntityCheck(ent); return compBitsets[ent.id].test(cid); }
 
 			/**
 			 * Checks if an entity has a component.
@@ -454,7 +464,7 @@ namespace Engine::ECS {
 			 * @return True if the entity has the component; otherwise false.
 			 */
 			template<class C>
-			ENGINE_INLINE bool hasComponent(Entity ent) const { return hasComponent(ent, getComponentId<C>()); }
+			ENGINE_INLINE bool hasComponent(Entity ent) const { debugEntityCheck(ent); return hasComponent(ent, getComponentId<C>()); }
 			
 			/**
 			 * Removes a component from an entity.
@@ -463,6 +473,7 @@ namespace Engine::ECS {
 			 */
 			template<class C>
 			ENGINE_INLINE void removeComponent(Entity ent) {
+				debugEntityCheck(ent);
 				C* comp = nullptr;
 
 				if constexpr (!IsFlagComponent<C>::value) {
@@ -490,13 +501,14 @@ namespace Engine::ECS {
 			/**
 			 * Removes all components from an entity.
 			 */
-			ENGINE_INLINE void removeAllComponents(Entity ent) { ((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...); };
+			ENGINE_INLINE void removeAllComponents(Entity ent) { debugEntityCheck(ent); ((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...); };
 
 			/**
 			 * Gets a reference to the component instance associated with an entity.
 			 */
 			template<class Component>
 			ENGINE_INLINE Component& getComponent(Entity ent) {
+				debugEntityCheck(ent);
 				// TODO: why is this not a compile error? this should need `decltype(auto)` return type?
 				static_assert(!IsFlagComponent<Component>::value,
 					"Calling World::getComponent on a flag component is not allowed. Use World::hasComponent instead."
@@ -508,6 +520,7 @@ namespace Engine::ECS {
 
 			template<class Component>
 			ENGINE_INLINE const Component& getComponent(Entity ent) const {
+				debugEntityCheck(ent);
 				return const_cast<World*>(this)->getComponent<Component>(ent);
 			}
 
@@ -548,11 +561,13 @@ namespace Engine::ECS {
 			 */
 			template<class... Components>
 			ENGINE_INLINE std::tuple<Components&...> getComponents(Entity ent) {
+				debugEntityCheck(ent);
 				return std::forward_as_tuple(getComponent<Components>(ent) ...);
 			}
 
 			template<class... Components>
 			ENGINE_INLINE std::tuple<const Components&...> getComponents(Entity ent) const {
+				debugEntityCheck(ent);
 				return std::forward_as_tuple(getComponent<Components>(ent) ...);
 			}
 
@@ -561,7 +576,7 @@ namespace Engine::ECS {
 			 * @param[in] ent The entity.
 			 * @return The components bitset for the entity
 			 */
-			ENGINE_INLINE decltype(auto) getComponentsBitset(Entity ent) const noexcept { return compBitsets[ent.id]; }
+			ENGINE_INLINE decltype(auto) getComponentsBitset(Entity ent) const noexcept { debugEntityCheck(ent); return compBitsets[ent.id]; }
 
 			/**
 			 * Gets the components bitset for all entities. Sorted by entity id. 
