@@ -376,7 +376,7 @@ namespace Engine::ECS {
 
 			ENGINE_INLINE void debugEntityCheck(Entity e) const {
 				ENGINE_DEBUG_ASSERT(isValid(e), "Attempting to use invalid entity");
-				ENGINE_DEBUG_ASSERT(isCurrent(e), "Attempting to use old entity");
+				ENGINE_DEBUG_ASSERT(isAlive(e), "Attempting to use old entity");
 			}
 
 			////////////////////////////////////////////////////////////////////////////////
