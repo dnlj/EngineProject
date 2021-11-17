@@ -126,7 +126,7 @@ namespace {
 #define HandleMessageDef(MsgType)\
 	template<> void NetworkingSystem::handleMessageType<MsgType>(ConnInfo& info, Connection& from, const Engine::Net::MessageHeader& head) {\
 	if constexpr (!(MessageType_Traits<MsgType>::side & ENGINE_SIDE)) { ENGINE_WARN("HandleMessageDef Abort A"); return; }\
-	if (!(MessageType_Traits<MsgType>::state & info.state)) { from.read(from.recvMsgSize()); ENGINE_WARN("HandleMessageDef Abort B: ", (int)head.type); return; }\
+	if (!(MessageType_Traits<MsgType>::state & from.getState())) { from.read(from.recvMsgSize()); ENGINE_WARN("HandleMessageDef Abort B: ", (int)head.type); return; }\
 	HandleMessageDef_DebugBreak(#MsgType);
 
 namespace Game {
@@ -163,7 +163,7 @@ namespace Game {
 			return;
 		}
 
-		info.state = std::max(info.state, ConnectionState::Connecting);
+		from.setState(std::max(from.getState(), ConnectionState::Connecting));
 		const auto keySend = *from.read<uint16>();
 		if (!from.getKeySend()) {
 			from.setKeySend(keySend);
@@ -173,7 +173,7 @@ namespace Game {
 		}
 		if (auto msg = from.beginMessage<MessageType::CONNECT_CHALLENGE>()) {
 			msg.write(from.getKeyRecv());
-			ENGINE_LOG("MessageType::CONNECT_REQUEST ", from.getKeyRecv(), " ", (int)info.state);
+			ENGINE_LOG("MessageType::CONNECT_REQUEST ", from.getKeyRecv(), " ", (int)from.getState());
 		}
 	}
 	
@@ -184,7 +184,7 @@ namespace Game {
 		}
 		if (auto msg = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
 			msg.write(from.getKeySend());
-			info.state = ConnectionState::Connected;
+			from.setState(ConnectionState::Connected);
 		}
 		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
 	}
@@ -196,7 +196,7 @@ namespace Game {
 			return;
 		}
 
-		info.state = ConnectionState::Connected;
+		from.setState(ConnectionState::Connected);
 		addPlayer(info.ent);
 
 		ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM", " Tick: ", world.getTick());
@@ -235,10 +235,10 @@ namespace Game {
 
 	HandleMessageDef(MessageType::DISCONNECT)
 		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", info.ent);
-		if (info.state != ConnectionState::Connected) { return; }
+		if (from.getState() != ConnectionState::Connected) { return; }
 		if (info.disconnectAt != Engine::Clock::TimePoint{}) { return; }
 		info.disconnectAt = Engine::Clock::now() + disconnectTime;
-		info.state = ConnectionState::Disconnected;
+		from.setState(ConnectionState::Disconnected);
 	}
 
 	HandleMessageDef(MessageType::PING)
@@ -529,7 +529,7 @@ namespace Game {
 			}
 
 			if (conn.getKeyRecv() != packet.getKey()) {
-				if (info.state == ConnectionState::Connected) {
+				if (conn.getState() == ConnectionState::Connected) {
 					ENGINE_WARN("Invalid key for ", conn.address(), " ", packet.getKey(), " != ", conn.getKeyRecv());
 					continue;
 				}
@@ -561,7 +561,7 @@ namespace Game {
 				if (diff > timeout) {
 					ENGINE_LOG("Connection for ", info.ent ," (", addr, ") timed out.");
 					info.disconnectAt = Engine::Clock::now() - disconnectTime;
-					info.state = ConnectionState::Disconnected;
+					conn.setState(ConnectionState::Disconnected);
 				}
 			}
 		}
@@ -580,7 +580,7 @@ namespace Game {
 			if (info.disconnectAt != Engine::Clock::TimePoint{}) {
 				// TODO: remove all comps but connection
 
-				if (info.state == ConnectionState::Connected) {
+				if (conn.getState() == ConnectionState::Connected) {
 					ENGINE_LOG("Send MessageType::DISCONNECT to ", addr);
 					if (auto msg = conn.beginMessage<MessageType::DISCONNECT>()) {
 					}
@@ -590,7 +590,7 @@ namespace Game {
 					conn.send(socket);
 					conn.setKeySend(0);
 					conn.setKeyRecv(0);
-					info.state = ConnectionState::Disconnected;
+					conn.setState(ConnectionState::Disconnected);
 
 					ENGINE_LOG("Disconnecting ", info.ent, " ", addr);
 					// TODO: world.removeComponent<ConnectionComponent>(info.ent);
@@ -611,19 +611,19 @@ namespace Game {
 
 	void NetworkingSystem::runClient() {
 		for (auto& [addr, info] : connections) {
-			if (info.state == ConnectionState::Connecting) {
+			const auto& conn = *world.getComponent<ConnectionComponent>(info.ent).conn;
+			if (conn.getState() == ConnectionState::Connecting) {
 				connectTo(addr);
 				break;
-			} else if (info.state == ConnectionState::Connected) {
+			} else if (conn.getState() == ConnectionState::Connected) {
 				static uint8 ping = 0;
 				static auto next = now;
 				if (next > now) { return; }
 				next = now + std::chrono::milliseconds{5000};
 		
 				for (auto& ply : world.getFilter<PlayerFilter>()) {
-					auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
-
-					if (auto msg = conn.beginMessage<MessageType::PING>()) {
+					auto& conn2 = *world.getComponent<ConnectionComponent>(ply).conn;
+					if (auto msg = conn2.beginMessage<MessageType::PING>()) {
 						msg.write(static_cast<uint8>(++ping & 0x7F));
 					}
 				}
@@ -641,7 +641,7 @@ namespace Game {
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		const auto& [info, conn] = getOrCreateConnection(addr);
-		info.state = ConnectionState::Connecting;
+		conn.setState(ConnectionState::Connecting);
 
 		if (!conn.getKeyRecv()) {
 			conn.setKeyRecv(genKey());
@@ -659,10 +659,10 @@ namespace Game {
 		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
 		auto [it, suc] = connections.emplace(addr, ConnInfo{
 			.ent = ent,
-			.state = ConnectionState::Disconnected,
 		});
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
 		connComp.conn = std::make_unique<Connection>(addr, now);
+		connComp.conn->setState(ConnectionState::Disconnected);
 		return {it->second, *connComp.conn};
 	}
 

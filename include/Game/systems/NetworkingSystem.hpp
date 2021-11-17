@@ -38,7 +38,6 @@ namespace Game {
 			struct ConnInfo {
 				Engine::ECS::Entity ent = {};
 				Engine::Clock::TimePoint disconnectAt = {};
-				ConnectionState state = ConnectionState::Disconnected;
 			};
 			Engine::FlatHashMap<Engine::Net::IPv4Address, ConnInfo> connections; // TODO: name
 
