@@ -543,11 +543,11 @@ namespace Game {
 			lastUpdate = now;
 			if constexpr (ENGINE_CLIENT) { runClient(); }
 
-			for (auto& [addr, ent] : addressToEntity) {
+			for (const auto ent : world.getFilter<ConnectionComponent>()) {
 				auto& connComp = world.getComponent<ConnectionComponent>(ent);
 				const auto diff = now - connComp.conn->recvTime();
 				if (diff > timeout) {
-					ENGINE_LOG("Connection for ", ent ," (", addr, ") timed out.");
+					ENGINE_LOG("Connection for ", ent ," (", connComp.conn->address(), ") timed out.");
 					connComp.disconnectAt = Engine::Clock::now() - disconnectTime;
 					connComp.conn->setState(ConnectionState::Disconnected);
 				}
@@ -555,8 +555,7 @@ namespace Game {
 		}
 
 		// Send Ack messages & unacked
-		for (auto it = addressToEntity.begin(); it != addressToEntity.end();) {
-			const auto& [addr, ent] = *it;
+		for (const auto ent : world.getFilter<ConnectionComponent>()) {
 			auto& connComp = world.getComponent<ConnectionComponent>(ent);
 			auto& conn = *connComp.conn;
 
@@ -569,7 +568,7 @@ namespace Game {
 				// TODO: remove all comps but connection
 
 				if (conn.getState() == ConnectionState::Connected) {
-					ENGINE_LOG("Send MessageType::DISCONNECT to ", addr);
+					ENGINE_LOG("Send MessageType::DISCONNECT to ", connComp.conn->address());
 					if (auto msg = conn.beginMessage<MessageType::DISCONNECT>()) {
 					}
 				}
@@ -580,16 +579,15 @@ namespace Game {
 					conn.setKeyRecv(0);
 					conn.setState(ConnectionState::Disconnected);
 
-					ENGINE_LOG("Disconnecting ", ent, " ", addr);
+					ENGINE_LOG("Disconnecting ", ent, " ", connComp.conn->address());
 					// TODO: world.removeComponent<ConnectionComponent>(info.ent);
 					world.deferedDestroyEntity(ent);
-					it = addressToEntity.erase(it);
+					addressToEntity.erase(addressToEntity.find(connComp.conn->address())); // TODO: this is actually incorrect since we use deferedDestroyEntity the entity might live on for short time.
 					continue;
 				}
 			}
 
 			conn.send(socket);
-			++it;
 		}
 
 		#ifdef ENGINE_UDP_NETWORK_SIM
@@ -598,10 +596,10 @@ namespace Game {
 	}
 
 	void NetworkingSystem::runClient() {
-		for (const auto& [addr, ent] : addressToEntity) {
+		for (const auto ent : world.getFilter<ConnectionComponent>()) {
 			const auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 			if (conn.getState() == ConnectionState::Connecting) {
-				connectTo(addr);
+				connectTo(conn.address());
 				break;
 			} else if (conn.getState() == ConnectionState::Connected) {
 				static uint8 ping = 0;
@@ -620,7 +618,7 @@ namespace Game {
 	}
 
 	int32 NetworkingSystem::connectionsCount() const {
-		return static_cast<int32>(addressToEntity.size());
+		return static_cast<int32>(world.getFilter<ConnectionComponent>().size());
 	}
 
 	int32 NetworkingSystem::playerCount() const {

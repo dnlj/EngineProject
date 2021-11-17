@@ -340,7 +340,7 @@ namespace Engine::ECS {
 
 			/**
 			 * Marks an Entity to be destroyed once it is out of rollback scope.
-			 * Until the Enttiy is destroyed it is disabled.
+			 * Until the Entity is destroyed it is disabled.
 			 */
 			ENGINE_INLINE void deferedDestroyEntity(Entity ent) {
 				setEnabled(ent, false); // TODO: Will we need a component callback for onDisabled to handle things like physics bodies?
