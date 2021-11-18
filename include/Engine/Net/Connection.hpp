@@ -384,10 +384,6 @@ namespace Engine::Net {
 			template<auto M>
 			[[nodiscard]]
 			ENGINE_INLINE decltype(auto) beginMessage() {
-				// TODO: check that no other message is active
-				auto& channel = getChannelForMessage<M>();
-				using Writer = decltype(channel.beginMessage(channel, M, msgBufferWriter));
-
 				if constexpr (ENGINE_DEBUG) {
 					if (!(state & MessageTraits<M>::state)) {
 						ENGINE_WARN("Incorrect connection state to begin message of type ",
@@ -396,6 +392,8 @@ namespace Engine::Net {
 					}
 				}
 
+				// TODO: check that no other message is active
+				auto& channel = getChannelForMessage<M>();
 				msgBufferWriter = msgBuffer;
 
 				// TODO: pass bufferwriter by ptr. we convert ot pointer anyways. makes it clearer

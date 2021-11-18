@@ -290,10 +290,6 @@ namespace Engine::ECS {
 					&& (ent.gen <= entities[ent.id].ent.gen);
 			}
 
-			ENGINE_INLINE bool isCurrent(Entity ent) const noexcept {
-				return ent.gen == entities[ent.id].ent.gen;
-			}
-
 			ENGINE_INLINE bool isAlive(Entity ent) const noexcept {
 				const auto& es = entities[ent.id];
 				return (es.ent.gen == ent.gen)

@@ -17,7 +17,6 @@ namespace Engine::Net {
 		private:
 			BufferWriter* buff;
 			Channel& channel;
-			int64 startSize;
 
 		public:
 			MessageWriter(Channel& channel, MessageType type, BufferWriter* buff)
