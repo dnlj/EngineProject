@@ -234,9 +234,9 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::DISCONNECT)
-		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", ent);
 		if (from.getState() != ConnectionState::Connected) { return; }
 		if (connComp.disconnectAt != Engine::Clock::TimePoint{}) { return; }
+		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", ent);
 		connComp.disconnectAt = Engine::Clock::now() + disconnectTime;
 		from.setState(ConnectionState::Disconnected);
 	}
@@ -579,7 +579,7 @@ namespace Game {
 					conn.setKeyRecv(0);
 					conn.setState(ConnectionState::Disconnected);
 
-					ENGINE_LOG("Disconnecting ", ent, " ", connComp.conn->address());
+					ENGINE_LOG("Disconnected ", ent, " ", connComp.conn->address());
 					addressToEntity.erase(addressToEntity.find(connComp.conn->address()));
 					world.getComponent<ConnectionComponent>(ent).conn.reset(); // Make sure connection is closed now and not later after defered destroy
 					world.deferedDestroyEntity(ent);
@@ -679,7 +679,7 @@ namespace Game {
 		auto [it, suc] = addressToEntity.emplace(addr, ent);
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
 		connComp.conn = std::make_unique<Connection>(addr, now);
-		connComp.conn->setState(ConnectionState::Disconnected);
+		connComp.conn->setState(ConnectionState::Unconnected);
 		return ent;
 	}
 	
