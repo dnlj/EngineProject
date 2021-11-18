@@ -409,16 +409,16 @@ namespace Game {
 								auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
 								auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 
-								// TODO: we really should check connection state here.
-								// TODO: cont. if disconnected still set packet rate
-
-								if (auto msg = conn.beginMessage<MessageType::CONFIG_NETWORK>()) {
-									auto v = static_cast<float32>(s.getValue());
-									conn.setPacketRecvRate(v);
-									msg.write(v);
-								} else {
-									ENGINE_WARN("Unable to set network recv rate!");
+								if (conn.getState() == ConnectionState::Connected) {
+									if (auto msg = conn.beginMessage<MessageType::CONFIG_NETWORK>()) {
+										auto v = static_cast<float32>(s.getValue());
+										conn.setPacketRecvRate(v);
+										msg.write(v);
+										return;
+									}
 								}
+
+								ENGINE_WARN("Unable to set network recv rate!");
 							}
 						);
 
