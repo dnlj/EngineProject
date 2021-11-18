@@ -125,8 +125,8 @@ namespace {
 
 #define HandleMessageDef(MsgType)\
 	template<> void NetworkingSystem::handleMessageType<MsgType>(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head) {\
-	if constexpr (!(Engine::Net::MessageTraits<MsgType>::side & ENGINE_SIDE)) { ENGINE_WARN("HandleMessageDef Abort A"); return; }\
-	if (!(Engine::Net::MessageTraits<MsgType>::state & from.getState())) { from.read(from.recvMsgSize()); ENGINE_WARN("HandleMessageDef Abort B: ", (int)head.type); return; }\
+	if constexpr (!(Engine::Net::MessageTraits<MsgType>::side & ENGINE_SIDE)) { ENGINE_WARN("Message received by wrong side. Aborting."); return; }\
+	if (!(Engine::Net::MessageTraits<MsgType>::state & from.getState())) { from.read(from.recvMsgSize()); ENGINE_WARN("Messages received in wrong state. Aborting. ", getMessageName(head.type), "(", (int)head.type, ")"); return; }\
 	HandleMessageDef_DebugBreak(#MsgType);
 
 namespace Game {
@@ -548,8 +548,7 @@ namespace Game {
 				const auto diff = now - connComp.conn->recvTime();
 				if (diff > timeout) {
 					ENGINE_LOG("Connection for ", ent ," (", connComp.conn->address(), ") timed out.");
-					connComp.disconnectAt = Engine::Clock::now() - disconnectTime;
-					connComp.conn->setState(ConnectionState::Disconnected);
+					connComp.disconnectAt = now;
 				}
 			}
 		}
@@ -563,26 +562,28 @@ namespace Game {
 			//	conn.msgBegin<MessageType::TEST>();
 			//	conn.msgEnd<MessageType::TEST>();
 			//}
-			
-			if (connComp.disconnectAt != Engine::Clock::TimePoint{}) {
-				// TODO: remove all comps but connection
 
-				if (conn.getState() == ConnectionState::Connected) {
+			if (connComp.disconnectAt != Engine::Clock::TimePoint{}) {
+				// TODO: At this point we should disable the entity. ATM we dont have a way to tell filters to show disabled entities though.
+				// TODO: cont. so it would never get cleaned/deferedDestroyEntity
+
+				ENGINE_DEBUG_ASSERT(conn.getState() != ConnectionState::Connected);
+				if (conn.getState() == ConnectionState::Disconnecting) {
 					ENGINE_LOG("Send MessageType::DISCONNECT to ", connComp.conn->address());
 					if (auto msg = conn.beginMessage<MessageType::DISCONNECT>()) {
 					}
 				}
 
-				if (connComp.disconnectAt < now) {
+				if (connComp.disconnectAt <= now) {
 					conn.send(socket);
 					conn.setKeySend(0);
 					conn.setKeyRecv(0);
 					conn.setState(ConnectionState::Disconnected);
 
 					ENGINE_LOG("Disconnecting ", ent, " ", connComp.conn->address());
-					// TODO: world.removeComponent<ConnectionComponent>(info.ent);
+					addressToEntity.erase(addressToEntity.find(connComp.conn->address()));
+					world.getComponent<ConnectionComponent>(ent).conn.reset(); // Make sure connection is closed now and not later after defered destroy
 					world.deferedDestroyEntity(ent);
-					addressToEntity.erase(addressToEntity.find(connComp.conn->address())); // TODO: this is actually incorrect since we use deferedDestroyEntity the entity might live on for short time.
 					continue;
 				}
 			}
@@ -682,6 +683,14 @@ namespace Game {
 		connComp.conn->setState(ConnectionState::Disconnected);
 		return ent;
 	}
+	
+	Engine::ECS::Entity NetworkingSystem::getEntity(const Engine::Net::IPv4Address& addr) {
+		const auto found = addressToEntity.find(addr);
+		if (found == addressToEntity.end()) {
+			return Engine::ECS::INVALID_ENTITY;
+		}
+		return found->second;
+	}
 
 	Engine::ECS::Entity NetworkingSystem::getOrCreateEntity(const Engine::Net::IPv4Address& addr) {
 		const auto found = addressToEntity.find(addr);
@@ -691,11 +700,14 @@ namespace Game {
 			return found->second;
 		}
 	}
-
+	
 	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
-		const auto ent = getOrCreateEntity(addr);
+		const auto ent = getEntity(addr);
+		if (ent == Engine::ECS::INVALID_ENTITY) { return; }
+
 		auto& connComp = world.getComponent<ConnectionComponent>(ent);
 		connComp.disconnectAt = Engine::Clock::now() + disconnectTime;
+		connComp.conn->setState(ConnectionState::Disconnecting);
 		ENGINE_INFO("Request disconnect ", addr, " ", ent);
 	}
 

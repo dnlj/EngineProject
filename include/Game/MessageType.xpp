@@ -1,10 +1,10 @@
-// Message,           Received By,        Valid Send States
+// Message,           Received by,        Valid in these states
 X(UNKNOWN,            ENGINE_SIDE_BOTH,   ConnectionState::Any)
 X(DISCOVER_SERVER,    ENGINE_SIDE_SERVER, ConnectionState::Any)
 X(SERVER_INFO,        ENGINE_SIDE_CLIENT, ConnectionState::Any)
 X(CONNECT_REQUEST,    ENGINE_SIDE_SERVER, ConnectionState::Disconnected | ConnectionState::Connecting)
 X(CONNECT_CHALLENGE,  ENGINE_SIDE_CLIENT, ConnectionState::Connecting)
-X(DISCONNECT,         ENGINE_SIDE_BOTH,   ConnectionState::Connected)
+X(DISCONNECT,         ENGINE_SIDE_BOTH,   ConnectionState::Disconnecting | ConnectionState::Connected)
 X(TEST,               ENGINE_SIDE_BOTH,   ConnectionState::Connected)
 X(ACTION,             ENGINE_SIDE_BOTH,   ConnectionState::Connected)
 X(CONNECT_CONFIRM,    ENGINE_SIDE_SERVER, ConnectionState::Connecting)

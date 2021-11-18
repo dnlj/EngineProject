@@ -66,6 +66,7 @@ namespace Game {
 		private:
 			void addPlayer(const Engine::ECS::Entity ent);
 			Engine::ECS::Entity addConnection(const Engine::Net::IPv4Address& addr);
+			Engine::ECS::Entity getEntity(const Engine::Net::IPv4Address& addr);
 			Engine::ECS::Entity getOrCreateEntity(const Engine::Net::IPv4Address& addr);
 
 			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr);
