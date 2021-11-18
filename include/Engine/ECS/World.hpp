@@ -20,7 +20,7 @@
 namespace Engine::ECS {
 	// TODO: move
 	// TODO: make copy constructor on this and EntityFilter private
-	template<class C, class World>
+	template<bool IncludeDisabled, class C, class World>
 	class SingleComponentFilter {
 		private:
 			using Cont = ComponentContainer<C>;
@@ -40,7 +40,7 @@ namespace Engine::ECS {
 
 					// TODO: do we also want to check if enabled? maybe filters need some way to specify what flags an entity should/shouoldnt have
 					ENGINE_INLINE bool canUse(Entity ent) const {
-						return world.isAlive(ent) && world.isEnabled(ent);
+						return world.isAlive(ent) && (IncludeDisabled || world.isEnabled(ent));
 					}
 
 					ENGINE_INLINE void stepNextValid() {
@@ -205,7 +205,7 @@ namespace Engine::ECS {
 		////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////
 		private:
-			template<class,class>
+			template<bool,class,class>
 			friend class SingleComponentFilter;
 
 			std::vector<EntityFilter> filters;
@@ -584,20 +584,25 @@ namespace Engine::ECS {
 			ENGINE_INLINE const auto& getAllComponentBitsets() const { return compBitsets; };
 
 			// TODO: doc
-			template<class C, class... Comps>
-			decltype(auto) getFilter() {
+			template<bool IncludeDisabled, class C, class... Comps>
+			decltype(auto) getFilterAll() {
 				if constexpr (IsEntityFilterList<C>::value) {
+					static_assert(sizeof...(Comps) == 0);
 					return [&]<class... Ds>(EntityFilterList<Ds...>) -> decltype(auto) {
-						return getFilter<Ds...>();
+						return getFilterAll<IncludeDisabled, Ds...>();
 					}(C{});
 				} else if constexpr (sizeof...(Comps) == 0) {
-					return SingleComponentFilter<C, World>{*this};
+					return SingleComponentFilter<IncludeDisabled, C, World>{*this};
 				} else {
 					const auto cbits = getBitsetForComponents<C, Comps...>();
 					auto found = cbitsToFilter.find(cbits);
 
-					// TODO: maybe having EntityFilter be more of a "view" class would be better to avoid this `.with` stuff and the accidental copy conern.
-					if (found != cbitsToFilter.end()) { return filters[found->second].with(entities); }
+					// TODO: maybe having EntityFilter be more of a "view" class would be better to avoid this `.with` stuff and the accidental copy concern.
+					if (found != cbitsToFilter.end()) {
+						// TODO: why do we have this `with` function? i assume at one point
+						// TODO: cont. it was for handling rollback but atm it doesnt look like it ever changes.
+						return filters[found->second].with(entities, IncludeDisabled);
+					}
 
 					const auto idx = static_cast<int32>(filters.size());
 					auto& filter = filters.emplace_back(entities, cbits);
@@ -612,6 +617,11 @@ namespace Engine::ECS {
 					(compToFilter[getComponentId<Comps>()].push_back(idx), ...);
 					return static_cast<const EntityFilter&>(filter);
 				}
+			}
+
+			template<class C, class... Comps>
+			ENGINE_INLINE decltype(auto) getFilter() {
+				return getFilterAll<false, C, Comps...>();
 			}
 			
 			/**

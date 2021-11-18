@@ -16,6 +16,7 @@ namespace Engine::ECS {
 			std::vector<Entity> entities;
 			const EntityStates* states;
 			ComponentBitset componentsBits;
+			bool includeDisabled = false;
 
 		private:
 			template<class T>
@@ -63,8 +64,9 @@ namespace Engine::ECS {
 
 			EntityFilter(const EntityStates& states, const ComponentBitset cbits);
 
-			const EntityFilter& with(const EntityStates& ss) {
+			const EntityFilter& with(const EntityStates& ss, bool incDisabled) {
 				states = &ss;
+				includeDisabled = incDisabled;
 				return *this;
 			}
 
@@ -82,7 +84,7 @@ namespace Engine::ECS {
 
 		private:
 			ENGINE_INLINE bool isEnabled(Entity ent) const {
-				return (*states)[ent.id].state & EntityState::Enabled;
+				return includeDisabled || ((*states)[ent.id].state & EntityState::Enabled);
 			}
 	};
 }
