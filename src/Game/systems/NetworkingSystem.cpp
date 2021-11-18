@@ -554,7 +554,7 @@ namespace Game {
 		}
 
 		// Send Ack messages & unacked
-		for (const auto ent : world.getFilter<ConnectionComponent>()) {
+		for (const auto ent : world.getFilterAll<true, ConnectionComponent>()) {
 			auto& connComp = world.getComponent<ConnectionComponent>(ent);
 			auto& conn = *connComp.conn;
 
@@ -564,8 +564,7 @@ namespace Game {
 			//}
 
 			if (connComp.disconnectAt != Engine::Clock::TimePoint{}) {
-				// TODO: At this point we should disable the entity. ATM we dont have a way to tell filters to show disabled entities though.
-				// TODO: cont. so it would never get cleaned/deferedDestroyEntity
+				world.setEnabled(ent, false);
 
 				ENGINE_DEBUG_ASSERT(conn.getState() != ConnectionState::Connected);
 				if (conn.getState() == ConnectionState::Disconnecting) {
