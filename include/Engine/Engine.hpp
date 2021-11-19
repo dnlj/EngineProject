@@ -153,3 +153,10 @@
 #else
 	#define ENGINE_DEBUG_ASSERT(...)
 #endif
+
+namespace Engine {
+	template<class T>
+	ENGINE_INLINE decltype(auto) underlying(T t) {
+		return static_cast<std::underlying_type_t<T>>(t);
+	}
+}

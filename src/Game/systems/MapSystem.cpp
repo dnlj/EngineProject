@@ -169,7 +169,7 @@ namespace Game {
 			}
 		};
 
-		mesh.setBufferFormat(vertexFormat);
+		mesh.setFormat(vertexFormat);
 	}
 
 	void MapSystem::tick() {
@@ -574,7 +574,9 @@ namespace Game {
 				buildEBOData.push_back(vertexCount + 0);
 			});
 
-			data.mesh.setBufferData(buildVBOData, buildEBOData);
+			data.mesh
+				.setVertexData(Engine::Graphics::Primitive::Triangles, buildVBOData)
+				.setElementData(buildEBOData);
 
 			buildVBOData.clear();
 			buildEBOData.clear();
