@@ -1,9 +1,9 @@
 // Engine
-#include <Engine/Graphics/Shader.hpp>
+#include <Engine/Gfx/Shader.hpp>
 #include <Engine/Utility/Utility.hpp>
 
 
-namespace Engine::Graphics {
+namespace Engine::Gfx {
 	Shader::Shader(const std::string& path) {
 		load(path);
 	}

@@ -12,7 +12,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Graphics/PixelFormat.hpp>
+#include <Engine/Gfx/PixelFormat.hpp>
 
 
 namespace Engine {

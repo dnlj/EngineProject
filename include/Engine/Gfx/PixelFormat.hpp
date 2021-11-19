@@ -10,7 +10,7 @@
 namespace Engine {
 	enum class PixelFormat {
 		#define X(Name, Format, Channels, R,G,B,A) Name,
-		#include <Engine/Graphics/PixelFormat.xpp>
+		#include <Engine/Gfx/PixelFormat.xpp>
 	};
 
 	struct PixelFormatInfo {
@@ -31,7 +31,7 @@ namespace Engine {
 	namespace Detail {
 		inline PixelFormatInfo PixelFormat_Info[] = {
 			#define X(Name, Format, Channels, R,G,B,A) {Format, Channels, R, G, B, A},
-			#include <Engine/Graphics/PixelFormat.xpp>
+			#include <Engine/Gfx/PixelFormat.xpp>
 		};
 	}
 

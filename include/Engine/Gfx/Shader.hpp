@@ -10,7 +10,7 @@
 #include <Engine/Engine.hpp>
 
 
-namespace Engine::Graphics {
+namespace Engine::Gfx {
 	class Shader {
 		private:
 			GLuint program = 0;

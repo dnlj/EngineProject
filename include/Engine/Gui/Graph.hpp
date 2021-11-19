@@ -2,7 +2,7 @@
 
 // Engine
 #include <Engine/Gui/Panel.hpp>
-#include <Engine/Graphics/Mesh.hpp>
+#include <Engine/Gfx/Mesh.hpp>
 
 
 namespace Engine::Gui {
@@ -14,18 +14,23 @@ namespace Engine::Gui {
 
 	class SubGraph {
 		protected:
+			bool rebuild = false;
 			std::vector<GraphVertex> data;
-			Graphics::Mesh mesh;
+			Gfx::Mesh mesh;
 
 		public:
 			virtual void addPoint(glm::vec2 p) = 0;
-			//Graphics::Mesh& getMesh() {
-			//}
+			Gfx::Mesh& getMesh() {
+				if (rebuild) {
+					//mesh.setVertexData(Graphics::Primdata);
+				}
+			}
 	};
 
 	class AreaGraph : public SubGraph {
 		public:
 			virtual void addPoint(glm::vec2 p) {
+				rebuild = true;
 				data.push_back({
 					.pos = {p.x, 0},
 					.color = {1,0,0,1},

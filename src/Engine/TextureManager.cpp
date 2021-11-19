@@ -4,7 +4,7 @@
 // Engine
 #include <Engine/TextureManager.hpp>
 #include <Engine/Engine.hpp>
-#include <Engine/Graphics/Image.hpp>
+#include <Engine/Gfx/Image.hpp>
 
 // SOIL
 #include <soil/SOIL.h>

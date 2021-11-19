@@ -2,7 +2,7 @@
 
 // Engine
 #include <Engine/ResourceManager.hpp>
-#include <Engine/Graphics/Texture.hpp>
+#include <Engine/Gfx/Texture.hpp>
 
 
 namespace Engine {

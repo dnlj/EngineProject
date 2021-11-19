@@ -11,7 +11,7 @@
 #include <Engine/Engine.hpp>
 
 
-namespace Engine::Graphics {
+namespace Engine::Gfx {
 	// TODO: Move
 	struct VertexAttribute {
 		GLuint location;

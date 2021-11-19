@@ -160,8 +160,8 @@ namespace Game {
 		return world.getSystem<PhysicsSystem>().createBody(mapEntity, bodyDef);
 	}
 
-	void MapSystem::setupMesh(Engine::Graphics::Mesh& mesh) const {
-		constexpr Engine::Graphics::VertexFormat<2> vertexFormat = {
+	void MapSystem::setupMesh(Engine::Gfx::Mesh& mesh) const {
+		constexpr Engine::Gfx::VertexFormat<2> vertexFormat = {
 			sizeof(Vertex),
 			{
 				{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)},
@@ -575,7 +575,7 @@ namespace Game {
 			});
 
 			data.mesh
-				.setVertexData(Engine::Graphics::Primitive::Triangles, buildVBOData)
+				.setVertexData(Engine::Gfx::Primitive::Triangles, buildVBOData)
 				.setElementData(buildEBOData);
 
 			buildVBOData.clear();

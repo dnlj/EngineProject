@@ -15,7 +15,7 @@
 
 // Engine
 #include <Engine/FlatHashMap.hpp>
-#include <Engine/Graphics/Texture.hpp>
+#include <Engine/Gfx/Texture.hpp>
 #include <Engine/Gui/Bounds.hpp>
 
 

@@ -13,11 +13,11 @@
 
 // Engine
 #include <Engine/ShaderManager.hpp>
-#include <Engine/Graphics/Mesh.hpp>
+#include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Common.hpp>
 #include <Engine/ThreadSafeQueue.hpp>
-#include <Engine/Graphics/Texture.hpp>
+#include <Engine/Gfx/Texture.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -173,7 +173,7 @@ namespace Game {
 
 			struct TestData { // TODO: rename
 				b2Body* body;
-				Engine::Graphics::Mesh mesh;
+				Engine::Gfx::Mesh mesh;
 				Engine::Clock::TimePoint lastUsed;
 				Engine::ECS::Tick updated = {};
 				std::vector<byte> rle;
@@ -214,7 +214,7 @@ namespace Game {
 			// TODO: recycle old bodies?
 			b2Body* createBody();
 
-			void setupMesh(Engine::Graphics::Mesh& mesh) const;
+			void setupMesh(Engine::Gfx::Mesh& mesh) const;
 
 			// TODO: Doc
 			void buildActiveChunkData(TestData& data, glm::ivec2 chunkPos);

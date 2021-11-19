@@ -8,15 +8,15 @@
 
 // Engine
 #include <Engine/ResourceManager.hpp>
-#include <Engine/Graphics/Shader.hpp>
+#include <Engine/Gfx/Shader.hpp>
 
 // TODO: Document
 namespace Engine {
-	class ShaderManager : public Engine::ResourceManager<ShaderManager, Graphics::Shader> {
-		friend class Engine::ResourceManager<ShaderManager, Graphics::Shader>;
+	class ShaderManager : public Engine::ResourceManager<ShaderManager, Gfx::Shader> {
+		friend class Engine::ResourceManager<ShaderManager, Gfx::Shader>;
 		private:
-			StorePtr load(const std::string& path) { return std::make_unique<Graphics::Shader>(path); };
-			void unload(Graphics::Shader shader);
+			StorePtr load(const std::string& path) { return std::make_unique<Gfx::Shader>(path); };
+			void unload(Gfx::Shader shader);
 	};
 
 	using ShaderRef = ShaderManager::Resource;
