@@ -21,7 +21,7 @@ namespace Game {
 			Engine::TextureRef texture;
 			glm::vec2 position = {0.0f, 0.0f};
 			glm::vec2 scale = {1.0f, 1.0f};
-			RenderLayer layer = RenderLayer::_count - RenderLayer{1};
+			RenderLayer layer = RenderLayer::Foreground;
 
 			constexpr static auto netRepl() { return Engine::Net::Replication::ONCE; };
 
