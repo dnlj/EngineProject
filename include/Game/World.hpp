@@ -62,8 +62,8 @@ namespace Game {
 		//ParallaxBackgroundSystem,
 		MapRenderSystem,
 		SpriteSystem,
-		RenderPassSystem,
-		UISystem
+		UISystem,
+		RenderPassSystem
 	>;
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<

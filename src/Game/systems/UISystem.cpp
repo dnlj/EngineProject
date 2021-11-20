@@ -712,6 +712,12 @@ namespace Game {
 		}
 	}
 
+	void UISystem::render(RenderLayer layer) {
+		if (layer == RenderLayer::UserInterface) {
+			ctx->render();
+		}
+	}
+
 	void UISystem::tick() {
 	}
 

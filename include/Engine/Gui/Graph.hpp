@@ -22,8 +22,9 @@ namespace Engine::Gui {
 			virtual void addPoint(glm::vec2 p) = 0;
 			Gfx::Mesh& getMesh() {
 				if (rebuild) {
-					//mesh.setVertexData(Graphics::Primdata);
+					mesh.setVertexData(Gfx::Primitive::TriangleStrip, data);
 				}
+				return mesh;
 			}
 	};
 

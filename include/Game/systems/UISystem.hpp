@@ -25,6 +25,7 @@ namespace Game {
 			void setup();
 			void run(float32 dt);
 			void tick();
+			void render(RenderLayer layer);
 
 			ENGINE_INLINE auto& getContext() noexcept { return *ctx; }
 

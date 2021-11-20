@@ -44,7 +44,8 @@ namespace {
 	struct {
 		constexpr static int w = 512;
 		constexpr static int h = 512;
-		GLuint tex = 0;
+		Engine::Texture2D tex2d;
+		//GLuint tex = 0;
 		//GLuint tex2 = 0;
 		//float32 data2[w] = {};
 		//float32 data[w] = {};
@@ -263,24 +264,14 @@ namespace {
 		ENGINE_LOG("Size2: ", sizeof(worley2));
 		std::cout << "Map Time (ms): " << std::chrono::duration<long double, std::milli>{end - begin}.count() << "\n";
 
-		glGenTextures(1, &map.tex);
-		glBindTexture(GL_TEXTURE_2D, map.tex);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, map.w, map.h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
-		
-		//glGenTextures(1, &map.tex2);
-		//glBindTexture(GL_TEXTURE_2D, map.tex2);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		//glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, map.w, map.h, 0, GL_RGB, GL_UNSIGNED_BYTE, data2);
+		if (!map.tex2d) {
+			map.tex2d.setStorage(Engine::TextureFormat::SRGB8, {map.w, map.h});
+		}
 
-		glBindTexture(GL_TEXTURE_2D, 0);
+		map.tex2d.setFilter(Engine::TextureFilter::NEAREST);
+		map.tex2d.setWrap(Engine::TextureWrap::REPEAT);
+		map.tex2d.setSubImage(0, {}, {map.w, map.h}, Engine::PixelFormat::RGB8, data);
 	}
 
 	void mapUI() {
@@ -318,8 +309,8 @@ namespace {
 
 			const glm::vec2 cpos = {ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y};
 			constexpr float32 scale = 2;
-			if (map.tex == 0) { buildMap(); }
-			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex));
+			if (!map.tex2d) { buildMap(); }
+			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex2d.get()));
 			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w * scale), static_cast<float32>(map.h * scale)), {0,1}, {1,0});
 
 			if (ImGui::IsItemHovered()) {
@@ -832,7 +823,7 @@ void run(int argc, char* argv[]) {
 
 		// ECS
 		world.run();
-
+		
 		// Frame rate
 		deltas[deltaIndex] = world.getDeltaTime();
 		deltaIndex = ++deltaIndex % deltas.size();
@@ -847,14 +838,10 @@ void run(int argc, char* argv[]) {
 
 		if constexpr (ENGINE_CLIENT) { mapUI(); }
 
-		guiContext.render();
 		Engine::ImGui::draw();
 		window.swapBuffers();
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
-
-	glDeleteTextures(1, &map.tex);
-	//glDeleteTextures(1, &map.tex2);
 
 	// UI cleanup
 	Engine::ImGui::shutdown();

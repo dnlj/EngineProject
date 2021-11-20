@@ -84,5 +84,7 @@ namespace Engine::Debug::GL {
 			<< "type: " << typeEnumToString(type) << "\n"
 			<< "severity: " << severityEnumToString(severity) << "\n"
 			<< "message: " << message << "\n\n";
+
+		__debugbreak();
 	}
 }

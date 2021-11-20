@@ -23,20 +23,19 @@ namespace Engine {
 			GLuint tex = 0;
 
 		public:
-			Texture() {}
-
+			Texture() = default;
 			Texture(const Texture&) = delete;
 
-			ENGINE_INLINE Texture(Texture&& other) {
+			ENGINE_INLINE Texture(Texture&& other) noexcept {
 				*this = std::move(other);
 			}
 
-			ENGINE_INLINE Texture& operator=(Texture&& other) {
+			ENGINE_INLINE Texture& operator=(Texture&& other) noexcept {
 				swap(*this, other);
 				return *this;
 			}
 
-			ENGINE_INLINE friend void swap(Texture& a, Texture& b) {
+			ENGINE_INLINE friend void swap(Texture& a, Texture& b) noexcept {
 				std::swap(a.tex, b.tex);
 			}
 
@@ -44,10 +43,9 @@ namespace Engine {
 				glDeleteTextures(1, &tex);
 			}
 
+			ENGINE_INLINE operator bool() const noexcept { return tex; }
+
 			void setStorage(TextureFormat format, Vec size, int mips = 1) {
-				// TODO: would it be better to just use glTexImage instead of glTextureStorage?
-				// TODO: cont. Then we dont need to delete/create texutre before new storage?
-				// TODO: cont. not sure which would be better.
 				glDeleteTextures(1, &tex);
 				glCreateTextures(Target, 1, &tex);
 
