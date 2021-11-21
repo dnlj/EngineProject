@@ -29,7 +29,8 @@ namespace Engine {
 			}
 
 			ENGINE_INLINE ArrayView(std::initializer_list<T> list)
-				: ArrayView(list.begin(), list.end()) {
+				: ArrayView(const_cast<T*>(list.begin()), const_cast<T*>(list.end())) {
+				static_assert(std::is_const_v<T>, "std::initializer_list can only be converted to an ArrayView over constant elements: ArrayView<const T>");
 			}
 
 			ENGINE_INLINE T* begin() noexcept { return dataBegin; }
@@ -44,6 +45,8 @@ namespace Engine {
 			// TODO: crbegin
 			// TODO: rend
 			// TODO: crend
+			
+			// TODO: slice
 
 			ENGINE_INLINE bool empty() const noexcept { return dataBegin == dataEnd; }
 			ENGINE_INLINE auto size() const noexcept { return dataEnd - dataBegin; }
