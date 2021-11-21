@@ -160,3 +160,23 @@ namespace Engine {
 		return static_cast<std::underlying_type_t<T>>(t);
 	}
 }
+
+#define CREATE_ADL_WRAPPER(name) \
+	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& u) { \
+		using ::std::name; return name(std::forward<T>(u)); \
+	}
+namespace Engine {
+	CREATE_ADL_WRAPPER(data);
+	CREATE_ADL_WRAPPER(empty);
+	CREATE_ADL_WRAPPER(size);
+	CREATE_ADL_WRAPPER(ssize);
+	CREATE_ADL_WRAPPER(begin);
+	CREATE_ADL_WRAPPER(cbegin);
+	CREATE_ADL_WRAPPER(rbegin);
+	CREATE_ADL_WRAPPER(crbegin);
+	CREATE_ADL_WRAPPER(end);
+	CREATE_ADL_WRAPPER(cend);
+	CREATE_ADL_WRAPPER(rend);
+	CREATE_ADL_WRAPPER(crend);
+}
+#undef CREATE_ADL_WRAPPER
