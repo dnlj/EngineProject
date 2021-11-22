@@ -20,7 +20,7 @@ namespace Engine {
 				ENGINE_DEBUG_ASSERT(dataBegin <= dataEnd);
 			};
 
-			ENGINE_INLINE ArrayView(T* data, ptrdiff_t size)
+			ENGINE_INLINE ArrayView(T* data, int64 size)
 				: ArrayView(data, data + size) {
 			};
 
@@ -45,13 +45,36 @@ namespace Engine {
 			// TODO: crbegin
 			// TODO: rend
 			// TODO: crend
-			
-			// TODO: slice
 
 			ENGINE_INLINE bool empty() const noexcept { return dataBegin == dataEnd; }
 			ENGINE_INLINE auto size() const noexcept { return dataEnd - dataBegin; }
 
 			ENGINE_INLINE T* data() noexcept { return dataBegin; }
 			ENGINE_INLINE const T* data() const noexcept { return dataBegin; }
+
+			ENGINE_INLINE T& operator[](int64 i) noexcept { return dataBegin[i]; }
+			ENGINE_INLINE const T& operator[](int64 i) const noexcept { return dataBegin[i]; }
+
+			ENGINE_INLINE T& front() noexcept { return *dataBegin; }
+			ENGINE_INLINE const T& front() const noexcept { return *dataBegin; }
+
+			ENGINE_INLINE T& back() noexcept { return dataEnd[-1]; }
+			ENGINE_INLINE const T& back() const noexcept { return dataEnd[-1]; }
+
+			/**
+			 * Creates a new view containing the elements [begin, end).
+			 */
+			ENGINE_INLINE ArrayView slice(int64 begin, int64 end) const noexcept { return {dataBegin + begin, dataEnd + end}; }
+			ENGINE_INLINE ArrayView slice(int64 begin) const noexcept { return {dataBegin + begin, dataEnd}; }
+
+			/**
+			 * Creates a new view containing this views first @p n elements.
+			 */
+			ENGINE_INLINE ArrayView first(int64 n) const noexcept { return {dataBegin, dataBegin + n}; }
+			
+			/**
+			 * Creates a new view containing this views last @p n elements.
+			 */
+			ENGINE_INLINE ArrayView last(int64 n) const noexcept { return {dataEnd - n, dataEnd}; }
 	};
 }
