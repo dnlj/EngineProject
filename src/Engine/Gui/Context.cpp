@@ -521,26 +521,34 @@ namespace Engine::Gui {
 		glyphDrawGroups.clear();
 	}
 
-	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color) {
-		const PanelId id = renderState.id;
-		const PanelId pid = renderState.pid;
+	void Context::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {
+		ENGINE_DEBUG_ASSERT(points.size() >= 3, "Must have at least three points");
 
+		auto begin = points.begin();
+		auto curr = begin + 1;
+		auto next = curr + 1;
+		auto end = points.end();
+
+		while (next < end) {
+			drawTri(*begin, *curr, *next, {0, 1, 1, 1});
+			curr = next;
+			++next;
+		}
+	}
+
+	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color) {
 		#ifdef DEBUG_GUI
 		if (renderState.color.a != 0) {
 			color = renderState.color;
 		}
 		#endif
 
-		//const auto color = renderState.color;
-		const auto offset = renderState.offset;
-
-		polyVertexData.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
-		polyVertexData.push_back({.color = color, .pos = offset + pos + glm::vec2{0, size.y}, .id = id, .pid = pid});
-		polyVertexData.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
-
-		polyVertexData.push_back({.color = color, .pos = offset + pos + size, .id = id, .pid = pid});
-		polyVertexData.push_back({.color = color, .pos = offset + pos + glm::vec2{size.x, 0}, .id = id, .pid = pid});
-		polyVertexData.push_back({.color = color, .pos = offset + pos, .id = id, .pid = pid});
+		drawVertex(pos, color);
+		drawVertex(pos + glm::vec2{0, size.y}, color);
+		drawVertex(pos + size, color);
+		drawVertex(pos + size, color);
+		drawVertex(pos + glm::vec2{size.x, 0}, color);
+		drawVertex(pos, color);
 	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {

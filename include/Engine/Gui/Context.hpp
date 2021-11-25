@@ -19,6 +19,7 @@
 #include <Engine/Gui/Cursor.hpp>
 #include <Engine/Gui/Action.hpp>
 #include <Engine/Gui/Theme.hpp>
+#include <Engine/ArrayView.hpp>
 
 namespace Engine {
 	class Camera;
@@ -233,7 +234,29 @@ namespace Engine::Gui {
 				lastBlink = Clock::now();
 			}
 
+
+			ENGINE_INLINE void drawVertex(const glm::vec2 pos, glm::vec4 color) {
+				polyVertexData.push_back({.color = color, .pos = pos + renderState.offset, .id = renderState.id, .pid = renderState.pid});
+			}
+
+			ENGINE_INLINE void drawTri(const glm::vec2 a, const glm::vec2 b, const glm::vec2 c, glm::vec4 color) {
+				drawVertex(a, color); drawVertex(b, color); drawVertex(c, color);
+			}
+
+			/**
+			 * Draws a convex polygon from a ordered set of perimeter points.
+			 * If the points are not in order the results are undefined.
+			 * 
+			 * @param points Three or more ordered perimeter points.
+			 * @param color The color of the polygon.
+			 */
+			void drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color);
+
+			/**
+			 * Draws a rectangle from a position and size.
+			 */
 			void drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color);
+
 			void drawString(glm::vec2 pos, const ShapedString* fstr);
 
 			void unsetActive();
