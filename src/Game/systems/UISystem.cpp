@@ -660,6 +660,13 @@ namespace Game {
 			panels.entityPane->toggle();
 		}
 
+		{
+			panels.graphTest = ctx->createPanel<Gui::Graph>(content);
+			panels.graphTest->setHeight(150);
+			panels.graphTest->setWidth(150);
+			panels.graphTest;
+		}
+
 		panels.infoPane->toggle();
 		panels.coordPane->toggle();
 		panels.netHealthPane->toggle();

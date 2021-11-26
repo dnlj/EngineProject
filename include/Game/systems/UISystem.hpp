@@ -13,6 +13,7 @@
 namespace Engine::Gui {
 	class Context;
 	class Window;
+	class Graph; // TODO: rm
 }
 
 namespace Game {
@@ -62,6 +63,7 @@ namespace Game {
 				class NetHealthPane* netHealthPane;
 				class NetGraphPane* netGraphPane;
 				class EntityPane* entityPane;
+				Engine::Gui::Graph* graphTest;
 			} panels;
 
 			void ui_connect();

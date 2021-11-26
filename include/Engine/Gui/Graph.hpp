@@ -14,48 +14,67 @@ namespace Engine::Gui {
 
 	class SubGraph {
 		protected:
-			bool rebuild = false;
-			std::vector<GraphVertex> data;
-			Gfx::Mesh mesh;
+			std::vector<glm::vec2> data;
 
 		public:
-			virtual void addPoint(glm::vec2 p) = 0;
-			Gfx::Mesh& getMesh() {
-				if (rebuild) {
-					mesh.setVertexData(Gfx::Primitive::TriangleStrip, data);
-				}
-				return mesh;
-			}
+			// TODO: this assumes inserting is already sorted
+			ENGINE_INLINE void addPoint(glm::vec2 p) { data.push_back(p); };
 	};
 
 	class AreaGraph : public SubGraph {
 		public:
-			virtual void addPoint(glm::vec2 p) {
-				rebuild = true;
-				data.push_back({
-					.pos = {p.x, 0},
-					.color = {1,0,0,1},
-				});
-				data.push_back({
-					.pos = p,
-					.color = {1,0,0,1},
-				});
+			void draw(const Panel* panel) const {
+				if (data.empty()) { return; }
+				auto ctx = panel->getContext();
+
+				const glm::vec2 scale = {1.0f, 1.0f}; // TODO: impl
+				const glm::vec2 min = {29, 0};
+				const float32 maxX = std::ceil(panel->getWidth() / scale.x);
+
+				const auto h = panel->getHeight();
+
+				const auto end = data.cend();
+				auto curr = data.cbegin();
+				auto prev = curr;
+
+				while (curr != end && curr->x <= min.x) { ++curr; }
+				if (curr == end) { return; }
+				if (curr == prev) { ++curr; }
+				prev = curr - 1;
+
+				int i = 0;
+				while (curr != end) {
+					if (prev->x > maxX) { break; }
+
+					glm::vec2 points[] = {
+						*prev - min,
+						*curr - min,
+						glm::vec2{curr->x - min.x, 0},
+						glm::vec2{prev->x - min.x, 0},
+					};
+
+					for (auto& p : points) {
+						p.y = h - p.y;
+					}
+
+					ctx->drawPoly(points, {1,0,1,1});
+
+					prev = curr;
+					++curr;
+				}
 			};
 	};
 
 	class Graph : public Panel {
 		private:
+			AreaGraph test;
 
 		public:
 			Graph(Context* context) : Panel{context} {
-				//Graphics::VertexFormat<2> format = {
-				//	.stride = sizeof(GraphVertex),
-				//	.attributes = {
-				//		// TODO: location depends on shader right?
-				//		{.location = 1, .size = 2, .type = GL_FLOAT, .offset = offsetof(GraphVertex, pos)},
-				//		{.location = 2, .size = 4, .type = GL_FLOAT, .offset = offsetof(GraphVertex, color)},
-				//	},
-				//};
+				test.addPoint({0,  10});
+				test.addPoint({30, 10});
+				test.addPoint({60, 15});
+				test.addPoint({90, 25});
 			}
 
 			// TODO: do we want an getPoint function like imgui or do we want our own addPoint function?
@@ -64,6 +83,12 @@ namespace Engine::Gui {
 			// The downside is that we have to store duplicate data.
 			//
 			// I think i want to to the addPoint way. how to handle culling data?
+
+			virtual void render() const override {
+				ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
+				test.draw(this);
+				//ctx->drawRect
+			}
 
 		private:
 	};

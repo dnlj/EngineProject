@@ -85,6 +85,6 @@ namespace Engine::Debug::GL {
 			<< "severity: " << severityEnumToString(severity) << "\n"
 			<< "message: " << message << "\n\n";
 
-		__debugbreak();
+		//__debugbreak();
 	}
 }
