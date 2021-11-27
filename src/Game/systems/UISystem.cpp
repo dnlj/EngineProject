@@ -491,9 +491,10 @@ namespace Game {
 
 			};
 
-			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
+			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, int> {
 				private:
 					Game::World& world;
+					int notTheSame = 0;
 
 				public:
 					using It = decltype(world.getFilter<ConnectionComponent>().begin());
@@ -504,9 +505,8 @@ namespace Game {
 					ENGINE_INLINE auto end() const { return world.getFilter<ConnectionComponent>().end(); }
 					ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
 
-					Checksum check(Id id) const {
-						// TODO: new value each update interval world.runTime or similar
-						return rand();
+					Checksum check(Id id) noexcept {
+						return ++notTheSame;
 					}
 
 					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {

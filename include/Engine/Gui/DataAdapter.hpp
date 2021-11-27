@@ -15,6 +15,7 @@ namespace Engine::Gui {
 	 * - `Panel* createPanel(Id id, Context& ctx)`, Creates a panel for an item.
 	 * - `void updatePanel(Id id, Panel* panel)`, Optional. Updates an existing panel for an item.
 	 * - `bool filter(Id id)`, Optional. Determines if an item should be used.
+	 * - `void update()`, Optional. Called once per adapter update.
 	 *
 	 * @tparam Self_ The CRTP derived class.
 	 * @tparam Id_ The type used to identify an item.
@@ -42,9 +43,12 @@ namespace Engine::Gui {
 			ENGINE_INLINE Self& self() noexcept { return *reinterpret_cast<Self*>(this); }
 			ENGINE_INLINE bool filter(const Id&) const noexcept { return true; }
 			ENGINE_INLINE void updatePanel(Id id, Panel* panel) const noexcept {}
+			ENGINE_INLINE void update() const noexcept {}
 
 			void operator()(Panel* parent) {
 				++iter;
+
+				self().update();
 
 				// Create and update items
 				for (auto it = self().begin(), e = self().end(); it != e; ++it) {
