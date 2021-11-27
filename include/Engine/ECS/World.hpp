@@ -178,7 +178,7 @@ namespace Engine::ECS {
 			/** TODO: doc */
 			bool performingRollback = false;
 
-			/** Beginning of last run. */
+			/** Beginning of most recent run. */
 			Clock::TimePoint beginTime;
 
 			// TODO: shouldnt this be part of snapshot? that would fix our issue with correct tickTime i think
@@ -646,7 +646,12 @@ namespace Engine::ECS {
 			 */
 			ENGINE_INLINE Clock::TimePoint getTickTime() const noexcept { return tickTime; };
 			ENGINE_INLINE Clock::TimePoint getTickTime(Tick tick) const noexcept { return history.get(tick).tickTime; };
-			
+
+			/**
+			 * The time at the start of the current run.
+			 */
+			ENGINE_INLINE Clock::TimePoint getTime() const noexcept { return beginTime; };
+
 			/**
 			 * Gets the time (in seconds) last update took to run.
 			 */
