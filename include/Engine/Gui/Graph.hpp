@@ -14,23 +14,37 @@ namespace Engine::Gui {
 
 	class SubGraph {
 		protected:
-			std::vector<glm::vec2> data;
+			Engine::RingBuffer<glm::vec2> data;
 
 		public:
 			// TODO: this assumes inserting is already sorted
-			ENGINE_INLINE void addPoint(glm::vec2 p) { data.push_back(p); };
+			ENGINE_INLINE void addPoint(glm::vec2 p) { data.push(p); };
+			virtual void draw(const Panel* panel) const = 0;
 	};
 
 	class AreaGraph : public SubGraph {
 		public:
+			glm::vec2 min = {};
+			glm::vec2 max = {100, 100};
+
+		public:
+			void trimData() {
+				while (true) {
+					auto it = data.cbegin();
+					if (it == data.cend()) { return; }
+
+					if (++it != data.cend() && it->x <= min.x) {
+						data.pop();
+					} else {
+						return;
+					}
+				}
+			}
+
 			void draw(const Panel* panel) const {
 				if (data.empty()) { return; }
 				auto ctx = panel->getContext();
-
-				const glm::vec2 scale = {1.0f, 1.0f}; // TODO: impl
-				const glm::vec2 min = {29, 0};
-				const float32 maxX = std::ceil(panel->getWidth() / scale.x);
-
+				const glm::vec2 scale = panel->getSize() / (max - min);
 				const auto h = panel->getHeight();
 
 				const auto end = data.cend();
@@ -39,12 +53,10 @@ namespace Engine::Gui {
 
 				while (curr != end && curr->x <= min.x) { ++curr; }
 				if (curr == end) { return; }
-				if (curr == prev) { ++curr; }
-				prev = curr - 1;
+				if (curr == prev) { ++curr; } else { prev = curr - 1; }
 
-				int i = 0;
 				while (curr != end) {
-					if (prev->x > maxX) { break; }
+					if (prev->x > max.x) { break; }
 
 					glm::vec2 points[] = {
 						*prev - min,
@@ -54,8 +66,10 @@ namespace Engine::Gui {
 					};
 
 					for (auto& p : points) {
-						p.y = h - p.y;
+						p.x *= scale.x;
+						p.y = h - p.y * scale.y;
 					}
+					// TODO: filter out empty polys (x==x or y==y==0)
 
 					ctx->drawPoly(points, {1,0,1,1});
 
@@ -66,15 +80,18 @@ namespace Engine::Gui {
 	};
 
 	class Graph : public Panel {
-		private:
-			AreaGraph test;
+		public: // TODO: private
+			std::vector<std::unique_ptr<SubGraph>> graphs;
 
 		public:
 			Graph(Context* context) : Panel{context} {
-				test.addPoint({0,  10});
-				test.addPoint({30, 10});
-				test.addPoint({60, 15});
-				test.addPoint({90, 25});
+				// TODO: rm 
+				//auto test = std::make_unique<AreaGraph>();
+				//test->addPoint({0,  10});
+				//test->addPoint({30, 10});
+				//test->addPoint({60, 15});
+				//test->addPoint({90, 25});
+				//graphs.push_back(std::move(test));
 			}
 
 			// TODO: do we want an getPoint function like imgui or do we want our own addPoint function?
@@ -86,8 +103,9 @@ namespace Engine::Gui {
 
 			virtual void render() const override {
 				ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
-				test.draw(this);
-				//ctx->drawRect
+				for (auto& graph : graphs) {
+					graph->draw(this);
+				}
 			}
 
 		private:

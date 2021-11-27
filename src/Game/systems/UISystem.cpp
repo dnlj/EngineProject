@@ -358,6 +358,8 @@ namespace Game {
 					Gui::Label* recv;
 					Gui::Label* loss;
 					Gui::Slider* recvRate;
+					Gui::Graph* graph;
+					Gui::AreaGraph* testArea;
 
 				public:
 					NetGraph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
@@ -422,8 +424,14 @@ namespace Game {
 							}
 						);
 
-						auto* graph = ctx->createPanel<Panel>(this);
+						graph = ctx->createPanel<Gui::Graph>(this);
 						graph->setHeight(200);
+
+						{
+							auto test = std::make_unique<Gui::AreaGraph>();
+							testArea = test.get();
+							graph->graphs.push_back(std::move(test));
+						}
 					}
 
 					void update(Engine::ECS::Entity ent, Game::World& world) {
@@ -439,6 +447,17 @@ namespace Game {
 						if (world.hasComponent<ActionComponent>(ent)) {
 							estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
 						}
+
+						const auto now = Engine::Clock::now();
+						testArea->addPoint({
+							Engine::Clock::Seconds{now.time_since_epoch()}.count(),
+							conn.getSendBandwidth(),
+						});
+
+						testArea->max.y = 15000;
+						testArea->max.x = Engine::Clock::Seconds{now.time_since_epoch()}.count();
+						testArea->min.x = Engine::Clock::Seconds{(now - std::chrono::milliseconds{5'000}).time_since_epoch()}.count();
+						testArea->trimData();
 
 						std::string buff;
 
@@ -486,9 +505,7 @@ namespace Game {
 					ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
 
 					Checksum check(Id id) const {
-						//uint64 hash = {};
-						//auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
-						// TODO:
+						// TODO: new value each update interval world.runTime or similar
 						return rand();
 					}
 
