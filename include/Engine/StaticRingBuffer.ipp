@@ -38,17 +38,6 @@ namespace Engine::detail {
 	}
 
 	template<class T, uint32 Size>
-	T& RingBufferImpl<T, Size>::back() noexcept {
-		ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::back called on empty buffer");
-		return dataT()[wrapIndex(stop - 1)];
-	}
-
-	template<class T, uint32 Size>
-	const T& RingBufferImpl<T, Size>::back() const noexcept {
-		return reinterpret_cast<RingBufferImpl&>(*this).back();
-	}
-
-	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::begin() noexcept -> Iterator {
 		return {this, 0};
 	}
@@ -64,32 +53,11 @@ namespace Engine::detail {
 	}
 	
 	template<class T, uint32 Size>
-	auto RingBufferImpl<T, Size>::capacity() const noexcept -> SizeType {
-		if constexpr (IsStatic) {
-			return Size;
-		} else {
-			return data.second;
-		}
-	}
-
-	template<class T, uint32 Size>
-	void RingBufferImpl<T, Size>::clear() {
-		while (!empty()) {
-			pop();
-		}
-	}
-	
-	template<class T, uint32 Size>
 	template<class... Args>
 	void RingBufferImpl<T, Size>::emplace(Args&&... args) {
 		ensureSpace();
 		new (dataT() + stop) T{std::forward<Args>(args)...};
 		elementAdded();
-	}
-	
-	template<class T, uint32 Size>
-	bool RingBufferImpl<T, Size>::empty() const noexcept {
-		return isEmpty;
 	}
 
 	template<class T, uint32 Size>
@@ -105,22 +73,6 @@ namespace Engine::detail {
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::cend() const noexcept -> ConstIterator {
 		return {this, size()};
-	}
-
-	template<class T, uint32 Size>
-	T& RingBufferImpl<T, Size>::front() noexcept {
-		ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::front called on empty buffer");
-		return dataT()[start];
-	}
-
-	template<class T, uint32 Size>
-	const T& RingBufferImpl<T, Size>::front() const noexcept {
-		return reinterpret_cast<RingBufferImpl&>(*this).front();
-	}
-
-	template<class T, uint32 Size>
-	bool RingBufferImpl<T, Size>::full() const noexcept {
-		return start == stop && !isEmpty;
 	}
 
 	template<class T, uint32 Size>
@@ -141,11 +93,6 @@ namespace Engine::detail {
 		ensureSpace();
 		new (dataT() + stop) T{std::move(obj)};
 		elementAdded();
-	}
-
-	template<class T, uint32 Size>
-	auto RingBufferImpl<T, Size>::size() const noexcept -> SizeType {
-		return stop < start ? stop + capacity() - start : stop - start;
 	}
 
 	template<class T, uint32 Size>
@@ -185,11 +132,5 @@ namespace Engine::detail {
 
 			*this = std::move(other);
 		}
-	}
-
-	template<class T, uint32 Size>
-	auto RingBufferImpl<T, Size>::wrapIndex(SizeType i) -> SizeType {
-		const auto c = capacity();
-		return (i + c) % c;
 	}
 }

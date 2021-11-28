@@ -95,19 +95,37 @@ namespace Engine {
 				[[nodiscard]] ConstIterator end() const noexcept;
 				[[nodiscard]] ConstIterator cend() const noexcept;
 
-				[[nodiscard]] SizeType capacity() const noexcept;
+				[[nodiscard]] ENGINE_INLINE SizeType capacity() const noexcept {
+					if constexpr (IsStatic) { return Size; } else { return data.second; }
+				}
 				
-				[[nodiscard]] SizeType size() const noexcept;
+				[[nodiscard]] SizeType size() const noexcept {
+					return stop < start ? stop + capacity() - start : stop - start;
+				}
 
-				[[nodiscard]] bool empty() const noexcept;
+				[[nodiscard]] ENGINE_INLINE bool empty() const noexcept { return isEmpty; }
 
-				[[nodiscard]] bool full() const noexcept;
+				[[nodiscard]] ENGINE_INLINE bool full() const noexcept {
+					return start == stop && !isEmpty;
+				}
 
-				[[nodiscard]] T& back() noexcept;
-				[[nodiscard]] const T& back() const noexcept;
+				[[nodiscard]] ENGINE_INLINE T& back() noexcept {
+					ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::back called on empty buffer");
+					return dataT()[wrapIndex(stop - 1)];
+				}
 
-				[[nodiscard]] T& front() noexcept;
-				[[nodiscard]] const T& front() const noexcept;
+				[[nodiscard]] ENGINE_INLINE const T& back() const noexcept{
+					return reinterpret_cast<RingBufferImpl&>(*this).back();
+				}
+
+				[[nodiscard]] ENGINE_INLINE T& front() noexcept {
+					ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::front called on empty buffer");
+					return dataT()[start];
+				}
+
+				[[nodiscard]] ENGINE_INLINE const T& front() const noexcept {
+					return reinterpret_cast<RingBufferImpl&>(*this).front();
+				}
 
 				template<class... Args>
 				void emplace(Args&&... args);
@@ -120,7 +138,7 @@ namespace Engine {
 
 				// TODO: reserve(n)
 
-				void clear();
+				ENGINE_INLINE void clear() { while (!empty()) { pop(); } }
 
 				friend void swap(RingBufferImpl& first, RingBufferImpl& second) requires IsDynamic {
 					using std::swap;
@@ -149,7 +167,11 @@ namespace Engine {
 				void elementAdded() noexcept;
 				void elementRemoved() noexcept;
 				void ensureSpace();
-				SizeType wrapIndex(SizeType i);
+
+				[[nodiscard]] ENGINE_INLINE SizeType wrapIndex(SizeType i) const noexcept {
+					const auto c = capacity();
+					return (i + c) % c;
+				}
 		};
 	}
 
