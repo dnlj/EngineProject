@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <memory>
+
 // Engine
 #include <Engine/Engine.hpp>
 
@@ -68,10 +71,11 @@ namespace Engine {
 
 			private:
 				// TODO: potential alignment issues?
-				std::conditional_t<IsStatic,
+				using Storage = std::conditional_t<IsStatic,
 					char[sizeof(T) * Size],
-					std::pair<char*, SizeType> // TODO: unique_ptr
-				> data;
+					std::pair<void*, SizeType> // TODO: unique_ptr
+				>;
+				Storage data; // TODO: rename data -> storage
 
 				/** The index of the first element */
 				SizeType start = 0;
@@ -88,7 +92,7 @@ namespace Engine {
 				RingBufferImpl(SizeType sz = 16) requires IsDynamic {
 					// TODO: replace with reserve(sz);
 					data.second = sz;
-					data.first = new char[sizeof(T) * sz];
+					data.first = new byte[sizeof(T) * sz];
 				}
 				
 				~RingBufferImpl(){
@@ -172,10 +176,30 @@ namespace Engine {
 					elementRemoved();
 				}
 
-				// TODO: reserve(n)
-
+				// TODO: std::destroy(begin(), end()) and update start/stop/empty
 				ENGINE_INLINE void clear() { while (!empty()) { pop(); } }
+				
+				ENGINE_INLINE void reserve(SizeType n) requires IsStatic {
+					ENGINE_DEBUG_ASSERT(n <= capacity());
+				}
+				
+				void reserve(SizeType n) requires IsDynamic {
+					if (capacity() >= n) { return; }
 
+					Storage temp = {};
+					temp.first = new byte[sizeof(T) * n]; // TODO: alignment, probably add func to create a Storage of size n
+					temp.second = n;
+
+					const auto sz = size();
+					std::uninitialized_move(begin(), end(), static_cast<T*>(temp.first));
+					clear();
+					start = 0;
+					stop = sz;
+					delete[] data.first;
+					data = temp;
+					isEmpty = sz == 0;
+				}
+				
 				friend void swap(RingBufferImpl& first, RingBufferImpl& second) requires IsDynamic {
 					using std::swap;
 					swap(first.data, second.data);
