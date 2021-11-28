@@ -54,21 +54,23 @@ namespace Engine {
 						T* operator->() const { return &**this; }
 						T& operator[](Index n) const { return *(*this + n); }
 
-						bool operator==(const IteratorBase& other) const { return i == other.i; }
-						bool operator!=(const IteratorBase& other) const { return !(*this == other); }
-						bool operator<(const IteratorBase& other) const { return i < other.i; }
-						bool operator<=(const IteratorBase& other) const { return i <= other.i; }
-						bool operator>=(const IteratorBase& other) const { return i >= other.i; }
-						bool operator>(const IteratorBase& other) const { return i > other.i; }
+						[[nodiscard]] bool operator==(const IteratorBase& other) const { return i == other.i; }
+						[[nodiscard]] bool operator!=(const IteratorBase& other) const { return !(*this == other); }
+						[[nodiscard]] bool operator<(const IteratorBase& other) const { return i < other.i; }
+						[[nodiscard]] bool operator<=(const IteratorBase& other) const { return i <= other.i; }
+						[[nodiscard]] bool operator>=(const IteratorBase& other) const { return i >= other.i; }
+						[[nodiscard]] bool operator>(const IteratorBase& other) const { return i > other.i; }
 				};
 
 				using Iterator = IteratorBase<T>;
 				using ConstIterator = IteratorBase<const T>;
 
 			public:
+				// TODO: requires clause?
 				template<class = std::enable_if_t<IsStatic>>
 				RingBufferImpl();
-
+				
+				// TODO: requires clause?
 				template<class = std::enable_if_t<!IsStatic>>
 				RingBufferImpl(SizeType sz = 16);
 
@@ -83,44 +85,45 @@ namespace Engine {
 
 				const T& operator[](SizeType i) const;
 
-				T& back() noexcept;
-				const T& back() const noexcept;
+				[[nodiscard]] Iterator begin() noexcept;
+				[[nodiscard]] ConstIterator begin() const noexcept;
+				[[nodiscard]] ConstIterator cbegin() const noexcept;
+				
+				[[nodiscard]] Iterator end() noexcept;
+				[[nodiscard]] ConstIterator end() const noexcept;
+				[[nodiscard]] ConstIterator cend() const noexcept;
 
-				Iterator begin() noexcept;
-				ConstIterator begin() const noexcept;
-				ConstIterator cbegin() const noexcept;
+				[[nodiscard]] SizeType capacity() const noexcept;
+				
+				[[nodiscard]] SizeType size() const noexcept;
 
-				SizeType capacity() const noexcept;
+				[[nodiscard]] bool empty() const noexcept;
+
+				[[nodiscard]] bool full() const noexcept;
+
+				[[nodiscard]] T& back() noexcept;
+				[[nodiscard]] const T& back() const noexcept;
+
+				[[nodiscard]] T& front() noexcept;
+				[[nodiscard]] const T& front() const noexcept;
+
+				template<class... Args>
+				void emplace(Args&&... args);
+
+				void push(const T& obj);
+			
+				void push(T&& obj);
+
+				void pop();
 
 				// TODO: reserve(n)
 
 				void clear();
 
-				template<class... Args>
-				void emplace(Args&&... args);
-
-				bool empty() const noexcept;
-				
-				Iterator end() noexcept;
-				ConstIterator end() const noexcept;
-				ConstIterator cend() const noexcept;
-				
-				T& front() noexcept;
-				const T& front() const noexcept;
-
-				bool full() const noexcept;
-
-				void pop();
-
-				void push(const T& obj);
-			
-				void push(T&& obj);
-			
-				SizeType size() const noexcept;
-
 				void swap(RingBufferImpl& other);
 
 			private:
+				// TODO: potential alignment issues?
 				std::conditional_t<IsStatic,
 					char[sizeof(T) * Size],
 					std::pair<char*, SizeType> // TODO: unique_ptr
