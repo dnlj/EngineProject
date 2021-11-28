@@ -160,20 +160,20 @@ namespace Engine {
 				dense.pop_back();
 			}
 
-			ENGINE_INLINE bool contains(const Key& key) const {
+			[[nodiscard]] ENGINE_INLINE bool contains(const Key& key) const {
 				const auto i = hash(key);
 				return i < sparse.size() && sparse[i] != invalid;
 			}
 
-			Val& get(const Key& key) {
+			[[nodiscard]] Val& get(const Key& key) {
 				return dense[sparse[hash(key)]].second;
 			}
 
-			ENGINE_INLINE const Val& get(const Key& key) const {
+			[[nodiscard]] ENGINE_INLINE const Val& get(const Key& key) const {
 				return dense[sparse[hash(key)]].second;
 			}
 
-			ENGINE_INLINE Index size() const {
+			[[nodiscard]] ENGINE_INLINE Index size() const {
 				return static_cast<Index>(dense.size());
 			}
 
@@ -213,27 +213,27 @@ namespace Engine {
 
 			// TODO: empty
 
-			ENGINE_INLINE auto begin() {
+			[[nodiscard]] ENGINE_INLINE auto begin() {
 				return Iterator{dense.data()};
 			}
 
-			ENGINE_INLINE auto cbegin() const {
+			[[nodiscard]] ENGINE_INLINE auto cbegin() const {
 				return ConstIterator{dense.data()};
 			}
 
-			ENGINE_INLINE auto begin() const {
+			[[nodiscard]] ENGINE_INLINE auto begin() const {
 				return cbegin();
 			}
 
-			ENGINE_INLINE auto end() {
+			[[nodiscard]] ENGINE_INLINE auto end() {
 				return Iterator{dense.data() + dense.size()};
 			}
 
-			ENGINE_INLINE auto cend() const {
+			[[nodiscard]] ENGINE_INLINE auto cend() const {
 				return ConstIterator{dense.data() + dense.size()};
 			}
 
-			ENGINE_INLINE auto end() const {
+			[[nodiscard]] ENGINE_INLINE auto end() const {
 				return cend();
 			}
 
