@@ -11,6 +11,7 @@ namespace Engine {
 		class RingBufferImpl {
 			public:
 				constexpr static bool IsStatic = Size != 0;
+				constexpr static bool IsDynamic = !IsStatic;
 				using size_type = decltype(Size);
 				using SizeType = size_type;
 
@@ -66,20 +67,21 @@ namespace Engine {
 				using ConstIterator = IteratorBase<const T>;
 
 			public:
-				// TODO: requires clause?
-				template<class = std::enable_if_t<IsStatic>>
-				RingBufferImpl();
+				RingBufferImpl() requires IsStatic = default;
 				
-				// TODO: requires clause?
-				template<class = std::enable_if_t<!IsStatic>>
-				RingBufferImpl(SizeType sz = 16);
+				RingBufferImpl(SizeType sz = 16) requires IsDynamic {
+					// TODO: replace with reserve(sz);
+					data.second = sz;
+					data.first = new char[sizeof(T) * sz];
+				}
 
 				~RingBufferImpl();
 
-				RingBufferImpl(const RingBufferImpl& other);
-				RingBufferImpl(RingBufferImpl&& other);
-				auto& operator=(const RingBufferImpl& other);
-				auto& operator=(RingBufferImpl&& other);
+				RingBufferImpl(const RingBufferImpl& other) { *this = other; }
+				RingBufferImpl(RingBufferImpl&& other) requires IsDynamic { swap(*this, other); }
+
+				RingBufferImpl& operator=(const RingBufferImpl& other);
+				RingBufferImpl& operator=(RingBufferImpl&& other) requires IsDynamic { swap(*this, other); return *this; }
 
 				T& operator[](SizeType i);
 
@@ -120,7 +122,13 @@ namespace Engine {
 
 				void clear();
 
-				void swap(RingBufferImpl& other);
+				friend void swap(RingBufferImpl& first, RingBufferImpl& second) requires IsDynamic {
+					using std::swap;
+					swap(first.data, second.data);
+					swap(first.start, second.start);
+					swap(first.stop, second.stop);
+					swap(first.isEmpty, second.isEmpty);
+				}
 
 			private:
 				// TODO: potential alignment issues?
@@ -143,9 +151,6 @@ namespace Engine {
 				void ensureSpace();
 				SizeType wrapIndex(SizeType i);
 		};
-
-		template<class T>
-		void swap(RingBufferImpl<T, 0>& first, RingBufferImpl<T, 0>& second) { first.swap(second); };
 	}
 
 	template<class T>

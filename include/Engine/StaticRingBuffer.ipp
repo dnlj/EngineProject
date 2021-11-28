@@ -6,29 +6,16 @@
 
 namespace Engine::detail {
 	template<class T, uint32 Size>
-	template<class>
-	RingBufferImpl<T, Size>::RingBufferImpl() {
-	}
-
-	template<class T, uint32 Size>
-	template<class>
-	RingBufferImpl<T, Size>::RingBufferImpl(SizeType sz) {
-		data.second = sz;
-		data.first = new char[sizeof(T) * sz];
-	}
-
-	template<class T, uint32 Size>
 	RingBufferImpl<T, Size>::~RingBufferImpl() {
 		clear();
-
-		if constexpr (!IsStatic) {
-			delete[] data.first;
-		}
+		if constexpr (!IsStatic) { delete[] data.first; }
 	}
-	
+
 	template<class T, uint32 Size>
-	RingBufferImpl<T, Size>::RingBufferImpl(const RingBufferImpl& other) {
-		if constexpr (!IsStatic) {
+	auto RingBufferImpl<T, Size>::operator=(const RingBufferImpl& other) -> RingBufferImpl& {
+		clear();
+
+		if constexpr (!IsStatic) { // TODO: replace with reserve(other.size());
 			data.second = other.data.second;
 			data.first = new char[sizeof(T) * data.second];
 		}
@@ -36,30 +23,7 @@ namespace Engine::detail {
 		for (const auto& v : other) {
 			push(v);
 		}
-	}
-	
-	template<class T, uint32 Size>
-	RingBufferImpl<T, Size>::RingBufferImpl(RingBufferImpl&& other) {
-		*this = other;
-	}
-	
-	template<class T, uint32 Size>
-	auto& RingBufferImpl<T, Size>::operator=(const RingBufferImpl& other) {
-		auto cpy = other;
-		*this = std::move(cpy);
-		return *this;
-	}
-	
-	template<class T, uint32 Size>
-	auto& RingBufferImpl<T, Size>::operator=(RingBufferImpl&& other) {
-		if constexpr (IsStatic) {
-			start = other.start;
-			stop = other.stop;
-			isEmpty = other.isEmpty;
-			data = other.data;
-		} else {
-			swap(other);
-		}
+
 		return *this;
 	}
 
@@ -182,15 +146,6 @@ namespace Engine::detail {
 	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::size() const noexcept -> SizeType {
 		return stop < start ? stop + capacity() - start : stop - start;
-	}
-	
-	template<class T, uint32 Size>
-	void RingBufferImpl<T, Size>::swap(RingBufferImpl& other) {
-		using std::swap;
-		swap(data, other.data);
-		swap(start, other.start);
-		swap(stop, other.stop);
-		swap(isEmpty, other.isEmpty);
 	}
 
 	template<class T, uint32 Size>
