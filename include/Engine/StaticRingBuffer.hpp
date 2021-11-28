@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/AlignedStorage.hpp>
 
 
 namespace Engine {
@@ -70,10 +71,10 @@ namespace Engine {
 				using ConstIterator = IteratorBase<const T>;
 
 			private:
-				// TODO: potential alignment issues?
+				using Proxy = AlignedStorage<T>;
 				using Storage = std::conditional_t<IsStatic,
-					char[sizeof(T) * Size],
-					std::pair<void*, SizeType> // TODO: unique_ptr
+					Proxy[Size],
+					std::pair<Proxy*, SizeType>
 				>;
 				Storage data; // TODO: rename data -> storage
 
@@ -90,9 +91,8 @@ namespace Engine {
 				RingBufferImpl() requires IsStatic = default;
 				
 				RingBufferImpl(SizeType sz = 16) requires IsDynamic {
-					// TODO: replace with reserve(sz);
+					data.first = new Proxy[sz];
 					data.second = sz;
-					data.first = new byte[sizeof(T) * sz];
 				}
 				
 				~RingBufferImpl(){
@@ -176,10 +176,14 @@ namespace Engine {
 					elementRemoved();
 				}
 
-				// TODO: std::destroy(begin(), end()) and update start/stop/empty
-				ENGINE_INLINE void clear() { while (!empty()) { pop(); } }
+				ENGINE_INLINE void clear() {
+					std::destroy(begin(), end());
+					start = 0;
+					stop = 0;
+					isEmpty = true;
+				}
 				
-				ENGINE_INLINE void reserve(SizeType n) requires IsStatic {
+				ENGINE_INLINE void reserve(SizeType n) const noexcept requires IsStatic {
 					ENGINE_DEBUG_ASSERT(n <= capacity());
 				}
 				
@@ -187,11 +191,11 @@ namespace Engine {
 					if (capacity() >= n) { return; }
 
 					Storage temp = {};
-					temp.first = new byte[sizeof(T) * n]; // TODO: alignment, probably add func to create a Storage of size n
+					temp.first = new Proxy[n];
 					temp.second = n;
 
 					const auto sz = size();
-					std::uninitialized_move(begin(), end(), static_cast<T*>(temp.first));
+					std::uninitialized_move(begin(), end(), &temp.first->as());
 					clear();
 					start = 0;
 					stop = sz;
@@ -207,7 +211,7 @@ namespace Engine {
 					swap(first.stop, second.stop);
 					swap(first.isEmpty, second.isEmpty);
 				}
-				
+
 			private:
 				ENGINE_INLINE T* dataT() noexcept {
 					if constexpr (IsStatic) {
