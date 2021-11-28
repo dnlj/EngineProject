@@ -74,26 +74,33 @@ namespace Engine {
 					data.second = sz;
 					data.first = new char[sizeof(T) * sz];
 				}
-
-				~RingBufferImpl();
+				
+				~RingBufferImpl(){
+					clear();
+					if constexpr (IsDynamic) { delete[] data.first; }
+				}
 
 				RingBufferImpl(const RingBufferImpl& other) { *this = other; }
 				RingBufferImpl(RingBufferImpl&& other) requires IsDynamic { swap(*this, other); }
-
+				
 				RingBufferImpl& operator=(const RingBufferImpl& other);
 				RingBufferImpl& operator=(RingBufferImpl&& other) requires IsDynamic { swap(*this, other); return *this; }
-
-				T& operator[](SizeType i);
-
-				const T& operator[](SizeType i) const;
-
-				[[nodiscard]] Iterator begin() noexcept;
-				[[nodiscard]] ConstIterator begin() const noexcept;
-				[[nodiscard]] ConstIterator cbegin() const noexcept;
 				
-				[[nodiscard]] Iterator end() noexcept;
-				[[nodiscard]] ConstIterator end() const noexcept;
-				[[nodiscard]] ConstIterator cend() const noexcept;
+				[[nodiscard]] ENGINE_INLINE T& operator[](SizeType i) noexcept {
+					return dataT()[wrapIndex(start + i)];
+				}
+
+				[[nodiscard]] ENGINE_INLINE const T& operator[](SizeType i) const noexcept {
+					return const_cast<RingBufferImpl&>(*this)[i];
+				}
+
+				[[nodiscard]] ENGINE_INLINE Iterator begin() noexcept { return {this, 0}; }
+				[[nodiscard]] ENGINE_INLINE ConstIterator begin() const noexcept { return cbegin(); }
+				[[nodiscard]] ENGINE_INLINE ConstIterator cbegin() const noexcept{ return {this, 0}; }
+				
+				[[nodiscard]] ENGINE_INLINE Iterator end() noexcept { return {this, size()}; }
+				[[nodiscard]] ENGINE_INLINE ConstIterator end() const noexcept { return cend(); }
+				[[nodiscard]] ENGINE_INLINE ConstIterator cend() const noexcept { return {this, size()}; }
 
 				[[nodiscard]] ENGINE_INLINE SizeType capacity() const noexcept {
 					if constexpr (IsStatic) { return Size; } else { return data.second; }
@@ -105,9 +112,7 @@ namespace Engine {
 
 				[[nodiscard]] ENGINE_INLINE bool empty() const noexcept { return isEmpty; }
 
-				[[nodiscard]] ENGINE_INLINE bool full() const noexcept {
-					return start == stop && !isEmpty;
-				}
+				[[nodiscard]] ENGINE_INLINE bool full() const noexcept { return start == stop && !isEmpty; }
 
 				[[nodiscard]] ENGINE_INLINE T& back() noexcept {
 					ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::back called on empty buffer");
@@ -131,7 +136,7 @@ namespace Engine {
 				void emplace(Args&&... args);
 
 				void push(const T& obj);
-			
+				
 				void push(T&& obj);
 
 				void pop();
@@ -147,7 +152,7 @@ namespace Engine {
 					swap(first.stop, second.stop);
 					swap(first.isEmpty, second.isEmpty);
 				}
-
+				
 			private:
 				// TODO: potential alignment issues?
 				std::conditional_t<IsStatic,
@@ -160,9 +165,17 @@ namespace Engine {
 
 				/** The index of the last element plus one */
 				SizeType stop = 0;
+
+				/** Used to determine if we are empty or full (start == stop in both cases) */
 				bool isEmpty = true;
 
-				T* dataT() noexcept;
+				ENGINE_INLINE T* dataT() noexcept {
+					if constexpr (IsStatic) {
+						return reinterpret_cast<T*>(&data);
+					} else {
+						return reinterpret_cast<T*>(data.first);
+					}
+				}
 
 				void elementAdded() noexcept;
 				void elementRemoved() noexcept;

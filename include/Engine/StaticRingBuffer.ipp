@@ -6,12 +6,6 @@
 
 namespace Engine::detail {
 	template<class T, uint32 Size>
-	RingBufferImpl<T, Size>::~RingBufferImpl() {
-		clear();
-		if constexpr (!IsStatic) { delete[] data.first; }
-	}
-
-	template<class T, uint32 Size>
 	auto RingBufferImpl<T, Size>::operator=(const RingBufferImpl& other) -> RingBufferImpl& {
 		clear();
 
@@ -28,51 +22,11 @@ namespace Engine::detail {
 	}
 
 	template<class T, uint32 Size>
-	T& RingBufferImpl<T, Size>::operator[](SizeType i) {
-		return dataT()[wrapIndex(start + i)];
-	}
-
-	template<class T, uint32 Size>
-	const T& RingBufferImpl<T, Size>::operator[](SizeType i) const {
-		return const_cast<RingBufferImpl&>(*this)[i];
-	}
-
-	template<class T, uint32 Size>
-	auto RingBufferImpl<T, Size>::begin() noexcept -> Iterator {
-		return {this, 0};
-	}
-
-	template<class T, uint32 Size>
-	auto RingBufferImpl<T, Size>::begin() const noexcept -> ConstIterator {
-		return cbegin();
-	}
-
-	template<class T, uint32 Size>
-	auto RingBufferImpl<T, Size>::cbegin() const noexcept -> ConstIterator {
-		return {this, 0};
-	}
-	
-	template<class T, uint32 Size>
 	template<class... Args>
 	void RingBufferImpl<T, Size>::emplace(Args&&... args) {
 		ensureSpace();
 		new (dataT() + stop) T{std::forward<Args>(args)...};
 		elementAdded();
-	}
-
-	template<class T, uint32 Size>
-	auto RingBufferImpl<T, Size>::end() noexcept -> Iterator {
-		return {this, size()};
-	}
-
-	template<class T, uint32 Size>
-	auto RingBufferImpl<T, Size>::end() const noexcept -> ConstIterator {
-		return cend();
-	}
-
-	template<class T, uint32 Size>
-	auto RingBufferImpl<T, Size>::cend() const noexcept -> ConstIterator {
-		return {this, size()};
 	}
 
 	template<class T, uint32 Size>
@@ -93,15 +47,6 @@ namespace Engine::detail {
 		ensureSpace();
 		new (dataT() + stop) T{std::move(obj)};
 		elementAdded();
-	}
-
-	template<class T, uint32 Size>
-	T* RingBufferImpl<T, Size>::dataT() noexcept {
-		if constexpr (IsStatic) {
-			return reinterpret_cast<T*>(&data);
-		} else {
-			return reinterpret_cast<T*>(data.first);
-		}
 	}
 
 	template<class T, uint32 Size>
