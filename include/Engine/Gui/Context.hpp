@@ -200,10 +200,23 @@ namespace Engine::Gui {
 			glm::vec2 clickLastPos = {};
 			Clock::TimePoint clickLastTime = {};
 
+			/* Other metrics */
+			/**
+			 * The resizable area around a window.
+			 *
+			 * Ideally we would query SM_C(X/Y)SIZEFRAME but these return incorrect values.
+			 * With GetSystemMetrics(ForDpi) the size frame is always 4 regardless of dpi, and scale.
+			 * 
+			 * The same issue is present with SPI_GETNONCLIENTMETRICS and SystemParametersInfo(ForDPI).
+			 */
+			constexpr static glm::vec2 resizeBorderSize = {7, 7}; // TODO: adjust for DPI aware - WM_DPICHANGED
+
 		public:
 			Context(ShaderManager& shaderManager, Camera& camera);
 			Context(Context&) = delete;
 			~Context();
+
+			ENGINE_INLINE constexpr static auto getResizeBorderSize() noexcept { return resizeBorderSize; }
 
 			ENGINE_INLINE void setUserdata(void* ptr) noexcept { userdata = ptr; }
 
@@ -224,6 +237,7 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void setNativeWindowHandle(const NativeHandle handle) noexcept {
 				nativeHandle = handle;
+				configUserSettings(); // TODO: rm
 			}
 
 			ENGINE_INLINE bool isBlinking() const noexcept {

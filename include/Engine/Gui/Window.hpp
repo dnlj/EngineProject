@@ -28,8 +28,8 @@ namespace Engine::Gui {
 					virtual bool canFocus() const override { return true; }
 			};
 			
-			constexpr static float32 outBorder = 5;
-			constexpr static float32 inBorder = 2; // TODO: i dont think we really want an in border. just tall corners.
+			constexpr static float32 outBorder = Context::getResizeBorderSize().x;
+			constexpr static float32 inBorder = outBorder; // Because of how hoverWithin works this is just corner height now.
 
 			int resizeDir = 0; // 1 = top, then clockwise
 			bool resizing = false;
@@ -42,7 +42,6 @@ namespace Engine::Gui {
 		public:
 			Window(Context* context);
 
-			
 			ENGINE_INLINE auto getContent() const noexcept { return content; }
 			
 			virtual void onBeginHover() override { hoverWithin = true; };
