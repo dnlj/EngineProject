@@ -132,7 +132,8 @@ namespace Engine {
 				}
 				
 				[[nodiscard]] SizeType size() const noexcept {
-					return stop < start ? stop + capacity() - start : stop - start;
+					if (empty()) { return 0; }
+					return (stop - start) + (stop <= start ? capacity() : 0);
 				}
 
 				[[nodiscard]] ENGINE_INLINE bool empty() const noexcept { return isEmpty; }
@@ -201,12 +202,12 @@ namespace Engine {
 
 					const auto sz = size();
 					std::uninitialized_move(begin(), end(), &temp.first->as());
+
 					clear();
-					start = 0;
 					stop = sz;
+
 					delete[] data.first;
 					data = temp;
-					isEmpty = sz == 0;
 				}
 				
 				friend void swap(RingBufferImpl& first, RingBufferImpl& second) requires IsDynamic {
@@ -244,7 +245,7 @@ namespace Engine {
 
 				ENGINE_INLINE void ensureSpace() requires IsDynamic {
 					if (!full()) { return; }
-					reserve(data.second + (data.second / 2));
+					reserve(data.second + (data.second / 2)); // 1.5 Growth factor
 				}
 
 				[[nodiscard]] ENGINE_INLINE SizeType wrapIndex(SizeType i) const noexcept {
