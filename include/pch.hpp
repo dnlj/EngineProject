@@ -54,7 +54,7 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/Hash.hpp>
-#include <Engine/StaticRingBuffer.hpp>
+#include <Engine/RingBuffer.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/SparseSet.hpp>
 #include <Engine/Net/IPv4Address.hpp>

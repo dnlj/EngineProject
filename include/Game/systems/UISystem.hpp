@@ -4,7 +4,7 @@
 #include <cmath>
 
 // Engine
-#include <Engine/StaticRingBuffer.hpp>
+#include <Engine/RingBuffer.hpp>
 #include <Engine/ImGui/ImGui.hpp>
 
 // Game

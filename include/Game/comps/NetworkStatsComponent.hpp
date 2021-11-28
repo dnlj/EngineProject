@@ -2,7 +2,7 @@
 
 // Engine
 #include <Engine/Clock.hpp>
-#include <Engine/StaticRingBuffer.hpp>
+#include <Engine/RingBuffer.hpp>
 
 // Game
 #include <Game/Common.hpp>

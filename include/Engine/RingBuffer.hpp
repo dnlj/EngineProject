@@ -9,7 +9,6 @@
 
 
 namespace Engine {
-	// TODO: doc all
 	namespace detail {
 		template<class T, uint32 Size = 0>
 		class RingBufferImpl {
@@ -103,7 +102,13 @@ namespace Engine {
 				RingBufferImpl(const RingBufferImpl& other) { *this = other; }
 				RingBufferImpl(RingBufferImpl&& other) requires IsDynamic { swap(*this, other); }
 				
-				RingBufferImpl& operator=(const RingBufferImpl& other);
+				RingBufferImpl& operator=(const RingBufferImpl& other){
+					clear();
+					reserve(other.data.second);
+					for (const auto& v : other) { push(v); }
+					return *this;
+				}
+
 				RingBufferImpl& operator=(RingBufferImpl&& other) requires IsDynamic { swap(*this, other); return *this; }
 				
 				[[nodiscard]] ENGINE_INLINE T& operator[](SizeType i) noexcept {
@@ -233,7 +238,14 @@ namespace Engine {
 					isEmpty = start == stop;
 				}
 
-				void ensureSpace();
+				ENGINE_INLINE void ensureSpace() const noexcept requires IsStatic {
+					ENGINE_DEBUG_ASSERT(!full());
+				}
+
+				ENGINE_INLINE void ensureSpace() requires IsDynamic {
+					if (!full()) { return; }
+					reserve(data.second + (data.second / 2));
+				}
 
 				[[nodiscard]] ENGINE_INLINE SizeType wrapIndex(SizeType i) const noexcept {
 					const auto c = capacity();
@@ -251,8 +263,4 @@ namespace Engine {
 	class StaticRingBuffer : public detail::RingBufferImpl<T, Size> {
 		using detail::RingBufferImpl<T, Size>::RingBufferImpl;
 	};
-
-
 }
-
-#include <Engine/StaticRingBuffer.ipp>

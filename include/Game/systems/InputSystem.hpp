@@ -7,7 +7,7 @@
 // Engine
 #include <Engine/Clock.hpp>
 #include <Engine/Input/Value.hpp>
-#include <Engine/StaticRingBuffer.hpp>
+#include <Engine/RingBuffer.hpp>
 
 // Game
 #include <Game/System.hpp>
