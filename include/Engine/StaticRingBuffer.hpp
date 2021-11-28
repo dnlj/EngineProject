@@ -66,6 +66,22 @@ namespace Engine {
 				using Iterator = IteratorBase<T>;
 				using ConstIterator = IteratorBase<const T>;
 
+			private:
+				// TODO: potential alignment issues?
+				std::conditional_t<IsStatic,
+					char[sizeof(T) * Size],
+					std::pair<char*, SizeType> // TODO: unique_ptr
+				> data;
+
+				/** The index of the first element */
+				SizeType start = 0;
+
+				/** The index of the last element plus one */
+				SizeType stop = 0;
+
+				/** Used to determine if we are empty or full (start == stop in both cases) */
+				bool isEmpty = true;
+
 			public:
 				RingBufferImpl() requires IsStatic = default;
 				
@@ -133,13 +149,28 @@ namespace Engine {
 				}
 
 				template<class... Args>
-				void emplace(Args&&... args);
+				void emplace(Args&&... args) {
+					ensureSpace();
+					new (dataT() + stop) T(std::forward<Args>(args)...);
+					elementAdded();
+				}
 
-				void push(const T& obj);
+				void push(const T& obj) {
+					ensureSpace();
+					new (dataT() + stop) T(obj);
+					elementAdded();
+				}
 				
-				void push(T&& obj);
+				void push(T&& obj) {
+					ensureSpace();
+					new (dataT() + stop) T(std::move(obj));
+					elementAdded();
+				}
 
-				void pop();
+				void pop() {
+					dataT()[start].~T();
+					elementRemoved();
+				}
 
 				// TODO: reserve(n)
 
@@ -154,21 +185,6 @@ namespace Engine {
 				}
 				
 			private:
-				// TODO: potential alignment issues?
-				std::conditional_t<IsStatic,
-					char[sizeof(T) * Size],
-					std::pair<char*, SizeType> // TODO: unique_ptr
-				> data;
-
-				/** The index of the first element */
-				SizeType start = 0;
-
-				/** The index of the last element plus one */
-				SizeType stop = 0;
-
-				/** Used to determine if we are empty or full (start == stop in both cases) */
-				bool isEmpty = true;
-
 				ENGINE_INLINE T* dataT() noexcept {
 					if constexpr (IsStatic) {
 						return reinterpret_cast<T*>(&data);
@@ -177,8 +193,18 @@ namespace Engine {
 					}
 				}
 
-				void elementAdded() noexcept;
-				void elementRemoved() noexcept;
+				void elementAdded() noexcept {
+					ENGINE_DEBUG_ASSERT(!full(), "Element added to full RingBuffer");
+					stop = wrapIndex(++stop);
+					isEmpty = false;
+				}
+
+				void elementRemoved() noexcept {
+					ENGINE_DEBUG_ASSERT(!empty(), "Element removed from empty RingBuffer");
+					start = wrapIndex(++start);
+					isEmpty = start == stop;
+				}
+
 				void ensureSpace();
 
 				[[nodiscard]] ENGINE_INLINE SizeType wrapIndex(SizeType i) const noexcept {

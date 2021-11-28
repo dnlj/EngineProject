@@ -22,48 +22,6 @@ namespace Engine::detail {
 	}
 
 	template<class T, uint32 Size>
-	template<class... Args>
-	void RingBufferImpl<T, Size>::emplace(Args&&... args) {
-		ensureSpace();
-		new (dataT() + stop) T{std::forward<Args>(args)...};
-		elementAdded();
-	}
-
-	template<class T, uint32 Size>
-	 void RingBufferImpl<T, Size>::pop() {
-		dataT()[start].~T();
-		elementRemoved();
-	}
-
-	template<class T, uint32 Size>
-	void RingBufferImpl<T, Size>::push(const T& obj) {
-		ensureSpace();
-		new (dataT() + stop) T{obj};
-		elementAdded();
-	}
-
-	template<class T, uint32 Size>
-	void RingBufferImpl<T, Size>::push(T&& obj) {
-		ensureSpace();
-		new (dataT() + stop) T{std::move(obj)};
-		elementAdded();
-	}
-
-	template<class T, uint32 Size>
-	void RingBufferImpl<T, Size>::elementAdded() noexcept {
-		ENGINE_DEBUG_ASSERT(!full(), "Element added to full RingBuffer");
-		stop = wrapIndex(++stop);
-		isEmpty = false;
-	}
-
-	template<class T, uint32 Size>
-	void RingBufferImpl<T, Size>::elementRemoved() noexcept {
-		ENGINE_DEBUG_ASSERT(!empty(), "Element removed from empty RingBuffer");
-		start = wrapIndex(++start);
-		isEmpty = start == stop;
-	}
-	
-	template<class T, uint32 Size>
 	void RingBufferImpl<T, Size>::ensureSpace() {
 		if constexpr (!IsStatic) {
 			if (!full()) { return; }
