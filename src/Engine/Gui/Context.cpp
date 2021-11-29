@@ -530,7 +530,7 @@ namespace Engine::Gui {
 		auto end = points.end();
 
 		while (next < end) {
-			drawTri(*begin, *curr, *next, {0, 1, 1, 1});
+			drawTri(*begin, *curr, *next, color);
 			curr = next;
 			++next;
 		}

@@ -13,6 +13,11 @@ namespace Engine::Gui {
 	};
 
 	class SubGraph {
+		public:
+			glm::vec2 min = {};
+			glm::vec2 max = {100, 100};
+			glm::vec4 color = {1,0,0,1};
+
 		protected:
 			Engine::RingBuffer<glm::vec2> data;
 
@@ -20,14 +25,7 @@ namespace Engine::Gui {
 			// TODO: this assumes inserting is already sorted
 			ENGINE_INLINE void addPoint(glm::vec2 p) { data.push(p); };
 			virtual void draw(const Panel* panel) const = 0;
-	};
 
-	class AreaGraph : public SubGraph {
-		public:
-			glm::vec2 min = {};
-			glm::vec2 max = {100, 100};
-
-		public:
 			void trimData() {
 				while (true) {
 					auto it = data.cbegin();
@@ -40,7 +38,10 @@ namespace Engine::Gui {
 					}
 				}
 			}
+	};
 
+	class AreaGraph : public SubGraph {
+		public:
 			void draw(const Panel* panel) const {
 				if (data.empty()) { return; }
 				auto ctx = panel->getContext();
@@ -71,7 +72,7 @@ namespace Engine::Gui {
 					}
 					// TODO: filter out empty polys (x==x or y==y==0)
 
-					ctx->drawPoly(points, {1,0,1,1});
+					ctx->drawPoly(points, color);
 
 					prev = curr;
 					++curr;

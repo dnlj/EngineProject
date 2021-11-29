@@ -348,18 +348,19 @@ namespace Game {
 		private:
 			class NetGraph : public Panel {
 				private:
-					Gui::Label* buffer;
-					Gui::Label* ideal;
-					Gui::Label* estBuff;
-					Gui::Label* ping;
-					Gui::Label* jitter;
-					Gui::Label* budget;
-					Gui::Label* sent;
-					Gui::Label* recv;
-					Gui::Label* loss;
-					Gui::Slider* recvRate;
-					Gui::Graph* graph;
-					Gui::AreaGraph* testArea;
+					Gui::Label* buffer = nullptr;
+					Gui::Label* ideal = nullptr;
+					Gui::Label* estBuff = nullptr;
+					Gui::Label* ping = nullptr;
+					Gui::Label* jitter = nullptr;
+					Gui::Label* budget = nullptr;
+					Gui::Label* sent = nullptr;
+					Gui::Label* recv = nullptr;
+					Gui::Label* loss = nullptr;
+					Gui::Slider* recvRate = nullptr;
+					Gui::Graph* graph = nullptr;
+					Gui::AreaGraph* sendGraph = nullptr;
+					Gui::AreaGraph* recvGraph = nullptr;
 
 				public:
 					NetGraph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
@@ -429,18 +430,35 @@ namespace Game {
 
 						{
 							auto test = std::make_unique<Gui::AreaGraph>();
-							testArea = test.get();
+							sendGraph = test.get();
+							sendGraph->max.y = 15000;
+							sendGraph->color = {1,0,1,0.5f};
+							graph->graphs.push_back(std::move(test));
+						}
+						{
+							auto test = std::make_unique<Gui::AreaGraph>();
+							recvGraph = test.get();
+							recvGraph->max.y = 5000;
+							recvGraph->color = {0,1,1,0.5f};
 							graph->graphs.push_back(std::move(test));
 						}
 					}
 
 					void update(Engine::ECS::Entity ent, Game::World& world) {
+						// TODO: config time
+						const auto now = world.getTime();
+
+						sendGraph->max.x = Engine::Clock::Seconds{now.time_since_epoch()}.count();
+						sendGraph->min.x = Engine::Clock::Seconds{(now - std::chrono::milliseconds{10'000}).time_since_epoch()}.count();
+						recvGraph->max.x = sendGraph->max.x;
+						recvGraph->min.x = sendGraph->min.x;
+
 						if (!world.hasComponent<NetworkStatsComponent>(ent)) {
 							world.addComponent<NetworkStatsComponent>(ent);
 						}
 						auto& stats = world.getComponent<NetworkStatsComponent>(ent);
 						auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
-
+						
 						// TODO: need to move NetworkStatsComponent update logic here
 
 						float32 estbuff = 0;
@@ -448,16 +466,17 @@ namespace Game {
 							estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
 						}
 
-						const auto now = Engine::Clock::now();
-						testArea->addPoint({
+						sendGraph->addPoint({
 							Engine::Clock::Seconds{now.time_since_epoch()}.count(),
 							conn.getSendBandwidth(),
 						});
+						sendGraph->trimData();
 
-						testArea->max.y = 15000;
-						testArea->max.x = Engine::Clock::Seconds{now.time_since_epoch()}.count();
-						testArea->min.x = Engine::Clock::Seconds{(now - std::chrono::milliseconds{5'000}).time_since_epoch()}.count();
-						testArea->trimData();
+						recvGraph->addPoint({
+							Engine::Clock::Seconds{now.time_since_epoch()}.count(),
+							conn.getRecvBandwidth(),
+						});
+						recvGraph->trimData();
 
 						std::string buff;
 
