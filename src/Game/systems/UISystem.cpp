@@ -688,7 +688,7 @@ namespace Game {
 		}
 
 		{
-			panels.netGraphPane = ctx->createPanel<NetGraphPane>(content);
+			//panels.netGraphPane = ctx->createPanel<NetGraphPane>(content);
 		}
 
 		{
@@ -699,8 +699,24 @@ namespace Game {
 		{
 			panels.graphTest = ctx->createPanel<Gui::Graph>(content);
 			panels.graphTest->setHeight(150);
-			panels.graphTest->setWidth(150);
-			panels.graphTest;
+			auto test1 = std::make_unique<Gui::AreaGraph>();
+			auto test2 = std::make_unique<Gui::LineGraph>();
+			test1->color = {1,1,0.2,1.f};
+			test2->color = {0.2,1,1,0.75f};
+			
+			test1->addPoint({10, 10});
+			test1->addPoint({30, 30});
+			test1->addPoint({60, 30});
+			test1->addPoint({90, 50});
+
+			test2->addPoint({10, 10});
+			test2->addPoint({30, 30});
+			test2->addPoint({60, 30});
+			test2->addPoint({90, 50});
+			test2->addPoint({95, 100});
+
+			panels.graphTest->graphs.push_back(std::move(test1));
+			panels.graphTest->graphs.push_back(std::move(test2));
 		}
 
 		panels.infoPane->toggle();

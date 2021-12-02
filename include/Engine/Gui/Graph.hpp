@@ -70,12 +70,78 @@ namespace Engine::Gui {
 						p.x *= scale.x;
 						p.y = h - p.y * scale.y;
 					}
-					// TODO: filter out empty polys (x==x or y==y==0)
 
 					ctx->drawPoly(points, color);
 
 					prev = curr;
 					++curr;
+				}
+			};
+	};
+
+	class LineGraph : public SubGraph {
+		private:
+			// TODO: store `thickness / 2` since thats what we really use this as
+			float32 thickness = 10;
+
+		public:
+			void draw(const Panel* panel) const {
+				const auto end = data.cend();
+				auto curr = data.cbegin();
+				if (end - curr < 2) { return; }
+
+				auto prev = curr;
+
+				while (curr != end && curr->x <= min.x) { ++curr; }
+				if (curr == end) { return; }
+
+				if (curr > prev) { prev = curr - 1; }
+				auto next = curr + 1;
+
+				auto ctx = panel->getContext();
+				const glm::vec2 scale = panel->getSize() / (max - min);
+				const auto h = panel->getHeight();
+
+				// TODO: use lowp_fvec2 for fast norm?
+				const auto worldToGraph = [&](auto p) ENGINE_INLINE {
+					p = (p - min) * scale;
+					p.y = h - p.y;
+					return p;
+				};
+
+				// TODO: this is actually (and in loop): wrong need to scale normal vec based on angle between tan vecs.
+				glm::vec2 pT = glm::normalize(*next - *curr);
+				glm::vec2 cT = {};
+				glm::vec2 a1 = worldToGraph(*curr) + glm::vec2{pT.y, pT.x};
+				glm::vec2 a2 = worldToGraph(*curr) - glm::vec2{pT.y, pT.x};
+
+				while (true) {
+					if (prev->x > max.x) { break; }
+
+					if (next == end) {
+						cT = {}; // TODO: ?
+					} else {
+						cT = glm::normalize(*next - *curr);
+					}
+
+					// Miter tan/normal
+					const auto cMT = glm::normalize(cT + pT);
+					const auto cMN = thickness * glm::vec2{cMT.y, cMT.x};
+
+					auto a3 = worldToGraph(*curr);
+					const auto a4 = a3 + cMN;
+					a3 = a3 - cMN;
+
+					ctx->drawPoly({a1,a2,a3,a4}, color);
+
+					a1 = a4;
+					a2 = a3;
+					pT = cT;
+					prev = curr;
+					curr = next;
+
+					if (next == end) { break; }
+					++next;
 				}
 			};
 	};
