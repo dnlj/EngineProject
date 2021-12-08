@@ -5,6 +5,7 @@
 #include <Engine/Gfx/Mesh.hpp>
 
 
+// TODO: split
 namespace Engine::Gui {
 	class GraphVertex {
 		public:
