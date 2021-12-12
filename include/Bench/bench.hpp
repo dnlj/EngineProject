@@ -7,6 +7,8 @@
 
 
 namespace Bench {
+	using namespace Engine::Types;
+
 	using Clock = std::chrono::high_resolution_clock;
 	using Duration = Clock::duration;
 	using TimePoint = Clock::time_point;
@@ -16,7 +18,7 @@ namespace Bench {
 	/**
 	 * Memory clobber.
 	 */
-	ENGINE_INLINE void clobber() noexcept {
+	ENGINE_INLINE inline void clobber() noexcept {
 		// Cost: none
 		std::atomic_signal_fence(std::memory_order_acq_rel);
 	}
@@ -49,7 +51,7 @@ namespace Bench {
 	class BenchmarkId {
 		public:
 			std::string name;
-			std::string dataset;
+			std::string dataset; // TODO: Dataset*
 
 			friend decltype(auto) operator<<(std::ostream& os, const BenchmarkId& id) {
 				return os << id.name << "/" << id.dataset;
@@ -78,7 +80,6 @@ namespace Bench {
 		public:
 			// TODO: rm - moved to id std::string dataset;
 			Func func;
-			std::vector<Duration> samples;
 	};
 	
 	class Group {
@@ -117,6 +118,7 @@ namespace Bench {
 			Engine::FlatHashMap<std::string, Group> groups;
 			TimePoint sampleStart;
 			TimePoint sampleStop;
+			std::vector<Duration> samples;
 
 		public:
 			Context() {};
@@ -133,12 +135,15 @@ namespace Bench {
 				std::atomic_thread_fence(std::memory_order_acq_rel);
 				sampleStop = Clock::now();
 				std::atomic_thread_fence(std::memory_order_acq_rel);
+				samples.push_back(sampleStop - sampleStart);
 			}
 
 			ENGINE_INLINE static Context& instance() { static Context inst; return inst; }
 
 			template<class T>
 			ENGINE_INLINE static auto& getDataset() { static T inst; return inst; }
+
+			void runGroup(const std::string& name);
 	};
 }
 

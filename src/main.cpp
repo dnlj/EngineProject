@@ -906,7 +906,6 @@ int entry(int argc, char* argv[]) {
 		freopen_s(&unused, "CONOUT$", "w", stderr);
 	}
 
-	
 	if (auto console = GetStdHandle(STD_OUTPUT_HANDLE);
 		!console || !SetConsoleMode(console, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
 		ENGINE_WARN(Engine::Win32::getLastErrorMessage());
