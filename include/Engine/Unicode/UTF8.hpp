@@ -100,8 +100,24 @@ namespace Engine::Unicode::UTF8 {
 	/**
 	 * @see length
 	 */
+	template<class T>
+	ENGINE_INLINE constexpr auto length(const T& cont) noexcept {
+		return length(std::data(cont), std::data(cont) + std::size(cont));
+	}
+
+	/**
+	 * @see length
+	 */
 	ENGINE_INLINE constexpr auto length8(const void* begin, const void* end) noexcept {
 		return length(reinterpret_cast<const Unit8*>(begin), reinterpret_cast<const Unit8*>(end));
+	}
+
+	/**
+	 * @see length8
+	 */
+	template<class T>
+	ENGINE_INLINE constexpr auto length8(const T& cont) noexcept {
+		return length8(std::data(cont), std::data(cont) + std::size(cont));
 	}
 
 	/**
