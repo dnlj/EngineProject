@@ -86,8 +86,8 @@ namespace Bench {
 			using Func = void(*)();
 
 		public:
-			// TODO: rm - moved to id std::string dataset;
 			Func func;
+			int64 size;
 	};
 	
 	class Group {
@@ -95,22 +95,22 @@ namespace Bench {
 			Engine::FlatHashMap<BenchmarkId, Benchmark> benchmarks;
 
 		public:
-			int add(std::string name, std::string dataset, Benchmark::Func func) {
-				add2({name, dataset}, func);
+			int add(std::string name, std::string dataset, Benchmark::Func func, const int64 size) {
+				add2({name, dataset}, func, size);
 				return 0;
 			}
 
 		private:
-			void add2(BenchmarkId id, Benchmark::Func func) {
+			void add2(BenchmarkId id, Benchmark::Func func, const int64 size) {
 				const auto found = benchmarks.find(id);
 				if (found != benchmarks.end()) {
 					ENGINE_WARN("Benchmark \"", id, "\" already exists.");
 					id.name += "~DUPLICATE~";
-					return add2(std::move(id), std::move(func));
+					return add2(std::move(id), std::move(func), size);
 				} else {
 					benchmarks.emplace(std::piecewise_construct,
 						std::forward_as_tuple(std::move(id)),
-						std::forward_as_tuple(std::move(func))
+						std::forward_as_tuple(std::move(func), size)
 					);
 				}
 			}
@@ -130,6 +130,13 @@ namespace Bench {
 			ENGINE_INLINE bool hasGroup(const std::string& name) { return groups.contains(name); }
 			ENGINE_INLINE auto& getGroup(const std::string& name) { return groups[name]; }
 
+			/*
+			 * We usually want to sample the whole dataset at once
+			 * because the cost of `Clock::now()` could actually out weigh our operation we are benchmarking.
+			 * For example, on MSVC `now` performs: 2x call, 4x idiv, 2x imul, 8x other
+			 * whereas just doing there vector iteration is just an: add, cmp, jne
+			 * So timing the loop as a whole should give us more accurate numbers.
+			 */
 			ENGINE_INLINE void startSample() noexcept {
 				std::atomic_thread_fence(std::memory_order_acq_rel);
 				sampleStart = Clock::now();
@@ -184,7 +191,7 @@ BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(single_group_per_unit, true, "You many only 
  * TODO: doc
  */
 #define BENCH_USE_GROUP(Group, Name, Dataset)\
-	static auto BENCH_CONCAT(_bench_##Name##_var_, __LINE__) = Bench::Context::instance().getGroup(Group).add(#Name, #Dataset, [](){ Name<Dataset>(); });
+	static auto BENCH_CONCAT(_bench_##Name##_var_, __LINE__) = Bench::Context::instance().getGroup(Group).add(#Name, #Dataset, [](){ Name<Dataset>(); }, Dataset ::size());
 
 /** Check for BENCH_USE */
 BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(use_group_defined, false, "You must define a group before using BENCH_USE or specify a group with BENCH_USE_GROUP.");

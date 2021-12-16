@@ -127,14 +127,13 @@ namespace Bench {
 			const auto stop = Clock::now();
 			fmt::print("\r\033[0K{} complete in {:.3}\n", id, Seconds{stop - start});
 
-			const auto datasetSize = 100000; // TODO: query the dataset
-			auto avg = std::chrono::duration_cast<OutDur>(std::reduce(ctx.samples.begin(), ctx.samples.end())) / datasetSize;
+			auto avg = std::chrono::duration_cast<OutDur>(std::reduce(ctx.samples.begin(), ctx.samples.end())) / bench.size;
 
 			auto& row = rows.emplace_back();
 			row.cells["Name"] = id.name;
 			row.cells["Dataset"] = id.dataset;
 			row.cells["Avg"] = fmt::format("{:.3}", avg);
-			row.cells["Dataset Size"] = fmt::format("{}", datasetSize);
+			row.cells["Dataset Size"] = fmt::format("{}", bench.size);
 		}
 
 		// Output buffer

@@ -9,7 +9,7 @@
 
 
 namespace Bench::Dist {
-	template<class T, size_t N>
+	template<class T, int64 N>
 	struct Uniform {
 		std::array<T, N> storage;
 		using D = std::conditional_t<std::is_floating_point_v<T>, std::uniform_real_distribution<T>, std::uniform_int_distribution<T>>;
@@ -17,12 +17,14 @@ namespace Bench::Dist {
 		Uniform() {
 			pcg32_k16384 rng = pcg_extras::seed_seq_from<std::random_device>();
 			D dist(0, std::numeric_limits<T>::max());
-			for (size_t i = 0; i < N; ++i) {
+			for (int64 i = 0; i < N; ++i) {
 				storage[i] = dist(rng);
 			}
 		}
 
 		decltype(auto) begin() const { return storage.begin(); }
 		decltype(auto) end() const { return storage.end(); }
+
+		constexpr static int64 size() noexcept { return N; }
 	};
 }
