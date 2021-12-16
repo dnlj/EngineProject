@@ -7,53 +7,6 @@
 
 #include "noise.hpp"
 
-// TODO: count template param?
-template<class T>
-struct Uniform {
-	std::vector<T> stuff;
-
-	Uniform() {
-		for (T i = 0; i < 100000; ++i) {
-			stuff.push_back(i);
-		}
-	}
-
-	decltype(auto) begin() const { return stuff.begin(); }
-	decltype(auto) end() const { return stuff.end(); }
-};
-
-BENCH(rsqrt_empty) {
-	ctx.startSample();
-	for (auto data : dataset) {
-		Bench::observe(data);
-	}
-	ctx.stopSample();
-}
-
-BENCH(rsqrt_std) {
-	// TODO: where to put this doc?
-	// We actually want to sample the whole dataset at once
-	// because the cost of `Clock::now()` could actually out weigh our operation we are benchmarking.
-	// For example, on MSVC `now` performs: 2x call, 4x idiv, 2x imul, 8x other
-	// whereas just doing there vector iteration is just an: add, cmp, jne
-	// So timing the loop as a whole should give us more accurate numbers.
-
-	ctx.startSample();
-	for (auto data : dataset) {
-		Bench::observe(1 / std::sqrt(data));
-	}
-	ctx.stopSample();
-}
-
-BENCH_GROUP("rsqrt");
-BENCH_USE(rsqrt_empty, Uniform<float>);
-BENCH_USE(rsqrt_std, Uniform<float>);
-BENCH_USE(rsqrt_std, Uniform<double>);
-BENCH_USE(rsqrt_std, Uniform<long double>);
-
-//BENCH_USE(sqrt_sse, Uniform<float>);
-//BENCH_USE(sqrt_sse, Uniform<double>);
-
 
 int main(int argc, char* argv[]) {
 	#ifdef ENGINE_OS_WINDOWS

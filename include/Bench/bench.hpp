@@ -117,7 +117,6 @@ namespace Bench {
 
 	};
 
-
 	class Context {
 		public: // TODO: private
 			Engine::FlatHashMap<std::string, Group> groups;
