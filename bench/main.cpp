@@ -22,10 +22,6 @@ struct Uniform {
 };
 
 BENCH(rsqrt_empty) {
-	for (auto data : dataset) {
-		Bench::observe(data);
-	}
-
 	ctx.startSample();
 	for (auto data : dataset) {
 		Bench::observe(data);

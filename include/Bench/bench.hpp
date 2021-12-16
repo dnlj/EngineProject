@@ -48,6 +48,14 @@ namespace Bench {
 		#endif
 	}
 
+	class SystemInfo {
+		public:
+			std::string cpu;
+			std::string os;
+	};
+
+	SystemInfo getSystemInfo();
+
 	class BenchmarkId {
 		public:
 			std::string name;
@@ -94,19 +102,16 @@ namespace Bench {
 
 		private:
 			void add2(BenchmarkId id, Benchmark::Func func) {
-				ENGINE_LOG("Add benchmark: ", id);
 				const auto found = benchmarks.find(id);
 				if (found != benchmarks.end()) {
 					ENGINE_WARN("Benchmark \"", id, "\" already exists.");
 					id.name += "~DUPLICATE~";
 					return add2(std::move(id), std::move(func));
 				} else {
-					ENGINE_LOG("benchmarks1: ", benchmarks.size());
 					benchmarks.emplace(std::piecewise_construct,
 						std::forward_as_tuple(std::move(id)),
 						std::forward_as_tuple(std::move(func))
 					);
-					ENGINE_LOG("benchmarks2: ", benchmarks.size());
 				}
 			}
 
@@ -123,7 +128,7 @@ namespace Bench {
 		public:
 			Context() {};
 
-			ENGINE_INLINE auto& getGroup(const std::string& name) { ENGINE_LOG("Get group: ", name, " ", name.size()); return groups[name]; }
+			ENGINE_INLINE auto& getGroup(const std::string& name) { return groups[name]; }
 
 			ENGINE_INLINE void startSample() noexcept {
 				std::atomic_thread_fence(std::memory_order_acq_rel);
