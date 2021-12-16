@@ -2,23 +2,24 @@
 
 // STD
 #include <ranges>
-#include <random> // TODO: rm - use pcg
+#include <random>
+
+// PCG
+#include <pcg_random.hpp>
 
 
 namespace Bench::Dist {
 	template<class T, size_t N>
 	struct Uniform {
-		std::vector<T> storage;
+		std::array<T, N> storage;
+		using D = std::conditional_t<std::is_floating_point_v<T>, std::uniform_real_distribution<T>, std::uniform_int_distribution<T>>;
 
 		Uniform() {
-			for (T i = 0; i < N; ++i) {
-				storage.push_back(i);
+			pcg32_k16384 rng = pcg_extras::seed_seq_from<std::random_device>();
+			D dist(0, std::numeric_limits<T>::max());
+			for (size_t i = 0; i < N; ++i) {
+				storage[i] = dist(rng);
 			}
-
-			// TODO: PCG - fixed seed
-			std::random_device rd;
-			std::mt19937 gen{rd()};
-			std::ranges::shuffle(storage, gen);
 		}
 
 		decltype(auto) begin() const { return storage.begin(); }
