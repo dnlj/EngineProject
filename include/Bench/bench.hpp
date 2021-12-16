@@ -128,6 +128,7 @@ namespace Bench {
 		public:
 			Context() {};
 
+			ENGINE_INLINE bool hasGroup(const std::string& name) { return groups.contains(name); }
 			ENGINE_INLINE auto& getGroup(const std::string& name) { return groups[name]; }
 
 			ENGINE_INLINE void startSample() noexcept {

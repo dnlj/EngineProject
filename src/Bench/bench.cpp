@@ -75,8 +75,14 @@ namespace Bench {
 		using Seconds = std::chrono::duration<long double>;
 		using OutDur = std::chrono::duration<long double, std::micro>; // TODO: configurable output duration type (ms/us/ns) (infer based on times?)
 
+		auto& ctx = Bench::Context::instance();
+		if (!ctx.hasGroup(name)) {
+			ENGINE_WARN("No benchmark group found with name: \"", name, '"');
+			return;
+		}
+
 		const auto sysInfo = getSystemInfo();
-		fmt::print("{}\n{}\n", sysInfo.cpu, sysInfo.os);
+		fmt::print("{}\n{}\n\n", sysInfo.cpu, sysInfo.os);
 
 		int32 warmups = 10; // TODO: configurable
 		int32 iters = 100; // TODO: configurable
@@ -103,7 +109,6 @@ namespace Bench {
 		cols.emplace_back("Dataset Size");
 
 		// Run benchmarks
-		auto& ctx = Bench::Context::instance();
 		auto& group = ctx.getGroup(name);
 		ctx.samples.clear();
 
@@ -151,7 +156,7 @@ namespace Bench {
 
 		// Table header
 		std::fill_n(out, totalWidth, '=');
-		fmt::format_to(out, "\n= {}\n", name);
+		fmt::format_to(out, "\n{}\n", name);
 		std::fill_n(out, totalWidth, '-');
 		out = '\n';
 

@@ -72,6 +72,14 @@ namespace Engine::CommandLine {
 
 			virtual bool store(const std::string& arg) override {
 				// TODO: impl
+				static_assert(sizeof(T) != sizeof(T), "TODO: Not implemented.");
+
+				// How do we want this to work?
+				// `program.exe --arg=abcd --arg=1234`
+				// Or
+				// `program.exe --arg=abcd,1234`
+				// Or both?
+
 				this->set = true;
 				return false;
 			};
