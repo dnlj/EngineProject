@@ -110,7 +110,7 @@ namespace Bench {
 
 		// Run benchmarks
 		auto& group = ctx.getGroup(name);
-		ctx.samples.clear();
+		ctx.samples.reserve(iters);
 
 		for (auto& [id, bench] : group.benchmarks) {
 			const auto start = Clock::now();
@@ -118,9 +118,10 @@ namespace Bench {
 			fmt::print("\r\033[0KRunning single pass");
 			bench.singleFunc();
 			
+			ctx.samples.clear();
 			for (int32 i = 0; i < warmups; ++i) {
 				fmt::print("\r\033[0KRunning {} warm {}%", id, i*100/iters);
-				ctx.samples.clear(); bench.iterFunc();
+				 bench.iterFunc();
 			}
 
 			ctx.samples.clear();
@@ -128,6 +129,7 @@ namespace Bench {
 				fmt::print("\r\033[0KRunning {} iter {}%", id, i*100/iters);
 				bench.iterFunc();
 			}
+
 			const auto stop = Clock::now();
 			fmt::print("\r\033[0K{} complete in {:.3}\n", id, Seconds{stop - start});
 
@@ -138,6 +140,15 @@ namespace Bench {
 			row.cells["Dataset"] = id.dataset;
 			row.cells["Avg"] = fmt::format("{:.3}", avg);
 			row.cells["Dataset Size"] = fmt::format("{}", bench.size);
+
+			for (const auto& [col, value] : custom) {
+				if (std::ranges::find(cols, col, &Column::title) == cols.end()) {
+					cols.emplace_back(col);
+				}
+				row.cells[col] = fmt::format("{}", *value);
+			}
+
+			custom.clear();
 		}
 
 		// Output buffer
@@ -183,7 +194,7 @@ namespace Bench {
 				const auto& cell = row.cells[col->title];
 				fmt::format_to(out, cell);
 
-				auto diff = col->width - static_cast<int64>(cell.size());
+				auto diff = col->width - Engine::Unicode::length8(cell);
 				std::fill_n(out, diff, ' ');
 
 				if (++col == end) { break; }
