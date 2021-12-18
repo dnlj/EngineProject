@@ -86,7 +86,8 @@ namespace Bench {
 			using Func = void(*)();
 
 		public:
-			Func func;
+			Func iterFunc;
+			// TODO: Func singleFunc;
 			int64 size;
 	};
 	
@@ -116,10 +117,37 @@ namespace Bench {
 			}
 
 	};
+	
+	enum class StatInterp {
+		Calc,
+		Flat,
+	};
+
+	class StoredValueBase {
+		public:
+			virtual auto fmt_format(fmt::dynamic_formatter<>& formatter, fmt::format_context& ctx) const -> decltype(ctx.out()) = 0;
+	};
+
+	template<class T>
+	class StoredValue : public StoredValueBase {
+		private:
+			T value;
+
+		public:
+			StoredValue() = delete;
+
+			template<class U>
+			StoredValue(U&& val) : value{std::forward<U>(val)} {};
+
+			virtual auto fmt_format(fmt::dynamic_formatter<>& formatter, fmt::format_context& ctx) const -> decltype(ctx.out()) override {
+				return formatter.format(value, ctx);
+			}
+	};
 
 	class Context {
 		public: // TODO: private
 			Engine::FlatHashMap<std::string, Group> groups;
+			Engine::FlatHashMap<std::string, std::unique_ptr<StoredValueBase>> custom;
 			TimePoint sampleStart;
 			TimePoint sampleStop;
 			std::vector<Duration> samples;
@@ -156,8 +184,22 @@ namespace Bench {
 			ENGINE_INLINE static auto& getDataset() { static T inst; return inst; }
 
 			void runGroup(const std::string& name);
+
+			template<class T>
+			void set(const std::string& col, T&& value, StatInterp interp) {
+				// TODO: different interp modes
+				custom[col] = std::make_unique<StoredValue<T>>(value);
+			}
 	};
 }
+
+
+
+template <> struct fmt::formatter<Bench::StoredValueBase> : dynamic_formatter<> {
+	constexpr auto format(const Bench::StoredValueBase& value, format_context& ctx) {
+		return value.fmt_format(*this, ctx);
+	}
+};
 
 
 
@@ -185,13 +227,13 @@ BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(single_group_per_unit, true, "You many only 
  * TODO: doc
  */
 #define BENCH(Name)\
-	template<class D> void Name(Bench::Context& ctx = Bench::Context::instance(), const D& dataset = Bench::Context::getDataset<D>())
+	template<class D, bool SinglePass> void Name(Bench::Context& ctx = Bench::Context::instance(), const D& dataset = Bench::Context::getDataset<D>())
 
 /**
  * TODO: doc
  */
 #define BENCH_USE_GROUP(Group, Name, Dataset)\
-	static auto BENCH_CONCAT(_bench_##Name##_var_, __LINE__) = Bench::Context::instance().getGroup(Group).add(#Name, #Dataset, [](){ Name<Dataset>(); }, Dataset ::size());
+	static auto BENCH_CONCAT(_bench_##Name##_var_, __LINE__) = Bench::Context::instance().getGroup(Group).add(#Name, #Dataset, [](){ Name<Dataset, false>(); }, Dataset ::size());
 
 /** Check for BENCH_USE */
 BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(use_group_defined, false, "You must define a group before using BENCH_USE or specify a group with BENCH_USE_GROUP.");

@@ -116,13 +116,13 @@ namespace Bench {
 			const auto start = Clock::now();
 			for (int32 i = 0; i < warmups; ++i) {
 				fmt::print("\r\033[0KRunning {} warm {}%", id, i*100/iters);
-				ctx.samples.clear(); bench.func();
+				ctx.samples.clear(); bench.iterFunc();
 			}
 
 			ctx.samples.clear();
 			for (int32 i = 0; i < iters; ++i) {
 				fmt::print("\r\033[0KRunning {} iter {}%", id, i*100/iters);
-				bench.func();
+				bench.iterFunc();
 			}
 			const auto stop = Clock::now();
 			fmt::print("\r\033[0K{} complete in {:.3}\n", id, Seconds{stop - start});
@@ -191,6 +191,10 @@ namespace Bench {
 
 		fmt::print("\033[{}A\033[0J", group.benchmarks.size());
 		fmt::print(output);
+
+		for (auto& [k, v] : custom) {
+			fmt::print("Key({}) = Value({})\n", k, *v);
+		}
 	}
 }
 
