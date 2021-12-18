@@ -24,6 +24,29 @@ namespace {
 		return y;
 	}
 
+	/**
+	 * "Optimized reciprocal square root function"
+	 * Derived from "A Brief History of InvSqrt" by Matthew Robertson (2012)
+	 * @see https://cs.uwaterloo.ca/~m32rober/rsqrt.pdf
+	 */
+	template<class Float>
+	Float mrob_rsqrt(Float number) {
+		constexpr bool is32 = std::same_as<Float, float>;
+		static_assert(is32 || std::same_as<Float, double>);
+		using UInt = std::conditional_t<is32, uint32_t, uint64_t>;
+		constexpr UInt magic = is32 ? 0x5f375a86 : 0x5fe6eb50c7b537a9;
+
+		UInt i;
+		Float x2, y;
+		x2 = number * Float{0.5};
+		y = number;
+		i = *(UInt *) &y;
+		i = magic - (i >> 1);
+		y = *(Float *) &i;
+		y = y * (Float{1.5} - (x2 * y * y));
+		return y;
+	}
+
 	template<class T>
 	ENGINE_INLINE T std_rsqrt(const T num) {
 		return T{1} / std::sqrt(num);
@@ -37,6 +60,20 @@ namespace {
 		const auto est = sse_rsqrt(num);
 		return est * (1.5f - num * 0.5f * est * est);
 	}
+
+	template<class D, class F>
+	auto calcAccuracy(const D& dataset, F&& func) {
+		std::vector<long double> samples;
+		for (auto data : dataset) {
+			const auto actual = std_rsqrt<long double>(data);
+			const auto result = func(data);
+			const auto diff = actual - result;
+			const auto err = std::abs(diff / actual);
+			samples.push_back(err);
+		}
+		const auto p = std::reduce(samples.begin(), samples.end()) / dataset.size();
+		return p;
+	}
 }
 
 BENCH(rsqrt_empty) {
@@ -49,18 +86,11 @@ BENCH(rsqrt_empty) {
 
 BENCH(rsqrt_std) {
 	if constexpr (SinglePass) {
-		for (auto data : dataset) {
-			const auto actual = std_rsqrt<long double>(data);
-			const auto result = std_rsqrt(data);
-			const auto diff = actual - result;
-			const auto percent = std::abs(diff / actual);
-			// TODO: how do we specify output columns, flat, avg, etc.
-			Bench::observe(std_rsqrt(data));
-		}
-
-		ctx.set("foo", 0.5, Bench::StatInterp::Flat);
-		ctx.set("bar", "this is a test", Bench::StatInterp::Flat);
-
+		// TODO: also pass optional format string
+		ctx.set("Accuracy",
+			calcAccuracy(dataset, std_rsqrt<D::ValueType>),
+			Bench::StatInterp::Flat
+		);
 		return;
 	}
 
@@ -72,6 +102,13 @@ BENCH(rsqrt_std) {
 }
 
 BENCH(rsqrt_sse) {
+	if constexpr (SinglePass) {
+		ctx.set("Accuracy",
+			calcAccuracy(dataset, sse_rsqrt),
+			Bench::StatInterp::Flat
+		);
+		return;
+	}
 	ctx.startSample();
 	for (auto data : dataset) {
 		Bench::observe(sse_rsqrt(data));
@@ -80,6 +117,13 @@ BENCH(rsqrt_sse) {
 }
 
 BENCH(rsqrt_sse_newton) {
+	if constexpr (SinglePass) {
+		ctx.set("Accuracy",
+			calcAccuracy(dataset, sse_rsqrt_newton),
+			Bench::StatInterp::Flat
+		);
+		return;
+	}
 	ctx.startSample();
 	for (auto data : dataset) {
 		Bench::observe(sse_rsqrt_newton(data));
@@ -88,6 +132,13 @@ BENCH(rsqrt_sse_newton) {
 }
 
 BENCH(rsqrt_quake) {
+	if constexpr (SinglePass) {
+		ctx.set("Accuracy",
+			calcAccuracy(dataset, Q_rsqrt),
+			Bench::StatInterp::Flat
+		);
+		return;
+	}
 	ctx.startSample();
 	for (auto data : dataset) {
 		Bench::observe(Q_rsqrt(data));
@@ -95,9 +146,24 @@ BENCH(rsqrt_quake) {
 	ctx.stopSample();
 }
 
+BENCH(rsqrt_mrob) {
+	if constexpr (SinglePass) {
+		ctx.set("Accuracy",
+			calcAccuracy(dataset, mrob_rsqrt<D::ValueType>),
+			Bench::StatInterp::Flat
+		);
+		return;
+	}
+	ctx.startSample();
+	for (auto data : dataset) {
+		Bench::observe(mrob_rsqrt(data));
+	}
+	ctx.stopSample();
+}
+
 namespace {
-	using UniformF = Bench::Dist::Uniform<float,  1234321>;
-	using UniformD = Bench::Dist::Uniform<double, 1234321>;
+	using UniformF = Bench::Dist::Uniform<float,  123321>;
+	using UniformD = Bench::Dist::Uniform<double, 123321>;
 }
 
 BENCH_GROUP("rsqrt");
@@ -108,3 +174,5 @@ BENCH_USE(rsqrt_std, UniformD);
 BENCH_USE(rsqrt_sse, UniformF);
 BENCH_USE(rsqrt_sse_newton, UniformF);
 BENCH_USE(rsqrt_quake, UniformF);
+BENCH_USE(rsqrt_mrob, UniformF);
+BENCH_USE(rsqrt_mrob, UniformD);

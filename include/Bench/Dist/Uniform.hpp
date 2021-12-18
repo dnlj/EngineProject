@@ -11,6 +11,7 @@
 namespace Bench::Dist {
 	template<class T, int64 N>
 	struct Uniform {
+		using ValueType = T;
 		std::array<T, N> storage;
 		using D = std::conditional_t<std::is_floating_point_v<T>, std::uniform_real_distribution<T>, std::uniform_int_distribution<T>>;
 
