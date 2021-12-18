@@ -57,11 +57,12 @@ BENCH(rsqrt_std) {
 			// TODO: how do we specify output columns, flat, avg, etc.
 			Bench::observe(std_rsqrt(data));
 		}
+
+		ctx.set("foo", 0.5, Bench::StatInterp::Flat);
+		ctx.set("bar", "this is a test", Bench::StatInterp::Flat);
+
 		return;
 	}
-
-	ctx.set("foo", 0.5, Bench::StatInterp::Flat);
-	ctx.set("bar", "this is a test", Bench::StatInterp::Flat);
 
 	ctx.startSample();
 	for (auto data : dataset) {

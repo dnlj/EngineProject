@@ -87,7 +87,7 @@ namespace Bench {
 
 		public:
 			Func iterFunc;
-			// TODO: Func singleFunc;
+			Func singleFunc;
 			int64 size;
 	};
 	
@@ -96,24 +96,17 @@ namespace Bench {
 			Engine::FlatHashMap<BenchmarkId, Benchmark> benchmarks;
 
 		public:
-			int add(std::string name, std::string dataset, Benchmark::Func func, const int64 size) {
-				add2({name, dataset}, func, size);
-				return 0;
-			}
-
-		private:
-			void add2(BenchmarkId id, Benchmark::Func func, const int64 size) {
+			int add(BenchmarkId id, Benchmark bench) {
+				// TODO: rm - BenchmarkId id = {name, dataset};
 				const auto found = benchmarks.find(id);
 				if (found != benchmarks.end()) {
 					ENGINE_WARN("Benchmark \"", id, "\" already exists.");
 					id.name += "~DUPLICATE~";
-					return add2(std::move(id), std::move(func), size);
+					return add(id, bench);
 				} else {
-					benchmarks.emplace(std::piecewise_construct,
-						std::forward_as_tuple(std::move(id)),
-						std::forward_as_tuple(std::move(func), size)
-					);
+					benchmarks.emplace(id, bench);
 				}
+				return 0;
 			}
 
 	};
@@ -233,7 +226,10 @@ BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(single_group_per_unit, true, "You many only 
  * TODO: doc
  */
 #define BENCH_USE_GROUP(Group, Name, Dataset)\
-	static auto BENCH_CONCAT(_bench_##Name##_var_, __LINE__) = Bench::Context::instance().getGroup(Group).add(#Name, #Dataset, [](){ Name<Dataset, false>(); }, Dataset ::size());
+	static auto BENCH_CONCAT(_bench_##Name##_var_, __LINE__) = Bench::Context::instance().getGroup(Group).add(\
+		{#Name, #Dataset},\
+		{[]{ Name<Dataset, false>(); }, []{ Name<Dataset, true>(); }, Dataset ::size()}\
+	);
 
 /** Check for BENCH_USE */
 BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(use_group_defined, false, "You must define a group before using BENCH_USE or specify a group with BENCH_USE_GROUP.");

@@ -114,6 +114,10 @@ namespace Bench {
 
 		for (auto& [id, bench] : group.benchmarks) {
 			const auto start = Clock::now();
+
+			fmt::print("\r\033[0KRunning single pass");
+			bench.singleFunc();
+			
 			for (int32 i = 0; i < warmups; ++i) {
 				fmt::print("\r\033[0KRunning {} warm {}%", id, i*100/iters);
 				ctx.samples.clear(); bench.iterFunc();
