@@ -9,6 +9,7 @@
 
 
 int main(int argc, char* argv[]) {
+	// start /wait /b /realtime Bench.exe -g=rsqrt
 	#ifdef ENGINE_OS_WINDOWS
 		SetConsoleOutputCP(CP_UTF8);
 
@@ -44,6 +45,7 @@ int main(int argc, char* argv[]) {
 		ctx.runGroup(*group);
 	}
 
+	/*
 	std::vector<Engine::Clock::Duration> times;
 	times.resize(10);
 
@@ -54,7 +56,9 @@ int main(int argc, char* argv[]) {
 
 	Engine::Clock::Duration sum = std::accumulate(times.cbegin(), times.cend(), Engine::Clock::Duration{});
 	std::cout << "Avg: " << Seconds{sum / times.size()}.count() << "s\n";
+	*/
 
+	std::cout.flush();
 	std::cin.get();
 	return 0;
 }

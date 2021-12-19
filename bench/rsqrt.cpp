@@ -62,17 +62,19 @@ namespace {
 	}
 
 	template<class D, class F>
-	auto calcAccuracy(const D& dataset, F&& func) {
+	void calcAccuracy(Bench::Context& ctx, const D& dataset, F&& func) {
 		std::vector<long double> samples;
 		for (auto data : dataset) {
 			const auto actual = std_rsqrt<long double>(data);
 			const auto result = func(data);
-			const auto diff = actual - result;
-			const auto err = std::abs(diff / actual);
+			const auto err = std::abs((result / actual) - 1.0L);
 			samples.push_back(err);
 		}
-		const auto p = std::reduce(samples.begin(), samples.end()) / dataset.size();
-		return p;
+		const auto props = Bench::calcSampleProperties(samples);
+		ctx.set("E-min", props.min);
+		ctx.set("E-max", props.max);
+		ctx.set("E-avg", props.mean);
+		ctx.set("E-dev", props.stddev);
 	}
 }
 
@@ -87,10 +89,7 @@ BENCH(rsqrt_empty) {
 BENCH(rsqrt_std) {
 	if constexpr (SinglePass) {
 		// TODO: also pass optional format string
-		ctx.set("Accuracy",
-			calcAccuracy(dataset, std_rsqrt<D::ValueType>),
-			Bench::StatInterp::Flat
-		);
+		calcAccuracy(ctx, dataset, std_rsqrt<D::ValueType>);
 		return;
 	}
 
@@ -103,10 +102,7 @@ BENCH(rsqrt_std) {
 
 BENCH(rsqrt_sse) {
 	if constexpr (SinglePass) {
-		ctx.set("Accuracy",
-			calcAccuracy(dataset, sse_rsqrt),
-			Bench::StatInterp::Flat
-		);
+		calcAccuracy(ctx, dataset, sse_rsqrt);
 		return;
 	}
 	ctx.startSample();
@@ -118,10 +114,7 @@ BENCH(rsqrt_sse) {
 
 BENCH(rsqrt_sse_newton) {
 	if constexpr (SinglePass) {
-		ctx.set("Accuracy",
-			calcAccuracy(dataset, sse_rsqrt_newton),
-			Bench::StatInterp::Flat
-		);
+		calcAccuracy(ctx, dataset, sse_rsqrt_newton);
 		return;
 	}
 	ctx.startSample();
@@ -133,10 +126,7 @@ BENCH(rsqrt_sse_newton) {
 
 BENCH(rsqrt_quake) {
 	if constexpr (SinglePass) {
-		ctx.set("Accuracy",
-			calcAccuracy(dataset, Q_rsqrt),
-			Bench::StatInterp::Flat
-		);
+		calcAccuracy(ctx, dataset, Q_rsqrt);
 		return;
 	}
 	ctx.startSample();
@@ -148,10 +138,7 @@ BENCH(rsqrt_quake) {
 
 BENCH(rsqrt_mrob) {
 	if constexpr (SinglePass) {
-		ctx.set("Accuracy",
-			calcAccuracy(dataset, mrob_rsqrt<D::ValueType>),
-			Bench::StatInterp::Flat
-		);
+		calcAccuracy(ctx, dataset, mrob_rsqrt<D::ValueType>);
 		return;
 	}
 	ctx.startSample();
@@ -162,8 +149,8 @@ BENCH(rsqrt_mrob) {
 }
 
 namespace {
-	using UniformF = Bench::Dist::Uniform<float,  123321>;
-	using UniformD = Bench::Dist::Uniform<double, 123321>;
+	using UniformF = Bench::Dist::Uniform<float,  1234321>;
+	using UniformD = Bench::Dist::Uniform<double, 1234321>;
 }
 
 BENCH_GROUP("rsqrt");

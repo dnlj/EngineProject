@@ -118,24 +118,81 @@ namespace Bench {
 
 	class StoredValueBase {
 		public:
+			StoredValueBase() = default;
+			StoredValueBase(const StoredValueBase&) = delete;
+
 			virtual auto fmt_format(fmt::dynamic_formatter<>& formatter, fmt::format_context& ctx) const -> decltype(ctx.out()) = 0;
+			virtual const void* get() const = 0;
 	};
 
 	template<class T>
 	class StoredValue : public StoredValueBase {
 		private:
+			static_assert(std::same_as<T, std::remove_cvref_t<T>>);
 			T value;
 
 		public:
-			StoredValue() = delete;
-
 			template<class U>
-			StoredValue(U&& val) : value{std::forward<U>(val)} {};
+			StoredValue(U&& val) : value{std::forward<U>(val)} {
+			};
 
 			virtual auto fmt_format(fmt::dynamic_formatter<>& formatter, fmt::format_context& ctx) const -> decltype(ctx.out()) override {
 				return formatter.format(value, ctx);
 			}
+
+			virtual const void* get() const override {
+				return &value;
+			}
 	};
+
+	template<class T>
+	class SampleProperties {
+		public:
+			T min = {};
+			T max = {};
+			T mean = {};
+			T stddev = {};
+	};
+
+	template<class Range>
+	auto calcSampleProperties(const Range& input) {
+		using T = std::remove_cvref_t<decltype(*std::ranges::data(input))>;
+		static_assert(std::same_as<T, long double>); // TODO: rm - just for debugging
+		SampleProperties<T> props = {};
+		if (std::ranges::empty(input)) { return props; }
+
+		props.min = *std::ranges::begin(input);
+		props.max = props.min;
+		for (T c = {}; const auto val : input) {
+			props.min = std::min(props.min, val);
+			props.max = std::max(props.max, val);
+
+			// Kahan Summation
+			const auto y = val - c;
+			const auto t = props.mean + y;
+			c = (t - props.mean) - y;
+			props.mean = t;
+		}
+
+		// TODO: why does this get wildly different numbers than reduce? the reduce numbers make more sense... something wrong probably
+		const auto size = std::ranges::size(input);
+		props.mean /= size;
+		props.mean = std::reduce(input.begin(), input.end()) / size;
+
+		for (T c = {}; const auto& val : input) {
+			const auto diff = val - props.mean;
+			
+			// Kahan Summation
+			const auto y = diff * diff - c;
+			const auto t = props.stddev + y;
+			c = (t - props.stddev) - y;
+			props.stddev = y;
+		}
+
+		props.stddev = std::sqrt(props.stddev / input.size());
+
+		return props;
+	}
 
 	class Context {
 		public: // TODO: private
@@ -179,13 +236,12 @@ namespace Bench {
 			void runGroup(const std::string& name);
 
 			template<class T>
-			void set(const std::string& col, T&& value, StatInterp interp) {
+			void set(const std::string& col, T&& value, StatInterp interp = {}) {
 				// TODO: different interp modes
-				custom[col] = std::make_unique<StoredValue<T>>(value);
+				custom[col] = std::make_unique<StoredValue<std::remove_cvref_t<T>>>(value);
 			}
 	};
 }
-
 
 
 template <> struct fmt::formatter<Bench::StoredValueBase> : dynamic_formatter<> {
@@ -193,7 +249,6 @@ template <> struct fmt::formatter<Bench::StoredValueBase> : dynamic_formatter<> 
 		return value.fmt_format(*this, ctx);
 	}
 };
-
 
 
 #define BENCH_CONCAT_IMPL(a, b) a##b
