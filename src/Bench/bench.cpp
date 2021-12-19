@@ -115,18 +115,18 @@ namespace Bench {
 		for (auto& [id, bench] : group.benchmarks) {
 			const auto start = Clock::now();
 
-			fmt::print("\r\033[0KRunning single pass");
+			fmt::print("\r\033[0KRunning {}", id);
 			bench.singleFunc();
 			
 			ctx.samples.clear();
 			for (int32 i = 0; i < warmups; ++i) {
-				fmt::print("\r\033[0KRunning {} warm {}%", id, i*100/iters);
 				 bench.iterFunc();
 			}
 
 			ctx.samples.clear();
 			for (int32 i = 0; i < iters; ++i) {
-				fmt::print("\r\033[0KRunning {} iter {}%", id, i*100/iters);
+				// Disabled because this had a significant impact benchmarks. Use to also have in warmup section.
+				// fmt::print("\r\033[0KRunning {} iter {}%", id, i*100/iters);
 				bench.iterFunc();
 			}
 
@@ -140,6 +140,16 @@ namespace Bench {
 			row.cells["Dataset"] = id.dataset;
 			row.cells["Avg"] = fmt::format("{:.3}", avg);
 			row.cells["Dataset Size"] = fmt::format("{}", bench.size);
+			// TODO: time to run
+
+			/*
+			for (auto& [k, v] : custom) {
+				if (k != "E-avg") { continue; }
+				char chars[256] = {};
+				const long double dub = *(const long double*)v->get();
+				std::to_chars(chars, chars + sizeof(chars), dub);
+				fmt::print("Key({0}) = Value({1} {1:} {1:f} {1:g} {1:G} {1:e} {1:E} {1:6g} {1:6G} {2} {3})\n", k, *v, chars, bool(dub == 0.0L));
+			}*/
 
 			for (const auto& [col, value] : custom) {
 				if (std::ranges::find(cols, col, &Column::title) == cols.end()) {
@@ -206,10 +216,6 @@ namespace Bench {
 
 		fmt::print("\033[{}A\033[0J", group.benchmarks.size());
 		fmt::print(output);
-
-		for (auto& [k, v] : custom) {
-			fmt::print("Key({}) = Value({})\n", k, *v);
-		}
 	}
 }
 
