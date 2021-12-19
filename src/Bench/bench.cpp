@@ -11,7 +11,7 @@
 #include <Bench/bench.hpp>
 
 namespace {
-	extern const char* win32ProductTypeLookup[PRODUCT_XBOX_SCARLETTHOSTOS];
+	extern const char* win32ProductTypeLookup[PRODUCT_XBOX_SCARLETTHOSTOS + 1];
 
 	const char* win32GetProductTypeString(DWORD pt) {
 		if (pt >= std::size(win32ProductTypeLookup)) { return "Unknown"; }
@@ -168,7 +168,6 @@ namespace Bench {
 
 		// Figure out column widths
 		for (auto& row : rows) {
-			// TODO: switch to do for each row cell -> col so we can support custom cols
 			for (auto& col : cols) {
 				col.width = std::max(col.width, Engine::Unicode::length8(row.cells[col.title]));
 			}
@@ -221,7 +220,8 @@ namespace Bench {
 
 namespace {
 	// Will need to be updated for future Windows versions. See: winnt.h
-	const char* win32ProductTypeLookup[PRODUCT_XBOX_SCARLETTHOSTOS] = {
+	const char* win32ProductTypeLookup[] = {
+		"UNDEFINED",
 		"Ultimate",
 		"Home Basic",
 		"Home Premium",

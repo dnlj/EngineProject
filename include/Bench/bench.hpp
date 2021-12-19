@@ -97,7 +97,6 @@ namespace Bench {
 
 		public:
 			int add(BenchmarkId id, Benchmark bench) {
-				// TODO: rm - BenchmarkId id = {name, dataset};
 				const auto found = benchmarks.find(id);
 				if (found != benchmarks.end()) {
 					ENGINE_WARN("Benchmark \"", id, "\" already exists.");
@@ -157,7 +156,6 @@ namespace Bench {
 	template<class Range>
 	auto calcSampleProperties(const Range& input) {
 		using T = std::remove_cvref_t<decltype(*std::ranges::data(input))>;
-		static_assert(std::same_as<T, long double>); // TODO: rm - just for debugging
 		SampleProperties<T> props = {};
 		if (std::ranges::empty(input)) { return props; }
 
@@ -174,10 +172,8 @@ namespace Bench {
 			props.mean = t;
 		}
 
-		// TODO: why does this get wildly different numbers than reduce? the reduce numbers make more sense... something wrong probably
 		const auto size = std::ranges::size(input);
 		props.mean /= size;
-		props.mean = std::reduce(input.begin(), input.end()) / size;
 
 		for (T c = {}; const auto& val : input) {
 			const auto diff = val - props.mean;
@@ -195,7 +191,7 @@ namespace Bench {
 	}
 
 	class Context {
-		public: // TODO: private
+		private:
 			Engine::FlatHashMap<std::string, Group> groups;
 			Engine::FlatHashMap<std::string, std::unique_ptr<StoredValueBase>> custom;
 			TimePoint sampleStart;
