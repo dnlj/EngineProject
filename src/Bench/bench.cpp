@@ -73,7 +73,8 @@ namespace Bench {
 
 	void Context::runGroup(const std::string& name) {
 		using Seconds = std::chrono::duration<long double>;
-		using OutDur = std::chrono::duration<long double, std::micro>; // TODO: configurable output duration type (ms/us/ns) (infer based on times?)
+		using MircoDur = std::chrono::duration<long double, std::micro>; // TODO: configurable output duration type (ms/us/ns) (infer based on times?)
+		using NanoDur = std::chrono::duration<long double, std::nano>;
 
 		auto& ctx = Bench::Context::instance();
 		if (!ctx.hasGroup(name)) {
@@ -103,6 +104,8 @@ namespace Bench {
 		std::vector<Row> rows;
 		std::vector<Column> cols;
 
+		// TODO: scale output duration type based on size: `< 0.1s` -> ms, `< 0.1ms` -> us, `< 0.1us` -> ns
+		// TODO: cont. although make sure all outputs have same units. Probably determine based on largest?
 		cols.emplace_back("Name");
 		cols.emplace_back("Dataset");
 		cols.emplace_back("Avg");
@@ -133,12 +136,16 @@ namespace Bench {
 			const auto stop = Clock::now();
 			fmt::print("\r\033[0K{} complete in {:.3}\n", id, Seconds{stop - start});
 
-			auto avg = std::chrono::duration_cast<OutDur>(std::reduce(ctx.samples.begin(), ctx.samples.end())) / bench.size;
+			constexpr auto countify = [](const auto& x) { return static_cast<long double>(x.count()); };
+			const auto propsRaw = calcSampleProperties(ctx.samples | std::views::transform(countify)).scaleN(static_cast<long double>(bench.size));
+			const auto props = SampleProperties<MircoDur>(SampleProperties<NanoDur>(propsRaw));
+
+			const auto avg = props.mean;
 
 			auto& row = rows.emplace_back();
 			row.cells["Name"] = id.name;
 			row.cells["Dataset"] = id.dataset;
-			row.cells["Avg"] = fmt::format("{:.3}", avg);
+			row.cells["Avg"] = fmt::format("{:.6}", avg);
 			row.cells["Dataset Size"] = fmt::format("{}", bench.size);
 			// TODO: time to run
 

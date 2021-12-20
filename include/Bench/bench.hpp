@@ -9,7 +9,7 @@
 namespace Bench {
 	using namespace Engine::Types;
 
-	using Clock = std::chrono::high_resolution_clock;
+	using Clock = std::chrono::high_resolution_clock; static_assert(Clock::is_steady);
 	using Duration = Clock::duration;
 	using TimePoint = Clock::time_point;
 
@@ -151,11 +151,30 @@ namespace Bench {
 			T max = {};
 			T mean = {};
 			T stddev = {};
+
+		public:
+			SampleProperties() = default;
+
+			template<class U>
+			SampleProperties(SampleProperties<U> other)
+				: min(other.min)
+				, max(other.max)
+				, mean(other.mean)
+				, stddev(other.stddev) {
+			}
+
+			SampleProperties scaleN(long double x) {
+				min /= x;
+				max /= x;
+				mean /= x;
+				stddev /= std::sqrt(x);
+				return *this;
+			}
 	};
 
 	template<class Range>
 	auto calcSampleProperties(const Range& input) {
-		using T = std::remove_cvref_t<decltype(*std::ranges::data(input))>;
+		using T = std::remove_cvref_t<decltype(*std::ranges::begin(input))>;
 		SampleProperties<T> props = {};
 		if (std::ranges::empty(input)) { return props; }
 
@@ -177,7 +196,7 @@ namespace Bench {
 
 		for (T c = {}; const auto& val : input) {
 			const auto diff = val - props.mean;
-			
+
 			// Kahan Summation
 			const auto y = diff * diff - c;
 			const auto t = props.stddev + y;
@@ -185,7 +204,7 @@ namespace Bench {
 			props.stddev = y;
 		}
 
-		props.stddev = std::sqrt(props.stddev / input.size());
+		props.stddev = static_cast<T>(std::sqrt(props.stddev / input.size()));
 
 		return props;
 	}
