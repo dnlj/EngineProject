@@ -73,7 +73,7 @@ namespace Bench {
 
 	void Context::runGroup(const std::string& name) {
 		using Seconds = std::chrono::duration<long double>;
-		using MircoDur = std::chrono::duration<long double, std::micro>; // TODO: configurable output duration type (ms/us/ns) (infer based on times?)
+		using MircoDur = std::chrono::duration<long double, std::micro>;
 		using NanoDur = std::chrono::duration<long double, std::nano>;
 
 		auto& ctx = Bench::Context::instance();
@@ -106,6 +106,7 @@ namespace Bench {
 
 		// TODO: scale output duration type based on size: `< 0.1s` -> ms, `< 0.1ms` -> us, `< 0.1us` -> ns
 		// TODO: cont. although make sure all outputs have same units. Probably determine based on largest?
+		// TODO: cont. also probably configurable through cmd line args
 		cols.emplace_back("Name");
 		cols.emplace_back("Dataset");
 		cols.emplace_back("Avg");
@@ -115,7 +116,7 @@ namespace Bench {
 		auto& group = ctx.getGroup(name);
 		ctx.samples.reserve(iters);
 
-		for (auto& [id, bench] : group.benchmarks) {
+		for (auto& [id, bench] : group.getBenchmarks()) {
 			const auto start = Clock::now();
 
 			fmt::print("\r\033[0KRunning {}", id);
@@ -220,7 +221,7 @@ namespace Bench {
 		}
 		out = '\n';
 
-		fmt::print("\033[{}A\033[0J", group.benchmarks.size());
+		fmt::print("\033[{}A\033[0J", group.getBenchmarks().size());
 		fmt::print(output);
 	}
 }

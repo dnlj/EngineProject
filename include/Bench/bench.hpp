@@ -59,7 +59,7 @@ namespace Bench {
 	class BenchmarkId {
 		public:
 			std::string name;
-			std::string dataset; // TODO: Dataset*
+			std::string dataset;
 
 			friend decltype(auto) operator<<(std::ostream& os, const BenchmarkId& id) {
 				return os << id.name << "/" << id.dataset;
@@ -92,10 +92,12 @@ namespace Bench {
 	};
 	
 	class Group {
-		public: // TODO: private
+		private:
 			Engine::FlatHashMap<BenchmarkId, Benchmark> benchmarks;
 
 		public:
+			const auto& getBenchmarks() const { return benchmarks; }
+
 			int add(BenchmarkId id, Benchmark bench) {
 				const auto found = benchmarks.find(id);
 				if (found != benchmarks.end()) {
@@ -250,9 +252,10 @@ namespace Bench {
 
 			void runGroup(const std::string& name);
 
+			// TODO: should also take optional format string
 			template<class T>
-			void set(const std::string& col, T&& value, StatInterp interp = {}) {
-				// TODO: different interp modes
+			void set(const std::string& col, T&& value, StatInterp = {}) {
+				// TODO: different interp modes - should this be only the value set or computed over all iterations (like we do for default avg, etc.)
 				custom[col] = std::make_unique<StoredValue<std::remove_cvref_t<T>>>(value);
 			}
 	};
@@ -280,20 +283,25 @@ template <> struct fmt::formatter<Bench::StoredValueBase> : dynamic_formatter<> 
 BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(single_group_per_unit, true, "You many only have one benchmark group per translation unit.");
 
 /**
- * TODO: doc
+ * Defines a new benchmark group.
  */
 #define BENCH_GROUP(Name, ...)\
 	BENCH_USE_COMPILE_CHECK(single_group_per_unit, struct _bench_group_id)\
 	struct _bench_group_id { constexpr static char name[] = Name; };
 
 /**
- * TODO: doc
+ * Defines a benchmark function.
+ * A benchmark function is given:
+ * - The context it is running in - param `ctx`
+ * - The dataset it should operate on - param `dataset`, type of template argument `D`
+ * - A constexpr bool that is set only on the first pass before benchmark warming - `SinglePass`
  */
 #define BENCH(Name)\
 	template<class D, bool SinglePass> void Name(Bench::Context& ctx = Bench::Context::instance(), const D& dataset = Bench::Context::getDataset<D>())
 
 /**
- * TODO: doc
+ * Defines a benchmark with a specific group, function, and dataset.
+ * @see BENCH_USE
  */
 #define BENCH_USE_GROUP(Group, Name, Dataset)\
 	static auto BENCH_CONCAT(_bench_##Name##_var_, __LINE__) = Bench::Context::instance().getGroup(Group).add(\
@@ -305,7 +313,9 @@ BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(single_group_per_unit, true, "You many only 
 BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(use_group_defined, false, "You must define a group before using BENCH_USE or specify a group with BENCH_USE_GROUP.");
 
 /**
- * TODO: doc
+ * Defines a benchmark with a specific function/dataset pair.
+ * Is assigned to the group specified by BENCH_GROUP.
+ * @see BENCH_USE_GROUP
  */
 #define BENCH_USE(Name, Dataset)\
 	BENCH_USE_COMPILE_CHECK(use_group_defined, struct _bench_group_id)\

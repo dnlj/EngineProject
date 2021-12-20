@@ -64,12 +64,14 @@ namespace {
 	template<class D, class F>
 	void calcAccuracy(Bench::Context& ctx, const D& dataset, F&& func) {
 		std::vector<long double> samples;
+
 		for (auto data : dataset) {
 			const auto actual = std_rsqrt<long double>(data);
 			const auto result = func(data);
 			const auto err = std::abs((result / actual) - 1.0L);
 			samples.push_back(err);
 		}
+
 		const auto props = Bench::calcSampleProperties(samples);
 		ctx.set("E-min", props.min);
 		ctx.set("E-max", props.max);
@@ -88,7 +90,6 @@ BENCH(rsqrt_empty) {
 
 BENCH(rsqrt_std) {
 	if constexpr (SinglePass) {
-		// TODO: also pass optional format string
 		calcAccuracy(ctx, dataset, std_rsqrt<D::ValueType>);
 		return;
 	}
