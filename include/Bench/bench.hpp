@@ -277,6 +277,7 @@ template <> struct fmt::formatter<Bench::StoredValueBase> : dynamic_formatter<> 
 	template<class T, unsigned long long line> struct _bench_compile_check_##Name<T, line, std::void_t<decltype(sizeof(T))>> { static_assert(!Negate || (line != line), Message); };
 
 #define BENCH_USE_COMPILE_CHECK(Name, Type)\
+	namespace { struct Type; }\
 	static _bench_compile_check_##Name<Type, __LINE__> BENCH_CONCAT(_bench_compile_check_##Name##_var, __LINE__);
 
 /** Check for BENCH_GROUP */
@@ -286,8 +287,8 @@ BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(single_group_per_unit, true, "You many only 
  * Defines a new benchmark group.
  */
 #define BENCH_GROUP(Name, ...)\
-	BENCH_USE_COMPILE_CHECK(single_group_per_unit, struct _bench_group_id)\
-	struct _bench_group_id { constexpr static char name[] = Name; };
+	BENCH_USE_COMPILE_CHECK(single_group_per_unit, _bench_group_id)\
+	namespace { struct _bench_group_id { constexpr static char name[] = Name; }; }
 
 /**
  * Defines a benchmark function.
@@ -318,6 +319,6 @@ BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(use_group_defined, false, "You must define a
  * @see BENCH_USE_GROUP
  */
 #define BENCH_USE(Name, Dataset)\
-	BENCH_USE_COMPILE_CHECK(use_group_defined, struct _bench_group_id)\
+	BENCH_USE_COMPILE_CHECK(use_group_defined, _bench_group_id)\
 	BENCH_USE_GROUP(_bench_group_id::name, Name, Dataset)
 
