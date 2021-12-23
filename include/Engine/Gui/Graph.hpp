@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Gui/Panel.hpp>
 #include <Engine/Gfx/Mesh.hpp>
+#include <Engine/Math/Math.hpp>
 
 
 // TODO: split
@@ -92,17 +93,15 @@ namespace Engine::Gui {
 				if (end - curr < 2) { return; }
 
 				auto prev = curr;
-
 				while (curr != end && curr->x <= min.x) { ++curr; }
+				if (curr == prev) { ++curr; } else { prev = curr - 1; }
 				if (curr == end) { return; }
-
-				if (curr > prev) { prev = curr - 1; }
-				auto next = curr + 1;
 
 				auto ctx = panel->getContext();
 				const glm::vec2 scale = panel->getSize() / (max - min);
 				const auto h = panel->getHeight();
 
+				// TODO: move into base subgraph class. All graph classes will need something like this.
 				// TODO: use lowp_fvec2 for fast norm?
 				const auto worldToGraph = [&](auto p) ENGINE_INLINE {
 					p = (p - min) * scale;
@@ -110,40 +109,58 @@ namespace Engine::Gui {
 					return p;
 				};
 
-				// TODO: this is actually (and in loop): wrong need to scale normal vec based on angle between tan vecs.
-				glm::vec2 pT = glm::normalize(*next - *curr);
-				glm::vec2 cT = {};
-				glm::vec2 a1 = worldToGraph(*curr) + glm::vec2{pT.y, pT.x};
-				glm::vec2 a2 = worldToGraph(*curr) - glm::vec2{pT.y, pT.x};
+				const auto miterLength = [&](auto aTan, auto bTan) ENGINE_INLINE {
+					// TODO: compare std::fma vs naive
+					const auto sinHalfAngleInv = Math::rsqrt(0.5f + 0.5f * glm::dot(aTan, bTan));
+					return thickness * sinHalfAngleInv;
+				};
 
-				while (true) {
-					if (prev->x > max.x) { break; }
+				const auto nextMiterPoints = [&](auto point, auto pointTan, auto lastTan) {
+					const auto mT = glm::normalize(pointT + lastT);
+					const auto mN = miterLength(pT, cT) * glm::vec2{-mT.y, mT.x};
+					return { point - mN, point + mN };
+				};
 
-					if (next == end) {
-						cT = {}; // TODO: ?
-					} else {
-						cT = glm::normalize(*next - *curr);
+				// TODO: full names on these vars, or at least comments
+				auto pV = worldToGraph(*prev);
+				auto cV = worldToGraph(*curr);
+				glm::vec2 pT = glm::normalize(cV - pV);
+				glm::vec2 cT = pT;
+
+				auto len = miterLength(pT, cT);
+				glm::vec2 a1 = pV + len * glm::vec2{-pT.y, pT.x};
+				glm::vec2 a2 = pV - len * glm::vec2{-pT.y, pT.x};
+
+				int i = 0; srand(0xDEADBEEF); // TODO: rm
+				while (curr != end) {
+					// TODO: need to figure out max in screen coords not world - if (pV.x > max.x) { break; }
+
+					cV = worldToGraph(*curr);
+					if (curr + 1 != end) {
+						cT = glm::normalize(worldToGraph(curr[1]) - cV);
 					}
 
 					// Miter tan/normal
+					len = miterLength(pT, cT);
 					const auto cMT = glm::normalize(cT + pT);
-					const auto cMN = thickness * glm::vec2{cMT.y, cMT.x};
+					const auto cMN = len * glm::vec2{-cMT.y, cMT.x};
 
-					auto a3 = worldToGraph(*curr);
+					auto a3 = cV;
 					const auto a4 = a3 + cMN;
 					a3 = a3 - cMN;
 
-					ctx->drawPoly({a1,a2,a3,a4}, color);
+					ctx->drawPoly({a1,a2,a3,a4},/*color*/glm::vec4{rand()%256/255.0f,rand()%256/255.0f,rand()%256/255.0f,0.5});
+					++i;
 
+					// TODO: move to top of loop?
 					a1 = a4;
 					a2 = a3;
 					pT = cT;
-					prev = curr;
-					curr = next;
+					pV = cV;
+					++curr;
+				};
 
-					if (next == end) { break; }
-					++next;
-				}
+				ENGINE_INFO("Draw Poly x", i);
 			};
 	};
 
