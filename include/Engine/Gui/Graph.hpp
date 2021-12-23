@@ -92,10 +92,8 @@ namespace Engine::Gui {
 				auto curr = data.cbegin();
 				if (end - curr < 2) { return; }
 
-				auto prev = curr;
 				while (curr != end && curr->x <= min.x) { ++curr; }
-				if (curr == prev) { ++curr; } else { prev = curr - 1; }
-				if (curr == end) { return; }
+				if (++curr >= end) { return; }
 
 				auto ctx = panel->getContext();
 				const glm::vec2 scale = panel->getSize() / (max - min);
@@ -115,49 +113,42 @@ namespace Engine::Gui {
 					return thickness * sinHalfAngleInv;
 				};
 
-				const auto nextMiterPoints = [&](auto point, auto pointTan, auto lastTan) {
+				const auto nextMiterPoints = [&](auto point, auto pointT, auto lastT) ENGINE_INLINE {
 					const auto mT = glm::normalize(pointT + lastT);
-					const auto mN = miterLength(pT, cT) * glm::vec2{-mT.y, mT.x};
-					return { point - mN, point + mN };
+					const auto mN = miterLength(pointT, lastT) * glm::vec2{-mT.y, mT.x};
+					return std::array{point - mN, point + mN};
 				};
 
-				// TODO: full names on these vars, or at least comments
-				auto pV = worldToGraph(*prev);
+				// xV = x's vector, xT = x's tangent, xN = x's normal
 				auto cV = worldToGraph(*curr);
-				glm::vec2 pT = glm::normalize(cV - pV);
-				glm::vec2 cT = pT;
-
-				auto len = miterLength(pT, cT);
-				glm::vec2 a1 = pV + len * glm::vec2{-pT.y, pT.x};
-				glm::vec2 a2 = pV - len * glm::vec2{-pT.y, pT.x};
+				const auto pV = worldToGraph(curr[-1]);
+				glm::vec2 cT = glm::normalize(cV - pV);
+				glm::vec2 pT = cT;
+				auto next = curr + 1;
+				glm::vec2 nV = {};
+				auto [a2, a1] = nextMiterPoints(pV, cT, pT);
 
 				int i = 0; srand(0xDEADBEEF); // TODO: rm
-				while (curr != end) {
+				while (true) {
 					// TODO: need to figure out max in screen coords not world - if (pV.x > max.x) { break; }
-
 					cV = worldToGraph(*curr);
-					if (curr + 1 != end) {
-						cT = glm::normalize(worldToGraph(curr[1]) - cV);
+					if (next != end) {
+						nV = worldToGraph(*next);
+						cT = glm::normalize(nV - cV);
 					}
 
-					// Miter tan/normal
-					len = miterLength(pT, cT);
-					const auto cMT = glm::normalize(cT + pT);
-					const auto cMN = len * glm::vec2{-cMT.y, cMT.x};
-
-					auto a3 = cV;
-					const auto a4 = a3 + cMN;
-					a3 = a3 - cMN;
+					auto [a3, a4] = nextMiterPoints(cV, cT, pT);
 
 					ctx->drawPoly({a1,a2,a3,a4},/*color*/glm::vec4{rand()%256/255.0f,rand()%256/255.0f,rand()%256/255.0f,0.5});
 					++i;
 
-					// TODO: move to top of loop?
+					if (next == end) { break; }
 					a1 = a4;
 					a2 = a3;
 					pT = cT;
-					pV = cV;
-					++curr;
+					cV = nV;
+					curr = next;
+					++next;
 				};
 
 				ENGINE_INFO("Draw Poly x", i);
