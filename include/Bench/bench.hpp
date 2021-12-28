@@ -51,7 +51,7 @@ namespace Bench {
 	ENGINE_INLINE void observe(T&& o) noexcept {
 		#ifdef _MSC_VER
 			// Costs: lea, mov
-			[[maybe_unused]] void* volatile unused = &o;
+			[[maybe_unused]] const void* volatile unused = &o;
 			clobber();
 		#else
 			// Costs: lea
@@ -324,7 +324,7 @@ BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(single_group_per_unit, true, "You many only 
 #define BENCH_USE_GROUP(Group, Name, Dataset)\
 	static auto BENCH_CONCAT(_bench_##Name##_var_, __LINE__) = Bench::Context::instance().getGroup(Group).add(\
 		{#Name, #Dataset},\
-		{[]{ Name<Dataset, false>(); }, []{ Name<Dataset, true>(); }, Dataset ::size()}\
+		{[]{ Name<Dataset, false>(); }, []{ Name<Dataset, true>(); }, Bench::Context::getDataset<Dataset>().size() }\
 	);
 
 /** Check for BENCH_USE */
