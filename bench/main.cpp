@@ -8,7 +8,6 @@
 
 // Bench
 #include <Bench/bench.hpp>
-#include <Bench/Dist/ZipIterator.hpp>
 
 #include "noise.hpp"
 

@@ -1,10 +1,13 @@
 // STD
 #include <cmath>
 
+// Engine
+#include <Engine/Zip.hpp>
+
 // Bench
 #include <Bench/bench.hpp>
 #include <Bench/Dist/Uniform.hpp>
-#include <Bench/Dist/ZipIterator.hpp>
+
 
 BENCH(mad_empty) {
 	ctx.startSample();
@@ -34,22 +37,22 @@ BENCH(mad_std) {
 namespace {
 	constexpr auto count = 1234321;
 	namespace D = Bench::Dist;
-	using UniformF = D::Zip<
+	using UniformF = Engine::Zip<
 		D::Uniform<float, count, 0>,
 		D::Uniform<float, count, 1>,
 		D::Uniform<float, count, 2>
 	>;
-	using UniformD = D::Zip<
+	using UniformD = Engine::Zip<
 		D::Uniform<double, count, 0>,
 		D::Uniform<double, count, 1>,
 		D::Uniform<double, count, 2>
 	>;
-	using UniformI32 = D::Zip<
+	using UniformI32 = Engine::Zip<
 		D::Uniform<int32_t, count, 0>,
 		D::Uniform<int32_t, count, 1>,
 		D::Uniform<int32_t, count, 2>
 	>;
-	using UniformI64 = D::Zip<
+	using UniformI64 = Engine::Zip<
 		D::Uniform<int64_t, count, 0>,
 		D::Uniform<int64_t, count, 1>,
 		D::Uniform<int64_t, count, 2>

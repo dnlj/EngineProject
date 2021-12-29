@@ -5,64 +5,13 @@
 #include <utility>
 
 // Engine
-#include <Engine/Meta/ForEach.hpp>
+#include <Engine/tuple.hpp>
 
 
-// TODO: everything in this file should probably be moved into Engine::*
-namespace Bench::Dist {
-
+namespace Engine {
 	/**
-	 * Forwards the type unless it is an rvalue reference, in which case resolves to a non-reference type.
+	 * Wraps a set of iterators; performs operations on every iterator.
 	 */
-	template<class T>
-	struct RemoveRValueRef {
-		using type = T;
-	};
-	
-	template<class T>
-	struct RemoveRValueRef<T&&> {
-		using type = T;
-	};
-
-	template<class T>
-	using RemoveRValueRef_t = typename RemoveRValueRef<T>::type;
-
-
-	// TODO: probably move into Engine::Meta or similar
-	template<class T, class... Us>
-	struct IsAnyOf : std::bool_constant<(std::same_as<T, Us> || ...)> {};
-
-	template<class T, class... Us>
-	constexpr inline bool IsAnyOf_v = IsAnyOf<T, Us...>::value;
-
-	class Nothing {};
-
-	/**
-	 * Calls a callable with the given arguments and returns the result.
-	 * If the result is `void`, return a Nothing object instead.
-	 */
-	template<class Func, class... Args>
-	// TODO: better name
-	ENGINE_INLINE decltype(auto) call(Func&& func, Args&&... args) {
-		if constexpr (std::same_as<void, decltype(std::forward<Func>(func)(std::forward<Args>(args)...))>) {
-			std::forward<Func>(func)(std::forward<Args>(args)...);
-			return Nothing{};
-		} else {
-			return std::forward<Func>(func)(std::forward<Args>(args)...);
-		}
-	}
-
-	template<class Tuple, class Func, auto... Is>
-	ENGINE_INLINE decltype(auto) forEach(Tuple&& tuple, Func&& func, std::index_sequence<Is...>) {
-		using Ret = std::tuple<decltype(call(std::forward<Func>(func), std::get<Is>(std::forward<Tuple>(tuple))))...>;
-		return Ret(call(std::forward<Func>(func), std::get<Is>(std::forward<Tuple>(tuple)))...);
-	}
-
-	template<class Tuple, class Func>
-	ENGINE_INLINE decltype(auto) forEach(Tuple&& tuple, Func&& func) {
-		return forEach(std::forward<Tuple>(tuple), std::forward<Func>(func), std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>{});
-	}
-
 	template<class... Iters>
 	class ZipIterator {
 		private:
@@ -123,7 +72,7 @@ namespace Bench::Dist {
 	class Zip {
 		private:
 			static_assert((!std::is_rvalue_reference_v<Ranges> && ...), "Cannot store rvalue reference");
-			std::tuple<Ranges...> ranges; // RemoveRValueRef_t no longer needed here because of ctad
+			std::tuple<Ranges...> ranges; // RemoveRValueRef_t no longer needed here because of ctad and static_assert
 
 		public:
 			Zip() {}
