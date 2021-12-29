@@ -169,6 +169,11 @@ namespace Bench {
 			custom.clear();
 		}
 
+		// Sort rows
+		std::ranges::sort(rows, [](auto& a, auto& b) {
+			return std::tie(a.cells["Name"], a.cells["Dataset"]) < std::tie(b.cells["Name"], b.cells["Dataset"]);
+		});
+
 		// Output buffer
 		std::string output;
 		output.reserve(1024); // TOOD: how big to make this?

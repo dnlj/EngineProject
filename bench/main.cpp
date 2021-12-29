@@ -37,15 +37,6 @@ int main(int argc, char* argv[]) {
 	//       cont. or go until we hit a certain confidence threshhold?
 	// TODO: need to store both wall time and cpu time
 
-	// TODO: rm - testing
-	std::vector<float> foo = {0.1f, 0.2f, 3.0f, 4.5f};
-	std::vector<int> bar = {4, 3, 2, 1};
-	std::vector<double> baz = {9.8, 7.6, 6.5, 5.4};
-	Bench::Dist::Zip a{foo, bar, baz};
-	for (auto [i,j,k] : a) {
-		ENGINE_LOG("i,j,k = ", i, ", ", j, ", ", k);
-	}
-
 	auto& ctx = Bench::Context::instance();
 
 	if (auto format = parser.get<std::string>("format")) {
