@@ -108,7 +108,6 @@ namespace Engine::Gui {
 				};
 
 				const auto miterLength = [&](auto aTan, auto bTan) ENGINE_INLINE {
-					// TODO: compare std::fma vs naive
 					const auto sinHalfAngleInv = Math::rsqrt(0.5f + 0.5f * glm::dot(aTan, bTan));
 					return thickness * sinHalfAngleInv;
 				};
