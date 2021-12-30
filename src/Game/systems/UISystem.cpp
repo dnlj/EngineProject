@@ -711,9 +711,13 @@ namespace Game {
 
 			test2->addPoint({10, 10});
 			test2->addPoint({30, 30});
+			//test2->addPoint({31, 35});
 			test2->addPoint({60, 30});
 			test2->addPoint({90, 50});
 			test2->addPoint({95, 100});
+			test2->addPoint({195, 100});
+			test2->addPoint({295, 100});
+			test2->addPoint({395, 100});
 
 			panels.graphTest->graphs.push_back(std::move(test1));
 			panels.graphTest->graphs.push_back(std::move(test2));

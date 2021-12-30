@@ -119,17 +119,17 @@ namespace Engine::Gui {
 				};
 
 				// xV = x's vector, xT = x's tangent, xN = x's normal
-				auto cV = worldToGraph(*curr);
+				const auto maxX = worldToGraph(max).x;
 				const auto pV = worldToGraph(curr[-1]);
-				glm::vec2 cT = glm::normalize(cV - pV);
-				glm::vec2 pT = cT;
+				auto cV = worldToGraph(*curr);
+				auto cT = glm::normalize(cV - pV);
+				auto pT = cT;
 				auto next = curr + 1;
 				glm::vec2 nV = {};
 				auto [a2, a1] = nextMiterPoints(pV, cT, pT);
 
 				int i = 0; srand(0xDEADBEEF); // TODO: rm
 				while (true) {
-					// TODO: need to figure out max in screen coords not world - if (pV.x > max.x) { break; }
 					cV = worldToGraph(*curr);
 					if (next != end) {
 						nV = worldToGraph(*next);
@@ -142,6 +142,8 @@ namespace Engine::Gui {
 					++i;
 
 					if (next == end) { break; }
+					if (cV.x > maxX) { break; }
+
 					a1 = a4;
 					a2 = a3;
 					pT = cT;
@@ -160,13 +162,6 @@ namespace Engine::Gui {
 
 		public:
 			Graph(Context* context) : Panel{context} {
-				// TODO: rm 
-				//auto test = std::make_unique<AreaGraph>();
-				//test->addPoint({0,  10});
-				//test->addPoint({30, 10});
-				//test->addPoint({60, 15});
-				//test->addPoint({90, 25});
-				//graphs.push_back(std::move(test));
 			}
 
 			// TODO: do we want an getPoint function like imgui or do we want our own addPoint function?
