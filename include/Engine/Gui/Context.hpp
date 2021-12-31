@@ -367,7 +367,8 @@ namespace Engine::Gui {
 			ENGINE_INLINE void deregisterTextCallback(Panel* panel) {
 				textCallbacks.erase(panel);
 			}
-			
+
+			// TODO: rename - getCursorPos to avoid confusion with setCursor, maybe rename setCursor to setCursorStyle or similar to further disambiguate.
 			ENGINE_INLINE auto getCursor() const noexcept {
 				return cursor;
 			}

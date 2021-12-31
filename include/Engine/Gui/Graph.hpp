@@ -64,8 +64,8 @@ namespace Engine::Gui {
 					glm::vec2 points[] = {
 						*prev - min,
 						*curr - min,
-						glm::vec2{curr->x - min.x, 0}, // TODO: change to draw to -inf instead of zero for more correct world coords
-						glm::vec2{prev->x - min.x, 0}, // TODO: change to draw to -inf instead of zero for more correct world coords
+						glm::vec2{curr->x - min.x, 0},
+						glm::vec2{prev->x - min.x, 0},
 					};
 
 					for (auto& p : points) {
@@ -92,6 +92,7 @@ namespace Engine::Gui {
 				auto curr = data.cbegin();
 				if (end - curr < 2) { return; }
 
+				// TODO: atm we cull first last point to soon. we need to overdraw by one point to get full miters
 				while (curr != end && curr->x <= min.x) { ++curr; }
 				if (curr == end) { return; }
 				if (curr == data.cbegin()) { ++curr; }
@@ -152,13 +153,14 @@ namespace Engine::Gui {
 					++next;
 				};
 
-				ENGINE_INFO("Draw Poly x", i);
+				//ENGINE_INFO("Draw Poly x", i);
 			};
 	};
 
 	class Graph : public Panel {
 		public: // TODO: private
 			std::vector<std::unique_ptr<SubGraph>> graphs;
+			glm::vec2 lastDragPos = {};
 
 		public:
 			Graph(Context* context) : Panel{context} {
@@ -184,8 +186,6 @@ namespace Engine::Gui {
 				// TODO: should we scale scroll by SPI_GETWHEELSCROLLLINES/SPI_GETWHEELSCROLLCHARS?
 				switch (act) {
 					case Action::Scroll: {
-						ENGINE_LOG("Graph - Scroll ", act.value.f32);
-
 						// Reduce scroll speed
 						const auto s = act.value.f32 * 0.5f;
 
@@ -198,11 +198,32 @@ namespace Engine::Gui {
 						break;
 					}
 					case Action::ScrollH: {
-						ENGINE_LOG("Graph - ScrollH ", act.value.f32);
 						break;
 					}
 					default: { break; }
 				}
+			}
+
+			// TODO: i think we really want this on riht click, maybe this should be an action?
+			virtual void onBeginActivate() override {
+				if (ctx->getActive() == this) { return; }
+
+				lastDragPos = ctx->getCursor();
+				ctx->registerMouseMove(this, [this](const glm::vec2 pos) {
+					const auto sz = getSize();
+					const auto diff = glm::vec2{lastDragPos.x - pos.x, pos.y - lastDragPos.y};
+					for (auto& graph : graphs) {
+						const auto scale = (graph->max - graph->min) / sz;
+						const auto offset = diff * scale;
+						graph->min += offset;
+						graph->max += offset;
+					}
+					lastDragPos = pos;
+				});
+			}
+
+			virtual void onEndActivate() override {
+				ctx->deregisterMouseMove(this);
 			}
 
 			void scale(float32 s) {
