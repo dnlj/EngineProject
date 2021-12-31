@@ -182,7 +182,6 @@ namespace Engine::Gui {
 			}
 
 			virtual void onAction(ActionEvent act) override {
-				// TODO: check that mouse is in window
 				// TODO: should we scale scroll by SPI_GETWHEELSCROLLLINES/SPI_GETWHEELSCROLLCHARS?
 				switch (act) {
 					case Action::Scroll: {
@@ -204,7 +203,7 @@ namespace Engine::Gui {
 				}
 			}
 
-			// TODO: i think we really want this on riht click, maybe this should be an action?
+			// TODO: i think we really want this on right click, maybe this should be an action?
 			virtual void onBeginActivate() override {
 				if (ctx->getActive() == this) { return; }
 

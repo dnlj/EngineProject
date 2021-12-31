@@ -310,8 +310,8 @@ namespace Engine::Gui {
 			for (auto act : actionQueue) {
 				focus->onAction(act);
 			}
-			actionQueue.clear();
 		}
+		actionQueue.clear();
 
 		const Panel* curr = root;
 		renderState.layer = 0;
