@@ -709,6 +709,7 @@ namespace Game {
 			test1->addPoint({60, 30});
 			test1->addPoint({90, 50});
 
+			test2->addPoint({-10, 10});
 			test2->addPoint({10, 10});
 			test2->addPoint({30, 30});
 			//test2->addPoint({31, 35});

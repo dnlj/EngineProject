@@ -64,8 +64,8 @@ namespace Engine::Gui {
 					glm::vec2 points[] = {
 						*prev - min,
 						*curr - min,
-						glm::vec2{curr->x - min.x, 0},
-						glm::vec2{prev->x - min.x, 0},
+						glm::vec2{curr->x - min.x, 0}, // TODO: change to draw to -inf instead of zero for more correct world coords
+						glm::vec2{prev->x - min.x, 0}, // TODO: change to draw to -inf instead of zero for more correct world coords
 					};
 
 					for (auto& p : points) {
@@ -93,7 +93,8 @@ namespace Engine::Gui {
 				if (end - curr < 2) { return; }
 
 				while (curr != end && curr->x <= min.x) { ++curr; }
-				if (++curr >= end) { return; }
+				if (curr == end) { return; }
+				if (curr == data.cbegin()) { ++curr; }
 
 				auto ctx = panel->getContext();
 				const glm::vec2 scale = panel->getSize() / (max - min);
@@ -119,7 +120,6 @@ namespace Engine::Gui {
 				};
 
 				// xV = x's vector, xT = x's tangent, xN = x's normal
-				const auto maxX = worldToGraph(max).x;
 				const auto pV = worldToGraph(curr[-1]);
 				auto cV = worldToGraph(*curr);
 				auto cT = glm::normalize(cV - pV);
@@ -142,7 +142,7 @@ namespace Engine::Gui {
 					++i;
 
 					if (next == end) { break; }
-					if (cV.x > maxX) { break; }
+					if (curr->x > max.x) { break; }
 
 					a1 = a4;
 					a2 = a3;
@@ -152,7 +152,7 @@ namespace Engine::Gui {
 					++next;
 				};
 
-				//ENGINE_INFO("Draw Poly x", i);
+				ENGINE_INFO("Draw Poly x", i);
 			};
 	};
 
@@ -173,12 +173,14 @@ namespace Engine::Gui {
 
 			virtual void render() const override {
 				ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
+				// TODO: these really should be rendered at +1 depth for correct clipping
 				for (auto& graph : graphs) {
 					graph->draw(this);
 				}
 			}
 
 			virtual void onAction(ActionEvent act) override {
+				// TODO: check that mouse is in window
 				// TODO: should we scale scroll by SPI_GETWHEELSCROLLLINES/SPI_GETWHEELSCROLLCHARS?
 				switch (act) {
 					case Action::Scroll: {
