@@ -550,6 +550,12 @@ namespace Engine::Gui {
 		drawVertex(pos + glm::vec2{size.x, 0}, color);
 		drawVertex(pos, color);
 	}
+	
+	void Context::drawLine(const glm::vec2 a, const glm::vec2 b, const float32 width, const glm::vec4 color) {
+		const auto t = glm::normalize(b - a);
+		const auto n = width * glm::vec2{-t.y, t.x};
+		drawPoly({a - n, a + n, b + n, b - n}, color);
+	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
 		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");

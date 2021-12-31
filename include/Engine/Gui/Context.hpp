@@ -271,6 +271,11 @@ namespace Engine::Gui {
 			 */
 			void drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color);
 
+			/**
+			 * Draws a line between two points.
+			 */
+			void drawLine(const glm::vec2 a, const glm::vec2 b, const float32 width, const glm::vec4 color);
+
 			void drawString(glm::vec2 pos, const ShapedString* fstr);
 
 			void unsetActive();
