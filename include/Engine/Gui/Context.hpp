@@ -114,7 +114,7 @@ namespace Engine::Gui {
 		private:
 			constexpr static PanelId invalidPanelId = -1;
 
-			std::vector<Action> actionQueue;
+			std::vector<ActionEvent> actionQueue;
 			NativeHandle nativeHandle = {};
 			std::string textBuffer;
 			void* userdata = nullptr;
@@ -409,7 +409,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE Panel* getActive() noexcept { return active; }
 			ENGINE_INLINE const Panel* getActive() const noexcept { return active; }
 
-			void queueAction(Action act);
+			void queueAction(Action action, Input::Value value = {});
 
 			/**
 			 * Copies the UTF-8 encoded text to the clipboard.

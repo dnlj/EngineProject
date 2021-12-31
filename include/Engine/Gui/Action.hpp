@@ -3,6 +3,8 @@
 
 namespace Engine::Gui {
 	enum class Action {
+		Unknown,
+
 		SelectBegin,
 		SelectEnd,
 		SelectAll,
@@ -28,5 +30,20 @@ namespace Engine::Gui {
 
 		PanelNext,
 		PanelPrev,
+
+		Scroll,
+		ScrollH,
+	};
+
+	class ActionEvent {
+		public:
+			ActionEvent(Action action = {}, Input::Value value = {})
+				: action{action}, value{value} {
+			}
+
+			Action action;
+			Input::Value value;
+
+			operator Action() const noexcept { return action; }
 	};
 }

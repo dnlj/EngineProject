@@ -318,7 +318,7 @@ namespace Engine::Gui {
 			}
 			ENGINE_INLINE bool isEnabled() const noexcept { return getFlag(Flag::Enabled); }
 
-			virtual void onAction(Action act) {}
+			virtual void onAction(ActionEvent action) {}
 			
 			/**
 			 * Called when this panel is hovered.

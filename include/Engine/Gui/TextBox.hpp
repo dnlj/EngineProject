@@ -78,7 +78,7 @@ namespace Engine::Gui {
 				}
 			}
 
-			virtual void onAction(Action act) override {
+			virtual void onAction(ActionEvent act) override {
 				switch (act) {
 					case Action::SelectBegin: { ++selecting; if (selecting == 1) { select = caret; } break; }
 					case Action::SelectEnd: { if (selecting > 0) { --selecting; }; break; }

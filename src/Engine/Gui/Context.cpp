@@ -633,8 +633,8 @@ namespace Engine::Gui {
 		}
 	}
 
-	void Context::queueAction(Action act) {
-		actionQueue.push_back(act);
+	void Context::queueAction(Action action, Input::Value value) {
+		actionQueue.push_back({action, value});
 	}
 
 	void Context::deletePanel(Panel* panel, bool isChild) {

@@ -782,6 +782,10 @@ void run(int argc, char* argv[]) {
 			InputId{InputType::KEYBOARD, 0, +KeyCode::RCtrl},
 			InputId{InputType::KEYBOARD, 0, +KeyCode::A},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::SelectAll); }});
+		
+		bm.addBind(InputLayer::GUI, true, InputSequence{
+				InputId{InputType::MOUSE_WHEEL, 0, 0}
+		}, [&](Value curr, Value prev, auto time){ guiContext.queueAction(GuiAction::Scroll, curr); });
 
 		//bm.setLayerEnabled(InputLayer::GUI, false);
 	}

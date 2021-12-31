@@ -152,7 +152,7 @@ namespace Engine::Gui {
 					++next;
 				};
 
-				ENGINE_INFO("Draw Poly x", i);
+				//ENGINE_INFO("Draw Poly x", i);
 			};
 	};
 
@@ -175,6 +175,47 @@ namespace Engine::Gui {
 				ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
 				for (auto& graph : graphs) {
 					graph->draw(this);
+				}
+			}
+
+			virtual void onAction(ActionEvent act) override {
+				// TODO: should we scale scroll by SPI_GETWHEELSCROLLLINES/SPI_GETWHEELSCROLLCHARS?
+				switch (act) {
+					case Action::Scroll: {
+						ENGINE_LOG("Graph - Scroll ", act.value.f32);
+
+						// Reduce scroll speed
+						const auto s = act.value.f32 * 0.5f;
+
+						if (s < 0) {
+							scale(1 - s);
+						} else {
+							scale(1.0f / (1 + s));
+						}
+
+						break;
+					}
+					case Action::ScrollH: {
+						ENGINE_LOG("Graph - ScrollH ", act.value.f32);
+						break;
+					}
+					default: { break; }
+				}
+			}
+
+			void scale(float32 s) {
+				auto p = ctx->getCursor();
+				p -= getPos();
+				p /= getSize();
+				p.y = 1.0f - p.y;
+				p = glm::clamp(p, 0.0f, 1.0f);
+
+				for (auto& graph : graphs) {
+					auto size = graph->max - graph->min;
+					const auto target = p * size + graph->min; // cursor in world space
+					size *= s;
+					graph->min = target - size * p;
+					graph->max = graph->min + size;
 				}
 			}
 
