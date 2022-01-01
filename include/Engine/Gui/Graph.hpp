@@ -2,8 +2,6 @@
 
 // Engine
 #include <Engine/Gui/Panel.hpp>
-#include <Engine/Gfx/Mesh.hpp>
-#include <Engine/Math/Math.hpp>
 #include <Engine/Gui/Context.hpp>
 
 
@@ -57,14 +55,31 @@ namespace Engine::Gui {
 			void draw(const Panel* panel) const;
 	};
 
+	class GraphAxis : public Panel {
+		private:
+			std::vector<ShapedString> labels;
+			int64 min = 0;
+			int64 max = 0;
+			int64 major = 10; // Every N minor marks
+			int64 minor = 5;
+			int64 step = std::gcd(major, minor);
+
+		public:
+			using Panel::Panel;
+			virtual void render() const override;
+			void setAxisBounds(float32 lower, float32 upper) noexcept {
+				min = static_cast<int64>(lower);
+				max = static_cast<int64>(upper);
+			}
+	};
+
 	class Graph : public Panel {
-		public: // TODO: private
+		private: // TODO: private
 			std::vector<std::unique_ptr<SubGraph>> graphs;
 			glm::vec2 lastDragPos = {};
 
 		public:
-			Graph(Context* context) : Panel{context} {
-			}
+			Graph(Context* context);
 
 			virtual void render() const override;
 
@@ -75,6 +90,14 @@ namespace Engine::Gui {
 			virtual void onEndActivate() override;
 
 			void scale(float32 s);
+
+			void addGraph(std::unique_ptr<SubGraph> graph) {
+				auto axis = ctx->createPanel<GraphAxis>(this);
+				// TODO: how to associate graph <-> axis bounds
+				axis->setAxisBounds(graph->min.x, graph->max.x);
+				axis->setSize({getWidth(), 32});
+				graphs.push_back(std::move(graph));
+			}
 
 		private:
 	};

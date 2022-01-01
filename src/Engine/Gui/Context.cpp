@@ -553,7 +553,7 @@ namespace Engine::Gui {
 	
 	void Context::drawLine(const glm::vec2 a, const glm::vec2 b, const float32 width, const glm::vec4 color) {
 		const auto t = glm::normalize(b - a);
-		const auto n = width * glm::vec2{-t.y, t.x};
+		const auto n = width * 0.5f * glm::vec2{-t.y, t.x};
 		drawPoly({a - n, a + n, b + n, b - n}, color);
 	}
 

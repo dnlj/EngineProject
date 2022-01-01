@@ -1,6 +1,8 @@
 
 // Engine
 #include <Engine/Gui/Graph.hpp>
+#include <Engine/Gui/DirectionalLayout.hpp>
+#include <Engine/Math/Math.hpp>
 
 
 namespace Engine::Gui {
@@ -108,9 +110,35 @@ namespace Engine::Gui {
 
 		//ENGINE_INFO("Draw Poly x", i);
 	};
+
+	void GraphAxis::render() const {
+		int64 start = min;
+		if (auto rem = start % minor; rem != 0) {
+			start += rem;
+		}
+
+		const auto scale = getWidth() / (max - min);
+		const auto line = [&](auto i, auto w, auto h) ENGINE_INLINE {
+			const auto x = scale * (i - min);
+			ctx->drawLine({x, 0}, {x, h}, w, {1,0,0,0.75});
+		};
+
+		for (int64 i = start; i <= max; i += step) {
+			if (i % major == 0) {
+				// TODO: text labels
+				line(i, 2.0f, getHeight());
+			} else if (i % minor == 0) {
+				line(i, 1.0f, getHeight() * 0.7f);
+			}
+		}
+	}
 }
 
 namespace Engine::Gui {
+	Graph::Graph(Context* context) : Panel{context} {
+		//setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch});
+	}
+
 	void Graph::render() const {
 		ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
 		// TODO: these really should be rendered at +1 depth for correct clipping

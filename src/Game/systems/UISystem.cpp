@@ -433,14 +433,14 @@ namespace Game {
 							sendGraph = test.get();
 							sendGraph->max.y = 15000;
 							sendGraph->color = {1,0,1,0.5f};
-							graph->graphs.push_back(std::move(test));
+							graph->addGraph(std::move(test));
 						}
 						{
 							auto test = std::make_unique<Gui::AreaGraph>();
 							recvGraph = test.get();
 							recvGraph->max.y = 5000;
 							recvGraph->color = {0,1,1,0.5f};
-							graph->graphs.push_back(std::move(test));
+							graph->addGraph(std::move(test));
 						}
 					}
 
@@ -720,8 +720,8 @@ namespace Game {
 			test2->addPoint({295, 100});
 			test2->addPoint({395, 100});
 
-			panels.graphTest->graphs.push_back(std::move(test1));
-			panels.graphTest->graphs.push_back(std::move(test2));
+			panels.graphTest->addGraph(std::move(test1));
+			panels.graphTest->addGraph(std::move(test2));
 		}
 
 		panels.infoPane->toggle();

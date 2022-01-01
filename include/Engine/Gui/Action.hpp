@@ -31,6 +31,7 @@ namespace Engine::Gui {
 		PanelNext,
 		PanelPrev,
 
+		// TODO: "scroll" isnt an action... "zoom in", "zoom out", "move line up", etc are actions
 		Scroll,
 		ScrollH,
 	};
