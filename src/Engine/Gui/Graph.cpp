@@ -174,7 +174,7 @@ namespace Engine::Gui {
 		// TODO: i think we really want this on right/middle click, maybe this should be an action?
 		lastDragPos = ctx->getCursor();
 		ctx->registerMouseMove(this, [this](const glm::vec2 pos) {
-			const auto sz = getSize();
+			const auto sz = area->getSize();
 			const auto diff = glm::vec2{lastDragPos.x - pos.x, pos.y - lastDragPos.y};
 			for (auto& graph : area->graphs) {
 				const auto scale = (graph->max - graph->min) / sz;
@@ -192,8 +192,8 @@ namespace Engine::Gui {
 
 	void RichGraph::scale(float32 s) {
 		auto p = ctx->getCursor();
-		p -= getPos();
-		p /= getSize();
+		p -= area->getPos();
+		p /= area->getSize();
 		p.y = 1.0f - p.y;
 		p = glm::clamp(p, 0.0f, 1.0f);
 

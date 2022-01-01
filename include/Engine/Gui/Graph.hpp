@@ -107,10 +107,10 @@ namespace Engine::Gui {
 			void scale(float32 s);
 
 			void addGraph(std::unique_ptr<SubGraph> graph) {
-				//auto axis = ctx->createPanel<GraphAxis>(this);
-				//// TODO: how to associate graph <-> axis bounds
-				//axis->setAxisBounds(graph->min.x, graph->max.x);
-				//axis->setSize({getWidth(), 32});
+				auto axis = ctx->createPanel<GraphAxis>(this);
+				// TODO: how to associate graph <-> axis bounds
+				axis->setAxisBounds(graph->min.x, graph->max.x);
+				axis->setSize({getWidth(), 32});
 				area->graphs.push_back(std::move(graph));
 			}
 
