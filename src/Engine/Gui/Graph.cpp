@@ -112,6 +112,7 @@ namespace Engine::Gui {
 	};
 
 	void GraphAxis::render() const {
+		ctx->drawRect({}, getSize(), {0,1,0,1});
 		int64 start = min;
 		if (auto rem = start % minor; rem != 0) {
 			start += rem;

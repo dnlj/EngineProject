@@ -110,7 +110,7 @@ namespace Engine::Gui {
 				auto axis = ctx->createPanel<GraphAxis>(this);
 				// TODO: how to associate graph <-> axis bounds
 				axis->setAxisBounds(graph->min.x, graph->max.x);
-				axis->setSize({getWidth(), 32});
+				axis->setFixedHeight(16);
 				area->graphs.push_back(std::move(graph));
 			}
 
