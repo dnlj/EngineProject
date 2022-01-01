@@ -54,6 +54,21 @@ namespace Engine::Gui {
 		public:
 			void draw(const Panel* panel) const;
 	};
+	
+	class GraphArea : public Panel {
+		public:
+			std::vector<std::unique_ptr<SubGraph>> graphs;
+
+		public:
+			using Panel::Panel;
+
+			virtual void render() const override {
+				ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
+				for (auto& graph : graphs) {
+					graph->draw(this);
+				}
+			}
+	};
 
 	class GraphAxis : public Panel {
 		private:
@@ -73,13 +88,13 @@ namespace Engine::Gui {
 			}
 	};
 
-	class Graph : public Panel {
+	class RichGraph : public Panel {
 		private: // TODO: private
-			std::vector<std::unique_ptr<SubGraph>> graphs;
+			GraphArea* area;
 			glm::vec2 lastDragPos = {};
 
 		public:
-			Graph(Context* context);
+			RichGraph(Context* context);
 
 			virtual void render() const override;
 
@@ -92,12 +107,14 @@ namespace Engine::Gui {
 			void scale(float32 s);
 
 			void addGraph(std::unique_ptr<SubGraph> graph) {
-				auto axis = ctx->createPanel<GraphAxis>(this);
-				// TODO: how to associate graph <-> axis bounds
-				axis->setAxisBounds(graph->min.x, graph->max.x);
-				axis->setSize({getWidth(), 32});
-				graphs.push_back(std::move(graph));
+				//auto axis = ctx->createPanel<GraphAxis>(this);
+				//// TODO: how to associate graph <-> axis bounds
+				//axis->setAxisBounds(graph->min.x, graph->max.x);
+				//axis->setSize({getWidth(), 32});
+				area->graphs.push_back(std::move(graph));
 			}
+
+			virtual bool canFocusChild(Panel* child) const { return false; }
 
 		private:
 	};

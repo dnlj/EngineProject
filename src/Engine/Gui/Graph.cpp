@@ -135,19 +135,17 @@ namespace Engine::Gui {
 }
 
 namespace Engine::Gui {
-	Graph::Graph(Context* context) : Panel{context} {
-		//setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch});
+	RichGraph::RichGraph(Context* context)
+		: Panel{context}
+		, area{context->createPanel<GraphArea>(this)} {
+		setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch});
 	}
 
-	void Graph::render() const {
-		ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
-		// TODO: these really should be rendered at +1 depth for correct clipping
-		for (auto& graph : graphs) {
-			graph->draw(this);
-		}
+	void RichGraph::render() const {
+		ctx->drawRect({0,0}, getSize(), {0,0,1,0.2});
 	}
 
-	void Graph::onAction(ActionEvent act) {
+	void RichGraph::onAction(ActionEvent act) {
 		// TODO: should we scale scroll by SPI_GETWHEELSCROLLLINES/SPI_GETWHEELSCROLLCHARS?
 		switch (act) {
 			case Action::Scroll: {
@@ -170,7 +168,7 @@ namespace Engine::Gui {
 	}
 
 	// TODO: i think we really want this on right click, maybe this should be an action?
-	void Graph::onBeginActivate() {
+	void RichGraph::onBeginActivate() {
 		if (ctx->getActive() == this) { return; }
 
 		// TODO: i think we really want this on right/middle click, maybe this should be an action?
@@ -178,7 +176,7 @@ namespace Engine::Gui {
 		ctx->registerMouseMove(this, [this](const glm::vec2 pos) {
 			const auto sz = getSize();
 			const auto diff = glm::vec2{lastDragPos.x - pos.x, pos.y - lastDragPos.y};
-			for (auto& graph : graphs) {
+			for (auto& graph : area->graphs) {
 				const auto scale = (graph->max - graph->min) / sz;
 				const auto offset = diff * scale;
 				graph->min += offset;
@@ -188,18 +186,18 @@ namespace Engine::Gui {
 		});
 	}
 
-	void Graph::onEndActivate() {
+	void RichGraph::onEndActivate() {
 		ctx->deregisterMouseMove(this);
 	}
 
-	void Graph::scale(float32 s) {
+	void RichGraph::scale(float32 s) {
 		auto p = ctx->getCursor();
 		p -= getPos();
 		p /= getSize();
 		p.y = 1.0f - p.y;
 		p = glm::clamp(p, 0.0f, 1.0f);
 
-		for (auto& graph : graphs) {
+		for (auto& graph : area->graphs) {
 			auto size = graph->max - graph->min;
 			const auto target = p * size + graph->min; // cursor in world space
 			size *= s;

@@ -358,7 +358,7 @@ namespace Game {
 					Gui::Label* recv = nullptr;
 					Gui::Label* loss = nullptr;
 					Gui::Slider* recvRate = nullptr;
-					Gui::Graph* graph = nullptr;
+					Gui::RichGraph* graph = nullptr;
 					Gui::AreaGraph* sendGraph = nullptr;
 					Gui::AreaGraph* recvGraph = nullptr;
 
@@ -425,7 +425,7 @@ namespace Game {
 							}
 						);
 
-						graph = ctx->createPanel<Gui::Graph>(this);
+						graph = ctx->createPanel<Gui::RichGraph>(this);
 						graph->setHeight(200);
 
 						{
@@ -697,7 +697,7 @@ namespace Game {
 		}
 
 		{
-			panels.graphTest = ctx->createPanel<Gui::Graph>(content);
+			panels.graphTest = ctx->createPanel<Gui::RichGraph>(content);
 			panels.graphTest->setHeight(150);
 			auto test1 = std::make_unique<Gui::AreaGraph>();
 			auto test2 = std::make_unique<Gui::LineGraph>();
