@@ -40,7 +40,7 @@ namespace Engine::Gui {
 				autoSize();
 			}
 
-			virtual void render() const override {
+			virtual void render() override {
 				glm::vec2 pos = {0,0};
 				const auto& str = getShapedString();
 				const glm::vec2 size = getSize();

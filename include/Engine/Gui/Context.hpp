@@ -103,7 +103,7 @@ namespace Engine::Gui {
 			};
 
 			struct BFSStateData {
-				const Panel* panel;
+				Panel* panel;
 			};
 
 			struct CursorEntry {

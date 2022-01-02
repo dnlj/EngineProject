@@ -313,7 +313,7 @@ namespace Engine::Gui {
 		}
 		actionQueue.clear();
 
-		const Panel* curr = root;
+		Panel* curr = root;
 		renderState.layer = 0;
 		polyDrawGroups.emplace_back().offset = 0;
 

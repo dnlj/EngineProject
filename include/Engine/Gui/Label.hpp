@@ -10,7 +10,7 @@ namespace Engine::Gui {
 		public:
 			using StringLine::StringLine;
 
-			virtual void render() const override {
+			virtual void render() override {
 				ctx->drawRect({0,0}, getSize(), {1,0,0,0});
 				ctx->drawString(getStringOffset(), &getShapedString());
 			}

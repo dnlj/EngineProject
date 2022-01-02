@@ -285,7 +285,7 @@ namespace Engine::Gui {
 			/**
 			 * Renders this panel.
 			 */
-			virtual void render() const;
+			virtual void render();
 
 			/**
 			 * Called before layout is performed.

@@ -11,7 +11,7 @@ namespace Engine::Gui {
 		delete layout;
 	};
 
-	void Panel::render() const {
+	void Panel::render() {
 		ctx->drawRect({0,0}, size, {1,0,0,0.2});
 	}
 }

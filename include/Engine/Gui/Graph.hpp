@@ -62,7 +62,7 @@ namespace Engine::Gui {
 		public:
 			using Panel::Panel;
 
-			virtual void render() const override {
+			virtual void render() override {
 				ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
 				for (auto& graph : graphs) {
 					graph->draw(this);
@@ -72,20 +72,16 @@ namespace Engine::Gui {
 
 	class GraphAxis : public Panel {
 		private:
-			std::vector<ShapedString> labels;
-			int64 min = 0;
-			int64 max = 0;
-			int64 major = 10; // Every N minor marks
-			int64 minor = 5;
-			int64 step = std::gcd(major, minor);
+			SubGraph* graph = nullptr;
+			//RingBuffer<ShapedString> labels;
+			int32 major = 10; // Every N minor marks
+			int32 minor = 5;
+			int32 step = std::gcd(major, minor);
 
 		public:
 			using Panel::Panel;
-			virtual void render() const override;
-			void setAxisBounds(float32 lower, float32 upper) noexcept {
-				min = static_cast<int64>(lower);
-				max = static_cast<int64>(upper);
-			}
+			virtual void render() override;
+			ENGINE_INLINE void setGraph(SubGraph* graph) noexcept { this->graph = graph; }
 	};
 
 	class RichGraph : public Panel {
@@ -96,7 +92,7 @@ namespace Engine::Gui {
 		public:
 			RichGraph(Context* context);
 
-			virtual void render() const override;
+			virtual void render() override;
 
 			virtual void onAction(ActionEvent act) override;
 
@@ -108,8 +104,7 @@ namespace Engine::Gui {
 
 			void addGraph(std::unique_ptr<SubGraph> graph) {
 				auto axis = ctx->createPanel<GraphAxis>(this);
-				// TODO: how to associate graph <-> axis bounds
-				axis->setAxisBounds(graph->min.x, graph->max.x);
+				axis->setGraph(graph.get());
 				axis->setFixedHeight(16);
 				area->graphs.push_back(std::move(graph));
 			}

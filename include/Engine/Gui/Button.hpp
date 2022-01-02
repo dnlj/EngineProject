@@ -18,7 +18,7 @@ namespace Engine::Gui {
 
 			void setAction(Callback func) { action = func; }
 
-			virtual void render() const override {
+			virtual void render() override {
 				ctx->drawRect({0,0}, getSize(), {1,0,0,0.2});
 				ctx->drawString(getStringOffset(), &getShapedString());
 			}

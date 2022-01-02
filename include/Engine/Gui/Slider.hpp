@@ -65,7 +65,7 @@ namespace Engine::Gui {
 				label->autoText(fmt::format("{:.3}", getValue()));
 			}
 
-			virtual void render() const override {
+			virtual void render() override {
 				const auto sz = getSize();
 				constexpr float32 hw = 8; // handle width
 
