@@ -110,11 +110,11 @@ namespace Engine {
 				}
 
 				RingBufferImpl& operator=(RingBufferImpl&& other) requires IsDynamic { swap(*this, other); return *this; }
-				
+
 				[[nodiscard]] ENGINE_INLINE T& operator[](SizeType i) noexcept {
 					return dataT()[wrapIndex(start + i)];
 				}
-
+				
 				[[nodiscard]] ENGINE_INLINE const T& operator[](SizeType i) const noexcept {
 					return const_cast<RingBufferImpl&>(*this)[i];
 				}
@@ -188,7 +188,7 @@ namespace Engine {
 					stop = 0;
 					isEmpty = true;
 				}
-				
+
 				ENGINE_INLINE void reserve(SizeType n) const noexcept requires IsStatic {
 					ENGINE_DEBUG_ASSERT(n <= capacity());
 				}
@@ -208,6 +208,11 @@ namespace Engine {
 
 					delete[] data.first;
 					data = temp;
+				}
+
+				ENGINE_INLINE void resize(SizeType n) requires IsDynamic {
+					reserve(n);
+					while (size() < n) { emplace(); }
 				}
 				
 				friend void swap(RingBufferImpl& first, RingBufferImpl& second) requires IsDynamic {
@@ -245,9 +250,10 @@ namespace Engine {
 
 				ENGINE_INLINE void ensureSpace() requires IsDynamic {
 					if (!full()) { return; }
+					// TODO: should we use a next-pow-2 growth factor for more optimized wrapIndex?
 					reserve(data.second + (data.second / 2)); // 1.5 Growth factor
 				}
-
+				
 				[[nodiscard]] ENGINE_INLINE SizeType wrapIndex(SizeType i) const noexcept {
 					const auto c = capacity();
 					return (i + c) % c;

@@ -381,6 +381,8 @@ namespace Engine::Gui {
 					currLayer = strdat.layer;
 					currFont = strdat.str->getFont();
 
+					ENGINE_DEBUG_ASSERT(currFont != (void*)0xCDCDCDCDCDCDCDCD); // TODO: rm
+
 					GlyphDrawGroup next {
 						.layer = currLayer,
 						.offset = group->offset + group->count,

@@ -111,23 +111,62 @@ namespace Engine::Gui {
 		//ENGINE_INFO("Draw Poly x", i);
 	};
 
-	void GraphAxis::render() const {
+	void GraphAxis::render() {
+		ENGINE_DEBUG_ASSERT(graph);
 		ctx->drawRect({}, getSize(), {0,1,0,1});
-		int64 start = min;
-		if (auto rem = start % minor; rem != 0) {
-			start += rem;
+		const float32 min = graph->min.x;
+		const float32 max = graph->max.x;
+		
+		// TODO: move into math
+		const auto roundUpToNearest = [](auto num, auto mult) {
+			return ((num + (num > 0 ? mult - 1 : 0)) / mult) * mult;
+		};
+		
+		const int64 start = roundUpToNearest(static_cast<int64>(min), step);
+		const int64 stop = static_cast<int64>(std::ceil(max));
+
+		// TODO: we really need a way to scale major/minor mark values
+		// TODO: cont. based on max-min range. Or else when you zoom out it will be way to much
+
+		if (auto sz = (stop - start) / major + 1; sz != labels.size()) {
+			labels.resize(sz);
 		}
 
-		const auto scale = getWidth() / (max - min);
+		const auto nextMajor = roundUpToNearest(start, major);
+		auto diff = nextMajor - labelsStart;
+		if (diff <= -major) {
+			const auto begin = std::shift_right(labels.begin(), labels.end(), -diff / major);
+			for (auto it = labels.begin(); it != begin; ++it) {
+				it->clear();
+			}
+		} else if (diff >= major) {
+			const auto end = std::shift_left(labels.begin(), labels.end(), diff / major);
+			for (auto it = end; it != labels.end(); ++it) {
+				it->clear();
+			}
+		}
+
+		labelsStart = nextMajor;
+
+		const auto range = max - min;
+		const auto scale = getWidth() / range;
 		const auto line = [&](auto i, auto w, auto h) ENGINE_INLINE {
 			const auto x = scale * (i - min);
 			ctx->drawLine({x, 0}, {x, h}, w, {1,0,0,0.75});
+			return x;
 		};
 
-		for (int64 i = start; i <= max; i += step) {
+		for (int64 i = start; i <= stop; i += step) {
 			if (i % major == 0) {
-				// TODO: text labels
-				line(i, 2.0f, getHeight());
+				auto& label = labels[(i - labelsStart) / major];
+				if (!label.getFont()) {
+					label.setFont(ctx->getTheme().fonts.body);
+					label = std::to_string(i);
+					label.shape();
+				}
+
+				const auto x = line(i, 2.0f, getHeight());
+				ctx->drawString({x,getHeight()}, &label);
 			} else if (i % minor == 0) {
 				line(i, 1.0f, getHeight() * 0.7f);
 			}
@@ -142,7 +181,7 @@ namespace Engine::Gui {
 		setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch});
 	}
 
-	void RichGraph::render() const {
+	void RichGraph::render() {
 		ctx->drawRect({0,0}, getSize(), {0,0,1,0.2});
 	}
 

@@ -26,11 +26,20 @@ namespace Engine::Gui {
 		public:
 			ShapedString() = default;
 			ShapedString(const ShapedString&) = delete;
+			ShapedString(ShapedString&& other) = default;
+
+			void clear() {
+				str.clear();
+				glyphs.clear();
+				font = nullptr;
+				bounds = {};
+			}
 
 			ENGINE_INLINE const auto& getGlyphShapeData() const noexcept { return glyphs; }
 			ENGINE_INLINE auto& getGlyphShapeDataMutable() noexcept { return glyphs; }
 
 			// TODO: should we just make str public so we dont have to re-implement all str's functions?
+			ENGINE_INLINE ShapedString& operator=(ShapedString&& other) = default;
 			ENGINE_INLINE ShapedString& operator=(const char* other) { str = other; return *this; }
 			ENGINE_INLINE ShapedString& operator=(std::string_view other) { str = other; return *this; }
 			ENGINE_INLINE ShapedString& operator=(const std::string& other) { str = other; return *this; }

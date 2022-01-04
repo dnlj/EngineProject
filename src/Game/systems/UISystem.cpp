@@ -719,6 +719,7 @@ namespace Game {
 			test2->addPoint({195, 100});
 			test2->addPoint({295, 100});
 			test2->addPoint({395, 100});
+			//test2->max.x = 200;
 
 			panels.graphTest->addGraph(std::move(test1));
 			panels.graphTest->addGraph(std::move(test2));
