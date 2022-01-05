@@ -73,11 +73,12 @@ namespace Engine::Gui {
 	class GraphAxis : public Panel {
 		private:
 			SubGraph* graph = nullptr;
+			constexpr static int64 ticks = 10;
+
+			//std::array<ShapedString, ticks + 1> labels;
 			std::vector<ShapedString> labels;
 			int64 labelsStart = 0;
-			int32 major = 10; // Every N minor marks
-			int32 minor = 5;
-			int32 step = std::gcd(major, minor);
+			int64 major = 10; // Major tick spacing
 
 		public:
 			using Panel::Panel;

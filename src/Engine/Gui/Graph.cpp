@@ -116,32 +116,8 @@ namespace Engine::Gui {
 		ctx->drawRect({}, getSize(), {0,1,0,1});
 		const float32 min = graph->min.x;
 		const float32 max = graph->max.x;
-		
-		const int64 start = Math::roundUpToNearest(static_cast<int64>(min), step);
-		const int64 stop = static_cast<int64>(std::ceil(max));
 
-		// TODO: we really need a way to scale major/minor mark values
-		// TODO: cont. based on max-min range. Or else when you zoom out it will be way to much
-
-		if (auto sz = (stop - start) / major + 1; sz != labels.size()) {
-			labels.resize(sz);
-		}
-
-		const auto nextMajor = Math::roundUpToNearest(start, major);
-		auto diff = nextMajor - labelsStart;
-		if (diff <= -major) {
-			const auto begin = std::shift_right(labels.begin(), labels.end(), -diff / major);
-			for (auto it = labels.begin(); it != begin; ++it) {
-				it->clear();
-			}
-		} else if (diff >= major) {
-			const auto end = std::shift_left(labels.begin(), labels.end(), diff / major);
-			for (auto it = end; it != labels.end(); ++it) {
-				it->clear();
-			}
-		}
-
-		labelsStart = nextMajor;
+		// TODO: change int64s to float64s to support decimal tick marks
 
 		const auto range = max - min;
 		const auto scale = getWidth() / range;
@@ -151,8 +127,44 @@ namespace Engine::Gui {
 			return x;
 		};
 
-		for (int64 i = start; i <= stop; i += step) {
-			if (i % major == 0) {
+		const auto old = major;
+		major = static_cast<int64>(Math::niceNumber(range / ticks));
+		const auto minor = major / 2;
+
+		if (major != old) {
+			for (auto& l : labels) { l.clear(); }
+			ENGINE_LOG("clear all labels");
+		}
+
+		
+		const int64 start = Math::roundUpToNearest(static_cast<int64>(min), minor);
+		const int64 stop = static_cast<int64>(std::ceil(max));
+
+		// TODO: we should be able to figure out the max labels size at compile time?
+		labels.resize((stop - start) / major + 1);
+
+		const auto nextMajor = Math::roundUpToNearest(start, major);
+		auto diff = nextMajor - labelsStart;
+		if (diff <= -major) {
+			ENGINE_LOG("shift right");
+			const auto begin = std::shift_right(labels.begin(), labels.end(), -diff / major);
+			for (auto it = labels.begin(); it != begin; ++it) {
+				it->clear();
+			}
+		} else if (diff >= major) {
+			ENGINE_LOG("shift left");
+			const auto end = std::shift_left(labels.begin(), labels.end(), diff / major);
+			for (auto it = end; it != labels.end(); ++it) {
+				it->clear();
+			}
+		}
+
+		labelsStart = nextMajor;
+
+		ENGINE_LOG(stop - start, "[", start, ", ", stop, "] ", major, " ", labels.size(), " ", range, "[", min, ", ", max, "]");
+		bool isMajor = std::fmod(start, major) == 0;
+		for (int64 i = start; i <= stop; i += minor) {
+			if (isMajor) {
 				auto& label = labels[(i - labelsStart) / major];
 				if (!label.getFont()) {
 					label.setFont(ctx->getTheme().fonts.body);
@@ -162,9 +174,10 @@ namespace Engine::Gui {
 
 				const auto x = line(i, 2.0f, getHeight());
 				ctx->drawString({x,getHeight()}, &label);
-			} else if (i % minor == 0) {
+			} else {
 				line(i, 1.0f, getHeight() * 0.7f);
 			}
+			isMajor = !isMajor;
 		}
 	}
 }
