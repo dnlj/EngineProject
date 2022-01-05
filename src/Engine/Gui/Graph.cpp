@@ -117,12 +117,7 @@ namespace Engine::Gui {
 		const float32 min = graph->min.x;
 		const float32 max = graph->max.x;
 		
-		// TODO: move into math
-		const auto roundUpToNearest = [](auto num, auto mult) {
-			return ((num + (num > 0 ? mult - 1 : 0)) / mult) * mult;
-		};
-		
-		const int64 start = roundUpToNearest(static_cast<int64>(min), step);
+		const int64 start = Math::roundUpToNearest(static_cast<int64>(min), step);
 		const int64 stop = static_cast<int64>(std::ceil(max));
 
 		// TODO: we really need a way to scale major/minor mark values
@@ -132,7 +127,7 @@ namespace Engine::Gui {
 			labels.resize(sz);
 		}
 
-		const auto nextMajor = roundUpToNearest(start, major);
+		const auto nextMajor = Math::roundUpToNearest(start, major);
 		auto diff = nextMajor - labelsStart;
 		if (diff <= -major) {
 			const auto begin = std::shift_right(labels.begin(), labels.end(), -diff / major);
