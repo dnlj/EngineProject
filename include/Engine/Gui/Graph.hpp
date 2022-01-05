@@ -73,10 +73,22 @@ namespace Engine::Gui {
 	class GraphAxis : public Panel {
 		private:
 			SubGraph* graph = nullptr;
-			constexpr static int64 ticks = 10;
+			constexpr static int64 ticks = 9;
 
-			//std::array<ShapedString, ticks + 1> labels;
-			std::vector<ShapedString> labels;
+			/**
+			* Storage for major axis tick mark labels.
+			* 
+			* We can determine the worst case size by looking at the
+			* implementation of `Math::niceNumber`. The worst case is when the
+			* returned number is smallest relative to the input. This happens in
+			* the first case where the output is only 66% of the input. Or when
+			* viewed in the other direction: the input is 150% of the output.
+			* Therefore we need to be able to store 1.5x our ideal tick size.
+			*
+			* We use `(ticks+1)/2` to get correct rounding with integer
+			* truncation for odd numbers.
+			*/
+			std::array<ShapedString, ticks + (ticks+1) / 2> labels;
 			int64 labelsStart = 0;
 			int64 major = 10; // Major tick spacing
 

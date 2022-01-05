@@ -114,8 +114,8 @@ namespace Engine::Gui {
 	void GraphAxis::render() {
 		ENGINE_DEBUG_ASSERT(graph);
 		ctx->drawRect({}, getSize(), {0,1,0,1});
-		const float32 min = graph->min.x;
-		const float32 max = graph->max.x;
+		const auto min = graph->min.x;
+		const auto max = graph->max.x;
 
 		// TODO: change int64s to float64s to support decimal tick marks
 
@@ -136,12 +136,8 @@ namespace Engine::Gui {
 			ENGINE_LOG("clear all labels");
 		}
 
-		
 		const int64 start = Math::roundUpToNearest(static_cast<int64>(min), minor);
 		const int64 stop = static_cast<int64>(std::ceil(max));
-
-		// TODO: we should be able to figure out the max labels size at compile time?
-		labels.resize((stop - start) / major + 1);
 
 		const auto nextMajor = Math::roundUpToNearest(start, major);
 		auto diff = nextMajor - labelsStart;
