@@ -73,7 +73,7 @@ namespace Engine::Gui {
 	class GraphAxis : public Panel {
 		private:
 			SubGraph* graph = nullptr;
-			constexpr static int64 ticks = 9;
+			constexpr static int64 tickGaps = 10;
 
 			/**
 			* Storage for major axis tick mark labels.
@@ -85,10 +85,9 @@ namespace Engine::Gui {
 			* viewed in the other direction: the input is 150% of the output.
 			* Therefore we need to be able to store 1.5x our ideal tick size.
 			*
-			* We use `(ticks+1)/2` to get correct rounding with integer
-			* truncation for odd numbers.
+			* The number of ticks = tickGaps + 1
 			*/
-			std::array<ShapedString, ticks + (ticks+1) / 2> labels;
+			std::array<ShapedString, (tickGaps+1) + (tickGaps+1)/2> labels;
 			int64 labelsStart = 0;
 			int64 major = 10; // Major tick spacing
 
