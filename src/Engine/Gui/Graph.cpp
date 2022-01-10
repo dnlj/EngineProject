@@ -131,18 +131,15 @@ namespace Engine::Gui {
 
 		if (major != old) {
 			for (auto& l : labels) { l.clear(); }
-			ENGINE_LOG("clear all labels");
 		} else {
 			auto diff = nextMajor - labelsStart;
 			if (diff < 0) {
-				ENGINE_LOG("shift right ", std::setprecision(17), -diff / major);
 				const auto offset = static_cast<int64>(std::round(-diff / major));
 				const auto begin = std::shift_right(labels.begin(), labels.end(), offset);
 				for (auto it = labels.begin(); it != begin; ++it) {
 					it->clear();
 				}
 			} else if (diff > 0) {
-				ENGINE_LOG("shift left ", std::setprecision(17), diff / major);
 				const auto offset = static_cast<int64>(std::round(diff / major));
 				const auto end = std::shift_left(labels.begin(), labels.end(), offset);
 				for (auto it = end; it != labels.end(); ++it) {
@@ -159,9 +156,7 @@ namespace Engine::Gui {
 			const auto v = nextMajor + i * major;
 			if (!label.getFont()) {
 				label.setFont(ctx->getTheme().fonts.body);
-
-				// TODO: dynamic number of decimals depending on major scale
-				label = std::to_string(v);
+				label = fmt::format("{:.7}", v);
 				label.shape();
 			}
 
