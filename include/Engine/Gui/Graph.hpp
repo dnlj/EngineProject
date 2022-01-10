@@ -88,8 +88,8 @@ namespace Engine::Gui {
 			* The number of ticks = tickGaps + 1
 			*/
 			std::array<ShapedString, (tickGaps+1) + (tickGaps+1)/2> labels;
-			int64 labelsStart = 0;
-			int64 major = 10; // Major tick spacing
+			float64 labelsStart = 0;
+			float64 major = 10; // Major tick spacing
 
 		public:
 			using Panel::Panel;

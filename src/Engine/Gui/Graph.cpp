@@ -117,8 +117,6 @@ namespace Engine::Gui {
 		const auto min = graph->min.x;
 		const auto max = graph->max.x;
 
-		// TODO: change int64s to float64s to support decimal tick marks
-
 		const auto range = max - min;
 		const auto scale = getWidth() / range;
 		const auto line = [&](auto i, auto w, auto h) ENGINE_INLINE {
@@ -128,28 +126,25 @@ namespace Engine::Gui {
 		};
 
 		const auto old = major;
-		major = std::max(1ll, static_cast<int64>(Math::niceNumber(range / tickGaps)));
-		// TODO: rm const auto minor = std::max(1.0, major / 2.0);
-
-		//const int64 start = Math::roundUpToNearest(static_cast<int64>(min), minor);
-		const int64 stop = static_cast<int64>(std::ceil(max));
-		//const auto nextMajor = Math::roundUpToNearest(start, major);
-		const auto nextMajor = Math::roundUpToNearest(static_cast<int64>(min), major);
+		major = Math::niceNumber(static_cast<float64>(range) / tickGaps);
+		const auto nextMajor = std::ceil(min / major) * major;
 
 		if (major != old) {
 			for (auto& l : labels) { l.clear(); }
 			ENGINE_LOG("clear all labels");
 		} else {
 			auto diff = nextMajor - labelsStart;
-			if (diff <= -major) {
-				ENGINE_LOG("shift right");
-				const auto begin = std::shift_right(labels.begin(), labels.end(), -diff / major);
+			if (diff < 0) {
+				ENGINE_LOG("shift right ", std::setprecision(17), -diff / major);
+				const auto offset = static_cast<int64>(std::round(-diff / major));
+				const auto begin = std::shift_right(labels.begin(), labels.end(), offset);
 				for (auto it = labels.begin(); it != begin; ++it) {
 					it->clear();
 				}
-			} else if (diff >= major) {
-				ENGINE_LOG("shift left");
-				const auto end = std::shift_left(labels.begin(), labels.end(), diff / major);
+			} else if (diff > 0) {
+				ENGINE_LOG("shift left ", std::setprecision(17), diff / major);
+				const auto offset = static_cast<int64>(std::round(diff / major));
+				const auto end = std::shift_left(labels.begin(), labels.end(), offset);
 				for (auto it = end; it != labels.end(); ++it) {
 					it->clear();
 				}
@@ -158,15 +153,19 @@ namespace Engine::Gui {
 		}
 
 		labelsStart = nextMajor;
-		for (int64 i = nextMajor; i < stop; i += major) {
-			auto& label = labels[(i - labelsStart) / major];
+		const auto count = static_cast<int64>(std::ceil((max - nextMajor) / major));
+		for (int64 i = 0; i < count; ++i) {
+			auto& label = labels[i];
+			const auto v = nextMajor + i * major;
 			if (!label.getFont()) {
 				label.setFont(ctx->getTheme().fonts.body);
-				label = std::to_string(i);
+
+				// TODO: dynamic number of decimals depending on major scale
+				label = std::to_string(v);
 				label.shape();
 			}
 
-			const auto x = line(i, 2.0f, getHeight());
+			const auto x = line(v, 2.0f, getHeight());
 			ctx->drawString({x,getHeight()}, &label);
 		}
 	}

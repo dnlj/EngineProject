@@ -49,10 +49,11 @@ namespace Engine::Math {
 	 * 
 	 * @see "Nice Numbers for Graph Labels" by Paul S. Heckbert in "Graphics Gems"
 	 */
-	inline auto niceNumber(const auto x) {
-		const auto u = std::pow(10, std::floor(std::log10(x))); // The scale of x
+	template<class X>
+	inline auto niceNumber(const X x) {
+		const auto u = std::pow(X(10), std::floor(std::log10(x))); // The scale of x
 		const auto v = x / u; // How much of the scale we use
-		if (v < 1.5f) { return u; }
+		if (v < decltype(u){1.5}) { return u; }
 		if (v < 3) { return 2 * u; }
 		if (v < 6) { return 5 * u; }
 		return 10 * u;
