@@ -698,7 +698,7 @@ namespace Game {
 
 		{
 			panels.graphTest = ctx->createPanel<Gui::RichGraph>(content);
-			panels.graphTest->setHeight(150);
+			panels.graphTest->setHeight(350);
 			auto test1 = std::make_unique<Gui::AreaGraph>();
 			auto test2 = std::make_unique<Gui::LineGraph>();
 			test1->color = {1,1,0.2,1.f};

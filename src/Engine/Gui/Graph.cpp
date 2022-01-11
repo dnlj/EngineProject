@@ -113,16 +113,22 @@ namespace Engine::Gui {
 
 	void GraphAxis::render() {
 		ENGINE_DEBUG_ASSERT(graph);
-		ctx->drawRect({}, getSize(), {0,0,0,0});
-		const auto min = graph->min.x;
-		const auto max = graph->max.x;
+		ctx->drawRect({}, getSize(), {0,1,0,0.1});
+		const auto min = graph->min[dir];
+		const auto max = graph->max[dir];
 
 		const auto range = max - min;
-		const auto scale = getWidth() / range;
-		const auto line = [&](auto i, auto w, auto h) ENGINE_INLINE {
-			const auto x = scale * (i - min);
-			ctx->drawLine({x, 0}, {x, h}, w, {1,0,0,0.75});
-			return x;
+		const auto scale = getSize()[dir] / range;
+		const auto line = [&](float32 i, float32 w, float32 l) ENGINE_INLINE {
+			const auto p = scale * (dir ? max - i : i - min);
+			glm::vec2 a = {};
+			a[dir] = p;
+
+			glm::vec2 b = a;
+			b[!dir] = l;
+
+			ctx->drawLine(a, b, w, {1,0,0,0.75});
+			return p;
 		};
 
 		const auto old = major;
@@ -154,14 +160,16 @@ namespace Engine::Gui {
 		for (int64 i = 0; i < count; ++i) {
 			auto& label = labels[i];
 			const auto v = nextMajor + i * major;
+
 			if (!label.getFont()) {
 				label.setFont(ctx->getTheme().fonts.body);
 				label = fmt::format("{:.7}", v);
 				label.shape();
 			}
 
-			const auto x = line(v, 2.0f, getHeight());
-			ctx->drawString({x,getHeight()}, &label);
+			auto pos = glm::vec2{0, dir ? 0 : getHeight()};
+			pos[dir] = line(static_cast<float32>(v), 2.0f, getSize()[!dir]);
+			ctx->drawString(pos, &label);
 		}
 	}
 }
@@ -170,7 +178,8 @@ namespace Engine::Gui {
 	RichGraph::RichGraph(Context* context)
 		: Panel{context}
 		, area{context->createPanel<GraphArea>(this)} {
-		setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch});
+		//setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch});
+		setLayout(new DirectionalLayout{Direction::Horizontal, Align::Stretch, Align::Stretch});
 	}
 
 	void RichGraph::render() {

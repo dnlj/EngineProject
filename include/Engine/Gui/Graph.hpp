@@ -1,6 +1,7 @@
 #pragma once
 
 // Engine
+#include <Engine/Gui/Gui.hpp>
 #include <Engine/Gui/Panel.hpp>
 #include <Engine/Gui/Context.hpp>
 #include <Engine/Gui/FillLayout.hpp>
@@ -113,9 +114,14 @@ namespace Engine::Gui {
 			std::array<ShapedString, (tickGaps+1) + (tickGaps+1)/2> labels;
 			float64 labelsStart = 0;
 			float64 major = 10;
+			Direction dir = {};
 
 		public:
-			using Panel::Panel;
+			GraphAxis(Context* context, Direction dir)
+				: Panel{context}
+				, dir{dir} {
+			}
+
 			virtual void render() override;
 			ENGINE_INLINE void setGraph(SubGraph* graph) noexcept { this->graph = graph; }
 	};
@@ -139,9 +145,11 @@ namespace Engine::Gui {
 			void scale(float32 s);
 
 			void addGraph(std::unique_ptr<SubGraph> graph) {
-				auto axis = ctx->createPanel<GraphAxis>(this);
+				//auto axis = ctx->createPanel<GraphAxis>(this, Direction::Horizontal);
+				auto axis = ctx->createPanel<GraphAxis>(this, Direction::Vertical);
 				axis->setGraph(graph.get());
-				axis->setFixedHeight(16);
+				//axis->setFixedHeight(16);
+				axis->setFixedWidth(64);
 				area->addGraph(std::move(graph));
 			}
 
