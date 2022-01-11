@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Gui/Panel.hpp>
 #include <Engine/Gui/Context.hpp>
+#include <Engine/Gui/FillLayout.hpp>
 
 
 // TODO: split
@@ -56,17 +57,39 @@ namespace Engine::Gui {
 	};
 	
 	class GraphArea : public Panel {
-		public:
-			std::vector<std::unique_ptr<SubGraph>> graphs;
+		private:
+			class GraphAreaImpl : public Panel {
+				public:
+					std::vector<std::unique_ptr<SubGraph>> graphs;
+					using Panel::Panel;
+					virtual void render() override {
+						ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
+						for (auto& graph : graphs) {
+							graph->draw(this);
+						}
+					}
+			};
+
+		private:
+			GraphAreaImpl* impl;
 
 		public:
-			using Panel::Panel;
+			GraphArea(Context* context)
+				: Panel{context}
+				, impl{ctx->createPanel<GraphAreaImpl>(this)} {
+				setLayout(new FillLayout{0});
+			}
 
 			virtual void render() override {
 				ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
-				for (auto& graph : graphs) {
-					graph->draw(this);
-				}
+			}
+
+			void addGraph(std::unique_ptr<SubGraph> graph) {
+				impl->graphs.push_back(std::move(graph));
+			}
+
+			auto& getGraphs() noexcept {
+				return impl->graphs; 
 			}
 	};
 
@@ -76,20 +99,20 @@ namespace Engine::Gui {
 			constexpr static int64 tickGaps = 10;
 
 			/**
-			* Storage for major axis tick mark labels.
-			* 
-			* We can determine the worst case size by looking at the
-			* implementation of `Math::niceNumber`. The worst case is when the
-			* returned number is smallest relative to the input. This happens in
-			* the first case where the output is only 66% of the input. Or when
-			* viewed in the other direction: the input is 150% of the output.
-			* Therefore we need to be able to store 1.5x our ideal tick size.
-			*
-			* The number of ticks = tickGaps + 1
-			*/
+			 * Storage for major axis tick mark labels.
+			 * 
+			 * We can determine the worst case size by looking at the
+			 * implementation of `Math::niceNumber`. The worst case is when the
+			 * returned number is smallest relative to the input. This happens in
+			 * the first case where the output is only 66% of the input. Or when
+			 * viewed in the other direction: the input is 150% of the output.
+			 * Therefore we need to be able to store 1.5x our ideal tick size.
+			 *
+			 * The number of ticks = tickGaps + 1
+			 */
 			std::array<ShapedString, (tickGaps+1) + (tickGaps+1)/2> labels;
 			float64 labelsStart = 0;
-			float64 major = 10; // Major tick spacing
+			float64 major = 10;
 
 		public:
 			using Panel::Panel;
@@ -119,7 +142,7 @@ namespace Engine::Gui {
 				auto axis = ctx->createPanel<GraphAxis>(this);
 				axis->setGraph(graph.get());
 				axis->setFixedHeight(16);
-				area->graphs.push_back(std::move(graph));
+				area->addGraph(std::move(graph));
 			}
 
 			virtual bool canFocusChild(Panel* child) const { return false; }

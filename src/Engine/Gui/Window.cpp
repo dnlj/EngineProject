@@ -1,22 +1,6 @@
 // Engine
 #include <Engine/Gui/Window.hpp>
-
-
-namespace {
-	// TODO: Could probably be handled by directional layout - stretch items or similar
-	struct FillLayout : Engine::Gui::Layout {
-		Engine::float32 pad = 0;
-
-		FillLayout(Engine::float32 padding) : pad{padding} {}
-		virtual void layout(Engine::Gui::Panel* panel) override {
-			auto* child = panel->getFirstChild();
-			auto bounds = panel->getBounds();
-			bounds.min += pad;
-			bounds.max -= pad;
-			child->setBounds(bounds);
-		}
-	};
-}
+#include <Engine/Gui/FillLayout.hpp>
 
 
 namespace Engine::Gui {

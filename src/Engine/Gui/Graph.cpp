@@ -113,7 +113,7 @@ namespace Engine::Gui {
 
 	void GraphAxis::render() {
 		ENGINE_DEBUG_ASSERT(graph);
-		ctx->drawRect({}, getSize(), {0,1,0,1});
+		ctx->drawRect({}, getSize(), {0,0,0,0});
 		const auto min = graph->min.x;
 		const auto max = graph->max.x;
 
@@ -208,7 +208,7 @@ namespace Engine::Gui {
 		ctx->registerMouseMove(this, [this](const glm::vec2 pos) {
 			const auto sz = area->getSize();
 			const auto diff = glm::vec2{lastDragPos.x - pos.x, pos.y - lastDragPos.y};
-			for (auto& graph : area->graphs) {
+			for (auto& graph : area->getGraphs()) {
 				const auto scale = (graph->max - graph->min) / sz;
 				const auto offset = diff * scale;
 				graph->min += offset;
@@ -229,7 +229,7 @@ namespace Engine::Gui {
 		p.y = 1.0f - p.y;
 		p = glm::clamp(p, 0.0f, 1.0f);
 
-		for (auto& graph : area->graphs) {
+		for (auto& graph : area->getGraphs()) {
 			auto size = graph->max - graph->min;
 			const auto target = p * size + graph->min; // cursor in world space
 			size *= s;
