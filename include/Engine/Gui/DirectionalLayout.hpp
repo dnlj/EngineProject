@@ -2,30 +2,11 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Gui/Gui.hpp>
 #include <Engine/Gui/Panel.hpp>
 
 
 namespace Engine::Gui {
-	struct Direction_ {
-		enum Direction {
-			Horizontal,
-			Vertical,
-			_count,
-		};
-	};
-	using Direction = Direction_::Direction;
-
-	struct Align_ {
-		enum Align {
-			Start,
-			End,
-			Center,
-			Stretch,
-			_count,
-		};
-	};
-	using Align = Align_::Align;
-
 	class DirectionalLayout : public Layout {
 		protected:
 			/** The main axis */
