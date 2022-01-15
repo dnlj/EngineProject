@@ -82,7 +82,7 @@ namespace Engine::Gui {
 			}
 
 			virtual void render() override {
-				ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
+				ctx->drawRect({0,0}, getSize(), {0,1,1,1});
 			}
 
 			void addGraph(std::unique_ptr<SubGraph> graph) {
@@ -144,14 +144,7 @@ namespace Engine::Gui {
 
 			void scale(float32 s);
 
-			void addGraph(std::unique_ptr<SubGraph> graph) {
-				//auto axis = ctx->createPanel<GraphAxis>(this, Direction::Horizontal);
-				auto axis = ctx->createPanel<GraphAxis>(this, Direction::Vertical);
-				axis->setGraph(graph.get());
-				//axis->setFixedHeight(16);
-				axis->setFixedWidth(64);
-				area->addGraph(std::move(graph));
-			}
+			void addGraph(std::unique_ptr<SubGraph> graph);
 
 			virtual bool canFocusChild(Panel* child) const { return false; }
 

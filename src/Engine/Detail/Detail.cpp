@@ -9,10 +9,6 @@
 
 
 namespace Engine {
-	void LogFormatter<::glm::vec2>::format(std::ostream& stream, const ::glm::vec2& val) {
-		stream << "glm::vec2(" << val.x << ", " << val.y << ")";
-	}
-	
 	void LogFormatter<Input::InputId>::format(std::ostream& stream, const Input::InputId& val) {
 		stream << "InputId(" << (int)val.device << ", " << (int)val.type << ", " << (int)val.code << ")";
 	}

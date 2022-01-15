@@ -2,6 +2,7 @@
 // Engine
 #include <Engine/Gui/Graph.hpp>
 #include <Engine/Gui/DirectionalLayout.hpp>
+#include <Engine/Gui/GridLayout.hpp>
 #include <Engine/Math/Math.hpp>
 
 
@@ -113,7 +114,7 @@ namespace Engine::Gui {
 
 	void GraphAxis::render() {
 		ENGINE_DEBUG_ASSERT(graph);
-		ctx->drawRect({}, getSize(), {0,1,0,0.1});
+		ctx->drawRect({}, getSize(), {0,1,0,1});
 		const auto min = graph->min[dir];
 		const auto max = graph->max[dir];
 
@@ -178,12 +179,11 @@ namespace Engine::Gui {
 	RichGraph::RichGraph(Context* context)
 		: Panel{context}
 		, area{context->createPanel<GraphArea>(this)} {
-		//setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch});
-		setLayout(new DirectionalLayout{Direction::Horizontal, Align::Stretch, Align::Stretch});
+		setLayout(new GridLayout{});
 	}
 
 	void RichGraph::render() {
-		ctx->drawRect({0,0}, getSize(), {0,0,1,0.2});
+		ctx->drawRect({0,0}, getSize(), {0,0,1,1});
 	}
 
 	void RichGraph::onAction(ActionEvent act) {
@@ -245,5 +245,26 @@ namespace Engine::Gui {
 			graph->min = target - size * p;
 			graph->max = graph->min + size;
 		}
+	}
+
+	void RichGraph::addGraph(std::unique_ptr<SubGraph> graph) {
+		for (auto curr = getFirstChild(); curr; curr = curr->getNextSibling()) {
+			curr->setGridColumn(curr->getGridColumn() + 1);
+		}
+
+		const int32 count = static_cast<int32>(area->getGraphs().size());
+
+		auto yAxis = ctx->createPanel<GraphAxis>(this, Direction::Vertical);
+		yAxis->setGraph(graph.get());
+		yAxis->setFixedWidth(32);
+		yAxis->setWeight(0);
+
+		auto xAxis = ctx->createPanel<GraphAxis>(this, Direction::Horizontal);
+		xAxis->setGraph(graph.get());
+		xAxis->setFixedHeight(16);
+		xAxis->setWeight(0);
+		xAxis->setGridPos(count+1, count+1);
+
+		area->addGraph(std::move(graph));
 	}
 }

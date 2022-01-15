@@ -21,8 +21,11 @@ namespace Engine {
 		}
 	};
 
-	template<> struct LogFormatter<glm::vec2> {
-		static void format(std::ostream& stream, const glm::vec2& val);
+	template<int L, class T, glm::qualifier Q>
+	struct LogFormatter<glm::vec<L, T, Q>> {
+		static void format(std::ostream& stream, const glm::vec<L, T, Q>& val) {
+			stream << "glm::vec(" << val.x << ", " << val.y << ")";
+		}
 	};
 };
 

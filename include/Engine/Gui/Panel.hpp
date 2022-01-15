@@ -62,7 +62,9 @@ namespace Engine::Gui {
 
 			glm::vec2 pos = {};
 			glm::vec2 size = minSize;
-			float32 weight = 1; // TODO: separte x,y weight?
+			float32 weight = 1; // TODO: separate x,y weight?
+
+			glm::ivec2 gridPos = {}; // TODO: is there a better way to handle these layout specific properties?
 
 			uint32 flags = Flag::Enabled;
 
@@ -74,15 +76,40 @@ namespace Engine::Gui {
 			Panel(Context* context) : ctx{context} {}
 			virtual ~Panel();
 
+			/**
+			 * The column and row this panel resides in if using a grid/table/ordered layout.
+			 */
+			ENGINE_INLINE void setGridPos(int32 col, int32 row) noexcept { gridPos = {col, row}; }
+			ENGINE_INLINE auto getGridPos() const noexcept { return gridPos; }
+			
+			/** @see setGridPos */
+			ENGINE_INLINE void setGridColumn(int32 col) noexcept { gridPos.x = col; }
+			ENGINE_INLINE auto getGridColumn() const noexcept { return gridPos.x; }
+			
+			/** @see setGridPos */
+			ENGINE_INLINE void setGridRow(int32 row) noexcept { gridPos.y = row; }
+			ENGINE_INLINE auto getGridRow() const noexcept { return gridPos.y; }
+
+			/**
+			 * The relative weight for this panel if using a weighted layout.
+			 */
 			ENGINE_INLINE void setWeight(float32 w) noexcept { weight = w; }
 			ENGINE_INLINE auto getWeight() const noexcept { return weight; }
-			ENGINE_INLINE auto getParent() const noexcept { return parent; }
 
+			ENGINE_INLINE auto getParent() const noexcept { return parent; }
+			
+			/** @see setAutoSize */
+			ENGINE_INLINE void setAutoSizeWidth(bool v) noexcept { autoSizeWidth = v; }
+			ENGINE_INLINE bool getAutoSizeWidth() const noexcept { return autoSizeWidth; }
+
+			/** @see setAutoSize */
 			ENGINE_INLINE void setAutoSizeHeight(bool v) noexcept { autoSizeHeight = v; }
 			ENGINE_INLINE bool getAutoSizeHeight() const noexcept { return autoSizeHeight; }
 
-			ENGINE_INLINE void setAutoSizeWidth(bool v) noexcept { autoSizeWidth = v; }
-			ENGINE_INLINE bool getAutoSizeWidth() const noexcept { return autoSizeWidth; }
+			/**
+			 * Set if this panel should resize its width/height to fit child panels.
+			 */
+			ENGINE_INLINE void setAutoSize(bool v) noexcept { setAutoSizeWidth(v); setAutoSizeHeight(v); }
 
 			ENGINE_INLINE auto getNextSiblingRaw() const noexcept {
 				return nextSibling;
