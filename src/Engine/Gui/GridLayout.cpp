@@ -19,6 +19,8 @@ namespace {
 		while (remSize >= 1 && remWeight > 0) {
 			auto runWeight = remWeight;
 			for (auto& d : data) {
+				if (!d.weight) { continue; }
+
 				const auto w = d.weight / runWeight;
 				const auto v = w * remSize;
 				const auto o = d.val;
@@ -38,10 +40,8 @@ namespace Engine::Gui {
 		{
 			glm::ivec2 realDims = {};
 
-			auto curr = panel->getFirstChild();
-			while (curr) {
+			for (auto curr = panel->getFirstChild(); curr; curr = curr->getNextSibling()) {
 				realDims = glm::max(realDims, curr->getGridPos());
-				curr = curr->getNextSibling();
 			}
 
 			realDims.x = dims.x ? dims.x : realDims.x + 1;
@@ -55,54 +55,68 @@ namespace Engine::Gui {
 		}
 
 		// Figure out row/col properties
-		{
-			auto curr = panel->getFirstChild();
-			while (curr) {
-				const auto pos = curr->getGridPos();
-				auto& col = cellMetrics.col[pos.x];
-				auto& row = cellMetrics.row[pos.y];
+		auto usableX = panel->getWidth();
+		auto usableY = panel->getHeight();
 
-				// TODO: if we use min or max to clamp the .max value is really matter
-				// TODO: cont: of preference and how the child panels should be layed out. Maybe add an option?
+		for (auto curr = panel->getFirstChild(); curr; curr = curr->getNextSibling()) {
+			const auto pos = curr->getGridPos();
+			auto& col = cellMetrics.col[pos.x];
+			auto& row = cellMetrics.row[pos.y];
 
-				col.min = std::max(col.min, curr->getMinSize().x);
-				col.max = std::max(col.max, curr->getMaxSize().x);
+			// TODO: if we use min or max to clamp the .max value is really matter
+			// TODO: cont: of preference and how the child panels should be layed out. Maybe add an option?
 
-				// TODO: also need to account for gap
-				// TODO: also need to account for this weight in total*Weight
-				
-				// TODO: use idealSize instead of current size if weight 0?
-				const auto cw = curr->getWeight() ? curr->getWeight() : curr->getWidth() / panel->getWidth();
+			col.min = std::max(col.min, curr->getMinSize().x);
+			col.max = std::max(col.max, curr->getMaxSize().x);
 
-				col.weight = std::max(col.weight, cw);
-				ENGINE_DEBUG_ASSERT(col.min <= col.max);
-				
-				row.min = std::max(row.min, curr->getMinSize().y);
-				row.max = std::max(row.max, curr->getMaxSize().y);
-
-				// TODO: use idealSize instead of current size if weight 0?
-				const auto rw = curr->getWeight() ? curr->getWeight() : curr->getHeight() / panel->getHeight();
-				row.weight = std::max(row.weight, rw);
-				ENGINE_DEBUG_ASSERT(row.min <= row.max);
-
-				curr = curr->getNextSibling();
+			if (const auto w = curr->getWeight(); w == 0) {
+				// TODO: use idealSize instead of current size?
+				col.val = curr->getWidth();
+			} else {
+				col.weight = std::max(col.weight, w);
 			}
+
+			ENGINE_DEBUG_ASSERT(col.min <= col.max);
+				
+			row.min = std::max(row.min, curr->getMinSize().y);
+			row.max = std::max(row.max, curr->getMaxSize().y);
+				
+			if (const auto w = curr->getWeight(); w == 0) {
+				// TODO: use idealSize instead of current size?
+				row.val = curr->getHeight();
+			} else {
+				row.weight = std::max(row.weight, w);
+			}
+
+			ENGINE_DEBUG_ASSERT(row.min <= row.max);
 		}
 
 		// Total row/col weights 
 		float32 totalColWeight = 0;
-		for (const auto& col : cellMetrics.col) {
+		for (auto& col : cellMetrics.col) {
 			totalColWeight += col.weight;
+
+			if (col.weight == 0) {
+				usableX -= col.val;
+			} else {
+				col.val = 0;
+			}
 		}
 		
 		float32 totalRowWeight = 0;
-		for (const auto& row : cellMetrics.row) {
+		for (auto& row : cellMetrics.row) {
 			totalRowWeight += row.weight;
+
+			if (row.weight == 0) {
+				usableY -= row.val;
+			} else {
+				row.val = 0;
+			}
 		}
 
 		// Figure out cell sizes
-		distributeWeight(cellMetrics.col, panel->getWidth(), totalColWeight, gap);
-		distributeWeight(cellMetrics.row, panel->getHeight(), totalRowWeight, gap);
+		distributeWeight(cellMetrics.col, usableX, totalColWeight, gap);
+		distributeWeight(cellMetrics.row, usableY, totalRowWeight, gap);
 
 		// Figure out cell positions
 		for (int i = 1; i < cellMetrics.col.size(); ++i) {
@@ -113,17 +127,13 @@ namespace Engine::Gui {
 			cellMetrics.row[i].pos = cellMetrics.row[i-1].pos + cellMetrics.row[i-1].val + gap;
 		}
 
-
 		// Layout children
-		{
-			auto curr = panel->getFirstChild();
-			while (curr) {
-				const auto pos = curr->getGridPos();
-				// TODO: how to size children in cells? stretch? start? stop? i guess we want the same props as DirectionalLayout
-				curr->setRelPos({cellMetrics.col[pos.x].pos, cellMetrics.row[pos.y].pos});
-				curr->setSize({cellMetrics.col[pos.x].val, cellMetrics.row[pos.y].val});
-				curr = curr->getNextSibling();
-			}
+		for (auto curr = panel->getFirstChild(); curr; curr = curr->getNextSibling()) {
+			const auto pos = curr->getGridPos();
+
+			// TODO: how to size children in cells? stretch? start? stop? i guess we want the same props as DirectionalLayout
+			curr->setRelPos({cellMetrics.col[pos.x].pos, cellMetrics.row[pos.y].pos});
+			curr->setSize({cellMetrics.col[pos.x].val, cellMetrics.row[pos.y].val});
 		}
 	}
 }

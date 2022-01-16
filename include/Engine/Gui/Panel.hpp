@@ -62,7 +62,12 @@ namespace Engine::Gui {
 
 			glm::vec2 pos = {};
 			glm::vec2 size = minSize;
-			float32 weight = 1; // TODO: separate x,y weight?
+
+			/**
+			 * Relative weights for various panel layouts.
+			 * Zero indicates no change/automatic weight.
+			 */
+			float32 weight = 1; // TODO: separate x,y weight
 
 			glm::ivec2 gridPos = {}; // TODO: is there a better way to handle these layout specific properties?
 

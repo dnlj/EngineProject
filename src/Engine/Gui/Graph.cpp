@@ -254,17 +254,19 @@ namespace Engine::Gui {
 
 		const int32 count = static_cast<int32>(area->getGraphs().size());
 
-		auto yAxis = ctx->createPanel<GraphAxis>(this, Direction::Vertical);
+		auto yAxis = ctx->constructPanel<GraphAxis>(Direction::Vertical);
 		yAxis->setGraph(graph.get());
 		yAxis->setFixedWidth(32);
 		yAxis->setWeight(0);
+		yAxis->setGridPos(0, 0);
 
-		auto xAxis = ctx->createPanel<GraphAxis>(this, Direction::Horizontal);
+		auto xAxis = ctx->constructPanel<GraphAxis>(Direction::Horizontal);
 		xAxis->setGraph(graph.get());
 		xAxis->setFixedHeight(16);
 		xAxis->setWeight(0);
 		xAxis->setGridPos(count+1, count+1);
 
+		addChildren({yAxis, xAxis});
 		area->addGraph(std::move(graph));
 	}
 }
