@@ -2,40 +2,9 @@
 #include <Engine/Gui/GridLayout.hpp>
 #include <Engine/ArrayView.hpp>
 
-namespace {
-	using namespace Engine::Types;
-	
-	// TODO: we have almost identical logic in DirectionalLayout. move into function or some kind of WeightedLayout base class
-	void distributeWeight(
-		Engine::ArrayView<Engine::Gui::CellData> data,
-		const float32 totalSize,
-		const float32 totalWeight,
-		const float32 gap) {
-
-		const auto sz = data.size();
-		auto remSize = totalSize - gap * (sz - 1);
-		auto remWeight = totalWeight;
-
-		while (remSize >= 1 && remWeight > 0) {
-			auto runWeight = remWeight;
-			for (auto& d : data) {
-				if (!d.weight) { continue; }
-
-				const auto w = d.weight / runWeight;
-				const auto v = w * remSize;
-				const auto o = d.val;
-				d.val = std::clamp(d.val + v, d.min, d.max);
-
-				remSize -= d.val - o;
-				runWeight -= d.weight;
-			}
-		}
-	}
-}
 
 namespace Engine::Gui {
 	void GridLayout::layout(Panel* panel) {
-
 		// Figure out grid dimensions
 		{
 			glm::ivec2 realDims = {};
@@ -48,10 +17,10 @@ namespace Engine::Gui {
 			realDims.y = dims.y ? dims.y : realDims.y + 1;
 
 			// Update and clear cell metric storage
-			cellMetrics.col.clear();
-			cellMetrics.col.resize(realDims.x);
-			cellMetrics.row.clear();
-			cellMetrics.row.resize(realDims.y);
+			metrics.col.clear();
+			metrics.col.resize(realDims.x);
+			metrics.row.clear();
+			metrics.row.resize(realDims.y);
 		}
 
 		// Figure out row/col properties
@@ -60,8 +29,8 @@ namespace Engine::Gui {
 
 		for (auto curr = panel->getFirstChild(); curr; curr = curr->getNextSibling()) {
 			const auto pos = curr->getGridPos();
-			auto& col = cellMetrics.col[pos.x];
-			auto& row = cellMetrics.row[pos.y];
+			auto& col = metrics.col[pos.x];
+			auto& row = metrics.row[pos.y];
 
 			// TODO: if we use min or max to clamp the .max value is really matter
 			// TODO: cont: of preference and how the child panels should be layed out. Maybe add an option?
@@ -93,7 +62,7 @@ namespace Engine::Gui {
 
 		// Total row/col weights 
 		float32 totalColWeight = 0;
-		for (auto& col : cellMetrics.col) {
+		for (auto& col : metrics.col) {
 			totalColWeight += col.weight;
 
 			if (col.weight == 0) {
@@ -104,7 +73,7 @@ namespace Engine::Gui {
 		}
 		
 		float32 totalRowWeight = 0;
-		for (auto& row : cellMetrics.row) {
+		for (auto& row : metrics.row) {
 			totalRowWeight += row.weight;
 
 			if (row.weight == 0) {
@@ -115,16 +84,16 @@ namespace Engine::Gui {
 		}
 
 		// Figure out cell sizes
-		distributeWeight(cellMetrics.col, usableX, totalColWeight, gap);
-		distributeWeight(cellMetrics.row, usableY, totalRowWeight, gap);
+		LayoutMetrics::distribute(metrics.col, usableX, totalColWeight, gap);
+		LayoutMetrics::distribute(metrics.row, usableY, totalRowWeight, gap);
 
 		// Figure out cell positions
-		for (int i = 1; i < cellMetrics.col.size(); ++i) {
-			cellMetrics.col[i].pos = cellMetrics.col[i-1].pos + cellMetrics.col[i-1].val + gap;
+		for (int i = 1; i < metrics.col.size(); ++i) {
+			metrics.col[i].pos = metrics.col[i-1].pos + metrics.col[i-1].val + gap;
 		}
 
-		for (int i = 1; i < cellMetrics.row.size(); ++i) {
-			cellMetrics.row[i].pos = cellMetrics.row[i-1].pos + cellMetrics.row[i-1].val + gap;
+		for (int i = 1; i < metrics.row.size(); ++i) {
+			metrics.row[i].pos = metrics.row[i-1].pos + metrics.row[i-1].val + gap;
 		}
 
 		// Layout children
@@ -132,8 +101,8 @@ namespace Engine::Gui {
 			const auto pos = curr->getGridPos();
 
 			// TODO: how to size children in cells? stretch? start? stop? i guess we want the same props as DirectionalLayout
-			curr->setRelPos({cellMetrics.col[pos.x].pos, cellMetrics.row[pos.y].pos});
-			curr->setSize({cellMetrics.col[pos.x].val, cellMetrics.row[pos.y].val});
+			curr->setRelPos({metrics.col[pos.x].pos, metrics.row[pos.y].pos});
+			curr->setSize({metrics.col[pos.x].val, metrics.row[pos.y].val});
 		}
 	}
 }
