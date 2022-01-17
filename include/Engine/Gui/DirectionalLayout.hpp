@@ -4,6 +4,7 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Gui/Gui.hpp>
 #include <Engine/Gui/Panel.hpp>
+#include <Engine/Gui/LayoutMetrics.hpp>
 
 
 namespace Engine::Gui {
@@ -78,16 +79,9 @@ namespace Engine::Gui {
 				auto curr = panel->getFirstChild();
 				glm::vec2 cpos = panel->getPos();
 
-				struct StretchData {
-					float32 min = 0;
-					float32 max = 0;
-					float32 val = 0;
-					float32 weight = 0;
-				};
-				
 				// Only used for main axis stretch.
 				int stretchIndex = -1;
-				std::vector<StretchData> stretchData;
+				std::vector<LayoutMetrics> metrics; // TODO: this would be a good candidate for a SmallVector<4> when we get around to it (small vector optimization)
 
 				if (mainAlign == Align::Start) {
 					// Already set correctly
@@ -98,18 +92,18 @@ namespace Engine::Gui {
 				} else if (mainAlign == Align::Center) {
 					ENGINE_WARN("TODO: impl Align::Center for main axis");
 				} else if (mainAlign == Align::Stretch) {
-					float32 remWeight = 0;
+					float32 totalWeight = 0;
 					int32 count = 0;
 					while (curr) {
 						++count;
-						remWeight += curr->getWeight();
+						totalWeight += curr->getWeight();
 						curr = curr->getNextSibling();
 					}
 					curr = panel->getFirstChild();
 
-					stretchData.resize(count);
+					metrics.resize(count);
 					for (int i = 0; curr; ++i, curr = curr->getNextSibling()) {
-						stretchData[i] = {
+						metrics[i] = {
 							.min = curr->getMinSize()[main],
 							.max = curr->getMaxSize()[main],
 							.val = 0,
@@ -118,28 +112,9 @@ namespace Engine::Gui {
 					}
 					curr = panel->getFirstChild();
 					
-					float32 remSize = size[main];
-					if (weight) { remSize *= remWeight / weight; }
-					remSize -= gap * (count - 1);
-
-					// While there is space remaining distribute it between all
-					// non-max-size panels according to their relative remaining weight
-					while (remSize >= 1 && remWeight > 0) {
-						float32 runWeight = remWeight;
-						for (auto& d : stretchData) {
-							if (d.val == d.max) { continue; }
-							float32 w = d.weight / runWeight;
-							float32 v = w * remSize;
-							float32 b = d.val;
-							d.val = std::clamp(d.val + v, d.min, d.max);
-							remSize -= d.val - b;
-							runWeight -= d.weight;
-
-							if (d.val == d.max) {
-								remWeight -= d.weight;
-							}
-						}
-					}
+					float32 totalSize = size[main];
+					if (weight) { totalSize *= totalWeight / weight; }
+					LayoutMetrics::distribute(metrics, totalSize, totalWeight, gap);
 				} else [[unlikely]] {
 					ENGINE_WARN("Unknown layout main axis alignment");
 				}
@@ -154,7 +129,7 @@ namespace Engine::Gui {
 
 						if (mainAlign == Align::Stretch) {
 							// Use pre build data
-							sz[main] = stretchData[++stretchIndex].val;
+							sz[main] = metrics[++stretchIndex].val;
 						}
 
 						if (crossAlign == Align::Stretch) {

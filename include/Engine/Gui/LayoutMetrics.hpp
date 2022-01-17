@@ -28,6 +28,7 @@ namespace Engine::Gui {
 					auto runWeight = remWeight;
 					for (auto& d : data) {
 						if (!d.weight) { continue; }
+						if (d.val == d.max) { continue; }
 
 						const auto w = d.weight / runWeight;
 						const auto v = w * remSize;
@@ -36,6 +37,9 @@ namespace Engine::Gui {
 
 						remSize -= d.val - o;
 						runWeight -= d.weight;
+
+						// If we dont do this check we will never exit if all items are max size and we have size left to distribute
+						if (d.val == d.max) { remWeight -= d.weight; }
 					}
 				}
 			}
