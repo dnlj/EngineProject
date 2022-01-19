@@ -68,9 +68,9 @@ namespace Engine::Gui {
 			virtual void render() override {
 				const auto sz = getSize();
 				constexpr float32 hw = 8; // handle width
-
-				ctx->drawRect({}, sz, {1,1,0,0.5});
-				ctx->drawRect({sz.x * p - (hw * 0.5f), 0}, {hw, sz.y}, {1,0,1,0.5});
+				const auto& theme = ctx->getTheme();
+				ctx->drawRect({}, sz, theme.colors.background2);
+				ctx->drawRect({sz.x * p - (hw * 0.5f), 0}, {hw, sz.y}, theme.colors.button);
 			}
 
 			virtual void preLayout() {

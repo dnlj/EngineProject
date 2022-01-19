@@ -56,9 +56,5 @@ namespace Engine::Gui {
 			}
 
 			ENGINE_INLINE Panel* getContent() const noexcept { return content; }
-
-			virtual void render() override {
-				ctx->drawRect({0,0}, getSize(), {0,0.5,0.5,1.0});
-			}
 	};
 }

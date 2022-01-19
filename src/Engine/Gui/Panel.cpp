@@ -12,6 +12,6 @@ namespace Engine::Gui {
 	};
 
 	void Panel::render() {
-		ctx->drawRect({0,0}, size, {1,0,0,0.2});
+		ctx->drawRect({0,0}, size, ctx->getTheme().colors.background);
 	}
 }

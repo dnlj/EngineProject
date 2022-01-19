@@ -7,7 +7,7 @@
 
 
 namespace Engine::Gui {
-	void AreaGraph::draw(const Panel* panel) const {
+	void AreaGraph::draw(const Panel* panel, const glm::vec4 color) const {
 		if (data.empty()) { return; }
 		auto ctx = panel->getContext();
 		const glm::vec2 scale = panel->getSize() / (max - min);
@@ -43,7 +43,7 @@ namespace Engine::Gui {
 		}
 	};
 
-	void LineGraph::draw(const Panel* panel) const {
+	void LineGraph::draw(const Panel* panel, const glm::vec4 color) const {
 		const auto end = data.cend();
 		auto curr = data.cbegin();
 		if (end - curr < 2) { return; }
@@ -94,8 +94,9 @@ namespace Engine::Gui {
 			}
 
 			auto [a3, a4] = nextMiterPoints(cV, cT, pT);
-
-			ctx->drawPoly({a1,a2,a3,a4},/*color*/glm::vec4{rand()%256/255.0f,rand()%256/255.0f,rand()%256/255.0f,0.5});
+			
+			//ctx->drawPoly({a1,a2,a3,a4},/*color*/glm::vec4{rand()%256/255.0f,rand()%256/255.0f,rand()%256/255.0f,0.5});
+			ctx->drawPoly({a1,a2,a3,a4}, color);
 			++i;
 
 			if (next == end) { break; }
@@ -114,7 +115,7 @@ namespace Engine::Gui {
 
 	void GraphAxis::render() {
 		ENGINE_DEBUG_ASSERT(graph);
-		ctx->drawRect({}, getSize(), {0,1,0,1});
+		ctx->drawRect({}, getSize(), {0,1,0,1}); // TODO: theme color
 		const auto min = graph->min[dir];
 		const auto max = graph->max[dir];
 
@@ -128,7 +129,7 @@ namespace Engine::Gui {
 			glm::vec2 b = a;
 			b[!dir] = l;
 
-			ctx->drawLine(a, b, w, {1,0,0,0.75});
+			ctx->drawLine(a, b, w, {1,0,0,0.75}); // TODO: theme color
 			return p;
 		};
 
@@ -183,7 +184,8 @@ namespace Engine::Gui {
 	}
 
 	void RichGraph::render() {
-		ctx->drawRect({0,0}, getSize(), {0,0,1,1});
+		ctx->drawRect({0,0}, getSize(), {1,1,1,1}); // TODO: theme color
+
 	}
 
 	void RichGraph::onAction(ActionEvent act) {

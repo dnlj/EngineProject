@@ -19,7 +19,7 @@ namespace Engine::Gui {
 			void setAction(Callback func) { action = func; }
 
 			virtual void render() override {
-				ctx->drawRect({0,0}, getSize(), {1,0,0,0.2});
+				ctx->drawRect({0,0}, getSize(), ctx->getTheme().colors.button);
 				ctx->drawString(getStringOffset(), &getShapedString());
 			}
 

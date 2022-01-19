@@ -14,6 +14,11 @@ namespace Engine::Gui {
 
 				public:
 					Title(Context* context, Window* window) : Label{context}, win{window} {}
+
+					virtual void render() override {
+						ctx->drawRect({0,0}, getSize(), ctx->getTheme().colors.title);
+						Label::render();
+					}
 					
 					virtual void onBeginActivate() override {
 						win->tracking = true;

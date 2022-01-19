@@ -229,6 +229,18 @@ namespace Engine::Gui {
 		//font_a = fontManager.createFont("assets/EmojiOneColor.otf", 32);
 		//font_a = fontManager.createFont("assets/FiraCode-Regular.ttf", 32);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
+
+		theme.colors = {
+			.foreground = {1,0,0,1},
+
+			.background = {0.1,0.1,0.2,0.25},
+			.background2 = {0.1,0.1,0.4,0.5},
+
+			.title = {0.2,0.1,0.2,1},
+
+			.accent = {1,0,0,1},
+			.button = {0,0.5,0,0.3},
+		};
 	}
 
 	Context::~Context() {

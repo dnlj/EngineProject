@@ -5,6 +5,7 @@
 #include <Engine/Gui/Panel.hpp>
 #include <Engine/Gui/Context.hpp>
 #include <Engine/Gui/FillLayout.hpp>
+#include <Engine/Math/color.hpp>
 
 
 // TODO: split
@@ -27,7 +28,7 @@ namespace Engine::Gui {
 		public:
 			// TODO: this assumes inserting is already sorted
 			ENGINE_INLINE void addPoint(glm::vec2 p) { data.push(p); };
-			virtual void draw(const Panel* panel) const = 0;
+			virtual void draw(const Panel* panel, const glm::vec4 color) const = 0;
 
 			void trimData() {
 				while (true) {
@@ -45,7 +46,7 @@ namespace Engine::Gui {
 
 	class AreaGraph : public SubGraph {
 		public:
-			void draw(const Panel* panel) const;;
+			void draw(const Panel* panel, const glm::vec4 color) const override;
 	};
 
 	class LineGraph : public SubGraph {
@@ -54,7 +55,7 @@ namespace Engine::Gui {
 			float32 thickness = 10;
 
 		public:
-			void draw(const Panel* panel) const;
+			void draw(const Panel* panel, const glm::vec4 color) const override;
 	};
 	
 	class GraphArea : public Panel {
@@ -64,9 +65,15 @@ namespace Engine::Gui {
 					std::vector<std::unique_ptr<SubGraph>> graphs;
 					using Panel::Panel;
 					virtual void render() override {
-						ctx->drawRect({0,0}, getSize(), {0,1,0,0.2});
+						const auto& theme = ctx->getTheme();
+						ctx->drawRect({0,0}, getSize(), theme.colors.background2);
+
+						// TODO: distribute colors "Equidistribution theorem" "low discrepancy sequence" http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+						//glm::vec4 hsl = {0, 0.7, 0.7, 1};
 						for (auto& graph : graphs) {
-							graph->draw(this);
+							//graph->draw(this, Math::cvtHSLtoRGB(hsl));
+							// TODO: colors seem to be off, gamma issue?
+							graph->draw(this, {67/255.0f,123/255.0f,4/255.0f,1});
 						}
 					}
 			};
@@ -82,7 +89,7 @@ namespace Engine::Gui {
 			}
 
 			virtual void render() override {
-				ctx->drawRect({0,0}, getSize(), {0,1,1,1});
+				ctx->drawRect({0,0}, getSize(), {});
 			}
 
 			void addGraph(std::unique_ptr<SubGraph> graph) {
@@ -107,7 +114,7 @@ namespace Engine::Gui {
 			 * returned number is smallest relative to the input. This happens in
 			 * the first case where the output is only 66% of the input. Or when
 			 * viewed in the other direction: the input is 150% of the output.
-			 * Therefore we need to be able to store 1.5x our ideal tick size.
+			 * Therefor we need to be able to store 1.5x our ideal tick size.
 			 *
 			 * The number of ticks = tickGaps + 1
 			 */

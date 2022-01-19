@@ -14,9 +14,15 @@ namespace Engine::Gui {
 			} fonts;
 
 			struct Colors {
-				glm::vec3 foreground;
-				glm::vec3 background;
-				glm::vec3 accent;
+				glm::vec4 foreground;
+				glm::vec4 background; // Main background
+				glm::vec4 backgroundAlt; // Alternate background (alternating table rows for example)
+				glm::vec4 background2;
+				glm::vec4 title;
+				glm::vec4 accent;
+				glm::vec4 button;
+
+
 			} colors;
 	};
 }
