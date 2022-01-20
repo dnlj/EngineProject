@@ -46,7 +46,10 @@
 #include <fmt/compile.h>
 
 // GLM
+#pragma warning (push)
+#pragma warning (disable: 4701)
 #include <glm/glm.hpp>
+#pragma warning (pop)
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
 

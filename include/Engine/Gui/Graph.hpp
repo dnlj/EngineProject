@@ -1,5 +1,8 @@
 #pragma once
 
+// GLM
+#include <glm/gtc/color_space.hpp>
+
 // Engine
 #include <Engine/Gui/Gui.hpp>
 #include <Engine/Gui/Panel.hpp>
@@ -68,12 +71,15 @@ namespace Engine::Gui {
 						const auto& theme = ctx->getTheme();
 						ctx->drawRect({0,0}, getSize(), theme.colors.background2);
 
-						// TODO: distribute colors "Equidistribution theorem" "low discrepancy sequence" http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
-						//glm::vec4 hsl = {0, 0.7, 0.7, 1};
+
+						// Ideally we would use HCL instead of HSL due to better maintained
+						// perceived brightness and saturation between hues, but from a quick glance
+						// the math looks much more involved.
+						glm::vec4 hsl = {3, 0.65, 0.65, 1};
 						for (auto& graph : graphs) {
-							//graph->draw(this, Math::cvtHSLtoRGB(hsl));
-							// TODO: colors seem to be off, gamma issue?
-							graph->draw(this, {67/255.0f,123/255.0f,4/255.0f,1});
+							// TODO: let themes specify an array of colors to use for this sort of thing
+							graph->draw(this, Math::cvtApproxRGBToLinear(Math::cvtHSLtoRGB(hsl)));
+							hsl.x = std::fmodf(hsl.x + InvPhi<float32> * 360, 360);
 						}
 					}
 			};

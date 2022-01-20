@@ -14,6 +14,12 @@ namespace Engine::Constants { // TODO: C++20: namespace Engine::inline Constants
 	template<class T>
 	constexpr inline T InvSqrt2 = static_cast<T>(0.707106781186547524400844362104849039284);
 
+	template<class T>
+	constexpr inline T Phi = static_cast<T>(1.618033988749894848204586834365638117720309);
+
+	template<class T>
+	constexpr inline T InvPhi = static_cast<T>(0.618033988749894848204586834365638117720309);
+
 	// TODO: move into own ns?
 	constexpr inline ASCIIColorString ASCII_BLACK        = "\033[30m";
 	constexpr inline ASCIIColorString ASCII_RED          = "\033[31m";

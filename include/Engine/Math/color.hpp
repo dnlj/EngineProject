@@ -1,18 +1,27 @@
 #pragma once
 
+/**
+ * @file
+ * Various functions for working with color.
+ * 
+ * @see glm/gtc/color_space
+ * @see glm/gtx/color_space
+ * @see glm/gtx/color_encoding
+ * @see glm/gtx/color_space_YCoCg
+ */
 
+// TODO: ideally these could be constexpr
 namespace Engine::Math {
 	/**
 	 * Converts color representation from hue, saturation, lightness to red, green, blue
 	 * @param hsl Hue, saturation, and lightness in the ranges [0, 360], [0, 1], and [0, 1]
 	 * @return The rgb representation in the range [0, 1]
 	 */
-	inline glm::vec3 cvtHSLtoRGB(const glm::vec3 hsl2) {
-		const auto hsl = glm::dvec3(hsl2);
-		const float64 c = (1 - std::abs(2 * hsl.z - 1)) * hsl.y;
-		const float64 h = hsl.x * (1.0 / 60.0);
-		const float64 x = c * (1 - std::abs(std::fmod(h, 2) - 1));
-		const float64 m = hsl.z - c * 0.5;
+	inline glm::vec3 cvtHSLtoRGB(const glm::vec3 hsl) {
+		const auto c = (1 - std::abs(2 * hsl.z - 1)) * hsl.y;
+		const auto h = hsl.x * (1.0f / 60.0f);
+		const auto x = c * (1 - std::abs(std::fmodf(h, 2) - 1));
+		const auto m = hsl.z - c * 0.5f;
 
 		if (h < 1) { return {c+m, x+m, 0+m}; }
 		if (h < 2) { return {x+m, c+m, 0+m}; }
@@ -27,5 +36,30 @@ namespace Engine::Math {
 	/** @see cvtHSLtoRGB */
 	ENGINE_INLINE inline glm::vec4 cvtHSLtoRGB(const glm::vec4 hsl) {
 		return {cvtHSLtoRGB({hsl.x, hsl.y, hsl.z}), hsl.w};
+	}
+
+	/**
+	 * Convert from linear color to sRGB color using the 2.2 gamma approximation.
+	 * For more exact conversion use glm::gt*::color_space functions
+	 */
+	ENGINE_INLINE inline glm::vec3 cvtApproxLinearToRGB(const glm::vec3 lin) {
+		constexpr decltype(lin) exp = {1/2.2, 1/2.2, 1/2.2};
+		return glm::pow(lin, exp);
+	}
+
+	/** @see cvtApproxLinearToRGB */
+	ENGINE_INLINE inline glm::vec4 cvtApproxLinearToRGB(const glm::vec4 lin) {
+		return {cvtApproxLinearToRGB({lin.x, lin.y, lin.z}), lin.w};
+	}
+
+	/** @see cvtApproxLinearToRGB */
+	ENGINE_INLINE inline glm::vec3 cvtApproxRGBToLinear(const glm::vec3 rgb) {
+		constexpr decltype(rgb) exp = {2.2, 2.2, 2.2};
+		return glm::pow(rgb, exp);
+	}
+	
+	/** @see cvtApproxLinearToRGB */
+	ENGINE_INLINE inline glm::vec4 cvtApproxRGBToLinear(const glm::vec4 rgb) {
+		return {cvtApproxRGBToLinear({rgb.x, rgb.y, rgb.z}), rgb.w};
 	}
 }

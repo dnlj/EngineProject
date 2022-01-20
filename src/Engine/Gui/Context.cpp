@@ -1,6 +1,7 @@
 // Engine
 #include <Engine/Camera.hpp>
 #include <Engine/Gui/Context.hpp>
+#include <Engine/Math/color.hpp>
 
 
 namespace {
@@ -230,16 +231,17 @@ namespace Engine::Gui {
 		//font_a = fontManager.createFont("assets/FiraCode-Regular.ttf", 32);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
 
+		constexpr auto rgb = [](glm::vec4 v) ENGINE_INLINE { return Math::cvtApproxRGBToLinear(v); };
 		theme.colors = {
-			.foreground = {1,0,0,1},
+			.foreground = rgb({1,0,0,1}),
 
-			.background = {0.1,0.1,0.2,0.25},
-			.background2 = {0.1,0.1,0.4,0.5},
+			.background = rgb({0.1,0.1,0.2,0.25}),
+			.background2 = rgb({0.1,0.1,0.4,0.5}),
 
-			.title = {0.2,0.1,0.2,1},
+			.title = rgb({0.2,0.1,0.2,1}),
 
-			.accent = {1,0,0,1},
-			.button = {0,0.5,0,0.3},
+			.accent = rgb({1,0,0,1}),
+			.button = rgb({0,0.5,0,0.3}),
 		};
 	}
 
