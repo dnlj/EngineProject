@@ -269,7 +269,7 @@ namespace Engine::Gui {
 		glDeleteBuffers(1, &glyphVBO);
 
 		deletePanel(root);
-		ENGINE_DEBUG_ASSERT(panelIdMap.empty(), "All panels have not been deleted");
+		ENGINE_DEBUG_ASSERT(panelIdMap.size() == 1 && panelIdMap.begin()->first == nullptr, "All panels have not been deleted");
 	}
 
 	void Context::configUserSettings() {
