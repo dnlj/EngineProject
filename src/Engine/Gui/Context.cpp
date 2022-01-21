@@ -231,17 +231,25 @@ namespace Engine::Gui {
 		//font_a = fontManager.createFont("assets/FiraCode-Regular.ttf", 32);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
 
-		constexpr auto rgb = [](glm::vec4 v) ENGINE_INLINE { return Math::cvtApproxRGBToLinear(v); };
+		constexpr auto rgb = [&](glm::vec4 v) ENGINE_INLINE { return Math::cvtApproxRGBToLinear(v); };
+		constexpr auto hsl = [&](glm::vec4 v) ENGINE_INLINE { return rgb(Math::cvtHSLtoRGB(v)); };
+		constexpr auto s = 0.70;
+		constexpr auto l = 0.63;
+		constexpr auto a = 0.33;
+
 		theme.colors = {
-			.foreground = rgb({1,0,0,1}),
+			.foreground = rgb({1, 0, 0, 1}),
 
-			.background = rgb({0.1,0.1,0.2,0.25}),
-			.background2 = rgb({0.1,0.1,0.4,0.5}),
+			.background = rgb({0.1, 0.1, 0.2, a}),
+			.background2 = rgb({0.1, 0.1, 0.4, a}),
+			.backgroundAlt = rgb({1,0,0,1}),
 
-			.title = rgb({0.2,0.1,0.2,1}),
+			.title = rgb({0.2, 0.1, 0.2,1}),
 
-			.accent = rgb({1,0,0,1}),
-			.button = rgb({0,0.5,0,0.3}),
+			.accent = hsl({202, s, l, 1}),
+			.feature = {0.9, 0.9, 0.9, 1},
+
+			.button = hsl({202, s, l, 1}),
 		};
 	}
 

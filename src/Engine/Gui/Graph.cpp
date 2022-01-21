@@ -115,7 +115,8 @@ namespace Engine::Gui {
 
 	void GraphAxis::render() {
 		ENGINE_DEBUG_ASSERT(graph);
-		ctx->drawRect({}, getSize(), {0,1,0,1}); // TODO: theme color
+		const auto& theme = ctx->getTheme();
+		ctx->drawRect({}, getSize(), theme.colors.background2);
 		const auto min = graph->min[dir];
 		const auto max = graph->max[dir];
 
@@ -129,7 +130,7 @@ namespace Engine::Gui {
 			glm::vec2 b = a;
 			b[!dir] = l;
 
-			ctx->drawLine(a, b, w, {1,0,0,0.75}); // TODO: theme color
+			ctx->drawLine(a, b, w, theme.colors.accent);
 			return p;
 		};
 
@@ -184,8 +185,7 @@ namespace Engine::Gui {
 	}
 
 	void RichGraph::render() {
-		ctx->drawRect({0,0}, getSize(), {1,1,1,1}); // TODO: theme color
-
+		ctx->drawRect({0,0}, getSize(), ctx->getTheme().colors.feature);
 	}
 
 	void RichGraph::onAction(ActionEvent act) {

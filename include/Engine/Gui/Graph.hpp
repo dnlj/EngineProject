@@ -55,7 +55,7 @@ namespace Engine::Gui {
 	class LineGraph : public SubGraph {
 		private:
 			// TODO: store `thickness / 2` since thats what we really use this as
-			float32 thickness = 10;
+			float32 thickness = 2;
 
 		public:
 			void draw(const Panel* panel, const glm::vec4 color) const override;
@@ -71,11 +71,10 @@ namespace Engine::Gui {
 						const auto& theme = ctx->getTheme();
 						ctx->drawRect({0,0}, getSize(), theme.colors.background2);
 
-
 						// Ideally we would use HCL instead of HSL due to better maintained
 						// perceived brightness and saturation between hues, but from a quick glance
 						// the math looks much more involved.
-						glm::vec4 hsl = {3, 0.65, 0.65, 1};
+						glm::vec4 hsl = {3, 0.65, 0.65, 0.5};
 						for (auto& graph : graphs) {
 							// TODO: let themes specify an array of colors to use for this sort of thing
 							graph->draw(this, Math::cvtApproxRGBToLinear(Math::cvtHSLtoRGB(hsl)));

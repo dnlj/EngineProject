@@ -69,7 +69,7 @@ namespace Engine::Gui {
 				const auto sz = getSize();
 				constexpr float32 hw = 8; // handle width
 				const auto& theme = ctx->getTheme();
-				ctx->drawRect({}, sz, theme.colors.background2);
+				ctx->drawRect({}, sz, theme.colors.feature);
 				ctx->drawRect({sz.x * p - (hw * 0.5f), 0}, {hw, sz.y}, theme.colors.button);
 			}
 
