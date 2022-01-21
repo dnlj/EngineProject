@@ -13,6 +13,10 @@ namespace Engine::Gui {
 				Font body;
 			} fonts;
 
+			struct {
+				float32 pad1;
+			} sizes;
+
 			struct Colors {
 				glm::vec4 foreground;
 

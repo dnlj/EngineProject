@@ -10,7 +10,7 @@ namespace Engine::Gui {
 		content = ctx->createPanel<Panel>(this);
 
 		// TODO: probably shouldnt have a layout by default
-		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch});
+		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch, ctx->getTheme().sizes.pad1});
 
 		title = ctx->createPanel<Title>(content, this);
 		title->setFont(ctx->getTheme().fonts.body);

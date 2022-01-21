@@ -81,7 +81,7 @@ namespace Game {
 		public:
 			AutoListPane(Gui::Context* context) : CollapsibleSection{context} {
 				auto* content = getContent();
-				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 			}
 
 			int32 addLabel(const std::string& format) {
@@ -196,7 +196,7 @@ namespace Game {
 	class NetCondPane : public Gui::CollapsibleSection {
 		public:
 			NetCondPane(Gui::Context* context) : CollapsibleSection{context} {
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 				setTitle("Network Conditions");
 				
 				#ifndef ENGINE_UDP_NETWORK_SIM
@@ -269,7 +269,7 @@ namespace Game {
 				slider->setWeight(2);
 				
 				auto line = ctx->createPanel<Panel>(getContent());
-				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 8});
+				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, ctx->getTheme().sizes.pad1});
 				line->setHeight(48); // TODO: ideally we could have some kind of auto size so panels expand by default.
 				line->addChildren({label, slider});
 				return *slider;
@@ -307,7 +307,7 @@ namespace Game {
 						auto* base = ctx.constructPanel<Panel>();
 						base->setRelPos({});
 						base->setSize({128,128});
-						base->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+						base->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx.getTheme().sizes.pad1});
 
 						auto* ipLabel = ctx.createPanel<Gui::Label>(base);
 						ipLabel->autoText(fmt::format("{}", addr));
@@ -337,7 +337,7 @@ namespace Game {
 				setTitle("Network Health");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 
 				setAutoSizeHeight(true);
 				getContent()->setAutoSizeHeight(true);
@@ -364,7 +364,7 @@ namespace Game {
 
 				public:
 					NetGraph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
-						setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+						setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 						setAutoSizeHeight(true);
 
 						auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
@@ -374,28 +374,28 @@ namespace Game {
 
 						// TODO: if we had full flexbox style layout this would be much simpler. no need for these row containers. This would all work with weights.
 						auto* row1 = ctx->createPanel<Panel>(this);
-						row1->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, 2, 3});
+						row1->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1, 3});
 						row1->setAutoSizeHeight(true);
 						buffer = ctx->createPanel<Gui::Label>(row1);
 						ideal = ctx->createPanel<Gui::Label>(row1);
 						estBuff = ctx->createPanel<Gui::Label>(row1);
 
 						auto* row2 = ctx->createPanel<Panel>(this);
-						row2->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, 2, 3});
+						row2->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1, 3});
 						row2->setAutoSizeHeight(true);
 						ping = ctx->createPanel<Gui::Label>(row2);
 						jitter = ctx->createPanel<Gui::Label>(row2);
 						budget = ctx->createPanel<Gui::Label>(row2);
 
 						auto* row3 = ctx->createPanel<Panel>(this);
-						row3->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, 2, 3});
+						row3->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1, 3});
 						row3->setAutoSizeHeight(true);
 						sent = ctx->createPanel<Gui::Label>(row3);
 						recv = ctx->createPanel<Gui::Label>(row3);
 						loss = ctx->createPanel<Gui::Label>(row3);
 
 						auto* row4 = ctx->createPanel<Panel>(this);
-						row4->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, 2, 3});
+						row4->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1, 3});
 						row4->setAutoSizeHeight(true);
 						ctx->createPanel<Gui::Label>(row4)->autoText("Packet Recv Rate");
 						recvRate = ctx->createPanel<Gui::Slider>(row4);
@@ -545,7 +545,7 @@ namespace Game {
 				setTitle("Network Graph");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 
 				setAutoSizeHeight(true);
 				getContent()->setAutoSizeHeight(true);
@@ -581,7 +581,7 @@ namespace Game {
 				setTitle("Entities");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 				
 				setAutoSizeHeight(true);
 				getContent()->setAutoSizeHeight(true);
@@ -625,7 +625,7 @@ namespace Game {
 				setTitle("Camera");
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 2});
+				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 				
 				setAutoSizeHeight(true);
 				getContent()->setAutoSizeHeight(true);
@@ -703,6 +703,7 @@ namespace Game {
 			auto test2 = std::make_unique<Gui::LineGraph>();
 			test1->color = {1,1,0.2,1.f};
 			test2->color = {0.2,1,1,0.75f};
+			test2->setLineThickness(2);
 			
 			test1->addPoint({10, 10});
 			test1->addPoint({30, 30});

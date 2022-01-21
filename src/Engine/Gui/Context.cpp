@@ -237,6 +237,10 @@ namespace Engine::Gui {
 		constexpr auto l = 0.63;
 		constexpr auto a = 0.33;
 
+		theme.sizes = {
+			.pad1 = 4.0f,
+		};
+
 		theme.colors = {
 			.foreground = rgb({1, 0, 0, 1}),
 
@@ -244,7 +248,7 @@ namespace Engine::Gui {
 			.background2 = rgb({0.1, 0.1, 0.4, a}),
 			.backgroundAlt = rgb({1,0,0,1}),
 
-			.title = rgb({0.2, 0.1, 0.2,1}),
+			.title = rgb({0.1, 0.1, 0.1, 1}),
 
 			.accent = hsl({202, s, l, 1}),
 			.feature = {0.9, 0.9, 0.9, 1},

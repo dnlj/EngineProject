@@ -20,7 +20,7 @@ namespace Engine::Gui {
 			Align crossAlign = {};
 
 			/** How much of a gap to insert between panels */
-			float32 gap = 8;
+			float32 gap = 0.0f;
 
 			/** Total main axis stretch weight. Zero for automatic weight. */
 			float32 weight = 0.0f;
@@ -28,7 +28,7 @@ namespace Engine::Gui {
 			bool autoSize = false;
 
 		public:
-			DirectionalLayout(Direction dir, Align mainAlign, Align crossAlign, float32 gap = 8.0f, float32 weight = 0.0f)
+			DirectionalLayout(Direction dir, Align mainAlign, Align crossAlign, float32 gap = 32.0f, float32 weight = 0.0f)
 				: dir{dir}, mainAlign{mainAlign}, crossAlign{crossAlign}, gap{gap} {
 			}
 

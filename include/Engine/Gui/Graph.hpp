@@ -54,11 +54,11 @@ namespace Engine::Gui {
 
 	class LineGraph : public SubGraph {
 		private:
-			// TODO: store `thickness / 2` since thats what we really use this as
-			float32 thickness = 2;
+			float32 halfThickness = 2;
 
 		public:
 			void draw(const Panel* panel, const glm::vec4 color) const override;
+			void setLineThickness(const float32 thickness) noexcept { halfThickness = thickness * 0.5f; }
 	};
 	
 	class GraphArea : public Panel {

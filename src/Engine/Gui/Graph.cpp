@@ -67,7 +67,7 @@ namespace Engine::Gui {
 
 		const auto miterLength = [&](auto aTan, auto bTan) ENGINE_INLINE {
 			const auto sinHalfAngleInv = Math::rsqrt(0.5f + 0.5f * glm::dot(aTan, bTan));
-			return thickness * sinHalfAngleInv;
+			return halfThickness * sinHalfAngleInv;
 		};
 
 		const auto nextMiterPoints = [&](auto point, auto pointT, auto lastT) ENGINE_INLINE {
