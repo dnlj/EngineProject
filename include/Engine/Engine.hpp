@@ -116,7 +116,7 @@
 
 // TODO: replace macros with source_location?
 #define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)\
-	([](auto&&... args){\
+	([](auto&&... args) ENGINE_INLINE {\
 		::Engine::Detail::log<Decorate>(Prefix, Color,\
 			(__FILE__ + sizeof(ENGINE_BASE_PATH)), __LINE__,\
 			std::forward<decltype(args)>(args) ...\
@@ -125,7 +125,7 @@
 	})
 
 #define _ENGINE_CREATE_ASSERT_LAMBDA(Prefix, Decorate, Color, Other)\
-	([](auto cond, auto&&... args){\
+	([](auto cond, auto&&... args) ENGINE_INLINE {\
 		if (!cond) {\
 			_ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)(std::forward<decltype(args)>(args)...);\
 		}\

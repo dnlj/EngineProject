@@ -186,6 +186,7 @@ namespace Engine::Gui {
 
 	void RichGraph::render() {
 		ctx->drawRect({0,0}, getSize(), ctx->getTheme().colors.feature);
+		// TODO: current cursor position (ji96pF6X)
 	}
 
 	void RichGraph::onAction(ActionEvent act) {
