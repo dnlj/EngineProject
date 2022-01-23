@@ -63,7 +63,9 @@ namespace Game {
 				class NetHealthPane* netHealthPane;
 				class NetGraphPane* netGraphPane;
 				class EntityPane* entityPane;
-				Engine::Gui::RichGraph* graphTest;
+				//Engine::Gui::RichGraph* graphTest;
+
+				class ConnectWindow* connectWindow;
 			} panels;
 
 			void ui_connect();

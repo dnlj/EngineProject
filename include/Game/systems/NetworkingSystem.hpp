@@ -56,8 +56,10 @@ namespace Game {
 		public:
 			NetworkingSystem(SystemArg arg);
 			void run(float32 dt);
-			int32 connectionsCount() const;
-			int32 playerCount() const;
+
+			int32 connectionsCount() const; // TODO: remove or at least make private. Should interact with filter directly.
+			int32 playerCount() const; // TODO: remove or at least make private. Should interact with filter directly.
+
 			void connectTo(const Engine::Net::IPv4Address& addr);
 			void requestDisconnect(const Engine::Net::IPv4Address& addr);
 

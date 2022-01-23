@@ -259,6 +259,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setLayout(Layout* l) noexcept {
 				if (layout) { delete layout; }
 				layout = l;
+				performLayout();
 			}
 			ENGINE_INLINE auto getLayout() noexcept { return layout; }
 

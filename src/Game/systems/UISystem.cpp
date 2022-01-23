@@ -631,6 +631,92 @@ namespace Game {
 				getContent()->setAutoSizeHeight(true);
 			}
 	};
+
+	class ConnectWindow : public Gui::Window {
+		private:
+			class Adapter : public Gui::DataAdapter<Adapter, Engine::Net::IPv4Address, Engine::Net::IPv4Address> {
+				private:
+					Game::World& world;
+
+				public:
+					using It = decltype(world.getSystem<NetworkingSystem>().servers.begin());
+
+					Adapter(Game::World& world) noexcept : world{world} {}
+					ENGINE_INLINE auto begin() const { return world.getSystem<NetworkingSystem>().servers.begin(); }
+					ENGINE_INLINE auto end() const { return world.getSystem<NetworkingSystem>().servers.end(); }
+					ENGINE_INLINE auto getId(It it) const noexcept { return it->first; }
+					ENGINE_INLINE Checksum check(Id id) const { return id; }
+
+					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
+						auto& info = world.getSystem<NetworkingSystem>().servers[id];
+
+						auto labels = ctx.constructPanel<Gui::Panel>();
+						labels->setAutoSizeHeight(true);
+						labels->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx.getTheme().sizes.pad1});
+						auto name = ctx.createPanel<Gui::Label>(labels);
+						name->autoText(info.name);
+						name->setWeight(2);
+						ctx.createPanel<Gui::Label>(labels)->autoText("3/16");
+						ctx.createPanel<Gui::Label>(labels)->autoText("103ms");
+
+						auto btn = ctx.createPanel<Gui::Button>(labels);
+						btn->autoText(fmt::format("{}", id));
+						btn->setAction([id](Gui::Button* b){
+							auto ui = b->getContext()->getUserdata<UISystem>();
+							connectTo(b->getText(), ui->getEngine(), ui->getWorld());
+						});
+
+						return labels;
+					}
+			};
+
+		public:
+			ConnectWindow(Gui::Context* context) : Window{context} {
+				//setTitle("Connect Window");
+				//setSize({300,64});
+				setWidth(300);
+				setRelPos({512,64});
+
+				// TODO: auto height is slightly broken
+				setHeight(300);
+				//setAutoSizeHeight(true);
+				//getContent()->setAutoSizeHeight(true);
+
+				{
+					auto row = ctx->createPanel<Gui::Panel>(getContent());
+					row->setAutoSizeHeight(true);
+					row->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1});
+					
+					auto name = ctx->createPanel<Gui::Label>(row);
+					name->autoText("Name");
+					name->setWeight(2);
+					ctx->createPanel<Gui::Label>(row)->autoText("Players");
+					ctx->createPanel<Gui::Label>(row)->autoText("Ping");
+					ctx->createPanel<Gui::Label>(row)->autoText("Connect");
+				}
+
+				{
+					auto row = ctx->createPanel<Gui::Panel>(getContent());
+					row->setAutoSizeHeight(true);
+
+					auto text = ctx->createPanel<Gui::TextBox>(row);
+					text->autoText("localhost:21212");
+
+					auto btn = ctx->createPanel<Gui::Button>(row);
+					btn->autoText("Connect");
+					btn->setFixedWidth(btn->getWidth());
+					btn->setAction([text](Gui::Button* b){
+						auto ui = b->getContext()->getUserdata<UISystem>();
+						connectTo(text->getText(), ui->getEngine(), ui->getWorld());
+					});
+
+					row->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1});
+				}
+
+				auto& world = ctx->getUserdata<UISystem>()->getWorld();
+				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
+			}
+	};
 }
 
 namespace Game {
@@ -688,7 +774,7 @@ namespace Game {
 		}
 
 		{
-			//panels.netGraphPane = ctx->createPanel<NetGraphPane>(content);
+			panels.netGraphPane = ctx->createPanel<NetGraphPane>(content);
 		}
 
 		{
@@ -697,6 +783,10 @@ namespace Game {
 		}
 
 		{
+			panels.connectWindow = ctx->createPanel<ConnectWindow>(ctx->getRoot());
+		}
+
+		/*{
 			panels.graphTest = ctx->createPanel<Gui::RichGraph>(content);
 			panels.graphTest->setHeight(350);
 			auto test1 = std::make_unique<Gui::AreaGraph>();
@@ -724,7 +814,7 @@ namespace Game {
 
 			panels.graphTest->addGraph(std::move(test1));
 			panels.graphTest->addGraph(std::move(test2));
-		}
+		}*/
 
 		panels.infoPane->toggle();
 		panels.coordPane->toggle();
