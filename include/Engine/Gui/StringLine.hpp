@@ -10,11 +10,15 @@ namespace Engine::Gui {
 	class StringLine : public Panel {
 		private:
 			ShapedString str;
-			glm::vec2 strOff = {};
+			glm::vec2 off = {};
+			glm::vec2 pad = {};
 
 		public:
 			StringLine(Context* context) : Panel{context} {
-				setFont(ctx->getTheme().fonts.body);
+				auto& theme = ctx->getTheme();
+				setFont(theme.fonts.body);
+				pad.x = theme.sizes.pad1;
+				pad.y = pad.x;
 			}
 
 			ENGINE_INLINE void insertText(uint32 i, std::string_view text) {
@@ -37,10 +41,14 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void shape() { str.shape(); }
 
-			ENGINE_INLINE void autoSize() {
+			ENGINE_INLINE glm::vec2 getStringSize() {
 				const auto& bounds = str.getBounds();
 				const auto sz = bounds.getRoundSize();
-				setSize({sz.x, str.getFont()->getLineHeight()});
+				return {sz.x, str.getFont()->getLineHeight()};
+			}
+
+			ENGINE_INLINE void autoSize() {
+				setSize(getStringSize() + pad + pad);
 			}
 
 			/**
@@ -51,9 +59,12 @@ namespace Engine::Gui {
 				autoSize();
 			}
 
-			ENGINE_INLINE void offset(glm::vec2 off) { strOff += off; }
-
-			virtual void render() override = 0;
+			virtual void render() override {
+				ctx->drawRect({0,0}, getSize(), {1,0,0,0});
+				//if (const auto font = str.getFont(); font) { ctx->drawRect({off.x, off.y - font->getAscent()}, {getStringSize().x, font->getBodyHeight()}, {1,0,0,1});}
+				//ctx->drawRect(getStringOffset(), {getWidth(), 1}, {1,0,0,1});
+				ctx->drawString(getStringOffset(), &getShapedString());
+			}
 
 			virtual void postLayout() override {
 				if (const auto font = str.getFont(); font) {
@@ -62,16 +73,17 @@ namespace Engine::Gui {
 					// would give us an inconsistent baseline.
 					//
 					// See "Glyph Metrics" illustrations at: https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html#section-3
-					const auto offsetToTopLeft = font->getAscent();
+					off.y = font->getAscent();
 
 					// Baseline offset + center in panel
-					strOff.y = offsetToTopLeft + 0.5f * (getHeight() - font->getLineHeight());
+					off.x = pad.x;
+					off.y += std::max(0.5f * (getHeight() - font->getBodyHeight()), pad.y);
 				}
 			}
 
 		protected:
 			ENGINE_INLINE auto& getTextMutable() noexcept { return str.getStringMutable(); }
 			ENGINE_INLINE const ShapedString& getShapedString() const { return str; }
-			ENGINE_INLINE auto getStringOffset() const { return strOff; }
+			ENGINE_INLINE glm::vec2 getStringOffset() const { return off; }
 	};
 }

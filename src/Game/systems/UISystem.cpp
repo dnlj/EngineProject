@@ -786,6 +786,20 @@ namespace Game {
 			panels.connectWindow = ctx->createPanel<ConnectWindow>(ctx->getRoot());
 		}
 
+
+		{
+			ctx->createPanel<Gui::Button>(content)->autoText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
+			auto btn = ctx->createPanel<Gui::Button>(content);
+			btn->setText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+			btn->setHeight(32);
+
+			
+			btn = ctx->createPanel<Gui::Button>(content);
+			btn->setText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+			btn->setHeight(27);
+		}
+
 		/*{
 			panels.graphTest = ctx->createPanel<Gui::RichGraph>(content);
 			panels.graphTest->setHeight(350);
@@ -819,7 +833,8 @@ namespace Game {
 		panels.infoPane->toggle();
 		panels.coordPane->toggle();
 		panels.netHealthPane->toggle();
-		//panels.netCondPane->toggle();
+		panels.netCondPane->toggle();
+		panels.netGraphPane->toggle();
 	}
 
 	UISystem::~UISystem() {

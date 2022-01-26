@@ -17,6 +17,7 @@
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Gfx/Texture.hpp>
 #include <Engine/Gui/Bounds.hpp>
+#include <Engine/Gui/FreeType.hpp>
 
 
 namespace Engine::Gui {
@@ -31,7 +32,7 @@ namespace Engine::Gui {
 	 */
 	class FontGlyphSet {
 		private:
-			constexpr static float32 mscale = 1.0f / 64;
+			constexpr static float32 mscale = 1.0f / 64; // We can also just do `metric >> 6` if we dont care about float/rounding
 
 			struct GlyphData {
 				// Make sure to consider GLSL alignment rules
@@ -96,7 +97,7 @@ namespace Engine::Gui {
 			void shapeString(class ShapedString& str);
 
 			/**
-			 * Gets the font specified line height.
+			 * Gets the font specified line height (i.e. the recommended distance between baselines)
 			 * 
 			 * This is different than the CSS line-height property which ignores
 			 * the font specified height and simply applies a multiplier of the
@@ -109,7 +110,23 @@ namespace Engine::Gui {
 			 */
 			ENGINE_INLINE auto getLineHeight() const noexcept { return ftSize->metrics.height * mscale; }
 
-			ENGINE_INLINE auto getAscent() const noexcept { return ftSize->metrics.ascender * mscale; }
+			ENGINE_INLINE auto getAscent() const noexcept {
+				// Can not use `ftSize->metrics.ascender` because it may be off by multiple pixels.
+				// See https://freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_metrics
+				return float32(FreeType::roundF26d6(FT_MulFix(ftFace->ascender, ftSize->metrics.y_scale)) >> 6);
+			}
+
+			ENGINE_INLINE auto getDescent() const noexcept {
+				// Can not use `ftSize->metrics.descender` because it may be off by multiple pixels.
+				// See https://freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_size_metrics
+				return float32(FreeType::roundF26d6(FT_MulFix(ftFace->descender, ftSize->metrics.y_scale)) >> 6);
+			}
+
+			/**
+			 * Gets the distance from the top of the highest letter to the bottom of the lowest.
+			 * This is as specified by the font. It is possible that some glyphs will overshoot.
+			 */
+			ENGINE_INLINE auto getBodyHeight() const noexcept { return getAscent() - getDescent(); }
 
 		private:
 			void initMaxGlyphSize();

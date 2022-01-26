@@ -20,7 +20,7 @@ namespace Engine::Gui {
 
 			virtual void render() override {
 				ctx->drawRect({0,0}, getSize(), ctx->getTheme().colors.button);
-				ctx->drawString(getStringOffset(), &getShapedString());
+				StringLine::render();
 			}
 
 			virtual void onEndActivate() override {

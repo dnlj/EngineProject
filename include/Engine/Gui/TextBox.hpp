@@ -24,21 +24,8 @@ namespace Engine::Gui {
 			Caret caret = 0;
 			Caret select = 0;
 
-			glm::vec2 pad = {5,5}; // TODO: probably pull from font size / theme
-
 		public:
 			using StringLine::StringLine;
-
-			ENGINE_INLINE void autoSize() {
-				StringLine::autoSize();
-				StringLine::offset(pad);
-				setSize(getSize() + pad + pad);
-			}
-
-			ENGINE_INLINE void autoText(std::string_view txt) {
-				setText(txt);
-				autoSize();
-			}
 
 			virtual void render() override {
 				glm::vec2 pos = {0,0};
@@ -54,9 +41,10 @@ namespace Engine::Gui {
 				ctx->drawRect(pos + glm::vec2{0, size.y - 1}, {size.x, 1}, bo);
 				ctx->drawRect(pos + glm::vec2{size.x - 1, 0}, {1, size.y}, bo);
 
-				pos += pad;
+				pos += getStringOffset();
+				ctx->drawString(pos, &str);
+				pos.y -= str.getFont()->getAscent();
 
-				ctx->drawString(getStringOffset(), &str);
 
 				if (ctx->getFocus() == this && ctx->isBlinking()) {
 					ctx->drawRect(
