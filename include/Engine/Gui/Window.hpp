@@ -59,7 +59,6 @@ namespace Engine::Gui {
 			};
 
 			virtual void onBeginChildHover(Panel* child) override { onEndHover(); };
-			virtual void onEndChildHover(Panel* child) override { onBeginHover(); };
 
 		private:
 			void moveCallback(const glm::vec2 pos);
