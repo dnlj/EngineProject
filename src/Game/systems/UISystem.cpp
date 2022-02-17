@@ -403,7 +403,7 @@ namespace Game {
 						recvRate->setLimits(1, 255).setValue(0).bind(
 							[ent](Gui::Slider& s){
 								auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
-								if (world.hasComponent<Game::ConnectionComponent>(ent)) {
+								if (world.isEnabled(ent) && world.hasComponent<Game::ConnectionComponent>(ent)) {
 									auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 									s.setValue(conn.getPacketRecvRate());
 								}
@@ -746,7 +746,8 @@ namespace Game {
 
 		{
 			panels.infoPane = ctx->createPanel<InfoPane>(content);
-			panels.infoPane->setHeight(128);
+			//panels.infoPane->setHeight(128);
+			panels.infoPane->setAutoSizeHeight(true);
 			panels.infoPane->disconnect->setAction([&](Gui::Button*){
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
