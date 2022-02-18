@@ -632,6 +632,7 @@ namespace Game {
 			}
 	};
 
+	#if ENGINE_CLIENT
 	class ConnectWindow : public Gui::Window {
 		private:
 			class Adapter : public Gui::DataAdapter<Adapter, Engine::Net::IPv4Address, Engine::Net::IPv4Address> {
@@ -717,6 +718,7 @@ namespace Game {
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 			}
 	};
+	#endif
 }
 
 namespace Game {
@@ -783,9 +785,11 @@ namespace Game {
 			panels.entityPane->toggle();
 		}
 
+		#if ENGINE_CLIENT
 		{
 			panels.connectWindow = ctx->createPanel<ConnectWindow>(ctx->getRoot());
 		}
+		#endif
 
 
 		{

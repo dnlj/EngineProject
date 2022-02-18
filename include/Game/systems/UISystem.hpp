@@ -65,7 +65,9 @@ namespace Game {
 				class EntityPane* entityPane;
 				//Engine::Gui::RichGraph* graphTest;
 
+				#if ENGINE_CLIENT
 				class ConnectWindow* connectWindow;
+				#endif
 			} panels;
 
 			void ui_connect();
