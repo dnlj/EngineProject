@@ -15,6 +15,9 @@ namespace Engine::Gui {
 
 		public:
 			using StringLine::StringLine;
+			Button(Context* context) : StringLine{context} {
+				setPadding(ctx->getTheme().sizes.pad1);
+			}
 
 			void setAction(Callback func) { action = func; }
 

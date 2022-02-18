@@ -17,13 +17,14 @@ namespace Engine::Gui {
 			StringLine(Context* context) : Panel{context} {
 				auto& theme = ctx->getTheme();
 				setFont(theme.fonts.body);
-				pad.x = theme.sizes.pad1;
+				//pad.x = theme.sizes.pad1;
+				pad.x = 0;
 				pad.y = pad.x;
 			}
 
-			ENGINE_INLINE glm::vec2 getPadding() const noexcept {
-				return pad;
-			}
+			ENGINE_INLINE void setPadding(glm::vec2 p) noexcept { pad = p; }
+			ENGINE_INLINE void setPadding(float32 p) noexcept { setPadding({p, p}); }
+			ENGINE_INLINE auto getPadding() const noexcept { return pad; }
 
 			ENGINE_INLINE void insertText(uint32 i, std::string_view text) {
 				auto& s = str.getStringMutable();

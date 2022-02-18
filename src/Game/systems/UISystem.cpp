@@ -364,7 +364,7 @@ namespace Game {
 
 				public:
 					NetGraph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
-						setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+						setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 0});
 						setAutoSizeHeight(true);
 
 						auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
@@ -374,28 +374,28 @@ namespace Game {
 
 						// TODO: if we had full flexbox style layout this would be much simpler. no need for these row containers. This would all work with weights.
 						auto* row1 = ctx->createPanel<Panel>(this);
-						row1->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1, 3});
+						row1->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 0});
 						row1->setAutoSizeHeight(true);
 						buffer = ctx->createPanel<Gui::Label>(row1);
 						ideal = ctx->createPanel<Gui::Label>(row1);
 						estBuff = ctx->createPanel<Gui::Label>(row1);
 
 						auto* row2 = ctx->createPanel<Panel>(this);
-						row2->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1, 3});
+						row2->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 0});
 						row2->setAutoSizeHeight(true);
 						ping = ctx->createPanel<Gui::Label>(row2);
 						jitter = ctx->createPanel<Gui::Label>(row2);
 						budget = ctx->createPanel<Gui::Label>(row2);
 
 						auto* row3 = ctx->createPanel<Panel>(this);
-						row3->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1, 3});
+						row3->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 0});
 						row3->setAutoSizeHeight(true);
 						sent = ctx->createPanel<Gui::Label>(row3);
 						recv = ctx->createPanel<Gui::Label>(row3);
 						loss = ctx->createPanel<Gui::Label>(row3);
 
 						auto* row4 = ctx->createPanel<Panel>(this);
-						row4->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1, 3});
+						row4->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 0});
 						row4->setAutoSizeHeight(true);
 						ctx->createPanel<Gui::Label>(row4)->autoText("Packet Recv Rate");
 						recvRate = ctx->createPanel<Gui::Slider>(row4);
