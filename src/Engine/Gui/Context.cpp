@@ -805,7 +805,7 @@ namespace Engine::Gui {
 		if (event.state.id.code == 0) {
 			if (event.state.value.i32) {
 
-				const auto isSequentialActivate = [&]() ENGINE_INLINE { // C++23: Can now omit empty params parens: [&] ENGINE_INLINE {
+				const auto isSequentialActivate = [&]() ENGINE_INLINE {
 					if (event.time - clickLastTime > clickRate) { return false; }
 
 					const auto diff = 2.0f * glm::abs(clickLastPos - getCursor());
@@ -831,7 +831,7 @@ namespace Engine::Gui {
 
 				ENGINE_DEBUG_ASSERT(active == nullptr);
 				auto focus = getFocus();
-				if (!focus) { return false; }
+				if (!focus || focus == root) { return false; }
 
 				bool skip = false;
 
@@ -871,7 +871,7 @@ namespace Engine::Gui {
 			cb(cursor);
 		}
 
-		return hover != nullptr;
+		return hover && hover != root;
 	}
 
 	bool Context::onMouseWheel(const Engine::Input::InputEvent event) {
