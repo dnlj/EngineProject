@@ -146,16 +146,6 @@ namespace Engine::Gui {
 		return result;
 	}
 
-	bool isWordSeparator(Unicode::Unit8* begin) {
-		// TODO: should probably use Unicode Character Categories for these
-		// TODO: cont. https://www.compart.com/en/unicode/category
-		// TODO: cont. http://www.unicode.org/reports/tr44/#General_Category_Values
-		for (auto c : {'.','-','_',':','/','\\','#'}) {
-			if (c == +*begin) { return true; }
-		}
-		return Unicode::UTF8::isWhitespace(begin);
-	}
-
 	void TextBox::actionSelectWord() {
 		moveWordLeft();
 		onAction(Action::SelectBegin);

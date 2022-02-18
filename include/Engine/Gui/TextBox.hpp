@@ -25,7 +25,9 @@ namespace Engine::Gui {
 			Caret select = 0;
 
 		public:
-			using StringLine::StringLine;
+			TextBox(Context* context) : StringLine{context} {
+				setPadding(ctx->getTheme().sizes.pad1);
+			}
 
 			virtual void render() override;
 			virtual void onAction(ActionEvent act) override;
@@ -40,16 +42,6 @@ namespace Engine::Gui {
 			void tryBeginSelection() noexcept;
 
 			Caret caretFromPos(const float32 pos) const noexcept;
-
-			bool isWordSeparator(Unicode::Unit8* begin) {
-				// TODO: should probably use Unicode Character Categories for these
-				// TODO: cont. https://www.compart.com/en/unicode/category
-				// TODO: cont. http://www.unicode.org/reports/tr44/#General_Category_Values
-				for (auto c : {'.','-','_',':','/','\\','#'}) {
-					if (c == +*begin) { return true; }
-				}
-				return Unicode::UTF8::isWhitespace(begin);
-			}
 
 			void actionSelectWord();
 			void actionSelectAll();
@@ -70,6 +62,16 @@ namespace Engine::Gui {
 			void moveLineEnd();
 			void deleteRangeByIndex(const uint32 begin, const uint32 end);
 			void updateCaretPos();
+
+			bool isWordSeparator(Unicode::Unit8* begin) const noexcept {
+				// TODO: should probably use Unicode Character Categories for these
+				// TODO: cont. https://www.compart.com/en/unicode/category
+				// TODO: cont. http://www.unicode.org/reports/tr44/#General_Category_Values
+				for (auto c : {'.','-','_',':','/','\\','#'}) {
+					if (c == +*begin) { return true; }
+				}
+				return Unicode::UTF8::isWhitespace(begin);
+			}
 
 			ENGINE_INLINE bool shouldMoveCaret() const noexcept {
 				return selecting || select == Caret::invalid || select == caret;
