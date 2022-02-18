@@ -428,6 +428,8 @@ namespace Engine::Gui {
 			 */
 			std::string getClipboardText() const;
 
+			bool onActivate(const bool state, Clock::TimePoint time);
+
 			/**
 			 * @return Indicate if the input was consumed.
 			 */

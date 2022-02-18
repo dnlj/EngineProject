@@ -793,6 +793,63 @@ namespace Engine::Gui {
 		return result;
 	}
 
+	bool Context::onActivate(const bool state, Clock::TimePoint time) {
+		if (state) {
+			const auto isSequentialActivate = [&]() ENGINE_INLINE {
+				if (time - clickLastTime > clickRate) { return false; }
+
+				const auto diff = 2.0f * glm::abs(clickLastPos - getCursor());
+				if (diff.x >= clickSize.x && diff.y >= clickSize.y) { return false; }
+
+				return true;
+			};
+
+			if (isSequentialActivate()) {
+				++activateCount;
+			} else {
+				activateCount = 1;
+			}
+			clickLastPos = getCursor();
+			clickLastTime = time;
+
+			for (auto& [panel, func] : activateCallbacks) {
+				if (panel->isEnabled()) { func(); }
+			}
+
+			auto hover = getHover();
+			setFocus(hover);
+
+			auto focus = getFocus();
+			if (!focus || focus == root) { return active != nullptr; }
+
+			bool skip = false;
+
+			for (auto& [panel, func] : panelBeginActivateCallbacks) {
+				if (panel->isEnabled() && func(focus)) {
+					skip = true;
+					break;
+				}
+			}
+
+			if (!skip) {
+				focus->onBeginActivate();
+				active = focus;
+			}
+
+			return true;
+		} else {
+			for (auto& [panel, func] : panelEndActivateCallbacks) {
+				if (panel->isEnabled()) { func(active); }
+			}
+
+			if (active) {
+				unsetActive();
+				return true;
+			}
+		}
+		return false;
+	}
+
 	bool Context::onMouse(const Engine::Input::InputEvent event) {
 		//ENGINE_LOG("onMouse:",
 		//	" ", event.state.value,
@@ -801,64 +858,11 @@ namespace Engine::Gui {
 		//	" ", (int)event.state.id.device,
 		//	" @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count()
 		//);
-
+		
 		if (event.state.id.code == 0) {
-			if (event.state.value.i32) {
-
-				const auto isSequentialActivate = [&]() ENGINE_INLINE {
-					if (event.time - clickLastTime > clickRate) { return false; }
-
-					const auto diff = 2.0f * glm::abs(clickLastPos - getCursor());
-					if (diff.x >= clickSize.x && diff.y >= clickSize.y) { return false; }
-
-					return true;
-				};
-
-				if (isSequentialActivate()) {
-					++activateCount;
-				} else {
-					activateCount = 1;
-				}
-				clickLastPos = getCursor();
-				clickLastTime = event.time;
-
-				for (auto& [panel, func] : activateCallbacks) {
-					if (panel->isEnabled()) { func(); }
-				}
-
-				auto hover = getHover();
-				setFocus(hover);
-
-				ENGINE_DEBUG_ASSERT(active == nullptr);
-				auto focus = getFocus();
-				if (!focus || focus == root) { return false; }
-
-				bool skip = false;
-
-				for (auto& [panel, func] : panelBeginActivateCallbacks) {
-					if (panel->isEnabled() && func(focus)) {
-						skip = true;
-						break;
-					}
-				}
-
-				if (!skip) {
-					focus->onBeginActivate();
-					active = focus;
-				}
-
-				return true;
-			} else {
-				for (auto& [panel, func] : panelEndActivateCallbacks) {
-					if (panel->isEnabled()) { func(active); }
-				}
-
-				if (active) {
-					unsetActive();
-					return true;
-				}
-			}
+			return onActivate(event.state.value.any(), event.time);
 		}
+
 		return false;
 	}
 
