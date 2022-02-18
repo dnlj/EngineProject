@@ -793,6 +793,10 @@ namespace Engine::Gui {
 		return result;
 	}
 
+	void Context::focusHover() {
+		setFocus(getHover());
+	}
+
 	bool Context::onActivate(const bool state, Clock::TimePoint time) {
 		if (state) {
 			const auto isSequentialActivate = [&]() ENGINE_INLINE {
@@ -815,9 +819,6 @@ namespace Engine::Gui {
 			for (auto& [panel, func] : activateCallbacks) {
 				if (panel->isEnabled()) { func(); }
 			}
-
-			auto hover = getHover();
-			setFocus(hover);
 
 			auto focus = getFocus();
 			if (!focus || focus == root) { return active != nullptr; }
@@ -858,10 +859,6 @@ namespace Engine::Gui {
 		//	" ", (int)event.state.id.device,
 		//	" @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count()
 		//);
-		
-		if (event.state.id.code == 0) {
-			return onActivate(event.state.value.any(), event.time);
-		}
 
 		return false;
 	}

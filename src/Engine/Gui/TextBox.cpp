@@ -58,6 +58,7 @@ namespace Engine::Gui {
 			case Action::Cut: { actionCut(); break; }
 			case Action::Copy: { actionCopy(); break; }
 			case Action::Paste: { actionPaste(); break; }
+			case Action::Submit: { ENGINE_WARN("TODO: Gui::TextBox Submit - ", getText()); break; }
 		}
 	}
 

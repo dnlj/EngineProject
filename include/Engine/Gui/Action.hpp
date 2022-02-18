@@ -34,6 +34,8 @@ namespace Engine::Gui {
 		// TODO: "scroll" isnt an action... "zoom in", "zoom out", "move line up", etc are actions
 		Scroll,
 		ScrollH,
+
+		Submit,
 	};
 
 	class ActionEvent {

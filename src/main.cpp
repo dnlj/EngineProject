@@ -785,11 +785,18 @@ void run(int argc, char* argv[]) {
 
 		bm.addBind(InputLayer::GUI, true, InputSequence{
 			InputId{InputType::KEYBOARD, 0, +KeyCode::Enter},
-		}, [&](Value curr, Value prev, auto time){ guiContext.onActivate(curr.any(), time); });
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Submit); }});
 		
 		bm.addBind(InputLayer::GUI, true, InputSequence{
 				InputId{InputType::MOUSE_WHEEL, 0, 0}
 		}, [&](Value curr, Value prev, auto time){ guiContext.queueAction(GuiAction::Scroll, curr); });
+
+		bm.addBind(InputLayer::GUI, true, InputSequence{
+				InputId{InputType::MOUSE, 0, 0}
+		}, [&](Value curr, Value prev, auto time){
+			if (curr.i32) { guiContext.focusHover(); }
+			guiContext.onActivate(curr.i32, time);
+		});
 
 		//bm.setLayerEnabled(InputLayer::GUI, false);
 	}

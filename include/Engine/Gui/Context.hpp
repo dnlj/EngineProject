@@ -428,6 +428,11 @@ namespace Engine::Gui {
 			 */
 			std::string getClipboardText() const;
 
+			/**
+			 * Changes the hovered panel to be focused.
+			 */
+			void focusHover();
+
 			bool onActivate(const bool state, Clock::TimePoint time);
 
 			/**
