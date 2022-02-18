@@ -37,6 +37,8 @@ namespace Engine::Gui {
 			virtual void onEndActivate() override;
 
 		private:
+			void tryBeginSelection() noexcept;
+
 			Caret caretFromPos(const float32 pos) const noexcept;
 
 			bool isWordSeparator(Unicode::Unit8* begin) {
@@ -64,6 +66,8 @@ namespace Engine::Gui {
 			void moveWordLeft();
 			void moveWordRight();
 			void moveWordEndRight();
+			void moveLineStart();
+			void moveLineEnd();
 			void deleteRangeByIndex(const uint32 begin, const uint32 end);
 			void updateCaretPos();
 

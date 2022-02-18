@@ -44,20 +44,26 @@ namespace Engine::Gui {
 
 	void TextBox::onAction(ActionEvent act) {
 		switch (act) {
-			case Action::SelectBegin: { ++selecting; if (selecting == 1) { select = caret; } break; }
+			case Action::SelectBegin: { ++selecting; break; }
 			case Action::SelectEnd: { if (selecting > 0) { --selecting; }; break; }
 			case Action::SelectAll: { actionSelectAll(); break; }
 			case Action::MoveCharLeft: { moveCharLeft(); break; }
 			case Action::MoveCharRight: { moveCharRight(); break; }
 			case Action::DeletePrev: { actionDeletePrev(); break; }
 			case Action::DeleteNext: { actionDeleteNext(); break; }
-			case Action::MoveLineStart: { caret.index = 0; updateCaretPos(); break; }
-			case Action::MoveLineEnd: { caret.index = static_cast<uint32>(getText().size()); updateCaretPos(); break; }
+			case Action::MoveLineStart: { moveLineStart(); break; }
+			case Action::MoveLineEnd: { moveLineEnd(); break; }
 			case Action::MoveWordLeft: { moveWordLeft(); break; }
 			case Action::MoveWordRight: { moveWordRight(); break; }
 			case Action::Cut: { actionCut(); break; }
 			case Action::Copy: { actionCopy(); break; }
 			case Action::Paste: { actionPaste(); break; }
+		}
+	}
+
+	ENGINE_INLINE void TextBox::tryBeginSelection() noexcept {
+		if (selecting && select == Caret::invalid) {
+			select = caret;
 		}
 	}
 			
@@ -78,6 +84,7 @@ namespace Engine::Gui {
 			insertText(caret.index, view);
 			caret.index += static_cast<uint32>(view.size());
 			updateCaretPos();
+			select = caret;
 			return true;
 		});
 	};
@@ -217,6 +224,7 @@ namespace Engine::Gui {
 	}
 
 	void TextBox::moveCharLeft() {
+		tryBeginSelection();
 		if (shouldMoveCaret()) {
 			caret.index = getIndexOfPrevCodePoint();
 		} else {	
@@ -226,6 +234,7 @@ namespace Engine::Gui {
 	}
 
 	void TextBox::moveCharRight() {
+		tryBeginSelection();
 		if (shouldMoveCaret()) {
 			caret.index = getIndexOfNextCodePoint();
 		} else {
@@ -235,6 +244,7 @@ namespace Engine::Gui {
 	}
 
 	void TextBox::moveWordLeft() {
+		tryBeginSelection();
 		auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
 
 		// Start at the first non-separator
@@ -249,6 +259,7 @@ namespace Engine::Gui {
 	}
 
 	void TextBox::moveWordRight() {
+		tryBeginSelection();
 		const auto size = static_cast<uint32>(getText().size());
 		auto* const begin = reinterpret_cast<Unicode::Unit8*>(getTextMutable().data());
 
@@ -272,6 +283,18 @@ namespace Engine::Gui {
 			moveCharRight();
 		}
 	}
+	
+	void TextBox::moveLineStart() {
+		tryBeginSelection();
+		caret.index = 0;
+		updateCaretPos();
+	}
+
+	void TextBox::moveLineEnd() {
+		tryBeginSelection();
+		caret.index = static_cast<uint32>(getText().size());
+		updateCaretPos();
+	}
 
 	void TextBox::deleteRangeByIndex(const uint32 begin, const uint32 end) {
 		if (begin < end) {
@@ -279,7 +302,6 @@ namespace Engine::Gui {
 			shape();
 
 			caret.index = begin;
-			selecting = 0;
 			updateCaretPos();
 		}
 	}
