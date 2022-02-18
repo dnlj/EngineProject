@@ -84,7 +84,6 @@ namespace Engine::Gui {
 			insertText(caret.index, view);
 			caret.index += static_cast<uint32>(view.size());
 			updateCaretPos();
-			select = caret;
 			return true;
 		});
 	};
