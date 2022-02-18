@@ -21,6 +21,10 @@ namespace Engine::Gui {
 				pad.y = pad.x;
 			}
 
+			ENGINE_INLINE glm::vec2 getPadding() const noexcept {
+				return pad;
+			}
+
 			ENGINE_INLINE void insertText(uint32 i, std::string_view text) {
 				auto& s = str.getStringMutable();
 				s.insert(s.begin() + i, text.begin(), text.end());
@@ -37,6 +41,10 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setFont(Font font) {
 				str.setFont(font);
 				postLayout();
+			}
+
+			ENGINE_INLINE Font getFont() const {
+				return str.getFont();
 			}
 
 			ENGINE_INLINE void shape() { str.shape(); }

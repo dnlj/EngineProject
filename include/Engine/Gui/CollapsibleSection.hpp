@@ -32,12 +32,8 @@ namespace Engine::Gui {
 				height = getHeight();
 
 				btn = ctx->constructPanel<Button>();
-				//btn->setText("Section Test");
 				btn->setAction([&](Button*){ toggle(); });
-				btn->setFixedHeight(64);
-				////btn->setMinSize({0, 32});
-				//btn->setMaxSize({INFINITY, 32});
-				//btn->setHeight(32);
+				btn->setFixedHeight(btn->getFont()->getBodyHeight() + btn->getPadding().y * 2);
 
 				content = ctx->constructPanel<Panel>();
 				content->setMinSize({32,32});
