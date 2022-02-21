@@ -3,7 +3,10 @@
 
 namespace Engine::Net {
 	/**
-	 * TODO: doc, in short these are options that need to be set at the time of socket creation
+	 * Socket flags are options which must be set at the time of socket creation.
+	 * As opposed to socket options, which can be set after creation (binding).
+	 *
+	 * @see SocketOption
 	 */
 	struct SocketFlag_ { enum SocketFlag {
 		None = 0,

@@ -12,12 +12,12 @@
 
 namespace Engine::Net {
 	template<>
-	bool UDPSocket::setOption<SocketOption::BROADCAST, bool>(const bool& value) {
+	bool UDPSocket::setOption<SocketOption::Broadcast, bool>(const bool& value) {
 		return 0 == setsockopt(handle, SOL_SOCKET, SO_BROADCAST, reinterpret_cast<const char*>(&value), sizeof(value));
 	}
 	
 	template<>
-	bool UDPSocket::setOption<SocketOption::MULTICAST_JOIN, IPv4Address>(const IPv4Address& groupAddr) {
+	bool UDPSocket::setOption<SocketOption::MulticastJoin, IPv4Address>(const IPv4Address& groupAddr) {
 		const ip_mreq group = {
 			.imr_multiaddr = groupAddr.getAs<sockaddr_in>().sin_addr,
 			.imr_interface = 0,
@@ -25,7 +25,7 @@ namespace Engine::Net {
 		return 0 == setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&group), sizeof(group));
 	}
 	template<>
-	bool UDPSocket::setOption<SocketOption::MULTICAST_LEAVE, IPv4Address>(const IPv4Address& groupAddr) {
+	bool UDPSocket::setOption<SocketOption::MulticastLeave, IPv4Address>(const IPv4Address& groupAddr) {
 		const ip_mreq group = {
 			.imr_multiaddr = groupAddr.getAs<sockaddr_in>().sin_addr,
 			.imr_interface = 0,

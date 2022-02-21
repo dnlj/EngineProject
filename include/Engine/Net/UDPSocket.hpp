@@ -3,8 +3,8 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Net/IPv4Address.hpp>
-#include <Engine/Net/SocketOptions.hpp>
-#include <Engine/Net/SocketFlags.hpp>
+#include <Engine/Net/SocketOption.hpp>
+#include <Engine/Net/SocketFlag.hpp>
 
 #if ENGINE_CLIENT
 #define ENGINE_UDP_NETWORK_SIM
@@ -20,7 +20,9 @@
 namespace Engine::Net {
 	class UDPSocket {
 		public:
-			struct DoNotInitialize {} doNotInitialize;
+			struct DoNotInitialize {
+				explicit DoNotInitialize() = default;
+			} doNotInitialize;
 
 		public:
 			ENGINE_INLINE UDPSocket(DoNotInitialize) noexcept {
@@ -31,7 +33,6 @@ namespace Engine::Net {
 			UDPSocket(const uint16 port, const SocketFlag flags = {});
 
 			UDPSocket() = delete;
-			template<class T> UDPSocket(std::initializer_list<T>) = delete;
 			UDPSocket(const UDPSocket&) = delete;
 			UDPSocket& operator=(const UDPSocket&) = delete;
 
@@ -48,9 +49,9 @@ namespace Engine::Net {
 				return false;
 			}
 
-			template<> bool setOption<SocketOption::BROADCAST, bool>(const bool& value);
-			template<> bool setOption<SocketOption::MULTICAST_JOIN, IPv4Address>(const IPv4Address& groupAddr);
-			template<> bool setOption<SocketOption::MULTICAST_LEAVE, IPv4Address>(const IPv4Address& groupAddr);
+			template<> bool setOption<SocketOption::Broadcast, bool>(const bool& value);
+			template<> bool setOption<SocketOption::MulticastJoin, IPv4Address>(const IPv4Address& groupAddr);
+			template<> bool setOption<SocketOption::MulticastLeave, IPv4Address>(const IPv4Address& groupAddr);
 
 		private:
 			uint64 handle = -1;

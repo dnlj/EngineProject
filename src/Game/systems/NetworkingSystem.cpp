@@ -136,7 +136,6 @@ namespace Game {
 	HandleMessageDef(MessageType::DISCOVER_SERVER)
 		// TODO: rate limit per ip (longer if invalid packet)
 		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
-		ENGINE_LOG("DISCOVER_SERVER - ", from.address()); // TODO: rm
 		if (from.recvMsgSize() == size && !memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
 			if (auto msg = from.beginMessage<MessageType::SERVER_INFO>()) {
 				//constexpr char name[] = "This is the name of the server";
@@ -145,8 +144,6 @@ namespace Game {
 				msg.write<int>(int(std::size(name)));
 				msg.write(name.data(), std::size(name));
 			}
-		} else {
-			ENGINE_LOG("Invalid DISCOVER_SERVER"); // TODO: rm
 		}
 	}
 	
@@ -157,7 +154,6 @@ namespace Game {
 			const char* name = static_cast<const char*>(from.read(*len));
 			servInfo.name.assign(name, *len);
 			servInfo.lastUpdate = Engine::Clock::now();
-			ENGINE_LOG("SERVER_INFO from ", from.address()); // TODO: rm
 		#endif
 	}
 
@@ -410,7 +406,6 @@ namespace Game {
 	}
 	
 	HandleMessageDef(MessageType::PLAYER_DATA)
-		ENGINE_DEBUG_ASSERT(!ENGINE_SERVER, "This message is not for the server."); // TODO: rm - debugging
 		const auto* tick = from.read<Engine::ECS::Tick>();
 		const auto* trans = from.read<b2Transform>();
 		const auto* vel = from.read<b2Vec2>();
@@ -490,9 +485,7 @@ namespace Game {
 			ENGINE_WARN("The server port and multicast port should not be the same value(", group.port, "). May lead to instability.");
 		}
 
-		// TODO: rm - discoverServerSocket.setOption<Engine::Net::SocketOption::BROADCAST>(true);
-
-		if (discoverServerSocket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(group)) {
+		if (discoverServerSocket.setOption<Net::SocketOption::MulticastJoin>(group)) {
 			ENGINE_LOG("LAN server discovery is available. Joining multicast group ", group);
 		} else {
 			ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", group);
@@ -511,7 +504,6 @@ namespace Game {
 
 		const auto ent = getOrCreateEntity(group);
 		const auto& conn = world.getComponent<ConnectionComponent>(ent).conn;
-		ENGINE_LOG("broadcastDiscover - group - ", group); // TODO: rm
 		if (auto msg = conn->beginMessage<MessageType::DISCOVER_SERVER>()) {
 			msg.write(MESSAGE_PADDING_DATA);
 		}
