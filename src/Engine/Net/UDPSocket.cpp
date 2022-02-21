@@ -35,9 +35,15 @@ namespace Engine::Net {
 
 
 namespace Engine::Net {
-	UDPSocket::UDPSocket(const uint16 port) {
+	UDPSocket::UDPSocket(const uint16 port, const SocketFlags flags) {
 		// TODO: is it possible to make this work with IPv4 and IPv6. AF_USPEC?
-		handle = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		int type = SOCK_DGRAM;
+
+		#ifndef ENGINE_OS_WINDOWS
+		type |= flags & SocketFlags::NonBlocking ? SOCK_NONBLOCK : 0;
+		#endif
+
+		handle = socket(AF_INET, type, IPPROTO_UDP);
 
 		if (handle == INVALID_SOCKET) {
 			const auto err = WSAGetLastError();
@@ -45,10 +51,14 @@ namespace Engine::Net {
 		}
 
 		// Set non-blocking
-		if (DWORD mode = 1; ioctlsocket(handle, FIONBIO, &mode)) {
-			const auto err = WSAGetLastError();
-			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
+		#ifdef ENGINE_OS_WINDOWS
+		if (flags & SocketFlags::NonBlocking) {
+			if (DWORD mode = 1; ioctlsocket(handle, FIONBIO, &mode)) {
+				const auto err = WSAGetLastError();
+				ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
+			}
 		}
+		#endif
 
 		// Bind to a port (0 = OS assigned)
 		const auto address = IPv4Address{INADDR_ANY, port}.getAs<sockaddr>();

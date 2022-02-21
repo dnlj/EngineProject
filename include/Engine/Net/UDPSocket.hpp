@@ -4,6 +4,7 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Net/IPv4Address.hpp>
 #include <Engine/Net/SocketOptions.hpp>
+#include <Engine/Net/SocketFlags.hpp>
 
 #if ENGINE_CLIENT
 #define ENGINE_UDP_NETWORK_SIM
@@ -19,7 +20,7 @@
 namespace Engine::Net {
 	class UDPSocket {
 		public:
-			UDPSocket(const uint16 port);
+			UDPSocket(const uint16 port, const SocketFlags flags = {});
 			UDPSocket(const UDPSocket&) = delete;
 			UDPSocket& operator=(const UDPSocket&) = delete;
 

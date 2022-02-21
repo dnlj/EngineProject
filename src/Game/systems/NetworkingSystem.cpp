@@ -136,12 +136,17 @@ namespace Game {
 	HandleMessageDef(MessageType::DISCOVER_SERVER)
 		// TODO: rate limit per ip (longer if invalid packet)
 		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
+		ENGINE_LOG("DISCOVER_SERVER - ", from.address()); // TODO: rm
 		if (from.recvMsgSize() == size && !memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
 			if (auto msg = from.beginMessage<MessageType::SERVER_INFO>()) {
-				constexpr char name[] = "This is the name of the server";
-				msg.write<int>(sizeof(name) - 1);
-				msg.write(name, sizeof(name) - 1);
+				//constexpr char name[] = "This is the name of the server";
+				std::string name = "This is the name of the server ";
+				name += std::to_string(Engine::getGlobalConfig().port);
+				msg.write<int>(int(std::size(name)));
+				msg.write(name.data(), std::size(name));
 			}
+		} else {
+			ENGINE_LOG("Invalid DISCOVER_SERVER"); // TODO: rm
 		}
 	}
 	
@@ -152,6 +157,7 @@ namespace Game {
 			const char* name = static_cast<const char*>(from.read(*len));
 			servInfo.name.assign(name, *len);
 			servInfo.lastUpdate = Engine::Clock::now();
+			ENGINE_LOG("SERVER_INFO from ", from.address()); // TODO: rm
 		#endif
 	}
 
@@ -469,7 +475,7 @@ namespace Game {
 namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
-		, socket{ENGINE_SERVER ? Engine::getGlobalConfig().port : 0}
+		, socket{ENGINE_SERVER ? Engine::getGlobalConfig().port : 0, Engine::Net::SocketFlags::NonBlocking}
 		, rng{pcg_extras::seed_seq_from<std::random_device>{}}
 		, group{Engine::getGlobalConfig().group} {
 
@@ -495,6 +501,7 @@ namespace Game {
 
 		const auto ent = getOrCreateEntity(group);
 		const auto& conn = world.getComponent<ConnectionComponent>(ent).conn;
+		ENGINE_LOG("broadcastDiscover - group - ", group); // TODO: rm
 		if (auto msg = conn->beginMessage<MessageType::DISCOVER_SERVER>()) {
 			msg.write(MESSAGE_PADDING_DATA);
 		}

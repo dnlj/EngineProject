@@ -880,7 +880,7 @@ int entry(int argc, char* argv[]) {
 		parser
 			.add<uint16>("port", 'p', 21212,
 				"The port to listen on.")
-			.add<IPv4Address>("group", 'g', {224,0,0,212, 21212},
+			.add<IPv4Address>("group", 'g', {224,0,0,212, 42424},
 				"The multicast group to join for server discovery.")
 			.add<std::string>("log", 'l', "",
 				"The file to use for logging.")
