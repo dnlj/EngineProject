@@ -37,6 +37,17 @@ namespace Engine::Net {
 
 namespace Engine::Net {
 	UDPSocket::UDPSocket(const uint16 port, const SocketFlag flags) {
+		init(flags);
+		bind(port);
+	}
+
+	UDPSocket::~UDPSocket() {
+		if (handle != invalid) { closesocket(handle); }
+	};
+	
+	void UDPSocket::init(const SocketFlag flags) {
+		ENGINE_DEBUG_ASSERT(handle == invalid, "Only an uninitialized socket can be initialized.");
+
 		// TODO: is it possible to make this work with IPv4 and IPv6. AF_USPEC?
 		int type = SOCK_DGRAM;
 
@@ -44,11 +55,8 @@ namespace Engine::Net {
 		type |= flags & SocketFlags::NonBlocking ? SOCK_NONBLOCK : 0;
 		#endif
 
-		handle = socket(AF_INET, type, IPPROTO_UDP);
-
-		if (handle == -1) {
-			showError();
-		}
+		handle = ::socket(AF_INET, type, IPPROTO_UDP);
+		if (handle == invalid) { showError(); return; }
 
 		// Set non-blocking. Non-Windows is handled in the call to `socket()`
 		#ifdef ENGINE_OS_WINDOWS
@@ -64,17 +72,16 @@ namespace Engine::Net {
 				showError();
 			}
 		}
+	}
 
+	void UDPSocket::bind(const uint16 port) {
+		ENGINE_DEBUG_ASSERT(handle != invalid, "Socket must have been initialized before binding.");
 		// Bind to a port (0 = OS assigned)
 		const auto address = IPv4Address{INADDR_ANY, port}.getAs<sockaddr>();
-		if (bind(handle, &address, sizeof(address))) {
+		if (::bind(handle, &address, sizeof(address))) {
 			showError();
 		}
 	}
-
-	UDPSocket::~UDPSocket() {
-		closesocket(handle);
-	};
 
 	int32 UDPSocket::send(const void* data, int32 size, const IPv4Address& address) {
 		const auto saddr = address.getAs<sockaddr>();

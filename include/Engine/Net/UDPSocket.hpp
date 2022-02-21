@@ -25,10 +25,7 @@ namespace Engine::Net {
 			} doNotInitialize;
 
 		public:
-			ENGINE_INLINE UDPSocket(DoNotInitialize) noexcept {
-				 // TODO: impl. will need to add init(flags) and bind(port) functions
-				ENGINE_ERROR("TODO: impl");
-			}
+			ENGINE_INLINE UDPSocket(DoNotInitialize) noexcept {}
 
 			UDPSocket(const uint16 port, const SocketFlag flags = {});
 
@@ -37,6 +34,9 @@ namespace Engine::Net {
 			UDPSocket& operator=(const UDPSocket&) = delete;
 
 			~UDPSocket();
+
+			void init(const SocketFlag flags = {});
+			void bind(const uint16 port);
 
 			int32 send(const void* data, int32 size, const IPv4Address& address);
 			int32 recv(void* data, int32 size, IPv4Address& address);
@@ -54,7 +54,8 @@ namespace Engine::Net {
 			template<> bool setOption<SocketOption::MulticastLeave, IPv4Address>(const IPv4Address& groupAddr);
 
 		private:
-			uint64 handle = -1;
+			constexpr static uint64 invalid = -1;
+			uint64 handle = invalid;
 			void showError();
 
 	#ifdef ENGINE_UDP_NETWORK_SIM
