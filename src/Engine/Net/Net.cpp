@@ -16,21 +16,12 @@ namespace Engine::Net {
 	bool startup() {
 		WSADATA data;
 		auto err = WSAStartup(MAKEWORD(2,2), &data);
-		if (err) {
-			// TODO: handle
-			return false;
-		}
-
+		if (err) { return false; }
 		return true;
 	}
 
-	// TODO: Doc
 	bool shutdown() {
-		if (WSACleanup()) {
-			// TODO: WSAGetLastError
-			return false;
-		}
-
+		if (WSACleanup()) { return false; }
 		return true;
 	}
 	
@@ -52,7 +43,6 @@ namespace Engine::Net {
 
 		if (auto err = getaddrinfo(host.data(), serv.data(), &hints, &results); err) {
 			ENGINE_WARN("Address error - ", Engine::Win32::getLastErrorMessage());
-			// TODO: error message popup/notification
 		} else {
 			for (auto ptr = results; ptr; ptr = results->ai_next) {
 				if (ptr->ai_family != AF_INET) { continue; }

@@ -860,13 +860,14 @@ void run(int argc, char* argv[]) {
 
 	// UI cleanup
 	Engine::ImGui::shutdown();
-
-	// Network cleanup
-	Engine::Net::shutdown();
 }
 
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
 int entry(int argc, char* argv[]) {
+	if (!Engine::Net::startup()) {
+		ENGINE_ERROR("Unable to start networking: ", Engine::Win32::getLastErrorMessage());
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Command Line
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -881,7 +882,7 @@ int entry(int argc, char* argv[]) {
 			.add<uint16>("port", 'p', 21212,
 				"The port to listen on.")
 			.add<IPv4Address>("group", 'g', {224,0,0,212, 12121},
-				"The multicast group to join for server discovery.")
+				"The multicast group to join for server discovery. Zero to disable.")
 			.add<std::string>("log", 'l', "",
 				"The file to use for logging.")
 			.add<bool>("logColor",
@@ -929,10 +930,10 @@ int entry(int argc, char* argv[]) {
 	// Position the console
 	if (HWND window; window = GetConsoleWindow()) {
 		if constexpr (ENGINE_CLIENT) {
-			SetWindowPos(window, HWND_TOP, 0, 0, 1500, 500, 0);
+			SetWindowPos(window, HWND_TOP, 0, 0, 1500, 600, 0);
 			SetWindowTextW(window, L"Client");
 		} else if constexpr (ENGINE_SERVER) {
-			SetWindowPos(window, HWND_TOP, 0, 500, 1500, 500, 0);
+			SetWindowPos(window, HWND_TOP, 0, 600, 1500, 600, 0);
 			SetWindowTextW(window, L"Server");
 		}
 	}
@@ -1029,6 +1030,10 @@ int entry(int argc, char* argv[]) {
 
 	startTime = Engine::Clock::now();
 	run(argc, argv);
+
+	if (!Engine::Net::shutdown()) {
+		ENGINE_WARN("Unable to shutdown networking: ", Engine::Win32::getLastErrorMessage());
+	}
 
 	ENGINE_LOG("Done.");
 	return EXIT_SUCCESS;

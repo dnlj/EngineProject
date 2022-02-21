@@ -474,21 +474,26 @@ namespace Game {
 		, group{Engine::getGlobalConfig().group}
 		, socket{ENGINE_SERVER ? Engine::getGlobalConfig().port : 0, Engine::Net::SocketFlag::NonBlocking}
 		#if ENGINE_SERVER
-		, discoverServerSocket{group.port, Net::SocketFlag::NonBlocking | Net::SocketFlag::ReuseAddress}
+		, discoverServerSocket{Net::UDPSocket::doNotInitialize}
 		#endif
 		, rng{pcg_extras::seed_seq_from<std::random_device>{}} {
 
 		ENGINE_LOG("Listening on port ", socket.getAddress().port);
 
 		#if ENGINE_SERVER
-		if (discoverServerSocket.getAddress().port == socket.getAddress().port) {
-			ENGINE_WARN("The server port and multicast port should not be the same value(", group.port, "). May lead to instability.");
-		}
-
-		if (discoverServerSocket.setOption<Net::SocketOption::MulticastJoin>(group)) {
-			ENGINE_LOG("LAN server discovery is available. Joining multicast group ", group);
+		if (group.port) {
+			if (group.port == socket.getAddress().port) {
+				ENGINE_WARN("The server port and multicast port should not be the same value(", group.port, "). May lead to instability.");
+			} else {
+				discoverServerSocket = Net::UDPSocket{group.port, Net::SocketFlag::NonBlocking | Net::SocketFlag::ReuseAddress};
+				if (discoverServerSocket.setOption<Net::SocketOption::MulticastJoin>(group)) {
+					ENGINE_LOG("LAN server discovery is available. Joining multicast group ", group);
+				} else {
+					ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", group);
+				}
+			}
 		} else {
-			ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", group);
+			ENGINE_LOG("LAN server discovery is disabled");
 		}
 		#endif
 	}

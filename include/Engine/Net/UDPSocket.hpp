@@ -21,13 +21,27 @@ namespace Engine::Net {
 	class UDPSocket {
 		public:
 			struct DoNotInitialize {
-				explicit DoNotInitialize() = default;
-			} doNotInitialize;
+				constexpr explicit DoNotInitialize() = default;
+			} constexpr static doNotInitialize;
 
 		public:
 			ENGINE_INLINE UDPSocket(DoNotInitialize) noexcept {}
 
 			UDPSocket(const uint16 port, const SocketFlag flags = {});
+
+			ENGINE_INLINE UDPSocket(UDPSocket&& other) noexcept {
+				*this = std::move(other);
+			}
+
+			ENGINE_INLINE UDPSocket& operator=(UDPSocket&& other) noexcept {
+				swap(*this, other);
+				return *this;
+			}
+
+			ENGINE_INLINE friend void swap(UDPSocket& a, UDPSocket& b) noexcept {
+				using std::swap;
+				swap(a.handle, b.handle);
+			}
 
 			UDPSocket() = delete;
 			UDPSocket(const UDPSocket&) = delete;
