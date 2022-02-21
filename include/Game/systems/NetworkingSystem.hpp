@@ -34,7 +34,20 @@ namespace Game {
 		private:
 			static constexpr auto timeout = std::chrono::milliseconds{5000};
 			static constexpr auto disconnectTime = std::chrono::milliseconds{500};
+
+			Engine::Net::IPv4Address address;
+			Engine::Net::Packet packet = {};
+			const Engine::Net::IPv4Address group;
+			Engine::Clock::TimePoint now = {};
+			Engine::Clock::TimePoint lastUpdate = {};
+
+			/** Main socket for talking to the server/clients */
 			Engine::Net::UDPSocket socket;
+
+			/** Used for multicast server discovery */
+			#if ENGINE_SERVER
+			Engine::Net::UDPSocket discoverServerSocket;
+			#endif
 
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> addressToEntity;
 
@@ -44,11 +57,6 @@ namespace Game {
 				while (!(v = rng())) {}
 				return v;
 			} 
-			Engine::Net::IPv4Address address;
-			Engine::Net::Packet packet = {};
-			const Engine::Net::IPv4Address group;
-			Engine::Clock::TimePoint now = {};
-			Engine::Clock::TimePoint lastUpdate = {};
 
 			// TODO: at some point we probably want to shrink this
 			Engine::FlatHashMap<Engine::ECS::Entity, Engine::ECS::Entity> entToLocal;
@@ -71,6 +79,7 @@ namespace Game {
 			Engine::ECS::Entity getEntity(const Engine::Net::IPv4Address& addr);
 			Engine::ECS::Entity getOrCreateEntity(const Engine::Net::IPv4Address& addr);
 
+			void recvAndDispatchMessages(Engine::Net::UDPSocket& sock);
 			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr);
 			void runClient();
 

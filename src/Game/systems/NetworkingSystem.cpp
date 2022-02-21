@@ -475,19 +475,26 @@ namespace Game {
 namespace Game {
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
+		, group{Engine::getGlobalConfig().group}
 		, socket{ENGINE_SERVER ? Engine::getGlobalConfig().port : 0, Engine::Net::SocketFlags::NonBlocking}
-		, rng{pcg_extras::seed_seq_from<std::random_device>{}}
-		, group{Engine::getGlobalConfig().group} {
+		#if ENGINE_SERVER
+		, discoverServerSocket{group.port, Engine::Net::SocketFlags::NonBlocking}
+		#endif
+		, rng{pcg_extras::seed_seq_from<std::random_device>{}} {
 
 		ENGINE_LOG("Listening on port ", socket.getAddress().port);
 
-		if constexpr (ENGINE_SERVER) {
-			if (socket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(group)) {
-				ENGINE_LOG("LAN server discovery is available. Joining multicast group ", group);
-			} else {
-				ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", group);
-			}
+		#if ENGINE_SERVER
+		if (discoverServerSocket.getAddress().port == socket.getAddress().port) {
+			ENGINE_WARN("The server port and multicast port should not be the same value(", group.port, "). May lead to instability.");
 		}
+
+		if (discoverServerSocket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(group)) {
+			ENGINE_LOG("LAN server discovery is available. Joining multicast group ", group);
+		} else {
+			ENGINE_WARN("LAN server discovery is unavailable; Unable to join multicast group ", group);
+		}
+		#endif
 	}
 
 	#if ENGINE_CLIENT
@@ -508,12 +515,9 @@ namespace Game {
 	}
 	#endif
 
-	void NetworkingSystem::run(float32 dt) {
-		now = Engine::Clock::now();
-
-		// Recv messages
+	void NetworkingSystem::recvAndDispatchMessages(Engine::Net::UDPSocket& sock) {
 		int32 sz;
-		while ((sz = socket.recv(&packet, sizeof(packet), address)) > -1) {
+		while ((sz = sock.recv(&packet, sizeof(packet), address)) > -1) {
 			const auto ent = getOrCreateEntity(address);
 			auto& connComp = world.getComponent<ConnectionComponent>(ent);
 			const auto& conn = connComp.conn;
@@ -531,7 +535,7 @@ namespace Game {
 			}
 
 			// ENGINE_LOG("****** ", conn->getKeySend(), " ", conn->getKeyRecv(), " ", packet.getKey(), " ", packet.getSeqNum());
-
+			
 			if (!conn->recv(packet, sz, now)) { continue; }
 
 			const Engine::Net::MessageHeader* hdr; 
@@ -539,6 +543,16 @@ namespace Game {
 				dispatchMessage(ent, connComp, hdr);
 			}
 		}
+	}
+
+	void NetworkingSystem::run(float32 dt) {
+		now = Engine::Clock::now();
+
+		// Recv messages
+		#if ENGINE_SERVER
+			recvAndDispatchMessages(discoverServerSocket);
+		#endif
+		recvAndDispatchMessages(socket);
 
 		// TODO: instead of sending all connections on every X. Send a smaller number every frame to distribute load.
 
