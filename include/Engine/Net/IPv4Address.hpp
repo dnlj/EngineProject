@@ -17,12 +17,12 @@ namespace Engine::Net {
 		public:
 			IPv4Address() = default;
 
-			constexpr IPv4Address(uint32 address, uint32 port = 0)
+			constexpr IPv4Address(uint32 address, uint16 port = 0)
 				: address{address}
 				, port{port} {
 			}
 
-			constexpr IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint32 port = 0)
+			constexpr IPv4Address(uint8 a, uint8 b, uint8 c, uint8 d, uint16 port = 0)
 				: d{d}, c{c}, b{b}, a{a}
 				, port{port} {
 			}
@@ -44,7 +44,7 @@ namespace Engine::Net {
 				};
 			};
 
-			uint32 port; // TODO: why is this 32bit? arent ports 16?
+			uint16 port;
 	};
 
 	bool operator==(const IPv4Address& a, const IPv4Address& b);
