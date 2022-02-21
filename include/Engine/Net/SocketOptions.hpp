@@ -8,7 +8,7 @@ namespace Engine::Net {
 	 * @see https://docs.microsoft.com/en-us/windows/win32/winsock/socket-options
 	 * @see https://linux.die.net/man/7/socket
 	 */
-	enum class SocketOption : int {
+	enum class SocketOption {
 		BROADCAST,
 		MULTICAST_JOIN,
 		MULTICAST_LEAVE,

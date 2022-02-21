@@ -473,12 +473,13 @@ namespace Game {
 #undef HandleMessageDef
 
 namespace Game {
+	namespace Net = Engine::Net;
 	NetworkingSystem::NetworkingSystem(SystemArg arg)
 		: System{arg}
 		, group{Engine::getGlobalConfig().group}
-		, socket{ENGINE_SERVER ? Engine::getGlobalConfig().port : 0, Engine::Net::SocketFlags::NonBlocking}
+		, socket{ENGINE_SERVER ? Engine::getGlobalConfig().port : 0, Engine::Net::SocketFlag::NonBlocking}
 		#if ENGINE_SERVER
-		, discoverServerSocket{group.port, Engine::Net::SocketFlags::NonBlocking}
+		, discoverServerSocket{group.port, Net::SocketFlag::NonBlocking | Net::SocketFlag::ReuseAddress}
 		#endif
 		, rng{pcg_extras::seed_seq_from<std::random_device>{}} {
 
@@ -488,6 +489,8 @@ namespace Game {
 		if (discoverServerSocket.getAddress().port == socket.getAddress().port) {
 			ENGINE_WARN("The server port and multicast port should not be the same value(", group.port, "). May lead to instability.");
 		}
+
+		// TODO: rm - discoverServerSocket.setOption<Engine::Net::SocketOption::BROADCAST>(true);
 
 		if (discoverServerSocket.setOption<Engine::Net::SocketOption::MULTICAST_JOIN>(group)) {
 			ENGINE_LOG("LAN server discovery is available. Joining multicast group ", group);

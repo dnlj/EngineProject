@@ -20,14 +20,24 @@
 namespace Engine::Net {
 	class UDPSocket {
 		public:
-			UDPSocket(const uint16 port, const SocketFlags flags = {});
+			struct DoNotInitialize {} doNotInitialize;
+
+		public:
+			ENGINE_INLINE UDPSocket(DoNotInitialize) noexcept {
+				 // TODO: impl. will need to add init(flags) and bind(port) functions
+				ENGINE_ERROR("TODO: impl");
+			}
+
+			UDPSocket(const uint16 port, const SocketFlag flags = {});
+
+			UDPSocket() = delete;
+			template<class T> UDPSocket(std::initializer_list<T>) = delete;
 			UDPSocket(const UDPSocket&) = delete;
 			UDPSocket& operator=(const UDPSocket&) = delete;
 
 			~UDPSocket();
 
 			int32 send(const void* data, int32 size, const IPv4Address& address);
-
 			int32 recv(void* data, int32 size, IPv4Address& address);
 
 			IPv4Address getAddress() const;
@@ -43,13 +53,8 @@ namespace Engine::Net {
 			template<> bool setOption<SocketOption::MULTICAST_LEAVE, IPv4Address>(const IPv4Address& groupAddr);
 
 		private:
-			uint64 handle;
-
-			/**
-			 * Gets the error string (utf-8) for the given error code.
-			 * @see https://docs.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
-			 */
-			std::string getWindowsErrorMessage(int err) const;
+			uint64 handle = -1;
+			void showError();
 
 	#ifdef ENGINE_UDP_NETWORK_SIM
 		private:

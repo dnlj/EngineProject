@@ -1,6 +1,7 @@
 #if ENGINE_OS_WINDOWS
 	#include <WinSock2.h>
 	#include <Ws2tcpip.h>
+	#include <Engine/Win32/Win32.hpp>
 #else
 	#error Not yet implemented for this operating system.
 #endif
@@ -35,7 +36,7 @@ namespace Engine::Net {
 
 
 namespace Engine::Net {
-	UDPSocket::UDPSocket(const uint16 port, const SocketFlags flags) {
+	UDPSocket::UDPSocket(const uint16 port, const SocketFlag flags) {
 		// TODO: is it possible to make this work with IPv4 and IPv6. AF_USPEC?
 		int type = SOCK_DGRAM;
 
@@ -45,26 +46,29 @@ namespace Engine::Net {
 
 		handle = socket(AF_INET, type, IPPROTO_UDP);
 
-		if (handle == INVALID_SOCKET) {
-			const auto err = WSAGetLastError();
-			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
+		if (handle == -1) {
+			showError();
 		}
 
-		// Set non-blocking
+		// Set non-blocking. Non-Windows is handled in the call to `socket()`
 		#ifdef ENGINE_OS_WINDOWS
-		if (flags & SocketFlags::NonBlocking) {
+		if (flags & SocketFlag::NonBlocking) {
 			if (DWORD mode = 1; ioctlsocket(handle, FIONBIO, &mode)) {
-				const auto err = WSAGetLastError();
-				ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
+				showError();
 			}
 		}
 		#endif
 
+		if (flags & SocketFlag::ReuseAddress) {
+			if (int val = 1; setsockopt(handle, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&val), sizeof(val))) {
+				showError();
+			}
+		}
+
 		// Bind to a port (0 = OS assigned)
 		const auto address = IPv4Address{INADDR_ANY, port}.getAs<sockaddr>();
 		if (bind(handle, &address, sizeof(address))) {
-			const auto err = WSAGetLastError();
-			ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
+			showError();
 		}
 	}
 
@@ -85,10 +89,7 @@ namespace Engine::Net {
 		const auto sent = sendto(handle, reinterpret_cast<const char*>(data), size, 0, &saddr, sizeof(saddr));
 
 		#ifdef DEBUG
-			if (sent != size) {
-				const auto err = WSAGetLastError();
-				ENGINE_ERROR(err, " - ", getWindowsErrorMessage(err));
-			}
+			if (sent != size) { showError(); }
 		#endif
 
 		return sent;
@@ -131,24 +132,13 @@ namespace Engine::Net {
 		return addr;
 	}
 
-	// TODO: use Engine::Windows
-	std::string UDPSocket::getWindowsErrorMessage(int err) const {
-		WCHAR* wmsg = nullptr;
-		FormatMessageW(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			nullptr,
-			err,
-			0,
-			reinterpret_cast<LPWSTR>(&wmsg),
-			0,
-			nullptr
-		);
-
-		const auto size = WideCharToMultiByte(CP_UTF8, 0, wmsg, -1, nullptr, 0, nullptr, nullptr);
-		std::string msg(size, '?');
-		WideCharToMultiByte(CP_UTF8, 0, wmsg, -1, msg.data(), size, nullptr, nullptr);
-		LocalFree(wmsg);
-		return msg;
+	void UDPSocket::showError() {
+		#ifdef ENGINE_OS_WINDOWS 
+		const auto err = WSAGetLastError();
+		ENGINE_ERROR(err, " - ", Win32::getLastErrorMessage());
+		#else
+		#error TODO: impl non windows - check errno
+		#endif
 	}
 
 #ifdef ENGINE_UDP_NETWORK_SIM

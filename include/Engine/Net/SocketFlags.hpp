@@ -2,9 +2,14 @@
 
 
 namespace Engine::Net {
-	struct SocketFlags_ { enum SocketFlags {
+	/**
+	 * TODO: doc, in short these are options that need to be set at the time of socket creation
+	 */
+	struct SocketFlag_ { enum SocketFlag {
 		None = 0,
 		NonBlocking = 1 << 0,
+		ReuseAddress = 1 << 1,
 	};};
-	using SocketFlags = SocketFlags_::SocketFlags;
+	using SocketFlag = SocketFlag_::SocketFlag;
+	ENGINE_BUILD_ALL_OPS(SocketFlag);
 }
