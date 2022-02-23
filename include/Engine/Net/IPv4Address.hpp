@@ -9,6 +9,7 @@
 
 
 struct sockaddr_in;
+struct sockaddr_storage;
 struct sockaddr;
 
 
@@ -27,11 +28,14 @@ namespace Engine::Net {
 				, port{port} {
 			}
 
-			IPv4Address(const sockaddr_in& saddress);
-			IPv4Address(const sockaddr& saddress);
+			IPv4Address(const sockaddr_in& addr);
+			IPv4Address(const sockaddr& addr);
+			IPv4Address(const sockaddr_storage& addr)
+				: IPv4Address{reinterpret_cast<const sockaddr&>(addr)} {
+			};
 
 			template<class T>
-			T getAs() const noexcept;
+			T as() const noexcept;
 
 			union {
 				uint32 address = 0;

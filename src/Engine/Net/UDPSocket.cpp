@@ -19,7 +19,7 @@ namespace Engine::Net {
 	template<>
 	bool UDPSocket::setOption<SocketOption::MulticastJoin, IPv4Address>(const IPv4Address& groupAddr) {
 		const ip_mreq group = {
-			.imr_multiaddr = groupAddr.getAs<sockaddr_in>().sin_addr,
+			.imr_multiaddr = groupAddr.as<sockaddr_in>().sin_addr,
 			.imr_interface = 0,
 		};
 		return 0 == setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char*>(&group), sizeof(group));
@@ -27,7 +27,7 @@ namespace Engine::Net {
 	template<>
 	bool UDPSocket::setOption<SocketOption::MulticastLeave, IPv4Address>(const IPv4Address& groupAddr) {
 		const ip_mreq group = {
-			.imr_multiaddr = groupAddr.getAs<sockaddr_in>().sin_addr,
+			.imr_multiaddr = groupAddr.as<sockaddr_in>().sin_addr,
 			.imr_interface = 0,
 		};
 		return 0 == setsockopt(handle, IPPROTO_IP, IP_DROP_MEMBERSHIP, reinterpret_cast<const char*>(&group), sizeof(group));
@@ -77,14 +77,14 @@ namespace Engine::Net {
 	void UDPSocket::bind(const uint16 port) {
 		ENGINE_DEBUG_ASSERT(handle != invalid, "Socket must have been initialized before binding.");
 		// Bind to a port (0 = OS assigned)
-		const auto address = IPv4Address{INADDR_ANY, port}.getAs<sockaddr>();
-		if (::bind(handle, &address, sizeof(address))) {
+		const auto address = IPv4Address{INADDR_ANY, port}.as<sockaddr_in>();
+		if (::bind(handle, reinterpret_cast<const sockaddr*>(&address), sizeof(address))) {
 			showError();
 		}
 	}
 
 	int32 UDPSocket::send(const void* data, int32 size, const IPv4Address& address) {
-		const auto saddr = address.getAs<sockaddr>();
+		const auto saddr = address.as<sockaddr_in>();
 		
 		#ifdef ENGINE_UDP_NETWORK_SIM
 		{
@@ -93,7 +93,10 @@ namespace Engine::Net {
 		}
 		#endif
 
-		const auto sent = sendto(handle, reinterpret_cast<const char*>(data), size, 0, &saddr, sizeof(saddr));
+		const auto sent = sendto(handle,
+			reinterpret_cast<const char*>(data), size, 0,
+			reinterpret_cast<const sockaddr*>(&saddr), sizeof(saddr)
+		);
 
 		#ifdef DEBUG
 			if (sent != size) { showError(); }
@@ -133,9 +136,9 @@ namespace Engine::Net {
 	}
 
 	IPv4Address UDPSocket::getAddress() const {
-		sockaddr addr = {};
+		sockaddr_storage addr = {};
 		int len = sizeof(addr);
-		getsockname(handle, &addr, &len);
+		getsockname(handle, reinterpret_cast<sockaddr*>(&addr), &len);
 		return addr;
 	}
 
@@ -153,8 +156,11 @@ namespace Engine::Net {
 		while (sendBuffer.size()) {
 			const auto& top = sendBuffer.top();
 			if (top.time > Engine::Clock::now()) { return; }
-			const auto saddr = top.addr.getAs<sockaddr>();
-			sendto(handle, reinterpret_cast<const char*>(top.data.data()), static_cast<int>(top.data.size()), 0, &saddr, sizeof(saddr));
+			const auto saddr = top.addr.as<sockaddr_in>();
+			sendto(
+				handle, reinterpret_cast<const char*>(top.data.data()), static_cast<int>(top.data.size()), 0,
+				reinterpret_cast<const sockaddr*>(&saddr), sizeof(saddr)
+			);
 			sendBuffer.pop();
 		}
 	}

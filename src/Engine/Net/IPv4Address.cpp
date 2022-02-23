@@ -12,27 +12,24 @@
 
 
 namespace Engine::Net {
-	IPv4Address::IPv4Address(const sockaddr_in& saddress)
-		: address{ntohl(saddress.sin_addr.s_addr)}
-		, port{ntohs(saddress.sin_port)} {
+	IPv4Address::IPv4Address(const sockaddr_in& addr)
+		: address{ntohl(addr.sin_addr.s_addr)}
+		, port{ntohs(addr.sin_port)} {
 	}
 	
-	IPv4Address::IPv4Address(const sockaddr& saddress)
-		: IPv4Address{reinterpret_cast<const sockaddr_in&>(saddress)} {
+	IPv4Address::IPv4Address(const sockaddr& addr)
+		: IPv4Address{reinterpret_cast<const sockaddr_in&>(addr)} {
+		ENGINE_ASSERT(addr.sa_family == AF_INET, "IPv4Address expects an IPv4 address at the sockaddr location.");
+		*this = reinterpret_cast<const sockaddr_in&>(addr);
 	}
 
 	template<>
-	sockaddr_in IPv4Address::getAs() const noexcept {
+	sockaddr_in IPv4Address::as() const noexcept {
 		sockaddr_in saddr;
 		saddr.sin_family = AF_INET,
 		saddr.sin_port = htons(port),
 		saddr.sin_addr.s_addr = htonl(address);
 		return saddr;
-	}
-
-	template<>
-	sockaddr IPv4Address::getAs() const noexcept {
-		return reinterpret_cast<const sockaddr&>(getAs<sockaddr_in>());
 	}
 
 	bool operator==(const IPv4Address& a, const IPv4Address& b) {
