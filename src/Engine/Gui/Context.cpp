@@ -872,7 +872,7 @@ namespace Engine::Gui {
 			cb(cursor);
 		}
 
-		return hover && hover != root;
+		return false;
 	}
 
 	bool Context::onMouseWheel(const Engine::Input::InputEvent event) {

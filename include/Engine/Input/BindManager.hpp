@@ -17,7 +17,7 @@
 namespace Engine::Input {
 	enum class BindId : uint16;
 
-	using BindListener = std::function<void(Value curr, Value prev, Clock::TimePoint time)>;
+	using BindListener = std::function<bool(Value curr, Value prev, Clock::TimePoint time)>;
 
 	// TODO: rename
 	class Bind2 {

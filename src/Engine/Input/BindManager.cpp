@@ -11,9 +11,9 @@ namespace Engine::Input {
 			const auto last = found->second.end();
 			for (auto bind = found->second.begin(); bind != last; ++bind) {
 				bool update = true;
-				const auto lim = bind->inputs.size() - 1;
-				for (int i = 0; i < lim; ++i) {
-					update = update && manager.getTrackedValue(bind->inputs[i]).any();
+
+				for (const auto& input : bind->inputs) {
+					update = update && manager.getTrackedValue(input).any();
 				}
 
 				if (update) {
@@ -22,9 +22,9 @@ namespace Engine::Input {
 					}
 
 					if (bind->repeat || event.state.value != bind->value) {
-						bind->listener(event.state.value, bind->value, event.time);
+						const auto consume = bind->listener(event.state.value, bind->value, event.time);
 						bind->value = event.state.value;
-						return true;
+						return consume;
 					}
 				}
 			}
@@ -32,9 +32,9 @@ namespace Engine::Input {
 			auto lastActive = active.size();
 			for (int b = 0; b < lastActive; ++b) {
 				auto& bind = active[b];
-				const auto lim = bind->inputs.size();
-				for (int i = 0; i < lim; ++i) {
-					if (bind->inputs[i] == event.state.id) {
+
+				for (const auto& input : bind->inputs) {
+					if (input == event.state.id) {
 						bind->listener({}, bind->value, event.time);
 						bind->value = {};
 						bind = active[--lastActive];
