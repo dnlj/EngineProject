@@ -9,7 +9,8 @@
 
 namespace Game {
 	enum class InputLayer {
-		GUI,
+		GuiFocus,
+		GuiHover,
 		Game,
 		_count,
 	};

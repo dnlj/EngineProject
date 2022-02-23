@@ -6,18 +6,18 @@
 
 namespace Engine::Input {
 	enum class InputType : int8 {
-		UNKNOWN = 0,
-		KEYBOARD,
-		MOUSE,
-		MOUSE_WHEEL,
-		GAMEPAD,
+		Unknown = 0,
+		Keyboard,
+		Mouse,
+		MouseWheel,
+		Gamepad,
 
-		KEYBOARD_AXIS = -KEYBOARD,
-		MOUSE_AXIS = -MOUSE,
-		GAMEPAD_AXIS = -GAMEPAD,
+		KeyboardAxis = -Keyboard,
+		MouseAxis = -Mouse,
+		GamepadAxis = -Gamepad,
 	};
 
-	constexpr bool isAxisInput(InputType it) {
-		return it < InputType::UNKNOWN;
+	constexpr inline bool isAxisInput(InputType it) noexcept {
+		return it < InputType::Unknown;
 	}
 }

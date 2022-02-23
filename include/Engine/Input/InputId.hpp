@@ -14,7 +14,7 @@ namespace Engine::Input {
 
 	class InputId {
 		public:
-			InputType type = InputType::UNKNOWN;
+			InputType type = {};
 			DeviceId device = 0;
 			uint16 code = 0;
 

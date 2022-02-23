@@ -635,39 +635,39 @@ void run(int argc, char* argv[]) {
 		is.registerCommand(Action::Target, [&](Value curr){ updateTargetState(world, curr); });
 
 		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, 29}, // CTRL
-			InputId{Type::KEYBOARD, 0, 46}, // C
+			InputId{Type::Keyboard, 0, 29}, // CTRL
+			InputId{Type::Keyboard, 0, 46}, // C
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); return true; });
 		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, 29}, // CTRL
-			InputId{Type::KEYBOARD, 0, 56}, // ALT
-			InputId{Type::KEYBOARD, 0, 16}, // Q
+			InputId{Type::Keyboard, 0, 29}, // CTRL
+			InputId{Type::Keyboard, 0, 56}, // ALT
+			InputId{Type::Keyboard, 0, 16}, // Q
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); return true; });
 		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, 57}
+			InputId{Type::Keyboard, 0, 57}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); return true; });
 		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, 17}
+			InputId{Type::Keyboard, 0, 17}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveUp, time, curr); return true; });
 		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, 31}
+			InputId{Type::Keyboard, 0, 31}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveDown, time, curr); return true; });
 		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, 30}
+			InputId{Type::Keyboard, 0, 30}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveLeft, time, curr); return true; });
 		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, 32}
+			InputId{Type::Keyboard, 0, 32}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveRight, time, curr); return true; });
 
 		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::MOUSE, 0, 0}
+			InputId{Type::Mouse, 0, 0}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); return true; });
 		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::MOUSE, 0, 1}
+			InputId{Type::Mouse, 0, 1}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack2, time, curr); return true; });
 
 		bm.addBind(Layer::Game, false, InputSequence{
-				InputId{Type::MOUSE_AXIS, 0, 0}
+				InputId{Type::MouseAxis, 0, 0}
 		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Target, time, curr); return true; });
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
@@ -675,82 +675,82 @@ void run(int argc, char* argv[]) {
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		using GuiAction = Engine::Gui::Action;
 
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::Left},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::Left},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveCharLeft); } return true; });
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::Right},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::Right},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveCharRight); } return true; });
 
-		bm.addBind(Layer::GUI, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::X},
+		bm.addBind(Layer::GuiFocus, false, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::X},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("L Cut!"); return true; });
-		bm.addBind(Layer::GUI, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::X},
+		bm.addBind(Layer::GuiFocus, false, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::X},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("R Cut!"); return true; });
 
-		bm.addBind(Layer::GUI, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::C},
+		bm.addBind(Layer::GuiFocus, false, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::C},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("L Copy!"); return true; });
-		bm.addBind(Layer::GUI, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::C},
+		bm.addBind(Layer::GuiFocus, false, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::C},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("R Copy!"); return true; });
 
-		bm.addBind(Layer::GUI, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::V},
+		bm.addBind(Layer::GuiFocus, false, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::V},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("L Paste!"); return true; });
-		bm.addBind(Layer::GUI, false, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::V},
+		bm.addBind(Layer::GuiFocus, false, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::V},
 		}, [&](Value curr, Value prev, auto time){ ENGINE_LOG("R Paste!"); return true; });
 
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::Backspace},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::Backspace},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::DeletePrev); } return true; });
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::Delete},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::Delete},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::DeleteNext); } return true; });
 
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::Home},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::Home},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveLineStart); } return true; });
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::End},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::End},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveLineEnd); } return true; });
 		
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::Left},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::Left},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveWordLeft); } return true; });
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::Left},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::Left},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveWordLeft); } return true; });
 
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::Right},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::Right},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveWordRight); } return true; });
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::Right},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::Right},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::MoveWordRight); } return true; });
 
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LShift},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LShift},
 			}, [&](Value curr, Value prev, auto time){
 			if (curr != prev) {
 				guiContext.queueAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd);
 			}
 			return true;
 		});
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RShift},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RShift},
 		}, [&](Value curr, Value prev, auto time){
 			if (curr != prev) {
 				guiContext.queueAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd);
@@ -758,57 +758,58 @@ void run(int argc, char* argv[]) {
 			return true;
 		});
 		
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::X},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::X},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Cut); } return true; });
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::X},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::X},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Cut); } return true; });
 		
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::C},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::C},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Copy); } return true; });
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::C},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::C},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Copy); } return true; });
 		
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::V},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::V},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Paste); } return true; });
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::V},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::V},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Paste); } return true; });
 
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::LCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::A},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::A},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::SelectAll); } return true; });
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::RCtrl},
-			InputId{Type::KEYBOARD, 0, +KeyCode::A},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
+			InputId{Type::Keyboard, 0, +KeyCode::A},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::SelectAll); } return true; });
 
-		bm.addBind(Layer::GUI, true, InputSequence{
-			InputId{Type::KEYBOARD, 0, +KeyCode::Enter},
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::Enter},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueAction(GuiAction::Submit); } return true; });
 		
-		bm.addBind(Layer::GUI, true, InputSequence{
-				InputId{Type::MOUSE_WHEEL, 0, 0}
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+				InputId{Type::MouseWheel, 0, 0}
 		}, [&](Value curr, Value prev, auto time){ guiContext.queueAction(GuiAction::Scroll, curr); return true; });
 
-		bm.addBind(Layer::GUI, true, InputSequence{
-				InputId{Type::MOUSE, 0, 0}
+		bm.addBind(Layer::GuiHover, true, InputSequence{
+				InputId{Type::Mouse, 0, 0}
 		}, [&](Value curr, Value prev, auto time){
 			if (curr.i32) { guiContext.focusHover(); }
 			return guiContext.onActivate(curr.i32, time);
 		});
-		//bm.setLayerEnabled(Layer::GUI, false);
+
+		//bm.setLayerEnabled(Layer::GuiFocus, false);
 	}
 
 	// More engine stuff

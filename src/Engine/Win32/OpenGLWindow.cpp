@@ -267,7 +267,7 @@ namespace Engine::Win32 {
 					if (buttons & (1 << i)) {
 						const Input::InputEvent event = {
 							.state = {
-								.id = { .type = Input::InputType::MOUSE, .device = device, .code = static_cast<uint16>(i >> 1) },
+								.id = { .type = Input::InputType::Mouse, .device = device, .code = static_cast<uint16>(i >> 1) },
 								.value = { .i32 = !(i & 1) },
 							},
 							.time = time,
@@ -283,7 +283,7 @@ namespace Engine::Win32 {
 				
 				Input::InputEvent event = {
 					.state = {
-						.id = { .type = Input::InputType::MOUSE_WHEEL, .device = device, .code = 0 },
+						.id = { .type = Input::InputType::MouseWheel, .device = device, .code = 0 },
 						.value = { .f32 = scroll },
 					},
 					.time = time,
@@ -328,7 +328,7 @@ namespace Engine::Win32 {
 			wasPressed = pressed;
 			const Input::InputEvent event = {
 				.state = {
-					.id = {Input::InputType::KEYBOARD, device, scancode},
+					.id = {Input::InputType::Keyboard, device, scancode},
 					.value = { .i32 = pressed },
 				},
 				.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
@@ -370,7 +370,7 @@ namespace Engine::Win32 {
 		// TODO: we currently don't distinguish between mouse devices
 		const Input::InputEvent event = {
 			.state = {
-				.id = {Input::InputType::MOUSE_AXIS, 0, 0},
+				.id = {Input::InputType::MouseAxis, 0, 0},
 				.value = { .f32v2 = {x , y} },
 			},
 			.time = Clock::TimePoint{std::chrono::milliseconds{GetMessageTime()}}
