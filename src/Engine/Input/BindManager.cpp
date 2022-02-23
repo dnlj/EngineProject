@@ -46,8 +46,6 @@ namespace Engine::Input {
 			}
 		}
 
-		// TODO: need a template param for fallthrough callback to translate chars
-
 		return false;
 	}
 }

@@ -19,8 +19,7 @@ namespace Engine::Input {
 
 	using BindListener = std::function<bool(Value curr, Value prev, Clock::TimePoint time)>;
 
-	// TODO: rename
-	class Bind2 {
+	class Bind {
 		public:
 			InputSequence inputs;
 			BindListener listener;
@@ -32,7 +31,7 @@ namespace Engine::Input {
 		private:
 			class Layer {
 				private:
-					using BindList = std::forward_list<Bind2>;
+					using BindList = std::forward_list<Bind>;
 
 					/** Mapping from activating inputs to binds. */
 					FlatHashMap<InputId, BindList> lookup;
