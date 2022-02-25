@@ -2,7 +2,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Gui/Gui.hpp>
+#include <Engine/Gui/common.hpp>
 #include <Engine/Gui/Panel.hpp>
 #include <Engine/Gui/LayoutMetrics.hpp>
 

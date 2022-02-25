@@ -171,6 +171,12 @@ namespace Engine::Gui {
 			}
 			ENGINE_INLINE auto getPos() const noexcept { return pos; }
 
+			ENGINE_INLINE void setPosX(const float32 x) noexcept { setPos({x, pos.y}); }
+			ENGINE_INLINE auto getPosX() const noexcept { return pos.x; }
+
+			ENGINE_INLINE void setPosY(const float32 y) noexcept { setPos({pos.x, y}); }
+			ENGINE_INLINE auto getPosY() const noexcept { return pos.y; }
+
 			/**
 			 * Set the size of this panel.
 			 * 

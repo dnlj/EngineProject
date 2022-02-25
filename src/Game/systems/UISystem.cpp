@@ -25,6 +25,7 @@
 #include <Engine/Gui/Slider.hpp>
 #include <Engine/Gui/DataAdapter.hpp>
 #include <Engine/Gui/Graph.hpp>
+#include <Engine/Gui/ScrollArea.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -735,7 +736,12 @@ namespace Game {
 			panels.window = ctx->createPanel<Gui::Window>(ctx->getRoot());
 			panels.window->setRelPos({32, 32});
 			panels.window->setSize({450, 900});
-			content = panels.window->getContent();
+
+			auto area = ctx->createPanel<Gui::ScrollArea>(panels.window->getContent());
+			content = area->getContent();
+			content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+
+			// TODO: rm - content = panels.window->getContent();
 
 			auto text = ctx->createPanel<Gui::TextBox>(content);
 			text->setFont(ctx->getTheme().fonts.header);

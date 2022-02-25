@@ -10,13 +10,13 @@ namespace Engine::Gui {
 		content = ctx->createPanel<Panel>(this);
 
 		// TODO: probably shouldnt have a layout by default
-		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch, ctx->getTheme().sizes.pad1});
+		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch, ctx->getTheme().sizes.pad1});
 
 		title = ctx->createPanel<Title>(content, this);
 		title->setFont(ctx->getTheme().fonts.body);
 		title->autoText("Window Title");
 		title->setRelPos({0, 0});
-		title->setHeight(title->getHeight() + 10);
+		title->setFixedHeight(title->getHeight() + 10);
 
 		ctx->registerMouseMove(this, [this](glm::vec2 pos) { moveCallback(pos); });
 
