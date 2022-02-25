@@ -15,6 +15,9 @@ namespace Engine::Gui {
 
 			struct {
 				float32 pad1;
+
+				/** The cross axis size of scroll bars */
+				float32 scrollWidth = 16;
 			} sizes;
 
 			struct Colors {

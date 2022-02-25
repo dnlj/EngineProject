@@ -14,26 +14,30 @@ namespace Engine::Gui {
 			using OnSlideCallback = std::function<void(float32)>;
 
 		private:
-			float32 s = 64.0f;
-			float32 p = 0.0f;
+			float32 s = 0;
+			float32 p = 0;
 			OnSlideCallback onSlide;
 
 		public:
 			ScrollBar(Context* context) : Panel{context} {
 				setWeight(0);
-				setFixedWidth(32);
+				setFixedWidth(ctx->getTheme().sizes.scrollWidth);
 			}
 
 			void render() {
 				auto sz = getSize();
 				ctx->drawRect({}, sz, {0,1,0,1});
+
+				glm::vec2 pos = {};
+				pos[D] = p;
 				sz[D] = s;
-				ctx->drawRect({}, sz, {1,0,0,1});
+
+				ctx->drawRect(pos, sz, {1,0,0,1});
 			}
 
 			void setRatio(float32 r) noexcept {
 				// TODO: need to handle minimum size
-				s = getSize()[D] * r;
+				s = getSize()[D] * std::clamp(r, 0.0f, 1.0f);
 			}
 
 			ENGINE_INLINE void autoRatio(float32 areaSize) noexcept {
@@ -42,6 +46,19 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void setOnSlide(OnSlideCallback callback) {
 				onSlide = std::move(callback);
+			}
+
+			virtual void onBeginActivate() {
+				ctx->registerMouseMove(this, [this, init=p, last=ctx->getCursor()[D]](glm::vec2 pos) noexcept {
+					p = init + pos[D] - last;
+					const auto sz = getSize()[D];
+					p = std::clamp(p, 0.0f, sz - s);
+					if (onSlide && s < sz) { onSlide(p / (sz - s)); }
+				});
+			}
+
+			virtual void onEndActivate() {
+				ctx->deregisterMouseMove(this);
 			}
 	};
 
@@ -86,6 +103,8 @@ namespace Engine::Gui {
 					scrollY->autoRatio(content->getHeight());
 				}
 			}
+
+			// TODO: mouse wheel support
 
 			void setDirection(Direction d) {
 				content->setAutoSize(false);
