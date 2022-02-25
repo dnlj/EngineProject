@@ -114,7 +114,10 @@ namespace Engine::Gui {
 		private:
 			constexpr static PanelId invalidPanelId = -1;
 
-			std::vector<ActionEvent> actionQueue;
+			// TODO: Should action events instead be associated with a panel instead of having multiple queues?
+			std::vector<ActionEvent> focusActionQueue;
+			std::vector<ActionEvent> hoverActionQueue;
+
 			NativeHandle nativeHandle = {};
 			std::string textBuffer;
 			void* userdata = nullptr;
@@ -415,7 +418,15 @@ namespace Engine::Gui {
 			ENGINE_INLINE Panel* getActive() noexcept { return active; }
 			ENGINE_INLINE const Panel* getActive() const noexcept { return active; }
 
-			void queueAction(Action action, Input::Value value = {});
+			/**
+			 * Queue an action for the focused panel.
+			 */
+			void queueFocusAction(Action action, Input::Value value = {}) { focusActionQueue.push_back({action, value}); }
+
+			/**
+			 * Queue an action for the hovered panel.
+			 */
+			void queueHoverAction(Action action, Input::Value value = {}) { hoverActionQueue.push_back({action, value}); }
 
 			/**
 			 * Copies the UTF-8 encoded text to the clipboard.

@@ -333,11 +333,18 @@ namespace Engine::Gui {
 		currPanelUpdateFunc = 0;
 
 		if (auto focus = getFocus()) {
-			for (auto act : actionQueue) {
+			for (auto act : focusActionQueue) {
 				focus->onAction(act);
 			}
 		}
-		actionQueue.clear();
+		focusActionQueue.clear();
+
+		if (auto hover = getHover()) {
+			for (auto act : hoverActionQueue) {
+				hover->onAction(act);
+			}
+		}
+		hoverActionQueue.clear();
 
 		Panel* curr = root;
 		renderState.layer = 0;
@@ -665,10 +672,6 @@ namespace Engine::Gui {
 			});
 			base += data.advance;
 		}
-	}
-
-	void Context::queueAction(Action action, Input::Value value) {
-		actionQueue.push_back({action, value});
 	}
 
 	void Context::deletePanel(Panel* panel, bool isChild) {

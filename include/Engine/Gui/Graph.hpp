@@ -159,6 +159,7 @@ namespace Engine::Gui {
 			void addGraph(std::unique_ptr<SubGraph> graph);
 
 			virtual bool canFocusChild(Panel* child) const { return false; }
+			virtual bool canHoverChild(Panel* child) const { return false; }
 
 		private:
 	};

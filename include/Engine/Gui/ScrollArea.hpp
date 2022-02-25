@@ -60,6 +60,19 @@ namespace Engine::Gui {
 			virtual void onEndActivate() {
 				ctx->deregisterMouseMove(this);
 			}
+
+			virtual void onAction(ActionEvent action) override {
+				switch (action) {
+					case Action::Scroll: {
+						ENGINE_LOG("Scroll: ", action.value.f32);
+						break;
+					}
+					case Action::ScrollH: {
+						ENGINE_WARN("TODO: impl"); // TODO; impl
+						break;
+					}
+				}
+			}
 	};
 
 	using ScrollBarH = ScrollBar<Direction::Horizontal>;
@@ -103,8 +116,6 @@ namespace Engine::Gui {
 					scrollY->autoRatio(content->getHeight());
 				}
 			}
-
-			// TODO: mouse wheel support
 
 			void setDirection(Direction d) {
 				content->setAutoSize(false);
