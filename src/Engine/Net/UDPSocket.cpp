@@ -84,7 +84,7 @@ namespace Engine::Net {
 	}
 
 	int32 UDPSocket::send(const void* data, int32 size, const IPv4Address& address) {
-		const auto saddr = address.as<sockaddr_in>();
+		const auto saddr = address.as<sockaddr_storage>();
 		
 		#ifdef ENGINE_UDP_NETWORK_SIM
 		{
@@ -106,10 +106,12 @@ namespace Engine::Net {
 	}
 
 	int32 UDPSocket::recv(void* data, int32 size, IPv4Address& address) {
-		sockaddr_in from;
+		sockaddr_storage from;
 		int fromlen = sizeof(from);
 		int32 len = recvfrom(handle, static_cast<char*>(data), size, 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
-		address = from;
+		if (len >= 0) {
+			address = from;
+		}
 
 		#ifdef ENGINE_UDP_NETWORK_SIM
 		{

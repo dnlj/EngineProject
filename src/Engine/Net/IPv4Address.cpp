@@ -15,21 +15,26 @@ namespace Engine::Net {
 	IPv4Address::IPv4Address(const sockaddr_in& addr)
 		: address{ntohl(addr.sin_addr.s_addr)}
 		, port{ntohs(addr.sin_port)} {
-	}
-	
-	IPv4Address::IPv4Address(const sockaddr& addr)
-		: IPv4Address{reinterpret_cast<const sockaddr_in&>(addr)} {
-		ENGINE_ASSERT(addr.sa_family == AF_INET, "IPv4Address expects an IPv4 address at the sockaddr location.");
-		*this = reinterpret_cast<const sockaddr_in&>(addr);
+		ENGINE_ASSERT(addr.sin_family == AF_INET, "IPv4Address expects an IPv4 address at the sockaddr location.");
 	}
 
 	template<>
 	sockaddr_in IPv4Address::as() const noexcept {
-		sockaddr_in saddr;
-		saddr.sin_family = AF_INET,
-		saddr.sin_port = htons(port),
-		saddr.sin_addr.s_addr = htonl(address);
-		return saddr;
+		sockaddr_in addr;
+		addr.sin_family = AF_INET,
+		addr.sin_port = htons(port),
+		addr.sin_addr.s_addr = htonl(address);
+		return addr;
+	}
+
+	template<>
+	sockaddr_storage IPv4Address::as() const noexcept {
+		sockaddr_storage storage;
+		auto& addr = reinterpret_cast<sockaddr_in&>(storage);
+		addr.sin_family = AF_INET,
+		addr.sin_port = htons(port),
+		addr.sin_addr.s_addr = htonl(address);
+		return storage;
 	}
 
 	bool operator==(const IPv4Address& a, const IPv4Address& b) {

@@ -29,9 +29,13 @@ namespace Engine::Net {
 			}
 
 			IPv4Address(const sockaddr_in& addr);
-			IPv4Address(const sockaddr& addr);
+			
+			IPv4Address(const sockaddr& addr)
+				: IPv4Address{reinterpret_cast<const sockaddr_in&>(addr)} {
+			}
+
 			IPv4Address(const sockaddr_storage& addr)
-				: IPv4Address{reinterpret_cast<const sockaddr&>(addr)} {
+				: IPv4Address{reinterpret_cast<const sockaddr_in&>(addr)} {
 			};
 
 			template<class T>
