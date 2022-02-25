@@ -8,7 +8,7 @@
 #include <Engine/Gui/FontManager.hpp>
 #include <Engine/Gui/FontGlyphSet.hpp>
 #include <Engine/Gui/ShapedString.hpp>
-#include <Engine/Gui/Gui.hpp>
+#include <Engine/Gui/common.hpp>
 
 
 namespace Engine::Gui {

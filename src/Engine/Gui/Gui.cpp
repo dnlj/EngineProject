@@ -2,7 +2,7 @@
 #include <freetype/freetype.h>
 
 // Engine
-#include <Engine/Gui/Gui.hpp>
+#include <Engine/Gui/common.hpp>
 
 
 namespace Engine::Gui {

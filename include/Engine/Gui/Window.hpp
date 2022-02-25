@@ -42,6 +42,7 @@ namespace Engine::Gui {
 			bool hoverWithin = false;
 			glm::vec2 offset = {};
 			Title* title;
+			Panel* area;
 			Panel* content;
 
 		public:

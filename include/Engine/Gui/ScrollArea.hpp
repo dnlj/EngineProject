@@ -14,8 +14,8 @@ namespace Engine::Gui {
 			using OnSlideCallback = std::function<void(float32)>;
 
 		private:
-			float32 s = 0;
-			float32 p = 0;
+			float32 s = 0; // Bar size
+			float32 p = 0; // Position offset
 			OnSlideCallback onSlide;
 
 		public:
@@ -37,7 +37,7 @@ namespace Engine::Gui {
 
 			void setRatio(float32 r) noexcept {
 				// TODO: need to handle minimum size
-				s = getSize()[D] * std::clamp(r, 0.0f, 1.0f);
+				s = std::round(getSize()[D] * std::clamp(r, 0.0f, 1.0f));
 			}
 
 			ENGINE_INLINE void autoRatio(float32 areaSize) noexcept {
@@ -48,12 +48,19 @@ namespace Engine::Gui {
 				onSlide = std::move(callback);
 			}
 
+			void setScrollOffset(float32 off) {
+				const auto sz = getSize()[D];
+				const auto n = std::clamp(off, 0.0f, getSize()[D] - s);
+
+				if (n != p && onSlide && s < sz) {
+					p = n;
+					onSlide(p / (sz - s));
+				}
+			}
+
 			virtual void onBeginActivate() {
 				ctx->registerMouseMove(this, [this, init=p, last=ctx->getCursor()[D]](glm::vec2 pos) noexcept {
-					p = init + pos[D] - last;
-					const auto sz = getSize()[D];
-					p = std::clamp(p, 0.0f, sz - s);
-					if (onSlide && s < sz) { onSlide(p / (sz - s)); }
+					setScrollOffset(init + pos[D] - last);
 				});
 			}
 
@@ -62,15 +69,11 @@ namespace Engine::Gui {
 			}
 
 			virtual void onAction(ActionEvent action) override {
-				switch (action) {
-					case Action::Scroll: {
-						ENGINE_LOG("Scroll: ", action.value.f32);
-						break;
-					}
-					case Action::ScrollH: {
-						ENGINE_WARN("TODO: impl"); // TODO; impl
-						break;
-					}
+				if (D == Direction::Vertical && action == Action::Scroll) {
+					auto off = ctx->getTheme().fonts.body->getLineHeight() * action.value.f32 * ctx->getScrollLines();
+					setScrollOffset(p - off);
+				} else if (D == Direction::Horizontal && action == Action::ScrollH) {
+					ENGINE_WARN("TODO: impl"); // TODO; impl
 				}
 			}
 	};
@@ -85,12 +88,7 @@ namespace Engine::Gui {
 					ScrollArea* area;
 					using Panel::Panel;
 					virtual void postLayout() override { area->updateScrollArea(); }
-					virtual void render() { ctx->drawRect({}, getSize(), {1,0,1,1}); }
-			};
-			class DebugPanel final : public Panel {
-				public:
-					using Panel::Panel;
-					virtual void render() { ctx->drawRect({}, getSize(), {0,0,1,1}); }
+					//virtual void render() { ctx->drawRect({}, getSize(), {1,0,1,1}); }
 			};
 
 		private:
@@ -102,7 +100,7 @@ namespace Engine::Gui {
 		public:
 			ScrollArea(Context* context, Direction dir = Direction::Vertical) : Panel{context} {
 				setLayout(new GridLayout());
-				wrap = ctx->createPanel<DebugPanel>(this);
+				wrap = ctx->createPanel<Panel>(this);
 				content = ctx->createPanel<ScrollPanel>(wrap);
 				content->area = this;
 				setDirection(dir);
@@ -114,6 +112,17 @@ namespace Engine::Gui {
 				}
 				if (scrollY) {
 					scrollY->autoRatio(content->getHeight());
+				}
+			}
+
+			// TODO: this wont work because actions are not propegated backward. Add bool (consume) return value.
+			virtual void onAction(ActionEvent action) override {
+				switch (action) {
+					case Action::Scroll:
+					case Action::ScrollH: {
+						if (scrollX) { scrollX->onAction(action); }
+						if (scrollY) { scrollY->onAction(action); }
+					}
 				}
 			}
 

@@ -7,16 +7,18 @@ namespace Engine::Gui {
 	Window::Window(Context* context) : Panel{context} {
 		setLayout(new FillLayout{outBorder});
 
-		content = ctx->createPanel<Panel>(this);
+		area = ctx->createPanel<Panel>(this);
 
-		// TODO: probably shouldnt have a layout by default
-		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch, ctx->getTheme().sizes.pad1});
+		area->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch, ctx->getTheme().sizes.pad1});
 
-		title = ctx->createPanel<Title>(content, this);
+		title = ctx->createPanel<Title>(area, this);
 		title->setFont(ctx->getTheme().fonts.body);
 		title->autoText("Window Title");
 		title->setRelPos({0, 0});
 		title->setFixedHeight(title->getHeight() + 10);
+
+		content = ctx->createPanel<Panel>(area);
+		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch, ctx->getTheme().sizes.pad1});
 
 		ctx->registerMouseMove(this, [this](glm::vec2 pos) { moveCallback(pos); });
 
@@ -137,7 +139,7 @@ namespace Engine::Gui {
 	}
 
 	void Window::updateResizeInfo(const glm::vec2 pos) {
-		const auto bounds = content->getBounds();
+		const auto bounds = area->getBounds();
 
 		auto cur = Cursor::Normal;
 

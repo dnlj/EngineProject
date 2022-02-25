@@ -736,12 +736,11 @@ namespace Game {
 			panels.window = ctx->createPanel<Gui::Window>(ctx->getRoot());
 			panels.window->setRelPos({32, 32});
 			panels.window->setSize({450, 900});
+			panels.window->getContent()->setLayout(new Gui::FillLayout{0});
 
 			auto area = ctx->createPanel<Gui::ScrollArea>(panels.window->getContent());
 			content = area->getContent();
 			content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
-
-			// TODO: rm - content = panels.window->getContent();
 
 			auto text = ctx->createPanel<Gui::TextBox>(content);
 			text->setFont(ctx->getTheme().fonts.header);
@@ -841,11 +840,11 @@ namespace Game {
 			panels.graphTest->addGraph(std::move(test2));
 		}*/
 
-		panels.infoPane->toggle();
-		panels.coordPane->toggle();
-		panels.netHealthPane->toggle();
-		panels.netCondPane->toggle();
-		panels.netGraphPane->toggle();
+		//panels.infoPane->toggle();
+		//panels.coordPane->toggle();
+		//panels.netHealthPane->toggle();
+		//panels.netCondPane->toggle();
+		//panels.netGraphPane->toggle();
 	}
 
 	UISystem::~UISystem() {
