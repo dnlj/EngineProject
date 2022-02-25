@@ -15,7 +15,7 @@ namespace Engine::Net {
 	IPv4Address::IPv4Address(const sockaddr_in& addr)
 		: address{ntohl(addr.sin_addr.s_addr)}
 		, port{ntohs(addr.sin_port)} {
-		ENGINE_ASSERT(addr.sin_family == AF_INET, "IPv4Address expects an IPv4 address at the sockaddr location.");
+		//ENGINE_ASSERT(addr.sin_family == AF_INET, "IPv4Address expects an IPv4 address at the sockaddr location.");
 	}
 
 	template<>

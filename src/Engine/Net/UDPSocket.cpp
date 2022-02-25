@@ -109,9 +109,7 @@ namespace Engine::Net {
 		sockaddr_storage from;
 		int fromlen = sizeof(from);
 		int32 len = recvfrom(handle, static_cast<char*>(data), size, 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
-		if (len >= 0) {
-			address = from;
-		}
+		address = from;
 
 		#ifdef ENGINE_UDP_NETWORK_SIM
 		{
