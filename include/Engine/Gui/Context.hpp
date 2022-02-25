@@ -214,12 +214,17 @@ namespace Engine::Gui {
 			 */
 			constexpr static glm::vec2 resizeBorderSize = {7, 7}; // TODO: adjust for DPI aware - WM_DPICHANGED
 
+			float32 scrollChars = 3; // 3 = default on Windows
+			float32 scrollLines = 3; // 3 = default on Windows
+
 		public:
 			Context(ShaderManager& shaderManager, Camera& camera);
 			Context(Context&) = delete;
 			~Context();
 
 			ENGINE_INLINE constexpr static auto getResizeBorderSize() noexcept { return resizeBorderSize; }
+			ENGINE_INLINE float32 getScrollChars() const noexcept { return scrollChars; }
+			ENGINE_INLINE float32 getScrollLines() const noexcept { return scrollLines; }
 
 			ENGINE_INLINE void setUserdata(void* ptr) noexcept { userdata = ptr; }
 
@@ -231,12 +236,8 @@ namespace Engine::Gui {
 			void render();
 
 			ENGINE_INLINE Panel* getRoot() const noexcept { return root; }
-
 			ENGINE_INLINE auto& getTheme() const noexcept { return theme; }
-
-			ENGINE_INLINE auto getActivateCount() const noexcept {
-				return activateCount;
-			}
+			ENGINE_INLINE auto getActivateCount() const noexcept { return activateCount; }
 
 			ENGINE_INLINE void setNativeWindowHandle(const NativeHandle handle) noexcept {
 				nativeHandle = handle;
@@ -250,7 +251,6 @@ namespace Engine::Gui {
 			ENGINE_INLINE void updateBlinkTime() noexcept {
 				lastBlink = Clock::now();
 			}
-
 
 			ENGINE_INLINE void drawVertex(const glm::vec2 pos, glm::vec4 color) {
 				polyVertexData.push_back({.color = color, .pos = pos + renderState.offset, .id = renderState.id, .pid = renderState.pid});
