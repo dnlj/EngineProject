@@ -83,6 +83,9 @@ namespace Game {
 			AutoListPane(Gui::Context* context) : CollapsibleSection{context} {
 				auto* content = getContent();
 				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+
+				setAutoSizeHeight(true);
+				content->setAutoSizeHeight(true);
 			}
 
 			int32 addLabel(const std::string& format) {
@@ -141,7 +144,6 @@ namespace Game {
 
 			CoordPane(Gui::Context* context) : AutoListPane{context} {
 				setTitle("Coordinates");
-				setAutoSizeHeight(true);
 
 				addLabel("Mouse (offset): {:.3f}");
 				addLabel("Mouse (world): {:.3f}");
@@ -336,9 +338,6 @@ namespace Game {
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
-
-				setAutoSizeHeight(true);
-				getContent()->setAutoSizeHeight(true);
 			}
 	};
 
@@ -544,9 +543,6 @@ namespace Game {
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
-
-				setAutoSizeHeight(true);
-				getContent()->setAutoSizeHeight(true);
 			}
 	};
 
@@ -580,9 +576,6 @@ namespace Game {
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
-				
-				setAutoSizeHeight(true);
-				getContent()->setAutoSizeHeight(true);
 			}
 	};
 
@@ -624,9 +617,6 @@ namespace Game {
 				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
-				
-				setAutoSizeHeight(true);
-				getContent()->setAutoSizeHeight(true);
 			}
 	};
 
@@ -750,8 +740,6 @@ namespace Game {
 
 		{
 			panels.infoPane = ctx->createPanel<InfoPane>(content);
-			//panels.infoPane->setHeight(128);
-			panels.infoPane->setAutoSizeHeight(true);
 			panels.infoPane->disconnect->setAction([&](Gui::Button*){
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();

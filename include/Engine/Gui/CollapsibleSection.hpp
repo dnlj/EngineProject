@@ -37,6 +37,9 @@ namespace Engine::Gui {
 
 				content = ctx->constructPanel<PanelT>();
 				content->setMinSize({32,32});
+
+				setAutoSizeHeight(true);
+				content->setAutoSizeHeight(true);
 				addChildren({btn, content});
 			}
 
