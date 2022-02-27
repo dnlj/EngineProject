@@ -87,8 +87,9 @@ namespace Game {
 
 			int32 addLabel(const std::string& format) {
 				auto* panel = ctx->createPanel<Gui::Label>(getContent());
-				labels.push_back(panel);
+				auto& label = labels.emplace_back(panel);
 				formats.push_back(format);
+				label->autoText(format);
 				return static_cast<int32>(labels.size()) - 1;
 			}
 
@@ -140,6 +141,7 @@ namespace Game {
 
 			CoordPane(Gui::Context* context) : AutoListPane{context} {
 				setTitle("Coordinates");
+				setAutoSizeHeight(true);
 
 				addLabel("Mouse (offset): {:.3f}");
 				addLabel("Mouse (world): {:.3f}");
@@ -253,12 +255,6 @@ namespace Game {
 						}
 					);
 				#endif
-				
-				// TODO: this really doesnt work because the interaction between this panel and its child.
-				// either need to make autoHeight virtual or give collapse section its own wrapper layout.
-				// The second one might be better
-				// Either way the way we handle resize in prelayout is prblemeativc
-				//autoHeight();
 			}
 
 			Gui::Slider& addSlider(std::string_view txt) {
@@ -271,7 +267,7 @@ namespace Game {
 				
 				auto line = ctx->createPanel<Panel>(getContent());
 				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, ctx->getTheme().sizes.pad1});
-				line->setHeight(48); // TODO: ideally we could have some kind of auto size so panels expand by default.
+				line->setAutoSizeHeight(true);
 				line->addChildren({label, slider});
 				return *slider;
 			}
@@ -309,6 +305,7 @@ namespace Game {
 						base->setRelPos({});
 						base->setSize({128,128});
 						base->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx.getTheme().sizes.pad1});
+						base->setAutoSizeHeight(true);
 
 						auto* ipLabel = ctx.createPanel<Gui::Label>(base);
 						ipLabel->autoText(fmt::format("{}", addr));
@@ -840,11 +837,11 @@ namespace Game {
 			panels.graphTest->addGraph(std::move(test2));
 		}*/
 
-		panels.infoPane->toggle();
-		panels.coordPane->toggle();
-		panels.netHealthPane->toggle();
-		panels.netCondPane->toggle();
-		panels.netGraphPane->toggle();
+		//panels.infoPane->toggle();
+		//panels.coordPane->toggle();
+		//panels.netHealthPane->toggle();
+		//panels.netCondPane->toggle();
+		//panels.netGraphPane->toggle();
 	}
 
 	UISystem::~UISystem() {
