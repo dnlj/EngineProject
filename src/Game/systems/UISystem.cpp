@@ -840,11 +840,11 @@ namespace Game {
 			panels.graphTest->addGraph(std::move(test2));
 		}*/
 
-		//panels.infoPane->toggle();
-		//panels.coordPane->toggle();
-		//panels.netHealthPane->toggle();
-		//panels.netCondPane->toggle();
-		//panels.netGraphPane->toggle();
+		panels.infoPane->toggle();
+		panels.coordPane->toggle();
+		panels.netHealthPane->toggle();
+		panels.netCondPane->toggle();
+		panels.netGraphPane->toggle();
 	}
 
 	UISystem::~UISystem() {

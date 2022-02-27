@@ -8,7 +8,7 @@
 
 
 namespace Engine::Gui {
-	class CollapsibleSection : public Panel {
+	class CollapsibleSection : public PanelT {
 		private:
 			Button* btn = nullptr;
 			Panel* content = nullptr;
@@ -27,7 +27,7 @@ namespace Engine::Gui {
 			};
 
 		public:
-			CollapsibleSection(Context* context) : Panel{context} {
+			CollapsibleSection(Context* context) : PanelT{context} {
 				setLayout(new Layout{Direction::Vertical, Align::Stretch, Align::Stretch, ctx->getTheme().sizes.pad1});
 				height = getHeight();
 
@@ -35,7 +35,7 @@ namespace Engine::Gui {
 				btn->setAction([&](Button*){ toggle(); });
 				btn->setFixedHeight(btn->getFont()->getBodyHeight() + btn->getPadding().y * 2);
 
-				content = ctx->constructPanel<Panel>();
+				content = ctx->constructPanel<PanelT>();
 				content->setMinSize({32,32});
 				addChildren({btn, content});
 			}

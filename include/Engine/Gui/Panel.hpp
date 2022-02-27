@@ -460,5 +460,15 @@ namespace Engine::Gui {
 				child->setRelPos(child->getPos());
 				return child;
 			}
-	};	
+	};
+
+
+	/**
+	 * A transparent panel.
+	 * Typeically used for non-visible organization and clipping.
+	 */
+	class PanelT : public Panel {
+		using Panel::Panel;
+		virtual void render() override;
+	};
 }

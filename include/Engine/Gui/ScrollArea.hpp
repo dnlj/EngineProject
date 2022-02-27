@@ -91,7 +91,7 @@ namespace Engine::Gui {
 					ScrollArea* area;
 					using Panel::Panel;
 					virtual void postLayout() override { area->updateScrollArea(); }
-					//virtual void render() { ctx->drawRect({}, getSize(), {1,0,1,1}); }
+					virtual void render() { ctx->drawRect({}, getSize(), {}); }
 			};
 
 		private:
@@ -103,7 +103,7 @@ namespace Engine::Gui {
 		public:
 			ScrollArea(Context* context, Direction dir = Direction::Vertical) : Panel{context} {
 				setLayout(new GridLayout());
-				wrap = ctx->createPanel<Panel>(this);
+				wrap = ctx->createPanel<PanelT>(this);
 				content = ctx->createPanel<ScrollPanel>(wrap);
 				content->area = this;
 				setDirection(dir);

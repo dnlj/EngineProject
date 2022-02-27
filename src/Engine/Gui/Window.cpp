@@ -17,7 +17,7 @@ namespace Engine::Gui {
 		title->setRelPos({0, 0});
 		title->setFixedHeight(title->getHeight() + 10);
 
-		content = ctx->createPanel<Panel>(area);
+		content = ctx->createPanel<PanelT>(area);
 		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch, ctx->getTheme().sizes.pad1});
 
 		ctx->registerMouseMove(this, [this](glm::vec2 pos) { moveCallback(pos); });
