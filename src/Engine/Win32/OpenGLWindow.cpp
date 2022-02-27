@@ -209,6 +209,12 @@ namespace Engine::Win32 {
 	}
 
 	template<>
+	LRESULT OpenGLWindow::processMessage<WM_SETTINGCHANGE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.callbacks.settingsChanged();
+		return 0;
+	}
+
+	template<>
 	LRESULT OpenGLWindow::processMessage<WM_INPUT>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
 		// Useful links
 		// MS docs: https://docs.microsoft.com/en-us/windows/win32/inputdev/using-raw-input
@@ -771,6 +777,7 @@ namespace Engine::Win32 {
 			HANDLE_MESSAGE(WM_DESTROY);
 			HANDLE_MESSAGE(WM_SIZE);
 			HANDLE_MESSAGE(WM_CLOSE);
+			HANDLE_MESSAGE(WM_SETTINGCHANGE);
 			HANDLE_MESSAGE(WM_INPUT);
 			HANDLE_MESSAGE(WM_CHAR);
 			HANDLE_MESSAGE(WM_MOUSEMOVE);

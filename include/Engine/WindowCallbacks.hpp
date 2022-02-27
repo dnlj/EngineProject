@@ -9,6 +9,10 @@ namespace Engine {
 	class WindowCallbackFunctions {
 		public:
 			virtual ~WindowCallbackFunctions() {};
+
+			/** Called when system settings are changed */
+			virtual void settingsChanged() = 0;
+
 			virtual void resizeCallback(int32 w, int32 h) = 0;
 			virtual void keyCallback(Engine::Input::InputEvent event) = 0;
 			virtual void charCallback(wchar_t character) = 0;

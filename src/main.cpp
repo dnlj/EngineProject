@@ -434,6 +434,10 @@ namespace {
 				nullptr, nullptr
 			));
 		}
+		
+		void settingsChanged() override {
+			userdata->guiContext.configUserSettings();
+		}
 
 		void resizeCallback(int32 w, int32 h) override {
 			ENGINE_LOG("Resize: ", w, " ", h);
