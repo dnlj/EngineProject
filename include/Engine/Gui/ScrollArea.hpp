@@ -68,13 +68,16 @@ namespace Engine::Gui {
 				ctx->deregisterMouseMove(this);
 			}
 
-			virtual void onAction(ActionEvent action) override {
+			virtual bool onAction(ActionEvent action) override {
 				if (D == Direction::Vertical && action == Action::Scroll) {
 					auto off = ctx->getTheme().fonts.body->getLineHeight() * action.value.f32 * ctx->getScrollLines();
 					setScrollOffset(p - off);
+					return true;
 				} else if (D == Direction::Horizontal && action == Action::ScrollH) {
 					ENGINE_WARN("TODO: impl"); // TODO; impl
+					return true;
 				}
+				return false;
 			}
 	};
 
@@ -115,15 +118,16 @@ namespace Engine::Gui {
 				}
 			}
 
-			// TODO: this wont work because actions are not propegated backward. Add bool (consume) return value.
-			virtual void onAction(ActionEvent action) override {
+			virtual bool onAction(ActionEvent action) override {
 				switch (action) {
 					case Action::Scroll:
 					case Action::ScrollH: {
 						if (scrollX) { scrollX->onAction(action); }
 						if (scrollY) { scrollY->onAction(action); }
+						return true;
 					}
 				}
+				return false;
 			}
 
 			void setDirection(Direction d) {

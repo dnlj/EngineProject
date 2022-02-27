@@ -189,7 +189,8 @@ namespace Engine::Gui {
 		// TODO: current cursor position (ji96pF6X)
 	}
 
-	void RichGraph::onAction(ActionEvent act) {
+	bool RichGraph::onAction(ActionEvent act) {
+		if (ctx->getFocus() != this) { return false; }
 		// TODO: should we scale scroll by SPI_GETWHEELSCROLLLINES/SPI_GETWHEELSCROLLCHARS?
 		switch (act) {
 			case Action::Scroll: {
@@ -207,8 +208,9 @@ namespace Engine::Gui {
 			case Action::ScrollH: {
 				break;
 			}
-			default: { break; }
+			default: { return false; }
 		}
+		return true;
 	}
 
 	// TODO: i think we really want this on right click, maybe this should be an action?

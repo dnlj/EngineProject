@@ -345,14 +345,20 @@ namespace Engine::Gui {
 
 		if (auto focus = getFocus()) {
 			for (auto act : focusActionQueue) {
-				focus->onAction(act);
+				focus = getFocus();
+				while (focus && !focus->onAction(act)) {
+					focus = focus->getParent();
+				}
 			}
 		}
 		focusActionQueue.clear();
 
 		if (auto hover = getHover()) {
 			for (auto act : hoverActionQueue) {
-				hover->onAction(act);
+				hover = getHover();
+				while (hover && !hover->onAction(act)) {
+					hover = hover->getParent();
+				}
 			}
 		}
 		hoverActionQueue.clear();

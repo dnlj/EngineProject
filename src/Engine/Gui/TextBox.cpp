@@ -42,7 +42,7 @@ namespace Engine::Gui {
 		}
 	}
 
-	void TextBox::onAction(ActionEvent act) {
+	bool TextBox::onAction(ActionEvent act) {
 		switch (act) {
 			case Action::SelectBegin: { ++selecting; break; }
 			case Action::SelectEnd: { if (selecting > 0) { --selecting; }; break; }
@@ -59,7 +59,9 @@ namespace Engine::Gui {
 			case Action::Copy: { actionCopy(); break; }
 			case Action::Paste: { actionPaste(); break; }
 			case Action::Submit: { ENGINE_WARN("TODO: Gui::TextBox Submit - ", getText()); break; }
+			default: { return false; }
 		}
+		return true;
 	}
 
 	ENGINE_INLINE void TextBox::tryBeginSelection() noexcept {

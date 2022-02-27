@@ -361,7 +361,12 @@ namespace Engine::Gui {
 			}
 			ENGINE_INLINE bool isEnabled() const noexcept { return getFlag(Flag::Enabled); }
 
-			virtual void onAction(ActionEvent action) {}
+			/**
+			 * Called when an ActionEvent is issued to this panel.
+			 * If the event is not consumed then it is propagated up the parent chain.
+			 * @return Was the event consumed.
+			 */
+			virtual bool onAction(ActionEvent action) { return false; }
 			
 			/**
 			 * Called when this panel is hovered.

@@ -30,7 +30,7 @@ namespace Engine::Gui {
 			}
 
 			virtual void render() override;
-			virtual void onAction(ActionEvent act) override;
+			virtual bool onAction(ActionEvent act) override;
 			virtual void onBeginHover() override;
 			virtual void onEndHover() override;
 			virtual void onBeginFocus() override;
