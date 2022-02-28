@@ -82,7 +82,7 @@ namespace Game {
 		public:
 			AutoListPane(Gui::Context* context) : CollapsibleSection{context} {
 				auto* content = getContent();
-				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Start, ctx->getTheme().sizes.pad1});
 
 				setAutoSizeHeight(true);
 				content->setAutoSizeHeight(true);
@@ -121,9 +121,10 @@ namespace Game {
 				addLabel("Tick: {}");
 				addLabel("Tick Scale: {:.3f}");
 
-				disconnect = ctx->createPanel<Gui::Button>(getContent());
+				disconnect = ctx->constructPanel<Gui::Button>();
 				disconnect->autoText("Disconnect");
-				disconnect->setHeight(32);
+				disconnect->lockSize();
+				getContent()->addChild(disconnect);
 			}
 	};
 

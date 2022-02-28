@@ -237,6 +237,10 @@ namespace Engine::Gui {
 			ENGINE_INLINE void setFixedHeight(const float32 h) noexcept { minSize.y = h; maxSize.y = h; setHeight(h); }
 			ENGINE_INLINE void setFixedSize(const glm::vec2 sz) noexcept { minSize = sz; maxSize = sz; setSize(sz); }
 
+			ENGINE_INLINE void lockWidth() noexcept { setFixedWidth(getWidth()); }
+			ENGINE_INLINE void lockHeight() noexcept { setFixedHeight(getHeight()); }
+			ENGINE_INLINE void lockSize() noexcept { setFixedSize(getSize()); }
+
 			ENGINE_INLINE void updateParentPos(const glm::vec2 p) {
 				const auto rel = getRelPos();
 				setPos(p + rel);
