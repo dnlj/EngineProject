@@ -79,6 +79,7 @@ namespace Engine::Gui {
 
 		public:
 			Panel(Context* context) : ctx{context} {}
+			Panel(Panel&) = delete;
 			virtual ~Panel();
 
 			/**

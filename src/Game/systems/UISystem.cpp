@@ -658,21 +658,23 @@ namespace Game {
 						return labels;
 					}
 			};
+		private:
+			Gui::Panel* content = nullptr;
 
 		public:
 			ConnectWindow(Gui::Context* context) : Window{context} {
 				setTitle("Server List");
 				//setSize({300,64});
 				setWidth(300);
+				setHeight(300);
 				setRelPos({512,64});
 
-				// TODO: auto height is slightly broken
-				setHeight(300);
-				//setAutoSizeHeight(true);
-				//getContent()->setAutoSizeHeight(true);
+				getContent()->setLayout(new Gui::FillLayout{0});
+				content = ctx->createPanel<Gui::ScrollArea>(getContent())->getContent();
+				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 
 				{
-					auto row = ctx->createPanel<Gui::Panel>(getContent());
+					auto row = ctx->createPanel<Gui::Panel>(content);
 					row->setAutoSizeHeight(true);
 					row->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1});
 					
@@ -685,7 +687,7 @@ namespace Game {
 				}
 
 				{
-					auto row = ctx->createPanel<Gui::Panel>(getContent());
+					auto row = ctx->createPanel<Gui::Panel>(content);
 					row->setAutoSizeHeight(true);
 
 					auto text = ctx->createPanel<Gui::TextBox>(row);
@@ -703,7 +705,7 @@ namespace Game {
 				}
 
 				auto& world = ctx->getUserdata<UISystem>()->getWorld();
-				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
+				ctx->addPanelUpdateFunc(content, Adapter{world});
 			}
 	};
 	#endif
