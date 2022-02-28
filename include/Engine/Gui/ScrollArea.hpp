@@ -60,7 +60,11 @@ namespace Engine::Gui {
 			}
 
 			virtual void onBeginActivate() {
-				ctx->registerMouseMove(this, [this, init=p, last=ctx->getCursor()[D]](glm::vec2 pos) noexcept {
+				const auto abs = getPos()[D];
+				const auto cur = ctx->getCursor()[D];
+				if (cur < abs + p || cur > abs + p + s) { return; }
+
+				ctx->registerMouseMove(this, [this, init=p, last=cur](glm::vec2 pos) noexcept {
 					setScrollOffset(init + pos[D] - last);
 				});
 			}
