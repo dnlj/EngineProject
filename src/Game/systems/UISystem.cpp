@@ -793,10 +793,15 @@ namespace Game {
 			btn->setText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 			btn->setHeight(32);
 
-			
 			btn = ctx->createPanel<Gui::Button>(content);
 			btn->setText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 			btn->setHeight(27);
+
+			for (int i = 0; i < 32; ++i) {
+				btn = ctx->createPanel<Gui::Button>(content);
+				btn->setText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+				btn->setHeight(27);
+			}
 		}
 
 		/*{
@@ -831,9 +836,9 @@ namespace Game {
 
 		//panels.infoPane->toggle();
 		//panels.coordPane->toggle();
-		//panels.netHealthPane->toggle();
-		//panels.netCondPane->toggle();
-		//panels.netGraphPane->toggle();
+		panels.netHealthPane->toggle();
+		panels.netCondPane->toggle();
+		panels.netGraphPane->toggle();
 	}
 
 	UISystem::~UISystem() {
@@ -934,7 +939,7 @@ namespace Game {
 
 		auto& io = ImGui::GetIO();
 		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;
-		ImGui::SetNextWindowPos(0.5f * io.DisplaySize, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+		ImGui::SetNextWindowPos(0.7f * io.DisplaySize, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 		ImGui::Begin("Join Server", nullptr, flags);
 
 		static char serverText[64] = "localhost:21212";

@@ -21,19 +21,27 @@ namespace Engine::Gui {
 			} sizes;
 
 			struct Colors {
+				/** Main foreground */
 				glm::vec4 foreground;
 
-				glm::vec4 background; // Main background
+				/** Main background. Numbered varients for distinguishing between nested areas. */
+				glm::vec4 background; 
 				glm::vec4 background2;
 				glm::vec4 background3;
-				glm::vec4 backgroundAlt; // Alternate background (alternating table rows for example)
+
+				/** Alternate background (alternating table rows for example) */
+				glm::vec4 backgroundAlt;
 
 				glm::vec4 title;
 
+				/** Generic accent color. Notable/interactable element. */
 				glm::vec4 accent;
+
+				/** An interactable feature such as the background for a slider or scrollbar */
 				glm::vec4 feature;
 
-				glm::vec4 button;
+				/** Button */
+				glm::vec4 button; 
 
 
 			} colors;

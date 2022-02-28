@@ -38,11 +38,9 @@ namespace Engine::Gui {
 
 			void setRatio(float32 r) noexcept {
 				// TODO: need to handle minimum size
-				s = std::round(getSize()[D] * std::clamp(r, 0.0f, 1.0f));
-			}
-
-			ENGINE_INLINE void autoRatio(float32 areaSize) noexcept {
-				setRatio(getSize()[D] / areaSize);
+				const auto sz = getSize()[D];
+				s = std::round(sz * std::clamp(r, 0.0f, 1.0f));
+				if (const auto max = sz - s; p > max) { setScrollOffset(max); }
 			}
 
 			ENGINE_INLINE void setOnSlide(OnSlideCallback callback) {
@@ -116,10 +114,10 @@ namespace Engine::Gui {
 
 			void updateScrollArea() {
 				if (scrollX) {
-					scrollX->autoRatio(content->getWidth());
+					scrollX->setRatio(wrap->getWidth() / content->getWidth());
 				}
 				if (scrollY) {
-					scrollY->autoRatio(content->getHeight());
+					scrollY->setRatio(wrap->getHeight() / content->getHeight());
 				}
 			}
 
@@ -135,6 +133,10 @@ namespace Engine::Gui {
 				return false;
 			}
 
+			virtual void postLayout() override {
+				updateScrollArea();
+			}
+
 			void setDirection(Direction d) {
 				content->setAutoSize(false);
 				if (d == Direction::Horizontal) {
@@ -148,7 +150,8 @@ namespace Engine::Gui {
 						scrollX = ctx->createPanel<ScrollBarH>(this);
 						scrollX->setGridPos(0,1);
 						scrollX->setOnSlide([this](float32 p){
-							content->setPosX(getPosX() - getWidth() * p);
+							const auto r = 1 - wrap->getWidth() / content->getWidth();
+							content->setPosX(wrap->getPosX() - content->getWidth() * p * r);
 						});
 					}
 				} else if (d == Direction::Vertical) {
@@ -161,8 +164,9 @@ namespace Engine::Gui {
 					if (!scrollY) {
 						scrollY = ctx->createPanel<ScrollBarV>(this);
 						scrollY->setGridPos(1,0);
-						scrollY->setOnSlide([this](float32 p){
-							content->setPosY(getPosY() - getHeight() * p);
+						scrollY->setOnSlide([this](float32 p) {
+							const auto r = 1 - wrap->getHeight() / content->getHeight();
+							content->setPosY(wrap->getPosY() - content->getHeight() * p * r);
 						});
 					}
 				}
