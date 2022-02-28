@@ -61,6 +61,8 @@ namespace Engine::Gui {
 
 			virtual void onBeginChildHover(Panel* child) override { onEndHover(); };
 
+			ENGINE_INLINE void setTitle(const std::string_view text) { title->autoText(text); }
+
 		private:
 			void moveCallback(const glm::vec2 pos);
 			bool beginActivateCallback(Panel* panel);

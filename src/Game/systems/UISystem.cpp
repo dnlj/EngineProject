@@ -661,7 +661,7 @@ namespace Game {
 
 		public:
 			ConnectWindow(Gui::Context* context) : Window{context} {
-				//setTitle("Connect Window");
+				setTitle("Server List");
 				//setSize({300,64});
 				setWidth(300);
 				setRelPos({512,64});
@@ -721,6 +721,7 @@ namespace Game {
 
 		{
 			panels.window = ctx->createPanel<Gui::Window>(ctx->getRoot());
+			panels.window->setTitle("Debug");
 			panels.window->setRelPos({32, 32});
 			panels.window->setSize({450, 900});
 			panels.window->getContent()->setLayout(new Gui::FillLayout{0});

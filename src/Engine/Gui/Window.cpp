@@ -13,7 +13,6 @@ namespace Engine::Gui {
 
 		title = ctx->createPanel<Title>(area, this);
 		title->setFont(ctx->getTheme().fonts.body);
-		title->autoText("Window Title");
 		title->setRelPos({0, 0});
 		title->setFixedHeight(title->getHeight() + 10);
 
