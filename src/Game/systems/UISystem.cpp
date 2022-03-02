@@ -357,8 +357,12 @@ namespace Game {
 					Gui::Label* loss = nullptr;
 					Gui::Slider* recvRate = nullptr;
 					Gui::RichGraph* graph = nullptr;
-					Gui::AreaGraph* sendGraph = nullptr;
-					Gui::AreaGraph* recvGraph = nullptr;
+					Gui::AreaGraph* sentGraphAvg = nullptr;
+					Gui::AreaGraph* recvGraphAvg = nullptr;
+					Gui::BarGraph* sentGraphDiff = nullptr;
+					Gui::BarGraph* recvGraphDiff = nullptr;
+					uint32 lastSentBytes = 0;
+					uint32 lastRecvBytes = 0;
 
 				public:
 					NetGraph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
@@ -427,16 +431,28 @@ namespace Game {
 						graph->setHeight(200);
 
 						{
-							auto test = std::make_unique<Gui::AreaGraph>();
-							sendGraph = test.get();
-							sendGraph->max.y = 15000;
-							graph->addGraph(std::move(test), "Send Graph");
+							auto graphP = std::make_unique<Gui::AreaGraph>();
+							sentGraphAvg = graphP.get();
+							sentGraphAvg->max.y = 15000;
+							graph->addGraph(std::move(graphP), "Send Avg");
 						}
 						{
-							auto test = std::make_unique<Gui::AreaGraph>();
-							recvGraph = test.get();
-							recvGraph->max.y = 5000;
-							graph->addGraph(std::move(test), "Recv Graph");
+							auto graphP = std::make_unique<Gui::AreaGraph>();
+							recvGraphAvg = graphP.get();
+							recvGraphAvg->max.y = 5000;
+							graph->addGraph(std::move(graphP), "Recv Avg");
+						}
+						{
+							auto graphP = std::make_unique<Gui::BarGraph>();
+							sentGraphDiff = graphP.get();
+							sentGraphDiff->max.y = 500;
+							graph->addGraph(std::move(graphP), "Send Bytes");
+						}
+						{
+							auto graphP = std::make_unique<Gui::BarGraph>();
+							recvGraphDiff = graphP.get();
+							recvGraphDiff->max.y = 500;
+							graph->addGraph(std::move(graphP), "Recv Bytes");
 						}
 					}
 
@@ -444,10 +460,14 @@ namespace Game {
 						// TODO: config time
 						const auto now = world.getTime();
 
-						sendGraph->max.x = Engine::Clock::Seconds{now.time_since_epoch()}.count();
-						sendGraph->min.x = Engine::Clock::Seconds{(now - std::chrono::milliseconds{10'000}).time_since_epoch()}.count();
-						recvGraph->max.x = sendGraph->max.x;
-						recvGraph->min.x = sendGraph->min.x;
+						sentGraphAvg->max.x = Engine::Clock::Seconds{now.time_since_epoch()}.count();
+						sentGraphAvg->min.x = Engine::Clock::Seconds{(now - std::chrono::milliseconds{10'000}).time_since_epoch()}.count();
+						recvGraphAvg->max.x = sentGraphAvg->max.x;
+						recvGraphAvg->min.x = sentGraphAvg->min.x;
+						sentGraphDiff->max.x = sentGraphAvg->max.x;
+						sentGraphDiff->min.x = sentGraphAvg->min.x;
+						recvGraphDiff->max.x = sentGraphAvg->max.x;
+						recvGraphDiff->min.x = sentGraphAvg->min.x;
 
 						if (!world.hasComponent<NetworkStatsComponent>(ent)) {
 							world.addComponent<NetworkStatsComponent>(ent);
@@ -462,17 +482,27 @@ namespace Game {
 							estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
 						}
 
-						sendGraph->addPoint({
-							Engine::Clock::Seconds{now.time_since_epoch()}.count(),
-							conn.getSendBandwidth(),
-						});
-						sendGraph->trimData();
+						const auto nowSec = Engine::Clock::Seconds{now.time_since_epoch()}.count();
+						sentGraphAvg->addPoint({ nowSec, conn.getSendBandwidth() });
+						sentGraphAvg->trimData();
 
-						recvGraph->addPoint({
-							Engine::Clock::Seconds{now.time_since_epoch()}.count(),
-							conn.getRecvBandwidth(),
-						});
-						recvGraph->trimData();
+						recvGraphAvg->addPoint({ nowSec, conn.getRecvBandwidth() });
+						recvGraphAvg->trimData();
+
+						const auto sentByteDiff = conn.getTotalBytesSent() - lastSentBytes;
+						const auto recvByteDiff = conn.getTotalBytesRecv() - lastRecvBytes;
+
+						if (sentByteDiff > 0) {
+							sentGraphDiff->addPoint({ nowSec, sentByteDiff });
+							lastSentBytes = conn.getTotalBytesSent();
+							sentGraphDiff->trimData();
+						}
+
+						if (recvByteDiff > 0) {
+							recvGraphDiff->addPoint({ nowSec, recvByteDiff });
+							lastRecvBytes = conn.getTotalBytesRecv();
+							recvGraphDiff->trimData();
+						}
 
 						std::string buff;
 

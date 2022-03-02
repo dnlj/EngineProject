@@ -20,12 +20,19 @@ namespace Engine::Gui {
 			glm::vec4 color;
 	};
 
+	/**
+	 * TODO: doc
+	 * TODO: note about updating graph min/max
+	 * TODO: note abotu trimming data
+	 */
 	class SubGraph {
 		public:
 			glm::vec2 min = {};
 			glm::vec2 max = {100, 100};
-			glm::vec4 color = {1,0,0,1};
-			bool enabled = true;
+
+			glm::vec4 color = {1,0,0,1}; // TODO: private
+			bool enabled = true; // TODO: private
+			glm::vec2 scale = {1,1}; // TODO: private
 
 		protected:
 			Engine::RingBuffer<glm::vec2> data;
@@ -47,6 +54,11 @@ namespace Engine::Gui {
 					}
 				}
 			}
+	};
+
+	class BarGraph : public SubGraph {
+		public:
+			void draw(const Panel* panel) const override;
 	};
 
 	class AreaGraph : public SubGraph {

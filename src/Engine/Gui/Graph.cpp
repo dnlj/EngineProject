@@ -7,6 +7,33 @@
 
 
 namespace Engine::Gui {
+	void BarGraph::draw(const Panel* panel) const {
+		if (data.empty()) { return; }
+		auto ctx = panel->getContext();
+		const auto scale = panel->getSize() / (max - min);
+		const auto h = panel->getHeight();
+		const auto worldToGraph = [&](glm::vec2 p) ENGINE_INLINE {
+			p = (p - min) * scale;
+			p.y = h - p.y;
+			return p;
+		};
+
+		const auto end = data.cend();
+		auto curr = data.cbegin();
+
+		while (curr != end && curr->x <= min.x) { ++curr; }
+
+		while (curr != end) {
+			//ctx->drawPoly(points, color);
+			ctx->drawLine(
+				worldToGraph({curr->x, 0}),
+				worldToGraph({curr->x, curr->y}),
+				1, color
+			);
+			++curr;
+		}
+	};
+
 	void AreaGraph::draw(const Panel* panel) const {
 		if (data.empty()) { return; }
 		auto ctx = panel->getContext();
@@ -85,7 +112,6 @@ namespace Engine::Gui {
 		glm::vec2 nV = {};
 		auto [a2, a1] = nextMiterPoints(pV, cT, pT);
 
-		int i = 0; srand(0xDEADBEEF); // TODO: rm
 		while (true) {
 			cV = worldToGraph(*curr);
 			if (next != end) {
@@ -93,11 +119,9 @@ namespace Engine::Gui {
 				cT = glm::normalize(nV - cV);
 			}
 
-			auto [a3, a4] = nextMiterPoints(cV, cT, pT);
+			const auto [a3, a4] = nextMiterPoints(cV, cT, pT);
 			
-			//ctx->drawPoly({a1,a2,a3,a4},/*color*/glm::vec4{rand()%256/255.0f,rand()%256/255.0f,rand()%256/255.0f,0.5});
 			ctx->drawPoly({a1,a2,a3,a4}, color);
-			++i;
 
 			if (next == end) { break; }
 			if (curr->x > max.x) { break; }
