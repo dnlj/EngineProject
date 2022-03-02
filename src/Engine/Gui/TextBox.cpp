@@ -95,8 +95,8 @@ namespace Engine::Gui {
 		ctx->deregisterTextCallback(this);
 	};
 			
-	void TextBox::onBeginActivate() {
-		if (ctx->getActive() == this) { return; }
+	bool TextBox::onBeginActivate() {
+		if (ctx->getActive() == this) { return true; }
 
 		caret = caretFromPos(ctx->getCursor().x);
 		select = Caret::invalid;
@@ -113,6 +113,8 @@ namespace Engine::Gui {
 				actionSelectAll();
 			}
 		}
+
+		return true;
 	}
 
 	void TextBox::onEndActivate() {

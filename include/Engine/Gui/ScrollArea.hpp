@@ -57,7 +57,7 @@ namespace Engine::Gui {
 				}
 			}
 
-			virtual void onBeginActivate() {
+			virtual bool onBeginActivate() {
 				const auto abs = getPos()[D];
 				const auto cur = ctx->getCursor()[D];
 				if (cur < abs + p || cur > abs + p + s) {
@@ -67,6 +67,8 @@ namespace Engine::Gui {
 				ctx->registerMouseMove(this, [this, init=p, last=cur](glm::vec2 pos) noexcept {
 					setScrollOffset(init + pos[D] - last);
 				});
+
+				return true;
 			}
 
 			virtual void onEndActivate() {

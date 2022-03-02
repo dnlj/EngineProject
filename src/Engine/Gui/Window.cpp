@@ -77,8 +77,8 @@ namespace Engine::Gui {
 		}
 	}
 
-	void Window::onBeginActivate() {
-		if (!resizeDir) { return; } // TODO: false
+	bool Window::onBeginActivate() {
+		if (!resizeDir) { return true; }
 
 		resizing = true;
 		const auto bounds = getBounds();
@@ -121,7 +121,7 @@ namespace Engine::Gui {
 				break;
 			}
 		}
-		return; // TODO: true
+		return true;
 	}
 
 	void Window::onEndActivate() {

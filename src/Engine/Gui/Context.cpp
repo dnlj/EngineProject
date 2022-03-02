@@ -127,7 +127,7 @@ namespace {
 		front.swap(back);
 	}
 
-	class RootPanel : public Engine::Gui::Panel {
+	class RootPanel final : public Engine::Gui::Panel {
 		public:
 			using Panel::Panel;
 
@@ -135,6 +135,10 @@ namespace {
 				// Force the child to be on top
 				addChild(child);
 			};
+			
+			virtual bool onBeginActivate() override { return false; }
+
+			// TODO: should we also have canHover/Focus return false?
 	};
 }
 
@@ -833,13 +837,19 @@ namespace Engine::Gui {
 			clickLastPos = getCursor();
 			clickLastTime = time;
 
-			auto focus = getFocus();
-			if (!focus || focus == root) { return active != nullptr; }
+			auto target = getFocus();
 
-			focus->onBeginActivate();
-			active = focus;
+			while (target) {
+				if (target->onBeginActivate()) {
+					active = target;
+					return true;
+				}
+				target = target->getParent();
+			}
 
-			return true;
+			active = nullptr;
+			activateCount = 0;
+			return false;
 		} else if (active) {
 			unsetActive();
 			return true;

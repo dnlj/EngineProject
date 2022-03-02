@@ -35,7 +35,7 @@ namespace Engine::Gui {
 			virtual void onEndHover() override;
 			virtual void onBeginFocus() override;
 			virtual void onEndFocus() override;
-			virtual void onBeginActivate() override;
+			virtual bool onBeginActivate() override;
 			virtual void onEndActivate() override;
 
 		private:

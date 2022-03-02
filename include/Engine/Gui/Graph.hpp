@@ -175,7 +175,7 @@ namespace Engine::Gui {
 
 			virtual bool onAction(ActionEvent act) override;
 
-			virtual void onBeginActivate() override;
+			virtual bool onBeginActivate() override;
 
 			virtual void onEndActivate() override;
 

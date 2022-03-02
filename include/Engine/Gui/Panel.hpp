@@ -406,7 +406,7 @@ namespace Engine::Gui {
 			/**
 			 * Called when this panel is activated.
 			 */
-			virtual void onBeginActivate() {}
+			virtual bool onBeginActivate() { return true; }
 			virtual void onEndActivate() {}
 
 			/**

@@ -20,9 +20,10 @@ namespace Engine::Gui {
 						Label::render();
 					}
 					
-					virtual void onBeginActivate() override {
+					virtual bool onBeginActivate() override {
 						win->tracking = true;
 						win->offset = win->getContext()->getCursor() - win->getPos() - outBorder;
+						return true;
 					}
 
 					virtual void onEndActivate() override {
@@ -61,14 +62,13 @@ namespace Engine::Gui {
 
 			virtual void onBeginChildHover(Panel* child) override { onEndHover(); };
 
-			virtual void onBeginActivate() override;
+			virtual bool onBeginActivate() override;
 			virtual void onEndActivate() override;
 
 			ENGINE_INLINE void setTitle(const std::string_view text) { title->autoText(text); }
 
 		private:
 			void moveCallback(const glm::vec2 pos);
-			bool beginActivateCallback(Panel* panel);
 			void updateResizeInfo(const glm::vec2 pos);
 	};
 }

@@ -225,8 +225,8 @@ namespace Engine::Gui {
 	}
 
 	// TODO: i think we really want this on right click, maybe this should be an action?
-	void RichGraph::onBeginActivate() {
-		if (ctx->getActive() == this) { return; }
+	bool RichGraph::onBeginActivate() {
+		if (ctx->getActive() == this) { return true; }
 
 		// TODO: i think we really want this on right/middle click, maybe this should be an action?
 		lastDragPos = ctx->getCursor();
@@ -241,6 +241,8 @@ namespace Engine::Gui {
 			}
 			lastDragPos = pos;
 		});
+
+		return true;
 	}
 
 	void RichGraph::onEndActivate() {

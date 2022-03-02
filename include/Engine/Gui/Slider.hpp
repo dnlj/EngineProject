@@ -77,13 +77,14 @@ namespace Engine::Gui {
 				label->setRelPos((getSize() - label->getSize()) * 0.5f);
 			}
 
-			virtual void onBeginActivate() override {
+			virtual bool onBeginActivate() override {
 				const auto func = [this](const glm::vec2 pos) {
 					float32 v = (ctx->getCursor().x - getPos().x) / getWidth();
 					setPercentage(v);
 				};
 				func(ctx->getCursor());
 				ctx->registerMouseMove(this, std::move(func));
+				return true;
 			}
 
 			virtual void onEndActivate() override {
