@@ -29,17 +29,8 @@ namespace Engine::Gui {
 	using NativeHandle = void*;
 
 	class Context {
-			using ActivateCallback = std::function<void()>;
-
 			// TODO: doc
 			using MouseMoveCallback = std::function<void(glm::vec2)>;
-
-			/**
-			 * @param panel The panel being activated
-			 * @return True if the activation has been intercepted; otherwise false.
-			 */
-			using PanelBeginActivateCallback = std::function<bool(Panel* panel)>;
-			using PanelEndActivateCallback = std::function<void(Panel* panel)>;
 
 			/**
 			 * @param text The input text
@@ -182,10 +173,7 @@ namespace Engine::Gui {
 			PanelId nextPanelId = invalidPanelId;
 
 			/* Callbacks */
-			FlatHashMap<Panel*, ActivateCallback> activateCallbacks;
 			FlatHashMap<Panel*, MouseMoveCallback> mouseMoveCallbacks;
-			FlatHashMap<Panel*, PanelBeginActivateCallback> panelBeginActivateCallbacks;
-			FlatHashMap<Panel*, PanelEndActivateCallback> panelEndActivateCallbacks;
 			FlatHashMap<Panel*, TextCallback> textCallbacks;
 			FlatHashMap<Panel*, KeyCallback> keyCallbacks;
 
@@ -331,15 +319,6 @@ namespace Engine::Gui {
 				}
 			}
 
-			ENGINE_INLINE void registerActivate(Panel* panel, ActivateCallback callback) {
-				ENGINE_DEBUG_ASSERT(!activateCallbacks[panel], "Attempting to add duplicate activate callback.");
-				activateCallbacks[panel] = callback;
-			}
-
-			ENGINE_INLINE void deregisterActivate(Panel* panel) {
-				activateCallbacks.erase(panel);
-			}
-
 			ENGINE_INLINE void registerMouseMove(Panel* panel, MouseMoveCallback callback) {
 				ENGINE_DEBUG_ASSERT(!mouseMoveCallbacks[panel], "Attempting to add duplicate mouse move callback.");
 				mouseMoveCallbacks[panel] = callback;
@@ -349,24 +328,6 @@ namespace Engine::Gui {
 				mouseMoveCallbacks.erase(panel);
 			}
 
-			ENGINE_INLINE void registerBeginActivate(Panel* panel, PanelBeginActivateCallback callback) {
-				ENGINE_DEBUG_ASSERT(!panelBeginActivateCallbacks[panel], "Attempting to add duplicate panel activate callback.");
-				panelBeginActivateCallbacks[panel] = callback;
-			}
-			
-			ENGINE_INLINE void deregisterBeginActivate(Panel* panel) {
-				panelBeginActivateCallbacks.erase(panel);
-			}
-
-			ENGINE_INLINE void registerEndActivate(Panel* panel, PanelEndActivateCallback callback) {
-				ENGINE_DEBUG_ASSERT(!panelEndActivateCallbacks[panel], "Attempting to add duplicate panel activate callback.");
-				panelEndActivateCallbacks[panel] = callback;
-			}
-			
-			ENGINE_INLINE void deregisterEndActivate(Panel* panel) {
-				panelBeginActivateCallbacks.erase(panel);
-			}
-			
 			ENGINE_INLINE void registerTextCallback(Panel* panel, TextCallback callback) {
 				ENGINE_DEBUG_ASSERT(!textCallbacks[panel], "Attempting to add duplicate char callback.");
 				textCallbacks[panel] = callback;

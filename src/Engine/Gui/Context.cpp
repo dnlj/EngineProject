@@ -720,10 +720,7 @@ namespace Engine::Gui {
 		}
 				
 		clearPanelUpdateFuncs(panel);
-		deregisterActivate(panel);
 		deregisterMouseMove(panel);
-		deregisterBeginActivate(panel);
-		deregisterEndActivate(panel);
 		deregisterTextCallback(panel);
 		deregisterPanel(panel);
 		delete panel;
@@ -836,37 +833,16 @@ namespace Engine::Gui {
 			clickLastPos = getCursor();
 			clickLastTime = time;
 
-			for (auto& [panel, func] : activateCallbacks) {
-				if (panel->isEnabled()) { func(); }
-			}
-
 			auto focus = getFocus();
 			if (!focus || focus == root) { return active != nullptr; }
 
-			bool skip = false;
-
-			for (auto& [panel, func] : panelBeginActivateCallbacks) {
-				if (panel->isEnabled() && func(focus)) {
-					skip = true;
-					break;
-				}
-			}
-
-			if (!skip) {
-				focus->onBeginActivate();
-				active = focus;
-			}
+			focus->onBeginActivate();
+			active = focus;
 
 			return true;
-		} else {
-			for (auto& [panel, func] : panelEndActivateCallbacks) {
-				if (panel->isEnabled()) { func(active); }
-			}
-
-			if (active) {
-				unsetActive();
-				return true;
-			}
+		} else if (active) {
+			unsetActive();
+			return true;
 		}
 		return false;
 	}
