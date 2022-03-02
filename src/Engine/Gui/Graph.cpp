@@ -7,7 +7,7 @@
 
 
 namespace Engine::Gui {
-	void AreaGraph::draw(const Panel* panel, const glm::vec4 color) const {
+	void AreaGraph::draw(const Panel* panel) const {
 		if (data.empty()) { return; }
 		auto ctx = panel->getContext();
 		const glm::vec2 scale = panel->getSize() / (max - min);
@@ -43,7 +43,7 @@ namespace Engine::Gui {
 		}
 	};
 
-	void LineGraph::draw(const Panel* panel, const glm::vec4 color) const {
+	void LineGraph::draw(const Panel* panel) const {
 		const auto end = data.cend();
 		auto curr = data.cbegin();
 		if (end - curr < 2) { return; }
@@ -178,6 +178,17 @@ namespace Engine::Gui {
 }
 
 namespace Engine::Gui {
+	void GraphArea::GraphAreaImpl::render() {
+		const auto& theme = ctx->getTheme();
+		ctx->drawRect({0,0}, getSize(), theme.colors.background2);
+
+		for (const auto& graph : graphs) {
+			graph->draw(this);
+		}
+	}
+}
+
+namespace Engine::Gui {
 	RichGraph::RichGraph(Context* context)
 		: Panel{context}
 		, area{context->createPanel<GraphArea>(this)} {
@@ -252,7 +263,7 @@ namespace Engine::Gui {
 		}
 	}
 
-	void RichGraph::addGraph(std::unique_ptr<SubGraph> graph) {
+	void RichGraph::addGraph(std::unique_ptr<SubGraph> graph, std::string label) {
 		for (auto curr = getFirstChild(); curr; curr = curr->getNextSibling()) {
 			curr->setGridColumn(curr->getGridColumn() + 1);
 		}
@@ -272,6 +283,10 @@ namespace Engine::Gui {
 		xAxis->setGridPos(count+1, count+1);
 
 		addChildren({yAxis, xAxis});
-		area->addGraph(std::move(graph));
+		graph->color = Math::cvtApproxRGBToLinear(Math::cvtHSLtoRGB(nextColorHSL));
+		area->addGraph(std::move(graph), std::move(label));
+		
+		// TODO: let themes specify an array of colors to use for this sort of thing
+		nextColorHSL.x = std::fmodf(nextColorHSL.x + InvPhi<float32> * 360, 360);
 	}
 }

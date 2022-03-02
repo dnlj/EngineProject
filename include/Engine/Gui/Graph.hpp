@@ -8,6 +8,8 @@
 #include <Engine/Gui/Panel.hpp>
 #include <Engine/Gui/Context.hpp>
 #include <Engine/Gui/FillLayout.hpp>
+#include <Engine/Gui/Button.hpp>
+#include <Engine/Gui/DirectionalLayout.hpp>
 #include <Engine/Math/color.hpp>
 
 
@@ -31,7 +33,7 @@ namespace Engine::Gui {
 		public:
 			// TODO: this assumes inserting is already sorted
 			ENGINE_INLINE void addPoint(glm::vec2 p) { data.push(p); };
-			virtual void draw(const Panel* panel, const glm::vec4 color) const = 0;
+			virtual void draw(const Panel* panel) const = 0;
 
 			void trimData() {
 				while (true) {
@@ -49,7 +51,7 @@ namespace Engine::Gui {
 
 	class AreaGraph : public SubGraph {
 		public:
-			void draw(const Panel* panel, const glm::vec4 color) const override;
+			void draw(const Panel* panel) const override;
 	};
 
 	class LineGraph : public SubGraph {
@@ -57,47 +59,65 @@ namespace Engine::Gui {
 			float32 halfThickness = 2;
 
 		public:
-			void draw(const Panel* panel, const glm::vec4 color) const override;
+			void draw(const Panel* panel) const override;
 			void setLineThickness(const float32 thickness) noexcept { halfThickness = thickness * 0.5f; }
 	};
 	
+	class GraphKey : public Panel {
+		public:
+			GraphKey(Context* context) : Panel{context} {
+				setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Start, ctx->getTheme().sizes.pad1});
+				setAutoSize(true);
+			}
+
+			void render() override {
+				ctx->drawRect({}, getSize(), {1,0,0,0.5});
+			}
+
+			void add(std::string text, glm::vec4 color) {
+				auto base = ctx->createPanel<Panel>(this);
+				base->setLayout(new DirectionalLayout{Direction::Horizontal, Align::Start, Align::Start, ctx->getTheme().sizes.pad1});
+				base->setAutoSize(true);
+
+				auto swatch = ctx->createPanel<Button>(base); // TODO: make textless button base class for button
+				auto label = ctx->createPanel<Label>(base);
+				label->autoText(std::move(text));
+				swatch->setFixedSize({label->getHeight(), label->getHeight()});
+				swatch->setAction([](Button* btn){
+					ENGINE_LOG("Click: ", btn);
+				});
+			}
+	};
+
 	class GraphArea : public Panel {
 		private:
 			class GraphAreaImpl : public Panel {
 				public:
 					std::vector<std::unique_ptr<SubGraph>> graphs;
 					using Panel::Panel;
-					virtual void render() override {
-						const auto& theme = ctx->getTheme();
-						ctx->drawRect({0,0}, getSize(), theme.colors.background2);
-
-						// Ideally we would use HCL instead of HSL due to better maintained
-						// perceived brightness and saturation between hues, but from a quick glance
-						// the math looks much more involved.
-						glm::vec4 hsl = {3, 0.65, 0.65, 0.5};
-						for (auto& graph : graphs) {
-							// TODO: let themes specify an array of colors to use for this sort of thing
-							graph->draw(this, Math::cvtApproxRGBToLinear(Math::cvtHSLtoRGB(hsl)));
-							hsl.x = std::fmodf(hsl.x + InvPhi<float32> * 360, 360);
-						}
-					}
+					virtual void render() override;
 			};
 
 		private:
-			GraphAreaImpl* impl;
+			GraphAreaImpl* impl = nullptr;
+			GraphKey* key = nullptr;
 
 		public:
 			GraphArea(Context* context)
 				: Panel{context}
 				, impl{ctx->createPanel<GraphAreaImpl>(this)} {
 				setLayout(new FillLayout{0});
+
+				impl->setLayout(new FillLayout{0});
+				key = ctx->createPanel<GraphKey>(impl);
 			}
 
 			virtual void render() override {
 				ctx->drawRect({0,0}, getSize(), {});
 			}
 
-			void addGraph(std::unique_ptr<SubGraph> graph) {
+			void addGraph(std::unique_ptr<SubGraph> graph, std::string label) {
+				key->add(std::move(label), graph->color);
 				impl->graphs.push_back(std::move(graph));
 			}
 
@@ -139,9 +159,14 @@ namespace Engine::Gui {
 	};
 
 	class RichGraph : public Panel {
-		private: // TODO: private
+		private:
 			GraphArea* area;
 			glm::vec2 lastDragPos = {};
+			
+			// Ideally we would use HCL instead of HSL due to better maintained
+			// perceived brightness and saturation between hues, but from a quick glance
+			// the math looks much more involved.
+			glm::vec4 nextColorHSL = {3, 0.65, 0.65, 0.5};
 
 		public:
 			RichGraph(Context* context);
@@ -156,11 +181,6 @@ namespace Engine::Gui {
 
 			void scale(float32 s);
 
-			void addGraph(std::unique_ptr<SubGraph> graph);
-
-			virtual bool canFocusChild(Panel* child) const { return false; }
-			virtual bool canHoverChild(Panel* child) const { return false; }
-
-		private:
+			void addGraph(std::unique_ptr<SubGraph> graph, std::string label);
 	};
 }
