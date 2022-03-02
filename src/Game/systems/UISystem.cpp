@@ -430,16 +430,12 @@ namespace Game {
 							auto test = std::make_unique<Gui::AreaGraph>();
 							sendGraph = test.get();
 							sendGraph->max.y = 15000;
-							//sendGraph->color = {1,0,1,0.5f}; // TODO: rm
-							// TODO: rm sendGraph->setLabel("Send Graph", ctx->getTheme().fonts.body);
 							graph->addGraph(std::move(test), "Send Graph");
 						}
 						{
 							auto test = std::make_unique<Gui::AreaGraph>();
 							recvGraph = test.get();
 							recvGraph->max.y = 5000;
-							//recvGraph->color = {0,1,1,0.5f}; // TODO: rm
-							// TODO: rm recvGraph->setLabel("Recv Graph", ctx->getTheme().fonts.body);
 							graph->addGraph(std::move(test), "Recv Graph");
 						}
 					}

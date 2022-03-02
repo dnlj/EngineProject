@@ -13,7 +13,6 @@
 #include <Engine/Math/color.hpp>
 
 
-// TODO: split
 namespace Engine::Gui {
 	class GraphVertex {
 		public:
@@ -26,6 +25,7 @@ namespace Engine::Gui {
 			glm::vec2 min = {};
 			glm::vec2 max = {100, 100};
 			glm::vec4 color = {1,0,0,1};
+			bool enabled = true;
 
 		protected:
 			Engine::RingBuffer<glm::vec2> data;
@@ -63,29 +63,41 @@ namespace Engine::Gui {
 			void setLineThickness(const float32 thickness) noexcept { halfThickness = thickness * 0.5f; }
 	};
 	
-	class GraphKey : public Panel {
+	class GraphKey : public PanelT {
+		private:
+			class Swatch : public Panel {
+				public:
+					using Panel::Panel;
+					glm::vec4 color = {1,0,0,1};
+					std::function<void(Swatch*)> activeCallback;
+
+					bool onBeginActivate() override {
+						if (activeCallback) { activeCallback(this); }
+						return true;
+					}
+
+					void render() override {
+						ctx->drawRect({}, getSize(), color);
+					}
+			};
+
 		public:
-			GraphKey(Context* context) : Panel{context} {
+			GraphKey(Context* context) : PanelT{context} {
 				setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Start, ctx->getTheme().sizes.pad1});
 				setAutoSize(true);
 			}
 
-			void render() override {
-				ctx->drawRect({}, getSize(), {1,0,0,0.5});
-			}
-
-			void add(std::string text, glm::vec4 color) {
+			void add(SubGraph* graph, std::string text, glm::vec4 color) {
 				auto base = ctx->createPanel<Panel>(this);
 				base->setLayout(new DirectionalLayout{Direction::Horizontal, Align::Start, Align::Start, ctx->getTheme().sizes.pad1});
 				base->setAutoSize(true);
 
-				auto swatch = ctx->createPanel<Button>(base); // TODO: make textless button base class for button
+				auto swatch = ctx->createPanel<Swatch>(base);
 				auto label = ctx->createPanel<Label>(base);
 				label->autoText(std::move(text));
 				swatch->setFixedSize({label->getHeight(), label->getHeight()});
-				swatch->setAction([](Button* btn){
-					ENGINE_LOG("Click: ", btn);
-				});
+				swatch->color = color;
+				swatch->activeCallback = [graph](Swatch* s){ graph->enabled = !graph->enabled; };
 			}
 	};
 
@@ -96,6 +108,8 @@ namespace Engine::Gui {
 					std::vector<std::unique_ptr<SubGraph>> graphs;
 					using Panel::Panel;
 					virtual void render() override;
+					virtual bool canHover() const override { return false; }
+					virtual bool canFocus() const override { return false; }
 			};
 
 		private:
@@ -117,13 +131,16 @@ namespace Engine::Gui {
 			}
 
 			void addGraph(std::unique_ptr<SubGraph> graph, std::string label) {
-				key->add(std::move(label), graph->color);
+				key->add(graph.get(), std::move(label), graph->color);
 				impl->graphs.push_back(std::move(graph));
 			}
 
 			auto& getGraphs() noexcept {
 				return impl->graphs; 
 			}
+			
+			virtual bool canHover() const override { return false; }
+			virtual bool canFocus() const override { return false; }
 	};
 
 	class GraphAxis : public Panel {

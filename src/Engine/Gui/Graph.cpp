@@ -183,7 +183,7 @@ namespace Engine::Gui {
 		ctx->drawRect({0,0}, getSize(), theme.colors.background2);
 
 		for (const auto& graph : graphs) {
-			graph->draw(this);
+			if (graph->enabled) { graph->draw(this); }
 		}
 	}
 }
