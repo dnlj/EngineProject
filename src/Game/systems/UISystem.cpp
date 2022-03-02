@@ -434,25 +434,25 @@ namespace Game {
 							auto graphP = std::make_unique<Gui::AreaGraph>();
 							sentGraphAvg = graphP.get();
 							sentGraphAvg->max.y = 15000;
-							graph->addGraph(std::move(graphP), "Send Avg");
+							graph->addGraph(std::move(graphP), "Send Avg", true, true);
 						}
 						{
 							auto graphP = std::make_unique<Gui::AreaGraph>();
 							recvGraphAvg = graphP.get();
-							recvGraphAvg->max.y = 5000;
-							graph->addGraph(std::move(graphP), "Recv Avg");
+							recvGraphAvg->max.y = 15000;
+							graph->addGraph(std::move(graphP), "Recv Avg", false, false);
 						}
 						{
 							auto graphP = std::make_unique<Gui::BarGraph>();
 							sentGraphDiff = graphP.get();
 							sentGraphDiff->max.y = 500;
-							graph->addGraph(std::move(graphP), "Send Bytes");
+							graph->addGraph(std::move(graphP), "Send Bytes", false, true);
 						}
 						{
 							auto graphP = std::make_unique<Gui::BarGraph>();
 							recvGraphDiff = graphP.get();
 							recvGraphDiff->max.y = 500;
-							graph->addGraph(std::move(graphP), "Recv Bytes");
+							graph->addGraph(std::move(graphP), "Recv Bytes", false, false);
 						}
 					}
 

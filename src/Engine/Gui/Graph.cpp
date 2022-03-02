@@ -289,26 +289,29 @@ namespace Engine::Gui {
 		}
 	}
 
-	void RichGraph::addGraph(std::unique_ptr<SubGraph> graph, std::string label) {
-		for (auto curr = getFirstChild(); curr; curr = curr->getNextSibling()) {
-			curr->setGridColumn(curr->getGridColumn() + 1);
+	void RichGraph::addGraph(std::unique_ptr<SubGraph> graph, std::string label, bool axisX, bool axisY) {
+
+		if (axisY) {
+			for (auto curr = getFirstChild(); curr; curr = curr->getNextSibling()) {
+				curr->setGridColumn(curr->getGridColumn() + 1);
+			}
+
+			auto yAxis = ctx->createPanel<GraphAxis>(this, Direction::Vertical);
+			yAxis->setGraph(graph.get());
+			yAxis->setFixedWidth(32);
+			yAxis->setWeight(0);
+			yAxis->setGridPos(0, 0);
 		}
 
-		const int32 count = static_cast<int32>(area->getGraphs().size());
+		if (axisX) {
+			const int32 count = static_cast<int32>(area->getGraphs().size());
+			auto xAxis = ctx->createPanel<GraphAxis>(this, Direction::Horizontal);
+			xAxis->setGraph(graph.get());
+			xAxis->setFixedHeight(16);
+			xAxis->setWeight(0);
+			xAxis->setGridPos(count+1, count+1);
+		}
 
-		auto yAxis = ctx->constructPanel<GraphAxis>(Direction::Vertical);
-		yAxis->setGraph(graph.get());
-		yAxis->setFixedWidth(32);
-		yAxis->setWeight(0);
-		yAxis->setGridPos(0, 0);
-
-		auto xAxis = ctx->constructPanel<GraphAxis>(Direction::Horizontal);
-		xAxis->setGraph(graph.get());
-		xAxis->setFixedHeight(16);
-		xAxis->setWeight(0);
-		xAxis->setGridPos(count+1, count+1);
-
-		addChildren({yAxis, xAxis});
 		graph->color = Math::cvtApproxRGBToLinear(Math::cvtHSLtoRGB(nextColorHSL));
 		area->addGraph(std::move(graph), std::move(label));
 		

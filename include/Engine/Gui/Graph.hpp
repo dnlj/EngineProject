@@ -210,6 +210,6 @@ namespace Engine::Gui {
 
 			void scale(float32 s);
 
-			void addGraph(std::unique_ptr<SubGraph> graph, std::string label);
+			void addGraph(std::unique_ptr<SubGraph> graph, std::string label, bool axisX, bool axisY);
 	};
 }
