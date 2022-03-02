@@ -20,20 +20,6 @@ namespace Engine::Gui {
 		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch, ctx->getTheme().sizes.pad1});
 
 		ctx->registerMouseMove(this, [this](glm::vec2 pos) { moveCallback(pos); });
-
-		ctx->registerBeginActivate(this, [this](Panel* panel) { return beginActivateCallback(panel); });
-				
-		ctx->registerEndActivate(this, [this](Panel* panel) {
-			if (!resizing) { return; }
-			resizeDir = 0;
-			resizing = false;
-
-			if (hoverWithin) {
-				updateResizeInfo(ctx->getCursor());
-			} else {
-				ctx->setCursor(Cursor::Normal);
-			}
-		});
 	}
 
 	void Window::moveCallback(const glm::vec2 pos) {
@@ -91,8 +77,9 @@ namespace Engine::Gui {
 		}
 	}
 
-	bool Window::beginActivateCallback(Panel* panel) {
-		if (!resizeDir) { return false; }
+	void Window::onBeginActivate() {
+		if (!resizeDir) { return; } // TODO: false
+
 		resizing = true;
 		const auto bounds = getBounds();
 		const auto pos = ctx->getCursor();
@@ -134,7 +121,19 @@ namespace Engine::Gui {
 				break;
 			}
 		}
-		return true;
+		return; // TODO: true
+	}
+
+	void Window::onEndActivate() {
+		if (!resizing) { return; }
+		resizeDir = 0;
+		resizing = false;
+
+		if (hoverWithin) {
+			updateResizeInfo(ctx->getCursor());
+		} else {
+			ctx->setCursor(Cursor::Normal);
+		}
 	}
 
 	void Window::updateResizeInfo(const glm::vec2 pos) {

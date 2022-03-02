@@ -61,6 +61,9 @@ namespace Engine::Gui {
 
 			virtual void onBeginChildHover(Panel* child) override { onEndHover(); };
 
+			virtual void onBeginActivate() override;
+			virtual void onEndActivate() override;
+
 			ENGINE_INLINE void setTitle(const std::string_view text) { title->autoText(text); }
 
 		private:
