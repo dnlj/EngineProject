@@ -71,7 +71,6 @@ namespace Game {
 			} panels;
 
 			void ui_debug();
-			void ui_coordinates();
 			void ui_render();
 			void ui_camera();
 			void ui_netsim();
