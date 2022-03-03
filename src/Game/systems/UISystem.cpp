@@ -655,6 +655,7 @@ namespace Game {
 			class Adapter : public Gui::DataAdapter<Adapter, Engine::Net::IPv4Address, Engine::Net::IPv4Address> {
 				private:
 					Game::World& world;
+					Engine::Clock::TimePoint last;
 
 				public:
 					using It = decltype(world.getSystem<NetworkingSystem>().servers.begin());
@@ -664,6 +665,13 @@ namespace Game {
 					ENGINE_INLINE auto end() const { return world.getSystem<NetworkingSystem>().servers.end(); }
 					ENGINE_INLINE auto getId(It it) const noexcept { return it->first; }
 					ENGINE_INLINE Checksum check(Id id) const { return id; }
+
+					void update() {
+						if (world.getTime() - last >= std::chrono::seconds{5}) {
+							world.getSystem<Game::NetworkingSystem>().broadcastDiscover();
+							last = world.getTime();
+						}
+					}
 
 					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
 						auto& info = world.getSystem<NetworkingSystem>().servers[id];
@@ -814,7 +822,7 @@ namespace Game {
 		#endif
 
 
-		{
+		/*{
 			ctx->createPanel<Gui::Button>(content)->autoText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
 			auto btn = ctx->createPanel<Gui::Button>(content);
@@ -830,36 +838,6 @@ namespace Game {
 				btn->setText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 				btn->setHeight(27);
 			}
-		}
-
-		/*{
-			panels.graphTest = ctx->createPanel<Gui::RichGraph>(content);
-			panels.graphTest->setHeight(350);
-			auto test1 = std::make_unique<Gui::AreaGraph>();
-			auto test2 = std::make_unique<Gui::LineGraph>();
-			test1->color = {1,1,0.2,1.f};
-			test2->color = {0.2,1,1,0.75f};
-			test2->setLineThickness(2);
-			
-			test1->addPoint({10, 10});
-			test1->addPoint({30, 30});
-			test1->addPoint({60, 30});
-			test1->addPoint({90, 50});
-
-			test2->addPoint({-10, 10});
-			test2->addPoint({10, 10});
-			test2->addPoint({30, 30});
-			//test2->addPoint({31, 35});
-			test2->addPoint({60, 30});
-			test2->addPoint({90, 50});
-			test2->addPoint({95, 100});
-			test2->addPoint({195, 100});
-			test2->addPoint({295, 100});
-			test2->addPoint({395, 100});
-			//test2->max.x = 200;
-
-			panels.graphTest->addGraph(std::move(test1));
-			panels.graphTest->addGraph(std::move(test2));
 		}*/
 
 		//panels.infoPane->toggle();
@@ -892,15 +870,6 @@ namespace Game {
 		// Cull old data
 		while(!frameData.empty() && frameData.front().second < rollingWindow) {
 			frameData.pop();
-		}
-
-		if constexpr (ENGINE_CLIENT) {
-			//ImGui::ShowDemoWindow();
-			//mapTestUI.render();
-			ui_connect();
-		}
-
-		if constexpr (ENGINE_SERVER) {
 		}
 
 		ui_debug();
@@ -958,71 +927,6 @@ namespace Game {
 		ui_entities();
 
 		ImGui::End();
-	}
-
-	void UISystem::ui_connect() {
-		#if ENGINE_CLIENT
-		auto& netSys = world.getSystem<Game::NetworkingSystem>();
-		if (netSys.playerCount()) { return; }
-
-		auto& io = ImGui::GetIO();
-		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;
-		ImGui::SetNextWindowPos(0.7f * io.DisplaySize, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-		ImGui::Begin("Join Server", nullptr, flags);
-
-		static char serverText[64] = "localhost:21212";
-		static Engine::Clock::TimePoint nextRefresh;
-
-		const auto now = Engine::Clock::now();
-		if (nextRefresh <= now) {
-			nextRefresh = now + std::chrono::seconds{2};
-			world.getSystem<Game::NetworkingSystem>().broadcastDiscover();
-		}
-
-		ImGui::PushItemWidth(io.DisplaySize.x * 0.5f);
-
-		// TODO: imgui tables https://github.com/ocornut/imgui/issues/2957
-		ImGui::Columns(4);
-		ImGui::Text("Name");
-		ImGui::NextColumn();
-		ImGui::Text("Players");
-		ImGui::NextColumn();
-		ImGui::Text("Ping");
-		ImGui::NextColumn();
-		ImGui::Text("");
-		ImGui::Columns(1);
-		ImGui::Separator();
-		ImGui::Columns(4);
-
-		for (const auto& [addr, info] : netSys.servers) {
-			ImGui::Text(info.name.c_str());
-
-			ImGui::NextColumn();
-			ImGui::Text("2/8");
-
-			ImGui::NextColumn();
-			ImGui::Text("100 ms");
-
-			ImGui::NextColumn();
-			if (ImGui::Button("Connect")) { // TODO: do i need to PushId ?
-				netSys.connectTo(addr);
-			}
-			ImGui::NextColumn();
-		}
-
-		ImGui::Columns(1);
-
-		bool shouldConnect = false;
-		shouldConnect |= ImGui::InputText("", serverText, sizeof(serverText), ImGuiInputTextFlags_EnterReturnsTrue);
-		ImGui::SameLine();
-		shouldConnect |= ImGui::Button("Connect##IP");
-
-		if (shouldConnect && strlen(serverText)) {
-			connectTo(serverText, engine, world);
-		};
-
-		ImGui::End();
-		#endif
 	}
 
 	void UISystem::ui_coordinates() {

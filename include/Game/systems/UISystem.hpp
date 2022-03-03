@@ -70,7 +70,6 @@ namespace Game {
 				#endif
 			} panels;
 
-			void ui_connect();
 			void ui_debug();
 			void ui_coordinates();
 			void ui_render();
