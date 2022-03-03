@@ -841,10 +841,10 @@ namespace Game {
 		}*/
 
 		//panels.infoPane->toggle();
-		//panels.coordPane->toggle();
+		panels.coordPane->toggle();
 		panels.netHealthPane->toggle();
 		panels.netCondPane->toggle();
-		//panels.netGraphPane->toggle();
+		panels.netGraphPane->toggle();
 	}
 
 	UISystem::~UISystem() {
@@ -920,7 +920,6 @@ namespace Game {
 
 		ui_camera();
 		ui_netsim();
-		ui_nethealth();
 		ui_network();
 
 		ImGui::End();
@@ -1113,28 +1112,5 @@ namespace Game {
 			Engine::Clock::Seconds{stats.time.time_since_epoch()}.count(),
 			B ? stats.recv.diff : stats.sent.diff
 		};
-	}
-
-	void UISystem::ui_nethealth() {
-		if (!ImGui::CollapsingHeader("Network Health")) { return; }
-		int connection = 0;
-
-		for (auto ent : world.getFilter<ConnectionComponent>()) {
-			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-			const auto& addr = conn.address();
-
-			if (connection) {
-				ImGui::Separator();
-			}
-
-			ImGui::Text("%i.%i.%i.%i:%i", addr.a, addr.b, addr.c, addr.d, addr.port);
-			for (int32 c = 0; true; ++c) {
-				const auto s = conn.getChannelQueueSize(c);
-				if (s < 0) { break; }
-				ImGui::Text("Channel%i: %i", c, s);
-			}
-
-			++connection;
-		}
 	}
 }

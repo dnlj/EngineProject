@@ -74,7 +74,6 @@ namespace Game {
 			void ui_camera();
 			void ui_netsim();
 			void ui_network();
-			void ui_nethealth();
 
 			template<bool B>
 			static ImPlotPoint netGetPointAvg(void* data, int idx);
