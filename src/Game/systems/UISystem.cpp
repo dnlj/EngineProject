@@ -918,28 +918,12 @@ namespace Game {
 			}
 		}
 
-		ui_render();
 		ui_camera();
 		ui_netsim();
 		ui_nethealth();
 		ui_network();
-		ui_entities();
 
 		ImGui::End();
-	}
-
-	void UISystem::ui_render() {
-		if (!ImGui::CollapsingHeader("Render")) { return; }
-		const auto& spriteSys = world.getSystem<SpriteSystem>();
-		ImGui::Text("Sprites: %i", spriteSys.totalSprites());
-		ImGui::Text("Sprite Groups: %i", spriteSys.totalSpriteGroups());
-
-		if (ImGui::TreeNode("Groups")) {
-			for (const auto& group : spriteSys.getSpriteGroups()) {
-				ImGui::Text("L: %i    T: %i    C: %i", group.layer, group.texture, group.count);
-			}
-			ImGui::TreePop();
-		}
 	}
 
 	void UISystem::ui_camera() {
@@ -1129,32 +1113,6 @@ namespace Game {
 			Engine::Clock::Seconds{stats.time.time_since_epoch()}.count(),
 			B ? stats.recv.diff : stats.sent.diff
 		};
-	}
-
-	void UISystem::ui_entities() {
-		if (!ImGui::CollapsingHeader("Entities")) { return; }
-
-		for (const auto& [ent, state] : world.getEntities()) {
-			if (!world.isAlive(ent)) { continue; }
-			ImGui::PushID(ent.id);
-
-			if (ImGui::TreeNode("Title", "Entity(%i, %i)", ent.id, ent.gen)) {
-				constexpr auto size = Engine::ECS::ComponentBitset::capacity();
-				static char comps[size] = {};
-				const auto& bits = world.getComponentsBitset(ent);
-
-				for (int i = 0; i < size; ++i) {
-					comps[i] = bits.test(size - i - 1) ? '1' : '0';
-				}
-
-				// TODO: more detailed component inspection
-
-				ImGui::LabelText("", "Components: %s", comps);
-				ImGui::TreePop();
-			}
-
-			ImGui::PopID();
-		}
 	}
 
 	void UISystem::ui_nethealth() {

@@ -71,12 +71,10 @@ namespace Game {
 			} panels;
 
 			void ui_debug();
-			void ui_render();
 			void ui_camera();
 			void ui_netsim();
 			void ui_network();
 			void ui_nethealth();
-			void ui_entities();
 
 			template<bool B>
 			static ImPlotPoint netGetPointAvg(void* data, int idx);
