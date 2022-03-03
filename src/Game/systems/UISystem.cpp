@@ -919,7 +919,6 @@ namespace Game {
 		}
 
 		ui_camera();
-		ui_netsim();
 		ui_network();
 
 		ImGui::End();
@@ -945,24 +944,6 @@ namespace Game {
 
 			ImGui::PopID();
 		}
-	}
-
-	void UISystem::ui_netsim() {
-		if (!ImGui::CollapsingHeader("Network Conditions", 0/* | ImGuiTreeNodeFlags_DefaultOpen */)) { return; }
-		#ifndef ENGINE_UDP_NETWORK_SIM
-			ImGui::Text("%s", "Network simulation disabled.");
-		#else
-			auto& netSys = world.getSystem<NetworkingSystem>();
-			auto& settings = netSys.getSocket().getSimSettings();
-
-			int hpa = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(settings.halfPingAdd).count());
-			ImGui::SliderInt("Half Ping Add", &hpa, 0, 500);
-			settings.halfPingAdd = std::chrono::milliseconds{hpa};
-
-			ImGui::SliderFloat("Jitter", &settings.jitter, 0.0f, 1.0f);
-			ImGui::SliderFloat("Duplicate Chance", &settings.duplicate, 0.0f, 1.0f);
-			ImGui::SliderFloat("Loss", &settings.loss, 0.0f, 1.0f);
-		#endif
 	}
 
 	void UISystem::ui_network() {
