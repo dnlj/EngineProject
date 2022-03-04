@@ -361,8 +361,22 @@ namespace Game {
 					Gui::AreaGraph* recvGraphAvg = nullptr;
 					Gui::BarGraph* sentGraphDiff = nullptr;
 					Gui::BarGraph* recvGraphDiff = nullptr;
+
+					Engine::Clock::TimePoint lastUpdate;
+
 					uint32 lastSentBytes = 0;
 					uint32 lastRecvBytes = 0;
+
+					// TODO: rm
+					//uint64 displaySentTotal;
+					//uint64 displayRecvTotal;
+					//float32 displaySentAvg;
+					//float32 displayRecvAvg;
+					//float32 displayPing;
+					//float32 displayJitter;
+					//float32 displayLoss;
+					//int32 displayInputBufferSize;
+					//float32 displayIdealInputBufferSize;
 
 				public:
 					NetGraph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
@@ -482,11 +496,14 @@ namespace Game {
 							estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
 						}
 
+						const auto sentAvg = conn.getSendBandwidth();
+						const auto recvAvg = conn.getRecvBandwidth();
+
 						const auto nowSec = Engine::Clock::Seconds{now.time_since_epoch()}.count();
-						sentGraphAvg->addPoint({ nowSec, conn.getSendBandwidth() });
+						sentGraphAvg->addPoint({ nowSec, sentAvg });
 						sentGraphAvg->trimData();
 
-						recvGraphAvg->addPoint({ nowSec, conn.getRecvBandwidth() });
+						recvGraphAvg->addPoint({ nowSec, recvAvg });
 						recvGraphAvg->trimData();
 
 						const auto sentByteDiff = conn.getTotalBytesSent() - lastSentBytes;
@@ -504,34 +521,61 @@ namespace Game {
 							recvGraphDiff->trimData();
 						}
 
-						std::string buff;
+						if ((now - lastUpdate) >= std::chrono::milliseconds{100}) {
+							lastUpdate = now;
 
-						buff.clear(); fmt::format_to(std::back_inserter(buff), "Buffer: {}", stats.displayInputBufferSize);
-						buffer->autoText(buff);
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							// TODO: network comp never gets added so this nevjklasd supdate
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+
+							std::string buff;
+
+
+							// TODO: we dont need the display* vars anymore, just pass values direct
+							buff.clear(); fmt::format_to(std::back_inserter(buff), "Buffer: {}", stats.inputBufferSize);
+							buffer->autoText(buff);
 						
-						buff.clear(); fmt::format_to(std::back_inserter(buff), "Ideal: {:.3f}", stats.displayIdealInputBufferSize);
-						ideal->autoText(buff);
+							buff.clear(); fmt::format_to(std::back_inserter(buff), "Ideal: {:.3f}", stats.idealInputBufferSize);
+							ideal->autoText(buff);
 
-						buff.clear(); fmt::format_to(std::back_inserter(buff), "Est. Buffer: {:.2f}", estbuff);
-						estBuff->autoText(buff);
+							buff.clear(); fmt::format_to(std::back_inserter(buff), "Est. Buffer: {:.2f}", estbuff);
+							estBuff->autoText(buff);
 
-						buff.clear(); fmt::format_to(std::back_inserter(buff), "Ping: {:.1f}ms", stats.displayPing);
-						ping->autoText(buff);
+							buff.clear(); fmt::format_to(std::back_inserter(buff), "Ping: {:.1f}ms", Engine::Clock::Seconds{conn.getPing()}.count() * 1000.0f);
+							ping->autoText(buff);
 						
-						buff.clear(); fmt::format_to(std::back_inserter(buff), "Jitter: {:.1f}ms", stats.displayJitter);
-						jitter->autoText(buff);
+							buff.clear(); fmt::format_to(std::back_inserter(buff), "Jitter: {:.1f}ms", Engine::Clock::Seconds{conn.getJitter()}.count() * 1000.0f);
+							jitter->autoText(buff);
 
-						buff.clear(); fmt::format_to(std::back_inserter(buff), "Budget: {:.2f}", conn.getPacketSendBudget());
-						budget->autoText(buff);
+							buff.clear(); fmt::format_to(std::back_inserter(buff), "Budget: {:.2f}", conn.getPacketSendBudget());
+							budget->autoText(buff);
 
-						buff.clear(); fmt::format_to(std::back_inserter(buff), "Sent: {}b {:.1f}b/s", stats.displaySentTotal, stats.displaySentAvg);
-						sent->autoText(buff);
+							buff.clear(); fmt::format_to(std::back_inserter(buff), "Sent: {}b {:.1f}b/s", conn.getTotalBytesSent(), sentAvg);
+							sent->autoText(buff);
 						
-						buff.clear(); fmt::format_to(std::back_inserter(buff), "Recv: {}b {:.1f}b/s", stats.displayRecvTotal, stats.displayRecvAvg);
-						recv->autoText(buff);
+							buff.clear(); fmt::format_to(std::back_inserter(buff), "Recv: {}b {:.1f}b/s", conn.getTotalBytesRecv(), recvAvg);
+							recv->autoText(buff);
 
-						buff.clear(); fmt::format_to(std::back_inserter(buff), "Loss: {:.3f}", stats.displayLoss);
-						loss->autoText(buff);
+							buff.clear(); fmt::format_to(std::back_inserter(buff), "Loss: {:.3f}", conn.getLoss());
+							loss->autoText(buff);
+						}
 					}
 
 			};
@@ -844,7 +888,7 @@ namespace Game {
 		panels.coordPane->toggle();
 		panels.netHealthPane->toggle();
 		panels.netCondPane->toggle();
-		panels.netGraphPane->toggle();
+		//panels.netGraphPane->toggle();
 	}
 
 	UISystem::~UISystem() {
@@ -919,7 +963,6 @@ namespace Game {
 		}
 
 		ui_camera();
-		ui_network();
 
 		ImGui::End();
 	}
@@ -944,154 +987,5 @@ namespace Game {
 
 			ImGui::PopID();
 		}
-	}
-
-	void UISystem::ui_network() {
-		if (!ImGui::CollapsingHeader("Networking")) { return; }
-		
-		for (auto ent : world.getFilter<ConnectionComponent>()) {
-			if (!world.hasComponent<NetworkStatsComponent>(ent)) {
-				world.addComponent<NetworkStatsComponent>(ent);
-			}
-			auto& statsComp = world.getComponent<NetworkStatsComponent>(ent);
-			auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
-			auto& buff = statsComp.buffer;
-
-			while (!buff.empty() && buff.front().time < rollingWindow) {
-				buff.pop();
-			}
-			const auto totalBytesSent = conn.getTotalBytesSent();
-			const auto totalBytesRecv = conn.getTotalBytesRecv();
-
-			buff.push({
-				.time = now,
-				.sent = {
-					.diff = static_cast<float32>(totalBytesSent - statsComp.lastTotalBytesSent),
-					.avg  = conn.getSendBandwidth(),
-				},
-				.recv = {
-					.diff = static_cast<float32>(totalBytesRecv - statsComp.lastTotalBytesRecv),
-					.avg  = conn.getRecvBandwidth(),
-				},
-			});
-
-			statsComp.lastTotalBytesSent = totalBytesSent;
-			statsComp.lastTotalBytesRecv = totalBytesRecv;
-
-			const auto& data = buff.back();
-
-			if (update) {
-				statsComp.displaySentTotal = totalBytesSent; 
-				statsComp.displayRecvTotal = totalBytesRecv;
-				statsComp.displaySentAvg = data.sent.avg;
-				statsComp.displayRecvAvg = data.recv.avg;
-
-				statsComp.displayPing = Engine::Clock::Seconds{conn.getPing()}.count() * 1000.0f;
-				statsComp.displayJitter = Engine::Clock::Seconds{conn.getJitter()}.count() * 1000.0f;
-				statsComp.displayLoss = conn.getLoss();
-
-				statsComp.displayInputBufferSize = statsComp.inputBufferSize;
-				statsComp.displayIdealInputBufferSize = statsComp.idealInputBufferSize;
-			}
-
-			float32 estbuff = 0;
-			if (world.hasComponent<ActionComponent>(ent)) {
-				estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
-			}
-
-			const auto& addr = conn.address();
-			ImGui::Text(
-				"%i.%i.%i.%i:%i\n"
-				"Ping: %.1fms          Jitter: %.1fms    Est. Buffer: %.2f\n"
-				"Buffer Size: %i     Ideal: %.3f\n"
-				"Sent: %ib %.1fb/s     Recv: %ib %.1fb/s     Loss: %.3f"
-				"\nBudget: %.2f"
-				,
-				addr.a, addr.b, addr.c, addr.d, addr.port,
-				statsComp.displayPing, statsComp.displayJitter, estbuff,
-				statsComp.displayInputBufferSize, statsComp.displayIdealInputBufferSize,
-				statsComp.displaySentTotal, statsComp.displaySentAvg,
-				statsComp.displayRecvTotal, statsComp.displayRecvAvg, statsComp.displayLoss,
-				conn.getPacketSendBudget()
-			);
-
-			{
-				const float32 r1 = conn.getPacketRecvRate();
-				auto r2 = r1;
-				ImGui::SliderFloat("Packet Recv Rate", &r2, 1.0f, 256.0f);
-
-				if (r2 != r1) {
-					if (auto msg = conn.beginMessage<MessageType::CONFIG_NETWORK>()) {
-						conn.setPacketRecvRate(r2);
-						msg.write(r2);
-					} else {
-						ENGINE_WARN("Unable to set network recv rate!");
-					}
-				}
-			}
-
-			const auto end = Engine::Clock::Seconds{now.time_since_epoch()}.count();
-			const auto begin = Engine::Clock::Seconds{rollingWindow.time_since_epoch()}.count();
-
-			constexpr auto yAxisflags = ImPlotAxisFlags_NoGridLines;
-			constexpr auto y2Axisflags = yAxisflags;
-			constexpr auto xAxisflags = yAxisflags & ImPlotAxisFlags_NoTickLabels;
-			constexpr auto yScale = 500.0f;
-			ImGui::PushID(ent.id);
-			ImPlot::SetNextPlotLimitsX(begin, end, ImGuiCond_Always);
-			ImPlot::SetNextPlotLimitsY(0.0f, yScale * tickrate * 0.333f, ImGuiCond_Once, 0);
-			ImPlot::SetNextPlotLimitsY(0.0f, yScale, ImGuiCond_Once, 1);
-			if (ImPlot::BeginPlot(
-				"##Netgraph", nullptr, nullptr, ImVec2(-1,200),
-				ImPlotFlags_YAxis2,
-				xAxisflags, yAxisflags, y2Axisflags)) {
-
-				// ImGui doesn't handle color correctly so we need to convert it
-				constexpr auto g = [](float32 in){ return powf(in/255.0f, 2.2f); };
-				static const ImVec4 colors[] = {
-					{g(239), g( 91), g( 91), 1.0f},
-					{g( 32), g(163), g(158), 1.0f},
-					{g(255), g(186), g( 73), 1.0f},
-					//{g(220), g(214), g(247), 0.33f},
-					//{g(199), g(242), g(167), 0.33f},
-					{g(219), g(254), g(184), 0.33f},
-				};
-
-				ImPlot::SetPlotYAxis(0);
-				// TODO: update - ImPlot::SetColormap(colors, sizeof(colors));
-				// TODO: thickness?
-				ImPlot::PlotLineG("Avg Sent (Bytes / Second)", netGetPointAvg<0>, &buff, buff.size(), 0);
-				ImPlot::PlotLineG("Avg Recv (Bytes / Second)", netGetPointAvg<1>, &buff, buff.size(), 0);
-
-				ImPlot::SetPlotYAxis(1);
-				ImPlot::PlotBarsG("Sent (Bytes)", netGetDiff<0>, &buff, buff.size(), 1.0f / tickrate, 0);
-				ImPlot::PlotBarsG("Recv (Bytes)", netGetDiff<1>, &buff, buff.size(), 1.0f / tickrate, 0);
-
-				ImPlot::EndPlot();
-				// TODO: update - ImPlot::SetColormap(ImPlotColormap_Default);
-				ImGui::Separator();
-			}
-			ImGui::PopID();
-		}
-	}
-
-	template<bool B>
-	ImPlotPoint UISystem::netGetPointAvg(void* data, int idx) {
-		const auto& buff = *reinterpret_cast<decltype(NetworkStatsComponent::buffer)*>(data);
-		const auto& stats = buff[idx];
-		return {
-			Engine::Clock::Seconds{stats.time.time_since_epoch()}.count(),
-			B ? stats.recv.avg : stats.sent.avg
-		};
-	};
-
-	template<bool B>
-	ImPlotPoint UISystem::netGetDiff(void* data, int idx) {
-		const auto& buff = *reinterpret_cast<decltype(NetworkStatsComponent::buffer)*>(data);
-		const auto& stats = buff[idx];
-		return {
-			Engine::Clock::Seconds{stats.time.time_since_epoch()}.count(),
-			B ? stats.recv.diff : stats.sent.diff
-		};
 	}
 }
