@@ -11,7 +11,6 @@
 #include <glm/gtc/matrix_access.hpp>
 
 // Engine
-#include <Engine/Debug/Debug.hpp>
 #include <Engine/Debug/DebugDrawBox2D.hpp>
 #include <Engine/Utility/Utility.hpp>
 #include <Engine/Engine.hpp>

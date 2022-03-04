@@ -24,4 +24,4 @@ namespace Engine::Algorithm {
 	constexpr auto sort(std::array<T, N> arr);
 }
 
-#include <Engine/Algorithm/Algorithm.ipp>
+#include <Engine/Algorithm/algorithm.ipp>
