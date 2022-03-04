@@ -127,9 +127,9 @@ namespace {
 		front.swap(back);
 	}
 
-	class RootPanel final : public Engine::Gui::Panel {
+	class RootPanel final : public Engine::Gui::PanelT {
 		public:
-			using Panel::Panel;
+			using PanelT::PanelT;
 
 			virtual void onBeginChildFocus(Panel* child) override {
 				// Force the child to be on top
@@ -222,8 +222,8 @@ namespace Engine::Gui {
 		registerPanel(nullptr); // register before everything else so nullptr = id 0
 
 		root = new RootPanel{this};
-		root->setRelPos({25, 25});
-		root->setSize({1024, 1024});
+		root->setPos({0,0});
+		root->setSize(camera.getScreenSize());
 		registerPanel(root);
 
 		///////////////////////////////////////////////////////////////////////////////
@@ -949,6 +949,7 @@ namespace Engine::Gui {
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT1, clipTex1.get(), 0);
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT2, clipTex2.get(), 0);
+		root->setSize({w,h});
 	}
 
 	void Context::onFocus(const bool has) {

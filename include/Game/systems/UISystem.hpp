@@ -70,9 +70,6 @@ namespace Game {
 				#endif
 			} panels;
 
-			void ui_debug();
-			void ui_camera();
-
 			template<bool B>
 			static ImPlotPoint netGetPointAvg(void* data, int idx);
 

@@ -879,8 +879,6 @@ namespace Game {
 			frameData.pop();
 		}
 
-		ui_debug();
-
 		if (panels.infoPane->getContent()->isEnabled()) {
 			if (update) {
 				panels.infoPane->setLabel(InfoPane::FPS, fps, 1.0f/fps);
@@ -898,57 +896,5 @@ namespace Game {
 	}
 
 	void UISystem::tick() {
-	}
-
-	void UISystem::ui_debug() {
-		if (!ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_MenuBar)) { ImGui::End(); return; }
-
-		if (update) {
-			fps = 0.0f;
-			int32 count = 0;
-			auto min = now - fpsAvgWindow;
-			for (auto& [fd, time] : frameData) {
-				if (time < min) { continue; } else { ++count; }
-				fps += fd.dt;
-			}
-			fps = count / fps;
-		}
-
-		ImGui::Text("Avg FPS %f (%f)", fps, 1.0f / fps);
-		ImGui::Text("Tick %i", world.getTick());
-		ImGui::Text("Tick Scale: %.4f", world.tickScale);
-
-		if (ImGui::Button("Disconnect")) {
-			for (const auto& ent : world.getFilter<ConnectionComponent>()) {
-				const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
-				world.getSystem<NetworkingSystem>().requestDisconnect(addr);
-			}
-		}
-
-		ui_camera();
-
-		ImGui::End();
-	}
-
-	void UISystem::ui_camera() {
-		if constexpr (!ENGINE_SERVER) { return; }
-		if (!ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) { return; }
-		for (const auto ply : world.getFilter<PlayerFlag>()) {
-			if (world.hasComponent<CameraTargetFlag>(ply)) {}
-			ImGui::PushID(ply.id);
-
-			ss.str("");
-			ss << ply;
-			if (ImGui::Button(ss.str().c_str())) {
-				for (const auto ply2 : world.getFilter<PlayerFlag>()) {
-					if (world.hasComponent<CameraTargetFlag>(ply2)) {
-						world.removeComponent<CameraTargetFlag>(ply2);
-					}
-				}
-				world.addComponent<CameraTargetFlag>(ply);
-			};
-
-			ImGui::PopID();
-		}
 	}
 }
