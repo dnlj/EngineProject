@@ -367,17 +367,6 @@ namespace Game {
 					uint32 lastSentBytes = 0;
 					uint32 lastRecvBytes = 0;
 
-					// TODO: rm
-					//uint64 displaySentTotal;
-					//uint64 displayRecvTotal;
-					//float32 displaySentAvg;
-					//float32 displayRecvAvg;
-					//float32 displayPing;
-					//float32 displayJitter;
-					//float32 displayLoss;
-					//int32 displayInputBufferSize;
-					//float32 displayIdealInputBufferSize;
-
 				public:
 					NetGraph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
 						setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 0});
@@ -489,8 +478,6 @@ namespace Game {
 						auto& stats = world.getComponent<NetworkStatsComponent>(ent);
 						auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 						
-						// TODO: need to move NetworkStatsComponent update logic here
-
 						float32 estbuff = 0;
 						if (world.hasComponent<ActionComponent>(ent)) {
 							estbuff = world.getComponent<ActionComponent>(ent).estBufferSize;
@@ -523,32 +510,8 @@ namespace Game {
 
 						if ((now - lastUpdate) >= std::chrono::milliseconds{100}) {
 							lastUpdate = now;
-
-							//
-							//
-							//
-							//
-							//
-							//
-							//
-							//
-							//
-							// TODO: network comp never gets added so this nevjklasd supdate
-							//
-							//
-							//
-							//
-							//
-							//
-							//
-							//
-							//
-							//
-
 							std::string buff;
 
-
-							// TODO: we dont need the display* vars anymore, just pass values direct
 							buff.clear(); fmt::format_to(std::back_inserter(buff), "Buffer: {}", stats.inputBufferSize);
 							buffer->autoText(buff);
 						
