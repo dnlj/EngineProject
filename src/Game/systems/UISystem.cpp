@@ -868,6 +868,15 @@ namespace Game {
 
 		if (update) {
 			lastUpdate = now;
+
+			fps = 0.0f;
+			int32 count = 0;
+			auto min = now - fpsAvgWindow;
+			for (auto& [fd, time] : frameData) {
+				if (time < min) { continue; } else { ++count; }
+				fps += fd.dt;
+			}
+			fps = count / fps;
 		}
 
 		frameData.emplace(FrameData{
@@ -891,7 +900,31 @@ namespace Game {
 
 	void UISystem::render(RenderLayer layer) {
 		if (layer == RenderLayer::UserInterface) {
+			thread_local static Engine::Clock::TimePoint last = {};
+			thread_local static Engine::StaticRingBuffer<Engine::Clock::Duration, 1000> _avg_dur = {};
+			const auto _time_start = Engine::Clock::now();
+
 			ctx->render();
+
+			const auto _time_end = Engine::Clock::now(); 
+			if (_time_end - last > std::chrono::milliseconds{50}) {
+				last = _time_end;
+
+				const auto dur = _time_end - _time_start;
+				if (_avg_dur.full()) { _avg_dur.pop(); }
+				_avg_dur.push(dur);
+
+				auto avg = std::reduce(_avg_dur.begin(), _avg_dur.end());
+				avg /= _avg_dur.size();
+
+				// Before, debug, connected (ip): ~6.00ms
+				// Before, release, connected (ip): ~1.42ms
+				ENGINE_LOG("GUI Time: ",
+					Engine::Clock::Milliseconds{dur}, " ",
+					Engine::Clock::Milliseconds{avg}, " ",
+					_avg_dur.size()
+				);
+			}
 		}
 	}
 
