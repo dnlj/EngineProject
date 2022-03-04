@@ -611,7 +611,7 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	if constexpr (ENGINE_CLIENT) {
+	{
 		using namespace Engine::Input;
 		using Layer = Game::InputLayer;
 		using Action = Game::Action;
@@ -620,10 +620,12 @@ void run(int argc, char* argv[]) {
 		auto& bm = engine.bindManager;
 		auto& is = world.getSystem<Game::InputSystem>();
 
-		constexpr auto updateActionState = [](auto& world, auto action, auto curr){
+		constexpr auto updateActionState = [](auto& world, auto action, auto curr) ENGINE_INLINE {
+			if constexpr (ENGINE_SERVER) { return; }
 			world.getSystem<Game::ActionSystem>().updateActionState(action, curr.i32);
 		};
-		constexpr auto updateTargetState = [](auto& world, auto curr){
+		constexpr auto updateTargetState = [](auto& world, auto curr) ENGINE_INLINE {
+			if constexpr (ENGINE_SERVER) { return; }
 			world.getSystem<Game::ActionSystem>().updateTarget(curr.f32v2);
 		};
 
