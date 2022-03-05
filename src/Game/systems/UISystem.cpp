@@ -674,7 +674,8 @@ namespace Game {
 					ENGINE_INLINE Checksum check(Id id) const { return id; }
 
 					void update() {
-						if (world.getTime() - last >= std::chrono::seconds{5}) {
+						auto& netSys = world.getSystem<Game::NetworkingSystem>();
+						if (netSys.playerCount() == 0 && world.getTime() - last >= std::chrono::seconds{5}) {
 							world.getSystem<Game::NetworkingSystem>().broadcastDiscover();
 							last = world.getTime();
 						}
