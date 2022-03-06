@@ -6,17 +6,14 @@ layout (triangle_strip, max_vertices=4) out;
 in vec2 geomSize[1];
 in vec2 geomTexSize[1];
 in vec3 geomTexOffset[1];
-in float geomParent[1];
 
 out vec2 fragTexCoord;
-out float fragParent;
 
 void main() {
 	vec4 geomPos = gl_in[0].gl_Position;
 	vec2 glyphSize = geomSize[0];
 	vec2 glyphTexSize = geomTexSize[0];
 	vec3 glyphTexOffset = geomTexOffset[0];
-	fragParent = geomParent[0];
 
 	glyphSize.y = -glyphSize.y;
 

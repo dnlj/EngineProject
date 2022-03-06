@@ -62,7 +62,6 @@ namespace Engine::Gui {
 			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 8);
 
 			struct GlyphDrawGroup {
-				int32 layer;
 				int32 offset;
 				int32 count;
 				FontGlyphSet* glyphSet;
@@ -70,22 +69,16 @@ namespace Engine::Gui {
 
 			struct GlyphVertex {
 				glm::vec2 pos;
-				uint32 index; // TODO: uint16?
-				PanelId parent;
-			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32) + sizeof(PanelId));
+				uint32 index;
+			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32));
 
 			struct StringData {
-				int32 layer;
-				PanelId parent;
 				glm::vec2 pos;
 				const ShapedString* str;
 			};
 
 			// TODO: rm - just make offset its own var
 			struct RenderState {
-				PanelId id = invalidPanelId; /* The id of the current panel */// TODO: rm 
-				PanelId pid = invalidPanelId; /* The parent id of the current panel */ // TODO: rm 
-				int32 layer; /* The layer being rendered */ // TODO: rm 
 				glm::vec2 offset; /* The offset to use for rendering */
 			
 			};
@@ -467,6 +460,6 @@ namespace Engine::Gui {
 			/**
 			 * Adds the glyphs needed to draw the string to the glyph vertex buffer.
 			 */
-			void renderString(const ShapedString& str, PanelId parent, glm::vec2 base, FontGlyphSet* font);
+			void renderString(const ShapedString& str, glm::vec2 base, FontGlyphSet* font);
 	};
 }

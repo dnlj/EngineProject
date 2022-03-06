@@ -2,14 +2,12 @@
 
 layout (location = 0) in vec2 vertPos;
 layout (location = 1) in uint vertIndex;
-layout (location = 2) in float vertParent;
 
 layout (location = 0) uniform vec2 viewSize;
 
 out vec2 geomSize;
 out vec2 geomTexSize;
 out vec3 geomTexOffset;
-out float geomParent;
 
 struct GlyphData {
 	vec2 size;
@@ -30,5 +28,4 @@ void main() {
 	geomSize = (glyphSize / viewSize) * 2;
 	geomTexSize = glyphSize / 4096; // TODO: dont hardcode?
 	geomTexOffset = glyphData[vertIndex].offset / 4096;
-	geomParent = vertParent;
 }

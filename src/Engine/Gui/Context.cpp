@@ -209,10 +209,6 @@ namespace Engine::Gui {
 			glEnableVertexArrayAttrib(glyphVAO, 1);
 			glVertexArrayAttribBinding(glyphVAO, 1, bindingIndex);
 			glVertexArrayAttribIFormat(glyphVAO, 1, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
-
-			glEnableVertexArrayAttrib(glyphVAO, 2);
-			glVertexArrayAttribBinding(glyphVAO, 2, bindingIndex);
-			glVertexArrayAttribFormat(glyphVAO, 2, 1, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, parent));
 		}
 
 		registerPanel(nullptr); // register before everything else so nullptr = id 0
@@ -401,30 +397,24 @@ namespace Engine::Gui {
 			}
 		}
 
-		flushDrawBuffer();
-
+		// TODO: this way of doing things isnt correct anymore. needs to be rendered between layers (in above dfs loop)
 		// Build glyph vertex buffer
 		if (!stringsToRender.empty()){
 			std::sort(stringsToRender.begin(), stringsToRender.end(), [](const StringData& a, const StringData& b){
-				return (a.layer < b.layer)
-					|| (a.layer == b.layer && a.str->getFont() < b.str->getFont());
+				return a.str->getFont() < b.str->getFont();
 			});
 
 			// Build glyph draw groups
-			int32 currLayer = stringsToRender.front().layer;
 			Font currFont = stringsToRender.front().str->getFont();
 			
 			GlyphDrawGroup* group = &glyphDrawGroups.emplace_back();
 			group->glyphSet = currFont;
-			group->layer = currLayer;
 
 			for (const auto& strdat : stringsToRender) {
-				if (strdat.layer != currLayer || currFont != strdat.str->getFont()) {
-					currLayer = strdat.layer;
+				if (currFont != strdat.str->getFont()) {
 					currFont = strdat.str->getFont();
 
 					GlyphDrawGroup next {
-						.layer = currLayer,
 						.offset = group->offset + group->count,
 						.count = 0,
 						.glyphSet = currFont,
@@ -432,13 +422,14 @@ namespace Engine::Gui {
 					group = &glyphDrawGroups.emplace_back(next);
 				}
 
-				renderString(*strdat.str, strdat.parent, strdat.pos, group->glyphSet);
+				renderString(*strdat.str, strdat.pos, group->glyphSet);
 				group->count += static_cast<int32>(strdat.str->getGlyphShapeData().size());
 			}
 
 			stringsToRender.clear();
 		}
 
+		// TODO: move into flush like polys
 		{ // Update glyph vertex buffer
 			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
 			if (newSize > glyphVBOCapacity) {
@@ -449,80 +440,7 @@ namespace Engine::Gui {
 			glyphVertexData.clear();
 		}
 
-		// We cant use glMultiDrawArrays because you can not read/write
-		// the same texture. It may be possible to work around this
-		// with glTextureBarrier but that isnt as widely supported.
-		/* TODO: rm 
-		auto currGlyphDrawGroup = glyphDrawGroups.data();
-		const auto lastGlyphDrawGroup = currGlyphDrawGroup + glyphDrawGroups.size();
-		GLuint activeStage = 0;
-
-		auto swapClipBuffers = [&]() ENGINE_INLINE {
-			activeClipTex = !activeClipTex;
-			const GLenum buffs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 + activeClipTex};
-			glNamedFramebufferDrawBuffers(fbo, 2, &buffs[0]);
-			glBindTextureUnit(0, activeClipTex ? clipTex1.get() : clipTex2.get());
-		};
-
-		// Setup buffers and uniforms
-		swapClipBuffers();
-		glProgramUniform2fv(polyShader->get(), 0, 1, &view.x);
-		glProgramUniform2fv(glyphShader->get(), 0, 1, &view.x);
-
-		for (int32 layer = 0; layer < polyDrawGroups.size(); ++layer) {
-			const auto first = polyDrawGroups[layer].offset;
-			const auto count = polyDrawGroups[layer].count;
-
-			/* TODO: rm
-			// Draw polys
-			{
-				if (activeStage != polyVAO) {
-					activeStage = polyVAO;
-					glBindVertexArray(polyVAO);
-					glUseProgram(polyShader->get());
-					glBindTextureUnit(1, guiBGTexture->tex.get());
-				}
-
-				glDrawArrays(GL_TRIANGLES, first, count);
-			}
-
-			swapClipBuffers();
-
-			// Draw glyphs
-			{
-				if (currGlyphDrawGroup == lastGlyphDrawGroup) { continue; }
-				if (currGlyphDrawGroup->layer != layer) { continue; }
-
-				// Disable drawing to clip buffer
-				glBlendFunci(1, GL_ZERO, GL_ONE);
-
-				if (activeStage != glyphVAO) {
-					activeStage = glyphVAO;
-					glBindVertexArray(glyphVAO);
-					glUseProgram(glyphShader->get());
-				}
-
-				FontGlyphSet* activeSet = nullptr;
-
-				while (true) {
-					if (currGlyphDrawGroup->glyphSet != activeSet) {
-						activeSet = currGlyphDrawGroup->glyphSet;
-						glBindTextureUnit(1, activeSet->getGlyphTexture().get());
-						glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, activeSet->getGlyphDataBuffer());
-					}
-
-					//ENGINE_LOG("Draw Glyphs: layer(", currGlyphDrawGroup->layer, "), offset(", currGlyphDrawGroup->offset, ") count(", currGlyphDrawGroup->count, ")");
-					glDrawArrays(GL_POINTS, currGlyphDrawGroup->offset, currGlyphDrawGroup->count);
-
-					++currGlyphDrawGroup;
-					if (currGlyphDrawGroup == lastGlyphDrawGroup) { break; }
-					if (currGlyphDrawGroup->layer != layer) { break; }
-				}
-
-				// Enable drawing to clip buffer
-				glBlendFunci(1, GL_ONE, GL_ZERO);
-			}
-		}*/
+		flushDrawBuffer();
 
 		// Draw to main framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -538,28 +456,52 @@ namespace Engine::Gui {
 	}
 
 	void Context::flushDrawBuffer() {
-		const auto count = polyVertexData.size();
-		if (!count) { return; }
-
-		{
-			const auto size = count * sizeof(polyVertexData[0]);
-			// Update polygon vertex buffer
-			if (size > polyVBOCapacity) {
-				polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(polyVertexData[0]));
-				glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+		// Draw polys
+		if (const auto count = polyVertexData.size(); count) {
+			{
+				const auto size = count * sizeof(polyVertexData[0]);
+				// Update polygon vertex buffer
+				if (size > polyVBOCapacity) {
+					polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(polyVertexData[0]));
+					glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+				}
+				glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
+				polyVertexData.clear();
 			}
-			glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
-			polyVertexData.clear();
+
+			// VAO + Shader
+			// TODO: eventually we shouldnt need to do this every flush
+			glBindVertexArray(polyVAO);
+			glUseProgram(polyShader->get());
+			glBindTextureUnit(1, guiBGTexture->tex.get());
+
+			// Draw
+			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(count));
 		}
 
-		// VAO + Shader
-		// TODO: eventually we shouldnt need to do this every flush
-		glBindVertexArray(polyVAO);
-		glUseProgram(polyShader->get());
-		glBindTextureUnit(1, guiBGTexture->tex.get());
+		// Draw glyphs
+		auto currGlyphDrawGroup = glyphDrawGroups.data();
+		const auto lastGlyphDrawGroup = currGlyphDrawGroup + glyphDrawGroups.size();
+		if (currGlyphDrawGroup != lastGlyphDrawGroup) {
+			glBindVertexArray(glyphVAO);
+			glUseProgram(glyphShader->get());
 
-		// Draw
-		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(count));
+			FontGlyphSet* activeSet = nullptr;
+
+			while (true) {
+				if (currGlyphDrawGroup->glyphSet != activeSet) {
+					activeSet = currGlyphDrawGroup->glyphSet;
+					glBindTextureUnit(1, activeSet->getGlyphTexture().get());
+					glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, activeSet->getGlyphDataBuffer());
+				}
+
+				//ENGINE_LOG("Draw Glyphs: layer(", currGlyphDrawGroup->layer, "), offset(", currGlyphDrawGroup->offset, ") count(", currGlyphDrawGroup->count, ")");
+				glDrawArrays(GL_POINTS, currGlyphDrawGroup->offset, currGlyphDrawGroup->count);
+
+				++currGlyphDrawGroup;
+				if (currGlyphDrawGroup == lastGlyphDrawGroup) { break; }
+			}
+		}
 	}
 
 	void Context::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {
@@ -600,7 +542,7 @@ namespace Engine::Gui {
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
 		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");
-		stringsToRender.emplace_back(renderState.layer, renderState.id, pos + renderState.offset, fstr);
+		stringsToRender.emplace_back(pos + renderState.offset, fstr);
 	}
 
 	void Context::unsetActive() {
@@ -666,7 +608,7 @@ namespace Engine::Gui {
 		focus = focusStack.empty() ? nullptr : focusStack.front();
 	}
 
-	void Context::renderString(const ShapedString& str, PanelId parent, glm::vec2 base, FontGlyphSet* font) {
+	void Context::renderString(const ShapedString& str, glm::vec2 base, FontGlyphSet* font) {
 		const auto glyphShapeData = str.getGlyphShapeData();
 
 		for (const auto& data : glyphShapeData) {
@@ -674,7 +616,6 @@ namespace Engine::Gui {
 			glyphVertexData.push_back({
 				.pos = glm::round(base + data.offset),
 				.index = index,
-				.parent = parent,
 			});
 			base += data.advance;
 		}
@@ -926,6 +867,7 @@ namespace Engine::Gui {
 		ENGINE_LOG("onResize: ", w, " ", h);
 		view = {w, h};
 		glProgramUniform2fv(polyShader->get(), 0, 1, &view.x);
+		glProgramUniform2fv(glyphShader->get(), 0, 1, &view.x);
 		colorTex.setStorage(TextureFormat::RGBA8, view);
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
 		root->setSize({w,h});
