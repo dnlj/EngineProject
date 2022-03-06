@@ -17,6 +17,13 @@ namespace Engine::Gui {
 					&& point.y <= max.y;
 			}
 
+			ENGINE_INLINE Bounds intersect(const Bounds other) const noexcept {
+				return {
+					glm::max(min, other.min),
+					glm::min(max, other.max),
+				};
+			}
+
 			ENGINE_INLINE glm::vec2 getSize() const noexcept {
 				return max - min;
 			}

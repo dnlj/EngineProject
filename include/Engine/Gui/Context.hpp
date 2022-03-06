@@ -43,6 +43,7 @@ namespace Engine::Gui {
 			using PanelUpdateFunc = std::function<void(Panel*)>;
 
 		private:
+			// TODO: rm? do we use this anymore? or do we need to use it.
 			// There is no point in using integers here because
 			// of GLSL integer requirement range limitations. In short
 			// GLSL integers may be implemented as floats with a limited range.
@@ -58,9 +59,7 @@ namespace Engine::Gui {
 				glm::vec4 color;
 				glm::vec2 texCoord;
 				glm::vec2 pos;
-				PanelId id;
-				PanelId pid;
-			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 8 + sizeof(PanelId) * 2);
+			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 8);
 
 			struct GlyphDrawGroup {
 				int32 layer;
@@ -82,17 +81,13 @@ namespace Engine::Gui {
 				const ShapedString* str;
 			};
 
+			// TODO: rm - just make offset its own var
 			struct RenderState {
-				const Panel* current = nullptr; /* The current panel being rendered */
-				PanelId id = invalidPanelId; /* The id of the current panel */
-				PanelId pid = invalidPanelId; /* The parent id of the current panel */
-				int32 layer; /* The layer being rendered */
+				PanelId id = invalidPanelId; /* The id of the current panel */// TODO: rm 
+				PanelId pid = invalidPanelId; /* The parent id of the current panel */ // TODO: rm 
+				int32 layer; /* The layer being rendered */ // TODO: rm 
 				glm::vec2 offset; /* The offset to use for rendering */
-
-			};
-
-			struct BFSStateData {
-				Panel* panel;
+			
 			};
 
 			struct CursorEntry {
@@ -114,18 +109,15 @@ namespace Engine::Gui {
 			/* Main framebuffer and clipping */
 			GLuint fbo = 0;
 			Texture2D colorTex;
-			Texture2D clipTex1;
-			Texture2D clipTex2;
-			GLenum activeClipTex = 1;
 			GLuint quadVAO;
 			GLuint quadVBO;
 			ShaderRef quadShader;
+			std::vector<Bounds> clipStack;
 
 			/* Polygon members */
 			GLuint polyVAO = 0;
 			GLuint polyVBO = 0;
 			GLsizei polyVBOCapacity = 0;
-			std::vector<PolyDrawGroup> polyDrawGroups;
 			std::vector<PolyVertex> polyVertexData;
 			ShaderRef polyShader;
 
@@ -144,9 +136,7 @@ namespace Engine::Gui {
 			std::vector<StringData> stringsToRender;
 
 			/* Scene graph traversal */
-			RenderState renderState;
-			std::vector<BFSStateData> bfsCurr;
-			std::vector<BFSStateData> bfsNext;
+			RenderState renderState; // TODO: rm - just make offset its own var
 			TextureRef guiBGTexture; // TODO: rm
 
 			/* Panel state */
@@ -228,7 +218,7 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void setNativeWindowHandle(const NativeHandle handle) noexcept {
 				nativeHandle = handle;
-				configUserSettings(); // TODO: rm
+				configUserSettings();
 			}
 
 			ENGINE_INLINE bool isBlinking() const noexcept {
@@ -239,13 +229,25 @@ namespace Engine::Gui {
 				lastBlink = Clock::now();
 			}
 
+			void flushDrawBuffer();
+
+			void pushClip(Bounds bounds) {
+				// TODO: should we have a function that returns an object to auto pop?
+				// TODO: clip stack at i=0 should always have root clip region
+
+				// draw prev if stuff to draw
+				clipStack.push_back(bounds.intersect(clipStack.back()));
+			}
+			
+			void popClip() {
+				// TODO: flush draw
+			}
+
 			ENGINE_INLINE void drawVertex(const glm::vec2 pos, glm::vec4 color) {
 				polyVertexData.push_back({
 					.color = color,
 					.texCoord = {},
 					.pos = pos + renderState.offset,
-					.id = renderState.id,
-					.pid = renderState.pid
 				});
 			}
 

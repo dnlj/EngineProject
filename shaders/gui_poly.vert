@@ -4,16 +4,12 @@
 layout (location = 0) in vec4 vertColor;
 layout (location = 1) in vec2 vertTexCoord;
 layout (location = 2) in vec2 vertPos;
-layout (location = 3) in float vertId;
-layout (location = 4) in float vertParent;
 
-layout (location = 0) uniform vec2 viewSize;
+layout (location = 0) uniform vec2 viewSize; // TODO: rm - no longer needed
 
 out vec4 fragColor;
 out vec2 fragTexCoord;
-out vec2 fragClipTexCoord;
-out float fragId;
-out float fragParent;
+out vec2 fragClipTexCoord; // TODO: rm - no longer needed
 
 void main() {
 	// Convert from pixels to NDC
@@ -23,6 +19,4 @@ void main() {
 
 	fragColor = vertColor;
 	fragTexCoord = vertTexCoord;
-	fragId = vertId;
-	fragParent = vertParent;
 }

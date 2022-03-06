@@ -192,14 +192,6 @@ namespace Engine::Gui {
 			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
 			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
 			glVertexArrayAttribFormat(polyVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pos));
-
-			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
-			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, id));
-
-			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
-			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pid));
 		}
 
 		{
@@ -374,53 +366,42 @@ namespace Engine::Gui {
 		}
 		hoverActionQueue.clear();
 
-		Panel* curr = root;
-		renderState.layer = 0;
-		polyDrawGroups.emplace_back().offset = 0;
+		// Update font buffers
+		fontManager.updateAllFontDataBuffers();
 
-		// TODO: probably move to own function
-		// Breadth first traversal
-		while (true) {
-			// Traverse siblings
-			while (curr) {
-				if (auto fc = curr->getFirstChild(); fc) {
-					bfsNext.emplace_back(fc);
+		glEnable(GL_BLEND);
+		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+		glClearTexImage(colorTex.get(), 0, GL_RGB, GL_FLOAT, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+		// DFS traversal
+		std::vector<Panel*> rm_panels;
+		for (Panel* curr = root; curr;) {
+			renderState.offset = curr->getPos();
+			curr->render();
+
+			if (auto c = std::ranges::count(rm_panels, curr) > 0) {
+				ENGINE_LOG("DUPLICATE PANEL: ", c);
+			}
+			rm_panels.push_back(curr);
+
+			if (auto* child = curr->getFirstChild()) {
+				curr = child;
+			} else if (auto* sib = curr->getNextSibling()) {
+				curr = sib;
+			} else {
+				while (curr = curr->getParent()) {
+					if (sib = curr->getNextSibling()) {
+						curr = sib;
+						break;
+					}
 				}
-
-				#ifdef DEBUG_GUI
-				if (false) {}
-				else if (curr == getActive()) { renderState.color = {1, 0, 1, 0.2}; }
-				else if (curr == getFocus()) { renderState.color = {0, 1, 1, 0.2}; }
-				else if (curr == getHover()) { renderState.color = {1, 1, 0, 0.2}; }
-				else { renderState.color = {}; }
-				#endif
-
-				renderState.current = curr;
-				renderState.id = getPanelId(renderState.current);
-				renderState.pid = getPanelId(renderState.current->getParent());
-
-				renderState.offset = curr->getPos();
-				curr->render();
-				curr = curr->getNextSibling();
+				if (!curr) { break; }
 			}
-
-			// Move to next layer if needed
-			if (bfsCurr.empty()) {
-				const auto vsz = static_cast<GLint>(polyVertexData.size());
-				polyDrawGroups.back().count = vsz - polyDrawGroups.back().offset;
-
-				bfsCurr.swap(bfsNext);
-				if (bfsCurr.empty()) { break; }
-
-				polyDrawGroups.emplace_back().offset = vsz;
-				++renderState.layer;
-			}
-
-			// Next of current layer
-			const auto& back = bfsCurr.back();
-			curr = back.panel;
-			bfsCurr.pop_back();
 		}
+
+		flushDrawBuffer();
 
 		// Build glyph vertex buffer
 		if (!stringsToRender.empty()){
@@ -442,8 +423,6 @@ namespace Engine::Gui {
 					currLayer = strdat.layer;
 					currFont = strdat.str->getFont();
 
-					ENGINE_DEBUG_ASSERT(currFont != (void*)0xCDCDCDCDCDCDCDCD); // TODO: rm
-
 					GlyphDrawGroup next {
 						.layer = currLayer,
 						.offset = group->offset + group->count,
@@ -460,21 +439,9 @@ namespace Engine::Gui {
 			stringsToRender.clear();
 		}
 
-		{ // Update polygon vertex buffer
-			// TODO: idealy we would only update if the data has actually changed
-			const auto size = polyVertexData.size() * sizeof(polyVertexData[0]);
-			if (size > polyVBOCapacity) {
-				polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(PolyVertex));
-				glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-			}
-			glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
-			polyVertexData.clear();
-		}
-		
 		{ // Update glyph vertex buffer
 			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
 			if (newSize > glyphVBOCapacity) {
-				//ENGINE_INFO("glyphVBO(", glyphVBO, ") resize: ", newSize);
 				glyphVBOCapacity = newSize;
 				glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 			}
@@ -482,25 +449,10 @@ namespace Engine::Gui {
 			glyphVertexData.clear();
 		}
 
-		// Update font buffers
-		fontManager.updateAllFontDataBuffers();
-
-		glEnable(GL_BLEND);
-		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		glBlendFunci(1, GL_ONE, GL_ZERO);
-
-		glClearTexImage(colorTex.get(), 0, GL_RGB, GL_FLOAT, 0);
-		glClearTexImage(clipTex1.get(), 0, GL_RGB, GL_FLOAT, 0);
-		glClearTexImage(clipTex2.get(), 0, GL_RGB, GL_FLOAT, 0);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-		// TODO: create constexpr constants for managing texture units, currently 0 is clip and 1 is glyphs
-
 		// We cant use glMultiDrawArrays because you can not read/write
 		// the same texture. It may be possible to work around this
 		// with glTextureBarrier but that isnt as widely supported.
-
+		/* TODO: rm 
 		auto currGlyphDrawGroup = glyphDrawGroups.data();
 		const auto lastGlyphDrawGroup = currGlyphDrawGroup + glyphDrawGroups.size();
 		GLuint activeStage = 0;
@@ -521,6 +473,7 @@ namespace Engine::Gui {
 			const auto first = polyDrawGroups[layer].offset;
 			const auto count = polyDrawGroups[layer].count;
 
+			/* TODO: rm
 			// Draw polys
 			{
 				if (activeStage != polyVAO) {
@@ -569,7 +522,7 @@ namespace Engine::Gui {
 				// Enable drawing to clip buffer
 				glBlendFunci(1, GL_ONE, GL_ZERO);
 			}
-		}
+		}*/
 
 		// Draw to main framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -581,8 +534,32 @@ namespace Engine::Gui {
 
 		// Reset buffers
 		glDisable(GL_BLEND);
-		polyDrawGroups.clear();
 		glyphDrawGroups.clear();
+	}
+
+	void Context::flushDrawBuffer() {
+		const auto count = polyVertexData.size();
+		if (!count) { return; }
+
+		{
+			const auto size = count * sizeof(polyVertexData[0]);
+			// Update polygon vertex buffer
+			if (size > polyVBOCapacity) {
+				polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(polyVertexData[0]));
+				glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+			}
+			glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
+			polyVertexData.clear();
+		}
+
+		// VAO + Shader
+		// TODO: eventually we shouldnt need to do this every flush
+		glBindVertexArray(polyVAO);
+		glUseProgram(polyShader->get());
+		glBindTextureUnit(1, guiBGTexture->tex.get());
+
+		// Draw
+		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(count));
 	}
 
 	void Context::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {
@@ -948,15 +925,9 @@ namespace Engine::Gui {
 		if (w == view.x && h == view.y) { return; }
 		ENGINE_LOG("onResize: ", w, " ", h);
 		view = {w, h};
-
-		// TODO: can we use a u16 for clip textures?
+		glProgramUniform2fv(polyShader->get(), 0, 1, &view.x);
 		colorTex.setStorage(TextureFormat::RGBA8, view);
-		clipTex1.setStorage(TextureFormat::R32F, view);
-		clipTex2.setStorage(TextureFormat::R32F, view);
-
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
-		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT1, clipTex1.get(), 0);
-		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT2, clipTex2.get(), 0);
 		root->setSize({w,h});
 	}
 
