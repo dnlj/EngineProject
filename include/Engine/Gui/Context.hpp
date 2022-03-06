@@ -56,10 +56,11 @@ namespace Engine::Gui {
 
 			struct PolyVertex {
 				glm::vec4 color;
+				glm::vec2 texCoord;
 				glm::vec2 pos;
 				PanelId id;
 				PanelId pid;
-			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 6 + sizeof(PanelId) * 2);
+			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 8 + sizeof(PanelId) * 2);
 
 			struct GlyphDrawGroup {
 				int32 layer;
@@ -81,16 +82,13 @@ namespace Engine::Gui {
 				const ShapedString* str;
 			};
 
-			//#define DEBUG_GUI
 			struct RenderState {
-				#ifdef DEBUG_GUI
-				glm::vec4 color = {};
-				#endif
 				const Panel* current = nullptr; /* The current panel being rendered */
 				PanelId id = invalidPanelId; /* The id of the current panel */
 				PanelId pid = invalidPanelId; /* The parent id of the current panel */
 				int32 layer; /* The layer being rendered */
 				glm::vec2 offset; /* The offset to use for rendering */
+
 			};
 
 			struct BFSStateData {
@@ -149,6 +147,7 @@ namespace Engine::Gui {
 			RenderState renderState;
 			std::vector<BFSStateData> bfsCurr;
 			std::vector<BFSStateData> bfsNext;
+			TextureRef guiBGTexture; // TODO: rm
 
 			/* Panel state */
 			// If you add any more context panel state make sure to update `deletePanel` to remove any references on delete
@@ -206,7 +205,7 @@ namespace Engine::Gui {
 			float32 scrollLines = 3; // 3 = default on Windows
 
 		public:
-			Context(ShaderManager& shaderManager, Camera& camera);
+			Context(ShaderManager& shaderManager, TextureManager& textureManager, Camera& camera);
 			Context(Context&) = delete;
 			~Context();
 
@@ -241,7 +240,13 @@ namespace Engine::Gui {
 			}
 
 			ENGINE_INLINE void drawVertex(const glm::vec2 pos, glm::vec4 color) {
-				polyVertexData.push_back({.color = color, .pos = pos + renderState.offset, .id = renderState.id, .pid = renderState.pid});
+				polyVertexData.push_back({
+					.color = color,
+					.texCoord = {},
+					.pos = pos + renderState.offset,
+					.id = renderState.id,
+					.pid = renderState.pid
+				});
 			}
 
 			ENGINE_INLINE void drawTri(const glm::vec2 a, const glm::vec2 b, const glm::vec2 c, glm::vec4 color) {

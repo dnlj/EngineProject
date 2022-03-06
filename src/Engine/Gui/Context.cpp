@@ -144,7 +144,7 @@ namespace {
 
 
 namespace Engine::Gui {
-	Context::Context(ShaderManager& shaderManager, Camera& camera) {
+	Context::Context(ShaderManager& shaderManager, TextureManager& textureManager, Camera& camera) {
 		quadShader = shaderManager.get("shaders/fullscreen_passthrough");
 		polyShader = shaderManager.get("shaders/gui_poly");
 		glyphShader = shaderManager.get("shaders/gui_glyph");
@@ -153,6 +153,7 @@ namespace Engine::Gui {
 		configUserSettings();
 
 		glProgramUniform1i(glyphShader->get(), 2, 1);
+		glProgramUniform1i(polyShader->get(), 2, 1);
 
 		glCreateFramebuffers(1, &fbo);
 
@@ -174,28 +175,31 @@ namespace Engine::Gui {
 
 		{
 			constexpr static GLuint bindingIndex = 0;
+			GLuint attribLocation = -1;
 
 			glCreateVertexArrays(1, &polyVAO);
 			glCreateBuffers(1, &polyVBO);
 			glVertexArrayVertexBuffer(polyVAO, bindingIndex, polyVBO, 0, sizeof(PolyVertex));
 
-			glEnableVertexArrayAttrib(polyVAO, 0);
-			glVertexArrayAttribBinding(polyVAO, 0, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, 0, 4, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, color));
+			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
+			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 4, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, color));
 
-			glEnableVertexArrayAttrib(polyVAO, 1);
-			glVertexArrayAttribBinding(polyVAO, 1, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, 1, 2, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pos));
+			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
+			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, texCoord));
 
-			glEnableVertexArrayAttrib(polyVAO, 2);
-			glVertexArrayAttribBinding(polyVAO, 2, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, 2, 1, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, id));
-			//glVertexArrayAttribIFormat(polyVAO, 2, 1, GL_UNSIGNED_INT, offsetof(PolyVertex, id));
-		
-			glEnableVertexArrayAttrib(polyVAO, 3);
-			glVertexArrayAttribBinding(polyVAO, 3, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, 3, 1, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pid));
-			//glVertexArrayAttribIFormat(polyVAO, 3, 1, GL_UNSIGNED_INT, offsetof(PolyVertex, pid));
+			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
+			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pos));
+
+			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
+			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, id));
+
+			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
+			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pid));
 		}
 
 		{
@@ -259,6 +263,9 @@ namespace Engine::Gui {
 
 			.button = hsl({202, s, l, 1}),
 		};
+
+		textureManager.add("assets/gui_test2.bmp");
+		guiBGTexture = textureManager.get("assets/gui_test2.bmp");
 	}
 
 	Context::~Context() {
@@ -520,6 +527,7 @@ namespace Engine::Gui {
 					activeStage = polyVAO;
 					glBindVertexArray(polyVAO);
 					glUseProgram(polyShader->get());
+					glBindTextureUnit(1, guiBGTexture->tex.get());
 				}
 
 				glDrawArrays(GL_TRIANGLES, first, count);

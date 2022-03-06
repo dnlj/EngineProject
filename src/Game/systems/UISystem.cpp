@@ -761,6 +761,7 @@ namespace Game {
 		: System{arg}
 		, ctx{new Engine::Gui::Context{
 			std::get<EngineInstance&>(arg).shaderManager,
+			std::get<EngineInstance&>(arg).textureManager,
 			std::get<EngineInstance&>(arg).camera,
 		}} {
 		ctx->setUserdata(this);
@@ -901,14 +902,16 @@ namespace Game {
 
 	void UISystem::render(RenderLayer layer) {
 		if (layer == RenderLayer::UserInterface) {
-			thread_local static Engine::Clock::TimePoint last = {};
-			thread_local static Engine::StaticRingBuffer<Engine::Clock::Duration, 1000> _avg_dur = {};
+			ctx->render();
+
+			/*thread_local static Engine::Clock::TimePoint last = {};
+			thread_local static Engine::StaticRingBuffer<Engine::Clock::Duration, 500> _avg_dur = {};
 			const auto _time_start = Engine::Clock::now();
 
 			ctx->render();
 
 			const auto _time_end = Engine::Clock::now(); 
-			if (_time_end - last > std::chrono::milliseconds{50}) {
+			if (_time_end - last > std::chrono::milliseconds{10}) {
 				last = _time_end;
 
 				const auto dur = _time_end - _time_start;
@@ -925,7 +928,7 @@ namespace Game {
 					Engine::Clock::Milliseconds{avg}, " ",
 					_avg_dur.size()
 				);
-			}
+			}*/
 		}
 	}
 

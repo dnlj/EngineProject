@@ -39,7 +39,7 @@ namespace Engine {
 				fmt = PixelFormat::RGBA8;
 
 				if (!image) {
-					ENGINE_WARN("[SOIL] ", SOIL_last_result());
+					ENGINE_WARN("[SOIL] ", SOIL_last_result(), " - \"", path, "\"");
 					fmt = PixelFormat::RGB8;
 					dims.x = 2;
 					dims.y = 2;
@@ -51,7 +51,6 @@ namespace Engine {
 					storage.assign(image, image + dims.x * dims.y * channels);
 					SOIL_free_image_data(image);
 				}
-
 				ENGINE_LOG("Img: ", path, " ", dims.x, " ", dims.y);
 			}
 
