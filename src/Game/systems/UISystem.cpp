@@ -830,25 +830,6 @@ namespace Game {
 		}
 		#endif
 
-
-		/*{
-			ctx->createPanel<Gui::Button>(content)->autoText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
-
-			auto btn = ctx->createPanel<Gui::Button>(content);
-			btn->setText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
-			btn->setHeight(32);
-
-			btn = ctx->createPanel<Gui::Button>(content);
-			btn->setText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
-			btn->setHeight(27);
-
-			for (int i = 0; i < 32; ++i) {
-				btn = ctx->createPanel<Gui::Button>(content);
-				btn->setText("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
-				btn->setHeight(27);
-			}
-		}*/
-
 		//panels.infoPane->toggle();
 		panels.coordPane->toggle();
 		panels.netHealthPane->toggle();
@@ -864,30 +845,20 @@ namespace Game {
 	}
 
 	void UISystem::run(float32 dt) {
-		now = Engine::Clock::now();
-		rollingWindow = now - rollingWindowSize;
-		update = now - lastUpdate >= updateRate;
+		const auto now = world.getTime();
+		const auto update = now - lastUpdate >= std::chrono::milliseconds{100};
+		fpsBuffer.emplace(dt, now);
+
+		// Cull old data
+		while(!fpsBuffer.empty() && fpsBuffer.front().second < (now - std::chrono::milliseconds{1000})) {
+			fpsBuffer.pop();
+		}
 
 		if (update) {
 			lastUpdate = now;
-
-			fps = 0.0f;
-			int32 count = 0;
-			auto min = now - fpsAvgWindow;
-			for (auto& [fd, time] : frameData) {
-				if (time < min) { continue; } else { ++count; }
-				fps += fd.dt;
-			}
-			fps = count / fps;
-		}
-
-		frameData.emplace(FrameData{
-			.dt = dt,
-		}, now);
-
-		// Cull old data
-		while(!frameData.empty() && frameData.front().second < rollingWindow) {
-			frameData.pop();
+			fps = 0;
+			for (auto& [delta, time] : fpsBuffer) { fps += delta; }
+			fps = fpsBuffer.size() / fps;
 		}
 
 		if (panels.infoPane->getContent()->isEnabled()) {
@@ -903,32 +874,6 @@ namespace Game {
 	void UISystem::render(RenderLayer layer) {
 		if (layer == RenderLayer::UserInterface) {
 			ctx->render();
-
-			/*thread_local static Engine::Clock::TimePoint last = {};
-			thread_local static Engine::StaticRingBuffer<Engine::Clock::Duration, 500> _avg_dur = {};
-			const auto _time_start = Engine::Clock::now();
-
-			ctx->render();
-
-			const auto _time_end = Engine::Clock::now(); 
-			if (_time_end - last > std::chrono::milliseconds{10}) {
-				last = _time_end;
-
-				const auto dur = _time_end - _time_start;
-				if (_avg_dur.full()) { _avg_dur.pop(); }
-				_avg_dur.push(dur);
-
-				auto avg = std::reduce(_avg_dur.begin(), _avg_dur.end());
-				avg /= _avg_dur.size();
-
-				// Before, debug, connected (ip): ~6.00ms
-				// Before, release, connected (ip): ~1.42ms
-				ENGINE_LOG("GUI Time: ",
-					Engine::Clock::Milliseconds{dur}, " ",
-					Engine::Clock::Milliseconds{avg}, " ",
-					_avg_dur.size()
-				);
-			}*/
 		}
 	}
 

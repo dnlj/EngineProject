@@ -29,30 +29,14 @@ namespace Game {
 			void render(RenderLayer layer);
 
 			ENGINE_INLINE auto& getContext() noexcept { return *ctx; }
-
 			ENGINE_INLINE auto& getWorld() const noexcept { return world; }
 			ENGINE_INLINE auto& getEngine() const noexcept { return engine; }
 
 		private:
-			std::stringstream ss;
 			Engine::Gui::Context* ctx;
-
-			Engine::Clock::TimePoint now;
 			Engine::Clock::TimePoint lastUpdate;
-			Engine::Clock::Duration updateRate = std::chrono::milliseconds{100};
-			bool update = false;
-
-			Engine::Clock::TimePoint rollingWindow;
-			Engine::Clock::Duration rollingWindowSize = std::chrono::milliseconds{10'000};
-
-			// TODO: rm RollingData for consistency with above
-			struct FrameData {
-				float32 dt = 0.0f;
-			};
-			Engine::RingBuffer<std::pair<FrameData, Engine::Clock::TimePoint>> frameData;
-
-			Engine::Clock::Duration fpsAvgWindow = std::chrono::milliseconds{500};
-			float32 fps = 0.0f;
+			Engine::RingBuffer<std::pair<float32, Engine::Clock::TimePoint>> fpsBuffer;
+			float32 fps = 0;
 
 			struct {
 				Engine::Gui::Window* window;
@@ -63,7 +47,6 @@ namespace Game {
 				class NetHealthPane* netHealthPane;
 				class NetGraphPane* netGraphPane;
 				class EntityPane* entityPane;
-				//Engine::Gui::RichGraph* graphTest;
 
 				#if ENGINE_CLIENT
 				class ConnectWindow* connectWindow;
