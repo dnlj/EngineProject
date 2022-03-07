@@ -254,6 +254,8 @@ namespace Engine::Gui {
 
 		textureManager.add("assets/gui_test2.bmp");
 		guiBGTexture = textureManager.get("assets/gui_test2.bmp");
+
+		resetDraw();
 	}
 
 	Context::~Context() {
@@ -366,6 +368,7 @@ namespace Engine::Gui {
 		fontManager.updateAllFontDataBuffers();
 
 		glEnable(GL_BLEND);
+		glEnable(GL_SCISSOR_TEST);
 		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 		glClearTexImage(colorTex.get(), 0, GL_RGB, GL_FLOAT, 0);
@@ -440,6 +443,11 @@ namespace Engine::Gui {
 			glyphVertexData.clear();
 		}
 
+		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
+		nextDrawGroup(); // Needed to populate count of last group
+		if (polyDrawGroups.back().count == 0) {
+			polyDrawGroups.pop_back();
+		}
 		flushDrawBuffer();
 
 		// Draw to main framebuffer
@@ -451,15 +459,15 @@ namespace Engine::Gui {
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// Reset buffers
+		glDisable(GL_SCISSOR_TEST);
 		glDisable(GL_BLEND);
 		glyphDrawGroups.clear();
 	}
 
 	void Context::flushDrawBuffer() {
-		// Draw polys
-		if (const auto count = polyVertexData.size(); count) {
+		{ // Draw polys
 			{
-				const auto size = count * sizeof(polyVertexData[0]);
+				const auto size = polyVertexData.size() * sizeof(polyVertexData[0]);
 				// Update polygon vertex buffer
 				if (size > polyVBOCapacity) {
 					polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(polyVertexData[0]));
@@ -476,7 +484,18 @@ namespace Engine::Gui {
 			glBindTextureUnit(1, guiBGTexture->tex.get());
 
 			// Draw
-			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(count));
+			for (auto& group : polyDrawGroups) {
+				ENGINE_DEBUG_ASSERT(group.count != 0, "Empty draw group. This group should have been skipped/removed already.");
+				glScissor(
+					static_cast<int32>(group.clip.min.x),
+					static_cast<int32>(view.y - group.clip.max.y),
+					static_cast<int32>(group.clip.getWidth()),
+					static_cast<int32>(group.clip.getHeight())
+				);
+				glDrawArrays(GL_TRIANGLES, group.offset, group.count);
+			}
+
+			resetDraw();
 		}
 
 		// Draw glyphs
@@ -502,6 +521,46 @@ namespace Engine::Gui {
 				if (currGlyphDrawGroup == lastGlyphDrawGroup) { break; }
 			}
 		}
+	}
+
+	void Context::resetDraw() {
+		clipStack.clear();
+		clipStack.push_back({{0,0}, view});
+
+		polyDrawGroups.clear();
+		polyDrawGroups.push_back({
+			.offset = 0,
+			.count = 0,
+			.clip = clipStack.back(),
+		});
+	}
+
+	void Context::nextDrawGroup() {
+		const auto sz = static_cast<int32>(polyVertexData.size());
+		auto& prev = polyDrawGroups.back();
+		prev.count = sz - prev.offset;
+
+		// Different clipping regions and the previous group wasnt empty
+		if (prev.clip != clipStack.back() && prev.count > 0) {
+			polyDrawGroups.push_back({
+				.offset = sz,
+			});
+		}
+
+		polyDrawGroups.back().clip = clipStack.back();
+	}
+
+	void Context::pushClip(Bounds bounds) {
+		const auto last = clipStack.back();
+		bounds = bounds.intersect(last);
+		clipStack.push_back(bounds);
+		nextDrawGroup();
+	}
+			
+	void Context::popClip() {
+		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
+		clipStack.pop_back();
+		nextDrawGroup();
 	}
 
 	void Context::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {

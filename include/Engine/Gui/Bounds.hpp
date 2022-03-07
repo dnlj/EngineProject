@@ -40,6 +40,10 @@ namespace Engine::Gui {
 				return glm::ceil(max) - glm::floor(min);
 			}
 
+			ENGINE_INLINE friend bool operator==(const Bounds& a, const Bounds& b) noexcept {
+				return a.min == b.min && a.max == b.max;
+			}
+
 			ENGINE_INLINE friend Bounds operator+(const Bounds& a, const glm::vec2 b) noexcept {
 				auto res = a;
 				res.min += b;

@@ -205,10 +205,11 @@ namespace Engine::Gui {
 	void GraphArea::GraphAreaImpl::render() {
 		const auto& theme = ctx->getTheme();
 		ctx->drawRect({0,0}, getSize(), theme.colors.background2);
-
+		ctx->pushClip({getPos(), getPos() + getSize()});
 		for (const auto& graph : graphs) {
 			if (graph->enabled) { graph->draw(this); }
 		}
+		ctx->popClip();
 	}
 }
 

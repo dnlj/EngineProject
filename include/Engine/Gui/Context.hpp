@@ -53,6 +53,7 @@ namespace Engine::Gui {
 			struct PolyDrawGroup {
 				int32 offset;
 				int32 count;
+				Bounds clip;
 			};
 
 			struct PolyVertex {
@@ -106,6 +107,7 @@ namespace Engine::Gui {
 			GLuint quadVBO;
 			ShaderRef quadShader;
 			std::vector<Bounds> clipStack;
+			std::vector<PolyDrawGroup> polyDrawGroups;
 
 			/* Polygon members */
 			GLuint polyVAO = 0;
@@ -223,18 +225,10 @@ namespace Engine::Gui {
 			}
 
 			void flushDrawBuffer();
-
-			void pushClip(Bounds bounds) {
-				// TODO: should we have a function that returns an object to auto pop?
-				// TODO: clip stack at i=0 should always have root clip region
-
-				// draw prev if stuff to draw
-				clipStack.push_back(bounds.intersect(clipStack.back()));
-			}
-			
-			void popClip() {
-				// TODO: flush draw
-			}
+			void resetDraw();
+			void nextDrawGroup();
+			void pushClip(Bounds bounds);
+			void popClip();
 
 			ENGINE_INLINE void drawVertex(const glm::vec2 pos, glm::vec4 color) {
 				polyVertexData.push_back({
