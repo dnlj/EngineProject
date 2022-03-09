@@ -169,7 +169,7 @@ namespace Game {
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			Engine::ShaderRef shader;
-			Engine::TextureArray2D texArr;
+			Engine::Texture2DArray texArr;
 
 			struct TestData { // TODO: rename
 				b2Body* body;

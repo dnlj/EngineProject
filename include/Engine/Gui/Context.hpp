@@ -47,7 +47,7 @@ namespace Engine::Gui {
 				int32 offset;
 				int32 count;
 				Bounds clip;
-				GLuint tex;
+				TextureHandle2D tex;
 			};
 
 			struct PolyVertex {
@@ -117,7 +117,7 @@ namespace Engine::Gui {
 
 			/* Render state */
 			std::vector<Bounds> clipStack; // TODO: should be part of render state?
-			GLuint activeTexture = 0;
+			TextureHandle2D activeTexture;
 			Texture2D defaultTexture; /** Default blank (white) texture */
 			glm::vec2 drawOffset; /* The offset to use for rendering */
 
@@ -212,7 +212,7 @@ namespace Engine::Gui {
 			void pushClip(Bounds bounds);
 			void popClip();
 
-			void drawTexture(GLuint tex, glm::vec2 pos, glm::vec2 size);
+			void drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);
 			
 			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {
 				polyVertexData.push_back({

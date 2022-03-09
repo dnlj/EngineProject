@@ -12,6 +12,7 @@
 #include <Engine/Gfx/TextureWrap.hpp>
 #include <Engine/Gfx/TextureFilter.hpp>
 #include <Engine/Gfx/TextureFormat.hpp>
+#include <Engine/Gfx/TextureHandle.hpp>
 
 
 namespace Engine {
@@ -155,12 +156,13 @@ namespace Engine {
 			}
 
 			ENGINE_INLINE auto get() const noexcept { return tex; }
+			ENGINE_INLINE operator TextureHandle<D, Target>() const noexcept { return TextureHandle<D, Target>{tex}; }
 	};
 
 	// TODO: untested - using Texture1D = Texture<1, GL_TEXTURE_1D>;
 	using Texture2D = Texture<2, GL_TEXTURE_2D>;
 	// TODO: untested - using Texture3D = Texture<3, GL_TEXTURE_3D>;
-	// TODO: untested - using TextureArray1D = Texture<2, GL_TEXTURE_1D_ARRAY>;
-	using TextureArray2D = Texture<3, GL_TEXTURE_2D_ARRAY>;
+	// TODO: untested - using Texture1DArray = Texture<2, GL_TEXTURE_1D_ARRAY>;
+	using Texture2DArray = Texture<3, GL_TEXTURE_2D_ARRAY>;
 	// TODO: cubemap
 }

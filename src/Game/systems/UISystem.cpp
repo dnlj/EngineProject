@@ -846,7 +846,7 @@ namespace Game {
 					tex = engine.textureManager.get("assets/gui_1.bmp");
 				}
 				void render() override {
-					ctx->drawTexture(tex->tex.get(), {}, getSize());
+					ctx->drawTexture(tex->tex, {}, getSize());
 				}
 			};
 			struct Texture2 : Gui::Panel {
@@ -857,7 +857,7 @@ namespace Game {
 					tex = engine.textureManager.get("assets/gui_2.bmp");
 				}
 				void render() override {
-					ctx->drawTexture(tex->tex.get(), {}, getSize());
+					ctx->drawTexture(tex->tex, {}, getSize());
 				}
 			};
 

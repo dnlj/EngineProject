@@ -256,7 +256,7 @@ namespace Engine::Gui {
 			defaultTexture.setImage(img);
 		}
 
-		activeTexture = defaultTexture.get();
+		activeTexture = defaultTexture;
 		resetDraw();
 	}
 
@@ -470,7 +470,7 @@ namespace Engine::Gui {
 			// Draw
 			for (auto& group : polyDrawGroups) {
 				ENGINE_DEBUG_ASSERT(group.count != 0, "Empty draw group. This group should have been skipped/removed already.");
-				glBindTextureUnit(0, group.tex);
+				glBindTextureUnit(0, group.tex.get());
 				glScissor(
 					static_cast<int32>(group.clip.min.x),
 					static_cast<int32>(view.y - group.clip.max.y),
@@ -527,7 +527,7 @@ namespace Engine::Gui {
 			.offset = 0,
 			.count = 0,
 			.clip = clipStack.back(),
-			.tex = defaultTexture.get(),
+			.tex = defaultTexture,
 		});
 	}
 
@@ -560,7 +560,7 @@ namespace Engine::Gui {
 		nextDrawGroup();
 	}
 
-	void Context::drawTexture(GLuint tex, glm::vec2 pos, glm::vec2 size) {
+	void Context::drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
 		const auto old = activeTexture;
 		activeTexture = tex;
 		nextDrawGroup();
