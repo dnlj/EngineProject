@@ -43,13 +43,6 @@ namespace Engine::Gui {
 			using PanelUpdateFunc = std::function<void(Panel*)>;
 
 		private:
-			// TODO: rm? do we use this anymore? or do we need to use it.
-			// There is no point in using integers here because
-			// of GLSL integer requirement range limitations. In short
-			// GLSL integers may be implemented as floats with a limited range.
-			// See GLSL spec for details (4.5.2  Precision Qualifiers)
-			using PanelId = float32;
-			
 			struct PolyDrawGroup {
 				int32 offset;
 				int32 count;
@@ -85,8 +78,6 @@ namespace Engine::Gui {
 			};
 
 		private:
-			constexpr static PanelId invalidPanelId = -1;
-
 			// TODO: Should action events instead be associated with a panel instead of having multiple queues?
 			std::vector<ActionEvent> focusActionQueue;
 			std::vector<ActionEvent> hoverActionQueue;
@@ -146,11 +137,6 @@ namespace Engine::Gui {
 
 			glm::vec2 view = {};
 			glm::vec2 cursor = {};
-
-			/* Panel id management */
-			FlatHashMap<const Panel*, PanelId> panelIdMap;
-			std::vector<PanelId> freePanelIds;
-			PanelId nextPanelId = invalidPanelId;
 
 			/* Callbacks */
 			FlatHashMap<Panel*, MouseMoveCallback> mouseMoveCallbacks;
@@ -268,17 +254,6 @@ namespace Engine::Gui {
 			void unsetActive();
 			void updateHover();
 
-			ENGINE_INLINE bool isValid(const Panel* panel) const {
-				auto found = panelIdMap.find(panel);
-				return found != panelIdMap.end();
-			}
-
-			ENGINE_INLINE PanelId getPanelId(const Panel* panel) const {
-				auto found = panelIdMap.find(panel);
-				ENGINE_DEBUG_ASSERT(found != panelIdMap.end(), "Attempting to get id of unregistered Panel.");
-				return found->second;
-			}
-			
 			template<class P, class... Args>
 			P* constructPanel(Args&&... args) {
 				auto p = new P(this, std::forward<Args>(args)...);
@@ -432,25 +407,11 @@ namespace Engine::Gui {
 			void onFocus(const bool has);
 
 		private:
-			[[nodiscard]]
-			PanelId claimNextPanelId() {
-				if (!freePanelIds.empty()) {
-					const auto id = freePanelIds.back();
-					return freePanelIds.pop_back(), id;
-				}
-				return ++nextPanelId;
-			}
-
 			ENGINE_INLINE void registerPanel(const Panel* panel) {
-				panelIdMap[panel] = claimNextPanelId();
 			}
 
 			ENGINE_INLINE void deregisterPanel(const Panel* panel) {
 				ENGINE_DEBUG_ASSERT(panel != nullptr, "Attempting to deregister nullptr.");
-				auto found = panelIdMap.find(panel);
-				ENGINE_DEBUG_ASSERT(found != panelIdMap.end(), "Attempting to deregister an unregistered Panel (", panel, ").");
-				freePanelIds.push_back(found->second);
-				panelIdMap.erase(found);
 			}
 
 			/**
