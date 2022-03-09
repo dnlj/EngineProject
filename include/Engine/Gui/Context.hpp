@@ -79,10 +79,6 @@ namespace Engine::Gui {
 				const ShapedString* str;
 			};
 
-			struct RenderState {
-				glm::vec2 offset; /* The offset to use for rendering */ // TODO: move out of struct
-			};
-
 			struct CursorEntry {
 				Panel* panel;
 				Cursor cursor;
@@ -131,8 +127,8 @@ namespace Engine::Gui {
 			/* Render state */
 			std::vector<Bounds> clipStack; // TODO: should be part of render state?
 			GLuint activeTexture = 0;
-			RenderState renderState; // TODO: rm - just make offset its own var
 			Texture2D defaultTexture; /** Default blank (white) texture */
+			glm::vec2 drawOffset; /* The offset to use for rendering */
 
 			/* Panel state */
 			// If you add any more context panel state make sure to update `deletePanel` to remove any references on delete
@@ -236,7 +232,7 @@ namespace Engine::Gui {
 				polyVertexData.push_back({
 					.color = color,
 					.texCoord = texCoord,
-					.pos = pos + renderState.offset,
+					.pos = pos + drawOffset,
 				});
 			}
 

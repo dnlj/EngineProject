@@ -152,8 +152,8 @@ namespace Engine::Gui {
 
 		configUserSettings();
 
-		glProgramUniform1i(glyphShader->get(), 2, 1);
-		glProgramUniform1i(polyShader->get(), 2, 1);
+		glProgramUniform1i(glyphShader->get(), 1, 0);
+		glProgramUniform1i(polyShader->get(), 1, 0);
 
 		glCreateFramebuffers(1, &fbo);
 
@@ -382,7 +382,7 @@ namespace Engine::Gui {
 		// DFS traversal
 		std::vector<Panel*> rm_panels;
 		for (Panel* curr = root; curr;) {
-			renderState.offset = curr->getPos();
+			drawOffset = curr->getPos();
 			curr->render();
 
 			if (auto c = std::ranges::count(rm_panels, curr) > 0) {
@@ -491,7 +491,7 @@ namespace Engine::Gui {
 			// Draw
 			for (auto& group : polyDrawGroups) {
 				ENGINE_DEBUG_ASSERT(group.count != 0, "Empty draw group. This group should have been skipped/removed already.");
-				glBindTextureUnit(1, group.tex);
+				glBindTextureUnit(0, group.tex);
 				glScissor(
 					static_cast<int32>(group.clip.min.x),
 					static_cast<int32>(view.y - group.clip.max.y),
@@ -516,7 +516,7 @@ namespace Engine::Gui {
 			while (true) {
 				if (currGlyphDrawGroup->glyphSet != activeSet) {
 					activeSet = currGlyphDrawGroup->glyphSet;
-					glBindTextureUnit(1, activeSet->getGlyphTexture().get());
+					glBindTextureUnit(0, activeSet->getGlyphTexture().get());
 					glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, activeSet->getGlyphDataBuffer());
 				}
 
@@ -629,7 +629,7 @@ namespace Engine::Gui {
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
 		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");
-		stringsToRender.emplace_back(pos + renderState.offset, fstr);
+		stringsToRender.emplace_back(pos + drawOffset, fstr);
 	}
 
 	void Context::unsetActive() {
@@ -953,8 +953,9 @@ namespace Engine::Gui {
 		if (w == view.x && h == view.y) { return; }
 		ENGINE_LOG("onResize: ", w, " ", h);
 		view = {w, h};
-		glProgramUniform2fv(polyShader->get(), 0, 1, &view.x);
-		glProgramUniform2fv(glyphShader->get(), 0, 1, &view.x);
+		const auto view2 = 2.0f / view;
+		glProgramUniform2fv(polyShader->get(), 0, 1, &view2.x);
+		glProgramUniform2fv(glyphShader->get(), 0, 1, &view2.x);
 		colorTex.setStorage(TextureFormat::RGBA8, view);
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
 		root->setSize({w,h});
