@@ -93,12 +93,11 @@ namespace Engine::Gui {
 
 	class ScrollArea : public Panel {
 		private:
-			class ScrollPanel final : public Panel {
+			class ScrollPanel final : public PanelT {
 				public:
 					ScrollArea* area;
-					using Panel::Panel;
+					using PanelT::PanelT;
 					virtual void postLayout() override { area->updateScrollArea(); }
-					virtual void render() { ctx->drawRect({}, getSize(), {}); }
 			};
 
 		private:

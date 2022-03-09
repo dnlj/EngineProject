@@ -138,9 +138,7 @@ namespace Engine::Gui {
 				key = ctx->createPanel<GraphKey>(impl);
 			}
 
-			virtual void render() override {
-				ctx->drawRect({0,0}, getSize(), {});
-			}
+			virtual void render() override {}
 
 			void addGraph(std::unique_ptr<SubGraph> graph, std::string label) {
 				key->add(graph.get(), std::move(label), graph->color);

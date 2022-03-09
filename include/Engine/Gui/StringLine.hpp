@@ -69,7 +69,6 @@ namespace Engine::Gui {
 			}
 
 			virtual void render() override {
-				ctx->drawRect({0,0}, getSize(), {1,0,0,0});
 				//if (const auto font = str.getFont(); font) { ctx->drawRect({off.x, off.y - font->getAscent()}, {getStringSize().x, font->getBodyHeight()}, {1,0,0,1});}
 				//ctx->drawRect(getStringOffset(), {getWidth(), 1}, {1,0,0,1});
 				ctx->drawString(getStringOffset(), &getShapedString());

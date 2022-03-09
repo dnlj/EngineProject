@@ -474,6 +474,6 @@ namespace Engine::Gui {
 	 */
 	class PanelT : public Panel {
 		using Panel::Panel;
-		virtual void render() override;
+		virtual void render() override {}
 	};
 }
