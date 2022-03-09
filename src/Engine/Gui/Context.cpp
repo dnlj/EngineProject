@@ -252,9 +252,12 @@ namespace Engine::Gui {
 			.button = hsl({202, s, l, 1}),
 		};
 
+
+		// TODO: if we are going to have a white texture just hardcode it. no need to load from file/texturemanager
 		textureManager.add("assets/gui_test2.bmp");
 		guiBGTexture = textureManager.get("assets/gui_test2.bmp");
 
+		activeTexture = guiBGTexture->tex.get();
 		resetDraw();
 	}
 
@@ -465,9 +468,10 @@ namespace Engine::Gui {
 	}
 
 	void Context::flushDrawBuffer() {
-		{ // Draw polys
+		// Draw polys
+		if (const auto count = polyVertexData.size()) {
 			{
-				const auto size = polyVertexData.size() * sizeof(polyVertexData[0]);
+				const auto size = count * sizeof(polyVertexData[0]);
 				// Update polygon vertex buffer
 				if (size > polyVBOCapacity) {
 					polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(polyVertexData[0]));
@@ -481,11 +485,11 @@ namespace Engine::Gui {
 			// TODO: eventually we shouldnt need to do this every flush
 			glBindVertexArray(polyVAO);
 			glUseProgram(polyShader->get());
-			glBindTextureUnit(1, guiBGTexture->tex.get());
 
 			// Draw
 			for (auto& group : polyDrawGroups) {
 				ENGINE_DEBUG_ASSERT(group.count != 0, "Empty draw group. This group should have been skipped/removed already.");
+				glBindTextureUnit(1, group.tex);
 				glScissor(
 					static_cast<int32>(group.clip.min.x),
 					static_cast<int32>(view.y - group.clip.max.y),
@@ -532,6 +536,7 @@ namespace Engine::Gui {
 			.offset = 0,
 			.count = 0,
 			.clip = clipStack.back(),
+			.tex = guiBGTexture->tex.get(),
 		});
 	}
 
@@ -541,13 +546,14 @@ namespace Engine::Gui {
 		prev.count = sz - prev.offset;
 
 		// Different clipping regions and the previous group wasnt empty
-		if (prev.clip != clipStack.back() && prev.count > 0) {
+		if (prev.count > 0 && (prev.clip != clipStack.back() || prev.tex != activeTexture)) {
 			polyDrawGroups.push_back({
 				.offset = sz,
 			});
 		}
 
 		polyDrawGroups.back().clip = clipStack.back();
+		polyDrawGroups.back().tex = activeTexture;
 	}
 
 	void Context::pushClip(Bounds bounds) {
@@ -560,6 +566,26 @@ namespace Engine::Gui {
 	void Context::popClip() {
 		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
 		clipStack.pop_back();
+		nextDrawGroup();
+	}
+
+	void Context::drawTexture(GLuint tex, glm::vec2 pos, glm::vec2 size) {
+		// TODO: would also like to be able to do bounds rect instead of texcoord
+		// TODO: remove setTexture
+		const auto old = activeTexture;
+
+		// TODO: dont try to new group if already correct texture
+		activeTexture = tex;
+		nextDrawGroup();
+
+		drawVertex(pos, {0,1});
+		drawVertex(pos + glm::vec2{0, size.y}, {0,0});
+		drawVertex(pos + size, {1,0});
+		drawVertex(pos + size, {1,0});
+		drawVertex(pos + glm::vec2{size.x, 0}, {1,1});
+		drawVertex(pos, {0,1});
+
+		activeTexture = old;
 		nextDrawGroup();
 	}
 
@@ -578,22 +604,22 @@ namespace Engine::Gui {
 		}
 	}
 
-	void Context::drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color) {
+	void Context::drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
 		#ifdef DEBUG_GUI
 		if (renderState.color.a != 0) {
 			color = renderState.color;
 		}
 		#endif
 
-		drawVertex(pos, color);
-		drawVertex(pos + glm::vec2{0, size.y}, color);
-		drawVertex(pos + size, color);
-		drawVertex(pos + size, color);
-		drawVertex(pos + glm::vec2{size.x, 0}, color);
-		drawVertex(pos, color);
+		drawVertex(pos, {0,1}, color);
+		drawVertex(pos + glm::vec2{0, size.y}, {0,0}, color);
+		drawVertex(pos + size, {1,0}, color);
+		drawVertex(pos + size, {1,0}, color);
+		drawVertex(pos + glm::vec2{size.x, 0}, {1,1}, color);
+		drawVertex(pos, {0,1}, color);
 	}
 	
-	void Context::drawLine(const glm::vec2 a, const glm::vec2 b, const float32 width, const glm::vec4 color) {
+	void Context::drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color) {
 		const auto t = glm::normalize(b - a);
 		const auto n = width * 0.5f * glm::vec2{-t.y, t.x};
 		drawPoly({a - n, a + n, b + n, b - n}, color);

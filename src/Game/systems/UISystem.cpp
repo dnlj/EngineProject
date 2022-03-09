@@ -834,7 +834,37 @@ namespace Game {
 		panels.coordPane->toggle();
 		panels.netHealthPane->toggle();
 		panels.netCondPane->toggle();
-		//panels.netGraphPane->toggle();
+		panels.netGraphPane->toggle();
+
+		{
+
+			struct Texture1 : Gui::Panel {
+				Engine::TextureRef tex;
+				Texture1(Gui::Context* context, EngineInstance& engine) : Panel{context} {
+					setFixedHeight(128);
+					engine.textureManager.add("assets/gui_1.bmp");
+					tex = engine.textureManager.get("assets/gui_1.bmp");
+				}
+				void render() override {
+					ctx->drawTexture(tex->tex.get(), {}, getSize());
+				}
+			};
+			struct Texture2 : Gui::Panel {
+				Engine::TextureRef tex;
+				Texture2(Gui::Context* context, EngineInstance& engine) : Panel{context} {
+					setFixedHeight(128);
+					engine.textureManager.add("assets/gui_2.bmp");
+					tex = engine.textureManager.get("assets/gui_2.bmp");
+				}
+				void render() override {
+					ctx->drawTexture(tex->tex.get(), {}, getSize());
+				}
+			};
+
+			ctx->createPanel<Texture1>(content, engine);
+			ctx->createPanel<Texture2>(content, engine);
+		}
+
 	}
 
 	UISystem::~UISystem() {

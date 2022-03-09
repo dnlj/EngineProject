@@ -54,6 +54,7 @@ namespace Engine::Gui {
 				int32 offset;
 				int32 count;
 				Bounds clip;
+				GLuint tex;
 			};
 
 			struct PolyVertex {
@@ -78,10 +79,8 @@ namespace Engine::Gui {
 				const ShapedString* str;
 			};
 
-			// TODO: rm - just make offset its own var
 			struct RenderState {
-				glm::vec2 offset; /* The offset to use for rendering */
-			
+				glm::vec2 offset; /* The offset to use for rendering */ // TODO: move out of struct
 			};
 
 			struct CursorEntry {
@@ -106,14 +105,13 @@ namespace Engine::Gui {
 			GLuint quadVAO;
 			GLuint quadVBO;
 			ShaderRef quadShader;
-			std::vector<Bounds> clipStack;
-			std::vector<PolyDrawGroup> polyDrawGroups;
 
 			/* Polygon members */
 			GLuint polyVAO = 0;
 			GLuint polyVBO = 0;
 			GLsizei polyVBOCapacity = 0;
 			std::vector<PolyVertex> polyVertexData;
+			std::vector<PolyDrawGroup> polyDrawGroups;
 			ShaderRef polyShader;
 
 			/* Glyph members */
@@ -130,7 +128,9 @@ namespace Engine::Gui {
 
 			std::vector<StringData> stringsToRender;
 
-			/* Scene graph traversal */
+			/* Render state */
+			std::vector<Bounds> clipStack; // TODO: should be part of render state?
+			GLuint activeTexture = 0;
 			RenderState renderState; // TODO: rm - just make offset its own var
 			TextureRef guiBGTexture; // TODO: rm
 
@@ -230,15 +230,21 @@ namespace Engine::Gui {
 			void pushClip(Bounds bounds);
 			void popClip();
 
-			ENGINE_INLINE void drawVertex(const glm::vec2 pos, glm::vec4 color) {
+			void drawTexture(GLuint tex, glm::vec2 pos, glm::vec2 size);
+			
+			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {
 				polyVertexData.push_back({
 					.color = color,
-					.texCoord = {},
+					.texCoord = texCoord,
 					.pos = pos + renderState.offset,
 				});
 			}
 
-			ENGINE_INLINE void drawTri(const glm::vec2 a, const glm::vec2 b, const glm::vec2 c, glm::vec4 color) {
+			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec4 color) {
+				drawVertex(pos, {}, color);
+			}
+
+			ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec4 color) {
 				drawVertex(a, color); drawVertex(b, color); drawVertex(c, color);
 			}
 
@@ -254,12 +260,12 @@ namespace Engine::Gui {
 			/**
 			 * Draws a rectangle from a position and size.
 			 */
-			void drawRect(const glm::vec2 pos, const glm::vec2 size, glm::vec4 color);
+			void drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color);
 
 			/**
 			 * Draws a line between two points.
 			 */
-			void drawLine(const glm::vec2 a, const glm::vec2 b, const float32 width, const glm::vec4 color);
+			void drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color);
 
 			void drawString(glm::vec2 pos, const ShapedString* fstr);
 
