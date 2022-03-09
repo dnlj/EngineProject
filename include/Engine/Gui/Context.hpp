@@ -132,7 +132,7 @@ namespace Engine::Gui {
 
 			/* Panel state */
 			// If you add any more context panel state make sure to update `deletePanel` to remove any references on delete
-			Panel* root;
+			Panel* root = nullptr;
 			Panel* active = nullptr;
 			Panel* focus = nullptr;
 			Panel* hover = nullptr;
@@ -144,7 +144,7 @@ namespace Engine::Gui {
 			std::vector<Panel*> focusStack;
 			std::vector<Panel*> focusStackBack;
 
-			glm::vec2 view;
+			glm::vec2 view = {};
 			glm::vec2 cursor = {};
 
 			/* Panel id management */

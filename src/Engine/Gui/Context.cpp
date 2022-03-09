@@ -148,8 +148,6 @@ namespace Engine::Gui {
 		quadShader = shaderManager.get("shaders/fullscreen_passthrough");
 		polyShader = shaderManager.get("shaders/gui_poly");
 		glyphShader = shaderManager.get("shaders/gui_glyph");
-		view = camera.getScreenSize(); // TODO: doesnt this break on resize?
-
 		configUserSettings();
 
 		glProgramUniform1i(glyphShader->get(), 1, 0);
@@ -215,7 +213,6 @@ namespace Engine::Gui {
 
 		root = new RootPanel{this};
 		root->setPos({0,0});
-		root->setSize(camera.getScreenSize());
 		registerPanel(root);
 
 		///////////////////////////////////////////////////////////////////////////////
@@ -380,15 +377,9 @@ namespace Engine::Gui {
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
 		// DFS traversal
-		std::vector<Panel*> rm_panels;
 		for (Panel* curr = root; curr;) {
 			drawOffset = curr->getPos();
 			curr->render();
-
-			if (auto c = std::ranges::count(rm_panels, curr) > 0) {
-				ENGINE_LOG("DUPLICATE PANEL: ", c);
-			}
-			rm_panels.push_back(curr);
 
 			if (auto* child = curr->getFirstChild()) {
 				curr = child;
@@ -435,17 +426,6 @@ namespace Engine::Gui {
 			}
 
 			stringsToRender.clear();
-		}
-
-		// TODO: move into flush like polys
-		{ // Update glyph vertex buffer
-			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
-			if (newSize > glyphVBOCapacity) {
-				glyphVBOCapacity = newSize;
-				glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-			}
-			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
-			glyphVertexData.clear();
 		}
 
 		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
@@ -502,6 +482,16 @@ namespace Engine::Gui {
 			}
 
 			resetDraw();
+		}
+		
+		{ // Update glyph vertex buffer
+			const GLsizei newSize = static_cast<GLsizei>(glyphVertexData.size() * sizeof(GlyphVertex));
+			if (newSize > glyphVBOCapacity) {
+				glyphVBOCapacity = newSize;
+				glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+			}
+			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
+			glyphVertexData.clear();
 		}
 
 		// Draw glyphs
@@ -572,11 +562,7 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawTexture(GLuint tex, glm::vec2 pos, glm::vec2 size) {
-		// TODO: would also like to be able to do bounds rect instead of texcoord
-		// TODO: remove setTexture
 		const auto old = activeTexture;
-
-		// TODO: dont try to new group if already correct texture
 		activeTexture = tex;
 		nextDrawGroup();
 
@@ -607,18 +593,12 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
-		#ifdef DEBUG_GUI
-		if (renderState.color.a != 0) {
-			color = renderState.color;
-		}
-		#endif
-
-		drawVertex(pos, {0,1}, color);
-		drawVertex(pos + glm::vec2{0, size.y}, {0,0}, color);
-		drawVertex(pos + size, {1,0}, color);
-		drawVertex(pos + size, {1,0}, color);
-		drawVertex(pos + glm::vec2{size.x, 0}, {1,1}, color);
-		drawVertex(pos, {0,1}, color);
+		drawVertex(pos, color);
+		drawVertex(pos + glm::vec2{0, size.y}, color);
+		drawVertex(pos + size, color);
+		drawVertex(pos + size, color);
+		drawVertex(pos + glm::vec2{size.x, 0}, color);
+		drawVertex(pos, color);
 	}
 	
 	void Context::drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color) {
@@ -656,7 +636,6 @@ namespace Engine::Gui {
 		// Manually check root since it doesn't have a parent (bounds checking would be skipped because of canUseChild)
 		if (curr->getBounds().contains(cursor)) {
 			hoverStackBack.push_back(curr);
-			//curr = curr->getFirstChild();
 			curr = curr->getLastChild();
 
 			while (curr) {
@@ -878,7 +857,6 @@ namespace Engine::Gui {
 		//	" ", (int)event.state.id.device,
 		//	" @ ", Engine::Clock::Seconds{event.time.time_since_epoch()}.count()
 		//);
-
 		return false;
 	}
 
@@ -951,18 +929,18 @@ namespace Engine::Gui {
 
 	void Context::onResize(const int32 w, const int32 h) {
 		if (w == view.x && h == view.y) { return; }
-		ENGINE_LOG("onResize: ", w, " ", h);
+
 		view = {w, h};
+		root->setSize(view);
+		colorTex.setStorage(TextureFormat::RGBA8, view);
+		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
+
 		const auto view2 = 2.0f / view;
 		glProgramUniform2fv(polyShader->get(), 0, 1, &view2.x);
 		glProgramUniform2fv(glyphShader->get(), 0, 1, &view2.x);
-		colorTex.setStorage(TextureFormat::RGBA8, view);
-		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
-		root->setSize({w,h});
 	}
 
 	void Context::onFocus(const bool has) {
-		//ENGINE_LOG("onFocus: ", has);
 		if (!has) {
 			hoverValid = true;
 
