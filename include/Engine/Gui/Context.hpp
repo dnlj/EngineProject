@@ -132,7 +132,7 @@ namespace Engine::Gui {
 			std::vector<Bounds> clipStack; // TODO: should be part of render state?
 			GLuint activeTexture = 0;
 			RenderState renderState; // TODO: rm - just make offset its own var
-			TextureRef guiBGTexture; // TODO: rm
+			Texture2D defaultTexture; /** Default blank (white) texture */
 
 			/* Panel state */
 			// If you add any more context panel state make sure to update `deletePanel` to remove any references on delete

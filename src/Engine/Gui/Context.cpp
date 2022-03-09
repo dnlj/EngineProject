@@ -252,12 +252,14 @@ namespace Engine::Gui {
 			.button = hsl({202, s, l, 1}),
 		};
 
+		{
+			Image img{PixelFormat::RGB8, {1,1}};
+			memset(img.data(), 0xFF, img.sizeBytes());
+			defaultTexture.setStorage(TextureFormat::RGB8, img.size());
+			defaultTexture.setImage(img);
+		}
 
-		// TODO: if we are going to have a white texture just hardcode it. no need to load from file/texturemanager
-		textureManager.add("assets/gui_test2.bmp");
-		guiBGTexture = textureManager.get("assets/gui_test2.bmp");
-
-		activeTexture = guiBGTexture->tex.get();
+		activeTexture = defaultTexture.get();
 		resetDraw();
 	}
 
@@ -536,7 +538,7 @@ namespace Engine::Gui {
 			.offset = 0,
 			.count = 0,
 			.clip = clipStack.back(),
-			.tex = guiBGTexture->tex.get(),
+			.tex = defaultTexture.get(),
 		});
 	}
 

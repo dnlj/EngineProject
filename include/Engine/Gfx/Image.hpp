@@ -60,6 +60,7 @@ namespace Engine {
 			ENGINE_INLINE const auto& size() const noexcept { return dims; }
 			ENGINE_INLINE const byte* data() const noexcept { return storage.data(); }
 			ENGINE_INLINE byte* data() noexcept { return storage.data(); }
+			ENGINE_INLINE auto sizeBytes() const noexcept { return storage.size(); }
 
 			void copySettings(const Image& other) {
 				fmt = other.fmt;
