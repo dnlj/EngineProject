@@ -44,6 +44,7 @@ namespace Engine::Gui {
 
 		private:
 			struct PolyDrawGroup {
+				int32 zindex = {};
 				int32 offset = {};
 				int32 count = {};
 				Bounds clip = {};
@@ -57,6 +58,7 @@ namespace Engine::Gui {
 			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 8);
 
 			struct GlyphDrawGroup {
+				int32 zindex = {};
 				int32 offset = {};
 				int32 count = {};
 				Bounds clip = {};
@@ -93,8 +95,8 @@ namespace Engine::Gui {
 			GLuint polyVAO = 0;
 			GLuint polyVBO = 0;
 			GLsizei polyVBOCapacity = 0;
-			std::vector<PolyVertex> polyVertexData;
 			std::vector<PolyDrawGroup> polyDrawGroups;
+			std::vector<PolyVertex> polyVertexData;
 			ShaderRef polyShader;
 
 			/* Glyph members */
@@ -116,7 +118,8 @@ namespace Engine::Gui {
 			glm::vec2 drawOffset; /* The offset to use for rendering */
 
 			struct RenderState {
-				Font font;
+				Font font = nullptr;
+				int32 zindex = -1;
 			} renderState;
 
 			/* Panel state */
@@ -206,28 +209,12 @@ namespace Engine::Gui {
 
 			void flushDrawBuffer();
 			void resetDraw();
-			void nextDrawGroup();
+			void nextDrawGroupPoly();
 			void nextDrawGroupGlyph();
 			void pushClip(Bounds bounds);
 			void popClip();
 
 			void drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);
-			
-			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {
-				polyVertexData.push_back({
-					.color = color,
-					.texCoord = texCoord,
-					.pos = pos + drawOffset,
-				});
-			}
-
-			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec4 color) {
-				drawVertex(pos, {}, color);
-			}
-
-			ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec4 color) {
-				drawVertex(a, color); drawVertex(b, color); drawVertex(c, color);
-			}
 
 			/**
 			 * Draws a convex polygon from a ordered set of perimeter points.
@@ -411,6 +398,22 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void deregisterPanel(const Panel* panel) {
 				ENGINE_DEBUG_ASSERT(panel != nullptr, "Attempting to deregister nullptr.");
+			}
+			
+			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {
+				polyVertexData.push_back({
+					.color = color,
+					.texCoord = texCoord,
+					.pos = pos + drawOffset,
+				});
+			}
+
+			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec4 color) {
+				drawVertex(pos, {}, color);
+			}
+
+			ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec4 color) {
+				drawVertex(a, color); drawVertex(b, color); drawVertex(c, color);
 			}
 	};
 }

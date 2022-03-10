@@ -395,11 +395,13 @@ namespace Engine::Gui {
 			}
 		}
 
-		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
-		nextDrawGroup(); // Needed to populate count of last group
+		// Needed to populate count of last draw groups
+		nextDrawGroupPoly();
 		nextDrawGroupGlyph();
 		if (polyDrawGroups.back().count == 0) { polyDrawGroups.pop_back(); }
 		if (glyphDrawGroups.back().count == 0) { glyphDrawGroups.pop_back(); }
+
+		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
 		flushDrawBuffer();
 
 		// Draw to main framebuffer
@@ -498,49 +500,83 @@ namespace Engine::Gui {
 		polyVertexData.clear();
 		polyDrawGroups.clear();
 		polyDrawGroups.emplace_back();
-		nextDrawGroup();
+		nextDrawGroupPoly();
 
 		glyphVertexData.clear();
 		glyphDrawGroups.clear();
 		glyphDrawGroups.emplace_back();
 		nextDrawGroupGlyph();
 
-		// TODO: also clear vertx buffers here
+		renderState.zindex = -1;
 	}
 
-	void Context::nextDrawGroup() {
+	void Context::nextDrawGroupPoly() {
 		const auto sz = static_cast<int32>(polyVertexData.size());
 		auto& prev = polyDrawGroups.back();
+		prev.count += sz - prev.offset;
+
+		const auto setup = [&](PolyDrawGroup& group) ENGINE_INLINE {
+			group.zindex = renderState.zindex;
+			group.offset = sz;
+			group.clip = clipStack.back();
+			group.tex = activeTexture;
+		};
+		
+		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
+		if (prev.count == 0) {
+			setup(prev);
+		} else if (prev.zindex != renderState.zindex
+			|| prev.clip != clipStack.back()
+			|| prev.tex != activeTexture) {
+			++renderState.zindex;
+			setup(polyDrawGroups.emplace_back());
+		} else {
+			// No group change needed, extend the previous group
+		}
+	}
+	
+	void Context::nextDrawGroupGlyph() {
+		const auto sz = static_cast<int32>(glyphVertexData.size());
+		auto& prev = glyphDrawGroups.back();
 		prev.count = sz - prev.offset;
 
-		// Different clipping regions and the previous group wasnt empty
-		if (prev.count > 0 && (prev.clip != clipStack.back() || prev.tex != activeTexture)) {
-			polyDrawGroups.push_back({
-				.offset = sz,
-			});
-		}
+		const auto setup = [&](GlyphDrawGroup& group) ENGINE_INLINE {
+			group.zindex = renderState.zindex;
+			group.offset = sz;
+			group.clip = clipStack.back();
+			group.font = renderState.font;
+		};
 
-		polyDrawGroups.back().clip = clipStack.back();
-		polyDrawGroups.back().tex = activeTexture;
+		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
+		if (prev.count == 0) {
+			setup(prev);
+		} else if (prev.zindex != renderState.zindex
+			|| prev.font != renderState.font
+			|| prev.clip != clipStack.back()) {
+			++renderState.zindex;
+			setup(glyphDrawGroups.emplace_back());
+		} else {
+			// No group change needed, extend the previous group
+		}
 	}
 
 	void Context::pushClip(Bounds bounds) {
 		const auto last = clipStack.back();
 		bounds = bounds.intersect(last);
 		clipStack.push_back(bounds);
-		nextDrawGroup();
+		nextDrawGroupPoly();
 	}
 			
 	void Context::popClip() {
 		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
 		clipStack.pop_back();
-		nextDrawGroup();
+		nextDrawGroupPoly();
 	}
 
 	void Context::drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
 		const auto old = activeTexture;
 		activeTexture = tex;
-		nextDrawGroup();
+		nextDrawGroupPoly();
 
 		drawVertex(pos, {0,1});
 		drawVertex(pos + glm::vec2{0, size.y}, {0,0});
@@ -550,11 +586,12 @@ namespace Engine::Gui {
 		drawVertex(pos, {0,1});
 
 		activeTexture = old;
-		nextDrawGroup();
+		nextDrawGroupPoly();
 	}
 
 	void Context::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {
 		ENGINE_DEBUG_ASSERT(points.size() >= 3, "Must have at least three points");
+		nextDrawGroupPoly();
 
 		auto begin = points.begin();
 		auto curr = begin + 1;
@@ -569,6 +606,7 @@ namespace Engine::Gui {
 	}
 
 	void Context::drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
+		nextDrawGroupPoly();
 		drawVertex(pos, color);
 		drawVertex(pos + glm::vec2{0, size.y}, color);
 		drawVertex(pos + size, color);
@@ -581,22 +619,6 @@ namespace Engine::Gui {
 		const auto t = glm::normalize(b - a);
 		const auto n = width * 0.5f * glm::vec2{-t.y, t.x};
 		drawPoly({a - n, a + n, b + n, b - n}, color);
-	}
-	
-	void Context::nextDrawGroupGlyph() {
-		const auto sz = static_cast<int32>(glyphVertexData.size());
-		auto& prev = glyphDrawGroups.back();
-		prev.count = sz - prev.offset;
-
-		if (prev.count > 0 && (prev.font != renderState.font || prev.clip != clipStack.back())) {
-			glyphDrawGroups.push_back({
-				.offset = static_cast<int32>(glyphVertexData.size()),
-				.count = 0,
-			});
-		}
-
-		glyphDrawGroups.back().clip = clipStack.back();
-		glyphDrawGroups.back().font = renderState.font;
 	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
