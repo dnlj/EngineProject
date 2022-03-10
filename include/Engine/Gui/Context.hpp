@@ -59,6 +59,7 @@ namespace Engine::Gui {
 			struct GlyphDrawGroup {
 				int32 offset;
 				int32 count;
+				Bounds clip;
 				Font font;
 			};
 

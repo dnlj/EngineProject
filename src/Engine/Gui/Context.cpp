@@ -413,7 +413,6 @@ namespace Engine::Gui {
 		// Reset buffers
 		glDisable(GL_SCISSOR_TEST);
 		glDisable(GL_BLEND);
-		glyphDrawGroups.clear();
 	}
 
 	void Context::flushDrawBuffer() {
@@ -446,8 +445,6 @@ namespace Engine::Gui {
 				);
 				glDrawArrays(GL_TRIANGLES, group.offset, group.count);
 			}
-
-			resetDraw();
 		}
 		
 		{ // Update glyph vertex buffer
@@ -477,12 +474,22 @@ namespace Engine::Gui {
 				}
 
 				//ENGINE_LOG("Draw Glyphs: layer(", currGlyphDrawGroup->layer, "), offset(", currGlyphDrawGroup->offset, ") count(", currGlyphDrawGroup->count, ")");
+
+				auto& group = *currGlyphDrawGroup;
+				glScissor(
+					static_cast<int32>(group.clip.min.x),
+					static_cast<int32>(view.y - group.clip.max.y),
+					static_cast<int32>(group.clip.getWidth()),
+					static_cast<int32>(group.clip.getHeight())
+				);
 				glDrawArrays(GL_POINTS, currGlyphDrawGroup->offset, currGlyphDrawGroup->count);
 
 				++currGlyphDrawGroup;
 				if (currGlyphDrawGroup == lastGlyphDrawGroup) { break; }
 			}
 		}
+
+		resetDraw();
 	}
 
 	void Context::resetDraw() {
@@ -496,6 +503,10 @@ namespace Engine::Gui {
 			.clip = clipStack.back(),
 			.tex = defaultTexture,
 		});
+
+		glyphDrawGroups.clear();
+
+		// TODO: also clear vertx buffers here
 	}
 
 	void Context::nextDrawGroup() {
@@ -579,12 +590,17 @@ namespace Engine::Gui {
 		const auto glyphShapeData = fstr->getGlyphShapeData();
 		auto font = fstr->getFont();
 		pos += drawOffset;
+
+		if (glyphDrawGroups.empty() || glyphDrawGroups.back().font != font || glyphDrawGroups.back().clip != clipStack.back()) {
+			glyphDrawGroups.push_back({
+				.offset = static_cast<int32>(glyphVertexData.size()),
+				.count = 0,
+				.clip = clipStack.back(),
+				.font = font,
+			});
+		}
 		
-		glyphDrawGroups.push_back({
-			.offset = static_cast<int32>(glyphVertexData.size()),
-			.count = static_cast<int32>(glyphShapeData.size()),
-			.font = font,
-		});
+		glyphDrawGroups.back().count += static_cast<int32>(glyphShapeData.size());
 
 		for (const auto& data : glyphShapeData) {
 			const uint32 index = font->getGlyphIndex(data.index);
