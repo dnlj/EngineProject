@@ -397,9 +397,9 @@ namespace Engine::Gui {
 
 		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
 		nextDrawGroup(); // Needed to populate count of last group
-		if (polyDrawGroups.back().count == 0) {
-			polyDrawGroups.pop_back();
-		}
+		nextDrawGroupGlyph();
+		if (polyDrawGroups.back().count == 0) { polyDrawGroups.pop_back(); }
+		if (glyphDrawGroups.back().count == 0) { glyphDrawGroups.pop_back(); }
 		flushDrawBuffer();
 
 		// Draw to main framebuffer
@@ -426,7 +426,6 @@ namespace Engine::Gui {
 					glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 				}
 				glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
-				polyVertexData.clear();
 			}
 
 			// VAO + Shader
@@ -454,7 +453,6 @@ namespace Engine::Gui {
 				glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 			}
 			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
-			glyphVertexData.clear();
 		}
 
 		// Draw glyphs
@@ -464,9 +462,10 @@ namespace Engine::Gui {
 			glBindVertexArray(glyphVAO);
 			glUseProgram(glyphShader->get());
 
-			FontGlyphSet* activeFont = nullptr;
+			Font activeFont = nullptr;
 
 			while (true) {
+				ENGINE_DEBUG_ASSERT(currGlyphDrawGroup->font != nullptr);
 				if (currGlyphDrawGroup->font != activeFont) {
 					activeFont = currGlyphDrawGroup->font;
 					glBindTextureUnit(0, activeFont->getGlyphTexture().get());
@@ -495,16 +494,16 @@ namespace Engine::Gui {
 	void Context::resetDraw() {
 		clipStack.clear();
 		clipStack.push_back({{0,0}, view});
-
+		
+		polyVertexData.clear();
 		polyDrawGroups.clear();
-		polyDrawGroups.push_back({
-			.offset = 0,
-			.count = 0,
-			.clip = clipStack.back(),
-			.tex = defaultTexture,
-		});
+		polyDrawGroups.emplace_back();
+		nextDrawGroup();
 
+		glyphVertexData.clear();
 		glyphDrawGroups.clear();
+		glyphDrawGroups.emplace_back();
+		nextDrawGroupGlyph();
 
 		// TODO: also clear vertx buffers here
 	}
@@ -583,6 +582,22 @@ namespace Engine::Gui {
 		const auto n = width * 0.5f * glm::vec2{-t.y, t.x};
 		drawPoly({a - n, a + n, b + n, b - n}, color);
 	}
+	
+	void Context::nextDrawGroupGlyph() {
+		const auto sz = static_cast<int32>(glyphVertexData.size());
+		auto& prev = glyphDrawGroups.back();
+		prev.count = sz - prev.offset;
+
+		if (prev.count > 0 && (prev.font != renderState.font || prev.clip != clipStack.back())) {
+			glyphDrawGroups.push_back({
+				.offset = static_cast<int32>(glyphVertexData.size()),
+				.count = 0,
+			});
+		}
+
+		glyphDrawGroups.back().clip = clipStack.back();
+		glyphDrawGroups.back().font = renderState.font;
+	}
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
 		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");
@@ -591,16 +606,8 @@ namespace Engine::Gui {
 		auto font = fstr->getFont();
 		pos += drawOffset;
 
-		if (glyphDrawGroups.empty() || glyphDrawGroups.back().font != font || glyphDrawGroups.back().clip != clipStack.back()) {
-			glyphDrawGroups.push_back({
-				.offset = static_cast<int32>(glyphVertexData.size()),
-				.count = 0,
-				.clip = clipStack.back(),
-				.font = font,
-			});
-		}
-		
-		glyphDrawGroups.back().count += static_cast<int32>(glyphShapeData.size());
+		renderState.font = font;
+		nextDrawGroupGlyph();
 
 		for (const auto& data : glyphShapeData) {
 			const uint32 index = font->getGlyphIndex(data.index);

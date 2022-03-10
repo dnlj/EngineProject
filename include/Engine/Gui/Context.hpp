@@ -44,10 +44,10 @@ namespace Engine::Gui {
 
 		private:
 			struct PolyDrawGroup {
-				int32 offset;
-				int32 count;
-				Bounds clip;
-				TextureHandle2D tex;
+				int32 offset = {};
+				int32 count = {};
+				Bounds clip = {};
+				TextureHandle2D tex = {};
 			};
 
 			struct PolyVertex {
@@ -57,21 +57,16 @@ namespace Engine::Gui {
 			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 8);
 
 			struct GlyphDrawGroup {
-				int32 offset;
-				int32 count;
-				Bounds clip;
-				Font font;
+				int32 offset = {};
+				int32 count = {};
+				Bounds clip = {};
+				Font font = {};
 			};
 
 			struct GlyphVertex {
 				glm::vec2 pos;
 				uint32 index;
 			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32));
-
-			struct StringData {
-				glm::vec2 pos;
-				const ShapedString* str;
-			};
 
 			struct CursorEntry {
 				Panel* panel;
@@ -119,6 +114,10 @@ namespace Engine::Gui {
 			TextureHandle2D activeTexture;
 			Texture2D defaultTexture; /** Default blank (white) texture */
 			glm::vec2 drawOffset; /* The offset to use for rendering */
+
+			struct RenderState {
+				Font font;
+			} renderState;
 
 			/* Panel state */
 			// If you add any more context panel state make sure to update `deletePanel` to remove any references on delete
@@ -208,6 +207,7 @@ namespace Engine::Gui {
 			void flushDrawBuffer();
 			void resetDraw();
 			void nextDrawGroup();
+			void nextDrawGroupGlyph();
 			void pushClip(Bounds bounds);
 			void popClip();
 
