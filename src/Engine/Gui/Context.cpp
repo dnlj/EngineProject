@@ -395,38 +395,6 @@ namespace Engine::Gui {
 			}
 		}
 
-		// TODO: this way of doing things isnt correct anymore. needs to be rendered between layers (in above dfs loop)
-		// Build glyph vertex buffer
-		if (!stringsToRender.empty()){
-			std::sort(stringsToRender.begin(), stringsToRender.end(), [](const StringData& a, const StringData& b){
-				return a.str->getFont() < b.str->getFont();
-			});
-
-			// Build glyph draw groups
-			Font currFont = stringsToRender.front().str->getFont();
-			
-			GlyphDrawGroup* group = &glyphDrawGroups.emplace_back();
-			group->glyphSet = currFont;
-
-			for (const auto& strdat : stringsToRender) {
-				if (currFont != strdat.str->getFont()) {
-					currFont = strdat.str->getFont();
-
-					GlyphDrawGroup next {
-						.offset = group->offset + group->count,
-						.count = 0,
-						.glyphSet = currFont,
-					};
-					group = &glyphDrawGroups.emplace_back(next);
-				}
-
-				renderString(*strdat.str, strdat.pos, group->glyphSet);
-				group->count += static_cast<int32>(strdat.str->getGlyphShapeData().size());
-			}
-
-			stringsToRender.clear();
-		}
-
 		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
 		nextDrawGroup(); // Needed to populate count of last group
 		if (polyDrawGroups.back().count == 0) {
@@ -463,7 +431,6 @@ namespace Engine::Gui {
 			}
 
 			// VAO + Shader
-			// TODO: eventually we shouldnt need to do this every flush
 			glBindVertexArray(polyVAO);
 			glUseProgram(polyShader->get());
 
@@ -500,13 +467,13 @@ namespace Engine::Gui {
 			glBindVertexArray(glyphVAO);
 			glUseProgram(glyphShader->get());
 
-			FontGlyphSet* activeSet = nullptr;
+			FontGlyphSet* activeFont = nullptr;
 
 			while (true) {
-				if (currGlyphDrawGroup->glyphSet != activeSet) {
-					activeSet = currGlyphDrawGroup->glyphSet;
-					glBindTextureUnit(0, activeSet->getGlyphTexture().get());
-					glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, activeSet->getGlyphDataBuffer());
+				if (currGlyphDrawGroup->font != activeFont) {
+					activeFont = currGlyphDrawGroup->font;
+					glBindTextureUnit(0, activeFont->getGlyphTexture().get());
+					glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, activeFont->getGlyphDataBuffer());
 				}
 
 				//ENGINE_LOG("Draw Glyphs: layer(", currGlyphDrawGroup->layer, "), offset(", currGlyphDrawGroup->offset, ") count(", currGlyphDrawGroup->count, ")");
@@ -608,7 +575,25 @@ namespace Engine::Gui {
 
 	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
 		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");
-		stringsToRender.emplace_back(pos + drawOffset, fstr);
+		
+		const auto glyphShapeData = fstr->getGlyphShapeData();
+		auto font = fstr->getFont();
+		pos += drawOffset;
+		
+		glyphDrawGroups.push_back({
+			.offset = static_cast<int32>(glyphVertexData.size()),
+			.count = static_cast<int32>(glyphShapeData.size()),
+			.font = font,
+		});
+
+		for (const auto& data : glyphShapeData) {
+			const uint32 index = font->getGlyphIndex(data.index);
+			glyphVertexData.push_back({
+				.pos = glm::round(pos + data.offset),
+				.index = index,
+			});
+			pos += data.advance;
+		}
 	}
 
 	void Context::unsetActive() {
@@ -671,19 +656,6 @@ namespace Engine::Gui {
 		updateNestedBehaviour<true>(focusStack, focusStackBack, canUse, canUseChild, endUse, endUseChild, beginUse, beginUseChild);
 
 		focus = focusStack.empty() ? nullptr : focusStack.front();
-	}
-
-	void Context::renderString(const ShapedString& str, glm::vec2 base, FontGlyphSet* font) {
-		const auto glyphShapeData = str.getGlyphShapeData();
-
-		for (const auto& data : glyphShapeData) {
-			const uint32 index = font->getGlyphIndex(data.index);
-			glyphVertexData.push_back({
-				.pos = glm::round(base + data.offset),
-				.index = index,
-			});
-			base += data.advance;
-		}
 	}
 
 	void Context::deletePanel(Panel* panel, bool isChild) {

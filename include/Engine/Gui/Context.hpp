@@ -59,7 +59,7 @@ namespace Engine::Gui {
 			struct GlyphDrawGroup {
 				int32 offset;
 				int32 count;
-				FontGlyphSet* glyphSet;
+				Font font;
 			};
 
 			struct GlyphVertex {
@@ -112,8 +112,6 @@ namespace Engine::Gui {
 			/* Text rendering helpers */
 			FontManager fontManager;
 			Theme theme;
-
-			std::vector<StringData> stringsToRender;
 
 			/* Render state */
 			std::vector<Bounds> clipStack; // TODO: should be part of render state?
@@ -413,10 +411,5 @@ namespace Engine::Gui {
 			ENGINE_INLINE void deregisterPanel(const Panel* panel) {
 				ENGINE_DEBUG_ASSERT(panel != nullptr, "Attempting to deregister nullptr.");
 			}
-
-			/**
-			 * Adds the glyphs needed to draw the string to the glyph vertex buffer.
-			 */
-			void renderString(const ShapedString& str, glm::vec2 base, FontGlyphSet* font);
 	};
 }
