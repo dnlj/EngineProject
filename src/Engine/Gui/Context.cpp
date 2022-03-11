@@ -457,6 +457,7 @@ namespace Engine::Gui {
 		const auto lastGlyphGroup = glyphDrawGroups.end();
 
 		for (int32 zindex = 0; zindex <= renderState.zindex;) {
+			// Draw polys
 			if (currPolyGroup != lastPolyGroup && currPolyGroup->zindex == zindex) {
 				glBindVertexArray(polyVAO);
 				glUseProgram(polyShader->get());
@@ -525,7 +526,7 @@ namespace Engine::Gui {
 
 		const auto sz = static_cast<int32>(polyVertexData.size());
 		auto& prev = polyDrawGroups.back();
-		prev.count += sz - prev.offset;
+		prev.count = sz - prev.offset;
 
 		const auto setup = [&](PolyDrawGroup& group) ENGINE_INLINE {
 			group.zindex = renderState.zindex;
