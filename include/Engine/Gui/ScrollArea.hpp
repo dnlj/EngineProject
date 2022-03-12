@@ -98,6 +98,10 @@ namespace Engine::Gui {
 					ScrollArea* area;
 					using PanelT::PanelT;
 					virtual void postLayout() override { area->updateScrollArea(); }
+
+					virtual void render() override {
+						ctx->setClip({getPos(), getPos() + getSize()});
+					}
 			};
 
 		private:
@@ -113,6 +117,10 @@ namespace Engine::Gui {
 				content = ctx->createPanel<ScrollPanel>(wrap);
 				content->area = this;
 				setDirection(dir);
+			}
+
+			virtual void render() override {
+				ctx->setClip({getPos(), getPos() + getSize()});
 			}
 
 			void updateScrollArea() {

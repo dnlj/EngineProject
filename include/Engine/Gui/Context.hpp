@@ -215,8 +215,10 @@ namespace Engine::Gui {
 			void resetDraw();
 			void nextDrawGroupPoly();
 			void nextDrawGroupGlyph();
-			void pushClip(Bounds bounds);
+
+			void pushClip();
 			void popClip();
+			void setClip(Bounds bounds);
 
 			void drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);
 

@@ -383,20 +383,22 @@ namespace Engine::Gui {
 		// DFS traversal
 		for (Panel* curr = root; curr;) {
 			drawOffset = curr->getPos();
+
+			pushClip();
 			curr->render();
 
 			if (auto* child = curr->getFirstChild()) {
 				curr = child;
-			} else if (auto* sib = curr->getNextSibling()) {
-				curr = sib;
 			} else {
-				while (curr = curr->getParent()) {
-					if (sib = curr->getNextSibling()) {
+				while (true) {
+					if (auto* sib = curr->getNextSibling()) {
+						popClip();
 						curr = sib;
 						break;
 					}
+					popClip();
+					if (!(curr = curr->getParent())) { break; }
 				}
-				if (!curr) { break; }
 			}
 		}
 
@@ -413,6 +415,7 @@ namespace Engine::Gui {
 		flushDrawBuffer();
 
 		// Draw to main framebuffer
+		glDisable(GL_SCISSOR_TEST);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		glBindVertexArray(quadVAO);
@@ -421,7 +424,6 @@ namespace Engine::Gui {
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// Reset buffers
-		glDisable(GL_SCISSOR_TEST);
 		glDisable(GL_BLEND);
 	}
 
@@ -486,7 +488,6 @@ namespace Engine::Gui {
 					}
 
 					scissor(currPolyGroup->clip, view.y);
-					//glDrawArrays(GL_TRIANGLES, currPolyGroup->offset, currPolyGroup->count);
 					glDrawElements(GL_TRIANGLES,
 						currPolyGroup->count,
 						sizeof(polyElementData[0]) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
@@ -599,17 +600,19 @@ namespace Engine::Gui {
 		}
 	}
 
-	void Context::pushClip(Bounds bounds) {
-		const auto last = clipStack.back();
-		bounds = bounds.intersect(last);
-		clipStack.push_back(bounds);
-		nextDrawGroupPoly();
+	void Context::pushClip() {
+		clipStack.push_back(clipStack.back());
 	}
 			
 	void Context::popClip() {
 		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
 		clipStack.pop_back();
-		nextDrawGroupPoly();
+	}
+
+	void Context::setClip(Bounds bounds) {
+		auto& curr = clipStack.back();
+		curr = (clipStack.end() - 2)->intersect(bounds);
+		curr.max = glm::max(curr.min, curr.max);
 	}
 
 	void Context::drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
