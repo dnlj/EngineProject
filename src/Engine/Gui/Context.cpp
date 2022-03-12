@@ -176,6 +176,10 @@ namespace Engine::Gui {
 			GLuint attribLocation = -1;
 
 			glCreateVertexArrays(1, &polyVAO);
+
+			glCreateBuffers(1, &polyEBO);
+			glVertexArrayElementBuffer(polyVAO, polyEBO);
+
 			glCreateBuffers(1, &polyVBO);
 			glVertexArrayVertexBuffer(polyVAO, bindingIndex, polyVBO, 0, sizeof(PolyVertex));
 
@@ -266,6 +270,7 @@ namespace Engine::Gui {
 
 		glDeleteFramebuffers(1, &fbo);
 		glDeleteVertexArrays(1, &polyVAO);
+		glDeleteBuffers(1, &polyEBO);
 		glDeleteBuffers(1, &polyVBO);
 
 		glDeleteVertexArrays(1, &glyphVAO);
@@ -397,7 +402,7 @@ namespace Engine::Gui {
 
 		// Needed to populate count of last draw groups
 		if (auto last = polyDrawGroups.rbegin(); last != polyDrawGroups.rend()) {
-			last->count = static_cast<int32>(polyVertexData.size()) - last->offset;
+			last->count = static_cast<int32>(polyElementData.size()) - last->offset;
 		}
 		if (auto last = glyphDrawGroups.rbegin(); last != glyphDrawGroups.rend()) {
 			last->count = static_cast<int32>(glyphVertexData.size()) - last->offset;
@@ -421,22 +426,31 @@ namespace Engine::Gui {
 	}
 
 	void Context::flushDrawBuffer() {
-		// Draw polys
+		// Update poly vertex/element buffer
 		if (const auto count = polyVertexData.size()) {
-			const auto size = count * sizeof(polyVertexData[0]);
-			// Update polygon vertex buffer
-			if (size > polyVBOCapacity) {
-				polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(polyVertexData[0]));
-				glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+			{
+				const auto size = count * sizeof(polyVertexData[0]);
+				if (size > polyVBOCapacity) {
+					polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(polyVertexData[0]));
+					glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+				}
+				glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
 			}
-			glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
+			{
+				const auto size = polyElementData.size() * sizeof(polyElementData[0]);
+				if (size > polyEBOCapacity) {
+					polyEBOCapacity = static_cast<GLsizei>(polyElementData.capacity() * sizeof(polyElementData[0]));
+					glNamedBufferData(polyEBO, polyEBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+				}
+				glNamedBufferSubData(polyEBO, 0, size, polyElementData.data());
+			}
 		}
-		
+
 		// Update glyph vertex buffer
 		if (const auto count = glyphVertexData.size()) {
 			const GLsizei newSize = static_cast<GLsizei>(count * sizeof(GlyphVertex));
 			if (newSize > glyphVBOCapacity) {
-				glyphVBOCapacity = newSize;
+				glyphVBOCapacity = static_cast<GLsizei>(glyphVertexData.capacity() * sizeof(glyphVertexData[0]));
 				glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 			}
 			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
@@ -472,7 +486,13 @@ namespace Engine::Gui {
 					}
 
 					scissor(currPolyGroup->clip, view.y);
-					glDrawArrays(GL_TRIANGLES, currPolyGroup->offset, currPolyGroup->count);
+					//glDrawArrays(GL_TRIANGLES, currPolyGroup->offset, currPolyGroup->count);
+					glDrawElements(GL_TRIANGLES,
+						currPolyGroup->count,
+						sizeof(polyElementData[0]) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
+						(void*)(currPolyGroup->offset * sizeof(polyElementData[0]))
+					);
+
 					++currPolyGroup;
 					++zindex;
 				} while (currPolyGroup != lastPolyGroup && currPolyGroup->zindex == zindex);
@@ -511,6 +531,7 @@ namespace Engine::Gui {
 
 		renderState.zindex = -1;
 
+		polyElementData.clear();
 		polyVertexData.clear();
 		polyDrawGroups.clear();
 
@@ -524,7 +545,7 @@ namespace Engine::Gui {
 			polyDrawGroups.emplace_back();
 		}
 
-		const auto sz = static_cast<int32>(polyVertexData.size());
+		const auto sz = static_cast<int32>(polyElementData.size());
 		auto& prev = polyDrawGroups.back();
 		prev.count = sz - prev.offset;
 
@@ -594,15 +615,7 @@ namespace Engine::Gui {
 	void Context::drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
 		const auto old = activeTexture;
 		activeTexture = tex;
-		nextDrawGroupPoly();
-
-		drawVertex(pos, {0,1});
-		drawVertex(pos + glm::vec2{0, size.y}, {0,0});
-		drawVertex(pos + size, {1,0});
-		drawVertex(pos + size, {1,0});
-		drawVertex(pos + glm::vec2{size.x, 0}, {1,1});
-		drawVertex(pos, {0,1});
-
+		drawRect(pos, size, {1,1,1,1});
 		activeTexture = old;
 	}
 
@@ -610,26 +623,26 @@ namespace Engine::Gui {
 		ENGINE_DEBUG_ASSERT(points.size() >= 3, "Must have at least three points");
 		nextDrawGroupPoly();
 
-		auto begin = points.begin();
-		auto curr = begin + 1;
-		auto next = curr + 1;
-		auto end = points.end();
+		const auto base = static_cast<int32>(polyVertexData.size());
+		const auto psz = points.size();
+		drawVertex(points[0], color);
+		drawVertex(points[1], color);
 
-		while (next < end) {
-			drawTri(*begin, *curr, *next, color);
-			curr = next;
-			++next;
+		for (int i = 2; i < psz; ++i) {
+			drawVertex(points[i], color);
+			addPolyElements(base, base + i - 1, base + i);
 		}
 	}
 
 	void Context::drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
 		nextDrawGroupPoly();
-		drawVertex(pos, color);
-		drawVertex(pos + glm::vec2{0, size.y}, color);
-		drawVertex(pos + size, color);
-		drawVertex(pos + size, color);
-		drawVertex(pos + glm::vec2{size.x, 0}, color);
-		drawVertex(pos, color);
+		auto base = static_cast<uint32>(polyVertexData.size());
+		drawVertex(pos, {0,1}, color);
+		drawVertex(pos + glm::vec2{0, size.y}, {0,0}, color);
+		drawVertex(pos + size, {1,0}, color);
+		drawVertex(pos + glm::vec2{size.x, 0}, {1,1}, color);
+		addPolyElements(base, base+1, base+2);
+		addPolyElements(base+2, base+3, base);
 	}
 	
 	void Context::drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color) {

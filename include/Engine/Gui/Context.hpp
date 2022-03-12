@@ -98,6 +98,10 @@ namespace Engine::Gui {
 			std::vector<PolyDrawGroup> polyDrawGroups;
 			std::vector<PolyVertex> polyVertexData;
 			ShaderRef polyShader;
+			
+			GLuint polyEBO = 0;
+			GLsizei polyEBOCapacity = 0;
+			std::vector<uint16> polyElementData;
 
 			/* Glyph members */
 			GLuint glyphVAO = 0;
@@ -414,6 +418,10 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec4 color) {
 				drawVertex(a, color); drawVertex(b, color); drawVertex(c, color);
+			}
+
+			ENGINE_INLINE void addPolyElements(uint32 i1, uint32 i2, uint32 i3) {
+				polyElementData.push_back(i1); polyElementData.push_back(i2); polyElementData.push_back(i3);
 			}
 	};
 }
