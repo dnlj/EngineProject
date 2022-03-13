@@ -196,7 +196,7 @@ namespace Engine::Gui {
 
 			auto pos = glm::vec2{0, dir ? 0 : getHeight()};
 			pos[dir] = line(static_cast<float32>(v), 2.0f, getSize()[!dir]);
-			ctx->drawString(pos, &label);
+			ctx->drawString(pos, &label, theme.colors.foreground);
 		}
 	}
 }

@@ -17,17 +17,17 @@ namespace Engine::Gui {
 			float64 min = 0;
 			float64 max = 1;
 			float64 p = 0.5;
-			Label* label = nullptr;
 			SetFunc setFunc;
+			ShapedString str;
+			glm::vec2 strOff = {};
 
 		public:
 			// TODO: label string or decimal count
 			// TODO: snap intervals
 			// TODO: vertical option
 			Slider(Context* context) : Panel{context} {
-				label = ctx->constructPanel<Label>();
-				addChild(label);
 				setSize({32, 16});
+				str.setFont(ctx->getTheme().fonts.body);
 				updateLabel();
 			}
 
@@ -62,7 +62,9 @@ namespace Engine::Gui {
 			ENGINE_INLINE float64 getValue() const noexcept { return std::lerp(min, max, p); }
 
 			ENGINE_INLINE void updateLabel() {
-				label->autoText(fmt::format("{:.3}", getValue()));
+				str = fmt::format("{:.3}", getValue());
+				str.shape();
+				strOff.y = str.getFont()->getBodyHeight();
 			}
 
 			virtual void render() override {
@@ -71,10 +73,11 @@ namespace Engine::Gui {
 				const auto& theme = ctx->getTheme();
 				ctx->drawRect({}, sz, theme.colors.feature);
 				ctx->drawRect({sz.x * p - (hw * 0.5f), 0}, {hw, sz.y}, theme.colors.button);
+				ctx->drawString(strOff, &str, theme.colors.foregroundAlt);
 			}
 
-			virtual void preLayout() {
-				label->setRelPos((getSize() - label->getSize()) * 0.5f);
+			virtual void postLayout() override {
+				strOff.x = (getWidth() - str.getBounds().getWidth()) * 0.5f;
 			}
 
 			virtual bool onBeginActivate() override {

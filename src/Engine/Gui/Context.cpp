@@ -193,7 +193,8 @@ namespace Engine::Gui {
 		};
 
 		theme.colors = {
-			.foreground = rgb({1, 0, 0, 1}),
+			.foreground = rgb({1, 1, 1, 1}),
+			.foregroundAlt = rgb({0, 0, 0, 1}),
 
 			.background = rgb({0.1, 0.1, 0.2, a}),
 			.background2 = rgb({0.1, 0.1, 0.4, a}),

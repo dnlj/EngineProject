@@ -23,7 +23,7 @@ namespace Engine::Gui {
 				glm::vec2 pos;
 				glm::u16vec2 texCoord;
 				glm::u8vec4 color;
-			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 2 + 4 + 4);
+			}; static_assert(sizeof(PolyVertex) == 8+4+4);
 
 			struct GlyphDrawGroup {
 				int32 zindex = {};
@@ -35,8 +35,9 @@ namespace Engine::Gui {
 
 			struct GlyphVertex {
 				glm::vec2 pos;
+				glm::u8vec4 color;
 				uint32 index;
-			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32));
+			}; static_assert(sizeof(GlyphVertex) == 8+4+4);
 
 		private:
 			/* Polygon members */
@@ -109,7 +110,7 @@ namespace Engine::Gui {
 			 */
 			void drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color);
 
-			void drawString(glm::vec2 pos, const ShapedString* fstr);
+			void drawString(glm::vec2 pos, const ShapedString* fstr, glm::vec4 color);
 
 		private:
 			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {

@@ -4,6 +4,7 @@
 
 namespace Engine::Gui {
 	void TextBox::render() {
+		auto& theme = ctx->getTheme();
 		glm::vec2 pos = {0,0};
 		const auto& str = getShapedString();
 		const glm::vec2 size = getSize();
@@ -18,7 +19,7 @@ namespace Engine::Gui {
 		ctx->drawRect(pos + glm::vec2{size.x - 1, 0}, {1, size.y}, bo);
 
 		pos += getStringOffset();
-		ctx->drawString(pos, &str);
+		ctx->drawString(pos, &str, theme.colors.foreground);
 		pos.y -= str.getFont()->getAscent();
 
 

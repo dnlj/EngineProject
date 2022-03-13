@@ -833,7 +833,7 @@ namespace Game {
 		//panels.infoPane->toggle();
 		panels.coordPane->toggle();
 		panels.netHealthPane->toggle();
-		panels.netCondPane->toggle();
+		//panels.netCondPane->toggle();
 		panels.netGraphPane->toggle();
 
 		{

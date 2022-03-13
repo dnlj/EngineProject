@@ -37,19 +37,24 @@ namespace Engine::Gui {
 
 		{
 			constexpr static GLuint bindingIndex = 0;
+			GLuint attribLocation = -1;
 
 			glCreateBuffers(1, &glyphVBO);
 
 			glCreateVertexArrays(1, &glyphVAO);
 			glVertexArrayVertexBuffer(glyphVAO, bindingIndex, glyphVBO, 0, sizeof(GlyphVertex));
 
-			glEnableVertexArrayAttrib(glyphVAO, bindingIndex);
-			glVertexArrayAttribBinding(glyphVAO, 0, bindingIndex);
-			glVertexArrayAttribFormat(glyphVAO, 0, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
+			glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
+			glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
+			glVertexArrayAttribFormat(glyphVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
 
-			glEnableVertexArrayAttrib(glyphVAO, 1);
-			glVertexArrayAttribBinding(glyphVAO, 1, bindingIndex);
-			glVertexArrayAttribIFormat(glyphVAO, 1, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
+			glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
+			glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
+			glVertexArrayAttribFormat(glyphVAO, attribLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(GlyphVertex, color));
+
+			glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
+			glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
+			glVertexArrayAttribIFormat(glyphVAO, attribLocation, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
 		}
 
 		{
@@ -322,7 +327,7 @@ namespace Engine::Gui {
 		drawPoly({a - n, a + n, b + n, b - n}, color);
 	}
 
-	void DrawBuilder::drawString(glm::vec2 pos, const ShapedString* fstr) {
+	void DrawBuilder::drawString(glm::vec2 pos, const ShapedString* fstr, glm::vec4 color) {
 		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");
 		
 		const auto glyphShapeData = fstr->getGlyphShapeData();
@@ -334,6 +339,7 @@ namespace Engine::Gui {
 			const uint32 index = font->getGlyphIndex(data.index);
 			glyphVertexData.push_back({
 				.pos = glm::round(pos + data.offset),
+				.color = color * 255.0f,
 				.index = index,
 			});
 			pos += data.advance;

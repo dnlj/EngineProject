@@ -23,6 +23,7 @@ namespace Engine::Gui {
 			struct Colors {
 				/** Main foreground */
 				glm::vec4 foreground;
+				glm::vec4 foregroundAlt;
 
 				/** Main background. Numbered varients for distinguishing between nested areas. */
 				glm::vec4 background; 

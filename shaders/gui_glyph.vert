@@ -1,13 +1,15 @@
 #version 450 core
 
 layout (location = 0) in vec2 vertPos;
-layout (location = 1) in uint vertIndex;
+layout (location = 1) in vec4 vertColor;
+layout (location = 2) in uint vertIndex;
 
 layout (location = 0) uniform vec2 viewScale; // = 2 / viewSize
 
 out vec2 geomSize;
 out vec2 geomTexSize;
 out vec3 geomTexOffset;
+out vec4 geomColor;
 
 struct GlyphData {
 	vec2 size;
@@ -26,4 +28,5 @@ void main() {
 	geomSize = glyphSize * viewScale;
 	geomTexSize = glyphSize / 4096; // TODO: dont hardcode?
 	geomTexOffset = glyphData[vertIndex].offset / 4096;
+	geomColor = vertColor;
 }
