@@ -16,6 +16,10 @@
 
 
 namespace Engine {
+	/**
+	 * Stores image data and format information.
+	 * @see Texture
+	 */
 	class Image {
 		private:
 			PixelFormat fmt = PixelFormat::NONE;

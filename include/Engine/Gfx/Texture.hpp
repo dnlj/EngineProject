@@ -16,6 +16,11 @@
 
 
 namespace Engine {
+	/**
+	 * Owns a GPU texture.
+	 * @see Image
+	 * @see TextureHandle
+	 */
 	template<int32 D, GLenum Target>
 	class Texture {
 		private:

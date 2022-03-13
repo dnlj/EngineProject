@@ -5,6 +5,10 @@
 
 
 namespace Engine {
+	/**
+	 * A non-owning reference to a Texture.
+	 * @see Texture
+	 */
 	template<int32 D, uint32 Target>
 	class TextureHandle {
 		private:
