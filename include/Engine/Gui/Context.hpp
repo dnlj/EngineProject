@@ -14,12 +14,10 @@
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Input/InputEvent.hpp>
 #include <Engine/Gui/Panel.hpp>
-#include <Engine/Gui/FontManager.hpp>
-#include <Engine/Gui/ShapedString.hpp>
 #include <Engine/Gui/Cursor.hpp>
 #include <Engine/Gui/Action.hpp>
 #include <Engine/Gui/Theme.hpp>
-#include <Engine/ArrayView.hpp>
+#include <Engine/Gui/DrawBuilder.hpp>
 
 namespace Engine {
 	class Camera;
@@ -28,7 +26,7 @@ namespace Engine {
 namespace Engine::Gui {
 	using NativeHandle = void*;
 
-	class Context {
+	class Context : public DrawBuilder {
 			// TODO: doc
 			using MouseMoveCallback = std::function<void(glm::vec2)>;
 
@@ -43,33 +41,6 @@ namespace Engine::Gui {
 			using PanelUpdateFunc = std::function<void(Panel*)>;
 
 		private:
-			struct PolyDrawGroup {
-				int32 zindex = {};
-				int32 offset = {};
-				int32 count = {};
-				Bounds clip = {};
-				TextureHandle2D tex = {};
-			};
-
-			struct PolyVertex {
-				glm::vec4 color;
-				glm::vec2 texCoord;
-				glm::vec2 pos;
-			}; static_assert(sizeof(PolyVertex) == sizeof(GLfloat) * 8);
-
-			struct GlyphDrawGroup {
-				int32 zindex = {};
-				int32 offset = {};
-				int32 count = {};
-				Bounds clip = {};
-				Font font = {};
-			};
-
-			struct GlyphVertex {
-				glm::vec2 pos;
-				uint32 index;
-			}; static_assert(sizeof(GlyphVertex) == sizeof(glm::vec2) + sizeof(uint32));
-
 			struct CursorEntry {
 				Panel* panel;
 				Cursor cursor;
@@ -91,40 +62,8 @@ namespace Engine::Gui {
 			GLuint quadVBO;
 			ShaderRef quadShader;
 
-			/* Polygon members */
-			GLuint polyVAO = 0;
-			GLuint polyVBO = 0;
-			GLsizei polyVBOCapacity = 0;
-			std::vector<PolyDrawGroup> polyDrawGroups;
-			std::vector<PolyVertex> polyVertexData;
-			ShaderRef polyShader;
-			
-			GLuint polyEBO = 0;
-			GLsizei polyEBOCapacity = 0;
-			std::vector<uint16> polyElementData;
-
-			/* Glyph members */
-			GLuint glyphVAO = 0;
-			GLuint glyphVBO = 0;
-			GLsizei glyphVBOCapacity = 0;
-			std::vector<GlyphDrawGroup> glyphDrawGroups;
-			std::vector<GlyphVertex> glyphVertexData;
-			ShaderRef glyphShader;
-
 			/* Text rendering helpers */
-			FontManager fontManager;
 			Theme theme;
-
-			/* Render state */
-			std::vector<Bounds> clipStack; // TODO: should be part of render state?
-			TextureHandle2D activeTexture;
-			Texture2D defaultTexture; /** Default blank (white) texture */
-			glm::vec2 drawOffset; /* The offset to use for rendering */
-
-			struct RenderState {
-				Font font = nullptr;
-				int32 zindex = -1;
-			} renderState;
 
 			/* Panel state */
 			// If you add any more context panel state make sure to update `deletePanel` to remove any references on delete
@@ -210,38 +149,6 @@ namespace Engine::Gui {
 			ENGINE_INLINE void updateBlinkTime() noexcept {
 				lastBlink = Clock::now();
 			}
-
-			void flushDrawBuffer();
-			void resetDraw();
-			void nextDrawGroupPoly();
-			void nextDrawGroupGlyph();
-
-			void pushClip();
-			void popClip();
-			void setClip(Bounds bounds);
-
-			void drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);
-
-			/**
-			 * Draws a convex polygon from a ordered set of perimeter points.
-			 * If the points are not in order the results are undefined.
-			 * 
-			 * @param points Three or more ordered perimeter points.
-			 * @param color The color of the polygon.
-			 */
-			void drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color);
-
-			/**
-			 * Draws a rectangle from a position and size.
-			 */
-			void drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color);
-
-			/**
-			 * Draws a line between two points.
-			 */
-			void drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color);
-
-			void drawString(glm::vec2 pos, const ShapedString* fstr);
 
 			void unsetActive();
 			void updateHover();
@@ -404,26 +311,6 @@ namespace Engine::Gui {
 
 			ENGINE_INLINE void deregisterPanel(const Panel* panel) {
 				ENGINE_DEBUG_ASSERT(panel != nullptr, "Attempting to deregister nullptr.");
-			}
-			
-			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {
-				polyVertexData.push_back({
-					.color = color,
-					.texCoord = texCoord,
-					.pos = pos + drawOffset,
-				});
-			}
-
-			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec4 color) {
-				drawVertex(pos, {}, color);
-			}
-
-			ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec4 color) {
-				drawVertex(a, color); drawVertex(b, color); drawVertex(c, color);
-			}
-
-			ENGINE_INLINE void addPolyElements(uint32 i1, uint32 i2, uint32 i3) {
-				polyElementData.push_back(i1); polyElementData.push_back(i2); polyElementData.push_back(i3);
 			}
 	};
 }

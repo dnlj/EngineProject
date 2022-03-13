@@ -142,16 +142,12 @@ namespace {
 	};
 }
 
-
 namespace Engine::Gui {
-	Context::Context(ShaderManager& shaderManager, TextureManager& textureManager, Camera& camera) {
-		quadShader = shaderManager.get("shaders/fullscreen_passthrough");
-		polyShader = shaderManager.get("shaders/gui_poly");
-		glyphShader = shaderManager.get("shaders/gui_glyph");
-		configUserSettings();
+	Context::Context(ShaderManager& shaderManager, TextureManager& textureManager, Camera& camera)
+		: DrawBuilder(shaderManager, textureManager) {
 
-		glProgramUniform1i(glyphShader->get(), 1, 0);
-		glProgramUniform1i(polyShader->get(), 1, 0);
+		quadShader = shaderManager.get("shaders/fullscreen_passthrough");
+		configUserSettings();
 
 		glCreateFramebuffers(1, &fbo);
 
@@ -171,48 +167,6 @@ namespace Engine::Gui {
 			glVertexArrayAttribFormat(quadVAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
 		}
 
-		{
-			constexpr static GLuint bindingIndex = 0;
-			GLuint attribLocation = -1;
-
-			glCreateVertexArrays(1, &polyVAO);
-
-			glCreateBuffers(1, &polyEBO);
-			glVertexArrayElementBuffer(polyVAO, polyEBO);
-
-			glCreateBuffers(1, &polyVBO);
-			glVertexArrayVertexBuffer(polyVAO, bindingIndex, polyVBO, 0, sizeof(PolyVertex));
-
-			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
-			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 4, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, color));
-
-			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
-			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, texCoord));
-
-			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
-			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pos));
-		}
-
-		{
-			constexpr static GLuint bindingIndex = 0;
-
-			glCreateBuffers(1, &glyphVBO);
-
-			glCreateVertexArrays(1, &glyphVAO);
-			glVertexArrayVertexBuffer(glyphVAO, bindingIndex, glyphVBO, 0, sizeof(GlyphVertex));
-
-			glEnableVertexArrayAttrib(glyphVAO, bindingIndex);
-			glVertexArrayAttribBinding(glyphVAO, 0, bindingIndex);
-			glVertexArrayAttribFormat(glyphVAO, 0, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
-
-			glEnableVertexArrayAttrib(glyphVAO, 1);
-			glVertexArrayAttribBinding(glyphVAO, 1, bindingIndex);
-			glVertexArrayAttribIFormat(glyphVAO, 1, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
-		}
-
 		registerPanel(nullptr); // register before everything else so nullptr = id 0
 
 		root = new RootPanel{this};
@@ -222,8 +176,8 @@ namespace Engine::Gui {
 		///////////////////////////////////////////////////////////////////////////////
 
 		// TODO: ideally these could just be "Arial" and "Consola" not actual paths.
-		theme.fonts.header = fontManager.createFont("assets/arial.ttf", 32);
-		theme.fonts.body = fontManager.createFont("assets/consola.ttf", 12);
+		theme.fonts.header = fontManager2.createFont("assets/arial.ttf", 32);
+		theme.fonts.body = fontManager2.createFont("assets/consola.ttf", 12);
 		//font_a = fontManager.createFont("assets/EmojiOneColor.otf", 32);
 		//font_a = fontManager.createFont("assets/FiraCode-Regular.ttf", 32);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
@@ -252,16 +206,6 @@ namespace Engine::Gui {
 
 			.button = hsl({202, s, l, 1}),
 		};
-
-		{
-			Image img{PixelFormat::RGB8, {1,1}};
-			memset(img.data(), 0xFF, img.sizeBytes());
-			defaultTexture.setStorage(TextureFormat::RGB8, img.size());
-			defaultTexture.setImage(img);
-		}
-
-		activeTexture = defaultTexture;
-		resetDraw();
 	}
 
 	Context::~Context() {
@@ -269,12 +213,6 @@ namespace Engine::Gui {
 		glDeleteBuffers(1, &quadVBO);
 
 		glDeleteFramebuffers(1, &fbo);
-		glDeleteVertexArrays(1, &polyVAO);
-		glDeleteBuffers(1, &polyEBO);
-		glDeleteBuffers(1, &polyVBO);
-
-		glDeleteVertexArrays(1, &glyphVAO);
-		glDeleteBuffers(1, &glyphVBO);
 
 		deletePanel(root);
 	}
@@ -370,16 +308,6 @@ namespace Engine::Gui {
 		}
 		hoverActionQueue.clear();
 
-		// Update font buffers
-		fontManager.updateAllFontDataBuffers();
-
-		glEnable(GL_BLEND);
-		glEnable(GL_SCISSOR_TEST);
-		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-		glClearTexImage(colorTex.get(), 0, GL_RGB, GL_FLOAT, 0);
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
 		// DFS traversal
 		for (Panel* curr = root; curr;) {
 			drawOffset = curr->getPos();
@@ -401,18 +329,19 @@ namespace Engine::Gui {
 				}
 			}
 		}
+		
 
-		// Needed to populate count of last draw groups
-		if (auto last = polyDrawGroups.rbegin(); last != polyDrawGroups.rend()) {
-			last->count = static_cast<int32>(polyElementData.size()) - last->offset;
-		}
-		if (auto last = glyphDrawGroups.rbegin(); last != glyphDrawGroups.rend()) {
-			last->count = static_cast<int32>(glyphVertexData.size()) - last->offset;
-		}
+		glEnable(GL_BLEND);
+		glEnable(GL_SCISSOR_TEST);
+		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+		glClearTexImage(colorTex.get(), 0, GL_RGB, GL_FLOAT, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
 		// Draw groups
-		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
-		flushDrawBuffer();
+		finish();
+		draw();
+		reset();
 
 		// Draw to main framebuffer
 		glDisable(GL_SCISSOR_TEST);
@@ -425,253 +354,6 @@ namespace Engine::Gui {
 
 		// Reset buffers
 		glDisable(GL_BLEND);
-	}
-
-	void Context::flushDrawBuffer() {
-		// Update poly vertex/element buffer
-		if (const auto count = polyVertexData.size()) {
-			{
-				const auto size = count * sizeof(polyVertexData[0]);
-				if (size > polyVBOCapacity) {
-					polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(polyVertexData[0]));
-					glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-				}
-				glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
-			}
-			{
-				const auto size = polyElementData.size() * sizeof(polyElementData[0]);
-				if (size > polyEBOCapacity) {
-					polyEBOCapacity = static_cast<GLsizei>(polyElementData.capacity() * sizeof(polyElementData[0]));
-					glNamedBufferData(polyEBO, polyEBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-				}
-				glNamedBufferSubData(polyEBO, 0, size, polyElementData.data());
-			}
-		}
-
-		// Update glyph vertex buffer
-		if (const auto count = glyphVertexData.size()) {
-			const GLsizei newSize = static_cast<GLsizei>(count * sizeof(GlyphVertex));
-			if (newSize > glyphVBOCapacity) {
-				glyphVBOCapacity = static_cast<GLsizei>(glyphVertexData.capacity() * sizeof(glyphVertexData[0]));
-				glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-			}
-			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
-		}
-
-		const auto scissor = [](const Bounds& bounds, float32 y) ENGINE_INLINE {
-			glScissor(
-				static_cast<int32>(bounds.min.x),
-				static_cast<int32>(y - bounds.max.y),
-				static_cast<int32>(bounds.getWidth()),
-				static_cast<int32>(bounds.getHeight())
-			);
-		};
-
-		auto currPolyGroup = polyDrawGroups.begin();
-		const auto lastPolyGroup = polyDrawGroups.end();
-		auto currGlyphGroup = glyphDrawGroups.begin();
-		const auto lastGlyphGroup = glyphDrawGroups.end();
-
-		for (int32 zindex = 0; zindex <= renderState.zindex;) {
-			// Draw polys
-			if (currPolyGroup != lastPolyGroup && currPolyGroup->zindex == zindex) {
-				glBindVertexArray(polyVAO);
-				glUseProgram(polyShader->get());
-				TextureHandle2D activeTex = {};
-
-				do {
-					ENGINE_DEBUG_ASSERT(currPolyGroup->count != 0, "Empty draw group. This group should have been skipped/removed already.");
-
-					if (currPolyGroup->tex != activeTex) {
-						activeTex = currPolyGroup->tex;
-						glBindTextureUnit(0, activeTex.get());
-					}
-
-					scissor(currPolyGroup->clip, view.y);
-					glDrawElements(GL_TRIANGLES,
-						currPolyGroup->count,
-						sizeof(polyElementData[0]) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
-						(void*)(currPolyGroup->offset * sizeof(polyElementData[0]))
-					);
-
-					++currPolyGroup;
-					++zindex;
-				} while (currPolyGroup != lastPolyGroup && currPolyGroup->zindex == zindex);
-			}
-
-			// Draw glyphs
-			if (currGlyphGroup != lastGlyphGroup && currGlyphGroup->zindex == zindex) {
-				glBindVertexArray(glyphVAO);
-				glUseProgram(glyphShader->get());
-				Font activeFont = nullptr;
-
-				do {
-					ENGINE_DEBUG_ASSERT(currGlyphGroup->count != 0, "Empty draw group. This group should have been skipped/removed already.");
-					ENGINE_DEBUG_ASSERT(currGlyphGroup->font != nullptr);
-
-					if (currGlyphGroup->font != activeFont) {
-						activeFont = currGlyphGroup->font;
-						glBindTextureUnit(0, activeFont->getGlyphTexture().get());
-						glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, activeFont->getGlyphDataBuffer());
-					}
-
-					scissor(currGlyphGroup->clip, view.y);
-					glDrawArrays(GL_POINTS, currGlyphGroup->offset, currGlyphGroup->count);
-
-					++currGlyphGroup;
-					++zindex;
-				} while (currGlyphGroup != lastGlyphGroup && currGlyphGroup->zindex == zindex);
-			}
-		}
-		resetDraw();
-	}
-
-	void Context::resetDraw() {
-		clipStack.clear();
-		clipStack.push_back({{0,0}, view});
-
-		renderState.zindex = -1;
-
-		polyElementData.clear();
-		polyVertexData.clear();
-		polyDrawGroups.clear();
-
-		glyphVertexData.clear();
-		glyphDrawGroups.clear();
-	}
-
-	void Context::nextDrawGroupPoly() {
-		if (polyDrawGroups.empty()) {
-			++renderState.zindex;
-			polyDrawGroups.emplace_back();
-		}
-
-		const auto sz = static_cast<int32>(polyElementData.size());
-		auto& prev = polyDrawGroups.back();
-		prev.count = sz - prev.offset;
-
-		const auto setup = [&](PolyDrawGroup& group) ENGINE_INLINE {
-			group.zindex = renderState.zindex;
-			group.offset = sz;
-			group.clip = clipStack.back();
-			group.tex = activeTexture;
-		};
-		
-		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
-		if (prev.count == 0) {
-			setup(prev);
-		} else if (prev.zindex != renderState.zindex
-			|| prev.clip != clipStack.back()
-			|| prev.tex != activeTexture) {
-			++renderState.zindex;
-			setup(polyDrawGroups.emplace_back());
-		} else {
-			// No group change needed, extend the previous group
-		}
-	}
-	
-	void Context::nextDrawGroupGlyph() {
-		if (glyphDrawGroups.empty()) {
-			++renderState.zindex;
-			glyphDrawGroups.emplace_back();
-		}
-
-		const auto sz = static_cast<int32>(glyphVertexData.size());
-		auto& prev = glyphDrawGroups.back();
-		prev.count = sz - prev.offset;
-
-		const auto setup = [&](GlyphDrawGroup& group) ENGINE_INLINE {
-			group.zindex = renderState.zindex;
-			group.offset = sz;
-			group.clip = clipStack.back();
-			group.font = renderState.font;
-		};
-
-		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
-		if (prev.count == 0) {
-			setup(prev);
-		} else if (prev.zindex != renderState.zindex
-			|| prev.font != renderState.font
-			|| prev.clip != clipStack.back()) {
-			++renderState.zindex;
-			setup(glyphDrawGroups.emplace_back());
-		} else {
-			// No group change needed, extend the previous group
-		}
-	}
-
-	void Context::pushClip() {
-		clipStack.push_back(clipStack.back());
-	}
-			
-	void Context::popClip() {
-		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
-		clipStack.pop_back();
-	}
-
-	void Context::setClip(Bounds bounds) {
-		auto& curr = clipStack.back();
-		curr = (clipStack.end() - 2)->intersect(bounds);
-		curr.max = glm::max(curr.min, curr.max);
-	}
-
-	void Context::drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
-		const auto old = activeTexture;
-		activeTexture = tex;
-		drawRect(pos, size, {1,1,1,1});
-		activeTexture = old;
-	}
-
-	void Context::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {
-		ENGINE_DEBUG_ASSERT(points.size() >= 3, "Must have at least three points");
-		nextDrawGroupPoly();
-
-		const auto base = static_cast<int32>(polyVertexData.size());
-		const auto psz = points.size();
-		drawVertex(points[0], color);
-		drawVertex(points[1], color);
-
-		for (int i = 2; i < psz; ++i) {
-			drawVertex(points[i], color);
-			addPolyElements(base, base + i - 1, base + i);
-		}
-	}
-
-	void Context::drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
-		nextDrawGroupPoly();
-		auto base = static_cast<uint32>(polyVertexData.size());
-		drawVertex(pos, {0,1}, color);
-		drawVertex(pos + glm::vec2{0, size.y}, {0,0}, color);
-		drawVertex(pos + size, {1,0}, color);
-		drawVertex(pos + glm::vec2{size.x, 0}, {1,1}, color);
-		addPolyElements(base, base+1, base+2);
-		addPolyElements(base+2, base+3, base);
-	}
-	
-	void Context::drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color) {
-		const auto t = glm::normalize(b - a);
-		const auto n = width * 0.5f * glm::vec2{-t.y, t.x};
-		drawPoly({a - n, a + n, b + n, b - n}, color);
-	}
-
-	void Context::drawString(glm::vec2 pos, const ShapedString* fstr) {
-		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");
-		
-		const auto glyphShapeData = fstr->getGlyphShapeData();
-		auto font = fstr->getFont();
-		pos += drawOffset;
-
-		renderState.font = font;
-		nextDrawGroupGlyph();
-
-		for (const auto& data : glyphShapeData) {
-			const uint32 index = font->getGlyphIndex(data.index);
-			glyphVertexData.push_back({
-				.pos = glm::round(pos + data.offset),
-				.index = index,
-			});
-			pos += data.advance;
-		}
 	}
 
 	void Context::unsetActive() {
@@ -983,10 +665,7 @@ namespace Engine::Gui {
 		root->setSize(view);
 		colorTex.setStorage(TextureFormat::RGBA8, view);
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
-
-		const auto view2 = 2.0f / view;
-		glProgramUniform2fv(polyShader->get(), 0, 1, &view2.x);
-		glProgramUniform2fv(glyphShader->get(), 0, 1, &view2.x);
+		resize(view);
 	}
 
 	void Context::onFocus(const bool has) {
