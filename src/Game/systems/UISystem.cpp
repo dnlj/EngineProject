@@ -26,6 +26,8 @@
 #include <Engine/Gui/DataAdapter.hpp>
 #include <Engine/Gui/Graph.hpp>
 #include <Engine/Gui/ScrollArea.hpp>
+#include <Engine/Gui/ImageDisplay.hpp>
+#include <Engine/Gui/DemoWindow.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -33,6 +35,7 @@
 
 namespace {
 	namespace Gui = Engine::Gui;
+	using namespace Engine::Gui;
 	const double avgDeltaTime = 1/64.0;
 
 	bool connectTo(const std::string& uri, Game::EngineInstance& engine, Game::World& world) {
@@ -754,6 +757,21 @@ namespace Game {
 			}
 	};
 	#endif
+
+	/*
+	class MapPreview : public Panel {
+		private:
+			ImageDisplay* img = nullptr;
+
+		public:
+			MapPreview(Context* context) : Panel{context} {
+				img = ctx->constructPanel<ImageDisplay>();
+
+
+				addChildren({img});
+				setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch});
+			}
+	};*/
 }
 
 namespace Game {
@@ -865,6 +883,11 @@ namespace Game {
 			ctx->createPanel<Texture2>(content, engine);
 		}
 
+		if (false) {
+			auto demo = ctx->createPanel<DemoWindow>(ctx->getRoot());
+			demo->setPos({520, 400});
+			demo->setSize({512, 512});
+		}
 	}
 
 	UISystem::~UISystem() {

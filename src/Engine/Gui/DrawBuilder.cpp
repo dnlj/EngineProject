@@ -331,6 +331,8 @@ namespace Engine::Gui {
 		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");
 		
 		const auto glyphShapeData = fstr->getGlyphShapeData();
+		if (glyphShapeData.empty()) { return; }
+
 		font = fstr->getFont();
 		pos += drawOffset;
 		nextDrawGroupGlyph();
