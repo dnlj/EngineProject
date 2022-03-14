@@ -51,6 +51,12 @@ namespace Engine {
 
 			ENGINE_INLINE operator bool() const noexcept { return tex; }
 
+			void setAuto(const Image& img) {
+				const auto& format = getPixelFormatInfo(img.format());
+				setStorage(format.defaultTexFormat, img.size());
+				setImage(img);
+			}
+
 			void setStorage(TextureFormat format, Vec size, int mips = 1) {
 				glDeleteTextures(1, &tex);
 				glCreateTextures(Target, 1, &tex);

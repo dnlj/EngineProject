@@ -5,32 +5,34 @@
 
 // OpenGL
 #include <glloadgen/gl_core_4_5.hpp>
+#include <Engine/Gfx/TextureFormat.hpp>
 
 
 namespace Engine {
 	enum class PixelFormat {
-		#define X(Name, Format, Channels, R,G,B,A) Name,
+		#define X(Name, Format, Tex, Channels, R,G,B,A) Name,
 		#include <Engine/Gfx/PixelFormat.xpp>
 	};
 
 	struct PixelFormatInfo {
-		const GLenum glFormat;
-		const int channels;
+		GLenum glFormat;
+		TextureFormat defaultTexFormat;
+		int channels;
 
 		union {
 			struct {
-				const int red;
-				const int green;
-				const int blue;
-				const int alpha;
+				int red;
+				int green;
+				int blue;
+				int alpha;
 			};
-			const glm::ivec4 bits;
+			glm::ivec4 bits;
 		};
 	};
 
 	namespace Detail {
-		inline PixelFormatInfo PixelFormat_Info[] = {
-			#define X(Name, Format, Channels, R,G,B,A) {Format, Channels, R, G, B, A},
+		inline constexpr PixelFormatInfo PixelFormat_Info[] = {
+			#define X(Name, Format, Tex, Channels, R,G,B,A) {Format, TextureFormat::Tex, Channels, R, G, B, A},
 			#include <Engine/Gfx/PixelFormat.xpp>
 		};
 	}
