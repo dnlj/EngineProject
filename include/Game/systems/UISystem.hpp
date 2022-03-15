@@ -48,6 +48,8 @@ namespace Game {
 				class NetGraphPane* netGraphPane;
 				class EntityPane* entityPane;
 
+				class MapPreview* mapPreviewWin;
+
 				#if ENGINE_CLIENT
 				class ConnectWindow* connectWindow;
 				#endif

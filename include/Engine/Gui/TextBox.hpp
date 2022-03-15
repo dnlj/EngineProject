@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Gui/Label.hpp>
+#include <Engine/Gui/Bindable.hpp>
 #include <Engine/Unicode/UTF8.hpp>
 
 
@@ -18,7 +19,7 @@ namespace Engine::Gui {
 			ENGINE_INLINE friend bool operator==(const Caret& a, const Caret& b) noexcept { return a.index == b.index; }
 	};
 
-	class TextBox : public StringLine {
+	class TextBox : public StringLine, public Bindable<TextBox> {
 		private:
 			uint8 selecting = 0;
 			Caret caret = 0;

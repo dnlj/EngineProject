@@ -757,21 +757,6 @@ namespace Game {
 			}
 	};
 	#endif
-
-	/*
-	class MapPreview : public Panel {
-		private:
-			ImageDisplay* img = nullptr;
-
-		public:
-			MapPreview(Context* context) : Panel{context} {
-				img = ctx->constructPanel<ImageDisplay>();
-
-
-				addChildren({img});
-				setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch});
-			}
-	};*/
 }
 
 namespace Game {

@@ -4,6 +4,7 @@
 
 namespace Engine::Gui {
 	void TextBox::render() {
+		ctx->setClip(getBounds()); // TODO: need to consider padding
 		auto& theme = ctx->getTheme();
 		glm::vec2 pos = {0,0};
 		const auto& str = getShapedString();
@@ -88,6 +89,7 @@ namespace Engine::Gui {
 			insertText(caret.index, view);
 			caret.index += static_cast<uint32>(view.size());
 			updateCaretPos();
+			setBindableValue();
 			return true;
 		});
 	};
@@ -200,6 +202,7 @@ namespace Engine::Gui {
 		insertText(caret.index, text);
 		caret.index += static_cast<uint32>(text.size());
 		updateCaretPos();
+		setBindableValue();
 	}
 			
 	void TextBox::actionDeletePrev() {
@@ -298,6 +301,7 @@ namespace Engine::Gui {
 
 			caret.index = begin;
 			updateCaretPos();
+			setBindableValue();
 		}
 	}
 

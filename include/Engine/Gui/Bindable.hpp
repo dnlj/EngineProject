@@ -21,11 +21,13 @@ namespace Engine::Gui {
 			Self& bind(GetFunc get, SetFunc set) {
 				static_assert(std::is_base_of_v<Panel, Self>, "Bindable classes must be panels to use addPanelUpdateFunc");
 				setFunc = {};
-				get(self());
+				if (get) {
+					get(self());
+					self().getContext()->addPanelUpdateFunc(&self(), [g=std::move(get)](Panel* p) {
+						g(static_cast<Self&>(*p));
+					});
+				}
 				setFunc = std::move(set);
-				self().getContext()->addPanelUpdateFunc(&self(), [g=std::move(get)](Panel* p) {
-					g(static_cast<Self&>(*p));
-				});
 				return self();
 			}
 	};

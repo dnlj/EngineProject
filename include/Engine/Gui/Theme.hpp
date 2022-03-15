@@ -7,6 +7,10 @@
 namespace Engine::Gui {
 	class Theme {
 		public:
+			Theme() = default;
+			Theme(Theme&) = delete;
+
+		public:
 			/* Storage for fonts. @See FontList */
 			struct Fonts {
 				Font header;
