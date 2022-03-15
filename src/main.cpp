@@ -446,13 +446,11 @@ namespace {
 				MapPreview(Context* context) : Window{context} {
 					auto& theme = ctx->getTheme();
 					auto cont = getContent();
-					cont->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch, theme.sizes.pad1});
 					// TODO: block pos tooltip
 
 					mapTest(); // TODO: rm - temp to fix invalid texture in ImageDisplay
 					area = ctx->constructPanel<DragArea>();
 					area->setTexture(map.tex2d);
-					area->setFixedSize({256,256});
 
 					auto sec = ctx->createPanel<Panel>(cont);
 					sec->setLayout(new DirectionalLayout{Direction::Horizontal, Align::Stretch, Align::Start, theme.sizes.pad1});
@@ -485,6 +483,8 @@ namespace {
 					yZoom->autoSize();
 					yZoom->bind(textGetter(area->zoom.y), textSetter(area->zoom.y));
 
+					sec->setFixedHeight(sec->getHeight());
+					cont->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch, theme.sizes.pad1});
 					cont->addChild(area);
 				}
 		};
