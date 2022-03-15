@@ -327,17 +327,15 @@ namespace Engine::Gui {
 		drawPoly({a - n, a + n, b + n, b - n}, color);
 	}
 
-	void DrawBuilder::drawString(glm::vec2 pos, const ShapedString* fstr, glm::vec4 color) {
-		ENGINE_DEBUG_ASSERT(fstr->getFont() != nullptr, "Attempting to draw string with null font.");
-		
-		const auto glyphShapeData = fstr->getGlyphShapeData();
-		if (glyphShapeData.empty()) { return; }
+	void DrawBuilder::drawString(glm::vec2 pos, glm::vec4 color, Font font, ArrayView<const ShapeGlyph> glyphs) {
+		ENGINE_DEBUG_ASSERT(font != nullptr, "Attempting to draw string with null font.");
+		if (glyphs.empty()) { return; }
 
-		font = fstr->getFont();
+		this->font = font;
 		pos += drawOffset;
 		nextDrawGroupGlyph();
 
-		for (const auto& data : glyphShapeData) {
+		for (const auto& data : glyphs) {
 			const uint32 index = font->getGlyphIndex(data.index);
 			glyphVertexData.push_back({
 				.pos = glm::round(pos + data.offset),
@@ -347,5 +345,4 @@ namespace Engine::Gui {
 			pos += data.advance;
 		}
 	}
-
 };

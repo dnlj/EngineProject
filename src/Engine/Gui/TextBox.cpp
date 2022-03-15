@@ -6,39 +6,58 @@ namespace Engine::Gui {
 	void TextBox::render() {
 		ctx->setClip(getBounds()); // TODO: need to consider padding
 		auto& theme = ctx->getTheme();
-		glm::vec2 pos = {0,0};
 		const auto& str = getShapedString();
 		const glm::vec2 size = getSize();
 		const glm::vec4 bg = {0.3,0.3,0.3,1};
 		const glm::vec4 bo = {0,0,0,1};
 
-		ctx->drawRect(pos, size, bg);
+		ctx->drawRect({}, size, bg);
 
-		ctx->drawRect(pos, {size.x, 1}, bo);
-		ctx->drawRect(pos, {1, size.y}, bo);
-		ctx->drawRect(pos + glm::vec2{0, size.y - 1}, {size.x, 1}, bo);
-		ctx->drawRect(pos + glm::vec2{size.x - 1, 0}, {1, size.y}, bo);
+		ctx->drawRect({}, {size.x, 1}, bo);
+		ctx->drawRect({}, {1, size.y}, bo);
+		ctx->drawRect(glm::vec2{0, size.y - 1}, {size.x, 1}, bo);
+		ctx->drawRect(glm::vec2{size.x - 1, 0}, {1, size.y}, bo);
 
-		pos += getStringOffset();
-		ctx->drawString(pos, &str, theme.colors.foreground);
-		pos.y -= str.getFont()->getAscent();
+		const auto off = getStringOffset();
+		auto top = off;
+		top.y -= str.getFont()->getAscent();
 
+
+		if (select.valid()) {
+			const auto a = caret.pos < select.pos ? caret : select;
+			const auto b = caret.pos < select.pos ? select : caret;
+
+			ctx->drawRect(
+				top + glm::vec2{a.pos, 0},
+				{b.pos - a.pos, str.getFont()->getLineHeight()},
+				bo
+			);
+
+			// Separate color for selection
+			if constexpr (true) {
+				ctx->drawString(off, &str, theme.colors.foreground);
+			} else {
+				const auto& glyphs = str.getGlyphShapeData();
+				const auto data = glyphs.data();
+
+				if (a.index != 0) {
+					ctx->drawString(off, {1,0,0,1}, str.getFont(), {data, data + a.index});
+				}
+
+				ctx->drawString({off.x+a.pos, off.y}, {0,1,0,1}, str.getFont(), {data + a.index, data + b.index});
+
+				if (auto sz = glyphs.size(); b.index != sz) {
+					ctx->drawString({off.x+b.pos, off.y}, {0,0,1,1}, str.getFont(), {data + b.index, data + sz});
+				}
+			}
+		} else {
+			ctx->drawString(off, &str, theme.colors.foreground);
+		}
 
 		if (ctx->getFocus() == this && ctx->isBlinking()) {
 			ctx->drawRect(
-				pos + glm::vec2{caret.pos, 0},
+				top + glm::vec2{caret.pos, 0},
 				{1, str.getFont()->getLineHeight()},
-				bo
-			);
-		}
-
-		if (select.valid()) {
-			const auto a = caret.pos < select.pos ? caret.pos : select.pos;
-			const auto b = caret.pos < select.pos ? select.pos : caret.pos;
-
-			ctx->drawRect(
-				pos + glm::vec2{a, 0},
-				{b - a, str.getFont()->getLineHeight()},
 				bo
 			);
 		}
