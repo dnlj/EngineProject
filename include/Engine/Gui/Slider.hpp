@@ -1,23 +1,17 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/Panel.hpp>
+#include <Engine/Gui/Bindable.hpp>
 #include <Engine/Gui/Label.hpp>
 #include <Engine/Gui/Context.hpp>
 
 
 namespace Engine::Gui {
-	class Slider : public Panel {
-		public:
-			using Callback = std::function<void(float64)>;
-			using GetFunc = std::function<void(Slider&)>;
-			using SetFunc = std::function<void(Slider&)>;
-
+	class Slider : public Panel, public Bindable<Slider> {
 		private:
 			float64 min = 0;
 			float64 max = 1;
 			float64 p = 0.5;
-			SetFunc setFunc;
 			ShapedString str;
 			glm::vec2 strOff = {};
 
@@ -29,14 +23,6 @@ namespace Engine::Gui {
 				setSize({32, 16});
 				str.setFont(ctx->getTheme().fonts.body);
 				updateLabel();
-			}
-
-			Slider& bind(GetFunc get, SetFunc set) {
-				setFunc = {};
-				get(*this);
-				setFunc = std::move(set);
-				ctx->addPanelUpdateFunc(this, [this, g=std::move(get)](Panel*){ g(*this); });
-				return *this;
 			}
 
 			Slider& setLimits(float64 min, float64 max) {
@@ -51,7 +37,7 @@ namespace Engine::Gui {
 				if (p == this->p) { return *this; }
 				this->p = p;
 				updateLabel();
-				if (setFunc) { setFunc(*this); }
+				setBindableValue();
 				return *this;
 			}
 
