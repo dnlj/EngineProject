@@ -18,7 +18,6 @@
 #include <Engine/Win32/Win32.hpp>
 #include <Engine/WindowCallbacks.hpp>
 #include <Engine/Window.hpp>
-#include <Engine/ImGui/ImGui.hpp>
 #include <Engine/Input/InputSequence.hpp>
 #include <Engine/CommandLine/Parser.hpp>
 #include <Engine/Debug/GL/GL.hpp>
@@ -279,98 +278,6 @@ namespace {
 		map.tex2d.setSubImage(0, {}, {map.w, map.h}, Engine::PixelFormat::RGB8, data);
 	}
 
-	void mapUI() {
-		if (ImGui::Begin("Map Test")) {
-			//static glm::vec2 offset = {11481.000, -1485.000};
-			//static glm::vec2 zoom = {20, 20};
-			static glm::vec2 offset = {8933, -185.000};
-			static glm::vec2 zoom = {0.5, 0.5};
-			static float scroll = 0;
-			static Engine::Clock::TimePoint scrollCooldown = {};
-
-			ImGui::PushItemWidth(256);
-
-			auto buildMap = [&]{
-				mapTest(offset.x, offset.y, zoom.x, zoom.y);
-			};
-			
-			ImGui::DragFloat("X Offset", &offset.x, 1.0f);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
-
-			ImGui::SameLine();
-
-			ImGui::DragFloat("Y Offset", &offset.y, 1.0f);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
-			
-			ImGui::DragFloat("X Zoom", &zoom.x, 0.05f, 0.1f, FLT_MAX);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
-
-			ImGui::SameLine();
-
-			ImGui::DragFloat("Y Zoom", &zoom.y, 0.05f, 0.1f, FLT_MAX);
-			if (ImGui::IsItemDeactivatedAfterEdit()) { buildMap(); }
-
-			ImGui::PopItemWidth();
-
-			const glm::vec2 cpos = {ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y};
-			constexpr float32 scale = 2;
-			if (!map.tex2d) { buildMap(); }
-			ImTextureID tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex2d.get()));
-			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w * scale), static_cast<float32>(map.h * scale)), {0,1}, {1,0});
-
-			if (ImGui::IsItemHovered()) {
-				const glm::vec2 mpos = {ImGui::GetMousePos().x, ImGui::GetMousePos().y};
-				const glm::vec2 moff = mpos - cpos;
-				const glm::vec2 isize = glm::vec2{map.w, map.h} * scale;
-				const glm::vec2 ioff = glm::vec2{moff.x, -moff.y} - isize * glm::vec2{0.5f, -0.5f};
-				const glm::vec2 bpos = glm::vec2{offset.x, offset.y} + ioff * (glm::vec2{zoom.x, zoom.y} / scale);
-
-				ImGui::BeginTooltip();
-				//ImGui::Text("%.0f, %.0f", ioff.x, ioff.y);
-				ImGui::Text("%.0f, %.0f", bpos.x, bpos.y);
-				ImGui::EndTooltip();
-
-				if (const auto s = ImGui::GetIO().MouseWheel) {
-					scroll += s;
-					scrollCooldown = Engine::Clock::now();
-				} else if (scroll && (Engine::Clock::now() - scrollCooldown) >= std::chrono::milliseconds{200}) {
-					auto z = std::clamp(scroll * 0.2f, -0.9f, 0.9f); // Limit max zoom
-					const auto old = zoom;
-					zoom -= zoom * z;
-					zoom = glm::max(zoom, 0.05f);
-					scroll = 0;
-					buildMap();
-				}
-
-				constexpr int dragButton = 1;
-				if (ImGui::IsMouseReleased(dragButton)) {
-					const glm::vec2 delta = {-ImGui::GetMouseDragDelta(dragButton).x, ImGui::GetMouseDragDelta(dragButton).y};
-					if (delta.x || delta.y) {
-						const glm::ivec2 diff = glm::round(delta * zoom / scale);
-						offset += diff;
-						buildMap();
-					}
-				}
-			}
-
-			/*
-			tid = reinterpret_cast<void*>(static_cast<uintptr_t>(map.tex2));
-			ImGui::Image(tid, ImVec2(static_cast<float32>(map.w*2), static_cast<float32>(map.h * 2)), {0,1}, {1,0});
-			
-			ImPlot::SetNextPlotLimitsY(-1.0f, 1.0f);
-			ImPlot::SetNextPlotLimitsX(0, map.w);
-			ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2{});
-			if (ImPlot::BeginPlot(
-				"##noisegraph", nullptr, nullptr, ImVec2(map.w * 2, 200),
-				ImPlotFlags_CanvasOnly, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_NoDecorations)) {
-				ImPlot::PlotLine("N1", map.data, (int)std::size(map.data));
-				ImPlot::PlotLine("N2", map.data2, (int)std::size(map.data2));
-			}
-			ImPlot::EndPlot();*/
-		}
-		ImGui::End();
-	}
-
 	namespace Map {
 		using namespace Engine::Gui;
 		class MapPreview : public Window {
@@ -575,7 +482,6 @@ namespace {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onKey(event)) { return; }
 			userdata->engine.bindManager.processInput(event);
-			Engine::ImGui::keyCallback(event.state);
 		}
 
 		void charCallback(wchar_t ch) {
@@ -597,34 +503,24 @@ namespace {
 			}
 
 			if (userdata->guiContext.onText(view)) { return; }
-
-			if (ch > 0xD7FF && ch < 0xE000) {
-				Engine::ImGui::charCallback(buffer16[0]);
-				Engine::ImGui::charCallback(buffer16[1]);
-			} else {
-				Engine::ImGui::charCallback(ch);
-			}
 		}
 
 		void mouseButtonCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouse(event)) { return; }
 			userdata->engine.bindManager.processInput(event);
-			Engine::ImGui::mouseButtonCallback(event.state);
 		}
 
 		void mouseWheelCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouseWheel(event)) { return; }
 			userdata->engine.bindManager.processInput(event);
-			Engine::ImGui::scrollCallback(event.state);
 		}
 
 		void mouseMoveCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouseMove(event)) { return; }
 			userdata->engine.bindManager.processInput(event);
-			Engine::ImGui::mouseMoveCallback(event.state);
 		}
 
 		void mouseLeaveCallback() override {
@@ -633,7 +529,6 @@ namespace {
 
 		void mouseEnterCallback() override {
 			userdata->guiContext.onFocus(true);
-			Engine::ImGui::mouseEnterCallback();
 		}
 	};
 }
@@ -677,13 +572,6 @@ void run(int argc, char* argv[]) {
 	#endif
 
 	glEnable(GL_FRAMEBUFFER_SRGB);
-
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// UI
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	IMGUI_CHECKVERSION();
-	Engine::ImGui::init(window);
-	ImGui::StyleColorsDark();
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Engine
@@ -950,7 +838,7 @@ void run(int argc, char* argv[]) {
 	// Map Stuff
 		
 
-	{
+	if constexpr (ENGINE_CLIENT) {
 		auto preview = guiContext.createPanel<Map::MapPreview>(guiContext.getRoot());
 		preview->setPos({520, 400});
 		preview->setSize({512, 512});
@@ -985,7 +873,6 @@ void run(int argc, char* argv[]) {
 
 		// Rendering
 		glClear(GL_COLOR_BUFFER_BIT);
-		Engine::ImGui::newFrame();
 
 		// ECS
 		world.run();
@@ -1002,15 +889,9 @@ void run(int argc, char* argv[]) {
 			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw();
 		#endif
 
-		if constexpr (ENGINE_CLIENT) { mapUI(); }
-
-		Engine::ImGui::draw();
 		window.swapBuffers();
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 	}
-
-	// UI cleanup
-	Engine::ImGui::shutdown();
 }
 
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");

@@ -44,9 +44,9 @@ CONAN_PACKAGES = {
 	["requires"] = {
 		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
 		"glm/0.9.9.7@dnlj/wobbly",
-		"imgui/1.82@dnlj/wobbly",
-		"imgui-node-editor/master@dnlj/wobbly",
-		"implot/0.9@dnlj/wobbly",
+		--"imgui/1.82@dnlj/wobbly",
+		--"imgui-node-editor/master@dnlj/wobbly",
+		--"implot/0.9@dnlj/wobbly",
 		"meta/master@dnlj/wobbly",
 		"pcg/master@dnlj/wobbly",
 		"premake5/latest@dnlj/wobbly",
@@ -221,7 +221,12 @@ project("*")
 	forceincludes "pch.hpp"
 
 	debugdir(os.getcwd())
-
+	filter "platforms:Windows*"
+		links {
+			"opengl32",
+			"Ws2_32",
+			"Imm32"
+		}
 	filter "configurations:Debug*"
 		conan_setup("debug")
 	filter "configurations:Release*"
@@ -233,8 +238,6 @@ project("*")
 	}
 
 	links {
-		"opengl32",
-		"Ws2_32",
 	}
 
 	libdirs {

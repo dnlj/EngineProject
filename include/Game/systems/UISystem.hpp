@@ -1,11 +1,7 @@
 #pragma once
 
-// STD
-#include <cmath>
-
 // Engine
 #include <Engine/RingBuffer.hpp>
-#include <Engine/ImGui/ImGui.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -54,11 +50,5 @@ namespace Game {
 				class ConnectWindow* connectWindow;
 				#endif
 			} panels;
-
-			template<bool B>
-			static ImPlotPoint netGetPointAvg(void* data, int idx);
-
-			template<bool B>
-			static ImPlotPoint netGetDiff(void* data, int idx);
 	};
 }
