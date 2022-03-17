@@ -29,6 +29,7 @@
 // GCC: https://gcc.gnu.org/onlinedocs/gcc-4.7.2/gcc/Function-Attributes.html
 // CLANG: https://clang.llvm.org/docs/AttributeReference.html
 // MSVC: https://www.reddit.com/r/programming/comments/g9inos/smarter_cc_inlining_with_attribute_flatten/foyoq62/
+// MSVC Archive: https://web.archive.org/web/20220317175003/https://old.reddit.com/r/programming/comments/g9inos/smarter_cc_inlining_with_attribute_flatten/foyoq62/
 // 
 // We have always had __forceinline, and I just added four attributes in this area,
 // 
@@ -58,6 +59,7 @@
 
 #define ENGINE_BUILD_UNARY_OP(T, O) \
 	ENGINE_INLINE constexpr decltype(auto) operator O(const T& a) noexcept { \
+		_Pragma("warning(suppress:4146)");\
 		return static_cast<T>(O static_cast<std::underlying_type_t<T>>(a)); \
 	}
 

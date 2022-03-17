@@ -899,6 +899,7 @@ namespace Game {
 			fps = fpsBuffer.size() / fps;
 		}
 
+		// TODO: use update function
 		if (panels.infoPane->getContent()->isEnabled()) {
 			if (update) {
 				panels.infoPane->setLabel(InfoPane::FPS, fps, 1.0f/fps);

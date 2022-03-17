@@ -16,6 +16,14 @@
 namespace Engine::Gui {
 	class Context; // Forward decl
 
+	/** @see Panel states section */
+	enum class PanelState : uint32 {
+		Enabled          = 1 << 0,
+		PerformingLayout = 1 << 1,
+		ParentEnabled    = 1 << 2,
+		_count,
+	}; ENGINE_BUILD_ALL_OPS(PanelState);
+
 	/**
 	 * The generic interface for all UI elements.
 	 * 
@@ -31,18 +39,7 @@ namespace Engine::Gui {
 	 * - PerformingLayout: The panel is updating its layout.
 	 */
 	class Panel {
-		private:
-			struct Flag_ {
-				/** @see Panel states section */
-				enum Flag : uint32 {
-					Enabled          = 1 << 0,
-					PerformingLayout = 1 << 1,
-					_count,
-				};
-			};
-
 		public:
-			using Flag = Flag_::Flag;
 
 		protected:
 			/** The Context that owns this panel. */
@@ -71,7 +68,7 @@ namespace Engine::Gui {
 
 			glm::ivec2 gridPos = {}; // TODO: is there a better way to handle these layout specific properties?
 
-			uint32 flags = Flag::Enabled;
+			PanelState flags = PanelState::Enabled | PanelState::ParentEnabled;
 
 			// TODO: maybe change to flag for diff size policies?
 			bool autoSizeHeight = false;
@@ -359,12 +356,30 @@ namespace Engine::Gui {
 			/**
 			 * @see Flag
 			 */
-			ENGINE_INLINE void setEnabled(bool e) noexcept {
+			void setEnabled(bool e) noexcept {
 				const auto old = isEnabled();
-				setFlag(Flag::Enabled, e);
-				if (old != e && parent) { parent->onChildChanged(this); }
+				setFlag(PanelState::Enabled, e);
+				if (old != e && parent) {
+					for (auto child = firstChild; child;) {
+						child->setParentEnabled(e);
+						child = child->nextSibling;
+					}
+					parent->onChildChanged(this);
+				}
 			}
-			ENGINE_INLINE bool isEnabled() const noexcept { return getFlag(Flag::Enabled); }
+			ENGINE_INLINE bool isEnabled() const noexcept { return isFlag(PanelState::Enabled | PanelState::ParentEnabled); }
+
+			void setParentEnabled(bool e) noexcept {
+				const auto old = isEnabled();
+				setFlag(PanelState::ParentEnabled, e);
+				e = isEnabled();
+				if (e != old) {
+					for (auto child = firstChild; child;) {
+						child->setParentEnabled(isEnabled());
+						child = child->nextSibling;
+					}
+				}
+			}
 
 			/**
 			 * Called when an ActionEvent is issued to this panel.
@@ -409,21 +424,22 @@ namespace Engine::Gui {
 			virtual bool onBeginActivate() { return true; }
 			virtual void onEndActivate() {}
 
+		private:
 			/**
-			 * Sets a Panel::Flag.
+			 * Sets a flag.
 			 * You should probably be using specific setXYZ/isXYZ functions unless you have a
 			 * good reason to use these. Could potentially modify internal flags and have
 			 * unintended consequences.
 			 */
-			ENGINE_INLINE void setFlag(Flag f, bool e) noexcept { e ? (flags |= f) : (flags &= ~f); }
-			ENGINE_INLINE bool getFlag(Flag f) const noexcept { return flags & f; }
+			ENGINE_INLINE void setFlag(PanelState f, bool e) noexcept { e ? (flags |= f) : (flags &= ~f); }
+			ENGINE_INLINE auto getFlag2(PanelState f) const noexcept { return flags & f; }
+			ENGINE_INLINE bool isFlag(PanelState f) const noexcept { return (flags & f) == f; }
 
-		private:
 			/**
 			 * @see Flag
 			 */
-			ENGINE_INLINE void setPerformingLayout(bool e) noexcept { setFlag(Flag::PerformingLayout, e); }
-			ENGINE_INLINE bool isPerformingLayout() const noexcept { return getFlag(Flag::PerformingLayout); }
+			ENGINE_INLINE void setPerformingLayout(bool e) noexcept { setFlag(PanelState::PerformingLayout, e); }
+			ENGINE_INLINE bool isPerformingLayout() const noexcept { return isFlag(PanelState::PerformingLayout); }
 			
 			/**
 			 * Called after a child panel has changed in a way that may affect the parent.
@@ -466,7 +482,6 @@ namespace Engine::Gui {
 				return child;
 			}
 	};
-
 
 	/**
 	 * A transparent panel.

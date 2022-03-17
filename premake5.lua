@@ -55,7 +55,7 @@ CONAN_PACKAGES = {
 		"freetype/VER-2-10-4@dnlj/wobbly",
 		"harfbuzz/2.8.1@dnlj/wobbly",
 		"fmtlib/8.0.1@dnlj/wobbly",
-		--"soil/latest@dnlj/wobbly", -- TODO: Look into soil2 or other image loading lib. We dont use any of the opengl features of soil.
+		--"soil/latest@dnlj/wobbly",
 
 	},
 	["generators"] = {
