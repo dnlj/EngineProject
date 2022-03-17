@@ -3,6 +3,7 @@
 
 // Game
 #include <Game/World.hpp>
+#include <Game/systems/CharacterMovementSystem.hpp>
 
 namespace {
 	using Filter = Engine::ECS::EntityFilterList<

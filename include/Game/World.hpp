@@ -9,24 +9,6 @@
 // Game
 #include <Game/Common.hpp>
 
-#include <Game/systems/InputSystem.hpp>
-#include <Game/systems/ActionSystem.hpp>
-#include <Game/systems/CharacterMovementSystem.hpp>
-#include <Game/systems/PhysicsOriginShiftSystem.hpp>
-#include <Game/systems/PhysicsSystem.hpp>
-#include <Game/systems/PhysicsInterpSystem.hpp>
-#include <Game/systems/CharacterSpellSystem.hpp>
-#include <Game/systems/CameraTrackingSystem.hpp>
-#include <Game/systems/SubWorldSystem.hpp>
-#include <Game/systems/MapSystem.hpp>
-#include <Game/systems/MapRenderSystem.hpp>
-#include <Game/systems/SpriteSystem.hpp>
-#include <Game/systems/EntityNetworkingSystem.hpp>
-#include <Game/systems/NetworkingSystem.hpp>
-#include <Game/systems/UISystem.hpp>
-#include <Game/systems/RenderPassSystem.hpp>
-#include <Game/systems/ParallaxBackgroundSystem.hpp>
-
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
@@ -36,34 +18,35 @@
 #include <Game/comps/NetworkStatsComponent.hpp>
 #include <Game/comps/MapAreaComponent.hpp>
 #include <Game/comps/BlockEntityComponent.hpp>
+#include <Game/comps/MapEditComponent.hpp>
 
 
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
 		// Networking
-		EntityNetworkingSystem,
-		NetworkingSystem,
+		class EntityNetworkingSystem,
+		class NetworkingSystem,
 
 		// Inputs
-		InputSystem,
-		ActionSystem,
+		class InputSystem,
+		class ActionSystem,
 
 		// Game Logic
-		CharacterMovementSystem,
-		PhysicsOriginShiftSystem,
-		PhysicsSystem,
-		CharacterSpellSystem,
+		class CharacterMovementSystem,
+		class PhysicsOriginShiftSystem,
+		class PhysicsSystem,
+		class CharacterSpellSystem,
 		//SubWorldSystem,
-		PhysicsInterpSystem,
-		CameraTrackingSystem,
-		MapSystem,
+		class PhysicsInterpSystem,
+		class CameraTrackingSystem,
+		class MapSystem,
 
 		// Rendering
 		//ParallaxBackgroundSystem,
-		MapRenderSystem,
-		SpriteSystem,
-		UISystem,
-		RenderPassSystem
+		class MapRenderSystem,
+		class SpriteSystem,
+		class UISystem,
+		class RenderPassSystem
 	>;
 	
 	using ComponentsSet = Meta::TypeSet::TypeSet<

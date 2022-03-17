@@ -31,6 +31,9 @@
 
 // Game
 #include <Game/systems/UISystem.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
+#include <Game/systems/MapSystem.hpp>
+#include <Game/systems/PhysicsOriginShiftSystem.hpp>
 #include <Game/World.hpp>
 
 namespace {

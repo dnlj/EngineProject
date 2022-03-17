@@ -8,6 +8,7 @@
 // Game
 #include <Game/systems/MapSystem.hpp>
 #include <Game/World.hpp>
+#include <Game/systems/PhysicsOriginShiftSystem.hpp>
 
 
 namespace {

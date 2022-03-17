@@ -3,6 +3,7 @@
 
 // Game
 #include <Game/World.hpp>
+#include <Game/systems/ParallaxBackgroundSystem.hpp>
 
 
 namespace Game {

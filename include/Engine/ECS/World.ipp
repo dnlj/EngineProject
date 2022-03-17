@@ -1,5 +1,3 @@
-#pragma once
-
 // Meta
 #include <Meta/IndexOf.hpp>
 
@@ -17,10 +15,15 @@ namespace Engine::ECS {
 		// If you are here from a compile error make sure your system has the correct constructor. Usually `using System::System` will work fine.
 		// You might be seeing this because you just added a member to an otherwise empty system.
 		//
-		, systems((sizeof(Ss*), std::forward<Arg>(arg)) ...) {
+		, systems{ new Ss(std::forward<Arg>(arg))... } {
 
 		tickTime = beginTime;
 		(getSystem<Ss>().setup(), ...);
+	}
+
+	WORLD_TPARAMS
+	WORLD_CLASS::~World() {
+		((delete &getSystem<Ss>()), ...);
 	}
 
 	WORLD_TPARAMS
@@ -86,50 +89,6 @@ namespace Engine::ECS {
 	}
 
 	WORLD_TPARAMS
-	template<class System>
-	constexpr static SystemId WORLD_CLASS::getSystemId() noexcept {
-		return ::Meta::IndexOf<System, Ss...>::value;
-	}
-
-	WORLD_TPARAMS
-	template<class... SystemN>
-	SystemBitset WORLD_CLASS::getBitsetForSystems() const {
-		SystemBitset value;
-		((value[getSystemId<SystemN>()] = true), ...);
-		return value;
-	};
-
-	WORLD_TPARAMS
-	float32 WORLD_CLASS::getDeltaTime() const {
-		return deltaTime;
-	}
-
-	WORLD_TPARAMS
-	auto WORLD_CLASS::getDeltaTimeNS() const {
-		return deltaTimeNS;
-	}
-
-	WORLD_TPARAMS
-	template<class SystemA, class SystemB>
-	constexpr static bool WORLD_CLASS::orderBefore() {
-		return ::Meta::IndexOf<SystemA, Ss...>::value < ::Meta::IndexOf<SystemB, Ss...>::value;
-	}
-
-	WORLD_TPARAMS
-	template<class SystemA, class SystemB>
-	constexpr static bool WORLD_CLASS::orderAfter() {
-		return orderBefore<SystemB, SystemA>();
-	}
-	
-	WORLD_TPARAMS
-	template<class Callable>
-	void WORLD_CLASS::callWithComponent(ComponentId cid, Callable&& callable) {
-		using Caller = void(Callable::*)(void) const;
-		constexpr Caller callers[]{ &Callable::template operator()<Cs>... };
-		return (callable.*callers[cid])();
-	}
-
-	WORLD_TPARAMS
 	void WORLD_CLASS::storeSnapshot() {
 		(getSystem<Ss>().preStoreSnapshot(), ...);
 
@@ -169,13 +128,5 @@ namespace Engine::ECS {
 
 		(getSystem<Ss>().postLoadSnapshot(), ...);
 		return true;
-	}
-
-	WORLD_TPARAMS
-	void WORLD_CLASS::setNextTick(Tick tick) {
-		// TODO: defer this till next `run`
-		currTick = tick - 1;
-		tickTime = Clock::now();
-		history.clear();
 	}
 }

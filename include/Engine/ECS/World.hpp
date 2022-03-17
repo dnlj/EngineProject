@@ -199,7 +199,9 @@ namespace Engine::ECS {
 			Clock::Duration deltaTimeNS{0};
 
 			/** All the systems in this world. */
-			std::tuple<Ss...> systems;
+			// TODO: rm - std::tuple<Ss...>* systems;
+			// TODO: at this point, now using pointers, is there a good reason to not just use inheritance/virtual functions?
+			void* systems[sizeof...(Ss)];
 
 		////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////
@@ -269,8 +271,8 @@ namespace Engine::ECS {
 			// TODO: doc
 			template<class Arg>
 			World(Arg&& arg);
-
 			World(const World&) = delete;
+			~World();
 
 			/**
 			 * Advances simulation time and calls the `tick` and `run` members of systems.
@@ -356,19 +358,24 @@ namespace Engine::ECS {
 			 * Gets the id of a system.
 			 */
 			template<class System>
-			constexpr static SystemId getSystemId() noexcept;
+			ENGINE_INLINE constexpr static SystemId getSystemId() noexcept { return ::Meta::IndexOf<System, Ss...>::value; }
 
 			/**
 			 * Gets the instance of the system for this world.
 			 */
 			template<class System>
-			ENGINE_INLINE System& getSystem() { return std::get<System>(systems); }
-
+			System& getSystem(){
+				return *reinterpret_cast<System*>(systems[getSystemId<System>()]);
+			}
 			/**
 			 * Gets a bitset with the bits for the given systems set.
 			 */
 			template<class... SystemN>
-			SystemBitset getBitsetForSystems() const; // TODO: constexpr, noexcept
+			SystemBitset getBitsetForSystems() const { // TODO: constexpr, noexcept
+				SystemBitset value;
+				((value[getSystemId<SystemN>()] = true), ...);
+				return value;
+			}
 
 			ENGINE_INLINE void debugEntityCheck(Entity e) const {
 				ENGINE_DEBUG_ASSERT(isValid(e), "Attempting to use invalid entity");
@@ -628,7 +635,12 @@ namespace Engine::ECS {
 			// TODO: also need to clear rollback history
 			// TODO: should this be setNextTick? might help avoid bugs if we wait till all systems are done before we adjust.
 			// TODO: doc
-			void setNextTick(Tick tick);
+			void setNextTick(Tick tick) {
+				// TODO: defer this till next `run`
+				currTick = tick - 1;
+				tickTime = Clock::now();
+				history.clear();
+			}
 
 			/**
 			 * Gets the tick interval.
@@ -655,28 +667,32 @@ namespace Engine::ECS {
 			/**
 			 * Gets the time (in seconds) last update took to run.
 			 */
-			float32 getDeltaTime() const;
+			ENGINE_INLINE float32 getDeltaTime() const noexcept { return deltaTime; }
 
 			/**
 			 * Gets the time (in nanoseconds) last update took to run.
 			 */
-			auto getDeltaTimeNS() const;
+			ENGINE_INLINE auto getDeltaTimeNS() const noexcept { return deltaTimeNS; }
 
 			/**
 			 * Checks if SystemA is run before SystemB.
 			 */
 			template<class SystemA, class SystemB>
-			constexpr static bool orderBefore();
+			constexpr static bool orderBefore() noexcept { return ::Meta::IndexOf<SystemA, Ss...>::value < ::Meta::IndexOf<SystemB, Ss...>::value; }
 
 			/**
 			 * Checks if SystemA is run after SystemB.
 			 */
 			template<class SystemA, class SystemB>
-			constexpr static bool orderAfter();
+			constexpr static bool orderAfter() noexcept { return orderBefore<SystemB, SystemA>(); }
 
 			// TODO: doc
 			template<class Callable>
-			void callWithComponent(ComponentId cid, Callable&& callable);
+			void callWithComponent(ComponentId cid, Callable&& callable) {
+				using Caller = void(Callable::*)(void) const;
+				constexpr Caller callers[]{ &Callable::template operator()<Cs>... };
+				return (callable.*callers[cid])();
+			}
 
 			/**
 			 * Helper to cast from `this` to CRTP derived class.
@@ -733,7 +749,7 @@ namespace Engine::ECS {
 	};
 }
 
-#include <Engine/ECS/World.ipp>
+//#include <Engine/ECS/World.ipp>
 
 #undef WORLD_TPARAMS
 #undef WORLD_CLASS

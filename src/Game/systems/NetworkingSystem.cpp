@@ -15,6 +15,7 @@
 #include <Game/World.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/comps/ConnectionComponent.hpp>
+#include <Game/systems/all.hpp> // TODO: any way to get around this? not great for build times
 
 namespace {
 	using PlayerFilter = Engine::ECS::EntityFilterList<

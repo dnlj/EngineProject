@@ -34,6 +34,10 @@
 // Game
 #include <Game/Common.hpp>
 #include <Game/World.hpp>
+#include <Game/MapGenerator2.hpp>
+#include <Game/systems/UISystem.hpp>
+#include <Game/systems/InputSystem.hpp>
+#include <Game/systems/ActionSystem.hpp>
 
 
 namespace {

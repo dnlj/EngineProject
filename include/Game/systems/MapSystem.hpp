@@ -24,6 +24,7 @@
 #include <Game/MapChunk.hpp>
 #include <Game/MapGenerator2.hpp>
 #include <Game/Connection.hpp>
+#include <Game/comps/MapEditComponent.hpp>
 
 // TODO: Document the different coordinate systems and terms used here.
 // TODO: convert to use sized types - int32, float32, etc.
@@ -60,13 +61,6 @@ namespace Game {
 				return loadedChunks.load() != size.x * size.y;
 			}
 			static_assert(decltype(loadedChunks)::is_always_lock_free);
-	};
-
-	// TODO: move
-	class MapEditComponent {
-		public:
-			bool place = false;
-			bool remove = false;
 	};
 
 	class MapSystem : public System {
