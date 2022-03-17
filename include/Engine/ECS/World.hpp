@@ -149,16 +149,14 @@ namespace Engine::ECS {
 
 namespace Engine::ECS {
 	/**
-	 * @tparam Derived CRTP dervied class. Needed for EntityFilter<Derived>. // TODO: this may no longer be needed? dont think its used anymore since filter rework.
 	 * @tparam TickRate The tick rate of the world.
 	 * @tparam SystemsSet The systems for this world to have.
 	 * @tparam ComponentsSet The components for entities in this world to have.
 	 */
-	template<class Derived, int64 TickRate, class SystemsSet, class ComponentsSet>
+	template<int64 TickRate, class SystemsSet, class ComponentsSet>
 	class World;
 
 	#define WORLD_TPARAMS template<\
-		class Derived,\
 		int64 TickRate,\
 		class... Ss,\
 		template<class...> class SystemsSet,\
@@ -166,14 +164,11 @@ namespace Engine::ECS {
 		template<class...> class ComponentsSet\
 	>
 
-	#define WORLD_CLASS World<Derived, TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
+	#define WORLD_CLASS World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
 	
 	WORLD_TPARAMS
 	class WORLD_CLASS {
 		static_assert(sizeof...(Cs) <= MAX_COMPONENTS);
-		public:
-			using Filter = EntityFilter; // TODO: now unneeded. use EntityFilter direct
-
 		private:
 			/** TODO: doc */
 			bool performingRollback = false;
@@ -199,8 +194,6 @@ namespace Engine::ECS {
 			Clock::Duration deltaTimeNS{0};
 
 			/** All the systems in this world. */
-			// TODO: rm - std::tuple<Ss...>* systems;
-			// TODO: at this point, now using pointers, is there a good reason to not just use inheritance/virtual functions?
 			void* systems[sizeof...(Ss)];
 
 		////////////////////////////////////////////////////////////////////
@@ -693,12 +686,6 @@ namespace Engine::ECS {
 				constexpr Caller callers[]{ &Callable::template operator()<Cs>... };
 				return (callable.*callers[cid])();
 			}
-
-			/**
-			 * Helper to cast from `this` to CRTP derived class.
-			 */
-			decltype(auto) self() { return reinterpret_cast<Derived&>(*this); }
-			decltype(auto) self() const { return reinterpret_cast<const Derived&>(*this); }
 
 		private:
 			void storeSnapshot();

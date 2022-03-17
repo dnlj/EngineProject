@@ -66,13 +66,10 @@ namespace Game {
 		struct NetworkedFlag
 	>;
 
-	// TODO: we could get rid of CRTP here by forward declaring all systems/components/flags...
-	// TODO: cont. - (effectively forward decl the sets) and making World a typedef and templating the ECS::World constructor...
-	// TODO: cont. - Would need to move the set defs into own file then. Not sure if worth. Probably is. CRTP is a little stinky.
-	class World : public Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet> {
+	class World : public Engine::ECS::World<tickrate, SystemsSet, ComponentsSet> {
 		public:
 			World(EngineInstance& engine)
-				: Engine::ECS::World<World, tickrate, SystemsSet, ComponentsSet>(std::tie(*this, engine)) {
+				: Engine::ECS::World<tickrate, SystemsSet, ComponentsSet>(std::tie(*this, engine)) {
 			}
 	};
 }

@@ -4,7 +4,6 @@
 
 // TODO: these shouldnt be here. figure out how to handle this better
 #define WORLD_TPARAMS template<\
-	class Derived,\
 	int64 TickRate,\
 	class... Ss,\
 	template<class...> class SystemsSet,\
@@ -12,7 +11,7 @@
 	template<class...> class ComponentsSet\
 >
 
-#define WORLD_CLASS World<Derived, TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
+#define WORLD_CLASS World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
 
 #include <Engine/ECS/World.ipp>
 
@@ -20,6 +19,6 @@
 #undef WORLD_TPARAMS
 #undef WORLD_CLASS
 
-template Engine::ECS::World<Game::World, Game::tickrate, Game::SystemsSet, Game::ComponentsSet>::World(std::tuple<Game::World&, Game::EngineInstance&>&&);
-template void Engine::ECS::World<Game::World, Game::tickrate, Game::SystemsSet, Game::ComponentsSet>::run();
-template Engine::ECS::World<Game::World, Game::tickrate, Game::SystemsSet, Game::ComponentsSet>::~World();
+template Engine::ECS::World<Game::tickrate, Game::SystemsSet, Game::ComponentsSet>::World(std::tuple<Game::World&, Game::EngineInstance&>&&);
+template void Engine::ECS::World<Game::tickrate, Game::SystemsSet, Game::ComponentsSet>::run();
+template Engine::ECS::World<Game::tickrate, Game::SystemsSet, Game::ComponentsSet>::~World();
