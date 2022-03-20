@@ -23,9 +23,8 @@ namespace Engine::ECS {
 	template<bool IncludeDisabled, class C, class World>
 	class SingleComponentFilter {
 		private:
-			using Cont = ComponentContainer<C>;
-			using It = decltype(std::declval<Cont>().begin());
-			using CIt = decltype(std::declval<Cont>().cbegin());
+			using It = decltype(std::declval<World>().template getComponentContainer<C>().begin());
+			using CIt = decltype(std::declval<World>().template getComponentContainer<C>().cbegin());
 			World& world;
 
 			class Iter {
@@ -36,7 +35,8 @@ namespace Engine::ECS {
 					World& world;
 
 					ENGINE_INLINE static auto& getCont(World& w) { return w.template getComponentContainer<C>(); }
-					ENGINE_INLINE auto& getCont() const { return getCont(world); }
+					ENGINE_INLINE static decltype(auto) getContBegin(World& w) { return getCont(w).begin(); }
+					ENGINE_INLINE static decltype(auto) getContEnd(World& w) { return getCont(w).end(); }
 
 					// TODO: do we also want to check if enabled? maybe filters need some way to specify what flags an entity should/shouoldnt have
 					ENGINE_INLINE bool canUse(Entity ent) const {
@@ -44,27 +44,27 @@ namespace Engine::ECS {
 					}
 
 					ENGINE_INLINE void stepNextValid() {
-						const auto end = getCont().end();
+						const auto end = getContEnd(world);
 						while (it != end && !canUse(it->first)) {
 							++it;
 						}
 					}
 
 					ENGINE_INLINE void stepPrevValid() {
-						const auto begin = getCont().begin();
+						const auto begin = getContBegin(world);
 						while (it != begin && !canUse(it->first)) {
 							--it;
 						}
 					}
 
 					static Iter begin(World& w) {
-						Iter temp{getCont(w).begin(), w};
+						Iter temp{getContBegin(w), w};
 						temp.stepNextValid();
 						return temp;
 					}
 
 					static Iter end(World& w) {
-						Iter temp{getCont(w).end(), w};
+						Iter temp{getContEnd(w), w};
 						return temp;
 					}
 
@@ -72,14 +72,14 @@ namespace Engine::ECS {
 
 				public:
 					auto& operator++() {
-						const auto end = getCont().end();
+						const auto end = getContEnd(world);
 						if (it != end) { ++it; }
 						stepNextValid();
 						return *this;
 					}
 
 					auto& operator--() {
-						const auto begin = getCont().begin();
+						const auto begin = getContBegin(world);
 						if (it != begin) { --it; }
 						stepPrevValid();
 						return *this;
@@ -134,6 +134,13 @@ namespace Engine::ECS {
 	template<class T>
 	struct IsSnapshotRelevant<T, std::void_t<typename T::SnapshotData>> : std::true_type {};
 
+	// TODO: move
+	template<class T, class = void>
+	struct ComponentContainerForSnapshot { using Type = bool; };
+
+	template<class T>
+	struct ComponentContainerForSnapshot<T, std::enable_if_t<IsSnapshotRelevant<T>::value>> { using Type = SparseSet<Entity, typename T::SnapshotData>; };
+
 	// TODO: rm - work around for requires clauses not working in `if constexpr` on msvc
 	template<class Sys, class Comp>
 	concept HasComponentAddedCallbackFor = requires (Sys sys, Engine::ECS::Entity ent, Comp comp) {
@@ -149,26 +156,56 @@ namespace Engine::ECS {
 
 namespace Engine::ECS {
 	/**
+	 * Manages entities, systems, and components.
+	 * You should probably use WorldHelper instead.
+	 * 
 	 * @tparam TickRate The tick rate of the world.
 	 * @tparam SystemsSet The systems for this world to have.
 	 * @tparam ComponentsSet The components for entities in this world to have.
+	 * @tparam FlagsSet The flag components.
+	 * @tparam MergedSet A set containing both the components and the flags for this world - Merged<Cs..., Fs...>
+	 * @see WorldHelper
 	 */
-	template<int64 TickRate, class SystemsSet, class ComponentsSet>
+	template<int64 TickRate, class SystemsSet, class ComponentsSet, class FlagsSet, class MergedSet>
 	class World;
 
 	#define WORLD_TPARAMS template<\
 		int64 TickRate,\
 		class... Ss,\
 		template<class...> class SystemsSet,\
+		class... Ns_,\
+		template<class...> class NonFlagsSet_,\
+		class... Fs_,\
+		template<class...> class FlagsSet_,\
 		class... Cs,\
 		template<class...> class ComponentsSet\
 	>
 
-	#define WORLD_CLASS World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>>
+	#define WORLD_CLASS World<TickRate, SystemsSet<Ss...>, NonFlagsSet_<Ns_...>, FlagsSet_<Fs_...>, ComponentsSet<Cs...>>
 	
 	WORLD_TPARAMS
 	class WORLD_CLASS {
 		static_assert(sizeof...(Cs) <= MAX_COMPONENTS);
+		public:
+			template<class C> struct IsFlagComponent {
+				constexpr static bool value = (std::is_same_v<C, Fs_> || ...);
+			};
+			template<class C> struct IsNonFlagComponent {
+				constexpr static bool value = (std::is_same_v<C, Ns_> || ...);
+			};
+			template<class C> struct IsAnyComponent {
+				constexpr static bool value = IsFlagComponent<C>::value || IsNonFlagComponent<C>::value;
+			};
+			template<class C> struct ComponentContainer
+				: std::conditional_t<IsFlagComponent<C>::value, SparseSet<Entity, void>, SparseSet<Entity, C>> {
+			};
+
+			using BaseType = World<TickRate, SystemsSet<Ss...>, NonFlagsSet_<Ns_...>, FlagsSet_<Fs_...>, ComponentsSet<Cs...>>;
+			using SystemsSetType = SystemsSet<Ss...>;
+			using NonFlagsSetType = NonFlagsSet_<Ns_...>;
+			using FlagSetType = FlagsSet_<Fs_...>;
+			using ComponentsSetType = ComponentsSet<Cs...>;
+
 		private:
 			/** TODO: doc */
 			bool performingRollback = false;
@@ -194,7 +231,7 @@ namespace Engine::ECS {
 			Clock::Duration deltaTimeNS{0};
 
 			/** All the systems in this world. */
-			void* systems[sizeof...(Ss)];
+			void* systems[sizeof...(Ss)] = {};
 
 		////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////
@@ -226,35 +263,51 @@ namespace Engine::ECS {
 			std::vector<ComponentBitset> compBitsets;
 
 			/** The containers for storing components. */
-			std::tuple<ComponentContainer<Cs>...> compContainers;
+			void* compContainers[sizeof...(Cs)] = {};
 
 			struct {
 				Engine::ECS::Tick tick = -1;
 				Clock::TimePoint time = {};
 			} rollbackData;
 
-			struct Snapshot {
-				Clock::TimePoint tickTime = {};
+			class Snapshot {
+				public:
+					Snapshot();
+					Snapshot(const Snapshot&) = delete;
+					~Snapshot();
 
-				// TODO: how should we handle flag components?
-				template<class T, class = void>
-				struct CompCont { using Type = bool; };
+					Snapshot& operator=(Snapshot&& other) {
+						swap(*this, other);
+						return *this;
+					}
 
-				template<class T>
-				struct CompCont<T, std::enable_if_t<IsSnapshotRelevant<T>::value>> { using Type = SparseSet<Entity, typename T::SnapshotData>; };
+					friend void swap(Snapshot& a, Snapshot& b) noexcept {
+						using std::swap;
+						swap(a.compContainers, b.compContainers);
+						swap(a.tickTime, b.tickTime);
+					}
 
-				std::tuple<typename CompCont<Cs>::Type ...> compConts;
-				template<class C>
-				ENGINE_INLINE auto& getComponentContainer() {
-					static_assert(IsSnapshotRelevant<C>::value,
-						"Attempting to get component container for non-snapshot relevant component."
-					);
+					Clock::TimePoint tickTime = {};
+					void* compContainers[sizeof...(Cs)] = {};
 
-					return std::get<getComponentId<C>()>(compConts);
-				}
+					template<class C>
+					ENGINE_INLINE auto& getComponentContainer() {
+						static_assert(IsSnapshotRelevant<C>::value,
+							"Attempting to get component container for non-snapshot relevant component."
+						);
+						ENGINE_DEBUG_ASSERT(IsSnapshotRelevant<C>::value);
+						ENGINE_DEBUG_ASSERT(getComponentContainer_Unsafe<C>() != nullptr);
+						return *getComponentContainer_Unsafe<C>();
+					}
 
-				template<class C>
-				ENGINE_INLINE const auto& getComponentContainer() const { return const_cast<Snapshot*>(this)->getComponentContainer<C>(); }
+					template<class C>
+					ENGINE_INLINE const auto& getComponentContainer() const { return const_cast<Snapshot*>(this)->getComponentContainer<C>(); }
+
+				private:
+					template<class C>
+					ENGINE_INLINE auto* getComponentContainer_Unsafe() {
+						return reinterpret_cast<ComponentContainerForSnapshot<C>::Type*>(compContainers[getComponentId<C>()]);
+					}
 
 			};
 
@@ -385,10 +438,8 @@ namespace Engine::ECS {
 			 */
 			template<class Component>
 			ENGINE_INLINE constexpr static ComponentId getComponentId() noexcept {
-				static_assert((std::is_same_v<Cs, Component> || ...),
-					"Attempting to get component id of type that is not in the component list. Did you forget to add it?"
-				);
-				return ::Meta::IndexOf<Component, Cs ...>::value;
+				static_assert(IsAnyComponent<Component>::value, "Attempting to get component id of type that is not in the component list. Did you forget to add it?");
+				return ::Meta::IndexOf<Component, Cs...>::value;
 			}
 
 			/**
@@ -409,7 +460,7 @@ namespace Engine::ECS {
 			 * @return A reference to the added component.
 			 */
 			template<class C, class... Args>
-			decltype(auto) addComponent(Entity ent, Args&&... args) { // TODO: split
+			decltype(auto) addComponent(Entity ent, Args&&... args) {
 				debugEntityCheck(ent);
 				constexpr auto cid = getComponentId<C>();
 				ENGINE_DEBUG_ASSERT(!hasComponent<C>(ent), "Attempting to add duplicate component (", cid ,") to ", ent);
@@ -497,7 +548,10 @@ namespace Engine::ECS {
 			/**
 			 * Removes all components from an entity.
 			 */
-			ENGINE_INLINE void removeAllComponents(Entity ent) { debugEntityCheck(ent); ((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...); };
+			ENGINE_INLINE void removeAllComponents(Entity ent) {
+				debugEntityCheck(ent);
+				((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 1)), ...);
+			};
 
 			/**
 			 * Gets a reference to the component instance associated with an entity.
@@ -701,14 +755,14 @@ namespace Engine::ECS {
 			ENGINE_INLINE ComponentContainer<C>& getComponentContainer() {
 				// Enabling this assert seems to cause compile errors with some of the `if constexpr` stuff
 				//static_assert(!IsFlagComponent<C>::value, "Attempting to get the container for a flag component.");
-				return std::get<ComponentContainer<C>>(compContainers);
+				return *static_cast<ComponentContainer<C>*>(compContainers[getComponentId<C>()]);
 			}
 
 			/**
 			 * Destroys and entity, freeing its id to be recycled.
 			 */
 			void destroyEntity(Entity ent) {
-				((hasComponent<Cs>(ent) && (removeComponent<Cs>(ent), 0)), ...);
+				removeAllComponents(ent);
 		
 				#if defined(DEBUG)
 					if (!isAlive(ent)) {
@@ -733,6 +787,25 @@ namespace Engine::ECS {
 				}
 				markedForDeath.clear();
 			}
+	};
+
+	/**
+	 * Helper class to automatically build the merged set for a World.
+	 * @see World
+	 */
+	template<int64 TickRate, class SystemsSet, class ComponentsSet, class FlagsSet>
+	class WorldHelper;
+
+	template<
+		int64 TickRate,
+		class... Ss, template<class...> class SystemsSet,
+		class... Cs, template<class...> class ComponentsSet,
+		class... Fs, template<class...> class FlagsSet
+	>
+	class WorldHelper<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>>
+		: public World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>, std::tuple<Cs..., Fs...>> {
+		public:
+			using World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>, std::tuple<Cs..., Fs...>>::World;
 	};
 }
 

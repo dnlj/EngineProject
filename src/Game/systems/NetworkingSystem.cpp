@@ -15,8 +15,8 @@
 #include <Game/World.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/all.hpp> // TODO: any way to get around this? not great for build times
-#include <Game/comps/ConnectionComponent.hpp>
-#include <Game/comps/SpriteComponent.hpp>
+#include <Game/comps/all.hpp>
+
 
 namespace {
 	using PlayerFilter = Engine::ECS::EntityFilterList<
@@ -333,8 +333,9 @@ namespace Game {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
+		ENGINE_DEBUG_ASSERT(IsNetworkedComponent<Game::SpriteComponent>); // TODO: rm 
 		world.callWithComponent(*cid, [&]<class C>(){
-			if constexpr (Engine::Net::IsNetworkedComponent<C>) {
+			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
 					auto& comp = world.addComponent<C>(local);
 					comp.netFromInit(engine, world, local, from);
@@ -365,7 +366,7 @@ namespace Game {
 		}
 
 		world.callWithComponent(*cid, [&]<class C>(){
-			if constexpr (Engine::Net::IsNetworkedComponent<C>) {
+			if constexpr (IsNetworkedComponent<C>) {
 				// TODO: this is a somewhat strange way to handle this
 				if constexpr (Engine::ECS::IsSnapshotRelevant<C>::value) {
 					const auto* tick = from.read<Engine::ECS::Tick>();
@@ -396,7 +397,7 @@ namespace Game {
 
 		Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
 			constexpr auto cid = world.getComponentId<C>();
-			if constexpr (!Engine::ECS::IsFlagComponent<C>::value) { return; }
+			if constexpr (!World::IsFlagComponent<C>::value) { return; }
 			if (!flags->test(cid)) { return; }
 
 			if (world.hasComponent<C>(local)) {

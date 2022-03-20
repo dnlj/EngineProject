@@ -7,8 +7,7 @@
 // Game
 #include <Game/World.hpp>
 #include <Game/systems/EntityNetworkingSystem.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
-#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/all.hpp>
 
 
 namespace {
@@ -112,7 +111,7 @@ namespace Game {
 			Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
 				// TODO: Note: this only updates components not flags. Still need to network flags.
 				constexpr auto cid = world.getComponentId<C>();
-				if constexpr (Engine::Net::IsNetworkedComponent<C>) {
+				if constexpr (IsNetworkedComponent<C>) {
 					if (!world.hasComponent<C>(ent)) { return; }
 					const auto& comp = world.getComponent<C>(ent);
 
@@ -143,7 +142,7 @@ namespace Game {
 						ENGINE_DEBUG_ASSERT("TODO: Update replication is not yet implemented");
 						// TODO: impl
 					}
-				} else if constexpr (Engine::ECS::IsFlagComponent<C>::value) {
+				} else if constexpr (World::IsFlagComponent<C>::value) {
 					const int32 diff = data.comps.test(cid) - world.getComponentsBitset(ent).test(cid);
 					if (diff) { flagComps.set(cid); }
 				}

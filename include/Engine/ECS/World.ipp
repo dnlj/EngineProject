@@ -7,6 +7,18 @@
 
 namespace Engine::ECS {
 	WORLD_TPARAMS
+	WORLD_CLASS::Snapshot::Snapshot()
+		: compContainers{(IsSnapshotRelevant<Cs>::value ? (new ComponentContainerForSnapshot<Cs>::Type()) : nullptr)... } {
+	}
+
+	WORLD_TPARAMS
+	WORLD_CLASS::Snapshot::~Snapshot() {
+		((delete getComponentContainer_Unsafe<Cs>()), ...);
+	}
+}
+
+namespace Engine::ECS {
+	WORLD_TPARAMS
 	template<class Arg>
 	WORLD_CLASS::World(Arg&& arg)
 		: beginTime{Clock::now()}
@@ -15,7 +27,8 @@ namespace Engine::ECS {
 		// If you are here from a compile error make sure your system has the correct constructor. Usually `using System::System` will work fine.
 		// You might be seeing this because you just added a member to an otherwise empty system.
 		//
-		, systems{ new Ss(std::forward<Arg>(arg))... } {
+		, systems{ new Ss(std::forward<Arg>(arg))... }
+		, compContainers{ new ComponentContainer<Cs>()... } {
 
 		tickTime = beginTime;
 		(getSystem<Ss>().setup(), ...);
@@ -24,6 +37,7 @@ namespace Engine::ECS {
 	WORLD_TPARAMS
 	WORLD_CLASS::~World() {
 		((delete &getSystem<Ss>()), ...);
+		((delete &getComponentContainer<Cs>()), ...);
 	}
 
 	WORLD_TPARAMS

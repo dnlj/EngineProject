@@ -81,7 +81,11 @@ namespace Engine {
 				};
 
 				auto& data = get(seq);
-				data = {}; // TODO: do we want this? not so sure
+				//
+				//
+				data = T(); // TODO: do we want this? not so sure
+				//
+				//
 				return data;
 			}
 

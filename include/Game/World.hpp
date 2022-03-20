@@ -2,23 +2,15 @@
 
 // Meta
 #include <Meta/TypeSet/TypeSet.hpp>
+#include <Engine/Meta/IsComplete.hpp>
 
 // Engine
 #include <Engine/ECS/World.hpp>
+#include <Engine/Net/Replication.hpp>
 
 // Game
 #include <Game/Common.hpp>
-
-#include <Game/comps/PhysicsBodyComponent.hpp>
-#include <Game/comps/PhysicsInterpComponent.hpp>
-#include <Game/comps/SpriteComponent.hpp>
-#include <Game/comps/ActionComponent.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
-#include <Game/comps/ECSNetworkingComponent.hpp>
-#include <Game/comps/NetworkStatsComponent.hpp>
-#include <Game/comps/MapAreaComponent.hpp>
-#include <Game/comps/BlockEntityComponent.hpp>
-#include <Game/comps/MapEditComponent.hpp>
+#include <Game/EngineInstance.hpp>
 
 
 namespace Game {
@@ -49,27 +41,55 @@ namespace Game {
 		class RenderPassSystem
 	>;
 	
-	using ComponentsSet = Meta::TypeSet::TypeSet<
-		MapEditComponent,
-		PhysicsBodyComponent,
-		PhysicsInterpComponent,
-		SpriteComponent,
-		ActionComponent,
-		ConnectionComponent,
-		ECSNetworkingComponent,
-		NetworkStatsComponent,
-		MapAreaComponent,
-		BlockEntityComponent,
-		struct CharacterSpellComponent, // TODO: rn xFlag?
+	using CompsSet = Meta::TypeSet::TypeSet<
+		class MapEditComponent,
+		class PhysicsBodyComponent,
+		class PhysicsInterpComponent,
+		class SpriteComponent,
+		class ActionComponent,
+		class ConnectionComponent,
+		class ECSNetworkingComponent,
+		class NetworkStatsComponent,
+		class MapAreaComponent,
+		class BlockEntityComponent
+	>;
+
+	using FlagsSet = Meta::TypeSet::TypeSet<
+		struct CharacterSpellComponent, // TODO: rn xFlag
 		struct PlayerFlag,
 		struct CameraTargetFlag,
 		struct NetworkedFlag
 	>;
 
-	class World : public Engine::ECS::World<tickrate, SystemsSet, ComponentsSet> {
+	// TODO is there a good reason we dont just have a `using=` decl here?
+	class World : public Engine::ECS::WorldHelper<tickrate, SystemsSet, CompsSet, FlagsSet> {
 		public:
 			World(EngineInstance& engine)
-				: Engine::ECS::World<tickrate, SystemsSet, ComponentsSet>(std::tie(*this, engine)) {
+				: Engine::ECS::WorldHelper<tickrate, SystemsSet, CompsSet, FlagsSet>(std::tie(*this, engine)) {
 			}
 	};
+
+	using ComponentsSet = World::ComponentsSetType;
+
+
+
+	// TODO: move this somewhere?
+	template<class T>
+	concept IsNetworkedComponent_internal = requires (T t) {
+		Engine::Net::Replication{t.netRepl()};
+	};
+
+	template<class T>
+	constexpr bool checkIsNetworkedComponent() {
+		if constexpr (World::IsFlagComponent<T>::value) {
+			return false;
+		} else {
+			static_assert(World::IsNonFlagComponent<T>::value, "Attempting to check if an invalid component should be networked.");
+			static_assert(Engine::Meta::IsComplete<T>::value, "Attempting to check if an incomplete component should be networked.");
+			return IsNetworkedComponent_internal<T>;
+		}
+	}
+
+	template<class T>
+	concept IsNetworkedComponent = checkIsNetworkedComponent<T>();
 }

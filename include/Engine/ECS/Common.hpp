@@ -30,22 +30,6 @@ namespace Engine::ECS {
 	/** The bitset type used for storing system priorites. */
 	using SystemBitset = Bitset<MAX_SYSTEMS>; // TODO: is there a reason this isnt a member of World?
 
-	/** Determiens if a component is a flag component */ // TODO: doc flag components somewhere.
-	template<class T, class = void>
-	struct IsFlagComponent : std::true_type {};
-
-	/** @see IsFlagComponent */
-	template<class T>
-	struct IsFlagComponent<T, std::enable_if_t<Meta::IsComplete<T>::value>> : std::is_empty<T> {};
-
-	/** The stored data type for a given component */
-	template<class T>
-	using ComponentData = std::conditional_t<IsFlagComponent<T>::value, void, T>;
-
-	/** The type used for storing components. */
-	template<class T>
-	struct ComponentContainer : SparseSet<Entity, ComponentData<T>> {};
-	
 	using EntityStates = std::vector<EntityState>;
 }
 

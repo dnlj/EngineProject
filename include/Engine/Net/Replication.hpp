@@ -11,10 +11,4 @@ namespace Engine::Net {
 		ALWAYS, // Unreliable frequent updates
 		UPDATE, // Reliable sent when modified
 	};
-
-	// TODO: where should we put this?
-	template<class T>
-	concept IsNetworkedComponent = requires (T t) {
-		Engine::Net::Replication{t.netRepl()};
-	};
 }
