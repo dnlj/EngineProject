@@ -13,6 +13,7 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/MessageType.hpp>
+#include <Game/Connection.hpp>
 
 
 namespace Game {

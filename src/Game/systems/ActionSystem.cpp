@@ -1,7 +1,10 @@
 // Game
-#include <Game/systems/ActionSystem.hpp>
 #include <Game/World.hpp>
+#include <Game/systems/ActionSystem.hpp>
 #include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/ConnectionComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/NetworkStatsComponent.hpp>
 
 
 namespace {

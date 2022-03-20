@@ -3,6 +3,7 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/comps/ECSNetworkingComponent.hpp>
+#include <Game/Connection.hpp>
 
 
 namespace Game {

@@ -5,10 +5,14 @@
 #include <Engine/Glue/Box2D.hpp>
 
 // Game
+#include <Game/World.hpp>
 #include <Game/systems/CharacterSpellSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
 #include <Game/comps/SpriteComponent.hpp>
-#include <Game/World.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/PhysicsInterpComponent.hpp>
+#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/ConnectionComponent.hpp>
 
 
 namespace Game {

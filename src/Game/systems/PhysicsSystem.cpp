@@ -2,6 +2,10 @@
 #include <Game/World.hpp>
 #include <Game/Math.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/PhysicsInterpComponent.hpp>
+#include <Game/comps/ConnectionComponent.hpp>
 
 namespace {
 	// TODO: rm or rename

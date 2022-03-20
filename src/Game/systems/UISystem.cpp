@@ -30,11 +30,16 @@
 #include <Engine/Gui/DemoWindow.hpp>
 
 // Game
+#include <Game/World.hpp>
 #include <Game/systems/UISystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/PhysicsOriginShiftSystem.hpp>
-#include <Game/World.hpp>
+#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/ConnectionComponent.hpp>
+#include <Game/comps/NetworkStatsComponent.hpp>
+
 
 namespace {
 	namespace Gui = Engine::Gui;

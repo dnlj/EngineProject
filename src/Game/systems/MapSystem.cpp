@@ -6,9 +6,16 @@
 #include <Engine/Glue/glm.hpp>
 
 // Game
-#include <Game/systems/MapSystem.hpp>
 #include <Game/World.hpp>
+#include <Game/systems/MapSystem.hpp>
 #include <Game/systems/PhysicsOriginShiftSystem.hpp>
+#include <Game/comps/ConnectionComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/SpriteComponent.hpp>
+#include <Game/comps/PhysicsInterpComponent.hpp>
+#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/MapAreaComponent.hpp>
+#include <Game/comps/BlockEntityComponent.hpp>
 
 
 namespace {

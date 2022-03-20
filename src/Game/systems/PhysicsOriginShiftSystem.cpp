@@ -1,4 +1,5 @@
 // Game
+#include <Game/systems/PhysicsSystem.hpp>
 #include <Game/systems/PhysicsOriginShiftSystem.hpp>
 #include <Game/World.hpp>
 

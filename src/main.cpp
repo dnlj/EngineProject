@@ -8,6 +8,9 @@
 #include <filesystem>
 #include <csignal>
 
+// Box2D
+#include <box2d/b2_body.h>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/TextureManager.hpp>
@@ -38,6 +41,7 @@
 #include <Game/systems/UISystem.hpp>
 #include <Game/systems/InputSystem.hpp>
 #include <Game/systems/ActionSystem.hpp>
+#include <Game/systems/PhysicsSystem.hpp>
 
 
 namespace {

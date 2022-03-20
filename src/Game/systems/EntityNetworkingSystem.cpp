@@ -7,6 +7,8 @@
 // Game
 #include <Game/World.hpp>
 #include <Game/systems/EntityNetworkingSystem.hpp>
+#include <Game/comps/ConnectionComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
 
 
 namespace {

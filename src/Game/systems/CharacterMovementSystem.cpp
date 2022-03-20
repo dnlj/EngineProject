@@ -1,9 +1,15 @@
+// Box2D
+#include <box2d/b2_math.h>
+
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Game
 #include <Game/World.hpp>
 #include <Game/systems/CharacterMovementSystem.hpp>
+#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
+
 
 namespace {
 	using Filter = Engine::ECS::EntityFilterList<

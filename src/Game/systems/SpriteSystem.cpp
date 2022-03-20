@@ -10,9 +10,10 @@
 #include <Engine/Glue/glm.hpp>
 
 // Game
+#include <Game/World.hpp>
 #include <Game/systems/SpriteSystem.hpp>
 #include <Game/comps/SpriteComponent.hpp>
-#include <Game/World.hpp>
+#include <Game/comps/PhysicsInterpComponent.hpp>
 
 
 namespace Game {

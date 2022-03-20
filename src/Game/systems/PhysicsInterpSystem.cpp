@@ -1,7 +1,8 @@
 // Game
 #include <Game/World.hpp>
-#include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/systems/PhysicsInterpSystem.hpp>
+#include <Game/comps/PhysicsInterpComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
 
 
 namespace Game {
