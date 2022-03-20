@@ -6,21 +6,21 @@
 
 
 namespace Engine::ECS {
-	WORLD_TPARAMS
-	WORLD_CLASS::Snapshot::Snapshot()
+	ECS_WORLD_TPARAMS
+	ECS_WORLD_CLASS::Snapshot::Snapshot()
 		: compContainers{(IsSnapshotRelevant<Cs>::value ? (new ComponentContainerForSnapshot<Cs>::Type()) : nullptr)... } {
 	}
 
-	WORLD_TPARAMS
-	WORLD_CLASS::Snapshot::~Snapshot() {
+	ECS_WORLD_TPARAMS
+	ECS_WORLD_CLASS::Snapshot::~Snapshot() {
 		((delete getComponentContainer_Unsafe<Cs>()), ...);
 	}
 }
 
 namespace Engine::ECS {
-	WORLD_TPARAMS
+	ECS_WORLD_TPARAMS
 	template<class Arg>
-	WORLD_CLASS::World(Arg&& arg)
+	ECS_WORLD_CLASS::World(Arg&& arg)
 		: beginTime{Clock::now()}
 		// TODO: add static_assert with requires statement to check this and give nice error message. Currently requires is not correctly supported on MSVC. See https://developercommunity.visualstudio.com/t/Keyword-requires-within-if-statement-d/1287202
 		// 
@@ -34,14 +34,14 @@ namespace Engine::ECS {
 		(getSystem<Ss>().setup(), ...);
 	}
 
-	WORLD_TPARAMS
-	WORLD_CLASS::~World() {
+	ECS_WORLD_TPARAMS
+	ECS_WORLD_CLASS::~World() {
 		((delete &getSystem<Ss>()), ...);
 		((delete &getComponentContainer<Cs>()), ...);
 	}
 
-	WORLD_TPARAMS
-	void WORLD_CLASS::run() {
+	ECS_WORLD_TPARAMS
+	void ECS_WORLD_CLASS::run() {
 		const auto endTime = Clock::now();
 		deltaTimeNS = endTime - beginTime;
 		beginTime = endTime;
@@ -92,8 +92,8 @@ namespace Engine::ECS {
 		destroyMarkedEntities();
 	}
 
-	WORLD_TPARAMS
-	void WORLD_CLASS::tickSystems() {
+	ECS_WORLD_TPARAMS
+	void ECS_WORLD_CLASS::tickSystems() {
 		++currTick;
 
 		storeSnapshot();
@@ -102,8 +102,8 @@ namespace Engine::ECS {
 		(getSystem<Ss>().postTick(), ...);
 	}
 
-	WORLD_TPARAMS
-	void WORLD_CLASS::storeSnapshot() {
+	ECS_WORLD_TPARAMS
+	void ECS_WORLD_CLASS::storeSnapshot() {
 		(getSystem<Ss>().preStoreSnapshot(), ...);
 
 		auto& snap = history.insertNoInit(currTick);
@@ -120,8 +120,8 @@ namespace Engine::ECS {
 		});
 	}
 
-	WORLD_TPARAMS
-	bool WORLD_CLASS::loadSnapshot(Tick tick) {
+	ECS_WORLD_TPARAMS
+	bool ECS_WORLD_CLASS::loadSnapshot(Tick tick) {
 		if (!history.contains(tick)) { return false; }
 
 		auto& snap = history.get(tick);
@@ -144,3 +144,7 @@ namespace Engine::ECS {
 		return true;
 	}
 }
+
+template ECS_WORLD_TYPE::World(ECS_WORLD_ARG);
+template void ECS_WORLD_TYPE::run();
+template ECS_WORLD_TYPE::~World();

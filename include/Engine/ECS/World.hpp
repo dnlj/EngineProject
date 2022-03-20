@@ -169,7 +169,7 @@ namespace Engine::ECS {
 	template<int64 TickRate, class SystemsSet, class ComponentsSet, class FlagsSet, class MergedSet>
 	class World;
 
-	#define WORLD_TPARAMS template<\
+	#define ECS_WORLD_TPARAMS template<\
 		int64 TickRate,\
 		class... Ss,\
 		template<class...> class SystemsSet,\
@@ -181,10 +181,10 @@ namespace Engine::ECS {
 		template<class...> class ComponentsSet\
 	>
 
-	#define WORLD_CLASS World<TickRate, SystemsSet<Ss...>, NonFlagsSet_<Ns_...>, FlagsSet_<Fs_...>, ComponentsSet<Cs...>>
+	#define ECS_WORLD_CLASS World<TickRate, SystemsSet<Ss...>, NonFlagsSet_<Ns_...>, FlagsSet_<Fs_...>, ComponentsSet<Cs...>>
 	
-	WORLD_TPARAMS
-	class WORLD_CLASS {
+	ECS_WORLD_TPARAMS
+	class ECS_WORLD_CLASS {
 		static_assert(sizeof...(Cs) <= MAX_COMPONENTS);
 		public:
 			template<class C> struct IsFlagComponent {
@@ -798,8 +798,3 @@ namespace Engine::ECS {
 			using World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>, std::tuple<Cs..., Fs...>>::World;
 	};
 }
-
-//#include <Engine/ECS/World.ipp>
-
-#undef WORLD_TPARAMS
-#undef WORLD_CLASS
