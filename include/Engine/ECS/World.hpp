@@ -274,18 +274,8 @@ namespace Engine::ECS {
 				public:
 					Snapshot();
 					Snapshot(const Snapshot&) = delete;
+					Snapshot& operator=(const Snapshot&) = delete;
 					~Snapshot();
-
-					Snapshot& operator=(Snapshot&& other) {
-						swap(*this, other);
-						return *this;
-					}
-
-					friend void swap(Snapshot& a, Snapshot& b) noexcept {
-						using std::swap;
-						swap(a.compContainers, b.compContainers);
-						swap(a.tickTime, b.tickTime);
-					}
 
 					Clock::TimePoint tickTime = {};
 					void* compContainers[sizeof...(Cs)] = {};

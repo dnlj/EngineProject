@@ -58,7 +58,7 @@ namespace Engine {
 				return seqGreater(seq, min()) || seq == min();
 			}
 			
-			T& insert(S seq) {
+			T& insertNoInit(S seq) {
 				ENGINE_DEBUG_ASSERT(canInsert(seq), "Attempting to insert invalid entry.");
 
 				if (const S n = seq + 1; seqGreater(n, next)) {
@@ -81,12 +81,11 @@ namespace Engine {
 				};
 
 				auto& data = get(seq);
-				//
-				//
-				data = T(); // TODO: do we want this? not so sure
-				//
-				//
 				return data;
+			}
+			
+			T& insert(S seq) {
+				return insertNoInit(seq) = T();
 			}
 
 			// TODO: doc that data is not removed until overwritten

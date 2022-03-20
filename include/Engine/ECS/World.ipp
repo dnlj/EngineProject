@@ -106,7 +106,7 @@ namespace Engine::ECS {
 	void WORLD_CLASS::storeSnapshot() {
 		(getSystem<Ss>().preStoreSnapshot(), ...);
 
-		auto& snap = history.insert(currTick);
+		auto& snap = history.insertNoInit(currTick);
 		snap.tickTime = tickTime;
 		Meta::ForEach<Cs...>::call([&]<class C>{
 			if constexpr (IsSnapshotRelevant<C>::value) {
