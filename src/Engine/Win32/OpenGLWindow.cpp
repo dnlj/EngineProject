@@ -1,6 +1,8 @@
 // Windows
 #include <Windows.h>
 #include <windowsx.h>
+#include <hidsdi.h> // Needed for type definitions in hidpi.h
+#include <hidpi.h>
 
 // STD
 #include <iomanip>
@@ -124,6 +126,132 @@ namespace {
 		std::cout.flags(flags);
 	}
 
+	void printRawHIDPreparsedData(const RAWHID& raw, PHIDP_PREPARSED_DATA data, bool desc) { // Preparsed data can be retrieved with GetRawInputDeviceInfo
+		const auto flags = std::cout.flags();
+		HIDP_CAPS caps = {};
+		ENGINE_ASSERT(HidP_GetCaps(data, &caps) == HIDP_STATUS_SUCCESS, "Invalid HIDP_PREPARSED_DATA");
+
+		std::cout << "-- HIDP_PREPARSED_DATA ---------------------------------------------------------\n";
+
+		auto hex = [&](const auto& v) { return fmt::format("{:#x}", v); };
+
+		if (desc) {
+			std::cout << "HIDP_CAPS: "
+				<< "\n\tUsage: " << caps.Usage
+				<< "\n\tUsagePage: " << caps.UsagePage
+				<< "\n\tInputReportByteLength: " << caps.InputReportByteLength
+				<< "\n\tOutputReportByteLength: " << caps.OutputReportByteLength
+				<< "\n\tFeatureReportByteLength: " << caps.FeatureReportByteLength
+				<< "\n\tNumberLinkCollectionNodes: " << caps.NumberLinkCollectionNodes
+				<< "\n\tNumberInputButtonCaps: " << caps.NumberInputButtonCaps
+				<< "\n\tNumberInputValueCaps: " << caps.NumberInputValueCaps
+				<< "\n\tNumberInputDataIndices: " << caps.NumberInputDataIndices
+				<< "\n\tNumberOutputButtonCaps: " << caps.NumberOutputButtonCaps
+				<< "\n\tNumberOutputValueCaps: " << caps.NumberOutputValueCaps
+				<< "\n\tNumberOutputDataIndices: " << caps.NumberOutputDataIndices
+				<< "\n\tNumberFeatureButtonCaps: " << caps.NumberFeatureButtonCaps
+				<< "\n\tNumberFeatureValueCaps: " << caps.NumberFeatureValueCaps
+				<< "\n\tNumberFeatureDataIndices: " << caps.NumberFeatureDataIndices
+				<< "\n";
+		}
+
+		{
+			std::vector<HIDP_BUTTON_CAPS> btncaps;
+			USHORT sz = caps.NumberInputButtonCaps;
+			btncaps.resize(sz);
+			ENGINE_ASSERT(HidP_GetButtonCaps(HidP_Input, btncaps.data(), &sz, data) == HIDP_STATUS_SUCCESS);
+			for (int i = 0; i < sz; ++i) {
+				auto& cap = btncaps[i];
+				if (desc) {
+					std::cout << "HIDP_BUTTON_CAPS: "
+						<< "\n\tUsagePage: " << cap.UsagePage
+						<< "\n\tReportID: " << (int)cap.ReportID
+						<< "\n\tIsAlias: " << (bool)cap.IsAlias
+						<< "\n\tBitField: " << cap.BitField
+						<< "\n\tLinkCollection: " << cap.LinkCollection
+						<< "\n\tLinkUsage: " << cap.LinkUsage
+						<< "\n\tLinkUsagePage: " << cap.LinkUsagePage
+						<< "\n\tIsRange: " << (bool)cap.IsRange
+						<< "\n\tIsStringRange: " << (bool)cap.IsStringRange
+						<< "\n\tIsDesignatorRange: " << (bool)cap.IsDesignatorRange
+						<< "\n\tIsAbsolute: " << (bool)cap.IsAbsolute
+						<< "\n\t\tUsage: (" << hex(cap.Range.UsageMin) << ", " << hex(cap.Range.UsageMax) << ")"
+						<< "\n\t\tString: (" << cap.Range.StringMin << ", " << cap.Range.StringMax << ")"
+						<< "\n\t\tDesignator: (" << cap.Range.DesignatorMin << ", " << cap.Range.DesignatorMax << ")"
+						<< "\n\t\tDataIndex: (" << cap.Range.DataIndexMin << ", " << cap.Range.DataIndexMax << ")"
+						<< "\n";
+				}
+
+				const auto count = cap.Range.UsageMax - cap.Range.UsageMin + 1;
+				std::vector<USAGE> usages;
+				ULONG usagesSz = count;
+				usages.resize(usagesSz);
+				ENGINE_ASSERT(
+					HIDP_STATUS_SUCCESS ==
+					HidP_GetUsages(HidP_Input, cap.UsagePage, cap.LinkCollection, usages.data(), &usagesSz, data, (CHAR*)raw.bRawData, raw.dwSizeHid)
+				);
+
+				for (ULONG u = 0; u < usagesSz; ++u) {
+					std::cout << "BUTTON USAGE: " << usages[u] << "\n";
+				}
+			}
+		}
+
+		{
+			std::vector<HIDP_VALUE_CAPS> valcaps;
+			USHORT sz = caps.NumberInputValueCaps;
+			valcaps.resize(sz);
+			ENGINE_ASSERT(HidP_GetValueCaps(HidP_Input, valcaps.data(), &sz, data) == HIDP_STATUS_SUCCESS);
+			for (int i = 0; i < sz; ++i) {
+				auto& cap = valcaps[i];
+				if (desc) {
+					std::cout << "HIDP_VALUE_CAPS: "
+						<< "\n\tUsagePage: " << cap.UsagePage
+						<< "\n\tReportID: " << (int)cap.ReportID
+						<< "\n\tIsAlias: " << (bool)cap.IsAlias
+						<< "\n\tBitField: " << cap.BitField
+						<< "\n\tLinkCollection: " << cap.LinkCollection
+						<< "\n\tLinkUsage: " << cap.LinkUsage
+						<< "\n\tLinkUsagePage: " << cap.LinkUsagePage
+						<< "\n\tIsRange: " << (bool)cap.IsRange
+						<< "\n\tIsStringRange: " << (bool)cap.IsStringRange
+						<< "\n\tIsDesignatorRange: " << (bool)cap.IsDesignatorRange
+						<< "\n\tIsAbsolute: " << (bool)cap.IsAbsolute
+						<< "\n\tHasNull: " << (bool)cap.HasNull
+						<< "\n\tReserved: " << (int)cap.Reserved
+						<< "\n\tBitSize: " << cap.BitSize
+						<< "\n\tReportCount: " << cap.ReportCount
+						<< "\n\tUnitsExp: " << cap.UnitsExp
+						<< "\n\tUnits: " << cap.Units
+						<< "\n\tLogical: (" << cap.LogicalMin << ", " << cap.LogicalMax << ")"
+						<< "\n\tPhysical: (" << cap.PhysicalMin << ", " << cap.PhysicalMax << ")"
+						<< "\n\t\tUsage: (" << hex(cap.Range.UsageMin) << ", " << hex(cap.Range.UsageMax) << ")"
+						<< "\n\t\tString: (" << cap.Range.StringMin << ", " << cap.Range.StringMax << ")"
+						<< "\n\t\tDesignator: (" << cap.Range.DesignatorMin << ", " << cap.Range.DesignatorMax << ")"
+						<< "\n\t\tDataIndex: (" << cap.Range.DataIndexMin << ", " << cap.Range.DataIndexMax << ")"
+						<< "\n";
+				}
+
+				//const auto count = cap.Range.UsageMax - cap.Range.UsageMin + 1;
+				//std::vector<USAGE> usages;
+				//ULONG usagesSz = count;
+				//usages.resize(usagesSz);
+				//
+				ULONG value = 0;
+				// TODO: need to handle IsRange=true
+				ENGINE_ASSERT(
+					HIDP_STATUS_SUCCESS ==
+					HidP_GetUsageValue(HidP_Input, cap.UsagePage, cap.LinkCollection, cap.Range.UsageMin, &value, data, (CHAR*)raw.bRawData, raw.dwSizeHid)
+				);
+				std::cout << "VALUE USAGE: " << value << "\n";
+			}
+		}
+
+		// TODO: HidP_GetValueCaps
+
+		std::cout.flags(flags);
+	}
+
 	void printRawDevices() {
 		UINT numDevices;
 		ENGINE_ASSERT(GetRawInputDeviceList(nullptr, &numDevices, sizeof(RAWINPUTDEVICELIST)) != static_cast<UINT>(-1),
@@ -226,19 +354,8 @@ namespace Engine::Win32 {
 		// If raw.hDevice == 0 then it is a virtual device such as On-Screen Keyboard or other software.
 		UINT size = std::extent_v<decltype(rawInputBuffer)>;
 
-		if constexpr (ENGINE_DEBUG) {
-			GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
-			ENGINE_ASSERT(size <= std::extent_v<decltype(rawInputBuffer)>, "Raw input buffer to small. Needs at least ", size);
-		}
-
-		GetRawInputData(
-			reinterpret_cast<HRAWINPUT>(lParam),
-			RID_INPUT,
-			window.rawInputBuffer,
-			&size,
-			sizeof(RAWINPUTHEADER)
-		);
-
+		GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, window.rawInputBuffer, &size, sizeof(RAWINPUTHEADER));
+		ENGINE_DEBUG_ASSERT(size <= sizeof(rawInputBuffer), "Raw input buffer to small. Needs at least ", size);
 		const auto& raw = *reinterpret_cast<RAWINPUT*>(window.rawInputBuffer);
 
 		// TODO: split into functions like we did for WM_* messages.
@@ -342,7 +459,20 @@ namespace Engine::Win32 {
 
 			window.callbacks.keyCallback(event);
 		} else if (raw.header.dwType == RIM_TYPEHID) {
-			// TODO: Gamepad input
+			const auto& data = raw.data.hid;
+			ENGINE_INFO("HID: ", data.dwSizeHid, " ", data.dwCount, " ", (uintptr_t)data.bRawData);
+
+			if (UINT req = 0; 1 > GetRawInputDeviceInfo(raw.header.hDevice, RIDI_PREPARSEDDATA, window.hidPreparsedData.data(), &req)) {
+				window.hidPreparsedData.resize(req);
+				ENGINE_INFO("Resize preparsed: ", req);
+				if (1 > GetRawInputDeviceInfo(raw.header.hDevice, RIDI_PREPARSEDDATA, window.hidPreparsedData.data(), &req)) [[unlikely]] {
+					ENGINE_WARN("Error reading HID preparsed data: ", Win32::getLastErrorMessage());
+					return 0;
+				}
+			}
+
+			auto* parsed = reinterpret_cast<PHIDP_PREPARSED_DATA>(window.hidPreparsedData.data());
+			printRawHIDPreparsedData(data, parsed, true);
 		}
 
 		return 0;
@@ -530,13 +660,12 @@ namespace Engine::Win32 {
 					.dwFlags = RIDEV_INPUTSINK,  // We still need legacy messages for correct cursor w/ ballistics
 					.hwndTarget = windowHandle,
 				},
-				// TODO: Gamepad
-				//{ // Gamepad
-				//	.usUsagePage = 0x01,
-				//	.usUsage = 0x05,
-				//	.dwFlags = 0,
-				//	.hwndTarget = nullptr,
-				//},
+				{ // Gamepad
+					.usUsagePage = 0x01,
+					.usUsage = 0x05,
+					.dwFlags = 0,
+					.hwndTarget = nullptr,
+				},
 				{ // Keyboard
 					.usUsagePage = 0x01,
 					.usUsage = 0x06,

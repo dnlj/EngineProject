@@ -59,6 +59,7 @@ namespace Engine::Win32 {
 			// we still need potentially arbitrary size. I guess whenever we add hid version support
 			// we should use a vector and resize when needed? Is there a better option? Maybe controllers have a maximal size?
 			alignas(8) BYTE rawInputBuffer[128] = {};
+			std::vector<byte> hidPreparsedData;
 
 			// TODO: if we want to save key bindings to a config file we will need a way to back to HANDLE and use RIDI_DEVICENAME to save
 			std::vector<HANDLE> deviceHandleToId;

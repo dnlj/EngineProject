@@ -225,7 +225,8 @@ project("*")
 		links {
 			"opengl32",
 			"Ws2_32",
-			"Imm32"
+			"Imm32",
+			"hid",
 		}
 	filter "configurations:Debug*"
 		conan_setup("debug")
