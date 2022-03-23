@@ -1,8 +1,6 @@
 // Windows
 #include <Windows.h>
 #include <windowsx.h>
-#include <hidsdi.h> // Needed for type definitions in hidpi.h
-#include <hidpi.h>
 
 // STD
 #include <iomanip>
@@ -205,6 +203,7 @@ namespace {
 			for (int i = 0; i < sz; ++i) {
 				auto& cap = valcaps[i];
 				if (desc) {
+					const auto logicalMask = (1<<cap.BitSize)-1;
 					std::cout << "HIDP_VALUE_CAPS: "
 						<< "\n\tUsagePage: " << cap.UsagePage
 						<< "\n\tReportID: " << (int)cap.ReportID
@@ -224,6 +223,7 @@ namespace {
 						<< "\n\tUnitsExp: " << cap.UnitsExp
 						<< "\n\tUnits: " << cap.Units
 						<< "\n\tLogical: (" << cap.LogicalMin << ", " << cap.LogicalMax << ")"
+						<< "\n\tLogicalM: (" << (cap.LogicalMin & logicalMask) << ", " << (cap.LogicalMax & logicalMask) << ")"
 						<< "\n\tPhysical: (" << cap.PhysicalMin << ", " << cap.PhysicalMax << ")"
 						<< "\n\t\tUsage: (" << hex(cap.Range.UsageMin) << ", " << hex(cap.Range.UsageMax) << ")"
 						<< "\n\t\tString: (" << cap.Range.StringMin << ", " << cap.Range.StringMax << ")"
@@ -462,17 +462,16 @@ namespace Engine::Win32 {
 			const auto& data = raw.data.hid;
 			ENGINE_INFO("HID: ", data.dwSizeHid, " ", data.dwCount, " ", (uintptr_t)data.bRawData);
 
-			if (UINT req = 0; 1 > GetRawInputDeviceInfo(raw.header.hDevice, RIDI_PREPARSEDDATA, window.hidPreparsedData.data(), &req)) {
+			if (UINT req = 0; 1 > GetRawInputDeviceInfoW(raw.header.hDevice, RIDI_PREPARSEDDATA, window.hidPreparsedData.data(), &req)) {
 				window.hidPreparsedData.resize(req);
 				ENGINE_INFO("Resize preparsed: ", req);
-				if (1 > GetRawInputDeviceInfo(raw.header.hDevice, RIDI_PREPARSEDDATA, window.hidPreparsedData.data(), &req)) [[unlikely]] {
+				if (1 > GetRawInputDeviceInfoW(raw.header.hDevice, RIDI_PREPARSEDDATA, window.hidPreparsedData.data(), &req)) [[unlikely]] {
 					ENGINE_WARN("Error reading HID preparsed data: ", Win32::getLastErrorMessage());
 					return 0;
 				}
 			}
-
 			auto* parsed = reinterpret_cast<PHIDP_PREPARSED_DATA>(window.hidPreparsedData.data());
-			printRawHIDPreparsedData(data, parsed, true);
+			printRawHIDPreparsedData(data, parsed, false);
 		}
 
 		return 0;
@@ -660,11 +659,12 @@ namespace Engine::Win32 {
 					.dwFlags = RIDEV_INPUTSINK,  // We still need legacy messages for correct cursor w/ ballistics
 					.hwndTarget = windowHandle,
 				},
+				// TODO: may also want to support Joystick (0x04) and Multi-axis Controller (0x08)
 				{ // Gamepad
 					.usUsagePage = 0x01,
 					.usUsage = 0x05,
-					.dwFlags = 0,
-					.hwndTarget = nullptr,
+					.dwFlags = RIDEV_INPUTSINK,
+					.hwndTarget = windowHandle,
 				},
 				{ // Keyboard
 					.usUsagePage = 0x01,
