@@ -459,9 +459,57 @@ namespace Engine::Win32 {
 
 			window.callbacks.keyCallback(event);
 		} else if (raw.header.dwType == RIM_TYPEHID) {
-			const auto& data = raw.data.hid;
-			ENGINE_INFO("HID: ", data.dwSizeHid, " ", data.dwCount, " ", (uintptr_t)data.bRawData);
+			// TODO: controller support - 9rQUMGgf
+			/*const auto& data = raw.data.hid;
+			//ENGINE_INFO("HID: ", data.dwSizeHid, " ", data.dwCount, " ", (uintptr_t)data.bRawData);
+			
+			{
+				UINT sz = 0;
+				// The documentation claims the last argument is size in bytes. This is wrong. It is the size in chars (wchar if using the *W version of this function).
+				GetRawInputDeviceInfoW(raw.header.hDevice, RIDI_DEVICENAME, nullptr, &sz);
+				std::wstring str(sz, '\0');
 
+				ENGINE_LOG(sz, " - ", str.size() * sizeof(str[0]));
+
+				if (-1 != GetRawInputDeviceInfoW(raw.header.hDevice, RIDI_DEVICENAME, str.data(), &sz)) {
+					std::wcout << "NAME: " << str << '\n';
+				}
+
+				auto handle = CreateFileW(
+					str.data(),
+					GENERIC_READ | GENERIC_WRITE,
+					FILE_SHARE_READ | FILE_SHARE_WRITE,
+					0,
+					OPEN_EXISTING,
+					FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED,
+					0
+				);
+
+				if (handle != INVALID_HANDLE_VALUE) {
+					str.clear(); str.resize(128); // For USB this is <= 127 inc null (wide chars)
+					if (HidD_GetProductString(handle, str.data(), ULONG(str.size() * sizeof(str[0])))) {
+						std::wcout << "HidD_GetProductString: " << str << '\n';
+					}
+
+					str.clear(); str.resize(128); // For USB this is <= 127 inc null (wide chars)
+					if (HidD_GetManufacturerString(handle, str.data(), ULONG(str.size() * sizeof(str[0])))) {
+						std::wcout << "HidD_GetManufacturerString: " << str << '\n';
+					}
+
+					CloseHandle(handle);
+				}
+			}
+
+			{
+				RID_DEVICE_INFO info;
+				UINT sz = sizeof(info);
+				if (auto res = GetRawInputDeviceInfoW(raw.header.hDevice, RIDI_DEVICEINFO, &info, &sz); res > 0) {
+					std::cout << "HID INFO: " << info.hid.dwProductId << " " << info.hid.dwVendorId << " " << info.hid.dwVersionNumber << '\n';
+				}
+			}
+
+			// TODO: im pretty sure we only need to get preparsed data once. To my understanding this is basically windows version of hid report descriptor
+			// https://github.com/libsdl-org/SDL/blob/main/src/joystick/windows/SDL_rawinputjoystick.c#L1135
 			if (UINT req = 0; 1 > GetRawInputDeviceInfoW(raw.header.hDevice, RIDI_PREPARSEDDATA, window.hidPreparsedData.data(), &req)) {
 				window.hidPreparsedData.resize(req);
 				ENGINE_INFO("Resize preparsed: ", req);
@@ -470,8 +518,11 @@ namespace Engine::Win32 {
 					return 0;
 				}
 			}
-			auto* parsed = reinterpret_cast<PHIDP_PREPARSED_DATA>(window.hidPreparsedData.data());
-			printRawHIDPreparsedData(data, parsed, false);
+
+			//auto* parsed = reinterpret_cast<PHIDP_PREPARSED_DATA>(window.hidPreparsedData.data());
+			//printRawHIDPreparsedData(data, parsed, true);
+
+			*/
 		}
 
 		return 0;
@@ -660,12 +711,12 @@ namespace Engine::Win32 {
 					.hwndTarget = windowHandle,
 				},
 				// TODO: may also want to support Joystick (0x04) and Multi-axis Controller (0x08)
-				{ // Gamepad
-					.usUsagePage = 0x01,
-					.usUsage = 0x05,
-					.dwFlags = RIDEV_INPUTSINK,
-					.hwndTarget = windowHandle,
-				},
+				//{ // Gamepad
+				//	.usUsagePage = 0x01,
+				//	.usUsage = 0x05,
+				//	.dwFlags = RIDEV_INPUTSINK,
+				//	.hwndTarget = windowHandle,
+				//},
 				{ // Keyboard
 					.usUsagePage = 0x01,
 					.usUsage = 0x06,
@@ -741,7 +792,6 @@ namespace Engine::Win32 {
 		return 0;
 	}
 
-	
 	auto OpenGLWindow::getKeyboardState(Input::DeviceId id) -> KeyboardState& {
 		return *keyboardData[id];
 	}

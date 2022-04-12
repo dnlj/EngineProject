@@ -34,6 +34,10 @@ namespace Engine {
 		public:
 			Bitset() = default;
 
+			Bitset(const void* data, int len) {
+				memcpy(storage, data, len);
+			}
+
 			template<std::integral I>
 			Bitset(I initial) {
 				if constexpr (sizeof(I) > sizeof(StorageUnit)) {

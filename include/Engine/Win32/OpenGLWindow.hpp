@@ -54,10 +54,14 @@ namespace Engine::Win32 {
 			// change in that axis). As far as i can tell this is an entirely artificial merging because if you handle
 			// reading from the hid device directly, or use a different api, the data is separate.
 			//
+			// Apparently this z axis merging was intention to encourage people to use xinput? I've read seen this
+			// stated in multiple places.
+			//
 			// To solve this your options are:
 			// 1. Use DirectInput - No
 			//    * Deprecated
 			//    * Provides nothing over RAWINPUT
+			//    * Has the same z axis problem
 			// 2. Use XInput - Supersedes DirectInput. Has separate drive in device manager that handles triggers correctly (also used by WinRT?).
 			//    * Has a 4 controller limit
 			//    * Doesnt fully support xbox one controllers ("impulse triggers")
@@ -70,6 +74,9 @@ namespace Engine::Win32 {
 			//    * Does it support non-xbox controllers?
 			// 4. Use RAWINPUT/hid directly. Read the hid reports using RAWINPUT.data.hid.bRawData or CreateFile/ReadFile/DeviceIoControl
 			//    and manually parse the data. (Apparently bRawData is the raw hid report data)
+			//    * The rest of the info in this section is wrong.
+			//      For some reason i thought that bRawData contained full input info which is wrong.
+			//      It only contains the info accessible by `HidP_*` function so it doesnt solve the problem with Z-axis.
 			//    * Pain to implement
 			//    * High maintenance
 			//    * Will require lots of special cases to handle different controller features ("impulse triggers", PS4 rumble/led, etc.)
@@ -102,10 +109,10 @@ namespace Engine::Win32 {
 			// Understanding HID Report Descriptors: http://who-t.blogspot.com/2018/12/understanding-hid-report-descriptors.html (https://web.archive.org/web/20220323050817/http://who-t.blogspot.com/2018/12/understanding-hid-report-descriptors.html)
 			// Windows Driver Kit samples "HClient" (search "WDK Samples"): https://github.com/microsoft/Windows-driver-samples/tree/master/hid/hclient
 			//
-			struct HIDState {
-				std::vector<HIDP_BUTTON_CAPS> btnCaps;
-				std::vector<HIDP_VALUE_CAPS> axisCaps;
-			};
+			//struct HIDState {
+			//	std::vector<HIDP_BUTTON_CAPS> btnCaps;
+			//	std::vector<HIDP_VALUE_CAPS> axisCaps;
+			//};
 
 			static constexpr wchar_t className[] = L"Engine::Win32::OpenGLWindow";
 			
