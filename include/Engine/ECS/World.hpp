@@ -10,7 +10,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
-#include <Engine/ECS/Common.hpp>
+#include <Engine/ECS/ecs.hpp>
 #include <Engine/SequenceBuffer.hpp>
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/FlatHashMap.hpp>

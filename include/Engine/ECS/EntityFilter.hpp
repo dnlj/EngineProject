@@ -5,7 +5,7 @@
 #include <iterator>
 
 // Engine
-#include <Engine/ECS/Common.hpp>
+#include <Engine/ECS/ecs.hpp>
 #include <Engine/Engine.hpp>
 
 

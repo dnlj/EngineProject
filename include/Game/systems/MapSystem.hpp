@@ -15,7 +15,7 @@
 #include <Engine/ShaderManager.hpp>
 #include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Clock.hpp>
-#include <Engine/ECS/Common.hpp>
+#include <Engine/ECS/ecs.hpp>
 #include <Engine/ThreadSafeQueue.hpp>
 #include <Engine/Gfx/Texture.hpp>
 

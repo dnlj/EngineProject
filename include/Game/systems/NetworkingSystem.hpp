@@ -8,7 +8,7 @@
 #include <Engine/Net/Connection.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Engine.hpp>
-#include <Engine/ECS/Common.hpp>
+#include <Engine/ECS/ecs.hpp>
 
 // Game
 #include <Game/System.hpp>

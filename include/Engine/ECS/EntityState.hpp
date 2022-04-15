@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/ECS/Common.hpp>
+#include <Engine/ECS/ecs.hpp>
 
 
 namespace Engine::ECS {

@@ -2,7 +2,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Net/Common.hpp>
+#include <Engine/Net/net.hpp>
 
 
 namespace Engine::Net {
