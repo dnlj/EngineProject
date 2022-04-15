@@ -49,10 +49,6 @@ namespace Game {
 			 */
 			void shiftOrigin(const b2Vec2& newOrigin);
 
-			#if defined(DEBUG_PHYSICS)
-				Engine::Debug::DebugDrawBox2D& getDebugDraw();
-			#endif
-
 			// TODO: rm - temp
 			b2Body* createPhysicsCircle(Engine::ECS::Entity ent, b2Vec2 position = b2Vec2_zero, int filter = 0) {
 				b2BodyDef bodyDef;

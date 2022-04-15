@@ -838,21 +838,13 @@ void run(int argc, char* argv[]) {
 		//bm.setLayerEnabled(Layer::GuiFocus, false);
 	}
 
-	// More engine stuff
-	#if defined (DEBUG_PHYSICS)
-		world.getSystem<Game::PhysicsSystem>().getDebugDraw().setup(engine.camera);
-	#endif
-
 	// Map Stuff
-		
-
 	if constexpr (ENGINE_CLIENT) {
 		auto preview = guiContext.createPanel<Map::MapPreview>(guiContext.getRoot());
 		preview->setPos({520, 400});
 		preview->setSize({512, 512});
 	}
 
-	
 	// Main loop
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;
@@ -891,11 +883,6 @@ void run(int argc, char* argv[]) {
 		if (deltaIndex == 0) {
 			avgDeltaTime = std::accumulate(deltas.cbegin(), deltas.cend(), 0.0) / deltas.size();
 		}
-
-		// Physics debug
-		#if defined (DEBUG_PHYSICS)
-			world.getSystem<Game::PhysicsSystem>().getDebugDraw().draw();
-		#endif
 
 		window.swapBuffers();
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});

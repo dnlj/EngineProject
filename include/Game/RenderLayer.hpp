@@ -8,11 +8,12 @@ namespace Game {
 		Terrain,
 		Main,
 		Foreground,
-		UserInterface,
 
 		#ifdef DEBUG_PHYSICS
 		PhysicsDebug,
 		#endif
+
+		UserInterface,
 
 		_count,
 	};
