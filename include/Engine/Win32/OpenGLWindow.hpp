@@ -1,10 +1,6 @@
 #pragma once
-// Windows
-#include <hidsdi.h> // Needed for type definitions in hidpi.h
-#include <hidpi.h>
 
 // GL
-#include <glloadgen/gl_core_4_5.hpp>
 #include <wglext.h> // TODO: should be part of glloadgen or similar.
 
 // GLM

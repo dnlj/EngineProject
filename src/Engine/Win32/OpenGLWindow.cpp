@@ -1,6 +1,8 @@
 // Windows
 #include <Windows.h>
 #include <windowsx.h>
+#include <hidsdi.h> // Needed for type definitions in hidpi.h
+#include <hidpi.h>
 
 // STD
 #include <iomanip>
