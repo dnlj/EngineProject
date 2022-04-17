@@ -11,6 +11,11 @@
 // Box2D
 #include <box2d/b2_body.h>
 
+// Assimp
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/TextureManager.hpp>
@@ -865,6 +870,21 @@ void run(int argc, char* argv[]) {
 		const auto endTime = Engine::Clock::now();
 		ENGINE_INFO("Launch Time: ", Engine::Clock::Milliseconds{endTime - launchTime}.count(), "ms");
 		ENGINE_INFO("Start Time: ", Engine::Clock::Milliseconds{endTime - startTime}.count(), "ms");
+	}
+
+	{
+		Assimp::Importer im;
+		const aiScene* scene = im.ReadFile("assets/teapot.obj", aiProcessPreset_TargetRealtime_Fast);
+		if (!scene) {
+			ENGINE_WARN("Assimp failed to load model: ", im.GetErrorString());
+		} else {
+			ENGINE_LOG("Assimp successfully loaded model: ",
+				scene->mNumMeshes, " ",
+				scene->mNumAnimations, " ",
+				scene->mNumMaterials, " ",
+				scene->mNumTextures
+			);
+		}
 	}
 
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);

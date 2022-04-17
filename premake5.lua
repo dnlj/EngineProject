@@ -56,6 +56,7 @@ CONAN_PACKAGES = {
 		"harfbuzz/2.8.1@dnlj/wobbly",
 		"fmtlib/8.0.1@dnlj/wobbly",
 		--"soil/latest@dnlj/wobbly",
+		"assimp/5.2.3@dnlj/wobbly",
 
 	},
 	["generators"] = {
