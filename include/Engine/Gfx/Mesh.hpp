@@ -9,6 +9,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Gfx/NumberType.hpp>
 
 
 namespace Engine::Gfx {
@@ -16,13 +17,14 @@ namespace Engine::Gfx {
 	struct VertexAttribute {
 		GLuint location;
 		GLuint size;
-		GLuint type;
+		NumberType type;
 		GLuint offset;
 	};
 
 	// TODO: Move
 	template<int32 AttributeCount>
 	struct VertexFormat {
+		/** The distance between elements within the buffer in bytes. Usually the size of your vertex. */
 		GLsizei stride;
 		VertexAttribute attributes[AttributeCount];
 	};
@@ -33,7 +35,8 @@ namespace Engine::Gfx {
 		TriangleStrip = GL_TRIANGLE_STRIP,
 		// TODO: rest
 	};
-	
+
+	// TODO: merge with NumberType
 	// TODO: Move
 	enum class IndexType : GLenum {
 		UInt8 = GL_UNSIGNED_BYTE,
@@ -43,6 +46,24 @@ namespace Engine::Gfx {
 
 	// TODO: doc
 	class Mesh {
+		private:
+			constexpr static GLuint bufferBindingIndex = 0;
+
+			GLuint vao = 0;
+			GLsizei count = 0;
+			IndexType eboType = {};
+			Primitive type = {};
+			
+			union {
+				GLuint buffers[2] = {0, 0};
+				struct {
+					GLuint vbo;
+					GLuint ebo;
+				};
+			};
+
+			constexpr static GLsizei bufferCount = static_cast<GLsizei>(std::extent_v<decltype(buffers)>);
+
 		public:
 			Mesh() = default;
 			Mesh(const Mesh&) = delete;
@@ -59,26 +80,23 @@ namespace Engine::Gfx {
 				glDeleteBuffers(bufferCount, buffers);
 			}
 
+			// TODO: I think we could also make stride be infered in setVertedData. (optional param = sizeof(Vertex))
+			// TODO: make setFormat just take a stride and attribute list directly, can use arrayview and dont need to mess with format
 			template<int32 AttributeCount>
 			Mesh& setFormat(const VertexFormat<AttributeCount>& format) {
 				if (!vao) { glCreateVertexArrays(1, &vao); }
 				if (!vbo) { glCreateBuffers(1, &vbo); }
 
-				constexpr GLuint bufferBindingIndex = 0;
 				glVertexArrayVertexBuffer(vao, bufferBindingIndex, vbo, 0, format.stride);
 
 				for (const auto& attrib : format.attributes) {
 					glEnableVertexArrayAttrib(vao, attrib.location);
-
-					ENGINE_DEBUG_ASSERT(attrib.type == GL_FLOAT,
-						// TODO: implement for non float types.
-						// See: https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glVertexAttribFormat.xhtml
-						// Will need to check attrib.type and select one of:
-						// glVertexArrayAttribFormat, glVertexArrayAttribIFormat, or glVertexArrayAttribLFormat
-						"TODO: implement for non GLfloat types. Currently only GL_FLOAT is implemented."
-					);
-
-					glVertexArrayAttribFormat(vao, attrib.location, attrib.size, attrib.type, GL_FALSE, attrib.offset);
+					// TODO: glVertexArrayAttribLFormat and glVertexArrayAttribIFormat
+					if (isInteger(attrib.type)) {
+						glVertexArrayAttribIFormat(vao, attrib.location, attrib.size, toGLEnum(attrib.type), attrib.offset);
+					} else {
+						glVertexArrayAttribFormat(vao, attrib.location, attrib.size, toGLEnum(attrib.type), GL_FALSE, attrib.offset);
+					}
 					glVertexArrayAttribBinding(vao, attrib.location, bufferBindingIndex);
 				}
 				return *this;
@@ -103,7 +121,7 @@ namespace Engine::Gfx {
 			 * Infers parameters based on @p data.
 			 * @see setElementData
 			 */
-			template<class Vertex>
+			template<class Vertex> // TODO: use ArrayView instead of vector
 			ENGINE_INLINE Mesh& setVertexData(Primitive type, const std::vector<Vertex>& data) {
 				return setVertexData(type, data.data(), data.size() * sizeof(Vertex));
 			}
@@ -167,21 +185,5 @@ namespace Engine::Gfx {
 				swap(a.vbo, b.vbo);
 				swap(a.ebo, b.ebo);
 			}
-
-		private:
-			GLuint vao = 0;
-			GLsizei count = 0;
-			IndexType eboType = {};
-			Primitive type = {};
-			
-			union {
-				GLuint buffers[2] = {0, 0};
-				struct {
-					GLuint vbo;
-					GLuint ebo;
-				};
-			};
-
-			constexpr static GLsizei bufferCount = static_cast<GLsizei>(std::extent_v<decltype(buffers)>);
 	};
 }

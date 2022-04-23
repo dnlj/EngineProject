@@ -15,6 +15,8 @@ namespace Game {
 
 		UserInterface,
 
+		Debug,
+
 		_count,
 	};
 	ENGINE_BUILD_ALL_OPS(RenderLayer)

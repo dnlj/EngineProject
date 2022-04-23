@@ -36,6 +36,7 @@ namespace Game {
 		// Rendering
 		//ParallaxBackgroundSystem,
 		class MapRenderSystem,
+		class AnimSystem,
 		class SpriteSystem,
 		class UISystem,
 		class RenderPassSystem

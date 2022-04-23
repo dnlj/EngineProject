@@ -27,6 +27,24 @@ namespace Engine {
 			stream << "glm::vec(" << val.x << ", " << val.y << ")";
 		}
 	};
+
+	template<int C, int R, class T, glm::qualifier Q>
+	struct LogFormatter<glm::mat<C, R, T, Q>> {
+		static void format(std::ostream& stream, const glm::mat<C, R, T, Q>& val) {
+			stream << "glm::mat(";
+			for (int r = 0; r < C; ++r) {
+				stream << "{";
+				for (int c = 0; c < C; ++c) {
+					stream << val[c][r];
+					if (c < C-1) { stream << ", "; }
+				}
+				stream << "}";
+				if (r < R-1) { stream << ", "; }
+			}
+			stream << ")";
+
+		}
+	};
 };
 
 template<int L, class T, glm::qualifier Q>

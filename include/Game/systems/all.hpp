@@ -11,6 +11,7 @@
 #include <Game/systems/SubWorldSystem.hpp>
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/MapRenderSystem.hpp>
+#include <Game/systems/AnimSystem.hpp>
 #include <Game/systems/SpriteSystem.hpp>
 #include <Game/systems/EntityNetworkingSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>

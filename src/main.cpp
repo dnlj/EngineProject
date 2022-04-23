@@ -11,11 +11,6 @@
 // Box2D
 #include <box2d/b2_body.h>
 
-// Assimp
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
-
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/TextureManager.hpp>
@@ -318,7 +313,7 @@ namespace {
 
 						glm::vec2 scale() { return getSize() / glm::vec2{map.w, map.h}; }
 
-						void rebuild() {
+						void rebuild() { // TODO: test
 							if (zoomAccum) {
 								auto z = std::clamp(zoomAccum * 0.2f, -0.9f, 0.9f);
 								zoom -= zoom * z;
@@ -445,7 +440,7 @@ namespace {
 		body->CreateFixture(&fixtureDef);
 		body->SetLinearDamping(10.0f);
 		body->SetFixedRotation(true);
-
+		
 		return body;
 	}
 
@@ -846,7 +841,7 @@ void run(int argc, char* argv[]) {
 	// Map Stuff
 	if constexpr (ENGINE_CLIENT) {
 		auto preview = guiContext.createPanel<Map::MapPreview>(guiContext.getRoot());
-		preview->setPos({520, 400});
+		preview->setPos({1200, 20});
 		preview->setSize({512, 512});
 	}
 
@@ -870,21 +865,6 @@ void run(int argc, char* argv[]) {
 		const auto endTime = Engine::Clock::now();
 		ENGINE_INFO("Launch Time: ", Engine::Clock::Milliseconds{endTime - launchTime}.count(), "ms");
 		ENGINE_INFO("Start Time: ", Engine::Clock::Milliseconds{endTime - startTime}.count(), "ms");
-	}
-
-	{
-		Assimp::Importer im;
-		const aiScene* scene = im.ReadFile("assets/teapot.obj", aiProcessPreset_TargetRealtime_Fast);
-		if (!scene) {
-			ENGINE_WARN("Assimp failed to load model: ", im.GetErrorString());
-		} else {
-			ENGINE_LOG("Assimp successfully loaded model: ",
-				scene->mNumMeshes, " ",
-				scene->mNumAnimations, " ",
-				scene->mNumMaterials, " ",
-				scene->mNumTextures
-			);
-		}
 	}
 
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);

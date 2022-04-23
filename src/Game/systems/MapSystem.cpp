@@ -169,11 +169,12 @@ namespace Game {
 	}
 
 	void MapSystem::setupMesh(Engine::Gfx::Mesh& mesh) const {
+		using NumberType = Engine::Gfx::NumberType;
 		constexpr Engine::Gfx::VertexFormat<2> vertexFormat = {
 			sizeof(Vertex),
 			{
-				{.location = 0, .size = 2, .type = GL_FLOAT, .offset = offsetof(Vertex, pos)},
-				{.location = 1, .size = 1, .type = GL_FLOAT, .offset = offsetof(Vertex, tex)},
+				{.location = 0, .size = 2, .type = NumberType::Float32, .offset = offsetof(Vertex, pos)},
+				{.location = 1, .size = 1, .type = NumberType::Float32, .offset = offsetof(Vertex, tex)},
 			}
 		};
 
