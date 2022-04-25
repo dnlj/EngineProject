@@ -16,7 +16,7 @@ namespace Game {
 		engine.shaderManager.add("shaders/mesh");
 		shader = engine.shaderManager.get("shaders/mesh");
 
-		constexpr char fileName[] = "assets/char2.fbx";
+		constexpr char fileName[] = "assets/char5.fbx";
 		//constexpr char fileName[] = "assets/char.glb";
 
 		Assimp::Importer im;
@@ -56,6 +56,9 @@ namespace Game {
 				scene->mNumMaterials, " ",
 				scene->mNumTextures
 			);
+
+			//float scale = 123;
+			//ENGINE_LOG("UnitScaleFactor: ", scene->mMetaData->Get("UnitScaleFactor", scale), " ", scale);
 		}
 
 		for (const auto* anim : Engine::ArrayView{scene->mAnimations, scene->mNumAnimations}) {
@@ -210,12 +213,14 @@ namespace Game {
 
 		updateAnim();
 
-		// TODO: fix units, should be able to just use engine.camera?
-		auto mvp =
-			glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000)
-			*
-			glm::scale(glm::translate(glm::mat4{1}, {1920/2,200,0}), {0.1,0.1,0.1})
-		;
+		auto mvp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
+		mvp = engine.camera.getProjection();
+
+		//float32 scale = 1.0f/ abs((sin(clock() / 1000.0f) * 10000));
+		//mvp *= glm::scale(glm::mat4{1}, glm::vec3{scale});
+
+		mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
+
 		glUseProgram(shader->get());
 		glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 

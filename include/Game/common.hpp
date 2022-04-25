@@ -10,4 +10,6 @@ namespace Game {
 	inline constexpr int32 pixelsPerBlock = 8;
 	inline constexpr int32 blocksPerMeter = 4;
 	inline constexpr int32 pixelsPerMeter = pixelsPerBlock * blocksPerMeter;
+	inline constexpr int32 pixelScale = 2;
+	inline constexpr float32 pixelRescaleFactor = 1.0f / (pixelsPerMeter * pixelScale);
 }

@@ -481,8 +481,7 @@ namespace {
 		void resizeCallback(int32 w, int32 h) override {
 			ENGINE_LOG("Resize: ", w, " ", h);
 			glViewport(0, 0, w, h);
-			// blocks per meter - pixels per block - 200% zoom
-			userdata->engine.camera.setAsOrtho(w, h, 1.0f / (Game::pixelsPerBlock * Game::blocksPerMeter * 2.0f));
+			userdata->engine.camera.setAsOrtho(w, h, Game::pixelRescaleFactor);
 			userdata->guiContext.onResize(w, h);
 		}
 
