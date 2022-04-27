@@ -6,6 +6,7 @@
 // Engine
 #include <Engine/Gfx/Mesh.hpp>
 #include <Engine/ArrayView.hpp>
+#include <Engine/Zip.hpp>
 
 // Game
 #include <Game/systems/AnimSystem.hpp>
@@ -16,8 +17,9 @@ namespace Game {
 		engine.shaderManager.add("shaders/mesh");
 		shader = engine.shaderManager.get("shaders/mesh");
 
-		constexpr char fileName[] = "assets/char5.fbx";
+		constexpr char fileName[] = "assets/char6.fbx";
 		//constexpr char fileName[] = "assets/char.glb";
+		//constexpr char fileName[] = "assets/char.dae";
 
 		Assimp::Importer im;
 		const aiScene* scene = im.ReadFile(fileName, aiProcessPreset_TargetRealtime_Fast);
@@ -61,20 +63,6 @@ namespace Game {
 			//ENGINE_LOG("UnitScaleFactor: ", scene->mMetaData->Get("UnitScaleFactor", scale), " ", scale);
 		}
 
-		for (const auto* anim : Engine::ArrayView{scene->mAnimations, scene->mNumAnimations}) {
-			ENGINE_LOG(
-				"\n\tName: ", anim->mName.C_Str(),
-				"\n\tTicks/s: ", anim->mTicksPerSecond,
-				"\n\tChannels:", anim->mNumChannels,
-				"\n\tMeshChannels:", anim->mNumMeshChannels,
-				""
-			);
-
-			for (const auto* chan : Engine::ArrayView{anim->mChannels, anim->mNumChannels}) {
-				ENGINE_LOG("\t\t", chan->mNodeName.C_Str());
-			}
-		}
-
 		std::vector<Vertex> verts;
 		std::vector<uint32> indices;
 		Engine::FlatHashMap<std::string_view, NodeIndex> nodeToIndex; // Map from an Assimp aiNode to index into nodes array
@@ -106,8 +94,6 @@ namespace Game {
 					#if ENGINE_DEBUG
 						nodes.back().name = found->first;
 					#endif
-
-					
 
 					ENGINE_LOG("Build Node: ", found->second, " - ", node->mName.C_Str(), " - ", cvtMat(node->mTransformation));
 				}
@@ -167,7 +153,6 @@ namespace Game {
 		}
 
 		nodes.shrink_to_fit();
-
 		if (nodes.size() > 100) {
 			ENGINE_WARN("To many bones in model. Clamping. ", fileName);
 			ENGINE_DIE; // TODO: clamp number of bones
@@ -175,6 +160,58 @@ namespace Game {
 
 		nodesFinal.resize(nodes.size());
 		ENGINE_LOG("*** Nodes: ", nodes.size());
+
+		ENGINE_DEBUG_ASSERT(scene->mNumAnimations == 1); // TODO: support multiple animations
+		for (const auto* anim : Engine::ArrayView{scene->mAnimations, scene->mNumAnimations}) {
+			ENGINE_LOG(
+				"\n\tName: ", anim->mName.C_Str(),
+				"\n\tTicks/s: ", anim->mTicksPerSecond,
+				"\n\tDuration: ", anim->mDuration,
+				"\n\tChannels:", anim->mNumChannels,
+				"\n\tMeshChannels:", anim->mNumMeshChannels,
+				""
+			);
+
+			// TODO: apply mTicksPerSecond to times?
+			animation.duration = static_cast<float32>(anim->mDuration);
+			for (const auto* chan : Engine::ArrayView{anim->mChannels, anim->mNumChannels}) {
+				ENGINE_LOG("\tChannel: ", chan->mNodeName.C_Str(), chan->mNumPositionKeys, " ", chan->mNumRotationKeys, " ", chan->mNumScalingKeys);
+				const auto name = std::string_view{chan->mNodeName.data, chan->mNodeName.length};
+				auto& seq = animation.channels.emplace_back();
+				seq.nodeId = nodeToIndex[name];
+				ENGINE_LOG("ANIM: ", seq.nodeId);
+
+				seq.pos.resize(chan->mNumPositionKeys);
+				for (auto* cval = chan->mPositionKeys; auto& sval : seq.pos) {
+					sval.value.x = cval->mValue.x; sval.value.y = cval->mValue.y; sval.value.z = cval->mValue.z;
+					sval.time = static_cast<float32>(cval->mTime);
+					++cval;
+				}
+
+				seq.scale.resize(chan->mNumScalingKeys);
+				for (auto* cval = chan->mScalingKeys; auto& sval : seq.scale) {
+					sval.value.x = cval->mValue.x; sval.value.y = cval->mValue.y; sval.value.z = cval->mValue.z;
+					sval.time = static_cast<float32>(cval->mTime);
+					++cval;
+				}
+
+				seq.rot.resize(chan->mNumRotationKeys);
+				for (auto* cval = chan->mRotationKeys; auto& sval : seq.rot) {
+					sval.value.w = cval->mValue.w; sval.value.x = cval->mValue.x; sval.value.y = cval->mValue.y; sval.value.z = cval->mValue.z;
+					sval.time = static_cast<float32>(cval->mTime);
+					++cval;
+				}
+
+				//auto vals = std::accumulate(seq.rot.begin(), seq.rot.end(), std::string{}, [](auto&& base, const auto& val){
+				//	return base + " " + std::to_string(val.time);
+				//});
+				//ENGINE_LOG("Times: ", vals);
+			}
+
+			std::sort(animation.channels.begin(), animation.channels.end(), [](const auto& a, const auto& b){
+				return a.nodeId < b.nodeId;
+			});
+		}
 
 		glCreateBuffers(1, &ubo);
 		glNamedBufferData(ubo, nodesFinal.size() * sizeof(nodesFinal[0]), nullptr, GL_DYNAMIC_DRAW);
@@ -188,6 +225,14 @@ namespace Game {
 
 	void AnimSystem::updateAnim() {
 		const auto nodeCount = nodes.size();
+
+		const auto tick = fmodf(clock() / 100.0f, animation.duration);
+		ENGINE_LOG("tick: ", tick);
+
+		for (const auto& seq : animation.channels) {
+			const auto& interp = seq.interp(tick);
+			nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
+		}
 
 		for (NodeIndex ni = 0; ni < nodeCount; ++ni) {
 			auto& node = nodes[ni];

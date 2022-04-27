@@ -52,6 +52,7 @@
 #pragma warning (pop)
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 // Engine
 #include <Engine/Engine.hpp>
