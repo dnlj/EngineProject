@@ -22,13 +22,12 @@ namespace Game {
 			GLuint ubo;
 
 			// TODO: add separate Bones vector that has the boneOffset - that way we only upload the values we need and max the total bones we can have
-			using NodeIndex = int;
-			using BoneIndex = int;
+			using NodeId = int;
+			using BoneId = int;
 			struct Node {
-				Node(NodeIndex parentIndex, BoneIndex boneIndex, const glm::mat4& bind)
-					: parentIndex{parentIndex}
-					, boneIndex{boneIndex}
-					, bind{bind}
+				Node(NodeId parentId, BoneId boneId, const glm::mat4& bind)
+					: parentId{parentId}
+					, boneId{boneId}
 					, trans{bind} {
 				}
 
@@ -36,11 +35,10 @@ namespace Game {
 					std::string name;
 				#endif
 
-				NodeIndex parentIndex = -1;
-				BoneIndex boneIndex = -1;
-				glm::mat4 bind; // The default (bind) transform
+				NodeId parentId = -1;
+				BoneId boneId = -1; // Corresponding bone if any
 				glm::mat4 trans; // parent -> local
-				glm::mat4 offset = glm::mat4{1};
+				glm::mat4 total; // Total parent transform chain up to this point (includes this)
 			};
 
 			struct Bone {
@@ -49,12 +47,9 @@ namespace Game {
 
 			// Should be populated such that all ancestor nodes occur before child nodes. This should be done automatically because of how getNodeIndex is implemented.
 			std::vector<Node> nodes;
+			std::vector<Bone> bones;
 
-			//std::vector<Bone>
-
-			// TODO: change this to only store final bone transforms, nodes can store parent transforms.
-			// TODO: we really only need bones here. not all nodes
-			std::vector<glm::mat4> nodesFinal;
+			std::vector<glm::mat4> bonesFinal;
 
 			Animation animation;
 

@@ -65,7 +65,7 @@ namespace Game {
 
 		std::vector<Vertex> verts;
 		std::vector<uint32> indices;
-		Engine::FlatHashMap<std::string_view, NodeIndex> nodeToIndex; // Map from an Assimp aiNode to index into nodes array
+		Engine::FlatHashMap<std::string_view, NodeId> nodeToIndex; // Map from an Assimp aiNode to index into nodes array
 
 		auto cvtMat = [](const aiMatrix4x4& m) { return glm::mat4{ // Convert to column major and glm
 			{m.a1, m.b1, m.c1, m.d1},
@@ -74,21 +74,21 @@ namespace Game {
 			{m.a4, m.b4, m.c4, m.d4},
 		};};
 
-		auto getNodeIndex = [&](const aiString& name) {
-			auto impl = [&](auto& self, const aiString& name, const aiNode* node) -> NodeIndex {
+		auto getNodeId = [&](const aiString& name) {
+			auto impl = [&](auto& self, const aiString& name, const aiNode* node) -> NodeId {
 				auto found = nodeToIndex.find(std::string_view{name.data, name.length});
 				if (found == nodeToIndex.end()) {
 					if (!node) {
 						node = scene->mRootNode->FindNode(name);
 					}
 
-					NodeIndex parent = -1;
+					NodeId parent = -1;
 					// TODO: need to stop at mesh or mesh parent node. I think bones dont NEED to be in one of these places but in practice they will. If they arent we can say the model is ill formed and should be fixed on the model side, not in code
 					if (node->mParent && node->mParent != scene->mRootNode) {
 						parent = self(self, node->mParent->mName, node->mParent);
 					}
 
-					found = nodeToIndex.emplace(std::string_view{name.data, name.length}, static_cast<NodeIndex>(nodes.size())).first;
+					found = nodeToIndex.emplace(std::string_view{name.data, name.length}, static_cast<NodeId>(nodes.size())).first;
 					nodes.emplace_back(parent, -1, cvtMat(node->mTransformation));
 
 					#if ENGINE_DEBUG
@@ -114,18 +114,24 @@ namespace Game {
 
 				const auto estNodes = nodes.size() + mesh->mNumBones * 2; // Just a guess, no way to get true number without walking `scene->mRootNode`
 				nodes.reserve(estNodes);
+				bones.reserve(estNodes);
 				nodeToIndex.reserve(estNodes);
 			}
 			
-			ENGINE_ASSERT(mesh->mNumBones <= 255, "To many bones in model"); // TODO: handle error, dont assert
 			for (uint i = 0; i < mesh->mNumBones; ++i) {
 				const auto& bone = mesh->mBones[i];
-				auto boneIndex = getNodeIndex(bone->mName);
+				const auto nodeId = getNodeId(bone->mName);
+
+				// We dont need bone data if it doesnt directly effect weights. Only node data.
+				if (bone->mNumWeights == 0) { continue; }
+
+				const auto boneId = static_cast<BoneId>(bones.size());
+				nodes[nodeId].boneId = boneId;
+				bones.emplace_back().offset = cvtMat(bone->mOffsetMatrix);
+
 				for (const auto& weight : Engine::ArrayView{bone->mWeights, bone->mNumWeights}) {
-					verts[weight.mVertexId].addBone(boneIndex, weight.mWeight);
+					verts[weight.mVertexId].addBone(boneId, weight.mWeight);
 				}
-				nodes[boneIndex].offset = cvtMat(bone->mOffsetMatrix);
-				//nodes[boneIndex].offset = glm::mat4{1};
 			}
 
 			for(uint i = -1; const auto& face : Engine::ArrayView{mesh->mFaces, mesh->mNumFaces}) {
@@ -152,14 +158,17 @@ namespace Game {
 			test.setElementData(indices);
 		}
 
-		nodes.shrink_to_fit();
-		if (nodes.size() > 100) {
+		if (bones.size() > 100) { // TODO: make constant or pull from shader or something (or inject into shader? that probably better.)
 			ENGINE_WARN("To many bones in model. Clamping. ", fileName);
 			ENGINE_DIE; // TODO: clamp number of bones
 		}
 
-		nodesFinal.resize(nodes.size());
-		ENGINE_LOG("*** Nodes: ", nodes.size());
+		nodes.shrink_to_fit();
+		bones.shrink_to_fit();
+		bonesFinal.resize(bones.size());
+		ENGINE_LOG("*** Nodes: ", nodes.size(), " / ", bones.size());
+
+		// TODO: sort nodes by parentId, sort bones to follow same order
 
 		ENGINE_DEBUG_ASSERT(scene->mNumAnimations == 1); // TODO: support multiple animations
 		for (const auto* anim : Engine::ArrayView{scene->mAnimations, scene->mNumAnimations}) {
@@ -201,20 +210,16 @@ namespace Game {
 					sval.time = static_cast<float32>(cval->mTime);
 					++cval;
 				}
-
-				//auto vals = std::accumulate(seq.rot.begin(), seq.rot.end(), std::string{}, [](auto&& base, const auto& val){
-				//	return base + " " + std::to_string(val.time);
-				//});
-				//ENGINE_LOG("Times: ", vals);
 			}
 
+			// Keep everything sorted to more closely resemble access order
 			std::sort(animation.channels.begin(), animation.channels.end(), [](const auto& a, const auto& b){
 				return a.nodeId < b.nodeId;
 			});
 		}
 
 		glCreateBuffers(1, &ubo);
-		glNamedBufferData(ubo, nodesFinal.size() * sizeof(nodesFinal[0]), nullptr, GL_DYNAMIC_DRAW);
+		glNamedBufferData(ubo, bonesFinal.size() * sizeof(bonesFinal[0]), nullptr, GL_DYNAMIC_DRAW);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo); // Bind index to ubo
 		glUniformBlockBinding(shader->get(), 0, 1); // Bind uniform block to buffer index
 	}
@@ -225,32 +230,27 @@ namespace Game {
 
 	void AnimSystem::updateAnim() {
 		const auto nodeCount = nodes.size();
-
 		const auto tick = fmodf(clock() / 100.0f, animation.duration);
-		ENGINE_LOG("tick: ", tick);
 
 		for (const auto& seq : animation.channels) {
 			const auto& interp = seq.interp(tick);
 			nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
 		}
 
-		for (NodeIndex ni = 0; ni < nodeCount; ++ni) {
+		for (NodeId ni = 0; ni < nodeCount; ++ni) {
 			auto& node = nodes[ni];
-			if (node.parentIndex >= 0) {
-				nodesFinal[ni] = nodesFinal[node.parentIndex] * node.trans;
+			if (node.parentId >= 0) {
+				node.total = nodes[node.parentId].total * node.trans;
 			} else {
-				nodesFinal[ni] = node.trans;
+				node.total = node.trans;
+			}
+
+			if (node.boneId >= 0) {
+				bonesFinal[node.boneId] = node.total * bones[node.boneId].offset;
 			}
 		}
 
-		for (NodeIndex ni = 0; ni < nodeCount; ++ni) {
-			auto& node = nodes[ni];
-			nodesFinal[ni] *= node.offset;
-		}
-
-		// TODO: ideally we would only upload bones, not all nodes. How do others handle this?
-		// as far as i could tell both the tutorials i looked at just ignore non-bone nodes, which would lead to incorrect behaviour.
-		glNamedBufferSubData(ubo, 0, nodesFinal.size() * sizeof(nodesFinal[0]), nodesFinal.data());
+		glNamedBufferSubData(ubo, 0, bonesFinal.size() * sizeof(bonesFinal[0]), bonesFinal.data());
 	}
 
 	void AnimSystem::render(const RenderLayer layer) {
@@ -260,10 +260,6 @@ namespace Game {
 
 		auto mvp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
 		mvp = engine.camera.getProjection();
-
-		//float32 scale = 1.0f/ abs((sin(clock() / 1000.0f) * 10000));
-		//mvp *= glm::scale(glm::mat4{1}, glm::vec3{scale});
-
 		mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
 
 		glUseProgram(shader->get());
