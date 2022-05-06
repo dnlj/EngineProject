@@ -12,7 +12,9 @@ namespace Game {
 		{
 			Engine::Gfx::ModelLoader loader;
 			arm = std::move(loader.arm);
-			animation = std::move(loader.animation);
+			if (!loader.animations.empty()) {
+				animation = std::move(loader.animations[0]);
+			}
 
 			using NumberType = Engine::Gfx::NumberType;
 			test.setFormat(Engine::Gfx::VertexFormat<3>{sizeof(Engine::Gfx::Vertex), {
@@ -70,7 +72,8 @@ namespace Game {
 
 		auto mvp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
 		mvp = engine.camera.getProjection();
-		mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
+		//mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
+		mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 4});
 
 		glUseProgram(shader->get());
 		glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);

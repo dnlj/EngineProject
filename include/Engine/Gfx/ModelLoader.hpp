@@ -1,5 +1,8 @@
 #pragma once
 
+// Assimp
+#include <assimp/Importer.hpp>
+
 // Engine
 #include <Engine/Gfx/AnimSeq.hpp>
 
@@ -14,6 +17,7 @@ namespace Engine::Gfx {
 
 	using NodeId = int;
 	using BoneId = int;
+	using MeshId = int;
 	struct Node {
 		Node(NodeId parentId, BoneId boneId, const glm::mat4& bind)
 			: parentId{parentId}
@@ -27,6 +31,8 @@ namespace Engine::Gfx {
 
 		NodeId parentId = -1;
 		BoneId boneId = -1; // Corresponding bone if any
+		// NodeId childId = -1;
+		// NodeId siblingId = -1;
 		glm::mat4 trans; // parent -> local
 		glm::mat4 total; // Total parent transform chain up to this point (includes this)
 	};
@@ -42,6 +48,11 @@ namespace Engine::Gfx {
 			// Should be populated such that all ancestor nodes occur before child nodes. This should be done automatically because of how getNodeIndex is implemented.
 			std::vector<Node> nodes;
 			std::vector<Bone> bones;
+
+			void clear() {
+				nodes.clear();
+				bones.clear();
+			}
 	};
 	
 	struct Vertex {
@@ -68,24 +79,44 @@ namespace Engine::Gfx {
 		}
 	};
 
-	// TODO: move
+	struct MeshRange {
+		uint32 offset = 0;
+		uint32 count = 0;
+	};
+
+	struct MeshInst {
+		MeshId meshId;
+		NodeId nodeId;
+	};
+
 	class ModelLoader {
 		private:
+			Assimp::Importer im;
+
 		public: // TODO: private
 			const struct aiScene* scene;
+
 			std::vector<Vertex> verts;
 			std::vector<uint32> indices;
-			Engine::FlatHashMap<std::string_view, NodeId> nodeToIndex; // Map from an Assimp aiNode to index into nodes array
+			Engine::FlatHashMap<std::string_view, NodeId> nodeNameToId;
+			std::vector<MeshRange> meshes;
 
-			Animation animation;
+			std::vector<Animation> animations;
+			std::vector<MeshInst> instances;
 			Armature arm;
 
+		public:
 			ModelLoader();
+			void load(const char* path);
+			void clear();
 
 		private:
+			void init();
 			void readMesh(const struct aiMesh* mesh);
 			void readAnim(const struct aiAnimation* anim);
-			NodeId getNodeId(const struct aiString& name, const struct aiNode* node = nullptr);
+			NodeId getNodeId(const struct aiString& name);
+			NodeId getNodeId(const struct aiNode* name);
+			void build(aiNode* root, NodeId parentId);
 
 	};
 }

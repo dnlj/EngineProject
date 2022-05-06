@@ -32,7 +32,7 @@ namespace Engine::Gfx {
 					return b.time < t;
 				});
 
-				if (last == cont.end()) { return cont.end()->value; }
+				if (last == cont.end()) { return (--last)->value; }
 				if (last == cont.begin()) { return last->value; }
 
 				auto first = last - 1;
