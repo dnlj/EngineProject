@@ -25,6 +25,7 @@ namespace Game {
 			Engine::Gfx::ModelLoader loader;
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size());
+			meshes = std::move(loader.meshes);
 			
 			arm = std::move(loader.arm);
 			if (!loader.animations.empty()) {
@@ -96,27 +97,23 @@ namespace Game {
 
 		//test.draw();
 
-		constexpr DrawElementsIndirectCommand commands[] = {
-			{
-				.count = 6,
-				.instanceCount = 1,
-				.firstIndex = 0,
-				.baseVertex = 0,
-				.baseInstance = 0,
-			},
-			{
-				.count = 3,
-				.instanceCount = 1,
-				.firstIndex = 6,
-				.baseVertex = 6,
-				.baseInstance = 0,
-			},
-		};
-		
+		static std::vector<DrawElementsIndirectCommand> commands; // TODO: rm temp
+
 		if (cmdbuff == 0) {
+			ENGINE_DEBUG_ASSERT(meshes.size() == 2);
+			for (const auto& mesh : meshes) {
+				commands.push_back({
+					.count = mesh.count,
+					.instanceCount = 1,
+					.firstIndex = mesh.offset,
+					.baseVertex = 0,
+					.baseInstance = 0,
+				});
+			}
+
 			glCreateBuffers(1, &cmdbuff);
-			glNamedBufferStorage(cmdbuff, sizeof(commands), nullptr, GL_DYNAMIC_STORAGE_BIT);
-			glNamedBufferSubData(cmdbuff, 0, sizeof(commands), commands);
+			glNamedBufferStorage(cmdbuff, commands.size() * sizeof(commands[0]), nullptr, GL_DYNAMIC_STORAGE_BIT);
+			glNamedBufferSubData(cmdbuff, 0, commands.size() * sizeof(commands[0]), std::data(commands));
 		}
 
 		glBindVertexArray(test.getVAO());

@@ -145,15 +145,15 @@ namespace Engine::Gfx {
 			}
 		}
 
-		// TODO: also need base vertex or bake in offset in indices
 		const auto& range = meshes.emplace_back(indexCount, mesh->mNumFaces * 3);
+		const auto baseVertex = vertCount;
 
 		for(const auto& face : Engine::ArrayView{mesh->mFaces, mesh->mNumFaces}) {
 			ENGINE_ASSERT(face.mNumIndices == 3, "Invalid number of mesh face indices"); // TODO: handle error, dont assert
 			ENGINE_DEBUG_ASSERT(indexCount+2 < indices.size());
-			indices[indexCount] = face.mIndices[0];
-			indices[++indexCount] = face.mIndices[1];
-			indices[++indexCount] = face.mIndices[2];
+			indices[indexCount] = baseVertex + face.mIndices[0];
+			indices[++indexCount] = baseVertex + face.mIndices[1];
+			indices[++indexCount] = baseVertex + face.mIndices[2];
 			++indexCount;
 		}
 

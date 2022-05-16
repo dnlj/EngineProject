@@ -20,6 +20,7 @@ namespace Game {
 			Engine::Gfx::Armature arm;
 
 			std::vector<glm::mat4> bonesFinal;
+			std::vector<Engine::Gfx::MeshRange> meshes;
 
 		public:
 			AnimSystem(SystemArg arg);
