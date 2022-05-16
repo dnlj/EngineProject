@@ -4,6 +4,18 @@
 // Game
 #include <Game/systems/AnimSystem.hpp>
 
+namespace {
+	typedef struct {
+        uint32_t  count;
+        uint32_t  instanceCount;
+        uint32_t  firstIndex;
+         int32_t  baseVertex;
+        uint32_t  baseInstance;
+    } DrawElementsIndirectCommand;
+	static_assert(sizeof(DrawElementsIndirectCommand) == 4 * 5, "glMultiDrawElementsIndirect requires that the indirect structure is tightly packed if using a stride of zero.");
+}
+
+
 namespace Game {
 	AnimSystem::AnimSystem(SystemArg arg) : System{arg} {
 		engine.shaderManager.add("shaders/mesh");
@@ -11,6 +23,9 @@ namespace Game {
 
 		{
 			Engine::Gfx::ModelLoader loader;
+
+			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size());
+			
 			arm = std::move(loader.arm);
 			if (!loader.animations.empty()) {
 				animation = std::move(loader.animations[0]);
@@ -38,6 +53,7 @@ namespace Game {
 
 	AnimSystem::~AnimSystem() {
 		glDeleteBuffers(1, &ubo);
+		glDeleteBuffers(1, &cmdbuff);
 	}
 
 	void AnimSystem::updateAnim() {
@@ -73,11 +89,38 @@ namespace Game {
 		auto mvp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
 		mvp = engine.camera.getProjection();
 		//mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
-		mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 4});
+		mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 2});
 
 		glUseProgram(shader->get());
 		glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 
-		test.draw();
+		//test.draw();
+
+		constexpr DrawElementsIndirectCommand commands[] = {
+			{
+				.count = 6,
+				.instanceCount = 1,
+				.firstIndex = 0,
+				.baseVertex = 0,
+				.baseInstance = 0,
+			},
+			{
+				.count = 3,
+				.instanceCount = 1,
+				.firstIndex = 6,
+				.baseVertex = 6,
+				.baseInstance = 0,
+			},
+		};
+		
+		if (cmdbuff == 0) {
+			glCreateBuffers(1, &cmdbuff);
+			glNamedBufferStorage(cmdbuff, sizeof(commands), nullptr, GL_DYNAMIC_STORAGE_BIT);
+			glNamedBufferSubData(cmdbuff, 0, sizeof(commands), commands);
+		}
+
+		glBindVertexArray(test.getVAO());
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, cmdbuff);
+		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);
 	}
 }

@@ -30,8 +30,9 @@ namespace Engine::Gfx {
 		// TODO: try nested armature
 
 		//constexpr char fileName[] = "assets/testing.fbx";
-		//constexpr char fileName[] = "assets/nested planes.fbx"; // TODO: doesnt work. i assume because no armature?
-		constexpr char fileName[] = "assets/char6.fbx";
+		constexpr char fileName[] = "assets/tri_test.fbx"; // TODO: doesnt work. i assume because no armature?
+		//constexpr char fileName[] = "assets/test.fbx"; // TODO: doesnt work. i assume because no armature?
+		//constexpr char fileName[] = "assets/char6.fbx";
 		//constexpr char fileName[] = "assets/char.glb";
 		//constexpr char fileName[] = "assets/char.dae";
 
@@ -65,6 +66,8 @@ namespace Engine::Gfx {
 	}
 
 	void ModelLoader::clear() {
+		indexCount = 0;
+		vertCount = 0;
 		indices.clear();
 		verts.clear();
 		nodeNameToId.clear();
@@ -132,6 +135,8 @@ namespace Engine::Gfx {
 			arm.nodes[nodeId].boneId = boneId;
 
 			// TODO: offset matrix will be diff for every mesh that uses this bone, correct? will need multiple stores.
+			//			^^^ dont think this is correct? each mesh should have the same offset for bone? test. ^^^
+			
 			// TODO: multiple meshes might refer to the same bone. Need to handle that
 			arm.bones.emplace_back().offset = cvtMat(bone->mOffsetMatrix);
 
@@ -140,22 +145,23 @@ namespace Engine::Gfx {
 			}
 		}
 
-		meshes.push_back({
-			.offset = static_cast<uint32>(indices.size()),
-			.count = mesh->mNumFaces * 3,
-		});
+		// TODO: also need base vertex or bake in offset in indices
+		const auto& range = meshes.emplace_back(indexCount, mesh->mNumFaces * 3);
 
-		for(uint i = -1; const auto& face : Engine::ArrayView{mesh->mFaces, mesh->mNumFaces}) {
+		for(const auto& face : Engine::ArrayView{mesh->mFaces, mesh->mNumFaces}) {
 			ENGINE_ASSERT(face.mNumIndices == 3, "Invalid number of mesh face indices"); // TODO: handle error, dont assert
-			ENGINE_DEBUG_ASSERT(i+2 < indices.size());
-			indices[++i] = face.mIndices[0];
-			indices[++i] = face.mIndices[1];
-			indices[++i] = face.mIndices[2];
+			ENGINE_DEBUG_ASSERT(indexCount+2 < indices.size());
+			indices[indexCount] = face.mIndices[0];
+			indices[++indexCount] = face.mIndices[1];
+			indices[++indexCount] = face.mIndices[2];
+			++indexCount;
 		}
 
-		for (uint i = 0; i < mesh->mNumVertices; ++i) {
-			const auto& v =  mesh->mVertices[i];
-			verts[i].pos = {v.x, v.y, v.z};
+		ENGINE_DEBUG_ASSERT(indexCount == range.offset + range.count);
+
+		for (const auto& v : Engine::ArrayView{mesh->mVertices, mesh->mNumVertices}) {
+			verts[vertCount].pos = {v.x, v.y, v.z};
+			++vertCount;
 		}
 	}
 
@@ -208,7 +214,7 @@ namespace Engine::Gfx {
 
 	size_t depth = 0; // TODO: rm 
 	void ModelLoader::build(aiNode* node, NodeId parentId) {
-		ENGINE_INFO("BUILD NODE: ", std::string(depth, ' '), node->mName.data, " ", node->mNumMeshes);
+		ENGINE_INFO("BUILD NODE: ", std::string(depth, ' '), node->mName.data, " ", node->mNumMeshes, " @ ", cvtMat(node->mTransformation));
 		++depth;
 		// Populate nodes
 		NodeId nodeId = static_cast<NodeId>(arm.nodes.size());

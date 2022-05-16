@@ -80,6 +80,8 @@ namespace Engine::Gfx {
 				glDeleteBuffers(bufferCount, buffers);
 			}
 
+			auto getVAO() const noexcept { return vao; }
+
 			// TODO: I think we could also make stride be infered in setVertedData. (optional param = sizeof(Vertex))
 			// TODO: make setFormat just take a stride and attribute list directly, can use arrayview and dont need to mess with format
 			template<int32 AttributeCount>
@@ -155,6 +157,8 @@ namespace Engine::Gfx {
 			ENGINE_INLINE Mesh& setElementData(const std::vector<Index>& data) {
 				ENGINE_DEBUG_ASSERT(data.size() < std::numeric_limits<int32>::max(), "To many mesh elements");
 				const auto sz = static_cast<int32>(data.size());
+
+				// TODO: should probably check size not same_as here. See F60fEjDA
 				if constexpr (std::same_as<Index, uint8>) {
 					return setElementData(IndexType::UInt8, data.data(), sz * sizeof(uint8), sz);
 				} else if constexpr (std::same_as<Index, uint16>) {

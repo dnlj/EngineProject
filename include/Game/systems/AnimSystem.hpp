@@ -14,6 +14,8 @@ namespace Game {
 			Engine::ShaderRef shader;
 			GLuint ubo;
 
+			GLuint cmdbuff = 0; // TODO: rm - just for testing
+
 			Engine::Gfx::Animation animation;
 			Engine::Gfx::Armature arm;
 

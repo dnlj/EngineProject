@@ -97,7 +97,11 @@ namespace Engine::Gfx {
 			const struct aiScene* scene;
 
 			std::vector<Vertex> verts;
+			uint32 vertCount = 0;
+
 			std::vector<uint32> indices;
+			uint32 indexCount = 0;
+
 			Engine::FlatHashMap<std::string_view, NodeId> nodeNameToId;
 			std::vector<MeshRange> meshes;
 

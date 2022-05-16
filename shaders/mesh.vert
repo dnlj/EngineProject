@@ -20,18 +20,12 @@ void main() {
 	vec4 vpos = vec4(vertPos, 1.0);
 
 
-	int i = 0;
-	for (; i < MAX_BONES_PER_VERT; ++i) {
-		if (vertWeights[i] == 0) { break; }
+	for (int i = 0; i < MAX_BONES_PER_VERT; ++i) {
 		pos += (bones[vertBones[i]] * vpos) * vertWeights[i];
 	}
 
-	--i;
+	pos = vpos; // TODO: rm - need to handle no bones on vert
 
-	if (i == 0) { fragColor = vec4(1,0,0,1); }
-	else if (i == 1) { fragColor = vec4(0,1,0,1); }
-	else if (i == 2) { fragColor = vec4(0,0,1,1); }
-	else if (i == 3) { fragColor = vec4(1,1,0,1); }
-
+	fragColor = vec4(0,1,0,1);
 	gl_Position = mvp * pos;
 }
