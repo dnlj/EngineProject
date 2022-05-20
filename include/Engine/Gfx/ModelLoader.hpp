@@ -79,9 +79,10 @@ namespace Engine::Gfx {
 		}
 	};
 
-	struct MeshRange {
+	struct MeshDesc {
 		uint32 offset = 0;
 		uint32 count = 0;
+		uint32 material = 0;
 	};
 
 	struct MeshInst {
@@ -107,11 +108,13 @@ namespace Engine::Gfx {
 			uint32 indexCount = 0;
 
 			Engine::FlatHashMap<std::string_view, NodeId> nodeNameToId;
-			std::vector<MeshRange> meshes;
+			std::vector<MeshDesc> meshes;
 
 			std::vector<Animation> animations;
 			std::vector<MeshInst> instances;
 			Armature arm;
+
+			bool skinned = false;
 
 		public:
 			ModelLoader();

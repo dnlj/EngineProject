@@ -26,11 +26,13 @@ namespace Game {
 		{
 			Engine::Gfx::ModelLoader loader;
 
+			model.skinned = true; // TODO: should be informed the loader
+
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size());
-			meshes = std::move(loader.meshes);
-			instances = std::move(loader.instances);
+			model.meshes = std::move(loader.meshes);
+			model.instances = std::move(loader.instances);
 			
-			arm = std::move(loader.arm);
+			model.arm = std::move(loader.arm);
 			if (!loader.animations.empty()) {
 				animation = std::move(loader.animations[0]);
 			}
@@ -47,10 +49,10 @@ namespace Game {
 
 		}
 
-		bonesFinal.resize(arm.bones.size());
+		model.bones.resize(model.arm.bones.size());
 
 		glCreateBuffers(1, &ubo);
-		glNamedBufferData(ubo, bonesFinal.size() * sizeof(bonesFinal[0]), nullptr, GL_DYNAMIC_DRAW);
+		glNamedBufferData(ubo, model.bones.size() * sizeof(model.bones[0]), nullptr, GL_DYNAMIC_DRAW);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo); // Bind index to ubo
 		glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
 	}
@@ -61,28 +63,28 @@ namespace Game {
 	}
 
 	void AnimSystem::updateAnim() {
-		const auto nodeCount = arm.nodes.size();
-		const auto tick = fmodf(clock() / 100.0f, animation.duration);
+		const auto nodeCount = model.arm.nodes.size();
+		const auto tick = fmodf(clock() / 80.0f, animation.duration);
 
 		for (const auto& seq : animation.channels) {
 			const auto& interp = seq.interp(tick);
-			arm.nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
+			model.arm.nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
 		}
 
 		for (Engine::Gfx::NodeId ni = 0; ni < nodeCount; ++ni) {
-			auto& node = arm.nodes[ni];
+			auto& node = model.arm.nodes[ni];
 			if (node.parentId >= 0) {
-				node.total = arm.nodes[node.parentId].total * node.trans;
+				node.total = model.arm.nodes[node.parentId].total * node.trans;
 			} else {
 				node.total = node.trans;
 			}
 
 			if (node.boneId >= 0) {
-				bonesFinal[node.boneId] = node.total * arm.bones[node.boneId].offset;
+				model.bones[node.boneId] = node.total * model.arm.bones[node.boneId].offset;
 			}
 		}
 
-		glNamedBufferSubData(ubo, 0, bonesFinal.size() * sizeof(bonesFinal[0]), bonesFinal.data());
+		glNamedBufferSubData(ubo, 0, model.bones.size() * sizeof(model.bones[0]), model.bones.data());
 	}
 
 	void AnimSystem::render(const RenderLayer layer) {
@@ -92,49 +94,49 @@ namespace Game {
 
 		auto vp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
 		vp = engine.camera.getProjection();
-		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
-		vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 2});
+		vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
+		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 2});
 
-		//glUseProgram(shaderSkinned->get());
-		//glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
-
-		//test.draw();
-
-		//static std::vector<DrawElementsIndirectCommand> commands; // TODO: rm temp
-
-		for (auto& inst : instances) {
-			const auto& node = arm.nodes[inst.nodeId];
-			const auto& mesh = meshes[inst.meshId];
-
-			const auto mvp = vp * node.total;
-
-			// TODO: the problem is we only have one anim and blender splits it into 4 anims for some reason instead of 1 or two
+		if (!model.skinned) {
 			glUseProgram(shaderStatic->get());
-			glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 
-			glBindVertexArray(test.getVAO());
-			glDrawElements(GL_TRIANGLES, mesh.count, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh.offset * sizeof(GLuint)));
-		}
+			for (auto& inst : model.instances) {
+				// TODO: do we really want static meshes to be animated? surely this should be done on the Entity level if that is the case.
+				// TODO: cont. if we want mesh level animation it should probably be rigged? (this seems to be what modeling programs assume)
+				const auto& node = model.arm.nodes[inst.nodeId];
+				const auto& mesh = model.meshes[inst.meshId];
+				const auto mvp = vp * node.total;
 
-		/*if (cmdbuff == 0) {
-			ENGINE_DEBUG_ASSERT(meshes.size() == 2);
-			for (const auto& mesh : meshes) {
-				commands.push_back({
-					.count = mesh.count,
-					.instanceCount = 1,
-					.firstIndex = mesh.offset,
-					.baseVertex = 0,
-					.baseInstance = 0,
-				});
+				glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
+				glBindVertexArray(test.getVAO());
+				glDrawElements(GL_TRIANGLES, mesh.count, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh.offset * sizeof(GLuint)));
+			}
+		} else {
+			glUseProgram(shaderSkinned->get());
+			glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
+
+			static std::vector<DrawElementsIndirectCommand> commands; // TODO: rm temp
+
+			if (cmdbuff == 0) {
+				for (const auto& inst : model.instances) {
+					const auto& mesh = model.meshes[inst.meshId];
+					commands.push_back({
+						.count = mesh.count,
+						.instanceCount = 1,
+						.firstIndex = mesh.offset,
+						.baseVertex = 0,
+						.baseInstance = 0,
+					});
+				}
+
+				glCreateBuffers(1, &cmdbuff);
+				glNamedBufferStorage(cmdbuff, commands.size() * sizeof(commands[0]), nullptr, GL_DYNAMIC_STORAGE_BIT);
+				glNamedBufferSubData(cmdbuff, 0, commands.size() * sizeof(commands[0]), std::data(commands));
 			}
 
-			glCreateBuffers(1, &cmdbuff);
-			glNamedBufferStorage(cmdbuff, commands.size() * sizeof(commands[0]), nullptr, GL_DYNAMIC_STORAGE_BIT);
-			glNamedBufferSubData(cmdbuff, 0, commands.size() * sizeof(commands[0]), std::data(commands));
+			glBindVertexArray(test.getVAO());
+			glBindBuffer(GL_DRAW_INDIRECT_BUFFER, cmdbuff);
+			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);
 		}
-
-		glBindVertexArray(test.getVAO());
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, cmdbuff);
-		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);*/
 	}
 }

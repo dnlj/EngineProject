@@ -8,6 +8,15 @@
 
 
 namespace Game {
+	class ModelData {
+		public:
+			bool skinned = false;
+			Engine::Gfx::Armature arm;
+			std::vector<glm::mat4> bones;
+			std::vector<Engine::Gfx::MeshInst> instances;
+			std::vector<Engine::Gfx::MeshDesc> meshes;
+	};
+
 	class AnimSystem : public System {
 		private:
 			Engine::Gfx::Mesh test;
@@ -18,11 +27,7 @@ namespace Game {
 			GLuint cmdbuff = 0; // TODO: rm - just for testing
 
 			Engine::Gfx::Animation animation;
-			Engine::Gfx::Armature arm;
-			std::vector<Engine::Gfx::MeshInst> instances;
-
-			std::vector<glm::mat4> bonesFinal;
-			std::vector<Engine::Gfx::MeshRange> meshes;
+			ModelData model;
 
 		public:
 			AnimSystem(SystemArg arg);

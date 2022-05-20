@@ -30,9 +30,9 @@ namespace Engine::Gfx {
 		// TODO: try nested armature
 
 		//constexpr char fileName[] = "assets/testing.fbx";
-		constexpr char fileName[] = "assets/tri_test.fbx";
+		//constexpr char fileName[] = "assets/tri_test2.fbx";
 		//constexpr char fileName[] = "assets/test.fbx";
-		//constexpr char fileName[] = "assets/char6.fbx";
+		constexpr char fileName[] = "assets/char6.fbx";
 		//constexpr char fileName[] = "assets/char.glb";
 		//constexpr char fileName[] = "assets/char.dae";
 
@@ -45,17 +45,17 @@ namespace Engine::Gfx {
 		int numVerts = 0;
 		int numFaces = 0;
 		int numNodesEst = 0;
-		bool hasBones = false;
+		skinned = false;
 
 		for(const auto* mesh : Engine::ArrayView{scene->mMeshes, scene->mNumMeshes}) {
 			numVerts += mesh->mNumVertices;
 			numFaces += mesh->mNumFaces;
 			numNodesEst += mesh->mNumBones;
-			hasBones = hasBones || mesh->mNumBones;
+			skinned = skinned || mesh->mNumBones;
 		}
 
 		// TODO: separate rendering paths for skinned/static meshes?
-		ENGINE_WARN("TODO: hasBones ", hasBones, " ", scene->mNumAnimations);
+		ENGINE_WARN("TODO: hasBones ", skinned, " ", scene->mNumAnimations);
 
 		// TODO: glMapBuffer w/o temporary buffer instead? would be good to test how that effects load times.
 		verts.resize(numVerts);
