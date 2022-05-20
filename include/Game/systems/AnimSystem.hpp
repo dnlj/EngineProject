@@ -11,13 +11,15 @@ namespace Game {
 	class AnimSystem : public System {
 		private:
 			Engine::Gfx::Mesh test;
-			Engine::ShaderRef shader;
+			Engine::ShaderRef shaderSkinned;
+			Engine::ShaderRef shaderStatic;
 			GLuint ubo;
 
 			GLuint cmdbuff = 0; // TODO: rm - just for testing
 
 			Engine::Gfx::Animation animation;
 			Engine::Gfx::Armature arm;
+			std::vector<Engine::Gfx::MeshInst> instances;
 
 			std::vector<glm::mat4> bonesFinal;
 			std::vector<Engine::Gfx::MeshRange> meshes;

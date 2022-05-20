@@ -30,8 +30,8 @@ namespace Engine::Gfx {
 		// TODO: try nested armature
 
 		//constexpr char fileName[] = "assets/testing.fbx";
-		constexpr char fileName[] = "assets/tri_test.fbx"; // TODO: doesnt work. i assume because no armature?
-		//constexpr char fileName[] = "assets/test.fbx"; // TODO: doesnt work. i assume because no armature?
+		constexpr char fileName[] = "assets/tri_test.fbx";
+		//constexpr char fileName[] = "assets/test.fbx";
 		//constexpr char fileName[] = "assets/char6.fbx";
 		//constexpr char fileName[] = "assets/char.glb";
 		//constexpr char fileName[] = "assets/char.dae";
@@ -45,12 +45,17 @@ namespace Engine::Gfx {
 		int numVerts = 0;
 		int numFaces = 0;
 		int numNodesEst = 0;
+		bool hasBones = false;
 
 		for(const auto* mesh : Engine::ArrayView{scene->mMeshes, scene->mNumMeshes}) {
 			numVerts += mesh->mNumVertices;
 			numFaces += mesh->mNumFaces;
 			numNodesEst += mesh->mNumBones;
+			hasBones = hasBones || mesh->mNumBones;
 		}
+
+		// TODO: separate rendering paths for skinned/static meshes?
+		ENGINE_WARN("TODO: hasBones ", hasBones, " ", scene->mNumAnimations);
 
 		// TODO: glMapBuffer w/o temporary buffer instead? would be good to test how that effects load times.
 		verts.resize(numVerts);
@@ -84,12 +89,12 @@ namespace Engine::Gfx {
 			ENGINE_WARN("Assimp failed to load model: ", im.GetErrorString());
 			return;
 		} else {
-			ENGINE_LOG("Assimp successfully loaded model: ",
+			/*ENGINE_LOG("Assimp successfully loaded model: ",
 				scene->mNumMeshes, " ",
 				scene->mNumAnimations, " ",
 				scene->mNumMaterials, " ",
 				scene->mNumTextures
-			);
+			);*/
 		}
 
 		init();
@@ -179,9 +184,9 @@ namespace Engine::Gfx {
 		// TODO: apply mTicksPerSecond to times?
 		anim.duration = static_cast<float32>(anim2->mDuration);
 		for (const auto* chan : Engine::ArrayView{anim2->mChannels, anim2->mNumChannels}) {
-			ENGINE_LOG("\tChannel: ", chan->mNodeName.C_Str(), chan->mNumPositionKeys, " ", chan->mNumRotationKeys, " ", chan->mNumScalingKeys);
+			ENGINE_LOG("\tChannel: ", chan->mNodeName.C_Str(), " ", chan->mNumPositionKeys, " ", chan->mNumRotationKeys, " ", chan->mNumScalingKeys);
 			auto& seq = anim.channels.emplace_back();
-			seq.nodeId = getNodeId(chan->mNodeName); // TODO: use getNodeId
+			seq.nodeId = getNodeId(chan->mNodeName);
 			ENGINE_LOG("ANIM: ", seq.nodeId);
 
 			seq.pos.resize(chan->mNumPositionKeys);
@@ -229,7 +234,7 @@ namespace Engine::Gfx {
 		for (uint i = 0; i < node->mNumMeshes; ++i) {
 			instances.push_back({
 				.meshId = static_cast<MeshId>(node->mMeshes[i]),
-				.nodeId = -1,
+				.nodeId = nodeId,
 			});
 		}
 

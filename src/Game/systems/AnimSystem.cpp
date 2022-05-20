@@ -19,13 +19,16 @@ namespace {
 namespace Game {
 	AnimSystem::AnimSystem(SystemArg arg) : System{arg} {
 		engine.shaderManager.add("shaders/mesh");
-		shader = engine.shaderManager.get("shaders/mesh");
+		engine.shaderManager.add("shaders/mesh_static");
+		shaderSkinned = engine.shaderManager.get("shaders/mesh");
+		shaderStatic = engine.shaderManager.get("shaders/mesh_static");
 
 		{
 			Engine::Gfx::ModelLoader loader;
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size());
 			meshes = std::move(loader.meshes);
+			instances = std::move(loader.instances);
 			
 			arm = std::move(loader.arm);
 			if (!loader.animations.empty()) {
@@ -49,7 +52,7 @@ namespace Game {
 		glCreateBuffers(1, &ubo);
 		glNamedBufferData(ubo, bonesFinal.size() * sizeof(bonesFinal[0]), nullptr, GL_DYNAMIC_DRAW);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo); // Bind index to ubo
-		glUniformBlockBinding(shader->get(), 0, 1); // Bind uniform block to buffer index
+		glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
 	}
 
 	AnimSystem::~AnimSystem() {
@@ -87,19 +90,33 @@ namespace Game {
 
 		updateAnim();
 
-		auto mvp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
-		mvp = engine.camera.getProjection();
-		//mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
-		mvp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 2});
+		auto vp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
+		vp = engine.camera.getProjection();
+		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
+		vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 2});
 
-		glUseProgram(shader->get());
-		glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
+		//glUseProgram(shaderSkinned->get());
+		//glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 
 		//test.draw();
 
-		static std::vector<DrawElementsIndirectCommand> commands; // TODO: rm temp
+		//static std::vector<DrawElementsIndirectCommand> commands; // TODO: rm temp
 
-		if (cmdbuff == 0) {
+		for (auto& inst : instances) {
+			const auto& node = arm.nodes[inst.nodeId];
+			const auto& mesh = meshes[inst.meshId];
+
+			const auto mvp = vp * node.total;
+
+			// TODO: the problem is we only have one anim and blender splits it into 4 anims for some reason instead of 1 or two
+			glUseProgram(shaderStatic->get());
+			glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
+
+			glBindVertexArray(test.getVAO());
+			glDrawElements(GL_TRIANGLES, mesh.count, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh.offset * sizeof(GLuint)));
+		}
+
+		/*if (cmdbuff == 0) {
 			ENGINE_DEBUG_ASSERT(meshes.size() == 2);
 			for (const auto& mesh : meshes) {
 				commands.push_back({
@@ -118,6 +135,6 @@ namespace Game {
 
 		glBindVertexArray(test.getVAO());
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, cmdbuff);
-		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);
+		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);*/
 	}
 }

@@ -955,11 +955,12 @@ int entry(int argc, char* argv[]) {
 
 	// Position the console
 	if (HWND window; window = GetConsoleWindow()) {
+		constexpr int height = 800;
 		if constexpr (ENGINE_CLIENT) {
-			SetWindowPos(window, HWND_TOP, 0, 0, 1500, 600, 0);
+			SetWindowPos(window, HWND_TOP, 0, 0, 1500, height, 0);
 			SetWindowTextW(window, L"Client");
 		} else if constexpr (ENGINE_SERVER) {
-			SetWindowPos(window, HWND_TOP, 0, 600, 1500, 600, 0);
+			SetWindowPos(window, HWND_TOP, 0, height, 1500, height, 0);
 			SetWindowTextW(window, L"Server");
 		}
 	}
