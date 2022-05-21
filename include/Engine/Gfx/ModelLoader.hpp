@@ -90,10 +90,6 @@ namespace Engine::Gfx {
 		NodeId nodeId;
 	};
 
-	struct ModelStatic {
-		// TODO:
-	};
-
 	class ModelLoader {
 		private:
 			Assimp::Importer im;

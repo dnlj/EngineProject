@@ -150,7 +150,7 @@ namespace Engine::Gfx {
 			}
 		}
 
-		const auto& range = meshes.emplace_back(indexCount, mesh->mNumFaces * 3);
+		const auto& range = meshes.emplace_back(indexCount, mesh->mNumFaces * 3, mesh->mMaterialIndex);
 		const auto baseVertex = vertCount;
 
 		for(const auto& face : Engine::ArrayView{mesh->mFaces, mesh->mNumFaces}) {

@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/ResourceManager.hpp>
+#include <Engine/ResourceManager2.hpp>
 #include <Engine/Gfx/Texture.hpp>
 
 
