@@ -2,8 +2,11 @@
 
 
 namespace Engine {
-	using ResourceId2 = int32;
+	using ResourceId2 = int32; // TODO: we really shouldnt need resource ids. atm its only used for networking i think. we should instead just use the key value or similar.
 
+	/**
+	 * Pair used for resource reference counting.
+	 */
 	template<class T>
 	class ResourceInfo2 {
 		public:
@@ -11,8 +14,11 @@ namespace Engine {
 			T data;
 	};
 
+	/**
+	 * A pointer like type the refers to a resource.
+	 */
 	template<class T>
-	class Resource2 { // TODO: rename
+	class ResourceRef { // TODO: rename
 		private:
 			ResourceInfo2<T>* info = nullptr;
 			void inc() { ++info->refCount; }
@@ -20,11 +26,11 @@ namespace Engine {
 
 		public:
 			using Id = ResourceId2;
-			Resource2() = default;
-			Resource2(ResourceInfo2<T>* info) : info{info} { inc(); };
-			~Resource2() { dec(); }
-			Resource2(const Resource2& other) { *this = other; inc(); }
-			Resource2& operator=(const Resource2& other) {
+			ResourceRef() = default;
+			ResourceRef(ResourceInfo2<T>* info) : info{info} { inc(); };
+			~ResourceRef() { dec(); }
+			ResourceRef(const ResourceRef& other) { *this = other; inc(); }
+			ResourceRef& operator=(const ResourceRef& other) {
 				if (this == &other) { return *this; }
 				info = other.info;
 				inc();
@@ -39,12 +45,15 @@ namespace Engine {
 			const auto& operator*() const { return *get(); }
 	};
 
+	/**
+	 * Manages a resource's lifetime.
+	 */
 	template<class T>
 	class ResourceManager2 { // TODO: rename
 		public:
 			struct CreateResult {
 				ResourceId2 id;
-				Resource2<T>& obj;
+				ResourceRef<T> obj;
 			};
 
 		private:
@@ -64,11 +73,11 @@ namespace Engine {
 					infos.emplace_back();
 				}
 
-				infos[id] = std::make_unique<ResourceInfo2>(std::forward<Args>(args)...);
+				infos[id] = std::make_unique<ResourceInfo2>(0, std::forward<Args>(args)...);
 
 				return {
 					.id = id,
-					.obj = Resource2{infos[id].get()},
+					.obj = ResourceRef{infos[id].get()},
 				};
 			}
 
@@ -78,9 +87,14 @@ namespace Engine {
 					const auto& info = infos[i];
 					ENGINE_DEBUG_ASSERT(info->refCount >= 0 || info->refCount > 0xFFFF, "Invalid resource reference count. Something went wrong.");
 					if (info->refCount == 0) {
+						ENGINE_LOG("Cleaning resource: ", i); // TODO: remove once tested
 						destroy(i);
 					}
 				}
+			}
+
+			ResourceRef<T> get(ResourceId2 id) {
+				return infos[id].get();
 			}
 
 		private:
@@ -91,5 +105,29 @@ namespace Engine {
 			}
 	};
 
+	/**
+	 * Loads a resource from a specific key (file path, uri, or similar).
+	 */
+	template<class Key, class T, class Init>
+	class ResourceLoader {
+		private:
+			FlatHashMap<Key, ResourceRef<T>> lookup;
+			ResourceManager2<T>& manager;
 
+		public:
+			ResourceLoader(ResourceManager2<T>& manager)
+				: manager{manager} {
+			}
+
+			ResourceRef<T> get(const Key& key) {
+				auto found = lookup.find(key);
+				if (found == lookup.end()) {
+					auto& [id, obj] = manager.create(load(key));
+					found = lookup.emplace(key, obj)->first;
+				}
+				return found->second;
+			}
+
+			virtual T load(const Key& key) = 0;
+	};
 }
