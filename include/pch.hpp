@@ -4,27 +4,28 @@
 #if 1
 
 // STD
-#include <iosfwd>
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <cmath>
+#include <csignal>
 #include <cstdio>
 #include <fstream>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <string>
-#include <chrono>
-#include <iterator>
-#include <algorithm>
-#include <type_traits>
-#include <limits>
-#include <numeric>
-#include <csignal>
 #include <functional>
-#include <memory>
-#include <cmath>
-#include <cassert>
-#include <utility>
 #include <initializer_list>
+#include <iosfwd>
+#include <iostream>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <numeric>
+#include <sstream>
+#include <string>
 #include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 
 // Windows
@@ -39,30 +40,30 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // FMT
+#include <fmt/chrono.h>
+#include <fmt/compile.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
-#include <fmt/chrono.h>
-#include <fmt/compile.h>
 
 // GLM
 #pragma warning (push)
 #pragma warning (disable: 4701)
 #include <glm/glm.hpp>
 #pragma warning (pop)
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 // Engine
-#include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
-#include <Engine/Hash.hpp>
-#include <Engine/RingBuffer.hpp>
-#include <Engine/FlatHashMap.hpp>
-#include <Engine/SparseSet.hpp>
-#include <Engine/Net/IPv4Address.hpp>
 #include <Engine/ECS/World.hpp>
+#include <Engine/Engine.hpp>
+#include <Engine/FlatHashMap.hpp>
+#include <Engine/Hash.hpp>
+#include <Engine/Net/IPv4Address.hpp>
+#include <Engine/RingBuffer.hpp>
+#include <Engine/SparseSet.hpp>
 
 // Game
 // This does speed up compile by a few seconds but it also would mean much more
