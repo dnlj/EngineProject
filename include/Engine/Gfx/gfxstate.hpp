@@ -12,47 +12,12 @@
 // TODO: split/sort/organaize everything in this file.
 
 namespace Engine::Gfx {
-	/*struct StorageFlags_ {
-		enum StorageFlags : GLbitfield {
-			MapRead = GL_MAP_READ_BIT,
-			MapWrite = GL_MAP_WRITE_BIT,
-			MapPersistent = GL_MAP_PERSISTENT_BIT,
-			MapCoherent = GL_MAP_COHERENT_BIT,
-			DynamicStorage = GL_DYNAMIC_STORAGE_BIT,
-			ClientStorage = GL_CLIENT_STORAGE_BIT,
-		};
-	};
-	using StorageFlags = StorageFlags_::StorageFlags;
-
-	class Buffer {
-		private:
-			GLuint buff = 0;
-
-		public:
-			Buffer(Buffer&) = delete;
-			~Buffer() { glDeleteBuffers(1, &buff); }
-
-			ENGINE_INLINE void init() { glCreateBuffers(1, &buff); }
-
-			void alloc(uint64 size, const void* data, StorageFlags flags) {
-				// TODO: is it better to use glBufferData instead of delete/create in cases where we need a resizeable buffer?
-				if (buff) { glDeleteBuffers(1, &buff); }
-				glCreateBuffers(1, &buff);
-				glBufferStorage(buff, size, data, flags);
-			}
-
-			ENGINE_INLINE void alloc(uint64 size, StorageFlags flags) {
-				alloc(size, nullptr, flags);
-			}
-	};*/
-
 	// CPU
 	//class Armature {}; // TODO: this isnt nessarily an armature, more of a embedded scene graph.
 	//class Animation {};
 
 	// GPU
 	class MeshRef {};
-	class Buffer {};
 
 	// TODO: should this be called VertexAttribute instead?
 	enum class VertexInput : uint32 {
@@ -68,6 +33,7 @@ namespace Engine::Gfx {
 
 	// Might also contain things like UBO and SSBO
 	enum class UniformInput : uint32 {
+		None				= 0,
 		ModelViewProj		= 1 << 0,
 		ModelViewProjArray	= 1 << 1,
 		Armature			= 1 << 2,
@@ -146,18 +112,19 @@ namespace Engine::Gfx {
 	};
 	class MaterialRef {};
 
+	class Buffer_ChangeToNewBuffer {};
 	// A single set of vertices with a single material.
 	class Mesh2 {
 		/* Vertex layouts could actually draw from multiple buffers (binding points), but atm we never actually do that.
 		 * @see glVertexArrayVertexBuffer
 		 * @see glVertexArrayAttribBinding
 		 */
-		Buffer vbuff;
+		Buffer_ChangeToNewBuffer vbuff;
 		MaterialRef mat;
 		//VertexAttributeLayoutRef layout;
 		// TODO: still need to setup buffers - glVertexArrayVertexBuffer(s)
 
-		Buffer ibuff;
+		Buffer_ChangeToNewBuffer ibuff;
 		uint32 offset = 0;
 		uint32 count = 0;
 

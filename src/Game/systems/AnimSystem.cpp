@@ -19,13 +19,15 @@ namespace {
 
 namespace Game {
 	AnimSystem::AnimSystem(SystemArg arg) : System{arg} {
+		using namespace Engine::Gfx;
+
 		engine.shaderManager.add("shaders/mesh");
 		engine.shaderManager.add("shaders/mesh_static");
 		shaderSkinned = engine.shaderManager.get("shaders/mesh");
 		shaderStatic = engine.shaderManager.get("shaders/mesh_static");
 
 		{
-			Engine::Gfx::ModelLoader loader;
+			ModelLoader loader;
 
 			model.skinned = true; // TODO: should be informed the loader
 
@@ -52,13 +54,12 @@ namespace Game {
 
 		model.bones.resize(model.arm.bones.size());
 
-		glCreateBuffers(1, &ubo);
-		glNamedBufferData(ubo, model.bones.size() * sizeof(model.bones[0]), nullptr, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo); // Bind index to ubo
+		ubo.alloc(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage);
+
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo.get()); // Bind index to ubo
 		glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
 
 		{
-			using namespace Engine::Gfx;
 			VertexAttributeDesc attribs[] = {
 				{ VertexInput::Position, 3, NumberType::Float32, offsetof(Vertex, pos), false },
 				{ VertexInput::BoneIndices, 4, NumberType::UInt8, offsetof(Vertex, bones), false },
@@ -74,7 +75,6 @@ namespace Game {
 	}
 
 	AnimSystem::~AnimSystem() {
-		glDeleteBuffers(1, &ubo);
 		glDeleteBuffers(1, &cmdbuff);
 	}
 
@@ -100,7 +100,7 @@ namespace Game {
 			}
 		}
 
-		glNamedBufferSubData(ubo, 0, model.bones.size() * sizeof(model.bones[0]), model.bones.data());
+		ubo.setData(model.bones);
 	}
 
 	void AnimSystem::render(const RenderLayer layer) {
