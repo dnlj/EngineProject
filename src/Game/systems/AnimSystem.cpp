@@ -1,5 +1,6 @@
 // Engine
 #include <Engine/Gfx/Mesh.hpp>
+#include <Engine/Gfx/gfxstate.hpp>
 
 // Game
 #include <Game/systems/AnimSystem.hpp>
@@ -55,6 +56,21 @@ namespace Game {
 		glNamedBufferData(ubo, model.bones.size() * sizeof(model.bones[0]), nullptr, GL_DYNAMIC_DRAW);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo); // Bind index to ubo
 		glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
+
+		{
+			using namespace Engine::Gfx;
+			VertexAttributeDesc attribs[] = {
+				{ VertexInput::Position, 3, NumberType::Float32, offsetof(Vertex, pos), false },
+				{ VertexInput::BoneIndices, 4, NumberType::UInt8, offsetof(Vertex, bones), false },
+				{ VertexInput::BoneWeights, 4, NumberType::Float32, offsetof(Vertex, weights), false },
+			};
+
+			layout = engine.vertexLayoutLoader.get(attribs);
+
+			glVertexArrayVertexBuffer(layout->vao, 0, test.getVBO(), 0, sizeof(Vertex));
+			glVertexArrayElementBuffer(layout->vao, test.getEBO());
+
+		}
 	}
 
 	AnimSystem::~AnimSystem() {
@@ -108,7 +124,7 @@ namespace Game {
 				const auto mvp = vp * node.total;
 
 				glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
-				glBindVertexArray(test.getVAO());
+				glBindVertexArray(layout->vao);
 				glDrawElements(GL_TRIANGLES, mesh.count, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh.offset * sizeof(GLuint)));
 			}
 		} else {
@@ -134,7 +150,7 @@ namespace Game {
 				glNamedBufferSubData(cmdbuff, 0, commands.size() * sizeof(commands[0]), std::data(commands));
 			}
 
-			glBindVertexArray(test.getVAO());
+			glBindVertexArray(layout->vao);
 			glBindBuffer(GL_DRAW_INDIRECT_BUFFER, cmdbuff);
 			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);
 		}

@@ -1,6 +1,7 @@
 #pragma once
 
 // Engine
+#include <Engine/Gfx/VertexLayoutLoader.hpp>
 #include <Engine/TextureManager.hpp>
 #include <Engine/ShaderManager.hpp>
 #include <Engine/Camera.hpp>
@@ -20,6 +21,10 @@ namespace Game {
 			Engine::Input::BindManager bindManager;
 			Engine::TextureManager textureManager;
 			Engine::ShaderManager shaderManager;
+
+			Engine::Gfx::VertexLayoutManager vertexLayoutManager;
+			Engine::Gfx::VertexLayoutLoader vertexLayoutLoader = vertexLayoutManager;
+
 			Engine::Camera camera;
 	};
 }

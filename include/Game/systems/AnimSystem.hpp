@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Gfx/ModelLoader.hpp>
+#include <Engine/Gfx/VertexLayoutLoader.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -20,6 +21,7 @@ namespace Game {
 	class AnimSystem : public System {
 		private:
 			Engine::Gfx::Mesh test;
+			Engine::Gfx::VertexAttributeLayoutRef layout;
 			Engine::ShaderRef shaderSkinned;
 			Engine::ShaderRef shaderStatic;
 			GLuint ubo;

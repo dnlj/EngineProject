@@ -80,7 +80,9 @@ namespace Engine::Gfx {
 				glDeleteBuffers(bufferCount, buffers);
 			}
 
-			auto getVAO() const noexcept { return vao; }
+			auto getVAO() const noexcept { return vao; } // TODO: rm - just for rework
+			auto getVBO() const noexcept { return vbo; } // TODO: rm - just for rework
+			auto getEBO() const noexcept { return ebo; } // TODO: rm - just for rework
 
 			// TODO: I think we could also make stride be infered in setVertedData. (optional param = sizeof(Vertex))
 			// TODO: make setFormat just take a stride and attribute list directly, can use arrayview and dont need to mess with format

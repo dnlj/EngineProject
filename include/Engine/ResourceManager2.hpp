@@ -51,14 +51,16 @@ namespace Engine {
 	template<class T>
 	class ResourceManager2 { // TODO: rename
 		public:
+			using ResourceRef = ::Engine::ResourceRef<T>;
+			using ResourceInfo = ResourceInfo2<T>;
 			struct CreateResult {
 				ResourceId2 id;
-				ResourceRef<T> obj;
+				ResourceRef obj;
 			};
 
 		private:
 			std::vector<ResourceId2> reuse;
-			std::vector<std::unique_ptr<ResourceInfo2<T>>> infos;
+			std::vector<std::unique_ptr<ResourceInfo>> infos;
 
 		public:
 			template<class... Args>
@@ -69,11 +71,11 @@ namespace Engine {
 					id = reuse.back();
 					reuse.pop_back();
 				} else {
-					id = infos.size();
+					id = static_cast<ResourceId2>(infos.size());
 					infos.emplace_back();
 				}
 
-				infos[id] = std::make_unique<ResourceInfo2>(0, std::forward<Args>(args)...);
+				infos[id] = std::make_unique<ResourceInfo>(0, std::forward<Args>(args)...);
 
 				return {
 					.id = id,
@@ -93,7 +95,7 @@ namespace Engine {
 				}
 			}
 
-			ResourceRef<T> get(ResourceId2 id) {
+			ResourceRef get(ResourceId2 id) {
 				return infos[id].get();
 			}
 
@@ -108,26 +110,33 @@ namespace Engine {
 	/**
 	 * Loads a resource from a specific key (file path, uri, or similar).
 	 */
-	template<class Key, class T, class Init>
+	template<class Key_, class Resource_>
 	class ResourceLoader {
+		public:
+			using Key = Key_;
+			using Resource = Resource_; // TODO: T a better name
+			using ResourceRef = ResourceRef<Resource>;
+			using Manager = ResourceManager2<Resource>;
+
 		private:
-			FlatHashMap<Key, ResourceRef<T>> lookup;
-			ResourceManager2<T>& manager;
+			FlatHashMap<Key, ResourceRef> lookup;
+			Manager& manager;
 
 		public:
-			ResourceLoader(ResourceManager2<T>& manager)
+			ResourceLoader(Manager& manager)
 				: manager{manager} {
 			}
 
-			ResourceRef<T> get(const Key& key) {
+			ResourceRef get(const Key& key) {
 				auto found = lookup.find(key);
 				if (found == lookup.end()) {
-					auto& [id, obj] = manager.create(load(key));
-					found = lookup.emplace(key, obj)->first;
+					const auto& [id, obj] = manager.create(load(key));
+					found = lookup.emplace(key, obj).first;
 				}
 				return found->second;
 			}
 
-			virtual T load(const Key& key) = 0;
+		private:
+			virtual Resource load(const Key& key) = 0;
 	};
 }

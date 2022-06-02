@@ -28,6 +28,10 @@ namespace Engine {
 		return Hash<T>()(val);
 	}
 
+	inline size_t hashBytes(const void* data, size_t len) {
+		return robin_hood::hash_bytes(data, len);
+	}
+
 	inline void hashCombine(size_t& seed, size_t value) {
 		seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 	}
