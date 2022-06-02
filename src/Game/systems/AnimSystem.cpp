@@ -40,16 +40,8 @@ namespace Game {
 				animation = std::move(loader.animations[0]);
 			}
 
-			using NumberType = Engine::Gfx::NumberType;
-			test.setFormat(Engine::Gfx::VertexFormat<3>{sizeof(Engine::Gfx::Vertex), {
-				{ .location = 0, .size = 3, .type = NumberType::Float32, .offset = offsetof(Engine::Gfx::Vertex, pos) },
-				{ .location = 1, .size = 4, .type = NumberType::UInt8, .offset = offsetof(Engine::Gfx::Vertex, bones) },
-				{ .location = 2, .size = 4, .type = NumberType::Float32, .offset = offsetof(Engine::Gfx::Vertex, weights) },
-			}});
-
-			test.setVertexData(Engine::Gfx::Primitive::Triangles, loader.verts);
-			test.setElementData(loader.indices);
-
+			vbo.alloc(loader.verts);
+			ebo.alloc(loader.indices);
 		}
 
 		model.bones.resize(model.arm.bones.size());
@@ -68,8 +60,8 @@ namespace Game {
 
 			layout = engine.vertexLayoutLoader.get(attribs);
 
-			glVertexArrayVertexBuffer(layout->vao, 0, test.getVBO(), 0, sizeof(Vertex));
-			glVertexArrayElementBuffer(layout->vao, test.getEBO());
+			glVertexArrayVertexBuffer(layout->vao, 0, vbo.get(), 0, sizeof(Vertex));
+			glVertexArrayElementBuffer(layout->vao, ebo.get());
 
 		}
 	}

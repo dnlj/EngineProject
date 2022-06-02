@@ -21,11 +21,12 @@ namespace Game {
 
 	class AnimSystem : public System {
 		private:
-			Engine::Gfx::Mesh test;
 			Engine::Gfx::VertexAttributeLayoutRef layout;
 			Engine::ShaderRef shaderSkinned;
 			Engine::ShaderRef shaderStatic;
 			Engine::Gfx::Buffer ubo;
+			Engine::Gfx::Buffer vbo;
+			Engine::Gfx::Buffer ebo;
 
 			GLuint cmdbuff = 0; // TODO: rm - just for testing
 

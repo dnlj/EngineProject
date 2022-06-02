@@ -91,7 +91,7 @@ namespace Engine::Gfx {
 	class VertexAttributeLayout {
 		public:
 			// TODO: should this also have a vertexInputs? i dont think we actually need it though.
-			uint32 vao;
+			uint32 vao; // TODO: private
 	};
 
 	class ShaderInfo { // TODO: bad name, more descriptive

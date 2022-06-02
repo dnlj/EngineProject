@@ -4,6 +4,7 @@
 namespace Engine::Gfx {
 	struct StorageFlag_ {
 		enum StorageFlag : GLbitfield {
+			None = 0,
 			MapRead = GL_MAP_READ_BIT,
 			MapWrite = GL_MAP_WRITE_BIT,
 			MapPersistent = GL_MAP_PERSISTENT_BIT,
@@ -30,15 +31,19 @@ namespace Engine::Gfx {
 
 			ENGINE_INLINE auto get() const { return buff; }
 
-			void alloc(uint64 size, const void* data, StorageFlag flags) {
+			void alloc(uint64 size, const void* data, StorageFlag flags = {}) {
 				// TODO: is it better to use glBufferData instead of delete/create in cases where we need a resizeable buffer?
 				if (buff) { glDeleteBuffers(1, &buff); }
 				glCreateBuffers(1, &buff);
 				glNamedBufferStorage(buff, size, data, flags);
 			}
 
-			ENGINE_INLINE void alloc(uint64 size, StorageFlag flags) {
+			ENGINE_INLINE void alloc(uint64 size, StorageFlag flags = {}) {
 				alloc(size, nullptr, flags);
+			}
+
+			ENGINE_INLINE void alloc(std::ranges::contiguous_range auto range, StorageFlag flags = {}) {
+				alloc(std::ranges::size(range) * sizeof(*std::ranges::cdata(range)), std::ranges::cdata(range), flags);
 			}
 
 			ENGINE_INLINE void setData(uint64 offset, uint64 size, const void* data) {
