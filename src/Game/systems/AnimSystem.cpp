@@ -40,15 +40,15 @@ namespace Game {
 				animation = std::move(loader.animations[0]);
 			}
 
-			vbo.alloc(loader.verts);
-			ebo.alloc(loader.indices);
+			vbo = engine.bufferManager.create(loader.verts).ref;
+			ebo = engine.bufferManager.create(loader.indices).ref;
 		}
 
 		model.bones.resize(model.arm.bones.size());
 
-		ubo.alloc(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage);
+		ubo = engine.bufferManager.create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage).ref;
 
-		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo.get()); // Bind index to ubo
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
 		glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
 
 		{
@@ -60,8 +60,8 @@ namespace Game {
 
 			layout = engine.vertexLayoutLoader.get(attribs);
 
-			glVertexArrayVertexBuffer(layout->vao, 0, vbo.get(), 0, sizeof(Vertex));
-			glVertexArrayElementBuffer(layout->vao, ebo.get());
+			glVertexArrayVertexBuffer(layout->vao, 0, vbo->get(), 0, sizeof(Vertex));
+			glVertexArrayElementBuffer(layout->vao, ebo->get());
 
 		}
 	}
@@ -92,7 +92,7 @@ namespace Game {
 			}
 		}
 
-		ubo.setData(model.bones);
+		ubo->setData(model.bones);
 	}
 
 	void AnimSystem::render(const RenderLayer layer) {

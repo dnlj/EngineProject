@@ -10,6 +10,9 @@ namespace Engine {
 	template<class T>
 	class ResourceInfo2 {
 		public:
+			template<class... Args>
+			ResourceInfo2(Args... args) : data(std::forward<Args>(args)...) {}
+
 			int32 refCount = 0;
 			T data;
 	};
@@ -38,11 +41,13 @@ namespace Engine {
 			}
 
 			const auto* get() const { return &info->data; }
-			const auto& path() const { return info->path; }
-			const auto& id() const { return info->id; }
+			auto* get() { return &info->data; }
 
 			const auto* operator->() const { return get(); }
+			auto* operator->() { return get(); }
+
 			const auto& operator*() const { return *get(); }
+			auto& operator*() { return *get(); }
 	};
 
 	/**
@@ -55,7 +60,7 @@ namespace Engine {
 			using ResourceInfo = ResourceInfo2<T>;
 			struct CreateResult {
 				ResourceId2 id;
-				ResourceRef obj;
+				ResourceRef ref;
 			};
 
 		private:
@@ -74,12 +79,13 @@ namespace Engine {
 					id = static_cast<ResourceId2>(infos.size());
 					infos.emplace_back();
 				}
+				ENGINE_INFO("[ResourceManager2] Create resource ", typeid(T).name(), " ", sizeof...(args));
 
-				infos[id] = std::make_unique<ResourceInfo>(0, std::forward<Args>(args)...);
+				infos[id] = std::make_unique<ResourceInfo>(std::forward<Args>(args)...);
 
 				return {
 					.id = id,
-					.obj = ResourceRef{infos[id].get()},
+					.ref = ResourceRef{infos[id].get()},
 				};
 			}
 
@@ -102,6 +108,7 @@ namespace Engine {
 		private:
 			void destroy(ResourceId2 id) {
 				ENGINE_DEBUG_ASSERT(id >= 0 && id < infos.size(), "Attempting to free invalid Resource");
+				ENGINE_INFO("[ResourceManager2] Destroy resource ", typeid(T).name(), " ", id);
 				infos[id] = nullptr;
 				reuse.push_back(id);
 			}
@@ -128,13 +135,18 @@ namespace Engine {
 			}
 
 			ResourceRef get(const Key& key) {
+				ENGINE_INFO("[ResourceLoader] Get resource ", typeid(Resource).name());
+
 				auto found = lookup.find(key);
 				if (found == lookup.end()) {
+					ENGINE_INFO("[ResourceLoader] Create resource ", typeid(Resource).name());
 					const auto& [id, obj] = manager.create(load(key));
 					found = lookup.emplace(key, obj).first;
 				}
 				return found->second;
 			}
+
+			// TODO: unload/free/release/etc
 
 		private:
 			virtual Resource load(const Key& key) = 0;

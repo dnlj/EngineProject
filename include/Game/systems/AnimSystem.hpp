@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Gfx/ModelLoader.hpp>
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
+#include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/Buffer.hpp>
 
 // Game
@@ -24,9 +25,9 @@ namespace Game {
 			Engine::Gfx::VertexAttributeLayoutRef layout;
 			Engine::ShaderRef shaderSkinned;
 			Engine::ShaderRef shaderStatic;
-			Engine::Gfx::Buffer ubo;
-			Engine::Gfx::Buffer vbo;
-			Engine::Gfx::Buffer ebo;
+			Engine::Gfx::BufferRef ubo;
+			Engine::Gfx::BufferRef vbo;
+			Engine::Gfx::BufferRef ebo;
 
 			GLuint cmdbuff = 0; // TODO: rm - just for testing
 

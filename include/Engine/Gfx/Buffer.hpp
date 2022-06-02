@@ -26,6 +26,18 @@ namespace Engine::Gfx {
 				buff = other.buff;
 				other.buff = 0;
 			};
+			
+			Buffer(uint64 size, const void* data, StorageFlag flags = {}) {
+				alloc(size, data, flags);
+			}
+
+			Buffer(uint64 size, StorageFlag flags = {}) {
+				alloc(size, nullptr, flags);
+			}
+
+			Buffer(std::ranges::contiguous_range auto range, StorageFlag flags = {}) {
+				alloc(std::ranges::size(range) * sizeof(*std::ranges::cdata(range)), std::ranges::cdata(range), flags);
+			}
 
 			~Buffer() { glDeleteBuffers(1, &buff); }
 

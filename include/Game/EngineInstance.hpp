@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
+#include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/TextureManager.hpp>
 #include <Engine/ShaderManager.hpp>
 #include <Engine/Camera.hpp>
@@ -24,6 +25,7 @@ namespace Game {
 
 			Engine::Gfx::VertexLayoutManager vertexLayoutManager;
 			Engine::Gfx::VertexLayoutLoader vertexLayoutLoader = vertexLayoutManager;
+			Engine::Gfx::BufferManager bufferManager;
 
 			Engine::Camera camera;
 	};
