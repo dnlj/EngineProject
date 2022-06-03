@@ -52,6 +52,7 @@ namespace Game {
 	void ActionSystem::tick() {
 		if (world.isPerformingRollback()) { return; }
 
+		auto& cam = engine.getCamera();
 		const auto currTick = world.getTick();
 		for (const auto ent : world.getFilter<Filter>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
@@ -62,7 +63,7 @@ namespace Game {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 				const auto& pos = physComp.getPosition();
 				auto& state = *actComp.state;
-				const auto& tpos = engine.camera.screenToWorld(state.screenTarget);
+				const auto& tpos = cam.screenToWorld(state.screenTarget);
 				state.target.x = tpos.x - pos.x;
 				state.target.y = tpos.y - pos.y;
 			}

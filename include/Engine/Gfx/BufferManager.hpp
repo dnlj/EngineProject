@@ -6,6 +6,8 @@
 
 
 namespace Engine::Gfx {
-	using BufferManager = ResourceManager2<Buffer>;
+	class BufferManager : public ResourceManager2<Buffer> {
+		using ResourceManager2::ResourceManager2;
+	};
 	using BufferRef = BufferManager::ResourceRef;
 }

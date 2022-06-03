@@ -1,6 +1,9 @@
 // GLM
 #include <glm/vec2.hpp>
 
+// Engine
+#include <Engine/Camera.hpp>
+
 // Game
 #include <Game/World.hpp>
 #include <Game/systems/ParallaxBackgroundSystem.hpp>
@@ -10,20 +13,20 @@ namespace Game {
 	ParallaxBackgroundSystem::ParallaxBackgroundSystem(SystemArg arg)
 		: System{arg} {
 
-		shader = engine.shaderManager.get("shaders/parallax");
+		shader = engine.getShaderManager().get("shaders/parallax");
 		
 		layers.push_back({
-			.texture = engine.textureManager.get("assets/para_test_2.png"),
+			.texture = engine.getTextureManager().get("assets/para_test_2.png"),
 			.speedScale = 0.05f,
 		});
 
 		layers.push_back({
-			.texture = engine.textureManager.get("assets/para_test_1.png"),
+			.texture = engine.getTextureManager().get("assets/para_test_1.png"),
 			.speedScale = 0.15f,
 		});
 
 		layers.push_back({
-			.texture = engine.textureManager.get("assets/para_test_0.png"),
+			.texture = engine.getTextureManager().get("assets/para_test_0.png"),
 			.speedScale = 0.3f,
 		});
 		
@@ -66,15 +69,17 @@ namespace Game {
 
 	void ParallaxBackgroundSystem::run(const float32 dt) {
 		const auto size = instData.size();
+		auto& cam = engine.getCamera();
+
 		for (int i = 0; i < size; ++i) {
 			auto& inst = instData[i];
 			const auto& layer = layers[i];
 
 			constexpr GLfloat strength = 1.0f; // TODO: user setting for parallax strength
 			const GLfloat worldToTexCoords = static_cast<GLfloat>(pixelsPerMeter) / layer.texture->size.x;
-			const glm::vec2 pos = engine.camera.getPosition();
+			const glm::vec2 pos = cam.getPosition();
 
-			inst.scale = glm::vec2{layer.texture->size} * (2.0f / glm::vec2{engine.camera.getScreenSize()});
+			inst.scale = glm::vec2{layer.texture->size} * (2.0f / glm::vec2{cam.getScreenSize()});
 			inst.xoff = pos.x * worldToTexCoords * layer.speedScale * strength;
 		}
 

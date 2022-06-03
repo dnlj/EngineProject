@@ -11,13 +11,14 @@ namespace Game {
 		: System{arg} {
 		static_assert(World::orderAfter<CameraTrackingSystem, CharacterMovementSystem>());
 		static_assert(World::orderAfter<CameraTrackingSystem, PhysicsSystem>());
-		engine.camera.setPosition({0,0});
+		engine.getCamera().setPosition({0,0});
 	}
 	
 	void CameraTrackingSystem::run(float dt) {
+		auto& cam = engine.getCamera();
 		for (auto ent : world.getFilter<CameraTargetFlag, PhysicsInterpComponent>()) {
 			const auto focusPos = world.getComponent<PhysicsInterpComponent>(ent).getPosition();
-			engine.camera.setPosition(glm::vec2{focusPos.x, focusPos.y});
+			cam.setPosition(glm::vec2{focusPos.x, focusPos.y});
 		}
 	}
 }

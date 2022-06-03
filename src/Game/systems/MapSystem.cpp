@@ -67,7 +67,7 @@ namespace Game {
 		}
 
 		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
-		spriteComp.texture = engine.textureManager.get(texStr[texIdx]);
+		spriteComp.texture = engine.getTextureManager().get(texStr[texIdx]);
 		spriteComp.layer = RenderLayer::Background;
 		//spriteComp.texture = engine.textureManager.get("assets/large_sprite_test.png");
 		{
@@ -140,7 +140,7 @@ namespace Game {
 
 	void MapSystem::setup() {
 		mapEntity = world.createEntity();
-		shader = engine.shaderManager.get("shaders/terrain");
+		shader = engine.getShaderManager().get("shaders/terrain");
 
 		constexpr int32 offset = 2; // offset by 2 to skip None and Air
 		const char* textures[BlockId::_count - offset] = {};

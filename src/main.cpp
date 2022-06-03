@@ -28,6 +28,7 @@
 #include <Engine/Gui/Context.hpp>
 #include <Engine/Input/KeyCode.hpp>
 #include <Engine/Unicode/UTF8.hpp>
+#include <Engine/Input/BindManager.hpp>
 
 #include <Engine/Gui/DirectionalLayout.hpp>
 #include <Engine/Gui/ImageDisplay.hpp>
@@ -481,14 +482,14 @@ namespace {
 		void resizeCallback(int32 w, int32 h) override {
 			ENGINE_LOG("Resize: ", w, " ", h);
 			glViewport(0, 0, w, h);
-			userdata->engine.camera.setAsOrtho(w, h, Game::pixelRescaleFactor);
+			userdata->engine.getCamera().setAsOrtho(w, h, Game::pixelRescaleFactor);
 			userdata->guiContext.onResize(w, h);
 		}
 
 		void keyCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onKey(event)) { return; }
-			userdata->engine.bindManager.processInput(event);
+			userdata->engine.getBindManager().processInput(event);
 		}
 
 		void charCallback(wchar_t ch) {
@@ -515,19 +516,19 @@ namespace {
 		void mouseButtonCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouse(event)) { return; }
-			userdata->engine.bindManager.processInput(event);
+			userdata->engine.getBindManager().processInput(event);
 		}
 
 		void mouseWheelCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouseWheel(event)) { return; }
-			userdata->engine.bindManager.processInput(event);
+			userdata->engine.getBindManager().processInput(event);
 		}
 
 		void mouseMoveCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
 			if (userdata->guiContext.onMouseMove(event)) { return; }
-			userdata->engine.bindManager.processInput(event);
+			userdata->engine.getBindManager().processInput(event);
 		}
 
 		void mouseLeaveCallback() override {
@@ -613,8 +614,8 @@ void run(int argc, char* argv[]) {
 			"shaders/gui_glyph",
 			"shaders/fullscreen_passthrough",
 		};
-		for (const auto& path : textures) { engine.textureManager.add(path); }
-		for (const auto& path : shaders) { engine.shaderManager.add(path); }
+		for (const auto& path : textures) { engine.getTextureManager().add(path); }
+		for (const auto& path : shaders) { engine.getShaderManager().add(path); }
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -636,7 +637,7 @@ void run(int argc, char* argv[]) {
 		using Action = Game::Action;
 		using Type = InputType;
 
-		auto& bm = engine.bindManager;
+		auto& bm = engine.getBindManager();
 		auto& is = world.getSystem<Game::InputSystem>();
 
 		constexpr auto updateActionState = [](auto& world, auto action, auto curr) ENGINE_INLINE {

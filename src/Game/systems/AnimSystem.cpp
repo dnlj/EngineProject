@@ -1,6 +1,7 @@
 // Engine
 #include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Gfx/gfxstate.hpp>
+#include <Engine/Camera.hpp>
 
 // Game
 #include <Game/systems/AnimSystem.hpp>
@@ -21,10 +22,10 @@ namespace Game {
 	AnimSystem::AnimSystem(SystemArg arg) : System{arg} {
 		using namespace Engine::Gfx;
 
-		engine.shaderManager.add("shaders/mesh");
-		engine.shaderManager.add("shaders/mesh_static");
-		shaderSkinned = engine.shaderManager.get("shaders/mesh");
-		shaderStatic = engine.shaderManager.get("shaders/mesh_static");
+		engine.getShaderManager().add("shaders/mesh");
+		engine.getShaderManager().add("shaders/mesh_static");
+		shaderSkinned = engine.getShaderManager().get("shaders/mesh");
+		shaderStatic = engine.getShaderManager().get("shaders/mesh_static");
 
 		{
 			ModelLoader loader;
@@ -40,13 +41,13 @@ namespace Game {
 				animation = std::move(loader.animations[0]);
 			}
 
-			vbo = engine.bufferManager.create(loader.verts).ref;
-			ebo = engine.bufferManager.create(loader.indices).ref;
+			vbo = engine.getBufferManager().create(loader.verts).ref;
+			ebo = engine.getBufferManager().create(loader.indices).ref;
 		}
 
 		model.bones.resize(model.arm.bones.size());
 
-		ubo = engine.bufferManager.create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage).ref;
+		ubo = engine.getBufferManager().create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage).ref;
 
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
 		glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
@@ -58,7 +59,7 @@ namespace Game {
 				{ VertexInput::BoneWeights, 4, NumberType::Float32, offsetof(Vertex, weights), false },
 			};
 
-			layout = engine.vertexLayoutLoader.get(attribs);
+			layout = engine.getVertexLayoutLoader().get(attribs);
 
 			glVertexArrayVertexBuffer(layout->vao, 0, vbo->get(), 0, sizeof(Vertex));
 			glVertexArrayElementBuffer(layout->vao, ebo->get());
@@ -101,7 +102,7 @@ namespace Game {
 		updateAnim();
 
 		auto vp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
-		vp = engine.camera.getProjection();
+		vp = engine.getCamera().getProjection();
 		vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
 		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 2});
 

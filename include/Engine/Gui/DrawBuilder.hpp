@@ -5,6 +5,7 @@
 #include <Engine/Gui/Bounds.hpp>
 #include <Engine/Gui/FontManager.hpp>
 #include <Engine/Gui/ShapedString.hpp>
+#include <Engine/ShaderManager.hpp>
 
 
 namespace Engine::Gui {

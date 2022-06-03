@@ -5,6 +5,7 @@
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/Buffer.hpp>
+#include <Engine/ShaderManager.hpp>
 
 // Game
 #include <Game/System.hpp>

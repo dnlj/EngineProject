@@ -48,5 +48,7 @@ namespace Engine::Gfx {
 	};
 
 	using VertexAttributeLayoutRef = VertexLayoutLoader::ResourceRef;
-	using VertexLayoutManager = ResourceManager2<VertexAttributeLayout>;
+	class VertexLayoutManager : public ResourceManager2<VertexAttributeLayout> {
+		using ResourceManager2::ResourceManager2;
+	};
 }

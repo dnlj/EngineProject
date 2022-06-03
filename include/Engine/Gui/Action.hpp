@@ -1,5 +1,8 @@
 #pragma once
 
+// Engine
+#include <Engine/Input/Value.hpp>
+
 
 namespace Engine::Gui {
 	enum class Action {

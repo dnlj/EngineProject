@@ -1,13 +1,22 @@
 #pragma once
 
-// Engine
-#include <Engine/Gfx/VertexLayoutLoader.hpp>
-#include <Engine/Gfx/BufferManager.hpp>
-#include <Engine/TextureManager.hpp>
-#include <Engine/ShaderManager.hpp>
-#include <Engine/Camera.hpp>
-#include <Engine/Input/BindManager.hpp>
 
+// Forward declarations
+namespace Engine {
+	class TextureManager;
+	class ShaderManager;
+	class Camera;
+
+	namespace Input {
+		class BindManager;
+	}
+
+	namespace Gfx {
+		class VertexLayoutManager;
+		class VertexLayoutLoader;
+		class BufferManager;
+	}
+}
 
 namespace Game {
 	enum class InputLayer {
@@ -18,15 +27,19 @@ namespace Game {
 	};
 
 	class EngineInstance {
+		private:
+			std::unique_ptr<class EngineInstancePimpl> pimpl;
+
 		public:
-			Engine::Input::BindManager bindManager;
-			Engine::TextureManager textureManager;
-			Engine::ShaderManager shaderManager;
+			EngineInstance();
+			~EngineInstance();
 
-			Engine::Gfx::VertexLayoutManager vertexLayoutManager;
-			Engine::Gfx::VertexLayoutLoader vertexLayoutLoader = vertexLayoutManager;
-			Engine::Gfx::BufferManager bufferManager;
-
-			Engine::Camera camera;
+			Engine::Input::BindManager& getBindManager();
+			Engine::TextureManager& getTextureManager();
+			Engine::ShaderManager& getShaderManager();
+			Engine::Gfx::VertexLayoutManager& getVertexLayoutManager();
+			Engine::Gfx::VertexLayoutLoader& getVertexLayoutLoader();
+			Engine::Gfx::BufferManager& getBufferManager();
+			Engine::Camera& getCamera();
 	};
 }

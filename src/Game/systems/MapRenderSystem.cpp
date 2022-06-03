@@ -34,9 +34,10 @@ namespace Game {
 		glBindTextureUnit(0, mapSys.texArr.get());
 		glUniform1i(4, 0);
 
-		const auto vp = engine.camera.getProjection() * engine.camera.getView();
+		auto& cam = engine.getCamera();
+		const auto vp = cam.getProjection() * cam.getView();
 
-		const auto bounds = engine.camera.getWorldScreenBounds();
+		const auto bounds = cam.getWorldScreenBounds();
 		const auto minChunk = MapSystem::blockToChunk(mapSys.worldToBlock(bounds.min));
 		const auto maxChunk = MapSystem::blockToChunk(mapSys.worldToBlock(bounds.max));
 

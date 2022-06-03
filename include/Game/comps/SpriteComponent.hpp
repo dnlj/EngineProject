@@ -59,7 +59,7 @@ namespace Game {
 					return;
 				}
 
-				texture = engine.textureManager.get(*tex);
+				texture = engine.getTextureManager().get(*tex);
 				layer = static_cast<RenderLayer>(*lay);
 				position = *pos;
 				scale = *sc;

@@ -8,6 +8,7 @@
 #include <Engine/Utility/Utility.hpp>
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/Glue/glm.hpp>
+#include <Engine/Camera.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -21,7 +22,7 @@ namespace Game {
 		: System{arg} {
 		static_assert(World::orderAfter<SpriteSystem, PhysicsSystem>());
 
-		shader = engine.shaderManager.get("shaders/sprite");
+		shader = engine.getShaderManager().get("shaders/sprite");
 
 		{ // Vertex array
 			glCreateVertexArrays(1, &vao);
@@ -144,9 +145,10 @@ namespace Game {
 			});
 		}
 
+		auto& cam = engine.getCamera();
 		for (const auto& sprite : sprites) {
 			// Set camera uniform
-			glm::mat4 mvp = engine.camera.getProjection() * engine.camera.getView() * sprite.trans;
+			glm::mat4 mvp = cam.getProjection() * cam.getView() * sprite.trans;
 			
 			auto& group = spriteGroups.back();
 			if (group.layer == sprite.layer && group.texture == sprite.texture) {

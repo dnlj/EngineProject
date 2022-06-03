@@ -14,7 +14,7 @@ namespace Game {
 		return;
 		// Using last frames position shouldnt be a problem here normally.
 		// May be an issue in cases of long distance teleportation.
-		const auto& pos = engine.camera.getPosition();
+		const auto& pos = engine.getCamera().getPosition();
 
 		if (std::abs(pos.x) > range) {
 			std::cout

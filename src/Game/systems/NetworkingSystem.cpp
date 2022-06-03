@@ -682,7 +682,7 @@ namespace Game {
 		world.addComponent<PhysicsInterpComponent>(ent);
 
 		world.addComponent<PlayerFlag>(ent);
-		world.addComponent<SpriteComponent>(ent).texture = engine.textureManager.get("assets/player.png");
+		world.addComponent<SpriteComponent>(ent).texture = engine.getTextureManager().get("assets/player.png");
 
 		{
 			// TODO: query map system and find good spawn location

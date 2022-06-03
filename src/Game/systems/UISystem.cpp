@@ -28,6 +28,7 @@
 #include <Engine/Gui/ScrollArea.hpp>
 #include <Engine/Gui/ImageDisplay.hpp>
 #include <Engine/Gui/DemoWindow.hpp>
+#include <Engine/TextureManager.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -191,7 +192,7 @@ namespace Game {
 					const auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
 					const auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
 					const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);
-					const auto camPos = engine.camera.getPosition();
+					const auto camPos = engine.getCamera().getPosition();
 					const auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
 					const auto mapBlockOffset = mapSys.getBlockOffset();
 					const auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
@@ -771,9 +772,9 @@ namespace Game {
 	UISystem::UISystem(SystemArg arg)
 		: System{arg}
 		, ctx{new Engine::Gui::Context{
-			std::get<EngineInstance&>(arg).shaderManager,
-			std::get<EngineInstance&>(arg).textureManager,
-			std::get<EngineInstance&>(arg).camera,
+			std::get<EngineInstance&>(arg).getShaderManager(),
+			std::get<EngineInstance&>(arg).getTextureManager(),
+			std::get<EngineInstance&>(arg).getCamera(),
 		}} {
 		ctx->setUserdata(this);
 		Gui::Panel* content = nullptr;
@@ -853,8 +854,8 @@ namespace Game {
 				Engine::TextureRef tex;
 				Texture1(Gui::Context* context, EngineInstance& engine) : Panel{context} {
 					setFixedHeight(128);
-					engine.textureManager.add("assets/gui_1.bmp");
-					tex = engine.textureManager.get("assets/gui_1.bmp");
+					engine.getTextureManager().add("assets/gui_1.bmp");
+					tex = engine.getTextureManager().get("assets/gui_1.bmp");
 				}
 				void render() override {
 					ctx->drawTexture(tex->tex, {}, getSize());
@@ -864,8 +865,8 @@ namespace Game {
 				Engine::TextureRef tex;
 				Texture2(Gui::Context* context, EngineInstance& engine) : Panel{context} {
 					setFixedHeight(128);
-					engine.textureManager.add("assets/gui_2.bmp");
-					tex = engine.textureManager.get("assets/gui_2.bmp");
+					engine.getTextureManager().add("assets/gui_2.bmp");
+					tex = engine.getTextureManager().get("assets/gui_2.bmp");
 				}
 				void render() override {
 					ctx->drawTexture(tex->tex, {}, getSize());
