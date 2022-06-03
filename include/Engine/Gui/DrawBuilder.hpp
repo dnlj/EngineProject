@@ -5,7 +5,7 @@
 #include <Engine/Gui/Bounds.hpp>
 #include <Engine/Gui/FontManager.hpp>
 #include <Engine/Gui/ShapedString.hpp>
-#include <Engine/ShaderManager.hpp>
+#include <Engine/Gfx/ShaderLoader.hpp>
 
 
 namespace Engine::Gui {
@@ -47,7 +47,7 @@ namespace Engine::Gui {
 			GLsizei polyVBOCapacity = 0;
 			std::vector<PolyDrawGroup> polyDrawGroups;
 			std::vector<PolyVertex> polyVertexData;
-			ShaderRef polyShader;
+			Gfx::ShaderRef polyShader;
 			
 			GLuint polyEBO = 0;
 			GLsizei polyEBOCapacity = 0;
@@ -59,7 +59,7 @@ namespace Engine::Gui {
 			GLsizei glyphVBOCapacity = 0;
 			std::vector<GlyphDrawGroup> glyphDrawGroups;
 			std::vector<GlyphVertex> glyphVertexData;
-			ShaderRef glyphShader;
+			Gfx::ShaderRef glyphShader;
 
 			/* Render state */
 			std::vector<Bounds> clipStack;
@@ -74,7 +74,7 @@ namespace Engine::Gui {
 			FontManager fontManager2;
 
 		public:
-			DrawBuilder(ShaderManager& shaderManager, TextureManager& textureManager);
+			DrawBuilder(Gfx::ShaderLoader& shaderLoader, TextureManager& textureManager);
 			~DrawBuilder();
 
 			void resize(glm::vec2 view);

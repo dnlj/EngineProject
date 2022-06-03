@@ -12,7 +12,7 @@
 #include <glm/vec2.hpp>
 
 // Engine
-#include <Engine/ShaderManager.hpp>
+#include <Engine/Gfx/ShaderLoader.hpp>
 #include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/ecs.hpp>
@@ -162,7 +162,7 @@ namespace Game {
 			//const MapChunk* getChunkData(const glm::ivec2 chunk, bool load = false);
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
-			Engine::ShaderRef shader;
+			Engine::Gfx::ShaderRef shader;
 			Engine::Texture2DArray texArr;
 
 			struct TestData { // TODO: rename

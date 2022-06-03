@@ -13,7 +13,7 @@ namespace Game {
 	ParallaxBackgroundSystem::ParallaxBackgroundSystem(SystemArg arg)
 		: System{arg} {
 
-		shader = engine.getShaderManager().get("shaders/parallax");
+		shader = engine.getShaderLoader().get("shaders/parallax");
 		
 		layers.push_back({
 			.texture = engine.getTextureManager().get("assets/para_test_2.png"),

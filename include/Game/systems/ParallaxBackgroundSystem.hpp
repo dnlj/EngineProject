@@ -5,7 +5,7 @@
 
 // Engine
 #include <Engine/TextureManager.hpp>
-#include <Engine/ShaderManager.hpp>
+#include <Engine/Gfx/ShaderLoader.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -27,7 +27,7 @@ namespace Game {
 		private:
 			GLuint vao = 0;
 			GLuint vbo = 0;
-			Engine::ShaderRef shader;
+			Engine::Gfx::ShaderRef shader;
 
 			std::vector<InstData> instData;
 			std::vector<Layer> layers;

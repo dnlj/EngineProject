@@ -24,8 +24,8 @@ namespace Game {
 	class AnimSystem : public System {
 		private:
 			Engine::Gfx::VertexAttributeLayoutRef layout;
-			Engine::Gfx::ShaderRef2 shaderSkinned;
-			Engine::Gfx::ShaderRef2 shaderStatic;
+			Engine::Gfx::ShaderRef shaderSkinned;
+			Engine::Gfx::ShaderRef shaderStatic;
 			Engine::Gfx::BufferRef ubo;
 			Engine::Gfx::BufferRef vbo;
 			Engine::Gfx::BufferRef ebo;

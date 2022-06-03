@@ -3,9 +3,9 @@
 
 
 namespace Engine::Gui {
-	DrawBuilder::DrawBuilder(ShaderManager& shaderManager, TextureManager& textureManager) {
-		polyShader = shaderManager.get("shaders/gui_poly");
-		glyphShader = shaderManager.get("shaders/gui_glyph");
+	DrawBuilder::DrawBuilder(Gfx::ShaderLoader& shaderLoader, TextureManager& textureManager) {
+		polyShader = shaderLoader.get("shaders/gui_poly");
+		glyphShader = shaderLoader.get("shaders/gui_glyph");
 
 		glProgramUniform1i(glyphShader->get(), 1, 0);
 		glProgramUniform1i(polyShader->get(), 1, 0);

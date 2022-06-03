@@ -6,12 +6,11 @@
 
 
 namespace Engine::Gfx {
-	// TODO: rename
-	class ShaderManager2 : public ResourceManager2<Shader> {
+	class ShaderManager : public ResourceManager2<Shader> {
 		using ResourceManager2::ResourceManager2;
 	};
 
-	using ShaderRef2 = ShaderManager2::ResourceRef;
+	using ShaderRef = ShaderManager::ResourceRef;
 
 	class ShaderLoader final : public ResourceLoader<std::string, Shader> {
 		using ResourceLoader::ResourceLoader;

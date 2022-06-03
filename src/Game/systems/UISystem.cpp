@@ -772,7 +772,7 @@ namespace Game {
 	UISystem::UISystem(SystemArg arg)
 		: System{arg}
 		, ctx{new Engine::Gui::Context{
-			std::get<EngineInstance&>(arg).getShaderManager(),
+			std::get<EngineInstance&>(arg).getShaderLoader(),
 			std::get<EngineInstance&>(arg).getTextureManager(),
 			std::get<EngineInstance&>(arg).getCamera(),
 		}} {

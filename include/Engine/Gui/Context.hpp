@@ -10,7 +10,6 @@
 #include <glm/vec2.hpp>
 
 // Engine
-#include <Engine/ShaderManager.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Input/InputEvent.hpp>
 #include <Engine/Gui/Panel.hpp>
@@ -60,7 +59,7 @@ namespace Engine::Gui {
 			Texture2D colorTex;
 			GLuint quadVAO;
 			GLuint quadVBO;
-			ShaderRef quadShader;
+			Gfx::ShaderRef quadShader;
 
 			/* Text rendering helpers */
 			Theme theme;
@@ -116,7 +115,7 @@ namespace Engine::Gui {
 			float32 scrollLines = 3; // 3 = default on Windows
 
 		public:
-			Context(ShaderManager& shaderManager, TextureManager& textureManager, Camera& camera);
+			Context(Gfx::ShaderLoader& shaderLoader, TextureManager& textureManager, Camera& camera);
 			Context(Context&) = delete;
 			~Context();
 

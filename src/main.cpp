@@ -614,8 +614,9 @@ void run(int argc, char* argv[]) {
 			"shaders/gui_glyph",
 			"shaders/fullscreen_passthrough",
 		};
+		// TODO: with our new loader/manager scheme we no longer have an add function. how should we handle this kind of stuff?
 		for (const auto& path : textures) { engine.getTextureManager().add(path); }
-		for (const auto& path : shaders) { engine.getShaderManager().add(path); }
+		//for (const auto& path : shaders) { engine.getShaderManager().add(path); }
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////

@@ -22,7 +22,7 @@ namespace Game {
 		: System{arg} {
 		static_assert(World::orderAfter<SpriteSystem, PhysicsSystem>());
 
-		shader = engine.getShaderManager().get("shaders/sprite");
+		shader = engine.getShaderLoader().get("shaders/sprite");
 
 		{ // Vertex array
 			glCreateVertexArrays(1, &vao);

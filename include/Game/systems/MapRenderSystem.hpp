@@ -5,7 +5,6 @@
 
 // Engine
 #include <Engine/TextureManager.hpp>
-#include <Engine/ShaderManager.hpp>
 
 // Game
 #include <Game/Common.hpp>

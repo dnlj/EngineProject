@@ -140,7 +140,7 @@ namespace Game {
 
 	void MapSystem::setup() {
 		mapEntity = world.createEntity();
-		shader = engine.getShaderManager().get("shaders/terrain");
+		shader = engine.getShaderLoader().get("shaders/terrain");
 
 		constexpr int32 offset = 2; // offset by 2 to skip None and Air
 		const char* textures[BlockId::_count - offset] = {};

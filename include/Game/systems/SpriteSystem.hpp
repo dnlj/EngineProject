@@ -7,7 +7,7 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Engine
-#include <Engine/ShaderManager.hpp>
+#include <Engine/Gfx/ShaderLoader.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -48,7 +48,7 @@ namespace Game {
 
 			int nextGroup = 0;
 			RenderLayer nextLayer = RenderLayer::_count;
-			Engine::ShaderRef shader;
+			Engine::Gfx::ShaderRef shader;
 			GLuint vao = 0;
 			GLuint vbo = 0;
 			GLuint ivbo = 0;

@@ -4,7 +4,6 @@
 // Forward declarations
 namespace Engine {
 	class TextureManager;
-	class ShaderManager;
 	class Camera;
 
 	namespace Input {
@@ -15,7 +14,7 @@ namespace Engine {
 		class VertexLayoutManager;
 		class VertexLayoutLoader;
 		class BufferManager;
-		class ShaderManager2;
+		class ShaderManager;
 		class ShaderLoader;
 	}
 }
@@ -38,12 +37,12 @@ namespace Game {
 
 			Engine::Input::BindManager& getBindManager();
 			Engine::TextureManager& getTextureManager();
-			Engine::ShaderManager& getShaderManager();
 
 			Engine::Gfx::VertexLayoutManager& getVertexLayoutManager();
 			Engine::Gfx::VertexLayoutLoader& getVertexLayoutLoader();
 			Engine::Gfx::BufferManager& getBufferManager();
-			Engine::Gfx::ShaderManager2& getShaderManager2();
+
+			Engine::Gfx::ShaderManager& getShaderManager();
 			Engine::Gfx::ShaderLoader& getShaderLoader();
 
 			Engine::Camera& getCamera();
