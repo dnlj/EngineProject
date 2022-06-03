@@ -15,6 +15,8 @@ namespace Engine {
 		class VertexLayoutManager;
 		class VertexLayoutLoader;
 		class BufferManager;
+		class ShaderManager2;
+		class ShaderLoader;
 	}
 }
 
@@ -37,9 +39,13 @@ namespace Game {
 			Engine::Input::BindManager& getBindManager();
 			Engine::TextureManager& getTextureManager();
 			Engine::ShaderManager& getShaderManager();
+
 			Engine::Gfx::VertexLayoutManager& getVertexLayoutManager();
 			Engine::Gfx::VertexLayoutLoader& getVertexLayoutLoader();
 			Engine::Gfx::BufferManager& getBufferManager();
+			Engine::Gfx::ShaderManager2& getShaderManager2();
+			Engine::Gfx::ShaderLoader& getShaderLoader();
+
 			Engine::Camera& getCamera();
 	};
 }

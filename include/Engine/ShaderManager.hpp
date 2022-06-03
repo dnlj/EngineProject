@@ -12,6 +12,7 @@
 
 // TODO: Document
 namespace Engine {
+	// TODO: rm
 	class ShaderManager : public Engine::ResourceManager<ShaderManager, Gfx::Shader> {
 		friend class Engine::ResourceManager<ShaderManager, Gfx::Shader>;
 		private:
@@ -19,5 +20,6 @@ namespace Engine {
 			void unload(Gfx::Shader shader);
 	};
 
+	// TODO: rm
 	using ShaderRef = ShaderManager::Resource;
 }

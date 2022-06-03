@@ -5,7 +5,7 @@
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/Buffer.hpp>
-#include <Engine/ShaderManager.hpp>
+#include <Engine/Gfx/ShaderLoader.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -24,8 +24,8 @@ namespace Game {
 	class AnimSystem : public System {
 		private:
 			Engine::Gfx::VertexAttributeLayoutRef layout;
-			Engine::ShaderRef shaderSkinned;
-			Engine::ShaderRef shaderStatic;
+			Engine::Gfx::ShaderRef2 shaderSkinned;
+			Engine::Gfx::ShaderRef2 shaderStatic;
 			Engine::Gfx::BufferRef ubo;
 			Engine::Gfx::BufferRef vbo;
 			Engine::Gfx::BufferRef ebo;

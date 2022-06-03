@@ -22,10 +22,8 @@ namespace Game {
 	AnimSystem::AnimSystem(SystemArg arg) : System{arg} {
 		using namespace Engine::Gfx;
 
-		engine.getShaderManager().add("shaders/mesh");
-		engine.getShaderManager().add("shaders/mesh_static");
-		shaderSkinned = engine.getShaderManager().get("shaders/mesh");
-		shaderStatic = engine.getShaderManager().get("shaders/mesh_static");
+		shaderSkinned = engine.getShaderLoader().get("shaders/mesh");
+		shaderStatic = engine.getShaderLoader().get("shaders/mesh_static");
 
 		{
 			ModelLoader loader;
