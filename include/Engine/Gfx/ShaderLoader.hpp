@@ -1,13 +1,13 @@
 #pragma once
 
 // Engine
-#include <Engine/ResourceManager2.hpp>
+#include <Engine/ResourceManager.hpp>
 #include <Engine/Gfx/Shader.hpp>
 
 
 namespace Engine::Gfx {
-	class ShaderManager : public ResourceManager2<Shader> {
-		using ResourceManager2::ResourceManager2;
+	class ShaderManager : public ResourceManager<Shader> {
+		using ResourceManager::ResourceManager;
 	};
 
 	using ShaderRef = ShaderManager::ResourceRef;

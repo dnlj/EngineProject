@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/ResourceManager2.hpp>
+#include <Engine/ResourceManager.hpp>
 #include <Engine/Gfx/Texture.hpp>
 
 
@@ -15,8 +15,8 @@ namespace Engine::Gfx {
 			ENGINE_INLINE operator TextureHandle2D() const { return tex; }
 	};
 
-	class TextureManager : public ResourceManager2<TextureInfo> {
-		using ResourceManager2::ResourceManager2;
+	class TextureManager : public ResourceManager<TextureInfo> {
+		using ResourceManager::ResourceManager;
 	};
 
 	using TextureRef = TextureManager::ResourceRef;

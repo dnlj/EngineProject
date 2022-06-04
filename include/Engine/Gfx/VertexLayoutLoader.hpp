@@ -1,12 +1,17 @@
 #pragma once
 
 // Engine
-#include <Engine/ResourceManager2.hpp>
+#include <Engine/ResourceManager.hpp>
 #include <Engine/Gfx/NumberType.hpp>
 #include <Engine/Gfx/gfxstate.hpp>
 
 
 namespace Engine::Gfx {
+	class VertexLayoutManager : public ResourceManager<VertexAttributeLayout> {
+		using ResourceManager::ResourceManager;
+	};
+	using VertexAttributeLayoutRef = VertexLayoutManager::ResourceRef;
+
 	// TODO: loader instead? should ResourceLoader inherit manager? what if we dont want that? or separate?
 	class VertexLayoutLoader final : public ResourceLoader<VertexAttributeDescList, VertexAttributeLayout> {
 		using ResourceLoader::ResourceLoader;
@@ -45,10 +50,5 @@ namespace Engine::Gfx {
 
 			return {vao};
 		};
-	};
-
-	using VertexAttributeLayoutRef = VertexLayoutLoader::ResourceRef;
-	class VertexLayoutManager : public ResourceManager2<VertexAttributeLayout> {
-		using ResourceManager2::ResourceManager2;
 	};
 }

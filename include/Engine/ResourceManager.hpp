@@ -2,16 +2,14 @@
 
 
 namespace Engine {
-	using ResourceId2 = int32; // TODO: we really shouldnt need resource ids. atm its only used for networking i think. we should instead just use the key value or similar.
-
 	/**
 	 * Pair used for resource reference counting.
 	 */
 	template<class T>
-	class ResourceInfo2 {
+	class ResourceInfo {
 		public:
 			template<class... Args>
-			ResourceInfo2(Args... args) : data(std::forward<Args>(args)...) {}
+			ResourceInfo(Args... args) : data(std::forward<Args>(args)...) {}
 
 			int32 refCount = 0;
 			T data;
@@ -23,16 +21,19 @@ namespace Engine {
 	template<class T>
 	class ResourceRef {
 		private:
-			ResourceInfo2<T>* info = nullptr;
+			ResourceInfo<T>* info = nullptr;
 			void inc() { ++info->refCount; }
 			void dec() { --info->refCount; }
 
 		public:
-			using Id = ResourceId2;
 			ResourceRef() = default;
-			ResourceRef(ResourceInfo2<T>* info) : info{info} { inc(); };
-			ResourceRef(const ResourceRef& other) { *this = other; }
+			ResourceRef(ResourceInfo<T>* info) : info{info} { inc(); };
 			~ResourceRef() { dec(); }
+
+			// Rvalue version doesnt really get us anything because we still need to `dec` our
+			// old value and in cases of self assignment we then need to `inc` again. So it would
+			// end up looking the same or very similar to the copy version.
+			ResourceRef(const ResourceRef& other) { *this = other; }
 			ResourceRef& operator=(const ResourceRef& other) {
 				if (info) { dec(); }
 				info = other.info;
@@ -56,44 +57,38 @@ namespace Engine {
 	 * Manages a resource's lifetime.
 	 */
 	template<class T>
-	class ResourceManager2 { // TODO: rename
+	class ResourceManager { // TODO: rename
 		public:
-			using ResourceRef = ::Engine::ResourceRef<T>;
-			using ResourceInfo = ResourceInfo2<T>;
-			struct CreateResult {
-				ResourceId2 id;
-				ResourceRef ref;
-			};
+			using ResourceId = uint32;
+			using ResourceRef = ResourceRef<T>;
+			using ResourceInfo = ResourceInfo<T>;
 
 		private:
-			std::vector<ResourceId2> reuse;
+			std::vector<ResourceId> reuse;
 			std::vector<std::unique_ptr<ResourceInfo>> infos;
 
 		public:
 			template<class... Args>
-			CreateResult create(Args&&... args) {
-				ResourceId2 id;
+			ResourceRef create(Args&&... args) {
+				ResourceId id;
 
 				if (!reuse.empty()) {
 					id = reuse.back();
 					reuse.pop_back();
 				} else {
-					id = static_cast<ResourceId2>(infos.size());
+					id = static_cast<ResourceId>(infos.size());
 					infos.emplace_back();
 				}
-				ENGINE_INFO("[ResourceManager2] Create resource ", typeid(T).name(), " ", sizeof...(args));
+				ENGINE_INFO("[ResourceManager] Create resource ", typeid(T).name(), " ", sizeof...(args));
 
 				infos[id] = std::make_unique<ResourceInfo>(std::forward<Args>(args)...);
 
-				return {
-					.id = id,
-					.ref = ResourceRef{infos[id].get()},
-				};
+				return infos[id].get();
 			}
 
 			void clean() {
 				const auto sz = infos.size();
-				for (ResourceId2 i = 0; i < sz; ++i) {
+				for (ResourceId i = 0; i < sz; ++i) {
 					const auto& info = infos[i];
 					ENGINE_DEBUG_ASSERT(info->refCount >= 0 || info->refCount > 0xFFFF, "Invalid resource reference count. Something went wrong.");
 					if (info->refCount == 0) {
@@ -103,14 +98,10 @@ namespace Engine {
 				}
 			}
 
-			//ResourceRef get(ResourceId2 id) {
-			//	return infos[id].get();
-			//}
-
 		private:
-			void destroy(ResourceId2 id) {
+			void destroy(ResourceId id) {
 				ENGINE_DEBUG_ASSERT(id >= 0 && id < infos.size(), "Attempting to free invalid Resource");
-				ENGINE_INFO("[ResourceManager2] Destroy resource ", typeid(T).name(), " ", id);
+				ENGINE_INFO("[ResourceManager] Destroy resource ", typeid(T).name(), " ", id);
 				infos[id] = nullptr;
 				reuse.push_back(id);
 			}
@@ -123,9 +114,9 @@ namespace Engine {
 	class ResourceLoader {
 		public:
 			using Key = Key_;
-			using Resource = Resource_; // TODO: T a better name
+			using Resource = Resource_;
 			using ResourceRef = ResourceRef<Resource>;
-			using Manager = ResourceManager2<Resource>;
+			using Manager = ResourceManager<Resource>;
 
 		private:
 			FlatHashMap<Key, ResourceRef> lookup;
@@ -140,8 +131,8 @@ namespace Engine {
 				auto found = lookup.find(key);
 				if (found == lookup.end()) {
 					ENGINE_INFO("[ResourceLoader] Create resource ", typeid(Resource).name());
-					const auto& [id, obj] = manager.create(load(key));
-					found = lookup.emplace(key, obj).first;
+					const auto& ref = manager.create(load(key));
+					found = lookup.try_emplace(key, ref).first;
 				}
 
 				ENGINE_INFO("[ResourceLoader] Get resource \"", typeid(Resource).name(), "\" ", found->second._debug()->refCount);

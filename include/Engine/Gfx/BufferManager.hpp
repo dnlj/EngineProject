@@ -1,13 +1,13 @@
 #pragma once
 
 // Engine
-#include <Engine/ResourceManager2.hpp>
+#include <Engine/ResourceManager.hpp>
 #include <Engine/Gfx/Buffer.hpp>
 
 
 namespace Engine::Gfx {
-	class BufferManager : public ResourceManager2<Buffer> {
-		using ResourceManager2::ResourceManager2;
+	class BufferManager : public ResourceManager<Buffer> {
+		using ResourceManager::ResourceManager;
 	};
 	using BufferRef = BufferManager::ResourceRef;
 }

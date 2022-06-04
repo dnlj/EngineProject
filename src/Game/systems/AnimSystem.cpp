@@ -39,13 +39,13 @@ namespace Game {
 				animation = std::move(loader.animations[0]);
 			}
 
-			vbo = engine.getBufferManager().create(loader.verts).ref;
-			ebo = engine.getBufferManager().create(loader.indices).ref;
+			vbo = engine.getBufferManager().create(loader.verts);
+			ebo = engine.getBufferManager().create(loader.indices);
 		}
 
 		model.bones.resize(model.arm.bones.size());
 
-		ubo = engine.getBufferManager().create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage).ref;
+		ubo = engine.getBufferManager().create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage);
 
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
 		glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
