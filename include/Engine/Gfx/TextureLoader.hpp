@@ -26,7 +26,7 @@ namespace Engine::Gfx {
 		virtual Resource load(const Key& key) override {
 			Image img = key;
 			img.flipY();
-			return {{img, TextureFilter::NEAREST, TextureWrap::REPEAT}, img.size()};
+			return {{img, TextureFilter::Nearest, TextureWrap::Repeat}, img.size()};
 		}
 	};
 }

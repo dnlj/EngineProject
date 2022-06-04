@@ -280,8 +280,8 @@ namespace {
 			map.tex2d.setStorage(Engine::TextureFormat::SRGB8, {map.w, map.h});
 		}
 
-		map.tex2d.setFilter(Engine::TextureFilter::NEAREST);
-		map.tex2d.setWrap(Engine::TextureWrap::REPEAT);
+		map.tex2d.setFilter(Engine::TextureFilter::Nearest);
+		map.tex2d.setWrap(Engine::TextureWrap::Repeat);
 		map.tex2d.setSubImage(0, {}, {map.w, map.h}, Engine::PixelFormat::RGB8, data);
 	}
 

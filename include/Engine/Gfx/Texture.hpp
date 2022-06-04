@@ -131,13 +131,13 @@ namespace Engine {
 			void setMinFilter(TextureFilter filter) {
 				decltype(auto) translate = [](auto f) ENGINE_INLINE -> GLenum {
 					switch (f) {
-						case TextureFilter::NEAREST: {
+						case TextureFilter::Nearest: {
 							return GL_NEAREST;
 						}
-						case TextureFilter::BILINEAR: {
+						case TextureFilter::Bilinear: {
 							return GL_LINEAR;
 						}
-						case TextureFilter::TRILINEAR: {
+						case TextureFilter::Trilinear: {
 							return GL_LINEAR_MIPMAP_LINEAR;
 						}
 					}
@@ -150,11 +150,11 @@ namespace Engine {
 			void setMagFilter(TextureFilter filter) {
 				decltype(auto) translate = [](auto f) ENGINE_INLINE -> GLenum {
 					switch (f) {
-						case TextureFilter::NEAREST: {
+						case TextureFilter::Nearest: {
 							return GL_NEAREST;
 						}
-						case TextureFilter::BILINEAR:
-						case TextureFilter::TRILINEAR: {
+						case TextureFilter::Bilinear:
+						case TextureFilter::Trilinear: {
 							return GL_LINEAR;
 						}
 					}

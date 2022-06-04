@@ -6,9 +6,9 @@
 
 namespace Engine {
 	enum class TextureFilter : GLenum {
-		NEAREST,
-		BILINEAR,
-		TRILINEAR,
+		Nearest,
+		Bilinear,
+		Trilinear,
 		// TODO: Anisotropic
 	};
 }
