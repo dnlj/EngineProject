@@ -21,22 +21,22 @@ namespace Engine {
 	 * A pointer like type the refers to a resource.
 	 */
 	template<class T>
-	class ResourceRef { // TODO: rename
+	class ResourceRef {
 		private:
 			ResourceInfo2<T>* info = nullptr;
 			void inc() { ++info->refCount; }
-			void dec() { ++info->refCount; }
+			void dec() { --info->refCount; }
 
 		public:
 			using Id = ResourceId2;
 			ResourceRef() = default;
 			ResourceRef(ResourceInfo2<T>* info) : info{info} { inc(); };
+			ResourceRef(const ResourceRef& other) { *this = other; }
 			~ResourceRef() { dec(); }
-			ResourceRef(const ResourceRef& other) { *this = other; inc(); }
 			ResourceRef& operator=(const ResourceRef& other) {
-				if (this == &other) { return *this; }
+				if (info) { dec(); }
 				info = other.info;
-				inc();
+				if (info) { inc(); }
 				return *this;
 			}
 
@@ -48,6 +48,8 @@ namespace Engine {
 
 			const auto& operator*() const { return *get(); }
 			auto& operator*() { return *get(); }
+
+			const auto* _debug() const { return info; }
 	};
 
 	/**
@@ -101,9 +103,9 @@ namespace Engine {
 				}
 			}
 
-			ResourceRef get(ResourceId2 id) {
-				return infos[id].get();
-			}
+			//ResourceRef get(ResourceId2 id) {
+			//	return infos[id].get();
+			//}
 
 		private:
 			void destroy(ResourceId2 id) {
@@ -135,14 +137,14 @@ namespace Engine {
 			}
 
 			ResourceRef get(const Key& key) {
-				ENGINE_INFO("[ResourceLoader] Get resource ", typeid(Resource).name());
-
 				auto found = lookup.find(key);
 				if (found == lookup.end()) {
 					ENGINE_INFO("[ResourceLoader] Create resource ", typeid(Resource).name());
 					const auto& [id, obj] = manager.create(load(key));
 					found = lookup.emplace(key, obj).first;
 				}
+
+				ENGINE_INFO("[ResourceLoader] Get resource \"", typeid(Resource).name(), "\" ", found->second._debug()->refCount);
 				return found->second;
 			}
 
