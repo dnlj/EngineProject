@@ -3,7 +3,7 @@
 
 
 namespace Engine::Gui {
-	DrawBuilder::DrawBuilder(Gfx::ShaderLoader& shaderLoader, TextureManager& textureManager) {
+	DrawBuilder::DrawBuilder(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader) {
 		polyShader = shaderLoader.get("shaders/gui_poly");
 		glyphShader = shaderLoader.get("shaders/gui_glyph");
 

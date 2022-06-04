@@ -74,7 +74,7 @@ namespace Engine::Gui {
 			FontManager fontManager2;
 
 		public:
-			DrawBuilder(Gfx::ShaderLoader& shaderLoader, TextureManager& textureManager);
+			DrawBuilder(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader);
 			~DrawBuilder();
 
 			void resize(glm::vec2 view);

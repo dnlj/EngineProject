@@ -115,7 +115,7 @@ namespace Engine::Gui {
 			float32 scrollLines = 3; // 3 = default on Windows
 
 		public:
-			Context(Gfx::ShaderLoader& shaderLoader, TextureManager& textureManager, Camera& camera);
+			Context(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader, Camera& camera);
 			Context(Context&) = delete;
 			~Context();
 

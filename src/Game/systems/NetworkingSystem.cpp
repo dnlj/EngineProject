@@ -333,7 +333,6 @@ namespace Game {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
-		ENGINE_DEBUG_ASSERT(IsNetworkedComponent<Game::SpriteComponent>); // TODO: rm 
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
@@ -682,7 +681,9 @@ namespace Game {
 		world.addComponent<PhysicsInterpComponent>(ent);
 
 		world.addComponent<PlayerFlag>(ent);
-		world.addComponent<SpriteComponent>(ent).texture = engine.getTextureManager().get("assets/player.png");
+		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
+		spriteComp.path = "assets/player.png";
+		spriteComp.texture = engine.getTextureLoader().get(spriteComp.path);
 
 		{
 			// TODO: query map system and find good spawn location

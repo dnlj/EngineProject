@@ -4,7 +4,7 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Engine
-#include <Engine/TextureManager.hpp>
+#include <Engine/Gfx/TextureLoader.hpp>
 #include <Engine/Gfx/ShaderLoader.hpp>
 
 // Game
@@ -20,7 +20,7 @@ namespace Game {
 			}; static_assert(sizeof(InstData) == 3 * sizeof(GLfloat), "Assumed to be tightly packed");
 
 			struct Layer {
-				Engine::TextureRef texture;
+				Engine::Gfx::TextureRef texture;
 				float32 speedScale;
 			};
 

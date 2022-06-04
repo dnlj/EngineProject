@@ -13,7 +13,6 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/TextureManager.hpp>
 #include <Engine/ResourceManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/Noise/SimplexNoise.hpp>
@@ -591,31 +590,31 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	{
 		// TODO: these should probably be loaded in a manifest file or something.
-		const std::string textures[] = {
-			"assets/player.png",
-			"assets/fire.png",
-			"assets/tree1.png",
-			"assets/tree2.png",
-			"assets/tree3.png",
-			"assets/test.png",
-			"assets/test_tree.png",
-			"assets/large_sprite_test.png",
-			"assets/para_test_0.png",
-			"assets/para_test_1.png",
-			"assets/para_test_2.png",
-			"assets/para_test_outline.png",
-		};
-		const std::string shaders[] = {
-			"shaders/box2d_debug",
-			"shaders/terrain",
-			"shaders/sprite",
-			"shaders/parallax",
-			"shaders/gui_poly",
-			"shaders/gui_glyph",
-			"shaders/fullscreen_passthrough",
-		};
+		//const std::string textures[] = {
+		//	"assets/player.png",
+		//	"assets/fire.png",
+		//	"assets/tree1.png",
+		//	"assets/tree2.png",
+		//	"assets/tree3.png",
+		//	"assets/test.png",
+		//	"assets/test_tree.png",
+		//	"assets/large_sprite_test.png",
+		//	"assets/para_test_0.png",
+		//	"assets/para_test_1.png",
+		//	"assets/para_test_2.png",
+		//	"assets/para_test_outline.png",
+		//};
+		//const std::string shaders[] = {
+		//	"shaders/box2d_debug",
+		//	"shaders/terrain",
+		//	"shaders/sprite",
+		//	"shaders/parallax",
+		//	"shaders/gui_poly",
+		//	"shaders/gui_glyph",
+		//	"shaders/fullscreen_passthrough",
+		//};
 		// TODO: with our new loader/manager scheme we no longer have an add function. how should we handle this kind of stuff?
-		for (const auto& path : textures) { engine.getTextureManager().add(path); }
+		//for (const auto& path : textures) { engine.getTextureManager().add(path); }
 		//for (const auto& path : shaders) { engine.getShaderManager().add(path); }
 	}
 

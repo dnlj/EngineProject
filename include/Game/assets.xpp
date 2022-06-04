@@ -1,0 +1,17 @@
+#ifdef TEX
+TEX("assets/player.png")
+TEX("assets/fire.png")
+TEX("assets/tree1.png")
+TEX("assets/tree2.png")
+TEX("assets/tree3.png")
+TEX("assets/test.png")
+TEX("assets/test_tree.png")
+TEX("assets/large_sprite_test.png")
+TEX("assets/para_test_0.png")
+TEX("assets/para_test_1.png")
+TEX("assets/para_test_2.png")
+TEX("assets/para_test_outline.png")
+#undef TEX
+#endif
+
+// TODO: others

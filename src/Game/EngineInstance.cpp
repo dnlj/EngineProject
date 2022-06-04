@@ -1,17 +1,57 @@
+// STD
+#include <algorithm>
+
 // Engine
 #include <Engine/Camera.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/ShaderLoader.hpp>
+#include <Engine/Gfx/TextureLoader.hpp>
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
 #include <Engine/Input/BindManager.hpp>
-#include <Engine/TextureManager.hpp>
+
+
+namespace {
+	using namespace Engine::Types;
+	template<uint32 N>
+	class Lookup {
+		private:
+			std::array<std::string_view, N> lookup;
+
+		public:
+			consteval Lookup(const std::array<std::string_view, N>& array) : lookup{array} {
+				std::ranges::sort(lookup);
+			}
+
+			constexpr const char* get(uint32 value) const {
+				return lookup[value].data();
+			}
+
+			// TODO: consteval - that was the whole point of this
+			constexpr uint32 get(std::string_view value) const {
+				auto found = std::ranges::lower_bound(lookup, value);
+				if (found == lookup.end()) {
+					ENGINE_WARN("Attempting to lookup invalid value (", value, ")");
+					return 0;
+				}
+				return static_cast<uint32>(found - lookup.begin());
+			}
+	};
+
+	template<uint32 N>
+	Lookup(const char*const(&)[N]) -> Lookup<N>;
+}
 
 
 namespace Game {
 	class EngineInstancePimpl {
 		public:
+			#define TEX(T) T,
+			constexpr static auto texLookup = Lookup({
+				#include <Game/assets.xpp>
+			});
+
+		public:
 			Engine::Input::BindManager bindManager;
-			Engine::TextureManager textureManager;
 
 			Engine::Gfx::VertexLayoutManager vertexLayoutManager;
 			Engine::Gfx::VertexLayoutLoader vertexLayoutLoader = vertexLayoutManager;
@@ -21,6 +61,9 @@ namespace Game {
 			Engine::Gfx::ShaderManager shaderManager;
 			Engine::Gfx::ShaderLoader shaderLoader = shaderManager;
 
+			Engine::Gfx::TextureManager textureManager;
+			Engine::Gfx::TextureLoader textureLoader = textureManager;
+
 			Engine::Camera camera;
 	};
 	
@@ -28,7 +71,6 @@ namespace Game {
 	EngineInstance::~EngineInstance() {}
 
 	Engine::Input::BindManager& EngineInstance::getBindManager() { return pimpl->bindManager; }
-	Engine::TextureManager& EngineInstance::getTextureManager() { return pimpl->textureManager; }
 
 	Engine::Gfx::VertexLayoutManager& EngineInstance::getVertexLayoutManager() { return pimpl->vertexLayoutManager; }
 	Engine::Gfx::VertexLayoutLoader& EngineInstance::getVertexLayoutLoader() { return pimpl->vertexLayoutLoader; }
@@ -36,5 +78,14 @@ namespace Game {
 	
 	Engine::Gfx::ShaderManager& EngineInstance::getShaderManager() { return pimpl->shaderManager; }
 	Engine::Gfx::ShaderLoader& EngineInstance::getShaderLoader() { return pimpl->shaderLoader; }
+
+	Engine::Gfx::TextureManager& EngineInstance::getTextureManager() { return pimpl->textureManager; }
+	Engine::Gfx::TextureLoader& EngineInstance::getTextureLoader() { return pimpl->textureLoader; }
+
 	Engine::Camera& EngineInstance::getCamera() { return pimpl->camera; }
+
+
+	// TODO: probably replace with a getTextureMap() that returns a ref to lookup instead of wrapping every get call
+	uint32 EngineInstance::getTextureId(std::string_view tex) const { return EngineInstancePimpl::texLookup.get(tex); }
+	const char* EngineInstance::getTexturePath(uint32 tex) const { return EngineInstancePimpl::texLookup.get(tex); };
 }

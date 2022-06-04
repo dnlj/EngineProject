@@ -3,9 +3,6 @@
 // glLoadGen
 #include <glloadgen/gl_core_4_5.hpp>
 
-// Engine
-#include <Engine/TextureManager.hpp>
-
 // Game
 #include <Game/Common.hpp>
 #include <Game/MapChunk.hpp>

@@ -143,8 +143,8 @@ namespace {
 }
 
 namespace Engine::Gui {
-	Context::Context(Gfx::ShaderLoader& shaderLoader, TextureManager& textureManager, Camera& camera)
-		: DrawBuilder(shaderLoader, textureManager) {
+	Context::Context(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader, Camera& camera)
+		: DrawBuilder(shaderLoader, textureLoader) {
 
 		quadShader = shaderLoader.get("shaders/fullscreen_passthrough");
 		configUserSettings();

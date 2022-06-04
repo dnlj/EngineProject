@@ -32,6 +32,20 @@ namespace Engine {
 			Texture() = default;
 			Texture(const Texture&) = delete;
 
+			Texture(const Image& img) {
+				setAuto(img);
+			}
+
+			Texture(const Image& img, TextureFilter filter, TextureWrap wrap) : Texture(img, filter, filter, wrap) {
+			}
+
+			Texture(const Image& img, TextureFilter min, TextureFilter mag, TextureWrap wrap) {
+				setAuto(img);
+				setMinFilter(min);
+				setMagFilter(mag);
+				setWrap(wrap);
+			}
+
 			ENGINE_INLINE Texture(Texture&& other) noexcept {
 				*this = std::move(other);
 			}

@@ -67,9 +67,9 @@ namespace Game {
 		}
 
 		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
-		spriteComp.texture = engine.getTextureManager().get(texStr[texIdx]);
+		spriteComp.path = texStr[texIdx];
+		spriteComp.texture = engine.getTextureLoader().get(spriteComp.path);
 		spriteComp.layer = RenderLayer::Background;
-		//spriteComp.texture = engine.textureManager.get("assets/large_sprite_test.png");
 		{
 			const auto& sz = spriteComp.texture.get()->size;
 			spriteComp.scale = {pixelsPerBlock, pixelsPerBlock};

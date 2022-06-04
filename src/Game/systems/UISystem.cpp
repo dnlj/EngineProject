@@ -28,7 +28,7 @@
 #include <Engine/Gui/ScrollArea.hpp>
 #include <Engine/Gui/ImageDisplay.hpp>
 #include <Engine/Gui/DemoWindow.hpp>
-#include <Engine/TextureManager.hpp>
+#include <Engine/Gfx/TextureLoader.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -773,7 +773,7 @@ namespace Game {
 		: System{arg}
 		, ctx{new Engine::Gui::Context{
 			std::get<EngineInstance&>(arg).getShaderLoader(),
-			std::get<EngineInstance&>(arg).getTextureManager(),
+			std::get<EngineInstance&>(arg).getTextureLoader(),
 			std::get<EngineInstance&>(arg).getCamera(),
 		}} {
 		ctx->setUserdata(this);
@@ -851,22 +851,20 @@ namespace Game {
 		{
 
 			struct Texture1 : Gui::Panel {
-				Engine::TextureRef tex;
+				Engine::Gfx::TextureRef tex;
 				Texture1(Gui::Context* context, EngineInstance& engine) : Panel{context} {
 					setFixedHeight(128);
-					engine.getTextureManager().add("assets/gui_1.bmp");
-					tex = engine.getTextureManager().get("assets/gui_1.bmp");
+					tex = engine.getTextureLoader().get("assets/gui_1.bmp");
 				}
 				void render() override {
 					ctx->drawTexture(tex->tex, {}, getSize());
 				}
 			};
 			struct Texture2 : Gui::Panel {
-				Engine::TextureRef tex;
+				Engine::Gfx::TextureRef tex;
 				Texture2(Gui::Context* context, EngineInstance& engine) : Panel{context} {
 					setFixedHeight(128);
-					engine.getTextureManager().add("assets/gui_2.bmp");
-					tex = engine.getTextureManager().get("assets/gui_2.bmp");
+					tex = engine.getTextureLoader().get("assets/gui_2.bmp");
 				}
 				void render() override {
 					ctx->drawTexture(tex->tex, {}, getSize());

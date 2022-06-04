@@ -58,7 +58,8 @@ namespace Game {
 				physBodyComp.getBody().SetActive(false);
 			}
 
-			spriteComp.texture = engine.getTextureManager().get("assets/fire.png");
+			spriteComp.path = "assets/fire.png";
+			spriteComp.texture = engine.getTextureLoader().get(spriteComp.path);
 			world.setEnabled(ent, false);
 		}
 	}

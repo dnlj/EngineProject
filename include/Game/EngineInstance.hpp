@@ -3,7 +3,6 @@
 
 // Forward declarations
 namespace Engine {
-	class TextureManager;
 	class Camera;
 
 	namespace Input {
@@ -16,6 +15,8 @@ namespace Engine {
 		class BufferManager;
 		class ShaderManager;
 		class ShaderLoader;
+		class TextureManager;
+		class TextureLoader;
 	}
 }
 
@@ -36,7 +37,6 @@ namespace Game {
 			~EngineInstance();
 
 			Engine::Input::BindManager& getBindManager();
-			Engine::TextureManager& getTextureManager();
 
 			Engine::Gfx::VertexLayoutManager& getVertexLayoutManager();
 			Engine::Gfx::VertexLayoutLoader& getVertexLayoutLoader();
@@ -45,6 +45,13 @@ namespace Game {
 			Engine::Gfx::ShaderManager& getShaderManager();
 			Engine::Gfx::ShaderLoader& getShaderLoader();
 
+			Engine::Gfx::TextureManager& getTextureManager();
+			Engine::Gfx::TextureLoader& getTextureLoader();
+
 			Engine::Camera& getCamera();
+
+			// TODO: what was the point of making lookup constexpr if this call isnt also constexpr...
+			uint32 getTextureId(std::string_view tex) const;
+			const char* getTexturePath(uint32 tex) const;
 	};
 }

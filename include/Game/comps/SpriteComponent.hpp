@@ -7,7 +7,7 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Engine
-#include <Engine/TextureManager.hpp>
+#include <Engine/Gfx/TextureLoader.hpp>
 
 // Game
 #include <Game/comps/NetworkComponent.hpp>
@@ -18,7 +18,8 @@
 namespace Game {
 	class SpriteComponent : public NetworkComponent {
 		public:
-			Engine::TextureRef texture;
+			std::string path; // TODO: hopefully temp. Ideally we would have a static asset id / prefab / w.e. that we already know about.
+			Engine::Gfx::TextureRef texture;
 			glm::vec2 position = {0.0f, 0.0f};
 			glm::vec2 scale = {1.0f, 1.0f};
 			RenderLayer layer = RenderLayer::Foreground;
@@ -26,7 +27,7 @@ namespace Game {
 			constexpr static auto netRepl() { return Engine::Net::Replication::ONCE; };
 
 			void netToInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
-				buff.write(texture.id());
+				buff.write(engine.getTextureId(path));
 				buff.write(position);
 				buff.write(scale);
 
@@ -35,7 +36,7 @@ namespace Game {
 			}
 
 			void netFromInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
-				const auto* tex = conn.read<Engine::TextureRef::Id>();
+				const auto* tex = conn.read<uint32>();
 				if (!tex) {
 					ENGINE_WARN("Unable to read sprite texture from network.");
 					return;
@@ -59,7 +60,7 @@ namespace Game {
 					return;
 				}
 
-				texture = engine.getTextureManager().get(*tex);
+				texture = engine.getTextureLoader().get(engine.getTexturePath(*tex));
 				layer = static_cast<RenderLayer>(*lay);
 				position = *pos;
 				scale = *sc;
