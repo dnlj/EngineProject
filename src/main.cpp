@@ -13,7 +13,6 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/ResourceManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/Noise/SimplexNoise.hpp>
 #include <Engine/Noise/WorleyNoise.hpp>
