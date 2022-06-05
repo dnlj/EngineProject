@@ -15,10 +15,7 @@ namespace Engine::Gfx {
 	// CPU
 	//class Armature {}; // TODO: this isnt nessarily an armature, more of a embedded scene graph.
 	//class Animation {};
-
-	// GPU
-	class MeshRef {};
-
+	
 	// TODO: should this be called VertexAttribute instead?
 	enum class VertexInput : uint32 {
 		None		= 0,
@@ -113,29 +110,9 @@ namespace Engine::Gfx {
 	class MaterialRef {};
 
 	class Buffer_ChangeToNewBuffer {};
-	// A single set of vertices with a single material.
-	class Mesh2 {
-		/* Vertex layouts could actually draw from multiple buffers (binding points), but atm we never actually do that.
-		 * @see glVertexArrayVertexBuffer
-		 * @see glVertexArrayAttribBinding
-		 */
-		Buffer_ChangeToNewBuffer vbuff;
-		MaterialRef mat;
-		//VertexAttributeLayoutRef layout;
-		// TODO: still need to setup buffers - glVertexArrayVertexBuffer(s)
-
-		Buffer_ChangeToNewBuffer ibuff;
-		uint32 offset = 0;
-		uint32 count = 0;
-
-		// Not needed currently because we only use one vertex buffer.
-		// If in the future we need to draw from multiple vertex buffers (binding points) we will need to be able to describe buffer -> binding point mappings
-		// vector<pair<int, int>> bufferToBindingMapping;
-	};
-	class Mesh2Ref {};
 
 	class ModelComponent {
-		std::vector<Mesh2Ref> meshes;
+		//std::vector<MeshRef> meshes;
 	};
 
 	class Armature2 {};

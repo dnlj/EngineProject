@@ -17,6 +17,7 @@ namespace Engine {
 		class ShaderLoader;
 		class TextureManager;
 		class TextureLoader;
+		class MeshManager;
 	}
 }
 
@@ -47,6 +48,8 @@ namespace Game {
 
 			Engine::Gfx::TextureManager& getTextureManager();
 			Engine::Gfx::TextureLoader& getTextureLoader();
+
+			Engine::Gfx::MeshManager& getMeshManager();
 
 			Engine::Camera& getCamera();
 

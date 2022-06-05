@@ -41,16 +41,18 @@ namespace Engine {
 				return *this;
 			}
 
-			const auto* get() const { return &info->data; }
-			auto* get() { return &info->data; }
+			const auto* get() const noexcept { return &info->data; }
+			auto* get() noexcept { return &info->data; }
 
-			const auto* operator->() const { return get(); }
-			auto* operator->() { return get(); }
+			const auto* operator->() const noexcept { return get(); }
+			auto* operator->() noexcept { return get(); }
 
-			const auto& operator*() const { return *get(); }
-			auto& operator*() { return *get(); }
+			const auto& operator*() const noexcept { return *get(); }
+			auto& operator*() noexcept { return *get(); }
 
-			const auto* _debug() const { return info; }
+			operator bool() const noexcept { return info; }
+
+			const auto* _debug() const noexcept { return info; }
 	};
 
 	/**

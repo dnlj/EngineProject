@@ -26,31 +26,6 @@ namespace Game {
 		shaderStatic = engine.getShaderLoader().get("shaders/mesh_static");
 
 		{
-			ModelLoader loader;
-
-			model.skinned = true; // TODO: should be informed the loader
-
-			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size());
-			model.meshes = std::move(loader.meshes);
-			model.instances = std::move(loader.instances);
-			
-			model.arm = std::move(loader.arm);
-			if (!loader.animations.empty()) {
-				animation = std::move(loader.animations[0]);
-			}
-
-			vbo = engine.getBufferManager().create(loader.verts);
-			ebo = engine.getBufferManager().create(loader.indices);
-		}
-
-		model.bones.resize(model.arm.bones.size());
-
-		ubo = engine.getBufferManager().create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage);
-
-		glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
-		glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
-
-		{
 			VertexAttributeDesc attribs[] = {
 				{ VertexInput::Position, 3, NumberType::Float32, offsetof(Vertex, pos), false },
 				{ VertexInput::BoneIndices, 4, NumberType::UInt8, offsetof(Vertex, bones), false },
@@ -58,10 +33,43 @@ namespace Game {
 			};
 
 			layout = engine.getVertexLayoutLoader().get(attribs);
+		}
 
+		{
+			ModelLoader loader;
+
+			model.skinned = !loader.arm.bones.empty();
+
+			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size());
+			model.instances = std::move(loader.instances);
+			
+			model.arm = std::move(loader.arm);
+			if (!loader.animations.empty()) {
+				animation = std::move(loader.animations[0]);
+			}
+
+			const auto vbo = engine.getBufferManager().create(loader.verts);
+			const auto ebo = engine.getBufferManager().create(loader.indices);
+
+			// TODO: probably just have model.instances store a MeshRef instead of a separate meshId
+			for (auto& m : loader.meshes) {
+				model.meshes.emplace_back(
+					engine.getMeshManager().create(vbo, layout, ebo, m.offset, m.count)
+				);
+			}
+
+			// TODO: this should be in part of the mesh/model/ something to desc buffer bindings
 			glVertexArrayVertexBuffer(layout->vao, 0, vbo->get(), 0, sizeof(Vertex));
 			glVertexArrayElementBuffer(layout->vao, ebo->get());
+		}
 
+		model.bones.resize(model.arm.bones.size());
+
+		if (!model.bones.empty()) {
+			ubo = engine.getBufferManager().create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage);
+
+			glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
+			glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
 		}
 	}
 
@@ -91,7 +99,7 @@ namespace Game {
 			}
 		}
 
-		ubo->setData(model.bones);
+		if (ubo) { ubo->setData(model.bones); }
 	}
 
 	void AnimSystem::render(const RenderLayer layer) {
@@ -116,7 +124,7 @@ namespace Game {
 
 				glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 				glBindVertexArray(layout->vao);
-				glDrawElements(GL_TRIANGLES, mesh.count, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh.offset * sizeof(GLuint)));
+				glDrawElements(GL_TRIANGLES, mesh->count, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh->offset * sizeof(GLuint)));
 			}
 		} else {
 			glUseProgram(shaderSkinned->get());
@@ -128,9 +136,9 @@ namespace Game {
 				for (const auto& inst : model.instances) {
 					const auto& mesh = model.meshes[inst.meshId];
 					commands.push_back({
-						.count = mesh.count,
+						.count = mesh->count,
 						.instanceCount = 1,
-						.firstIndex = mesh.offset,
+						.firstIndex = mesh->offset,
 						.baseVertex = 0,
 						.baseInstance = 0,
 					});
