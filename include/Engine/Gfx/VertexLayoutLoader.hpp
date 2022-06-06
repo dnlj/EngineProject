@@ -10,7 +10,6 @@ namespace Engine::Gfx {
 	class VertexLayoutManager : public ResourceManager<VertexAttributeLayout> {
 		using ResourceManager::ResourceManager;
 	};
-	using VertexAttributeLayoutRef = VertexLayoutManager::ResourceRef;
 
 	// TODO: loader instead? should ResourceLoader inherit manager? what if we dont want that? or separate?
 	class VertexLayoutLoader final : public ResourceLoader<VertexAttributeDescList, VertexAttributeLayout> {

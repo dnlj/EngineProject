@@ -9,5 +9,4 @@ namespace Engine::Gfx {
 	class BufferManager : public ResourceManager<Buffer> {
 		using ResourceManager::ResourceManager;
 	};
-	using BufferRef = BufferManager::ResourceRef;
 }

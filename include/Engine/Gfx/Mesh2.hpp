@@ -1,8 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/Gfx/BufferManager.hpp>
-#include <Engine/Gfx/VertexLayoutLoader.hpp>
+#include <Engine/Gfx/resources.hpp>
 
 
 namespace Engine::Gfx {

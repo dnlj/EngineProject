@@ -19,8 +19,6 @@ namespace Engine::Gfx {
 		using ResourceManager::ResourceManager;
 	};
 
-	using TextureRef = TextureManager::ResourceRef;
-
 	class TextureLoader final : public ResourceLoader<std::string, TextureInfo> {
 		using ResourceLoader::ResourceLoader;
 		virtual Resource load(const Key& key) override {

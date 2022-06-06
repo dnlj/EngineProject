@@ -5,6 +5,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+// Engine
+#include <Engine/Gfx/Shader.hpp>
+
 // Game
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/MapRenderSystem.hpp>

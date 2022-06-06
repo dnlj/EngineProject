@@ -5,10 +5,11 @@
 #include <Box2D/b2_math.h>
 
 // Engine
-#include <Engine/Utility/Utility.hpp>
-#include <Engine/ECS/EntityFilter.hpp>
-#include <Engine/Glue/glm.hpp>
 #include <Engine/Camera.hpp>
+#include <Engine/ECS/EntityFilter.hpp>
+#include <Engine/Gfx/ShaderLoader.hpp>
+#include <Engine/Glue/glm.hpp>
+#include <Engine/Utility/Utility.hpp>
 
 // Game
 #include <Game/World.hpp>

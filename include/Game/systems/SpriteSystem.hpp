@@ -7,7 +7,7 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 // Engine
-#include <Engine/Gfx/ShaderLoader.hpp>
+#include <Engine/Gfx/resources.hpp>
 
 // Game
 #include <Game/System.hpp>

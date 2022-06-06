@@ -2,6 +2,7 @@
 #include <Engine/Camera.hpp>
 #include <Engine/Gui/Context.hpp>
 #include <Engine/Math/color.hpp>
+#include <Engine/Gfx/ShaderLoader.hpp>
 
 
 namespace {
