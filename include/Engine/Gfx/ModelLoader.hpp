@@ -44,7 +44,6 @@ namespace Engine::Gfx {
 	// TODO: move
 	class Armature {
 		public:
-
 			// Should be populated such that all ancestor nodes occur before child nodes. This should be done automatically because of how getNodeIndex is implemented.
 			std::vector<Node> nodes;
 			std::vector<Bone> bones;

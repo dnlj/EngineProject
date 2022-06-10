@@ -37,8 +37,6 @@ namespace Engine::Gfx {
 	};
 	class MaterialRef {};
 
-	class Buffer_ChangeToNewBuffer {};
-
 	class ModelComponent {
 		//std::vector<MeshRef> meshes;
 	};

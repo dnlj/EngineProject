@@ -41,21 +41,25 @@ namespace Game {
 			model.skinned = !loader.arm.bones.empty();
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size());
-			model.instances = std::move(loader.instances);
-			
-			model.arm = std::move(loader.arm);
-			if (!loader.animations.empty()) {
-				animation = std::move(loader.animations[0]);
-			}
 
 			const auto vbo = engine.getBufferManager().create(loader.verts);
 			const auto ebo = engine.getBufferManager().create(loader.indices);
 
-			// TODO: probably just have model.instances store a MeshRef instead of a separate meshId
+			std::vector<MeshRef> meshes;
+			meshes.reserve(loader.meshes.size());
 			for (auto& m : loader.meshes) {
-				model.meshes.emplace_back(
-					engine.getMeshManager().create(vbo, layout, ebo, m.offset, m.count)
-				);
+				meshes.emplace_back(engine.getMeshManager().create(vbo, layout, ebo, m.offset, m.count));
+			}
+
+			model.instances.reserve(loader.instances.size());
+			for (const auto& inst : loader.instances) {
+				model.instances.emplace_back(inst.nodeId, meshes[inst.meshId]);
+			}
+
+			// TODO: really arm.bones is the same for all instances of a mesh, its just the offset matrix. Would it make sense to refify armatures?
+			model.arm = std::move(loader.arm);
+			if (!loader.animations.empty()) {
+				animation = std::move(loader.animations[0]);
 			}
 
 			// TODO: this should be in part of the mesh/model/ something to desc buffer bindings
@@ -119,7 +123,7 @@ namespace Game {
 				// TODO: do we really want static meshes to be animated? surely this should be done on the Entity level if that is the case.
 				// TODO: cont. if we want mesh level animation it should probably be rigged? (this seems to be what modeling programs assume)
 				const auto& node = model.arm.nodes[inst.nodeId];
-				const auto& mesh = model.meshes[inst.meshId];
+				const auto& mesh = inst.mesh;
 				const auto mvp = vp * node.total;
 
 				glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
@@ -134,7 +138,7 @@ namespace Game {
 
 			if (cmdbuff == 0) {
 				for (const auto& inst : model.instances) {
-					const auto& mesh = model.meshes[inst.meshId];
+					const auto& mesh = inst.mesh;
 					commands.push_back({
 						.count = mesh->count,
 						.instanceCount = 1,

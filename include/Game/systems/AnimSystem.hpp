@@ -15,11 +15,16 @@
 namespace Game {
 	class ModelData {
 		public:
+			struct Inst {
+				Engine::Gfx::NodeId nodeId;
+				Engine::Gfx::MeshRef mesh;
+			};
+
+		public:
 			bool skinned = false;
 			Engine::Gfx::Armature arm;
 			std::vector<glm::mat4> bones;
-			std::vector<Engine::Gfx::MeshInst> instances;
-			std::vector<Engine::Gfx::MeshRef> meshes;
+			std::vector<Inst> instances;
 	};
 
 	class AnimSystem : public System {
