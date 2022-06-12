@@ -39,6 +39,7 @@ namespace Game {
 		class AnimSystem,
 		class SpriteSystem,
 		class UISystem,
+		class MeshRenderSystem,
 		class RenderPassSystem
 	>;
 	
@@ -52,7 +53,8 @@ namespace Game {
 		class ECSNetworkingComponent,
 		class NetworkStatsComponent,
 		class MapAreaComponent,
-		class BlockEntityComponent
+		class BlockEntityComponent,
+		class ModelComponent
 	>;
 
 	using FlagsSet = Meta::TypeSet::TypeSet<

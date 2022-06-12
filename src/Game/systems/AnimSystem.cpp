@@ -5,6 +5,7 @@
 
 // Game
 #include <Game/systems/AnimSystem.hpp>
+#include <Game/comps/ModelComponent.hpp>
 
 namespace {
 	typedef struct {
@@ -21,6 +22,8 @@ namespace {
 namespace Game {
 	AnimSystem::AnimSystem(SystemArg arg) : System{arg} {
 		using namespace Engine::Gfx;
+
+		ent = world.createEntity();
 
 		shaderSkinned = engine.getShaderLoader().get("shaders/mesh");
 		shaderStatic = engine.getShaderLoader().get("shaders/mesh_static");
@@ -48,7 +51,11 @@ namespace Game {
 			std::vector<MeshRef> meshes;
 			meshes.reserve(loader.meshes.size());
 			for (auto& m : loader.meshes) {
-				meshes.emplace_back(engine.getMeshManager().create(vbo, layout, ebo, m.offset, m.count));
+				meshes.emplace_back(engine.getMeshManager().create(
+					layout,
+					vbo, static_cast<uint32>(sizeof(Vertex)),
+					ebo, m.offset, m.count
+				));
 			}
 
 			model.instances.reserve(loader.instances.size());
@@ -65,6 +72,9 @@ namespace Game {
 			// TODO: this should be in part of the mesh/model/ something to desc buffer bindings
 			glVertexArrayVertexBuffer(layout->vao, 0, vbo->get(), 0, sizeof(Vertex));
 			glVertexArrayElementBuffer(layout->vao, ebo->get());
+
+			// TODO: multiple meshes
+			world.addComponent<ModelComponent>(ent, model.skinned ? shaderSkinned : shaderStatic, meshes[0]);
 		}
 
 		model.bones.resize(model.arm.bones.size());
@@ -128,9 +138,11 @@ namespace Game {
 
 				glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 				glBindVertexArray(layout->vao);
-				glDrawElements(GL_TRIANGLES, mesh->count, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh->offset * sizeof(GLuint)));
+				glDrawElements(GL_TRIANGLES, mesh->ecount, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh->eoffset * sizeof(GLuint)));
 			}
 		} else {
+			glProgramUniformMatrix4fv(shaderSkinned->get(), 0, 1, GL_FALSE, &vp[0][0]);
+			/*
 			glUseProgram(shaderSkinned->get());
 			glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
 
@@ -140,9 +152,9 @@ namespace Game {
 				for (const auto& inst : model.instances) {
 					const auto& mesh = inst.mesh;
 					commands.push_back({
-						.count = mesh->count,
+						.count = mesh->ecount,
 						.instanceCount = 1,
-						.firstIndex = mesh->offset,
+						.firstIndex = mesh->eoffset,
 						.baseVertex = 0,
 						.baseInstance = 0,
 					});
@@ -155,7 +167,7 @@ namespace Game {
 
 			glBindVertexArray(layout->vao);
 			glBindBuffer(GL_DRAW_INDIRECT_BUFFER, cmdbuff);
-			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);
+			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);*/
 		}
 	}
 }

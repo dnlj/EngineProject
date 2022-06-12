@@ -4,6 +4,7 @@
 // Engine
 #include <Engine/Camera.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
+#include <Engine/Gfx/Context.hpp>
 #include <Engine/Gfx/MeshManager.hpp>
 #include <Engine/Gfx/ShaderLoader.hpp>
 #include <Engine/Gfx/TextureLoader.hpp>
@@ -67,6 +68,8 @@ namespace Game {
 
 			Engine::Gfx::MeshManager meshManager;
 
+			Engine::Gfx::Context gfxContext;
+
 			Engine::Camera camera;
 	};
 	
@@ -86,6 +89,8 @@ namespace Game {
 	Engine::Gfx::TextureLoader& EngineInstance::getTextureLoader() { return pimpl->textureLoader; }
 
 	Engine::Gfx::MeshManager& EngineInstance::getMeshManager() { return pimpl->meshManager; }
+
+	Engine::Gfx::Context& EngineInstance::getGraphicsContext() { return pimpl->gfxContext; }
 
 	Engine::Camera& EngineInstance::getCamera() { return pimpl->camera; }
 

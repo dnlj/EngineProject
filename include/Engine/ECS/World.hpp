@@ -230,12 +230,6 @@ namespace Engine::ECS {
 			/** Delta time in nanoseconds. @see deltaTime */
 			Clock::Duration deltaTimeNS{0};
 
-			/** All the systems in this world. */
-			void* systems[sizeof...(Ss)] = {};
-
-		////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////
 		private:
 			template<bool,class,class>
 			friend class SingleComponentFilter;
@@ -302,6 +296,9 @@ namespace Engine::ECS {
 			};
 
 			SequenceBuffer<Tick, Snapshot, TickRate> history;
+			
+			/** All the systems in this world. */
+			void* systems[sizeof...(Ss)] = {};
 			
 		public:
 			// TODO: doc

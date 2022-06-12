@@ -18,6 +18,7 @@ namespace Game {
 			struct Inst {
 				Engine::Gfx::NodeId nodeId;
 				Engine::Gfx::MeshRef mesh;
+				// TODO: Engine::Gfx::ShaderRef material;
 			};
 
 		public:
@@ -29,6 +30,7 @@ namespace Game {
 
 	class AnimSystem : public System {
 		private:
+			Engine::ECS::Entity ent;
 			Engine::Gfx::VertexAttributeLayoutRef layout;
 			Engine::Gfx::ShaderRef shaderSkinned;
 			Engine::Gfx::ShaderRef shaderStatic;

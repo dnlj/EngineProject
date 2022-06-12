@@ -10,3 +10,4 @@
 #include <Game/comps/MapAreaComponent.hpp>
 #include <Game/comps/BlockEntityComponent.hpp>
 #include <Game/comps/MapEditComponent.hpp>
+#include <Game/comps/ModelComponent.hpp>

@@ -27,8 +27,8 @@ namespace Engine::ECS {
 		// If you are here from a compile error make sure your system has the correct constructor. Usually `using System::System` will work fine.
 		// You might be seeing this because you just added a member to an otherwise empty system.
 		//
-		, systems{ new Ss(std::forward<Arg>(arg))... }
-		, compContainers{ new ComponentContainer<Cs>()... } {
+		, compContainers{ new ComponentContainer<Cs>()... }
+		, systems{ new Ss(std::forward<Arg>(arg))... } {
 
 		tickTime = beginTime;
 		(getSystem<Ss>().setup(), ...);

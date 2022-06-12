@@ -85,6 +85,8 @@ namespace Engine::Debug::GL {
 			<< "severity: " << severityEnumToString(severity) << "\n"
 			<< "message: " << message << "\n\n";
 
-		__debugbreak();
+		if (severity == GL_DEBUG_SEVERITY_HIGH) {
+			__debugbreak();
+		}
 	}
 }

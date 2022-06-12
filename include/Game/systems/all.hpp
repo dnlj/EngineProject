@@ -16,5 +16,6 @@
 #include <Game/systems/EntityNetworkingSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/UISystem.hpp>
+#include <Game/systems/MeshRenderSystem.hpp>
 #include <Game/systems/RenderPassSystem.hpp>
 #include <Game/systems/ParallaxBackgroundSystem.hpp>

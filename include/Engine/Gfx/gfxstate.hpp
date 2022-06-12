@@ -31,7 +31,7 @@ namespace Engine::Gfx {
 		private:
 			ShaderInfoRef shader;
 
-			// TOOD: still need to store specific inputs that fit the shape (textures, uniforms, ubo, ssbo, etc.)
+			// TOOD: still need to store specific inputs "material instance" that fit the shape (textures, uniforms, ubo, ssbo, etc.)
 
 		public:
 	};
@@ -54,28 +54,6 @@ namespace Engine::Gfx {
 		private:
 			ArmatureComponent armComp;
 			ModelComponent modelComp;
-	};
-
-	// I think we really need more specialized batches unless we have a good way to rep uniform data
-	struct DrawBatch {
-		uint32 program;
-		uint32 vao;
-
-		struct TextureBinding {
-			uint32 texture;
-			uint32 binding;
-		} textures[4];
-
-		struct BufferBinding {
-			uint32 type; // UBO, SSBO. See glBindBufferRange
-			uint32 buffer;
-			uint32 binding;
-		} buffers[4];
-
-		struct UniformData {
-			// TODO: ????
-		} uniforms[1];
-
 	};
 
 	/*
