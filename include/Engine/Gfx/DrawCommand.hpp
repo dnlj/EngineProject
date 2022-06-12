@@ -12,19 +12,10 @@ namespace Engine::Gfx {
 			uint32 ecount;
 			uint32 eoffset;
 
-			struct TextureBinding {
-				uint32 texture;
-				uint32 binding;
-			} textures[4];
-
-			struct BufferBinding {
-				uint32 type; // UBO, SSBO. See glBindBufferRange
-				uint32 buffer;
-				uint32 binding;
-			} buffers[4];
-
-			struct UniformData {
-				// TODO: ????
-			} uniforms[1];
+			glm::mat4 mvp; // TODO: find better solution for uniforms
+			
+			// TODO: Textures
+			// TODO: Buffers
+			// TODO: Uniforms
 	};
 }

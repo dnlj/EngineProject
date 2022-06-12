@@ -25,17 +25,21 @@ namespace Game {
 		const auto& filter = world.getFilter<ModelComponent>();
 
 		for (auto ent : filter) {
-			const auto& [shader, mesh] = world.getComponent<ModelComponent>(ent);
+			const auto& [meshes] = world.getComponent<ModelComponent>(ent);
 
-			cmd.program = shader->get();
-			cmd.vao = mesh->layout->vao;
-			cmd.vbo = mesh->vbuff->get();
-			cmd.vboStride = mesh->vstride;
-			cmd.ebo = mesh->ebuff->get();
-			cmd.ecount = mesh->ecount;
-			cmd.eoffset = mesh->eoffset;
+			for (const auto& [shader, mesh, mvp] : meshes) {
+				cmd.program = shader->get();
+				cmd.vao = mesh->layout->vao;
+				cmd.vbo = mesh->vbuff->get();
+				cmd.vboStride = mesh->vstride;
+				cmd.ebo = mesh->ebuff->get();
+				cmd.ecount = mesh->ecount;
+				cmd.eoffset = mesh->eoffset;
 
-			ctx.push(cmd);
+				cmd.mvp = mvp;
+
+				ctx.push(cmd);
+			}
 		}
 
 		ctx.render();

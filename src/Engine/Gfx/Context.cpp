@@ -68,6 +68,7 @@ namespace Engine::Gfx {
 			glBindVertexArray(cmd.vao);
 			glVertexArrayVertexBuffer(cmd.vao, 0, cmd.vbo, 0, cmd.vboStride);
 			glVertexArrayElementBuffer(cmd.vao, cmd.ebo);
+			glUniformMatrix4fv(0, 1, GL_FALSE, &cmd.mvp[0][0]);
 
 			glDrawElementsInstancedBaseVertexBaseInstance(
 				GL_TRIANGLES,

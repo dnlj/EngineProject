@@ -70,11 +70,14 @@ namespace Game {
 			}
 
 			// TODO: this should be in part of the mesh/model/ something to desc buffer bindings
-			glVertexArrayVertexBuffer(layout->vao, 0, vbo->get(), 0, sizeof(Vertex));
-			glVertexArrayElementBuffer(layout->vao, ebo->get());
+			//glVertexArrayVertexBuffer(layout->vao, 0, vbo->get(), 0, sizeof(Vertex));
+			//glVertexArrayElementBuffer(layout->vao, ebo->get());
 
-			// TODO: multiple meshes
-			world.addComponent<ModelComponent>(ent, model.skinned ? shaderSkinned : shaderStatic, meshes[0]);
+			auto& mdlComp = world.addComponent<ModelComponent>(ent);
+			mdlComp.meshes.reserve(model.instances.size());
+			for (const auto& inst : model.instances) {
+				mdlComp.meshes.emplace_back(model.skinned ? shaderSkinned : shaderStatic, inst.mesh);
+			}
 		}
 
 		model.bones.resize(model.arm.bones.size());
@@ -127,21 +130,34 @@ namespace Game {
 		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 2});
 
 		if (!model.skinned) {
-			glUseProgram(shaderStatic->get());
+			// TODO: Awful way to handle this. Very fragile.
+			auto& [meshes] = world.getComponent<ModelComponent>(ent);
+			for (int i = 0; i < meshes.size(); ++i) {
+				auto& inst1 = meshes[i];
+				auto& inst2 = model.instances[i];
+				const auto& node = model.arm.nodes[inst2.nodeId];
+				const auto mvp = vp * node.total;
+				inst1.mvp = mvp;
+			}
+			/*glUseProgram(shaderStatic->get());
 
 			for (auto& inst : model.instances) {
 				// TODO: do we really want static meshes to be animated? surely this should be done on the Entity level if that is the case.
 				// TODO: cont. if we want mesh level animation it should probably be rigged? (this seems to be what modeling programs assume)
 				const auto& node = model.arm.nodes[inst.nodeId];
-				const auto& mesh = inst.mesh;
 				const auto mvp = vp * node.total;
 
 				glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 				glBindVertexArray(layout->vao);
+
+				const auto& mesh = inst.mesh;
 				glDrawElements(GL_TRIANGLES, mesh->ecount, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh->eoffset * sizeof(GLuint)));
-			}
+			}*/
 		} else {
-			glProgramUniformMatrix4fv(shaderSkinned->get(), 0, 1, GL_FALSE, &vp[0][0]);
+			auto& [meshes] = world.getComponent<ModelComponent>(ent);
+			for (auto& inst : meshes) {
+				inst.mvp = vp;
+			}
 			/*
 			glUseProgram(shaderSkinned->get());
 			glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);

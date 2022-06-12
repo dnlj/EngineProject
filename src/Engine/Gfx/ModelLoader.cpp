@@ -30,9 +30,9 @@ namespace Engine::Gfx {
 		// TODO: try nested armature
 
 		//constexpr char fileName[] = "assets/testing.fbx";
-		//constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
+		constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
 		//constexpr char fileName[] = "assets/test.fbx";
-		constexpr char fileName[] = "assets/char6.fbx";///////////////
+		//constexpr char fileName[] = "assets/char6.fbx";///////////////
 		//constexpr char fileName[] = "assets/char.glb";
 		//constexpr char fileName[] = "assets/char.dae";
 

@@ -5,17 +5,22 @@
 
 
 namespace Game {
-	class ModelComponent {
+	class MeshInstance { // TODO: should be part of Engine?
 		public:
-			// TODO: makes sense for the armature to be a separate comp
-			// TODO: cont. How to org? Currently our instances have a nodeId. how does that relate between components.
 			Engine::Gfx::ShaderRef shader;
 			Engine::Gfx::MeshRef mesh;
 
-
+			glm::mat4 mvp; // TODO: find better solution for uniforms
 
 			// TODO: Textures(TextureRef)
 			// TODO: Buffers(BufferRef)
 			// TODO: Uniforms(???)
+	};
+
+	class ModelComponent {
+		public:
+			// TODO: makes sense for the armature to be a separate comp
+			// TODO: cont. How to org? Currently our instances have a nodeId. how does that relate between components.
+			std::vector<MeshInstance> meshes;
 	};
 }
