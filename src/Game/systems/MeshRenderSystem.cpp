@@ -28,7 +28,7 @@ namespace Game {
 			const auto& [meshes] = world.getComponent<ModelComponent>(ent);
 
 			for (const auto& [mat, mesh, mvp, params] : meshes) {
-				cmd.program = mat.getShader().get(); // TODO: once types are fixed we shouldnt need to cast this
+				cmd.shader = mat->getShader();
 				cmd.vao = mesh->layout->vao;
 				cmd.vbo = mesh->vbuff->get();
 				cmd.vboStride = mesh->vstride;

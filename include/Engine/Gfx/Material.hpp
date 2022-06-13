@@ -49,30 +49,27 @@ namespace Engine::Gfx {
 	class Material {
 		private:
 			ShaderRef shader;
-			FlatHashMap<MaterialInput, uint32> inputs;
+			//FlatHashMap<MaterialInput, uint32> inputs;
 
 		public:
 			Material(ShaderRef shader) : shader{shader} {}
 
-			ShaderHandle getShader() const noexcept { return *shader; }
-
+			const Shader* getShader() const noexcept { return shader.get(); }
 			uint32 getParametersBlockSize() { return 16; } // TODO: impl
 
 			//void fetchInputs();
 			//void apply(const MaterialParams& params);
 
 		private:
-			uint32 getFieldOffset(MaterialInput input) const noexcept {
-				auto found = inputs.find(input);
-				if (found == inputs.end()) [[unlikely]] {
-					ENGINE_WARN("Attempting to get invalid material input field");
-					return 0;
-				}
-				return found->second;
-			}
+			//uint32 getFieldOffset(MaterialInput input) const noexcept {
+			//	auto found = inputs.find(input);
+			//	if (found == inputs.end()) [[unlikely]] {
+			//		ENGINE_WARN("Attempting to get invalid material input field");
+			//		return 0;
+			//	}
+			//	return found->second;
+			//}
 	};
-
-	using MaterialRef = void*; // TODO: rm
 
 	class MaterialInstance {
 		public:

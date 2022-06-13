@@ -40,7 +40,7 @@ namespace Engine::Gfx {
 			// Uniform updates
 			// ---------------------------------------------
 
-			if (a.program != b.program) { return a.program < b.program; }
+			if (a.shader != b.shader) { return a.shader < b.shader; }
 
 			// TODO: textures. Not sure how we want to do this.
 			//
@@ -66,20 +66,21 @@ namespace Engine::Gfx {
 
 		for (const auto& cmd : cmds) {
 			// TODO: rework to use glMultiDrawElementsIndirect and uniforms array buffers
-			if (active.program != cmd.program) {}
+			if (active.shader != cmd.shader) {}
 			if (active.vao != cmd.vao) {}
 			if (active.vbo != cmd.vbo) {}
 			if (active.ebo != cmd.ebo) {}
 
 			constexpr uint32 matParamsBufferIndex = 2;
 
-			glUseProgram(cmd.program);
+			const auto prog = cmd.shader->get();
+			glUseProgram(prog);
 			glBindVertexArray(cmd.vao);
 
 			// TODO: If we always use the same index then we dont ever need to rebind this one right?
 			// TODO: cont. Unless we resize the buffer i guess? does it make sense to do that?
 			glBindBufferBase(GL_UNIFORM_BUFFER, matParamsBufferIndex, matParamsBuffer->get());
-			glUniformBlockBinding(cmd.program, 1, matParamsBufferIndex);
+			glUniformBlockBinding(prog, 1, matParamsBufferIndex);
 
 			glVertexArrayVertexBuffer(cmd.vao, 0, cmd.vbo, 0, cmd.vboStride);
 			glVertexArrayElementBuffer(cmd.vao, cmd.ebo);

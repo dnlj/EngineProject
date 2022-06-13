@@ -1,7 +1,8 @@
 // Engine
+#include <Engine/Camera.hpp>
+#include <Engine/Gfx/MaterialManager.hpp>
 #include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Gfx/VertexAttributeLayout.hpp>
-#include <Engine/Camera.hpp>
 
 // Game
 #include <Game/systems/AnimSystem.hpp>
@@ -25,8 +26,11 @@ namespace Game {
 
 		ent = world.createEntity();
 
-		auto shaderSkinned = engine.getShaderLoader().get("shaders/mesh");
-		auto shaderStatic = engine.getShaderLoader().get("shaders/mesh_static");
+		auto shaderSkinned2 = engine.getShaderLoader().get("shaders/mesh");
+		auto shaderStatic2 = engine.getShaderLoader().get("shaders/mesh_static");
+
+		auto matSkinned = engine.getMaterialManager().create(shaderSkinned2);
+		auto matStatic = engine.getMaterialManager().create(shaderStatic2);
 
 		{
 			VertexAttributeDesc attribs[] = {
@@ -70,7 +74,7 @@ namespace Game {
 			auto& mdlComp = world.addComponent<ModelComponent>(ent);
 			mdlComp.meshes.reserve(model.instances.size());
 			for (const auto& inst : model.instances) {
-				auto& mesh = mdlComp.meshes.emplace_back(model.skinned ? shaderSkinned : shaderStatic, inst.mesh);
+				auto& mesh = mdlComp.meshes.emplace_back(model.skinned ? matSkinned : matStatic, inst.mesh);
 				mesh.params._TODO_rm_resize(4);
 				mesh.params.set(4, glm::vec4{1,1,0.5,1});
 			}
@@ -81,8 +85,8 @@ namespace Game {
 		if (!model.bones.empty()) {
 			ubo = engine.getBufferManager().create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage);
 
-			glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
-			glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
+			//glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
+			//glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
 		}
 	}
 

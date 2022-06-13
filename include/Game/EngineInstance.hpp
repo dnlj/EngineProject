@@ -18,6 +18,7 @@ namespace Engine {
 		class TextureManager;
 		class TextureLoader;
 		class MeshManager;
+		class MaterialManager;
 		class Context;
 	}
 }
@@ -51,6 +52,8 @@ namespace Game {
 			Engine::Gfx::TextureLoader& getTextureLoader();
 
 			Engine::Gfx::MeshManager& getMeshManager();
+
+			Engine::Gfx::MaterialManager& getMaterialManager();
 
 			Engine::Gfx::Context& getGraphicsContext();
 
