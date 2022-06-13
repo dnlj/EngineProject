@@ -3,7 +3,7 @@
 // Engine
 #include <Engine/ResourceManager.hpp>
 #include <Engine/Gfx/NumberType.hpp>
-#include <Engine/Gfx/gfxstate.hpp>
+#include <Engine/Gfx/VertexAttributeLayout.hpp>
 
 
 namespace Engine::Gfx {

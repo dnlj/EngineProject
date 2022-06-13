@@ -13,8 +13,6 @@ layout (std140, binding=0) uniform Bones {
 	mat4 bones[100]; // TODO: what is a good size?
 };
 
-out vec4 fragColor;
-
 void main() {
 	vec4 pos = vec4(0);
 	vec4 vpos = vec4(vertPos, 1.0);
@@ -23,6 +21,5 @@ void main() {
 		pos += (bones[vertBones[i]] * vpos) * vertWeights[i];
 	}
 
-	fragColor = vec4(0,1,0,1);
 	gl_Position = mvp * pos;
 }

@@ -31,9 +31,6 @@ namespace Game {
 	class AnimSystem : public System {
 		private:
 			Engine::ECS::Entity ent;
-			Engine::Gfx::VertexAttributeLayoutRef layout;
-			Engine::Gfx::ShaderRef shaderSkinned;
-			Engine::Gfx::ShaderRef shaderStatic;
 			Engine::Gfx::BufferRef ubo;
 
 			GLuint cmdbuff = 0; // TODO: rm - just for testing

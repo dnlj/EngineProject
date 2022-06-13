@@ -1,6 +1,6 @@
 // Engine
 #include <Engine/Gfx/Mesh.hpp>
-#include <Engine/Gfx/gfxstate.hpp>
+#include <Engine/Gfx/VertexAttributeLayout.hpp>
 #include <Engine/Camera.hpp>
 
 // Game
@@ -25,8 +25,8 @@ namespace Game {
 
 		ent = world.createEntity();
 
-		shaderSkinned = engine.getShaderLoader().get("shaders/mesh");
-		shaderStatic = engine.getShaderLoader().get("shaders/mesh_static");
+		auto shaderSkinned = engine.getShaderLoader().get("shaders/mesh");
+		auto shaderStatic = engine.getShaderLoader().get("shaders/mesh_static");
 
 		{
 			VertexAttributeDesc attribs[] = {
@@ -35,10 +35,8 @@ namespace Game {
 				{ VertexInput::BoneWeights, 4, NumberType::Float32, offsetof(Vertex, weights), false },
 			};
 
-			layout = engine.getVertexLayoutLoader().get(attribs);
-		}
+			auto layout = engine.getVertexLayoutLoader().get(attribs);
 
-		{
 			ModelLoader loader;
 
 			model.skinned = !loader.arm.bones.empty();
@@ -69,14 +67,12 @@ namespace Game {
 				animation = std::move(loader.animations[0]);
 			}
 
-			// TODO: this should be in part of the mesh/model/ something to desc buffer bindings
-			//glVertexArrayVertexBuffer(layout->vao, 0, vbo->get(), 0, sizeof(Vertex));
-			//glVertexArrayElementBuffer(layout->vao, ebo->get());
-
 			auto& mdlComp = world.addComponent<ModelComponent>(ent);
 			mdlComp.meshes.reserve(model.instances.size());
 			for (const auto& inst : model.instances) {
-				mdlComp.meshes.emplace_back(model.skinned ? shaderSkinned : shaderStatic, inst.mesh);
+				auto& mesh = mdlComp.meshes.emplace_back(model.skinned ? shaderSkinned : shaderStatic, inst.mesh);
+				mesh.params._TODO_rm_resize(4);
+				mesh.params.set(4, glm::vec4{1,1,0.5,1});
 			}
 		}
 
@@ -139,20 +135,6 @@ namespace Game {
 				const auto mvp = vp * node.total;
 				inst1.mvp = mvp;
 			}
-			/*glUseProgram(shaderStatic->get());
-
-			for (auto& inst : model.instances) {
-				// TODO: do we really want static meshes to be animated? surely this should be done on the Entity level if that is the case.
-				// TODO: cont. if we want mesh level animation it should probably be rigged? (this seems to be what modeling programs assume)
-				const auto& node = model.arm.nodes[inst.nodeId];
-				const auto mvp = vp * node.total;
-
-				glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
-				glBindVertexArray(layout->vao);
-
-				const auto& mesh = inst.mesh;
-				glDrawElements(GL_TRIANGLES, mesh->ecount, GL_UNSIGNED_INT, (const void*)(uintptr_t)(mesh->eoffset * sizeof(GLuint)));
-			}*/
 		} else {
 			auto& [meshes] = world.getComponent<ModelComponent>(ent);
 			for (auto& inst : meshes) {

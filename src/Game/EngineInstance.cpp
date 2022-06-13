@@ -68,7 +68,7 @@ namespace Game {
 
 			Engine::Gfx::MeshManager meshManager;
 
-			Engine::Gfx::Context gfxContext;
+			Engine::Gfx::Context gfxContext = bufferManager;
 
 			Engine::Camera camera;
 	};

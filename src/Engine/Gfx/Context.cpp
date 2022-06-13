@@ -1,5 +1,8 @@
 // Engine
 #include <Engine/Gfx/Context.hpp>
+#include <Engine/Gfx/Material.hpp>
+#include <Engine/Gfx/Buffer.hpp>
+#include <Engine/Gfx/BufferManager.hpp>
 
 
 namespace {
@@ -15,6 +18,10 @@ namespace {
 
 
 namespace Engine::Gfx {
+	Context::Context(BufferManager& bufferManager) {
+		matParamsBuffer = bufferManager.create();
+	}
+
 	void Context::render() {
 		// TODO: move to own function
 		std::ranges::sort(cmds, [](const DrawCommand& a, const DrawCommand& b) noexcept {
@@ -64,11 +71,26 @@ namespace Engine::Gfx {
 			if (active.vbo != cmd.vbo) {}
 			if (active.ebo != cmd.ebo) {}
 
+			constexpr uint32 matParamsBufferIndex = 2;
+
 			glUseProgram(cmd.program);
 			glBindVertexArray(cmd.vao);
+
+			// TODO: If we always use the same index then we dont ever need to rebind this one right?
+			// TODO: cont. Unless we resize the buffer i guess? does it make sense to do that?
+			glBindBufferBase(GL_UNIFORM_BUFFER, matParamsBufferIndex, matParamsBuffer->get());
+			glUniformBlockBinding(cmd.program, 1, matParamsBufferIndex);
+
 			glVertexArrayVertexBuffer(cmd.vao, 0, cmd.vbo, 0, cmd.vboStride);
 			glVertexArrayElementBuffer(cmd.vao, cmd.ebo);
 			glUniformMatrix4fv(0, 1, GL_FALSE, &cmd.mvp[0][0]);
+
+			// TODO: use Material::getParametersBlockSize
+			if (16 > matParamsBufferSize) {
+				matParamsBufferSize = 16;
+				matParamsBuffer->alloc(16, StorageFlag::DynamicStorage);
+			}
+			matParamsBuffer->setData(16, cmd.params->data());
 
 			glDrawElementsInstancedBaseVertexBaseInstance(
 				GL_TRIANGLES,

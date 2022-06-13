@@ -5,6 +5,7 @@
 #include <Engine/Gfx/VertexAttributeLayout.hpp>
 #include <Engine/Gfx/Buffer.hpp>
 #include <Engine/Gfx/Context.hpp>
+#include <Engine/Gfx/Material.hpp>
 
 // Game
 #include <Game/systems/MeshRenderSystem.hpp>
@@ -14,7 +15,6 @@
 
 namespace Game {
 	MeshRenderSystem::MeshRenderSystem(SystemArg arg) : System{arg} {
-
 	}
 
 	void MeshRenderSystem::render(RenderLayer layer) {
@@ -27,8 +27,8 @@ namespace Game {
 		for (auto ent : filter) {
 			const auto& [meshes] = world.getComponent<ModelComponent>(ent);
 
-			for (const auto& [shader, mesh, mvp] : meshes) {
-				cmd.program = shader->get();
+			for (const auto& [mat, mesh, mvp, params] : meshes) {
+				cmd.program = mat.getShader().get(); // TODO: once types are fixed we shouldnt need to cast this
 				cmd.vao = mesh->layout->vao;
 				cmd.vbo = mesh->vbuff->get();
 				cmd.vboStride = mesh->vstride;
@@ -37,6 +37,8 @@ namespace Game {
 				cmd.eoffset = mesh->eoffset;
 
 				cmd.mvp = mvp;
+
+				cmd.params = &params;
 
 				ctx.push(cmd);
 			}

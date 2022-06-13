@@ -7,7 +7,8 @@
 #include <string>
 
 // Engine
-#include <Engine/Engine.hpp>
+#include <Engine/engine.hpp>
+#include <Engine/Gfx/ShaderHandle.hpp>
 
 
 namespace Engine::Gfx {
@@ -26,6 +27,7 @@ namespace Engine::Gfx {
 			void load(const std::string& path);
 			void unload();
 
-			ENGINE_INLINE auto get() const noexcept { return program; }
+			ENGINE_INLINE auto get() const noexcept { return program; } // TODO: rm - use ShaderHandle instead
+			ENGINE_INLINE operator ShaderHandle() const noexcept { return ShaderHandle{program}; }
 	};
 };
