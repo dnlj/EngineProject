@@ -2,15 +2,12 @@
 
 
 namespace Engine::Gfx {
-	class Shader;
-	class MaterialParams;
+	class MaterialInstance;
 
 	class DrawCommand {
 		public:
-			// TODO: should we be dealing with pointers to our own types still; `Shader*` etc? We dont want ref types here because of ref counting.
+			const MaterialInstance* material;
 
-			// TODO: we should probably just pass around the MaterialInstance* instead of shader + params
-			const Shader* shader;
 			uint32 vao;
 			uint32 vbo;
 			uint32 vboStride;
@@ -20,8 +17,6 @@ namespace Engine::Gfx {
 
 			glm::mat4 mvp; // TODO: find better solution for uniforms
 
-			const MaterialParams* params;
-			
 			// TODO: Textures
 			// TODO: Buffers
 			// TODO: Uniforms

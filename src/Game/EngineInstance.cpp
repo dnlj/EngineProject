@@ -6,6 +6,7 @@
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/Context.hpp>
 #include <Engine/Gfx/MaterialManager.hpp>
+#include <Engine/Gfx/MaterialInstanceManager.hpp>
 #include <Engine/Gfx/MeshManager.hpp>
 #include <Engine/Gfx/ShaderLoader.hpp>
 #include <Engine/Gfx/TextureLoader.hpp>
@@ -70,6 +71,7 @@ namespace Game {
 			Engine::Gfx::MeshManager meshManager;
 
 			Engine::Gfx::MaterialManager materialManager;
+			Engine::Gfx::MaterialInstanceManager materialInstanceManager;
 
 			Engine::Gfx::Context gfxContext = bufferManager;
 
@@ -93,6 +95,7 @@ namespace Game {
 
 	Engine::Gfx::MeshManager& EngineInstance::getMeshManager() { return pimpl->meshManager; }
 	Engine::Gfx::MaterialManager& EngineInstance::getMaterialManager() { return pimpl->materialManager; }
+	Engine::Gfx::MaterialInstanceManager& EngineInstance::getMaterialInstanceManager() { return pimpl->materialInstanceManager; }
 
 
 	Engine::Gfx::Context& EngineInstance::getGraphicsContext() { return pimpl->gfxContext; }

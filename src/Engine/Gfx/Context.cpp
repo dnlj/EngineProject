@@ -40,7 +40,7 @@ namespace Engine::Gfx {
 			// Uniform updates
 			// ---------------------------------------------
 
-			if (a.shader != b.shader) { return a.shader < b.shader; }
+			if (a.material != b.material) { return a.material < b.material; }
 
 			// TODO: textures. Not sure how we want to do this.
 			//
@@ -66,14 +66,14 @@ namespace Engine::Gfx {
 
 		for (const auto& cmd : cmds) {
 			// TODO: rework to use glMultiDrawElementsIndirect and uniforms array buffers
-			if (active.shader != cmd.shader) {}
+			if (active.material != cmd.material) {}
 			if (active.vao != cmd.vao) {}
 			if (active.vbo != cmd.vbo) {}
 			if (active.ebo != cmd.ebo) {}
 
 			constexpr uint32 matParamsBufferIndex = 2;
 
-			const auto prog = cmd.shader->get();
+			const auto prog = cmd.material->material->getShader()->get();
 			glUseProgram(prog);
 			glBindVertexArray(cmd.vao);
 
@@ -91,7 +91,7 @@ namespace Engine::Gfx {
 				matParamsBufferSize = 16;
 				matParamsBuffer->alloc(16, StorageFlag::DynamicStorage);
 			}
-			matParamsBuffer->setData(16, cmd.params->data());
+			matParamsBuffer->setData(16, cmd.material->params.data());
 
 			glDrawElementsInstancedBaseVertexBaseInstance(
 				GL_TRIANGLES,

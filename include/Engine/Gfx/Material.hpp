@@ -76,5 +76,4 @@ namespace Engine::Gfx {
 			MaterialRef material;
 			MaterialParams params;
 	};
-	using MaterialInstanceRef = void*; // TODO: rm
 }

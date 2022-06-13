@@ -1,6 +1,7 @@
 // Engine
 #include <Engine/Camera.hpp>
 #include <Engine/Gfx/MaterialManager.hpp>
+#include <Engine/Gfx/MaterialInstanceManager.hpp>
 #include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Gfx/VertexAttributeLayout.hpp>
 
@@ -25,12 +26,7 @@ namespace Game {
 		using namespace Engine::Gfx;
 
 		ent = world.createEntity();
-
-		auto shaderSkinned2 = engine.getShaderLoader().get("shaders/mesh");
-		auto shaderStatic2 = engine.getShaderLoader().get("shaders/mesh_static");
-
-		auto matSkinned = engine.getMaterialManager().create(shaderSkinned2);
-		auto matStatic = engine.getMaterialManager().create(shaderStatic2);
+		Engine::Gfx::MaterialInstanceRef material;
 
 		{
 			VertexAttributeDesc attribs[] = {
@@ -44,6 +40,14 @@ namespace Game {
 			ModelLoader loader;
 
 			model.skinned = !loader.arm.bones.empty();
+
+			{
+				auto shader = engine.getShaderLoader().get(model.skinned ? "shaders/mesh" : "shaders/mesh_static");
+				auto matBase = engine.getMaterialManager().create(shader);
+				material = engine.getMaterialInstanceManager().create(matBase);
+				material->params._TODO_rm_resize(4);
+				material->params.set(4, glm::vec4{1,1,0.5,1});
+			}
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size());
 
@@ -74,9 +78,7 @@ namespace Game {
 			auto& mdlComp = world.addComponent<ModelComponent>(ent);
 			mdlComp.meshes.reserve(model.instances.size());
 			for (const auto& inst : model.instances) {
-				auto& mesh = mdlComp.meshes.emplace_back(model.skinned ? matSkinned : matStatic, inst.mesh);
-				mesh.params._TODO_rm_resize(4);
-				mesh.params.set(4, glm::vec4{1,1,0.5,1});
+				mdlComp.meshes.emplace_back(material, inst.mesh);
 			}
 		}
 
@@ -85,8 +87,9 @@ namespace Game {
 		if (!model.bones.empty()) {
 			ubo = engine.getBufferManager().create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage);
 
-			//glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
-			//glUniformBlockBinding(shaderSkinned->get(), 0, 1); // Bind uniform block to buffer index
+			// TODO: work on removing - still needed atm for bone anim
+			glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
+			glUniformBlockBinding(material->material->getShader()->get(), 0, 1); // Bind uniform block to buffer index
 		}
 	}
 

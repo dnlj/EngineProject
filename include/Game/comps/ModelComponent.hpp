@@ -8,7 +8,7 @@
 namespace Game {
 	class MeshInstance { // TODO: should be part of Engine?
 		public:
-			Engine::Gfx::MaterialRef material;
+			Engine::Gfx::MaterialInstanceRef material;
 			Engine::Gfx::MeshRef mesh;
 
 			glm::mat4 mvp; // TODO: find better solution for uniforms

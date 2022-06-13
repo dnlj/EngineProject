@@ -28,7 +28,7 @@ namespace Game {
 			const auto& [meshes] = world.getComponent<ModelComponent>(ent);
 
 			for (const auto& [mat, mesh, mvp, params] : meshes) {
-				cmd.shader = mat->getShader();
+				cmd.material = mat.get();
 				cmd.vao = mesh->layout->vao;
 				cmd.vbo = mesh->vbuff->get();
 				cmd.vboStride = mesh->vstride;
@@ -37,8 +37,6 @@ namespace Game {
 				cmd.eoffset = mesh->eoffset;
 
 				cmd.mvp = mvp;
-
-				cmd.params = &params;
 
 				ctx.push(cmd);
 			}
