@@ -47,7 +47,7 @@ namespace Engine::Gfx {
 				location += (attrib.size + 3) / 4;
 			}
 
-			return {vao};
+			return VertexAttributeLayout{VertexAttributeLayout::AllowConstruct, vao};
 		};
 	};
 }

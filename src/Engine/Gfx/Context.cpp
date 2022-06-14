@@ -71,7 +71,7 @@ namespace Engine::Gfx {
 			// TODO: rework to use glMultiDrawElementsIndirect and uniforms array buffers
 
 			const auto program = mat->base->getShader()->get();
-			const auto vao = mesh->layout->vao;
+			const auto vao = mesh->layout->get();
 
 			constexpr uint32 matParamsBufferIndex = 2;
 

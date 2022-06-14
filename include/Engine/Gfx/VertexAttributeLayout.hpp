@@ -56,9 +56,18 @@ namespace Engine::Gfx {
 
 	// Maps a buffer layout to a vertex input shape (built from a VertexAttributeDesc[])
 	class VertexAttributeLayout {
+		private:
+			uint32 vao;
+
 		public:
-			// TODO: should this also have a vertexInputs? i dont think we actually need it though.
-			uint32 vao; // TODO: private
+			class AllowConstruct_Tag {
+				friend class VertexAttributeLayout;
+				private: constexpr AllowConstruct_Tag() noexcept {};
+			};
+			constexpr static AllowConstruct_Tag AllowConstruct;
+
+			ENGINE_INLINE explicit VertexAttributeLayout(AllowConstruct_Tag, uint32 vao) noexcept : vao{vao} {}
+			ENGINE_INLINE uint32 get() const noexcept{ return vao; }
 	};
 }
 
