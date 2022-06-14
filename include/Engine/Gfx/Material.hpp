@@ -55,7 +55,7 @@ namespace Engine::Gfx {
 			Material(ShaderRef shader) : shader{shader} {}
 
 			const Shader* getShader() const noexcept { return shader.get(); }
-			uint32 getParametersBlockSize() { return 16; } // TODO: impl
+			uint32 getParametersBlockSize() const noexcept { return 16; } // TODO: impl
 
 			//void fetchInputs();
 			//void apply(const MaterialParams& params);
@@ -73,7 +73,7 @@ namespace Engine::Gfx {
 
 	class MaterialInstance {
 		public:
-			MaterialRef material;
+			MaterialRef base;
 			MaterialParams params;
 	};
 }

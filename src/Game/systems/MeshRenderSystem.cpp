@@ -29,12 +29,7 @@ namespace Game {
 
 			for (const auto& [mat, mesh, mvp, params] : meshes) {
 				cmd.material = mat.get();
-				cmd.vao = mesh->layout->vao;
-				cmd.vbo = mesh->vbuff->get();
-				cmd.vboStride = mesh->vstride;
-				cmd.ebo = mesh->ebuff->get();
-				cmd.ecount = mesh->ecount;
-				cmd.eoffset = mesh->eoffset;
+				cmd.mesh = mesh.get();
 
 				cmd.mvp = mvp;
 

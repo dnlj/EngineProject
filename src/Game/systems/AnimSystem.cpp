@@ -89,7 +89,7 @@ namespace Game {
 
 			// TODO: work on removing - still needed atm for bone anim
 			glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
-			glUniformBlockBinding(material->material->getShader()->get(), 0, 1); // Bind uniform block to buffer index
+			glUniformBlockBinding(material->base->getShader()->get(), 0, 1); // Bind uniform block to buffer index
 		}
 	}
 

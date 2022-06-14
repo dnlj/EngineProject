@@ -3,6 +3,8 @@
 #include <Engine/Gfx/Material.hpp>
 #include <Engine/Gfx/Buffer.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
+#include <Engine/Gfx/Mesh2.hpp>
+#include <Engine/Gfx/VertexAttributeLayout.hpp>
 
 
 namespace {
@@ -23,6 +25,7 @@ namespace Engine::Gfx {
 	}
 
 	void Context::render() {
+		/*
 		// TODO: move to own function
 		std::ranges::sort(cmds, [](const DrawCommand& a, const DrawCommand& b) noexcept {
 			// Sorted based on approximate cost from:
@@ -62,43 +65,44 @@ namespace Engine::Gfx {
 			// TODO: uniforms
 
 			return false;
-		});
+		});*/
 
-		for (const auto& cmd : cmds) {
+		for (const auto& [mat, mesh, mvp] : cmds) {
 			// TODO: rework to use glMultiDrawElementsIndirect and uniforms array buffers
-			if (active.material != cmd.material) {}
-			if (active.vao != cmd.vao) {}
-			if (active.vbo != cmd.vbo) {}
-			if (active.ebo != cmd.ebo) {}
+
+			const auto program = mat->base->getShader()->get();
+			const auto vao = mesh->layout->vao;
 
 			constexpr uint32 matParamsBufferIndex = 2;
 
-			const auto prog = cmd.material->material->getShader()->get();
-			glUseProgram(prog);
-			glBindVertexArray(cmd.vao);
+			glUseProgram(program);
+			glBindVertexArray(vao);
 
 			// TODO: If we always use the same index then we dont ever need to rebind this one right?
 			// TODO: cont. Unless we resize the buffer i guess? does it make sense to do that?
 			glBindBufferBase(GL_UNIFORM_BUFFER, matParamsBufferIndex, matParamsBuffer->get());
-			glUniformBlockBinding(prog, 1, matParamsBufferIndex);
+			glUniformBlockBinding(program, 1, matParamsBufferIndex);
 
-			glVertexArrayVertexBuffer(cmd.vao, 0, cmd.vbo, 0, cmd.vboStride);
-			glVertexArrayElementBuffer(cmd.vao, cmd.ebo);
-			glUniformMatrix4fv(0, 1, GL_FALSE, &cmd.mvp[0][0]);
+			glVertexArrayVertexBuffer(vao, 0, mesh->vbuff->get(), 0, mesh->vstride);
+			glVertexArrayElementBuffer(vao, mesh->ebuff->get());
+			glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 
-			// TODO: use Material::getParametersBlockSize
-			if (16 > matParamsBufferSize) {
-				matParamsBufferSize = 16;
-				matParamsBuffer->alloc(16, StorageFlag::DynamicStorage);
+			const auto matParamsSize = mat->base->getParametersBlockSize();
+			if (matParamsSize > matParamsBufferSize) {
+				matParamsBufferSize = matParamsSize;
+				matParamsBuffer->alloc(matParamsSize, StorageFlag::DynamicStorage);
+				// TODO: we need rebind the buffer since we realloc
 			}
-			matParamsBuffer->setData(16, cmd.material->params.data());
+			matParamsBuffer->setData(matParamsSize, mat->params.data());
+
+			// TODO: batch material and instance parameters into same buffer object (glBindBufferRange)
 
 			glDrawElementsInstancedBaseVertexBaseInstance(
 				GL_TRIANGLES,
-				cmd.ecount,
+				mesh->ecount,
 				GL_UNSIGNED_INT,
 				// TODO: note that when we change this to use glMultiDrawElementsIndirect that the offset changes from bytes to indices
-				reinterpret_cast<const void*>(static_cast<uintptr_t>(cmd.eoffset * sizeof(uint32))),
+				reinterpret_cast<const void*>(static_cast<uintptr_t>(mesh->eoffset * sizeof(uint32))),
 				1, 0, 0
 			);
 		}

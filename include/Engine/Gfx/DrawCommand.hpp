@@ -3,17 +3,12 @@
 
 namespace Engine::Gfx {
 	class MaterialInstance;
+	class Mesh2;
 
 	class DrawCommand {
 		public:
 			const MaterialInstance* material;
-
-			uint32 vao;
-			uint32 vbo;
-			uint32 vboStride;
-			uint32 ebo;
-			uint32 ecount;
-			uint32 eoffset;
+			const Mesh2* mesh;
 
 			glm::mat4 mvp; // TODO: find better solution for uniforms
 
