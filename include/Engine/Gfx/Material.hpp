@@ -10,14 +10,39 @@ namespace Engine::Gfx {
 
 	};
 
+	class Material {
+		private:
+			ShaderRef shader;
+			//FlatHashMap<MaterialInput, uint32> inputs;
+
+		public:
+			Material(ShaderRef shader) : shader{shader} {}
+
+			const Shader* getShader() const noexcept { return shader.get(); }
+			uint32 getParametersBlockSize() const noexcept { return 16; } // TODO: impl
+
+			//void fetchInputs();
+			//void apply(const MaterialParams& params);
+
+		private:
+			//uint32 getFieldOffset(MaterialInput input) const noexcept {
+			//	auto found = inputs.find(input);
+			//	if (found == inputs.end()) [[unlikely]] {
+			//		ENGINE_WARN("Attempting to get invalid material input field");
+			//		return 0;
+			//	}
+			//	return found->second;
+			//}
+	};
+
 	class MaterialParams {
 		private:
 			using Unit = uint32;
 			std::unique_ptr<Unit[]> storage;
 
 		public:
-			// TODO: rm - this should be set based on the material it is to be used with - probably in constructor.
-			void _TODO_rm_resize(size_t units) { storage = decltype(storage)(new Unit[units]); }
+			MaterialParams(const Material& mat) { setStorageSize(mat.getParametersBlockSize()); }
+			MaterialParams(const MaterialRef& mat) : MaterialParams{*mat} {}
 
 			byte* data() noexcept { // Dont need length because that can be infered from the material
 				ENGINE_DEBUG_ASSERT(storage != nullptr, "Attempting to get data of params with empty storage.");
@@ -44,35 +69,14 @@ namespace Engine::Gfx {
 
 			// TODO: how to handle this? should this hold a texture ref? take a texture handle? how to handle layout.
 			//ENGINE_INLINE void set(MaterialInput field, TextureRef value) { set(field, &value, sizeof(value)); };
-	};
-
-	class Material {
-		private:
-			ShaderRef shader;
-			//FlatHashMap<MaterialInput, uint32> inputs;
-
-		public:
-			Material(ShaderRef shader) : shader{shader} {}
-
-			const Shader* getShader() const noexcept { return shader.get(); }
-			uint32 getParametersBlockSize() const noexcept { return 16; } // TODO: impl
-
-			//void fetchInputs();
-			//void apply(const MaterialParams& params);
 
 		private:
-			//uint32 getFieldOffset(MaterialInput input) const noexcept {
-			//	auto found = inputs.find(input);
-			//	if (found == inputs.end()) [[unlikely]] {
-			//		ENGINE_WARN("Attempting to get invalid material input field");
-			//		return 0;
-			//	}
-			//	return found->second;
-			//}
+			void setStorageSize(size_t units) { storage = decltype(storage)(new Unit[units]); }
 	};
 
 	class MaterialInstance {
 		public:
+			MaterialInstance(const MaterialRef& mat) : base{mat}, params{mat} {}
 			MaterialRef base;
 			MaterialParams params;
 	};

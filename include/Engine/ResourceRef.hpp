@@ -15,9 +15,6 @@ namespace Engine {
 			template<class... Args>
 			ResourceInfo(Args... args) : data(std::forward<Args>(args)...) {}
 	};
-	
-	template<class T>
-	class ResourceInfo;
 
 	/**
 	 * A pointer like type the refers to a resource.
@@ -47,14 +44,14 @@ namespace Engine {
 				return *this;
 			}
 
-			const auto* get() const noexcept { return &info->data; }
-			auto* get() noexcept { return &info->data; }
+			const T* get() const noexcept { return &info->data; }
+			T* get() noexcept { return &info->data; }
 
-			const auto* operator->() const noexcept { return get(); }
-			auto* operator->() noexcept { return get(); }
+			const T* operator->() const noexcept { return get(); }
+			T* operator->() noexcept { return get(); }
 
-			const auto& operator*() const noexcept { return *get(); }
-			auto& operator*() noexcept { return *get(); }
+			const T& operator*() const noexcept { return *get(); }
+			T& operator*() noexcept { return *get(); }
 
 			operator bool() const noexcept { return info; }
 

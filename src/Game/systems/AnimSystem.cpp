@@ -42,10 +42,9 @@ namespace Game {
 			model.skinned = !loader.arm.bones.empty();
 
 			{
-				auto shader = engine.getShaderLoader().get(model.skinned ? "shaders/mesh" : "shaders/mesh_static");
-				auto matBase = engine.getMaterialManager().create(shader);
+				const auto shader = engine.getShaderLoader().get(model.skinned ? "shaders/mesh" : "shaders/mesh_static");
+				const auto matBase = engine.getMaterialManager().create(shader);
 				material = engine.getMaterialInstanceManager().create(matBase);
-				material->params._TODO_rm_resize(4);
 				material->params.set(4, glm::vec4{1,1,0.5,1});
 			}
 
