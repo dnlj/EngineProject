@@ -45,28 +45,28 @@ namespace Game {
 			EngineInstance();
 			~EngineInstance();
 
-			Engine::Input::BindManager& getBindManager();
+			Engine::Input::BindManager& getBindManager() noexcept;
 
-			Engine::Gfx::VertexLayoutManager& getVertexLayoutManager();
-			Engine::Gfx::VertexLayoutLoader& getVertexLayoutLoader();
-			Engine::Gfx::BufferManager& getBufferManager();
+			Engine::Gfx::VertexLayoutManager& getVertexLayoutManager() noexcept;
+			Engine::Gfx::VertexLayoutLoader& getVertexLayoutLoader() noexcept;
+			Engine::Gfx::BufferManager& getBufferManager() noexcept;
 
-			Engine::Gfx::ShaderManager& getShaderManager();
-			Engine::Gfx::ShaderLoader& getShaderLoader();
+			Engine::Gfx::ShaderManager& getShaderManager() noexcept;
+			Engine::Gfx::ShaderLoader& getShaderLoader() noexcept;
 
-			Engine::Gfx::TextureManager& getTextureManager();
-			Engine::Gfx::TextureLoader& getTextureLoader();
+			Engine::Gfx::TextureManager& getTextureManager() noexcept;
+			Engine::Gfx::TextureLoader& getTextureLoader() noexcept;
 
-			Engine::Gfx::MeshManager& getMeshManager();
+			Engine::Gfx::MeshManager& getMeshManager() noexcept;
 
-			Engine::Gfx::MaterialManager& getMaterialManager();
-			Engine::Gfx::MaterialInstanceManager& getMaterialInstanceManager();
+			Engine::Gfx::MaterialManager& getMaterialManager() noexcept;
+			Engine::Gfx::MaterialInstanceManager& getMaterialInstanceManager() noexcept;
 
-			Engine::Gfx::Context& getGraphicsContext();
-			Engine::Gui::Context& getUIContext();
+			Engine::Gfx::Context& getGraphicsContext() noexcept;
+			Engine::Gui::Context& getUIContext() noexcept;
 
-			Engine::Camera& getCamera();
-			World& getWorld();
+			Engine::Camera& getCamera() noexcept;
+			World& getWorld() noexcept { return *world; }
 
 			// TODO: what was the point of making lookup constexpr if this call isnt also constexpr...
 			uint32 getTextureId(std::string_view tex) const;

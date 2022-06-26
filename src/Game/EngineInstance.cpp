@@ -84,34 +84,33 @@ namespace Game {
 	};
 	
 	EngineInstance::EngineInstance() : pimpl{std::make_unique<EngineInstancePimpl>()} {
+		// Specifically not initialized in the initialization list because it requires `*this` as a constructor argument.
 		world = std::make_unique<World>(*this);
 	}
 
 	EngineInstance::~EngineInstance() {}
 
-	Engine::Input::BindManager& EngineInstance::getBindManager() { return pimpl->bindManager; }
+	Engine::Input::BindManager& EngineInstance::getBindManager() noexcept { return pimpl->bindManager; }
 
-	Engine::Gfx::VertexLayoutManager& EngineInstance::getVertexLayoutManager() { return pimpl->vertexLayoutManager; }
-	Engine::Gfx::VertexLayoutLoader& EngineInstance::getVertexLayoutLoader() { return pimpl->vertexLayoutLoader; }
-	Engine::Gfx::BufferManager& EngineInstance::getBufferManager() { return pimpl->bufferManager; }
+	Engine::Gfx::VertexLayoutManager& EngineInstance::getVertexLayoutManager() noexcept { return pimpl->vertexLayoutManager; }
+	Engine::Gfx::VertexLayoutLoader& EngineInstance::getVertexLayoutLoader() noexcept { return pimpl->vertexLayoutLoader; }
+	Engine::Gfx::BufferManager& EngineInstance::getBufferManager() noexcept { return pimpl->bufferManager; }
 	
-	Engine::Gfx::ShaderManager& EngineInstance::getShaderManager() { return pimpl->shaderManager; }
-	Engine::Gfx::ShaderLoader& EngineInstance::getShaderLoader() { return pimpl->shaderLoader; }
+	Engine::Gfx::ShaderManager& EngineInstance::getShaderManager() noexcept { return pimpl->shaderManager; }
+	Engine::Gfx::ShaderLoader& EngineInstance::getShaderLoader() noexcept { return pimpl->shaderLoader; }
 
-	Engine::Gfx::TextureManager& EngineInstance::getTextureManager() { return pimpl->textureManager; }
-	Engine::Gfx::TextureLoader& EngineInstance::getTextureLoader() { return pimpl->textureLoader; }
+	Engine::Gfx::TextureManager& EngineInstance::getTextureManager() noexcept { return pimpl->textureManager; }
+	Engine::Gfx::TextureLoader& EngineInstance::getTextureLoader() noexcept { return pimpl->textureLoader; }
 
-	Engine::Gfx::MeshManager& EngineInstance::getMeshManager() { return pimpl->meshManager; }
-	Engine::Gfx::MaterialManager& EngineInstance::getMaterialManager() { return pimpl->materialManager; }
-	Engine::Gfx::MaterialInstanceManager& EngineInstance::getMaterialInstanceManager() { return pimpl->materialInstanceManager; }
+	Engine::Gfx::MeshManager& EngineInstance::getMeshManager() noexcept { return pimpl->meshManager; }
+	Engine::Gfx::MaterialManager& EngineInstance::getMaterialManager() noexcept { return pimpl->materialManager; }
+	Engine::Gfx::MaterialInstanceManager& EngineInstance::getMaterialInstanceManager() noexcept { return pimpl->materialInstanceManager; }
 
 
-	Engine::Gfx::Context& EngineInstance::getGraphicsContext() { return pimpl->gfxContext; }
-	Engine::Gui::Context& EngineInstance::getUIContext() { return pimpl->uiContext; }
+	Engine::Gfx::Context& EngineInstance::getGraphicsContext() noexcept { return pimpl->gfxContext; }
+	Engine::Gui::Context& EngineInstance::getUIContext() noexcept { return pimpl->uiContext; }
 
-	Engine::Camera& EngineInstance::getCamera() { return pimpl->camera; }
-	World& EngineInstance::getWorld() { return *world; }
-
+	Engine::Camera& EngineInstance::getCamera() noexcept { return pimpl->camera; }
 
 	// TODO: probably replace with a getTextureMap() that returns a ref to lookup instead of wrapping every get call
 	uint32 EngineInstance::getTextureId(std::string_view tex) const { return EngineInstancePimpl::texLookup.get(tex); }
