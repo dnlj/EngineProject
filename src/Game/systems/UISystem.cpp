@@ -43,8 +43,7 @@
 
 
 namespace {
-	namespace Gui = Engine::Gui;
-	using namespace Engine::Gui;
+	namespace EUI = Engine::Gui;
 	const double avgDeltaTime = 1/64.0;
 
 	bool connectTo(const std::string& uri, Game::EngineInstance& engine) {
@@ -95,15 +94,15 @@ namespace Game::UI {
 				TickScale,
 			};
 
-			Gui::Button* disconnect;
+			EUI::Button* disconnect;
 
-			InfoPane(Gui::Context* context) : AutoList{context} {
+			InfoPane(EUI::Context* context) : AutoList{context} {
 				setTitle("Info");
 				addLabel("FPS: {:.3f} ({:.6f})");
 				addLabel("Tick: {}");
 				addLabel("Tick Scale: {:.3f}");
 
-				disconnect = ctx->constructPanel<Gui::Button>();
+				disconnect = ctx->constructPanel<EUI::Button>();
 				disconnect->autoText("Disconnect");
 				disconnect->lockSize();
 				getContent()->addChild(disconnect);
@@ -125,7 +124,7 @@ namespace Game::UI {
 				MapOffsetChunk,
 			};
 
-			CoordPane(Gui::Context* context) : AutoList{context} {
+			CoordPane(EUI::Context* context) : AutoList{context} {
 				setTitle("Coordinates");
 
 				addLabel("Mouse (offset): {:.3f}");
@@ -181,59 +180,59 @@ namespace Game::UI {
 			}
 	};
 
-	class NetCondPane : public Gui::CollapsibleSection {
+	class NetCondPane : public EUI::CollapsibleSection {
 		public:
-			NetCondPane(Gui::Context* context) : CollapsibleSection{context} {
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+			NetCondPane(EUI::Context* context) : CollapsibleSection{context} {
+				getContent()->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx->getTheme().sizes.pad1});
 				setTitle("Network Conditions");
 				
 				#ifndef ENGINE_UDP_NETWORK_SIM
-					auto label = ctx->createPanel<Gui::Label>(getContent());
+					auto label = ctx->createPanel<EUI::Label>(getContent());
 					label->autoText("Network simulation disabled.");
 				#else
 					addSlider("Half Ping Add").setLimits(0, 500).setValue(0).bind(
-						[](Gui::Slider& s){
+						[](EUI::Slider& s){
 							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							s.setValue(static_cast<float64>(std::chrono::duration_cast<std::chrono::milliseconds>(settings.halfPingAdd).count()));
 						},
-						[](Gui::Slider& s){
+						[](EUI::Slider& s){
 							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							settings.halfPingAdd = std::chrono::milliseconds{static_cast<int64>(s.getValue())};
 						}
 					);
 					addSlider("Jitter").setLimits(0, 1).setValue(0).bind(
-						[](Gui::Slider& s){
+						[](EUI::Slider& s){
 							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							s.setValue(settings.jitter);
 						},
-						[](Gui::Slider& s){
+						[](EUI::Slider& s){
 							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							settings.jitter = static_cast<float32>(s.getValue());
 						}
 					);
 					addSlider("Duplicate Chance").setLimits(0, 1).setValue(0).bind(
-						[](Gui::Slider& s){
+						[](EUI::Slider& s){
 							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							s.setValue(settings.duplicate);
 						},
-						[](Gui::Slider& s){
+						[](EUI::Slider& s){
 							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							settings.duplicate = static_cast<float32>(s.getValue());
 						}
 					);
 					addSlider("Loss").setLimits(0, 1).setValue(0).bind(
-						[](Gui::Slider& s){
+						[](EUI::Slider& s){
 							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							s.setValue(settings.loss);
 						},
-						[](Gui::Slider& s){
+						[](EUI::Slider& s){
 							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							settings.loss = static_cast<float32>(s.getValue());
@@ -242,25 +241,25 @@ namespace Game::UI {
 				#endif
 			}
 
-			Gui::Slider& addSlider(std::string_view txt) {
-				auto label = ctx->constructPanel<Gui::Label>();
+			EUI::Slider& addSlider(std::string_view txt) {
+				auto label = ctx->constructPanel<EUI::Label>();
 				label->autoText(txt);
 				label->setWeight(1);
 
-				auto slider = ctx->constructPanel<Gui::Slider>();
+				auto slider = ctx->constructPanel<EUI::Slider>();
 				slider->setWeight(2);
 				
 				auto line = ctx->createPanel<Panel>(getContent());
-				line->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, ctx->getTheme().sizes.pad1});
+				line->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, ctx->getTheme().sizes.pad1});
 				line->setAutoSizeHeight(true);
 				line->addChildren({label, slider});
 				return *slider;
 			}
 	};
 
-	class NetHealthPane : public Gui::CollapsibleSection {
+	class NetHealthPane : public EUI::CollapsibleSection {
 		private:
-			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
+			class Adapter : public EUI::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
 				private:
 					Game::World& world;
 
@@ -282,21 +281,21 @@ namespace Game::UI {
 						return hash;
 					}
 
-					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
+					Panel* createPanel(Id id, EUI::Context& ctx) const {
 						auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
 						const auto& addr = conn.address();
 
 						auto* base = ctx.constructPanel<Panel>();
 						base->setRelPos({});
 						base->setSize({128,128});
-						base->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx.getTheme().sizes.pad1});
+						base->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx.getTheme().sizes.pad1});
 						base->setAutoSizeHeight(true);
 
-						auto* ipLabel = ctx.createPanel<Gui::Label>(base);
+						auto* ipLabel = ctx.createPanel<EUI::Label>(base);
 						ipLabel->autoText(fmt::format("{}", addr));
 
 						for (const auto s : conn.getAllChannelQueueSizes()) {
-							ctx.createPanel<Gui::Label>(base);
+							ctx.createPanel<EUI::Label>(base);
 						}
 
 						updatePanel(id, base);
@@ -308,7 +307,7 @@ namespace Game::UI {
 						auto& conn = *world.getComponent<ConnectionComponent>(id).conn;
 						for (int32 c = 0; const auto s : conn.getAllChannelQueueSizes()) {
 							curr = curr->getNextSibling();
-							Gui::Label* label = reinterpret_cast<Gui::Label*>(curr);
+							EUI::Label* label = reinterpret_cast<EUI::Label*>(curr);
 							label->autoText(fmt::format("Channel {}: {}", c++, s));
 						}
 					}
@@ -316,33 +315,33 @@ namespace Game::UI {
 			};
 			
 		public:
-			NetHealthPane(Gui::Context* context) : CollapsibleSection{context} {
+			NetHealthPane(EUI::Context* context) : CollapsibleSection{context} {
 				setTitle("Network Health");
 				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+				getContent()->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx->getTheme().sizes.pad1});
 			}
 	};
 
-	class NetGraphPane : public Gui::CollapsibleSection {
+	class NetGraphPane : public EUI::CollapsibleSection {
 		private:
 			class NetGraph : public Panel {
 				private:
-					Gui::Label* buffer = nullptr;
-					Gui::Label* ideal = nullptr;
-					Gui::Label* estBuff = nullptr;
-					Gui::Label* ping = nullptr;
-					Gui::Label* jitter = nullptr;
-					Gui::Label* budget = nullptr;
-					Gui::Label* sent = nullptr;
-					Gui::Label* recv = nullptr;
-					Gui::Label* loss = nullptr;
-					Gui::Slider* recvRate = nullptr;
-					Gui::RichGraph* graph = nullptr;
-					Gui::AreaGraph* sentGraphAvg = nullptr;
-					Gui::AreaGraph* recvGraphAvg = nullptr;
-					Gui::BarGraph* sentGraphDiff = nullptr;
-					Gui::BarGraph* recvGraphDiff = nullptr;
+					EUI::Label* buffer = nullptr;
+					EUI::Label* ideal = nullptr;
+					EUI::Label* estBuff = nullptr;
+					EUI::Label* ping = nullptr;
+					EUI::Label* jitter = nullptr;
+					EUI::Label* budget = nullptr;
+					EUI::Label* sent = nullptr;
+					EUI::Label* recv = nullptr;
+					EUI::Label* loss = nullptr;
+					EUI::Slider* recvRate = nullptr;
+					EUI::RichGraph* graph = nullptr;
+					EUI::AreaGraph* sentGraphAvg = nullptr;
+					EUI::AreaGraph* recvGraphAvg = nullptr;
+					EUI::BarGraph* sentGraphDiff = nullptr;
+					EUI::BarGraph* recvGraphDiff = nullptr;
 
 					Engine::Clock::TimePoint lastUpdate;
 
@@ -350,52 +349,52 @@ namespace Game::UI {
 					uint32 lastRecvBytes = 0;
 
 				public:
-					NetGraph(Gui::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
-						setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, 0});
+					NetGraph(EUI::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
+						setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, 0});
 						setAutoSizeHeight(true);
 
 						auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 
-						auto* addr = ctx->createPanel<Gui::Label>(this);
+						auto* addr = ctx->createPanel<EUI::Label>(this);
 						addr->autoText(fmt::format("{}", conn.address()));
 
 						// TODO: if we had full flexbox style layout this would be much simpler. no need for these row containers. This would all work with weights.
 						auto* row1 = ctx->createPanel<Panel>(this);
-						row1->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 0});
+						row1->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, 0});
 						row1->setAutoSizeHeight(true);
-						buffer = ctx->createPanel<Gui::Label>(row1);
-						ideal = ctx->createPanel<Gui::Label>(row1);
-						estBuff = ctx->createPanel<Gui::Label>(row1);
+						buffer = ctx->createPanel<EUI::Label>(row1);
+						ideal = ctx->createPanel<EUI::Label>(row1);
+						estBuff = ctx->createPanel<EUI::Label>(row1);
 
 						auto* row2 = ctx->createPanel<Panel>(this);
-						row2->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 0});
+						row2->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, 0});
 						row2->setAutoSizeHeight(true);
-						ping = ctx->createPanel<Gui::Label>(row2);
-						jitter = ctx->createPanel<Gui::Label>(row2);
-						budget = ctx->createPanel<Gui::Label>(row2);
+						ping = ctx->createPanel<EUI::Label>(row2);
+						jitter = ctx->createPanel<EUI::Label>(row2);
+						budget = ctx->createPanel<EUI::Label>(row2);
 
 						auto* row3 = ctx->createPanel<Panel>(this);
-						row3->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 0});
+						row3->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, 0});
 						row3->setAutoSizeHeight(true);
-						sent = ctx->createPanel<Gui::Label>(row3);
-						recv = ctx->createPanel<Gui::Label>(row3);
-						loss = ctx->createPanel<Gui::Label>(row3);
+						sent = ctx->createPanel<EUI::Label>(row3);
+						recv = ctx->createPanel<EUI::Label>(row3);
+						loss = ctx->createPanel<EUI::Label>(row3);
 
 						auto* row4 = ctx->createPanel<Panel>(this);
-						row4->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Center, 0});
+						row4->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, 0});
 						row4->setAutoSizeHeight(true);
-						ctx->createPanel<Gui::Label>(row4)->autoText("Packet Recv Rate");
-						recvRate = ctx->createPanel<Gui::Slider>(row4);
+						ctx->createPanel<EUI::Label>(row4)->autoText("Packet Recv Rate");
+						recvRate = ctx->createPanel<EUI::Slider>(row4);
 						recvRate->setWeight(2);
 						recvRate->setLimits(1, 255).setValue(0).bind(
-							[ent](Gui::Slider& s){
+							[ent](EUI::Slider& s){
 								auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 								if (world.isEnabled(ent) && world.hasComponent<Game::ConnectionComponent>(ent)) {
 									auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 									s.setValue(conn.getPacketRecvRate());
 								}
 							},
-							[ent](Gui::Slider& s){
+							[ent](EUI::Slider& s){
 								auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 								auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 
@@ -412,29 +411,29 @@ namespace Game::UI {
 							}
 						);
 
-						graph = ctx->createPanel<Gui::RichGraph>(this);
+						graph = ctx->createPanel<EUI::RichGraph>(this);
 						graph->setHeight(200);
 
 						{
-							auto graphP = std::make_unique<Gui::AreaGraph>();
+							auto graphP = std::make_unique<EUI::AreaGraph>();
 							sentGraphAvg = graphP.get();
 							sentGraphAvg->max.y = 15000;
 							graph->addGraph(std::move(graphP), "Send Avg", true, true);
 						}
 						{
-							auto graphP = std::make_unique<Gui::AreaGraph>();
+							auto graphP = std::make_unique<EUI::AreaGraph>();
 							recvGraphAvg = graphP.get();
 							recvGraphAvg->max.y = 15000;
 							graph->addGraph(std::move(graphP), "Recv Avg", false, false);
 						}
 						{
-							auto graphP = std::make_unique<Gui::BarGraph>();
+							auto graphP = std::make_unique<EUI::BarGraph>();
 							sentGraphDiff = graphP.get();
 							sentGraphDiff->max.y = 500;
 							graph->addGraph(std::move(graphP), "Send Bytes", false, true);
 						}
 						{
-							auto graphP = std::make_unique<Gui::BarGraph>();
+							auto graphP = std::make_unique<EUI::BarGraph>();
 							recvGraphDiff = graphP.get();
 							recvGraphDiff->max.y = 500;
 							graph->addGraph(std::move(graphP), "Recv Bytes", false, false);
@@ -525,7 +524,7 @@ namespace Game::UI {
 
 			};
 
-			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, int> {
+			class Adapter : public EUI::DataAdapter<Adapter, Engine::ECS::Entity, int> {
 				private:
 					Game::World& world;
 					int notTheSame = 0;
@@ -543,7 +542,7 @@ namespace Game::UI {
 						return ++notTheSame;
 					}
 
-					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
+					Panel* createPanel(Id id, EUI::Context& ctx) const {
 						auto* base = ctx.constructPanel<NetGraph>(id, world);
 						updatePanel(id, base);
 						return base;
@@ -556,17 +555,17 @@ namespace Game::UI {
 			};
 			
 		public:
-			NetGraphPane(Gui::Context* context) : CollapsibleSection{context} {
+			NetGraphPane(EUI::Context* context) : CollapsibleSection{context} {
 				setTitle("Network Graph");
 				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+				getContent()->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx->getTheme().sizes.pad1});
 			}
 	};
 
-	class EntityPane : public Gui::CollapsibleSection {
+	class EntityPane : public EUI::CollapsibleSection {
 		private:
-			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
+			class Adapter : public EUI::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
 				private:
 					Game::World& world;
 
@@ -580,8 +579,8 @@ namespace Game::UI {
 					ENGINE_INLINE bool filter(Id id) const noexcept { return world.isAlive(id); }
 					ENGINE_INLINE Checksum check(Id id) const { return *reinterpret_cast<Checksum*>(&id);	}
 
-					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
-						auto* base = ctx.constructPanel<Gui::Label>();
+					Panel* createPanel(Id id, EUI::Context& ctx) const {
+						auto* base = ctx.constructPanel<EUI::Label>();
 						base->autoText(fmt::format("{}", id));
 						return base;
 					}
@@ -589,17 +588,17 @@ namespace Game::UI {
 			};
 
 		public:
-			EntityPane(Gui::Context* context) : CollapsibleSection{context} {
+			EntityPane(EUI::Context* context) : CollapsibleSection{context} {
 				setTitle("Entities");
 				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+				getContent()->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx->getTheme().sizes.pad1});
 			}
 	};
 
-	class CameraPane : public Gui::CollapsibleSection {
+	class CameraPane : public EUI::CollapsibleSection {
 		private:
-			class Adapter : public Gui::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
+			class Adapter : public EUI::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
 				private:
 					Game::World& world;
 
@@ -612,10 +611,10 @@ namespace Game::UI {
 					ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
 					ENGINE_INLINE Checksum check(Id id) const { return *reinterpret_cast<Checksum*>(&id); }
 
-					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
-						auto* base = ctx.constructPanel<Gui::Button>();
+					Panel* createPanel(Id id, EUI::Context& ctx) const {
+						auto* base = ctx.constructPanel<EUI::Button>();
 						base->autoText(fmt::format("{}", id));
-						base->setAction([id](Gui::Button* btn){
+						base->setAction([id](EUI::Button* btn){
 							auto& world = btn->getContext()->getUserdata<EngineInstance>()->getWorld();
 							for (const auto ply2 : world.getFilter<PlayerFlag>()) {
 								if (world.hasComponent<CameraTargetFlag>(ply2)) {
@@ -630,18 +629,18 @@ namespace Game::UI {
 			};
 
 		public:
-			CameraPane(Gui::Context* context) : CollapsibleSection{context} {
+			CameraPane(EUI::Context* context) : CollapsibleSection{context} {
 				setTitle("Camera");
 				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
-				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+				getContent()->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx->getTheme().sizes.pad1});
 			}
 	};
 
 	#if ENGINE_CLIENT
-	class ConnectWindow : public Gui::Window {
+	class ConnectWindow : public EUI::Window {
 		private:
-			class Adapter : public Gui::DataAdapter<Adapter, Engine::Net::IPv4Address, Engine::Net::IPv4Address> {
+			class Adapter : public EUI::DataAdapter<Adapter, Engine::Net::IPv4Address, Engine::Net::IPv4Address> {
 				private:
 					Game::World& world;
 					Engine::Clock::TimePoint last;
@@ -663,21 +662,21 @@ namespace Game::UI {
 						}
 					}
 
-					Panel* createPanel(Id id, Engine::Gui::Context& ctx) const {
+					Panel* createPanel(Id id, EUI::Context& ctx) const {
 						auto& info = world.getSystem<NetworkingSystem>().servers[id];
 
-						auto labels = ctx.constructPanel<Gui::Panel>();
+						auto labels = ctx.constructPanel<EUI::Panel>();
 						labels->setAutoSizeHeight(true);
-						labels->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx.getTheme().sizes.pad1});
-						auto name = ctx.createPanel<Gui::Label>(labels);
+						labels->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, ctx.getTheme().sizes.pad1});
+						auto name = ctx.createPanel<EUI::Label>(labels);
 						name->autoText(info.name);
 						name->setWeight(2);
-						ctx.createPanel<Gui::Label>(labels)->autoText("3/16");
-						ctx.createPanel<Gui::Label>(labels)->autoText("103ms");
+						ctx.createPanel<EUI::Label>(labels)->autoText("3/16");
+						ctx.createPanel<EUI::Label>(labels)->autoText("103ms");
 
-						auto btn = ctx.createPanel<Gui::Button>(labels);
+						auto btn = ctx.createPanel<EUI::Button>(labels);
 						btn->autoText(fmt::format("{}", id));
-						btn->setAction([id](Gui::Button* b){
+						btn->setAction([id](EUI::Button* b){
 							auto engine = b->getContext()->getUserdata<EngineInstance>();
 							connectTo(b->getText(), *engine);
 						});
@@ -686,49 +685,49 @@ namespace Game::UI {
 					}
 			};
 		private:
-			Gui::Panel* content = nullptr;
+			EUI::Panel* content = nullptr;
 
 		public:
-			ConnectWindow(Gui::Context* context) : Window{context} {
+			ConnectWindow(EUI::Context* context) : Window{context} {
 				setTitle("Server List");
 				//setSize({300,64});
 				setWidth(300);
 				setHeight(300);
 				setRelPos({512,64});
 
-				getContent()->setLayout(new Gui::FillLayout{0});
-				content = ctx->createPanel<Gui::ScrollArea>(getContent())->getContent();
-				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+				getContent()->setLayout(new EUI::FillLayout{0});
+				content = ctx->createPanel<EUI::ScrollArea>(getContent())->getContent();
+				content->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx->getTheme().sizes.pad1});
 
 				{
-					auto row = ctx->createPanel<Gui::Panel>(content);
+					auto row = ctx->createPanel<EUI::Panel>(content);
 					row->setAutoSizeHeight(true);
-					row->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1});
+					row->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, ctx->getTheme().sizes.pad1});
 					
-					auto name = ctx->createPanel<Gui::Label>(row);
+					auto name = ctx->createPanel<EUI::Label>(row);
 					name->autoText("Name");
 					name->setWeight(2);
-					ctx->createPanel<Gui::Label>(row)->autoText("Players");
-					ctx->createPanel<Gui::Label>(row)->autoText("Ping");
-					ctx->createPanel<Gui::Label>(row)->autoText("Connect");
+					ctx->createPanel<EUI::Label>(row)->autoText("Players");
+					ctx->createPanel<EUI::Label>(row)->autoText("Ping");
+					ctx->createPanel<EUI::Label>(row)->autoText("Connect");
 				}
 
 				{
-					auto row = ctx->createPanel<Gui::Panel>(content);
+					auto row = ctx->createPanel<EUI::Panel>(content);
 					row->setAutoSizeHeight(true);
 
-					auto text = ctx->createPanel<Gui::TextBox>(row);
+					auto text = ctx->createPanel<EUI::TextBox>(row);
 					text->autoText("localhost:21212");
 
-					auto btn = ctx->createPanel<Gui::Button>(row);
+					auto btn = ctx->createPanel<EUI::Button>(row);
 					btn->autoText("Connect");
 					btn->setFixedWidth(btn->getWidth());
-					btn->setAction([text](Gui::Button* b){
+					btn->setAction([text](EUI::Button* b){
 						auto engine = b->getContext()->getUserdata<EngineInstance>();
 						connectTo(text->getText(), *engine);
 					});
 
-					row->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1});
+					row->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, ctx->getTheme().sizes.pad1});
 				}
 
 				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
@@ -741,20 +740,20 @@ namespace Game::UI {
 namespace Game {
 	UISystem::UISystem(SystemArg arg) : System{arg} {
 		auto& ctx = engine.getUIContext();
-		Gui::Panel* content = nullptr;
+		EUI::Panel* content = nullptr;
 
 		{
-			panels.window = ctx.createPanel<Gui::Window>(ctx.getRoot());
+			panels.window = ctx.createPanel<EUI::Window>(ctx.getRoot());
 			panels.window->setTitle("Debug");
 			panels.window->setRelPos({32, 32});
 			panels.window->setSize({450, 900});
-			panels.window->getContent()->setLayout(new Gui::FillLayout{0});
+			panels.window->getContent()->setLayout(new EUI::FillLayout{0});
 
-			auto area = ctx.createPanel<Gui::ScrollArea>(panels.window->getContent());
+			auto area = ctx.createPanel<EUI::ScrollArea>(panels.window->getContent());
 			content = area->getContent();
-			content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx.getTheme().sizes.pad1});
+			content->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx.getTheme().sizes.pad1});
 
-			auto text = ctx.createPanel<Gui::TextBox>(content);
+			auto text = ctx.createPanel<EUI::TextBox>(content);
 			text->setFont(ctx.getTheme().fonts.header);
 			text->autoText(R"(Example text)");
 			//char8_t str8[] = u8"_a_\u0078\u030A\u0058\u030A_b_!=_===_0xFF_<=_||_++_/=_<<=_<=>_";
@@ -765,7 +764,7 @@ namespace Game {
 
 		{
 			panels.infoPane = ctx.createPanel<UI::InfoPane>(content);
-			panels.infoPane->disconnect->setAction([&](Gui::Button*){
+			panels.infoPane->disconnect->setAction([&](EUI::Button*){
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
 					world.getSystem<NetworkingSystem>().requestDisconnect(addr);
@@ -814,9 +813,9 @@ namespace Game {
 
 		{
 
-			struct Texture1 : Gui::Panel {
+			struct Texture1 : EUI::Panel {
 				Engine::Gfx::TextureRef tex;
-				Texture1(Gui::Context* context, EngineInstance& engine) : Panel{context} {
+				Texture1(EUI::Context* context, EngineInstance& engine) : Panel{context} {
 					setFixedHeight(128);
 					tex = engine.getTextureLoader().get("assets/gui_1.bmp");
 				}
@@ -824,9 +823,9 @@ namespace Game {
 					ctx->drawTexture(tex->tex, {}, getSize());
 				}
 			};
-			struct Texture2 : Gui::Panel {
+			struct Texture2 : EUI::Panel {
 				Engine::Gfx::TextureRef tex;
-				Texture2(Gui::Context* context, EngineInstance& engine) : Panel{context} {
+				Texture2(EUI::Context* context, EngineInstance& engine) : Panel{context} {
 					setFixedHeight(128);
 					tex = engine.getTextureLoader().get("assets/gui_2.bmp");
 				}
@@ -840,7 +839,7 @@ namespace Game {
 		}
 
 		if (false) {
-			auto demo = ctx.createPanel<DemoWindow>(ctx.getRoot());
+			auto demo = ctx.createPanel<EUI::DemoWindow>(ctx.getRoot());
 			demo->setPos({520, 400});
 			demo->setSize({512, 512});
 		}
