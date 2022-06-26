@@ -24,12 +24,11 @@ namespace Game {
 			void tick();
 			void render(RenderLayer layer);
 
-			ENGINE_INLINE auto& getContext() noexcept { return *ctx; }
 			ENGINE_INLINE auto& getWorld() const noexcept { return world; }
 			ENGINE_INLINE auto& getEngine() const noexcept { return engine; }
 
 		private:
-			Engine::Gui::Context* ctx;
+			Engine::Gui::Context& ctx;
 			Engine::Clock::TimePoint lastUpdate;
 			Engine::RingBuffer<std::pair<float32, Engine::Clock::TimePoint>> fpsBuffer;
 			float32 fps = 0;

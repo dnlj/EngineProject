@@ -622,7 +622,7 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	auto worldStorage = std::make_unique<Game::World>(engine);
 	Game::World& world = *worldStorage.get();
-	auto& guiContext = world.getSystem<Game::UISystem>().getContext();
+	auto& guiContext = engine.getUIContext();
 	guiContext.setNativeWindowHandle(window.getWin32WindowHandle());
 	TempWorldEngineWrapper wrapper{engine, world, guiContext};
 	windowCallbacks.userdata = &wrapper;

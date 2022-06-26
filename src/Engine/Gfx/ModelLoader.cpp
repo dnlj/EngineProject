@@ -54,9 +54,6 @@ namespace Engine::Gfx {
 			skinned = skinned || mesh->mNumBones;
 		}
 
-		// TODO: separate rendering paths for skinned/static meshes?
-		ENGINE_WARN("TODO: hasBones ", skinned, " ", scene->mNumAnimations);
-
 		// TODO: glMapBuffer w/o temporary buffer instead? would be good to test how that effects load times.
 		verts.resize(numVerts);
 		indices.resize(numFaces * 3);

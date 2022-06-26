@@ -771,27 +771,23 @@ namespace Game {
 namespace Game {
 	UISystem::UISystem(SystemArg arg)
 		: System{arg}
-		, ctx{new Engine::Gui::Context{
-			std::get<EngineInstance&>(arg).getShaderLoader(),
-			std::get<EngineInstance&>(arg).getTextureLoader(),
-			std::get<EngineInstance&>(arg).getCamera(),
-		}} {
-		ctx->setUserdata(this);
+		, ctx{engine.getUIContext()} {
+		ctx.setUserdata(this); // TODO: probably set this to the engine instance in EngineInstace instead
 		Gui::Panel* content = nullptr;
 
 		{
-			panels.window = ctx->createPanel<Gui::Window>(ctx->getRoot());
+			panels.window = ctx.createPanel<Gui::Window>(ctx.getRoot());
 			panels.window->setTitle("Debug");
 			panels.window->setRelPos({32, 32});
 			panels.window->setSize({450, 900});
 			panels.window->getContent()->setLayout(new Gui::FillLayout{0});
 
-			auto area = ctx->createPanel<Gui::ScrollArea>(panels.window->getContent());
+			auto area = ctx.createPanel<Gui::ScrollArea>(panels.window->getContent());
 			content = area->getContent();
-			content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
+			content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx.getTheme().sizes.pad1});
 
-			auto text = ctx->createPanel<Gui::TextBox>(content);
-			text->setFont(ctx->getTheme().fonts.header);
+			auto text = ctx.createPanel<Gui::TextBox>(content);
+			text->setFont(ctx.getTheme().fonts.header);
 			text->autoText(R"(Example text)");
 			//char8_t str8[] = u8"_a_\u0078\u030A\u0058\u030A_b_!=_===_0xFF_<=_||_++_/=_<<=_<=>_";
 			//std::string str = reinterpret_cast<char*>(str8);
@@ -800,7 +796,7 @@ namespace Game {
 		}
 
 		{
-			panels.infoPane = ctx->createPanel<InfoPane>(content);
+			panels.infoPane = ctx.createPanel<InfoPane>(content);
 			panels.infoPane->disconnect->setAction([&](Gui::Button*){
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
@@ -810,35 +806,35 @@ namespace Game {
 		}
 
 		{
-			panels.coordPane = ctx->createPanel<CoordPane>(content);
+			panels.coordPane = ctx.createPanel<CoordPane>(content);
 			panels.coordPane->setHeight(300);
 		}
 
 		if constexpr (ENGINE_SERVER) {
-			panels.cameraPane = ctx->createPanel<CameraPane>(content);
+			panels.cameraPane = ctx.createPanel<CameraPane>(content);
 		}
 
 		{
-			panels.netCondPane = ctx->createPanel<NetCondPane>(content);
+			panels.netCondPane = ctx.createPanel<NetCondPane>(content);
 			panels.netCondPane->autoHeight();
 		}
 
 		{
-			panels.netHealthPane = ctx->createPanel<NetHealthPane>(content);
+			panels.netHealthPane = ctx.createPanel<NetHealthPane>(content);
 		}
 
 		{
-			panels.netGraphPane = ctx->createPanel<NetGraphPane>(content);
+			panels.netGraphPane = ctx.createPanel<NetGraphPane>(content);
 		}
 
 		{
-			panels.entityPane = ctx->createPanel<EntityPane>(content);
+			panels.entityPane = ctx.createPanel<EntityPane>(content);
 			panels.entityPane->toggle();
 		}
 
 		#if ENGINE_CLIENT
 		{
-			panels.connectWindow = ctx->createPanel<ConnectWindow>(ctx->getRoot());
+			panels.connectWindow = ctx.createPanel<ConnectWindow>(ctx.getRoot());
 		}
 		#endif
 
@@ -871,19 +867,18 @@ namespace Game {
 				}
 			};
 
-			ctx->createPanel<Texture1>(content, engine);
-			ctx->createPanel<Texture2>(content, engine);
+			ctx.createPanel<Texture1>(content, engine);
+			ctx.createPanel<Texture2>(content, engine);
 		}
 
 		if (false) {
-			auto demo = ctx->createPanel<DemoWindow>(ctx->getRoot());
+			auto demo = ctx.createPanel<DemoWindow>(ctx.getRoot());
 			demo->setPos({520, 400});
 			demo->setSize({512, 512});
 		}
 	}
 
 	UISystem::~UISystem() {
-		delete ctx;
 	}
 
 	void UISystem::setup() {
@@ -919,7 +914,7 @@ namespace Game {
 
 	void UISystem::render(RenderLayer layer) {
 		if (layer == RenderLayer::UserInterface) {
-			ctx->render();
+			ctx.render();
 		}
 	}
 

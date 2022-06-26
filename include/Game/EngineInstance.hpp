@@ -9,6 +9,10 @@ namespace Engine {
 		class BindManager;
 	}
 
+	namespace Gui {
+		class Context;
+	}
+
 	namespace Gfx {
 		class VertexLayoutManager;
 		class VertexLayoutLoader;
@@ -58,6 +62,7 @@ namespace Game {
 			Engine::Gfx::MaterialInstanceManager& getMaterialInstanceManager();
 
 			Engine::Gfx::Context& getGraphicsContext();
+			Engine::Gui::Context& getUIContext();
 
 			Engine::Camera& getCamera();
 
