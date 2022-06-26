@@ -84,8 +84,18 @@ namespace Game {
 	};
 	
 	EngineInstance::EngineInstance() : pimpl{std::make_unique<EngineInstancePimpl>()} {
-		// Specifically not initialized in the initialization list because it requires `*this` as a constructor argument.
-		world = std::make_unique<World>(*this);
+		// Must be set before constructing our Game::World.
+		getUIContext().setUserdata(this);
+
+		// Workaround for the fact that some systems call engine.getWorld in their constructor.
+		// Because of this we need its address before it is constructed.
+		// Not ideal but it works for the time being.
+		// Even after fixing the above: Specifically not initialized in the initialization list because it requires `*this` as a constructor argument.
+		{
+			void* storage = operator new (sizeof(World), std::align_val_t{alignof(World)});
+			world = std::unique_ptr<World>(reinterpret_cast<World*>(storage));
+			new (storage) World(*this);
+		}
 	}
 
 	EngineInstance::~EngineInstance() {}

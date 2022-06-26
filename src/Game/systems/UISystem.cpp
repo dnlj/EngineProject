@@ -47,7 +47,9 @@ namespace {
 	using namespace Engine::Gui;
 	const double avgDeltaTime = 1/64.0;
 
-	bool connectTo(const std::string& uri, Game::EngineInstance& engine, Game::World& world) {
+	bool connectTo(const std::string& uri, Game::EngineInstance& engine) {
+		Game::World& world = engine.getWorld();
+
 		// TODO: use Engine::Net::hostToAddress
 		addrinfo* results = nullptr;
 		addrinfo hints = {
@@ -171,8 +173,8 @@ namespace Game {
 
 				ctx->addPanelUpdateFunc(this, [](Panel* panel){
 					auto pane = reinterpret_cast<CoordPane*>(panel);
-					auto& world = panel->getContext()->getUserdata<Game::UISystem>()->getWorld();
-					auto& engine = panel->getContext()->getUserdata<Game::UISystem>()->getEngine();
+					auto& engine = *panel->getContext()->getUserdata<EngineInstance>();
+					auto& world = engine.getWorld();
 
 					const auto& activePlayerFilter = world.getFilter<PlayerFlag>();
 					if (activePlayerFilter.empty()) { return; }
@@ -223,48 +225,48 @@ namespace Game {
 				#else
 					addSlider("Half Ping Add").setLimits(0, 500).setValue(0).bind(
 						[](Gui::Slider& s){
-							auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							s.setValue(static_cast<float64>(std::chrono::duration_cast<std::chrono::milliseconds>(settings.halfPingAdd).count()));
 						},
 						[](Gui::Slider& s){
-							auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							settings.halfPingAdd = std::chrono::milliseconds{static_cast<int64>(s.getValue())};
 						}
 					);
 					addSlider("Jitter").setLimits(0, 1).setValue(0).bind(
 						[](Gui::Slider& s){
-							auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							s.setValue(settings.jitter);
 						},
 						[](Gui::Slider& s){
-							auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							settings.jitter = static_cast<float32>(s.getValue());
 						}
 					);
 					addSlider("Duplicate Chance").setLimits(0, 1).setValue(0).bind(
 						[](Gui::Slider& s){
-							auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							s.setValue(settings.duplicate);
 						},
 						[](Gui::Slider& s){
-							auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							settings.duplicate = static_cast<float32>(s.getValue());
 						}
 					);
 					addSlider("Loss").setLimits(0, 1).setValue(0).bind(
 						[](Gui::Slider& s){
-							auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							s.setValue(settings.loss);
 						},
 						[](Gui::Slider& s){
-							auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+							auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 							auto& settings = world.getSystem<NetworkingSystem>().getSocket().getSimSettings();
 							settings.loss = static_cast<float32>(s.getValue());
 						}
@@ -348,7 +350,7 @@ namespace Game {
 		public:
 			NetHealthPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Network Health");
-				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 			}
@@ -419,14 +421,14 @@ namespace Game {
 						recvRate->setWeight(2);
 						recvRate->setLimits(1, 255).setValue(0).bind(
 							[ent](Gui::Slider& s){
-								auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+								auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 								if (world.isEnabled(ent) && world.hasComponent<Game::ConnectionComponent>(ent)) {
 									auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 									s.setValue(conn.getPacketRecvRate());
 								}
 							},
 							[ent](Gui::Slider& s){
-								auto& world = s.getContext()->getUserdata<Game::UISystem>()->getWorld();
+								auto& world = s.getContext()->getUserdata<EngineInstance>()->getWorld();
 								auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 
 								if (conn.getState() == ConnectionState::Connected) {
@@ -588,7 +590,7 @@ namespace Game {
 		public:
 			NetGraphPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Network Graph");
-				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 			}
@@ -621,7 +623,7 @@ namespace Game {
 		public:
 			EntityPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Entities");
-				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 			}
@@ -646,7 +648,7 @@ namespace Game {
 						auto* base = ctx.constructPanel<Gui::Button>();
 						base->autoText(fmt::format("{}", id));
 						base->setAction([id](Gui::Button* btn){
-							auto& world = btn->getContext()->getUserdata<Game::UISystem>()->getWorld();
+							auto& world = btn->getContext()->getUserdata<EngineInstance>()->getWorld();
 							for (const auto ply2 : world.getFilter<PlayerFlag>()) {
 								if (world.hasComponent<CameraTargetFlag>(ply2)) {
 									world.removeComponent<CameraTargetFlag>(ply2);
@@ -662,7 +664,7 @@ namespace Game {
 		public:
 			CameraPane(Gui::Context* context) : CollapsibleSection{context} {
 				setTitle("Camera");
-				auto& world = ctx->getUserdata<Game::UISystem>()->getWorld();
+				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Stretch, ctx->getTheme().sizes.pad1});
 			}
@@ -708,8 +710,8 @@ namespace Game {
 						auto btn = ctx.createPanel<Gui::Button>(labels);
 						btn->autoText(fmt::format("{}", id));
 						btn->setAction([id](Gui::Button* b){
-							auto ui = b->getContext()->getUserdata<UISystem>();
-							connectTo(b->getText(), ui->getEngine(), ui->getWorld());
+							auto engine = b->getContext()->getUserdata<EngineInstance>();
+							connectTo(b->getText(), *engine);
 						});
 
 						return labels;
@@ -754,14 +756,14 @@ namespace Game {
 					btn->autoText("Connect");
 					btn->setFixedWidth(btn->getWidth());
 					btn->setAction([text](Gui::Button* b){
-						auto ui = b->getContext()->getUserdata<UISystem>();
-						connectTo(text->getText(), ui->getEngine(), ui->getWorld());
+						auto engine = b->getContext()->getUserdata<EngineInstance>();
+						connectTo(text->getText(), *engine);
 					});
 
 					row->setLayout(new Gui::DirectionalLayout{Gui::Direction::Horizontal, Gui::Align::Stretch, Gui::Align::Start, ctx->getTheme().sizes.pad1});
 				}
 
-				auto& world = ctx->getUserdata<UISystem>()->getWorld();
+				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(content, Adapter{world});
 			}
 	};
@@ -769,10 +771,8 @@ namespace Game {
 }
 
 namespace Game {
-	UISystem::UISystem(SystemArg arg)
-		: System{arg}
-		, ctx{engine.getUIContext()} {
-		ctx.setUserdata(this); // TODO: probably set this to the engine instance in EngineInstace instead
+	UISystem::UISystem(SystemArg arg) : System{arg} {
+		auto& ctx = engine.getUIContext();
 		Gui::Panel* content = nullptr;
 
 		{
@@ -914,7 +914,7 @@ namespace Game {
 
 	void UISystem::render(RenderLayer layer) {
 		if (layer == RenderLayer::UserInterface) {
-			ctx.render();
+			engine.getUIContext().render();
 		}
 	}
 

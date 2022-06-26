@@ -43,6 +43,7 @@ namespace Game {
 
 		public:
 			EngineInstance();
+			EngineInstance(const EngineInstance&) = delete;
 			~EngineInstance();
 
 			Engine::Input::BindManager& getBindManager() noexcept;
