@@ -451,15 +451,8 @@ namespace {
 }
 
 namespace {
-	// TODO: once input is finished this should go away;
-	struct TempWorldEngineWrapper {
-		Game::EngineInstance& engine;
-		Game::World& world;
-		Engine::Gui::Context& guiContext;
-	};
-
 	// TODO: move into file
-	class WindowCallbacks final : public Engine::WindowCallbacks<TempWorldEngineWrapper> {
+	class WindowCallbacks final : public Engine::WindowCallbacks<Game::EngineInstance> {
 		wchar_t buffer16[2] = {};
 		char buffer8[4] = {};
 		static_assert(sizeof(buffer16) == 4 && sizeof(buffer8) == 4);
@@ -474,20 +467,20 @@ namespace {
 		}
 		
 		void settingsChanged() override {
-			userdata->guiContext.configUserSettings();
+			userdata->getUIContext().configUserSettings();
 		}
 
 		void resizeCallback(int32 w, int32 h) override {
 			ENGINE_LOG("Resize: ", w, " ", h);
 			glViewport(0, 0, w, h);
-			userdata->engine.getCamera().setAsOrtho(w, h, Game::pixelRescaleFactor);
-			userdata->guiContext.onResize(w, h);
+			userdata->getCamera().setAsOrtho(w, h, Game::pixelRescaleFactor);
+			userdata->getUIContext().onResize(w, h);
 		}
 
 		void keyCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
-			if (userdata->guiContext.onKey(event)) { return; }
-			userdata->engine.getBindManager().processInput(event);
+			if (userdata->getUIContext().onKey(event)) { return; }
+			userdata->getBindManager().processInput(event);
 		}
 
 		void charCallback(wchar_t ch) {
@@ -508,33 +501,33 @@ namespace {
 				view = std::string_view{buffer8, convertBuffers(1)};
 			}
 
-			if (userdata->guiContext.onText(view)) { return; }
+			if (userdata->getUIContext().onText(view)) { return; }
 		}
 
 		void mouseButtonCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
-			if (userdata->guiContext.onMouse(event)) { return; }
-			userdata->engine.getBindManager().processInput(event);
+			if (userdata->getUIContext().onMouse(event)) { return; }
+			userdata->getBindManager().processInput(event);
 		}
 
 		void mouseWheelCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
-			if (userdata->guiContext.onMouseWheel(event)) { return; }
-			userdata->engine.getBindManager().processInput(event);
+			if (userdata->getUIContext().onMouseWheel(event)) { return; }
+			userdata->getBindManager().processInput(event);
 		}
 
 		void mouseMoveCallback(Engine::Input::InputEvent event) override {
 			event.state.id.device = 0;
-			if (userdata->guiContext.onMouseMove(event)) { return; }
-			userdata->engine.getBindManager().processInput(event);
+			if (userdata->getUIContext().onMouseMove(event)) { return; }
+			userdata->getBindManager().processInput(event);
 		}
 
 		void mouseLeaveCallback() override {
-			userdata->guiContext.onFocus(false);
+			userdata->getUIContext().onFocus(false);
 		}
 
 		void mouseEnterCallback() override {
-			userdata->guiContext.onFocus(true);
+			userdata->getUIContext().onFocus(true);
 		}
 	};
 }
@@ -623,8 +616,7 @@ void run(int argc, char* argv[]) {
 	Game::World& world = engine.getWorld();
 	auto& guiContext = engine.getUIContext();
 	guiContext.setNativeWindowHandle(window.getWin32WindowHandle());
-	TempWorldEngineWrapper wrapper{engine, world, guiContext};
-	windowCallbacks.userdata = &wrapper;
+	windowCallbacks.userdata = &engine;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
