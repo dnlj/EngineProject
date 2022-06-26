@@ -20,7 +20,6 @@
 #include <Engine/Glue/glm.hpp>
 #include <Engine/Gui/Context.hpp>
 #include <Engine/Gui/Window.hpp>
-#include <Engine/Gui/CollapsibleSection.hpp>
 #include <Engine/Gui/TextBox.hpp>
 #include <Engine/Gui/Slider.hpp>
 #include <Engine/Gui/DataAdapter.hpp>
@@ -40,6 +39,7 @@
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/ConnectionComponent.hpp>
 #include <Game/comps/NetworkStatsComponent.hpp>
+#include <Game/UI/AutoList.hpp>
 
 
 namespace {
@@ -86,40 +86,8 @@ namespace {
 	}
 }
 
-namespace Game {
-	class AutoListPane : public Gui::CollapsibleSection {
-		private:
-			std::vector<Gui::Label*> labels;
-			std::vector<std::string> formats;
-			std::string buffer;
-
-		public:
-			AutoListPane(Gui::Context* context) : CollapsibleSection{context} {
-				auto* content = getContent();
-				content->setLayout(new Gui::DirectionalLayout{Gui::Direction::Vertical, Gui::Align::Start, Gui::Align::Start, ctx->getTheme().sizes.pad1});
-
-				setAutoSizeHeight(true);
-				content->setAutoSizeHeight(true);
-			}
-
-			int32 addLabel(const std::string& format) {
-				auto* panel = ctx->createPanel<Gui::Label>(getContent());
-				auto& label = labels.emplace_back(panel);
-				formats.push_back(format);
-				label->autoText(format);
-				return static_cast<int32>(labels.size()) - 1;
-			}
-
-			template<class... Ts>
-			void setLabel(int32 id, const Ts&... values) {
-				auto panel = labels[id];
-				fmt::format_to(std::back_inserter(buffer), formats[id], values...);
-				panel->autoText(buffer);
-				buffer.clear();
-			}
-	};
-	
-	class InfoPane : public AutoListPane {
+namespace Game::UI {
+	class InfoPane : public AutoList {
 		public:
 			enum {
 				FPS,
@@ -129,7 +97,7 @@ namespace Game {
 
 			Gui::Button* disconnect;
 
-			InfoPane(Gui::Context* context) : AutoListPane{context} {
+			InfoPane(Gui::Context* context) : AutoList{context} {
 				setTitle("Info");
 				addLabel("FPS: {:.3f} ({:.6f})");
 				addLabel("Tick: {}");
@@ -142,7 +110,7 @@ namespace Game {
 			}
 	};
 
-	class CoordPane : public AutoListPane {
+	class CoordPane : public AutoList {
 		public:
 			enum {
 				MouseOffset,
@@ -157,7 +125,7 @@ namespace Game {
 				MapOffsetChunk,
 			};
 
-			CoordPane(Gui::Context* context) : AutoListPane{context} {
+			CoordPane(Gui::Context* context) : AutoList{context} {
 				setTitle("Coordinates");
 
 				addLabel("Mouse (offset): {:.3f}");
@@ -796,7 +764,7 @@ namespace Game {
 		}
 
 		{
-			panels.infoPane = ctx.createPanel<InfoPane>(content);
+			panels.infoPane = ctx.createPanel<UI::InfoPane>(content);
 			panels.infoPane->disconnect->setAction([&](Gui::Button*){
 				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
 					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
@@ -806,35 +774,35 @@ namespace Game {
 		}
 
 		{
-			panels.coordPane = ctx.createPanel<CoordPane>(content);
+			panels.coordPane = ctx.createPanel<UI::CoordPane>(content);
 			panels.coordPane->setHeight(300);
 		}
 
 		if constexpr (ENGINE_SERVER) {
-			panels.cameraPane = ctx.createPanel<CameraPane>(content);
+			panels.cameraPane = ctx.createPanel<UI::CameraPane>(content);
 		}
 
 		{
-			panels.netCondPane = ctx.createPanel<NetCondPane>(content);
+			panels.netCondPane = ctx.createPanel<UI::NetCondPane>(content);
 			panels.netCondPane->autoHeight();
 		}
 
 		{
-			panels.netHealthPane = ctx.createPanel<NetHealthPane>(content);
+			panels.netHealthPane = ctx.createPanel<UI::NetHealthPane>(content);
 		}
 
 		{
-			panels.netGraphPane = ctx.createPanel<NetGraphPane>(content);
+			panels.netGraphPane = ctx.createPanel<UI::NetGraphPane>(content);
 		}
 
 		{
-			panels.entityPane = ctx.createPanel<EntityPane>(content);
+			panels.entityPane = ctx.createPanel<UI::EntityPane>(content);
 			panels.entityPane->toggle();
 		}
 
 		#if ENGINE_CLIENT
 		{
-			panels.connectWindow = ctx.createPanel<ConnectWindow>(ctx.getRoot());
+			panels.connectWindow = ctx.createPanel<UI::ConnectWindow>(ctx.getRoot());
 		}
 		#endif
 
@@ -904,11 +872,11 @@ namespace Game {
 		// TODO: use update function
 		if (panels.infoPane->getContent()->isEnabled()) {
 			if (update) {
-				panels.infoPane->setLabel(InfoPane::FPS, fps, 1.0f/fps);
+				panels.infoPane->setLabel(UI::InfoPane::FPS, fps, 1.0f/fps);
 			}
 
-			panels.infoPane->setLabel(InfoPane::Tick, world.getTick());
-			panels.infoPane->setLabel(InfoPane::TickScale, world.tickScale);
+			panels.infoPane->setLabel(UI::InfoPane::Tick, world.getTick());
+			panels.infoPane->setLabel(UI::InfoPane::TickScale, world.tickScale);
 		}
 	}
 

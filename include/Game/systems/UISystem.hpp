@@ -12,6 +12,18 @@ namespace Engine::Gui {
 	class RichGraph;
 }
 
+namespace Game::UI {
+	class InfoPane;
+	class CoordPane;
+	class CameraPane;
+	class NetCondPane;
+	class NetHealthPane;
+	class NetGraphPane;
+	class EntityPane;
+	class MapPreview;
+	class ConnectWindow;
+}
+
 namespace Game {
 	class UISystem : public System {
 		public:
@@ -31,18 +43,18 @@ namespace Game {
 
 			struct {
 				Engine::Gui::Window* window;
-				class InfoPane* infoPane;
-				class CoordPane* coordPane;
-				class CameraPane* cameraPane;
-				class NetCondPane* netCondPane;
-				class NetHealthPane* netHealthPane;
-				class NetGraphPane* netGraphPane;
-				class EntityPane* entityPane;
+				UI::InfoPane* infoPane;
+				UI::CoordPane* coordPane;
+				UI::CameraPane* cameraPane;
+				UI::NetCondPane* netCondPane;
+				UI::NetHealthPane* netHealthPane;
+				UI::NetGraphPane* netGraphPane;
+				UI::EntityPane* entityPane;
 
-				class MapPreview* mapPreviewWin;
+				UI::MapPreview* mapPreviewWin;
 
 				#if ENGINE_CLIENT
-				class ConnectWindow* connectWindow;
+				UI::ConnectWindow* connectWindow;
 				#endif
 			} panels;
 	};
