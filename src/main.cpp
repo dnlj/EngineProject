@@ -620,8 +620,7 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// World
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	auto worldStorage = std::make_unique<Game::World>(engine);
-	Game::World& world = *worldStorage.get();
+	Game::World& world = engine.getWorld();
 	auto& guiContext = engine.getUIContext();
 	guiContext.setNativeWindowHandle(window.getWin32WindowHandle());
 	TempWorldEngineWrapper wrapper{engine, world, guiContext};

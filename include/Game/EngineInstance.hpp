@@ -39,6 +39,7 @@ namespace Game {
 	class EngineInstance {
 		private:
 			std::unique_ptr<class EngineInstancePimpl> pimpl;
+			std::unique_ptr<class World> world;
 
 		public:
 			EngineInstance();
@@ -65,6 +66,7 @@ namespace Game {
 			Engine::Gui::Context& getUIContext();
 
 			Engine::Camera& getCamera();
+			World& getWorld();
 
 			// TODO: what was the point of making lookup constexpr if this call isnt also constexpr...
 			uint32 getTextureId(std::string_view tex) const;

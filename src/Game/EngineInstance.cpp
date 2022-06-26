@@ -14,6 +14,9 @@
 #include <Engine/Input/BindManager.hpp>
 #include <Engine/Gui/Context.hpp>
 
+// Game
+#include <Game/World.hpp>
+
 
 namespace {
 	using namespace Engine::Types;
@@ -80,7 +83,10 @@ namespace Game {
 			Engine::Gui::Context uiContext = {shaderLoader, textureLoader, camera};
 	};
 	
-	EngineInstance::EngineInstance() : pimpl{std::make_unique<EngineInstancePimpl>()} {}
+	EngineInstance::EngineInstance() : pimpl{std::make_unique<EngineInstancePimpl>()} {
+		world = std::make_unique<World>(*this);
+	}
+
 	EngineInstance::~EngineInstance() {}
 
 	Engine::Input::BindManager& EngineInstance::getBindManager() { return pimpl->bindManager; }
@@ -104,6 +110,7 @@ namespace Game {
 	Engine::Gui::Context& EngineInstance::getUIContext() { return pimpl->uiContext; }
 
 	Engine::Camera& EngineInstance::getCamera() { return pimpl->camera; }
+	World& EngineInstance::getWorld() { return *world; }
 
 
 	// TODO: probably replace with a getTextureMap() that returns a ref to lookup instead of wrapping every get call
