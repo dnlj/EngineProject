@@ -1,39 +1,11 @@
-#if ENGINE_OS_WINDOWS
-	#include <WinSock2.h>
-	#include <Ws2tcpip.h>
-#else
-	#error Not yet implemented for this operating system.
-#endif
-
-
-// STD
-#include <regex>
-#include <algorithm>
-#include <cstdio>
-
-// FMT
-#include <fmt/core.h>
-#include <fmt/ostream.h>
-
 // Engine
-#include <Engine/Glue/Box2D.hpp>
-#include <Engine/Glue/glm.hpp>
-#include <Engine/Gui/Context.hpp>
-#include <Engine/Gui/Window.hpp>
-#include <Engine/Gui/TextBox.hpp>
-#include <Engine/Gui/Slider.hpp>
-#include <Engine/Gui/DataAdapter.hpp>
-#include <Engine/Gui/Graph.hpp>
-#include <Engine/Gui/ScrollArea.hpp>
-#include <Engine/Gui/ImageDisplay.hpp>
-#include <Engine/Gui/DemoWindow.hpp>
 #include <Engine/Gfx/TextureLoader.hpp>
+#include <Engine/Gui/DemoWindow.hpp>
+#include <Engine/Gui/FillLayout.hpp>
+#include <Engine/Gui/ScrollArea.hpp>
+#include <Engine/Gui/TextBox.hpp>
 
 // Game
-#include <Game/comps/ActionComponent.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
-#include <Game/comps/NetworkStatsComponent.hpp>
-#include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/UISystem.hpp>
 #include <Game/UI/AutoList.hpp>
 #include <Game/UI/CameraPane.hpp>
@@ -44,7 +16,6 @@
 #include <Game/UI/NetCondPane.hpp>
 #include <Game/UI/NetGraphPane.hpp>
 #include <Game/UI/NetHealthPane.hpp>
-#include <Game/World.hpp>
 
 
 namespace {
@@ -153,21 +124,9 @@ namespace Game {
 		}
 	}
 
-	UISystem::~UISystem() {
-	}
-
-	void UISystem::setup() {
-	}
-
-	void UISystem::update(float32 dt) {
-	}
-
 	void UISystem::render(RenderLayer layer) {
 		if (layer == RenderLayer::UserInterface) {
 			engine.getUIContext().render();
 		}
-	}
-
-	void UISystem::tick() {
 	}
 }

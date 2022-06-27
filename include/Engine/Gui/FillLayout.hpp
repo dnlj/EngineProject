@@ -2,6 +2,8 @@
 
 // Engine
 #include <Engine/Gui/common.hpp>
+#include <Engine/Gui/Layout.hpp>
+#include <Engine/Gui/Panel.hpp>
 
 
 namespace Engine::Gui {

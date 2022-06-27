@@ -1,8 +1,5 @@
 #pragma once
 
-// Engine
-#include <Engine/RingBuffer.hpp>
-
 // Game
 #include <Game/System.hpp>
 
@@ -29,18 +26,10 @@ namespace Game {
 		public:
 			UISystem(SystemArg arg);
 			UISystem(const UISystem&) = delete;
-			~UISystem();
 
-			void setup();
-			void update(float32 dt);
-			void tick();
 			void render(RenderLayer layer);
 
 		private:
-			Engine::Clock::TimePoint lastUpdate;
-			Engine::RingBuffer<std::pair<float32, Engine::Clock::TimePoint>> fpsBuffer;
-			float32 fps = 0;
-
 			struct {
 				Engine::Gui::Window* window;
 				UI::InfoPane* infoPane;

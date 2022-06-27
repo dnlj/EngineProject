@@ -5,14 +5,14 @@
 #include <Engine/Camera.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/Context.hpp>
-#include <Engine/Gfx/MaterialManager.hpp>
 #include <Engine/Gfx/MaterialInstanceManager.hpp>
+#include <Engine/Gfx/MaterialManager.hpp>
 #include <Engine/Gfx/MeshManager.hpp>
 #include <Engine/Gfx/ShaderLoader.hpp>
 #include <Engine/Gfx/TextureLoader.hpp>
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
-#include <Engine/Input/BindManager.hpp>
 #include <Engine/Gui/Context.hpp>
+#include <Engine/Input/BindManager.hpp>
 
 // Game
 #include <Game/World.hpp>
