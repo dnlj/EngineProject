@@ -1,5 +1,8 @@
 #pragma once
 
+// Engine
+#include <Engine/Gui/Panel.hpp>
+
 
 namespace Engine::Gui {
 	/**
