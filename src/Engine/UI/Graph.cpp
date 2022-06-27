@@ -1,12 +1,12 @@
 
 // Engine
-#include <Engine/Gui/Graph.hpp>
-#include <Engine/Gui/DirectionalLayout.hpp>
-#include <Engine/Gui/GridLayout.hpp>
+#include <Engine/UI/Graph.hpp>
+#include <Engine/UI/DirectionalLayout.hpp>
+#include <Engine/UI/GridLayout.hpp>
 #include <Engine/Math/Math.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	void BarGraph::draw(const Panel* panel) const {
 		if (data.empty()) { return; }
 		auto ctx = panel->getContext();
@@ -201,7 +201,7 @@ namespace Engine::Gui {
 	}
 }
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	void GraphArea::GraphAreaImpl::render() {
 		const auto& theme = ctx->getTheme();
 		ctx->setClip({getPos(), getPos() + getSize()});
@@ -212,7 +212,7 @@ namespace Engine::Gui {
 	}
 }
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	RichGraph::RichGraph(Context* context)
 		: Panel{context}
 		, area{context->createPanel<GraphArea>(this)} {

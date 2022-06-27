@@ -1,8 +1,8 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/Label.hpp>
-#include <Engine/Gui/Bindable.hpp>
+#include <Engine/UI/Label.hpp>
+#include <Engine/UI/Bindable.hpp>
 #include <Engine/Unicode/UTF8.hpp>
 
 

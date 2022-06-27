@@ -1,9 +1,9 @@
 // Engine
-#include <Engine/Gui/DrawBuilder.hpp>
+#include <Engine/UI/DrawBuilder.hpp>
 #include <Engine/Gfx/ShaderLoader.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	DrawBuilder::DrawBuilder(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader) {
 		polyShader = shaderLoader.get("shaders/gui_poly");
 		glyphShader = shaderLoader.get("shaders/gui_glyph");

@@ -1,7 +1,7 @@
 // Engine
-#include <Engine/Gui/DataAdapter.hpp>
-#include <Engine/Gui/Graph.hpp>
-#include <Engine/Gui/Slider.hpp>
+#include <Engine/UI/DataAdapter.hpp>
+#include <Engine/UI/Graph.hpp>
+#include <Engine/UI/Slider.hpp>
 
 // Game
 #include <Game/comps/ActionComponent.hpp>

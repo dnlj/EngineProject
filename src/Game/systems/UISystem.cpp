@@ -1,9 +1,9 @@
 // Engine
 #include <Engine/Gfx/TextureLoader.hpp>
-#include <Engine/Gui/DemoWindow.hpp>
-#include <Engine/Gui/FillLayout.hpp>
-#include <Engine/Gui/ScrollArea.hpp>
-#include <Engine/Gui/TextBox.hpp>
+#include <Engine/UI/DemoWindow.hpp>
+#include <Engine/UI/FillLayout.hpp>
+#include <Engine/UI/ScrollArea.hpp>
+#include <Engine/UI/TextBox.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -19,7 +19,7 @@
 
 
 namespace {
-	namespace EUI = Engine::Gui;
+	namespace EUI = Engine::UI;
 }
 
 namespace Game {

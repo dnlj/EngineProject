@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/FontManager.hpp>
+#include <Engine/UI/FontManager.hpp>
 
 
 namespace Engine::UI {

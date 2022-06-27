@@ -2,9 +2,9 @@
 
 // Engine
 #include <Engine/ArrayView.hpp>
-#include <Engine/Gui/Bounds.hpp>
-#include <Engine/Gui/FontManager.hpp>
-#include <Engine/Gui/ShapedString.hpp>
+#include <Engine/UI/Bounds.hpp>
+#include <Engine/UI/FontManager.hpp>
+#include <Engine/UI/ShapedString.hpp>
 #include <Engine/Gfx/resources.hpp>
 
 

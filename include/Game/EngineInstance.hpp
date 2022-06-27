@@ -9,7 +9,7 @@ namespace Engine {
 		class BindManager;
 	}
 
-	namespace Gui {
+	namespace UI {
 		class Context;
 	}
 

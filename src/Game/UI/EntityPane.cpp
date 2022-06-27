@@ -3,7 +3,7 @@
 #include <fmt/ostream.h>
 
 // Engine
-#include <Engine/Gui/DataAdapter.hpp>
+#include <Engine/UI/DataAdapter.hpp>
 
 // Game
 #include <Game/UI/EntityPane.hpp>

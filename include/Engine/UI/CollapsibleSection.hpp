@@ -1,10 +1,10 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/Panel.hpp>
-#include <Engine/Gui/Context.hpp>
-#include <Engine/Gui/DirectionalLayout.hpp>
-#include <Engine/Gui/Button.hpp>
+#include <Engine/UI/Panel.hpp>
+#include <Engine/UI/Context.hpp>
+#include <Engine/UI/DirectionalLayout.hpp>
+#include <Engine/UI/Button.hpp>
 
 
 namespace Engine::UI {

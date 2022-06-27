@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/CollapsibleSection.hpp>
+#include <Engine/UI/CollapsibleSection.hpp>
 
 // Game
 #include <Game/UI/ui.hpp>

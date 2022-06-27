@@ -1,9 +1,9 @@
 // Engine
-#include <Engine/Gui/GridLayout.hpp>
+#include <Engine/UI/GridLayout.hpp>
 #include <Engine/ArrayView.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	void GridLayout::layout(Panel* panel) {
 		// Figure out grid dimensions
 		{

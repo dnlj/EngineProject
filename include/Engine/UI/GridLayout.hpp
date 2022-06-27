@@ -2,9 +2,9 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Gui/common.hpp>
-#include <Engine/Gui/Panel.hpp>
-#include <Engine/Gui/LayoutMetrics.hpp>
+#include <Engine/UI/common.hpp>
+#include <Engine/UI/Panel.hpp>
+#include <Engine/UI/LayoutMetrics.hpp>
 
 
 namespace Engine::UI {

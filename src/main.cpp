@@ -23,15 +23,15 @@
 #include <Engine/CommandLine/Parser.hpp>
 #include <Engine/Debug/GL/GL.hpp>
 #include <Engine/ConfigParser.hpp>
-#include <Engine/Gui/Context.hpp>
+#include <Engine/UI/Context.hpp>
 #include <Engine/Input/KeyCode.hpp>
 #include <Engine/Unicode/UTF8.hpp>
 #include <Engine/Input/BindManager.hpp>
 
-#include <Engine/Gui/DirectionalLayout.hpp>
-#include <Engine/Gui/ImageDisplay.hpp>
-#include <Engine/Gui/Window.hpp>
-#include <Engine/Gui/TextBox.hpp>
+#include <Engine/UI/DirectionalLayout.hpp>
+#include <Engine/UI/ImageDisplay.hpp>
+#include <Engine/UI/Window.hpp>
+#include <Engine/UI/TextBox.hpp>
 
 // Game
 #include <Game/Common.hpp>
@@ -286,7 +286,7 @@ namespace {
 	}
 
 	namespace Map {
-		using namespace Engine::Gui;
+		using namespace Engine::UI;
 		class MapPreview : public Window {
 			private:
 				class DragArea : public ImageDisplay {
@@ -689,7 +689,7 @@ void run(int argc, char* argv[]) {
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		// Interface Binds
 		////////////////////////////////////////////////////////////////////////////////////////////////
-		using GuiAction = Engine::Gui::Action;
+		using GuiAction = Engine::UI::Action;
 
 		bm.addBind(Layer::GuiFocus, true, InputSequence{
 			InputId{Type::Keyboard, 0, +KeyCode::Left},

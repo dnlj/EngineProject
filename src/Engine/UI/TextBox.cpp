@@ -1,8 +1,8 @@
 // Engine
-#include <Engine/Gui/TextBox.hpp>
+#include <Engine/UI/TextBox.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	void TextBox::render() {
 		ctx->setClip(getBounds()); // TODO: need to consider padding
 		auto& theme = ctx->getTheme();

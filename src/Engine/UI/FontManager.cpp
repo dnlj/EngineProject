@@ -8,12 +8,12 @@
 #include <hb-ft.h>
 
 // Engine
-#include <Engine/Gui/FontManager.hpp>
-#include <Engine/Gui/FontGlyphSet.hpp>
-#include <Engine/Gui/common.hpp>
+#include <Engine/UI/FontManager.hpp>
+#include <Engine/UI/FontGlyphSet.hpp>
+#include <Engine/UI/common.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	FontManager::FontManager() {
 		if (const auto err = FT_Init_FreeType(&ftlib)) {
 			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error

@@ -2,10 +2,10 @@
 #include <freetype/freetype.h>
 
 // Engine
-#include <Engine/Gui/common.hpp>
+#include <Engine/UI/common.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	#undef FTERRORS_H_
 	#define FT_ERROR_START_LIST
 	#define FT_ERROR_END_LIST

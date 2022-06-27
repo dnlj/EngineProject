@@ -1,13 +1,13 @@
 // Engine
-#include <Engine/Gui/DemoWindow.hpp>
-#include <Engine/Gui/Context.hpp>
-#include <Engine/Gui/DirectionalLayout.hpp>
-#include <Engine/Gui/CollapsibleSection.hpp>
-#include <Engine/Gui/Slider.hpp>
-#include <Engine/Gui/ImageDisplay.hpp>
+#include <Engine/UI/DemoWindow.hpp>
+#include <Engine/UI/Context.hpp>
+#include <Engine/UI/DirectionalLayout.hpp>
+#include <Engine/UI/CollapsibleSection.hpp>
+#include <Engine/UI/Slider.hpp>
+#include <Engine/UI/ImageDisplay.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	DemoWindow::DemoWindow(Context* context) : Window{context} {
 		auto& theme = ctx->getTheme();
 		auto cont = getContent();

@@ -1,6 +1,6 @@
 // Engine
 #include <Engine/Camera.hpp>
-#include <Engine/Gui/Context.hpp>
+#include <Engine/UI/Context.hpp>
 #include <Engine/Math/color.hpp>
 #include <Engine/Gfx/ShaderLoader.hpp>
 
@@ -128,7 +128,7 @@ namespace {
 		front.swap(back);
 	}
 
-	class RootPanel final : public Engine::Gui::PanelT {
+	class RootPanel final : public Engine::UI::PanelT {
 		public:
 			using PanelT::PanelT;
 
@@ -143,7 +143,7 @@ namespace {
 	};
 }
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	Context::Context(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader, Camera& camera)
 		: DrawBuilder(shaderLoader, textureLoader) {
 

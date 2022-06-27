@@ -1,9 +1,9 @@
 // Engine
-#include <Engine/Gui/Window.hpp>
-#include <Engine/Gui/FillLayout.hpp>
+#include <Engine/UI/Window.hpp>
+#include <Engine/UI/FillLayout.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	Window::Window(Context* context) : Panel{context} {
 		setLayout(new FillLayout{outBorder});
 

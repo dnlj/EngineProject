@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/Window.hpp>
+#include <Engine/UI/Window.hpp>
 
 namespace Engine::UI {
 	class DemoWindow : public Window {

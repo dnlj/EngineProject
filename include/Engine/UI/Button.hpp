@@ -4,7 +4,7 @@
 #include <functional>
 
 // Engine
-#include <Engine/Gui/Label.hpp>
+#include <Engine/UI/Label.hpp>
 
 
 namespace Engine::UI {

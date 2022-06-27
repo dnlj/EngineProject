@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/Panel.hpp>
+#include <Engine/UI/Panel.hpp>
 
 
 namespace Engine::UI {

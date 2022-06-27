@@ -2,7 +2,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Gui/FontGlyphSet.hpp>
+#include <Engine/UI/FontGlyphSet.hpp>
 
 
 namespace Engine::UI {

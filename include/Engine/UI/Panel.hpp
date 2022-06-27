@@ -8,9 +8,9 @@
 
 // Engine
 #include <Engine/Engine.hpp>
-#include <Engine/Gui/Layout.hpp>
-#include <Engine/Gui/Bounds.hpp>
-#include <Engine/Gui/Action.hpp>
+#include <Engine/UI/Layout.hpp>
+#include <Engine/UI/Bounds.hpp>
+#include <Engine/UI/Action.hpp>
 
 
 namespace Engine::UI {

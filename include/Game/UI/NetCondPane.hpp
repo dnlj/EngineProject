@@ -1,8 +1,8 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/CollapsibleSection.hpp>
-#include <Engine/Gui/Slider.hpp>
+#include <Engine/UI/CollapsibleSection.hpp>
+#include <Engine/UI/Slider.hpp>
 
 // Game
 #include <Game/UI/ui.hpp>

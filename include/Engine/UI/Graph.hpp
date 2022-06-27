@@ -4,12 +4,12 @@
 #include <glm/gtc/color_space.hpp>
 
 // Engine
-#include <Engine/Gui/common.hpp>
-#include <Engine/Gui/Panel.hpp>
-#include <Engine/Gui/Context.hpp>
-#include <Engine/Gui/FillLayout.hpp>
-#include <Engine/Gui/Button.hpp>
-#include <Engine/Gui/DirectionalLayout.hpp>
+#include <Engine/UI/common.hpp>
+#include <Engine/UI/Panel.hpp>
+#include <Engine/UI/Context.hpp>
+#include <Engine/UI/FillLayout.hpp>
+#include <Engine/UI/Button.hpp>
+#include <Engine/UI/DirectionalLayout.hpp>
 #include <Engine/Math/color.hpp>
 
 

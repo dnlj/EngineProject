@@ -12,11 +12,11 @@
 // Engine
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Input/InputEvent.hpp>
-#include <Engine/Gui/Panel.hpp>
-#include <Engine/Gui/Cursor.hpp>
-#include <Engine/Gui/Action.hpp>
-#include <Engine/Gui/Theme.hpp>
-#include <Engine/Gui/DrawBuilder.hpp>
+#include <Engine/UI/Panel.hpp>
+#include <Engine/UI/Cursor.hpp>
+#include <Engine/UI/Action.hpp>
+#include <Engine/UI/Theme.hpp>
+#include <Engine/UI/DrawBuilder.hpp>
 
 namespace Engine {
 	class Camera;

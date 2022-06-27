@@ -11,7 +11,7 @@
 #include <Engine/Gfx/ShaderLoader.hpp>
 #include <Engine/Gfx/TextureLoader.hpp>
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
-#include <Engine/Gui/Context.hpp>
+#include <Engine/UI/Context.hpp>
 #include <Engine/Input/BindManager.hpp>
 
 // Game
@@ -80,7 +80,7 @@ namespace Game {
 			Engine::Gfx::MaterialInstanceManager materialInstanceManager;
 
 			Engine::Gfx::Context gfxContext = bufferManager;
-			Engine::Gui::Context uiContext = {shaderLoader, textureLoader, camera};
+			Engine::UI::Context uiContext = {shaderLoader, textureLoader, camera};
 	};
 	
 	EngineInstance::EngineInstance() : pimpl{std::make_unique<EngineInstancePimpl>()} {
@@ -118,7 +118,7 @@ namespace Game {
 
 
 	Engine::Gfx::Context& EngineInstance::getGraphicsContext() noexcept { return pimpl->gfxContext; }
-	Engine::Gui::Context& EngineInstance::getUIContext() noexcept { return pimpl->uiContext; }
+	Engine::UI::Context& EngineInstance::getUIContext() noexcept { return pimpl->uiContext; }
 
 	Engine::Camera& EngineInstance::getCamera() noexcept { return pimpl->camera; }
 

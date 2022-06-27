@@ -1,8 +1,8 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/StringLine.hpp>
-#include <Engine/Gui/Context.hpp>
+#include <Engine/UI/StringLine.hpp>
+#include <Engine/UI/Context.hpp>
 
 
 namespace Engine::UI {

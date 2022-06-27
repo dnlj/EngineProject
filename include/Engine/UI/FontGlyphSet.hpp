@@ -16,8 +16,8 @@
 // Engine
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Gfx/Texture.hpp>
-#include <Engine/Gui/Bounds.hpp>
-#include <Engine/Gui/FreeType.hpp>
+#include <Engine/UI/Bounds.hpp>
+#include <Engine/UI/FreeType.hpp>
 
 
 namespace Engine::UI {

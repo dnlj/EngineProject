@@ -1,8 +1,8 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/DirectionalLayout.hpp>
-#include <Engine/Gui/Label.hpp>
+#include <Engine/UI/DirectionalLayout.hpp>
+#include <Engine/UI/Label.hpp>
 
 
 namespace Engine::UI {

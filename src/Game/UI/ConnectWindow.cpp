@@ -4,11 +4,11 @@
 #include <regex>
 
 // Engine
-#include <Engine/Gui/DataAdapter.hpp>
-#include <Engine/Gui/Button.hpp>
-#include <Engine/Gui/FillLayout.hpp>
-#include <Engine/Gui/ScrollArea.hpp>
-#include <Engine/Gui/TextBox.hpp>
+#include <Engine/UI/DataAdapter.hpp>
+#include <Engine/UI/Button.hpp>
+#include <Engine/UI/FillLayout.hpp>
+#include <Engine/UI/ScrollArea.hpp>
+#include <Engine/UI/TextBox.hpp>
 
 // Game
 #include <Game/UI/ConnectWindow.hpp>

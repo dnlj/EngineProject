@@ -1,9 +1,9 @@
 #pragma once
 
 // Engine
-#include <Engine/Gui/common.hpp>
-#include <Engine/Gui/Layout.hpp>
-#include <Engine/Gui/Panel.hpp>
+#include <Engine/UI/common.hpp>
+#include <Engine/UI/Layout.hpp>
+#include <Engine/UI/Panel.hpp>
 
 
 namespace Engine::UI {

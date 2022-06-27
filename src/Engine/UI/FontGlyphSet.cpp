@@ -5,13 +5,13 @@
 #include <hb-ft.h>
 
 // Engine
-#include <Engine/Gui/FontManager.hpp>
-#include <Engine/Gui/FontGlyphSet.hpp>
-#include <Engine/Gui/ShapedString.hpp>
-#include <Engine/Gui/common.hpp>
+#include <Engine/UI/FontManager.hpp>
+#include <Engine/UI/FontGlyphSet.hpp>
+#include <Engine/UI/ShapedString.hpp>
+#include <Engine/UI/common.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	FontGlyphSet::FontGlyphSet() {
 	}
 
