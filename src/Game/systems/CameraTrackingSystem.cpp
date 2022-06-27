@@ -14,7 +14,7 @@ namespace Game {
 		engine.getCamera().setPosition({0,0});
 	}
 	
-	void CameraTrackingSystem::run(float dt) {
+	void CameraTrackingSystem::update(float dt) {
 		auto& cam = engine.getCamera();
 		for (auto ent : world.getFilter<CameraTargetFlag, PhysicsInterpComponent>()) {
 			const auto focusPos = world.getComponent<PhysicsInterpComponent>(ent).getPosition();

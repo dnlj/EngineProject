@@ -22,7 +22,7 @@ namespace Game {
 	MapRenderSystem::~MapRenderSystem() {
 	}
 
-	void MapRenderSystem::run(float dt) {
+	void MapRenderSystem::update(float dt) {
 	}
 
 	void MapRenderSystem::render(const RenderLayer layer) {

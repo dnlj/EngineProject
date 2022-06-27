@@ -8,6 +8,6 @@ namespace Game {
 	class RenderPassSystem : public System {
 		public:
 			using System::System;
-			void run(float32 dt);
+			void update(float32 dt);
 	};
 }

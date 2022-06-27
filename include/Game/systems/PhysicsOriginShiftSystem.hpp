@@ -21,7 +21,7 @@ namespace Game {
 		public:
 			PhysicsOriginShiftSystem(SystemArg arg);
 
-			void run(float32 dt);
+			void update(float32 dt);
 
 			glm::ivec2 getOffset() const;
 	};

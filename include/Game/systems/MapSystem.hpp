@@ -85,7 +85,7 @@ namespace Game {
 
 			void setup();
 			void tick();
-			void run(float32 dt);
+			void update(float32 dt);
 			void ensurePlayAreaLoaded(Engine::ECS::Entity ply);
 
 			void chunkFromNet(Connection& from, const Engine::Net::MessageHeader& head);

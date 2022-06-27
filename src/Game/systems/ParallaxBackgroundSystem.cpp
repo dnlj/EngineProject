@@ -69,7 +69,7 @@ namespace Game {
 		glDeleteVertexArrays(1, &vao);
 	}
 
-	void ParallaxBackgroundSystem::run(const float32 dt) {
+	void ParallaxBackgroundSystem::update(const float32 dt) {
 		const auto size = instData.size();
 		auto& cam = engine.getCamera();
 

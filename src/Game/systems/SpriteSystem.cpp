@@ -104,7 +104,7 @@ namespace Game {
 		glVertexArrayVertexBuffer(vao, instBindingIndex, ivbo, 0, sizeof(InstanceData));
 	}
 
-	void SpriteSystem::run(float dt) {
+	void SpriteSystem::update(float dt) {
 		auto& filter = world.getFilter<
 			Game::SpriteComponent,
 			Game::PhysicsInterpComponent

@@ -38,7 +38,7 @@ namespace Game {
 			ENGINE_INLINE void tick() {}
 			ENGINE_INLINE void postTick() {}
 
-			ENGINE_INLINE void run(float32 dt) {}
+			ENGINE_INLINE void update(float32 dt) {}
 			ENGINE_INLINE void render(const RenderLayer layer) {}
 
 			ENGINE_INLINE void preStoreSnapshot() {}

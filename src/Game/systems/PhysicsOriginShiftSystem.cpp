@@ -10,7 +10,7 @@ namespace Game {
 		static_assert(World::orderBefore<PhysicsOriginShiftSystem, PhysicsSystem>());
 	}
 
-	void PhysicsOriginShiftSystem::run(float32 dt) {
+	void PhysicsOriginShiftSystem::update(float32 dt) {
 		return;
 		// Using last frames position shouldnt be a problem here normally.
 		// May be an issue in cases of long distance teleportation.

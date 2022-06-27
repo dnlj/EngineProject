@@ -18,7 +18,7 @@ namespace Game {
 
 		public:
 			using System::System;
-			void run(float32 dt);
+			void update(float32 dt);
 
 		private:
 			void updateNeighbors();

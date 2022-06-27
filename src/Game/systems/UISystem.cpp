@@ -49,7 +49,6 @@
 
 namespace {
 	namespace EUI = Engine::Gui;
-	const double avgDeltaTime = 1/64.0;
 }
 
 namespace Game {
@@ -160,7 +159,7 @@ namespace Game {
 	void UISystem::setup() {
 	}
 
-	void UISystem::run(float32 dt) {
+	void UISystem::update(float32 dt) {
 	}
 
 	void UISystem::render(RenderLayer layer) {

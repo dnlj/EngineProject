@@ -64,7 +64,7 @@ namespace Game {
 
 		public:
 			NetworkingSystem(SystemArg arg);
-			void run(float32 dt);
+			void update(float32 dt);
 
 			int32 connectionsCount() const; // TODO: remove or at least make private. Should interact with filter directly.
 			int32 playerCount() const; // TODO: remove or at least make private. Should interact with filter directly.
@@ -82,7 +82,7 @@ namespace Game {
 
 			void recvAndDispatchMessages(Engine::Net::UDPSocket& sock);
 			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr);
-			void runClient();
+			void updateClient();
 
 			template<MessageType Type>
 			void handleMessageType(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head) {

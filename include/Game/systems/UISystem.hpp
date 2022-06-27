@@ -32,7 +32,7 @@ namespace Game {
 			~UISystem();
 
 			void setup();
-			void run(float32 dt);
+			void update(float32 dt);
 			void tick();
 			void render(RenderLayer layer);
 

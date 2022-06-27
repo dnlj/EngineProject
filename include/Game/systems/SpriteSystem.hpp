@@ -61,7 +61,7 @@ namespace Game {
 			SpriteSystem(SystemArg arg);
 			~SpriteSystem();
 
-			void run(float32 dt);
+			void update(float32 dt);
 			void render(const RenderLayer layer);
 			void addSprite(Sprite sprite);
 			ENGINE_INLINE auto totalSprites() const noexcept { return sprites.size(); }

@@ -46,7 +46,7 @@ namespace Game {
 		public:
 			ParallaxBackgroundSystem(SystemArg arg);
 			~ParallaxBackgroundSystem();
-			void run(const float32 dt);
+			void update(const float32 dt);
 			void render(const RenderLayer layer);
 	};
 }

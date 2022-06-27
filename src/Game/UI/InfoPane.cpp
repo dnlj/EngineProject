@@ -34,7 +34,7 @@ namespace Game::UI {
 
 	void InfoPane::update() {
 		const auto& world = getContext()->getUserdata<EngineInstance>()->getWorld();
-		const Sample curr = {world.getTime(), world.getRun()};
+		const Sample curr = {world.getTime(), world.getUpdate()};
 		fpsSamples.push(curr);
 
 		// Cull old data
@@ -57,6 +57,5 @@ namespace Game::UI {
 
 		setLabel(UI::InfoPane::Tick, world.getTick());
 		setLabel(UI::InfoPane::TickScale, world.tickScale);
-		ENGINE_LOG(fpsSamples.size());
 	}
 }

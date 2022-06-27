@@ -244,8 +244,8 @@ namespace Engine::ECS {
 			/** The current tick being run */
 			Tick currTick = -1;
 
-			/** The current run  */
-			uint64 currRun = -1;
+			/** The current update  */
+			uint64 currUpdate = -1;
 				
 			/** TODO: doc */
 			EntityStates entities;
@@ -311,7 +311,7 @@ namespace Engine::ECS {
 			~World();
 
 			/**
-			 * Advances simulation time and calls the `tick` and `run` members of systems.
+			 * Advances simulation time and calls the `tick` and `update` members of systems.
 			 */
 			void run();
 
@@ -670,9 +670,9 @@ namespace Engine::ECS {
 			ENGINE_INLINE auto getTick() const noexcept { return currTick; }
 
 			/**
-			 * Gets the current run.
+			 * Gets the current update.
 			 */
-			ENGINE_INLINE auto getRun() const noexcept { return currRun; }
+			ENGINE_INLINE auto getUpdate() const noexcept { return currUpdate; }
 
 			// TODO: also need to clear rollback history
 			// TODO: should this be setNextTick? might help avoid bugs if we wait till all systems are done before we adjust.
@@ -702,7 +702,7 @@ namespace Engine::ECS {
 			ENGINE_INLINE Clock::TimePoint getTickTime(Tick tick) const noexcept { return history.get(tick).tickTime; };
 
 			/**
-			 * The time at the start of the current run.
+			 * The time at the start of the current update.
 			 */
 			ENGINE_INLINE Clock::TimePoint getTime() const noexcept { return beginTime; };
 
@@ -740,7 +740,7 @@ namespace Engine::ECS {
 			void storeSnapshot();
 			bool loadSnapshot(Tick tick);
 			void tickSystems();
-			void runSystems();
+			void updateSystems();
 
 			/**
 			 * Get the container for components of type @p Component.

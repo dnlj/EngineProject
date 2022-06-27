@@ -18,7 +18,7 @@ namespace {
 }
 
 namespace Game {
-	void EntityNetworkingSystem::run(float32 dt) {
+	void EntityNetworkingSystem::update(float32 dt) {
 		if constexpr (ENGINE_CLIENT) { return; }
 		const auto now = Engine::Clock::now();
 		if (now < nextUpdate) { return; }

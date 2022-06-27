@@ -14,7 +14,7 @@ namespace Game {
 			MapRenderSystem(SystemArg arg);
 			~MapRenderSystem();
 
-			void run(float dt);
+			void update(float dt);
 			void render(const RenderLayer layer);
 	};
 }

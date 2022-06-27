@@ -262,7 +262,7 @@ namespace Game {
 		chunkEdits[chunkPos].fromRLE(begin, end);
 	}
 
-	void MapSystem::run(float32 dt) {
+	void MapSystem::update(float32 dt) {
 		const auto tick = world.getTick();
 		auto timeout = world.getTickTime() - std::chrono::seconds{10}; // TODO: how long? 30s?
 

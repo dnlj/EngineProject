@@ -547,7 +547,7 @@ namespace Game {
 		}
 	}
 
-	void NetworkingSystem::run(float32 dt) {
+	void NetworkingSystem::update(float32 dt) {
 		now = Engine::Clock::now();
 
 		// Recv messages
@@ -564,7 +564,7 @@ namespace Game {
 
 		if (shouldUpdate) {
 			lastUpdate = now;
-			if constexpr (ENGINE_CLIENT) { runClient(); }
+			if constexpr (ENGINE_CLIENT) { updateClient(); }
 
 			for (const auto ent : world.getFilter<ConnectionComponent>()) {
 				auto& connComp = world.getComponent<ConnectionComponent>(ent);
@@ -618,7 +618,7 @@ namespace Game {
 		#endif
 	}
 
-	void NetworkingSystem::runClient() {
+	void NetworkingSystem::updateClient() {
 		for (const auto ent : world.getFilter<ConnectionComponent>()) {
 			const auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 			if (conn.getState() == ConnectionState::Connecting) {

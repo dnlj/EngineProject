@@ -12,6 +12,6 @@ namespace Game {
 	class CameraTrackingSystem : public System {
 		public:
 			CameraTrackingSystem(SystemArg arg);
-			void run(float dt);
+			void update(float dt);
 	};
 }

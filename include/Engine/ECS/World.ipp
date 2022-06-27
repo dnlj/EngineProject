@@ -88,7 +88,7 @@ namespace Engine::ECS {
 			}
 		}
 
-		runSystems();
+		updateSystems();
 		destroyMarkedEntities();
 	}
 
@@ -103,9 +103,9 @@ namespace Engine::ECS {
 	}
 
 	ECS_WORLD_TPARAMS
-	void ECS_WORLD_CLASS::runSystems() {
-		++currRun;
-		(getSystem<Ss>().run(deltaTime), ...);
+	void ECS_WORLD_CLASS::updateSystems() {
+		++currUpdate;
+		(getSystem<Ss>().update(deltaTime), ...);
 	}
 
 	ECS_WORLD_TPARAMS

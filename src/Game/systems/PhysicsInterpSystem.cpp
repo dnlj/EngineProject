@@ -6,7 +6,7 @@
 
 
 namespace Game {
-	void PhysicsInterpSystem::run(float32 dt) {
+	void PhysicsInterpSystem::update(float32 dt) {
 		const auto now = Engine::Clock::now();
 
 		for (const auto& ent : world.getFilter<PhysicsBodyComponent, PhysicsInterpComponent>()) {
