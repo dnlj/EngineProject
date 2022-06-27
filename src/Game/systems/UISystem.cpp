@@ -40,6 +40,7 @@
 #include <Game/UI/ConnectWindow.hpp>
 #include <Game/UI/CoordPane.hpp>
 #include <Game/UI/EntityPane.hpp>
+#include <Game/UI/InfoPane.hpp>
 #include <Game/UI/NetCondPane.hpp>
 #include <Game/UI/NetGraphPane.hpp>
 #include <Game/UI/NetHealthPane.hpp>
@@ -49,31 +50,6 @@
 namespace {
 	namespace EUI = Engine::Gui;
 	const double avgDeltaTime = 1/64.0;
-}
-
-namespace Game::UI {
-	class InfoPane : public AutoList {
-		public:
-			enum {
-				FPS,
-				Tick,
-				TickScale,
-			};
-
-			EUI::Button* disconnect;
-
-			InfoPane(EUI::Context* context) : AutoList{context} {
-				setTitle("Info");
-				addLabel("FPS: {:.3f} ({:.6f})");
-				addLabel("Tick: {}");
-				addLabel("Tick Scale: {:.3f}");
-
-				disconnect = ctx->constructPanel<EUI::Button>();
-				disconnect->autoText("Disconnect");
-				disconnect->lockSize();
-				getContent()->addChild(disconnect);
-			}
-	};
 }
 
 namespace Game {
@@ -103,12 +79,6 @@ namespace Game {
 
 		{
 			panels.infoPane = ctx.createPanel<UI::InfoPane>(content);
-			panels.infoPane->disconnect->setAction([&](EUI::Button*){
-				for (const auto& ent : world.getFilter<ConnectionComponent>()) {
-					const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
-					world.getSystem<NetworkingSystem>().requestDisconnect(addr);
-				}
-			});
 		}
 
 		{
@@ -191,31 +161,6 @@ namespace Game {
 	}
 
 	void UISystem::run(float32 dt) {
-		const auto now = world.getTime();
-		const auto update = now - lastUpdate >= std::chrono::milliseconds{100};
-		fpsBuffer.emplace(dt, now);
-
-		// Cull old data
-		while(!fpsBuffer.empty() && fpsBuffer.front().second < (now - std::chrono::milliseconds{1000})) {
-			fpsBuffer.pop();
-		}
-
-		if (update) {
-			lastUpdate = now;
-			fps = 0;
-			for (auto& [delta, time] : fpsBuffer) { fps += delta; }
-			fps = fpsBuffer.size() / fps;
-		}
-
-		// TODO: use update function
-		if (panels.infoPane->getContent()->isEnabled()) {
-			if (update) {
-				panels.infoPane->setLabel(UI::InfoPane::FPS, fps, 1.0f/fps);
-			}
-
-			panels.infoPane->setLabel(UI::InfoPane::Tick, world.getTick());
-			panels.infoPane->setLabel(UI::InfoPane::TickScale, world.tickScale);
-		}
 	}
 
 	void UISystem::render(RenderLayer layer) {

@@ -88,7 +88,7 @@ namespace Engine::ECS {
 			}
 		}
 
-		(getSystem<Ss>().run(deltaTime), ...);
+		runSystems();
 		destroyMarkedEntities();
 	}
 
@@ -100,6 +100,12 @@ namespace Engine::ECS {
 		(getSystem<Ss>().preTick(), ...);
 		(getSystem<Ss>().tick(), ...);
 		(getSystem<Ss>().postTick(), ...);
+	}
+
+	ECS_WORLD_TPARAMS
+	void ECS_WORLD_CLASS::runSystems() {
+		++currRun;
+		(getSystem<Ss>().run(deltaTime), ...);
 	}
 
 	ECS_WORLD_TPARAMS

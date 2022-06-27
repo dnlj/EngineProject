@@ -174,7 +174,6 @@ namespace Engine::Gui {
 			 */
 			void deletePanel(Panel* panel, bool isChild = false);
 
-			// TODO: rename add since we have multiple now
 			ENGINE_INLINE void addPanelUpdateFunc(Panel* panel, PanelUpdateFunc func) {
 				panelUpdateFunc.push_back({.panel = panel, .func = func});
 			}

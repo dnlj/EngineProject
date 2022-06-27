@@ -243,6 +243,9 @@ namespace Engine::ECS {
 
 			/** The current tick being run */
 			Tick currTick = -1;
+
+			/** The current run  */
+			uint64 currRun = -1;
 				
 			/** TODO: doc */
 			EntityStates entities;
@@ -664,7 +667,12 @@ namespace Engine::ECS {
 			/**
 			 * Gets the current tick.
 			 */
-			ENGINE_INLINE auto getTick() const { return currTick; }
+			ENGINE_INLINE auto getTick() const noexcept { return currTick; }
+
+			/**
+			 * Gets the current run.
+			 */
+			ENGINE_INLINE auto getRun() const noexcept { return currRun; }
 
 			// TODO: also need to clear rollback history
 			// TODO: should this be setNextTick? might help avoid bugs if we wait till all systems are done before we adjust.
@@ -732,6 +740,7 @@ namespace Engine::ECS {
 			void storeSnapshot();
 			bool loadSnapshot(Tick tick);
 			void tickSystems();
+			void runSystems();
 
 			/**
 			 * Get the container for components of type @p Component.
