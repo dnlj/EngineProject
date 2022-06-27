@@ -1,5 +1,8 @@
 #pragma once
 
+// Engine
+#include <Engine/Gui/common.hpp>
+
 
 namespace Engine::Gui {
 	struct FillLayout : Engine::Gui::Layout {
