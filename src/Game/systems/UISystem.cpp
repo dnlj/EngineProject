@@ -41,6 +41,7 @@
 #include <Game/UI/EntityPane.hpp>
 #include <Game/UI/NetCondPane.hpp>
 #include <Game/UI/NetHealthPane.hpp>
+#include <Game/UI/CameraPane.hpp>
 
 
 namespace {
@@ -344,47 +345,6 @@ namespace Game::UI {
 		public:
 			NetGraphPane(EUI::Context* context) : CollapsibleSection{context} {
 				setTitle("Network Graph");
-				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
-				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
-				getContent()->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx->getTheme().sizes.pad1});
-			}
-	};
-
-	class CameraPane : public EUI::CollapsibleSection {
-		private:
-			class Adapter : public EUI::DataAdapter<Adapter, Engine::ECS::Entity, uint64> {
-				private:
-					Game::World& world;
-
-				public:
-					using It = decltype(world.getFilter<PlayerFlag>().begin());
-
-					Adapter(Game::World& world) noexcept : world{world} {}
-					ENGINE_INLINE auto begin() const { return world.getFilter<PlayerFlag>().begin(); }
-					ENGINE_INLINE auto end() const { return world.getFilter<PlayerFlag>().end(); }
-					ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
-					ENGINE_INLINE Checksum check(Id id) const { return *reinterpret_cast<Checksum*>(&id); }
-
-					Panel* createPanel(Id id, EUI::Context& ctx) const {
-						auto* base = ctx.constructPanel<EUI::Button>();
-						base->autoText(fmt::format("{}", id));
-						base->setAction([id](EUI::Button* btn){
-							auto& world = btn->getContext()->getUserdata<EngineInstance>()->getWorld();
-							for (const auto ply2 : world.getFilter<PlayerFlag>()) {
-								if (world.hasComponent<CameraTargetFlag>(ply2)) {
-									world.removeComponent<CameraTargetFlag>(ply2);
-								}
-							}
-							world.addComponent<CameraTargetFlag>(id);
-						});
-						return base;
-					}
-
-			};
-
-		public:
-			CameraPane(EUI::Context* context) : CollapsibleSection{context} {
-				setTitle("Camera");
 				auto& world = ctx->getUserdata<EngineInstance>()->getWorld();
 				ctx->addPanelUpdateFunc(getContent(), Adapter{world});
 				getContent()->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx->getTheme().sizes.pad1});
