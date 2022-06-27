@@ -3,7 +3,7 @@
 // Engine
 #include <Engine/Gui/Window.hpp>
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class DemoWindow : public Window {
 		private:
 			Texture2D tex;

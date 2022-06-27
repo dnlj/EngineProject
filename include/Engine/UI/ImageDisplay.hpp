@@ -4,7 +4,7 @@
 #include <Engine/Gui/Panel.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class ImageDisplay : public Panel {
 		private:
 			TextureHandle2D tex;

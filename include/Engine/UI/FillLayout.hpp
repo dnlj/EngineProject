@@ -6,12 +6,12 @@
 #include <Engine/Gui/Panel.hpp>
 
 
-namespace Engine::Gui {
-	struct FillLayout : Engine::Gui::Layout {
+namespace Engine::UI {
+	struct FillLayout : Engine::UI::Layout {
 		Engine::float32 pad = 0;
 
 		FillLayout(Engine::float32 padding) : pad{padding} {}
-		virtual void layout(Engine::Gui::Panel* panel) override {
+		virtual void layout(Engine::UI::Panel* panel) override {
 			auto* child = panel->getFirstChild();
 			if (!child) { return; }
 			auto bounds = panel->getBounds();
@@ -22,11 +22,11 @@ namespace Engine::Gui {
 	};
 
 	template<Direction D>
-	struct StretchLayout : Engine::Gui::Layout {
+	struct StretchLayout : Engine::UI::Layout {
 		Engine::float32 pad = 0;
 
 		StretchLayout(Engine::float32 padding) : pad{padding} {}
-		virtual void layout(Engine::Gui::Panel* panel) override {
+		virtual void layout(Engine::UI::Panel* panel) override {
 			auto* child = panel->getFirstChild();
 			if (!child) { return; }
 			auto sz = child->getSize();

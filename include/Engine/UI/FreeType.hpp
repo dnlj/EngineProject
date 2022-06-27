@@ -6,7 +6,7 @@
 /**
  * Helper functions for working with FreeType.
  */
-namespace Engine::Gui::FreeType {
+namespace Engine::UI::FreeType {
 	/**
 	 * Add two 26.6 numbers
 	 */

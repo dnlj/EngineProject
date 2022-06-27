@@ -20,7 +20,7 @@
 #include <Engine/Gui/FreeType.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	/**
 	 * Supports a number of operations needed to render strings in a given font face and size on the gpu.
 	 *

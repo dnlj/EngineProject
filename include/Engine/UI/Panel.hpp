@@ -13,7 +13,7 @@
 #include <Engine/Gui/Action.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Context; // Forward decl
 
 	/** @see Panel states section */

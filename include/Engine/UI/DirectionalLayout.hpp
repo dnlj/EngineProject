@@ -7,7 +7,7 @@
 #include <Engine/Gui/LayoutMetrics.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class DirectionalLayout : public Layout {
 		protected:
 			/** The main axis */

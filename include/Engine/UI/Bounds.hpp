@@ -4,7 +4,7 @@
 #include <glm/vec2.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Bounds {
 		public:
 			glm::vec2 min;

@@ -4,7 +4,7 @@
 #include <Engine/Gui/Panel.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	template<class Self>
 	class Bindable {
 		public:

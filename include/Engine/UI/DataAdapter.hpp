@@ -4,7 +4,7 @@
 #include <Engine/Gui/Panel.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	/**
 	 * Provides a Context::PanelUpdateFunc to manage panels derived from external data using checksums an polling.
 	 * 

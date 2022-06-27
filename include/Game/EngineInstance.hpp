@@ -64,7 +64,7 @@ namespace Game {
 			Engine::Gfx::MaterialInstanceManager& getMaterialInstanceManager() noexcept;
 
 			Engine::Gfx::Context& getGraphicsContext() noexcept;
-			Engine::Gui::Context& getUIContext() noexcept;
+			Engine::UI::Context& getUIContext() noexcept;
 
 			Engine::Camera& getCamera() noexcept;
 			World& getWorld() noexcept { return *world; }

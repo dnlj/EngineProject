@@ -7,7 +7,7 @@
 #include <Engine/Gui/Button.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class CollapsibleSection : public PanelT {
 		private:
 			Button* btn = nullptr;

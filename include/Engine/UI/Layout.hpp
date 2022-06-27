@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Panel;
 
 	class Layout {

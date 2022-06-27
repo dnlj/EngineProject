@@ -4,7 +4,7 @@
 #include <Engine/Gui/FontManager.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Theme {
 		public:
 			Theme() = default;

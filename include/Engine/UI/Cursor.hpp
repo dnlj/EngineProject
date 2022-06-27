@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	enum class Cursor {
 		#ifdef ENGINE_OS_WINDOWS
 			// See https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadcursora

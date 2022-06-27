@@ -6,7 +6,7 @@
 #include <Engine/Gui/Context.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Slider : public Panel, public Bindable<Slider> {
 		private:
 			float64 min = 0;

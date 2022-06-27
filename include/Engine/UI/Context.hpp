@@ -22,7 +22,7 @@ namespace Engine {
 	class Camera;
 }
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	using NativeHandle = void*;
 
 	class Context : public DrawBuilder {

@@ -6,7 +6,7 @@
 #include <Engine/Gui/Context.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class StringLine : public Panel {
 		private:
 			ShapedString str;

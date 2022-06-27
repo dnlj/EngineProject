@@ -8,7 +8,7 @@
 #include <Engine/Gfx/resources.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	// TODO: we really should separate the buffer building and draw/opengl objects. But since we only support opengl atm not a lot to gain.
 	class DrawBuilder {
 		private:

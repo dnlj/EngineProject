@@ -7,7 +7,7 @@
 #include <Engine/Gui/LayoutMetrics.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class GridLayout : public Layout {
 		private:
 			struct CellMetrics {

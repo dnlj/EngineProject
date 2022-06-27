@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	struct Direction_ {
 		enum Direction {
 			Horizontal,

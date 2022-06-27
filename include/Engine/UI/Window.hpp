@@ -5,7 +5,7 @@
 #include <Engine/Gui/Label.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Window : public Panel {
 		private:
 			class Title : public Label {

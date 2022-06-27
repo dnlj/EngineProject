@@ -6,7 +6,7 @@
 #include <Engine/Unicode/UTF8.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Caret {
 		public:
 			constexpr static uint32 invalid = 0xFFFFFFFF;

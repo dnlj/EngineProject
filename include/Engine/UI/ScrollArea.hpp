@@ -8,7 +8,7 @@
 #include <Engine/Gui/Panel.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	template<Direction D>
 	class ScrollBar : public Panel {
 		public:

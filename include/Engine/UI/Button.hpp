@@ -7,7 +7,7 @@
 #include <Engine/Gui/Label.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Button : public StringLine {
 		private:
 			using Callback = std::function<void(Button*)>;

@@ -3,7 +3,7 @@
 // Game
 #include <Game/System.hpp>
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Context;
 	class Window;
 	class RichGraph;
@@ -31,7 +31,7 @@ namespace Game {
 
 		private:
 			struct {
-				Engine::Gui::Window* window;
+				Engine::UI::Window* window;
 				UI::InfoPane* infoPane;
 				UI::CoordPane* coordPane;
 				UI::CameraPane* cameraPane;

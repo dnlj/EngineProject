@@ -5,7 +5,7 @@
 #include <Engine/Gui/Context.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class Label : public StringLine {
 		public:
 			using StringLine::StringLine;

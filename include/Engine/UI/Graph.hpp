@@ -13,7 +13,7 @@
 #include <Engine/Math/color.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class GraphVertex {
 		public:
 			glm::vec2 pos;

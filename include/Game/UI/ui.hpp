@@ -1,5 +1,5 @@
 #pragma once
 
 namespace Game::UI {
-	namespace EUI = ::Engine::Gui;
+	namespace EUI = ::Engine::UI;
 }

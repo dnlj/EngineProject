@@ -12,7 +12,7 @@
 struct hb_buffer_t;
 
 
-namespace Engine::Gui::Detail {
+namespace Engine::UI::Detail {
 	struct FontId {
 		FT_Face font;
 		int32 size;
@@ -24,8 +24,8 @@ namespace Engine::Gui::Detail {
 }
 
 template<> 
-struct Engine::Hash<Engine::Gui::Detail::FontId> {
-	size_t operator()(const Engine::Gui::Detail::FontId& val) const {
+struct Engine::Hash<Engine::UI::Detail::FontId> {
+	size_t operator()(const Engine::UI::Detail::FontId& val) const {
 		static_assert(sizeof(size_t) == sizeof(val.font));
 		size_t seed = reinterpret_cast<const size_t&>(val.font);
 		hashCombine(seed, val.size);
@@ -33,7 +33,7 @@ struct Engine::Hash<Engine::Gui::Detail::FontId> {
 	}
 };
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	using Font = class FontGlyphSet*;
 
 	class FontManager {

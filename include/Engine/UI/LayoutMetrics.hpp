@@ -4,7 +4,7 @@
 #include <Engine/ArrayView.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	class LayoutMetrics {
 		public:
 			float32 min = 0;

@@ -4,7 +4,7 @@
 #include <Engine/Input/Value.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	enum class Action {
 		Unknown,
 

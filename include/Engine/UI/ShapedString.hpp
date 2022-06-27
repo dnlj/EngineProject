@@ -5,7 +5,7 @@
 #include <Engine/Gui/FontGlyphSet.hpp>
 
 
-namespace Engine::Gui {
+namespace Engine::UI {
 	using Font = class FontGlyphSet*;
 
 	class ShapeGlyph {
