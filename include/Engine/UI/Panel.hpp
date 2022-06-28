@@ -1,8 +1,5 @@
 #pragma once
 
-// STD
-#include <ranges>
-
 // GLM
 #include <glm/vec2.hpp>
 

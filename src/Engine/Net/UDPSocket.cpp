@@ -6,9 +6,111 @@
 	#error Not yet implemented for this operating system.
 #endif
 
-
 // Engine
 #include <Engine/Net/UDPSocket.hpp>
+
+
+#ifdef ENGINE_UDP_NETWORK_SIM
+#include <queue>
+#include <random>
+#include <pcg_random.hpp>
+#include <Engine/Clock.hpp>
+#endif
+
+
+#ifdef ENGINE_UDP_NETWORK_SIM
+namespace Engine::Net {
+	class UDPSimState {
+		private:
+			UDPSimSettings settings;
+
+			pcg32 rng = pcg_extras::seed_seq_from<std::random_device>{};
+
+			float32 random() {
+				std::uniform_real_distribution<float32> dist{0.0f, std::nextafter(1.0f, 2.0f)};
+				return dist(rng);
+			}
+
+			struct PacketData {
+				Engine::Clock::TimePoint time;
+				IPv4Address addr;
+				std::vector<byte> data;
+				bool operator>(const PacketData& other) const { return time > other.time; }
+			};
+
+			using Queue = std::priority_queue<
+				PacketData,
+				std::vector<PacketData>,
+				std::greater<PacketData>
+			>;
+			Queue sendBuffer;
+			Queue recvBuffer;
+
+			void simPacket(Queue& buff, const IPv4Address& addr, const void* data, const int32 size) {
+				if (random() < settings.loss) { return; }
+
+				// Ping var is total variance so between ping +- pingVar/2
+				const float32 r = -1 + 2 * random();
+				const auto var = std::chrono::duration_cast<Engine::Clock::Duration>(
+					// TODO: this def of jitter is idff than we use in Connection. should be +- jitter not +- 0.5 jitter
+					settings.halfPingAdd * (settings.jitter * 0.5f * r)
+				);
+
+				const auto now = Engine::Clock::now();
+				auto pkt = PacketData{
+					.time = now + settings.halfPingAdd + var,
+					.addr = addr,
+					.data = {static_cast<const byte*>(data), static_cast<const byte*>(data) + size},
+				};
+
+				if (random() < settings.duplicate) {
+					buff.push(pkt);
+				}
+
+				buff.push(std::move(pkt));
+			}
+
+		public:
+			ENGINE_INLINE auto simSend(const IPv4Address& addr, const void* data, const int32 size) {
+				simPacket(sendBuffer, addr, data, size);
+				return size;
+			}
+
+			ENGINE_INLINE void simRecv(const IPv4Address& addr, const void* data, const int32 size) {
+				return simPacket(recvBuffer, addr, data, size);
+			}
+
+			void realSend(UDPSocket& socket) {
+				while (sendBuffer.size()) {
+					const auto& top = sendBuffer.top();
+					if (top.time > Engine::Clock::now()) { return; }
+					const auto saddr = top.addr.as<sockaddr_in>();
+					sendto(
+						socket.handle, reinterpret_cast<const char*>(top.data.data()), static_cast<int>(top.data.size()), 0,
+						reinterpret_cast<const sockaddr*>(&saddr), sizeof(saddr)
+					);
+					sendBuffer.pop();
+				}
+			}
+
+			int32 realRecv(void* data, int32 size, IPv4Address& address) {
+				if (!recvBuffer.empty()) {
+					const auto& top = recvBuffer.top();
+					if (top.time <= Engine::Clock::now()) {
+						const auto len = std::min(static_cast<int32>(top.data.size()), size);
+						memcpy(data, top.data.data(), len);
+						address = top.addr;
+						recvBuffer.pop();
+						return len;
+					}
+				}
+				return -1;
+			}
+
+			auto& getSettings() noexcept { return settings; }
+	};
+}
+#endif
 
 namespace Engine::Net {
 	template<>
@@ -39,11 +141,24 @@ namespace Engine::Net {
 	UDPSocket::UDPSocket(const uint16 port, const SocketFlag flags) {
 		init(flags);
 		bind(port);
+
+		#ifdef ENGINE_UDP_NETWORK_SIM
+		sim = new UDPSimState();
+		#endif
 	}
 
 	UDPSocket::~UDPSocket() {
 		if (handle != invalid) { closesocket(handle); }
+		delete sim;
 	};
+
+	UDPSimSettings& UDPSocket::getSimSettings() noexcept {
+		return sim->getSettings();
+	}
+
+	void UDPSocket::realSimSend() {
+		return sim->realSend(*this);
+	}
 	
 	void UDPSocket::init(const SocketFlag flags) {
 		ENGINE_DEBUG_ASSERT(handle == invalid, "Only an uninitialized socket can be initialized.");
@@ -87,10 +202,7 @@ namespace Engine::Net {
 		const auto saddr = address.as<sockaddr_storage>();
 		
 		#ifdef ENGINE_UDP_NETWORK_SIM
-		{
-			simPacket(sendBuffer, saddr, data, size);
-			return size;
-		}
+			return sim->simSend(saddr, data, size);
 		#endif
 
 		const auto sent = sendto(handle,
@@ -114,21 +226,10 @@ namespace Engine::Net {
 		#ifdef ENGINE_UDP_NETWORK_SIM
 		{
 			if (len > -1) {
-				simPacket(recvBuffer, from, data, len);
+				sim->simRecv(from, data, len);
 			}
 
-			if (recvBuffer.size()) {
-				const auto& top = recvBuffer.top();
-				if (top.time <= Engine::Clock::now()) {
-					memcpy(data, top.data.data(), top.data.size());
-					len = static_cast<int32>(top.data.size());
-					address = top.addr;
-					recvBuffer.pop();
-					return len;
-				}
-			}
-
-			return -1;
+			return sim->realRecv(data, size, address);
 		}
 		#endif
 
@@ -150,19 +251,4 @@ namespace Engine::Net {
 		#error TODO: impl non windows - check errno
 		#endif
 	}
-
-#ifdef ENGINE_UDP_NETWORK_SIM
-	void UDPSocket::simPacketSend() {
-		while (sendBuffer.size()) {
-			const auto& top = sendBuffer.top();
-			if (top.time > Engine::Clock::now()) { return; }
-			const auto saddr = top.addr.as<sockaddr_in>();
-			sendto(
-				handle, reinterpret_cast<const char*>(top.data.data()), static_cast<int>(top.data.size()), 0,
-				reinterpret_cast<const sockaddr*>(&saddr), sizeof(saddr)
-			);
-			sendBuffer.pop();
-		}
-	}
-#endif
 }

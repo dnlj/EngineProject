@@ -614,7 +614,7 @@ namespace Game {
 		}
 
 		#ifdef ENGINE_UDP_NETWORK_SIM
-			socket.simPacketSend();
+			socket.realSimSend();
 		#endif
 	}
 

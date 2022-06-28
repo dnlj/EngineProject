@@ -1,25 +1,15 @@
 #pragma once
 
-// STD
-#include <algorithm>
-#include <memory>
-
 // Meta
 #include <Meta/IndexOf.hpp>
 
 // Engine
-#include <Engine/Engine.hpp>
-#include <Engine/Net/MessageHeader.hpp>
-#include <Engine/Net/IPv4Address.hpp>
-#include <Engine/Net/UDPSocket.hpp>
-#include <Engine/Net/Net.hpp>
-#include <Engine/Net/BufferWriter.hpp>
-#include <Engine/StaticVector.hpp>
-#include <Engine/Bitset.hpp>
 #include <Engine/Clock.hpp>
-#include <Engine/Utility/Utility.hpp>
-#include <Engine/SequenceBuffer.hpp>
+#include <Engine/Net/BufferWriter.hpp>
+#include <Engine/Net/net.hpp>
 #include <Engine/Net/Packet.hpp>
+#include <Engine/Net/UDPSocket.hpp>
+#include <Engine/SequenceBuffer.hpp>
 
 
 namespace Engine::Net {
