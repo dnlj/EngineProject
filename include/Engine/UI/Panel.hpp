@@ -5,6 +5,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/ArrayView.hpp>
 #include <Engine/UI/Layout.hpp>
 #include <Engine/UI/Bounds.hpp>
 #include <Engine/UI/Action.hpp>
@@ -110,10 +111,6 @@ namespace Engine::UI {
 			 */
 			ENGINE_INLINE void setAutoSize(bool v) noexcept { setAutoSizeWidth(v); setAutoSizeHeight(v); }
 
-			ENGINE_INLINE auto getNextSiblingRaw() const noexcept {
-				return nextSibling;
-			}
-
 			/**
 			 * Gets the next enabled sibling panel.
 			 */
@@ -121,6 +118,10 @@ namespace Engine::UI {
 				auto res = nextSibling;
 				while (res && !res->isEnabled()) { res = res->nextSibling; }
 				return (res && !res->isEnabled()) ? nullptr : res;
+			}
+
+			ENGINE_INLINE auto getNextSiblingRaw() const noexcept {
+				return nextSibling;
 			}
 			
 			/**
@@ -132,8 +133,8 @@ namespace Engine::UI {
 				return (res && !res->isEnabled()) ? nullptr : res;
 			}
 
-			ENGINE_INLINE auto getFirstChildRaw() const noexcept {
-				return firstChild;
+			ENGINE_INLINE auto getPrevSiblingRaw() const noexcept {
+				return prevSibling;
 			}
 
 			/**
@@ -142,12 +143,20 @@ namespace Engine::UI {
 			ENGINE_INLINE auto getFirstChild() const noexcept {
 				return (firstChild && !firstChild->isEnabled()) ? firstChild->getNextSibling() : firstChild;
 			}
+
+			ENGINE_INLINE auto getFirstChildRaw() const noexcept {
+				return firstChild;
+			}
 			
 			/**
 			 * Gets the last enabled child panel.
 			 */
 			ENGINE_INLINE auto getLastChild() const noexcept {
 				return (lastChild && !lastChild->isEnabled()) ? lastChild->getPrevSibling() : lastChild;
+			}
+
+			ENGINE_INLINE auto getLastChildRaw() const noexcept {
+				return lastChild;
 			}
 
 			ENGINE_INLINE auto getContext() const noexcept { return ctx; }
@@ -282,28 +291,41 @@ namespace Engine::UI {
 			 * This does not delete the child. You now own the removed panel.
 			 */
 			void removeChild(Panel* child) {
-				ENGINE_DEBUG_ASSERT(child->parent == this);
-				child->setPos(child->getRelPos());
+				return removeChildren(child, child);
+			}
 
-				if (child->nextSibling) {
-					child->nextSibling->prevSibling = child->prevSibling;
+			/**
+			 * Removes the children in range [first, last] inclusive.
+			 * This does not delete the children. You now own the removed panels.
+			 */
+			void removeChildren(Panel* first, Panel* last) {
+				ENGINE_DEBUG_ASSERT(first->parent == this, "Attempting to remove invalid panel range.");
+				ENGINE_DEBUG_ASSERT(last->parent == this, "Attempting to remove invalid panel range.");
+
+				if (last->nextSibling) {
+					last->nextSibling->prevSibling = first->prevSibling;
 				}
 
-				if (child->prevSibling) {
-					child->prevSibling->nextSibling = child->nextSibling;
+				if (first->prevSibling) {
+					first->prevSibling->nextSibling = last->nextSibling;
 				}
 
-				if (child == lastChild) {
-					lastChild = child->prevSibling;
+				if (last == lastChild) {
+					lastChild = first->prevSibling;
 				}
 
-				if (child == firstChild) {
-					firstChild = child->nextSibling;
+				if (first == firstChild) {
+					firstChild = last->nextSibling;
 				}
 
-				child->prevSibling = nullptr;
-				child->nextSibling = nullptr;
-				child->parent = nullptr;
+				first->prevSibling = nullptr;
+				last->nextSibling = nullptr;
+
+				for (auto curr = first;; curr = curr->nextSibling) {
+					curr->setPos(curr->getRelPos());
+					curr->parent = nullptr;
+					if (curr == last) { break; }
+				}
 
 				performLayout();
 			}
@@ -322,7 +344,7 @@ namespace Engine::UI {
 			 * Add multiple panels as children of this panel.
 			 * Perfoms layout only once.
 			 */
-			void addChildren(std::initializer_list<Panel*> children) {
+			void addChildren(ArrayView<Panel* const> children) {
 				for (Panel* child : children) {
 					appendChild(child);
 				}
@@ -496,5 +518,16 @@ namespace Engine::UI {
 	class PanelT : public Panel {
 		using Panel::Panel;
 		virtual void render() override {}
+	};
+
+	/**
+	 * A panel with a colored background.
+	 * Used for debugging.
+	 */
+	class PanelC final : public Panel {
+		public:
+			glm::vec4 color = {1,0,1,1};
+			PanelC(Context* context, glm::vec4 color = {1,0,1,1}) : Panel{context}, color{color} {}
+			virtual void render() override;
 	};
 }

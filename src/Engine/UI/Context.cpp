@@ -422,38 +422,57 @@ namespace Engine::UI {
 	}
 
 	void Context::deletePanel(Panel* panel, bool isChild) {
+		return deletePanels(panel, panel, isChild);
+	}
+
+	void Context::deletePanels(Panel* first, Panel* last, bool isChild) {
+		ENGINE_DEBUG_ASSERT(first->getParent() == last->getParent(), "Attempting to delete invalid panel range.");
 		// Clear from active
-		if (panel == active) { unsetActive(); }
+		for (auto p = first;; p = p->getNextSiblingRaw()) {
+			if (active == p) { unsetActive(); }
+			if (p == last) { break; }
+		}
 
 		if (!isChild) {
+			const auto parent = first->getParent();
+
 			// Clear from focus
-			for (auto curr = focus; curr; curr = curr->getParent()) {
-				if (curr == panel) {
-					setFocus(panel->getParent());
+			for (auto curr = focusStack.begin(), end = focusStack.end(); curr != end; ++curr) {
+				if (*curr == parent) {
+					auto next = curr + 1;
+					if (next != end) {
+						for (auto p = first;; p = p->getNextSiblingRaw()) {
+							if (*next == p) {
+								setFocus(parent);
+								break;
+							}
+							if (p == last) { break; }
+						}
+					}
 					break;
 				}
 			}
 
 			// Clear from hover
-			if (auto p = panel->getParent()) {
-				p->removeChild(panel);
-			}
+			parent->removeChildren(first, last);
 			updateHover();
 		}
 
-		// Delete children
-		auto child = panel->getFirstChildRaw();
-		while (child) {
-			const auto next = child->getNextSiblingRaw();
-			deletePanel(child, true);
-			child = next;
+		for (auto curr = first;;) {
+			if (curr->getFirstChildRaw()) {
+				deletePanels(curr->getFirstChildRaw(), curr->getLastChildRaw(), true);
+			}
+
+			const auto next = curr->getNextSiblingRaw();
+			clearPanelUpdateFuncs(curr);
+			deregisterMouseMove(curr);
+			deregisterTextCallback(curr);
+			deregisterPanel(curr);
+			delete curr;
+
+			if (curr == last) { break; }
+			curr = next;
 		}
-				
-		clearPanelUpdateFuncs(panel);
-		deregisterMouseMove(panel);
-		deregisterTextCallback(panel);
-		deregisterPanel(panel);
-		delete panel;
 	}
 
 	void Context::setClipboard(std::string_view view) {

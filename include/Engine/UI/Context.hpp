@@ -174,6 +174,7 @@ namespace Engine::UI {
 			 * @param isChild Internal parameter used for recursive child deletion. Leave at default.
 			 */
 			void deletePanel(Panel* panel, bool isChild = false);
+			void deletePanels(Panel* first, Panel* last, bool isChild = false);
 
 			ENGINE_INLINE void addPanelUpdateFunc(Panel* panel, PanelUpdateFunc func) {
 				panelUpdateFunc.push_back({.panel = panel, .func = func});

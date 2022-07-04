@@ -14,4 +14,8 @@ namespace Engine::UI {
 	void Panel::render() {
 		ctx->drawRect({0,0}, size, ctx->getTheme().colors.background);
 	}
+
+	void PanelC::render() {
+		ctx->drawRect({}, getSize(), color);
+	}
 }
