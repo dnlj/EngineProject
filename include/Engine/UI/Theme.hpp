@@ -36,7 +36,13 @@ namespace Engine::UI {
 
 				/** Alternate background (alternating table rows for example) */
 				glm::vec4 backgroundAlt;
+				glm::vec4 backgroundAlt2;
 
+				/** Hovered element */
+				glm::vec4 backgroundHover = backgroundAlt;
+				glm::vec4 backgroundSelection = backgroundAlt2;
+
+				/** . */
 				glm::vec4 title;
 
 				/** Generic accent color. Notable/interactable element. */

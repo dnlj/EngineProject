@@ -9,8 +9,10 @@
 
 namespace Engine::UI {
 	class Button : public StringLine {
-		private:
+		public:
 			using Callback = std::function<void(Button*)>;
+
+		private:
 			Callback action;
 
 		public:

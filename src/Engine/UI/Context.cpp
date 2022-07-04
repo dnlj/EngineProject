@@ -200,6 +200,7 @@ namespace Engine::UI {
 			.background = rgb({0.1, 0.1, 0.2, a}),
 			.background2 = rgb({0.1, 0.1, 0.4, a}),
 			.backgroundAlt = rgb({1,0,0,1}),
+			.backgroundAlt2 = rgb({0,1,0,1}),
 
 			.title = rgb({0.1, 0.1, 0.1, 1}),
 

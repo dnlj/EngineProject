@@ -16,6 +16,7 @@
 #include <Game/UI/NetCondPane.hpp>
 #include <Game/UI/NetGraphPane.hpp>
 #include <Game/UI/NetHealthPane.hpp>
+#include <Game/UI/ResourcePane.hpp>
 
 
 namespace {
@@ -76,6 +77,10 @@ namespace Game {
 		{
 			panels.entityPane = ctx.createPanel<UI::EntityPane>(content);
 			panels.entityPane->toggle();
+		}
+
+		{
+			ctx.createPanel<UI::ResourcePane>(content);
 		}
 
 		#if ENGINE_CLIENT

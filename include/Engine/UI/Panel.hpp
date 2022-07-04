@@ -18,7 +18,6 @@ namespace Engine::UI {
 		Enabled          = 1 << 0,
 		PerformingLayout = 1 << 1,
 		ParentEnabled    = 1 << 2,
-		_count,
 	}; ENGINE_BUILD_ALL_OPS(PanelState);
 
 	/**
@@ -220,12 +219,22 @@ namespace Engine::UI {
 			 */
 			ENGINE_INLINE void setRelPos(const glm::vec2 p) noexcept { setPos(p + (parent ? parent->getPos() : glm::vec2{})); }
 			ENGINE_INLINE auto getRelPos() const noexcept { return getPos() - (parent ? parent->getPos() : glm::vec2{}); }
-			
+
+			ENGINE_INLINE void setMinWidth(float32 w) noexcept { setMinSize({w, minSize.y}); }
+			ENGINE_INLINE void setMinHeight(float32 h) noexcept { setMinSize({minSize.x, h}); }
 			ENGINE_INLINE void setMinSize(const glm::vec2 sz) noexcept { minSize = sz; setSize(getSize()); }
+
 			ENGINE_INLINE auto getMinSize() const noexcept { return minSize; }
+			ENGINE_INLINE auto getMinWidth() const noexcept { return getMinSize().x; }
+			ENGINE_INLINE auto getMinHeight() const noexcept { return getMinSize().y; }
 			
+			ENGINE_INLINE void setMaxWidth(float32 w) noexcept { setMaxSize({w, maxSize.y}); }
+			ENGINE_INLINE void setMaxHeight(float32 h) noexcept { setMaxSize({maxSize.x, h}); }
 			ENGINE_INLINE void setMaxSize(const glm::vec2 sz) noexcept { maxSize = sz; setSize(getSize()); }
+
 			ENGINE_INLINE auto getMaxSize() const noexcept { return maxSize; }
+			ENGINE_INLINE auto getMaxWidth() const noexcept { return getMaxSize().x; }
+			ENGINE_INLINE auto getMaxHeight() const noexcept { return getMaxSize().y; }
 
 			ENGINE_INLINE void setFixedWidth(const float32 w) noexcept { minSize.x = w; maxSize.x = w; setWidth(w); }
 			ENGINE_INLINE void setFixedHeight(const float32 h) noexcept { minSize.y = h; maxSize.y = h; setHeight(h); }

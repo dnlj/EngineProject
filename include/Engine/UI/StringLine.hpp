@@ -17,8 +17,7 @@ namespace Engine::UI {
 			StringLine(Context* context) : Panel{context} {
 				auto& theme = ctx->getTheme();
 				setFont(theme.fonts.body);
-				//pad.x = theme.sizes.pad1;
-				pad.x = 0;
+				pad.x = theme.sizes.pad1;
 				pad.y = pad.x;
 			}
 
