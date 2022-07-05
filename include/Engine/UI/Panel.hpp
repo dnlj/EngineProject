@@ -36,8 +36,6 @@ namespace Engine::UI {
 	 * - PerformingLayout: The panel is updating its layout.
 	 */
 	class Panel {
-		public:
-
 		protected:
 			/** The Context that owns this panel. */
 			Context* ctx = nullptr;
@@ -70,6 +68,33 @@ namespace Engine::UI {
 			// TODO: maybe change to flag for diff size policies?
 			bool autoSizeHeight = false;
 			bool autoSizeWidth = false;
+
+		public:
+			/**
+			 * Builds the sibling chain for a group of panels.
+			 * 
+			 * These should probably be orphaned panels because this does not modify
+			 * any other relationships or update related panels.
+			 * You probably want addChildren or insertChildren instead.
+			 * 
+			 * @see addChildren
+			 * @see insertChildren
+			 */
+			static void unsafe_CreateSiblings(ArrayView<Panel* const> children) noexcept {
+				ENGINE_DEBUG_ASSERT(children.size() > 1, "Attempting to create siblings out of one or fewer panels.");
+				auto curr = children.begin();
+				auto next = curr + 1;
+				const auto end = children.end();
+
+				ENGINE_DEBUG_ASSERT((*curr)->parent == nullptr);
+				while (next != end) {
+					ENGINE_DEBUG_ASSERT((*next)->parent == nullptr);
+					(*curr)->nextSibling = *next;
+					(*next)->prevSibling = *curr;
+					curr = next;
+					++next;
+				}
+			}
 
 		public:
 			Panel(Context* context) : ctx{context} {}
@@ -289,65 +314,63 @@ namespace Engine::UI {
 			/**
 			 * Remove a child from this panel.
 			 * This does not delete the child. You now own the removed panel.
+			 * 
+			 * @see removeChildren
 			 */
-			void removeChild(Panel* child) {
+			ENGINE_INLINE void removeChild(Panel* child) {
 				return removeChildren(child, child);
 			}
 
 			/**
 			 * Removes the children in range [first, last] inclusive.
 			 * This does not delete the children. You now own the removed panels.
+			 * 
+			 * @see removeChild
 			 */
-			void removeChildren(Panel* first, Panel* last) {
-				ENGINE_DEBUG_ASSERT(first->parent == this, "Attempting to remove invalid panel range.");
-				ENGINE_DEBUG_ASSERT(last->parent == this, "Attempting to remove invalid panel range.");
-
-				if (last->nextSibling) {
-					last->nextSibling->prevSibling = first->prevSibling;
-				}
-
-				if (first->prevSibling) {
-					first->prevSibling->nextSibling = last->nextSibling;
-				}
-
-				if (last == lastChild) {
-					lastChild = first->prevSibling;
-				}
-
-				if (first == firstChild) {
-					firstChild = last->nextSibling;
-				}
-
-				first->prevSibling = nullptr;
-				last->nextSibling = nullptr;
-
-				for (auto curr = first;; curr = curr->nextSibling) {
-					curr->setPos(curr->getRelPos());
-					curr->parent = nullptr;
-					if (curr == last) { break; }
-				}
-
+			ENGINE_INLINE void removeChildren(Panel* first, Panel* last) {
+				removeChildrenNoLayout(first, last);
 				performLayout();
 			}
 
 			/**
 			 * Add a child to the end of the child list.
 			 * This panel now owns the child.
+			 * 
+			 * @see addChildren
 			 */
-			Panel* addChild(Panel* child) {
-				appendChild(child);
-				performLayout();
+			ENGINE_INLINE Panel* addChild(Panel* child) {
+				insertChildren(nullptr, child, child);
 				return child;
 			}
 
 			/**
-			 * Add multiple panels as children of this panel.
+			 * Add multiple orphaned panels as children of this panel.
 			 * Perfoms layout only once.
+			 *
+			 * @see addChild
 			 */
 			void addChildren(ArrayView<Panel* const> children) {
-				for (Panel* child : children) {
-					appendChild(child);
-				}
+				unsafe_CreateSiblings(children);
+				insertChildren(nullptr, children.front(), children.back());
+			}
+
+			/**
+			 * Inserts the panel @p child before @p before.
+			 *
+			 * @see insertChildren
+			 */
+			ENGINE_INLINE void insertChild(Panel* before, Panel* child) {
+				insertChildren(before, child, child);
+			}
+
+			/**
+			 * Inserts the panels [@p first, @p last] inclusive before @p before.
+			 * @p before Must not be in the range [@p first, @p last].
+			 *
+			 * @see insertChild
+			 */
+			ENGINE_INLINE void insertChildren(Panel* before, Panel* first, Panel* last) {
+				insertChildrenNoLayout(before, first, last);
 				performLayout();
 			}
 
@@ -484,30 +507,80 @@ namespace Engine::UI {
 				performLayout();
 				if (parent) { parent->onChildChanged(this); }
 			}
+			
+			void insertChildrenNoLayout(Panel* before, Panel* first, Panel* last) {
+				ENGINE_DEBUG_ASSERT(first != nullptr);
+				ENGINE_DEBUG_ASSERT(last != nullptr);
 
-			/**
-			 * Sets a panel as a child of this panel.
-			 * Does not perform layout.
-			 */
-			Panel* appendChild(Panel* child) {
-				if (child->parent) {
-					child->parent->removeChild(child);
+				// Orphan children
+				if (auto parent = first->parent) {
+					if (parent == this) {
+						removeChildrenNoLayout(first, last);
+					} else {
+						parent->removeChildren(first, last);
+					}
 				}
 
-				if (lastChild) {
-					ENGINE_DEBUG_ASSERT(lastChild->nextSibling == nullptr);
-					ENGINE_DEBUG_ASSERT(child->prevSibling == nullptr);
-					lastChild->nextSibling = child;
-					child->prevSibling = lastChild;
+				// Insert children
+				if (before == firstChild) {
+					firstChild = first;
+				}
+
+				if (before == nullptr) {
+					if (lastChild) {
+						lastChild->nextSibling = first;
+						first->prevSibling = lastChild;
+					}
+
+					lastChild = last;
 				} else {
-					ENGINE_DEBUG_ASSERT(firstChild == nullptr);
-					firstChild = child;
+					if (auto prev = before->prevSibling) {
+						prev->nextSibling = first;
+						first->prevSibling = prev;
+					}
+
+					last->nextSibling = before;
+					before->prevSibling = last;
 				}
 
-				child->parent = this;
-				lastChild = child;
-				child->setRelPos(child->getPos());
-				return child;
+				// Make relative
+				for (auto curr = first;; curr = curr->getNextSiblingRaw()) {
+					curr->parent = this;
+					// TODO: setPos calls layout on children, is there any way to defer this until after perform layout?
+					// TODO: cont. because performLayout is likely(but not guaranteed) to move them again.
+					curr->setPos(curr->getPos() + getPos()); // Update position to be relative to parent
+					if (curr == last) { break; }
+				}
+			}
+
+			void removeChildrenNoLayout(Panel* first, Panel* last) {
+				ENGINE_DEBUG_ASSERT(first->parent == this, "Attempting to remove invalid panel range.");
+				ENGINE_DEBUG_ASSERT(last->parent == this, "Attempting to remove invalid panel range.");
+
+				if (last->nextSibling) {
+					last->nextSibling->prevSibling = first->prevSibling;
+				}
+
+				if (first->prevSibling) {
+					first->prevSibling->nextSibling = last->nextSibling;
+				}
+
+				if (last == lastChild) {
+					lastChild = first->prevSibling;
+				}
+
+				if (first == firstChild) {
+					firstChild = last->nextSibling;
+				}
+
+				first->prevSibling = nullptr;
+				last->nextSibling = nullptr;
+
+				for (auto curr = first;; curr = curr->nextSibling) {
+					curr->setPos(curr->getRelPos());
+					curr->parent = nullptr;
+					if (curr == last) { break; }
+				}
 			}
 	};
 
