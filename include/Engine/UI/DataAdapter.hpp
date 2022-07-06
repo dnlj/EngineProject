@@ -43,7 +43,7 @@ namespace Engine::UI {
 			uint32 iter = 0;
 
 		public:
-			ENGINE_INLINE Self& self() noexcept { return *reinterpret_cast<Self*>(this); }
+			ENGINE_INLINE Self& self() noexcept { return *static_cast<Self*>(this); }
 			ENGINE_INLINE bool filter(const Id&) const noexcept { return true; }
 			ENGINE_INLINE void updatePanel(Id id, Panel* panel) const noexcept {}
 			ENGINE_INLINE void update() const noexcept {}
@@ -86,4 +86,104 @@ namespace Engine::UI {
 				}
 			}
 	};
+
+	// TODO: merge with or remove above
+	template<class Self_, class Id_, class Checksum_, bool Ordered = false>
+	class DataAdapter2 {
+		public:
+			using Self = Self_;
+			using Id = Id_;
+			using Checksum = Checksum_;
+
+		private:
+			struct Store {
+				Panel* first = nullptr;
+				Panel* last = nullptr;
+				Checksum checksum = 0;
+				uint32 iter = 0;
+			};
+
+			Engine::FlatHashMap<Id, Store> cache;
+			uint32 iter = 0;
+
+		public:
+			ENGINE_INLINE Self& self() noexcept { return *static_cast<Self*>(this); }
+			ENGINE_INLINE bool filter(const Id&) const noexcept { return true; }
+			ENGINE_INLINE void updatePanel(Id id, Panel* panel) const noexcept {}
+			ENGINE_INLINE void update() const noexcept {}
+
+			void operator()(Panel* parent) {
+				++iter;
+
+				self().update();
+
+				// Create and update items
+				Panel* nextPanel = nullptr;
+				if constexpr (Ordered) {
+					nextPanel = parent->getFirstChildRaw();
+				}
+
+				for (auto it = self().begin(), e = self().end(); it != e; ++it) {
+					auto id = self().getId(it);
+
+					if (!self().filter(id)) { continue; }
+
+					auto found = cache.find(id);
+					if (found == cache.end()) {
+						auto panels = self().createPanel(id, it, parent->getContext());
+
+						ENGINE_DEBUG_ASSERT(std::size(panels) > 0, "Attempting to create zero panels in UI DataAdapter.");
+
+						auto [emplacedIt, _] = cache.emplace(id, Store{
+							.first = *std::begin(panels),
+							.last = *--std::end(panels),
+							.checksum = self().check(id),
+							.iter = iter,
+						});
+
+						found = emplacedIt;
+
+						Panel::unsafe_CreateSiblings(panels);
+						parent->insertChildren(nextPanel, found->second.first, found->second.last);
+					} else {
+						found->second.iter = iter;
+
+						if constexpr (Ordered) {
+							if (found->second.first != nextPanel) {
+								parent->insertChildren(nextPanel, found->second.first, found->second.last);
+							}
+						}
+
+						if (auto sum = self().check(id); sum != found->second.checksum) {
+							self().updatePanel(id, found->second.first);
+							found->second.checksum = sum;
+						}
+					}
+
+					if constexpr (Ordered) {
+						nextPanel = found->second.last->getNextSiblingRaw();
+					}
+				}
+
+				// Remove old items
+				for (auto it = cache.begin(), e = cache.end(); it != e;) {
+					if (it->second.iter != iter) {
+						parent->getContext()->deletePanels(it->second.first, it->second.last);
+						it = cache.erase(it);
+					} else {
+						++it;
+					}
+				}
+			}
+
+		protected:
+			/**
+			 * Convert a set of panels to an array (std::array<Panel*, N>).
+			 */
+			template<std::convertible_to<Panel*>... Ps>
+			ENGINE_INLINE constexpr static auto group(Ps... ps) noexcept {
+				return std::array<Panel*, sizeof...(Ps)>{ps...};
+			}
+	};
+
 }
