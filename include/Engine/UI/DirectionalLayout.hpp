@@ -62,11 +62,11 @@ namespace Engine::UI {
 				return val;
 			}
 
-			virtual float32 getAutoHeight(const Panel* panel) const override {
+			virtual float32 getAutoHeight(const Panel* panel) override {
 				return getAutoDim(panel, Direction::Vertical);
 			}
 
-			virtual float32 getAutoWidth(const Panel* panel) const override {
+			virtual float32 getAutoWidth(const Panel* panel) override {
 				return getAutoDim(panel, Direction::Horizontal);
 			}
 

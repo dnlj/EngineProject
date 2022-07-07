@@ -9,7 +9,7 @@ namespace Engine {
 	 * Manages a resource's lifetime.
 	 */
 	template<class T>
-	class ResourceManager { // TODO: rename
+	class ResourceManager {
 		public:
 			using ResourceId = uint32;
 			using ResourceRef = ResourceRef<T>;
@@ -87,11 +87,13 @@ namespace Engine {
 					found = lookup.try_emplace(key, ref).first;
 				}
 
-				ENGINE_INFO("[ResourceLoader] Get resource \"", typeid(Resource).name(), "\" ", found->second._debug()->refCount);
 				return found->second;
 			}
 
 			// TODO: unload/free/release/etc
+
+			const auto begin() const { return lookup.cbegin(); }
+			const auto end() const { return lookup.cend(); }
 
 		private:
 			virtual Resource load(const Key& key) = 0;

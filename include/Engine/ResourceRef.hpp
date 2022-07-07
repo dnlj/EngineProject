@@ -56,5 +56,6 @@ namespace Engine {
 			operator bool() const noexcept { return info; }
 
 			const auto* _debug() const noexcept { return info; }
+			const auto count() const noexcept { return info->refCount; }
 	};
 }

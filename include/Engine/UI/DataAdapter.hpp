@@ -86,7 +86,28 @@ namespace Engine::UI {
 				}
 			}
 	};
-
+	
+	/**
+	 * Provides a Context::PanelUpdateFunc to manage panels derived from external data using checksums an polling.
+	 * 
+	 * Uses CRTP.
+	 * Derived classes must implement:
+	 * - `It`, Some iterator like type used to iterate data items.
+	 * - `It begin()`, Gets the begin iterator.
+	 * - `It end()`, Gets the end iterator.
+	 * - `Id getId(It it)`, Gets the id for an item.
+	 * - `Checksum check(const Id& id)`, Gets the checksum for an item. Used to determine if panels need updating.
+	 * - `auto createPanel(const Id& id, It it, Context* ctx)`, Creates a panel for an item. Returns a range of panels to be added as children.
+	 * - `void updatePanel(const Id& id, Panel* panel)`, Optional. Updates an existing panel for an item.
+	 * - `bool filter(const Id& id)`, Optional. Determines if an item should be used.
+	 * - `void update()`, Optional. Called once per adapter update.
+	 * - `void remove(const Id&, Panel* panel)` Optional. Called before an item is removed.
+	 * 
+	 * @tparam Self_ The CRTP derived class.
+	 * @tparam Id_ The type used to identify an item.
+	 * @tparam Checksum_ The checksum type used to determine if an item has changed.
+	 * 
+	 */
 	// TODO: merge with or remove above
 	template<class Self_, class Id_, class Checksum_, bool Ordered = false>
 	class DataAdapter2 {
@@ -109,8 +130,9 @@ namespace Engine::UI {
 		public:
 			ENGINE_INLINE Self& self() noexcept { return *static_cast<Self*>(this); }
 			ENGINE_INLINE bool filter(const Id&) const noexcept { return true; }
-			ENGINE_INLINE void updatePanel(Id id, Panel* panel) const noexcept {}
+			ENGINE_INLINE void updatePanel(const Id& id, Panel* panel) const noexcept {}
 			ENGINE_INLINE void update() const noexcept {}
+			ENGINE_INLINE void remove(const Id& id) const noexcept {}
 
 			void operator()(Panel* parent) {
 				++iter;
@@ -124,13 +146,13 @@ namespace Engine::UI {
 				}
 
 				for (auto it = self().begin(), e = self().end(); it != e; ++it) {
-					auto id = self().getId(it);
+					const auto& id = self().getId(it);
 
 					if (!self().filter(id)) { continue; }
 
 					auto found = cache.find(id);
 					if (found == cache.end()) {
-						auto panels = self().createPanel(id, it, parent->getContext());
+						auto panels = self().createPanel(std::as_const(id), it, parent->getContext());
 
 						ENGINE_DEBUG_ASSERT(std::size(panels) > 0, "Attempting to create zero panels in UI DataAdapter.");
 
@@ -168,6 +190,7 @@ namespace Engine::UI {
 				// Remove old items
 				for (auto it = cache.begin(), e = cache.end(); it != e;) {
 					if (it->second.iter != iter) {
+						self().remove(std::as_const(it->first), it->second.first);
 						parent->getContext()->deletePanels(it->second.first, it->second.last);
 						it = cache.erase(it);
 					} else {
@@ -175,6 +198,8 @@ namespace Engine::UI {
 					}
 				}
 			}
+
+			const auto& getCache() const noexcept { return cache; }
 
 		protected:
 			/**

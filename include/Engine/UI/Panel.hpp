@@ -288,7 +288,7 @@ namespace Engine::UI {
 				return getHeight();
 			}
 
-			ENGINE_INLINE void autoHeight() {
+			void autoHeight() {
 				setHeight(getAutoHeight());
 			}
 

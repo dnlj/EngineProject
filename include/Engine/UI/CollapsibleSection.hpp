@@ -18,7 +18,7 @@ namespace Engine::UI {
 			struct Layout : DirectionalLayout {
 				using DirectionalLayout::DirectionalLayout;
 
-				virtual float32 getAutoHeight(const Panel* panel) const override {
+				virtual float32 getAutoHeight(const Panel* panel) override {
 					auto section = reinterpret_cast<const CollapsibleSection*>(panel);
 					auto content = section->getContent();
 					const auto h = content->isEnabled() ? content->getAutoHeight() + gap : 0;

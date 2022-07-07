@@ -50,6 +50,7 @@ namespace Game {
 
 			Engine::Gfx::VertexLayoutManager& getVertexLayoutManager() noexcept;
 			Engine::Gfx::VertexLayoutLoader& getVertexLayoutLoader() noexcept;
+
 			Engine::Gfx::BufferManager& getBufferManager() noexcept;
 
 			Engine::Gfx::ShaderManager& getShaderManager() noexcept;
