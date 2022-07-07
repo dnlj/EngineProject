@@ -29,7 +29,7 @@ NodeEditor.json
 premake5.exe
 
 # Doxygen
-/[Dd]ocs/
+/[Dd]ocs/generated/
 doxy*.exe
 libclang.dll
 
