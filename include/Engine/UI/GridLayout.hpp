@@ -24,9 +24,15 @@ namespace Engine::UI {
 
 		public:
 			// TODO: gap param
-			virtual float32 getAutoHeight(const Panel* panel) const { return 53; };
-			virtual float32 getAutoWidth(const Panel* panel) const { return 53; };
-
+			float32 getAutoDim(const Panel* panel, int dim);
+			virtual float32 getAutoWidth(const Panel* panel) override { return getAutoDim(panel, 0); }
+			virtual float32 getAutoHeight(const Panel* panel) override { return getAutoDim(panel, 1); }
 			virtual void layout(Panel* panel);
+
+		private:
+			/**
+			 * Resize our CellMetrics for a panel and its siblings.
+			 */
+			void resizeMetrics(const Panel* panel);
 	};
 }

@@ -4,24 +4,42 @@
 
 
 namespace Engine::UI {
+	void GridLayout::resizeMetrics(const Panel* panel) {
+		glm::ivec2 realDims = {};
+
+		for (auto curr = panel->getFirstChild(); curr; curr = curr->getNextSibling()) {
+			realDims = glm::max(realDims, curr->getGridPos());
+		}
+
+		++realDims.x;
+		++realDims.y;
+
+		// Update and clear cell metric storage
+		metrics.col.clear();
+		metrics.col.resize(realDims.x);
+		metrics.row.clear();
+		metrics.row.resize(realDims.y);
+	}
+
+	float32 GridLayout::getAutoDim(const Panel* panel, int dim) {
+		resizeMetrics(panel);
+		auto& met = dim ? metrics.row : metrics.col;
+
+		if (met.size() == 0) { return 0; }
+
+		for (auto curr = panel->getFirstChild(); curr; curr = curr->getNextSibling()) {
+			auto& cell = met[curr->getGridPos()[dim]];
+			cell.val = std::max(cell.val, curr->getSize()[dim]);
+		}
+
+		float32 total = (met.size() - 1) * gap;
+		for (const auto& cell : met) { total += cell.val; }
+		return std::max(0.0f, total);
+	};
+
 	void GridLayout::layout(Panel* panel) {
 		// Figure out grid dimensions
-		{
-			glm::ivec2 realDims = {};
-
-			for (auto curr = panel->getFirstChild(); curr; curr = curr->getNextSibling()) {
-				realDims = glm::max(realDims, curr->getGridPos());
-			}
-
-			realDims.x = dims.x ? dims.x : realDims.x + 1;
-			realDims.y = dims.y ? dims.y : realDims.y + 1;
-
-			// Update and clear cell metric storage
-			metrics.col.clear();
-			metrics.col.resize(realDims.x);
-			metrics.row.clear();
-			metrics.row.resize(realDims.y);
-		}
+		resizeMetrics(panel);
 
 		// Figure out row/col properties
 		auto usableX = panel->getWidth();
