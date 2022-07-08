@@ -64,7 +64,10 @@ namespace Engine::Net {
 			ENGINE_INLINE friend void swap(UDPSocket& a, UDPSocket& b) noexcept {
 				using std::swap;
 				swap(a.handle, b.handle);
-				swap(a.sim, b.sim);
+				
+				#ifdef ENGINE_UDP_NETWORK_SIM
+					swap(a.sim, b.sim);
+				#endif
 			}
 
 			UDPSocket() = delete;

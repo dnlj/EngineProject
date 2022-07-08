@@ -149,16 +149,22 @@ namespace Engine::Net {
 
 	UDPSocket::~UDPSocket() {
 		if (handle != invalid) { closesocket(handle); }
+		#ifdef ENGINE_UDP_NETWORK_SIM
 		delete sim;
+		#endif
 	};
-
+	
+	#ifdef ENGINE_UDP_NETWORK_SIM
 	UDPSimSettings& UDPSocket::getSimSettings() noexcept {
 		return sim->getSettings();
 	}
-
+	#endif
+	
+	#ifdef ENGINE_UDP_NETWORK_SIM
 	void UDPSocket::realSimSend() {
 		return sim->realSend(*this);
 	}
+	#endif
 	
 	void UDPSocket::init(const SocketFlag flags) {
 		ENGINE_DEBUG_ASSERT(handle == invalid, "Only an uninitialized socket can be initialized.");

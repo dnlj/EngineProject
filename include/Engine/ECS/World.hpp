@@ -456,7 +456,7 @@ namespace Engine::ECS {
 				ENGINE_DEBUG_ASSERT(!hasComponent<C>(ent), "Attempting to add duplicate component (", cid ,") to ", ent);
 				auto& cbits = compBitsets[ent.id];
 				cbits.set(cid);
-
+				
 				auto& container = getComponentContainer<C>();
 				auto& comp = container.add(ent, std::forward<Args>(args)...);
 
@@ -749,8 +749,6 @@ namespace Engine::ECS {
 			 */
 			template<class C>
 			ENGINE_INLINE ComponentContainer<C>& getComponentContainer() {
-				// Enabling this assert seems to cause compile errors with some of the `if constexpr` stuff
-				//static_assert(!IsFlagComponent<C>::value, "Attempting to get the container for a flag component.");
 				return *static_cast<ComponentContainer<C>*>(compContainers[getComponentId<C>()]);
 			}
 

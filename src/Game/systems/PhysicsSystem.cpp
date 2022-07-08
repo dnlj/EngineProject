@@ -25,7 +25,7 @@ namespace Game {
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
 			physWorld.SetDebugDraw(&debugDraw);
-			debugDraw.setup(engine.camera);
+			debugDraw.setup(engine.getCamera());
 		#endif
 	}
 
