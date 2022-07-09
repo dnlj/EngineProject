@@ -59,9 +59,36 @@ while (!window.shouldClose()) {
 ```
 
 ## Networking
-- TODO: concepts: packet, channel, message, connection
-- TODO: example (bit packing)
-- TODO: note about api rework.
+Networking is implemented on top of UDP using messages and channels. A message is a group of data that is sent over a specific channel. A channel is a logical sequence of related messages. Channels can provide various guarantees and functionality for messages such as reliability, ordering, priority, and large message splitting which can all be configured and a per channel basis.
+
+In the background messages from multiple channels are combined into a UDP packet, sent, and reassembled on the receiving side.
+
+Here is an example of what usage might look like. This API is likely to change in the future as im not really happy with how bare bones and error prone this can be.
+```C++
+void send(Connection& conn) {
+	float32 foo = 3.14159f;
+	std::string bar = "The quick brown fox jumps over the lazy dog.";
+
+	if (auto msg = conn.beginMessage<Messages::MyExampleMessage>()) {
+		msg.write(foo);
+		msg.write(bar.size());
+		msg.write(bar.data(), bar.size());
+	}
+}
+
+void recv(Connection& conn) {
+	if (auto* foo = conn.read<float32>()) {
+		*foo;
+		// ...
+	}
+
+	if (auto* len = conn.read<uint64>()) {
+		char* str = conn.read(*len);
+		std::string(str, *len);
+		// ...
+	}
+}
+```
 
 ## User Interface
 - TODO: API Example
