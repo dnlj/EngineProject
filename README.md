@@ -9,6 +9,7 @@ and will typically operate on all entities that have a certain set of components
 
 ### Example
 Here's a basic example of what usage might look like.
+
 ```C++
 struct PhysicsComponent {
 	vec2 position = {0, 0};
@@ -63,6 +64,7 @@ Networking is implemented on top of UDP using messages and channels. A message i
 
 In the background messages from multiple channels are combined into a UDP packet, sent, and reassembled on the receiving side.
 
+### Example
 Here is an example of what usage might look like. This API is likely to change in the future as im not really happy with how bare bones and error prone this can be.
 ```C++
 void send(Connection& conn) {
@@ -91,15 +93,40 @@ void recv(Connection& conn) {
 ```
 
 ## User Interface
-- TODO: API Example
-- TODO: Font rendering
-- TODO: img
+The user interface library uses OpenGL for rendering, FreeType for glyph generation, and HarfBuzz for layout.
+
+With the current rendering implementation there is a lot of room for improvement with how draw batches are handled. Specifically around clipping, textures, and text rendering. In the future it should be possible to reduce the number of draw calls by a huge margin.
+
+Currently there is no support for fallbacks or full color emoji, these features will likely be added in the future.
+
+### Example
+Here is an example of a creating a window with a text box and button.
+
+```C++
+auto win = ctx.createPanel<Window>(ctx.getRoot());
+win->setTitle("UI Example");
+win->setSize({275, 100});
+
+auto cont = win->getContent();
+cont->setLayout(new DirectionalLayout{Direction::Horizontal, Align::Start, Align::Start, theme.sizes.pad1});
+
+auto text = ctx.createPanel<TextBox>(cont);
+text->autoText("This is a editable text box!");
+
+auto btn = ctx.createPanel<Button>(cont);
+btn->autoText("Submit");
+```
+![Simple user interface example window](/docs/img/ui_simple_example.png)
+
+Here is a more complex example including graphs, clipping, scroll sections, editable text, sliders, collapsible sections, etc.
+
+![Complex user interface example window](/docs/img/ui_complex_example.png)
 
 ## Rendering
-Currently being reworked. Check back later.
+Currently being heavily reworked. Check back later.
 
 ## Utilities and Data Structures
-- TODO: data structures (SparseSet, StaticVector,
+- TODO: data structures (SparseSet, StaticVector, Bitset, RingBuffer(static/dynamic), SeqBuffer, etc)
 - TODO: utilities
 - TODO: command line
 - TODO: file type (see example.cfg)
@@ -110,6 +137,7 @@ Currently being reworked. Check back later.
 - TODO: Premake stuff
 
 # Game
+- TODO: game level networking (interp, buffer, etc)
 - TODO: terrain gen
-![Terrain physics bounding boxes](/docs/terrain_physics_debug.png)
-![Terrain with textured wireframe](/docs/terrain_textured_wireframe.png)
+![Terrain physics bounding boxes](/docs/img/terrain_physics_debug.png)
+![Terrain with textured wireframe](/docs/img/terrain_textured_wireframe.png)
