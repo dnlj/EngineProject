@@ -5,6 +5,9 @@
 *.dll
 /_TEMP_*_
 
+# Photoshop
+**.psd
+
 # Windows Shortcuts
 *.lnk
 
