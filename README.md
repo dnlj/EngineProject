@@ -1,5 +1,5 @@
 # Engine Project
-TODO: project desc
+A game engine i have been working on in my free time. Very much a work in progress.
 
 ## Entity Component System
 An Entity-Component-System (ECS) architecture is a way of structuring your program around the ideas
@@ -128,10 +128,10 @@ Currently being heavily reworked. Check back later.
 ## Utilities and Data Structures
 
 ### Data Structures
-- SparseSet: TODO
 - StaticVector: An array/vector like data structure with a static capacity and dynamic size.
 - RingBuffer: A typical ring buffer with variants for both static and dynamic capacity.
 - Bitset: A bitset similar to `std::bitset` but allows access to the underlying data. (serialization, networking, etc.)
+- SparseSet: TODO
 - SequenceBuffer: TODO
 
 ### Command Line Parser
@@ -199,8 +199,14 @@ if (dec_var) { ... }
 
 # Game
 - TODO: game level networking (interp, buffer, etc)
-- TODO: terrain gen
+
+### Terrain Generation
+- TODO: terrain gen (2d, tile based, noise functions, etc)
+
+Physics bounds generation:
 ![Terrain physics bounding boxes](/docs/img/terrain_physics_debug.png)
+
+Rendering bounds generation:
 ![Terrain with textured wireframe](/docs/img/terrain_textured_wireframe.png)
 
 
