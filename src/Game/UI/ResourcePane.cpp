@@ -131,6 +131,8 @@ namespace Game::UI {
 					break;
 				}
 			}
+
+			return true;
 		});
 
 		body = ctx->constructPanel<EUI::Panel>();

@@ -44,7 +44,7 @@ namespace Engine::UI {
 
 	class Dropdown : public StringLine {
 		public:
-			using OnSelectionCallback = std::function<void(DropdownOption*)>;
+			using OnSelectionCallback = std::function<bool(DropdownOption*)>;
 
 		private:
 			friend class DropdownContent;
@@ -125,15 +125,17 @@ namespace Engine::UI {
 
 namespace Engine::UI {
 	inline void DropdownContent::select(DropdownOption* opt) {
+		if (dropdown->onSelection) {
+			if (!dropdown->onSelection(opt)) { return; }
+		}
+
 		if (selected) { selected->selected = false; }
 		selected = opt;
 		if (opt) { opt->selected = true; }
-
-		if (dropdown->onSelection) {
-			dropdown->onSelection(opt);
-		}
 	}
-	
+}
+
+namespace Engine::UI { 
 	inline bool DropdownOption::onBeginActivate() {
 		reinterpret_cast<DropdownContent*>(getParent())->select(this);
 		return true;
