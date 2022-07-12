@@ -1,5 +1,5 @@
 # Engine Project
-A game engine i have been working on in my free time. Very much a work in progress.
+A game engine I have been working on in my free time. Very much a work in progress.
 
 ## Entity Component System
 An Entity-Component-System (ECS) architecture is a way of structuring your program around the ideas
@@ -60,7 +60,7 @@ while (!window.shouldClose()) {
 ```
 
 ## Networking
-Networking is implemented on top of UDP using messages and channels. A message is a group of data that is sent over a specific channel. A channel is a logical sequence of related messages. Channels can provide various guarantees and functionality for messages such as reliability, ordering, priority, and large message splitting which can all be configured and a per channel basis.
+Networking is implemented on top of UDP using messages and channels. A message is a group of data that is sent over a specific channel. A channel is a logical sequence of related messages. Channels can provide various guarantees and functionality for messages such as reliability, ordering, priority, and large message splitting which can all be configured on a per channel basis.
 
 In the background messages from multiple channels are combined into a UDP packet, sent, and reassembled on the receiving side.
 
@@ -131,8 +131,8 @@ Currently being heavily reworked. Check back later.
 - StaticVector: An array/vector like data structure with a static capacity and dynamic size.
 - RingBuffer: A typical ring buffer with variants for both static and dynamic capacity.
 - Bitset: A bitset similar to `std::bitset` but allows access to the underlying data. (serialization, networking, etc.)
-- SparseSet: TODO
-- SequenceBuffer: TODO
+- SparseSet: TODO: description
+- SequenceBuffer: TODO: description
 
 ### Command Line Parser
 A utility class for reading, interpreting, and defaulting command line arguments.
