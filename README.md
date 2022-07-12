@@ -126,10 +126,71 @@ Here is a more complex example including graphs, clipping, scroll sections, edit
 Currently being heavily reworked. Check back later.
 
 ## Utilities and Data Structures
-- TODO: data structures (SparseSet, StaticVector, Bitset, RingBuffer(static/dynamic), SeqBuffer, etc)
-- TODO: utilities
-- TODO: command line
-- TODO: file type (see example.cfg)
+
+### Data Structures
+- SparseSet: TODO
+- StaticVector: An array/vector like data structure with a static capacity and dynamic size.
+- RingBuffer: A typical ring buffer with variants for both static and dynamic capacity.
+- Bitset: A bitset similar to `std::bitset` but allows access to the underlying data. (serialization, networking, etc.)
+- SequenceBuffer: TODO
+
+### Command Line Parser
+A utility class for reading, interpreting, and defaulting command line arguments.
+
+#### Example
+```C++
+// Setup: add<Type>(full name, short, default, description)
+parser
+	.add<uint16>("port", 'p', 21212,
+		"The port to listen on.")
+	.add<IPv4Address>("group", 'g', {224,0,0,212, 12121},
+		"The multicast group to join for server discovery. Zero to disable.")
+	.add<std::string>("log", 'l', "",
+		"The file to use for logging.")
+	.add<bool>("logColor",
+		"Enable or disable color log output.")
+	.add<bool>("logTimeOnly",
+		"Show only time stamps instead of full dates in log output.");
+
+// Reading
+auto* port = parser.get<uint16>("port");
+if (port) { ... }
+```
+
+### Config File Parser
+An `.ini` inspired format with support for data types, multiline strings, and trailing comments.
+One of the main benefit of this format is the ability to maintain source formatting such as whitespace and comments when edited programmatically.
+
+#### Example
+A file might look something like this:
+```
+# example.cfg
+[NumberExamples]
+bool_var = true # Trailing comments
+bin_var = 0b101010
+hex_var = 0xDEADBEEF
+dec_var = 12345
+float_var = -123.67e+10
+
+[AnotherSection]
+string_key = "This is a
+multiline string example \"with a quote\""
+```
+
+Using the parser:
+```C++
+// Load from file
+parser.loadAndTokenize("example.cfg");
+
+// Modify
+parser.insert("AnotherSection.new_key", 1.618);
+parser.remove("NumberExamples.bin_var");
+parser.save("example_modified.cfg");
+
+// Reading
+auto* dec_var = parser.get<int64>("NumberExamples.dec_var");
+if (dec_var) { ... }
+```
 
 # Build
 - TODO: link to docs/building.md
@@ -141,3 +202,6 @@ Currently being heavily reworked. Check back later.
 - TODO: terrain gen
 ![Terrain physics bounding boxes](/docs/img/terrain_physics_debug.png)
 ![Terrain with textured wireframe](/docs/img/terrain_textured_wireframe.png)
+
+
+
