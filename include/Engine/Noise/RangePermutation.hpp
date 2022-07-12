@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/Noise/Noise.hpp>
+#include <Engine/Noise/noise.hpp>
 #include <Engine/Engine.hpp>
 
 

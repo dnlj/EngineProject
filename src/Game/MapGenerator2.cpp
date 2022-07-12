@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 
 // Engine
-#include <Engine/Noise/Noise.hpp>
+#include <Engine/Noise/noise.hpp>
 
 // Game
 #include <Game/MapGenerator2.hpp>

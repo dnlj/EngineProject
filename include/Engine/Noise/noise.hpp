@@ -2,8 +2,6 @@
 
 
 namespace Engine::Noise {
-	// TODO: name
-	// TODO: split
 	/**
 	 * Applies and linear congruential generator (LCG) to @p seed to generate a pseudorandom number.
 	 * @tparam T The numeric type to operate on.
@@ -16,7 +14,6 @@ namespace Engine::Noise {
 		return seed * 6364136223846793005l + 1442695040888963407l;
 	}
 
-	// TODO: split
 	// TODO: Check if this is actually faster
 	/**
 	 * Takes the floor of @p x and returns it as @p Int.

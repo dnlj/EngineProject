@@ -7,7 +7,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/BaseMember.hpp>
-#include <Engine/Noise/Noise.hpp>
+#include <Engine/Noise/noise.hpp>
 #include <Engine/Noise/RangePermutation.hpp>
 #include <Engine/Noise/Metric.hpp>
 

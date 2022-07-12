@@ -28,7 +28,7 @@ namespace Engine::Noise {
 			template<class Vec>
 			[[nodiscard]] ENGINE_INLINE decltype(auto) operator()(const Vec& a, const Vec& b) const noexcept {
 				static_assert(Vec::length() == 2, "TODO: impl for more vector sizes");
-				// Some reason if we use glm funcs they aren't inlined even with GLM_FORCE_INLINE and result it code that is twice as slow (in release mode)
+				// Some reason if we use glm funcs they aren't inlined even with GLM_FORCE_INLINE and resulted in code that is twice as slow (in release mode)
 				return abs(b.x-a.x) + abs(b.y-a.y);
 			}
 	};

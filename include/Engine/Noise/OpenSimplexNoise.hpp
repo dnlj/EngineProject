@@ -1,18 +1,15 @@
 #pragma once
-// TODO: split? inline?
-// TODO: move to namespace
-// TODO: Cleanup
 
 // GLM
 #include <glm/fwd.hpp>
 
 // Engine
-#include <Engine/Noise/Noise.hpp>
+#include <Engine/Noise/noise.hpp>
 #include <Engine/Noise/RangePermutation.hpp>
 
 
 namespace Engine::Noise {
-	// Originally from: https://gist.github.com/KdotJPG/b1270127455a94ac5d19
+	// Originally from: https://gist.github.com/KdotJPG/b1270127455a94ac5d19 which was/is public domain.
 	template<std::floating_point Float, std::integral Int>
 	class OpenSimplexNoiseGeneric {
 		public:
