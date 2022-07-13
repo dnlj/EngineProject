@@ -32,25 +32,25 @@ namespace {
 				return hash;
 			}
 
-			EUI::Panel* createPanel(Id id, EUI::Context& ctx) const {
+			auto createPanel(Id id, It it, EUI::Context* ctx) const {
 				auto& conn = *world.getComponent<Game::ConnectionComponent>(id).conn;
 				const auto& addr = conn.address();
 
-				auto* base = ctx.constructPanel<EUI::Panel>();
+				auto* base = ctx->constructPanel<EUI::Panel>();
 				base->setRelPos({});
 				base->setSize({128,128});
-				base->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx.getTheme().sizes.pad1});
+				base->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, ctx->getTheme().sizes.pad1});
 				base->setAutoSizeHeight(true);
 
-				auto* ipLabel = ctx.createPanel<EUI::Label>(base);
+				auto* ipLabel = ctx->createPanel<EUI::Label>(base);
 				ipLabel->autoText(fmt::format("{}", addr));
 
 				for (const auto s : conn.getAllChannelQueueSizes()) {
-					ctx.createPanel<EUI::Label>(base);
+					ctx->createPanel<EUI::Label>(base);
 				}
 
 				updatePanel(id, base);
-				return base;
+				return this->group(base);
 			}
 
 			void updatePanel(Id id, EUI::Panel* panel) const {

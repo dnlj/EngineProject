@@ -78,26 +78,26 @@ namespace {
 				}
 			}
 
-			EUI::Panel* createPanel(Id id, EUI::Context& ctx) const {
+			auto createPanel(Id id, It it, EUI::Context* ctx) const {
 				auto& info = world.getSystem<Game::NetworkingSystem>().servers[id];
 
-				auto labels = ctx.constructPanel<EUI::Panel>();
+				auto labels = ctx->constructPanel<EUI::Panel>();
 				labels->setAutoSizeHeight(true);
-				labels->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, ctx.getTheme().sizes.pad1});
-				auto name = ctx.createPanel<EUI::Label>(labels);
+				labels->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, ctx->getTheme().sizes.pad1});
+				auto name = ctx->createPanel<EUI::Label>(labels);
 				name->autoText(info.name);
 				name->setWeight(2);
-				ctx.createPanel<EUI::Label>(labels)->autoText("3/16");
-				ctx.createPanel<EUI::Label>(labels)->autoText("103ms");
+				ctx->createPanel<EUI::Label>(labels)->autoText("3/16");
+				ctx->createPanel<EUI::Label>(labels)->autoText("103ms");
 
-				auto btn = ctx.createPanel<EUI::Button>(labels);
+				auto btn = ctx->createPanel<EUI::Button>(labels);
 				btn->autoText(fmt::format("{}", id));
 				btn->setAction([id](EUI::Button* b){
 					auto engine = b->getContext()->getUserdata<Game::EngineInstance>();
 					connectTo(b->getText(), *engine);
 				});
 
-				return labels;
+				return this->group(labels);
 			}
 	};
 }

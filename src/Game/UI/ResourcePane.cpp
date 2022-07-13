@@ -20,7 +20,7 @@ namespace {
 	using namespace Engine::Types;
 
 	template<class L>
-	class Adapter : public EUI::DataAdapter2<Adapter<L>, std::string, uint64, false> {
+	class Adapter : public EUI::DataAdapter<Adapter<L>, std::string, uint64, false> {
 		private:
 			L& loader;
 			using Id = std::string;
@@ -120,6 +120,8 @@ namespace Game::UI {
 		dd->addOption("Option 4", 0);
 
 		dd->setOnSelection([&](EUI::DropdownOption* opt){
+			// TODO: pop to front if exists
+			// TODO: if not exists create new window - replace conetens with a pane?
 			ctx->clearPanelUpdateFuncs(this);
 			for (auto child = body->getLastChild(); child; child = body->getLastChild()) {
 				ctx->deletePanel(child);

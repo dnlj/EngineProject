@@ -26,8 +26,8 @@ namespace {
 			ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
 			ENGINE_INLINE Checksum check(Id id) const { return *reinterpret_cast<Checksum*>(&id); }
 
-			EUI::Panel* createPanel(Id id, EUI::Context& ctx) const {
-				auto* base = ctx.constructPanel<EUI::Button>();
+			auto createPanel(Id id, It it, EUI::Context* ctx) const {
+				auto* base = ctx->constructPanel<EUI::Button>();
 				base->autoText(fmt::format("{}", id));
 				base->setAction([id](EUI::Button* btn){
 					auto& world = btn->getContext()->getUserdata<Game::EngineInstance>()->getWorld();
@@ -38,7 +38,7 @@ namespace {
 					}
 					world.addComponent<Game::CameraTargetFlag>(id);
 				});
-				return base;
+				return this->group(base);
 			}
 
 	};

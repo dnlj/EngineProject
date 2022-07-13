@@ -27,10 +27,10 @@ namespace {
 			ENGINE_INLINE bool filter(Id id) const noexcept { return world.isAlive(id); }
 			ENGINE_INLINE Checksum check(Id id) const { return *reinterpret_cast<Checksum*>(&id);	}
 
-			EUI::Panel* createPanel(Id id, EUI::Context& ctx) const {
-				auto* base = ctx.constructPanel<EUI::Label>();
+			auto createPanel(Id id, It it, EUI::Context* ctx) const {
+				auto* base = ctx->constructPanel<EUI::Label>();
 				base->autoText(fmt::format("{}", id));
-				return base;
+				return this->group(base);
 			}
 
 	};

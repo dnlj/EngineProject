@@ -232,10 +232,10 @@ namespace {
 				return ++notTheSame;
 			}
 
-			EUI::Panel* createPanel(Id id, EUI::Context& ctx) const {
-				auto* base = ctx.constructPanel<NetGraph>(id, world);
+			auto createPanel(Id id, It it, EUI::Context* ctx) const {
+				auto* base = ctx->constructPanel<NetGraph>(id, world);
 				updatePanel(id, base);
-				return base;
+				return this->group(base);
 			}
 
 			void updatePanel(Id id, EUI::Panel* panel) const {
