@@ -2,17 +2,18 @@
 #include <array>
 
 // Engine
+#include <Engine/FlatHashMap.hpp>
 #include <Engine/Gfx/TextureLoader.hpp>
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
 #include <Engine/UI/DataAdapter.hpp>
 #include <Engine/UI/DirectionalLayout.hpp>
 #include <Engine/UI/Dropdown.hpp>
 #include <Engine/UI/GridLayout.hpp>
-#include <Engine/FlatHashMap.hpp>
+#include <Engine/UI/Window.hpp>
 
 // Game
-#include <Game/UI/ResourcePane.hpp>
 #include <Game/EngineInstance.hpp>
+#include <Game/UI/ResourcePane.hpp>
 
 
 namespace {
@@ -49,6 +50,10 @@ namespace {
 				count->autoText(fmt::format("{}", countOf(id)));
 				count->setWeight(1);
 				count->setGridPos(1, nextRow);
+
+				auto height = label->getFont()->getLineHeight();
+				label->setFixedHeight(height);
+				count->setFixedHeight(height);
 
 				++nextRow;
 				return this->group(label, count);
@@ -89,18 +94,6 @@ namespace {
 			}
 
 	};
-
-	enum class ResourceType {
-		None = 0,
-		VertexLayout,
-		Buffer,
-		Shader,
-		Texture,
-		Mesh,
-		Material,
-		MaterialInstance,
-	};
-	ENGINE_BUILD_DECAY_ENUM(ResourceType);
 }
 
 namespace Game::UI {
@@ -110,7 +103,6 @@ namespace Game::UI {
 
 		auto& engine = *ctx->getUserdata<EngineInstance>();
 		auto* content = getContent();
-		//content->setAutoSize(true);
 		content->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, theme.sizes.pad1});
 
 		auto dd = ctx->constructPanel<EUI::Dropdown>();
@@ -119,30 +111,41 @@ namespace Game::UI {
 		dd->addOption("Option 3", 0);
 		dd->addOption("Option 4", 0);
 
-		dd->setOnSelection([&](EUI::DropdownOption* opt){
-			// TODO: pop to front if exists
-			// TODO: if not exists create new window - replace conetens with a pane?
-			ctx->clearPanelUpdateFuncs(this);
-			for (auto child = body->getLastChild(); child; child = body->getLastChild()) {
-				ctx->deletePanel(child);
+		dd->setOnSelection([&](EUI::DropdownOption* opt) {
+			const auto res = static_cast<ResourceType>(opt->id);
+
+			if (res >= ResourceType::_count || res == ResourceType::None) {
+				ENGINE_WARN("Invalid resource type");
+				return false;
 			}
 
-			switch(static_cast<ResourceType>(opt->id)) {
+			auto& win = windows[+res - 1];
+			if (win) {
+				ctx->setFocus(win);
+				return false;
+			}
+
+			win = ctx->createPanel<EUI::Window>(ctx->getRoot());
+			win->setSize({800, 600});
+			win->center();
+
+			auto cont = win->getContent();
+			cont->setAutoSizeHeight(true);
+			cont->setLayout(new EUI::GridLayout{});// TODO: really want grid with auto widths
+
+			switch(res) {
 				case ResourceType::Texture: {
-					ctx->addPanelUpdateFunc(body, Adapter{engine.getTextureLoader()});
+					win->setTitle("Textures");
+					ctx->addPanelUpdateFunc(cont, Adapter{engine.getTextureLoader()});
 					break;
 				}
 			}
 
-			return true;
+			return false;
 		});
 
-		body = ctx->constructPanel<EUI::Panel>();
-		body->setAutoSizeHeight(true);
-		// TODO: really want grid with auto widths
-		body->setLayout(new EUI::GridLayout{});
-
-		content->addChildren({dd, body});
+		// TODO: change dd children to work with one panel, maybe specialize on contexpr? if you can do that
+		content->addChildren({dd});
 	}
 
 	void ResourcePane::render() {

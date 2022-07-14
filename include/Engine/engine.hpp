@@ -106,7 +106,7 @@
 	ENGINE_BUILD_ASSIGN_BIN_OP(T, %); \
 
 #define ENGINE_BUILD_DECAY_ENUM(T) \
-	constexpr decltype(auto) operator+(const T& t) { return static_cast<std::underlying_type_t<T>>(t); }
+	constexpr inline decltype(auto) operator+(const T& t) noexcept { return static_cast<std::underlying_type_t<T>>(t); }
 
 /**
  * @def ENGINE_EMPTY_BASE
