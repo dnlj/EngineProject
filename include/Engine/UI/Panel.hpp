@@ -278,6 +278,11 @@ namespace Engine::UI {
 			ENGINE_INLINE void lockHeight() noexcept { setFixedHeight(getHeight()); }
 			ENGINE_INLINE void lockSize() noexcept { setFixedSize(getSize()); }
 
+			void center() noexcept {
+				ENGINE_DEBUG_ASSERT(parent, "Attempting to center parentless panel.");
+				setPos(parent->getPos() + (parent->getSize() - getSize()) * 0.5f);
+			}
+
 			ENGINE_INLINE void updateParentPos(const glm::vec2 p) {
 				const auto rel = getRelPos();
 				setPos(p + rel);
@@ -350,7 +355,10 @@ namespace Engine::UI {
 			 * @see addChild
 			 */
 			void addChildren(ArrayView<Panel* const> children) {
-				unsafe_CreateSiblings(children);
+				if (children.size() > 1) {
+					unsafe_CreateSiblings(children);
+				}
+
 				insertChildren(nullptr, children.front(), children.back());
 			}
 
