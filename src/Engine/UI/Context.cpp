@@ -233,12 +233,6 @@ namespace Engine::UI {
 			if (UINT out = 3; SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &out, 0)) {
 				scrollLines = static_cast<float32>(out);
 			}
-
-			ENGINE_LOG("GUI Blink Rate: ", Clock::Milliseconds{cursorBlinkRate}.count());
-			ENGINE_LOG("GUI Click Rate: ", Clock::Milliseconds{clickRate}.count());
-			ENGINE_LOG("GUI Click Size: ", clickSize);
-			ENGINE_LOG("GUI Scroll Lines: ", scrollLines);
-			ENGINE_LOG("GUI Scroll Chars: ", scrollChars);
 		#else
 			#error TODO: impl for non-Windows
 			ENGINE_WARN("Not implemented for non-Windows");

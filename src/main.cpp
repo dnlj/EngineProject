@@ -272,7 +272,6 @@ namespace {
 		}
 		const auto end = std::chrono::high_resolution_clock::now();
 
-		ENGINE_LOG("Size2: ", sizeof(worley2));
 		std::cout << "Map Time (ms): " << std::chrono::duration<long double, std::milli>{end - begin}.count() << "\n";
 
 

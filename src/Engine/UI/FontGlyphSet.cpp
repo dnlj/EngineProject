@@ -72,7 +72,6 @@ namespace Engine::UI {
 		// Setup OpenGL
 		GLint texSize;
 		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texSize);
-		ENGINE_INFO("Maximum texture size: ", texSize);
 
 		initMaxGlyphSize();
 

@@ -61,7 +61,6 @@ namespace Engine {
 					storage.assign(image, image + dims.x * dims.y * channels);
 					SOIL_free_image_data(image);
 				}
-				ENGINE_LOG("Img: ", path, " ", dims.x, " ", dims.y);
 			}
 
 			ENGINE_INLINE operator bool() const noexcept { return fmt != PixelFormat::NONE; }

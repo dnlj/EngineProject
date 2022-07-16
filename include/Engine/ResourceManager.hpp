@@ -31,7 +31,6 @@ namespace Engine {
 					id = static_cast<ResourceId>(infos.size());
 					infos.emplace_back();
 				}
-				ENGINE_INFO("[ResourceManager] Create resource ", typeid(T).name(), " ", sizeof...(args));
 
 				infos[id] = std::make_unique<ResourceInfo>(std::forward<Args>(args)...);
 
@@ -44,7 +43,7 @@ namespace Engine {
 					const auto& info = infos[i];
 					ENGINE_DEBUG_ASSERT(info->refCount >= 0 || info->refCount > 0xFFFF, "Invalid resource reference count. Something went wrong.");
 					if (info->refCount == 0) {
-						ENGINE_LOG("Cleaning resource: ", i); // TODO: remove once tested
+						ENGINE_WARN("Cleaning resource: ", i); // TODO: remove once tested
 						destroy(i);
 					}
 				}
@@ -53,7 +52,6 @@ namespace Engine {
 		private:
 			void destroy(ResourceId id) {
 				ENGINE_DEBUG_ASSERT(id >= 0 && id < infos.size(), "Attempting to free invalid Resource");
-				ENGINE_INFO("[ResourceManager] Destroy resource ", typeid(T).name(), " ", id);
 				infos[id] = nullptr;
 				reuse.push_back(id);
 			}
@@ -82,7 +80,6 @@ namespace Engine {
 			ResourceRef get(const Key& key) {
 				auto found = lookup.find(key);
 				if (found == lookup.end()) {
-					ENGINE_INFO("[ResourceLoader] Create resource ", typeid(Resource).name());
 					const auto& ref = manager.create(load(key));
 					found = lookup.try_emplace(key, ref).first;
 				}
