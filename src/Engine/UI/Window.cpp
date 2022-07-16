@@ -4,6 +4,34 @@
 
 
 namespace Engine::UI {
+	Window::TitleBar::TitleBar(Context* context, Window* window) : Panel{context}, win{window} {
+		const auto& theme = ctx->getTheme();
+
+		setLayout(new DirectionalLayout{Direction::Horizontal, Align::Stretch, Align::Center, 0, 0});
+
+		const auto h = theme.fonts.body->getLineHeight();
+		setFixedHeight(h);
+
+		title = ctx->constructPanel<Label>();
+		title->setFont(theme.fonts.body);
+		title->setPadding(0);
+		title->setFixedHeight(h);
+
+		close = ctx->constructPanel<Button>();
+		close->setFont(theme.fonts.body);
+		close->setPadding(0);
+		close->autoText("Close");
+		close->setFixedHeight(h);
+		close->setFixedWidth(close->getWidth());
+		close->setAction([this](Button* btn){
+			if (closeCallback && closeCallback(win)) {
+				getContext()->deferedDeletePanel(win);
+			}
+		});
+
+		addChildren({title, close});
+	}
+
 	Window::Window(Context* context) : Panel{context} {
 		setLayout(new FillLayout{outBorder});
 
@@ -11,10 +39,7 @@ namespace Engine::UI {
 
 		area->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch, ctx->getTheme().sizes.pad1});
 
-		title = ctx->createPanel<Title>(area, this);
-		title->setFont(ctx->getTheme().fonts.body);
-		title->setRelPos({0, 0});
-		title->setFixedHeight(title->getHeight() + 10);
+		title = ctx->createPanel<TitleBar>(area, this);
 
 		content = ctx->createPanel<PanelT>(area);
 		content->setLayout(new DirectionalLayout{Direction::Vertical, Align::Start, Align::Stretch, ctx->getTheme().sizes.pad1});

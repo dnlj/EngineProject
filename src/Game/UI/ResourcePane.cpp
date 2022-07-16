@@ -128,6 +128,10 @@ namespace Game::UI {
 			win = ctx->createPanel<EUI::Window>(ctx->getRoot());
 			win->setSize({800, 600});
 			win->center();
+			win->setCloseCallback([&win](EUI::Window*){
+				win = nullptr;
+				return true;
+			});
 
 			auto cont = win->getContent();
 			cont->setAutoSizeHeight(true);
@@ -144,7 +148,6 @@ namespace Game::UI {
 			return false;
 		});
 
-		// TODO: change dd children to work with one panel, maybe specialize on contexpr? if you can do that
 		content->addChildren({dd});
 	}
 

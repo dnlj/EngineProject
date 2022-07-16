@@ -3,21 +3,31 @@
 // Engine
 #include <Engine/UI/DirectionalLayout.hpp>
 #include <Engine/UI/Label.hpp>
+#include <Engine/UI/Button.hpp>
 
 
 namespace Engine::UI {
 	class Window : public Panel {
+		public:
+			using CloseCallback = std::function<bool(Window*)>;
+
 		private:
-			class Title : public Label {
+			class TitleBar : public Panel {
 				public:
 					Window* win;
+					Label* title;
+					Button* close;
+					CloseCallback closeCallback;
 
 				public:
-					Title(Context* context, Window* window) : Label{context}, win{window} {}
+					TitleBar(Context* context, Window* window);
+
+					void setTitle(std::string_view txt) {
+						title->autoText(txt);
+					}
 
 					virtual void render() override {
 						ctx->drawRect({0,0}, getSize(), ctx->getTheme().colors.title);
-						Label::render();
 					}
 					
 					virtual bool onBeginActivate() override {
@@ -42,7 +52,7 @@ namespace Engine::UI {
 			bool tracking = false;
 			bool hoverWithin = false;
 			glm::vec2 offset = {};
-			Title* title;
+			TitleBar* title;
 			Panel* area;
 			Panel* content;
 
@@ -65,7 +75,11 @@ namespace Engine::UI {
 			virtual bool onBeginActivate() override;
 			virtual void onEndActivate() override;
 
-			ENGINE_INLINE void setTitle(const std::string_view text) { title->autoText(text); }
+			ENGINE_INLINE void setTitle(const std::string_view text) { title->setTitle(text); }
+
+			ENGINE_INLINE void setCloseCallback(CloseCallback func) {
+				title->closeCallback = std::move(func);
+			}
 
 		private:
 			void moveCallback(const glm::vec2 pos);
