@@ -64,7 +64,7 @@ namespace Engine::UI {
 			}
 
 			virtual ~Dropdown() {
-				ctx->deletePanel(content);
+				ctx->deferedDeletePanel(content);
 			}
 
 			void addOption(std::string_view text, uint64 id) {

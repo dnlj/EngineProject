@@ -76,8 +76,10 @@ namespace Engine::UI {
 			std::vector<Panel*> hoverStackBack;
 			bool hoverValid = false;
 
-			std::vector<Panel*> focusStack;
+			std::vector<Panel*> focusStack; // Stored in reverse order: front() is the focused pane land back() is the root panel.
 			std::vector<Panel*> focusStackBack;
+
+			std::vector<Panel*> deleteQueue;
 
 			glm::vec2 view = {};
 			glm::vec2 cursor = {};
@@ -169,18 +171,33 @@ namespace Engine::UI {
 			}
 
 			/**
-			 * Delete a panel.
-			 * @param panel The panel to delete.
-			 * @param isChild Internal parameter used for recursive child deletion. Leave at default.
+			 * Marks a panel for deletion.
+			 * @ see deferedDeletePanels
 			 */
-			void deletePanel(Panel* panel, bool isChild = false);
-			void deletePanels(Panel* first, Panel* last, bool isChild = false);
+			ENGINE_INLINE void deferedDeletePanel(Panel* panel){ return deferedDeletePanels(panel, panel); }
+
+			/**
+			 * Marks a set of siblings and their children for deletion.
+			 * All panels marked are:
+			 * - Removed from their parents.
+			 * - Update and callbacks are removed.
+			 * - State marked as deleted and disabled.
+			 * - Added to list to be deleted at the end of frame.
+			 */
+			void deferedDeletePanels(Panel* first, Panel* last);
+			
+			ENGINE_INLINE void clearAllCallbacks(Panel* panel) {
+				clearPanelUpdateFuncs(panel);
+				deregisterMouseMove(panel);
+				deregisterTextCallback(panel);
+				deregisterPanel(panel);
+			}
 
 			ENGINE_INLINE void addPanelUpdateFunc(Panel* panel, PanelUpdateFunc func) {
 				panelUpdateFunc.push_back({.panel = panel, .func = func});
 			}
 
-			ENGINE_INLINE void clearPanelUpdateFuncs(Panel* panel) {
+			void clearPanelUpdateFuncs(Panel* panel) {
 				for (auto i=std::ssize(panelUpdateFunc)-1; i >= 0; --i) {
 					if (panelUpdateFunc[i].panel == panel) {
 						if (i <= currPanelUpdateFunc) { --currPanelUpdateFunc; }
@@ -306,6 +323,25 @@ namespace Engine::UI {
 			void onFocus(const bool has);
 
 		private:
+			/**
+			 * Deletes all panels marked for deletion.
+			 * @see deferedDeletePanels
+			 */
+			void deleteDeferedPanels();
+
+			/**
+			 * Calls delete on a set of siblings and their children.
+			 * @see deleteDeferedPanels
+			 * @see deferedDeletePanels
+			 */
+			void deleteSiblings(Panel* first, Panel* last);
+
+			/**
+			 * Walks a panel tree and performs the defered deletion for all panels.
+			 * @see deferedDeletePanels
+			 */
+			void cleanup(Panel* panel);
+
 			ENGINE_INLINE void registerPanel(const Panel* panel) {
 			}
 

@@ -217,7 +217,7 @@ namespace Engine::UI {
 
 		glDeleteFramebuffers(1, &fbo);
 
-		deletePanel(root);
+		deleteSiblings(root, root);
 	}
 
 	void Context::configUserSettings() {
@@ -283,6 +283,8 @@ namespace Engine::UI {
 			updateHover();
 			hoverValid = true;
 		}
+
+		deleteDeferedPanels();
 
 		while (currPanelUpdateFunc < panelUpdateFunc.size()) {
 			auto& [panel, func] = panelUpdateFunc[currPanelUpdateFunc];
@@ -420,54 +422,83 @@ namespace Engine::UI {
 
 		focus = focusStack.empty() ? nullptr : focusStack.front();
 	}
+	
+	void Context::deferedDeletePanels(Panel* first, Panel* last) {
+		const auto parent = first->getParent();
+		if (parent && parent->isDeleted()) { return; }
 
-	void Context::deletePanel(Panel* panel, bool isChild) {
-		return deletePanels(panel, panel, isChild);
-	}
-
-	void Context::deletePanels(Panel* first, Panel* last, bool isChild) {
-		ENGINE_DEBUG_ASSERT(first->getParent() == last->getParent(), "Attempting to delete invalid panel range.");
-		// Clear from active
-		for (auto p = first;; p = p->getNextSiblingRaw()) {
-			if (active == p) { unsetActive(); }
-			if (p == last) { break; }
+		// Remove from parent
+		if (parent) {
+			Panel::unsafe_orphanChildrenUnsafe(parent, first, last);
 		}
 
-		if (!isChild) {
-			const auto parent = first->getParent();
+		// Figure out if we might be in the focus stack
+		Panel* nextFocus = nullptr;
+		for (auto curr = focusStack.rbegin(), end = focusStack.rend(); curr != end; ++curr) {
+			if (*curr == parent) {
+				auto next = curr + 1;
+				if (next != end) {
+					nextFocus = *next;
+				}
+				break;
+			}
+		}
+
+		// Clean as much as we can without true deletion
+		for (auto curr = first;; curr = curr->getNextSiblingRaw()) {
+			ENGINE_DEBUG_ASSERT(curr->getParent() == parent);
+			ENGINE_DEBUG_ASSERT(parent != nullptr);
+
+			// Clear from active
+			if (curr == active) { unsetActive(); }
 
 			// Clear from focus
-			for (auto curr = focusStack.begin(), end = focusStack.end(); curr != end; ++curr) {
-				if (*curr == parent) {
-					auto next = curr + 1;
-					if (next != end) {
-						for (auto p = first;; p = p->getNextSiblingRaw()) {
-							if (*next == p) {
-								setFocus(parent);
-								break;
-							}
-							if (p == last) { break; }
-						}
-					}
-					break;
-				}
+			if (curr == nextFocus) {
+				setFocus(parent);
 			}
 
-			// Clear from hover
-			parent->removeChildren(first, last);
-			updateHover();
+			// Cleanup panel and children
+			Panel::unsafe_setParent(curr, nullptr);
+			cleanup(curr);
+
+			// Queue for deletion
+			deleteQueue.push_back(curr);
+			if (curr == last) { break; }
 		}
 
+		// Update parent
+		// TODO: we could also defer this until after all panels have been REALLY deleted
+		if (parent) {
+			parent->performLayout();
+		}
+
+		hoverValid = false;
+	}
+
+	void Context::cleanup(Panel* panel) {
+		if (panel->isDeleted()) { return; }
+
+		Panel::unsafe_markDeleted(panel);
+		clearAllCallbacks(panel);
+		for (auto child = panel->getFirstChildRaw(); child; child = child->getNextSiblingRaw()) {
+			cleanup(child);
+		}
+	};
+
+	void Context::deleteDeferedPanels() {
+		for (auto p : deleteQueue) {
+			deleteSiblings(p, p);
+		}
+		deleteQueue.clear();
+	}
+
+	void Context::deleteSiblings(Panel* first, Panel* last) {
 		for (auto curr = first;;) {
 			if (curr->getFirstChildRaw()) {
-				deletePanels(curr->getFirstChildRaw(), curr->getLastChildRaw(), true);
+				deleteSiblings(curr->getFirstChildRaw(), curr->getLastChildRaw());
 			}
 
 			const auto next = curr->getNextSiblingRaw();
-			clearPanelUpdateFuncs(curr);
-			deregisterMouseMove(curr);
-			deregisterTextCallback(curr);
-			deregisterPanel(curr);
 			delete curr;
 
 			if (curr == last) { break; }

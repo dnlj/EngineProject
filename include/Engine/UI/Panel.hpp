@@ -19,6 +19,7 @@ namespace Engine::UI {
 		Enabled          = 1 << 0,
 		PerformingLayout = 1 << 1,
 		ParentEnabled    = 1 << 2,
+		Deleted			 = 1 << 3,
 	}; ENGINE_BUILD_ALL_OPS(PanelState);
 
 	/**
@@ -96,6 +97,60 @@ namespace Engine::UI {
 				}
 			}
 
+			/**
+			 * Removes children from a parents sibling chain.
+			 * Does NOT update the removed childrens parent relation or adjust position.
+			 * You probably want removeChild or removeChildren instead
+			 *
+			 * @see removeChild
+			 * @see removeChildren
+			 */
+			static void unsafe_orphanChildrenUnsafe(Panel* parent, Panel* first, Panel* last) noexcept {
+				if (last->nextSibling) {
+					last->nextSibling->prevSibling = first->prevSibling;
+				}
+
+				if (first->prevSibling) {
+					first->prevSibling->nextSibling = last->nextSibling;
+				}
+
+				if (last == parent->lastChild) {
+					parent->lastChild = first->prevSibling;
+				}
+
+				if (first == parent->firstChild) {
+					parent->firstChild = last->nextSibling;
+				}
+
+				first->prevSibling = nullptr;
+				last->nextSibling = nullptr;
+			}
+
+			/**
+			 * Directly sets a panels parent.
+			 * Does NOT update any other relations.
+			 * You probably want addChildren or insertChildren instead.
+			 * 
+			 * @see addChildren
+			 * @see insertChildren
+			 */
+			static void unsafe_setParent(Panel* child, Panel* parent) noexcept {
+				child->parent = parent;
+			}
+
+			/**
+			 * Sets a panels state to a deleted state.
+			 * Does NOT update any child panels.
+			 * You may want setEnabled instead.
+			 *
+			 * @see setEnabled
+			 */
+			ENGINE_INLINE static bool unsafe_markDeleted(Panel* panel) noexcept {
+				// Set PerformingLayout in case we some how call layout on a deleted panel.
+				// In debug we have warnings for this, but could happen i guess. Just a safety net for release mode.
+				panel->flags = PanelState::Deleted | PanelState::PerformingLayout;
+			}
+
 		public:
 			Panel(Context* context) : ctx{context} {}
 			Panel(Panel&) = delete;
@@ -121,7 +176,7 @@ namespace Engine::UI {
 			ENGINE_INLINE void setWeight(float32 w) noexcept { weight = w; }
 			ENGINE_INLINE auto getWeight() const noexcept { return weight; }
 
-			ENGINE_INLINE auto getParent() const noexcept { return parent; }
+			ENGINE_INLINE Panel* getParent() const noexcept { return parent; }
 			
 			/** @see setAutoSize */
 			ENGINE_INLINE void setAutoSizeWidth(bool v) noexcept { autoSizeWidth = v; }
@@ -401,6 +456,7 @@ namespace Engine::UI {
 			 * Causes this panel to update its layout.
 			 */
 			ENGINE_INLINE void performLayout() {
+				ENGINE_DEBUG_ASSERT(!isDeleted(), "Attempting to perform layout on a panel marked for deletion.");
 				if (isPerformingLayout()) { return; }
 
 				setPerformingLayout(true);
@@ -427,6 +483,8 @@ namespace Engine::UI {
 				}
 			}
 			ENGINE_INLINE bool isEnabled() const noexcept { return isFlag(PanelState::Enabled | PanelState::ParentEnabled); }
+
+			ENGINE_INLINE bool isDeleted() const noexcept { return isFlag(PanelState::Deleted); }
 
 			void setParentEnabled(bool e) noexcept {
 				const auto old = isEnabled();
@@ -565,24 +623,7 @@ namespace Engine::UI {
 				ENGINE_DEBUG_ASSERT(first->parent == this, "Attempting to remove invalid panel range.");
 				ENGINE_DEBUG_ASSERT(last->parent == this, "Attempting to remove invalid panel range.");
 
-				if (last->nextSibling) {
-					last->nextSibling->prevSibling = first->prevSibling;
-				}
-
-				if (first->prevSibling) {
-					first->prevSibling->nextSibling = last->nextSibling;
-				}
-
-				if (last == lastChild) {
-					lastChild = first->prevSibling;
-				}
-
-				if (first == firstChild) {
-					firstChild = last->nextSibling;
-				}
-
-				first->prevSibling = nullptr;
-				last->nextSibling = nullptr;
+				ENGINE_INLINE_CALLS unsafe_orphanChildrenUnsafe(this, first, last);
 
 				for (auto curr = first;; curr = curr->nextSibling) {
 					curr->setPos(curr->getRelPos());
