@@ -80,7 +80,7 @@ namespace Game {
 		}
 
 		{
-			ctx.createPanel<UI::ResourcePane>(content);
+			//ctx.createPanel<UI::ResourcePane>(content);
 		}
 
 		#if ENGINE_CLIENT

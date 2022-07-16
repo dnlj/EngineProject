@@ -106,7 +106,8 @@ namespace Game::UI {
 		content->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, theme.sizes.pad1});
 
 		auto dd = ctx->constructPanel<EUI::Dropdown>();
-		dd->addOption("Texture", +ResourceType::Texture);
+		dd->addOption("Texture (loaded)", +ResourceType::TextureLoader);
+		dd->addOption("Texture (managed)", +ResourceType::TextureManager);
 		dd->addOption("Option 2", 0);
 		dd->addOption("Option 3", 0);
 		dd->addOption("Option 4", 0);
@@ -138,9 +139,14 @@ namespace Game::UI {
 			cont->setLayout(new EUI::GridLayout{});// TODO: really want grid with auto widths
 
 			switch(res) {
-				case ResourceType::Texture: {
-					win->setTitle("Textures");
+				case ResourceType::TextureLoader: {
+					win->setTitle("Texture (loaded)");
 					ctx->addPanelUpdateFunc(cont, Adapter{engine.getTextureLoader()});
+					break;
+				}
+				case ResourceType::TextureManager: {
+					win->setTitle("Texture (managed)");
+					//ctx->addPanelUpdateFunc(cont, Adapter{engine.getTextureManager()});
 					break;
 				}
 			}
