@@ -1,12 +1,8 @@
 #pragma once
 
 // Engine
-#include <Engine/Gfx/ModelLoader.hpp>
-#include <Engine/Gfx/VertexLayoutLoader.hpp>
-#include <Engine/Gfx/BufferManager.hpp>
-#include <Engine/Gfx/Buffer.hpp>
-#include <Engine/Gfx/ShaderLoader.hpp>
-#include <Engine/Gfx/MeshManager.hpp>
+#include <Engine/Gfx/ModelLoader.hpp> // TODO: rm - needed for `Gfx::Animation` which should be moved to own file.
+#include <Engine/Gfx/resources.hpp>
 
 // Game
 #include <Game/System.hpp>
@@ -18,14 +14,13 @@ namespace Game {
 			struct Inst {
 				Engine::Gfx::NodeId nodeId;
 				Engine::Gfx::MeshRef mesh;
-				// TODO: Engine::Gfx::ShaderRef material;
+				Engine::Gfx::MaterialInstanceRef material;
 			};
 
 		public:
 			bool skinned = false;
 			Engine::Gfx::Armature arm;
 			std::vector<glm::mat4> bones;
-			std::vector<Inst> instances;
 	};
 
 	class AnimSystem : public System {
@@ -37,6 +32,8 @@ namespace Game {
 
 			Engine::Gfx::Animation animation;
 			ModelData model;
+
+			Engine::Gfx::MaterialInstanceRef mats[3];
 
 		public:
 			AnimSystem(SystemArg arg);

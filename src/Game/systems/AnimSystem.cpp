@@ -4,6 +4,10 @@
 #include <Engine/Gfx/MaterialInstanceManager.hpp>
 #include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Gfx/VertexAttributeLayout.hpp>
+#include <Engine/Gfx/VertexLayoutLoader.hpp>
+#include <Engine/Gfx/ShaderLoader.hpp>
+#include <Engine/Gfx/BufferManager.hpp>
+#include <Engine/Gfx/MeshManager.hpp>
 
 // Game
 #include <Game/systems/AnimSystem.hpp>
@@ -26,7 +30,6 @@ namespace Game {
 		using namespace Engine::Gfx;
 
 		ent = world.createEntity();
-		Engine::Gfx::MaterialInstanceRef material;
 
 		{
 			VertexAttributeDesc attribs[] = {
@@ -37,15 +40,23 @@ namespace Game {
 
 			auto layout = engine.getVertexLayoutLoader().get(attribs);
 
+			// TODO: we probably also want a ModelLoader/Manager to cache this stuff so we dont load the same thing multiple times
 			ModelLoader loader;
-
 			model.skinned = !loader.arm.bones.empty();
 
 			{
 				const auto shader = engine.getShaderLoader().get(model.skinned ? "shaders/mesh" : "shaders/mesh_static");
 				const auto matBase = engine.getMaterialManager().create(shader);
-				material = engine.getMaterialInstanceManager().create(matBase);
-				material->params.set(4, glm::vec4{1,1,0.5,1});
+
+				// TODO: load from model
+				mats[0] = engine.getMaterialInstanceManager().create(matBase);
+				mats[0]->params.set(123, glm::vec4{1,1,0.5,1});
+
+				mats[1] = engine.getMaterialInstanceManager().create(matBase);
+				mats[1]->params.set(123, glm::vec4{1,0.5,1,1});
+
+				mats[2] = engine.getMaterialInstanceManager().create(matBase);
+				mats[2]->params.set(123, glm::vec4{0.5,1,1,1});
 			}
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size());
@@ -53,31 +64,36 @@ namespace Game {
 			const auto vbo = engine.getBufferManager().create(loader.verts);
 			const auto ebo = engine.getBufferManager().create(loader.indices);
 
-			std::vector<MeshRef> meshes;
-			meshes.reserve(loader.meshes.size());
+			struct MeshInfo {
+				MeshRef mesh;
+				MaterialInstanceRef mat;
+			};
+			std::vector<MeshInfo> meshInfo;
+			meshInfo.reserve(loader.meshes.size());
+
 			for (auto& m : loader.meshes) {
-				meshes.emplace_back(engine.getMeshManager().create(
-					layout,
-					vbo, static_cast<uint32>(sizeof(Vertex)),
-					ebo, m.offset, m.count
-				));
-			}
-
-			model.instances.reserve(loader.instances.size());
-			for (const auto& inst : loader.instances) {
-				model.instances.emplace_back(inst.nodeId, meshes[inst.meshId]);
-			}
-
-			// TODO: really arm.bones is the same for all instances of a mesh, its just the offset matrix. Would it make sense to refify armatures?
-			model.arm = std::move(loader.arm);
-			if (!loader.animations.empty()) {
-				animation = std::move(loader.animations[0]);
+				ENGINE_LOG("MeshDesc::material = ", m.material);
+				meshInfo.emplace_back(
+					engine.getMeshManager().create(
+						layout,
+						vbo, static_cast<uint32>(sizeof(Vertex)),
+						ebo, m.offset, m.count
+					),
+					mats[m.material] // TODO: really neex to lookup in ModelLoader::materials or similar
+				);
 			}
 
 			auto& mdlComp = world.addComponent<ModelComponent>(ent);
-			mdlComp.meshes.reserve(model.instances.size());
-			for (const auto& inst : model.instances) {
-				mdlComp.meshes.emplace_back(material, inst.mesh);
+			mdlComp.meshes.reserve(loader.instances.size());
+			for (const auto& inst : loader.instances) {
+				auto& minfo = meshInfo[inst.meshId];
+				mdlComp.meshes.emplace_back(inst.nodeId, minfo.mesh, minfo.mat);
+			}
+
+			// TODO: really arm.bones is the same for all instances of a mesh, its just the offset matrix. Would it make sense to ref-ify armatures?
+			model.arm = std::move(loader.arm);
+			if (!loader.animations.empty()) {
+				animation = std::move(loader.animations[0]);
 			}
 		}
 
@@ -88,7 +104,7 @@ namespace Game {
 
 			// TODO: work on removing - still needed atm for bone anim
 			glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
-			glUniformBlockBinding(material->base->getShader()->get(), 0, 1); // Bind uniform block to buffer index
+			glUniformBlockBinding(mats[0]->base->getShader()->get(), 0, 1); // Bind uniform block to buffer index
 		}
 	}
 
@@ -133,13 +149,15 @@ namespace Game {
 
 		if (!model.skinned) {
 			// TODO: Awful way to handle this. Very fragile.
+			// ^^^^: Not sure what we ment by this? I assume because we use to index into the model.instances with the same index as the meshes.
+			// ^^^^: Which we just happen to know align but could be different?
+			// ^^^^: Investigate more then remove if there isnt anything obviously wrong here.
 			auto& [meshes] = world.getComponent<ModelComponent>(ent);
 			for (int i = 0; i < meshes.size(); ++i) {
-				auto& inst1 = meshes[i];
-				auto& inst2 = model.instances[i];
-				const auto& node = model.arm.nodes[inst2.nodeId];
+				auto& inst = meshes[i];
+				const auto& node = model.arm.nodes[inst.nodeId];
 				const auto mvp = vp * node.total;
-				inst1.mvp = mvp;
+				inst.mvp = mvp;
 			}
 		} else {
 			auto& [meshes] = world.getComponent<ModelComponent>(ent);

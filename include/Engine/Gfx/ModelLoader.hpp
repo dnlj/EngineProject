@@ -15,6 +15,7 @@ namespace Engine::Gfx {
 			std::vector<Engine::Gfx::AnimSeq> channels;
 	};
 
+	// TODO: move into own file
 	using NodeId = int;
 	using BoneId = int;
 	using MeshId = int;

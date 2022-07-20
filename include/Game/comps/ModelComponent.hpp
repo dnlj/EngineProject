@@ -4,18 +4,15 @@
 #include <Engine/Gfx/resources.hpp>
 #include <Engine/Gfx/Mesh2.hpp>
 #include <Engine/Gfx/Material.hpp>
+#include <Engine/Gfx/ModelLoader.hpp> // TODO: rm once NodeId is moved into own file
 
 
 namespace Game {
 	class MeshInstance { // TODO: should be part of Engine?
 		public:
-			MeshInstance(const Engine::Gfx::MaterialInstanceRef& mat, const Engine::Gfx::MeshRef& mesh)
-				: material{mat}
-				, mesh{mesh} {
-			}
-
-			Engine::Gfx::MaterialInstanceRef material;
+			Engine::Gfx::NodeId nodeId;
 			Engine::Gfx::MeshRef mesh;
+			Engine::Gfx::MaterialInstanceRef material;
 
 			glm::mat4 mvp; // TODO: find better solution for uniforms
 

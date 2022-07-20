@@ -19,6 +19,10 @@ namespace Engine::Gfx {
 			Material(ShaderRef shader) : shader{shader} {}
 
 			const Shader* getShader() const noexcept { return shader.get(); }
+
+			/**
+			 * @return The size in bytes of the parameter block.
+			 */
 			uint32 getParametersBlockSize() const noexcept { return 16; } // TODO: impl
 
 			//void fetchInputs();
@@ -71,7 +75,13 @@ namespace Engine::Gfx {
 			//ENGINE_INLINE void set(MaterialInput field, TextureRef value) { set(field, &value, sizeof(value)); };
 
 		private:
-			void setStorageSize(size_t units) { storage = decltype(storage)(new Unit[units]); }
+			/**
+			 * Sets the size of the storage in bytes.
+			 */
+			void setStorageSize(size_t bytes) {
+				auto sz = (bytes / sizeof(Unit)) + (bytes % sizeof(Unit) != 0);
+				storage = decltype(storage)(new Unit[sz]);
+			}
 	};
 
 	class MaterialInstance {
