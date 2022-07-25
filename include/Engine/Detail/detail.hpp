@@ -101,7 +101,7 @@ namespace Engine::Detail {
 				<< " ";
 		}
 
-		(LogFormatter<std::decay_t<Args>>::format(stream, filter(std::forward<Args>(args))), ...);
+		(LogFormatter<std::decay_t<decltype(filter(std::forward<Args>(args)))>>::format(stream, filter(std::forward<Args>(args))), ...);
 		//(stream << ... << filter(std::forward<Args>(args)));
 		stream << '\n';
 
