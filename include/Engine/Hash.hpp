@@ -52,6 +52,8 @@ namespace Engine {
 	// TODO: where to put this?
 	template<class C>
 	struct Hash<std::basic_string<C>> {
+		using is_transparent = void;
+
 		[[nodiscard]]
 		size_t operator()(const std::basic_string<C>& val) const noexcept {
 			return hashBytes(std::data(val), std::size(val));

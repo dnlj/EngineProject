@@ -13,6 +13,8 @@ namespace Engine {
 	// TODO: where to put this?
 	template<class C>
 	struct EqualTo<std::basic_string<C>> {
+		using is_transparent = void;
+
 		[[nodiscard]]
 		constexpr bool operator()(const std::basic_string<C>& left, const std::basic_string<C>& right) const noexcept {
 			return left == right;
