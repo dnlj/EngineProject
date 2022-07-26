@@ -17,6 +17,7 @@ namespace Engine {
 	// TODO: Doc - specialization for enums
 	template<class T>
 	struct Hash<T, std::enable_if_t<std::is_enum_v<T>>> : Hash<std::underlying_type_t<T>> {
+		[[nodiscard]]
 		size_t operator()(const T& val) const {
 			using U =  std::underlying_type_t<T>;
 			return Hash<U>::operator()(static_cast<U>(val));
@@ -24,10 +25,12 @@ namespace Engine {
 	};
 
 	template<class T>
+	[[nodiscard]]
 	inline size_t hash(const T& val) {
 		return Hash<T>()(val);
 	}
-
+	
+	[[nodiscard]]
 	inline size_t hashBytes(const void* data, size_t len) {
 		return robin_hood::hash_bytes(data, len);
 	}
@@ -39,6 +42,7 @@ namespace Engine {
 	// TODO: should this be in Engine::Glue or similar?
 	template<>
 	struct Hash<glm::ivec2> {
+		[[nodiscard]]
 		size_t operator()(const glm::ivec2& val) const {
 			static_assert(sizeof(size_t) == sizeof(val));
 			return *reinterpret_cast<const size_t*>(&val);
