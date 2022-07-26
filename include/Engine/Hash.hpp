@@ -14,16 +14,6 @@ namespace Engine {
 	template<class T, class SFINAE = void>
 	struct Hash : robin_hood::hash<T> {};
 
-	// TODO: Doc - specialization for enums
-	template<class T>
-	struct Hash<T, std::enable_if_t<std::is_enum_v<T>>> : Hash<std::underlying_type_t<T>> {
-		[[nodiscard]]
-		size_t operator()(const T& val) const {
-			using U =  std::underlying_type_t<T>;
-			return Hash<U>::operator()(static_cast<U>(val));
-		}
-	};
-
 	template<class T>
 	[[nodiscard]]
 	inline size_t hash(const T& val) {
@@ -55,13 +45,13 @@ namespace Engine {
 		using is_transparent = void;
 
 		[[nodiscard]]
-		size_t operator()(const std::basic_string<C>& val) const noexcept {
-			return hashBytes(std::data(val), std::size(val));
+		size_t operator()(const std::basic_string_view<C>& val) const noexcept {
+			return hashBytes(std::data(val), sizeof(C) * std::size(val));
 		}
 
 		[[nodiscard]]
-		size_t operator()(const std::basic_string_view<C>& val) const noexcept {
-			return hashBytes(std::data(val), std::size(val));
+		size_t operator()(const std::basic_string<C>& val) const noexcept {
+			return (*this)(std::basic_string_view<C>(val));
 		}
 
 		[[nodiscard]]
