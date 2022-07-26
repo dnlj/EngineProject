@@ -4,27 +4,76 @@
 
 
 namespace Engine::Gfx {
-	/*void Material::fetchInputs() {
-		const auto p = shader->get();
+	void Material::fetchParameterDesc() {
+		const auto sdr = shader->get();
+		ENGINE_INFO("", Engine::ASCII_RED_BOLD, "=======================================================");
+		GLint count = 0;
+		glGetProgramInterfaceiv(sdr, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &count);
 
-		int32 count = 0;
-		glGetProgramiv(p, GL_ACTIVE_UNIFORMS, &count);
-		if (!count) { return; }
-
-		int32 maxName = 0;
-		glGetProgramiv(p, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxName);
-
-		int32 len = 0;
-		int32 size = 0;
-		uint32 type = 0;
-		std::string name(maxName,'\0');
-
-		puts("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-		for (int32 i = 0; i < count; ++i) {
-			glGetActiveUniform(p, i, maxName, &len, &size, &type, name.data());
-			ENGINE_LOG("Uniform: ", name.data(), " ", size, " ", type);
-			std::ranges::fill(name, '\0');
+		constexpr static char section[] = "MaterialParameters";
+		std::string name;
+		{
+			GLint bLen = 0;
+			GLint uLen = 0;
+			glGetProgramInterfaceiv(sdr, GL_UNIFORM_BLOCK, GL_MAX_NAME_LENGTH, &bLen);
+			glGetProgramInterfaceiv(sdr, GL_UNIFORM, GL_MAX_NAME_LENGTH, &uLen);
+			name.resize(std::max<GLint>({bLen, uLen, sizeof(section)}));
 		}
-		puts("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-	}*/
+		const auto nameLen = static_cast<GLsizei>(name.size());
+
+		GLint block = 0;
+		for (;block < count; ++block) {
+			glGetProgramResourceName(sdr, GL_UNIFORM_BLOCK, block, nameLen, nullptr, name.data());
+			ENGINE_INFO("Block Name: ", name.data());
+			if (std::ranges::equal(name, section)) {
+				ENGINE_INFO("Found block!");
+				break;
+			}
+		}
+
+		ENGINE_DEBUG_ASSERT(block != count, "Unable to find material parameter block.");
+		if (block == count) { return; }
+
+		MaterialParamsDesc desc;
+		{
+			GLint blockVarCount = 0;
+			{
+				GLenum props[] = {GL_NUM_ACTIVE_VARIABLES, GL_BUFFER_DATA_SIZE};
+				GLint out[std::size(props)] = {};
+				glGetProgramResourceiv(sdr, GL_UNIFORM_BLOCK, block, (GLsizei)std::size(props), props, (GLsizei)std::size(out), nullptr, out);
+				blockVarCount = out[0];
+				desc.blockSize = out[1];
+				ENGINE_INFO("Block var count: ", blockVarCount, " ", desc.blockSize);
+			}
+
+			std::vector<GLint> blockVarIndices(blockVarCount, 0);
+			desc.params.reserve(blockVarCount);
+
+			{
+				GLenum props[] = {GL_ACTIVE_VARIABLES};
+				glGetProgramResourceiv(sdr, GL_UNIFORM_BLOCK, block, (GLsizei)std::size(props), props, blockVarCount, nullptr, blockVarIndices.data());
+			}
+
+			for (const auto i : blockVarIndices) {
+				GLint len = 0;
+				name.clear();
+				name.resize(nameLen);
+				glGetProgramResourceName(sdr, GL_UNIFORM, i, nameLen, &len, name.data());
+				name.resize(len);
+
+				GLenum props[] = {GL_TYPE, GL_OFFSET};
+				GLint out[std::size(props)] = {};
+				glGetProgramResourceiv(sdr, GL_UNIFORM, i, (GLsizei)std::size(props), props, (GLsizei)std::size(out), nullptr, out);
+
+				auto& param = desc.params[name];
+				param.type = fromGLEnum(out[0]);
+				param.offset = static_cast<uint32>(std::max(out[1], 0));
+				param.size = getTypeSize(param.type);
+
+				ENGINE_INFO("Block var index: ", name, " ", param.offset, " ", param.size);
+			}
+		}
+
+		ENGINE_INFO("", Engine::ASCII_RED_BOLD, "=======================================================");
+	}
 }

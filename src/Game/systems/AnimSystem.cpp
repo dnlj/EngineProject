@@ -46,17 +46,19 @@ namespace Game {
 
 			{
 				const auto shader = engine.getShaderLoader().get(model.skinned ? "shaders/mesh" : "shaders/mesh_static");
-				const auto matBase = engine.getMaterialManager().create(shader);
+				auto matBase = engine.getMaterialManager().create(shader);
+
+				matBase->fetchParameterDesc();
 
 				// TODO: load from model
 				mats[0] = engine.getMaterialInstanceManager().create(matBase);
-				mats[0]->params.set(123, glm::vec4{1,1,0.5,1});
+				mats[0]->set(0, glm::vec4{1,1,0.5,1});
 
 				mats[1] = engine.getMaterialInstanceManager().create(matBase);
-				mats[1]->params.set(123, glm::vec4{1,0.5,1,1});
+				mats[1]->set(0, glm::vec4{1,0.5,1,1});
 
 				mats[2] = engine.getMaterialInstanceManager().create(matBase);
-				mats[2]->params.set(123, glm::vec4{0.5,1,1,1});
+				mats[2]->set(0, glm::vec4{0.5,1,1,1});
 			}
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size());

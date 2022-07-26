@@ -93,7 +93,7 @@ namespace Engine::Gfx {
 				matParamsBuffer->alloc(matParamsSize, StorageFlag::DynamicStorage);
 				// TODO: we need rebind the buffer since we realloc
 			}
-			matParamsBuffer->setData(matParamsSize, mat->params.data());
+			matParamsBuffer->setData(matParamsSize, mat->data());
 
 			// TODO: batch material and instance parameters into same buffer object (glBindBufferRange)
 

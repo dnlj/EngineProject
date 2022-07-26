@@ -3,17 +3,27 @@
 // Engine
 #include <Engine/Gfx/resources.hpp>
 #include <Engine/Gfx/Shader.hpp>
+#include <Engine/Gfx/NumberType.hpp>
 
 
 namespace Engine::Gfx {
-	enum class MaterialInput : uint32 {
+	class MaterialParamDesc {
+		public:
+			NumberType type;
+			uint32 offset;
+			uint32 size;
+	};
 
+	class MaterialParamsDesc {
+		public:
+			uint32 blockSize;
+			FlatHashMap<std::string, MaterialParamDesc> params;
 	};
 
 	class Material {
 		private:
 			ShaderRef shader;
-			//FlatHashMap<MaterialInput, uint32> inputs;
+			MaterialParamsDesc params;
 
 		public:
 			Material(ShaderRef shader) : shader{shader} {}
@@ -25,51 +35,44 @@ namespace Engine::Gfx {
 			 */
 			uint32 getParametersBlockSize() const noexcept { return 16; } // TODO: impl
 
-			//void fetchInputs();
-			//void apply(const MaterialParams& params);
+			void fetchParameterDesc();
 
 		private:
-			//uint32 getFieldOffset(MaterialInput input) const noexcept {
-			//	auto found = inputs.find(input);
-			//	if (found == inputs.end()) [[unlikely]] {
-			//		ENGINE_WARN("Attempting to get invalid material input field");
-			//		return 0;
-			//	}
-			//	return found->second;
-			//}
 	};
 
-	class MaterialParams {
+	class MaterialInstance {
+		public:
+			MaterialRef base; // TODO: why is this public?
+
 		private:
 			using Unit = uint32;
 			std::unique_ptr<Unit[]> storage;
 
 		public:
-			MaterialParams(const Material& mat) { setStorageSize(mat.getParametersBlockSize()); }
-			MaterialParams(const MaterialRef& mat) : MaterialParams{*mat} {}
+			MaterialInstance(const MaterialRef& mat) : base{mat} {
+				setStorageSize(base->getParametersBlockSize());
+			}
 
 			byte* data() noexcept { // Dont need length because that can be infered from the material
 				ENGINE_DEBUG_ASSERT(storage != nullptr, "Attempting to get data of params with empty storage.");
 				return reinterpret_cast<byte*>(storage.get());
 			}
-			const byte* data() const noexcept { return const_cast<MaterialParams*>(this)->data(); }
-
-			using MaterialInput = uint32; // TODO: rm - temp while testing
-			uint32 getFieldOffset(MaterialInput field) {
-				// TODO: watch alignment - this depends on the shader - std140 vs std430
-				return 0; // TODO: impl
+			const byte* data() const noexcept { return const_cast<MaterialInstance*>(this)->data(); }
+			
+			void set(uint32 offset, const void* dat, uint32 len) noexcept {
+				memcpy(data() + offset, dat, len);
 			}
 
-			void set(MaterialInput field, const void* dat, uint32 len) noexcept {
-				memcpy(data() + getFieldOffset(field), dat, len);
+			void set(std::string_view field, const void* dat, uint32 len) noexcept {
+				//set(param.offset, dat, len);
 			}
 
-			ENGINE_INLINE void set(MaterialInput field, float32 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(MaterialInput field, glm::vec2 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(MaterialInput field, glm::vec3 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(MaterialInput field, glm::vec4 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(MaterialInput field, glm::mat3x3 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(MaterialInput field, glm::mat4x4 value) { set(field, &value, sizeof(value)); };
+			ENGINE_INLINE void set(uint32 field, float32 value) { set(field, &value, sizeof(value)); };
+			ENGINE_INLINE void set(uint32 field, glm::vec2 value) { set(field, &value, sizeof(value)); };
+			ENGINE_INLINE void set(uint32 field, glm::vec3 value) { set(field, &value, sizeof(value)); };
+			ENGINE_INLINE void set(uint32 field, glm::vec4 value) { set(field, &value, sizeof(value)); };
+			ENGINE_INLINE void set(uint32 field, glm::mat3x3 value) { set(field, &value, sizeof(value)); };
+			ENGINE_INLINE void set(uint32 field, glm::mat4x4 value) { set(field, &value, sizeof(value)); };
 
 			// TODO: how to handle this? should this hold a texture ref? take a texture handle? how to handle layout.
 			//ENGINE_INLINE void set(MaterialInput field, TextureRef value) { set(field, &value, sizeof(value)); };
@@ -82,12 +85,5 @@ namespace Engine::Gfx {
 				auto sz = (bytes / sizeof(Unit)) + (bytes % sizeof(Unit) != 0);
 				storage = decltype(storage)(new Unit[sz]);
 			}
-	};
-
-	class MaterialInstance {
-		public:
-			MaterialInstance(const MaterialRef& mat) : base{mat}, params{mat} {}
-			MaterialRef base;
-			MaterialParams params;
 	};
 }
