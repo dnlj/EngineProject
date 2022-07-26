@@ -44,4 +44,23 @@ namespace Engine {
 			return *reinterpret_cast<const size_t*>(&val);
 		}
 	};
+
+	// TODO: where to put this?
+	template<class C>
+	struct Hash<std::basic_string<C>> {
+		[[nodiscard]]
+		size_t operator()(const std::basic_string<C>& val) const noexcept {
+			return hashBytes(std::data(val), std::size(val));
+		}
+
+		[[nodiscard]]
+		size_t operator()(const std::basic_string_view<C>& val) const noexcept {
+			return hashBytes(std::data(val), std::size(val));
+		}
+
+		[[nodiscard]]
+		size_t operator()(const C* val) const noexcept {
+			return (*this)(std::basic_string_view<C>(val));
+		}
+	};
 }

@@ -5,15 +5,15 @@
 
 // Engine
 #include <Engine/Hash.hpp>
+#include <Engine/EqualTo.hpp>
 
 
 namespace Engine {
-	// TODO: put in `Container` namespace?
 	template <
 		class KeyType,
 		class ValueType,
 		class Hash = Engine::Hash<KeyType>,
-		class Equal = std::equal_to<KeyType>,
+		class Equal = Engine::EqualTo<KeyType>,
 		size_t MaxLoadFactor100 = 75
 	>
 	using FlatHashMap = robin_hood::unordered_flat_map<KeyType, ValueType, Hash, Equal, MaxLoadFactor100>;
