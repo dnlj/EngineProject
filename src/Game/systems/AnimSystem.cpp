@@ -48,8 +48,6 @@ namespace Game {
 				const auto shader = engine.getShaderLoader().get(model.skinned ? "shaders/mesh" : "shaders/mesh_static");
 				auto matBase = engine.getMaterialManager().create(shader);
 
-				matBase->fetchParameterDesc();
-
 				// TODO: load from model
 				mats[0] = engine.getMaterialInstanceManager().create(matBase);
 				mats[0]->set("color", glm::vec4{1,1,0.5,1});

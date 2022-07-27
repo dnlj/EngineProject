@@ -31,7 +31,7 @@ namespace Engine {
 		public:
 			ResourceRef() = default;
 			ResourceRef(ResourceInfo* info) : info{info} { inc(); };
-			~ResourceRef() { dec(); }
+			~ResourceRef() { if (info) { dec(); } }
 
 			// Rvalue version doesnt really get us anything because we still need to `dec` our
 			// old value and in cases of self assignment we then need to `inc` again. So it would

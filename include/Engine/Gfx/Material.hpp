@@ -26,13 +26,13 @@ namespace Engine::Gfx {
 			MaterialParamsDesc desc;
 
 		public:
-			Material(ShaderRef shader) : shader{shader} {}
+			Material(ShaderRef shader) : shader{shader} { fetchParameterDesc(); }
 
 			const Shader* getShader() const noexcept { return shader.get(); }
-			void fetchParameterDesc();
 			const auto& getParameterDescription() const noexcept { return desc; }
 
 		private:
+			void fetchParameterDesc();
 	};
 
 	class MaterialInstance {
@@ -100,7 +100,6 @@ namespace Engine::Gfx {
 			ENGINE_INLINE void set(std::string_view field, glm::mat4x4 value) {
 				set(field, &value, sizeof(value), NumberType::Mat4x4);
 			};
-
 
 			// TODO: how to handle this? should this hold a texture ref? take a texture handle? how to handle layout.
 			//ENGINE_INLINE void set(MaterialInput field, TextureRef value) { set(field, &value, sizeof(value)); };
