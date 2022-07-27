@@ -92,13 +92,20 @@ namespace Game {
 		// Not ideal but it works for the time being.
 		// Even after fixing the above: Specifically not initialized in the initialization list because it requires `*this` as a constructor argument.
 		{
-			void* storage = operator new (sizeof(World), std::align_val_t{alignof(World)});
+			// If for some reason World is over-aligned we need to use explicit alignment
+			// when calling both new and delete. This makes the code quite a bit less readable and
+			// probably won't ever be an issue so a static assert it is.
+			static_assert(alignof(World) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__,
+				"Wrong alignment for engine world. You will need to use align_val_t with new/delete."
+			);
+			void* storage = operator new (sizeof(World));
 			world = std::unique_ptr<World>(reinterpret_cast<World*>(storage));
 			new (storage) World(*this);
 		}
 	}
 
-	EngineInstance::~EngineInstance() {}
+	EngineInstance::~EngineInstance() {
+	}
 
 	Engine::Input::BindManager& EngineInstance::getBindManager() noexcept { return pimpl->bindManager; }
 
