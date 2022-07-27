@@ -27,23 +27,23 @@ namespace Engine::Gfx {
 				other.buff = 0;
 			};
 			
-			Buffer(uint64 size, const void* data, StorageFlag flags = {}) {
-				alloc(size, data, flags);
+			Buffer(const void* data, uint64 size, StorageFlag flags = {}) {
+				alloc(data, size, flags);
 			}
 
 			Buffer(uint64 size, StorageFlag flags = {}) {
-				alloc(size, nullptr, flags);
+				alloc(nullptr, size, flags);
 			}
 
 			Buffer(std::ranges::contiguous_range auto range, StorageFlag flags = {}) {
-				alloc(std::ranges::size(range) * sizeof(*std::ranges::cdata(range)), std::ranges::cdata(range), flags);
+				alloc(std::ranges::cdata(range), std::ranges::size(range) * sizeof(*std::ranges::cdata(range)), flags);
 			}
 
 			~Buffer() { glDeleteBuffers(1, &buff); }
 
 			ENGINE_INLINE auto get() const { return buff; }
 
-			void alloc(uint64 size, const void* data, StorageFlag flags = {}) {
+			void alloc(const void* data, uint64 size, StorageFlag flags = {}) {
 				// TODO: is it better to use glBufferData instead of delete/create in cases where we need a resizeable buffer?
 				if (buff) { glDeleteBuffers(1, &buff); }
 				glCreateBuffers(1, &buff);
@@ -51,25 +51,25 @@ namespace Engine::Gfx {
 			}
 
 			ENGINE_INLINE void alloc(uint64 size, StorageFlag flags = {}) {
-				alloc(size, nullptr, flags);
+				alloc(nullptr, size, flags);
 			}
 
 			ENGINE_INLINE void alloc(std::ranges::contiguous_range auto range, StorageFlag flags = {}) {
-				alloc(std::ranges::size(range) * sizeof(*std::ranges::cdata(range)), std::ranges::cdata(range), flags);
+				alloc(std::ranges::cdata(range), std::ranges::size(range) * sizeof(*std::ranges::cdata(range)), flags);
 			}
 
-			ENGINE_INLINE void setData(uint64 offset, uint64 size, const void* data) {
+			ENGINE_INLINE void setData(uint64 offset, const void* data, uint64 size) {
 				ENGINE_DEBUG_ASSERT(buff != 0, "Attempting to set data of empty buffer.");
 				ENGINE_DEBUG_ASSERT(size > 0, "Attempting to set data with size zero.");
 				glNamedBufferSubData(buff, offset, size, data);
 			}
 
-			ENGINE_INLINE void setData(uint64 size, const void* data) {
-				setData(0, size, data);
+			ENGINE_INLINE void setData(const void* data, uint64 size) {
+				setData(0, data, size);
 			}
 
 			ENGINE_INLINE void setData(std::ranges::contiguous_range auto range) {
-				setData(0, std::ranges::size(range) * sizeof(*std::ranges::cdata(range)), std::ranges::cdata(range));
+				setData(0, std::ranges::cdata(range), std::ranges::size(range) * sizeof(*std::ranges::cdata(range)));
 			}
 	};
 }
