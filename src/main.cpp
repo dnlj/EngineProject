@@ -880,6 +880,8 @@ void run(int argc, char* argv[]) {
 
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");
 int entry(int argc, char* argv[]) {
+	launchTime = Engine::Clock::now();
+
 	if (!Engine::Net::startup()) {
 		ENGINE_ERROR("Unable to start networking: ", Engine::Win32::getLastErrorMessage());
 	}
@@ -1033,18 +1035,6 @@ int entry(int argc, char* argv[]) {
 	//cfg.loadAndTokenize("example.cfg");
 	//cfg.print();
 
-	{
-		//using namespace Engine::Unicode;
-		////uint8 test[4] = {0xF0, 0x9F, 0x8E, 0x82};
-		////uint8 test[3] = {0xEA, 0xB0, 0x80};
-		////uint8 test[2] = {0xD7, 0xA9};
-		//uint8 test[1] = {'X'};
-		//ENGINE_WARN("\n Point = ", std::hex,
-		//	+to32(reinterpret_cast<const Unit8*>(test))
-		//);
-		//getchar();
-	}
-
 	startTime = Engine::Clock::now();
 	run(argc, argv);
 
@@ -1058,7 +1048,6 @@ int entry(int argc, char* argv[]) {
 
 #ifdef ENGINE_OS_WINDOWS
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nCmdShow) {
-	launchTime = Engine::Clock::now();
 	return entry(__argc, __argv);
 }
 #else

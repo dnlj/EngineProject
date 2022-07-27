@@ -87,7 +87,7 @@ namespace Engine::Gfx {
 			glVertexArrayElementBuffer(vao, mesh->ebuff->get());
 			glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 
-			const auto matParamsSize = mat->base->getParametersBlockSize();
+			const auto matParamsSize = mat->base->getParameterDescription().blockSize;
 			if (matParamsSize > matParamsBufferSize) {
 				matParamsBufferSize = matParamsSize;
 				matParamsBuffer->alloc(matParamsSize, StorageFlag::DynamicStorage);

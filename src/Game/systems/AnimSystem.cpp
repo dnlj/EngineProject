@@ -52,13 +52,13 @@ namespace Game {
 
 				// TODO: load from model
 				mats[0] = engine.getMaterialInstanceManager().create(matBase);
-				mats[0]->set(0, glm::vec4{1,1,0.5,1});
+				mats[0]->set("color", glm::vec4{1,1,0.5,1});
 
 				mats[1] = engine.getMaterialInstanceManager().create(matBase);
-				mats[1]->set(0, glm::vec4{1,0.5,1,1});
+				mats[1]->set("color", glm::vec4{1,0.5,1,1});
 
 				mats[2] = engine.getMaterialInstanceManager().create(matBase);
-				mats[2]->set(0, glm::vec4{0.5,1,1,1});
+				mats[2]->set("color", glm::vec4{0.5,1,1,1});
 			}
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size());

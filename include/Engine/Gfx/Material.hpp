@@ -23,19 +23,14 @@ namespace Engine::Gfx {
 	class Material {
 		private:
 			ShaderRef shader;
-			MaterialParamsDesc params;
+			MaterialParamsDesc desc;
 
 		public:
 			Material(ShaderRef shader) : shader{shader} {}
 
 			const Shader* getShader() const noexcept { return shader.get(); }
-
-			/**
-			 * @return The size in bytes of the parameter block.
-			 */
-			uint32 getParametersBlockSize() const noexcept { return 16; } // TODO: impl
-
 			void fetchParameterDesc();
+			const auto& getParameterDescription() const noexcept { return desc; }
 
 		private:
 	};
@@ -50,7 +45,7 @@ namespace Engine::Gfx {
 
 		public:
 			MaterialInstance(const MaterialRef& mat) : base{mat} {
-				setStorageSize(base->getParametersBlockSize());
+				setStorageSize(base->getParameterDescription().blockSize);
 			}
 
 			byte* data() noexcept { // Dont need length because that can be infered from the material
@@ -63,16 +58,49 @@ namespace Engine::Gfx {
 				memcpy(data() + offset, dat, len);
 			}
 
-			void set(std::string_view field, const void* dat, uint32 len) noexcept {
-				//set(param.offset, dat, len);
+			void set(std::string_view field, const void* dat, uint32 len, NumberType type) noexcept {
+				auto& desc = base->getParameterDescription();
+				auto found = desc.params.find(field);
+
+				if (found != desc.params.end()) [[likely]] {
+					const auto& param = found->second;
+					ENGINE_DEBUG_ASSERT(len == param.size, "Wrong material parameter size.");
+					ENGINE_DEBUG_ASSERT(type == param.type, "Wrong material parameter type.");
+					set(param.offset, dat, len);
+				} else [[unlikely]] {
+					ENGINE_WARN("Attempting to set invalid material parameter.");
+					ENGINE_DEBUG_ASSERT(false);
+				}
 			}
 
-			ENGINE_INLINE void set(uint32 field, float32 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(uint32 field, glm::vec2 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(uint32 field, glm::vec3 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(uint32 field, glm::vec4 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(uint32 field, glm::mat3x3 value) { set(field, &value, sizeof(value)); };
-			ENGINE_INLINE void set(uint32 field, glm::mat4x4 value) { set(field, &value, sizeof(value)); };
+			void set(nullptr_t field, auto value) {
+				static_assert(!sizeof(value), "nullptr is not a valid material parameter.");
+			}
+
+			ENGINE_INLINE void set(std::string_view field, float32 value) {
+				set(field, &value, sizeof(value), NumberType::Float32);
+			};
+
+			ENGINE_INLINE void set(std::string_view field, glm::vec2 value) {
+				set(field, &value, sizeof(value), NumberType::Vec2);
+			};
+
+			ENGINE_INLINE void set(std::string_view field, glm::vec3 value) {
+				set(field, &value, sizeof(value), NumberType::Vec3);
+			};
+
+			ENGINE_INLINE void set(std::string_view field, glm::vec4 value) {
+				set(field, &value, sizeof(value), NumberType::Vec4);
+			};
+
+			ENGINE_INLINE void set(std::string_view field, glm::mat3x3 value) {
+				set(field, &value, sizeof(value), NumberType::Mat3x3);
+			};
+
+			ENGINE_INLINE void set(std::string_view field, glm::mat4x4 value) {
+				set(field, &value, sizeof(value), NumberType::Mat4x4);
+			};
+
 
 			// TODO: how to handle this? should this hold a texture ref? take a texture handle? how to handle layout.
 			//ENGINE_INLINE void set(MaterialInput field, TextureRef value) { set(field, &value, sizeof(value)); };

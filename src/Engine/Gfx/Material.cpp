@@ -6,7 +6,7 @@
 namespace Engine::Gfx {
 	void Material::fetchParameterDesc() {
 		const auto sdr = shader->get();
-		ENGINE_INFO("", Engine::ASCII_RED_BOLD, "=======================================================");
+
 		GLint count = 0;
 		glGetProgramInterfaceiv(sdr, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &count);
 
@@ -24,17 +24,13 @@ namespace Engine::Gfx {
 		GLint block = 0;
 		for (;block < count; ++block) {
 			glGetProgramResourceName(sdr, GL_UNIFORM_BLOCK, block, nameLen, nullptr, name.data());
-			ENGINE_INFO("Block Name: ", name.data());
-			if (std::ranges::equal(name, section)) {
-				ENGINE_INFO("Found block!");
-				break;
-			}
+			//ENGINE_INFO("Block Name: ", name.data());
+			if (std::ranges::equal(name, section)) { break; }
 		}
 
 		ENGINE_DEBUG_ASSERT(block != count, "Unable to find material parameter block.");
 		if (block == count) { return; }
 
-		MaterialParamsDesc desc;
 		{
 			GLint blockVarCount = 0;
 			{
@@ -43,7 +39,7 @@ namespace Engine::Gfx {
 				glGetProgramResourceiv(sdr, GL_UNIFORM_BLOCK, block, (GLsizei)std::size(props), props, (GLsizei)std::size(out), nullptr, out);
 				blockVarCount = out[0];
 				desc.blockSize = out[1];
-				ENGINE_INFO("Block var count: ", blockVarCount, " ", desc.blockSize);
+				//ENGINE_INFO("Block var count: ", blockVarCount, " ", desc.blockSize);
 			}
 
 			std::vector<GLint> blockVarIndices(blockVarCount, 0);
@@ -70,10 +66,8 @@ namespace Engine::Gfx {
 				param.offset = static_cast<uint32>(std::max(out[1], 0));
 				param.size = getTypeSize(param.type);
 
-				ENGINE_INFO("Block var index: ", name, " ", param.offset, " ", param.size);
+				//ENGINE_INFO("Block var index: ", name, " ", param.offset, " ", param.size);
 			}
 		}
-
-		ENGINE_INFO("", Engine::ASCII_RED_BOLD, "=======================================================");
 	}
 }
