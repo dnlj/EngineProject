@@ -62,8 +62,7 @@ namespace Engine::Gfx {
 		instances.reserve(scene->mNumMeshes * 2); // Just a guess, no way to know without walking scene.
 
 		numNodesEst *= 2;  // Just a guess, no way to know without walking scene.
-		arm.nodes.reserve(numNodesEst);
-		arm.bones.reserve(numNodesEst);
+		arm.reserve(numNodesEst);
 		nodeNameToId.reserve(numNodesEst);
 	}
 
@@ -109,19 +108,18 @@ namespace Engine::Gfx {
 			readMesh(mesh);
 		}
 
-		if (arm.bones.size() > 100) { // TODO: make constant or pull from shader or something (or inject into shader? that probably better.)
+		if (arm.boneOffsets.size() > 100) { // TODO: make constant or pull from shader or something (or inject into shader? that probably better.)
 			ENGINE_WARN("To many bones in model. Clamping. ", path);
 			ENGINE_DIE; // TODO: clamp number of bones
 		}
 
-		ENGINE_LOG("*** Nodes: ", arm.nodes.size(), " / ", arm.bones.size());
+		ENGINE_LOG("*** Nodes: ", arm.nodes.size(), " / ", arm.boneOffsets.size());
 
 		for (const auto* anim : Engine::ArrayView{scene->mAnimations, scene->mNumAnimations}) {
 			readAnim(anim);
 		}
 
-		arm.nodes.shrink_to_fit();
-		arm.bones.shrink_to_fit();
+		arm.finalize();
 		instances.shrink_to_fit();
 	}
 
@@ -133,14 +131,14 @@ namespace Engine::Gfx {
 			// We dont need bone data if it doesnt directly effect weights. Only node data.
 			if (bone->mNumWeights == 0) { continue; }
 
-			const auto boneId = static_cast<BoneId>(arm.bones.size());
+			const auto boneId = static_cast<BoneId>(arm.boneOffsets.size());
 			arm.nodes[nodeId].boneId = boneId;
 
 			// TODO: offset matrix will be diff for every mesh that uses this bone, correct? will need multiple stores.
 			//			^^^ dont think this is correct? each mesh should have the same offset for bone? test. ^^^
 			
 			// TODO: multiple meshes might refer to the same bone. Need to handle that
-			arm.bones.emplace_back().offset = cvtMat(bone->mOffsetMatrix);
+			arm.boneOffsets.emplace_back() = cvtMat(bone->mOffsetMatrix);
 
 			for (const auto& weight : Engine::ArrayView{bone->mWeights, bone->mNumWeights}) {
 				verts[weight.mVertexId].addBone(boneId, weight.mWeight);

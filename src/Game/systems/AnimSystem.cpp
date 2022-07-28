@@ -46,7 +46,7 @@ namespace Game {
 
 			// TODO: we probably also want a ModelLoader/Manager to cache this stuff so we dont load the same thing multiple times
 			ModelLoader loader;
-			model.skinned = !loader.arm.bones.empty();
+			model.skinned = !loader.arm.boneOffsets.empty();
 
 			{
 				const auto shader = engine.getShaderLoader().get(model.skinned ? "shaders/mesh" : "shaders/mesh_static");
@@ -93,7 +93,7 @@ namespace Game {
 				mdlComp.meshes.emplace_back(inst.nodeId, minfo.mesh, minfo.mat);
 			}
 
-			armComp.arm = std::move(loader.arm);
+			armComp = std::move(loader.arm);
 			if (!loader.animations.empty()) {
 				animation = std::move(loader.animations[0]);
 			}
@@ -114,24 +114,24 @@ namespace Game {
 
 	void AnimSystem::updateAnim() {
 		auto& armComp = world.getComponent<ArmatureComponent>(ent);
-		const auto nodeCount = armComp.arm.nodes.size();
+		const auto nodeCount = armComp.nodes.size();
 		const auto tick = fmodf(clock() / 80.0f, animation.duration);
 
 		for (const auto& seq : animation.channels) {
 			const auto& interp = seq.interp(tick);
-			armComp.arm.nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
+			armComp.nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
 		}
 
 		for (Engine::Gfx::NodeId ni = 0; ni < nodeCount; ++ni) {
-			auto& node = armComp.arm.nodes[ni];
+			auto& node = armComp.nodes[ni];
 			if (node.parentId >= 0) {
-				node.total = armComp.arm.nodes[node.parentId].total * node.trans;
+				node.total = armComp.nodes[node.parentId].total * node.trans;
 			} else {
 				node.total = node.trans;
 			}
 
 			if (node.boneId >= 0) {
-				armComp.results[node.boneId] = node.total * armComp.arm.bones[node.boneId].offset;
+				armComp.results[node.boneId] = node.total * armComp.boneOffsets[node.boneId];
 			}
 		}
 
@@ -154,7 +154,7 @@ namespace Game {
 			// ^^^^: Which we just happen to know align but could be different?
 			// ^^^^: Investigate more then remove if there isnt anything obviously wrong here.
 			auto& [meshes] = world.getComponent<ModelComponent>(ent);
-			const auto& [arm, _] = world.getComponent<ArmatureComponent>(ent);
+			const auto& arm = world.getComponent<ArmatureComponent>(ent);
 			for (int i = 0; i < meshes.size(); ++i) {
 				auto& inst = meshes[i];
 				const auto& node = arm.nodes[inst.nodeId];

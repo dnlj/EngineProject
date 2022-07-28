@@ -5,12 +5,6 @@ namespace Engine::Gfx {
 	using NodeId = int32;
 	using BoneId = int32;
 
-	class Bone {
-		public:
-			auto& operator=(const glm::mat4& rhs) noexcept { offset = rhs; return *this; }
-			glm::mat4 offset;
-	};
-
 	struct Node {
 		Node(NodeId parentId, BoneId boneId, const glm::mat4& bind)
 			: parentId{parentId}
@@ -33,11 +27,28 @@ namespace Engine::Gfx {
 			// Should be populated such that all ancestor nodes occur before child nodes.
 			// This should be done automatically because of how getNodeIndex is implemented.
 			std::vector<Node> nodes;
-			std::vector<Bone> bones;
+
+			/** Inverse bind pose for each bone. */
+			std::vector<glm::mat4> boneOffsets;
+
+			/** The final accumulated bone transforms. */
+			std::vector<glm::mat4> results;
+
+			void reserve(size_t cap) {
+				nodes.reserve(cap);
+				boneOffsets.reserve(cap);
+			}
 
 			void clear() {
 				nodes.clear();
-				bones.clear();
+				boneOffsets.clear();
+				results.clear();
+			}
+
+			void finalize() {
+				nodes.shrink_to_fit();
+				boneOffsets.shrink_to_fit();
+				results.resize(boneOffsets.size());
 			}
 	};
 }
