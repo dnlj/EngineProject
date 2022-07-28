@@ -11,3 +11,4 @@
 #include <Game/comps/BlockEntityComponent.hpp>
 #include <Game/comps/MapEditComponent.hpp>
 #include <Game/comps/ModelComponent.hpp>
+#include <Game/comps/ArmatureComponent.hpp>

@@ -19,8 +19,8 @@ namespace Game {
 
 		public:
 			bool skinned = false;
-			Engine::Gfx::Armature arm;
-			std::vector<glm::mat4> bones;
+			//Engine::Gfx::Armature arm;
+			//std::vector<glm::mat4> bones;
 	};
 
 	class AnimSystem : public System {

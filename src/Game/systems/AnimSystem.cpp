@@ -12,6 +12,7 @@
 // Game
 #include <Game/systems/AnimSystem.hpp>
 #include <Game/comps/ModelComponent.hpp>
+#include <Game/comps/ArmatureComponent.hpp>
 
 namespace {
 	typedef struct {
@@ -30,6 +31,8 @@ namespace Game {
 		using namespace Engine::Gfx;
 
 		ent = world.createEntity();
+		auto& mdlComp = world.addComponent<ModelComponent>(ent);
+		auto& armComp = world.addComponent<ArmatureComponent>(ent);
 
 		{
 			VertexAttributeDesc attribs[] = {
@@ -83,24 +86,20 @@ namespace Game {
 				);
 			}
 
-			auto& mdlComp = world.addComponent<ModelComponent>(ent);
 			mdlComp.meshes.reserve(loader.instances.size());
 			for (const auto& inst : loader.instances) {
 				auto& minfo = meshInfo[inst.meshId];
 				mdlComp.meshes.emplace_back(inst.nodeId, minfo.mesh, minfo.mat);
 			}
 
-			// TODO: really arm.bones is the same for all instances of a mesh, its just the offset matrix. Would it make sense to ref-ify armatures?
-			model.arm = std::move(loader.arm);
+			armComp.arm = std::move(loader.arm);
 			if (!loader.animations.empty()) {
 				animation = std::move(loader.animations[0]);
 			}
 		}
 
-		model.bones.resize(model.arm.bones.size());
-
-		if (!model.bones.empty()) {
-			ubo = engine.getBufferManager().create(model.bones.size() * sizeof(model.bones[0]), StorageFlag::DynamicStorage);
+		if (!armComp.results.empty()) {
+			ubo = engine.getBufferManager().create(armComp.results.size() * sizeof(armComp.results[0]), StorageFlag::DynamicStorage);
 
 			// TODO: work on removing - still needed atm for bone anim
 			glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
@@ -113,28 +112,29 @@ namespace Game {
 	}
 
 	void AnimSystem::updateAnim() {
-		const auto nodeCount = model.arm.nodes.size();
+		auto& armComp = world.getComponent<ArmatureComponent>(ent);
+		const auto nodeCount = armComp.arm.nodes.size();
 		const auto tick = fmodf(clock() / 80.0f, animation.duration);
 
 		for (const auto& seq : animation.channels) {
 			const auto& interp = seq.interp(tick);
-			model.arm.nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
+			armComp.arm.nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
 		}
 
 		for (Engine::Gfx::NodeId ni = 0; ni < nodeCount; ++ni) {
-			auto& node = model.arm.nodes[ni];
+			auto& node = armComp.arm.nodes[ni];
 			if (node.parentId >= 0) {
-				node.total = model.arm.nodes[node.parentId].total * node.trans;
+				node.total = armComp.arm.nodes[node.parentId].total * node.trans;
 			} else {
 				node.total = node.trans;
 			}
 
 			if (node.boneId >= 0) {
-				model.bones[node.boneId] = node.total * model.arm.bones[node.boneId].offset;
+				armComp.results[node.boneId] = node.total * armComp.arm.bones[node.boneId].offset;
 			}
 		}
 
-		if (ubo) { ubo->setData(model.bones); }
+		if (ubo) { ubo->setData(armComp.results); }
 	}
 
 	void AnimSystem::render(const RenderLayer layer) {
@@ -153,9 +153,10 @@ namespace Game {
 			// ^^^^: Which we just happen to know align but could be different?
 			// ^^^^: Investigate more then remove if there isnt anything obviously wrong here.
 			auto& [meshes] = world.getComponent<ModelComponent>(ent);
+			const auto& [arm, _] = world.getComponent<ArmatureComponent>(ent);
 			for (int i = 0; i < meshes.size(); ++i) {
 				auto& inst = meshes[i];
-				const auto& node = model.arm.nodes[inst.nodeId];
+				const auto& node = arm.nodes[inst.nodeId];
 				const auto mvp = vp * node.total;
 				inst.mvp = mvp;
 			}

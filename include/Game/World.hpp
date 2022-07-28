@@ -54,7 +54,8 @@ namespace Game {
 		class NetworkStatsComponent,
 		class MapAreaComponent,
 		class BlockEntityComponent,
-		class ModelComponent
+		class ModelComponent,
+		class ArmatureComponent
 	>;
 
 	using FlagsSet = Meta::TypeSet::TypeSet<
