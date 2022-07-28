@@ -1,7 +1,8 @@
 #pragma once
 
 // Engine
-#include <Engine/Gfx/ModelLoader.hpp> // TODO: rm - needed for `Gfx::Animation` which should be moved to own file.
+#include <Engine/Gfx/Animation.hpp>
+#include <Engine/Gfx/Armature.hpp>
 #include <Engine/Gfx/resources.hpp>
 
 // Game

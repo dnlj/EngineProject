@@ -4,18 +4,11 @@
 #include <assimp/Importer.hpp>
 
 // Engine
-#include <Engine/Gfx/AnimSeq.hpp>
+#include <Engine/Gfx/Animation.hpp>
 #include <Engine/Gfx/Armature.hpp>
 
 
 namespace Engine::Gfx {
-	// TODO: move
-	class Animation {
-		public:
-			float32 duration;
-			std::vector<Engine::Gfx::AnimSeq> channels;
-	};
-
 	// TODO: move into own file
 	using MeshId = int32;
 	

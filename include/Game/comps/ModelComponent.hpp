@@ -1,10 +1,10 @@
 #pragma once
 
 // Engine
-#include <Engine/Gfx/resources.hpp>
-#include <Engine/Gfx/Mesh2.hpp>
+#include <Engine/Gfx/Armature.hpp>
 #include <Engine/Gfx/Material.hpp>
-#include <Engine/Gfx/ModelLoader.hpp> // TODO: rm once NodeId is moved into own file
+#include <Engine/Gfx/Mesh2.hpp>
+#include <Engine/Gfx/resources.hpp>
 
 
 namespace Game {
