@@ -2,6 +2,7 @@
 
 
 namespace Engine::Gfx {
+	class Animation;
 	using NodeId = int32;
 	using BoneId = int32;
 
@@ -28,7 +29,7 @@ namespace Engine::Gfx {
 			// This should be done automatically because of how getNodeIndex is implemented.
 			std::vector<Node> nodes;
 
-			/** Inverse bind pose for each bone. */
+			/** Inverse bind pose for each bone. Converts from mesh space to bone space. */
 			std::vector<glm::mat4> boneOffsets;
 
 			/** The final accumulated bone transforms. */
@@ -50,5 +51,8 @@ namespace Engine::Gfx {
 				boneOffsets.shrink_to_fit();
 				results.resize(boneOffsets.size());
 			}
+
+			void apply(const Animation& anim, float32 tick);
+			void rebuild();
 	};
 }

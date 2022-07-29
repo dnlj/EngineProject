@@ -116,25 +116,7 @@ namespace Game {
 		auto& armComp = world.getComponent<ArmatureComponent>(ent);
 		const auto nodeCount = armComp.nodes.size();
 		const auto tick = fmodf(clock() / 80.0f, animation.duration);
-
-		for (const auto& seq : animation.channels) {
-			const auto& interp = seq.interp(tick);
-			armComp.nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
-		}
-
-		for (Engine::Gfx::NodeId ni = 0; ni < nodeCount; ++ni) {
-			auto& node = armComp.nodes[ni];
-			if (node.parentId >= 0) {
-				node.total = armComp.nodes[node.parentId].total * node.trans;
-			} else {
-				node.total = node.trans;
-			}
-
-			if (node.boneId >= 0) {
-				armComp.results[node.boneId] = node.total * armComp.boneOffsets[node.boneId];
-			}
-		}
-
+		armComp.apply(animation, tick);
 		if (ubo) { ubo->setData(armComp.results); }
 	}
 
