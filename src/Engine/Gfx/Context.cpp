@@ -96,6 +96,7 @@ namespace Engine::Gfx {
 			matParamsBuffer->setData(mat->data(), matParamsSize);
 
 			// TODO: batch material and instance parameters into same buffer object (glBindBufferRange)
+			// TODO: we really need to do uniform introspection for instance data like we do for material uniforms so we can group uniform data.
 
 			glDrawElementsInstancedBaseVertexBaseInstance(
 				GL_TRIANGLES,
@@ -106,6 +107,34 @@ namespace Engine::Gfx {
 				1, 0, 0
 			);
 		}
+
+		/* Example code i used to have in AnimSystem using multidraw. Note that this doesnt handle uniforms or similar.
+		glUseProgram(shaderSkinned->get());
+		glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
+
+		static std::vector<DrawElementsIndirectCommand> commands; // TODO: rm temp
+
+		if (cmdbuff == 0) {
+			for (const auto& inst : model.instances) {
+				const auto& mesh = inst.mesh;
+				commands.push_back({
+					.count = mesh->ecount,
+					.instanceCount = 1,
+					.firstIndex = mesh->eoffset,
+					.baseVertex = 0,
+					.baseInstance = 0,
+				});
+			}
+
+			glCreateBuffers(1, &cmdbuff);
+			glNamedBufferStorage(cmdbuff, commands.size() * sizeof(commands[0]), nullptr, GL_DYNAMIC_STORAGE_BIT);
+			glNamedBufferSubData(cmdbuff, 0, commands.size() * sizeof(commands[0]), std::data(commands));
+		}
+
+		glBindVertexArray(layout->vao);
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, cmdbuff);
+		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);
+		*/
 
 		cmds.clear();
 	}

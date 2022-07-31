@@ -10,20 +10,6 @@
 
 
 namespace Game {
-	class ModelData {
-		public:
-			struct Inst {
-				Engine::Gfx::NodeId nodeId;
-				Engine::Gfx::MeshRef mesh;
-				Engine::Gfx::MaterialInstanceRef material;
-			};
-
-		public:
-			bool skinned = false;
-			//Engine::Gfx::Armature arm;
-			//std::vector<glm::mat4> bones;
-	};
-
 	class AnimSystem : public System {
 		private:
 			Engine::ECS::Entity ent;
@@ -32,7 +18,7 @@ namespace Game {
 			GLuint cmdbuff = 0; // TODO: rm - just for testing
 
 			Engine::Gfx::Animation animation;
-			ModelData model;
+			bool skinned = false;
 
 			Engine::Gfx::MaterialInstanceRef mats[3];
 

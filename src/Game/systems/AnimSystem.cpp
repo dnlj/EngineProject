@@ -15,17 +15,6 @@
 #include <Game/comps/ModelComponent.hpp>
 #include <Game/comps/ArmatureComponent.hpp>
 
-namespace {
-	typedef struct {
-        uint32_t  count;
-        uint32_t  instanceCount;
-        uint32_t  firstIndex;
-         int32_t  baseVertex;
-        uint32_t  baseInstance;
-    } DrawElementsIndirectCommand;
-	static_assert(sizeof(DrawElementsIndirectCommand) == 4 * 5, "glMultiDrawElementsIndirect requires that the indirect structure is tightly packed if using a stride of zero.");
-}
-
 
 namespace Game {
 	AnimSystem::AnimSystem(SystemArg arg) : System{arg} {
@@ -46,10 +35,10 @@ namespace Game {
 
 			// TODO: we probably also want a ModelLoader/Manager to cache this stuff so we dont load the same thing multiple times
 			ModelLoader loader;
-			model.skinned = !loader.arm.boneOffsets.empty();
+			skinned = !loader.arm.boneOffsets.empty();
 
 			{
-				const auto shader = engine.getShaderLoader().get(model.skinned ? "shaders/mesh" : "shaders/mesh_static");
+				const auto shader = engine.getShaderLoader().get(skinned ? "shaders/mesh" : "shaders/mesh_static");
 				auto matBase = engine.getMaterialManager().create(shader);
 
 				// TODO: load from model
@@ -63,7 +52,7 @@ namespace Game {
 				mats[2]->set("color", glm::vec4{0.5,1,1,1});
 			}
 
-			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size());
+			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size(), " ", skinned);
 
 			const auto vbo = engine.getBufferManager().create(loader.verts);
 			const auto ebo = engine.getBufferManager().create(loader.indices);
@@ -130,11 +119,9 @@ namespace Game {
 		vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
 		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 2});
 
-		if (!model.skinned) {
-			// TODO: Awful way to handle this. Very fragile.
-			// ^^^^: Not sure what we ment by this? I assume because we use to index into the model.instances with the same index as the meshes.
-			// ^^^^: Which we just happen to know align but could be different?
-			// ^^^^: Investigate more then remove if there isnt anything obviously wrong here.
+		if (!skinned) {
+			// TODO: not a great way to handle uniforms, but this should be resolved when we
+			// ^^^^: get more comprehensive instance data support. See: MnETMncr
 			auto& [meshes] = world.getComponent<ModelComponent>(ent);
 			const auto& arm = world.getComponent<ArmatureComponent>(ent);
 			for (int i = 0; i < meshes.size(); ++i) {
@@ -148,32 +135,6 @@ namespace Game {
 			for (auto& inst : meshes) {
 				inst.mvp = vp;
 			}
-			/*
-			glUseProgram(shaderSkinned->get());
-			glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
-
-			static std::vector<DrawElementsIndirectCommand> commands; // TODO: rm temp
-
-			if (cmdbuff == 0) {
-				for (const auto& inst : model.instances) {
-					const auto& mesh = inst.mesh;
-					commands.push_back({
-						.count = mesh->ecount,
-						.instanceCount = 1,
-						.firstIndex = mesh->eoffset,
-						.baseVertex = 0,
-						.baseInstance = 0,
-					});
-				}
-
-				glCreateBuffers(1, &cmdbuff);
-				glNamedBufferStorage(cmdbuff, commands.size() * sizeof(commands[0]), nullptr, GL_DYNAMIC_STORAGE_BIT);
-				glNamedBufferSubData(cmdbuff, 0, commands.size() * sizeof(commands[0]), std::data(commands));
-			}
-
-			glBindVertexArray(layout->vao);
-			glBindBuffer(GL_DRAW_INDIRECT_BUFFER, cmdbuff);
-			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, (GLsizei)std::size(commands), 0);*/
 		}
 	}
 }

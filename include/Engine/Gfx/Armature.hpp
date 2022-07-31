@@ -45,7 +45,7 @@ namespace Engine::Gfx {
 				boneOffsets.clear();
 				results.clear();
 			}
-
+			
 			void finalize() {
 				nodes.shrink_to_fit();
 				boneOffsets.shrink_to_fit();
