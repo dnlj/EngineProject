@@ -54,27 +54,37 @@ namespace Engine::Gfx {
 			}
 			const byte* data() const noexcept { return const_cast<MaterialInstance*>(this)->data(); }
 			
+			const MaterialParamDesc* getParamDesc(std::string_view field) const noexcept {
+				const auto& desc = base->getParameterDescription();
+				const auto found = desc.params.find(field);
+				if (found == desc.params.end()) [[unlikely]] { return nullptr; }
+				return &found->second;
+			}
+
 			void set(uint32 offset, const void* dat, uint32 len) noexcept {
 				memcpy(data() + offset, dat, len);
 			}
 
 			void set(std::string_view field, const void* dat, uint32 len, NumberType type) noexcept {
-				auto& desc = base->getParameterDescription();
-				auto found = desc.params.find(field);
-
-				if (found != desc.params.end()) [[likely]] {
-					const auto& param = found->second;
-					ENGINE_DEBUG_ASSERT(len == param.size, "Wrong material parameter size.");
-					ENGINE_DEBUG_ASSERT(type == param.type, "Wrong material parameter type.");
-					set(param.offset, dat, len);
+				const auto* param = getParamDesc(field);
+				if (param != nullptr) [[likely]] {
+					ENGINE_DEBUG_ASSERT(len == param->size, "Wrong material parameter size.");
+					ENGINE_DEBUG_ASSERT(type == param->type, "Wrong material parameter type.");
+					set(param->offset, dat, len);
 				} else [[unlikely]] {
-					ENGINE_WARN("Attempting to set invalid material parameter.");
+					ENGINE_WARN("Attempting to set invalid material parameter (", field, ").");
 					ENGINE_DEBUG_ASSERT(false);
 				}
 			}
 
-			void set(nullptr_t field, auto value) {
+			void set(std::same_as<nullptr_t> auto field, auto value) {
+				// TODO: C++23: string_view	can no longer take a nullptr_t (=delete) so we should be able to remove this overload?
 				static_assert(!sizeof(value), "nullptr is not a valid material parameter.");
+			}
+
+			ENGINE_INLINE void set(uint32 offset, auto value) {
+				static_assert(requires { set("", value); }, "Invalid value type for MaterialInstance::set(offset, value);");
+				set(offset, &value, sizeof(value));
 			}
 
 			ENGINE_INLINE void set(std::string_view field, float32 value) {
