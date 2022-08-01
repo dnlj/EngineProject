@@ -145,7 +145,7 @@ namespace Engine::UI {
 			 *
 			 * @see setEnabled
 			 */
-			ENGINE_INLINE static bool unsafe_markDeleted(Panel* panel) noexcept {
+			ENGINE_INLINE static void unsafe_markDeleted(Panel* panel) noexcept {
 				// Set PerformingLayout in case we some how call layout on a deleted panel.
 				// In debug we have warnings for this, but could happen i guess. Just a safety net for release mode.
 				panel->flags = PanelState::Deleted | PanelState::PerformingLayout;

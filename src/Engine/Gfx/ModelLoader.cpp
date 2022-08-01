@@ -145,7 +145,9 @@ namespace Engine::Gfx {
 			}
 		}
 
+		#if ENGINE_DEBUG
 		const auto& range = meshes.emplace_back(indexCount, mesh->mNumFaces * 3, mesh->mMaterialIndex);
+		#endif
 		const auto baseVertex = vertCount;
 
 		for(const auto& face : Engine::ArrayView{mesh->mFaces, mesh->mNumFaces}) {

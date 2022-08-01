@@ -93,6 +93,9 @@ namespace Engine::Gfx {
 				matParamsBuffer->alloc(matParamsSize, StorageFlag::DynamicStorage);
 				// TODO: we need rebind the buffer since we realloc
 			}
+			// TODO: when we go to multi-indirect rendering we should be able to have
+			// ^^^^: multiple draw batches worth of unifrom data in one buffer instead of per
+			// ^^^^: batch re-upload
 			matParamsBuffer->setData(mat->data(), matParamsSize);
 
 			// TODO: batch material and instance parameters into same buffer object (glBindBufferRange)
