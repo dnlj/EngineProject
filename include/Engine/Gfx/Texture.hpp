@@ -13,24 +13,108 @@
 #include <Engine/Gfx/TextureFilter.hpp>
 #include <Engine/Gfx/TextureFormat.hpp>
 #include <Engine/Gfx/TextureHandle.hpp>
+#include <Engine/Gfx/TextureType.hpp>
 
 
+// TODO: namespace Gfx
 namespace Engine {
+	class TextureGeneric {
+		protected:
+			GLuint tex = 0;
+
+		public:
+			TextureGeneric() = default;
+			TextureGeneric(const TextureGeneric&) = delete;
+
+			ENGINE_INLINE TextureGeneric(TextureGeneric&& other) noexcept {
+				*this = std::move(other);
+			}
+
+			ENGINE_INLINE TextureGeneric& operator=(TextureGeneric&& other) noexcept {
+				swap(*this, other);
+				return *this;
+			}
+
+			ENGINE_INLINE friend void swap(TextureGeneric& a, TextureGeneric& b) noexcept {
+				std::swap(a.tex, b.tex);
+			}
+
+			ENGINE_INLINE ~TextureGeneric() {
+				glDeleteTextures(1, &tex);
+			}
+
+			ENGINE_INLINE operator bool() const noexcept { return tex; }
+			ENGINE_INLINE auto get() const noexcept { return tex; }
+
+			void setMinFilter(TextureFilter filter) {
+				// TODO: should have a conversion function in Engine::Gfx instead of a lambda here.
+				decltype(auto) translate = [](auto f) ENGINE_INLINE -> GLenum {
+					switch (f) {
+						case TextureFilter::Nearest: {
+							return GL_NEAREST;
+						}
+						case TextureFilter::Bilinear: {
+							return GL_LINEAR;
+						}
+						case TextureFilter::Trilinear: {
+							return GL_LINEAR_MIPMAP_LINEAR;
+						}
+					}
+					ENGINE_WARN("Invalid texture minification filter.");
+					return GL_NEAREST;
+				};
+				glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, translate(filter));
+			}
+
+			void setMagFilter(TextureFilter filter) {
+				// TODO: should have a conversion function in Engine::Gfx instead of a lambda here.
+				decltype(auto) translate = [](auto f) ENGINE_INLINE -> GLenum {
+					switch (f) {
+						case TextureFilter::Nearest: {
+							return GL_NEAREST;
+						}
+						case TextureFilter::Bilinear:
+						case TextureFilter::Trilinear: {
+							return GL_LINEAR;
+						}
+					}
+					ENGINE_WARN("Invalid texture magnification filter.");
+					return GL_NEAREST;
+				};
+				glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, translate(filter));
+			}
+
+			void setFilter(TextureFilter filter) {
+				setMinFilter(filter);
+				setMagFilter(filter);
+			}
+
+			void setWrap(TextureWrap wrap) {
+				// TODO: should probably have a conversion function in Engine::Gfx instead of cast
+				glTextureParameteri(tex, GL_TEXTURE_WRAP_S, static_cast<GLenum>(wrap));
+				glTextureParameteri(tex, GL_TEXTURE_WRAP_T, static_cast<GLenum>(wrap));
+				glTextureParameteri(tex, GL_TEXTURE_WRAP_R, static_cast<GLenum>(wrap));
+			}
+
+			void generateMipmaps() {
+				ENGINE_DEBUG_ASSERT(tex != 0, "Attempting to generate mipmaps for uninitialized texture.");
+				glGenerateTextureMipmap(tex);
+			}
+	};
+
 	/**
 	 * Owns a GPU texture.
 	 * @see Image
 	 * @see TextureHandle
 	 */
-	template<int32 D, GLenum Target>
-	class Texture {
+	template<int32 D, Gfx::TextureType Target>
+	class Texture : public TextureGeneric {
 		private:
 			static_assert(1 <= D && D <= 3, "Invalid texture dimensions");
 			using Vec = glm::vec<D, glm::i32, glm::defaultp>;
-			GLuint tex = 0;
 
 		public:
-			Texture() = default;
-			Texture(const Texture&) = delete;
+			using TextureGeneric::TextureGeneric;
 
 			Texture(const Image& img) {
 				setAuto(img);
@@ -46,25 +130,6 @@ namespace Engine {
 				setWrap(wrap);
 			}
 
-			ENGINE_INLINE Texture(Texture&& other) noexcept {
-				*this = std::move(other);
-			}
-
-			ENGINE_INLINE Texture& operator=(Texture&& other) noexcept {
-				swap(*this, other);
-				return *this;
-			}
-
-			ENGINE_INLINE friend void swap(Texture& a, Texture& b) noexcept {
-				std::swap(a.tex, b.tex);
-			}
-
-			ENGINE_INLINE ~Texture() {
-				glDeleteTextures(1, &tex);
-			}
-
-			ENGINE_INLINE operator bool() const noexcept { return tex; }
-
 			void setAuto(const Image& img) {
 				const auto& format = getPixelFormatInfo(img.format());
 				setStorage(format.defaultTexFormat, img.size());
@@ -73,7 +138,7 @@ namespace Engine {
 
 			void setStorage(TextureFormat format, Vec size, int mips = 1) {
 				glDeleteTextures(1, &tex);
-				glCreateTextures(Target, 1, &tex);
+				glCreateTextures(toGL(Target), 1, &tex);
 
 				if constexpr (D == 1) {
 					// TODO: 1D	
@@ -128,66 +193,13 @@ namespace Engine {
 				}
 			}
 
-			void setMinFilter(TextureFilter filter) {
-				decltype(auto) translate = [](auto f) ENGINE_INLINE -> GLenum {
-					switch (f) {
-						case TextureFilter::Nearest: {
-							return GL_NEAREST;
-						}
-						case TextureFilter::Bilinear: {
-							return GL_LINEAR;
-						}
-						case TextureFilter::Trilinear: {
-							return GL_LINEAR_MIPMAP_LINEAR;
-						}
-					}
-					ENGINE_WARN("Invalid texture minification filter.");
-					return GL_NEAREST;
-				};
-				glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, translate(filter));
-			}
-
-			void setMagFilter(TextureFilter filter) {
-				decltype(auto) translate = [](auto f) ENGINE_INLINE -> GLenum {
-					switch (f) {
-						case TextureFilter::Nearest: {
-							return GL_NEAREST;
-						}
-						case TextureFilter::Bilinear:
-						case TextureFilter::Trilinear: {
-							return GL_LINEAR;
-						}
-					}
-					ENGINE_WARN("Invalid texture magnification filter.");
-					return GL_NEAREST;
-				};
-				glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, translate(filter));
-			}
-
-			void setFilter(TextureFilter filter) {
-				setMinFilter(filter);
-				setMagFilter(filter);
-			}
-
-			void setWrap(TextureWrap wrap) {
-				glTextureParameteri(tex, GL_TEXTURE_WRAP_S, static_cast<GLenum>(wrap));
-				glTextureParameteri(tex, GL_TEXTURE_WRAP_T, static_cast<GLenum>(wrap));
-				glTextureParameteri(tex, GL_TEXTURE_WRAP_R, static_cast<GLenum>(wrap));
-			}
-
-			void generateMipmaps() {
-				ENGINE_DEBUG_ASSERT(tex != 0, "Attempting to generate mipmaps for uninitialized texture.");
-				glGenerateTextureMipmap(tex);
-			}
-
-			ENGINE_INLINE auto get() const noexcept { return tex; }
 			ENGINE_INLINE operator TextureHandle<D, Target>() const noexcept { return TextureHandle<D, Target>{tex}; }
 	};
 
 	// TODO: untested - using Texture1D = Texture<1, GL_TEXTURE_1D>;
-	using Texture2D = Texture<2, GL_TEXTURE_2D>;
+	using Texture2D = Texture<2, Gfx::TextureType::Target2D>;
 	// TODO: untested - using Texture3D = Texture<3, GL_TEXTURE_3D>;
 	// TODO: untested - using Texture1DArray = Texture<2, GL_TEXTURE_1D_ARRAY>;
-	using Texture2DArray = Texture<3, GL_TEXTURE_2D_ARRAY>;
+	using Texture2DArray = Texture<3, Gfx::TextureType::Target2DArray>;
 	// TODO: cubemap
 }
