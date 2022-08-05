@@ -57,7 +57,7 @@ namespace Engine::UI {
 
 			/* Main framebuffer and clipping */
 			GLuint fbo = 0;
-			Texture2D colorTex;
+			Gfx::Texture2D colorTex;
 			GLuint quadVAO;
 			GLuint quadVBO;
 			Gfx::ShaderRef quadShader;

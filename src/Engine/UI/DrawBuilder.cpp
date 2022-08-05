@@ -59,6 +59,7 @@ namespace Engine::UI {
 		}
 
 		{
+			using namespace Gfx;
 			Image img{PixelFormat::RGB8, {1,1}};
 			memset(img.data(), 0xFF, img.sizeBytes());
 			defaultTexture.setStorage(TextureFormat::RGB8, img.size());
@@ -151,7 +152,7 @@ namespace Engine::UI {
 			if (currPolyGroup != lastPolyGroup && currPolyGroup->zindex == z) {
 				glBindVertexArray(polyVAO);
 				glUseProgram(polyShader->get());
-				TextureHandle2D activeTex = {};
+				Gfx::TextureHandle2D activeTex = {};
 
 				do {
 					ENGINE_DEBUG_ASSERT(currPolyGroup->count != 0, "Empty draw group. This group should have been skipped/removed already.");
@@ -289,7 +290,7 @@ namespace Engine::UI {
 		curr.max = glm::max(curr.min, curr.max);
 	}
 
-	void DrawBuilder::drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
+	void DrawBuilder::drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
 		const auto old = activeTexture;
 		activeTexture = tex;
 		drawRect(pos, size, {1,1,1,1});

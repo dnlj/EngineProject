@@ -16,8 +16,7 @@
 #include <Engine/Gfx/TextureType.hpp>
 
 
-// TODO: namespace Gfx
-namespace Engine {
+namespace Engine::Gfx {
 	class TextureGeneric {
 		protected:
 			GLuint tex = 0;
@@ -107,7 +106,7 @@ namespace Engine {
 	 * @see Image
 	 * @see TextureHandle
 	 */
-	template<int32 D, Gfx::TextureType Target>
+	template<int32 D, TextureType Target>
 	class Texture : public TextureGeneric {
 		private:
 			static_assert(1 <= D && D <= 3, "Invalid texture dimensions");
@@ -197,9 +196,9 @@ namespace Engine {
 	};
 
 	// TODO: untested - using Texture1D = Texture<1, GL_TEXTURE_1D>;
-	using Texture2D = Texture<2, Gfx::TextureType::Target2D>;
+	using Texture2D = Texture<2, TextureType::Target2D>;
 	// TODO: untested - using Texture3D = Texture<3, GL_TEXTURE_3D>;
 	// TODO: untested - using Texture1DArray = Texture<2, GL_TEXTURE_1D_ARRAY>;
-	using Texture2DArray = Texture<3, Gfx::TextureType::Target2DArray>;
+	using Texture2DArray = Texture<3, TextureType::Target2DArray>;
 	// TODO: cubemap
 }

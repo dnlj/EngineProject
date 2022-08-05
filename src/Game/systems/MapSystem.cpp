@@ -140,6 +140,8 @@ namespace Game {
 	}
 
 	void MapSystem::setup() {
+		using namespace Engine::Gfx;
+
 		mapEntity = world.createEntity();
 		shader = engine.getShaderLoader().get("shaders/terrain");
 
@@ -150,10 +152,10 @@ namespace Game {
 		}
 
 		// TODO: really no reason to use RGBA here. we dont use alpha
-		texArr.setStorage(Engine::TextureFormat::SRGBA8, {8, 8, std::size(textures)});
-		texArr.setFilter(Engine::TextureFilter::Nearest);
+		texArr.setStorage(TextureFormat::SRGBA8, {8, 8, std::size(textures)});
+		texArr.setFilter(TextureFilter::Nearest);
 
-		Engine::Image img;
+		Image img;
 		for (int i = 0; auto path : textures) {
 			img = path;
 			img.flipY();

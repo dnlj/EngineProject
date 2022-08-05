@@ -7,7 +7,7 @@
 #include <glloadgen/gl_core_4_5.hpp>
 
 
-namespace Engine {
+namespace Engine::Gfx {
 	enum class TextureFormat : GLenum {
 		NONE = 0,
 		R16F = GL_R16F,

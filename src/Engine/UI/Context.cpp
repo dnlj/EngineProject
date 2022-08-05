@@ -710,7 +710,7 @@ namespace Engine::UI {
 
 		view = {w, h};
 		root->setSize(view);
-		colorTex.setStorage(TextureFormat::RGBA8, view);
+		colorTex.setStorage(Gfx::TextureFormat::RGBA8, view);
 		glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, colorTex.get(), 0);
 		resize(view);
 	}

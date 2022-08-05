@@ -17,7 +17,7 @@ namespace Engine::UI {
 				int32 offset = {};
 				int32 count = {};
 				Bounds clip = {};
-				TextureHandle2D tex = {};
+				Gfx::TextureHandle2D tex = {};
 			};
 
 			struct PolyVertex {
@@ -63,8 +63,8 @@ namespace Engine::UI {
 
 			/* Render state */
 			std::vector<Bounds> clipStack;
-			TextureHandle2D activeTexture;
-			Texture2D defaultTexture; /** Default blank (white) texture */
+			Gfx::TextureHandle2D activeTexture;
+			Gfx::Texture2D defaultTexture; /** Default blank (white) texture */
 			Font font = nullptr;
 			int32 zindex = -1;
 			glm::vec2 view = {};
@@ -90,7 +90,7 @@ namespace Engine::UI {
 
 			void setFont(Font f) { font = f; }
 
-			void drawTexture(TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);
+			void drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);
 
 			/**
 			 * Draws a convex polygon from a ordered set of perimeter points.

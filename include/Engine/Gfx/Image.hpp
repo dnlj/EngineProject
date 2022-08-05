@@ -15,7 +15,7 @@
 #include <Engine/Gfx/PixelFormat.hpp>
 
 
-namespace Engine {
+namespace Engine::Gfx {
 	/**
 	 * Stores image data and format information.
 	 * @see Texture

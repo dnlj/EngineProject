@@ -4,7 +4,7 @@
 #include <Engine/engine.hpp>
 
 
-namespace Engine {
+namespace Engine::Gfx {
 	/**
 	 * A non-owning reference to a Shader.
 	 * @see Shader

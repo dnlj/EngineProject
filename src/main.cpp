@@ -55,7 +55,7 @@ namespace {
 	struct {
 		constexpr static int w = 512;
 		constexpr static int h = 512;
-		Engine::Texture2D tex2d;
+		Engine::Gfx::Texture2D tex2d;
 		//GLuint tex = 0;
 		//GLuint tex2 = 0;
 		//float32 data2[w] = {};
@@ -274,14 +274,14 @@ namespace {
 
 		std::cout << "Map Time (ms): " << std::chrono::duration<long double, std::milli>{end - begin}.count() << "\n";
 
-
+		using namespace Engine::Gfx;
 		if (!map.tex2d) {
-			map.tex2d.setStorage(Engine::TextureFormat::SRGB8, {map.w, map.h});
+			map.tex2d.setStorage(TextureFormat::SRGB8, {map.w, map.h});
 		}
 
-		map.tex2d.setFilter(Engine::TextureFilter::Nearest);
-		map.tex2d.setWrap(Engine::TextureWrap::Repeat);
-		map.tex2d.setSubImage(0, {}, {map.w, map.h}, Engine::PixelFormat::RGB8, data);
+		map.tex2d.setFilter(TextureFilter::Nearest);
+		map.tex2d.setWrap(TextureWrap::Repeat);
+		map.tex2d.setSubImage(0, {}, {map.w, map.h}, PixelFormat::RGB8, data);
 	}
 
 	namespace Map {

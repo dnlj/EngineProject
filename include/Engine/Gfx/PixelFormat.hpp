@@ -8,7 +8,7 @@
 #include <Engine/Gfx/TextureFormat.hpp>
 
 
-namespace Engine {
+namespace Engine::Gfx {
 	enum class PixelFormat {
 		#define X(Name, Format, Tex, Channels, R,G,B,A) Name,
 		#include <Engine/Gfx/PixelFormat.xpp>

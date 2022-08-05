@@ -40,7 +40,7 @@ namespace Engine::UI {
 		{
 			auto sec = section("Graphics");
 			auto img = ctx->createPanel<ImageDisplay>(sec);
-			Image store = "nope";
+			Gfx::Image store = "nope";
 			tex.setAuto(store);
 			img->setTexture(tex);
 			img->setSize({256,256});

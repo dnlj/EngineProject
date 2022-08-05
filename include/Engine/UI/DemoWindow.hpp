@@ -6,7 +6,7 @@
 namespace Engine::UI {
 	class DemoWindow : public Window {
 		private:
-			Texture2D tex;
+			Gfx::Texture2D tex;
 
 		public:
 			DemoWindow(class Context* context);

@@ -59,7 +59,7 @@ namespace Engine::UI {
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
 			
-			Texture2D glyphTex;
+			Gfx::Texture2D glyphTex;
 			glm::vec2 maxGlyphSize;
 			glm::ivec2 indexBounds;
 			int nextGlyphIndex = 0; // TODO: glyph index recycling

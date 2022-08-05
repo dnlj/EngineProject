@@ -80,7 +80,7 @@ namespace Engine::UI {
 		
 		indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxGlyphSize);
 		
-		glyphTex.setStorage(TextureFormat::R8, {texSize, texSize});
+		glyphTex.setStorage(Gfx::TextureFormat::R8, {texSize, texSize});
 
 		glCreateBuffers(1, &glyphSSBO);
 	}
@@ -114,7 +114,7 @@ namespace Engine::UI {
 			ENGINE_DEBUG_ASSERT(i.y < indexBounds.y, "Glyph texture index is out of bounds. Should rollover to next texture layer in array.");
 
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			glyphTex.setSubImage(0, dat.offset, dat.size, PixelFormat::R8, glyph.bitmap.buffer);
+			glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 		}
 
