@@ -14,31 +14,33 @@
 #include <Engine/Gfx/TextureFormat.hpp>
 #include <Engine/Gfx/TextureHandle.hpp>
 #include <Engine/Gfx/TextureType.hpp>
+#include <Engine/Gfx/resources.hpp>
 
 
 namespace Engine::Gfx {
-	class TextureGeneric {
+	template<>
+	class Texture<0, TextureType::Unknown> {
 		protected:
 			GLuint tex = 0;
 
 		public:
-			TextureGeneric() = default;
-			TextureGeneric(const TextureGeneric&) = delete;
+			Texture() = default;
+			Texture(const Texture&) = delete;
 
-			ENGINE_INLINE TextureGeneric(TextureGeneric&& other) noexcept {
+			ENGINE_INLINE Texture(Texture&& other) noexcept {
 				*this = std::move(other);
 			}
 
-			ENGINE_INLINE TextureGeneric& operator=(TextureGeneric&& other) noexcept {
+			ENGINE_INLINE Texture& operator=(Texture&& other) noexcept {
 				swap(*this, other);
 				return *this;
 			}
 
-			ENGINE_INLINE friend void swap(TextureGeneric& a, TextureGeneric& b) noexcept {
+			ENGINE_INLINE friend void swap(Texture& a, Texture& b) noexcept {
 				std::swap(a.tex, b.tex);
 			}
 
-			ENGINE_INLINE ~TextureGeneric() {
+			ENGINE_INLINE ~Texture() {
 				glDeleteTextures(1, &tex);
 			}
 
@@ -195,10 +197,11 @@ namespace Engine::Gfx {
 			ENGINE_INLINE operator TextureHandle<D, Target>() const noexcept { return TextureHandle<D, Target>{tex}; }
 	};
 
-	// TODO: untested - using Texture1D = Texture<1, GL_TEXTURE_1D>;
-	using Texture2D = Texture<2, TextureType::Target2D>;
-	// TODO: untested - using Texture3D = Texture<3, GL_TEXTURE_3D>;
-	// TODO: untested - using Texture1DArray = Texture<2, GL_TEXTURE_1D_ARRAY>;
-	using Texture2DArray = Texture<3, TextureType::Target2DArray>;
-	// TODO: cubemap
+	// Ensure all texture types are bitwise equal.
+	static_assert(sizeof(TextureGeneric) == sizeof(GLuint));
+	static_assert(sizeof(Texture1D) == sizeof(TextureGeneric));
+	static_assert(sizeof(Texture2D) == sizeof(TextureGeneric));
+	static_assert(sizeof(Texture3D) == sizeof(TextureGeneric));
+	static_assert(sizeof(Texture1DArray) == sizeof(TextureGeneric));
+	static_assert(sizeof(Texture2DArray) == sizeof(TextureGeneric));
 }

@@ -59,7 +59,7 @@ namespace Game {
 			}
 
 			spriteComp.path = "assets/fire.png";
-			spriteComp.texture = engine.getTextureLoader().get(spriteComp.path);
+			spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
 			world.setEnabled(ent, false);
 		}
 	}

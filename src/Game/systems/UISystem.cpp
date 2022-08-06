@@ -98,20 +98,20 @@ namespace Game {
 		{
 
 			struct Texture1 : EUI::Panel {
-				Engine::Gfx::TextureRef tex;
+				Engine::Gfx::Texture2DRef tex;
 				Texture1(EUI::Context* context, EngineInstance& engine) : Panel{context} {
 					setFixedHeight(128);
-					tex = engine.getTextureLoader().get("assets/gui_1.bmp");
+					tex = engine.getTextureLoader().get2D("assets/gui_1.bmp");
 				}
 				void render() override {
 					ctx->drawTexture(tex->tex, {}, getSize());
 				}
 			};
 			struct Texture2 : EUI::Panel {
-				Engine::Gfx::TextureRef tex;
+				Engine::Gfx::Texture2DRef tex;
 				Texture2(EUI::Context* context, EngineInstance& engine) : Panel{context} {
 					setFixedHeight(128);
-					tex = engine.getTextureLoader().get("assets/gui_2.bmp");
+					tex = engine.getTextureLoader().get2D("assets/gui_2.bmp");
 				}
 				void render() override {
 					ctx->drawTexture(tex->tex, {}, getSize());

@@ -683,7 +683,7 @@ namespace Game {
 		world.addComponent<PlayerFlag>(ent);
 		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
 		spriteComp.path = "assets/player.png";
-		spriteComp.texture = engine.getTextureLoader().get(spriteComp.path);
+		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
 
 		{
 			// TODO: query map system and find good spawn location

@@ -69,7 +69,7 @@ namespace Game {
 
 		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
 		spriteComp.path = texStr[texIdx];
-		spriteComp.texture = engine.getTextureLoader().get(spriteComp.path);
+		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
 		spriteComp.layer = RenderLayer::Background;
 		{
 			const auto& sz = spriteComp.texture.get()->size;

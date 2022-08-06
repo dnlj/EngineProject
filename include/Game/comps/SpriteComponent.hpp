@@ -20,7 +20,7 @@ namespace Game {
 	class SpriteComponent : public NetworkComponent {
 		public:
 			std::string path; // TODO: hopefully temp. Ideally we would have a static asset id / prefab / w.e. that we already know about.
-			Engine::Gfx::TextureRef texture;
+			Engine::Gfx::Texture2DRef texture;
 			glm::vec2 position = {0.0f, 0.0f};
 			glm::vec2 scale = {1.0f, 1.0f};
 			RenderLayer layer = RenderLayer::Foreground;
@@ -61,7 +61,7 @@ namespace Game {
 					return;
 				}
 
-				texture = engine.getTextureLoader().get(engine.getTexturePath(*tex));
+				texture = engine.getTextureLoader().get2D(engine.getTexturePath(*tex));
 				layer = static_cast<RenderLayer>(*lay);
 				position = *pos;
 				scale = *sc;

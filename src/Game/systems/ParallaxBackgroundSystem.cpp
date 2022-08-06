@@ -18,17 +18,17 @@ namespace Game {
 		shader = engine.getShaderLoader().get("shaders/parallax");
 		
 		layers.push_back({
-			.texture = engine.getTextureLoader().get("assets/para_test_2.png"),
+			.texture = engine.getTextureLoader().get2D("assets/para_test_2.png"),
 			.speedScale = 0.05f,
 		});
 
 		layers.push_back({
-			.texture = engine.getTextureLoader().get("assets/para_test_1.png"),
+			.texture = engine.getTextureLoader().get2D("assets/para_test_1.png"),
 			.speedScale = 0.15f,
 		});
 
 		layers.push_back({
-			.texture = engine.getTextureLoader().get("assets/para_test_0.png"),
+			.texture = engine.getTextureLoader().get2D("assets/para_test_0.png"),
 			.speedScale = 0.3f,
 		});
 		

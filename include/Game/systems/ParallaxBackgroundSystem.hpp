@@ -19,7 +19,7 @@ namespace Game {
 			}; static_assert(sizeof(InstData) == 3 * sizeof(GLfloat), "Assumed to be tightly packed");
 
 			struct Layer {
-				Engine::Gfx::TextureRef texture;
+				Engine::Gfx::Texture2DRef texture;
 				float32 speedScale;
 			};
 

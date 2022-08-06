@@ -89,8 +89,9 @@ namespace {
 
 		private:
 			auto countOf(const Id& id) const {
+				// TODO: actually want this to be any textures. not just 2d
 				// Subtract one for this reference which dies at this return
-				return loader.get(id).count() - 1;
+				return loader.get2D(id).count() - 1;
 			}
 
 	};

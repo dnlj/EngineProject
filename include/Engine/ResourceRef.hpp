@@ -21,12 +21,21 @@ namespace Engine {
 	 */
 	template<class T>
 	class ResourceRef {
-		private:
+		public:
 			using ResourceInfo = ResourceInfo<T>;
-			ResourceInfo* info = nullptr;
 
+		private:
+			ResourceInfo* info = nullptr;
 			void inc() { ++info->refCount; }
 			void dec() { --info->refCount; }
+
+		public:
+			/**
+			 * Provides access to the underlying ResourceInfo<T>.
+			 * Does NOT provide any reference counting.
+			 */
+			static ResourceInfo* unsafe_getInfo(ResourceRef& ref) noexcept { return ref.info; }
+			static const ResourceInfo* unsafe_getInfo(const ResourceRef& ref) noexcept { return ref.info; }
 
 		public:
 			ResourceRef() = default;
@@ -54,8 +63,6 @@ namespace Engine {
 			T& operator*() noexcept { return *get(); }
 
 			operator bool() const noexcept { return info; }
-
-			const auto* _debug() const noexcept { return info; }
 			const auto count() const noexcept { return info->refCount; }
 	};
 }
