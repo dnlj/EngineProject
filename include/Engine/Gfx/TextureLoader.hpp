@@ -1,9 +1,9 @@
 #pragma once
 
 // Engine
-#include <Engine/ResourceManager.hpp>
-#include <Engine/Gfx/Texture.hpp>
 #include <Engine/Gfx/resources.hpp>
+#include <Engine/Gfx/Texture.hpp>
+#include <Engine/ResourceManager.hpp>
 
 
 namespace Engine::Gfx {
@@ -28,32 +28,16 @@ namespace Engine::Gfx {
 
 	class TextureLoader final : public ResourceLoader<std::string, TextureGenericInfo> {
 		private:
-			using ResourceLoader::ResourceLoader;
-			using ResourceLoader::get;
-
-			virtual Resource load(const Key& key) override {
-				Image img = key;
-				img.flipY();
-				return {
-					.tex = Texture2D{img, TextureFilter::Nearest, TextureWrap::Repeat},
-					.size = {img.size(), 1},
-					.type = TextureType::Target2D,
-				};
-			}
+			Texture2DRef err2D;
 
 		public:
-			Texture2DRef get2D(const Key& key) {
-				auto got = get(key);
+			Texture2DRef get2D(const Key& key);
+			Texture2DRef getErrorTexture2D();
 
-				if (got->type != TextureType::Target2D) {
-					ENGINE_WARN("Attempting to get texture as wrong type (", key, ").");
-					ENGINE_DEBUG_ASSERT(false);
-					// TODO: return placeholder instead
-				}
+		private:
+			using ResourceLoader::ResourceLoader;
+			using ResourceLoader::get;
+			virtual Resource load(const Key& key) override;
 
-				return reinterpret_cast<Texture2DRef::ResourceInfo*>(
-					TextureGenericRef::unsafe_getInfo(got)
-				);
-			}
 	};
 }

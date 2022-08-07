@@ -70,6 +70,8 @@ namespace Engine {
 
 		private:
 			FlatHashMap<Key, ResourceRef> lookup;
+
+		protected:
 			Manager& manager;
 
 		public:
