@@ -41,3 +41,20 @@ namespace Engine::Gfx {
 
 	};
 }
+
+namespace Engine {
+	template<>
+	class ResourceRef<Gfx::TextureGenericInfo> : public ResourceRefImpl<Gfx::TextureGenericInfo> {
+		using ResourceRefImpl<Gfx::TextureGenericInfo>::ResourceRefImpl;
+		public:
+			// Allow conversion from any other texture ref
+			template<class Tex>
+			ResourceRef(ResourceRef<Gfx::TextureInfo<Tex>>& other)
+				: ResourceRef(
+					reinterpret_cast<Gfx::TextureGenericRef::ResourceInfo*>(
+						ResourceRef<Gfx::TextureInfo<Tex>>::unsafe_getInfo(other)
+					)
+				) {
+			}
+	};
+}
