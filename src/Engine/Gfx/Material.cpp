@@ -66,7 +66,7 @@ namespace Engine::Gfx {
 				param.offset = static_cast<uint32>(std::max(out[1], 0));
 				param.size = getTypeSize(param.type);
 
-				//ENGINE_INFO("Block var index: ", name, " ", param.offset, " ", param.size);
+				//ENGINE_INFO("Block var index: ", name, " ", param.offset, " ", param.size, " ", param.type);
 			}
 		}
 	}
