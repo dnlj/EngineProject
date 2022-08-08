@@ -1,5 +1,8 @@
 #pragma once
 
+// STD
+#include <iosfwd>
+
 
 namespace Engine::Gfx {
 	enum class NumberType {
@@ -50,4 +53,14 @@ namespace Engine::Gfx {
 		};
 		return lookup[+type];
 	}
+
+	constexpr inline std::string_view toString(NumberType type) noexcept {
+		constexpr std::string_view lookup[+NumberType::_count] = {
+			#define X(Name, Type, GLEnum) "NumberType::"#Name,
+			#include <Engine/Gfx/NumberType.xpp>
+		};
+		return lookup[+type];
+	}
+
+	std::ostream& operator<<(std::ostream& os, NumberType type);
 }
