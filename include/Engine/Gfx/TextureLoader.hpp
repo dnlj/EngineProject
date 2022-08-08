@@ -6,22 +6,24 @@
 #include <Engine/ResourceManager.hpp>
 
 
-namespace Engine::Gfx {
-	template<class Tex>
-	class TextureInfo {
+namespace Engine {
+	template<>
+	class ResourceRef<Gfx::TextureGenericInfo> : public ResourceRefImpl<Gfx::TextureGenericInfo> {
+		using ResourceRefImpl<Gfx::TextureGenericInfo>::ResourceRefImpl;
 		public:
-			Tex tex;
-			glm::ivec3 size;
-			TextureType type;
+			// Allow conversion from any other texture ref.
+			template<class Tex>
+			ResourceRef(ResourceRef<Gfx::TextureInfo<Tex>>& other)
+				: ResourceRef(
+					reinterpret_cast<Gfx::TextureGenericRef::ResourceInfo*>(
+						ResourceRef<Gfx::TextureInfo<Tex>>::unsafe_getInfo(other)
+					)
+				) {
+			}
 	};
+}
 
-	using TextureGenericInfo = TextureInfo<TextureGeneric>;
-	using Texture1DInfo = TextureInfo<Texture1D>;
-	using Texture2DInfo = TextureInfo<Texture2D>;
-	using Texture3DInfo = TextureInfo<Texture3D>;
-	using Texture1DArrayInfo = TextureInfo<Texture1DArray>;
-	using Texture2DArrayInfo = TextureInfo<Texture2DArray>;
-
+namespace Engine::Gfx {
 	class TextureManager : public ResourceManager<TextureGenericInfo> {
 		using ResourceManager::ResourceManager;
 	};
@@ -39,22 +41,5 @@ namespace Engine::Gfx {
 			using ResourceLoader::get;
 			virtual Resource load(const Key& key) override;
 
-	};
-}
-
-namespace Engine {
-	template<>
-	class ResourceRef<Gfx::TextureGenericInfo> : public ResourceRefImpl<Gfx::TextureGenericInfo> {
-		using ResourceRefImpl<Gfx::TextureGenericInfo>::ResourceRefImpl;
-		public:
-			// Allow conversion from any other texture ref
-			template<class Tex>
-			ResourceRef(ResourceRef<Gfx::TextureInfo<Tex>>& other)
-				: ResourceRef(
-					reinterpret_cast<Gfx::TextureGenericRef::ResourceInfo*>(
-						ResourceRef<Gfx::TextureInfo<Tex>>::unsafe_getInfo(other)
-					)
-				) {
-			}
 	};
 }
