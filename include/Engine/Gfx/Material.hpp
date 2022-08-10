@@ -93,38 +93,12 @@ namespace Engine::Gfx {
 			ENGINE_INLINE void set(uint32 offset, const TextureRef& value) {
 				textures[offset] = value;
 			}
-			
-			ENGINE_INLINE void set(std::string_view field, const int32 value) {
-				set(field, &value, sizeof(value), NumberType::Int32);
-			};
 
-			ENGINE_INLINE void set(std::string_view field, const uint32 value) {
-				set(field, &value, sizeof(value), NumberType::UInt32);
-			};
-
-			ENGINE_INLINE void set(std::string_view field, const float32 value) {
-				set(field, &value, sizeof(value), NumberType::Float32);
-			};
-
-			ENGINE_INLINE void set(std::string_view field, const glm::vec2 value) {
-				set(field, &value, sizeof(value), NumberType::Vec2);
-			};
-
-			ENGINE_INLINE void set(std::string_view field, const glm::vec3 value) {
-				set(field, &value, sizeof(value), NumberType::Vec3);
-			};
-
-			ENGINE_INLINE void set(std::string_view field, const glm::vec4 value) {
-				set(field, &value, sizeof(value), NumberType::Vec4);
-			};
-
-			ENGINE_INLINE void set(std::string_view field, const glm::mat3x3& value) {
-				set(field, &value, sizeof(value), NumberType::Mat3x3);
-			};
-
-			ENGINE_INLINE void set(std::string_view field, const glm::mat4x4& value) {
-				set(field, &value, sizeof(value), NumberType::Mat4x4);
-			};
+			template<class T>
+			ENGINE_INLINE void set(std::string_view field, const T& value)
+				requires requires { TypeToEnum<T>::value; } {
+				set(field, &value, sizeof(value), TypeToEnum_v<T>);
+			}
 
 			ENGINE_INLINE void set(std::string_view field, const TextureRef& value) {
 				const auto* param = getParamDesc(field);

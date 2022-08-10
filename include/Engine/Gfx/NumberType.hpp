@@ -62,5 +62,10 @@ namespace Engine::Gfx {
 		return lookup[+type];
 	}
 
+	template<class T> struct TypeToEnum;
+	#define X(Name, TypeM, GLEnum) template<> struct TypeToEnum<TypeM> { constexpr static NumberType value = NumberType::Name; };
+	#include <Engine/Gfx/NumberType.xpp>
+	template<class T> constexpr static inline NumberType TypeToEnum_v = TypeToEnum<T>::value;
+
 	std::ostream& operator<<(std::ostream& os, NumberType type);
 }
