@@ -7,7 +7,7 @@ namespace Engine::Gfx {
 
 	class DrawCommand {
 		public:
-			const MaterialInstance* material;
+			MaterialInstance* material;
 			const Mesh2* mesh;
 
 			glm::mat4 mvp; // TODO: find better solution for uniforms

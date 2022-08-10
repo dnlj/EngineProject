@@ -44,8 +44,9 @@ namespace Engine::Gfx {
 				glDeleteTextures(1, &tex);
 			}
 
-			ENGINE_INLINE operator bool() const noexcept { return tex; }
+			ENGINE_INLINE explicit operator bool() const noexcept { return tex; }
 			ENGINE_INLINE auto get() const noexcept { return tex; }
+			ENGINE_INLINE operator TextureHandle<0, TextureType::Unknown>() const noexcept { return TextureHandle<0, TextureType::Unknown>{tex}; }
 
 			void setMinFilter(TextureFilter filter) {
 				// TODO: should have a conversion function in Engine::Gfx instead of a lambda here.

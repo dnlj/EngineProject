@@ -96,6 +96,19 @@ namespace Engine::Gfx {
 			// TODO: when we go to multi-indirect rendering we should be able to have
 			// ^^^^: multiple draw batches worth of unifrom data in one buffer instead of per
 			// ^^^^: batch re-upload
+			{
+				int32 textures[16] = {};
+
+				const auto& [off, tex] = *mat->textures.begin();
+				glBindTextureUnit(5, tex->tex.get());
+				mat->set("tex", 3);
+				textures[3] = 5;
+
+				// TODO: maybe bindless? makes this kind of thing a lot easier
+				// TODO: need to set textures uniform
+				glProgramUniform1iv(program, glGetUniformLocation(program, "textures"), (GLsizei)std::size(textures), textures);
+
+			}
 			matParamsBuffer->setData(mat->data(), matParamsSize);
 
 			// TODO: batch material and instance parameters into same buffer object (glBindBufferRange)

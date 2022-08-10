@@ -25,9 +25,9 @@ namespace Game {
 		const auto& filter = world.getFilter<ModelComponent>();
 
 		for (auto ent : filter) {
-			const auto& [meshes] = world.getComponent<ModelComponent>(ent);
+			auto& [meshes] = world.getComponent<ModelComponent>(ent);
 
-			for (const auto& [nid, mesh, mat, mvp] : meshes) {
+			for (auto& [nid, mesh, mat, mvp] : meshes) {
 				cmd.material = mat.get();
 				cmd.mesh = mesh.get();
 

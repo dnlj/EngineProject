@@ -40,16 +40,20 @@ namespace Game {
 			{
 				const auto shader = engine.getShaderLoader().get(skinned ? "shaders/mesh" : "shaders/mesh_static");
 				auto matBase = engine.getMaterialManager().create(shader);
-
+				auto tex = engine.getTextureLoader().get2D("assets/gui_1.bmp");
+				ENGINE_LOG("Texture = ", tex->tex.get());
 				// TODO: load from model
 				mats[0] = engine.getMaterialInstanceManager().create(matBase);
 				mats[0]->set("color", glm::vec4{1,1,0.5,1});
+				mats[0]->set("tex", tex);
 
 				mats[1] = engine.getMaterialInstanceManager().create(matBase);
 				mats[1]->set("color", glm::vec4{1,0.5,1,1});
+				mats[0]->set("tex", tex);
 
 				mats[2] = engine.getMaterialInstanceManager().create(matBase);
 				mats[2]->set("color", glm::vec4{0.5,1,1,1});
+				mats[0]->set("tex", tex);
 			}
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size(), " ", skinned);

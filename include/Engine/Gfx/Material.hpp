@@ -44,7 +44,7 @@ namespace Engine::Gfx {
 			using Unit = uint32;
 
 			std::unique_ptr<Unit[]> storage;
-			FlatHashMap<uint32, TextureRef> textures;
+		public: FlatHashMap<uint32, TextureRef> textures;// TODO: private
 
 		public:
 			MaterialInstance(const MaterialRef& mat) : base{mat} {
@@ -93,20 +93,28 @@ namespace Engine::Gfx {
 			ENGINE_INLINE void set(uint32 offset, const TextureRef& value) {
 				textures[offset] = value;
 			}
+			
+			ENGINE_INLINE void set(std::string_view field, const int32 value) {
+				set(field, &value, sizeof(value), NumberType::Int32);
+			};
 
-			ENGINE_INLINE void set(std::string_view field, const float32& value) {
+			ENGINE_INLINE void set(std::string_view field, const uint32 value) {
+				set(field, &value, sizeof(value), NumberType::UInt32);
+			};
+
+			ENGINE_INLINE void set(std::string_view field, const float32 value) {
 				set(field, &value, sizeof(value), NumberType::Float32);
 			};
 
-			ENGINE_INLINE void set(std::string_view field, const glm::vec2& value) {
+			ENGINE_INLINE void set(std::string_view field, const glm::vec2 value) {
 				set(field, &value, sizeof(value), NumberType::Vec2);
 			};
 
-			ENGINE_INLINE void set(std::string_view field, const glm::vec3& value) {
+			ENGINE_INLINE void set(std::string_view field, const glm::vec3 value) {
 				set(field, &value, sizeof(value), NumberType::Vec3);
 			};
 
-			ENGINE_INLINE void set(std::string_view field, const glm::vec4& value) {
+			ENGINE_INLINE void set(std::string_view field, const glm::vec4 value) {
 				set(field, &value, sizeof(value), NumberType::Vec4);
 			};
 
@@ -122,7 +130,7 @@ namespace Engine::Gfx {
 				const auto* param = getParamDesc(field);
 				if (param) [[likely]] {
 					ENGINE_DEBUG_ASSERT(4 == param->size, "Wrong material parameter size.");
-					ENGINE_DEBUG_ASSERT(NumberType::UInt32 == param->type, "Wrong material parameter type.");
+					ENGINE_DEBUG_ASSERT(NumberType::Int32 == param->type, "Wrong material parameter type.");
 					set(param->offset, value);
 				} else [[unlikely]] {
 					ENGINE_WARN("Attempting to set invalid material parameter texture (", field, ").");

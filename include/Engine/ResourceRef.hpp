@@ -64,8 +64,9 @@ namespace Engine {
 			const T& operator*() const noexcept { return *get(); }
 			T& operator*() noexcept { return *get(); }
 
-			operator bool() const noexcept { return info; }
+			explicit operator bool() const noexcept { return info; }
 			const auto count() const noexcept { return info->refCount; }
+
 	};
 	
 	/**
