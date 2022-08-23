@@ -30,6 +30,24 @@ BENCH(linear_subset) {
 	ctx.stopSample();
 }
 
+BENCH(linear_subset_manual) {
+	const auto find = resample(dataset, dataset.size() / 4);
+	const auto end = dataset.end();
+
+	ctx.startSample();
+	for (const auto& key : find) {
+		auto found = false;
+		for (const auto d : dataset) {
+			if (d == key) {
+				found = true;
+				break;
+			}
+		}
+		Bench::observe(found);
+	}
+	ctx.stopSample();
+}
+
 BENCH(linear_ffo_subset) {
 	const auto find = resample(dataset, dataset.size() / 4);
 	const auto end = dataset.end();
@@ -104,56 +122,69 @@ namespace {
 BENCH_GROUP("find_or_hash")
 
 BENCH_USE(linear_subset, Fixed_16_16);
+BENCH_USE(linear_subset_manual, Fixed_16_16);
 BENCH_USE(linear_ffo_subset, Fixed_16_16);
 BENCH_USE(std_hash_subset, Fixed_16_16);
 BENCH_USE(rhh_hash_subset, Fixed_16_16);
 BENCH_USE(linear_subset, Fixed_16_256);
+BENCH_USE(linear_subset_manual, Fixed_16_256);
 BENCH_USE(linear_ffo_subset, Fixed_16_256);
 BENCH_USE(std_hash_subset, Fixed_16_256);
 BENCH_USE(rhh_hash_subset, Fixed_16_256);
 BENCH_USE(linear_subset, Fixed_16_1024);
+BENCH_USE(linear_subset_manual, Fixed_16_1024);
 BENCH_USE(linear_ffo_subset, Fixed_16_1024);
 BENCH_USE(std_hash_subset, Fixed_16_1024);
 BENCH_USE(rhh_hash_subset, Fixed_16_1024);
 BENCH_USE(linear_subset, Fixed_16_4096);
+BENCH_USE(linear_subset_manual, Fixed_16_4096);
 BENCH_USE(linear_ffo_subset, Fixed_16_4096);
 BENCH_USE(std_hash_subset, Fixed_16_4096);
 BENCH_USE(rhh_hash_subset, Fixed_16_4096);
 
 BENCH_USE(linear_subset, Fixed_32_16);
+BENCH_USE(linear_subset_manual, Fixed_32_16);
 BENCH_USE(linear_ffo_subset, Fixed_32_16);
 BENCH_USE(std_hash_subset, Fixed_32_16);
 BENCH_USE(rhh_hash_subset, Fixed_32_16);
 BENCH_USE(linear_subset, Fixed_32_256);
+BENCH_USE(linear_subset_manual, Fixed_32_256);
 BENCH_USE(linear_ffo_subset, Fixed_32_256);
 BENCH_USE(std_hash_subset, Fixed_32_256);
 BENCH_USE(rhh_hash_subset, Fixed_32_256);
 BENCH_USE(linear_subset, Fixed_32_1024);
+BENCH_USE(linear_subset_manual, Fixed_32_1024);
 BENCH_USE(linear_ffo_subset, Fixed_32_1024);
 BENCH_USE(std_hash_subset, Fixed_32_1024);
 BENCH_USE(rhh_hash_subset, Fixed_32_1024);
 BENCH_USE(linear_subset, Fixed_32_4096);
+BENCH_USE(linear_subset_manual, Fixed_32_4096);
 BENCH_USE(linear_ffo_subset, Fixed_32_4096);
 BENCH_USE(std_hash_subset, Fixed_32_4096);
 BENCH_USE(rhh_hash_subset, Fixed_32_4096);
 
 BENCH_USE(linear_subset, Uniform_16);
+BENCH_USE(linear_subset_manual, Uniform_16);
 BENCH_USE(linear_ffo_subset, Uniform_16);
 BENCH_USE(std_hash_subset, Uniform_16);
 BENCH_USE(rhh_hash_subset, Uniform_16);
 BENCH_USE(linear_subset, Uniform_32);
+BENCH_USE(linear_subset_manual, Uniform_32);
 BENCH_USE(linear_ffo_subset, Uniform_32);
 BENCH_USE(std_hash_subset, Uniform_32);
 BENCH_USE(rhh_hash_subset, Uniform_32);
 BENCH_USE(linear_subset, Uniform_128);
+BENCH_USE(linear_subset_manual, Uniform_128);
 BENCH_USE(linear_ffo_subset, Uniform_128);
 BENCH_USE(std_hash_subset, Uniform_128);
 BENCH_USE(rhh_hash_subset, Uniform_128);
 BENCH_USE(linear_subset, Uniform_256);
+BENCH_USE(linear_subset_manual, Uniform_256);
 BENCH_USE(linear_ffo_subset, Uniform_256);
 BENCH_USE(std_hash_subset, Uniform_256);
 BENCH_USE(rhh_hash_subset, Uniform_256);
 BENCH_USE(linear_subset, Uniform_1024);
+BENCH_USE(linear_subset_manual, Uniform_1024);
 BENCH_USE(linear_ffo_subset, Uniform_1024);
 BENCH_USE(std_hash_subset, Uniform_1024);
 BENCH_USE(rhh_hash_subset, Uniform_1024);
