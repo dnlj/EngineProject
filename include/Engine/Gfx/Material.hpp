@@ -44,7 +44,7 @@ namespace Engine::Gfx {
 			using Unit = uint32;
 
 			std::unique_ptr<Unit[]> storage;
-		public: FlatHashMap<uint32, TextureRef> textures;// TODO: private
+			FlatHashMap<uint32, TextureRef> textures; // offset -> texture
 
 		public:
 			MaterialInstance(const MaterialRef& mat) : base{mat} {
@@ -111,6 +111,10 @@ namespace Engine::Gfx {
 					ENGINE_DEBUG_ASSERT(false);
 				}
 			};
+
+			const auto& getTextures() const noexcept {
+				return textures;
+			}
 
 		private:
 			/**
