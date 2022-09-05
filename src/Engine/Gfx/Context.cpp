@@ -5,6 +5,7 @@
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/Mesh2.hpp>
 #include <Engine/Gfx/VertexAttributeLayout.hpp>
+#include <Engine/Gfx/ActiveTextureCache.hpp>
 
 
 namespace {
@@ -20,8 +21,14 @@ namespace {
 
 
 namespace Engine::Gfx {
-	Context::Context(BufferManager& bufferManager) {
+	Context::Context(BufferManager& bufferManager, TextureLoader& textureLoader) {
 		matParamsBuffer = bufferManager.create();
+		errTexture = textureLoader.getErrorTexture2D();
+
+		// TODO: this really only fixes it for 2d textures, would need error textures for each target to fully fix this.
+		for (uint32 i = 0; i < maxActiveTextures; ++i) {
+			glBindTextureUnit(i, errTexture->tex.get());
+		}
 	}
 
 	void Context::render() {
@@ -54,7 +61,9 @@ namespace Engine::Gfx {
 			// remap uniform->binding index if we already have a texture bound.
 			//
 			// Bindless sparse array textures are also a thing. Maybe look into that.
-			// 
+			//
+			// probably want to sort be ref count then textureid so that as a heuristic.
+			// In theory we should be able to find the optimal ordering, just not sure what that is called atm.
 			//if (a.textures[0].texture != b.textures[0].texture) { return a.textures[0].texture > b.textures[0].texture; }
 
 			if (a.vao != b.vao) { return a.vao < b.vao; }
@@ -66,6 +75,14 @@ namespace Engine::Gfx {
 
 			return false;
 		});*/
+
+		{
+			// TODO: in the future we could have this persist between draws, but at the
+			// ^^^^: moment we have other draw systems that likely change textures and invalidate
+			// ^^^^: our state here.
+			texCache.clear();
+			memset(texActive, 0, sizeof(texActive));
+		}
 
 		for (const auto& [mat, mesh, mvp] : cmds) {
 			// TODO: rework to use glMultiDrawElementsIndirect and uniforms array buffers
@@ -93,20 +110,32 @@ namespace Engine::Gfx {
 				matParamsBuffer->alloc(matParamsSize, StorageFlag::DynamicStorage);
 				// TODO: we need rebind the buffer since we realloc
 			}
+
 			// TODO: when we go to multi-indirect rendering we should be able to have
 			// ^^^^: multiple draw batches worth of unifrom data in one buffer instead of per
 			// ^^^^: batch re-upload
 			{
-				int32 textures[16] = {};
+				texCache.use(*mat);
 
-				const auto& [off, tex] = *mat->textures.begin();
-				glBindTextureUnit(5, tex->tex.get());
-				mat->set("tex", 3);
-				textures[3] = 5;
+				{
+					auto activeCurr = texActive;
+					auto cacheCurr = texCache.begin();
+
+					for (uint32 i = 0; i < maxActiveTextures; ++i, ++activeCurr, ++cacheCurr) {
+						if (*activeCurr != cacheCurr->tex) {
+							*activeCurr = cacheCurr->tex;
+							glBindTextureUnit(i, activeCurr->get());
+						}
+					}
+				}
+
+				for (const auto& tex : mat->getTextures()) {
+					mat->set<uint32>(tex.first, texCache.get(tex.second->tex));
+				}
 
 				// TODO: maybe bindless? makes this kind of thing a lot easier
 				// TODO: need to set textures uniform
-				glProgramUniform1iv(program, glGetUniformLocation(program, "textures"), (GLsizei)std::size(textures), textures);
+				//glProgramUniform1iv(program, glGetUniformLocation(program, "textures"), (GLsizei)std::size(texIndices), texIndices);
 
 			}
 			matParamsBuffer->setData(mat->data(), matParamsSize);

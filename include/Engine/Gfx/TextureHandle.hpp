@@ -29,3 +29,13 @@ namespace Engine::Gfx {
 	using TextureHandle1DArray = TextureHandle<2, TextureType::Target1DArray>;
 	using TextureHandle2DArray = TextureHandle<3, TextureType::Target2DArray>;
 }
+
+
+namespace Engine {
+	template<int32 D, Gfx::TextureType Target>
+	struct Hash<Gfx::TextureHandle<D, Target>> {
+		[[nodiscard]] size_t operator()(const Gfx::TextureHandle<D, Target>& val) const {
+			return val.get();
+		}
+	};
+}

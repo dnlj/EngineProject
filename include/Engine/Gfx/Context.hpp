@@ -3,11 +3,12 @@
 // Engine
 #include <Engine/Gfx/DrawCommand.hpp>
 #include <Engine/Gfx/resources.hpp>
+#include <Engine/Gfx/TextureHandle.hpp>
+#include <Engine/Gfx/ActiveTextureCache.hpp>
 
 
 
 namespace Engine::Gfx {
-	// TODO: should this also have the resource managers?
 	class Context {
 		private:
 			std::vector<DrawCommand> cmds;
@@ -15,9 +16,15 @@ namespace Engine::Gfx {
 			BufferRef matParamsBuffer;
 			uint32 matParamsBufferSize = 0;
 
+			constexpr static uint32 maxActiveTextures = 16; // 16 = OpenGL fragment texture limit
+			ActiveTextureCache<maxActiveTextures> texCache;
+			TextureHandleGeneric texActive[maxActiveTextures];
+			int32 texIndices[maxActiveTextures];
+
+			Texture2DRef errTexture;
 		public:
 			// TODO: should a context just own all the managers? would make sense.
-			Context(BufferManager& bufferManager);
+			Context(BufferManager& bufferManager, TextureLoader& textureLoader);
 			void push(const DrawCommand& cmd) { cmds.push_back(cmd); }
 			void render();
 	};

@@ -79,7 +79,7 @@ namespace Game {
 			Engine::Gfx::MaterialManager materialManager;
 			Engine::Gfx::MaterialInstanceManager materialInstanceManager;
 
-			Engine::Gfx::Context gfxContext = bufferManager;
+			Engine::Gfx::Context gfxContext = {bufferManager, textureLoader};
 			Engine::UI::Context uiContext = {shaderLoader, textureLoader, camera};
 	};
 	

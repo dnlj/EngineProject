@@ -49,11 +49,11 @@ namespace Game {
 
 				mats[1] = engine.getMaterialInstanceManager().create(matBase);
 				mats[1]->set("color", glm::vec4{1,0.5,1,1});
-				mats[0]->set("tex", tex);
+				mats[1]->set("tex", tex);
 
 				mats[2] = engine.getMaterialInstanceManager().create(matBase);
 				mats[2]->set("color", glm::vec4{0.5,1,1,1});
-				mats[0]->set("tex", tex);
+				mats[2]->set("tex", tex);
 			}
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size(), " ", skinned);
