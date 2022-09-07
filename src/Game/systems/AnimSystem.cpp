@@ -27,6 +27,7 @@ namespace Game {
 		{
 			VertexAttributeDesc attribs[] = {
 				{ VertexInput::Position, 3, NumberType::Float32, offsetof(Vertex, pos), false },
+				{ VertexInput::TexCoord, 2, NumberType::Float32, offsetof(Vertex, uv), false }, // TODO: use normalized short here like we do in DrawBuilder
 				{ VertexInput::BoneIndices, 4, NumberType::UInt8, offsetof(Vertex, bones), false },
 				{ VertexInput::BoneWeights, 4, NumberType::Float32, offsetof(Vertex, weights), false },
 			};
@@ -40,20 +41,24 @@ namespace Game {
 			{
 				const auto shader = engine.getShaderLoader().get(skinned ? "shaders/mesh" : "shaders/mesh_static");
 				auto matBase = engine.getMaterialManager().create(shader);
-				auto tex = engine.getTextureLoader().get2D("assets/gui_1.bmp");
-				ENGINE_LOG("Texture = ", tex->tex.get());
+				//auto tex = engine.getTextureLoader().get2D("assets/gui_1.bmp");
+				auto tex1 = engine.getTextureLoader().get2D("assets/tri_test3_uv1.png");
+				//auto tex2 = engine.getTextureLoader().get2D("assets/tri_test3_uv2.png");
+				auto tex2 = engine.getTextureLoader().get2D("assets/char_uv.png");
+				//ENGINE_LOG("Texture = ", tex->tex.get());
+
 				// TODO: load from model
 				mats[0] = engine.getMaterialInstanceManager().create(matBase);
 				mats[0]->set("color", glm::vec4{1,1,0.5,1});
-				mats[0]->set("tex", tex);
+				mats[0]->set("tex", tex2);
 
 				mats[1] = engine.getMaterialInstanceManager().create(matBase);
 				mats[1]->set("color", glm::vec4{1,0.5,1,1});
-				mats[1]->set("tex", tex);
+				mats[1]->set("tex", tex1);
 
 				mats[2] = engine.getMaterialInstanceManager().create(matBase);
 				mats[2]->set("color", glm::vec4{0.5,1,1,1});
-				mats[2]->set("tex", tex);
+				mats[2]->set("tex", tex1);
 			}
 
 			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size(), " ", skinned);
@@ -121,7 +126,7 @@ namespace Game {
 		auto vp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
 		vp = engine.getCamera().getProjection();
 		vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
-		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 2});
+		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 0.2f});
 
 		if (!skinned) {
 			// TODO: not a great way to handle uniforms, but this should be resolved when we

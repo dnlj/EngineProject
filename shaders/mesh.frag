@@ -1,5 +1,6 @@
 #version 450 core
 
+in vec2 fragTexCoord;
 out vec4 finalColor;
 
 layout(std140, binding=1) uniform MaterialParameters {
@@ -14,6 +15,6 @@ layout(binding=0) uniform sampler2D textures[16];
 //layout(binding=0) uniform sampler3D textures3D[16];
 
 void main() {
-	finalColor = texture(textures[tex], color.xy);
+	finalColor = color * texture(textures[tex], fragTexCoord);
 	finalColor.a = 1;
 }

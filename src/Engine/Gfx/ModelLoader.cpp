@@ -30,9 +30,12 @@ namespace Engine::Gfx {
 		// TODO: try nested armature
 
 		//constexpr char fileName[] = "assets/testing.fbx";
+		//constexpr char fileName[] = "assets/tri_test3.fbx";
 		//constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
+		//constexpr char fileName[] = "assets/tri_test2_3.fbx";
 		//constexpr char fileName[] = "assets/test.fbx";
-		constexpr char fileName[] = "assets/char6.fbx";///////////////
+		constexpr char fileName[] = "assets/char_v2.fbx";
+		//constexpr char fileName[] = "assets/char6.fbx";///////////////
 		//constexpr char fileName[] = "assets/char.glb";
 		//constexpr char fileName[] = "assets/char.dae";
 
@@ -47,7 +50,7 @@ namespace Engine::Gfx {
 		int numNodesEst = 0;
 		skinned = false;
 
-		for(const auto* mesh : Engine::ArrayView{scene->mMeshes, scene->mNumMeshes}) {
+		for(const auto* mesh : ArrayView{scene->mMeshes, scene->mNumMeshes}) {
 			numVerts += mesh->mNumVertices;
 			numFaces += mesh->mNumFaces;
 			numNodesEst += mesh->mNumBones;
@@ -104,7 +107,7 @@ namespace Engine::Gfx {
 
 		// TODO: test mesh instancing
 		// TODO: i think we really need to walk the scene, there may be multiple instances of a mesh. Also consider that each instance of a mesh would probably have its own anim time.
-		for(const auto* mesh : Engine::ArrayView{scene->mMeshes, scene->mNumMeshes}) {
+		for(const auto* mesh : ArrayView{scene->mMeshes, scene->mNumMeshes}) {
 			readMesh(mesh);
 		}
 
@@ -115,7 +118,7 @@ namespace Engine::Gfx {
 
 		ENGINE_LOG("*** Nodes: ", arm.nodes.size(), " / ", arm.boneOffsets.size());
 
-		for (const auto* anim : Engine::ArrayView{scene->mAnimations, scene->mNumAnimations}) {
+		for (const auto* anim : ArrayView{scene->mAnimations, scene->mNumAnimations}) {
 			readAnim(anim);
 		}
 
@@ -140,7 +143,7 @@ namespace Engine::Gfx {
 			// TODO: multiple meshes might refer to the same bone. Need to handle that
 			arm.boneOffsets.emplace_back() = cvtMat(bone->mOffsetMatrix);
 
-			for (const auto& weight : Engine::ArrayView{bone->mWeights, bone->mNumWeights}) {
+			for (const auto& weight : ArrayView{bone->mWeights, bone->mNumWeights}) {
 				verts[weight.mVertexId].addBone(boneId, weight.mWeight);
 			}
 		}
@@ -150,7 +153,7 @@ namespace Engine::Gfx {
 		#endif
 		const auto baseVertex = vertCount;
 
-		for(const auto& face : Engine::ArrayView{mesh->mFaces, mesh->mNumFaces}) {
+		for(const auto& face : ArrayView{mesh->mFaces, mesh->mNumFaces}) {
 			ENGINE_ASSERT(face.mNumIndices == 3, "Invalid number of mesh face indices"); // TODO: handle error, dont assert
 			ENGINE_DEBUG_ASSERT(indexCount+2 < indices.size());
 			indices[indexCount] = baseVertex + face.mIndices[0];
@@ -161,8 +164,18 @@ namespace Engine::Gfx {
 
 		ENGINE_DEBUG_ASSERT(indexCount == range.offset + range.count);
 
-		for (const auto& v : Engine::ArrayView{mesh->mVertices, mesh->mNumVertices}) {
-			verts[vertCount].pos = {v.x, v.y, v.z};
+		for (uint32 i = 0; i < mesh->mNumVertices; ++i) {
+			auto& vert = verts[vertCount];
+
+			const auto& pos = mesh->mVertices[i];
+			vert.pos = {pos.x, pos.y, pos.z};
+
+			if (const auto& set = mesh->mTextureCoords[0]) {
+				ENGINE_ASSERT_WARN(set != nullptr, "Missing UV map for mesh.");
+				const auto& uv = mesh->mTextureCoords[0][i];
+				vert.uv = {uv.x, uv.y};
+			}
+
 			++vertCount;
 		}
 	}
@@ -180,7 +193,7 @@ namespace Engine::Gfx {
 		auto& anim = animations.emplace_back();
 		// TODO: apply mTicksPerSecond to times?
 		anim.duration = static_cast<float32>(anim2->mDuration);
-		for (const auto* chan : Engine::ArrayView{anim2->mChannels, anim2->mNumChannels}) {
+		for (const auto* chan : ArrayView{anim2->mChannels, anim2->mNumChannels}) {
 			ENGINE_LOG("\tChannel: ", chan->mNodeName.C_Str(), " ", chan->mNumPositionKeys, " ", chan->mNumRotationKeys, " ", chan->mNumScalingKeys);
 			auto& seq = anim.channels.emplace_back();
 			seq.nodeId = getNodeId(chan->mNodeName);
