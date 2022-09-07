@@ -5,7 +5,7 @@
 #include <Engine/Gfx/MaterialManager.hpp>
 #include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Gfx/MeshManager.hpp>
-#include <Engine/Gfx/ModelLoader.hpp>
+#include <Engine/Gfx/ModelReader.hpp>
 #include <Engine/Gfx/ShaderLoader.hpp>
 #include <Engine/Gfx/VertexAttributeLayout.hpp>
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
@@ -35,8 +35,8 @@ namespace Game {
 			auto layout = engine.getVertexLayoutLoader().get(attribs);
 
 			// TODO: we probably also want a ModelLoader/Manager to cache this stuff so we dont load the same thing multiple times
-			ModelLoader loader;
-			skinned = !loader.arm.boneOffsets.empty();
+			ModelReader reader;
+			skinned = !reader.arm.boneOffsets.empty();
 
 			{
 				const auto shader = engine.getShaderLoader().get(skinned ? "shaders/mesh" : "shaders/mesh_static");
@@ -61,19 +61,19 @@ namespace Game {
 				mats[2]->set("tex", tex1);
 			}
 
-			ENGINE_INFO("**** Loaded Model: ", loader.verts.size(), " ", loader.indices.size(), " ", loader.instances.size(), " ", skinned);
+			ENGINE_INFO("**** Loaded Model: ", reader.verts.size(), " ", reader.indices.size(), " ", reader.instances.size(), " ", skinned);
 
-			const auto vbo = engine.getBufferManager().create(loader.verts);
-			const auto ebo = engine.getBufferManager().create(loader.indices);
+			const auto vbo = engine.getBufferManager().create(reader.verts);
+			const auto ebo = engine.getBufferManager().create(reader.indices);
 
 			struct MeshInfo {
 				MeshRef mesh;
 				MaterialInstanceRef mat;
 			};
 			std::vector<MeshInfo> meshInfo;
-			meshInfo.reserve(loader.meshes.size());
+			meshInfo.reserve(reader.meshes.size());
 
-			for (auto& m : loader.meshes) {
+			for (auto& m : reader.meshes) {
 				ENGINE_LOG("MeshDesc::material = ", m.material);
 				meshInfo.emplace_back(
 					engine.getMeshManager().create(
@@ -85,15 +85,15 @@ namespace Game {
 				);
 			}
 
-			mdlComp.meshes.reserve(loader.instances.size());
-			for (const auto& inst : loader.instances) {
+			mdlComp.meshes.reserve(reader.instances.size());
+			for (const auto& inst : reader.instances) {
 				auto& minfo = meshInfo[inst.meshId];
 				mdlComp.meshes.emplace_back(inst.nodeId, minfo.mesh, minfo.mat);
 			}
 
-			armComp = std::move(loader.arm);
-			if (!loader.animations.empty()) {
-				animation = std::move(loader.animations[0]);
+			armComp = std::move(reader.arm);
+			if (!reader.animations.empty()) {
+				animation = std::move(reader.animations[0]);
 			}
 		}
 

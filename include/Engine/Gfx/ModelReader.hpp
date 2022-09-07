@@ -48,7 +48,7 @@ namespace Engine::Gfx {
 		NodeId nodeId;
 	};
 
-	class ModelLoader {
+	class ModelReader {
 		private:
 			Assimp::Importer im;
 
@@ -71,7 +71,7 @@ namespace Engine::Gfx {
 			bool skinned = false;
 
 		public:
-			ModelLoader();
+			ModelReader();
 			void load(const char* path);
 			void clear();
 

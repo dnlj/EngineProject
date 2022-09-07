@@ -4,7 +4,7 @@
 
 // Engine
 #include <Engine/ArrayView.hpp>
-#include <Engine/Gfx/ModelLoader.hpp>
+#include <Engine/Gfx/ModelReader.hpp>
 
 
 namespace {
@@ -24,7 +24,7 @@ namespace {
 }
 
 namespace Engine::Gfx {
-	ModelLoader::ModelLoader() {
+	ModelReader::ModelReader() {
 
 		// TODO: try "nested planes" with each one having a different material
 		// TODO: try nested armature
@@ -42,7 +42,7 @@ namespace Engine::Gfx {
 		load(fileName);
 	}
 
-	void ModelLoader::init() {
+	void ModelReader::init() {
 		clear();
 
 		int numVerts = 0;
@@ -69,7 +69,7 @@ namespace Engine::Gfx {
 		nodeNameToId.reserve(numNodesEst);
 	}
 
-	void ModelLoader::clear() {
+	void ModelReader::clear() {
 		indexCount = 0;
 		vertCount = 0;
 		indices.clear();
@@ -81,7 +81,7 @@ namespace Engine::Gfx {
 		arm.clear();
 	}
 
-	void ModelLoader::load(const char* path) {
+	void ModelReader::load(const char* path) {
 		scene = im.ReadFile(path, aiProcessPreset_TargetRealtime_Fast);
 
 		if (!scene) {
@@ -122,11 +122,20 @@ namespace Engine::Gfx {
 			readAnim(anim);
 		}
 
+		//for (const auto* mat : ArrayView{scene->mMaterials, scene->mNumMaterials}) {
+		//	ENGINE_INFO("------------------------------");
+		//	ENGINE_INFO("Name: ", mat->GetName().C_Str());
+		//	for (const auto* prop : ArrayView{mat->mProperties, mat->mNumProperties}) {
+		//		ENGINE_INFO("\t", prop->mKey.C_Str());
+		//	}
+		//	ENGINE_INFO("------------------------------");
+		//}
+
 		arm.finalize();
 		instances.shrink_to_fit();
 	}
 
-	void ModelLoader::readMesh(const aiMesh* mesh) {
+	void ModelReader::readMesh(const aiMesh* mesh) {
 		for (uint i = 0; i < mesh->mNumBones; ++i) {
 			const auto& bone = mesh->mBones[i];
 			const auto nodeId = getNodeId(bone->mName);
@@ -180,7 +189,7 @@ namespace Engine::Gfx {
 		}
 	}
 
-	void ModelLoader::readAnim(const aiAnimation* anim2) {
+	void ModelReader::readAnim(const aiAnimation* anim2) {
 		ENGINE_LOG(
 			"\n\tName: ", anim2->mName.C_Str(),
 			"\n\tTicks/s: ", anim2->mTicksPerSecond,
@@ -228,7 +237,7 @@ namespace Engine::Gfx {
 	}
 
 	size_t depth = 0; // TODO: rm 
-	void ModelLoader::build(aiNode* node, NodeId parentId) {
+	void ModelReader::build(aiNode* node, NodeId parentId) {
 		ENGINE_INFO("BUILD NODE: ", std::string(depth, ' '), node->mName.data, " ", node->mNumMeshes, " @ ", cvtMat(node->mTransformation));
 		++depth;
 		// Populate nodes
@@ -255,7 +264,7 @@ namespace Engine::Gfx {
 		--depth;
 	}
 
-	NodeId ModelLoader::getNodeId(const aiString& name) {
+	NodeId ModelReader::getNodeId(const aiString& name) {
 		ENGINE_DEBUG_ASSERT(nodeNameToId.contains(view(name)));
 		return nodeNameToId[view(name)];
 	};
