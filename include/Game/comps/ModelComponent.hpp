@@ -8,6 +8,7 @@
 
 
 namespace Game {
+	// TODO: rm - use Engine::Gfx::Model
 	class MeshInstance { // TODO: should be part of Engine?
 		public:
 			Engine::Gfx::NodeId nodeId;

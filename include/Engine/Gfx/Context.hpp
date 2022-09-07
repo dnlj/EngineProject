@@ -22,6 +22,7 @@ namespace Engine::Gfx {
 			int32 texIndices[maxActiveTextures];
 
 			Texture2DRef errTexture;
+
 		public:
 			// TODO: should a context just own all the managers? would make sense.
 			Context(BufferManager& bufferManager, TextureLoader& textureLoader);

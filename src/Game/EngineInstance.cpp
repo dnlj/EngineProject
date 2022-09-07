@@ -13,6 +13,7 @@
 #include <Engine/Gfx/VertexLayoutLoader.hpp>
 #include <Engine/UI/Context.hpp>
 #include <Engine/Input/BindManager.hpp>
+#include <Engine/Gfx/ResourceContext.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -60,27 +61,10 @@ namespace Game {
 
 		public:
 			Engine::Camera camera;
-
 			Engine::Input::BindManager bindManager;
-
-			Engine::Gfx::VertexLayoutManager vertexLayoutManager;
-			Engine::Gfx::VertexLayoutLoader vertexLayoutLoader = vertexLayoutManager;
-
-			Engine::Gfx::BufferManager bufferManager;
-
-			Engine::Gfx::ShaderManager shaderManager;
-			Engine::Gfx::ShaderLoader shaderLoader = shaderManager;
-
-			Engine::Gfx::TextureManager textureManager;
-			Engine::Gfx::TextureLoader textureLoader = textureManager;
-
-			Engine::Gfx::MeshManager meshManager;
-
-			Engine::Gfx::MaterialManager materialManager;
-			Engine::Gfx::MaterialInstanceManager materialInstanceManager;
-
-			Engine::Gfx::Context gfxContext = {bufferManager, textureLoader};
-			Engine::UI::Context uiContext = {shaderLoader, textureLoader, camera};
+			Engine::Gfx::ResourceContext gfxResCtx;
+			Engine::Gfx::Context gfxContext = {gfxResCtx.bufferManager, gfxResCtx.textureLoader};
+			Engine::UI::Context uiContext = {gfxResCtx.shaderLoader, gfxResCtx.textureLoader, camera};
 	};
 	
 	EngineInstance::EngineInstance() : pimpl{std::make_unique<EngineInstancePimpl>()} {
@@ -109,21 +93,21 @@ namespace Game {
 
 	Engine::Input::BindManager& EngineInstance::getBindManager() noexcept { return pimpl->bindManager; }
 
-	Engine::Gfx::VertexLayoutManager& EngineInstance::getVertexLayoutManager() noexcept { return pimpl->vertexLayoutManager; }
-	Engine::Gfx::VertexLayoutLoader& EngineInstance::getVertexLayoutLoader() noexcept { return pimpl->vertexLayoutLoader; }
-	Engine::Gfx::BufferManager& EngineInstance::getBufferManager() noexcept { return pimpl->bufferManager; }
+	Engine::Gfx::VertexLayoutManager& EngineInstance::getVertexLayoutManager() noexcept { return pimpl->gfxResCtx.vertexLayoutManager; }
+	Engine::Gfx::VertexLayoutLoader& EngineInstance::getVertexLayoutLoader() noexcept { return pimpl->gfxResCtx.vertexLayoutLoader; }
+	Engine::Gfx::BufferManager& EngineInstance::getBufferManager() noexcept { return pimpl->gfxResCtx.bufferManager; }
 	
-	Engine::Gfx::ShaderManager& EngineInstance::getShaderManager() noexcept { return pimpl->shaderManager; }
-	Engine::Gfx::ShaderLoader& EngineInstance::getShaderLoader() noexcept { return pimpl->shaderLoader; }
+	Engine::Gfx::ShaderManager& EngineInstance::getShaderManager() noexcept { return pimpl->gfxResCtx.shaderManager; }
+	Engine::Gfx::ShaderLoader& EngineInstance::getShaderLoader() noexcept { return pimpl->gfxResCtx.shaderLoader; }
 
-	Engine::Gfx::TextureManager& EngineInstance::getTextureManager() noexcept { return pimpl->textureManager; }
-	Engine::Gfx::TextureLoader& EngineInstance::getTextureLoader() noexcept { return pimpl->textureLoader; }
+	Engine::Gfx::TextureManager& EngineInstance::getTextureManager() noexcept { return pimpl->gfxResCtx.textureManager; }
+	Engine::Gfx::TextureLoader& EngineInstance::getTextureLoader() noexcept { return pimpl->gfxResCtx.textureLoader; }
 
-	Engine::Gfx::MeshManager& EngineInstance::getMeshManager() noexcept { return pimpl->meshManager; }
-	Engine::Gfx::MaterialManager& EngineInstance::getMaterialManager() noexcept { return pimpl->materialManager; }
-	Engine::Gfx::MaterialInstanceManager& EngineInstance::getMaterialInstanceManager() noexcept { return pimpl->materialInstanceManager; }
+	Engine::Gfx::MeshManager& EngineInstance::getMeshManager() noexcept { return pimpl->gfxResCtx.meshManager; }
+	Engine::Gfx::MaterialManager& EngineInstance::getMaterialManager() noexcept { return pimpl->gfxResCtx.materialManager; }
+	Engine::Gfx::MaterialInstanceManager& EngineInstance::getMaterialInstanceManager() noexcept { return pimpl->gfxResCtx.materialInstanceManager; }
 
-
+	Engine::Gfx::ResourceContext& EngineInstance::getGraphicsResourceContext() noexcept { return pimpl->gfxResCtx; }
 	Engine::Gfx::Context& EngineInstance::getGraphicsContext() noexcept { return pimpl->gfxContext; }
 	Engine::UI::Context& EngineInstance::getUIContext() noexcept { return pimpl->uiContext; }
 
