@@ -15,12 +15,8 @@ namespace Game {
 			Engine::ECS::Entity ent;
 			Engine::Gfx::BufferRef ubo;
 
-			GLuint cmdbuff = 0; // TODO: rm - just for testing
-
 			Engine::Gfx::Animation animation;
 			bool skinned = false;
-
-			Engine::Gfx::MaterialInstanceRef mats[3];
 
 		public:
 			AnimSystem(SystemArg arg);

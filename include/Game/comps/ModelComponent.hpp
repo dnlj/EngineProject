@@ -1,31 +1,15 @@
 #pragma once
 
 // Engine
-#include <Engine/Gfx/Armature.hpp>
-#include <Engine/Gfx/Material.hpp>
-#include <Engine/Gfx/Mesh2.hpp>
-#include <Engine/Gfx/resources.hpp>
+#include <Engine/Gfx/Model.hpp>
 
 
 namespace Game {
-	// TODO: rm - use Engine::Gfx::Model
-	class MeshInstance { // TODO: should be part of Engine?
-		public:
-			Engine::Gfx::NodeId nodeId;
-			Engine::Gfx::MeshRef mesh;
-			Engine::Gfx::MaterialInstanceRef material;
-
-			glm::mat4 mvp; // TODO: find better solution for uniforms
-
-			// TODO: Textures(TextureRef)
-			// TODO: Buffers(BufferRef)
-			// TODO: Uniforms(???)
-	};
-
 	class ModelComponent {
 		public:
+			// TODO: engine::gfx::model
 			// TODO: makes sense for the armature to be a separate comp
-			// TODO: cont. How to org? Currently our instances have a nodeId. how does that relate between components.
-			std::vector<MeshInstance> meshes;
+			// ^^^^: How to org? Currently our instances have a nodeId. how does that relate between components.
+			std::vector<Engine::Gfx::MeshInstance> meshes;
 	};
 }

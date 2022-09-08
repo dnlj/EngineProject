@@ -1,14 +1,10 @@
 // Engine
 #include <Engine/Camera.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
-#include <Engine/Gfx/MaterialInstanceManager.hpp>
-#include <Engine/Gfx/MaterialManager.hpp>
-#include <Engine/Gfx/Mesh.hpp>
-#include <Engine/Gfx/MeshManager.hpp>
-#include <Engine/Gfx/ModelReader.hpp>
-#include <Engine/Gfx/ShaderLoader.hpp>
-#include <Engine/Gfx/VertexAttributeLayout.hpp>
-#include <Engine/Gfx/VertexLayoutLoader.hpp>
+#include <Engine/Gfx/ModelLoader.hpp>
+#include <Engine/Gfx/Mesh2.hpp>
+#include <Engine/Gfx/Material.hpp>
+
 
 // Game
 #include <Game/systems/AnimSystem.hpp>
@@ -25,76 +21,21 @@ namespace Game {
 		auto& armComp = world.addComponent<ArmatureComponent>(ent);
 
 		{
-			VertexAttributeDesc attribs[] = {
-				{ VertexInput::Position, 3, NumberType::Float32, offsetof(Vertex, pos), false },
-				{ VertexInput::TexCoord, 2, NumberType::Float32, offsetof(Vertex, uv), false }, // TODO: use normalized short here like we do in DrawBuilder
-				{ VertexInput::BoneIndices, 4, NumberType::UInt8, offsetof(Vertex, bones), false },
-				{ VertexInput::BoneWeights, 4, NumberType::Float32, offsetof(Vertex, weights), false },
-			};
+			//constexpr char fileName[] = "assets/testing.fbx";
+			//constexpr char fileName[] = "assets/tri_test3.fbx";
+			//constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
+			//constexpr char fileName[] = "assets/tri_test2_3.fbx";
+			//constexpr char fileName[] = "assets/test.fbx";
+			constexpr char fileName[] = "assets/char_v2.fbx";//////////////////////////////
+			//constexpr char fileName[] = "assets/char6.fbx";///////////////
+			//constexpr char fileName[] = "assets/char.glb";
+			//constexpr char fileName[] = "assets/char.dae";
 
-			auto layout = engine.getVertexLayoutLoader().get(attribs);
-
-			// TODO: we probably also want a ModelLoader/Manager to cache this stuff so we dont load the same thing multiple times
-			ModelReader reader;
-			skinned = !reader.arm.boneOffsets.empty();
-
-			{
-				const auto shader = engine.getShaderLoader().get(skinned ? "shaders/mesh" : "shaders/mesh_static");
-				auto matBase = engine.getMaterialManager().create(shader);
-				//auto tex = engine.getTextureLoader().get2D("assets/gui_1.bmp");
-				auto tex1 = engine.getTextureLoader().get2D("assets/tri_test3_uv1.png");
-				//auto tex2 = engine.getTextureLoader().get2D("assets/tri_test3_uv2.png");
-				auto tex2 = engine.getTextureLoader().get2D("assets/char_uv.png");
-				//ENGINE_LOG("Texture = ", tex->tex.get());
-
-				// TODO: load from model
-				mats[0] = engine.getMaterialInstanceManager().create(matBase);
-				mats[0]->set("color", glm::vec4{1,1,0.5,1});
-				mats[0]->set("tex", tex2);
-
-				mats[1] = engine.getMaterialInstanceManager().create(matBase);
-				mats[1]->set("color", glm::vec4{1,0.5,1,1});
-				mats[1]->set("tex", tex1);
-
-				mats[2] = engine.getMaterialInstanceManager().create(matBase);
-				mats[2]->set("color", glm::vec4{0.5,1,1,1});
-				mats[2]->set("tex", tex1);
-			}
-
-			ENGINE_INFO("**** Loaded Model: ", reader.verts.size(), " ", reader.indices.size(), " ", reader.instances.size(), " ", skinned);
-
-			const auto vbo = engine.getBufferManager().create(reader.verts);
-			const auto ebo = engine.getBufferManager().create(reader.indices);
-
-			struct MeshInfo {
-				MeshRef mesh;
-				MaterialInstanceRef mat;
-			};
-			std::vector<MeshInfo> meshInfo;
-			meshInfo.reserve(reader.meshes.size());
-
-			for (auto& m : reader.meshes) {
-				ENGINE_LOG("MeshDesc::material = ", m.material);
-				meshInfo.emplace_back(
-					engine.getMeshManager().create(
-						layout,
-						vbo, static_cast<uint32>(sizeof(Vertex)),
-						ebo, m.offset, m.count
-					),
-					mats[m.material] // TODO: really neex to lookup in ModelLoader::materials or similar
-				);
-			}
-
-			mdlComp.meshes.reserve(reader.instances.size());
-			for (const auto& inst : reader.instances) {
-				auto& minfo = meshInfo[inst.meshId];
-				mdlComp.meshes.emplace_back(inst.nodeId, minfo.mesh, minfo.mat);
-			}
-
-			armComp = std::move(reader.arm);
-			if (!reader.animations.empty()) {
-				animation = std::move(reader.animations[0]);
-			}
+			const auto& data = engine.getModelLoader().get(fileName);
+			mdlComp.meshes = data.meshes;
+			armComp = data.arm;
+			animation = data.anims[0];
+			skinned = !armComp.boneOffsets.empty(); // TODO: handle better
 		}
 
 		if (!armComp.results.empty()) {
@@ -102,12 +43,14 @@ namespace Game {
 
 			// TODO: work on removing - still needed atm for bone anim
 			glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
-			glUniformBlockBinding(mats[0]->base->getShader()->get(), 0, 1); // Bind uniform block to buffer index
+
+			// TODO: awful way of doing this.
+			const auto shader = mdlComp.meshes[0].material->base->getShader()->get();
+			glUniformBlockBinding(shader, 0, 1); // Bind uniform block to buffer index
 		}
 	}
 
 	AnimSystem::~AnimSystem() {
-		glDeleteBuffers(1, &cmdbuff);
 	}
 
 	void AnimSystem::updateAnim() {

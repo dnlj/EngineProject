@@ -107,6 +107,8 @@ namespace Game {
 	Engine::Gfx::MaterialManager& EngineInstance::getMaterialManager() noexcept { return pimpl->gfxResCtx.materialManager; }
 	Engine::Gfx::MaterialInstanceManager& EngineInstance::getMaterialInstanceManager() noexcept { return pimpl->gfxResCtx.materialInstanceManager; }
 
+	Engine::Gfx::ModelLoader& EngineInstance::getModelLoader() noexcept { return pimpl->gfxResCtx.modelLoader; }
+
 	Engine::Gfx::ResourceContext& EngineInstance::getGraphicsResourceContext() noexcept { return pimpl->gfxResCtx; }
 	Engine::Gfx::Context& EngineInstance::getGraphicsContext() noexcept { return pimpl->gfxContext; }
 	Engine::UI::Context& EngineInstance::getUIContext() noexcept { return pimpl->uiContext; }

@@ -25,21 +25,6 @@ namespace {
 
 namespace Engine::Gfx {
 	ModelReader::ModelReader() {
-
-		// TODO: try "nested planes" with each one having a different material
-		// TODO: try nested armature
-
-		//constexpr char fileName[] = "assets/testing.fbx";
-		//constexpr char fileName[] = "assets/tri_test3.fbx";
-		//constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
-		//constexpr char fileName[] = "assets/tri_test2_3.fbx";
-		//constexpr char fileName[] = "assets/test.fbx";
-		constexpr char fileName[] = "assets/char_v2.fbx";
-		//constexpr char fileName[] = "assets/char6.fbx";///////////////
-		//constexpr char fileName[] = "assets/char.glb";
-		//constexpr char fileName[] = "assets/char.dae";
-
-		load(fileName);
 	}
 
 	void ModelReader::init() {
