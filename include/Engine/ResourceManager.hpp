@@ -2,7 +2,7 @@
 
 // Engine
 #include <Engine/ResourceRef.hpp>
-
+#include <Engine/ResourceStorage.hpp>
 
 namespace Engine {
 	/**
@@ -13,11 +13,10 @@ namespace Engine {
 		public:
 			using ResourceId = uint32;
 			using ResourceRef = ResourceRef<T>;
-			using ResourceInfo = ResourceInfo<T>;
 
 		private:
 			std::vector<ResourceId> reuse;
-			std::vector<std::unique_ptr<ResourceInfo>> infos;
+			std::vector<ResourceStorage<T>> infos;
 
 		public:
 			template<class... Args>
@@ -29,12 +28,11 @@ namespace Engine {
 					reuse.pop_back();
 				} else {
 					id = static_cast<ResourceId>(infos.size());
-					infos.emplace_back();
+					infos.emplace_back(nullptr);
 				}
 
-				infos[id] = std::make_unique<ResourceInfo>(std::forward<Args>(args)...);
-
-				return infos[id].get();
+				infos[id] = ResourceStorage<T>::create(std::forward<Args>(args)...);
+				return infos[id];
 			}
 
 			void clean() {
@@ -52,7 +50,7 @@ namespace Engine {
 		private:
 			void destroy(ResourceId id) {
 				ENGINE_DEBUG_ASSERT(id >= 0 && id < infos.size(), "Attempting to free invalid Resource");
-				infos[id] = nullptr;
+				infos[id].clear();
 				reuse.push_back(id);
 			}
 	};

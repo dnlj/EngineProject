@@ -22,9 +22,7 @@ namespace Engine::Gfx {
 			return getErrorTexture2D();
 		}
 
-		return reinterpret_cast<Texture2DRef::ResourceInfo*>(
-			TextureGenericRef::unsafe_getInfo(got)
-		);
+		return TextureGenericRef::unsafe_getInfo(got);
 	}
 
 	Texture2DRef TextureLoader::getErrorTexture2D() {
@@ -47,9 +45,7 @@ namespace Engine::Gfx {
 			TextureType::Target2D,
 		});
 
-		err2D = reinterpret_cast<Texture2DRef::ResourceInfo*>(
-			TextureGenericRef::unsafe_getInfo(got)
-		);
+		err2D = TextureGenericRef::unsafe_getInfo(got);
 
 		return err2D;
 	}

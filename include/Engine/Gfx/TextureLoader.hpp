@@ -14,11 +14,7 @@ namespace Engine {
 			// Allow conversion from any other texture ref.
 			template<class Tex>
 			ResourceRef(ResourceRef<Gfx::TextureInfo<Tex>>& other)
-				: ResourceRef(
-					reinterpret_cast<Gfx::TextureGenericRef::ResourceInfo*>(
-						ResourceRef<Gfx::TextureInfo<Tex>>::unsafe_getInfo(other)
-					)
-				) {
+				: ResourceRef(ResourceRef<Gfx::TextureInfo<Tex>>::unsafe_getInfo(other)) {
 			}
 	};
 }
