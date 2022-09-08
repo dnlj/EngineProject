@@ -13,7 +13,14 @@ namespace Engine {
 
 		public:
 			template<class... Args>
-			ResourceInfo(Args... args) : data(std::forward<Args>(args)...) {}
+			ResourceInfo(Args... args) : data(std::forward<Args>(args)...) {
+				static_assert(offsetof(ResourceInfo, refCount) == 0,
+					"`refCount` is required to be at the same address as `this`. See ResourceRefImpl<T> for details."
+				);
+				static_assert(offsetof(ResourceInfo, data) >= sizeof(decltype(refCount)),
+					"`refCount` is required to be at the same address as `this`. See ResourceRefImpl<T> for details."
+				);
+			}
 	};
 
 	/**
@@ -28,8 +35,13 @@ namespace Engine {
 
 		private:
 			ResourceInfo* info = nullptr;
-			void inc() { ++info->refCount; }
-			void dec() { --info->refCount; }
+
+			// This is technically undefined behaviour if `T` is not a standard layout type.
+			// I guess the "correct" way to do this would be manually malloc our own block
+			// of memory where we store a `int32` and an manually aligned `T` separately.
+			// Our static_assert in ResourceInfo should catch any issues though.
+			void inc() { ++reinterpret_cast<int32&>(*info); }
+			void dec() { --reinterpret_cast<int32&>(*info); }
 
 		public:
 			/**
