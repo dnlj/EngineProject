@@ -84,13 +84,14 @@ namespace Engine::Gfx {
 			memset(texActive, 0, sizeof(texActive));
 		}
 
-		for (const auto& [mat, mesh, mvp] : cmds) {
+		for (const auto& cmd : cmds) {
+			auto& [mat, mesh, mvp, bindings] = cmd; // TODO: rm - this is fragile, adding, removing, or reordering cmd members breaks this - just use cmd.xyz directly
 			// TODO: rework to use glMultiDrawElementsIndirect and uniforms array buffers
 
 			const auto program = mat->base->getShader()->get();
 			const auto vao = mesh->layout->get();
 
-			constexpr uint32 matParamsBufferIndex = 2;
+			constexpr uint32 matParamsBufferIndex = 1; // TODO: hard coded in shader, better way to handle?
 
 			glUseProgram(program);
 			glBindVertexArray(vao);
@@ -98,7 +99,6 @@ namespace Engine::Gfx {
 			// TODO: If we always use the same index then we dont ever need to rebind this one right?
 			// TODO: cont. Unless we resize the buffer i guess? does it make sense to do that?
 			glBindBufferBase(GL_UNIFORM_BUFFER, matParamsBufferIndex, matParamsBuffer->get());
-			glUniformBlockBinding(program, 1, matParamsBufferIndex);
 
 			glVertexArrayVertexBuffer(vao, 0, mesh->vbuff->get(), 0, mesh->vstride);
 			glVertexArrayElementBuffer(vao, mesh->ebuff->get());

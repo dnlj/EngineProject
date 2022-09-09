@@ -42,11 +42,11 @@ namespace Game {
 			ubo = engine.getBufferManager().create(armComp.results.size() * sizeof(armComp.results[0]), StorageFlag::DynamicStorage);
 
 			// TODO: work on removing - still needed atm for bone anim
-			glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo->get()); // Bind index to ubo
+			glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo->get()); // Bind index to ubo
 
 			// TODO: awful way of doing this.
-			const auto shader = mdlComp.meshes[0].material->base->getShader()->get();
-			glUniformBlockBinding(shader, 0, 1); // Bind uniform block to buffer index
+			//const auto shader = mdlComp.meshes[0].material->base->getShader()->get();
+			//glUniformBlockBinding(shader, 0, 1); // Bind uniform block to buffer index
 		}
 	}
 
