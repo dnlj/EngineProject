@@ -6,11 +6,7 @@
 
 
 namespace Engine {
-	// TODO: name?
-	// TODO: put in `Container` namespace?
-	// TODO: split
-	// TODO: asserts
-	// TODO: tests
+	// TODO: should probably change this to actually use placement new and ~T() so obj lifetime is managed as expected. (or create another class that works like that)
 	template<class T, uint16_t N>
 	class StaticVector {
 		static_assert(N > 0, "Number of elements must be non-zero");
@@ -35,7 +31,6 @@ namespace Engine {
 		public:
 			StaticVector() = default;
 
-
 			// TODO: would be nice to have a size constructor
 			template<class... Vals, class = std::enable_if_t<(std::is_assignable_v<Vals, value_type> && ...)>>
 			StaticVector(Vals&&... vals) : storage{std::forward<Vals>(vals)...}, used{sizeof...(Vals)} {
@@ -48,7 +43,9 @@ namespace Engine {
 				used = count;
 			}
 
-			// TODO: clear
+			ENGINE_INLINE void clear() noexcept {
+				resize(0);
+			}
 
 			ENGINE_INLINE T& front() noexcept {
 				return storage[0];
