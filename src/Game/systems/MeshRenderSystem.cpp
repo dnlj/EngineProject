@@ -25,13 +25,23 @@ namespace Game {
 		const auto& filter = world.getFilter<ModelComponent>();
 
 		for (auto ent : filter) {
-			auto& [meshes] = world.getComponent<ModelComponent>(ent);
+			auto& modelComp = world.getComponent<ModelComponent>(ent);
 
-			for (auto& [nid, mesh, mat, mvp] : meshes) {
-				cmd.material = mat.get();
-				cmd.mesh = mesh.get();
+			for (auto& data : modelComp.meshes) {
+				cmd.material = data.mat.get();
+				cmd.mesh = data.mesh.get();
 
-				cmd.mvp = mvp;
+				cmd.mvp = data.mvp;
+
+				cmd.blockBindings.resize(data.bindings.size());
+				for (int i = 0; i < data.bindings.size(); ++i) {
+					auto& from = data.bindings[i];
+					auto& to = cmd.blockBindings[i];
+					to.buff = from.buff.get();
+					to.index = from.index;
+					to.offset = from.offset;
+					to.size = from.size;
+				}
 
 				ctx.push(cmd);
 			}

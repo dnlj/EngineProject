@@ -100,9 +100,16 @@ namespace Engine::Gfx {
 			// TODO: cont. Unless we resize the buffer i guess? does it make sense to do that?
 			glBindBufferBase(GL_UNIFORM_BUFFER, matParamsBufferIndex, matParamsBuffer->get());
 
+			// TODO: also probably diff with active binds so we only bind when needed - should be elimiated when we get draw sorting working though so probably not worth fixing atm
+			// TODO: use glBindBuffersRange instead to bind all with one cmd. Need to redo DrawCommand::blockBindings to use SoA layout.
+			for (const auto& bind : bindings) {
+				glBindBufferRange(GL_UNIFORM_BUFFER, bind.index, bind.buff->get(), bind.offset, bind.size);
+			}
+
 			glVertexArrayVertexBuffer(vao, 0, mesh->vbuff->get(), 0, mesh->vstride);
 			glVertexArrayElementBuffer(vao, mesh->ebuff->get());
 			glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
+
 
 			const auto matParamsSize = mat->base->getParameterDescription().blockSize;
 			if (matParamsSize > matParamsBufferSize) {

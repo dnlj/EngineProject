@@ -32,21 +32,34 @@ namespace Game {
 			//constexpr char fileName[] = "assets/char.dae";
 
 			const auto& data = engine.getModelLoader().get(fileName);
-			mdlComp.meshes = data.meshes;
+
+			mdlComp.meshes.reserve(data.meshes.size());
+			for (const auto& inst : data.meshes) {
+				mdlComp.meshes.push_back({
+					.mesh = inst.mesh,
+					.mat = inst.mat,
+					.nodeId = inst.nodeId,
+				});
+			}
+
 			armComp = data.arm;
 			animation = data.anims[0];
 			skinned = !armComp.boneOffsets.empty(); // TODO: handle better
 		}
 
 		if (!armComp.results.empty()) {
-			ubo = engine.getBufferManager().create(armComp.results.size() * sizeof(armComp.results[0]), StorageFlag::DynamicStorage);
+			const auto size = armComp.results.size() * sizeof(armComp.results[0]);
+			ubo = engine.getBufferManager().create(size, StorageFlag::DynamicStorage);
 
-			// TODO: work on removing - still needed atm for bone anim
-			glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo->get()); // Bind index to ubo
-
-			// TODO: awful way of doing this.
-			//const auto shader = mdlComp.meshes[0].material->base->getShader()->get();
-			//glUniformBlockBinding(shader, 0, 1); // Bind uniform block to buffer index
+			for (auto& inst : mdlComp.meshes) {
+				ENGINE_DEBUG_ASSERT(size <= (1<<16));
+				inst.bindings.push_back({
+					.buff = ubo,
+					.index = 0,
+					.offset = 0,
+					.size = static_cast<uint16>(size),
+				});
+			}
 		}
 	}
 
@@ -71,22 +84,22 @@ namespace Game {
 		vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
 		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 0.2f});
 
+		auto& modelComp = world.getComponent<ModelComponent>(ent);
 		if (!skinned) {
 			// TODO: not a great way to handle uniforms, but this should be resolved when we
 			// ^^^^: get more comprehensive instance data support. See: MnETMncr
-			auto& [meshes] = world.getComponent<ModelComponent>(ent);
 			const auto& arm = world.getComponent<ArmatureComponent>(ent);
-			for (int i = 0; i < meshes.size(); ++i) {
-				auto& inst = meshes[i];
+			for (auto& inst : modelComp.meshes) {
 				const auto& node = arm.nodes[inst.nodeId];
 				const auto mvp = vp * node.total;
 				inst.mvp = mvp;
 			}
 		} else {
-			auto& [meshes] = world.getComponent<ModelComponent>(ent);
-			for (auto& inst : meshes) {
+			//auto& meshes = world.getComponent<ModelComponent>(ent).meshes;
+			for (auto& inst : modelComp.meshes) {
 				inst.mvp = vp;
 			}
+			// TODO: just modelComp.mvp = vp;
 		}
 	}
 }

@@ -1,12 +1,19 @@
 #pragma once
 
 // Engine
+#include <Engine/Gfx/resources.hpp>
 #include <Engine/ResourceManager.hpp>
-#include <Engine/Gfx/Model.hpp>
 #include <Engine/Gfx/ModelReader.hpp>
 
 
 namespace Engine::Gfx {
+	class MeshNode {
+		public:
+			MeshRef mesh;
+			MaterialInstanceRef mat;
+			NodeId nodeId;
+	};
+
 	class ModelData {
 		public:
 			ModelData() = default;
@@ -17,7 +24,7 @@ namespace Engine::Gfx {
 			ModelData(ModelData&&) = default;
 			ModelData& operator=(ModelData&&) = default;
 
-			std::vector<MeshInstance> meshes;
+			std::vector<MeshNode> meshes;
 			std::vector<Animation> anims; // TODO: i assume we will also want animation names or something?
 			Armature arm;
 	};

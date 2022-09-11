@@ -69,7 +69,7 @@ namespace Engine::Gfx {
 
 		for (const auto& inst : reader.instances) {
 			auto& minfo = meshInfo[inst.meshId];
-			data.meshes.emplace_back(inst.nodeId, minfo.mesh, minfo.mat);
+			data.meshes.emplace_back(minfo.mesh, minfo.mat, inst.nodeId);
 		}
 
 		data.arm = std::move(reader.arm);

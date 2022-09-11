@@ -3,7 +3,6 @@
 // Engine
 #include <Engine/StaticVector.hpp>
 
-
 namespace Engine::Gfx {
 	class MaterialInstance;
 	class Mesh2;
@@ -11,9 +10,12 @@ namespace Engine::Gfx {
 
 	class DrawCommand {
 		public:
+			// We def our own struct here instead of using the normal BufferBinding so we dont inc/dec a BufferRef constantly while drawing.
 			struct BufferBinding {
-				uint32 index;
 				const Buffer* buff;
+				uint16 index;
+				uint16 offset;
+				uint16 size;
 			};
 
 		public:
