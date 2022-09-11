@@ -100,6 +100,12 @@ namespace Engine::ECS {
 		public:
 			SingleComponentFilter(World& world) : world{world} {}
 
+			SingleComponentFilter(const SingleComponentFilter&) = delete;
+			SingleComponentFilter& operator=(const SingleComponentFilter&) = delete;
+
+			SingleComponentFilter(SingleComponentFilter&&) = default;
+			SingleComponentFilter& operator=(SingleComponentFilter&&) = default;
+
 			ENGINE_INLINE Iter begin() const {
 				return Iter::begin(world);
 			}

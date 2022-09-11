@@ -64,6 +64,12 @@ namespace Engine::ECS {
 
 			EntityFilter(const EntityStates& states, const ComponentBitset cbits);
 
+			EntityFilter(const EntityFilter&) = delete;
+			EntityFilter& operator=(const EntityFilter&) = delete;
+
+			EntityFilter(EntityFilter&&) = default;
+			EntityFilter& operator=(EntityFilter&&) = default;
+
 			const EntityFilter& with(const EntityStates& ss, bool incDisabled) {
 				states = &ss;
 				includeDisabled = incDisabled;
