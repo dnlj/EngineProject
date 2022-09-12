@@ -8,9 +8,8 @@
 #include <Engine/Gfx/Material.hpp>
 
 // Game
-#include <Game/systems/MeshRenderSystem.hpp>
-#include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/ModelComponent.hpp>
+#include <Game/systems/MeshRenderSystem.hpp>
 
 
 namespace Game {
@@ -18,10 +17,12 @@ namespace Game {
 	}
 
 	void MeshRenderSystem::render(RenderLayer layer) {
+		using namespace Engine::Gfx;
+
 		if (layer != RenderLayer::Debug) { return; } // TODO: really this should be after everything else
 		auto& ctx = engine.getGraphicsContext();
 
-		Engine::Gfx::DrawCommand cmd;
+		DrawCommand cmd;
 		const auto& filter = world.getFilter<ModelComponent>();
 
 		for (auto ent : filter) {
@@ -34,6 +35,7 @@ namespace Game {
 				cmd.mvp = data.mvp;
 
 				cmd.blockBindings.resize(data.bindings.size());
+
 				for (int i = 0; i < data.bindings.size(); ++i) {
 					auto& from = data.bindings[i];
 					auto& to = cmd.blockBindings[i];

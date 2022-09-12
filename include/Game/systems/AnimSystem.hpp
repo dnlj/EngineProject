@@ -13,10 +13,13 @@ namespace Game {
 	class AnimSystem : public System {
 		private:
 			Engine::ECS::Entity ent;
-			Engine::Gfx::BufferRef ubo;
 
 			Engine::Gfx::Animation animation;
 			bool skinned = false;
+
+			std::vector<byte> bonesBuffTemp;
+			Engine::Gfx::BufferRef bonesBuff;
+			uint64 bonesBuffSize = 0;
 
 		public:
 			AnimSystem(SystemArg arg);

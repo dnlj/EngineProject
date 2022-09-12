@@ -47,20 +47,7 @@ namespace Game {
 			skinned = !armComp.boneOffsets.empty(); // TODO: handle better
 		}
 
-		if (!armComp.results.empty()) {
-			const auto size = armComp.results.size() * sizeof(armComp.results[0]);
-			ubo = engine.getBufferManager().create(size, StorageFlag::DynamicStorage);
-
-			for (auto& inst : mdlComp.meshes) {
-				ENGINE_DEBUG_ASSERT(size <= (1<<16));
-				inst.bindings.push_back({
-					.buff = ubo,
-					.index = 0,
-					.offset = 0,
-					.size = static_cast<uint16>(size),
-				});
-			}
-		}
+		bonesBuff = engine.getBufferManager().create();
 	}
 
 	AnimSystem::~AnimSystem() {
@@ -71,10 +58,11 @@ namespace Game {
 		const auto nodeCount = armComp.nodes.size();
 		const auto tick = fmodf(clock() / 80.0f, animation.duration);
 		armComp.apply(animation, tick);
-		if (ubo) { ubo->setData(armComp.results); }
 	}
 
 	void AnimSystem::render(const RenderLayer layer) {
+		using namespace Engine::Gfx;
+
 		if (layer != RenderLayer::Debug) { return; }
 
 		updateAnim();
@@ -100,6 +88,67 @@ namespace Game {
 				inst.mvp = vp;
 			}
 			// TODO: just modelComp.mvp = vp;
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		const auto& armFilter = world.getFilter<ModelComponent, ArmatureComponent>(); // TODO: cache in system
+
+		constexpr auto align256 = [](const auto v) ENGINE_INLINE -> decltype(v) {
+			return (v & ~0xff); // floor(x / 256) * 256
+		};
+
+		{
+			bonesBuffTemp.clear();
+			uint64 offset = 0;
+
+			// TODO: we really need to get multiple models working so we can test this properly
+			for (auto ent : armFilter) {
+				// Pad for alignment
+				// UBO offsets must be aligned at 256.
+				// Some AMD and Intel gpus require less. Most (all?) NVIDIA is 256.
+				// If we really care you can query GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT.
+				if (auto aligned = align256(offset); aligned != offset) {
+					aligned += 256;
+					bonesBuffTemp.resize(bonesBuffTemp.size() + (aligned - offset));
+					offset = aligned;
+				}
+
+				// Insert new elements
+				const auto& arm = world.getComponent<ArmatureComponent>(ent);
+				ENGINE_LOG("Update: ", ent, " ", arm.results.size());
+				const auto addr = [](auto it) ENGINE_INLINE { return reinterpret_cast<const byte*>(std::to_address(it)); };
+				bonesBuffTemp.insert(bonesBuffTemp.cend(), addr(arm.results.cbegin()), addr(arm.results.cend()));
+
+				// Update bindings
+				auto& mdl = world.getComponent<ModelComponent>(ent);
+				const auto sz = arm.results.size() * sizeof(arm.results[0]);
+				ENGINE_DEBUG_ASSERT(offset < (1<<16), "Too many bones in armature.");
+				ENGINE_DEBUG_ASSERT(sz < (1<<16), "Too many bones in armature.");
+
+				// TODO: really need a way to set a binding point per model as well as per mesh.  kinda feels like we are leaking draw commands at this point.
+				// TODO: impl this, just copy opasted from above. change vals
+				for (auto& inst : mdl.meshes) {
+					inst.bindings.clear(); // TODO: better way to handle this. we really dont want to clear this. other systems might set buffer bindings.
+					inst.bindings.push_back({
+						.buff = bonesBuff,
+						.index = 0,
+						.offset = static_cast<uint16>(offset),
+						.size = static_cast<uint16>(sz),
+					});
+				}
+
+				offset += sz;
+			}
+
+			if (offset) {
+				if (auto sz = bonesBuffTemp.size(); sz > bonesBuffSize) {
+					ENGINE_INFO(" ** RESIZE BONES BUFFER ** ", sz);
+					bonesBuffSize = sz;
+					bonesBuff->alloc(bonesBuffTemp, StorageFlag::DynamicStorage);
+				} else {
+					bonesBuff->setData(bonesBuffTemp);
+				}
+			}
 		}
 	}
 }
