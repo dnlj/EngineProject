@@ -4,31 +4,10 @@
 #include <Engine/Gfx/resources.hpp>
 #include <Engine/ResourceManager.hpp>
 #include <Engine/Gfx/ModelReader.hpp>
+#include <Engine/Gfx/ModelData.hpp>
 
 
 namespace Engine::Gfx {
-	class MeshNode {
-		public:
-			MeshRef mesh;
-			MaterialInstanceRef mat;
-			NodeId nodeId;
-	};
-
-	class ModelData {
-		public:
-			ModelData() = default;
-
-			ModelData(const ModelData&) = delete;
-			ModelData& operator=(const ModelData&) = delete;
-
-			ModelData(ModelData&&) = default;
-			ModelData& operator=(ModelData&&) = default;
-
-			std::vector<MeshNode> meshes;
-			std::vector<Animation> anims; // TODO: i assume we will also want animation names or something?
-			Armature arm;
-	};
-
 	class ModelLoader final {
 		private:
 			FlatHashMap<std::string, ModelData> cache;

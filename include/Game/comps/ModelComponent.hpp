@@ -1,9 +1,9 @@
 #pragma once
 
 // Engine
-#include <Engine/Gfx/Armature.hpp> // TODO: rm - only needed for NodeId
 #include <Engine/Gfx/resources.hpp>
 #include <Engine/StaticVector.hpp>
+#include <Engine/Gfx/ModelData.hpp>
 
 
 namespace Game {
@@ -30,9 +30,19 @@ namespace Game {
 
 	class ModelComponent {
 		public:
-			// TODO: engine::gfx::model
-			// TODO: makes sense for the armature to be a separate comp
-			// ^^^^: How to org? Currently our instances have a nodeId. how does that relate between components.
+			ModelComponent() = default;
+
+			ModelComponent(const Engine::Gfx::ModelData& mdat) {
+				meshes.reserve(mdat.meshes.size());
+				for (const auto& inst : mdat.meshes) {
+					meshes.push_back({
+						.mesh = inst.mesh,
+						.mat = inst.mat,
+						.nodeId = inst.nodeId,
+					});
+				}
+			};
+
 			std::vector<MeshInstData> meshes;
 
 			// TODO: maybe this should be its own component? idk. not sure where this makes sense logically.

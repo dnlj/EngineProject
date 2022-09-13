@@ -12,7 +12,7 @@
 namespace Game {
 	class AnimSystem : public System {
 		private:
-			Engine::ECS::Entity ent;
+			Engine::ECS::Entity ents[4];
 
 			Engine::Gfx::Animation animation;
 			bool skinned = false;

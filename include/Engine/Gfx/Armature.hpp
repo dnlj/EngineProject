@@ -1,10 +1,11 @@
 #pragma once
 
+// Engine
+#include <Engine/Gfx/resources.hpp>
+
 
 namespace Engine::Gfx {
 	class Animation;
-	using NodeId = int32;
-	using BoneId = int32;
 
 	struct Node {
 		Node(NodeId parentId, BoneId boneId, const glm::mat4& bind)

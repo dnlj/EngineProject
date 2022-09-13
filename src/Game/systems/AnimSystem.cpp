@@ -16,48 +16,46 @@ namespace Game {
 	AnimSystem::AnimSystem(SystemArg arg) : System{arg} {
 		using namespace Engine::Gfx;
 
-		ent = world.createEntity();
-		auto& mdlComp = world.addComponent<ModelComponent>(ent);
-		auto& armComp = world.addComponent<ArmatureComponent>(ent);
+		bonesBuff = engine.getBufferManager().create();
 
-		{
-			//constexpr char fileName[] = "assets/testing.fbx";
-			//constexpr char fileName[] = "assets/tri_test3.fbx";
-			//constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
-			//constexpr char fileName[] = "assets/tri_test2_3.fbx";
-			//constexpr char fileName[] = "assets/test.fbx";
-			constexpr char fileName[] = "assets/char_v2.fbx";//////////////////////////////
-			//constexpr char fileName[] = "assets/char6.fbx";///////////////
-			//constexpr char fileName[] = "assets/char.glb";
-			//constexpr char fileName[] = "assets/char.dae";
+		//constexpr char fileName[] = "assets/testing.fbx";
+		//constexpr char fileName[] = "assets/tri_test3.fbx";
+		//constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
+		//constexpr char fileName[] = "assets/tri_test2_3.fbx";
+		//constexpr char fileName[] = "assets/test.fbx";
+		constexpr char fileName[] = "assets/char_v2.fbx";//////////////////////////////
+		//constexpr char fileName[] = "assets/char6.fbx";///////////////
+		//constexpr char fileName[] = "assets/char.glb";
+		//constexpr char fileName[] = "assets/char.dae";
 
-			const auto& data = engine.getModelLoader().get(fileName);
+		const auto& data = engine.getModelLoader().get(fileName);
 
-			mdlComp.meshes.reserve(data.meshes.size());
-			for (const auto& inst : data.meshes) {
-				mdlComp.meshes.push_back({
-					.mesh = inst.mesh,
-					.mat = inst.mat,
-					.nodeId = inst.nodeId,
-				});
-			}
+		for (auto& ent : ents) {
+			ent = world.createEntity();
+			world.addComponent<ModelComponent>(ent, data);
+			auto& armComp = world.addComponent<ArmatureComponent>(ent);
 
 			armComp = data.arm;
+
+			// TODO: handle these better
 			animation = data.anims[0];
 			skinned = !armComp.boneOffsets.empty(); // TODO: handle better
 		}
-
-		bonesBuff = engine.getBufferManager().create();
 	}
 
 	AnimSystem::~AnimSystem() {
 	}
 
 	void AnimSystem::updateAnim() {
-		auto& armComp = world.getComponent<ArmatureComponent>(ent);
-		const auto nodeCount = armComp.nodes.size();
-		const auto tick = fmodf(clock() / 80.0f, animation.duration);
-		armComp.apply(animation, tick);
+		for (int i = 0; i < std::size(ents); ++i) {
+			const auto& ent = ents[i];
+			auto& armComp = world.getComponent<ArmatureComponent>(ent);
+			const auto nodeCount = armComp.nodes.size();
+
+			const auto off = CLOCKS_PER_SEC / std::size(ents);
+			auto interp = ((clock() + i*off) % CLOCKS_PER_SEC) / float32(CLOCKS_PER_SEC);
+			armComp.apply(animation, interp * animation.duration);
+		}
 	}
 
 	void AnimSystem::render(const RenderLayer layer) {
@@ -72,22 +70,30 @@ namespace Game {
 		vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
 		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 0.2f});
 
-		auto& modelComp = world.getComponent<ModelComponent>(ent);
-		if (!skinned) {
-			// TODO: not a great way to handle uniforms, but this should be resolved when we
-			// ^^^^: get more comprehensive instance data support. See: MnETMncr
-			const auto& arm = world.getComponent<ArmatureComponent>(ent);
-			for (auto& inst : modelComp.meshes) {
-				const auto& node = arm.nodes[inst.nodeId];
-				const auto mvp = vp * node.total;
-				inst.mvp = mvp;
+		constexpr float32 inc = 128;
+		vp = glm::translate(vp, glm::vec3{-inc * std::size(ents) * 0.5f, 0, 0});
+
+		for (int i = 0; i < std::size(ents); ++i) {
+			auto& ent = ents[i];
+
+			auto& modelComp = world.getComponent<ModelComponent>(ent);
+			if (!skinned) {
+				// TODO: not a great way to handle uniforms, but this should be resolved when we
+				// ^^^^: get more comprehensive instance data support. See: MnETMncr
+				const auto& arm = world.getComponent<ArmatureComponent>(ent);
+				for (auto& inst : modelComp.meshes) {
+					const auto& node = arm.nodes[inst.nodeId];
+					inst.mvp = vp * node.total;
+				}
+			} else {
+				//auto& meshes = world.getComponent<ModelComponent>(ent).meshes;
+				for (auto& inst : modelComp.meshes) {
+					inst.mvp = vp;
+				}
+				// TODO: just modelComp.mvp = vp;
 			}
-		} else {
-			//auto& meshes = world.getComponent<ModelComponent>(ent).meshes;
-			for (auto& inst : modelComp.meshes) {
-				inst.mvp = vp;
-			}
-			// TODO: just modelComp.mvp = vp;
+
+			vp = glm::translate(vp, glm::vec3{128,0,0});
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -101,7 +107,6 @@ namespace Game {
 			bonesBuffTemp.clear();
 			uint64 offset = 0;
 
-			// TODO: we really need to get multiple models working so we can test this properly
 			for (auto ent : armFilter) {
 				// Pad for alignment
 				// UBO offsets must be aligned at 256.
@@ -115,7 +120,6 @@ namespace Game {
 
 				// Insert new elements
 				const auto& arm = world.getComponent<ArmatureComponent>(ent);
-				ENGINE_LOG("Update: ", ent, " ", arm.results.size());
 				const auto addr = [](auto it) ENGINE_INLINE { return reinterpret_cast<const byte*>(std::to_address(it)); };
 				bonesBuffTemp.insert(bonesBuffTemp.cend(), addr(arm.results.cbegin()), addr(arm.results.cend()));
 
@@ -126,7 +130,6 @@ namespace Game {
 				ENGINE_DEBUG_ASSERT(sz < (1<<16), "Too many bones in armature.");
 
 				// TODO: really need a way to set a binding point per model as well as per mesh.  kinda feels like we are leaking draw commands at this point.
-				// TODO: impl this, just copy opasted from above. change vals
 				for (auto& inst : mdl.meshes) {
 					inst.bindings.clear(); // TODO: better way to handle this. we really dont want to clear this. other systems might set buffer bindings.
 					inst.bindings.push_back({
