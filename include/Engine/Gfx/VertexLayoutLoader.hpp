@@ -11,7 +11,6 @@ namespace Engine::Gfx {
 		using ResourceManager::ResourceManager;
 	};
 
-	// TODO: loader instead? should ResourceLoader inherit manager? what if we dont want that? or separate?
 	class VertexLayoutLoader final : public ResourceLoader<VertexAttributeDescList, VertexAttributeLayout> {
 		using ResourceLoader::ResourceLoader;
 		virtual Resource load(const Key& key) override {
@@ -28,7 +27,6 @@ namespace Engine::Gfx {
 			}
 
 			uint32 location = 0;
-			constexpr uint32 binding = 0;
 
 			for (const auto& attrib : key) {
 				if (attrib.input == VertexInput::None) { break; }
@@ -42,7 +40,8 @@ namespace Engine::Gfx {
 					glVertexArrayAttribFormat(vao, location, attrib.size, toGLEnum(attrib.type), attrib.normalize, attrib.offset);
 				}
 
-				glVertexArrayAttribBinding(vao, location, binding);
+				glVertexArrayBindingDivisor(vao, attrib.binding, attrib.divisor);
+				glVertexArrayAttribBinding(vao, location, attrib.binding);
 
 				location += (attrib.size + 3) / 4;
 			}

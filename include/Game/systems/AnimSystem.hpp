@@ -21,6 +21,14 @@ namespace Game {
 			Engine::Gfx::BufferRef bonesBuff;
 			uint64 bonesBuffSize = 0;
 
+			std::vector<glm::mat4> mvpBuffTemp;
+			Engine::Gfx::BufferRef mvpBuff;
+			uint64 mvpBuffSize = 0;
+
+			std::vector<uint32> idBuffTemp;
+			Engine::Gfx::BufferRef idBuff;
+			uint64 idBuffSize = 0;
+
 		public:
 			AnimSystem(SystemArg arg);
 			~AnimSystem();

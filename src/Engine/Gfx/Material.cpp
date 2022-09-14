@@ -24,8 +24,8 @@ namespace Engine::Gfx {
 		GLint block = 0;
 		for (;block < count; ++block) {
 			glGetProgramResourceName(sdr, GL_UNIFORM_BLOCK, block, nameLen, nullptr, name.data());
-			//ENGINE_INFO("Block Name: ", name.data());
-			if (std::ranges::equal(name, section)) { break; }
+			ENGINE_INFO("Block Name: ", name.data());
+			if (strcmp(name.data(), section) == 0) { break; };
 		}
 
 		ENGINE_DEBUG_ASSERT(block != count, "Unable to find material parameter block.");

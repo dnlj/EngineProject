@@ -29,16 +29,26 @@ namespace Game {
 			auto& modelComp = world.getComponent<ModelComponent>(ent);
 
 			for (auto& data : modelComp.meshes) {
+				cmd.baseInstance = data.baseInstance;
 				cmd.material = data.mat.get();
 				cmd.mesh = data.mesh.get();
 
-				cmd.mvp = data.mvp;
+				// TODO: make a conversion operator
+				cmd.uboBindings.resize(data.uboBindings.size());
+				for (int i = 0; i < data.uboBindings.size(); ++i) {
+					auto& from = data.uboBindings[i];
+					auto& to = cmd.uboBindings[i];
+					to.buff = from.buff.get();
+					to.index = from.index;
+					to.offset = from.offset;
+					to.size = from.size;
+				}
 
-				cmd.blockBindings.resize(data.bindings.size());
-
-				for (int i = 0; i < data.bindings.size(); ++i) {
-					auto& from = data.bindings[i];
-					auto& to = cmd.blockBindings[i];
+				// TODO: make a conversion operator
+				cmd.vboBindings.resize(data.vboBindings.size());
+				for (int i = 0; i < data.vboBindings.size(); ++i) {
+					auto& from = data.vboBindings[i];
+					auto& to = cmd.vboBindings[i];
 					to.buff = from.buff.get();
 					to.index = from.index;
 					to.offset = from.offset;

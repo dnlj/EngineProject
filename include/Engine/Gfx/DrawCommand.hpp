@@ -21,11 +21,10 @@ namespace Engine::Gfx {
 		public:
 			MaterialInstance* material;
 			const Mesh2* mesh;
+			uint32 baseInstance;
 
-			glm::mat4 mvp; // TODO: find better solution for uniforms
-
-			/** Uniform block bindings */
-			StaticVector<BufferBinding, 4> blockBindings; // TODO: not sure the best way to handle this. (and uniforms in general)
+			StaticVector<BufferBinding, 4> uboBindings;
+			StaticVector<BufferBinding, 4> vboBindings;
 
 			// TODO: Textures
 			// TODO: Buffers

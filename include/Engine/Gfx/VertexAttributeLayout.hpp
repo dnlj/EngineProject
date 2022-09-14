@@ -10,12 +10,14 @@ namespace Engine::Gfx {
 	class VertexAttributeDesc {
 		public:
 			VertexAttributeDesc() = default;
-			VertexAttributeDesc(VertexInput input, uint16 size, NumberType type, uint32 offset, bool normalize)
+			VertexAttributeDesc(VertexInput input, uint16 size, NumberType type, uint32 offset, bool normalize, uint8 binding, uint32 divisor)
 				: input{input}
 				, type{type}
 				, offset{offset}
 				, size{size}
-				, normalize{normalize} {
+				, normalize{normalize}
+				, binding{binding}
+				, divisor{divisor} {
 			}
 
 			VertexInput input = {};
@@ -23,10 +25,10 @@ namespace Engine::Gfx {
 			uint32 offset = {};
 			uint16 size = {};
 			bool normalize = {};
-			// bool normalize : 1;
-			// uint16 binding : 15; - may want binding later if we want to support multiple
-			bool operator==(const VertexAttributeDesc&) const = default;
-	}; static_assert(sizeof(VertexAttributeDesc) == 16);
+			uint8 binding = {};
+			uint32 divisor = {};
+			bool operator==(const VertexAttributeDesc&) const noexcept = default;
+	}; static_assert(sizeof(VertexAttributeDesc) == 20);
 
 	class VertexAttributeDescList {
 		private:

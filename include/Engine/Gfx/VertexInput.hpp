@@ -12,5 +12,6 @@ namespace Engine::Gfx {
 		Tangent		= 1 << 4,
 		BoneIndices = 1 << 5,
 		BoneWeights	= 1 << 6,
+		DrawId		= 1 << 7,
 	};
 }

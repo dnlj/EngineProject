@@ -85,16 +85,17 @@ namespace Engine::Gfx {
 		}
 
 		for (const auto& cmd : cmds) {
-			auto& [mat, mesh, mvp, bindings] = cmd; // TODO: rm - this is fragile, adding, removing, or reordering cmd members breaks this - just use cmd.xyz directly
-			// TODO: rework to use glMultiDrawElementsIndirect and uniforms array buffers
+			auto& mat = cmd.material;
+			auto& mesh = cmd.mesh;
 
 			const auto program = mat->base->getShader()->get();
 			const auto vao = mesh->layout->get();
 
-			constexpr uint32 matParamsBufferIndex = 1; // TODO: hard coded in shader, better way to handle?
-
 			glUseProgram(program);
 			glBindVertexArray(vao);
+			
+			// TODO: read from material. See src/engine/gfx/material.cpp - we already have code for this
+			constexpr uint32 matParamsBufferIndex = 2;
 
 			// TODO: If we always use the same index then we dont ever need to rebind this one right?
 			// TODO: cont. Unless we resize the buffer i guess? does it make sense to do that?
@@ -102,14 +103,15 @@ namespace Engine::Gfx {
 
 			// TODO: also probably diff with active binds so we only bind when needed - should be elimiated when we get draw sorting working though so probably not worth fixing atm
 			// TODO: use glBindBuffersRange instead to bind all with one cmd. Need to redo DrawCommand::blockBindings to use SoA layout.
-			for (const auto& bind : bindings) {
+			for (const auto& bind : cmd.uboBindings) {
 				glBindBufferRange(GL_UNIFORM_BUFFER, bind.index, bind.buff->get(), bind.offset, bind.size);
 			}
 
-			glVertexArrayVertexBuffer(vao, 0, mesh->vbuff->get(), 0, mesh->vstride);
-			glVertexArrayElementBuffer(vao, mesh->ebuff->get());
-			glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
+			for (const auto& bind : cmd.vboBindings) {
+				glVertexArrayVertexBuffer(vao, bind.index, bind.buff->get(), bind.offset, bind.size);
+			}
 
+			glVertexArrayElementBuffer(vao, mesh->ebuff->get());
 
 			const auto matParamsSize = mat->base->getParameterDescription().blockSize;
 			if (matParamsSize > matParamsBufferSize) {
@@ -156,7 +158,7 @@ namespace Engine::Gfx {
 				GL_UNSIGNED_INT,
 				// TODO: note that when we change this to use glMultiDrawElementsIndirect that the offset changes from bytes to indices
 				reinterpret_cast<const void*>(static_cast<uintptr_t>(mesh->eoffset * sizeof(uint32))),
-				1, 0, 0
+				1, 0, cmd.baseInstance
 			);
 		}
 

@@ -20,8 +20,9 @@ namespace Game {
 			using BufferBindings = Engine::StaticVector<BufferBinding, 4>;
 
 		public:
-			glm::mat4 mvp; // TODO: is this the best place for this? really shouldnt store the whole mvp here. should really pull from scene cam + position comppnent
-			BufferBindings bindings;
+			uint32 baseInstance;
+			BufferBindings uboBindings;
+			BufferBindings vboBindings;
 			Engine::Gfx::MeshRef mesh;
 			Engine::Gfx::MaterialInstanceRef mat;
 			Engine::Gfx::NodeId nodeId;

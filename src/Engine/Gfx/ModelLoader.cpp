@@ -14,10 +14,11 @@ namespace Engine::Gfx {
 		ENGINE_INFO("**** Loaded Model: ", reader.verts.size(), " ", reader.indices.size(), " ", reader.instances.size(), " ", skinned);
 
 		VertexAttributeDesc attribs[] = {
-			{ VertexInput::Position, 3, NumberType::Float32, offsetof(Vertex, pos), false },
-			{ VertexInput::TexCoord, 2, NumberType::Float32, offsetof(Vertex, uv), false }, // TODO: use normalized short here like we do in DrawBuilder
-			{ VertexInput::BoneIndices, 4, NumberType::UInt8, offsetof(Vertex, bones), false },
-			{ VertexInput::BoneWeights, 4, NumberType::Float32, offsetof(Vertex, weights), false },
+			{ VertexInput::Position, 3, NumberType::Float32, offsetof(Vertex, pos), false, 0, 0},
+			{ VertexInput::TexCoord, 2, NumberType::Float32, offsetof(Vertex, uv), false, 0, 0}, // TODO: use normalized short here like we do in DrawBuilder
+			{ VertexInput::BoneIndices, 4, NumberType::UInt8, offsetof(Vertex, bones), false, 0, 0},
+			{ VertexInput::BoneWeights, 4, NumberType::Float32, offsetof(Vertex, weights), false, 0, 0},
+			{ VertexInput::DrawId, 1, NumberType::UInt32, 0, false, 1, 1},
 		};
 
 		auto layout = rctx.vertexLayoutLoader.get(attribs);
