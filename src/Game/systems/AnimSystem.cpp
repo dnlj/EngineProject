@@ -32,13 +32,41 @@ namespace Game {
 
 		for (auto& ent : ents) {
 			ent = world.createEntity();
-			world.addComponent<ModelComponent>(ent, data);
+			auto& mdlComp = world.addComponent<ModelComponent>(ent, data);
 			auto& armComp = world.addComponent<ArmatureComponent>(ent);
 
 			armComp = data.arm;
 
 			animation = data.anims[0]; // TODO: handle better
 			skinned = !armComp.boneOffsets.empty(); // TODO: handle better
+
+			for (auto& inst : mdlComp.meshes) {
+				inst.uboBindings.push_back({
+					.buff = mvpBuff,
+					.index = 0,
+					.offset = 0,
+					.size = uint16(-1),
+				});
+				inst.uboBindings.push_back({
+					.buff = bonesBuff,
+					.index = 1,
+					.offset = 0,
+					.size = 0,
+				});
+
+				inst.vboBindings.push_back({
+					.buff = inst.mesh->vbuff,
+					.index = 0,
+					.offset = 0,
+					.size = (uint16)inst.mesh->vstride,
+				});
+				inst.vboBindings.push_back({
+					.buff = idBuff,
+					.index = 1,
+					.offset = 0,
+					.size = sizeof(uint32),
+				});
+			}
 		}
 	}
 
@@ -108,46 +136,11 @@ namespace Game {
 			for (auto& inst : mdl.meshes) {
 				// We could just use baseInstance instead of an id buffer, but that will only work until we get multi draw setup
 				inst.baseInstance = static_cast<uint32>(mvpBuffTemp.size());
+				inst.uboBindings[1].offset = static_cast<uint16>(offset);
+				inst.uboBindings[1].size = static_cast<uint16>(sz);
+
 				idBuffTemp.push_back(inst.baseInstance);
-
-
-				if (skinned) {
-					mvpBuffTemp.push_back(vp);
-				} else {
-					mvpBuffTemp.push_back(vp * arm.nodes[inst.nodeId].total);
-				}
-
-				// TODO: we really only need to setup these bindings once, not every frame
-
-				// TODO: better way to handle this. we really dont want to clear this. other systems might set buffer bindings.
-				inst.uboBindings.clear();
-				inst.uboBindings.push_back({
-					.buff = mvpBuff,
-					.index = 0,
-					.offset = 0,
-					.size = uint16(-1),
-				});
-				inst.uboBindings.push_back({
-					.buff = bonesBuff,
-					.index = 1,
-					.offset = static_cast<uint16>(offset),
-					.size = static_cast<uint16>(sz),
-				});
-
-				// TODO: better way to handle this. we really dont want to clear this. other systems might set buffer bindings.
-				inst.vboBindings.clear();
-				inst.vboBindings.push_back({
-					.buff = inst.mesh->vbuff,
-					.index = 0,
-					.offset = 0,
-					.size = (uint16)inst.mesh->vstride,
-				});
-				inst.vboBindings.push_back({
-					.buff = idBuff,
-					.index = 1,
-					.offset = 0,
-					.size = sizeof(uint32),
-				});
+				mvpBuffTemp.push_back(skinned ? vp : vp * arm.nodes[inst.nodeId].total);
 			}
 
 			offset += sz;
