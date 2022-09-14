@@ -9,6 +9,16 @@
 
 namespace Engine::Gfx {
 	class ModelLoader final {
+		public:
+			enum class VertexInput : uint32 {
+				Position	= 0,
+				TexCoord	= 1,
+				BoneIndices	= 2,
+				BoneWeights	= 3,
+				DrawId		= 4,
+			};
+			friend ENGINE_BUILD_DECAY_ENUM(VertexInput);
+
 		private:
 			FlatHashMap<std::string, ModelData> cache;
 			ModelReader reader;

@@ -17,33 +17,22 @@ namespace Engine::Gfx {
 			uint32 vao;
 			glCreateVertexArrays(1, &vao);
 
-			if constexpr (ENGINE_DEBUG) {
-				auto last = VertexInput::None;
-				for (const auto& attrib : key) {
-					if (attrib.input == VertexInput::None) { break; }
-					ENGINE_DEBUG_ASSERT(last < attrib.input);
-					last = attrib.input;
-				}
-			}
-
-			uint32 location = 0;
-
 			for (const auto& attrib : key) {
-				if (attrib.input == VertexInput::None) { break; }
+				if (attrib.size == 0) { break; }
 
-				glEnableVertexArrayAttrib(vao, location);
+				glEnableVertexArrayAttrib(vao, attrib.input);
 
 				if (isInteger(attrib.type)) {
-					glVertexArrayAttribIFormat(vao, location, attrib.size, toGLEnum(attrib.type), attrib.offset);
+					glVertexArrayAttribIFormat(vao, attrib.input, attrib.size, toGLEnum(attrib.type), attrib.offset);
 				} else {
 					// TODO: glVertexArrayAttribLFormat note the "L" (doubles)
-					glVertexArrayAttribFormat(vao, location, attrib.size, toGLEnum(attrib.type), attrib.normalize, attrib.offset);
+					glVertexArrayAttribFormat(vao, attrib.input, attrib.size, toGLEnum(attrib.type), attrib.normalize, attrib.offset);
 				}
 
 				glVertexArrayBindingDivisor(vao, attrib.binding, attrib.divisor);
-				glVertexArrayAttribBinding(vao, location, attrib.binding);
+				glVertexArrayAttribBinding(vao, attrib.input, attrib.binding);
 
-				location += (attrib.size + 3) / 4;
+				//location += (attrib.size + 3) / 4;
 			}
 
 			return VertexAttributeLayout{VertexAttributeLayout::AllowConstruct, vao};

@@ -2,28 +2,16 @@
 
 // Engine
 #include <Engine/Gfx/NumberType.hpp>
-#include <Engine/Gfx/VertexInput.hpp>
 
 
 namespace Engine::Gfx {
 	// Describes the location of a specific attribute within a buffer
 	class VertexAttributeDesc {
 		public:
-			VertexAttributeDesc() = default;
-			VertexAttributeDesc(VertexInput input, uint16 size, NumberType type, uint32 offset, bool normalize, uint8 binding, uint32 divisor)
-				: input{input}
-				, type{type}
-				, offset{offset}
-				, size{size}
-				, normalize{normalize}
-				, binding{binding}
-				, divisor{divisor} {
-			}
-
-			VertexInput input = {};
+			uint16 input = {};
+			uint16 size = {};
 			NumberType type = {};
 			uint32 offset = {};
-			uint16 size = {};
 			bool normalize = {};
 			uint8 binding = {};
 			uint32 divisor = {};
