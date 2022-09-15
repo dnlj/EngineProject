@@ -18,7 +18,7 @@ namespace Engine::UI {
 				auto& theme = ctx->getTheme();
 				setFont(theme.fonts.body);
 				pad.x = theme.sizes.pad1;
-				pad.y = pad.x;
+				//pad.y = pad.x;
 			}
 
 			ENGINE_INLINE void setPadding(glm::vec2 p) noexcept { pad = p; }

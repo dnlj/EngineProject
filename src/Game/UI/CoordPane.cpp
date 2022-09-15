@@ -61,7 +61,6 @@ namespace Game::UI {
 			const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
 			if (!actComp.valid()) { return; }
 
-			// TODO: reimplement - ImGui::Text("Mouse (screen): (%f, %f)", screenMousePos.x, screenMousePos.y);
 			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 			const auto offsetMousePos = actComp.getTarget();
 			const auto worldMousePos = offsetMousePos + Engine::Glue::as<glm::vec2>(physComp.getPosition());
