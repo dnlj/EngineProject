@@ -12,6 +12,15 @@
 namespace Game::UI {
 	CoordPane::CoordPane(EUI::Context* context) : AutoList{context} {
 		setTitle("Coordinates");
+		
+		addLabel("Camera: {:.3f}");
+		addLabel("Cursor: {:.3f}");
+		addLabel("Cursor (offset): {:.3f}");
+		addLabel("Cursor (world): {:.3f}");
+
+		addLabel("Map Offset: {}");
+		addLabel("Map Offset (block): {}");
+		addLabel("Map Offset (chunk): {}");
 
 		addLabel("Mouse (offset): {:.3f}");
 		addLabel("Mouse (world): {:.3f}");
@@ -19,21 +28,35 @@ namespace Game::UI {
 		addLabel("Mouse (block-world): {:.3f}");
 		addLabel("Mouse (chunk): {} {}");
 		addLabel("Mouse (region): {}");
-		addLabel("Camera: {:.3f}");
-		addLabel("Map Offset: {}");
-		addLabel("Map Offset (block): {}");
-		addLabel("Map Offset (chunk): {}");
 
 		ctx->addPanelUpdateFunc(this, [](Panel* panel){
 			auto pane = reinterpret_cast<CoordPane*>(panel);
-			auto& engine = *panel->getContext()->getUserdata<EngineInstance>();
+			auto& ctx = *panel->getContext();
+			auto& engine = *ctx.getUserdata<EngineInstance>();
 			auto& world = engine.getWorld();
+
+			auto& mapSys = world.getSystem<Game::MapSystem>();
+			auto& cam = engine.getCamera();
+
+			const auto camPos = engine.getCamera().getPosition();
+			const auto cursorPos = ctx.getCursor();
+			const auto cursorWorldOffset = (cursorPos - glm::vec2{cam.getScreenSize()/2}) * pixelRescaleFactor;
+			const auto cursorWorldPos = glm::vec2{camPos} + cursorWorldOffset;
+			const auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
+			const auto mapBlockOffset = mapSys.getBlockOffset();
+			const auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
+
+			pane->setLabel(CoordPane::Camera, camPos);
+			pane->setLabel(CoordPane::CursorPos, cursorPos);
+			pane->setLabel(CoordPane::CursorWorldOffset, cursorWorldOffset);
+			pane->setLabel(CoordPane::CursorWorldPos, cursorWorldPos);
+			pane->setLabel(CoordPane::MapOffset, mapOffset);
+			pane->setLabel(CoordPane::MapOffsetBlock, mapBlockOffset);
+			pane->setLabel(CoordPane::MapOffsetChunk, mapChunkOffset);
 
 			const auto& activePlayerFilter = world.getFilter<PlayerFlag>();
 			if (activePlayerFilter.empty()) { return; }
 			const auto ply = *activePlayerFilter.begin();
-
-			auto& mapSys = world.getSystem<Game::MapSystem>();
 
 			const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
 			if (!actComp.valid()) { return; }
@@ -47,10 +70,6 @@ namespace Game::UI {
 			const auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
 			const auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
 			const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);
-			const auto camPos = engine.getCamera().getPosition();
-			const auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
-			const auto mapBlockOffset = mapSys.getBlockOffset();
-			const auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
 
 			pane->setLabel(CoordPane::MouseOffset, offsetMousePos);
 			pane->setLabel(CoordPane::MouseWorld, worldMousePos);
@@ -58,10 +77,6 @@ namespace Game::UI {
 			pane->setLabel(CoordPane::MouseBlockWorld, blockWorldMousePos);
 			pane->setLabel(CoordPane::MouseChunk, chunkMousePos, chunkBlockMousePos);
 			pane->setLabel(CoordPane::MouseRegion, regionMousePos);
-			pane->setLabel(CoordPane::Camera, camPos);
-			pane->setLabel(CoordPane::MapOffset, mapOffset);
-			pane->setLabel(CoordPane::MapOffsetBlock, mapBlockOffset);
-			pane->setLabel(CoordPane::MapOffsetChunk, mapChunkOffset);
 		});
 	}
 }
