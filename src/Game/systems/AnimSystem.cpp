@@ -23,7 +23,8 @@ namespace Game {
 		//constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
 		//constexpr char fileName[] = "assets/tri_test2_3.fbx";
 		//constexpr char fileName[] = "assets/test.fbx";
-		constexpr char fileName[] = "assets/char_v2.fbx";//////////////////////////////
+		constexpr char fileName[] = "assets/char_v3.fbx";//////////////////////////////
+		//constexpr char fileName[] = "assets/char_v2.fbx";//////////////////////////////
 		//constexpr char fileName[] = "assets/char6.fbx";///////////////
 		//constexpr char fileName[] = "assets/char.glb";
 		//constexpr char fileName[] = "assets/char.dae";
@@ -90,17 +91,15 @@ namespace Game {
 
 		updateAnim();
 
-		auto vp = glm::ortho<float32>(0, 1920, 0, 1080, -10000, 10000);
-		vp = engine.getCamera().getProjection();
-		vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / pixelsPerMeter});
-		//vp *= glm::scale(glm::mat4{1}, glm::vec3{1.0f / 0.2f});
+		auto& cam = engine.getCamera();
+		glm::mat4 vpT = cam.getProjection() * cam.getView();
 
-		constexpr float32 inc = 128;
-		vp = glm::translate(vp, glm::vec3{-inc * std::size(ents) * 0.5f, 0, 0});
+		constexpr static float32 inc = 5;
+		glm::mat4 mT = glm::translate(glm::mat4{1.0f}, glm::vec3{-inc * std::size(ents) * 0.5f, 0, 0});
 
 		const auto& armFilter = world.getFilter<ModelComponent, ArmatureComponent>(); // TODO: cache in system
 
-		constexpr auto align256 = [](const auto v) ENGINE_INLINE -> decltype(v) {
+		constexpr static auto align256 = [](const auto v) ENGINE_INLINE -> decltype(v) {
 			return (v & ~0xFF); // floor(x / 256) * 256
 		};
 
@@ -140,11 +139,11 @@ namespace Game {
 				inst.uboBindings[1].size = static_cast<uint16>(sz);
 
 				idBuffTemp.push_back(inst.baseInstance);
-				mvpBuffTemp.push_back(skinned ? vp : vp * arm.nodes[inst.nodeId].total);
+				mvpBuffTemp.push_back(skinned ? vpT * mT : vpT * mT * arm.nodes[inst.nodeId].total);
 			}
 
 			offset += sz;
-			vp = glm::translate(vp, glm::vec3{128,0,0});
+			mT = glm::translate(mT, glm::vec3{inc,0,0});
 		}
 
 		if (auto sz = bonesBuffTemp.size(); sz > bonesBuffSize) {
