@@ -83,6 +83,25 @@ namespace Engine::Gfx {
 
 		init();
 
+		materials.resize(scene->mNumMaterials);
+		for (unsigned i = 0; i < scene->mNumMaterials; ++i) {
+			const aiMaterial* from = scene->mMaterials[i];
+			auto& to = materials[i];
+
+			for (const auto* prop : ArrayView{from->mProperties, from->mNumProperties}) {
+				if (prop->mType != aiPTI_String) { continue; }
+
+				const std::string_view key = {prop->mKey.data, prop->mKey.length};
+				const aiString* val = reinterpret_cast<const aiString*>(prop->mData);
+
+				if (key == "?mat.name") {
+					to.name = std::string{val->data, val->length};
+				} else if (key == "$tex.file") {
+					to.path = std::string{val->data, val->length};
+				}
+			}
+		}
+
 		// TODO: there are also other nodes we might want to exclude?
 		// Build children. Exclude the root node because its transform is irrelevant (should always be identity)
 		//build(scene->mRootNode, -1);
@@ -106,15 +125,6 @@ namespace Engine::Gfx {
 		for (const auto* anim : ArrayView{scene->mAnimations, scene->mNumAnimations}) {
 			readAnim(anim);
 		}
-
-		//for (const auto* mat : ArrayView{scene->mMaterials, scene->mNumMaterials}) {
-		//	ENGINE_INFO("------------------------------");
-		//	ENGINE_INFO("Name: ", mat->GetName().C_Str());
-		//	for (const auto* prop : ArrayView{mat->mProperties, mat->mNumProperties}) {
-		//		ENGINE_INFO("\t", prop->mKey.C_Str());
-		//	}
-		//	ENGINE_INFO("------------------------------");
-		//}
 
 		arm.finalize();
 		instances.shrink_to_fit();
@@ -143,6 +153,7 @@ namespace Engine::Gfx {
 		}
 
 		#if ENGINE_DEBUG
+		++materials[mesh->mMaterialIndex].count;
 		const auto& range = meshes.emplace_back(indexCount, mesh->mNumFaces * 3, mesh->mMaterialIndex);
 		#endif
 		const auto baseVertex = vertCount;

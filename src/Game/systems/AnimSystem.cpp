@@ -24,7 +24,9 @@ namespace Game {
 		//constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
 		//constexpr char fileName[] = "assets/tri_test2_3.fbx";
 		//constexpr char fileName[] = "assets/test.fbx";
+		//constexpr char fileName[] = "assets/wooble.fbx";
 		constexpr char fileName[] = "assets/char_v3.fbx";//////////////////////////////
+		//constexpr char fileName[] = "assets/char_v3.gltf";
 		//constexpr char fileName[] = "assets/char_v2.fbx";//////////////////////////////
 		//constexpr char fileName[] = "assets/char6.fbx";///////////////
 		//constexpr char fileName[] = "assets/char.glb";

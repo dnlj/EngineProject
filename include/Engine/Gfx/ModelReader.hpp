@@ -48,6 +48,12 @@ namespace Engine::Gfx {
 		NodeId nodeId;
 	};
 
+	struct MaterialDesc {
+		std::string name;
+		std::string path;
+		int count = 0;
+	};
+
 	class ModelReader {
 		private:
 			Assimp::Importer im;
@@ -63,6 +69,8 @@ namespace Engine::Gfx {
 
 			Engine::FlatHashMap<std::string_view, NodeId> nodeNameToId;
 			std::vector<MeshDesc> meshes;
+
+			std::vector<MaterialDesc> materials;
 
 			std::vector<Animation> animations;
 			std::vector<MeshInst> instances;

@@ -23,26 +23,18 @@ namespace Engine::Gfx {
 
 		auto layout = rctx.vertexLayoutLoader.get(attribs);
 
-		{ // TODO: load from model
-			const auto shader = rctx.shaderLoader.get(skinned ? "shaders/mesh" : "shaders/mesh_static");
-			auto matBase = rctx.materialManager.create(shader);
-			//auto tex = rctx.textureLoader.get2D("assets/gui_1.bmp");
-			auto tex1 = rctx.textureLoader.get2D("assets/tri_test3_uv1.png");
-			//auto tex2 = rctx.textureLoader.get2D("assets/tri_test3_uv2.png");
-			auto tex2 = rctx.textureLoader.get2D("assets/char_uv.png");
-			//ENGINE_LOG("Texture = ", tex->tex.get());
-
-			mats[0] = rctx.materialInstanceManager.create(matBase);
-			mats[0]->set("color", glm::vec4{1,1,0.5,1});
-			mats[0]->set("tex", tex2);
-
-			mats[1] = rctx.materialInstanceManager.create(matBase);
-			mats[1]->set("color", glm::vec4{1,0.5,1,1});
-			mats[1]->set("tex", tex1);
-
-			mats[2] = rctx.materialInstanceManager.create(matBase);
-			mats[2]->set("color", glm::vec4{0.5,1,1,1});
-			mats[2]->set("tex", tex1);
+		std::vector<MaterialInstanceRef> mats;
+		mats.reserve(reader.materials.size());
+		
+		const auto shader = rctx.shaderLoader.get(skinned ? "shaders/mesh" : "shaders/mesh_static");
+		auto matBase = rctx.materialManager.create(shader);
+		for (const auto& from : reader.materials) {
+			if (from.count == 0) { continue; }
+			ENGINE_LOG("Load Material(", from.count, "): ", from.path);
+			auto& to = mats.emplace_back(rctx.materialInstanceManager.create(matBase));
+			auto tex = rctx.textureLoader.get2D("assets/" + from.path); // TODO: better path handling. See: kUYZw2N2
+			to->set("color", glm::vec4{1,1,0.5,1});
+			to->set("tex", tex);
 		}
 
 		const auto vbo = rctx.bufferManager.create(reader.verts);
@@ -62,7 +54,7 @@ namespace Engine::Gfx {
 					vbo, static_cast<uint32>(sizeof(Vertex)),
 					ebo, m.offset, m.count
 				),
-				mats[m.material] // TODO: really neex to lookup in ModelLoader::materials or similar
+				mats[m.material]
 			);
 		}
 
