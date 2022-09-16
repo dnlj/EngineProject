@@ -152,10 +152,9 @@ namespace Engine::Gfx {
 			}
 		}
 
-		#if ENGINE_DEBUG
 		++materials[mesh->mMaterialIndex].count;
-		const auto& range = meshes.emplace_back(indexCount, mesh->mNumFaces * 3, mesh->mMaterialIndex);
-		#endif
+		meshes.emplace_back(indexCount, mesh->mNumFaces * 3, mesh->mMaterialIndex);
+
 		const auto baseVertex = vertCount;
 
 		for(const auto& face : ArrayView{mesh->mFaces, mesh->mNumFaces}) {
@@ -167,7 +166,7 @@ namespace Engine::Gfx {
 			++indexCount;
 		}
 
-		ENGINE_DEBUG_ASSERT(indexCount == range.offset + range.count);
+		ENGINE_DEBUG_ASSERT(indexCount == meshes.back().offset + meshes.back().count);
 
 		for (uint32 i = 0; i < mesh->mNumVertices; ++i) {
 			auto& vert = verts[vertCount];

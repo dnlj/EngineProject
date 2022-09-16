@@ -40,7 +40,7 @@ namespace Engine {
 			ResourceStorage(ResourceStorage&& other) { *this = std::move(other); }
 
 			ResourceStorage& operator=(const ResourceStorage&) = delete;
-			ResourceStorage& operator=(ResourceStorage&& other) { swap(*this, other); }
+			ResourceStorage& operator=(ResourceStorage&& other) { swap(*this, other); return *this; }
 
 			~ResourceStorage() { destroy(*this); }
 
