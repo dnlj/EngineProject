@@ -27,10 +27,11 @@ namespace Engine::Gfx {
 		mats.reserve(reader.materials.size());
 		
 		const auto shader = rctx.shaderLoader.get(skinned ? "shaders/mesh" : "shaders/mesh_static");
-		auto matBase = rctx.materialManager.create(shader);
+		const auto matBase = rctx.materialLoader.get(shader);
 		for (const auto& from : reader.materials) {
 			if (from.count == 0) { continue; }
 			ENGINE_LOG("Load Material(", from.count, "): ", from.path);
+			// TODO: Really need an instance loader, shouldnt create a new one for each model. See: qZnumyMN
 			auto& to = mats.emplace_back(rctx.materialInstanceManager.create(matBase));
 			auto tex = rctx.textureLoader.get2D("assets/" + from.path); // TODO: better path handling. See: kUYZw2N2
 			to->set("color", glm::vec4{1,1,0.5,1});
