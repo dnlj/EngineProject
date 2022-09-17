@@ -20,11 +20,11 @@ namespace Engine {
 
 		public:
 			/**
-			 * Provides access to the underlying ResourceInfo<T>.
+			 * Provides access to the underlying ResourceMemory.
 			 * Does NOT provide any reference counting.
 			 */
-			static ResourceMemory unsafe_getInfo(ResourceRefImpl& ref) noexcept { return ref.info; }
-			static const ResourceMemory unsafe_getInfo(const ResourceRefImpl& ref) noexcept { return ref.info; }
+			ENGINE_INLINE static ResourceMemory unsafe_getInfo(ResourceRefImpl& ref) noexcept { return ref.info; }
+			ENGINE_INLINE static const ResourceMemory unsafe_getInfo(const ResourceRefImpl& ref) noexcept { return ref.info; }
 
 		public:
 			ResourceRefImpl() = default;
@@ -42,17 +42,21 @@ namespace Engine {
 				return *this;
 			}
 
-			const T* get() const noexcept { return &info.getObj<T>(); }
-			T* get() noexcept { return &info.getObj<T>(); }
+			ENGINE_INLINE const T* get() const noexcept { return &info.getObj<T>(); }
+			ENGINE_INLINE T* get() noexcept { return &info.getObj<T>(); }
 
-			const T* operator->() const noexcept { return get(); }
-			T* operator->() noexcept { return get(); }
+			ENGINE_INLINE const T* operator->() const noexcept { return get(); }
+			ENGINE_INLINE T* operator->() noexcept { return get(); }
 
-			const T& operator*() const noexcept { return *get(); }
-			T& operator*() noexcept { return *get(); }
+			ENGINE_INLINE const T& operator*() const noexcept { return *get(); }
+			ENGINE_INLINE T& operator*() noexcept { return *get(); }
 
-			explicit operator bool() const noexcept { return info; }
-			const auto count() const noexcept { return info.getRefCount(); }
+			ENGINE_INLINE explicit operator bool() const noexcept { return info; }
+			ENGINE_INLINE const auto count() const noexcept { return info.getRefCount(); }
+
+			ENGINE_INLINE friend bool operator==(const ResourceRefImpl& lhs, const ResourceRefImpl& rhs) noexcept {
+				return lhs.info == rhs.info;
+			}
 
 	};
 	
@@ -63,5 +67,12 @@ namespace Engine {
 	template<class T>
 	class ResourceRef : public ResourceRefImpl<T> {
 		using ResourceRefImpl<T>::ResourceRefImpl;
+	};
+
+	template<class T>
+	struct Hash<ResourceRef<T>> {
+		[[nodiscard]] size_t operator()(const ResourceRef<T>& val) const {
+			return reinterpret_cast<uintptr_t>(ResourceRef<T>::unsafe_getInfo(val).memory);
+		}
 	};
 }

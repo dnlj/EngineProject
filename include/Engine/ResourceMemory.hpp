@@ -25,6 +25,6 @@ namespace Engine {
 			template<class T> ENGINE_INLINE T& getObj() noexcept { return *reinterpret_cast<T*>(getObjAddr()); };
 			template<class T> ENGINE_INLINE const T& getObj() const noexcept { return const_cast<ResourceMemory*>(this)->getObj<T>(); };
 
-			operator bool() const noexcept { return memory; }
+			ENGINE_INLINE operator bool() const noexcept { return memory; }
 	};
 }
