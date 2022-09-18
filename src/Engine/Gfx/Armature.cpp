@@ -6,7 +6,7 @@
 namespace Engine::Gfx {
 	void Armature::apply(const Animation& anim, float32 tick) {
 		for (const auto& seq : anim.channels) {
-			const auto& interp = seq.interp(tick);
+			const auto& interp = seq.sample(tick);
 			nodes[seq.nodeId].trans = glm::scale(glm::translate(glm::mat4{1.0f}, interp.pos) * glm::mat4_cast(interp.rot), interp.scale);
 		}
 

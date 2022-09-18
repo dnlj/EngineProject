@@ -14,7 +14,6 @@ namespace Game {
 		private:
 			Engine::ECS::Entity ents[4];
 
-			Engine::Gfx::Animation animation;
 			bool skinned = false;
 
 			std::vector<byte> bonesBuffTemp;

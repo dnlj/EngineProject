@@ -8,6 +8,7 @@
 
 // Game
 #include <Game/comps/ArmatureComponent.hpp>
+#include <Game/comps/AnimationComponent.hpp>
 #include <Game/comps/ModelComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/systems/AnimSystem.hpp>
@@ -32,22 +33,28 @@ namespace Game {
 		//constexpr char fileName[] = "assets/char.glb";
 		//constexpr char fileName[] = "assets/char.dae";
 
-		const auto& data = engine.getModelLoader().get(fileName);
+		const auto& modelA = engine.getModelLoader().get(fileName);
+		//const auto& modelB = engine.getModelLoader().get("assets/wooble.fbx");
 
-		constexpr static float32 inc = 5;
+		constexpr static float32 inc = 3;
 		float32 xOff = std::size(ents) * 0.5f * -inc;
+		bool mdlToggle = true;
 		for (auto& ent : ents) {
+			const auto& mdlData = modelA;
+			//const auto& mdlData = mdlToggle ? modelA : modelB;
+			mdlToggle = !mdlToggle;
+
 			ent = world.createEntity();
-			auto& mdlComp = world.addComponent<ModelComponent>(ent, data);
+			auto& mdlComp = world.addComponent<ModelComponent>(ent, mdlData);
 			auto& armComp = world.addComponent<ArmatureComponent>(ent);
 			auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
+			auto& animComp =  world.addComponent<AnimationComponent>(ent);
 
 			physInterpComp.trans.p.x = xOff;
 			xOff += inc;
 
-			armComp = data.arm;
-
-			animation = data.anims[0]; // TODO: handle better
+			armComp = mdlData.arm;
+			animComp.anim = mdlData.anims[0];
 			skinned = !armComp.boneOffsets.empty(); // TODO: handle better
 
 			for (auto& inst : mdlComp.meshes) {
@@ -87,11 +94,12 @@ namespace Game {
 		for (int i = 0; i < std::size(ents); ++i) {
 			const auto& ent = ents[i];
 			auto& armComp = world.getComponent<ArmatureComponent>(ent);
+			auto& animComp = world.getComponent<AnimationComponent>(ent);
 			const auto nodeCount = armComp.nodes.size();
 
 			const auto off = CLOCKS_PER_SEC / std::size(ents);
 			auto interp = ((clock() + i*off) % CLOCKS_PER_SEC) / float32(CLOCKS_PER_SEC);
-			armComp.apply(animation, interp * animation.duration);
+			armComp.apply(animComp.anim, interp * animComp.anim.duration);
 		}
 	}
 

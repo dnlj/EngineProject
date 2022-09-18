@@ -55,7 +55,8 @@ namespace Game {
 		class MapAreaComponent,
 		class BlockEntityComponent,
 		class ModelComponent,
-		class ArmatureComponent
+		class ArmatureComponent,
+		class AnimationComponent
 	>;
 
 	using FlagsSet = Meta::TypeSet::TypeSet<

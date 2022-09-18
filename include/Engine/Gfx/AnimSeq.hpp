@@ -26,19 +26,20 @@ namespace Engine::Gfx {
 			};
 
 			template<class T>
-			static auto interpImpl(TimePoint t, const std::vector<T>& cont) {
+			static auto interpImpl(TimePoint t, const std::vector<T>& cont) noexcept {
 				ENGINE_DEBUG_ASSERT(cont.size());
-				auto last = std::lower_bound(cont.begin(), cont.end(), t, [](const T& b, const TimePoint& t) {
+
+				const auto last = std::lower_bound(cont.begin(), cont.end(), t, [](const T& b, const TimePoint& t) noexcept {
 					return b.time < t;
 				});
 
-				if (last == cont.end()) { return (--last)->value; }
+				if (last == cont.end()) { return (last - 1)->value; }
 				if (last == cont.begin()) { return last->value; }
 
-				auto first = last - 1;
+				const auto first = last - 1;
 				ENGINE_DEBUG_ASSERT(first->time != last->time, "Invalid animation timestamp. No frames should have the same time.");
 
-				auto p = (t - first->time) / (last->time - first->time);
+				const auto p = (t - first->time) / (last->time - first->time);
 
 				if constexpr (std::same_as<T, QuatKey>) {
 					return glm::slerp(first->value, last->value, p);
@@ -54,17 +55,15 @@ namespace Engine::Gfx {
 			std::vector<QuatKey> rot;
 
 			// TODO: should this take a [0,1] instead of tick?
-			InterpValues interp(TimePoint t) const {
+			InterpValues sample(TimePoint t) const {
+				ENGINE_DEBUG_ASSERT(pos.size(), "Cannot interp animation: invalid positions.");
+				ENGINE_DEBUG_ASSERT(scale.size(), "Cannot interp animation: invalid scales.");
+				ENGINE_DEBUG_ASSERT(rot.size(), "Cannot interp animation: invalid rotations.");
+
 				InterpValues res;
-
-				ENGINE_DEBUG_ASSERT(pos.size());
-				ENGINE_DEBUG_ASSERT(scale.size());
-				ENGINE_DEBUG_ASSERT(rot.size());
-
 				res.pos = interpImpl(t, pos);
 				res.scale = interpImpl(t, scale);
 				res.rot = interpImpl(t, rot);
-
 				return res;
 			}
 	};
