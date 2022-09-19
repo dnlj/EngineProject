@@ -12,8 +12,6 @@
 namespace Game {
 	class AnimSystem : public System {
 		private:
-			Engine::ECS::Entity ents[4];
-
 			bool skinned = false;
 
 			std::vector<byte> bonesBuffTemp;
@@ -31,7 +29,6 @@ namespace Game {
 		public:
 			AnimSystem(SystemArg arg);
 			~AnimSystem();
-			void updateAnim();
 			void render(const RenderLayer layer);
 	};
 }

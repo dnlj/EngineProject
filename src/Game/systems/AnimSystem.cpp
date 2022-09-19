@@ -34,17 +34,16 @@ namespace Game {
 		//constexpr char fileName[] = "assets/char.dae";
 
 		const auto& modelA = engine.getModelLoader().get(fileName);
-		//const auto& modelB = engine.getModelLoader().get("assets/wooble.fbx");
+		const auto& modelB = engine.getModelLoader().get("assets/wooble.fbx");
 
-		constexpr static float32 inc = 3;
-		float32 xOff = std::size(ents) * 0.5f * -inc;
-		bool mdlToggle = true;
-		for (auto& ent : ents) {
-			const auto& mdlData = modelA;
-			//const auto& mdlData = mdlToggle ? modelA : modelB;
-			mdlToggle = !mdlToggle;
+		constexpr float inc = 3;
+		constexpr int count = 5;
+		float32 xOff = count * 0.5f * -inc;
 
-			ent = world.createEntity();
+		for (int i = 0; i < count; ++i) {
+			const auto& mdlData = i&1 ? modelA : modelB;
+
+			auto ent = world.createEntity();
 			auto& mdlComp = world.addComponent<ModelComponent>(ent, mdlData);
 			auto& armComp = world.addComponent<ArmatureComponent>(ent);
 			auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
@@ -90,23 +89,8 @@ namespace Game {
 	AnimSystem::~AnimSystem() {
 	}
 
-	void AnimSystem::updateAnim() {
-		for (int i = 0; i < std::size(ents); ++i) {
-			const auto& ent = ents[i];
-			auto& armComp = world.getComponent<ArmatureComponent>(ent);
-			auto& animComp = world.getComponent<AnimationComponent>(ent);
-			const auto nodeCount = armComp.nodes.size();
-
-			const auto off = CLOCKS_PER_SEC / std::size(ents);
-			auto interp = ((clock() + i*off) % CLOCKS_PER_SEC) / float32(CLOCKS_PER_SEC);
-			armComp.apply(animComp.anim, interp * animComp.anim.duration);
-		}
-	}
-
 	void AnimSystem::render(const RenderLayer layer) {
 		if (layer != RenderLayer::Debug) { return; }
-
-		updateAnim();
 
 		auto& cam = engine.getCamera();
 		glm::mat4 vpT = cam.getProjection() * cam.getView();
@@ -114,7 +98,7 @@ namespace Game {
 		//constexpr static float32 inc = 5;
 		//glm::mat4 mT = glm::translate(glm::mat4{1.0f}, glm::vec3{-inc * std::size(ents) * 0.5f, 0, 0});
 
-		const auto& armFilter = world.getFilter<ModelComponent, ArmatureComponent, PhysicsInterpComponent>(); // TODO: cache in system
+		const auto& animFilter = world.getFilter<ModelComponent, ArmatureComponent, PhysicsInterpComponent>(); // TODO: cache in system
 
 		constexpr static auto align256 = [](const auto v) ENGINE_INLINE -> decltype(v) {
 			return (v & ~0xFF); // floor(x / 256) * 256
@@ -126,7 +110,18 @@ namespace Game {
 
 		uint64 offset = 0;
 
-		for (auto ent : armFilter) {
+		const auto entCount = animFilter.size();
+		for (int i=0; auto ent : animFilter) {
+			const auto& animComp = world.getComponent<AnimationComponent>(ent);
+			auto& armComp = world.getComponent<ArmatureComponent>(ent);
+			
+			const auto nodeCount = armComp.nodes.size();
+			const auto off = CLOCKS_PER_SEC / entCount;
+			auto interp = ((clock() + i++*off) % CLOCKS_PER_SEC) / float32(CLOCKS_PER_SEC);
+			armComp.apply(animComp.anim, interp * animComp.anim.duration);
+		}
+
+		for (auto ent : animFilter) {
 			// Pad for alignment
 			// UBO offsets must be aligned at 256.
 			// Some AMD and Intel gpus require less. Most (all?) NVIDIA is 256.
