@@ -13,12 +13,12 @@ namespace Engine::Gfx {
 		bool skinned = !reader.arm.boneOffsets.empty(); // TODO: better way to handle this
 		ENGINE_INFO("**** Loaded Model: ", reader.verts.size(), " ", reader.indices.size(), " ", reader.instances.size(), " ", skinned);
 
-		VertexAttributeDesc attribs[] = {
-			{ +VertexInput::Position, 3, NumberType::Float32, offsetof(Vertex, pos), false, 0, 0},
-			{ +VertexInput::TexCoord, 2, NumberType::Float32, offsetof(Vertex, uv), false, 0, 0}, // TODO: use normalized short here like we do in DrawBuilder
-			{ +VertexInput::BoneIndices, 4, NumberType::UInt8, offsetof(Vertex, bones), false, 0, 0},
-			{ +VertexInput::BoneWeights, 4, NumberType::Float32, offsetof(Vertex, weights), false, 0, 0},
-			{ +VertexInput::DrawId, 1, NumberType::UInt32, 0, false, 1, 1},
+		constexpr VertexAttributeDesc attribs[] = {
+			{ +VertexInput::Position, 3, NumberType::Float32, VertexAttribTarget::Float, false, offsetof(Vertex, pos), 0, 0},
+			{ +VertexInput::TexCoord, 2, NumberType::UInt16, VertexAttribTarget::Float, true, offsetof(Vertex, uv), 0, 0},
+			{ +VertexInput::BoneIndices, 4, NumberType::UInt8, VertexAttribTarget::Int, false, offsetof(Vertex, bones), 0, 0},
+			{ +VertexInput::BoneWeights, 4, NumberType::Float32, VertexAttribTarget::Float, false, offsetof(Vertex, weights), 0, 0},
+			{ +VertexInput::DrawId, 1, NumberType::UInt32, VertexAttribTarget::Int, false, 0, 1, 1},
 		};
 
 		auto layout = rctx.vertexLayoutLoader.get(attribs);

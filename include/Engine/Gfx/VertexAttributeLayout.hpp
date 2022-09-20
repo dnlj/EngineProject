@@ -5,14 +5,20 @@
 
 
 namespace Engine::Gfx {
+	enum class VertexAttribTarget : uint8 {
+		Float,
+		Int,
+	};
+
 	// Describes the location of a specific attribute within a buffer
 	class VertexAttributeDesc {
 		public:
 			uint16 input = {};
 			uint16 size = {};
 			NumberType type = {};
-			uint32 offset = {};
+			VertexAttribTarget target = {};
 			bool normalize = {};
+			uint16 offset = {};
 			uint8 binding = {};
 			uint32 divisor = {};
 			bool operator==(const VertexAttributeDesc&) const noexcept = default;

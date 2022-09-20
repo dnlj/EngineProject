@@ -177,7 +177,11 @@ namespace Engine::Gfx {
 			if (const auto& set = mesh->mTextureCoords[0]) {
 				ENGINE_ASSERT_WARN(set != nullptr, "Missing UV map for mesh.");
 				const auto& uv = mesh->mTextureCoords[0][i];
-				vert.uv = {uv.x, uv.y};
+				static_assert(std::same_as<uint16, std::decay_t<decltype(vert.uv.x)>>, "UVs are currently stored in normalized short format.");
+				vert.uv = {
+					std::clamp(uv.x * 65535.0f, 0.0f, 65535.0f),
+					std::clamp(uv.y * 65535.0f, 0.0f, 65535.0f),
+				};
 			}
 
 			++vertCount;

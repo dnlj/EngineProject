@@ -22,9 +22,10 @@ namespace Engine::Gfx {
 
 				glEnableVertexArrayAttrib(vao, attrib.input);
 
-				if (isInteger(attrib.type)) {
+				if (attrib.target == VertexAttribTarget::Int) {
 					glVertexArrayAttribIFormat(vao, attrib.input, attrib.size, toGLEnum(attrib.type), attrib.offset);
 				} else {
+					ENGINE_DEBUG_ASSERT(attrib.target == VertexAttribTarget::Float, "Invalid vertex attribute target.");
 					// TODO: glVertexArrayAttribLFormat note the "L" (doubles)
 					glVertexArrayAttribFormat(vao, attrib.input, attrib.size, toGLEnum(attrib.type), attrib.normalize, attrib.offset);
 				}
