@@ -25,11 +25,15 @@ namespace Engine::Gfx {
 
 		std::vector<MaterialInstanceRef> mats;
 		mats.reserve(reader.materials.size());
-		
+
 		const auto shader = rctx.shaderLoader.get(skinned ? "shaders/mesh" : "shaders/mesh_static");
 		const auto matBase = rctx.materialLoader.get(shader);
 		for (const auto& from : reader.materials) {
-			if (from.count == 0) { continue; }
+			if (from.count == 0) {
+				ENGINE_WARN("Unused material: ", from.name);
+				continue;
+			}
+
 			ENGINE_LOG("Load Material(", from.count, "): ", from.path);
 			// TODO: Really need an instance loader, shouldnt create a new one for each model. See: qZnumyMN
 			auto& to = mats.emplace_back(rctx.materialInstanceManager.create(matBase));

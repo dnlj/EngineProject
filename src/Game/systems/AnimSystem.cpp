@@ -20,21 +20,13 @@ namespace Game {
 		mvpBuff = engine.getBufferManager().create();
 		idBuff = engine.getBufferManager().create();
 
-		//constexpr char fileName[] = "assets/testing.fbx";
-		//constexpr char fileName[] = "assets/tri_test3.fbx";
-		//constexpr char fileName[] = "assets/tri_test2.fbx";///////////////
-		//constexpr char fileName[] = "assets/tri_test2_3.fbx";
-		//constexpr char fileName[] = "assets/test.fbx";
+		constexpr char fileName[] = "assets/square_no_arm.fbx";
 		//constexpr char fileName[] = "assets/wooble.fbx";
-		constexpr char fileName[] = "assets/char_v3.fbx";//////////////////////////////
-		//constexpr char fileName[] = "assets/char_v3.gltf";
-		//constexpr char fileName[] = "assets/char_v2.fbx";//////////////////////////////
-		//constexpr char fileName[] = "assets/char6.fbx";///////////////
-		//constexpr char fileName[] = "assets/char.glb";
-		//constexpr char fileName[] = "assets/char.dae";
+		//constexpr char fileName[] = "assets/char_v3.fbx";
 
 		const auto& modelA = engine.getModelLoader().get(fileName);
-		const auto& modelB = engine.getModelLoader().get("assets/wooble.fbx");
+		//const auto& modelB = engine.getModelLoader().get("assets/wooble.fbx");
+		const auto& modelB = modelA;
 
 		constexpr float inc = 3;
 		constexpr int count = 5;
@@ -45,7 +37,7 @@ namespace Game {
 
 			auto ent = world.createEntity();
 			auto& mdlComp = world.addComponent<ModelComponent>(ent, mdlData);
-			auto& armComp = world.addComponent<ArmatureComponent>(ent);
+			auto& armComp = world.addComponent<ArmatureComponent>(ent); // TODO: static meshes really shouldnt need an armature comp, we only use a small part of it
 			auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
 			auto& animComp =  world.addComponent<AnimationComponent>(ent);
 
@@ -54,7 +46,6 @@ namespace Game {
 
 			armComp = mdlData.arm;
 			animComp.anim = mdlData.anims[0];
-			skinned = !armComp.boneOffsets.empty(); // TODO: handle better
 
 			for (auto& inst : mdlComp.meshes) {
 				inst.uboBindings.push_back({
@@ -63,6 +54,8 @@ namespace Game {
 					.offset = 0,
 					.size = uint16(-1),
 				});
+
+				// TODO: dont need this on skinned meshes
 				inst.uboBindings.push_back({
 					.buff = bonesBuff,
 					.index = 1,
@@ -92,13 +85,11 @@ namespace Game {
 	void AnimSystem::render(const RenderLayer layer) {
 		if (layer != RenderLayer::Debug) { return; }
 
+		const auto& animFilter = world.getFilter<ModelComponent, ArmatureComponent, PhysicsInterpComponent>(); // TODO: cache in system
+
 		auto& cam = engine.getCamera();
 		glm::mat4 vpT = cam.getProjection() * cam.getView();
 
-		//constexpr static float32 inc = 5;
-		//glm::mat4 mT = glm::translate(glm::mat4{1.0f}, glm::vec3{-inc * std::size(ents) * 0.5f, 0, 0});
-
-		const auto& animFilter = world.getFilter<ModelComponent, ArmatureComponent, PhysicsInterpComponent>(); // TODO: cache in system
 
 		constexpr static auto align256 = [](const auto v) ENGINE_INLINE -> decltype(v) {
 			return (v & ~0xFF); // floor(x / 256) * 256
@@ -145,6 +136,7 @@ namespace Game {
 
 			const auto& pos = world.getComponent<PhysicsInterpComponent>(ent).getPosition();
 			const auto mT = glm::translate(glm::mat4{1.0f}, glm::vec3{pos.x, pos.y, 0});
+			const bool skinned = !arm.boneOffsets.empty();
 
 			// TODO: really need a way to set a binding point per model as well as per mesh.  kinda feels like we are leaking draw commands at this point.
 			for (auto& inst : mdl.meshes) {
@@ -163,21 +155,21 @@ namespace Game {
 		if (auto sz = bonesBuffTemp.size(); sz > bonesBuffSize) {
 			bonesBuffSize = sz;
 			bonesBuff->alloc(bonesBuffTemp, Engine::Gfx::StorageFlag::DynamicStorage);
-		} else {
+		} else if (sz) {
 			bonesBuff->setData(bonesBuffTemp);
 		}
 
 		if (auto sz = mvpBuffTemp.size(); sz > mvpBuffSize) {
 			mvpBuffSize = sz;
 			mvpBuff->alloc(mvpBuffTemp, Engine::Gfx::StorageFlag::DynamicStorage);
-		} else {
+		} else if (sz) {
 			mvpBuff->setData(mvpBuffTemp);
 		}
 
 		if (auto sz = idBuffTemp.size(); sz > idBuffSize) {
 			idBuffSize = sz;
 			idBuff->alloc(idBuffTemp, Engine::Gfx::StorageFlag::DynamicStorage);
-		} else {
+		} else if (sz) {
 			idBuff->setData(idBuffTemp);
 		}
 	}

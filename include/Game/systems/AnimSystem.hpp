@@ -12,8 +12,6 @@
 namespace Game {
 	class AnimSystem : public System {
 		private:
-			bool skinned = false;
-
 			std::vector<byte> bonesBuffTemp;
 			Engine::Gfx::BufferRef bonesBuff;
 			uint64 bonesBuffSize = 0;
