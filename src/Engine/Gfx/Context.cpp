@@ -104,10 +104,12 @@ namespace Engine::Gfx {
 			// TODO: also probably diff with active binds so we only bind when needed - should be elimiated when we get draw sorting working though so probably not worth fixing atm
 			// TODO: use glBindBuffersRange instead to bind all with one cmd. Need to redo DrawCommand::blockBindings to use SoA layout.
 			for (const auto& bind : cmd.uboBindings) {
+				ENGINE_DEBUG_ASSERT(bind.size > 0, "Invalid ubo binding size");
 				glBindBufferRange(GL_UNIFORM_BUFFER, bind.index, bind.buff->get(), bind.offset, bind.size);
 			}
 
 			for (const auto& bind : cmd.vboBindings) {
+				ENGINE_DEBUG_ASSERT(bind.size > 0, "Invalid vbo binding size");
 				glVertexArrayVertexBuffer(vao, bind.index, bind.buff->get(), bind.offset, bind.size);
 			}
 

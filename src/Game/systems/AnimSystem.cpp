@@ -25,8 +25,7 @@ namespace Game {
 		//constexpr char fileName[] = "assets/char_v3.fbx";
 
 		const auto& modelA = engine.getModelLoader().get(fileName);
-		//const auto& modelB = engine.getModelLoader().get("assets/wooble.fbx");
-		const auto& modelB = modelA;
+		const auto& modelB = engine.getModelLoader().get("assets/wooble.fbx");
 
 		constexpr float inc = 3;
 		constexpr int count = 5;
@@ -37,7 +36,7 @@ namespace Game {
 
 			auto ent = world.createEntity();
 			auto& mdlComp = world.addComponent<ModelComponent>(ent, mdlData);
-			auto& armComp = world.addComponent<ArmatureComponent>(ent); // TODO: static meshes really shouldnt need an armature comp, we only use a small part of it
+			auto& armComp = world.addComponent<ArmatureComponent>(ent);
 			auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
 			auto& animComp =  world.addComponent<AnimationComponent>(ent);
 
@@ -46,6 +45,7 @@ namespace Game {
 
 			armComp = mdlData.arm;
 			animComp.anim = mdlData.anims[0];
+			const bool skinned = armComp.results.size();
 
 			for (auto& inst : mdlComp.meshes) {
 				inst.uboBindings.push_back({
@@ -55,13 +55,14 @@ namespace Game {
 					.size = uint16(-1),
 				});
 
-				// TODO: dont need this on skinned meshes
-				inst.uboBindings.push_back({
-					.buff = bonesBuff,
-					.index = 1,
-					.offset = 0,
-					.size = 0,
-				});
+				if (skinned) {
+					inst.uboBindings.push_back({
+						.buff = bonesBuff,
+						.index = 1,
+						.offset = 0,
+						.size = 0,
+					});
+				}
 
 				inst.vboBindings.push_back({
 					.buff = inst.mesh->vbuff,
@@ -113,43 +114,52 @@ namespace Game {
 		}
 
 		for (auto ent : animFilter) {
-			// Pad for alignment
-			// UBO offsets must be aligned at 256.
-			// Some AMD and Intel gpus require less. Most (all?) NVIDIA is 256.
-			// If we really care you can query GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT.
-			if (auto aligned = align256(offset); aligned != offset) {
-				aligned += 256;
-				bonesBuffTemp.resize(bonesBuffTemp.size() + (aligned - offset));
-				offset = aligned;
-			}
-
-			// Insert bones
 			const auto& arm = world.getComponent<ArmatureComponent>(ent);
-			const auto addr = [](auto it) ENGINE_INLINE { return reinterpret_cast<const byte*>(std::to_address(it)); };
-			bonesBuffTemp.insert(bonesBuffTemp.cend(), addr(arm.results.cbegin()), addr(arm.results.cend()));
-
-			// Update bindings
-			auto& mdl = world.getComponent<ModelComponent>(ent);
 			const auto sz = arm.results.size() * sizeof(arm.results[0]);
-			ENGINE_DEBUG_ASSERT(offset < (1<<16), "Too many bones in armature.");
-			ENGINE_DEBUG_ASSERT(sz < (1<<16), "Too many bones in armature.");
+			const bool skinned = sz;
+
+			if (skinned) {
+				// Pad for alignment
+				// UBO offsets must be aligned at 256.
+				// Some AMD and Intel gpus require less. Most (all?) NVIDIA is 256.
+				// If we really care you can query GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT.
+				if (auto aligned = align256(offset); aligned != offset) {
+					aligned += 256;
+					bonesBuffTemp.resize(bonesBuffTemp.size() + (aligned - offset));
+					offset = aligned;
+				}
+
+				// TODO: only skinned
+				// Insert bones
+				const auto addr = [](auto it) ENGINE_INLINE { return reinterpret_cast<const byte*>(std::to_address(it)); };
+				bonesBuffTemp.insert(bonesBuffTemp.cend(), addr(arm.results.cbegin()), addr(arm.results.cend()));
+
+				// Update bindings
+				ENGINE_DEBUG_ASSERT(offset < (1<<16), "Too many bones in armature.");
+				ENGINE_DEBUG_ASSERT(sz < (1<<16), "Too many bones in armature.");
+			}
 
 			const auto& pos = world.getComponent<PhysicsInterpComponent>(ent).getPosition();
 			const auto mT = glm::translate(glm::mat4{1.0f}, glm::vec3{pos.x, pos.y, 0});
-			const bool skinned = !arm.boneOffsets.empty();
 
 			// TODO: really need a way to set a binding point per model as well as per mesh.  kinda feels like we are leaking draw commands at this point.
+			auto& mdl = world.getComponent<ModelComponent>(ent);
 			for (auto& inst : mdl.meshes) {
 				// We could just use baseInstance instead of an id buffer, but that will only work until we get multi draw setup
 				inst.baseInstance = static_cast<uint32>(mvpBuffTemp.size());
-				inst.uboBindings[1].offset = static_cast<uint16>(offset);
-				inst.uboBindings[1].size = static_cast<uint16>(sz);
+
+				if (skinned) { // TODO: only skinned
+					inst.uboBindings[1].offset = static_cast<uint16>(offset);
+					inst.uboBindings[1].size = static_cast<uint16>(sz);
+				}
 
 				idBuffTemp.push_back(inst.baseInstance);
 				mvpBuffTemp.push_back(skinned ? vpT * mT : vpT * mT * arm.nodes[inst.nodeId].total);
 			}
 
-			offset += sz;
+			if (skinned) {
+				offset += sz;
+			}
 		}
 
 		if (auto sz = bonesBuffTemp.size(); sz > bonesBuffSize) {
