@@ -55,32 +55,30 @@ namespace Engine::Gfx {
 	};
 
 	class ModelReader {
+		public:
+			struct Results {
+				std::vector<Vertex> verts;
+				std::vector<uint32> indices;
+				std::vector<MeshDesc> meshes;
+				std::vector<MaterialDesc> materials;
+				std::vector<Animation> animations;
+				std::vector<MeshInst> instances;
+				Armature arm;
+				bool skinned;
+			};
+
 		private:
 			Assimp::Importer im;
-
-		public: // TODO: private
 			const struct aiScene* scene;
-
-			std::vector<Vertex> verts;
+			Results res;
 			uint32 vertCount = 0;
-
-			std::vector<uint32> indices;
 			uint32 indexCount = 0;
-
 			Engine::FlatHashMap<std::string_view, NodeId> nodeNameToId;
-			std::vector<MeshDesc> meshes;
-
-			std::vector<MaterialDesc> materials;
-
-			std::vector<Animation> animations;
-			std::vector<MeshInst> instances;
-			Armature arm;
-
-			bool skinned = false;
 
 		public:
 			ModelReader();
-			void load(const char* path);
+			bool load(const char* path);
+			const Results& results() const noexcept { return res; }
 			void clear();
 
 		private:
@@ -90,6 +88,5 @@ namespace Engine::Gfx {
 			NodeId getNodeId(const struct aiString& name);
 			NodeId getNodeId(const struct aiNode* name);
 			void build(aiNode* root, NodeId parentId);
-
 	};
 }

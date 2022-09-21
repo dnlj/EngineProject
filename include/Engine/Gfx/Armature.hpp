@@ -48,8 +48,6 @@ namespace Engine::Gfx {
 			}
 			
 			void finalize() {
-				nodes.shrink_to_fit();
-				boneOffsets.shrink_to_fit();
 				results.resize(boneOffsets.size());
 			}
 

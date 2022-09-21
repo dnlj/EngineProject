@@ -33,45 +33,46 @@ namespace Engine::Gfx {
 		int numVerts = 0;
 		int numFaces = 0;
 		int numNodesEst = 0;
-		skinned = false;
+		res.skinned = false;
 
 		for(const auto* mesh : ArrayView{scene->mMeshes, scene->mNumMeshes}) {
 			numVerts += mesh->mNumVertices;
 			numFaces += mesh->mNumFaces;
 			numNodesEst += mesh->mNumBones;
-			skinned = skinned || mesh->mNumBones;
+			res.skinned = res.skinned || mesh->mNumBones;
 		}
 
 		// TODO: glMapBuffer w/o temporary buffer instead? would be good to test how that effects load times.
-		verts.resize(numVerts);
-		indices.resize(numFaces * 3);
-		meshes.reserve(scene->mNumMeshes);
-		animations.reserve(scene->mNumAnimations);
-		instances.reserve(scene->mNumMeshes * 2); // Just a guess, no way to know without walking scene.
+		res.verts.resize(numVerts);
+		res.indices.resize(numFaces * 3);
+		res.meshes.reserve(scene->mNumMeshes);
+		res.animations.reserve(scene->mNumAnimations);
+		res.instances.reserve(scene->mNumMeshes * 2); // Just a guess, no way to know without walking scene.
 
 		numNodesEst *= 2;  // Just a guess, no way to know without walking scene.
-		arm.reserve(numNodesEst);
+		res.arm.reserve(numNodesEst);
 		nodeNameToId.reserve(numNodesEst);
 	}
 
 	void ModelReader::clear() {
 		indexCount = 0;
 		vertCount = 0;
-		indices.clear();
-		verts.clear();
 		nodeNameToId.clear();
-		meshes.clear();
-		animations.clear();
-		instances.clear();
-		arm.clear();
+
+		res.indices.clear();
+		res.verts.clear();
+		res.meshes.clear();
+		res.animations.clear();
+		res.instances.clear();
+		res.arm.clear();
 	}
 
-	void ModelReader::load(const char* path) {
+	bool ModelReader::load(const char* path) {
 		scene = im.ReadFile(path, aiProcessPreset_TargetRealtime_Fast);
 
 		if (!scene) {
 			ENGINE_WARN("Assimp failed to load model: ", im.GetErrorString());
-			return;
+			return false;
 		} else {
 			/*ENGINE_LOG("Assimp successfully loaded model: ",
 				scene->mNumMeshes, " ",
@@ -83,10 +84,10 @@ namespace Engine::Gfx {
 
 		init();
 
-		materials.resize(scene->mNumMaterials);
+		res.materials.resize(scene->mNumMaterials);
 		for (unsigned i = 0; i < scene->mNumMaterials; ++i) {
 			const aiMaterial* from = scene->mMaterials[i];
-			auto& to = materials[i];
+			auto& to = res.materials[i];
 
 			for (const auto* prop : ArrayView{from->mProperties, from->mNumProperties}) {
 				if (prop->mType != aiPTI_String) { continue; }
@@ -115,19 +116,19 @@ namespace Engine::Gfx {
 			readMesh(mesh);
 		}
 
-		if (arm.boneOffsets.size() > 100) { // TODO: make constant or pull from shader or something (or inject into shader? that probably better.)
+		if (res.arm.boneOffsets.size() > 100) { // TODO: make constant or pull from shader or something (or inject into shader? that probably better.)
 			ENGINE_WARN("To many bones in model. Clamping. ", path);
 			ENGINE_DIE; // TODO: clamp number of bones
 		}
 
-		ENGINE_LOG("*** Nodes: ", arm.nodes.size(), " / ", arm.boneOffsets.size());
+		ENGINE_LOG("*** Nodes: ", res.arm.nodes.size(), " / ", res.arm.boneOffsets.size());
 
 		for (const auto* anim : ArrayView{scene->mAnimations, scene->mNumAnimations}) {
 			readAnim(anim);
 		}
 
-		arm.finalize();
-		instances.shrink_to_fit();
+		res.arm.finalize();
+		return true;
 	}
 
 	void ModelReader::readMesh(const aiMesh* mesh) {
@@ -138,38 +139,38 @@ namespace Engine::Gfx {
 			// We dont need bone data if it doesnt directly effect weights. Only node data.
 			if (bone->mNumWeights == 0) { continue; }
 
-			const auto boneId = static_cast<BoneId>(arm.boneOffsets.size());
-			arm.nodes[nodeId].boneId = boneId;
+			const auto boneId = static_cast<BoneId>(res.arm.boneOffsets.size());
+			res.arm.nodes[nodeId].boneId = boneId;
 
 			// TODO: offset matrix will be diff for every mesh that uses this bone, correct? will need multiple stores.
 			//			^^^ dont think this is correct? each mesh should have the same offset for bone? test. ^^^
 			
 			// TODO: multiple meshes might refer to the same bone. Need to handle that
-			arm.boneOffsets.emplace_back() = cvtMat(bone->mOffsetMatrix);
+			res.arm.boneOffsets.emplace_back() = cvtMat(bone->mOffsetMatrix);
 
 			for (const auto& weight : ArrayView{bone->mWeights, bone->mNumWeights}) {
-				verts[weight.mVertexId].addBone(boneId, weight.mWeight);
+				res.verts[weight.mVertexId].addBone(boneId, weight.mWeight);
 			}
 		}
 
-		++materials[mesh->mMaterialIndex].count;
-		meshes.emplace_back(indexCount, mesh->mNumFaces * 3, mesh->mMaterialIndex);
+		++res.materials[mesh->mMaterialIndex].count;
+		res.meshes.emplace_back(indexCount, mesh->mNumFaces * 3, mesh->mMaterialIndex);
 
 		const auto baseVertex = vertCount;
 
 		for(const auto& face : ArrayView{mesh->mFaces, mesh->mNumFaces}) {
 			ENGINE_ASSERT(face.mNumIndices == 3, "Invalid number of mesh face indices"); // TODO: handle error, dont assert
-			ENGINE_DEBUG_ASSERT(indexCount+2 < indices.size());
-			indices[indexCount] = baseVertex + face.mIndices[0];
-			indices[++indexCount] = baseVertex + face.mIndices[1];
-			indices[++indexCount] = baseVertex + face.mIndices[2];
+			ENGINE_DEBUG_ASSERT(indexCount+2 < res.indices.size());
+			res.indices[indexCount] = baseVertex + face.mIndices[0];
+			res.indices[++indexCount] = baseVertex + face.mIndices[1];
+			res.indices[++indexCount] = baseVertex + face.mIndices[2];
 			++indexCount;
 		}
 
-		ENGINE_DEBUG_ASSERT(indexCount == meshes.back().offset + meshes.back().count);
+		ENGINE_DEBUG_ASSERT(indexCount == res.meshes.back().offset + res.meshes.back().count);
 
 		for (uint32 i = 0; i < mesh->mNumVertices; ++i) {
-			auto& vert = verts[vertCount];
+			auto& vert = res.verts[vertCount];
 
 			const auto& pos = mesh->mVertices[i];
 			vert.pos = {pos.x, pos.y, pos.z};
@@ -198,7 +199,7 @@ namespace Engine::Gfx {
 			""
 		);
 
-		auto& anim = animations.emplace_back();
+		auto& anim = res.animations.emplace_back();
 		// TODO: apply mTicksPerSecond to times?
 		anim.duration = static_cast<float32>(anim2->mDuration);
 		for (const auto* chan : ArrayView{anim2->mChannels, anim2->mNumChannels}) {
@@ -240,17 +241,17 @@ namespace Engine::Gfx {
 		ENGINE_INFO("BUILD NODE: ", std::string(depth, ' '), node->mName.data, " ", node->mNumMeshes, " @ ", cvtMat(node->mTransformation));
 		++depth;
 		// Populate nodes
-		NodeId nodeId = static_cast<NodeId>(arm.nodes.size());
-		arm.nodes.emplace_back(parentId, -1, cvtMat(node->mTransformation));
+		NodeId nodeId = static_cast<NodeId>(res.arm.nodes.size());
+		res.arm.nodes.emplace_back(parentId, -1, cvtMat(node->mTransformation));
 		nodeNameToId.emplace(view(node->mName), nodeId);
 
 		#if ENGINE_DEBUG
-			arm.nodes.back().name = node->mName.C_Str();
+			res.arm.nodes.back().name = node->mName.C_Str();
 		#endif
 
 		// Populate mesh instances
 		for (uint i = 0; i < node->mNumMeshes; ++i) {
-			instances.push_back({
+			res.instances.push_back({
 				.meshId = static_cast<MeshId>(node->mMeshes[i]),
 				.nodeId = nodeId,
 			});
