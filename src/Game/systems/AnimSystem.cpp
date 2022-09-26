@@ -110,7 +110,7 @@ namespace Game {
 			const auto nodeCount = armComp.nodes.size();
 			const auto off = CLOCKS_PER_SEC / entCount;
 			auto interp = ((clock() + i++*off) % CLOCKS_PER_SEC) / float32(CLOCKS_PER_SEC);
-			armComp.apply(animComp.anim, interp * animComp.anim.duration);
+			armComp.apply(*animComp.anim, interp * animComp.anim->duration);
 		}
 
 		for (auto ent : animFilter) {

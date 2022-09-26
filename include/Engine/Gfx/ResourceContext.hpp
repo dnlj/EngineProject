@@ -1,6 +1,7 @@
 #pragma once
 
 // Engine
+#include <Engine/Gfx/AnimationManager.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/MaterialInstanceManager.hpp>
 #include <Engine/Gfx/MaterialLoader.hpp>
@@ -25,6 +26,7 @@ namespace Engine::Gfx {
 			MaterialLoader materialLoader = materialManager;
 			MaterialInstanceManager materialInstanceManager;
 			ModelLoader modelLoader;
+			AnimationManager animManager;
 
 			ResourceContext() : modelLoader{*this} {
 			}
@@ -36,6 +38,8 @@ namespace Engine::Gfx {
 
 				//ModelLoader;
 				//
+				//AnimationManager;
+				// 
 				//MeshManager;
 				//BufferManager;
 				//

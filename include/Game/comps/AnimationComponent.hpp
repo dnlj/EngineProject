@@ -1,12 +1,12 @@
 #pragma once
 
 // Engine
-#include <Engine/Gfx/Animation.hpp>
+#include <Engine/Gfx/resources.hpp>
 
 
 namespace Game {
 	class AnimationComponent {
 		public:
-			Engine::Gfx::Animation anim;
+			Engine::Gfx::AnimationRef anim;
 	};
 }

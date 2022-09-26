@@ -15,6 +15,7 @@ namespace Engine::Gfx {
 	using MaterialRef = ResourceRef<class Material>;
 	using MaterialInstanceRef = ResourceRef<class MaterialInstance>;
 	using VertexAttributeLayoutRef = ResourceRef<class VertexAttributeLayout>;
+	using AnimationRef = ResourceRef<class Animation>;
 
 	template<int32, TextureType> class Texture;
 	using TextureGeneric = Texture<0, TextureType::Unknown>;

@@ -76,6 +76,10 @@ namespace Engine::Gfx {
 		}
 
 		data.arm = mdl.arm;
-		data.anims = mdl.animations;
+		data.anims.reserve(mdl.animations.size());
+		for (const auto& anim : mdl.animations) {
+			data.anims.emplace_back(rctx.animManager.create(anim));
+		}
+
 	}
 }
