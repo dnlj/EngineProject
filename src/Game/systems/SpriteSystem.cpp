@@ -7,7 +7,7 @@
 // Engine
 #include <Engine/Camera.hpp>
 #include <Engine/ECS/EntityFilter.hpp>
-#include <Engine/Gfx/ShaderLoader.hpp>
+#include <Engine/Gfx/ShaderManager.hpp>
 #include <Engine/Glue/glm.hpp>
 #include <Engine/Utility/Utility.hpp>
 

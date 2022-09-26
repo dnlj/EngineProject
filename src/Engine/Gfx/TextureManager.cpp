@@ -1,5 +1,5 @@
 // Engine
-#include <Engine/Gfx/TextureLoader.hpp>
+#include <Engine/Gfx/TextureManager.hpp>
 
 
 namespace Engine::Gfx {

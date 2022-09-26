@@ -1,6 +1,6 @@
 // Engine
 #include <Engine/UI/DrawBuilder.hpp>
-#include <Engine/Gfx/ShaderLoader.hpp>
+#include <Engine/Gfx/ShaderManager.hpp>
 
 
 namespace Engine::UI {

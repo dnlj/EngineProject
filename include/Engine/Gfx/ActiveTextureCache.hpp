@@ -7,7 +7,7 @@
 #include <Engine/ArrayView.hpp>
 #include <Engine/Gfx/TextureHandle.hpp>
 #include <Engine/Gfx/Material.hpp>
-#include <Engine/Gfx/TextureLoader.hpp>
+#include <Engine/Gfx/TextureManager.hpp>
 
 
 namespace Engine::Gfx {

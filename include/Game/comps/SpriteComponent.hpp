@@ -8,7 +8,7 @@
 
 // Engine
 #include <Engine/Gfx/resources.hpp>
-#include <Engine/Gfx/TextureLoader.hpp>
+#include <Engine/Gfx/TextureManager.hpp>
 
 // Game
 #include <Game/comps/NetworkComponent.hpp>

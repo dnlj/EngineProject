@@ -1,5 +1,5 @@
 // Engine
-#include <Engine/Gfx/TextureLoader.hpp>
+#include <Engine/Gfx/TextureManager.hpp>
 #include <Engine/UI/DemoWindow.hpp>
 #include <Engine/UI/FillLayout.hpp>
 #include <Engine/UI/ScrollArea.hpp>

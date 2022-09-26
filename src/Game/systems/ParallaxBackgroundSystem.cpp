@@ -3,8 +3,8 @@
 
 // Engine
 #include <Engine/Camera.hpp>
-#include <Engine/Gfx/TextureLoader.hpp>
-#include <Engine/Gfx/ShaderLoader.hpp>
+#include <Engine/Gfx/TextureManager.hpp>
+#include <Engine/Gfx/ShaderManager.hpp>
 
 // Game
 #include <Game/World.hpp>

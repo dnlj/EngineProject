@@ -4,12 +4,12 @@
 #include <Engine/Gfx/AnimationManager.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/MaterialInstanceManager.hpp>
-#include <Engine/Gfx/MaterialLoader.hpp>
+#include <Engine/Gfx/MaterialManager.hpp>
 #include <Engine/Gfx/MeshManager.hpp>
 #include <Engine/Gfx/ModelLoader.hpp>
-#include <Engine/Gfx/ShaderLoader.hpp>
-#include <Engine/Gfx/TextureLoader.hpp>
-#include <Engine/Gfx/VertexLayoutLoader.hpp>
+#include <Engine/Gfx/ShaderManager.hpp>
+#include <Engine/Gfx/TextureManager.hpp>
+#include <Engine/Gfx/VertexLayoutManager.hpp>
 
 namespace Engine::Gfx {
 	class ResourceContext {

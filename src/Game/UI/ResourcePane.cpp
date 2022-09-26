@@ -3,8 +3,8 @@
 
 // Engine
 #include <Engine/FlatHashMap.hpp>
-#include <Engine/Gfx/TextureLoader.hpp>
-#include <Engine/Gfx/VertexLayoutLoader.hpp>
+#include <Engine/Gfx/TextureManager.hpp>
+#include <Engine/Gfx/VertexLayoutManager.hpp>
 #include <Engine/UI/DataAdapter.hpp>
 #include <Engine/UI/DirectionalLayout.hpp>
 #include <Engine/UI/Dropdown.hpp>

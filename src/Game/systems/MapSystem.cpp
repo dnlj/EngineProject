@@ -4,7 +4,7 @@
 // Engine
 #include <Engine/Glue/Box2D.hpp>
 #include <Engine/Glue/glm.hpp>
-#include <Engine/Gfx/ShaderLoader.hpp>
+#include <Engine/Gfx/ShaderManager.hpp>
 
 // Game
 #include <Game/World.hpp>

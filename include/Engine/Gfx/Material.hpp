@@ -4,7 +4,7 @@
 #include <Engine/Gfx/resources.hpp>
 #include <Engine/Gfx/Shader.hpp>
 #include <Engine/Gfx/NumberType.hpp>
-#include <Engine/Gfx/TextureLoader.hpp>
+#include <Engine/Gfx/TextureManager.hpp>
 
 
 namespace Engine::Gfx {
