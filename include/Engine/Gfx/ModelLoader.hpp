@@ -23,7 +23,6 @@ namespace Engine::Gfx {
 			FlatHashMap<std::string, ModelData> cache;
 			ModelReader reader;
 			ResourceContext& rctx;
-			Engine::Gfx::MaterialInstanceRef mats[3];// TODO: rm - load from model
 
 		public:
 			ModelLoader(ResourceContext& rctx) : rctx{rctx} {
@@ -45,6 +44,7 @@ namespace Engine::Gfx {
 				// TODO: since nothing stores direct references how do we want to handle this?
 				// ^^^^: would be useful to have a function that checks all sub refs - but these might
 				// ^^^^: have diff number of ref count due to multiple deps
+				ENGINE_ASSERT(false, "TODO: impl");
 			}
 
 		private:

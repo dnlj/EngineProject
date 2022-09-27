@@ -91,7 +91,6 @@ namespace Game {
 		auto& cam = engine.getCamera();
 		glm::mat4 vpT = cam.getProjection() * cam.getView();
 
-
 		constexpr static auto align256 = [](const auto v) ENGINE_INLINE -> decltype(v) {
 			return (v & ~0xFF); // floor(x / 256) * 256
 		};
@@ -129,7 +128,6 @@ namespace Game {
 					offset = aligned;
 				}
 
-				// TODO: only skinned
 				// Insert bones
 				const auto addr = [](auto it) ENGINE_INLINE { return reinterpret_cast<const byte*>(std::to_address(it)); };
 				bonesBuffTemp.insert(bonesBuffTemp.cend(), addr(arm.results.cbegin()), addr(arm.results.cend()));
@@ -148,7 +146,7 @@ namespace Game {
 				// We could just use baseInstance instead of an id buffer, but that will only work until we get multi draw setup
 				inst.baseInstance = static_cast<uint32>(mvpBuffTemp.size());
 
-				if (skinned) { // TODO: only skinned
+				if (skinned) {
 					inst.uboBindings[1].offset = static_cast<uint16>(offset);
 					inst.uboBindings[1].size = static_cast<uint16>(sz);
 				}

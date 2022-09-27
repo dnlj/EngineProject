@@ -24,7 +24,6 @@ namespace Engine::Gfx {
 			Texture2DRef errTexture;
 
 		public:
-			// TODO: should a context just own all the managers? would make sense.
 			Context(BufferManager& bufferManager, TextureLoader& textureLoader);
 			void push(const DrawCommand& cmd) { cmds.push_back(cmd); }
 			void render();

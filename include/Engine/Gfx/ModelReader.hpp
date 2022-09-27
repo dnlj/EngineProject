@@ -9,16 +9,12 @@
 
 
 namespace Engine::Gfx {
-	// TODO: move into own file
-	using MeshId = int32;
-	
 	struct Vertex {
 		Vertex() {};
 
 		glm::vec3 pos;
 		glm::u16vec2 uv;
 
-		// TODO: instead of invalid bone id we can just check if weight == 0, can do this in shader also
 		uint8 bones[4];
 		float32 weights[4] = {};
 

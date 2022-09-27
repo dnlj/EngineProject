@@ -8,6 +8,7 @@
 namespace Engine::Gfx {
 	using NodeId = int32;
 	using BoneId = int32;
+	using MeshId = int32;
 
 	using ShaderRef = ResourceRef<class Shader>;
 	using BufferRef = ResourceRef<class Buffer>;

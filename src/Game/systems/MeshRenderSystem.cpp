@@ -19,7 +19,7 @@ namespace Game {
 	void MeshRenderSystem::render(RenderLayer layer) {
 		using namespace Engine::Gfx;
 
-		if (layer != RenderLayer::Debug) { return; } // TODO: really this should be after everything else
+		if (layer != RenderLayer::Debug) { return; }
 		auto& ctx = engine.getGraphicsContext();
 
 		DrawCommand cmd;

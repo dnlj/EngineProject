@@ -1,7 +1,6 @@
 #version 450 core
 
 #define MAX_BONES_PER_VERT 4
-#define INVALID_BONE 0xFF
 
 layout (location = 0) in vec3 vertPos;
 layout (location = 1) in vec2 vertTexCoord;

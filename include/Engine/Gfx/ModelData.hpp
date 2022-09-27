@@ -18,7 +18,7 @@ namespace Engine::Gfx {
 			ModelData& operator=(ModelData&&) = default;
 
 			std::vector<MeshNode> meshes;
-			std::vector<AnimationRef> anims; // TODO: i assume we will also want animation names or something?
+			std::vector<AnimationRef> anims;
 			Armature arm;
 	};
 }

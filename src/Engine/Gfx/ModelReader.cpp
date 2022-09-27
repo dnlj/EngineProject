@@ -42,14 +42,13 @@ namespace Engine::Gfx {
 			res.skinned = res.skinned || mesh->mNumBones;
 		}
 
-		// TODO: glMapBuffer w/o temporary buffer instead? would be good to test how that effects load times.
 		res.verts.resize(numVerts);
 		res.indices.resize(numFaces * 3);
 		res.meshes.reserve(scene->mNumMeshes);
 		res.animations.reserve(scene->mNumAnimations);
 		res.instances.reserve(scene->mNumMeshes * 2); // Just a guess, no way to know without walking scene.
 
-		numNodesEst *= 2;  // Just a guess, no way to know without walking scene.
+		numNodesEst *= 2; // Just a guess, no way to know without walking scene.
 		res.arm.reserve(numNodesEst);
 		nodeNameToId.reserve(numNodesEst);
 	}
@@ -110,7 +109,6 @@ namespace Engine::Gfx {
 			build(scene->mRootNode->mChildren[i], -1);
 		}
 
-		// TODO: test mesh instancing
 		// TODO: i think we really need to walk the scene, there may be multiple instances of a mesh. Also consider that each instance of a mesh would probably have its own anim time.
 		for(const auto* mesh : ArrayView{scene->mMeshes, scene->mNumMeshes}) {
 			readMesh(mesh);
