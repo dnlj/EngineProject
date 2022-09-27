@@ -59,7 +59,7 @@ namespace Engine {
 	 * Loads a resource from a specific key (file path, uri, or similar).
 	 */
 	template<class Key_, class Resource_>
-	class ResourceLoader {
+	class ResourceLoader : public ResourceManager<Resource_> {
 		public:
 			using Key = Key_;
 			using Resource = Resource_;
@@ -69,18 +69,11 @@ namespace Engine {
 		private:
 			FlatHashMap<Key, ResourceRef> lookup;
 
-		protected:
-			Manager& manager;
-
 		public:
-			ResourceLoader(Manager& manager)
-				: manager{manager} {
-			}
-
 			ResourceRef get(const Key& key) {
 				auto found = lookup.find(key);
 				if (found == lookup.end()) {
-					const auto& ref = manager.create(load(key));
+					const auto& ref = this->create(load(key));
 					found = lookup.try_emplace(key, ref).first;
 				}
 

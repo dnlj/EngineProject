@@ -93,18 +93,15 @@ namespace Game {
 
 	Engine::Input::BindManager& EngineInstance::getBindManager() noexcept { return pimpl->bindManager; }
 
-	Engine::Gfx::VertexLayoutManager& EngineInstance::getVertexLayoutManager() noexcept { return pimpl->gfxResCtx.vertexLayoutManager; }
 	Engine::Gfx::VertexLayoutLoader& EngineInstance::getVertexLayoutLoader() noexcept { return pimpl->gfxResCtx.vertexLayoutLoader; }
 	Engine::Gfx::BufferManager& EngineInstance::getBufferManager() noexcept { return pimpl->gfxResCtx.bufferManager; }
 	
-	Engine::Gfx::ShaderManager& EngineInstance::getShaderManager() noexcept { return pimpl->gfxResCtx.shaderManager; }
 	Engine::Gfx::ShaderLoader& EngineInstance::getShaderLoader() noexcept { return pimpl->gfxResCtx.shaderLoader; }
 
-	Engine::Gfx::TextureManager& EngineInstance::getTextureManager() noexcept { return pimpl->gfxResCtx.textureManager; }
 	Engine::Gfx::TextureLoader& EngineInstance::getTextureLoader() noexcept { return pimpl->gfxResCtx.textureLoader; }
 
 	Engine::Gfx::MeshManager& EngineInstance::getMeshManager() noexcept { return pimpl->gfxResCtx.meshManager; }
-	Engine::Gfx::MaterialManager& EngineInstance::getMaterialManager() noexcept { return pimpl->gfxResCtx.materialManager; }
+	Engine::Gfx::MaterialLoader& EngineInstance::getMaterialLoader() noexcept { return pimpl->gfxResCtx.materialLoader; }
 	Engine::Gfx::MaterialInstanceManager& EngineInstance::getMaterialInstanceManager() noexcept { return pimpl->gfxResCtx.materialInstanceManager; }
 
 	Engine::Gfx::ModelLoader& EngineInstance::getModelLoader() noexcept { return pimpl->gfxResCtx.modelLoader; }

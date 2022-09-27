@@ -188,23 +188,22 @@ namespace Engine::Gfx {
 	}
 
 	void ModelReader::readAnim(const aiAnimation* anim2) {
-		ENGINE_LOG(
-			"\n\tName: ", anim2->mName.C_Str(),
-			"\n\tTicks/s: ", anim2->mTicksPerSecond,
-			"\n\tDuration: ", anim2->mDuration,
-			"\n\tChannels:", anim2->mNumChannels,
-			"\n\tMeshChannels:", anim2->mNumMeshChannels,
-			""
-		);
+		//ENGINE_LOG(
+		//	"\n\tName: ", anim2->mName.C_Str(),
+		//	"\n\tTicks/s: ", anim2->mTicksPerSecond,
+		//	"\n\tDuration: ", anim2->mDuration,
+		//	"\n\tChannels:", anim2->mNumChannels,
+		//	"\n\tMeshChannels:", anim2->mNumMeshChannels,
+		//	""
+		//);
 
 		auto& anim = res.animations.emplace_back();
 		// TODO: apply mTicksPerSecond to times?
 		anim.duration = static_cast<float32>(anim2->mDuration);
 		for (const auto* chan : ArrayView{anim2->mChannels, anim2->mNumChannels}) {
-			ENGINE_LOG("\tChannel: ", chan->mNodeName.C_Str(), " ", chan->mNumPositionKeys, " ", chan->mNumRotationKeys, " ", chan->mNumScalingKeys);
+			//ENGINE_LOG("\tChannel: ", chan->mNodeName.C_Str(), " ", chan->mNumPositionKeys, " ", chan->mNumRotationKeys, " ", chan->mNumScalingKeys);
 			auto& seq = anim.channels.emplace_back();
 			seq.nodeId = getNodeId(chan->mNodeName);
-			ENGINE_LOG("ANIM: ", seq.nodeId);
 
 			seq.pos.resize(chan->mNumPositionKeys);
 			for (auto* cval = chan->mPositionKeys; auto& sval : seq.pos) {

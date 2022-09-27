@@ -39,7 +39,7 @@ namespace Engine::Gfx {
 			}
 		}
 
-		auto got = manager.create(TextureGenericInfo{
+		auto got = create(TextureGenericInfo{
 			Texture2D{img, TextureFilter::Nearest, TextureWrap::Repeat},
 			{img.size(), 1},
 			TextureType::Target2D,

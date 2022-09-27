@@ -23,6 +23,7 @@ namespace Engine {
 		class TextureLoader;
 		class MeshManager;
 		class MaterialManager;
+		class MaterialLoader;
 		class MaterialInstanceManager;
 		class ModelLoader;
 		class ResourceContext;
@@ -50,20 +51,17 @@ namespace Game {
 
 			Engine::Input::BindManager& getBindManager() noexcept;
 
-			Engine::Gfx::VertexLayoutManager& getVertexLayoutManager() noexcept;
 			Engine::Gfx::VertexLayoutLoader& getVertexLayoutLoader() noexcept;
 
 			Engine::Gfx::BufferManager& getBufferManager() noexcept;
 
-			Engine::Gfx::ShaderManager& getShaderManager() noexcept;
 			Engine::Gfx::ShaderLoader& getShaderLoader() noexcept;
 
-			Engine::Gfx::TextureManager& getTextureManager() noexcept;
 			Engine::Gfx::TextureLoader& getTextureLoader() noexcept;
 
 			Engine::Gfx::MeshManager& getMeshManager() noexcept;
 
-			Engine::Gfx::MaterialManager& getMaterialManager() noexcept;
+			Engine::Gfx::MaterialLoader& getMaterialLoader() noexcept;
 			Engine::Gfx::MaterialInstanceManager& getMaterialInstanceManager() noexcept;
 
 			Engine::Gfx::ModelLoader& getModelLoader() noexcept;
