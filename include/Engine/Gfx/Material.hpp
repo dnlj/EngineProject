@@ -37,8 +37,8 @@ namespace Engine::Gfx {
 	};
 
 	class MaterialInstance {
-		public:
-			MaterialRef base; // TODO: why is this public?
+		private:
+			MaterialRef base;
 
 		private:
 			using Unit = uint32;
@@ -49,6 +49,10 @@ namespace Engine::Gfx {
 		public:
 			MaterialInstance(const MaterialRef& mat) : base{mat} {
 				setStorageSize(base->getParameterDescription().blockSize);
+			}
+
+			MaterialRefWeak getBase() const noexcept {
+				return base;
 			}
 
 			byte* data() noexcept { // Dont need length because that can be infered from the material

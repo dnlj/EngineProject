@@ -88,7 +88,7 @@ namespace Engine::Gfx {
 			auto& mat = cmd.material;
 			auto& mesh = cmd.mesh;
 
-			const auto program = mat->base->getShader()->get();
+			const auto program = mat->getBase()->getShader()->get();
 			const auto vao = mesh->layout->get();
 
 			glUseProgram(program);
@@ -115,7 +115,7 @@ namespace Engine::Gfx {
 
 			glVertexArrayElementBuffer(vao, mesh->ebuff->get());
 
-			const auto matParamsSize = mat->base->getParameterDescription().blockSize;
+			const auto matParamsSize = mat->getBase()->getParameterDescription().blockSize;
 			if (matParamsSize > matParamsBufferSize) {
 				matParamsBufferSize = matParamsSize;
 				matParamsBuffer->alloc(matParamsSize, StorageFlag::DynamicStorage);

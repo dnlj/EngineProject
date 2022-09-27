@@ -5,42 +5,22 @@
 
 
 namespace Engine {
-	/**
-	 * The implementation of ResourceRef.
-	 * Split into base class to make extension/specialization easier.
-	 * @see ResourceRef
-	 */
 	template<class T>
-	class ResourceRefImpl {
-		private:
+	class ResourceRefWeak {
+		protected:
 			ResourceMemory info{nullptr};
-
-			void inc() { ++info.getRefCount(); }
-			void dec() { --info.getRefCount(); }
 
 		public:
 			/**
 			 * Provides access to the underlying ResourceMemory.
 			 * Does NOT provide any reference counting.
 			 */
-			ENGINE_INLINE static ResourceMemory unsafe_getInfo(ResourceRefImpl& ref) noexcept { return ref.info; }
-			ENGINE_INLINE static const ResourceMemory unsafe_getInfo(const ResourceRefImpl& ref) noexcept { return ref.info; }
+			ENGINE_INLINE static ResourceMemory unsafe_getInfo(ResourceRefWeak& ref) noexcept { return ref.info; }
+			ENGINE_INLINE static const ResourceMemory unsafe_getInfo(const ResourceRefWeak& ref) noexcept { return ref.info; }
 
 		public:
-			ResourceRefImpl() = default;
-			ResourceRefImpl(ResourceMemory info) : info{info} { inc(); };
-			~ResourceRefImpl() { if (info) { dec(); } }
-
-			// Rvalue version doesnt really get us anything because we still need to `dec` our
-			// old value and in cases of self assignment we then need to `inc` again. So it would
-			// end up looking the same or very similar to the copy version.
-			ResourceRefImpl(const ResourceRefImpl& other) { *this = other; }
-			ResourceRefImpl& operator=(const ResourceRefImpl& other) {
-				if (info) { dec(); }
-				info = other.info;
-				if (info) { inc(); }
-				return *this;
-			}
+			ResourceRefWeak(ResourceMemory info) : info{info} {};
+			ResourceRefWeak() = default;
 
 			ENGINE_INLINE const T* get() const noexcept { return &info.getObj<T>(); }
 			ENGINE_INLINE T* get() noexcept { return &info.getObj<T>(); }
@@ -54,8 +34,40 @@ namespace Engine {
 			ENGINE_INLINE explicit operator bool() const noexcept { return info; }
 			ENGINE_INLINE const auto count() const noexcept { return info.getRefCount(); }
 
-			ENGINE_INLINE friend bool operator==(const ResourceRefImpl& lhs, const ResourceRefImpl& rhs) noexcept {
+			ENGINE_INLINE friend bool operator==(const ResourceRefWeak& lhs, const ResourceRefWeak& rhs) noexcept {
 				return lhs.info == rhs.info;
+			}
+	};
+
+	/**
+	 * The implementation of ResourceRef.
+	 * Split into base class to make extension/specialization easier.
+	 * @see ResourceRef
+	 */
+	template<class T>
+	class ResourceRefImpl : public ResourceRefWeak<T> {
+		private:
+			void inc() { ++this->info.getRefCount(); }
+			void dec() { --this->info.getRefCount(); }
+
+		public:
+			using RefWeak = ResourceRefWeak<T>;
+
+		public:
+			ResourceRefImpl() = default;
+			ResourceRefImpl(RefWeak weak) : RefWeak{weak} { inc(); };
+			ResourceRefImpl(ResourceMemory info) : RefWeak{info} { inc(); };
+			~ResourceRefImpl() { if (this->info) { dec(); } }
+
+			// Rvalue version doesnt really get us anything because we still need to `dec` our
+			// old value and in cases of self assignment we then need to `inc` again. So it would
+			// end up looking the same or very similar to the copy version.
+			ResourceRefImpl(const ResourceRefImpl& other) { *this = other; }
+			ResourceRefImpl& operator=(const ResourceRefImpl& other) {
+				if (this->info) { dec(); }
+				this->info = other.info;
+				if (this->info) { inc(); }
+				return *this;
 			}
 
 	};

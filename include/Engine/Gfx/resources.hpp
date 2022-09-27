@@ -11,12 +11,25 @@ namespace Engine::Gfx {
 	using MeshId = int32;
 
 	using ShaderRef = ResourceRef<class Shader>;
+	using ShaderRefWeak = ResourceRefWeak<class Shader>;
+
 	using BufferRef = ResourceRef<class Buffer>;
+	using BufferRefWeak = ResourceRefWeak<class Buffer>;
+
 	using MeshRef = ResourceRef<class Mesh2>;
+	using MeshRefWeak = ResourceRefWeak<class Mesh2>;
+
 	using MaterialRef = ResourceRef<class Material>;
+	using MaterialRefWeak = ResourceRefWeak<class Material>;
+
 	using MaterialInstanceRef = ResourceRef<class MaterialInstance>;
+	using MaterialInstanceRefWeak = ResourceRefWeak<class MaterialInstance>;
+
 	using VertexAttributeLayoutRef = ResourceRef<class VertexAttributeLayout>;
+	using VertexAttributeLayoutRefWeak = ResourceRefWeak<class VertexAttributeLayout>;
+
 	using AnimationRef = ResourceRef<class Animation>;
+	using AnimationRefWeak = ResourceRefWeak<class Animation>;
 
 	template<int32, TextureType> class Texture;
 	using TextureGeneric = Texture<0, TextureType::Unknown>;
@@ -40,12 +53,27 @@ namespace Engine {
 
 namespace Engine::Gfx {
 	using TextureGenericRef = ResourceRef<TextureGenericInfo>;
+	using TextureGenericRefWeak = ResourceRefWeak<TextureGenericInfo>;
+
 	using TextureRef = TextureGenericRef;
+	using TextureRefWeak = TextureGenericRefWeak;
+
 	using Texture1DRef = ResourceRef<Texture1DInfo>;
+	using Texture1DRefWeak = ResourceRefWeak<Texture1DInfo>;
+
 	using Texture2DRef = ResourceRef<Texture2DInfo>;
+	using Texture2DRefWeak = ResourceRefWeak<Texture2DInfo>;
+
 	using Texture3DRef = ResourceRef<Texture3DInfo>;
+	using Texture3DRefWeak = ResourceRefWeak<Texture3DInfo>;
+
 	using Texture1DArrayRef = ResourceRef<Texture1DArrayInfo>;
+	using Texture1DArrayRefWeak = ResourceRefWeak<Texture1DArrayInfo>;
+
 	using Texture2DArrayRef = ResourceRef<Texture2DArrayInfo>;
+	using Texture2DArrayRefWeak = ResourceRefWeak<Texture2DArrayInfo>;
+
+
 	// TODO: cubemap
 	// TODO: cubemap array
 }
