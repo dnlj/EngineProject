@@ -687,7 +687,7 @@ namespace Game {
 
 		{
 			// TODO: query map system and find good spawn location
-			const b2Vec2 pos = {0, 62};
+			const b2Vec2 pos = {0, 2};
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
 			physComp.setBody(physSys.createPhysicsCircle(ent, pos, -+PhysicsType::Player));
 			physComp.type = PhysicsType::Player;

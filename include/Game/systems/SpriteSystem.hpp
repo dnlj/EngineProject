@@ -49,7 +49,8 @@ namespace Game {
 			int nextGroup = 0;
 			RenderLayer nextLayer = RenderLayer::_count;
 			Engine::Gfx::ShaderRef shader;
-			GLuint vao = 0;
+
+			Engine::Gfx::VertexAttributeLayoutRef vertexLayout;
 			GLuint vbo = 0;
 			GLuint ivbo = 0;
 			GLuint ebo = 0;

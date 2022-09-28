@@ -17,6 +17,7 @@ namespace Game {
 	}
 
 	void MeshRenderSystem::render(RenderLayer layer) {
+		return;
 		using namespace Engine::Gfx;
 
 		if (layer != RenderLayer::Debug) { return; }

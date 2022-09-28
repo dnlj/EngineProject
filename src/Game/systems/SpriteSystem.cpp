@@ -10,6 +10,8 @@
 #include <Engine/Gfx/ShaderManager.hpp>
 #include <Engine/Glue/glm.hpp>
 #include <Engine/Utility/Utility.hpp>
+#include <Engine/Gfx/ResourceContext.hpp>
+#include <Engine/Gfx/VertexAttributeLayout.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -25,8 +27,34 @@ namespace Game {
 
 		shader = engine.getShaderLoader().get("shaders/sprite");
 
-		{ // Vertex array
-			glCreateVertexArrays(1, &vao);
+		{
+			using namespace Engine::Gfx;
+			constexpr static VertexAttributeDesc layout[] = {
+				{
+					.input=0, .size=2, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
+					.offset=offsetof(Vertex, position), .binding=0, .divisor=0
+				}, {
+					.input=1, .size=2, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
+					.offset=offsetof(Vertex, texCoord), .binding=0, .divisor=0
+				},
+				// TODO: make a version that knows how to handle a matrix instead of 4 attribs
+				{
+					.input=2, .size=4, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
+					.offset=offsetof(InstanceData, mvp) + 0*4*sizeof(float32), .binding=1, .divisor=1
+				},{
+					.input=3, .size=4, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
+					.offset=offsetof(InstanceData, mvp) + 1*4*sizeof(float32), .binding=1, .divisor=1
+				},{
+					.input=4, .size=4, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
+					.offset=offsetof(InstanceData, mvp) + 2*4*sizeof(float32), .binding=1, .divisor=1
+				},{
+					.input=5, .size=4, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
+					.offset=offsetof(InstanceData, mvp) + 3*4*sizeof(float32), .binding=1, .divisor=1
+				},
+			};
+
+			auto& rctx = engine.getGraphicsResourceContext();
+			vertexLayout = rctx.vertexLayoutLoader.get(layout);
 		}
 
 		{ // Vertex buffer
@@ -39,7 +67,7 @@ namespace Game {
 
 			glCreateBuffers(1, &vbo);
 			glNamedBufferData(vbo, sizeof(data), &data, GL_STATIC_DRAW);
-			glVertexArrayVertexBuffer(vao, dataBindingIndex, vbo, 0, sizeof(Vertex));
+			glVertexArrayVertexBuffer(vertexLayout->get(), dataBindingIndex, vbo, 0, sizeof(Vertex));
 		}
 
 		{ // Instance vertex buffer
@@ -56,43 +84,11 @@ namespace Game {
 
 			glCreateBuffers(1, &ebo);
 			glNamedBufferData(ebo, sizeof(data), &data, GL_STATIC_DRAW);
-			glVertexArrayElementBuffer(vao, ebo);
-		}
-
-		{
-			// Vertex attributes
-			glEnableVertexArrayAttrib(vao, 0);
-			glEnableVertexArrayAttrib(vao, 1);
-
-			glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
-			glVertexArrayAttribFormat(vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoord));
-
-			glVertexArrayAttribBinding(vao, 0, dataBindingIndex);
-			glVertexArrayAttribBinding(vao, 1, dataBindingIndex);
-
-
-			// Instance attributes
-			glVertexArrayBindingDivisor(vao, instBindingIndex, 1);
-
-			glEnableVertexArrayAttrib(vao, 2);
-			glEnableVertexArrayAttrib(vao, 3);
-			glEnableVertexArrayAttrib(vao, 4);
-			glEnableVertexArrayAttrib(vao, 5);
-
-			glVertexArrayAttribFormat(vao, 2, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) +  0 * sizeof(GLfloat));
-			glVertexArrayAttribFormat(vao, 3, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) +  4 * sizeof(GLfloat));
-			glVertexArrayAttribFormat(vao, 4, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) +  8 * sizeof(GLfloat));
-			glVertexArrayAttribFormat(vao, 5, 4, GL_FLOAT, GL_FALSE, offsetof(InstanceData, mvp) + 12 * sizeof(GLfloat));
-
-			glVertexArrayAttribBinding(vao, 2, instBindingIndex);
-			glVertexArrayAttribBinding(vao, 3, instBindingIndex);
-			glVertexArrayAttribBinding(vao, 4, instBindingIndex);
-			glVertexArrayAttribBinding(vao, 5, instBindingIndex);
+			glVertexArrayElementBuffer(vertexLayout->get(), ebo);
 		}
 	}
 
 	SpriteSystem::~SpriteSystem() {
-		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
 		glDeleteBuffers(1, &ivbo);
 		glDeleteBuffers(1, &ebo);
@@ -101,7 +97,7 @@ namespace Game {
 	void SpriteSystem::resizeInstanceData() {
 		const auto size = instanceData.capacity();
 		glNamedBufferData(ivbo, size * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
-		glVertexArrayVertexBuffer(vao, instBindingIndex, ivbo, 0, sizeof(InstanceData));
+		glVertexArrayVertexBuffer(vertexLayout->get(), instBindingIndex, ivbo, 0, sizeof(InstanceData));
 	}
 
 	void SpriteSystem::update(float dt) {
@@ -181,7 +177,7 @@ namespace Game {
 		if (layer != nextLayer) { return; }
 
 		// VAO / Program
-		glBindVertexArray(vao);
+		glBindVertexArray(vertexLayout->get());
 		glUseProgram(shader->get());
 
 		const auto size = spriteGroups.size();
