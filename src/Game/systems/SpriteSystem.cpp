@@ -29,29 +29,32 @@ namespace Game {
 
 		{
 			using namespace Engine::Gfx;
-			constexpr static VertexAttributeDesc layout[] = {
+			const VertexAttributeLayoutDesc layout = {{
+				{ .binding = 0, .divisor = 0 },
+				{ .binding = 1, .divisor = 1 },
+			},{
 				{
 					.input=0, .size=2, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
-					.offset=offsetof(Vertex, position), .binding=0, .divisor=0
+					.offset=offsetof(Vertex, position), .binding=0
 				}, {
 					.input=1, .size=2, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
-					.offset=offsetof(Vertex, texCoord), .binding=0, .divisor=0
+					.offset=offsetof(Vertex, texCoord), .binding=0
 				},
 				// TODO: make a version that knows how to handle a matrix instead of 4 attribs
 				{
 					.input=2, .size=4, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
-					.offset=offsetof(InstanceData, mvp) + 0*4*sizeof(float32), .binding=1, .divisor=1
+					.offset=offsetof(InstanceData, mvp) + 0*4*sizeof(float32), .binding=1
 				},{
 					.input=3, .size=4, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
-					.offset=offsetof(InstanceData, mvp) + 1*4*sizeof(float32), .binding=1, .divisor=1
+					.offset=offsetof(InstanceData, mvp) + 1*4*sizeof(float32), .binding=1
 				},{
 					.input=4, .size=4, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
-					.offset=offsetof(InstanceData, mvp) + 2*4*sizeof(float32), .binding=1, .divisor=1
+					.offset=offsetof(InstanceData, mvp) + 2*4*sizeof(float32), .binding=1
 				},{
 					.input=5, .size=4, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
-					.offset=offsetof(InstanceData, mvp) + 3*4*sizeof(float32), .binding=1, .divisor=1
+					.offset=offsetof(InstanceData, mvp) + 3*4*sizeof(float32), .binding=1
 				},
-			};
+			}};
 
 			auto& rctx = engine.getGraphicsResourceContext();
 			vertexLayout = rctx.vertexLayoutLoader.get(layout);

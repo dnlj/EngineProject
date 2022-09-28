@@ -18,13 +18,16 @@ namespace Engine::Gfx {
 
 		ENGINE_INFO("**** Loaded Model: ", mdl.verts.size(), " ", mdl.indices.size(), " ", mdl.instances.size(), " ", skinned);
 
-		constexpr VertexAttributeDesc attribs[] = {
+		const VertexAttributeLayoutDesc attribs = {{
+			{.binding = 0, .divisor = 0},
+			{.binding = 1, .divisor = 1},
+		},{
 			{ +VertexInput::Position, 3, NumberType::Float32, VertexAttribTarget::Float, false, offsetof(Vertex, pos), 0, 0},
 			{ +VertexInput::TexCoord, 2, NumberType::UInt16, VertexAttribTarget::Float, true, offsetof(Vertex, uv), 0, 0},
 			{ +VertexInput::BoneIndices, 4, NumberType::UInt8, VertexAttribTarget::Int, false, offsetof(Vertex, bones), 0, 0},
 			{ +VertexInput::BoneWeights, 4, NumberType::Float32, VertexAttribTarget::Float, false, offsetof(Vertex, weights), 0, 0},
 			{ +VertexInput::DrawId, 1, NumberType::UInt32, VertexAttribTarget::Int, false, 0, 1, 1},
-		};
+		}};
 
 		auto layout = rctx.vertexLayoutLoader.get(attribs);
 

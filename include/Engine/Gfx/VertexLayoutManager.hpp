@@ -11,13 +11,17 @@ namespace Engine::Gfx {
 		using ResourceManager::ResourceManager;
 	};
 
-	class VertexLayoutLoader final : public ResourceLoader<VertexAttributeDescList, VertexAttributeLayout> {
+	class VertexLayoutLoader final : public ResourceLoader<VertexAttributeLayoutDesc, VertexAttributeLayout> {
 		using ResourceLoader::ResourceLoader;
 		virtual Resource load(const Key& key) override {
 			uint32 vao;
 			glCreateVertexArrays(1, &vao);
 
-			for (const auto& attrib : key) {
+			for (const auto& bd : key.divisors) {
+				glVertexArrayBindingDivisor(vao, bd.binding, bd.divisor);
+			}
+
+			for (const auto& attrib : key.attribs) {
 				if (attrib.size == 0) { break; }
 
 				glEnableVertexArrayAttrib(vao, attrib.input);
@@ -30,7 +34,6 @@ namespace Engine::Gfx {
 					glVertexArrayAttribFormat(vao, attrib.input, attrib.size, toGLEnum(attrib.type), attrib.normalize, attrib.offset);
 				}
 
-				glVertexArrayBindingDivisor(vao, attrib.binding, attrib.divisor);
 				glVertexArrayAttribBinding(vao, attrib.input, attrib.binding);
 
 				//location += (attrib.size + 3) / 4;
