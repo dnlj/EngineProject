@@ -25,6 +25,7 @@ namespace Engine {
 		class MaterialManager;
 		class MaterialLoader;
 		class MaterialInstanceManager;
+		class MaterialInstanceLoader;
 		class ModelLoader;
 		class ResourceContext;
 		class Context;
@@ -62,7 +63,7 @@ namespace Game {
 			Engine::Gfx::MeshManager& getMeshManager() noexcept;
 
 			Engine::Gfx::MaterialLoader& getMaterialLoader() noexcept;
-			Engine::Gfx::MaterialInstanceManager& getMaterialInstanceManager() noexcept;
+			Engine::Gfx::MaterialInstanceLoader& getMaterialInstanceLoader() noexcept;
 
 			Engine::Gfx::ModelLoader& getModelLoader() noexcept;
 

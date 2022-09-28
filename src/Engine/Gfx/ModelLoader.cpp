@@ -28,11 +28,9 @@ namespace Engine::Gfx {
 
 		auto layout = rctx.vertexLayoutLoader.get(attribs);
 
-		std::vector<MaterialInstanceRef> mats;
+		std::vector<MaterialInstanceRefWeak> mats;
 		mats.reserve(mdl.materials.size());
-
-		const auto shader = rctx.shaderLoader.get(skinned ? "shaders/mesh" : "shaders/mesh_static");
-		const auto matBase = rctx.materialLoader.get(shader);
+		
 		for (const auto& from : mdl.materials) {
 			if (from.count == 0) {
 				ENGINE_WARN("Unused material: ", from.name);
@@ -40,11 +38,10 @@ namespace Engine::Gfx {
 			}
 
 			ENGINE_LOG("Load Material(", from.count, "): ", from.path);
-			// TODO: Really need an instance loader, shouldnt create a new one for each model. See: qZnumyMN
-			auto& to = mats.emplace_back(rctx.materialInstanceManager.create(matBase));
-			auto tex = rctx.textureLoader.get2D("assets/" + from.path); // TODO: better path handling. See: kUYZw2N2
-			to->set("color", glm::vec4{1,1,0.5,1});
-			to->set("tex", tex);
+			mats.emplace_back(rctx.materialInstanceLoader.get({
+				.path = from.path,
+				.shdr = skinned ? "shaders/mesh" : "shaders/mesh_static",
+			}));
 		}
 
 		const auto vbo = rctx.bufferManager.create(mdl.verts);
@@ -64,7 +61,7 @@ namespace Engine::Gfx {
 					vbo, static_cast<uint32>(sizeof(Vertex)),
 					ebo, m.offset, m.count
 				),
-				mats[m.material]
+				MaterialInstanceRef(mats[m.material])
 			);
 		}
 

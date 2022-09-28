@@ -20,11 +20,13 @@ namespace Engine::Gfx {
 			TextureLoader textureLoader;
 			MeshManager meshManager;
 			MaterialLoader materialLoader;
-			MaterialInstanceManager materialInstanceManager;
+			MaterialInstanceLoader materialInstanceLoader;
 			ModelLoader modelLoader;
 			AnimationManager animManager;
 
-			ResourceContext() : modelLoader{*this} {
+			ResourceContext()
+				: materialInstanceLoader{*this}
+				, modelLoader{*this} {
 			}
 
 			void clean() {

@@ -102,7 +102,7 @@ namespace Game {
 
 	Engine::Gfx::MeshManager& EngineInstance::getMeshManager() noexcept { return pimpl->gfxResCtx.meshManager; }
 	Engine::Gfx::MaterialLoader& EngineInstance::getMaterialLoader() noexcept { return pimpl->gfxResCtx.materialLoader; }
-	Engine::Gfx::MaterialInstanceManager& EngineInstance::getMaterialInstanceManager() noexcept { return pimpl->gfxResCtx.materialInstanceManager; }
+	Engine::Gfx::MaterialInstanceLoader& EngineInstance::getMaterialInstanceLoader() noexcept { return pimpl->gfxResCtx.materialInstanceLoader; }
 
 	Engine::Gfx::ModelLoader& EngineInstance::getModelLoader() noexcept { return pimpl->gfxResCtx.modelLoader; }
 
