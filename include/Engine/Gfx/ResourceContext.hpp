@@ -14,7 +14,8 @@
 namespace Engine::Gfx {
 	class ResourceContext {
 		public:
-			VertexLayoutLoader vertexLayoutLoader;
+			VertexLayoutManager vertexLayoutManager;
+			VertexLayoutCache vertexLayoutCache;
 			BufferManager bufferManager;
 			ShaderLoader shaderLoader;
 			TextureLoader textureLoader;

@@ -82,6 +82,11 @@ namespace Engine {
 
 			// TODO: unload/free/release/etc
 
+			void clean() {
+				// TODO: impl
+				ResourceManager::clean();
+			}
+
 			const auto begin() const { return lookup.cbegin(); }
 			const auto end() const { return lookup.cend(); }
 

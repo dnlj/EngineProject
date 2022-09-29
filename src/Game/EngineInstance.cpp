@@ -93,7 +93,7 @@ namespace Game {
 
 	Engine::Input::BindManager& EngineInstance::getBindManager() noexcept { return pimpl->bindManager; }
 
-	Engine::Gfx::VertexLayoutLoader& EngineInstance::getVertexLayoutLoader() noexcept { return pimpl->gfxResCtx.vertexLayoutLoader; }
+	Engine::Gfx::VertexLayoutManager& EngineInstance::getVertexLayoutManager() noexcept { return pimpl->gfxResCtx.vertexLayoutManager; }
 	Engine::Gfx::BufferManager& EngineInstance::getBufferManager() noexcept { return pimpl->gfxResCtx.bufferManager; }
 	
 	Engine::Gfx::ShaderLoader& EngineInstance::getShaderLoader() noexcept { return pimpl->gfxResCtx.shaderLoader; }

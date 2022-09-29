@@ -24,12 +24,14 @@ namespace Game {
 	SpriteSystem::SpriteSystem(SystemArg arg)
 		: System{arg} {
 		static_assert(World::orderAfter<SpriteSystem, PhysicsSystem>());
+		auto& rctx = engine.getGraphicsResourceContext();
 
 		shader = engine.getShaderLoader().get("shaders/sprite");
 
-		{
+		vertexLayout = rctx.vertexLayoutCache.get(1); // TODO: handle ids better (probably enum)
+		if (!vertexLayout) {
 			using namespace Engine::Gfx;
-			const VertexAttributeLayoutDesc layout = {{
+			const VertexAttributeLayoutDesc desc = {{
 				{ .binding = 0, .divisor = 0 },
 				{ .binding = 1, .divisor = 1 },
 			},{
@@ -56,8 +58,7 @@ namespace Game {
 				},
 			}};
 
-			auto& rctx = engine.getGraphicsResourceContext();
-			vertexLayout = rctx.vertexLayoutLoader.get(layout);
+			vertexLayout = rctx.vertexLayoutCache.set(1, rctx.vertexLayoutManager.create(desc));
 		}
 
 		{ // Vertex buffer

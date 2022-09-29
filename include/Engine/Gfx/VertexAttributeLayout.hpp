@@ -49,6 +49,7 @@ namespace Engine::Gfx {
 			constexpr static AllowConstruct_Tag AllowConstruct;
 
 			ENGINE_INLINE explicit VertexAttributeLayout(AllowConstruct_Tag, uint32 vao) noexcept : vao{vao} {}
+			explicit VertexAttributeLayout(const VertexAttributeLayoutDesc& layout);
 			ENGINE_INLINE uint32 get() const noexcept{ return vao; }
 	};
 }

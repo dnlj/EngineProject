@@ -15,7 +15,6 @@ namespace Engine {
 
 	namespace Gfx {
 		class VertexLayoutManager;
-		class VertexLayoutLoader;
 		class BufferManager;
 		class ShaderManager;
 		class ShaderLoader;
@@ -52,7 +51,7 @@ namespace Game {
 
 			Engine::Input::BindManager& getBindManager() noexcept;
 
-			Engine::Gfx::VertexLayoutLoader& getVertexLayoutLoader() noexcept;
+			Engine::Gfx::VertexLayoutManager& getVertexLayoutManager() noexcept;
 
 			Engine::Gfx::BufferManager& getBufferManager() noexcept;
 
