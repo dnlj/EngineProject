@@ -12,7 +12,7 @@ namespace Engine::Gfx {
 	};
 
 	enum class NumberType {
-		#define X(Name, Type, GLEnum, Cols, Rows) Name,
+		#define X(Name, Elem, Type, GLEnum, Cols, Rows) Name,
 		#include <Engine/Gfx/NumberType.xpp>
 		// TODO: half float
 		// TODO: fixed point
@@ -24,7 +24,7 @@ namespace Engine::Gfx {
 
 	constexpr bool isInteger(NumberType type) noexcept {
 		constexpr bool lookup[+NumberType::_count] = {
-			#define X(Name, Type, GLEnum, Cols, Rows) std::integral<Type>,
+			#define X(Name, Elem, Type, GLEnum, Cols, Rows) std::integral<Type>,
 			#include <Engine/Gfx/NumberType.xpp>
 		};
 		return lookup[+type];
@@ -32,7 +32,15 @@ namespace Engine::Gfx {
 	
 	constexpr GLenum toGLEnum(NumberType type) noexcept {
 		constexpr GLenum lookup[+NumberType::_count] = {
-			#define X(Name, Type, GLEnum, Cols, Rows) GLEnum,
+			#define X(Name, Elem, Type, GLEnum, Cols, Rows) GLEnum,
+			#include <Engine/Gfx/NumberType.xpp>
+		};
+		return lookup[+type];
+	}
+
+	constexpr NumberType getElementType(NumberType type) noexcept {
+		constexpr NumberType lookup[+NumberType::_count] = {
+			#define X(Name, Elem, Type, GLEnum, Cols, Rows) NumberType:: Elem,
 			#include <Engine/Gfx/NumberType.xpp>
 		};
 		return lookup[+type];
@@ -43,7 +51,7 @@ namespace Engine::Gfx {
 	 */
 	constexpr NumberTypeShape getShape(NumberType type) noexcept {
 		constexpr NumberTypeShape lookup[+NumberType::_count] = {
-			#define X(Name, Type, GLEnum, Cols, Rows) {Cols, Rows},
+			#define X(Name, Elem, Type, GLEnum, Cols, Rows) {Cols, Rows},
 			#include <Engine/Gfx/NumberType.xpp>
 		};
 		return lookup[+type];
@@ -54,7 +62,7 @@ namespace Engine::Gfx {
 	 */
 	constexpr NumberType fromGLEnum(GLenum type) noexcept {
 		switch (type) {
-			#define X(Name, Type, GLEnum, Cols, Rows) case GLEnum: { return NumberType::Name; }
+			#define X(Name, Elem, Type, GLEnum, Cols, Rows) case GLEnum: { return NumberType::Name; }
 			#include <Engine/Gfx/NumberType.xpp>
 			default: { return NumberType::Unknown; }
 		}
@@ -65,7 +73,7 @@ namespace Engine::Gfx {
 	 */
 	constexpr uint32 getTypeSize(NumberType type) noexcept {
 		constexpr uint32 lookup[+NumberType::_count] = {
-			#define X(Name, Type, GLEnum, Cols, Rows) sizeof(Type),
+			#define X(Name, Elem, Type, GLEnum, Cols, Rows) sizeof(Type),
 			#include <Engine/Gfx/NumberType.xpp>
 		};
 		return lookup[+type];
@@ -73,14 +81,14 @@ namespace Engine::Gfx {
 
 	constexpr std::string_view toString(NumberType type) noexcept {
 		constexpr std::string_view lookup[+NumberType::_count] = {
-			#define X(Name, Type, GLEnum, Cols, Rows) "NumberType::"#Name,
+			#define X(Name, Elem, Type, GLEnum, Cols, Rows) "NumberType::"#Name,
 			#include <Engine/Gfx/NumberType.xpp>
 		};
 		return lookup[+type];
 	}
 
 	template<class T> struct TypeToEnum;
-	#define X(Name, TypeM, GLEnum, Cols, Rows) template<> struct TypeToEnum<TypeM> { constexpr static NumberType value = NumberType::Name; };
+	#define X(Name, Elem, TypeM, GLEnum, Cols, Rows) template<> struct TypeToEnum<TypeM> { constexpr static NumberType value = NumberType::Name; };
 	#include <Engine/Gfx/NumberType.xpp>
 	template<class T> constexpr static inline NumberType TypeToEnum_v = TypeToEnum<T>::value;
 
