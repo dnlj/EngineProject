@@ -20,9 +20,8 @@ namespace Engine::Gfx {
 			bool normalize = {};
 			uint16 offset = {};
 			uint8 binding = {};
-			uint32 divisor = {};
 			bool operator==(const VertexAttributeDesc&) const noexcept = default;
-	}; static_assert(sizeof(VertexAttributeDesc) == 20);
+	}; static_assert(sizeof(VertexAttributeDesc) == 16);
 
 	class VertexAttributeLayoutDesc {
 		public:
