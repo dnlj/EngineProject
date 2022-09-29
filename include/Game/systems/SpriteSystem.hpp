@@ -51,9 +51,9 @@ namespace Game {
 			Engine::Gfx::ShaderRef shader;
 
 			Engine::Gfx::VertexAttributeLayoutRef vertexLayout;
-			GLuint vbo = 0;
-			GLuint ivbo = 0;
-			GLuint ebo = 0;
+			Engine::Gfx::BufferRef vertBuff;
+			Engine::Gfx::BufferRef elemBuff;
+			Engine::Gfx::BufferRef instBuff;
 
 		private:
 			void resizeInstanceData();

@@ -28,7 +28,6 @@ namespace Game {
 
 		shader = engine.getShaderLoader().get("shaders/sprite");
 
-		vertexLayout = rctx.vertexLayoutCache.get(1); // TODO: handle ids better (probably enum)
 		if (!vertexLayout) {
 			using namespace Engine::Gfx;
 			const VertexAttributeLayoutDesc desc = {{
@@ -58,7 +57,7 @@ namespace Game {
 				},
 			}};
 
-			vertexLayout = rctx.vertexLayoutCache.set(1, rctx.vertexLayoutManager.create(desc));
+			vertexLayout = rctx.vertexLayoutManager.create(desc);
 		}
 
 		{ // Vertex buffer
@@ -69,13 +68,13 @@ namespace Game {
 				Vertex{glm::vec2{+0.5f, +0.5f},   glm::vec2{+1.0f, +1.0f}},
 			};
 
-			glCreateBuffers(1, &vbo);
-			glNamedBufferData(vbo, sizeof(data), &data, GL_STATIC_DRAW);
-			glVertexArrayVertexBuffer(vertexLayout->get(), dataBindingIndex, vbo, 0, sizeof(Vertex));
+			vertBuff = rctx.bufferManager.create();
+			vertBuff->alloc(data);
+			glVertexArrayVertexBuffer(vertexLayout->get(), dataBindingIndex, vertBuff->get(), 0, sizeof(Vertex));
 		}
 
 		{ // Instance vertex buffer
-			glCreateBuffers(1, &ivbo);
+			instBuff = rctx.bufferManager.create();
 			instanceData.reserve(128);
 			resizeInstanceData();
 		}
@@ -86,22 +85,19 @@ namespace Game {
 				2, 3, 0,
 			};
 
-			glCreateBuffers(1, &ebo);
-			glNamedBufferData(ebo, sizeof(data), &data, GL_STATIC_DRAW);
-			glVertexArrayElementBuffer(vertexLayout->get(), ebo);
+			elemBuff = rctx.bufferManager.create();
+			elemBuff->alloc(data);
+			glVertexArrayElementBuffer(vertexLayout->get(), elemBuff->get());
 		}
 	}
 
 	SpriteSystem::~SpriteSystem() {
-		glDeleteBuffers(1, &vbo);
-		glDeleteBuffers(1, &ivbo);
-		glDeleteBuffers(1, &ebo);
 	}
 
 	void SpriteSystem::resizeInstanceData() {
 		const auto size = instanceData.capacity();
-		glNamedBufferData(ivbo, size * sizeof(InstanceData), nullptr, GL_DYNAMIC_DRAW);
-		glVertexArrayVertexBuffer(vertexLayout->get(), instBindingIndex, ivbo, 0, sizeof(InstanceData));
+		instBuff->alloc(size * sizeof(InstanceData), Engine::Gfx::StorageFlag::DynamicStorage);
+		glVertexArrayVertexBuffer(vertexLayout->get(), instBindingIndex, instBuff->get(), 0, sizeof(InstanceData));
 	}
 
 	void SpriteSystem::update(float dt) {
@@ -122,7 +118,6 @@ namespace Game {
 		for (const auto& ent : filter) {
 			const glm::vec3 pos = {Engine::Glue::as<glm::vec2>(world.getComponent<Game::PhysicsInterpComponent>(ent).getPosition()), 0.0f};
 			const auto& spriteComp = world.getComponent<Game::SpriteComponent>(ent);
-
 			sprites.push_back({
 				.layer = spriteComp.layer,
 				.texture = spriteComp.texture->tex.get(),
@@ -149,7 +144,7 @@ namespace Game {
 		auto& cam = engine.getCamera();
 		for (const auto& sprite : sprites) {
 			// Set camera uniform
-			glm::mat4 mvp = cam.getProjection() * cam.getView() * sprite.trans;
+			glm::mat4 mvp = cam.getProjection() * cam.getView() * sprite.trans; // TODO: make vp ahead
 			
 			auto& group = spriteGroups.back();
 			if (group.layer == sprite.layer && group.texture == sprite.texture) {
@@ -172,7 +167,7 @@ namespace Game {
 		}
 
 		// Update data
-		glNamedBufferSubData(ivbo, 0, instanceData.size() * sizeof(InstanceData), instanceData.data());
+		instBuff->setData(instanceData);
 		nextGroup = 0;
 		nextLayer = spriteGroups.front().layer;
 	}
