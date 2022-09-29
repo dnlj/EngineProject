@@ -54,6 +54,11 @@ namespace Engine::Gfx {
 				alloc(nullptr, size, flags);
 			}
 
+			template<class T, uint32 N>
+			ENGINE_INLINE void alloc(T (&range)[N], StorageFlag flags = {}) {
+				alloc(std::ranges::cdata(range), std::ranges::size(range) * sizeof(*std::ranges::cdata(range)), flags);
+			}
+
 			ENGINE_INLINE void alloc(std::ranges::contiguous_range auto range, StorageFlag flags = {}) {
 				alloc(std::ranges::cdata(range), std::ranges::size(range) * sizeof(*std::ranges::cdata(range)), flags);
 			}
@@ -66,6 +71,11 @@ namespace Engine::Gfx {
 
 			ENGINE_INLINE void setData(const void* data, uint64 size) {
 				setData(0, data, size);
+			}
+			
+			template<class T, uint32 N>
+			ENGINE_INLINE void setData(T (&range)[N]) {
+				setData(0, std::ranges::cdata(range), std::ranges::size(range) * sizeof(*std::ranges::cdata(range)));
 			}
 
 			ENGINE_INLINE void setData(std::ranges::contiguous_range auto range) {
