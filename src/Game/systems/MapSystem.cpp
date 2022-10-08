@@ -588,10 +588,9 @@ namespace Game {
 
 			{
 				const auto sz = buildVBOData.size() * sizeof(buildVBOData[0]);
-				if (data.vsize < sz) {
+				if (data.vbuff.size() < sz) {
 					const auto cap = sz + (sz >> 1);
 					data.vbuff.alloc(cap, Engine::Gfx::StorageFlag::DynamicStorage);
-					data.vsize = static_cast<uint32>(cap);
 				}
 
 				if (sz) {
@@ -601,10 +600,9 @@ namespace Game {
 
 			{
 				const auto sz = buildEBOData.size() * sizeof(buildEBOData[0]);
-				if (data.esize < sz) {
+				if (data.ebuff.size() < sz) {
 					const auto cap = sz + (sz >> 1);
 					data.ebuff.alloc(cap, Engine::Gfx::StorageFlag::DynamicStorage);
-					data.esize = static_cast<uint32>(cap);
 				}
 
 				if (sz) {

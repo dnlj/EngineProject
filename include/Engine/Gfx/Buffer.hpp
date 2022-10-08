@@ -17,21 +17,23 @@ namespace Engine::Gfx {
 
 	class Buffer {
 		private:
+			uint64 len = 0;
 			GLuint buff = 0;
 
 		public:
 			Buffer() = default;
 			Buffer(Buffer&) = delete;
-			Buffer(Buffer&& other) noexcept {
-				buff = other.buff;
-				other.buff = 0;
-			};
+			Buffer(Buffer&& other) noexcept { *this = std::move(other); };
 
 			Buffer& operator=(Buffer&& rhs) noexcept {
-				Buffer{std::move(*this)};
-				buff = rhs.buff;
-				rhs.buff = 0;
+				swap(*this, rhs);
 				return *this;
+			}
+
+			friend void swap(Buffer& a, Buffer& b) noexcept {
+				using std::swap;
+				swap(a.len, b.len);
+				swap(a.buff, b.buff);
 			}
 			
 			Buffer(const void* data, uint64 size, StorageFlag flags = {}) {
@@ -49,12 +51,14 @@ namespace Engine::Gfx {
 			~Buffer() { glDeleteBuffers(1, &buff); }
 
 			ENGINE_INLINE auto get() const { return buff; }
+			ENGINE_INLINE uint64 size() const noexcept { return len; }
 
 			void alloc(const void* data, uint64 size, StorageFlag flags = {}) {
 				// TODO: is it better to use glBufferData instead of delete/create in cases where we need a resizeable buffer?
 				if (buff) { glDeleteBuffers(1, &buff); }
 				glCreateBuffers(1, &buff);
 				glNamedBufferStorage(buff, size, data, flags);
+				len = size;
 			}
 
 			ENGINE_INLINE void alloc(uint64 size, StorageFlag flags = {}) {

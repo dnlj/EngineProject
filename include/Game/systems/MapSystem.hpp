@@ -15,7 +15,6 @@
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/ecs.hpp>
 #include <Engine/Gfx/Buffer.hpp>
-#include <Engine/Gfx/Mesh2.hpp>
 #include <Engine/Gfx/resources.hpp>
 #include <Engine/Gfx/Texture.hpp>
 #include <Engine/Gfx/VertexAttributeLayout.hpp>
@@ -180,11 +179,8 @@ namespace Game {
 				b2Body* body;
 
 				Engine::Gfx::Buffer vbuff;
-				uint32 vsize = 0;
-
 				Engine::Gfx::Buffer ebuff;
 				uint32 ecount;
-				uint32 esize = 0;
 
 				Engine::Clock::TimePoint lastUsed;
 				Engine::ECS::Tick updated = {};

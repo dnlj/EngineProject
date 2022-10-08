@@ -56,7 +56,7 @@ namespace Game {
 				const auto pos = data.body->GetPosition();
 				const auto mvp = glm::translate(vp, glm::vec3(pos.x, pos.y, 0.0f));
 				glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
-
+				
 				glVertexArrayVertexBuffer(vao, 0, data.vbuff.get(), 0, sizeof(MapSystem::Vertex));
 				glVertexArrayElementBuffer(vao, data.ebuff.get());
 				glDrawElements(GL_TRIANGLES, data.ecount, GL_UNSIGNED_SHORT, 0);
