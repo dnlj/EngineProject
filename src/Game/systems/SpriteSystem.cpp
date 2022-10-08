@@ -40,9 +40,7 @@ namespace Game {
 				}, {
 					.input=1, .size=2, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
 					.offset=offsetof(Vertex, texCoord), .binding=0
-				},
-				// TODO: make a version that knows how to handle a matrix instead of 4 attribs
-				{
+				},{
 					.input=2, .size=4, .type=NumberType::Float32, .target=VertexAttribTarget::Float, .normalize=false,
 					.offset=offsetof(InstanceData, mvp) + 0*4*sizeof(float32), .binding=1
 				},{
@@ -113,8 +111,6 @@ namespace Game {
 		instanceData.clear();
 		spriteGroups.clear();
 
-		// TODO: Look into array textures (GL_TEXTURE_2D_ARRAY)
-
 		for (const auto& ent : filter) {
 			const glm::vec3 pos = {Engine::Glue::as<glm::vec2>(world.getComponent<Game::PhysicsInterpComponent>(ent).getPosition()), 0.0f};
 			const auto& spriteComp = world.getComponent<Game::SpriteComponent>(ent);
@@ -142,10 +138,8 @@ namespace Game {
 		}
 
 		auto& cam = engine.getCamera();
+		const auto vp = cam.getProjection() * cam.getView();
 		for (const auto& sprite : sprites) {
-			// Set camera uniform
-			glm::mat4 mvp = cam.getProjection() * cam.getView() * sprite.trans; // TODO: make vp ahead
-			
 			auto& group = spriteGroups.back();
 			if (group.layer == sprite.layer && group.texture == sprite.texture) {
 				++group.count;
@@ -158,7 +152,7 @@ namespace Game {
 				});
 			}
 
-			instanceData.emplace_back(mvp);
+			instanceData.emplace_back(vp * sprite.trans);
 		}
 
 		if (instanceData.capacity() > oldInstCap) {

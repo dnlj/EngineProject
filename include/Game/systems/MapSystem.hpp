@@ -14,9 +14,11 @@
 // Engine
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/ecs.hpp>
-#include <Engine/Gfx/Mesh.hpp>
+#include <Engine/Gfx/Buffer.hpp>
+#include <Engine/Gfx/Mesh2.hpp>
 #include <Engine/Gfx/resources.hpp>
 #include <Engine/Gfx/Texture.hpp>
+#include <Engine/Gfx/VertexAttributeLayout.hpp>
 #include <Engine/ThreadSafeQueue.hpp>
 
 // Game
@@ -65,6 +67,12 @@ namespace Game {
 
 	class MapSystem : public System {
 		public:
+			struct Vertex {
+				glm::vec2 pos;
+				GLfloat tex;
+			};
+			static_assert(sizeof(Vertex) == 3*sizeof(GLfloat), "Unexpected vertex size.");
+
 			/** The number of chunks in each region */
 			constexpr static glm::ivec2 regionSize = {16, 16};
 
@@ -165,9 +173,19 @@ namespace Game {
 			Engine::Gfx::ShaderRef shader;
 			Engine::Gfx::Texture2DArray texArr;
 
+			Engine::Gfx::VertexAttributeLayoutRef vertexLayout;
 			struct TestData { // TODO: rename
+				//TestData() = default;
+				//TestData(TestData&&) {};
 				b2Body* body;
-				Engine::Gfx::Mesh mesh;
+
+				Engine::Gfx::Buffer vbuff;
+				uint32 vsize = 0;
+
+				Engine::Gfx::Buffer ebuff;
+				uint32 ecount;
+				uint32 esize = 0;
+
 				Engine::Clock::TimePoint lastUsed;
 				Engine::ECS::Tick updated = {};
 				std::vector<byte> rle;
@@ -194,12 +212,6 @@ namespace Game {
 			Engine::FlatHashMap<glm::ivec2, std::unique_ptr<MapRegion>> regions;
 			Engine::ECS::Entity mapEntity;
 
-			struct Vertex {
-				glm::vec2 pos;
-				GLfloat tex;
-			};
-			static_assert(sizeof(Vertex) == 3*sizeof(GLfloat), "Unexpected vertex size.");
-
 			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;
 
@@ -207,8 +219,6 @@ namespace Game {
 
 			// TODO: recycle old bodies?
 			b2Body* createBody();
-
-			void setupMesh(Engine::Gfx::Mesh& mesh) const;
 
 			// TODO: Doc
 			void buildActiveChunkData(TestData& data, glm::ivec2 chunkPos);

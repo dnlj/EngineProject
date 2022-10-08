@@ -22,10 +22,17 @@ namespace Engine::Gfx {
 		public:
 			Buffer() = default;
 			Buffer(Buffer&) = delete;
-			Buffer(Buffer&& other) {
+			Buffer(Buffer&& other) noexcept {
 				buff = other.buff;
 				other.buff = 0;
 			};
+
+			Buffer& operator=(Buffer&& rhs) noexcept {
+				Buffer{std::move(*this)};
+				buff = rhs.buff;
+				rhs.buff = 0;
+				return *this;
+			}
 			
 			Buffer(const void* data, uint64 size, StorageFlag flags = {}) {
 				alloc(data, size, flags);

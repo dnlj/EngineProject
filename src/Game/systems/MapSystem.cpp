@@ -5,6 +5,7 @@
 #include <Engine/Glue/Box2D.hpp>
 #include <Engine/Glue/glm.hpp>
 #include <Engine/Gfx/ShaderManager.hpp>
+#include <Engine/Gfx/ResourceContext.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -124,6 +125,17 @@ namespace Game {
 	MapSystem::MapSystem(SystemArg arg)
 		: System{arg} {
 		static_assert(World::orderAfter<MapSystem, CameraTrackingSystem>());
+		namespace Gfx = Engine::Gfx;
+
+		auto& rctx = engine.getGraphicsResourceContext();
+		vertexLayout = rctx.vertexLayoutManager.create(Gfx::VertexAttributeLayoutDesc{
+			{
+				{.binding = 0, .divisor = 0}
+			},{
+				{0, 2, Gfx::NumberType::Float32, Gfx::VertexAttribTarget::Float, false, offsetof(Game::MapSystem::Vertex, pos), 0},
+				{1, 2, Gfx::NumberType::Float32, Gfx::VertexAttribTarget::Float, false, offsetof(Game::MapSystem::Vertex, tex), 0}
+			}
+		});
 
 		for (auto& t : threads) {
 			t = std::thread{&MapSystem::loadChunkAsyncWorker, this};
@@ -169,19 +181,6 @@ namespace Game {
 		bodyDef.awake = false;
 		bodyDef.fixedRotation = true;
 		return world.getSystem<PhysicsSystem>().createBody(mapEntity, bodyDef);
-	}
-
-	void MapSystem::setupMesh(Engine::Gfx::Mesh& mesh) const {
-		using NumberType = Engine::Gfx::NumberType;
-		constexpr Engine::Gfx::VertexFormat<2> vertexFormat = {
-			sizeof(Vertex),
-			{
-				{.location = 0, .size = 2, .type = NumberType::Float32, .offset = offsetof(Vertex, pos)},
-				{.location = 1, .size = 1, .type = NumberType::Float32, .offset = offsetof(Vertex, tex)},
-			}
-		};
-
-		mesh.setFormat(vertexFormat);
 	}
 
 	void MapSystem::tick() {
@@ -451,9 +450,10 @@ namespace Game {
 				auto it = activeChunks.find(chunkPos);
 				if (it == activeChunks.end()) {
 					if (isBufferChunk) { continue; }
-					it = activeChunks.emplace(chunkPos, TestData{}).first;
+
+					// TODO (QmIupKgJ): we really should probably have a cache of inactive chunks that we can reuse instead of constant destroy/create.
+					it = activeChunks.try_emplace(chunkPos).first;
 					it->second.body = createBody();
-					setupMesh(it->second.mesh);
 
 					const auto chunkIndex = chunkToRegionIndex(chunkPos);
 					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
@@ -586,9 +586,33 @@ namespace Game {
 				buildEBOData.push_back(vertexCount + 0);
 			});
 
-			data.mesh
-				.setVertexData(Engine::Gfx::Primitive::Triangles, buildVBOData)
-				.setElementData(buildEBOData);
+			{
+				const auto sz = buildVBOData.size() * sizeof(buildVBOData[0]);
+				if (data.vsize < sz) {
+					const auto cap = sz + (sz >> 1);
+					data.vbuff.alloc(cap, Engine::Gfx::StorageFlag::DynamicStorage);
+					data.vsize = static_cast<uint32>(cap);
+				}
+
+				if (sz) {
+					data.vbuff.setData(buildVBOData);
+				}
+			}
+
+			{
+				const auto sz = buildEBOData.size() * sizeof(buildEBOData[0]);
+				if (data.esize < sz) {
+					const auto cap = sz + (sz >> 1);
+					data.ebuff.alloc(cap, Engine::Gfx::StorageFlag::DynamicStorage);
+					data.esize = static_cast<uint32>(cap);
+				}
+
+				if (sz) {
+					data.ebuff.setData(buildEBOData);
+				}
+				data.ecount = static_cast<uint32>(sz);
+			}
+
 
 			buildVBOData.clear();
 			buildEBOData.clear();

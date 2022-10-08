@@ -45,7 +45,7 @@ namespace Engine::Gfx {
 	};
 
 	// TODO: doc
-	class Mesh {
+	class Mesh_old {
 		private:
 			constexpr static GLuint bufferBindingIndex = 0;
 
@@ -65,17 +65,17 @@ namespace Engine::Gfx {
 			constexpr static GLsizei bufferCount = static_cast<GLsizei>(std::extent_v<decltype(buffers)>);
 
 		public:
-			Mesh() = default;
-			Mesh(const Mesh&) = delete;
-			ENGINE_INLINE Mesh(Mesh&& other) noexcept { swap(*this, other); };
+			Mesh_old() = default;
+			Mesh_old(const Mesh_old&) = delete;
+			ENGINE_INLINE Mesh_old(Mesh_old&& other) noexcept { swap(*this, other); };
 
-			Mesh& operator=(const Mesh&) = delete;
-			ENGINE_INLINE Mesh& operator=(Mesh&& other) noexcept {
+			Mesh_old& operator=(const Mesh_old&) = delete;
+			ENGINE_INLINE Mesh_old& operator=(Mesh_old&& other) noexcept {
 				swap(*this, other);
 				return *this;
 			}
 
-			ENGINE_INLINE ~Mesh() {
+			ENGINE_INLINE ~Mesh_old() {
 				glDeleteVertexArrays(1, &vao);
 				glDeleteBuffers(bufferCount, buffers);
 			}
@@ -87,7 +87,7 @@ namespace Engine::Gfx {
 			// TODO: I think we could also make stride be infered in setVertedData. (optional param = sizeof(Vertex))
 			// TODO: make setFormat just take a stride and attribute list directly, can use arrayview and dont need to mess with format
 			template<int32 AttributeCount>
-			Mesh& setFormat(const VertexFormat<AttributeCount>& format) {
+			Mesh_old& setFormat(const VertexFormat<AttributeCount>& format) {
 				if (!vao) { glCreateVertexArrays(1, &vao); }
 				if (!vbo) { glCreateBuffers(1, &vbo); }
 
@@ -108,12 +108,12 @@ namespace Engine::Gfx {
 
 			/**
 			 * Sets the vertex buffer data.
-			 * @pre The Mesh must have already had its format set with setFormat.
+			 * @pre The Mesh_old must have already had its format set with setFormat.
 			 * @param type The type primitive stored in @p data.
 			 * @param data The data to use.
 			 * @param size The size of @p data in bytes.
 			 */
-			Mesh& setVertexData(Primitive type, const void* data, int64 size) {
+			Mesh_old& setVertexData(Primitive type, const void* data, int64 size) {
 				ENGINE_DEBUG_ASSERT(size >= 0, "Invalid buffer size");
 				ENGINE_DEBUG_ASSERT(vbo, "Must be called after setFormat");
 				glNamedBufferData(vbo, size, data, GL_STATIC_DRAW);
@@ -126,19 +126,19 @@ namespace Engine::Gfx {
 			 * @see setElementData
 			 */
 			template<class Vertex> // TODO: use ArrayView instead of vector
-			ENGINE_INLINE Mesh& setVertexData(Primitive type, const std::vector<Vertex>& data) {
+			ENGINE_INLINE Mesh_old& setVertexData(Primitive type, const std::vector<Vertex>& data) {
 				return setVertexData(type, data.data(), data.size() * sizeof(Vertex));
 			}
 
 			/**
 			 * Sets the element buffer data.
-			 * @pre The Mesh must have already had its format set with setFormat.
+			 * @pre The Mesh_old must have already had its format set with setFormat.
 			 * @param type The type contained in @p data.
 			 * @param data Pointer to the data.
 			 * @param size The size of @p data in bytes.
 			 * @param count The number of elements of type @p type in @p data.
 			 */
-			Mesh& setElementData(IndexType type, const void* data, int64 size, int32 count) {
+			Mesh_old& setElementData(IndexType type, const void* data, int64 size, int32 count) {
 				ENGINE_DEBUG_ASSERT(size >= 0, "Invalid buffer size");
 				if (!ebo) {
 					ENGINE_DEBUG_ASSERT(vao != 0, "Must be called after setFormat");
@@ -156,7 +156,7 @@ namespace Engine::Gfx {
 			 * @see setElementData
 			 */
 			template<class Index>
-			ENGINE_INLINE Mesh& setElementData(const std::vector<Index>& data) {
+			ENGINE_INLINE Mesh_old& setElementData(const std::vector<Index>& data) {
 				ENGINE_DEBUG_ASSERT(data.size() < std::numeric_limits<int32>::max(), "To many mesh elements");
 				const auto sz = static_cast<int32>(data.size());
 
@@ -182,7 +182,7 @@ namespace Engine::Gfx {
 				}
 			}
 
-			friend void swap(Mesh& a, Mesh& b) noexcept {
+			friend void swap(Mesh_old& a, Mesh_old& b) noexcept {
 				using std::swap;
 				swap(a.vao, b.vao);
 				swap(a.count, b.count);
