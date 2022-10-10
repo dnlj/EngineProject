@@ -20,7 +20,7 @@ namespace {
 namespace Game {
 	void EntityNetworkingSystem::update(float32 dt) {
 		if constexpr (ENGINE_CLIENT) { return; }
-		const auto now = Engine::Clock::now();
+		const auto now = world.getTime();
 		if (now < nextUpdate) { return; }
 
 		// TODO: config for this

@@ -155,7 +155,7 @@ namespace Game {
 			const auto* len = from.read<int>();
 			const char* name = static_cast<const char*>(from.read(*len));
 			servInfo.name.assign(name, *len);
-			servInfo.lastUpdate = Engine::Clock::now();
+			servInfo.lastUpdate = world.getTime();
 		#endif
 	}
 
@@ -241,7 +241,7 @@ namespace Game {
 		if (from.getState() != ConnectionState::Connected) { return; }
 		if (connComp.disconnectAt != Engine::Clock::TimePoint{}) { return; }
 		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", ent);
-		connComp.disconnectAt = Engine::Clock::now() + disconnectTime;
+		connComp.disconnectAt = world.getTime() + disconnectTime;
 		from.setState(ConnectionState::Disconnected);
 	}
 
@@ -502,7 +502,7 @@ namespace Game {
 
 	#if ENGINE_CLIENT
 	void NetworkingSystem::broadcastDiscover() {
-		const auto now = Engine::Clock::now();
+		const auto now = world.getTime();
 		for (auto it = servers.begin(); it != servers.end(); ++it) {
 			if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
 				servers.erase(it);
@@ -548,7 +548,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::update(float32 dt) {
-		now = Engine::Clock::now();
+		now = world.getTime();
 
 		// Recv messages
 		#if ENGINE_SERVER
@@ -730,7 +730,7 @@ namespace Game {
 		if (ent == Engine::ECS::INVALID_ENTITY) { return; }
 
 		auto& connComp = world.getComponent<ConnectionComponent>(ent);
-		connComp.disconnectAt = Engine::Clock::now() + disconnectTime;
+		connComp.disconnectAt = world.getTime() + disconnectTime;
 		connComp.conn->setState(ConnectionState::Disconnecting);
 		ENGINE_INFO("Request disconnect ", addr, " ", ent);
 	}

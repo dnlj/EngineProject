@@ -36,13 +36,15 @@ namespace Engine::Gfx {
 			void fetchParameterDesc();
 	};
 
+	/**
+	 * A specific instance of a material.
+	 * Represents a base material + specific parameters (textures, uniforms, etc).
+	 * TODO (pb6mVS2e): Should we have a version that bakes static parameters into base shader?
+	 */
 	class MaterialInstance {
 		private:
-			MaterialRef base;
-
-		private:
 			using Unit = uint32;
-
+			MaterialRef base;
 			std::unique_ptr<Unit[]> storage;
 			FlatHashMap<uint32, TextureRef> textures; // offset -> texture
 
