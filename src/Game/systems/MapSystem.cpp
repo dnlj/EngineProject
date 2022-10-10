@@ -133,7 +133,7 @@ namespace Game {
 				{.binding = 0, .divisor = 0}
 			},{
 				{0, 2, Gfx::NumberType::Float32, Gfx::VertexAttribTarget::Float, false, offsetof(Game::MapSystem::Vertex, pos), 0},
-				{1, 2, Gfx::NumberType::Float32, Gfx::VertexAttribTarget::Float, false, offsetof(Game::MapSystem::Vertex, tex), 0}
+				{1, 1, Gfx::NumberType::Float32, Gfx::VertexAttribTarget::Float, false, offsetof(Game::MapSystem::Vertex, tex), 0}
 			}
 		});
 
@@ -599,7 +599,8 @@ namespace Game {
 			}
 
 			{
-				const auto sz = buildEBOData.size() * sizeof(buildEBOData[0]);
+				const auto count = buildEBOData.size();
+				const auto sz = count * sizeof(buildEBOData[0]);
 				if (data.ebuff.size() < sz) {
 					const auto cap = sz + (sz >> 1);
 					data.ebuff.alloc(cap, Engine::Gfx::StorageFlag::DynamicStorage);
@@ -608,7 +609,7 @@ namespace Game {
 				if (sz) {
 					data.ebuff.setData(buildEBOData);
 				}
-				data.ecount = static_cast<uint32>(sz);
+				data.ecount = static_cast<uint32>(count);
 			}
 
 
