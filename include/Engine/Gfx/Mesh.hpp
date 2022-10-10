@@ -5,7 +5,7 @@
 
 
 namespace Engine::Gfx {
-	class Mesh2 {
+	class Mesh {
 		public:
 			/** Vertex buffer layout */
 			VertexAttributeLayoutRef layout;

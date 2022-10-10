@@ -1,6 +1,6 @@
 // Engine
 #include <Engine/Gfx/DrawCommand.hpp>
-#include <Engine/Gfx/Mesh2.hpp>
+#include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Gfx/Shader.hpp>
 #include <Engine/Gfx/VertexAttributeLayout.hpp>
 #include <Engine/Gfx/Buffer.hpp>

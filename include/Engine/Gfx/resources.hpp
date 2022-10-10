@@ -16,8 +16,8 @@ namespace Engine::Gfx {
 	using BufferRef = ResourceRef<class Buffer>;
 	using BufferRefWeak = ResourceRefWeak<class Buffer>;
 
-	using MeshRef = ResourceRef<class Mesh2>;
-	using MeshRefWeak = ResourceRefWeak<class Mesh2>;
+	using MeshRef = ResourceRef<class Mesh>;
+	using MeshRefWeak = ResourceRefWeak<class Mesh>;
 
 	using MaterialRef = ResourceRef<class Material>;
 	using MaterialRefWeak = ResourceRefWeak<class Material>;

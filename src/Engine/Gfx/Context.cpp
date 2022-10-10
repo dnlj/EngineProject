@@ -3,7 +3,7 @@
 #include <Engine/Gfx/Material.hpp>
 #include <Engine/Gfx/Buffer.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
-#include <Engine/Gfx/Mesh2.hpp>
+#include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Gfx/VertexAttributeLayout.hpp>
 #include <Engine/Gfx/ActiveTextureCache.hpp>
 

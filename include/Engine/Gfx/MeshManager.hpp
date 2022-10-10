@@ -1,11 +1,11 @@
 #pragma once
 
 // Engine
-#include <Engine/Gfx/Mesh2.hpp>
+#include <Engine/Gfx/Mesh.hpp>
 
 
 namespace Engine::Gfx {
-	class MeshManager : public ResourceManager<Mesh2> {
+	class MeshManager : public ResourceManager<Mesh> {
 		using ResourceManager::ResourceManager;
 	};
 }

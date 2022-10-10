@@ -2,7 +2,7 @@
 #include <Engine/Camera.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/Material.hpp>
-#include <Engine/Gfx/Mesh2.hpp>
+#include <Engine/Gfx/Mesh.hpp>
 #include <Engine/Gfx/ModelLoader.hpp>
 
 

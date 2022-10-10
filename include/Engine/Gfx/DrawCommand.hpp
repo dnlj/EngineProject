@@ -5,7 +5,7 @@
 
 namespace Engine::Gfx {
 	class MaterialInstance;
-	class Mesh2;
+	class Mesh;
 	class Buffer;
 
 	class DrawCommand {
@@ -20,7 +20,7 @@ namespace Engine::Gfx {
 
 		public:
 			MaterialInstance* material;
-			const Mesh2* mesh;
+			const Mesh* mesh;
 			uint32 baseInstance;
 
 			StaticVector<BufferBinding, 4> uboBindings;
