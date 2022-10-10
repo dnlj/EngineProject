@@ -77,6 +77,7 @@ namespace Engine::Gfx {
 			ENGINE_INLINE void setData(uint64 offset, const void* data, uint64 size) {
 				ENGINE_DEBUG_ASSERT(buff != 0, "Attempting to set data of empty buffer.");
 				ENGINE_DEBUG_ASSERT(size > 0, "Attempting to set data with size zero.");
+				ENGINE_DEBUG_ASSERT(size <= len, "Attempting to overfill buffer.");
 				glNamedBufferSubData(buff, offset, size, data);
 			}
 

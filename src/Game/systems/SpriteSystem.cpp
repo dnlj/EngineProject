@@ -74,7 +74,6 @@ namespace Game {
 		{ // Instance vertex buffer
 			instBuff = rctx.bufferManager.create();
 			instanceData.reserve(128);
-			resizeInstanceData();
 		}
 
 		{ // Element buffer
@@ -92,12 +91,6 @@ namespace Game {
 	SpriteSystem::~SpriteSystem() {
 	}
 
-	void SpriteSystem::resizeInstanceData() {
-		const auto size = instanceData.capacity();
-		instBuff->alloc(size * sizeof(InstanceData), Engine::Gfx::StorageFlag::DynamicStorage);
-		glVertexArrayVertexBuffer(vertexLayout->get(), instBindingIndex, instBuff->get(), 0, sizeof(InstanceData));
-	}
-
 	void SpriteSystem::update(float dt) {
 		auto& filter = world.getFilter<
 			Game::SpriteComponent,
@@ -106,7 +99,6 @@ namespace Game {
 		if (filter.empty()) { return; }
 
 		// Cleanup
-		const auto oldInstCap = instanceData.capacity();
 		sprites.clear();
 		instanceData.clear();
 		spriteGroups.clear();
@@ -155,9 +147,10 @@ namespace Game {
 			instanceData.emplace_back(vp * sprite.trans);
 		}
 
-		if (instanceData.capacity() > oldInstCap) {
-			ENGINE_INFO("Resizing sprite instance buffer: ", oldInstCap, " > ", instanceData.capacity(), ")");
-			resizeInstanceData();
+		if (auto sz = instanceData.capacity() * sizeof(instanceData[0]); sz > instBuff->size()) {
+			ENGINE_INFO("Resizing sprite instance buffer: ", instBuff->size(), " > ", sz);
+			instBuff->alloc(sz, Engine::Gfx::StorageFlag::DynamicStorage);
+			glVertexArrayVertexBuffer(vertexLayout->get(), instBindingIndex, instBuff->get(), 0, sizeof(InstanceData));
 		}
 
 		// Update data

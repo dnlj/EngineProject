@@ -116,8 +116,7 @@ namespace Engine::Gfx {
 			glVertexArrayElementBuffer(vao, mesh->ebuff->get());
 
 			const auto matParamsSize = mat->getBase()->getParameterDescription().blockSize;
-			if (matParamsSize > matParamsBufferSize) {
-				matParamsBufferSize = matParamsSize;
+			if (matParamsSize > matParamsBuffer->size()) {
 				matParamsBuffer->alloc(matParamsSize, StorageFlag::DynamicStorage);
 				// TODO: we need rebind the buffer since we realloc
 			}

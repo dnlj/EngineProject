@@ -55,9 +55,6 @@ namespace Game {
 			Engine::Gfx::BufferRef elemBuff;
 			Engine::Gfx::BufferRef instBuff;
 
-		private:
-			void resizeInstanceData();
-
 		public:
 			SpriteSystem(SystemArg arg);
 			~SpriteSystem();

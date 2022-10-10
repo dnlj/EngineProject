@@ -14,7 +14,6 @@ namespace Engine::Gfx {
 			std::vector<DrawCommand> cmds;
 			DrawCommand active = {};
 			BufferRef matParamsBuffer;
-			uint32 matParamsBufferSize = 0;
 
 			constexpr static uint32 maxActiveTextures = 16; // 16 = OpenGL fragment texture limit
 			ActiveTextureCache<maxActiveTextures> texCache;
