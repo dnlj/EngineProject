@@ -4,7 +4,6 @@
 // Engine
 #include <Engine/Camera.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
-#include <Engine/Gfx/Context.hpp>
 #include <Engine/Gfx/MaterialInstanceManager.hpp>
 #include <Engine/Gfx/MaterialManager.hpp>
 #include <Engine/Gfx/MeshManager.hpp>
@@ -63,7 +62,6 @@ namespace Game {
 			Engine::Camera camera;
 			Engine::Input::BindManager bindManager;
 			Engine::Gfx::ResourceContext gfxResCtx;
-			Engine::Gfx::Context gfxContext = {gfxResCtx.bufferManager, gfxResCtx.textureLoader};
 			Engine::UI::Context uiContext = {gfxResCtx.shaderLoader, gfxResCtx.textureLoader, camera};
 	};
 	
@@ -107,7 +105,6 @@ namespace Game {
 	Engine::Gfx::ModelLoader& EngineInstance::getModelLoader() noexcept { return pimpl->gfxResCtx.modelLoader; }
 
 	Engine::Gfx::ResourceContext& EngineInstance::getGraphicsResourceContext() noexcept { return pimpl->gfxResCtx; }
-	Engine::Gfx::Context& EngineInstance::getGraphicsContext() noexcept { return pimpl->gfxContext; }
 	Engine::UI::Context& EngineInstance::getUIContext() noexcept { return pimpl->uiContext; }
 
 	Engine::Camera& EngineInstance::getCamera() noexcept { return pimpl->camera; }
