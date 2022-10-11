@@ -337,7 +337,14 @@ namespace Engine::Win32 {
 		window.close = true;
 		return 0;
 	}
-
+	
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_GETMINMAXINFO>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		auto* minmax = reinterpret_cast<MINMAXINFO*>(lParam);
+		minmax->ptMinTrackSize.x = 256;
+		minmax->ptMinTrackSize.y = 256;
+		return 0;
+	}
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_SETTINGCHANGE>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
 		window.callbacks.settingsChanged();
@@ -958,6 +965,7 @@ namespace Engine::Win32 {
 			HANDLE_MESSAGE(WM_DESTROY);
 			HANDLE_MESSAGE(WM_SIZE);
 			HANDLE_MESSAGE(WM_CLOSE);
+			HANDLE_MESSAGE(WM_GETMINMAXINFO);
 			HANDLE_MESSAGE(WM_SETTINGCHANGE);
 			HANDLE_MESSAGE(WM_INPUT);
 			HANDLE_MESSAGE(WM_CHAR);

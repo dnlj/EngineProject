@@ -707,6 +707,7 @@ namespace Engine::UI {
 
 	void Context::onResize(const int32 w, const int32 h) {
 		if (w == view.x && h == view.y) { return; }
+		if (!(w||h)) { return; } // Minimize
 
 		view = {w, h};
 		root->setSize(view);
