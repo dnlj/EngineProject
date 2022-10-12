@@ -184,7 +184,7 @@ namespace Game {
 			from.setKeyRemote(remote);
 		}
 
-		if (from.getState() == ConnectionState::Unconnected) {
+		if (from.getState() == ConnectionState::Disconnected) {
 			ENGINE_DEBUG_ASSERT(from.getKeyLocal() == 0, "It should not be possible to have a local key in an unconnected state. This is a bug.");
 			from.setState(ConnectionState::Connecting);
 			from.setKeyLocal(genKey());
@@ -264,8 +264,7 @@ namespace Game {
 		if (from.getState() != ConnectionState::Connected) { return; }
 		if (connComp.disconnectAt != Engine::Clock::TimePoint{}) { return; }
 		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", ent);
-		connComp.disconnectAt = world.getTime() + disconnectTime;
-		from.setState(ConnectionState::Disconnected);
+		disconnect(ent, connComp);
 	}
 
 	HandleMessageDef(MessageType::PING)
@@ -474,9 +473,6 @@ namespace Game {
 		world.getSystem<ActionSystem>().recvActions(from, head, ent);
 	}
 
-	HandleMessageDef(MessageType::TEST)
-	}
-
 	HandleMessageDef(MessageType::MAP_CHUNK)
 		world.getSystem<MapSystem>().chunkFromNet(from, head);
 	}
@@ -604,17 +600,9 @@ namespace Game {
 			auto& connComp = world.getComponent<ConnectionComponent>(ent);
 			auto& conn = *connComp.conn;
 
-			//if (info.state == ConnectionState::Connected) {
-			//	conn.msgBegin<MessageType::TEST>();
-			//	conn.msgEnd<MessageType::TEST>();
-			//}
-
 			if (connComp.disconnectAt != Engine::Clock::TimePoint{}) {
-				world.setEnabled(ent, false);
-
-				ENGINE_DEBUG_ASSERT(conn.getState() != ConnectionState::Connected);
 				if (conn.getState() == ConnectionState::Disconnecting) {
-					ENGINE_LOG("Send MessageType::DISCONNECT to ", connComp.conn->address());
+					ENGINE_LOG("Send DISCONNECT to ", connComp.conn->address());
 					if (auto msg = conn.beginMessage<MessageType::DISCONNECT>()) {
 					}
 				}
@@ -671,12 +659,28 @@ namespace Game {
 		return static_cast<int32>(world.getFilter<PlayerFilter>().size());
 	}
 
+	void NetworkingSystem::disconnect(Engine::ECS::Entity ent, ConnectionComponent& connComp) {
+		connComp.conn->setState(ConnectionState::Disconnected);
+		connComp.disconnectAt = world.getTime() + disconnectTime;
+		world.setEnabled(ent, false);
+	}
+	
+	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
+		const auto ent = getEntity(addr);
+		if (ent == Engine::ECS::INVALID_ENTITY) { return; }
+
+		auto& connComp = world.getComponent<ConnectionComponent>(ent);
+		disconnect(ent, connComp);
+		connComp.conn->setState(ConnectionState::Disconnecting);
+		ENGINE_INFO("Request disconnect ", addr, " ", ent);
+	}
+
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		// TODO: the client should only ever connect to one server
 		const auto ent = getOrCreateEntity(addr);
 		auto& conn = world.getComponent<ConnectionComponent>(ent).conn;
 
-		if (conn->getState() != ConnectionState::Unconnected) {
+		if (conn->getState() != ConnectionState::Disconnected) {
 			ENGINE_WARN("Attempting to connect to same server while already connected. Aborting.");
 			return;
 		}
@@ -734,7 +738,7 @@ namespace Game {
 		auto [it, suc] = addressToEntity.emplace(addr, ent);
 		auto& connComp = world.addComponent<ConnectionComponent>(ent);
 		connComp.conn = std::make_unique<Connection>(addr, now);
-		connComp.conn->setState(ConnectionState::Unconnected);
+		connComp.conn->setState(ConnectionState::Disconnected);
 		return ent;
 	}
 	
@@ -753,16 +757,6 @@ namespace Game {
 		} else {
 			return found->second;
 		}
-	}
-	
-	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
-		const auto ent = getEntity(addr);
-		if (ent == Engine::ECS::INVALID_ENTITY) { return; }
-
-		auto& connComp = world.getComponent<ConnectionComponent>(ent);
-		connComp.disconnectAt = world.getTime() + disconnectTime;
-		connComp.conn->setState(ConnectionState::Disconnecting);
-		ENGINE_INFO("Request disconnect ", addr, " ", ent);
 	}
 
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr) {

@@ -8,11 +8,10 @@ namespace Game {
 	struct ConnectionState_ {
 		enum ConnectionState : uint8 {
 			None          = 0,
-			Unconnected   = 1 << 0, // Has not connected
+			Disconnected  = 1 << 0, // Not connected
 			Connecting    = 1 << 1, // Is in the process of connecting
 			Connected     = 1 << 2, // Has fully connected
 			Disconnecting = 1 << 3, // Is in the process of disconnecting
-			Disconnected  = 1 << 4, // Has fully disconnected
 			Any           = 0xFF,
 		};
 	};

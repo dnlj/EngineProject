@@ -79,6 +79,7 @@ namespace Game {
 			Engine::ECS::Entity addConnection(const Engine::Net::IPv4Address& addr);
 			Engine::ECS::Entity getEntity(const Engine::Net::IPv4Address& addr);
 			Engine::ECS::Entity getOrCreateEntity(const Engine::Net::IPv4Address& addr);
+			void disconnect(Engine::ECS::Entity ent, ConnectionComponent& connComp);
 
 			void recvAndDispatchMessages(Engine::Net::UDPSocket& sock);
 			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr);

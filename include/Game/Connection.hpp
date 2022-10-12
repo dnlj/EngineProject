@@ -18,7 +18,6 @@ namespace Game {
 		MessageType::CONNECT_CHALLENGE,
 		MessageType::DISCONNECT,
 
-		MessageType::TEST,
 		MessageType::ACTION // TODO: one of these things is not like the others
 	> {};
 
