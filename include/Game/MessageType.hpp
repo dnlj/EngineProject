@@ -20,7 +20,7 @@ namespace Game {
 
 	struct MessageType_ {
 		enum MessageType : Engine::Net::MessageType {
-			#define X(Name, Side, State) Name,
+			#define X(Name, Side, SState, RState) Name,
 			#include <Game/MessageType.xpp>
 			_count,
 		};
@@ -28,11 +28,12 @@ namespace Game {
 	using MessageType = MessageType_::MessageType;
 }
 
-#define X(Name, Side, State)\
+#define X(Name, Side, SState, RState)\
 template<> struct Engine::Net::MessageTraits<Game::MessageType::Name> {\
-	using ConnectionState = Game::ConnectionState;\
+	using enum Game::ConnectionState;\
 	constexpr static auto side = Side;\
-	constexpr static auto state = State;\
+	constexpr static auto sstate = SState;\
+	constexpr static auto rstate = RState;\
 	constexpr static char name[] = #Name;\
 };
 #include <Game/MessageType.xpp>
@@ -42,7 +43,7 @@ namespace Game {
 	inline std::string_view getMessageName(Engine::Net::MessageType msg) {
 		if (msg < 0 || msg >= MessageType::_count) { return ""; }
 
-		#define X(Name, Side, State) case MessageType::Name: { return Engine::Net::MessageTraits<MessageType::Name>::name; }
+		#define X(Name, Side, SState, RState) case MessageType::Name: { return Engine::Net::MessageTraits<MessageType::Name>::name; }
 		switch(msg) {
 			#include <Game/MessageType.xpp>
 		}

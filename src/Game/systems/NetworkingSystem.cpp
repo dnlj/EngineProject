@@ -125,11 +125,20 @@ namespace {
 #define HandleMessageDef_DebugBreak(...)
 #endif
 
-#define HandleMessageDef(MsgType)\
-	template<> void NetworkingSystem::handleMessageType<MsgType>(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head) {\
-	if constexpr (!(Engine::Net::MessageTraits<MsgType>::side & ENGINE_SIDE)) { ENGINE_WARN("Message received by wrong side. Aborting."); return; }\
-	if (!(Engine::Net::MessageTraits<MsgType>::state & from.getState())) { from.read(from.recvMsgSize()); ENGINE_WARN("Messages received in wrong state. Aborting. ", getMessageName(head.type), "(", (int)head.type, ")"); return; }\
+
+#define HandleMessageDef(MsgType) \
+	template<> \
+	void NetworkingSystem::handleMessageType<MsgType>(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head) { \
+	if constexpr (!(Engine::Net::MessageTraits<MsgType>::side & ENGINE_SIDE)) { \
+		ENGINE_WARN("Message received by wrong side. Aborting."); return; \
+	} \
+	if (!(Engine::Net::MessageTraits<MsgType>::rstate & from.getState())) { \
+		from.discard(); \
+		ENGINE_WARN("Messages received in wrong state. Aborting. ", getMessageName(head.type), "(", (int)head.type, ")"); \
+		return; \
+	} \
 	HandleMessageDef_DebugBreak(#MsgType);
+
 
 namespace Game {
 	HandleMessageDef(MessageType::UNKNOWN)
@@ -167,43 +176,57 @@ namespace Game {
 			return;
 		}
 
-		from.setState(std::max(from.getState(), ConnectionState::Connecting));
-		const auto keySend = *from.read<uint16>();
-		if (!from.getKeySend()) {
-			from.setKeySend(keySend);
+		const auto remote = *from.read<uint16>();
+		if (from.getKeyRemote() && from.getKeyRemote() != remote) {
+			ENGINE_WARN("Got connection request with invalid key from ", from.address(), " (", remote, " != ", from.getKeyRemote(), ")");
+			return from.discard();
+		} else {
+			from.setKeyRemote(remote);
 		}
-		if (!from.getKeyRecv()) {
-			from.setKeyRecv(genKey());
+
+		if (from.getState() == ConnectionState::Unconnected) {
+			ENGINE_DEBUG_ASSERT(from.getKeyLocal() == 0, "It should not be possible to have a local key in an unconnected state. This is a bug.");
+			from.setState(ConnectionState::Connecting);
+			from.setKeyLocal(genKey());
+		} else {
+			ENGINE_DEBUG_ASSERT(from.getKeyLocal() != 0, "It should not be possible to be missing a local key in any non-unconnected state. This is a bug.");
 		}
+
 		if (auto msg = from.beginMessage<MessageType::CONNECT_CHALLENGE>()) {
-			msg.write(from.getKeyRecv());
-			ENGINE_LOG("MessageType::CONNECT_REQUEST ", from.getKeyRecv(), " ", (int)from.getState());
+			msg.write(from.getKeyLocal());
+			ENGINE_LOG("CONNECT_REQUEST from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
 		}
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CHALLENGE)
-		const auto& keySend = *from.read<uint16>();
-		if (!from.getKeySend()) {
-			from.setKeySend(keySend);
+		const auto& remote = *from.read<uint16>();
+		if (from.getKeyRemote()) {
+			ENGINE_WARN("Extraneous CONNECT_CHALLENGE received. Ignoring.");
+			ENGINE_DEBUG_ASSERT(from.getState() == ConnectionState::Connected);
+			return from.discard();
 		}
+
 		if (auto msg = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
-			msg.write(from.getKeySend());
+			msg.write(remote);
+			from.setKeyRemote(remote);
 			from.setState(ConnectionState::Connected);
+			ENGINE_LOG("CONNECT_CHALLENGE from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
+		} else [[unlikely]] {
+			ENGINE_WARN("Unable to send CONNECT_CONFIRM");
 		}
-		ENGINE_LOG("MessageType::CONNECT_CHALLENGE from ", from.address(), " ", keySend);
 	}
 
 	HandleMessageDef(MessageType::CONNECT_CONFIRM)
 		const auto key = *from.read<uint16>();
-		if (key != from.getKeyRecv()) {
-			ENGINE_WARN("CONNECT_CONFIRM: Invalid recv key ", key, " != ", from.getKeyRecv());
-			return;
+		if (key != from.getKeyLocal()) {
+			ENGINE_WARN("CONNECT_CONFIRM: Invalid recv key ", key, " != ", from.getKeyLocal());
+			return from.discard();
 		}
 
+		ENGINE_LOG("CONNECT_CONFIRM from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick());
 		from.setState(ConnectionState::Connected);
 		addPlayer(ent);
 
-		ENGINE_LOG("SERVER MessageType::CONNECT_CONFIRM", " Tick: ", world.getTick());
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
 		if (auto msg = from.beginMessage<MessageType::ECS_INIT>()) {
 			msg.write(ent);
@@ -529,9 +552,9 @@ namespace Game {
 				continue;
 			}
 
-			if (conn->getKeyRecv() != packet.getKey()) {
+			if (conn->getKeyLocal() != packet.getKey()) {
 				if (conn->getState() == ConnectionState::Connected) {
-					ENGINE_WARN("Invalid key for ", conn->address(), " ", packet.getKey(), " != ", conn->getKeyRecv());
+					ENGINE_WARN("Invalid key for ", conn->address(), " ", packet.getKey(), " != ", conn->getKeyLocal());
 					continue;
 				}
 			}
@@ -598,8 +621,8 @@ namespace Game {
 
 				if (connComp.disconnectAt <= now) {
 					conn.send(socket);
-					conn.setKeySend(0);
-					conn.setKeyRecv(0);
+					conn.setKeyLocal(0);
+					conn.setKeyRemote(0);
 					conn.setState(ConnectionState::Disconnected);
 
 					ENGINE_LOG("Disconnected ", ent, " ", connComp.conn->address());
@@ -649,18 +672,25 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
+		// TODO: the client should only ever connect to one server
 		const auto ent = getOrCreateEntity(addr);
 		auto& conn = world.getComponent<ConnectionComponent>(ent).conn;
+
+		if (conn->getState() != ConnectionState::Unconnected) {
+			ENGINE_WARN("Attempting to connect to same server while already connected. Aborting.");
+			return;
+		}
+
 		conn->setState(ConnectionState::Connecting);
 
-		if (!conn->getKeyRecv()) {
-			conn->setKeyRecv(genKey());
+		if (!conn->getKeyLocal()) {
+			conn->setKeyLocal(genKey());
 		}
-		ENGINE_LOG("TRY CONNECT TO: ", addr, " rkey: ", conn->getKeyRecv(), " skey: ",  conn->getKeySend(), " Tick: ", world.getTick());
+		ENGINE_LOG("TRY CONNECT TO: ", addr, " lkey: ", conn->getKeyLocal(), " rkey: ",  conn->getKeyRemote(), " Tick: ", world.getTick());
 
 		if (auto msg = conn->beginMessage<MessageType::CONNECT_REQUEST>()) {
 			msg.write(MESSAGE_PADDING_DATA);
-			msg.write(conn->getKeyRecv());
+			msg.write(conn->getKeyLocal());
 		}
 	}
 
@@ -737,14 +767,16 @@ namespace Game {
 
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr) {
 		auto& from = *connComp.conn;
+
+		// TODO: replace with Game::getMessageName
 		constexpr auto msgToStr = [](const Engine::Net::MessageType& type) -> const char* {
-			#define X(Name, Side, State) if (type == MessageType::Name) { return #Name; }
+			#define X(Name, Side, SState, RState) if (type == MessageType::Name) { return #Name; }
 			#include <Game/MessageType.xpp>
 			return "UNKNOWN";
 		};
 
 		switch(hdr->type) {
-			#define X(Name, Side, State) case MessageType::Name: {\
+			#define X(Name, Side, SState, RState) case MessageType::Name: {\
 				/*ENGINE_LOG("MESSAGE: ", #Name, " ", hdr->seq, " ", hdr->size);/**/\
 				handleMessageType<MessageType::Name>(ent, connComp, from, *hdr); break; };
 			#include <Game/MessageType.xpp>

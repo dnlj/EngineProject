@@ -19,8 +19,8 @@ namespace Engine::Net {
 			using ChannelId = uint8;
 
 			const IPv4Address addr = {};
-			uint16 keySend = 0;
-			uint16 keyRecv = 0;
+			uint16 keyLocal = 0;
+			uint16 keyRemote = 0;
 
 			struct PacketData {
 				Engine::Clock::TimePoint sendTime;
@@ -154,11 +154,11 @@ namespace Engine::Net {
 			ENGINE_INLINE auto getTotalBytesSent() const noexcept { return packetTotalBytesSent; }
 			ENGINE_INLINE auto getTotalBytesRecv() const noexcept { return packetTotalBytesRecv; }
 
-			ENGINE_INLINE void setKeySend(decltype(keySend) keySend) noexcept { this->keySend = keySend; }
-			ENGINE_INLINE auto getKeySend() const noexcept { return keySend; }
+			ENGINE_INLINE void setKeyLocal(decltype(keyLocal) keyLocal) noexcept { this->keyLocal = keyLocal; }
+			ENGINE_INLINE auto getKeyLocal() const noexcept { return keyLocal; }
 
-			ENGINE_INLINE void setKeyRecv(decltype(keyRecv) keyRecv) noexcept { this->keyRecv = keyRecv; }
-			ENGINE_INLINE auto getKeyRecv() const noexcept { return keyRecv; }
+			ENGINE_INLINE void setKeyRemote(decltype(keyRemote) keyRemote) noexcept { this->keyRemote = keyRemote; }
+			ENGINE_INLINE auto getKeyRemote() const noexcept { return keyRemote; }
 
 			constexpr static auto getChannelCount() noexcept { return sizeof...(Cs); }
 
@@ -313,7 +313,11 @@ namespace Engine::Net {
 				return val;
 			}
 
-			void readFlushBits() {
+			ENGINE_INLINE void discard() noexcept {
+				rdat.curr = rdat.last;
+			}
+
+			ENGINE_INLINE void readFlushBits() noexcept {
 				bitStore = 0;
 				bitCount = 0;
 			}
@@ -336,7 +340,7 @@ namespace Engine::Net {
 					if (msgBufferWriter.size() == 0) { break; }
 					++nextSeqNum;
 
-					pkt.setKey(keySend); // TODO: should just be set once after packet is changed to member variable
+					pkt.setKey(keyRemote); // TODO: should just be set once after packet is changed to member variable
 					pkt.setNextAck(nextRecvAck);
 					pkt.setAcks(recvAcks);
 					pkt.setProtocol(protocol); // TODO: should just be set once after packet is changed to member variable
@@ -368,9 +372,9 @@ namespace Engine::Net {
 
 			template<auto M>
 			[[nodiscard]]
-			ENGINE_INLINE decltype(auto) beginMessage() {
+			decltype(auto) beginMessage() {
 				if constexpr (ENGINE_DEBUG) {
-					if (!(state & MessageTraits<M>::state)) {
+					if (!(state & MessageTraits<M>::sstate)) {
 						ENGINE_WARN("Incorrect connection state to begin message of type ",
 							MessageTraits<M>::name, "(", static_cast<size_t>(M), ")"
 						);

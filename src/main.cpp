@@ -947,7 +947,7 @@ int entry(int argc, char* argv[]) {
 
 	// Position the console
 	if (HWND window; window = GetConsoleWindow()) {
-		constexpr int height = 800;
+		constexpr int height = 1440/2;
 		if constexpr (ENGINE_CLIENT) {
 			SetWindowPos(window, HWND_TOP, 0, 0, 1500, height, 0);
 			SetWindowTextW(window, L"Client");
@@ -1048,6 +1048,11 @@ int entry(int argc, char* argv[]) {
 
 #ifdef ENGINE_OS_WINDOWS
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nCmdShow) {
+
+	if (ENGINE_SERVER) {
+		//std::this_thread::sleep_for(std::chrono::milliseconds{2'000});
+	}
+
 	return entry(__argc, __argv);
 }
 #else
