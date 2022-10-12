@@ -680,14 +680,12 @@ namespace Engine::ECS {
 			 */
 			ENGINE_INLINE auto getUpdate() const noexcept { return currUpdate; }
 
-			// TODO: also need to clear rollback history
-			// TODO: should this be setNextTick? might help avoid bugs if we wait till all systems are done before we adjust.
 			// TODO: doc
 			void setNextTick(Tick tick) {
 				// TODO: defer this till next `run`
 				currTick = tick - 1;
 				tickTime = Clock::now();
-				history.clear();
+				history.clear(tick);
 			}
 
 			/**

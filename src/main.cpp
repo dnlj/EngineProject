@@ -7,6 +7,7 @@
 #include <numeric>
 #include <filesystem>
 #include <csignal>
+#include <random>
 
 // Box2D
 #include <box2d/b2_body.h>
@@ -616,6 +617,8 @@ void run(int argc, char* argv[]) {
 	auto& guiContext = engine.getUIContext();
 	guiContext.setNativeWindowHandle(window.getWin32WindowHandle());
 	windowCallbacks.userdata = &engine;
+	//world.setNextTick(std::random_device()());
+	//world.setNextTick(uint32(Engine::Noise::lcg(uint64(rand()))));
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
