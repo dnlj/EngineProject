@@ -252,12 +252,12 @@ namespace Game {
 			return;
 		}
 
-		addPlayer(ent);
-		entToLocal[*remote] = ent;
 		ENGINE_LOG("ECS_INIT - Remote: ", *remote, " Local: ", ent, " Tick: ", world.getTick(), " - ", *tick);
 
 		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
 		world.setNextTick(*tick + 16);
+		entToLocal[*remote] = ent;
+		addPlayer(ent);
 	}
 
 	HandleMessageDef(MessageType::DISCONNECT)
@@ -422,6 +422,7 @@ namespace Game {
 			if (!flags->test(cid)) { return; }
 
 			if (world.hasComponent<C>(local)) {
+				// TODO: isnt this wrong? shouldnt this be dependant on `flags->test`?
 				world.removeComponent<C>(local);
 			} else {
 				world.addComponent<C>(local);
@@ -727,7 +728,7 @@ namespace Game {
 			physComp.type = PhysicsType::Player;
 		}
 
-		world.addComponent<ActionComponent>(ent);
+		world.addComponent<ActionComponent>(ent).init(world.getTick());
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);
 	}

@@ -69,6 +69,10 @@ namespace Game {
 		public:
 			constexpr static int32 maxStates = decltype(states)::capacity();
 
+			// TODO (ecZcAJcs): temp until we fix ecZcAJcs
+			//ActionComponent(Engine::ECS::Tick initTick) : states{initTick} {}
+			void init(Engine::ECS::Tick initTick) { states.clear(initTick); }
+
 			ENGINE_INLINE bool valid() const noexcept { return state != nullptr; }
 
 			// TODO: are these called on server? nullptr check

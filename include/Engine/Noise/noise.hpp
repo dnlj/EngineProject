@@ -8,8 +8,7 @@ namespace Engine::Noise {
 	 * @param seed The seed number to use for the LCG.
 	 * @return A pseudorandom number.
 	 */
-	template<class T>
-	constexpr T lcg(T seed) {
+	constexpr uint64 lcg(uint64 seed) {
 		// TODO: Are these good LCG constants?
 		return seed * 6364136223846793005l + 1442695040888963407l;
 	}

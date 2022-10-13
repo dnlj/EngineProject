@@ -36,8 +36,10 @@ namespace Engine {
 			ENGINE_INLINE const auto& getEntry(S seq) const { return const_cast<SequenceBuffer*>(this)->getEntry(seq); }
 
 		public:
-			constexpr static S capacity() noexcept { return N; }
+			SequenceBuffer() = default;
+			SequenceBuffer(S init) : lowest{init}, next{init} {}
 
+			constexpr static S capacity() noexcept { return N; }
 			ENGINE_INLINE S max() const noexcept { return next - 1; }
 			ENGINE_INLINE S min() const noexcept { return next - capacity(); }
 			ENGINE_INLINE S minValid() const noexcept { return lowest; }
@@ -84,7 +86,7 @@ namespace Engine {
 						clear(seq);
 						getEntry(seq) = true;
 					} else { // 4. Partial overlap with existing range
-						// Unset out of bounds entries
+						// Unset out of bounds entries 
 						while (seqLess(lowest, mmin)) { getEntry(lowest) = false; ++lowest; }
 						
 						// Advance lowest to next valid
