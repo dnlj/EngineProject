@@ -358,10 +358,14 @@ namespace Game {
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
-					auto& comp = world.addComponent<C>(local);
-					comp.netFromInit(engine, world, local, from);
+					std::apply(
+						[&]<class... Args>(Args&&... args){
+							world.addComponent<C>(local, std::forward<Args>(args)...);
+						},
+						NetworkTraits<C>::readInit(from, engine, world, local)
+					);
 				}
-			} else {
+			} else if constexpr (ENGINE_DEBUG) {
 				ENGINE_WARN("Attemping to network non-network component");
 			}
 		});
@@ -399,9 +403,9 @@ namespace Game {
 					auto& state = world.getComponentState<C>(local, *tick);
 					state.netFrom(from);
 				} else {
-					world.getComponent<C>(local).netFrom(from);
+					NetworkTraits<C>::read(world.getComponent<C>(local), from);
 				}
-			} else {
+			} else if constexpr (ENGINE_DEBUG) {
 				ENGINE_WARN("Attemping to network non-network component");
 			}
 		});

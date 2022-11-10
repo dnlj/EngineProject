@@ -8,16 +8,16 @@ namespace Game {
 		this->body = body;
 	}
 
-	void PhysicsBodyComponent::netTo(Engine::Net::BufferWriter& buff) const {
-		buff.write(getTransform());
-		buff.write(getVelocity());
+	void NetworkTraits<PhysicsBodyComponent>::write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff) {
+		buff.write(obj.getTransform());
+		buff.write(obj.getVelocity());
 	}
 
-	void PhysicsBodyComponent::netToInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
-		buff.write(type);
-		buff.write(body->GetType());
+	void NetworkTraits<PhysicsBodyComponent>::writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+		buff.write(obj.type);
+		buff.write(obj.getBody().GetType());
 
-		if (const auto* fix = body->GetFixtureList()) {
+		if (const auto* fix = obj.getBody().GetFixtureList()) {
 			const auto ftype = fix->GetType();
 			buff.write(ftype);
 			buff.write(fix->GetFilterData().maskBits);
@@ -56,55 +56,58 @@ namespace Game {
 			ENGINE_WARN("Attempting to network physics object without any fixtures.");
 		}
 
-		netTo(buff);
+		NetworkTraits::write(obj, buff);
 	}
 
-	void PhysicsBodyComponent::netFrom(Connection& conn) {
+	void NetworkTraits<PhysicsBodyComponent>::read(PhysicsBodyComponent& obj, Connection& conn) {
 		const auto trans = *conn.read<b2Transform>();
 		const auto vel = *conn.read<b2Vec2>();
-		setTransform(trans.p, trans.q.GetAngle());
-		rollbackOverride = true;
+		obj.setTransform(trans.p, trans.q.GetAngle());
+		obj.rollbackOverride = true;
 	}
 
-	void PhysicsBodyComponent::netFromInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
+	std::tuple<PhysicsBodyComponent> NetworkTraits<PhysicsBodyComponent>::readInit(Connection& conn, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+		PhysicsBodyComponent result;
+
 		const auto* ptype = conn.read<PhysicsType>();
 		if (!ptype) {
 			ENGINE_WARN("Unable to read physics type from network.");
-			return;
+			return result;
 		}
-		type = *ptype;
+		result.type = *ptype;
 
 		const auto* btype = conn.read<b2BodyType>();
 		if (!btype) {
 			ENGINE_WARN("Unable to read b2 physics type from network.");
-			return;
+			return result;
 		}
 
 		const auto* ftype = conn.read<b2Shape::Type>();
 		if (!ftype) {
 			ENGINE_WARN("Unable to read physics fixture type from network.");
-			return;
+			return result;
 		}
 
 		const auto* mask = conn.read<uint16>();
 		if (!mask) {
 			ENGINE_WARN("Unable to read physics filter mask from network");
-			return;
+			return result;
 		}
 
 		auto& physSys = world.getSystem<PhysicsSystem>();
+		b2Body* body = nullptr;
 		{
 			b2BodyDef bodyDef;
 			bodyDef.fixedRotation = true;
 			bodyDef.linearDamping = 10.0f; // TODO: value?
 			bodyDef.type = *btype;
 			bodyDef.position = {0, 0}; // TODO: read correct position from network
-
-			setBody(physSys.createBody(ent, bodyDef));
+			body = physSys.createBody(ent, bodyDef);
+			result.setBody(body);
 		}
 
 		b2FixtureDef fixDef;
-		fixDef.filter.groupIndex = -+type;
+		fixDef.filter.groupIndex = -+result.type;
 		fixDef.filter.maskBits = *mask;
 
 		switch (*ftype) {
@@ -112,7 +115,7 @@ namespace Game {
 				const auto* radius = conn.read<float32>();
 				if (!radius) {
 					ENGINE_WARN("Unable to read physics fixture radius from network.");
-					return;
+					return result;
 				}
 
 				b2CircleShape shape;
@@ -127,7 +130,7 @@ namespace Game {
 				const auto* count = conn.read<uint8>();
 				if (!count) {
 					ENGINE_WARN("Unable to read physics fixture count from network.");
-					return;
+					return result;
 				}
 
 				if (*count != 4) {
@@ -140,7 +143,7 @@ namespace Game {
 					const auto* v = conn.read<b2Vec2>();;
 					if (!v) {
 						ENGINE_WARN("Unable to read vertex for physics shape from network.");
-						return;
+						return result;
 					}
 					verts[i] = *v;
 				}
@@ -158,6 +161,7 @@ namespace Game {
 			}
 		}
 
-		netFrom(conn);
+		NetworkTraits::read(result, conn);
+		return std::make_tuple(result);
 	}
 }

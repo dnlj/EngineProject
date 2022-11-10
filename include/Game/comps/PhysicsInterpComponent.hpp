@@ -3,17 +3,12 @@
 // Box2D
 #include <box2d/b2_body.h>
 
-// Engine
-#include <Engine/Net/Connection.hpp>
-#include <Engine/Net/Replication.hpp>
-
 // Game
-#include <Game/Connection.hpp>
+#include <Game/NetworkTraits.hpp>
 
 
 namespace Game {
 	class PhysicsInterpComponent {
-		//private:
 		public:
 			b2Transform trans = {};
 
@@ -30,17 +25,28 @@ namespace Game {
 		public:
 			bool onlyUserVerified = false;
 			const auto& getPosition() const { return trans.p; }
-			constexpr static Engine::Net::Replication netRepl() { return Engine::Net::Replication::ONCE; };
+	};
 
-			ENGINE_INLINE void netTo(Engine::Net::BufferWriter& buff) const {};
-			ENGINE_INLINE void netToInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const {
-				//buff.write(onlyUserVerified);
-			};
+	template<>
+	class NetworkTraits<PhysicsInterpComponent> {
+		public:
+			static Engine::Net::Replication getReplType(const PhysicsInterpComponent& obj) {
+				return Engine::Net::Replication::ONCE;
+			}
 
-			ENGINE_INLINE void netFrom(Connection& conn) {};
-			ENGINE_INLINE void netFromInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn) {
-				//onlyUserVerified = conn.read<bool>();
-				onlyUserVerified = true;
-			};
+			static void writeInit(const PhysicsInterpComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+			}
+
+			static void write(const PhysicsInterpComponent& obj, Engine::Net::BufferWriter& buff) {
+			}
+
+			static std::tuple<PhysicsInterpComponent> readInit(Connection& conn, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+				PhysicsInterpComponent result;
+				result.onlyUserVerified = true;
+				return result;
+			}
+
+			static void read(PhysicsInterpComponent& obj, Connection& conn) {
+			}
 	};
 }

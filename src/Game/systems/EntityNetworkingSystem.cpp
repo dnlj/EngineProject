@@ -58,12 +58,12 @@ namespace Game {
 	template<class C>
 	bool EntityNetworkingSystem::networkComponent(const Engine::ECS::Entity ent, Connection& conn) const {
 		auto& comp = world.getComponent<C>(ent);
-		if (comp.netRepl() == Engine::Net::Replication::NONE) { return true; }
+		if (NetworkTraits<C>::getReplType(comp) == Engine::Net::Replication::NONE) { return true; }
 
 		if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ADD>()) {
 			msg.write(ent);
 			msg.write(world.getComponentId<C>());
-			comp.netToInit(engine, world, ent, msg.getBufferWriter()); // TODO: how to handle with messages? just byte writer?
+			NetworkTraits<C>::writeInit(comp, msg.getBufferWriter(), engine, world, ent);
 			return true;
 		}
 
@@ -115,7 +115,7 @@ namespace Game {
 					if (!world.hasComponent<C>(ent)) { return; }
 					const auto& comp = world.getComponent<C>(ent);
 
-					const auto repl = comp.netRepl();
+					const auto repl = NetworkTraits<C>::getReplType(comp);
 					if (repl == Engine::Net::Replication::NONE) { return; }
 
 					const int32 diff = data.comps.test(cid) - world.getComponentsBitset(ent).test(cid);
@@ -135,8 +135,8 @@ namespace Game {
 							if (Engine::ECS::IsSnapshotRelevant<C>::value) {
 								msg.write(world.getTick());
 							}
-									
-							comp.netTo(msg.getBufferWriter());
+
+							NetworkTraits<C>::write(comp, msg.getBufferWriter());
 						}
 					} else if (repl == Engine::Net::Replication::UPDATE) {
 						ENGINE_DEBUG_ASSERT("TODO: Update replication is not yet implemented");

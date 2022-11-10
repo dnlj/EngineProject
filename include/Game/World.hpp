@@ -75,26 +75,4 @@ namespace Game {
 	};
 
 	using ComponentsSet = World::ComponentsSetType;
-
-
-
-	// TODO: move this somewhere?
-	template<class T>
-	concept IsNetworkedComponent_internal = requires (T t) {
-		Engine::Net::Replication{t.netRepl()};
-	};
-
-	template<class T>
-	constexpr bool checkIsNetworkedComponent() {
-		if constexpr (World::IsFlagComponent<T>::value) {
-			return false;
-		} else {
-			static_assert(World::IsNonFlagComponent<T>::value, "Attempting to check if an invalid component should be networked.");
-			static_assert(Engine::Meta::IsComplete<T>::value, "Attempting to check if an incomplete component should be networked.");
-			return IsNetworkedComponent_internal<T>;
-		}
-	}
-
-	template<class T>
-	concept IsNetworkedComponent = checkIsNetworkedComponent<T>();
 }

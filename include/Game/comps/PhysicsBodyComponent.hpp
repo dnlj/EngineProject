@@ -3,14 +3,10 @@
 // Box2D
 #include <Box2D/Box2D.h>
 
-// Engine
-#include <Engine/Net/Connection.hpp>
-#include <Engine/Net/Replication.hpp>
-
 // Game
 #include <Game/Common.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
-#include <Game/Connection.hpp>
+#include <Game/NetworkTraits.hpp>
 
 
 namespace Game {
@@ -22,14 +18,8 @@ namespace Game {
 	// TODO: rename - to just phys comp
 	class PhysicsBodyComponent {
 		private:
-			friend class PhysicsSystem;
-			friend class NetworkingSystem;
-
 			// Hello! Did you modify/add/remove a member variable of this class? Make sure to update the move/copy/assignment functions.
 			b2Body* body = nullptr;
-			// TODO: rm - int* count = nullptr; // TODO: is this actually used? since we dont do rollback for this?
-
-			//PhysicsShape shape;
 
 		public:
 			PhysicsType type = {}; // TODO: why is this public?
@@ -106,17 +96,19 @@ namespace Game {
 					fix = fix->GetNext();
 				}
 			}
+	};
 
-			Engine::Net::Replication netRepl() const {
-				return (body->GetType() == b2_staticBody) ? Engine::Net::Replication::ONCE : Engine::Net::Replication::ALWAYS;
+	template<>
+	class NetworkTraits<PhysicsBodyComponent> {
+		public:
+			static Engine::Net::Replication getReplType(const PhysicsBodyComponent& obj) {
+				return (obj.getBody().GetType() == b2_staticBody) ? Engine::Net::Replication::ONCE : Engine::Net::Replication::ALWAYS;
 			}
 
-			void netTo(Engine::Net::BufferWriter& buff) const;
+			static void writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
+			static void write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff);
 
-			void netToInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Engine::Net::BufferWriter& buff) const;
-
-			void netFrom(Connection& conn);
-
-			void netFromInit(EngineInstance& engine, World& world, Engine::ECS::Entity ent, Connection& conn);
+			static std::tuple<PhysicsBodyComponent> readInit(Connection& conn, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
+			static void read(PhysicsBodyComponent& obj, Connection& conn);
 	};
 }
