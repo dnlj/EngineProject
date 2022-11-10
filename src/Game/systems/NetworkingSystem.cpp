@@ -294,23 +294,6 @@ namespace Game {
 			}
 		}
 	}
-	
-	HandleMessageDef(MessageType::ECS_ENT_CREATE)
-		auto* remote = from.read<Engine::ECS::Entity>();
-		if (!remote) { return; }
-
-		auto& local = entToLocal[*remote];
-		if (local == Engine::ECS::INVALID_ENTITY) {
-			local = world.createEntity();
-		}
-
-		world.addComponent<NetworkedFlag>(local);
-		ENGINE_LOG("Networked: ", local, world.hasComponent<NetworkedFlag>(local));
-
-		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", *remote, " Local: ", local, " Tick: ", world.getTick());
-
-		// TODO: components init
-	}
 
 	HandleMessageDef(MessageType::CONFIG_NETWORK)
 		const auto* rate = from.read<float32>();
@@ -334,6 +317,23 @@ namespace Game {
 
 		ENGINE_LOG("Network send rate updated: ", r2);
 		from.setPacketSendRate(std::max(minSendRate, std::min(r2, maxSendRate)));
+	}
+
+	HandleMessageDef(MessageType::ECS_ENT_CREATE)
+		auto* remote = from.read<Engine::ECS::Entity>();
+		if (!remote) { return; }
+
+		auto& local = entToLocal[*remote];
+		if (local == Engine::ECS::INVALID_ENTITY) {
+			local = world.createEntity();
+		}
+
+		world.addComponent<NetworkedFlag>(local);
+		ENGINE_LOG("Networked: ", local, world.hasComponent<NetworkedFlag>(local));
+
+		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", *remote, " Local: ", local, " Tick: ", world.getTick());
+
+		// TODO: components init
 	}
 
 	HandleMessageDef(MessageType::ECS_ENT_DESTROY) 

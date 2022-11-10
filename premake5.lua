@@ -144,7 +144,7 @@ workspace(PROJECT_NAME .."Workspace")
 
 	filter "action:vs*"
 		buildoptions{
-			"/wd4996", -- Disable some warnings about things Visual Studio has taken apon itself to deem "deprecated"
+			"/wd4996", -- Disable some warnings about things Visual Studio has taken upon itself to deem deprecated
 			"/wd4103", -- Work around for MSVC bug. TODO: remove when fixed - https://developercommunity.visualstudio.com/t/Warning-C4103-in-Visual-Studio-166-Upda/1057589
 			--"/w14061", -- Not enabled because of enum count cases. Enable: missing switch case for enum
 			--"/w14062", -- Not enabled because of enum count cases. Enable: missing switch case for enum, and no default

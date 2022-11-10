@@ -61,7 +61,7 @@ namespace Game {
 		private:
 			friend class ActionSystem;
 			Engine::SequenceBuffer<Engine::ECS::Tick, ActionState, tickrate> states;
-			ActionState* state;
+			ActionState* state = nullptr;
 
 			// TODo: rename. use tickTrend
 			public: float32 estBufferSize = 0.0f;
@@ -69,9 +69,10 @@ namespace Game {
 		public:
 			constexpr static int32 maxStates = decltype(states)::capacity();
 
-			// TODO (ecZcAJcs): temp until we fix ecZcAJcs
-			//ActionComponent(Engine::ECS::Tick initTick) : states{initTick} {}
-			void init(Engine::ECS::Tick initTick) { states.clear(initTick); }
+			ActionComponent() = default;
+
+			// TODO (4ThFTYLX, ecZcAJcs): merge with constructor once ecs network rework complete
+			void init(Engine::ECS::Tick initTick) { states.clear(initTick);  }
 
 			ENGINE_INLINE bool valid() const noexcept { return state != nullptr; }
 

@@ -23,6 +23,7 @@ namespace Game {
 				Engine::ECS::ComponentBitset comps;
 			};
 
+			// TODO: hashmap would probably be better suited here.
 			Engine::SparseSet<Engine::ECS::Entity, NeighborData> neighbors;
 	};
 }
