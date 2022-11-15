@@ -50,7 +50,15 @@
 /**
  * Attempts to force inline all function calls in a block or statement.
  */
-#define ENGINE_INLINE_CALLS [[msvc::forceinline_calls]] // TODO: cross platform: [[gnu::flatten]]
+#define ENGINE_INLINE_CALLS [[msvc::forceinline_calls]]
+
+/**
+ * Attempts to flatten all calls in a block or statement.
+ * https://twitter.com/molecularmusing/status/1578657585334714368
+ * https://twitter.com/terrym4h/status/1579311539781505026
+ * https://web.archive.org/web/20221111110723/https://twitter.com/molecularmusing/status/1578657585334714368
+ */
+#define ENGINE_FLATTEN [[msvc::flatten]] // TODO: cross platform: [[gnu::flatten]]
 
 #define ENGINE_BUILD_BIN_OP(T, O) \
 	ENGINE_INLINE constexpr decltype(auto) operator O(const T& a, const T& b) noexcept { \
