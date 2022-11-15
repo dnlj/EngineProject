@@ -23,42 +23,11 @@ namespace Game {
 
 		public:
 			PhysicsType type = {}; // TODO: why is this public?
-
 			bool snap = false; // TODO: this should probably be on the interp component?
 			bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
 
-			struct SnapshotData {
-				b2Transform trans = {};
-				b2Vec2 vel = {};
-				float32 angVel = {};
-				bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
-
-				void netFrom(Connection& conn) { // TODO: not sure how to handle this and keep in sync with phys comp. There is probably a better solution
-					trans = *conn.read<b2Transform>();
-					vel = *conn.read<b2Vec2>();
-					rollbackOverride = true;
-				}
-			};
-
-			operator SnapshotData() const noexcept {
-				return {
-					.trans = body->GetTransform(),
-					.vel = body->GetLinearVelocity(),
-					.angVel = body->GetAngularVelocity(),
-					.rollbackOverride = rollbackOverride,
-				};
-			}
-
 		public:
 			PhysicsBodyComponent() = default;
-			PhysicsBodyComponent& operator=(const SnapshotData& other) noexcept {
-				setTransform(other.trans.p, other.trans.q.GetAngle());
-				setVelocity(other.vel);
-				setAngularVelocity(other.angVel);
-				rollbackOverride = other.rollbackOverride;
-				return *this;
-			}
-
 			void setBody(b2Body* body);
 
 			// TODO: why does one return pointer and the other ref. Make both ref or pointer.
@@ -97,7 +66,41 @@ namespace Game {
 				}
 			}
 	};
+}
 
+namespace Engine::ECS {
+	template<>
+	class SnapshotTraits<Game::PhysicsBodyComponent> {
+		public:
+			struct Type {
+				b2Transform trans = {};
+				b2Vec2 vel = {};
+				float32 angVel = {};
+				bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
+			};
+
+			using Container = SparseSet<Entity, Type>;
+
+			// TODO: should we do tuple for these?
+			static std::tuple<Type> toSnapshot(const Game::PhysicsBodyComponent& obj) noexcept {
+				return Type{
+					.trans = obj.getBody().GetTransform(),
+					.vel = obj.getBody().GetLinearVelocity(),
+					.angVel = obj.getBody().GetAngularVelocity(),
+					.rollbackOverride = obj.rollbackOverride,
+				};
+			}
+
+			static void fromSnapshot(Game::PhysicsBodyComponent& obj, const Type& snap) noexcept {
+				obj.setTransform(snap.trans.p, snap.trans.q.GetAngle());
+				obj.setVelocity(snap.vel);
+				obj.setAngularVelocity(snap.angVel);
+				obj.rollbackOverride = snap.rollbackOverride;
+			}
+	};
+}
+
+namespace Game {
 	template<>
 	class NetworkTraits<PhysicsBodyComponent> {
 		public:
@@ -110,5 +113,11 @@ namespace Game {
 
 			static std::tuple<PhysicsBodyComponent> readInit(Connection& conn, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
 			static void read(PhysicsBodyComponent& obj, Connection& conn);
+
+			static void read(Engine::ECS::SnapshotTraits<PhysicsBodyComponent>::Type& obj, Connection& conn) {
+				obj.trans = *conn.read<b2Transform>();
+				obj.vel = *conn.read<b2Vec2>();
+				obj.rollbackOverride = true;
+			}
 	};
 }

@@ -8,11 +8,12 @@
 // Game
 #include <Game/Connection.hpp>
 
+
 namespace Game {
 	template<class T>
 	class NetworkTraits {
 		private:
-			constexpr inline static void _t_NetworkTraits_isSpecialized();
+			using _t_NetworkTraits_isSpecialized = void;
 
 		public:
 			static Engine::Net::Replication getReplType(const T& obj) {

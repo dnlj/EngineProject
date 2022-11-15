@@ -58,7 +58,8 @@
  * https://twitter.com/terrym4h/status/1579311539781505026
  * https://web.archive.org/web/20221111110723/https://twitter.com/molecularmusing/status/1578657585334714368
  */
-#define ENGINE_FLATTEN [[msvc::flatten]] // TODO: cross platform: [[gnu::flatten]]
+// TODO: once msvc upgrade: #define ENGINE_FLATTEN [[msvc::flatten]] // TODO: cross platform: [[gnu::flatten]]
+#define ENGINE_FLATTEN ENGINE_INLINE_CALLS // Temp until msvc upgrade
 
 #define ENGINE_BUILD_BIN_OP(T, O) \
 	ENGINE_INLINE constexpr decltype(auto) operator O(const T& a, const T& b) noexcept { \

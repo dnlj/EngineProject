@@ -128,6 +128,7 @@ namespace Engine {
 			}
 
 			// We call this add because it is subtly different then the usage patterns of insert/emplace (see: std::unordered_map)
+			// TODO (NEtwNxsp): I assume the above is referencing that unordered_map takes a pair? Probably rename to emplace anyways (std now has try_emplace with this same interface)
 			template<class... Args>
 			auto& add(const Key& key, Args&&... args) {
 				const auto i = hash(key);

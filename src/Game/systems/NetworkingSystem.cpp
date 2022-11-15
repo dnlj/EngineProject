@@ -358,12 +358,9 @@ namespace Game {
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
-					std::apply(
-						[&]<class... Args>(Args&&... args){
-							world.addComponent<C>(local, std::forward<Args>(args)...);
-						},
-						NetworkTraits<C>::readInit(from, engine, world, local)
-					);
+					ENGINE_FLATTEN std::apply([&]<class... Args>(Args&&... args) ENGINE_INLINE {
+						world.addComponent<C>(local, std::forward<Args>(args)...);
+					}, NetworkTraits<C>::readInit(from, engine, world, local));
 				}
 			} else if constexpr (ENGINE_DEBUG) {
 				ENGINE_WARN("Attemping to network non-network component");
@@ -393,15 +390,14 @@ namespace Game {
 		world.callWithComponent(*cid, [&]<class C>(){
 			if constexpr (IsNetworkedComponent<C>) {
 				// TODO: this is a somewhat strange way to handle this
-				if constexpr (Engine::ECS::IsSnapshotRelevant<C>::value) {
+				if constexpr (Engine::ECS::IsSnapshotRelevant<C>) {
 					const auto* tick = from.read<Engine::ECS::Tick>();
 					if (!tick) {
 						ENGINE_WARN("No tick specified for snapshot component in ECS_COMP_ALWAYS");
 						return;
 					}
 
-					auto& state = world.getComponentState<C>(local, *tick);
-					state.netFrom(from);
+					NetworkTraits<C>::read(world.getComponentState<C>(local, *tick), from);
 				} else {
 					NetworkTraits<C>::read(world.getComponent<C>(local), from);
 				}

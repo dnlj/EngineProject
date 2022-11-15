@@ -156,7 +156,7 @@ namespace Game {
 				if (world.hasComponent(ent, tick)) {
 					const auto& physCompState2 = world.getComponentState<PhysicsBodyComponent>(ent, tick);
 					if (physCompState2.rollbackOverride) {
-						physComp = physCompState2;
+						Engine::ECS::SnapshotTraits<PhysicsBodyComponent>::fromSnapshot(physComp, physCompState2);
 					}
 				}
 			}

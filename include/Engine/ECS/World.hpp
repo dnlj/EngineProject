@@ -132,20 +132,6 @@ namespace Engine::ECS {
 
 	template<class... Cs>
 	struct IsEntityFilterList<EntityFilterList<Cs...>> : std::true_type {};
-	
-	// TODO: move
-	template<class T, class = void>
-	struct IsSnapshotRelevant : std::false_type {};
-
-	template<class T>
-	struct IsSnapshotRelevant<T, std::void_t<typename T::SnapshotData>> : std::true_type {};
-
-	// TODO: move
-	template<class T, class = void>
-	struct ComponentContainerForSnapshot { using Type = bool; };
-
-	template<class T>
-	struct ComponentContainerForSnapshot<T, std::enable_if_t<IsSnapshotRelevant<T>::value>> { using Type = SparseSet<Entity, typename T::SnapshotData>; };
 
 	// TODO: rm - work around for requires clauses not working in `if constexpr` on msvc
 	template<class Sys, class Comp>
@@ -157,6 +143,30 @@ namespace Engine::ECS {
 	template<class Sys, class Comp>
 	concept HasComponentRemovedCallbackFor = requires (Sys sys, Engine::ECS::Entity ent, Comp comp) {
 		sys.onComponentRemoved(ent, comp);
+	};
+
+	template<class T>
+	class SnapshotTraits {
+		private:
+			using _t_SnapshotTraits_isSpecialized = void;
+
+		public:
+			using Type = struct Null{};
+			using Container = SparseSet<Entity, Type>;
+
+			static std::tuple<> toSnapshot(const T& obj) {
+				static_assert(!sizeof(T), "SnapshotTraits::toSnapshot must be implemented for type T.");
+				return std::make_tuple();
+			}
+
+			static void fromSnapshot(T& obj, const Type& snap) {
+				static_assert(!sizeof(T), "SnapshotTraits::fromSnapshot must be implemented for type T.");
+			}
+	};
+
+	template<class T>
+	concept IsSnapshotRelevant = !requires {
+		SnapshotTraits<T>::_t_SnapshotTraits_isSpecialized;
 	};
 }
 
@@ -285,10 +295,9 @@ namespace Engine::ECS {
 
 					template<class C>
 					ENGINE_INLINE auto& getComponentContainer() {
-						static_assert(IsSnapshotRelevant<C>::value,
+						static_assert(IsSnapshotRelevant<C>,
 							"Attempting to get component container for non-snapshot relevant component."
 						);
-						ENGINE_DEBUG_ASSERT(IsSnapshotRelevant<C>::value);
 						ENGINE_DEBUG_ASSERT(getComponentContainer_Unsafe<C>() != nullptr);
 						return *getComponentContainer_Unsafe<C>();
 					}
@@ -299,7 +308,7 @@ namespace Engine::ECS {
 				private:
 					template<class C>
 					ENGINE_INLINE auto* getComponentContainer_Unsafe() {
-						return reinterpret_cast<ComponentContainerForSnapshot<C>::Type*>(compContainers[getComponentId<C>()]);
+						return reinterpret_cast<SnapshotTraits<C>::Container*>(compContainers[getComponentId<C>()]);
 					}
 
 			};
@@ -581,7 +590,7 @@ namespace Engine::ECS {
 			 */
 			template<class C>
 			ENGINE_INLINE auto& getComponentState(Entity ent, Tick tick) {
-				static_assert(IsSnapshotRelevant<C>::value,
+				static_assert(IsSnapshotRelevant<C>,
 					"Attempting to get component from snapshot for non-snapshot relevant component."
 				);
 

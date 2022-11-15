@@ -8,7 +8,7 @@
 namespace Engine::ECS {
 	ECS_WORLD_TPARAMS
 	ECS_WORLD_CLASS::Snapshot::Snapshot()
-		: compContainers{(IsSnapshotRelevant<Cs>::value ? (new ComponentContainerForSnapshot<Cs>::Type()) : nullptr)... } {
+		: compContainers{(IsSnapshotRelevant<Cs> ? (new SnapshotTraits<Cs>::Container()) : nullptr)... } {
 	}
 
 	ECS_WORLD_TPARAMS
@@ -115,12 +115,14 @@ namespace Engine::ECS {
 		auto& snap = history.insertNoInit(currTick);
 		snap.tickTime = tickTime;
 		Meta::ForEach<Cs...>::call([&]<class C>{
-			if constexpr (IsSnapshotRelevant<C>::value) {
+			if constexpr (IsSnapshotRelevant<C>) {
 				auto& cont = getComponentContainer<C>();
 				auto& scont = snap.getComponentContainer<C>();
 				scont.clear();
 				for (const auto& [ent, comp] : cont) {
-					scont.add(ent, comp);
+					ENGINE_FLATTEN std::apply([&]<class... Args>(Args&&... args) ENGINE_INLINE {
+						scont.add(ent, std::forward<Args>(args)...);
+					}, SnapshotTraits<C>::toSnapshot(comp));
 				}
 			}
 		});
@@ -132,12 +134,12 @@ namespace Engine::ECS {
 
 		auto& snap = history.get(tick);
 		Meta::ForEach<Cs...>::call([&]<class C>{
-			if constexpr (IsSnapshotRelevant<C>::value) {
+			if constexpr (IsSnapshotRelevant<C>) {
 				auto& cont = getComponentContainer<C>();
 				auto& scont = snap.getComponentContainer<C>();
 				for (auto& [ent, comp] : scont) {
 					if (cont.contains(ent)) {
-						cont.get(ent) = comp;
+						SnapshotTraits<C>::fromSnapshot(cont.get(ent), comp);
 					}
 				}
 			}

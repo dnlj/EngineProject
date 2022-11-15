@@ -132,7 +132,7 @@ namespace Game {
 						if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ALWAYS>()) {
 							msg.write(ent);
 							msg.write(cid);
-							if (Engine::ECS::IsSnapshotRelevant<C>::value) {
+							if (Engine::ECS::IsSnapshotRelevant<C>) {
 								msg.write(world.getTick());
 							}
 
