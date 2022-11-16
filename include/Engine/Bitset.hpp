@@ -16,6 +16,7 @@ namespace Engine {
 		static_assert(N > 0, "Attempting to create empty bitset.");
 		public:
 			using SizeType = decltype(N);
+			using Unit = StorageUnit;
 
 			template<int16 M, class U>
 			friend class Bitset;
@@ -32,14 +33,14 @@ namespace Engine {
 			StorageUnit storage[storageSize] = {};
 
 		public:
-			Bitset() = default;
+			constexpr Bitset() = default;
 
 			Bitset(const void* data, int len) {
 				memcpy(storage, data, len);
 			}
 
 			template<std::integral I>
-			Bitset(I initial) {
+			constexpr Bitset(I initial) noexcept {
 				if constexpr (sizeof(I) > sizeof(StorageUnit)) {
 					// TODO: handle
 					static_assert(false, "TODO: impl");
@@ -48,25 +49,31 @@ namespace Engine {
 				}
 			};
 
-			template<auto M, class U>
-			Bitset(const Bitset<M, U>& other) {
-				memcpy(storage, other.storage, std::min(sizeof(storage), sizeof(other.storage)));
+			// TODO: isnt this wrong? dont we need to consider endianness here?
+			//template<auto M, class U>
+			//Bitset(const Bitset<M, U>& other) {
+			//	memcpy(storage, other.storage, std::min(sizeof(storage), sizeof(other.storage)));
+			//};
+
+			template<auto M>
+			constexpr Bitset(const Bitset<M, StorageUnit>& other) noexcept {
+				std::copy(other.storage, other.storage + std::min(M, N), storage);
 			};
 
 			// TODO: ref(SizeType i);
 
-			ENGINE_INLINE bool test(SizeType i) const noexcept { return storage[index(i)] & (StorageUnit{1} << bit(i)); };
+			ENGINE_INLINE constexpr bool test(SizeType i) const noexcept { return storage[index(i)] & (StorageUnit{1} << bit(i)); };
 
-			ENGINE_INLINE void set() noexcept { /* TODO: impl */ };
-			ENGINE_INLINE void set(SizeType i) noexcept { storage[index(i)] |= (StorageUnit{1} << bit(i)); };
-			ENGINE_INLINE void set(SizeType i, bool v) noexcept { reset(i); storage[index(i)] |= (v << bit(i));};
+			//ENGINE_INLINE constexpr void set() noexcept { /* TODO: impl */ };
+			ENGINE_INLINE constexpr void set(SizeType i) noexcept { storage[index(i)] |= (StorageUnit{1} << bit(i)); };
+			ENGINE_INLINE constexpr void set(SizeType i, bool v) noexcept { reset(i); storage[index(i)] |= (v << bit(i));};
 
-			ENGINE_INLINE void reset() noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] = 0; } };
-			ENGINE_INLINE void reset(SizeType i) noexcept { storage[index(i)] &= ~(StorageUnit{1} << bit(i)); };
+			ENGINE_INLINE constexpr void reset() noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] = 0; } };
+			ENGINE_INLINE constexpr void reset(SizeType i) noexcept { storage[index(i)] &= ~(StorageUnit{1} << bit(i)); };
 
-			ENGINE_INLINE void flip(SizeType i) noexcept { storage[index(i)] ^= StorageUnit{1} << bit(i); }
+			ENGINE_INLINE constexpr void flip(SizeType i) noexcept { storage[index(i)] ^= StorageUnit{1} << bit(i); }
 
-			ENGINE_INLINE void invert() noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] = ~storage[i]; } }
+			ENGINE_INLINE constexpr void invert() noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] = ~storage[i]; } }
 
 			// TODO: [cr]begin / [cr]end
 
@@ -77,21 +84,26 @@ namespace Engine {
 			constexpr static SizeType size() noexcept { return N; }
 			constexpr static SizeType capacity() noexcept { return sizeof(storage) * CHAR_BIT; }
 
-			ENGINE_INLINE Bitset& operator&=(const Bitset& other) noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] &= other.storage[i]; } return *this; }
-			ENGINE_INLINE Bitset operator&(const Bitset& other) const noexcept {auto n = *this; return n &= other; }
+			ENGINE_INLINE constexpr Bitset& operator&=(const Bitset& other) noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] &= other.storage[i]; } return *this; }
+			ENGINE_INLINE constexpr Bitset operator&(const Bitset& other) const noexcept { auto n = *this; return n &= other; }
 
-			ENGINE_INLINE Bitset& operator|=(const Bitset& other) noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] |= other.storage[i]; } return *this; }
-			ENGINE_INLINE Bitset operator|(const Bitset& other) const noexcept {auto n = *this; return n |= other; }
+			ENGINE_INLINE constexpr Bitset& operator|=(const Bitset& other) noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] |= other.storage[i]; } return *this; }
+			ENGINE_INLINE constexpr Bitset operator|(const Bitset& other) const noexcept { auto n = *this; return n |= other; }
 
-			ENGINE_INLINE Bitset& operator^=(const Bitset& other) noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] ^= other.storage[i]; } return *this; }
-			ENGINE_INLINE Bitset operator^(const Bitset& other) const noexcept {auto n = *this; return n ^= other; }
+			ENGINE_INLINE constexpr Bitset& operator^=(const Bitset& other) noexcept { for (SizeType i = 0; i < storageSize; ++i) { storage[i] ^= other.storage[i]; } return *this; }
+			ENGINE_INLINE constexpr Bitset operator^(const Bitset& other) const noexcept { auto n = *this; return n ^= other; }
 
-			ENGINE_INLINE Bitset operator~() const noexcept { Bitset n{*this}; n.invert(); return n; }
+			ENGINE_INLINE constexpr Bitset operator~() const noexcept { auto n = *this; n.invert(); return n; }
 
-			ENGINE_INLINE operator bool() const { for (SizeType i = 0; i < storageSize; ++i) { if (storage[i]) { return true; } } return false; }
+			ENGINE_INLINE constexpr operator bool() const { for (SizeType i = 0; i < storageSize; ++i) { if (storage[i]) { return true; } } return false; }
+
+			// Avoid accidental conversions
+			constexpr operator char() const = delete;
+			constexpr operator signed char() const = delete;
+			constexpr operator unsigned char() const = delete;
 
 			template<std::integral I>
-			Bitset& operator>>=(I n) noexcept {
+			constexpr Bitset& operator>>=(I n) noexcept {
 				while (n > 0) {
 					const auto b = std::min<I>(n, storageUnitBits - 1);
 					const auto carryBits = storageUnitBits - b;
@@ -109,7 +121,7 @@ namespace Engine {
 			}
 			
 			template<std::integral I>
-			Bitset& operator<<=(I n) noexcept {
+			constexpr Bitset& operator<<=(I n) noexcept {
 				while (n > 0) {
 					const auto b = std::min<I>(n, storageUnitBits - 1);
 					const auto carryBits = storageUnitBits - b;
@@ -127,12 +139,12 @@ namespace Engine {
 			}
 			
 			template<std::integral I>
-			ENGINE_INLINE Bitset operator>>(I n) const noexcept { auto copy = *this; return copy >>= n; }
+			ENGINE_INLINE constexpr Bitset operator>>(I n) const noexcept { auto copy = *this; return copy >>= n; }
 
 			template<std::integral I>
-			ENGINE_INLINE Bitset operator<<(I n) const noexcept { auto copy = *this; return copy <<= n; }
+			ENGINE_INLINE constexpr Bitset operator<<(I n) const noexcept { auto copy = *this; return copy <<= n; }
 
-			ENGINE_INLINE friend bool operator==(const Bitset& a, const Bitset& b) noexcept {
+			ENGINE_INLINE constexpr friend bool operator==(const Bitset& a, const Bitset& b) noexcept {
 				for (SizeType i = 0; i < storageSize; ++i) {
 					if (a.storage[i] != b.storage[i]) {
 						return false;
@@ -141,7 +153,7 @@ namespace Engine {
 				return true;
 			}
 
-			ENGINE_INLINE friend bool operator!=(const Bitset& a, const Bitset& b) noexcept { return !(a == b); }
+			ENGINE_INLINE constexpr friend bool operator!=(const Bitset& a, const Bitset& b) noexcept { return !(a == b); }
 
 			friend std::ostream& operator<<(std::ostream& os, const Bitset& bs) {
 				for (SizeType i = storageSize - 1; i >= 0; --i) {
