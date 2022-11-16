@@ -108,8 +108,7 @@ namespace Game {
 			Engine::ECS::ComponentBitset flagComps;
 			const auto compsCurr = world.getComponentsBitset(ent);
 
-			Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
-				// TODO: Note: this only updates components not flags. Still need to network flags.
+			Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>{
 				constexpr auto cid = world.getComponentId<C>();
 				if constexpr (IsNetworkedComponent<C>) {
 					if (!world.hasComponent<C>(ent)) { return; }
@@ -143,6 +142,7 @@ namespace Game {
 						// TODO: impl
 					}
 				} else if constexpr (World::IsFlagComponent<C>::value) {
+					// TODO: we should be able to do all flags at once with just an xor
 					const int32 diff = data.comps.test(cid) - world.getComponentsBitset(ent).test(cid);
 					if (diff) { flagComps.set(cid); }
 				}

@@ -355,7 +355,7 @@ namespace Game {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
-		world.callWithComponent(*cid, [&]<class C>(){
+		world.callWithComponent(*cid, [&]<class C>{
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
 					ENGINE_FLATTEN std::apply([&]<class... Args>(Args&&... args) ENGINE_INLINE {
@@ -376,18 +376,19 @@ namespace Game {
 		auto found = entToLocal.find(*remote);
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
-
+		 
 		if (!world.isAlive(local)) {
 			ENGINE_WARN("Attempting to update dead entitiy ", local);
 			return;
 		}
 
+		// TODO: if a component IsSnapshotRelevant we should still store the snapshot data
 		if (!world.hasComponent(local, *cid)) {
 			ENGINE_WARN(local, " does not have component ", *cid);
 			return;
 		}
 
-		world.callWithComponent(*cid, [&]<class C>(){
+		world.callWithComponent(*cid, [&]<class C>{
 			if constexpr (IsNetworkedComponent<C>) {
 				// TODO: this is a somewhat strange way to handle this
 				if constexpr (Engine::ECS::IsSnapshotRelevant<C>) {
@@ -416,13 +417,13 @@ namespace Game {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
-		Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>() {
+		Engine::Meta::ForEachIn<FlagsSet>::call([&]<class C>{
+			static_assert(World::IsFlagComponent<C>::value);
+
 			constexpr auto cid = world.getComponentId<C>();
-			if constexpr (!World::IsFlagComponent<C>::value) { return; }
 			if (!flags->test(cid)) { return; }
 
 			if (world.hasComponent<C>(local)) {
-				// TODO: isnt this wrong? shouldnt this be dependant on `flags->test`?
 				world.removeComponent<C>(local);
 			} else {
 				world.addComponent<C>(local);
@@ -728,6 +729,7 @@ namespace Game {
 			physComp.type = PhysicsType::Player;
 		}
 
+		//world.addComponent<ActionComponent>(ent, world.getTick());
 		world.addComponent<ActionComponent>(ent).init(world.getTick());
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);

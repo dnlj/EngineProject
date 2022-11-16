@@ -70,6 +70,7 @@ namespace Game {
 			constexpr static int32 maxStates = decltype(states)::capacity();
 
 			ActionComponent() = default;
+			//ActionComponent(Engine::ECS::Tick initTick) : states{initTick} { }
 
 			// TODO (4ThFTYLX, ecZcAJcs): merge with constructor once ecs network rework complete
 			void init(Engine::ECS::Tick initTick) { states.clear(initTick);  }

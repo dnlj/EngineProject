@@ -81,7 +81,6 @@ namespace Engine::ECS {
 
 			using Container = SparseSet<Entity, Type>;
 
-			// TODO: should we do tuple for these?
 			static std::tuple<Type> toSnapshot(const Game::PhysicsBodyComponent& obj) noexcept {
 				return Type{
 					.trans = obj.getBody().GetTransform(),
