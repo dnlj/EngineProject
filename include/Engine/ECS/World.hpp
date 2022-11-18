@@ -179,7 +179,7 @@ namespace Engine::ECS {
 	 * @tparam SystemsSet The systems for this world to have.
 	 * @tparam ComponentsSet The components for entities in this world to have.
 	 * @tparam FlagsSet The flag components.
-	 * @tparam MergedSet A set containing both the components and the flags for this world - Merged<Cs..., Fs...>
+	 * @tparam MergedSet A set containing both the components and the flags for this world - Merged<Fs..., Cs...>
 	 * @see WorldHelper
 	 */
 	template<int64 TickRate, class SystemsSet, class ComponentsSet, class FlagsSet, class MergedSet>
@@ -202,6 +202,8 @@ namespace Engine::ECS {
 	ECS_WORLD_TPARAMS
 	class ECS_WORLD_CLASS {
 		static_assert(sizeof...(Cs) <= MAX_COMPONENTS);
+		static_assert(std::same_as<std::tuple<Fs_..., Ns_...>, std::tuple<Cs...>>, "In the merged set the flags set must occur before the components set.");
+
 		public:
 			template<class C> struct IsFlagComponent {
 				constexpr static bool value = (std::is_same_v<C, Fs_> || ...);
@@ -221,6 +223,7 @@ namespace Engine::ECS {
 			using NonFlagsSetType = NonFlagsSet_<Ns_...>;
 			using FlagSetType = FlagsSet_<Fs_...>;
 			using ComponentsSetType = ComponentsSet<Cs...>;
+			using FlagsBitset = Engine::Bitset<sizeof...(Fs_), ComponentBitset::Unit>;
 
 		private:
 			/** TODO: doc */
@@ -810,8 +813,8 @@ namespace Engine::ECS {
 		class... Fs, template<class...> class FlagsSet
 	>
 	class WorldHelper<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>>
-		: public World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>, std::tuple<Cs..., Fs...>> {
+		: public World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>, std::tuple<Fs..., Cs...>> {
 		public:
-			using World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>, std::tuple<Cs..., Fs...>>::World;
+			using World<TickRate, SystemsSet<Ss...>, ComponentsSet<Cs...>, FlagsSet<Fs...>, std::tuple<Fs..., Cs...>>::World;
 	};
 }

@@ -57,7 +57,6 @@
 
 // Engine
 #include <Engine/Clock.hpp>
-#include <Engine/ECS/World.hpp>
 #include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Hash.hpp>

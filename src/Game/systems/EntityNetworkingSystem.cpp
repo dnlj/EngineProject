@@ -105,10 +105,10 @@ namespace Game {
 				continue;
 			}
 
-			Engine::ECS::ComponentBitset flagComps;
 			const auto compsCurr = world.getComponentsBitset(ent);
 
-			Engine::Meta::ForEachIn<ComponentsSet>::call([&]<class C>{
+			// Non-flag components
+			Engine::Meta::ForEachIn<CompsSet>::call([&]<class C>{
 				constexpr auto cid = world.getComponentId<C>();
 				if constexpr (IsNetworkedComponent<C>) {
 					if (!world.hasComponent<C>(ent)) { return; }
@@ -141,22 +141,18 @@ namespace Game {
 						ENGINE_DEBUG_ASSERT("TODO: Update replication is not yet implemented");
 						// TODO: impl
 					}
-				} else if constexpr (World::IsFlagComponent<C>::value) {
-					// TODO: we should be able to do all flags at once with just an xor
-					const int32 diff = data.comps.test(cid) - world.getComponentsBitset(ent).test(cid);
-					if (diff) { flagComps.set(cid); }
 				}
 			});
 
-			if (flagComps) {
-				if (auto msg = conn.beginMessage<MessageType::ECS_FLAG>()) {
-					msg.write(ent);
-					msg.write(flagComps);
-					data.comps |= flagComps;
-				} else {
-					// TODO: we either need to always network all flags or have a way to handle this
-					// TODO: if we network all flags we probably want a way to tell it to only network certain ones for security/cheat reasons
-					ENGINE_WARN("Unable to network entity flags");
+			// Flag components
+			{
+				World::FlagsBitset diffs = data.comps ^ world.getComponentsBitset(ent);
+				if (diffs) {
+					if (auto msg = conn.beginMessage<MessageType::ECS_FLAG>()) {
+						msg.write(ent);
+						msg.write(diffs);
+						data.comps ^= diffs;
+					}
 				}
 			}
 		}

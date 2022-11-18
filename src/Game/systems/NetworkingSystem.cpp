@@ -410,16 +410,14 @@ namespace Game {
 
 	HandleMessageDef(MessageType::ECS_FLAG)
 		const auto remote = from.read<Engine::ECS::Entity>();
-		const auto flags = from.read<Engine::ECS::ComponentBitset>();
+		const auto flags = from.read<World::FlagsBitset>();
 		if (!remote || !flags) { return; }
-
+		
 		auto found = entToLocal.find(*remote);
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
 		Engine::Meta::ForEachIn<FlagsSet>::call([&]<class C>{
-			static_assert(World::IsFlagComponent<C>::value);
-
 			constexpr auto cid = world.getComponentId<C>();
 			if (!flags->test(cid)) { return; }
 
