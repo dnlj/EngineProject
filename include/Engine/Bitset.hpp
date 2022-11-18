@@ -49,6 +49,8 @@ namespace Engine {
 				}
 			};
 
+			constexpr Bitset(bool) noexcept = delete;
+
 			// TODO: isnt this wrong? dont we need to consider endianness here?
 			//template<auto M, class U>
 			//Bitset(const Bitset<M, U>& other) {
@@ -57,7 +59,14 @@ namespace Engine {
 
 			template<auto M>
 			constexpr Bitset(const Bitset<M, StorageUnit>& other) noexcept {
-				std::copy(other.storage, other.storage + std::min(M, N), storage);
+				constexpr auto sz = std::min(storageSize, other.storageSize);
+				std::copy(other.storage, other.storage + sz, storage);
+
+				// Clear any excess high bits
+				constexpr StorageUnit hiUnitMask = (StorageUnit{1} << (N % storageUnitBits)) - 1;
+				if constexpr (hiUnitMask > 0) {
+					storage[storageSize-1] &= hiUnitMask;
+				}
 			};
 
 			// TODO: ref(SizeType i);
