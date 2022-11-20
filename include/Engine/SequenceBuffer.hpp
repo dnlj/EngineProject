@@ -27,7 +27,7 @@ namespace Engine {
 			S lowest = 0;
 			S next = 0;
 			bool entries[N] = {};
-			T storage[N];
+			T storage[N] = {};
 
 			static_assert(!std::numeric_limits<S>::is_signed, "SequenceBuffer assumes a unsigned sequence number.");
 			constexpr static S index(S seq) noexcept { return seq % N; }

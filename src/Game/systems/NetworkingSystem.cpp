@@ -727,8 +727,7 @@ namespace Game {
 			physComp.type = PhysicsType::Player;
 		}
 
-		//world.addComponent<ActionComponent>(ent, world.getTick());
-		world.addComponent<ActionComponent>(ent).init(world.getTick());
+		world.addComponent<ActionComponent>(ent, world.getTick());
 		world.addComponent<MapEditComponent>(ent);
 		world.addComponent<CharacterSpellComponent>(ent);
 	}
