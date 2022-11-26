@@ -13,6 +13,12 @@
 
 
 namespace Engine::Net {
+	class MessageView {
+		public:
+			MessageHeader hdr = {};
+			BufferReader msg = {};
+	};
+
 	template<class State, class... Cs>
 	class Connection {
 		private:
@@ -85,8 +91,6 @@ namespace Engine::Net {
 
 				/** One past the last byte in the recv packet */
 				const byte* last;
-
-				MessageHeader head;
 			} rdat2;
 
 			SeqNum nextSeqNum = 0;
@@ -223,10 +227,10 @@ namespace Engine::Net {
 
 			auto recvTime() const { return rdat2.time; }
 
-			// TODO: fix return type
-			struct MessageView { const MessageHeader* hdr=nullptr; BufferReader msg={}; };
 			MessageView recvNext() {
 				ENGINE_DEBUG_ASSERT(rdat2.curr <= rdat2.last);
+
+				MessageView view = {};
 
 				// Read from channels if current packet empty
 				if (rdat2.curr == rdat2.last) {
@@ -234,33 +238,32 @@ namespace Engine::Net {
 					// If we need more flexibility with storage we need to do a buffer reader like we do below.
 					const MessageHeader* hdr = nullptr;
 					((hdr = getChannel<Cs>().recvNext()) || ...); // Takes advantage of || short circuit
-					MessageView view = {};
 					if (hdr) { 
-						view = {hdr, {hdr, hdr->size + sizeof(MessageHeader)}};
+						view = {*hdr, {hdr, hdr->size + sizeof(MessageHeader)}};
 						view.msg.read(sizeof(MessageHeader));
 					}
 					return view;
 				}
 
 				// Read from active packet
-				BufferReader msg = {rdat2.curr, rdat2.last};
-				if (!msg.read(&rdat2.head)) {
+				view.msg = {rdat2.curr, rdat2.last};
+				if (!view.msg.read(&view.hdr)) {
 					ENGINE_DEBUG_ASSERT(false, "Unable to read message header.");
 					ENGINE_WARN("Unable to read message header.");
 					// TODO: we need to handle this or else we will just read the same message again
 					return {};
 				}
 
-				ENGINE_DEBUG_ASSERT(msg.begin() != msg.peek());
+				ENGINE_DEBUG_ASSERT(view.msg.begin() != view.msg.peek());
 
-				if (rdat2.head.type > maxMessageType()) {
+				if (view.hdr.type > maxMessageType()) {
 					ENGINE_WARN("Invalid message type.");
 					ENGINE_DEBUG_ASSERT(false, "Invalid message type.");
 					// TODO: we need to handle this or else we will just read the same message again
 					return {};
 				}
 
-				if (rdat2.head.size > sizeof(Packet::body) - sizeof(MessageHeader)) {
+				if (view.hdr.size > sizeof(Packet::body) - sizeof(MessageHeader)) {
 					ENGINE_WARN("Invalid message length");
 					ENGINE_DEBUG_ASSERT(false, "Invalid message length");
 					// TODO: we need to handle this or else we will just read the same message again
@@ -268,17 +271,17 @@ namespace Engine::Net {
 				}
 
 				// Retarget so we arent spanning the whole packet, only the active message.
-				msg.resize(sizeof(MessageHeader) + rdat2.head.size);
+				view.msg.resize(sizeof(MessageHeader) + view.hdr.size);
 
 				// Should we process this message now or is it being buffered for later?
 				bool process = true;
-				callWithChannelForMessage(rdat2.head.type, [&]<class C>(){
+				callWithChannelForMessage(view.hdr.type, [&]<class C>(){
 					auto& ch = getChannel<C>();
-					process = ch.recv(rdat2.head, std::as_const(msg));
+					process = ch.recv(view.hdr, std::as_const(view.msg));
 				});
 
-				rdat2.curr = msg.end();
-				if (process) { return { &rdat2.head, msg}; }
+				rdat2.curr = view.msg.end();
+				if (process) { return view; }
 				return recvNext();
 			}
 

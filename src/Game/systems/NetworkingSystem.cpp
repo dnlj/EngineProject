@@ -121,7 +121,7 @@ namespace {
 
 #define HandleMessageDef(MsgType) \
 	template<> \
-	void NetworkingSystem::handleMessageType<MsgType>(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& msg) { \
+	void NetworkingSystem::handleMessageType<MsgType>(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) { \
 	if constexpr (!(Engine::Net::MessageTraits<MsgType>::side & ENGINE_SIDE)) { \
 		ENGINE_WARN("Message received by wrong side. Aborting."); return; \
 	} \
@@ -577,7 +577,7 @@ namespace Game {
 
 			while (true) {
 				auto [hdr, msg] = conn->recvNext();
-				if (!hdr) { break; }
+				if (hdr.type == 0) { break; }
 				dispatchMessage(ent, connComp, hdr, msg);
 			}
 		}
@@ -776,7 +776,7 @@ namespace Game {
 		}
 	}
 
-	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr, Engine::Net::BufferReader& msg) {
+	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg) {
 		auto& from = *connComp.conn;
 
 		// TODO: replace with Game::getMessageName
@@ -786,20 +786,20 @@ namespace Game {
 			return "UNKNOWN";
 		};
 
-		switch(hdr->type) {
+		switch(hdr.type) {
 			#define X(Name, Side, SState, RState) case MessageType::Name: {\
-				/*ENGINE_LOG("MESSAGE: ", #Name, " ", hdr->seq, " ", hdr->size);/**/\
-				handleMessageType<MessageType::Name>(ent, connComp, from, *hdr, msg); break; };
+				/*ENGINE_LOG("MESSAGE: ", #Name, " ", hdr.seq, " ", hdr.size);/**/\
+				handleMessageType<MessageType::Name>(ent, connComp, from, hdr, msg); break; };
 			#include <Game/MessageType.xpp>
 			default: {
-				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(hdr->type));
+				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(hdr.type));
 			}
 		}
 		
 		if (auto rem = msg.remaining(); rem > 0) {
-			ENGINE_WARN("Incomplete read of network message ", msgToStr(hdr->type), " (", rem, " bytes remaining). Ignoring.");
+			ENGINE_WARN("Incomplete read of network message ", msgToStr(hdr.type), " (", rem, " bytes remaining). Ignoring.");
 		} else if (rem < 0) {
-			ENGINE_WARN("Read past end of network messge type ", msgToStr(hdr->type)," (", rem, " bytes remaining).");
+			ENGINE_WARN("Read past end of network messge type ", msgToStr(hdr.type)," (", rem, " bytes remaining).");
 		}
 	}
 }
