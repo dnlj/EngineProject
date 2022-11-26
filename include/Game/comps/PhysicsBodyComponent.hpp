@@ -110,12 +110,12 @@ namespace Game {
 			static void writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
 			static void write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff);
 
-			static std::tuple<PhysicsBodyComponent> readInit(Connection& conn, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
-			static void read(PhysicsBodyComponent& obj, Connection& conn);
+			static std::tuple<PhysicsBodyComponent> readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
+			static void read(PhysicsBodyComponent& obj, Engine::Net::BufferReader& buff);
 
-			static void read(Engine::ECS::SnapshotTraits<PhysicsBodyComponent>::Type& obj, Connection& conn) {
-				obj.trans = *conn.read<b2Transform>();
-				obj.vel = *conn.read<b2Vec2>();
+			static void read(Engine::ECS::SnapshotTraits<PhysicsBodyComponent>::Type& obj, Engine::Net::BufferReader& buff) {
+				buff.read<b2Transform>(&obj.trans);
+				buff.read<b2Vec2>(&obj.vel);
 				obj.rollbackOverride = true;
 			}
 	};

@@ -59,37 +59,39 @@ namespace Game {
 		NetworkTraits::write(obj, buff);
 	}
 
-	void NetworkTraits<PhysicsBodyComponent>::read(PhysicsBodyComponent& obj, Connection& conn) {
-		const auto trans = *conn.read<b2Transform>();
-		const auto vel = *conn.read<b2Vec2>();
+	void NetworkTraits<PhysicsBodyComponent>::read(PhysicsBodyComponent& obj, Engine::Net::BufferReader& buff) {
+		b2Transform trans;
+		buff.read<b2Transform>(&trans);
+
+		b2Vec2 vel;
+		buff.read<b2Vec2>(&vel);
+
 		obj.setTransform(trans.p, trans.q.GetAngle());
 		obj.rollbackOverride = true;
 	}
 
-	std::tuple<PhysicsBodyComponent> NetworkTraits<PhysicsBodyComponent>::readInit(Connection& conn, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+	std::tuple<PhysicsBodyComponent> NetworkTraits<PhysicsBodyComponent>::readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 		PhysicsBodyComponent result;
 
-		const auto* ptype = conn.read<PhysicsType>();
-		if (!ptype) {
+		if (!buff.read<PhysicsType>(&result.type)) {
 			ENGINE_WARN("Unable to read physics type from network.");
 			return result;
 		}
-		result.type = *ptype;
 
-		const auto* btype = conn.read<b2BodyType>();
-		if (!btype) {
+		b2BodyType btype;
+		if (!buff.read<b2BodyType>(&btype)) {
 			ENGINE_WARN("Unable to read b2 physics type from network.");
 			return result;
 		}
 
-		const auto* ftype = conn.read<b2Shape::Type>();
-		if (!ftype) {
+		b2Shape::Type ftype;
+		if (!buff.read<b2Shape::Type>(&ftype)) {
 			ENGINE_WARN("Unable to read physics fixture type from network.");
 			return result;
 		}
 
-		const auto* mask = conn.read<uint16>();
-		if (!mask) {
+		uint16 mask;
+		if (!buff.read<uint16>(&mask)) {
 			ENGINE_WARN("Unable to read physics filter mask from network");
 			return result;
 		}
@@ -100,7 +102,7 @@ namespace Game {
 			b2BodyDef bodyDef;
 			bodyDef.fixedRotation = true;
 			bodyDef.linearDamping = 10.0f; // TODO: value?
-			bodyDef.type = *btype;
+			bodyDef.type = btype;
 			bodyDef.position = {0, 0}; // TODO: read correct position from network
 			body = physSys.createBody(ent, bodyDef);
 			result.setBody(body);
@@ -108,18 +110,15 @@ namespace Game {
 
 		b2FixtureDef fixDef;
 		fixDef.filter.groupIndex = -+result.type;
-		fixDef.filter.maskBits = *mask;
+		fixDef.filter.maskBits = mask;
 
-		switch (*ftype) {
+		switch (ftype) {
 			case b2Shape::Type::e_circle: {
-				const auto* radius = conn.read<float32>();
-				if (!radius) {
+				b2CircleShape shape;
+				if (!buff.read<float32>(&shape.m_radius)) {
 					ENGINE_WARN("Unable to read physics fixture radius from network.");
 					return result;
 				}
-
-				b2CircleShape shape;
-				shape.m_radius = *radius;
 				
 				fixDef.shape = &shape;
 				body->CreateFixture(&fixDef);
@@ -127,29 +126,27 @@ namespace Game {
 				break;
 			}
 			case b2Shape::Type::e_polygon: {
-				const auto* count = conn.read<uint8>();
-				if (!count) {
+				uint8 count;
+				if (!buff.read<uint8>(&count)) {
 					ENGINE_WARN("Unable to read physics fixture count from network.");
 					return result;
 				}
 
-				if (*count != 4) {
+				if (count != 4) {
 					ENGINE_WARN("Physics fixture received from network with non-rect shape. This is probably an error.");
 				}
 
-				ENGINE_DEBUG_ASSERT(*count <= b2_maxPolygonVertices);
+				ENGINE_DEBUG_ASSERT(count <= b2_maxPolygonVertices);
 				b2Vec2 verts[b2_maxPolygonVertices];
-				for (int i = 0; i < *count; ++i) {
-					const auto* v = conn.read<b2Vec2>();;
-					if (!v) {
+				for (int i = 0; i < count; ++i) {
+					if (!buff.read<b2Vec2>(&verts[i])) {
 						ENGINE_WARN("Unable to read vertex for physics shape from network.");
 						return result;
 					}
-					verts[i] = *v;
 				}
 
 				b2PolygonShape shape;
-				shape.Set(verts, *count);
+				shape.Set(verts, count);
 
 				fixDef.shape = &shape;
 				body->CreateFixture(&fixDef);
@@ -161,7 +158,7 @@ namespace Game {
 			}
 		}
 
-		NetworkTraits::read(result, conn);
+		NetworkTraits::read(result, buff);
 		return std::make_tuple(result);
 	}
 }

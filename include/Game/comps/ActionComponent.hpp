@@ -42,16 +42,15 @@ namespace Game {
 			ActionValue buttons[static_cast<int32>(Action::_button_count)];
 			glm::vec2 target;
 
-			void netRead(Connection& conn) {
+			void netRead(Engine::Net::BufferReader& msg) {
 				for (auto& b : buttons) {
-					// TODO: better interface for reading bits.
-					b.pressCount = static_cast<decltype(b.pressCount)>(conn.read<2>());
-					b.releaseCount = static_cast<decltype(b.releaseCount)>(conn.read<2>());
-					b.latest = static_cast<decltype(b.latest)>(conn.read<1>());
+					msg.read<2>(&b.pressCount);
+					msg.read<2>(&b.releaseCount);
+					msg.read<1>(&b.latest);
 				}
 
-				const auto x = conn.read<32>();
-				const auto y = conn.read<32>();
+				const auto x = msg.read<32, uint32>();
+				const auto y = msg.read<32, uint32>();
 				target.x = reinterpret_cast<const float32&>(x);
 				target.y = reinterpret_cast<const float32&>(y);
 			}

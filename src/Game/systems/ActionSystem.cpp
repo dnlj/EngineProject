@@ -128,20 +128,25 @@ namespace Game {
 		}
 	}
 
-	void ActionSystem::recvActions(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
+	void ActionSystem::recvActions(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt, Engine::Net::BufferReader& msg) {
 		if constexpr (ENGINE_SERVER) {
-			recvActionsServer(from, head, fromEnt);
+			recvActionsServer(from, head, fromEnt, msg);
 		} else {
-			recvActionsClient(from, head, fromEnt);
+			recvActionsClient(from, head, fromEnt, msg);
 		}
 	}
 
-	void ActionSystem::recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
+	void ActionSystem::recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt, Engine::Net::BufferReader& msg) {
 		// TODO: what about ordering?
 		// TODO: we dont actually use tick/recvTick. just nw buffsize
 		constexpr float32 maxStates = static_cast<float32>(decltype(ActionComponent::states)::capacity());
-		const auto tick = *from.read<Engine::ECS::Tick>();
-		const auto recvTick = *from.read<Engine::ECS::Tick>();
+
+		Engine::ECS::Tick tick;
+		msg.read<Engine::ECS::Tick>(&tick);
+
+		Engine::ECS::Tick recvTick;
+		msg.read<Engine::ECS::Tick>(&recvTick);
+
 		const auto buffSize = tick - recvTick;
 
 		if (recvTick == 0) { // TODO: The server should probably send a bitset of the recvs it has received each time so it can be redundant like the client side inputs are.
@@ -160,7 +165,9 @@ namespace Game {
 
 		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
 		{
-			const auto est = estBuffSizeFromNet(*from.read<uint8>());
+			uint8 estNet;
+			msg.read<uint8>(&estNet);
+			const auto est = estBuffSizeFromNet(estNet);
 
 			// NOTE: seems to work fine without this.
 			//float32 ping = std::chrono::duration<float32, std::milli>{from.getPing()}.count();
@@ -243,8 +250,10 @@ namespace Game {
 		}
 	} 
 
-	void ActionSystem::recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt) {
-		const auto tick = *from.read<Engine::ECS::Tick>();
+	void ActionSystem::recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt, Engine::Net::BufferReader& msg) {
+		Engine::ECS::Tick tick;
+		msg.read<Engine::ECS::Tick>(&tick);
+
 		const auto recvTick = world.getTick();
 		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
 
@@ -254,7 +263,7 @@ namespace Game {
 
 		for (auto t = tick + 1 - (actComp.states.capacity() / 4); t <= tick; ++t) {
 			ActionState s = {};
-			s.netRead(from);
+			s.netRead(msg);
 
 			if (t < minTick || t > maxTick) { continue; }
 			if (!actComp.states.contains(t)) {
@@ -268,7 +277,7 @@ namespace Game {
 				actComp.states.insert(t) = s;
 			}
 		}
-		from.readFlushBits();
+		msg.readFlushBits();
 
 		{
 			// TODO: why do we do this? isnt this always `tick - recvTick`?

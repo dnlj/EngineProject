@@ -95,7 +95,7 @@ namespace Game {
 			void update(float32 dt);
 			void ensurePlayAreaLoaded(Engine::ECS::Entity ply);
 
-			void chunkFromNet(Connection& from, const Engine::Net::MessageHeader& head);
+			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);
 
 			// TODO: Name? this isnt consistent with our other usage of offset
 			// TODO: Doc. Gets the size of the current offset in blocks coordinates

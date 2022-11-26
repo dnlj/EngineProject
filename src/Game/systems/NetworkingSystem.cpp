@@ -107,20 +107,13 @@ namespace {
 #if DEBUG
 namespace {
 	struct HandleMessageDef_DebugBreak_Struct {
-		const Engine::Net::MessageHeader* hdr;
-		Game::Connection& from;
-		const char* msgType = nullptr;
-
+		Engine::Net::BufferReader& msg;
 		~HandleMessageDef_DebugBreak_Struct() {
-			using byte = Engine::byte;
-			const byte* stop = reinterpret_cast<const byte*>(hdr) + sizeof(*hdr) + hdr->size;
-			const byte* curr = static_cast<const byte*>(from.read(0));
-			const auto rem = stop - curr;
-			//if (rem != 0) { __debugbreak(); }
+			if (msg.remaining() != 0) { __debugbreak(); }
 		}
 	};
 }
-#define HandleMessageDef_DebugBreak(MsgType) HandleMessageDef_DebugBreak_Struct _ENGINE_temp_object_for_HandleMessageDef_DebugBreak_Struct{&head, from, MsgType}
+#define HandleMessageDef_DebugBreak(MsgType) HandleMessageDef_DebugBreak_Struct _ENGINE_temp_object_for_HandleMessageDef_DebugBreak_Struct{msg}
 #else
 #define HandleMessageDef_DebugBreak(...)
 #endif
@@ -128,12 +121,12 @@ namespace {
 
 #define HandleMessageDef(MsgType) \
 	template<> \
-	void NetworkingSystem::handleMessageType<MsgType>(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head) { \
+	void NetworkingSystem::handleMessageType<MsgType>(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& msg) { \
 	if constexpr (!(Engine::Net::MessageTraits<MsgType>::side & ENGINE_SIDE)) { \
 		ENGINE_WARN("Message received by wrong side. Aborting."); return; \
 	} \
 	if (!(Engine::Net::MessageTraits<MsgType>::rstate & from.getState())) { \
-		from.discard(); \
+		msg.discard(); \
 		ENGINE_WARN("Messages received in wrong state. Aborting. ", getMessageName(head.type), "(", (int)head.type, ")"); \
 		return; \
 	} \
@@ -147,39 +140,48 @@ namespace Game {
 	HandleMessageDef(MessageType::DISCOVER_SERVER)
 		// TODO: rate limit per ip (longer if invalid packet)
 		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
-		if (from.recvMsgSize() == size && !memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
-			if (auto msg = from.beginMessage<MessageType::SERVER_INFO>()) {
+		if (msg.remaining() == size && !memcmp(msg.read(size), MESSAGE_PADDING_DATA, size)) {
+			if (auto reply = from.beginMessage<MessageType::SERVER_INFO>()) {
 				//constexpr char name[] = "This is the name of the server";
 				std::string name = "This is the name of the server ";
 				name += std::to_string(Engine::getGlobalConfig().port);
-				msg.write<int>(int(std::size(name)));
-				msg.write(name.data(), std::size(name));
+				reply.write<int>(int(std::size(name)));
+				reply.write(name.data(), std::size(name));
 			}
+		} else if constexpr (ENGINE_DEBUG) {
+			[[maybe_unused]] const auto rem = msg.remaining();
+			[[maybe_unused]] const auto diff = rem - size;
+			ENGINE_DEBUG_ASSERT(false);
+			msg.discard();
 		}
 	}
 	
 	HandleMessageDef(MessageType::SERVER_INFO)
 		#if ENGINE_CLIENT
+			int len;
+			if (!msg.read<int>(&len)) { return; }
+
+			const char* name = reinterpret_cast<const char*>(msg.read(len));
 			auto& servInfo = servers[from.address()];
-			const auto* len = from.read<int>();
-			const char* name = static_cast<const char*>(from.read(*len));
-			servInfo.name.assign(name, *len);
+			servInfo.name.assign(name, len);
 			servInfo.lastUpdate = world.getTime();
 		#endif
 	}
 
 	HandleMessageDef(MessageType::CONNECT_REQUEST)
 		constexpr auto size = sizeof(MESSAGE_PADDING_DATA);
-		if (from.recvMsgSize() != size + sizeof(uint16) || memcmp(from.read(size), MESSAGE_PADDING_DATA, size)) {
+		if (msg.remaining() != size + sizeof(uint16) || memcmp(msg.read(size), MESSAGE_PADDING_DATA, size)) {
 			// TODO: rate limit connections with invalid messages
 			ENGINE_WARN("Got invalid connection request from ", from.address());
 			return;
 		}
 
-		const auto remote = *from.read<uint16>();
+		uint16 remote = {};
+		msg.read<uint16>(&remote);
+
 		if (from.getKeyRemote() && from.getKeyRemote() != remote) {
 			ENGINE_WARN("Got connection request with invalid key from ", from.address(), " (", remote, " != ", from.getKeyRemote(), ")");
-			return from.discard();
+			return msg.discard();
 		} else {
 			from.setKeyRemote(remote);
 		}
@@ -192,22 +194,24 @@ namespace Game {
 			ENGINE_DEBUG_ASSERT(from.getKeyLocal() != 0, "It should not be possible to be missing a local key in any non-unconnected state. This is a bug.");
 		}
 
-		if (auto msg = from.beginMessage<MessageType::CONNECT_CHALLENGE>()) {
-			msg.write(from.getKeyLocal());
+		if (auto reply = from.beginMessage<MessageType::CONNECT_CHALLENGE>()) {
+			reply.write(from.getKeyLocal());
 			ENGINE_LOG("CONNECT_REQUEST from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
 		}
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CHALLENGE)
-		const auto& remote = *from.read<uint16>();
+		uint16 remote = {};
+		msg.read<uint16>(&remote);
+
 		if (from.getKeyRemote()) {
 			ENGINE_WARN("Extraneous CONNECT_CHALLENGE received. Ignoring.");
 			ENGINE_DEBUG_ASSERT(from.getState() == ConnectionState::Connected);
-			return from.discard();
+			return msg.discard();
 		}
 
-		if (auto msg = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
-			msg.write(remote);
+		if (auto reply = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
+			reply.write(remote);
 			from.setKeyRemote(remote);
 			from.setState(ConnectionState::Connected);
 			ENGINE_LOG("CONNECT_CHALLENGE from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
@@ -217,10 +221,12 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::CONNECT_CONFIRM)
-		const auto key = *from.read<uint16>();
+		uint16 key = {};
+		msg.read<uint16>(&key);
+
 		if (key != from.getKeyLocal()) {
 			ENGINE_WARN("CONNECT_CONFIRM: Invalid recv key ", key, " != ", from.getKeyLocal());
-			return from.discard();
+			return msg.discard();
 		}
 
 		ENGINE_LOG("CONNECT_CONFIRM from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick());
@@ -228,35 +234,34 @@ namespace Game {
 		addPlayer(ent);
 
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
-		if (auto msg = from.beginMessage<MessageType::ECS_INIT>()) {
-			msg.write(ent);
-			msg.write(world.getTick());
+		if (auto reply = from.beginMessage<MessageType::ECS_INIT>()) {
+			reply.write(ent);
+			reply.write(world.getTick());
 		}
 
-		if (auto msg = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
-			msg.write(from.getPacketRecvRate());
+		if (auto reply = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
+			reply.write(from.getPacketRecvRate());
 		}
 	}
 
 	HandleMessageDef(MessageType::ECS_INIT)
-		auto* remote = from.read<Engine::ECS::Entity>();
-		auto* tick = from.read<Engine::ECS::Tick>();
-
-		if (!remote) {
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) {
 			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
 			return;
 		}
 
-		if (!tick) {
+		Engine::ECS::Tick tick;
+		if (!msg.read(&tick)) {
 			ENGINE_WARN("Unable to sync ticks.");
 			return;
 		}
 
-		ENGINE_LOG("ECS_INIT - Remote: ", *remote, " Local: ", ent, " Tick: ", world.getTick(), " - ", *tick);
+		ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", ent, " Tick: ", world.getTick(), " - ", tick);
 
 		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
-		world.setNextTick(*tick + 16);
-		entToLocal[*remote] = ent;
+		world.setNextTick(tick + 16);
+		entToLocal[remote] = ent;
 		addPlayer(ent);
 	}
 
@@ -269,8 +274,10 @@ namespace Game {
 
 	HandleMessageDef(MessageType::PING)
 		static uint8 last = 0;
-		// TODO: nullptr check
-		const auto data = *from.read<uint8>();
+
+		uint8 data;
+		msg.read(&data);
+
 		const bool pong = data & 0x80;
 		const int32 val = data & 0x7F;
 		last = val;
@@ -289,26 +296,26 @@ namespace Game {
 				" from ", from.address(),
 				" ", val
 			);
-			if (auto msg = from.beginMessage<MessageType::PING>()) {
-				msg.write(static_cast<uint8>(val | 0x80));
+			if (auto reply = from.beginMessage<MessageType::PING>()) {
+				reply.write(static_cast<uint8>(val | 0x80));
 			}
 		}
 	}
 
 	HandleMessageDef(MessageType::CONFIG_NETWORK)
-		const auto* rate = from.read<float32>();
-		if (!rate) { return; }
+		float32 rate;
+		if (!msg.read(&rate)) { return; }
 
 		if constexpr (ENGINE_CLIENT) {
-			if (auto msg = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
-				msg.write(from.getPacketRecvRate());
+			if (auto reply = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
+				reply.write(from.getPacketRecvRate());
 			}
 		}
 
 		// TODO: these values should be configured by convar/config
 		constexpr float32 maxSendRate = 256;
 		constexpr float32 minSendRate = 8;
-		float32 r2 = *rate;
+		float32 r2 = rate;
 
 		// We need this check because MSVC does not handle comparisons correctly for non-finite values even when is_iec559 is true.
 		if (!std::isfinite(r2)) {
@@ -320,10 +327,10 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_ENT_CREATE)
-		auto* remote = from.read<Engine::ECS::Entity>();
-		if (!remote) { return; }
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) { return; }
 
-		auto& local = entToLocal[*remote];
+		auto& local = entToLocal[remote];
 		if (local == Engine::ECS::INVALID_ENTITY) {
 			local = world.createEntity();
 		}
@@ -331,15 +338,16 @@ namespace Game {
 		world.addComponent<NetworkedFlag>(local);
 		ENGINE_LOG("Networked: ", local, world.hasComponent<NetworkedFlag>(local));
 
-		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", *remote, " Local: ", local, " Tick: ", world.getTick());
+		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", remote, " Local: ", local, " Tick: ", world.getTick());
 
 		// TODO: components init
 	}
 
 	HandleMessageDef(MessageType::ECS_ENT_DESTROY) 
-		auto* remote = from.read<Engine::ECS::Entity>();
-		if (!remote) { return; }
-		auto found = entToLocal.find(*remote);
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) { return; }
+
+		auto found = entToLocal.find(remote);
 		if (found != entToLocal.end()) {
 			world.deferedDestroyEntity(found->second);
 			entToLocal.erase(found);
@@ -347,20 +355,22 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_COMP_ADD)
-		const auto* remote = from.read<Engine::ECS::Entity>();
-		const auto* cid = from.read<Engine::ECS::ComponentId>();
-		if (!remote || !cid) { return; }
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) { return; }
 
-		auto found = entToLocal.find(*remote);
+		Engine::ECS::ComponentId cid;
+		if (!msg.read(&cid)) { return; }
+
+		auto found = entToLocal.find(remote);
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
-		world.callWithComponent(*cid, [&]<class C>{
+		world.callWithComponent(cid, [&]<class C>{
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
 					ENGINE_FLATTEN std::apply([&]<class... Args>(Args&&... args) ENGINE_INLINE {
 						world.addComponent<C>(local, std::forward<Args>(args)...);
-					}, NetworkTraits<C>::readInit(from, engine, world, local));
+					}, NetworkTraits<C>::readInit(msg, engine, world, local));
 				}
 			} else if constexpr (ENGINE_DEBUG) {
 				ENGINE_WARN("Attemping to network non-network component");
@@ -369,11 +379,13 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_COMP_ALWAYS)
-		const auto* remote = from.read<Engine::ECS::Entity>();
-		const auto* cid = from.read<Engine::ECS::ComponentId>();
-		if (!remote || !cid) { return; }
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) { return; }
+
+		Engine::ECS::ComponentId cid;
+		if (!msg.read(&cid)) { return; }
 		
-		auto found = entToLocal.find(*remote);
+		auto found = entToLocal.find(remote);
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 		 
@@ -383,24 +395,24 @@ namespace Game {
 		}
 
 		// TODO: if a component IsSnapshotRelevant we should still store the snapshot data
-		if (!world.hasComponent(local, *cid)) {
-			ENGINE_WARN(local, " does not have component ", *cid);
+		if (!world.hasComponent(local, cid)) {
+			ENGINE_WARN(local, " does not have component ", cid);
 			return;
 		}
 
-		world.callWithComponent(*cid, [&]<class C>{
+		world.callWithComponent(cid, [&]<class C>{
 			if constexpr (IsNetworkedComponent<C>) {
 				// TODO: this is a somewhat strange way to handle this
 				if constexpr (Engine::ECS::IsSnapshotRelevant<C>) {
-					const auto* tick = from.read<Engine::ECS::Tick>();
-					if (!tick) {
+					Engine::ECS::Tick tick;
+					if (!msg.read(&tick)) {
 						ENGINE_WARN("No tick specified for snapshot component in ECS_COMP_ALWAYS");
 						return;
 					}
 
-					NetworkTraits<C>::read(world.getComponentState<C>(local, *tick), from);
+					NetworkTraits<C>::read(world.getComponentState<C>(local, tick), msg);
 				} else {
-					NetworkTraits<C>::read(world.getComponent<C>(local), from);
+					NetworkTraits<C>::read(world.getComponent<C>(local), msg);
 				}
 			} else if constexpr (ENGINE_DEBUG) {
 				ENGINE_WARN("Attemping to network non-network component");
@@ -409,17 +421,19 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ECS_FLAG)
-		const auto remote = from.read<Engine::ECS::Entity>();
-		const auto flags = from.read<World::FlagsBitset>();
-		if (!remote || !flags) { return; }
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) { return; }
+
+		World::FlagsBitset flags;
+		if (!msg.read(&flags)) { return; }
 		
-		auto found = entToLocal.find(*remote);
+		auto found = entToLocal.find(remote);
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
 		Engine::Meta::ForEachIn<FlagsSet>::call([&]<class C>{
 			constexpr auto cid = world.getComponentId<C>();
-			if (!flags->test(cid)) { return; }
+			if (!flags.test(cid)) { return; }
 
 			if (world.hasComponent<C>(local)) {
 				world.removeComponent<C>(local);
@@ -430,12 +444,13 @@ namespace Game {
 	}
 	
 	HandleMessageDef(MessageType::PLAYER_DATA)
-		const auto* tick = from.read<Engine::ECS::Tick>();
-		const auto* trans = from.read<b2Transform>();
-		const auto* vel = from.read<b2Vec2>();
+		Engine::ECS::Tick tick;
+		b2Transform trans;
+		b2Vec2 vel;
+		
 		// TODO: angVel
 
-		if (!tick || !trans || !vel) {
+		if (!msg.read(&tick) || !msg.read(&trans) || !msg.read(&vel)) {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
@@ -445,45 +460,46 @@ namespace Game {
 			return;
 		}
 
-		auto& physCompState = world.getComponentState<PhysicsBodyComponent>(ent, *tick);
-		const auto diff = physCompState.trans.p - trans->p;
+		auto& physCompState = world.getComponentState<PhysicsBodyComponent>(ent, tick);
+		const auto diff = physCompState.trans.p - trans.p;
 		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
 		// TODO: why does this ever happen with only one player connected?
 		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
 			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physCompState.trans.p.x)>::max_digits10),
-				"Oh boy a mishap has occured on tick ", *tick,
+				"Oh boy a mishap has occured on tick ", tick,
 				" (<", physCompState.trans.p.x, ", ", physCompState.trans.p.y, "> - <",
-				trans->p.x, ", ", trans->p.y, "> = <",
+				trans.p.x, ", ", trans.p.y, "> = <",
 				diff.x, ", ", diff.y,
 				">)"
 			);
 
-			physCompState.trans = *trans;
-			physCompState.vel = *vel;
+			physCompState.trans = trans;
+			physCompState.vel = vel;
 			physCompState.rollbackOverride = true;
 
-			world.scheduleRollback(*tick);
+			world.scheduleRollback(tick);
 		}
 
 		// TODO: vel
 	}
 
 	HandleMessageDef(MessageType::ACTION)
-		world.getSystem<ActionSystem>().recvActions(from, head, ent);
+		world.getSystem<ActionSystem>().recvActions(from, head, ent, msg);
 	}
 
 	HandleMessageDef(MessageType::MAP_CHUNK)
-		world.getSystem<MapSystem>().chunkFromNet(from, head);
+		world.getSystem<MapSystem>().chunkFromNet(head, msg);
 	}
 
 	// TODO: unsued?
 	HandleMessageDef(MessageType::SPELL)
+		b2Vec2 pos;
+		b2Vec2 dir;
+		if (!msg.read(&pos) || !msg.read(&dir)) { return; }
+
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();
-		const auto* pos = from.read<b2Vec2>();
-		const auto* dir = from.read<b2Vec2>();
-		if (!pos || !dir) { return; }
-		spellSys.queueMissile(*pos, *dir);
+		spellSys.queueMissile(pos, dir);
 	}
 }
 #undef HandleMessageDef
@@ -559,9 +575,10 @@ namespace Game {
 			
 			if (!conn->recv(packet, sz, now)) { continue; }
 
-			const Engine::Net::MessageHeader* hdr; 
-			while (hdr = conn->recvNext()) {
-				dispatchMessage(ent, connComp, hdr);
+			while (true) {
+				auto [hdr, msg] = conn->recvNext();
+				if (!hdr) { break; }
+				dispatchMessage(ent, connComp, hdr, msg);
 			}
 		}
 	}
@@ -759,7 +776,7 @@ namespace Game {
 		}
 	}
 
-	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr) {
+	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr, Engine::Net::BufferReader& msg) {
 		auto& from = *connComp.conn;
 
 		// TODO: replace with Game::getMessageName
@@ -772,20 +789,15 @@ namespace Game {
 		switch(hdr->type) {
 			#define X(Name, Side, SState, RState) case MessageType::Name: {\
 				/*ENGINE_LOG("MESSAGE: ", #Name, " ", hdr->seq, " ", hdr->size);/**/\
-				handleMessageType<MessageType::Name>(ent, connComp, from, *hdr); break; };
+				handleMessageType<MessageType::Name>(ent, connComp, from, *hdr, msg); break; };
 			#include <Game/MessageType.xpp>
 			default: {
 				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(hdr->type));
 			}
 		}
 		
-		const byte* stop = reinterpret_cast<const byte*>(hdr) + sizeof(*hdr) + hdr->size;
-		const byte* curr = static_cast<const byte*>(from.read(0));
-		const auto rem = stop - curr;
-
-		if (rem > 0) {
+		if (auto rem = msg.remaining(); rem > 0) {
 			ENGINE_WARN("Incomplete read of network message ", msgToStr(hdr->type), " (", rem, " bytes remaining). Ignoring.");
-			from.read(rem);
 		} else if (rem < 0) {
 			ENGINE_WARN("Read past end of network messge type ", msgToStr(hdr->type)," (", rem, " bytes remaining).");
 		}

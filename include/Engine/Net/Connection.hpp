@@ -80,18 +80,14 @@ namespace Engine::Net {
 				/** The time the message was received */
 				Engine::Clock::TimePoint time;
 
-				/** The first byte in the recv packet */
-				const byte* first;
+				/** The current byte in the recv packet */
+				const byte* curr;
 
 				/** One past the last byte in the recv packet */
 				const byte* last;
 
-				/** The current position in the recv packet */
-				const byte* curr;
-
-				/** One past the last byte in the current message */
-				const byte* msgLast;
-			} rdat;
+				MessageHeader head;
+			} rdat2;
 
 			SeqNum nextSeqNum = 0;
 
@@ -124,6 +120,7 @@ namespace Engine::Net {
 
 			template<class Func>
 			void callWithChannelForMessage(const MessageType m, Func&& func) {
+				ENGINE_DEBUG_ASSERT(m <= maxMessageType(), "Invalid message type.");
 				([&]<class T, T... Is>(std::integer_sequence<T, Is...>){
 					using F = void(Func::*)(void) const;
 					constexpr F fs[] = {&Func::template operator()<std::decay_t<decltype(std::declval<Connection>().getChannelForMessage<Is>())>>...};
@@ -133,7 +130,7 @@ namespace Engine::Net {
 
 		public:
 			Connection(IPv4Address addr, Engine::Clock::TimePoint time) : addr{addr} {
-				rdat.time = time;
+				rdat2.time = time;
 			}
 
 			ENGINE_INLINE const auto& address() const { return addr; }
@@ -172,11 +169,11 @@ namespace Engine::Net {
 			// TODO: why does this have a return value? isnt it always true?
 			[[nodiscard]]
 			bool recv(const Packet& pkt, int32 sz, Engine::Clock::TimePoint time) {
-				rdat.time = time;
-				rdat.first = pkt.head;
-				rdat.last = rdat.first + sz;
-				rdat.curr = pkt.body;
-				rdat.msgLast = rdat.curr;
+				rdat2.time = time;
+				rdat2.curr = pkt.body;
+				rdat2.last = pkt.head + sz;
+				ENGINE_DEBUG_ASSERT(sz > 0);
+				ENGINE_DEBUG_ASSERT(rdat2.curr < rdat2.last);
 
 				const auto& acks = pkt.getAcks();
 				const auto seq = pkt.getSeqNum();
@@ -224,102 +221,65 @@ namespace Engine::Net {
 				return true;
 			}
 
-			auto recvTime() const { return rdat.time; }
+			auto recvTime() const { return rdat2.time; }
 
-			/**
-			 * Read the next message from the packet set by recv.
-			 */
-			const MessageHeader* recvNext() {
-				if (rdat.curr >= rdat.last) {
+			// TODO: fix return type
+			struct MessageView { const MessageHeader* hdr=nullptr; BufferReader msg={}; };
+			MessageView recvNext() {
+				ENGINE_DEBUG_ASSERT(rdat2.curr <= rdat2.last);
+
+				// Read from channels if current packet empty
+				if (rdat2.curr == rdat2.last) {
+					// Its fine to use hdr directly here since channels store data in max aligned storage (std::vector at the time of writting this)
+					// If we need more flexibility with storage we need to do a buffer reader like we do below.
 					const MessageHeader* hdr = nullptr;
 					((hdr = getChannel<Cs>().recvNext()) || ...); // Takes advantage of || short circuit
-					if (hdr) {
-						rdat.first = reinterpret_cast<const byte*>(hdr);
-						rdat.curr = rdat.first + sizeof(*hdr);
-						rdat.last = rdat.curr + hdr->size;
-						rdat.msgLast = rdat.last;
+					MessageView view = {};
+					if (hdr) { 
+						view = {hdr, {hdr, hdr->size + sizeof(MessageHeader)}};
+						view.msg.read(sizeof(MessageHeader));
 					}
-					return hdr;
+					return view;
 				}
 
-				ENGINE_DEBUG_ASSERT(rdat.curr == rdat.msgLast, "Incomplete read of network message");
-				const auto* hdr = read<MessageHeader>();
-				ENGINE_DEBUG_ASSERT(hdr->size <= sizeof(Packet::body) - sizeof(MessageHeader),
-					"Invalid network message length"
-				);
+				// Read from active packet
+				BufferReader msg = {rdat2.curr, rdat2.last};
+				if (!msg.read(&rdat2.head)) {
+					ENGINE_DEBUG_ASSERT(false, "Unable to read message header.");
+					ENGINE_WARN("Unable to read message header.");
+					// TODO: we need to handle this or else we will just read the same message again
+					return {};
+				}
 
+				ENGINE_DEBUG_ASSERT(msg.begin() != msg.peek());
+
+				if (rdat2.head.type > maxMessageType()) {
+					ENGINE_WARN("Invalid message type.");
+					ENGINE_DEBUG_ASSERT(false, "Invalid message type.");
+					// TODO: we need to handle this or else we will just read the same message again
+					return {};
+				}
+
+				if (rdat2.head.size > sizeof(Packet::body) - sizeof(MessageHeader)) {
+					ENGINE_WARN("Invalid message length");
+					ENGINE_DEBUG_ASSERT(false, "Invalid message length");
+					// TODO: we need to handle this or else we will just read the same message again
+					return {};
+				}
+
+				// Retarget so we arent spanning the whole packet, only the active message.
+				msg.resize(sizeof(MessageHeader) + rdat2.head.size);
+
+				// Should we process this message now or is it being buffered for later?
 				bool process = true;
-				callWithChannelForMessage(hdr->type, [&]<class C>(){
+				callWithChannelForMessage(rdat2.head.type, [&]<class C>(){
 					auto& ch = getChannel<C>();
-					process = ch.recv(*hdr);
+					process = ch.recv(rdat2.head, std::as_const(msg));
 				});
 
-				rdat.msgLast = rdat.curr + hdr->size;
-
-				if (process) {
-					return hdr;
-				} else {
-					rdat.curr += hdr->size;
-					return recvNext();
-				}
-			}
-
-			/**
-			 * The number of bytes remaining in the current recv message.
-			 */
-			auto recvMsgSize() const { return static_cast<int32>(rdat.msgLast - rdat.curr); }
-
-			/**
-			 * The number of byte reminaing in the current recv packet.
-			 */
-			auto recvSize() const { return static_cast<int32>(rdat.last - rdat.curr); }
-
-			/**
-			 * Reads a specific number of bytes from the current message.
-			 */
-			const void* read(size_t sz) {
-				ENGINE_DEBUG_ASSERT(rdat.curr + sz <= rdat.last, "Insufficient space remaining to read");
-				if (rdat.curr + sz > rdat.last) { return nullptr; }
-
-				// TODO: will this have alignment issues?
-				const void* temp = rdat.curr;
-				rdat.curr += sz;
-				return temp;
-			}
-			
-			/**
-			 * Reads an object from the current message.
-			 */
-			template<class T>
-			decltype(auto) read() {
-				static_assert(!std::is_pointer_v<T>, "Cannot read pointers from network connection.");
-				ENGINE_DEBUG_ASSERT(bitCount == 0, "Incomplete read of packed bits");
-				return reinterpret_cast<const T*>(read(sizeof(T)));
-			}
-
-			template<int N>
-			uint32 read() {
-				// TODO: add version for > 32
-				static_assert(N <= 32);
-				while (bitCount < N) {
-					bitStore |= uint64{*rdat.curr} << bitCount;
-					rdat.curr += 1;
-					bitCount += 8;
-				}
-
-				uint32 val = bitStore & ((1ull << N) - 1);
-				bitStore >>= N;
-				bitCount -= N;
-				return val;
-			}
-
-			ENGINE_INLINE void discard() noexcept {
-				rdat.curr = rdat.last;
-			}
-
-			ENGINE_INLINE void readFlushBits() noexcept {
-				bitStore = 0;
-				bitCount = 0;
+				rdat2.curr = msg.end();
+				if (process) { return { &rdat2.head, msg}; }
+				return recvNext();
 			}
 
 			void send(UDPSocket& sock) {
@@ -335,7 +295,7 @@ namespace Engine::Net {
 					const auto seq = nextSeqNum;
 
 					Packet pkt; // TODO: if we keep this move to be a member variable instead; - should be able to merge with msgBuffer?
-					msgBufferWriter = pkt.body;
+					msgBufferWriter.reset(pkt.body);
 					(getChannel<Cs>().fill(seq, msgBufferWriter), ...);
 					if (msgBufferWriter.size() == 0) { break; }
 					++nextSeqNum;
@@ -383,7 +343,7 @@ namespace Engine::Net {
 
 				// TODO: check that no other message is active
 				auto& channel = getChannelForMessage<M>();
-				msgBufferWriter = msgBuffer;
+				msgBufferWriter.reset(msgBuffer);
 
 				// TODO: pass bufferwriter by ptr. we convert ot pointer anyways. makes it clearer
 				return channel.beginMessage(channel, M, msgBufferWriter);

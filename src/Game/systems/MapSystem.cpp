@@ -248,8 +248,8 @@ namespace Game {
 		chunkEdits.clear();
 	}
 
-	void MapSystem::chunkFromNet(Connection& from, const Engine::Net::MessageHeader& head) {
-		const byte* begin = reinterpret_cast<const byte*>(from.read(head.size));
+	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
+		const byte* begin = reinterpret_cast<const byte*>(buff.read(head.size));
 		const byte* end = begin + head.size;
 		glm::ivec2 chunkPos;
 

@@ -143,9 +143,10 @@ namespace Engine::Net {
 			/**
 			 * Determines if a message should be processed by a connection.
 			 * @param hdr The header for the message.
+			 * @param buff A view of the message with the current position set to the body of the message.
 			 * @return True if the messages should be processed.
 			 */
-			bool recv(const MessageHeader& hdr) = delete;
+			bool recv(const MessageHeader& hdr, BufferReader buff) = delete;
 
 			/**
 			 * Gets any messages that need to be processed from this channel.
@@ -174,7 +175,7 @@ namespace Engine::Net {
 				return true;
 			}
 
-			constexpr static bool recv(const MessageHeader& hdr) noexcept {
+			constexpr static bool recv(const MessageHeader& hdr, BufferReader buff) noexcept {
 				return true;
 			}
 			
@@ -218,7 +219,7 @@ namespace Engine::Net {
 				return true;
 			}
 
-			bool recv(const MessageHeader& hdr) noexcept {
+			bool recv(const MessageHeader& hdr, BufferReader buff) noexcept {
 				if (seqGreater(hdr.seq, lastSeq)) {
 					lastSeq = hdr.seq;
 					return true;
@@ -340,7 +341,7 @@ namespace Engine::Net {
 			SequenceBuffer<SeqNum, bool, MAX_ACTIVE_MESSAGES_PER_CHANNEL> recvData;
 
 		public:
-			bool recv(const MessageHeader& hdr) {
+			bool recv(const MessageHeader& hdr, BufferReader buff) {
 				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
 					recvData.insert(hdr.seq);
 					return true;
@@ -365,10 +366,10 @@ namespace Engine::Net {
 			SequenceBuffer<SeqNum, RecvData, MAX_ACTIVE_MESSAGES_PER_CHANNEL> recvData;
 
 		public:
-			bool recv(const MessageHeader& hdr) {
+			bool recv(const MessageHeader& hdr, const BufferReader buff) {
 				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
 					auto& rcv = recvData.insert(hdr.seq);
-					rcv.data.assign(reinterpret_cast<const byte*>(&hdr), reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size);
+					rcv.data.assign(buff.begin(), buff.end());
 				}
 				return false;
 			}
@@ -526,12 +527,13 @@ namespace Engine::Net {
 				++nextBlob;
 			}
 
-			bool recv(const MessageHeader& hdr) {
+			bool recv(const MessageHeader& hdr, BufferReader buff) {
 				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
 					recvData.insert(hdr.seq);
 
-					const byte* dataBegin = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr);
+					const byte* dataBegin = buff.peek();
 
+					// TODO: cant just reinterpret, should memcpy, possible alignment issues
 					const auto& info = *reinterpret_cast<const BlobHeader*>(dataBegin);
 					dataBegin += sizeof(info);
 
@@ -549,11 +551,12 @@ namespace Engine::Net {
 					}
 
 					if (info.start() & ~BlobHeader::LEN_MASK) {
+						// TODO: cant just reinterpret, should memcpy, possible alignment issues
 						found->total = *reinterpret_cast<const int32*>(dataBegin);
 						dataBegin += sizeof(found->total);
 					}
 
-					const auto dataEnd = reinterpret_cast<const byte*>(&hdr) + sizeof(hdr) + hdr.size;
+					const auto dataEnd = buff.end();
 					// ENGINE_INFO("Recv blob part: ", info.seq(), " ", dataEnd - dataBegin, " ", info.start() & BlobHeader::LEN_MASK);
 					found->insert(info.start() & BlobHeader::LEN_MASK, dataBegin, dataEnd);
 				}

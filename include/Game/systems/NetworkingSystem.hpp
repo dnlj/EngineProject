@@ -82,11 +82,11 @@ namespace Game {
 			void disconnect(Engine::ECS::Entity ent, ConnectionComponent& connComp);
 
 			void recvAndDispatchMessages(Engine::Net::UDPSocket& sock);
-			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr);
+			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader* hdr, Engine::Net::BufferReader& msg);
 			void updateClient();
 
 			template<MessageType Type>
-			void handleMessageType(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head) {
+			void handleMessageType(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& msg) {
 				static_assert(Type != Type, "Unhandled network message type.");
 			};
 	};

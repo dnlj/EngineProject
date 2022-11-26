@@ -22,8 +22,8 @@ namespace Game {
 			void updateTarget(Engine::ECS::Entity ent, glm::vec2 val);
 
 		public:
-			void recvActions(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
-			void recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
-			void recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt);
+			void recvActions(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt, Engine::Net::BufferReader& msg);
+			void recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt, Engine::Net::BufferReader& msg);
+			void recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt, Engine::Net::BufferReader& msg);
 	};
 }
