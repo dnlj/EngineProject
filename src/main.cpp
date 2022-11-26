@@ -617,8 +617,8 @@ void run(int argc, char* argv[]) {
 	auto& guiContext = engine.getUIContext();
 	guiContext.setNativeWindowHandle(window.getWin32WindowHandle());
 	windowCallbacks.userdata = &engine;
-	//world.setNextTick((uint32)Engine::Noise::lcg(std::random_device()()));
-	world.setNextTick(ENGINE_SERVER ?  0x7FFF'FFFF : 0);
+	world.setNextTick((uint32)Engine::Noise::lcg(std::random_device()()));
+	//world.setNextTick(ENGINE_SERVER ?  0x7FFF'FFFF : 0);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Binds
