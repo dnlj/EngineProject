@@ -19,6 +19,8 @@
 namespace Game {
 	class ConnectionComponent;
 
+	using NetworkMessageHandler = void(*)(EngineInstance& engine, Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg);
+
 	class NetworkingSystem : public System {
 		public:
 			#if ENGINE_CLIENT
@@ -42,6 +44,8 @@ namespace Game {
 			Engine::Clock::TimePoint now = {};
 			Engine::Clock::TimePoint lastUpdate = {};
 
+			NetworkMessageHandler msgHandlers[MessageType::_count] = {};
+
 			/** Main socket for talking to the server/clients */
 			Engine::Net::UDPSocket socket;
 
@@ -59,8 +63,6 @@ namespace Game {
 				return v;
 			} 
 
-			// TODO: at some point we probably want to shrink this
-			Engine::FlatHashMap<Engine::ECS::Entity, Engine::ECS::Entity> entToLocal;
 
 		public:
 			NetworkingSystem(SystemArg arg);
@@ -74,8 +76,20 @@ namespace Game {
 
 			auto& getSocket() noexcept { return socket; }
 
+			void setMessageHandler(MessageType msg, NetworkMessageHandler func) noexcept {
+				if (msg >= MessageType::_count) {
+					ENGINE_WARN("Invalid message type ", msg);
+					ENGINE_DEBUG_ASSERT(false);
+					return;
+				}
+
+				ENGINE_DEBUG_ASSERT(!msgHandlers[msg], "Attempting to overwrite message handler.");
+				msgHandlers[msg] = func;
+			}
+
+			void addPlayer(const Engine::ECS::Entity ent); // TODO: move addPlayer to EntityNetworkingSystem
+
 		private:
-			void addPlayer(const Engine::ECS::Entity ent);
 			Engine::ECS::Entity addConnection(const Engine::Net::IPv4Address& addr);
 			Engine::ECS::Entity getEntity(const Engine::Net::IPv4Address& addr);
 			Engine::ECS::Entity getOrCreateEntity(const Engine::Net::IPv4Address& addr);
@@ -86,7 +100,7 @@ namespace Game {
 			void updateClient();
 
 			template<MessageType Type>
-			void handleMessageType(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) {
+			static void handleMessageType(EngineInstance& engine, Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) {
 				static_assert(Type != Type, "Unhandled network message type.");
 			};
 	};

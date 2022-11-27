@@ -9,15 +9,211 @@
 #include <Game/systems/EntityNetworkingSystem.hpp>
 #include <Game/comps/all.hpp>
 
+#include <Game/systems/NetworkingSystem.hpp>
+#include <Game/Connection.hpp>
+
 
 namespace {
 	using PlayerFilter = Engine::ECS::EntityFilterList<
 		Game::PlayerFlag,
 		Game::ConnectionComponent
 	>;
+
+	using Engine::ECS::Entity;
+	using Engine::Net::MessageHeader;
+	using Engine::Net::BufferReader;
+
+	using namespace Game;
+	using MsgT = Game::MessageType;
+
+	template <MsgT>
+	void recv(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg);
+
+	template<>
+	void recv<MsgT::ECS_INIT>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) {
+			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
+			return;
+		}
+
+		Engine::ECS::Tick tick;
+		if (!msg.read(&tick)) {
+			ENGINE_WARN("Unable to sync ticks.");
+			return;
+		}
+
+		auto& world = engine.getWorld();
+		ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", ent, " Tick: ", world.getTick(), " - ", tick);
+
+		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
+		world.setNextTick(tick + 16);
+		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
+		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+
+		entToLocal[remote] = ent;
+
+		// TODO: move addPlayer to EntityNetworkingSystem
+		world.getSystem<Game::NetworkingSystem>().addPlayer(ent);
+	}
+
+	template<>
+	void recv<MsgT::ECS_ENT_CREATE>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		Entity remote;
+		if (!msg.read(&remote)) { return; }
+
+		auto& world = engine.getWorld();
+		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
+		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+
+		auto& local = entToLocal[remote];
+		if (local == Engine::ECS::INVALID_ENTITY) {
+			local = world.createEntity();
+		}
+
+		world.addComponent<NetworkedFlag>(local);
+		ENGINE_LOG("Networked: ", local, world.hasComponent<NetworkedFlag>(local));
+
+		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", remote, " Local: ", local, " Tick: ", world.getTick());
+
+		// TODO: components init
+	}
+
+	template<>
+	void recv<MsgT::ECS_ENT_DESTROY>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) { return; }
+		
+		auto& world = engine.getWorld();
+		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
+		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+
+		auto found = entToLocal.find(remote);
+		if (found != entToLocal.end()) {
+			world.deferedDestroyEntity(found->second);
+			entToLocal.erase(found);
+		}
+	}
+
+	template<>
+	void recv<MsgT::ECS_COMP_ADD>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) { return; }
+
+		Engine::ECS::ComponentId cid;
+		if (!msg.read(&cid)) { return; }
+		
+		auto& world = engine.getWorld();
+		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
+		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+
+		auto found = entToLocal.find(remote);
+		if (found == entToLocal.end()) { return; }
+		auto local = found->second;
+
+		world.callWithComponent(cid, [&]<class C>{
+			if constexpr (IsNetworkedComponent<C>) {
+				if (!world.hasComponent<C>(local)) {
+					ENGINE_FLATTEN std::apply([&]<class... Args>(Args&&... args) ENGINE_INLINE {
+						world.addComponent<C>(local, std::forward<Args>(args)...);
+					}, NetworkTraits<C>::readInit(msg, engine, world, local));
+				}
+			} else if constexpr (ENGINE_DEBUG) {
+				ENGINE_WARN("Attemping to network non-network component");
+			}
+		});
+	}
+
+	template<>
+	void recv<MsgT::ECS_COMP_ALWAYS>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) { return; }
+
+		Engine::ECS::ComponentId cid;
+		if (!msg.read(&cid)) { return; }
+		
+		auto& world = engine.getWorld();
+		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
+		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+
+		auto found = entToLocal.find(remote);
+		if (found == entToLocal.end()) { return; }
+		auto local = found->second;
+		 
+		if (!world.isAlive(local)) {
+			ENGINE_WARN("Attempting to update dead entitiy ", local);
+			return;
+		}
+
+		// TODO: if a component IsSnapshotRelevant we should still store the snapshot data
+		if (!world.hasComponent(local, cid)) {
+			ENGINE_WARN(local, " does not have component ", cid);
+			return;
+		}
+
+		world.callWithComponent(cid, [&]<class C>{
+			if constexpr (IsNetworkedComponent<C>) {
+				// TODO: this is a somewhat strange way to handle this
+				if constexpr (Engine::ECS::IsSnapshotRelevant<C>) {
+					Engine::ECS::Tick tick;
+					if (!msg.read(&tick)) {
+						ENGINE_WARN("No tick specified for snapshot component in ECS_COMP_ALWAYS");
+						return;
+					}
+
+					NetworkTraits<C>::read(world.getComponentState<C>(local, tick), msg);
+				} else {
+					NetworkTraits<C>::read(world.getComponent<C>(local), msg);
+				}
+			} else if constexpr (ENGINE_DEBUG) {
+				ENGINE_WARN("Attemping to network non-network component");
+			}
+		});
+	}
+
+	template<>
+	void recv<MsgT::ECS_FLAG>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		Engine::ECS::Entity remote;
+		if (!msg.read(&remote)) { return; }
+
+		Game::World::FlagsBitset flags;
+		if (!msg.read(&flags)) { return; }
+		
+		auto& world = engine.getWorld();
+		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
+		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+
+
+		auto found = entToLocal.find(remote);
+		if (found == entToLocal.end()) { return; }
+		auto local = found->second;
+
+		Engine::Meta::ForEachIn<Game::FlagsSet>::call([&]<class C>{
+			constexpr auto cid = world.getComponentId<C>();
+			if (!flags.test(cid)) { return; }
+
+			if (world.hasComponent<C>(local)) {
+				world.removeComponent<C>(local);
+			} else {
+				world.addComponent<C>(local);
+			}
+		});
+	}
 }
 
 namespace Game {
+	void EntityNetworkingSystem::setup() {
+		auto& netSys = world.getSystem<NetworkingSystem>();
+
+		// TODO: NetworkingSystem might not be init yet...
+		netSys.setMessageHandler(MsgT::ECS_INIT, &recv<MsgT::ECS_INIT>);
+		netSys.setMessageHandler(MsgT::ECS_ENT_CREATE, &recv<MsgT::ECS_ENT_CREATE>);
+		netSys.setMessageHandler(MsgT::ECS_ENT_DESTROY, &recv<MsgT::ECS_ENT_DESTROY>);
+		netSys.setMessageHandler(MsgT::ECS_COMP_ADD, &recv<MsgT::ECS_COMP_ADD>);
+		netSys.setMessageHandler(MsgT::ECS_COMP_ALWAYS, &recv<MsgT::ECS_COMP_ALWAYS>);
+		netSys.setMessageHandler(MsgT::ECS_FLAG, &recv<MsgT::ECS_FLAG>);
+	}
+
 	void EntityNetworkingSystem::update(float32 dt) {
 		if constexpr (ENGINE_CLIENT) { return; }
 		const auto now = world.getTime();
@@ -56,7 +252,7 @@ namespace Game {
 
 	
 	template<class C>
-	bool EntityNetworkingSystem::networkComponent(const Engine::ECS::Entity ent, Connection& conn) const {
+	bool EntityNetworkingSystem::networkComponent(const Entity ent, Connection& conn) const {
 		auto& comp = world.getComponent<C>(ent);
 		if (NetworkTraits<C>::getReplType(comp) == Engine::Net::Replication::NONE) { return true; }
 
@@ -181,7 +377,7 @@ namespace Game {
 				}
 
 				virtual bool ReportFixture(b2Fixture* fixture) override {
-					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
+					const Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
 					if (ecsNetComp.neighbors.contains(ent)) {
 						ecsNetComp.neighbors.get(ent).state = ECSNetworkingComponent::NeighborState::Current;
 					}
@@ -200,7 +396,7 @@ namespace Game {
 				}
 
 				virtual bool ReportFixture(b2Fixture* fixture) override {
-					const Engine::ECS::Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
+					const Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
 					if (!world.hasComponent<NetworkedFlag>(ent)) { return true; }
 					if (!ecsNetComp.neighbors.contains(ent) && ent != ply) {
 						ecsNetComp.neighbors.add(ent, ECSNetworkingComponent::NeighborState::Added);

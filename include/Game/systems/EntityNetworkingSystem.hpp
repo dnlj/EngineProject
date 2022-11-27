@@ -1,5 +1,8 @@
 #pragma once
 
+// Engine
+#include <Engine/FlatHashMap.hpp>
+
 // Game
 #include <Game/System.hpp>
 #include <Game/comps/ECSNetworkingComponent.hpp>
@@ -15,10 +18,19 @@ namespace Game {
 			// TODO: rm - std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
 
 			Engine::Clock::TimePoint nextUpdate = {};
+			
+			// TODO: at some point we probably want to shrink this
+			/** Translate from remote to local entities */
+			Engine::FlatHashMap<Engine::ECS::Entity, Engine::ECS::Entity> entRemoteToLocal;
 
 		public:
 			using System::System;
+			void setup();
+
 			void update(float32 dt);
+
+			auto& getRemoteToLocalEntityMapping() noexcept { return entRemoteToLocal; }
+			const auto& getRemoteToLocalEntityMapping() const noexcept { return entRemoteToLocal; }
 
 		private:
 			void updateNeighbors();

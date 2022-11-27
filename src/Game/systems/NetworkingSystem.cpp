@@ -121,7 +121,7 @@ namespace {
 
 #define HandleMessageDef(MsgType) \
 	template<> \
-	void NetworkingSystem::handleMessageType<MsgType>(Engine::ECS::Entity ent, ConnectionComponent& connComp, Connection& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) { \
+	void NetworkingSystem::handleMessageType<MsgType>(EngineInstance& engine, Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) { \
 	if constexpr (!(Engine::Net::MessageTraits<MsgType>::side & ENGINE_SIDE)) { \
 		ENGINE_WARN("Message received by wrong side. Aborting."); return; \
 	} \
@@ -161,8 +161,10 @@ namespace Game {
 			int len;
 			if (!msg.read<int>(&len)) { return; }
 
+			auto& world = engine.getWorld();
+			auto& netSys = world.getSystem<NetworkingSystem>();
 			const char* name = reinterpret_cast<const char*>(msg.read(len));
-			auto& servInfo = servers[from.address()];
+			auto& servInfo = netSys.servers[from.address()];
 			servInfo.name.assign(name, len);
 			servInfo.lastUpdate = world.getTime();
 		#endif
@@ -189,7 +191,10 @@ namespace Game {
 		if (from.getState() == ConnectionState::Disconnected) {
 			ENGINE_DEBUG_ASSERT(from.getKeyLocal() == 0, "It should not be possible to have a local key in an unconnected state. This is a bug.");
 			from.setState(ConnectionState::Connecting);
-			from.setKeyLocal(genKey());
+
+			auto& world = engine.getWorld();
+			auto& netSys = world.getSystem<NetworkingSystem>(); // TODO: make a genKeys that doesnt use networking system
+			from.setKeyLocal(netSys.genKey());
 		} else {
 			ENGINE_DEBUG_ASSERT(from.getKeyLocal() != 0, "It should not be possible to be missing a local key in any non-unconnected state. This is a bug.");
 		}
@@ -228,10 +233,14 @@ namespace Game {
 			ENGINE_WARN("CONNECT_CONFIRM: Invalid recv key ", key, " != ", from.getKeyLocal());
 			return msg.discard();
 		}
+		
+		auto& world = engine.getWorld();
+		auto& netSys = world.getSystem<NetworkingSystem>();
 
 		ENGINE_LOG("CONNECT_CONFIRM from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick());
 		from.setState(ConnectionState::Connected);
-		addPlayer(ent);
+
+		netSys.addPlayer(ent);
 
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
 		if (auto reply = from.beginMessage<MessageType::ECS_INIT>()) {
@@ -244,32 +253,17 @@ namespace Game {
 		}
 	}
 
-	HandleMessageDef(MessageType::ECS_INIT)
-		Engine::ECS::Entity remote;
-		if (!msg.read(&remote)) {
-			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
-			return;
-		}
-
-		Engine::ECS::Tick tick;
-		if (!msg.read(&tick)) {
-			ENGINE_WARN("Unable to sync ticks.");
-			return;
-		}
-
-		ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", ent, " Tick: ", world.getTick(), " - ", tick);
-
-		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
-		world.setNextTick(tick + 16);
-		entToLocal[remote] = ent;
-		addPlayer(ent);
-	}
-
 	HandleMessageDef(MessageType::DISCONNECT)
 		if (from.getState() != ConnectionState::Connected) { return; }
+	
+		auto& world = engine.getWorld();
+		auto& netSys = world.getSystem<NetworkingSystem>();
+		auto& connComp = world.getComponent<ConnectionComponent>(ent);
+
+		// TODO: restructure so we dont need conncomp
 		if (connComp.disconnectAt != Engine::Clock::TimePoint{}) { return; }
 		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", ent);
-		disconnect(ent, connComp);
+		netSys.disconnect(ent, connComp);
 	}
 
 	HandleMessageDef(MessageType::PING)
@@ -325,123 +319,6 @@ namespace Game {
 		ENGINE_LOG("Network send rate updated: ", r2);
 		from.setPacketSendRate(std::max(minSendRate, std::min(r2, maxSendRate)));
 	}
-
-	HandleMessageDef(MessageType::ECS_ENT_CREATE)
-		Engine::ECS::Entity remote;
-		if (!msg.read(&remote)) { return; }
-
-		auto& local = entToLocal[remote];
-		if (local == Engine::ECS::INVALID_ENTITY) {
-			local = world.createEntity();
-		}
-
-		world.addComponent<NetworkedFlag>(local);
-		ENGINE_LOG("Networked: ", local, world.hasComponent<NetworkedFlag>(local));
-
-		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", remote, " Local: ", local, " Tick: ", world.getTick());
-
-		// TODO: components init
-	}
-
-	HandleMessageDef(MessageType::ECS_ENT_DESTROY) 
-		Engine::ECS::Entity remote;
-		if (!msg.read(&remote)) { return; }
-
-		auto found = entToLocal.find(remote);
-		if (found != entToLocal.end()) {
-			world.deferedDestroyEntity(found->second);
-			entToLocal.erase(found);
-		}
-	}
-
-	HandleMessageDef(MessageType::ECS_COMP_ADD)
-		Engine::ECS::Entity remote;
-		if (!msg.read(&remote)) { return; }
-
-		Engine::ECS::ComponentId cid;
-		if (!msg.read(&cid)) { return; }
-
-		auto found = entToLocal.find(remote);
-		if (found == entToLocal.end()) { return; }
-		auto local = found->second;
-
-		world.callWithComponent(cid, [&]<class C>{
-			if constexpr (IsNetworkedComponent<C>) {
-				if (!world.hasComponent<C>(local)) {
-					ENGINE_FLATTEN std::apply([&]<class... Args>(Args&&... args) ENGINE_INLINE {
-						world.addComponent<C>(local, std::forward<Args>(args)...);
-					}, NetworkTraits<C>::readInit(msg, engine, world, local));
-				}
-			} else if constexpr (ENGINE_DEBUG) {
-				ENGINE_WARN("Attemping to network non-network component");
-			}
-		});
-	}
-
-	HandleMessageDef(MessageType::ECS_COMP_ALWAYS)
-		Engine::ECS::Entity remote;
-		if (!msg.read(&remote)) { return; }
-
-		Engine::ECS::ComponentId cid;
-		if (!msg.read(&cid)) { return; }
-		
-		auto found = entToLocal.find(remote);
-		if (found == entToLocal.end()) { return; }
-		auto local = found->second;
-		 
-		if (!world.isAlive(local)) {
-			ENGINE_WARN("Attempting to update dead entitiy ", local);
-			return;
-		}
-
-		// TODO: if a component IsSnapshotRelevant we should still store the snapshot data
-		if (!world.hasComponent(local, cid)) {
-			ENGINE_WARN(local, " does not have component ", cid);
-			return;
-		}
-
-		world.callWithComponent(cid, [&]<class C>{
-			if constexpr (IsNetworkedComponent<C>) {
-				// TODO: this is a somewhat strange way to handle this
-				if constexpr (Engine::ECS::IsSnapshotRelevant<C>) {
-					Engine::ECS::Tick tick;
-					if (!msg.read(&tick)) {
-						ENGINE_WARN("No tick specified for snapshot component in ECS_COMP_ALWAYS");
-						return;
-					}
-
-					NetworkTraits<C>::read(world.getComponentState<C>(local, tick), msg);
-				} else {
-					NetworkTraits<C>::read(world.getComponent<C>(local), msg);
-				}
-			} else if constexpr (ENGINE_DEBUG) {
-				ENGINE_WARN("Attemping to network non-network component");
-			}
-		});
-	}
-
-	HandleMessageDef(MessageType::ECS_FLAG)
-		Engine::ECS::Entity remote;
-		if (!msg.read(&remote)) { return; }
-
-		World::FlagsBitset flags;
-		if (!msg.read(&flags)) { return; }
-		
-		auto found = entToLocal.find(remote);
-		if (found == entToLocal.end()) { return; }
-		auto local = found->second;
-
-		Engine::Meta::ForEachIn<FlagsSet>::call([&]<class C>{
-			constexpr auto cid = world.getComponentId<C>();
-			if (!flags.test(cid)) { return; }
-
-			if (world.hasComponent<C>(local)) {
-				world.removeComponent<C>(local);
-			} else {
-				world.addComponent<C>(local);
-			}
-		});
-	}
 	
 	HandleMessageDef(MessageType::PLAYER_DATA)
 		Engine::ECS::Tick tick;
@@ -454,7 +331,8 @@ namespace Game {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
-
+		
+		auto& world = engine.getWorld();
 		if (!world.hasComponent<PhysicsBodyComponent>(ent)) {
 			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsBodyComponent");
 			return;
@@ -485,10 +363,12 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::ACTION)
+		auto& world = engine.getWorld();
 		world.getSystem<ActionSystem>().recvActions(from, head, ent, msg);
 	}
 
 	HandleMessageDef(MessageType::MAP_CHUNK)
+		auto& world = engine.getWorld();
 		world.getSystem<MapSystem>().chunkFromNet(head, msg);
 	}
 
@@ -497,7 +377,8 @@ namespace Game {
 		b2Vec2 pos;
 		b2Vec2 dir;
 		if (!msg.read(&pos) || !msg.read(&dir)) { return; }
-
+		
+		auto& world = engine.getWorld();
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();
 		spellSys.queueMissile(pos, dir);
 	}
@@ -516,6 +397,26 @@ namespace Game {
 		, rng{pcg_extras::seed_seq_from<std::random_device>{}} {
 
 		ENGINE_LOG("Listening on port ", socket.getAddress().port);
+
+		setMessageHandler(MessageType::UNKNOWN, &handleMessageType<MessageType::UNKNOWN>);
+		setMessageHandler(MessageType::DISCOVER_SERVER, &handleMessageType<MessageType::DISCOVER_SERVER>);
+		setMessageHandler(MessageType::SERVER_INFO, &handleMessageType<MessageType::SERVER_INFO>);
+		setMessageHandler(MessageType::CONNECT_REQUEST, &handleMessageType<MessageType::CONNECT_REQUEST>);
+		setMessageHandler(MessageType::CONNECT_CHALLENGE, &handleMessageType<MessageType::CONNECT_CHALLENGE>);
+		setMessageHandler(MessageType::DISCONNECT, &handleMessageType<MessageType::DISCONNECT>);
+		setMessageHandler(MessageType::ACTION, &handleMessageType<MessageType::ACTION>);
+		setMessageHandler(MessageType::CONNECT_CONFIRM, &handleMessageType<MessageType::CONNECT_CONFIRM>);
+		setMessageHandler(MessageType::PING, &handleMessageType<MessageType::PING>);
+		setMessageHandler(MessageType::PLAYER_DATA, &handleMessageType<MessageType::PLAYER_DATA>);
+		setMessageHandler(MessageType::SPELL, &handleMessageType<MessageType::SPELL>);
+		setMessageHandler(MessageType::CONFIG_NETWORK, &handleMessageType<MessageType::CONFIG_NETWORK>);
+		//setMessageHandler(MessageType::ECS_INIT, &handleMessageType<MessageType::ECS_INIT>);
+		//setMessageHandler(MessageType::ECS_ENT_CREATE, &handleMessageType<MessageType::ECS_ENT_CREATE>);
+		//setMessageHandler(MessageType::ECS_ENT_DESTROY, &handleMessageType<MessageType::ECS_ENT_DESTROY>);
+		//setMessageHandler(MessageType::ECS_COMP_ADD, &handleMessageType<MessageType::ECS_COMP_ADD>);
+		//setMessageHandler(MessageType::ECS_COMP_ALWAYS, &handleMessageType<MessageType::ECS_COMP_ALWAYS>);
+		//setMessageHandler(MessageType::ECS_FLAG, &handleMessageType<MessageType::ECS_FLAG>);
+		setMessageHandler(MessageType::MAP_CHUNK, &handleMessageType<MessageType::MAP_CHUNK>);
 
 		#if ENGINE_SERVER
 		if (group.port) {
@@ -786,16 +687,43 @@ namespace Game {
 			return "UNKNOWN";
 		};
 
-		switch(hdr.type) {
-			#define X(Name, Side, SState, RState) case MessageType::Name: {\
-				/*ENGINE_LOG("MESSAGE: ", #Name, " ", hdr.seq, " ", hdr.size);/**/\
-				handleMessageType<MessageType::Name>(ent, connComp, from, hdr, msg); break; };
-			#include <Game/MessageType.xpp>
-			default: {
-				ENGINE_WARN("Unhandled network message type ", static_cast<int32>(hdr.type));
-			}
+
+		// TODO: rm
+		//switch(hdr.type) {
+		//	#define X(Name, Side, SState, RState) case MessageType::Name: {\
+		//		/*ENGINE_LOG("MESSAGE: ", #Name, " ", hdr.seq, " ", hdr.size);/**/\
+		//		handleMessageType<MessageType::Name>(engine, ent, from, hdr, msg); break; };
+		//	#include <Game/MessageType.xpp>
+		//	default: {
+		//		ENGINE_WARN("Unhandled network message type ", static_cast<int32>(hdr.type));
+		//	}
+		//}
+
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: need to setup handles rsfalsdkfjsdf
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		if (hdr.type <= 0 || hdr.type >= MessageType::_count) {
+			ENGINE_WARN("Attempting to dispatch invalid message type ", +hdr.type);
+		} else {
+			auto func = msgHandlers[hdr.type];
+			ENGINE_DEBUG_ASSERT(func, "No message handler set for type ", +hdr.type);
+			func(engine, ent, from, hdr, msg);
 		}
-		
+
 		if (auto rem = msg.remaining(); rem > 0) {
 			ENGINE_WARN("Incomplete read of network message ", msgToStr(hdr.type), " (", rem, " bytes remaining). Ignoring.");
 		} else if (rem < 0) {
