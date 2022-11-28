@@ -362,11 +362,6 @@ namespace Game {
 		// TODO: vel
 	}
 
-	HandleMessageDef(MessageType::ACTION)
-		auto& world = engine.getWorld();
-		world.getSystem<ActionSystem>().recvActions(from, head, ent, msg);
-	}
-
 	HandleMessageDef(MessageType::MAP_CHUNK)
 		auto& world = engine.getWorld();
 		world.getSystem<MapSystem>().chunkFromNet(head, msg);
@@ -404,18 +399,11 @@ namespace Game {
 		setMessageHandler(MessageType::CONNECT_REQUEST, &handleMessageType<MessageType::CONNECT_REQUEST>);
 		setMessageHandler(MessageType::CONNECT_CHALLENGE, &handleMessageType<MessageType::CONNECT_CHALLENGE>);
 		setMessageHandler(MessageType::DISCONNECT, &handleMessageType<MessageType::DISCONNECT>);
-		setMessageHandler(MessageType::ACTION, &handleMessageType<MessageType::ACTION>);
 		setMessageHandler(MessageType::CONNECT_CONFIRM, &handleMessageType<MessageType::CONNECT_CONFIRM>);
 		setMessageHandler(MessageType::PING, &handleMessageType<MessageType::PING>);
 		setMessageHandler(MessageType::PLAYER_DATA, &handleMessageType<MessageType::PLAYER_DATA>);
 		setMessageHandler(MessageType::SPELL, &handleMessageType<MessageType::SPELL>);
 		setMessageHandler(MessageType::CONFIG_NETWORK, &handleMessageType<MessageType::CONFIG_NETWORK>);
-		//setMessageHandler(MessageType::ECS_INIT, &handleMessageType<MessageType::ECS_INIT>);
-		//setMessageHandler(MessageType::ECS_ENT_CREATE, &handleMessageType<MessageType::ECS_ENT_CREATE>);
-		//setMessageHandler(MessageType::ECS_ENT_DESTROY, &handleMessageType<MessageType::ECS_ENT_DESTROY>);
-		//setMessageHandler(MessageType::ECS_COMP_ADD, &handleMessageType<MessageType::ECS_COMP_ADD>);
-		//setMessageHandler(MessageType::ECS_COMP_ALWAYS, &handleMessageType<MessageType::ECS_COMP_ALWAYS>);
-		//setMessageHandler(MessageType::ECS_FLAG, &handleMessageType<MessageType::ECS_FLAG>);
 		setMessageHandler(MessageType::MAP_CHUNK, &handleMessageType<MessageType::MAP_CHUNK>);
 
 		#if ENGINE_SERVER

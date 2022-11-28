@@ -57,9 +57,11 @@ namespace Game {
 	};
 
 	class ActionComponent {
+		public:
+			Engine::SequenceBuffer<Engine::ECS::Tick, ActionState, tickrate> states; // TODO: why is this public?
+
 		private:
-			friend class ActionSystem;
-			Engine::SequenceBuffer<Engine::ECS::Tick, ActionState, tickrate> states;
+			friend class ActionSystem; // TODO: rm - no longer needed
 			ActionState* state = nullptr;
 
 			// TODo: rename. use tickTrend

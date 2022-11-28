@@ -1,6 +1,7 @@
 // Game
 #include <Game/World.hpp>
 #include <Game/systems/ActionSystem.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/ConnectionComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
@@ -10,6 +11,9 @@
 namespace {
 	using namespace Game;
 	using EstBuffSize = uint8;
+	using Engine::ECS::Entity;
+	using Engine::Net::MessageHeader;
+	using Engine::Net::BufferReader;
 	constexpr int32 tmax = std::numeric_limits<EstBuffSize>::max();
 	constexpr int32 range = (tmax - ActionComponent::maxStates) / 2;
 
@@ -23,12 +27,183 @@ namespace {
 	};
 
 	using Filter = Engine::ECS::EntityFilterList<ActionComponent, ConnectionComponent>;
+
+	void recv_ACTION_server(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		auto& world = engine.getWorld();
+
+		Engine::ECS::Tick tick;
+		msg.read<Engine::ECS::Tick>(&tick);
+
+		const auto recvTick = world.getTick();
+		auto& actComp = world.getComponent<ActionComponent>(ent);
+
+		// These are inclusive
+		const auto minTick = recvTick + 1;
+		const auto maxTick = recvTick + actComp.states.capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
+
+		for (auto t = tick + 1 - (actComp.states.capacity() / 4); t <= tick; ++t) {
+			ActionState s = {};
+			s.netRead(msg);
+
+			if (t < minTick || t > maxTick) { continue; }
+			if (!actComp.states.contains(t)) {
+				if (t != tick) {
+					//ENGINE_INFO("Oh boy. Back filled tick: ", t, " ", tick);
+				} else {
+					//ENGINE_WARN("Oh boy.", t);
+				}
+
+				s.recvTick = recvTick;
+				actComp.states.insert(t) = s;
+			}
+		}
+		msg.readFlushBits();
+
+		{
+			// TODO: why do we do this? isnt this always `tick - recvTick`?
+			const float32 off = tick < recvTick ? -static_cast<float32>(recvTick - tick) : static_cast<float32>(tick - recvTick);
+			// TODO: need to handle negative values. tick-recv vs recv-tick then cast to float and neg
+			actComp.estBufferSize += (off - actComp.estBufferSize) * 0.2f;
+		}
+
+		//auto* found = actComp.states.find(tick);
+		//
+		//if (found) {
+		//	ENGINE_WARN("Duplicate input for tick ", tick, ". Ignoring.");
+		//	return;
+		//} else {
+		//	found = &actComp.states.insert(tick);
+		//}
+		//
+		//*found = *state;
+		//found->recvTick = recvTick;
+	}
+
+	void recv_ACTION_client(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		auto& world = engine.getWorld();
+		// TODO: what about ordering?
+		// TODO: we dont actually use tick/recvTick. just nw buffsize
+		constexpr float32 maxStates = static_cast<float32>(decltype(ActionComponent::states)::capacity());
+
+		Engine::ECS::Tick tick;
+		msg.read<Engine::ECS::Tick>(&tick);
+
+		Engine::ECS::Tick recvTick;
+		msg.read<Engine::ECS::Tick>(&recvTick);
+
+		const auto buffSize = tick - recvTick;
+
+		if (recvTick == 0) { // TODO: The server should probably send a bitset of the recvs it has received each time so it can be redundant like the client side inputs are.
+			auto& actComp = world.getComponent<ActionComponent>(ent);
+			auto* state = actComp.states.find(tick);
+			if (state) {
+				auto* prev = actComp.states.find(tick - 1);
+				if (prev) {
+					*state = *prev;
+					ENGINE_WARN("Server missed input for ", tick, " - duplicating last input");
+				} else {
+					ENGINE_WARN("Server missed input for ", tick, " - unable to duplicate last input");
+				}
+			}
+		}
+
+		auto& actComp = world.getComponent<ActionComponent>(ent);
+		{
+			uint8 estNet;
+			msg.read<uint8>(&estNet);
+			const auto est = estBuffSizeFromNet(estNet);
+
+			// NOTE: seems to work fine without this.
+			//float32 ping = std::chrono::duration<float32, std::milli>{from.getPing()}.count();
+			//float32 ticksPerPing = Engine::Clock::Milliseconds{from.getPing()} / Engine::Clock::Milliseconds{World::getTickInterval()};
+			//
+			//// Interpolate between 0.2 and 0.01 based on ping
+			//constexpr float32 m = (0.01f - 0.2f) / (maxStates - 1.0f);
+			//constexpr float32 b = (-maxStates * m) + 0.01f;
+			//float32 smoothing = m * ticksPerPing + b;
+
+			//actComp.estBufferSize += (est - actComp.estBufferSize) * smoothing;
+			actComp.estBufferSize = est;
+		}
+
+		// TODO: this is ideal buffer size not tick lead...
+		const auto idealTickLead = [&](){
+			constexpr auto tickDur = World::getTickInterval();
+			const auto p2 = from.getPing().count() * 0.5f; // One way trip
+			const auto j2 = static_cast<float32>(from.getJitter().count());
+			const auto avgTripTime = p2 * (1.0f + from.getLoss()) + j2;
+			const auto avgTicksPerTrip = std::ceil(avgTripTime / tickDur.count());
+			// TODO: probably also want to track a stat of how many inputs we have missed in the last X seconds. (exp avg would be fine)
+			return avgTicksPerTrip + 1;
+		};
+
+		// TODO: ideal should be smoothed over time
+		const auto ideal = idealTickLead();
+
+		// Used to adjust tickScale when based on trend. Scaled in range [trendAdjust, maxTrendScale + trendAdjust]
+		constexpr float32 maxTickScale = 2.0f;
+		constexpr float32 maxBufferSize = maxStates;
+
+		float32 diff = actComp.estBufferSize - ideal;
+
+		const auto calcTickScale = [&](const float32 diff){
+			float32 scale = (maxTickScale/(range + maxStates));
+			const auto ping = from.getPing();
+
+			// Be more conservative at larger pings to prevent bouncing between too high and too low due to slower feedback
+			if (ping > std::chrono::milliseconds{350}) {
+				scale *= 0.25f;
+			} else if (ping > std::chrono::milliseconds{250}) {
+				scale *= 0.50f;
+			} else if (ping > std::chrono::milliseconds{100}) {
+				scale *= 0.75f;
+			} else if (ping > std::chrono::milliseconds{50}) {
+				scale *= 0.95f;
+			}
+
+			return 1.0f + (diff * scale);
+		};
+
+		// NOTE: seems to work fine without this
+		// Prevent large changes from ping spikes
+		//if (from.getJitter() > std::chrono::milliseconds{50}) {
+		//	diff *= 0.25f;
+		//}
+
+		// Slow down when we are close to the correct value
+		if (std::abs(diff) < ideal + 8.0f) {
+			diff *= 0.75f;
+		}
+
+		// Determine the tick scale
+		constexpr float32 eps = 0.8f;
+		if (diff < -eps) {
+			world.tickScale = 1.0f / calcTickScale(std::abs(diff));
+		} else if (diff > eps) {
+			world.tickScale = calcTickScale(diff);
+		} else {
+			world.tickScale = 1.0f;
+		}
+
+		if constexpr (ENGINE_DEBUG) {
+			if (world.hasComponent<NetworkStatsComponent>(ent)) {
+				auto& netStatsComp = world.getComponent<NetworkStatsComponent>(ent);
+				netStatsComp.inputBufferSize = static_cast<int32>(buffSize);
+				netStatsComp.idealInputBufferSize = ideal;
+			}
+		}
+	}
 }
 
 
 namespace Game {
 	ActionSystem::ActionSystem(SystemArg arg)
 		: System{arg} {
+	}
+
+	void ActionSystem::setup() {
+		auto& netSys = world.getSystem<NetworkingSystem>();
+		netSys.setMessageHandler(MessageType::ACTION, ENGINE_SERVER ? recv_ACTION_server : recv_ACTION_client);
 	}
 
 	void ActionSystem::preTick() {
@@ -126,177 +301,6 @@ namespace Game {
 				// If we ever add lag compensation we will need to handle server rollback here.
 			}
 		}
-	}
-
-	void ActionSystem::recvActions(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt, Engine::Net::BufferReader& msg) {
-		if constexpr (ENGINE_SERVER) {
-			recvActionsServer(from, head, fromEnt, msg);
-		} else {
-			recvActionsClient(from, head, fromEnt, msg);
-		}
-	}
-
-	void ActionSystem::recvActionsClient(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt, Engine::Net::BufferReader& msg) {
-		// TODO: what about ordering?
-		// TODO: we dont actually use tick/recvTick. just nw buffsize
-		constexpr float32 maxStates = static_cast<float32>(decltype(ActionComponent::states)::capacity());
-
-		Engine::ECS::Tick tick;
-		msg.read<Engine::ECS::Tick>(&tick);
-
-		Engine::ECS::Tick recvTick;
-		msg.read<Engine::ECS::Tick>(&recvTick);
-
-		const auto buffSize = tick - recvTick;
-
-		if (recvTick == 0) { // TODO: The server should probably send a bitset of the recvs it has received each time so it can be redundant like the client side inputs are.
-			auto& actComp = world.getComponent<ActionComponent>(fromEnt);
-			auto* state = actComp.states.find(tick);
-			if (state) {
-				auto* prev = actComp.states.find(tick - 1);
-				if (prev) {
-					*state = *prev;
-					ENGINE_WARN("Server missed input for ", tick, " - duplicating last input");
-				} else {
-					ENGINE_WARN("Server missed input for ", tick, " - unable to duplicate last input");
-				}
-			}
-		}
-
-		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
-		{
-			uint8 estNet;
-			msg.read<uint8>(&estNet);
-			const auto est = estBuffSizeFromNet(estNet);
-
-			// NOTE: seems to work fine without this.
-			//float32 ping = std::chrono::duration<float32, std::milli>{from.getPing()}.count();
-			//float32 ticksPerPing = Engine::Clock::Milliseconds{from.getPing()} / Engine::Clock::Milliseconds{World::getTickInterval()};
-			//
-			//// Interpolate between 0.2 and 0.01 based on ping
-			//constexpr float32 m = (0.01f - 0.2f) / (maxStates - 1.0f);
-			//constexpr float32 b = (-maxStates * m) + 0.01f;
-			//float32 smoothing = m * ticksPerPing + b;
-
-			//actComp.estBufferSize += (est - actComp.estBufferSize) * smoothing;
-			actComp.estBufferSize = est;
-		}
-
-		// TODO: this is ideal buffer size not tick lead...
-		const auto idealTickLead = [&](){
-			constexpr auto tickDur = World::getTickInterval();
-			const auto p2 = from.getPing().count() * 0.5f; // One way trip
-			const auto j2 = static_cast<float32>(from.getJitter().count());
-			const auto avgTripTime = p2 * (1.0f + from.getLoss()) + j2;
-			const auto avgTicksPerTrip = std::ceil(avgTripTime / tickDur.count());
-			// TODO: probably also want to track a stat of how many inputs we have missed in the last X seconds. (exp avg would be fine)
-			return avgTicksPerTrip + 1;
-		};
-
-		// TODO: ideal should be smoothed over time
-		const auto ideal = idealTickLead();
-
-		// Used to adjust tickScale when based on trend. Scaled in range [trendAdjust, maxTrendScale + trendAdjust]
-		constexpr float32 maxTickScale = 2.0f;
-		constexpr float32 maxBufferSize = maxStates;
-
-		float32 diff = actComp.estBufferSize - ideal;
-
-		const auto calcTickScale = [&](const float32 diff){
-			float32 scale = (maxTickScale/(range + maxStates));
-			const auto ping = from.getPing();
-
-			// Be more conservative at larger pings to prevent bouncing between too high and too low due to slower feedback
-			if (ping > std::chrono::milliseconds{350}) {
-				scale *= 0.25f;
-			} else if (ping > std::chrono::milliseconds{250}) {
-				scale *= 0.50f;
-			} else if (ping > std::chrono::milliseconds{100}) {
-				scale *= 0.75f;
-			} else if (ping > std::chrono::milliseconds{50}) {
-				scale *= 0.95f;
-			}
-
-			return 1.0f + (diff * scale);
-		};
-
-		// NOTE: seems to work fine without this
-		// Prevent large changes from ping spikes
-		//if (from.getJitter() > std::chrono::milliseconds{50}) {
-		//	diff *= 0.25f;
-		//}
-
-		// Slow down when we are close to the correct value
-		if (std::abs(diff) < ideal + 8.0f) {
-			diff *= 0.75f;
-		}
-
-		// Determine the tick scale
-		constexpr float32 eps = 0.8f;
-		if (diff < -eps) {
-			world.tickScale = 1.0f / calcTickScale(std::abs(diff));
-		} else if (diff > eps) {
-			world.tickScale = calcTickScale(diff);
-		} else {
-			world.tickScale = 1.0f;
-		}
-
-		if constexpr (ENGINE_DEBUG) {
-			if (world.hasComponent<NetworkStatsComponent>(fromEnt)) {
-				auto& netStatsComp = world.getComponent<NetworkStatsComponent>(fromEnt);
-				netStatsComp.inputBufferSize = static_cast<int32>(buffSize);
-				netStatsComp.idealInputBufferSize = ideal;
-			}
-		}
-	} 
-
-	void ActionSystem::recvActionsServer(Connection& from, const Engine::Net::MessageHeader& head, Engine::ECS::Entity fromEnt, Engine::Net::BufferReader& msg) {
-		Engine::ECS::Tick tick;
-		msg.read<Engine::ECS::Tick>(&tick);
-
-		const auto recvTick = world.getTick();
-		auto& actComp = world.getComponent<ActionComponent>(fromEnt);
-
-		// These are inclusive
-		const auto minTick = recvTick + 1;
-		const auto maxTick = recvTick + actComp.states.capacity() - 1 - 1; // Keep last input so we can duplicate if we need to
-
-		for (auto t = tick + 1 - (actComp.states.capacity() / 4); t <= tick; ++t) {
-			ActionState s = {};
-			s.netRead(msg);
-
-			if (t < minTick || t > maxTick) { continue; }
-			if (!actComp.states.contains(t)) {
-				if (t != tick) {
-					//ENGINE_INFO("Oh boy. Back filled tick: ", t, " ", tick);
-				} else {
-					//ENGINE_WARN("Oh boy.", t);
-				}
-
-				s.recvTick = recvTick;
-				actComp.states.insert(t) = s;
-			}
-		}
-		msg.readFlushBits();
-
-		{
-			// TODO: why do we do this? isnt this always `tick - recvTick`?
-			const float32 off = tick < recvTick ? -static_cast<float32>(recvTick - tick) : static_cast<float32>(tick - recvTick);
-			// TODO: need to handle negative values. tick-recv vs recv-tick then cast to float and neg
-			actComp.estBufferSize += (off - actComp.estBufferSize) * 0.2f;
-		}
-
-		//auto* found = actComp.states.find(tick);
-		//
-		//if (found) {
-		//	ENGINE_WARN("Duplicate input for tick ", tick, ". Ignoring.");
-		//	return;
-		//} else {
-		//	found = &actComp.states.insert(tick);
-		//}
-		//
-		//*found = *state;
-		//found->recvTick = recvTick;
 	}
 
 	void ActionSystem::updateActionState(Action act, bool val) {
