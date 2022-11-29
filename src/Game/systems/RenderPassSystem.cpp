@@ -1,7 +1,7 @@
 #pragma once
 
 // Engine
-#include <Engine/Meta/ForEach.hpp>
+#include <Engine/Meta/for.hpp>
 
 // Game
 #include <Game/World.hpp>

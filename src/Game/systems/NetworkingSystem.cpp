@@ -9,7 +9,7 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Entity.hpp>
-#include <Engine/Meta/ForEach.hpp>
+#include <Engine/Meta/for.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -574,7 +574,6 @@ namespace Game {
 
 		world.addComponent<ActionComponent>(ent, world.getTick());
 		world.addComponent<MapEditComponent>(ent);
-		world.addComponent<CharacterSpellComponent>(ent);
 	}
 
 	Engine::ECS::Entity NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {

@@ -14,7 +14,7 @@
 #include <Engine/SequenceBuffer.hpp>
 #include <Engine/ECS/EntityFilter.hpp>
 #include <Engine/FlatHashMap.hpp>
-#include <Engine/Meta/ForEach.hpp>
+#include <Engine/Meta/for.hpp>
 
 
 namespace Engine::ECS {

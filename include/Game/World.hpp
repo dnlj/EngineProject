@@ -60,7 +60,6 @@ namespace Game {
 	>;
 
 	using FlagsSet = Meta::TypeSet::TypeSet<
-		struct CharacterSpellComponent, // TODO: rn xFlag
 		struct PlayerFlag,
 		struct CameraTargetFlag,
 		struct NetworkedFlag
