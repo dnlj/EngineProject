@@ -19,18 +19,12 @@ namespace {
 		Game::ConnectionComponent
 	>;
 
+	using namespace Game;
 	using Engine::ECS::Entity;
 	using Engine::Net::MessageHeader;
 	using Engine::Net::BufferReader;
 
-	using namespace Game;
-	using MsgT = Game::MessageType;
-
-	template <MsgT>
-	void recv(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg);
-
-	template<>
-	void recv<MsgT::ECS_INIT>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_INIT(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) {
 			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
@@ -57,8 +51,7 @@ namespace {
 		world.getSystem<Game::NetworkingSystem>().addPlayer(ent);
 	}
 
-	template<>
-	void recv<MsgT::ECS_ENT_CREATE>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_ENT_CREATE(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
 		Entity remote;
 		if (!msg.read(&remote)) { return; }
 
@@ -79,8 +72,7 @@ namespace {
 		// TODO: components init
 	}
 
-	template<>
-	void recv<MsgT::ECS_ENT_DESTROY>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_ENT_DESTROY(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) { return; }
 		
@@ -95,8 +87,7 @@ namespace {
 		}
 	}
 
-	template<>
-	void recv<MsgT::ECS_COMP_ADD>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_COMP_ADD(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) { return; }
 
@@ -124,8 +115,7 @@ namespace {
 		});
 	}
 
-	template<>
-	void recv<MsgT::ECS_COMP_ALWAYS>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_COMP_ALWAYS(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) { return; }
 
@@ -171,8 +161,7 @@ namespace {
 		});
 	}
 
-	template<>
-	void recv<MsgT::ECS_FLAG>(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_FLAG(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) { return; }
 
@@ -199,6 +188,48 @@ namespace {
 			}
 		});
 	}
+
+	void recv_PLAYER_DATA(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		Engine::ECS::Tick tick;
+		b2Transform trans;
+		b2Vec2 vel;
+		
+		// TODO: angVel
+
+		if (!msg.read(&tick) || !msg.read(&trans) || !msg.read(&vel)) {
+			ENGINE_WARN("Invalid PLAYER_DATA network message");
+			return;
+		}
+		
+		auto& world = engine.getWorld();
+		if (!world.hasComponent<PhysicsBodyComponent>(ent)) {
+			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsBodyComponent");
+			return;
+		}
+
+		auto& physCompState = world.getComponentState<PhysicsBodyComponent>(ent, tick);
+		const auto diff = physCompState.trans.p - trans.p;
+		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
+		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
+		// TODO: why does this ever happen with only one player connected?
+		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
+			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physCompState.trans.p.x)>::max_digits10),
+				"Oh boy a mishap has occured on tick ", tick,
+				" (<", physCompState.trans.p.x, ", ", physCompState.trans.p.y, "> - <",
+				trans.p.x, ", ", trans.p.y, "> = <",
+				diff.x, ", ", diff.y,
+				">)"
+			);
+
+			physCompState.trans = trans;
+			physCompState.vel = vel;
+			physCompState.rollbackOverride = true;
+
+			world.scheduleRollback(tick);
+		}
+
+		// TODO: vel
+	}
 }
 
 namespace Game {
@@ -206,12 +237,13 @@ namespace Game {
 		auto& netSys = world.getSystem<NetworkingSystem>();
 
 		// TODO: NetworkingSystem might not be init yet...
-		netSys.setMessageHandler(MsgT::ECS_INIT, &recv<MsgT::ECS_INIT>);
-		netSys.setMessageHandler(MsgT::ECS_ENT_CREATE, &recv<MsgT::ECS_ENT_CREATE>);
-		netSys.setMessageHandler(MsgT::ECS_ENT_DESTROY, &recv<MsgT::ECS_ENT_DESTROY>);
-		netSys.setMessageHandler(MsgT::ECS_COMP_ADD, &recv<MsgT::ECS_COMP_ADD>);
-		netSys.setMessageHandler(MsgT::ECS_COMP_ALWAYS, &recv<MsgT::ECS_COMP_ALWAYS>);
-		netSys.setMessageHandler(MsgT::ECS_FLAG, &recv<MsgT::ECS_FLAG>);
+		netSys.setMessageHandler(MessageType::ECS_INIT, recv_ECS_INIT);
+		netSys.setMessageHandler(MessageType::ECS_ENT_CREATE, recv_ECS_ENT_CREATE);
+		netSys.setMessageHandler(MessageType::ECS_ENT_DESTROY, recv_ECS_ENT_DESTROY);
+		netSys.setMessageHandler(MessageType::ECS_COMP_ADD, recv_ECS_COMP_ADD);
+		netSys.setMessageHandler(MessageType::ECS_COMP_ALWAYS, recv_ECS_COMP_ALWAYS);
+		netSys.setMessageHandler(MessageType::ECS_FLAG, recv_ECS_FLAG);
+		netSys.setMessageHandler(MessageType::PLAYER_DATA, recv_PLAYER_DATA);
 	}
 
 	void EntityNetworkingSystem::update(float32 dt) {
@@ -228,6 +260,7 @@ namespace Game {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
 			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
 
+			// TODO: see DqVBIIfY
 			// TODO: move elsewhere, this isnt really related to ECS networking
 			{ // TODO: player data should be sent every tick along with actions/inputs.
 			// TODO: cont.  Should it? every few frames is probably fine for keeping it in sync. Although when it does desync it will be a larger rollback.

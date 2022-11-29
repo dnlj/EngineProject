@@ -320,59 +320,11 @@ namespace Game {
 		from.setPacketSendRate(std::max(minSendRate, std::min(r2, maxSendRate)));
 	}
 	
-	HandleMessageDef(MessageType::PLAYER_DATA)
-		Engine::ECS::Tick tick;
-		b2Transform trans;
-		b2Vec2 vel;
-		
-		// TODO: angVel
-
-		if (!msg.read(&tick) || !msg.read(&trans) || !msg.read(&vel)) {
-			ENGINE_WARN("Invalid PLAYER_DATA network message");
-			return;
-		}
-		
-		auto& world = engine.getWorld();
-		if (!world.hasComponent<PhysicsBodyComponent>(ent)) {
-			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsBodyComponent");
-			return;
-		}
-
-		auto& physCompState = world.getComponentState<PhysicsBodyComponent>(ent, tick);
-		const auto diff = physCompState.trans.p - trans.p;
-		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
-		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
-		// TODO: why does this ever happen with only one player connected?
-		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
-			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physCompState.trans.p.x)>::max_digits10),
-				"Oh boy a mishap has occured on tick ", tick,
-				" (<", physCompState.trans.p.x, ", ", physCompState.trans.p.y, "> - <",
-				trans.p.x, ", ", trans.p.y, "> = <",
-				diff.x, ", ", diff.y,
-				">)"
-			);
-
-			physCompState.trans = trans;
-			physCompState.vel = vel;
-			physCompState.rollbackOverride = true;
-
-			world.scheduleRollback(tick);
-		}
-
-		// TODO: vel
-	}
-
-	HandleMessageDef(MessageType::MAP_CHUNK)
-		auto& world = engine.getWorld();
-		world.getSystem<MapSystem>().chunkFromNet(head, msg);
-	}
-
-	// TODO: unsued?
+	// TODO: Should probably be derived from actionsystem inputs/binds/w.e. not its own message
 	HandleMessageDef(MessageType::SPELL)
 		b2Vec2 pos;
 		b2Vec2 dir;
 		if (!msg.read(&pos) || !msg.read(&dir)) { return; }
-		
 		auto& world = engine.getWorld();
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();
 		spellSys.queueMissile(pos, dir);
@@ -393,18 +345,16 @@ namespace Game {
 
 		ENGINE_LOG("Listening on port ", socket.getAddress().port);
 
-		setMessageHandler(MessageType::UNKNOWN, &handleMessageType<MessageType::UNKNOWN>);
-		setMessageHandler(MessageType::DISCOVER_SERVER, &handleMessageType<MessageType::DISCOVER_SERVER>);
-		setMessageHandler(MessageType::SERVER_INFO, &handleMessageType<MessageType::SERVER_INFO>);
-		setMessageHandler(MessageType::CONNECT_REQUEST, &handleMessageType<MessageType::CONNECT_REQUEST>);
-		setMessageHandler(MessageType::CONNECT_CHALLENGE, &handleMessageType<MessageType::CONNECT_CHALLENGE>);
-		setMessageHandler(MessageType::DISCONNECT, &handleMessageType<MessageType::DISCONNECT>);
-		setMessageHandler(MessageType::CONNECT_CONFIRM, &handleMessageType<MessageType::CONNECT_CONFIRM>);
-		setMessageHandler(MessageType::PING, &handleMessageType<MessageType::PING>);
-		setMessageHandler(MessageType::PLAYER_DATA, &handleMessageType<MessageType::PLAYER_DATA>);
-		setMessageHandler(MessageType::SPELL, &handleMessageType<MessageType::SPELL>);
-		setMessageHandler(MessageType::CONFIG_NETWORK, &handleMessageType<MessageType::CONFIG_NETWORK>);
-		setMessageHandler(MessageType::MAP_CHUNK, &handleMessageType<MessageType::MAP_CHUNK>);
+		setMessageHandler(MessageType::UNKNOWN, handleMessageType<MessageType::UNKNOWN>);
+		setMessageHandler(MessageType::DISCOVER_SERVER, handleMessageType<MessageType::DISCOVER_SERVER>);
+		setMessageHandler(MessageType::SERVER_INFO, handleMessageType<MessageType::SERVER_INFO>);
+		setMessageHandler(MessageType::CONNECT_REQUEST, handleMessageType<MessageType::CONNECT_REQUEST>);
+		setMessageHandler(MessageType::CONNECT_CHALLENGE, handleMessageType<MessageType::CONNECT_CHALLENGE>);
+		setMessageHandler(MessageType::DISCONNECT, handleMessageType<MessageType::DISCONNECT>);
+		setMessageHandler(MessageType::CONNECT_CONFIRM, handleMessageType<MessageType::CONNECT_CONFIRM>);
+		setMessageHandler(MessageType::PING, handleMessageType<MessageType::PING>);
+		setMessageHandler(MessageType::SPELL, handleMessageType<MessageType::SPELL>);
+		setMessageHandler(MessageType::CONFIG_NETWORK, handleMessageType<MessageType::CONFIG_NETWORK>);
 
 		#if ENGINE_SERVER
 		if (group.port) {
@@ -668,54 +618,18 @@ namespace Game {
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg) {
 		auto& from = *connComp.conn;
 
-		// TODO: replace with Game::getMessageName
-		constexpr auto msgToStr = [](const Engine::Net::MessageType& type) -> const char* {
-			#define X(Name, Side, SState, RState) if (type == MessageType::Name) { return #Name; }
-			#include <Game/MessageType.xpp>
-			return "UNKNOWN";
-		};
-
-
-		// TODO: rm
-		//switch(hdr.type) {
-		//	#define X(Name, Side, SState, RState) case MessageType::Name: {\
-		//		/*ENGINE_LOG("MESSAGE: ", #Name, " ", hdr.seq, " ", hdr.size);/**/\
-		//		handleMessageType<MessageType::Name>(engine, ent, from, hdr, msg); break; };
-		//	#include <Game/MessageType.xpp>
-		//	default: {
-		//		ENGINE_WARN("Unhandled network message type ", static_cast<int32>(hdr.type));
-		//	}
-		//}
-
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: need to setup handles rsfalsdkfjsdf
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
 		if (hdr.type <= 0 || hdr.type >= MessageType::_count) {
-			ENGINE_WARN("Attempting to dispatch invalid message type ", +hdr.type);
+			ENGINE_WARN("Attempting to dispatch invalid message type ", getMessageName(hdr.type), " (", +hdr.type, ")");
 		} else {
 			auto func = msgHandlers[hdr.type];
-			ENGINE_DEBUG_ASSERT(func, "No message handler set for type ", +hdr.type);
+			ENGINE_DEBUG_ASSERT(func, "No message handler set for type ", getMessageName(hdr.type), " (", +hdr.type, ")");
 			func(engine, ent, from, hdr, msg);
 		}
 
 		if (auto rem = msg.remaining(); rem > 0) {
-			ENGINE_WARN("Incomplete read of network message ", msgToStr(hdr.type), " (", rem, " bytes remaining). Ignoring.");
+			ENGINE_WARN("Incomplete read of network message ", getMessageName(hdr.type), " (", rem, " bytes remaining). Ignoring.");
 		} else if (rem < 0) {
-			ENGINE_WARN("Read past end of network messge type ", msgToStr(hdr.type)," (", rem, " bytes remaining).");
+			ENGINE_WARN("Read past end of network messge type ", getMessageName(hdr.type)," (", rem, " bytes remaining).");
 		}
 	}
 }

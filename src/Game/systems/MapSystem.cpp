@@ -10,6 +10,7 @@
 // Game
 #include <Game/World.hpp>
 #include <Game/systems/MapSystem.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/PhysicsOriginShiftSystem.hpp>
 #include <Game/comps/ConnectionComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
@@ -21,11 +22,21 @@
 
 
 namespace {
+	using namespace Game;
+	using Engine::ECS::Entity;
+	using Engine::Net::MessageHeader;
+	using Engine::Net::BufferReader;
+
 	using PlayerFilter = Engine::ECS::EntityFilterList<
-		Game::PlayerFlag,
-		Game::PhysicsBodyComponent,
-		Game::ConnectionComponent
+		PlayerFlag,
+		PhysicsBodyComponent,
+		ConnectionComponent
 	>;
+
+	void recv_MAP_CHUNK(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		auto& world = engine.getWorld();
+		world.getSystem<MapSystem>().chunkFromNet(head, msg);
+	}
 }
 
 
@@ -153,6 +164,11 @@ namespace Game {
 
 	void MapSystem::setup() {
 		using namespace Engine::Gfx;
+
+		{
+			auto& netSys = world.getSystem<NetworkingSystem>();
+			netSys.setMessageHandler(MessageType::MAP_CHUNK, recv_MAP_CHUNK);
+		}
 
 		mapEntity = world.createEntity();
 		shader = engine.getShaderLoader().get("shaders/terrain");
