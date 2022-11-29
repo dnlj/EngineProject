@@ -66,6 +66,9 @@ namespace Game {
 		struct NetworkedFlag
 	>;
 
+	
+	// Example: template<> constexpr static inline bool IsNetworkedFlag<PlayerFlag> = true;
+
 	// TODO is there a good reason we dont just have a `using=` decl here?
 	class World : public Engine::ECS::WorldHelper<tickrate, SystemsSet, CompsSet, FlagsSet> {
 		public:

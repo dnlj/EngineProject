@@ -8,11 +8,30 @@
 #include <Game/World.hpp>
 #include <Game/systems/CharacterSpellSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
 #include <Game/comps/SpriteComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/ConnectionComponent.hpp>
+
+
+namespace {
+	using namespace Game;
+	using Engine::ECS::Entity;
+	using Engine::Net::MessageHeader;
+	using Engine::Net::BufferReader;
+
+	// TODO: Should probably be derived from actionsystem inputs/binds/w.e. not its own message
+	void recv_SPELL(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+		b2Vec2 pos;
+		b2Vec2 dir;
+		if (!msg.read(&pos) || !msg.read(&dir)) { return; }
+		auto& world = engine.getWorld();
+		auto& spellSys = world.getSystem<CharacterSpellSystem>();
+		spellSys.queueMissile(pos, dir);
+	}
+}
 
 
 namespace Game {
@@ -23,6 +42,9 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::setup() {
+		auto& netSys = world.getSystem<NetworkingSystem>();
+		netSys.setMessageHandler(MessageType::SPELL, recv_SPELL);
+
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		physSys.addListener(this);
 

@@ -42,4 +42,7 @@ namespace Game {
 	concept IsNetworkedComponent = !requires {
 		NetworkTraits<T>::_t_NetworkTraits_isSpecialized;
 	};
+
+	template<class F>
+	constexpr static inline bool IsNetworkedFlag = false;
 }

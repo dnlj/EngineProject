@@ -319,16 +319,6 @@ namespace Game {
 		ENGINE_LOG("Network send rate updated: ", r2);
 		from.setPacketSendRate(std::max(minSendRate, std::min(r2, maxSendRate)));
 	}
-	
-	// TODO: Should probably be derived from actionsystem inputs/binds/w.e. not its own message
-	HandleMessageDef(MessageType::SPELL)
-		b2Vec2 pos;
-		b2Vec2 dir;
-		if (!msg.read(&pos) || !msg.read(&dir)) { return; }
-		auto& world = engine.getWorld();
-		auto& spellSys = world.getSystem<CharacterSpellSystem>();
-		spellSys.queueMissile(pos, dir);
-	}
 }
 #undef HandleMessageDef
 
@@ -353,7 +343,6 @@ namespace Game {
 		setMessageHandler(MessageType::DISCONNECT, handleMessageType<MessageType::DISCONNECT>);
 		setMessageHandler(MessageType::CONNECT_CONFIRM, handleMessageType<MessageType::CONNECT_CONFIRM>);
 		setMessageHandler(MessageType::PING, handleMessageType<MessageType::PING>);
-		setMessageHandler(MessageType::SPELL, handleMessageType<MessageType::SPELL>);
 		setMessageHandler(MessageType::CONFIG_NETWORK, handleMessageType<MessageType::CONFIG_NETWORK>);
 
 		#if ENGINE_SERVER

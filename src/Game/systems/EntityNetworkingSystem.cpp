@@ -235,8 +235,6 @@ namespace {
 namespace Game {
 	void EntityNetworkingSystem::setup() {
 		auto& netSys = world.getSystem<NetworkingSystem>();
-
-		// TODO: NetworkingSystem might not be init yet...
 		netSys.setMessageHandler(MessageType::ECS_INIT, recv_ECS_INIT);
 		netSys.setMessageHandler(MessageType::ECS_ENT_CREATE, recv_ECS_ENT_CREATE);
 		netSys.setMessageHandler(MessageType::ECS_ENT_DESTROY, recv_ECS_ENT_DESTROY);
@@ -375,7 +373,13 @@ namespace Game {
 
 			// Flag components
 			{
-				World::FlagsBitset diffs = data.comps ^ world.getComponentsBitset(ent);
+				constexpr World::FlagsBitset netFlagMask = Engine::Meta::forAll<FlagsSet>([]<class... Fs>{
+					World::FlagsBitset res = {};
+					res = (... | (IsNetworkedFlag<Fs> ? (World::FlagsBitset{1} << World::getComponentId<Fs>()) : 0));
+					return res;
+				});
+
+				World::FlagsBitset diffs = (data.comps ^ world.getComponentsBitset(ent)) & netFlagMask;
 				if (diffs) {
 					if (auto msg = conn.beginMessage<MessageType::ECS_FLAG>()) {
 						msg.write(ent);
