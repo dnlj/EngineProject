@@ -177,6 +177,11 @@ namespace {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
+		#if ENGINE_DEBUG && ENGINE_CLIENT
+			ENGINE_DEBUG_ASSERT(ensSystem._debug_networking == false);
+			ensSystem._debug_networking = true;
+		#endif
+
 		Engine::Meta::ForEachIn<Game::FlagsSet>::call([&]<class C>{
 			constexpr auto cid = world.getComponentId<C>();
 			if (!flags.test(cid)) { return; }
@@ -187,6 +192,10 @@ namespace {
 				world.addComponent<C>(local);
 			}
 		});
+
+		#if ENGINE_DEBUG && ENGINE_CLIENT
+			ensSystem._debug_networking = false;
+		#endif
 	}
 
 	void recv_PLAYER_DATA(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
@@ -231,6 +240,7 @@ namespace {
 		// TODO: vel
 	}
 }
+
 
 namespace Game {
 	void EntityNetworkingSystem::setup() {

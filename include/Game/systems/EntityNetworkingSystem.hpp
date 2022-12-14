@@ -32,6 +32,28 @@ namespace Game {
 			auto& getRemoteToLocalEntityMapping() noexcept { return entRemoteToLocal; }
 			const auto& getRemoteToLocalEntityMapping() const noexcept { return entRemoteToLocal; }
 
+		#if ENGINE_DEBUG && ENGINE_CLIENT
+			bool _debug_networking = false;
+
+			template<class C>
+			void onComponentAdded(class Engine::ECS::Entity&) {
+				if constexpr (IsNetworkedFlag<C>) {
+					ENGINE_DEBUG_ASSERT(_debug_networking, "Attempting to modify networked flag from client side.");
+				} else {
+					ENGINE_DEBUG_ASSERT(!_debug_networking, "Attempting to modify non-networked flag from network.");
+				}
+			}
+
+			template<class C>
+			void onComponentRemoved(class Engine::ECS::Entity&) {
+				if constexpr (IsNetworkedFlag<C>) {
+					ENGINE_DEBUG_ASSERT(_debug_networking, "Attempting to modify networked flag from client side.");
+				} else {
+					ENGINE_DEBUG_ASSERT(!_debug_networking, "Attempting to modify non-networked flag from network.");
+				}
+			}
+		#endif
+
 		private:
 			void updateNeighbors();
 

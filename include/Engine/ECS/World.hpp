@@ -133,18 +133,6 @@ namespace Engine::ECS {
 	template<class... Cs>
 	struct IsEntityFilterList<EntityFilterList<Cs...>> : std::true_type {};
 
-	// TODO: rm - work around for requires clauses not working in `if constexpr` on msvc
-	template<class Sys, class Comp>
-	concept HasComponentAddedCallbackFor = requires (Sys sys, Engine::ECS::Entity ent, Comp comp) {
-		sys.onComponentAdded(ent, comp);
-	};
-
-	// TODO: rm - work around for requires clauses not working in `if constexpr` on msvc
-	template<class Sys, class Comp>
-	concept HasComponentRemovedCallbackFor = requires (Sys sys, Engine::ECS::Entity ent, Comp comp) {
-		sys.onComponentRemoved(ent, comp);
-	};
-
 	template<class T>
 	class SnapshotTraits {
 		private:
@@ -486,8 +474,10 @@ namespace Engine::ECS {
 				}
 
 				Meta::ForEach<Ss...>::call([&]<class S>() ENGINE_INLINE {
-					if constexpr (HasComponentAddedCallbackFor<S, C>) {
+					if constexpr (requires { getSystem<S>().onComponentAdded(ent, comp); }) {
 						getSystem<S>().onComponentAdded(ent, comp);
+					} else if constexpr (requires { getSystem<S>().template onComponentAdded<C>(ent); }) {
+						getSystem<S>().template onComponentAdded<C>(ent);
 					}
 				});
 
@@ -537,8 +527,10 @@ namespace Engine::ECS {
 
 				// Callbacks
 				Meta::ForEach<Ss...>::call([&]<class S>() ENGINE_INLINE {
-					if constexpr (HasComponentRemovedCallbackFor<S, C>) {
+					if constexpr (requires { getSystem<S>().onComponentRemoved(ent, *comp); }) {
 						getSystem<S>().onComponentRemoved(ent, *comp);
+					} else if constexpr (requires { getSystem<S>().template onComponentRemoved<C>(ent); }) {
+						getSystem<S>().template onComponentRemoved<C>(ent);
 					}
 				});
 

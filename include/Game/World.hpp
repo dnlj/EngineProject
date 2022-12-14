@@ -11,6 +11,7 @@
 // Game
 #include <Game/Common.hpp>
 #include <Game/EngineInstance.hpp>
+#include <Game/NetworkTraits.hpp>
 
 
 namespace Game {
@@ -65,8 +66,10 @@ namespace Game {
 		struct NetworkedFlag
 	>;
 
-	
 	// Example: template<> constexpr static inline bool IsNetworkedFlag<PlayerFlag> = true;
+	//template<> constexpr static inline bool IsNetworkedFlag<PlayerFlag> = true;
+	//template<> constexpr static inline bool IsNetworkedFlag<NetworkedFlag> = true;
+	//template<> constexpr static inline bool IsNetworkedFlag<CameraTargetFlag> = true;
 
 	// TODO is there a good reason we dont just have a `using=` decl here?
 	class World : public Engine::ECS::WorldHelper<tickrate, SystemsSet, CompsSet, FlagsSet> {
