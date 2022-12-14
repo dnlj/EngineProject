@@ -3,6 +3,7 @@
 // STD
 #include <concepts>
 
+
 namespace Engine {
 	/**
 	 * Translates from a type to a unique integral suitable for use as an index.
@@ -12,7 +13,7 @@ namespace Engine {
 	template<class T>
 	struct IndexHash {
 		int32 operator()(const T& v) const {
-			static_assert(false, "IndexHash is not specialized for this type");
+			static_assert(ENGINE_TMP_FALSE(T), "IndexHash is not specialized for this type");
 		}
 	};
 

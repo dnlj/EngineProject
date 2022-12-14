@@ -90,7 +90,6 @@ namespace Game {
 			
 			bool fromRLE(const byte* begin, const byte* end) {
 				bool editMade = false;
-				constexpr auto sz = size.x * size.y;
 				BlockId* linear = &data[0][0];
 				RLEPair pair;
 

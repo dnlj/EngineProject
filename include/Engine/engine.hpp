@@ -112,10 +112,16 @@
 	ENGINE_BUILD_ASSIGN_BIN_OP(T, -); \
 	ENGINE_BUILD_ASSIGN_BIN_OP(T, *); \
 	ENGINE_BUILD_ASSIGN_BIN_OP(T, /); \
-	ENGINE_BUILD_ASSIGN_BIN_OP(T, %); \
+	ENGINE_BUILD_ASSIGN_BIN_OP(T, %);
 
 #define ENGINE_BUILD_DECAY_ENUM(T) \
 	constexpr inline decltype(auto) operator+(const T& t) noexcept { return static_cast<std::underlying_type_t<T>>(t); }
+
+/**
+ * Used to trigger a static_assert only in a specialized template context.
+ * Example: static_assert(ENGINE_TMP_FALSE(T), "Type must be specialized for type T")
+ */
+#define ENGINE_TMP_FALSE(T) (!sizeof(T))
 
 /**
  * @def ENGINE_EMPTY_BASE

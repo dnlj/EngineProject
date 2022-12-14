@@ -86,7 +86,7 @@ namespace Engine::Net {
 
 			template<SocketOption Opt, class Value>
 			bool setOption(const Value& value){
-				static_assert(false, "Invalid SocketOption + Value combination.");
+				static_assert(ENGINE_TMP_FALSE(Value), "Invalid SocketOption + Value combination.");
 				return false;
 			}
 

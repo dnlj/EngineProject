@@ -12,7 +12,7 @@ namespace Engine::CommandLine {
 	template<class T>
 	class ArgumentConverter {
 		public: bool operator()(const std::string& str, T& storage) {
-			static_assert(!std::is_same_v<T, T>, "Unable to find ArgumentConverter for T");
+			static_assert(ENGINE_TMP_FALSE(T), "Unable to find ArgumentConverter for T");
 		}
 	};
 

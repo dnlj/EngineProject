@@ -142,7 +142,7 @@ namespace {
 
 		// Used to adjust tickScale when based on trend. Scaled in range [trendAdjust, maxTrendScale + trendAdjust]
 		constexpr float32 maxTickScale = 2.0f;
-		constexpr float32 maxBufferSize = maxStates;
+		//constexpr float32 maxBufferSize = maxStates;
 
 		float32 diff = actComp.estBufferSize - ideal;
 

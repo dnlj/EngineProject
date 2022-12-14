@@ -46,6 +46,7 @@ namespace {
 				ipLabel->autoText(fmt::format("{}", addr));
 
 				for (const auto s : conn.getAllChannelQueueSizes()) {
+					(void)s;
 					ctx->createPanel<EUI::Label>(base);
 				}
 

@@ -679,7 +679,7 @@ namespace Game {
 
 	void MapSystem::queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region) {
 		std::cout << "Queue region: " << regionPos.x << " " << regionPos.y << "\n";
-		constexpr auto totalSize = MapRegion::size.x * MapRegion::size.y;
+		//constexpr auto totalSize = MapRegion::size.x * MapRegion::size.y;
 		const auto regionStart = regionToChunk(regionPos);
 
 		auto lock = chunkQueue.lock();

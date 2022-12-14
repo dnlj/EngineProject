@@ -43,7 +43,7 @@ namespace Engine {
 			constexpr Bitset(I initial) noexcept {
 				if constexpr (sizeof(I) > sizeof(StorageUnit)) {
 					// TODO: handle
-					static_assert(false, "TODO: impl");
+					static_assert(ENGINE_TMP_FALSE(I), "TODO: impl");
 				} else {
 					storage[0] = initial;
 				}
