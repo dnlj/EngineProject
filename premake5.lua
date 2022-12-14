@@ -18,7 +18,7 @@ CLEAN_PATTERNS = {
 	-- Build Artifacts
 	"./bin",
 	"./obj",
-	"./docs",
+	"./docs/generated",
 
 	-- Conan
 	"conan_build",
