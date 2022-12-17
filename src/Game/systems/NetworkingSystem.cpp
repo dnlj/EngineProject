@@ -462,6 +462,11 @@ namespace Game {
 					addressToEntity.erase(addressToEntity.find(connComp.conn->address()));
 					world.getComponent<ConnectionComponent>(ent).conn.reset(); // Make sure connection is closed now and not later after defered destroy
 					world.deferedDestroyEntity(ent);
+
+					#if ENGINE_CLIENT
+						// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
+						world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping().clear();
+					#endif
 					continue;
 				}
 			}
@@ -611,7 +616,7 @@ namespace Game {
 		} else {
 			auto func = msgHandlers[hdr.type];
 			ENGINE_DEBUG_ASSERT(func, "No message handler set for type ", getMessageName(hdr.type), " (", +hdr.type, ")");
-			func(engine, ent, from, hdr, msg);
+			if (func) { func(engine, ent, from, hdr, msg); }
 		}
 
 		if (auto rem = msg.remaining(); rem > 0) {
