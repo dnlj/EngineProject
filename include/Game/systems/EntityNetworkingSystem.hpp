@@ -11,48 +11,50 @@
 
 namespace Game {
 	class EntityNetworkingSystem : public System {
+		public:
+			using System::System;
+
+		#if ENGINE_CLIENT
 		private:
-			//ECSNetworkingComponent::Set lastNeighbors;
-
-			// TODO: we should probably have something like this in ecs instead
-			// TODO: rm - std::vector<Engine::ECS::ComponentBitset> lastCompsBitsets;
-
-			Engine::Clock::TimePoint nextUpdate = {};
-			
 			// TODO: at some point we probably want to shrink this
 			/** Translate from remote to local entities */
 			Engine::FlatHashMap<Engine::ECS::Entity, Engine::ECS::Entity> entRemoteToLocal;
 
 		public:
-			using System::System;
 			void setup();
-
-			void update(float32 dt);
 
 			auto& getRemoteToLocalEntityMapping() noexcept { return entRemoteToLocal; }
 			const auto& getRemoteToLocalEntityMapping() const noexcept { return entRemoteToLocal; }
 
-		#if ENGINE_DEBUG && ENGINE_CLIENT
-			bool _debug_networking = false;
+			#if ENGINE_DEBUG
+				bool _debug_networking = false;
 
-			template<class C>
-			void onComponentAdded(class Engine::ECS::Entity&) {
-				if constexpr (IsNetworkedFlag<C>) {
-					ENGINE_DEBUG_ASSERT(_debug_networking, "Attempting to modify networked flag from client side.");
-				} else {
-					ENGINE_DEBUG_ASSERT(!_debug_networking, "Attempting to modify non-networked flag from network.");
+				template<class C>
+				void onComponentAdded(class Engine::ECS::Entity&) {
+					if constexpr (IsNetworkedFlag<C>) {
+						ENGINE_DEBUG_ASSERT(_debug_networking, "Attempting to modify networked flag from client side.");
+					} else {
+						ENGINE_DEBUG_ASSERT(!_debug_networking, "Attempting to modify non-networked flag from network.");
+					}
 				}
-			}
 
-			template<class C>
-			void onComponentRemoved(class Engine::ECS::Entity&) {
-				if constexpr (IsNetworkedFlag<C>) {
-					ENGINE_DEBUG_ASSERT(_debug_networking, "Attempting to modify networked flag from client side.");
-				} else {
-					ENGINE_DEBUG_ASSERT(!_debug_networking, "Attempting to modify non-networked flag from network.");
+				template<class C>
+				void onComponentRemoved(class Engine::ECS::Entity&) {
+					if constexpr (IsNetworkedFlag<C>) {
+						ENGINE_DEBUG_ASSERT(_debug_networking, "Attempting to modify networked flag from client side.");
+					} else {
+						ENGINE_DEBUG_ASSERT(!_debug_networking, "Attempting to modify non-networked flag from network.");
+					}
 				}
-			}
-		#endif
+			#endif // ENGINE_DEBUG
+		#endif // ENGINE_CLIENT
+
+		#if ENGINE_SERVER
+		private:
+			Engine::Clock::TimePoint nextUpdate = {};
+			
+		public:
+			void update(float32 dt);
 
 		private:
 			void updateNeighbors();
@@ -64,5 +66,6 @@ namespace Game {
 			template<class C>
 			[[nodiscard]]
 			bool networkComponent(const Engine::ECS::Entity ent, Connection& conn) const;
+		#endif // ENGINE_SERVER
 	};
 }

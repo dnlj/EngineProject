@@ -13,6 +13,9 @@
 #include <Game/Connection.hpp>
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Shared
+////////////////////////////////////////////////////////////////////////////////
 namespace {
 	using PlayerFilter = Engine::ECS::EntityFilterList<
 		Game::PlayerFlag,
@@ -23,7 +26,14 @@ namespace {
 	using Engine::ECS::Entity;
 	using Engine::Net::MessageHeader;
 	using Engine::Net::BufferReader;
+}
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Client side
+////////////////////////////////////////////////////////////////////////////////
+#if ENGINE_CLIENT
+namespace {
 	void recv_ECS_INIT(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) {
@@ -177,7 +187,7 @@ namespace {
 		if (found == entToLocal.end()) { return; }
 		auto local = found->second;
 
-		#if ENGINE_DEBUG && ENGINE_CLIENT
+		#if ENGINE_DEBUG
 			ENGINE_DEBUG_ASSERT(ensSystem._debug_networking == false);
 			ensSystem._debug_networking = true;
 		#endif
@@ -193,7 +203,7 @@ namespace {
 			}
 		});
 
-		#if ENGINE_DEBUG && ENGINE_CLIENT
+		#if ENGINE_DEBUG
 			ensSystem._debug_networking = false;
 		#endif
 	}
@@ -241,9 +251,9 @@ namespace {
 	}
 }
 
-
 namespace Game {
 	void EntityNetworkingSystem::setup() {
+		static_assert(ENGINE_CLIENT, "This code is client side only");
 		auto& netSys = world.getSystem<NetworkingSystem>();
 		netSys.setMessageHandler(MessageType::ECS_INIT, recv_ECS_INIT);
 		netSys.setMessageHandler(MessageType::ECS_ENT_CREATE, recv_ECS_ENT_CREATE);
@@ -253,9 +263,17 @@ namespace Game {
 		netSys.setMessageHandler(MessageType::ECS_FLAG, recv_ECS_FLAG);
 		netSys.setMessageHandler(MessageType::PLAYER_DATA, recv_PLAYER_DATA);
 	}
+}
 
+#endif // ENGINE_CLIENT
+
+////////////////////////////////////////////////////////////////////////////////
+// Server side
+////////////////////////////////////////////////////////////////////////////////
+#if ENGINE_SERVER
+namespace Game {
 	void EntityNetworkingSystem::update(float32 dt) {
-		if constexpr (ENGINE_CLIENT) { return; }
+		static_assert(ENGINE_SERVER, "This code is server side only.");
 		const auto now = world.getTime();
 		if (now < nextUpdate) { return; }
 
@@ -291,7 +309,6 @@ namespace Game {
 		}
 	}
 
-	
 	template<class C>
 	bool EntityNetworkingSystem::networkComponent(const Entity ent, Connection& conn) const {
 		auto& comp = world.getComponent<C>(ent);
@@ -472,3 +489,4 @@ namespace Game {
 		}
 	}
 }
+#endif // ENGINE_SERVER
