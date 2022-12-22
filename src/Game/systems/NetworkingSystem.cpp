@@ -446,7 +446,8 @@ namespace Game {
 			auto& conn = *connComp.conn;
 
 			if (connComp.disconnectAt != Engine::Clock::TimePoint{}) {
-				if (conn.getState() == ConnectionState::Disconnecting) {
+				const auto state = conn.getState();
+				if (state == ConnectionState::Disconnecting) {
 					ENGINE_LOG("Send DISCONNECT to ", connComp.conn->address());
 					if (auto msg = conn.beginMessage<MessageType::DISCONNECT>()) {
 					}
@@ -458,15 +459,23 @@ namespace Game {
 					conn.setKeyRemote(0);
 					conn.setState(ConnectionState::Disconnected);
 
-					ENGINE_LOG("Disconnected ", ent, " ", connComp.conn->address());
-					addressToEntity.erase(addressToEntity.find(connComp.conn->address()));
-					world.getComponent<ConnectionComponent>(ent).conn.reset(); // Make sure connection is closed now and not later after defered destroy
-					world.deferedDestroyEntity(ent);
+					ENGINE_LOG("Disconnected ", ent, " ", conn.address());
+					addressToEntity.erase(addressToEntity.find(conn.address()));
+					connComp.conn.reset(); // Make sure connection is closed now and not later after defered destroy
 
-					#if ENGINE_CLIENT
-						// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
-						world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping().clear();
-					#endif
+					if (ENGINE_CLIENT && state != ConnectionState::Disconnected) {
+						#if ENGINE_CLIENT
+							// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
+							auto& map = world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping();
+							for (auto [remote, local] : map) {
+								world.deferedDestroyEntity(local);
+							}
+							map.clear();
+						#endif
+					} else {
+						world.deferedDestroyEntity(ent);
+					}
+
 					continue;
 				}
 			}

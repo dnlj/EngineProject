@@ -383,7 +383,18 @@ namespace Engine::ECS {
 			 * Until the Entity is destroyed it is disabled.
 			 */
 			ENGINE_INLINE void deferedDestroyEntity(Entity ent) {
+				if constexpr (ENGINE_DEBUG) {
+					for (auto e : markedForDeath) {
+						if (e == ent) {
+							ENGINE_ERROR("Attempting to mark duplicate entity ", ent, " for destruction. ");
+						}
+					}
+				}
+
+				// TODO: should marked for destruction also have its own flag? seems like it.
 				setEnabled(ent, false); // TODO: Will we need a component callback for onDisabled to handle things like physics bodies?
+
+				// TODO (IXqogmSD): why is this sorted?
 				// TODO: would it be better to sort the list afterward (in World::storeSnapshot for example)? instead of while inserting
 				markedForDeath.insert(std::lower_bound(markedForDeath.cbegin(), markedForDeath.cend(), ent), ent);
 			}

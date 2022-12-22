@@ -55,6 +55,7 @@ namespace {
 		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
 		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
 
+		ENGINE_DEBUG_ASSERT(entToLocal.size() == 0, "Networked entity map already has entries. This is a bug.");
 		entToLocal[remote] = ent;
 
 		// TODO: move addPlayer to EntityNetworkingSystem
