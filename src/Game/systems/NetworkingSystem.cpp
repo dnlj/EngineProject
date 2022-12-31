@@ -446,8 +446,7 @@ namespace Game {
 			auto& conn = *connComp.conn;
 
 			if (connComp.disconnectAt != Engine::Clock::TimePoint{}) {
-				const auto state = conn.getState();
-				if (state == ConnectionState::Disconnecting) {
+				if (conn.getState() == ConnectionState::Disconnecting) {
 					ENGINE_LOG("Send DISCONNECT to ", connComp.conn->address());
 					if (auto msg = conn.beginMessage<MessageType::DISCONNECT>()) {
 					}
@@ -455,27 +454,7 @@ namespace Game {
 
 				if (connComp.disconnectAt <= now) {
 					conn.send(socket);
-					conn.setKeyLocal(0);
-					conn.setKeyRemote(0);
-					conn.setState(ConnectionState::Disconnected);
-
-					ENGINE_LOG("Disconnected ", ent, " ", conn.address());
-					addressToEntity.erase(addressToEntity.find(conn.address()));
-					connComp.conn.reset(); // Make sure connection is closed now and not later after defered destroy
-
-					if (ENGINE_CLIENT && state != ConnectionState::Disconnected) {
-						#if ENGINE_CLIENT
-							// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
-							auto& map = world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping();
-							for (auto [remote, local] : map) {
-								world.deferedDestroyEntity(local);
-							}
-							map.clear();
-						#endif
-					} else {
-						world.deferedDestroyEntity(ent);
-					}
-
+					dropConnection(ent, connComp);
 					continue;
 				}
 			}
@@ -518,8 +497,30 @@ namespace Game {
 		return static_cast<int32>(world.getFilter<PlayerFilter>().size());
 	}
 
+	void NetworkingSystem::dropConnection(Engine::ECS::Entity ent, ConnectionComponent& connComp) {
+		if (ENGINE_CLIENT && connComp.conn->getState() != ConnectionState::Disconnected) {
+			#if ENGINE_CLIENT
+				// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
+				auto& map = world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping();
+				for (auto [remote, local] : map) {
+					world.deferedDestroyEntity(local);
+				}
+				map.clear();
+			#endif
+		} else {
+			world.deferedDestroyEntity(ent);
+		}
+
+		ENGINE_LOG("Dropping connection ", ent, " ", connComp.conn->address());
+		addressToEntity.erase(addressToEntity.find(connComp.conn->address()));
+		connComp.conn.reset(); // Make sure connection is closed now and not later after defered destroy
+	}
+
 	void NetworkingSystem::disconnect(Engine::ECS::Entity ent, ConnectionComponent& connComp) {
+		ENGINE_LOG("Disconnect ", ent, " ", connComp.conn->address());
 		connComp.conn->setState(ConnectionState::Disconnected);
+		connComp.conn->setKeyLocal(0);
+		connComp.conn->setKeyRemote(0);
 		connComp.disconnectAt = world.getTime() + disconnectTime;
 		world.setEnabled(ent, false);
 	}
@@ -529,9 +530,14 @@ namespace Game {
 		if (ent == Engine::ECS::INVALID_ENTITY) { return; }
 
 		auto& connComp = world.getComponent<ConnectionComponent>(ent);
+		const auto prevState = connComp.conn->getState();
 		disconnect(ent, connComp);
-		connComp.conn->setState(ConnectionState::Disconnecting);
-		ENGINE_INFO("Request disconnect ", addr, " ", ent);
+
+		if (prevState != ConnectionState::Disconnected) {
+			connComp.conn->setState(ConnectionState::Disconnecting);
+		}
+
+		ENGINE_INFO("Requesting disconnect ", ent, " ", addr);
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {

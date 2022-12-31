@@ -72,6 +72,10 @@ namespace Game {
 			int32 playerCount() const; // TODO: remove or at least make private. Should interact with filter directly.
 
 			void connectTo(const Engine::Net::IPv4Address& addr);
+
+			/**
+			 * Begins a graceful disconnect.
+			 */
 			void requestDisconnect(const Engine::Net::IPv4Address& addr);
 
 			auto& getSocket() noexcept { return socket; }
@@ -93,7 +97,16 @@ namespace Game {
 			Engine::ECS::Entity addConnection(const Engine::Net::IPv4Address& addr);
 			Engine::ECS::Entity getEntity(const Engine::Net::IPv4Address& addr);
 			Engine::ECS::Entity getOrCreateEntity(const Engine::Net::IPv4Address& addr);
+
+			/**
+			 * Disconnects a connection/entity and schedules its destruction.
+			 */
 			void disconnect(Engine::ECS::Entity ent, ConnectionComponent& connComp);
+
+			/**
+			 * Immediately drops a connection and deletes the associated entity.
+			 */
+			void dropConnection(Engine::ECS::Entity ent, ConnectionComponent& connComp);
 
 			void recvAndDispatchMessages(Engine::Net::UDPSocket& sock);
 			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg);
