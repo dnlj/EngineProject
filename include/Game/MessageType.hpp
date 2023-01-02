@@ -6,7 +6,7 @@
 
 namespace Game {
 	struct ConnectionState_ {
-		enum ConnectionState : uint8 {
+		enum ConnectionState : Engine::Net::ConnectionState {
 			None          = 0,
 			Disconnected  = 1 << 0, // Not connected
 			Connecting    = 1 << 1, // Is in the process of connecting
@@ -27,27 +27,36 @@ namespace Game {
 	using MessageType = MessageType_::MessageType;
 }
 
-#define X(Name, Side, SState, RState)\
-template<> struct Engine::Net::MessageTraits<Game::MessageType::Name> {\
-	using enum Game::ConnectionState;\
-	constexpr static auto side = Side;\
-	constexpr static auto sstate = SState;\
-	constexpr static auto rstate = RState;\
-	constexpr static char name[] = #Name;\
-};
-#include <Game/MessageType.xpp>
-
-
 namespace Game {
-	inline std::string_view getMessageName(Engine::Net::MessageType msg) {
-		if (msg < 0 || msg >= MessageType::_count) { return ""; }
-
-		#define X(Name, Side, SState, RState) case MessageType::Name: { return Engine::Net::MessageTraits<MessageType::Name>::name; }
-		switch(msg) {
+	inline const Engine::Net::MessageMetaInfo& getMessageMetaInfo(Engine::Net::MessageType mtype) {
+		using enum Game::ConnectionState;
+		constexpr static Engine::Net::MessageMetaInfo infos[Game::MessageType::_count + 1] = {
+			#define X(Name, Dir, SendState, RecvState) {\
+				.dir = Engine::Net::MessageDirection::Dir,\
+				.sendState = SendState,\
+				.recvState = RecvState,\
+				.name = #Name,\
+			},
 			#include <Game/MessageType.xpp>
+			{
+				.dir = Engine::Net::MessageDirection::None,
+				.sendState = ConnectionState::None,
+				.recvState = ConnectionState::None,
+				.name = "#INVALID_MESSAGE_TYPE#",
+			}
+		};
+
+		if (mtype < 0 || mtype >= MessageType::_count) {
+			ENGINE_DEBUG_ASSERT(false, "Attempting to get meta info of invalid message type.");
+			return infos[Game::MessageType::_count];
 		}
 
-		// Should never be hit
-		return "THIS IS A BUG. NO MESSAGE NAME FOUND.";
-	}
+		return infos[mtype];
+	};
 }
+
+
+// TODO: really we should work on getting rid of this when we do the connection rework, the Engine::Connection really shouldnt need this info, or get it in a more flexible way. This feels very specific to how we are currently doing things.
+#define X(Name, Side, SState, RState)\
+template<> inline const Engine::Net::MessageMetaInfo& Engine::Net::getMessageMetaInfo<Game::MessageType::Name>() { return Game::getMessageMetaInfo(Game::MessageType::Name); }
+#include <Game/MessageType.xpp>

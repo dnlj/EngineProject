@@ -122,14 +122,6 @@ namespace {
 #define HandleMessageDef(MsgType) \
 	template<> \
 	void NetworkingSystem::handleMessageType<MsgType>(EngineInstance& engine, Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) { \
-	if constexpr (!(Engine::Net::MessageTraits<MsgType>::side & ENGINE_SIDE)) { \
-		ENGINE_WARN("Message received by wrong side. Aborting."); return; \
-	} \
-	if (!(Engine::Net::MessageTraits<MsgType>::rstate & from.getState())) { \
-		msg.discard(); \
-		ENGINE_WARN("Messages received in wrong state. Aborting. ", getMessageName(head.type), "(", (int)head.type, ")"); \
-		return; \
-	} \
 	HandleMessageDef_DebugBreak(#MsgType);
 
 
@@ -625,19 +617,34 @@ namespace Game {
 
 	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg) {
 		auto& from = *connComp.conn;
+		
+		const auto& meta = getMessageMetaInfo(hdr.type);
+		constexpr auto dir = (ENGINE_SERVER ? Engine::Net::MessageDirection::ClientToServer : Engine::Net::MessageDirection::ServerToClient);
+		if (!(meta.dir & dir)) {
+			ENGINE_WARN("Network message ", meta.name, "(", +hdr.type, ")"," received by wrong side. Aborting.");
+			ENGINE_DEBUG_ASSERT(false);
+			msg.discard();
+			return;
+		}
+
+		if (!(meta.recvState & from.getState())) {
+			ENGINE_WARN("Messages received in wrong state. Aborting. ", meta.name, "(", +hdr.type, ")");
+			msg.discard();
+			return;
+		}
 
 		if (hdr.type <= 0 || hdr.type >= MessageType::_count) {
-			ENGINE_WARN("Attempting to dispatch invalid message type ", getMessageName(hdr.type), " (", +hdr.type, ")");
+			ENGINE_WARN("Attempting to dispatch invalid message type ", meta.name, " (", +hdr.type, ")");
 		} else {
 			auto func = msgHandlers[hdr.type];
-			ENGINE_DEBUG_ASSERT(func, "No message handler set for type ", getMessageName(hdr.type), " (", +hdr.type, ")");
+			ENGINE_DEBUG_ASSERT(func, "No message handler set for type ", meta.name, " (", +hdr.type, ")");
 			if (func) { func(engine, ent, from, hdr, msg); }
 		}
 
 		if (auto rem = msg.remaining(); rem > 0) {
-			ENGINE_WARN("Incomplete read of network message ", getMessageName(hdr.type), " (", rem, " bytes remaining). Ignoring.");
+			ENGINE_WARN("Incomplete read of network message ", meta.name, " (", rem, " bytes remaining). Ignoring.");
 		} else if (rem < 0) {
-			ENGINE_WARN("Read past end of network messge type ", getMessageName(hdr.type)," (", rem, " bytes remaining).");
+			ENGINE_WARN("Read past end of network messge type ", meta.name," (", rem, " bytes remaining).");
 		}
 	}
 }

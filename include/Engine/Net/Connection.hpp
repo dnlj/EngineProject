@@ -19,7 +19,7 @@ namespace Engine::Net {
 			BufferReader msg = {};
 	};
 
-	template<class State, class... Cs>
+	template<class... Cs>
 	class Connection {
 		private:
 			using ChannelId = uint8;
@@ -76,8 +76,8 @@ namespace Engine::Net {
 			uint64 bitStore = 0;
 			int bitCount = 0;
 
-			State state = {};
-
+			// TODO: really this might be better as part of a subclass, nothing in here actually uses state other than debug checks.
+			ConnectionState state = {};
 
 			// TODO: channel - float32 sendBandwidth[sizeof...(Cs)] = {};
 			// TODO: channel - float32 recvBandwidth[sizeof...(Cs)] = {};
@@ -167,8 +167,8 @@ namespace Engine::Net {
 				return std::array<int32, getChannelCount()>{getChannel<Cs>().getQueueSize()...};
 			}
 
-			ENGINE_INLINE State getState() const noexcept { return state; }
-			ENGINE_INLINE void setState(State s) noexcept { state = s; }
+			ENGINE_INLINE ConnectionState getState() const noexcept { return state; }
+			ENGINE_INLINE void setState(ConnectionState s) noexcept { state = s; }
 
 			// TODO: why does this have a return value? isnt it always true?
 			[[nodiscard]]
@@ -337,9 +337,9 @@ namespace Engine::Net {
 			[[nodiscard]]
 			decltype(auto) beginMessage() {
 				if constexpr (ENGINE_DEBUG) {
-					if (!(state & MessageTraits<M>::sstate)) {
+					if (!(state & getMessageMetaInfo<M>().sendState)) {
 						ENGINE_WARN("Incorrect connection state to begin message of type ",
-							MessageTraits<M>::name, "(", static_cast<size_t>(M), ")"
+							getMessageMetaInfo<M>().name, "(", static_cast<size_t>(M), ")"
 						);
 					}
 				}
