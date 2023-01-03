@@ -399,6 +399,7 @@ namespace Game {
 				auto [hdr, msg] = conn->recvNext();
 				if (hdr.type == 0) { break; }
 				dispatchMessage(ent, connComp, hdr, msg);
+				ENGINE_DEBUG_ASSERT(msg.remaining() == 0, "Incomplete read of network message.");
 			}
 		}
 	}
@@ -490,6 +491,7 @@ namespace Game {
 	}
 
 	void NetworkingSystem::dropConnection(Engine::ECS::Entity ent, ConnectionComponent& connComp) {
+		// We need the state check here so that we dont nuke our entity mapping when our server list update connection timeouts
 		if (ENGINE_CLIENT && connComp.conn->getState() != ConnectionState::Disconnected) {
 			#if ENGINE_CLIENT
 				// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
@@ -512,7 +514,8 @@ namespace Game {
 		ENGINE_LOG("Disconnect ", ent, " ", connComp.conn->address());
 		connComp.conn->setState(ConnectionState::Disconnected);
 		connComp.conn->setKeyLocal(0);
-		connComp.conn->setKeyRemote(0);
+		// This breaks the repeat sending of the disconnect messages
+		//connComp.conn->setKeyRemote(0);
 		connComp.disconnectAt = world.getTime() + disconnectTime;
 		world.setEnabled(ent, false);
 	}
