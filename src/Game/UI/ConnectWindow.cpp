@@ -1,8 +1,5 @@
 #if ENGINE_CLIENT
 
-// STD
-#include <regex>
-
 // Engine
 #include <Engine/UI/DataAdapter.hpp>
 #include <Engine/UI/Button.hpp>
@@ -13,73 +10,81 @@
 // Game
 #include <Game/UI/ConnectWindow.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
+#include <Game/comps/ConnectionComponent.hpp>
 
 namespace {
 	namespace EUI = Game::UI::EUI;
 	using namespace Engine::Types;
+	using namespace Game;
 
-	bool connectTo(const std::string& uri, Game::EngineInstance& engine) {
-		Game::World& world = engine.getWorld();
-
-		// TODO: use Engine::Net::hostToAddress
-		addrinfo* results = nullptr;
-		addrinfo hints = {
-			.ai_family = AF_INET, // TODO: support ipv6 - AF_UNSPEC
-			.ai_socktype = SOCK_DGRAM,
-		};
-
-		std::regex regex{R"(^(?:(.*):\/\/)?(.*?)(?::(\d+))?(?:\/.*)?$)"};
-		std::smatch matches;
-		std::regex_match(uri, matches, regex);
-		ENGINE_ASSERT_WARN(matches.size() == 4, "Incorrect number of captures");
-
-		std::string host = matches[2].str();
-		std::string serv = matches[3].matched ? matches[3].str() : matches[1].str();
-
-		if (auto err = getaddrinfo(host.data(), serv.data(), &hints, &results); err) {
-			ENGINE_WARN("Address error");
-			// TODO: error log message + popup/notification
-			return false;
-		} else {
-			for (auto ptr = results; ptr; ptr = results->ai_next) {
-				if (ptr->ai_family != AF_INET) {
-					ENGINE_ERROR("Unsuported network family");
+	bool isAlreadyConnected(Game::World& world, Engine::Net::IPv4Address addr) {
+		for (auto ent : world.getFilter<ConnectionComponent>()) {
+			auto& connComp = world.getComponent<ConnectionComponent>(ent);
+			if (connComp.conn->address() == addr) {
+				if (connComp.conn->getState() == ConnectionState::Connected) {
+					return true;
 				}
-
-				Engine::Net::IPv4Address addr{*ptr->ai_addr};
-				ENGINE_LOG("Address: ", addr);
-				world.getSystem<Game::NetworkingSystem>().connectTo(addr);
 			}
 		}
+		return false;
+	}
 
-		freeaddrinfo(results);
-		return true;
+	auto makeConnectButtonAction(const EUI::StringLine* ipSrc) {
+		return [ipSrc](EUI::Button* b){
+			auto ctx = b->getContext();
+			auto engine = ctx->getUserdata<EngineInstance>();
+			auto& world = engine->getWorld();
+			auto addr = Engine::Net::hostToAddress(ipSrc->getText());
+			if (isAlreadyConnected(world, addr)) { return; }
+
+			// TODO: really would like to be able to clear a single function, doesnt really matter since this is our only callback, but still.
+			ctx->addPanelUpdateFunc(b, [last=Engine::Clock::TimePoint{}, count=0u, addr](EUI::Panel* p) mutable {
+				auto ctx = p->getContext();
+				auto engine = ctx->getUserdata<EngineInstance>();
+				auto& world = engine->getWorld();
+				auto now = engine->getWorld().getTime();
+
+				if (++count > 5) {
+					ENGINE_INFO("Unable to connect to server ", addr); // TODO: might want to have a ui message somewhere (just a top right notification/toast probably)
+					ctx->clearPanelUpdateFuncs(p);
+					return;
+				} else if (isAlreadyConnected(world, addr)) {
+					ctx->clearPanelUpdateFuncs(p);
+					return;
+				}
+
+				if (now - last > std::chrono::milliseconds{200}) {
+					last = now;
+					world.getSystem<NetworkingSystem>().connectTo(addr);
+				}
+			});
+		};
 	}
 
 	class Adapter : public EUI::DataAdapter<Adapter, Engine::Net::IPv4Address, Engine::Net::IPv4Address> {
 		private:
-			Game::World& world;
+			World& world;
 			Engine::Clock::TimePoint last;
 
 		public:
-			using It = decltype(world.getSystem<Game::NetworkingSystem>().servers.begin());
+			using It = decltype(world.getSystem<NetworkingSystem>().servers.begin());
 
-			Adapter(Game::World& world) noexcept : world{world} {}
-			ENGINE_INLINE auto begin() const { return world.getSystem<Game::NetworkingSystem>().servers.begin(); }
-			ENGINE_INLINE auto end() const { return world.getSystem<Game::NetworkingSystem>().servers.end(); }
+			Adapter(World& world) noexcept : world{world} {}
+			ENGINE_INLINE auto begin() const { return world.getSystem<NetworkingSystem>().servers.begin(); }
+			ENGINE_INLINE auto end() const { return world.getSystem<NetworkingSystem>().servers.end(); }
 			ENGINE_INLINE auto getId(It it) const noexcept { return it->first; }
 			ENGINE_INLINE Checksum check(Id id) const { return id; }
 
 			void update() {
-				auto& netSys = world.getSystem<Game::NetworkingSystem>();
+				auto& netSys = world.getSystem<NetworkingSystem>();
 				if (netSys.playerCount() == 0 && world.getTime() - last >= std::chrono::seconds{5}) {
-					world.getSystem<Game::NetworkingSystem>().broadcastDiscover();
+					world.getSystem<NetworkingSystem>().broadcastDiscover();
 					last = world.getTime();
 				}
 			}
 
 			auto createPanel(Id id, It it, EUI::Context* ctx) const {
-				auto& info = world.getSystem<Game::NetworkingSystem>().servers[id];
+				auto& info = world.getSystem<NetworkingSystem>().servers[id];
 
 				auto labels = ctx->constructPanel<EUI::Panel>();
 				labels->setAutoSizeHeight(true);
@@ -92,10 +97,7 @@ namespace {
 
 				auto btn = ctx->createPanel<EUI::Button>(labels);
 				btn->autoText(fmt::format("{}", id));
-				btn->setAction([id](EUI::Button* b){
-					auto engine = b->getContext()->getUserdata<Game::EngineInstance>();
-					connectTo(b->getText(), *engine);
-				});
+				btn->setAction(makeConnectButtonAction(btn));
 
 				return this->group(labels);
 			}
@@ -137,10 +139,7 @@ namespace Game::UI {
 			auto btn = ctx->createPanel<EUI::Button>(row);
 			btn->autoText("Connect");
 			btn->setFixedWidth(btn->getWidth());
-			btn->setAction([text](EUI::Button* b){
-				auto engine = b->getContext()->getUserdata<EngineInstance>();
-				connectTo(text->getText(), *engine);
-			});
+			btn->setAction(makeConnectButtonAction(text));
 
 			row->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, ctx->getTheme().sizes.pad1});
 		}

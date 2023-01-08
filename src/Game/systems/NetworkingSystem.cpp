@@ -199,7 +199,7 @@ namespace Game {
 	
 	HandleMessageDef(MessageType::CONNECT_CHALLENGE)
 		uint16 remote = {};
-		msg.read<uint16>(&remote);
+		msg.read<uint16>(&remote); // TODO: error checking
 
 		if (from.getKeyRemote()) {
 			ENGINE_WARN("Extraneous CONNECT_CHALLENGE received. Ignoring.");
@@ -463,10 +463,9 @@ namespace Game {
 	void NetworkingSystem::updateClient() {
 		for (const auto ent : world.getFilter<ConnectionComponent>()) {
 			const auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-			if (conn.getState() == ConnectionState::Connecting) {
-				connectTo(conn.address());
-				break;
-			} else if (conn.getState() == ConnectionState::Connected) {
+
+			// TODO: really we can remove this, its just a debug ping
+			if (conn.getState() == ConnectionState::Connected) {
 				static uint8 ping = 0;
 				static auto next = now;
 				if (next > now) { return; }

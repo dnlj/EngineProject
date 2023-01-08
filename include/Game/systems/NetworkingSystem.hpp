@@ -71,6 +71,7 @@ namespace Game {
 			int32 connectionsCount() const; // TODO: remove or at least make private. Should interact with filter directly.
 			int32 playerCount() const; // TODO: remove or at least make private. Should interact with filter directly.
 
+			// TODO: make client only
 			void connectTo(const Engine::Net::IPv4Address& addr);
 
 			/**
