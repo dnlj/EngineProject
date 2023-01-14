@@ -16,13 +16,13 @@ namespace Game {
 		MessageType::SERVER_INFO,
 		MessageType::CONNECT_REQUEST,
 		MessageType::CONNECT_CHALLENGE,
+		MessageType::CONNECT_CONFIRM,
 		MessageType::DISCONNECT,
 
 		MessageType::ACTION // TODO: one of these things is not like the others
 	> {};
 
 	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
-		MessageType::CONNECT_CONFIRM,
 		MessageType::PING,
 		MessageType::PLAYER_DATA,
 		MessageType::SPELL

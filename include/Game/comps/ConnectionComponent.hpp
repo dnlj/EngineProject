@@ -10,8 +10,7 @@
 namespace Game {
 	class ConnectionComponent {
 		public:
-			// TODO: does this still need to be in a ptr?
-			std::unique_ptr<Connection> conn;
+			std::unique_ptr<Connection> conn = {};
 			Engine::Clock::TimePoint disconnectAt = {};
 	};
 }

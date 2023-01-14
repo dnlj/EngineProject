@@ -897,10 +897,9 @@ int entry(int argc, char* argv[]) {
 	{
 		using namespace Engine::CommandLine;
 		using namespace Engine::Net;
-		//auto& parser = ;
 
 		parser
-			.add<uint16>("port", 'p', 21212,
+			.add<uint16>("port", 'p', ENGINE_SERVER ? 21212 : 0,
 				"The port to listen on.")
 			.add<IPv4Address>("group", 'g', {224,0,0,212, 12121},
 				"The multicast group to join for server discovery. Zero to disable.")

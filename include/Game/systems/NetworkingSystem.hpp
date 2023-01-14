@@ -35,8 +35,8 @@ namespace Game {
 			#endif
 
 		private:
-			static constexpr auto timeout = std::chrono::milliseconds{5000};
-			static constexpr auto disconnectTime = std::chrono::milliseconds{500};
+			static constexpr auto timeout = std::chrono::milliseconds{5000}; // TODO: Should be configurable
+			static constexpr auto disconnectingPeriod = std::chrono::milliseconds{500}; // TODO: Should be configurable
 
 			Engine::Net::IPv4Address address;
 			Engine::Net::Packet packet = {};
@@ -55,6 +55,9 @@ namespace Game {
 			#endif
 
 			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> addressToEntity;
+
+			// TODO: good candidate for small object optimization, when that gets implemented.
+			std::vector<Engine::ECS::Entity> dropList; // TODO: dont really like this way of handling things. Once we move the connection object we might be able to just use erase-remove.
 
 			pcg32 rng;
 			uint16 genKey() {
