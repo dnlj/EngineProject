@@ -17,12 +17,12 @@
 // Shared
 ////////////////////////////////////////////////////////////////////////////////
 namespace {
+	using namespace Game;
 	using PlayerFilter = Engine::ECS::EntityFilterList<
-		Game::PlayerFlag,
-		Game::ConnectionComponent
+		PlayerFlag,
+		ConnectedFlag
 	>;
 
-	using namespace Game;
 	using Engine::ECS::Entity;
 	using Engine::Net::MessageHeader;
 	using Engine::Net::BufferReader;
@@ -34,7 +34,7 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 #if ENGINE_CLIENT
 namespace {
-	void recv_ECS_INIT(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_INIT(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) {
 			ENGINE_WARN("Server didn't send remote entity. Unable to sync.");
@@ -48,7 +48,7 @@ namespace {
 		}
 
 		auto& world = engine.getWorld();
-		ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", ent, " Tick: ", world.getTick(), " - ", tick);
+		ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", from.ent, " Tick: ", world.getTick(), " - ", tick);
 
 		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
 		world.setNextTick(tick + 16);
@@ -56,13 +56,13 @@ namespace {
 		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
 
 		ENGINE_DEBUG_ASSERT(entToLocal.size() == 0, "Networked entity map already has entries. This is a bug.");
-		entToLocal[remote] = ent;
+		entToLocal[remote] = from.ent;
 
 		// TODO: move addPlayer to EntityNetworkingSystem
-		world.getSystem<Game::NetworkingSystem>().addPlayer(ent);
+		world.getSystem<Game::NetworkingSystem>().addPlayer(from);
 	}
 
-	void recv_ECS_ENT_CREATE(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_ENT_CREATE(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		Entity remote;
 		if (!msg.read(&remote)) { return; }
 
@@ -83,7 +83,7 @@ namespace {
 		// TODO: components init
 	}
 
-	void recv_ECS_ENT_DESTROY(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_ENT_DESTROY(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) { return; }
 		
@@ -98,7 +98,7 @@ namespace {
 		}
 	}
 
-	void recv_ECS_COMP_ADD(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_COMP_ADD(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) { return; }
 
@@ -126,7 +126,7 @@ namespace {
 		});
 	}
 
-	void recv_ECS_COMP_ALWAYS(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_COMP_ALWAYS(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) { return; }
 
@@ -172,7 +172,7 @@ namespace {
 		});
 	}
 
-	void recv_ECS_FLAG(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ECS_FLAG(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Entity remote;
 		if (!msg.read(&remote)) { return; }
 
@@ -209,7 +209,7 @@ namespace {
 		#endif
 	}
 
-	void recv_PLAYER_DATA(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_PLAYER_DATA(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		Engine::ECS::Tick tick;
 		b2Transform trans;
 		b2Vec2 vel;
@@ -222,12 +222,12 @@ namespace {
 		}
 		
 		auto& world = engine.getWorld();
-		if (!world.hasComponent<PhysicsBodyComponent>(ent)) {
+		if (!world.hasComponent<PhysicsBodyComponent>(from.ent)) {
 			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsBodyComponent");
 			return;
 		}
 
-		auto& physCompState = world.getComponentState<PhysicsBodyComponent>(ent, tick);
+		auto& physCompState = world.getComponentState<PhysicsBodyComponent>(from.ent, tick);
 		const auto diff = physCompState.trans.p - trans.p;
 		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
@@ -283,16 +283,22 @@ namespace Game {
 
 		updateNeighbors();
 
+		auto& netSys = world.getSystem<NetworkingSystem>();
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
-			auto& conn = *world.getComponent<ConnectionComponent>(ply).conn;
+
+			auto* conn = netSys.getConnection(ply);
+			if (!conn) {
+				ENGINE_WARN("Unable to get connection for entity. This is a bug.");
+				continue;
+			}
 
 			// TODO: see DqVBIIfY
 			// TODO: move elsewhere, this isnt really related to ECS networking
 			{ // TODO: player data should be sent every tick along with actions/inputs.
 			// TODO: cont.  Should it? every few frames is probably fine for keeping it in sync. Although when it does desync it will be a larger rollback.
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-				if (auto msg = conn.beginMessage<MessageType::PLAYER_DATA>()) {
+				if (auto msg = conn->beginMessage<MessageType::PLAYER_DATA>()) {
 					msg.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
 					msg.write(physComp.getTransform());
 					msg.write(physComp.getVelocity());
@@ -304,9 +310,9 @@ namespace Game {
 			// TODO: prioritize entities
 
 			// Order is important here since some failed writes change neighbor states
-			processAddedNeighbors(ply, conn, ecsNetComp);
-			processRemovedNeighbors(ply, conn, ecsNetComp);
-			processCurrentNeighbors(ply, conn, ecsNetComp);
+			processAddedNeighbors(ply, *conn, ecsNetComp);
+			processRemovedNeighbors(ply, *conn, ecsNetComp);
+			processCurrentNeighbors(ply, *conn, ecsNetComp);
 		}
 	}
 

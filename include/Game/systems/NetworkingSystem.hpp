@@ -17,9 +17,13 @@
 
 
 namespace Game {
-	class ConnectionComponent;
+	class ConnectionInfo : public Connection {
+		public:
+			using Connection::Connection;
+			Engine::ECS::Entity ent{}; // TODO: probably add getter/setter once conversion is done. Makes access cleaner
+	};
 
-	using NetworkMessageHandler = void(*)(EngineInstance& engine, Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg);
+	using NetworkMessageHandler = void(*)(EngineInstance& engine, ConnectionInfo& from, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg);
 
 	class NetworkingSystem : public System {
 		public:
@@ -38,7 +42,6 @@ namespace Game {
 			static constexpr auto timeout = std::chrono::milliseconds{5000}; // TODO: Should be configurable
 			static constexpr auto disconnectingPeriod = std::chrono::milliseconds{500}; // TODO: Should be configurable
 
-			Engine::Net::IPv4Address address;
 			Engine::Net::Packet packet = {};
 			const Engine::Net::IPv4Address group;
 			Engine::Clock::TimePoint now = {};
@@ -54,11 +57,9 @@ namespace Game {
 			Engine::Net::UDPSocket discoverServerSocket;
 			#endif
 
-			Engine::FlatHashMap<Engine::Net::IPv4Address, Engine::ECS::Entity> addressToEntity;
-
-			// TODO: good candidate for small object optimization, when that gets implemented.
-			std::vector<Engine::ECS::Entity> dropList; // TODO: dont really like this way of handling things. Once we move the connection object we might be able to just use erase-remove.
-
+			Engine::FlatHashMap<Engine::Net::IPv4Address, std::unique_ptr<ConnectionInfo>> addrToConn;
+			Engine::FlatHashMap<Engine::ECS::Entity, ConnectionInfo*> entToConn;
+			
 			pcg32 rng;
 			uint16 genKey() {
 				uint16 v;
@@ -95,29 +96,39 @@ namespace Game {
 				msgHandlers[msg] = func;
 			}
 
-			void addPlayer(const Engine::ECS::Entity ent); // TODO: move addPlayer to EntityNetworkingSystem
+			void addPlayer(ConnectionInfo& conn); // TODO: move addPlayer to EntityNetworkingSystem?
+
+			ConnectionInfo* getConnection(Engine::ECS::Entity ent) {
+				auto found = entToConn.find(ent);
+				return found == entToConn.end() ? nullptr : found->second;
+			}
+
+			ConnectionInfo* getConnection(Engine::Net::IPv4Address addr) {
+				auto found = addrToConn.find(addr);
+				return found == addrToConn.end() ? nullptr : found->second.get();
+			}
+
+			auto& getConnections() { return addrToConn; }
+			const auto& getConnections() const { return addrToConn; }
 
 		private:
-			Engine::ECS::Entity addConnection(const Engine::Net::IPv4Address& addr);
-			Engine::ECS::Entity getEntity(const Engine::Net::IPv4Address& addr);
-			Engine::ECS::Entity getOrCreateEntity(const Engine::Net::IPv4Address& addr);
+			ConnectionInfo& getOrCreateConnection(const Engine::Net::IPv4Address& addr);
 
 			/**
 			 * Disconnects a connection/entity and schedules its destruction.
 			 */
-			void disconnect(Engine::ECS::Entity ent, ConnectionComponent& connComp);
+			void disconnect(ConnectionInfo& conn);
 
 			/**
-			 * Immediately drops a connection and deletes the associated entity.
+			 * Immediately drops a connection.
 			 */
-			void dropConnection(Engine::ECS::Entity ent, ConnectionComponent& connComp);
+			void dropConnection(const Engine::Net::IPv4Address& addr);
 
 			void recvAndDispatchMessages(Engine::Net::UDPSocket& sock);
-			void dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg);
-			void updateClient();
+			void dispatchMessage(ConnectionInfo& from, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg);
 
 			template<MessageType Type>
-			static void handleMessageType(EngineInstance& engine, Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) {
+			static void handleMessageType(EngineInstance& engine, ConnectionInfo& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) {
 				static_assert(Type != Type, "Unhandled network message type.");
 			};
 	};

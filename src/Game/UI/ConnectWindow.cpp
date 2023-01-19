@@ -10,7 +10,6 @@
 // Game
 #include <Game/UI/ConnectWindow.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
 
 namespace {
 	namespace EUI = Game::UI::EUI;
@@ -18,15 +17,9 @@ namespace {
 	using namespace Game;
 
 	bool isAlreadyConnected(Game::World& world, Engine::Net::IPv4Address addr) {
-		for (auto ent : world.getFilter<ConnectionComponent>()) {
-			auto& connComp = world.getComponent<ConnectionComponent>(ent);
-			if (connComp.conn->address() == addr) {
-				if (connComp.conn->getState() == ConnectionState::Connected) {
-					return true;
-				}
-			}
-		}
-		return false;
+		auto& netSys = world.getSystem<NetworkingSystem>();
+		auto* conn = netSys.getConnection(addr);
+		return conn && conn->getState() == ConnectionState::Connected;
 	}
 
 	auto makeConnectButtonAction(const EUI::StringLine* ipSrc) {

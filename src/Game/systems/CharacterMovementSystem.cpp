@@ -23,6 +23,7 @@ namespace Game {
 		: System{arg} {
 
 		static_assert(World::orderBefore<CharacterMovementSystem, PhysicsSystem>());
+		static_assert(World::orderAfter<CharacterMovementSystem, ActionSystem>());
 	}
 
 	void CharacterMovementSystem::tick() {

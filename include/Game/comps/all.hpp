@@ -4,7 +4,6 @@
 #include <Game/comps/AnimationComponent.hpp>
 #include <Game/comps/ArmatureComponent.hpp>
 #include <Game/comps/BlockEntityComponent.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
 #include <Game/comps/ECSNetworkingComponent.hpp>
 #include <Game/comps/MapAreaComponent.hpp>
 #include <Game/comps/MapEditComponent.hpp>

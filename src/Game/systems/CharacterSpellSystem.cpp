@@ -13,7 +13,6 @@
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/ActionComponent.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
 
 
 namespace {
@@ -23,7 +22,7 @@ namespace {
 	using Engine::Net::BufferReader;
 
 	// TODO: Should probably be derived from actionsystem inputs/binds/w.e. not its own message
-	void recv_SPELL(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_SPELL(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		b2Vec2 pos;
 		b2Vec2 dir;
 		if (!msg.read(&pos) || !msg.read(&dir)) { return; }
@@ -147,12 +146,18 @@ namespace Game {
 			fireMissile(event.pos, event.dir);
 
 			if constexpr (ENGINE_SERVER) {
-				for (const auto ply : world.getFilter<PlayerFlag>()) {
-					if (ply == event.ent) { continue; }
-					auto& connComp = world.getComponent<ConnectionComponent>(ply);
-					auto& conn = *connComp.conn;
+				auto& netSys = world.getSystem<NetworkingSystem>();
 
-					if (auto msg = conn.beginMessage<MessageType::SPELL>()) {
+				for (const auto ply : world.getFilter<PlayerFlag, ConnectedFlag>()) {
+					if (ply == event.ent) { continue; }
+					auto* conn = netSys.getConnection(ply);
+
+					if (!conn) {
+						ENGINE_WARN("Unable to get network connection. This is a bug.");
+						continue;
+					}
+
+					if (auto msg = conn->beginMessage<MessageType::SPELL>()) {
 						msg.write(event.pos);
 						msg.write(event.dir);
 					}

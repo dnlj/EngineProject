@@ -5,15 +5,15 @@
 
 // Game
 #include <Game/comps/ActionComponent.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
 #include <Game/comps/NetworkStatsComponent.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
 #include <Game/EngineInstance.hpp>
 #include <Game/UI/NetGraphPane.hpp>
 
 
 namespace {
 	namespace EUI = Game::UI::EUI;
-	using namespace Engine::Types;
+	using namespace Game;
 
 	class NetGraph : public EUI::Panel {
 		private:
@@ -39,14 +39,19 @@ namespace {
 			uint32 lastRecvBytes = 0;
 
 		public:
-			NetGraph(EUI::Context* context, Engine::ECS::Entity ent, Game::World& world) : Panel{context} {
+			NetGraph(EUI::Context* context, Engine::Net::IPv4Address addr, Game::World& world) : Panel{context} {
 				setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, 0});
 				setAutoSizeHeight(true);
 
-				auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
+				auto& netSys = world.getSystem<NetworkingSystem>();
+				auto* conn = netSys.getConnection(addr);
+				if (!conn) {
+					ENGINE_WARN("Unable to get connection object for entity in NetGraph::NetGraph. This is a bug.");
+					return;
+				}
 
-				auto* addr = ctx->createPanel<EUI::Label>(this);
-				addr->autoText(fmt::format("{}", conn.address()));
+				auto* addrLabel = ctx->createPanel<EUI::Label>(this);
+				addrLabel->autoText(fmt::format("{}", conn->address()));
 
 				// TODO: if we had full flexbox style layout this would be much simpler. no need for these row containers. This would all work with weights.
 				auto* row1 = ctx->createPanel<Panel>(this);
@@ -77,21 +82,14 @@ namespace {
 				recvRate = ctx->createPanel<EUI::Slider>(row4);
 				recvRate->setWeight(2);
 				recvRate->setLimits(1, 255).setValue(0).bind(
-					[ent](EUI::Slider& s){
-						auto& world = s.getContext()->getUserdata<Game::EngineInstance>()->getWorld();
-						if (world.isEnabled(ent) && world.hasComponent<Game::ConnectionComponent>(ent)) {
-							auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
-							s.setValue(conn.getPacketRecvRate());
-						}
+					[conn](EUI::Slider& s){
+						s.setValue(conn->getPacketRecvRate());
 					},
-					[ent](EUI::Slider& s){
-						auto& world = s.getContext()->getUserdata<Game::EngineInstance>()->getWorld();
-						auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
-
-						if (conn.getState() == Game::ConnectionState::Connected) {
-							if (auto msg = conn.beginMessage<Game::MessageType::CONFIG_NETWORK>()) {
+					[conn](EUI::Slider& s){
+						if (conn->getState() == ConnectionState::Connected) {
+							if (auto msg = conn->beginMessage<MessageType::CONFIG_NETWORK>()) {
 								auto v = static_cast<float32>(s.getValue());
-								conn.setPacketRecvRate(v);
+								conn->setPacketRecvRate(v);
 								msg.write(v);
 								return;
 							}
@@ -130,7 +128,7 @@ namespace {
 				}
 			}
 
-			void update(Engine::ECS::Entity ent, Game::World& world) {
+			void update(Engine::Net::IPv4Address addr, Game::World& world) {
 				// TODO: config time
 				const auto now = world.getTime();
 
@@ -142,20 +140,28 @@ namespace {
 				sentGraphDiff->min.x = sentGraphAvg->min.x;
 				recvGraphDiff->max.x = sentGraphAvg->max.x;
 				recvGraphDiff->min.x = sentGraphAvg->min.x;
+				
+				auto& netSys = world.getSystem<NetworkingSystem>();
+				auto* conn = netSys.getConnection(addr);
 
+				if (!conn) {
+					ENGINE_WARN("Unable to get connection object for entity in NetGraph::update. This is a bug.");
+					return;
+				}
+
+				const auto ent = conn->ent;
 				if (!world.hasComponent<Game::NetworkStatsComponent>(ent)) {
 					world.addComponent<Game::NetworkStatsComponent>(ent);
 				}
 				auto& stats = world.getComponent<Game::NetworkStatsComponent>(ent);
-				auto& conn = *world.getComponent<Game::ConnectionComponent>(ent).conn;
 						
 				float32 estbuff = 0;
 				if (world.hasComponent<Game::ActionComponent>(ent)) {
 					estbuff = world.getComponent<Game::ActionComponent>(ent).estBufferSize;
 				}
 
-				const auto sentAvg = conn.getSendBandwidth();
-				const auto recvAvg = conn.getRecvBandwidth();
+				const auto sentAvg = conn->getSendBandwidth();
+				const auto recvAvg = conn->getRecvBandwidth();
 
 				const auto nowSec = Engine::Clock::Seconds{now.time_since_epoch()}.count();
 				sentGraphAvg->addPoint({ nowSec, sentAvg });
@@ -164,18 +170,18 @@ namespace {
 				recvGraphAvg->addPoint({ nowSec, recvAvg });
 				recvGraphAvg->trimData();
 
-				const auto sentByteDiff = conn.getTotalBytesSent() - lastSentBytes;
-				const auto recvByteDiff = conn.getTotalBytesRecv() - lastRecvBytes;
+				const auto sentByteDiff = conn->getTotalBytesSent() - lastSentBytes;
+				const auto recvByteDiff = conn->getTotalBytesRecv() - lastRecvBytes;
 
 				if (sentByteDiff > 0) {
 					sentGraphDiff->addPoint({ nowSec, sentByteDiff });
-					lastSentBytes = conn.getTotalBytesSent();
+					lastSentBytes = conn->getTotalBytesSent();
 					sentGraphDiff->trimData();
 				}
 
 				if (recvByteDiff > 0) {
 					recvGraphDiff->addPoint({ nowSec, recvByteDiff });
-					lastRecvBytes = conn.getTotalBytesRecv();
+					lastRecvBytes = conn->getTotalBytesRecv();
 					recvGraphDiff->trimData();
 				}
 
@@ -192,41 +198,42 @@ namespace {
 					buff.clear(); fmt::format_to(std::back_inserter(buff), "Est. Buffer: {:.2f}", estbuff);
 					estBuff->autoText(buff);
 
-					buff.clear(); fmt::format_to(std::back_inserter(buff), "Ping: {:.1f}ms", Engine::Clock::Seconds{conn.getPing()}.count() * 1000.0f);
+					buff.clear(); fmt::format_to(std::back_inserter(buff), "Ping: {:.1f}ms", Engine::Clock::Seconds{conn->getPing()}.count() * 1000.0f);
 					ping->autoText(buff);
 						
-					buff.clear(); fmt::format_to(std::back_inserter(buff), "Jitter: {:.1f}ms", Engine::Clock::Seconds{conn.getJitter()}.count() * 1000.0f);
+					buff.clear(); fmt::format_to(std::back_inserter(buff), "Jitter: {:.1f}ms", Engine::Clock::Seconds{conn->getJitter()}.count() * 1000.0f);
 					jitter->autoText(buff);
 
-					buff.clear(); fmt::format_to(std::back_inserter(buff), "Budget: {:.2f}", conn.getPacketSendBudget());
+					buff.clear(); fmt::format_to(std::back_inserter(buff), "Budget: {:.2f}", conn->getPacketSendBudget());
 					budget->autoText(buff);
 
-					buff.clear(); fmt::format_to(std::back_inserter(buff), "Sent: {}b {:.1f}b/s", conn.getTotalBytesSent(), sentAvg);
+					buff.clear(); fmt::format_to(std::back_inserter(buff), "Sent: {}b {:.1f}b/s", conn->getTotalBytesSent(), sentAvg);
 					sent->autoText(buff);
 						
-					buff.clear(); fmt::format_to(std::back_inserter(buff), "Recv: {}b {:.1f}b/s", conn.getTotalBytesRecv(), recvAvg);
+					buff.clear(); fmt::format_to(std::back_inserter(buff), "Recv: {}b {:.1f}b/s", conn->getTotalBytesRecv(), recvAvg);
 					recv->autoText(buff);
 
-					buff.clear(); fmt::format_to(std::back_inserter(buff), "Loss: {:.3f}", conn.getLoss());
+					buff.clear(); fmt::format_to(std::back_inserter(buff), "Loss: {:.3f}", conn->getLoss());
 					loss->autoText(buff);
 				}
 			}
 
 	};
 
-	class Adapter : public EUI::DataAdapter<Adapter, Engine::ECS::Entity, int> {
+	class Adapter : public EUI::DataAdapter<Adapter, Engine::Net::IPv4Address, int> {
 		private:
 			Game::World& world;
 			int notTheSame = 0;
 
 		public:
-			using It = decltype(world.getFilter<Game::ConnectionComponent>().begin());
+			using Cont = std::decay_t<decltype(world.getSystem<NetworkingSystem>().getConnections())>;
+			using It = Cont::const_iterator;
 
 			Adapter(Game::World& world) noexcept : world{world} {}
 
-			ENGINE_INLINE auto begin() const { return world.getFilter<Game::ConnectionComponent>().begin(); }
-			ENGINE_INLINE auto end() const { return world.getFilter<Game::ConnectionComponent>().end(); }
-			ENGINE_INLINE auto getId(It it) const noexcept { return *it; }
+			ENGINE_INLINE auto begin() const { return world.getSystem<NetworkingSystem>().getConnections().cbegin(); }
+			ENGINE_INLINE auto end() const { return world.getSystem<NetworkingSystem>().getConnections().cend(); }
+			ENGINE_INLINE auto getId(It it) const noexcept { return it->first; }
 
 			Checksum check(Id id) noexcept {
 				return ++notTheSame;

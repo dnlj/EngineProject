@@ -5,7 +5,7 @@
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
 
 namespace {
 	// TODO: rm or rename
@@ -42,14 +42,16 @@ namespace Game {
 	void PhysicsSystem::tick() {
 		if constexpr (ENGINE_CLIENT || ENGINE_SERVER) { // TODO: this should be client only correct?
 			Engine::Clock::TimePoint interpTime;
-			int buffSize = 0;
-			Engine::Clock::Duration ping = {};
+			int buffSize = 0; // TODO: should probably have est value initially
+			Engine::Clock::Duration ping = {}; // TODO: should probably have est value initially
 
-			for (const auto& ply : world.getFilter<ActionComponent, ConnectionComponent>()) {
-				const auto& connComp = world.getComponent<ConnectionComponent>(ply);
-				const auto& actComp = world.getComponent<ActionComponent>(ply); 
+			// TODO: this is a bad way of handling this, we really need this per connection. Atm this might pick the server discover, an old DC'd connection, etc.
+			// TODO: when we split the connection object, we really only need the stats part here for ping/jitter.
+			for (const auto& ply : world.getFilter<ActionComponent, ConnectedFlag>()) {
+				const auto& actComp = world.getComponent<ActionComponent>(ply);
+				auto* conn = world.getSystem<NetworkingSystem>().getConnection(ply);
 				buffSize = static_cast<int>(actComp.estBufferSize) + 1;
-				ping = connComp.conn->getPing() + connComp.conn->getJitter();
+				ping = conn->getPing() + conn->getJitter();
 				break;
 			}
 

@@ -50,7 +50,6 @@ namespace Game {
 		class PhysicsInterpComponent,
 		class SpriteComponent,
 		class ActionComponent,
-		class ConnectionComponent,
 		class ECSNetworkingComponent,
 		class NetworkStatsComponent,
 		class MapAreaComponent,
@@ -63,7 +62,8 @@ namespace Game {
 	using FlagsSet = Meta::TypeSet::TypeSet<
 		struct PlayerFlag,
 		struct CameraTargetFlag,
-		struct NetworkedFlag
+		struct NetworkedFlag,
+		struct ConnectedFlag
 	>;
 
 	// Example: template<> constexpr static inline bool IsNetworkedFlag<PlayerFlag> = true;

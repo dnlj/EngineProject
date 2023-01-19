@@ -12,7 +12,6 @@
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/PhysicsOriginShiftSystem.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
@@ -29,11 +28,10 @@ namespace {
 
 	using PlayerFilter = Engine::ECS::EntityFilterList<
 		PlayerFlag,
-		PhysicsBodyComponent,
-		ConnectionComponent
+		PhysicsBodyComponent
 	>;
 
-	void recv_MAP_CHUNK(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_MAP_CHUNK(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		auto& world = engine.getWorld();
 		world.getSystem<MapSystem>().chunkFromNet(head, msg);
 	}
@@ -282,11 +280,18 @@ namespace Game {
 	void MapSystem::update(float32 dt) {
 		const auto tick = world.getTick();
 		auto timeout = world.getTickTime() - std::chrono::seconds{10}; // TODO: how long? 30s?
+		auto& netSys = world.getSystem<NetworkingSystem>();
 
 		for (auto ent : world.getFilter<MapAreaComponent>()) {
 			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ent);
 			const auto begin = mapAreaComp.updates.begin();
 			const auto end = mapAreaComp.updates.end();
+
+			auto* conn = netSys.getConnection(ent);
+			if (!conn) {
+				ENGINE_WARN("Unable to get network connection for entity. This is a bug.");
+				return;
+			}
 
 			for (auto it = begin; it != end;) {
 				const auto& chunkPos = it->first;
@@ -304,9 +309,6 @@ namespace Game {
 
 				if (meta.last != activeData.updated) {
 					if (meta.last == 0) { // Fresh chunk
-						auto& connComp = world.getComponent<ConnectionComponent>(ent);
-						auto& conn = *connComp.conn;
-
 						const auto regionPos = chunkToRegion(chunkPos);
 						const auto regionIt = regions.find(regionPos);
 						if (regionIt != regions.end() && !regionIt->second->loading()) {
@@ -315,7 +317,7 @@ namespace Game {
 							rleTemp.clear();
 							chunkInfo.chunk.toRLE(rleTemp);
 							
-							if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
+							if (auto msg = conn->beginMessage<MessageType::MAP_CHUNK>()) {
 								meta.last = activeData.updated;
 								const auto size = static_cast<int32>(rleTemp.size() * sizeof(rleTemp[0]));
 								byte* data = reinterpret_cast<byte*>(rleTemp.data());
@@ -331,9 +333,7 @@ namespace Game {
 						// TODO: i dont think this case should be hit?
 						ENGINE_WARN("No RLE data for chunk");
 					} else { // Chunk edit
-						auto& connComp = world.getComponent<ConnectionComponent>(ent);
-						auto& conn = *connComp.conn;
-						if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
+						if (auto msg = conn->beginMessage<MessageType::MAP_CHUNK>()) {
 							meta.last = activeData.updated;
 							const auto size = static_cast<int32>(activeData.rle.size() * sizeof(activeData.rle[0]));
 							byte* data = reinterpret_cast<byte*>(activeData.rle.data());

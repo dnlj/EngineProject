@@ -3,7 +3,6 @@
 #include <Game/systems/ActionSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/comps/ActionComponent.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/NetworkStatsComponent.hpp>
 
@@ -26,16 +25,14 @@ namespace {
 		return static_cast<float32>(v - range);
 	};
 
-	using Filter = Engine::ECS::EntityFilterList<ActionComponent, ConnectionComponent>;
-
-	void recv_ACTION_server(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ACTION_server(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		auto& world = engine.getWorld();
 
 		Engine::ECS::Tick tick;
 		msg.read<Engine::ECS::Tick>(&tick);
 
 		const auto recvTick = world.getTick();
-		auto& actComp = world.getComponent<ActionComponent>(ent);
+		auto& actComp = world.getComponent<ActionComponent>(from.ent);
 
 		// These are inclusive
 		const auto minTick = recvTick + 1;
@@ -79,7 +76,7 @@ namespace {
 		//found->recvTick = recvTick;
 	}
 
-	void recv_ACTION_client(EngineInstance& engine, Entity ent, Connection& from, const MessageHeader head, BufferReader& msg) {
+	void recv_ACTION_client(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		auto& world = engine.getWorld();
 		// TODO: what about ordering?
 		// TODO: we dont actually use tick/recvTick. just nw buffsize
@@ -94,7 +91,7 @@ namespace {
 		const auto buffSize = tick - recvTick;
 
 		if (recvTick == 0) { // TODO: The server should probably send a bitset of the recvs it has received each time so it can be redundant like the client side inputs are.
-			auto& actComp = world.getComponent<ActionComponent>(ent);
+			auto& actComp = world.getComponent<ActionComponent>(from.ent);
 			auto* state = actComp.states.find(tick);
 			if (state) {
 				auto* prev = actComp.states.find(tick - 1);
@@ -107,7 +104,7 @@ namespace {
 			}
 		}
 
-		auto& actComp = world.getComponent<ActionComponent>(ent);
+		auto& actComp = world.getComponent<ActionComponent>(from.ent);
 		{
 			uint8 estNet;
 			msg.read<uint8>(&estNet);
@@ -186,8 +183,8 @@ namespace {
 		}
 
 		if constexpr (ENGINE_DEBUG) {
-			if (world.hasComponent<NetworkStatsComponent>(ent)) {
-				auto& netStatsComp = world.getComponent<NetworkStatsComponent>(ent);
+			if (world.hasComponent<NetworkStatsComponent>(from.ent)) {
+				auto& netStatsComp = world.getComponent<NetworkStatsComponent>(from.ent);
 				netStatsComp.inputBufferSize = static_cast<int32>(buffSize);
 				netStatsComp.idealInputBufferSize = ideal;
 			}
@@ -207,9 +204,10 @@ namespace Game {
 	}
 
 	void ActionSystem::preTick() {
-		for (const auto ent : world.getFilter<Filter>()) {
+		for (const auto ent : world.getFilter<ActionComponent>()) {
 			const auto tick = world.getTick();
 			auto& actComp = world.getComponent<ActionComponent>(ent);
+
 			if (ENGINE_SERVER || world.isPerformingRollback()) {
 				actComp.state = actComp.states.find(tick);
 			} else {
@@ -229,10 +227,12 @@ namespace Game {
 
 		auto& cam = engine.getCamera();
 		const auto currTick = world.getTick();
-		for (const auto ent : world.getFilter<Filter>()) {
-			auto& actComp = world.getComponent<ActionComponent>(ent);
-			auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 
+		// TODO: really some of the things in here dont require ConnectedFlag. Change so those are run even without it.
+		for (const auto ent : world.getFilter<ActionComponent, ConnectedFlag>()) {
+			auto& actComp = world.getComponent<ActionComponent>(ent);
+
+			// TODO: this should probably be moved, this doesnt really depend on the connection status/object/etc
 			if constexpr (ENGINE_CLIENT) {
 				// TODO: update cursor axis locations
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
@@ -243,14 +243,21 @@ namespace Game {
 				state.target.y = tpos.y - pos.y;
 			}
 
+			auto* conn = world.getSystem<NetworkingSystem>().getConnection(ent);
+			if (!conn) {
+				ENGINE_WARN("Entity has ConnectedFlag but is missing a valid connection object. This is a bug.");
+				continue;
+			}
+
 			if constexpr (ENGINE_CLIENT) {
 				// Hey! are you wondering why the client sends so much data again?
 				// Well let me save you some time. This code sends about
 				// 12288 bytes per second assuming 64 tick and 64 action history states (sending 1/4 of that).
 				// If we want to do better we need to compress this or send fewer states.
-				// Check trello for more complete explanation. https://trello.com/c/O3oJLMde
+				// Check trello for more complete explanation. See: O3oJLMde
 
-				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
+
+				if (auto msg = conn->beginMessage<MessageType::ACTION>()) {
 					msg.write(currTick);
 
 					// TODO: how many to send?
@@ -273,7 +280,7 @@ namespace Game {
 			} else if constexpr (ENGINE_SERVER) {
 				auto* state = actComp.state;
 
-				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
+				if (auto msg = conn->beginMessage<MessageType::ACTION>()) {
 					msg.write(currTick);
 					msg.write(state ? state->recvTick : 0);
 					msg.write(estBuffSizeToNet(actComp.estBufferSize));
@@ -304,7 +311,7 @@ namespace Game {
 	}
 
 	void ActionSystem::updateActionState(Action act, bool val) {
-		for (const auto& ent : world.getFilter<Filter>()) {
+		for (const auto& ent : world.getFilter<ActionComponent>()) {
 			updateActionState(ent, act, val);
 		}
 	}
@@ -318,7 +325,7 @@ namespace Game {
 	}
 	
 	void ActionSystem::updateTarget(glm::vec2 val) {
-		for (const auto& ent : world.getFilter<Filter>()) {
+		for (const auto& ent : world.getFilter<ActionComponent>()) {
 			updateTarget(ent, val);
 		}
 	}

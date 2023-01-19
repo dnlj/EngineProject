@@ -1,7 +1,6 @@
 // Game
 #include <Game/UI/InfoPane.hpp>
 #include <Game/EngineInstance.hpp>
-#include <Game/comps/ConnectionComponent.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 
 
@@ -19,10 +18,10 @@ namespace Game::UI {
 
 		disconnect->setAction([](EUI::Button* btn){
 			auto& world = btn->getContext()->getUserdata<EngineInstance>()->getWorld();
+			auto& netSys = world.getSystem<NetworkingSystem>();
 
-			for (const auto& ent : world.getFilter<ConnectionComponent>()) {
-				const auto& addr = world.getComponent<ConnectionComponent>(ent).conn->address();
-				world.getSystem<NetworkingSystem>().requestDisconnect(addr);
+			for (const auto& conn : netSys.getConnections()) {
+				world.getSystem<NetworkingSystem>().requestDisconnect(conn.first);
 			}
 		});
 

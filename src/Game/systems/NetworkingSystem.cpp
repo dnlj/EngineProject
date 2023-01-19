@@ -20,8 +20,9 @@
 
 namespace {
 	using PlayerFilter = Engine::ECS::EntityFilterList<
-		Game::PlayerFlag,
-		Game::ConnectionComponent
+		Game::PlayerFlag
+		// TODO: since we dont have connComp anymore, make sure eveything that uses this is still correct
+		//Game::ConnectionComponent
 	>;
 
 	// TODO: would probably be easier to just have a base class instead of all these type traits
@@ -73,7 +74,7 @@ namespace {
 
 #define HandleMessageDef(MsgType) \
 	template<> \
-	void NetworkingSystem::handleMessageType<MsgType>(EngineInstance& engine, Engine::ECS::Entity ent, Connection& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) { \
+	void NetworkingSystem::handleMessageType<MsgType>(EngineInstance& engine, ConnectionInfo& from, const Engine::Net::MessageHeader head, Engine::Net::BufferReader& msg) { \
 	HandleMessageDef_DebugBreak(#MsgType);
 
 
@@ -185,12 +186,12 @@ namespace Game {
 
 		ENGINE_LOG("CONNECT_CONFIRM from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick());
 		from.setState(ConnectionState::Connected);
+		netSys.addPlayer(from); // TODO: this step should probably be delayed until we get some kind of CONFIG_CONFIRM message.
 
-		netSys.addPlayer(ent); // TODO: this step should probably be delayed until we get some kind of CONFIG_CONFIRM message.
 
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
 		if (auto reply = from.beginMessage<MessageType::ECS_INIT>()) {
-			reply.write(ent);
+			reply.write(from.ent);
 			reply.write(world.getTick());
 		}
 
@@ -200,13 +201,10 @@ namespace Game {
 	}
 
 	HandleMessageDef(MessageType::DISCONNECT)
+		ENGINE_LOG("MessageType::DISCONNECT ", from.address());
 		auto& world = engine.getWorld();
 		auto& netSys = world.getSystem<NetworkingSystem>();
-		auto& connComp = world.getComponent<ConnectionComponent>(ent);
-
-		// TODO: restructure so we dont need conncomp
-		ENGINE_LOG("MessageType::DISCONNECT ", from.address(), " ", ent);
-		netSys.disconnect(ent, connComp);
+		netSys.disconnect(from);
 		from.setKeyRemote(0); // TODO: really shouldnt have to do this here. Need to make disconnect() deal with this.
 	}
 
@@ -309,17 +307,15 @@ namespace Game {
 
 	#if ENGINE_CLIENT
 	void NetworkingSystem::broadcastDiscover() {
-		return; // TODO: rm
 		const auto now = world.getTime();
 		for (auto it = servers.begin(); it != servers.end(); ++it) {
 			if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
 				servers.erase(it);
 			}
 		}
-
-		const auto ent = getOrCreateEntity(group);
-		const auto& conn = world.getComponent<ConnectionComponent>(ent).conn;
-		if (auto msg = conn->beginMessage<MessageType::DISCOVER_SERVER>()) {
+		
+		auto& conn = getOrCreateConnection(group);
+		if (auto msg = conn.beginMessage<MessageType::DISCOVER_SERVER>()) {
 			writeMessagePadding(msg.getBufferWriter());
 		}
 	}
@@ -327,31 +323,31 @@ namespace Game {
 
 	void NetworkingSystem::recvAndDispatchMessages(Engine::Net::UDPSocket& sock) {
 		int32 sz;
-		while ((sz = sock.recv(&packet, sizeof(packet), address)) > -1) {
-			const auto ent = getOrCreateEntity(address);
-			auto& connComp = world.getComponent<ConnectionComponent>(ent);
-			const auto& conn = connComp.conn;
+		Engine::Net::IPv4Address addr;
+
+		while ((sz = sock.recv(&packet, sizeof(packet), addr)) > -1) {
 			// TODO: move back to connection
 			if (packet.getProtocol() != Engine::Net::protocol) {
 				ENGINE_WARN("Invalid protocol"); // TODO: rm - could be used for lag/dos?
 				continue;
 			}
 
-			if (conn->getKeyLocal() != packet.getKey()) {
-				if (conn->getState() == ConnectionState::Connected) {
-					ENGINE_WARN("Invalid key for ", conn->address(), " ", packet.getKey(), " != ", conn->getKeyLocal());
+			auto& conn = getOrCreateConnection(addr);
+			if (conn.getKeyLocal() != packet.getKey()) {
+				if (conn.getState() == ConnectionState::Connected) {
+					ENGINE_WARN("Invalid key for ", conn.address(), " ", packet.getKey(), " != ", conn.getKeyLocal());
 					continue;
 				}
 			}
 
-			// ENGINE_LOG("****** ", conn->getKeySend(), " ", conn->getKeyRecv(), " ", packet.getKey(), " ", packet.getSeqNum());
+			// ENGINE_LOG("****** ", conn.getKeySend(), " ", conn.getKeyRecv(), " ", packet.getKey(), " ", packet.getSeqNum());
 			
-			if (!conn->recv(packet, sz, now)) { continue; }
+			if (!conn.recv(packet, sz, now)) { continue; }
 
 			while (true) {
-				auto [hdr, msg] = conn->recvNext();
+				auto [hdr, msg] = conn.recvNext();
 				if (hdr.type == 0) { break; }
-				dispatchMessage(ent, connComp, hdr, msg);
+				dispatchMessage(conn, hdr, msg);
 				ENGINE_DEBUG_ASSERT(msg.remaining() == 0, "Incomplete read of network message.");
 			}
 		}
@@ -375,8 +371,9 @@ namespace Game {
 
 		if (shouldUpdate) {
 			lastUpdate = now;
-			if constexpr (ENGINE_CLIENT) { updateClient(); } // TODO: remove - currently just does ping spam
 
+			// TODO: timeout and dc resend
+			/*
 			for (const auto ent : world.getFilterAll<true, ConnectionComponent>()) {
 				auto& connComp = world.getComponent<ConnectionComponent>(ent);
 				auto& conn = *connComp.conn;
@@ -394,142 +391,147 @@ namespace Game {
 						dropList.push_back(ent);
 					}
 				}
-			}
+			}*/
 		}
 		
 		// Send messages
-		for (const auto ent : world.getFilterAll<true, ConnectionComponent>()) {
-			auto& connComp = world.getComponent<ConnectionComponent>(ent);
-			auto& conn = *connComp.conn;
-			conn.send(socket);
+		for (auto& [addr, conn] : addrToConn) {
+			conn->send(socket);
 		}
 
-		for (auto ent : dropList) {
-			auto& connComp = world.getComponent<ConnectionComponent>(ent);
-			dropConnection(ent, connComp);
-		}
-		dropList.clear();
+		// TODO: impl
+		//for (auto ent : dropList) {
+		//	auto& connComp = world.getComponent<ConnectionComponent>(ent);
+		//	dropConnection(ent, connComp);
+		//}
+		//dropList.clear();
 
 		#ifdef ENGINE_UDP_NETWORK_SIM
 			socket.realSimSend();
 		#endif
 	}
 
-	void NetworkingSystem::updateClient() {
-		for (const auto ent : world.getFilter<ConnectionComponent>()) {
-			const auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
 
-			// TODO: really we can remove this, its just a debug ping
-			if (conn.getState() == ConnectionState::Connected) {
-				static uint8 ping = 0;
-				static auto next = now;
-				if (next > now) { return; }
-				next = now + std::chrono::milliseconds{5000};
-		
-				for (auto& ply : world.getFilter<PlayerFilter>()) {
-					auto& conn2 = *world.getComponent<ConnectionComponent>(ply).conn;
-					if (auto msg = conn2.beginMessage<MessageType::PING>()) {
-						msg.write(static_cast<uint8>(++ping & 0x7F));
-					}
-				}
-			}
-		}
-	}
+	// TODO: rm / re-impl
+	//void NetworkingSystem::updateClient() {
+	//	for (const auto ent : world.getFilter<ConnectionComponent>()) {
+	//		const auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
+	//
+	//		// TODO: really we can remove this, its just a debug ping
+	//		if (conn.getState() == ConnectionState::Connected) {
+	//			static uint8 ping = 0;
+	//			static auto next = now;
+	//			if (next > now) { return; }
+	//			next = now + std::chrono::milliseconds{5000};
+	//	
+	//			for (auto& ply : world.getFilter<PlayerFilter>()) {
+	//				auto& conn2 = *world.getComponent<ConnectionComponent>(ply).conn;
+	//				if (auto msg = conn2.beginMessage<MessageType::PING>()) {
+	//					msg.write(static_cast<uint8>(++ping & 0x7F));
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
-	int32 NetworkingSystem::connectionsCount() const {
-		return static_cast<int32>(world.getFilter<ConnectionComponent>().size());
-	}
+	// TODO: rm/impl
+	//int32 NetworkingSystem::connectionsCount() const {
+	//	return static_cast<int32>(world.getFilter<ConnectionComponent>().size());
+	//}
 
 	int32 NetworkingSystem::playerCount() const {
 		return static_cast<int32>(world.getFilter<PlayerFilter>().size());
 	}
 
-	void NetworkingSystem::dropConnection(Engine::ECS::Entity ent, ConnectionComponent& connComp) {
-		ENGINE_LOG("Dropping connection ", ent, " ", connComp.conn->address());
-		addressToEntity.erase(addressToEntity.find(connComp.conn->address()));
-		world.removeAllComponents(ent);
-		world.deferedDestroyEntity(ent);
+	void NetworkingSystem::dropConnection(const Engine::Net::IPv4Address& addr) {
+		addrToConn.erase(addr);
 	}
 
-	void NetworkingSystem::disconnect(Engine::ECS::Entity ent, ConnectionComponent& connComp) {
-		ENGINE_LOG("Disconnect ", ent, " ", connComp.conn->address());
-		connComp.conn->setState(ConnectionState::Disconnected);
-		connComp.conn->setKeyLocal(0);
+	void NetworkingSystem::disconnect(ConnectionInfo& conn) {
+		ENGINE_LOG("Disconnect ", conn.address());
+		conn.setState(ConnectionState::Disconnected);
+		conn.setKeyLocal(0);
 
-		{ // TODO: temp workaround until we fix connection ownership.
-			// We need the state check here so that we dont nuke our entity mapping when our server list update connection timeouts
-			#if ENGINE_CLIENT
-				// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
-				auto& map = world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping();
-				bool _debug_found = false;
-				for (auto [remote, local] : map) {
-					_debug_found = _debug_found || local == ent;
-
-					if (ent == local) { continue; }
-					world.deferedDestroyEntity(local);
-				}
-				ENGINE_DEBUG_ASSERT(_debug_found, "Local entity not cleaned up.");
-				map.clear();
-			#endif
-
-			ConnectionComponent tmp = std::move(connComp);
-			world.removeAllComponents(ent);
-			world.addComponent<ConnectionComponent>(ent) = std::move(tmp);
-		}
-
+		// TODO: impl
+		//{ // TODO: temp workaround until we fix connection ownership.
+		//	// We need the state check here so that we dont nuke our entity mapping when our server list update connection timeouts
+		//	#if ENGINE_CLIENT
+		//		// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
+		//		auto& map = world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping();
+		//		bool _debug_found = false;
+		//		for (auto [remote, local] : map) {
+		//			_debug_found = _debug_found || local == ent;
+					//
+		//			if (ent == local) { continue; }
+		//			world.deferedDestroyEntity(local);
+		//		}
+		//		ENGINE_DEBUG_ASSERT(_debug_found, "Local entity not cleaned up.");
+		//		map.clear();
+		//	#endif
+				//
+		//	ConnectionComponent tmp = std::move(connComp);
+		//	world.removeAllComponents(ent);
+		//	world.addComponent<ConnectionComponent>(ent) = std::move(tmp);
+		//}
 		// TODO: really need a better way to handle DC: currently this breaks DISCONNECT messages. Shouldnt be as much of a problem once we fix connection ownership.
 		//connComp.conn->setKeyRemote(0);
-		world.setEnabled(ent, false);
+		//world.setEnabled(ent, false);
 	}
 	
 	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
-		const auto ent = getEntity(addr);
-		if (ent == Engine::ECS::INVALID_ENTITY) { return; }
-
-		auto& connComp = world.getComponent<ConnectionComponent>(ent);
-		auto& conn = *connComp.conn;
-		if (conn.getState() == ConnectionState::Disconnecting) {
-			ENGINE_INFO("Duplicate disconnect request. Ignoring.");
-			return;
-		}
-
-		const auto prevState = conn.getState();
-		disconnect(ent, connComp);
-
-		if (prevState != ConnectionState::Disconnected) {
-			conn.setState(ConnectionState::Disconnecting);
-			connComp.disconnectAt = now + disconnectingPeriod;
-		}
-
-		ENGINE_INFO("Requesting disconnect ", ent, " ", addr);
+		// TODO: impl
+		//const auto ent = getEntity(addr);
+		//if (ent == Engine::ECS::INVALID_ENTITY) { return; }
+		//
+		//auto& connComp = world.getComponent<ConnectionComponent>(ent);
+		//auto& conn = *connComp.conn;
+		//if (conn.getState() == ConnectionState::Disconnecting) {
+		//	ENGINE_INFO("Duplicate disconnect request. Ignoring.");
+		//	return;
+		//}
+		//
+		//const auto prevState = conn.getState();
+		//disconnect(ent, connComp);
+		//
+		//if (prevState != ConnectionState::Disconnected) {
+		//	conn.setState(ConnectionState::Disconnecting);
+		//	connComp.disconnectAt = now + disconnectingPeriod;
+		//}
+		//
+		//ENGINE_INFO("Requesting disconnect ", ent, " ", addr);
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
 		// TODO: the client should only ever connect to one server
-		const auto ent = getOrCreateEntity(addr);
-		auto& conn = world.getComponent<ConnectionComponent>(ent).conn;
+		auto& conn = getOrCreateConnection(addr);
 
-		if (conn->getState() != ConnectionState::Disconnected) {
+		if (conn.getState() != ConnectionState::Disconnected) {
 			ENGINE_WARN("Attempting to connect to same server while already connected. Aborting.");
 			return;
 		}
 		
-		conn->setKeyRemote(0);
-		conn->setState(ConnectionState::Connecting);
+		conn.setKeyRemote(0);
+		conn.setState(ConnectionState::Connecting);
 
-		if (!conn->getKeyLocal()) {
-			conn->setKeyLocal(genKey());
+		if (!conn.getKeyLocal()) {
+			conn.setKeyLocal(genKey());
 		}
-		ENGINE_LOG("TRY CONNECT TO: ", addr, " lkey: ", conn->getKeyLocal(), " rkey: ",  conn->getKeyRemote(), " Tick: ", world.getTick());
+		ENGINE_LOG("TRY CONNECT TO: ", addr, " lkey: ", conn.getKeyLocal(), " rkey: ",  conn.getKeyRemote(), " Tick: ", world.getTick());
 
-		if (auto msg = conn->beginMessage<MessageType::CONNECT_REQUEST>()) {
-			msg.write(conn->getKeyLocal());
+		if (auto msg = conn.beginMessage<MessageType::CONNECT_REQUEST>()) {
+			msg.write(conn.getKeyLocal());
 			writeMessagePadding(msg.getBufferWriter());
 		}
 	}
 
-	void NetworkingSystem::addPlayer(const Engine::ECS::Entity ent) {
+	void NetworkingSystem::addPlayer(ConnectionInfo& conn) {
 		// TODO: i feel like this should be handled elsewhere. Where?
+		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY, "Attempting to add duplicate player.");
+		conn.ent = world.createEntity();
+		const auto ent = conn.ent;
+
+		ENGINE_DEBUG_ASSERT(entToConn[ent] == nullptr, "entToConn map is in an invalid state.");
+		entToConn[conn.ent] = &conn;
 
 		ENGINE_INFO("Add player: ", ent, " ", world.hasComponent<PlayerFlag>(ent), " Tick: ", world.getTick());
 		auto& physSys = world.getSystem<PhysicsSystem>();
@@ -541,10 +543,12 @@ namespace Game {
 		} else {
 			world.addComponent<CameraTargetFlag>(ent);
 		}
+
 		// TODO: client only
 		world.addComponent<PhysicsInterpComponent>(ent);
 
 		world.addComponent<PlayerFlag>(ent);
+		world.addComponent<ConnectedFlag>(ent);
 		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
 		spriteComp.path = "assets/player.png";
 		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
@@ -561,36 +565,17 @@ namespace Game {
 		world.addComponent<MapEditComponent>(ent);
 	}
 
-	Engine::ECS::Entity NetworkingSystem::addConnection(const Engine::Net::IPv4Address& addr) {
-		auto ent = world.createEntity();
-		ENGINE_INFO("Add connection: ", ent, " ", addr, " ", world.hasComponent<PlayerFlag>(ent), " ");
-		auto [it, suc] = addressToEntity.emplace(addr, ent);
-		auto& connComp = world.addComponent<ConnectionComponent>(ent);
-		connComp.conn = std::make_unique<Connection>(addr, now);
-		connComp.conn->setState(ConnectionState::Disconnected);
-		return ent;
-	}
-	
-	Engine::ECS::Entity NetworkingSystem::getEntity(const Engine::Net::IPv4Address& addr) {
-		const auto found = addressToEntity.find(addr);
-		if (found == addressToEntity.end()) {
-			return Engine::ECS::INVALID_ENTITY;
+	ConnectionInfo& NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) {
+		auto found = addrToConn.find(addr);
+		if (found == addrToConn.end()) {
+			auto [it,_] = addrToConn.emplace(addr, std::make_unique<ConnectionInfo>(addr, now));
+			found = it;
+			found->second->setState(ConnectionState::Disconnected);
 		}
-		return found->second;
+		return *found->second;
 	}
 
-	Engine::ECS::Entity NetworkingSystem::getOrCreateEntity(const Engine::Net::IPv4Address& addr) {
-		const auto found = addressToEntity.find(addr);
-		if (found == addressToEntity.end()) {
-			return addConnection(addr);
-		} else {
-			return found->second;
-		}
-	}
-
-	void NetworkingSystem::dispatchMessage(Engine::ECS::Entity ent, ConnectionComponent& connComp, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg) {
-		auto& from = *connComp.conn;
-		
+	void NetworkingSystem::dispatchMessage(ConnectionInfo& from, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg) {
 		const auto& meta = getMessageMetaInfo(hdr.type);
 		constexpr auto dir = (ENGINE_SERVER ? Engine::Net::MessageDirection::ClientToServer : Engine::Net::MessageDirection::ServerToClient);
 		if (!(meta.dir & dir)) {
@@ -601,7 +586,7 @@ namespace Game {
 		}
 
 		if (!(meta.recvState & from.getState())) {
-			ENGINE_WARN("Messages received in wrong state. Aborting. ", meta.name, "(", +hdr.type, ")");
+			ENGINE_WARN("Messages received in wrong state. Aborting. ", meta.name, "(", +hdr.type, ") ", +meta.recvState, " != ", +from.getState());
 			msg.discard();
 			return;
 		}
@@ -611,7 +596,7 @@ namespace Game {
 		} else {
 			auto func = msgHandlers[hdr.type];
 			ENGINE_DEBUG_ASSERT(func, "No message handler set for type ", meta.name, " (", +hdr.type, ")");
-			if (func) { func(engine, ent, from, hdr, msg); }
+			if (func) { func(engine, from, hdr, msg); }
 		}
 
 		if (auto rem = msg.remaining(); rem > 0) {

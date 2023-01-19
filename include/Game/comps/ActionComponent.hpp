@@ -25,12 +25,14 @@ namespace Game {
 		MoveRight,
 		Attack1,
 		Attack2,
-		_button_count,
+		_button_end,
 
 		// Axes
-		Target = _button_count,
-		_axis_count,
+		Target = _button_end,
+		_axis_end,
 
+		_button_count = _button_end,
+		_axis_count = _axis_end - _button_end,
 		_count = _button_count + _axis_count,
 	};
 
@@ -76,10 +78,12 @@ namespace Game {
 
 			// TODO: are these called on server? nullptr check
 			ENGINE_INLINE const ActionValue& getAction(Action btn) const {
+				ENGINE_DEBUG_ASSERT(valid(), "Attempting to get the target of an ActionComponent in an invalid state.");
 				return state->buttons[static_cast<int32>(btn)];
 			}
 
 			ENGINE_INLINE const auto& getTarget() const {
+				ENGINE_DEBUG_ASSERT(valid(), "Attempting to get the target of an ActionComponent in an invalid state.");
 				return state->target;
 			}
 	};
