@@ -585,6 +585,10 @@ namespace Engine::ECS {
 				return const_cast<World*>(this)->getComponent<Component>(ent);
 			}
 
+			/**
+			 * Attempts to get a component for an entitiy.
+			 * @return A pointer to the component if the entity has one, else null.
+			 */
 			template<class Component>
 			ENGINE_INLINE const Component* tryComponent(Entity ent) const {
 				return hasComponent<Component>(ent) ? &getComponent<Component>(ent) : nullptr;
