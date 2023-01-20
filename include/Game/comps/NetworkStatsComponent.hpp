@@ -7,7 +7,7 @@
 namespace Game {
 	class NetworkStatsComponent {
 		public:
-			int32 inputBufferSize = 0;
-			float32 idealInputBufferSize = 0;
+			int32 inputBufferSize = -1;
+			float32 idealInputBufferSize = -1;
 	};
 }

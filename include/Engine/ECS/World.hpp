@@ -585,6 +585,11 @@ namespace Engine::ECS {
 				return const_cast<World*>(this)->getComponent<Component>(ent);
 			}
 
+			template<class Component>
+			ENGINE_INLINE const Component* tryComponent(Entity ent) const {
+				return hasComponent<Component>(ent) ? &getComponent<Component>(ent) : nullptr;
+			}
+
 			template<class C>
 			ENGINE_INLINE bool hadComponent(Entity ent, Tick tick) const {
 				return history.get(tick).getComponentContainer<C>().contains(ent);

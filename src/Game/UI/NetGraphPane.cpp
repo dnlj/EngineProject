@@ -149,15 +149,10 @@ namespace {
 					return;
 				}
 
-				const auto ent = conn->ent;
-				if (!world.hasComponent<Game::NetworkStatsComponent>(ent)) {
-					world.addComponent<Game::NetworkStatsComponent>(ent);
-				}
-				auto& stats = world.getComponent<Game::NetworkStatsComponent>(ent);
-						
-				float32 estbuff = 0;
-				if (world.hasComponent<Game::ActionComponent>(ent)) {
-					estbuff = world.getComponent<Game::ActionComponent>(ent).estBufferSize;
+				const auto* actComp = conn->ent ? world.tryComponent<ActionComponent>(conn->ent) : nullptr;
+				const auto* stats = conn->ent ? world.tryComponent<NetworkStatsComponent>(conn->ent) : nullptr;
+				if (conn->ent && !stats) {
+					stats = &world.addComponent<NetworkStatsComponent>(conn->ent);
 				}
 
 				const auto sentAvg = conn->getSendBandwidth();
@@ -189,13 +184,13 @@ namespace {
 					lastUpdate = now;
 					std::string buff;
 
-					buff.clear(); fmt::format_to(std::back_inserter(buff), "Buffer: {}", stats.inputBufferSize);
+					buff.clear(); fmt::format_to(std::back_inserter(buff), "Buffer: {}", stats ? stats->inputBufferSize : -1);
 					buffer->autoText(buff);
 						
-					buff.clear(); fmt::format_to(std::back_inserter(buff), "Ideal: {:.3f}", stats.idealInputBufferSize);
+					buff.clear(); fmt::format_to(std::back_inserter(buff), "Ideal: {:.3f}", stats ? stats->idealInputBufferSize : -1);
 					ideal->autoText(buff);
 
-					buff.clear(); fmt::format_to(std::back_inserter(buff), "Est. Buffer: {:.2f}", estbuff);
+					buff.clear(); fmt::format_to(std::back_inserter(buff), "Est. Buffer: {:.2f}", actComp ? actComp->estBufferSize : -1);
 					estBuff->autoText(buff);
 
 					buff.clear(); fmt::format_to(std::back_inserter(buff), "Ping: {:.1f}ms", Engine::Clock::Seconds{conn->getPing()}.count() * 1000.0f);

@@ -1,8 +1,7 @@
 #pragma once
 
 // STD
-#include <cstdint>
-#include <ostream>
+#include <iosfwd>
 
 // Engine
 #include <Engine/Engine.hpp>
@@ -13,8 +12,17 @@
 namespace Engine::ECS {
 	class Entity {
 		public:
+			// TODO (yClymPoU): make Entity(0,0) the invalid entity (with gen=0 invalid)
 			uint16 id = static_cast<uint16>(-1);
 			uint16 gen = static_cast<uint16>(-1);
+
+			ENGINE_INLINE friend bool operator==(Entity lhs, Entity rhs) { return (lhs.id == rhs.id) && (lhs.gen == rhs.gen); }
+			ENGINE_INLINE friend bool operator!=(Entity lhs, Entity rhs) { return !(lhs == rhs); }
+			ENGINE_INLINE friend bool operator<(Entity lhs, Entity rhs) { return (lhs.gen < rhs.gen) || (lhs.id < rhs.id) && (lhs.gen == rhs.gen); }
+			ENGINE_INLINE friend bool operator>=(Entity lhs, Entity rhs) { return !(lhs < rhs); }
+			ENGINE_INLINE friend bool operator>(Entity lhs, Entity rhs) { return (lhs != rhs) && (lhs >= rhs); }
+			ENGINE_INLINE friend bool operator<=(Entity lhs, Entity rhs) { return !(lhs > rhs); }
+			ENGINE_INLINE explicit operator bool() const { return *this != Entity{}; }
 	};
 
 	static_assert(sizeof(Entity) == 4);
@@ -22,16 +30,9 @@ namespace Engine::ECS {
 		"Since entities are sometimes stored in userdata pointers, they should not exceed the size of a pointer."
 	);
 
-	constexpr Entity INVALID_ENTITY = {-1, -1};
+	constexpr Entity INVALID_ENTITY = {};
 
-	bool operator==(const Entity& e1, const Entity& e2);
-	bool operator!=(const Entity& e1, const Entity& e2);
-	bool operator<(const Entity& e1, const Entity& e2);
-	bool operator>=(const Entity& e1, const Entity& e2);
-	bool operator>(const Entity& e1, const Entity& e2);
-	bool operator<=(const Entity& e1, const Entity& e2);
-
-	std::ostream& operator<<(std::ostream& os, const Entity& ent);
+	std::ostream& operator<<(std::ostream& os, Entity ent);
 }
 
 namespace Engine {
