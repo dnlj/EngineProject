@@ -16,5 +16,12 @@ namespace Engine {
 		class Equal = EqualTo<KeyType>,
 		size_t MaxLoadFactor100 = 75
 	>
-	using FlatHashMap = robin_hood::unordered_flat_map<KeyType, ValueType, Hash, Equal, MaxLoadFactor100>;
+	#if 1 // For debugging, std implementations have more checking than robin_hood does.
+		using FlatHashMap = robin_hood::unordered_flat_map<KeyType, ValueType, Hash, Equal, MaxLoadFactor100>;
+	#else
+		#if ENGINE_RELEASE
+			#error This should not be set in release mode.
+		#endif
+		using FlatHashMap = std::unordered_map<KeyType, ValueType, Hash, Equal>;
+	#endif
 }

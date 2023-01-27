@@ -21,6 +21,7 @@ namespace Game {
 		public:
 			using Connection::Connection;
 			Engine::ECS::Entity ent{}; // TODO: probably add getter/setter once conversion is done. Makes access cleaner
+			Engine::Clock::TimePoint disconnectAt = {};
 	};
 
 	using NetworkMessageHandler = void(*)(EngineInstance& engine, ConnectionInfo& from, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg);
@@ -72,14 +73,13 @@ namespace Game {
 			NetworkingSystem(SystemArg arg);
 			void update(float32 dt);
 
-			int32 connectionsCount() const; // TODO: remove or at least make private. Should interact with filter directly.
 			int32 playerCount() const; // TODO: remove or at least make private. Should interact with filter directly.
 
 			// TODO: make client only
 			void connectTo(const Engine::Net::IPv4Address& addr);
 
 			/**
-			 * Begins a graceful disconnect.
+			 * Attempt a graceful disconnect.
 			 */
 			void requestDisconnect(const Engine::Net::IPv4Address& addr);
 
@@ -115,14 +115,14 @@ namespace Game {
 			ConnectionInfo& getOrCreateConnection(const Engine::Net::IPv4Address& addr);
 
 			/**
+			 * Cleanup any ECS state associated with a connection.
+			 */
+			void cleanECS(ConnectionInfo& conn);
+
+			/**
 			 * Disconnects a connection/entity and schedules its destruction.
 			 */
 			void disconnect(ConnectionInfo& conn);
-
-			/**
-			 * Immediately drops a connection.
-			 */
-			void dropConnection(const Engine::Net::IPv4Address& addr);
 
 			void recvAndDispatchMessages(Engine::Net::UDPSocket& sock);
 			void dispatchMessage(ConnectionInfo& from, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg);

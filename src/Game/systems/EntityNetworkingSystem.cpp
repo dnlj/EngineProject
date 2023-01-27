@@ -54,12 +54,14 @@ namespace {
 		world.setNextTick(tick + 16);
 		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
 		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+		
+		// TODO: move addPlayer to EntityNetworkingSystem?
+		world.getSystem<Game::NetworkingSystem>().addPlayer(from);
 
 		ENGINE_DEBUG_ASSERT(entToLocal.size() == 0, "Networked entity map already has entries. This is a bug.");
+		ENGINE_DEBUG_ASSERT(remote, "Attempting to setup invalid entity mapping (remote)");
+		ENGINE_DEBUG_ASSERT(from.ent, "Attempting to setup invalid entity mapping (local)");
 		entToLocal[remote] = from.ent;
-
-		// TODO: move addPlayer to EntityNetworkingSystem
-		world.getSystem<Game::NetworkingSystem>().addPlayer(from);
 	}
 
 	void recv_ECS_ENT_CREATE(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
@@ -74,6 +76,9 @@ namespace {
 		if (local == Engine::ECS::INVALID_ENTITY) {
 			local = world.createEntity();
 		}
+		
+		ENGINE_DEBUG_ASSERT(remote, "Attempting to setup invalid entity mapping (remote)");
+		ENGINE_DEBUG_ASSERT(from.ent, "Attempting to setup invalid entity mapping (local)");
 
 		world.addComponent<NetworkedFlag>(local);
 		ENGINE_LOG("Networked: ", local, world.hasComponent<NetworkedFlag>(local));

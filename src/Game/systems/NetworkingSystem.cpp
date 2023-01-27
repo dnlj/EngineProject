@@ -191,6 +191,7 @@ namespace Game {
 
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
 		if (auto reply = from.beginMessage<MessageType::ECS_INIT>()) {
+			ENGINE_DEBUG_ASSERT(from.ent, "Attempting to network invalid entity.");
 			reply.write(from.ent);
 			reply.write(world.getTick());
 		}
@@ -205,7 +206,6 @@ namespace Game {
 		auto& world = engine.getWorld();
 		auto& netSys = world.getSystem<NetworkingSystem>();
 		netSys.disconnect(from);
-		from.setKeyRemote(0); // TODO: really shouldnt have to do this here. Need to make disconnect() deal with this.
 	}
 
 	HandleMessageDef(MessageType::PING)
@@ -307,6 +307,8 @@ namespace Game {
 
 	#if ENGINE_CLIENT
 	void NetworkingSystem::broadcastDiscover() {
+		// TODO: rm this return, just for testing.
+		return; 
 		const auto now = world.getTime();
 		for (auto it = servers.begin(); it != servers.end(); ++it) {
 			if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
@@ -365,47 +367,39 @@ namespace Game {
 		recvAndDispatchMessages(socket);
 
 		// TODO: instead of sending all connections on every X. Send a smaller number every frame to distribute load.
-
-		// Connection Cleanup
 		const bool shouldUpdate = now - lastUpdate >= std::chrono::milliseconds{1000 / 20}; // TODO: rate should be configurable somewhere
 
-		if (shouldUpdate) {
-			lastUpdate = now;
+		const auto dropConn = [this](decltype(addrToConn)::iterator it) ENGINE_INLINE {
+			ENGINE_LOG("Dropping connection ", it->first);
+			disconnect(*it->second);
+			return addrToConn.erase(it);
+		};
 
-			// TODO: timeout and dc resend
-			/*
-			for (const auto ent : world.getFilterAll<true, ConnectionComponent>()) {
-				auto& connComp = world.getComponent<ConnectionComponent>(ent);
-				auto& conn = *connComp.conn;
+		for (auto cur =  addrToConn.begin(), end = addrToConn.end(); cur != end;) {
+			auto& [addr, conn] = *cur;
 
-				// TODO: maybe each connection should have its own timeout based on network conditions OR set with CONFIG_NETWORK.
-				if (now - conn.recvTime() >= timeout) {
-					ENGINE_LOG("Connection for ", ent ," (", conn.address(), ") timed out.");
-					dropList.push_back(ent);
-				} else if (conn.getState() == ConnectionState::Disconnecting) {
-					if (auto msg = conn.beginMessage<MessageType::DISCONNECT>()) {
-						ENGINE_LOG("Send DISCONNECT to ", conn.address());
-					}
-
-					if (now - connComp.disconnectAt >= disconnectingPeriod) {
-						dropList.push_back(ent);
-					}
+			// Handle any disconnects
+			if (now - conn->recvTime() >= timeout) { // Timeout, havent received a message recently.
+				cur = dropConn(cur);
+				continue;
+			} else if (conn->getState() == ConnectionState::Disconnecting) { // Graceful disconnect
+				if (auto msg = conn->beginMessage<MessageType::DISCONNECT>()) {
+					ENGINE_LOG("Send DISCONNECT to ", conn->address());
 				}
-			}*/
+
+				if (now - conn->disconnectAt >= disconnectingPeriod) {
+					cur = dropConn(cur);
+					continue;
+				}
+			}
+
+			// Send any messages
+			if (shouldUpdate) {
+				conn->send(socket);
+			}
+			++cur;
 		}
 		
-		// Send messages
-		for (auto& [addr, conn] : addrToConn) {
-			conn->send(socket);
-		}
-
-		// TODO: impl
-		//for (auto ent : dropList) {
-		//	auto& connComp = world.getComponent<ConnectionComponent>(ent);
-		//	dropConnection(ent, connComp);
-		//}
-		//dropList.clear();
-
 		#ifdef ENGINE_UDP_NETWORK_SIM
 			socket.realSimSend();
 		#endif
@@ -434,71 +428,77 @@ namespace Game {
 	//	}
 	//}
 
-	// TODO: rm/impl
-	//int32 NetworkingSystem::connectionsCount() const {
-	//	return static_cast<int32>(world.getFilter<ConnectionComponent>().size());
-	//}
-
 	int32 NetworkingSystem::playerCount() const {
 		return static_cast<int32>(world.getFilter<PlayerFilter>().size());
 	}
 
-	void NetworkingSystem::dropConnection(const Engine::Net::IPv4Address& addr) {
-		addrToConn.erase(addr);
+	void NetworkingSystem::cleanECS(ConnectionInfo& conn) {
+		ENGINE_INFO("ECS Clean: ", conn.ent);
+
+		#if ENGINE_CLIENT
+			// TODO: This state check isnt quite right because we have a many to one relationship. We almost want each connection to have its own mapping.
+			// TODO cont: consider connected to one server > connected to second server. The first timeout would clear any entities from the second connection.
+			if (conn.getState() != ConnectionState::Disconnected) {
+				// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
+				auto& map = world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping();
+				ENGINE_LOG("Clean ECS 1 ", conn.address(), " ", map.size());
+				bool _debug_found = !conn.ent;
+				for (auto [remote, local] : map) {
+					_debug_found = _debug_found || (conn.ent && local == conn.ent);
+					world.deferedDestroyEntity(local);
+				}
+				ENGINE_DEBUG_ASSERT(_debug_found, "Local entity not cleaned up.");
+				map.clear();
+				ENGINE_LOG("Clean ECS 2 ", conn.address(), " ", map.size());
+			}
+		#endif
+
+		if (conn.ent) {
+			if constexpr (ENGINE_SERVER) { // Client should be handled above.
+				world.deferedDestroyEntity(conn.ent);
+			}
+
+			auto found = entToConn.find(conn.ent);
+			if (found != entToConn.end()) {
+				entToConn.erase(found);
+			}
+			conn.ent = {};
+		}
 	}
 
 	void NetworkingSystem::disconnect(ConnectionInfo& conn) {
 		ENGINE_LOG("Disconnect ", conn.address());
+		cleanECS(conn);
+
+		// TODO: maybe just move all this into a Connection::reset func instead.
 		conn.setState(ConnectionState::Disconnected);
 		conn.setKeyLocal(0);
-
-		// TODO: impl
-		//{ // TODO: temp workaround until we fix connection ownership.
-		//	// We need the state check here so that we dont nuke our entity mapping when our server list update connection timeouts
-		//	#if ENGINE_CLIENT
-		//		// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
-		//		auto& map = world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping();
-		//		bool _debug_found = false;
-		//		for (auto [remote, local] : map) {
-		//			_debug_found = _debug_found || local == ent;
-					//
-		//			if (ent == local) { continue; }
-		//			world.deferedDestroyEntity(local);
-		//		}
-		//		ENGINE_DEBUG_ASSERT(_debug_found, "Local entity not cleaned up.");
-		//		map.clear();
-		//	#endif
-				//
-		//	ConnectionComponent tmp = std::move(connComp);
-		//	world.removeAllComponents(ent);
-		//	world.addComponent<ConnectionComponent>(ent) = std::move(tmp);
-		//}
-		// TODO: really need a better way to handle DC: currently this breaks DISCONNECT messages. Shouldnt be as much of a problem once we fix connection ownership.
-		//connComp.conn->setKeyRemote(0);
-		//world.setEnabled(ent, false);
+		conn.setKeyRemote(0);
+		conn.disconnectAt = {};
+		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY); // Should be set by `cleanECS`
 	}
 	
 	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
-		// TODO: impl
-		//const auto ent = getEntity(addr);
-		//if (ent == Engine::ECS::INVALID_ENTITY) { return; }
-		//
-		//auto& connComp = world.getComponent<ConnectionComponent>(ent);
-		//auto& conn = *connComp.conn;
-		//if (conn.getState() == ConnectionState::Disconnecting) {
-		//	ENGINE_INFO("Duplicate disconnect request. Ignoring.");
-		//	return;
-		//}
-		//
-		//const auto prevState = conn.getState();
-		//disconnect(ent, connComp);
-		//
-		//if (prevState != ConnectionState::Disconnected) {
-		//	conn.setState(ConnectionState::Disconnecting);
-		//	connComp.disconnectAt = now + disconnectingPeriod;
-		//}
-		//
-		//ENGINE_INFO("Requesting disconnect ", ent, " ", addr);
+		ENGINE_INFO("Requesting disconnect from ", addr);
+
+		auto found = addrToConn.find(addr);
+		if (found == addrToConn.end()) {
+			ENGINE_WARN("Attempting to disconnect from a address without a connection. This is probably a bug. ", addr);
+			return;
+		}
+
+		const auto conn = found->second.get();
+
+		if (conn->getState() == ConnectionState::Disconnecting) {
+			ENGINE_INFO("Duplicate disconnect request. Ignoring. ", addr);
+			return;
+		}
+
+		cleanECS(*conn);
+		conn->setKeyLocal(0);
+		conn->setState(ConnectionState::Disconnecting);
+		conn->disconnectAt = now + disconnectingPeriod;
+		
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {

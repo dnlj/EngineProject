@@ -382,7 +382,7 @@ namespace Engine::ECS {
 			 * Marks an Entity to be destroyed once it is out of rollback scope.
 			 * Until the Entity is destroyed it is disabled.
 			 */
-			ENGINE_INLINE void deferedDestroyEntity(Entity ent) {
+			void deferedDestroyEntity(Entity ent) {
 				if constexpr (ENGINE_DEBUG) {
 					for (auto e : markedForDeath) {
 						if (e == ent) {
