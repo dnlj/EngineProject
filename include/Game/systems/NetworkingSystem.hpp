@@ -60,6 +60,7 @@ namespace Game {
 
 			Engine::FlatHashMap<Engine::Net::IPv4Address, std::unique_ptr<ConnectionInfo>> addrToConn;
 			Engine::FlatHashMap<Engine::ECS::Entity, ConnectionInfo*> entToConn;
+			using ConnIt = decltype(addrToConn)::iterator;
 			
 			pcg32 rng;
 			uint16 genKey() {
@@ -122,6 +123,7 @@ namespace Game {
 			/**
 			 * Disconnects a connection/entity and schedules its destruction.
 			 */
+			ConnIt disconnect(ConnIt connIt);
 			void disconnect(ConnectionInfo& conn);
 
 			void recvAndDispatchMessages(Engine::Net::UDPSocket& sock);

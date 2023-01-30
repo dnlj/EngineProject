@@ -184,9 +184,9 @@ namespace Game {
 		auto& world = engine.getWorld();
 		auto& netSys = world.getSystem<NetworkingSystem>();
 
-		ENGINE_LOG("CONNECT_CONFIRM from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick());
 		from.setState(ConnectionState::Connected);
 		netSys.addPlayer(from); // TODO: this step should probably be delayed until we get some kind of CONFIG_CONFIRM message.
+		ENGINE_LOG("CONNECT_CONFIRM from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick(), " ", from.ent);
 
 
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
@@ -369,18 +369,12 @@ namespace Game {
 		// TODO: instead of sending all connections on every X. Send a smaller number every frame to distribute load.
 		const bool shouldUpdate = now - lastUpdate >= std::chrono::milliseconds{1000 / 20}; // TODO: rate should be configurable somewhere
 
-		const auto dropConn = [this](decltype(addrToConn)::iterator it) ENGINE_INLINE {
-			ENGINE_LOG("Dropping connection ", it->first);
-			disconnect(*it->second);
-			return addrToConn.erase(it);
-		};
-
 		for (auto cur =  addrToConn.begin(), end = addrToConn.end(); cur != end;) {
 			auto& [addr, conn] = *cur;
 
 			// Handle any disconnects
 			if (now - conn->recvTime() >= timeout) { // Timeout, havent received a message recently.
-				cur = dropConn(cur);
+				cur = disconnect(cur);
 				continue;
 			} else if (conn->getState() == ConnectionState::Disconnecting) { // Graceful disconnect
 				if (auto msg = conn->beginMessage<MessageType::DISCONNECT>()) {
@@ -388,7 +382,7 @@ namespace Game {
 				}
 
 				if (now - conn->disconnectAt >= disconnectingPeriod) {
-					cur = dropConn(cur);
+					cur = disconnect(cur);
 					continue;
 				}
 			}
@@ -466,16 +460,19 @@ namespace Game {
 		}
 	}
 
-	void NetworkingSystem::disconnect(ConnectionInfo& conn) {
-		ENGINE_LOG("Disconnect ", conn.address());
-		cleanECS(conn);
+	auto NetworkingSystem::disconnect(ConnIt connIt) -> ConnIt {
+		ENGINE_LOG("Disconnect ", connIt->second->address());
+		cleanECS(*connIt->second);
+		return addrToConn.erase(connIt);
+	}
 
-		// TODO: maybe just move all this into a Connection::reset func instead.
-		conn.setState(ConnectionState::Disconnected);
-		conn.setKeyLocal(0);
-		conn.setKeyRemote(0);
-		conn.disconnectAt = {};
-		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY); // Should be set by `cleanECS`
+	void NetworkingSystem::disconnect(ConnectionInfo& conn) {
+		auto found = addrToConn.find(conn.address());
+		if (found == addrToConn.end()) {
+			ENGINE_WARN("Missing connection mapping for connection at ", conn.address(), ". This is probably a bug.");
+		} else {
+			disconnect(found);
+		}
 	}
 	
 	void NetworkingSystem::requestDisconnect(const Engine::Net::IPv4Address& addr) {
@@ -586,7 +583,9 @@ namespace Game {
 		}
 
 		if (!(meta.recvState & from.getState())) {
-			ENGINE_WARN("Messages received in wrong state. Aborting. ", meta.name, "(", +hdr.type, ") ", +meta.recvState, " != ", +from.getState());
+			if (!ENGINE_DEBUG || (hdr.type != MessageType::DISCONNECT)) {
+				ENGINE_WARN("Messages received in wrong state. Aborting. ", meta.name, "(", +hdr.type, ") ", +meta.recvState, " != ", +from.getState());
+			}
 			msg.discard();
 			return;
 		}
