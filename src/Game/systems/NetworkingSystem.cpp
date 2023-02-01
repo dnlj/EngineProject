@@ -545,7 +545,6 @@ namespace Game {
 		world.addComponent<PhysicsInterpComponent>(ent);
 
 		world.addComponent<PlayerFlag>(ent);
-		world.addComponent<ConnectedFlag>(ent);
 		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
 		spriteComp.path = "assets/player.png";
 		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);

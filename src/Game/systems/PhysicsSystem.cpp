@@ -47,7 +47,7 @@ namespace Game {
 
 			// TODO: this is a bad way of handling this, we really need this per connection. Atm this might pick the server discover, an old DC'd connection, etc.
 			// TODO: when we split the connection object, we really only need the stats part here for ping/jitter.
-			for (const auto& ply : world.getFilter<ActionComponent, ConnectedFlag>()) {
+			for (const auto& ply : world.getFilter<ActionComponent>()) {
 				const auto& actComp = world.getComponent<ActionComponent>(ply);
 				auto* conn = world.getSystem<NetworkingSystem>().getConnection(ply);
 				buffSize = static_cast<int>(actComp.estBufferSize) + 1;

@@ -62,8 +62,7 @@ namespace Game {
 	using FlagsSet = Meta::TypeSet::TypeSet<
 		struct PlayerFlag,
 		struct CameraTargetFlag,
-		struct NetworkedFlag,
-		struct ConnectedFlag
+		struct NetworkedFlag
 	>;
 
 	// Example: template<> constexpr static inline bool IsNetworkedFlag<PlayerFlag> = true;

@@ -148,7 +148,7 @@ namespace Game {
 			if constexpr (ENGINE_SERVER) {
 				auto& netSys = world.getSystem<NetworkingSystem>();
 
-				for (const auto ply : world.getFilter<PlayerFlag, ConnectedFlag>()) {
+				for (const auto ply : world.getFilter<PlayerFlag>()) {
 					if (ply == event.ent) { continue; }
 					auto* conn = netSys.getConnection(ply);
 

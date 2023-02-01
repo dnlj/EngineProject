@@ -228,8 +228,7 @@ namespace Game {
 		auto& cam = engine.getCamera();
 		const auto currTick = world.getTick();
 
-		// TODO: really some of the things in here dont require ConnectedFlag. Change so those are run even without it.
-		for (const auto ent : world.getFilter<ActionComponent, ConnectedFlag>()) {
+		for (const auto ent : world.getFilter<ActionComponent>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 
 			// TODO: this should probably be moved, this doesnt really depend on the connection status/object/etc

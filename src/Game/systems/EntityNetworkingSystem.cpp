@@ -18,10 +18,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace {
 	using namespace Game;
-	using PlayerFilter = Engine::ECS::EntityFilterList<
-		PlayerFlag,
-		ConnectedFlag
-	>;
+	using PlayerFilter = Engine::ECS::EntityFilterList<PlayerFlag>;
 
 	using Engine::ECS::Entity;
 	using Engine::Net::MessageHeader;
