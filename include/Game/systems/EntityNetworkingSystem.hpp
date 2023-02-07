@@ -23,8 +23,34 @@ namespace Game {
 		public:
 			void setup();
 
-			auto& getRemoteToLocalEntityMapping() noexcept { return entRemoteToLocal; }
-			const auto& getRemoteToLocalEntityMapping() const noexcept { return entRemoteToLocal; }
+			ENGINE_INLINE void addEntityMapping(Engine::ECS::Entity remote, Engine::ECS::Entity local) {
+				[[maybe_unused]] const auto [it, succ] = entRemoteToLocal.try_emplace(remote, local);
+				ENGINE_DEBUG_ASSERT(succ, "Attempting to add duplicate mapping for remote entity ", remote, ". Existing = ", it->second, "; New = ", local);
+			}
+
+			ENGINE_INLINE Engine::ECS::Entity removeEntityMapping(Engine::ECS::Entity remote) {
+				const auto found = entRemoteToLocal.find(remote);
+				if (found != entRemoteToLocal.end()) {
+					const auto local = found->second;
+					entRemoteToLocal.erase(remote);
+					return local;
+				} else {
+					return {};
+				}
+			}
+
+			ENGINE_INLINE Engine::ECS::Entity getEntityMapping(Engine::ECS::Entity remote) const {
+				const auto found = entRemoteToLocal.find(remote);
+				return found != entRemoteToLocal.cend() ? found->second : Engine::ECS::Entity{};
+			}
+
+			ENGINE_INLINE const auto& getEntityMapping() noexcept {
+				return entRemoteToLocal;
+			}
+
+			ENGINE_INLINE void clearEntityMapping() {
+				entRemoteToLocal.clear();
+			}
 
 			#if ENGINE_DEBUG
 				bool _debug_networking = false;

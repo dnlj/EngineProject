@@ -434,16 +434,14 @@ namespace Game {
 			// TODO cont: consider connected to one server > connected to second server. The first timeout would clear any entities from the second connection.
 			if (conn.getState() != ConnectionState::Disconnected) {
 				// TODO (uAiwkWDY): really would like a better way to handle this kind of stuff. event/signal system maybe.
-				auto& map = world.getSystem<EntityNetworkingSystem>().getRemoteToLocalEntityMapping();
-				ENGINE_LOG("Clean ECS 1 ", conn.address(), " ", map.size());
+				auto& entNetSys = world.getSystem<EntityNetworkingSystem>();
 				bool _debug_found = !conn.ent;
-				for (auto [remote, local] : map) {
+				for (auto [remote, local] : entNetSys.getEntityMapping()) {
 					_debug_found = _debug_found || (conn.ent && local == conn.ent);
 					world.deferedDestroyEntity(local);
 				}
 				ENGINE_DEBUG_ASSERT(_debug_found, "Local entity not cleaned up.");
-				map.clear();
-				ENGINE_LOG("Clean ECS 2 ", conn.address(), " ", map.size());
+				entNetSys.clearEntityMapping();
 			}
 		#endif
 

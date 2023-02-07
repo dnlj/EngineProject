@@ -49,16 +49,15 @@ namespace {
 
 		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
 		world.setNextTick(tick + 16);
-		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
-		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
 		
 		// TODO: move addPlayer to EntityNetworkingSystem?
 		world.getSystem<Game::NetworkingSystem>().addPlayer(from);
 
-		ENGINE_DEBUG_ASSERT(entToLocal.size() == 0, "Networked entity map already has entries. This is a bug.");
+		ENGINE_DEBUG_ASSERT(entNetSystem.getEntityMapping().size() == 0, "Networked entity map already has entries. This is a bug.");
 		ENGINE_DEBUG_ASSERT(remote, "Attempting to setup invalid entity mapping (remote)");
 		ENGINE_DEBUG_ASSERT(from.ent, "Attempting to setup invalid entity mapping (local)");
-		entToLocal[remote] = from.ent;
+		entNetSystem.addEntityMapping(remote, from.ent);
 	}
 
 	void recv_ECS_ENT_CREATE(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
@@ -66,20 +65,19 @@ namespace {
 		if (!msg.read(&remote)) { return; }
 
 		auto& world = engine.getWorld();
-		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
-		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
 
-		auto& local = entToLocal[remote];
-		if (local == Engine::ECS::INVALID_ENTITY) {
-			local = world.createEntity();
+		if (entNetSystem.getEntityMapping(remote)) {
+			ENGINE_WARN("Attempting to create duplicate entity (remote = ", remote, ")");
+			return;
 		}
+
+		auto local = world.createEntity();
+		entNetSystem.addEntityMapping(remote, local);
+		world.addComponent<NetworkedFlag>(local);
 		
 		ENGINE_DEBUG_ASSERT(remote, "Attempting to setup invalid entity mapping (remote)");
 		ENGINE_DEBUG_ASSERT(from.ent, "Attempting to setup invalid entity mapping (local)");
-
-		world.addComponent<NetworkedFlag>(local);
-		ENGINE_LOG("Networked: ", local, world.hasComponent<NetworkedFlag>(local));
-
 		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", remote, " Local: ", local, " Tick: ", world.getTick());
 
 		// TODO: components init
@@ -90,13 +88,10 @@ namespace {
 		if (!msg.read(&remote)) { return; }
 		
 		auto& world = engine.getWorld();
-		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
-		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
 
-		auto found = entToLocal.find(remote);
-		if (found != entToLocal.end()) {
-			world.deferedDestroyEntity(found->second);
-			entToLocal.erase(found);
+		if (auto local = entNetSystem.removeEntityMapping(remote)) {
+			world.deferedDestroyEntity(local);
 		}
 	}
 
@@ -108,12 +103,12 @@ namespace {
 		if (!msg.read(&cid)) { return; }
 		
 		auto& world = engine.getWorld();
-		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
-		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
-
-		auto found = entToLocal.find(remote);
-		if (found == entToLocal.end()) { return; }
-		auto local = found->second;
+		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
+		auto local = entNetSystem.getEntityMapping(remote);
+		if (!local) {
+			ENGINE_WARN("Attempting to add component to uncreated local entity.");
+			return;
+		}
 
 		world.callWithComponent(cid, [&]<class C>{
 			if constexpr (IsNetworkedComponent<C>) {
@@ -136,12 +131,13 @@ namespace {
 		if (!msg.read(&cid)) { return; }
 		
 		auto& world = engine.getWorld();
-		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
-		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
+		auto local = entNetSystem.getEntityMapping(remote);
 
-		auto found = entToLocal.find(remote);
-		if (found == entToLocal.end()) { return; }
-		auto local = found->second;
+		if (!local) {
+			ENGINE_WARN("Attempting to update uncreated local entity.");
+			return;
+		}
 		 
 		if (!world.isAlive(local)) {
 			ENGINE_WARN("Attempting to update dead entitiy ", local);
@@ -182,17 +178,17 @@ namespace {
 		if (!msg.read(&flags)) { return; }
 		
 		auto& world = engine.getWorld();
-		auto& ensSystem = world.getSystem<Game::EntityNetworkingSystem>();
-		auto& entToLocal = ensSystem.getRemoteToLocalEntityMapping();
+		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
+		auto local = entNetSystem.getEntityMapping(remote);
 
-
-		auto found = entToLocal.find(remote);
-		if (found == entToLocal.end()) { return; }
-		auto local = found->second;
+		if (!local) {
+			ENGINE_WARN("Attempting to set flags on uncreated local entity.");
+			return;
+		}
 
 		#if ENGINE_DEBUG
-			ENGINE_DEBUG_ASSERT(ensSystem._debug_networking == false);
-			ensSystem._debug_networking = true;
+			ENGINE_DEBUG_ASSERT(entNetSystem._debug_networking == false);
+			entNetSystem._debug_networking = true;
 		#endif
 
 		Engine::Meta::ForEachIn<Game::FlagsSet>::call([&]<class C>{
@@ -207,7 +203,7 @@ namespace {
 		});
 
 		#if ENGINE_DEBUG
-			ensSystem._debug_networking = false;
+			entNetSystem._debug_networking = false;
 		#endif
 	}
 
