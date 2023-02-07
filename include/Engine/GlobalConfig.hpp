@@ -19,6 +19,8 @@ namespace Engine {
 
 			uint16 port = 0;
 			Net::IPv4Address group = {};
+			float32 sendRateMax = 256;
+			float32 sendRateMin = 8;
 	};
 
 	namespace Detail { inline GlobalConfig globalConfig = {}; }

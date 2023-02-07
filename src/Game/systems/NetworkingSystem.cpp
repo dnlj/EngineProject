@@ -230,18 +230,17 @@ namespace Game {
 			}
 		}
 
-		// TODO: these values should be configured by convar/config
-		constexpr float32 maxSendRate = 256;
-		constexpr float32 minSendRate = 8;
-		float32 r2 = rate;
+		const float32 maxSendRate = Engine::getGlobalConfig().sendRateMax;
+		const float32 minSendRate = Engine::getGlobalConfig().sendRateMin;
 
 		// We need this check because MSVC does not handle comparisons correctly for non-finite values even when is_iec559 is true.
-		if (!std::isfinite(r2)) {
-			r2 = minSendRate;
+		if (!std::isfinite(rate)) {
+			rate = minSendRate;
 		}
 
-		ENGINE_LOG("Network send rate updated: ", r2);
-		from.setPacketSendRate(std::max(minSendRate, std::min(r2, maxSendRate)));
+		const auto rateClamped = std::max(minSendRate, std::min(rate, maxSendRate));
+		ENGINE_LOG("Network send rate updated: ", rateClamped, " (", rate, ")");
+		from.setPacketSendRate(rateClamped);
 	}
 }
 #undef HandleMessageDef
