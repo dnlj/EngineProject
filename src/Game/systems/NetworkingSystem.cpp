@@ -62,7 +62,7 @@ namespace {
 	struct HandleMessageDef_DebugBreak_Struct {
 		Engine::Net::BufferReader& msg;
 		~HandleMessageDef_DebugBreak_Struct() {
-			if (msg.remaining() != 0) { __debugbreak(); }
+			ENGINE_DEBUG_ASSERT(msg.remaining() == 0, "Incomplete read of message.");
 		}
 	};
 }
@@ -122,9 +122,9 @@ namespace Game {
 			// TODO: rate limit connections with invalid messages
 			ENGINE_WARN("Got invalid connection request from ", from.address());
 			return;
+		} else {
+			msg.discard();
 		}
-
-		msg.discard();
 
 		if (from.getKeyRemote() && from.getKeyRemote() != remote) {
 			ENGINE_WARN("Got connection request with invalid key from ", from.address(), " (", remote, " != ", from.getKeyRemote(), ")");
@@ -162,6 +162,7 @@ namespace Game {
 
 		if (auto reply = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
 			reply.write(remote);
+			writeMessagePadding(reply.getBufferWriter());
 			from.setKeyRemote(remote);
 			from.setState(ConnectionState::Connected);
 			ENGINE_LOG("CONNECT_CHALLENGE from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
@@ -179,7 +180,13 @@ namespace Game {
 			return msg.discard();
 		}
 
-		// TODO: also require this message to have padding.
+		if (!verifyMessagePadding(msg)) {
+			// TODO: rate limit connections with invalid messages
+			ENGINE_WARN("Got invalid connection confirm from ", from.address());
+			return;
+		} else {
+			msg.discard();
+		}
 
 		auto& world = engine.getWorld();
 		auto& netSys = world.getSystem<NetworkingSystem>();
