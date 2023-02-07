@@ -23,7 +23,6 @@ namespace Game {
 	> {};
 
 	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
-		MessageType::PING,
 		MessageType::PLAYER_DATA,
 		MessageType::SPELL
 	> {};

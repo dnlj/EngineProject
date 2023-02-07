@@ -1,35 +1,34 @@
 // STD
-#include <set>
+#include <algorithm>
 #include <concepts>
 #include <iomanip>
 #include <random>
-#include <algorithm>
+#include <set>
 
 // Engine
-#include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/Entity.hpp>
+#include <Engine/Engine.hpp>
 #include <Engine/Meta/for.hpp>
 
 // Game
-#include <Game/World.hpp>
+#include <Game/systems/EntityNetworkingSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
-#include <Game/systems/all.hpp> // TODO: any way to get around this? not great for build times
-#include <Game/comps/all.hpp>
+
+// TODO: Do we really need all these components? Maybe try to clean this up.
+#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/MapAreaComponent.hpp>
+#include <Game/comps/MapEditComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/PhysicsInterpComponent.hpp>
+#include <Game/comps/SpriteComponent.hpp>
 
 
 namespace {
+	using namespace Game;
 	using PlayerFilter = Engine::ECS::EntityFilterList<
-		Game::PlayerFlag
-		// TODO: since we dont have connComp anymore, make sure eveything that uses this is still correct
-		//Game::ConnectionComponent
+		PlayerFlag
 	>;
-
-	// TODO: would probably be easier to just have a base class instead of all these type traits
-	template<class T, class = void>
-	struct GetComponentReplication {
-		constexpr static auto value = Engine::Net::Replication::NONE;
-	};
 
 	constexpr uint8 msgPadSeq[] = {0x54, 0x68, 0x65, 0x20, 0x63, 0x61, 0x6B, 0x65, 0x20, 0x69, 0x73, 0x20, 0x61, 0x20, 0x6C, 0x69, 0x65, 0x2E, 0x20};
 
@@ -138,7 +137,7 @@ namespace Game {
 			from.setState(ConnectionState::Connecting);
 
 			auto& world = engine.getWorld();
-			auto& netSys = world.getSystem<NetworkingSystem>(); // TODO: make a genKeys that doesnt use networking system
+			auto& netSys = world.getSystem<NetworkingSystem>();
 			from.setKeyLocal(netSys.genKey());
 		} else {
 			ENGINE_DEBUG_ASSERT(from.getKeyLocal() != 0, "It should not be possible to be missing a local key in any non-unconnected state. This is a bug.");
@@ -151,12 +150,15 @@ namespace Game {
 	}
 	
 	HandleMessageDef(MessageType::CONNECT_CHALLENGE)
-		uint16 remote = {};
-		msg.read<uint16>(&remote); // TODO: error checking
-
 		if (from.getKeyRemote()) {
 			ENGINE_WARN("Extraneous CONNECT_CHALLENGE received. Ignoring.");
 			ENGINE_DEBUG_ASSERT(from.getState() == ConnectionState::Connected);
+			return msg.discard();
+		}
+
+		uint16 remote = {};
+		if (!msg.read<uint16>(&remote)) {
+			ENGINE_WARN("Invalid connection challenge received.");
 			return msg.discard();
 		}
 
@@ -215,39 +217,12 @@ namespace Game {
 		netSys.disconnect(from);
 	}
 
-	HandleMessageDef(MessageType::PING)
-		static uint8 last = 0;
-
-		uint8 data;
-		msg.read(&data);
-
-		const bool pong = data & 0x80;
-		const int32 val = data & 0x7F;
-		last = val;
-
-		if (pong) {
-			ENGINE_LOG("recv pong @ ",
-				std::fixed, std::setprecision(2),
-				Engine::Clock::now().time_since_epoch().count() / 1E9,
-				" from ", from.address(),
-				" ", val
-			);
-		} else {
-			ENGINE_LOG("recv ping @ ",
-				std::fixed, std::setprecision(2),
-				Engine::Clock::now().time_since_epoch().count() / 1E9,
-				" from ", from.address(),
-				" ", val
-			);
-			if (auto reply = from.beginMessage<MessageType::PING>()) {
-				reply.write(static_cast<uint8>(val | 0x80));
-			}
-		}
-	}
-
 	HandleMessageDef(MessageType::CONFIG_NETWORK)
 		float32 rate;
-		if (!msg.read(&rate)) { return; }
+		if (!msg.read(&rate)) {
+			ENGINE_WARN("Invalid CONFIG_NETWORK received.");
+			return;
+		}
 
 		if constexpr (ENGINE_CLIENT) {
 			if (auto reply = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
@@ -291,7 +266,6 @@ namespace Game {
 		setMessageHandler(MessageType::CONNECT_CHALLENGE, handleMessageType<MessageType::CONNECT_CHALLENGE>);
 		setMessageHandler(MessageType::DISCONNECT, handleMessageType<MessageType::DISCONNECT>);
 		setMessageHandler(MessageType::CONNECT_CONFIRM, handleMessageType<MessageType::CONNECT_CONFIRM>);
-		setMessageHandler(MessageType::PING, handleMessageType<MessageType::PING>);
 		setMessageHandler(MessageType::CONFIG_NETWORK, handleMessageType<MessageType::CONFIG_NETWORK>);
 
 		#if ENGINE_SERVER
@@ -314,8 +288,6 @@ namespace Game {
 
 	#if ENGINE_CLIENT
 	void NetworkingSystem::broadcastDiscover() {
-		// TODO: rm this return, just for testing.
-		return; 
 		const auto now = world.getTime();
 		for (auto it = servers.begin(); it != servers.end(); ++it) {
 			if (it->second.lastUpdate + std::chrono::seconds{5} < now) {
@@ -337,7 +309,7 @@ namespace Game {
 		while ((sz = sock.recv(&packet, sizeof(packet), addr)) > -1) {
 			// TODO: move back to connection
 			if (packet.getProtocol() != Engine::Net::protocol) {
-				ENGINE_WARN("Invalid protocol"); // TODO: rm - could be used for lag/dos?
+				ENGINE_WARN("Invalid protocol");
 				continue;
 			}
 
@@ -405,29 +377,6 @@ namespace Game {
 			socket.realSimSend();
 		#endif
 	}
-
-
-	// TODO: rm / re-impl
-	//void NetworkingSystem::updateClient() {
-	//	for (const auto ent : world.getFilter<ConnectionComponent>()) {
-	//		const auto& conn = *world.getComponent<ConnectionComponent>(ent).conn;
-	//
-	//		// TODO: really we can remove this, its just a debug ping
-	//		if (conn.getState() == ConnectionState::Connected) {
-	//			static uint8 ping = 0;
-	//			static auto next = now;
-	//			if (next > now) { return; }
-	//			next = now + std::chrono::milliseconds{5000};
-	//	
-	//			for (auto& ply : world.getFilter<PlayerFilter>()) {
-	//				auto& conn2 = *world.getComponent<ConnectionComponent>(ply).conn;
-	//				if (auto msg = conn2.beginMessage<MessageType::PING>()) {
-	//					msg.write(static_cast<uint8>(++ping & 0x7F));
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
 
 	int32 NetworkingSystem::playerCount() const {
 		return static_cast<int32>(world.getFilter<PlayerFilter>().size());
@@ -504,7 +453,6 @@ namespace Game {
 	}
 
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		// TODO: the client should only ever connect to one server
 		auto& conn = getOrCreateConnection(addr);
 
 		if (conn.getState() != ConnectionState::Disconnected) {
@@ -546,7 +494,6 @@ namespace Game {
 			world.addComponent<CameraTargetFlag>(ent);
 		}
 
-		// TODO: client only
 		world.addComponent<PhysicsInterpComponent>(ent);
 
 		world.addComponent<PlayerFlag>(ent);
