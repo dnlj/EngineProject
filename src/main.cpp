@@ -861,6 +861,7 @@ void run(int argc, char* argv[]) {
 
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 	while (!window.shouldClose()) {
+		auto tstart = std::chrono::high_resolution_clock::now();
 		window.poll();
 
 		// Rendering
@@ -877,7 +878,15 @@ void run(int argc, char* argv[]) {
 		}
 
 		window.swapBuffers();
+		
 		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
+
+		// Don't eat all our GPU and cause our system to prepare for takeoff.
+		// Sleep is very inprecise (~15ms resolution), so instead busy wait with a yield.
+		constexpr auto targetFrameTime = std::chrono::microseconds{9'000}; // TODO: should probably be a setting/cmd line/cfg/console option.
+		while (std::chrono::high_resolution_clock::now() - tstart < targetFrameTime) {
+			std::this_thread::yield();
+		}
 	}
 }
 
