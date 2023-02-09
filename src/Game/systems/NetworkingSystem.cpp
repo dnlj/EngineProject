@@ -355,9 +355,7 @@ namespace Game {
 				cur = disconnect(cur);
 				continue;
 			} else if (conn->getState() == ConnectionState::Disconnecting) { // Graceful disconnect
-				if (auto msg = conn->beginMessage<MessageType::DISCONNECT>()) {
-					ENGINE_LOG("Send DISCONNECT to ", conn->address());
-				}
+				if (auto msg = conn->beginMessage<MessageType::DISCONNECT>()) {}
 
 				if (now - conn->disconnectAt >= disconnectingPeriod) {
 					cur = disconnect(cur);
@@ -448,10 +446,17 @@ namespace Game {
 		conn->setKeyLocal(0);
 		conn->setState(ConnectionState::Disconnecting);
 		conn->disconnectAt = now + disconnectingPeriod;
-		
 	}
 
+	#if ENGINE_CLIENT
 	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
+		for (const auto& [add, con] : addrToConn) {
+			if (con->getState() != ConnectionState::Disconnected) {
+				ENGINE_WARN("Already connected to server (", add, "). Aborting.");
+				return;
+			}
+		}
+
 		auto& conn = getOrCreateConnection(addr);
 
 		if (conn.getState() != ConnectionState::Disconnected) {
@@ -472,6 +477,7 @@ namespace Game {
 			writeMessagePadding(msg.getBufferWriter());
 		}
 	}
+	#endif
 
 	void NetworkingSystem::addPlayer(ConnectionInfo& conn) {
 		// TODO: i feel like this should be handled elsewhere. Where?

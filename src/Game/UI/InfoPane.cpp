@@ -21,7 +21,9 @@ namespace Game::UI {
 			auto& netSys = world.getSystem<NetworkingSystem>();
 
 			for (const auto& conn : netSys.getConnections()) {
-				world.getSystem<NetworkingSystem>().requestDisconnect(conn.first);
+				if (conn.second->ent) {
+					world.getSystem<NetworkingSystem>().requestDisconnect(conn.first);
+				}
 			}
 		});
 

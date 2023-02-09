@@ -28,7 +28,11 @@ namespace {
 			auto engine = ctx->getUserdata<EngineInstance>();
 			auto& world = engine->getWorld();
 			auto addr = Engine::Net::hostToAddress(ipSrc->getText());
-			if (isAlreadyConnected(world, addr)) { return; }
+
+			if (isAlreadyConnected(world, addr)) {
+				ENGINE_WARN("Attempting to connect to same server. Ignoring.");
+				return;
+			}
 
 			// TODO: really would like to be able to clear a single function, doesnt really matter since this is our only callback, but still.
 			ctx->addPanelUpdateFunc(b, [last=Engine::Clock::TimePoint{}, count=0u, addr](EUI::Panel* p) mutable {

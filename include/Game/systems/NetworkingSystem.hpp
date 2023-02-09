@@ -70,14 +70,15 @@ namespace Game {
 			} 
 
 
-		public:
+		public:	
 			NetworkingSystem(SystemArg arg);
 			void update(float32 dt);
 
 			int32 playerCount() const; // TODO: remove or at least make private. Should interact with filter directly.
 
-			// TODO: make client only
-			void connectTo(const Engine::Net::IPv4Address& addr);
+			#if ENGINE_CLIENT
+				void connectTo(const Engine::Net::IPv4Address& addr);
+			#endif
 
 			/**
 			 * Attempt a graceful disconnect.
