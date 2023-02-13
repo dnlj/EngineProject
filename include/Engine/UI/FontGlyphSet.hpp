@@ -21,6 +21,18 @@
 
 
 namespace Engine::UI {
+	using Font = class FontGlyphSet*;
+
+	class ShapeGlyph {
+		public:
+			uint32 index;
+			uint32 cluster;
+			glm::vec2 offset;
+			glm::vec2 advance;
+	};
+}
+
+namespace Engine::UI {
 	/**
 	 * Supports a number of operations needed to render strings in a given font face and size on the gpu.
 	 *
@@ -76,8 +88,6 @@ namespace Engine::UI {
 
 			ENGINE_INLINE bool isGlyphLoaded(const uint32 index) const noexcept { return glyphIndexToLoadedIndex.contains(index); };
 
-			ENGINE_INLINE void ensureGlyphLoaded(const uint32 index) { if (!isGlyphLoaded(index)) { loadGlyph(index); } }
-
 			ENGINE_INLINE const auto& getGlyphTexture() const noexcept { return glyphTex; }
 
 			ENGINE_INLINE const auto& getGlyphDataBuffer() const noexcept { return glyphSSBO; }
@@ -94,7 +104,8 @@ namespace Engine::UI {
 			/**
 			 * Populate a ShapedString with glyph position and bounds info.
 			 */
-			void shapeString(class ShapedString& str);
+			void shapeString(class ShapedString& str); // TODO: rm - just use other overload
+			void shapeString(std::string_view str, std::vector<ShapeGlyph>& glyphs, Bounds& bounds);
 
 			/**
 			 * Gets the font specified line height (i.e. the recommended distance between baselines)

@@ -172,24 +172,24 @@ namespace Engine::UI {
 		//ENGINE_LOG("Max Glyph: ", maxGlyph.x, ", ", maxGlyph.y);
 		//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
 	}
-
-	void FontGlyphSet::shapeString(ShapedString& str) {
+	
+	void FontGlyphSet::shapeString(std::string_view str, std::vector<ShapeGlyph>& glyphs, Bounds& bounds) {
 		auto buffer = getManager().getWorkingBuffer();
 		ftFace->size = ftSize;
 
 		// TODO: lookinto hb_buffer_set_cluster_level
 		hb_buffer_clear_contents(buffer);
-		hb_buffer_add_utf8(buffer, str.getString().data(), -1, 0, -1);
+		hb_buffer_add_utf8(buffer, str.data(), static_cast<int>(str.size()), 0, -1);
 		hb_buffer_guess_segment_properties(buffer); // TODO: Should we handle this ourself?
 		hb_shape(hbFont, buffer, nullptr, 0);
 
 		const auto sz = hb_buffer_get_length(buffer);
 		const auto infoArr = hb_buffer_get_glyph_infos(buffer, nullptr);
 		const auto posArr = hb_buffer_get_glyph_positions(buffer, nullptr);
-		auto& data = str.getGlyphShapeDataMutable();
-		data.clear();
 
-		Bounds bounds = {};
+		glyphs.reserve(glyphs.size() + sz);
+
+		bounds = {};
 		glm::vec2 cursor = {}; // Used for calc bounds
 
 		for (uint32 i = 0; i < sz; ++i) {
@@ -197,15 +197,18 @@ namespace Engine::UI {
 			const auto& pos = posArr[i];
 
 			if (!info.codepoint) {
-				const auto c = str.getString()[info.cluster];
+				const auto c = str[info.cluster];
 				ENGINE_WARN("Missing one or more glyphs for character at index ", info.cluster, " = ",  static_cast<int>(c)," (", c, ")");
 			}
 
-			ensureGlyphLoaded(info.codepoint);
+			if (!isGlyphLoaded(info.codepoint)) {
+				loadGlyph(info.codepoint);
+			}
+
 			const auto gi = glyphIndexToLoadedIndex[info.codepoint];
 			const auto& met = glyphMetrics[gi];
 
-			data.push_back({
+			glyphs.push_back({
 				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
 				.cluster = info.cluster,
 				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing,
@@ -213,7 +216,7 @@ namespace Engine::UI {
 			});
 
 			{ // Update bounds
-				const auto& back = data.back();
+				const auto& back = glyphs.back();
 				const auto& dat = glyphData[gi];
 				const auto min = cursor + back.offset;
 				const auto max = min + dat.size;
@@ -224,7 +227,13 @@ namespace Engine::UI {
 				cursor += back.advance;
 			}
 		}
+	}
 
+	void FontGlyphSet::shapeString(ShapedString& str) {
+		Bounds bounds = {};
+		auto& glyphs = str.getGlyphShapeDataMutable();
+		glyphs.clear();
+		shapeString(str.getString(), glyphs, bounds);
 		str.setBounds(bounds);
 	}
 	

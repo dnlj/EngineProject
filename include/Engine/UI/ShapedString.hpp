@@ -6,16 +6,6 @@
 
 
 namespace Engine::UI {
-	using Font = class FontGlyphSet*;
-
-	class ShapeGlyph {
-		public:
-			uint32 index;
-			uint32 cluster;
-			glm::vec2 offset;
-			glm::vec2 advance;
-	};
-
 	class ShapedString {
 		private:
 			std::string str;

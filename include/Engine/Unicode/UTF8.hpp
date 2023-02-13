@@ -56,24 +56,48 @@ namespace Engine::Unicode {
 
 
 namespace Engine::Unicode::UTF32 {
+	inline constexpr bool isNewline(const Point32 point) noexcept {
+		// TODO: also look at unicode annex "Unicode Line Breaking Algorithm"
+		// TODO: how to handle "CR LF"? really we need to handle this with ptrs like we do with lenth,next,prev,etc.
+		// From "5.8 Newline Guidelines" unicode standard.
+		return (+point == 0x000D) // CR, carriage return
+			|| (+point == 0x000A) // LF, line feed
+			|| (+point == 0x0085) // NEL, next line
+			|| (+point == 0x000B) // VT, vertical tab
+			|| (+point == 0x000C) // FF, form feed
+			|| (+point == 0x2028) // LS, line separator
+			|| (+point == 0x2029) // PS, paragraph seperator
+			|| 0;
+	}
+
 	inline constexpr bool isWhitespace(const Point32 point) noexcept {
 		return (+point == 0x0020)
-			|| (+point == 0x0085)
 			|| (+point == 0x00A0)
 			|| (+point == 0x1680)
-			|| (+point == 0x2028)
-			|| (+point == 0x2029)
 			|| (+point == 0x202F)
 			|| (+point == 0x205F)
 			|| (+point == 0x3000)
 			|| (+point >= 0x0009 && +point <= 0x000D)
-			|| (+point >= 0x2000 && +point <= 0x200A);
+			|| (+point >= 0x2000 && +point <= 0x200A)
+			|| isNewline(point)
+			|| 0;
 	}
 }
 
 namespace Engine::Unicode::UTF8 {
 	ENGINE_INLINE constexpr bool isStartOfCodePoint(Unit8 unit) noexcept {
 		return !(+unit & 0b1000'0000) || ((+unit & 0b1100'0000) == 0b1100'0000);
+	}
+
+	/**
+	 * Checks if a code point is a newline.
+	 */
+	ENGINE_INLINE constexpr bool isNewline(const Unit8* begin) noexcept {
+		return UTF32::isNewline(to32(begin));
+	}
+
+	ENGINE_INLINE constexpr bool isNewline8(const void* begin) noexcept {
+		return isNewline(reinterpret_cast<const Unit8*>(begin));
 	}
 
 	/**

@@ -10,6 +10,7 @@
 #include <Game/UI/AutoList.hpp>
 #include <Game/UI/CameraPane.hpp>
 #include <Game/UI/ConnectWindow.hpp>
+#include <Game/UI/ConsoleWindow.hpp>
 #include <Game/UI/CoordPane.hpp>
 #include <Game/UI/EntityPane.hpp>
 #include <Game/UI/InfoPane.hpp>
@@ -88,6 +89,10 @@ namespace Game {
 			panels.connectWindow = ctx.createPanel<UI::ConnectWindow>(ctx.getRoot());
 		}
 		#endif
+
+		{
+			panels.consoleWindow = ctx.createPanel<UI::ConsoleWindow>(ctx.getRoot());
+		}
 
 		//panels.infoPane->toggle();
 		panels.coordPane->toggle();

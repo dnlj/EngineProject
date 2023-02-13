@@ -19,6 +19,7 @@ namespace Game::UI {
 	class EntityPane;
 	class MapPreview;
 	class ConnectWindow;
+	class ConsoleWindow;
 }
 
 namespace Game {
@@ -45,6 +46,8 @@ namespace Game {
 				#if ENGINE_CLIENT
 				UI::ConnectWindow* connectWindow;
 				#endif
+
+				UI::ConsoleWindow* consoleWindow;
 			} panels;
 	};
 }

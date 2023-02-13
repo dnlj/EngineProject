@@ -159,10 +159,11 @@ namespace Engine {
 				}
 
 				template<class... Args>
-				void emplace(Args&&... args) {
+				T& emplace(Args&&... args) {
 					ensureSpace();
 					new (dataT() + stop) T(std::forward<Args>(args)...);
 					elementAdded();
+					return back();
 				}
 
 				void push(const T& obj) {
