@@ -173,7 +173,8 @@ namespace Engine::UI {
 		//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
 	}
 	
-	void FontGlyphSet::shapeString(std::string_view str, std::vector<ShapeGlyph>& glyphs, Bounds& bounds) {
+	template<class ShapeGlyphCont>
+	void FontGlyphSet::shapeStringImpl(std::string_view str, ShapeGlyphCont& glyphs, Bounds& bounds) {
 		auto buffer = getManager().getWorkingBuffer();
 		ftFace->size = ftSize;
 
@@ -187,7 +188,8 @@ namespace Engine::UI {
 		const auto infoArr = hb_buffer_get_glyph_infos(buffer, nullptr);
 		const auto posArr = hb_buffer_get_glyph_positions(buffer, nullptr);
 
-		glyphs.reserve(glyphs.size() + sz);
+		const auto basei = glyphs.size();
+		glyphs.resize(basei + sz);
 
 		bounds = {};
 		glm::vec2 cursor = {}; // Used for calc bounds
@@ -208,12 +210,12 @@ namespace Engine::UI {
 			const auto gi = glyphIndexToLoadedIndex[info.codepoint];
 			const auto& met = glyphMetrics[gi];
 
-			glyphs.push_back({
+			glyphs[basei + i] = {
 				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
 				.cluster = info.cluster,
 				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing,
 				.advance = glm::vec2{pos.x_advance, pos.y_advance} * (1.0f/64),
-			});
+			};
 
 			{ // Update bounds
 				const auto& back = glyphs.back();
@@ -228,6 +230,9 @@ namespace Engine::UI {
 			}
 		}
 	}
+
+	template void FontGlyphSet::shapeStringImpl(std::string_view str, std::vector<ShapeGlyph>& glyphs, Bounds& bounds);
+	template void FontGlyphSet::shapeStringImpl(std::string_view str, RingBuffer<ShapeGlyph>& glyphs, Bounds& bounds);
 
 	void FontGlyphSet::shapeString(ShapedString& str) {
 		Bounds bounds = {};
@@ -248,3 +253,4 @@ namespace Engine::UI {
 		}
 	}
 }
+

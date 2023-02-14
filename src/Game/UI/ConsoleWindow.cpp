@@ -25,8 +25,8 @@ namespace Game::UI {
 				|| Engine::Unicode::isNewline8(p);
 		};
 
-		static int count = 0; // TODO: rm
-		const auto pushLine = [this](auto a, auto b) ENGINE_INLINE {
+		const auto pushLine = [this](auto a, auto b) ENGINE_INLINE_REL {
+			// TOOD: also need to handle the unlikely case where a single line is larger than our charBuff.
 			auto& line = lines.emplace();
 			line.chars.start = static_cast<Index>(charBuff.getHead());
 			if (a == b) { return; }
@@ -37,18 +37,18 @@ namespace Game::UI {
 			ENGINE_DEBUG_ASSERT(charBuff.getHead() < std::numeric_limits<Index>::max(), "Char index is to large to fit in datatype.");
 
 			EUI::Bounds bounds;
-			line.glyphs.start = static_cast<Index>(glyphBuff.size());
+			line.glyphs.start = static_cast<Index>(glyphBuff.next());
 			font->shapeString({a, b}, glyphBuff, bounds);
-			line.glyphs.stop = static_cast<Index>(glyphBuff.size());
+			line.glyphs.stop = static_cast<Index>(glyphBuff.next());
 			ENGINE_DEBUG_ASSERT(glyphBuff.size() < std::numeric_limits<Index>::max(), "Glyph index is to large to fit in datatype.");
-			ENGINE_LOG("Add ", ++count, " ", std::string_view{a,b}, " [", line.chars.start, ", ", line.chars.stop, ")");
+			ENGINE_LOG("Add ", std::string_view{a,b}, " [", line.chars.start, ", ", line.chars.stop, ") ", glyphBuff.size());
 
 			{ // TODO: we actually should be able to do this after we have pushed all lines? or is there potential problem with overlapping our whole buffer with a single push of multiple lines? idk. ill think about this later. probably just needs extra checks.
 				// Remove old lines that overlap our new buffer
 				while (lines.size() > 1) {
 					// Any line that overlaps our new line
-					const auto& f = lines.front().chars;
-					const auto& l = line.chars;
+					const auto& f = lines.front();
+					const auto& l = line;
 
 					////////////////////////////////////////////////////
 					// Visualization of overlap logic.
@@ -61,14 +61,21 @@ namespace Game::UI {
 					// Case B: [----|-----------------|----]
 					//            ^ Area 2               ^ Area 3
 					////////////////////////////////////////////////////
-					const bool wrapped = l.stop < l.start;
-					const bool after = f.start >= l.start;
-					const bool before = f.start < l.stop;
+					const bool wrapped = l.chars.stop < l.chars.start;
+					const bool after = f.chars.start >= l.chars.start;
+					const bool before = f.chars.start < l.chars.stop;
 					//   (1||2) && (   2    ||   1  )) || (        3       )
 					if ((before && (wrapped || after)) || (wrapped && after)) {
-						ENGINE_WARN("Pop: [", lines.front().chars.start, ", ", lines.front().chars.stop, ")");
+						ENGINE_WARN("Pop: [", f.glyphs.start, ", ", f.glyphs.stop, ")");
+
+						// TODO: add RingBuffer::remove/pop(n)
+						auto count = (f.glyphs.stop - f.glyphs.start + glyphBuff.capacity()) % glyphBuff.capacity();
+						while (count) {
+							glyphBuff.pop();
+							--count;
+						}
+
 						lines.pop();
-						// TODO: glyph cleanup
 					} else {
 						break;
 					}
@@ -96,12 +103,17 @@ namespace Game::UI {
 	void TextArea::render() {
 		ctx->drawRect({}, getSize(), {0,0,0,0.5});
 
-		const auto base = glyphBuff.data();
+		const auto base = glyphBuff.unsafe_dataT();
 		const auto lh = font->getLineHeight();
 		float32 yOff = 25;
 		const auto xOff = 25;
 		for (const auto& line : lines) {
-			ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + line.glyphs.start, base + line.glyphs.stop});
+			if (line.glyphs.stop < line.glyphs.start) {
+				const auto off = ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + line.glyphs.start, base + glyphBuff.capacity()});
+				ctx->drawString(off, {0,1,0,1}, font, {base, base + line.glyphs.stop});
+			} else {
+				ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + line.glyphs.start, base + line.glyphs.stop});
+			}
 			yOff += lh;
 		}
 	};
@@ -127,7 +139,7 @@ namespace Game::UI {
 			auto area = static_cast<TextArea*>(self);
 			const auto now = Engine::Clock::now();
 			if (now - last > std::chrono::milliseconds{400}) {
-				area->pushText("This is line " + std::to_string(++i));
+				area->pushText("This is line " + std::string(1 + rand()%16, 'A') + " " + std::to_string(++i));
 				last = now;
 			}
 		});

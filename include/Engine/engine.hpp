@@ -46,6 +46,11 @@
  * This does not apply the effects of the C++ `inline` keyword.
  */
 #define ENGINE_INLINE [[msvc::forceinline]] // TODO: cross platform: [[gnu::always_inline]]
+#if ENGINE_DEBUG
+	#define ENGINE_INLINE_REL
+#else
+	#define ENGINE_INLINE_REL ENGINE_INLINE
+#endif
 
 /**
  * Attempts to force inline all function calls in a block or statement.

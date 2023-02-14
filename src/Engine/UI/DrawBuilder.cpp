@@ -329,11 +329,15 @@ namespace Engine::UI {
 		drawPoly({a - n, a + n, b + n, b - n}, color);
 	}
 
-	void DrawBuilder::drawString(glm::vec2 pos, glm::vec4 color, Font font, ArrayView<const ShapeGlyph> glyphs) {
+	glm::vec2 DrawBuilder::drawString(glm::vec2 pos, glm::vec4 color, Font font, ArrayView<const ShapeGlyph> glyphs) {
 		ENGINE_DEBUG_ASSERT(font != nullptr, "Attempting to draw string with null font.");
-		if (glyphs.empty()) { return; }
+		if (glyphs.empty()) { return pos; }
 
-		this->font = font;
+		// TODO (N2s3MidY): this is a weird way to handle fonts. Either have a separate DrawBuilder::setFont function with this being a shortcut for that.
+		// or have nextDrawGroupGlyph take a font as param. Passing through member is strange with the current configuration.
+		// Maybe that would be best to have properties like color and font set on the object with setColor/setFont.
+		// then we have drawString(pos,glyphs). with the current version just being shorthand for that.
+		this->font = font; 
 		pos += drawOffset;
 		nextDrawGroupGlyph();
 
@@ -346,5 +350,7 @@ namespace Engine::UI {
 			});
 			pos += data.advance;
 		}
+
+		return pos - drawOffset;
 	}
 };

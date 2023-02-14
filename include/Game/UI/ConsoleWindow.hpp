@@ -68,7 +68,7 @@ namespace Game::UI {
 			SimpleRingBuffer<char> charBuff;
 
 			// TODO: should really use RingBuffer for this, but we dont have an insert(first,last) funciton for that yet.
-			std::vector<EUI::ShapeGlyph> glyphBuff;
+			Engine::RingBuffer<EUI::ShapeGlyph> glyphBuff;
 			Engine::RingBuffer<Line> lines;
 			EUI::Font font;
 

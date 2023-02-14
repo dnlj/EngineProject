@@ -105,7 +105,9 @@ namespace Engine::UI {
 			 * Populate a ShapedString with glyph position and bounds info.
 			 */
 			void shapeString(class ShapedString& str); // TODO: rm - just use other overload
-			void shapeString(std::string_view str, std::vector<ShapeGlyph>& glyphs, Bounds& bounds);
+
+			ENGINE_INLINE void shapeString(std::string_view str, std::vector<ShapeGlyph>& glyphs, Bounds& bounds) { shapeStringImpl(str, glyphs, bounds); }
+			ENGINE_INLINE void shapeString(std::string_view str, RingBuffer<ShapeGlyph>& glyphs, Bounds& bounds) { shapeStringImpl(str, glyphs, bounds); }
 
 			/**
 			 * Gets the font specified line height (i.e. the recommended distance between baselines)
@@ -140,6 +142,9 @@ namespace Engine::UI {
 			ENGINE_INLINE auto getBodyHeight() const noexcept { return getAscent() - getDescent(); }
 
 		private:
+			template<class ShapeGlyphCont>
+			void shapeStringImpl(std::string_view str, ShapeGlyphCont& glyphs, Bounds& bounds);
+
 			void initMaxGlyphSize();
 	};
 }

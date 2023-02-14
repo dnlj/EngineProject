@@ -111,11 +111,16 @@ namespace Engine::UI {
 			 */
 			void drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color);
 
-			ENGINE_INLINE void drawString(glm::vec2 pos, const ShapedString* fstr, glm::vec4 color) {
-				drawString(pos, color, fstr->getFont(), fstr->getGlyphShapeData());
+			/**
+			 * Draws a string of glyphs.
+			 * @return The accumulated advance of the string drawn.
+			 */
+			glm::vec2 drawString(glm::vec2 pos, glm::vec4 color, Font font, ArrayView<const ShapeGlyph> glyphs);
+
+			ENGINE_INLINE glm::vec2 drawString(glm::vec2 pos, const ShapedString* fstr, glm::vec4 color) {
+				return drawString(pos, color, fstr->getFont(), fstr->getGlyphShapeData());
 			}
 
-			void drawString(glm::vec2 pos, glm::vec4 color, Font font, ArrayView<const ShapeGlyph> glyphs);
 
 		private:
 			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {

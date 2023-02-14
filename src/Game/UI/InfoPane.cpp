@@ -43,6 +43,7 @@ namespace Game::UI {
 			fpsSamples.pop();
 		}
 
+		ENGINE_DEBUG_ASSERT(fpsSamples.size() > 0);
 		if (curr.time - lastUpdate >= std::chrono::milliseconds{100}) {
 			lastUpdate = curr.time;
 
