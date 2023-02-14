@@ -70,33 +70,36 @@ namespace Engine {
 				using ConstIterator = IteratorBase<const T>;
 
 			private:
+				// TODO (bXIBu9nt): Look into mmap/VirtualAlloc(2). Should increase perfomance and simplify iterators down to simple pointers.
 				using Proxy = AlignedStorage<T>;
 				using Storage = std::conditional_t<IsStatic,
 					Proxy[Size],
 					std::pair<Proxy*, SizeType>
 				>;
-				Storage data; // TODO: rename data -> storage
+				Storage storage;
 
-				/** The index of the first element */
-				SizeType start = 0;
+				/** The index of the first/oldest element. */
+				SizeType tail = 0;
 
-				/** The index of the last element plus one */
-				SizeType stop = 0;
+				/** The index of the last/most recent element plus one. */
+				SizeType head = 0;
 
-				/** Used to determine if we are empty or full (start == stop in both cases) */
+				/** Used to determine if we are empty or full (tail == head in both cases) */
 				bool isEmpty = true;
 
 			public:
 				RingBufferImpl() requires IsStatic = default;
 				
 				RingBufferImpl(SizeType sz = 16) requires IsDynamic {
-					data.first = new Proxy[sz];
-					data.second = sz;
+					// TODO (b4HTs9x0): shouldnt alloc here if no size is passed, remove default and make reserve handle empty case.
+					sz = nextSize(sz);
+					storage.first = new Proxy[sz];
+					storage.second = sz;
 				}
 				
 				~RingBufferImpl(){
 					clear();
-					if constexpr (IsDynamic) { delete[] data.first; }
+					if constexpr (IsDynamic) { delete[] storage.first; }
 				}
 
 				RingBufferImpl(const RingBufferImpl& other) { *this = other; }
@@ -104,7 +107,7 @@ namespace Engine {
 				
 				RingBufferImpl& operator=(const RingBufferImpl& other){
 					clear();
-					reserve(other.data.second);
+					reserve(other.storage.second);
 					for (const auto& v : other) { push(v); }
 					return *this;
 				}
@@ -112,7 +115,7 @@ namespace Engine {
 				RingBufferImpl& operator=(RingBufferImpl&& other) requires IsDynamic { swap(*this, other); return *this; }
 
 				[[nodiscard]] ENGINE_INLINE T& operator[](SizeType i) noexcept {
-					return dataT()[wrapIndex(start + i)];
+					return dataT()[wrap(tail + i)];
 				}
 				
 				[[nodiscard]] ENGINE_INLINE const T& operator[](SizeType i) const noexcept {
@@ -128,21 +131,23 @@ namespace Engine {
 				[[nodiscard]] ENGINE_INLINE ConstIterator cend() const noexcept { return {this, size()}; }
 
 				[[nodiscard]] ENGINE_INLINE SizeType capacity() const noexcept {
-					if constexpr (IsStatic) { return Size; } else { return data.second; }
+					if constexpr (IsStatic) { return Size; } else { return storage.second; }
 				}
 				
 				[[nodiscard]] SizeType size() const noexcept {
 					if (empty()) { return 0; }
-					return (stop - start) + (stop <= start ? capacity() : 0);
+					return (head - tail) + (head <= tail ? capacity() : 0);
 				}
 
 				[[nodiscard]] ENGINE_INLINE bool empty() const noexcept { return isEmpty; }
 
-				[[nodiscard]] ENGINE_INLINE bool full() const noexcept { return start == stop && !isEmpty; }
+				[[nodiscard]] ENGINE_INLINE bool full() const noexcept { return tail == head && !isEmpty; }
+
+				[[nodiscard]] ENGINE_INLINE SizeType next() const noexcept { return head; }
 
 				[[nodiscard]] ENGINE_INLINE T& back() noexcept {
 					ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::back called on empty buffer");
-					return dataT()[wrapIndex(stop - 1)];
+					return dataT()[wrap(capacity() + head - 1)];
 				}
 
 				[[nodiscard]] ENGINE_INLINE const T& back() const noexcept{
@@ -151,7 +156,7 @@ namespace Engine {
 
 				[[nodiscard]] ENGINE_INLINE T& front() noexcept {
 					ENGINE_DEBUG_ASSERT(!empty(), "RingBufferImpl::front called on empty buffer");
-					return dataT()[start];
+					return dataT()[tail];
 				}
 
 				[[nodiscard]] ENGINE_INLINE const T& front() const noexcept {
@@ -161,32 +166,58 @@ namespace Engine {
 				template<class... Args>
 				T& emplace(Args&&... args) {
 					ensureSpace();
-					new (dataT() + stop) T(std::forward<Args>(args)...);
+					new (dataT() + head) T(std::forward<Args>(args)...);
 					elementAdded();
 					return back();
 				}
 
 				void push(const T& obj) {
 					ensureSpace();
-					new (dataT() + stop) T(obj);
+					new (dataT() + head) T(obj);
 					elementAdded();
 				}
 				
 				void push(T&& obj) {
 					ensureSpace();
-					new (dataT() + stop) T(std::move(obj));
+					new (dataT() + head) T(std::move(obj));
 					elementAdded();
 				}
 
+				template<class It>
+				void push(const It first, const It last) {
+					SizeType len1 = last - first;
+					SizeType len2 = 0;
+					if (len1 == 0) { return; }
+
+					const SizeType req = size() + len1;
+					if (req >= capacity()) { reserve(req); }
+				
+					if (head + len1 >= capacity()) {
+						len2 = wrap(head + len1);
+						len1 = len1 - len2;
+					}
+
+					ENGINE_INLINE_CALLS {
+						std::uninitialized_copy_n(first, len1, dataT() + head);
+						head = wrap(head + len1);
+						
+						std::uninitialized_copy_n(first + len1, len2, dataT() + head);
+						head = wrap(head + len2);
+					}
+
+					isEmpty = false;
+				}
+
 				void pop() {
-					dataT()[start].~T();
+					dataT()[tail].~T();
 					elementRemoved();
 				}
 
 				ENGINE_INLINE void clear() {
+					// TODO: probably better to manually split and use ptrs
 					std::destroy(begin(), end());
-					start = 0;
-					stop = 0;
+					tail = 0;
+					head = 0;
 					isEmpty = true;
 				}
 
@@ -196,6 +227,7 @@ namespace Engine {
 				
 				void reserve(SizeType n) requires IsDynamic {
 					if (capacity() >= n) { return; }
+					n = nextSize(n);
 
 					Storage temp = {};
 					temp.first = new Proxy[n];
@@ -205,13 +237,14 @@ namespace Engine {
 					std::uninitialized_move(begin(), end(), &temp.first->as());
 
 					clear();
-					stop = sz;
+					head = sz;
 
-					delete[] data.first;
-					data = temp;
+					delete[] storage.first;
+					storage = temp;
 				}
 
 				ENGINE_INLINE void resize(SizeType n) requires IsDynamic {
+					// TODO: this doesnt account for downsizing?
 					reserve(n);
 					while (size() < n) { emplace(); }
 				}
@@ -219,30 +252,38 @@ namespace Engine {
 				friend void swap(RingBufferImpl& first, RingBufferImpl& second) requires IsDynamic {
 					using std::swap;
 					swap(first.data, second.data);
-					swap(first.start, second.start);
-					swap(first.stop, second.stop);
+					swap(first.tail, second.tail);
+					swap(first.head, second.head);
 					swap(first.isEmpty, second.isEmpty);
 				}
+
+				/**
+				 * Gets a pointer to our internal data buffer.
+				 * Keep in mind that only objects in the range [tail, head) are valid.
+				 * @see operator[]
+				 * @see begin()
+				 */
+				ENGINE_INLINE const T* unsafe_dataT() const noexcept { return const_cast<RingBufferImpl*>(this)->dataT(); }
 
 			private:
 				ENGINE_INLINE T* dataT() noexcept {
 					if constexpr (IsStatic) {
-						return reinterpret_cast<T*>(&data);
+						return reinterpret_cast<T*>(&storage);
 					} else {
-						return reinterpret_cast<T*>(data.first);
+						return reinterpret_cast<T*>(storage.first);
 					}
 				}
 
 				void elementAdded() noexcept {
 					ENGINE_DEBUG_ASSERT(!full(), "Element added to full RingBuffer");
-					stop = wrapIndex(++stop);
+					head = wrap(++head);
 					isEmpty = false;
 				}
 
 				void elementRemoved() noexcept {
 					ENGINE_DEBUG_ASSERT(!empty(), "Element removed from empty RingBuffer");
-					start = wrapIndex(++start);
-					isEmpty = start == stop;
+					tail = wrap(++tail);
+					isEmpty = tail == head;
 				}
 
 				ENGINE_INLINE void ensureSpace() const noexcept requires IsStatic {
@@ -251,13 +292,22 @@ namespace Engine {
 
 				ENGINE_INLINE void ensureSpace() requires IsDynamic {
 					if (!full()) { return; }
-					// TODO: should we use a next-pow-2 growth factor for more optimized wrapIndex?
-					reserve(data.second + (data.second / 2)); // 1.5 Growth factor
+					// TODO: should we use a next-pow-2 growth factor for more optimized wrap?
+					reserve(storage.second + (storage.second / 2)); // 1.5 Growth factor
 				}
 				
-				[[nodiscard]] ENGINE_INLINE SizeType wrapIndex(SizeType i) const noexcept {
-					const auto c = capacity();
-					return (i + c) % c;
+				[[nodiscard]] ENGINE_INLINE SizeType wrap(SizeType i) const noexcept {
+					// TODO: rm this check - we used to have a `i+capacity()` here to allow negative indicies. We no longer support that.
+					ENGINE_DEBUG_ASSERT(i < std::numeric_limits<SizeType>::max()/2u, "Negative indicies are not supported.");
+					if constexpr (IsStatic && nextSize(Size) != Size) {
+						return i % capacity();
+					} else {
+						return i & (capacity() - 1);
+					}
+				}
+
+				[[nodiscard]] ENGINE_FLATTEN constexpr static SizeType nextSize(SizeType i) noexcept {
+					return std::bit_ceil(i); // Next pow 2
 				}
 		};
 	}
