@@ -165,20 +165,20 @@ namespace Engine {
 
 				template<class... Args>
 				T& emplace(Args&&... args) {
-					ensureSpace();
+					if (full()) { reserve(capacity() + 1); };
 					new (dataT() + head) T(std::forward<Args>(args)...);
 					elementAdded();
 					return back();
 				}
 
 				void push(const T& obj) {
-					ensureSpace();
+					if (full()) { reserve(capacity() + 1); };
 					new (dataT() + head) T(obj);
 					elementAdded();
 				}
 				
 				void push(T&& obj) {
-					ensureSpace();
+					if (full()) { reserve(capacity() + 1); };
 					new (dataT() + head) T(std::move(obj));
 					elementAdded();
 				}
@@ -213,9 +213,23 @@ namespace Engine {
 					elementRemoved();
 				}
 
+				ENGINE_INLINE_CALLS void remove(SizeType idx) {
+					const auto dat = dataT();
+					if (idx < tail) {
+						ENGINE_DEBUG_ASSERT(head >= idx, "Invalid RingBuffer::remove index.");
+						ENGINE_DEBUG_ASSERT(head <= tail, "Invalid RingBuffer::remove index.");
+						std::destroy(dat + tail, dat + capacity());
+						std::destroy(dat, dat + idx);
+					} else {
+						std::destroy(dat + tail, dat + idx);
+					}
+
+					tail = idx;
+					isEmpty = tail == head;
+				}
+
 				ENGINE_INLINE void clear() {
-					// TODO: probably better to manually split and use ptrs
-					std::destroy(begin(), end());
+					std::destroy(begin(), end()); // TODO (bXIBu9nt): replace with ptr version when mmap  is done.
 					tail = 0;
 					head = 0;
 					isEmpty = true;
@@ -228,16 +242,21 @@ namespace Engine {
 				void reserve(SizeType n) requires IsDynamic {
 					if (capacity() >= n) { return; }
 					n = nextSize(n);
+					ENGINE_WARN("resize: ", n);
 
 					Storage temp = {};
 					temp.first = new Proxy[n];
 					temp.second = n;
 
-					const auto sz = size();
-					std::uninitialized_move(begin(), end(), &temp.first->as());
+					if (head <= tail && !empty()) {
+						std::uninitialized_move(dataT() + tail, dataT() + capacity(), &temp.first->as() + tail);
+						std::uninitialized_move(dataT(), dataT() + head, &temp.first->as() + capacity());
+						head += capacity();
+					} else {
+						std::uninitialized_move(dataT() + tail, dataT() + head, &temp.first->as() + tail);
+					}
 
-					clear();
-					head = sz;
+					std::destroy(begin(), end()); // TODO (bXIBu9nt): replace with ptr version when mmap  is done.
 
 					delete[] storage.first;
 					storage = temp;
@@ -246,6 +265,8 @@ namespace Engine {
 				ENGINE_INLINE void resize(SizeType n) requires IsDynamic {
 					// TODO: this doesnt account for downsizing?
 					reserve(n);
+
+					// TODO: shouldnt we just do a uninitialized_default_construct
 					while (size() < n) { emplace(); }
 				}
 				
@@ -264,6 +285,16 @@ namespace Engine {
 				 * @see begin()
 				 */
 				ENGINE_INLINE const T* unsafe_dataT() const noexcept { return const_cast<RingBufferImpl*>(this)->dataT(); }
+				
+				[[nodiscard]] ENGINE_INLINE SizeType wrap(SizeType i) const noexcept {
+					// TODO: rm this check - we used to have a `i+capacity()` here to allow negative indicies. We no longer support that.
+					ENGINE_DEBUG_ASSERT(i < std::numeric_limits<SizeType>::max()/2u, "Negative indicies are not supported.");
+					if constexpr (IsStatic && nextSize(Size) != Size) {
+						return i % capacity();
+					} else {
+						return i & (capacity() - 1);
+					}
+				}
 
 			private:
 				ENGINE_INLINE T* dataT() noexcept {
@@ -284,26 +315,6 @@ namespace Engine {
 					ENGINE_DEBUG_ASSERT(!empty(), "Element removed from empty RingBuffer");
 					tail = wrap(++tail);
 					isEmpty = tail == head;
-				}
-
-				ENGINE_INLINE void ensureSpace() const noexcept requires IsStatic {
-					ENGINE_DEBUG_ASSERT(!full());
-				}
-
-				ENGINE_INLINE void ensureSpace() requires IsDynamic {
-					if (!full()) { return; }
-					// TODO: should we use a next-pow-2 growth factor for more optimized wrap?
-					reserve(storage.second + (storage.second / 2)); // 1.5 Growth factor
-				}
-				
-				[[nodiscard]] ENGINE_INLINE SizeType wrap(SizeType i) const noexcept {
-					// TODO: rm this check - we used to have a `i+capacity()` here to allow negative indicies. We no longer support that.
-					ENGINE_DEBUG_ASSERT(i < std::numeric_limits<SizeType>::max()/2u, "Negative indicies are not supported.");
-					if constexpr (IsStatic && nextSize(Size) != Size) {
-						return i % capacity();
-					} else {
-						return i & (capacity() - 1);
-					}
 				}
 
 				[[nodiscard]] ENGINE_FLATTEN constexpr static SizeType nextSize(SizeType i) noexcept {

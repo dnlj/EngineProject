@@ -29,19 +29,25 @@ namespace Game::UI {
 			// TOOD: also need to handle the unlikely case where a single line is larger than our charBuff.
 			auto& line = lines.emplace();
 			line.chars.start = static_cast<Index>(charBuff.getHead());
+			line.glyphs.stop = glyphIndex; // Must be set for correct cleanup, even for empty lines.
 			if (a == b) { return; }
 
-			// TODO: this is wrong, we dont wrap index, should be solved when we switch to ring buffer.
 			charBuff.push(a, b);
 			line.chars.stop = static_cast<Index>(charBuff.getHead());
-			ENGINE_DEBUG_ASSERT(charBuff.getHead() < std::numeric_limits<Index>::max(), "Char index is to large to fit in datatype.");
+			ENGINE_DEBUG_ASSERT(charBuff.getHead() < uint64{std::numeric_limits<Index>::max()}, "Char index is to large to fit in datatype.");
 
-			EUI::Bounds bounds;
-			line.glyphs.start = static_cast<Index>(glyphBuff.next());
-			font->shapeString({a, b}, glyphBuff, bounds);
-			line.glyphs.stop = static_cast<Index>(glyphBuff.next());
-			ENGINE_DEBUG_ASSERT(glyphBuff.size() < std::numeric_limits<Index>::max(), "Glyph index is to large to fit in datatype.");
-			ENGINE_LOG("Add ", std::string_view{a,b}, " [", line.chars.start, ", ", line.chars.stop, ") ", glyphBuff.size());
+			{
+				EUI::Bounds _unused_bounds;
+				const auto szA = glyphBuff.size();
+				font->shapeString({a, b}, glyphBuff, _unused_bounds);
+				const auto szB = glyphBuff.size();
+
+				line.glyphs.start = glyphIndex;
+				glyphIndex += szB - szA;
+				line.glyphs.stop = glyphIndex;
+				ENGINE_DEBUG_ASSERT(glyphBuff.size() < uint64{std::numeric_limits<Index>::max()}, "Glyph index is to large to fit in datatype.");
+				ENGINE_DEBUG_ASSERT(charBuff.capacity() < uint64{std::numeric_limits<Index>::max()}, "Char buffer larger than glyph index can support. Will need to change increase size of glyph index.");
+			}
 
 			{ // TODO: we actually should be able to do this after we have pushed all lines? or is there potential problem with overlapping our whole buffer with a single push of multiple lines? idk. ill think about this later. probably just needs extra checks.
 				// Remove old lines that overlap our new buffer
@@ -66,22 +72,12 @@ namespace Game::UI {
 					const bool before = f.chars.start < l.chars.stop;
 					//   (1||2) && (   2    ||   1  )) || (        3       )
 					if ((before && (wrapped || after)) || (wrapped && after)) {
-						ENGINE_WARN("Pop: [", f.glyphs.start, ", ", f.glyphs.stop, ")");
-
-						// TODO: add RingBuffer::remove/pop(n)
-						auto count = (f.glyphs.stop - f.glyphs.start + glyphBuff.capacity()) % glyphBuff.capacity();
-						while (count) {
-							glyphBuff.pop();
-							--count;
-						}
-
+						glyphBuff.remove(glyphBuff.wrap(f.glyphs.stop));
 						lines.pop();
 					} else {
 						break;
 					}
 				}
-
-				ENGINE_WARN("Frt: [", lines.front().chars.start, ", ", lines.front().chars.stop, ")");
 			}
 		};
 
@@ -105,14 +101,16 @@ namespace Game::UI {
 
 		const auto base = glyphBuff.unsafe_dataT();
 		const auto lh = font->getLineHeight();
-		float32 yOff = 25;
+		float32 yOff = 25 + (30 - lines.size())*lh;
 		const auto xOff = 25;
 		for (const auto& line : lines) {
-			if (line.glyphs.stop < line.glyphs.start) {
-				const auto off = ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + line.glyphs.start, base + glyphBuff.capacity()});
-				ctx->drawString(off, {0,1,0,1}, font, {base, base + line.glyphs.stop});
+			const auto start = glyphBuff.wrap(line.glyphs.start);
+			const auto stop = glyphBuff.wrap(line.glyphs.stop);
+			if (stop < start) {
+				const auto off = ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + start, base + glyphBuff.capacity()});
+				ctx->drawString(off, {0,1,0,1}, font, {base, base + stop});
 			} else {
-				ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + line.glyphs.start, base + line.glyphs.stop});
+				ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + start, base + stop});
 			}
 			yOff += lh;
 		}
@@ -134,12 +132,20 @@ namespace Game::UI {
 		textArea->pushText("");
 		textArea->pushText("This is the fifth line.\nThis is the sixth line.");
 		ctx->addPanelUpdateFunc(textArea, [](Panel* self){
+			auto* engine = self->getContext()->getUserdata<EngineInstance>();
+			constexpr static auto lcg = [](auto x){ return x * 6364136223846793005l + 1442695040888963407l; };
+			static auto last = engine->getWorld().getTime();
 			static int i = 0;
-			static auto last = Engine::Clock::now();
+			static uint64 rng = [](auto& i){
+				auto seed = 0b1010011010000101001101011000011010011110010100110100110100101000ull;
+				for (; i < 10'000; ++i) { seed = lcg(seed); }
+				return seed;
+			}(i);
 			auto area = static_cast<TextArea*>(self);
-			const auto now = Engine::Clock::now();
-			if (now - last > std::chrono::milliseconds{400}) {
-				area->pushText("This is line " + std::string(1 + rand()%16, 'A') + " " + std::to_string(++i));
+			const auto now = engine->getWorld().getTime();
+			if (now - last > std::chrono::milliseconds{200}) {
+				rng = lcg(rng);
+				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A'));
 				last = now;
 			}
 		});

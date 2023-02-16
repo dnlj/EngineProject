@@ -42,7 +42,7 @@ namespace Game::UI {
 				head = wrap(head + len2);
 			}
 
-			constexpr static Index capacity() noexcept { return 256; } // 1 << 13
+			constexpr static Index capacity() noexcept { return 512; } // 1 << 13
 			Index getHead() const noexcept { return head; }
 
 		private:
@@ -69,6 +69,7 @@ namespace Game::UI {
 
 			// TODO: should really use RingBuffer for this, but we dont have an insert(first,last) funciton for that yet.
 			Engine::RingBuffer<EUI::ShapeGlyph> glyphBuff;
+			Index glyphIndex = 0;
 			Engine::RingBuffer<Line> lines;
 			EUI::Font font;
 
