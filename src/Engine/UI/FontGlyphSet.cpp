@@ -210,7 +210,8 @@ namespace Engine::UI {
 			const auto gi = glyphIndexToLoadedIndex[info.codepoint];
 			const auto& met = glyphMetrics[gi];
 
-			glyphs[basei + i] = {
+			auto& glyph = glyphs[basei + i];
+			glyph = {
 				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
 				.cluster = info.cluster,
 				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing,
@@ -218,15 +219,14 @@ namespace Engine::UI {
 			};
 
 			{ // Update bounds
-				const auto& back = glyphs.back();
 				const auto& dat = glyphData[gi];
-				const auto min = cursor + back.offset;
+				const auto min = cursor + glyph.offset;
 				const auto max = min + dat.size;
 
 				bounds.min = glm::min(bounds.min, min);
 				bounds.max = glm::max(bounds.max, max);
 
-				cursor += back.advance;
+				cursor += glyph.advance;
 			}
 		}
 	}
