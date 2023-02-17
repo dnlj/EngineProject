@@ -1,15 +1,17 @@
 // Engine
 #include <Engine/Unicode/UTF8.hpp>
+#include <Engine/UI/TextBox.hpp>
+#include <Engine/UI/DirectionalLayout.hpp>
 
 // Game
 #include <Game/UI/ConsoleWindow.hpp>
 
 namespace Game::UI {
-	TextArea::TextArea(EUI::Context* context) : Panel{context} {
+	TextFeed::TextFeed(EUI::Context* context) : Panel{context} {
 		font = ctx->getTheme().fonts.body;
 	}
 
-	void TextArea::pushText(std::string_view txt) {
+	void TextFeed::pushText(std::string_view txt) {
 		auto beg = std::to_address(txt.begin());
 		const auto end = std::to_address(txt.end());
 		auto cur = beg;
@@ -26,17 +28,26 @@ namespace Game::UI {
 		};
 
 		const auto pushLine = [this](auto a, auto b) ENGINE_INLINE_REL {
-			// TOOD: also need to handle the unlikely case where a single line is larger than our charBuff.
+			// Dont overflow our buffer
+			if (b - a > charBuff.capacity()) {
+				a = b - charBuff.capacity();
+			}
+
+			// Setup initial line state, needed for correct cleanup and blank lines.
 			auto& line = lines.emplace();
 			line.chars.start = static_cast<Index>(charBuff.getHead());
+			line.chars.stop = line.chars.start;
+			line.glyphs.start = glyphIndex;
 			line.glyphs.stop = glyphIndex; // Must be set for correct cleanup, even for empty lines.
 			if (a == b) { return; }
 
+			// Add our line to the buffer
 			charBuff.push(a, b);
 			line.chars.stop = static_cast<Index>(charBuff.getHead());
 			ENGINE_DEBUG_ASSERT(charBuff.getHead() < uint64{std::numeric_limits<Index>::max()}, "Char index is to large to fit in datatype.");
 
-			{
+			// Shape glyphs
+			{ 
 				EUI::Bounds _unused_bounds;
 				const auto szA = glyphBuff.size();
 				font->shapeString({a, b}, glyphBuff, _unused_bounds);
@@ -49,38 +60,36 @@ namespace Game::UI {
 				ENGINE_DEBUG_ASSERT(charBuff.capacity() < uint64{std::numeric_limits<Index>::max()}, "Char buffer larger than glyph index can support. Will need to change increase size of glyph index.");
 			}
 
-			{ // TODO: we actually should be able to do this after we have pushed all lines? or is there potential problem with overlapping our whole buffer with a single push of multiple lines? idk. ill think about this later. probably just needs extra checks.
-				// Remove old lines that overlap our new buffer
-				while (lines.size() > 1) {
-					// Any line that overlaps our new line
-					const auto& f = lines.front();
-					const auto& l = line;
+			// Remove old lines that overlap our new buffer
+			while (lines.size() > 1) {
+				const auto& f = lines.front();
+				const auto& l = line;
 
-					////////////////////////////////////////////////////
-					// Visualization of overlap logic.
-					// B = begin (start)         E = end (stop)
-					// Case A = no index wrap    Case B = index wrap 
-					//                             B     E
-					// Case A: [-------------------|-----|-]
-					//                                ^ Area 1
-					//              E                 B
-					// Case B: [----|-----------------|----]
-					//            ^ Area 2               ^ Area 3
-					////////////////////////////////////////////////////
-					const bool wrapped = l.chars.stop < l.chars.start;
-					const bool after = f.chars.start >= l.chars.start;
-					const bool before = f.chars.start < l.chars.stop;
-					//   (1||2) && (   2    ||   1  )) || (        3       )
-					if ((before && (wrapped || after)) || (wrapped && after)) {
-						glyphBuff.remove(glyphBuff.wrap(f.glyphs.stop));
-						lines.pop();
-					} else {
-						break;
-					}
+				////////////////////////////////////////////////////
+				// Visualization of overlap logic.
+				// B = begin (start)         E = end (stop)
+				// Case A = no index wrap    Case B = index wrap 
+				//                             B     E
+				// Case A: [-------------------|-----|-]
+				//                                ^ Area 1
+				//              E                 B
+				// Case B: [----|-----------------|----]
+				//            ^ Area 2               ^ Area 3
+				////////////////////////////////////////////////////
+				const bool wrapped = l.chars.stop < l.chars.start;
+				const bool after = f.chars.start >= l.chars.start;
+				const bool before = f.chars.start < l.chars.stop;
+				// ( (1||2) && (   2    ||   1  )) || (        3       )
+				if ((before && (wrapped || after)) || (wrapped && after)) {
+					glyphBuff.remove(glyphBuff.wrap(f.glyphs.stop));
+					lines.pop();
+				} else {
+					break;
 				}
 			}
 		};
 
+		// Split and append lines
 		while (cur != end) {
 			// TODO: doesnt handle "CR LF". See `Engine::Unicode::UTF32::isNewline`
 			if (isEOL(cur)) {
@@ -96,14 +105,24 @@ namespace Game::UI {
 		pushLine(beg, cur);
 	}
 
-	void TextArea::render() {
-		ctx->drawRect({}, getSize(), {0,0,0,0.5});
+	void TextFeed::render() {
+		// TODO: line wrap or hscroll
 
-		const auto base = glyphBuff.unsafe_dataT();
+		ctx->drawRect({}, getSize(), {0,0,0,0.5});
+		
 		const auto lh = font->getLineHeight();
-		float32 yOff = 25 + (30 - lines.size())*lh;
-		const auto xOff = 25;
-		for (const auto& line : lines) {
+		const int32 maxLines = static_cast<int32>(std::ceil(getHeight() / lh));
+		const int32 sz = static_cast<int32>(lines.size());
+		const int32 upper = sz - 1;
+		const int32 lower = std::max(sz - maxLines, 0);
+
+		float32 yOff = getHeight();
+		const auto xOff = 0;
+		const auto base = glyphBuff.unsafe_dataT();
+		ctx->setClip(getBounds());
+
+		for (int32 i = upper; i >= lower; --i) {
+			auto& line = lines[i];
 			const auto start = glyphBuff.wrap(line.glyphs.start);
 			const auto stop = glyphBuff.wrap(line.glyphs.stop);
 			if (stop < start) {
@@ -112,42 +131,62 @@ namespace Game::UI {
 			} else {
 				ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + start, base + stop});
 			}
-			yOff += lh;
+			yOff -= lh;
 		}
 	};
 }
 
 namespace Game::UI {
 	ConsoleWindow::ConsoleWindow(EUI::Context* context) : Window{context} {
+		const auto& theme = ctx->getTheme();
 		setTitle("Console");
 		setSize({650, 500});
 		setRelPos({512,64+300+8});
 
 		// TODO: can we just add a setContent(p) function? would make sense, instead of creating an extra content panel with a fill layout?
 		//getContent()->setLayout(new EUI::FillLayout{0});
-		textArea = ctx->createPanel<TextArea>(getContent());
-		textArea->setHeight(256);
-		textArea->pushText("This is the first line.\rThis is the second line.\nThis is the third line.");
-		textArea->pushText("This is the fourth line.");
-		textArea->pushText("");
-		textArea->pushText("This is the fifth line.\nThis is the sixth line.");
-		ctx->addPanelUpdateFunc(textArea, [](Panel* self){
-			auto* engine = self->getContext()->getUserdata<EngineInstance>();
-			constexpr static auto lcg = [](auto x){ return x * 6364136223846793005l + 1442695040888963407l; };
-			static auto last = engine->getWorld().getTime();
-			static int i = 0;
-			static uint64 rng = [](auto& i){
-				auto seed = 0b1010011010000101001101011000011010011110010100110100110100101000ull;
-				for (; i < 10'000; ++i) { seed = lcg(seed); }
-				return seed;
-			}(i);
-			auto area = static_cast<TextArea*>(self);
-			const auto now = engine->getWorld().getTime();
-			if (now - last > std::chrono::milliseconds{200}) {
-				rng = lcg(rng);
-				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A'));
-				last = now;
-			}
+		feed = ctx->createPanel<TextFeed>(getContent());
+		feed->setHeight(297);
+		feed->pushText("This is the first line.\rThis is the second line.\nThis is the third line.");
+		feed->pushText("This is the fourth line.");
+		feed->pushText("");
+		feed->pushText("This is the fifth line.\nThis is the sixth line.");
+
+		//ctx->addPanelUpdateFunc(feed, [](Panel* self){
+		//	auto* engine = self->getContext()->getUserdata<EngineInstance>();
+		//	constexpr static auto lcg = [](auto x){ return x * 6364136223846793005l + 1442695040888963407l; };
+		//	static auto last = engine->getWorld().getTime();
+		//	static int i = 0;
+		//	static uint64 rng = [](auto& i){
+		//		auto seed = 0b1010011010000101001101011000011010011110010100110100110100101000ull;
+		//		for (; i < 10'000; ++i) { seed = lcg(seed); }
+		//		return seed;
+		//	}(i);
+		//	auto area = static_cast<TextFeed*>(self);
+		//	const auto now = engine->getWorld().getTime();
+		//	if (now - last > std::chrono::milliseconds{100}) {
+		//		rng = lcg(rng);
+		//		area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A'));
+		//		last = now;
+		//	}
+		//});
+
+		auto input = ctx->constructPanel<EUI::TextBox>();
+		input->autoText("This is a test");
+
+		auto submit = ctx->constructPanel<EUI::Button>();
+		submit->autoText("Submit");
+		submit->lockSize();
+		submit->setAction([input, feed=feed](EUI::Button* self){
+			const auto txt = input->getText();
+			if (txt.size() <= 0) { return; }
+			feed->pushText(txt);
+			input->setText("");
 		});
+
+		auto cont = ctx->createPanel<EUI::PanelT>(getContent());
+		cont->addChildren({input, submit});
+		cont->setAutoSizeHeight(true);
+		cont->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, theme.sizes.pad1});
 	}
 }

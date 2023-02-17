@@ -42,7 +42,7 @@ namespace Game::UI {
 				head = wrap(head + len2);
 			}
 
-			constexpr static Index capacity() noexcept { return 512; } // 1 << 13
+			constexpr static Index capacity() noexcept { return 1024; } // 1 << 13
 			Index getHead() const noexcept { return head; }
 
 		private:
@@ -51,7 +51,7 @@ namespace Game::UI {
 			}
 	};
 
-	class TextArea : public EUI::Panel {
+	class TextFeed : public EUI::Panel {
 		private:
 			using Index = uint16;
 
@@ -74,7 +74,7 @@ namespace Game::UI {
 			EUI::Font font;
 
 		public:
-			TextArea(EUI::Context* context);
+			TextFeed(EUI::Context* context);
 			void pushText(std::string_view txt);
 
 			void render() override;
@@ -85,7 +85,7 @@ namespace Game::UI {
 
 	class ConsoleWindow : public EUI::Window {
 		private:
-			TextArea* textArea;
+			TextFeed* feed;
 
 		public:
 			ConsoleWindow(EUI::Context* context);
