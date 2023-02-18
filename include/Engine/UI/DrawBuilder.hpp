@@ -23,7 +23,9 @@ namespace Engine::UI {
 			struct PolyVertex {
 				glm::vec2 pos;
 				glm::u16vec2 texCoord;
-				glm::u8vec4 color;
+				glm::u8vec4 color; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
+				//glm::u8 layer; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
+				//char _unused[3];
 			}; static_assert(sizeof(PolyVertex) == 8+4+4);
 
 			struct GlyphDrawGroup {

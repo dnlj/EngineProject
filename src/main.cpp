@@ -883,10 +883,10 @@ void run(int argc, char* argv[]) {
 
 		// Don't eat all our GPU and cause our system to prepare for takeoff.
 		// Sleep is very inprecise (~15ms resolution), so instead busy wait with a yield.
-		constexpr auto targetFrameTime = std::chrono::microseconds{9'000}; // TODO: should probably be a setting/cmd line/cfg/console option.
-		while (std::chrono::high_resolution_clock::now() - tstart < targetFrameTime) {
-			std::this_thread::yield();
-		}
+		//constexpr auto targetFrameTime = std::chrono::microseconds{9'000}; // TODO: should probably be a setting/cmd line/cfg/console option.
+		//while (std::chrono::high_resolution_clock::now() - tstart < targetFrameTime) {
+		//	std::this_thread::yield();
+		//}
 	}
 }
 

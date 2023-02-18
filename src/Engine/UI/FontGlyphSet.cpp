@@ -81,6 +81,10 @@ namespace Engine::UI {
 		indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxGlyphSize);
 		
 		glyphTex.setStorage(Gfx::TextureFormat::R8, {texSize, texSize});
+		{ // TODO: move into the Texture class
+			const GLint swizzle[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
+			glTextureParameteriv(glyphTex.get(), GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+		}
 
 		glCreateBuffers(1, &glyphSSBO);
 	}

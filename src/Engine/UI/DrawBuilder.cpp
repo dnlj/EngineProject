@@ -175,7 +175,7 @@ namespace Engine::UI {
 			}
 
 			// Draw glyphs
-			if (currGlyphGroup != lastGlyphGroup && currGlyphGroup->zindex == z) {
+			/*if (currGlyphGroup != lastGlyphGroup && currGlyphGroup->zindex == z) {
 				glBindVertexArray(glyphVAO);
 				glUseProgram(glyphShader->get());
 				Font activeFont = nullptr;
@@ -196,7 +196,7 @@ namespace Engine::UI {
 					++currGlyphGroup;
 					++z;
 				} while (currGlyphGroup != lastGlyphGroup && currGlyphGroup->zindex == z);
-			}
+			}*/
 		}
 	}
 
@@ -337,20 +337,43 @@ namespace Engine::UI {
 		// or have nextDrawGroupGlyph take a font as param. Passing through member is strange with the current configuration.
 		// Maybe that would be best to have properties like color and font set on the object with setColor/setFont.
 		// then we have drawString(pos,glyphs). with the current version just being shorthand for that.
-		this->font = font; 
-		pos += drawOffset;
-		nextDrawGroupGlyph();
+		//this->font = font; 
+		//pos += drawOffset;
+		//nextDrawGroupGlyph();
+
+		const auto& glyphData = font->_debug_getGlyphData();
+		const auto old = activeTexture;
+		activeTexture = font->getGlyphTexture();
+		nextDrawGroupPoly();
+		// TODO: rm ENGINE_LOG("String Texture: ", activeTexture.get(), " ", font->getGlyphTexture().get());
 
 		for (const auto& data : glyphs) {
 			const uint32 index = font->getGlyphIndex(data.index);
-			glyphVertexData.push_back({
-				.pos = glm::round(pos + data.offset),
-				.color = color * 255.0f,
-				.index = index,
-			});
+			const glm::vec2 offset = glyphData[index].offset / 4096.0f;
+			auto size = glyphData[index].size;
+			const auto uvsize = size / 4096.0f;
+			const auto base = static_cast<uint32>(polyVertexData.size()); // TODO: should be able to just check once then do += 4
+			size.y = size.y;
+
+			//glyphVertexData.push_back({
+			//	.pos = glm::round(pos + data.offset),
+			//	.color = color * 255.0f,
+			//	.index = index,
+			//});
+
+			const auto p = glm::round(pos + data.offset); // I think this should technically also include the size offset per vert. In practice it does not make a difference (in any tests i have done) and this is faster.
+			drawVertex(p, offset, color);
+			drawVertex(p + glm::vec2{0, size.y}, offset + glm::vec2{0, uvsize.y}, color);
+			drawVertex(p + size, offset + uvsize, color);
+			drawVertex(p + glm::vec2{size.x, 0}, offset + glm::vec2{uvsize.x, 0}, color);
+
+			addPolyElements(base, base+1, base+2);
+			addPolyElements(base+2, base+3, base);
+
 			pos += data.advance;
 		}
 
+		activeTexture = old;
 		return pos - drawOffset;
 	}
 };

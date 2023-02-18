@@ -146,30 +146,32 @@ namespace Game::UI {
 		// TODO: can we just add a setContent(p) function? would make sense, instead of creating an extra content panel with a fill layout?
 		//getContent()->setLayout(new EUI::FillLayout{0});
 		feed = ctx->createPanel<TextFeed>(getContent());
-		feed->setHeight(297);
+		feed->setHeight(400);
 		feed->pushText("This is the first line.\rThis is the second line.\nThis is the third line.");
 		feed->pushText("This is the fourth line.");
 		feed->pushText("");
 		feed->pushText("This is the fifth line.\nThis is the sixth line.");
 
-		//ctx->addPanelUpdateFunc(feed, [](Panel* self){
-		//	auto* engine = self->getContext()->getUserdata<EngineInstance>();
-		//	constexpr static auto lcg = [](auto x){ return x * 6364136223846793005l + 1442695040888963407l; };
-		//	static auto last = engine->getWorld().getTime();
-		//	static int i = 0;
-		//	static uint64 rng = [](auto& i){
-		//		auto seed = 0b1010011010000101001101011000011010011110010100110100110100101000ull;
-		//		for (; i < 10'000; ++i) { seed = lcg(seed); }
-		//		return seed;
-		//	}(i);
-		//	auto area = static_cast<TextFeed*>(self);
-		//	const auto now = engine->getWorld().getTime();
-		//	if (now - last > std::chrono::milliseconds{100}) {
-		//		rng = lcg(rng);
-		//		area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A'));
-		//		last = now;
-		//	}
-		//});
+		ctx->addPanelUpdateFunc(feed, [](Panel* self){
+			auto* engine = self->getContext()->getUserdata<EngineInstance>();
+			constexpr static auto lcg = [](auto x){ return x * 6364136223846793005l + 1442695040888963407l; };
+			static auto last = engine->getWorld().getTime();
+			static int i = 0;
+			static uint64 rng = [](auto& i){
+				auto seed = 0b1010011010000101001101011000011010011110010100110100110100101000ull;
+				for (; i < 10'000; ++i) { seed = lcg(seed); }
+				return seed;
+			}(i);
+			auto area = static_cast<TextFeed*>(self);
+			const auto now = engine->getWorld().getTime();
+			if (now - last > std::chrono::milliseconds{0}) {
+				rng = lcg(rng);
+				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A'));
+				last = now;
+			}
+
+			//if (i == 10'100) { self->getContext()->clearPanelUpdateFuncs(self); }
+		});
 
 		auto input = ctx->constructPanel<EUI::TextBox>();
 		input->autoText("This is a test");

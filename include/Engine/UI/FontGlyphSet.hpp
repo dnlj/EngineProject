@@ -90,6 +90,8 @@ namespace Engine::UI {
 
 			ENGINE_INLINE const auto& getGlyphTexture() const noexcept { return glyphTex; }
 
+			ENGINE_INLINE const auto& _debug_getGlyphData() const noexcept { return glyphData; } // TODO: just merge glyphData and metrics? or what?
+
 			ENGINE_INLINE const auto& getGlyphDataBuffer() const noexcept { return glyphSSBO; }
 
 			ENGINE_INLINE auto getGlyphIndex(uint32 glyph) { return glyphIndexToLoadedIndex[glyph]; }

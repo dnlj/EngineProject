@@ -42,7 +42,7 @@ namespace Game::UI {
 				head = wrap(head + len2);
 			}
 
-			constexpr static Index capacity() noexcept { return 1024; } // 1 << 13
+			constexpr static Index capacity() noexcept { return 2048; } // 1 << 13
 			Index getHead() const noexcept { return head; }
 
 		private:
