@@ -71,9 +71,9 @@ namespace Engine::UI {
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
 
-			//Gfx::Texture2D glyphTex; // TODO: handle better
-			public: int glyphTexLayer = 0; private: // TODO: rm - should be handled by some kind of layer allocater
-			Gfx::Texture2DArray* glyphTex; // TODO: handle better
+			Gfx::Texture2D glyphTex; // TODO: handle better
+			//public: int glyphTexLayer = 0; private: // TODO: rm - should be handled by some kind of layer allocater
+			//Gfx::Texture2DArray* glyphTex; // TODO: handle better
 			glm::vec2 maxGlyphSize;
 			glm::ivec2 indexBounds;
 			int nextGlyphIndex = 0; // TODO: glyph index recycling

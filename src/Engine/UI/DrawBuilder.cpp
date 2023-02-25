@@ -77,8 +77,8 @@ namespace Engine::UI {
 			_temp_all.setSubImage(0, {}, {4096, 4096, 1}, white);
 		}
 
-		//activeTexture = defaultTexture;
-		activeTexture = _temp_all;
+		activeTexture = defaultTexture;
+		//activeTexture = _temp_all;
 		reset();
 	}
 
@@ -304,10 +304,10 @@ namespace Engine::UI {
 	}
 
 	void DrawBuilder::drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
-		const auto old = activeTexture;
-		activeTexture = tex;
-		drawRect(pos, size, {1,1,1,1});
-		activeTexture = old;
+		//const auto old = activeTexture;
+		//activeTexture = tex;
+		//drawRect(pos, size, {1,1,1,1});
+		//activeTexture = old;
 	}
 
 	void DrawBuilder::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {
@@ -371,8 +371,8 @@ namespace Engine::UI {
 
 		const auto& glyphData = font->_debug_getGlyphData();
 		const auto old = activeTexture;
-		activeTexture = *font->getGlyphTexture();
-		const auto layer = font->glyphTexLayer;
+		activeTexture = font->getGlyphTexture();
+		//const auto layer = font->glyphTexLayer;
 		nextDrawGroupPoly();
 		// TODO: rm ENGINE_LOG("String Texture: ", activeTexture.get(), " ", font->getGlyphTexture().get());
 
@@ -395,7 +395,7 @@ namespace Engine::UI {
 			const auto rect = clipStack.back().intersect({p, p+size});
 			if (rect.max.x <= rect.min.x || rect.max.y <= rect.min.y) { continue; }
 
-			//int layer = 0;
+			int layer = 0;
 			drawVertex2(rect.min, offset, color, layer);
 			drawVertex2({rect.min.x, rect.max.y}, offset + glm::vec2{0, uvsize.y}, color, layer);
 			drawVertex2(rect.max, offset + uvsize, color, layer);

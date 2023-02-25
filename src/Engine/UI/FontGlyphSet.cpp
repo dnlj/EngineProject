@@ -128,18 +128,18 @@ namespace Engine::UI {
 			//
 			//
 			//
-			static int layer = 0;
-			glyphTexLayer = ++layer;
-			glyphTex = &DrawBuilder::_temp_all;
+			//static int layer = 0;
+			//glyphTexLayer = ++layer;
+			//glyphTex = &DrawBuilder::_temp_all;
 			//glyphTex->setSubImage(0, {0,0,1}, {4096, 4096, 1},);
 		}
 
 		// TODO: rm
-		//glyphTex.setStorage(Gfx::TextureFormat::R8, {texSize, texSize});
-		//{ // TODO: move into the Texture class
-		//	const GLint swizzle[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
-		//	glTextureParameteriv(glyphTex.get(), GL_TEXTURE_SWIZZLE_RGBA, swizzle);
-		//}
+		glyphTex.setStorage(Gfx::TextureFormat::R8, {texSize, texSize});
+		{ // TODO: move into the Texture class
+			const GLint swizzle[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
+			glTextureParameteriv(glyphTex.get(), GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+		}
 
 		glCreateBuffers(1, &glyphSSBO);
 	}
@@ -169,29 +169,28 @@ namespace Engine::UI {
 				met.index % indexBounds.x,
 				met.index / indexBounds.x,
 			};
-			//dat.offset = glm::vec3{i * maxGlyphSize, 0};
-			dat.offset = glm::vec3{i * maxGlyphSize, glyphTexLayer};
+			dat.offset = glm::vec3{i * maxGlyphSize, 0};
+			//dat.offset = glm::vec3{i * maxGlyphSize, glyphTexLayer};
 
 			ENGINE_DEBUG_ASSERT(i.y < indexBounds.y, "Glyph texture index is out of bounds. Should rollover to next texture layer in array.");
 
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			//glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
-			// TODO: rm - glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
-			// TODO: rm - glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
-			std::vector<byte> temp; // TODO: do this better
-			temp.reserve(glyph.bitmap.rows * abs(glyph.bitmap.pitch));
-			
-			for (uint64 row = 0; row < glyph.bitmap.rows; ++row) {
-				for (uint64 col = 0; col < glyph.bitmap.width; ++col) {
-					temp.push_back(255);
-					temp.push_back(255);
-					temp.push_back(255);
-					temp.push_back(glyph.bitmap.buffer[row * glyph.bitmap.pitch + col]);
-				}
-			}
-
+			glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
+			//// TODO: rm - glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
+			//// TODO: rm - glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
+			//std::vector<byte> temp; // TODO: do this better
+			//temp.reserve(glyph.bitmap.rows * abs(glyph.bitmap.pitch));
+			//
+			//for (uint64 row = 0; row < glyph.bitmap.rows; ++row) {
+			//	for (uint64 col = 0; col < glyph.bitmap.width; ++col) {
+			//		temp.push_back(255);
+			//		temp.push_back(255);
+			//		temp.push_back(255);
+			//		temp.push_back(glyph.bitmap.buffer[row * glyph.bitmap.pitch + col]);
+			//	}
+			//}
+			//glyphTex->setSubImage(0, dat.offset, glm::vec3{dat.size, 1}, Gfx::PixelFormat::RGBA8, temp.data());
 			//glyphTex->setSubImage(0, dat.offset, glm::vec3{dat.size, 1}, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
-			glyphTex->setSubImage(0, dat.offset, glm::vec3{dat.size, 1}, Gfx::PixelFormat::RGBA8, temp.data());
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 		}
 
