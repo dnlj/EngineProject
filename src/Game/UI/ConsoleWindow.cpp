@@ -146,7 +146,7 @@ namespace Game::UI {
 		// TODO: can we just add a setContent(p) function? would make sense, instead of creating an extra content panel with a fill layout?
 		//getContent()->setLayout(new EUI::FillLayout{0});
 		feed = ctx->createPanel<TextFeed>(getContent());
-		feed->setHeight(400);
+		feed->setHeight(395);
 		feed->pushText("This is the first line.\rThis is the second line.\nThis is the third line.");
 		feed->pushText("This is the fourth line.");
 		feed->pushText("");
@@ -164,13 +164,13 @@ namespace Game::UI {
 			}(i);
 			auto area = static_cast<TextFeed*>(self);
 			const auto now = engine->getWorld().getTime();
-			if (now - last > std::chrono::milliseconds{0}) {
+			if (now - last > std::chrono::milliseconds{00}) {
 				rng = lcg(rng);
 				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A'));
 				last = now;
 			}
 
-			//if (i == 10'100) { self->getContext()->clearPanelUpdateFuncs(self); }
+			if (i == 10'100) { self->getContext()->clearPanelUpdateFuncs(self); }
 		});
 
 		auto input = ctx->constructPanel<EUI::TextBox>();

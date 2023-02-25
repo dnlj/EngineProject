@@ -20,6 +20,7 @@ namespace Engine::Gfx {
 			ENGINE_INLINE explicit TextureHandle(uint32 h) noexcept : handle{h} {}
 			ENGINE_INLINE auto get() const noexcept { return handle; }
 			ENGINE_INLINE auto operator<=>(const TextureHandle&) const noexcept = default;
+			ENGINE_INLINE operator TextureHandle<0, TextureType::Unknown>() { return TextureHandle<0, TextureType::Unknown>{handle}; }
 	};
 
 	using TextureHandleGeneric = TextureHandle<0, TextureType::Unknown>;

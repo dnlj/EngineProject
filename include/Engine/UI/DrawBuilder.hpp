@@ -16,17 +16,17 @@ namespace Engine::UI {
 				int32 zindex = {};
 				int32 offset = {};
 				int32 count = {};
-				Bounds clip = {};
-				Gfx::TextureHandle2D tex = {};
+				//Bounds clip = {}; // TODO: rm - this shouldnt be needed anymore
+				Gfx::TextureHandleGeneric tex = {};
 			};
 
 			struct PolyVertex {
 				glm::vec2 pos;
 				glm::u16vec2 texCoord;
 				glm::u8vec4 color; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
-				//glm::u8 layer; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
-				//char _unused[3];
-			}; static_assert(sizeof(PolyVertex) == 8+4+4);
+				glm::u8 layer; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
+				char _unused[3];
+			}; static_assert(sizeof(PolyVertex) == 8+4+4 +4);
 
 			struct GlyphDrawGroup {
 				int32 zindex = {};
@@ -65,11 +65,15 @@ namespace Engine::UI {
 
 			/* Render state */
 			std::vector<Bounds> clipStack;
-			Gfx::TextureHandle2D activeTexture;
+			Gfx::TextureHandleGeneric activeTexture;
 			Gfx::Texture2D defaultTexture; /** Default blank (white) texture */
 			Font font = nullptr;
 			int32 zindex = -1;
 			glm::vec2 view = {};
+
+		public:
+			// TODO: rename - defaultTexture
+			static inline Gfx::Texture2DArray _temp_all;  // TODO: make an actual system to alloc/manage these. this is just for proof of concept.
 			
 		public: // TODO: private
 			glm::vec2 drawOffset; /* The offset to use for rendering */
@@ -125,11 +129,22 @@ namespace Engine::UI {
 
 
 		private:
+			// TODO: add something to push multipler verts ine one resize+idx
 			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {
 				polyVertexData.push_back({
 					.pos = pos + drawOffset,
 					.texCoord = texCoord * 65535.0f,
 					.color = color * 255.0f,
+				});
+			}
+
+			// TODO: rm - merge with above
+			void drawVertex2(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}, uint8 layer = 0) {
+				polyVertexData.push_back({
+					.pos = pos,
+					.texCoord = texCoord * 65535.0f,
+					.color = color * 255.0f,
+					.layer = layer,
 				});
 			}
 

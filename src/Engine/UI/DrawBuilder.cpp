@@ -34,6 +34,10 @@ namespace Engine::UI {
 			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
 			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
 			glVertexArrayAttribFormat(polyVAO, attribLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(PolyVertex, color));
+			
+			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
+			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_UNSIGNED_BYTE, GL_FALSE, offsetof(PolyVertex, layer));
 		}
 
 		{
@@ -60,13 +64,21 @@ namespace Engine::UI {
 
 		{
 			using namespace Gfx;
+
+			// TODO: rm -
 			Image img{PixelFormat::RGB8, {1,1}};
 			memset(img.data(), 0xFF, img.sizeBytes());
 			defaultTexture.setStorage(TextureFormat::RGB8, img.size());
 			defaultTexture.setImage(img);
+
+			Image white{PixelFormat::RGBA8, {4096, 4096}};
+			memset(white.data(), 0xFF, white.sizeBytes());
+			_temp_all.setStorage(TextureFormat::RGBA8, {4096, 4096, 3});
+			_temp_all.setSubImage(0, {}, {4096, 4096, 1}, white);
 		}
 
-		activeTexture = defaultTexture;
+		//activeTexture = defaultTexture;
+		activeTexture = _temp_all;
 		reset();
 	}
 
@@ -100,6 +112,8 @@ namespace Engine::UI {
 	}
 
 	void DrawBuilder::draw() {
+		glDisable(GL_SCISSOR_TEST); // TODO: rm - just remove the enable from gui context
+
 		// Update font buffers
 		fontManager2.updateAllFontDataBuffers();
 
@@ -133,13 +147,13 @@ namespace Engine::UI {
 			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
 		}
 
-		const auto scissor = [](const Bounds& bounds, float32 y) ENGINE_INLINE {
-			glScissor(
-				static_cast<int32>(bounds.min.x),
-				static_cast<int32>(y - bounds.max.y),
-				static_cast<int32>(bounds.getWidth()),
-				static_cast<int32>(bounds.getHeight())
-			);
+		const auto scissor = [](const Bounds& bounds, float32 y) ENGINE_INLINE { // TODO: rm
+			//glScissor(
+			//	static_cast<int32>(bounds.min.x),
+			//	static_cast<int32>(y - bounds.max.y),
+			//	static_cast<int32>(bounds.getWidth()),
+			//	static_cast<int32>(bounds.getHeight())
+			//);
 		};
 
 		auto currPolyGroup = polyDrawGroups.begin();
@@ -152,17 +166,16 @@ namespace Engine::UI {
 			if (currPolyGroup != lastPolyGroup && currPolyGroup->zindex == z) {
 				glBindVertexArray(polyVAO);
 				glUseProgram(polyShader->get());
-				Gfx::TextureHandle2D activeTex = {};
+				Gfx::TextureHandleGeneric activeTex = {};
 
 				do {
-					ENGINE_DEBUG_ASSERT(currPolyGroup->count != 0, "Empty draw group. This group should have been skipped/removed already.");
+					// TODO: re-enable: ENGINE_DEBUG_ASSERT(currPolyGroup->count != 0, "Empty draw group. This group should have been skipped/removed already.");
 
 					if (currPolyGroup->tex != activeTex) {
 						activeTex = currPolyGroup->tex;
 						glBindTextureUnit(0, activeTex.get());
 					}
 
-					scissor(currPolyGroup->clip, view.y);
 					glDrawElements(GL_TRIANGLES,
 						currPolyGroup->count,
 						sizeof(polyElementData[0]) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
@@ -227,7 +240,7 @@ namespace Engine::UI {
 		const auto setup = [&](PolyDrawGroup& group) ENGINE_INLINE {
 			group.zindex = zindex;
 			group.offset = sz;
-			group.clip = clipStack.back();
+			// TODO: rm - group.clip = clipStack.back();
 			group.tex = activeTexture;
 		};
 		
@@ -235,7 +248,7 @@ namespace Engine::UI {
 		if (prev.count == 0) {
 			setup(prev);
 		} else if (prev.zindex != zindex
-			|| prev.clip != clipStack.back()
+			/*|| prev.clip != clipStack.back()*/ // TODO: rm -
 			|| prev.tex != activeTexture) {
 			++zindex;
 			setup(polyDrawGroups.emplace_back());
@@ -313,12 +326,27 @@ namespace Engine::UI {
 	}
 
 	void DrawBuilder::drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
+		const auto pvdSz = polyVertexData.size();
+		auto base = static_cast<uint32>(pvdSz);
+
+		// TODO: need to include drawOffset here;
+
+		pos += drawOffset;
+
+		ENGINE_DEBUG_ASSERT(clipStack.size() > 0);
+		const auto rect = clipStack.back().intersect({pos, pos+size});
+		if (rect.max.x <= rect.min.x || rect.max.y <= rect.min.y) { return; }
+
 		nextDrawGroupPoly();
-		auto base = static_cast<uint32>(polyVertexData.size());
-		drawVertex(pos, {0,1}, color);
-		drawVertex(pos + glm::vec2{0, size.y}, {0,0}, color);
-		drawVertex(pos + size, {1,0}, color);
-		drawVertex(pos + glm::vec2{size.x, 0}, {1,1}, color);
+		drawVertex2(rect.min, {0,1}, color);
+		drawVertex2({rect.min.x, rect.max.y}, {0,0}, color);
+		drawVertex2(rect.max, {1,0}, color);
+		drawVertex2({rect.max.x, rect.min.y}, {1,1}, color);
+		
+		//drawVertex2(pos, {0,1}, color);
+		//drawVertex2(pos + glm::vec2{0, size.y}, {0,0}, color);
+		//drawVertex2(pos + size, {1,0}, color);
+		//drawVertex2(pos + glm::vec2{size.x, 0}, {1,1}, color);
 		addPolyElements(base, base+1, base+2);
 		addPolyElements(base+2, base+3, base);
 	}
@@ -343,11 +371,12 @@ namespace Engine::UI {
 
 		const auto& glyphData = font->_debug_getGlyphData();
 		const auto old = activeTexture;
-		activeTexture = font->getGlyphTexture();
+		activeTexture = *font->getGlyphTexture();
+		const auto layer = font->glyphTexLayer;
 		nextDrawGroupPoly();
 		// TODO: rm ENGINE_LOG("String Texture: ", activeTexture.get(), " ", font->getGlyphTexture().get());
 
-		for (const auto& data : glyphs) {
+		for (const auto& data : glyphs) ENGINE_INLINE_CALLS {
 			const uint32 index = font->getGlyphIndex(data.index);
 			const glm::vec2 offset = glyphData[index].offset / 4096.0f;
 			auto size = glyphData[index].size;
@@ -361,11 +390,21 @@ namespace Engine::UI {
 			//	.index = index,
 			//});
 
-			const auto p = glm::round(pos + data.offset); // I think this should technically also include the size offset per vert. In practice it does not make a difference (in any tests i have done) and this is faster.
-			drawVertex(p, offset, color);
-			drawVertex(p + glm::vec2{0, size.y}, offset + glm::vec2{0, uvsize.y}, color);
-			drawVertex(p + size, offset + uvsize, color);
-			drawVertex(p + glm::vec2{size.x, 0}, offset + glm::vec2{uvsize.x, 0}, color);
+			const auto p = glm::round(pos + data.offset + drawOffset); // I think this should technically also include the size offset per vert. In practice it does not make a difference (in any tests i have done) and this is faster.
+			ENGINE_DEBUG_ASSERT(clipStack.size() > 0);
+			const auto rect = clipStack.back().intersect({p, p+size});
+			if (rect.max.x <= rect.min.x || rect.max.y <= rect.min.y) { continue; }
+
+			//int layer = 0;
+			drawVertex2(rect.min, offset, color, layer);
+			drawVertex2({rect.min.x, rect.max.y}, offset + glm::vec2{0, uvsize.y}, color, layer);
+			drawVertex2(rect.max, offset + uvsize, color, layer);
+			drawVertex2({rect.max.x, rect.min.y}, offset + glm::vec2{uvsize.x, 0}, color, layer);
+			 
+			//drawVertex(p, offset, color);
+			//drawVertex(p + glm::vec2{0, size.y}, offset + glm::vec2{0, uvsize.y}, color);
+			//drawVertex(p + size, offset + uvsize, color);
+			//drawVertex(p + glm::vec2{size.x, 0}, offset + glm::vec2{uvsize.x, 0}, color);
 
 			addPolyElements(base, base+1, base+2);
 			addPolyElements(base+2, base+3, base);
