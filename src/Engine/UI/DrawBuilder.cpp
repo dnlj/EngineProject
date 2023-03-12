@@ -6,9 +6,9 @@
 namespace Engine::UI {
 	DrawBuilder::DrawBuilder(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader) {
 		polyShader = shaderLoader.get("shaders/gui_poly");
-		glyphShader = shaderLoader.get("shaders/gui_glyph");
+		// TODO: rm - glyphShader = shaderLoader.get("shaders/gui_glyph");
 
-		glProgramUniform1i(glyphShader->get(), 1, 0);
+		// TODO: rm - glProgramUniform1i(glyphShader->get(), 1, 0);
 		glProgramUniform1i(polyShader->get(), 1, 0);
 
 		{
@@ -40,27 +40,28 @@ namespace Engine::UI {
 			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_UNSIGNED_BYTE, GL_FALSE, offsetof(PolyVertex, layer));
 		}
 
-		{
-			constexpr static GLuint bindingIndex = 0;
-			GLuint attribLocation = -1;
-
-			glCreateBuffers(1, &glyphVBO);
-
-			glCreateVertexArrays(1, &glyphVAO);
-			glVertexArrayVertexBuffer(glyphVAO, bindingIndex, glyphVBO, 0, sizeof(GlyphVertex));
-
-			glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
-			glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(glyphVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
-
-			glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
-			glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(glyphVAO, attribLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(GlyphVertex, color));
-
-			glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
-			glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribIFormat(glyphVAO, attribLocation, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
-		}
+		// TODO: rm
+		//{
+		//	constexpr static GLuint bindingIndex = 0;
+		//	GLuint attribLocation = -1;
+		//
+		//	glCreateBuffers(1, &glyphVBO);
+		//
+		//	glCreateVertexArrays(1, &glyphVAO);
+		//	glVertexArrayVertexBuffer(glyphVAO, bindingIndex, glyphVBO, 0, sizeof(GlyphVertex));
+		//
+		//	glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
+		//	glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
+		//	glVertexArrayAttribFormat(glyphVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
+		//
+		//	glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
+		//	glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
+		//	glVertexArrayAttribFormat(glyphVAO, attribLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(GlyphVertex, color));
+		//
+		//	glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
+		//	glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
+		//	glVertexArrayAttribIFormat(glyphVAO, attribLocation, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
+		//}
 
 		{
 			using namespace Gfx;
@@ -87,15 +88,15 @@ namespace Engine::UI {
 		glDeleteBuffers(1, &polyEBO);
 		glDeleteBuffers(1, &polyVBO);
 
-		glDeleteVertexArrays(1, &glyphVAO);
-		glDeleteBuffers(1, &glyphVBO);
+		// TODO: rm - glDeleteVertexArrays(1, &glyphVAO);
+		// TODO: rm - glDeleteBuffers(1, &glyphVBO);
 	}
 
 	void DrawBuilder::resize(glm::vec2 viewport) {
 		view = viewport;
 		const auto view2 = 2.0f / view;
 		glProgramUniform2fv(polyShader->get(), 0, 1, &view2.x);
-		glProgramUniform2fv(glyphShader->get(), 0, 1, &view2.x);
+		// TODO: rm - glProgramUniform2fv(glyphShader->get(), 0, 1, &view2.x);
 	}
 
 	void DrawBuilder::finish() {
@@ -104,9 +105,10 @@ namespace Engine::UI {
 			last->count = static_cast<int32>(polyElementData.size()) - last->offset;
 		}
 
-		if (auto last = glyphDrawGroups.rbegin(); last != glyphDrawGroups.rend()) {
-			last->count = static_cast<int32>(glyphVertexData.size()) - last->offset;
-		}
+		// TODO: rm
+		//if (auto last = glyphDrawGroups.rbegin(); last != glyphDrawGroups.rend()) {
+		//	last->count = static_cast<int32>(glyphVertexData.size()) - last->offset;
+		//}
 
 		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
 	}
@@ -137,15 +139,16 @@ namespace Engine::UI {
 			}
 		}
 
-		// Update glyph vertex buffer
-		if (const auto count = glyphVertexData.size()) {
-			const GLsizei newSize = static_cast<GLsizei>(count * sizeof(GlyphVertex));
-			if (newSize > glyphVBOCapacity) {
-				glyphVBOCapacity = static_cast<GLsizei>(glyphVertexData.capacity() * sizeof(glyphVertexData[0]));
-				glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-			}
-			glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
-		}
+		// TODO: rm
+		//// Update glyph vertex buffer
+		//if (const auto count = glyphVertexData.size()) {
+		//	const GLsizei newSize = static_cast<GLsizei>(count * sizeof(GlyphVertex));
+		//	if (newSize > glyphVBOCapacity) {
+		//		glyphVBOCapacity = static_cast<GLsizei>(glyphVertexData.capacity() * sizeof(glyphVertexData[0]));
+		//		glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+		//	}
+		//	glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
+		//}
 
 		const auto scissor = [](const Bounds& bounds, float32 y) ENGINE_INLINE { // TODO: rm
 			//glScissor(
@@ -158,8 +161,10 @@ namespace Engine::UI {
 
 		auto currPolyGroup = polyDrawGroups.begin();
 		const auto lastPolyGroup = polyDrawGroups.end();
-		auto currGlyphGroup = glyphDrawGroups.begin();
-		const auto lastGlyphGroup = glyphDrawGroups.end();
+
+		// TODO: rm
+		//auto currGlyphGroup = glyphDrawGroups.begin();
+		//const auto lastGlyphGroup = glyphDrawGroups.end();
 
 		for (int32 z = 0; z <= zindex;) {
 			// Draw polys
@@ -223,8 +228,9 @@ namespace Engine::UI {
 		polyVertexData.clear();
 		polyDrawGroups.clear();
 
-		glyphVertexData.clear();
-		glyphDrawGroups.clear();
+		// TODO: rm
+		//glyphVertexData.clear();
+		//glyphDrawGroups.clear();
 	}
 
 	void DrawBuilder::nextDrawGroupPoly() {
@@ -256,7 +262,9 @@ namespace Engine::UI {
 			// No group change needed, extend the previous group
 		}
 	}
-	
+
+	// TODO: rm
+	/*
 	void DrawBuilder::nextDrawGroupGlyph() {
 		if (glyphDrawGroups.empty()) {
 			++zindex;
@@ -286,7 +294,7 @@ namespace Engine::UI {
 		} else {
 			// No group change needed, extend the previous group
 		}
-	}
+	}*/
 
 	void DrawBuilder::pushClip() {
 		clipStack.push_back(clipStack.back());
@@ -304,10 +312,10 @@ namespace Engine::UI {
 	}
 
 	void DrawBuilder::drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
-		//const auto old = activeTexture;
-		//activeTexture = tex;
-		//drawRect(pos, size, {1,1,1,1});
-		//activeTexture = old;
+		const auto old = activeTexture;
+		activeTexture = tex;
+		drawRect(pos, size, {1,1,1,1});
+		activeTexture = old;
 	}
 
 	void DrawBuilder::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {
@@ -384,23 +392,44 @@ namespace Engine::UI {
 			const auto base = static_cast<uint32>(polyVertexData.size()); // TODO: should be able to just check once then do += 4
 			size.y = size.y;
 
-			//glyphVertexData.push_back({
-			//	.pos = glm::round(pos + data.offset),
-			//	.color = color * 255.0f,
-			//	.index = index,
-			//});
-
 			const auto p = glm::round(pos + data.offset + drawOffset); // I think this should technically also include the size offset per vert. In practice it does not make a difference (in any tests i have done) and this is faster.
+			pos += data.advance;
 			ENGINE_DEBUG_ASSERT(clipStack.size() > 0);
-			const auto rect = clipStack.back().intersect({p, p+size});
-			if (rect.max.x <= rect.min.x || rect.max.y <= rect.min.y) { continue; }
+			auto orig = Bounds{p, p+size};
+
+			// TODO: bounds-ify
+			auto uvMin = offset;
+			auto uvMax = uvsize;
+			const auto clip = clipStack.back();
+
+			if (orig.min.x < clip.min.x) {
+				uvMin.x += (clip.min.x - orig.min.x) * (uvsize.x / (orig.max.x - orig.min.x));
+				orig.min.x = clip.min.x;
+			}
+			if (orig.max.x > clip.max.x) {
+				uvMax.x -= (orig.max.x - clip.max.x) * (uvsize.x / (orig.max.x - orig.min.x));
+				orig.max.x = clip.max.x;
+			}
+			if (orig.max.x <= orig.min.x) { continue; }
+
+			if (orig.min.y < clip.min.y) {
+				uvMin.y += (clip.min.y - orig.min.y) * (uvsize.y / (orig.max.y - orig.min.y));
+				orig.min.y = clip.min.y;
+			}
+			if (orig.max.y > clip.max.y) {
+				uvMax.y -= (orig.max.y - clip.max.y) * (uvsize.y / (orig.max.y - orig.min.y));
+				orig.max.y = clip.max.y;
+			}
+			if (orig.max.y <= orig.min.y) { continue; }
+
 
 			int layer = 0;
-			drawVertex2(rect.min, offset, color, layer);
-			drawVertex2({rect.min.x, rect.max.y}, offset + glm::vec2{0, uvsize.y}, color, layer);
-			drawVertex2(rect.max, offset + uvsize, color, layer);
-			drawVertex2({rect.max.x, rect.min.y}, offset + glm::vec2{uvsize.x, 0}, color, layer);
-			 
+			drawVertex2(orig.min, uvMin, color, layer);
+			drawVertex2({orig.min.x, orig.max.y}, uvMin + glm::vec2{0, uvMax.y}, color, layer);
+			drawVertex2(orig.max, uvMin + uvMax, color, layer);
+			drawVertex2({orig.max.x, orig.min.y}, uvMin + glm::vec2{uvMax.x, 0}, color, layer);
+
+			// TODO: rm
 			//drawVertex(p, offset, color);
 			//drawVertex(p + glm::vec2{0, size.y}, offset + glm::vec2{0, uvsize.y}, color);
 			//drawVertex(p + size, offset + uvsize, color);
@@ -408,8 +437,6 @@ namespace Engine::UI {
 
 			addPolyElements(base, base+1, base+2);
 			addPolyElements(base+2, base+3, base);
-
-			pos += data.advance;
 		}
 
 		activeTexture = old;

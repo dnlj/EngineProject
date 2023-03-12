@@ -55,13 +55,13 @@ namespace Engine::UI {
 			GLsizei polyEBOCapacity = 0;
 			std::vector<uint16> polyElementData;
 
-			/* Glyph members */
-			GLuint glyphVAO = 0;
-			GLuint glyphVBO = 0;
-			GLsizei glyphVBOCapacity = 0;
-			std::vector<GlyphDrawGroup> glyphDrawGroups;
-			std::vector<GlyphVertex> glyphVertexData;
-			Gfx::ShaderRef glyphShader;
+			///* Glyph members */
+			//GLuint glyphVAO = 0;
+			//GLuint glyphVBO = 0;
+			//GLsizei glyphVBOCapacity = 0;
+			//std::vector<GlyphDrawGroup> glyphDrawGroups;
+			//std::vector<GlyphVertex> glyphVertexData;
+			//Gfx::ShaderRef glyphShader;
 
 			/* Render state */
 			std::vector<Bounds> clipStack;

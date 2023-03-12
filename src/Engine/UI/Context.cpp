@@ -312,6 +312,7 @@ namespace Engine::UI {
 			drawOffset = curr->getPos();
 
 			pushClip();
+			setClip(curr->getBounds());
 			curr->render();
 
 			if (auto* child = curr->getFirstChild()) {
