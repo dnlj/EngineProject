@@ -13,10 +13,9 @@ namespace Engine::UI {
 	class DrawBuilder {
 		private:
 			struct PolyDrawGroup {
-				int32 zindex = {};
-				int32 offset = {};
-				int32 count = {};
-				//Bounds clip = {}; // TODO: rm - this shouldnt be needed anymore
+				int32 offset = {}; // VBO offset
+				int32 count = {}; // VBO elements
+				Bounds clip = {}; // Empty if clipping is done 100% in software for this group.
 				Gfx::TextureHandleGeneric tex = {};
 			};
 
@@ -27,20 +26,6 @@ namespace Engine::UI {
 				glm::u8 layer; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
 				char _unused[3];
 			}; static_assert(sizeof(PolyVertex) == 8+4+4 +4);
-
-			struct GlyphDrawGroup {
-				int32 zindex = {};
-				int32 offset = {};
-				int32 count = {};
-				Bounds clip = {};
-				Font font = {};
-			};
-
-			struct GlyphVertex {
-				glm::vec2 pos;
-				glm::u8vec4 color;
-				uint32 index;
-			}; static_assert(sizeof(GlyphVertex) == 8+4+4);
 
 		private:
 			/* Polygon members */
@@ -55,25 +40,13 @@ namespace Engine::UI {
 			GLsizei polyEBOCapacity = 0;
 			std::vector<uint16> polyElementData;
 
-			///* Glyph members */
-			//GLuint glyphVAO = 0;
-			//GLuint glyphVBO = 0;
-			//GLsizei glyphVBOCapacity = 0;
-			//std::vector<GlyphDrawGroup> glyphDrawGroups;
-			//std::vector<GlyphVertex> glyphVertexData;
-			//Gfx::ShaderRef glyphShader;
-
 			/* Render state */
 			std::vector<Bounds> clipStack;
+			int32 lastClipOffset = 0; // VBO offset of current clipping group
 			Gfx::TextureHandleGeneric activeTexture;
 			Gfx::Texture2D defaultTexture; /** Default blank (white) texture */
 			Font font = nullptr;
-			int32 zindex = -1;
 			glm::vec2 view = {};
-
-		public:
-			// TODO: rename - defaultTexture
-			static inline Gfx::Texture2DArray _temp_all;  // TODO: make an actual system to alloc/manage these. this is just for proof of concept.
 			
 		public: // TODO: private
 			glm::vec2 drawOffset; /* The offset to use for rendering */
@@ -88,7 +61,6 @@ namespace Engine::UI {
 			void reset();
 			void finish();
 			void nextDrawGroupPoly();
-			void nextDrawGroupGlyph();
 
 			void pushClip();
 			void popClip();
@@ -101,6 +73,8 @@ namespace Engine::UI {
 			/**
 			 * Draws a convex polygon from a ordered set of perimeter points.
 			 * If the points are not in order the results are undefined.
+			 *
+			 * May create a new hardware clipping group.
 			 * 
 			 * @param points Three or more ordered perimeter points.
 			 * @param color The color of the polygon.
@@ -129,6 +103,8 @@ namespace Engine::UI {
 
 
 		private:
+			void makeHardwareClip();
+
 			// TODO: add something to push multipler verts ine one resize+idx
 			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {
 				polyVertexData.push_back({
@@ -144,7 +120,7 @@ namespace Engine::UI {
 					.pos = pos,
 					.texCoord = texCoord * 65535.0f,
 					.color = color * 255.0f,
-					.layer = layer,
+					.layer = layer, // TOOD: what is this? why do we need it?
 				});
 			}
 

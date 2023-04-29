@@ -7,8 +7,12 @@
 namespace Engine::UI {
 	class Bounds {
 		public:
-			glm::vec2 min;
-			glm::vec2 max;
+			glm::vec2 min = {NAN, NAN};
+			glm::vec2 max = {NAN, NAN};
+
+			ENGINE_INLINE bool empty() const noexcept {
+				return std::isnan(min.x);
+			}
 
 			ENGINE_INLINE bool contains(const glm::vec2 point) const noexcept {
 				return point.x >= min.x

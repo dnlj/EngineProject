@@ -6,9 +6,6 @@
 namespace Engine::UI {
 	DrawBuilder::DrawBuilder(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader) {
 		polyShader = shaderLoader.get("shaders/gui_poly");
-		// TODO: rm - glyphShader = shaderLoader.get("shaders/gui_glyph");
-
-		// TODO: rm - glProgramUniform1i(glyphShader->get(), 1, 0);
 		glProgramUniform1i(polyShader->get(), 1, 0);
 
 		{
@@ -40,46 +37,17 @@ namespace Engine::UI {
 			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_UNSIGNED_BYTE, GL_FALSE, offsetof(PolyVertex, layer));
 		}
 
-		// TODO: rm
-		//{
-		//	constexpr static GLuint bindingIndex = 0;
-		//	GLuint attribLocation = -1;
-		//
-		//	glCreateBuffers(1, &glyphVBO);
-		//
-		//	glCreateVertexArrays(1, &glyphVAO);
-		//	glVertexArrayVertexBuffer(glyphVAO, bindingIndex, glyphVBO, 0, sizeof(GlyphVertex));
-		//
-		//	glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
-		//	glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
-		//	glVertexArrayAttribFormat(glyphVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(GlyphVertex, pos));
-		//
-		//	glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
-		//	glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
-		//	glVertexArrayAttribFormat(glyphVAO, attribLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(GlyphVertex, color));
-		//
-		//	glEnableVertexArrayAttrib(glyphVAO, ++attribLocation);
-		//	glVertexArrayAttribBinding(glyphVAO, attribLocation, bindingIndex);
-		//	glVertexArrayAttribIFormat(glyphVAO, attribLocation, 1, GL_UNSIGNED_INT, offsetof(GlyphVertex, index));
-		//}
-
 		{
 			using namespace Gfx;
 
-			// TODO: rm -
+			// TODO: rm
 			Image img{PixelFormat::RGB8, {1,1}};
 			memset(img.data(), 0xFF, img.sizeBytes());
 			defaultTexture.setStorage(TextureFormat::RGB8, img.size());
 			defaultTexture.setImage(img);
-
-			Image white{PixelFormat::RGBA8, {4096, 4096}};
-			memset(white.data(), 0xFF, white.sizeBytes());
-			_temp_all.setStorage(TextureFormat::RGBA8, {4096, 4096, 3});
-			_temp_all.setSubImage(0, {}, {4096, 4096, 1}, white);
 		}
 
 		activeTexture = defaultTexture;
-		//activeTexture = _temp_all;
 		reset();
 	}
 
@@ -87,16 +55,12 @@ namespace Engine::UI {
 		glDeleteVertexArrays(1, &polyVAO);
 		glDeleteBuffers(1, &polyEBO);
 		glDeleteBuffers(1, &polyVBO);
-
-		// TODO: rm - glDeleteVertexArrays(1, &glyphVAO);
-		// TODO: rm - glDeleteBuffers(1, &glyphVBO);
 	}
 
 	void DrawBuilder::resize(glm::vec2 viewport) {
 		view = viewport;
 		const auto view2 = 2.0f / view;
 		glProgramUniform2fv(polyShader->get(), 0, 1, &view2.x);
-		// TODO: rm - glProgramUniform2fv(glyphShader->get(), 0, 1, &view2.x);
 	}
 
 	void DrawBuilder::finish() {
@@ -104,18 +68,10 @@ namespace Engine::UI {
 		if (auto last = polyDrawGroups.rbegin(); last != polyDrawGroups.rend()) {
 			last->count = static_cast<int32>(polyElementData.size()) - last->offset;
 		}
-
-		// TODO: rm
-		//if (auto last = glyphDrawGroups.rbegin(); last != glyphDrawGroups.rend()) {
-		//	last->count = static_cast<int32>(glyphVertexData.size()) - last->offset;
-		//}
-
 		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
 	}
 
 	void DrawBuilder::draw() {
-		glDisable(GL_SCISSOR_TEST); // TODO: rm - just remove the enable from gui context
-
 		// Update font buffers
 		fontManager2.updateAllFontDataBuffers();
 
@@ -139,170 +95,133 @@ namespace Engine::UI {
 			}
 		}
 
-		// TODO: rm
-		//// Update glyph vertex buffer
-		//if (const auto count = glyphVertexData.size()) {
-		//	const GLsizei newSize = static_cast<GLsizei>(count * sizeof(GlyphVertex));
-		//	if (newSize > glyphVBOCapacity) {
-		//		glyphVBOCapacity = static_cast<GLsizei>(glyphVertexData.capacity() * sizeof(glyphVertexData[0]));
-		//		glNamedBufferData(glyphVBO, glyphVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-		//	}
-		//	glNamedBufferSubData(glyphVBO, 0, newSize, glyphVertexData.data());
-		//}
-
-		const auto scissor = [](const Bounds& bounds, float32 y) ENGINE_INLINE { // TODO: rm
-			//glScissor(
-			//	static_cast<int32>(bounds.min.x),
-			//	static_cast<int32>(y - bounds.max.y),
-			//	static_cast<int32>(bounds.getWidth()),
-			//	static_cast<int32>(bounds.getHeight())
-			//);
+		const auto scissor = [y=view.y](const Bounds& bounds) ENGINE_INLINE {
+			glScissor(
+			      static_cast<int32>(bounds.min.x),
+			      static_cast<int32>(y - bounds.max.y),
+			      static_cast<int32>(bounds.getWidth()),
+			      static_cast<int32>(bounds.getHeight())
+			);
 		};
 
-		auto currPolyGroup = polyDrawGroups.begin();
-		const auto lastPolyGroup = polyDrawGroups.end();
+		// Draw polys
+		for (auto const& group : polyDrawGroups) {
+			// TODO: ENGINE_DEBUG_ASSERT(group.count > 0);
 
-		// TODO: rm
-		//auto currGlyphGroup = glyphDrawGroups.begin();
-		//const auto lastGlyphGroup = glyphDrawGroups.end();
+			glBindVertexArray(polyVAO);
+			glUseProgram(polyShader->get());
+			Gfx::TextureHandleGeneric activeTex = {};
 
-		for (int32 z = 0; z <= zindex;) {
-			// Draw polys
-			if (currPolyGroup != lastPolyGroup && currPolyGroup->zindex == z) {
-				glBindVertexArray(polyVAO);
-				glUseProgram(polyShader->get());
-				Gfx::TextureHandleGeneric activeTex = {};
-
-				do {
-					// TODO: re-enable: ENGINE_DEBUG_ASSERT(currPolyGroup->count != 0, "Empty draw group. This group should have been skipped/removed already.");
-
-					if (currPolyGroup->tex != activeTex) {
-						activeTex = currPolyGroup->tex;
-						glBindTextureUnit(0, activeTex.get());
-					}
-
-					glDrawElements(GL_TRIANGLES,
-						currPolyGroup->count,
-						sizeof(polyElementData[0]) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
-						(void*)(currPolyGroup->offset * sizeof(polyElementData[0]))
-					);
-
-					++currPolyGroup;
-					++z;
-				} while (currPolyGroup != lastPolyGroup && currPolyGroup->zindex == z);
+			if (!group.clip.empty()) {
+				scissor(group.clip);
+			} else {
+				// TODO: exclude redundant calls
+				scissor(clipStack.front());
 			}
 
-			// Draw glyphs
-			/*if (currGlyphGroup != lastGlyphGroup && currGlyphGroup->zindex == z) {
-				glBindVertexArray(glyphVAO);
-				glUseProgram(glyphShader->get());
-				Font activeFont = nullptr;
+			if (group.tex != activeTex) {
+				activeTex = group.tex;
+				glBindTextureUnit(0, activeTex.get());
+			}
 
-				do {
-					ENGINE_DEBUG_ASSERT(currGlyphGroup->count != 0, "Empty draw group. This group should have been skipped/removed already.");
-					ENGINE_DEBUG_ASSERT(currGlyphGroup->font != nullptr);
-
-					if (currGlyphGroup->font != activeFont) {
-						activeFont = currGlyphGroup->font;
-						glBindTextureUnit(0, activeFont->getGlyphTexture().get());
-						glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, activeFont->getGlyphDataBuffer());
-					}
-
-					scissor(currGlyphGroup->clip, view.y);
-					glDrawArrays(GL_POINTS, currGlyphGroup->offset, currGlyphGroup->count);
-
-					++currGlyphGroup;
-					++z;
-				} while (currGlyphGroup != lastGlyphGroup && currGlyphGroup->zindex == z);
-			}*/
+			glDrawElements(GL_TRIANGLES,
+				group.count,
+				sizeof(polyElementData[0]) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
+				(void*)(group.offset * sizeof(polyElementData[0]))
+			);
 		}
 	}
 
 	void DrawBuilder::reset() {
 		clipStack.clear();
 		clipStack.push_back({{0,0}, view});
-
-		zindex = -1;
+		lastClipOffset = 0;
 
 		polyElementData.clear();
 		polyVertexData.clear();
 		polyDrawGroups.clear();
-
-		// TODO: rm
-		//glyphVertexData.clear();
-		//glyphDrawGroups.clear();
 	}
 
 	void DrawBuilder::nextDrawGroupPoly() {
-		if (polyDrawGroups.empty()) {
-			++zindex;
+		if (polyDrawGroups.empty()) { // TODO: probably just make sure we push one in reset instead of having a check here.
 			polyDrawGroups.emplace_back();
 		}
 
 		const auto sz = static_cast<int32>(polyElementData.size());
 		auto& prev = polyDrawGroups.back();
 		prev.count = sz - prev.offset;
+		ENGINE_DEBUG_ASSERT(prev.count >= 0); // TODO: this should just be > zero not >=. Why do we fail this?
+
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: one thing would be to change things so this gets called when me mutate state that affects
+		//       draw groups instead of checking at each vertex.
+		//
+		//
+		//
+		//
+		//
 
 		const auto setup = [&](PolyDrawGroup& group) ENGINE_INLINE {
-			group.zindex = zindex;
 			group.offset = sz;
-			// TODO: rm - group.clip = clipStack.back();
 			group.tex = activeTexture;
+			lastClipOffset = group.offset;
 		};
 		
 		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
 		if (prev.count == 0) {
 			setup(prev);
-		} else if (prev.zindex != zindex
-			/*|| prev.clip != clipStack.back()*/ // TODO: rm -
-			|| prev.tex != activeTexture) {
-			++zindex;
+		} else if (false
+			|| (prev.tex != activeTexture)
+			//|| (!prev.clip.empty() && prev.clip != clipStack.back())
+			) {
 			setup(polyDrawGroups.emplace_back());
 		} else {
 			// No group change needed, extend the previous group
 		}
 	}
 
-	// TODO: rm
-	/*
-	void DrawBuilder::nextDrawGroupGlyph() {
-		if (glyphDrawGroups.empty()) {
-			++zindex;
-			glyphDrawGroups.emplace_back();
+	void DrawBuilder::makeHardwareClip() {
+		auto* last = &polyDrawGroups.back();
+		if (!last->clip.empty()) { return; }
+
+		// We need to split the previous group
+		if (last->offset != lastClipOffset) {
+			ENGINE_DEBUG_ASSERT(lastClipOffset > last->offset);
+			auto* next = &polyDrawGroups.emplace_back(*last);
+			next->offset = lastClipOffset;
+			last->count = next->offset - last->offset;
+			last = next;
 		}
 
-		const auto sz = static_cast<int32>(glyphVertexData.size());
-		auto& prev = glyphDrawGroups.back();
-		prev.count = sz - prev.offset;
-
-		const auto setup = [&](GlyphDrawGroup& group) ENGINE_INLINE {
-			group.zindex = zindex;
-			group.offset = sz;
-			group.clip = clipStack.back();
-			group.font = font;
-			ENGINE_DEBUG_ASSERT(font != nullptr);
-		};
-
-		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
-		if (prev.count == 0) {
-			setup(prev);
-		} else if (prev.zindex != zindex
-			|| prev.font != font
-			|| prev.clip != clipStack.back()) {
-			++zindex;
-			setup(glyphDrawGroups.emplace_back());
-		} else {
-			// No group change needed, extend the previous group
-		}
-	}*/
+		last->clip = clipStack.back();
+	}
 
 	void DrawBuilder::pushClip() {
 		clipStack.push_back(clipStack.back());
+		//
+		//
+		// TODO: really should just change this function to take a Bounds and remove setClip? With error checking for to make sure we match push/pop calls or anobject with destructor
+		//       Maybe some kind of ClipScope{}; object?
+		// TODO: check clip != last clip, if it is we should be able to just keep the prev lastClipOffset
+		//       We cant do that yet though because we have setClip still
+		//
+		//
+		//
+		lastClipOffset = static_cast<int32>(polyElementData.size());
 	}
 			
 	void DrawBuilder::popClip() {
 		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
 		clipStack.pop_back();
+
+		// TODO: again check that back != old back, if is just continue the prev offset
+		lastClipOffset = static_cast<int32>(polyElementData.size());
 	}
 
 	void DrawBuilder::setClip(Bounds bounds) {
@@ -321,6 +240,7 @@ namespace Engine::UI {
 	void DrawBuilder::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {
 		ENGINE_DEBUG_ASSERT(points.size() >= 3, "Must have at least three points");
 		nextDrawGroupPoly();
+		makeHardwareClip();
 
 		const auto base = static_cast<int32>(polyVertexData.size());
 		const auto psz = points.size();
@@ -337,8 +257,6 @@ namespace Engine::UI {
 		const auto pvdSz = polyVertexData.size();
 		auto base = static_cast<uint32>(pvdSz);
 
-		// TODO: need to include drawOffset here;
-
 		pos += drawOffset;
 
 		ENGINE_DEBUG_ASSERT(clipStack.size() > 0);
@@ -350,11 +268,7 @@ namespace Engine::UI {
 		drawVertex2({rect.min.x, rect.max.y}, {0,0}, color);
 		drawVertex2(rect.max, {1,0}, color);
 		drawVertex2({rect.max.x, rect.min.y}, {1,1}, color);
-		
-		//drawVertex2(pos, {0,1}, color);
-		//drawVertex2(pos + glm::vec2{0, size.y}, {0,0}, color);
-		//drawVertex2(pos + size, {1,0}, color);
-		//drawVertex2(pos + glm::vec2{size.x, 0}, {1,1}, color);
+
 		addPolyElements(base, base+1, base+2);
 		addPolyElements(base+2, base+3, base);
 	}
@@ -377,66 +291,55 @@ namespace Engine::UI {
 		//pos += drawOffset;
 		//nextDrawGroupGlyph();
 
-		const auto& glyphData = font->_debug_getGlyphData();
+		const auto& glyphData = font->_debug_getGlyphData(); // TODO: remove this function, see definition for details
 		const auto old = activeTexture;
+		auto base = static_cast<uint32>(polyVertexData.size()); // TODO: should be able to just check once then do += 4
 		activeTexture = font->getGlyphTexture();
-		//const auto layer = font->glyphTexLayer;
 		nextDrawGroupPoly();
-		// TODO: rm ENGINE_LOG("String Texture: ", activeTexture.get(), " ", font->getGlyphTexture().get());
 
 		for (const auto& data : glyphs) ENGINE_INLINE_CALLS {
 			const uint32 index = font->getGlyphIndex(data.index);
 			const glm::vec2 offset = glyphData[index].offset / 4096.0f;
 			auto size = glyphData[index].size;
 			const auto uvsize = size / 4096.0f;
-			const auto base = static_cast<uint32>(polyVertexData.size()); // TODO: should be able to just check once then do += 4
-			size.y = size.y;
 
 			const auto p = glm::round(pos + data.offset + drawOffset); // I think this should technically also include the size offset per vert. In practice it does not make a difference (in any tests i have done) and this is faster.
 			pos += data.advance;
 			ENGINE_DEBUG_ASSERT(clipStack.size() > 0);
+			const auto& clip = clipStack.back();
 			auto orig = Bounds{p, p+size};
-
-			// TODO: bounds-ify
-			auto uvMin = offset;
-			auto uvMax = uvsize;
-			const auto clip = clipStack.back();
+			auto uv = Bounds{offset, uvsize};
 
 			if (orig.min.x < clip.min.x) {
-				uvMin.x += (clip.min.x - orig.min.x) * (uvsize.x / (orig.max.x - orig.min.x));
+				uv.min.x += (clip.min.x - orig.min.x) * (uvsize.x / (orig.max.x - orig.min.x));
 				orig.min.x = clip.min.x;
 			}
 			if (orig.max.x > clip.max.x) {
-				uvMax.x -= (orig.max.x - clip.max.x) * (uvsize.x / (orig.max.x - orig.min.x));
+				uv.max.x -= (orig.max.x - clip.max.x) * (uvsize.x / (orig.max.x - orig.min.x));
 				orig.max.x = clip.max.x;
 			}
 			if (orig.max.x <= orig.min.x) { continue; }
 
 			if (orig.min.y < clip.min.y) {
-				uvMin.y += (clip.min.y - orig.min.y) * (uvsize.y / (orig.max.y - orig.min.y));
+				uv.min.y += (clip.min.y - orig.min.y) * (uvsize.y / (orig.max.y - orig.min.y));
 				orig.min.y = clip.min.y;
 			}
 			if (orig.max.y > clip.max.y) {
-				uvMax.y -= (orig.max.y - clip.max.y) * (uvsize.y / (orig.max.y - orig.min.y));
+				uv.max.y -= (orig.max.y - clip.max.y) * (uvsize.y / (orig.max.y - orig.min.y));
 				orig.max.y = clip.max.y;
 			}
 			if (orig.max.y <= orig.min.y) { continue; }
 
 
-			int layer = 0;
-			drawVertex2(orig.min, uvMin, color, layer);
-			drawVertex2({orig.min.x, orig.max.y}, uvMin + glm::vec2{0, uvMax.y}, color, layer);
-			drawVertex2(orig.max, uvMin + uvMax, color, layer);
-			drawVertex2({orig.max.x, orig.min.y}, uvMin + glm::vec2{uvMax.x, 0}, color, layer);
-
-			// TODO: rm
-			//drawVertex(p, offset, color);
-			//drawVertex(p + glm::vec2{0, size.y}, offset + glm::vec2{0, uvsize.y}, color);
-			//drawVertex(p + size, offset + uvsize, color);
-			//drawVertex(p + glm::vec2{size.x, 0}, offset + glm::vec2{uvsize.x, 0}, color);
+			int layer = 0; // TODO:
+			drawVertex2(orig.min, uv.min, color, layer);
+			drawVertex2({orig.min.x, orig.max.y}, uv.min + glm::vec2{0, uv.max.y}, color, layer);
+			drawVertex2(orig.max, uv.min + uv.max, color, layer);
+			drawVertex2({orig.max.x, orig.min.y}, uv.min + glm::vec2{uv.max.x, 0}, color, layer);
 
 			addPolyElements(base, base+1, base+2);
 			addPolyElements(base+2, base+3, base);
+			base += 4;
 		}
 
 		activeTexture = old;
