@@ -11,12 +11,14 @@ namespace Engine::UI {
 		const glm::vec4 bg = {0.3,0.3,0.3,1};
 		const glm::vec4 bo = {0,0,0,1};
 
-		ctx->drawRect({}, size, bg);
+		ctx->setColor(bg);
+		ctx->drawRect({}, size);
 
-		ctx->drawRect({}, {size.x, 1}, bo);
-		ctx->drawRect({}, {1, size.y}, bo);
-		ctx->drawRect(glm::vec2{0, size.y - 1}, {size.x, 1}, bo);
-		ctx->drawRect(glm::vec2{size.x - 1, 0}, {1, size.y}, bo);
+		ctx->setColor(bo);
+		ctx->drawRect({}, {size.x, 1});
+		ctx->drawRect({}, {1, size.y});
+		ctx->drawRect(glm::vec2{0, size.y - 1}, {size.x, 1});
+		ctx->drawRect(glm::vec2{size.x - 1, 0}, {1, size.y});
 
 		const auto off = getStringOffset();
 		auto top = off;
@@ -27,38 +29,39 @@ namespace Engine::UI {
 			const auto a = caret.pos < select.pos ? caret : select;
 			const auto b = caret.pos < select.pos ? select : caret;
 
-			ctx->drawRect(
-				top + glm::vec2{a.pos, 0},
-				{b.pos - a.pos, str.getFont()->getLineHeight()},
-				bo
-			);
+			ctx->drawRect(top + glm::vec2{a.pos, 0}, {b.pos - a.pos, str.getFont()->getLineHeight()});
 
 			// Separate color for selection
 			if constexpr (true) {
-				ctx->drawString(off, &str, theme.colors.foreground);
+				ctx->setColor(theme.colors.foreground);
+				ctx->drawString(off, &str);
 			} else {
 				const auto& glyphs = str.getGlyphShapeData();
 				const auto data = glyphs.data();
 
 				if (a.index != 0) {
-					ctx->drawString(off, {1,0,0,1}, str.getFont(), {data, data + a.index});
+					ctx->setColor({1,0,0,1});
+					ctx->drawString(off, str.getFont(), {data, data + a.index});
 				}
 
-				ctx->drawString({off.x+a.pos, off.y}, {0,1,0,1}, str.getFont(), {data + a.index, data + b.index});
+				ctx->setColor({0,1,0,1});
+				ctx->drawString({off.x+a.pos, off.y}, str.getFont(), {data + a.index, data + b.index});
 
 				if (auto sz = glyphs.size(); b.index != sz) {
-					ctx->drawString({off.x+b.pos, off.y}, {0,0,1,1}, str.getFont(), {data + b.index, data + sz});
+					ctx->setColor({0,0,1,1});
+					ctx->drawString({off.x+b.pos, off.y}, str.getFont(), {data + b.index, data + sz});
 				}
 			}
 		} else {
-			ctx->drawString(off, &str, theme.colors.foreground);
+			ctx->setColor(theme.colors.foreground);
+			ctx->drawString(off, &str);
 		}
 
 		if (ctx->getFocus() == this && ctx->isBlinking()) {
+			ctx->setColor(bo);
 			ctx->drawRect(
 				top + glm::vec2{caret.pos, 0},
-				{1, str.getFont()->getLineHeight()},
-				bo
+				{1, str.getFont()->getLineHeight()}
 			);
 		}
 	}

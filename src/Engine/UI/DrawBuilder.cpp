@@ -152,21 +152,6 @@ namespace Engine::UI {
 		prev.count = sz - prev.offset;
 		ENGINE_DEBUG_ASSERT(prev.count >= 0); // TODO: this should just be > zero not >=. Why do we fail this?
 
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: one thing would be to change things so this gets called when me mutate state that affects
-		//       draw groups instead of checking at each vertex.
-		//
-		//
-		//
-		//
-		//
-
 		const auto setup = [&](PolyDrawGroup& group) ENGINE_INLINE {
 			group.offset = sz;
 			group.tex = activeTexture;
@@ -232,28 +217,28 @@ namespace Engine::UI {
 
 	void DrawBuilder::drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
 		const auto old = activeTexture;
-		activeTexture = tex;
-		drawRect(pos, size, {1,1,1,1});
-		activeTexture = old;
+		setTexture(tex);
+		drawRect(pos, size);
+		setTexture(old);
 	}
 
-	void DrawBuilder::drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color) {
+	void DrawBuilder::drawPoly(ArrayView<const glm::vec2> points) {
 		ENGINE_DEBUG_ASSERT(points.size() >= 3, "Must have at least three points");
 		nextDrawGroupPoly();
 		makeHardwareClip();
 
 		const auto base = static_cast<int32>(polyVertexData.size());
 		const auto psz = points.size();
-		drawVertex(points[0], color);
-		drawVertex(points[1], color);
+		drawVertex(points[0]);
+		drawVertex(points[1]);
 
 		for (int i = 2; i < psz; ++i) {
-			drawVertex(points[i], color);
+			drawVertex(points[i]);
 			addPolyElements(base, base + i - 1, base + i);
 		}
 	}
 
-	void DrawBuilder::drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
+	void DrawBuilder::drawRect(glm::vec2 pos, glm::vec2 size) {
 		const auto pvdSz = polyVertexData.size();
 		auto base = static_cast<uint32>(pvdSz);
 
@@ -264,22 +249,22 @@ namespace Engine::UI {
 		if (rect.max.x <= rect.min.x || rect.max.y <= rect.min.y) { return; }
 
 		nextDrawGroupPoly();
-		drawVertex2(rect.min, {0,1}, color);
-		drawVertex2({rect.min.x, rect.max.y}, {0,0}, color);
-		drawVertex2(rect.max, {1,0}, color);
-		drawVertex2({rect.max.x, rect.min.y}, {1,1}, color);
+		drawVertex2(rect.min, {0,1});
+		drawVertex2({rect.min.x, rect.max.y}, {0,0});
+		drawVertex2(rect.max, {1,0});
+		drawVertex2({rect.max.x, rect.min.y}, {1,1});
 
 		addPolyElements(base, base+1, base+2);
 		addPolyElements(base+2, base+3, base);
 	}
 	
-	void DrawBuilder::drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color) {
+	void DrawBuilder::drawLine(glm::vec2 a, glm::vec2 b, float32 width) {
 		const auto t = glm::normalize(b - a);
 		const auto n = width * 0.5f * glm::vec2{-t.y, t.x};
-		drawPoly({a - n, a + n, b + n, b - n}, color);
+		drawPoly({a - n, a + n, b + n, b - n});
 	}
 
-	glm::vec2 DrawBuilder::drawString(glm::vec2 pos, glm::vec4 color, Font font, ArrayView<const ShapeGlyph> glyphs) {
+	glm::vec2 DrawBuilder::drawString(glm::vec2 pos, Font font, ArrayView<const ShapeGlyph> glyphs) {
 		ENGINE_DEBUG_ASSERT(font != nullptr, "Attempting to draw string with null font.");
 		if (glyphs.empty()) { return pos; }
 
@@ -294,8 +279,7 @@ namespace Engine::UI {
 		const auto& glyphData = font->_debug_getGlyphData(); // TODO: remove this function, see definition for details
 		const auto old = activeTexture;
 		auto base = static_cast<uint32>(polyVertexData.size()); // TODO: should be able to just check once then do += 4
-		activeTexture = font->getGlyphTexture();
-		nextDrawGroupPoly();
+		setTexture(font->getGlyphTexture());
 
 		for (const auto& data : glyphs) ENGINE_INLINE_CALLS {
 			const uint32 index = font->getGlyphIndex(data.index);
@@ -332,17 +316,17 @@ namespace Engine::UI {
 
 
 			int layer = 0; // TODO:
-			drawVertex2(orig.min, uv.min, color, layer);
-			drawVertex2({orig.min.x, orig.max.y}, uv.min + glm::vec2{0, uv.max.y}, color, layer);
-			drawVertex2(orig.max, uv.min + uv.max, color, layer);
-			drawVertex2({orig.max.x, orig.min.y}, uv.min + glm::vec2{uv.max.x, 0}, color, layer);
+			drawVertex2(orig.min, uv.min, layer);
+			drawVertex2({orig.min.x, orig.max.y}, uv.min + glm::vec2{0, uv.max.y}, layer);
+			drawVertex2(orig.max, uv.min + uv.max, layer);
+			drawVertex2({orig.max.x, orig.min.y}, uv.min + glm::vec2{uv.max.x, 0}, layer);
 
 			addPolyElements(base, base+1, base+2);
 			addPolyElements(base+2, base+3, base);
 			base += 4;
 		}
 
-		activeTexture = old;
+		setTexture(old);
 		return pos - drawOffset;
 	}
 };

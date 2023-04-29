@@ -57,9 +57,15 @@ namespace Engine::UI {
 				const auto sz = getSize();
 				constexpr float32 hw = 8; // handle width
 				const auto& theme = ctx->getTheme();
-				ctx->drawRect({}, sz, theme.colors.feature);
-				ctx->drawRect({sz.x * p - (hw * 0.5f), 0}, {hw, sz.y}, theme.colors.button);
-				ctx->drawString(strOff, &str, theme.colors.foregroundAlt);
+
+				ctx->setColor(theme.colors.feature);
+				ctx->drawRect({}, sz);
+
+				ctx->setColor(theme.colors.button);
+				ctx->drawRect({sz.x * p - (hw * 0.5f), 0}, {hw, sz.y});
+
+				ctx->setColor(theme.colors.foregroundAlt);
+				ctx->drawString(strOff, &str);
 			}
 
 			virtual void postLayout() override {

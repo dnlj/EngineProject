@@ -28,13 +28,15 @@ namespace Engine::UI {
 			void render() {
 				auto& theme = ctx->getTheme();
 				auto sz = getSize();
-				ctx->drawRect({}, sz, theme.colors.feature);
+				ctx->setColor(theme.colors.feature);
+				ctx->drawRect({}, sz);
 
 				glm::vec2 pos = {};
 				pos[D] = p;
 				sz[D] = s;
 
-				ctx->drawRect(pos, sz, theme.colors.accent);
+				ctx->setColor(theme.colors.accent);
+				ctx->drawRect(pos, sz);
 			}
 
 			void setRatio(float32 r) noexcept {

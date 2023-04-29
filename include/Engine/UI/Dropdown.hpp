@@ -16,11 +16,13 @@ namespace Engine::UI {
 			
 			virtual void render() override {
 				const auto& theme = ctx->getTheme();
-				ctx->drawRect({0,0}, getSize(),
-					selected ? theme.colors.backgroundSelection
-					: ctx->getHover() == this ? theme.colors.backgroundAlt
-					: theme.colors.background
-				);
+				const auto color = selected
+					? theme.colors.backgroundSelection
+					: ctx->getHover() == this
+						? theme.colors.backgroundAlt
+						: theme.colors.background;
+				ctx->setColor(color);
+				ctx->drawRect({0,0}, getSize());
 				StringLine::render();
 			}
 			
@@ -97,21 +99,22 @@ namespace Engine::UI {
 			virtual void render() override {
 				const auto& theme = ctx->getTheme();
 				const auto sz = getSize();
-
-				ctx->drawRect({0,0}, sz, {1,0,0,1});
+				ctx->setColor({1,0,0,1});
+				ctx->drawRect({0,0}, sz);
 
 				const auto p = round(theme.sizes.pad1 * 1.5);
 				const auto s = round(sz.y*1.21f - 2*p);
 				const auto x0 = sz.x - s - p;
 
+				ctx->setColor(theme.colors.foreground);
 				if (content->isEnabled()) {
 					ctx->drawPoly({
 						{x0, sz.y - p}, {x0 + s, sz.y - p}, {x0 + s*0.5f, p}
-					}, theme.colors.foreground);
+					});
 				} else {
 					ctx->drawPoly({
 						{x0, p}, {x0 + s, p}, {x0 + s*0.5f,  sz.y - p}
-					}, theme.colors.foreground);
+					});
 				}
 
 				if (auto sel = content->getSelected(); sel) {

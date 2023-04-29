@@ -12,10 +12,12 @@ namespace Engine::UI {
 	};
 
 	void Panel::render() {
-		ctx->drawRect({0,0}, size, ctx->getTheme().colors.background);
+		ctx->setColor(ctx->getTheme().colors.background);
+		ctx->drawRect({0,0}, size);
 	}
 
 	void PanelC::render() {
-		ctx->drawRect({}, getSize(), color);
+		ctx->setColor(color);
+		ctx->drawRect({}, getSize());
 	}
 }

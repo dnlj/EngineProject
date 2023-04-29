@@ -70,7 +70,8 @@ namespace Engine::UI {
 			virtual void render() override {
 				//if (const auto font = str.getFont(); font) { ctx->drawRect({off.x, off.y - font->getAscent()}, {getStringSize().x, font->getBodyHeight()}, {1,0,0,1});}
 				//ctx->drawRect(getStringOffset(), {getWidth(), 1}, {1,0,0,1});
-				ctx->drawString(getStringOffset(), &getShapedString(), ctx->getTheme().colors.foreground);
+				ctx->setColor(ctx->getTheme().colors.foreground);
+				ctx->drawString(getStringOffset(), &getShapedString());
 			}
 
 			virtual void postLayout() override {

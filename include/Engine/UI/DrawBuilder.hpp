@@ -46,6 +46,7 @@ namespace Engine::UI {
 			Gfx::TextureHandleGeneric activeTexture;
 			Gfx::Texture2D defaultTexture; /** Default blank (white) texture */
 			Font font = nullptr;
+			glm::vec4 color = {1,1,1,1};
 			glm::vec2 view = {};
 			
 		public: // TODO: private
@@ -66,7 +67,10 @@ namespace Engine::UI {
 			void popClip();
 			void setClip(Bounds bounds);
 
-			void setFont(Font f) { font = f; }
+			// TODO: probably move this state stuff into base class to avoid changing in draw* functions
+			ENGINE_INLINE void setColor(glm::vec4 color) noexcept { this->color = color * 255.0f; nextDrawGroupPoly(); }
+			ENGINE_INLINE void setTexture(Gfx::TextureHandleGeneric tex) { activeTexture = tex; nextDrawGroupPoly(); }
+			ENGINE_INLINE void setFont(Font f) noexcept { font = f; }
 
 			void drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);
 
@@ -77,28 +81,27 @@ namespace Engine::UI {
 			 * May create a new hardware clipping group.
 			 * 
 			 * @param points Three or more ordered perimeter points.
-			 * @param color The color of the polygon.
 			 */
-			void drawPoly(ArrayView<const glm::vec2> points, glm::vec4 color);
+			void drawPoly(ArrayView<const glm::vec2> points);
 
 			/**
 			 * Draws a rectangle from a position and size.
 			 */
-			void drawRect(glm::vec2 pos, glm::vec2 size, glm::vec4 color);
+			void drawRect(glm::vec2 pos, glm::vec2 size);
 
 			/**
 			 * Draws a line between two points.
 			 */
-			void drawLine(glm::vec2 a, glm::vec2 b, float32 width, glm::vec4 color);
+			void drawLine(glm::vec2 a, glm::vec2 b, float32 width);
 
 			/**
 			 * Draws a string of glyphs.
 			 * @return The accumulated advance of the string drawn.
 			 */
-			glm::vec2 drawString(glm::vec2 pos, glm::vec4 color, Font font, ArrayView<const ShapeGlyph> glyphs);
+			glm::vec2 drawString(glm::vec2 pos, Font font, ArrayView<const ShapeGlyph> glyphs);
 
-			ENGINE_INLINE glm::vec2 drawString(glm::vec2 pos, const ShapedString* fstr, glm::vec4 color) {
-				return drawString(pos, color, fstr->getFont(), fstr->getGlyphShapeData());
+			ENGINE_INLINE glm::vec2 drawString(glm::vec2 pos, const ShapedString* fstr) {
+				return drawString(pos, fstr->getFont(), fstr->getGlyphShapeData());
 			}
 
 
@@ -106,30 +109,26 @@ namespace Engine::UI {
 			void makeHardwareClip();
 
 			// TODO: add something to push multipler verts ine one resize+idx
-			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}) {
+			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord = {}) {
 				polyVertexData.push_back({
 					.pos = pos + drawOffset,
 					.texCoord = texCoord * 65535.0f,
-					.color = color * 255.0f,
+					.color = color,
 				});
 			}
 
 			// TODO: rm - merge with above
-			void drawVertex2(glm::vec2 pos, glm::vec2 texCoord, glm::vec4 color = {1,1,1,1}, uint8 layer = 0) {
+			void drawVertex2(glm::vec2 pos, glm::vec2 texCoord, uint8 layer = 0) {
 				polyVertexData.push_back({
 					.pos = pos,
 					.texCoord = texCoord * 65535.0f,
-					.color = color * 255.0f,
+					.color = color,
 					.layer = layer, // TOOD: what is this? why do we need it?
 				});
 			}
 
-			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec4 color) {
-				drawVertex(pos, {}, color);
-			}
-
-			ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec4 color) {
-				drawVertex(a, color); drawVertex(b, color); drawVertex(c, color);
+			ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c) {
+				drawVertex(a); drawVertex(b); drawVertex(c);
 			}
 
 			ENGINE_INLINE void addPolyElements(uint32 i1, uint32 i2, uint32 i3) {

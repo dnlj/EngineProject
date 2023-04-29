@@ -107,8 +107,8 @@ namespace Game::UI {
 
 	void TextFeed::render() {
 		// TODO: line wrap or hscroll
-
-		ctx->drawRect({}, getSize(), {0,0,0,0.5});
+		ctx->setColor({0,0,0,0.5});
+		ctx->drawRect({}, getSize());
 		
 		const auto lh = font->getLineHeight();
 		const int32 maxLines = static_cast<int32>(std::ceil(getHeight() / lh));
@@ -125,11 +125,13 @@ namespace Game::UI {
 			auto& line = lines[i];
 			const auto start = glyphBuff.wrap(line.glyphs.start);
 			const auto stop = glyphBuff.wrap(line.glyphs.stop);
+
+			ctx->setColor({0,1,0,1});
 			if (stop < start) {
-				const auto off = ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + start, base + glyphBuff.capacity()});
-				ctx->drawString(off, {0,1,0,1}, font, {base, base + stop});
+				const auto off = ctx->drawString({xOff, yOff}, font, {base + start, base + glyphBuff.capacity()});
+				ctx->drawString(off, font, {base, base + stop});
 			} else {
-				ctx->drawString({xOff, yOff}, {0,1,0,1}, font, {base + start, base + stop});
+				ctx->drawString({xOff, yOff}, font, {base + start, base + stop});
 			}
 			yOff -= lh;
 		}

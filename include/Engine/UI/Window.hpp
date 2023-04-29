@@ -27,7 +27,8 @@ namespace Engine::UI {
 					}
 
 					virtual void render() override {
-						ctx->drawRect({0,0}, getSize(), ctx->getTheme().colors.title);
+						ctx->setColor(ctx->getTheme().colors.title);
+						ctx->drawRect({0,0}, getSize());
 					}
 					
 					virtual bool onBeginActivate() override {

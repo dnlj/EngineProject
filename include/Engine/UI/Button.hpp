@@ -24,7 +24,8 @@ namespace Engine::UI {
 			void setAction(Callback func) { action = func; }
 
 			virtual void render() override {
-				ctx->drawRect({0,0}, getSize(), ctx->getTheme().colors.button);
+				ctx->setColor(ctx->getTheme().colors.button);
+				ctx->drawRect({0,0}, getSize());
 				StringLine::render();
 			}
 

@@ -89,7 +89,8 @@ namespace Engine::UI {
 					}
 
 					void render() override {
-						ctx->drawRect({}, getSize(), color);
+						ctx->setColor(color);
+						ctx->drawRect({}, getSize());
 					}
 			};
 

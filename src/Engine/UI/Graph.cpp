@@ -24,12 +24,9 @@ namespace Engine::UI {
 		while (curr != end && curr->x <= min.x) { ++curr; }
 
 		while (curr != end) {
+			ctx->setColor(color);
 			//ctx->drawPoly(points, color);
-			ctx->drawLine(
-				worldToGraph({curr->x, 0}),
-				worldToGraph({curr->x, curr->y}),
-				1, color
-			);
+			ctx->drawLine(worldToGraph({curr->x, 0}), worldToGraph({curr->x, curr->y}), 1);
 			++curr;
 		}
 	};
@@ -48,6 +45,7 @@ namespace Engine::UI {
 		if (curr == end) { return; }
 		if (curr == prev) { ++curr; } else { prev = curr - 1; }
 
+		ctx->setColor(color);
 		while (curr != end) {
 			if (prev->x > max.x) { break; }
 
@@ -63,7 +61,7 @@ namespace Engine::UI {
 				p.y = h - p.y * scale.y;
 			}
 
-			ctx->drawPoly(points, color);
+			ctx->drawPoly(points);
 
 			prev = curr;
 			++curr;
@@ -112,6 +110,7 @@ namespace Engine::UI {
 		glm::vec2 nV = {};
 		auto [a2, a1] = nextMiterPoints(pV, cT, pT);
 
+		ctx->setColor(color);
 		while (true) {
 			cV = worldToGraph(*curr);
 			if (next != end) {
@@ -121,7 +120,7 @@ namespace Engine::UI {
 
 			const auto [a3, a4] = nextMiterPoints(cV, cT, pT);
 			
-			ctx->drawPoly({a1,a2,a3,a4}, color);
+			ctx->drawPoly({a1,a2,a3,a4});
 
 			if (next == end) { break; }
 			if (curr->x > max.x) { break; }
@@ -140,7 +139,8 @@ namespace Engine::UI {
 	void GraphAxis::render() {
 		ENGINE_DEBUG_ASSERT(graph);
 		const auto& theme = ctx->getTheme();
-		ctx->drawRect({}, getSize(), theme.colors.background2);
+		ctx->setColor(theme.colors.background2);
+		ctx->drawRect({}, getSize());
 		const auto min = graph->min[dir];
 		const auto max = graph->max[dir];
 
@@ -154,7 +154,8 @@ namespace Engine::UI {
 			glm::vec2 b = a;
 			b[!dir] = l;
 
-			ctx->drawLine(a, b, w, theme.colors.accent);
+			ctx->setColor(theme.colors.accent);
+			ctx->drawLine(a, b, w);
 			return p;
 		};
 
@@ -196,7 +197,8 @@ namespace Engine::UI {
 
 			auto pos = glm::vec2{0, dir ? 0 : getHeight()};
 			pos[dir] = line(static_cast<float32>(v), 2.0f, getSize()[!dir]);
-			ctx->drawString(pos, &label, theme.colors.foreground);
+			ctx->setColor(theme.colors.foreground);
+			ctx->drawString(pos, &label);
 		}
 	}
 }
@@ -205,7 +207,8 @@ namespace Engine::UI {
 	void GraphArea::GraphAreaImpl::render() {
 		const auto& theme = ctx->getTheme();
 		ctx->setClip({getPos(), getPos() + getSize()});
-		ctx->drawRect({0,0}, getSize(), theme.colors.background2);
+		ctx->setColor(theme.colors.background2);
+		ctx->drawRect({0,0}, getSize());
 		for (const auto& graph : graphs) {
 			if (graph->enabled) { graph->draw(this); }
 		}
@@ -220,7 +223,8 @@ namespace Engine::UI {
 	}
 
 	void RichGraph::render() {
-		ctx->drawRect({0,0}, getSize(), ctx->getTheme().colors.feature);
+		ctx->setColor(ctx->getTheme().colors.feature);
+		ctx->drawRect({0,0}, getSize());
 		// TODO: current cursor position (ji96pF6X)
 	}
 
