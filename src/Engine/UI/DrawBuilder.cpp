@@ -16,6 +16,7 @@ namespace Engine::UI {
 		//
 		//
 		lastClipOffset = static_cast<int32>(elemData.size());
+		nextDrawGroup();
 	}
 			
 	void DrawGroupManager::popClip() {
@@ -24,12 +25,14 @@ namespace Engine::UI {
 
 		// TODO: again check that back != old back, if is just continue the prev offset
 		lastClipOffset = static_cast<int32>(elemData.size());
+		nextDrawGroup();
 	}
 
 	void DrawGroupManager::setClip(Bounds bounds) {
 		auto& curr = clipStack.back();
 		curr = (clipStack.end() - 2)->intersect(bounds);
 		curr.max = glm::max(curr.min, curr.max);
+		nextDrawGroup();
 	}
 	void DrawGroupManager::nextDrawGroup() {
 		if (drawGroups.empty()) { // TODO: probably just make sure we push one in reset instead of having a check here.

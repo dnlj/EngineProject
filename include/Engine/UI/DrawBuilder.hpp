@@ -39,7 +39,7 @@ namespace Engine::UI {
 			std::vector<Element> elemData;
 
 		public:
-			ENGINE_INLINE void setColor(glm::vec4 color) noexcept { this->color = color * 255.0f; nextDrawGroup(); }
+			ENGINE_INLINE void setColor(glm::vec4 color) noexcept { this->color = color * 255.0f; }
 			ENGINE_INLINE auto getColor() const noexcept { return color; }
 
 			ENGINE_INLINE void setTexture(Gfx::TextureHandleGeneric tex) noexcept { activeTexture = tex; nextDrawGroup(); }
