@@ -4,6 +4,99 @@
 
 
 namespace Engine::UI {
+	void DrawGroupManager::pushClip() {
+		clipStack.push_back(clipStack.back());
+		//
+		//
+		// TODO: really should just change this function to take a Bounds and remove setClip? With error checking for to make sure we match push/pop calls or anobject with destructor
+		//       Maybe some kind of ClipScope{}; object?
+		// TODO: check clip != last clip, if it is we should be able to just keep the prev lastClipOffset
+		//       We cant do that yet though because we have setClip still
+		//
+		//
+		//
+		lastClipOffset = static_cast<int32>(elemData.size());
+	}
+			
+	void DrawGroupManager::popClip() {
+		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
+		clipStack.pop_back();
+
+		// TODO: again check that back != old back, if is just continue the prev offset
+		lastClipOffset = static_cast<int32>(elemData.size());
+	}
+
+	void DrawGroupManager::setClip(Bounds bounds) {
+		auto& curr = clipStack.back();
+		curr = (clipStack.end() - 2)->intersect(bounds);
+		curr.max = glm::max(curr.min, curr.max);
+	}
+	void DrawGroupManager::nextDrawGroup() {
+		if (drawGroups.empty()) { // TODO: probably just make sure we push one in reset instead of having a check here.
+			drawGroups.emplace_back();
+		}
+
+		const auto sz = static_cast<int32>(elemData.size());
+		auto& prev = drawGroups.back();
+		prev.count = sz - prev.offset;
+		ENGINE_DEBUG_ASSERT(prev.count >= 0); // TODO: this should just be > zero not >=. Why do we fail this?
+
+		const auto setup = [&](DrawGroup& group) ENGINE_INLINE {
+			group.offset = sz;
+			group.tex = activeTexture;
+			lastClipOffset = group.offset;
+		};
+		
+		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
+		if (prev.count == 0) {
+			setup(prev);
+		} else if (false
+			|| (prev.tex != activeTexture)
+			//|| (!prev.clip.empty() && prev.clip != clipStack.back())
+			) {
+			setup(drawGroups.emplace_back());
+		} else {
+			// No group change needed, extend the previous group
+		}
+	}
+	
+	void DrawGroupManager::reset(Bounds clip) {
+		clipStack.clear();
+		clipStack.push_back(clip);
+		lastClipOffset = 0;
+
+		elemData.clear();
+		vertData.clear();
+		drawGroups.clear();
+	}
+
+	void DrawGroupManager::finish() {
+		// Needed to populate count of last draw groups
+		if (auto last = drawGroups.rbegin(); last != drawGroups.rend()) {
+			last->count = static_cast<int32>(elemData.size()) - last->offset;
+		}
+		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
+	}
+
+	void DrawGroupManager::makeHardwareClip() {
+		auto* last = &drawGroups.back();
+		if (!last->clip.empty()) { return; }
+
+		// We need to split the previous group
+		if (last->offset != lastClipOffset) {
+			ENGINE_DEBUG_ASSERT(lastClipOffset > last->offset);
+			auto* next = &drawGroups.emplace_back(*last);
+			next->offset = lastClipOffset;
+			last->count = next->offset - last->offset;
+			last = next;
+		}
+
+		last->clip = clipStack.back();
+	}
+}
+
+
+namespace Engine::UI {
 	DrawBuilder::DrawBuilder(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader) {
 		polyShader = shaderLoader.get("shaders/gui_poly");
 		glProgramUniform1i(polyShader->get(), 1, 0);
@@ -18,23 +111,23 @@ namespace Engine::UI {
 			glVertexArrayElementBuffer(polyVAO, polyEBO);
 
 			glCreateBuffers(1, &polyVBO);
-			glVertexArrayVertexBuffer(polyVAO, bindingIndex, polyVBO, 0, sizeof(PolyVertex));
+			glVertexArrayVertexBuffer(polyVAO, bindingIndex, polyVBO, 0, sizeof(Vertex));
 
 			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
 			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(PolyVertex, pos));
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
 
 			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
 			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 2, GL_UNSIGNED_SHORT, GL_TRUE, offsetof(PolyVertex, texCoord));
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 2, GL_UNSIGNED_SHORT, GL_TRUE, offsetof(Vertex, texCoord));
 
 			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
 			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(PolyVertex, color));
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(Vertex, color));
 			
 			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
 			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_UNSIGNED_BYTE, GL_FALSE, offsetof(PolyVertex, layer));
+			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_UNSIGNED_BYTE, GL_FALSE, offsetof(Vertex, layer));
 		}
 
 		{
@@ -47,7 +140,7 @@ namespace Engine::UI {
 			defaultTexture.setImage(img);
 		}
 
-		activeTexture = defaultTexture;
+		setTexture(defaultTexture);
 		reset();
 	}
 
@@ -64,11 +157,11 @@ namespace Engine::UI {
 	}
 
 	void DrawBuilder::finish() {
-		// Needed to populate count of last draw groups
-		if (auto last = polyDrawGroups.rbegin(); last != polyDrawGroups.rend()) {
-			last->count = static_cast<int32>(polyElementData.size()) - last->offset;
-		}
-		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
+		DrawGroupManager::finish();
+	}
+
+	void DrawBuilder::reset() {
+		DrawGroupManager::reset({{0,0}, view});
 	}
 
 	void DrawBuilder::draw() {
@@ -76,22 +169,26 @@ namespace Engine::UI {
 		fontManager2.updateAllFontDataBuffers();
 
 		// Update poly vertex/element buffer
-		if (const auto count = polyVertexData.size()) {
-			{
-				const auto size = count * sizeof(polyVertexData[0]);
-				if (size > polyVBOCapacity) {
-					polyVBOCapacity = static_cast<GLsizei>(polyVertexData.capacity() * sizeof(polyVertexData[0]));
-					glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+		{ // TODO: pull into function
+			const auto& vertData = getVertexData();
+			const auto& elemData = getElementData();
+			if (const auto count = vertData.size()) {
+				{
+					const auto size = count * sizeof(Vertex);
+					if (size > polyVBOCapacity) {
+						polyVBOCapacity = static_cast<GLsizei>(vertData.capacity() * sizeof(Vertex));
+						glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+					}
+					glNamedBufferSubData(polyVBO, 0, size, vertData.data());
 				}
-				glNamedBufferSubData(polyVBO, 0, size, polyVertexData.data());
-			}
-			{
-				const auto size = polyElementData.size() * sizeof(polyElementData[0]);
-				if (size > polyEBOCapacity) {
-					polyEBOCapacity = static_cast<GLsizei>(polyElementData.capacity() * sizeof(polyElementData[0]));
-					glNamedBufferData(polyEBO, polyEBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+				{
+					const auto size = elemData.size() * sizeof(Element);
+					if (size > polyEBOCapacity) {
+						polyEBOCapacity = static_cast<GLsizei>(elemData.capacity() * sizeof(Element));
+						glNamedBufferData(polyEBO, polyEBOCapacity, nullptr, GL_DYNAMIC_DRAW);
+					}
+					glNamedBufferSubData(polyEBO, 0, size, elemData.data());
 				}
-				glNamedBufferSubData(polyEBO, 0, size, polyElementData.data());
 			}
 		}
 
@@ -105,7 +202,7 @@ namespace Engine::UI {
 		};
 
 		// Draw polys
-		for (auto const& group : polyDrawGroups) {
+		for (auto const& group : getDrawGroups()) {
 			// TODO: ENGINE_DEBUG_ASSERT(group.count > 0);
 
 			glBindVertexArray(polyVAO);
@@ -116,7 +213,7 @@ namespace Engine::UI {
 				scissor(group.clip);
 			} else {
 				// TODO: exclude redundant calls
-				scissor(clipStack.front());
+				scissor(getRootClip());
 			}
 
 			if (group.tex != activeTex) {
@@ -126,97 +223,14 @@ namespace Engine::UI {
 
 			glDrawElements(GL_TRIANGLES,
 				group.count,
-				sizeof(polyElementData[0]) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
-				(void*)(group.offset * sizeof(polyElementData[0]))
+				sizeof(Element) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
+				(void*)(group.offset * sizeof(Element))
 			);
 		}
 	}
 
-	void DrawBuilder::reset() {
-		clipStack.clear();
-		clipStack.push_back({{0,0}, view});
-		lastClipOffset = 0;
-
-		polyElementData.clear();
-		polyVertexData.clear();
-		polyDrawGroups.clear();
-	}
-
-	void DrawBuilder::nextDrawGroupPoly() {
-		if (polyDrawGroups.empty()) { // TODO: probably just make sure we push one in reset instead of having a check here.
-			polyDrawGroups.emplace_back();
-		}
-
-		const auto sz = static_cast<int32>(polyElementData.size());
-		auto& prev = polyDrawGroups.back();
-		prev.count = sz - prev.offset;
-		ENGINE_DEBUG_ASSERT(prev.count >= 0); // TODO: this should just be > zero not >=. Why do we fail this?
-
-		const auto setup = [&](PolyDrawGroup& group) ENGINE_INLINE {
-			group.offset = sz;
-			group.tex = activeTexture;
-			lastClipOffset = group.offset;
-		};
-		
-		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
-		if (prev.count == 0) {
-			setup(prev);
-		} else if (false
-			|| (prev.tex != activeTexture)
-			//|| (!prev.clip.empty() && prev.clip != clipStack.back())
-			) {
-			setup(polyDrawGroups.emplace_back());
-		} else {
-			// No group change needed, extend the previous group
-		}
-	}
-
-	void DrawBuilder::makeHardwareClip() {
-		auto* last = &polyDrawGroups.back();
-		if (!last->clip.empty()) { return; }
-
-		// We need to split the previous group
-		if (last->offset != lastClipOffset) {
-			ENGINE_DEBUG_ASSERT(lastClipOffset > last->offset);
-			auto* next = &polyDrawGroups.emplace_back(*last);
-			next->offset = lastClipOffset;
-			last->count = next->offset - last->offset;
-			last = next;
-		}
-
-		last->clip = clipStack.back();
-	}
-
-	void DrawBuilder::pushClip() {
-		clipStack.push_back(clipStack.back());
-		//
-		//
-		// TODO: really should just change this function to take a Bounds and remove setClip? With error checking for to make sure we match push/pop calls or anobject with destructor
-		//       Maybe some kind of ClipScope{}; object?
-		// TODO: check clip != last clip, if it is we should be able to just keep the prev lastClipOffset
-		//       We cant do that yet though because we have setClip still
-		//
-		//
-		//
-		lastClipOffset = static_cast<int32>(polyElementData.size());
-	}
-			
-	void DrawBuilder::popClip() {
-		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
-		clipStack.pop_back();
-
-		// TODO: again check that back != old back, if is just continue the prev offset
-		lastClipOffset = static_cast<int32>(polyElementData.size());
-	}
-
-	void DrawBuilder::setClip(Bounds bounds) {
-		auto& curr = clipStack.back();
-		curr = (clipStack.end() - 2)->intersect(bounds);
-		curr.max = glm::max(curr.min, curr.max);
-	}
-
 	void DrawBuilder::drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
-		const auto old = activeTexture;
+		const auto old = getTexture();
 		setTexture(tex);
 		drawRect(pos, size);
 		setTexture(old);
@@ -224,38 +238,35 @@ namespace Engine::UI {
 
 	void DrawBuilder::drawPoly(ArrayView<const glm::vec2> points) {
 		ENGINE_DEBUG_ASSERT(points.size() >= 3, "Must have at least three points");
-		nextDrawGroupPoly();
 		makeHardwareClip();
 
-		const auto base = static_cast<int32>(polyVertexData.size());
+		const auto base = static_cast<int32>(getVertexData().size());
 		const auto psz = points.size();
-		drawVertex(points[0]);
-		drawVertex(points[1]);
+		addVertex(points[0] + drawOffset, {});
+		addVertex(points[1] + drawOffset, {});
 
 		for (int i = 2; i < psz; ++i) {
-			drawVertex(points[i]);
-			addPolyElements(base, base + i - 1, base + i);
+			addVertex(points[i] + drawOffset, {});
+			addElements(base, base + i - 1, base + i);
 		}
 	}
 
 	void DrawBuilder::drawRect(glm::vec2 pos, glm::vec2 size) {
-		const auto pvdSz = polyVertexData.size();
+		const auto pvdSz = getVertexData().size();
 		auto base = static_cast<uint32>(pvdSz);
 
 		pos += drawOffset;
 
-		ENGINE_DEBUG_ASSERT(clipStack.size() > 0);
-		const auto rect = clipStack.back().intersect({pos, pos+size});
+		const auto rect = getClip().intersect({pos, pos+size});
 		if (rect.max.x <= rect.min.x || rect.max.y <= rect.min.y) { return; }
 
-		nextDrawGroupPoly();
-		drawVertex2(rect.min, {0,1});
-		drawVertex2({rect.min.x, rect.max.y}, {0,0});
-		drawVertex2(rect.max, {1,0});
-		drawVertex2({rect.max.x, rect.min.y}, {1,1});
+		addVertex(rect.min, {0,1});
+		addVertex({rect.min.x, rect.max.y}, {0,0});
+		addVertex(rect.max, {1,0});
+		addVertex({rect.max.x, rect.min.y}, {1,1});
 
-		addPolyElements(base, base+1, base+2);
-		addPolyElements(base+2, base+3, base);
+		addElements(base, base+1, base+2);
+		addElements(base+2, base+3, base);
 	}
 	
 	void DrawBuilder::drawLine(glm::vec2 a, glm::vec2 b, float32 width) {
@@ -277,8 +288,8 @@ namespace Engine::UI {
 		//nextDrawGroupGlyph();
 
 		const auto& glyphData = font->_debug_getGlyphData(); // TODO: remove this function, see definition for details
-		const auto old = activeTexture;
-		auto base = static_cast<uint32>(polyVertexData.size()); // TODO: should be able to just check once then do += 4
+		const auto old = getTexture();
+		auto base = static_cast<uint32>(getVertexData().size()); // TODO: should be able to just check once then do += 4
 		setTexture(font->getGlyphTexture());
 
 		for (const auto& data : glyphs) ENGINE_INLINE_CALLS {
@@ -289,8 +300,7 @@ namespace Engine::UI {
 
 			const auto p = glm::round(pos + data.offset + drawOffset); // I think this should technically also include the size offset per vert. In practice it does not make a difference (in any tests i have done) and this is faster.
 			pos += data.advance;
-			ENGINE_DEBUG_ASSERT(clipStack.size() > 0);
-			const auto& clip = clipStack.back();
+			const auto& clip = getClip();
 			auto orig = Bounds{p, p+size};
 			auto uv = Bounds{offset, uvsize};
 
@@ -316,13 +326,13 @@ namespace Engine::UI {
 
 
 			int layer = 0; // TODO:
-			drawVertex2(orig.min, uv.min, layer);
-			drawVertex2({orig.min.x, orig.max.y}, uv.min + glm::vec2{0, uv.max.y}, layer);
-			drawVertex2(orig.max, uv.min + uv.max, layer);
-			drawVertex2({orig.max.x, orig.min.y}, uv.min + glm::vec2{uv.max.x, 0}, layer);
+			addVertex(orig.min, uv.min, layer);
+			addVertex({orig.min.x, orig.max.y}, uv.min + glm::vec2{0, uv.max.y}, layer);
+			addVertex(orig.max, uv.min + uv.max, layer);
+			addVertex({orig.max.x, orig.min.y}, uv.min + glm::vec2{uv.max.x, 0}, layer);
 
-			addPolyElements(base, base+1, base+2);
-			addPolyElements(base+2, base+3, base);
+			addElements(base, base+1, base+2);
+			addElements(base+2, base+3, base);
 			base += 4;
 		}
 

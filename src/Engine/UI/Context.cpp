@@ -309,7 +309,7 @@ namespace Engine::UI {
 
 		// DFS traversal
 		for (Panel* curr = root; curr;) {
-			drawOffset = curr->getPos();
+			setOffset(curr->getPos());
 
 			pushClip();
 			setClip(curr->getBounds());

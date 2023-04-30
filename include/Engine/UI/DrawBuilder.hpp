@@ -9,71 +9,111 @@
 
 
 namespace Engine::UI {
-	// TODO: we really should separate the buffer building and draw/opengl objects. But since we only support opengl atm not a lot to gain.
-	class DrawBuilder {
-		private:
-			struct PolyDrawGroup {
+	class DrawGroupManager {
+		protected:
+			struct DrawGroup {
 				int32 offset = {}; // VBO offset
 				int32 count = {}; // VBO elements
 				Bounds clip = {}; // Empty if clipping is done 100% in software for this group.
 				Gfx::TextureHandleGeneric tex = {};
 			};
 
-			struct PolyVertex {
+			struct Vertex {
 				glm::vec2 pos;
 				glm::u16vec2 texCoord;
 				glm::u8vec4 color; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
 				glm::u8 layer; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
 				char _unused[3];
-			}; static_assert(sizeof(PolyVertex) == 8+4+4 +4);
+			}; static_assert(sizeof(Vertex) == 8+4+4 +4);
+
+			using Element = uint16;
 
 		private:
-			/* Polygon members */
+			/* Render state */
+			Gfx::TextureHandleGeneric activeTexture; // TODO: rename just texture
+			glm::vec4 color = {1,1,1,1};
+			int32 lastClipOffset = 0; // VBO offset of current clipping group
+			std::vector<Bounds> clipStack;
+			std::vector<DrawGroup> drawGroups;
+			std::vector<Vertex> vertData;
+			std::vector<Element> elemData;
+
+		public:
+			ENGINE_INLINE void setColor(glm::vec4 color) noexcept { this->color = color * 255.0f; nextDrawGroup(); }
+			ENGINE_INLINE auto getColor() const noexcept { return color; }
+
+			ENGINE_INLINE void setTexture(Gfx::TextureHandleGeneric tex) noexcept { activeTexture = tex; nextDrawGroup(); }
+			ENGINE_INLINE auto getTexture() const noexcept { return activeTexture; }
+
+			void pushClip();
+			void popClip();
+			void setClip(Bounds bounds); // TODO: remove or change to use pop,push pattern
+			ENGINE_INLINE const auto& getClip() const noexcept { ENGINE_DEBUG_ASSERT(clipStack.size() > 0); return clipStack.back(); }
+			ENGINE_INLINE const auto& getRootClip() const noexcept { ENGINE_DEBUG_ASSERT(clipStack.size() > 0); return clipStack.front(); }
+
+			ENGINE_INLINE const auto& getVertexData() const noexcept { return vertData; }
+			ENGINE_INLINE const auto& getElementData() const noexcept { return elemData; }
+			ENGINE_INLINE const auto& getDrawGroups() const noexcept { return drawGroups; }
+			
+			void finish();
+			void reset(Bounds clip);
+
+			void makeHardwareClip();
+
+			void addVertex(glm::vec2 pos, glm::vec2 texCoord, uint8 layer = 0) {
+				vertData.push_back({
+					.pos = pos,
+					.texCoord = texCoord * 65535.0f,
+					.color = color,
+					.layer = layer, // TOOD: what is this? why do we need it?
+				});
+			}
+
+			ENGINE_INLINE void addElements(uint32 i1, uint32 i2, uint32 i3) {
+				elemData.push_back(i1); elemData.push_back(i2); elemData.push_back(i3);
+			}
+
+		private:
+			void nextDrawGroup();
+	};
+	// TODO: we really should separate the buffer building and draw/opengl objects. But since we only support opengl atm not a lot to gain.
+	class DrawBuilder : protected DrawGroupManager {
+		private:
+			/* Render state */
+			Gfx::Texture2D defaultTexture; /** Default blank (white) texture */
+			Font font = nullptr;
+			glm::vec2 view = {};
+			Gfx::ShaderRef polyShader;
+
+			// TODO: use Gfx:: types
+			glm::vec2 drawOffset; /* The position offset to use for rendering */
 			GLuint polyVAO = 0;
 			GLuint polyVBO = 0;
 			GLsizei polyVBOCapacity = 0;
-			std::vector<PolyDrawGroup> polyDrawGroups;
-			std::vector<PolyVertex> polyVertexData;
-			Gfx::ShaderRef polyShader;
-			
 			GLuint polyEBO = 0;
 			GLsizei polyEBOCapacity = 0;
-			std::vector<uint16> polyElementData;
-
-			/* Render state */
-			std::vector<Bounds> clipStack;
-			int32 lastClipOffset = 0; // VBO offset of current clipping group
-			Gfx::TextureHandleGeneric activeTexture;
-			Gfx::Texture2D defaultTexture; /** Default blank (white) texture */
-			Font font = nullptr;
-			glm::vec4 color = {1,1,1,1};
-			glm::vec2 view = {};
 			
 		public: // TODO: private
-			glm::vec2 drawOffset; /* The offset to use for rendering */
 			FontManager fontManager2;
 
 		public:
 			DrawBuilder(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader);
 			~DrawBuilder();
 
-			void resize(glm::vec2 view);
-			void draw();
-			void reset();
-			void finish();
-			void nextDrawGroupPoly();
+			using DrawGroupManager::setColor;
+			using DrawGroupManager::setClip;
 
-			void pushClip();
-			void popClip();
-			void setClip(Bounds bounds);
+			void setOffset(glm::vec2 offset) noexcept { drawOffset = offset; }
+			void resize(glm::vec2 view);
+			void finish();
+			void reset();
+			void draw();
 
 			// TODO: probably move this state stuff into base class to avoid changing in draw* functions
-			ENGINE_INLINE void setColor(glm::vec4 color) noexcept { this->color = color * 255.0f; nextDrawGroupPoly(); }
-			ENGINE_INLINE void setTexture(Gfx::TextureHandleGeneric tex) { activeTexture = tex; nextDrawGroupPoly(); }
 			ENGINE_INLINE void setFont(Font f) noexcept { font = f; }
 
 			void drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);
-
+			 
 			/**
 			 * Draws a convex polygon from a ordered set of perimeter points.
 			 * If the points are not in order the results are undefined.
@@ -106,34 +146,10 @@ namespace Engine::UI {
 
 
 		private:
-			void makeHardwareClip();
-
-			// TODO: add something to push multipler verts ine one resize+idx
-			ENGINE_INLINE void drawVertex(glm::vec2 pos, glm::vec2 texCoord = {}) {
-				polyVertexData.push_back({
-					.pos = pos + drawOffset,
-					.texCoord = texCoord * 65535.0f,
-					.color = color,
-				});
-			}
-
-			// TODO: rm - merge with above
-			void drawVertex2(glm::vec2 pos, glm::vec2 texCoord, uint8 layer = 0) {
-				polyVertexData.push_back({
-					.pos = pos,
-					.texCoord = texCoord * 65535.0f,
-					.color = color,
-					.layer = layer, // TOOD: what is this? why do we need it?
-				});
-			}
-
-			ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c) {
-				drawVertex(a); drawVertex(b); drawVertex(c);
-			}
-
-			ENGINE_INLINE void addPolyElements(uint32 i1, uint32 i2, uint32 i3) {
-				polyElementData.push_back(i1); polyElementData.push_back(i2); polyElementData.push_back(i3);
-			}
+			// TODO: rm - dont we need an addElement here also?
+			//ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c) {
+			//	addVertex(a); addVertex(b); addVertex(c);
+			//}
 
 	};
 }
