@@ -6,39 +6,31 @@
 namespace Engine::UI {
 	void DrawGroupManager::pushClip() {
 		clipStack.push_back(clipStack.back());
-		//
-		//
-		// TODO: really should just change this function to take a Bounds and remove setClip? With error checking for to make sure we match push/pop calls or anobject with destructor
-		//       Maybe some kind of ClipScope{}; object?
-		// TODO: check clip != last clip, if it is we should be able to just keep the prev lastClipOffset
-		//       We cant do that yet though because we have setClip still
-		//
-		//
-		//
-		lastClipOffset = static_cast<int32>(elemData.size());
-		nextDrawGroup();
 	}
 			
 	void DrawGroupManager::popClip() {
 		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
 		clipStack.pop_back();
-
-		// TODO: again check that back != old back, if is just continue the prev offset
 		lastClipOffset = static_cast<int32>(elemData.size());
 		nextDrawGroup();
 	}
 
 	void DrawGroupManager::setClip(Bounds bounds) {
 		auto& curr = clipStack.back();
+
+		// Avoid splitting groups with the same clipping
+		if (curr != bounds) {
+			lastClipOffset = static_cast<int32>(elemData.size());
+		}
+
+		// Set clip
 		curr = (clipStack.end() - 2)->intersect(bounds);
 		curr.max = glm::max(curr.min, curr.max);
+
 		nextDrawGroup();
 	}
 	void DrawGroupManager::nextDrawGroup() {
-		if (drawGroups.empty()) { // TODO: probably just make sure we push one in reset instead of having a check here.
-			drawGroups.emplace_back();
-		}
-
+		ENGINE_DEBUG_ASSERT(!drawGroups.empty());
 		const auto sz = static_cast<int32>(elemData.size());
 		auto& prev = drawGroups.back();
 		prev.count = sz - prev.offset;
@@ -52,10 +44,10 @@ namespace Engine::UI {
 		
 		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
 		if (prev.count == 0) {
-			setup(prev);
+			setup(prev = {});
 		} else if (false
 			|| (prev.tex != activeTexture)
-			//|| (!prev.clip.empty() && prev.clip != clipStack.back())
+			// ...
 			) {
 			setup(drawGroups.emplace_back());
 		} else {
@@ -71,6 +63,7 @@ namespace Engine::UI {
 		elemData.clear();
 		vertData.clear();
 		drawGroups.clear();
+		drawGroups.emplace_back();
 	}
 
 	void DrawGroupManager::finish() {
@@ -143,8 +136,8 @@ namespace Engine::UI {
 			defaultTexture.setImage(img);
 		}
 
-		setTexture(defaultTexture);
 		reset();
+		setTexture(defaultTexture);
 	}
 
 	DrawBuilder::~DrawBuilder() {
@@ -212,10 +205,17 @@ namespace Engine::UI {
 			glUseProgram(polyShader->get());
 			Gfx::TextureHandleGeneric activeTex = {};
 
+			// TODO: We could save on a few scissor calls here if we track all clips and
+			//       have a separate isHardware flag. This would allow us to only revert to
+			//       the root clip if the next clip is outside the current scissor. For
+			//       example, we could draw all sub panel and the only reset to root clip
+			//       once all sub panel are done. With the current implementation we will
+			//       have an unneeded scissor(root) then a scissor(sub) where we should
+			//       really only need the scissor(sub), the scissor (root) is not needed
+			//       because we are in a sub panel.
 			if (!group.clip.empty()) {
 				scissor(group.clip);
 			} else {
-				// TODO: exclude redundant calls
 				scissor(getRootClip());
 			}
 
