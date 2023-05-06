@@ -297,13 +297,14 @@ namespace Engine::UI {
 		const auto& glyphData = font->_debug_getGlyphData(); // TODO: remove this function, see definition for details
 		const auto old = getTexture();
 		auto base = static_cast<uint32>(getVertexData().size());
+		const float32 texSize = static_cast<float32>(font->getGlyphTextureSize());
 		setTexture(font->getGlyphTexture());
 
 		for (const auto& data : glyphs) ENGINE_INLINE_CALLS {
 			const uint32 index = font->getGlyphIndex(data.index);
-			const glm::vec2 offset = glyphData[index].offset / 4096.0f;
+			const glm::vec2 offset = glyphData[index].offset / texSize;
 			auto size = glyphData[index].size;
-			const auto uvsize = size / 4096.0f;
+			const auto uvsize = size / texSize;
 
 			const auto p = glm::round(pos + data.offset + drawOffset); // I think this should technically also include the size offset per vert. In practice it does not make a difference (in any tests i have done) and this is faster.
 			pos += data.advance;

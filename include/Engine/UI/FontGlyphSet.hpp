@@ -71,9 +71,8 @@ namespace Engine::UI {
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
 
-			Gfx::Texture2D glyphTex; // TODO: handle better
-			//public: int glyphTexLayer = 0; private: // TODO: rm - should be handled by some kind of layer allocater
-			//Gfx::Texture2DArray* glyphTex; // TODO: handle better
+			Gfx::Texture2D glyphTex;
+			int32 glyphTexSize = 0;
 			glm::vec2 maxGlyphSize;
 			glm::ivec2 indexBounds;
 			int nextGlyphIndex = 0; // TODO: glyph index recycling
@@ -87,6 +86,8 @@ namespace Engine::UI {
 			void init(FT_Face face, int32 size);
 
 			void loadGlyph(const uint32 index);
+
+			ENGINE_INLINE int32 getGlyphTextureSize() const noexcept { return glyphTexSize; }
 
 			ENGINE_INLINE bool isGlyphLoaded(const uint32 index) const noexcept { return glyphIndexToLoadedIndex.contains(index); };
 

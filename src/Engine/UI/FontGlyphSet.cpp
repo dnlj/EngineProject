@@ -4,6 +4,9 @@
 // Harfbuzz
 #include <hb-ft.h>
 
+// GLM
+#include <glm/gtx/component_wise.hpp>
+
 // Engine
 #include <Engine/UI/FontManager.hpp>
 #include <Engine/UI/FontGlyphSet.hpp>
@@ -72,70 +75,21 @@ namespace Engine::UI {
 		hbFont = hb_ft_font_create(face, nullptr);
 
 		// Setup OpenGL
-		GLint texSize;
-		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texSize);
-
 		initMaxGlyphSize();
+		{
+			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &glyphTexSize);
 
-		// TODO: may want to limit base on face size? for small font sizes 4096 might be excessive.
-		texSize = std::min(texSize, 4096);
-		
-		indexBounds = glm::floor(glm::vec2{texSize, texSize} / maxGlyphSize);
+			// Next pow2 that will contain at least `count` glyphs
+			constexpr auto count = 10;
+			auto const ideal = std::bit_ceil(static_cast<uint32>(glm::compMax(maxGlyphSize) * count));
 
-		{ // TODO: fix, this is the worst way to handle this
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: problem is we use same texture layer for each font size, alloc new layer for each font
-			// for now just alloc more layers, in the future should probably use sparse texture arrays
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//static int layer = 0;
-			//glyphTexLayer = ++layer;
-			//glyphTex = &DrawBuilder::_temp_all;
-			//glyphTex->setSubImage(0, {0,0,1}, {4096, 4096, 1},);
-		}
+			glyphTexSize = std::min(glyphTexSize, static_cast<GLint>(ideal));
+		};
+
+		indexBounds = glm::floor(glm::vec2{glyphTexSize, glyphTexSize} / maxGlyphSize);
 
 		// TODO: rm
-		glyphTex.setStorage(Gfx::TextureFormat::R8, {texSize, texSize});
+		glyphTex.setStorage(Gfx::TextureFormat::R8, {glyphTexSize, glyphTexSize});
 		{ // TODO: move into the Texture class
 			const GLint swizzle[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
 			glTextureParameteriv(glyphTex.get(), GL_TEXTURE_SWIZZLE_RGBA, swizzle);
@@ -170,31 +124,15 @@ namespace Engine::UI {
 				met.index / indexBounds.x,
 			};
 			dat.offset = glm::vec3{i * maxGlyphSize, 0};
-			//dat.offset = glm::vec3{i * maxGlyphSize, glyphTexLayer};
 
 			ENGINE_DEBUG_ASSERT(i.y < indexBounds.y, "Glyph texture index is out of bounds. Should rollover to next texture layer in array.");
 
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
-			//// TODO: rm - glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
-			//// TODO: rm - glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
-			//std::vector<byte> temp; // TODO: do this better
-			//temp.reserve(glyph.bitmap.rows * abs(glyph.bitmap.pitch));
-			//
-			//for (uint64 row = 0; row < glyph.bitmap.rows; ++row) {
-			//	for (uint64 col = 0; col < glyph.bitmap.width; ++col) {
-			//		temp.push_back(255);
-			//		temp.push_back(255);
-			//		temp.push_back(255);
-			//		temp.push_back(glyph.bitmap.buffer[row * glyph.bitmap.pitch + col]);
-			//	}
-			//}
-			//glyphTex->setSubImage(0, dat.offset, glm::vec3{dat.size, 1}, Gfx::PixelFormat::RGBA8, temp.data());
-			//glyphTex->setSubImage(0, dat.offset, glm::vec3{dat.size, 1}, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 		}
 
-		//ENGINE_INFO("Loaded glyph ", index, " = ", nextGlyphIndex-1, " @ ", dat.offset.x, ", ", dat.offset.y); // TODO: rm
+		//ENGINE_INFO("Loaded glyph ", index, " = ", nextGlyphIndex-1, " @ ", dat.offset.x, ", ", dat.offset.y);
 	}
 
 	void FontGlyphSet::initMaxGlyphSize() {
@@ -231,6 +169,7 @@ namespace Engine::UI {
 			FT_MulFix(ftFace->bbox.yMax - ftFace->bbox.yMin, ftFace->size->metrics.y_scale) * mscale
 		});
 
+		// See above comment
 		// Find minimum bounding box that can contain any glyph
 		//glm::vec2 maxGlyph = {};
 		//const auto startT = Clock::now();

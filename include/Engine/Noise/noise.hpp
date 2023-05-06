@@ -13,6 +13,7 @@ namespace Engine::Noise {
 		return seed * 6364136223846793005l + 1442695040888963407l;
 	}
 
+	// TODO: move to Engine::Math, maybe combine namespaces?
 	// TODO: Check if this is actually faster
 	/**
 	 * Takes the floor of @p x and returns it as @p Int.
@@ -25,5 +26,11 @@ namespace Engine::Noise {
 	constexpr Int floorTo(Float x) {
 		Int xi = static_cast<Int>(x);
 		return x < xi ? xi - 1 : xi;
+	}
+
+	template<class Int, class Float>
+	constexpr Int ceilTo(Float x) {
+		Int xi = static_cast<Int>(x);
+		return x > xi ? xi + 1 : xi;
 	}
 }
