@@ -13,24 +13,20 @@
 #include <Engine/UI/ShapedString.hpp>
 #include <Engine/UI/common.hpp>
 
-#include <Engine/UI/DrawBuilder.hpp> // TODO: remove, shouldnt be needed here
-
 
 namespace Engine::UI {
 	FontGlyphSet::FontGlyphSet() {
 	}
 
 	FontGlyphSet::~FontGlyphSet() {
-		glDeleteBuffers(1, &glyphSSBO);
-
 		hb_font_destroy(hbFont);
 		
 		if (const auto err = FT_Done_Size(ftSize)) [[unlikely]] {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err));
 		}
 
 		if (const auto err = FT_Done_Face(ftFace)) [[unlikely]] {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err));
 		}
 	}
 
@@ -94,8 +90,6 @@ namespace Engine::UI {
 			const GLint swizzle[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
 			glTextureParameteriv(glyphTex.get(), GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 		}
-
-		glCreateBuffers(1, &glyphSSBO);
 	}
 
 	void FontGlyphSet::loadGlyph(const uint32 index) {
@@ -255,17 +249,6 @@ namespace Engine::UI {
 		glyphs.clear();
 		shapeString(str.getString(), glyphs, bounds);
 		str.setBounds(bounds);
-	}
-	
-	void FontGlyphSet::updateDataBuffer() {
-		// TODO: we should know when this is resized. just do this then?
-		const GLsizei newSize = static_cast<GLsizei>(glyphData.size() * sizeof(glyphData[0]));
-		if (newSize > glyphSSBOSize) {
-			//ENGINE_INFO("glyphSSBO resize: ", newSize, " ", glyphSSBO);
-			glyphSSBOSize = newSize;
-			glNamedBufferData(glyphSSBO, glyphSSBOSize, nullptr, GL_DYNAMIC_DRAW); // TODO: what storge type?
-			glNamedBufferSubData(glyphSSBO, 0, newSize, glyphData.data());
-		}
 	}
 }
 

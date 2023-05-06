@@ -163,9 +163,6 @@ namespace Engine::UI {
 	}
 
 	void DrawBuilder::updateBuffers() {
-		// Update font buffers
-		updateAllFontDataBuffers();
-
 		// Update poly vertex/element buffer
 		const auto& vertData = getVertexData();
 		const auto& elemData = getElementData();

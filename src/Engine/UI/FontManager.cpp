@@ -81,10 +81,4 @@ namespace Engine::UI {
 
 		return found->second.get();
 	}
-
-	void FontManager::updateAllFontDataBuffers() {
-		for (auto& [id, set] : fontIdToGlyphSet) {
-			set->updateDataBuffer();
-		}
-	}
 }

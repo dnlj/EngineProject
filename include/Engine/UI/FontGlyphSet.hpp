@@ -65,8 +65,6 @@ namespace Engine::UI {
 			FT_Size ftSize;
 			hb_font_t* hbFont;
 
-			GLuint glyphSSBO = 0;
-			GLsizei glyphSSBOSize = 0;
 			FlatHashMap<uint32, uint32> glyphIndexToLoadedIndex;
 			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
@@ -94,8 +92,6 @@ namespace Engine::UI {
 			ENGINE_INLINE const auto& getGlyphTexture() const noexcept { return glyphTex; }
 
 			ENGINE_INLINE const auto& _debug_getGlyphData() const noexcept { return glyphData; } // TODO: just merge glyphData and metrics? or what?
-
-			ENGINE_INLINE const auto& getGlyphDataBuffer() const noexcept { return glyphSSBO; }
 
 			ENGINE_INLINE auto getGlyphIndex(uint32 glyph) { return glyphIndexToLoadedIndex[glyph]; }
 

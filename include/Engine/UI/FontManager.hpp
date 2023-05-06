@@ -53,8 +53,6 @@ namespace Engine::UI {
 			Font createFont(const std::string& path, int32 size);
 
 			ENGINE_INLINE auto getWorkingBuffer() const noexcept { return workingBuffer; }
-
-			void updateAllFontDataBuffers();
 	};
 }
 
