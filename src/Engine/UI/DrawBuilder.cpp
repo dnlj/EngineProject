@@ -34,7 +34,7 @@ namespace Engine::UI {
 		const auto sz = static_cast<int32>(elemData.size());
 		auto& prev = drawGroups.back();
 		prev.count = sz - prev.offset;
-		ENGINE_DEBUG_ASSERT(prev.count >= 0); // TODO: this should just be > zero not >=. Why do we fail this?
+		ENGINE_DEBUG_ASSERT(prev.count >= 0);
 
 		const auto setup = [&](DrawGroup& group) ENGINE_INLINE {
 			group.offset = sz;
@@ -67,9 +67,15 @@ namespace Engine::UI {
 	}
 
 	void DrawGroupManager::finish() {
-		// Needed to populate count of last draw groups
+		// Populate count of last draw groups
 		if (auto last = drawGroups.rbegin(); last != drawGroups.rend()) {
 			last->count = static_cast<int32>(elemData.size()) - last->offset;
+
+			// This will be true 100% of the time based on how we currently push/pop clips.
+			// Thats technically not part of the DrawGroupManager though so we still need to calc.
+			if (last->count == 0) {
+				drawGroups.pop_back();
+			}
 		}
 		ENGINE_DEBUG_ASSERT(clipStack.size() == 1, "Mismatched push/pop clip");
 	}
@@ -120,16 +126,12 @@ namespace Engine::UI {
 			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
 			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
 			glVertexArrayAttribFormat(polyVAO, attribLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(Vertex, color));
-			
-			glEnableVertexArrayAttrib(polyVAO, ++attribLocation);
-			glVertexArrayAttribBinding(polyVAO, attribLocation, bindingIndex);
-			glVertexArrayAttribFormat(polyVAO, attribLocation, 1, GL_UNSIGNED_BYTE, GL_FALSE, offsetof(Vertex, layer));
 		}
 
 		{
 			using namespace Gfx;
 
-			// TODO: rm
+			// TODO: rm - doesn't the resource manager already provide a default texture?
 			Image img{PixelFormat::RGB8, {1,1}};
 			memset(img.data(), 0xFF, img.sizeBytes());
 			defaultTexture.setStorage(TextureFormat::RGB8, img.size());
@@ -199,7 +201,7 @@ namespace Engine::UI {
 
 		// Draw polys
 		for (auto const& group : getDrawGroups()) {
-			// TODO: ENGINE_DEBUG_ASSERT(group.count > 0);
+			ENGINE_DEBUG_ASSERT(group.count > 0);
 
 			glBindVertexArray(polyVAO);
 			glUseProgram(polyShader->get());
@@ -292,7 +294,7 @@ namespace Engine::UI {
 
 		const auto& glyphData = font->_debug_getGlyphData(); // TODO: remove this function, see definition for details
 		const auto old = getTexture();
-		auto base = static_cast<uint32>(getVertexData().size()); // TODO: should be able to just check once then do += 4
+		auto base = static_cast<uint32>(getVertexData().size());
 		setTexture(font->getGlyphTexture());
 
 		for (const auto& data : glyphs) ENGINE_INLINE_CALLS {
@@ -327,12 +329,10 @@ namespace Engine::UI {
 			}
 			if (orig.max.y <= orig.min.y) { continue; }
 
-
-			int layer = 0; // TODO:
-			addVertex(orig.min, uv.min, layer);
-			addVertex({orig.min.x, orig.max.y}, uv.min + glm::vec2{0, uv.max.y}, layer);
-			addVertex(orig.max, uv.min + uv.max, layer);
-			addVertex({orig.max.x, orig.min.y}, uv.min + glm::vec2{uv.max.x, 0}, layer);
+			addVertex(orig.min, uv.min);
+			addVertex({orig.min.x, orig.max.y}, uv.min + glm::vec2{0, uv.max.y});
+			addVertex(orig.max, uv.min + uv.max);
+			addVertex({orig.max.x, orig.min.y}, uv.min + glm::vec2{uv.max.x, 0});
 
 			addElements(base, base+1, base+2);
 			addElements(base+2, base+3, base);

@@ -22,9 +22,7 @@ namespace Engine::UI {
 				glm::vec2 pos;
 				glm::u16vec2 texCoord;
 				glm::u8vec4 color; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
-				glm::u8 layer; // TODO: could be moved to a per-tri attribute buffer to reduce upload cost. bench and test.
-				char _unused[3];
-			}; static_assert(sizeof(Vertex) == 8+4+4 +4);
+			}; static_assert(sizeof(Vertex) == 8+4+4);
 
 			using Element = uint16;
 
@@ -60,12 +58,11 @@ namespace Engine::UI {
 
 			void makeHardwareClip();
 
-			void addVertex(glm::vec2 pos, glm::vec2 texCoord, uint8 layer = 0) {
+			ENGINE_INLINE void addVertex(glm::vec2 pos, glm::vec2 texCoord) {
 				vertData.push_back({
 					.pos = pos,
 					.texCoord = texCoord * 65535.0f,
 					.color = color,
-					.layer = layer, // TOOD: what is this? why do we need it?
 				});
 			}
 

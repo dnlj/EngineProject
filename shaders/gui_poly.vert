@@ -4,13 +4,11 @@
 layout (location = 0) in vec2 vertPos;
 layout (location = 1) in vec2 vertTexCoord;
 layout (location = 2) in vec4 vertColor;
-layout (location = 3) in float vertLayer;
 
 layout (location = 0) uniform vec2 viewScale; // = 2 / viewSize
 
 out vec4 fragColor;
 out vec2 fragTexCoord;
-out float fragLayer;
 
 void main() {
 	// Convert from pixels to NDC
@@ -19,5 +17,4 @@ void main() {
 
 	fragColor = vertColor;
 	fragTexCoord = vertTexCoord;
-	fragLayer = vertLayer;
 }
