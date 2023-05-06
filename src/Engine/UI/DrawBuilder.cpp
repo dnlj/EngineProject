@@ -162,33 +162,35 @@ namespace Engine::UI {
 		DrawGroupManager::reset({{0,0}, view});
 	}
 
-	void DrawBuilder::draw() {
+	void DrawBuilder::updateBuffers() {
 		// Update font buffers
 		fontManager2.updateAllFontDataBuffers();
 
 		// Update poly vertex/element buffer
-		{ // TODO: pull into function
-			const auto& vertData = getVertexData();
-			const auto& elemData = getElementData();
-			if (const auto count = vertData.size()) {
-				{
-					const auto size = count * sizeof(Vertex);
-					if (size > polyVBOCapacity) {
-						polyVBOCapacity = static_cast<GLsizei>(vertData.capacity() * sizeof(Vertex));
-						glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-					}
-					glNamedBufferSubData(polyVBO, 0, size, vertData.data());
+		const auto& vertData = getVertexData();
+		const auto& elemData = getElementData();
+		if (const auto count = vertData.size()) {
+			{
+				const auto size = count * sizeof(Vertex);
+				if (size > polyVBOCapacity) {
+					polyVBOCapacity = static_cast<GLsizei>(vertData.capacity() * sizeof(Vertex));
+					glNamedBufferData(polyVBO, polyVBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 				}
-				{
-					const auto size = elemData.size() * sizeof(Element);
-					if (size > polyEBOCapacity) {
-						polyEBOCapacity = static_cast<GLsizei>(elemData.capacity() * sizeof(Element));
-						glNamedBufferData(polyEBO, polyEBOCapacity, nullptr, GL_DYNAMIC_DRAW);
-					}
-					glNamedBufferSubData(polyEBO, 0, size, elemData.data());
+				glNamedBufferSubData(polyVBO, 0, size, vertData.data());
+			}
+			{
+				const auto size = elemData.size() * sizeof(Element);
+				if (size > polyEBOCapacity) {
+					polyEBOCapacity = static_cast<GLsizei>(elemData.capacity() * sizeof(Element));
+					glNamedBufferData(polyEBO, polyEBOCapacity, nullptr, GL_DYNAMIC_DRAW);
 				}
+				glNamedBufferSubData(polyEBO, 0, size, elemData.data());
 			}
 		}
+	}
+
+	void DrawBuilder::draw() {
+		updateBuffers();
 
 		const auto scissor = [y=view.y](const Bounds& bounds) ENGINE_INLINE {
 			glScissor(

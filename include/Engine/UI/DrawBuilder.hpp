@@ -143,10 +143,7 @@ namespace Engine::UI {
 
 
 		private:
-			// TODO: rm - dont we need an addElement here also?
-			//ENGINE_INLINE void drawTri(glm::vec2 a, glm::vec2 b, glm::vec2 c) {
-			//	addVertex(a); addVertex(b); addVertex(c);
-			//}
+			void updateBuffers();
 
 	};
 }
