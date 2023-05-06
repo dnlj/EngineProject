@@ -38,7 +38,7 @@ namespace Engine::UI {
 
 		const auto setup = [&](DrawGroup& group) ENGINE_INLINE {
 			group.offset = sz;
-			group.tex = activeTexture;
+			group.tex = texture;
 			lastClipOffset = group.offset;
 		};
 		
@@ -46,7 +46,7 @@ namespace Engine::UI {
 		if (prev.count == 0) {
 			setup(prev = {});
 		} else if (false
-			|| (prev.tex != activeTexture)
+			|| (prev.tex != texture)
 			// ...
 			) {
 			setup(drawGroups.emplace_back());
@@ -164,7 +164,7 @@ namespace Engine::UI {
 
 	void DrawBuilder::updateBuffers() {
 		// Update font buffers
-		fontManager2.updateAllFontDataBuffers();
+		updateAllFontDataBuffers();
 
 		// Update poly vertex/element buffer
 		const auto& vertData = getVertexData();

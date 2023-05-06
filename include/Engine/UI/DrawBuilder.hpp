@@ -28,7 +28,7 @@ namespace Engine::UI {
 
 		private:
 			/* Render state */
-			Gfx::TextureHandleGeneric activeTexture; // TODO: rename just texture
+			Gfx::TextureHandleGeneric texture;
 			glm::vec4 color = {1,1,1,1};
 			int32 lastClipOffset = 0; // VBO offset of current clipping group
 			std::vector<Bounds> clipStack;
@@ -40,8 +40,8 @@ namespace Engine::UI {
 			ENGINE_INLINE void setColor(glm::vec4 color) noexcept { this->color = color * 255.0f; }
 			ENGINE_INLINE auto getColor() const noexcept { return color; }
 
-			ENGINE_INLINE void setTexture(Gfx::TextureHandleGeneric tex) noexcept { activeTexture = tex; nextDrawGroup(); }
-			ENGINE_INLINE auto getTexture() const noexcept { return activeTexture; }
+			ENGINE_INLINE void setTexture(Gfx::TextureHandleGeneric tex) noexcept { texture = tex; nextDrawGroup(); }
+			ENGINE_INLINE auto getTexture() const noexcept { return texture; }
 
 			void pushClip();
 			void popClip();
@@ -73,8 +73,8 @@ namespace Engine::UI {
 		private:
 			void nextDrawGroup();
 	};
-	// TODO: we really should separate the buffer building and draw/opengl objects. But since we only support opengl atm not a lot to gain.
-	class DrawBuilder : protected DrawGroupManager {
+
+	class DrawBuilder : protected DrawGroupManager, FontManager {
 		private:
 			/* Render state */
 			Gfx::Texture2D defaultTexture; /** Default blank (white) texture */
@@ -89,16 +89,14 @@ namespace Engine::UI {
 			GLsizei polyVBOCapacity = 0;
 			GLuint polyEBO = 0;
 			GLsizei polyEBOCapacity = 0;
-			
-		public: // TODO: private
-			FontManager fontManager2;
 
 		public:
-			DrawBuilder(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader);
-			~DrawBuilder();
-
 			using DrawGroupManager::setColor;
 			using DrawGroupManager::setClip;
+			using FontManager::createFont;
+
+			DrawBuilder(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader);
+			~DrawBuilder();
 
 			void setOffset(glm::vec2 offset) noexcept { drawOffset = offset; }
 			void resize(glm::vec2 view);

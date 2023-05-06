@@ -177,14 +177,14 @@ namespace Engine::UI {
 		///////////////////////////////////////////////////////////////////////////////
 
 		// TODO: ideally these could just be "Arial" and "Consola" not actual paths.
-		theme.fonts.header = fontManager2.createFont("assets/arial.ttf", 32);
-		theme.fonts.body = fontManager2.createFont("assets/consola.ttf", 12);
+		theme.fonts.header = createFont("assets/arial.ttf", 32);
+		theme.fonts.body = createFont("assets/consola.ttf", 12);
 		//font_a = fontManager.createFont("assets/EmojiOneColor.otf", 32);
 		//font_a = fontManager.createFont("assets/FiraCode-Regular.ttf", 32);
 		//font_b = fontManager.createFont("assets/arial.ttf", 128);
 
-		const auto rgb = [&](glm::vec4 v) ENGINE_INLINE { return Math::cvtApproxRGBToLinear(v); };
-		const auto hsl = [&](glm::vec4 v) ENGINE_INLINE { return rgb(Math::cvtHSLtoRGB(v)); };
+		constexpr auto rgb = [](glm::vec4 v) ENGINE_INLINE { return Math::cvtApproxRGBToLinear(v); };
+		constexpr auto hsl = [](glm::vec4 v) ENGINE_INLINE { return rgb(Math::cvtHSLtoRGB(v)); };
 		constexpr auto s = 0.70;
 		constexpr auto l = 0.63;
 		constexpr auto a = 0.33;
