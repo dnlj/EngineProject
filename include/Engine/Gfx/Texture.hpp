@@ -14,10 +14,14 @@
 #include <Engine/Gfx/TextureFormat.hpp>
 #include <Engine/Gfx/TextureHandle.hpp>
 #include <Engine/Gfx/TextureType.hpp>
+#include <Engine/Gfx/TextureChannel.hpp>
 #include <Engine/Gfx/resources.hpp>
 
 
 namespace Engine::Gfx {
+	enum class TextureSwizzle {
+	};
+
 	template<>
 	class Texture<0, TextureType::Unknown> {
 		protected:
@@ -86,21 +90,26 @@ namespace Engine::Gfx {
 				glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, translate(filter));
 			}
 
-			void setFilter(TextureFilter filter) {
+			ENGINE_INLINE void setFilter(TextureFilter filter) {
 				setMinFilter(filter);
 				setMagFilter(filter);
 			}
 
-			void setWrap(TextureWrap wrap) {
+			ENGINE_INLINE void setWrap(TextureWrap wrap) {
 				// TODO: should probably have a conversion function in Engine::Gfx instead of cast
 				glTextureParameteri(tex, GL_TEXTURE_WRAP_S, static_cast<GLenum>(wrap));
 				glTextureParameteri(tex, GL_TEXTURE_WRAP_T, static_cast<GLenum>(wrap));
 				glTextureParameteri(tex, GL_TEXTURE_WRAP_R, static_cast<GLenum>(wrap));
 			}
 
-			void generateMipmaps() {
+			ENGINE_INLINE void generateMipmaps() {
 				ENGINE_DEBUG_ASSERT(tex != 0, "Attempting to generate mipmaps for uninitialized texture.");
 				glGenerateTextureMipmap(tex);
+			}
+
+			ENGINE_INLINE void setSwizzle(TextureChannel r, TextureChannel g, TextureChannel b, TextureChannel a) {
+				const GLint swizzle[4] = {static_cast<GLint>(r), static_cast<GLint>(g), static_cast<GLint>(b), static_cast<GLint>(a)};
+				glTextureParameteriv(tex, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 			}
 	};
 
@@ -153,19 +162,19 @@ namespace Engine::Gfx {
 				}
 			}
 			
-			void setImage(const Image& img) {
+			ENGINE_INLINE void setImage(const Image& img) {
 				setSubImage(0, img);
 			}
 
-			void setSubImage(int32 mip, const Image& img) {
+			ENGINE_INLINE void setSubImage(int32 mip, const Image& img) {
 				setSubImage(mip, {}, img);
 			}
 
-			void setSubImage(int32 mip, Vec offset, const Image& img) {
+			ENGINE_INLINE void setSubImage(int32 mip, Vec offset, const Image& img) {
 				setSubImage(mip, offset, img.size(), img.format(), img.data());
 			}
 
-			void setSubImage(int32 mip, Vec offset, Vec size, const Image& img) {
+			ENGINE_INLINE void setSubImage(int32 mip, Vec offset, Vec size, const Image& img) {
 				setSubImage(mip, offset, size, img.format(), img.data());
 			}
 

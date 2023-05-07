@@ -16,7 +16,7 @@
 namespace Engine::UI {
 	FontManager::FontManager() {
 		if (const auto err = FT_Init_FreeType(&ftlib)) {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err));
 		}
 
 		workingBuffer = hb_buffer_create();
@@ -30,7 +30,7 @@ namespace Engine::UI {
 		fontIdToGlyphSet.clear();
 
 		if (const auto err = FT_Done_FreeType(ftlib)) {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err));
 		}
 
 		hb_buffer_destroy(workingBuffer);
@@ -51,7 +51,7 @@ namespace Engine::UI {
 
 			// Setup FreeType face
 			if (const auto err = FT_New_Face(ftlib, path.data(), 0, &found->second)) {
-				ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err)); // TODO: actual error
+				ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err));
 			}
 
 			FT_Done_Size(found->second->size);

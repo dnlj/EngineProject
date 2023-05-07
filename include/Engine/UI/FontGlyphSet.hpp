@@ -105,8 +105,7 @@ namespace Engine::UI {
 			/**
 			 * Populate a ShapedString with glyph position and bounds info.
 			 */
-			void shapeString(class ShapedString& str); // TODO: rm - just use other overload
-
+			void shapeString(class ShapedString& str);
 			ENGINE_INLINE void shapeString(std::string_view str, std::vector<ShapeGlyph>& glyphs, Bounds& bounds) { shapeStringImpl(str, glyphs, bounds); }
 			ENGINE_INLINE void shapeString(std::string_view str, RingBuffer<ShapeGlyph>& glyphs, Bounds& bounds) { shapeStringImpl(str, glyphs, bounds); }
 

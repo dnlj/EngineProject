@@ -84,19 +84,15 @@ namespace Engine::UI {
 
 		indexBounds = glm::floor(glm::vec2{glyphTexSize, glyphTexSize} / maxGlyphSize);
 
-		// TODO: rm
 		glyphTex.setStorage(Gfx::TextureFormat::R8, {glyphTexSize, glyphTexSize});
-		{ // TODO: move into the Texture class
-			const GLint swizzle[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
-			glTextureParameteriv(glyphTex.get(), GL_TEXTURE_SWIZZLE_RGBA, swizzle);
-		}
+		glyphTex.setSwizzle(Gfx::TextureChannel::One, Gfx::TextureChannel::One, Gfx::TextureChannel::One, Gfx::TextureChannel::Red);
 	}
 
 	void FontGlyphSet::loadGlyph(const uint32 index) {
 		ftFace->size = ftSize;
 		
 		if (const auto err = FT_Load_Glyph(ftFace, index, FT_LOAD_RENDER)) [[unlikely]] {
-			ENGINE_ERROR("FreeType error: ", err); // TODO: actual error
+			ENGINE_ERROR("FreeType error: ", getFreeTypeErrorString(err));
 		}
 		
 		const auto& glyph = *ftFace->glyph;
