@@ -130,8 +130,7 @@ namespace Engine::UI {
 
 		{
 			using namespace Gfx;
-
-			// TODO: rm - doesn't the resource manager already provide a default texture?
+			// TODO: try to combine white texture with font textures for less swapping.
 			Image img{PixelFormat::RGB8, {1,1}};
 			memset(img.data(), 0xFF, img.sizeBytes());
 			defaultTexture.setStorage(TextureFormat::RGB8, img.size());
@@ -291,20 +290,19 @@ namespace Engine::UI {
 		//pos += drawOffset;
 		//nextDrawGroupGlyph();
 
-		const auto& glyphData = font->_debug_getGlyphData(); // TODO: remove this function, see definition for details
 		const auto old = getTexture();
 		auto base = static_cast<uint32>(getVertexData().size());
 		const float32 texSize = static_cast<float32>(font->getGlyphTextureSize());
 		setTexture(font->getGlyphTexture());
 
-		for (const auto& data : glyphs) ENGINE_INLINE_CALLS {
-			const uint32 index = font->getGlyphIndex(data.index);
-			const glm::vec2 offset = glyphData[index].offset / texSize;
-			auto size = glyphData[index].size;
+		for (const auto& glyph : glyphs) ENGINE_INLINE_CALLS {
+			const auto& met = font->getGlyphMetrics(glyph.glyphId);
+			const glm::vec2 offset = met.offset / texSize;
+			auto size = met.size;
 			const auto uvsize = size / texSize;
 
-			const auto p = glm::round(pos + data.offset + drawOffset); // I think this should technically also include the size offset per vert. In practice it does not make a difference (in any tests i have done) and this is faster.
-			pos += data.advance;
+			const auto p = glm::round(pos + glyph.offset + drawOffset); // I think this should technically also include the size offset per vert. In practice it does not make a difference (in any tests i have done) and this is faster.
+			pos += glyph.advance;
 			const auto& clip = getClip();
 			auto orig = Bounds{p, p+size};
 			auto uv = Bounds{offset, uvsize};

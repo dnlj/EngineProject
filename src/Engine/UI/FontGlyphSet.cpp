@@ -97,32 +97,28 @@ namespace Engine::UI {
 		
 		const auto& glyph = *ftFace->glyph;
 		const auto& metrics = glyph.metrics;
-
 		auto& met = glyphMetrics.emplace_back();
-		met.index = nextGlyphIndex;
 		met.bearing = {metrics.horiBearingX * mscale, metrics.horiBearingY * -mscale};
-
-		auto& dat = glyphData.emplace_back();
-		dat.size = {metrics.width * mscale, metrics.height * mscale};
+		met.size = {metrics.width * mscale, metrics.height * mscale};
 		glyphIndexToLoadedIndex[index] = nextGlyphIndex;
-		++nextGlyphIndex;
 
 		if (glyph.bitmap.width) {
 			// TODO: really need to handle glyph FT_Pixel_Mode and alignment(glyph.pitch) here
 			const glm::vec2 i = {
-				met.index % indexBounds.x,
-				met.index / indexBounds.x,
+				nextGlyphIndex % indexBounds.x,
+				nextGlyphIndex / indexBounds.x,
 			};
-			dat.offset = glm::vec3{i * maxGlyphSize, 0};
+			met.offset = i * maxGlyphSize;
 
 			ENGINE_DEBUG_ASSERT(i.y < indexBounds.y, "Glyph texture index is out of bounds. Should rollover to next texture layer in array.");
 
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			glyphTex.setSubImage(0, dat.offset, dat.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
+			glyphTex.setSubImage(0, met.offset, met.size, Gfx::PixelFormat::R8, glyph.bitmap.buffer);
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 		}
-
-		//ENGINE_INFO("Loaded glyph ", index, " = ", nextGlyphIndex-1, " @ ", dat.offset.x, ", ", dat.offset.y);
+		
+		//ENGINE_INFO("Loaded glyph ", index, " = ", nextGlyphIndex, " @ ", dat.offset.x, ", ", dat.offset.y);
+		++nextGlyphIndex;
 	}
 
 	void FontGlyphSet::initMaxGlyphSize() {
@@ -217,16 +213,16 @@ namespace Engine::UI {
 
 			auto& glyph = glyphs[basei + i];
 			glyph = {
-				.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
+				//.index = info.codepoint, // info.codepoint is a glyph index not a actual code point
+				.glyphId = gi,
 				.cluster = info.cluster,
 				.offset = glm::vec2{pos.x_offset, pos.y_offset} * (1.0f/64) + met.bearing,
 				.advance = glm::vec2{pos.x_advance, pos.y_advance} * (1.0f/64),
 			};
 
 			{ // Update bounds
-				const auto& dat = glyphData[gi];
 				const auto min = cursor + glyph.offset;
-				const auto max = min + dat.size;
+				const auto max = min + met.size;
 
 				bounds.min = glm::min(bounds.min, min);
 				bounds.max = glm::max(bounds.max, max);

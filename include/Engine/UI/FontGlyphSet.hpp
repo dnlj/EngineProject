@@ -25,7 +25,7 @@ namespace Engine::UI {
 
 	class ShapeGlyph {
 		public:
-			uint32 index;
+			uint32 glyphId; // Glyph metrics index
 			uint32 cluster;
 			glm::vec2 offset;
 			glm::vec2 advance;
@@ -46,18 +46,10 @@ namespace Engine::UI {
 		private:
 			constexpr static float32 mscale = 1.0f / 64; // We can also just do `metric >> 6` if we dont care about float/rounding
 
-			struct GlyphData {
-				// Make sure to consider GLSL alignment rules
-				glm::vec2 size; // Size in texels
-				float32 _size_padding[2];
-
-				glm::vec3 offset; // Offset in texels
-				float32 _offset_padding[1];
-			}; static_assert(sizeof(GlyphData) == sizeof(float32) * 8);
-
 			struct GlyphMetrics {
 				glm::vec2 bearing;
-				uint32 index;
+				glm::vec2 size; // Size in texels
+				glm::vec2 offset; // Offset in texels
 			};
 
 		private:
@@ -66,7 +58,6 @@ namespace Engine::UI {
 			hb_font_t* hbFont;
 
 			FlatHashMap<uint32, uint32> glyphIndexToLoadedIndex;
-			std::vector<GlyphData> glyphData;
 			std::vector<GlyphMetrics> glyphMetrics;
 
 			Gfx::Texture2D glyphTex;
@@ -91,9 +82,7 @@ namespace Engine::UI {
 
 			ENGINE_INLINE const auto& getGlyphTexture() const noexcept { return glyphTex; }
 
-			ENGINE_INLINE const auto& _debug_getGlyphData() const noexcept { return glyphData; } // TODO: just merge glyphData and metrics? or what?
-
-			ENGINE_INLINE auto getGlyphIndex(uint32 glyph) { return glyphIndexToLoadedIndex[glyph]; }
+			ENGINE_INLINE const auto& getGlyphMetrics(uint32 gid) const noexcept { return glyphMetrics[gid]; }
 
 			ENGINE_INLINE auto& getManager() const noexcept {
 				ENGINE_DEBUG_ASSERT(ftFace->generic.data, "No font manager assigned to glyph set. This is a bug.");
