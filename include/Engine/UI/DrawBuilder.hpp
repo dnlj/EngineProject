@@ -40,7 +40,7 @@ namespace Engine::UI {
 			ENGINE_INLINE void setColor(glm::vec4 color) noexcept { this->color = color * 255.0f; }
 			ENGINE_INLINE auto getColor() const noexcept { return color; }
 
-			ENGINE_INLINE void setTexture(Gfx::TextureHandleGeneric tex) noexcept { texture = tex; nextDrawGroup(); }
+			ENGINE_INLINE void setTexture(Gfx::TextureHandleGeneric tex) noexcept { texture = tex; }
 			ENGINE_INLINE auto getTexture() const noexcept { return texture; }
 
 			void pushClip();
@@ -56,6 +56,7 @@ namespace Engine::UI {
 			void finish();
 			void reset(Bounds clip);
 
+			void nextDrawGroup();
 			void makeHardwareClip();
 
 			ENGINE_INLINE void addVertex(glm::vec2 pos, glm::vec2 texCoord) {
@@ -69,9 +70,6 @@ namespace Engine::UI {
 			ENGINE_INLINE void addElements(uint32 i1, uint32 i2, uint32 i3) {
 				elemData.push_back(i1); elemData.push_back(i2); elemData.push_back(i3);
 			}
-
-		private:
-			void nextDrawGroup();
 	};
 
 	class DrawBuilder : protected DrawGroupManager, FontManager {

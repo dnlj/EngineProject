@@ -12,7 +12,6 @@ namespace Engine::UI {
 		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
 		clipStack.pop_back();
 		lastClipOffset = static_cast<int32>(elemData.size());
-		nextDrawGroup();
 	}
 
 	void DrawGroupManager::setClip(Bounds bounds) {
@@ -26,9 +25,8 @@ namespace Engine::UI {
 		// Set clip
 		curr = (clipStack.end() - 2)->intersect(bounds);
 		curr.max = glm::max(curr.min, curr.max);
-
-		nextDrawGroup();
 	}
+
 	void DrawGroupManager::nextDrawGroup() {
 		ENGINE_DEBUG_ASSERT(!drawGroups.empty());
 		const auto sz = static_cast<int32>(elemData.size());
@@ -39,9 +37,11 @@ namespace Engine::UI {
 		const auto setup = [&](DrawGroup& group) ENGINE_INLINE {
 			group.offset = sz;
 			group.tex = texture;
+
+			// TODO: is this correct?
 			lastClipOffset = group.offset;
 		};
-		
+
 		// Figure out if we need a new group, can reuse an empty group, or extend the previous group
 		if (prev.count == 0) {
 			setup(prev = {});
@@ -197,12 +197,26 @@ namespace Engine::UI {
 			);
 		};
 
+		// TODO: I _think_ we could also do some optimization around rendering groups
+		//       that are on the same layer as long as they dont use hardware clipping.
+		//       Currently groups can span multiple z-layers so we would need to split
+		//       on z-layer and then, once all groups have been built, sort the groups
+		//       by z-layer and merge neighbor groups. I don't think this would actually
+		//       be that difficult to implement, but its just not a priority atm.
+		// 
+		//       This would probably also be largely redundant if we did some texture
+		//       packing of UI and font textures.
+		//
+
 		// Draw polys
+		glBindVertexArray(polyVAO);
+		glUseProgram(polyShader->get());
+		const auto rootClip = getRootClip();
+		auto curClip = rootClip;
+		scissor(curClip);
+
 		for (auto const& group : getDrawGroups()) {
 			ENGINE_DEBUG_ASSERT(group.count > 0);
-
-			glBindVertexArray(polyVAO);
-			glUseProgram(polyShader->get());
 			Gfx::TextureHandleGeneric activeTex = {};
 
 			// TODO: We could save on a few scissor calls here if we track all clips and
@@ -215,8 +229,9 @@ namespace Engine::UI {
 			//       because we are in a sub panel.
 			if (!group.clip.empty()) {
 				scissor(group.clip);
-			} else {
-				scissor(getRootClip());
+				curClip = group.clip;
+			} else if (curClip != rootClip) {
+				scissor(rootClip);
 			}
 
 			if (group.tex != activeTex) {
@@ -235,12 +250,14 @@ namespace Engine::UI {
 	void DrawBuilder::drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
 		const auto old = getTexture();
 		setTexture(tex);
+		nextDrawGroup();
 		drawRect(pos, size);
 		setTexture(old);
 	}
 
 	void DrawBuilder::drawPoly(ArrayView<const glm::vec2> points) {
 		ENGINE_DEBUG_ASSERT(points.size() >= 3, "Must have at least three points");
+		nextDrawGroup();
 		makeHardwareClip();
 
 		const auto base = static_cast<int32>(getVertexData().size());
@@ -262,7 +279,8 @@ namespace Engine::UI {
 
 		const auto rect = getClip().intersect({pos, pos+size});
 		if (rect.max.x <= rect.min.x || rect.max.y <= rect.min.y) { return; }
-
+		
+		nextDrawGroup();
 		addVertex(rect.min, {0,1});
 		addVertex({rect.min.x, rect.max.y}, {0,0});
 		addVertex(rect.max, {1,0});
@@ -294,6 +312,7 @@ namespace Engine::UI {
 		auto base = static_cast<uint32>(getVertexData().size());
 		const float32 texSize = static_cast<float32>(font->getGlyphTextureSize());
 		setTexture(font->getGlyphTexture());
+		nextDrawGroup();
 
 		for (const auto& glyph : glyphs) ENGINE_INLINE_CALLS {
 			const auto& met = font->getGlyphMetrics(glyph.glyphId);
