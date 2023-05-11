@@ -102,9 +102,6 @@ namespace Engine::UI {
 			void reset();
 			void draw();
 
-			// TODO: probably move this state stuff into base class to avoid changing in draw* functions
-			ENGINE_INLINE void setFont(Font f) noexcept { font = f; }
-
 			void drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);
 			 
 			/**

@@ -54,28 +54,28 @@ namespace {
 				addrLabel->autoText(fmt::format("{}", conn->address()));
 
 				// TODO: if we had full flexbox style layout this would be much simpler. no need for these row containers. This would all work with weights.
-				auto* row1 = ctx->createPanel<Panel>(this);
+				auto* row1 = ctx->createPanel<EUI::PanelT>(this);
 				row1->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, 0});
 				row1->setAutoSizeHeight(true);
 				buffer = ctx->createPanel<EUI::Label>(row1);
 				ideal = ctx->createPanel<EUI::Label>(row1);
 				estBuff = ctx->createPanel<EUI::Label>(row1);
 
-				auto* row2 = ctx->createPanel<Panel>(this);
+				auto* row2 = ctx->createPanel<EUI::PanelT>(this);
 				row2->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, 0});
 				row2->setAutoSizeHeight(true);
 				ping = ctx->createPanel<EUI::Label>(row2);
 				jitter = ctx->createPanel<EUI::Label>(row2);
 				budget = ctx->createPanel<EUI::Label>(row2);
 
-				auto* row3 = ctx->createPanel<Panel>(this);
+				auto* row3 = ctx->createPanel<EUI::PanelT>(this);
 				row3->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, 0});
 				row3->setAutoSizeHeight(true);
 				sent = ctx->createPanel<EUI::Label>(row3);
 				recv = ctx->createPanel<EUI::Label>(row3);
 				loss = ctx->createPanel<EUI::Label>(row3);
 
-				auto* row4 = ctx->createPanel<Panel>(this);
+				auto* row4 = ctx->createPanel<EUI::PanelT>(this);
 				row4->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, 0});
 				row4->setAutoSizeHeight(true);
 				ctx->createPanel<EUI::Label>(row4)->autoText("Packet Recv Rate");

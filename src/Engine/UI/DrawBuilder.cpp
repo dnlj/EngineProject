@@ -37,8 +37,6 @@ namespace Engine::UI {
 		const auto setup = [&](DrawGroup& group) ENGINE_INLINE {
 			group.offset = sz;
 			group.tex = texture;
-
-			// TODO: is this correct?
 			lastClipOffset = group.offset;
 		};
 
@@ -215,9 +213,9 @@ namespace Engine::UI {
 		auto curClip = rootClip;
 		scissor(curClip);
 
+		Gfx::TextureHandleGeneric activeTex = {};
 		for (auto const& group : getDrawGroups()) {
 			ENGINE_DEBUG_ASSERT(group.count > 0);
-			Gfx::TextureHandleGeneric activeTex = {};
 
 			// TODO: We could save on a few scissor calls here if we track all clips and
 			//       have a separate isHardware flag. This would allow us to only revert to
@@ -299,14 +297,6 @@ namespace Engine::UI {
 	glm::vec2 DrawBuilder::drawString(glm::vec2 pos, Font font, ArrayView<const ShapeGlyph> glyphs) {
 		ENGINE_DEBUG_ASSERT(font != nullptr, "Attempting to draw string with null font.");
 		if (glyphs.empty()) { return pos; }
-
-		// TODO (N2s3MidY): this is a weird way to handle fonts. Either have a separate DrawBuilder::setFont function with this being a shortcut for that.
-		// or have nextDrawGroupGlyph take a font as param. Passing through member is strange with the current configuration.
-		// Maybe that would be best to have properties like color and font set on the object with setColor/setFont.
-		// then we have drawString(pos,glyphs). with the current version just being shorthand for that.
-		//this->font = font; 
-		//pos += drawOffset;
-		//nextDrawGroupGlyph();
 
 		const auto old = getTexture();
 		auto base = static_cast<uint32>(getVertexData().size());

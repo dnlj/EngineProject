@@ -192,7 +192,7 @@ namespace Engine::UI {
 		const auto basei = glyphs.size();
 		glyphs.resize(basei + sz);
 
-		bounds = {};
+		bounds = {{0,0}, {0,0}};
 		glm::vec2 cursor = {}; // Used for calc bounds
 
 		for (uint32 i = 0; i < sz; ++i) {
@@ -234,13 +234,5 @@ namespace Engine::UI {
 
 	template void FontGlyphSet::shapeStringImpl(std::string_view str, std::vector<ShapeGlyph>& glyphs, Bounds& bounds);
 	template void FontGlyphSet::shapeStringImpl(std::string_view str, RingBuffer<ShapeGlyph>& glyphs, Bounds& bounds);
-
-	void FontGlyphSet::shapeString(ShapedString& str) {
-		Bounds bounds = {};
-		auto& glyphs = str.getGlyphShapeDataMutable();
-		glyphs.clear();
-		shapeString(str.getString(), glyphs, bounds);
-		str.setBounds(bounds);
-	}
 }
 

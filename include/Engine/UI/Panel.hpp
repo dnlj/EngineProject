@@ -635,7 +635,7 @@ namespace Engine::UI {
 
 	/**
 	 * A transparent panel.
-	 * Typeically used for non-visible organization and clipping.
+	 * Typeically used for non-visible organization.
 	 */
 	class PanelT : public Panel {
 		using Panel::Panel;

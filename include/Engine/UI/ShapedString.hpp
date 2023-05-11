@@ -26,9 +26,7 @@ namespace Engine::UI {
 			}
 
 			ENGINE_INLINE const auto& getGlyphShapeData() const noexcept { return glyphs; }
-			ENGINE_INLINE auto& getGlyphShapeDataMutable() noexcept { return glyphs; }
 
-			// TODO: should we just make str public so we dont have to re-implement all str's functions?
 			ENGINE_INLINE ShapedString& operator=(ShapedString&& other) = default;
 			ENGINE_INLINE ShapedString& operator=(const char* other) { str = other; return *this; }
 			ENGINE_INLINE ShapedString& operator=(std::string_view other) { str = other; return *this; }
@@ -43,6 +41,10 @@ namespace Engine::UI {
 			ENGINE_INLINE void setBounds(Bounds b) { bounds = b; }
 			ENGINE_INLINE const auto& getBounds() const noexcept { return bounds; }
 
-			ENGINE_INLINE void shape() { font->shapeString(*this); }
+			ENGINE_INLINE void shape() {
+				glyphs.clear();
+				bounds = {};
+				font->shapeString(str, glyphs, bounds);
+			}
 	};
 }
