@@ -80,7 +80,7 @@ namespace Engine::UI {
 			glm::vec2 view = {};
 			Gfx::ShaderRef polyShader;
 
-			// TODO: use Gfx:: types
+			// TODO: use Gfx::* types
 			glm::vec2 drawOffset; /* The position offset to use for rendering */
 			GLuint polyVAO = 0;
 			GLuint polyVBO = 0;

@@ -158,6 +158,8 @@ workspace(PROJECT_NAME .."Workspace")
 			--"/w14710", -- Enable: function marked as inline not inlined
 			"/w14714", -- Enable: function marked as __forceinline not inlined -- TODO: does this also work for `[[msvc::force_inline]]`?
 			"/w15038", -- Enable: out of order initialization warnings. Bugs related to this can be tricky to track down.
+			"/diagnostics:column", -- Include column in error messages
+			--"/diagnostics:caret", -- Enable more detailed error reporting
 		}
 
 	filter "platforms:Windows_x64"
