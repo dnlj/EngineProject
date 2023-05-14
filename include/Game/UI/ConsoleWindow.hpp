@@ -91,6 +91,7 @@ namespace Game::UI {
 
 		private:
 			EUI::Caret getCaret();
+			Index getMaxVisibleLines() const;
 			int wrap(int i) { return 0; }
 	};
 

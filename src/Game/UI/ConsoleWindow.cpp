@@ -110,60 +110,60 @@ namespace Game::UI {
 		ctx->drawRect({}, getSize());
 		
 		const auto lh = font->getLineHeight();
-		const Index maxLines = static_cast<Index>(std::ceil(getHeight() / lh));
+		const Index maxLines = getMaxVisibleLines();
 		const Index lineCount = static_cast<Index>(lines.size());
-		const Index first = lineCount - 1; // The most recent line
-		const Index last = lineCount < maxLines ? 0 : lineCount - maxLines; // The oldest line
+		const Index latest = lineCount - 1;
+		const Index oldest = lineCount < maxLines ? 0 : lineCount - maxLines;
 
+		// Draw selection
 		if (sel.second.valid()) {
 			const auto beg = sel.first.index < sel.second.index ? sel.first : sel.second;
 			const auto end = sel.first.index < sel.second.index ? sel.second : sel.first;
 			Index begLine = -1;
 			Index endLine = -1;
 
-			// TODO: need to handle that it is now offscreen( that is `beg < first`)
-
-			// Find the begin and end of our selection
-			for (Index i = first;; --i) {
+			// Find the begin of our selection
+			for (Index i = oldest;; ++i) {
 				const auto& line = lines[i];
-				if (beg.index >= line.glyphs.start) {
+				if (beg.index <= line.glyphs.stop) {
 					begLine = i;
 					break;
 				}
-
-				if (i == last) { break; }
+				if (i == latest) { break; }
 			}
 			ENGINE_DEBUG_ASSERT(begLine != -1);
 			
-			for (Index i = begLine; i < lineCount; ++i) {
+			// Find the end of our selection
+			for (Index i = begLine;; ++i) {
 				const auto& line = lines[i];
 				if (end.index <= line.glyphs.stop) {
 					endLine = i;
 					break;
 				}
+				if (i == latest) { break; }
 			}
 			ENGINE_DEBUG_ASSERT(endLine != -1);
 
-			//ENGINE_LOG("Draw Highlight: ", begLine, " ", endLine);
-
 			// Draw the single or multiline selection
-			float32 yOff = getHeight();
+			float32 yOff = getHeight() - font->getDescent();
+			ctx->setColor({1,0,0,1});
 			if (begLine == endLine) {
-				//const auto& line = lines[begLine];
-				ctx->setColor({1,0,0,1});
 				ctx->drawRect({beg.pos, yOff - (lineCount - endLine)*lh}, {end.pos - beg.pos, lh});
 			} else {
-				// TODO:
-				yOff;
-				//__debugbreak();
+				// TODO: special case handle eol (maybe just a min width?)
+				ctx->drawRect({beg.pos, yOff - (lineCount - begLine)*lh}, {lines[begLine].bounds.getWidth() - beg.pos, lh});
+				for (Index i = begLine + 1; i < endLine; ++i) {
+					ctx->drawRect({0, yOff - (lineCount - i)*lh}, {lines[i].bounds.getWidth(), lh});
+				}
+				ctx->drawRect({0, yOff - (lineCount - endLine)*lh}, {end.pos, lh});
 			}
 		}
 
-		{
+		{ // Draw Text
 			float32 yOff = getHeight();
 			const auto base = glyphBuff.unsafe_dataT();
 
-			for (Index i = first;; --i) {
+			for (Index i = latest;; --i) {
 				auto& line = lines[i];
 				const auto start = glyphBuff.wrap(line.glyphs.start);
 				const auto stop = glyphBuff.wrap(line.glyphs.stop);
@@ -177,7 +177,7 @@ namespace Game::UI {
 				}
 				yOff -= lh;
 
-				if (i == last) { break; }
+				if (i == oldest) { break; }
 			}
 		}
 	}
@@ -195,47 +195,44 @@ namespace Game::UI {
 	//	}
 	//	return true;
 	//}
+
+	auto TextFeed::getMaxVisibleLines() const -> Index {
+		return static_cast<Index>(std::ceil(getHeight() / font->getLineHeight()));
+	}
 	
 	EUI::Caret TextFeed::getCaret() {
 		const auto pos = ctx->getCursor();
 		const auto rel = pos - getPos();
-		//
-		//
-		//
-		// TODO: need to handle rel < {0,0}
-		// TODO: seem to select the line below to soon, not sure if thats here or elsewhere
-		//
-		//
-		//
-		ENGINE_DEBUG_ASSERT(rel.x >= 0 && rel.y >=0, "TODO: handle out of bounds selection");
-		const auto lineNum = static_cast<Index>((getHeight() - rel.y) / font->getLineHeight());
-		const auto lineSz = lines.size();
+
 		EUI::Caret caret = {0,0};
-		ENGINE_LOG("Line: ", lineNum);
+		const auto lineSz = lines.size();
+		const auto lineNum = [&]() ENGINE_INLINE -> Index {
+			if (rel.y < 0) { return getMaxVisibleLines(); }
+			if (rel.y > getHeight()) { return 0; }
+			return static_cast<Index>((getHeight() - rel.y) / font->getLineHeight());
+		}();
 
-		if (lineNum < lineSz) {
-			const auto& line = lines[lineSz - 1 - lineNum];
-			const auto base = glyphBuff.unsafe_dataT();
-			const auto start = glyphBuff.wrap(line.glyphs.start);
-			const auto stop = glyphBuff.wrap(line.glyphs.stop);
+		const auto& line = lines[lineSz - 1 - lineNum];
+		const auto base = glyphBuff.unsafe_dataT();
+		const auto start = glyphBuff.wrap(line.glyphs.start);
+		const auto stop = glyphBuff.wrap(line.glyphs.stop);
 
-			if (stop < start) {
-				caret = EUI::getCaretInLine(rel.x, {base + start, glyphBuff.capacity()});
-				if (rel.x > caret.pos) {
-					caret = EUI::getCaretInLine(rel.x - caret.pos, {base, base + stop});
-				}
-				__debugbreak(); // TODO: need to adjust caret.pos
-			} else {
-				caret = EUI::getCaretInLine(rel.x, {base + start, base + stop});
+		if (stop < start) {
+			// TODO: need to test this path, needs work
+			caret = EUI::getCaretInLine(rel.x, {base + start, glyphBuff.capacity()});
+			if (rel.x > caret.pos) {
+				caret = EUI::getCaretInLine(rel.x - caret.pos, {base, base + stop});
 			}
-
-			caret.index += line.glyphs.start;
-			ENGINE_LOG("Index: ", caret.index, " ", start);
+			__debugbreak(); // TODO: need to adjust caret.pos
+		} else {
+			caret = EUI::getCaretInLine(rel.x, {base + start, base + stop});
 		}
 
+		caret.index += line.glyphs.start;
 		return caret;
 
 	}
+
 	// TODO: move this into a base calss for both TextBox and TextFeed
 	bool TextFeed::onBeginActivate() {
 		// TODO: why is this needed? Is it possible to activate multiple times?
