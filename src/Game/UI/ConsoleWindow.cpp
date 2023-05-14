@@ -47,10 +47,9 @@ namespace Game::UI {
 			ENGINE_DEBUG_ASSERT(charBuff.getHead() < uint64{std::numeric_limits<Index>::max()}, "Char index is to large to fit in datatype.");
 
 			// Shape glyphs
-			{ 
-				EUI::Bounds _unused_bounds;
+			{
 				const auto szA = glyphBuff.size();
-				font->shapeString({a, b}, glyphBuff, _unused_bounds);
+				font->shapeString({a, b}, glyphBuff, line.bounds);
 				const auto szB = glyphBuff.size();
 
 				line.glyphs.start = glyphIndex;
@@ -111,31 +110,163 @@ namespace Game::UI {
 		ctx->drawRect({}, getSize());
 		
 		const auto lh = font->getLineHeight();
-		const int32 maxLines = static_cast<int32>(std::ceil(getHeight() / lh));
-		const int32 sz = static_cast<int32>(lines.size());
-		const int32 upper = sz - 1;
-		const int32 lower = std::max(sz - maxLines, 0);
+		const Index maxLines = static_cast<Index>(std::ceil(getHeight() / lh));
+		const Index lineCount = static_cast<Index>(lines.size());
+		const Index first = lineCount - 1; // The most recent line
+		const Index last = lineCount < maxLines ? 0 : lineCount - maxLines; // The oldest line
 
-		float32 yOff = getHeight();
-		const auto xOff = 0;
-		const auto base = glyphBuff.unsafe_dataT();
-		ctx->setClip(getBounds());
+		if (sel.second.valid()) {
+			const auto beg = sel.first.index < sel.second.index ? sel.first : sel.second;
+			const auto end = sel.first.index < sel.second.index ? sel.second : sel.first;
+			Index begLine = -1;
+			Index endLine = -1;
 
-		for (int32 i = upper; i >= lower; --i) {
-			auto& line = lines[i];
+			// TODO: need to handle that it is now offscreen( that is `beg < first`)
+
+			// Find the begin and end of our selection
+			for (Index i = first;; --i) {
+				const auto& line = lines[i];
+				if (beg.index >= line.glyphs.start) {
+					begLine = i;
+					break;
+				}
+
+				if (i == last) { break; }
+			}
+			ENGINE_DEBUG_ASSERT(begLine != -1);
+			
+			for (Index i = begLine; i < lineCount; ++i) {
+				const auto& line = lines[i];
+				if (end.index <= line.glyphs.stop) {
+					endLine = i;
+					break;
+				}
+			}
+			ENGINE_DEBUG_ASSERT(endLine != -1);
+
+			//ENGINE_LOG("Draw Highlight: ", begLine, " ", endLine);
+
+			// Draw the single or multiline selection
+			float32 yOff = getHeight();
+			if (begLine == endLine) {
+				//const auto& line = lines[begLine];
+				ctx->setColor({1,0,0,1});
+				ctx->drawRect({beg.pos, yOff - (lineCount - endLine)*lh}, {end.pos - beg.pos, lh});
+			} else {
+				// TODO:
+				yOff;
+				//__debugbreak();
+			}
+		}
+
+		{
+			float32 yOff = getHeight();
+			const auto base = glyphBuff.unsafe_dataT();
+
+			for (Index i = first;; --i) {
+				auto& line = lines[i];
+				const auto start = glyphBuff.wrap(line.glyphs.start);
+				const auto stop = glyphBuff.wrap(line.glyphs.stop);
+
+				ctx->setColor({0,1,0,1});
+				if (stop < start) {
+					const auto off = ctx->drawString({0, yOff}, font, {base + start, base + glyphBuff.capacity()});
+					ctx->drawString(off, font, {base, base + stop});
+				} else {
+					ctx->drawString({0, yOff}, font, {base + start, base + stop});
+				}
+				yOff -= lh;
+
+				if (i == last) { break; }
+			}
+		}
+	}
+
+	// TODO: copy/cut/paste
+	//bool TextFeed::onAction(ActionEvent act) {
+	//	switch (act) {
+	//		// TODO: cut and copy should both just copy
+	//		// TODO: paste should probably be yoinked by parent window
+	//		//case Action::Cut: { actionCut(); break; }
+	//		//case Action::Copy: { actionCopy(); break; }
+	//		//case Action::Paste: { actionPaste(); break; }
+	//		case Action::Submit: { ENGINE_WARN("TODO: Gui::TextBox Submit - ", getText()); break; }
+	//		default: { return false; }
+	//	}
+	//	return true;
+	//}
+	
+	EUI::Caret TextFeed::getCaret() {
+		const auto pos = ctx->getCursor();
+		const auto rel = pos - getPos();
+		//
+		//
+		//
+		// TODO: need to handle rel < {0,0}
+		// TODO: seem to select the line below to soon, not sure if thats here or elsewhere
+		//
+		//
+		//
+		ENGINE_DEBUG_ASSERT(rel.x >= 0 && rel.y >=0, "TODO: handle out of bounds selection");
+		const auto lineNum = static_cast<Index>((getHeight() - rel.y) / font->getLineHeight());
+		const auto lineSz = lines.size();
+		EUI::Caret caret = {0,0};
+		ENGINE_LOG("Line: ", lineNum);
+
+		if (lineNum < lineSz) {
+			const auto& line = lines[lineSz - 1 - lineNum];
+			const auto base = glyphBuff.unsafe_dataT();
 			const auto start = glyphBuff.wrap(line.glyphs.start);
 			const auto stop = glyphBuff.wrap(line.glyphs.stop);
 
-			ctx->setColor({0,1,0,1});
 			if (stop < start) {
-				const auto off = ctx->drawString({xOff, yOff}, font, {base + start, base + glyphBuff.capacity()});
-				ctx->drawString(off, font, {base, base + stop});
+				caret = EUI::getCaretInLine(rel.x, {base + start, glyphBuff.capacity()});
+				if (rel.x > caret.pos) {
+					caret = EUI::getCaretInLine(rel.x - caret.pos, {base, base + stop});
+				}
+				__debugbreak(); // TODO: need to adjust caret.pos
 			} else {
-				ctx->drawString({xOff, yOff}, font, {base + start, base + stop});
+				caret = EUI::getCaretInLine(rel.x, {base + start, base + stop});
 			}
-			yOff -= lh;
+
+			caret.index += line.glyphs.start;
+			ENGINE_LOG("Index: ", caret.index, " ", start);
 		}
-	};
+
+		return caret;
+
+	}
+	// TODO: move this into a base calss for both TextBox and TextFeed
+	bool TextFeed::onBeginActivate() {
+		// TODO: why is this needed? Is it possible to activate multiple times?
+		if (ctx->getActive() == this) { return true; }
+
+		sel.first = getCaret();
+
+		ctx->registerMouseMove(this, [this](const glm::vec2) {
+			sel.second = getCaret();
+		});
+
+		// TODO:
+		//if (auto count = ctx->getActivateCount(); count > 1) {
+		//
+		//	// TODO: this should rotate betwee: word, paragraph, all
+		//
+		//	count %= 2;
+		//	if (count == 0) {
+		//		actionSelectWord();
+		//	} else if (count == 1) {
+		//		actionSelectAll();
+		//	}
+		//}
+
+		return true;
+	}
+
+	void TextFeed::onEndActivate() {
+		// TODO: shift focus to text box at this point
+		ctx->deregisterMouseMove(this);
+	}
 }
 
 namespace Game::UI {

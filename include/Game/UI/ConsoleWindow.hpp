@@ -1,9 +1,10 @@
 #pragma once
 
 // Engine
-#include <Engine/UI/Window.hpp>
-#include <Engine/UI/FontGlyphSet.hpp>
 #include <Engine/AlignedStorage.hpp>
+#include <Engine/UI/FontGlyphSet.hpp>
+#include <Engine/UI/TextSelection.hpp>
+#include <Engine/UI/Window.hpp>
 
 // Game
 #include <Game/UI/ui.hpp>
@@ -16,7 +17,7 @@ namespace Game::UI {
 			static_assert(std::is_trivially_copyable_v<T>);
 
 			using Index = uint32;
-			std::vector<T> storage;
+			std::vector<T> storage; // TODO: why use a vector instead of array?
 			Index head = 0;
 
 		public:
@@ -53,7 +54,7 @@ namespace Game::UI {
 
 	class TextFeed : public EUI::Panel {
 		private:
-			using Index = uint16;
+			using Index = uint32;
 
 			struct Range {
 				Index start;
@@ -63,6 +64,12 @@ namespace Game::UI {
 			struct Line {
 				Range chars;
 				Range glyphs;
+				EUI::Bounds bounds; // TODO: rm - dont actually need
+			};
+
+			struct Selection { // TODO: can we do a generic TextSelection
+				EUI::Caret first = {};
+				EUI::Caret second = {};
 			};
 
 			SimpleRingBuffer<char> charBuff;
@@ -72,14 +79,18 @@ namespace Game::UI {
 			Index glyphIndex = 0;
 			Engine::RingBuffer<Line> lines;
 			EUI::Font font;
+			Selection sel = {};
 
 		public:
 			TextFeed(EUI::Context* context);
 			void pushText(std::string_view txt);
 
 			void render() override;
+			bool onBeginActivate() override;
+			void onEndActivate() override;
 
 		private:
+			EUI::Caret getCaret();
 			int wrap(int i) { return 0; }
 	};
 

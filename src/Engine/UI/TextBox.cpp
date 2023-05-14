@@ -119,15 +119,15 @@ namespace Engine::UI {
 	void TextBox::onEndFocus() {
 		ctx->deregisterTextCallback(this);
 	};
-			
+	
 	bool TextBox::onBeginActivate() {
 		if (ctx->getActive() == this) { return true; }
 
-		caret = caretFromPos(ctx->getCursor().x);
+		caret = getCaretInLine(ctx->getCursor().x);
 		select = Caret::invalid;
 
 		ctx->registerMouseMove(this, [this](const glm::vec2 pos) {
-			select = caretFromPos(pos.x);
+			select = getCaretInLine(pos.x);
 		});
 
 		if (auto count = ctx->getActivateCount(); count > 1) {
@@ -146,33 +146,8 @@ namespace Engine::UI {
 		ctx->deregisterMouseMove(this);
 	}
 
-	Caret TextBox::caretFromPos(const float32 pos) const noexcept {
-		const auto x = getPos().x;
-		const auto& glyphs = getShapedString().getGlyphShapeData();
-		Caret result = {};
-
-		// Use glyph advances to approximate glyph bbox.
-		// To do this "correctly" we would have to fully calculate the glyph
-		// bbox(adv+off+width), which could overlap glyphs leading to strange selections
-		// where you end up selecting a code point that occurs visually after but byte
-		// order before. Unless a problem arises, using advances is better in my opinion
-		// because of more obvious selection.
-
-		for (auto glyph = glyphs.begin();; ++glyph) {
-			if (glyph == glyphs.end()) {
-				result.index += !glyphs.empty();
-				break;
-			}
-			result.index = glyph->cluster;
-
-			// The multipler for advance used here is just a guess based on observation and
-			// feel. A value around 0.6 feels about right. 0.5 is to small. Im not sure how other text
-			// engines handle selection. Probably worth looking into to get 100% native feel.
-			if (x + result.pos + glyph->advance.x * 0.6f > pos) { break; }
-			result.pos += glyph->advance.x;
-		}
-
-		return result;
+	Caret TextBox::getCaretInLine(const float32 x) const noexcept {
+		return UI::getCaretInLine(x - getPos().x, getShapedString().getGlyphShapeData());
 	}
 
 	void TextBox::actionSelectWord() {
@@ -186,7 +161,7 @@ namespace Engine::UI {
 		onAction(Action::SelectBegin);
 		onAction(Action::MoveLineEnd);
 		onAction(Action::SelectEnd);
-		select = {};
+		select = {0,0};
 	}
 
 	ENGINE_INLINE void TextBox::actionCancel() {

@@ -1,24 +1,13 @@
 #pragma once
 
 // Engine
-#include <Engine/UI/Label.hpp>
 #include <Engine/UI/Bindable.hpp>
+#include <Engine/UI/Label.hpp>
+#include <Engine/UI/TextSelection.hpp>
 #include <Engine/Unicode/UTF8.hpp>
 
 
 namespace Engine::UI {
-	class Caret {
-		public:
-			constexpr static uint32 invalid = 0xFFFFFFFF;
-
-			uint32 index = 0;
-			float32 pos = 0;
-
-			ENGINE_INLINE Caret(const uint32 index = 0, const float32 pos = 0) noexcept : index{index}, pos{pos} {}
-			ENGINE_INLINE bool valid() const noexcept { return index != invalid; }
-			ENGINE_INLINE friend bool operator==(const Caret& a, const Caret& b) noexcept { return a.index == b.index; }
-	};
-
 	class TextBox : public StringLine, public Bindable<TextBox> {
 		private:
 			uint8 selecting = 0;
@@ -42,7 +31,7 @@ namespace Engine::UI {
 		private:
 			void tryBeginSelection() noexcept;
 
-			Caret caretFromPos(const float32 pos) const noexcept;
+			Caret getCaretInLine(const float32 x) const noexcept;
 
 			void actionSelectWord();
 			void actionSelectAll();
