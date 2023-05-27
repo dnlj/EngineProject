@@ -125,6 +125,7 @@ namespace Game::UI {
 		const Index latest = lineCount - 1;
 
 		// Draw selection
+		
 		if (sel.second.valid()) {
 
 			// TODO: this fails if we wrap doesnt it?
@@ -138,7 +139,6 @@ namespace Game::UI {
 				std::swap(beg, end);
 			}
 
-			// TODO: line 106 doesnt seem to render correctly. No \n. I think this is wher ethe char buffer wrap
 			const auto& TODO_rm123 = lines[latest].chars; TODO_rm123;
 			// TODO: could binary search lines here if we need to.
 			if (beg.index == lines[latest].chars.stop) {
@@ -177,7 +177,7 @@ namespace Game::UI {
 				ctx->drawRect({0, yOff - (lineCount - endLine)*lh}, {end.pos, lh});
 			}
 		}
-
+		
 		{ // Draw Text
 			float32 yOff = getHeight();
 			const auto base = glyphBuff.unsafe_dataT();

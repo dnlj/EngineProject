@@ -347,6 +347,6 @@ namespace Engine::UI {
 		}
 
 		setTexture(old);
-		return pos - drawOffset;
+		return pos;
 	}
 };
