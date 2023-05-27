@@ -93,7 +93,7 @@ void recv(Connection& conn) {
 ```
 
 ## User Interface
-The user interface library uses OpenGL for rendering, FreeType for glyph generation, and HarfBuzz for layout.
+The user interface library uses OpenGL for rendering, FreeType for glyph generation, and HarfBuzz for text layout.
 
 With the current rendering implementation there is a lot of room for improvement with how draw batches are handled. Specifically around clipping, textures, and text rendering. In the future it should be possible to reduce the number of draw calls by a huge margin.
 

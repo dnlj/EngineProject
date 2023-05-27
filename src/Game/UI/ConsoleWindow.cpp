@@ -6,6 +6,10 @@
 // Game
 #include <Game/UI/ConsoleWindow.hpp>
 
+// TODO: move this UI element into engine
+using namespace Engine;
+using namespace Engine::UI;
+
 namespace Game::UI {
 	TextFeed::TextFeed(EUI::Context* context) : Panel{context} {
 		font = ctx->getTheme().fonts.body;
@@ -88,20 +92,25 @@ namespace Game::UI {
 			}
 		};
 
+		// TODO: if line doesnt end with \n we need to append one
+
 		// Split and append lines
 		while (cur != end) {
 			// TODO: doesnt handle "CR LF". See `Engine::Unicode::UTF32::isNewline`
 			if (isEOL(cur)) {
-				pushLine(beg, cur);
 				++cur; // Skip the EOL
-				if (cur == end) { break; }
+				pushLine(beg, cur);
 				beg = cur;
+				if (cur == end) { break; }
+			} else {
+				++cur;
 			}
-
-			++cur;
 		}
 
-		pushLine(beg, cur);
+		if (beg != end){
+			ENGINE_DEBUG_ASSERT(cur == end);
+			pushLine(beg, cur);
+		}
 	}
 
 	void TextFeed::render() {
@@ -112,39 +121,49 @@ namespace Game::UI {
 		const auto lh = font->getLineHeight();
 		const Index maxLines = getMaxVisibleLines();
 		const Index lineCount = static_cast<Index>(lines.size());
-		const Index latest = lineCount - 1;
 		const Index oldest = lineCount < maxLines ? 0 : lineCount - maxLines;
+		const Index latest = lineCount - 1;
 
 		// Draw selection
 		if (sel.second.valid()) {
-			const auto beg = sel.first.index < sel.second.index ? sel.first : sel.second;
-			const auto end = sel.first.index < sel.second.index ? sel.second : sel.first;
-			Index begLine = -1;
-			Index endLine = -1;
 
-			// Find the begin of our selection
-			for (Index i = oldest;; ++i) {
-				const auto& line = lines[i];
-				if (beg.index <= line.glyphs.stop) {
-					begLine = i;
-					break;
-				}
-				if (i == latest) { break; }
+			// TODO: this fails if we wrap doesnt it?
+			auto beg = sel.first.index < sel.second.index ? sel.first : sel.second;
+			auto end = sel.first.index < sel.second.index ? sel.second : sel.first;
+			Index begLine = invalidIndex;
+			Index endLine = invalidIndex;
+
+			const auto head = charBuff.getHead();
+			if (beg.index <= head && end.index > head) {
+				std::swap(beg, end);
 			}
-			ENGINE_DEBUG_ASSERT(begLine != -1);
+
+			// TODO: line 106 doesnt seem to render correctly. No \n. I think this is wher ethe char buffer wrap
+			const auto& TODO_rm123 = lines[latest].chars; TODO_rm123;
+			// TODO: could binary search lines here if we need to.
+			if (beg.index == lines[latest].chars.stop) {
+				// TODO: skip selection drawing. both selections are past end.
+				begLine = latest;
+				endLine = latest;
+			} else {
+				for (Index i = 0; i <= latest; ++i) {
+					if (lines[i].chars.contains(beg.index)) { begLine = i; break; }
+				}
+			}
+			ENGINE_DEBUG_ASSERT(begLine != invalidIndex);
 			
-			// Find the end of our selection
-			for (Index i = begLine;; ++i) {
-				const auto& line = lines[i];
-				if (end.index <= line.glyphs.stop) {
-					endLine = i;
-					break;
+			if (end.index == lines[latest].chars.stop) {
+				endLine = latest;
+				end.pos = lines[endLine].bounds.getWidth();
+			} else {
+				for (Index i = begLine; i <= latest; ++i) {
+					if (lines[i].chars.contains(end.index)) { endLine = i; break; }
 				}
-				if (i == latest) { break; }
 			}
-			ENGINE_DEBUG_ASSERT(endLine != -1);
+			ENGINE_DEBUG_ASSERT(endLine != invalidIndex);
 
 			// Draw the single or multiline selection
+			begLine = std::max(begLine, oldest); // Don't draw offscreen lines
 			float32 yOff = getHeight() - font->getDescent();
 			ctx->setColor({1,0,0,1});
 			if (begLine == endLine) {
@@ -183,23 +202,44 @@ namespace Game::UI {
 	}
 
 	// TODO: copy/cut/paste
-	//bool TextFeed::onAction(ActionEvent act) {
-	//	switch (act) {
-	//		// TODO: cut and copy should both just copy
-	//		// TODO: paste should probably be yoinked by parent window
-	//		//case Action::Cut: { actionCut(); break; }
-	//		//case Action::Copy: { actionCopy(); break; }
-	//		//case Action::Paste: { actionPaste(); break; }
-	//		case Action::Submit: { ENGINE_WARN("TODO: Gui::TextBox Submit - ", getText()); break; }
-	//		default: { return false; }
-	//	}
-	//	return true;
-	//}
+	bool TextFeed::onAction(EUI::ActionEvent act) {
+		using namespace EUI;
+		switch (act) {
+			// TODO: select all
+			// TODO: cut and copy should both just copy
+			// TODO: paste should probably be yoinked by parent window
+			//case Action::Cut: { actionCut(); break; }
+			case Action::Copy: { actionCopy(); break; }
+			//case Action::Paste: { actionPaste(); break; }
+			default: { return false; }
+		}
+		return true;
+	}
+	void TextFeed::actionCopy() {
+		ENGINE_LOG("actionCopy 1");
+		if (!sel.second.valid()) { return; }
+		if (sel.first == sel.second) { return; }
+		ENGINE_LOG("actionCopy 2");
+		const auto data = charBuff.unsafe_data();
+		const auto head = charBuff.getHead();
+		const auto a = sel.first.index < sel.second.index ? sel.first.index : sel.second.index;
+		const auto b = sel.first.index < sel.second.index ? sel.second.index : sel.first.index;
+
+		if (a < head && b >= head) { // Selection wraps
+			std::cout << "^^^^^^^^^^^^^^^\n";
+			std::cout << std::string_view{data + b, charBuff.capacity() - b};
+			std::cout << std::string_view{data, a};
+		} else {
+			std::cout << "+++++++++++++++\n";
+			std::cout << std::string_view{data + a, b - a};
+		}
+		std::cout << "\n---------------\n";
+	}
 
 	auto TextFeed::getMaxVisibleLines() const -> Index {
 		return static_cast<Index>(std::ceil(getHeight() / font->getLineHeight()));
 	}
-	
+
 	EUI::Caret TextFeed::getCaret() {
 		const auto pos = ctx->getCursor();
 		const auto rel = pos - getPos();
@@ -216,19 +256,33 @@ namespace Game::UI {
 		const auto base = glyphBuff.unsafe_dataT();
 		const auto start = glyphBuff.wrap(line.glyphs.start);
 		const auto stop = glyphBuff.wrap(line.glyphs.stop);
+		ArrayView<const ShapeGlyph> view;
 
 		if (stop < start) {
-			// TODO: need to test this path, needs work
-			caret = EUI::getCaretInLine(rel.x, {base + start, glyphBuff.capacity()});
+			view = {base + start, glyphBuff.capacity()};
+			caret = EUI::getCaretInLine(rel.x, view);
+
 			if (rel.x > caret.pos) {
-				caret = EUI::getCaretInLine(rel.x - caret.pos, {base, base + stop});
+				const auto last = caret;
+				view = {base, stop};
+				caret = EUI::getCaretInLine(rel.x - last.pos, view);
+
+				caret.pos += last.pos;
+				caret.index += last.index;
 			}
-			__debugbreak(); // TODO: need to adjust caret.pos
 		} else {
-			caret = EUI::getCaretInLine(rel.x, {base + start, base + stop});
+			view = {base + start, base + stop};
+			caret = EUI::getCaretInLine(rel.x, view);
 		}
 
-		caret.index += line.glyphs.start;
+		if (caret.index > view.back().cluster) {
+			// Since we wrap we are on start of next line
+			caret.pos = 0;
+		}
+
+		const auto TODO_rm = caret.index;
+		caret.index = charBuff.wrap(line.chars.start + caret.index);
+		ENGINE_LOG("Caret: ", caret.index, " ", TODO_rm);
 		return caret;
 
 	}
@@ -238,6 +292,7 @@ namespace Game::UI {
 		// TODO: why is this needed? Is it possible to activate multiple times?
 		if (ctx->getActive() == this) { return true; }
 
+		sel = {};
 		sel.first = getCaret();
 
 		ctx->registerMouseMove(this, [this](const glm::vec2) {
@@ -296,11 +351,13 @@ namespace Game::UI {
 			const auto now = engine->getWorld().getTime();
 			if (now - last > std::chrono::milliseconds{00}) {
 				rng = lcg(rng);
-				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A'));
+				// TODO: append new line causes duplicates
+				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!' + '\n');
+				//area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!');
 				last = now;
 			}
 
-			if (i == 10'100) { self->getContext()->clearPanelUpdateFuncs(self); }
+			if (i == 10'110) { self->getContext()->clearPanelUpdateFuncs(self); }
 		});
 
 		auto input = ctx->constructPanel<EUI::TextBox>();

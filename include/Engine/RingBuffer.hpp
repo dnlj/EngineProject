@@ -21,7 +21,8 @@ namespace Engine {
 				template<class T>
 				class IteratorBase {
 					private:
-						using Index = int32;
+						// TODO: we no longer support negative index. Change to SizeType. All negative operations need to be (i + capactiy() - n)
+						using Index = SizeType;
 						using Buff = std::conditional_t<std::is_const_v<T>, const RingBufferImpl, RingBufferImpl>;
 						Buff* rb;
 						SizeType i;
@@ -37,8 +38,11 @@ namespace Engine {
 						IteratorBase(Buff* rb, SizeType i) : rb{rb}, i{i} {}
 						~IteratorBase() = default;
 
-						auto& operator+=(Index n) { i += n; return *this; }
-						auto& operator-=(Index n) { return *this += -n; }
+						auto& operator+=(Index n) { i = rb->wrap(i + n); return *this; }
+						auto& operator-=(Index n) {
+							ENGINE_DEBUG_ASSERT(n <= rb->capacity());
+							return *this += rb->capacity() - n;
+						}
 
 						friend auto operator+(IteratorBase it, Index n) { return it += n; }
 						friend auto operator-(IteratorBase it, Index n) { return it -= n; }
@@ -46,6 +50,7 @@ namespace Engine {
 						friend auto operator+(Index n, IteratorBase it) { return it += n; }
 						friend auto operator-(Index n, IteratorBase it) { return it -= n; }
 
+						// TODO: This doesnt make since because indices can wrap, Add ADL for std::distance.
 						friend auto operator-(const IteratorBase& a, const IteratorBase& b) { return a.i - b.i; }
 
 						auto& operator++() { return *this += 1; }
@@ -60,10 +65,12 @@ namespace Engine {
 
 						[[nodiscard]] bool operator==(const IteratorBase& other) const { return i == other.i; }
 						[[nodiscard]] bool operator!=(const IteratorBase& other) const { return !(*this == other); }
-						[[nodiscard]] bool operator<(const IteratorBase& other) const { return i < other.i; }
-						[[nodiscard]] bool operator<=(const IteratorBase& other) const { return i <= other.i; }
-						[[nodiscard]] bool operator>=(const IteratorBase& other) const { return i >= other.i; }
-						[[nodiscard]] bool operator>(const IteratorBase& other) const { return i > other.i; }
+
+						// Indices wrap so these don't really make sense
+						//[[nodiscard]] bool operator<(const IteratorBase& other) const { return i < other.i; }
+						//[[nodiscard]] bool operator<=(const IteratorBase& other) const { return i <= other.i; }
+						//[[nodiscard]] bool operator>=(const IteratorBase& other) const { return i >= other.i; }
+						//[[nodiscard]] bool operator>(const IteratorBase& other) const { return i > other.i; }
 				};
 
 				using Iterator = IteratorBase<T>;
@@ -115,6 +122,7 @@ namespace Engine {
 				RingBufferImpl& operator=(RingBufferImpl&& other) requires IsDynamic { swap(*this, other); return *this; }
 
 				[[nodiscard]] ENGINE_INLINE T& operator[](SizeType i) noexcept {
+					ENGINE_DEBUG_ASSERT(i >= 0, "Negative index not currently supported.");
 					return dataT()[wrap(tail + i)];
 				}
 				

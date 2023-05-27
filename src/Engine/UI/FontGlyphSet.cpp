@@ -179,10 +179,9 @@ namespace Engine::UI {
 		auto buffer = getManager().getWorkingBuffer();
 		ftFace->size = ftSize;
 
-		// TODO: lookinto hb_buffer_set_cluster_level
 		hb_buffer_clear_contents(buffer);
 		hb_buffer_add_utf8(buffer, str.data(), static_cast<int>(str.size()), 0, -1);
-		hb_buffer_guess_segment_properties(buffer); // TODO: Should we handle this ourself?
+		hb_buffer_guess_segment_properties(buffer); // TODO: Should we handle this ourself? Should this be set in fontmanager?
 		hb_shape(hbFont, buffer, nullptr, 0);
 
 		const auto sz = hb_buffer_get_length(buffer);
@@ -198,7 +197,7 @@ namespace Engine::UI {
 		for (uint32 i = 0; i < sz; ++i) {
 			const auto& info = infoArr[i];
 			const auto& pos = posArr[i];
-
+			
 			if (!info.codepoint) {
 				const auto c = str[info.cluster];
 				ENGINE_WARN("Missing one or more glyphs for character at index ", info.cluster, " = ",  static_cast<int>(c)," (", c, ")");

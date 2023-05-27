@@ -42,23 +42,31 @@ namespace Game::UI {
 				memcpy(dat + head, first + len1, len2 * sizeof(T));
 				head = wrap(head + len2);
 			}
-
-			constexpr static Index capacity() noexcept { return 2048; } // 1 << 13
-			Index getHead() const noexcept { return head; }
-
-		private:
-			ENGINE_INLINE constexpr static Index wrap(Index i) noexcept {
-				return i & (capacity() - 1);
-			}
+			ENGINE_INLINE const T* unsafe_data() const noexcept { return storage.data(); }
+			ENGINE_INLINE constexpr static Index capacity() noexcept { return 2048; } // 1 << 13
+			ENGINE_INLINE Index getHead() const noexcept { return head; }
+			ENGINE_INLINE constexpr T& operator[](Index i) { return storage[i]; }
+			ENGINE_INLINE constexpr const T& operator[](Index i) const { return storage[i]; }
+			ENGINE_INLINE constexpr static Index wrap(Index i) noexcept { return i & (capacity() - 1); }
+			ENGINE_INLINE constexpr static Index subwrap(Index i) noexcept { return wrap(capacity() + i); }
 	};
 
 	class TextFeed : public EUI::Panel {
 		private:
 			using Index = uint32;
+			constexpr static Index invalidIndex = -1;
 
 			struct Range {
 				Index start;
 				Index stop;
+				ENGINE_INLINE constexpr bool valid() const noexcept { return start != invalidIndex && stop != invalidIndex; }
+				[[nodiscard]] ENGINE_INLINE constexpr bool contains(Index i) const noexcept {
+					if (stop < start) {
+						return i >= start || i < stop;
+					} else {
+						return i >= start && i < stop;
+					}
+				};
 			};
 
 			struct Line {
@@ -68,8 +76,8 @@ namespace Game::UI {
 			};
 
 			struct Selection { // TODO: can we do a generic TextSelection
-				EUI::Caret first = {};
-				EUI::Caret second = {};
+				EUI::Caret first;
+				EUI::Caret second;
 			};
 
 			SimpleRingBuffer<char> charBuff;
@@ -89,10 +97,13 @@ namespace Game::UI {
 			bool onBeginActivate() override;
 			void onEndActivate() override;
 
+			bool onAction(EUI::ActionEvent act) override;
+
 		private:
-			EUI::Caret getCaret();
 			Index getMaxVisibleLines() const;
+			EUI::Caret getCaret();
 			int wrap(int i) { return 0; }
+			void actionCopy();
 	};
 
 	class ConsoleWindow : public EUI::Window {

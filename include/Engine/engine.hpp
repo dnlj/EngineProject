@@ -188,22 +188,27 @@ namespace Engine {
 	}
 }
 
-#define CREATE_ADL_WRAPPER(name) \
-	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& u) { \
-		using ::std::name; return name(std::forward<T>(u)); \
+#define CREATE_ADL_WRAPPER_1(name) \
+	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& t) { \
+		using ::std::name; return name(std::forward<T>(t)); \
+	}
+#define CREATE_ADL_WRAPPER_2(name) \
+	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& t1, T&& t2) { \
+		using ::std::name; return name(std::forward<T>(t1), std::forward<T>(t2)); \
 	}
 namespace Engine {
-	CREATE_ADL_WRAPPER(data);
-	CREATE_ADL_WRAPPER(empty);
-	CREATE_ADL_WRAPPER(size);
-	CREATE_ADL_WRAPPER(ssize);
-	CREATE_ADL_WRAPPER(begin);
-	CREATE_ADL_WRAPPER(cbegin);
-	CREATE_ADL_WRAPPER(rbegin);
-	CREATE_ADL_WRAPPER(crbegin);
-	CREATE_ADL_WRAPPER(end);
-	CREATE_ADL_WRAPPER(cend);
-	CREATE_ADL_WRAPPER(rend);
-	CREATE_ADL_WRAPPER(crend);
+	CREATE_ADL_WRAPPER_2(swap);
+	CREATE_ADL_WRAPPER_1(data);
+	CREATE_ADL_WRAPPER_1(empty);
+	CREATE_ADL_WRAPPER_1(size);
+	CREATE_ADL_WRAPPER_1(ssize);
+	CREATE_ADL_WRAPPER_1(begin);
+	CREATE_ADL_WRAPPER_1(cbegin);
+	CREATE_ADL_WRAPPER_1(rbegin);
+	CREATE_ADL_WRAPPER_1(crbegin);
+	CREATE_ADL_WRAPPER_1(end);
+	CREATE_ADL_WRAPPER_1(cend);
+	CREATE_ADL_WRAPPER_1(rend);
+	CREATE_ADL_WRAPPER_1(crend);
 }
 #undef CREATE_ADL_WRAPPER
