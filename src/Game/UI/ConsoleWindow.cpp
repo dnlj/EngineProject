@@ -125,9 +125,9 @@ namespace Game::UI {
 		// Draw selection
 		if (sel.second.valid() && sel.first != sel.second) {
 			const auto selection = getSelectionLines();
-			const auto [begC, endC, begL, endL] = getSelectionLines();
+			auto [begC, endC, begL, endL] = getSelectionLines();
 
-			// TODO: begL = std::max(begL, oldest); // Don't draw offscreen lines
+			begL = std::max(begL, oldest); // Don't draw offscreen lines
 
 			float32 yOff = getHeight() - font->getDescent();
 			ctx->setColor({1,0,0,1});
@@ -244,7 +244,7 @@ namespace Game::UI {
 
 		// Selection wraps?
 		const auto head = charBuff.getHead();
-		if (begC.index < head && endC.index >= head) {
+		if (begC.index <= head && endC.index > head) {
 			std::swap(begC, endC);
 		}
 
@@ -252,7 +252,6 @@ namespace Game::UI {
 		if (begC.index == lastChar) {
 			// This should only happen if you clicked past the endC of the last line.
 			ENGINE_DEBUG_ASSERT(begC == endC);
-			__debugbreak();
 			return {begC, endC, latest, latest};
 		} else {
 			for (Index i = 0; i <= latest; ++i) {
@@ -322,7 +321,7 @@ namespace Game::UI {
 			caret.pos = 0;
 		}
 
-		const auto TODO_rm = caret.index;
+		const auto TODO_rm = caret.index; // TODO: rm
 		caret.index = charBuff.wrap(line.chars.start + caret.index);
 		ENGINE_LOG("Caret: ", caret.index, " ", TODO_rm, " ", caret.pos);
 		return caret;
