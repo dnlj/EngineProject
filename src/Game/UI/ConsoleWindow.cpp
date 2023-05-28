@@ -38,7 +38,7 @@ namespace Game::UI {
 			return begin + 1;
 		};
 
-		const auto pushLine = [this](auto a, auto b) ENGINE_INLINE_REL {
+		const auto pushLine = [this](auto a, auto b){
 			// Dont overflow our buffer
 			if (b - a > charBuff.capacity()) {
 				a = b - charBuff.capacity();
@@ -98,6 +98,10 @@ namespace Game::UI {
 				}
 			}
 		};
+
+		// TODO: need to update selection every time we push a line
+		// TODO: need to handle empty line (currently doesnt push)
+		// TODO: bad rendering for blank lines
 
 		// Split and append lines
 		while (cur != end) {
@@ -196,39 +200,32 @@ namespace Game::UI {
 		ENGINE_LOG("actionCopy 2");
 
 		const auto data = charBuff.unsafe_data();
-		const auto head = charBuff.getHead();
-		const auto a = sel.first.index < sel.second.index ? sel.first.index : sel.second.index;
-		const auto b = sel.first.index < sel.second.index ? sel.second.index : sel.first.index;
-
-
-		// TODO: should this be: `a<h && b>=h`
-		if (a <= head && b > head) { // Selection wraps
-			std::cout << "^^^^^^^^^^^^^^^\n";
-			std::cout << std::string_view{data + b, charBuff.capacity() - b};
-			std::cout << std::string_view{data, a};
-		} else {
-			std::cout << "+++++++++++++++\n";
-			std::cout << std::string_view{data + a, b - a};
-		}
-		std::cout << "\n---------------\n";
-		
-		// Draw the single or multiline selection
 		const auto [beg, end] = sortedSelection();
+
 		if (beg.line == end.line) {
-			std::cout << "///////////////\n";
-			// +1 because selection in inclusive
+			if (end.index <= beg.index) {
+				ENGINE_WARN("Invalid selection chars (end < beg)");
+				ENGINE_DEBUG_BREAK;
+				return;
+			}
 			const auto TODO_rm = std::string_view{data + beg.index, end.index - beg.index};
-			std::cout << '|' << TODO_rm << '|';
 			ctx->setClipboard(TODO_rm);
+			std::cout << "///////////////\n";
+			std::cout << '|' << TODO_rm << '|';
 			std::cout << "\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n";
 		} else {
-			std::cout << ">>>>>>>>>>>>>>>\n|";
-			const auto capacity = charBuff.capacity();
+			constexpr std::string_view newline = "\u000A"; // Use '\n' only. Don't use '\r'+'\n' on Windows.
 			std::vector<std::string_view> toCopy;
+			if (end.line <= beg.line) {
+				ENGINE_WARN("Invalid selection lines (end < beg)");
+				ENGINE_DEBUG_BREAK;
+				return;
+			}
 			toCopy.reserve(end.line - beg.line);
 
-			const auto copy = [&](Range chars) ENGINE_INLINE {
-				ENGINE_DEBUG_ASSERT(chars.start != chars.stop, "Attempting to push empty string");
+			const auto capacity = charBuff.capacity();
+			const auto copy = [&](Range chars) ENGINE_INLINE_REL {
+				if (chars.start == chars.stop) { return; }
 				if (chars.stop < chars.start) {
 					toCopy.emplace_back(data + chars.start, capacity - chars.start);
 					toCopy.emplace_back(data, chars.stop);
@@ -238,25 +235,24 @@ namespace Game::UI {
 			};
 
 			copy({beg.index, lines[beg.line].chars.stop});
-			toCopy.push_back("\n");
+			toCopy.push_back(newline);
 
 			for (Index i = beg.line+1; i < end.line; ++i) {
 				copy(lines[i].chars);
-				toCopy.push_back("\n");
+				toCopy.push_back(newline);
 			}
 
-			if (const auto start = lines[end.line].chars.start; start != end.index) {
-				copy({lines[end.line].chars.start, end.index});
-			}
+			copy({lines[end.line].chars.start, end.index});
+			ctx->setClipboard(toCopy);
 
 			// TODO: rm
+			std::cout << ">>>>>>>>>>>>>>>\n|";
 			for (auto& line : toCopy) {
 				std::cout << line << '|';
 			}
-
-			ctx->setClipboard(toCopy);
-
 			std::cout << "\n<<<<<<<<<<<<<<<\n";
+
+
 		}
 
 	}
@@ -269,8 +265,13 @@ namespace Game::UI {
 		const auto head = charBuff.getHead();
 		if (beg.index <= head && end.index > head) {
 			std::swap(beg, end);
+		} else if (end.line < beg.line) {
+			ENGINE_DEBUG_ASSERT(beg.index == end.index);
+			// This happens when you select from the end of one line to the start of another.
+			std::swap(beg, end);
 		}
 
+		ENGINE_DEBUG_ASSERT(beg.line <= end.line);
 		return {beg, end};
 	}
 
@@ -392,7 +393,14 @@ namespace Game::UI {
 				last = now;
 			}
 
-			if (i == 10'115) { self->getContext()->clearPanelUpdateFuncs(self); }
+			if (i == 10'115) {
+				area->pushText("");
+				area->pushText("abc123");
+				area->pushText("\n");
+				area->pushText("xyz789");
+				area->pushText("foo bar baz\n");
+				self->getContext()->clearPanelUpdateFuncs(self);
+			}
 		});
 
 		auto input = ctx->constructPanel<EUI::TextBox>();

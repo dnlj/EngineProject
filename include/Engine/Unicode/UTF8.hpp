@@ -57,9 +57,9 @@ namespace Engine::Unicode {
 
 namespace Engine::Unicode::UTF32 {
 	inline constexpr bool isNewline(const Point32 point) noexcept {
-		// TODO: also look at unicode annex "Unicode Line Breaking Algorithm"
 		// TODO: how to handle "CR LF"? really we need to handle this with ptrs like we do with lenth,next,prev,etc.
-		// From "5.8 Newline Guidelines" unicode standard.
+		// See section "Mandatory breaks" under: https://unicode.org/reports/tr14/#BreakingRules
+		// See section "5.8 Newline Guidelines" in the Unicode standard: https://www.unicode.org/versions/Unicode15.0.0/ch05.pdf
 		return (+point == 0x000D) // CR, carriage return
 			|| (+point == 0x000A) // LF, line feed
 			|| (+point == 0x0085) // NEL, next line
