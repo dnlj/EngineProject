@@ -50,6 +50,7 @@ namespace Game::UI {
 			line.chars.stop = line.chars.start;
 			line.glyphs.start = glyphIndex;
 			line.glyphs.stop = glyphIndex; // Must be set for correct cleanup, even for empty lines.
+			line.bounds = {{0,0},{0,0}};
 			if (a == b) { return; }
 
 			// Add our line to the buffer
@@ -99,10 +100,13 @@ namespace Game::UI {
 			}
 		};
 
+		//
+		//
 		// TODO: need to update selection every time we push a line
-		// TODO: need to handle empty line (currently doesnt push)
-		// TODO: bad rendering for blank lines
-
+		// TODO: need to be able to push empty lines (just newline)
+		//
+		//
+		
 		// Split and append lines
 		while (cur != end) {
 			// TODO: doesnt handle "CR LF". See `Engine::Unicode::UTF32::isNewline`
@@ -133,6 +137,7 @@ namespace Game::UI {
 		const Index lineCount = static_cast<Index>(lines.size());
 		const Index oldest = lineCount < maxLines ? 0 : lineCount - maxLines;
 		const Index latest = lineCount - 1;
+		const auto eolWidth = font->getNominalSize().x * 0.6f; // The multiplier is arbitrary. The full width just looks wrong.
 
 		// Draw selection
 		if (sel.second.valid() && sel.first != sel.second) {
@@ -145,10 +150,12 @@ namespace Game::UI {
 			if (beg.line == end.line) {
 				ctx->drawRect({beg.pos, yOff - (lineCount - end.line)*lh}, {end.pos - beg.pos, lh});
 			} else {
-				// TODO: special case handle eol (maybe just a min width?)
-				ctx->drawRect({beg.pos, yOff - (lineCount - beg.line)*lh}, {lines[beg.line].bounds.getWidth() - beg.pos, lh});
+				ctx->drawRect(
+					{beg.pos, yOff - (lineCount - beg.line)*lh},
+					{lines[beg.line].bounds.getWidth() - beg.pos + eolWidth, lh}
+				);
 				for (Index i = beg.line + 1; i < end.line; ++i) {
-					ctx->drawRect({0, yOff - (lineCount - i)*lh}, {lines[i].bounds.getWidth(), lh});
+					ctx->drawRect({0, yOff - (lineCount - i)*lh}, {lines[i].bounds.getWidth() + eolWidth, lh});
 				}
 				ctx->drawRect({0, yOff - (lineCount - end.line)*lh}, {end.pos, lh});
 			}

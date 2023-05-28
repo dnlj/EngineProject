@@ -32,6 +32,8 @@ namespace Engine::UI {
 	};
 }
 
+
+// TODO: we can probably pull freetype and harfbuzz out of this header and into the cpp file
 namespace Engine::UI {
 	/**
 	 * Supports a number of operations needed to render strings in a given font face and size on the gpu.
@@ -128,6 +130,11 @@ namespace Engine::UI {
 			 * This is as specified by the font. It is possible that some glyphs will overshoot.
 			 */
 			ENGINE_INLINE auto getBodyHeight() const noexcept { return getAscent() - getDescent(); }
+
+			/**
+			 * Gets the nominal size of the font (EM square).
+			 */
+			ENGINE_INLINE glm::vec2 getNominalSize() const noexcept { return {ftSize->metrics.x_ppem, ftSize->metrics.y_ppem}; }
 
 		private:
 			template<class ShapeGlyphCont>

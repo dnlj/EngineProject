@@ -72,7 +72,7 @@ namespace Game::UI {
 			struct Line {
 				Range chars;
 				Range glyphs;
-				EUI::Bounds bounds; // TODO: rm - dont actually need
+				EUI::Bounds bounds;
 			};
 
 			struct Caret {
