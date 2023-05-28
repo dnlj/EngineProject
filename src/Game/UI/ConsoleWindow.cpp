@@ -92,6 +92,21 @@ namespace Game::UI {
 				const bool before = f.chars.start < l.chars.stop;
 				// ( (1||2) && (   2    ||   1  )) || (        3       )
 				if ((before && (wrapped || after)) || (wrapped && after)) {
+
+					const auto clampLine = [&](Caret& caret) ENGINE_INLINE {
+						if (caret.valid()) {
+							if (caret.line == 0) {
+								caret.index = lines[1].chars.start;
+								caret.pos = 0;
+							} else {
+								--caret.line;
+							}
+						}
+					};
+
+					clampLine(sel.first);
+					clampLine(sel.second);
+
 					glyphBuff.remove(glyphBuff.wrap(f.glyphs.stop));
 					lines.pop();
 				} else {
@@ -103,9 +118,14 @@ namespace Game::UI {
 		//
 		//
 		// TODO: need to update selection every time we push a line
-		// TODO: need to be able to push empty lines (just newline)
 		//
 		//
+
+		// Pushed empty line
+		if (beg == end) {
+			pushLine(beg, end);
+			return;
+		}
 		
 		// Split and append lines
 		while (cur != end) {
@@ -269,10 +289,22 @@ namespace Game::UI {
 		auto end = sel.first.index < sel.second.index ? sel.second : sel.first;
 		
 		// Selection wraps?
+
+		//
+		//
+		//
+		//
+		// TODO: can we simplify this? we have the lines surely we can use that.
+		//
+		//
+		//
+		//
+
 		const auto head = charBuff.getHead();
 		if (beg.index <= head && end.index > head) {
 			std::swap(beg, end);
 		} else if (end.line < beg.line) {
+			// TODO: we have to also consider wrap for this check
 			ENGINE_DEBUG_ASSERT(beg.index == end.index);
 			// This happens when you select from the end of one line to the start of another.
 			std::swap(beg, end);
@@ -294,10 +326,27 @@ namespace Game::UI {
 		const auto lineNum = [&]() -> Index ENGINE_INLINE {
 			if (rel.y < 0) { return getMaxVisibleLines(); }
 			if (rel.y > getHeight()) { return 0; }
-			return static_cast<Index>((getHeight() - rel.y) / font->getLineHeight());
+
+			const auto yOff = getHeight() - rel.y;
+			if (yOff < 0) {
+				// Shouldn't be possible since we would be out of focus
+				ENGINE_DEBUG_ASSERT(false, "Invalid caret line offset");
+				return 0;
+			} 
+
+			return static_cast<int32>(yOff / font->getLineHeight());
 		}();
 
-		const auto lineIdx = lineSz - 1 - lineNum;
+		const auto lineOff = 1 + lineNum;
+		if (lineOff > lineSz) {
+			return {
+				.line = 0,
+				.index = lines[0].chars.start,
+				.pos = 0,
+			};
+		}
+
+		const auto lineIdx = lineSz - lineOff;
 		const auto& line = lines[lineIdx];
 		const auto base = glyphBuff.unsafe_dataT();
 		const auto start = glyphBuff.wrap(line.glyphs.start);
@@ -326,8 +375,11 @@ namespace Game::UI {
 		}
 
 		caret.index = charBuff.wrap(line.chars.start + caret.index);
-		return {lineIdx, caret.index, caret.pos};
-
+		return {
+			.line = lineIdx,
+			.index = caret.index,
+			.pos = caret.pos,
+		};
 	}
 
 	// TODO: move this into a base calss for both TextBox and TextFeed
@@ -392,7 +444,7 @@ namespace Game::UI {
 			}(i);
 			auto area = static_cast<TextFeed*>(self);
 			const auto now = engine->getWorld().getTime();
-			if (now - last > std::chrono::milliseconds{00}) {
+			if (now - last > std::chrono::milliseconds{50}) {
 				rng = lcg(rng);
 				// TODO: append new line causes duplicates
 				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!' + '\n');
@@ -401,11 +453,11 @@ namespace Game::UI {
 			}
 
 			if (i == 10'115) {
-				area->pushText("");
-				area->pushText("abc123");
-				area->pushText("\n");
-				area->pushText("xyz789");
-				area->pushText("foo bar baz\n");
+				//area->pushText("");
+				//area->pushText("abc123");
+				//area->pushText("\n");
+				//area->pushText("xyz789");
+				//area->pushText("foo bar baz\n");
 				self->getContext()->clearPanelUpdateFuncs(self);
 			}
 		});
