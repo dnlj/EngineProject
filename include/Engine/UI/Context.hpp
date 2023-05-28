@@ -280,7 +280,8 @@ namespace Engine::UI {
 			 * Copies the UTF-8 encoded text to the clipboard.
 			 * Requires that setNativeWindowHandle has been called.
 			 */
-			void setClipboard(std::string_view view);
+			void setClipboard(ArrayView<const std::string_view> array) const;
+			ENGINE_INLINE void setClipboard(const std::string_view view) const { setClipboard(ArrayView{view}); }
 
 			/**
 			 * Gets the text currently in the clipboard as a UTF-8 encoded string.

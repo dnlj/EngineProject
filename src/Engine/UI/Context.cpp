@@ -1,8 +1,9 @@
 // Engine
 #include <Engine/Camera.hpp>
-#include <Engine/UI/Context.hpp>
-#include <Engine/Math/color.hpp>
 #include <Engine/Gfx/ShaderManager.hpp>
+#include <Engine/Math/color.hpp>
+#include <Engine/UI/Context.hpp>
+#include <Engine/Win32/win32.hpp>
 
 
 namespace {
@@ -501,7 +502,7 @@ namespace Engine::UI {
 		}
 	}
 
-	void Context::setClipboard(std::string_view view) {
+	void Context::setClipboard(ArrayView<const std::string_view> array) const {
 		#if !ENGINE_OS_WINDOWS
 			#error TODO: impl for non Windows
 		#endif
@@ -512,36 +513,65 @@ namespace Engine::UI {
 			return;
 		}
 
-		if (!::OpenClipboard(handle)) {
-			ENGINE_WARN("Unable to open clipboard");
-			return;
-		}
-
-		::EmptyClipboard();
-
+		// UTF-16 buffer
+		// Can't use u16string because Win32 expects wchar not char16
 		std::wstring convBuffer;
-		convBuffer.resize(view.size());
-		static_assert(sizeof(convBuffer[0]) == 2, "Assumes a two byte wide char");
+		static_assert(sizeof(convBuffer[0]) == sizeof(char16_t), "Assumes a two byte wide char");
+
+		const auto u8size = std::transform_reduce(array.cbegin(), array.cend(), 0ull, std::plus{},
+			[](auto view) { return view.size(); }
+		);
+
+		convBuffer.resize(u8size); // u16 size will always be less than or equal to the u8 size
 
 		// Convert to UTF-16
-		::MultiByteToWideChar(CP_UTF8, 0,
-			view.data(), static_cast<int>(view.size()),
-			convBuffer.data(), static_cast<int>(convBuffer.size())
-		);
+		size_t offset = 0; // Offset, in wide chars
+		for (const auto& view : array) {
+			const auto len = ::MultiByteToWideChar(CP_UTF8, 0,
+				view.data(),
+				static_cast<int>(view.size()), // Size in bytes
+				convBuffer.data() + offset,
+				static_cast<int>(convBuffer.size()) // Size in wide chars
+			);
+
+			if (ENGINE_DEBUG && len == 0) {
+				ENGINE_WARN("Unable to convert clipboard data: ", Win32::getLastErrorMessage());
+			}
+
+			offset += len;
+		}
+
+		// Discard any unused code units
 		convBuffer.resize(std::wcslen(convBuffer.data()) + 1); // + 1 for null
 		convBuffer.back() = 0;
 
-		const auto sz = convBuffer.size() * 2;
-		if (auto mem = ::GlobalAlloc(GMEM_MOVEABLE, sz)) {
+		// See: https://learn.microsoft.com/en-us/windows/win32/dataxchg/using-the-clipboard
+		const auto bytes = convBuffer.size() * 2;
+		if (auto mem = ::GlobalAlloc(GMEM_MOVEABLE, bytes)) {
 			if (auto ptr = ::GlobalLock(mem)) {
-				memcpy(ptr, convBuffer.data(), sz);
+				memcpy(ptr, convBuffer.data(), bytes);
 				::GlobalUnlock(mem);
 			} else {
-				ENGINE_WARN("Unable to lock win32 memory");
+				ENGINE_WARN("Unable to lock clipboard memory: ", Win32::getLastErrorMessage());
 			}
-			::SetClipboardData(CF_UNICODETEXT, mem);
+
+			if (!::OpenClipboard(handle)) {
+				ENGINE_WARN("Unable to open clipboard: ", Win32::getLastErrorMessage());
+			} else {
+				if (::EmptyClipboard() && ::SetClipboardData(CF_UNICODETEXT, mem)) {
+					// Success, don't free mem
+				} else {
+					ENGINE_WARN("Unable to set clipboard data: ", Win32::getLastErrorMessage());
+					::GlobalFree(mem);
+				}
+
+				if (!::CloseClipboard()) {
+					ENGINE_WARN("Unable to close clipboard: ", Win32::getLastErrorMessage());
+				}
+			}
+		} else {
+			ENGINE_WARN("Unable to allocate global memory for clipboard: ", Win32::getLastErrorMessage());
 		}
-		::CloseClipboard();
 	}
 
 	std::string Context::getClipboardText() const {

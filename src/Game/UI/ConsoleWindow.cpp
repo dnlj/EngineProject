@@ -226,7 +226,19 @@ namespace Game::UI {
 				}
 			};
 
-			copy(lines[begL].chars);
+			copy({begC.index, lines[begL].chars.stop});
+			for (Index i = begL+1; i < endL; ++i) {
+				copy(lines[i].chars);
+			}
+			copy({lines[endL].chars.start, endC.index});
+
+			// TODO: rm
+			for (auto& line : toCopy) {
+				std::cout << line;
+			}
+
+			ctx->setClipboard(toCopy);
+
 			std::cout << "\n<<<<<<<<<<<<<<<\n";
 		}
 

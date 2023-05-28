@@ -77,4 +77,7 @@ namespace Engine {
 			 */
 			ENGINE_INLINE ArrayView last(int64 n) const noexcept { return {dataEnd - n, dataEnd}; }
 	};
+
+	template<class T>
+	ArrayView(std::initializer_list<T>&&) -> ArrayView<const T>;
 }
