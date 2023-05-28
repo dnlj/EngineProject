@@ -270,6 +270,8 @@ namespace Engine::UI {
 	}
 
 	void DrawBuilder::drawRect(glm::vec2 pos, glm::vec2 size) {
+		// TODO: Enable and fix empty bugs
+		//ENGINE_DEBUG_ASSERT(size.x > 0 && size.y > 0, "Attempting to draw empty rect.");
 		const auto pvdSz = getVertexData().size();
 		auto base = static_cast<uint32>(pvdSz);
 

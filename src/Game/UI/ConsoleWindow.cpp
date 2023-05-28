@@ -92,8 +92,6 @@ namespace Game::UI {
 			}
 		};
 
-		// TODO: if line doesnt end with \n we need to append one
-
 		// Split and append lines
 		while (cur != end) {
 			// TODO: doesnt handle "CR LF". See `Engine::Unicode::UTF32::isNewline`
@@ -125,56 +123,23 @@ namespace Game::UI {
 		const Index latest = lineCount - 1;
 
 		// Draw selection
-		
-		if (sel.second.valid()) {
+		if (sel.second.valid() && sel.first != sel.second) {
+			const auto selection = getSelectionLines();
+			const auto [begC, endC, begL, endL] = getSelectionLines();
 
-			// TODO: this fails if we wrap doesnt it?
-			auto beg = sel.first.index < sel.second.index ? sel.first : sel.second;
-			auto end = sel.first.index < sel.second.index ? sel.second : sel.first;
-			Index begLine = invalidIndex;
-			Index endLine = invalidIndex;
+			// TODO: begL = std::max(begL, oldest); // Don't draw offscreen lines
 
-			const auto head = charBuff.getHead();
-			if (beg.index <= head && end.index > head) {
-				std::swap(beg, end);
-			}
-
-			const auto& TODO_rm123 = lines[latest].chars; TODO_rm123;
-			// TODO: could binary search lines here if we need to.
-			if (beg.index == lines[latest].chars.stop) {
-				// TODO: skip selection drawing. both selections are past end.
-				begLine = latest;
-				endLine = latest;
-			} else {
-				for (Index i = 0; i <= latest; ++i) {
-					if (lines[i].chars.contains(beg.index)) { begLine = i; break; }
-				}
-			}
-			ENGINE_DEBUG_ASSERT(begLine != invalidIndex);
-			
-			if (end.index == lines[latest].chars.stop) {
-				endLine = latest;
-				end.pos = lines[endLine].bounds.getWidth();
-			} else {
-				for (Index i = begLine; i <= latest; ++i) {
-					if (lines[i].chars.contains(end.index)) { endLine = i; break; }
-				}
-			}
-			ENGINE_DEBUG_ASSERT(endLine != invalidIndex);
-
-			// Draw the single or multiline selection
-			begLine = std::max(begLine, oldest); // Don't draw offscreen lines
 			float32 yOff = getHeight() - font->getDescent();
 			ctx->setColor({1,0,0,1});
-			if (begLine == endLine) {
-				ctx->drawRect({beg.pos, yOff - (lineCount - endLine)*lh}, {end.pos - beg.pos, lh});
+			if (begL == endL) {
+				ctx->drawRect({begC.pos, yOff - (lineCount - endL)*lh}, {endC.pos - begC.pos, lh});
 			} else {
 				// TODO: special case handle eol (maybe just a min width?)
-				ctx->drawRect({beg.pos, yOff - (lineCount - begLine)*lh}, {lines[begLine].bounds.getWidth() - beg.pos, lh});
-				for (Index i = begLine + 1; i < endLine; ++i) {
+				ctx->drawRect({begC.pos, yOff - (lineCount - begL)*lh}, {lines[begL].bounds.getWidth() - begC.pos, lh});
+				for (Index i = begL + 1; i < endL; ++i) {
 					ctx->drawRect({0, yOff - (lineCount - i)*lh}, {lines[i].bounds.getWidth(), lh});
 				}
-				ctx->drawRect({0, yOff - (lineCount - endLine)*lh}, {end.pos, lh});
+				ctx->drawRect({0, yOff - (lineCount - endL)*lh}, {endC.pos, lh});
 			}
 		}
 		
@@ -183,14 +148,16 @@ namespace Game::UI {
 			const auto base = glyphBuff.unsafe_dataT();
 
 			for (Index i = latest;; --i) {
-				auto& line = lines[i];
+				const auto& line = lines[i];
 				const auto start = glyphBuff.wrap(line.glyphs.start);
 				const auto stop = glyphBuff.wrap(line.glyphs.stop);
 
 				ctx->setColor({0,1,0,1});
 				if (stop < start) {
 					const auto off = ctx->drawString({0, yOff}, font, {base + start, base + glyphBuff.capacity()});
+					ctx->setColor({0,1,1,1});
 					ctx->drawString(off, font, {base, base + stop});
+					ctx->setColor({0,1,0,1});
 				} else {
 					ctx->drawString({0, yOff}, font, {base + start, base + stop});
 				}
@@ -220,12 +187,15 @@ namespace Game::UI {
 		if (!sel.second.valid()) { return; }
 		if (sel.first == sel.second) { return; }
 		ENGINE_LOG("actionCopy 2");
+
 		const auto data = charBuff.unsafe_data();
 		const auto head = charBuff.getHead();
 		const auto a = sel.first.index < sel.second.index ? sel.first.index : sel.second.index;
 		const auto b = sel.first.index < sel.second.index ? sel.second.index : sel.first.index;
 
-		if (a < head && b >= head) { // Selection wraps
+
+		// TODO: should this be: `a<h && b>=h`
+		if (a <= head && b > head) { // Selection wraps
 			std::cout << "^^^^^^^^^^^^^^^\n";
 			std::cout << std::string_view{data + b, charBuff.capacity() - b};
 			std::cout << std::string_view{data, a};
@@ -234,6 +204,74 @@ namespace Game::UI {
 			std::cout << std::string_view{data + a, b - a};
 		}
 		std::cout << "\n---------------\n";
+		
+		// Draw the single or multiline selection
+		auto [begC, endC, begL, endL] = getSelectionLines();
+		if (begL == endL) {
+			std::cout << "///////////////\n";
+			std::cout << std::string_view{data + begC.index, endC.index - begC.index};
+			std::cout << "\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n";
+		} else {
+			std::cout << ">>>>>>>>>>>>>>>\n";
+			const auto capacity = charBuff.capacity();
+			std::vector<std::string_view> toCopy;
+			toCopy.reserve(endL - begL);
+
+			const auto copy = [&](Range chars) ENGINE_INLINE {
+				if (chars.stop < chars.start) {
+					toCopy.emplace_back(data + chars.start, capacity - chars.start);
+					toCopy.emplace_back(data, chars.stop);
+				} else {
+					toCopy.emplace_back(data + chars.start, chars.stop - chars.start);
+				}
+			};
+
+			copy(lines[begL].chars);
+			std::cout << "\n<<<<<<<<<<<<<<<\n";
+		}
+
+	}
+
+	auto TextFeed::getSelectionLines() const -> SelectionLines {
+		const Index latest = static_cast<Index>(lines.size()) - 1;
+		ENGINE_DEBUG_ASSERT(latest != invalidIndex);
+		const auto lastChar = lines[latest].chars.stop;
+		auto begC = sel.first.index < sel.second.index ? sel.first : sel.second;
+		auto endC = sel.first.index < sel.second.index ? sel.second : sel.first;
+
+		Index begL = invalidIndex;
+		Index endL = invalidIndex;
+
+		// Selection wraps?
+		const auto head = charBuff.getHead();
+		if (begC.index < head && endC.index >= head) {
+			std::swap(begC, endC);
+		}
+
+		// TODO: could binary search lines here if we need to.
+		if (begC.index == lastChar) {
+			// This should only happen if you clicked past the endC of the last line.
+			ENGINE_DEBUG_ASSERT(begC == endC);
+			__debugbreak();
+			return {begC, endC, latest, latest};
+		} else {
+			for (Index i = 0; i <= latest; ++i) {
+				if (lines[i].chars.contains(begC.index)) { begL = i; break; }
+			}
+		}
+		ENGINE_DEBUG_ASSERT(begL != invalidIndex);
+
+		if (endC.index == lastChar) {
+			endL = latest;
+			endC.pos = lines[endL].bounds.getWidth();
+		} else {
+			for (Index i = begL; i <= latest; ++i) {
+				if (lines[i].chars.contains(endC.index)) { endL = i; break; }
+			}
+		}
+		ENGINE_DEBUG_ASSERT(endL != invalidIndex);
+
+		return {begC, endC, begL, endL};
 	}
 
 	auto TextFeed::getMaxVisibleLines() const -> Index {
@@ -246,7 +284,7 @@ namespace Game::UI {
 
 		EUI::Caret caret = {0,0};
 		const auto lineSz = lines.size();
-		const auto lineNum = [&]() ENGINE_INLINE -> Index {
+		const auto lineNum = [&]() -> Index ENGINE_INLINE {
 			if (rel.y < 0) { return getMaxVisibleLines(); }
 			if (rel.y > getHeight()) { return 0; }
 			return static_cast<Index>((getHeight() - rel.y) / font->getLineHeight());
@@ -257,18 +295,22 @@ namespace Game::UI {
 		const auto start = glyphBuff.wrap(line.glyphs.start);
 		const auto stop = glyphBuff.wrap(line.glyphs.stop);
 		ArrayView<const ShapeGlyph> view;
-
+		
 		if (stop < start) {
-			view = {base + start, glyphBuff.capacity()};
+			view = {base + start, base + glyphBuff.capacity()};
 			caret = EUI::getCaretInLine(rel.x, view);
 
-			if (rel.x > caret.pos) {
+			// TODO: rm - why didnt this work?: if (rel.x > caret.pos) {
+			// Hit EoL on first half
+			if (caret.index > view.back().cluster) {
 				const auto last = caret;
-				view = {base, stop};
+				view = {base, base + stop};
 				caret = EUI::getCaretInLine(rel.x - last.pos, view);
-
 				caret.pos += last.pos;
-				caret.index += last.index;
+
+				// We don't need to offset index because each line is shaped
+				// contiguously before getting pushed to the buffer.
+				//caret.index += last.index;
 			}
 		} else {
 			view = {base + start, base + stop};
@@ -282,7 +324,7 @@ namespace Game::UI {
 
 		const auto TODO_rm = caret.index;
 		caret.index = charBuff.wrap(line.chars.start + caret.index);
-		ENGINE_LOG("Caret: ", caret.index, " ", TODO_rm);
+		ENGINE_LOG("Caret: ", caret.index, " ", TODO_rm, " ", caret.pos);
 		return caret;
 
 	}
