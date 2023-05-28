@@ -132,22 +132,21 @@ namespace Game::UI {
 
 		// Draw selection
 		if (sel.second.valid() && sel.first != sel.second) {
-			const auto selection = getSelectionLines();
-			auto [begC, endC, begL, endL] = getSelectionLines();
+			auto [beg, end] = sortedSelection();
 
-			begL = std::max(begL, oldest); // Don't draw offscreen lines
+			beg.line = std::max(beg.line, oldest); // Don't draw offscreen lines
 
 			float32 yOff = getHeight() - font->getDescent();
 			ctx->setColor({1,0,0,1});
-			if (begL == endL) {
-				ctx->drawRect({begC.pos, yOff - (lineCount - endL)*lh}, {endC.pos - begC.pos, lh});
+			if (beg.line == end.line) {
+				ctx->drawRect({beg.pos, yOff - (lineCount - end.line)*lh}, {end.pos - beg.pos, lh});
 			} else {
 				// TODO: special case handle eol (maybe just a min width?)
-				ctx->drawRect({begC.pos, yOff - (lineCount - begL)*lh}, {lines[begL].bounds.getWidth() - begC.pos, lh});
-				for (Index i = begL + 1; i < endL; ++i) {
+				ctx->drawRect({beg.pos, yOff - (lineCount - beg.line)*lh}, {lines[beg.line].bounds.getWidth() - beg.pos, lh});
+				for (Index i = beg.line + 1; i < end.line; ++i) {
 					ctx->drawRect({0, yOff - (lineCount - i)*lh}, {lines[i].bounds.getWidth(), lh});
 				}
-				ctx->drawRect({0, yOff - (lineCount - endL)*lh}, {endC.pos, lh});
+				ctx->drawRect({0, yOff - (lineCount - end.line)*lh}, {end.pos, lh});
 			}
 		}
 		
@@ -214,11 +213,11 @@ namespace Game::UI {
 		std::cout << "\n---------------\n";
 		
 		// Draw the single or multiline selection
-		auto [begC, endC, begL, endL] = getSelectionLines();
-		if (begL == endL) {
+		const auto [beg, end] = sortedSelection();
+		if (beg.line == end.line) {
 			std::cout << "///////////////\n";
 			// +1 because selection in inclusive
-			const auto TODO_rm = std::string_view{data + begC.index, endC.index - begC.index};
+			const auto TODO_rm = std::string_view{data + beg.index, end.index - beg.index};
 			std::cout << '|' << TODO_rm << '|';
 			ctx->setClipboard(TODO_rm);
 			std::cout << "\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n";
@@ -226,7 +225,7 @@ namespace Game::UI {
 			std::cout << ">>>>>>>>>>>>>>>\n|";
 			const auto capacity = charBuff.capacity();
 			std::vector<std::string_view> toCopy;
-			toCopy.reserve(endL - begL);
+			toCopy.reserve(end.line - beg.line);
 
 			const auto copy = [&](Range chars) ENGINE_INLINE {
 				ENGINE_DEBUG_ASSERT(chars.start != chars.stop, "Attempting to push empty string");
@@ -238,16 +237,16 @@ namespace Game::UI {
 				}
 			};
 
-			copy({begC.index, lines[begL].chars.stop});
+			copy({beg.index, lines[beg.line].chars.stop});
 			toCopy.push_back("\n");
 
-			for (Index i = begL+1; i < endL; ++i) {
+			for (Index i = beg.line+1; i < end.line; ++i) {
 				copy(lines[i].chars);
 				toCopy.push_back("\n");
 			}
 
-			if (const auto start = lines[endL].chars.start; start != endC.index) {
-				copy({lines[endL].chars.start, endC.index});
+			if (const auto start = lines[end.line].chars.start; start != end.index) {
+				copy({lines[end.line].chars.start, end.index});
 			}
 
 			// TODO: rm
@@ -262,64 +261,18 @@ namespace Game::UI {
 
 	}
 
-	// TODO: rm - replace with a getSorted() or similar
-	auto TextFeed::getSelectionLines() const -> SelectionLines {
-		// TODO: since we now store line numbers sorting should be trivial. Replace.
-		auto begC = sel.first.index < sel.second.index ? sel.first : sel.second;
-		auto endC = sel.first.index < sel.second.index ? sel.second : sel.first;
-
+	auto TextFeed::sortedSelection() const -> Selection {
+		auto beg = sel.first.index < sel.second.index ? sel.first : sel.second;
+		auto end = sel.first.index < sel.second.index ? sel.second : sel.first;
+		
 		// Selection wraps?
 		const auto head = charBuff.getHead();
-		if (begC.index <= head && endC.index > head) {
-			std::swap(begC, endC);
+		if (beg.index <= head && end.index > head) {
+			std::swap(beg, end);
 		}
-		return {
-			{begC.index, begC.pos},
-			{endC.index, endC.pos},
-			begC.line,
-			endC.line,
-		};
+
+		return {beg, end};
 	}
-	//auto TextFeed::getSelectionLines() const -> SelectionLines {
-	//	const Index latest = static_cast<Index>(lines.size()) - 1;
-	//	ENGINE_DEBUG_ASSERT(latest != invalidIndex);
-	//	const auto lastChar = lines[latest].chars.stop;
-	//	auto begC = sel.first.index < sel.second.index ? sel.first : sel.second;
-	//	auto endC = sel.first.index < sel.second.index ? sel.second : sel.first;
-	//
-	//	Index begL = invalidIndex;
-	//	Index endL = invalidIndex;
-	//
-	//	// Selection wraps?
-	//	const auto head = charBuff.getHead();
-	//	if (begC.index <= head && endC.index > head) {
-	//		std::swap(begC, endC);
-	//	}
-	//
-	//	// TODO: could binary search lines here if we need to.
-	//	if (begC.index == lastChar) {
-	//		// This should only happen if you clicked past the endC of the last line.
-	//		ENGINE_DEBUG_ASSERT(begC == endC);
-	//		return {begC, endC, latest, latest};
-	//	} else {
-	//		for (Index i = 0; i <= latest; ++i) {
-	//			if (lines[i].chars.contains(begC.index)) { begL = i; break; }
-	//		}
-	//	}
-	//	ENGINE_DEBUG_ASSERT(begL != invalidIndex);
-	//
-	//	if (endC.index == lastChar) {
-	//		endL = latest;
-	//		endC.pos = lines[endL].bounds.getWidth();
-	//	} else {
-	//		for (Index i = begL; i <= latest; ++i) {
-	//			if (lines[i].chars.contains(endC.index)) { endL = i; break; }
-	//		}
-	//	}
-	//	ENGINE_DEBUG_ASSERT(endL != invalidIndex);
-	//
-	//	return {begC, endC, begL, endL};
-	//}
 
 	auto TextFeed::getMaxVisibleLines() const -> Index {
 		return static_cast<Index>(std::ceil(getHeight() / font->getLineHeight()));
@@ -348,7 +301,6 @@ namespace Game::UI {
 			view = {base + start, base + glyphBuff.capacity()};
 			caret = EUI::getCaretInLine(rel.x, view);
 
-			// TODO: rm - why didnt this work?: if (rel.x > caret.pos) {
 			// Hit EoL on first half
 			if (caret.index > view.back().cluster) {
 				const auto last = caret;
@@ -364,11 +316,6 @@ namespace Game::UI {
 			view = {base + start, base + stop};
 			caret = EUI::getCaretInLine(rel.x, view);
 		}
-
-		//if (const auto back = view.back().cluster; caret.index > back) {
-		//	// Selected whole line. Clamp.
-		//	//caret.index = back;
-		//}
 
 		caret.index = charBuff.wrap(line.chars.start + caret.index);
 		return {lineIdx, caret.index, caret.pos};

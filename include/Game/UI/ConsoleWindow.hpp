@@ -88,16 +88,6 @@ namespace Game::UI {
 				Caret second;
 			};
 
-			struct SelectionLines {
-				// TODO: use TextFeed::Caret instead of EUI
-				// TODO: awful names:
-				EUI::Caret begC;
-				EUI::Caret endC;
-				Index begL;
-				Index endL;
-				ENGINE_INLINE constexpr bool valid() const noexcept { return begC.valid(); }
-			};
-
 			SimpleRingBuffer<char> charBuff;
 
 			// TODO: should really use RingBuffer for this, but we dont have an insert(first,last) funciton for that yet.
@@ -118,7 +108,7 @@ namespace Game::UI {
 			bool onAction(EUI::ActionEvent act) override;
 
 		private:
-			SelectionLines getSelectionLines() const;
+			Selection sortedSelection() const;
 			Index getMaxVisibleLines() const;
 			Caret getCaret();
 			int wrap(int i) { return 0; }
