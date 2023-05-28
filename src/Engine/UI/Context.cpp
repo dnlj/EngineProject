@@ -527,6 +527,8 @@ namespace Engine::UI {
 		// Convert to UTF-16
 		size_t offset = 0; // Offset, in wide chars
 		for (const auto& view : array) {
+			ENGINE_DEBUG_ASSERT(!view.empty(), "It is not valid to set empty clipboard data. Use clearClipboard.");
+
 			const auto len = ::MultiByteToWideChar(CP_UTF8, 0,
 				view.data(),
 				static_cast<int>(view.size()), // Size in bytes
@@ -547,27 +549,27 @@ namespace Engine::UI {
 
 		// See: https://learn.microsoft.com/en-us/windows/win32/dataxchg/using-the-clipboard
 		const auto bytes = convBuffer.size() * 2;
-		if (auto mem = ::GlobalAlloc(GMEM_MOVEABLE, bytes)) {
-			if (auto ptr = ::GlobalLock(mem)) {
+		if (const auto mem = ::GlobalAlloc(GMEM_MOVEABLE, bytes)) {
+			if (const auto ptr = ::GlobalLock(mem)) {
 				memcpy(ptr, convBuffer.data(), bytes);
 				::GlobalUnlock(mem);
+
+				if (!::OpenClipboard(handle)) {
+					ENGINE_WARN("Unable to open clipboard: ", Win32::getLastErrorMessage());
+				} else {
+					if (::EmptyClipboard() && ::SetClipboardData(CF_UNICODETEXT, mem)) {
+						// Success, don't free mem
+					} else {
+						ENGINE_WARN("Unable to set clipboard data: ", Win32::getLastErrorMessage());
+						::GlobalFree(mem);
+					}
+
+					if (!::CloseClipboard()) {
+						ENGINE_WARN("Unable to close clipboard: ", Win32::getLastErrorMessage());
+					}
+				}
 			} else {
 				ENGINE_WARN("Unable to lock clipboard memory: ", Win32::getLastErrorMessage());
-			}
-
-			if (!::OpenClipboard(handle)) {
-				ENGINE_WARN("Unable to open clipboard: ", Win32::getLastErrorMessage());
-			} else {
-				if (::EmptyClipboard() && ::SetClipboardData(CF_UNICODETEXT, mem)) {
-					// Success, don't free mem
-				} else {
-					ENGINE_WARN("Unable to set clipboard data: ", Win32::getLastErrorMessage());
-					::GlobalFree(mem);
-				}
-
-				if (!::CloseClipboard()) {
-					ENGINE_WARN("Unable to close clipboard: ", Win32::getLastErrorMessage());
-				}
 			}
 		} else {
 			ENGINE_WARN("Unable to allocate global memory for clipboard: ", Win32::getLastErrorMessage());

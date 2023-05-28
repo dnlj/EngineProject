@@ -11,7 +11,7 @@ namespace Engine::UI {
 		public:
 			constexpr static uint32 invalid = 0xFFFFFFFF;
 
-			uint32 index; // Inclusive
+			uint32 index;
 			float32 pos;
 
 			ENGINE_INLINE constexpr Caret(const uint32 index = invalid, const float32 pos = 0) noexcept : index{index}, pos{pos} {}

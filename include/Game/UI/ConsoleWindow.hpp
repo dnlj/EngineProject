@@ -75,12 +75,21 @@ namespace Game::UI {
 				EUI::Bounds bounds; // TODO: rm - dont actually need
 			};
 
+			struct Caret {
+				Index line = invalidIndex;
+				Index index = invalidIndex;
+				float32 pos = 0;
+				ENGINE_INLINE constexpr bool valid() const noexcept { return index != invalidIndex; }
+				constexpr bool operator==(const Caret&) const noexcept = default;
+			};
+
 			struct Selection { // TODO: can we do a generic TextSelection
-				EUI::Caret first;
-				EUI::Caret second;
+				Caret first;
+				Caret second;
 			};
 
 			struct SelectionLines {
+				// TODO: use TextFeed::Caret instead of EUI
 				// TODO: awful names:
 				EUI::Caret begC;
 				EUI::Caret endC;
@@ -111,7 +120,7 @@ namespace Game::UI {
 		private:
 			SelectionLines getSelectionLines() const;
 			Index getMaxVisibleLines() const;
-			EUI::Caret getCaret();
+			Caret getCaret();
 			int wrap(int i) { return 0; }
 			void actionCopy();
 	};

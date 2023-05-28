@@ -20,7 +20,7 @@ namespace Game::UI {
 		const auto end = std::to_address(txt.end());
 		auto cur = beg;
 
-		constexpr auto isEOL = [](const auto* p) ENGINE_INLINE {
+		constexpr auto isEOL = [](const char* p) ENGINE_INLINE {
 			// TODO: Likely incompleted. I didnt find a unicode set or annex for these. There probably is one I just dont know what its called.
 			return (*p == 0x0000) // NUL, null
 				|| (*p == 0x0003) // ETX, end of text
@@ -29,6 +29,13 @@ namespace Game::UI {
 				|| (*p == 0x0017) // ETB, end of transmission block
 				|| (*p == 0x009C) // ST, string terminator
 				|| Engine::Unicode::isNewline8(p);
+		};
+
+		constexpr auto afterEOL = [](const char* begin, const char* end) noexcept ENGINE_INLINE {
+			if (end - begin >= 2 && *begin == char{0x000D} && *(begin+1) == char{0x000A})  {
+				return begin + 2;
+			}
+			return begin + 1;
 		};
 
 		const auto pushLine = [this](auto a, auto b) ENGINE_INLINE_REL {
@@ -96,8 +103,9 @@ namespace Game::UI {
 		while (cur != end) {
 			// TODO: doesnt handle "CR LF". See `Engine::Unicode::UTF32::isNewline`
 			if (isEOL(cur)) {
-				++cur; // Skip the EOL
+				//++cur; // Skip the EOL
 				pushLine(beg, cur);
+				cur = afterEOL(cur, end);
 				beg = cur;
 				if (cur == end) { break; }
 			} else {
@@ -105,8 +113,8 @@ namespace Game::UI {
 			}
 		}
 
+		ENGINE_DEBUG_ASSERT(cur == end);
 		if (beg != end){
-			ENGINE_DEBUG_ASSERT(cur == end);
 			pushLine(beg, cur);
 		}
 	}
@@ -209,15 +217,19 @@ namespace Game::UI {
 		auto [begC, endC, begL, endL] = getSelectionLines();
 		if (begL == endL) {
 			std::cout << "///////////////\n";
-			std::cout << std::string_view{data + begC.index, endC.index - begC.index};
+			// +1 because selection in inclusive
+			const auto TODO_rm = std::string_view{data + begC.index, endC.index - begC.index};
+			std::cout << '|' << TODO_rm << '|';
+			ctx->setClipboard(TODO_rm);
 			std::cout << "\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n";
 		} else {
-			std::cout << ">>>>>>>>>>>>>>>\n";
+			std::cout << ">>>>>>>>>>>>>>>\n|";
 			const auto capacity = charBuff.capacity();
 			std::vector<std::string_view> toCopy;
 			toCopy.reserve(endL - begL);
 
 			const auto copy = [&](Range chars) ENGINE_INLINE {
+				ENGINE_DEBUG_ASSERT(chars.start != chars.stop, "Attempting to push empty string");
 				if (chars.stop < chars.start) {
 					toCopy.emplace_back(data + chars.start, capacity - chars.start);
 					toCopy.emplace_back(data, chars.stop);
@@ -227,14 +239,20 @@ namespace Game::UI {
 			};
 
 			copy({begC.index, lines[begL].chars.stop});
+			toCopy.push_back("\n");
+
 			for (Index i = begL+1; i < endL; ++i) {
 				copy(lines[i].chars);
+				toCopy.push_back("\n");
 			}
-			copy({lines[endL].chars.start, endC.index});
+
+			if (const auto start = lines[endL].chars.start; start != endC.index) {
+				copy({lines[endL].chars.start, endC.index});
+			}
 
 			// TODO: rm
 			for (auto& line : toCopy) {
-				std::cout << line;
+				std::cout << line << '|';
 			}
 
 			ctx->setClipboard(toCopy);
@@ -244,56 +262,73 @@ namespace Game::UI {
 
 	}
 
+	// TODO: rm - replace with a getSorted() or similar
 	auto TextFeed::getSelectionLines() const -> SelectionLines {
-		const Index latest = static_cast<Index>(lines.size()) - 1;
-		ENGINE_DEBUG_ASSERT(latest != invalidIndex);
-		const auto lastChar = lines[latest].chars.stop;
+		// TODO: since we now store line numbers sorting should be trivial. Replace.
 		auto begC = sel.first.index < sel.second.index ? sel.first : sel.second;
 		auto endC = sel.first.index < sel.second.index ? sel.second : sel.first;
-
-		Index begL = invalidIndex;
-		Index endL = invalidIndex;
 
 		// Selection wraps?
 		const auto head = charBuff.getHead();
 		if (begC.index <= head && endC.index > head) {
 			std::swap(begC, endC);
 		}
-
-		// TODO: could binary search lines here if we need to.
-		if (begC.index == lastChar) {
-			// This should only happen if you clicked past the endC of the last line.
-			ENGINE_DEBUG_ASSERT(begC == endC);
-			return {begC, endC, latest, latest};
-		} else {
-			for (Index i = 0; i <= latest; ++i) {
-				if (lines[i].chars.contains(begC.index)) { begL = i; break; }
-			}
-		}
-		ENGINE_DEBUG_ASSERT(begL != invalidIndex);
-
-		if (endC.index == lastChar) {
-			endL = latest;
-			endC.pos = lines[endL].bounds.getWidth();
-		} else {
-			for (Index i = begL; i <= latest; ++i) {
-				if (lines[i].chars.contains(endC.index)) { endL = i; break; }
-			}
-		}
-		ENGINE_DEBUG_ASSERT(endL != invalidIndex);
-
-		return {begC, endC, begL, endL};
+		return {
+			{begC.index, begC.pos},
+			{endC.index, endC.pos},
+			begC.line,
+			endC.line,
+		};
 	}
+	//auto TextFeed::getSelectionLines() const -> SelectionLines {
+	//	const Index latest = static_cast<Index>(lines.size()) - 1;
+	//	ENGINE_DEBUG_ASSERT(latest != invalidIndex);
+	//	const auto lastChar = lines[latest].chars.stop;
+	//	auto begC = sel.first.index < sel.second.index ? sel.first : sel.second;
+	//	auto endC = sel.first.index < sel.second.index ? sel.second : sel.first;
+	//
+	//	Index begL = invalidIndex;
+	//	Index endL = invalidIndex;
+	//
+	//	// Selection wraps?
+	//	const auto head = charBuff.getHead();
+	//	if (begC.index <= head && endC.index > head) {
+	//		std::swap(begC, endC);
+	//	}
+	//
+	//	// TODO: could binary search lines here if we need to.
+	//	if (begC.index == lastChar) {
+	//		// This should only happen if you clicked past the endC of the last line.
+	//		ENGINE_DEBUG_ASSERT(begC == endC);
+	//		return {begC, endC, latest, latest};
+	//	} else {
+	//		for (Index i = 0; i <= latest; ++i) {
+	//			if (lines[i].chars.contains(begC.index)) { begL = i; break; }
+	//		}
+	//	}
+	//	ENGINE_DEBUG_ASSERT(begL != invalidIndex);
+	//
+	//	if (endC.index == lastChar) {
+	//		endL = latest;
+	//		endC.pos = lines[endL].bounds.getWidth();
+	//	} else {
+	//		for (Index i = begL; i <= latest; ++i) {
+	//			if (lines[i].chars.contains(endC.index)) { endL = i; break; }
+	//		}
+	//	}
+	//	ENGINE_DEBUG_ASSERT(endL != invalidIndex);
+	//
+	//	return {begC, endC, begL, endL};
+	//}
 
 	auto TextFeed::getMaxVisibleLines() const -> Index {
 		return static_cast<Index>(std::ceil(getHeight() / font->getLineHeight()));
 	}
 
-	EUI::Caret TextFeed::getCaret() {
+	auto TextFeed::getCaret() -> Caret {
 		const auto pos = ctx->getCursor();
 		const auto rel = pos - getPos();
 
-		EUI::Caret caret = {0,0};
 		const auto lineSz = lines.size();
 		const auto lineNum = [&]() -> Index ENGINE_INLINE {
 			if (rel.y < 0) { return getMaxVisibleLines(); }
@@ -301,11 +336,13 @@ namespace Game::UI {
 			return static_cast<Index>((getHeight() - rel.y) / font->getLineHeight());
 		}();
 
-		const auto& line = lines[lineSz - 1 - lineNum];
+		const auto lineIdx = lineSz - 1 - lineNum;
+		const auto& line = lines[lineIdx];
 		const auto base = glyphBuff.unsafe_dataT();
 		const auto start = glyphBuff.wrap(line.glyphs.start);
 		const auto stop = glyphBuff.wrap(line.glyphs.stop);
 		ArrayView<const ShapeGlyph> view;
+		EUI::Caret caret = {0,0};
 		
 		if (stop < start) {
 			view = {base + start, base + glyphBuff.capacity()};
@@ -328,15 +365,13 @@ namespace Game::UI {
 			caret = EUI::getCaretInLine(rel.x, view);
 		}
 
-		if (caret.index > view.back().cluster) {
-			// Since we wrap we are on start of next line
-			caret.pos = 0;
-		}
+		//if (const auto back = view.back().cluster; caret.index > back) {
+		//	// Selected whole line. Clamp.
+		//	//caret.index = back;
+		//}
 
-		const auto TODO_rm = caret.index; // TODO: rm
 		caret.index = charBuff.wrap(line.chars.start + caret.index);
-		ENGINE_LOG("Caret: ", caret.index, " ", TODO_rm, " ", caret.pos);
-		return caret;
+		return {lineIdx, caret.index, caret.pos};
 
 	}
 
@@ -410,7 +445,7 @@ namespace Game::UI {
 				last = now;
 			}
 
-			if (i == 10'110) { self->getContext()->clearPanelUpdateFuncs(self); }
+			if (i == 10'115) { self->getContext()->clearPanelUpdateFuncs(self); }
 		});
 
 		auto input = ctx->constructPanel<EUI::TextBox>();
