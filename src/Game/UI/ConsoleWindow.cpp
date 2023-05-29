@@ -95,6 +95,7 @@ namespace Game::UI {
 					const auto clampLine = [&](Caret& caret) ENGINE_INLINE {
 						if (caret.valid()) {
 							if (caret.line == 0) {
+								// TODO: this isnt correct. We need to do this sorted so we can determine if we should use start or stop
 								caret.index = lines[1].chars.start;
 								caret.pos = 0;
 							} else {
@@ -160,7 +161,7 @@ namespace Game::UI {
 		const auto eolWidth = font->getNominalSize().x * 0.6f; // The multiplier is arbitrary. The full width just looks wrong.
 		const Index maxLines = getMaxVisibleLines();
 		const Index latest = (lineScrollOffset > 0 && lineCount <= static_cast<Index>(lineScrollOffset)) ? 0 : lineCount - 1 - lineScrollOffset;
-		const Index oldest = latest < maxLines ? 0 : latest - maxLines;
+		const Index oldest = latest < maxLines ? 0 : latest + 1 - maxLines;
 
 		//ENGINE_INFO("Draw: ",
 		//	" size:", latest - oldest,
@@ -172,29 +173,45 @@ namespace Game::UI {
 		//);
 
 		// Draw selection
-		if (sel.second.valid() && sel.first != sel.second) {
-			auto [beg, end] = sortedSelection();
+		[&]() ENGINE_INLINE {
+			if (sel.second.valid() && sel.first != sel.second) {
+				auto [beg, end] = sortedSelection();
 
-			// Don't draw offscreen lines
-			// TODO: also need to change index
-			beg.line = std::max(beg.line, oldest);
-			end.line = std::min(end.line, latest);
+				// Out of view
+				if (beg.line > latest || end.line < oldest) { return; }
 
-			float32 yOff = getHeight() - font->getDescent();
-			ctx->setColor({1,0,0,1});
-			if (beg.line == end.line) {
-				ctx->drawRect({beg.pos, yOff - (lineCount - end.line)*lh}, {end.pos - beg.pos, lh});
-			} else {
-				ctx->drawRect(
-					{beg.pos, yOff - (lineCount - beg.line)*lh},
-					{lines[beg.line].bounds.getWidth() - beg.pos + eolWidth, lh}
-				);
-				for (Index i = beg.line + 1; i < end.line; ++i) {
-					ctx->drawRect({0, yOff - (lineCount - i)*lh}, {lines[i].bounds.getWidth() + eolWidth, lh});
+				// Don't show line above/below the screen.
+				// We don't have to update index here because we dont actually use that for selection drawing.
+				// Above:
+				if (beg.line < oldest) {
+					beg.line = oldest;
+					beg.pos = 0;
 				}
-				ctx->drawRect({0, yOff - (lineCount - end.line)*lh}, {end.pos, lh});
+
+				// Below:
+				if (end.line > latest) {
+					end.line = latest;
+					end.pos = lines[latest].bounds.getWidth();
+				}
+
+				// Draw
+				const auto last = latest + 1; // Needed for exclusive
+				float32 yOff = getHeight() - font->getDescent();
+				ctx->setColor({1,0,0,1});
+				if (beg.line == end.line) { // Single line
+					ctx->drawRect({beg.pos, yOff - (last - end.line)*lh}, {end.pos - beg.pos, lh});
+				} else { // Multi line
+					ctx->drawRect(
+						{beg.pos, yOff - (last - beg.line)*lh},
+						{lines[beg.line].bounds.getWidth() - beg.pos + eolWidth, lh}
+					);
+					for (Index i = beg.line + 1; i < end.line; ++i) {
+						ctx->drawRect({0, yOff - (last - i)*lh}, {lines[i].bounds.getWidth() + eolWidth, lh});
+					}
+					ctx->drawRect({0, yOff - (last - end.line)*lh}, {end.pos, lh});
+				}
 			}
-		}
+		}();
 		
 		{ // Draw Text
 			float32 yOff = getHeight();
@@ -228,13 +245,11 @@ namespace Game::UI {
 			// TODO: select all
 			// TODO: cut and copy should both just copy
 			// TODO: paste should probably be yoinked by parent window
-			//case Action::Cut: { actionCut(); break; }
+			case Action::Cut: { actionCopy(); break; }
 			case Action::Copy: { actionCopy(); break; }
 			//case Action::Paste: { actionPaste(); break; }
 			case Action::Scroll: {
-				ENGINE_INFO("Scroll ", act.value.f32, " ", ctx->getScrollLines());
-				lineScrollOffset += static_cast<int32>(act.value.f32 * ctx->getScrollLines());
-
+				lineScrollOffset += static_cast<int32>(act.value.f32 /* ctx->getScrollLines()*/);
 				// TODO: we dont allow overscroll yet
 				const auto sz = static_cast<int32>(lines.size());
 				lineScrollOffset = std::clamp(lineScrollOffset, 0, sz);
@@ -314,17 +329,6 @@ namespace Game::UI {
 		auto end = sel.first.index < sel.second.index ? sel.second : sel.first;
 		
 		// Selection wraps?
-
-		//
-		//
-		//
-		//
-		// TODO: can we simplify this? we have the lines surely we can use that.
-		//
-		//
-		//
-		//
-
 		const auto head = charBuff.getHead();
 		if (beg.index <= head && end.index > head) {
 			std::swap(beg, end);
@@ -360,7 +364,9 @@ namespace Game::UI {
 			} 
 
 			return static_cast<int32>(yOff / font->getLineHeight());
-		}();
+		}() + lineScrollOffset;
+
+		ENGINE_DEBUG_ASSERT(lineScrollOffset >= 0, "TODO: Update getCaret to support negative scroll index"); // TODO:
 
 		const auto lineOff = 1 + lineNum;
 		if (lineOff > lineSz) {
