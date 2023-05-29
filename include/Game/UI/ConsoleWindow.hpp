@@ -96,6 +96,7 @@ namespace Game::UI {
 			Engine::RingBuffer<Line> lines;
 			EUI::Font font;
 			Selection sel = {};
+			int32 lineScrollOffset = 0;
 
 		public:
 			TextFeed(EUI::Context* context);

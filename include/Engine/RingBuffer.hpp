@@ -123,6 +123,7 @@ namespace Engine {
 
 				[[nodiscard]] ENGINE_INLINE T& operator[](SizeType i) noexcept {
 					ENGINE_DEBUG_ASSERT(i >= 0, "Negative index not currently supported.");
+					ENGINE_DEBUG_ASSERT(i < size(), "Attempting to access out of bounds index.");
 					return dataT()[wrap(tail + i)];
 				}
 				

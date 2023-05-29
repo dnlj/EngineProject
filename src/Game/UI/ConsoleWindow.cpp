@@ -92,7 +92,6 @@ namespace Game::UI {
 				const bool before = f.chars.start < l.chars.stop;
 				// ( (1||2) && (   2    ||   1  )) || (        3       )
 				if ((before && (wrapped || after)) || (wrapped && after)) {
-
 					const auto clampLine = [&](Caret& caret) ENGINE_INLINE {
 						if (caret.valid()) {
 							if (caret.line == 0) {
@@ -148,22 +147,38 @@ namespace Game::UI {
 	}
 
 	void TextFeed::render() {
+		const Index lineCount = static_cast<Index>(lines.size());
+		if (lineCount <= 0) { return; }
+
 		// TODO: line wrap or hscroll
 		ctx->setColor({0,0,0,0.5});
 		ctx->drawRect({}, getSize());
-		
+
+		// TODO: allow scrolling blank above/below the text by up to 75% of height()
+
 		const auto lh = font->getLineHeight();
-		const Index maxLines = getMaxVisibleLines();
-		const Index lineCount = static_cast<Index>(lines.size());
-		const Index oldest = lineCount < maxLines ? 0 : lineCount - maxLines;
-		const Index latest = lineCount - 1;
 		const auto eolWidth = font->getNominalSize().x * 0.6f; // The multiplier is arbitrary. The full width just looks wrong.
+		const Index maxLines = getMaxVisibleLines();
+		const Index latest = (lineScrollOffset > 0 && lineCount <= static_cast<Index>(lineScrollOffset)) ? 0 : lineCount - 1 - lineScrollOffset;
+		const Index oldest = latest < maxLines ? 0 : latest - maxLines;
+
+		//ENGINE_INFO("Draw: ",
+		//	" size:", latest - oldest,
+		//	" max:", maxLines,
+		//	" latest:", latest,
+		//	" oldest:", oldest,
+		//	" scroll:", lineScrollOffset,
+		//	" lines:", lines.size()
+		//);
 
 		// Draw selection
 		if (sel.second.valid() && sel.first != sel.second) {
 			auto [beg, end] = sortedSelection();
 
-			beg.line = std::max(beg.line, oldest); // Don't draw offscreen lines
+			// Don't draw offscreen lines
+			// TODO: also need to change index
+			beg.line = std::max(beg.line, oldest);
+			end.line = std::min(end.line, latest);
 
 			float32 yOff = getHeight() - font->getDescent();
 			ctx->setColor({1,0,0,1});
@@ -216,6 +231,16 @@ namespace Game::UI {
 			//case Action::Cut: { actionCut(); break; }
 			case Action::Copy: { actionCopy(); break; }
 			//case Action::Paste: { actionPaste(); break; }
+			case Action::Scroll: {
+				ENGINE_INFO("Scroll ", act.value.f32, " ", ctx->getScrollLines());
+				lineScrollOffset += static_cast<int32>(act.value.f32 * ctx->getScrollLines());
+
+				// TODO: we dont allow overscroll yet
+				const auto sz = static_cast<int32>(lines.size());
+				lineScrollOffset = std::clamp(lineScrollOffset, 0, sz);
+
+				break;
+			}
 			default: { return false; }
 		}
 		return true;
@@ -444,7 +469,7 @@ namespace Game::UI {
 			}(i);
 			auto area = static_cast<TextFeed*>(self);
 			const auto now = engine->getWorld().getTime();
-			if (now - last > std::chrono::milliseconds{50}) {
+			if (now - last > std::chrono::milliseconds{0}) {
 				rng = lcg(rng);
 				// TODO: append new line causes duplicates
 				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!' + '\n');
