@@ -109,8 +109,6 @@ namespace Engine::UI {
 		ctx->registerTextCallback(this, [this](std::string_view view) {
 			if (select.valid()) { actionDelete(); }
 			insertText(caret.index, view);
-			caret.index += static_cast<uint32>(view.size());
-			updateCaretPos();
 			setBindableValue();
 			return true;
 		});
@@ -197,7 +195,6 @@ namespace Engine::UI {
 
 		// Insert
 		insertText(caret.index, text);
-		caret.index += static_cast<uint32>(text.size());
 		updateCaretPos();
 		setBindableValue();
 	}

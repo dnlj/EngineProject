@@ -19,6 +19,24 @@ namespace Engine::UI {
 				setPadding(ctx->getTheme().sizes.pad1);
 			}
 
+			ENGINE_INLINE_REL void setText(std::string_view text) {
+				StringLine::setText(text);
+				moveLineEnd();
+			}
+
+			ENGINE_INLINE_REL void autoText(std::string_view text) {
+				StringLine::autoText(text);
+				moveLineEnd();
+			}
+
+			ENGINE_INLINE_REL void insertText(uint32 i, std::string_view text) {
+				StringLine::insertText(i, text);
+				if (i <= caret.index) {
+					caret.index += static_cast<uint32>(text.size());
+					updateCaretPos();
+				}
+			}
+
 			virtual void render() override;
 			virtual bool onAction(ActionEvent act) override;
 			virtual void onBeginHover() override;

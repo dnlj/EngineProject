@@ -6,15 +6,12 @@
 // Game
 #include <Game/UI/ConsoleWindow.hpp>
 
-// TODO: move this UI element into engine
-using namespace Engine;
-using namespace Engine::UI;
 
 namespace Game::UI {
 	ConsolePanel::ConsolePanel(EUI::Context* context) : PanelT{context} {
 		const auto& theme = ctx->getTheme();
 
-		feed = ctx->createPanel<TextFeed>(this);
+		feed = ctx->createPanel<EUI::TextFeed>(this);
 		feed->pushText("This is the first line.\rThis is the second line.\nThis is the third line.");
 		feed->pushText("This is the fourth line.");
 		feed->pushText("");
@@ -30,12 +27,12 @@ namespace Game::UI {
 				for (; i < 10'000; ++i) { seed = lcg(seed); }
 				return seed;
 			}(i);
-			auto area = static_cast<TextFeed*>(self);
+			auto area = static_cast<EUI::TextFeed*>(self);
 			const auto now = engine->getWorld().getTime();
 			if (now - last > std::chrono::milliseconds{0}) {
 				rng = lcg(rng);
-				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!' + '\n');
-				//area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!');
+				//area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!' + '\n');
+				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!');
 				last = now;
 			}
 
@@ -56,6 +53,7 @@ namespace Game::UI {
 		submit->autoText("Submit");
 		submit->lockSize();
 		submit->setAction([this](EUI::Button* self){
+			ctx->setFocus(input);
 			const auto txt = input->getText();
 			if (txt.size() <= 0) { return; }
 			feed->pushText(txt);
@@ -71,7 +69,8 @@ namespace Game::UI {
 		setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Stretch, EUI::Align::Stretch, theme.sizes.pad1});
 	}
 	
-	bool ConsolePanel::onAction(ActionEvent act) {
+	bool ConsolePanel::onAction(EUI::ActionEvent act) {
+		using EUI::Action;
 		switch (act) {
 			//case Action::Scroll: { break; } // TODO: forward to TextFeed
 			case Action::Paste:

@@ -25,14 +25,15 @@ namespace Engine::UI {
 			ENGINE_INLINE void setPadding(float32 p) noexcept { setPadding({p, p}); }
 			ENGINE_INLINE auto getPadding() const noexcept { return pad; }
 
-			ENGINE_INLINE void insertText(uint32 i, std::string_view text) {
+			ENGINE_INLINE_REL void insertText(uint32 i, std::string_view text) {
 				auto& s = str.getStringMutable();
+				ENGINE_DEBUG_ASSERT(i <= s.size());
 				s.insert(s.begin() + i, text.begin(), text.end());
 				if (str.getFont()) { shape(); }
 			}
 
-			ENGINE_INLINE void setText(std::string_view txt) {
-				str = txt;
+			ENGINE_INLINE_REL void setText(std::string_view text) {
+				str = text;
 				if (str.getFont()) { shape(); }
 			}
 
@@ -62,8 +63,8 @@ namespace Engine::UI {
 			/**
 			 * Sets the text and resizes the panel to fit.
 			 */
-			ENGINE_INLINE void autoText(std::string_view txt) {
-				setText(txt);
+			ENGINE_INLINE void autoText(std::string_view text) {
+				setText(text);
 				autoSize();
 			}
 

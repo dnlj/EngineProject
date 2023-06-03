@@ -16,7 +16,6 @@ namespace Engine::UI {
 		auto cur = beg;
 
 		constexpr auto isEOL = [](const char* p) ENGINE_INLINE {
-			// TODO: Likely incompleted. I didnt find a unicode set or annex for these. There probably is one I just dont know what its called.
 			return (*p == 0x0000) // NUL, null
 				|| (*p == 0x0003) // ETX, end of text
 				|| (*p == 0x0004) // EOT, end of transmission
@@ -117,9 +116,7 @@ namespace Engine::UI {
 		
 		// Split and append lines
 		while (cur != end) {
-			// TODO: doesnt handle "CR LF". See `Engine::Unicode::UTF32::isNewline`
 			if (isEOL(cur)) {
-				//++cur; // Skip the EOL
 				pushLine(beg, cur);
 				cur = afterEOL(cur, end);
 				beg = cur;
@@ -418,7 +415,7 @@ namespace Engine::UI {
 			return static_cast<int32>(yOff / font->getLineHeight());
 		}() + lineScrollOffset;
 
-		ENGINE_DEBUG_ASSERT(lineScrollOffset >= 0, "TODO: Update getCaret to support negative scroll index"); // TODO:
+		ENGINE_DEBUG_ASSERT(lineScrollOffset >= 0, "TODO: Update getCaret to support negative scroll index"); // TODO: support negative scroll index
 
 		const auto lineOff = 1 + lineNum;
 		if (lineOff > lineSz) {
