@@ -193,7 +193,7 @@ if (dec_var) { ... }
 ```
 
 # Build
-[See: docs/building.md](docs/building.md)
+[See building.md](building.md)
 
 # Game
 - TODO: game level networking (interp, buffer, etc)
