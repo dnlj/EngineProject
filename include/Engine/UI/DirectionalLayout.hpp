@@ -71,13 +71,21 @@ namespace Engine::UI {
 			}
 
 			virtual void layout(Panel* panel) override {
+				constexpr glm::vec2 pad = {0,0}; // TODO: padding support
 				const auto main = dir;
 				const auto cross = dir == Direction::Horizontal ? Direction::Vertical : Direction::Horizontal;
-				const auto size = panel->getSize();
+				const auto size = panel->getSize() - pad - pad;
+				glm::vec2 cpos = panel->getPos() + pad;
 
+				if constexpr (ENGINE_DEBUG) {
+					const auto minSize = panel->getMinSize() - pad - pad;
+					ENGINE_DEBUG_ASSERT(minSize.x > 0 && minSize.y > 0, "Attempting layout with padding that is larger than the panels minimum size.");
+				}
+
+				ENGINE_DEBUG_ASSERT(size.x > 0 && size.y > 0, "Attempting layout with padding that is larger than panel size.");
+				
 				auto next = &Panel::getNextSibling;
 				auto curr = panel->getFirstChild();
-				glm::vec2 cpos = panel->getPos();
 
 				// Only used for main axis stretch.
 				int stretchIndex = -1;
@@ -86,7 +94,7 @@ namespace Engine::UI {
 				if (mainAlign == Align::Start) {
 					// Already set correctly
 				} else if (mainAlign == Align::End) {
-					cpos[main] += panel->getSize()[main];
+					cpos[main] += size[main];
 					next = &Panel::getPrevSibling;
 					curr = panel->getLastChild();
 				} else if (mainAlign == Align::Center) {
