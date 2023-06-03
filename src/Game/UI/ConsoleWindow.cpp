@@ -115,12 +115,6 @@ namespace Game::UI {
 			}
 		};
 
-		//
-		//
-		// TODO: need to update selection every time we push a line
-		//
-		//
-
 		// Pushed empty line
 		if (beg == end) {
 			pushLine(beg, end);
@@ -238,18 +232,16 @@ namespace Game::UI {
 		}
 	}
 
-	// TODO: copy/cut/paste
 	bool TextFeed::onAction(EUI::ActionEvent act) {
 		using namespace EUI;
 		switch (act) {
-			// TODO: select all
-			// TODO: cut and copy should both just copy
-			// TODO: paste should probably be yoinked by parent window
+			case Action::SelectAll: { selectAll(); break; }
 			case Action::Cut: { actionCopy(); break; }
 			case Action::Copy: { actionCopy(); break; }
+			// TODO: paste should probably be yoinked by parent window and paste into input box
 			//case Action::Paste: { actionPaste(); break; }
 			case Action::Scroll: {
-				lineScrollOffset += static_cast<int32>(act.value.f32 /* ctx->getScrollLines()*/);
+				lineScrollOffset += static_cast<int32>(act.value.f32 * ctx->getScrollLines());
 				// TODO: we dont allow overscroll yet
 				const auto sz = static_cast<int32>(lines.size());
 				lineScrollOffset = std::clamp(lineScrollOffset, 0, sz);
@@ -260,26 +252,115 @@ namespace Game::UI {
 		}
 		return true;
 	}
+
+	void TextFeed::selectWord() {
+		ENGINE_WARN("TODO: impl select word"); // TODO: impl
+		const auto isWordBreak = [](const void* c){ return Unicode::isWhitespace8(c); };
+		const auto data = charBuff.unsafe_data();
+		const auto& line = lines[sel.first.line];
+		auto beg = sel.first.index;
+
+		// Find the previous word boundary
+		while (beg != line.chars.start) {
+			if (isWordBreak(data + beg)) {
+				break;
+			}
+			beg = charBuff.subwrap(beg - 1);
+		}
+
+		// Skip the break itself. We might be at the start of a line and that
+		// char might not be a word break.
+		if (isWordBreak(data + beg)) {
+			beg = charBuff.wrap(beg + 1);
+		}
+		
+		// Find the next word boundary
+		auto end = beg;
+		while (end != line.chars.stop) {
+			if (isWordBreak(data + end)) {
+				break;
+			}
+			end = charBuff.wrap(end + 1);
+		}
+
+		// We don't need to skip the end break because the range is half open: [beg, end)
+		sel.first.index = beg;
+		sel.second.line = sel.first.line;
+		sel.second.index = end;
+
+		{ // Find the render bounds
+			const auto glyphs = glyphBuff.unsafe_dataT();
+			auto i = line.glyphs.start;
+			float32 pos = 0;
+
+			constexpr auto dist = [](auto a, auto b) ENGINE_INLINE {
+				return b >= a ? b - a : b + decltype(charBuff)::capacity() - a;
+			};
+			const auto bdist = dist(line.chars.start, beg);
+
+			while (i != line.glyphs.stop) {
+				const auto& glyph = glyphs[glyphBuff.wrap(i)];
+				if (glyph.cluster == bdist) { break; }
+				pos += glyph.advance.x;
+				++i;
+			}
+
+			sel.first.pos = pos;
+
+			const auto edist = dist(line.chars.start, end);
+			while (i != line.glyphs.stop) {
+				const auto& glyph = glyphs[glyphBuff.wrap(i)];
+				if (glyph.cluster == edist) { break; }
+				pos += glyph.advance.x;
+				++i;
+			}
+
+			sel.second.pos = pos;
+		}
+	}
+	void TextFeed::selectLine() {
+		ENGINE_DEBUG_ASSERT(sel.first.valid());
+		const auto& line = lines[sel.first.line];
+		sel.first.index = line.chars.start;
+		sel.first.pos = 0;
+		sel.second.line = sel.first.line;
+		sel.second.index = line.chars.stop;
+		sel.second.pos = line.bounds.getWidth();
+	}
+
+	void TextFeed::selectAll() {
+		if (!lines.empty()) {
+			sel.first.line = 0;
+			sel.first.index = lines.front().chars.start;
+			sel.first.pos = 0;
+
+			sel.second.line = lines.size() - 1;
+			sel.second.index = lines.back().chars.stop;
+			sel.second.pos = lines.back().bounds.getWidth();
+		}
+	}
+
 	void TextFeed::actionCopy() {
-		ENGINE_LOG("actionCopy 1");
 		if (!sel.second.valid()) { return; }
 		if (sel.first == sel.second) { return; }
-		ENGINE_LOG("actionCopy 2");
 
 		const auto data = charBuff.unsafe_data();
 		const auto [beg, end] = sortedSelection();
 
 		if (beg.line == end.line) {
-			if (end.index <= beg.index) {
-				ENGINE_WARN("Invalid selection chars (end < beg)");
+			if (end.index == beg.index) {
+				ENGINE_WARN("Copying empty selection. This should have already been aborted by this point.");
 				ENGINE_DEBUG_BREAK;
-				return;
 			}
-			const auto TODO_rm = std::string_view{data + beg.index, end.index - beg.index};
-			ctx->setClipboard(TODO_rm);
-			std::cout << "///////////////\n";
-			std::cout << '|' << TODO_rm << '|';
-			std::cout << "\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n";
+
+			if (end.index >= beg.index) {
+				ctx->setClipboard({data + beg.index, end.index - beg.index});
+			} else {
+				ctx->setClipboard({
+					{data + beg.index, data + charBuff.capacity()},
+					{data, data + end.index}
+				});
+			}
 		} else {
 			constexpr std::string_view newline = "\u000A"; // Use '\n' only. Don't use '\r'+'\n' on Windows.
 			std::vector<std::string_view> toCopy;
@@ -311,17 +392,7 @@ namespace Game::UI {
 
 			copy({lines[end.line].chars.start, end.index});
 			ctx->setClipboard(toCopy);
-
-			// TODO: rm
-			std::cout << ">>>>>>>>>>>>>>>\n|";
-			for (auto& line : toCopy) {
-				std::cout << line << '|';
-			}
-			std::cout << "\n<<<<<<<<<<<<<<<\n";
-
-
 		}
-
 	}
 
 	auto TextFeed::sortedSelection() const -> Selection {
@@ -333,9 +404,9 @@ namespace Game::UI {
 		if (beg.index <= head && end.index > head) {
 			std::swap(beg, end);
 		} else if (end.line < beg.line) {
-			// TODO: we have to also consider wrap for this check
+			// This happens when you select from the end of one line to the
+			// start of another (only select the'\n').
 			ENGINE_DEBUG_ASSERT(beg.index == end.index);
-			// This happens when you select from the end of one line to the start of another.
 			std::swap(beg, end);
 		}
 
@@ -413,7 +484,6 @@ namespace Game::UI {
 		};
 	}
 
-	// TODO: move this into a base calss for both TextBox and TextFeed
 	bool TextFeed::onBeginActivate() {
 		// TODO: why is this needed? Is it possible to activate multiple times?
 		if (ctx->getActive() == this) { return true; }
@@ -425,18 +495,16 @@ namespace Game::UI {
 			sel.second = getCaret();
 		});
 
-		// TODO:
-		//if (auto count = ctx->getActivateCount(); count > 1) {
-		//
-		//	// TODO: this should rotate betwee: word, paragraph, all
-		//
-		//	count %= 2;
-		//	if (count == 0) {
-		//		actionSelectWord();
-		//	} else if (count == 1) {
-		//		actionSelectAll();
-		//	}
-		//}
+		if (auto count = ctx->getActivateCount(); count > 1) {
+			count %= 3;
+			if (count == 0) {
+				selectLine();
+			} else if (count == 1) {
+				selectAll();
+			} else if (count == 2) {
+				selectWord();
+			}
+		}
 
 		return true;
 	}
@@ -477,7 +545,6 @@ namespace Game::UI {
 			const auto now = engine->getWorld().getTime();
 			if (now - last > std::chrono::milliseconds{0}) {
 				rng = lcg(rng);
-				// TODO: append new line causes duplicates
 				area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!' + '\n');
 				//area->pushText("This is line " + std::to_string(++i) + " " + std::string(1 + rng%32, 'A') + '!');
 				last = now;

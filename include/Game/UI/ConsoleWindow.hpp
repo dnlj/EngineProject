@@ -113,6 +113,9 @@ namespace Game::UI {
 			Index getMaxVisibleLines() const;
 			Caret getCaret();
 			int wrap(int i) { return 0; }
+			void selectWord();
+			void selectLine();
+			void selectAll();
 			void actionCopy();
 	};
 
