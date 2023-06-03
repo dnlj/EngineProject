@@ -7,8 +7,6 @@ namespace Engine::UI {
 	Window::TitleBar::TitleBar(Context* context, Window* window) : Panel{context}, win{window} {
 		const auto& theme = ctx->getTheme();
 
-		setLayout(new DirectionalLayout{Direction::Horizontal, Align::Stretch, Align::Center, 0, 0});
-
 		const auto h = theme.fonts.body->getLineHeight();
 		setFixedHeight(h);
 
@@ -30,13 +28,13 @@ namespace Engine::UI {
 		});
 
 		addChildren({title, close});
+		setLayout(new DirectionalLayout{Direction::Horizontal, Align::Stretch, Align::Center, 0, 0});
 	}
 
 	Window::Window(Context* context) : Panel{context} {
 		setLayout(new FillLayout{outBorder});
 
 		area = ctx->createPanel<Panel>(this);
-
 		area->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch, ctx->getTheme().sizes.pad1});
 
 		title = ctx->createPanel<TitleBar>(area, this);

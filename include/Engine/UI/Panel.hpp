@@ -457,6 +457,7 @@ namespace Engine::UI {
 			 */
 			ENGINE_INLINE void performLayout() {
 				ENGINE_DEBUG_ASSERT(!isDeleted(), "Attempting to perform layout on a panel marked for deletion.");
+				// TODO: We should also return if the panel is not enabled right?
 				if (isPerformingLayout()) { return; }
 
 				setPerformingLayout(true);

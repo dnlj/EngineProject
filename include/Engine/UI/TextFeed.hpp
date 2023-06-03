@@ -7,7 +7,7 @@
 
 namespace Engine::UI {
 	template<class T>
-	class SimpleRingBuffer {
+	class SimpleRingBuffer { // TODO: move to own file
 		private:
 			static_assert(std::is_trivially_copyable_v<T>);
 
@@ -37,6 +37,8 @@ namespace Engine::UI {
 				memcpy(dat + head, first + len1, len2 * sizeof(T));
 				head = wrap(head + len2);
 			}
+
+			// TODO: why unsafe_? For this buffer everything is initialized already. It might be out of bounds but its not undefined behavior or anything.
 			ENGINE_INLINE const T* unsafe_data() const noexcept { return storage.data(); }
 			ENGINE_INLINE constexpr static Index capacity() noexcept { return 2048; } // 1 << 13
 			ENGINE_INLINE constexpr Index getHead() const noexcept { return head; }

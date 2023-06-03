@@ -60,6 +60,11 @@ namespace Engine::UI {
 		public:
 			Window(Context* context);
 
+			ENGINE_INLINE auto setContent(Panel* content) const noexcept {
+				// TODO: really want a way to disable layout while this happens. setEnabled(false)?
+				area->removeChild(this->content);
+				area->addChild(content);
+			}
 			ENGINE_INLINE auto getContent() const noexcept { return content; }
 			
 			virtual void onBeginHover() override { hoverWithin = true; };

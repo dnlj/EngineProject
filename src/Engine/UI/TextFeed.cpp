@@ -90,7 +90,6 @@ namespace Engine::UI {
 					const auto clampLine = [&](Caret& caret) ENGINE_INLINE {
 						if (caret.valid()) {
 							if (caret.line == 0) {
-								// TODO: this isnt correct. We need to do this sorted so we can determine if we should use start or stop
 								caret.index = lines[1].chars.start;
 								caret.pos = 0;
 							} else {
@@ -141,25 +140,16 @@ namespace Engine::UI {
 		if (lineCount <= 0) { return; }
 
 		// TODO: line wrap or hscroll
+		// TODO: allow scrolling blank above/below the text by up to 75% of height()
+
 		ctx->setColor({0,0,0,0.5});
 		ctx->drawRect({}, getSize());
-
-		// TODO: allow scrolling blank above/below the text by up to 75% of height()
 
 		const auto lh = font->getLineHeight();
 		const auto eolWidth = font->getNominalSize().x * 0.6f; // The multiplier is arbitrary. The full width just looks wrong.
 		const Index maxLines = getMaxVisibleLines();
 		const Index latest = (lineScrollOffset > 0 && lineCount <= static_cast<Index>(lineScrollOffset)) ? 0 : lineCount - 1 - lineScrollOffset;
 		const Index oldest = latest < maxLines ? 0 : latest + 1 - maxLines;
-
-		//ENGINE_INFO("Draw: ",
-		//	" size:", latest - oldest,
-		//	" max:", maxLines,
-		//	" latest:", latest,
-		//	" oldest:", oldest,
-		//	" scroll:", lineScrollOffset,
-		//	" lines:", lines.size()
-		//);
 
 		// Draw selection
 		[&]() ENGINE_INLINE {
@@ -232,8 +222,6 @@ namespace Engine::UI {
 			case Action::SelectAll: { selectAll(); break; }
 			case Action::Cut: { actionCopy(); break; }
 			case Action::Copy: { actionCopy(); break; }
-			// TODO: paste should probably be yoinked by parent window and paste into input box
-			//case Action::Paste: { actionPaste(); break; }
 			case Action::Scroll: {
 				lineScrollOffset += static_cast<int32>(act.value.f32 * ctx->getScrollLines());
 				// TODO: we dont allow overscroll yet
@@ -248,7 +236,6 @@ namespace Engine::UI {
 	}
 
 	void TextFeed::selectWord() {
-		ENGINE_WARN("TODO: impl select word"); // TODO: impl
 		const auto isWordBreak = [](const void* c){ return Unicode::isWhitespace8(c); };
 		const auto data = charBuff.unsafe_data();
 		const auto& line = lines[sel.first.line];
@@ -365,7 +352,7 @@ namespace Engine::UI {
 			}
 			toCopy.reserve(end.line - beg.line);
 
-			const auto capacity = charBuff.capacity();
+			constexpr auto capacity = decltype(charBuff)::capacity();
 			const auto copy = [&](Range chars) ENGINE_INLINE_REL {
 				if (chars.start == chars.stop) { return; }
 				if (chars.stop < chars.start) {
@@ -504,7 +491,6 @@ namespace Engine::UI {
 	}
 
 	void TextFeed::onEndActivate() {
-		// TODO: shift focus to text box at this point
 		ctx->deregisterMouseMove(this);
 	}
 }

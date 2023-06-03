@@ -10,18 +10,11 @@
 using namespace Engine;
 using namespace Engine::UI;
 
-
 namespace Game::UI {
-	ConsoleWindow::ConsoleWindow(EUI::Context* context) : Window{context} {
+	ConsolePanel::ConsolePanel(EUI::Context* context) : PanelT{context} {
 		const auto& theme = ctx->getTheme();
-		setTitle("Console");
-		setSize({650, 500});
-		setRelPos({512,64+300+8});
 
-		// TODO: can we just add a setContent(p) function? would make sense, instead of creating an extra content panel with a fill layout?
-		//getContent()->setLayout(new EUI::FillLayout{0});
-		feed = ctx->createPanel<TextFeed>(getContent());
-		feed->setHeight(395);
+		feed = ctx->createPanel<TextFeed>(this);
 		feed->pushText("This is the first line.\rThis is the second line.\nThis is the third line.");
 		feed->pushText("This is the fourth line.");
 		feed->pushText("");
@@ -56,22 +49,42 @@ namespace Game::UI {
 			}
 		});
 
-		auto input = ctx->constructPanel<EUI::TextBox>();
+		input = ctx->constructPanel<EUI::TextBox>();
 		input->autoText("This is a test");
 
 		auto submit = ctx->constructPanel<EUI::Button>();
 		submit->autoText("Submit");
 		submit->lockSize();
-		submit->setAction([input, feed=feed](EUI::Button* self){
+		submit->setAction([this](EUI::Button* self){
 			const auto txt = input->getText();
 			if (txt.size() <= 0) { return; }
 			feed->pushText(txt);
 			input->setText("");
 		});
 
-		auto cont = ctx->createPanel<EUI::PanelT>(getContent());
+		auto cont = ctx->createPanel<EUI::PanelT>(this);
 		cont->addChildren({input, submit});
-		cont->setAutoSizeHeight(true);
 		cont->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, theme.sizes.pad1});
+		cont->autoHeight();
+		cont->lockHeight();
+
+		setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Stretch, EUI::Align::Stretch, theme.sizes.pad1});
+	}
+	
+	bool ConsolePanel::onAction(ActionEvent act) {
+		switch (act) {
+			//case Action::Scroll: { break; } // TODO: forward to TextFeed
+			case Action::Paste:
+			default: { return input->onAction(act); }
+		}
+	}
+}
+
+namespace Game::UI {
+	ConsoleWindow::ConsoleWindow(EUI::Context* context) : Window{context} {
+		setTitle("Console");
+		setSize({650, 500});
+		setRelPos({512,64+300+8});
+		setContent(ctx->constructPanel<ConsolePanel>());
 	}
 }
