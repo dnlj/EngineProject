@@ -1,12 +1,12 @@
 # Prerequisites
-- [Premake 5]([Premake](https://github.com/premake/premake-core))
+- [Premake 5](https://github.com/premake/premake-core)
 - [CMake >= 3.16](https://cmake.org)
 - [Python >= 3.5](https://python.org)
 - [Conan >= 1.21.1](https://conan.io)
-- [Visual Studio 2019](https://visualstudio.microsoft.com/)
+- [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
 # Building
-Currently only tested with Visual Studio 2019 (>= 16.9.2)
+Currently only tested with Visual Studio 2022 (>= 17.4.5)
 
 Download and build dependencies with conan
 ```
@@ -16,7 +16,7 @@ premake5 conan fullsetup
 
 Create a Visual Studio solution
 ```
-premake5 vs2019
+premake5 vs2022
 ```
 
 
@@ -25,17 +25,14 @@ premake5 vs2019
 ## Premake
 - Main Project
 
-## Python
-- Conan
-
 ## Conan
 - Main Project
 
+## Python
+- Conan
+
 ## CMake
 - Box2D
-- Dear ImGui
-- Dear ImGui Node Editor
 - FreeType
 - Harfbuzz
-- ImPlot
 - SOIL (littlstar)

@@ -193,9 +193,7 @@ if (dec_var) { ... }
 ```
 
 # Build
-- TODO: link to docs/building.md
-- TODO: Conan stuff
-- TODO: Premake stuff
+[See: docs/building.md](docs/building.md)
 
 # Game
 - TODO: game level networking (interp, buffer, etc)
