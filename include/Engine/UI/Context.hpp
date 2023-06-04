@@ -116,6 +116,7 @@ namespace Engine::UI {
 
 			float32 scrollChars = 3; // 3 = default on Windows
 			float32 scrollLines = 3; // 3 = default on Windows
+			Clock::Duration autoscrollRate = clickRate / 5;
 
 		public:
 			Context(Gfx::ShaderLoader& shaderLoader, Gfx::TextureLoader& textureLoader, Camera& camera);
@@ -125,6 +126,7 @@ namespace Engine::UI {
 			ENGINE_INLINE constexpr static auto getResizeBorderSize() noexcept { return resizeBorderSize; }
 			ENGINE_INLINE float32 getScrollChars() const noexcept { return scrollChars; }
 			ENGINE_INLINE float32 getScrollLines() const noexcept { return scrollLines; }
+			ENGINE_INLINE Clock::Duration getAutoscrollSpeed() const noexcept { return autoscrollRate; }
 
 			ENGINE_INLINE void setUserdata(void* ptr) noexcept { userdata = ptr; }
 

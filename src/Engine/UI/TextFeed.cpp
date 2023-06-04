@@ -214,22 +214,71 @@ namespace Engine::UI {
 		}
 	}
 
+	bool TextFeed::onBeginActivate() {
+		// TODO: why is this needed? Is it possible to activate multiple times?
+		if (ctx->getActive() == this) { return true; }
+
+		sel = {};
+		sel.first = getCaret();
+
+		ctx->registerMouseMove(this, [this, lastScroll = Clock::TimePoint{}](const glm::vec2 mpos) mutable {
+			sel.second = getCaret();
+			
+			const auto tryScroll = [&](int32 numLines) ENGINE_INLINE {
+				if (Clock::now() - lastScroll > ctx->getAutoscrollSpeed()) {
+					scroll(numLines);
+					lastScroll = Clock::now();
+				}
+			};
+
+			// TODO: dynamic velocity based on distance
+			// TODO: allow partial lines when scrolling
+			if (mpos.y <= getPos().y) {
+				tryScroll(1);
+			} else if (mpos.y >= getPos().y + getHeight()) {
+				tryScroll(-1);
+			}
+		});
+
+		if (auto count = ctx->getActivateCount(); count > 1) {
+			count %= 3;
+			if (count == 0) {
+				selectLine();
+			} else if (count == 1) {
+				selectAll();
+			} else if (count == 2) {
+				selectWord();
+			}
+		}
+
+		return true;
+	}
+
+	void TextFeed::onEndActivate() {
+		ctx->deregisterMouseMove(this);
+	}
+
 	bool TextFeed::onAction(ActionEvent act) {
 		switch (act) {
 			case Action::SelectAll: { selectAll(); break; }
 			case Action::Cut: { actionCopy(); break; }
 			case Action::Copy: { actionCopy(); break; }
 			case Action::Scroll: {
-				lineScrollOffset += static_cast<int32>(act.value.f32 * ctx->getScrollLines());
-				// TODO: we dont allow overscroll yet
-				const auto sz = static_cast<int32>(lines.size());
-				lineScrollOffset = std::clamp(lineScrollOffset, 0, sz);
-
+				scroll(static_cast<int32>(act.value.f32 * ctx->getScrollLines()));
 				break;
 			}
 			default: { return false; }
 		}
 		return true;
+	}
+
+	void TextFeed::scroll(int32 numLines) {
+		ENGINE_DEBUG_ASSERT(numLines != 0, "Attempting to scroll zero lines. This is probably not intended.");
+		lineScrollOffset += numLines;
+		// TODO: we dont allow overscroll yet
+		const auto sz = static_cast<int32>(lines.size());
+		lineScrollOffset = std::clamp(lineScrollOffset, 0, sz);
+
 	}
 
 	void TextFeed::selectWord() {
@@ -460,34 +509,5 @@ namespace Engine::UI {
 			.index = caret.index,
 			.pos = caret.pos,
 		};
-	}
-
-	bool TextFeed::onBeginActivate() {
-		// TODO: why is this needed? Is it possible to activate multiple times?
-		if (ctx->getActive() == this) { return true; }
-
-		sel = {};
-		sel.first = getCaret();
-
-		ctx->registerMouseMove(this, [this](const glm::vec2) {
-			sel.second = getCaret();
-		});
-
-		if (auto count = ctx->getActivateCount(); count > 1) {
-			count %= 3;
-			if (count == 0) {
-				selectLine();
-			} else if (count == 1) {
-				selectAll();
-			} else if (count == 2) {
-				selectWord();
-			}
-		}
-
-		return true;
-	}
-
-	void TextFeed::onEndActivate() {
-		ctx->deregisterMouseMove(this);
 	}
 }

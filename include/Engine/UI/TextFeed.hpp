@@ -106,10 +106,10 @@ namespace Engine::UI {
 			bool onAction(ActionEvent act) override;
 
 		private:
+			void scroll(int32 numLines);
 			Selection sortedSelection() const;
 			Index getMaxVisibleLines() const;
 			Caret getCaret();
-			int wrap(int i) { return 0; }
 			void selectWord();
 			void selectLine();
 			void selectAll();

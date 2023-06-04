@@ -234,6 +234,16 @@ namespace Engine::UI {
 			if (UINT out = 3; SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &out, 0)) {
 				scrollLines = static_cast<float32>(out);
 			}
+
+			// Win32 doesn't provide a autoscroll rate but deriving from click rate
+			// is a good approximation based on the articles from Raymond Chen
+			// See:
+			//   Raymond Chen. "Autoscrolling on drag, part 1: Basic implementation", https://devblogs.microsoft.com/oldnewthing/20210125-00/?p=104757
+			//   Raymond Chen. "Autoscrolling on drag, part 2: Why does scrolling go faster if I wiggle the mouse?", https://devblogs.microsoft.com/oldnewthing/20210126-00/?p=104759
+			//   Raymond Chen. "Autoscrolling on drag, part 3: Dynamic autoscroll based on mouse position", https://devblogs.microsoft.com/oldnewthing/20210127-00/?p=104764
+			//   Raymond Chen. "Autoscrolling on drag, part 4: Dynamic autoscroll based on escape velocity", https://devblogs.microsoft.com/oldnewthing/20210128-00/?p=104768
+			//   Raymond Chen. "The double-click time tells the window manager how good your reflexes are", https://devblogs.microsoft.com/oldnewthing/20080423-00/?p=22623
+			autoscrollRate = clickRate / 5;
 		#else
 			#error TODO: impl for non-Windows
 			ENGINE_WARN("Not implemented for non-Windows");
