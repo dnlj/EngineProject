@@ -38,10 +38,10 @@ namespace Engine {
 						IteratorBase(Buff* rb, SizeType i) : rb{rb}, i{i} {}
 						~IteratorBase() = default;
 
-						auto& operator+=(Index n) { i = rb->wrap(i + n); return *this; }
+						auto& operator+=(Index n) { i += n; return *this; }
 						auto& operator-=(Index n) {
-							ENGINE_DEBUG_ASSERT(n <= rb->capacity());
-							return *this += rb->capacity() - n;
+							ENGINE_DEBUG_ASSERT(n <= i, "RingBuffer iterator negative overflow.");
+							i -= n; return *this;
 						}
 
 						friend auto operator+(IteratorBase it, Index n) { return it += n; }
@@ -65,12 +65,10 @@ namespace Engine {
 
 						[[nodiscard]] bool operator==(const IteratorBase& other) const { return i == other.i; }
 						[[nodiscard]] bool operator!=(const IteratorBase& other) const { return !(*this == other); }
-
-						// Indices wrap so these don't really make sense
-						//[[nodiscard]] bool operator<(const IteratorBase& other) const { return i < other.i; }
-						//[[nodiscard]] bool operator<=(const IteratorBase& other) const { return i <= other.i; }
-						//[[nodiscard]] bool operator>=(const IteratorBase& other) const { return i >= other.i; }
-						//[[nodiscard]] bool operator>(const IteratorBase& other) const { return i > other.i; }
+						[[nodiscard]] bool operator<(const IteratorBase& other) const { return i < other.i; }
+						[[nodiscard]] bool operator<=(const IteratorBase& other) const { return i <= other.i; }
+						[[nodiscard]] bool operator>=(const IteratorBase& other) const { return i >= other.i; }
+						[[nodiscard]] bool operator>(const IteratorBase& other) const { return i > other.i; }
 				};
 
 				using Iterator = IteratorBase<T>;

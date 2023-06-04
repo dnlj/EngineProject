@@ -1,8 +1,9 @@
 #pragma once
 
-// Engine
-#include <Engine/ArrayView.hpp>
 
+namespace Engine {
+	template<class> class ArrayView;
+}
 
 namespace Engine::UI {
 	class ShapeGlyph;

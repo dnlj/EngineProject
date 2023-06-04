@@ -1,8 +1,8 @@
 // Engine
-#include <Engine/UI/TextFeed.hpp>
+#include <Engine/UI/Caret.hpp>
 #include <Engine/UI/Context.hpp>
+#include <Engine/UI/TextFeed.hpp>
 #include <Engine/Unicode/UTF8.hpp>
-#include <Engine/UI/TextSelection.hpp>
 
 
 namespace Engine::UI {

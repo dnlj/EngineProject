@@ -153,7 +153,7 @@
 
 #define _ENGINE_CREATE_ASSERT_LAMBDA(Prefix, Decorate, Color, Other)\
 	([](auto cond, auto&&... args) ENGINE_INLINE {\
-		if (!cond) {\
+		if (!cond) [[unlikely]] {\
 			_ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)(std::forward<decltype(args)>(args)...);\
 		}\
 	})

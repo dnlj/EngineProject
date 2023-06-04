@@ -2,8 +2,8 @@
 
 // Engine
 #include <Engine/UI/Bindable.hpp>
+#include <Engine/UI/Caret.hpp>
 #include <Engine/UI/Label.hpp>
-#include <Engine/UI/TextSelection.hpp>
 #include <Engine/Unicode/UTF8.hpp>
 
 

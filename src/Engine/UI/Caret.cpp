@@ -1,5 +1,6 @@
 // Engine
-#include <Engine/UI/TextSelection.hpp>
+#include <Engine/ArrayView.hpp>
+#include <Engine/UI/Caret.hpp>
 #include <Engine/UI/FontGlyphSet.hpp>
 
 
