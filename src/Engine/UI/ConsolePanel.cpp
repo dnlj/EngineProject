@@ -46,7 +46,7 @@ namespace Engine::UI {
 		});
 
 		input = ctx->constructPanel<TextBox>();
-		input->autoText("This is a test");
+		input->autoText("This is a test abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
 		auto submit = ctx->constructPanel<Button>();
 		submit->autoText("Submit");

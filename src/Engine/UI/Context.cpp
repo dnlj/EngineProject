@@ -331,11 +331,9 @@ namespace Engine::UI {
 			}
 		}
 		
-
 		glEnable(GL_BLEND);
 		glEnable(GL_SCISSOR_TEST);
 		glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
 		glClearTexImage(colorTex.get(), 0, GL_RGB, GL_FLOAT, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
@@ -353,7 +351,7 @@ namespace Engine::UI {
 		glBindTextureUnit(0, colorTex.get());
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		// Reset buffers
+		// Cleanup
 		glDisable(GL_BLEND);
 	}
 

@@ -4,9 +4,11 @@
 
 namespace Engine::UI {
 	void TextBox::render() {
-		ctx->setClip(getBounds()); // TODO: need to consider padding
+		ctx->setClip(getBounds());
 		auto& theme = ctx->getTheme();
 		const auto& str = getShapedString();
+		const auto& font = str.getFont();
+		const auto lineHeight = font->getLineHeight();
 		const glm::vec2 size = getSize();
 		const glm::vec4 bg = {0.3,0.3,0.3,1};
 		const glm::vec4 bo = {0,0,0,1};
@@ -14,22 +16,15 @@ namespace Engine::UI {
 		ctx->setColor(bg);
 		ctx->drawRect({}, size);
 
-		ctx->setColor(bo);
-		ctx->drawRect({}, {size.x, 1});
-		ctx->drawRect({}, {1, size.y});
-		ctx->drawRect(glm::vec2{0, size.y - 1}, {size.x, 1});
-		ctx->drawRect(glm::vec2{size.x - 1, 0}, {1, size.y});
-
 		const auto off = getStringOffset();
-		auto top = off;
-		top.y -= str.getFont()->getAscent();
-
+		const auto topCaret = (getHeight() - lineHeight) * 0.5f; // Center in line
 
 		if (select.valid()) {
 			const auto a = caret.pos < select.pos ? caret : select;
 			const auto b = caret.pos < select.pos ? select : caret;
 
-			ctx->drawRect(top + glm::vec2{a.pos, 0}, {b.pos - a.pos, str.getFont()->getLineHeight()});
+			ctx->setColor(bo);
+			ctx->drawRect(topCaret + glm::vec2{a.pos, 0}, {b.pos - a.pos, lineHeight});
 
 			// Separate color for selection
 			if constexpr (true) {
@@ -41,15 +36,15 @@ namespace Engine::UI {
 
 				if (a.index != 0) {
 					ctx->setColor({1,0,0,1});
-					ctx->drawString(off, str.getFont(), {data, data + a.index});
+					ctx->drawString(off, font, {data, data + a.index});
 				}
 
 				ctx->setColor({0,1,0,1});
-				ctx->drawString({off.x+a.pos, off.y}, str.getFont(), {data + a.index, data + b.index});
+				ctx->drawString({off.x+a.pos, off.y}, font, {data + a.index, data + b.index});
 
 				if (auto sz = glyphs.size(); b.index != sz) {
 					ctx->setColor({0,0,1,1});
-					ctx->drawString({off.x+b.pos, off.y}, str.getFont(), {data + b.index, data + sz});
+					ctx->drawString({off.x+b.pos, off.y}, font, {data + b.index, data + sz});
 				}
 			}
 		} else {
@@ -60,10 +55,16 @@ namespace Engine::UI {
 		if (ctx->getFocus() == this && ctx->isBlinking()) {
 			ctx->setColor(bo);
 			ctx->drawRect(
-				top + glm::vec2{caret.pos, 0},
-				{1, str.getFont()->getLineHeight()}
+				topCaret + glm::vec2{caret.pos, 0},
+				{1, lineHeight}
 			);
 		}
+		
+		ctx->setColor(bo);
+		ctx->drawRect({}, {size.x, 1});
+		ctx->drawRect({}, {1, size.y});
+		ctx->drawRect(glm::vec2{0, size.y - 1}, {size.x, 1});
+		ctx->drawRect(glm::vec2{size.x - 1, 0}, {1, size.y});
 	}
 
 	bool TextBox::onAction(ActionEvent act) {

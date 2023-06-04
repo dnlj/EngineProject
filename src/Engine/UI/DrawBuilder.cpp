@@ -3,18 +3,25 @@
 #include <Engine/Gfx/ShaderManager.hpp>
 
 
+namespace {
+	constexpr bool debug_disableClipping = ENGINE_DEBUG && false;
+}
+
 namespace Engine::UI {
 	void DrawGroupManager::pushClip() {
+		if constexpr (debug_disableClipping) { return; }
 		clipStack.push_back(clipStack.back());
 	}
 			
 	void DrawGroupManager::popClip() {
+		if constexpr (debug_disableClipping) { return; }
 		ENGINE_DEBUG_ASSERT(!clipStack.empty(), "Attempting to pop empty clipping stack");
 		clipStack.pop_back();
 		lastClipOffset = static_cast<int32>(elemData.size());
 	}
 
 	void DrawGroupManager::setClip(Bounds bounds) {
+		if constexpr (debug_disableClipping) { return; }
 		auto& curr = clipStack.back();
 
 		// Avoid splitting groups with the same clipping

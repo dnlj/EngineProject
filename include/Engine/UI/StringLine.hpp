@@ -84,7 +84,9 @@ namespace Engine::UI {
 					// See "Glyph Metrics" illustrations at: https://www.freetype.org/freetype2/docs/glyphs/glyphs-3.html#section-3
 					off.y = font->getAscent();
 
-					// Baseline offset + center in panel
+					// Baseline offset + center in panel.
+					// We use body height instead of line height here because it is
+					// closer to the true visual bounds.
 					off.x = pad.x;
 					off.y += std::max(0.5f * (getHeight() - font->getBodyHeight()), pad.y);
 				}
