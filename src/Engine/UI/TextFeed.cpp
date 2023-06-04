@@ -221,22 +221,29 @@ namespace Engine::UI {
 		sel = {};
 		sel.first = getCaret();
 
-		ctx->registerMouseMove(this, [this, lastScroll = Clock::TimePoint{}](const glm::vec2 mpos) mutable {
+		ctx->registerMouseMove(this, [this, dir = 0](const glm::vec2 mpos) mutable {
 			sel.second = getCaret();
 			
-			const auto tryScroll = [&](int32 numLines) ENGINE_INLINE {
-				if (Clock::now() - lastScroll > ctx->getAutoscrollSpeed()) {
-					scroll(numLines);
-					lastScroll = Clock::now();
-				}
-			};
-
-			// TODO: dynamic velocity based on distance
-			// TODO: allow partial lines when scrolling
 			if (mpos.y <= getPos().y) {
-				tryScroll(1);
+				if (dir <= 0) {
+					dir = 1;
+					if (autoscrollTimer) { ctx->deleteTimer(autoscrollTimer); }
+					autoscrollTimer = ctx->createTimer(ctx->getAutoscrollSpeed(), [&]{
+						scroll((getPos().y - ctx->getCursor().y) / font->getLineHeight());
+					});
+				}
 			} else if (mpos.y >= getPos().y + getHeight()) {
-				tryScroll(-1);
+				if (dir >= 0) {
+					dir = -1;
+					if (autoscrollTimer) { ctx->deleteTimer(autoscrollTimer); }
+					autoscrollTimer = ctx->createTimer(ctx->getAutoscrollSpeed(), [&]{
+						scroll((getPos().y + getHeight() - ctx->getCursor().y) / font->getLineHeight());
+					});
+				}
+			} else if (autoscrollTimer) {
+				ctx->deleteTimer(autoscrollTimer);
+				autoscrollTimer = {};
+				dir = 0;
 			}
 		});
 
@@ -255,6 +262,10 @@ namespace Engine::UI {
 	}
 
 	void TextFeed::onEndActivate() {
+		if (autoscrollTimer) {
+			ctx->deleteTimer(autoscrollTimer);
+			autoscrollTimer = {};
+		}
 		ctx->deregisterMouseMove(this);
 	}
 
@@ -272,8 +283,13 @@ namespace Engine::UI {
 		return true;
 	}
 
+	void TextFeed::scroll(float32 numLines) {
+		// TODO: support partial line scrolling
+		scroll(static_cast<int32>(numLines));
+	}
+
 	void TextFeed::scroll(int32 numLines) {
-		ENGINE_DEBUG_ASSERT(numLines != 0, "Attempting to scroll zero lines. This is probably not intended.");
+		//ENGINE_DEBUG_ASSERT(numLines != 0, "Attempting to scroll zero lines. This is probably not intended.");
 		lineScrollOffset += numLines;
 		// TODO: we dont allow overscroll yet
 		const auto sz = static_cast<int32>(lines.size());

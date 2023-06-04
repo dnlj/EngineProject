@@ -27,7 +27,7 @@ namespace Engine::UI {
 	using NativeHandle = void*;
 
 	class Context : public DrawBuilder {
-			// TODO: doc
+		public:
 			using MouseMoveCallback = std::function<void(glm::vec2)>;
 
 			/**
@@ -39,6 +39,16 @@ namespace Engine::UI {
 			using KeyCallback = std::function<bool(Engine::Input::InputEvent)>;
 
 			using PanelUpdateFunc = std::function<void(Panel*)>;
+			using TimerUpdateFunc = std::function<void()>;
+			class PanelUpdateFuncId {
+				private:
+					friend Context;
+					uint64 id = 0;
+				public:
+					PanelUpdateFuncId() = default;
+					ENGINE_INLINE constexpr operator bool() const noexcept { return id; }
+					ENGINE_INLINE constexpr bool operator==(const PanelUpdateFuncId& other) const noexcept { return id == other.id; }
+			};
 
 		private:
 			struct CursorEntry {
@@ -90,8 +100,9 @@ namespace Engine::UI {
 			FlatHashMap<Panel*, KeyCallback> keyCallbacks;
 
 			int currPanelUpdateFunc = 0;
-			struct PanelUpdatePair { Panel* panel; PanelUpdateFunc func; };
-			std::vector<PanelUpdatePair> panelUpdateFunc;
+			PanelUpdateFuncId lastPanelUpdateId = {};
+			struct PanelUpdateData { PanelUpdateFuncId id = {}; Panel* panel; PanelUpdateFunc func; };
+			std::vector<PanelUpdateData> panelUpdateFunc;
 
 			/* Cursors */
 			Cursor currentCursor = Cursor::Normal;
@@ -195,8 +206,25 @@ namespace Engine::UI {
 				deregisterPanel(panel);
 			}
 
-			ENGINE_INLINE void addPanelUpdateFunc(Panel* panel, PanelUpdateFunc func) {
-				panelUpdateFunc.push_back({.panel = panel, .func = func});
+			ENGINE_INLINE PanelUpdateFuncId addPanelUpdateFunc(Panel* panel, PanelUpdateFunc&& func) {
+				++lastPanelUpdateId.id;
+				panelUpdateFunc.push_back({.id = lastPanelUpdateId, .panel = panel, .func = std::move(func)});
+				ENGINE_WARN("CREATE: ", lastPanelUpdateId.id);
+				return lastPanelUpdateId;
+			}
+
+			void removePanelUpdateFunc(PanelUpdateFuncId id) {
+				ENGINE_DEBUG_ASSERT(id);
+				const auto end = panelUpdateFunc.cend();
+				for (auto it = panelUpdateFunc.cbegin(); it != end; ++it) {
+					if (it->id == id) {
+						ENGINE_LOG("ERASE: ", id.id);
+						panelUpdateFunc.erase(it);
+						return;
+					}
+				}
+				ENGINE_WARN("Invalid panel update function id: ", id.id);
+				ENGINE_DEBUG_BREAK;
 			}
 
 			void clearPanelUpdateFuncs(Panel* panel) {
@@ -206,6 +234,28 @@ namespace Engine::UI {
 						panelUpdateFunc.erase(panelUpdateFunc.begin() + i);
 					}
 				}
+			}
+
+			ENGINE_INLINE PanelUpdateFuncId createTimer(Panel* panel, Clock::Duration interval, PanelUpdateFunc&& func) {
+				return addPanelUpdateFunc(nullptr, [interval, last=Clock::now(), func = std::move(func)](Panel* p) mutable {
+					if (const auto now = Clock::now(); now - last >= interval) {
+						func(p);
+						last = now;
+					}
+				});
+			}
+
+			ENGINE_INLINE [[nodiscard]] auto createTimer(Clock::Duration interval, TimerUpdateFunc&& func) {
+				return addPanelUpdateFunc(nullptr, [interval, last=Clock::now(), func = std::move(func)](Panel*) mutable {
+					if (const auto now = Clock::now(); now - last >= interval) {
+						func();
+						last = now;
+					}
+				});
+			}
+
+			ENGINE_INLINE void deleteTimer(PanelUpdateFuncId id) {
+				removePanelUpdateFunc(id);
 			}
 
 			ENGINE_INLINE void registerMouseMove(Panel* panel, MouseMoveCallback callback) {

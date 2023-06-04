@@ -94,6 +94,7 @@ namespace Engine::UI {
 			Font font;
 			Selection sel = {};
 			int32 lineScrollOffset = 0;
+			Context::PanelUpdateFuncId autoscrollTimer = {};
 
 		public:
 			TextFeed(Context* context);
@@ -106,6 +107,7 @@ namespace Engine::UI {
 			bool onAction(ActionEvent act) override;
 
 		private:
+			void scroll(float32 numLines);
 			void scroll(int32 numLines);
 			Selection sortedSelection() const;
 			Index getMaxVisibleLines() const;

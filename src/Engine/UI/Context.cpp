@@ -292,8 +292,12 @@ namespace Engine::UI {
 		deleteDeferedPanels();
 
 		while (currPanelUpdateFunc < panelUpdateFunc.size()) {
-			auto& [panel, func] = panelUpdateFunc[currPanelUpdateFunc];
-			if (panel->isEnabled()) { func(panel); }
+			auto& [id, panel, func] = panelUpdateFunc[currPanelUpdateFunc];
+			if (panel) {
+				if (panel->isEnabled()) { func(panel); }
+			} else {
+				func(panel);
+			}
 			++currPanelUpdateFunc;
 		}
 		currPanelUpdateFunc = 0;
