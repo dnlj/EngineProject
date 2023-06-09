@@ -136,8 +136,8 @@ namespace Engine::UI {
 		const Index lineCount = static_cast<Index>(lines.size());
 		if (lineCount <= 0) { return; }
 
-		// TODO: line wrap or hscroll
-		// TODO: allow scrolling blank above/below the text by up to 75% of height()
+		// TODO (4E2g1Jyr): line wrap or hscroll
+		// TODO (qS3VZBNC): allow scrolling blank above/below the text by up to 75% of height()
 
 		ctx->setColor({0,0,0,0.5});
 		ctx->drawRect({}, getSize());
@@ -215,7 +215,6 @@ namespace Engine::UI {
 	}
 
 	bool TextFeed::onBeginActivate() {
-		// TODO: why is this needed? Is it possible to activate multiple times?
 		if (ctx->getActive() == this) { return true; }
 
 		sel = {};
@@ -284,14 +283,13 @@ namespace Engine::UI {
 	}
 
 	void TextFeed::scroll(float32 numLines) {
-		// TODO: support partial line scrolling
+		// TODO (julyIPi4): support partial line scrolling
 		scroll(static_cast<int32>(numLines));
 	}
 
 	void TextFeed::scroll(int32 numLines) {
 		//ENGINE_DEBUG_ASSERT(numLines != 0, "Attempting to scroll zero lines. This is probably not intended.");
 		lineScrollOffset += numLines;
-		// TODO: we dont allow overscroll yet
 		const auto sz = static_cast<int32>(lines.size());
 		lineScrollOffset = std::clamp(lineScrollOffset, 0, sz);
 
@@ -480,7 +478,7 @@ namespace Engine::UI {
 			return static_cast<int32>(yOff / font->getLineHeight());
 		}() + lineScrollOffset;
 
-		ENGINE_DEBUG_ASSERT(lineScrollOffset >= 0, "TODO: Update getCaret to support negative scroll index"); // TODO: support negative scroll index
+		ENGINE_DEBUG_ASSERT(lineScrollOffset >= 0, "TODO (qS3VZBNC): Support negative scroll index (overscroll)"); // TODO (qS3VZBNC): Support negative scroll index (overscroll)
 
 		const auto lineOff = 1 + lineNum;
 		if (lineOff > lineSz) {
