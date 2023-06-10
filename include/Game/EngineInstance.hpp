@@ -4,6 +4,7 @@
 // Forward declarations
 namespace Engine {
 	class Camera;
+	class CommandManager;
 
 	namespace Input {
 		class BindManager;
@@ -48,6 +49,8 @@ namespace Game {
 			EngineInstance();
 			EngineInstance(const EngineInstance&) = delete;
 			~EngineInstance();
+
+			Engine::CommandManager& getCommandManager() noexcept;
 
 			Engine::Input::BindManager& getBindManager() noexcept;
 

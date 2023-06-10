@@ -3,6 +3,7 @@
 
 // Engine
 #include <Engine/Camera.hpp>
+#include <Engine/CommandManager.hpp>
 #include <Engine/Gfx/BufferManager.hpp>
 #include <Engine/Gfx/MaterialInstanceManager.hpp>
 #include <Engine/Gfx/MaterialManager.hpp>
@@ -60,6 +61,7 @@ namespace Game {
 
 		public:
 			Engine::Camera camera;
+			Engine::CommandManager commandManager;
 			Engine::Input::BindManager bindManager;
 			Engine::Gfx::ResourceContext gfxResCtx;
 			Engine::UI::Context uiContext = {gfxResCtx.shaderLoader, gfxResCtx.textureLoader, camera};
@@ -88,7 +90,8 @@ namespace Game {
 
 	EngineInstance::~EngineInstance() {
 	}
-
+	
+	Engine::CommandManager& EngineInstance::getCommandManager() noexcept { return pimpl->commandManager; }
 	Engine::Input::BindManager& EngineInstance::getBindManager() noexcept { return pimpl->bindManager; }
 
 	Engine::Gfx::VertexLayoutManager& EngineInstance::getVertexLayoutManager() noexcept { return pimpl->gfxResCtx.vertexLayoutManager; }

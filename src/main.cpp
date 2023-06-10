@@ -14,6 +14,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/CommandManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/Noise/SimplexNoise.hpp>
 #include <Engine/Noise/WorleyNoise.hpp>
@@ -828,6 +829,31 @@ void run(int argc, char* argv[]) {
 		});
 
 		//bm.setLayerEnabled(Layer::GuiFocus, false);
+	}
+
+	// Commands
+	{
+		auto& cm = engine.getCommandManager();
+		auto const test = cm.registerCommand("test_command", [](auto&){
+			ENGINE_WARN("this is a test command");
+		});
+		cm.exec(test);
+		// TODO: test escape
+		cm.exec(R"(bind key "Test Quote Arg" 123 how are you)"); puts("");
+		cm.exec(R"(bind key 123 how are you"Test Quote Arg")"); puts("");
+		cm.exec(R"(bind key 123 how are you\"Test Quote Arg")"); puts("");
+		cm.exec(R"(bind key 123 how are you \"Test Quote Arg")"); puts("");
+		cm.exec(R"(bind key 123 how are you "\"Test\" Quote Arg")"); puts("");
+		cm.exec(R"(bind key 123 how are you "Quote Arg \"Test\"")"); puts("");
+		cm.exec(R"(bind key)"); puts("");
+		cm.exec(R"(bind)"); puts("");
+		cm.exec(R"(")"); puts("");
+		cm.exec(R"(bind")"); puts("");
+		cm.exec(R"("bind")"); puts("");
+		cm.exec(R"("bind)"); puts("");
+		cm.exec(R"(bind key 123 how are you 'Test Quote Arg')"); puts("");
+		cm.exec(R"(bind key 123 how are you '\'Test\' Quote Arg')"); puts("");
+		cm.exec(R"(bind key 123 how are you 'Test' Quote Arg')"); puts("");
 	}
 
 	// Map Stuff

@@ -87,7 +87,6 @@ namespace Engine::UI {
 
 			SimpleRingBuffer<char> charBuff;
 
-			// TODO: should really use RingBuffer for this, but we dont have an insert(first,last) funciton for that yet.
 			Engine::RingBuffer<ShapeGlyph> glyphBuff;
 			Index glyphIndex = 0;
 			Engine::RingBuffer<Line> lines;
