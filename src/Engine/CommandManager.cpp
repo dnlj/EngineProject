@@ -74,9 +74,34 @@ namespace Engine {
 					break;
 				}
 
-				// TODO: replace \q with q
-				args.emplace_back(last+1, cur);
-				++cur; // Move past the closing quote
+				// Skip leading quote
+				++last;
+
+				// Replace \q with q and copy to args
+				const auto fend = cur;
+				auto fcur = last;
+				auto& arg = args.emplace_back();
+				arg.reserve(cur - last);
+
+				while (true) {
+					auto found = std::find(fcur, fend, '\\');
+					if (found == fend || ++found == fend) { break; }
+					if (*found == q || *found == '\\') {
+						arg.append(fcur, found); // Insert the current range including the escape "\"
+						arg.back() = *found; // Replace the escape "\" with the escaped char
+
+						// Skip the escaped character next pass. We need to do things this
+						// way so we can support escaping a backslash "\\".
+						fcur = found + 1;
+					}
+				}
+
+				if (fcur != fend) {
+					arg.append(fcur, fend);
+				}
+
+				// Move past trailing quote
+				++cur;
 			} else if (eatWord()) {
 				args.emplace_back(last, cur);
 			} else {

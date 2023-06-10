@@ -838,7 +838,6 @@ void run(int argc, char* argv[]) {
 			ENGINE_WARN("this is a test command");
 		});
 		cm.exec(test);
-		// TODO: test escape
 		cm.exec(R"(bind key "Test Quote Arg" 123 how are you)"); puts("");
 		cm.exec(R"(bind key 123 how are you"Test Quote Arg")"); puts("");
 		cm.exec(R"(bind key 123 how are you\"Test Quote Arg")"); puts("");
@@ -854,6 +853,7 @@ void run(int argc, char* argv[]) {
 		cm.exec(R"(bind key 123 how are you 'Test Quote Arg')"); puts("");
 		cm.exec(R"(bind key 123 how are you '\'Test\' Quote Arg')"); puts("");
 		cm.exec(R"(bind key 123 how are you 'Test' Quote Arg')"); puts("");
+		cm.exec(R"(bind key 123 how are you 'Test\\\\\' Quote Arg')"); puts("");
 	}
 
 	// Map Stuff
