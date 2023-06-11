@@ -47,23 +47,12 @@ namespace Engine::UI {
 
 		input = ctx->constructPanel<TextBox>();
 		input->autoText("This is a test abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+		input->setAction([this](TextBox*){ doSubmit(); });
 
 		auto submit = ctx->constructPanel<Button>();
 		submit->autoText("Submit");
 		submit->lockSize();
-		submit->setAction([this](Button* self){
-			ctx->setFocus(input);
-			const auto& text = input->getText();
-			if (text.size() <= 0) { return; }
-
-			feed->pushText(text);
-
-			if (onSubmit) {
-				onSubmit(*this, text);
-			}
-
-			input->setText("");
-		});
+		submit->setAction([this](Button*){ doSubmit(); });
 
 		auto cont = ctx->createPanel<PanelT>(this);
 		cont->addChildren({input, submit});
@@ -80,5 +69,19 @@ namespace Engine::UI {
 			case Action::Paste:
 			default: { return input->onAction(act); }
 		}
+	}
+
+	void ConsolePanel::doSubmit() {
+		ctx->setFocus(input);
+		const auto& text = input->getText();
+		if (text.size() <= 0) { return; }
+
+		feed->pushText(text);
+
+		if (onSubmit) {
+			onSubmit(this, text);
+		}
+
+		input->setText("");
 	}
 }

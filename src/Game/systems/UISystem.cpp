@@ -94,8 +94,8 @@ namespace Game {
 
 		{
 			panels.consoleWindow = ctx.createPanel<UI::ConsoleWindow>(ctx.getRoot());
-			panels.consoleWindow->get()->setAction([](EUI::ConsolePanel& self, std::string_view text) {
-				auto* engine = self.getContext()->getUserdata<Game::EngineInstance>();
+			panels.consoleWindow->get()->setAction([](EUI::ConsolePanel* self, std::string_view text) {
+				auto* engine = self->getContext()->getUserdata<Game::EngineInstance>();
 				engine->getCommandManager().exec(text);
 			});
 		}

@@ -13,19 +13,21 @@ namespace Engine::UI {
 namespace Engine::UI {
 	class ConsolePanel : public PanelT {
 		public:
-			using OnSubmit = std::function<void (ConsolePanel& self, std::string_view text)>;
+			using OnSubmit = std::function<void (ConsolePanel* self, std::string_view text)>;
 
 		protected:
 			TextFeed* feed;
 			TextBox* input;
-			Button* submit;
 			OnSubmit onSubmit;
 
 		public:
 			ConsolePanel(Context* context);
-			void setAction(OnSubmit func) { onSubmit = func; }
+			void setAction(OnSubmit func) { onSubmit = std::move(func); }
 			virtual bool onAction(ActionEvent act) override;
 
 			// TODO: up/down command history
+
+		private:
+			void doSubmit();
 	};
 }

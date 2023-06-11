@@ -9,10 +9,14 @@
 
 namespace Engine::UI {
 	class TextBox : public StringLine, public Bindable<TextBox> {
+		public:
+			using OnSubmit = std::function<void (TextBox* self)>;
+
 		private:
 			uint8 selecting = 0;
 			Caret caret = 0;
 			Caret select = 0;
+			OnSubmit onSubmit;
 
 		public:
 			TextBox(Context* context) : StringLine{context} {
@@ -36,6 +40,8 @@ namespace Engine::UI {
 					updateCaretPos();
 				}
 			}
+
+			ENGINE_INLINE void setAction(OnSubmit func) { onSubmit = std::move(func); }
 
 			virtual void render() override;
 			virtual bool onAction(ActionEvent act) override;

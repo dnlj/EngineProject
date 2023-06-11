@@ -83,7 +83,7 @@ namespace Engine::UI {
 			case Action::Cut: { actionCut(); break; }
 			case Action::Copy: { actionCopy(); break; }
 			case Action::Paste: { actionPaste(); break; }
-			case Action::Submit: { ENGINE_WARN("TODO: Gui::TextBox Submit - ", getText()); break; }
+			case Action::Submit: { if (onSubmit) { onSubmit(this); } break; }
 			default: { return false; }
 		}
 		return true;
