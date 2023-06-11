@@ -2,6 +2,9 @@
 #include <Engine/CommandManager.hpp>
 #include <Engine/Unicode/UTF8.hpp>
 
+template<const int S, const char A[S]>
+class Test {
+};
 
 namespace Engine {
 	CommandManager::CommandManager() {
@@ -14,30 +17,30 @@ namespace Engine {
 
 		if (id == CommandId::Invalid) {
 			ENGINE_WARN("Invalid command id");
-			args.clear();
+			arguments.clear();
 			return;
 		}
 
 		auto& cmd = commands[+id];
 		cmd.func(*this);
-		args.clear();
+		arguments.clear();
 	}
 
 	void CommandManager::exec(std::string_view str) {
 		parse(str);
 
-		if (args.empty()) {
+		if (arguments.empty()) {
 			ENGINE_WARN("Invalid command: ", str);
 			return;
 		}
 
-		const auto& name = args.front();
+		const auto& name = arguments.front();
 		const auto id = lookup(name);
 		exec(id);
 	}
 
 	void CommandManager::parse(std::string_view str) {
-		ENGINE_DEBUG_ASSERT(args.empty(), "Arguments were not cleared by last exec.");
+		ENGINE_DEBUG_ASSERT(arguments.empty(), "Arguments were not cleared by last exec.");
 
 		const auto end = std::to_address(str.cend());
 		auto cur = std::to_address(str.cbegin());
@@ -100,10 +103,10 @@ namespace Engine {
 				// Skip leading quote
 				++last;
 
-				// Replace \q with q and copy to args
+				// Replace \q with q and copy to arguments
 				const auto fend = cur;
 				auto fcur = last;
-				auto& arg = args.emplace_back();
+				auto& arg = arguments.emplace_back();
 				arg.reserve(cur - last);
 
 				while (true) {
@@ -126,7 +129,7 @@ namespace Engine {
 				// Move past trailing quote
 				++cur;
 			} else if (eatWord()) {
-				args.emplace_back(last, cur);
+				arguments.emplace_back(last, cur);
 			} else {
 				ENGINE_WARN("Expected argument.");
 				break;

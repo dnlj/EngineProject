@@ -53,9 +53,15 @@ namespace Engine::UI {
 		submit->lockSize();
 		submit->setAction([this](Button* self){
 			ctx->setFocus(input);
-			const auto txt = input->getText();
-			if (txt.size() <= 0) { return; }
-			feed->pushText(txt);
+			const auto& text = input->getText();
+			if (text.size() <= 0) { return; }
+
+			feed->pushText(text);
+
+			if (onSubmit) {
+				onSubmit(*this, text);
+			}
+
 			input->setText("");
 		});
 

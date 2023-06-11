@@ -4,6 +4,8 @@
 #include <Engine/UI/FillLayout.hpp>
 #include <Engine/UI/ScrollArea.hpp>
 #include <Engine/UI/TextBox.hpp>
+#include <Engine/UI/ConsolePanel.hpp>
+#include <Engine/CommandManager.hpp>
 
 // Game
 #include <Game/systems/UISystem.hpp>
@@ -92,6 +94,10 @@ namespace Game {
 
 		{
 			panels.consoleWindow = ctx.createPanel<UI::ConsoleWindow>(ctx.getRoot());
+			panels.consoleWindow->get()->setAction([](EUI::ConsolePanel& self, std::string_view text) {
+				auto* engine = self.getContext()->getUserdata<Game::EngineInstance>();
+				engine->getCommandManager().exec(text);
+			});
 		}
 
 		//panels.infoPane->toggle();

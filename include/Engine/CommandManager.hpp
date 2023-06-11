@@ -7,7 +7,7 @@ namespace Engine {
 	};
 	ENGINE_BUILD_DECAY_ENUM(CommandId);
 
-	using CommandFunc = std::function<void(CommandManager&)>;
+	using CommandFunc = std::function<void (CommandManager&)>;
 
 	class CommandMeta {
 		public:
@@ -18,16 +18,24 @@ namespace Engine {
 	};
 
 	class CommandManager {
+		public:
+			template<class T>
+			using CVarGet = std::function<const T& (CommandManager& manager)>;
+
+			template<class T>
+			using CVarSet = std::function<const T& (CommandManager& manager, std::string_view value)>;
+
 		private:
 			FlatHashMap<std::string, CommandId> nameToCommand;
 			std::vector<CommandMeta> commands;
-			std::vector<std::string> args;
+			std::vector<std::string> arguments;
 
 		public:
 			CommandManager();
-			// getParam<type>(uint32 n);
 
+			const auto& args() const { return arguments; }
 			void exec(CommandId id);
+
 			void exec(std::string_view str);
 
 			CommandId registerCommand(std::string_view name, CommandFunc func) {

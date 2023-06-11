@@ -836,29 +836,48 @@ void run(int argc, char* argv[]) {
 		auto& cm = engine.getCommandManager();
 		auto const test = cm.registerCommand("test_command", [](auto&){
 			ENGINE_WARN("this is a test command");
-		});
+		}); test;
 
-		cm.registerCommand("bind", [](auto&){});
+		//cm.registerCommand("bind", [](auto&){});
+		//cm.exec(test);
+		//cm.exec(R"(bind key "Test Quote Arg" 123 how are you)");
+		//cm.exec(R"(bind key 123 how are you"Test Quote Arg")");
+		//cm.exec(R"(bind key 123 how are you\"Test Quote Arg")");
+		//cm.exec(R"(bind key 123 how are you \"Test Quote Arg")");
+		//cm.exec(R"(bind key 123 how are you "\"Test\" Quote Arg")");
+		//cm.exec(R"(bind key 123 how are you "Quote Arg \"Test\"")");
+		//cm.exec(R"(bind key)");
+		//cm.exec(R"(bind)");
+		//cm.exec(R"(")");
+		//cm.exec(R"()");
+		//cm.exec(R"(bind")");
+		//cm.exec(R"("bind")");
+		//cm.exec(R"("bind)");
+		//cm.exec(R"(bind key 123 how are you 'Test Quote Arg')");
+		//cm.exec(R"(bind key 123 how are you '\'Test\' Quote Arg')");
+		//cm.exec(R"(bind key 123 how are you 'Test' Quote Arg')");
+		//cm.exec(R"(bind key 123 how are you 'Test\\\\\' Quote Arg')");
+		//cm.exec("test_command this is a test 1234");
 
-		cm.exec(test);
-		cm.exec(R"(bind key "Test Quote Arg" 123 how are you)"); puts("");
-		cm.exec(R"(bind key 123 how are you"Test Quote Arg")"); puts("");
-		cm.exec(R"(bind key 123 how are you\"Test Quote Arg")"); puts("");
-		cm.exec(R"(bind key 123 how are you \"Test Quote Arg")"); puts("");
-		cm.exec(R"(bind key 123 how are you "\"Test\" Quote Arg")"); puts("");
-		cm.exec(R"(bind key 123 how are you "Quote Arg \"Test\"")"); puts("");
-		cm.exec(R"(bind key)"); puts("");
-		cm.exec(R"(bind)"); puts("");
-		cm.exec(R"(")"); puts("");
-		cm.exec(R"()"); puts("");
-		cm.exec(R"(bind")"); puts("");
-		cm.exec(R"("bind")"); puts("");
-		cm.exec(R"("bind)"); puts("");
-		cm.exec(R"(bind key 123 how are you 'Test Quote Arg')"); puts("");
-		cm.exec(R"(bind key 123 how are you '\'Test\' Quote Arg')"); puts("");
-		cm.exec(R"(bind key 123 how are you 'Test' Quote Arg')"); puts("");
-		cm.exec(R"(bind key 123 how are you 'Test\\\\\' Quote Arg')"); puts("");
-		cm.exec("test_command this is a test 1234"); puts("");
+		//CVAR(net_packets_max) = CVar<float32>(256);
+		//CVAR(net_packets_max, float32, 256);
+		//cm.cvar<float32>("net_packets_max", 256);
+		//cm.cvar<float32>("net_packets_min", 8);
+
+		const auto cvar = [](Engine::CommandManager& cm){
+			//auto& cfg = Engine::getGlobalConfig<true>();
+			auto& args = cm.args();
+			if (args.size() == 1) {
+				// TODO: get
+				ENGINE_WARN("Get (", args.front(), ") ", args.size());
+			} else {
+				// TODO: set
+				ENGINE_WARN("Set (", args.front(), ") ", args.size());
+			}
+		};
+
+		cm.registerCommand("net_packet_rate_min", cvar);
+		cm.registerCommand("net_packet_rate_max", cvar);
 	}
 
 	// Map Stuff

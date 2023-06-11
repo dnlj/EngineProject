@@ -17,6 +17,7 @@ namespace Engine {
 			bool logColor = false;
 			bool logTimeOnly = false;
 
+			// TODO: maybe these shouldnt be here. Move to EngineInstance with ConsoleManager
 			uint16 port = 0;
 			Net::IPv4Address group = {};
 			float32 sendRateMax = 256;

@@ -60,10 +60,11 @@ namespace Engine::UI {
 		public:
 			Window(Context* context);
 
-			ENGINE_INLINE auto setContent(Panel* content) const noexcept {
+			ENGINE_INLINE auto setContent(Panel* content) noexcept {
 				// TODO: really want a way to disable layout while this happens. setEnabled(false)?
 				area->removeChild(this->content);
 				area->addChild(content);
+				this->content = content;
 			}
 			ENGINE_INLINE auto getContent() const noexcept { return content; }
 			
