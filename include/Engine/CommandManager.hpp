@@ -2,8 +2,9 @@
 
 
 namespace Engine {
-	enum class CommandId : uint32;
-	ENGINE_BUILD_ALL_OPS(CommandId);
+	enum class CommandId : uint32 {
+		Invalid = 0,
+	};
 	ENGINE_BUILD_DECAY_ENUM(CommandId);
 
 	using CommandFunc = std::function<void(CommandManager&)>;
@@ -18,28 +19,43 @@ namespace Engine {
 
 	class CommandManager {
 		private:
+			FlatHashMap<std::string, CommandId> nameToCommand;
 			std::vector<CommandMeta> commands;
 			std::vector<std::string> args;
 
 		public:
+			CommandManager();
 			// getParam<type>(uint32 n);
 
-			// TODO: args
+			void exec(CommandId id);
 			void exec(std::string_view str);
 
-			void exec(CommandId cid) {
-				ENGINE_DEBUG_ASSERT(+cid < commands.size(), "Attempting to execute invalid command.");
-				auto& cmd = commands[+cid];
-				cmd.func(*this);
-			}
-			
 			CommandId registerCommand(std::string_view name, CommandFunc func) {
 				ENGINE_DEBUG_ASSERT(func, "Attempting to add a command without a function.");
-				const auto id = static_cast<CommandId>(commands.size());
-				commands.emplace_back(name, func);
-				return id;
+				ENGINE_DEBUG_ASSERT(!name.empty(), "Attempting to add a command with an empty name.");
+				return registerCommandUnchecked(name, func);
+			}
+
+			CommandId lookup(std::string_view name) const noexcept {
+				const auto found = nameToCommand.find(name);
+				if (found == nameToCommand.end()) { return CommandId::Invalid; }
+				return found->second;
 			}
 
 		private:
+			void parse(std::string_view str);
+			
+			CommandId registerCommandUnchecked(std::string_view name, CommandFunc func) {
+				const auto id = static_cast<CommandId>(commands.size());
+				commands.emplace_back(name, func);
+
+				if (nameToCommand.contains(name)) {
+					ENGINE_WARN("Attempting to add duplicate command: ", name);
+					return CommandId::Invalid;
+				}
+
+				nameToCommand.emplace(name, id);
+				return id;
+			}
 	};
 }

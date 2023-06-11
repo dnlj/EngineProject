@@ -4,42 +4,68 @@
 
 
 namespace Engine {
-	void CommandManager::exec(std::string_view str) {
-		// TODO: Need to:
-		// * Parse into components
-		// * Validate and find command meta
-		// * Setup command arguments
-		// * Call exec(meta.cid);
+	CommandManager::CommandManager() {
+		const auto id = registerCommandUnchecked("$_INVALID", nullptr);
+		ENGINE_DEBUG_ASSERT(id == CommandId::Invalid);
+	}
+	
+	void CommandManager::exec(CommandId id) {
+		ENGINE_DEBUG_ASSERT(+id < commands.size(), "Attempting to execute invalid command.");
+
+		if (id == CommandId::Invalid) {
+			ENGINE_WARN("Invalid command id");
+			args.clear();
+			return;
+		}
+
+		auto& cmd = commands[+id];
+		cmd.func(*this);
 		args.clear();
+	}
+
+	void CommandManager::exec(std::string_view str) {
+		parse(str);
+
+		if (args.empty()) {
+			ENGINE_WARN("Invalid command: ", str);
+			return;
+		}
+
+		const auto& name = args.front();
+		const auto id = lookup(name);
+		exec(id);
+	}
+
+	void CommandManager::parse(std::string_view str) {
+		ENGINE_DEBUG_ASSERT(args.empty(), "Arguments were not cleared by last exec.");
+
 		const auto end = std::to_address(str.cend());
 		auto cur = std::to_address(str.cbegin());
 		auto last = cur;
-
-		// TODO: cur != end;
 
 		const auto isQuote = [&]() -> char ENGINE_INLINE {
 			if (*cur == '"' || *cur == '\'') { return *cur; }
 			return 0;
 		};
 
-		const auto isSpace = [&]() -> bool ENGINE_INLINE {
+		const auto isSpace = [&]() ENGINE_INLINE {
 			return *cur == ' ' || *cur == '\t';
 		};
 
 		const auto eatQuote = [&]() ENGINE_INLINE -> char {
 			const auto q = isQuote();
 			if (!q) { return false; }
+
 			ENGINE_DEBUG_ASSERT(last == cur);
 			while (++cur != end) {
 				if (*cur == q && *(cur-1) != '\\') { return q; }
 			}
 
-			// TODO: error
 			// Hit end of string without closing quote.
 			return q;
 		};
 
-		const auto eatSpace = [&]() ENGINE_INLINE -> bool {
+		const auto eatSpace = [&]() ENGINE_INLINE {
 			if (isSpace()) {
 				while (++cur != end) {
 					if (!isSpace()) { break; }
@@ -49,7 +75,7 @@ namespace Engine {
 			return false;
 		};
 		
-		const auto eatWord = [&]() ENGINE_INLINE -> bool {
+		const auto eatWord = [&]() ENGINE_INLINE {
 			if (!isSpace()) {
 				while (++cur != end) {
 					if (isSpace()) { break; }
@@ -62,9 +88,6 @@ namespace Engine {
 		// Leading space
 		eatSpace();
 		last = cur;
-
-		// TODO: remove
-		ENGINE_INFO("Command: ", str);
 
 		// Main parsing
 		while (cur != end) {
@@ -117,10 +140,6 @@ namespace Engine {
 			}
 
 			last = cur;
-		}
-
-		for (const auto& arg : args) {
-			ENGINE_INFO("Arg: ", arg);
 		}
 	}
 }

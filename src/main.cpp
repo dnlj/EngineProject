@@ -837,6 +837,9 @@ void run(int argc, char* argv[]) {
 		auto const test = cm.registerCommand("test_command", [](auto&){
 			ENGINE_WARN("this is a test command");
 		});
+
+		cm.registerCommand("bind", [](auto&){});
+
 		cm.exec(test);
 		cm.exec(R"(bind key "Test Quote Arg" 123 how are you)"); puts("");
 		cm.exec(R"(bind key 123 how are you"Test Quote Arg")"); puts("");
@@ -847,6 +850,7 @@ void run(int argc, char* argv[]) {
 		cm.exec(R"(bind key)"); puts("");
 		cm.exec(R"(bind)"); puts("");
 		cm.exec(R"(")"); puts("");
+		cm.exec(R"()"); puts("");
 		cm.exec(R"(bind")"); puts("");
 		cm.exec(R"("bind")"); puts("");
 		cm.exec(R"("bind)"); puts("");
@@ -854,6 +858,7 @@ void run(int argc, char* argv[]) {
 		cm.exec(R"(bind key 123 how are you '\'Test\' Quote Arg')"); puts("");
 		cm.exec(R"(bind key 123 how are you 'Test' Quote Arg')"); puts("");
 		cm.exec(R"(bind key 123 how are you 'Test\\\\\' Quote Arg')"); puts("");
+		cm.exec("test_command this is a test 1234"); puts("");
 	}
 
 	// Map Stuff
