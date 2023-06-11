@@ -109,6 +109,7 @@ namespace Engine::UI {
 			void scroll(float32 numLines);
 			void scroll(int32 numLines);
 			Selection sortedSelection() const;
+			float32 getBottom() const;
 			Index getMaxVisibleLines() const;
 			Caret getCaret();
 			void selectWord();

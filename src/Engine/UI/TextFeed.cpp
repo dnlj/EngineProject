@@ -172,7 +172,7 @@ namespace Engine::UI {
 
 				// Draw
 				const auto last = latest + 1; // Needed for exclusive
-				float32 yOff = getHeight() - font->getDescent();
+				float32 yOff = getBottom() - font->getDescent();
 				ctx->setColor({1,0,0,1});
 				if (beg.line == end.line) { // Single line
 					ctx->drawRect({beg.pos, yOff - (last - end.line)*lh}, {end.pos - beg.pos, lh});
@@ -190,7 +190,7 @@ namespace Engine::UI {
 		}();
 		
 		{ // Draw Text
-			float32 yOff = getHeight();
+			float32 yOff = getBottom();
 			const auto base = glyphBuff.unsafe_dataT();
 
 			for (Index i = latest;; --i) {
@@ -454,9 +454,14 @@ namespace Engine::UI {
 		ENGINE_DEBUG_ASSERT(beg.line <= end.line);
 		return {beg, end};
 	}
+	
+	ENGINE_INLINE float32 TextFeed::getBottom() const {
+		const auto extra = 0.5f * (font->getLineHeight() - font->getBodyHeight());
+		return getHeight() - extra + font->getDescent();
+	}
 
 	auto TextFeed::getMaxVisibleLines() const -> Index {
-		return static_cast<Index>(std::ceil(getHeight() / font->getLineHeight()));
+		return static_cast<Index>(std::ceil(getBottom() / font->getLineHeight()));
 	}
 
 	auto TextFeed::getCaret() -> Caret {
@@ -466,9 +471,11 @@ namespace Engine::UI {
 		const auto lineSz = lines.size();
 		const auto lineNum = [&]() -> Index ENGINE_INLINE {
 			if (rel.y < 0) { return getMaxVisibleLines(); }
-			if (rel.y > getHeight()) { return 0; }
 
-			const auto yOff = getHeight() - rel.y;
+			const auto bottom = getBottom();
+			if (rel.y > bottom) { return 0; }
+
+			const auto yOff = bottom - rel.y;
 			if (yOff < 0) {
 				// Shouldn't be possible since we would be out of focus
 				ENGINE_DEBUG_ASSERT(false, "Invalid caret line offset");
