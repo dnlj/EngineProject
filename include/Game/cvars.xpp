@@ -1,0 +1,4 @@
+// Name, Type, Default
+X(net_packet_rate_min, float32, 8)
+X(net_packet_rate_max, float32, 256)
+#undef X

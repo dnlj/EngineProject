@@ -17,11 +17,15 @@ namespace Engine {
 			bool logColor = false;
 			bool logTimeOnly = false;
 
-			// TODO: maybe these shouldnt be here. Move to EngineInstance with ConsoleManager
+			// Command line only
 			uint16 port = 0;
 			Net::IPv4Address group = {};
-			float32 sendRateMax = 256;
-			float32 sendRateMin = 8;
+
+			// TODO: shouldn't be including "Game" files in Engine
+			struct {
+				#define X(Name, Type, Default) Type Name = Default;
+				#include <Game/cvars.xpp>
+			} cvars;
 	};
 
 	namespace Detail { inline GlobalConfig globalConfig = {}; }

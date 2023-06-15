@@ -29,6 +29,7 @@
 #include <Engine/Input/KeyCode.hpp>
 #include <Engine/Unicode/UTF8.hpp>
 #include <Engine/Input/BindManager.hpp>
+#include <Engine/from_string.hpp>
 
 #include <Engine/UI/DirectionalLayout.hpp>
 #include <Engine/UI/ImageDisplay.hpp>
@@ -834,7 +835,7 @@ void run(int argc, char* argv[]) {
 	// Commands
 	{
 		auto& cm = engine.getCommandManager();
-		auto const test = cm.registerCommand("test_command", [](auto&){
+		const auto test = cm.registerCommand("test_command", [](auto&){
 			ENGINE_WARN("this is a test command");
 		}); test;
 
@@ -866,13 +867,35 @@ void run(int argc, char* argv[]) {
 
 		const auto cvar = [](Engine::CommandManager& cm){
 			//auto& cfg = Engine::getGlobalConfig<true>();
-			auto& args = cm.args();
+			const auto& args = cm.args();
 			if (args.size() == 1) {
-				// TODO: get
-				ENGINE_WARN("Get (", args.front(), ") ", args.size());
+				std::string str = [](const auto& name) ENGINE_INLINE_REL -> std::string {
+					const auto& cfg = Engine::getGlobalConfig();
+					using std::to_string;
+					#define X(Name, Type, Default) if (name == #Name) { return to_string(cfg.cvars.Name); }
+					#include <Game/cvars.xpp>
+					return {};
+				}(args[0]);
+
+				if (str.empty()) {
+					// TODO: error
+				}
+
+				ENGINE_WARN("Get (", args[0], ") ", args.size(), " = ", str);
+
 			} else {
-				// TODO: set
-				ENGINE_WARN("Set (", args.front(), ") ", args.size());
+				ENGINE_WARN("Set (", args[0], ") ", args.size());
+				const auto suc = [](const auto& name, const auto& arg) ENGINE_INLINE_REL -> bool {
+					auto& cfg = Engine::getGlobalConfig<true>();
+					using Engine::fromString;
+					#define X(Name, Type, Default) if (name == #Name) { return fromString(arg, cfg.cvars.Name); }
+					#include <Game/cvars.xpp>
+					return false;
+				}(args[0], args[1]);
+
+				if (!suc) {
+					ENGINE_WARN("Unable to set cvar ", args[0], " ", args[1]);
+				}
 			}
 		};
 

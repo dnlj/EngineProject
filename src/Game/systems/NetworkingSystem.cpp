@@ -230,8 +230,8 @@ namespace Game {
 			}
 		}
 
-		const float32 maxSendRate = Engine::getGlobalConfig().sendRateMax;
-		const float32 minSendRate = Engine::getGlobalConfig().sendRateMin;
+		const float32 maxSendRate = Engine::getGlobalConfig().cvars.net_packet_rate_max;
+		const float32 minSendRate = Engine::getGlobalConfig().cvars.net_packet_rate_min;
 
 		// We need this check because MSVC does not handle comparisons correctly for non-finite values even when is_iec559 is true.
 		if (!std::isfinite(rate)) {
