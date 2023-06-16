@@ -65,7 +65,14 @@ namespace Engine::UI {
 	
 	bool ConsolePanel::onAction(ActionEvent act) {
 		switch (act) {
-			//case Action::Scroll: { break; } // TODO: forward to TextFeed
+			case Action::MoveCharUp: {
+				historyDec();
+				return true;
+			}
+			case Action::MoveCharDown: {
+				historyInc();
+				return true;
+			}
 			case Action::Paste:
 			default: { return input->onAction(act); }
 		}
@@ -76,12 +83,41 @@ namespace Engine::UI {
 		const auto& text = input->getText();
 		if (text.size() <= 0) { return; }
 
+		historyReset();
 		feed->pushText(text);
+		if (text != history.head(-1)) {
+			// Make sure the most recent history is always a blank string.
+			history.head() = text;
+			history.advance();
+			history.head().clear();
+		}
 
 		if (onSubmit) {
 			onSubmit(this, text);
 		}
 
 		input->setText("");
+	}
+
+	ENGINE_INLINE void ConsolePanel::historyInc() {
+		if (historyOff == 0) { return; }
+		++historyOff;
+		historyUpdate();
+	}
+
+	ENGINE_INLINE void ConsolePanel::historyDec() {
+		if (historyOff - 1 == history.size()) { return; }
+		if (history.head(historyOff-1).empty()) { return; }
+		--historyOff;
+		historyUpdate();
+	}
+
+	ENGINE_INLINE void ConsolePanel::historyReset() {
+		historyOff = 0;
+	}
+
+	ENGINE_INLINE void ConsolePanel::historyUpdate() {
+		// TODO: current index = head/0
+		input->setText(history.head(historyOff));
 	}
 }

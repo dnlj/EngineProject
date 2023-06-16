@@ -701,6 +701,12 @@ void run(int argc, char* argv[]) {
 		bm.addBind(Layer::GuiFocus, true, InputSequence{
 			InputId{Type::Keyboard, 0, +KeyCode::Right},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveCharRight); } return true; });
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::Up},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveCharUp); } return true; });
+		bm.addBind(Layer::GuiFocus, true, InputSequence{
+			InputId{Type::Keyboard, 0, +KeyCode::Down},
+		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveCharDown); } return true; });
 
 		bm.addBind(Layer::GuiFocus, false, InputSequence{
 			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
@@ -879,6 +885,7 @@ void run(int argc, char* argv[]) {
 
 				if (str.empty()) {
 					// TODO: error
+					ENGINE_WARN("TODO: err");
 				}
 
 				ENGINE_WARN("Get (", args[0], ") ", args.size(), " = ", str);
