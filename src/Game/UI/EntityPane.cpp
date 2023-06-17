@@ -1,7 +1,3 @@
-// FMT
-#include <fmt/core.h>
-#include <fmt/ostream.h>
-
 // Engine
 #include <Engine/UI/DataAdapter.hpp>
 

@@ -35,6 +35,17 @@ namespace Engine::ECS {
 	std::ostream& operator<<(std::ostream& os, Entity ent);
 }
 
+template<>
+struct fmt::formatter<Engine::ECS::Entity> {
+	constexpr auto parse(format_parse_context& ctx) {
+		return ctx.end();
+	}
+
+	auto format(const Engine::ECS::Entity ent, format_context& ctx) {
+		return fmt::format_to(ctx.out(), "Entity({}, {})", ent.id, ent.gen);
+	}
+};
+
 namespace Engine {
 	template<> struct Hash<ECS::Entity> {
 		size_t operator()(const ECS::Entity& val) const {

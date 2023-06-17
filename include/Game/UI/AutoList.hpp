@@ -34,7 +34,7 @@ namespace Game::UI {
 			template<class... Ts>
 			void setLabel(int32 id, const Ts&... values) {
 				auto panel = labels[id];
-				fmt::format_to(std::back_inserter(buffer), formats[id], values...);
+				fmt::format_to(std::back_inserter(buffer), fmt::runtime(formats[id]), values...);
 				panel->autoText(buffer);
 				buffer.clear();
 			}

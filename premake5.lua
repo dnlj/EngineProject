@@ -54,7 +54,7 @@ CONAN_PACKAGES = {
 		"soil_littlstar/master@dnlj/wobbly",
 		"freetype/VER-2-10-4@dnlj/wobbly",
 		"harfbuzz/2.8.1@dnlj/wobbly",
-		"fmtlib/8.0.1@dnlj/wobbly",
+		"fmtlib/10.0.0@dnlj/wobbly",
 		--"soil/latest@dnlj/wobbly",
 		"assimp/5.2.3@dnlj/wobbly",
 
