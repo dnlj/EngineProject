@@ -213,4 +213,5 @@ namespace Engine {
 	CREATE_ADL_WRAPPER_1(rend);
 	CREATE_ADL_WRAPPER_1(crend);
 }
-#undef CREATE_ADL_WRAPPER
+#undef CREATE_ADL_WRAPPER_1
+#undef CREATE_ADL_WRAPPER_2

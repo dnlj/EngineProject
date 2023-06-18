@@ -16,7 +16,7 @@ struct sockaddr;
 namespace Engine::Net {
 	class IPv4Address {
 		public:
-			IPv4Address() = default;
+			constexpr IPv4Address() = default;
 
 			constexpr IPv4Address(uint32 address, uint16 port = 0)
 				: address{address}

@@ -14,6 +14,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Logger.hpp>
 #include <Engine/CommandManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/Noise/SimplexNoise.hpp>
@@ -448,7 +449,6 @@ namespace {
 	
 	void performExit(const char* reason) {
 		ENGINE_LOG("Shutting down: ", reason, "\n\n");
-		fclose(Engine::getGlobalConfig().log.get());
 	};
 }
 
@@ -845,38 +845,12 @@ void run(int argc, char* argv[]) {
 			ENGINE_WARN("this is a test command");
 		}); test;
 
-		//cm.registerCommand("bind", [](auto&){});
-		//cm.exec(test);
-		//cm.exec(R"(bind key "Test Quote Arg" 123 how are you)");
-		//cm.exec(R"(bind key 123 how are you"Test Quote Arg")");
-		//cm.exec(R"(bind key 123 how are you\"Test Quote Arg")");
-		//cm.exec(R"(bind key 123 how are you \"Test Quote Arg")");
-		//cm.exec(R"(bind key 123 how are you "\"Test\" Quote Arg")");
-		//cm.exec(R"(bind key 123 how are you "Quote Arg \"Test\"")");
-		//cm.exec(R"(bind key)");
-		//cm.exec(R"(bind)");
-		//cm.exec(R"(")");
-		//cm.exec(R"()");
-		//cm.exec(R"(bind")");
-		//cm.exec(R"("bind")");
-		//cm.exec(R"("bind)");
-		//cm.exec(R"(bind key 123 how are you 'Test Quote Arg')");
-		//cm.exec(R"(bind key 123 how are you '\'Test\' Quote Arg')");
-		//cm.exec(R"(bind key 123 how are you 'Test' Quote Arg')");
-		//cm.exec(R"(bind key 123 how are you 'Test\\\\\' Quote Arg')");
-		//cm.exec("test_command this is a test 1234");
-
-		//CVAR(net_packets_max) = CVar<float32>(256);
-		//CVAR(net_packets_max, float32, 256);
-		//cm.cvar<float32>("net_packets_max", 256);
-		//cm.cvar<float32>("net_packets_min", 8);
-
 		const auto cvar = [](Engine::CommandManager& cm){
-			//auto& cfg = Engine::getGlobalConfig<true>();
 			const auto& args = cm.args();
 			if (args.size() == 1) {
 				std::string str = [](const auto& name) ENGINE_INLINE_REL -> std::string {
 					const auto& cfg = Engine::getGlobalConfig();
+					// TODO: using fmt::to_string
 					using std::to_string;
 					#define X(Name, Type, Default) if (name == #Name) { return to_string(cfg.cvars.Name); }
 					#include <Game/cvars.xpp>
@@ -1009,10 +983,11 @@ int entry(int argc, char* argv[]) {
 			if (log && !log->empty()) {
 				std::cout << "Log file: " << *log << std::endl;
 				auto old = std::move(cfg.log);
+				// TODO: cfg.log = {fopen(log->c_str(), "ab+"), &fclose};
 				cfg.log = {fopen(log->c_str(), "ab+"), &fclose};
 
 				if (!cfg.log) {
-					cfg.log = std::move(cfg.log);
+					cfg.log = std::move(old);
 					ENGINE_WARN("Failed to open log file: ", *log);
 				}
 			}
@@ -1125,6 +1100,40 @@ int entry(int argc, char* argv[]) {
 	//Engine::ConfigParser cfg;
 	//cfg.loadAndTokenize("example.cfg");
 	//cfg.print();
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// TODO: rm - testing
+	{
+		Engine::Logger logger;
+		const auto ip = Engine::Net::IPv4Address(000, 111, 222, 101, 12345);
+		
+		logger.styledWritter = [](Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
+			fmt::memory_buffer buffer;
+			buffer.clear();
+			logger.decorate<false, true>(fmt::appender(buffer), info);
+			fmt::vformat_to(fmt::appender(buffer), format, args);
+			std::cout << std::string_view(buffer) << '\n';
+		};
+
+		logger.cleanWritter = [](Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
+			fmt::memory_buffer buffer;
+			logger.decorate<true, false>(fmt::appender(buffer), info);
+			fmt::vformat_to(fmt::appender(buffer), format, args);
+			std::cout << std::string_view(buffer) << '\n';
+		};
+
+		for (int i = 0; i < 10000; ++i) {
+			logger.warn("Test log {} {} {}", Engine::LogStyle{"My Test Number"}, i, Engine::LogStyle{123});
+		}
+
+		getchar();
+		getchar();
+		getchar();
+		getchar();
+		getchar();
+		getchar();
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	startTime = Engine::Clock::now();
 	run(argc, argv);
