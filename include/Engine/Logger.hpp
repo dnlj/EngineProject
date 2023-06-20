@@ -9,12 +9,6 @@
 // Engine
 #include <Engine/traits.hpp>
 
-// TODO:
-//   Verbose
-//   Info
-//   Debug
-//   Error
-//   None
 
 namespace Engine {
 	enum class LogLevel {
@@ -39,12 +33,157 @@ namespace Engine {
 			std::source_location location;
 	};
 
+
+	class ANSIStyle {
+		public:
+			enum Style {
+				Empty = 0,
+				Bold = 1 << 0,
+				Faint = 1 << 1,
+				Italic = 1 << 2,
+				Underline = 1 << 3,
+			};
+
+			class NamedColor {
+				public:
+					const glm::u8vec3 color = {};
+					const uint8 useCase = 0; // 0 = none, 1 = bit, 2 = rgb
+
+				public:
+					consteval NamedColor(nullptr_t) {}; // TODO (MSVC): ICE if we try to use a default constructor.
+					consteval NamedColor(uint8 n) : color{n,0,0}, useCase{1} {}
+					consteval NamedColor(glm::u8vec3 color) : color{color}, useCase{2} {}
+			}; static_assert(sizeof(NamedColor) == 4);
+
+			struct Foreground : NamedColor { using NamedColor::NamedColor; };
+			struct Background : NamedColor { using NamedColor::NamedColor; };
+
+		public:
+			consteval ANSIStyle(Style style)
+				: bitset{style} {
+			}
+			consteval ANSIStyle(Style style, Foreground fg)
+				: bitset{style}, fg{fg} {
+			}
+			consteval ANSIStyle(Style style, Background bg)
+				: bitset{style}, bg{bg} {
+			}
+			consteval ANSIStyle(Style style, Foreground fg, Background bg)
+				: bitset{style}, fg{fg}, bg{bg} {
+			}
+
+			Style bitset;
+			Foreground fg = nullptr_t{};
+			Background bg = nullptr_t{};
+
+			// TODO: combine styles with | instead of constructor{,,,,}
+			//friend ANSIStyle operator|(const ANSIStyle& left, const ANSIStyle& right) {}
+			//friend ANSIStyle operator|(const Style& left, const ANSIStyle& right) {}
+			//friend ANSIStyle operator|(const ANSIStyle& left, const Style& right) {}
+			//friend ANSIStyle operator|(const ANSIStyle& left, const Style& right) {}
+	};
+	ENGINE_BUILD_ALL_OPS(ANSIStyle::Style);
+	ENGINE_BUILD_DECAY_ENUM(ANSIStyle::Style);
+
+
+	consteval auto styleFor(ANSIStyle style) {
+	}
+
+	class ANSIEscapeSequence {
+		//
+		// Bold = 1
+		// Faint = 2
+		// Italic = 3
+		// Underline = 4
+		//
+		// Foreground = 38;5;(n)m
+		// Foreground(RGB) = 38;2;(r);(g);(b)m
+		//
+		// Background = 48;5;(n)m
+		// Background(RGB) = 48;2;(r);(g);(b)m
+		//
+		private:
+			const std::array<char, 31> str = {};
+			const uint8 len = 0;
+
+		public:
+			consteval ANSIEscapeSequence(ANSIStyle style)
+				: str{from(style)}
+				, len{static_cast<decltype(len)>(std::find(str.begin(), str.end(), '\0') - str.begin())} {
+			}
+			consteval ANSIEscapeSequence(ANSIStyle::Style style)
+				: str{from(ANSIStyle{style})}
+				, len{static_cast<decltype(len)>(std::find(str.begin(), str.end(), '\0') - str.begin())} {
+			}
+
+			constexpr std::string_view view() const noexcept { return std::string_view{str.data(), len}; }
+
+		public: // TODO: private
+			consteval static decltype(str) from(const ANSIStyle style) {
+				std::string seq = "\033[";
+
+				const auto append = [&]<class T>(const T& val){
+					if (seq.back() != '[') {
+						seq += ';';
+					}
+
+					if constexpr (std::integral<T>) {
+						constexpr auto len = 3;
+						seq.append(len, 0);
+						auto end = std::to_address(seq.end());
+						const auto res = std::to_chars(end - len, end, val);
+						
+						if (res.ec != std::errc{}) {
+							throw "Number is to large";
+						}
+						
+						seq.resize(res.ptr - seq.data());
+					} else {
+						seq += val;
+					}
+				};
+
+				if (+(style.bitset & ANSIStyle::Style::Bold)) { append("1"); }
+				if (+(style.bitset & ANSIStyle::Style::Faint)) { append("2"); }
+				if (+(style.bitset & ANSIStyle::Style::Italic)) { append("3"); }
+				if (+(style.bitset & ANSIStyle::Style::Underline)) { append("4"); }
+
+				// TODO: Need to handle the BRIGHT variant in the non-rgb version: https://ss64.com/nt/syntax-ansi.html
+		
+				// TODO: Verify not normal and RGB set
+				if (style.fg.useCase == 1) {
+					append("38;5");
+					append(style.fg.color[0]);
+				} else if (style.fg.useCase == 2) {
+					// TODO: rgb
+				}
+
+				// TODO: background
+
+				seq += "m"; // Don't use `append`. We don't want the extra semicolon.
+				if (seq.size() > std::tuple_size_v<decltype(str)> - 1) { // -1 for null
+					throw "Style string exceeds the char buffer. Increase buffer size.";
+				}
+
+				// TODO: verify that we have SOME style, shouldn't be empty
+				// 
+				// TODO: can we use std inserter and just cut out the std::string?
+				std::remove_cvref_t<decltype(str)> res = {};
+				std::copy(seq.begin(), seq.end(), res.begin());
+				return res;
+			}
+	}; static_assert(sizeof(ANSIEscapeSequence) == 32);
+
 	// TODO: better interface
 	template<class T>
 	class LogStyle {
 		public:
-			LogStyle(const T& value) : value{value} {}
+			constexpr LogStyle(const T& value, ANSIEscapeSequence style)
+				: value{value}
+				, style{style} {
+			}
 			const T& value;
+			const ANSIEscapeSequence style;
 	};
 
 	template<class Char>
@@ -136,7 +275,7 @@ namespace Engine {
 template<class T, class Char>
 struct fmt::formatter<Engine::LogStyle<T>, Char> : fmt::formatter<T, Char> {
 	format_context::iterator format(const Engine::LogStyle<T>& styled, format_context& ctx) {
-		std::ranges::copy("\033[34m", ctx.out());
+		std::ranges::copy(styled.style.view(), ctx.out());
 		fmt::format_to(ctx.out(), "{}", styled.value);
 		std::ranges::copy("\033[0m", ctx.out());
 		return ctx.out();

@@ -46,6 +46,8 @@
 #include <Game/systems/ActionSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
 
+#include <fmt/color.h> // TODO: remove;
+
 
 namespace {
 	using namespace Engine::Types;
@@ -1122,8 +1124,20 @@ int entry(int argc, char* argv[]) {
 			std::cout << std::string_view(buffer) << '\n';
 		};
 
-		for (int i = 0; i < 10000; ++i) {
-			logger.warn("Test log {} {} {}", Engine::LogStyle{"My Test Number"}, i, Engine::LogStyle{123});
+		for (int i = 0; i < 10; ++i) {
+			using Engine::ANSIStyle;
+			constexpr auto style = ANSIStyle{ANSIStyle::Bold, ANSIStyle::Foreground{1}};
+			constexpr auto seq = Engine::ANSIEscapeSequence{style};
+			constexpr auto arg = Engine::LogStyle{"My Test Number", style};
+			logger.warn("Test log {} {} {} - {}", arg, i, Engine::LogStyle{i, style}, Engine::LogStyle{123, style});
+			//logger.warn("Test log {}", Engine::LogStyle{123, ANSIStyle::Bold | ANSIStyle::Foreground{1}});
+			//logger.warn("Test log {} {} {} - {}", arg, i, Engine::LogStyle{i, style}, fmt::styled(123, fmt::fg(fmt::color::blue)));
+			//logger.warn("Test log {} {} {} - {}", arg, i, Engine::LogStyle{i, style}, fmt::styled(123, fmt::emphasis::bold));
+			//logger.warn("Test log {} {} {} - {}", arg, i, Engine::LogStyle{i, style}, fmt::styled(123, fmt::emphasis::faint));
+			//const auto a = Engine::LogStyle{123, style};
+			//logger.warn("Test log {}", a);
+			//logger.warn("Test log {}", Engine::LogStyle{123, style});
+			//logger.warn("Test log {}", fmt::styled(123, fmt::fg(fmt::color::blue)));
 		}
 
 		getchar();
