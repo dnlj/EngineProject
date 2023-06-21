@@ -13,7 +13,7 @@ namespace Game {
 	template<class T>
 	class NetworkTraits {
 		private:
-			using _t_NetworkTraits_isSpecialized = void;
+			using _t_NetworkTraits_isSpecialized = int;
 
 		public:
 			static Engine::Net::Replication getReplType(const T& obj) {
@@ -39,8 +39,8 @@ namespace Game {
 	};
 
 	template<class T>
-	concept IsNetworkedComponent = !requires {
-		NetworkTraits<T>::_t_NetworkTraits_isSpecialized;
+	concept IsNetworkedComponent = !requires (typename NetworkTraits<T>::_t_NetworkTraits_isSpecialized special) {
+		special;
 	};
 
 	template<class F>

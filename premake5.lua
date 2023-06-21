@@ -112,6 +112,16 @@ premake.override(premake.vstudio.vc2010.elements, "user", function(base, cfg)
 	return calls
 end)
 
+-- Disable modules. They do not work at all (cause ICE) and msvc doesn't provide a build option to disable them.
+-- Microsoft says: "Use /experimental:module- to disable module support explicitly."
+-- This does not work. They are still enabled.
+premake.override(premake.vstudio.vc2010.elements, "clCompile", function(base, cfg)
+	local calls = base(cfg)
+	table.insert(calls, function(cfg) premake.w("<EnableModules>false</EnableModules>") end)
+	table.insert(calls, function(cfg) premake.w("<BuildStlModules>false</BuildStlModules>") end)
+	return calls
+end)
+
 --------------------------------------------------------------------------------
 -- The main premake settings
 --------------------------------------------------------------------------------
@@ -143,7 +153,7 @@ workspace(PROJECT_NAME .."Workspace")
 	}
 
 	filter "action:vs*"
-		buildoptions{
+		buildoptions {
 			"/wd4996", -- Disable some warnings about things Visual Studio has taken upon itself to deem deprecated
 			"/wd4103", -- Work around for MSVC bug. TODO: remove when fixed - https://developercommunity.visualstudio.com/t/Warning-C4103-in-Visual-Studio-166-Upda/1057589
 			--"/w14061", -- Not enabled because of enum count cases. Enable: missing switch case for enum

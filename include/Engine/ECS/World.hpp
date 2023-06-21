@@ -136,11 +136,16 @@ namespace Engine::ECS {
 	template<class T>
 	class SnapshotTraits {
 		private:
-			using _t_SnapshotTraits_isSpecialized = void;
+			using _t_SnapshotTraits_isSpecialized = int;
 
 		public:
-			using Type = struct Null{};
-			using Container = SparseSet<Entity, Type>;
+			using Type = nullptr_t;
+
+			// TODO (Vy9qN0EB): Update World to correctly skip non-snapshot components where
+			//       relevant and make this void. This is currently here due to lazyness of
+			//       not wanting to filter out non-snapshot components when creating
+			//       containers in snapshots.
+			using Container = nullptr_t;
 
 			static std::tuple<> toSnapshot(const T& obj) {
 				static_assert(!sizeof(T), "SnapshotTraits::toSnapshot must be implemented for type T.");
@@ -153,8 +158,8 @@ namespace Engine::ECS {
 	};
 
 	template<class T>
-	concept IsSnapshotRelevant = !requires {
-		SnapshotTraits<T>::_t_SnapshotTraits_isSpecialized;
+	concept IsSnapshotRelevant = !requires (typename SnapshotTraits<T>::_t_SnapshotTraits_isSpecialized special) {
+		special;
 	};
 }
 
