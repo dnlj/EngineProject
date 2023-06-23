@@ -10,8 +10,8 @@
 #include <Engine/traits.hpp>
 
 
-namespace Engine {
-	enum class LogLevel {
+namespace Engine::Log {
+	enum class Level {
 		Default = 0,
 		Debug,
 		Text,
@@ -33,93 +33,122 @@ namespace Engine {
 			std::source_location location;
 	};
 
-
-	class ANSIStyle {
+	// TODO: Move StyleBitset/Foreground/Background into namespace or something, no reason to have them on the Style
+	class StyleBitset {
 		public:
-			enum Style {
-				Empty = 0,
-				Bold = 1 << 0,
-				Faint = 1 << 1,
-				Italic = 1 << 2,
-				Underline = 1 << 3,
-			};
+			uint32 bitset = {};
+			consteval StyleBitset() {}
+			consteval StyleBitset(uint32 bitset) : bitset{bitset} {}
+			friend consteval StyleBitset operator&(StyleBitset left, StyleBitset right) { return left.bitset & right.bitset; }
+			friend consteval StyleBitset operator|(StyleBitset left, StyleBitset right) { return left.bitset | right.bitset; }
+			consteval operator bool() const noexcept { return bitset; }
+	};
 
+	class Style {
+		private:
 			class NamedColor {
 				public:
-					const glm::u8vec3 color = {};
-					const uint8 useCase = 0; // 0 = none, 1 = bit, 2 = rgb
+					glm::u8vec3 color = {};
+					uint8 useCase = 0; // 0 = none, 1 = bit, 2 = rgb
 
 				public:
 					consteval NamedColor(nullptr_t) {}; // TODO (MSVC): ICE if we try to use a default constructor.
 					consteval NamedColor(uint8 n) : color{n,0,0}, useCase{1} {}
 					consteval NamedColor(glm::u8vec3 color) : color{color}, useCase{2} {}
+					constexpr operator bool() const noexcept { return useCase; }
 			}; static_assert(sizeof(NamedColor) == 4);
 
+		public:
 			struct Foreground : NamedColor { using NamedColor::NamedColor; };
 			struct Background : NamedColor { using NamedColor::NamedColor; };
 
-		public:
-			consteval ANSIStyle(Style style)
-				: bitset{style} {
-			}
-			consteval ANSIStyle(Style style, Foreground fg)
-				: bitset{style}, fg{fg} {
-			}
-			consteval ANSIStyle(Style style, Background bg)
-				: bitset{style}, bg{bg} {
-			}
-			consteval ANSIStyle(Style style, Foreground fg, Background bg)
-				: bitset{style}, fg{fg}, bg{bg} {
-			}
+			constexpr static StyleBitset Empty = 0;
+			constexpr static StyleBitset Bold = 1 << 0;
+			constexpr static StyleBitset Faint = 1 << 1;
+			constexpr static StyleBitset Italic = 1 << 2;
+			constexpr static StyleBitset Underline = 1 << 3;
 
-			Style bitset;
+		private:
+			friend class ANSIEscapeSequence; /// TODO: just make a toEscapeSequence function instead of having it on ANSIEscapeSequence
+			StyleBitset bitset = {};
 			Foreground fg = nullptr_t{};
 			Background bg = nullptr_t{};
 
-			// TODO: combine styles with | instead of constructor{,,,,}
-			//friend ANSIStyle operator|(const ANSIStyle& left, const ANSIStyle& right) {}
-			//friend ANSIStyle operator|(const Style& left, const ANSIStyle& right) {}
-			//friend ANSIStyle operator|(const ANSIStyle& left, const Style& right) {}
-			//friend ANSIStyle operator|(const ANSIStyle& left, const Style& right) {}
+		public:
+			consteval Style(StyleBitset style)
+				: bitset{style} {
+			}
+			consteval Style(StyleBitset style, Foreground fg)
+				: bitset{style}, fg{fg} {
+			}
+			consteval Style(StyleBitset style, Background bg)
+				: bitset{style}, bg{bg} {
+			}
+			consteval Style(StyleBitset style, Foreground fg, Background bg)
+				: bitset{style}, fg{fg}, bg{bg} {
+			}
+
+			friend consteval Style operator|(const Style& left, const Style& right) {
+				auto result = left;
+				result.bitset = left.bitset | right.bitset;
+
+				if (left.fg && right.fg) {
+					throw "Invalid style combination. Both styles have a foreground.";
+				} else if (right.fg) {
+					result.fg = right.fg;
+				}
+
+				if (left.bg && right.bg) {
+					throw "Invalid style combination. Both styles have a background.";
+				} else if (right.bg) {
+					result.bg = right.bg;
+				}
+
+				return result;
+			}
+
+			friend consteval Style operator|(const Style& left, const Foreground& right) {
+				auto result = left;
+				if (result.fg) { throw "Style already has a foreground."; }
+				result.fg = right;
+				return result;
+			}
+
+			friend consteval Style operator|(const StyleBitset& left, const Foreground& right) {
+				return Style{left} | right;
+			}
+
+			friend consteval Style operator|(const Style& left, const Background& right) {
+				auto result = left;
+				if (result.bg) { throw "Style already has a foreground."; }
+				result.bg = right;
+				return result;
+			}
+
+			friend consteval Style operator|(const StyleBitset& left, const Background& right) {
+				return Style{left} | right;
+			}
 	};
-	ENGINE_BUILD_ALL_OPS(ANSIStyle::Style);
-	ENGINE_BUILD_DECAY_ENUM(ANSIStyle::Style);
-
-
-	consteval auto styleFor(ANSIStyle style) {
-	}
 
 	class ANSIEscapeSequence {
-		//
-		// Bold = 1
-		// Faint = 2
-		// Italic = 3
-		// Underline = 4
-		//
-		// Foreground = 38;5;(n)m
-		// Foreground(RGB) = 38;2;(r);(g);(b)m
-		//
-		// Background = 48;5;(n)m
-		// Background(RGB) = 48;2;(r);(g);(b)m
-		//
 		private:
 			const std::array<char, 31> str = {};
 			const uint8 len = 0;
 
 		public:
-			consteval ANSIEscapeSequence(ANSIStyle style)
+			consteval ANSIEscapeSequence(Style style)
 				: str{from(style)}
 				, len{static_cast<decltype(len)>(std::find(str.begin(), str.end(), '\0') - str.begin())} {
 			}
-			consteval ANSIEscapeSequence(ANSIStyle::Style style)
-				: str{from(ANSIStyle{style})}
+			consteval ANSIEscapeSequence(StyleBitset style)
+				: str{from(Style{style})}
 				, len{static_cast<decltype(len)>(std::find(str.begin(), str.end(), '\0') - str.begin())} {
 			}
 
 			constexpr std::string_view view() const noexcept { return std::string_view{str.data(), len}; }
 
 		public: // TODO: private
-			consteval static decltype(str) from(const ANSIStyle style) {
+			consteval static decltype(str) from(const Style style) {
 				std::string seq = "\033[";
 
 				const auto append = [&]<class T>(const T& val){
@@ -143,10 +172,10 @@ namespace Engine {
 					}
 				};
 
-				if (+(style.bitset & ANSIStyle::Style::Bold)) { append("1"); }
-				if (+(style.bitset & ANSIStyle::Style::Faint)) { append("2"); }
-				if (+(style.bitset & ANSIStyle::Style::Italic)) { append("3"); }
-				if (+(style.bitset & ANSIStyle::Style::Underline)) { append("4"); }
+				if (style.bitset & Style::Bold) { append("1"); }
+				if (style.bitset & Style::Faint) { append("2"); }
+				if (style.bitset & Style::Italic) { append("3"); }
+				if (style.bitset & Style::Underline) { append("4"); }
 
 				// TODO: Need to handle the BRIGHT variant in the non-rgb version: https://ss64.com/nt/syntax-ansi.html
 		
@@ -174,11 +203,10 @@ namespace Engine {
 			}
 	}; static_assert(sizeof(ANSIEscapeSequence) == 32);
 
-	// TODO: better interface
 	template<class T>
-	class LogStyle {
+	class Styled {
 		public:
-			constexpr LogStyle(const T& value, ANSIEscapeSequence style)
+			constexpr Styled(const T& value, ANSIEscapeSequence style)
 				: value{value}
 				, style{style} {
 			}
@@ -187,13 +215,13 @@ namespace Engine {
 	};
 
 	template<class Char>
-	LogStyle(const std::basic_string<Char>&) -> LogStyle<std::basic_string_view<Char>>;
+	Styled(const std::basic_string<Char>&) -> Styled<std::basic_string_view<Char>>;
 
 	template<AnyChar Char>
-	LogStyle(const Char*&) -> LogStyle<std::basic_string_view<Char>>;
+	Styled(const Char*&) -> Styled<std::basic_string_view<Char>>;
 
 	template<AnyChar Char, size_t N>
-	LogStyle(const Char(&)[N]) -> LogStyle<std::basic_string_view<Char>>;
+	Styled(const Char(&)[N]) -> Styled<std::basic_string_view<Char>>;
 
 	class Logger {
 		private:
@@ -204,7 +232,7 @@ namespace Engine {
 				}
 
 				template<class T>
-				const T& operator()(const LogStyle<T>& styled) const noexcept {
+				const T& operator()(const Styled<T>& styled) const noexcept {
 					return styled.value;
 				};
 			};
@@ -217,7 +245,7 @@ namespace Engine {
 			class Info {
 				public:
 					const std::source_location location;
-					const LogLevel level;
+					const Level level;
 					const std::string_view label;
 					const TimePoint time;
 
@@ -226,19 +254,16 @@ namespace Engine {
 					}
 			};
 			
-			using LogFunc = void (*)(Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args);
+			using LogFunc = void (*)(Engine::Log::Logger& logger, const Engine::Log::Logger::Info& info, std::string_view format, fmt::format_args args);
 
 		public:
 			LogFunc styledWritter = nullptr;
 			LogFunc cleanWritter = nullptr;
 			void* userdata = nullptr;
 			
-			//template<class... Args>
-			//void warn(LogFormatString<Args...> format, const Args&... args);
-
 			template<class... Args>
 			void warn(LogFormatString format, const Args&... args) {
-				log(format.location, LogLevel::Warn, "WARN", format.format, args...);
+				log(format.location, Level::Warn, "WARN", format.format, args...);
 			}
 
 			template<bool TimeOnly, bool Style, class OutputIt>
@@ -252,7 +277,7 @@ namespace Engine {
 
 		private:
 			template<class... Args>
-			void log(const std::source_location location, LogLevel level, std::string_view label, std::string_view format, const Args&... args) {
+			void log(const std::source_location location, Level level, std::string_view label, std::string_view format, const Args&... args) {
 				Info info = {
 					.location = location,
 					.level = level,
@@ -271,10 +296,14 @@ namespace Engine {
 	};
 }
 
+namespace Engine {
+	using Logger = Log::Logger;
+}
+
 
 template<class T, class Char>
-struct fmt::formatter<Engine::LogStyle<T>, Char> : fmt::formatter<T, Char> {
-	format_context::iterator format(const Engine::LogStyle<T>& styled, format_context& ctx) {
+struct fmt::formatter<Engine::Log::Styled<T>, Char> : fmt::formatter<T, Char> {
+	format_context::iterator format(const Engine::Log::Styled<T>& styled, format_context& ctx) {
 		std::ranges::copy(styled.style.view(), ctx.out());
 		fmt::format_to(ctx.out(), "{}", styled.value);
 		std::ranges::copy("\033[0m", ctx.out());

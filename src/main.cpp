@@ -1125,18 +1125,20 @@ int entry(int argc, char* argv[]) {
 		};
 
 		for (int i = 0; i < 10; ++i) {
-			using Engine::ANSIStyle;
-			constexpr auto style = ANSIStyle{ANSIStyle::Bold, ANSIStyle::Foreground{1}};
-			constexpr auto seq = Engine::ANSIEscapeSequence{style};
-			constexpr auto arg = Engine::LogStyle{"My Test Number", style};
-			logger.warn("Test log {} {} {} - {}", arg, i, Engine::LogStyle{i, style}, Engine::LogStyle{123, style});
-			//logger.warn("Test log {}", Engine::LogStyle{123, ANSIStyle::Bold | ANSIStyle::Foreground{1}});
-			//logger.warn("Test log {} {} {} - {}", arg, i, Engine::LogStyle{i, style}, fmt::styled(123, fmt::fg(fmt::color::blue)));
-			//logger.warn("Test log {} {} {} - {}", arg, i, Engine::LogStyle{i, style}, fmt::styled(123, fmt::emphasis::bold));
-			//logger.warn("Test log {} {} {} - {}", arg, i, Engine::LogStyle{i, style}, fmt::styled(123, fmt::emphasis::faint));
-			//const auto a = Engine::LogStyle{123, style};
+			using Engine::Log::Style;
+			using Engine::Log::Styled;
+			constexpr Style style = Style::Bold | Style::Foreground{2};
+			constexpr auto seq = Engine::Log::ANSIEscapeSequence{style};
+			constexpr auto arg = Styled{"My Test Number", style};
+			logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, Styled{123, style});
+			 
+			//logger.warn("Test log {}", Styled{123, Style::Bold | Style::Foreground{1}});
+			//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::fg(fmt::color::blue)));
+			//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::emphasis::bold));
+			//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::emphasis::faint));
+			//const auto a = Styled{123, style};
 			//logger.warn("Test log {}", a);
-			//logger.warn("Test log {}", Engine::LogStyle{123, style});
+			//logger.warn("Test log {}", Styled{123, style});
 			//logger.warn("Test log {}", fmt::styled(123, fmt::fg(fmt::color::blue)));
 		}
 
