@@ -90,7 +90,7 @@ BENCH(rsqrt_empty) {
 
 BENCH(rsqrt_std) {
 	if constexpr (SinglePass) {
-		calcAccuracy(ctx, dataset, std_rsqrt<D::ValueType>);
+		calcAccuracy(ctx, dataset, std_rsqrt<typename D::ValueType>);
 		return;
 	}
 
@@ -139,7 +139,7 @@ BENCH(rsqrt_quake) {
 
 BENCH(rsqrt_mrob) {
 	if constexpr (SinglePass) {
-		calcAccuracy(ctx, dataset, mrob_rsqrt<D::ValueType>);
+		calcAccuracy(ctx, dataset, mrob_rsqrt<typename D::ValueType>);
 		return;
 	}
 	ctx.startSample();

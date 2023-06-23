@@ -1,9 +1,6 @@
 // STD
 #include <ranges>
 
-// FMT
-#include <fmt/ostream.h>
-
 // Engine
 #include <Engine/Unicode/UTF8.hpp>
 
@@ -163,7 +160,7 @@ namespace Bench {
 				if (std::ranges::find(cols, col, &Column::title) == cols.end()) {
 					cols.emplace_back(col);
 				}
-				row.cells[col] = fmt::format("{}", *value);
+				row.cells[col] = value->str();
 			}
 
 			custom.clear();
@@ -176,7 +173,7 @@ namespace Bench {
 
 		// Output buffer
 		std::string output;
-		output.reserve(1024); // TOOD: how big to make this?
+		output.reserve(1024);
 		auto out = std::back_inserter(output);
 
 		// Figure out column widths
@@ -191,13 +188,16 @@ namespace Bench {
 		const auto totalWidth = (cols.size()-1)*3 + std::reduce(cols.cbegin(), cols.cend(), 0ll, [](auto s, const auto& o){ return s + o.width; });
 
 		// Table header
+		// TODO: Windows seems to break some stuff whenever it feels like it. If you change this to 4096 it still gets cut at edge of display. Will be easy to lose data
 		std::fill_n(out, totalWidth, '=');
-		fmt::format_to(out, "\n{}\n", name);
+		out = '\n';
+		std::ranges::copy(name, out);
+		out = '\n';
 		std::fill_n(out, totalWidth, '-');
 		out = '\n';
 
 		if (auto col = cols.cbegin(), end = cols.cend(); col != end) { while (true) {
-			fmt::format_to(out, col->title);
+			std::ranges::copy(col->title, out);
 
 			auto diff = col->width - Engine::Unicode::length8(col->title);
 			std::fill_n(out, diff, ' ');
@@ -214,7 +214,7 @@ namespace Bench {
 		for (auto& row : rows) {
 			if (auto col = cols.cbegin(), end = cols.cend(); col != end) { while (true) {
 				const auto& cell = row.cells[col->title];
-				fmt::format_to(out, cell);
+				std::ranges::copy(cell, out);
 
 				auto diff = col->width - Engine::Unicode::length8(cell);
 				std::fill_n(out, diff, ' ');
@@ -227,7 +227,7 @@ namespace Bench {
 		out = '\n';
 
 		fmt::print("\033[{}A\033[0J", group.getBenchmarks().size());
-		fmt::print(output);
+		std::cout << '\n' << output << "\n";
 	}
 }
 

@@ -89,6 +89,13 @@ namespace Bench {
 }
 
 template<>
+struct fmt::formatter<Bench::BenchmarkId> : fmt::formatter<std::string_view> {
+	auto format(const Bench::BenchmarkId& id, auto& ctx) {
+		return fmt::format_to(ctx.out(), "{}/{}", id.name, id.dataset);
+	}
+};
+
+template<>
 struct Engine::Hash<Bench::BenchmarkId> {
 	size_t operator()(const Bench::BenchmarkId& val) const {
 		auto seed = Engine::hash(val.name);
@@ -139,7 +146,7 @@ namespace Bench {
 			StoredValueBase() = default;
 			StoredValueBase(const StoredValueBase&) = delete;
 
-			virtual auto fmt_format(fmt::dynamic_formatter<>& formatter, fmt::format_context& ctx) const -> decltype(ctx.out()) = 0;
+			virtual std::string str() const = 0;
 			virtual const void* get() const = 0;
 	};
 
@@ -153,9 +160,9 @@ namespace Bench {
 			template<class U>
 			StoredValue(U&& val) : value{std::forward<U>(val)} {
 			};
-
-			virtual auto fmt_format(fmt::dynamic_formatter<>& formatter, fmt::format_context& ctx) const -> decltype(ctx.out()) override {
-				return formatter.format(value, ctx);
+			
+			virtual std::string str() const override {
+				return fmt::format("{}", value);
 			}
 
 			virtual const void* get() const override {
@@ -277,14 +284,6 @@ namespace Bench {
 			}
 	};
 }
-
-
-template <> struct fmt::formatter<Bench::StoredValueBase> : dynamic_formatter<> {
-	constexpr auto format(const Bench::StoredValueBase& value, format_context& ctx) {
-		return value.fmt_format(*this, ctx);
-	}
-};
-
 
 #define BENCH_CONCAT_IMPL(a, b) a##b
 #define BENCH_CONCAT(a, b) BENCH_CONCAT_IMPL(a, b)
