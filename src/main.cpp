@@ -1129,7 +1129,7 @@ int entry(int argc, char* argv[]) {
 		for (int j = 0; j < 10; ++j) {
 			const auto start = Engine::Clock::now();
 			std::atomic_signal_fence(std::memory_order_acq_rel);
-			for (int i = 0; i < 10000; ++i) {
+			for (int i = 0; i < 10; ++i) {
 				using Engine::Log::Style;
 				using Engine::Log::Styled;
 				using Clock = std::chrono::system_clock;
@@ -1139,7 +1139,25 @@ int entry(int argc, char* argv[]) {
 				//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, Styled{123, style});
 
 				//[21:47:25.673-0600][src\main.cpp][1139][WARN] This is my test message #9995. This is my test message #9995.
+				logger.debug("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+				logger.log("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+				//logger.log("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::BG::BrightCyan});
+				//logger.log("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Invert | Style::BG::Cyan});
+				logger.info("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+				logger.success("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+				logger.verbose("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
 				logger.warn("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+				logger.error("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+				
+				ENGINE_LOG("This is my test message. This is my test message #");
+				//ENGINE_INFO("This is my test message. This is my test message #");
+				//ENGINE_LOG("This is my test message. This is my test message #");
+				//ENGINE_SUCCESS("This is my test message. This is my test message #");
+				//ENGINE_WARN("This is my test message. This is my test message #");
+				//ENGINE_FAIL("This is my test message. This is my test message #");
+
+				//puts("\033[1m|This is my test string|\033[0m");
+				//puts("\033[38;5;1m|This is my test string|\033[0m");
 
 				//const auto time = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
 				//fmt::print(

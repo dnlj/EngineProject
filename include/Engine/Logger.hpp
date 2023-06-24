@@ -16,6 +16,7 @@ namespace Engine::Log {
 		Debug,
 		Text,
 		Info,
+		Success,
 		Verbose,
 		Warn,
 		Error,
@@ -44,36 +45,86 @@ namespace Engine::Log {
 			consteval operator bool() const noexcept { return bitset; }
 	};
 
+	namespace Detail {
+		class NamedColor {
+			public:
+				enum class UseCase : uint8 {
+					None = 0,
+					Named, // Original colors + bright variants
+					Expanded, // 256 color
+					RGB, // True color rgb
+
+				};
+
+				glm::u8vec3 color = {};
+				UseCase useCase = {};
+
+			public:
+				constexpr NamedColor(None) noexcept {} // TODO (MSVC): ICE if we try to use a default/zero-arg constructor.
+				consteval NamedColor(uint8 n) : color{n,0,0}, useCase{UseCase::Expanded} {}
+				consteval NamedColor(uint8 n, bool bright) : color{n,0,0}, useCase{UseCase::Named} {}
+				consteval NamedColor(glm::u8vec3 color) : color{color}, useCase{UseCase::RGB} {}
+				consteval NamedColor(uint8 r, uint8 g, uint8 b) : color{r,g,b}, useCase{UseCase::RGB} {}
+				constexpr operator bool() const noexcept { return useCase != UseCase::None; }
+		}; static_assert(sizeof(NamedColor) == 4);
+	}
+	
 	class Style {
-		private:
-			class NamedColor {
-				public:
-					glm::u8vec3 color = {};
-					uint8 useCase = 0; // 0 = none, 1 = bit, 2 = rgb
-
-				public:
-					consteval NamedColor(nullptr_t) {}; // TODO (MSVC): ICE if we try to use a default/zero-arg constructor.
-					consteval NamedColor(uint8 n) : color{n,0,0}, useCase{1} {}
-					consteval NamedColor(glm::u8vec3 color) : color{color}, useCase{2} {}
-					constexpr operator bool() const noexcept { return useCase; }
-			}; static_assert(sizeof(NamedColor) == 4);
-
 		public:
-			struct Foreground : NamedColor { using NamedColor::NamedColor; };
-			struct Background : NamedColor { using NamedColor::NamedColor; };
+			struct Foreground : Detail::NamedColor { using Detail::NamedColor::NamedColor; };
+			struct Background : Detail::NamedColor { using Detail::NamedColor::NamedColor; };
+
+			struct FG {
+				constexpr static Foreground Black = {30, false};
+				constexpr static Foreground Red = {31, false};
+				constexpr static Foreground Green = {32, false};
+				constexpr static Foreground Yellow = {33, false};
+				constexpr static Foreground Blue = {34, false};
+				constexpr static Foreground Magenta = {35, false};
+				constexpr static Foreground Cyan = {36, false};
+				constexpr static Foreground White = {37, false};
+				constexpr static Foreground BrightBlack = {90, false};
+				constexpr static Foreground BrightRed = {91, false};
+				constexpr static Foreground BrightGreen = {92, false};
+				constexpr static Foreground BrightYellow = {93, false};
+				constexpr static Foreground BrightBlue = {94, false};
+				constexpr static Foreground BrightMagenta = {95, false};
+				constexpr static Foreground BrightCyan = {96, false};
+				constexpr static Foreground BrightWhite = {97, false};
+			};
+
+			struct BG {
+				constexpr static Background Black = {40, false};
+				constexpr static Background Red = {41, false};
+				constexpr static Background Green = {42, false};
+				constexpr static Background Yellow = {43, false};
+				constexpr static Background Blue = {44, false};
+				constexpr static Background Magenta = {45, false};
+				constexpr static Background Cyan = {46, false};
+				constexpr static Background White = {47, false};
+				constexpr static Background BrightBlack = {100, false};
+				constexpr static Background BrightRed = {101, false};
+				constexpr static Background BrightGreen = {102, false};
+				constexpr static Background BrightYellow = {103, false};
+				constexpr static Background BrightBlue = {104, false};
+				constexpr static Background BrightMagenta = {105, false};
+				constexpr static Background BrightCyan = {106, false};
+				constexpr static Background BrightWhite = {107, false};
+			};
 
 			constexpr static StyleBitset Empty = 0;
 			constexpr static StyleBitset Bold = 1 << 0;
 			constexpr static StyleBitset Faint = 1 << 1;
 			constexpr static StyleBitset Italic = 1 << 2;
 			constexpr static StyleBitset Underline = 1 << 3;
-			constexpr static StyleBitset Reset = 1 << 4;
+			constexpr static StyleBitset Invert = 1 << 4;
+			constexpr static StyleBitset Reset = 1 << 5;
 
 		private:
 			friend class ANSIEscapeSequence; /// TODO: just make a toEscapeSequence function instead of having it on ANSIEscapeSequence
 			StyleBitset bitset = {};
-			Foreground fg = nullptr_t{};
-			Background bg = nullptr_t{};
+			Foreground fg = None{};
+			Background bg = None{};
 
 		public:
 			consteval Style(StyleBitset style)
@@ -160,7 +211,7 @@ namespace Engine::Log {
 				return static_cast<L>(l);
 			}
 
-			constexpr explicit ANSIEscapeSequence(nullptr_t) {};
+			constexpr explicit ANSIEscapeSequence(None) {};
 
 			consteval ANSIEscapeSequence(Style style)
 				: str{from(style)}
@@ -186,6 +237,11 @@ namespace Engine::Log {
 
 		private:
 			consteval static Storage from(const Style style) {
+				// References:
+				// https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
+				// https://en.wikipedia.org/wiki/ANSI_escape_code?useskin=vector#SGR_(Select_Graphic_Rendition)_parameters
+				// https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+
 				if (style.bitset & Style::Reset) { return Storage{"\033[0m"}; }
 				if (!style) { return Storage{}; }
 
@@ -216,21 +272,31 @@ namespace Engine::Log {
 				if (style.bitset & Style::Faint) { append("2"); }
 				if (style.bitset & Style::Italic) { append("3"); }
 				if (style.bitset & Style::Underline) { append("4"); }
+				if (style.bitset & Style::Invert) { append("7"); }
 
 				// TODO: Verify not normal and RGB set
-				if (style.fg.useCase == 1) {
+				if (style.fg.useCase == Style::Foreground::UseCase::Named) {
+					append(style.fg.color[0]);
+				} else if (style.fg.useCase == Style::Foreground::UseCase::Expanded) {
 					append("38;5");
 					append(style.fg.color[0]);
-				} else if (style.fg.useCase == 2) {
-					// TODO: rgb
+				} else if (style.fg.useCase == Style::Foreground::UseCase::RGB) {
+					append("38;2");
+					append(style.fg.color[0]);
+					append(style.fg.color[1]);
+					append(style.fg.color[2]);
 				}
 
-				// TODO: Verify not normal and RGB set
-				if (style.fg.useCase == 2) {
+				if (style.bg.useCase == Style::Background::UseCase::Named) {
+					append(style.bg.color[0]);
+				} else if (style.bg.useCase == Style::Background::UseCase::Expanded) {
 					append("48;5");
 					append(style.bg.color[0]);
-				} else if (style.bg.useCase == 2) {
-					// TODO: rgb
+				} else if (style.bg.useCase == Style::Background::UseCase::RGB) {
+					append("48;2");
+					append(style.bg.color[0]);
+					append(style.bg.color[1]);
+					append(style.bg.color[2]);
 				}
 
 				seq += "m"; // Don't use `append`. We don't want the extra semicolon.
@@ -302,10 +368,40 @@ namespace Engine::Log {
 			OutputFunc styledWritter = nullptr;
 			OutputFunc cleanWritter = nullptr;
 			void* userdata = nullptr;
+
+			template<class... Args>
+			void debug(FormatString format, const Args&... args) {
+				write(format.location, Level::Debug, "DEBUG", Style::Foreground{3}, format.format, args...);
+			}
+			
+			template<class... Args>
+			void log(FormatString format, const Args&... args) {
+				write(format.location, Level::Text, "LOG", Style::FG::BrightBlack, format.format, args...);
+			}
+			
+			template<class... Args>
+			void info(FormatString format, const Args&... args) {
+				write(format.location, Level::Info, "INFO", Style::Foreground{4}, format.format, args...);
+			}
+			
+			template<class... Args>
+			void success(FormatString format, const Args&... args) {
+				write(format.location, Level::Success, "SUCCESS", Style::Foreground{2}, format.format, args...);
+			}
+			
+			template<class... Args>
+			void verbose(FormatString format, const Args&... args) {
+				write(format.location, Level::Verbose, "VERBOSE", Style::Foreground{15}, format.format, args...);
+			}
 			
 			template<class... Args>
 			void warn(FormatString format, const Args&... args) {
-				log(format.location, Level::Warn, "WARN", Style::Foreground{3}, format.format, args...);
+				write(format.location, Level::Warn, "WARN", Style::Foreground{3}, format.format, args...);
+			}
+
+			template<class... Args>
+			void error(FormatString format, const Args&... args) {
+				write(format.location, Level::Error, "ERROR", Style::Foreground{1}, format.format, args...);
 			}
 
 			template<bool TimeOnly, bool Style, class OutputIt>
@@ -327,7 +423,7 @@ namespace Engine::Log {
 
 		private:
 			template<class... Args>
-			ENGINE_INLINE void log(const std::source_location location, Level level, std::string_view label, ANSIEscapeSequence style, std::string_view format, const Args&... args) {
+			ENGINE_INLINE void write(const std::source_location location, Level level, std::string_view label, ANSIEscapeSequence style, std::string_view format, const Args&... args) {
 				Info info = {
 					.location = location,
 					.level = level,

@@ -188,6 +188,8 @@ namespace Engine {
 	ENGINE_INLINE decltype(auto) underlying(T t) {
 		return static_cast<std::underlying_type_t<T>>(t);
 	}
+
+	struct None { constexpr None() = default; };
 }
 
 #define CREATE_ADL_WRAPPER_1(name) \
