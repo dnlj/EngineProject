@@ -52,7 +52,7 @@ namespace Engine::Log {
 					uint8 useCase = 0; // 0 = none, 1 = bit, 2 = rgb
 
 				public:
-					consteval NamedColor(nullptr_t) {}; // TODO (MSVC): ICE if we try to use a default constructor.
+					consteval NamedColor(nullptr_t) {}; // TODO (MSVC): ICE if we try to use a default/zero-arg constructor.
 					consteval NamedColor(uint8 n) : color{n,0,0}, useCase{1} {}
 					consteval NamedColor(glm::u8vec3 color) : color{color}, useCase{2} {}
 					constexpr operator bool() const noexcept { return useCase; }
@@ -86,6 +86,12 @@ namespace Engine::Log {
 			}
 			consteval Style(StyleBitset style, Foreground fg, Background bg)
 				: bitset{style}, fg{fg}, bg{bg} {
+			}
+			consteval Style(Foreground fg)
+				: fg{fg} {
+			}
+			consteval Style(Background bg)
+				: bg{bg} {
 			}
 
 			friend consteval Style operator|(const Style& left, const Style& right) {
@@ -136,13 +142,28 @@ namespace Engine::Log {
 			const uint8 len = 0;
 
 		public:
+			consteval auto size() const noexcept {
+				return static_cast<decltype(len)>(std::find(str.begin(), str.end(), '\0') - str.begin());
+			}
+
 			consteval ANSIEscapeSequence(Style style)
 				: str{from(style)}
-				, len{static_cast<decltype(len)>(std::find(str.begin(), str.end(), '\0') - str.begin())} {
+				, len{size()} {
 			}
+
 			consteval ANSIEscapeSequence(StyleBitset style)
 				: str{from(Style{style})}
-				, len{static_cast<decltype(len)>(std::find(str.begin(), str.end(), '\0') - str.begin())} {
+				, len{size()} {
+			}
+
+			consteval ANSIEscapeSequence(Style::Foreground style)
+				: str{from(Style{style})}
+				, len{size()} {
+			}
+
+			consteval ANSIEscapeSequence(Style::Background style)
+				: str{from(Style{style})}
+				, len{size()} {
 			}
 
 			constexpr std::string_view view() const noexcept { return std::string_view{str.data(), len}; }
@@ -177,8 +198,6 @@ namespace Engine::Log {
 				if (style.bitset & Style::Italic) { append("3"); }
 				if (style.bitset & Style::Underline) { append("4"); }
 
-				// TODO: Need to handle the BRIGHT variant in the non-rgb version: https://ss64.com/nt/syntax-ansi.html
-		
 				// TODO: Verify not normal and RGB set
 				if (style.fg.useCase == 1) {
 					append("38;5");
@@ -254,11 +273,11 @@ namespace Engine::Log {
 					}
 			};
 			
-			using LogFunc = void (*)(Engine::Log::Logger& logger, const Engine::Log::Logger::Info& info, std::string_view format, fmt::format_args args);
+			using OutputFunc = void (*)(Engine::Log::Logger& logger, const Engine::Log::Logger::Info& info, std::string_view format, fmt::format_args args);
 
 		public:
-			LogFunc styledWritter = nullptr;
-			LogFunc cleanWritter = nullptr;
+			OutputFunc styledWritter = nullptr;
+			OutputFunc cleanWritter = nullptr;
 			void* userdata = nullptr;
 			
 			template<class... Args>
@@ -277,7 +296,7 @@ namespace Engine::Log {
 
 		private:
 			template<class... Args>
-			void log(const std::source_location location, Level level, std::string_view label, std::string_view format, const Args&... args) {
+			ENGINE_INLINE void log(const std::source_location location, Level level, std::string_view label, std::string_view format, const Args&... args) {
 				Info info = {
 					.location = location,
 					.level = level,

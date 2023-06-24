@@ -1111,35 +1111,88 @@ int entry(int argc, char* argv[]) {
 		
 		logger.styledWritter = [](Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
 			fmt::memory_buffer buffer;
-			buffer.clear();
-			logger.decorate<false, true>(fmt::appender(buffer), info);
+			logger.decorate<true, true>(fmt::appender(buffer), info);
 			fmt::vformat_to(fmt::appender(buffer), format, args);
-			std::cout << std::string_view(buffer) << '\n';
+			//std::cout << std::string_view(buffer) << '\n';
+			fwrite(buffer.data(), 1, buffer.size(), stdout);
 		};
 
-		logger.cleanWritter = [](Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
-			fmt::memory_buffer buffer;
-			logger.decorate<true, false>(fmt::appender(buffer), info);
-			fmt::vformat_to(fmt::appender(buffer), format, args);
-			std::cout << std::string_view(buffer) << '\n';
-		};
+		//logger.cleanWritter = [](Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
+		//	fmt::memory_buffer buffer;
+		//	logger.decorate<true, false>(fmt::appender(buffer), info);
+		//	fmt::vformat_to(fmt::appender(buffer), format, args);
+		//	//std::cout << std::string_view(buffer) << '\n';
+		//	//fwrite(buffer.data(), 1, buffer.size(), stdout);
+		//};
 
-		for (int i = 0; i < 10; ++i) {
-			using Engine::Log::Style;
-			using Engine::Log::Styled;
-			constexpr Style style = Style::Bold | Style::Foreground{2};
-			constexpr auto seq = Engine::Log::ANSIEscapeSequence{style};
-			constexpr auto arg = Styled{"My Test Number", style};
-			logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, Styled{123, style});
+		std::vector<Engine::Clock::duration> times;
+		for (int j = 0; j < 10; ++j) {
+			const auto start = Engine::Clock::now();
+			std::atomic_signal_fence(std::memory_order_acq_rel);
+			for (int i = 0; i < 10000; ++i) {
+				using Engine::Log::Style;
+				using Engine::Log::Styled;
+				using Clock = std::chrono::system_clock;
+				//constexpr Style style = Style::Bold | Style::Foreground{2};
+				//constexpr auto seq = Engine::Log::ANSIEscapeSequence{style};
+				//constexpr auto arg = Styled{"My Test Number", style};
+				//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, Styled{123, style});
+
+				//[21:47:25.673-0600][src\main.cpp][1139][WARN] This is my test message #9995. This is my test message #9995.
+				logger.warn("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+
+				//const auto time = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
+				//fmt::print(
+				//	fmt::fg(fmt::terminal_color::red),
+				//	"[{:%H:%M:%S%z}][{}][{}][{}]{} This is my test message #{}. This is my test message #{}.\n",
+				//	time,
+				//	__FILE__,
+				//	__LINE__,
+				//	"WARN",
+				//	"\x1b[0m",
+				//	i,
+				//	fmt::styled(i, fmt::fg(fmt::terminal_color::green))
+				//);
+
+				//const auto time = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
+				//fmt::print(
+				//	fmt::fg(fmt::terminal_color::red),
+				//	"[{:%H:%M:%S%z}][{}][{}][{}]",
+				//	time,
+				//	__FILE__,
+				//	__LINE__,
+				//	"WARN"
+				//);
+				//
+				//fmt::print(
+				//	"This is my test message #{}. This is my test message #{}.\n",
+				//	i,
+				//	fmt::styled(i, fmt::fg(fmt::terminal_color::green))
+				//);
+
+				//std::ostringstream os;
+				//os << "This is my test message #" << i << ". This is my test message #" << i << '\n';
+				////os << "This is my test message #" << i << ". This is my test message #" << Engine::ASCII_SUCCESS.str << i << '\n';
+				//fputs(os.str().c_str(), stdout);
+				
+				//ENGINE_WARN("This is my test message #", i, ". This is my test message #", Engine::ASCII_SUCCESS, i);
 			 
-			//logger.warn("Test log {}", Styled{123, Style::Bold | Style::Foreground{1}});
-			//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::fg(fmt::color::blue)));
-			//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::emphasis::bold));
-			//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::emphasis::faint));
-			//const auto a = Styled{123, style};
-			//logger.warn("Test log {}", a);
-			//logger.warn("Test log {}", Styled{123, style});
-			//logger.warn("Test log {}", fmt::styled(123, fmt::fg(fmt::color::blue)));
+				//logger.warn("Test log {}", Styled{123, Style::Bold | Style::Foreground{1}});
+				//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::fg(fmt::color::blue)));
+				//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::emphasis::bold));
+				//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::emphasis::faint));
+				//const auto a = Styled{123, style};
+				//logger.warn("Test log {}", a);
+				//logger.warn("Test log {}", Styled{123, style});
+				//logger.warn("Test log {}", fmt::styled(123, fmt::fg(fmt::color::blue)));
+			}
+			std::atomic_signal_fence(std::memory_order_acq_rel);
+			const auto stop = Engine::Clock::now();
+			times.push_back(stop - start);
+		}
+
+		for (const auto& time : times) {
+			ENGINE_INFO("Time: ", Engine::Clock::Milliseconds{time});
 		}
 
 		getchar();
