@@ -154,7 +154,7 @@ namespace {
 	using UniformD = Bench::Dist::Uniform<double, 1234321>;
 }
 
-BENCH_GROUP("rsqrt");
+BENCH_GROUP("rsqrt", 1000, 10000);
 BENCH_USE(rsqrt_empty, UniformF);
 BENCH_USE(rsqrt_empty, UniformD);
 BENCH_USE(rsqrt_std, UniformF);

@@ -8,7 +8,7 @@ class Test {
 
 namespace Engine {
 	CommandManager::CommandManager() {
-		const auto id = registerCommandUnchecked("$_INVALID", nullptr);
+		[[maybe_unused]] const auto id = registerCommandUnchecked("$_INVALID", nullptr);
 		ENGINE_DEBUG_ASSERT(id == CommandId::Invalid);
 	}
 	

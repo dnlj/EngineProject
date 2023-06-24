@@ -59,7 +59,7 @@ namespace {
 	>;
 }
 
-BENCH_GROUP("mad");
+BENCH_GROUP("mad", 1000, 10000);
 
 BENCH_USE(mad_empty, UniformF);
 BENCH_USE(mad_empty, UniformD);

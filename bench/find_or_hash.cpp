@@ -67,7 +67,7 @@ BENCH(binary_sorted_stack) {
 	const auto find = resample(dataset, dataset.size() / 4);
 	std::array<T, 256> dataset_real;
 
-	assert(dataset.size() <= dataset_real.size());
+	assert(std::cmp_less_equal(dataset.size(), dataset_real.size()));
 	std::copy(dataset.begin(), dataset.end(), dataset_real.begin());
 	std::ranges::sort(dataset_real);
 
@@ -152,7 +152,7 @@ namespace {
 	using Uniform_1024 = Bench::Dist::Uniform<int, 1024>;
 }
 
-BENCH_GROUP("find_or_hash")
+BENCH_GROUP("find_or_hash", 100, 1000)
 
 BENCH_USE(linear_subset, Fixed_16_16);
 BENCH_USE(linear_subset_manual, Fixed_16_16);

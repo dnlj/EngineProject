@@ -22,10 +22,10 @@ namespace Engine::Log {
 		User, // Start of user defined levels
 	};
 
-	class LogFormatString {
+	class FormatString {
 		public:
 			template<class S>
-			consteval LogFormatString(const S& format, std::source_location location = std::source_location::current())
+			consteval FormatString(const S& format, std::source_location location = std::source_location::current())
 				: format{format}
 				, location{location} {
 			}
@@ -262,7 +262,7 @@ namespace Engine::Log {
 			void* userdata = nullptr;
 			
 			template<class... Args>
-			void warn(LogFormatString format, const Args&... args) {
+			void warn(FormatString format, const Args&... args) {
 				log(format.location, Level::Warn, "WARN", format.format, args...);
 			}
 

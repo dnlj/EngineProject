@@ -180,7 +180,7 @@
 	#define ENGINE_DEBUG_BREAK __debugbreak();
 #else
 	#define ENGINE_DEBUG_ASSERT(...)
-	#define ENGINE_DEBUG_BREAK;
+	#define ENGINE_DEBUG_BREAK
 #endif
 
 namespace Engine {

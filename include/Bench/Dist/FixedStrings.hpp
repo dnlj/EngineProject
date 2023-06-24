@@ -22,7 +22,7 @@ namespace Bench::Dist {
 
 				for (auto& str : storage) {
 					str.resize(S);
-					std::ranges::generate(str, [&]{return rng();});
+					std::ranges::generate(str, [&]{ return ' ' + rng('~' - ' '); });
 				}
 			}
 

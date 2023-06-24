@@ -118,9 +118,16 @@ namespace Bench {
 	class Group {
 		private:
 			Engine::FlatHashMap<BenchmarkId, Benchmark> benchmarks;
+			uint64 warmups = 10;
+			uint64 iters = 100;
 
 		public:
 			const auto& getBenchmarks() const { return benchmarks; }
+
+			void setup(uint64 warmups, uint64 iters) {
+				this->warmups = warmups;
+				this->iters = iters;
+			}
 
 			int add(BenchmarkId id, Benchmark bench) {
 				const auto found = benchmarks.find(id);
@@ -246,6 +253,7 @@ namespace Bench {
 		public:
 			Context() {};
 
+			nullptr_t setup(const std::string& name, uint64 warmups, uint64 iters) { groups[name].setup(warmups, iters); return nullptr; }
 			ENGINE_INLINE bool hasGroup(const std::string& name) { return groups.contains(name); }
 			ENGINE_INLINE auto& getGroup(const std::string& name) { return groups[name]; }
 
@@ -285,6 +293,8 @@ namespace Bench {
 	};
 }
 
+// TODO: a lot of this could probably be constexpr/consteval-ified
+
 #define BENCH_CONCAT_IMPL(a, b) a##b
 #define BENCH_CONCAT(a, b) BENCH_CONCAT_IMPL(a, b)
 
@@ -302,9 +312,13 @@ BENCH_DEFINE_COMPILE_TYPE_DEF_CHECK(single_group_per_unit, true, "You many only 
 /**
  * Defines a new benchmark group.
  */
-#define BENCH_GROUP(Name, ...)\
+#define BENCH_GROUP(Name, Warmups, Iters, ...)\
 	BENCH_USE_COMPILE_CHECK(single_group_per_unit, _bench_group_id)\
-	namespace { struct _bench_group_id { constexpr static char name[] = Name; }; }
+	namespace { struct _bench_group_id { \
+		constexpr static char name[] = Name;\
+		static inline nullptr_t dumby = Bench::Context::instance().setup(Name, Warmups, Iters); \
+	};}
+	
 
 /**
  * Defines a benchmark function.
