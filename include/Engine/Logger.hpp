@@ -67,6 +67,7 @@ namespace Engine::Log {
 			constexpr static StyleBitset Faint = 1 << 1;
 			constexpr static StyleBitset Italic = 1 << 2;
 			constexpr static StyleBitset Underline = 1 << 3;
+			constexpr static StyleBitset Reset = 1 << 4;
 
 		private:
 			friend class ANSIEscapeSequence; /// TODO: just make a toEscapeSequence function instead of having it on ANSIEscapeSequence
@@ -92,6 +93,10 @@ namespace Engine::Log {
 			}
 			consteval Style(Background bg)
 				: bg{bg} {
+			}
+
+			consteval operator bool() const {
+				return bitset != 0 || fg || bg;
 			}
 
 			friend consteval Style operator|(const Style& left, const Style& right) {
@@ -137,14 +142,25 @@ namespace Engine::Log {
 	};
 
 	class ANSIEscapeSequence {
+		public:
+			constexpr static std::string_view reset = "\033[0m";
+
 		private:
-			const std::array<char, 31> str = {};
+			using Storage = std::array<char, 31>;
+			const Storage str = {};
 			const uint8 len = 0;
 
 		public:
 			consteval auto size() const noexcept {
-				return static_cast<decltype(len)>(std::find(str.begin(), str.end(), '\0') - str.begin());
+				using L = decltype(len);
+				const auto l = std::find(str.begin(), str.end(), '\0') - str.begin();
+				if (std::cmp_greater(l, std::numeric_limits<L>::max())) {
+					throw "Style is to large for ANSIEscapeSequence";
+				}
+				return static_cast<L>(l);
 			}
+
+			constexpr explicit ANSIEscapeSequence(nullptr_t) {};
 
 			consteval ANSIEscapeSequence(Style style)
 				: str{from(style)}
@@ -168,8 +184,11 @@ namespace Engine::Log {
 
 			constexpr std::string_view view() const noexcept { return std::string_view{str.data(), len}; }
 
-		public: // TODO: private
-			consteval static decltype(str) from(const Style style) {
+		private:
+			consteval static Storage from(const Style style) {
+				if (style.bitset & Style::Reset) { return Storage{"\033[0m"}; }
+				if (!style) { return Storage{}; }
+
 				std::string seq = "\033[";
 
 				const auto append = [&]<class T>(const T& val){
@@ -206,18 +225,21 @@ namespace Engine::Log {
 					// TODO: rgb
 				}
 
-				// TODO: background
+				// TODO: Verify not normal and RGB set
+				if (style.fg.useCase == 2) {
+					append("48;5");
+					append(style.bg.color[0]);
+				} else if (style.bg.useCase == 2) {
+					// TODO: rgb
+				}
 
 				seq += "m"; // Don't use `append`. We don't want the extra semicolon.
 				if (seq.size() > std::tuple_size_v<decltype(str)> - 1) { // -1 for null
 					throw "Style string exceeds the char buffer. Increase buffer size.";
 				}
 
-				// TODO: verify that we have SOME style, shouldn't be empty
-				// 
-				// TODO: can we use std inserter and just cut out the std::string?
-				std::remove_cvref_t<decltype(str)> res = {};
-				std::copy(seq.begin(), seq.end(), res.begin());
+				Storage res = {};
+				std::ranges::copy(seq.begin(), seq.end(), res.begin());
 				return res;
 			}
 	}; static_assert(sizeof(ANSIEscapeSequence) == 32);
@@ -267,6 +289,7 @@ namespace Engine::Log {
 					const Level level;
 					const std::string_view label;
 					const TimePoint time;
+					const ANSIEscapeSequence style;
 
 					constexpr std::string_view relative() const noexcept {
 						return location.file_name() + sizeof(ENGINE_BASE_PATH);
@@ -282,26 +305,35 @@ namespace Engine::Log {
 			
 			template<class... Args>
 			void warn(FormatString format, const Args&... args) {
-				log(format.location, Level::Warn, "WARN", format.format, args...);
+				log(format.location, Level::Warn, "WARN", Style::Foreground{3}, format.format, args...);
 			}
 
 			template<bool TimeOnly, bool Style, class OutputIt>
 			static void decorate(OutputIt out, const Info& info) {
-				constexpr auto shortFormat = "[{:%H:%M:%S%z}][{}][{}][{}] ";
-				constexpr auto longFormat = "[{:%Y-%m-%dT%H:%M:%S%z}][{}][{}][{}] ";
-				if constexpr (Style) { std::ranges::copy("\033[31m", out); } // TODO: Don't hard code styles
+				constexpr auto shortFormat = "[{:%H:%M:%S%z}][{}:{}][{}] ";
+				constexpr auto longFormat = "[{:%Y-%m-%dT%H:%M:%S%z}][{}:{}][{}] ";
+
+				if constexpr (Style) {
+					std::ranges::copy(info.style.view(), out);
+				}
+
 				fmt::format_to(out, TimeOnly ? shortFormat : longFormat, info.time, info.relative(), info.location.line(), info.label);
-				if constexpr (Style) { std::ranges::copy("\033[0m", out); } // TODO: Don't hard code styles
+
+				if constexpr (Style) {
+					constexpr auto reset = ANSIEscapeSequence{Style::Reset};
+					std::ranges::copy(reset.view(), out);
+				}
 			}
 
 		private:
 			template<class... Args>
-			ENGINE_INLINE void log(const std::source_location location, Level level, std::string_view label, std::string_view format, const Args&... args) {
+			ENGINE_INLINE void log(const std::source_location location, Level level, std::string_view label, ANSIEscapeSequence style, std::string_view format, const Args&... args) {
 				Info info = {
 					.location = location,
 					.level = level,
 					.label = label,
 					.time = std::chrono::time_point_cast<Duration>(Clock::now()),
+					.style = style,
 				};
 
 				if (styledWritter) {
@@ -318,7 +350,6 @@ namespace Engine::Log {
 namespace Engine {
 	using Logger = Log::Logger;
 }
-
 
 template<class T, class Char>
 struct fmt::formatter<Engine::Log::Styled<T>, Char> : fmt::formatter<T, Char> {
