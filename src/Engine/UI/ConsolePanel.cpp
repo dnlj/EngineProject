@@ -47,12 +47,12 @@ namespace Engine::UI {
 
 		input = ctx->constructPanel<TextBox>();
 		input->autoText("This is a test abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
-		input->setAction([this](TextBox*){ doSubmit(); });
+		input->setAction([this](TextBox*){ submitInput(); });
 
 		auto submit = ctx->constructPanel<Button>();
 		submit->autoText("Submit");
 		submit->lockSize();
-		submit->setAction([this](Button*){ doSubmit(); });
+		submit->setAction([this](Button*){ submitInput(); });
 
 		auto cont = ctx->createPanel<PanelT>(this);
 		cont->addChildren({input, submit});
@@ -78,11 +78,21 @@ namespace Engine::UI {
 		}
 	}
 
-	void ConsolePanel::doSubmit() {
+	void ConsolePanel::submitInput() {
 		ctx->setFocus(input);
 		const auto& text = input->getText();
 		if (text.size() <= 0) { return; }
 
+		submit(text);
+
+		if (onSubmitInput) {
+			onSubmitInput(this, text);
+		}
+
+		input->setText("");
+	}
+
+	void ConsolePanel::submit(std::string_view text) {
 		historyReset();
 		feed->pushText(text);
 		if (text != history.head(-1)) {
@@ -91,12 +101,6 @@ namespace Engine::UI {
 			history.advance();
 			history.head().clear();
 		}
-
-		if (onSubmit) {
-			onSubmit(this, text);
-		}
-
-		input->setText("");
 	}
 
 	ENGINE_INLINE void ConsolePanel::historyInc() {

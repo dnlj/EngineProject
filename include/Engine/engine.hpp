@@ -1,12 +1,5 @@
 #pragma once
 
-
-// Engine
-#include <Engine/Detail/Detail.hpp>
-#include <Engine/FatalException.hpp>
-#include <Engine/Constants.hpp>
-#include <Engine/Types.hpp>
-
 #define ENGINE_SIDE_SERVER 1
 #define ENGINE_SIDE_CLIENT 2
 #define ENGINE_SIDE_BOTH (ENGINE_SIDE_SERVER | ENGINE_SIDE_CLIENT)
@@ -68,6 +61,9 @@
 // TODO: once msvc upgrade: #define ENGINE_FLATTEN [[msvc::flatten]] // TODO: cross platform: [[gnu::flatten]]
 #define ENGINE_FLATTEN [[msvc::flatten]]
 
+/**
+ * Build various operators for enums.
+ */
 #define ENGINE_BUILD_BIN_OP(T, O) \
 	ENGINE_INLINE constexpr decltype(auto) operator O(const T& a, const T& b) noexcept { \
 		return static_cast<T>(static_cast<std::underlying_type_t<T>>(a) O static_cast<std::underlying_type_t<T>>(b)); \
@@ -98,7 +94,7 @@
 #define ENGINE_BUILD_ALL_OPS(T) \
 	ENGINE_BUILD_UNARY_OP(T, ~); \
 	ENGINE_BUILD_UNARY_OP(T, !); \
-	/*ENGINE_BUILD_UNARY_OP(T, +);*/ \
+	/*ENGINE_BUILD_UNARY_OP(T, +); // Excluded because of conflict with ENGINE_BUILD_DECAY_ENUM and doesn't provide anything on its own. */ \
 	ENGINE_BUILD_UNARY_OP(T, -); \
 	ENGINE_BUILD_UNARY_OP_REF(T, ++); \
 	ENGINE_BUILD_UNARY_OP_REF(T, --); \
@@ -121,6 +117,9 @@
 	ENGINE_BUILD_ASSIGN_BIN_OP(T, /); \
 	ENGINE_BUILD_ASSIGN_BIN_OP(T, %);
 
+/**
+ * Decay an enum to its underlying type.
+ */
 #define ENGINE_BUILD_DECAY_ENUM(T) \
 	constexpr inline decltype(auto) operator+(const T& t) noexcept { return static_cast<std::underlying_type_t<T>>(t); }
 
@@ -141,7 +140,59 @@
 	#define ENGINE_EMPTY_BASE
 #endif
 
-// TODO: replace macros with source_location?
+/**
+ * Insert a breakpoint in debug mode.
+ * Useful for unexpected, but tolerable, errors.
+ */
+#if ENGINE_DEBUG
+	#define ENGINE_DEBUG_BREAK __debugbreak();
+#else
+	#define ENGINE_DEBUG_BREAK
+#endif
+
+namespace Engine {
+	/**
+	 * A generic, unique, constructable, type for none/void/nil/null.
+	 */
+	struct None { constexpr None() = default; };
+}
+
+/**
+ * Helpers for quickly performing ADL.
+ */
+#define CREATE_ADL_WRAPPER_1(name) \
+	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& t) { \
+		using ::std::name; return name(std::forward<T>(t)); \
+	}
+#define CREATE_ADL_WRAPPER_2(name) \
+	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& t1, T&& t2) { \
+		using ::std::name; return name(std::forward<T>(t1), std::forward<T>(t2)); \
+	}
+namespace Engine {
+	CREATE_ADL_WRAPPER_2(swap);
+	CREATE_ADL_WRAPPER_1(data);
+	CREATE_ADL_WRAPPER_1(empty);
+	CREATE_ADL_WRAPPER_1(size);
+	CREATE_ADL_WRAPPER_1(ssize);
+	CREATE_ADL_WRAPPER_1(begin);
+	CREATE_ADL_WRAPPER_1(cbegin);
+	CREATE_ADL_WRAPPER_1(rbegin);
+	CREATE_ADL_WRAPPER_1(crbegin);
+	CREATE_ADL_WRAPPER_1(end);
+	CREATE_ADL_WRAPPER_1(cend);
+	CREATE_ADL_WRAPPER_1(rend);
+	CREATE_ADL_WRAPPER_1(crend);
+}
+#undef CREATE_ADL_WRAPPER_1
+#undef CREATE_ADL_WRAPPER_2
+
+
+// Log stuff, must be last due to include order issues between: engine.hpp > detail.hpp > GlobalConfig.hpp > Logger.hpp > engine.hpp
+#include <Engine/Detail/detail.hpp>
+#include <Engine/FatalException.hpp>
+#include <Engine/Constants.hpp>
+#include <Engine/Types.hpp>
+
 #define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)\
 	([](auto&&... args) ENGINE_INLINE {\
 		::Engine::Detail::log<Decorate>(Prefix, Color,\
@@ -182,38 +233,3 @@
 	#define ENGINE_DEBUG_ASSERT(...)
 	#define ENGINE_DEBUG_BREAK
 #endif
-
-namespace Engine {
-	template<class T>
-	ENGINE_INLINE decltype(auto) underlying(T t) {
-		return static_cast<std::underlying_type_t<T>>(t);
-	}
-
-	struct None { constexpr None() = default; };
-}
-
-#define CREATE_ADL_WRAPPER_1(name) \
-	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& t) { \
-		using ::std::name; return name(std::forward<T>(t)); \
-	}
-#define CREATE_ADL_WRAPPER_2(name) \
-	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& t1, T&& t2) { \
-		using ::std::name; return name(std::forward<T>(t1), std::forward<T>(t2)); \
-	}
-namespace Engine {
-	CREATE_ADL_WRAPPER_2(swap);
-	CREATE_ADL_WRAPPER_1(data);
-	CREATE_ADL_WRAPPER_1(empty);
-	CREATE_ADL_WRAPPER_1(size);
-	CREATE_ADL_WRAPPER_1(ssize);
-	CREATE_ADL_WRAPPER_1(begin);
-	CREATE_ADL_WRAPPER_1(cbegin);
-	CREATE_ADL_WRAPPER_1(rbegin);
-	CREATE_ADL_WRAPPER_1(crbegin);
-	CREATE_ADL_WRAPPER_1(end);
-	CREATE_ADL_WRAPPER_1(cend);
-	CREATE_ADL_WRAPPER_1(rend);
-	CREATE_ADL_WRAPPER_1(crend);
-}
-#undef CREATE_ADL_WRAPPER_1
-#undef CREATE_ADL_WRAPPER_2

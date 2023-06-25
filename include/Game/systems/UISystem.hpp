@@ -30,6 +30,8 @@ namespace Game {
 
 			void render(RenderLayer layer);
 
+			UI::ConsoleWindow* getConsole() const noexcept { return panels.consoleWindow; }
+
 		private:
 			struct {
 				Engine::UI::Window* window;

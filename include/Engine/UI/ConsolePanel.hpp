@@ -50,24 +50,26 @@ namespace Engine {
 namespace Engine::UI {
 	class ConsolePanel final : public PanelT {
 		public:
-			using OnSubmit = std::function<void (ConsolePanel* self, std::string_view text)>;
+			using OnSubmitInput = std::function<void (ConsolePanel* self, std::string_view text)>;
 
 		protected:
 			TextFeed* feed;
 			TextBox* input;
-			OnSubmit onSubmit;
+			OnSubmitInput onSubmitInput;
 			DumbRingBuffer<std::string, 64> history;
 			int32 historyOff = {};
 
 		public:
 			ConsolePanel(Context* context);
-			void setAction(OnSubmit func) { onSubmit = std::move(func); }
+			void setAction(OnSubmitInput func) { onSubmitInput = std::move(func); }
 			virtual bool onAction(ActionEvent act) override;
 
 			// TODO: up/down command history
 
+			void submit(std::string_view text);
+
 		private:
-			void doSubmit();
+			void submitInput();
 			void historyInc();
 			void historyDec();
 			void historyReset();

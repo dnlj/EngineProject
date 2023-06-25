@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Types.hpp>
 #include <Engine/Net/IPv4Address.hpp>
+#include <Engine/Logger.hpp>
 
 
 namespace Engine {
@@ -13,6 +14,7 @@ namespace Engine {
 			GlobalConfig(const GlobalConfig&) = delete;
 			GlobalConfig(GlobalConfig&&) = delete;
 
+			Engine::Logger logger;
 			UniqueFilePointer log{stdout, [](FILE*)->int{ return 0; }};
 			bool logColor = false;
 			bool logTimeOnly = false;

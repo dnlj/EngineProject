@@ -34,7 +34,6 @@ namespace Engine::Log {
 			std::source_location location;
 	};
 
-	// TODO: Move StyleBitset/Foreground/Background into namespace or something, no reason to have them on the Style
 	class StyleBitset {
 		public:
 			uint32 bitset = {};
@@ -362,7 +361,7 @@ namespace Engine::Log {
 					}
 			};
 			
-			using OutputFunc = void (*)(Engine::Log::Logger& logger, const Engine::Log::Logger::Info& info, std::string_view format, fmt::format_args args);
+			using OutputFunc = void (*)(const Engine::Log::Logger& logger, const Engine::Log::Logger::Info& info, std::string_view format, fmt::format_args args);
 
 		public:
 			OutputFunc styledWritter = nullptr;
@@ -370,37 +369,37 @@ namespace Engine::Log {
 			void* userdata = nullptr;
 
 			template<class... Args>
-			void debug(FormatString format, const Args&... args) {
+			void debug(FormatString format, const Args&... args) const {
 				write(format.location, Level::Debug, "DEBUG", Style::Foreground{3}, format.format, args...);
 			}
 			
 			template<class... Args>
-			void log(FormatString format, const Args&... args) {
+			void log(FormatString format, const Args&... args) const {
 				write(format.location, Level::Text, "LOG", Style::FG::BrightBlack, format.format, args...);
 			}
 			
 			template<class... Args>
-			void info(FormatString format, const Args&... args) {
+			void info(FormatString format, const Args&... args) const {
 				write(format.location, Level::Info, "INFO", Style::Foreground{4}, format.format, args...);
 			}
 			
 			template<class... Args>
-			void success(FormatString format, const Args&... args) {
+			void success(FormatString format, const Args&... args) const {
 				write(format.location, Level::Success, "SUCCESS", Style::Foreground{2}, format.format, args...);
 			}
 			
 			template<class... Args>
-			void verbose(FormatString format, const Args&... args) {
+			void verbose(FormatString format, const Args&... args) const {
 				write(format.location, Level::Verbose, "VERBOSE", Style::Foreground{15}, format.format, args...);
 			}
 			
 			template<class... Args>
-			void warn(FormatString format, const Args&... args) {
+			void warn(FormatString format, const Args&... args) const {
 				write(format.location, Level::Warn, "WARN", Style::Foreground{3}, format.format, args...);
 			}
 
 			template<class... Args>
-			void error(FormatString format, const Args&... args) {
+			void error(FormatString format, const Args&... args) const {
 				write(format.location, Level::Error, "ERROR", Style::Foreground{1}, format.format, args...);
 			}
 
@@ -423,7 +422,7 @@ namespace Engine::Log {
 
 		private:
 			template<class... Args>
-			ENGINE_INLINE void write(const std::source_location location, Level level, std::string_view label, ANSIEscapeSequence style, std::string_view format, const Args&... args) {
+			ENGINE_INLINE void write(const std::source_location location, Level level, std::string_view label, ANSIEscapeSequence style, std::string_view format, const Args&... args) const {
 				Info info = {
 					.location = location,
 					.level = level,

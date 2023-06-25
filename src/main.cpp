@@ -45,6 +45,7 @@
 #include <Game/systems/InputSystem.hpp>
 #include <Game/systems/ActionSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
+#include <Game/UI/ConsoleWindow.hpp>
 
 #include <fmt/color.h> // TODO: remove;
 
@@ -582,6 +583,71 @@ void run(int argc, char* argv[]) {
 	Game::EngineInstance engine;
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Setup logging
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	{
+		// TODO: need to repect logFile/logColor/logTimeOnly
+		// TODO: move back to entry, should be setup asap
+		auto& logger = Engine::getGlobalConfig<true>().logger;
+		logger.userdata = &engine;
+		const auto ip = Engine::Net::IPv4Address(000, 111, 222, 101, 12345);
+
+		// TODO: create cleanup stories for old log stuff (ASCIIColorString, detail.hpp, macros, LogFormatter, etc)
+
+		// TODO: setup this one ahead of time in the main func
+		logger.styledWritter = [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
+			fmt::memory_buffer buffer;
+			auto out = std::back_inserter(buffer);
+			logger.decorate<true, true>(out, info);
+			fmt::vformat_to(out, format, args);
+			out = '\n';
+			fwrite(buffer.data(), 1, buffer.size(), stdout);
+		};
+
+		logger.cleanWritter = [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
+			fmt::memory_buffer buffer;
+			fmt::vformat_to(std::back_inserter(buffer), format, args);
+
+			auto* engine = static_cast<Game::EngineInstance*>(logger.userdata);
+			auto& uiSys = engine->getWorld().getSystem<Game::UISystem>();
+
+			// TODO: we probably still want info.label at least
+			//logger.decorate<true, false>(fmt::appender(buffer), info);
+
+			uiSys.getConsole()->submit(std::string_view{buffer});
+		};
+
+		//std::vector<Engine::Clock::duration> times;
+		//for (int j = 0; j < 10; ++j) {
+		//	const auto start = Engine::Clock::now();
+		//	std::atomic_signal_fence(std::memory_order_acq_rel);
+		//	for (int i = 0; i < 10; ++i) {
+		//		using Engine::Log::Style;
+		//		using Engine::Log::Styled;
+		//		using Clock = std::chrono::system_clock;
+		//		logger.debug("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+		//		logger.log("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+		//		logger.info("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+		//		logger.success("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+		//		logger.verbose("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+		//		logger.warn("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+		//		logger.error("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
+		//		
+		//		ENGINE_LOG("This is my test message. This is my test message #");
+		//	}
+		//	std::atomic_signal_fence(std::memory_order_acq_rel);
+		//	const auto stop = Engine::Clock::now();
+		//	times.push_back(stop - start);
+		//}
+		//
+		//for (const auto& time : times) {
+		//	ENGINE_INFO("Time: ", Engine::Clock::Milliseconds{time});
+		//}
+		//getchar();
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Resources
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	{
@@ -934,9 +1000,9 @@ void run(int argc, char* argv[]) {
 		}
 
 		window.swapBuffers();
-		
-		//std::this_thread::sleep_for(std::chrono::milliseconds{250});
 
+		Engine::getGlobalConfig().logger.debug("This is my test string"); // TODO: check color
+		
 		// Don't eat all our GPU and cause our system to prepare for takeoff.
 		// Sleep is very inprecise (~15ms resolution), so instead busy wait with a yield.
 		//constexpr auto targetFrameTime = std::chrono::microseconds{9'000}; // TODO: should probably be a setting/cmd line/cfg/console option.
@@ -1097,129 +1163,6 @@ int entry(int argc, char* argv[]) {
 	// --------------------------
 	//_set_error_mode(_OUT_TO_MSGBOX);
 	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW | _CRTDBG_MODE_DEBUG);
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	//Engine::ConfigParser cfg;
-	//cfg.loadAndTokenize("example.cfg");
-	//cfg.print();
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// TODO: rm - testing
-	{
-		Engine::Logger logger;
-		const auto ip = Engine::Net::IPv4Address(000, 111, 222, 101, 12345);
-		
-		logger.styledWritter = [](Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
-			fmt::memory_buffer buffer;
-			logger.decorate<true, true>(fmt::appender(buffer), info);
-			fmt::vformat_to(fmt::appender(buffer), format, args);
-			//std::cout << std::string_view(buffer) << '\n';
-			fwrite(buffer.data(), 1, buffer.size(), stdout);
-		};
-
-		//logger.cleanWritter = [](Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
-		//	fmt::memory_buffer buffer;
-		//	logger.decorate<true, false>(fmt::appender(buffer), info);
-		//	fmt::vformat_to(fmt::appender(buffer), format, args);
-		//	//std::cout << std::string_view(buffer) << '\n';
-		//	//fwrite(buffer.data(), 1, buffer.size(), stdout);
-		//};
-
-		std::vector<Engine::Clock::duration> times;
-		for (int j = 0; j < 10; ++j) {
-			const auto start = Engine::Clock::now();
-			std::atomic_signal_fence(std::memory_order_acq_rel);
-			for (int i = 0; i < 10; ++i) {
-				using Engine::Log::Style;
-				using Engine::Log::Styled;
-				using Clock = std::chrono::system_clock;
-				//constexpr Style style = Style::Bold | Style::Foreground{2};
-				//constexpr auto seq = Engine::Log::ANSIEscapeSequence{style};
-				//constexpr auto arg = Styled{"My Test Number", style};
-				//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, Styled{123, style});
-
-				//[21:47:25.673-0600][src\main.cpp][1139][WARN] This is my test message #9995. This is my test message #9995.
-				logger.debug("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-				logger.log("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-				//logger.log("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::BG::BrightCyan});
-				//logger.log("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Invert | Style::BG::Cyan});
-				logger.info("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-				logger.success("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-				logger.verbose("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-				logger.warn("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-				logger.error("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-				
-				ENGINE_LOG("This is my test message. This is my test message #");
-				//ENGINE_INFO("This is my test message. This is my test message #");
-				//ENGINE_LOG("This is my test message. This is my test message #");
-				//ENGINE_SUCCESS("This is my test message. This is my test message #");
-				//ENGINE_WARN("This is my test message. This is my test message #");
-				//ENGINE_FAIL("This is my test message. This is my test message #");
-
-				//puts("\033[1m|This is my test string|\033[0m");
-				//puts("\033[38;5;1m|This is my test string|\033[0m");
-
-				//const auto time = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
-				//fmt::print(
-				//	fmt::fg(fmt::terminal_color::red),
-				//	"[{:%H:%M:%S%z}][{}][{}][{}]{} This is my test message #{}. This is my test message #{}.\n",
-				//	time,
-				//	__FILE__,
-				//	__LINE__,
-				//	"WARN",
-				//	"\x1b[0m",
-				//	i,
-				//	fmt::styled(i, fmt::fg(fmt::terminal_color::green))
-				//);
-
-				//const auto time = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
-				//fmt::print(
-				//	fmt::fg(fmt::terminal_color::red),
-				//	"[{:%H:%M:%S%z}][{}][{}][{}]",
-				//	time,
-				//	__FILE__,
-				//	__LINE__,
-				//	"WARN"
-				//);
-				//
-				//fmt::print(
-				//	"This is my test message #{}. This is my test message #{}.\n",
-				//	i,
-				//	fmt::styled(i, fmt::fg(fmt::terminal_color::green))
-				//);
-
-				//std::ostringstream os;
-				//os << "This is my test message #" << i << ". This is my test message #" << i << '\n';
-				////os << "This is my test message #" << i << ". This is my test message #" << Engine::ASCII_SUCCESS.str << i << '\n';
-				//fputs(os.str().c_str(), stdout);
-				
-				//ENGINE_WARN("This is my test message #", i, ". This is my test message #", Engine::ASCII_SUCCESS, i);
-			 
-				//logger.warn("Test log {}", Styled{123, Style::Bold | Style::Foreground{1}});
-				//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::fg(fmt::color::blue)));
-				//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::emphasis::bold));
-				//logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, fmt::styled(123, fmt::emphasis::faint));
-				//const auto a = Styled{123, style};
-				//logger.warn("Test log {}", a);
-				//logger.warn("Test log {}", Styled{123, style});
-				//logger.warn("Test log {}", fmt::styled(123, fmt::fg(fmt::color::blue)));
-			}
-			std::atomic_signal_fence(std::memory_order_acq_rel);
-			const auto stop = Engine::Clock::now();
-			times.push_back(stop - start);
-		}
-
-		for (const auto& time : times) {
-			ENGINE_INFO("Time: ", Engine::Clock::Milliseconds{time});
-		}
-
-		getchar();
-		getchar();
-		getchar();
-		getchar();
-		getchar();
-		getchar();
-	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	startTime = Engine::Clock::now();

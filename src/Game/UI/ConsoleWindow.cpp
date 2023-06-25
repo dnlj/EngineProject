@@ -15,4 +15,13 @@ namespace Game::UI {
 		setRelPos({512,64+300+8});
 		setContent(ctx->constructPanel<EUI::ConsolePanel>());
 	}
+
+	EUI::ConsolePanel* ConsoleWindow::get() const noexcept {
+		return static_cast<EUI::ConsolePanel*>(getContent());
+	}
+
+	void ConsoleWindow::submit(std::string_view text) {
+		auto* panel = static_cast<EUI::ConsolePanel*>(getContent());
+		panel->submit(text);
+	}
 }

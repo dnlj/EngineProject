@@ -15,6 +15,7 @@ namespace Game::UI {
 	class ConsoleWindow final : public EUI::Window {
 		public:
 			ConsoleWindow(EUI::Context* context);
-			EUI::ConsolePanel* get() const noexcept { return static_cast<EUI::ConsolePanel*>(getContent()); }
+			EUI::ConsolePanel* get() const noexcept;
+			void submit(std::string_view text);
 	};
 }
