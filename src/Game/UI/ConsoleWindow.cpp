@@ -20,8 +20,8 @@ namespace Game::UI {
 		return static_cast<EUI::ConsolePanel*>(getContent());
 	}
 
-	void ConsoleWindow::submit(std::string_view text) {
+	void ConsoleWindow::push(std::string_view text) {
 		auto* panel = static_cast<EUI::ConsolePanel*>(getContent());
-		panel->submit(text);
+		panel->push(text);
 	}
 }

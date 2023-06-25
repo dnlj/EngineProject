@@ -188,10 +188,10 @@ namespace Engine {
 
 
 // Log stuff, must be last due to include order issues between: engine.hpp > detail.hpp > GlobalConfig.hpp > Logger.hpp > engine.hpp
-#include <Engine/Detail/detail.hpp>
+#include <Engine/Types.hpp>
 #include <Engine/FatalException.hpp>
 #include <Engine/Constants.hpp>
-#include <Engine/Types.hpp>
+#include <Engine/Detail/detail.hpp>
 
 #define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)\
 	([](auto&&... args) ENGINE_INLINE {\
@@ -233,3 +233,7 @@ namespace Engine {
 	#define ENGINE_DEBUG_ASSERT(...)
 	#define ENGINE_DEBUG_BREAK
 #endif
+
+#define ENGINE_CONSOLE ([](::Engine::Log::FormatString format, const auto&... args) ENGINE_INLINE {\
+	::Engine::getGlobalConfig().logger.user(format, +::Engine::Log::Level::User, "CONSOLE", ::Engine::Log::Style::FG::Green, args...);\
+})

@@ -7,6 +7,7 @@
 #include <fmt/core.h>
 
 // Engine
+#include <Engine/engine.hpp>
 #include <Engine/traits.hpp>
 
 
@@ -14,7 +15,7 @@ namespace Engine::Log {
 	enum class Level {
 		Default = 0,
 		Debug,
-		Text,
+		Log,
 		Info,
 		Success,
 		Verbose,
@@ -22,6 +23,7 @@ namespace Engine::Log {
 		Error,
 		User, // Start of user defined levels
 	};
+	ENGINE_BUILD_DECAY_ENUM(Level);
 
 	class FormatString {
 		public:
@@ -375,7 +377,7 @@ namespace Engine::Log {
 			
 			template<class... Args>
 			void log(FormatString format, const Args&... args) const {
-				write(format.location, Level::Text, "LOG", Style::FG::BrightBlack, format.format, args...);
+				write(format.location, Level::Log, "LOG", Style::FG::BrightBlack, format.format, args...);
 			}
 			
 			template<class... Args>
@@ -401,6 +403,14 @@ namespace Engine::Log {
 			template<class... Args>
 			void error(FormatString format, const Args&... args) const {
 				write(format.location, Level::Error, "ERROR", Style::Foreground{1}, format.format, args...);
+			}
+
+			template<class... Args>
+			void user(FormatString format, std::underlying_type_t<Level> level, std::string_view label, ANSIEscapeSequence style, const Args&... args) const {
+				if constexpr (ENGINE_DEBUG) {
+					if (level < +Level::User) { ENGINE_DEBUG_BREAK; }
+				}
+				write(format.location, static_cast<Level>(level), label, style, format.format, args...);
 			}
 
 			template<bool TimeOnly, bool Style, class OutputIt>

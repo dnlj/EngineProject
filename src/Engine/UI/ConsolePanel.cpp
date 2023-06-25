@@ -83,7 +83,14 @@ namespace Engine::UI {
 		const auto& text = input->getText();
 		if (text.size() <= 0) { return; }
 
-		submit(text);
+		historyReset();
+		push("> " + text);
+		if (text != history.head(-1)) {
+			// Make sure the most recent history is always a blank string.
+			history.head() = text;
+			history.advance();
+			history.head().clear();
+		}
 
 		if (onSubmitInput) {
 			onSubmitInput(this, text);
@@ -92,15 +99,8 @@ namespace Engine::UI {
 		input->setText("");
 	}
 
-	void ConsolePanel::submit(std::string_view text) {
-		historyReset();
+	void ConsolePanel::push(std::string_view text) {
 		feed->pushText(text);
-		if (text != history.head(-1)) {
-			// Make sure the most recent history is always a blank string.
-			history.head() = text;
-			history.advance();
-			history.head().clear();
-		}
 	}
 
 	ENGINE_INLINE void ConsolePanel::historyInc() {

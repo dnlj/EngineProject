@@ -593,15 +593,19 @@ void run(int argc, char* argv[]) {
 			fmt::memory_buffer buffer;
 			auto out = std::back_inserter(buffer);
 
-			out = '[';
-			buffer.append(info.label);
-			out = ']';
-			out = ' ';
+			// Don't prepend user defined levels
+			if (info.level < Engine::Log::Level::User) {
+				out = '[';
+				buffer.append(info.label);
+				out = ']';
+				out = ' ';
+			}
+
 			fmt::vformat_to(out, format, args);
 
 			auto* engine = static_cast<Game::EngineInstance*>(logger.userdata);
 			auto& uiSys = engine->getWorld().getSystem<Game::UISystem>();
-			uiSys.getConsole()->submit(std::string_view{buffer});
+			uiSys.getConsole()->push(std::string_view{buffer});
 		};
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -869,7 +873,7 @@ void run(int argc, char* argv[]) {
 	{
 		auto& cm = engine.getCommandManager();
 		const auto test = cm.registerCommand("test_command", [](auto&){
-			ENGINE_WARN("this is a test command");
+			ENGINE_CONSOLE("This is a test command! {}", 123);
 		}); test;
 
 		const auto cvar = [](Engine::CommandManager& cm){
@@ -889,10 +893,10 @@ void run(int argc, char* argv[]) {
 					ENGINE_WARN("TODO: err");
 				}
 
-				ENGINE_WARN("Get (", args[0], ") ", args.size(), " = ", str);
+				ENGINE_CONSOLE("Get ({}) {} = {}", args[0], args.size(), str);
 
 			} else {
-				ENGINE_WARN("Set (", args[0], ") ", args.size());
+				ENGINE_CONSOLE("Set ({}) {}", args[0], args.size());
 				const auto suc = [](const auto& name, const auto& arg) ENGINE_INLINE_REL -> bool {
 					auto& cfg = Engine::getGlobalConfig<true>();
 					using Engine::fromString;
@@ -960,8 +964,6 @@ void run(int argc, char* argv[]) {
 
 		window.swapBuffers();
 
-		Engine::getGlobalConfig().logger.debug("This is my test string"); // TODO: check color
-		
 		// Don't eat all our GPU and cause our system to prepare for takeoff.
 		// Sleep is very inprecise (~15ms resolution), so instead busy wait with a yield.
 		//constexpr auto targetFrameTime = std::chrono::microseconds{9'000}; // TODO: should probably be a setting/cmd line/cfg/console option.

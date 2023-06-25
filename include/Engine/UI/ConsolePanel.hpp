@@ -66,7 +66,7 @@ namespace Engine::UI {
 
 			// TODO: up/down command history
 
-			void submit(std::string_view text);
+			void push(std::string_view text);
 
 		private:
 			void submitInput();
