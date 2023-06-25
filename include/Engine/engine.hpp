@@ -215,13 +215,13 @@ namespace Engine {
 	#define ENGINE_DIE ::std::terminate();
 #endif
 	
-#define ENGINE_RAW_TEXT _ENGINE_CREATE_LOG_LAMBDA("[TEXT]", false, Engine::ASCII_FG2, 0)
-#define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA("[LOG]", true, Engine::ASCII_FG2, 0)
-#define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA("[INFO]", true, Engine::ASCII_INFO, 0)
-#define ENGINE_SUCCESS _ENGINE_CREATE_LOG_LAMBDA("[SUCCESS]", true, Engine::ASCII_SUCCESS, 0)
-#define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA("[WARN]", true, Engine::ASCII_WARN, 0)
-#define ENGINE_FAIL _ENGINE_CREATE_LOG_LAMBDA("[FAIL]", true, Engine::ASCII_ERROR, 0)
-#define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA("[ERROR]", true, Engine::ASCII_ERROR, ENGINE_DIE)
+//#define ENGINE_RAW_TEXT _ENGINE_CREATE_LOG_LAMBDA("[TEXT_OLD]", false, Engine::ASCII_FG2, 0)
+#define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA("[LOG_OLD]", true, Engine::ASCII_FG2, 0)
+#define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA("[INFO_OLD]", true, Engine::ASCII_INFO, 0)
+//#define ENGINE_SUCCESS _ENGINE_CREATE_LOG_LAMBDA("[SUCCESS_OLD]", true, Engine::ASCII_SUCCESS, 0)
+#define ENGINE_WARN _ENGINE_CREATE_LOG_LAMBDA("[WARN_OLD]", true, Engine::ASCII_WARN, 0)
+//#define ENGINE_FAIL _ENGINE_CREATE_LOG_LAMBDA("[FAIL_OLD]", true, Engine::ASCII_ERROR, 0)
+#define ENGINE_ERROR _ENGINE_CREATE_LOG_LAMBDA("[ERROR_OLD]", true, Engine::ASCII_ERROR, ENGINE_DIE)
 
 #define ENGINE_ASSERT _ENGINE_CREATE_ASSERT_LAMBDA("[ERROR][ASSERT]", true, Engine::ASCII_ERROR, ENGINE_DIE)
 #define ENGINE_ASSERT_WARN _ENGINE_CREATE_ASSERT_LAMBDA("[WARN][ASSERT]", true, Engine::ASCII_WARN, 0)
@@ -233,6 +233,19 @@ namespace Engine {
 	#define ENGINE_DEBUG_ASSERT(...)
 	#define ENGINE_DEBUG_BREAK
 #endif
+
+
+#define ENGINE_DEBUG2 ::Engine::getGlobalConfig().logger.debug
+#define ENGINE_LOG2 ::Engine::getGlobalConfig().logger.log
+#define ENGINE_INFO2 ::Engine::getGlobalConfig().logger.info
+#define ENGINE_SUCCESS2 ::Engine::getGlobalConfig().logger.success
+#define ENGINE_VERBOSE2 ::Engine::getGlobalConfig().logger.verbose
+#define ENGINE_WARN2 ::Engine::getGlobalConfig().logger.warn
+
+#define ENGINE_ERROR2 ([](::Engine::Log::FormatString format, const auto&... args) ENGINE_INLINE {\
+	::Engine::getGlobalConfig().logger.error(format, args...);\
+	ENGINE_DIE;\
+})
 
 #define ENGINE_CONSOLE ([](::Engine::Log::FormatString format, const auto&... args) ENGINE_INLINE {\
 	::Engine::getGlobalConfig().logger.user(format, +::Engine::Log::Level::User, "CONSOLE", ::Engine::Log::Style::FG::Green, args...);\

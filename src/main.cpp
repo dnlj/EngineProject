@@ -964,6 +964,7 @@ void run(int argc, char* argv[]) {
 
 		window.swapBuffers();
 
+		// TODO: also look into NVIDIA Reflex SDK and AMD Anti-Lag
 		// Don't eat all our GPU and cause our system to prepare for takeoff.
 		// Sleep is very inprecise (~15ms resolution), so instead busy wait with a yield.
 		//constexpr auto targetFrameTime = std::chrono::microseconds{9'000}; // TODO: should probably be a setting/cmd line/cfg/console option.

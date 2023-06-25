@@ -659,7 +659,8 @@ namespace Engine::Net {
 							}
 						} else {
 							// This shouldn't happen?
-							ENGINE_FAIL("Blob not found! ", seq);
+							ENGINE_ASSERT(false, "Blob not found! ", seq);
+							ENGINE_DIE;
 						}
 					}
 				}
