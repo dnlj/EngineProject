@@ -586,64 +586,23 @@ void run(int argc, char* argv[]) {
 	// Setup logging
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	{
-		// TODO: need to repect logFile/logColor/logTimeOnly
-		// TODO: move back to entry, should be setup asap
 		auto& logger = Engine::getGlobalConfig<true>().logger;
 		logger.userdata = &engine;
-		const auto ip = Engine::Net::IPv4Address(000, 111, 222, 101, 12345);
-
-		// TODO: create cleanup stories for old log stuff (ASCIIColorString, detail.hpp, macros, LogFormatter, etc)
-
-		// TODO: setup this one ahead of time in the main func
-		logger.styledWritter = [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
-			fmt::memory_buffer buffer;
-			auto out = std::back_inserter(buffer);
-			logger.decorate<true, true>(out, info);
-			fmt::vformat_to(out, format, args);
-			out = '\n';
-			fwrite(buffer.data(), 1, buffer.size(), stdout);
-		};
 
 		logger.cleanWritter = [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
 			fmt::memory_buffer buffer;
-			fmt::vformat_to(std::back_inserter(buffer), format, args);
+			auto out = std::back_inserter(buffer);
+
+			out = '[';
+			buffer.append(info.label);
+			out = ']';
+			out = ' ';
+			fmt::vformat_to(out, format, args);
 
 			auto* engine = static_cast<Game::EngineInstance*>(logger.userdata);
 			auto& uiSys = engine->getWorld().getSystem<Game::UISystem>();
-
-			// TODO: we probably still want info.label at least
-			//logger.decorate<true, false>(fmt::appender(buffer), info);
-
 			uiSys.getConsole()->submit(std::string_view{buffer});
 		};
-
-		//std::vector<Engine::Clock::duration> times;
-		//for (int j = 0; j < 10; ++j) {
-		//	const auto start = Engine::Clock::now();
-		//	std::atomic_signal_fence(std::memory_order_acq_rel);
-		//	for (int i = 0; i < 10; ++i) {
-		//		using Engine::Log::Style;
-		//		using Engine::Log::Styled;
-		//		using Clock = std::chrono::system_clock;
-		//		logger.debug("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-		//		logger.log("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-		//		logger.info("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-		//		logger.success("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-		//		logger.verbose("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-		//		logger.warn("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-		//		logger.error("This is my test message #{}. This is my test message #{}.\n", i, Styled{i, Style::Foreground{2}});
-		//		
-		//		ENGINE_LOG("This is my test message. This is my test message #");
-		//	}
-		//	std::atomic_signal_fence(std::memory_order_acq_rel);
-		//	const auto stop = Engine::Clock::now();
-		//	times.push_back(stop - start);
-		//}
-		//
-		//for (const auto& time : times) {
-		//	ENGINE_INFO("Time: ", Engine::Clock::Milliseconds{time});
-		//}
-		//getchar();
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -1112,6 +1071,29 @@ int entry(int argc, char* argv[]) {
 
 			const auto* group = parser.get<Engine::Net::IPv4Address>("group");
 			if (group) { cfg.group = *group; }
+		}
+
+		{ // Setup logger
+			const auto writter = []<bool TimeOnly, bool Style>{
+				return [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
+					fmt::memory_buffer buffer;
+					auto out = std::back_inserter(buffer);
+					logger.decorate<TimeOnly, Style>(out, info);
+					fmt::vformat_to(out, format, args);
+					out = '\n';
+					fwrite(buffer.data(), 1, buffer.size(), Engine::getGlobalConfig().log.get());
+				};
+			};
+
+			if (cfg.logColor && cfg.logTimeOnly) {
+				cfg.logger.styledWritter = writter.template operator()<true, true>();
+			} else if (cfg.logColor) {
+				cfg.logger.styledWritter = writter.template operator()<false, true>();
+			} else if (cfg.logTimeOnly) {
+				cfg.logger.styledWritter = writter.template operator()<true, false>();
+			} else {
+				cfg.logger.styledWritter = writter.template operator()<false, false>();
+			}
 		}
 	}
 
