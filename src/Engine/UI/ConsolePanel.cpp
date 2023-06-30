@@ -3,7 +3,7 @@
 #include <Engine/UI/ConsolePanel.hpp>
 #include <Engine/UI/Context.hpp>
 #include <Engine/UI/DirectionalLayout.hpp>
-#include <Engine/UI/TextBox.hpp>
+#include <Engine/UI/InputTextBox.hpp>
 #include <Engine/UI/TextFeed.hpp>
 
 
@@ -45,7 +45,7 @@ namespace Engine::UI {
 			}
 		});
 
-		input = ctx->constructPanel<TextBox>();
+		input = ctx->constructPanel<InputTextBox>();
 		input->autoText("This is a test abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 		input->setAction([this](TextBox*){ submitInput(); });
 

@@ -107,10 +107,9 @@ namespace Engine::UI {
 		// TODO: use caret pos once correct IME position is fixed (04kVYW2Y)
 		ctx->setIMEPosition(getPos());
 
-		ctx->registerTextCallback(this, [this](std::string_view view) {
+		ctx->registerTextCallback(this, [this](std::string_view text) {
 			if (select.valid()) { actionDelete(); }
-			insertText(caret.index, view);
-			setBindableValue();
+			onTextCallback(text);
 			return true;
 		});
 	};
@@ -143,6 +142,11 @@ namespace Engine::UI {
 
 	void TextBox::onEndActivate() {
 		ctx->deregisterMouseMove(this);
+	}
+
+	void TextBox::onTextCallback(std::string_view text) {
+		insertText(caret.index, text);
+		setBindableValue();
 	}
 
 	Caret TextBox::getCaretInLine(const float32 x) const noexcept {

@@ -214,7 +214,7 @@ namespace Engine {
 #else
 	#define ENGINE_DIE ::std::terminate();
 #endif
-	
+
 //#define ENGINE_RAW_TEXT _ENGINE_CREATE_LOG_LAMBDA("[TEXT_OLD]", false, Engine::ASCII_FG2, 0)
 #define ENGINE_LOG _ENGINE_CREATE_LOG_LAMBDA("[LOG_OLD]", true, Engine::ASCII_FG2, 0)
 #define ENGINE_INFO _ENGINE_CREATE_LOG_LAMBDA("[INFO_OLD]", true, Engine::ASCII_INFO, 0)

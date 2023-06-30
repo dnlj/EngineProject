@@ -122,7 +122,7 @@ namespace Engine::Log {
 			constexpr static StyleBitset Reset = 1 << 5;
 
 		private:
-			friend class ANSIEscapeSequence; /// TODO: just make a toEscapeSequence function instead of having it on ANSIEscapeSequence
+			friend class ANSIEscapeSequence;
 			StyleBitset bitset = {};
 			Foreground fg = None{};
 			Background bg = None{};
@@ -275,7 +275,6 @@ namespace Engine::Log {
 				if (style.bitset & Style::Underline) { append("4"); }
 				if (style.bitset & Style::Invert) { append("7"); }
 
-				// TODO: Verify not normal and RGB set
 				if (style.fg.useCase == Style::Foreground::UseCase::Named) {
 					append(style.fg.color[0]);
 				} else if (style.fg.useCase == Style::Foreground::UseCase::Expanded) {

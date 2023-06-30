@@ -1,19 +1,9 @@
-// Windows
-#include <Windows.h>
-#include <io.h>
-
 // STD
-#include <iostream>
-#include <numeric>
 #include <filesystem>
-#include <csignal>
 #include <random>
 
-// Box2D
-#include <box2d/b2_body.h>
-
 // Engine
-#include <Engine/Engine.hpp>
+#include <Engine/engine.hpp>
 #include <Engine/Logger.hpp>
 #include <Engine/CommandManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
@@ -26,19 +16,18 @@
 #include <Engine/CommandLine/Parser.hpp>
 #include <Engine/Debug/GL/GL.hpp>
 #include <Engine/ConfigParser.hpp>
-#include <Engine/UI/Context.hpp>
 #include <Engine/Input/KeyCode.hpp>
-#include <Engine/Unicode/UTF8.hpp>
 #include <Engine/Input/BindManager.hpp>
 #include <Engine/from_string.hpp>
 
+#include <Engine/UI/Context.hpp>
 #include <Engine/UI/DirectionalLayout.hpp>
 #include <Engine/UI/ImageDisplay.hpp>
 #include <Engine/UI/Window.hpp>
 #include <Engine/UI/TextBox.hpp>
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/common.hpp>
 #include <Game/World.hpp>
 #include <Game/MapGenerator2.hpp>
 #include <Game/systems/UISystem.hpp>
@@ -46,8 +35,6 @@
 #include <Game/systems/ActionSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
 #include <Game/UI/ConsoleWindow.hpp>
-
-#include <fmt/color.h> // TODO: remove;
 
 
 namespace {
@@ -601,15 +588,14 @@ void run(int argc, char* argv[]) {
 				out = ' ';
 			}
 
-			fmt::vformat_to(out, format, args);
-
+			// Write to console
 			auto* engine = static_cast<Game::EngineInstance*>(logger.userdata);
 			auto& uiSys = engine->getWorld().getSystem<Game::UISystem>();
+			fmt::vformat_to(out, format, args);
 			uiSys.getConsole()->push(std::string_view{buffer});
 		};
 	}
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Resources
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -881,8 +867,7 @@ void run(int argc, char* argv[]) {
 			if (args.size() == 1) {
 				std::string str = [](const auto& name) ENGINE_INLINE_REL -> std::string {
 					const auto& cfg = Engine::getGlobalConfig();
-					// TODO: using fmt::to_string
-					using std::to_string;
+					using fmt::to_string;
 					#define X(Name, Type, Default) if (name == #Name) { return to_string(cfg.cvars.Name); }
 					#include <Game/cvars.xpp>
 					return {};
@@ -890,7 +875,8 @@ void run(int argc, char* argv[]) {
 
 				if (str.empty()) {
 					// TODO: error
-					ENGINE_WARN("TODO: err");
+					ENGINE_WARN2("TODO: error");
+					ENGINE_DEBUG_BREAK;
 				}
 
 				ENGINE_CONSOLE("Get ({}) {} = {}", args[0], args.size(), str);
@@ -906,7 +892,7 @@ void run(int argc, char* argv[]) {
 				}(args[0], args[1]);
 
 				if (!suc) {
-					ENGINE_WARN("Unable to set cvar ", args[0], " ", args[1]);
+					ENGINE_WARN2("Unable to set cvar \"{}\" to  \"{}\"", args[0], args[1]);
 				}
 			}
 		};

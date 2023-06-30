@@ -52,6 +52,8 @@ namespace Engine::UI {
 			virtual bool onBeginActivate() override;
 			virtual void onEndActivate() override;
 
+			virtual void onTextCallback(std::string_view text);
+
 		private:
 			void tryBeginSelection() noexcept;
 

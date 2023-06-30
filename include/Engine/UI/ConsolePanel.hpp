@@ -6,7 +6,7 @@
 
 namespace Engine::UI {
 	class TextFeed;
-	class TextBox;
+	class InputTextBox;
 	class Button;
 }
 
@@ -54,7 +54,7 @@ namespace Engine::UI {
 
 		protected:
 			TextFeed* feed;
-			TextBox* input;
+			InputTextBox* input;
 			OnSubmitInput onSubmitInput;
 			DumbRingBuffer<std::string, 64> history;
 			int32 historyOff = {};
