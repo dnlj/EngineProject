@@ -180,10 +180,8 @@ BENCH(logging_engine_logger) {
 	using Engine::Log::Styled;
 	Engine::Logger logger;
 	const auto ip = Engine::Net::IPv4Address(000, 111, 222, 101, 12345);
-		
-	logger.styledWritter = [](Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
+	logger.styledWritter = [](const Engine::Log::Logger& logger, const Engine::Log::Logger::Info& info, std::string_view format, fmt::format_args args){
 		fmt::memory_buffer buffer;
-		buffer.clear();
 		logger.decorate<true, true>(fmt::appender(buffer), info);
 		fmt::vformat_to(fmt::appender(buffer), format, args);
 		//std::cout << std::string_view(buffer);

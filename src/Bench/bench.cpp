@@ -168,7 +168,8 @@ namespace Bench {
 
 		// Sort rows
 		std::ranges::sort(rows, [](auto& a, auto& b) {
-			return std::tie(a.cells["Name"], a.cells["Dataset"]) < std::tie(b.cells["Name"], b.cells["Dataset"]);
+			//return std::tie(a.cells["Name"], a.cells["Dataset"]) < std::tie(b.cells["Name"], b.cells["Dataset"]);
+			return std::tie(a.cells["Dataset"], a.cells["Avg"], a.cells["Name"]) < std::tie(b.cells["Dataset"], b.cells["Avg"], b.cells["Name"]);
 		});
 
 		// Output buffer

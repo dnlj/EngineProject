@@ -29,5 +29,6 @@ namespace Bench::Dist {
 			decltype(auto) begin() const { return storage.begin(); }
 			decltype(auto) end() const { return storage.end(); }
 			constexpr static int64 size() noexcept { return N; }
+			const auto& internal() const noexcept { return storage; }
 	};
 }
