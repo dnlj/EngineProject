@@ -134,16 +134,17 @@ BENCH(std_hash_subset) {
 
 namespace {
 	// TODO: small set counts are probably not very accurate since they are so fast. Whats a good way to handle this?
+	namespace D = Bench::Dist;
 
-	using Fixed_16_16 = Bench::Dist::FixedStrings<16, 16>;
-	using Fixed_16_256 = Bench::Dist::FixedStrings<256, 16>;
-	using Fixed_16_1024 = Bench::Dist::FixedStrings<1024, 16>;
-	using Fixed_16_4096 = Bench::Dist::FixedStrings<4096, 16>;
+	using Fixed_16_16 = Bench::Dist::FixedStrings<16, 16, D::Bool::False>;
+	using Fixed_16_256 = Bench::Dist::FixedStrings<256, 16, D::Bool::False>;
+	using Fixed_16_1024 = Bench::Dist::FixedStrings<1024, 16, D::Bool::False>;
+	using Fixed_16_4096 = Bench::Dist::FixedStrings<4096, 16, D::Bool::False>;
 
-	using Fixed_32_16 = Bench::Dist::FixedStrings<16, 32>;
-	using Fixed_32_256 = Bench::Dist::FixedStrings<256, 32>;
-	using Fixed_32_1024 = Bench::Dist::FixedStrings<1024, 32>;
-	using Fixed_32_4096 = Bench::Dist::FixedStrings<4096, 32>;
+	using Fixed_32_16 = Bench::Dist::FixedStrings<16, 32, D::Bool::False>;
+	using Fixed_32_256 = Bench::Dist::FixedStrings<256, 32, D::Bool::False>;
+	using Fixed_32_1024 = Bench::Dist::FixedStrings<1024, 32, D::Bool::False>;
+	using Fixed_32_4096 = Bench::Dist::FixedStrings<4096, 32, D::Bool::False>;
 
 	using Uniform_16 = Bench::Dist::Uniform<int, 16>;
 	using Uniform_32 = Bench::Dist::Uniform<int, 32>;

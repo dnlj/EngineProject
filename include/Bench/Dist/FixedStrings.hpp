@@ -10,7 +10,12 @@
 
 
 namespace Bench::Dist {
-	template<int64 N, int64 S, int64 seed = 0>
+	enum class Bool {
+		False = 0,
+		True = 1,
+	};
+
+	template<int64 N, int64 S, Bool LettersOnly, int64 seed = 0>
 	class FixedStrings {
 		private:
 			std::vector<std::string> storage;
@@ -22,7 +27,11 @@ namespace Bench::Dist {
 
 				for (auto& str : storage) {
 					str.resize(S);
-					std::ranges::generate(str, [&]{ return ' ' + rng('~' - ' '); });
+					if constexpr (LettersOnly == Bool::True) {
+						std::ranges::generate(str, [&]{ return ' ' +  rng('~' - ' '); });
+					} else {
+						std::ranges::generate(str, [&]{ return rng(); });
+					}
 				}
 			}
 

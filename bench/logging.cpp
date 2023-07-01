@@ -199,7 +199,7 @@ namespace {
 	constexpr auto count = 1000;
 	namespace D = Bench::Dist;
 	using DataSet1 = Engine::Zip<
-		D::FixedStrings<count, 16, 0>,
+		D::FixedStrings<count, 16, D::Bool::True>,
 		D::Uniform<float, count, 0>,
 		D::Uniform<int32_t, count, 0>
 	>;

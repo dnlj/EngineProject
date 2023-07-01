@@ -104,28 +104,49 @@ BENCH(ternary_tolower) {
 
 namespace {
 	namespace D = Bench::Dist;
-	// TODO: need to allow chars outside ['a', 'Z']
-	using DataSet16 = D::FixedStrings<25'000, 16, 0>;
-	using DataSet64 = D::FixedStrings<20'000, 64, 0>;
-	using DataSet128 = D::FixedStrings<10'000, 128, 0>;
-	using DataSet512 = D::FixedStrings<5'000, 512, 0>;
+	using DataSet16_Letter = D::FixedStrings<25'000, 16, D::Bool::True, 0>;
+	using DataSet64_Letter = D::FixedStrings<20'000, 64, D::Bool::True, 0>;
+	using DataSet128_Letter = D::FixedStrings<10'000, 128, D::Bool::True, 0>;
+	using DataSet512_Letter = D::FixedStrings<5'000, 512, D::Bool::True, 0>;
+
+	using DataSet16_All = D::FixedStrings<25'000, 16, D::Bool::False, 0>;
+	using DataSet64_All = D::FixedStrings<20'000, 64, D::Bool::False, 0>;
+	using DataSet128_All = D::FixedStrings<10'000, 128, D::Bool::False, 0>;
+	using DataSet512_All = D::FixedStrings<5'000, 512, D::Bool::False, 0>;
+
 	// TODO: create a dataset from file names, cvarlist, etc
 }
 
 BENCH_GROUP("tolower", 2, 20);
 
-BENCH_USE(std_tolower, DataSet16);
-BENCH_USE(switch_tolower, DataSet16);
-BENCH_USE(ternary_tolower, DataSet16);
+BENCH_USE(std_tolower, DataSet16_Letter);
+BENCH_USE(switch_tolower, DataSet16_Letter);
+BENCH_USE(ternary_tolower, DataSet16_Letter);
 
-BENCH_USE(std_tolower, DataSet64);
-BENCH_USE(switch_tolower, DataSet64);
-BENCH_USE(ternary_tolower, DataSet64);
+BENCH_USE(std_tolower, DataSet64_Letter);
+BENCH_USE(switch_tolower, DataSet64_Letter);
+BENCH_USE(ternary_tolower, DataSet64_Letter);
 
-BENCH_USE(std_tolower, DataSet128);
-BENCH_USE(switch_tolower, DataSet128);
-BENCH_USE(ternary_tolower, DataSet128);
+BENCH_USE(std_tolower, DataSet128_Letter);
+BENCH_USE(switch_tolower, DataSet128_Letter);
+BENCH_USE(ternary_tolower, DataSet128_Letter);
 
-BENCH_USE(std_tolower, DataSet512);
-BENCH_USE(switch_tolower, DataSet512);
-BENCH_USE(ternary_tolower, DataSet512);
+BENCH_USE(std_tolower, DataSet512_Letter);
+BENCH_USE(switch_tolower, DataSet512_Letter);
+BENCH_USE(ternary_tolower, DataSet512_Letter);
+
+BENCH_USE(std_tolower, DataSet16_All);
+BENCH_USE(switch_tolower, DataSet16_All);
+BENCH_USE(ternary_tolower, DataSet16_All);
+
+BENCH_USE(std_tolower, DataSet64_All);
+BENCH_USE(switch_tolower, DataSet64_All);
+BENCH_USE(ternary_tolower, DataSet64_All);
+
+BENCH_USE(std_tolower, DataSet128_All);
+BENCH_USE(switch_tolower, DataSet128_All);
+BENCH_USE(ternary_tolower, DataSet128_All);
+
+BENCH_USE(std_tolower, DataSet512_All);
+BENCH_USE(switch_tolower, DataSet512_All);
+BENCH_USE(ternary_tolower, DataSet512_All);
