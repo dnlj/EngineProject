@@ -250,3 +250,10 @@ namespace Engine {
 #define ENGINE_CONSOLE ([](::Engine::Log::FormatString format, const auto&... args) ENGINE_INLINE {\
 	::Engine::getGlobalConfig().logger.user(format, +::Engine::Log::Level::User, "CONSOLE", ::Engine::Log::Style::FG::Green, args...);\
 })
+
+
+namespace Engine {
+	ENGINE_INLINE constexpr char toLower(char c) noexcept {
+		return c >= 'A' && c <= 'Z' ? c+32 : c;
+	}
+}

@@ -4,6 +4,7 @@
 /[Aa]ssets/
 *.dll
 /_TEMP_*_
+.private
 
 # Photoshop
 **.psd
