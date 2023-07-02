@@ -57,8 +57,6 @@ namespace Game::UI {
 		};
 
 		// Tried using a fixed std::array. A few ms faster in debug. No definitive diff in release.
-		//std::vector<Match> results;
-
 		matches.clear();
 		matches.resize(10, { .bad = INT_MIN });
 
@@ -80,7 +78,7 @@ namespace Game::UI {
 
 			while (icur != iend && tcur != tend) {
 				if (auto quality = eq(*icur, *tcur)) {
-					match.temp.push_back(*icur);
+					GAME_DEBUG_CONSOLE_SUGGESTIONS(match.highlight.push_back(*icur));
 					++tcur;
 
 					badRun = 0;
@@ -90,7 +88,7 @@ namespace Game::UI {
 					// Give increasing bonuses to long sequences of matches.
 					match.good += quality + (goodRun >> 2);
 				} else {
-					match.temp.push_back('_');
+					GAME_DEBUG_CONSOLE_SUGGESTIONS(match.highlight.push_back('_'));
 
 					goodRun = 0;
 					++badRun;
@@ -110,14 +108,16 @@ namespace Game::UI {
 				match.bad -= (rem > 0) + (rem >> 2);
 			}
 
-			match.temp.insert(match.temp.end(), item.size() - match.temp.size(), '_');
+			GAME_DEBUG_CONSOLE_SUGGESTIONS(
+				match.highlight.insert(match.highlight.end(), item.size() - match.highlight.size(), '_');
+			);
 
 			{ // Insert new entry
 				const auto end = matches.end();
 				auto found = std::lower_bound(matches.begin(), end, match, std::greater<Match>{});
 				if (found != end) {
 					std::shift_right(found, end, 1);
-					match.str = item;
+					GAME_DEBUG_CONSOLE_SUGGESTIONS(match.full = item);
 					*found = std::move(match);
 				}
 			}
@@ -129,15 +129,17 @@ namespace Game::UI {
 			matches.erase(last, end);
 		}
 
-		ENGINE_LOG2("{}", std::string(32, '>'));
-		{
-			const auto end = matches.rend();
-			auto cur = end - std::min(matches.size(), 100ull);
-			for (; cur != end; ++cur) {
-				ENGINE_LOG2("Match: {} {}\n   {}\n   {}", cur->good, cur->bad, cur->temp, cur->str);
+		GAME_DEBUG_CONSOLE_SUGGESTIONS({
+			ENGINE_LOG2("{}", std::string(32, '>'));
+			{
+				const auto end = matches.rend();
+				auto cur = end - std::min(matches.size(), 100ull);
+				for (; cur != end; ++cur) {
+					ENGINE_LOG2("Match: {} {}\n   {}\n   {}", cur->good, cur->bad, cur->highlight, cur->full);
+				}
 			}
-		}
-		ENGINE_LOG2("{}", std::string(32, '<'));
+			ENGINE_LOG2("{}", std::string(32, '<'));
+		})
 	};
 }
 
@@ -190,12 +192,19 @@ namespace Game::UI {
 	void ConsoleSuggestionHandler::filter(std::string_view text) {
 		ENGINE_DEBUG_ASSERT(popup);
 		popup->setEnabled(true);
-		auto start = Engine::Clock::now();
-		std::atomic_signal_fence(std::memory_order_acq_rel);
+
+		GAME_DEBUG_CONSOLE_SUGGESTIONS(
+			auto start = Engine::Clock::now();
+			std::atomic_signal_fence(std::memory_order_acq_rel);
+		)
+
 		popup->filter(text);
-		std::atomic_signal_fence(std::memory_order_acq_rel);
-		auto end = Engine::Clock::now();
-		ENGINE_INFO2("Time: {}", Engine::Clock::Milliseconds{end - start});
+
+		GAME_DEBUG_CONSOLE_SUGGESTIONS(
+			std::atomic_signal_fence(std::memory_order_acq_rel);
+			auto end = Engine::Clock::now();
+			ENGINE_INFO2("Time: {}", Engine::Clock::Milliseconds{end - start});
+		)
 	}
 
 	void ConsoleSuggestionHandler::done() {
