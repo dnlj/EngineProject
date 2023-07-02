@@ -20,6 +20,7 @@ namespace Game::UI {
 	class MapPreview;
 	class ConnectWindow;
 	class ConsoleWindow;
+	class ConsoleSuggestionHandler;
 }
 
 namespace Game {
@@ -27,6 +28,7 @@ namespace Game {
 		public:
 			UISystem(SystemArg arg);
 			UISystem(const UISystem&) = delete;
+			~UISystem();
 
 			void render(RenderLayer layer);
 
@@ -49,6 +51,7 @@ namespace Game {
 				UI::ConnectWindow* connectWindow;
 				#endif
 
+				std::unique_ptr<UI::ConsoleSuggestionHandler> consoleSuggestionHandler;
 				UI::ConsoleWindow* consoleWindow;
 			} panels;
 	};

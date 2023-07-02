@@ -8,6 +8,7 @@ namespace Engine::UI {
 	class TextFeed;
 	class InputTextBox;
 	class Button;
+	class SuggestionHandler;
 }
 
 namespace Engine {
@@ -61,12 +62,12 @@ namespace Engine::UI {
 
 		public:
 			ConsolePanel(Context* context);
-			void setAction(OnSubmitInput func) { onSubmitInput = std::move(func); }
+
 			virtual bool onAction(ActionEvent act) override;
 
-			// TODO: up/down command history
-
+			void setAction(OnSubmitInput func) { onSubmitInput = std::move(func); }
 			void push(std::string_view text);
+			void setHandler(SuggestionHandler* handler);
 
 		private:
 			void submitInput();

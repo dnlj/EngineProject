@@ -5,36 +5,28 @@
 
 
 namespace Engine::UI {
-	class InputTextBoxModel {
+	class SuggestionHandler {
 		public:
-			using Index = uint32;
-
-		public: // TODO: private
-			std::vector<std::string> items; // TODO: shouldnt store a copy, pull from real model
-			std::vector<Index> active;
-
-		public:
-			// TODO: look at DataAdapter, might be better to use create/update panel methods like that
-			void updated(Index first, Index last) {};
-
-			void filter(std::string_view text);
-
-			Index size() const noexcept { return static_cast<Index>(active.size()); };
-			bool empty() const noexcept { return active.empty(); }
-			const auto& at(Index i) const noexcept { return items[i]; }
-			auto begin() const { return active.begin(); }
-			auto end() const { return active.end(); }
+			virtual void prepair(Panel* relative) = 0;
+			virtual void filter(std::string_view text) = 0;
+			virtual void done() = 0;
 	};
 
 	class InputTextBox : public TextBox {
 		private:
-			class SuggestionPopup* popup = nullptr;
+			SuggestionHandler* suggest = nullptr;
 
 		public:
 			using TextBox::TextBox;
+
 			virtual bool onAction(ActionEvent action) override;
 			virtual void onBeginFocus() override;
 			virtual void onEndFocus() override;
 			virtual void onTextCallback(std::string_view text) override;
+
+			void setHandler(SuggestionHandler* handler) noexcept {
+				ENGINE_DEBUG_ASSERT(suggest == nullptr);
+				suggest = handler;
+			}
 	};
 }

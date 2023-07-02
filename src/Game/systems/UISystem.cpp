@@ -12,6 +12,7 @@
 #include <Game/UI/AutoList.hpp>
 #include <Game/UI/CameraPane.hpp>
 #include <Game/UI/ConnectWindow.hpp>
+#include <Game/UI/ConsoleSuggestionHandler.hpp>
 #include <Game/UI/ConsoleWindow.hpp>
 #include <Game/UI/CoordPane.hpp>
 #include <Game/UI/EntityPane.hpp>
@@ -98,6 +99,9 @@ namespace Game {
 				auto* engine = self->getContext()->getUserdata<Game::EngineInstance>();
 				engine->getCommandManager().exec(text);
 			});
+
+			panels.consoleSuggestionHandler = std::make_unique<UI::ConsoleSuggestionHandler>();
+			panels.consoleWindow->get()->setHandler(panels.consoleSuggestionHandler.get());
 		}
 
 		//panels.infoPane->toggle();
@@ -138,6 +142,9 @@ namespace Game {
 			demo->setPos({520, 400});
 			demo->setSize({512, 512});
 		}
+	}
+
+	UISystem::~UISystem() {
 	}
 
 	void UISystem::render(RenderLayer layer) {

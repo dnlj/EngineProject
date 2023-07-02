@@ -25,6 +25,7 @@
 #include <Engine/UI/ImageDisplay.hpp>
 #include <Engine/UI/Window.hpp>
 #include <Engine/UI/TextBox.hpp>
+#include <Engine/UI/ConsolePanel.hpp>
 
 // Game
 #include <Game/common.hpp>
@@ -899,6 +900,12 @@ void run(int argc, char* argv[]) {
 
 		cm.registerCommand("net_packet_rate_min", cvar);
 		cm.registerCommand("net_packet_rate_max", cvar);
+
+		//auto& uiSys = engine.getWorld().getSystem<Game::UISystem>();
+		//auto* console = uiSys.getConsole();
+
+		// TODO: probably take a get func and container? idk best interface?
+		//console->get()->setSuggestions()
 	}
 
 	// Map Stuff

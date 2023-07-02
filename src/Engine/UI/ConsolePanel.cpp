@@ -103,6 +103,10 @@ namespace Engine::UI {
 		feed->pushText(text);
 	}
 
+	void ConsolePanel::setHandler(SuggestionHandler* handler) {
+		input->setHandler(handler);
+	}
+
 	ENGINE_INLINE void ConsolePanel::historyInc() {
 		if (historyOff == 0) { return; }
 		++historyOff;

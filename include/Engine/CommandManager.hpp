@@ -50,6 +50,8 @@ namespace Engine {
 				return found->second;
 			}
 
+			const auto& getCommands() const noexcept { return commands; }
+
 		private:
 			void parse(std::string_view str);
 			

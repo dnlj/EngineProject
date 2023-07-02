@@ -79,6 +79,14 @@ namespace Engine {
 				return used == 0;
 			}
 
+			ENGINE_INLINE constexpr bool full() const noexcept {
+				return size() != capacity();
+			}
+
+			ENGINE_INLINE constexpr bool space() const noexcept {
+				return !full();
+			}
+
 			ENGINE_INLINE constexpr static size_type capacity() noexcept {
 				return N;
 			}
@@ -123,6 +131,7 @@ namespace Engine {
 			// TODO: (c)rend()
 
 			ENGINE_INLINE void expand(size_type n = 1) noexcept {
+				ENGINE_DEBUG_ASSERT(size() + n <= capacity());
 				resize(size() + n);
 			}
 
@@ -141,6 +150,20 @@ namespace Engine {
 				std::move(it + 1, end(), it);
 				pop_back();
 			}
+
+			// TODO: this is wrong. Need more checks around safe bounds for move.
+			// TODO: Should change to placement new before messing with this
+			//ENGINE_INLINE_REL void insert(iterator it, T&& value) {
+			//	if (!space()) { expand(); }
+			//
+			//	[[maybe_unused]] auto b = begin();
+			//	auto e = end();
+			//	if (it == e) { return; }
+			//
+			//	const auto out = it+1;
+			//	if (out != e) { std::move(it, e-1, out); }
+			//	*it = std::move(value);
+			//}
 
 			// TODO: at
 	};
