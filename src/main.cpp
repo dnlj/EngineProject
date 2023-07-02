@@ -901,6 +901,14 @@ void run(int argc, char* argv[]) {
 		cm.registerCommand("net_packet_rate_min", cvar);
 		cm.registerCommand("net_packet_rate_max", cvar);
 
+		std::vector<const char*> testData = {
+			#include "../.private/testdata_ue"
+		};
+
+		for (auto cmd : testData) {
+			cm.registerCommand(cmd, cvar);
+		}
+
 		//auto& uiSys = engine.getWorld().getSystem<Game::UISystem>();
 		//auto* console = uiSys.getConsole();
 

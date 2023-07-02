@@ -7,34 +7,39 @@
 #include <Game/UI/ui.hpp>
 
 
+namespace Game {
+	class CommandManager;
+}
+
 namespace Game::UI {
-	class SuggestionModel {
-		public:
-			using Index = uint32;
-
-		public: // TODO: private
-			std::vector<std::string> items; // TODO: shouldnt store a copy, pull from real model
-			std::vector<Index> active;
-
-		public:
-			void filter(std::string_view text);
-
-			Index size() const noexcept { return static_cast<Index>(active.size()); };
-			bool empty() const noexcept { return active.empty(); }
-			const auto& at(Index i) const noexcept { return items[i]; }
-			auto begin() const { return active.begin(); }
-			auto end() const { return active.end(); }
-	};
-
 	class ConsoleSuggestionPopup final : public EUI::Panel {
 		private:
-			SuggestionModel model;
+			using Index = uint32;
+
+			struct Match {
+				std::string_view str = {}; // TODO: rm - debugging
+				std::string temp = {}; // TODO: rm - debugging
+				Index index = 0;
+
+				constexpr bool operator<(const Match& right) const noexcept { return score() < right.score(); }
+				constexpr bool operator>(const Match& right) const noexcept { return score() > right.score(); }
+				constexpr bool operator==(const Match& right) const noexcept = delete;
+
+				// TODO: combine, this is just useful for debugging
+				int good = 0;
+				int bad = 0;
+				constexpr int score() const noexcept { return good + bad; }
+			};
+
+			std::vector<Match> matches;
 
 		public:
 			ConsoleSuggestionPopup(EUI::Context* context);
 			void filter(std::string_view text);
 			void clear();
 
+		private:
+			void update(std::string_view text);
 	};
 
 	class ConsoleSuggestionHandler final : public EUI::SuggestionHandler {

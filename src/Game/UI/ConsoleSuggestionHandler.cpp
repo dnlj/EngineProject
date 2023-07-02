@@ -1,23 +1,22 @@
 // Engine
 #include <Engine/UI/DirectionalLayout.hpp>
+#include <Engine/CommandManager.hpp>
 
 // Game
 #include <Game/UI/ConsoleSuggestionHandler.hpp>
 
 
 namespace {
-	std::vector<std::string> getTestData() {
-		return {
-			#include "../.private/testdata_ue"
-		};
+	const auto& getCommands(Engine::UI::Context* ctx) {
+		auto* instance = ctx->getUserdata<Game::EngineInstance>();
+		auto& manager = instance->getCommandManager();
+		return manager.getCommands();
 	}
 }
 
 
 namespace Game::UI {
-	void SuggestionModel::filter(std::string_view text) {
-		active.clear();
-
+	void ConsoleSuggestionPopup::update(std::string_view text) {
 		// Scoring is tricky:
 		// - Exact match vs remap match
 		// - Sequential matches
@@ -57,25 +56,16 @@ namespace Game::UI {
 			return (a == b) + (Engine::toLower(a) == Engine::toLower(b));
 		};
 
-		struct Match {
-			std::string_view str;
-			std::string temp; // TODO: rm
-
-			constexpr bool operator<(const Match& right) const noexcept { return score() < right.score(); }
-			constexpr bool operator>(const Match& right) const noexcept { return score() > right.score(); }
-			constexpr bool operator==(const Match& right) const noexcept = delete;
-
-			// TODO: combine, this is just useful for debugging
-			int good = 0;
-			int bad = 0;
-			constexpr int score() const noexcept { return good + bad; }
-		};
-
 		// Tried using a fixed std::array. A few ms faster in debug. No definitive diff in release.
-		std::vector<Match> results;
-		results.resize(10, {{}, {}, 0, INT_MIN});
+		//std::vector<Match> results;
 
-		for (const auto& item : items) {
+		matches.clear();
+		matches.resize(10, { .bad = INT_MIN });
+
+		const auto& commands = getCommands(ctx);
+		const auto commandCount = commands.size();
+		for (uint32 i = 0; i < commandCount; ++i) {
+			auto& item = commands[i].name;
 
 			auto icur = item.begin();
 			const auto iend = item.end();
@@ -86,7 +76,7 @@ namespace Game::UI {
 			// Lying about being in a sequence initially gives us a bias toward matches at the exact start.
 			int goodRun = 3;
 			int badRun = 0;
-			Match match = {item};
+			Match match = { .index = i };
 
 			while (icur != iend && tcur != tend) {
 				if (auto quality = eq(*icur, *tcur)) {
@@ -107,7 +97,7 @@ namespace Game::UI {
 
 					// Discourage sequences of bad matches.
 					// 
-					// Have a little buffer here instead of a constant value
+					// Having a little buffer here instead of a constant value
 					// helps us give preference to matches that contain the full
 					// filter string.
 					match.bad -= (badRun > 2);
@@ -115,27 +105,34 @@ namespace Game::UI {
 				++icur;
 			}
 
-			// Bias toward shorter/more exact matches
-			{
+			{ // Bias toward shorter/more exact matches
 				const int rem = static_cast<int>(iend - icur);
 				match.bad -= (rem > 0) + (rem >> 2);
 			}
 
 			match.temp.insert(match.temp.end(), item.size() - match.temp.size(), '_');
 
-			// Insert new entry.
-			const auto end = results.end();
-			auto found = std::lower_bound(results.begin(), end, match, std::greater<Match>{});
-			if (found != end) {
-				std::shift_right(found, end, 1);
-				*found = std::move(match);
+			{ // Insert new entry
+				const auto end = matches.end();
+				auto found = std::lower_bound(matches.begin(), end, match, std::greater<Match>{});
+				if (found != end) {
+					std::shift_right(found, end, 1);
+					match.str = item;
+					*found = std::move(match);
+				}
 			}
+		}
+
+		{ // Only include positive matches
+			const auto end = matches.end();
+			auto last = std::find_if(matches.begin(), end, [](const Match& match){ return match.good <= 0; });
+			matches.erase(last, end);
 		}
 
 		ENGINE_LOG2("{}", std::string(32, '>'));
 		{
-			const auto end = results.rend();
-			auto cur = end - std::min(results.size(), 100ull);
+			const auto end = matches.rend();
+			auto cur = end - std::min(matches.size(), 100ull);
 			for (; cur != end; ++cur) {
 				ENGINE_LOG2("Match: {} {}\n   {}\n   {}", cur->good, cur->bad, cur->temp, cur->str);
 			}
@@ -148,21 +145,21 @@ namespace Game::UI {
 namespace Game::UI {
 	ConsoleSuggestionPopup::ConsoleSuggestionPopup(EUI::Context* context)
 		: Panel{context} {
-		model.items = getTestData();
 	}
 
 	void ConsoleSuggestionPopup::filter(std::string_view text) {
 		clear();
-		model.filter(text);
-		if (model.empty()) { return; }
+		update(text);
+		if (matches.empty()) { return; }
 
 		// TODO: would be good to have a way to disable updates while we rebuild this list instead of creating a vector
 		std::vector<Panel*> children;
-		children.reserve(model.size());
+		children.reserve(matches.size());
 
-		for (const auto& i : model) {
+		auto& commands = getCommands(ctx);
+		for (const auto& match : matches) {
 			auto label = ctx->constructPanel<EUI::Label>();
-			label->autoText(model.at(i));
+			label->autoText(commands[match.index].name);
 			children.push_back(label);
 		}
 

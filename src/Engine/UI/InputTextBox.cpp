@@ -12,7 +12,7 @@ namespace Engine::UI {
 			case Action::DeletePrev:
 			case Action::DeleteNext: {
 				if (result) {
-					ENGINE_DEBUG_ASSERT(suggest, "Popup should exist by now in focus stack.");
+					ENGINE_DEBUG_ASSERT(suggest);
 					suggest->filter(getText());
 				}
 			}
@@ -37,6 +37,11 @@ namespace Engine::UI {
 
 	void InputTextBox::onTextCallback(std::string_view text) {
 		TextBox::onTextCallback(text);
-		suggest->filter(getText());
+
+		ENGINE_DEBUG_ASSERT(suggest);
+		const auto& full = getText();
+		if (!full.empty()) {
+			suggest->filter(full);
+		}
 	}
 }
