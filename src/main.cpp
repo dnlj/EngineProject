@@ -842,6 +842,7 @@ void run(int argc, char* argv[]) {
 			return guiContext.onActivate(curr.i32, time);
 		});
 
+
 		// TODO: really want a way to specify generic L/R shift without to registers
 		bm.addBind(Layer::GuiFocus, true, InputSequence{
 			InputId{Type::Keyboard, 0, +KeyCode::Tab},

@@ -52,6 +52,7 @@ namespace Game::UI {
 			bool onAction(EUI::ActionEvent action);
 			void filter(std::string_view text);
 			void clear();
+			std::string_view get() const noexcept;
 
 		private:
 			template<auto FirstChild, auto NextChild>
@@ -65,8 +66,8 @@ namespace Game::UI {
 
 		public:
 			virtual bool onAction(EUI::ActionEvent action) override;
-			virtual void prepair(EUI::Panel* relative) override;
-			virtual void filter(std::string_view text) override;
-			virtual void done() override;
+			virtual void filter(EUI::Panel* relative, std::string_view text) override;
+			virtual void close() override;
+			virtual std::string_view get() override;
 	};
 }

@@ -204,7 +204,6 @@ namespace Game::UI {
 
 		if (!selected) {
 			selected = (this->*FirstChild)();
-			//selected = getFirstChild();
 			if (selected == nullptr) { return; }
 			prev = selected;
 		} else {
@@ -217,11 +216,17 @@ namespace Game::UI {
 	}
 
 	void ConsoleSuggestionPopup::clear() {
+		selected = nullptr;
 		const auto first = getFirstChildRaw();
 		if (first == nullptr) { return; }
 
 		const auto last = getLastChildRaw();
 		ctx->deferedDeletePanels(first, last);
+	}
+
+	std::string_view ConsoleSuggestionPopup::get() const noexcept {
+		auto sel = static_cast<SuggestionLabel*>(selected);
+		return sel ? sel->getText() : std::string_view{};
 	}
 }
 
@@ -231,20 +236,15 @@ namespace Game::UI {
 		return popup->onAction(action);
 	}
 
-	void ConsoleSuggestionHandler::prepair(EUI::Panel* relative) {
-		using namespace EUI;
-		ENGINE_DEBUG_ASSERT(popup == nullptr);
-		auto* ctx = relative->getContext();
-		popup = ctx->createPanel<ConsoleSuggestionPopup>(ctx->getRoot());
-		popup->setEnabled(false);
-		popup->setAutoSize(true);
-		popup->setLayout(new DirectionalLayout(Direction::Vertical, Align::Start, Align::Stretch, 0));
-		popup->setPos(relative->getPos() + glm::vec2{0, relative->getHeight()});
-	}
-
-	void ConsoleSuggestionHandler::filter(std::string_view text) {
-		ENGINE_DEBUG_ASSERT(popup);
-		popup->setEnabled(true);
+	void ConsoleSuggestionHandler::filter(EUI::Panel* relative, std::string_view text) {
+		if (!popup) {
+			using namespace EUI;
+			auto* ctx = relative->getContext();
+			popup = ctx->createPanel<ConsoleSuggestionPopup>(ctx->getRoot());
+			popup->setPos(relative->getPos() + glm::vec2{0, relative->getHeight()});
+			popup->setAutoSize(true);
+			popup->setLayout(new DirectionalLayout(Direction::Vertical, Align::Start, Align::Stretch, 0));
+		}
 
 		GAME_DEBUG_CONSOLE_SUGGESTIONS(
 			auto start = Engine::Clock::now();
@@ -260,9 +260,14 @@ namespace Game::UI {
 		)
 	}
 
-	void ConsoleSuggestionHandler::done() {
-		ENGINE_DEBUG_ASSERT(popup);
-		popup->getContext()->deferedDeletePanel(popup);
-		popup = nullptr;
+	void ConsoleSuggestionHandler::close() {
+		if (popup) {
+			popup->getContext()->deferedDeletePanel(popup);
+			popup = nullptr;
+		}
+	}
+
+	std::string_view ConsoleSuggestionHandler::get() {
+		return popup ? popup->get() : std::string_view{};
 	}
 }

@@ -5,14 +5,20 @@
 
 namespace Engine::UI {
 	bool InputTextBox::onAction(ActionEvent action) {
+		auto result = suggest->onAction(action);
+		if (result) { return result; }
+
 		switch (action) {
-			case Action::PanelNext:
-			case Action::PanelPrev: {
-				return suggest->onAction(action);
+			case Action::Submit: {
+				if (auto text = suggest->get(); !text.empty()) {
+					setText(text);
+					suggest->close();
+					return true;
+				}
 			}
 		}
 
-		auto result = TextBox::onAction(action);
+		result = TextBox::onAction(action);
 		switch (action) {
 			case Action::Cut:
 			case Action::Paste:
@@ -20,7 +26,7 @@ namespace Engine::UI {
 			case Action::DeleteNext: {
 				if (result) {
 					ENGINE_DEBUG_ASSERT(suggest);
-					suggest->filter(getText());
+					suggest->filter(this, getText());
 				}
 			}
 		}
@@ -29,17 +35,11 @@ namespace Engine::UI {
 
 	void InputTextBox::onBeginFocus() {
 		TextBox::onBeginFocus();
-
-		// TODO: probably want this to be some kind of scroll area
-		ENGINE_DEBUG_ASSERT(suggest);
-		suggest->prepair(this);
 	}
 
 	void InputTextBox::onEndFocus() {
 		TextBox::onEndFocus();
-
-		ENGINE_DEBUG_ASSERT(suggest);
-		suggest->done();
+		suggest->close();
 	}
 
 	void InputTextBox::onTextCallback(std::string_view text) {
@@ -48,7 +48,7 @@ namespace Engine::UI {
 		ENGINE_DEBUG_ASSERT(suggest);
 		const auto& full = getText();
 		if (!full.empty()) {
-			suggest->filter(full);
+			suggest->filter(this, full);
 		}
 	}
 }

@@ -8,9 +8,9 @@ namespace Engine::UI {
 	class SuggestionHandler {
 		public:
 			virtual bool onAction(ActionEvent action) = 0;
-			virtual void prepair(Panel* relative) = 0;
-			virtual void filter(std::string_view text) = 0;
-			virtual void done() = 0;
+			virtual void filter(Panel* relative, std::string_view text) = 0;
+			virtual void close() = 0;
+			virtual std::string_view get() = 0;
 	};
 
 	class InputTextBox : public TextBox {
