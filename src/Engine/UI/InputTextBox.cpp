@@ -5,6 +5,13 @@
 
 namespace Engine::UI {
 	bool InputTextBox::onAction(ActionEvent action) {
+		switch (action) {
+			case Action::PanelNext:
+			case Action::PanelPrev: {
+				return suggest->onAction(action);
+			}
+		}
+
 		auto result = TextBox::onAction(action);
 		switch (action) {
 			case Action::Cut:

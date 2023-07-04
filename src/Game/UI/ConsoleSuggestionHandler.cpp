@@ -7,11 +7,24 @@
 
 
 namespace {
+	namespace EUI = Engine::UI;
 	const auto& getCommands(Engine::UI::Context* ctx) {
 		auto* instance = ctx->getUserdata<Game::EngineInstance>();
 		auto& manager = instance->getCommandManager();
 		return manager.getCommands();
 	}
+
+	class SuggestionLabel : public EUI::Label {
+		public:
+			using Label::Label;
+			glm::vec4 color = {1,0,0,1};
+
+			virtual void render() override {
+				ctx->setColor(color);
+				ctx->drawRect({}, getSize());
+				Label::render();
+			}
+	};
 }
 
 
@@ -149,6 +162,20 @@ namespace Game::UI {
 		: Panel{context} {
 	}
 
+	bool ConsoleSuggestionPopup::onAction(EUI::ActionEvent action) {
+		switch (action) {
+			case EUI::Action::PanelNext: {
+				selectNext();
+				return true;
+			}
+			case EUI::Action::PanelPrev: {
+				//selectPrev();
+				return true;
+			}
+		}
+		return false;
+	}
+
 	void ConsoleSuggestionPopup::filter(std::string_view text) {
 		clear();
 		update(text);
@@ -160,12 +187,29 @@ namespace Game::UI {
 
 		auto& commands = getCommands(ctx);
 		for (const auto& match : matches) {
-			auto label = ctx->constructPanel<EUI::Label>();
+			auto label = ctx->constructPanel<SuggestionLabel>();
 			label->autoText(commands[match.index].name);
 			children.push_back(label);
 		}
 
 		addChildren(children);
+	}
+
+	void ConsoleSuggestionPopup::selectNext() {
+		puts("ConsoleSuggestionPopup::selectNext()");
+		// TODO: no children?
+		auto* prev = selected;
+
+		if (!selected) {
+			selected = getFirstChild();
+			prev = selected;
+		} else {
+			selected = selected->getNextSibling();
+			if (!selected) { selected = prev; }
+		}
+
+		static_cast<SuggestionLabel*>(prev)->color = {1,0,0,1};
+		static_cast<SuggestionLabel*>(selected)->color = {0,1,0,1};
 	}
 
 	void ConsoleSuggestionPopup::clear() {
@@ -178,6 +222,10 @@ namespace Game::UI {
 }
 
 namespace Game::UI {
+	bool ConsoleSuggestionHandler::onAction(EUI::ActionEvent action) {
+		return popup->onAction(action);
+	}
+
 	void ConsoleSuggestionHandler::prepair(EUI::Panel* relative) {
 		using namespace EUI;
 		ENGINE_DEBUG_ASSERT(popup == nullptr);

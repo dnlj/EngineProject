@@ -7,6 +7,7 @@
 namespace Engine::UI {
 	class SuggestionHandler {
 		public:
+			virtual bool onAction(ActionEvent action) = 0;
 			virtual void prepair(Panel* relative) = 0;
 			virtual void filter(std::string_view text) = 0;
 			virtual void done() = 0;

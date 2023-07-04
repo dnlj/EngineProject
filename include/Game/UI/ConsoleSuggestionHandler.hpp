@@ -45,13 +45,18 @@ namespace Game::UI {
 			};
 
 			std::vector<Match> matches;
+			Panel* selected = nullptr;
 
 		public:
 			ConsoleSuggestionPopup(EUI::Context* context);
+			bool onAction(EUI::ActionEvent action);
 			void filter(std::string_view text);
 			void clear();
 
 		private:
+			void select();
+			void selectNext();
+			//void selectPrev();
 			void update(std::string_view text);
 	};
 
@@ -60,6 +65,7 @@ namespace Game::UI {
 			ConsoleSuggestionPopup* popup = nullptr;
 
 		public:
+			virtual bool onAction(EUI::ActionEvent action) override;
 			virtual void prepair(EUI::Panel* relative) override;
 			virtual void filter(std::string_view text) override;
 			virtual void done() override;
