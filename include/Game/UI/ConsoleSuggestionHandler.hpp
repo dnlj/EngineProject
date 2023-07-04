@@ -54,9 +54,8 @@ namespace Game::UI {
 			void clear();
 
 		private:
+			template<auto FirstChild, auto NextChild>
 			void select();
-			void selectNext();
-			//void selectPrev();
 			void update(std::string_view text);
 	};
 

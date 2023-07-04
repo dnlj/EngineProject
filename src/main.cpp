@@ -842,18 +842,17 @@ void run(int argc, char* argv[]) {
 			return guiContext.onActivate(curr.i32, time);
 		});
 
-		// TODO: need to be able to specify exclusive
 		// TODO: really want a way to specify generic L/R shift without to registers
 		bm.addBind(Layer::GuiFocus, true, InputSequence{
 			InputId{Type::Keyboard, 0, +KeyCode::Tab},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::PanelNext); } return true; });
 		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Tab},
 			InputId{Type::Keyboard, 0, +KeyCode::LShift},
+			InputId{Type::Keyboard, 0, +KeyCode::Tab},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::PanelPrev); } return true; });
 		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Tab},
 			InputId{Type::Keyboard, 0, +KeyCode::RShift},
+			InputId{Type::Keyboard, 0, +KeyCode::Tab},
 		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::PanelPrev); } return true; });
 		
 		//bm.setLayerEnabled(Layer::GuiFocus, false);

@@ -25,11 +25,14 @@ namespace {
 				Label::render();
 			}
 	};
+
 }
 
 
 namespace Game::UI {
 	void ConsoleSuggestionPopup::update(std::string_view text) {
+		// TODO: Why does searching "_" not show the "net_" commands?
+
 		// Scoring is tricky:
 		// - Exact match vs remap match
 		// - Sequential matches
@@ -165,11 +168,11 @@ namespace Game::UI {
 	bool ConsoleSuggestionPopup::onAction(EUI::ActionEvent action) {
 		switch (action) {
 			case EUI::Action::PanelNext: {
-				selectNext();
+				select<&EUI::Panel::getFirstChild, &EUI::Panel::getNextSibling>();
 				return true;
 			}
 			case EUI::Action::PanelPrev: {
-				//selectPrev();
+				select<&EUI::Panel::getLastChild, &EUI::Panel::getPrevSibling>();
 				return true;
 			}
 		}
@@ -195,16 +198,17 @@ namespace Game::UI {
 		addChildren(children);
 	}
 
-	void ConsoleSuggestionPopup::selectNext() {
-		puts("ConsoleSuggestionPopup::selectNext()");
-		// TODO: no children?
+	template<auto FirstChild, auto NextChild>
+	void ConsoleSuggestionPopup::select() {
 		auto* prev = selected;
 
 		if (!selected) {
-			selected = getFirstChild();
+			selected = (this->*FirstChild)();
+			//selected = getFirstChild();
+			if (selected == nullptr) { return; }
 			prev = selected;
 		} else {
-			selected = selected->getNextSibling();
+			selected = (selected->*NextChild)();
 			if (!selected) { selected = prev; }
 		}
 
@@ -223,6 +227,7 @@ namespace Game::UI {
 
 namespace Game::UI {
 	bool ConsoleSuggestionHandler::onAction(EUI::ActionEvent action) {
+		if (!popup) { return false; }
 		return popup->onAction(action);
 	}
 
