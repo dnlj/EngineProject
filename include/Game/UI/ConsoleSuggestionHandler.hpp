@@ -8,7 +8,7 @@
 
 
 // Debug console command suggestions
-#if false
+#if 0
 	#define GAME_DEBUG_CONSOLE_SUGGESTIONS(arg) arg
 #else
 	#define GAME_DEBUG_CONSOLE_SUGGESTIONS(arg)
@@ -22,26 +22,24 @@ namespace Game {
 namespace Game::UI {
 	class ConsoleSuggestionPopup final : public EUI::Panel {
 		private:
-			using Index = uint32;
-
 			struct Match {
-				GAME_DEBUG_CONSOLE_SUGGESTIONS(std::string_view full = {});
-				GAME_DEBUG_CONSOLE_SUGGESTIONS(std::string highlight = {});
+				using Score = int;
 
-				Index index = 0;
-
-				constexpr bool operator<(const Match& right) const noexcept { return score() < right.score(); }
 				constexpr bool operator>(const Match& right) const noexcept { return score() > right.score(); }
 				constexpr bool operator==(const Match& right) const noexcept = delete;
+				constexpr Score score() const noexcept { return good + bad; }
 
 				// We could also use a combined score instead of keeping track of
 				// good/bad separate and it would be 99% the same. The only downside is
 				// we couldn't do simple things like `good <= 0` to cull all results
 				// that have zero matches. We could probably use a heuristic or just add
 				// a found var if we really wanted to.
-				int good = 0;
-				int bad = 0;
-				constexpr int score() const noexcept { return good + bad; }
+				Score good = 0;
+				Score bad = 0;
+
+				uint32 index = 0;
+				GAME_DEBUG_CONSOLE_SUGGESTIONS(std::string_view full = {});
+				GAME_DEBUG_CONSOLE_SUGGESTIONS(std::string highlight = {});
 			};
 
 			std::vector<Match> matches;

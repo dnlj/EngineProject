@@ -31,8 +31,6 @@ namespace {
 
 namespace Game::UI {
 	void ConsoleSuggestionPopup::update(std::string_view text) {
-		// TODO: Why does searching "_" not show the "net_" commands?
-
 		// Scoring is tricky:
 		// - Exact match vs remap match
 		// - Sequential matches
@@ -74,7 +72,7 @@ namespace Game::UI {
 
 		// Tried using a fixed std::array. A few ms faster in debug. No definitive diff in release.
 		matches.clear();
-		matches.resize(10, { .bad = INT_MIN });
+		matches.resize(10, { .bad = std::numeric_limits<Match::Score>::min() });
 
 		const auto& commands = getCommands(ctx);
 		const auto commandCount = commands.size();
@@ -88,8 +86,10 @@ namespace Game::UI {
 			const auto tend = text.end();
 
 			// Lying about being in a sequence initially gives us a bias toward matches at the exact start.
-			int goodRun = 3;
-			int badRun = 0;
+			// Form of `n*4 - 1` where n is the number of bonus points for start of string search.
+			// Because for the run bonus we do `n >> 2` == `n / 4`.
+			Match::Score goodRun = 10*4 - 1;
+			Match::Score badRun = 0;
 			Match match = { .index = i };
 
 			while (icur != iend && tcur != tend) {
@@ -104,7 +104,7 @@ namespace Game::UI {
 					// Give increasing bonuses to long sequences of matches.
 					match.good += quality + (goodRun >> 2);
 				} else {
-					GAME_DEBUG_CONSOLE_SUGGESTIONS(match.highlight.push_back('_'));
+					GAME_DEBUG_CONSOLE_SUGGESTIONS(match.highlight.push_back('~'));
 
 					goodRun = 0;
 					++badRun;
@@ -120,12 +120,18 @@ namespace Game::UI {
 			}
 
 			{ // Bias toward shorter/more exact matches
-				const int rem = static_cast<int>(iend - icur);
-				match.bad -= (rem > 0) + (rem >> 2);
+				const auto rem = static_cast<Match::Score>(iend - icur);
+				match.bad -= (rem > 0) + (rem >> 1);
+			}
+
+			// Bonus for matching whole search string
+			if (tcur == tend) {
+				//match.good += 10; // Could also make this proportional to `iend - ibeg` to offset bad matches?
+				match.bad /= 2;
 			}
 
 			GAME_DEBUG_CONSOLE_SUGGESTIONS(
-				match.highlight.insert(match.highlight.end(), item.size() - match.highlight.size(), '_');
+				match.highlight.insert(match.highlight.end(), item.size() - match.highlight.size(), '~');
 			);
 
 			{ // Insert new entry
