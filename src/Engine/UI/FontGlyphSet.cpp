@@ -48,7 +48,8 @@ namespace Engine::UI {
 		}
 
 		// Setup HarfBuzz
-		// 
+		//
+		// TODO (aHGFyF77):
 		// Ideally we would share a single hb_face_t* between all sizes of a face (cached in FT_Face::generic)
 		// Unfortunately HarfBuzz does not expose `_hb_ft_font_set_funcs` so our only options
 		// are to:
@@ -173,6 +174,33 @@ namespace Engine::UI {
 		//ENGINE_LOG("Max Glyph: ", maxGlyph.x, ", ", maxGlyph.y);
 		//ENGINE_LOG("Max Face: ", maxFace.x, ", ", maxFace.y);
 	}
+
+	ENGINE_INLINE void FontGlyphSet::fallback(std::string_view str, hb_glyph_info_t& info, hb_glyph_position_t& pos) {
+		// At the momement we only have single char fallbacks, but we could have
+		// a cluster of multiple chars map to a single glyph.
+		//const char c = str[info.cluster];
+
+		//
+		// TODO: this isn't really a good way to handle tabs. They need to be
+		// handled at render time because we dont know WHERE the tab stops
+		// actually are. Consider: "\thello" and "h\tello".
+		//
+		// You would expect:
+		// `    hello`
+		// `h   ello`
+		// 
+		// But with this you will get:
+		// `    hello`
+		// `h    ello`
+		//
+		// In the second case the \t should only be three wide. With this impl it is always four.
+		//
+		//if (c == '\t') {
+		//	if (hb_font_get_glyph(hbFont, 0x20, 0, &info.codepoint)) {
+		//		pos.x_advance = 4*hb_font_get_glyph_h_advance(hbFont, info.codepoint);
+		//	}
+		//}
+	}
 	
 	template<class ShapeGlyphCont>
 	void FontGlyphSet::shapeStringImpl(std::string_view str, ShapeGlyphCont& glyphs, Bounds& bounds) {
@@ -195,9 +223,13 @@ namespace Engine::UI {
 		glm::vec2 cursor = {}; // Used for calc bounds
 
 		for (uint32 i = 0; i < sz; ++i) {
-			const auto& info = infoArr[i];
-			const auto& pos = posArr[i];
-			
+			auto& info = infoArr[i];
+			auto& pos = posArr[i];
+
+			if (!info.codepoint) {
+				fallback(str, info, pos);
+			}
+
 			if (!info.codepoint) {
 				const auto c = str[info.cluster];
 				ENGINE_WARN("Missing one or more glyphs for character at index ", info.cluster, " = ",  static_cast<int>(c)," (", c, ")");

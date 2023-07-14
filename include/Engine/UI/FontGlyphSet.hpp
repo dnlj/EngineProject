@@ -137,6 +137,8 @@ namespace Engine::UI {
 			ENGINE_INLINE glm::vec2 getNominalSize() const noexcept { return {ftSize->metrics.x_ppem, ftSize->metrics.y_ppem}; }
 
 		private:
+			void fallback(std::string_view str, hb_glyph_info_t& info, hb_glyph_position_t& pos);
+
 			template<class ShapeGlyphCont>
 			void shapeStringImpl(std::string_view str, ShapeGlyphCont& glyphs, Bounds& bounds);
 

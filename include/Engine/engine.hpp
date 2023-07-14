@@ -131,7 +131,7 @@
 
 /**
  * @def ENGINE_EMPTY_BASE
- * Enables more broad use of empty base optmization on MSVC
+ * Enables more broad use of empty base optimization on MSVC
  * @see https://devblogs.microsoft.com/cppblog/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
  */
 #if ENGINE_OS_WINDOWS

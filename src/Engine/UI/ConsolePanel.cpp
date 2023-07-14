@@ -41,6 +41,13 @@ namespace Engine::UI {
 				//area->pushText("\n");
 				//area->pushText("xyz789");
 				//area->pushText("foo bar baz\n");
+				area->pushText("-------------------");
+				area->pushText("\tabc123");
+				area->pushText("xyz\t987");
+				area->pushText("First line\nSecond line\nThird line\n");
+				area->pushText("Fourth line");
+				area->pushText("");
+				area->pushText("Sixth line");
 				self->getContext()->clearPanelUpdateFuncs(self);
 			}
 		});
