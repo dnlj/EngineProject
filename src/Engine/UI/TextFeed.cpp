@@ -120,16 +120,18 @@ namespace Engine::UI {
 				pushLine(beg, cur);
 				cur = afterEOL(cur, end);
 				beg = cur;
-				if (cur == end) { break; }
 			} else {
 				++cur;
 			}
 		}
 
-		ENGINE_DEBUG_ASSERT(cur == end);
-		if (beg != end){
-			pushLine(beg, cur);
-		}
+		pushLine(beg, cur);
+
+		// Skip trailing new lines. I don't think we actually want this.
+		//ENGINE_DEBUG_ASSERT(cur == end);
+		//if (beg != end){
+		//	pushLine(beg, cur);
+		//}
 	}
 
 	void TextFeed::render() {

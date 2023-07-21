@@ -36,18 +36,20 @@ namespace Engine::UI {
 			}
 
 			if (i == 10'115) {
-				//area->pushText("");
-				//area->pushText("abc123");
-				//area->pushText("\n");
-				//area->pushText("xyz789");
-				//area->pushText("foo bar baz\n");
-				area->pushText("-------------------");
-				area->pushText("\tabc123");
-				area->pushText("xyz\t987");
-				area->pushText("First line\nSecond line\nThird line\n");
-				area->pushText("Fourth line");
 				area->pushText("");
-				area->pushText("Sixth line");
+				area->pushText("abc123");
+				area->pushText("\n");
+				area->pushText("xyz789");
+				area->pushText("foo bar baz\n");
+				//area->pushText("-------------------");
+				//area->pushText("test line 1");
+				//area->pushText("test line 2\n");
+				//area->pushText("\tabc123");
+				//area->pushText("xyz\t987");
+				//area->pushText("First line\r\nSecond line\nThird line\n\n"); // TODO: also need to test with fianl \r\n
+				//area->pushText("Fourth line");
+				//area->pushText("");
+				//area->pushText("Sixth line");
 				self->getContext()->clearPanelUpdateFuncs(self);
 			}
 		});
