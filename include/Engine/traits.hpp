@@ -45,4 +45,17 @@ namespace Engine {
 
 	template<class T>
 	concept AnyChar = IsChar_v<T>;
+
+
+	/**
+	 * Check if a type is a floating point or integral.
+	 */
+	template<class T>
+	struct IsNumber : std::disjunction<T, std::is_integral<T>, std::is_floating_point<T>> {};
+
+	template<class T>
+	constexpr inline bool IsNumber_v = IsNumber<T>::value;
+
+	template<class T>
+	concept AnyNumber = IsNumber_v<T>;
 }

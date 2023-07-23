@@ -25,7 +25,7 @@ namespace Engine {
 
 			// TODO: shouldn't be including "Game" files in Engine
 			struct {
-				#define X(Name, Type, Default) Type Name = Default;
+				#define X(Name, Type, Default, ...) Type Name = Default;
 				#include <Game/cvars.xpp>
 			} cvars;
 	};

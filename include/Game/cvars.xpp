@@ -1,4 +1,8 @@
-// Name, Type, Default
-X(net_packet_rate_min, float32, 8)
-X(net_packet_rate_max, float32, 256)
+// Name, Type, Default, ... = Min, Max
+X(net_packet_rate_min, float32,   8,  1, 1024)
+X(net_packet_rate_max, float32, 256,  1, 1024)
+
+X(frametime, float64, 0,  0, 100)
+X(    vsync,   int32, 1, -3,   3) // -1 = Adaptive, 0 = Off, 1+ = vsync interval. See wglSwapIntervalEXT.
+
 #undef X

@@ -1,6 +1,7 @@
 // STD
 #include <filesystem>
 #include <random>
+#include <type_traits>
 
 // Engine
 #include <Engine/engine.hpp>
@@ -36,6 +37,9 @@
 #include <Game/systems/ActionSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
 #include <Game/UI/ConsoleWindow.hpp>
+
+// Win32
+#include <timeapi.h>
 
 
 namespace {
@@ -866,57 +870,106 @@ void run(int argc, char* argv[]) {
 			ENGINE_CONSOLE("This is a test command! {}", 123);
 		}); test;
 
-		const auto cvar = [](Engine::CommandManager& cm){
-			const auto& args = cm.args();
-			if (args.size() == 1) {
-				std::string str = [](const auto& name) ENGINE_INLINE_REL -> std::string {
-					const auto& cfg = Engine::getGlobalConfig();
-					using fmt::to_string;
-					#define X(Name, Type, Default) if (name == #Name) { return to_string(cfg.cvars.Name); }
-					#include <Game/cvars.xpp>
-					return {};
-				}(args[0]);
 
-				if (str.empty()) {
-					// TODO: error
-					ENGINE_WARN2("TODO: error");
-					ENGINE_DEBUG_BREAK;
+		struct MyString {
+			const char* const data;
+			consteval MyString(const char* const data) noexcept : data{data} {}
+			consteval std::string_view view() const noexcept { return data; }
+		};
+
+		const auto cvar = []<MyString CVarName, class Func = Engine::None>(Func&& validate = {}) consteval {
+			return [validate=std::forward<Func>(validate)](Engine::CommandManager& cm){
+				const auto& args = cm.args();
+				if (args.size() == 1) {
+					std::string str = [](const auto& name) ENGINE_INLINE_REL -> std::string {
+						const auto& cfg = Engine::getGlobalConfig();
+						using fmt::to_string;
+						#define X(Name, ...) if (name == #Name) { return to_string(cfg.cvars.Name); }
+						#include <Game/cvars.xpp>
+						return {};
+					}(args[0]);
+
+					if (str.empty()) {
+						// TODO: error
+						ENGINE_WARN2("TODO: error");
+						ENGINE_DEBUG_BREAK;
+					}
+
+					ENGINE_CONSOLE("Get ({}) {} = {}", args[0], args.size(), str);
+				} else {
+					ENGINE_CONSOLE("Set ({}) {}", args[0], args.size());
+					//const auto suc = [&validate](const auto& name, const auto& arg) ENGINE_INLINE_REL -> bool {
+					//	auto& cfg = Engine::getGlobalConfig<true>();
+					//	using Engine::fromString;
+					//	#define X(Name, Type, Default, ...)\
+					//		if (name == #Name) {\
+					//			if (!fromString(arg, cfg.cvars.Name)) { return false; }\
+					//			if constexpr (!std::same_as<Func, Engine::None>) {\
+					//				static_assert(requires { validate(cfg.cvars.Name, __VA_ARGS__); }, "Invalid cvar validation function");\
+					//				validate(cfg.cvars.Name, __VA_ARGS__);\
+					//			}\
+					//			return true;\
+					//		}
+					//	#include <Game/cvars.xpp>
+					//	return false;
+					//}(args[0], args[1]);
+
+					const auto suc = [&args, &validate]() -> bool {
+						#define X(Name, Type, Default, ...)\
+							if constexpr (CVarName.view() == #Name) {\
+								if (args[0] == CVarName.view()) {\
+									auto& cfg = Engine::getGlobalConfig<true>();\
+									using Engine::fromString;\
+									if (!fromString(args[1], cfg.cvars.Name)) { return false; }\
+									if constexpr (!std::same_as<Func, Engine::None>) {\
+										static_assert(requires { validate(cfg.cvars.Name, __VA_ARGS__); }, "Invalid cvar validation function");\
+										validate(cfg.cvars.Name, __VA_ARGS__);\
+									}\
+									return true;\
+								}\
+							}
+						#include <Game/cvars.xpp>
+						return false;
+					}();
+
+					if (!suc) {
+						ENGINE_WARN2("Unable to set cvar \"{}\" to  \"{}\"", args[0], args[1]);
+					}
 				}
+			};
+		};
+		// TODO: use cvars.xpp
 
-				ENGINE_CONSOLE("Get ({}) {} = {}", args[0], args.size(), str);
 
-			} else {
-				ENGINE_CONSOLE("Set ({}) {}", args[0], args.size());
-				const auto suc = [](const auto& name, const auto& arg) ENGINE_INLINE_REL -> bool {
-					auto& cfg = Engine::getGlobalConfig<true>();
-					using Engine::fromString;
-					#define X(Name, Type, Default) if (name == #Name) { return fromString(arg, cfg.cvars.Name); }
-					#include <Game/cvars.xpp>
-					return false;
-				}(args[0], args[1]);
+		//constexpr static MyString str = "This is a test string";
+		//const auto test123 = []<MyString name>() -> std::string_view { return name.data; };
+		//std::cout << test123.template operator()<"This is a teeeeeeeeeeeeeest">()<< '\n';
 
-				if (!suc) {
-					ENGINE_WARN2("Unable to set cvar \"{}\" to  \"{}\"", args[0], args[1]);
-				}
+		cm.registerCommand("net_packet_rate_min", cvar.template operator()<"net_packet_rate_min">());
+		cm.registerCommand("net_packet_rate_max", cvar.template operator()<"net_packet_rate_max">());
+
+		constexpr auto clamp = []<class V>(V& value, const V& min, const V& max) constexpr {
+			ENGINE_LOG2("Before: {}", value);
+			value = std::clamp<V>(value, min, max);
+			ENGINE_LOG2("After: {}", value);
+		};
+
+		// TODO: detect if vsync is supported, if so default to -1 instead of +1
+		// TODO: frametime should warn if setting decimal number on windows (time != int(time))
+		// TODO: how does our cvar setter handle negative numbers for unsigned types? we should be printing an error and then ignore.
+		// TODO: need to add fromString for bools
+		cm.registerCommand("frametime", cvar.template operator()<"frametime">());
+		cm.registerCommand("vsync", cvar.template operator()<"vsync">(clamp));
+
+		if constexpr (false) {
+			std::vector<const char*> testData = {
+				#include "../.private/testdata_ue"
+			};
+
+			for (auto cmd : testData) {
+				//cm.registerCommand(cmd, cvar());
 			}
-		};
-
-		cm.registerCommand("net_packet_rate_min", cvar);
-		cm.registerCommand("net_packet_rate_max", cvar);
-
-		std::vector<const char*> testData = {
-			#include "../.private/testdata_ue"
-		};
-
-		for (auto cmd : testData) {
-			cm.registerCommand(cmd, cvar);
 		}
-
-		//auto& uiSys = engine.getWorld().getSystem<Game::UISystem>();
-		//auto* console = uiSys.getConsole();
-
-		// TODO: probably take a get func and container? idk best interface?
-		//console->get()->setSuggestions()
 	}
 
 	// Map Stuff
@@ -927,16 +980,16 @@ void run(int argc, char* argv[]) {
 	}
 
 	// Main loop
+	const auto& cfg = Engine::getGlobalConfig();
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;
 
 	if constexpr (ENGINE_SERVER) {
 		window.setPosSize(3440, 0, 1920, 1080);
 	} else {
-		//window.setClientArea(1920, 1080);
-		//window.center();
 		window.setClientArea(1920, 1080);
 		window.setPosition(1250, 100);
+		//window.center();
 	}
 
 	window.setSwapInterval(0);
@@ -948,9 +1001,23 @@ void run(int argc, char* argv[]) {
 		ENGINE_INFO("Start Time: ", Engine::Clock::Milliseconds{endTime - startTime}.count(), "ms");
 	}
 
+	#if ENGINE_OS_WINDOWS
+		const uint32 minClockResolution = []{
+			TIMECAPS caps{ .wPeriodMin = 0 };
+			::timeGetDevCaps(&caps, sizeof(caps));
+			return caps.wPeriodMin;
+		}();
+
+		if (minClockResolution != 1) {
+			ENGINE_WARN2("Poor cpu clock resolution ({}ms, expected 1ms). You may experience excessive hardware usage.", minClockResolution);
+		}
+
+		timeBeginPeriod(minClockResolution);
+	#endif
+
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
 	while (!window.shouldClose()) {
-		auto tstart = std::chrono::high_resolution_clock::now();
+		const auto tstart = std::chrono::high_resolution_clock::now();
 		window.poll();
 
 		// Rendering
@@ -968,14 +1035,35 @@ void run(int argc, char* argv[]) {
 
 		window.swapBuffers();
 
+		//
+		//
+		//
+		//
+		// TODO: update comment about sleep and mention timeBeginPeriod
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+
 		// TODO: also look into NVIDIA Reflex SDK and AMD Anti-Lag
-		// Don't eat all our GPU and cause our system to prepare for takeoff.
-		// Sleep is very inprecise (~15ms resolution), so instead busy wait with a yield.
-		//constexpr auto targetFrameTime = std::chrono::microseconds{9'000}; // TODO: should probably be a setting/cmd line/cfg/console option.
-		//while (std::chrono::high_resolution_clock::now() - tstart < targetFrameTime) {
-		//	std::this_thread::yield();
-		//}
+		// Don't eat all our CPU/GPU and cause our system to prepare for takeoff.
+		const auto frametime = static_cast<uint32>(cfg.cvars.frametime);
+		if (cfg.cvars.vsync == 0 && frametime > minClockResolution) {
+			const auto target = tstart + std::chrono::milliseconds{frametime - minClockResolution};
+			std::this_thread::sleep_until(target);
+		}
 	}
+
+	#if ENGINE_OS_WINDOWS
+		timeEndPeriod(minClockResolution);
+	#endif
 }
 
 static_assert(ENGINE_CLIENT ^ ENGINE_SERVER, "Must be either client or server");

@@ -240,6 +240,7 @@ project("*")
 			"Ws2_32",
 			"Imm32",
 			"hid",
+			"Winmm",
 		}
 	filter "configurations:Debug*"
 		conan_setup("debug")
