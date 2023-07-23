@@ -11,7 +11,7 @@ namespace Engine::UI {
 		switch (action) {
 			case Action::Submit: {
 				if (auto text = suggest->get(); !text.empty()) {
-					setText(text);
+					setText(std::string{text} + ' ');
 					suggest->close();
 					return true;
 				}
