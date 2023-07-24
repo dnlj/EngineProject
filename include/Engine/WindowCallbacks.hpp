@@ -6,9 +6,9 @@
 
 
 namespace Engine {
-	class WindowCallbackFunctions {
+	class WindowCallbacks {
 		public:
-			virtual ~WindowCallbackFunctions() {};
+			virtual ~WindowCallbacks() {};
 
 			/** Called when system settings are changed */
 			virtual void settingsChanged() = 0;
@@ -21,11 +21,5 @@ namespace Engine {
 			virtual void mouseMoveCallback(Engine::Input::InputEvent event) = 0;
 			virtual void mouseLeaveCallback() = 0;
 			virtual void mouseEnterCallback() = 0;
-	};
-
-	template<class UserData>
-	class WindowCallbacks : public WindowCallbackFunctions {
-		public:
-			UserData* userdata;
 	};
 }

@@ -605,7 +605,7 @@ namespace Engine::Win32 {
 // OpenGLWindow
 ////////////////////////////////////////////////////////////////////////////////
 namespace Engine::Win32 {
-	OpenGLWindow::OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat, WindowCallbackFunctions& callbacks)
+	OpenGLWindow::OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat, WindowCallbacks& callbacks)
 		: callbacks{callbacks} {
 		wglPtrs = OpenGLWindow::init();
 

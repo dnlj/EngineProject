@@ -113,7 +113,7 @@ namespace Engine::Win32 {
 			static constexpr wchar_t className[] = L"Engine::Win32::OpenGLWindow";
 			
 			// TODO: make template after de-globalizing UI/ImGui
-			WindowCallbackFunctions& callbacks;
+			WindowCallbacks& callbacks;
 			HWND windowHandle = nullptr;
 			HDC deviceContext = nullptr;
 			HGLRC renderContext = nullptr;
@@ -133,7 +133,7 @@ namespace Engine::Win32 {
 			std::vector<std::unique_ptr<KeyboardState>> keyboardData;
 
 		public:
-			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat, WindowCallbackFunctions& callbacks);
+			OpenGLWindow(const PixelFormat& pixelFormat, const ContextFormat& contextFormat, WindowCallbacks& callbacks);
 			OpenGLWindow(const OpenGLWindow&) = delete;
 
 			~OpenGLWindow(); // TODO: cleanup Windows objects

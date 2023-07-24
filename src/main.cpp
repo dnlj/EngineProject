@@ -6,41 +6,33 @@
 // Engine
 #include <Engine/engine.hpp>
 #include <Engine/Logger.hpp>
-#include <Engine/CommandManager.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/Noise/SimplexNoise.hpp>
 #include <Engine/Noise/WorleyNoise.hpp>
 #include <Engine/Win32/Win32.hpp>
-#include <Engine/WindowCallbacks.hpp>
 #include <Engine/Window.hpp>
-#include <Engine/Input/InputSequence.hpp>
 #include <Engine/CommandLine/Parser.hpp>
 #include <Engine/Debug/GL/GL.hpp>
-#include <Engine/ConfigParser.hpp>
-#include <Engine/Input/KeyCode.hpp>
 #include <Engine/Input/BindManager.hpp>
-#include <Engine/from_string.hpp>
+#include <Engine/Camera.hpp>
 
 #include <Engine/UI/Context.hpp>
-#include <Engine/UI/DirectionalLayout.hpp>
 #include <Engine/UI/ImageDisplay.hpp>
 #include <Engine/UI/Window.hpp>
 #include <Engine/UI/TextBox.hpp>
-#include <Engine/UI/ConsolePanel.hpp>
 
 // Game
 #include <Game/common.hpp>
 #include <Game/World.hpp>
 #include <Game/MapGenerator2.hpp>
 #include <Game/systems/UISystem.hpp>
-#include <Game/systems/InputSystem.hpp>
-#include <Game/systems/ActionSystem.hpp>
-#include <Game/systems/PhysicsSystem.hpp>
 #include <Game/UI/ConsoleWindow.hpp>
 
 // Win32
 #include <timeapi.h>
 
+void setupCommands(Game::EngineInstance& engine);
+void setupBinds(Game::EngineInstance& engine);
 
 namespace {
 	using namespace Engine::Types;
@@ -420,28 +412,6 @@ namespace {
 		}
 	}
 
-	b2Body* createPhysicsSquare(Engine::ECS::Entity ent, Game::PhysicsSystem& physSys, b2Vec2 position = b2Vec2_zero) {
-		b2BodyDef bodyDef;
-		bodyDef.type = b2_dynamicBody;
-		bodyDef.position = position;
-
-		b2Body* body = physSys.createBody(ent, bodyDef);
-
-		b2PolygonShape shape;
-		shape.SetAsBox(1.0f/8, 1.0f/8);
-
-		b2FixtureDef fixtureDef;
-		fixtureDef.shape = &shape;
-		fixtureDef.density = 1.0f;
-
-		body->CreateFixture(&fixtureDef);
-		body->SetLinearDamping(10.0f);
-		body->SetFixedRotation(true);
-		
-		return body;
-	}
-
-	
 	void performExit(const char* reason) {
 		ENGINE_LOG("Shutting down: ", reason, "\n\n");
 	};
@@ -449,83 +419,87 @@ namespace {
 
 namespace {
 	// TODO: move into file
-	class WindowCallbacks final : public Engine::WindowCallbacks<Game::EngineInstance> {
-		wchar_t buffer16[2] = {};
-		char buffer8[4] = {};
-		static_assert(sizeof(buffer16) == 4 && sizeof(buffer8) == 4);
-		std::string_view view;
+	class WindowCallbacks final : public Engine::WindowCallbacks {
+		public:
+			Game::EngineInstance* userdata;
 
-		uint32 convertBuffers(int l) {
-			return static_cast<uint32>(WideCharToMultiByte(CP_UTF8, 0,
-				buffer16, l,
-				buffer8, 4,
-				nullptr, nullptr
-			));
-		}
+		private:
+			wchar_t buffer16[2] = {};
+			char buffer8[4] = {};
+			static_assert(sizeof(buffer16) == 4 && sizeof(buffer8) == 4);
+			std::string_view view;
+
+			uint32 convertBuffers(int l) {
+				return static_cast<uint32>(WideCharToMultiByte(CP_UTF8, 0,
+					buffer16, l,
+					buffer8, 4,
+					nullptr, nullptr
+				));
+			}
 		
-		void settingsChanged() override {
-			userdata->getUIContext().configUserSettings();
-		}
-
-		void resizeCallback(int32 w, int32 h) override {
-			ENGINE_LOG("Resize: ", w, " ", h);
-			glViewport(0, 0, w, h);
-			userdata->getCamera().setAsOrtho(w, h, Game::pixelRescaleFactor);
-			userdata->getUIContext().onResize(w, h);
-		}
-
-		void keyCallback(Engine::Input::InputEvent event) override {
-			event.state.id.device = 0;
-			if (userdata->getUIContext().onKey(event)) { return; }
-			userdata->getBindManager().processInput(event);
-		}
-
-		void charCallback(wchar_t ch) {
-			// Convert from UTF-16 to UTF-8
-			// Code point that requires multiple code units (surrogate pair)
-			if (ch > 0xD7FF && ch < 0xE000) {
-				if (ch < 0xDC00) {
-					// Don't process until we get the low surrogate
-					buffer16[0] = ch;
-					return;
-				} else {
-					buffer16[1] = ch;
-				}
-				
-				view = std::string_view{buffer8, convertBuffers(2)};
-			} else {
-				buffer16[0] = ch;
-				view = std::string_view{buffer8, convertBuffers(1)};
+			void settingsChanged() override {
+				userdata->getUIContext().configUserSettings();
 			}
 
-			if (userdata->getUIContext().onText(view)) { return; }
-		}
+			void resizeCallback(int32 w, int32 h) override {
+				ENGINE_LOG("Resize: ", w, " ", h);
+				glViewport(0, 0, w, h);
+				userdata->getCamera().setAsOrtho(w, h, Game::pixelRescaleFactor);
+				userdata->getUIContext().onResize(w, h);
+			}
 
-		void mouseButtonCallback(Engine::Input::InputEvent event) override {
-			event.state.id.device = 0;
-			if (userdata->getUIContext().onMouse(event)) { return; }
-			userdata->getBindManager().processInput(event);
-		}
+			void keyCallback(Engine::Input::InputEvent event) override {
+				event.state.id.device = 0;
+				if (userdata->getUIContext().onKey(event)) { return; }
+				userdata->getBindManager().processInput(event);
+			}
 
-		void mouseWheelCallback(Engine::Input::InputEvent event) override {
-			event.state.id.device = 0;
-			if (userdata->getUIContext().onMouseWheel(event)) { return; }
-			userdata->getBindManager().processInput(event);
-		}
+			void charCallback(wchar_t ch) {
+				// Convert from UTF-16 to UTF-8
+				// Code point that requires multiple code units (surrogate pair)
+				if (ch > 0xD7FF && ch < 0xE000) {
+					if (ch < 0xDC00) {
+						// Don't process until we get the low surrogate
+						buffer16[0] = ch;
+						return;
+					} else {
+						buffer16[1] = ch;
+					}
+				
+					view = std::string_view{buffer8, convertBuffers(2)};
+				} else {
+					buffer16[0] = ch;
+					view = std::string_view{buffer8, convertBuffers(1)};
+				}
 
-		void mouseMoveCallback(Engine::Input::InputEvent event) override {
-			event.state.id.device = 0;
-			if (userdata->getUIContext().onMouseMove(event)) { return; }
-			userdata->getBindManager().processInput(event);
-		}
+				if (userdata->getUIContext().onText(view)) { return; }
+			}
 
-		void mouseLeaveCallback() override {
-			userdata->getUIContext().onFocus(false);
-		}
+			void mouseButtonCallback(Engine::Input::InputEvent event) override {
+				event.state.id.device = 0;
+				if (userdata->getUIContext().onMouse(event)) { return; }
+				userdata->getBindManager().processInput(event);
+			}
 
-		void mouseEnterCallback() override {
-			userdata->getUIContext().onFocus(true);
-		}
+			void mouseWheelCallback(Engine::Input::InputEvent event) override {
+				event.state.id.device = 0;
+				if (userdata->getUIContext().onMouseWheel(event)) { return; }
+				userdata->getBindManager().processInput(event);
+			}
+
+			void mouseMoveCallback(Engine::Input::InputEvent event) override {
+				event.state.id.device = 0;
+				if (userdata->getUIContext().onMouseMove(event)) { return; }
+				userdata->getBindManager().processInput(event);
+			}
+
+			void mouseLeaveCallback() override {
+				userdata->getUIContext().onFocus(false);
+			}
+
+			void mouseEnterCallback() override {
+				userdata->getUIContext().onFocus(true);
+			}
 	};
 }
 
@@ -645,341 +619,23 @@ void run(int argc, char* argv[]) {
 	//world.setNextTick(ENGINE_SERVER ?  0x7FFF'FFFF : 0);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Binds
+	// Initialize Systems
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	{
-		using namespace Engine::Input;
-		using Layer = Game::InputLayer;
-		using Action = Game::Action;
-		using Type = InputType;
-
-		auto& bm = engine.getBindManager();
-		auto& is = world.getSystem<Game::InputSystem>();
-
-		constexpr auto updateActionState = [](auto& world, auto action, auto curr) ENGINE_INLINE {
-			if constexpr (ENGINE_SERVER) { return; }
-			world.getSystem<Game::ActionSystem>().updateActionState(action, curr.i32);
-		};
-		constexpr auto updateTargetState = [](auto& world, auto curr) ENGINE_INLINE {
-			if constexpr (ENGINE_SERVER) { return; }
-			world.getSystem<Game::ActionSystem>().updateTarget(curr.f32v2);
-		};
-
-		////////////////////////////////////////////////////////////////////////////////////////////////
-		// Game Binds
-		////////////////////////////////////////////////////////////////////////////////////////////////
-		is.registerCommand(Action::Attack1, [&](Value curr){ updateActionState(world, Action::Attack1, curr); });
-		is.registerCommand(Action::Attack2, [&](Value curr){ updateActionState(world, Action::Attack2, curr); });
-		is.registerCommand(Action::MoveUp, [&](Value curr){ updateActionState(world, Action::MoveUp, curr); });
-		is.registerCommand(Action::MoveDown, [&](Value curr){ updateActionState(world, Action::MoveDown, curr); });
-		is.registerCommand(Action::MoveLeft, [&](Value curr){ updateActionState(world, Action::MoveLeft, curr); });
-		is.registerCommand(Action::MoveRight, [&](Value curr){ updateActionState(world, Action::MoveRight, curr); });
-		is.registerCommand(Action::Target, [&](Value curr){ updateTargetState(world, curr); });
-
-		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::Keyboard, 0, 29}, // CTRL
-			InputId{Type::Keyboard, 0, 46}, // C
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); return true; });
-		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::Keyboard, 0, 29}, // CTRL
-			InputId{Type::Keyboard, 0, 56}, // ALT
-			InputId{Type::Keyboard, 0, 16}, // Q
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); return true; });
-		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::Keyboard, 0, 57}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); return true; });
-		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::Keyboard, 0, 17}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveUp, time, curr); return true; });
-		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::Keyboard, 0, 31}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveDown, time, curr); return true; });
-		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::Keyboard, 0, 30}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveLeft, time, curr); return true; });
-		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::Keyboard, 0, 32}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::MoveRight, time, curr); return true; });
-
-		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::Mouse, 0, 0}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack1, time, curr); return true; });
-		bm.addBind(Layer::Game, false, InputSequence{
-			InputId{Type::Mouse, 0, 1}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Attack2, time, curr); return true; });
-
-		bm.addBind(Layer::Game, false, InputSequence{
-				InputId{Type::MouseAxis, 0, 0}
-		}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Target, time, curr); return true; });
-
-		////////////////////////////////////////////////////////////////////////////////////////////////
-		// Interface Binds
-		////////////////////////////////////////////////////////////////////////////////////////////////
-		using GuiAction = Engine::UI::Action;
-
-		// Chars
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Left},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveCharLeft); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Right},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveCharRight); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Up},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveCharUp); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Down},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveCharDown); } return true; });
-
-
-		// Words
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::Left},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveWordLeft); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::Left},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveWordLeft); } return true; });
-
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::Right},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveWordRight); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::Right},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveWordRight); } return true; });
-
-
-		// Lines
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Home},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveLineStart); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::End},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::MoveLineEnd); } return true; });
-
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Backspace},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::DeletePrev); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Delete},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::DeleteNext); } return true; });
-
-
-		// Selection
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::LShift},
-			}, [&](Value curr, Value prev, auto time){
-			if (curr != prev) {
-				guiContext.queueFocusAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd);
-			}
-			return true;
-		});
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::RShift},
-		}, [&](Value curr, Value prev, auto time){
-			if (curr != prev) {
-				guiContext.queueFocusAction(curr.i32 ? GuiAction::SelectBegin : GuiAction::SelectEnd);
-			}
-			return true;
-		});
-
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::A},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::SelectAll); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::A},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::SelectAll); } return true; });
-
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Enter},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::Submit); } return true; });
-
-
-		// Cut
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::X},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::Cut); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::X},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::Cut); } return true; });
-
-
-		// Copy
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::C},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::Copy); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::C},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::Copy); } return true; });
-
-
-		// Paste
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::LCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::V},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::Paste); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::RCtrl},
-			InputId{Type::Keyboard, 0, +KeyCode::V},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::Paste); } return true; });
-
-
-		// Scroll
-		bm.addBind(Layer::GuiHover, true, InputSequence{
-				InputId{Type::MouseWheel, 0, 0}
-		}, [&](Value curr, Value prev, auto time){ guiContext.queueHoverAction(GuiAction::Scroll, curr); return true; });
-
-
-		bm.addBind(Layer::GuiHover, true, InputSequence{
-				InputId{Type::Mouse, 0, 0}
-		}, [&](Value curr, Value prev, auto time){
-			if (curr.i32) { guiContext.focusHover(); }
-			return guiContext.onActivate(curr.i32, time);
-		});
-
-
-		// TODO: really want a way to specify generic L/R shift without to registers
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::Tab},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::PanelNext); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::LShift},
-			InputId{Type::Keyboard, 0, +KeyCode::Tab},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::PanelPrev); } return true; });
-		bm.addBind(Layer::GuiFocus, true, InputSequence{
-			InputId{Type::Keyboard, 0, +KeyCode::RShift},
-			InputId{Type::Keyboard, 0, +KeyCode::Tab},
-		}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::PanelPrev); } return true; });
-		
-		//bm.setLayerEnabled(Layer::GuiFocus, false);
-	}
-
-	// Commands
-	{
-		auto& cm = engine.getCommandManager();
-		const auto test = cm.registerCommand("test_command", [](auto&){
-			ENGINE_CONSOLE("This is a test command! {}", 123);
-		}); test;
-
-
-		struct MyString {
-			const char* const data;
-			consteval MyString(const char* const data) noexcept : data{data} {}
-			consteval std::string_view view() const noexcept { return data; }
-		};
-
-		const auto cvar = []<MyString CVarName, class Func = Engine::None>(Func&& validate = {}) consteval {
-			return [validate=std::forward<Func>(validate)](Engine::CommandManager& cm){
-				const auto& args = cm.args();
-				if (args.size() == 1) {
-					std::string str = [](const auto& name) ENGINE_INLINE_REL -> std::string {
-						const auto& cfg = Engine::getGlobalConfig();
-						using fmt::to_string;
-						#define X(Name, ...) if (name == #Name) { return to_string(cfg.cvars.Name); }
-						#include <Game/cvars.xpp>
-						return {};
-					}(args[0]);
-
-					if (str.empty()) {
-						// TODO: error
-						ENGINE_WARN2("TODO: error");
-						ENGINE_DEBUG_BREAK;
-					}
-
-					ENGINE_CONSOLE("Get ({}) {} = {}", args[0], args.size(), str);
-				} else {
-					ENGINE_CONSOLE("Set ({}) {}", args[0], args.size());
-					//const auto suc = [&validate](const auto& name, const auto& arg) ENGINE_INLINE_REL -> bool {
-					//	auto& cfg = Engine::getGlobalConfig<true>();
-					//	using Engine::fromString;
-					//	#define X(Name, Type, Default, ...)\
-					//		if (name == #Name) {\
-					//			if (!fromString(arg, cfg.cvars.Name)) { return false; }\
-					//			if constexpr (!std::same_as<Func, Engine::None>) {\
-					//				static_assert(requires { validate(cfg.cvars.Name, __VA_ARGS__); }, "Invalid cvar validation function");\
-					//				validate(cfg.cvars.Name, __VA_ARGS__);\
-					//			}\
-					//			return true;\
-					//		}
-					//	#include <Game/cvars.xpp>
-					//	return false;
-					//}(args[0], args[1]);
-
-					const auto suc = [&args, &validate]() -> bool {
-						#define X(Name, Type, Default, ...)\
-							if constexpr (CVarName.view() == #Name) {\
-								if (args[0] == CVarName.view()) {\
-									auto& cfg = Engine::getGlobalConfig<true>();\
-									using Engine::fromString;\
-									if (!fromString(args[1], cfg.cvars.Name)) { return false; }\
-									if constexpr (!std::same_as<Func, Engine::None>) {\
-										static_assert(requires { validate(cfg.cvars.Name, __VA_ARGS__); }, "Invalid cvar validation function");\
-										validate(cfg.cvars.Name, __VA_ARGS__);\
-									}\
-									return true;\
-								}\
-							}
-						#include <Game/cvars.xpp>
-						return false;
-					}();
-
-					if (!suc) {
-						ENGINE_WARN2("Unable to set cvar \"{}\" to  \"{}\"", args[0], args[1]);
-					}
-				}
-			};
-		};
-		// TODO: use cvars.xpp
-
-
-		//constexpr static MyString str = "This is a test string";
-		//const auto test123 = []<MyString name>() -> std::string_view { return name.data; };
-		//std::cout << test123.template operator()<"This is a teeeeeeeeeeeeeest">()<< '\n';
-
-		cm.registerCommand("net_packet_rate_min", cvar.template operator()<"net_packet_rate_min">());
-		cm.registerCommand("net_packet_rate_max", cvar.template operator()<"net_packet_rate_max">());
-
-		constexpr auto clamp = []<class V>(V& value, const V& min, const V& max) constexpr {
-			ENGINE_LOG2("Before: {}", value);
-			value = std::clamp<V>(value, min, max);
-			ENGINE_LOG2("After: {}", value);
-		};
-
-		// TODO: detect if vsync is supported, if so default to -1 instead of +1
-		// TODO: frametime should warn if setting decimal number on windows (time != int(time))
-		// TODO: how does our cvar setter handle negative numbers for unsigned types? we should be printing an error and then ignore.
-		// TODO: need to add fromString for bools
-		cm.registerCommand("frametime", cvar.template operator()<"frametime">());
-		cm.registerCommand("vsync", cvar.template operator()<"vsync">(clamp));
-
-		if constexpr (false) {
-			std::vector<const char*> testData = {
-				#include "../.private/testdata_ue"
-			};
-
-			for (auto cmd : testData) {
-				//cm.registerCommand(cmd, cvar());
-			}
-		}
-	}
-
-	// Map Stuff
+	setupBinds(engine);
+	setupCommands(engine);
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Map Testing
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	if constexpr (ENGINE_CLIENT) {
 		auto preview = guiContext.createPanel<Map::MapPreview>(guiContext.getRoot());
 		preview->setPos({1200, 20});
 		preview->setSize({512, 512});
 	}
 
-	// Main loop
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// Main Loop
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	const auto& cfg = Engine::getGlobalConfig();
 	std::array<float, 64> deltas = {};
 	size_t deltaIndex = 0;
@@ -1001,6 +657,7 @@ void run(int argc, char* argv[]) {
 		ENGINE_INFO("Start Time: ", Engine::Clock::Milliseconds{endTime - startTime}.count(), "ms");
 	}
 
+	// Configure Windows clock resolution
 	#if ENGINE_OS_WINDOWS
 		const uint32 minClockResolution = []{
 			TIMECAPS caps{ .wPeriodMin = 0 };
