@@ -161,11 +161,11 @@ namespace Engine {
  * Helpers for quickly performing ADL.
  */
 #define CREATE_ADL_WRAPPER_1(name) \
-	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& t) { \
+	template<class T> ENGINE_INLINE constexpr decltype(auto) adl_##name(T&& t) { \
 		using ::std::name; return name(std::forward<T>(t)); \
 	}
 #define CREATE_ADL_WRAPPER_2(name) \
-	template<class T> ENGINE_INLINE decltype(auto) adl_##name(T&& t1, T&& t2) { \
+	template<class T> ENGINE_INLINE constexpr decltype(auto) adl_##name(T&& t1, T&& t2) { \
 		using ::std::name; return name(std::forward<T>(t1), std::forward<T>(t2)); \
 	}
 namespace Engine {
