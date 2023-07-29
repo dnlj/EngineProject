@@ -15,27 +15,20 @@
 #include <Engine/Win32/OpenGLWindow.hpp>
 #include <Engine/Clock.hpp>
 
+#if ENGINE_DEBUG
+	#include <Engine/Debug/GL/GL.hpp>
+#endif
+
+
 
 namespace {
 	using namespace Engine::Types;
 
 	template<class T>
-	T getFunctionPointerGL(const char* name) {
+	T getOpenGLExtensionFunction(const char* name) {
 		auto addr = wglGetProcAddress(name);
 		ENGINE_ASSERT(addr, "Unable to get WGL function pointer for ", name, " - ", Engine::Win32::getLastErrorMessage());
 		return reinterpret_cast<T>(addr);
-
-		// TODO: only needed for gl 1?
-		// if (addr) { return addr; }
-		//static auto module = [](){
-		//	const auto handle = GetModuleHandleW(L"opengl32.dll");
-		//	if (!handle) {
-		//		abort(); // TODO: handle error. GetLastError
-		//	}
-		//	return  handle;
-		//}();
-		//
-		//addr = GetProcAddress(module, name);
 	}
 
 	constexpr bool getKeyExtended(LPARAM lParam) {
@@ -599,6 +592,20 @@ namespace Engine::Win32 {
 		window.callbacks.mouseLeaveCallback();
 		return 0;
 	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_SETFOCUS>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.focused = true;
+		window.callbacks.gainFocus();
+		return 0;
+	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_KILLFOCUS>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		window.focused = false;
+		window.callbacks.loseFocus();
+		return 0;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -738,6 +745,50 @@ namespace Engine::Win32 {
 				ENGINE_ERROR("Unable to register input devices - ", getLastErrorMessage());
 			}
 		}
+
+		{ // Setup OpenGL
+			wglMakeCurrent(deviceContext, renderContext);
+			auto loaded = ogl_LoadFunctions();
+			if (loaded == ogl_LOAD_FAILED) {
+				ENGINE_ERROR("[glLoadGen] initialization failed.");
+			}
+
+			auto failed = loaded - ogl_LOAD_SUCCEEDED;
+			if (failed > 0) {
+				ENGINE_ERROR("[glLoadGen] Failed to load ", failed, " functions.");
+			}
+
+			if (!ogl_IsVersionGEQ(contextFormat.majorVersion, contextFormat.minorVersion)) {
+				ENGINE_ERROR("[glLoadGen] OpenGL version ", contextFormat.majorVersion, ".", contextFormat.minorVersion, " is not available.");
+			}
+
+			// OpenGL debug message
+			if constexpr (ENGINE_DEBUG) {
+				glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+				glDebugMessageCallback(Engine::Debug::GL::debugMessageCallback, nullptr);
+				glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+			}
+
+			glEnable(GL_FRAMEBUFFER_SRGB);
+		}
+
+		{ // Load Capabilities
+			GLint count = 0;
+			glGetIntegerv(GL_NUM_EXTENSIONS, &count);
+
+			Engine::FlatHashMap<std::string_view, void> caps;
+			caps.reserve(1024);
+
+			for (GLint i = 0; i < count; ++i) {
+				std::string_view name = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i)); // UTF-8, null terminated
+				caps.insert(name);
+			}
+
+			if (caps.contains("EXT_swap_control_tear")){
+				// TODO: This doesn't cover GSync. Only EXT_swap_control_tear
+				capabilities |= +WindowCapabilities::AdaptiveSync;
+			}
+		}
 	}
 
 	OpenGLWindow::~OpenGLWindow() {
@@ -749,10 +800,6 @@ namespace Engine::Win32 {
 
 	void OpenGLWindow::show() {
 		ShowWindow(windowHandle, SW_SHOW);
-	}
-
-	void OpenGLWindow::makeContextCurrent() {
-		wglMakeCurrent(deviceContext, renderContext);
 	}
 
 	void OpenGLWindow::poll() {
@@ -772,14 +819,6 @@ namespace Engine::Win32 {
 		if (!wglPtrs.wglSwapIntervalEXT(interval)) {
 			ENGINE_WARN("Unable to set swap interval to ", interval, ". Current swap interval is ", wglPtrs.wglGetSwapIntervalEXT(), ".");
 		}
-	}
-
-	HWND OpenGLWindow::getWin32WindowHandle() const {
-		return windowHandle;
-	}
-
-	bool OpenGLWindow::shouldClose() const {
-		return close;
 	}
 
 	glm::ivec2 OpenGLWindow::getFramebufferSize() const {
@@ -939,10 +978,10 @@ namespace Engine::Win32 {
 
 		WGLPointers pointers = {
 			// If you ever have issues getting a function pointer make sure to check caps. EXT not Ext etc.
-			.wglChoosePixelFormatARB = getFunctionPointerGL<PFNWGLCHOOSEPIXELFORMATARBPROC>("wglChoosePixelFormatARB"),
-			.wglCreateContextAttribsARB = getFunctionPointerGL<PFNWGLCREATECONTEXTATTRIBSARBPROC>("wglCreateContextAttribsARB"),
-			.wglSwapIntervalEXT = getFunctionPointerGL<PFNWGLSWAPINTERVALEXTPROC>("wglSwapIntervalEXT"),
-			.wglGetSwapIntervalEXT = getFunctionPointerGL<PFNWGLGETSWAPINTERVALEXTPROC>("wglGetSwapIntervalEXT"),
+			.wglChoosePixelFormatARB = getOpenGLExtensionFunction<PFNWGLCHOOSEPIXELFORMATARBPROC>("wglChoosePixelFormatARB"),
+			.wglCreateContextAttribsARB = getOpenGLExtensionFunction<PFNWGLCREATECONTEXTATTRIBSARBPROC>("wglCreateContextAttribsARB"),
+			.wglSwapIntervalEXT = getOpenGLExtensionFunction<PFNWGLSWAPINTERVALEXTPROC>("wglSwapIntervalEXT"),
+			.wglGetSwapIntervalEXT = getOpenGLExtensionFunction<PFNWGLGETSWAPINTERVALEXTPROC>("wglGetSwapIntervalEXT"),
 		};
 		
 		ENGINE_ASSERT(wglMakeCurrent(nullptr, nullptr), "Unable to make WGL render context non-current - ", getLastErrorMessage());
@@ -971,6 +1010,8 @@ namespace Engine::Win32 {
 			HANDLE_MESSAGE(WM_CHAR);
 			HANDLE_MESSAGE(WM_MOUSEMOVE);
 			HANDLE_MESSAGE(WM_MOUSELEAVE);
+			HANDLE_MESSAGE(WM_SETFOCUS);
+			HANDLE_MESSAGE(WM_KILLFOCUS);
 
 			// Avoid default behaviour that causes hanging and beeps
 			case WM_SYSKEYDOWN: { return 0; };

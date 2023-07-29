@@ -21,5 +21,7 @@ namespace Engine {
 			virtual void mouseMoveCallback(Engine::Input::InputEvent event) = 0;
 			virtual void mouseLeaveCallback() = 0;
 			virtual void mouseEnterCallback() = 0;
+			virtual void gainFocus() = 0;
+			virtual void loseFocus() = 0;
 	};
 }

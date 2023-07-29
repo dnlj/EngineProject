@@ -12,7 +12,6 @@
 #include <Engine/Win32/Win32.hpp>
 #include <Engine/Window.hpp>
 #include <Engine/CommandLine/Parser.hpp>
-#include <Engine/Debug/GL/GL.hpp>
 #include <Engine/Input/BindManager.hpp>
 #include <Engine/Camera.hpp>
 
@@ -29,7 +28,9 @@
 #include <Game/UI/ConsoleWindow.hpp>
 
 // Win32
+#if ENGINE_OS_WINDOWS
 #include <timeapi.h>
+#endif
 
 void setupCommands(Game::EngineInstance& engine);
 void setupBinds(Game::EngineInstance& engine);
@@ -394,24 +395,6 @@ namespace {
 		};
 	}
 
-	void initializeOpenGL() {
-		auto loaded = ogl_LoadFunctions();
-
-		if (loaded == ogl_LOAD_FAILED) {
-			ENGINE_ERROR("[glLoadGen] initialization failed.");
-		}
-
-		auto failed = loaded - ogl_LOAD_SUCCEEDED;
-		if (failed > 0) {
-			ENGINE_ERROR("[glLoadGen] Failed to load ", failed, " functions.");
-		}
-
-
-		if (!ogl_IsVersionGEQ(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR)) {
-			ENGINE_ERROR("[glLoadGen] OpenGL version ", OPENGL_VERSION_MAJOR, ".", OPENGL_VERSION_MINOR, " is not available.");
-		}
-	}
-
 	void performExit(const char* reason) {
 		ENGINE_LOG("Shutting down: ", reason, "\n\n");
 	};
@@ -500,6 +483,9 @@ namespace {
 			void mouseEnterCallback() override {
 				userdata->getUIContext().onFocus(true);
 			}
+
+			void gainFocus() override {}
+			void loseFocus() override {}
 	};
 }
 
@@ -527,22 +513,7 @@ void run(int argc, char* argv[]) {
 		},
 		windowCallbacks
 	};
-	window.makeContextCurrent();
 	
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Initialize OpenGL functions
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	initializeOpenGL();
-	
-	// OpenGL debug message
-	#if defined(DEBUG)
-		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-		glDebugMessageCallback(Engine::Debug::GL::debugMessageCallback, nullptr);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-	#endif
-
-	glEnable(GL_FRAMEBUFFER_SRGB);
-
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Engine
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -692,29 +663,18 @@ void run(int argc, char* argv[]) {
 
 		window.swapBuffers();
 
-		//
-		//
-		//
-		//
-		// TODO: update comment about sleep and mention timeBeginPeriod
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-
-		// TODO: also look into NVIDIA Reflex SDK and AMD Anti-Lag
+		// TODO: if server then ignore this and use the server tickInterval
+		// TODO: force fps limit if in background
+		// TODO: Look into NV_CTRL_GSYNC_ALLOWED for gsync and EXT_swap_control_tear for Adaptive Sync
+		// TODO: Look into NVIDIA Reflex SDK and AMD Anti-Lag
+		// Limit our framerate if we are out of focus or have vsync disabled
 		// Don't eat all our CPU/GPU and cause our system to prepare for takeoff.
-		const auto frametime = static_cast<uint32>(cfg.cvars.frametime);
-		if (cfg.cvars.vsync == 0 && frametime > minClockResolution) {
-			const auto target = tstart + std::chrono::milliseconds{frametime - minClockResolution};
-			std::this_thread::sleep_until(target);
+		if (!window.hasFocus() || cfg.cvars.vsync == 0) {
+			const auto frametime = static_cast<uint32>(window.hasFocus() ? cfg.cvars.frametime : cfg.cvars.frametime_bg);
+			if (frametime > minClockResolution) {
+				const auto target = tstart + std::chrono::milliseconds{frametime - minClockResolution};
+				std::this_thread::sleep_until(target);
+			}
 		}
 	}
 

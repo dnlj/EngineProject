@@ -5,6 +5,7 @@
 
 
 namespace Engine {
+	// TODO: support static size variant for constexpr bounds checking
 	template<class T>
 	class ArrayView {
 		private:

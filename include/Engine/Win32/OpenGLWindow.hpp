@@ -14,9 +14,16 @@
 
 
 namespace Engine::Win32 {
+
+	enum class WindowCapabilities {
+		None = 0,
+		AdaptiveSync,
+		_count
+	};
+	ENGINE_BUILD_DECAY_ENUM(WindowCapabilities);
+
 	// TODO: GLFW_OPENGL_DEBUG_CONTEXT
 	// TODO: GLFW_SRGB_CAPABLE
-	// TODO: name?
 	// TODO: High DPI https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
 	// TODO: mouse buttons other than l/r
 	class OpenGLWindow {
@@ -119,7 +126,8 @@ namespace Engine::Win32 {
 			HGLRC renderContext = nullptr;
 			bool close = false;
 			bool mouseInWindow = false;
-
+			bool focused = false;
+			Bitset<+WindowCapabilities::_count> capabilities;
 			// Must be 8 byte aligned because of RAWINPUT. See GetRawInputBuffer docs: https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getrawinputbuffer
 			// This size is more/less arbitrary. For both mouse/keyboard version of RAWINPUT we
 			// can use a fixed sizeof(RAWINPUT), but for the hid version (controller/joystick/other) 
@@ -142,17 +150,15 @@ namespace Engine::Win32 {
 
 			void show();
 
-			void makeContextCurrent();
-
 			void poll();
-
 			void swapBuffers();
+			void flushDWM();
 
 			void setSwapInterval(int interval);
 
-			HWND getWin32WindowHandle() const;
-
-			bool shouldClose() const;
+			ENGINE_INLINE HWND getWin32WindowHandle() const noexcept { return windowHandle; }
+			ENGINE_INLINE bool shouldClose() const noexcept { return close; }
+			ENGINE_INLINE bool hasFocus() const noexcept { return focused; }
 
 			glm::ivec2 getFramebufferSize() const;
 
