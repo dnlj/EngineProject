@@ -630,17 +630,19 @@ void run(int argc, char* argv[]) {
 
 	// Configure Windows clock resolution
 	#if ENGINE_OS_WINDOWS
-		const uint32 minClockResolution = []{
+		const auto minClockResolution = []{
 			TIMECAPS caps{ .wPeriodMin = 0 };
 			::timeGetDevCaps(&caps, sizeof(caps));
-			return caps.wPeriodMin;
+			return std::chrono::milliseconds{caps.wPeriodMin};
 		}();
 
-		if (minClockResolution != 1) {
-			ENGINE_WARN2("Poor cpu clock resolution ({}ms, expected 1ms). You may experience excessive hardware usage.", minClockResolution);
+		ENGINE_ASSERT(minClockResolution < std::chrono::milliseconds{100}); // Sanity check
+
+		if (minClockResolution != std::chrono::milliseconds{1}) {
+			ENGINE_WARN2("Poor cpu clock resolution ({}, expected 1ms). You may experience excessive hardware usage.", minClockResolution);
 		}
 
-		timeBeginPeriod(minClockResolution);
+		timeBeginPeriod(static_cast<UINT>(minClockResolution.count()));
 	#endif
 
 	glClearColor(0.2176f, 0.2176f, 0.2176f, 1.0f);
@@ -663,23 +665,28 @@ void run(int argc, char* argv[]) {
 
 		window.swapBuffers();
 
-		// TODO: if server then ignore this and use the server tickInterval
-		// TODO: force fps limit if in background
 		// TODO: Look into NV_CTRL_GSYNC_ALLOWED for gsync and EXT_swap_control_tear for Adaptive Sync
 		// TODO: Look into NVIDIA Reflex SDK and AMD Anti-Lag
 		// Limit our framerate if we are out of focus or have vsync disabled
 		// Don't eat all our CPU/GPU and cause our system to prepare for takeoff.
-		if (!window.hasFocus() || cfg.cvars.r_vsync == 0) {
-			const auto frametime = static_cast<uint32>(window.hasFocus() ? cfg.cvars.r_frametime : cfg.cvars.r_frametime_bg);
+		if (ENGINE_SERVER || !window.hasFocus() || cfg.cvars.r_vsync == 0) {
+			const auto frametime = [&]() ENGINE_INLINE {
+				if constexpr (ENGINE_CLIENT) {
+					return std::chrono::milliseconds{static_cast<uint32>(window.hasFocus() ? cfg.cvars.r_frametime : cfg.cvars.r_frametime_bg)};
+				} else {
+					return world.getTickInterval(); // TODO: should probably be a cmdline/cvar
+				}
+			}();
+
 			if (frametime > minClockResolution) {
-				const auto target = tstart + std::chrono::milliseconds{frametime - minClockResolution};
+				const auto target = tstart + (frametime - minClockResolution);
 				std::this_thread::sleep_until(target);
 			}
 		}
 	}
 
 	#if ENGINE_OS_WINDOWS
-		timeEndPeriod(minClockResolution);
+		timeEndPeriod(static_cast<UINT>(minClockResolution.count()));
 	#endif
 }
 

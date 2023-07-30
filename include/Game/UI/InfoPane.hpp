@@ -22,6 +22,7 @@ namespace Game::UI {
 				FPS,
 				Tick,
 				TickScale,
+				TickRate,
 			};
 
 			InfoPane(EUI::Context* context);

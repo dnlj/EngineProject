@@ -132,7 +132,6 @@ void setupCommands(Game::EngineInstance& engine) {
 	// CVars
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// TODO: detect if vsync is supported, if so default to -1 instead of +1
-	// TODO: how does our cvar setter handle negative numbers for unsigned types? we should be printing an error and then ignore.
 	#define X(Name, ...) cm.registerCommand(#Name, makeCVarFunc<#Name>(validate));
 	#include <Game/cvars.xpp>
 

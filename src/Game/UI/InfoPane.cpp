@@ -10,6 +10,8 @@ namespace Game::UI {
 		addLabel("FPS: {:.3f} ({:.6f})");
 		addLabel("Tick: {}");
 		addLabel("Tick Scale: {:.3f}");
+		addLabel("Tick Rate: {}");
+		setLabel(UI::InfoPane::TickRate, Game::tickrate);
 
 		disconnect = ctx->constructPanel<EUI::Button>();
 		disconnect->autoText("Disconnect");
