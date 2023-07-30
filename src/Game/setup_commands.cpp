@@ -121,20 +121,18 @@ void setupCommands(Game::EngineInstance& engine) {
 	const auto test = cm.registerCommand("test_command", [](auto&){
 		ENGINE_CONSOLE("This is a test command! {}", 123);
 	}); test;
-
+	
+	// Build CVars
 	constexpr auto validate = [](auto& value, std::initializer_list<bool(*const)(decltype(value))> steps) ENGINE_INLINE {
 		for (const auto& step : steps) {
 			if (step(value)) { return true; }
 		}
 		return false;
 	};
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// CVars
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// TODO: detect if vsync is supported, if so default to -1 instead of +1
 	#define X(Name, ...) cm.registerCommand(#Name, makeCVarFunc<#Name>(validate));
 	#include <Game/cvars.xpp>
 
+	// Test Data
 	if constexpr (false) {
 		std::vector<const char*> testData = {
 			#include "../.private/testdata_ue"

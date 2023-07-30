@@ -665,8 +665,12 @@ void run(int argc, char* argv[]) {
 
 		window.swapBuffers();
 
-		// TODO: Look into NV_CTRL_GSYNC_ALLOWED for gsync and EXT_swap_control_tear for Adaptive Sync
+		// TODO: If gsync or adaptive sync is enabled:
+		//       If enabled default r_vsync = 0
+		//       If disabled or not supported: r_vsync = 1
+		// TODO: Look into NV_CTRL_GSYNC_ALLOWED and NVAPI for gsync and EXT_swap_control_tear for Adaptive Sync
 		// TODO: Look into NVIDIA Reflex SDK and AMD Anti-Lag
+		// 
 		// Limit our framerate if we are out of focus or have vsync disabled
 		// Don't eat all our CPU/GPU and cause our system to prepare for takeoff.
 		if (ENGINE_SERVER || !window.hasFocus() || cfg.cvars.r_vsync == 0) {
