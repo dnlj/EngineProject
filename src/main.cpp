@@ -669,8 +669,8 @@ void run(int argc, char* argv[]) {
 		// TODO: Look into NVIDIA Reflex SDK and AMD Anti-Lag
 		// Limit our framerate if we are out of focus or have vsync disabled
 		// Don't eat all our CPU/GPU and cause our system to prepare for takeoff.
-		if (!window.hasFocus() || cfg.cvars.vsync == 0) {
-			const auto frametime = static_cast<uint32>(window.hasFocus() ? cfg.cvars.frametime : cfg.cvars.frametime_bg);
+		if (!window.hasFocus() || cfg.cvars.r_vsync == 0) {
+			const auto frametime = static_cast<uint32>(window.hasFocus() ? cfg.cvars.r_frametime : cfg.cvars.r_frametime_bg);
 			if (frametime > minClockResolution) {
 				const auto target = tstart + std::chrono::milliseconds{frametime - minClockResolution};
 				std::this_thread::sleep_until(target);

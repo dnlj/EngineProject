@@ -29,21 +29,31 @@ namespace {
 	 * validation function signals an abort the old value is restored
 	 */
 	namespace Validation {
-		const auto Clamp = []<Engine::AnyNumber V>(V& value, const auto& limits) constexpr -> bool {
-			value = std::clamp<V>(value, limits[0], limits[1]);
-			return false;
-		};
-
-		const auto WarnIfDecimal = [](std::floating_point auto& value, const auto& limits) constexpr -> bool {
-			if (value != std::trunc(value)) {
-				ENGINE_WARN2("Decimal values are not supported: ", limits[20]);
+		template<auto Min, decltype(Min) Max>
+		constexpr auto Clamp = [](Engine::AnyNumber auto& value) constexpr noexcept -> bool {
+			puts("Clamp");
+			const auto before = value;
+			value = std::clamp(value, Min, Max);
+			if (before != value) {
+				ENGINE_WARN2("Invalid value. Clamping to {}.", value, before);
 			}
 			return false;
 		};
 
-		const auto WarnIfDecimal_Win32 = [](std::floating_point auto& value, const auto& limits) constexpr -> bool {
+		template<CompileString Msg>
+		constexpr auto WarnIfDecimal = [](std::floating_point auto& value) constexpr noexcept -> bool {
+			puts("WarnIfDecimal");
+			if (value != std::trunc(value)) {
+				ENGINE_WARN2(Msg);
+			}
+			return false;
+		};
+		
+		template<CompileString Msg>
+		constexpr auto WarnIfDecimal_Win32 = [](std::floating_point auto& value) constexpr noexcept -> bool {
+			puts("WarnIfDecimal_Win32");
 			if constexpr (ENGINE_OS_WINDOWS) {
-				return WarnIfDecimal(value, limits);
+				return WarnIfDecimal<Msg>(value);
 			}
 			return false;
 		};
@@ -112,19 +122,19 @@ void setupCommands(Game::EngineInstance& engine) {
 		ENGINE_CONSOLE("This is a test command! {}", 123);
 	}); test;
 
-	constexpr auto validate = []<class V, class T, auto N>(
-		V& value,
-		const T(&limits)[N],
-		std::initializer_list<bool(*const)( // Function pointer like: func(value, ArrayView(limits));
-			// We have to use decltype w/ remove_cvref instead of V and T directly to disambiguate template resolution.
-			decltype(value),
-			const Engine::ArrayView<const std::remove_cvref_t<decltype(limits[0])>>&
-		)> steps
-		) ENGINE_INLINE {
+	/*constexpr auto validate = []<class V, class T, auto N>(
+	V& value,
+	const T(&limits)[N],
+	std::initializer_list<bool(*const)( // Function pointer like: func(value, ArrayView(limits));
+		// We have to use decltype w/ remove_cvref instead of V and T directly to disambiguate template resolution.
+		decltype(value),
+		const Engine::ArrayView<const std::remove_cvref_t<decltype(limits[0])>>&
+	)> steps
+	) ENGINE_INLINE {*/
+
+	constexpr auto validate = [](auto& value, std::initializer_list<bool(*const)(decltype(value))> steps) ENGINE_INLINE {
 		for (const auto& step : steps) {
-			if (step(value, limits)) {
-				return true;
-			}
+			if (step(value)) { return true; }
 		}
 		return false;
 	};
@@ -132,21 +142,19 @@ void setupCommands(Game::EngineInstance& engine) {
 	// CVars
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// TODO: move to file and add helper to remove duplicate name
-	#define CM_REGISTER_CVAR(Name, ...) cm.registerCommand(Name, makeCVarFunc<Name>(__VA_ARGS__))
+	// TODO: just do include cvar.xpp
+	#define CM_REGISTER_CVAR(Name) cm.registerCommand(Name, makeCVarFunc<Name>(validate))
 	CM_REGISTER_CVAR("net_packet_rate_min");
 	CM_REGISTER_CVAR("net_packet_rate_max");
-	//
-	//
-	//
-	//
+	
 	// TODO: prefix for these, not sure what though. Probably r_, server should use tickrate
 	// TODO: Move validate type to xpp, This doesnt have to be a real type, just a name we can either define at the #include scope or ignore
 	// TODO: detect if vsync is supported, if so default to -1 instead of +1
 	// TODO: frametime should warn if setting decimal number on windows (time != int(time))
 	// TODO: how does our cvar setter handle negative numbers for unsigned types? we should be printing an error and then ignore.
-	CM_REGISTER_CVAR("frametime", validate);
-	CM_REGISTER_CVAR("frametime_bg", validate);
-	CM_REGISTER_CVAR("vsync", validate);
+	CM_REGISTER_CVAR("r_frametime");
+	CM_REGISTER_CVAR("r_frametime_bg");
+	CM_REGISTER_CVAR("r_vsync");
 	#undef CM_REGISTER_COMMAND
 
 	if constexpr (false) {
