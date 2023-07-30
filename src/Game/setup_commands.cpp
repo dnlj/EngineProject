@@ -122,16 +122,6 @@ void setupCommands(Game::EngineInstance& engine) {
 		ENGINE_CONSOLE("This is a test command! {}", 123);
 	}); test;
 
-	/*constexpr auto validate = []<class V, class T, auto N>(
-	V& value,
-	const T(&limits)[N],
-	std::initializer_list<bool(*const)( // Function pointer like: func(value, ArrayView(limits));
-		// We have to use decltype w/ remove_cvref instead of V and T directly to disambiguate template resolution.
-		decltype(value),
-		const Engine::ArrayView<const std::remove_cvref_t<decltype(limits[0])>>&
-	)> steps
-	) ENGINE_INLINE {*/
-
 	constexpr auto validate = [](auto& value, std::initializer_list<bool(*const)(decltype(value))> steps) ENGINE_INLINE {
 		for (const auto& step : steps) {
 			if (step(value)) { return true; }
@@ -141,21 +131,10 @@ void setupCommands(Game::EngineInstance& engine) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// CVars
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	// TODO: move to file and add helper to remove duplicate name
-	// TODO: just do include cvar.xpp
-	#define CM_REGISTER_CVAR(Name) cm.registerCommand(Name, makeCVarFunc<Name>(validate))
-	CM_REGISTER_CVAR("net_packet_rate_min");
-	CM_REGISTER_CVAR("net_packet_rate_max");
-	
-	// TODO: prefix for these, not sure what though. Probably r_, server should use tickrate
-	// TODO: Move validate type to xpp, This doesnt have to be a real type, just a name we can either define at the #include scope or ignore
 	// TODO: detect if vsync is supported, if so default to -1 instead of +1
-	// TODO: frametime should warn if setting decimal number on windows (time != int(time))
 	// TODO: how does our cvar setter handle negative numbers for unsigned types? we should be printing an error and then ignore.
-	CM_REGISTER_CVAR("r_frametime");
-	CM_REGISTER_CVAR("r_frametime_bg");
-	CM_REGISTER_CVAR("r_vsync");
-	#undef CM_REGISTER_COMMAND
+	#define X(Name, ...) cm.registerCommand(#Name, makeCVarFunc<#Name>(validate));
+	#include <Game/cvars.xpp>
 
 	if constexpr (false) {
 		std::vector<const char*> testData = {

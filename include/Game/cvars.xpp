@@ -10,5 +10,7 @@ X(r_frametime,    float64,  0, L(Clamp<0.0, 100.0>, WarnIfDecimal_Win32<"Windows
 X(r_frametime_bg, float64, 50, L(Clamp<0.0, 100.0>, WarnIfDecimal_Win32<"Windows does not support fractional timer precision.">))
 X(r_vsync,          int32,  0, L(Clamp<-3, 3>)) // -1 = Adaptive, 0 = Off, 1+ = vsync interval. See wglSwapIntervalEXT.
 
+X(test, uint32, 0, L())
+
 #undef L
 #undef X
