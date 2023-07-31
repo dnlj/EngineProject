@@ -425,15 +425,6 @@ namespace Engine::ECS {
 			System& getSystem(){
 				return *reinterpret_cast<System*>(systems[getSystemId<System>()]);
 			}
-			/**
-			 * Gets a bitset with the bits for the given systems set.
-			 */
-			template<class... SystemN>
-			SystemBitset getBitsetForSystems() const { // TODO: constexpr, noexcept
-				SystemBitset value;
-				((value[getSystemId<SystemN>()] = true), ...);
-				return value;
-			}
 
 			ENGINE_INLINE void debugEntityCheck(Entity e) const {
 				ENGINE_DEBUG_ASSERT(isValid(e), "Attempting to use invalid entity");
