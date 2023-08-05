@@ -24,7 +24,7 @@ namespace Engine {
 			Net::IPv4Address group = {};
 
 			// TODO: shouldn't be including "Game" files in Engine
-			struct {
+			struct CVars {
 				#define X(Name, Type, Default, ...) Type Name = Default;
 				#include <Game/cvars.xpp>
 			} cvars;

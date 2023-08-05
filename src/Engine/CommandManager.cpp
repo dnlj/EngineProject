@@ -2,9 +2,6 @@
 #include <Engine/CommandManager.hpp>
 #include <Engine/Unicode/UTF8.hpp>
 
-template<const int S, const char A[S]>
-class Test {
-};
 
 namespace Engine {
 	CommandManager::CommandManager() {

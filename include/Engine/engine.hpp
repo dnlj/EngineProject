@@ -256,4 +256,15 @@ namespace Engine {
 	ENGINE_INLINE constexpr char toLower(char c) noexcept {
 		return c >= 'A' && c <= 'Z' ? c+32 : c;
 	}
+
+	class CompileString {
+		public:
+			const char* const data;
+			consteval CompileString(const char* const data) noexcept : data{data} {}
+			constexpr operator std::string_view() const noexcept { return view(); }
+			constexpr bool operator==(std::string_view other) const noexcept { return view() == other; };
+
+		private:
+			constexpr std::string_view view() const noexcept { return data; }
+	};
 }

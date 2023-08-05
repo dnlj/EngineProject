@@ -14,7 +14,6 @@
 
 
 namespace Engine::Win32 {
-
 	enum class WindowCapabilities {
 		None = 0,
 		AdaptiveSync,
