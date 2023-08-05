@@ -32,7 +32,7 @@
 #include <timeapi.h>
 #endif
 
-void setupCommands(Game::EngineInstance& engine);
+void setupCommands(Game::EngineInstance& engine, Engine::Window& window);
 void setupBinds(Game::EngineInstance& engine);
 
 namespace {
@@ -593,7 +593,7 @@ void run(int argc, char* argv[]) {
 	// Initialize Systems
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	setupBinds(engine);
-	setupCommands(engine);
+	setupCommands(engine, window);
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Map Testing

@@ -2,6 +2,7 @@
 #include <Engine/CommandManager.hpp>
 #include <Engine/from_string.hpp>
 #include <Engine/ArrayView.hpp>
+#include <Engine/Window.hpp>
 
 // TODO: rm
 #include <type_traits>
@@ -9,23 +10,10 @@
 
 namespace {
 	using namespace Game;
-
-	// TODO: rm
-	//using CVars = Engine::GlobalConfig::CVars;
-	//
-	//template<auto CVar>
-	//concept IsValidCVar = requires (const CVars& cvars) { cvars.*CVar; };
-	//
-	//// Specialize to call when a cvar is changed: template<> constexpr auto onChanged<&CVars::r_vsync> = [](){ ... }
-	//template<auto CVar>
-	//requires IsValidCVar<CVar>
-	//constexpr auto onChanged = [](const auto&...) consteval noexcept {};
-	//
-	//template<>
-	//constexpr auto onChanged<&CVars::r_vsync> = [](){
-	//	puts("onChanged r_vsync");
-	//	// TODO: update swap interval
-	//};
+	using CVars = Engine::GlobalConfig::CVars;
+	
+	template<auto CVar>
+	concept IsValidCVar = requires (const CVars& cvars) { cvars.*CVar; };
 
 	/**
 	 * Validation functions used by cvars.
@@ -40,7 +28,6 @@ namespace {
 	namespace Validation {
 		template<auto Min, decltype(Min) Max>
 		constexpr auto Clamp = [](Engine::AnyNumber auto& value) constexpr noexcept -> bool {
-			puts("Clamp");
 			const auto before = value;
 			value = std::clamp(value, Min, Max);
 			if (before != value) {
@@ -51,7 +38,6 @@ namespace {
 
 		template<Engine::CompileString Msg>
 		constexpr auto WarnIfDecimal = [](std::floating_point auto& value) constexpr noexcept -> bool {
-			puts("WarnIfDecimal");
 			if (value != std::trunc(value)) {
 				ENGINE_WARN2(Msg);
 			}
@@ -60,7 +46,6 @@ namespace {
 		
 		template<Engine::CompileString Msg>
 		constexpr auto WarnIfDecimal_Win32 = [](std::floating_point auto& value) constexpr noexcept -> bool {
-			puts("WarnIfDecimal_Win32");
 			if constexpr (ENGINE_OS_WINDOWS) {
 				return WarnIfDecimal<Msg>(value);
 			}
@@ -68,8 +53,9 @@ namespace {
 		};
 	}
 
+	// Can't be consteval anymore because onChanged captures the engine instance.
 	template<auto CVarMember, class Validate, class OnChanged>
-	consteval auto makeCVarFunc(Validate&& validate, OnChanged&& onChanged) {
+	constexpr auto makeCVarFunc(Validate&& validate, OnChanged&& onChanged) {
 		return [validate=std::forward<Validate>(validate), onChanged=std::forward<OnChanged>(onChanged)](Engine::CommandManager& cm){
 			const auto& args = cm.args();
 			if (args.size() == 1) {
@@ -78,14 +64,13 @@ namespace {
 				const auto str = to_string(cfg.cvars.*CVarMember);
 
 				if (str.empty()) {
-					// TODO: error
-					ENGINE_WARN2("TODO: error");
+					// don't think fmt::to_string can fail?
+					ENGINE_WARN2("Unable to convert to string");
 					ENGINE_DEBUG_BREAK;
 				}
 
-				ENGINE_CONSOLE("Get ({}) {} = {}", args[0], args.size(), str);
+				ENGINE_CONSOLE("{} = {}", args[0], args.size(), str);
 			} else {
-				ENGINE_CONSOLE("Set ({}) {}", args[0], args.size());
 				using Engine::fromString;
 				auto& cvar = Engine::getGlobalConfig<true>().cvars.*CVarMember;
 				const auto old = cvar;
@@ -110,30 +95,35 @@ namespace {
 			return (steps(value) || ...);
 		};
 	}
+
+	// Specialize to call when a cvar is changed
+	template<auto CVar>
+	requires IsValidCVar<CVar>
+	ENGINE_INLINE auto makeOnChanged(Game::EngineInstance& engine, Engine::Window& window) noexcept {
+		return [](const auto& prev, const auto& current) noexcept {};
+	}
+
+	template<>
+	ENGINE_INLINE auto makeOnChanged<&CVars::r_vsync>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
+		return [&window](const auto& prev, const auto& current){
+			window.setSwapInterval(current);
+		};
+	}
 }
 
-void setupCommands(Game::EngineInstance& engine) {
+void setupCommands(Game::EngineInstance& engine, Engine::Window& window) {
 	auto& cm = engine.getCommandManager();
 	const auto test = cm.registerCommand("test_command", [](auto&){
 		ENGINE_CONSOLE("This is a test command! {}", 123);
 	}); test;
 	
 	// Build CVars
-	// TODO: Just move into makeCVarFunc
-	constexpr auto validate = [](auto& value, std::initializer_list<bool(*const)(decltype(value))> steps) ENGINE_INLINE {
-		for (const auto& step : steps) {
-			if (step(value)) { return true; }
-		}
-		return false;
-	};
-	constexpr auto onChanged = [](auto&...){};
-
 	{
 		using namespace Validation;
 		#define X(Name, Type, Default, Validators) \
-			cm.registerCommand(#Name, makeCVarFunc<&Engine::GlobalConfig::CVars::Name>( \
+			cm.registerCommand(#Name, makeCVarFunc<&CVars::Name>( \
 				makeValidateForSteps(Validators), \
-				onChanged \
+				makeOnChanged<&CVars::Name>(engine, window) \
 			));
 		#include <Game/cvars.xpp>
 	}
