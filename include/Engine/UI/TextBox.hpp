@@ -13,7 +13,7 @@ namespace Engine::UI {
 			using OnSubmit = std::function<void (TextBox* self)>;
 
 		private:
-			uint8 selecting = 0;
+			uint8 selectingCount = 0;
 			Caret caret = 0;
 			Caret select = 0;
 			OnSubmit onSubmit;
@@ -56,8 +56,8 @@ namespace Engine::UI {
 
 		private:
 			void tryBeginSelection() noexcept;
-
 			Caret getCaretInLine(const float32 x) const noexcept;
+			ENGINE_INLINE bool selecting() const noexcept { return selectingCount > 1; }
 
 			void actionSelectWord();
 			void actionSelectAll();
@@ -90,7 +90,7 @@ namespace Engine::UI {
 			}
 
 			ENGINE_INLINE bool shouldMoveCaret() const noexcept {
-				return selecting || select == Caret::invalid || select == caret;
+				return selecting() || select == Caret::invalid || select == caret;
 			}
 
 			ENGINE_INLINE const Unicode::Unit8* getCodePointAtCaret() const {

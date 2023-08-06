@@ -6,27 +6,25 @@
 namespace Engine::UI {
 	bool InputTextBox::onAction(ActionEvent action) {
 		auto result = suggest->onAction(action);
-		if (result) { return result; }
 
-		switch (action) {
-			case Action::Submit: {
-				if (auto text = suggest->get(); !text.empty()) {
-					setText(std::string{text} + ' ');
-					suggest->close();
-					return true;
-				}
+		if (auto text = suggest->get(); !text.empty()) {
+			const std::string_view curr = getText();
+			if (curr.substr(0, curr.find(' ')) != text) {
+				setText(std::string{text} + ' ');
 			}
 		}
 
+		if (result) { return result; }
+
 		result = TextBox::onAction(action);
-		switch (action) {
-			case Action::Cut:
-			case Action::Paste:
-			case Action::DeletePrev:
-			case Action::DeleteNext: {
-				if (result) {
-					ENGINE_DEBUG_ASSERT(suggest);
-					suggest->filter(this, getText());
+		if (result) {
+			switch (action) {
+				case Action::Cut:
+				case Action::Paste:
+				case Action::DeletePrev:
+				case Action::DeleteNext: {
+						ENGINE_DEBUG_ASSERT(suggest);
+						suggest->filter(this, getText());
 				}
 			}
 		}

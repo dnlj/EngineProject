@@ -214,7 +214,7 @@ namespace Game::UI {
 			prev = selected;
 		} else {
 			selected = (selected->*NextChild)();
-			if (!selected) { selected = prev; }
+			if (!selected) { selected = (this->*FirstChild)(); }
 		}
 
 		static_cast<SuggestionLabel*>(prev)->color = {1,0,0,1};

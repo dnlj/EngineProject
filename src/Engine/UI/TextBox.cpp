@@ -68,18 +68,22 @@ namespace Engine::UI {
 	}
 
 	bool TextBox::onAction(ActionEvent act) {
+		// All actions that involve selection are wrapped in a selectingCount
+		// inc/dec because selecting() is only true when selectingCount > 1. This is
+		// to prevent selection when something changes our caret other than a user
+		// action (calling setText when the caret = size for example).
 		switch (act) {
-			case Action::SelectBegin: { ++selecting; break; }
-			case Action::SelectEnd: { if (selecting > 0) { --selecting; }; break; }
-			case Action::SelectAll: { actionSelectAll(); break; }
-			case Action::MoveCharLeft: { moveCharLeft(); break; }
-			case Action::MoveCharRight: { moveCharRight(); break; }
+			case Action::SelectBegin: { ++selectingCount; break; }
+			case Action::SelectEnd: { if (selectingCount > 0) { --selectingCount; }; break; }
+			case Action::SelectAll: { ++selectingCount; actionSelectAll(); --selectingCount; break; }
+			case Action::MoveCharLeft: { ++selectingCount; moveCharLeft(); --selectingCount; break; }
+			case Action::MoveCharRight: { ++selectingCount; moveCharRight(); --selectingCount; break; }
+			case Action::MoveLineStart: { ++selectingCount; moveLineStart(); --selectingCount; break; }
+			case Action::MoveLineEnd: { ++selectingCount; moveLineEnd(); --selectingCount; break; }
+			case Action::MoveWordLeft: { ++selectingCount; moveWordLeft(); --selectingCount; break; }
+			case Action::MoveWordRight: { ++selectingCount; moveWordRight(); --selectingCount; break; }
 			case Action::DeletePrev: { actionDeletePrev(); break; }
 			case Action::DeleteNext: { actionDeleteNext(); break; }
-			case Action::MoveLineStart: { moveLineStart(); break; }
-			case Action::MoveLineEnd: { moveLineEnd(); break; }
-			case Action::MoveWordLeft: { moveWordLeft(); break; }
-			case Action::MoveWordRight: { moveWordRight(); break; }
 			case Action::Cut: { actionCut(); break; }
 			case Action::Copy: { actionCopy(); break; }
 			case Action::Paste: { actionPaste(); break; }
@@ -90,7 +94,7 @@ namespace Engine::UI {
 	}
 
 	ENGINE_INLINE void TextBox::tryBeginSelection() noexcept {
-		if (selecting && select == Caret::invalid) {
+		if (selecting() && select == Caret::invalid) {
 			select = caret;
 		}
 	}
@@ -288,6 +292,13 @@ namespace Engine::UI {
 	}
 
 	void TextBox::moveLineEnd() {
+		// Make sure our caret is in a valid position before trying to update
+		// our selection. This can happen by using setText instead of typing.
+		if (auto sz = static_cast<decltype(caret.index)>(getText().size()); caret.index > sz) {
+			caret.index = sz;
+			updateCaretPos();
+		}
+
 		tryBeginSelection();
 		caret.index = static_cast<uint32>(getText().size());
 		updateCaretPos();
@@ -305,7 +316,7 @@ namespace Engine::UI {
 	}
 
 	void TextBox::updateCaretPos() {
-		select = selecting ? select : Caret::invalid;
+		select = selecting() ? select : Caret::invalid;
 		const auto last = caret.pos;
 		const auto& glyphs = getShapedString().getGlyphShapeData();
 		caret.pos = 0;
