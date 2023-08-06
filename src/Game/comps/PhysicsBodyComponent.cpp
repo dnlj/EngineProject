@@ -17,10 +17,15 @@ namespace Game {
 		buff.write(obj.getBody().GetType());
 
 		if (const auto* fix = obj.getBody().GetFixtureList()) {
+			// Type
 			const auto ftype = fix->GetType();
 			buff.write(ftype);
-			buff.write(fix->GetFilterData().maskBits);
 
+			// Category
+			static_assert(+PhysicsCategory::_count <= std::numeric_limits<uint8>::max());
+			buff.write(static_cast<uint8>(PhysicsSystem::getCategory(fix->GetFilterData().categoryBits)));
+
+			// Shape
 			switch (ftype) {
 				case b2Shape::Type::e_circle: {
 					const auto* shape = reinterpret_cast<const b2CircleShape*>(fix->GetShape());
@@ -84,8 +89,8 @@ namespace Game {
 			return result;
 		}
 
-		uint16 mask;
-		if (!buff.read<uint16>(&mask)) {
+		uint8 category;
+		if (!buff.read<uint8>(&category)) {
 			ENGINE_WARN("Unable to read physics filter mask from network");
 			return result;
 		}
@@ -103,8 +108,8 @@ namespace Game {
 		}
 
 		b2FixtureDef fixDef;
-		//fixDef.filter.groupIndex = -+result.type;
-		fixDef.filter.maskBits = mask;
+		fixDef.filter.categoryBits = PhysicsSystem::getCategoryBits(static_cast<PhysicsCategory>(category));
+		fixDef.filter.maskBits = PhysicsSystem::getMaskBits(static_cast<PhysicsCategory>(category));
 
 		switch (ftype) {
 			case b2Shape::Type::e_circle: {

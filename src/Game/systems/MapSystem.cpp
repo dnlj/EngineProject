@@ -58,7 +58,9 @@ namespace Game {
 
 		b2FixtureDef fixtureDef;
 		//fixtureDef.density = 1.0f;
-		fixtureDef.filter.maskBits = PhysicsMask::DecorationMask; // Disable collision
+		// Disable collision
+		fixtureDef.filter.categoryBits = PhysicsSystem::getCategoryBits(PhysicsCategory::Decoration);
+		fixtureDef.filter.maskBits = PhysicsSystem::getMaskBits(PhysicsCategory::Decoration);
 
 		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos));
 		const auto ent = world.createEntity();
