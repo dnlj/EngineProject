@@ -12,7 +12,11 @@
 
 
 namespace Game {
-	class PhysicsSystem : public System {
+	class PhysicsSystem : public System, public b2ContactListener {
+		private:
+			/** The box2d world */
+			b2World physWorld;
+
 		public:
 			PhysicsSystem(SystemArg arg);
 
@@ -71,33 +75,19 @@ namespace Game {
 				return body;
 			}
 
-			ENGINE_INLINE static Engine::ECS::Entity toEntity(void* userdata) {
+			ENGINE_INLINE static Engine::ECS::Entity toEntity(const void* userdata) noexcept {
 				return reinterpret_cast<Engine::ECS::Entity&>(userdata);
 			};
 
 		private:
-			class ContactListener : public b2ContactListener {
-				public:
-					ContactListener(PhysicsSystem& physSys);
-					virtual void BeginContact(b2Contact* contact) override;
-					virtual void EndContact(b2Contact* contact) override;
-					// virtual void PreSolve(b2Contact* contact, const b2Manifold* oldManifold) override;
-					// virtual void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) override;
+			// b2ContactListener members
+			virtual void BeginContact(b2Contact* contact) override;
+			virtual void EndContact(b2Contact* contact) override;
+			// virtual void PreSolve(b2Contact* contact, const b2Manifold* oldManifold) override;
+			// virtual void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) override;
+			std::vector<PhysicsListener*> listeners;
 
-					void addListener(PhysicsListener* listener);
-
-				private:
-					PhysicsSystem& physSys;
-					std::vector<PhysicsListener*> listeners;
-			};
-
-
-			/** The box2d world */
-			b2World physWorld;
-
-			/** The box2d contact listener */
-			ContactListener contactListener;
-
+			// Debug members
 			#if defined(DEBUG_PHYSICS)
 				Engine::Debug::DebugDrawBox2D debugDraw;
 			#endif

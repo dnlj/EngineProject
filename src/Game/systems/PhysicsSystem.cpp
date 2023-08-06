@@ -12,15 +12,15 @@ namespace {
 	using ProxyFilter = Engine::ECS::EntityFilterList<
 		Game::PhysicsBodyComponent
 	>;
+
 }
 
 namespace Game {
 	PhysicsSystem::PhysicsSystem(SystemArg arg)
 		: System{arg}
-		, physWorld{b2Vec2_zero}
-		, contactListener{*this} {
+		, physWorld{b2Vec2_zero} {
 
-		physWorld.SetContactListener(&contactListener);
+		physWorld.SetContactListener(this);
 
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
@@ -178,7 +178,7 @@ namespace Game {
 	}
 
 	void PhysicsSystem::addListener(PhysicsListener* listener) {
-		contactListener.addListener(listener);
+		listeners.push_back(listener);
 	}
 
 	void PhysicsSystem::shiftOrigin(const b2Vec2& newOrigin) {
@@ -190,14 +190,8 @@ namespace Game {
 		//	physComp.setTransform2(physComp.body->GetTransform());
 		//}
 	}
-}
 
-namespace Game {
-	PhysicsSystem::ContactListener::ContactListener(PhysicsSystem& physSys)
-		: physSys{physSys} {
-	}
-
-	void PhysicsSystem::ContactListener::BeginContact(b2Contact* contact) {
+	void PhysicsSystem::BeginContact(b2Contact* contact) {
 		const auto entA = toEntity(contact->GetFixtureA()->GetBody()->GetUserData());
 		const auto entB = toEntity(contact->GetFixtureB()->GetBody()->GetUserData());
 
@@ -206,16 +200,12 @@ namespace Game {
 		}
 	}
 
-	void PhysicsSystem::ContactListener::EndContact(b2Contact* contact) {
+	void PhysicsSystem::EndContact(b2Contact* contact) {
 		const auto entA = toEntity(contact->GetFixtureA()->GetBody()->GetUserData());
 		const auto entB = toEntity(contact->GetFixtureB()->GetBody()->GetUserData());
 
 		for (auto listener : listeners) {
 			listener->endContact(entA, entB);
 		}
-	}
-
-	void PhysicsSystem::ContactListener::addListener(PhysicsListener* listener) {
-		listeners.push_back(listener);
 	}
 }
