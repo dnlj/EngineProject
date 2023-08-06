@@ -12,10 +12,33 @@
 
 
 namespace Game {
-	class PhysicsSystem : public System, public b2ContactListener {
+	struct PhysicsMask_ {
+		enum PhysicsMask : decltype(b2Filter::categoryBits) {
+			// Categories
+			None        = 0 << 0,
+			World       = 1 << 0,
+			Player      = 1 << 1,
+
+			// Masks
+			AllMask        = std::numeric_limits<std::underlying_type_t<PhysicsMask>>::max(),
+			DecorationMask = None,
+			PlayerMask     = World,
+			WorldMask      = AllMask,
+		};
+	};
+	using PhysicsMask = PhysicsMask_::PhysicsMask;
+
+	//enum class PhysicsGroup : decltype(b2Filter::categoryBits) {
+	//	None        = 0 << 0,
+	//	World       = 1 << 0,
+	//	Player      = 1 << 1,
+	//	Decoration  = 1 << 2,
+	//};
+
+	class PhysicsSystem : public System, public b2ContactListener, public b2ContactFilter {
 		private:
-			/** The box2d world */
 			b2World physWorld;
+			std::vector<PhysicsListener*> listeners;
 
 		public:
 			PhysicsSystem(SystemArg arg);
@@ -69,7 +92,7 @@ namespace Game {
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &shape;
 				fixtureDef.density = 1.0f;
-				fixtureDef.filter.groupIndex = filter;
+				fixtureDef.filter.categoryBits = filter;
 
 				body->CreateFixture(&fixtureDef);
 				return body;
@@ -85,7 +108,9 @@ namespace Game {
 			virtual void EndContact(b2Contact* contact) override;
 			// virtual void PreSolve(b2Contact* contact, const b2Manifold* oldManifold) override;
 			// virtual void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) override;
-			std::vector<PhysicsListener*> listeners;
+
+			// b2ContactFilter members
+			virtual bool ShouldCollide(b2Fixture* fixtureA, b2Fixture* fixtureB) override;
 
 			// Debug members
 			#if defined(DEBUG_PHYSICS)

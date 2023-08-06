@@ -14,7 +14,6 @@ namespace Game {
 	}
 
 	void NetworkTraits<PhysicsBodyComponent>::writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
-		buff.write(obj.type);
 		buff.write(obj.getBody().GetType());
 
 		if (const auto* fix = obj.getBody().GetFixtureList()) {
@@ -73,11 +72,6 @@ namespace Game {
 	std::tuple<PhysicsBodyComponent> NetworkTraits<PhysicsBodyComponent>::readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 		PhysicsBodyComponent result;
 
-		if (!buff.read<PhysicsType>(&result.type)) {
-			ENGINE_WARN("Unable to read physics type from network.");
-			return result;
-		}
-
 		b2BodyType btype;
 		if (!buff.read<b2BodyType>(&btype)) {
 			ENGINE_WARN("Unable to read b2 physics type from network.");
@@ -109,7 +103,7 @@ namespace Game {
 		}
 
 		b2FixtureDef fixDef;
-		fixDef.filter.groupIndex = -+result.type;
+		//fixDef.filter.groupIndex = -+result.type;
 		fixDef.filter.maskBits = mask;
 
 		switch (ftype) {

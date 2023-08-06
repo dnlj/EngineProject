@@ -21,6 +21,7 @@ namespace Game {
 		, physWorld{b2Vec2_zero} {
 
 		physWorld.SetContactListener(this);
+		physWorld.SetContactFilter(this);
 
 		#if defined(DEBUG_PHYSICS)
 			debugDraw.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
@@ -207,5 +208,18 @@ namespace Game {
 		for (auto listener : listeners) {
 			listener->endContact(entA, entB);
 		}
+	}
+
+	bool PhysicsSystem::ShouldCollide(b2Fixture* fixtureA, b2Fixture* fixtureB) {
+		//   groupIndex = "I only collide with fixtures in this group" (int)
+		// categoryBits = "I'm a ..." (bitset, usually just one bit should be set)
+		//     maskBits = "I collide with categories ..." (bitset, all categories to collide with)
+		const auto& filterA = fixtureA->GetFilterData();
+		const auto& filterB = fixtureB->GetFilterData();
+
+		// Are the fixtures in the same group and they both think they should collide?
+		return (filterA.groupIndex == filterB.groupIndex)
+			&& (filterA.maskBits & filterB.categoryBits)
+			&& (filterB.maskBits & filterA.categoryBits);
 	}
 }

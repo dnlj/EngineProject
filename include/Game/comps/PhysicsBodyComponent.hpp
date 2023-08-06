@@ -10,11 +10,6 @@
 
 
 namespace Game {
-	enum PhysicsType : uint8 { // TODO: should probably rename filter/collision type or similar
-		Default,
-		Player,
-	};
-
 	// TODO: rename - to just phys comp
 	class PhysicsBodyComponent {
 		private:
@@ -22,7 +17,7 @@ namespace Game {
 			b2Body* body = nullptr;
 
 		public:
-			PhysicsType type = {}; // TODO: why is this public?
+			//PhysicsType type = {}; // TODO: why is this public?
 			bool snap = false; // TODO: this should probably be on the interp component?
 			bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
 
@@ -54,17 +49,6 @@ namespace Game {
 			ENGINE_INLINE void setAngularVelocity(const float32 av) noexcept { body->SetAngularVelocity(av); };
 
 			ENGINE_INLINE void applyLinearImpulse(const b2Vec2 imp, const bool wake) noexcept { body->ApplyLinearImpulseToCenter(imp, wake); }
-
-			void setType(PhysicsType t) {
-				b2Filter filter;
-				filter.groupIndex = t;
-
-				auto fix = body->GetFixtureList();
-				while (fix) {
-					fix->SetFilterData(filter);
-					fix = fix->GetNext();
-				}
-			}
 	};
 }
 
