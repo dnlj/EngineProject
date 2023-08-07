@@ -30,6 +30,7 @@ namespace {
 namespace Game {
 	UISystem::UISystem(SystemArg arg) : System{arg} {
 		auto& ctx = engine.getUIContext();
+		auto* prevLastChild = ctx.getRoot()->getLastChildRaw();
 		EUI::Panel* content = nullptr;
 
 		{
@@ -84,7 +85,9 @@ namespace Game {
 		}
 
 		{
-			//ctx.createPanel<UI::ResourcePane>(content);
+			panels.mapPreviewWin = ctx.createPanel<UI::MapPreview>(ctx.getRoot());
+			panels.mapPreviewWin->setPos({1200, 20});
+			panels.mapPreviewWin->setSize({512, 512});
 		}
 
 		#if ENGINE_CLIENT
@@ -142,6 +145,18 @@ namespace Game {
 			demo->setPos({520, 400});
 			demo->setSize({512, 512});
 		}
+
+		// Hide all panels
+		if (!prevLastChild) { prevLastChild = ctx.getRoot()->getFirstChildRaw(); }
+		for (auto* curr = prevLastChild; curr; curr = curr->getNextSibling()) {
+			curr->setEnabled(false);
+		}
+
+		// Show default panels
+		panels.window->setEnabled(true);
+		#if ENGINE_CLIENT
+			panels.connectWindow->setEnabled(true);
+		#endif
 	}
 
 	UISystem::~UISystem() {

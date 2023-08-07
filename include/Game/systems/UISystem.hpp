@@ -2,6 +2,8 @@
 
 // Game
 #include <Game/System.hpp>
+#include <Game/UI/ConnectWindow.hpp>
+#include <Game/UI/MapPreview.hpp>
 
 namespace Engine::UI {
 	class Context;
@@ -17,8 +19,6 @@ namespace Game::UI {
 	class NetHealthPane;
 	class NetGraphPane;
 	class EntityPane;
-	class MapPreview;
-	class ConnectWindow;
 	class ConsoleWindow;
 	class ConsoleSuggestionHandler;
 }
@@ -33,6 +33,12 @@ namespace Game {
 			void render(RenderLayer layer);
 
 			UI::ConsoleWindow* getConsole() const noexcept { return panels.consoleWindow; }
+			Engine::UI::Window* getDebugWindow() const noexcept { return panels.window; }
+			UI::MapPreview* getMapPreview() const noexcept { return panels.mapPreviewWin; }
+
+			#if ENGINE_CLIENT
+				Engine::UI::Window* getConnectWindow() const noexcept { return panels.connectWindow; }
+			#endif
 
 		private:
 			struct {
@@ -48,7 +54,7 @@ namespace Game {
 				UI::MapPreview* mapPreviewWin;
 
 				#if ENGINE_CLIENT
-				UI::ConnectWindow* connectWindow;
+					UI::ConnectWindow* connectWindow;
 				#endif
 
 				std::unique_ptr<UI::ConsoleSuggestionHandler> consoleSuggestionHandler;

@@ -26,6 +26,7 @@
 #include <Game/MapGenerator2.hpp>
 #include <Game/systems/UISystem.hpp>
 #include <Game/UI/ConsoleWindow.hpp>
+#include <Game/UI/MapPreview.hpp>
 
 // Win32
 #if ENGINE_OS_WINDOWS
@@ -276,128 +277,118 @@ namespace {
 		map.tex2d.setSubImage(0, {}, {map.w, map.h}, PixelFormat::RGB8, data);
 	}
 
-	namespace Map {
-		using namespace Engine::UI;
-		class MapPreview : public Window {
-			private:
-				class DragArea : public ImageDisplay {
-					private:
-						glm::vec2 move = {};
-						float32 zoomAccum = 0;
-						Engine::Clock::TimePoint lastZoom = {};
-
-					public:
-						glm::vec2 offset = {8933, -185.000};
-						glm::vec2 zoom = {0.5, 0.5};
-
-					public:
-						using ImageDisplay::ImageDisplay;
-
-						void render() override {
-							ImageDisplay::render();
-							if (zoomAccum && (Engine::Clock::now() - lastZoom) > std::chrono::milliseconds{1000}) {
-								lastZoom = Engine::Clock::now();
-								rebuild();
-							}
-						}
-
-						glm::vec2 scale() { return getSize() / glm::vec2{map.w, map.h}; }
-
-						void rebuild() { // TODO: test
-							if (zoomAccum) {
-								auto z = std::clamp(zoomAccum * 0.2f, -0.9f, 0.9f);
-								zoom -= zoom * z;
-								zoom = glm::max(zoom, 0.05f);
-								zoomAccum = 0;
-							}
-							mapTest(offset.x, offset.y, zoom.x, zoom.y);
-						}
-
-						bool onAction(ActionEvent action) override {
-							switch (action) {
-								case Action::Scroll: {
-									zoomAccum += action.value.f32;
-									return true;
-								}
-							}
-							return false;
-						}
-
-						bool onBeginActivate() override {
-							move = ctx->getCursor();
-							return true;
-						}
-
-						void onEndActivate() override {
-							// TODO: need to fix scale depending on sz
-							move -= ctx->getCursor();
-							if (move.x || move.y) {
-								move.y = -move.y;
-								const glm::ivec2 diff = glm::round(move * zoom / scale());
-								offset += diff;
-								rebuild();
-							}
-						}
-				};
-			private:
-				TextBox* xMove = nullptr;
-				TextBox* yMove = nullptr;
-				TextBox* xZoom = nullptr;
-				TextBox* yZoom = nullptr;
-
-				DragArea* area = nullptr;
-
-			public:
-				MapPreview(Context* context) : Window{context} {
-					auto& theme = ctx->getTheme();
-					auto cont = getContent();
-					// TODO: block pos tooltip
-
-					mapTest(); // TODO: rm - temp to fix invalid texture in ImageDisplay
-					area = ctx->constructPanel<DragArea>();
-					area->setTexture(map.tex2d);
-
-					auto sec = ctx->createPanel<Panel>(cont);
-					sec->setLayout(new DirectionalLayout{Direction::Horizontal, Align::Stretch, Align::Start, theme.sizes.pad1});
-					sec->setAutoSizeHeight(true);
-
-					auto textGetter = [](auto& var){ return [&var, last=0.0f](TextBox& box) mutable {
-						if (var == last) { return; }
-						last = var;
-						box.setText(std::to_string(last));
-					};};
-
-					auto textSetter = [area = this->area](auto& var){ return [area, &var](TextBox& box) {
-						std::from_chars(std::to_address(box.getText().begin()), std::to_address(box.getText().end()), var);
-						area->rebuild();
-					};};
-					
-					xMove = ctx->createPanel<TextBox>(sec);
-					xMove->autoSize();
-					xMove->bind(textGetter(area->offset.x), textSetter(area->offset.x));
-					
-					yMove = ctx->createPanel<TextBox>(sec);
-					yMove->autoSize();
-					yMove->bind(textGetter(area->offset.y), textSetter(area->offset.y));
-					
-					xZoom = ctx->createPanel<TextBox>(sec);
-					xZoom->autoSize();
-					xZoom->bind(textGetter(area->zoom.x), textSetter(area->zoom.x));
-					
-					yZoom = ctx->createPanel<TextBox>(sec);
-					yZoom->autoSize();
-					yZoom->bind(textGetter(area->zoom.y), textSetter(area->zoom.y));
-
-					sec->setFixedHeight(sec->getHeight());
-					cont->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch, theme.sizes.pad1});
-					cont->addChild(area);
-				}
-		};
-	}
-
 	void performExit(const char* reason) {
 		ENGINE_LOG("Shutting down: ", reason, "\n\n");
 	};
+}
+
+// TODO: cleanup all this map this mess.
+namespace Game::UI {
+	using namespace Engine::UI;
+	class MapPreviewDragArea : public ImageDisplay {
+		private:
+			glm::vec2 move = {};
+			float32 zoomAccum = 0;
+			Engine::Clock::TimePoint lastZoom = {};
+
+		public:
+			glm::vec2 offset = {8933, -185.000};
+			glm::vec2 zoom = {0.5, 0.5};
+
+		public:
+			using ImageDisplay::ImageDisplay;
+
+			void render() override {
+				ImageDisplay::render();
+				if (zoomAccum && (Engine::Clock::now() - lastZoom) > std::chrono::milliseconds{1000}) {
+					lastZoom = Engine::Clock::now();
+					rebuild();
+				}
+			}
+
+			glm::vec2 scale() { return getSize() / glm::vec2{map.w, map.h}; }
+
+			void rebuild() { // TODO: test
+				if (zoomAccum) {
+					auto z = std::clamp(zoomAccum * 0.2f, -0.9f, 0.9f);
+					zoom -= zoom * z;
+					zoom = glm::max(zoom, 0.05f);
+					zoomAccum = 0;
+				}
+				mapTest(offset.x, offset.y, zoom.x, zoom.y);
+			}
+
+			bool onAction(ActionEvent action) override {
+				switch (action) {
+					case Action::Scroll: {
+						zoomAccum += action.value.f32;
+						return true;
+					}
+				}
+				return false;
+			}
+
+			bool onBeginActivate() override {
+				move = ctx->getCursor();
+				return true;
+			}
+
+			void onEndActivate() override {
+				// TODO: need to fix scale depending on sz
+				move -= ctx->getCursor();
+				if (move.x || move.y) {
+					move.y = -move.y;
+					const glm::ivec2 diff = glm::round(move * zoom / scale());
+					offset += diff;
+					rebuild();
+				}
+			}
+	};
+
+	MapPreview::MapPreview(Context* context) : Window{context} {
+		auto& theme = ctx->getTheme();
+		auto cont = getContent();
+		// TODO: block pos tooltip
+
+		mapTest(); // TODO: rm - temp to fix invalid texture in ImageDisplay
+		area = ctx->constructPanel<MapPreviewDragArea>();
+		area->setTexture(map.tex2d);
+
+		auto sec = ctx->createPanel<Panel>(cont);
+		sec->setLayout(new DirectionalLayout{Direction::Horizontal, Align::Stretch, Align::Start, theme.sizes.pad1});
+		sec->setAutoSizeHeight(true);
+
+		auto textGetter = [](auto& var){ return [&var, last=0.0f](TextBox& box) mutable {
+			if (var == last) { return; }
+			last = var;
+			box.setText(std::to_string(last));
+		};};
+
+		auto textSetter = [area = this->area](auto& var){ return [area, &var](TextBox& box) {
+			std::from_chars(std::to_address(box.getText().begin()), std::to_address(box.getText().end()), var);
+			area->rebuild();
+		};};
+					
+		xMove = ctx->createPanel<TextBox>(sec);
+		xMove->autoSize();
+		xMove->bind(textGetter(area->offset.x), textSetter(area->offset.x));
+					
+		yMove = ctx->createPanel<TextBox>(sec);
+		yMove->autoSize();
+		yMove->bind(textGetter(area->offset.y), textSetter(area->offset.y));
+					
+		xZoom = ctx->createPanel<TextBox>(sec);
+		xZoom->autoSize();
+		xZoom->bind(textGetter(area->zoom.x), textSetter(area->zoom.x));
+					
+		yZoom = ctx->createPanel<TextBox>(sec);
+		yZoom->autoSize();
+		yZoom->bind(textGetter(area->zoom.y), textSetter(area->zoom.y));
+
+		sec->setFixedHeight(sec->getHeight());
+		cont->setLayout(new DirectionalLayout{Direction::Vertical, Align::Stretch, Align::Stretch, theme.sizes.pad1});
+		cont->addChild(area);
+	}
 }
 
 namespace {
@@ -599,7 +590,7 @@ void run(int argc, char* argv[]) {
 	// Map Testing
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	if constexpr (ENGINE_CLIENT) {
-		auto preview = guiContext.createPanel<Map::MapPreview>(guiContext.getRoot());
+		auto preview = world.getSystem<Game::UISystem>().getMapPreview();
 		preview->setPos({1200, 20});
 		preview->setSize({512, 512});
 	}

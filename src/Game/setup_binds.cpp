@@ -6,14 +6,19 @@
 #include <Game/World.hpp>
 #include <Game/systems/InputSystem.hpp>
 #include <Game/systems/ActionSystem.hpp>
+#include <Game/systems/UISystem.hpp>
+#include <Game/UI/ConsoleWindow.hpp>
+//#include <Game/UI/MapPreview.hpp>
 
 void setupBinds(Game::EngineInstance& engine) {
 	using namespace Engine::Input;
+	using namespace Game;
 	using Layer = Game::InputLayer;
 	using Action = Game::Action;
 	using Type = InputType;
 
 	auto& world = engine.getWorld();
+	auto& uiSys = world.getSystem<UISystem>();
 	auto& guiContext = engine.getUIContext();
 	auto& bm = engine.getBindManager();
 	auto& is = world.getSystem<Game::InputSystem>();
@@ -208,7 +213,7 @@ void setupBinds(Game::EngineInstance& engine) {
 		return guiContext.onActivate(curr.i32, time);
 	});
 
-
+	// Tab Navigation
 	// TODO: really want a way to specify generic L/R shift without to registers
 	bm.addBind(Layer::GuiFocus, true, InputSequence{
 		InputId{Type::Keyboard, 0, +KeyCode::Tab},
@@ -221,6 +226,29 @@ void setupBinds(Game::EngineInstance& engine) {
 		InputId{Type::Keyboard, 0, +KeyCode::RShift},
 		InputId{Type::Keyboard, 0, +KeyCode::Tab},
 	}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::PanelPrev); } return true; });
-	
+
+	// UI Toggles
+	bm.addBind(Layer::GuiHover, false, InputSequence{
+		InputId{Type::Keyboard, 0, +KeyCode::Backtick},
+	}, [&](Value curr, Value prev, auto time){ if (curr.i32) { uiSys.getConsole()->toggleEnabled(); } return true; });
+
+	bm.addBind(Layer::GuiHover, false, InputSequence{
+		InputId{Type::Keyboard, 0, +KeyCode::F1},
+	}, [&](Value curr, Value prev, auto time){ if (curr.i32) { uiSys.getDebugWindow()->toggleEnabled(); } return true; });
+
+	bm.addBind(Layer::GuiHover, false, InputSequence{
+		InputId{Type::Keyboard, 0, +KeyCode::Esc},
+	}, [&](Value curr, Value prev, auto time) {
+		if (curr.i32) {
+			bool enable = !uiSys.getConsole()->isEnabled();
+			#if ENGINE_CLIENT
+				uiSys.getConnectWindow()->setEnabled(enable);
+			#endif
+			uiSys.getMapPreview()->setEnabled(enable);
+			uiSys.getConsole()->setEnabled(enable);
+		}
+		return true;
+	});
+
 	//bm.setLayerEnabled(Layer::GuiFocus, false);
 }
