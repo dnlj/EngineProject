@@ -130,6 +130,9 @@ namespace Engine::UI {
 
 		ctx->registerMouseMove(this, [this](const glm::vec2 pos) {
 			select = getCaretInLine(pos.x);
+
+			// Selections should contain at least one full char
+			if (select == caret) { select = Caret::invalid; }
 		});
 
 		if (auto count = ctx->getActivateCount(); count > 1) {
