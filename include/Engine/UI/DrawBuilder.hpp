@@ -100,6 +100,7 @@ namespace Engine::UI {
 			void resize(glm::vec2 view);
 			void finish();
 			void reset();
+			void resetStyle();
 			void draw();
 
 			void drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size);

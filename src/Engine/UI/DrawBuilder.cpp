@@ -139,11 +139,11 @@ namespace Engine::UI {
 			Image img{PixelFormat::RGB8, {1,1}};
 			memset(img.data(), 0xFF, img.sizeBytes());
 			defaultTexture.setStorage(TextureFormat::RGB8, img.size());
+			defaultTexture.setFilter(TextureFilter::Nearest);
 			defaultTexture.setImage(img);
 		}
 
 		reset();
-		setTexture(defaultTexture);
 	}
 
 	DrawBuilder::~DrawBuilder() {
@@ -164,6 +164,12 @@ namespace Engine::UI {
 
 	void DrawBuilder::reset() {
 		DrawGroupManager::reset({{0,0}, view});
+		resetStyle();
+	}
+
+	void DrawBuilder::resetStyle() {
+		setTexture(defaultTexture);
+		setColor({1,1,1,1});
 	}
 
 	void DrawBuilder::updateBuffers() {
@@ -255,7 +261,6 @@ namespace Engine::UI {
 	void DrawBuilder::drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
 		const auto old = getTexture();
 		setTexture(tex);
-		nextDrawGroup();
 		drawRect(pos, size);
 		setTexture(old);
 	}
@@ -277,8 +282,7 @@ namespace Engine::UI {
 	}
 
 	void DrawBuilder::drawRect(glm::vec2 pos, glm::vec2 size) {
-		// TODO: Enable and fix empty bugs
-		//ENGINE_DEBUG_ASSERT(size.x > 0 && size.y > 0, "Attempting to draw empty rect.");
+		ENGINE_DEBUG_ASSERT(size.x > 0 && size.y > 0, "Attempting to draw empty rect.");
 		const auto pvdSz = getVertexData().size();
 		auto base = static_cast<uint32>(pvdSz);
 

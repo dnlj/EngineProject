@@ -323,12 +323,15 @@ namespace Engine::UI {
 		hoverActionQueue.clear();
 
 		// DFS traversal
+		reset();
 		for (Panel* curr = root; curr;) {
 			setOffset(curr->getPos());
 
 			pushClip();
 			setClip(curr->getBounds());
+
 			curr->render();
+			resetStyle();
 
 			if (auto* child = curr->getFirstChild()) {
 				curr = child;
@@ -354,7 +357,6 @@ namespace Engine::UI {
 		// Draw groups
 		finish();
 		draw();
-		reset();
 
 		// Draw to main framebuffer
 		glDisable(GL_SCISSOR_TEST);

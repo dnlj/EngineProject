@@ -1,6 +1,6 @@
-// Name, GL Format, Default Texture Format, Channels, R, G, B, A,
-X(NONE, GL_NONE, NONE, 0, 0, 0, 0, 0)
-X(R8, GL_RED, R8, 1, 8, 0, 0, 0)
-X(RGB8, GL_RGB, SRGB8, 3, 8, 8, 8, 0)
-X(RGBA8, GL_RGBA, SRGBA8, 4, 8, 8, 8, 8)
+// Name, GL Format, Texture Format, Channels, R, G, B, A,
+X(NONE,  GL_NONE,   NONE,           0,        0, 0, 0, 0)
+X(R8,    GL_RED,    R8,             1,        8, 0, 0, 0)
+X(RGB8,  GL_RGB,    SRGB8,          3,        8, 8, 8, 0)
+X(RGBA8, GL_RGBA,   SRGBA8,         4,        8, 8, 8, 8)
 #undef X

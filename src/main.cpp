@@ -33,6 +33,7 @@
 #include <timeapi.h>
 #endif
 
+
 void setupCommands(Game::EngineInstance& engine, Engine::Window& window);
 void setupBinds(Game::EngineInstance& engine);
 
@@ -308,7 +309,7 @@ namespace Game::UI {
 
 			glm::vec2 scale() { return getSize() / glm::vec2{map.w, map.h}; }
 
-			void rebuild() { // TODO: test
+			void rebuild() {
 				if (zoomAccum) {
 					auto z = std::clamp(zoomAccum * 0.2f, -0.9f, 0.9f);
 					zoom -= zoom * z;
