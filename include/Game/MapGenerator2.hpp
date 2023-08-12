@@ -125,7 +125,7 @@ namespace Game {
 			};
 
 		public:
-			MapGenerator2(const int64 seed)
+			MapGenerator2(const uint64 seed)
 				: simplex{seed}
 				, perm{seed} {
 			}

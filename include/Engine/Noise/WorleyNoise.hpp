@@ -164,7 +164,7 @@ namespace Engine::Noise {
 
 	class WorleyNoise : public WorleyNoiseGeneric<RangePermutation<256>, ConstantDistribution<1>, MetricEuclidean2, float32, int32> {
 		public:
-			WorleyNoise(int64 seed) : WorleyNoiseGeneric{seed, {}, {}} {
+			WorleyNoise(uint64 seed) : WorleyNoiseGeneric{seed, {}, {}} {
 			}
 	};
 }

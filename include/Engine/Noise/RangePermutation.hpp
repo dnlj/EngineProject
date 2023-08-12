@@ -19,7 +19,7 @@ namespace Engine::Noise {
 			constexpr static bool isPowerOfTwo = Size && !(Size & (Size - 1));
 
 		public:
-			RangePermutation(int64 seed) {
+			RangePermutation(uint64 seed) {
 				// Generate a source array with values [0, Size - 1]
 				decltype(perm) source;
 				for (Int i = 0; i < Size; i++) {

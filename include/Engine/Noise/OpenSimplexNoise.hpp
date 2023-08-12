@@ -15,7 +15,7 @@ namespace Engine::Noise {
 		public:
 			using FVec2 = glm::vec<2, Float>;
 
-			OpenSimplexNoiseGeneric(int64 seed) : perm{seed} {
+			OpenSimplexNoiseGeneric(uint64 seed) : perm{seed} {
 			}
 
 			void setSeed(int64 seed) {
