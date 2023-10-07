@@ -19,7 +19,7 @@ namespace Engine::UI {
 		const auto off = getStringOffset();
 		const auto topCaret = (getHeight() - lineHeight) * 0.5f; // Center in line
 
-		if (select.valid()) {
+		if (select.valid() && caret != select) {
 			const auto a = caret.pos < select.pos ? caret : select;
 			const auto b = caret.pos < select.pos ? select : caret;
 

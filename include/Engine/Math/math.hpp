@@ -10,6 +10,11 @@
 
 
 namespace Engine::Math {
+	template<class T>
+	ENGINE_INLINE constexpr T pow2(T num) noexcept {
+		return num * num;
+	}
+
 	template<class T, std::floating_point F>
 	ENGINE_INLINE constexpr T lerp(T a, T b, F t) {
 		return t * a + (F{1} - t) * b;
@@ -57,5 +62,15 @@ namespace Engine::Math {
 		if (v < 3) { return 2 * u; }
 		if (v < 6) { return 5 * u; }
 		return 10 * u;
+	}
+
+	template<std::integral T, glm::qualifier Q>
+	ENGINE_INLINE constexpr auto length2(const glm::vec<2, T, Q> vec) noexcept {
+		return vec.x * vec.x + vec.y * vec.y;
+	}
+	
+	template<std::integral T, glm::qualifier Q>
+	ENGINE_INLINE constexpr auto distance2(const glm::vec<2, T, Q> vecA, const glm::vec<2, T, Q> vecB) noexcept {
+		return length2(vecB - vecA);
 	}
 }

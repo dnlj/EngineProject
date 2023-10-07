@@ -24,4 +24,12 @@ namespace Engine {
 		#endif
 		using FlatHashMap = std::unordered_map<KeyType, ValueType, Hash, Equal>;
 	#endif
+		
+	template <
+		class KeyType,
+		class Hash = Hash<KeyType>,
+		class Equal = EqualTo<KeyType>,
+		size_t MaxLoadFactor100 = 75
+	>
+	using FlatHashSet = robin_hood::unordered_flat_set<KeyType, Hash, Equal, MaxLoadFactor100>;
 }

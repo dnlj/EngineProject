@@ -4,9 +4,6 @@
 #include <Engine/ArrayView.hpp>
 #include <Engine/Window.hpp>
 
-// TODO: rm
-#include <type_traits>
-#include <Engine/traits.hpp>
 
 namespace {
 	using namespace Game;

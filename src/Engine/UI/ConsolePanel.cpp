@@ -17,6 +17,7 @@ namespace Engine::UI {
 		feed->pushText("");
 		feed->pushText("This is the fifth line.\nThis is the sixth line.");
 
+		/*
 		ctx->addPanelUpdateFunc(feed, [](Panel* self){
 			constexpr static auto lcg = [](auto x){ return x * 6364136223846793005l + 1442695040888963407l; };
 			static auto last = Clock::now();
@@ -52,10 +53,11 @@ namespace Engine::UI {
 				//area->pushText("Sixth line");
 				self->getContext()->clearPanelUpdateFuncs(self);
 			}
-		});
+		});*/
 
 		input = ctx->constructPanel<InputTextBox>();
-		input->autoText("This is a test abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+		//input->autoText("This is a test abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+		input->autoText("");
 		input->setAction([this](TextBox*){ submitInput(); });
 
 		auto submit = ctx->constructPanel<Button>();

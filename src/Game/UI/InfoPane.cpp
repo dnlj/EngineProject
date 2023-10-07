@@ -4,6 +4,14 @@
 #include <Game/systems/NetworkingSystem.hpp>
 
 
+// TODO: rm
+#include <charconv>
+#include <type_traits>
+#include <Engine/traits.hpp>
+#include <Game/comps/all.hpp> // TODO: rm - just for debug command
+#include <Game/systems/all.hpp> // TODO: rm - just for debug command
+
+
 namespace Game::UI {
 	InfoPane::InfoPane(EUI::Context* context) : AutoList{context} {
 		setTitle("Info");
@@ -32,6 +40,65 @@ namespace Game::UI {
 		ctx->addPanelUpdateFunc(getContent(), [](auto* panel){
 			auto* self = reinterpret_cast<InfoPane*>(panel->getParent());
 			self->update();
+		});
+
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// TODO: rm - zone testing debug ui
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		const auto debugZoneButton = [this](const auto& name, EUI::Button::Callback func) {
+			auto button = ctx->constructPanel<EUI::Button>();
+			button->autoText(name);
+			button->lockSize();
+			getContent()->addChild(button);
+			button->setAction(std::move(func));
+			return button;
+		};
+
+		auto add = [this](float32 x, float32 y){
+			auto& engine = *ctx->getUserdata<EngineInstance>();
+			auto& world = engine.getWorld();
+			auto& physSys = world.getSystem<PhysicsSystem>();
+			auto ent = world.createEntity();
+
+			//world.addComponent<PlayerFlag>(ent);
+			//world.addComponent<ActionComponent>(ent, world.getTick());
+			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
+			auto& zoneComp = world.addComponent<ZoneComponent>(ent);
+
+			physComp.setBody(physSys.createPhysicsCircle(ent, {x, y}, PhysicsCategory::Player));
+			zoneComp;physComp;
+			return ent;
+		};
+
+		constexpr auto max = 499;
+		debugZoneButton("Zone Wide 2x", [this, add](EUI::Button* btn){
+			add(0,0*max);
+			add(0,1*max);
+		});
+
+		debugZoneButton("Zone Wide 3x", [this, add](EUI::Button* btn){
+			add(0,0*max);
+			add(0,1*max);
+			add(0,2*max);
+		});
+
+		debugZoneButton("Zone Wide 4x", [this, add](EUI::Button* btn){
+			add(0,0*max);
+			add(0,1*max);
+			add(0,2*max);
+			add(0,3*max);
+		});
+
+		debugZoneButton("Zone Wide 8x", [this, add](EUI::Button* btn){
+			const auto ent0 = add(0,0*max);
+			const auto ent1 = add(0,1*max);
+			const auto ent2 = add(0,2*max);
+			const auto ent3 = add(0,3*max);
+			const auto ent4 = add(0,4*max);
+			const auto ent5 = add(0,5*max);
+			const auto ent6 = add(0,6*max);
+			const auto ent7 = add(0,7*max);
 		});
 	}
 

@@ -156,6 +156,7 @@ namespace Game {
 		panels.window->setEnabled(true);
 		#if ENGINE_CLIENT
 			panels.connectWindow->setEnabled(true);
+			panels.consoleWindow->setEnabled(true);
 		#endif
 	}
 

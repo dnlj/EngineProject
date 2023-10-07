@@ -9,7 +9,7 @@
 #include <Engine/Net/Replication.hpp>
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/common.hpp>
 #include <Game/EngineInstance.hpp>
 #include <Game/NetworkTraits.hpp>
 
@@ -25,6 +25,7 @@ namespace Game {
 		class ActionSystem,
 
 		// Game Logic
+		class ZoneManagementSystem,
 		class CharacterMovementSystem,
 		class PhysicsOriginShiftSystem,
 		class PhysicsSystem,
@@ -45,18 +46,19 @@ namespace Game {
 	>;
 	
 	using CompsSet = Meta::TypeSet::TypeSet<
+		class ActionComponent,
+		class AnimationComponent,
+		class ArmatureComponent,
+		class BlockEntityComponent,
+		class ECSNetworkingComponent,
+		class MapAreaComponent,
 		class MapEditComponent,
+		class ModelComponent,
+		class NetworkStatsComponent,
 		class PhysicsBodyComponent,
 		class PhysicsInterpComponent,
 		class SpriteComponent,
-		class ActionComponent,
-		class ECSNetworkingComponent,
-		class NetworkStatsComponent,
-		class MapAreaComponent,
-		class BlockEntityComponent,
-		class ModelComponent,
-		class ArmatureComponent,
-		class AnimationComponent
+		class ZoneComponent
 	>;
 
 	using FlagsSet = Meta::TypeSet::TypeSet<

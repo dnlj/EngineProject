@@ -267,4 +267,9 @@ namespace Engine {
 		private:
 			constexpr std::string_view view() const noexcept { return data; }
 	};
+
+	ENGINE_INLINE decltype(auto) pbegin(auto& obj) { return std::to_address(std::begin(obj)); }
+	ENGINE_INLINE decltype(auto) pcbegin(const auto& obj) { return std::to_address(std::cbegin(obj)); }
+	ENGINE_INLINE decltype(auto) pend(auto& obj) { return std::to_address(std::end(obj)); }
+	ENGINE_INLINE decltype(auto) pcend(const auto& obj) { return std::to_address(std::cend(obj)); }
 }
