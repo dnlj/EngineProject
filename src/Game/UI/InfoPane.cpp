@@ -107,20 +107,15 @@ namespace Game::UI {
 			add(0,2*max);
 			add(0,3*max);
 			
-			//add(510,0*max);
-			//add(510,1*max);
-			//add(510,2*max);
-			//add(510,3*max);
+			add(max+10, 0*max);
+			add(max+10, 1*max);
+			add(max+10, 2*max);
+			add(max+10, 3*max);
+		});
 
-			add(510,0*max);
-			add(510,1*max);
-			add(510,2*max);
-			add(510,3*max);
-
-			//add(500, 4*max);
-			//add(500, 5*max);
-			//add(500, 6*max);
-			//add(500, 7*max);
+		debugZoneButton("Zone Wide 2x1", [this, add, debugZoneButton](EUI::Button* btn){
+			add(0, 0);
+			add(0, 2100);
 		});
 	}
 

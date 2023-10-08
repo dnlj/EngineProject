@@ -60,7 +60,7 @@ namespace Game {
 				public:
 					Engine::ECS::Entity ply1 = {};
 					Engine::ECS::Entity ply2 = {};
-					Dist dist2 = zoneUnitMax;
+					Dist dist = zoneUnitMax;
 			};
 
 			class GroupPair {

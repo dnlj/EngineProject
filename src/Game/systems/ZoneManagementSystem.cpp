@@ -12,18 +12,8 @@
 
 namespace {
 	using namespace Game;
-	class WorldPos {
-		public:
-			ZoneVec abs;
-			glm::vec2 rel;
-
-			ENGINE_INLINE constexpr ZoneVec rough() const noexcept {
-				return abs + ZoneVec{rel};
-			}
-	};
-
-	ENGINE_INLINE constexpr ZoneUnit roughDistance2(const WorldPos& a, const WorldPos& b) noexcept {
-		return Engine::Math::length2(a.rough() + b.rough());
+	ENGINE_INLINE ZoneUnit manhattanDist(const ZoneVec& a, const ZoneVec& b) noexcept {
+		ENGINE_FLATTEN return glm::compAdd(glm::abs(a - b));
 	}
 }
 
@@ -61,40 +51,28 @@ namespace Game {
 		// though.
 		//
 
-		// 
-		// TODO (B2R7X87e): One huge downside of this is using squared
-		// distances. The second we use the squared distance anywhere in any
-		// calculation we limit our maximum world size to radius = sqrt(2^63) =
-		// ~3 billion
-		//
-		// Maybe we can rework this to make sense with Chebyshev or Manhattan
-		// distance instead to increase maximum world size? Should probably look
-		// into sooner rather than later.
-		//
-		// I think we would want Chebyshev since it overshoots and Manhattan
-		// undershoots? Think about this a bit.
-		//
-
-		// TODO: Look into: we really want some kind of spatial data structure
-		//       here so we don't have to compute n*m distances. Think physics
-		//       quadtree/bsp/broadphase type lookup.
-
 		// TODO: one problem is our world scale is a bit off. Should probably be more like 6-8 blocks per meter instead of 4/5.
 
-		// TODO: cleanup any unused here.
-		// All distances are store squared to simplify distance computations.
-		constexpr int64 mustSplit2 = Engine::Math::pow2(2000);
-		//constexpr int64 likeJoin2 = Engine::Math::pow2(1000);
-		constexpr int64 mustJoin2 = Engine::Math::pow2(500);
-		static_assert(mustJoin2 < mustSplit2);
+		constexpr int64 mustSplit = 2000;
+		constexpr int64 mustJoin = 500;
+		static_assert(mustJoin < mustSplit);
 
 		// How close can two zones be to be considered the same. Used to select
 		// if an existing zone can be used for a particular group.
-		constexpr int64 sameZoneDist2 = Engine::Math::pow2(500);
+		constexpr int64 sameZoneDist = 500;
 
-		// TODo: we can probably combine most of these loops once we have the logic figured out.
+		// The metric to use for comparing distances.
+		// - Using Euclidean is bad because we need to take a square root.
+		// - Using squared Euclidean is bad because it greatly limits our world size to sqrt(INT_MAX)
+		// - Chebyshev or Manhattan should be fine.
+		// 
+		// I went with Manhattan to have less aggressive merges. Might be a
+		// problem depnding on desired interaction range but I doubt we will
+		// need interactions that far out anyways.
+		constexpr auto metric = manhattanDist;
+
+		// TODO: we can probably combine most of these loops once we have the logic figured out.
 		// TODO: look into various clustering algos, k-means, etc.
-		// TODO: if this is a perf issue maybe only do one player per tick?
 		groupRemaps.clear();
 		groupsStorage.clear();
 		merged.clear();
@@ -125,16 +103,16 @@ namespace Game {
 					const auto relPos2 = physComp2.getPosition();
 					const auto globalBlockPos1 = zones[zoneComp1.zoneId].offset + ZoneVec{relPos1.x, relPos1.y};
 					const auto globalBlockPos2 = zones[zoneComp2.zoneId].offset + ZoneVec{relPos2.x, relPos2.y};
-					const auto dist2 = Engine::Math::distance2(globalBlockPos1, globalBlockPos2);
-					relations.emplace_back(*cur, *next, dist2);
-					ZONE_DEBUG("Relation between {} and {} = {} ({})", *cur, *next, dist2, std::sqrt(dist2));
+					const auto dist = metric(globalBlockPos1, globalBlockPos2);
+					relations.emplace_back(*cur, *next, dist);
+					ZONE_DEBUG("Relation between {} and {} = {}", *cur, *next, dist);
 				}
 			}
 
 			// TODO: if we merge the must join loop into the above then we should be able to remove this step.
 			// Sort to make the distance check logic simpler. Must join, must split, etc. are now all grouped.
 			std::ranges::sort(relations, [](const auto& a, const auto& b){
-				return a.dist2 < b.dist2;
+				return a.dist < b.dist;
 			});
 		}
 
@@ -145,7 +123,7 @@ namespace Game {
 			// TODO: probably a better scheme for remaps. Need to think a about it a bit.
 			// TODO: could just do this step while calcing distances
 			for (; cur != end; ++cur) {
-				if (cur->dist2 > mustJoin2) { break; }
+				if (cur->dist > mustJoin) { break; }
 				auto& zoneComp1 = world.getComponent<ZoneComponent>(cur->ply1);
 				auto& zoneComp2 = world.getComponent<ZoneComponent>(cur->ply2);
 
@@ -196,24 +174,28 @@ namespace Game {
 					ZONE_DEBUG("{} - Creating new group {} for {} and {}", world.getTick(), zoneComp2.group, cur->ply1, cur->ply2);
 				}
 			}
-
 		}
 
-		//
-		//
-		// 
-		//
-		// TODO: need to handle players where all relations are > mustJoin2 since the above loop drops at mustJoin2.
-		// Do we? Wont they just stay where they are which is fine? If so leave a comment explaining
-		// We do need to at least clear their group id
-		//
-		// what if they move outside of 2000m or so? will it split?
-		//
-		// 
-		//
-		//
-		//
-		//
+		// Split solo players outside of split range.
+		// - If they are in a group they should be handled already below.
+		// - If they are not in a group and they aren't outside the split range
+		//   then nothing needs to happen so it should be fine.
+		for (const auto ply : playerFilter) {
+			auto& zoneComp = world.getComponent<ZoneComponent>(ply);
+			if (zoneComp.group == -1) {
+				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+				const auto pos = physComp.getPosition();
+				const auto dist = metric({pos.x, pos.y}, {});
+				if (dist > mustSplit) {
+					const auto groupId = static_cast<ZoneId>(groupsStorage.size());
+					groupRemaps.emplace_back(groupId);
+					auto& group = groupsStorage.emplace_back();
+					group.push_back(ply);
+					zoneComp.group = groupId;
+					ZONE_DEBUG("{} - Creating new group {} for {}", world.getTick(), groupId, ply);
+				}
+			}
+		}
 
 		// Create zones and shift entities.
 		for (const auto& groupStorageId : groupRemaps) {
@@ -233,13 +215,13 @@ namespace Game {
 
 			// Figure out if an existing zone is close enough to use.
 			ZoneId zoneId = -1;
-			ZoneUnit minDist2 = sameZoneDist2;
+			ZoneUnit minDist = sameZoneDist;
 			for (const auto ply : group) {
 				const auto& zoneComp = world.getComponent<ZoneComponent>(ply);
 				const auto& zone = zones[zoneComp.zoneId];
-				const auto dist2 = Engine::Math::distance2(zone.offset, ideal);
-				if (dist2 < minDist2) {
-					minDist2 = dist2;
+				const auto dist = metric(zone.offset, ideal);
+				if (dist < minDist) {
+					minDist = dist;
 					zoneId = zoneComp.zoneId;
 				}
 			}
@@ -276,8 +258,6 @@ namespace Game {
 				reuse.push_back(zoneId);
 			}
 		}
-
-		// TODO: migrate/load any non-player entities for zones
 	}
 
 	ZoneId ZoneManagementSystem::createNewZone(ZoneVec pos) {
