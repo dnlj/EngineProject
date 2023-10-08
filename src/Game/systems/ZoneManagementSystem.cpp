@@ -38,6 +38,29 @@ namespace Game {
 		// TODO: const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent, ZoneComponent>();
 		const auto& playerFilter = world.getFilter<PhysicsBodyComponent, ZoneComponent>();
 
+		//
+		// TODO: One option to support higher player counts might be do instead
+		// do something like have each zone track its total radius and then use
+		// that info as a rough broad phase for which zones potentially need
+		// merged or recalculated instead of doing that on a per player basis
+		// always.
+		// 
+		// n = #players
+		// m = #zones
+		// 
+		// Current edge calculations are  n(n-1)/2 = O(n^2)  The proposed method
+		// is approximately  n*m  but it is very likely that  m << n  so in
+		// reality this is probably closer to something like  n^1.3  which
+		// starts paying off around  n=4  and is worst case still only  n^2
+		// plus the overhead for zone management. Probably worth looking into if
+		// this is a perf issue.
+		//
+		// Beyond that we could also distribute either the current or proposed
+		// method across frames assuming some maximum player move speed. We
+		// would need to make sure to account for teleporting between areas
+		// though.
+		//
+
 		// 
 		// TODO (B2R7X87e): One huge downside of this is using squared
 		// distances. The second we use the squared distance anywhere in any
@@ -76,7 +99,7 @@ namespace Game {
 		groupsStorage.clear();
 		merged.clear();
 		relations.clear();
-		puts("=========================================");
+		ZONE_DEBUG("=========================================");
 
 		// TODO: shouldn't need this. Should be assignd when entity created. Change to a if-constexpr-debug check.
 		for (const auto ply : playerFilter) {
@@ -92,21 +115,19 @@ namespace Game {
 			const auto end = playerFilter.end();
 			for (; cur != end; ++cur) {
 				const auto& physComp1 = world.getComponent<PhysicsBodyComponent>(*cur);
-				auto next = cur;
-				++next;
+				auto& zoneComp1 = world.getComponent<ZoneComponent>(*cur);
+				zoneComp1.group = -1; // Reset for the next pass
 
-				for (; next != end; ++next) {
+				for (auto next = cur; ++next != end;) {
 					const auto& physComp2 = world.getComponent<PhysicsBodyComponent>(*next);
-					const auto dist2 = Engine::Math::distance2(physComp1.getGlobalBlockPosition(), physComp2.getGlobalBlockPosition());
+					const auto& zoneComp2 = world.getComponent<ZoneComponent>(*next);
+					const auto relPos1 = physComp1.getPosition();
+					const auto relPos2 = physComp2.getPosition();
+					const auto globalBlockPos1 = zones[zoneComp1.zoneId].offset + ZoneVec{relPos1.x, relPos1.y};
+					const auto globalBlockPos2 = zones[zoneComp2.zoneId].offset + ZoneVec{relPos2.x, relPos2.y};
+					const auto dist2 = Engine::Math::distance2(globalBlockPos1, globalBlockPos2);
 					relations.emplace_back(*cur, *next, dist2);
 					ZONE_DEBUG("Relation between {} and {} = {} ({})", *cur, *next, dist2, std::sqrt(dist2));
-				}
-
-				// Just for debugging
-				// Make sure everything was cleaned up correctly last loop
-				if constexpr (ENGINE_DEBUG) {
-					auto& zoneComp = world.getComponent<ZoneComponent>(*cur);
-					ENGINE_DEBUG_ASSERT(zoneComp.group == -1);
 				}
 			}
 
@@ -132,36 +153,35 @@ namespace Game {
 
 				if (zoneComp1.group != -1) { // ply1 is in a group
 					if (zoneComp2.group != -1) { // Both are in a group
-						ENGINE_DEBUG_ASSERT(zoneComp1.group != zoneComp2.group, world.getTick(), " - Attempting to merge group with itself");
+						if (groupRemaps[zoneComp1.group] == groupRemaps[zoneComp2.group]) { continue; }
+						const auto [min, max] = std::minmax(zoneComp1.group, zoneComp2.group);
+						ZONE_DEBUG("{} - Merging group {} into {} because of {} and {}", world.getTick(), max, min, cur->ply1, cur->ply2);
+						//ENGINE_DEBUG_ASSERT(zoneComp1.group != zoneComp2.group, world.getTick(), " - Attempting to merge group with itself");
 
 						// Merge the larger id group into the smaller id group
-						const auto [min, max] = std::minmax(zoneComp1.group, zoneComp2.group);
 						groupsStorage[groupRemaps[min]].append_range(groupsStorage[groupRemaps[max]]);
 						groupsStorage[groupRemaps[max]].clear();
-						groupRemaps[max] = groupRemaps[min];
-						ZONE_DEBUG("{} - Merging group {} into {} because of {} and {}", world.getTick(), max, min, cur->ply1, cur->ply2);
+
+						zoneComp1.group = min;
+						zoneComp2.group = min;
 
 						// Update any groups that reference max
 						for (auto& gid : groupRemaps) {
 							if (gid == max) {
-								ZONE_DEBUG("    Merge update {2} > {} > {}", gid, min, std::ranges::find(groupRemaps, gid) - groupRemaps.begin());
+								const auto original = std::ranges::find(groupRemaps, gid) - groupRemaps.begin();
+								ZONE_DEBUG("    Merge update {} > {} > {}", original, gid, min);
 								gid = min;
 							}
 						}
-
-						// TODO: probably update both zoneComps to use the same id. This
-						//       shouldn't affect any logic because we have groupRemap, but it
-						//       might generate slightly better groups/fewer merges.
-
 					} else { // ONLY ply1 is in a group. Use that group.
 						zoneComp2.group = zoneComp1.group;
 						groupsStorage[groupRemaps[zoneComp1.group]].push_back(cur->ply2);
-						ZONE_DEBUG("{} - Adding {} to existing group {} with {}", world.getTick(), cur->ply2, zoneComp2.group, cur->ply1);
+						ZONE_DEBUG("{} - Adding1 {} to existing group {} with {}", world.getTick(), cur->ply2, zoneComp2.group, cur->ply1);
 					}
 				} else if (zoneComp2.group != -1) { // Only ply2 is in a group. Use that group.
 					zoneComp1.group = zoneComp2.group;
 					groupsStorage[groupRemaps[zoneComp2.group]].push_back(cur->ply1);
-					ZONE_DEBUG("{} - Adding {} to existing group {} with {}", world.getTick(), cur->ply1, zoneComp2.group, cur->ply2);
+					ZONE_DEBUG("{} - Adding2 {} to existing group {} with {}", world.getTick(), cur->ply1, zoneComp2.group, cur->ply2);
 				} else { // Neither is in a group
 					const auto groupId = static_cast<ZoneId>(groupsStorage.size());
 					zoneComp1.group = groupId;
@@ -169,13 +189,14 @@ namespace Game {
 
 					ENGINE_DEBUG_ASSERT(groupsStorage.size() == groupRemaps.size());
 
-					groupRemaps.emplace_back();
+					groupRemaps.emplace_back(groupId);
 					auto& group = groupsStorage.emplace_back();
 					group.push_back(cur->ply1);
 					group.push_back(cur->ply2);
 					ZONE_DEBUG("{} - Creating new group {} for {} and {}", world.getTick(), zoneComp2.group, cur->ply1, cur->ply2);
 				}
 			}
+
 		}
 
 		//
@@ -184,8 +205,11 @@ namespace Game {
 		//
 		// TODO: need to handle players where all relations are > mustJoin2 since the above loop drops at mustJoin2.
 		// Do we? Wont they just stay where they are which is fine? If so leave a comment explaining
+		// We do need to at least clear their group id
 		//
 		// what if they move outside of 2000m or so? will it split?
+		//
+		// 
 		//
 		//
 		//
@@ -232,27 +256,17 @@ namespace Game {
 			for (const auto ply : group) {
 				auto& zoneComp = world.getComponent<ZoneComponent>(ply);
 
-				// Clear group for next tick
-				//ZONE_DEBUG("{} - Clear group for {}", world.getTick(), ply);
-				zoneComp.group = -1;
-
 				// Already in the zone.
 				if (zoneComp.zoneId == zoneId) { continue; }
 
-				// Remove from old zone
+				// Move to new zone
 				migratePlayer(ply, zoneId, zoneComp, world.getComponent<PhysicsBodyComponent>(ply));
-				//zones[zoneComp.zoneId].removePlayer(ply);
-				//
-				//// Add to new zone
-				//zones[zoneId].addPlayer(ply);
-				//zoneComp.zoneId = zoneId;
 			}
 		}
 
 		for (ZoneId zoneId = 0; zoneId < zones.size(); ++zoneId) {
 			if (!zones[zoneId].getPlayers().empty()) { continue; }
 
-			// TODO: close and re-use
 			if (zoneId != 0) {
 				ZONE_DEBUG("{} - Closing zone {}", world.getTick(), zoneId);
 

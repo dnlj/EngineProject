@@ -22,7 +22,7 @@ namespace Game {
 
 		public:
 			// The offset from the true origin to use for entities in this zone. The effective "position" of this zone.
-			ZoneVec offset;
+			ZoneVec offset = {0, 0};
 
 			ENGINE_INLINE void addPlayer(Engine::ECS::Entity ply) {
 				ENGINE_DEBUG_ASSERT(!players.contains(ply), "Attempting to insert duplicate player in zone. This is a bug.");
@@ -75,7 +75,6 @@ namespace Game {
 			std::vector<PlyRel> relations;
 			std::vector<ZoneId> reuse;
 			std::vector<Zone> zones;
-			//Engine::StaticVector<ZonePID, std::numeric_limits<ZonePID>::digits> groups;
 
 			// Remaps for groups. These map from a groupId to groupStorageId. This extra
 			// layer of indirection is needed to handle the case where groups are

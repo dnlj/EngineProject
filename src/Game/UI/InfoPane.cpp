@@ -72,33 +72,55 @@ namespace Game::UI {
 		};
 
 		constexpr auto max = 499;
-		debugZoneButton("Zone Wide 2x", [this, add](EUI::Button* btn){
+		debugZoneButton("Zone Wide 1x2", [this, add](EUI::Button* btn){
 			add(0,0*max);
 			add(0,1*max);
 		});
 
-		debugZoneButton("Zone Wide 3x", [this, add](EUI::Button* btn){
+		debugZoneButton("Zone Wide 1x3", [this, add](EUI::Button* btn){
 			add(0,0*max);
 			add(0,1*max);
 			add(0,2*max);
 		});
 
-		debugZoneButton("Zone Wide 4x", [this, add](EUI::Button* btn){
+		debugZoneButton("Zone Wide 1x4", [this, add](EUI::Button* btn){
 			add(0,0*max);
 			add(0,1*max);
 			add(0,2*max);
 			add(0,3*max);
 		});
 
-		debugZoneButton("Zone Wide 8x", [this, add](EUI::Button* btn){
-			const auto ent0 = add(0,0*max);
-			const auto ent1 = add(0,1*max);
-			const auto ent2 = add(0,2*max);
-			const auto ent3 = add(0,3*max);
-			const auto ent4 = add(0,4*max);
-			const auto ent5 = add(0,5*max);
-			const auto ent6 = add(0,6*max);
-			const auto ent7 = add(0,7*max);
+		debugZoneButton("Zone Wide 1x8", [this, add, debugZoneButton](EUI::Button* btn){
+			add(0,0*max);
+			add(0,1*max);
+			add(0,2*max);
+			add(0,3*max);
+			add(0,4*max);
+			add(0,5*max);
+			add(0,6*max);
+			add(0,7*max);
+		});
+
+		debugZoneButton("Zone Wide 2x4", [this, add, debugZoneButton](EUI::Button* btn){
+			add(0,0*max);
+			add(0,1*max);
+			add(0,2*max);
+			add(0,3*max);
+			
+			//add(510,0*max);
+			//add(510,1*max);
+			//add(510,2*max);
+			//add(510,3*max);
+
+			add(510,0*max);
+			add(510,1*max);
+			add(510,2*max);
+			add(510,3*max);
+
+			//add(500, 4*max);
+			//add(500, 5*max);
+			//add(500, 6*max);
+			//add(500, 7*max);
 		});
 	}
 
