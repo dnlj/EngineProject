@@ -12,6 +12,12 @@
 
 
 namespace Game {
+	using PhysicsGroup = int16;
+	static_assert(
+		std::is_same_v<PhysicsGroup, decltype(b2Filter::groupIndex)>,
+		"We assume a physics group can be losslessly converted to a b2 group index"
+	);
+
 	enum class PhysicsCategory {
 		World       = 0,
 		Player      = 1,
@@ -41,7 +47,7 @@ namespace Game {
 			 * @param[in] bodyDef The box2d body definition.
 			 * @return A box2d body.
 			 */
-			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef);
+			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef/*, PhysicsGroup group*/);
 
 			/**
 			 * Destroys a box2d body.

@@ -27,11 +27,13 @@ namespace Game {
 
 			// TODO: why does one return pointer and the other ref. Make both ref or pointer.
 			// TODO: we should get rid of these. Should write wrappers for any funcs we want.
-			b2Body& getBody() { return *body; }
-			const b2Body& getBody() const { return *body; }
+			b2Body& getBody2() { return *body; }
+			const b2Body& getBody2() const { return *body; }
 
 			b2World* getWorld() { return body->GetWorld(); }
 			const b2World* getWorld() const { return body->GetWorld(); }
+
+			ENGINE_INLINE const b2Fixture* getFixtureList() const noexcept { return body->GetFixtureList(); }
 
 			ENGINE_INLINE const auto& getTransform() const noexcept { return body->GetTransform(); }
 			ENGINE_INLINE void setTransform(const b2Vec2& pos, const float32 ang) { body->SetTransform(pos, ang); }
@@ -49,6 +51,11 @@ namespace Game {
 			ENGINE_INLINE void setAngularVelocity(const float32 av) noexcept { body->SetAngularVelocity(av); };
 
 			ENGINE_INLINE void applyLinearImpulse(const b2Vec2 imp, const bool wake) noexcept { body->ApplyLinearImpulseToCenter(imp, wake); }
+
+			ENGINE_INLINE void setActive(bool active) { body->SetActive(active); }
+			ENGINE_INLINE bool getActive(bool active) const noexcept { body->IsActive(); }
+
+			void setFilterGroup(int16 group);
 	};
 }
 
@@ -67,9 +74,9 @@ namespace Engine::ECS {
 
 			static std::tuple<Type> toSnapshot(const Game::PhysicsBodyComponent& obj) noexcept {
 				return Type{
-					.trans = obj.getBody().GetTransform(),
-					.vel = obj.getBody().GetLinearVelocity(),
-					.angVel = obj.getBody().GetAngularVelocity(),
+					.trans = obj.getTransform(),
+					.vel = obj.getVelocity(),
+					.angVel = obj.getAngularVelocity(),
 					.rollbackOverride = obj.rollbackOverride,
 				};
 			}
@@ -88,7 +95,7 @@ namespace Game {
 	class NetworkTraits<PhysicsBodyComponent> {
 		public:
 			static Engine::Net::Replication getReplType(const PhysicsBodyComponent& obj) {
-				return (obj.getBody().GetType() == b2_staticBody) ? Engine::Net::Replication::ONCE : Engine::Net::Replication::ALWAYS;
+				return (obj.getBody2().GetType() == b2_staticBody) ? Engine::Net::Replication::ONCE : Engine::Net::Replication::ALWAYS;
 			}
 
 			static void writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);

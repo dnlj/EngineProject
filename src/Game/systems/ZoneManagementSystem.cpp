@@ -8,7 +8,8 @@
 // GLM
 #include <glm/gtx/norm.hpp>
 
-#define ZONE_DEBUG ENGINE_LOG2
+//#define ZONE_DEBUG ENGINE_LOG2
+#define ZONE_DEBUG
 
 namespace {
 	using namespace Game;
@@ -54,7 +55,7 @@ namespace Game {
 		// TODO: one problem is our world scale is a bit off. Should probably be more like 6-8 blocks per meter instead of 4/5.
 
 		constexpr int64 mustSplit = 2000;
-		constexpr int64 mustJoin = 500;
+		constexpr int64 mustJoin = 300;
 		static_assert(mustJoin < mustSplit);
 
 		// How close can two zones be to be considered the same. Used to select
@@ -287,11 +288,11 @@ namespace Game {
 		// TODO: need to do shifting stuff.
 		const auto zoneOffsetDiff = newZone.offset - oldZone.offset;
 		const b2Vec2 zoneOffsetDiffB2 = {static_cast<float32>(zoneOffsetDiff.x), static_cast<float32>(zoneOffsetDiff.y)};
+		physComp.setFilterGroup(newZoneId);
 		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);
 
 		zones[zoneComp.zoneId].removePlayer(ply);
 		zones[newZoneId].addPlayer(ply);
 		zoneComp.zoneId = newZoneId;
-
 	}
 }

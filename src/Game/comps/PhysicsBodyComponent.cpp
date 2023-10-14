@@ -8,15 +8,24 @@ namespace Game {
 		this->body = body;
 	}
 
+	void PhysicsBodyComponent::setFilterGroup(int16 group) {
+		for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()){
+			auto filter = fixture->GetFilterData();
+			static_assert(std::is_same_v<decltype(filter.groupIndex), decltype(group)>);
+			filter.groupIndex = group;
+			fixture->SetFilterData(filter);
+		}
+	}
+
 	void NetworkTraits<PhysicsBodyComponent>::write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff) {
 		buff.write(obj.getTransform());
 		buff.write(obj.getVelocity());
 	}
 
 	void NetworkTraits<PhysicsBodyComponent>::writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
-		buff.write(obj.getBody().GetType());
+		buff.write(obj.getBody2().GetType());
 
-		if (const auto* fix = obj.getBody().GetFixtureList()) {
+		if (const auto* fix = obj.getFixtureList()) {
 			// Type
 			const auto ftype = fix->GetType();
 			buff.write(ftype);

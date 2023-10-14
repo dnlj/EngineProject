@@ -62,6 +62,10 @@ namespace Game {
 				b2BodyDef bodyDef;
 				bodyDef.type = b2_dynamicBody;
 				bodyDef.position = b2Vec2_zero;
+				bodyDef.linearDamping = 0.0f;
+				bodyDef.fixedRotation = true;
+				bodyDef.active = false;
+				//bodyDef.bullet = true; // TODO: when should this be used?
 
 				physBodyComp.setBody(physSys.createBody(ent, bodyDef));
 
@@ -73,10 +77,7 @@ namespace Game {
 				fixtureDef.density = 0.0f;
 				fixtureDef.isSensor = true;
 
-				physBodyComp.getBody().CreateFixture(&fixtureDef);
-				physBodyComp.getBody().SetLinearDamping(0.0f);
-				physBodyComp.getBody().SetFixedRotation(true);
-				physBodyComp.getBody().SetActive(false);
+				physBodyComp.getBody2().CreateFixture(&fixtureDef);
 			}
 
 			spriteComp.path = "assets/fire.png";
@@ -99,9 +100,7 @@ namespace Game {
 		auto& physComp = world.getComponent<PhysicsBodyComponent>(missile);
 		physComp.snap = true;
 		physComp.setTransform(pos, 0);
-
-		auto& body = physComp.getBody();
-		body.SetActive(true); // TODO: use physComp instead
+		physComp.setActive(true);
 		physComp.setVelocity(4.0f * dir);
 
 		currentMissile = (currentMissile + 1) % missiles.size();
@@ -110,7 +109,7 @@ namespace Game {
 	void CharacterSpellSystem::detonateMissile(Engine::ECS::Entity ent) {
 		std::cout << "Boom: " << ent << "\n";
 		world.setEnabled(ent, false);
-		world.getComponent<PhysicsBodyComponent>(ent).getBody().SetActive(false);
+		world.getComponent<PhysicsBodyComponent>(ent).setActive(false);
 	}
 
 	void CharacterSpellSystem::tick() {

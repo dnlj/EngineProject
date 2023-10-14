@@ -37,7 +37,7 @@ namespace Game {
 
 	void PhysicsSystem::onComponentRemoved(const Engine::ECS::Entity ent, PhysicsBodyComponent& comp) {
 		// ENGINE_INFO(" PhysicsSystem - component removed from ", ent);
-		physWorld.DestroyBody(&comp.getBody());
+		physWorld.DestroyBody(&comp.getBody2());
 	};
 
 	void PhysicsSystem::tick() {
@@ -59,7 +59,7 @@ namespace Game {
 			for (const auto ent : world.getFilter<PhysicsBodyComponent, PhysicsInterpComponent>()) {
 				auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
 				auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
-				if (physInterpComp.onlyUserVerified && physBodyComp.getBody().GetType() != b2_staticBody) {
+				if (physInterpComp.onlyUserVerified && physBodyComp.getBody2().GetType() != b2_staticBody) {
 					physInterpComp.nextTime = {};
 					physInterpComp.prevTime = {};
 
@@ -166,10 +166,39 @@ namespace Game {
 		}
 	}
 
-	b2Body* PhysicsSystem::createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef) {
+	b2Body* PhysicsSystem::createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef/*, PhysicsGroup group*/) {
 		auto body = physWorld.CreateBody(&bodyDef);
 		static_assert(sizeof(void*) >= sizeof(ent), "Engine::ECS::Entity is to large to store in userdata pointer.");
 		body->SetUserData(reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t&>(ent)));
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: how to handle group here? We really should take fixtures in or something so we can verify group.
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
 		return body;
 	}
 
