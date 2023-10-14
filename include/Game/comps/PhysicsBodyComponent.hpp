@@ -4,19 +4,30 @@
 #include <Box2D/Box2D.h>
 
 // Game
-#include <Game/Common.hpp>
-#include <Game/systems/PhysicsSystem.hpp>
+#include <Game/common.hpp>
 #include <Game/NetworkTraits.hpp>
+#include <Game/systems/PhysicsSystem.hpp>
+#include <Game/Zone.hpp>
 
 
 namespace Game {
+	class ZoneInfo {
+		public:
+			ZoneId id = -1;
+
+			// TODO: should probably be a temp DS on the manager.
+			ZoneId group = -1;
+	};
+
 	// TODO: rename - to just phys comp
 	class PhysicsBodyComponent {
 		private:
-			// Hello! Did you modify/add/remove a member variable of this class? Make sure to update the move/copy/assignment functions.
 			b2Body* body = nullptr;
 
 		public:
+			// TODO: need to handle networking
+			ZoneInfo zone; // TODO: make private once we have everyhing moved over.
+
 			//PhysicsType type = {}; // TODO: why is this public?
 			bool snap = false; // TODO: this should probably be on the interp component?
 			bool rollbackOverride = false; // TODO: there is probably a better way to handle this.

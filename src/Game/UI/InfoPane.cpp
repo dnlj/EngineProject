@@ -64,10 +64,9 @@ namespace Game::UI {
 			//world.addComponent<PlayerFlag>(ent);
 			//world.addComponent<ActionComponent>(ent, world.getTick());
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
-			auto& zoneComp = world.addComponent<ZoneComponent>(ent);
+			world.addComponent<ZoneComponent>(ent);
 
 			physComp.setBody(physSys.createPhysicsCircle(ent, {x, y}, PhysicsCategory::Player));
-			zoneComp;physComp;
 			return ent;
 		};
 

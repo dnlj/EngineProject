@@ -8,8 +8,8 @@
 // GLM
 #include <glm/gtx/norm.hpp>
 
-//#define ZONE_DEBUG ENGINE_LOG2
-#define ZONE_DEBUG
+#define ZONE_DEBUG ENGINE_LOG2
+//#define ZONE_DEBUG
 
 namespace {
 	using namespace Game;
@@ -82,9 +82,9 @@ namespace Game {
 
 		// TODO: shouldn't need this. Should be assignd when entity created. Change to a if-constexpr-debug check.
 		for (const auto ply : playerFilter) {
-			auto& zoneComp = world.getComponent<ZoneComponent>(ply);
-			if (zoneComp.zoneId == -1) {
-				zoneComp.zoneId = 0;
+			auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+			if (physComp.zone.id == -1) {
+				physComp.zone.id = 0;
 				zones[0].addPlayer(ply);
 			}
 		}
@@ -93,17 +93,15 @@ namespace Game {
 			auto cur = playerFilter.begin();
 			const auto end = playerFilter.end();
 			for (; cur != end; ++cur) {
-				const auto& physComp1 = world.getComponent<PhysicsBodyComponent>(*cur);
-				auto& zoneComp1 = world.getComponent<ZoneComponent>(*cur);
-				zoneComp1.group = -1; // Reset for the next pass
+				auto& physComp1 = world.getComponent<PhysicsBodyComponent>(*cur);
+				physComp1.zone.group = -1; // Reset for the next pass
 
 				for (auto next = cur; ++next != end;) {
 					const auto& physComp2 = world.getComponent<PhysicsBodyComponent>(*next);
-					const auto& zoneComp2 = world.getComponent<ZoneComponent>(*next);
 					const auto relPos1 = physComp1.getPosition();
 					const auto relPos2 = physComp2.getPosition();
-					const auto globalBlockPos1 = zones[zoneComp1.zoneId].offset + ZoneVec{relPos1.x, relPos1.y};
-					const auto globalBlockPos2 = zones[zoneComp2.zoneId].offset + ZoneVec{relPos2.x, relPos2.y};
+					const auto globalBlockPos1 = zones[physComp1.zone.id].offset + ZoneVec{relPos1.x, relPos1.y};
+					const auto globalBlockPos2 = zones[physComp2.zone.id].offset + ZoneVec{relPos2.x, relPos2.y};
 					const auto dist = metric(globalBlockPos1, globalBlockPos2);
 					relations.emplace_back(*cur, *next, dist);
 					ZONE_DEBUG("Relation between {} and {} = {}", *cur, *next, dist);
@@ -125,24 +123,24 @@ namespace Game {
 			// TODO: could just do this step while calcing distances
 			for (; cur != end; ++cur) {
 				if (cur->dist > mustJoin) { break; }
-				auto& zoneComp1 = world.getComponent<ZoneComponent>(cur->ply1);
-				auto& zoneComp2 = world.getComponent<ZoneComponent>(cur->ply2);
+				auto& physComp1 = world.getComponent<PhysicsBodyComponent>(cur->ply1);
+				auto& physComp2 = world.getComponent<PhysicsBodyComponent>(cur->ply2);
 
 				// TODO: Test if keeping zone avg totals here is faster than doing it later
 
-				if (zoneComp1.group != -1) { // ply1 is in a group
-					if (zoneComp2.group != -1) { // Both are in a group
-						if (groupRemaps[zoneComp1.group] == groupRemaps[zoneComp2.group]) { continue; }
-						const auto [min, max] = std::minmax(zoneComp1.group, zoneComp2.group);
+				if (physComp1.zone.group != -1) { // ply1 is in a group
+					if (physComp2.zone.group != -1) { // Both are in a group
+						if (groupRemaps[physComp1.zone.group] == groupRemaps[physComp2.zone.group]) { continue; }
+						const auto [min, max] = std::minmax(physComp1.zone.group, physComp2.zone.group);
 						ZONE_DEBUG("{} - Merging group {} into {} because of {} and {}", world.getTick(), max, min, cur->ply1, cur->ply2);
-						//ENGINE_DEBUG_ASSERT(zoneComp1.group != zoneComp2.group, world.getTick(), " - Attempting to merge group with itself");
+						//ENGINE_DEBUG_ASSERT(physComp1.zone.group != physComp2.zone.group, world.getTick(), " - Attempting to merge group with itself");
 
 						// Merge the larger id group into the smaller id group
 						groupsStorage[groupRemaps[min]].append_range(groupsStorage[groupRemaps[max]]);
 						groupsStorage[groupRemaps[max]].clear();
 
-						zoneComp1.group = min;
-						zoneComp2.group = min;
+						physComp1.zone.group = min;
+						physComp2.zone.group = min;
 
 						// Update any groups that reference max
 						for (auto& gid : groupRemaps) {
@@ -153,18 +151,18 @@ namespace Game {
 							}
 						}
 					} else { // ONLY ply1 is in a group. Use that group.
-						zoneComp2.group = zoneComp1.group;
-						groupsStorage[groupRemaps[zoneComp1.group]].push_back(cur->ply2);
-						ZONE_DEBUG("{} - Adding1 {} to existing group {} with {}", world.getTick(), cur->ply2, zoneComp2.group, cur->ply1);
+						physComp2.zone.group = physComp1.zone.group;
+						groupsStorage[groupRemaps[physComp1.zone.group]].push_back(cur->ply2);
+						ZONE_DEBUG("{} - Adding1 {} to existing group {} with {}", world.getTick(), cur->ply2, physComp2.zone.group, cur->ply1);
 					}
-				} else if (zoneComp2.group != -1) { // Only ply2 is in a group. Use that group.
-					zoneComp1.group = zoneComp2.group;
-					groupsStorage[groupRemaps[zoneComp2.group]].push_back(cur->ply1);
-					ZONE_DEBUG("{} - Adding2 {} to existing group {} with {}", world.getTick(), cur->ply1, zoneComp2.group, cur->ply2);
+				} else if (physComp2.zone.group != -1) { // Only ply2 is in a group. Use that group.
+					physComp1.zone.group = physComp2.zone.group;
+					groupsStorage[groupRemaps[physComp2.zone.group]].push_back(cur->ply1);
+					ZONE_DEBUG("{} - Adding2 {} to existing group {} with {}", world.getTick(), cur->ply1, physComp2.zone.group, cur->ply2);
 				} else { // Neither is in a group
 					const auto groupId = static_cast<ZoneId>(groupsStorage.size());
-					zoneComp1.group = groupId;
-					zoneComp2.group = groupId;
+					physComp1.zone.group = groupId;
+					physComp2.zone.group = groupId;
 
 					ENGINE_DEBUG_ASSERT(groupsStorage.size() == groupRemaps.size());
 
@@ -172,7 +170,7 @@ namespace Game {
 					auto& group = groupsStorage.emplace_back();
 					group.push_back(cur->ply1);
 					group.push_back(cur->ply2);
-					ZONE_DEBUG("{} - Creating new group {} for {} and {}", world.getTick(), zoneComp2.group, cur->ply1, cur->ply2);
+					ZONE_DEBUG("{} - Creating new group {} for {} and {}", world.getTick(), physComp2.zone.group, cur->ply1, cur->ply2);
 				}
 			}
 		}
@@ -182,9 +180,8 @@ namespace Game {
 		// - If they are not in a group and they aren't outside the split range
 		//   then nothing needs to happen so it should be fine.
 		for (const auto ply : playerFilter) {
-			auto& zoneComp = world.getComponent<ZoneComponent>(ply);
-			if (zoneComp.group == -1) {
-				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+			auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+			if (physComp.zone.group == -1) {
 				const auto pos = physComp.getPosition();
 				const auto dist = metric({pos.x, pos.y}, {});
 				if (dist > mustSplit) {
@@ -192,7 +189,7 @@ namespace Game {
 					groupRemaps.emplace_back(groupId);
 					auto& group = groupsStorage.emplace_back();
 					group.push_back(ply);
-					zoneComp.group = groupId;
+					physComp.zone.group = groupId;
 					ZONE_DEBUG("{} - Creating new group {} for {}", world.getTick(), groupId, ply);
 				}
 			}
@@ -206,10 +203,9 @@ namespace Game {
 			// Figure out ideal zone origin.
 			ZoneVec ideal = {};
 			for (const auto ply : group) {
-				const auto& zoneComp = world.getComponent<ZoneComponent>(ply);
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto pos = physComp.getPosition();
-				ideal += zones[zoneComp.zoneId].offset + ZoneVec{pos.x, pos.y};
+				ideal += zones[physComp.zone.id].offset + ZoneVec{pos.x, pos.y};
 			}
 
 			ideal /= group.size();
@@ -218,12 +214,12 @@ namespace Game {
 			ZoneId zoneId = -1;
 			ZoneUnit minDist = sameZoneDist;
 			for (const auto ply : group) {
-				const auto& zoneComp = world.getComponent<ZoneComponent>(ply);
-				const auto& zone = zones[zoneComp.zoneId];
+				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+				const auto& zone = zones[physComp.zone.id];
 				const auto dist = metric(zone.offset, ideal);
 				if (dist < minDist) {
 					minDist = dist;
-					zoneId = zoneComp.zoneId;
+					zoneId = physComp.zone.id;
 				}
 			}
 
@@ -237,13 +233,13 @@ namespace Game {
 
 			// Migrate or shift
 			for (const auto ply : group) {
-				auto& zoneComp = world.getComponent<ZoneComponent>(ply);
+				auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 
 				// Already in the zone.
-				if (zoneComp.zoneId == zoneId) { continue; }
+				if (physComp.zone.id == zoneId) { continue; }
 
 				// Move to new zone
-				migratePlayer(ply, zoneId, zoneComp, world.getComponent<PhysicsBodyComponent>(ply));
+				migratePlayer(ply, zoneId, physComp);
 			}
 		}
 
@@ -277,12 +273,12 @@ namespace Game {
 		return zid;
 	}
 
-	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, ZoneComponent& zoneComp, PhysicsBodyComponent& physComp)
+	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp)
 	{
-		ZONE_DEBUG("{} - Migrating player from {} to {}", world.getTick(), zoneComp.zoneId, newZoneId);
-		ENGINE_DEBUG_ASSERT(newZoneId != zoneComp.zoneId, "Attempting to move player to same zone. This is a bug.");
+		ZONE_DEBUG("{} - Migrating player from {} to {}", world.getTick(), physComp.zone.id, newZoneId);
+		ENGINE_DEBUG_ASSERT(newZoneId != physComp.zone.id, "Attempting to move player to same zone. This is a bug.");
 
-		auto& oldZone = zones[zoneComp.zoneId];
+		auto& oldZone = zones[physComp.zone.id];
 		auto& newZone = zones[newZoneId];
 
 		// TODO: need to do shifting stuff.
@@ -291,8 +287,8 @@ namespace Game {
 		physComp.setFilterGroup(newZoneId);
 		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);
 
-		zones[zoneComp.zoneId].removePlayer(ply);
+		zones[physComp.zone.id].removePlayer(ply);
 		zones[newZoneId].addPlayer(ply);
-		zoneComp.zoneId = newZoneId;
+		physComp.zone.id = newZoneId;
 	}
 }
