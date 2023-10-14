@@ -77,7 +77,7 @@ namespace Game {
 				fixtureDef.density = 0.0f;
 				fixtureDef.isSensor = true;
 
-				physBodyComp.getBody2().CreateFixture(&fixtureDef);
+				physBodyComp.getBody3().CreateFixture(&fixtureDef);
 			}
 
 			spriteComp.path = "assets/fire.png";

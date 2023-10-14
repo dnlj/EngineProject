@@ -23,7 +23,7 @@ namespace Game {
 	}
 
 	void NetworkTraits<PhysicsBodyComponent>::writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
-		buff.write(obj.getBody2().GetType());
+		buff.write(obj.getType());
 
 		if (const auto* fix = obj.getFixtureList()) {
 			// Type

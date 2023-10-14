@@ -37,7 +37,7 @@ namespace Game {
 
 	void PhysicsSystem::onComponentRemoved(const Engine::ECS::Entity ent, PhysicsBodyComponent& comp) {
 		// ENGINE_INFO(" PhysicsSystem - component removed from ", ent);
-		physWorld.DestroyBody(&comp.getBody2());
+		physWorld.DestroyBody(&comp.getBody3());
 	};
 
 	void PhysicsSystem::tick() {
@@ -59,7 +59,7 @@ namespace Game {
 			for (const auto ent : world.getFilter<PhysicsBodyComponent, PhysicsInterpComponent>()) {
 				auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ent);
 				auto& physInterpComp = world.getComponent<PhysicsInterpComponent>(ent);
-				if (physInterpComp.onlyUserVerified && physBodyComp.getBody2().GetType() != b2_staticBody) {
+				if (physInterpComp.onlyUserVerified && physBodyComp.getType() != b2_staticBody) {
 					physInterpComp.nextTime = {};
 					physInterpComp.prevTime = {};
 

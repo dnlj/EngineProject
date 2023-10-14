@@ -27,8 +27,8 @@ namespace Game {
 
 			// TODO: why does one return pointer and the other ref. Make both ref or pointer.
 			// TODO: we should get rid of these. Should write wrappers for any funcs we want.
-			b2Body& getBody2() { return *body; }
-			const b2Body& getBody2() const { return *body; }
+			b2Body& getBody3() { return *body; }
+			const b2Body& getBody3() const { return *body; }
 
 			b2World* getWorld() { return body->GetWorld(); }
 			const b2World* getWorld() const { return body->GetWorld(); }
@@ -54,6 +54,8 @@ namespace Game {
 
 			ENGINE_INLINE void setActive(bool active) { body->SetActive(active); }
 			ENGINE_INLINE bool getActive(bool active) const noexcept { body->IsActive(); }
+
+			ENGINE_INLINE b2BodyType getType() const noexcept { body->GetType(); }
 
 			void setFilterGroup(int16 group);
 	};
@@ -95,7 +97,7 @@ namespace Game {
 	class NetworkTraits<PhysicsBodyComponent> {
 		public:
 			static Engine::Net::Replication getReplType(const PhysicsBodyComponent& obj) {
-				return (obj.getBody2().GetType() == b2_staticBody) ? Engine::Net::Replication::ONCE : Engine::Net::Replication::ALWAYS;
+				return (obj.getType() == b2_staticBody) ? Engine::Net::Replication::ONCE : Engine::Net::Replication::ALWAYS;
 			}
 
 			static void writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
