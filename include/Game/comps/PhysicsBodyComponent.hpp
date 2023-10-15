@@ -68,7 +68,7 @@ namespace Game {
 			ENGINE_INLINE void setActive(bool active) { body->SetActive(active); }
 			ENGINE_INLINE bool getActive(bool active) const noexcept { body->IsActive(); }
 
-			ENGINE_INLINE b2BodyType getType() const noexcept { body->GetType(); }
+			ENGINE_INLINE b2BodyType getType() const noexcept { return body->GetType(); }
 
 			ENGINE_INLINE void createFixture(b2FixtureDef def) {
 				ENGINE_DEBUG_ASSERT(body != nullptr, "Attempting to create fixture for null body.");
