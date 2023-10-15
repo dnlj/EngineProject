@@ -611,7 +611,8 @@ void run(int argc, char* argv[]) {
 		//window.center();
 	}
 
-	window.setSwapInterval(0);
+	ENGINE_LOG("Swap Interval: ", cfg.cvars.r_vsync);
+	window.setSwapInterval(cfg.cvars.r_vsync);
 	window.show();
 
 	{

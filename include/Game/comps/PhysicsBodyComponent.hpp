@@ -28,7 +28,6 @@ namespace Game {
 			// TODO: need to handle networking
 			ZoneInfo zone; // TODO: make private once we have everyhing moved over.
 
-			//PhysicsType type = {}; // TODO: why is this public?
 			bool snap = false; // TODO: this should probably be on the interp component?
 			bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
 
@@ -38,10 +37,11 @@ namespace Game {
 			void setBody(b2Body* body, ZoneId zone);
 			void setZone(ZoneId zoneId);
 
-			// TODO: why does one return pointer and the other ref. Make both ref or pointer.
-			// TODO: we should get rid of these. Should write wrappers for any funcs we want.
-			b2Body& getBody4() { return *body; }
-			const b2Body& getBody4() const { return *body; }
+			ENGINE_INLINE b2Body* takeOwnership() noexcept {
+				const auto temp = body;
+				*this = {};
+				return temp;
+			}
 
 			ENGINE_INLINE const b2Fixture* getFixtureList() const noexcept { return body->GetFixtureList(); }
 

@@ -37,7 +37,7 @@ namespace Game {
 
 	void PhysicsSystem::onComponentRemoved(const Engine::ECS::Entity ent, PhysicsBodyComponent& comp) {
 		// ENGINE_INFO(" PhysicsSystem - component removed from ", ent);
-		physWorld.DestroyBody(&comp.getBody4());
+		physWorld.DestroyBody(comp.takeOwnership());
 	};
 
 	void PhysicsSystem::tick() {
