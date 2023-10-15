@@ -66,7 +66,7 @@ namespace Game::UI {
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
 			world.addComponent<ZoneComponent>(ent);
 
-			physComp.setBody(physSys.createPhysicsCircle(ent, {x, y}, PhysicsCategory::Player));
+			physComp.setBody(physSys.createPhysicsCircle(ent, {x, y}, PhysicsCategory::Player), 0); // TODO: zone
 			return ent;
 		};
 

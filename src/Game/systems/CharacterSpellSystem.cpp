@@ -67,7 +67,7 @@ namespace Game {
 				bodyDef.active = false;
 				//bodyDef.bullet = true; // TODO: when should this be used?
 
-				physBodyComp.setBody(physSys.createBody(ent, bodyDef));
+				physBodyComp.setBody(physSys.createBody(ent, bodyDef), 0); // TODO: zone
 
 				b2CircleShape shape;
 				shape.m_radius = 0.5f;
@@ -77,7 +77,7 @@ namespace Game {
 				fixtureDef.density = 0.0f;
 				fixtureDef.isSensor = true;
 
-				physBodyComp.getBody3().CreateFixture(&fixtureDef);
+				physBodyComp.createFixture(fixtureDef);
 			}
 
 			spriteComp.path = "assets/fire.png";

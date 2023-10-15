@@ -13,10 +13,10 @@
 namespace Game {
 	class ZoneInfo {
 		public:
-			ZoneId id = -1;
+			ZoneId id = zoneInvalidId;
 
 			// TODO: should probably be a temp DS on the manager.
-			ZoneId group = -1;
+			ZoneId group = zoneInvalidId;
 	};
 
 	// TODO: rename - to just phys comp
@@ -34,12 +34,14 @@ namespace Game {
 
 		public:
 			PhysicsBodyComponent() = default;
-			void setBody(b2Body* body);
+
+			void setBody(b2Body* body, ZoneId zone);
+			void setZone(ZoneId zoneId);
 
 			// TODO: why does one return pointer and the other ref. Make both ref or pointer.
 			// TODO: we should get rid of these. Should write wrappers for any funcs we want.
-			b2Body& getBody3() { return *body; }
-			const b2Body& getBody3() const { return *body; }
+			b2Body& getBody4() { return *body; }
+			const b2Body& getBody4() const { return *body; }
 
 			b2World* getWorld() { return body->GetWorld(); }
 			const b2World* getWorld() const { return body->GetWorld(); }
@@ -68,7 +70,12 @@ namespace Game {
 
 			ENGINE_INLINE b2BodyType getType() const noexcept { body->GetType(); }
 
-			void setFilterGroup(int16 group);
+			ENGINE_INLINE void createFixture(b2FixtureDef def) {
+				ENGINE_DEBUG_ASSERT(body != nullptr, "Attempting to create fixture for null body.");
+				ENGINE_DEBUG_ASSERT(zone.id != zoneInvalidId, "Attempting to create fixture without a valid zone.");
+				def.filter.groupIndex = zone.id;
+				body->CreateFixture(&def);
+			}
 	};
 }
 

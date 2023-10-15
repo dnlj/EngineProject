@@ -8,8 +8,8 @@
 // GLM
 #include <glm/gtx/norm.hpp>
 
-#define ZONE_DEBUG ENGINE_LOG2
-//#define ZONE_DEBUG
+//#define ZONE_DEBUG ENGINE_LOG2
+#define ZONE_DEBUG
 
 namespace {
 	using namespace Game;
@@ -284,7 +284,7 @@ namespace Game {
 		// TODO: need to do shifting stuff.
 		const auto zoneOffsetDiff = newZone.offset - oldZone.offset;
 		const b2Vec2 zoneOffsetDiffB2 = {static_cast<float32>(zoneOffsetDiff.x), static_cast<float32>(zoneOffsetDiff.y)};
-		physComp.setFilterGroup(newZoneId);
+		physComp.setZone(newZoneId);
 		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);
 
 		zones[physComp.zone.id].removePlayer(ply);

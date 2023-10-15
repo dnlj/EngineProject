@@ -148,7 +148,7 @@ namespace Game {
 		for (auto* body : bodies) {
 			Engine::ECS::Entity ent{static_cast<uint16>(reinterpret_cast<uintptr_t>(body->GetUserData())), 0};
 			auto* newBody = copyBodyToWorld(body, world);
-			this->world.getComponent<PhysicsBodyComponent>(ent).setBody(newBody);
+			this->world.getComponent<PhysicsBodyComponent>(ent).setBody(newBody, 0); // TODO: zone
 		}
 
 		// TODO: if oldW has no players add it to usable list for splitting

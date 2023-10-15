@@ -4,15 +4,26 @@
 
 
 namespace Game {
-	void PhysicsBodyComponent::setBody(b2Body* body) {
+	void PhysicsBodyComponent::setBody(b2Body* body, ZoneId zoneId) {
 		this->body = body;
+		zone.id = zoneId;
+
+		// Assume that the body already has the correct zoneId
+		if constexpr (ENGINE_DEBUG) {
+			for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()){
+				auto filter = fixture->GetFilterData();
+				ENGINE_DEBUG_ASSERT(filter.groupIndex == zoneId);
+			}
+		}
 	}
 
-	void PhysicsBodyComponent::setFilterGroup(int16 group) {
+	void PhysicsBodyComponent::setZone(ZoneId zoneId) {
 		for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()){
 			auto filter = fixture->GetFilterData();
-			static_assert(std::is_same_v<decltype(filter.groupIndex), decltype(group)>);
-			filter.groupIndex = group;
+
+			ENGINE_DEBUG_ASSERT(zoneId < static_cast<ZoneId>(std::numeric_limits<decltype(b2Filter::groupIndex)>::max()));
+
+			filter.groupIndex = zoneId;
 			fixture->SetFilterData(filter);
 		}
 	}
@@ -113,7 +124,7 @@ namespace Game {
 			bodyDef.type = btype;
 			bodyDef.position = {0, 0}; // TODO: read correct position from network
 			body = physSys.createBody(ent, bodyDef);
-			result.setBody(body);
+			result.setBody(body, 0); // TODO: network zone
 		}
 
 		b2FixtureDef fixDef;

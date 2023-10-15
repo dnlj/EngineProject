@@ -103,7 +103,7 @@ namespace Game {
 			fixtureDef.shape = &shape;
 			body->CreateFixture(&fixtureDef);
 
-			physComp.setBody(body);
+			physComp.setBody(body, 0); // TODO: zone
 		}
 
 		auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
