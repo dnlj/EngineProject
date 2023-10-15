@@ -43,9 +43,6 @@ namespace Game {
 			b2Body& getBody4() { return *body; }
 			const b2Body& getBody4() const { return *body; }
 
-			b2World* getWorld() { return body->GetWorld(); }
-			const b2World* getWorld() const { return body->GetWorld(); }
-
 			ENGINE_INLINE const b2Fixture* getFixtureList() const noexcept { return body->GetFixtureList(); }
 
 			ENGINE_INLINE const auto& getTransform() const noexcept { return body->GetTransform(); }

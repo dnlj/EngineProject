@@ -424,6 +424,9 @@ namespace Game {
 	}
 
 	void EntityNetworkingSystem::updateNeighbors() {
+		auto& physSys = world.getSystem<PhysicsSystem>();
+		auto& physWorld = physSys.getPhysicsWorld();
+
 		for (const auto ply : world.getFilter<PlayerFilter>()) {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
 			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
@@ -482,12 +485,12 @@ namespace Game {
 			constexpr float32 rangeSmall = 5; // TODO: what range?
 			constexpr float32 rangeLarge = 20; // TODO: what range?
 
-			physComp.getWorld()->QueryAABB(&queryCallbackLarge, b2AABB{
+			physWorld.QueryAABB(&queryCallbackLarge, b2AABB{
 				{pos.x - rangeLarge, pos.y - rangeLarge},
 				{pos.x + rangeLarge, pos.y + rangeLarge},
 			});
 
-			physComp.getWorld()->QueryAABB(&queryCallbackSmall, b2AABB{
+			physWorld.QueryAABB(&queryCallbackSmall, b2AABB{
 				{pos.x - rangeSmall, pos.y - rangeSmall},
 				{pos.x + rangeSmall, pos.y + rangeSmall},
 			});

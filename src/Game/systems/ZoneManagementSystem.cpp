@@ -27,6 +27,7 @@ namespace Game {
 
 	void ZoneManagementSystem::tick() {
 		// TODO: const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent, ZoneComponent>();
+		//const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent>();
 		const auto& playerFilter = world.getFilter<PhysicsBodyComponent, ZoneComponent>();
 
 		//

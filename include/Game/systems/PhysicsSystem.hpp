@@ -12,12 +12,6 @@
 
 
 namespace Game {
-	using PhysicsGroup = int16;
-	static_assert(
-		std::is_same_v<PhysicsGroup, decltype(b2Filter::groupIndex)>,
-		"We assume a physics group can be losslessly converted to a b2 group index"
-	);
-
 	enum class PhysicsCategory {
 		World       = 0,
 		Player      = 1,
@@ -40,6 +34,9 @@ namespace Game {
 
 			void onComponentAdded(const Engine::ECS::Entity ent, class PhysicsBodyComponent& comp);
 			void onComponentRemoved(const Engine::ECS::Entity ent, class PhysicsBodyComponent& comp);
+
+			// TODO: really should just write accessors for whatever we need this for instead of leaking the entire world.
+			const b2World& getPhysicsWorld() const noexcept { return physWorld; }
 
 			/**
 			 * Creates a box2d body and associates an entity with it.

@@ -2,7 +2,8 @@
 #include <Game/World.hpp>
 #include <Game/systems/SubWorldSystem.hpp>
 
-
+// TODO: this class is now outdated/replaces with the ZoneManagementSystem
+/*
 namespace {
 	ENGINE_INLINE b2Body* copyBodyToWorld(b2Body* body, b2World* world) {
 		b2BodyDef bodyDef;
@@ -176,3 +177,4 @@ namespace Game {
 		return world;
 	}
 }
+*/
