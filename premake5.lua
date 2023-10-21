@@ -138,6 +138,11 @@ workspace(PROJECT_NAME .."Workspace")
 	targetdir "./bin/%{cfg.buildcfg}_%{cfg.platform}"
 	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
 	startproject(PROJECT_NAME)
+	
+	-- Might be a better solution. See discussion: https://github.com/premake/premake-core/issues/1061
+	files {
+		"natvis/**.natvis",
+	}
 
 	flags {
 		"FatalWarnings",
