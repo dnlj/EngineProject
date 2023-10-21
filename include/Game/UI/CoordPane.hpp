@@ -14,9 +14,7 @@ namespace Game::UI {
 				CursorWorldOffset,
 				CursorWorldPos,
 
-				MapOffset,
-				MapOffsetBlock,
-				MapOffsetChunk,
+				ZoneOffset,
 
 				MouseOffset,
 				MouseWorld,

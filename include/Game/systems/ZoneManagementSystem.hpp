@@ -51,6 +51,7 @@ namespace Game {
 		public:
 			ZoneManagementSystem(SystemArg arg);
 			void tick();
+			ENGINE_INLINE const Zone& getZone(ZoneId id) const noexcept { return zones[id]; }
 
 		private:
 			ZoneId createNewZone(ZoneVec pos);

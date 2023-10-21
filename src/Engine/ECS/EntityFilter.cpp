@@ -52,12 +52,4 @@ namespace Engine::ECS {
 	auto EntityFilter::end() const -> ConstIterator {
 		return ConstIterator(*this, entities.end());
 	}
-	
-	auto EntityFilter::cbegin() const -> ConstIterator {
-		return begin();
-	}
-	
-	auto EntityFilter::cend() const -> ConstIterator {
-		return end();
-	}
 }

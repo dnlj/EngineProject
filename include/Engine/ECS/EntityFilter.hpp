@@ -85,8 +85,10 @@ namespace Engine::ECS {
 			ConstIterator begin() const;
 			ConstIterator end() const;
 
-			ConstIterator cbegin() const;
-			ConstIterator cend() const;
+			ENGINE_INLINE ConstIterator cbegin() const { return begin(); }
+			ENGINE_INLINE ConstIterator cend() const { return end(); }
+
+			ENGINE_INLINE Entity front() const { return *begin(); }
 
 		private:
 			ENGINE_INLINE bool isEnabled(Entity ent) const {

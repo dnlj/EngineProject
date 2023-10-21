@@ -27,10 +27,10 @@ namespace Game {
 		// Game Logic
 		class ZoneManagementSystem,
 		class CharacterMovementSystem,
-		class PhysicsOriginShiftSystem,
+		//class PhysicsOriginShiftSystem, // TODO: remove
 		class PhysicsSystem,
 		class CharacterSpellSystem,
-		//SubWorldSystem,
+		//SubWorldSystem, // TODO: remove
 		class PhysicsInterpSystem,
 		class CameraTrackingSystem,
 		class MapSystem,

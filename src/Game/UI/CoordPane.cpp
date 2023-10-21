@@ -2,11 +2,12 @@
 #include <Engine/Glue/glm.hpp>
 
 // Game
-#include <Game/UI/CoordPane.hpp>
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/PhysicsOriginShiftSystem.hpp>
+#include <Game/systems/ZoneManagementSystem.hpp>
+#include <Game/UI/CoordPane.hpp>
 
 
 namespace Game::UI {
@@ -18,9 +19,7 @@ namespace Game::UI {
 		addLabel("Cursor (offset): {:.3f}");
 		addLabel("Cursor (world): {:.3f}");
 
-		addLabel("Map Offset: {}");
-		addLabel("Map Offset (block): {}");
-		addLabel("Map Offset (chunk): {}");
+		addLabel("Zone Offset: {}");
 
 		addLabel("Mouse (offset): {:.3f}");
 		addLabel("Mouse (world): {:.3f}");
@@ -35,37 +34,34 @@ namespace Game::UI {
 			auto& engine = *ctx.getUserdata<EngineInstance>();
 			auto& world = engine.getWorld();
 
-			auto& mapSys = world.getSystem<Game::MapSystem>();
-			auto& cam = engine.getCamera();
-
-			const auto camPos = engine.getCamera().getPosition();
+			const auto& cam = engine.getCamera();
+			const auto camPos = cam.getPosition();
 			const auto cursorPos = ctx.getCursor();
 			const auto cursorWorldOffset = (cursorPos - glm::vec2{cam.getScreenSize()/2}) * pixelRescaleFactor;
 			const auto cursorWorldPos = glm::vec2{camPos} + cursorWorldOffset;
-			const auto mapOffset = world.getSystem<Game::PhysicsOriginShiftSystem>().getOffset();
-			const auto mapBlockOffset = mapSys.getBlockOffset();
-			const auto mapChunkOffset = mapSys.blockToChunk(mapBlockOffset);
 
 			pane->setLabel(CoordPane::Camera, camPos);
 			pane->setLabel(CoordPane::CursorPos, cursorPos);
 			pane->setLabel(CoordPane::CursorWorldOffset, cursorWorldOffset);
 			pane->setLabel(CoordPane::CursorWorldPos, cursorWorldPos);
-			pane->setLabel(CoordPane::MapOffset, mapOffset);
-			pane->setLabel(CoordPane::MapOffsetBlock, mapBlockOffset);
-			pane->setLabel(CoordPane::MapOffsetChunk, mapChunkOffset);
 
-			const auto& activePlayerFilter = world.getFilter<PlayerFlag>();
-			if (activePlayerFilter.empty()) { return; }
-			const auto ply = *activePlayerFilter.begin();
+			const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent>();
+			if (playerFilter.empty()) { return; }
+			const auto ply = *playerFilter.begin();
+			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+
+			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+			const auto& zone = zoneSys.getZone(physComp.getZone());
+			pane->setLabel(CoordPane::ZoneOffset, zone.offset);
 
 			const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
 			if (!actComp.valid()) { return; }
 
-			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+			const auto& mapSys = world.getSystem<Game::MapSystem>();
 			const auto offsetMousePos = actComp.getTarget();
 			const auto worldMousePos = offsetMousePos + Engine::Glue::as<glm::vec2>(physComp.getPosition());
-			const auto blockMousePos = mapSys.worldToBlock(worldMousePos);
-			const auto blockWorldMousePos = mapSys.blockToWorld(blockMousePos);
+			const auto blockMousePos = worldToBlock(worldMousePos, zone.offset);
+			const auto blockWorldMousePos = blockToWorld(blockMousePos, zone.offset);
 			const auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
 			const auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
 			const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);

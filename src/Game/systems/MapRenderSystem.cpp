@@ -41,8 +41,8 @@ namespace Game {
 		const auto vp = cam.getProjection() * cam.getView();
 
 		const auto bounds = cam.getWorldScreenBounds();
-		const auto minChunk = MapSystem::blockToChunk(mapSys.worldToBlock(bounds.min));
-		const auto maxChunk = MapSystem::blockToChunk(mapSys.worldToBlock(bounds.max));
+		const auto minChunk = MapSystem::blockToChunk(worldToBlock(bounds.min, mapSys.getBlockOffset()));
+		const auto maxChunk = MapSystem::blockToChunk(worldToBlock(bounds.max, mapSys.getBlockOffset()));
 
 		const auto vao = mapSys.vertexLayout->get();
 		glBindVertexArray(vao);

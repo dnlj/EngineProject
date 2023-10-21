@@ -13,10 +13,8 @@
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/ParallaxBackgroundSystem.hpp>
 #include <Game/systems/PhysicsInterpSystem.hpp>
-#include <Game/systems/PhysicsOriginShiftSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
 #include <Game/systems/RenderPassSystem.hpp>
 #include <Game/systems/SpriteSystem.hpp>
-#include <Game/systems/SubWorldSystem.hpp>
 #include <Game/systems/UISystem.hpp>
 #include <Game/systems/ZoneManagementSystem.hpp>

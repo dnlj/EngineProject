@@ -114,6 +114,11 @@ namespace Engine::ECS {
 				return Iter::end(world);
 			}
 
+			ENGINE_INLINE Entity front() const {
+				return *begin();
+			}
+
+			// TODO: do we actually use this anywhere? Should we also just use std::distance?
 			auto size() const {
 				int32 i = 0;
 				for (auto it = begin(); it != end(); ++it, ++i) {}

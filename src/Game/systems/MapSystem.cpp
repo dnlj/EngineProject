@@ -8,16 +8,16 @@
 #include <Engine/Gfx/ResourceContext.hpp>
 
 // Game
-#include <Game/World.hpp>
+#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/BlockEntityComponent.hpp>
+#include <Game/comps/MapAreaComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/PhysicsInterpComponent.hpp>
+#include <Game/comps/SpriteComponent.hpp>
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
-#include <Game/systems/PhysicsOriginShiftSystem.hpp>
-#include <Game/comps/PhysicsBodyComponent.hpp>
-#include <Game/comps/SpriteComponent.hpp>
-#include <Game/comps/PhysicsInterpComponent.hpp>
-#include <Game/comps/ActionComponent.hpp>
-#include <Game/comps/MapAreaComponent.hpp>
-#include <Game/comps/BlockEntityComponent.hpp>
+#include <Game/systems/ZoneManagementSystem.hpp>
+#include <Game/World.hpp>
 
 
 namespace {
@@ -62,7 +62,7 @@ namespace Game {
 		fixtureDef.filter.categoryBits = PhysicsSystem::getCategoryBits(PhysicsCategory::Decoration);
 		fixtureDef.filter.maskBits = PhysicsSystem::getMaskBits(PhysicsCategory::Decoration);
 
-		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos));
+		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos, getBlockOffset()));
 		const auto ent = world.createEntity();
 
 		world.addComponent<NetworkedFlag>(ent);
@@ -86,7 +86,7 @@ namespace Game {
 		{
 			const auto& sz = spriteComp.texture.get()->size;
 			spriteComp.scale = {pixelsPerBlock, pixelsPerBlock};
-			spriteComp.position.x = MapChunk::blockSize * 0.5f;
+			spriteComp.position.x = blockSize * 0.5f;
 			spriteComp.position.y = sz.y * (0.5f / pixelsPerMeter);
 		}
 
@@ -98,8 +98,8 @@ namespace Game {
 			b2Body* body = physSys.createBody(ent, bodyDef);
 
 			b2PolygonShape shape;
-			const b2Vec2 tsize = 0.5f * MapChunk::blockSize * Engine::Glue::as<b2Vec2>(desc.data.asTree.size);
-			shape.SetAsBox(tsize.x, tsize.y, {0.5f * MapChunk::blockSize, tsize.y}, 0);
+			const b2Vec2 tsize = 0.5f * blockSize * Engine::Glue::as<b2Vec2>(desc.data.asTree.size);
+			shape.SetAsBox(tsize.x, tsize.y, {0.5f * blockSize, tsize.y}, 0);
 			fixtureDef.shape = &shape;
 			body->CreateFixture(&fixtureDef);
 
@@ -207,7 +207,7 @@ namespace Game {
 			for (int x = -2; x < 3; ++x) {
 				for (int y = -2; y < 3; ++y) {
 					setValueAt(
-						mouse + glm::vec2{x * MapChunk::blockSize, y * MapChunk::blockSize},
+						mouse + glm::vec2{x * blockSize, y * blockSize},
 						bid
 					);
 				}
@@ -407,7 +407,7 @@ namespace Game {
 		#endif
 		const auto tick = world.getTick();
 		const auto plyPos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsBodyComponent>(ply).getPosition());
-		const auto blockPos = worldToBlock(plyPos);
+		const auto blockPos = worldToBlock(plyPos, getBlockOffset());
 
 		// How large of an area to load around the chunk blockPos is in.
 		constexpr auto areaSize = glm::ivec2{5, 5};
@@ -504,15 +504,26 @@ namespace Game {
 	}
 	
 	glm::ivec2 MapSystem::getBlockOffset() const {
-		constexpr int32 blocksPerShift = static_cast<int32>(PhysicsOriginShiftSystem::range / MapChunk::blockSize);
-		static_assert(PhysicsOriginShiftSystem::range - blocksPerShift * MapChunk::blockSize == 0.0f, "Remainder not handled");
-		return blocksPerShift * world.getSystem<PhysicsOriginShiftSystem>().getOffset();
+		//constexpr int32 blocksPerShift = static_cast<int32>(PhysicsOriginShiftSystem::range / blockSize);
+		//static_assert(PhysicsOriginShiftSystem::range - blocksPerShift * blockSize == 0.0f, "Remainder not handled");
+		//return blocksPerShift * world.getSystem<PhysicsOriginShiftSystem>().getOffset();
+
+		// TODO: temp work around until we get the map system updated for zones.
+		// This wont work correctly with multiple players. Can we just cache the
+		// offset on the phys comp or something while building zones? there has
+		// to be a better way than doing comp+sys+zone lookup
+		const auto& filter = world.getFilter<PlayerFlag, ZoneComponent>();
+		if (filter.empty()) { return {}; }
+		const auto& physComp = world.getComponent<PhysicsBodyComponent>(filter.front());
+		physComp.zone.id;
+		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+		return zoneSys.getZone(physComp.zone.id).offset;
 	}
 
 	void MapSystem::setValueAt(const glm::vec2 wpos, BlockId bid) {
 		// TODO: Make conversion functions for all of these? Better names
 
-		const auto blockOffset = glm::floor(wpos / MapChunk::blockSize);
+		const auto blockOffset = glm::floor(wpos / blockSize);
 		const auto blockIndex = (MapChunk::size + glm::ivec2{blockOffset} % MapChunk::size) % MapChunk::size;
 
 		const glm::ivec2 chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
@@ -522,15 +533,6 @@ namespace Game {
 		edit.data[blockIndex.x][blockIndex.y] = bid;
 	}
 	
-	glm::ivec2 MapSystem::worldToBlock(const glm::vec2 world) const {
-		const glm::ivec2 blockOffset = glm::floor(world / MapChunk::blockSize);
-		return getBlockOffset() + blockOffset;
-	}
-
-	glm::vec2 MapSystem::blockToWorld(const glm::ivec2 block) const {
-		return glm::vec2{block - getBlockOffset()} * MapChunk::blockSize;
-	}
-
 	// TODO: thread this. Not sure how nice box2d will play with it.
 	void MapSystem::buildActiveChunkData(TestData& data, glm::ivec2 chunkPos) {
 		const auto regionPos = chunkToRegion(chunkPos);
@@ -583,8 +585,8 @@ namespace Game {
 					&& chunkInfo.chunk.data[pos.x][pos.y] == blockMeta.id;
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
 				// Add buffer data
-				glm::vec2 origin = glm::vec2{begin} * MapChunk::blockSize;
-				glm::vec2 size = glm::vec2{end - begin} * MapChunk::blockSize;
+				glm::vec2 origin = glm::vec2{begin} * blockSize;
+				glm::vec2 size = glm::vec2{end - begin} * blockSize;
 				const auto vertexCount = static_cast<GLushort>(buildVBOData.size());
 
 				static_assert(BlockId::_count <= 255,
@@ -636,7 +638,7 @@ namespace Game {
 		}
 
 		{ // Physics
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos)));
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos), getBlockOffset()));
 			auto& body = *data.body;
 
 			// TODO: Look into edge and chain shapes
@@ -657,8 +659,8 @@ namespace Game {
 				return getBlockMeta(chunkInfo.chunk.data[pos.x][pos.y]).solid;
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
 				// ENGINE_LOG("Physics: (", begin.x, ", ", begin.y, ") ", "(", end.x, ", ", end.y, ")");
-				const auto halfSize = MapChunk::blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
-				const auto center = MapChunk::blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
+				const auto halfSize = blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
+				const auto center = blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
 				shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
 				body.CreateFixture(&fixtureDef);
 			});

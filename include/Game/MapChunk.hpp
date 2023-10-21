@@ -16,7 +16,6 @@ namespace Game {
 	class MapChunk {
 		public:
 			constexpr static glm::ivec2 size = {64, 64};
-			constexpr static auto blockSize = 1.0f / Game::blocksPerMeter;
 			constexpr static BlockId RLE_COUNT_BIT = static_cast<BlockId>(1ll << ((sizeof(BlockId) * 8) - 1));
 
 			struct RLEPair {

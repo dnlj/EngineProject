@@ -5,6 +5,7 @@
 
 
 namespace Game {
+	// TODO: use common types defined in common.hpp
 	using ZoneId = uint32;
 	using ZoneUnit = int64;
 	using ZoneVec = glm::vec<2, ZoneUnit>;

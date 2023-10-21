@@ -104,15 +104,17 @@ namespace Game {
 			// TODO: Doc
 			void setValueAt(const glm::vec2 wpos, BlockId bid);
 
-			/**
-			 * Converts from world coordinates to block coordinates.
-			 */
-			glm::ivec2 worldToBlock(const glm::vec2 world) const;
-
-			/**
-			 * Converts from block coordinates to world coordinates.
-			 */
-			glm::vec2 blockToWorld(const glm::ivec2 block) const;
+			//
+			//
+			//
+			//
+			//
+			// TODO: some of these conversion functions should be moved to common.hpp
+			//
+			//
+			//
+			//
+			//
 
 			/**
 			 * Converts from block coordinates to chunk coordinates.

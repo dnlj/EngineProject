@@ -3,7 +3,7 @@
 #include <Game/systems/PhysicsOriginShiftSystem.hpp>
 #include <Game/World.hpp>
 
-
+/*
 namespace Game {
 	PhysicsOriginShiftSystem::PhysicsOriginShiftSystem(SystemArg arg)
 		: System{arg} {
@@ -53,3 +53,4 @@ namespace Game {
 		return offset;
 	}
 }
+*/
