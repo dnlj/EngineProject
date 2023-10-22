@@ -19,7 +19,7 @@ namespace Game::UI {
 		addLabel("Cursor (offset): {:.3f}");
 		addLabel("Cursor (world): {:.3f}");
 
-		addLabel("Zone Offset: {}");
+		addLabel("Zone Offset ({}): {}");
 
 		addLabel("Mouse (offset): {:.3f}");
 		addLabel("Mouse (world): {:.3f}");
@@ -51,8 +51,9 @@ namespace Game::UI {
 			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 
 			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-			const auto& zone = zoneSys.getZone(physComp.getZone());
-			pane->setLabel(CoordPane::ZoneOffset, zone.offset);
+			const auto zoneId = physComp.getZone();
+			const auto& zone = zoneSys.getZone(zoneId);
+			pane->setLabel(CoordPane::ZoneOffset, zoneId, zone.offset);
 
 			const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
 			if (!actComp.valid()) { return; }

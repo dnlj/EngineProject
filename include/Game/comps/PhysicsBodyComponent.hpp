@@ -34,7 +34,7 @@ namespace Game {
 		public:
 			PhysicsBodyComponent() = default;
 
-			void setBody(b2Body* body, ZoneId zone);
+			void setBody(b2Body* body, ZoneId zoneId);
 			void setZone(ZoneId zoneId);
 			ENGINE_INLINE ZoneId getZone() const noexcept { return zone.id; }
 

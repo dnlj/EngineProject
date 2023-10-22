@@ -8,11 +8,15 @@ namespace Game {
 		this->body = body;
 		zone.id = zoneId;
 
+		// TODO: remove, this is a workaround during transition. Bodies should
+		// be setup correctly with their zoneId already before setting them.
+		setZone(zoneId);
+
 		// Assume that the body already has the correct zoneId
 		if constexpr (ENGINE_DEBUG) {
 			for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()){
 				auto filter = fixture->GetFilterData();
-				ENGINE_DEBUG_ASSERT(filter.groupIndex == zoneId);
+				ENGINE_DEBUG_ASSERT(filter.groupIndex == zone.id);
 			}
 		}
 	}

@@ -427,7 +427,7 @@ namespace Engine::ECS {
 			 * Gets the instance of the system for this world.
 			 */
 			template<class System>
-			System& getSystem(){
+			ENGINE_INLINE System& getSystem() noexcept {
 				return *reinterpret_cast<System*>(systems[getSystemId<System>()]);
 			}
 

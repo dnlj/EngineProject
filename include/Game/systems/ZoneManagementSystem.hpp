@@ -52,6 +52,7 @@ namespace Game {
 			ZoneManagementSystem(SystemArg arg);
 			void tick();
 			ENGINE_INLINE const Zone& getZone(ZoneId id) const noexcept { return zones[id]; }
+			ENGINE_INLINE void addPlayer(Engine::ECS::Entity ply, ZoneId zoneId) { zones[zoneId].addPlayer(ply); }
 
 		private:
 			ZoneId createNewZone(ZoneVec pos);

@@ -81,10 +81,13 @@ namespace Game {
 		relations.clear();
 		ZONE_DEBUG("=========================================");
 
-		// TODO: shouldn't need this. Should be assignd when entity created. Change to a if-constexpr-debug check.
+		// TODO: shouldn't need this. Should be assigned when entity created. Change to a if-constexpr-debug check.
 		for (const auto ply : playerFilter) {
 			auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-			if (physComp.zone.id == -1) {
+			//ENGINE_WARN2("\n\nCheck: {} {}\n", ply, physComp.zone.id);
+
+			if (physComp.zone.id == zoneInvalidId) {
+				ENGINE_WARN2("\n\nAdding to zone: {}\n", ply);
 				physComp.zone.id = 0;
 				zones[0].addPlayer(ply);
 			}

@@ -103,7 +103,7 @@ namespace Game {
 			fixtureDef.shape = &shape;
 			body->CreateFixture(&fixtureDef);
 
-			physComp.setBody(body, 0); // TODO: zone
+			physComp.setBody(body, 0);
 		}
 
 		auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
@@ -512,7 +512,7 @@ namespace Game {
 		// This wont work correctly with multiple players. Can we just cache the
 		// offset on the phys comp or something while building zones? there has
 		// to be a better way than doing comp+sys+zone lookup
-		const auto& filter = world.getFilter<PlayerFlag, ZoneComponent>();
+		const auto& filter = world.getFilter<PlayerFlag, ZoneComponent>(); 
 		if (filter.empty()) { return {}; }
 		const auto& physComp = world.getComponent<PhysicsBodyComponent>(filter.front());
 		physComp.zone.id;

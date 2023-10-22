@@ -14,6 +14,7 @@
 // Game
 #include <Game/systems/EntityNetworkingSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
+#include <Game/systems/ZoneManagementSystem.hpp>
 
 // TODO: Do we really need all these components? Maybe try to clean this up.
 #include <Game/comps/ActionComponent.hpp>
@@ -483,38 +484,42 @@ namespace Game {
 		// TODO: i feel like this should be handled elsewhere. Where?
 		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY, "Attempting to add duplicate player.");
 		conn.ent = world.createEntity();
-		const auto ent = conn.ent;
+		const auto ply = conn.ent;
 
-		ENGINE_DEBUG_ASSERT(entToConn[ent] == nullptr, "entToConn map is in an invalid state.");
-		entToConn[conn.ent] = &conn;
+		ENGINE_DEBUG_ASSERT(entToConn[ply] == nullptr, "entToConn map is in an invalid state.");
+		entToConn[ply] = &conn;
 
-		ENGINE_INFO("Add player: ", ent, " ", world.hasComponent<PlayerFlag>(ent), " Tick: ", world.getTick());
+		ENGINE_INFO("Add player: ", ply, " ", world.hasComponent<PlayerFlag>(ply), " Tick: ", world.getTick());
 		auto& physSys = world.getSystem<PhysicsSystem>();
 
 		if constexpr (ENGINE_SERVER) {
-			world.addComponent<NetworkedFlag>(ent);
-			world.addComponent<ECSNetworkingComponent>(ent);
-			world.addComponent<MapAreaComponent>(ent);
+			world.addComponent<NetworkedFlag>(ply);
+			world.addComponent<ECSNetworkingComponent>(ply);
+			world.addComponent<MapAreaComponent>(ply);
 		} else {
-			world.addComponent<CameraTargetFlag>(ent);
+			world.addComponent<CameraTargetFlag>(ply);
 		}
 
-		world.addComponent<PhysicsInterpComponent>(ent);
+		world.addComponent<PhysicsInterpComponent>(ply);
 
-		world.addComponent<PlayerFlag>(ent);
-		auto& spriteComp = world.addComponent<SpriteComponent>(ent);
+		world.addComponent<PlayerFlag>(ply);
+		auto& spriteComp = world.addComponent<SpriteComponent>(ply);
 		spriteComp.path = "assets/player.png";
 		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
 
 		{
 			// TODO: query map system and find good spawn location
 			const b2Vec2 pos = {0, 2};
-			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
-			physComp.setBody(physSys.createPhysicsCircle(ent, pos, PhysicsCategory::Player), 0); // TODO: zone
+			auto& physComp = world.addComponent<PhysicsBodyComponent>(ply);
+
+			ENGINE_WARN2("\nAdding physics comp: {} {}\n", ply, physComp.zone.id);
+
+			world.getSystem<ZoneManagementSystem>().addPlayer(ply, 0);
+			physComp.setBody(physSys.createPhysicsCircle(ply, pos, PhysicsCategory::Player), 0);
 		}
 
-		world.addComponent<ActionComponent>(ent, world.getTick());
-		world.addComponent<MapEditComponent>(ent);
+		world.addComponent<ActionComponent>(ply, world.getTick());
+		world.addComponent<MapEditComponent>(ply);
 	}
 
 	ConnectionInfo& NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) {
