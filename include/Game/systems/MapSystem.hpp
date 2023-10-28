@@ -72,20 +72,6 @@ namespace Game {
 			};
 			static_assert(sizeof(Vertex) == 3*sizeof(GLfloat), "Unexpected vertex size.");
 
-			/** The number of chunks in each region */
-			constexpr static glm::ivec2 regionSize = {16, 16};
-
-			/** The number of regions in the map */
-			constexpr static glm::ivec2 regionCount = {3, 3};
-
-			/** The number of chunks in the map */
-			constexpr static glm::ivec2 mapSize = regionCount * regionSize;
-
-			// TODO: Doc
-			constexpr static glm::ivec2 activeAreaSize = {8, 8};
-			static_assert(!(activeAreaSize.x & (activeAreaSize.x - 1)), "Must be power of two");
-			static_assert(!(activeAreaSize.y & (activeAreaSize.y - 1)), "Must be power of two");
-
 		public:
 			MapSystem(SystemArg arg);
 			~MapSystem();
@@ -103,72 +89,6 @@ namespace Game {
 			
 			// TODO: Doc
 			void setValueAt(const glm::vec2 wpos, BlockId bid);
-
-			//
-			//
-			//
-			//
-			//
-			// TODO: some of these conversion functions should be moved to common.hpp
-			//
-			//
-			//
-			//
-			//
-
-			/**
-			 * Converts from block coordinates to chunk coordinates.
-			 */
-			ENGINE_INLINE constexpr static glm::ivec2 blockToChunk(const glm::ivec2 block) noexcept {
-				// Integer division + floor
-				auto d = block / MapChunk::size;
-				d.x = d.x * MapChunk::size.x == block.x ? d.x : d.x - (block.x < 0);
-				d.y = d.y * MapChunk::size.y == block.y ? d.y : d.y - (block.y < 0);
-				return d;
-			}
-
-			/**
-			 * Converts from chunk coordinates to block coordinates.
-			 */
-			ENGINE_INLINE constexpr static glm::ivec2 chunkToBlock(const glm::ivec2 chunk) noexcept {
-				return chunk * MapChunk::size;
-			}
-
-			/**
-			 * Converts from chunk coordinates to region coordinates.
-			 */
-			ENGINE_INLINE constexpr static glm::ivec2 chunkToRegion(const glm::ivec2 chunk) noexcept {
-				// Integer division + floor
-				auto d = chunk / regionSize;
-				d.x = d.x * regionSize.x == chunk.x ? d.x : d.x - (chunk.x < 0);
-				d.y = d.y * regionSize.y == chunk.y ? d.y : d.y - (chunk.y < 0);
-				return d;
-			}
-
-			/**
-			 * Converts from chunk coordinates to an index wrapped at increments of MapRegion::size.
-			 */
-			ENGINE_INLINE constexpr static glm::ivec2 chunkToRegionIndex(const glm::ivec2 chunk) noexcept {
-				return (MapRegion::size + chunk % MapRegion::size) % MapRegion::size;
-			}
-
-			/**
-			 * Converts from region coordinates to chunk coordinates.
-			 */
-			ENGINE_INLINE constexpr static glm::ivec2 regionToChunk(const glm::ivec2 region) noexcept {
-				return region * regionSize;
-			}
-
-			/**
-			 * Converts from a region to an index wrapped at increments of regionSize.
-			 */
-			ENGINE_INLINE constexpr static glm::ivec2 regionToIndex(const glm::ivec2 region) noexcept {
-				return (regionCount + region % regionCount) % regionCount;
-			}
-
-			// TODO: how to handle this since chunk data is loaded async?
-			//[[nodiscard]]
-			//const MapChunk* getChunkData(const glm::ivec2 chunk, bool load = false);
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			Engine::Gfx::ShaderRef shader;

@@ -51,21 +51,20 @@ namespace Game::UI {
 			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 
 			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-			const auto zoneId = physComp.getZone();
+			const auto zoneId = physComp.getZoneId();
 			const auto& zone = zoneSys.getZone(zoneId);
 			pane->setLabel(CoordPane::ZoneOffset, zoneId, zone.offset);
 
 			const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
 			if (!actComp.valid()) { return; }
 
-			const auto& mapSys = world.getSystem<Game::MapSystem>();
 			const auto offsetMousePos = actComp.getTarget();
 			const auto worldMousePos = offsetMousePos + Engine::Glue::as<glm::vec2>(physComp.getPosition());
 			const auto blockMousePos = worldToBlock(worldMousePos, zone.offset);
 			const auto blockWorldMousePos = blockToWorld(blockMousePos, zone.offset);
-			const auto chunkMousePos = mapSys.blockToChunk(blockMousePos);
-			const auto chunkBlockMousePos = mapSys.chunkToBlock(chunkMousePos);
-			const auto regionMousePos = mapSys.chunkToRegion(chunkMousePos);
+			const auto chunkMousePos = blockToChunk(blockMousePos);
+			const auto chunkBlockMousePos = chunkToBlock(chunkMousePos);
+			const auto regionMousePos = chunkToRegion(chunkMousePos);
 
 			pane->setLabel(CoordPane::MouseOffset, offsetMousePos);
 			pane->setLabel(CoordPane::MouseWorld, worldMousePos);

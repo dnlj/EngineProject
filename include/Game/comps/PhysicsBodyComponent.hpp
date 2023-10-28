@@ -36,7 +36,7 @@ namespace Game {
 
 			void setBody(b2Body* body, ZoneId zoneId);
 			void setZone(ZoneId zoneId);
-			ENGINE_INLINE ZoneId getZone() const noexcept { return zone.id; }
+			ENGINE_INLINE ZoneId getZoneId() const noexcept { return zone.id; }
 
 			ENGINE_INLINE b2Body* takeOwnership() noexcept {
 				const auto temp = body;

@@ -9,7 +9,6 @@ namespace Game {
 	};
 	ENGINE_BUILD_ALL_OPS(BlockId);
 
-
 	struct BlockMeta {
 		const BlockId id = BlockId::None;
 		const char* const name = nullptr;

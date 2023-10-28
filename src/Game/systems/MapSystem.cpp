@@ -410,12 +410,12 @@ namespace Game {
 		const auto blockPos = worldToBlock(plyPos, getBlockOffset());
 
 		// How large of an area to load around the chunk blockPos is in.
-		constexpr auto areaSize = glm::ivec2{5, 5};
+		constexpr auto areaSize = ChunkVec{5, 5};
 
 		// How large of a buffer around areaSize to wait befor unloading areas.
 		// We want a larger unload area so that we arent constantly loading/unloading
 		// when a player is near a chunk border
-		constexpr auto buffSize = glm::ivec2{7, 7};
+		constexpr auto buffSize = ChunkVec{7, 7};
 
 		const auto minAreaChunk = blockToChunk(blockPos) - areaSize;
 		const auto maxAreaChunk = blockToChunk(blockPos) + areaSize;
@@ -526,7 +526,7 @@ namespace Game {
 		const auto blockOffset = glm::floor(wpos / blockSize);
 		const auto blockIndex = (MapChunk::size + glm::ivec2{blockOffset} % MapChunk::size) % MapChunk::size;
 
-		const glm::ivec2 chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
+		const ChunkVec chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
 		const auto chunkPos = blockToChunk(getBlockOffset()) + chunkOffset;
 
 		auto& edit = chunkEdits[chunkPos];
@@ -687,11 +687,11 @@ namespace Game {
 		const auto regionStart = regionToChunk(regionPos);
 
 		auto lock = chunkQueue.lock();
-		for (int x = 0; x < regionSize.x; ++x) {
-			for (int y = 0; y < regionSize.y; ++y) {
+		for (RegionUnit x = 0; x < regionSize.x; ++x) {
+			for (RegionUnit y = 0; y < regionSize.y; ++y) {
 				// TODO: maybe have each thred do a whole row of a region? per chunk seems to granular
 				chunkQueue.unsafeEmplace([this,
-						chunkPos = regionStart + glm::ivec2{x, y},
+						chunkPos = regionStart + RegionVec{x, y},
 						&region,
 						&chunkInfo = region.data[x][y]
 					] {
@@ -703,20 +703,4 @@ namespace Game {
 		lock.unlock();
 		chunkQueue.notify();
 	}
-
-	/*
-	const MapChunk* MapSystem::getChunkData(const glm::ivec2 chunk, bool load) {
-		const auto region = chunkToRegion(chunk);
-		auto found = regions.find(region);
-
-		if (found == regions.cend()) {
-			if (load) {
-				// TODO: load regions
-			} else {
-				return nullptr;
-			}
-		}
-		const auto chunkIndex = chunkToRegionIndex(chunk);
-		return &found->second->data[chunkIndex.x][chunkIndex.y];
-	}*/
 }
