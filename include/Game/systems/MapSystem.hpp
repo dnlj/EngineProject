@@ -21,12 +21,13 @@
 #include <Engine/ThreadSafeQueue.hpp>
 
 // Game
-#include <Game/Common.hpp>
+#include <Game/common.hpp>
 #include <Game/MapChunk.hpp>
 #include <Game/MapGenerator2.hpp>
 #include <Game/Connection.hpp>
 #include <Game/comps/MapEditComponent.hpp>
 
+// TODO: This documentation and comments are likely out of date since the multiplayer and chunk/region/zone reworks.
 // TODO: Document the different coordinate systems and terms used here.
 // TODO: convert to use sized types - int32, float32, etc.
 // TODO: Change all mentions of "tile" to "block". Its a more common term.
@@ -55,6 +56,14 @@ namespace Game {
 
 			bool loading() const {
 				// TODO: look into which memory order is needed
+
+				// TODO: Why is this always false on the client? I assume it was
+				// something to do with always loading the chunks on the server?
+				//
+				// Even if thats the case we should be able to premptevly
+				// generate them on the client and then update them once we get
+				// the real info from the server?
+
 				if constexpr (ENGINE_CLIENT) {
 					return false;
 				}
@@ -95,7 +104,7 @@ namespace Game {
 			Engine::Gfx::Texture2DArray texArr;
 
 			Engine::Gfx::VertexAttributeLayoutRef vertexLayout;
-			struct TestData { // TODO: rename
+			struct ActiveChunkData {
 				//TestData() = default;
 				//TestData(TestData&&) {};
 				b2Body* body;
@@ -107,12 +116,14 @@ namespace Game {
 				Engine::Clock::TimePoint lastUsed;
 				Engine::ECS::Tick updated = {};
 				std::vector<byte> rle;
+				ZoneId zoneId = zoneInvalidId;
 
 				// TODO: need to serialize for unloaded/inactive chunks. Just a vector<byte> should work?
 				std::vector<Engine::ECS::Entity> blockEntities;
 			};
 
-			Engine::FlatHashMap<glm::ivec2, TestData> activeChunks;
+			/** The info for chunks */
+			Engine::FlatHashMap<glm::ivec2, ActiveChunkData> activeChunks;
 			Engine::FlatHashMap<glm::ivec2, MapChunk> chunkEdits;
 
 		private:
@@ -139,7 +150,7 @@ namespace Game {
 			b2Body* createBody();
 
 			// TODO: Doc
-			void buildActiveChunkData(TestData& data, glm::ivec2 chunkPos);
+			void buildActiveChunkData(ActiveChunkData& data, glm::ivec2 chunkPos);
 
 			// TODO: Doc
 			void loadChunk(const glm::ivec2 chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;

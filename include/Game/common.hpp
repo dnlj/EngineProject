@@ -17,6 +17,12 @@ namespace Game {
 
 	using RegionUnit = BlockUnit;
 	using RegionVec = glm::vec<2, RegionUnit>;
+
+	using ZoneUnit = ChunkUnit;
+	using ZoneVec = glm::vec<2, ZoneUnit>;
+	using ZoneId = uint32;
+	constexpr inline auto zoneUnitMax = std::numeric_limits<ZoneUnit>::max();
+	constexpr inline auto zoneInvalidId = std::numeric_limits<ZoneId>::max();
 	
 	//static_assert(std::same_as<WorldVec, glm::vec2>);
 	//static_assert(std::same_as<WorldUnit, decltype(b2Vec2::x)>);

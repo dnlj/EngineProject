@@ -353,6 +353,8 @@ namespace Game {
 			}
 		}
 
+		// TODO: Shouldn't this unload logic be in tick instead of update?
+
 		// Unload active chunks
 		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
 			if (it->second.lastUsed < timeout) {
@@ -406,9 +408,13 @@ namespace Game {
 			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ply);
 		#endif
 		const auto tick = world.getTick();
+		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		const auto plyPos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsBodyComponent>(ply).getPosition());
+		const auto plyZoneId = world.getComponent<PhysicsBodyComponent>(ply).getZoneId();
 		const auto blockPos = worldToBlock(plyPos, getBlockOffset());
+		const auto plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
 
+		// TODO: areaSize and buffSize should be 2/3 since we do + and - for the min/max calcs
 		// How large of an area to load around the chunk blockPos is in.
 		constexpr auto areaSize = ChunkVec{5, 5};
 
@@ -422,6 +428,27 @@ namespace Game {
 		const auto minBuffChunk = minAreaChunk - buffSize;
 		const auto maxBuffChunk = maxAreaChunk + buffSize;
 
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: need to check that chunk is in the right Zone
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+
 		for (auto chunkPos = minBuffChunk; chunkPos.x <= maxBuffChunk.x; ++chunkPos.x) {
 			for (chunkPos.y = minBuffChunk.y; chunkPos.y <= maxBuffChunk.y; ++chunkPos.y) {
 				const auto isBufferChunk = chunkPos.x < minAreaChunk.x
@@ -432,6 +459,7 @@ namespace Game {
 				const auto regionPos = chunkToRegion(chunkPos);
 				auto regionIt = regions.find(regionPos);
 
+				// Create a new region if needed
 				if (regionIt == regions.end()) {
 					if (!isBufferChunk) {
 						//const auto it = regions.emplace(regionPos, new MapRegion{
@@ -452,9 +480,10 @@ namespace Game {
 					continue;
 				}
 
+				// Update chunk usage info
 				const auto& region = regionIt->second;
-				if (region->loading()) { continue; }
 				region->lastUsed = world.getTickTime();
+				if (region->loading()) { continue; }
 
 				#if ENGINE_SERVER
 				{
@@ -464,13 +493,28 @@ namespace Game {
 					}
 				}
 				#endif
-				
+
+				// Create active chunk data.
+				// The generation of the actual graphics/physics is done in
+				// MapSystem::tick based on the last chunk update tick. 
 				auto it = activeChunks.find(chunkPos);
 				if (it == activeChunks.end()) {
 					if (isBufferChunk) { continue; }
 
+					//
+					//
+					//
+					// TODO: need to setup initial zone here
+					//
+					//
+					//
+					//
+					//
+					//
+
 					// TODO (QmIupKgJ): we really should probably have a cache of inactive chunks that we can reuse instead of constant destroy/create.
 					it = activeChunks.try_emplace(chunkPos).first;
+					ENGINE_DEBUG_ASSERT(it->second.body == nullptr);
 					it->second.body = createBody();
 
 					const auto chunkIndex = chunkToRegionIndex(chunkPos);
@@ -497,6 +541,19 @@ namespace Game {
 					// ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
 					it->second.updated = tick;
 				}
+
+				// TODO: how will we handle this on the client? I assume it
+				//       should all be controlled on the server? On the client we
+				//       shouldnt really need to think about shifting.
+				//if constexpr (ENGINE_SERVER) {
+				//	if (it->second.zoneId != plyZoneId) {
+				//		const auto pos = blockToWorld(chunkToBlock(chunkPos), plyZoneOffset);
+				//		const auto body = it->second.body;
+				//		body->SetTransform({pos.x, pos.y}, 0);
+				//		
+				//		it->second.zoneId = plyZoneId;
+				//	}
+				//}
 				
 				it->second.lastUsed = world.getTickTime();
 			}
@@ -534,7 +591,7 @@ namespace Game {
 	}
 	
 	// TODO: thread this. Not sure how nice box2d will play with it.
-	void MapSystem::buildActiveChunkData(TestData& data, glm::ivec2 chunkPos) {
+	void MapSystem::buildActiveChunkData(ActiveChunkData& data, glm::ivec2 chunkPos) {
 		const auto regionPos = chunkToRegion(chunkPos);
 		const auto regionIt = regions.find(regionPos);
 		if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
@@ -649,6 +706,30 @@ namespace Game {
 				fixture = next;
 			}
 
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			// TODO: need to handle zone (just group filter i think?) here.
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+
 			body.SetTransform(pos, 0);
 
 			b2PolygonShape shape;
@@ -681,6 +762,9 @@ namespace Game {
 		}
 	}
 
+	// TODO: This need to take the zone as well so we know the initial location
+	// and don't have to instantly shift the chunks afterward? Then again not
+	// ALL chunks will be there so maybe? Idk think through pros/cons.
 	void MapSystem::queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region) {
 		std::cout << "Queue region: " << regionPos.x << " " << regionPos.y << "\n";
 		//constexpr auto totalSize = MapRegion::size.x * MapRegion::size.y;

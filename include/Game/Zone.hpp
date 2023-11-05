@@ -5,13 +5,6 @@
 
 
 namespace Game {
-	// TODO: use common types defined in common.hpp
-	using ZoneId = uint32;
-	using ZoneUnit = int64;
-	using ZoneVec = glm::vec<2, ZoneUnit>;
-	constexpr inline auto zoneUnitMax = std::numeric_limits<ZoneUnit>::max();
-	constexpr inline auto zoneInvalidId = std::numeric_limits<ZoneId>::max();
-
 	class Zone {
 		private:
 			// TODO: It would be nice if we had a way to just do a intersection by

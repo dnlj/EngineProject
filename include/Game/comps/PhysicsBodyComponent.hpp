@@ -19,8 +19,7 @@ namespace Game {
 			ZoneId group = zoneInvalidId;
 	};
 
-	// TODO: rename - to just phys comp
-	class PhysicsBodyComponent {
+	class PhysicsBody {
 		private:
 			b2Body* body = nullptr;
 
@@ -28,12 +27,7 @@ namespace Game {
 			// TODO: need to handle networking
 			ZoneInfo zone; // TODO: make private once we have everyhing moved over.
 
-			bool snap = false; // TODO: this should probably be on the interp component?
-			bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
-
 		public:
-			PhysicsBodyComponent() = default;
-
 			void setBody(b2Body* body, ZoneId zoneId);
 			void setZone(ZoneId zoneId);
 			ENGINE_INLINE ZoneId getZoneId() const noexcept { return zone.id; }
@@ -74,6 +68,16 @@ namespace Game {
 				def.filter.groupIndex = zone.id;
 				body->CreateFixture(&def);
 			}
+	};
+
+	// TODO: rename - to just phys comp
+	class PhysicsBodyComponent : public PhysicsBody {
+		public:
+			bool snap = false; // TODO: this should probably be on the interp component?
+			bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
+
+		public:
+			PhysicsBodyComponent() = default;
 	};
 }
 

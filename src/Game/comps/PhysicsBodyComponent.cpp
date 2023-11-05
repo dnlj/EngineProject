@@ -4,7 +4,7 @@
 
 
 namespace Game {
-	void PhysicsBodyComponent::setBody(b2Body* body, ZoneId zoneId) {
+	void PhysicsBody::setBody(b2Body* body, ZoneId zoneId) {
 		this->body = body;
 		zone.id = zoneId;
 
@@ -21,7 +21,7 @@ namespace Game {
 		}
 	}
 
-	void PhysicsBodyComponent::setZone(ZoneId zoneId) {
+	void PhysicsBody::setZone(ZoneId zoneId) {
 		for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()){
 			auto filter = fixture->GetFilterData();
 
