@@ -55,7 +55,7 @@ namespace Game {
 
 		// TODO: one problem is our world scale is a bit off. Should probably be more like 6-8 blocks per meter instead of 4/5.
 
-		constexpr int64 mustSplit = 2000;
+		constexpr int64 mustSplit = 1000;
 		constexpr int64 mustJoin = 300;
 		static_assert(mustJoin < mustSplit);
 
@@ -279,10 +279,11 @@ namespace Game {
 
 	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp)
 	{
-		ZONE_DEBUG("{} - Migrating player from {} to {}", world.getTick(), physComp.zone.id, newZoneId);
-		ENGINE_DEBUG_ASSERT(newZoneId != physComp.zone.id, "Attempting to move player to same zone. This is a bug.");
+		const auto oldZoneId = physComp.getZoneId();
+		ZONE_DEBUG("{} - Migrating player from {} to {}", world.getTick(), oldZoneId, newZoneId);
+		ENGINE_DEBUG_ASSERT(newZoneId != oldZoneId, "Attempting to move player to same zone. This is a bug.");
 
-		auto& oldZone = zones[physComp.zone.id];
+		auto& oldZone = zones[oldZoneId];
 		auto& newZone = zones[newZoneId];
 
 		// TODO: need to do shifting stuff.
@@ -291,8 +292,8 @@ namespace Game {
 		physComp.setZone(newZoneId);
 		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);
 
-		zones[physComp.zone.id].removePlayer(ply);
+		zones[oldZoneId].removePlayer(ply);
 		zones[newZoneId].addPlayer(ply);
-		physComp.zone.id = newZoneId;
+		physComp.setZone(newZoneId);
 	}
 }

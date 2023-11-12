@@ -38,6 +38,26 @@ namespace Game {
 			// TODO: really should just write accessors for whatever we need this for instead of leaking the entire world.
 			const b2World& getPhysicsWorld() const noexcept { return physWorld; }
 
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			// TODO: these functions should operate/create/destroy PhysicsBody not b2Body
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+
 			/**
 			 * Creates a box2d body and associates an entity with it.
 			 * @param[in] ent The entity.
@@ -57,12 +77,6 @@ namespace Game {
 			 * @param[in] listener The listener.
 			 */
 			void addListener(PhysicsListener* listener);
-
-			/**
-			 * Changes the origin of the physics world.
-			 * @param[in] newOrigin The new origin relative to the current origin.
-			 */
-			void shiftOrigin(const b2Vec2& newOrigin);
 
 			// TODO: rm - temp
 			b2Body* createPhysicsCircle(Engine::ECS::Entity ent, b2Vec2 position, PhysicsCategory group) {

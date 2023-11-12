@@ -5,10 +5,19 @@
 
 namespace Game {
 	using namespace Engine::Types;
-
+	/**
+	 * A position in world units. These will always be relative to some origin
+	 * or offset for physics and float precision reasons.
+	 * Physics operates on world units.
+	 */
 	using WorldUnit = float32;
 	using WorldVec = glm::vec<2, WorldUnit>;
 
+	/**
+	 * A position in blocks. Generally will be absolute positions from true (0,0),
+	 * but may be an offset. These are usually combined with world units
+	 * to represent the true position of an object.
+	 */
 	using BlockUnit = int64;
 	using BlockVec = glm::vec<2, BlockUnit>;
 
@@ -18,6 +27,8 @@ namespace Game {
 	using RegionUnit = BlockUnit;
 	using RegionVec = glm::vec<2, RegionUnit>;
 
+	// TODO: Shouldn't this derive from blockUnit? this is stored in blocks, no?
+	//       Document what lall of these units represet and how they are converted.
 	using ZoneUnit = ChunkUnit;
 	using ZoneVec = glm::vec<2, ZoneUnit>;
 	using ZoneId = uint32;

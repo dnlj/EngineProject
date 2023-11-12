@@ -26,6 +26,7 @@
 #include <Game/MapGenerator2.hpp>
 #include <Game/Connection.hpp>
 #include <Game/comps/MapEditComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp> // TODO: split physicsbody from componennt
 
 // TODO: This documentation and comments are likely out of date since the multiplayer and chunk/region/zone reworks.
 // TODO: Document the different coordinate systems and terms used here.
@@ -97,7 +98,7 @@ namespace Game {
 			glm::ivec2 getBlockOffset() const;
 			
 			// TODO: Doc
-			void setValueAt(const glm::vec2 wpos, BlockId bid);
+			void setValueAt2(const BlockVec blockPos, BlockId bid);
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			Engine::Gfx::ShaderRef shader;
@@ -105,9 +106,7 @@ namespace Game {
 
 			Engine::Gfx::VertexAttributeLayoutRef vertexLayout;
 			struct ActiveChunkData {
-				//TestData() = default;
-				//TestData(TestData&&) {};
-				b2Body* body;
+				PhysicsBody body;
 
 				Engine::Gfx::Buffer vbuff;
 				Engine::Gfx::Buffer ebuff;
@@ -116,7 +115,6 @@ namespace Game {
 				Engine::Clock::TimePoint lastUsed;
 				Engine::ECS::Tick updated = {};
 				std::vector<byte> rle;
-				ZoneId zoneId = zoneInvalidId;
 
 				// TODO: need to serialize for unloaded/inactive chunks. Just a vector<byte> should work?
 				std::vector<Engine::ECS::Entity> blockEntities;

@@ -141,7 +141,7 @@ namespace Engine {
 					if constexpr (IsStatic) { return Size; } else { return storage.second; }
 				}
 				
-				[[nodiscard]] SizeType size() const noexcept {
+				[[nodiscard]] ENGINE_INLINE SizeType size() const noexcept {
 					if (empty()) { return 0; }
 					return (head - tail) + (head <= tail ? capacity() : 0);
 				}

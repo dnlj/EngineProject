@@ -103,6 +103,13 @@ namespace Game {
 			fixtureDef.shape = &shape;
 			body->CreateFixture(&fixtureDef);
 
+			//
+			//
+			//
+			// TODO: need to handle zone
+			//
+			//
+			//
 			physComp.setBody(body, 0);
 		}
 
@@ -202,14 +209,19 @@ namespace Game {
 	void MapSystem::tick() {
 		const auto currTick = world.getTick();
 
-		// TODO: move
-		const auto makeEdit = [&](BlockId bid, const glm::vec2 mouse) {
+		const auto makeEdit = [&](BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp) {
+			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 			for (int x = -2; x < 3; ++x) {
 				for (int y = -2; y < 3; ++y) {
-					setValueAt(
-						mouse + glm::vec2{x * blockSize, y * blockSize},
-						bid
+					const auto plyPos = physComp.getPosition();
+					//const auto plyBlockPos = BlockVec{plyPos.x, plyPos.y} + ;
+					//const BlockVec target = actComp.getTarget() * blockSize + glm::vec2{plyPos.x, plyPos.y};
+					const WorldVec placementOffset = {x*blockSize, y*blockSize};
+					const BlockVec target = worldToBlock(
+						WorldVec{plyPos.x, plyPos.y} + actComp.getTarget() + placementOffset,
+						zoneSys.getZone(physComp.getZoneId()).offset
 					);
+					setValueAt2(target, bid);
 				}
 			}
 		};
@@ -219,13 +231,11 @@ namespace Game {
 
 			if (actComp.getAction(Action::Attack1).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
-				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
-				makeEdit(BlockId::Dirt, pos + actComp.getTarget());
+				makeEdit(BlockId::Dirt, actComp, physBodyComp);
 			}
 			if (actComp.getAction(Action::Attack2).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
-				const auto& pos = Engine::Glue::as<glm::vec2>(physBodyComp.getPosition());
-				makeEdit(BlockId::Air, pos + actComp.getTarget());
+				makeEdit(BlockId::Air, actComp, physBodyComp);
 			}
 
 			if (!world.isPerformingRollback()) {
@@ -385,7 +395,7 @@ namespace Game {
 					}
 				}
 
-				world.getSystem<PhysicsSystem>().destroyBody(it->second.body);
+				world.getSystem<PhysicsSystem>().destroyBody(it->second.body.takeOwnership()); // TODO: destory body should just work on PhysicsBody instead of b2Body
 				it = activeChunks.erase(it);
 			} else {
 				++it;
@@ -411,8 +421,8 @@ namespace Game {
 		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		const auto plyPos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsBodyComponent>(ply).getPosition());
 		const auto plyZoneId = world.getComponent<PhysicsBodyComponent>(ply).getZoneId();
-		const auto blockPos = worldToBlock(plyPos, getBlockOffset());
 		const auto plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
+		const auto blockPos = worldToBlock(plyPos, plyZoneOffset);
 
 		// TODO: areaSize and buffSize should be 2/3 since we do + and - for the min/max calcs
 		// How large of an area to load around the chunk blockPos is in.
@@ -427,27 +437,6 @@ namespace Game {
 		const auto maxAreaChunk = blockToChunk(blockPos) + areaSize;
 		const auto minBuffChunk = minAreaChunk - buffSize;
 		const auto maxBuffChunk = maxAreaChunk + buffSize;
-
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: need to check that chunk is in the right Zone
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
 
 		for (auto chunkPos = minBuffChunk; chunkPos.x <= maxBuffChunk.x; ++chunkPos.x) {
 			for (chunkPos.y = minBuffChunk.y; chunkPos.y <= maxBuffChunk.y; ++chunkPos.y) {
@@ -501,21 +490,10 @@ namespace Game {
 				if (it == activeChunks.end()) {
 					if (isBufferChunk) { continue; }
 
-					//
-					//
-					//
-					// TODO: need to setup initial zone here
-					//
-					//
-					//
-					//
-					//
-					//
-
 					// TODO (QmIupKgJ): we really should probably have a cache of inactive chunks that we can reuse instead of constant destroy/create.
 					it = activeChunks.try_emplace(chunkPos).first;
-					ENGINE_DEBUG_ASSERT(it->second.body == nullptr);
-					it->second.body = createBody();
+					it->second.body.setBody(createBody(), plyZoneId); // TODO: create body should just create a PhysicsBody
+					ENGINE_DEBUG_ASSERT(it->second.body.valid());
 
 					const auto chunkIndex = chunkToRegionIndex(chunkPos);
 					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
@@ -545,15 +523,17 @@ namespace Game {
 				// TODO: how will we handle this on the client? I assume it
 				//       should all be controlled on the server? On the client we
 				//       shouldnt really need to think about shifting.
-				//if constexpr (ENGINE_SERVER) {
-				//	if (it->second.zoneId != plyZoneId) {
-				//		const auto pos = blockToWorld(chunkToBlock(chunkPos), plyZoneOffset);
-				//		const auto body = it->second.body;
-				//		body->SetTransform({pos.x, pos.y}, 0);
-				//		
-				//		it->second.zoneId = plyZoneId;
-				//	}
-				//}
+				if constexpr (ENGINE_SERVER || ENGINE_CLIENT) {
+					auto& body = it->second.body;
+					//plyZoneId ? ENGINE_INFO2("Debug chunk ({}) zone from {} to {}", chunkPos, body.getZoneId(), plyZoneId), 0 : 0;
+					if (body.getZoneId() != plyZoneId) {
+						// TODO: this needs significant testing
+						ENGINE_INFO2("Moving chunk ({}) zone from {} to {}", chunkPos, body.getZoneId(), plyZoneId);
+						const auto pos = blockToWorld(chunkToBlock(chunkPos), plyZoneOffset);
+						body.setPosition({pos.x, pos.y});
+						body.setZone(plyZoneId);
+					}
+				}
 				
 				it->second.lastUsed = world.getTickTime();
 			}
@@ -577,16 +557,24 @@ namespace Game {
 		return zoneSys.getZone(physComp.zone.id).offset;
 	}
 
-	void MapSystem::setValueAt(const glm::vec2 wpos, BlockId bid) {
+	void MapSystem::setValueAt2(const BlockVec blockPos, BlockId bid) {
+		//
+		//
+		//
+		// TODO: cleanup
+		//
+		// 
+		// 
 		// TODO: Make conversion functions for all of these? Better names
 
-		const auto blockOffset = glm::floor(wpos / blockSize);
-		const auto blockIndex = (MapChunk::size + glm::ivec2{blockOffset} % MapChunk::size) % MapChunk::size;
+		//const auto blockOffset = glm::floor(wpos / blockSize);
+		//const auto blockIndex = (MapChunk::size + glm::ivec2{blockOffset} % MapChunk::size) % MapChunk::size;
 
-		const ChunkVec chunkOffset = glm::floor(blockOffset / glm::vec2{MapChunk::size});
-		const auto chunkPos = blockToChunk(getBlockOffset()) + chunkOffset;
+		// TODO: aren't tehse the same?
+		const auto blockIndex = (MapChunk::size + blockPos % MapChunk::size) % MapChunk::size;
+		//const auto blockIndex = (MapChunk::size + blockPos) % MapChunk::size;
 
-		auto& edit = chunkEdits[chunkPos];
+		auto& edit = chunkEdits[blockToChunk(blockPos)];
 		edit.data[blockIndex.x][blockIndex.y] = bid;
 	}
 	
@@ -695,42 +683,14 @@ namespace Game {
 		}
 
 		{ // Physics
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos), getBlockOffset()));
-			auto& body = *data.body;
+			auto& body = data.body;
+			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos), zoneSys.getZone(body.getZoneId()).offset));
 
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures
-			for (auto* fixture = body.GetFixtureList(); fixture;) {
-				auto* next = fixture->GetNext();
-				body.DestroyFixture(fixture);
-				fixture = next;
-			}
-
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: need to handle zone (just group filter i think?) here.
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-
-			body.SetTransform(pos, 0);
+			body.clear();
+			body.setPosition(pos);
 
 			b2PolygonShape shape;
 			b2FixtureDef fixtureDef;
@@ -743,7 +703,7 @@ namespace Game {
 				const auto halfSize = blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
 				const auto center = blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
 				shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
-				body.CreateFixture(&fixtureDef);
+				body.createFixture(fixtureDef);
 			});
 		}
 	}

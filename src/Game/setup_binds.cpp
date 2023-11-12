@@ -8,6 +8,7 @@
 #include <Game/systems/ActionSystem.hpp>
 #include <Game/systems/UISystem.hpp>
 #include <Game/UI/ConsoleWindow.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
 //#include <Game/UI/MapPreview.hpp>
 
 void setupBinds(Game::EngineInstance& engine) {
@@ -41,6 +42,8 @@ void setupBinds(Game::EngineInstance& engine) {
 	is.registerCommand(Action::MoveDown, [&](Value curr){ updateActionState(world, Action::MoveDown, curr); });
 	is.registerCommand(Action::MoveLeft, [&](Value curr){ updateActionState(world, Action::MoveLeft, curr); });
 	is.registerCommand(Action::MoveRight, [&](Value curr){ updateActionState(world, Action::MoveRight, curr); });
+	is.registerCommand(Action::DebugTeleLeft, [&](Value curr){ updateActionState(world, Action::DebugTeleLeft, curr); });
+	is.registerCommand(Action::DebugTeleRight, [&](Value curr){ updateActionState(world, Action::DebugTeleRight, curr); });
 	is.registerCommand(Action::Target, [&](Value curr){ updateTargetState(world, curr); });
 
 	bm.addBind(Layer::Game, false, InputSequence{
@@ -78,6 +81,15 @@ void setupBinds(Game::EngineInstance& engine) {
 	bm.addBind(Layer::Game, false, InputSequence{
 			InputId{Type::MouseAxis, 0, 0}
 	}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::Target, time, curr); return true; });
+
+	bm.addBind(Layer::Game, false, InputSequence{
+		InputId{Type::Keyboard, 0, +KeyCode::LAlt},
+		InputId{Type::Keyboard, 0, +KeyCode::A},
+	}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::DebugTeleLeft, time, curr); return true; });
+	bm.addBind(Layer::Game, false, InputSequence{
+		InputId{Type::Keyboard, 0, +KeyCode::LAlt},
+		InputId{Type::Keyboard, 0, +KeyCode::D},
+	}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::DebugTeleRight, time, curr); return true; });
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Interface Binds

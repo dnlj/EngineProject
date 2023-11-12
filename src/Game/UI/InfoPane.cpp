@@ -46,6 +46,7 @@ namespace Game::UI {
 		// TODO: rm - zone testing debug ui
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		// Assumes split=2000, join=300, sameZone=500
 		const auto debugZoneButton = [this](const auto& name, EUI::Button::Callback func) {
 			auto button = ctx->constructPanel<EUI::Button>();
 			button->autoText(name);

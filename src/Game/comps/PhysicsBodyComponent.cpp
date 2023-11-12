@@ -4,9 +4,16 @@
 
 
 namespace Game {
+	void PhysicsBody::clear() noexcept {
+		for (auto* fixture = body->GetFixtureList(); fixture;) {
+			auto* next  = fixture->GetNext();
+			body->DestroyFixture(fixture);
+			fixture = next;
+		}
+	}
+
 	void PhysicsBody::setBody(b2Body* body, ZoneId zoneId) {
 		this->body = body;
-		zone.id = zoneId;
 
 		// TODO: remove, this is a workaround during transition. Bodies should
 		// be setup correctly with their zoneId already before setting them.
@@ -22,6 +29,7 @@ namespace Game {
 	}
 
 	void PhysicsBody::setZone(ZoneId zoneId) {
+		zone.id = zoneId;
 		for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()){
 			auto filter = fixture->GetFilterData();
 

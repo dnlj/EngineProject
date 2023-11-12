@@ -42,6 +42,14 @@ namespace Game {
 			if (move != b2Vec2_zero) {
 				physComp.applyLinearImpulse(world.getTickDelta() * speed * move, true);
 			}
+
+			// TODO: disable outside of debug/cvar cheats/etc.
+			if (true) {
+				const bool teleLeft = actComp.getAction(Action::DebugTeleLeft).pressCount;
+				const bool teleRight = actComp.getAction(Action::DebugTeleRight).pressCount;
+				const auto dir = teleRight - teleLeft;
+				if (dir) { physComp.setPosition(physComp.getPosition() + b2Vec2{100.0f * dir, 0}); }
+			}
 		}
 	}
 }

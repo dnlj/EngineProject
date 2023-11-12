@@ -211,16 +211,6 @@ namespace Game {
 		listeners.push_back(listener);
 	}
 
-	void PhysicsSystem::shiftOrigin(const b2Vec2& newOrigin) {
-		ENGINE_ASSERT(false, "TODO: impl"); // TODO: impl
-		//physWorld.ShiftOrigin(newOrigin);
-		//
-		//for (auto& ent : world.getFilter<PhysicsBodyComponent>()) {
-		//	auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
-		//	physComp.setTransform2(physComp.body->GetTransform());
-		//}
-	}
-
 	void PhysicsSystem::BeginContact(b2Contact* contact) {
 		const auto entA = toEntity(contact->GetFixtureA()->GetBody()->GetUserData());
 		const auto entB = toEntity(contact->GetFixtureB()->GetBody()->GetUserData());

@@ -23,11 +23,14 @@ namespace Game {
 		private:
 			b2Body* body = nullptr;
 
-		public:
 			// TODO: need to handle networking
+		public:
 			ZoneInfo zone; // TODO: make private once we have everyhing moved over.
 
 		public:
+			ENGINE_INLINE bool valid() const noexcept { return body; }
+			void clear() noexcept;
+
 			void setBody(b2Body* body, ZoneId zoneId);
 			void setZone(ZoneId zoneId);
 			ENGINE_INLINE ZoneId getZoneId() const noexcept { return zone.id; }

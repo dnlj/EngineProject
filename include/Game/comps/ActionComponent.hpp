@@ -25,6 +25,8 @@ namespace Game {
 		MoveRight,
 		Attack1,
 		Attack2,
+		DebugTeleLeft,
+		DebugTeleRight,
 		_button_end,
 
 		// Axes
