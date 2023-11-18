@@ -313,6 +313,8 @@ namespace Game {
 				auto& activeData = found->second;
 
 				if (meta.last != activeData.updated) {
+					std::vector<byte>* rle = nullptr;
+
 					if (meta.last == 0) { // Fresh chunk
 						const auto regionPos = chunkToRegion(chunkPos);
 						const auto regionIt = regions.find(regionPos);
@@ -321,34 +323,27 @@ namespace Game {
 							auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
 							rleTemp.clear();
 							chunkInfo.chunk.toRLE(rleTemp);
-							
-							if (auto msg = conn->beginMessage<MessageType::MAP_CHUNK>()) {
-								meta.last = activeData.updated;
-								const auto size = static_cast<int32>(rleTemp.size() * sizeof(rleTemp[0]));
-								byte* data = reinterpret_cast<byte*>(rleTemp.data());
-								memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
-								memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
-								msg.writeBlob(data, size);
-								//ENGINE_INFO("Send Chunk (fresh): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
-							} else {
-								//ENGINE_WARN("Unable to begin MAP_CHUNK message.");
-							}
+							rle = &rleTemp;
+							//ENGINE_INFO("Send chunk (fresh): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
 						}
 					} else if (activeData.rle.empty()) {
 						// TODO: i dont think this case should be hit?
 						ENGINE_WARN("No RLE data for chunk");
+						ENGINE_DEBUG_BREAK;
 					} else { // Chunk edit
-						if (auto msg = conn->beginMessage<MessageType::MAP_CHUNK>()) {
-							meta.last = activeData.updated;
-							const auto size = static_cast<int32>(activeData.rle.size() * sizeof(activeData.rle[0]));
-							byte* data = reinterpret_cast<byte*>(activeData.rle.data());
-							memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
-							memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
-							msg.writeBlob(data, size);
-							//ENGINE_INFO("Send Chunk (edit): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
-						} else {
-							//ENGINE_WARN("Unable to begin MAP_CHUNK message.");
-						}
+						rle = &activeData.rle;
+						//ENGINE_INFO("Send chunk (edit): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
+					}
+
+					if (auto msg = conn->beginMessage<MessageType::MAP_CHUNK>()) {
+						meta.last = activeData.updated;
+						const auto size = static_cast<int32>(rle->size() * sizeof(rle->front()));
+						byte* data = reinterpret_cast<byte*>(rle->data());
+						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
+						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
+						msg.writeBlob(data, size);
+					} else {
+						//ENGINE_WARN("Unable to begin MAP_CHUNK message.");
 					}
 				}
 
