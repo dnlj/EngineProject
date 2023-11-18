@@ -11,6 +11,7 @@
 // Game
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/MapRenderSystem.hpp>
+#include <Game/systems/ZoneManagementSystem.hpp>
 #include <Game/World.hpp>
 
 
@@ -27,8 +28,16 @@ namespace Game {
 
 	void MapRenderSystem::render(const RenderLayer layer) {
 		if (layer != RenderLayer::Terrain) { return; }
-		const auto& mapSys = world.getSystem<MapSystem>();
+
+		const auto& plyFilter = world.getFilter<PlayerFlag, CameraTargetFlag, PhysicsBodyComponent>();
+		if (plyFilter.size() == 0) { return; }
+
+		if (ENGINE_DEBUG && plyFilter.size() != 1) [[unlikely]] {
+			ENGINE_WARN2("Unexpected number of players {}", plyFilter.size());
+		}
+
 		// TODO: these should be part of model/mesh or maprendersystem. why are they on mapsystem
+		const auto& mapSys = world.getSystem<MapSystem>();
 		auto& shader = mapSys.shader;
 
 		glUseProgram(shader->get());
@@ -40,9 +49,12 @@ namespace Game {
 		auto& cam = engine.getCamera();
 		const auto vp = cam.getProjection() * cam.getView();
 
+		const auto ply = plyFilter.front();
+		const auto physComp = world.getComponent<PhysicsBodyComponent>(ply);
+		const auto offset = world.getSystem<ZoneManagementSystem>().getZone(physComp.getZoneId()).offset;
 		const auto bounds = cam.getWorldScreenBounds();
-		const auto minChunk = blockToChunk(worldToBlock(bounds.min, mapSys.getBlockOffset()));
-		const auto maxChunk = blockToChunk(worldToBlock(bounds.max, mapSys.getBlockOffset()));
+		const auto minChunk = blockToChunk(worldToBlock(bounds.min, offset));
+		const auto maxChunk = blockToChunk(worldToBlock(bounds.max, offset));
 
 		const auto vao = mapSys.vertexLayout->get();
 		glBindVertexArray(vao);

@@ -26,7 +26,6 @@ namespace Game {
 	}
 
 	void ZoneManagementSystem::tick() {
-		// TODO: const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent, ZoneComponent>();
 		const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent>();
 		//const auto& playerFilter = world.getFilter<PhysicsBodyComponent, ZoneComponent>();
 
@@ -280,7 +279,8 @@ namespace Game {
 	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp)
 	{
 		const auto oldZoneId = physComp.getZoneId();
-		ZONE_DEBUG("{} - Migrating player from {} to {}", world.getTick(), oldZoneId, newZoneId);
+		//ZONE_DEBUG("{} - Migrating player from {} to {}", world.getTick(), oldZoneId, newZoneId);
+		ENGINE_INFO2("{} - Migrating player from {} to {}", world.getTick(), oldZoneId, newZoneId);
 		ENGINE_DEBUG_ASSERT(newZoneId != oldZoneId, "Attempting to move player to same zone. This is a bug.");
 
 		auto& oldZone = zones[oldZoneId];

@@ -38,7 +38,7 @@ namespace {
 }
 
 
-#define BUILD_BLOCK_ENTITY(Type) template<> Engine::ECS::Entity MapSystem::buildBlockEntity<BlockEntityType::Type>(const BlockEntityDesc& desc)
+#define BUILD_BLOCK_ENTITY(Type) template<> Engine::ECS::Entity MapSystem::buildBlockEntity<BlockEntityType::Type>(const BlockEntityDesc& desc, const ActiveChunkData& activeChunkData)
 #define STORE_BLOCK_ENTITY(Type) template<> void MapSystem::storeBlockEntity<BlockEntityType::Type>(BlockEntityTypeData<BlockEntityType::Type>& data, const Engine::ECS::Entity ent)
 
 namespace Game {
@@ -62,7 +62,8 @@ namespace Game {
 		fixtureDef.filter.categoryBits = PhysicsSystem::getCategoryBits(PhysicsCategory::Decoration);
 		fixtureDef.filter.maskBits = PhysicsSystem::getMaskBits(PhysicsCategory::Decoration);
 
-		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos, getBlockOffset()));
+		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset;
+		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos, zoneOffset));
 		const auto ent = world.createEntity();
 
 		world.addComponent<NetworkedFlag>(ent);
@@ -102,15 +103,7 @@ namespace Game {
 			shape.SetAsBox(tsize.x, tsize.y, {0.5f * blockSize, tsize.y}, 0);
 			fixtureDef.shape = &shape;
 			body->CreateFixture(&fixtureDef);
-
-			//
-			//
-			//
-			// TODO: need to handle zone
-			//
-			//
-			//
-			physComp.setBody(body, 0);
+			physComp.setBody(body, activeChunkData.body.getZoneId());
 		}
 
 		auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
@@ -419,8 +412,9 @@ namespace Game {
 		#endif
 		const auto tick = world.getTick();
 		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-		const auto plyPos = Engine::Glue::as<glm::vec2>(world.getComponent<PhysicsBodyComponent>(ply).getPosition());
-		const auto plyZoneId = world.getComponent<PhysicsBodyComponent>(ply).getZoneId();
+		const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+		const auto plyPos = Engine::Glue::as<glm::vec2>(physComp.getPosition());
+		const auto plyZoneId = physComp.getZoneId();
 		const auto plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
 		const auto blockPos = worldToBlock(plyPos, plyZoneOffset);
 
@@ -494,6 +488,7 @@ namespace Game {
 					it = activeChunks.try_emplace(chunkPos).first;
 					it->second.body.setBody(createBody(), plyZoneId); // TODO: create body should just create a PhysicsBody
 					ENGINE_DEBUG_ASSERT(it->second.body.valid());
+					ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
 
 					const auto chunkIndex = chunkToRegionIndex(chunkPos);
 					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
@@ -503,7 +498,7 @@ namespace Game {
 							Engine::ECS::Entity ent;
 
 							desc.data.with([&]<auto Type>(auto& data) ENGINE_INLINE {
-								ent = buildBlockEntity<Type>(desc);
+								ent = buildBlockEntity<Type>(desc, it->second);
 								if (ent != Engine::ECS::INVALID_ENTITY) {
 									auto& beComp = world.addComponent<BlockEntityComponent>(ent);
 									beComp.type = desc.data.type;
@@ -523,7 +518,8 @@ namespace Game {
 				// TODO: how will we handle this on the client? I assume it
 				//       should all be controlled on the server? On the client we
 				//       shouldnt really need to think about shifting.
-				if constexpr (ENGINE_SERVER || ENGINE_CLIENT) {
+				//if constexpr (ENGINE_SERVER || ENGINE_CLIENT) {
+				if constexpr (ENGINE_SERVER) {
 					auto& body = it->second.body;
 					//plyZoneId ? ENGINE_INFO2("Debug chunk ({}) zone from {} to {}", chunkPos, body.getZoneId(), plyZoneId), 0 : 0;
 					if (body.getZoneId() != plyZoneId) {
@@ -539,41 +535,9 @@ namespace Game {
 			}
 		}
 	}
-	
-	glm::ivec2 MapSystem::getBlockOffset() const {
-		//constexpr int32 blocksPerShift = static_cast<int32>(PhysicsOriginShiftSystem::range / blockSize);
-		//static_assert(PhysicsOriginShiftSystem::range - blocksPerShift * blockSize == 0.0f, "Remainder not handled");
-		//return blocksPerShift * world.getSystem<PhysicsOriginShiftSystem>().getOffset();
-
-		// TODO: temp work around until we get the map system updated for zones.
-		// This wont work correctly with multiple players. Can we just cache the
-		// offset on the phys comp or something while building zones? there has
-		// to be a better way than doing comp+sys+zone lookup
-		const auto& filter = world.getFilter<PlayerFlag, ZoneComponent>(); 
-		if (filter.empty()) { return {}; }
-		const auto& physComp = world.getComponent<PhysicsBodyComponent>(filter.front());
-		physComp.zone.id;
-		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-		return zoneSys.getZone(physComp.zone.id).offset;
-	}
 
 	void MapSystem::setValueAt2(const BlockVec blockPos, BlockId bid) {
-		//
-		//
-		//
-		// TODO: cleanup
-		//
-		// 
-		// 
-		// TODO: Make conversion functions for all of these? Better names
-
-		//const auto blockOffset = glm::floor(wpos / blockSize);
-		//const auto blockIndex = (MapChunk::size + glm::ivec2{blockOffset} % MapChunk::size) % MapChunk::size;
-
-		// TODO: aren't tehse the same?
 		const auto blockIndex = (MapChunk::size + blockPos % MapChunk::size) % MapChunk::size;
-		//const auto blockIndex = (MapChunk::size + blockPos) % MapChunk::size;
-
 		auto& edit = chunkEdits[blockToChunk(blockPos)];
 		edit.data[blockIndex.x][blockIndex.y] = bid;
 	}

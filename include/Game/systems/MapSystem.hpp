@@ -93,10 +93,6 @@ namespace Game {
 
 			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);
 
-			// TODO: Name? this isnt consistent with our other usage of offset
-			// TODO: Doc. Gets the size of the current offset in blocks coordinates
-			glm::ivec2 getBlockOffset() const;
-			
 			// TODO: Doc
 			void setValueAt2(const BlockVec blockPos, BlockId bid);
 
@@ -160,7 +156,7 @@ namespace Game {
 			void queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region);
 
 			template<BlockEntityType Type>
-			Engine::ECS::Entity buildBlockEntity(const BlockEntityDesc& data) {
+			Engine::ECS::Entity buildBlockEntity(const BlockEntityDesc& data, const ActiveChunkData& activeChunkData) {
 				static_assert(Type != Type, "Missing specialization.");
 			}
 
