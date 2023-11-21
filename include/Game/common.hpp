@@ -2,16 +2,24 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Math/math.hpp>
+
 
 namespace Game {
 	using namespace Engine::Types;
 	/**
-	 * A position in world units. These will always be relative to some origin
+	 * A position in world units (Box2D meters). These will always be relative to some origin
 	 * or offset for physics and float precision reasons.
 	 * Physics operates on world units.
 	 */
 	using WorldUnit = float32;
 	using WorldVec = glm::vec<2, WorldUnit>;
+
+	/**
+	 * An approximate absolute world position.
+	 */
+	using WorldAbsUnit = int64;
+	using WorldAbsVec = glm::vec<2, WorldAbsUnit>;
 
 	/**
 	 * A position in blocks. Generally will be absolute positions from true (0,0),
@@ -27,6 +35,7 @@ namespace Game {
 	using RegionUnit = BlockUnit;
 	using RegionVec = glm::vec<2, RegionUnit>;
 
+	// TODO: remove these, we should be using the correct units from above for clearer intent
 	// TODO: Shouldn't this derive from blockUnit? this is stored in blocks, no?
 	//       Document what lall of these units represet and how they are converted.
 	using ZoneUnit = ChunkUnit;
@@ -55,12 +64,22 @@ namespace Game {
 	constexpr inline RegionVec regionSize = {chunksPerRegion, chunksPerRegion};
 
 	/**
+	 * Convert from a world position and an absolute offset to an approximate absolute world position.
+	 */
+	ENGINE_INLINE inline WorldAbsVec worldToAbsolute(const WorldVec world, const WorldAbsVec offset) noexcept {
+		return offset + WorldAbsVec{glm::floor(world)};
+	}
+
+	/**
 	 * Convert from a world position to a block position.
 	 * @param world The local world position relative to the absolute offset @offset.
 	 * @param offset The absolute position offset that @p world uses as its origin.
 	 */
-	ENGINE_INLINE constexpr inline BlockVec worldToBlock(const WorldVec world, const BlockVec offset) noexcept {
-		return offset + BlockVec{glm::floor(world / blockSize)};
+	ENGINE_INLINE inline BlockVec worldToBlock2(const WorldVec world, const WorldAbsVec offset) noexcept {
+		// Calculate separate and then combine to correctly handle the fractional part.
+		const auto o = offset * static_cast<WorldAbsUnit>(blocksPerMeter);
+		const auto w = glm::floor(world * static_cast<WorldUnit>(blocksPerMeter));
+		return BlockVec{o} + BlockVec{w};
 	}
 
 	/**
@@ -68,8 +87,10 @@ namespace Game {
 	 * @param block The absolute block position to convert.
 	 * @param offset The absolute block position that the resulting local vector will be relative to.
 	 */
-	ENGINE_INLINE constexpr inline WorldVec blockToWorld(const BlockVec block, const BlockVec offset) noexcept {
-		return WorldVec{block - offset} * blockSize;
+	ENGINE_INLINE constexpr inline WorldVec blockToWorld2(const BlockVec block, const WorldAbsVec offset) noexcept {
+		const auto meters = Engine::Math::divFloor(block, static_cast<BlockUnit>(blocksPerMeter));
+		const auto rem = WorldVec{meters.r} / static_cast<WorldUnit>(blocksPerMeter);
+		return WorldVec{meters.q - offset} + rem;
 	}
 
 	/**

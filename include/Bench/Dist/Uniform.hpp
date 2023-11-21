@@ -18,7 +18,21 @@ namespace Bench::Dist {
 		Uniform() {
 			pcg32_k16384 rng = Bench::seeds[seed];
 
-			D dist(0, std::numeric_limits<T>::max());
+			// TODO: Is there a reason this was only positive numbers?
+			//       Does this break anything?
+			//D dist(0, std::numeric_limits<T>::max());
+
+			constexpr auto lower = []() -> T {
+				if constexpr (std::is_floating_point_v<T>) {
+					//return std::nextafter(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max());
+					//return -std::nextafter(std::numeric_limits<T>::max(), T{});
+					return 0; // TODO: allow negative numbers, idk why the above doesn't work?
+				} else {
+					return std::numeric_limits<T>::lowest();
+				}
+			};
+
+			D dist(lower(), std::numeric_limits<T>::max());
 			for (int64 i = 0; i < N; ++i) {
 				storage[i] = dist(rng);
 			}

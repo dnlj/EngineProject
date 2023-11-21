@@ -763,11 +763,11 @@ namespace Engine::Win32 {
 			}
 
 			// OpenGL debug message
-			if constexpr (ENGINE_DEBUG) {
+			#if ENGINE_DEBUG
 				glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 				glDebugMessageCallback(Engine::Debug::GL::debugMessageCallback, nullptr);
 				glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-			}
+			#endif
 
 			glEnable(GL_FRAMEBUFFER_SRGB);
 		}

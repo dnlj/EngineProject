@@ -51,10 +51,10 @@ namespace Game {
 
 		const auto ply = plyFilter.front();
 		const auto physComp = world.getComponent<PhysicsBodyComponent>(ply);
-		const auto offset = world.getSystem<ZoneManagementSystem>().getZone(physComp.getZoneId()).offset;
+		const auto offset = world.getSystem<ZoneManagementSystem>().getZone(physComp.getZoneId()).offset2;
 		const auto bounds = cam.getWorldScreenBounds();
-		const auto minChunk = blockToChunk(worldToBlock(bounds.min, offset));
-		const auto maxChunk = blockToChunk(worldToBlock(bounds.max, offset));
+		const auto minChunk = blockToChunk(worldToBlock2(bounds.min, offset));
+		const auto maxChunk = blockToChunk(worldToBlock2(bounds.max, offset));
 
 		const auto vao = mapSys.vertexLayout->get();
 		glBindVertexArray(vao);

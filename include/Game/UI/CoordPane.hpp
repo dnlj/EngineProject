@@ -13,15 +13,16 @@ namespace Game::UI {
 				CursorPos,
 				CursorWorldOffset,
 				CursorWorldPos,
+				CursorWorldAbsPos,
 
 				ZoneOffset,
 
-				MouseOffset,
-				MouseWorld,
-				MouseBlock,
-				MouseBlockWorld,
-				MouseChunk,
-				MouseRegion,
+				TargetOffset,
+				TargetWorld,
+				TargetBlock,
+				TargetBlockWorld,
+				TargetChunk,
+				TargetRegion,
 			};
 
 			CoordPane(EUI::Context* context);

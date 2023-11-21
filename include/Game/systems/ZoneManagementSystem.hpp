@@ -22,7 +22,7 @@ namespace Game {
 				public:
 					Engine::ECS::Entity ply1 = {};
 					Engine::ECS::Entity ply2 = {};
-					Dist dist = zoneUnitMax;
+					WorldAbsUnit dist = zoneUnitMax;
 			};
 
 			class GroupPair {
@@ -30,7 +30,7 @@ namespace Game {
 					// The src should always be the larger groupId
 					GroupId src = -1;
 					GroupId dst = -1;
-					ZoneVec ideal = {};
+					WorldAbsVec ideal = {};
 			};
 					
 		private:
@@ -55,7 +55,7 @@ namespace Game {
 			ENGINE_INLINE void addPlayer(Engine::ECS::Entity ply, ZoneId zoneId) { zones[zoneId].addPlayer(ply); }
 
 		private:
-			ZoneId createNewZone(ZoneVec pos);
+			ZoneId createNewZone(WorldAbsVec pos);
 			void migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp);
 	};
 }

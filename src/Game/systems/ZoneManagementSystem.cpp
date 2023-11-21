@@ -5,6 +5,9 @@
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/systems/ZoneManagementSystem.hpp>
 
+// Engine
+#include <Engine/Glue/glm.hpp>
+
 // GLM
 #include <glm/gtx/norm.hpp>
 
@@ -101,11 +104,12 @@ namespace Game {
 
 				for (auto next = cur; ++next != end;) {
 					const auto& physComp2 = world.getComponent<PhysicsBodyComponent>(*next);
+
 					const auto relPos1 = physComp1.getPosition();
 					const auto relPos2 = physComp2.getPosition();
-					const auto globalBlockPos1 = zones[physComp1.zone.id].offset + ZoneVec{relPos1.x, relPos1.y};
-					const auto globalBlockPos2 = zones[physComp2.zone.id].offset + ZoneVec{relPos2.x, relPos2.y};
-					const auto dist = metric(globalBlockPos1, globalBlockPos2);
+					const auto globalPos1 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos1), zones[physComp1.zone.id].offset2);
+					const auto globalPos2 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos2), zones[physComp2.zone.id].offset2);
+					const auto dist = metric(globalPos1, globalPos2);
 					relations.emplace_back(*cur, *next, dist);
 					ZONE_DEBUG("Relation between {} and {} = {}", *cur, *next, dist);
 				}
@@ -204,11 +208,12 @@ namespace Game {
 			if (group.empty()) { continue; }
 
 			// Figure out ideal zone origin.
-			ZoneVec ideal = {};
+			// TODO: Potential overflow with `ideal` (avg) position here? This would break/overflow with large values.
+			WorldAbsVec ideal = {};
 			for (const auto ply : group) {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto pos = physComp.getPosition();
-				ideal += zones[physComp.zone.id].offset + ZoneVec{pos.x, pos.y};
+				ideal += worldToAbsolute({pos.x, pos.y}, zones[physComp.zone.id].offset2);
 			}
 
 			ideal /= group.size();
@@ -219,7 +224,7 @@ namespace Game {
 			for (const auto ply : group) {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& zone = zones[physComp.zone.id];
-				const auto dist = metric(zone.offset, ideal);
+				const auto dist = metric(zone.offset2, ideal);
 				if (dist < minDist) {
 					minDist = dist;
 					zoneId = physComp.zone.id;
@@ -229,9 +234,9 @@ namespace Game {
 			// No existing zone is close enough to use.
 			if (zoneId == -1) {
 				zoneId = createNewZone(ideal);
-				ZONE_DEBUG("{} - Creating new zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset);
+				ZONE_DEBUG("{} - Creating new zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset2);
 			} else {
-				ZONE_DEBUG("{} - Using existing zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset);
+				ZONE_DEBUG("{} - Using existing zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset2);
 			}
 
 			// Migrate or shift
@@ -260,7 +265,7 @@ namespace Game {
 		}
 	}
 
-	ZoneId ZoneManagementSystem::createNewZone(ZoneVec pos) {
+	ZoneId ZoneManagementSystem::createNewZone(WorldAbsVec pos) {
 		ZoneId zid = -1;
 		if (!reuse.empty()) {
 			zid = reuse.back();
@@ -272,7 +277,7 @@ namespace Game {
 		}
 
 		ENGINE_DEBUG_ASSERT(zid != -1, "Failed to create valid zone. This is a bug.");
-		zones[zid].offset = pos;
+		zones[zid].offset2 = pos;
 		return zid;
 	}
 
@@ -287,7 +292,7 @@ namespace Game {
 		auto& newZone = zones[newZoneId];
 
 		// TODO: need to do shifting stuff.
-		const auto zoneOffsetDiff = newZone.offset - oldZone.offset;
+		const auto zoneOffsetDiff = newZone.offset2 - oldZone.offset2;
 		const b2Vec2 zoneOffsetDiffB2 = {static_cast<float32>(zoneOffsetDiff.x), static_cast<float32>(zoneOffsetDiff.y)};
 		physComp.setZone(newZoneId);
 		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);

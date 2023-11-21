@@ -5,7 +5,6 @@
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/systems/MapSystem.hpp>
-#include <Game/systems/PhysicsOriginShiftSystem.hpp>
 #include <Game/systems/ZoneManagementSystem.hpp>
 #include <Game/UI/CoordPane.hpp>
 
@@ -13,20 +12,22 @@
 namespace Game::UI {
 	CoordPane::CoordPane(EUI::Context* context) : AutoList{context} {
 		setTitle("Coordinates");
-		
-		addLabel("Camera: {:.3f}");
-		addLabel("Cursor: {:.3f}");
-		addLabel("Cursor (offset): {:.3f}");
-		addLabel("Cursor (world): {:.3f}");
 
-		addLabel("Zone Offset ({}): {}");
+		// TODO: add units px/m/b/c/etc
+		addLabel("Camera: {:.3f}m");
+		addLabel("Cursor: {:.3f}px");
+		addLabel("Cursor (offset): {:.3f}m");
+		addLabel("Cursor (world): {:.3f}m");
+		addLabel("Cursor (world abs): {}m");
 
-		addLabel("Mouse (offset): {:.3f}");
-		addLabel("Mouse (world): {:.3f}");
-		addLabel("Mouse (block): {}");
-		addLabel("Mouse (block-world): {:.3f}");
-		addLabel("Mouse (chunk): {} {}");
-		addLabel("Mouse (region): {}");
+		addLabel("Zone Offset ({}): {}m");
+
+		addLabel("Target (offset): {:.3f}");
+		addLabel("Target (world): {:.3f}");
+		addLabel("Target (block): {}");
+		addLabel("Target (block-world): {:.3f}");
+		addLabel("Target (chunk): {} {}");
+		addLabel("Target (region): {}");
 
 		ctx->addPanelUpdateFunc(this, [](Panel* panel){
 			auto pane = reinterpret_cast<CoordPane*>(panel);
@@ -41,7 +42,7 @@ namespace Game::UI {
 			const auto cursorWorldPos = glm::vec2{camPos} + cursorWorldOffset;
 
 			pane->setLabel(CoordPane::Camera, camPos);
-			pane->setLabel(CoordPane::CursorPos, cursorPos);
+			pane->setLabel(CoordPane::CursorPos, cursorPos); // TOOD (oHuNLpn2): why is this inverted? + = - and - = +
 			pane->setLabel(CoordPane::CursorWorldOffset, cursorWorldOffset);
 			pane->setLabel(CoordPane::CursorWorldPos, cursorWorldPos);
 
@@ -53,25 +54,27 @@ namespace Game::UI {
 			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 			const auto zoneId = physComp.getZoneId();
 			const auto& zone = zoneSys.getZone(zoneId);
-			pane->setLabel(CoordPane::ZoneOffset, zoneId, zone.offset);
+
+			pane->setLabel(CoordPane::CursorWorldAbsPos, worldToAbsolute(cursorWorldPos, zone.offset2));
+			pane->setLabel(CoordPane::ZoneOffset, zoneId, zone.offset2);
 
 			const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
 			if (!actComp.valid()) { return; }
 
-			const auto offsetMousePos = actComp.getTarget();
-			const auto worldMousePos = offsetMousePos + Engine::Glue::as<glm::vec2>(physComp.getPosition());
-			const auto blockMousePos = worldToBlock(worldMousePos, zone.offset);
-			const auto blockWorldMousePos = blockToWorld(blockMousePos, zone.offset);
-			const auto chunkMousePos = blockToChunk(blockMousePos);
-			const auto chunkBlockMousePos = chunkToBlock(chunkMousePos);
-			const auto regionMousePos = chunkToRegion(chunkMousePos);
+			const auto offsetTargetPos = actComp.getTarget();
+			const auto worldTargetPos = offsetTargetPos + Engine::Glue::as<glm::vec2>(physComp.getPosition());
+			const auto blockTargetPos = worldToBlock2(worldTargetPos, zone.offset2);
+			const auto blockWorldTargetPos = blockToWorld2(blockTargetPos, zone.offset2);
+			const auto chunkTargetPos = blockToChunk(blockTargetPos);
+			const auto chunkBlockTargetPos = chunkToBlock(chunkTargetPos);
+			const auto regionTargetPos = chunkToRegion(chunkTargetPos);
 
-			pane->setLabel(CoordPane::MouseOffset, offsetMousePos);
-			pane->setLabel(CoordPane::MouseWorld, worldMousePos);
-			pane->setLabel(CoordPane::MouseBlock, blockMousePos);
-			pane->setLabel(CoordPane::MouseBlockWorld, blockWorldMousePos);
-			pane->setLabel(CoordPane::MouseChunk, chunkMousePos, chunkBlockMousePos);
-			pane->setLabel(CoordPane::MouseRegion, regionMousePos);
+			pane->setLabel(CoordPane::TargetOffset, offsetTargetPos);
+			pane->setLabel(CoordPane::TargetWorld, worldTargetPos);
+			pane->setLabel(CoordPane::TargetBlock, blockTargetPos);
+			pane->setLabel(CoordPane::TargetBlockWorld, blockWorldTargetPos);
+			pane->setLabel(CoordPane::TargetChunk, chunkTargetPos, chunkBlockTargetPos);
+			pane->setLabel(CoordPane::TargetRegion, regionTargetPos);
 		});
 	}
 }

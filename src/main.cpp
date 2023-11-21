@@ -281,6 +281,78 @@ namespace {
 	void performExit(const char* reason) {
 		ENGINE_LOG("Shutting down: ", reason, "\n\n");
 	};
+	
+	// TODO: add actual actual unit test once gtest is fixed
+	void test_divFloor() {
+		using Engine::Math::divFloor;
+
+		// TODO: and negatives
+		{ auto a = divFloor(0, 1); assert(a.q == 0); assert(a.r == 0); }
+		{ auto a = divFloor(0, 2); assert(a.q == 0); assert(a.r == 0); }
+		{ auto a = divFloor(0, 3); assert(a.q == 0); assert(a.r == 0); }
+		{ auto a = divFloor(0, 4); assert(a.q == 0); assert(a.r == 0); }
+		{ auto a = divFloor(0, 5); assert(a.q == 0); assert(a.r == 0); }
+
+		{ auto a = divFloor(1, 1); assert(a.q == 1); assert(a.r == 0); }
+		{ auto a = divFloor(1, 2); assert(a.q == 0); assert(a.r == 1); }
+		{ auto a = divFloor(1, 3); assert(a.q == 0); assert(a.r == 1); }
+		{ auto a = divFloor(1, 4); assert(a.q == 0); assert(a.r == 1); }
+		{ auto a = divFloor(1, 5); assert(a.q == 0); assert(a.r == 1); }
+
+		{ auto a = divFloor(2, 1); assert(a.q == 2); assert(a.r == 0); }
+		{ auto a = divFloor(2, 2); assert(a.q == 1); assert(a.r == 0); }
+		{ auto a = divFloor(2, 3); assert(a.q == 0); assert(a.r == 2); }
+		{ auto a = divFloor(2, 4); assert(a.q == 0); assert(a.r == 2); }
+		{ auto a = divFloor(2, 5); assert(a.q == 0); assert(a.r == 2); }
+
+		{ auto a = divFloor(3, 1); assert(a.q == 3); assert(a.r == 0); }
+		{ auto a = divFloor(3, 2); assert(a.q == 1); assert(a.r == 1); }
+		{ auto a = divFloor(3, 3); assert(a.q == 1); assert(a.r == 0); }
+		{ auto a = divFloor(3, 4); assert(a.q == 0); assert(a.r == 3); }
+		{ auto a = divFloor(3, 5); assert(a.q == 0); assert(a.r == 3); }
+
+		{ auto a = divFloor(4, 1); assert(a.q == 4); assert(a.r == 0); }
+		{ auto a = divFloor(4, 2); assert(a.q == 2); assert(a.r == 0); }
+		{ auto a = divFloor(4, 3); assert(a.q == 1); assert(a.r == 1); }
+		{ auto a = divFloor(4, 4); assert(a.q == 1); assert(a.r == 0); }
+		{ auto a = divFloor(4, 5); assert(a.q == 0); assert(a.r == 4); }
+
+		{ auto a = divFloor(5, 1); assert(a.q == 5); assert(a.r == 0); }
+		{ auto a = divFloor(5, 2); assert(a.q == 2); assert(a.r == 1); }
+		{ auto a = divFloor(5, 3); assert(a.q == 1); assert(a.r == 2); }
+		{ auto a = divFloor(5, 4); assert(a.q == 1); assert(a.r == 1); }
+		{ auto a = divFloor(5, 5); assert(a.q == 1); assert(a.r == 0); }
+		
+		{ auto a = divFloor(-1, 1); assert(a.q == -1); assert(a.r == 0); }
+		{ auto a = divFloor(-1, 2); assert(a.q == -1); assert(a.r == 1); }
+		{ auto a = divFloor(-1, 3); assert(a.q == -1); assert(a.r == 2); }
+		{ auto a = divFloor(-1, 4); assert(a.q == -1); assert(a.r == 3); }
+		{ auto a = divFloor(-1, 5); assert(a.q == -1); assert(a.r == 4); }
+
+		{ auto a = divFloor(-2, 1); assert(a.q == -2); assert(a.r == 0); }
+		{ auto a = divFloor(-2, 2); assert(a.q == -1); assert(a.r == 0); }
+		{ auto a = divFloor(-2, 3); assert(a.q == -1); assert(a.r == 1); }
+		{ auto a = divFloor(-2, 4); assert(a.q == -1); assert(a.r == 2); }
+		{ auto a = divFloor(-2, 5); assert(a.q == -1); assert(a.r == 3); }
+
+		{ auto a = divFloor(-3, 1); assert(a.q == -3); assert(a.r == 0); }
+		{ auto a = divFloor(-3, 2); assert(a.q == -2); assert(a.r == 1); }
+		{ auto a = divFloor(-3, 3); assert(a.q == -1); assert(a.r == 0); }
+		{ auto a = divFloor(-3, 4); assert(a.q == -1); assert(a.r == 1); }
+		{ auto a = divFloor(-3, 5); assert(a.q == -1); assert(a.r == 2); }
+
+		{ auto a = divFloor(-4, 1); assert(a.q == -4); assert(a.r == 0); }
+		{ auto a = divFloor(-4, 2); assert(a.q == -2); assert(a.r == 0); }
+		{ auto a = divFloor(-4, 3); assert(a.q == -2); assert(a.r == 2); }
+		{ auto a = divFloor(-4, 4); assert(a.q == -1); assert(a.r == 0); }
+		{ auto a = divFloor(-4, 5); assert(a.q == -1); assert(a.r == 1); }
+
+		{ auto a = divFloor(-5, 1); assert(a.q == -5); assert(a.r == 0); }
+		{ auto a = divFloor(-5, 2); assert(a.q == -3); assert(a.r == 1); }
+		{ auto a = divFloor(-5, 3); assert(a.q == -2); assert(a.r == 1); }
+		{ auto a = divFloor(-5, 4); assert(a.q == -2); assert(a.r == 3); }
+		{ auto a = divFloor(-5, 5); assert(a.q == -1); assert(a.r == 0); }
+	}
 }
 
 // TODO: cleanup all this map this mess.
@@ -862,6 +934,8 @@ int entry(int argc, char* argv[]) {
 	//_set_error_mode(_OUT_TO_MSGBOX);
 	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW | _CRTDBG_MODE_DEBUG);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	test_divFloor(); // TODO: move to gtest once fixed
 
 	startTime = Engine::Clock::now();
 	run(argc, argv);

@@ -62,8 +62,8 @@ namespace Game {
 		fixtureDef.filter.categoryBits = PhysicsSystem::getCategoryBits(PhysicsCategory::Decoration);
 		fixtureDef.filter.maskBits = PhysicsSystem::getMaskBits(PhysicsCategory::Decoration);
 
-		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset;
-		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos, zoneOffset));
+		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset2;
+		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld2(desc.pos, zoneOffset));
 		const auto ent = world.createEntity();
 
 		world.addComponent<NetworkedFlag>(ent);
@@ -210,9 +210,9 @@ namespace Game {
 					//const auto plyBlockPos = BlockVec{plyPos.x, plyPos.y} + ;
 					//const BlockVec target = actComp.getTarget() * blockSize + glm::vec2{plyPos.x, plyPos.y};
 					const WorldVec placementOffset = {x*blockSize, y*blockSize};
-					const BlockVec target = worldToBlock(
+					const BlockVec target = worldToBlock2(
 						WorldVec{plyPos.x, plyPos.y} + actComp.getTarget() + placementOffset,
-						zoneSys.getZone(physComp.getZoneId()).offset
+						zoneSys.getZone(physComp.getZoneId()).offset2
 					);
 					setValueAt2(target, bid);
 				}
@@ -410,8 +410,8 @@ namespace Game {
 		const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 		const auto plyPos = Engine::Glue::as<glm::vec2>(physComp.getPosition());
 		const auto plyZoneId = physComp.getZoneId();
-		const auto plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
-		const auto blockPos = worldToBlock(plyPos, plyZoneOffset);
+		const auto plyZoneOffset = zoneSys.getZone(plyZoneId).offset2;
+		const auto blockPos = worldToBlock2(plyPos, plyZoneOffset);
 
 		// TODO: areaSize and buffSize should be 2/3 since we do + and - for the min/max calcs
 		// How large of an area to load around the chunk blockPos is in.
@@ -520,7 +520,7 @@ namespace Game {
 					if (body.getZoneId() != plyZoneId) {
 						// TODO: this needs significant testing
 						ENGINE_INFO2("Moving chunk ({}) zone from {} to {}", chunkPos, body.getZoneId(), plyZoneId);
-						const auto pos = blockToWorld(chunkToBlock(chunkPos), plyZoneOffset);
+						const auto pos = blockToWorld2(chunkToBlock(chunkPos), plyZoneOffset);
 						body.setPosition({pos.x, pos.y});
 						body.setZone(plyZoneId);
 					}
@@ -583,6 +583,7 @@ namespace Game {
 		};
 
 		{ // Render
+			// Generate VBO+EBO data
 			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE {
 				return blockMeta.id != BlockId::None
 					&& blockMeta.id != BlockId::Air
@@ -610,7 +611,7 @@ namespace Game {
 				buildEBOData.push_back(vertexCount + 0);
 			});
 
-			{
+			{ // Build vertex buffer
 				const auto sz = buildVBOData.size() * sizeof(buildVBOData[0]);
 				if (data.vbuff.size() < sz) {
 					const auto cap = sz + (sz >> 1);
@@ -622,7 +623,7 @@ namespace Game {
 				}
 			}
 
-			{
+			{ // Build element buffer
 				const auto count = buildEBOData.size();
 				const auto sz = count * sizeof(buildEBOData[0]);
 				if (data.ebuff.size() < sz) {
@@ -636,7 +637,6 @@ namespace Game {
 				data.ecount = static_cast<uint32>(count);
 			}
 
-
 			buildVBOData.clear();
 			buildEBOData.clear();
 		}
@@ -644,7 +644,7 @@ namespace Game {
 		{ // Physics
 			auto& body = data.body;
 			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos), zoneSys.getZone(body.getZoneId()).offset));
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld2(chunkToBlock(chunkPos), zoneSys.getZone(body.getZoneId()).offset2));
 
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures
@@ -658,7 +658,6 @@ namespace Game {
 			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE {
 				return getBlockMeta(chunkInfo.chunk.data[pos.x][pos.y]).solid;
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
-				// ENGINE_LOG("Physics: (", begin.x, ", ", begin.y, ") ", "(", end.x, ", ", end.y, ")");
 				const auto halfSize = blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
 				const auto center = blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
 				shape.SetAsBox(halfSize.x, halfSize.y, center, 0.0f);
@@ -681,18 +680,14 @@ namespace Game {
 		}
 	}
 
-	// TODO: This need to take the zone as well so we know the initial location
-	// and don't have to instantly shift the chunks afterward? Then again not
-	// ALL chunks will be there so maybe? Idk think through pros/cons.
 	void MapSystem::queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region) {
 		std::cout << "Queue region: " << regionPos.x << " " << regionPos.y << "\n";
-		//constexpr auto totalSize = MapRegion::size.x * MapRegion::size.y;
 		const auto regionStart = regionToChunk(regionPos);
 
 		auto lock = chunkQueue.lock();
 		for (RegionUnit x = 0; x < regionSize.x; ++x) {
 			for (RegionUnit y = 0; y < regionSize.y; ++y) {
-				// TODO: maybe have each thred do a whole row of a region? per chunk seems to granular
+				// TODO: maybe have each thread do a whole row of a region? per chunk seems to granular
 				chunkQueue.unsafeEmplace([this,
 						chunkPos = regionStart + RegionVec{x, y},
 						&region,

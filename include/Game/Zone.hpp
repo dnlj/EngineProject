@@ -13,8 +13,9 @@ namespace Game {
 			Engine::FlatHashSet<Engine::ECS::Entity> entities;
 
 		public:
+			// TODO: rename
 			// The offset from the true origin to use for entities in this zone. The effective "position" of this zone.
-			ZoneVec offset = {0, 0};
+			ZoneVec offset2 = {0, 0};
 
 			ENGINE_INLINE void addPlayer(Engine::ECS::Entity ply) {
 				ENGINE_DEBUG_ASSERT(!players.contains(ply), "Attempting to insert duplicate player in zone. This is a bug.");

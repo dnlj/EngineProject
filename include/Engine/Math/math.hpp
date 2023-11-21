@@ -11,6 +11,13 @@
 
 namespace Engine::Math {
 	template<class T>
+	class DivFloorResult {
+		public:
+			T q{}; // Quotient
+			T r{}; // Remainder
+	};
+
+	template<class T>
 	ENGINE_INLINE constexpr T pow2(T num) noexcept {
 		return num * num;
 	}
@@ -72,5 +79,36 @@ namespace Engine::Math {
 	template<std::integral T, glm::qualifier Q>
 	ENGINE_INLINE constexpr auto distance2(const glm::vec<2, T, Q> vecA, const glm::vec<2, T, Q> vecB) noexcept {
 		return length2(vecB - vecA);
+	}
+
+	/**
+	 * Integer division + floor
+	 * @param num The numerator to use.
+	 * @param den The positive denominator to use.
+	 */
+	template<std::integral T>
+	[[nodiscard]] ENGINE_INLINE constexpr auto divFloor(T num, T den) noexcept {
+		// There are a number of ways to implement this. This is the fastest
+		// (see Bench, divfloor) and IMO the most readable. Good assembly
+		// between all MSVC/GCC/Clang as a bonus compared to other implementations.
+		const auto q = num / den;
+		const auto r = num % den;
+
+		// If the result is negative and there is a remainder, subtract one (floor).
+		// If it is positive the truncation is already the same as floor.
+		const auto q0 = q - (r ? num < 0 : 0);
+		const auto r0 = num - den * q0; // TODO: is there a way to get this based on the original r? I don't think so because we also do the floor after.
+
+		return DivFloorResult<T>{ .q = q0, .r = r0 }; 
+	}
+
+	template<std::integral T, glm::qualifier Q>
+	[[nodiscard]] ENGINE_INLINE constexpr auto divFloor(glm::vec<2, T, Q> num, T den) noexcept {
+		const auto x = divFloor(num.x, den);
+		const auto y = divFloor(num.y, den);
+		return DivFloorResult<decltype(num)>{
+			.q = {x.q, y.q},
+			.r = {x.r, y.r},
+		};
 	}
 }
