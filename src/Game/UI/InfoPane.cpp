@@ -62,10 +62,14 @@ namespace Game::UI {
 			auto& physSys = world.getSystem<PhysicsSystem>();
 			auto ent = world.createEntity();
 
-			//world.addComponent<PlayerFlag>(ent);
+			// TODO: The player flag breaks things atm but is needed for the
+			//       ZoneManagementSystem to pick up these entities. Currently
+			//       it causes other systems to pick up these as players, which
+			//       makes sense, but that comes with assumptions that we don't
+			//       fulfill here.
+			world.addComponent<PlayerFlag>(ent);
 			//world.addComponent<ActionComponent>(ent, world.getTick());
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
-			world.addComponent<ZoneComponent>(ent);
 
 			physComp.setBody(physSys.createPhysicsCircle(ent, {x, y}, PhysicsCategory::Player), 0);
 			return ent;

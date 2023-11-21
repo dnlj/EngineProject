@@ -30,7 +30,6 @@ namespace Game {
 
 	void ZoneManagementSystem::tick() {
 		const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent>();
-		//const auto& playerFilter = world.getFilter<PhysicsBodyComponent, ZoneComponent>();
 
 		//
 		// TODO: One option to support higher player counts might be do instead

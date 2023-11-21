@@ -9,11 +9,6 @@
 
 
 namespace Game {
-
-	// TODO: remove, moved to physBodyComp, currently just a tag for debugging
-	class ZoneComponent {
-	};
-
 	class ZoneManagementSystem : public System {
 		private:
 			using GroupId = uint32;

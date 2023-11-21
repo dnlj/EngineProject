@@ -12,8 +12,3 @@
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
-
-
-// TODO: move to own file
-//#include <Game/comps/ZoneComponent.hpp>
-#include <Game/systems/ZoneManagementSystem.hpp>
