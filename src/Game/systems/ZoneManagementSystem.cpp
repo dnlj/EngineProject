@@ -16,7 +16,7 @@
 
 namespace {
 	using namespace Game;
-	ENGINE_INLINE ZoneUnit manhattanDist(const ZoneVec& a, const ZoneVec& b) noexcept {
+	ENGINE_INLINE WorldAbsUnit manhattanDist(const WorldAbsVec& a, const WorldAbsVec& b) noexcept {
 		ENGINE_FLATTEN return glm::compAdd(glm::abs(a - b));
 	}
 }
@@ -220,7 +220,7 @@ namespace Game {
 
 			// Figure out if an existing zone is close enough to use.
 			ZoneId zoneId = -1;
-			ZoneUnit minDist = sameZoneDist;
+			WorldAbsUnit minDist = sameZoneDist;
 			for (const auto ply : group) {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& zone = zones[physComp.zone.id];

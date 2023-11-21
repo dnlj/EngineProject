@@ -38,10 +38,9 @@ namespace Game {
 	// TODO: remove these, we should be using the correct units from above for clearer intent
 	// TODO: Shouldn't this derive from blockUnit? this is stored in blocks, no?
 	//       Document what lall of these units represet and how they are converted.
-	using ZoneUnit = ChunkUnit;
-	using ZoneVec = glm::vec<2, ZoneUnit>;
+	//using ZoneUnit = ChunkUnit;
+	//using ZoneVec = glm::vec<2, ZoneUnit>;
 	using ZoneId = uint32;
-	constexpr inline auto zoneUnitMax = std::numeric_limits<ZoneUnit>::max();
 	constexpr inline auto zoneInvalidId = std::numeric_limits<ZoneId>::max();
 	
 	//static_assert(std::same_as<WorldVec, glm::vec2>);

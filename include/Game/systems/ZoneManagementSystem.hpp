@@ -22,7 +22,7 @@ namespace Game {
 				public:
 					Engine::ECS::Entity ply1 = {};
 					Engine::ECS::Entity ply2 = {};
-					WorldAbsUnit dist = zoneUnitMax;
+					WorldAbsUnit dist = std::numeric_limits<WorldAbsUnit>::max();
 			};
 
 			class GroupPair {
