@@ -29,6 +29,12 @@ namespace Game {
 	}
 
 	void ZoneManagementSystem::tick() {
+		// On the client we don't every need to do these calcs, its done on the
+		// server and then networked so everything stays in sync. We still need
+		// to have zones though so we can potentially preload things like boss
+		// zones or waypoints ahead of time and then swap to them.
+		if constexpr (ENGINE_CLIENT) { return; }
+
 		const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent>();
 
 		//
@@ -250,6 +256,9 @@ namespace Game {
 			}
 		}
 
+		// TODO (m2X6CXl5): still need to do this cleanup on the client
+		//       Will need some way for the client to know what zones are still needed so we don't unload them...
+		//       Not an issue right now but if we want to do preloading or similar 
 		for (ZoneId zoneId = 0; zoneId < zones.size(); ++zoneId) {
 			if (!zones[zoneId].getPlayers().empty()) { continue; }
 
@@ -278,6 +287,20 @@ namespace Game {
 		ENGINE_DEBUG_ASSERT(zid != -1, "Failed to create valid zone. This is a bug.");
 		zones[zid].offset2 = pos;
 		return zid;
+	}
+	
+	void ZoneManagementSystem::ensureZone(ZoneId zoneId, WorldAbsVec pos) {
+		// TODO (kVnrPSny): In the future we need a way for the server to explicitly tell
+		//       the client what zones it should have loaded. As is these will get
+		//       cleaned up imediately if there isn't a player in the zone which would
+		//       break some things like preloading.
+		if (zones.size() <= zoneId) {
+			zones.resize(zoneId + 1);
+			reuse.erase(std::remove(reuse.begin(), reuse.end(), zoneId), reuse.end());
+			zones[zoneId].offset2 = pos;
+		}
+
+		ENGINE_DEBUG_ASSERT(zones[zoneId].offset2 == pos);
 	}
 
 	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp)

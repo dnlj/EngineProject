@@ -24,7 +24,7 @@ namespace Game {
 				static_assert(!sizeof(T), "NetworkTraits::writeInit must be implemented for type T.");
 			}
 
-			static void write(const T& obj, Engine::Net::BufferWriter& buff) {
+			static void write(const T& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 				static_assert(!sizeof(T), "NetworkTraits::write must be implemented for type T.");
 			}
 			
@@ -33,7 +33,7 @@ namespace Game {
 				return std::make_tuple();
 			}
 
-			static void read(T& obj, Engine::Net::BufferReader& buff) {
+			static void read(T& obj, Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 				static_assert(!sizeof(T), "NetworkTraits::read must be implemented for type T.");
 			}
 	};

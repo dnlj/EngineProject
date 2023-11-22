@@ -37,7 +37,7 @@ namespace Game {
 			static void writeInit(const PhysicsInterpComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 			}
 
-			static void write(const PhysicsInterpComponent& obj, Engine::Net::BufferWriter& buff) {
+			static void write(const PhysicsInterpComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 			}
 
 			static std::tuple<PhysicsInterpComponent> readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
@@ -46,7 +46,7 @@ namespace Game {
 				return result;
 			}
 
-			static void read(PhysicsInterpComponent& obj, Engine::Net::BufferReader& buff) {
+			static void read(PhysicsInterpComponent& obj, Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 			}
 	};
 }

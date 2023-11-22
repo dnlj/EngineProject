@@ -1,6 +1,6 @@
 // Game
-#include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/World.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
 
 
 namespace Game {
@@ -40,9 +40,10 @@ namespace Game {
 		}
 	}
 
-	void NetworkTraits<PhysicsBodyComponent>::write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff) {
+	void NetworkTraits<PhysicsBodyComponent>::write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 		buff.write(obj.getTransform());
 		buff.write(obj.getVelocity());
+		buff.write(obj.getZoneId());
 	}
 
 	void NetworkTraits<PhysicsBodyComponent>::writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
@@ -92,15 +93,22 @@ namespace Game {
 			ENGINE_WARN("Attempting to network physics object without any fixtures.");
 		}
 
-		NetworkTraits::write(obj, buff);
+		NetworkTraits::write(obj, buff, engine, world, ent);
 	}
 
-	void NetworkTraits<PhysicsBodyComponent>::read(PhysicsBodyComponent& obj, Engine::Net::BufferReader& buff) {
+	void NetworkTraits<PhysicsBodyComponent>::read(PhysicsBodyComponent& obj, Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 		b2Transform trans;
 		buff.read<b2Transform>(&trans);
 
 		b2Vec2 vel;
 		buff.read<b2Vec2>(&vel);
+
+		ZoneId zoneId;
+		buff.read<ZoneId>(&zoneId);
+
+		if (zoneId != obj.getZoneId()) {
+			obj.setZone(zoneId);
+		}
 
 		obj.setTransform(trans.p, trans.q.GetAngle());
 		obj.rollbackOverride = true;
@@ -189,7 +197,7 @@ namespace Game {
 			}
 		}
 
-		NetworkTraits::read(result, buff);
+		NetworkTraits::read(result, buff, engine, world, ent);
 		return std::make_tuple(result);
 	}
 }

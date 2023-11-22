@@ -13,21 +13,20 @@ namespace Game::UI {
 	CoordPane::CoordPane(EUI::Context* context) : AutoList{context} {
 		setTitle("Coordinates");
 
-		// TODO: add units px/m/b/c/etc
 		addLabel("Camera: {:.3f}m");
-		addLabel("Cursor: {:.3f}px");
+		addLabel("Cursor (screen): {:.3f}px");
 		addLabel("Cursor (offset): {:.3f}m");
 		addLabel("Cursor (world): {:.3f}m");
 		addLabel("Cursor (world abs): {}m");
 
 		addLabel("Zone Offset ({}): {}m");
 
-		addLabel("Target (offset): {:.3f}");
-		addLabel("Target (world): {:.3f}");
-		addLabel("Target (block): {}");
-		addLabel("Target (block-world): {:.3f}");
-		addLabel("Target (chunk): {} {}");
-		addLabel("Target (region): {}");
+		addLabel("Target (offset): {:.3f}m");
+		addLabel("Target (world): {:.3f}m");
+		addLabel("Target (block): {}b");
+		addLabel("Target (block-world): {:.3f}b");
+		addLabel("Target (chunk): {}c {}b");
+		addLabel("Target (region): {}r");
 
 		ctx->addPanelUpdateFunc(this, [](Panel* panel){
 			auto pane = reinterpret_cast<CoordPane*>(panel);

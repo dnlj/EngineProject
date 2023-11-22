@@ -49,8 +49,10 @@ namespace Game {
 			ENGINE_INLINE const Zone& getZone(ZoneId id) const noexcept { return zones[id]; }
 			ENGINE_INLINE void addPlayer(Engine::ECS::Entity ply, ZoneId zoneId) { zones[zoneId].addPlayer(ply); }
 
+			void ensureZone(ZoneId zoneId, WorldAbsVec pos);
+			void migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp);
+
 		private:
 			ZoneId createNewZone(WorldAbsVec pos);
-			void migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp);
 	};
 }

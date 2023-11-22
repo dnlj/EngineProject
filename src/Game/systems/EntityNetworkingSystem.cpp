@@ -7,6 +7,7 @@
 // Game
 #include <Game/World.hpp>
 #include <Game/systems/EntityNetworkingSystem.hpp>
+#include <Game/systems/ZoneManagementSystem.hpp>
 #include <Game/comps/all.hpp>
 
 #include <Game/systems/NetworkingSystem.hpp>
@@ -162,7 +163,7 @@ namespace {
 
 					NetworkTraits<C>::read(world.getComponentState<C>(local, tick), msg);
 				} else {
-					NetworkTraits<C>::read(world.getComponent<C>(local), msg);
+					NetworkTraits<C>::read(world.getComponent<C>(local), msg, engine, world, local);
 				}
 			} else if constexpr (ENGINE_DEBUG) {
 				ENGINE_WARN("Attemping to network non-network component");
@@ -211,10 +212,17 @@ namespace {
 		Engine::ECS::Tick tick;
 		b2Transform trans;
 		b2Vec2 vel;
-		
+
+		// TODO (kVnrPSny): Zones need to be handled by their own message. We only need the
+		//       pos/id once on change. No reason to send them by themselves. That
+		//       also provides the server a way to tell the client what zones to
+		//       load/preload/unload, which would simplify things in the future.
+		ZoneId zoneId;
+		WorldAbsVec zonePos;
+				
 		// TODO: angVel
 
-		if (!msg.read(&tick) || !msg.read(&trans) || !msg.read(&vel)) {
+		if (!msg.read(&tick) || !msg.read(&trans) || !msg.read(&vel) || !msg.read(&zoneId) || !msg.read(&zonePos)) {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
@@ -223,6 +231,14 @@ namespace {
 		if (!world.hasComponent<PhysicsBodyComponent>(from.ent)) {
 			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsBodyComponent");
 			return;
+		}
+
+		auto& physComp = world.getComponent<PhysicsBodyComponent>(from.ent);
+
+		if (physComp.getZoneId() != zoneId) {
+			auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+			zoneSys.ensureZone(zoneId, zonePos);
+			zoneSys.migratePlayer(from.ent, zoneId, physComp);
 		}
 
 		auto& physCompState = world.getComponentState<PhysicsBodyComponent>(from.ent, tick);
@@ -238,6 +254,8 @@ namespace {
 				diff.x, ", ", diff.y,
 				">)"
 			);
+
+			// TODO: how to manage zone here?
 
 			physCompState.trans = trans;
 			physCompState.vel = vel;
@@ -300,6 +318,11 @@ namespace Game {
 					msg.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
 					msg.write(physComp.getTransform());
 					msg.write(physComp.getVelocity());
+
+					// TODO (kVnrPSny): temp
+					auto const& zoneSys = world.getSystem<ZoneManagementSystem>();
+					msg.write(physComp.getZoneId());
+					msg.write(zoneSys.getZone(physComp.getZoneId()).offset2);
 				}
 			}
 
@@ -394,7 +417,7 @@ namespace Game {
 								msg.write(world.getTick());
 							}
 
-							NetworkTraits<C>::write(comp, msg.getBufferWriter());
+							NetworkTraits<C>::write(comp, msg.getBufferWriter(), engine, world, ent);
 						}
 					} else if (repl == Engine::Net::Replication::UPDATE) {
 						ENGINE_DEBUG_ASSERT("TODO: Update replication is not yet implemented");

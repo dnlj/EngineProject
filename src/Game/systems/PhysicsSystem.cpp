@@ -170,35 +170,6 @@ namespace Game {
 		auto body = physWorld.CreateBody(&bodyDef);
 		static_assert(sizeof(void*) >= sizeof(ent), "Engine::ECS::Entity is to large to store in userdata pointer.");
 		body->SetUserData(reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t&>(ent)));
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: how to handle group here? We really should take fixtures in or something so we can verify group.
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
 		return body;
 	}
 

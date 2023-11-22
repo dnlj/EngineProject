@@ -41,7 +41,7 @@ namespace Game {
 				buff.write(static_cast<uint8>(obj.layer));
 			}
 
-			static void write(const SpriteComponent& obj, Engine::Net::BufferWriter& buff) {}
+			static void write(const SpriteComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {}
 
 			static std::tuple<SpriteComponent> readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 				SpriteComponent result;
@@ -77,6 +77,6 @@ namespace Game {
 				return result;
 			}
 
-			static void read(SpriteComponent& obj, Engine::Net::BufferReader& buff) {}
+			static void read(SpriteComponent& obj, Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {}
 	};
 }

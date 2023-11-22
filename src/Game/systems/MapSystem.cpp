@@ -483,7 +483,7 @@ namespace Game {
 					it = activeChunks.try_emplace(chunkPos).first;
 					it->second.body.setBody(createBody(), plyZoneId); // TODO: create body should just create a PhysicsBody
 					ENGINE_DEBUG_ASSERT(it->second.body.valid());
-					ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
+					//ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
 
 					const auto chunkIndex = chunkToRegionIndex(chunkPos);
 					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
@@ -508,18 +508,10 @@ namespace Game {
 
 					// ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
 					it->second.updated = tick;
-				}
-
-				// TODO: how will we handle this on the client? I assume it
-				//       should all be controlled on the server? On the client we
-				//       shouldnt really need to think about shifting.
-				//if constexpr (ENGINE_SERVER || ENGINE_CLIENT) {
-				if constexpr (ENGINE_SERVER) {
+				} else {
 					auto& body = it->second.body;
-					//plyZoneId ? ENGINE_INFO2("Debug chunk ({}) zone from {} to {}", chunkPos, body.getZoneId(), plyZoneId), 0 : 0;
 					if (body.getZoneId() != plyZoneId) {
-						// TODO: this needs significant testing
-						ENGINE_INFO2("Moving chunk ({}) zone from {} to {}", chunkPos, body.getZoneId(), plyZoneId);
+						ENGINE_INFO2("~~~~Moving chunk {} from zone {} to {} @ {}", chunkPos, body.getZoneId(), plyZoneId, tick);
 						const auto pos = blockToWorld2(chunkToBlock(chunkPos), plyZoneOffset);
 						body.setPosition({pos.x, pos.y});
 						body.setZone(plyZoneId);

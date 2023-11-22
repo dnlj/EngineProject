@@ -16,6 +16,8 @@
 
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
+		class ZoneManagementSystem,
+
 		// Networking
 		class EntityNetworkingSystem,
 		class NetworkingSystem,
@@ -25,7 +27,6 @@ namespace Game {
 		class ActionSystem,
 
 		// Game Logic
-		class ZoneManagementSystem,
 		class CharacterMovementSystem,
 		class PhysicsSystem,
 		class CharacterSpellSystem,
