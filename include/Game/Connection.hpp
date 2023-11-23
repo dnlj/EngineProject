@@ -24,6 +24,7 @@ namespace Game {
 
 	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
 		MessageType::PLAYER_DATA,
+		MessageType::ZONE_INFO,
 		MessageType::SPELL
 	> {};
 

@@ -212,17 +212,10 @@ namespace {
 		Engine::ECS::Tick tick;
 		b2Transform trans;
 		b2Vec2 vel;
-
-		// TODO (kVnrPSny): Zones need to be handled by their own message. We only need the
-		//       pos/id once on change. No reason to send them by themselves. That
-		//       also provides the server a way to tell the client what zones to
-		//       load/preload/unload, which would simplify things in the future.
-		ZoneId zoneId;
-		WorldAbsVec zonePos;
 				
 		// TODO: angVel
 
-		if (!msg.read(&tick) || !msg.read(&trans) || !msg.read(&vel) || !msg.read(&zoneId) || !msg.read(&zonePos)) {
+		if (!msg.read(&tick) || !msg.read(&trans) || !msg.read(&vel)) {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
@@ -231,14 +224,6 @@ namespace {
 		if (!world.hasComponent<PhysicsBodyComponent>(from.ent)) {
 			ENGINE_WARN("PLAYER_DATA message received for entity that has no PhysicsBodyComponent");
 			return;
-		}
-
-		auto& physComp = world.getComponent<PhysicsBodyComponent>(from.ent);
-
-		if (physComp.getZoneId() != zoneId) {
-			auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-			zoneSys.ensureZone(zoneId, zonePos);
-			zoneSys.migratePlayer(from.ent, zoneId, physComp);
 		}
 
 		auto& physCompState = world.getComponentState<PhysicsBodyComponent>(from.ent, tick);
@@ -318,11 +303,6 @@ namespace Game {
 					msg.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
 					msg.write(physComp.getTransform());
 					msg.write(physComp.getVelocity());
-
-					// TODO (kVnrPSny): temp
-					auto const& zoneSys = world.getSystem<ZoneManagementSystem>();
-					msg.write(physComp.getZoneId());
-					msg.write(zoneSys.getZone(physComp.getZoneId()).offset2);
 				}
 			}
 

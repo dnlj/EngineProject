@@ -4,6 +4,7 @@
 // Game
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/systems/ZoneManagementSystem.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
 
 // Engine
 #include <Engine/Glue/glm.hpp>
@@ -16,8 +17,30 @@
 
 namespace {
 	using namespace Game;
+	using Engine::ECS::Entity;
+	using Engine::Net::MessageHeader;
+	using Engine::Net::BufferReader;
+
 	ENGINE_INLINE WorldAbsUnit manhattanDist(const WorldAbsVec& a, const WorldAbsVec& b) noexcept {
 		ENGINE_FLATTEN return glm::compAdd(glm::abs(a - b));
+	}
+
+	void recv_ZONE_INFO(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
+		ENGINE_DEBUG_ASSERT(ENGINE_CLIENT);
+		auto& world = engine.getWorld();
+		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+
+		ZoneId zoneId;
+		WorldAbsVec zonePos;
+
+		if (!msg.read(&zoneId) || !msg.read(&zonePos)) {
+			ENGINE_WARN("Unable to read zone message.");
+			ENGINE_DEBUG_BREAK;
+			return;
+		}
+
+		zoneSys.ensureZone(zoneId, zonePos);
+		zoneSys.migratePlayer(from.ent, zoneId, world.getComponent<PhysicsBodyComponent>(from.ent));
 	}
 }
 
@@ -26,6 +49,13 @@ namespace Game {
 		: System{arg} {
 		// Should always have at least one zone.
 		zones.emplace_back();
+	}
+
+	void ZoneManagementSystem::setup() {
+		if constexpr (ENGINE_CLIENT) {
+			auto& netSys = world.getSystem<NetworkingSystem>();
+			netSys.setMessageHandler(MessageType::ZONE_INFO, recv_ZONE_INFO);
+		}
 	}
 
 	void ZoneManagementSystem::tick_Server() {
@@ -106,8 +136,8 @@ namespace Game {
 
 					const auto relPos1 = physComp1.getPosition();
 					const auto relPos2 = physComp2.getPosition();
-					const auto globalPos1 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos1), zones[physComp1.zone.id].offset2);
-					const auto globalPos2 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos2), zones[physComp2.zone.id].offset2);
+					const auto globalPos1 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos1), zones[physComp1.zone.id].offset);
+					const auto globalPos2 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos2), zones[physComp2.zone.id].offset);
 					const auto dist = metric(globalPos1, globalPos2);
 					relations.emplace_back(*cur, *next, dist);
 					ZONE_DEBUG("Relation between {} and {} = {}", *cur, *next, dist);
@@ -212,7 +242,7 @@ namespace Game {
 			for (const auto ply : group) {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto pos = physComp.getPosition();
-				ideal += worldToAbsolute({pos.x, pos.y}, zones[physComp.zone.id].offset2);
+				ideal += worldToAbsolute({pos.x, pos.y}, zones[physComp.zone.id].offset);
 			}
 
 			ideal /= group.size();
@@ -223,7 +253,7 @@ namespace Game {
 			for (const auto ply : group) {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& zone = zones[physComp.zone.id];
-				const auto dist = metric(zone.offset2, ideal);
+				const auto dist = metric(zone.offset, ideal);
 				if (dist < minDist) {
 					minDist = dist;
 					zoneId = physComp.zone.id;
@@ -233,9 +263,9 @@ namespace Game {
 			// No existing zone is close enough to use.
 			if (zoneId == -1) {
 				zoneId = createNewZone(ideal);
-				ZONE_DEBUG("{} - Creating new zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset2);
+				ZONE_DEBUG("{} - Creating new zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset);
 			} else {
-				ZONE_DEBUG("{} - Using existing zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset2);
+				ZONE_DEBUG("{} - Using existing zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset);
 			}
 
 			// Migrate or shift
@@ -295,23 +325,19 @@ namespace Game {
 
 		ENGINE_DEBUG_ASSERT(zid != -1, "Failed to create valid zone. This is a bug.");
 		auto& zone = zones[zid];
-		zone.offset2 = pos;
+		zone.offset = pos;
 		zone.active = false;
 		return zid;
 	}
 	
 	void ZoneManagementSystem::ensureZone(ZoneId zoneId, WorldAbsVec pos) {
-		// TODO (kVnrPSny): In the future we need a way for the server to explicitly tell
-		//       the client what zones it should have loaded. As is these will get
-		//       cleaned up imediately if there isn't a player in the zone which would
-		//       break some things like preloading.
 		if (zones.size() <= zoneId) {
 			zones.resize(zoneId + 1);
 			reuse.erase(std::remove(reuse.begin(), reuse.end(), zoneId), reuse.end());
-			zones[zoneId].offset2 = pos;
+			zones[zoneId].offset = pos;
 		}
 
-		ENGINE_DEBUG_ASSERT(zones[zoneId].offset2 == pos);
+		ENGINE_DEBUG_ASSERT(zones[zoneId].offset == pos);
 	}
 
 	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp)
@@ -325,13 +351,26 @@ namespace Game {
 		auto& newZone = zones[newZoneId];
 
 		// TODO: need to do shifting stuff.
-		const auto zoneOffsetDiff = newZone.offset2 - oldZone.offset2;
+		const auto zoneOffsetDiff = newZone.offset - oldZone.offset;
 		const b2Vec2 zoneOffsetDiffB2 = {static_cast<float32>(zoneOffsetDiff.x), static_cast<float32>(zoneOffsetDiff.y)};
 		physComp.setZone(newZoneId);
 		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);
 
-		zones[oldZoneId].removePlayer(ply);
-		zones[newZoneId].addPlayer(ply);
+		oldZone.removePlayer(ply);
+		newZone.addPlayer(ply);
 		physComp.setZone(newZoneId);
+
+		if constexpr (ENGINE_SERVER) {
+			auto& netSys = world.getSystem<NetworkingSystem>();
+			auto conn = netSys.getConnection(ply);
+			ENGINE_DEBUG_ASSERT(conn);
+
+			if (auto msg = conn->beginMessage<MessageType::ZONE_INFO>()) {
+				msg.write(newZoneId);
+				msg.write(newZone.offset);
+			} else {
+				ENGINE_DEBUG_BREAK;
+			}
+		}
 	}
 }

@@ -168,6 +168,8 @@ workspace(PROJECT_NAME .."Workspace")
 			"/w14189", -- Enable: local variable is initialized but not referenced
 			"/w14456", -- Enable: declaration hides previous local declaration
 			"/w14457", -- Enable: declaration hides function parameter
+			--"/wl4458", -- Enable: declaration of 'identifier' hides class member
+			--"/wl4459", -- Enable: declaration of 'identifier' hides global declaration
 			"/w14700", -- Enable: uninitialized local variable used
 			"/w14701", -- Enable: potentially uninitialized local variable 'name' used
 			--"/w14710", -- Enable: function marked as inline not inlined

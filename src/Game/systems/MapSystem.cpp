@@ -62,7 +62,7 @@ namespace Game {
 		fixtureDef.filter.categoryBits = PhysicsSystem::getCategoryBits(PhysicsCategory::Decoration);
 		fixtureDef.filter.maskBits = PhysicsSystem::getMaskBits(PhysicsCategory::Decoration);
 
-		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset2;
+		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset;
 		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld2(desc.pos, zoneOffset));
 		const auto ent = world.createEntity();
 
@@ -212,7 +212,7 @@ namespace Game {
 					const WorldVec placementOffset = {x*blockSize, y*blockSize};
 					const BlockVec target = worldToBlock2(
 						WorldVec{plyPos.x, plyPos.y} + actComp.getTarget() + placementOffset,
-						zoneSys.getZone(physComp.getZoneId()).offset2
+						zoneSys.getZone(physComp.getZoneId()).offset
 					);
 					setValueAt2(target, bid);
 				}
@@ -410,7 +410,7 @@ namespace Game {
 		const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 		const auto plyPos = Engine::Glue::as<glm::vec2>(physComp.getPosition());
 		const auto plyZoneId = physComp.getZoneId();
-		const auto plyZoneOffset = zoneSys.getZone(plyZoneId).offset2;
+		const auto plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
 		const auto blockPos = worldToBlock2(plyPos, plyZoneOffset);
 
 		// TODO: areaSize and buffSize should be 2/3 since we do + and - for the min/max calcs
@@ -636,7 +636,7 @@ namespace Game {
 		{ // Physics
 			auto& body = data.body;
 			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld2(chunkToBlock(chunkPos), zoneSys.getZone(body.getZoneId()).offset2));
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld2(chunkToBlock(chunkPos), zoneSys.getZone(body.getZoneId()).offset));
 
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures

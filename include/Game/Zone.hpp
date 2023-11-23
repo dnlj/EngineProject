@@ -13,9 +13,8 @@ namespace Game {
 			Engine::FlatHashSet<Engine::ECS::Entity> entities;
 
 		public:
-			// TODO: rename
 			// The offset from the true origin to use for entities in this zone. The effective "position" of this zone.
-			WorldAbsVec offset2 = {0, 0};
+			WorldAbsVec offset = {0, 0};
 			bool active = true;
 
 			ENGINE_INLINE void addPlayer(Engine::ECS::Entity ply) {
