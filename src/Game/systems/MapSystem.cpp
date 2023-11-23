@@ -511,7 +511,7 @@ namespace Game {
 				} else {
 					auto& body = it->second.body;
 					if (body.getZoneId() != plyZoneId) {
-						ENGINE_INFO2("~~~~Moving chunk {} from zone {} to {} @ {}", chunkPos, body.getZoneId(), plyZoneId, tick);
+						//ENGINE_INFO2("Moving chunk {} from zone {} to {} @ {}", chunkPos, body.getZoneId(), plyZoneId, tick);
 						const auto pos = blockToWorld2(chunkToBlock(chunkPos), plyZoneOffset);
 						body.setPosition({pos.x, pos.y});
 						body.setZone(plyZoneId);

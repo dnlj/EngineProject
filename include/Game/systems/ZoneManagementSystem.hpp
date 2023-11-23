@@ -54,5 +54,7 @@ namespace Game {
 
 		private:
 			ZoneId createNewZone(WorldAbsVec pos);
+			ENGINE_INLINE void tick_Server();
+			ENGINE_INLINE void tick_Client();
 	};
 }

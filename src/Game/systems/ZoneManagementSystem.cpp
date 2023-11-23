@@ -28,13 +28,7 @@ namespace Game {
 		zones.emplace_back();
 	}
 
-	void ZoneManagementSystem::tick() {
-		// On the client we don't every need to do these calcs, its done on the
-		// server and then networked so everything stays in sync. We still need
-		// to have zones though so we can potentially preload things like boss
-		// zones or waypoints ahead of time and then swap to them.
-		if constexpr (ENGINE_CLIENT) { return; }
-
+	void ZoneManagementSystem::tick_Server() {
 		const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent>();
 
 		//
@@ -255,19 +249,34 @@ namespace Game {
 				migratePlayer(ply, zoneId, physComp);
 			}
 		}
+	}
+	
+	void ZoneManagementSystem::tick_Client() {
+		// Nothing client only atm.
+	}
+
+	void ZoneManagementSystem::tick() {
+		// On the client we don't every need to do these calcs, its done on the
+		// server and then networked so everything stays in sync. We still need
+		// to have zones though so we can potentially preload things like boss
+		// zones or waypoints ahead of time and then swap to them.
+		if constexpr (ENGINE_SERVER) { tick_Server(); }
+		if constexpr (ENGINE_CLIENT) { tick_Client(); }
 
 		// TODO (m2X6CXl5): still need to do this cleanup on the client
 		//       Will need some way for the client to know what zones are still needed so we don't unload them...
 		//       Not an issue right now but if we want to do preloading or similar 
 		for (ZoneId zoneId = 0; zoneId < zones.size(); ++zoneId) {
-			if (!zones[zoneId].getPlayers().empty()) { continue; }
+			auto& zone = zones[zoneId];
+			if (!zone.getPlayers().empty()) { continue; }
 
-			if (zoneId != 0) {
-				ZONE_DEBUG("{} - Closing zone {}", world.getTick(), zoneId);
+			if (zoneId != 0 && zone.active) {
+				ENGINE_LOG2("{} - Closing zone {}", world.getTick(), zoneId);
 
 				// TODO: save off entities etc
 
-				zones[zoneId].clear();
+				zone.active = false;
+				zone.clear();
 				reuse.push_back(zoneId);
 			}
 		}
@@ -285,7 +294,9 @@ namespace Game {
 		}
 
 		ENGINE_DEBUG_ASSERT(zid != -1, "Failed to create valid zone. This is a bug.");
-		zones[zid].offset2 = pos;
+		auto& zone = zones[zid];
+		zone.offset2 = pos;
+		zone.active = false;
 		return zid;
 	}
 	
