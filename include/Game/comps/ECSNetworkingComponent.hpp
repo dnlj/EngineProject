@@ -16,6 +16,7 @@ namespace Game {
 				Added,
 				Current,
 				Removed,
+				ZoneChanged,
 			};
 
 			struct NeighborData {

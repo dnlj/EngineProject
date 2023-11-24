@@ -85,9 +85,9 @@ namespace Game {
 		private:
 			void updateNeighbors();
 
-			void processAddedNeighbors(const Engine::ECS::Entity ply, Connection& conn, ECSNetworkingComponent& ecsNetComp);
-			void processRemovedNeighbors(const Engine::ECS::Entity ply, Connection& conn, ECSNetworkingComponent& ecsNetComp);
-			void processCurrentNeighbors(const Engine::ECS::Entity ply, Connection& conn, ECSNetworkingComponent& ecsNetComp);
+			void processAddedNeighbors(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data);
+			void processRemovedNeighbors(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data);
+			void processCurrentNeighbors(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data);
 
 			template<class C>
 			[[nodiscard]]
