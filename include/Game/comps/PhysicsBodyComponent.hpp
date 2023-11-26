@@ -74,16 +74,8 @@ namespace Game {
 	};
 
 	// TODO: rename - to just phys comp
-	class PhysicsBodyComponent : public PhysicsBody {
+	class PhysicsBodyComponent : public PhysicsBody, public MoveOnly {
 		public:
-			// TODO (CMcGAzqH): this should really be a property of GetComponent<T> instead
-			//       of a per-component basis, or maybe have a base class that
-			//       everything must inherit from? I think that should work?
-			PhysicsBodyComponent(const PhysicsBodyComponent&) = delete;
-			PhysicsBodyComponent(PhysicsBodyComponent&&) = default;
-			PhysicsBodyComponent& operator=(const PhysicsBodyComponent&) = delete;
-			PhysicsBodyComponent& operator=(PhysicsBodyComponent&&) = default;
-
 			bool snap = false; // TODO: this should probably be on the interp component?
 			bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
 

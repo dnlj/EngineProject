@@ -134,4 +134,15 @@ namespace Game {
 	ENGINE_INLINE constexpr inline ChunkVec regionToChunk(const RegionVec region) noexcept {
 		return region * regionSize;
 	}
+	
+	// TODO (CMcGAzqH): this should really be a property of GetComponent<T> instead of a per-component basis.
+	class MoveOnly {
+		public:
+			MoveOnly() = default;
+			MoveOnly(MoveOnly&&) = default;
+			MoveOnly& operator=(MoveOnly&&) = default;
+
+			MoveOnly(const MoveOnly&) = delete;
+			MoveOnly& operator=(const MoveOnly&) = delete;
+	};
 }
