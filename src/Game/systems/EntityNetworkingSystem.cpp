@@ -347,11 +347,6 @@ namespace Game {
 					processCurrentNeighbors(*conn, ent, data);
 				} else if (data.state == NeighborState::ZoneChanged) {
 					zoneChanged.push_back(ent);
-
-					// TODO (tz4j8Z1Q): how to verify zone change? I guess just do update
-					//       it for now but its kinda dumb that we don't always
-					//       persist that info
-
 					data.state = NeighborState::Current;
 				} else {
 					ENGINE_DEBUG_BREAK;
@@ -370,10 +365,13 @@ namespace Game {
 						ENGINE_INFO2("MSG: {} {} {}", ent, zoneId, zonePos);
 					}
 				} else {
-					// TODO: we don't have a way to handle this since the state has already been updated.
-					//       I guess we could loop over them again and change their state back to current?
+					// TODO: This code path is largely untested. ATM we don't have a way
+					//       to force messages to fail to fully verify this.
 					ENGINE_WARN2("Unable to send entity zone change.");
 					ENGINE_DEBUG_BREAK;
+					for (const auto ent : zoneChanged) {
+						ecsNetComp.neighbors[ent].state = NeighborState::ZoneChanged;
+					}
 				}
 			}
 		}
