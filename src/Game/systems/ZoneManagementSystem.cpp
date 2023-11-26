@@ -5,6 +5,7 @@
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/systems/ZoneManagementSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
+#include <Game/comps/ECSNetworkingComponent.hpp>
 
 // Engine
 #include <Engine/Glue/glm.hpp>
@@ -47,6 +48,8 @@ namespace {
 namespace Game {
 	ZoneManagementSystem::ZoneManagementSystem(SystemArg arg)
 		: System{arg} {
+		static_assert(World::orderBefore<ZoneManagementSystem, EntityNetworkingSystem>());
+
 		// Should always have at least one zone.
 		zones.emplace_back();
 	}
@@ -90,6 +93,9 @@ namespace Game {
 		constexpr int64 mustJoin = 300;
 		static_assert(mustJoin < mustSplit);
 
+		// TODO: Couldn't we just use the mustJoin distance? What benefit do we
+		//       have from this being different? Need to investigate usage.
+		// 
 		// How close can two zones be to be considered the same. Used to select
 		// if an existing zone can be used for a particular group.
 		constexpr int64 sameZoneDist = 500;
@@ -344,23 +350,29 @@ namespace Game {
 	{
 		const auto oldZoneId = physComp.getZoneId();
 		//ZONE_DEBUG("{} - Migrating player from {} to {}", world.getTick(), oldZoneId, newZoneId);
-		ENGINE_INFO2("{} - Migrating player from {} to {}", world.getTick(), oldZoneId, newZoneId);
-		ENGINE_DEBUG_ASSERT(newZoneId != oldZoneId, "Attempting to move player to same zone. This is a bug.");
+		ENGINE_INFO2("{} - Migrating player ({}) from {} to {}", world.getTick(), ply, oldZoneId, newZoneId);
 
 		auto& oldZone = zones[oldZoneId];
 		auto& newZone = zones[newZoneId];
 
-		// TODO: need to do shifting stuff.
-		const auto zoneOffsetDiff = newZone.offset - oldZone.offset;
-		const b2Vec2 zoneOffsetDiffB2 = {static_cast<float32>(zoneOffsetDiff.x), static_cast<float32>(zoneOffsetDiff.y)};
-		physComp.setZone(newZoneId);
-		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);
-
 		oldZone.removePlayer(ply);
 		newZone.addPlayer(ply);
-		physComp.setZone(newZoneId);
+
+		migrateEntity(ply, newZoneId, physComp);
 
 		if constexpr (ENGINE_SERVER) {
+			// Mark entities for network zone updates.
+			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
+			for (auto& [ent, data] : ecsNetComp.neighbors) {
+				data.state = ECSNetworkingComponent::NeighborState::ZoneChanged;
+				auto& neighPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
+				if (neighPhysComp.getZoneId() != newZoneId) {
+					ENGINE_INFO2("    Move neighbor {}", ent, neighPhysComp.getZoneId(), newZoneId);
+					migrateEntity(ent, newZoneId, neighPhysComp);
+				}
+			}
+
+			// Network the player's zone.
 			auto& netSys = world.getSystem<NetworkingSystem>();
 			auto conn = netSys.getConnection(ply);
 			ENGINE_DEBUG_ASSERT(conn);
@@ -372,5 +384,20 @@ namespace Game {
 				ENGINE_DEBUG_BREAK;
 			}
 		}
+	}
+
+	void ZoneManagementSystem::migrateEntity(Engine::ECS::Entity ent, ZoneId newZoneId, PhysicsBodyComponent& physComp) {
+		const auto oldZoneId = physComp.getZoneId();
+		//ZONE_DEBUG("{} - Migrating entity from {} to {}", world.getTick(), oldZoneId, newZoneId);
+		ENGINE_INFO2("{} - Migrating entity ({}) from {} to {}", world.getTick(), ent, oldZoneId, newZoneId);
+		ENGINE_DEBUG_ASSERT(newZoneId != oldZoneId, "Attempting to move entity to same zone. This is a bug.");
+
+		auto& oldZone = zones[oldZoneId];
+		auto& newZone = zones[newZoneId];
+
+		const auto zoneOffsetDiff = newZone.offset - oldZone.offset;
+		const b2Vec2 zoneOffsetDiffB2 = {static_cast<float32>(zoneOffsetDiff.x), static_cast<float32>(zoneOffsetDiff.y)};
+		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);
+		physComp.setZone(newZoneId);
 	}
 }

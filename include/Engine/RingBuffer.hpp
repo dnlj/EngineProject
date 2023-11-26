@@ -249,7 +249,7 @@ namespace Engine {
 				void reserve(SizeType n) requires IsDynamic {
 					if (capacity() >= n) { return; }
 					n = nextSize(n);
-					ENGINE_WARN("resize: ", n);
+					//ENGINE_WARN("resize: ", n);
 
 					Storage temp = {};
 					temp.first = new Proxy[n];

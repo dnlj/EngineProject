@@ -198,6 +198,6 @@ namespace Game {
 		}
 
 		NetworkTraits::read(result, buff, engine, world, ent);
-		return std::make_tuple(result);
+		return std::make_tuple(std::move(result));
 	}
 }

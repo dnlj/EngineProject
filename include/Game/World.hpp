@@ -16,12 +16,6 @@
 
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
-		class ZoneManagementSystem,
-
-		// Networking
-		class EntityNetworkingSystem,
-		class NetworkingSystem,
-
 		// Inputs
 		class InputSystem,
 		class ActionSystem,
@@ -33,6 +27,11 @@ namespace Game {
 		class PhysicsInterpSystem,
 		class CameraTrackingSystem,
 		class MapSystem,
+
+		// State Updates & Networking
+		class ZoneManagementSystem,
+		class EntityNetworkingSystem,
+		class NetworkingSystem,
 
 		// Rendering
 		//ParallaxBackgroundSystem,

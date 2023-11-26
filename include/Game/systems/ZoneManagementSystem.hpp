@@ -52,6 +52,7 @@ namespace Game {
 
 			void ensureZone(ZoneId zoneId, WorldAbsVec pos);
 			void migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp);
+			void migrateEntity(Engine::ECS::Entity ent, ZoneId newZoneId, PhysicsBodyComponent& physComp);
 
 		private:
 			ZoneId createNewZone(WorldAbsVec pos);

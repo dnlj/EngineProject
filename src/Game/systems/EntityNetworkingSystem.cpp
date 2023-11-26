@@ -253,6 +253,30 @@ namespace {
 
 		// TODO: vel
 	}
+
+	void recv_ECS_ZONE_INFO(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
+		while (msg.remaining()) {
+			Entity remote;
+			ZoneId zoneId;
+			WorldAbsVec zonePos;
+
+			if (!msg.read(&remote) || !msg.read(&zoneId) || !msg.read(&zonePos)) {
+				ENGINE_WARN2("Unable to read ECS_ZONE_INFO.");
+				ENGINE_DEBUG_BREAK;
+				return;
+			}
+
+			// TODO (FolQVYqw): we should probably have separate ZONE_CREATE/ZONE_DESTROY
+			//       messages independant from the the (ent, zid) messages so we don't
+			//       have to duplicate the zone position info for every entity.
+			auto& world = engine.getWorld();
+			auto& entNetSys = world.getSystem<Game::EntityNetworkingSystem>();
+			auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+			const auto local = entNetSys.getEntityMapping(remote);
+			zoneSys.ensureZone(zoneId, zonePos);
+			zoneSys.migrateEntity(local, zoneId, world.getComponent<PhysicsBodyComponent>(local));
+		}
+	}
 }
 
 namespace Game {
@@ -266,6 +290,7 @@ namespace Game {
 		netSys.setMessageHandler(MessageType::ECS_COMP_ALWAYS, recv_ECS_COMP_ALWAYS);
 		netSys.setMessageHandler(MessageType::ECS_FLAG, recv_ECS_FLAG);
 		netSys.setMessageHandler(MessageType::PLAYER_DATA, recv_PLAYER_DATA);
+		netSys.setMessageHandler(MessageType::ECS_ZONE_INFO, recv_ECS_ZONE_INFO);
 	}
 }
 
@@ -309,11 +334,10 @@ namespace Game {
 				}
 			}
 
-			// TODO: handle entities without phys comp?
-			// TODO: figure out which entities have been updated
-			// TODO: prioritize entities
+			// TODO: prioritize entities?
 
 			// Order is important here since some failed writes change neighbor states
+			zoneChanged.clear();
 			for (auto& [ent, data] : ecsNetComp.neighbors) {
 				if (data.state == NeighborState::Added) {
 					processAddedNeighbors(*conn, ent, data);
@@ -322,8 +346,33 @@ namespace Game {
 				} else if (data.state == NeighborState::Current) {
 					processCurrentNeighbors(*conn, ent, data);
 				} else if (data.state == NeighborState::ZoneChanged) {
-					// TODO: impl
+					zoneChanged.push_back(ent);
+
+					// TODO (tz4j8Z1Q): how to verify zone change? I guess just do update
+					//       it for now but its kinda dumb that we don't always
+					//       persist that info
+
+					data.state = NeighborState::Current;
 				} else {
+					ENGINE_DEBUG_BREAK;
+				}
+			}
+
+			if (!zoneChanged.empty()) {
+				if (auto msg = conn->beginMessage<MessageType::ECS_ZONE_INFO>()) {
+					const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+					for (const auto ent : zoneChanged) {
+						const auto zoneId = world.getComponent<PhysicsBodyComponent>(ent).getZoneId();
+						const auto zonePos = zoneSys.getZone(zoneId).offset;
+						msg.write(ent);
+						msg.write(zoneId);
+						msg.write(zonePos);
+						ENGINE_INFO2("MSG: {} {} {}", ent, zoneId, zonePos);
+					}
+				} else {
+					// TODO: we don't have a way to handle this since the state has already been updated.
+					//       I guess we could loop over them again and change their state back to current?
+					ENGINE_WARN2("Unable to send entity zone change.");
 					ENGINE_DEBUG_BREAK;
 				}
 			}
@@ -430,14 +479,24 @@ namespace Game {
 			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 
 			ecsNetComp.neighbors.eraseRemove([](auto& pair){
+				// Remove anything that is still marked as remove from last iteration.
 				if (pair.second.state == NeighborState::Removed) {
 					return true;
 				}
 
-				pair.second.state = NeighborState::Removed;
+				// Mark everything as removed for next iteration. Anything that
+				// is still current gets updated below. Anything that isn't
+				// updated perists until next iteration where it will be removed
+				// above.
+				if (pair.second.state != NeighborState::ZoneChanged) {
+					pair.second.state = NeighborState::Removed;
+				}
 				return false;
 			});
 
+			// Persist any items that are already neighbors in a larger area to
+			// avoid rapid add/remove near edge/border if the player is moving
+			// around in the same small area a lot.
 			struct QueryCallbackLarge : b2QueryCallback {
 				World& world;
 				ECSNetworkingComponent& ecsNetComp;
@@ -449,13 +508,16 @@ namespace Game {
 				virtual bool ReportFixture(b2Fixture* fixture) override {
 					const Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
 					if (ecsNetComp.neighbors.contains(ent)) {
-						ecsNetComp.neighbors.get(ent).state = NeighborState::Current;
+						auto& state = ecsNetComp.neighbors.get(ent).state;
+						if (state != NeighborState::ZoneChanged) {
+							state = NeighborState::Current;
+						}
 					}
 					return true;
 				}
 			} queryCallbackLarge(world, ecsNetComp);
 
-			
+			// Only add new items in a smaller radius.
 			struct QueryCallbackSmall : b2QueryCallback {
 				const Engine::ECS::Entity ply;
 				World& world;
@@ -475,13 +537,8 @@ namespace Game {
 				}
 			} queryCallbackSmall(ply, world, ecsNetComp);
 
-
-			// We keep objects loaded in a larger area than we initially load them so that
-			// if an object is near the edge it doesnt get constantly created and destroyed
-			// as a player moves a small amount
+			// TODO: maybe these should be cvars?
 			const auto& pos = physComp.getPosition();
-
-			// TODO
 			constexpr float32 rangeSmall = 5; // TODO: what range?
 			constexpr float32 rangeLarge = 20; // TODO: what range?
 

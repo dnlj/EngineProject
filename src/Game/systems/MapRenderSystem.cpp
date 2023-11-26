@@ -50,7 +50,7 @@ namespace Game {
 		const auto vp = cam.getProjection() * cam.getView();
 
 		const auto ply = plyFilter.front();
-		const auto physComp = world.getComponent<PhysicsBodyComponent>(ply);
+		const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 		const auto offset = world.getSystem<ZoneManagementSystem>().getZone(physComp.getZoneId()).offset;
 		const auto bounds = cam.getWorldScreenBounds();
 		const auto minChunk = blockToChunk(worldToBlock2(bounds.min, offset));

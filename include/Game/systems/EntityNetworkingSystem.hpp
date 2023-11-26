@@ -78,6 +78,7 @@ namespace Game {
 		#if ENGINE_SERVER
 		private:
 			Engine::Clock::TimePoint nextUpdate = {};
+			std::vector<Engine::ECS::Entity> zoneChanged = {};
 			
 		public:
 			void update(float32 dt);
