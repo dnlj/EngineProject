@@ -133,6 +133,11 @@ namespace Game {
 				buff.read<b2Transform>(&obj.trans);
 				buff.read<b2Vec2>(&obj.vel);
 				obj.rollbackOverride = true;
+
+				// ZoneId isnt relevant to snapshots. Will be handled be the
+				// newer reads + zone specific messages.
+				ZoneId zoneId_unused;
+				buff.read<ZoneId>(&zoneId_unused);
 			}
 	};
 }

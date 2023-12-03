@@ -19,6 +19,9 @@
 	#include <Engine/Debug/GL/GL.hpp>
 #endif
 
+// FMT
+#include <fmt/xchar.h>
+
 
 
 namespace {
@@ -616,21 +619,26 @@ namespace Engine::Win32 {
 		: callbacks{callbacks} {
 		wglPtrs = OpenGLWindow::init();
 
-		windowHandle = CreateWindowExW(
-			0, // TODO:
-			className,
-			(std::wstring{L"My Window Title - "} + (ENGINE_SERVER?L"Server":L"Client")).c_str(),
-			WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
-			//WS_POPUP,
-			CW_USEDEFAULT,
-			CW_USEDEFAULT,
-			1280,
-			720,
-			0,
-			0,
-			GetModuleHandleW(nullptr),
-			nullptr
-		);
+		{
+			const auto& info = Engine::Win32::getStartupInfo();
+			const auto title = fmt::format(L"My Window Title - {} - {}", info.type, info.debugging);
+
+			windowHandle = CreateWindowExW(
+				0, // TODO:
+				className,
+				title.c_str(),
+				WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
+				//WS_POPUP,
+				CW_USEDEFAULT,
+				CW_USEDEFAULT,
+				1280,
+				720,
+				0,
+				0,
+				GetModuleHandleW(nullptr),
+				nullptr
+			);
+		}
 		ENGINE_ASSERT(windowHandle, "Unable to create window. - ", getLastErrorMessage());
 		SetWindowLongPtrW(windowHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 

@@ -1,5 +1,7 @@
 // Windows
 #include <Windows.h>
+#include <TlHelp32.h>
+#include <Psapi.h>
 
 // STD
 #include <string>
@@ -53,5 +55,48 @@ namespace Engine::Win32 {
 		}
 
 		return msg;
+	}
+
+	StartupInfo getStartupInfo() {
+		StartupInfo results = {
+			.type = ENGINE_SERVER ? L"Server" : L"Client",
+			.debugging = IsDebuggerPresent() ? L"Debugging" : L"Standalone",
+		};
+
+		// TODO: some reason this doesn't work, can't be bothered to do this correctly right now.
+		//const auto snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+		//if (snapshot == INVALID_HANDLE_VALUE) {
+		//	ENGINE_WARN2("Unable to check processes: {}", getLastErrorMessage());
+		//} else {
+		//	PROCESSENTRY32W entry{};
+		//	entry.dwSize = sizeof(entry);
+		//
+		//	if (!Process32FirstW(snapshot, &entry)) {
+		//		ENGINE_WARN2("Unable to check first process: {}", getLastErrorMessage());
+		//	} else {
+		//		do {
+		//			//std::cout << "Process:\n";
+		//			//std::cout << "\tdwSize: " << entry.dwSize << "\n";
+		//			//std::cout << "\tcntUsage: " << entry.cntUsage << "\n";
+		//			//std::cout << "\tth32ProcessID: " << entry.th32ProcessID << "\n";
+		//			//std::cout << "\tth32DefaultHeapID: " << entry.th32DefaultHeapID << "\n";
+		//			//std::cout << "\tth32ModuleID: " << entry.th32ModuleID << "\n";
+		//			//std::cout << "\tcntThreads: " << entry.cntThreads << "\n";
+		//			//std::cout << "\tth32ParentProcessID: " << entry.th32ParentProcessID << "\n";
+		//			//std::cout << "\tpcPriClassBase: " << entry.pcPriClassBase << "\n";
+		//			//std::cout << "\tdwFlags: " << entry.dwFlags << "\n";
+		//			//std::wcout << "\tszExeFile: " << std::wstring_view{entry.szExeFile} << "\n";
+		//
+		//			// TODO: This isn't 100% correct because we only check against the
+		//			// exe name which could easily collide with other programs. But I
+		//			// can't be bothered to do this correctly atm.
+		//			results.instance += std::wstring_view{entry.szExeFile} == results.type;
+		//		} while (Process32NextW(snapshot, &entry));
+		//	}
+		//
+		//	CloseHandle(snapshot);
+		//}
+
+		return results;
 	}
 }

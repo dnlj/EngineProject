@@ -28,6 +28,9 @@
 #include <Game/UI/ConsoleWindow.hpp>
 #include <Game/UI/MapPreview.hpp>
 
+// FMT
+#include <fmt/xchar.h>
+
 // Win32
 #if ENGINE_OS_WINDOWS
 #include <timeapi.h>
@@ -919,6 +922,11 @@ int entry(int argc, char* argv[]) {
 	std::atexit([]{ performExit("exit requested"); });
 	std::at_quick_exit([]{ performExit("quick exit requested"); });
 	std::set_terminate([]{ performExit("terminate handler called"); });
+
+	{
+		const auto& info = Engine::Win32::getStartupInfo();
+		SetConsoleTitleW(fmt::format(L"{} - Console - {}", info.type, info.debugging).c_str());
+	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Run

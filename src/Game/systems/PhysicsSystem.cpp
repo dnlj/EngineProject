@@ -103,7 +103,7 @@ namespace Game {
 
 					constexpr auto zero = Engine::Clock::TimePoint{};
 					if (physInterpComp.nextTime == zero) {
-						ENGINE_WARN("nextTrans not found! ", world.getTick());
+						ENGINE_WARN2("nextTrans not found for {} @ {}! ", ent, world.getTick());
 						if (physInterpComp.prevTime != zero) {
 							physInterpComp.nextTrans = physInterpComp.prevTrans;
 							physInterpComp.nextTime = physInterpComp.prevTime;

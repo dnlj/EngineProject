@@ -41,9 +41,9 @@ namespace Game {
 	}
 
 	void NetworkTraits<PhysicsBodyComponent>::write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
-		buff.write(obj.getTransform());
-		buff.write(obj.getVelocity());
-		buff.write(obj.getZoneId());
+		buff.write<b2Transform>(obj.getTransform());
+		buff.write<b2Vec2>(obj.getVelocity());
+		buff.write<ZoneId>(obj.getZoneId());
 	}
 
 	void NetworkTraits<PhysicsBodyComponent>::writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
