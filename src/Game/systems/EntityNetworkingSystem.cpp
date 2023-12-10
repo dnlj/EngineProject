@@ -94,6 +94,7 @@ namespace {
 		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
 
 		if (auto local = entNetSystem.removeEntityMapping(remote)) {
+			ENGINE_LOG("ECS_ENT_DESTROY - Remote: ", remote, " Local: ", local, " Tick: ", world.getTick());
 			world.deferedDestroyEntity(local);
 		}
 	}
@@ -467,7 +468,7 @@ namespace Game {
 			}
 		}
 	}
-
+	
 	void EntityNetworkingSystem::updateNeighbors() {
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		auto& physWorld = physSys.getPhysicsWorld();
@@ -492,62 +493,68 @@ namespace Game {
 				return false;
 			});
 
+			// Create a b2 query object the filters entities to only those relevant the the player.
+			auto const createQuery = [](ZoneId plyZoneId, World& world, auto&& func){
+				using Func = decltype(func);
+				struct ZoneQuery : b2QueryCallback {
+					Func func;
+					ZoneId plyZoneId = 0;
+					World& world;
+
+					ZoneQuery(ZoneId plyZoneId, World& world, Func&& func)
+						: func{std::move(func)}, plyZoneId{plyZoneId}, world{world} {
+					}
+
+					virtual bool ReportFixture(b2Fixture* fixture) override {
+						const Entity ent = Game::PhysicsSystem::toEntity(fixture);
+						if (world.hasComponent<NetworkedFlag>(ent)) {
+							const auto& entPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
+							if (entPhysComp.getZoneId() == plyZoneId) {
+								func(*this, ent);
+							}
+						}
+						return true;
+					}
+				} query{plyZoneId, world, std::move(func)};
+				return query;
+			};
+
 			// Persist any items that are already neighbors in a larger area to
 			// avoid rapid add/remove near edge/border if the player is moving
 			// around in the same small area a lot.
-			struct QueryCallbackLarge : b2QueryCallback {
-				World& world;
-				ECSNetworkingComponent& ecsNetComp;
-
-				QueryCallbackLarge(World& world, ECSNetworkingComponent& ecsNetComp)
-					: world{world}, ecsNetComp{ecsNetComp} {
-				}
-
-				virtual bool ReportFixture(b2Fixture* fixture) override {
-					const Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
+			auto queryPersist = createQuery(physComp.getZoneId(), world,
+				[&ecsNetComp](auto const& self, Entity ent){
 					if (ecsNetComp.neighbors.contains(ent)) {
 						auto& state = ecsNetComp.neighbors.get(ent).state;
 						if (state != NeighborState::ZoneChanged) {
 							state = NeighborState::Current;
 						}
 					}
-					return true;
 				}
-			} queryCallbackLarge(world, ecsNetComp);
+			);
 
 			// Only add new items in a smaller radius.
-			struct QueryCallbackSmall : b2QueryCallback {
-				const Engine::ECS::Entity ply;
-				World& world;
-				ECSNetworkingComponent& ecsNetComp;
-
-				QueryCallbackSmall(Engine::ECS::Entity ply, World& world, ECSNetworkingComponent& ecsNetComp)
-					: ply{ply}, world{world}, ecsNetComp{ecsNetComp} {
-				}
-
-				virtual bool ReportFixture(b2Fixture* fixture) override {
-					const Entity ent = Game::PhysicsSystem::toEntity(fixture->GetBody()->GetUserData());
-					if (!world.hasComponent<NetworkedFlag>(ent)) { return true; }
+			auto queryAdd = createQuery(physComp.getZoneId(), world,
+				[ply, &ecsNetComp](auto const& self, Entity ent){
 					if (!ecsNetComp.neighbors.contains(ent) && ent != ply) {
 						ecsNetComp.neighbors.add(ent, NeighborState::Added);
 					}
-					return true;
 				}
-			} queryCallbackSmall(ply, world, ecsNetComp);
+			);
 
 			// TODO: maybe these should be cvars?
 			const auto& pos = physComp.getPosition();
-			constexpr float32 rangeSmall = 5; // TODO: what range?
-			constexpr float32 rangeLarge = 20; // TODO: what range?
+			constexpr float32 rangePersist = 20; // TODO: what range?
+			constexpr float32 rangeAdd = 5; // TODO: what range?
 
-			physWorld.QueryAABB(&queryCallbackLarge, b2AABB{
-				{pos.x - rangeLarge, pos.y - rangeLarge},
-				{pos.x + rangeLarge, pos.y + rangeLarge},
+			physWorld.QueryAABB(&queryPersist, b2AABB{
+				{pos.x - rangePersist, pos.y - rangePersist},
+				{pos.x + rangePersist, pos.y + rangePersist},
 			});
 
-			physWorld.QueryAABB(&queryCallbackSmall, b2AABB{
-				{pos.x - rangeSmall, pos.y - rangeSmall},
-				{pos.x + rangeSmall, pos.y + rangeSmall},
+			physWorld.QueryAABB(&queryAdd, b2AABB{
+				{pos.x - rangeAdd, pos.y - rangeAdd},
+				{pos.x + rangeAdd, pos.y + rangeAdd},
 			});
 		}
 	}

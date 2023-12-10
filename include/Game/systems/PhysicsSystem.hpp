@@ -101,6 +101,10 @@ namespace Game {
 				return body;
 			}
 
+			ENGINE_INLINE static Engine::ECS::Entity toEntity(const b2Fixture* fixture) noexcept {
+				return toEntity(fixture->GetBody()->GetUserData());
+			}
+
 			ENGINE_INLINE static Engine::ECS::Entity toEntity(const void* userdata) noexcept {
 				return reinterpret_cast<Engine::ECS::Entity&>(userdata);
 			};
