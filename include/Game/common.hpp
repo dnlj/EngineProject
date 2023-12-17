@@ -4,9 +4,11 @@
 #include <Engine/Engine.hpp>
 #include <Engine/Math/math.hpp>
 
-
 namespace Game {
 	using namespace Engine::Types;
+}
+
+namespace Game::inline Units {
 	/**
 	 * A position in world units (Box2D meters). These will always be relative to some origin
 	 * or offset for physics and float precision reasons.
@@ -35,18 +37,11 @@ namespace Game {
 	using RegionUnit = BlockUnit;
 	using RegionVec = glm::vec<2, RegionUnit>;
 
-	// TODO: remove these, we should be using the correct units from above for clearer intent
-	// TODO: Shouldn't this derive from blockUnit? this is stored in blocks, no?
-	//       Document what lall of these units represet and how they are converted.
-	//using ZoneUnit = ChunkUnit;
-	//using ZoneVec = glm::vec<2, ZoneUnit>;
 	using ZoneId = uint32;
 	constexpr inline auto zoneInvalidId = std::numeric_limits<ZoneId>::max();
-	
-	//static_assert(std::same_as<WorldVec, glm::vec2>);
-	//static_assert(std::same_as<WorldUnit, decltype(b2Vec2::x)>);
+}
 
-
+namespace Game::inline Constants {
 	constexpr inline int32 tickrate = 64;
 
 	constexpr inline int32 pixelsPerBlock = 8;
@@ -62,6 +57,42 @@ namespace Game {
 	constexpr inline RegionUnit chunksPerRegion = 16;
 	constexpr inline RegionVec regionSize = {chunksPerRegion, chunksPerRegion};
 
+	// TODO: should these neighbor and zone ranges be cvars?
+
+	/** The range at which new neighbors are added. */
+	constexpr inline WorldUnit neighborRangeAdd = 5;
+
+	/** The range at which existing neighbors will persist before being removed as neighbors. */
+	constexpr inline WorldUnit neighborRangePersist = 20;
+
+	static_assert(neighborRangePersist - neighborRangeAdd > 10, "Insufficient difference between neighbor add and persist ranges. This will cause excessive updates/work/networking.");
+
+	/**
+	 * How far away a player can be before they must be moved into a new zone.
+	 * The main consideration here is the precision of calculations when using
+	 * local world coordinates (WorldUnit). Box2D recommends ~2km as a maximum
+	 * size before shifting (B2 docs > Overview > Units).
+	 */
+	constexpr WorldAbsUnit zoneMustSplitDist = 1000;
+
+	/**
+	 * How close two players can be before their zones must be merged.
+	 * The main considerations here are probably the players screen size +
+	 * zoom/scale and network latency to avoid entities popping in and out.
+	 */
+	constexpr WorldAbsUnit zoneMustJoinDist = 300;
+
+	/**
+	 * How close can two zones be to be considered the same. Used to select if
+	 * an existing zone can be used for a particular group.
+	 */
+	constexpr WorldAbsUnit zoneSameDist = 500;
+
+	static_assert(zoneMustSplitDist - zoneMustJoinDist > 10, "The zone split distance must be significantly larger than the join distance.");
+	static_assert(zoneMustJoinDist - neighborRangePersist > 10, "The zone join distance should be significantly larger than the neighbor distance");
+}
+
+namespace Game::inline Units {
 	/**
 	 * Convert from a world position and an absolute offset to an approximate absolute world position.
 	 */
@@ -134,7 +165,9 @@ namespace Game {
 	ENGINE_INLINE constexpr inline ChunkVec regionToChunk(const RegionVec region) noexcept {
 		return region * regionSize;
 	}
-	
+}
+
+namespace Game {
 	// TODO (CMcGAzqH): this should really be a property of GetComponent<T> instead of a per-component basis.
 	class MoveOnly {
 		public:

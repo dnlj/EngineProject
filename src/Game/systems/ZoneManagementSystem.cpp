@@ -89,17 +89,6 @@ namespace Game {
 
 		// TODO: one problem is our world scale is a bit off. Should probably be more like 6-8 blocks per meter instead of 4/5.
 
-		constexpr int64 mustSplit = 1000;
-		constexpr int64 mustJoin = 300;
-		static_assert(mustJoin < mustSplit);
-
-		// TODO: Couldn't we just use the mustJoin distance? What benefit do we
-		//       have from this being different? Need to investigate usage.
-		// 
-		// How close can two zones be to be considered the same. Used to select
-		// if an existing zone can be used for a particular group.
-		constexpr int64 sameZoneDist = 500;
-
 		// The metric to use for comparing distances.
 		// - Using Euclidean is bad because we need to take a square root.
 		// - Using squared Euclidean is bad because it greatly limits our world size to sqrt(INT_MAX)
@@ -164,7 +153,7 @@ namespace Game {
 			// TODO: probably a better scheme for remaps. Need to think a about it a bit.
 			// TODO: could just do this step while calcing distances
 			for (; cur != end; ++cur) {
-				if (cur->dist > mustJoin) { break; }
+				if (cur->dist > zoneMustJoinDist) { break; }
 				auto& physComp1 = world.getComponent<PhysicsBodyComponent>(cur->ply1);
 				auto& physComp2 = world.getComponent<PhysicsBodyComponent>(cur->ply2);
 
@@ -226,7 +215,7 @@ namespace Game {
 			if (physComp.zone.group == -1) {
 				const auto pos = physComp.getPosition();
 				const auto dist = metric({pos.x, pos.y}, {});
-				if (dist > mustSplit) {
+				if (dist > zoneMustSplitDist) {
 					const auto groupId = static_cast<ZoneId>(groupsStorage.size());
 					groupRemaps.emplace_back(groupId);
 					auto& group = groupsStorage.emplace_back();
@@ -255,7 +244,7 @@ namespace Game {
 
 			// Figure out if an existing zone is close enough to use.
 			ZoneId zoneId = -1;
-			WorldAbsUnit minDist = sameZoneDist;
+			WorldAbsUnit minDist = zoneSameDist;
 			for (const auto ply : group) {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 				const auto& zone = zones[physComp.zone.id];

@@ -544,17 +544,15 @@ namespace Game {
 
 			// TODO: maybe these should be cvars?
 			const auto& pos = physComp.getPosition();
-			constexpr float32 rangePersist = 20; // TODO: what range?
-			constexpr float32 rangeAdd = 5; // TODO: what range?
 
 			physWorld.QueryAABB(&queryPersist, b2AABB{
-				{pos.x - rangePersist, pos.y - rangePersist},
-				{pos.x + rangePersist, pos.y + rangePersist},
+				{pos.x - neighborRangePersist, pos.y - neighborRangePersist},
+				{pos.x + neighborRangePersist, pos.y + neighborRangePersist},
 			});
 
 			physWorld.QueryAABB(&queryAdd, b2AABB{
-				{pos.x - rangeAdd, pos.y - rangeAdd},
-				{pos.x + rangeAdd, pos.y + rangeAdd},
+				{pos.x - neighborRangeAdd, pos.y - neighborRangeAdd},
+				{pos.x + neighborRangeAdd, pos.y + neighborRangeAdd},
 			});
 		}
 	}
