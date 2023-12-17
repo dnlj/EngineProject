@@ -43,7 +43,7 @@ namespace Game::UI {
 			const auto cursorWorldPos = glm::vec2{camPos} + cursorWorldOffset;
 
 			pane->setLabel(CoordPane::Camera, camPos);
-			pane->setLabel(CoordPane::CursorPos, cursorPos); // TOOD (oHuNLpn2): why is this inverted? + = - and - = +
+			pane->setLabel(CoordPane::CursorPos, cursorPos);
 			pane->setLabel(CoordPane::CursorWorldOffset, cursorWorldOffset);
 			pane->setLabel(CoordPane::CursorWorldPos, cursorWorldPos);
 
