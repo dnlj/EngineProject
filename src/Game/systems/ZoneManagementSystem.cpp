@@ -281,16 +281,9 @@ namespace Game {
 	}
 
 	void ZoneManagementSystem::tick() {
-		// On the client we don't every need to do these calcs, its done on the
-		// server and then networked so everything stays in sync. We still need
-		// to have zones though so we can potentially preload things like boss
-		// zones or waypoints ahead of time and then swap to them.
 		if constexpr (ENGINE_SERVER) { tick_Server(); }
 		if constexpr (ENGINE_CLIENT) { tick_Client(); }
 
-		// TODO (m2X6CXl5): still need to do this cleanup on the client
-		//       Will need some way for the client to know what zones are still needed so we don't unload them...
-		//       Not an issue right now but if we want to do preloading or similar 
 		for (ZoneId zoneId = 0; zoneId < zones.size(); ++zoneId) {
 			auto& zone = zones[zoneId];
 			if (!zone.getPlayers().empty()) { continue; }
