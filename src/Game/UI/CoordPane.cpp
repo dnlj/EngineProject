@@ -37,7 +37,9 @@ namespace Game::UI {
 			const auto& cam = engine.getCamera();
 			const auto camPos = cam.getPosition();
 			const auto cursorPos = ctx.getCursor();
-			const auto cursorWorldOffset = (cursorPos - glm::vec2{cam.getScreenSize()/2}) * pixelRescaleFactor;
+
+			// Need to negate y to go from screen +y=down to world +y=up
+			const auto cursorWorldOffset = (cursorPos - glm::vec2{cam.getScreenSize()/2}) * pixelRescaleFactor * glm::vec2{1, -1}; 
 			const auto cursorWorldPos = glm::vec2{camPos} + cursorWorldOffset;
 
 			pane->setLabel(CoordPane::Camera, camPos);
