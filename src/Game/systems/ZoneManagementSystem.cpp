@@ -48,6 +48,15 @@ namespace {
 namespace Game {
 	ZoneManagementSystem::ZoneManagementSystem(SystemArg arg)
 		: System{arg} {
+
+		// We need the zone system to be at the beginning or end of an update or
+		// else there will be visual issues (1 frame flash/blink) with:
+		// physUpdate > moveZones > render. Due to the positions moving before rendering but after the interp system
+		static_assert(World::orderBefore<ZoneManagementSystem, PhysicsSystem>());
+		static_assert(World::orderBefore<ZoneManagementSystem, PhysicsInterpSystem>());
+		static_assert(World::orderBefore<ZoneManagementSystem, RenderPassSystem>());
+
+		// Should be for for most accurate updates or else we will be sending data delayed by one tick.
 		static_assert(World::orderBefore<ZoneManagementSystem, EntityNetworkingSystem>());
 
 		// Should always have at least one zone.
@@ -291,7 +300,7 @@ namespace Game {
 			if (zoneId != 0 && zone.active) {
 				ENGINE_LOG2("{} - Closing zone {}", world.getTick(), zoneId);
 
-				// TODO: save off entities etc
+				// TODO (mAtTDzjB): save off entities etc
 
 				zone.active = false;
 				zone.clear();
