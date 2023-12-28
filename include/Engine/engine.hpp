@@ -193,14 +193,20 @@ namespace Engine {
 #include <Engine/Constants.hpp>
 #include <Engine/Detail/detail.hpp>
 
-#define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)\
-	([](auto&&... args) ENGINE_INLINE {\
-		::Engine::Detail::log<Decorate>(Prefix, Color,\
-			(__FILE__ + sizeof(ENGINE_BASE_PATH)), __LINE__,\
-			std::forward<decltype(args)>(args) ...\
-		);\
-		Other;\
-	})
+#define ENGINE_DISABLE_ALL_LOGGING false
+
+#if ENGINE_DISABLE_ALL_LOGGING
+	#define _ENGINE_CREATE_LOG_LAMBDA(...) ([](auto&&...){})
+#else
+	#define _ENGINE_CREATE_LOG_LAMBDA(Prefix, Decorate, Color, Other)\
+		([](auto&&... args) ENGINE_INLINE {\
+			::Engine::Detail::log<Decorate>(Prefix, Color,\
+				(__FILE__ + sizeof(ENGINE_BASE_PATH)), __LINE__,\
+				std::forward<decltype(args)>(args) ...\
+			);\
+			Other;\
+		})
+#endif
 
 #define _ENGINE_CREATE_ASSERT_LAMBDA(Prefix, Decorate, Color, Other)\
 	([](auto cond, auto&&... args) ENGINE_INLINE {\
@@ -234,13 +240,21 @@ namespace Engine {
 	#define ENGINE_DEBUG_BREAK
 #endif
 
-
-#define ENGINE_DEBUG2 ::Engine::getGlobalConfig().logger.debug
-#define ENGINE_LOG2 ::Engine::getGlobalConfig().logger.log
-#define ENGINE_INFO2 ::Engine::getGlobalConfig().logger.info
-#define ENGINE_SUCCESS2 ::Engine::getGlobalConfig().logger.success
-#define ENGINE_VERBOSE2 ::Engine::getGlobalConfig().logger.verbose
-#define ENGINE_WARN2 ::Engine::getGlobalConfig().logger.warn
+#if ENGINE_DISABLE_ALL_LOGGING
+	#define ENGINE_DEBUG2(...)
+	#define ENGINE_LOG2(...)
+	#define ENGINE_INFO2(...)
+	#define ENGINE_SUCCESS2(...)
+	#define ENGINE_VERBOSE2(...)
+	#define ENGINE_WARN2(...)
+#else
+	#define ENGINE_DEBUG2 ::Engine::getGlobalConfig().logger.debug
+	#define ENGINE_LOG2 ::Engine::getGlobalConfig().logger.log
+	#define ENGINE_INFO2 ::Engine::getGlobalConfig().logger.info
+	#define ENGINE_SUCCESS2 ::Engine::getGlobalConfig().logger.success
+	#define ENGINE_VERBOSE2 ::Engine::getGlobalConfig().logger.verbose
+	#define ENGINE_WARN2 ::Engine::getGlobalConfig().logger.warn
+#endif
 
 #define ENGINE_ERROR2 ([](::Engine::Log::FormatString format, const auto&... args) ENGINE_INLINE {\
 	::Engine::getGlobalConfig().logger.error(format, args...);\
