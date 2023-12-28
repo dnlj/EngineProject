@@ -227,7 +227,7 @@ namespace Engine::UI {
 		scissor(curClip);
 
 		Gfx::TextureHandleGeneric activeTex = {};
-		for (auto const& group : getDrawGroups()) {
+		for (const auto& group : getDrawGroups()) {
 			ENGINE_DEBUG_ASSERT(group.count > 0);
 
 			// TODO: We could save on a few scissor calls here if we track all clips and

@@ -78,7 +78,7 @@ namespace Engine::UI {
 
 			// Next pow2 that will contain at least `count` glyphs
 			constexpr auto count = 10;
-			auto const ideal = std::bit_ceil(static_cast<uint32>(glm::compMax(maxGlyphSize) * count));
+			const auto ideal = std::bit_ceil(static_cast<uint32>(glm::compMax(maxGlyphSize) * count));
 
 			glyphTexSize = std::min(glyphTexSize, static_cast<GLint>(ideal));
 		};

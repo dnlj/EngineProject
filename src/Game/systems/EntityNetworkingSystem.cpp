@@ -520,8 +520,7 @@ namespace Game {
 			});
 
 			// Create a b2 query object the filters entities to only those relevant the the player.
-			auto const createQuery = [](ZoneId plyZoneId, World& world, auto&& func){
-				using Func = decltype(func);
+			const auto createQuery = []<class Func>(ZoneId plyZoneId, World& world, Func&& func){
 				struct ZoneQuery : b2QueryCallback {
 					Func func;
 					ZoneId plyZoneId = 0;
@@ -549,7 +548,7 @@ namespace Game {
 			// avoid rapid add/remove near edge/border if the player is moving
 			// around in the same small area a lot.
 			auto queryPersist = createQuery(physComp.getZoneId(), world,
-				[&ecsNetComp](auto const& self, Entity ent){
+				[&ecsNetComp](const auto& self, Entity ent){
 					if (ecsNetComp.neighbors.contains(ent)) {
 						auto& state = ecsNetComp.neighbors.get(ent).state;
 						if (state != NeighborState::ZoneChanged) {
@@ -561,7 +560,7 @@ namespace Game {
 
 			// Only add new items in a smaller radius.
 			auto queryAdd = createQuery(physComp.getZoneId(), world,
-				[ply, &ecsNetComp](auto const& self, Entity ent){
+				[ply, &ecsNetComp](const auto& self, Entity ent){
 					if (!ecsNetComp.neighbors.contains(ent) && ent != ply) {
 						ecsNetComp.neighbors.add(ent, NeighborState::Added);
 					}
