@@ -89,7 +89,7 @@ namespace Game {
 			void setup();
 			void tick();
 			void update(float32 dt);
-			void ensurePlayAreaLoaded(Engine::ECS::Entity ply);
+			void ensurePlayAreaLoaded(Engine::ECS::Entity ply); // TODO: should probably be private
 
 			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);
 

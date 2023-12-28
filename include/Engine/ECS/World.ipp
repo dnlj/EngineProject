@@ -47,7 +47,9 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		if constexpr (ENGINE_CLIENT) {
+		// TODO: remove the `&& false` - currently just temp while debugging zone stutter.
+		// TODO (FisZQ6LR): rollback currently breaks zone changes (I think only for static entities?).
+		if constexpr (ENGINE_CLIENT && false) {
 			if (rollbackData.tick != -1 && !performingRollback) {
 				const auto oldTick = currTick;
 				const auto oldTime = tickTime;

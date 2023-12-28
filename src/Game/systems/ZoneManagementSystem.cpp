@@ -25,24 +25,6 @@ namespace {
 	ENGINE_INLINE WorldAbsUnit manhattanDist(const WorldAbsVec& a, const WorldAbsVec& b) noexcept {
 		ENGINE_FLATTEN return glm::compAdd(glm::abs(a - b));
 	}
-
-	void recv_ZONE_INFO(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
-		ENGINE_DEBUG_ASSERT(ENGINE_CLIENT);
-		auto& world = engine.getWorld();
-		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-
-		ZoneId zoneId;
-		WorldAbsVec zonePos;
-
-		if (!msg.read(&zoneId) || !msg.read(&zonePos)) {
-			ENGINE_WARN("Unable to read zone message.");
-			ENGINE_DEBUG_BREAK;
-			return;
-		}
-
-		zoneSys.ensureZone(zoneId, zonePos);
-		zoneSys.migratePlayer(from.ent, zoneId, world.getComponent<PhysicsBodyComponent>(from.ent));
-	}
 }
 
 namespace Game {
@@ -56,18 +38,16 @@ namespace Game {
 		static_assert(World::orderBefore<ZoneManagementSystem, PhysicsInterpSystem>());
 		static_assert(World::orderBefore<ZoneManagementSystem, RenderPassSystem>());
 
-		// Should be for for most accurate updates or else we will be sending data delayed by one tick.
-		static_assert(World::orderBefore<ZoneManagementSystem, EntityNetworkingSystem>());
+		// Zone updates are the first thing that happens for the next update
+		// immediately after sending the previous state.
+		static_assert(World::orderAfter<ZoneManagementSystem, EntityNetworkingSystem>());
+		static_assert(World::orderAfter<ZoneManagementSystem, NetworkingSystem>());
 
 		// Should always have at least one zone.
 		zones.emplace_back();
 	}
 
 	void ZoneManagementSystem::setup() {
-		if constexpr (ENGINE_CLIENT) {
-			auto& netSys = world.getSystem<NetworkingSystem>();
-			netSys.setMessageHandler(MessageType::ZONE_INFO, recv_ZONE_INFO);
-		}
 	}
 
 	void ZoneManagementSystem::tick_Server() {
@@ -362,18 +342,6 @@ namespace Game {
 					migrateEntity(ent, newZoneId, neighPhysComp);
 				}
 			}
-
-			// Network the player's zone.
-			auto& netSys = world.getSystem<NetworkingSystem>();
-			auto conn = netSys.getConnection(ply);
-			ENGINE_DEBUG_ASSERT(conn);
-
-			if (auto msg = conn->beginMessage<MessageType::ZONE_INFO>()) {
-				msg.write(newZoneId);
-				msg.write(newZone.offset);
-			} else {
-				ENGINE_DEBUG_BREAK;
-			}
 		}
 	}
 
@@ -390,5 +358,11 @@ namespace Game {
 		const b2Vec2 zoneOffsetDiffB2 = {static_cast<float32>(zoneOffsetDiff.x), static_cast<float32>(zoneOffsetDiff.y)};
 		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);
 		physComp.setZone(newZoneId);
+
+		// Avoid interpolating between after zone changes or else things will
+		// appear very off (blank/off screen) for a few frames because it will
+		// be something like lerp(1000, 0) = 500. Whereas in global coordinates
+		// the position hasn't changed.
+		physComp.snap = true;
 	}
 }

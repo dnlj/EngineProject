@@ -16,8 +16,10 @@
 
 namespace Game {
 	using SystemsSet = Meta::TypeSet::TypeSet<
-		// State Updates
+		// Networking & State Updates
 		// Must be before physics + rendering. Updating between causes a flash/flick.
+		class EntityNetworkingSystem,
+		class NetworkingSystem,
 		class ZoneManagementSystem,
 
 		// Inputs
@@ -31,11 +33,6 @@ namespace Game {
 		class PhysicsInterpSystem,
 		class CameraTrackingSystem,
 		class MapSystem,
-
-		// Networking
-		// We want networking before rendering so that the ui/console have the most up to date info.
-		class EntityNetworkingSystem,
-		class NetworkingSystem,
 
 		// Rendering
 		//ParallaxBackgroundSystem,

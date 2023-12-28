@@ -13,6 +13,9 @@
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/Connection.hpp>
 
+// TODO: rm - shouldnt be accessed from here.
+#include <Game/systems/MapSystem.hpp>
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shared
@@ -234,7 +237,7 @@ namespace {
 		const float32 eps = 0.0001f; // TODO: figure out good eps value. Probably half the size of a pixel or similar.
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
 		// TODO: why does this ever happen with only one player connected?
-		if (diff.LengthSquared() >  eps * eps) { // TODO: also check q
+		if (diff.LengthSquared() > eps * eps) { // TODO: also check q
 			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physCompState.trans.p.x)>::max_digits10),
 				"Oh boy a mishap has occured on tick ", tick,
 				" (<", physCompState.trans.p.x, ", ", physCompState.trans.p.y, "> - <",
@@ -243,7 +246,11 @@ namespace {
 				">)"
 			);
 
-			// TODO: how to manage zone here?
+			// TODO: how to manage zone here? If the zone is different we should
+			//       be able to ignore it and abort the rollback or something?
+			//       The actual zone update is handled in ECS_ZONE_INFO since
+			//       all zones changes need to be batched to avoid flickering
+			//       between zone ticks
 
 			physCompState.trans = trans;
 			physCompState.vel = vel;
@@ -256,25 +263,39 @@ namespace {
 	}
 
 	void recv_ECS_ZONE_INFO(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
+		ZoneId zoneId;
+		WorldAbsVec zonePos;
+
+		if (!msg.read(&zoneId) || !msg.read(&zonePos)) {
+			ENGINE_WARN2("Unable to read zone info in ECS_ZONE_INFO.");
+			ENGINE_DEBUG_BREAK;
+			return;
+		}
+		
+		auto& world = engine.getWorld();
+		auto& entNetSys = world.getSystem<EntityNetworkingSystem>();
+		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+
+		// We should only be getting this message when the player switches zones
+		// so it is safe to assume that the player also migrated zones.
+		zoneSys.ensureZone(zoneId, zonePos);
+		zoneSys.migratePlayer(from.ent, zoneId, world.getComponent<PhysicsBodyComponent>(from.ent));
+
+		// TODO: Find a better solution, this is just a hack for now. The issues
+		//       is terrain zone isn't updated until the next tick whereas this is
+		//       received on update so there are a few frames where entities have
+		//       moved but terrain is still in the old zone.
+		world.getSystem<MapSystem>().ensurePlayAreaLoaded(from.ent);
+
 		while (msg.remaining()) {
 			Entity remote;
-			ZoneId zoneId;
-			WorldAbsVec zonePos;
-
-			if (!msg.read(&remote) || !msg.read(&zoneId) || !msg.read(&zonePos)) {
-				ENGINE_WARN2("Unable to read ECS_ZONE_INFO.");
+			if (!msg.read(&remote)) {
+				ENGINE_WARN2("Unable to read entity in ECS_ZONE_INFO.");
 				ENGINE_DEBUG_BREAK;
 				return;
 			}
 
-			// TODO (FolQVYqw): we should probably have separate ZONE_CREATE/ZONE_DESTROY
-			//       messages independant from the the (ent, zid) messages so we don't
-			//       have to duplicate the zone position info for every entity.
-			auto& world = engine.getWorld();
-			auto& entNetSys = world.getSystem<Game::EntityNetworkingSystem>();
-			auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 			const auto local = entNetSys.getEntityMapping(remote);
-			zoneSys.ensureZone(zoneId, zonePos);
 			zoneSys.migrateEntity(local, zoneId, world.getComponent<PhysicsBodyComponent>(local));
 		}
 	}
@@ -325,14 +346,18 @@ namespace Game {
 
 			// TODO: see DqVBIIfY
 			// TODO: move elsewhere, this isnt really related to ECS networking
-			{ // TODO: player data should be sent every tick along with actions/inputs.
-			// TODO: cont.  Should it? every few frames is probably fine for keeping it in sync. Although when it does desync it will be a larger rollback.
-				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-				if (auto msg = conn->beginMessage<MessageType::PLAYER_DATA>()) {
-					msg.write(world.getTick() + 1); // since this is in `run` and not before `tick` we are sending one tick off. +1 is temp fix
-					msg.write(physComp.getTransform());
-					msg.write(physComp.getVelocity());
-				}
+			// 
+			// TODO: player data should be sent every tick along with actions/inputs.
+			//       Should it? every few frames is probably fine for keeping it in
+			//       sync. Although when it does desync it will be a larger rollback.
+			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+			if (auto msg = conn->beginMessage<MessageType::PLAYER_DATA>()) {
+				// TODO: Is this +1 comment still correct? Shouldn't this be
+				//       removed/updated since networking now happens at the start of
+				//       the loop instead of the end?
+				msg.write(world.getTick() + 1); // since this is in `update` and not before `tick` we are sending one tick off. +1 is temp fix
+				msg.write(physComp.getTransform());
+				msg.write(physComp.getVelocity());
 			}
 
 			// TODO: prioritize entities?
@@ -357,12 +382,13 @@ namespace Game {
 			if (!zoneChanged.empty()) {
 				if (auto msg = conn->beginMessage<MessageType::ECS_ZONE_INFO>()) {
 					const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+					const auto zoneId = physComp.getZoneId();
+					const auto zonePos = zoneSys.getZone(zoneId).offset;
+					msg.write(zoneId);
+					msg.write(zonePos);
+
 					for (const auto ent : zoneChanged) {
-						const auto zoneId = world.getComponent<PhysicsBodyComponent>(ent).getZoneId();
-						const auto zonePos = zoneSys.getZone(zoneId).offset;
 						msg.write(ent);
-						msg.write(zoneId);
-						msg.write(zonePos);
 						ENGINE_INFO2("MSG: {} {} {}", ent, zoneId, zonePos);
 					}
 				} else {

@@ -24,8 +24,7 @@ namespace Game {
 
 	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
 		MessageType::PLAYER_DATA,
-		MessageType::ZONE_INFO,
-		MessageType::ECS_ZONE_INFO,
+		MessageType::ECS_ZONE_INFO, // TODO: would moving this to ordered with the other ecs flags fix some of the stutter?
 		MessageType::SPELL
 	> {};
 
