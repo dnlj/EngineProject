@@ -2,11 +2,14 @@
 
 
 namespace Game {
-	enum BlockId : uint16 {
-		#define X(Name, Solid, Path) Name,
-		#include <Game/Blocks.xpp>
-		_count,
+	struct BlockId_ {
+		enum BlockId : uint16 {
+			#define X(Name, Solid, Path) Name,
+			#include <Game/Blocks.xpp>
+			_count,
+		};
 	};
+	using BlockId = BlockId_::BlockId;
 	ENGINE_BUILD_ALL_OPS(BlockId);
 
 	struct BlockMeta {
