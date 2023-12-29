@@ -234,10 +234,8 @@ namespace Engine {
 
 #if ENGINE_DEBUG
 	#define ENGINE_DEBUG_ASSERT ENGINE_ASSERT
-	#define ENGINE_DEBUG_BREAK __debugbreak();
 #else
 	#define ENGINE_DEBUG_ASSERT(...)
-	#define ENGINE_DEBUG_BREAK
 #endif
 
 #if ENGINE_DISABLE_ALL_LOGGING

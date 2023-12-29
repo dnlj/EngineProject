@@ -168,7 +168,7 @@ namespace Game {
 			writeMessagePadding(reply.getBufferWriter());
 			from.setKeyRemote(remote);
 			from.setState(ConnectionState::Connected);
-			ENGINE_LOG("CONNECT_CHALLENGE from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
+			ENGINE_LOG("CONNECT_CHALLENGE from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
 		} else [[unlikely]] {
 			ENGINE_WARN("Unable to send CONNECT_CONFIRM");
 		}
@@ -196,7 +196,7 @@ namespace Game {
 
 		from.setState(ConnectionState::Connected);
 		netSys.addPlayer(from); // TODO: this step should probably be delayed until we get some kind of CONFIG_CONFIRM message.
-		ENGINE_LOG("CONNECT_CONFIRM from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick(), " ", from.ent);
+		ENGINE_LOG("CONNECT_CONFIRM from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick(), " ", from.ent);
 
 
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
@@ -528,6 +528,7 @@ namespace Game {
 			auto [it,_] = addrToConn.emplace(addr, std::make_unique<ConnectionInfo>(addr, now));
 			found = it;
 			found->second->setState(ConnectionState::Disconnected);
+			ENGINE_INFO2("Create connection: {} - {:0X}", addr, (intptr_t)found->second.get());
 		}
 		return *found->second;
 	}
@@ -543,8 +544,8 @@ namespace Game {
 		}
 
 		if (!(meta.recvState & from.getState())) {
-			if (!ENGINE_DEBUG || (hdr.type != MessageType::DISCONNECT)) {
-				ENGINE_WARN("Messages received in wrong state. Aborting. ", meta.name, "(", +hdr.type, ") ", +meta.recvState, " != ", +from.getState());
+			if (hdr.type != MessageType::DISCONNECT) {
+				ENGINE_WARN2("Messages received in wrong state ({} - {:0X}). Aborting. {}({}) {} != {}", from.address(), (intptr_t)&from, meta.name, +hdr.type, +meta.recvState, +from.getState());
 			}
 			msg.discard();
 			return;

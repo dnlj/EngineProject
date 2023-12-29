@@ -53,7 +53,11 @@ namespace Engine::Net {
 			};
 
 			uint16 port;
-	};
+
+			// Explicitly zero padding bytes
+			byte _padding[2] = {};
+			static_assert(sizeof(address) + sizeof(port) + sizeof(_padding) == 8);
+	}; static_assert(sizeof(IPv4Address) == 8);
 
 	bool operator==(const IPv4Address& a, const IPv4Address& b);
 	std::ostream& operator<<(std::ostream& os, const IPv4Address& address);
