@@ -23,6 +23,7 @@ namespace Game::UI {
 				Tick,
 				TickScale,
 				TickRate,
+				RunDelta,
 			};
 
 			InfoPane(EUI::Context* context);
