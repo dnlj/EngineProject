@@ -6,6 +6,8 @@
 #define ENGINE_SERVER (ENGINE_SIDE == ENGINE_SIDE_SERVER)
 #define ENGINE_CLIENT (ENGINE_SIDE == ENGINE_SIDE_CLIENT)
 
+#define ENGINE_DISABLE_ALL_LOGGING false
+
 #ifdef DEBUG
 	#define ENGINE_DEBUG true
 #else
@@ -192,8 +194,6 @@ namespace Engine {
 #include <Engine/FatalException.hpp>
 #include <Engine/Constants.hpp>
 #include <Engine/Detail/detail.hpp>
-
-#define ENGINE_DISABLE_ALL_LOGGING false
 
 #if ENGINE_DISABLE_ALL_LOGGING
 	#define _ENGINE_CREATE_LOG_LAMBDA(...) ([](auto&&...){})
