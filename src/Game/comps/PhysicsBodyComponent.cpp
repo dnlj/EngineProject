@@ -40,6 +40,26 @@ namespace Game {
 		}
 	}
 
+	void PhysicsBody::moveZone(WorldAbsVec oldZoneOffset, ZoneId newZoneId, WorldAbsVec newZoneOffset) {
+		ENGINE_DEBUG_ASSERT(newZoneId != getZoneId(), "Attempting to move PhysicsBody to the same zone.");
+		const auto zoneOffsetDiff = newZoneOffset - oldZoneOffset;
+		const b2Vec2 zoneOffsetDiffB2 = {static_cast<float32>(zoneOffsetDiff.x), static_cast<float32>(zoneOffsetDiff.y)};
+		setPosition(getPosition() - zoneOffsetDiffB2);
+		setZone(newZoneId);
+	}
+}
+
+namespace Game {
+	void PhysicsBodyComponent::moveZone(WorldAbsVec oldZoneOffset, ZoneId newZoneId, WorldAbsVec newZoneOffset) {
+		PhysicsBody::moveZone(oldZoneOffset, newZoneId, newZoneOffset);
+
+		// Avoid interpolating after zone changes or else things will appear
+		// very off (likely blank/off screen) for a few frames because it will
+		// be something like lerp(1000, 0) = 500. Whereas in global coordinates
+		// the position hasn't changed.
+		snap = true;
+	}
+
 	void NetworkTraits<PhysicsBodyComponent>::write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 		buff.write<b2Transform>(obj.getTransform());
 		buff.write<b2Vec2>(obj.getVelocity());

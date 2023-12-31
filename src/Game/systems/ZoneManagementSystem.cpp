@@ -353,16 +353,6 @@ namespace Game {
 
 		auto& oldZone = zones[oldZoneId];
 		auto& newZone = zones[newZoneId];
-
-		const auto zoneOffsetDiff = newZone.offset - oldZone.offset;
-		const b2Vec2 zoneOffsetDiffB2 = {static_cast<float32>(zoneOffsetDiff.x), static_cast<float32>(zoneOffsetDiff.y)};
-		physComp.setPosition(physComp.getPosition() - zoneOffsetDiffB2);
-		physComp.setZone(newZoneId);
-
-		// Avoid interpolating between after zone changes or else things will
-		// appear very off (blank/off screen) for a few frames because it will
-		// be something like lerp(1000, 0) = 500. Whereas in global coordinates
-		// the position hasn't changed.
-		physComp.snap = true;
+		physComp.moveZone(oldZone.offset, newZoneId, newZone.offset);
 	}
 }

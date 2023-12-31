@@ -40,6 +40,8 @@ namespace Game {
 				*this = {};
 				return temp;
 			}
+			
+			void moveZone(WorldAbsVec oldZoneOffset, ZoneId newZoneId, WorldAbsVec newZoneOffset);
 
 			ENGINE_INLINE const b2Fixture* getFixtureList() const noexcept { return body->GetFixtureList(); }
 
@@ -81,6 +83,7 @@ namespace Game {
 
 		public:
 			PhysicsBodyComponent() = default;
+			void moveZone(WorldAbsVec oldZoneOffset, ZoneId newZoneId, WorldAbsVec newZoneOffset);
 	};
 }
 

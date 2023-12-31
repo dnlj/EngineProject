@@ -488,6 +488,7 @@ namespace Game {
 					const auto chunkIndex = chunkToRegionIndex(chunkPos);
 					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
 
+					// Build chunk entities
 					if constexpr (ENGINE_SERVER) {
 						for (const auto& desc : chunkInfo.entData) {
 							Engine::ECS::Entity ent;
@@ -509,12 +510,23 @@ namespace Game {
 					// ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
 					it->second.updated = tick;
 				} else {
+					// If the chunk is already loaded make sure the chunk and its entities are in the correct zone.
 					auto& body = it->second.body;
 					if (body.getZoneId() != plyZoneId) {
 						//ENGINE_INFO2("Moving chunk {} from zone {} to {} @ {}", chunkPos, body.getZoneId(), plyZoneId, tick);
 						const auto pos = blockToWorld2(chunkToBlock(chunkPos), plyZoneOffset);
 						body.setPosition({pos.x, pos.y});
 						body.setZone(plyZoneId);
+
+						for (const auto ent : it->second.blockEntities) {
+							auto& entPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
+
+							// Some entities may have already been moved in the zone system so we need to check the zone here.
+							if (entPhysComp.getZoneId() != plyZoneId) {
+								const auto oldZoneOffset = zoneSys.getZone(entPhysComp.getZoneId()).offset;
+								entPhysComp.moveZone(oldZoneOffset, plyZoneId, plyZoneOffset);
+							}
+						}
 					}
 				}
 				
