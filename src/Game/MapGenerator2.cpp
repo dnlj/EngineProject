@@ -440,11 +440,15 @@ namespace Game {
 	auto MapGenerator2::landmark(const FVec2 pos, const IVec2 ipos, const Int h, BlockGenData& bgd) const noexcept -> LandmarkSample {
 		LandmarkSample res = {};
 
+		// TODO: Both these functions should be constexpr with no capture. Need
+		//       to rework a little to return landmark instead of store in vairable. I
+		//       imagine a lot of this generation code will be changing in the near-ish
+		//       future. Probably not worth dealing with atm.
 		const auto sample = [&]<Landmark L>() ENGINE_INLINE {
 			res = landmarkSample<L>(pos, ipos, h, bgd);
 		};
 
-		constexpr auto iter = [&]<class T, T... Is>(std::integer_sequence<T, Is...>) ENGINE_INLINE {
+		const auto iter = [&]<class T, T... Is>(std::integer_sequence<T, Is...>) ENGINE_INLINE {
 			((sample.template operator()<landmarksByBiome<B>[Is]>(), res.exists) || ...);
 		};
 

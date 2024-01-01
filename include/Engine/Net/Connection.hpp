@@ -239,7 +239,7 @@ namespace Engine::Net {
 					const MessageHeader* hdr = nullptr;
 					((hdr = getChannel<Cs>().recvNext()) || ...); // Takes advantage of || short circuit
 					if (hdr) { 
-						view = {*hdr, {hdr, hdr->size + sizeof(MessageHeader)}};
+						view = {*hdr, {hdr, hdr->size + static_cast<ptrdiff_t>(sizeof(MessageHeader))}};
 						view.msg.read(sizeof(MessageHeader));
 					}
 					return view;

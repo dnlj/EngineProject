@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <random>
 #include <type_traits>
+#include <thread>
 
 // Engine
 #include <Engine/engine.hpp>
