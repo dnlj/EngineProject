@@ -223,7 +223,8 @@ namespace Engine::UI {
 	}
 
 	void RichGraph::render() {
-		ctx->setColor(ctx->getTheme().colors.feature);
+		//ctx->setColor(ctx->getTheme().colors.feature);
+		ctx->setColor({0.25, 0.25, 0.25, 1.0});
 		ctx->drawRect({0,0}, getSize());
 		// TODO: current cursor position (ji96pF6X)
 	}

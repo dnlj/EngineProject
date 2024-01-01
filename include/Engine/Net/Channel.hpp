@@ -7,6 +7,16 @@
 #include <Engine/Clock.hpp>
 #include <Engine/SequenceBuffer.hpp>
 
+// TODO (0W4vlcPN): We shouldn't be calling SequenceBuffer::insert anywhere in
+//                  the channels since it leads to a lot of potentially large
+//                  and redundant allocations. The whole point was to reuse the
+//                  same buffer data instead of reallocating every time. I think
+//                  this is fallout from reusing SequenceBuffer in other non
+//                  network code later and then assuming insert would re-init
+//                  its data. We should either split into another class or
+//                  manually call insertNoInit and clear/reuse the fields
+//                  appropriately.
+
 
 namespace Engine::Net {
 	// TODO: make MAX_ACTIVE_MESSAGES_PER_CHANNEL a template argument of Channel_ReliableSender instead of global?
