@@ -22,7 +22,12 @@ CLEAN_PATTERNS = {
 
 	-- Conan
 	"conan_build",
-	".temp.conanfile.*"
+	".temp.conanfile.*",
+	
+	-- Intel VTune
+	"DawnCache",
+	"GPUCache",
+	"Intel® VTune™ Profiler Results",
 }
 
 --------------------------------------------------------------------------------
@@ -158,6 +163,7 @@ workspace(PROJECT_NAME .."Workspace")
 	}
 
 	filter "action:vs*"
+		justmycode "off" -- /JMC adds significant debug build overhead
 		buildoptions {
 			"/wd4996", -- Disable some warnings about things Visual Studio has taken upon itself to deem deprecated
 			"/wd4103", -- Work around for MSVC bug. TODO: remove when fixed - https://developercommunity.visualstudio.com/t/Warning-C4103-in-Visual-Studio-166-Upda/1057589

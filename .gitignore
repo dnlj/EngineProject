@@ -6,6 +6,11 @@
 /_TEMP_*_
 .private
 
+# Intel VTune
+DawnCache
+GPUCache
+Intel® VTune™ Profiler Results
+
 # Photoshop
 **.psd
 
