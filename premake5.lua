@@ -23,11 +23,26 @@ CLEAN_PATTERNS = {
 	-- Conan
 	"conan_build",
 	".temp.conanfile.*",
-	
+
 	-- Intel VTune
 	"DawnCache",
 	"GPUCache",
 	"Intel® VTune™ Profiler Results",
+}
+--------------------------------------------------------------------------------
+-- Setup files/tools/utilties
+--------------------------------------------------------------------------------
+SETUP_CONFIG = {
+	{
+		name = "Conan",
+		url = "https://github.com/conan-io/conan/releases/download/2.0.14/conan-win-64.zip",
+		dir = "tools/conan",
+	},
+	{
+		name = "Doxygen",
+		url = "https://www.doxygen.nl/files/doxygen-1.10.0.windows.x64.bin.zip",
+		dir = "tools/doxygen",
+	},
 }
 
 --------------------------------------------------------------------------------
@@ -110,6 +125,7 @@ require "premake/action_clean"
 require "premake/action_build"
 require "premake/action_tests"
 require "premake/action_conan"
+require "premake/action_setup"
 
 premake.override(premake.vstudio.vc2010.elements, "user", function(base, cfg)
 	local calls = base(cfg)
@@ -143,7 +159,7 @@ workspace(PROJECT_NAME .."Workspace")
 	targetdir "./bin/%{cfg.buildcfg}_%{cfg.platform}"
 	objdir "./obj/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
 	startproject(PROJECT_NAME)
-	
+
 	-- Might be a better solution. See discussion: https://github.com/premake/premake-core/issues/1061
 	files {
 		"natvis/**.natvis",
@@ -241,7 +257,7 @@ project("*")
 		"src/pch.cpp",
 		"include/pch.hpp",
 	}
-	
+
 	pchheader "pch.hpp"
 	pchsource "src/pch.cpp"
 	forceincludes "pch.hpp"
@@ -260,7 +276,7 @@ project("*")
 	filter "configurations:Release*"
 		conan_setup("release")
 	filter {}
-	
+
 	includedirs {
 		"include",
 	}
@@ -310,13 +326,13 @@ project("Bench")
 	uuid "71611229-1162-4773-AC04-0B86A3FE1AD0"
 	kind "ConsoleApp"
 	flags { "ExcludeFromBuild" }
-	
+
 	files {
 		"bench/**",
 		"include/bench/**",
 		"src/bench/**",
 	}
-	
+
 	includedirs {
 		"include/bench/**",
 	}
