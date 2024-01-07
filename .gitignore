@@ -6,6 +6,9 @@
 /_TEMP_*_
 .private
 
+# Exclude all user/cache folders (.vs, .conan, .vscode, etc.)
+/.*/
+
 # Intel VTune
 DawnCache
 GPUCache
