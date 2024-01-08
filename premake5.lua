@@ -69,7 +69,6 @@ CONAN_PACKAGES = {
 		----"implot/0.9@dnlj/wobbly",----------------------------------------------------
 		--"meta/master@dnlj/wobbly",
 		--"pcg/master@dnlj/wobbly",
-		----"premake5/latest@dnlj/wobbly",
 		--"robin_hood/master@dnlj/wobbly",
 		--"soil_littlstar/master@dnlj/wobbly",
 		--"freetype/VER-2-10-4@dnlj/wobbly",
