@@ -12,8 +12,7 @@ class Recipe(ConanFile):
 		tools.files.get(self, url=f"https://github.com/g-truc/glm/archive/{self.version}.zip")
 
 	def package(self):
-		tools.files.copy(self,
-			pattern="*",
+		tools.files.copy(self, "*",
 			src=os.path.join(self.source_folder, f"glm-{self.version}/glm"),
 			dst=os.path.join(self.package_folder, "include/glm"),
 			keep_path=True,

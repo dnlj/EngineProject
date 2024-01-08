@@ -13,8 +13,7 @@ class Recipe(ConanFile):
 		)
 
 	def package(self):
-		tools.files.copy(self,
-			pattern="*.hpp",
+		tools.files.copy(self, "*.hpp",
 			src=os.path.join(self.source_folder, "include"),
 			dst=os.path.join(self.package_folder, "include"),
 			keep_path=True
