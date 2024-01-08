@@ -48,7 +48,8 @@ SETUP_CONFIG = {
 --------------------------------------------------------------------------------
 -- Conan Settings
 --------------------------------------------------------------------------------
-CONAN_USER_HOME = os.getcwd()
+CONAN_ROOT = _MAIN_SCRIPT_DIR
+CONAN_EXE = "tools/conan/conan"
 
 function conan_setup(cfg)
 	if not cfg or not CONAN_BUILD_INFO or not CONAN_BUILD_INFO[cfg] then return end
@@ -56,27 +57,26 @@ function conan_setup(cfg)
 end
 
 CONAN_REMOTES = {
-	-- ["conan-center"] = "https://api.bintray.com/conan/conan/conan-center",
-	-- ["bincrafters"] = "https://api.bintray.com/conan/bincrafters/public-conan",
+	-- ["conancenter"] = "https://center.conan.io",
 }
 
 CONAN_PACKAGES = {
 	["requires"] = {
 		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
-		"glm/0.9.9.7@dnlj/wobbly",
-		--"imgui/1.82@dnlj/wobbly",
-		--"imgui-node-editor/master@dnlj/wobbly",
-		--"implot/0.9@dnlj/wobbly",
-		"meta/master@dnlj/wobbly",
-		"pcg/master@dnlj/wobbly",
-		"premake5/latest@dnlj/wobbly",
-		"robin_hood/master@dnlj/wobbly",
-		"soil_littlstar/master@dnlj/wobbly",
-		"freetype/VER-2-10-4@dnlj/wobbly",
-		"harfbuzz/2.8.1@dnlj/wobbly",
-		"fmtlib/10.0.0@dnlj/wobbly",
-		--"soil/latest@dnlj/wobbly",
-		"assimp/5.2.3@dnlj/wobbly",
+		--"glm/0.9.9.7@dnlj/wobbly",
+		----"imgui/1.82@dnlj/wobbly",----------------------------------------------------
+		----"imgui-node-editor/master@dnlj/wobbly",----------------------------------------------------
+		----"implot/0.9@dnlj/wobbly",----------------------------------------------------
+		--"meta/master@dnlj/wobbly",
+		--"pcg/master@dnlj/wobbly",
+		----"premake5/latest@dnlj/wobbly",
+		--"robin_hood/master@dnlj/wobbly",
+		--"soil_littlstar/master@dnlj/wobbly",
+		--"freetype/VER-2-10-4@dnlj/wobbly",
+		--"harfbuzz/2.8.1@dnlj/wobbly",
+		--"fmtlib/10.0.0@dnlj/wobbly",
+		----"soil/latest@dnlj/wobbly", ----------------------------------------------------
+		--"assimp/5.2.3@dnlj/wobbly",
 
 	},
 	["generators"] = {
@@ -89,30 +89,37 @@ CONAN_PROFILES = {
 		build = false,
 		includes = {},
 		settings = {
-			arch = "x86_64",
+			-- TODO: Shouldn't this pull from premake? Is that possible with how
+			--       build permutations are generated? I think we should be able to
+			--       get close since this is the kind of stuff the would probably be
+			--       defined on the workspace?
+			["arch"] = "x86_64",
+			["compiler"] = "msvc",
+			["compiler.cppstd"] = "14",
+			["compiler.runtime"] = "dynamic",
+			["compiler.version"] = "193",
 		},
 		options = {
-			["harfbuzz:with_freetype"] = true,
+			["harfbuzz/*:with_freetype"] = true,
 		},
-		env = {},
+		conf = {
+		}
 	},
-	release = {
-		build = true,
-		includes = {"common"},
-		settings = {
-			build_type = "Release",
-		},
-		options = {},
-		env = {},
-	},
+	--release = {
+	--	build = true,
+	--	includes = {"common"},
+	--	settings = {
+	--		["build_type"] = "Release",
+	--	},
+	--	options = {},
+	--},
 	debug = {
 		build = true,
 		includes = {"common"},
 		settings = {
-			build_type = "Debug",
+			["build_type"] = "Debug",
 		},
 		options = {},
-		env = {},
 	},
 }
 

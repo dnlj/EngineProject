@@ -29,6 +29,7 @@ namespace Game {
 	}
 
 	void PhysicsBody::setZone(ZoneId zoneId) {
+		ENGINE_DEBUG_ASSERT(zoneId != zone.id);
 		zone.id = zoneId;
 		for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()){
 			auto filter = fixture->GetFilterData();
