@@ -1,5 +1,4 @@
 from conan import ConanFile, tools
-import os
 
 class Recipe(ConanFile):
 	name = "assimp"
@@ -7,7 +6,7 @@ class Recipe(ConanFile):
 	license = "BSD 3-clause"
 	homepage = "https://www.assimp.org"
 	url = "https://github.com/assimp/assimp.git"
-	settings = "arch", "build_type", "compiler"
+	settings = "arch", "build_type", "compiler", "os"
 
 	def source(self):
 		isver = self.version[0].isdigit()
@@ -18,6 +17,7 @@ class Recipe(ConanFile):
 
 	def generate(self):
 		tc = tools.cmake.CMakeToolchain(self)
+		# TODO: I think a lot of these are out of date/version dependant, Probably assimp 4?
 		tc.variables["BUILD_SHARED_LIBS"]          = "OFF"	# Generation of shared libs ( dll for windows, so for Linux ). Set this to OFF to get a static lib.
 		tc.variables["BUILD_FRAMEWORK"]            = "OFF"	# Mac only. Build package as Mac OS X Framework bundle
 		tc.variables["ASSIMP_DOUBLE_PRECISION"]    = "OFF"	# All data will be stored as double values.
@@ -46,21 +46,7 @@ class Recipe(ConanFile):
 		cmake.build()
 
 	def package(self):
-		self.copy("*",
-			src=os.path.join(self.source_folder, "include"),
-			dst=os.path.join(self.package_folder, "include"),
-			keep_path=True
-		)
-		self.copy("*.lib",
-			src=self.source_folder,
-			dst=os.path.join(self.package_folder, "lib"),
-			keep_path=False
-		)
-		self.copy("*.a",
-			src=self.source_folder,
-			dst=os.path.join(self.package_folder, "lib"),
-			keep_path=False
-		)
+		tools.cmake.CMake(self).install()
 
 	def package_info(self):
 		self.cpp_info.libs = tools.files.collect_libs(self)
