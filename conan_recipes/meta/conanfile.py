@@ -1,27 +1,24 @@
-from conans import ConanFile, tools, errors
+from conan import ConanFile, tools
+import os
 
 class Recipe(ConanFile):
 	name = "meta"
 	description = "A header only C++ library that provides type manipulation utilities."
-	license = "None"
 	homepage = "https://github.com/dnlj/Meta"
-	url = "none"
 
 	def source(self):
-		tools.Git().clone(
+		tools.scm.Git(self).fetch_commit(
 			url="https://github.com/dnlj/Meta.git",
-			branch=self.version,
-			shallow=True
+			commit=self.version,
 		)
 
-	def build(self):
-		pass
-
 	def package(self):
-		self.copy("*.hpp", src="include", dst="include", keep_path=True)
+		tools.files.copy(self,
+			pattern="*.hpp",
+			src=os.path.join(self.source_folder, "include"),
+			dst=os.path.join(self.package_folder, "include"),
+			keep_path=True
+		)
 
 	def package_id(self):
-		self.info.header_only()
-
-	def package_info(self):
-		pass
+		self.info.clear()
