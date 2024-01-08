@@ -20,10 +20,11 @@ end
 do -- Build the CONAN_PROFILES table
 	local profileTemplate = {
 		_HAS_BEEN_BUILT = true,
-		build = true,
+		build = false,
 		includes = {},
 		settings = {},
 		options = {},
+		conf = {},
 		-- We could also have a vars section for full feature parity, but
 		-- since we can just do vars in lua so i dont think they are needed.
 	}
@@ -41,6 +42,17 @@ do -- Build the CONAN_PROFILES table
 
 		table.insert(incs, prof)
 		CONAN_PROFILES[name] = table.merge(table.unpack(incs))
+
+		-- Required so that we don't accidentally use the default profile
+		-- Only check profiles for building. Other profiles might just be include sets.
+		if CONAN_PROFILES[name].build then
+			local requiredSettings = {"arch", "compiler", "compiler.cppstd", "compiler.runtime", "compiler.version"}
+			for _, k in pairs(requiredSettings) do
+				local v = CONAN_PROFILES[name]["settings"][k]
+				assert(v and #v > 0, "Profile is missing required field: ".. k)
+			end
+		end
+
 		return CONAN_PROFILES[name]
 	end
 
@@ -76,7 +88,7 @@ end
 
 local function execConan(cmd, output)
 	local exec = ([[%s"%s" %s 2>&1]]):format(getCommandPrefix(), CONAN_EXE, cmd)
-	print("execConan:", exec)
+	--print("execConan:", exec)
 	return (output and os.outputof or os.execute)(exec)
 
 	-- Could wrap with io.popen but ANSI color codes dont work unless run through echo.
@@ -118,7 +130,7 @@ function commands.install()
 
 	-- TODO: is this still true with Conan 2.0? Look into if we can avoid this
 	-- We have to do it this way (w/ temp file) or else we can't use custom generators.
-	local conanFilePath = CONAN_HOME .."/.temp.conanfile.".. os.uuid()
+	local conanFilePath = path.join(CONAN_HOME, ".temp.conanfile.".. os.uuid())
 	do
 		local file = io.open(conanFilePath, "w")
 
@@ -157,13 +169,13 @@ function commands.install()
 
 			local settings = buildArgs(" -s:a ", true, prof.settings)
 			local options = buildArgs(" -o:a ", true, prof.options)
-			local options = buildArgs(" -c:a ", true, prof.conf)
+			local conf = buildArgs(" -c:a ", true, prof.conf)
 			local gens = buildArgs(" -g ", false, CONAN_PACKAGES.generators)
 			local out = path.join(CONAN_BUILD_DIR, name)
 			local jsonfile = path.join(out, "info.json")
 			local err = execConan(
-				("install -b missing -of %s/%s%s%s%s %s")
-				:format(CONAN_BUILD_DIR, name, settings, options, gens, conanFilePath)
+				("install -b missing -of %s/%s%s%s%s%s %s")
+				:format(CONAN_BUILD_DIR, name, settings, options, conf, gens, conanFilePath)
 			)
 			errors = errors + (err and 0 or 1)
 		end
@@ -182,38 +194,44 @@ function commands.install()
 	return errors
 end
 
-function commands.exec()
-	assert(#_ARGS >= 2, "exec requires additional arguments to pass to conan")
-	execConan(table.concat(_ARGS, " ", 2, #_ARGS))
-end
-
 function commands.config()
 	local extensionsPath = path.join(CONAN_HOME, "extensions")
 	local defaultProfilePath = path.join(CONAN_HOME, "profiles", "default")
 
-	-- TODO: look into if we can just leave the file blank, if not just use
-	--       `conan profile detect` and check the we specify all of the settings in
-	--       the profile settings in the loop below. At this point it might just be
-	--       better to generate profile files instead and not have a default at all.
-	os.remove(defaultProfilePath)
-	io.writefile(defaultProfilePath,
-[[
-[settings]
-arch=x86_64
-build_type=Release
-compiler=msvc
-compiler.cppstd=14
-compiler.runtime=dynamic
-compiler.version=193
-os=Windows
-]]
-	)
+	-- If we ever want to switch to profile files instead of args
+	--	local function conanValue(v) if type(v) == "boolean" then v = v and "True" or "False" end return v end
+	--	for name, prof in pairs(CONAN_PROFILES) do
+	--		local profilePath = path.join(CONAN_HOME, "profiles", name)
+	--		local parts = {}
+	--
+	--		for _, inc in pairs(prof.includes) do table.insert(parts, "include(".. inc ..")") end
+	--
+	--		if #prof.includes > 0 then table.insert(parts, "\n\n") end
+	--
+	--		table.insert(parts, "[settings]\n")
+	--		for k,v in pairs(prof.settings) do table.insert(parts, k .."=".. conanValue(v)) end
+	--
+	--		table.insert(parts, "\n\n[options]\n")
+	--		for k,v in pairs(prof.options) do table.insert(parts, k .."=".. conanValue(v)) end
+	--
+	--		table.insert(parts, "\n\n[conf]\n")
+	--		for k,v in pairs(prof.conf) do table.insert(parts, k .."=".. conanValue(v)) end
+	--
+	--		print("------------------------")
+	--		io.write(table.concat(parts), "\n")
+	--		print("------------------------")
+	--	end
 
 	-- Remove existing/stale extensions
 	os.rmdir(extensionsPath)
 
 	-- Force conan to re-generate the default extensions on the next conan command
 	os.remove(path.join(CONAN_HOME, "version.txt"))
+
+	-- We need to generate the default profile or else conan will cry about it
+	-- even though we already specify everything on the command line.
+	os.remove(defaultProfilePath)
+	execConan("profile detect")
 
 	-- Copy extensions over
 	local files = os.matchfiles(path.join(CONAN_EXTENSIONS_DIR, "**"))
@@ -224,6 +242,11 @@ os=Windows
 		os.mkdir(path.getdirectory(dst))
 		assert(os.copyfile(file, dst))
 	end
+end
+
+function commands.exec()
+	assert(#_ARGS >= 2, "exec requires additional arguments to pass to conan")
+	execConan(table.concat(_ARGS, " ", 2, #_ARGS))
 end
 
 function commands.fullsetup()
@@ -246,14 +269,6 @@ newaction {
 		else
 			error("Unknown conan command: ".. cmdstr)
 		end
-
-		--for k,v in pairs(_ARGS) do
-		--	print(k, v)
-		--end
-
-		--for k,v in pairs(_OPTIONS) do
-		--	print(k, v)
-		--end
 	end
 }
 

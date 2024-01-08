@@ -62,6 +62,8 @@ CONAN_REMOTES = {
 
 CONAN_PACKAGES = {
 	["requires"] = {
+		-- TODO: Can we just exclude the user/channel here? Or is it required?
+		--       We don't really care about it since we always export our own recipes.
 		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
 		--"glm/0.9.9.7@dnlj/wobbly",
 		----"imgui/1.82@dnlj/wobbly",----------------------------------------------------
@@ -86,7 +88,6 @@ CONAN_PACKAGES = {
 CONAN_PROFILES = {
 	common = {
 		build = false,
-		includes = {},
 		settings = {
 			-- TODO: Shouldn't this pull from premake? Is that possible with how
 			--       build permutations are generated? I think we should be able to
@@ -94,24 +95,22 @@ CONAN_PROFILES = {
 			--       defined on the workspace?
 			["arch"] = "x86_64",
 			["compiler"] = "msvc",
-			["compiler.cppstd"] = "14",
+			["compiler.cppstd"] = "14", -- TODO: check/verify settings
 			["compiler.runtime"] = "dynamic",
 			["compiler.version"] = "193",
 		},
 		options = {
 			["harfbuzz/*:with_freetype"] = true,
 		},
-		conf = {
-		}
 	},
-	--release = {
-	--	build = true,
-	--	includes = {"common"},
-	--	settings = {
-	--		["build_type"] = "Release",
-	--	},
-	--	options = {},
-	--},
+	release = {
+		build = true,
+		includes = {"common"},
+		settings = {
+			["build_type"] = "Release",
+		},
+		options = {},
+	},
 	debug = {
 		build = true,
 		includes = {"common"},
