@@ -1,4 +1,4 @@
-from conans import ConanFile, tools, errors, CMake
+from conan import ConanFile, tools
 import os
 
 class Recipe(ConanFile):
@@ -10,30 +10,43 @@ class Recipe(ConanFile):
 	settings = "arch", "build_type", "compiler"
 
 	def source(self):
-		tools.Git().clone(
+		tools.scm.Git(self).fetch_commit(
 			url=self.url,
-			branch=self.version,
-			shallow=True
+			commit=self.version,
 		)
 
+	def generate(self):
+		tc = tools.cmake.CMakeToolchain(self)
+		tc.variables["FMT_DOC"] = False
+		tc.variables["FMT_INSTALL"] = False
+		tc.variables["FMT_TEST"] = False
+		tc.variables["FMT_FUZZ"] = False
+		tc.variables["FMT_CUDA_TEST"] = False
+		tc.variables["FMT_OS"] = True
+		tc.variables["FMT_MODULE"] = False
+		tc.generate()
+
 	def build(self):
-		cmake = CMake(self)
-
-		cmake.definitions["FMT_DOC"] = False
-		cmake.definitions["FMT_INSTALL"] = False
-		cmake.definitions["FMT_TEST"] = False
-		cmake.definitions["FMT_FUZZ"] = False
-		cmake.definitions["FMT_CUDA_TEST"] = False
-		cmake.definitions["FMT_OS"] = True
-		cmake.definitions["FMT_MODULE"] = False
-
+		cmake = tools.cmake.CMake(self)
 		cmake.configure()
 		cmake.build()
 
 	def package(self):
-		self.copy("*.h", src="include", dst="include", keep_path=True)
-		self.copy("*.lib", src="", dst="lib", keep_path=False)
-		self.copy("*.a", src="", dst="lib", keep_path=False)
+		tools.files.copy(self, "*.h",
+			src=os.path.join(self.source_folder, "include"),
+			dst=os.path.join(self.package_folder, "include"),
+			keep_path=True
+		)
+		tools.files.copy(self, "*.lib",
+			src=self.source_folder,
+			dst=os.path.join(self.package_folder, "lib"),
+			keep_path=False
+		)
+		tools.files.copy(self, "*.a",
+			src=self.source_folder,
+			dst=os.path.join(self.package_folder, "lib"),
+			keep_path=False
+		)
 
 	def package_info(self):
-		self.cpp_info.libs = tools.collect_libs(self)
+		self.cpp_info.libs = tools.files.collect_libs(self)
