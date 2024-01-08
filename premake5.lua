@@ -64,8 +64,8 @@ CONAN_PACKAGES = {
 	["requires"] = {
 		-- TODO: Can we just exclude the user/channel here? Or is it required?
 		--       We don't really care about it since we always export our own recipes.
-		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
-		--"glm/0.9.9.7@dnlj/wobbly",
+		--"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
+		"glm/0.9.9.7@dnlj/wobbly",
 		----"imgui/1.82@dnlj/wobbly",----------------------------------------------------
 		----"imgui-node-editor/master@dnlj/wobbly",----------------------------------------------------
 		----"implot/0.9@dnlj/wobbly",----------------------------------------------------
@@ -103,14 +103,14 @@ CONAN_PROFILES = {
 			["harfbuzz/*:with_freetype"] = true,
 		},
 	},
-	release = {
-		build = true,
-		includes = {"common"},
-		settings = {
-			["build_type"] = "Release",
-		},
-		options = {},
-	},
+	--release = {
+	--	build = true,
+	--	includes = {"common"},
+	--	settings = {
+	--		["build_type"] = "Release",
+	--	},
+	--	options = {},
+	--},
 	debug = {
 		build = true,
 		includes = {"common"},

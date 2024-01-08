@@ -7,7 +7,6 @@ class Recipe(ConanFile):
 	description = "A 2D Physics Engine for Games."
 	license = "MIT"
 	homepage = "https://box2d.org/"
-	url = "none"
 	settings = "arch", "build_type", "compiler"
 
 	def isLegacy(self):
