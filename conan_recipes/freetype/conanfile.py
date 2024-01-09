@@ -1,4 +1,4 @@
-from conans import ConanFile, tools, errors, CMake
+from conan import ConanFile, tools
 import os
 
 class Recipe(ConanFile):
@@ -6,25 +6,29 @@ class Recipe(ConanFile):
 	description = "A freely available software library to render fonts."
 	license = "FTL, GPLv2"
 	homepage = "https://www.freetype.org/"
-	url = "none"
-	settings = "arch", "build_type", "compiler"
-	
+	settings = "arch", "build_type", "compiler", "os"
+
 	def source(self):
-		tools.Git().clone(
+		tools.scm.Git(self).fetch_commit(
 			url="https://gitlab.freedesktop.org/freetype/freetype.git",
-			branch=self.version,
-			shallow=True
+			commit="VER-" + self.version.replace(".", "-"),
 		)
-		
+
+	def layout(self):
+		tools.cmake.cmake_layout(self)
+
+	def generate(self):
+		tc = tools.cmake.CMakeToolchain(self)
+		tc.generate()
+
 	def build(self):
-		cmake = CMake(self)
-		cmake.configure(build_folder="build")
+		cmake = tools.cmake.CMake(self)
+		cmake.configure()
 		cmake.build()
-		
+
 	def package(self):
-		self.copy("*.h", src="include", dst="include", keep_path=True)
-		self.copy("*.lib", src="", dst="lib", keep_path=False)
-		self.copy("*.a", src="", dst="lib", keep_path=False)
-		
+		cmake = tools.cmake.CMake(self)
+		cmake.install()
+
 	def package_info(self):
-		self.cpp_info.libs = tools.collect_libs(self)
+		self.cpp_info.libs = tools.files.collect_libs(self)

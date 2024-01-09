@@ -1,40 +1,44 @@
-from conans import ConanFile, tools, errors, CMake
-import os
+from conan import ConanFile, tools
 
 class Recipe(ConanFile):
 	name = "harfbuzz"
 	description = "HarfBuzz text shaping engine."
 	license = "MIT"
 	homepage = "https://github.com/harfbuzz/harfbuzz"
-	url = "none"
-	settings = "arch", "build_type", "compiler"
+	settings = "arch", "build_type", "compiler", "os"
 	options = {
 		"with_freetype": [True, False] # TODO: potential issues https://github.com/conan-io/conan/issues/3620
 	}
-	
+
 	def source(self):
-		tools.Git().clone(
+		tools.scm.Git(self).fetch_commit(
 			url="https://github.com/harfbuzz/harfbuzz.git",
-			branch=self.version,
-			shallow=True
+			commit=self.version,
 		)
-	
+
 	def requirements(self):
 		if self.options.with_freetype:
-			self.requires("freetype/master")
-		
+			self.requires("freetype/[~2]")
+
+
+	def layout(self):
+		tools.cmake.cmake_layout(self)
+
+	def generate(self):
+		tc = tools.cmake.CMakeToolchain(self)
+		tc.variables["HB_HAVE_FREETYPE"] = self.options.with_freetype
+		tc.variables["HB_BUILD_SUBSET"] = False
+		#tc.variables["CMAKE_PREFIX_PATH"] = ";".join(self.deps_cpp_info.builddirs).replace("\\", "/")
+		tc.generate()
+
 	def build(self):
-		cmake = CMake(self)
-		cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
-		cmake.definitions["HB_BUILD_SUBSET"] = False
-		cmake.definitions["CMAKE_PREFIX_PATH"] = ";".join(self.deps_cpp_info.builddirs).replace("\\", "/")
-		cmake.configure(build_folder="build")
+		cmake = tools.cmake.CMake(self)
+		cmake.configure()
 		cmake.build()
-		
+
 	def package(self):
-		self.copy("*.h", src="src", dst="include", keep_path=True)
-		self.copy("*.lib", src="", dst="lib", keep_path=False)
-		self.copy("*.a", src="", dst="lib", keep_path=False)
-		
+		cmake = tools.cmake.CMake(self)
+		cmake.install()
+
 	def package_info(self):
-		self.cpp_info.libs = tools.collect_libs(self)
+		self.cpp_info.libs = tools.files.collect_libs(self)
