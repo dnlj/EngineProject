@@ -132,16 +132,19 @@ class premake5:
 		host = accumulateDeps(self.conanfile.dependencies.host)
 		parts.extend(toLua(host["_all"], 0, "conan"))
 		parts.extend(toLua({"dependencies": host["dependencies"]}, 0, "conan"))
+		parts.append("\n")
 
 		parts.append(divider("Build Info"))
 		build = accumulateDeps(self.conanfile.dependencies.build)
 		parts.extend(toLua(build["_all"], 0, "conan"))
 		parts.extend(toLua({"dependencies": build["dependencies"]}, 0, "conan"))
+		parts.append("\n")
 
 		parts.append(divider("Test Info"))
 		test = accumulateDeps(self.conanfile.dependencies.test)
 		parts.extend(toLua(test["_all"], 0, "conan"))
 		parts.extend(toLua({"dependencies": test["dependencies"]}, 0, "conan"))
+		parts.append("\n")
 
 		parts.append("return conan")
 
