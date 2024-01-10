@@ -32,3 +32,4 @@ class Recipe(ConanFile):
 
 	def package_info(self):
 		self.cpp_info.libs = tools.files.collect_libs(self)
+		self.cpp_info.includedirs = [os.path.join("include", "freetype2")]

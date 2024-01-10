@@ -7,7 +7,7 @@ class Recipe(ConanFile):
 	description = "A 2D Physics Engine for Games."
 	license = "MIT"
 	homepage = "https://box2d.org/"
-	settings = "arch", "build_type", "compiler"
+	settings = "arch", "build_type", "compiler", "os"
 
 	def isLegacy(self):
 		v = self.version.split(".")

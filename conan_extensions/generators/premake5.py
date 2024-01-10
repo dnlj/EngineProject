@@ -111,15 +111,15 @@ class premake5:
 		parts.append(divider("Helpers"))
 		parts.append("\n".join([
 			'function conan.setup()',
-			'	for _, p in pairs(conan.src_paths) do',
+			'	for _, p in pairs(conan.host.srcdirs or {}) do',
 			'		files(path.join(p, "**"))',
 			'	end',
 			'	',
-			'	includedirs(conan.includedirs)',
-			'	libdirs(conan.libdirs)',
-			'	links(conan.libs)',
-			'	bindirs(conan.bindirs)',
-			'	defines(conan.defines)',
+			'	includedirs(conan.host["includedirs"])',
+			'	libdirs(conan.host["libdirs"])',
+			'	links(conan.host["libs"])',
+			'	bindirs(conan.host["bindirs"])',
+			'	defines(conan.host["defines"])',
 			'end\n\n',
 		]))
 
@@ -129,21 +129,24 @@ class premake5:
 
 		# I think we only care about "host" deps atm. There are also `.build` and `.test`.
 		parts.append(divider("Host Info"))
+		parts.append("conan.host = {}\n")
 		host = accumulateDeps(self.conanfile.dependencies.host)
-		parts.extend(toLua(host["_all"], 0, "conan"))
-		parts.extend(toLua({"dependencies": host["dependencies"]}, 0, "conan"))
+		parts.extend(toLua(host["_all"], 0, "conan.host"))
+		parts.extend(toLua({"dependencies": host["dependencies"]}, 0, "conan.host"))
 		parts.append("\n")
 
 		parts.append(divider("Build Info"))
+		parts.append("conan.build = {}\n")
 		build = accumulateDeps(self.conanfile.dependencies.build)
-		parts.extend(toLua(build["_all"], 0, "conan"))
-		parts.extend(toLua({"dependencies": build["dependencies"]}, 0, "conan"))
+		parts.extend(toLua(build["_all"], 0, "conan.build"))
+		parts.extend(toLua({"dependencies": build["dependencies"]}, 0, "conan.build"))
 		parts.append("\n")
 
 		parts.append(divider("Test Info"))
+		parts.append("conan.test = {}\n")
 		test = accumulateDeps(self.conanfile.dependencies.test)
-		parts.extend(toLua(test["_all"], 0, "conan"))
-		parts.extend(toLua({"dependencies": test["dependencies"]}, 0, "conan"))
+		parts.extend(toLua(test["_all"], 0, "conan.test"))
+		parts.extend(toLua({"dependencies": test["dependencies"]}, 0, "conan.test"))
 		parts.append("\n")
 
 		parts.append("return conan")

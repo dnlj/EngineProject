@@ -62,23 +62,20 @@ CONAN_REMOTES = {
 
 CONAN_PACKAGES = {
 	["requires"] = {
-		-- TODO: Can we just exclude the user/channel here? Or is it required?
-		--       We don't really care about it since we always export our own recipes.
-		--"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80@dnlj/wobbly",
-		--"glm/0.9.9.7@dnlj/wobbly",
-		----"imgui/1.82@dnlj/wobbly",----------------------------------------------------
-		----"imgui-node-editor/master@dnlj/wobbly",----------------------------------------------------
-		----"implot/0.9@dnlj/wobbly",----------------------------------------------------
-		--"meta/master@dnlj/wobbly",
-		--"pcg/master@dnlj/wobbly",
-		--"robin_hood/master@dnlj/wobbly",
-		--"soil_littlstar/master@dnlj/wobbly",
-		----"freetype/VER-2-10-4@dnlj/wobbly",
-		"freetype/2.10.4@dnlj/wobbly",
-		"harfbuzz/2.8.1@dnlj/wobbly",
-		--"fmtlib/10.0.0@dnlj/wobbly",
-		----"soil/latest@dnlj/wobbly", ----------------------------------------------------
-		--"assimp/5.2.3@dnlj/wobbly",
+		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80",
+		"glm/0.9.9.7",
+		--"imgui/1.82",----------------------------------------------------
+		--"imgui-node-editor/master",----------------------------------------------------
+		--"implot/0.9",----------------------------------------------------
+		"meta/master",
+		"pcg/master",
+		"robin_hood/master",
+		"soil_littlstar/master",
+		"freetype/2.10.4",
+		"harfbuzz/2.8.1",
+		"fmtlib/10.0.0",
+		--"soil/latest", ----------------------------------------------------
+		"assimp/5.2.3",
 
 	},
 	["generators"] = {
@@ -107,14 +104,14 @@ CONAN_PROFILES = {
 			--["tools.build:verbosity"] = "verbose",
 		},
 	},
-	--release = {
-	--	build = true,
-	--	includes = {"common"},
-	--	settings = {
-	--		["build_type"] = "Release",
-	--	},
-	--	options = {},
-	--},
+	release = {
+		build = true,
+		includes = {"common"},
+		settings = {
+			["build_type"] = "Release",
+		},
+		options = {},
+	},
 	debug = {
 		build = true,
 		includes = {"common"},

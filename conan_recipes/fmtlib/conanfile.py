@@ -7,7 +7,7 @@ class Recipe(ConanFile):
 	license = "MIT"
 	homepage = "https://fmt.dev"
 	url = "https://github.com/fmtlib/fmt.git"
-	settings = "arch", "build_type", "compiler"
+	settings = "arch", "build_type", "compiler", "os"
 
 	def source(self):
 		tools.scm.Git(self).fetch_commit(

@@ -1,4 +1,5 @@
 from conan import ConanFile, tools
+import os
 
 class Recipe(ConanFile):
 	name = "harfbuzz"
@@ -19,7 +20,6 @@ class Recipe(ConanFile):
 	def requirements(self):
 		if self.options.with_freetype:
 			self.requires("freetype/[~2]")
-
 
 	def layout(self):
 		tools.cmake.cmake_layout(self)
@@ -42,3 +42,4 @@ class Recipe(ConanFile):
 
 	def package_info(self):
 		self.cpp_info.libs = tools.files.collect_libs(self)
+		self.cpp_info.includedirs = [os.path.join("include", "harfbuzz")]

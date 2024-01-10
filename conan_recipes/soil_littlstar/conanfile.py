@@ -14,7 +14,7 @@ class Recipe(ConanFile):
 	description = "A tiny C library used primarily for uploading textures into OpenGL."
 	license = "Public Domain"
 	homepage = "https://github.com/littlstar/soil"
-	settings = "arch", "build_type", "compiler"
+	settings = "arch", "build_type", "compiler", "os"
 
 	def source(self):
 		tools.scm.Git(self).fetch_commit(

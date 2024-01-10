@@ -7,6 +7,7 @@ assert(CONAN_EXE, "CONAN_EXE must be defined")
 local commands = {}
 
 -- TODO: make user configurable?
+CONAN_ROOT = path.getabsolute(CONAN_ROOT)
 CONAN_HOME = path.join(CONAN_ROOT, ".conan")
 CONAN_BUILD_DIR = path.join(CONAN_ROOT, "conan_build")
 CONAN_RECIPES_DIR = path.join(CONAN_ROOT, "conan_recipes")
@@ -293,14 +294,14 @@ if not table.contains(skiplist, _ACTION) then
 
 	for name, prof in pairs(CONAN_PROFILES) do
 		if prof.build then
-			local file = CONAN_BUILD_DIR .."/".. name .."/conanbuildinfo.lua"
+			local file = path.join(CONAN_BUILD_DIR, name, "conanbuildinfo.lua")
+			print(file)
 			if not os.isfile(file) then
-				msg.warn("Unable to find conan build info for profile ", name, " \n")
+				msg.warn("Unable to find conan build info for profile ", name, " (", file, ") \n")
 			else
 				CONAN_BUILD_INFO[name] = assert(loadfile(file))()
 			end
 		end
 	end
-
 	setmetatable(_ENV, oldmeta)
 end
