@@ -32,21 +32,10 @@ class Recipe(ConanFile):
 		cmake.build()
 
 	def package(self):
-		tools.files.copy(self, "*.h",
-			src=os.path.join(self.source_folder, "include"),
-			dst=os.path.join(self.package_folder, "include"),
-			keep_path=True
-		)
-		tools.files.copy(self, "*.lib",
-			src=self.source_folder,
-			dst=os.path.join(self.package_folder, "lib"),
-			keep_path=False
-		)
-		tools.files.copy(self, "*.a",
-			src=self.source_folder,
-			dst=os.path.join(self.package_folder, "lib"),
-			keep_path=False
-		)
+		tools.files.copy(self, "*.h", src=os.path.join(self.source_folder, "include"), dst=os.path.join(self.package_folder, "include"), keep_path=True)
+		tools.files.copy(self, "*.lib", src=self.source_folder, dst=os.path.join(self.package_folder, "lib"), keep_path=False)
+		tools.files.copy(self, "*.pdb", src=self.source_folder, dst=os.path.join(self.package_folder, "lib"), keep_path=False)
+		tools.files.copy(self, "*.a", src=self.source_folder, dst=os.path.join(self.package_folder, "lib"), keep_path=False)
 
 	def package_info(self):
 		self.cpp_info.libs = tools.files.collect_libs(self)
