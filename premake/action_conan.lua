@@ -160,8 +160,16 @@ function commands.install()
 					end
 
 					-- TODO: temp work around for https://github.com/conan-io/conan/issues/3620
-					if type(v) == "boolean" then
+					local vType = type(v)
+					if vType == "boolean" then
 						v = v and "True" or "False"
+					elseif vType == "table" then
+						-- Assume its an array
+						if #v > 0 then
+							v = "\"[\\\"".. table.concat(v, "\\\", \\\"") .."\\\"]\""
+						else
+							v = '\"[]\"'
+						end
 					end
 					table.insert(tbl, v)
 				end
@@ -295,7 +303,6 @@ if not table.contains(skiplist, _ACTION) then
 	for name, prof in pairs(CONAN_PROFILES) do
 		if prof.build then
 			local file = path.join(CONAN_BUILD_DIR, name, "conanbuildinfo.lua")
-			print(file)
 			if not os.isfile(file) then
 				msg.warn("Unable to find conan build info for profile ", name, " (", file, ") \n")
 			else

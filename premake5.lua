@@ -102,6 +102,13 @@ CONAN_PROFILES = {
 		},
 		conf = {
 			--["tools.build:verbosity"] = "verbose",
+			["tools.info.package_id:confs"] = {
+				"tools.build:cflags", -- List of extra C flags used by different toolchains like CMakeToolchain, AutotoolsToolchain and MesonToolchain
+				"tools.build:cxxflags", -- List of extra CXX flags used by different toolchains like CMakeToolchain, AutotoolsToolchain and MesonToolchain
+				"tools.build:defines", -- List of extra definition flags used by different toolchains like CMakeToolchain and AutotoolsToolchain
+				"tools.build:exelinkflags", -- List of extra flags used by CMakeToolchain for CMAKE_EXE_LINKER_FLAGS_INIT variable
+				"tools.build:sharedlinkflags", -- List of extra flags used by CMakeToolchain for CMAKE_SHARED_LINKER_FLAGS_INIT variable
+			}
 		},
 	},
 	release = {
@@ -119,6 +126,9 @@ CONAN_PROFILES = {
 			["build_type"] = "Debug",
 		},
 		options = {},
+		conf = {
+			["box2d/*:tools.build:cxxflags"] = {"/Ob1"}
+		},
 	},
 }
 
