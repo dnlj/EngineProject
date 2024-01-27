@@ -413,19 +413,18 @@ namespace Game {
 		const auto plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
 		const auto blockPos = worldToBlock2(plyPos, plyZoneOffset);
 
-		// TODO: areaSize and buffSize should be 2/3 since we do + and - for the min/max calcs
 		// How large of an area to load around the chunk blockPos is in.
-		constexpr auto areaSize = ChunkVec{5, 5};
+		constexpr auto halfAreaSize = ChunkVec{5, 5};
 
-		// How large of a buffer around areaSize to wait befor unloading areas.
+		// How large of a buffer around halfAreaSize to wait befor unloading areas.
 		// We want a larger unload area so that we arent constantly loading/unloading
-		// when a player is near a chunk border
-		constexpr auto buffSize = ChunkVec{7, 7};
+		// when a player is near a chunk border.
+		constexpr auto halfBuffSize = ChunkVec{7, 7};
 
-		const auto minAreaChunk = blockToChunk(blockPos) - areaSize;
-		const auto maxAreaChunk = blockToChunk(blockPos) + areaSize;
-		const auto minBuffChunk = minAreaChunk - buffSize;
-		const auto maxBuffChunk = maxAreaChunk + buffSize;
+		const auto minAreaChunk = blockToChunk(blockPos) - halfAreaSize;
+		const auto maxAreaChunk = blockToChunk(blockPos) + halfAreaSize;
+		const auto minBuffChunk = minAreaChunk - halfBuffSize;
+		const auto maxBuffChunk = maxAreaChunk + halfBuffSize;
 
 		for (auto chunkPos = minBuffChunk; chunkPos.x <= maxBuffChunk.x; ++chunkPos.x) {
 			for (chunkPos.y = minBuffChunk.y; chunkPos.y <= maxBuffChunk.y; ++chunkPos.y) {
@@ -509,7 +508,22 @@ namespace Game {
 
 					// ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
 					it->second.updated = tick;
-				} else {
+				} else if (!isBufferChunk) {
+					// Only move the non-buffer chunks to avoid any stutter when moving
+					// between zones. The buffer chunks will be moved later if the player
+					// gets in range again.
+					//
+					// There still is a small amount of stutter when changing zones in debug
+					// mode but its pretty minor and not present at all in release mode. If
+					// this turns into an issue in the future the next steps would be to
+					// reduce the active area size above (halfAreaSize). At the time of writing
+					// this its (5,5) = (5+1+5)^2 = 121 chunks. Really that could probably
+					// be reduced to (3,3) = (3+1+3)^2 = 49 which would be a huge
+					// improvement. Even just (4,4) = 81 might be enough.
+					//
+					// Reducing the buffer area size (halfBuffSize) shouldn't have any effect
+					// since we only update the nonbuffered chunks immediately.
+					
 					// If the chunk is already loaded make sure the chunk and its entities are in the correct zone.
 					auto& body = it->second.body;
 					if (body.getZoneId() != plyZoneId) {
@@ -655,8 +669,26 @@ namespace Game {
 			body.clear();
 			body.setPosition(pos);
 
-			b2PolygonShape shape;
-			b2FixtureDef fixtureDef;
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			// TODO: we never actually set initial fixture filter/zone...
+			// maybe a PhysicsBody::fixtureDef() to get the initial definition with populated group?
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+
+			b2PolygonShape shape{};
+			b2FixtureDef fixtureDef{};
 			fixtureDef.shape = &shape;
 
 			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE {

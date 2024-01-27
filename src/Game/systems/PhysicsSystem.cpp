@@ -132,46 +132,6 @@ namespace Game {
 			}
 		}
 
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: this is what causes the hickup when changing zones in debug
-		//       mode. I think its due to a bunch of simple functions not getting
-		//       inlined. These don't seeem to have any effect though. Forcing inline
-		//       here doesn't mean much because `Step` isn't an inline funciton and
-		//       the funtions that need inlined are inside of `Step`. Might be able to
-		//       change some of the cmake/conan build options to always inline even in
-		//       debug mode? Probably worth it if that works. Look into /Ob1 or whatever that would be in CMake
-		//
-		// https://github.com/conan-io/conan/issues/10891
-		// Cmake: add_compile_options
-		// conan: self.cpp_info.cxxflags i think?
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
 		physWorld.Step(world.getTickDelta(), 8, 3);
 	}
 

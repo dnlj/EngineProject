@@ -21,7 +21,7 @@ namespace Game {
 
 		// Assume that the body already has the correct zoneId
 		if constexpr (ENGINE_DEBUG) {
-			for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()){
+			for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()) {
 				auto filter = fixture->GetFilterData();
 				ENGINE_DEBUG_ASSERT(filter.groupIndex == zone.id);
 			}
@@ -30,12 +30,11 @@ namespace Game {
 
 	void PhysicsBody::setZone(ZoneId zoneId) {
 		ENGINE_DEBUG_ASSERT(zoneId != zone.id);
+		ENGINE_DEBUG_ASSERT(zoneId < static_cast<ZoneId>(std::numeric_limits<decltype(b2Filter::groupIndex)>::max()));
 		zone.id = zoneId;
-		for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()){
+
+		for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()) {
 			auto filter = fixture->GetFilterData();
-
-			ENGINE_DEBUG_ASSERT(zoneId < static_cast<ZoneId>(std::numeric_limits<decltype(b2Filter::groupIndex)>::max()));
-
 			filter.groupIndex = zoneId;
 			fixture->SetFilterData(filter);
 		}

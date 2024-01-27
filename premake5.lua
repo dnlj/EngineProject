@@ -128,7 +128,13 @@ CONAN_PROFILES = {
 		},
 		options = {},
 		conf = {
-			["box2d/*:tools.build:cxxflags"] = {"/Ob1"}
+			["box2d/*:tools.build:cxxflags"] = {
+				--"/Ob1", -- Inline marked functions
+				--"/JMC-", -- Just My Code
+				--"/GR-", -- RTTI
+				--"/GF", -- Deduplicate Global Strings
+				--"/Gw", -- Optimize Global Data
+			}
 		},
 	},
 }

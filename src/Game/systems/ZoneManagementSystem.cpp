@@ -236,11 +236,12 @@ namespace Game {
 			WorldAbsUnit minDist = zoneSameDist;
 			for (const auto ply : group) {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-				const auto& zone = zones[physComp.zone.id];
+				auto const plyZoneId = physComp.getZoneId();
+				const auto& zone = zones[plyZoneId];
 				const auto dist = metric(zone.offset, ideal);
 				if (dist < minDist) {
 					minDist = dist;
-					zoneId = physComp.zone.id;
+					zoneId = plyZoneId;
 				}
 			}
 

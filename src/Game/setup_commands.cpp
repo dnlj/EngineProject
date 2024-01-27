@@ -4,6 +4,9 @@
 #include <Engine/ArrayView.hpp>
 #include <Engine/Window.hpp>
 
+// Game
+#include <Game/systems/PhysicsSystem.hpp>
+
 
 namespace {
 	using namespace Game;
@@ -110,9 +113,25 @@ namespace {
 
 void setupCommands(Game::EngineInstance& engine, Engine::Window& window) {
 	auto& cm = engine.getCommandManager();
-	const auto test = cm.registerCommand("test_command", [](auto&){
+	cm.registerCommand("test_command", [](auto&){
 		ENGINE_CONSOLE("This is a test command! {}", 123);
-	}); test;
+	});
+
+	cm.registerCommand("phys_counts", [&engine](auto&){
+		const auto& physSys = engine.getWorld().getSystem<PhysicsSystem>();
+		const auto& physWorld = physSys.getPhysicsWorld();
+
+		uint64 bodyCount = 0;
+		uint64 fixtureCount = 0;
+		for (auto* body = physWorld.GetBodyList(); body; body=body->GetNext()) {
+			++bodyCount;
+			for (auto* fixture = body->GetFixtureList(); fixture; fixture = fixture->GetNext()) {
+				++fixtureCount;
+			}
+		}
+
+		ENGINE_CONSOLE("Bodies: {}  Fixtures: {}", bodyCount, fixtureCount);
+	});
 	
 	// Build CVars
 	{
