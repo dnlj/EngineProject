@@ -16,6 +16,7 @@ namespace Engine::UI {
 	class InputTextBox : public TextBox {
 		private:
 			SuggestionHandler* suggest = nullptr;
+			Input::KeyCode filterKey = Input::KeyCode::None;
 
 		public:
 			using TextBox::TextBox;
@@ -23,7 +24,9 @@ namespace Engine::UI {
 			virtual bool onAction(ActionEvent action) override;
 			virtual void onBeginFocus() override;
 			virtual void onEndFocus() override;
-			virtual void onTextCallback(std::string_view text) override;
+			virtual void onTextCallback(std::string_view text, Input::KeyCode code) override;
+
+			void setFilterKey(Input::KeyCode code) { filterKey = code; }
 
 			void setHandler(SuggestionHandler* handler) noexcept {
 				ENGINE_DEBUG_ASSERT(suggest == nullptr);

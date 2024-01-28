@@ -600,9 +600,9 @@ namespace Engine::ECS {
 				return history.get(tick).getComponentContainer<C>().contains(ent);
 			}
 
-			// TODO: Doc
 			/**
-			 * 
+			 * Gets a snapshot of an entity's component on the given tick.
+			 * Inserts a default state if none is found.
 			 */
 			template<class C>
 			ENGINE_INLINE auto& getComponentState(Entity ent, Tick tick) {

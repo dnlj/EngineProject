@@ -535,7 +535,21 @@ namespace Engine::Win32 {
 
 	template<>
 	LRESULT OpenGLWindow::processMessage<WM_CHAR>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
-		window.callbacks.charCallback(static_cast<wchar_t>(wParam));
+		// See: https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#keystroke-message-flags
+		// See: https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-char#parameters
+		
+		const auto repeat       =  lParam & 0b00000000'00000000'11111111'11111111;
+		const auto scancode     = (lParam & 0b00000000'11111111'00000000'00000000) >> 16;
+		//const bool extended   =  lParam & 0b00000001'00000000'00000000'00000000;
+		//const auto reserved   =  lParam & 0b00011110'00000000'00000000'00000000;
+		//const bool context    =  lParam & 0b00100000'00000000'00000000'00000000;
+		//const bool previous   =  lParam & 0b01000000'00000000'00000000'00000000;
+		//const bool transition =  lParam & 0b10000000'00000000'00000000'00000000;
+
+		// Not sure how/if this can actually happen for WM_CHAR
+		ENGINE_DEBUG_ASSERT(repeat == 1);
+
+		window.callbacks.charCallback(static_cast<wchar_t>(wParam), static_cast<Input::KeyCode>(scancode));
 		return 0;
 	}
 

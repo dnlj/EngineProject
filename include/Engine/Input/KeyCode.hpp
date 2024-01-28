@@ -16,9 +16,10 @@ namespace Engine::Input {
 	 * @see https://source.android.com/devices/input/keyboard-devices
 	 */
 	enum class KeyCode : uint16 {
+		None = 0x0000,
 		Esc = 0x0001,
 		Tab = 0x000F,
-		Backtick = 0x0029,
+		Backtick = 0x0029, // Tilde
 		Enter = 0x001C,
 		Backspace = 0x000E,
 		Backslash = 0x002B,

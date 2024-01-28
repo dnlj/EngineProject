@@ -16,7 +16,7 @@ namespace Game::UI {
 		setContent(ctx->constructPanel<EUI::ConsolePanel>());
 	}
 
-	EUI::ConsolePanel* ConsoleWindow::get() const noexcept {
+	EUI::ConsolePanel* ConsoleWindow::get() noexcept {
 		return static_cast<EUI::ConsolePanel*>(getContent());
 	}
 

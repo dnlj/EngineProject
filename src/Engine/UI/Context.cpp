@@ -377,6 +377,9 @@ namespace Engine::UI {
 	}
 
 	void Context::updateHover() {
+		ENGINE_DEBUG_ASSERT(hoverGuard == false, "updateHover called recursively from one of the panel hover callbacks.");
+		ENGINE_DEBUG_ONLY(hoverGuard = true);
+
 		auto&& canUse = [](auto&& it) ENGINE_INLINE { return (*it)->canHover(); };
 		auto&& canUseChild = [c=cursor](auto&& itP, auto&& itC) ENGINE_INLINE {
 			return (*itP)->canHoverChild(*itC) && (*itC)->getBounds().contains(c);
@@ -411,9 +414,14 @@ namespace Engine::UI {
 		updateNestedBehaviour<false>(hoverStack, hoverStackBack, canUse, canUseChild, endUse, endUseChild, beginUse, beginUseChild);
 
 		hover = hoverStack.empty() ? nullptr : hoverStack.back();
+
+		ENGINE_DEBUG_ONLY(hoverGuard = false);
 	}
 
 	void Context::setFocus(Panel* panel) {
+		ENGINE_DEBUG_ASSERT(focusGuard == false, "setFocus called recursively from one of the panel hover callbacks.");
+		ENGINE_DEBUG_ONLY(focusGuard = true);
+
 		focusStackBack.clear();
 		for (auto curr = panel; curr != nullptr; curr = curr->getParent()) {
 			focusStackBack.push_back(curr);
@@ -431,6 +439,7 @@ namespace Engine::UI {
 		updateNestedBehaviour<true>(focusStack, focusStackBack, canUse, canUseChild, endUse, endUseChild, beginUse, beginUseChild);
 
 		focus = focusStack.empty() ? nullptr : focusStack.front();
+		ENGINE_DEBUG_ONLY(focusGuard = false);
 	}
 	
 	void Context::deferedDeletePanels(Panel* first, Panel* last) {
@@ -439,7 +448,7 @@ namespace Engine::UI {
 
 		// Remove from parent
 		if (parent) {
-			Panel::unsafe_orphanChildrenUnsafe(parent, first, last);
+			Panel::unsafe_orphanChildren(parent, first, last);
 		}
 
 		// Figure out if we might be in the focus stack
@@ -503,7 +512,7 @@ namespace Engine::UI {
 	}
 
 	void Context::deleteSiblings(Panel* first, Panel* last) {
-		for (auto curr = first;;) {
+		for (auto* curr = first;;) {
 			if (curr->getFirstChildRaw()) {
 				deleteSiblings(curr->getFirstChildRaw(), curr->getLastChildRaw());
 			}
@@ -707,7 +716,7 @@ namespace Engine::UI {
 		return false;
 	}
 
-	bool Context::onText(std::string_view str) {
+	bool Context::onText(std::string_view str, Input::KeyCode code) {
 		// Filter out non-printable ascii
 		constexpr auto isPrintable = [](unsigned char c) -> bool {
 			if (c  < 0x20 || c == 0x7F) {
@@ -746,7 +755,7 @@ namespace Engine::UI {
 		}
 
 		for (auto& [panel, cb] : textCallbacks) {
-			if (panel->isEnabled() && cb(str)) { return true; }
+			if (panel->isEnabled() && cb(str, code)) { return true; }
 		}
 
 		return false;

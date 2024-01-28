@@ -68,6 +68,7 @@ namespace Engine::UI {
 			void setAction(OnSubmitInput func) { onSubmitInput = std::move(func); }
 			void push(std::string_view text);
 			void setHandler(SuggestionHandler* handler);
+			InputTextBox* getInput() noexcept { return input; }
 
 		private:
 			void submitInput();

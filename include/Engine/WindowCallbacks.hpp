@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 #include <Engine/Input/InputEvent.hpp>
+#include <Engine/Input/KeyCode.hpp>
 
 
 namespace Engine {
@@ -14,11 +15,11 @@ namespace Engine {
 			virtual void settingsChanged() = 0;
 
 			virtual void resizeCallback(int32 w, int32 h) = 0;
-			virtual void keyCallback(Engine::Input::InputEvent event) = 0;
-			virtual void charCallback(wchar_t character) = 0;
-			virtual void mouseButtonCallback(Engine::Input::InputEvent event) = 0;
-			virtual void mouseWheelCallback(Engine::Input::InputEvent event) = 0;
-			virtual void mouseMoveCallback(Engine::Input::InputEvent event) = 0;
+			virtual void keyCallback(Input::InputEvent event) = 0;
+			virtual void charCallback(wchar_t character, Input::KeyCode code) = 0;
+			virtual void mouseButtonCallback(Input::InputEvent event) = 0;
+			virtual void mouseWheelCallback(Input::InputEvent event) = 0;
+			virtual void mouseMoveCallback(Input::InputEvent event) = 0;
 			virtual void mouseLeaveCallback() = 0;
 			virtual void mouseEnterCallback() = 0;
 			virtual void gainFocus() = 0;

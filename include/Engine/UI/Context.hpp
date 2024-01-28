@@ -34,9 +34,9 @@ namespace Engine::UI {
 			 * @param text The input text
 			 * @return True to consume the input; otherwise false.
 			 */
-			using TextCallback = std::function<bool(std::string_view text)>;
+			using TextCallback = std::function<bool(std::string_view text, Input::KeyCode code)>;
 
-			using KeyCallback = std::function<bool(Engine::Input::InputEvent)>;
+			using KeyCallback = std::function<bool(Input::InputEvent)>;
 
 			using PanelUpdateFunc = std::function<void(Panel*)>;
 			using TimerUpdateFunc = std::function<void()>;
@@ -81,6 +81,10 @@ namespace Engine::UI {
 			Panel* active = nullptr;
 			Panel* focus = nullptr;
 			Panel* hover = nullptr;
+
+			// Used to guard against recursive call bugs
+			ENGINE_DEBUG_ONLY(bool focusGuard = false);
+			ENGINE_DEBUG_ONLY(bool hoverGuard = false);
 
 			std::vector<Panel*> hoverStack;
 			std::vector<Panel*> hoverStackBack;
@@ -350,27 +354,27 @@ namespace Engine::UI {
 			/**
 			 * @return Indicate if the input was consumed.
 			 */
-			bool onMouse(const Engine::Input::InputEvent event);
+			bool onMouse(const Input::InputEvent event);
 
 			/**
 			 * @return Indicate if the input was consumed.
 			 */
-			bool onMouseMove(const Engine::Input::InputEvent event);
+			bool onMouseMove(const Input::InputEvent event);
 
 			/**
 			 * @return Indicate if the input was consumed.
 			 */
-			bool onMouseWheel(const Engine::Input::InputEvent event);
+			bool onMouseWheel(const Input::InputEvent event);
 			
 			/**
 			 * @return Indicate if the input was consumed.
 			 */
-			bool onKey(const Engine::Input::InputEvent event);
+			bool onKey(const Input::InputEvent event);
 
 			/**
 			 * @return Indicate if the input was consumed.
 			 */
-			bool onText(std::string_view str);
+			bool onText(std::string_view str, Input::KeyCode code);
 
 			void onResize(const int32 w, const int32 h);
 			void onFocus(const bool has);

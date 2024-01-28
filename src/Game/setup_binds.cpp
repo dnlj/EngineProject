@@ -1,6 +1,8 @@
 // Engine
 #include <Engine/Input/BindManager.hpp>
+#include <Engine/UI/ConsolePanel.hpp>
 #include <Engine/UI/Context.hpp>
+#include <Engine/UI/InputTextBox.hpp>
 
 // Game
 #include <Game/World.hpp>
@@ -240,9 +242,19 @@ void setupBinds(Game::EngineInstance& engine) {
 	}, [&](Value curr, Value prev, auto time){ if (curr.i32) { guiContext.queueFocusAction(GuiAction::PanelPrev); } return true; });
 
 	// UI Toggles
+	uiSys.getConsole()->get()->getInput()->setFilterKey(KeyCode::Backtick);
 	bm.addBind(Layer::GuiHover, false, InputSequence{
 		InputId{Type::Keyboard, 0, +KeyCode::Backtick},
-	}, [&](Value curr, Value prev, auto time){ if (curr.i32) { uiSys.getConsole()->toggleEnabled(); } return true; });
+	}, [&](Value curr, Value prev, auto time){
+		if (curr.i32) {
+			auto* console = uiSys.getConsole();
+			if (!console->isEnabled()) {
+				console->getContext()->setFocus(console->get()->getInput());
+			}
+			console->toggleEnabled();
+		}
+		return true;
+	});
 
 	bm.addBind(Layer::GuiHover, false, InputSequence{
 		InputId{Type::Keyboard, 0, +KeyCode::F1},

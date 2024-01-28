@@ -10,8 +10,10 @@
 
 #ifdef DEBUG
 	#define ENGINE_DEBUG true
+	#define ENGINE_DEBUG_ONLY(x) x
 #else
 	#define ENGINE_DEBUG false
+	#define ENGINE_DEBUG_ONLY(x)
 #endif
 
 /**

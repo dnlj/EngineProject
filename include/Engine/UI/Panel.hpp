@@ -105,7 +105,7 @@ namespace Engine::UI {
 			 * @see removeChild
 			 * @see removeChildren
 			 */
-			static void unsafe_orphanChildrenUnsafe(Panel* parent, Panel* first, Panel* last) noexcept {
+			static void unsafe_orphanChildren(Panel* parent, Panel* first, Panel* last) noexcept {
 				if (last->nextSibling) {
 					last->nextSibling->prevSibling = first->prevSibling;
 				}
@@ -628,7 +628,7 @@ namespace Engine::UI {
 				ENGINE_DEBUG_ASSERT(first->parent == this, "Attempting to remove invalid panel range.");
 				ENGINE_DEBUG_ASSERT(last->parent == this, "Attempting to remove invalid panel range.");
 
-				ENGINE_INLINE_CALLS unsafe_orphanChildrenUnsafe(this, first, last);
+				ENGINE_INLINE_CALLS unsafe_orphanChildren(this, first, last);
 
 				for (auto curr = first;; curr = curr->nextSibling) {
 					curr->setPos(curr->getRelPos());

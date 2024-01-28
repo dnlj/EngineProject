@@ -40,8 +40,9 @@ namespace Engine::UI {
 		suggest->close();
 	}
 
-	void InputTextBox::onTextCallback(std::string_view text) {
-		TextBox::onTextCallback(text);
+	void InputTextBox::onTextCallback(std::string_view text, Input::KeyCode code) {
+		if (code == filterKey) { return; }
+		TextBox::onTextCallback(text, code);
 
 		ENGINE_DEBUG_ASSERT(suggest);
 		const auto& full = getText();

@@ -505,7 +505,7 @@ namespace {
 				userdata->getBindManager().processInput(event);
 			}
 
-			void charCallback(wchar_t ch) {
+			void charCallback(wchar_t ch, Engine::Input::KeyCode code) override {
 				// Convert from UTF-16 to UTF-8
 				// Code point that requires multiple code units (surrogate pair)
 				if (ch > 0xD7FF && ch < 0xE000) {
@@ -523,7 +523,7 @@ namespace {
 					view = std::string_view{buffer8, convertBuffers(1)};
 				}
 
-				if (userdata->getUIContext().onText(view)) { return; }
+				if (userdata->getUIContext().onText(view, code)) { return; }
 			}
 
 			void mouseButtonCallback(Engine::Input::InputEvent event) override {
