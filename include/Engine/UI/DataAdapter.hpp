@@ -111,7 +111,7 @@ namespace Engine::UI {
 				for (auto it = cache.begin(), e = cache.end(); it != e;) {
 					if (it->second.iter != iter) {
 						self().remove(std::as_const(it->first), it->second.first);
-						parent->getContext()->deferedDeletePanels(it->second.first, it->second.last);
+						parent->getContext()->deferredDeletePanels(it->second.first, it->second.last);
 						it = cache.erase(it);
 					} else {
 						++it;

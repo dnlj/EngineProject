@@ -23,7 +23,7 @@ namespace Engine::UI {
 		close->setFixedWidth(close->getWidth());
 		close->setAction([this](Button* btn){
 			if (closeCallback && closeCallback(win)) {
-				getContext()->deferedDeletePanel(win);
+				getContext()->deferredDeletePanel(win);
 			}
 		});
 

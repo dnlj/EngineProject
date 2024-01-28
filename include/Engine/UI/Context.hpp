@@ -189,9 +189,9 @@ namespace Engine::UI {
 
 			/**
 			 * Marks a panel for deletion.
-			 * @ see deferedDeletePanels
+			 * @ see deferredDeletePanels
 			 */
-			ENGINE_INLINE void deferedDeletePanel(Panel* panel){ return deferedDeletePanels(panel, panel); }
+			ENGINE_INLINE void deferredDeletePanel(Panel* panel){ return deferredDeletePanels(panel, panel); }
 
 			/**
 			 * Marks a set of siblings and their children for deletion.
@@ -201,7 +201,7 @@ namespace Engine::UI {
 			 * - State marked as deleted and disabled.
 			 * - Added to list to be deleted at the end of frame.
 			 */
-			void deferedDeletePanels(Panel* first, Panel* last);
+			void deferredDeletePanels(Panel* first, Panel* last);
 			
 			ENGINE_INLINE void clearAllCallbacks(Panel* panel) {
 				clearPanelUpdateFuncs(panel);
@@ -382,20 +382,20 @@ namespace Engine::UI {
 		private:
 			/**
 			 * Deletes all panels marked for deletion.
-			 * @see deferedDeletePanels
+			 * @see deferredDeletePanels
 			 */
-			void deleteDeferedPanels();
+			void deleteDeferredPanels();
 
 			/**
 			 * Calls delete on a set of siblings and their children.
-			 * @see deleteDeferedPanels
-			 * @see deferedDeletePanels
+			 * @see deleteDeferredPanels
+			 * @see deferredDeletePanels
 			 */
 			void deleteSiblings(Panel* first, Panel* last);
 
 			/**
-			 * Walks a panel tree and performs the defered deletion for all panels.
-			 * @see deferedDeletePanels
+			 * Walks a panel tree and performs the deferred deletion for all panels.
+			 * @see deferredDeletePanels
 			 */
 			void cleanup(Panel* panel);
 

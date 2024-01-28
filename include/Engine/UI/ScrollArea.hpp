@@ -157,7 +157,7 @@ namespace Engine::UI {
 					wrap->setLayout(new StretchLayout<Direction::Vertical>{0});
 					content->setAutoSizeWidth(true);
 					if (scrollY) {
-						ctx->deferedDeletePanel(scrollY);
+						ctx->deferredDeletePanel(scrollY);
 						setRelPos({});
 					}
 					if (!scrollX) {
@@ -172,7 +172,7 @@ namespace Engine::UI {
 					wrap->setLayout(new StretchLayout<Direction::Horizontal>{0});
 					content->setAutoSizeHeight(true);
 					if (scrollX) {
-						ctx->deferedDeletePanel(scrollX);
+						ctx->deferredDeletePanel(scrollX);
 						setRelPos({});
 					}
 					if (!scrollY) {

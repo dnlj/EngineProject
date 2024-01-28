@@ -289,7 +289,7 @@ namespace Engine::UI {
 			hoverValid = true;
 		}
 
-		deleteDeferedPanels();
+		deleteDeferredPanels();
 
 		while (currPanelUpdateFunc < panelUpdateFunc.size()) {
 			auto& [id, panel, func] = panelUpdateFunc[currPanelUpdateFunc];
@@ -337,12 +337,11 @@ namespace Engine::UI {
 				curr = child;
 			} else {
 				while (true) {
+					popClip();
 					if (auto* sib = curr->getNextSibling()) {
-						popClip();
 						curr = sib;
 						break;
 					}
-					popClip();
 					if (!(curr = curr->getParent())) { break; }
 				}
 			}
@@ -442,7 +441,8 @@ namespace Engine::UI {
 		ENGINE_DEBUG_ONLY(focusGuard = false);
 	}
 	
-	void Context::deferedDeletePanels(Panel* first, Panel* last) {
+	void Context::deferredDeletePanels(Panel* first, Panel* last) {
+		ENGINE_DEBUG_ASSERT(first && last);
 		const auto parent = first->getParent();
 		if (parent && parent->isDeleted()) { return; }
 
@@ -457,6 +457,8 @@ namespace Engine::UI {
 			if (*curr == parent) {
 				auto next = curr + 1;
 				if (next != end) {
+					// We have to store this off and check it in the next loop since
+					// nextFocus might be a child of parent but not in [first, last]
 					nextFocus = *next;
 				}
 				break;
@@ -464,14 +466,11 @@ namespace Engine::UI {
 		}
 
 		// Clean as much as we can without true deletion
-		for (auto curr = first;; curr = curr->getNextSiblingRaw()) {
+		for (auto* curr = first;; curr = curr->getNextSiblingRaw()) {
 			ENGINE_DEBUG_ASSERT(curr->getParent() == parent);
 			ENGINE_DEBUG_ASSERT(parent != nullptr);
 
-			// Clear from active
-			if (curr == active) { unsetActive(); }
-
-			// Clear from focus
+			// Clear from focus.
 			if (curr == nextFocus) {
 				setFocus(parent);
 			}
@@ -480,10 +479,14 @@ namespace Engine::UI {
 			Panel::unsafe_setParent(curr, nullptr);
 			cleanup(curr);
 
-			// Queue for deletion
+			// Queue for deletion.
+			// Children are handled by deleteSiblings
 			deleteQueue.push_back(curr);
 			if (curr == last) { break; }
 		}
+
+		// Clear from active
+		if (active && active->isDeleted()) { unsetActive(); }
 
 		// Update parent
 		// TODO: we could also defer this until after all panels have been REALLY deleted
@@ -504,7 +507,7 @@ namespace Engine::UI {
 		}
 	};
 
-	void Context::deleteDeferedPanels() {
+	void Context::deleteDeferredPanels() {
 		for (auto p : deleteQueue) {
 			deleteSiblings(p, p);
 		}

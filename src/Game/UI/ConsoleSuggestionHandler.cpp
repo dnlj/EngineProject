@@ -227,7 +227,7 @@ namespace Game::UI {
 		if (first == nullptr) { return; }
 
 		const auto last = getLastChildRaw();
-		ctx->deferedDeletePanels(first, last);
+		ctx->deferredDeletePanels(first, last);
 	}
 
 	std::string_view ConsoleSuggestionPopup::get() const noexcept {
@@ -268,7 +268,7 @@ namespace Game::UI {
 
 	void ConsoleSuggestionHandler::close() {
 		if (popup) {
-			popup->getContext()->deferedDeletePanel(popup);
+			popup->getContext()->deferredDeletePanel(popup);
 			popup = nullptr;
 		}
 	}
