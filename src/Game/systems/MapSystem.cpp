@@ -532,13 +532,16 @@ namespace Game {
 						body.setPosition({pos.x, pos.y});
 						body.setZone(plyZoneId);
 
-						for (const auto ent : it->second.blockEntities) {
-							auto& entPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
-
-							// Some entities may have already been moved in the zone system so we need to check the zone here.
-							if (entPhysComp.getZoneId() != plyZoneId) {
-								const auto oldZoneOffset = zoneSys.getZone(entPhysComp.getZoneId()).offset;
-								entPhysComp.moveZone(oldZoneOffset, plyZoneId, plyZoneOffset);
+						// Client side this is handled through the entity networking system.
+						if constexpr (ENGINE_SERVER) {
+							for (const auto ent : it->second.blockEntities) {
+								auto& entPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
+								
+								// Some entities may have already been moved in the zone system so we need to check the zone here.
+								if (entPhysComp.getZoneId() != plyZoneId) {
+									const auto oldZoneOffset = zoneSys.getZone(entPhysComp.getZoneId()).offset;
+									entPhysComp.moveZone(oldZoneOffset, plyZoneId, plyZoneOffset);
+								}
 							}
 						}
 					}

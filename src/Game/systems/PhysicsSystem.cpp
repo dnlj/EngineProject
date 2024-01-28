@@ -146,7 +146,6 @@ namespace Game {
 	}
 
 	void PhysicsSystem::preStoreSnapshot() {
-		// TODO: client only?
 		for (const auto ent : world.getFilter<PhysicsBodyComponent>()) {
 			auto& physComp = world.getComponent<PhysicsBodyComponent>(ent);
 			physComp.snap = false;
@@ -156,9 +155,11 @@ namespace Game {
 			if (world.isPerformingRollback()) {
 				const auto tick = world.getTick();
 				if (world.hasComponent(ent, tick)) {
-					const auto& physCompState2 = world.getComponentState<PhysicsBodyComponent>(ent, tick);
-					if (physCompState2.rollbackOverride) {
-						Engine::ECS::SnapshotTraits<PhysicsBodyComponent>::fromSnapshot(physComp, physCompState2);
+					const auto& physCompState = world.getComponentState<PhysicsBodyComponent>(ent, tick);
+
+					// We should never rollback between zones because zone changes are initiated by there server.
+					if (physCompState.rollbackOverride) {
+						Engine::ECS::SnapshotTraits<PhysicsBodyComponent>::fromSnapshot(physComp, physCompState);
 					}
 				}
 			}

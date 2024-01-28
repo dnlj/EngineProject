@@ -95,6 +95,7 @@ namespace Engine::ECS {
 				b2Transform trans = {};
 				b2Vec2 vel = {};
 				float32 angVel = {};
+				Game::ZoneId zoneId = {};
 				bool rollbackOverride = false; // TODO: there is probably a better way to handle this.
 			};
 
@@ -105,11 +106,14 @@ namespace Engine::ECS {
 					.trans = obj.getTransform(),
 					.vel = obj.getVelocity(),
 					.angVel = obj.getAngularVelocity(),
+					.zoneId = obj.getZoneId(),
 					.rollbackOverride = obj.rollbackOverride,
 				};
 			}
 
 			static void fromSnapshot(Game::PhysicsBodyComponent& obj, const Type& snap) noexcept {
+				// Don't rollback between zones
+				if (obj.getZoneId() != snap.zoneId) { return; }
 				obj.setTransform(snap.trans.p, snap.trans.q.GetAngle());
 				obj.setVelocity(snap.vel);
 				obj.setAngularVelocity(snap.angVel);

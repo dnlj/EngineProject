@@ -218,10 +218,11 @@ namespace {
 		Engine::ECS::Tick tick;
 		b2Transform trans;
 		b2Vec2 vel;
+		ZoneId zoneId;
 				
 		// TODO: angVel
 
-		if (!msg.read(&tick) || !msg.read(&trans) || !msg.read(&vel)) {
+		if (!msg.read(&tick) || !msg.read(&trans) || !msg.read(&vel) || !msg.read(&zoneId)) {
 			ENGINE_WARN("Invalid PLAYER_DATA network message");
 			return;
 		}
@@ -246,17 +247,16 @@ namespace {
 				">)"
 			);
 
-			// TODO: how to manage zone here? If the zone is different we should
-			//       be able to ignore it and abort the rollback or something?
-			//       The actual zone update is handled in ECS_ZONE_INFO since
-			//       all zones changes need to be batched to avoid flickering
-			//       between zone ticks
-
 			physCompState.trans = trans;
 			physCompState.vel = vel;
 			physCompState.rollbackOverride = true;
+			physCompState.zoneId = zoneId;
 
-			world.scheduleRollback(tick);
+			// Don't rollback between zones.
+			const auto& physComp = world.getComponent<PhysicsBodyComponent>(from.ent);
+			if (zoneId == physComp.getZoneId()) {
+				world.scheduleRollback(tick);
+			}
 		}
 
 		// TODO: vel
@@ -358,6 +358,7 @@ namespace Game {
 				msg.write(world.getTick() + 1); // since this is in `update` and not before `tick` we are sending one tick off. +1 is temp fix
 				msg.write(physComp.getTransform());
 				msg.write(physComp.getVelocity());
+				msg.write(physComp.getZoneId());
 			}
 
 			// TODO: prioritize entities?

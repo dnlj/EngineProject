@@ -47,9 +47,7 @@ namespace Engine::ECS {
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
 
-		// TODO: remove the `&& false` - currently just temp while debugging zone stutter.
-		// TODO (FisZQ6LR): rollback currently breaks zone changes (I think only for static entities?).
-		if constexpr (ENGINE_CLIENT && false) {
+		if constexpr (ENGINE_CLIENT) {
 			if (rollbackData.tick != -1 && !performingRollback) {
 				const auto oldTick = currTick;
 				const auto oldTime = tickTime;
@@ -64,6 +62,8 @@ namespace Engine::ECS {
 					rollbackData.tick = -1;
 				}
 			}
+		} else {
+			ENGINE_DEBUG_ASSERT(performingRollback == false, "Rollback is currently only used client side");
 		}
 
 		if (ENGINE_CLIENT && performingRollback) {
@@ -98,7 +98,9 @@ namespace Engine::ECS {
 	void ECS_WORLD_CLASS::tickSystems() {
 		++currTick;
 
-		storeSnapshot();
+		// Currently rollback can only happen client side so there is no point in storing snapshots server side.
+		if (ENGINE_CLIENT) { storeSnapshot(); }
+
 		(getSystem<Ss>().preTick(), ...);
 		(getSystem<Ss>().tick(), ...);
 		(getSystem<Ss>().postTick(), ...);
@@ -121,10 +123,14 @@ namespace Engine::ECS {
 				auto& cont = getComponentContainer<C>();
 				auto& scont = snap.getComponentContainer<C>();
 				scont.clear();
+
 				for (const auto& [ent, comp] : cont) {
-					ENGINE_FLATTEN std::apply([&]<class... Args>(Args&&... args) ENGINE_INLINE {
-						scont.add(ent, std::forward<Args>(args)...);
-					}, SnapshotTraits<C>::toSnapshot(comp));
+					ENGINE_FLATTEN std::apply(
+						[&]<class... Args>(Args&&... args) ENGINE_INLINE {
+							scont.add(ent, std::forward<Args>(args)...);
+						},
+						SnapshotTraits<C>::toSnapshot(comp)
+					);
 				}
 			}
 		});
