@@ -37,6 +37,47 @@ namespace Engine::UI {
 
 	void InputTextBox::onEndFocus() {
 		TextBox::onEndFocus();
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: The problem is the focus is switch BEFORE activate. Not sure if
+		//       there is anything we can do about that. I think I need a
+		//       alternate solution. Any time we use EndFocus will ALWAYS be
+		//       before activate.
+		//
+		//
+		//      The onFocusFinished event idea also doesnt work because that would still occur BEFORE activate.
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		puts("close!");
 		suggest->close();
 	}
 

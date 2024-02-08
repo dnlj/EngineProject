@@ -14,20 +14,31 @@ namespace {
 		return manager.getCommands();
 	}
 
-	class SuggestionLabel : public EUI::Label {
+	// TODO (poyYXFpx): We should remove this class entirely. Just have this be
+	//      implemented as rendering functionality on the ConsoleSuggestionPopup
+	//      itself. There is no difference in functionality between each
+	//      instance and we have a well know use case. This just seems like pure
+	//      overhead to render a few strings in a sequence.
+	class SuggestionLabel : public EUI::StringLine {
 		public:
-			using Label::Label;
+			using StringLine::StringLine;
 			glm::vec4 color = {1,0,0,1};
+			std::function<void()> onActivate{};
+
+			virtual bool onBeginActivate() override {
+				ENGINE_DEBUG_ASSERT(onActivate);
+				onActivate();
+				return true;
+			}
 
 			virtual void render() override {
 				ctx->setColor(color);
 				ctx->drawRect({}, getSize());
-				Label::render();
+				StringLine::render();
 			}
 	};
 
 }
-
 
 namespace Game::UI {
 	void ConsoleSuggestionPopup::update(std::string_view text) {
@@ -196,8 +207,30 @@ namespace Game::UI {
 
 		auto& commands = getCommands(ctx);
 		for (const auto& match : matches) {
-			auto label = ctx->constructPanel<SuggestionLabel>();
+			// TODO (poyYXFpx): Remove suggestion label, just have this be
+			//      implemted as part of the ConsoleSuggestionPopup::render. No
+			//      need for all the overhead of an extra class, managing
+			//      selection color, one lambda per label, etc.
+			auto* label = ctx->constructPanel<SuggestionLabel>();
 			label->autoText(commands[match.index].name);
+			label->onActivate = [label]{
+				//
+				//
+				//
+				//
+				//
+				//
+				// TOOD:
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				puts("wooooooooooo!");
+			};
 			children.push_back(label);
 		}
 
@@ -246,11 +279,21 @@ namespace Game::UI {
 		if (!popup) {
 			using namespace EUI;
 			auto* ctx = relative->getContext();
+			ENGINE_LOG2("filter root: {}", (void*)ctx->getRoot());
 			popup = ctx->createPanel<ConsoleSuggestionPopup>(ctx->getRoot());
-			popup->setPos(relative->getPos() + glm::vec2{0, relative->getHeight()});
+
+			// TODO: may want ot reposition every update
+
 			popup->setAutoSize(true);
 			popup->setLayout(new DirectionalLayout(Direction::Vertical, Align::Start, Align::Stretch, 0));
 		}
+
+		if (!popup->isEnabled()) {
+			popup->setEnabled(true);
+		}
+
+		popup->setPos(relative->getPos() + glm::vec2{0, relative->getHeight()});
+		// TODO: move popup to front of windows.
 
 		GAME_DEBUG_CONSOLE_SUGGESTIONS(
 			auto start = Engine::Clock::now();
@@ -267,10 +310,22 @@ namespace Game::UI {
 	}
 
 	void ConsoleSuggestionHandler::close() {
-		if (popup) {
-			popup->getContext()->deferredDeletePanel(popup);
-			popup = nullptr;
-		}
+		//if (popup) {
+		//	auto* parent = popup->getParent();
+		//	auto* prev = popup->getPrevSiblingRaw();
+		//	auto* next = popup->getNextSiblingRaw();
+		//	popup->getContext()->deferredDeletePanel(popup);
+		//
+		//	ENGINE_LOG2(
+		//		"-- Close --\n\tPopupB: ={} ^{} <{} >{} \n\tPopupA: ={} ^{} <{} >{} \n\t PrevA: ={} ^{} <{} >{}",
+		//		(void*)popup, (void*)parent, (void*)prev, (void*)next,
+		//		(void*)popup, (void*)popup->getParent(), (void*)popup->getPrevSiblingRaw(), (void*)popup->getNextSiblingRaw(),
+		//		(void*)prev, (void*)prev->getParent(), (void*)prev->getPrevSiblingRaw(), (void*)prev->getNextSiblingRaw()
+		//	);
+		//	popup = nullptr;
+		//}
+		ENGINE_DEBUG_ASSERT(popup); // TODO: when would this not be true? Before I had an if(popup) but i think that shouldn't be needed?
+		popup->setEnabled(false);
 	}
 
 	std::string_view ConsoleSuggestionHandler::get() {

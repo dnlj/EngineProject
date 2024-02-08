@@ -93,6 +93,7 @@ namespace Engine::UI {
 			std::vector<Panel*> focusStack; // Stored in reverse order: front() is the focused pane land back() is the root panel.
 			std::vector<Panel*> focusStackBack;
 
+			std::vector<Panel*> deferredDeleteQueue;
 			std::vector<Panel*> deleteQueue;
 
 			glm::vec2 view = {};
@@ -174,15 +175,16 @@ namespace Engine::UI {
 
 			template<class P, class... Args>
 			P* constructPanel(Args&&... args) {
-				auto p = new P(this, std::forward<Args>(args)...);
+				auto* p = new P(this, std::forward<Args>(args)...);
 				registerPanel(p);
+				ENGINE_LOG2("constructPanel: {} = {}", (void*)p, typeid(P).name());
 				return p;
 			}
 
 			template<class P, class... Args>
 			P* createPanel(Panel* parent, Args&&... args) {
 				ENGINE_DEBUG_ASSERT(parent != nullptr, "Creating a panel without a parent should be done with `constructPanel`.");
-				auto p = constructPanel<P>(std::forward<Args>(args)...);
+				auto* p = constructPanel<P>(std::forward<Args>(args)...);
 				parent->addChild(p);
 				return p;
 			}
@@ -315,6 +317,7 @@ namespace Engine::UI {
 			 */
 			ENGINE_INLINE Panel* getFocus() noexcept { return focus; }
 			ENGINE_INLINE const Panel* getFocus() const noexcept { return focus; }
+			ENGINE_INLINE bool inFocusStack(const Panel* panel) const noexcept { return std::ranges::contains(focusStack, panel); }
 			
 			/**
 			 * Gets the active panel.

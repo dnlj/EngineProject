@@ -52,6 +52,9 @@ namespace Game::UI {
 			void clear();
 			std::string_view get() const noexcept;
 
+			//virtual bool canFocus() const override { return false; }
+			//virtual bool canFocusChild(Panel* child) const override { return true; }
+
 		private:
 			template<auto FirstChild, auto NextChild>
 			void select();

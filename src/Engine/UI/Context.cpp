@@ -6,7 +6,23 @@
 #include <Engine/Win32/win32.hpp>
 
 
+#define USABLE(Panel)\
+	ENGINE_DEBUG_ASSERT((Panel) != nullptr);\
+	ENGINE_DEBUG_ASSERT(!(Panel)->isDeleted());
+
 namespace {
+	//
+	//
+	//
+	//
+	//
+	// TODO: document, generic behavior, what is front, what is back, what needs to be valid about back before calling, etc.
+	//
+	//
+	//
+	//
+	//
+	//
 	template<bool Reverse, class Stack, class CanUseFunc, class CanUseChildFunc, class EndUseFunc, class EndUseChildFunc, class BeginUseFunc, class BeginUseChildFunc>
 	void updateNestedBehaviour(
 		Stack& front, Stack& back,
@@ -17,15 +33,17 @@ namespace {
 		auto&& begin = [](Stack& stack) ENGINE_INLINE { if constexpr(Reverse) { return stack.rbegin(); } else { return stack.begin(); } };
 		auto&& end = [](Stack& stack) ENGINE_INLINE { if constexpr(Reverse) { return stack.rend(); } else { return stack.end(); } };
 
+		// A = new stack (back stack)
 		const auto aBegin = begin(back);
 		const auto aEnd = end(back);
 		auto aStop = aEnd;
 		auto aCurr = aBegin;
 
+		// B = old/active stack (front stack)
 		const auto bBegin = begin(front);
 		const auto bEnd = end(front);
 		auto bCurr = bBegin;
-		
+
 		// Find where stacks diverge
 		while (aCurr != aEnd && bCurr != bEnd && *aCurr == *bCurr) {
 			++aCurr;
@@ -34,6 +52,22 @@ namespace {
 
 		// At this point aCurr and bCurr are the first element at which the stacks differ
 		const auto aDiff = aCurr;
+
+		//
+		//
+		//
+		//
+		//
+		// TODO: I think it is better to make sure the stack is valid BEFORE
+		//       calling this function, or else we are duplicating logic like in
+		//       hover.
+		//
+		//       Should be able to verify that by instead replacing the validate/aStop with debug asserts?
+		//
+		//
+		//
+		//
+		//
 
 		{ // Validate the stack
 			if (aCurr != aBegin) {
@@ -45,12 +79,16 @@ namespace {
 				auto child = aCurr + 1;
 
 				if (child == aStop) {
+					USABLE(*aCurr);
+
+					// Exclude the child if it isn't usable
 					if (!canUse(aCurr)) {
 						aStop = aCurr;
 
 						if (aCurr == aBegin) {
 							// TODO: abort - stack empty
 							ENGINE_WARN("TODO: abort focus");
+							ENGINE_DEBUG_BREAK;
 						} else {
 							--aCurr;
 						}
@@ -60,18 +98,36 @@ namespace {
 						break;
 					}
 				} else {
+					USABLE(*aCurr);
+					USABLE(*child);
 					if (!canUseChild(aCurr, child)) {
-						aStop = aCurr + 1;
+						// TODO: Should be able to remove this assert. Just validating some
+						//       logic, before this said `aCurr + 1` instead of `child`, which
+						//       I think is synonymous at this point?
+						ENGINE_DEBUG_ASSERT(child == (aCurr + 1)); 
+						aStop = child;
 					} else {
 						aCurr = child;
 					}
 				}
 			}
+
+			//
+			//
+			//
+			//
+			// TODO: how does this fail for hover?
+			//
+			//
+			//
+			//
+			//ENGINE_DEBUG_ASSERT(aStop == aEnd);
 		}
 
 		if (bCurr == bEnd && bCurr != bBegin && aStop != aBegin) {
 			if (*(bCurr-1) == *(aStop - 1)) {
 				//ENGINE_INFO("Same target");
+				back.clear();
 				return;
 			}
 		}
@@ -109,10 +165,13 @@ namespace {
 				while (true) {
 					auto child = aCurr + 1;
 					if (child == aStop) {
+						USABLE(*aCurr);
 						beginUse(aCurr);
 						break;
 					}
-
+					
+					USABLE(*aCurr);
+					USABLE(*child);
 					beginUseChild(aCurr, child);
 					aCurr = child;
 				}
@@ -127,6 +186,7 @@ namespace {
 
 		// Cleanup
 		front.swap(back);
+		back.clear();
 	}
 
 	class RootPanel final : public Engine::UI::PanelT {
@@ -134,6 +194,8 @@ namespace {
 			using PanelT::PanelT;
 
 			virtual void onBeginChildFocus(Panel* child) override {
+				USABLE(child);
+
 				// Force the child to be on top
 				addChild(child);
 			};
@@ -286,9 +348,13 @@ namespace Engine::UI {
 	void Context::render() {
 		if (!hoverValid) {
 			updateHover();
-			hoverValid = true;
 		}
 
+		//
+		//
+		// TODO: shouldn't this be the first thing in this function? or right before rendering?
+		//
+		//
 		deleteDeferredPanels();
 
 		while (currPanelUpdateFunc < panelUpdateFunc.size()) {
@@ -325,6 +391,8 @@ namespace Engine::UI {
 		// DFS traversal
 		reset();
 		for (Panel* curr = root; curr;) {
+			ENGINE_DEBUG_ASSERT(!curr->isDeleted());
+			ENGINE_DEBUG_ASSERT(curr->isEnabled());
 			setOffset(curr->getPos());
 
 			pushClip();
@@ -346,6 +414,7 @@ namespace Engine::UI {
 				}
 			}
 		}
+		//ENGINE_LOG2("--- End");
 		
 		glEnable(GL_BLEND);
 		glEnable(GL_SCISSOR_TEST);
@@ -390,12 +459,19 @@ namespace Engine::UI {
 		auto&& beginUse = [](auto&& it) ENGINE_INLINE { return (*it)->onBeginHover(); };
 		auto&& beginUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onBeginChildHover(*itC); };
 
-		hoverStackBack.clear();
-		auto curr = root;
+		ENGINE_DEBUG_ASSERT(hoverStackBack.empty());
+
+		//
+		//
+		// TODO: This is a bit suspect, is this not redundant with the log in
+		//       updateNestedBehaviour? Might be more nuance here than I am
+		//       seeing at a glance.
+		//
+		//
 
 		// We traverse children in reverse order so that the results match what is rendered when children overlap
 		// Manually check root since it doesn't have a parent (bounds checking would be skipped because of canUseChild)
-		if (curr->getBounds().contains(cursor)) {
+		if (auto curr = root; curr->getBounds().contains(cursor)) {
 			hoverStackBack.push_back(curr);
 			curr = curr->getLastChild();
 
@@ -413,18 +489,15 @@ namespace Engine::UI {
 		updateNestedBehaviour<false>(hoverStack, hoverStackBack, canUse, canUseChild, endUse, endUseChild, beginUse, beginUseChild);
 
 		hover = hoverStack.empty() ? nullptr : hoverStack.back();
-
+		hoverValid = true;
 		ENGINE_DEBUG_ONLY(hoverGuard = false);
 	}
 
 	void Context::setFocus(Panel* panel) {
+		ENGINE_WARN2("Context::setFocus({})\n", (void*)panel);
+		USABLE(panel);
 		ENGINE_DEBUG_ASSERT(focusGuard == false, "setFocus called recursively from one of the panel hover callbacks.");
 		ENGINE_DEBUG_ONLY(focusGuard = true);
-
-		focusStackBack.clear();
-		for (auto curr = panel; curr != nullptr; curr = curr->getParent()) {
-			focusStackBack.push_back(curr);
-		}
 
 		auto&& canUse = [](auto&& it) ENGINE_INLINE { return (*it)->canFocus(); };
 		auto&& canUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->canFocusChild(*itC); };
@@ -434,6 +507,28 @@ namespace Engine::UI {
 
 		auto&& beginUse = [](auto&& it) ENGINE_INLINE { return (*it)->onBeginFocus(); };
 		auto&& beginUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onBeginChildFocus(*itC); };
+
+		ENGINE_DEBUG_ASSERT(focusStackBack.empty());
+
+		if (panel) {
+			auto curr = panel;
+			while (curr) {
+				USABLE(curr);
+
+				// This logic is a bit strange since the focus stack is build in
+				// reverse order. If we cant use this panel we need to clear the
+				// stack or else we will have "inaccesible" entries (missing
+				// ancestors) with the wrong parents.
+				const auto parent = curr->getParent();
+				if (canUse(&curr) && (!parent || canUseChild(&parent, &curr))) {
+					focusStackBack.push_back(curr);
+				} else {
+					focusStackBack.clear();
+				}
+
+				curr = parent;
+			}
+		}
 
 		updateNestedBehaviour<true>(focusStack, focusStackBack, canUse, canUseChild, endUse, endUseChild, beginUse, beginUseChild);
 
@@ -470,9 +565,20 @@ namespace Engine::UI {
 			ENGINE_DEBUG_ASSERT(curr->getParent() == parent);
 			ENGINE_DEBUG_ASSERT(parent != nullptr);
 
+
+			// TODO: These aren't quite right. It is fine to delete things while
+			//       ending focus, just not while beginning focus. With how things
+			//       are currently implemented there can be things in the back stack
+			//       that are filter by the canUse functions. Those panels should be
+			//       fine to delete since they wont be in the new focus.
+			ENGINE_DEBUG_ASSERT(!focusGuard || !std::ranges::contains(focusStackBack, curr), "Attempting to delete a panel while it is begin added to the focus stack.");
+			ENGINE_DEBUG_ASSERT(!hoverGuard || !std::ranges::contains(hoverStackBack, curr), "Attempting to delete a panel while it is begin added to the hover stack.");
+
 			// Clear from focus.
 			if (curr == nextFocus) {
+				// TODO: This doesn't seem to ever be called?
 				setFocus(parent);
+				ENGINE_DEBUG_BREAK; // TODO: For debugging, when is this path taken?
 			}
 
 			// Cleanup panel and children
@@ -489,12 +595,17 @@ namespace Engine::UI {
 		if (active && active->isDeleted()) { unsetActive(); }
 
 		// Update parent
-		// TODO: we could also defer this until after all panels have been REALLY deleted
+		// TODO: Could we also defer this until after all panels have been REALLY deleted? For the case where you delete multiple children?
 		if (parent) {
 			parent->performLayout();
 		}
 
-		hoverValid = false;
+		for (auto panel : hoverStack) {
+			if (panel == parent) {
+				updateHover();
+				break;
+			}
+		}
 	}
 
 	void Context::cleanup(Panel* panel) {
@@ -667,6 +778,7 @@ namespace Engine::UI {
 			clickLastTime = time;
 
 			auto target = getFocus();
+			//auto target = getHover();
 
 			while (target) {
 				if (target->onBeginActivate()) {
