@@ -103,7 +103,7 @@ namespace Game {
 				engine->getCommandManager().exec(text);
 			});
 
-			panels.consoleSuggestionHandler = std::make_unique<UI::ConsoleSuggestionHandler>();
+			panels.consoleSuggestionHandler = std::make_unique<UI::ConsoleSuggestionHandler>(panels.consoleWindow->get()->getInput());
 			panels.consoleWindow->get()->setHandler(panels.consoleSuggestionHandler.get());
 		}
 

@@ -7,13 +7,6 @@ namespace Engine::UI {
 	bool InputTextBox::onAction(ActionEvent action) {
 		auto result = suggest->onAction(action);
 
-		if (auto text = suggest->get(); !text.empty()) {
-			const std::string_view curr = getText();
-			if (curr.substr(0, curr.find(' ')) != text) {
-				setText(std::string{text} + ' ');
-			}
-		}
-
 		if (result) { return result; }
 
 		result = TextBox::onAction(action);
@@ -78,6 +71,7 @@ namespace Engine::UI {
 		//
 		//
 		puts("close!");
+		ENGINE_LOG2("InputTextBox::Selected: {}\n", suggest->get());
 		suggest->close();
 	}
 

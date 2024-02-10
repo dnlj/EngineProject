@@ -20,6 +20,19 @@ namespace Game {
 }
 
 namespace Game::UI {
+	class ConsoleSuggestionPopup;
+
+	class ConsoleSuggestionLabel final : public EUI::StringLine {
+		public:
+			using StringLine::StringLine;
+
+			virtual bool onBeginActivate() override;
+			virtual void render() override;
+
+		private:
+			ConsoleSuggestionPopup* popup();
+	};
+
 	class ConsoleSuggestionPopup final : public EUI::Panel {
 		private:
 			struct Match {
@@ -42,30 +55,32 @@ namespace Game::UI {
 				GAME_DEBUG_CONSOLE_SUGGESTIONS(std::string highlight = {});
 			};
 
+			EUI::InputTextBox* input = nullptr;
+			ConsoleSuggestionLabel* selected = nullptr;
 			std::vector<Match> matches;
-			Panel* selected = nullptr;
 
 		public:
-			ConsoleSuggestionPopup(EUI::Context* context);
+			ConsoleSuggestionPopup(EUI::Context* context, EUI::InputTextBox* input);
 			bool onAction(EUI::ActionEvent action);
 			void filter(std::string_view text);
 			void clear();
+			void select(ConsoleSuggestionLabel* child);
 			std::string_view get() const noexcept;
-
-			//virtual bool canFocus() const override { return false; }
-			//virtual bool canFocusChild(Panel* child) const override { return true; }
+			ENGINE_INLINE EUI::Panel* getSelected() const noexcept { return selected; };
+			ENGINE_INLINE EUI::InputTextBox* getInput() const noexcept { return input; }
 
 		private:
 			template<auto FirstChild, auto NextChild>
 			void select();
+
 			void update(std::string_view text);
 	};
-
 	class ConsoleSuggestionHandler final : public EUI::SuggestionHandler {
 		private:
 			ConsoleSuggestionPopup* popup = nullptr;
 
 		public:
+			ConsoleSuggestionHandler(EUI::InputTextBox* input);
 			virtual bool onAction(EUI::ActionEvent action) override;
 			virtual void filter(EUI::Panel* relative, std::string_view text) override;
 			virtual void close() override;

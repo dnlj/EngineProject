@@ -7,37 +7,13 @@
 
 
 namespace {
+	namespace GUI = Game::UI;
 	namespace EUI = Engine::UI;
 	const auto& getCommands(Engine::UI::Context* ctx) {
 		auto* instance = ctx->getUserdata<Game::EngineInstance>();
 		auto& manager = instance->getCommandManager();
 		return manager.getCommands();
 	}
-
-	// TODO (poyYXFpx): We should remove this class entirely. Just have this be
-	//      implemented as rendering functionality on the ConsoleSuggestionPopup
-	//      itself. There is no difference in functionality between each
-	//      instance and we have a well know use case. This just seems like pure
-	//      overhead to render a few strings in a sequence.
-	class SuggestionLabel : public EUI::StringLine {
-		public:
-			using StringLine::StringLine;
-			glm::vec4 color = {1,0,0,1};
-			std::function<void()> onActivate{};
-
-			virtual bool onBeginActivate() override {
-				ENGINE_DEBUG_ASSERT(onActivate);
-				onActivate();
-				return true;
-			}
-
-			virtual void render() override {
-				ctx->setColor(color);
-				ctx->drawRect({}, getSize());
-				StringLine::render();
-			}
-	};
-
 }
 
 namespace Game::UI {
@@ -176,10 +152,30 @@ namespace Game::UI {
 	};
 }
 
+namespace Game::UI {
+	bool ConsoleSuggestionLabel::onBeginActivate() {
+		popup()->select(this);
+		ctx->setFocus(popup()->getInput());
+		return true;
+	}
+
+	void ConsoleSuggestionLabel::render(){
+		const auto selected = popup()->getSelected() == this;
+		// TODO: pull colors from theme
+		ctx->setColor(selected ? glm::vec4{0,1,0,1} : glm::vec4{1,0,0,1});
+		ctx->drawRect({}, getSize());
+		StringLine::render();
+	}
+	
+	ENGINE_INLINE ConsoleSuggestionPopup* ConsoleSuggestionLabel::popup() {
+		return static_cast<ConsoleSuggestionPopup*>(getParent());
+	}
+}
 
 namespace Game::UI {
-	ConsoleSuggestionPopup::ConsoleSuggestionPopup(EUI::Context* context)
-		: Panel{context} {
+	ConsoleSuggestionPopup::ConsoleSuggestionPopup(EUI::Context* context, EUI::InputTextBox* input)
+		: Panel{context}
+		, input{input} {
 	}
 
 	bool ConsoleSuggestionPopup::onAction(EUI::ActionEvent action) {
@@ -208,50 +204,29 @@ namespace Game::UI {
 		auto& commands = getCommands(ctx);
 		for (const auto& match : matches) {
 			// TODO (poyYXFpx): Remove suggestion label, just have this be
-			//      implemted as part of the ConsoleSuggestionPopup::render. No
+			//      implemented as part of the ConsoleSuggestionPopup::render. No
 			//      need for all the overhead of an extra class, managing
 			//      selection color, one lambda per label, etc.
-			auto* label = ctx->constructPanel<SuggestionLabel>();
+			auto* label = ctx->constructPanel<ConsoleSuggestionLabel>();
 			label->autoText(commands[match.index].name);
-			label->onActivate = [label]{
-				//
-				//
-				//
-				//
-				//
-				//
-				// TOOD:
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				puts("wooooooooooo!");
-			};
 			children.push_back(label);
 		}
 
 		addChildren(children);
 	}
+	
+	void ConsoleSuggestionPopup::select(ConsoleSuggestionLabel* child) {
+		ENGINE_DEBUG_ASSERT(child, "Attempting to select nullptr.");
+		ENGINE_DEBUG_ASSERT(child->getParent() == this, "Attempting to make invalid selection.");
+		selected = child;
+		input->setText(selected->getText() + ' ');
+		fmt::print("ConsoleSuggestionPopup::Selected: {}\n", (void*)child);
+	}
 
 	template<auto FirstChild, auto NextChild>
 	void ConsoleSuggestionPopup::select() {
-		auto* prev = selected;
-
-		if (!selected) {
-			selected = (this->*FirstChild)();
-			if (selected == nullptr) { return; }
-			prev = selected;
-		} else {
-			selected = (selected->*NextChild)();
-			if (!selected) { selected = (this->*FirstChild)(); }
-		}
-
-		static_cast<SuggestionLabel*>(prev)->color = {1,0,0,1};
-		static_cast<SuggestionLabel*>(selected)->color = {0,1,0,1};
+		auto* const next = selected ? (selected->*NextChild)() : (this->*FirstChild)();
+		if (next) { select(static_cast<ConsoleSuggestionLabel*>(next)); }
 	}
 
 	void ConsoleSuggestionPopup::clear() {
@@ -264,36 +239,31 @@ namespace Game::UI {
 	}
 
 	std::string_view ConsoleSuggestionPopup::get() const noexcept {
-		auto sel = static_cast<SuggestionLabel*>(selected);
-		return sel ? sel->getText() : std::string_view{};
+		return selected ? selected->getText() : std::string_view{};
 	}
 }
 
 namespace Game::UI {
+	ConsoleSuggestionHandler::ConsoleSuggestionHandler(EUI::InputTextBox* input) {
+		auto* const ctx = input->getContext();
+		popup = ctx->createPanel<ConsoleSuggestionPopup>(ctx->getRoot(), input);
+		popup->setAutoSize(true);
+		popup->setLayout(new EUI::DirectionalLayout(EUI::Direction::Vertical, EUI::Align::Start, EUI::Align::Stretch, 0));
+	}
+
 	bool ConsoleSuggestionHandler::onAction(EUI::ActionEvent action) {
-		if (!popup) { return false; }
 		return popup->onAction(action);
 	}
 
 	void ConsoleSuggestionHandler::filter(EUI::Panel* relative, std::string_view text) {
-		if (!popup) {
-			using namespace EUI;
-			auto* ctx = relative->getContext();
-			ENGINE_LOG2("filter root: {}", (void*)ctx->getRoot());
-			popup = ctx->createPanel<ConsoleSuggestionPopup>(ctx->getRoot());
-
-			// TODO: may want ot reposition every update
-
-			popup->setAutoSize(true);
-			popup->setLayout(new DirectionalLayout(Direction::Vertical, Align::Start, Align::Stretch, 0));
-		}
-
 		if (!popup->isEnabled()) {
 			popup->setEnabled(true);
 		}
 
 		popup->setPos(relative->getPos() + glm::vec2{0, relative->getHeight()});
-		// TODO: move popup to front of windows.
+
+		// TODO: add a toFront member function
+		popup->getParent()->addChild(popup);
 
 		GAME_DEBUG_CONSOLE_SUGGESTIONS(
 			auto start = Engine::Clock::now();
@@ -310,25 +280,10 @@ namespace Game::UI {
 	}
 
 	void ConsoleSuggestionHandler::close() {
-		//if (popup) {
-		//	auto* parent = popup->getParent();
-		//	auto* prev = popup->getPrevSiblingRaw();
-		//	auto* next = popup->getNextSiblingRaw();
-		//	popup->getContext()->deferredDeletePanel(popup);
-		//
-		//	ENGINE_LOG2(
-		//		"-- Close --\n\tPopupB: ={} ^{} <{} >{} \n\tPopupA: ={} ^{} <{} >{} \n\t PrevA: ={} ^{} <{} >{}",
-		//		(void*)popup, (void*)parent, (void*)prev, (void*)next,
-		//		(void*)popup, (void*)popup->getParent(), (void*)popup->getPrevSiblingRaw(), (void*)popup->getNextSiblingRaw(),
-		//		(void*)prev, (void*)prev->getParent(), (void*)prev->getPrevSiblingRaw(), (void*)prev->getNextSiblingRaw()
-		//	);
-		//	popup = nullptr;
-		//}
-		ENGINE_DEBUG_ASSERT(popup); // TODO: when would this not be true? Before I had an if(popup) but i think that shouldn't be needed?
 		popup->setEnabled(false);
 	}
 
 	std::string_view ConsoleSuggestionHandler::get() {
-		return popup ? popup->get() : std::string_view{};
+		return popup->get();
 	}
 }
