@@ -116,7 +116,21 @@ namespace {
 			//
 			//
 			//
+			//
+			//
+			//
+			//
+			//
+			//
 			// TODO: how does this fail for hover?
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
 			//
 			//
 			//
@@ -195,9 +209,7 @@ namespace {
 
 			virtual void onBeginChildFocus(Panel* child) override {
 				USABLE(child);
-
-				// Force the child to be on top
-				addChild(child);
+				child->toTop();
 			};
 			
 			virtual bool onBeginActivate() override { return false; }
@@ -494,7 +506,6 @@ namespace Engine::UI {
 	}
 
 	void Context::setFocus(Panel* panel) {
-		ENGINE_WARN2("Context::setFocus({})\n", (void*)panel);
 		USABLE(panel);
 		ENGINE_DEBUG_ASSERT(focusGuard == false, "setFocus called recursively from one of the panel hover callbacks.");
 		ENGINE_DEBUG_ONLY(focusGuard = true);
@@ -564,7 +575,6 @@ namespace Engine::UI {
 		for (auto* curr = first;; curr = curr->getNextSiblingRaw()) {
 			ENGINE_DEBUG_ASSERT(curr->getParent() == parent);
 			ENGINE_DEBUG_ASSERT(parent != nullptr);
-
 
 			// TODO: These aren't quite right. It is fine to delete things while
 			//       ending focus, just not while beginning focus. With how things

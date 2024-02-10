@@ -438,6 +438,11 @@ namespace Engine::UI {
 			}
 
 			/**
+			 * Move this child to the top (last child).
+			 */
+			void toTop() { getParent()->addChild(this); }
+
+			/**
 			 * Renders this panel.
 			 */
 			virtual void render();

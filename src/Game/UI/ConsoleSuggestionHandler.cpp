@@ -203,10 +203,6 @@ namespace Game::UI {
 
 		auto& commands = getCommands(ctx);
 		for (const auto& match : matches) {
-			// TODO (poyYXFpx): Remove suggestion label, just have this be
-			//      implemented as part of the ConsoleSuggestionPopup::render. No
-			//      need for all the overhead of an extra class, managing
-			//      selection color, one lambda per label, etc.
 			auto* label = ctx->constructPanel<ConsoleSuggestionLabel>();
 			label->autoText(commands[match.index].name);
 			children.push_back(label);
@@ -220,7 +216,6 @@ namespace Game::UI {
 		ENGINE_DEBUG_ASSERT(child->getParent() == this, "Attempting to make invalid selection.");
 		selected = child;
 		input->setText(selected->getText() + ' ');
-		fmt::print("ConsoleSuggestionPopup::Selected: {}\n", (void*)child);
 	}
 
 	template<auto FirstChild, auto NextChild>
@@ -261,9 +256,7 @@ namespace Game::UI {
 		}
 
 		popup->setPos(relative->getPos() + glm::vec2{0, relative->getHeight()});
-
-		// TODO: add a toFront member function
-		popup->getParent()->addChild(popup);
+		popup->toTop();
 
 		GAME_DEBUG_CONSOLE_SUGGESTIONS(
 			auto start = Engine::Clock::now();
