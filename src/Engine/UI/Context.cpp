@@ -6,37 +6,62 @@
 #include <Engine/Win32/win32.hpp>
 
 
+/**
+ * Sanity check for working with panels.
+ * 99% of the time we expect to be working with non-null and non-deleted panels.
+ */
 #define USABLE(Panel)\
 	ENGINE_DEBUG_ASSERT((Panel) != nullptr);\
 	ENGINE_DEBUG_ASSERT(!(Panel)->isDeleted());
 
 namespace {
-	//
-	//
-	//
-	//
-	//
-	// TODO: document, generic behavior, what is front, what is back, what needs to be valid about back before calling, etc.
-	//
-	//
-	//
-	//
-	//
-	//
-	template<bool Reverse, class Stack, class CanUseFunc, class CanUseChildFunc, class EndUseFunc, class EndUseChildFunc, class BeginUseFunc, class BeginUseChildFunc>
+	/**
+	 * Call the associated end and begin functions on a sequence of panels.
+	 *
+	 * The stacks are intended to be setup in order or reverse order from parent
+	 * to child (depending on @p Reverse). It isn't strictly required that the
+	 * panels have a parent/child relationship since we don't use any sibling,
+	 * parent, or child functions here, but it would make the begin/end function
+	 * parameters not make 100% sense.
+	 * 
+	 * This used to happen if you deleted a panel right before updating focus,
+	 * but I think that should now be resolved within deferredDeletePanels. It
+	 * might still be possible when you change a panels parent?
+	 *
+	 * When a panel is added to the active stack the begin functions are called
+	 * on its parent and then it. When a panel is removed from the active stack
+	 * the end functions are called on it and then its parent panel. The end
+	 * functions are always called before the begin and in reverse order.
+	 * Similar to constructors and destructors.
+	 * 
+	 * Example:
+	 * ------------------------------------------------------------------------------
+	 *   Going from stack one to stack two:
+	 *     1. A > B > C > D
+	 *     2. A > B > E > F
+	 *   
+	 *   Calls:
+	 *     - end(D), endChild(C, D), end(C), endChild(B, C)
+	 *     - beginChild(B, E), begin(E), beginChild(E, F), begin(F)
+	 * ------------------------------------------------------------------------------
+	 *
+	 * @tparam Reverse Is the order of panel in each stack parent then child or child then parent.
+	 * @param front The current/active/existing list of panels from the previous run.
+	 * @param back The new set of panels to target.
+	 */
+	template<bool Reverse, class EndUseFunc, class EndUseChildFunc, class BeginUseFunc, class BeginUseChildFunc>
 	void updateNestedBehaviour(
-		Stack& front, Stack& back,
-		CanUseFunc&& canUse, CanUseChildFunc&& canUseChild,
+		std::vector<Engine::UI::Panel*>& front, std::vector<Engine::UI::Panel*>& back,
 		EndUseFunc&& endUse, EndUseChildFunc&& endUseChild,
 		BeginUseFunc&& beginUse, BeginUseChildFunc&& beginUseChild
 	) {
-		auto&& begin = [](Stack& stack) ENGINE_INLINE { if constexpr(Reverse) { return stack.rbegin(); } else { return stack.begin(); } };
-		auto&& end = [](Stack& stack) ENGINE_INLINE { if constexpr(Reverse) { return stack.rend(); } else { return stack.end(); } };
+		constexpr auto begin = [](auto& stack) ENGINE_INLINE { if constexpr(Reverse) { return stack.rbegin(); } else { return stack.begin(); } };
+		constexpr auto end = [](auto& stack) ENGINE_INLINE { if constexpr(Reverse) { return stack.rend(); } else { return stack.end(); } };
 
 		// A = new stack (back stack)
 		const auto aBegin = begin(back);
 		const auto aEnd = end(back);
-		auto aStop = aEnd;
+		const auto aStop = aEnd;
 		auto aCurr = aBegin;
 
 		// B = old/active stack (front stack)
@@ -51,95 +76,18 @@ namespace {
 		}
 
 		// At this point aCurr and bCurr are the first element at which the stacks differ
-		const auto aDiff = aCurr;
+		ENGINE_DEBUG_ONLY(const auto aDiff = aCurr);
 
+		// No change in the target.
+		// - Neither stack is empty.
+		// - The new stack is equal to or a subset of the old stack.
+		// - The last item in each stack is equal.
 		//
-		//
-		//
-		//
-		//
-		// TODO: I think it is better to make sure the stack is valid BEFORE
-		//       calling this function, or else we are duplicating logic like in
-		//       hover.
-		//
-		//       Should be able to verify that by instead replacing the validate/aStop with debug asserts?
-		//
-		//
-		//
-		//
-		//
-
-		{ // Validate the stack
-			if (aCurr != aBegin) {
-				--aCurr;
-			}
-
-			while (true) {
-				if (aCurr == aStop) { break; }
-				auto child = aCurr + 1;
-
-				if (child == aStop) {
-					USABLE(*aCurr);
-
-					// Exclude the child if it isn't usable
-					if (!canUse(aCurr)) {
-						aStop = aCurr;
-
-						if (aCurr == aBegin) {
-							// TODO: abort - stack empty
-							ENGINE_WARN("TODO: abort focus");
-							ENGINE_DEBUG_BREAK;
-						} else {
-							--aCurr;
-						}
-					} else {
-						// At this point aCurr has been validated and should be the last element
-						ENGINE_DEBUG_ASSERT(child == aStop);
-						break;
-					}
-				} else {
-					USABLE(*aCurr);
-					USABLE(*child);
-					if (!canUseChild(aCurr, child)) {
-						// TODO: Should be able to remove this assert. Just validating some
-						//       logic, before this said `aCurr + 1` instead of `child`, which
-						//       I think is synonymous at this point?
-						ENGINE_DEBUG_ASSERT(child == (aCurr + 1)); 
-						aStop = child;
-					} else {
-						aCurr = child;
-					}
-				}
-			}
-
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: how does this fail for hover?
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//ENGINE_DEBUG_ASSERT(aStop == aEnd);
-		}
-
-		if (bCurr == bEnd && bCurr != bBegin && aStop != aBegin) {
-			if (*(bCurr-1) == *(aStop - 1)) {
+		// We need the additional check that `bCurr == aEnd-1` because it
+		// could be that the back stack is a subset of the front stack. In that
+		// case we still need to call some end functions and use the last item.
+		if (bCurr == bEnd && bEnd != bBegin && aEnd != aBegin) {
+			if (*(bCurr-1) == *(aEnd-1)) {
 				//ENGINE_INFO("Same target");
 				back.clear();
 				return;
@@ -148,6 +96,7 @@ namespace {
 
 		// Call end events
 		if (bBegin == bEnd) {
+			// There new stack is empty. There is no target.
 			//ENGINE_WARN("Empty b list");
 		} else {
 			auto bLast = bEnd - 1;
@@ -167,18 +116,21 @@ namespace {
 
 		// Call begin events
 		{
-			if (aStop == aBegin) {
+			if (aEnd == aBegin) {
+				// The old stack is empty. There was no target.
 				//ENGINE_WARN("Empty a list");
 			} else {
-				aCurr = aStop < aDiff ? aStop : aDiff;
-
+				ENGINE_DEBUG_ASSERT(aCurr == aDiff);
 				if (aCurr != aBegin) {
 					--aCurr;
 				}
 
 				while (true) {
+					 // TODO: Why is this true at this point? Particularly for the first iteration. Document.
+					ENGINE_DEBUG_ASSERT(aCurr != aEnd);
+
 					auto child = aCurr + 1;
-					if (child == aStop) {
+					if (child == aEnd) {
 						USABLE(*aCurr);
 						beginUse(aCurr);
 						break;
@@ -473,23 +425,18 @@ namespace Engine::UI {
 
 		ENGINE_DEBUG_ASSERT(hoverStackBack.empty());
 
-		//
-		//
-		// TODO: This is a bit suspect, is this not redundant with the log in
-		//       updateNestedBehaviour? Might be more nuance here than I am
-		//       seeing at a glance.
-		//
-		//
-
 		// We traverse children in reverse order so that the results match what is rendered when children overlap
 		// Manually check root since it doesn't have a parent (bounds checking would be skipped because of canUseChild)
 		if (auto curr = root; curr->getBounds().contains(cursor)) {
+			ENGINE_DEBUG_ASSERT(canUse(&curr),
+				"This function assumes the root is a usable hover target. The above check will need updated if that changes."
+			); 
 			hoverStackBack.push_back(curr);
 			curr = curr->getLastChild();
 
 			while (curr) {
 				auto parent = curr->getParent();
-				if (parent && canUseChild(&parent, &curr)) {
+				if (canUse(&curr) && parent && canUseChild(&parent, &curr)) {
 					hoverStackBack.push_back(curr);
 					curr = curr->getLastChild();
 				} else {
@@ -498,7 +445,7 @@ namespace Engine::UI {
 			}
 		}
 
-		updateNestedBehaviour<false>(hoverStack, hoverStackBack, canUse, canUseChild, endUse, endUseChild, beginUse, beginUseChild);
+		updateNestedBehaviour<false>(hoverStack, hoverStackBack, endUse, endUseChild, beginUse, beginUseChild);
 
 		hover = hoverStack.empty() ? nullptr : hoverStack.back();
 		hoverValid = true;
@@ -541,7 +488,7 @@ namespace Engine::UI {
 			}
 		}
 
-		updateNestedBehaviour<true>(focusStack, focusStackBack, canUse, canUseChild, endUse, endUseChild, beginUse, beginUseChild);
+		updateNestedBehaviour<true>(focusStack, focusStackBack, endUse, endUseChild, beginUse, beginUseChild);
 
 		focus = focusStack.empty() ? nullptr : focusStack.front();
 		ENGINE_DEBUG_ONLY(focusGuard = false);
@@ -551,11 +498,6 @@ namespace Engine::UI {
 		ENGINE_DEBUG_ASSERT(first && last);
 		const auto parent = first->getParent();
 		if (parent && parent->isDeleted()) { return; }
-
-		// Remove from parent
-		if (parent) {
-			Panel::unsafe_orphanChildren(parent, first, last);
-		}
 
 		// Figure out if we might be in the focus stack
 		Panel* nextFocus = nullptr;
@@ -604,17 +546,18 @@ namespace Engine::UI {
 		// Clear from active
 		if (active && active->isDeleted()) { unsetActive(); }
 
-		// Update parent
-		// TODO: Could we also defer this until after all panels have been REALLY deleted? For the case where you delete multiple children?
-		if (parent) {
-			parent->performLayout();
-		}
-
+		// Update hover
 		for (auto panel : hoverStack) {
 			if (panel == parent) {
 				updateHover();
 				break;
 			}
+		}
+
+		// Remove from and update parent
+		if (parent) {
+			Panel::unsafe_orphanChildren(parent, first, last);
+			parent->performLayout(); // TODO: Could we also defer this until after all panels have been REALLY deleted? For the case where you delete multiple children?
 		}
 	}
 
