@@ -672,24 +672,6 @@ namespace Game {
 			body.clear();
 			body.setPosition(pos);
 
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: we never actually set initial fixture filter/zone...
-			// maybe a PhysicsBody::fixtureDef() to get the initial definition with populated group?
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-
 			b2PolygonShape shape{};
 			b2FixtureDef fixtureDef{};
 			fixtureDef.shape = &shape;

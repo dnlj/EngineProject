@@ -310,16 +310,11 @@ namespace Engine::UI {
 	}
 	
 	void Context::render() {
+		deleteDeferredPanels();
+
 		if (!hoverValid) {
 			updateHover();
 		}
-
-		//
-		//
-		// TODO: shouldn't this be the first thing in this function? or right before rendering?
-		//
-		//
-		deleteDeferredPanels();
 
 		while (currPanelUpdateFunc < panelUpdateFunc.size()) {
 			auto& [id, panel, func] = panelUpdateFunc[currPanelUpdateFunc];
