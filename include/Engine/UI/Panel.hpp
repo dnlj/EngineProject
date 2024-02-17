@@ -489,10 +489,7 @@ namespace Engine::UI {
 				}
 			}
 			ENGINE_INLINE bool isEnabled() const noexcept { return isFlag(PanelState::Enabled | PanelState::ParentEnabled); }
-
-			ENGINE_INLINE void toggleEnabled() noexcept {
-				setEnabled(!isEnabled());
-			}
+			ENGINE_INLINE void toggleEnabled() noexcept { setEnabled(!isEnabled()); }
 
 			ENGINE_INLINE bool isDeleted() const noexcept { return isFlag(PanelState::Deleted); }
 

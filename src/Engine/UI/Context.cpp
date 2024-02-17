@@ -463,7 +463,7 @@ namespace Engine::UI {
 
 		ENGINE_DEBUG_ASSERT(focusStackBack.empty());
 
-		if (panel) {
+		{
 			auto curr = panel;
 			while (curr) {
 				USABLE(curr);

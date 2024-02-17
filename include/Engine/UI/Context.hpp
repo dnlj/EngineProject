@@ -177,7 +177,6 @@ namespace Engine::UI {
 			P* constructPanel(Args&&... args) {
 				auto* p = new P(this, std::forward<Args>(args)...);
 				registerPanel(p);
-				ENGINE_LOG2("constructPanel: {} = {}", (void*)p, typeid(P).name());
 				return p;
 			}
 

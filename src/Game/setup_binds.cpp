@@ -248,10 +248,18 @@ void setupBinds(Game::EngineInstance& engine) {
 	}, [&](Value curr, Value prev, auto time){
 		if (curr.i32) {
 			auto* console = uiSys.getConsole();
+			auto* conCtx = console->getContext();
 			if (!console->isEnabled()) {
-				console->getContext()->setFocus(console->get()->getInput());
+				conCtx->setFocus(console->get()->getInput());
 			}
+
 			console->toggleEnabled();
+
+			// Hide the suggestion popup
+			if (conCtx->getFocus() == console->get()->getInput())
+			{
+				conCtx->setFocus(conCtx->getRoot());
+			}
 		}
 		return true;
 	});
