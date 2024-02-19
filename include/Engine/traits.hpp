@@ -38,7 +38,7 @@ namespace Engine {
 	 * Signed and unsigned char are excluded to avoid issues with (u)int8_t.
 	 */
 	template<class T>
-	struct IsChar : IsAnyOf<T, char, wchar_t, char8_t, char16_t, char32_t> {};
+	struct IsChar : IsAnyOf<std::remove_cvref_t<T>, char, wchar_t, char8_t, char16_t, char32_t> {};
 
 	template<class T>
 	constexpr inline bool IsChar_v = IsChar<T>::value;
@@ -46,6 +46,8 @@ namespace Engine {
 	template<class T>
 	concept AnyChar = IsChar_v<T>;
 
+	template<class T>
+	concept AnyNonChar = !AnyChar<T>;
 
 	/**
 	 * Check if a type is a floating point or integral.

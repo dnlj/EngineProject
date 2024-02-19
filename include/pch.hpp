@@ -56,8 +56,8 @@
 #include <glm/gtc/quaternion.hpp>
 
 // Engine
+#include <Engine/engine.hpp>
 #include <Engine/Clock.hpp>
-#include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Hash.hpp>
 #include <Engine/Net/IPv4Address.hpp>

@@ -256,12 +256,12 @@ namespace Engine {
 	#define ENGINE_WARN2 ::Engine::getGlobalConfig().logger.warn
 #endif
 
-#define ENGINE_ERROR2 ([](::Engine::Log::FormatString format, const auto&... args) ENGINE_INLINE {\
+#define ENGINE_ERROR2 ([]<class... Args>(const ::Engine::Log::FormatString<Args...>& format, const Args&... args) ENGINE_INLINE {\
 	::Engine::getGlobalConfig().logger.error(format, args...);\
 	ENGINE_DIE;\
 })
 
-#define ENGINE_CONSOLE ([](::Engine::Log::FormatString format, const auto&... args) ENGINE_INLINE {\
+#define ENGINE_CONSOLE ([]<class... Args>(const ::Engine::Log::FormatString<Args...>& format, const Args&... args) ENGINE_INLINE {\
 	::Engine::getGlobalConfig().logger.user(format, +::Engine::Log::Level::User, "CONSOLE", ::Engine::Log::Style::FG::Green, args...);\
 })
 

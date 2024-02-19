@@ -25,17 +25,6 @@ namespace Engine::Log {
 	};
 	ENGINE_BUILD_DECAY_ENUM(Level);
 
-	class FormatString {
-		public:
-			template<class S>
-			consteval FormatString(const S& format, std::source_location location = std::source_location::current())
-				: format{format}
-				, location{location} {
-			}
-			std::string_view format;
-			std::source_location location;
-	};
-
 	class StyleBitset {
 		public:
 			uint32 bitset = {};
@@ -330,8 +319,61 @@ namespace Engine::Log {
 	template<AnyChar Char, size_t N>
 	Styled(const Char(&)[N]) -> Styled<std::basic_string_view<Char>>;
 
+	/**
+	 * A wrapper type so we can customize the formatting of pointers.
+	 */
+	class Pointer {
+		public:
+			constexpr Pointer(const void* const value) : value{std::bit_cast<uintptr_t>(value)} {}
+			uintptr_t const value = {};
+	};
+
+	template<class T>
+	concept ShouldFormatAsPointer = std::is_pointer_v<T> && !Engine::IsChar_v<std::decay_t<T>>;
+
+	/**
+	 * Forward any non-pointer types. Cast any non-char pointers to void
+	 * pointers.
+	 */
+	ENGINE_INLINE constexpr const auto& castPointers(const auto& value) { return value; }
+	ENGINE_INLINE constexpr Pointer castPointers(const AnyNonChar auto* value) { return {value}; }
+
+	/**
+	 * Figure out what the final type of the argument that is sent to fmt will
+	 * be once any of our own transforms have been done.
+	 */
+	template<class T>
+	using ArgType = decltype(castPointers(std::declval<T>()));
+
+	/**
+	 * The format string to use for logging.
+	 * Provides file and line number info as well as validation using fmt.
+	 * Usually you should be using FormatString instead of BasicFormatString to
+	 * avoid template argument resolution issues.
+	 */
+	template<class... Args>
+	class BasicFormatString {
+		public:
+			template<class S>
+			consteval BasicFormatString(const S& formatStr, std::source_location location = std::source_location::current())
+				: format{formatStr}
+				, location{location} {
+
+				// Just for format validation. We cant pass this to format
+				// directly because fmt uses its own string view type.
+				fmt::format_string<ArgType<Args>...>{format};
+			}
+
+			std::string_view format;
+			std::source_location location;
+	};
+
+	template<class... Args>
+	using FormatString = BasicFormatString<std::type_identity_t<Args>...>;
+
 	class Logger {
 		private:
+			// TODO: Is there a reason this is a class an not a function? Seems unnecessary.
 			struct StyleFilter {
 				template<class T>
 				constexpr const T& operator()(const T& value) const noexcept {
@@ -370,42 +412,42 @@ namespace Engine::Log {
 			void* userdata = nullptr;
 
 			template<class... Args>
-			void debug(FormatString format, const Args&... args) const {
+			void debug(FormatString<Args...> format, const Args&... args) const {
 				write(format.location, Level::Debug, "DEBUG", Style::Foreground{3}, format.format, args...);
 			}
 			
 			template<class... Args>
-			void log(FormatString format, const Args&... args) const {
+			void log(FormatString<Args...> format, const Args&... args) const {
 				write(format.location, Level::Log, "LOG", Style::FG::BrightBlack, format.format, args...);
 			}
 			
 			template<class... Args>
-			void info(FormatString format, const Args&... args) const {
+			void info(FormatString<Args...> format, const Args&... args) const {
 				write(format.location, Level::Info, "INFO", Style::Foreground{4}, format.format, args...);
 			}
 			
 			template<class... Args>
-			void success(FormatString format, const Args&... args) const {
+			void success(FormatString<Args...> format, const Args&... args) const {
 				write(format.location, Level::Success, "SUCCESS", Style::Foreground{2}, format.format, args...);
 			}
 			
 			template<class... Args>
-			void verbose(FormatString format, const Args&... args) const {
+			void verbose(FormatString<Args...> format, const Args&... args) const {
 				write(format.location, Level::Verbose, "VERBOSE", Style::Foreground{15}, format.format, args...);
 			}
 			
 			template<class... Args>
-			void warn(FormatString format, const Args&... args) const {
+			void warn(FormatString<Args...> format, const Args&... args) const {
 				write(format.location, Level::Warn, "WARN", Style::Foreground{3}, format.format, args...);
 			}
 
 			template<class... Args>
-			void error(FormatString format, const Args&... args) const {
+			void error(FormatString<Args...> format, const Args&... args) const {
 				write(format.location, Level::Error, "ERROR", Style::Foreground{1}, format.format, args...);
 			}
 
 			template<class... Args>
-			void user(FormatString format, std::underlying_type_t<Level> level, std::string_view label, ANSIEscapeSequence style, const Args&... args) const {
+			void user(FormatString<Args...> format, std::underlying_type_t<Level> level, std::string_view label, ANSIEscapeSequence style, const Args&... args) const {
 				if constexpr (ENGINE_DEBUG) {
 					if (level < +Level::User) { ENGINE_DEBUG_BREAK; }
 				}
@@ -440,11 +482,20 @@ namespace Engine::Log {
 					.style = style,
 				};
 
+				// FMT explicitly disallows formatting any non void pointer
+				// types even if a fmt::formatter<> specialization is given. See
+				// static_assert in ::fmt::detail::make_value.
+				//
+				// Because of this we have to manually preprocess the arguments
+				// with castPointers to sanely print pointers without bloating
+				// our code with static_cast<const void*>(xyz) everywhere.
+
 				if (styledWritter) {
-					styledWritter(*this, info, format, fmt::make_format_args(args...));
+					styledWritter(*this, info, format, fmt::make_format_args(castPointers(args)...));
 				}
+
 				if (cleanWritter) {
-					cleanWritter(*this, info, format, fmt::make_format_args(StyleFilter{}(args)...));
+					cleanWritter(*this, info, format, fmt::make_format_args(StyleFilter{}(castPointers(args))...));
 				}
 			}
 
@@ -462,5 +513,28 @@ struct fmt::formatter<Engine::Log::Styled<T>, Char> : fmt::formatter<T, Char> {
 		fmt::format_to(ctx.out(), "{}", styled.value);
 		std::ranges::copy("\033[0m", ctx.out());
 		return ctx.out();
+	}
+};
+
+template<class Char>
+struct fmt::formatter<Engine::Log::Pointer, Char> {
+	template<class Context>
+	constexpr auto parse(Context& ctx) {
+		return ctx.end();
+	}
+	
+	template<class Context>
+	constexpr auto format(Engine::Log::Pointer const& pointer, Context& ctx) {
+		// This format string assumes 16 hex digits because sizeof(uintptr_t)=8
+		// and CHAR_BIT=8. If either of those is not true we need to update the
+		// format string. Could also update this to build the format string at
+		// compile time but that sounds like a slight pain unless
+		// https://wg21.link/P2291 makes it in.
+		constexpr auto bitsPerHexDigit = 4; // 4 base 2 digits = 1 base 16 digit
+		constexpr auto hexDigitsPerByte = CHAR_BIT / bitsPerHexDigit;
+		constexpr auto hexDigitsPerPointer = sizeof(uintptr_t) * hexDigitsPerByte;
+		static_assert(hexDigitsPerPointer == 16, "Incorrect format for byte or pointer size.");
+
+		return fmt::format_to(ctx.out(), "0x{:016X}", pointer.value);
 	}
 };
