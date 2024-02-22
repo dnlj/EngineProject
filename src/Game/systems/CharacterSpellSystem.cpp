@@ -52,11 +52,8 @@ namespace Game {
 		
 		for (int i = 0; i < count; ++i) {
 			auto ent = missiles.emplace_back(world.createEntity(true));
-			const auto& [spriteComp, physBodyComp, physInterpComp] = world.addComponents<
-				Game::SpriteComponent,
-				Game::PhysicsBodyComponent,
-				Game::PhysicsInterpComponent
-			>(ent);
+			auto& spriteComp = world.addComponent<SpriteComponent>(ent);
+			world.addComponent<PhysicsInterpComponent>(ent);
 
 			{
 				b2BodyDef bodyDef;
@@ -66,8 +63,8 @@ namespace Game {
 				bodyDef.fixedRotation = true;
 				bodyDef.active = false;
 				//bodyDef.bullet = true; // TODO: when should this be used?
-
-				physBodyComp.setBody(physSys.createBody(ent, bodyDef), 0); // TODO: zone
+				
+				auto& physBodyComp = world.addComponent<PhysicsBodyComponent>(ent, physSys.createBody(ent, bodyDef, 0));
 
 				b2CircleShape shape;
 				shape.m_radius = 0.5f;
@@ -94,6 +91,13 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::fireMissile(const b2Vec2& pos, const b2Vec2& dir) {
+
+		//
+		//
+		// TODO: need to set zone as well
+		//
+		//
+
 		auto missile = missiles[currentMissile];
 		world.setEnabled(missile, true);
 

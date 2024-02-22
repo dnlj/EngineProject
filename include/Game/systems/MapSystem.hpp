@@ -141,7 +141,7 @@ namespace Game {
 			MapGenerator2 mgen{12345};
 
 			// TODO: recycle old bodies?
-			b2Body* createBody();
+			PhysicsBody createBody(ZoneId zoneId);
 
 			// TODO: Doc
 			void buildActiveChunkData(ActiveChunkData& data, glm::ivec2 chunkPos);

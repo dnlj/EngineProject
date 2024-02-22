@@ -508,14 +508,15 @@ namespace Game {
 		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
 
 		{
+			constexpr ZoneId zoneId = 0;
 			// TODO: query map system and find good spawn location
 			const b2Vec2 pos = {0, 2};
-			auto& physComp = world.addComponent<PhysicsBodyComponent>(ply);
-
+			world.getSystem<ZoneManagementSystem>().addPlayer(ply, zoneId);
+			
+			// TODO: This is hacky. Rework to not use takeOwnership. It should just be created dirctly on the PhysicsBodyComponent.
+			auto body = physSys.createPhysicsCircle(ply, pos, zoneId, PhysicsCategory::Player);
+			auto& physComp = world.addComponent<PhysicsBodyComponent>(ply, body);
 			ENGINE_WARN2("\nAdding physics comp: {} {}\n", ply, physComp.zone.id);
-
-			world.getSystem<ZoneManagementSystem>().addPlayer(ply, 0);
-			physComp.setBody(physSys.createPhysicsCircle(ply, pos, PhysicsCategory::Player), 0);
 		}
 
 		world.addComponent<ActionComponent>(ply, world.getTick());

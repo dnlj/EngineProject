@@ -166,11 +166,27 @@ namespace Game {
 		}
 	}
 
-	b2Body* PhysicsSystem::createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef/*, PhysicsGroup group*/) {
+	PhysicsBody PhysicsSystem::createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef, ZoneId zoneId) {
 		auto body = physWorld.CreateBody(&bodyDef);
 		static_assert(sizeof(void*) >= sizeof(ent), "Engine::ECS::Entity is to large to store in userdata pointer.");
 		body->SetUserData(reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t&>(ent)));
-		return body;
+
+		//
+		//
+		//
+		//
+		//
+		// TODO: Make zone a constructor arg?
+		//
+		//
+		//
+		//
+		//
+
+		PhysicsBody physBody{};
+		physBody.setBody(body, zoneId);
+
+		return physBody;
 	}
 
 	void PhysicsSystem::destroyBody(b2Body* body) {

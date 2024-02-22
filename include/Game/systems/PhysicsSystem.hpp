@@ -9,6 +9,7 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/PhysicsListener.hpp>
+#include <Game/PhysicsBody.hpp>
 
 
 namespace Game {
@@ -64,7 +65,7 @@ namespace Game {
 			 * @param[in] bodyDef The box2d body definition.
 			 * @return A box2d body.
 			 */
-			b2Body* createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef/*, PhysicsGroup group*/);
+			PhysicsBody createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef, ZoneId zoneId);
 
 			/**
 			 * Destroys a box2d body.
@@ -79,14 +80,14 @@ namespace Game {
 			void addListener(PhysicsListener* listener);
 
 			// TODO: rm - temp
-			b2Body* createPhysicsCircle(Engine::ECS::Entity ent, b2Vec2 position, PhysicsCategory group) {
+			PhysicsBody createPhysicsCircle(Engine::ECS::Entity ent, b2Vec2 position, ZoneId zoneId, PhysicsCategory group) {
 				b2BodyDef bodyDef;
 				bodyDef.type = b2_dynamicBody;
 				bodyDef.position = position;
 				bodyDef.linearDamping = 10.0f;
 				bodyDef.fixedRotation = true;
 
-				b2Body* body = createBody(ent, bodyDef);
+				auto body = createBody(ent, bodyDef, zoneId);
 
 				b2CircleShape shape;
 				shape.m_radius = 0.49f;
@@ -97,7 +98,7 @@ namespace Game {
 				fixtureDef.filter.categoryBits = getCategoryBits(group);
 				fixtureDef.filter.maskBits = getMaskBits(group);
 
-				body->CreateFixture(&fixtureDef);
+				body.createFixture(fixtureDef);
 				return body;
 			}
 

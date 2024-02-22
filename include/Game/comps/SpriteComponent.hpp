@@ -43,38 +43,36 @@ namespace Game {
 
 			static void write(const SpriteComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {}
 
-			static std::tuple<SpriteComponent> readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
-				SpriteComponent result;
-
+			static void readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 				uint32 tex;
 				if (!buff.read<uint32>(&tex)) {
 					ENGINE_WARN("Unable to read sprite texture from network.");
-					return {};
+					return;
 				}
 				
 				glm::vec2 pos;
 				if (!buff.read<glm::vec2>(&pos)) {
 					ENGINE_WARN("Unable to read sprite position from network.");
-					return {};
+					return;
 				}
 
 				glm::vec2 sc;
 				if (!buff.read<glm::vec2>(&sc)) {
 					ENGINE_WARN("Unable to read sprite scale from network.");
-					return {};
+					return;
 				}
 
 				uint8 lay;
 				if (!buff.read<uint8>(&lay)) {
 					ENGINE_WARN("Unable to read sprite layer from network.");
-					return {};
+					return;
 				}
 
-				result.texture = engine.getTextureLoader().get2D(engine.getTexturePath(tex));
-				result.layer = static_cast<RenderLayer>(lay);
-				result.position = pos;
-				result.scale = sc;
-				return result;
+				auto& spriteComp = world.addComponent<SpriteComponent>(ent);
+				spriteComp.texture = engine.getTextureLoader().get2D(engine.getTexturePath(tex));
+				spriteComp.layer = static_cast<RenderLayer>(lay);
+				spriteComp.position = pos;
+				spriteComp.scale = sc;
 			}
 
 			static void read(SpriteComponent& obj, Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {}

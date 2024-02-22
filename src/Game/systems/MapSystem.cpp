@@ -91,19 +91,28 @@ namespace Game {
 			spriteComp.position.y = sz.y * (0.5f / pixelsPerMeter);
 		}
 
-		auto& physComp = world.addComponent<PhysicsBodyComponent>(ent);
-		auto& physSys = world.getSystem<PhysicsSystem>();
+		//
+		//
+		//
+		//
+		//
+		// TODO: Should physics comp take a PhysicsBody in constructor? seems like it
+		//
+		//
+		//
+		//
+		//
 
 		{
 			bodyDef.position = pos;
-			b2Body* body = physSys.createBody(ent, bodyDef);
+			auto& physSys = world.getSystem<PhysicsSystem>();
+			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent, physSys.createBody(ent, bodyDef, activeChunkData.body.getZoneId()));
 
 			b2PolygonShape shape;
 			const b2Vec2 tsize = 0.5f * blockSize * Engine::Glue::as<b2Vec2>(desc.data.asTree.size);
 			shape.SetAsBox(tsize.x, tsize.y, {0.5f * blockSize, tsize.y}, 0);
 			fixtureDef.shape = &shape;
-			body->CreateFixture(&fixtureDef);
-			physComp.setBody(body, activeChunkData.body.getZoneId());
+			physComp.createFixture(fixtureDef);
 		}
 
 		auto& physInterpComp = world.addComponent<PhysicsInterpComponent>(ent);
@@ -191,12 +200,12 @@ namespace Game {
 		}
 	}
 
-	b2Body* MapSystem::createBody() {
+	PhysicsBody MapSystem::createBody(ZoneId zoneId) {
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_staticBody;
 		bodyDef.awake = false;
 		bodyDef.fixedRotation = true;
-		return world.getSystem<PhysicsSystem>().createBody(mapEntity, bodyDef);
+		return world.getSystem<PhysicsSystem>().createBody(mapEntity, bodyDef, zoneId);
 	}
 
 	void MapSystem::tick() {
@@ -480,7 +489,7 @@ namespace Game {
 
 					// TODO (QmIupKgJ): we really should probably have a cache of inactive chunks that we can reuse instead of constant destroy/create.
 					it = activeChunks.try_emplace(chunkPos).first;
-					it->second.body.setBody(createBody(), plyZoneId); // TODO: create body should just create a PhysicsBody
+					it->second.body = createBody(plyZoneId);
 					ENGINE_DEBUG_ASSERT(it->second.body.valid());
 					//ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
 

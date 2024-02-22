@@ -120,9 +120,7 @@ namespace {
 		world.callWithComponent(cid, [&]<class C>{
 			if constexpr (IsNetworkedComponent<C>) {
 				if (!world.hasComponent<C>(local)) {
-					ENGINE_FLATTEN std::apply([&]<class... Args>(Args&&... args) ENGINE_INLINE {
-						world.addComponent<C>(local, std::forward<Args>(args)...);
-					}, NetworkTraits<C>::readInit(msg, engine, world, local));
+					NetworkTraits<C>::readInit(msg, engine, world, local);
 				}
 			} else if constexpr (ENGINE_DEBUG) {
 				ENGINE_WARN("Attemping to network non-network component");

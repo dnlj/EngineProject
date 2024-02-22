@@ -40,10 +40,9 @@ namespace Game {
 			static void write(const PhysicsInterpComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 			}
 
-			static std::tuple<PhysicsInterpComponent> readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
-				PhysicsInterpComponent result;
-				result.onlyUserVerified = true;
-				return result;
+			static void readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+				auto& interpComp = world.addComponent<PhysicsInterpComponent>(ent);
+				interpComp.onlyUserVerified = true;
 			}
 
 			static void read(PhysicsInterpComponent& obj, Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
