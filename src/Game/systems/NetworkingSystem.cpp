@@ -514,8 +514,11 @@ namespace Game {
 			world.getSystem<ZoneManagementSystem>().addPlayer(ply, zoneId);
 			
 			// TODO: This is hacky. Rework to not use takeOwnership. It should just be created dirctly on the PhysicsBodyComponent.
-			auto body = physSys.createPhysicsCircle(ply, pos, zoneId, PhysicsCategory::Player);
-			auto& physComp = world.addComponent<PhysicsBodyComponent>(ply, body);
+			auto& physComp = world.addComponent<PhysicsBodyComponent>(
+				ply,
+				physSys.createPhysicsCircle(ply, pos, zoneId, PhysicsCategory::Player)
+			);
+
 			ENGINE_WARN2("\nAdding physics comp: {} {}\n", ply, physComp.zone.id);
 		}
 

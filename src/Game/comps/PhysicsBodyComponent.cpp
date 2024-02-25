@@ -5,7 +5,7 @@
 
 namespace Game {
 	PhysicsBodyComponent::PhysicsBodyComponent(PhysicsBody body)
-		: PhysicsBody{body}
+		: PhysicsBody{std::move(body)}
 	{
 	}
 

@@ -17,13 +17,6 @@ namespace Game {
 			ZoneId group = zoneInvalidId;
 	};
 
-	//
-	//
-	//
-	// TODO: should this inherit MoveOnly? Probably
-	//
-	//
-	//
 	class PhysicsBody {
 		private:
 			b2Body* body = nullptr;
@@ -33,6 +26,11 @@ namespace Game {
 			ZoneInfo zone; // TODO: make private once we have everyhing moved over.
 
 		public:
+			PhysicsBody() = default;
+			PhysicsBody(const PhysicsBody&) = delete;
+			PhysicsBody(PhysicsBody&&) = default;
+			PhysicsBody& operator=(PhysicsBody&&) = default;
+
 			ENGINE_INLINE bool valid() const noexcept { return body; }
 			void clear() noexcept;
 
