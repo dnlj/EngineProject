@@ -118,17 +118,7 @@ namespace Game {
 		bodyDef.type = btype;
 		bodyDef.position = {0, 0}; // TODO: read correct position from network
 
-		//
-		//
-		//
-		//
-		//
-		// TODO: zone? it is also set by noraml ::read so maybe we don't care? If so we should doc that
-		//
-		//
-		//
-		//
-
+		// Zone is setup in the normal ::read
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		auto& physComp = world.addComponent<PhysicsBodyComponent>(ent, physSys.createBody(ent, bodyDef, 0));
 
@@ -136,6 +126,7 @@ namespace Game {
 		fixDef.filter.categoryBits = PhysicsSystem::getCategoryBits(static_cast<PhysicsCategory>(category));
 		fixDef.filter.maskBits = PhysicsSystem::getMaskBits(static_cast<PhysicsCategory>(category));
 
+		// TODO: these returns should probably cleanup this body. Maybe an atExit(lambda) helper with a .cancel() func?
 		switch (ftype) {
 			case b2Shape::Type::e_circle: {
 				b2CircleShape shape;
