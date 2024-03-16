@@ -30,7 +30,7 @@ namespace Game {
 		#endif
 	}
 
-	
+
 	void PhysicsSystem::onComponentAdded(const Engine::ECS::Entity ent, PhysicsBodyComponent& comp) {
 		// ENGINE_INFO(" PhysicsSystem - component added to ", ent);
 	};
@@ -73,7 +73,7 @@ namespace Game {
 					//              DeJitterBuffer >      . RecvUpdate                            . ClientTick
 					// Client: <-------------------|------|---------------------------------------|---------> Time
 					//                          RTT/2 ---> \                                     /  <--- RTT/2
-					//                                      \                                   /             
+					//                                      \                                   /
 					// Server: <-----------------------------|----------|.....|----------------|------------>
 					//                               NetRate >          >     < ServerTick     < InputBuffer
 					//                                                  . ServerTick Complete
@@ -183,9 +183,7 @@ namespace Game {
 		//
 		//
 
-		PhysicsBody physBody{};
-		physBody.setBody(body, zoneId);
-
+		PhysicsBody physBody{body, zoneId};
 		return physBody;
 	}
 

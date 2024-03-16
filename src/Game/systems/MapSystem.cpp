@@ -488,8 +488,7 @@ namespace Game {
 					if (isBufferChunk) { continue; }
 
 					// TODO (QmIupKgJ): we really should probably have a cache of inactive chunks that we can reuse instead of constant destroy/create.
-					it = activeChunks.try_emplace(chunkPos).first;
-					it->second.body = createBody(plyZoneId);
+					it = activeChunks.try_emplace(chunkPos, createBody(plyZoneId)).first;
 					ENGINE_DEBUG_ASSERT(it->second.body.valid());
 					//ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
 

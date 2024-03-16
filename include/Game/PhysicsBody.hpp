@@ -26,20 +26,13 @@ namespace Game {
 			ZoneInfo zone; // TODO: make private once we have everyhing moved over.
 
 		public:
-			PhysicsBody() = default;
-			PhysicsBody(const PhysicsBody&) = delete;
-			PhysicsBody(PhysicsBody&&) = default;
+			PhysicsBody(b2Body* body, ZoneId zoneId);
+			PhysicsBody(PhysicsBody&&);
 			PhysicsBody& operator=(PhysicsBody&&) = default;
 
 			ENGINE_INLINE bool valid() const noexcept { return body; }
 			void clear() noexcept;
 
-			//
-			//
-			// TODO: should probably remove this function now that everything is dealing with PhysicsBody instead of b2
-			//
-			//
-			void setBody(b2Body* body, ZoneId zoneId);
 			void setZone(ZoneId zoneId);
 			ENGINE_INLINE ZoneId getZoneId() const noexcept { return zone.id; }
 
@@ -81,6 +74,11 @@ namespace Game {
 				def.filter.groupIndex = zone.id;
 				body->CreateFixture(&def);
 			}
+
+		private:
+			PhysicsBody() = default;
+			PhysicsBody(const PhysicsBody&) = default;
+			PhysicsBody& operator=(const PhysicsBody&) = default;
 	};
 
 }
