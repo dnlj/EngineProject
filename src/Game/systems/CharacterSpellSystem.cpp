@@ -28,7 +28,16 @@ namespace {
 		if (!msg.read(&pos) || !msg.read(&dir)) { return; }
 		auto& world = engine.getWorld();
 		auto& spellSys = world.getSystem<CharacterSpellSystem>();
-		spellSys.queueMissile(pos, dir);
+
+		// TODO: pull zone id here.
+		const auto zoneId = world.getComponent<PhysicsBodyComponent>(from.ent).getZoneId();
+
+		spellSys.queueMissile({
+			.ent = {}, // TODO: what to do here? guess we need to send this? not right now, we don't use it.
+			.zoneId = zoneId,
+			.pos = pos,
+			.dir = dir,
+		});
 	}
 }
 
@@ -82,30 +91,22 @@ namespace Game {
 			world.setEnabled(ent, false);
 		}
 	}
-	
-	void CharacterSpellSystem::queueMissile(const b2Vec2& pos, const b2Vec2& dir) {
-		events.push_back(FireEvent{
-			.pos = pos,
-			.dir = dir,
-		});
-	}
 
-	void CharacterSpellSystem::fireMissile(const b2Vec2& pos, const b2Vec2& dir) {
-
-		//
-		//
-		// TODO: need to set zone as well
-		//
-		//
+	void CharacterSpellSystem::fireMissile(const FireEvent& event) {
 
 		auto missile = missiles[currentMissile];
 		world.setEnabled(missile, true);
 
 		auto& physComp = world.getComponent<PhysicsBodyComponent>(missile);
+
+		if (event.zoneId != physComp.getZoneId()) {
+			physComp.setZone(event.zoneId);
+		}
+
 		physComp.snap = true;
-		physComp.setTransform(pos, 0);
+		physComp.setTransform(event.pos, 0);
 		physComp.setActive(true);
-		physComp.setVelocity(4.0f * dir);
+		physComp.setVelocity(4.0f * event.dir);
 
 		currentMissile = (currentMissile + 1) % missiles.size();
 	}
@@ -126,8 +127,12 @@ namespace Game {
 				auto dir = Engine::Glue::as<b2Vec2>(actComp.getTarget());
 				dir.Normalize();
 
-				queueMissile(pos + 1.3f * dir, 4.0f * dir);
-				events.back().ent = ent;
+				queueMissile({
+					.ent = ent,
+					.zoneId = physComp.getZoneId(),
+					.pos = pos + 1.3f * dir,
+					.dir = 4.0f * dir,
+				});
 			}
 		}
 
@@ -146,11 +151,12 @@ namespace Game {
 		}
 
 		for (const auto& event : events) {
-			fireMissile(event.pos, event.dir);
+			fireMissile(event);
 
 			if constexpr (ENGINE_SERVER) {
 				auto& netSys = world.getSystem<NetworkingSystem>();
 
+				// TODO: Only need to send to players in the same zone. Should probably be batching these all into one message.
 				for (const auto ply : world.getFilter<PlayerFlag>()) {
 					if (ply == event.ent) { continue; }
 					auto* conn = netSys.getConnection(ply);
@@ -168,6 +174,10 @@ namespace Game {
 			}
 		}
 		events.clear();
+	}
+	
+	void CharacterSpellSystem::queueMissile(const FireEvent& event) {
+		events.emplace_back(event);
 	}
 
 	void CharacterSpellSystem::beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) {
