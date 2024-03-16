@@ -175,9 +175,10 @@ namespace Game {
 		return physBody;
 	}
 
-	void PhysicsSystem::destroyBody(b2Body* body) {
-		ENGINE_DEBUG_ASSERT(body != nullptr, "Attempting to destroy null b2Body");
-		physWorld.DestroyBody(body);
+	void PhysicsSystem::destroyBody(PhysicsBody& body) {
+		const auto ptr = body.takeOwnership();
+		ENGINE_DEBUG_ASSERT(ptr != nullptr, "Attempting to destroy null physics body");
+		physWorld.DestroyBody(ptr);
 	}
 
 	void PhysicsSystem::addListener(PhysicsListener* listener) {

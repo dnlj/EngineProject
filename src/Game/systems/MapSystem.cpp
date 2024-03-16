@@ -380,7 +380,7 @@ namespace Game {
 					}
 				}
 
-				world.getSystem<PhysicsSystem>().destroyBody(it->second.body.takeOwnership()); // TODO: destory body should just work on PhysicsBody instead of b2Body
+				world.getSystem<PhysicsSystem>().destroyBody(it->second.body);
 				it = activeChunks.erase(it);
 			} else {
 				++it;

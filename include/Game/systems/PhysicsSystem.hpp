@@ -39,26 +39,6 @@ namespace Game {
 			// TODO: really should just write accessors for whatever we need this for instead of leaking the entire world.
 			const b2World& getPhysicsWorld() const noexcept { return physWorld; }
 
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: these functions should operate/create/destroy PhysicsBody not b2Body
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-
 			/**
 			 * Creates a box2d body and associates an entity with it.
 			 * @param[in] ent The entity.
@@ -71,7 +51,7 @@ namespace Game {
 			 * Destroys a box2d body.
 			 * @param[in] body The body to destroy.
 			 */
-			void destroyBody(b2Body* body);
+			void destroyBody(PhysicsBody& body);
 
 			/**
 			 * Adds a physics listener.
