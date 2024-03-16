@@ -171,18 +171,6 @@ namespace Game {
 		static_assert(sizeof(void*) >= sizeof(ent), "Engine::ECS::Entity is to large to store in userdata pointer.");
 		body->SetUserData(reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t&>(ent)));
 
-		//
-		//
-		//
-		//
-		//
-		// TODO: Make zone a constructor arg?
-		//
-		//
-		//
-		//
-		//
-
 		PhysicsBody physBody{body, zoneId};
 		return physBody;
 	}

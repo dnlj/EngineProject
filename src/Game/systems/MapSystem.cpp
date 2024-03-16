@@ -91,18 +91,6 @@ namespace Game {
 			spriteComp.position.y = sz.y * (0.5f / pixelsPerMeter);
 		}
 
-		//
-		//
-		//
-		//
-		//
-		// TODO: Should physics comp take a PhysicsBody in constructor? seems like it
-		//
-		//
-		//
-		//
-		//
-
 		{
 			bodyDef.position = pos;
 			auto& physSys = world.getSystem<PhysicsSystem>();

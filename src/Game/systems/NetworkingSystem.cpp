@@ -513,7 +513,6 @@ namespace Game {
 			const b2Vec2 pos = {0, 2};
 			world.getSystem<ZoneManagementSystem>().addPlayer(ply, zoneId);
 			
-			// TODO: This is hacky. Rework to not use takeOwnership. It should just be created dirctly on the PhysicsBodyComponent.
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(
 				ply,
 				physSys.createPhysicsCircle(ply, pos, zoneId, PhysicsCategory::Player)
