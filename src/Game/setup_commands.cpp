@@ -31,7 +31,7 @@ namespace {
 			const auto before = value;
 			value = std::clamp(value, Min, Max);
 			if (before != value) {
-				ENGINE_WARN2("Invalid value. Clamping to {}.", value, before);
+				ENGINE_WARN2("Invalid value. Clamping to {}.", value);
 			}
 			return false;
 		};
@@ -69,7 +69,7 @@ namespace {
 					ENGINE_DEBUG_BREAK;
 				}
 
-				ENGINE_CONSOLE("{} = {}", args[0], args.size(), str);
+				ENGINE_CONSOLE("{} {} = {}", args[0], args.size(), str);
 			} else {
 				using Engine::fromString;
 				auto& cvar = Engine::getGlobalConfig<true>().cvars.*CVarMember;

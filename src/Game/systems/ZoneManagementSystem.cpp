@@ -339,7 +339,7 @@ namespace Game {
 				data.state = ECSNetworkingComponent::NeighborState::ZoneChanged;
 				auto& neighPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
 				if (neighPhysComp.getZoneId() != newZoneId) {
-					ENGINE_INFO2("    Move neighbor {}", ent, neighPhysComp.getZoneId(), newZoneId);
+					ENGINE_INFO2("    Move neighbor {} {} {}", ent, neighPhysComp.getZoneId(), newZoneId);
 					migrateEntity(ent, newZoneId, neighPhysComp);
 				}
 			}

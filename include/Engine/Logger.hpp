@@ -319,6 +319,69 @@ namespace Engine::Log {
 	template<AnyChar Char, size_t N>
 	Styled(const Char(&)[N]) -> Styled<std::basic_string_view<Char>>;
 
+
+	//
+	//
+	//
+	//
+	//
+	//
+	// TODO: detail what this is and how it works.
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+
+	// TODO: we should be able to do better, actually track which args are used under indexed conditions.
+
+	/**
+	 * Provide compile time fmtlib format string checking.
+	 */
+	template<class Char, class... Args>
+	class FormatStringChecker : public fmt::detail::format_string_checker<Char, Args...> {
+		private:
+			using Base = fmt::detail::format_string_checker<Char, fmt::remove_cvref_t<Args>...>;
+			int maxArgId = -1;
+
+			// Subtract one to avoid signed overflow in totalUsedArgs.
+			//constexpr static int maxArgs = std::numeric_limits<decltype(maxArgId)>::max() - 1;
+
+		public:
+			using Base::Base;
+
+			constexpr ~FormatStringChecker() noexcept(false) {
+				if (totalUsedArgs() < sizeof...(Args)) {
+					throw "More format arguments given then used.";
+				}
+			}
+
+			constexpr auto totalUsedArgs() const noexcept { return maxArgId + 1; }
+
+			using Base::on_arg_id;
+			constexpr int on_arg_id() {
+				return use(Base::on_arg_id());
+			}
+
+			constexpr int on_arg_id(int id) {
+				return use(Base::on_arg_id(id));
+			}
+
+			constexpr int on_arg_id(fmt::basic_string_view<Char> name) {
+				return use(Base::on_arg_id(name));
+			}
+
+		private:
+			constexpr int use(int id) noexcept {
+				maxArgId = std::max(maxArgId, id);
+				return id;
+			}
+
+	};
+
 	/**
 	 * A wrapper type so we can customize the formatting of pointers.
 	 */
@@ -351,7 +414,7 @@ namespace Engine::Log {
 	 * Usually you should be using FormatString instead of BasicFormatString to
 	 * avoid template argument resolution issues.
 	 */
-	template<class... Args>
+	template<class Char, class... Args>
 	class BasicFormatString {
 		public:
 			template<class S>
@@ -359,17 +422,21 @@ namespace Engine::Log {
 				: format{formatStr}
 				, location{location} {
 
-				// Just for format validation. We cant pass this to format
-				// directly because fmt uses its own string view type.
-				fmt::format_string<ArgType<Args>...>{format};
+				fmt::basic_string_view<Char> str{format};
+				FormatStringChecker<Char, std::remove_cvref_t<Args>...> checker{str};
+				fmt::detail::parse_format_string<true>(str, checker);
+
+				//if (checker.totalUsedArgs() < sizeof...(Args)) {
+				//	throw "More format arguments given then used.";
+				//}
 			}
 
-			std::string_view format;
+			std::basic_string_view<Char> format;
 			std::source_location location;
 	};
 
 	template<class... Args>
-	using FormatString = BasicFormatString<std::type_identity_t<Args>...>;
+	using FormatString = BasicFormatString<char, std::type_identity_t<Args>...>;
 
 	class Logger {
 		private:
