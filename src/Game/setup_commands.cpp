@@ -69,7 +69,7 @@ namespace {
 					ENGINE_DEBUG_BREAK;
 				}
 
-				ENGINE_CONSOLE("{} {} = {}", args[0], args.size(), str);
+				ENGINE_CONSOLE("{} = {}", args[0], str);
 			} else {
 				using Engine::fromString;
 				auto& cvar = Engine::getGlobalConfig<true>().cvars.*CVarMember;

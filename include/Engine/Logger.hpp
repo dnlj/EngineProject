@@ -331,7 +331,8 @@ namespace Engine::Log {
 	 *   fmtlib never intends to add argument checking for excessive
 	 *   arguments[1]. This implementation does depend on fmt internals, but the
 	 *   fmt authors have recommended a similar approach[2] in the past so
-	 *   hopefully this isn't _that_ volatile.
+	 *   hopefully this isn't _that_ volatile. Very frustrating that fmt refuses
+	 *   to add this, it has revealed multiple bugs.
 	 * 
 	 * 1. https://github.com/fmtlib/fmt/issues/492
 	 * 2. https://github.com/fmtlib/fmt/issues/1507
