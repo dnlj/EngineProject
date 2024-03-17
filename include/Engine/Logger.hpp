@@ -2,6 +2,7 @@
 
 // STD
 #include <source_location>
+#include <bitset>
 
 // FMT
 #include <fmt/core.h>
@@ -319,67 +320,49 @@ namespace Engine::Log {
 	template<AnyChar Char, size_t N>
 	Styled(const Char(&)[N]) -> Styled<std::basic_string_view<Char>>;
 
-
-	//
-	//
-	//
-	//
-	//
-	//
-	// TODO: detail what this is and how it works.
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-
-	// TODO: we should be able to do better, actually track which args are used under indexed conditions.
-
 	/**
 	 * Provide compile time fmtlib format string checking.
+	 * Used in conjunction with fmt::detail::parse_format_string.
+	 * 
+	 * This provdes all the default fmtlib checks as well as:
+	 * - Verifying that all the given arguments are used. (See: Appendix A)
+	 *
+	 * Appendix A:
+	 *   fmtlib never intends to add argument checking for excessive
+	 *   arguments[1]. This implementation does depend on fmt internals, but the
+	 *   fmt authors have recommended a similar approach[2] in the past so
+	 *   hopefully this isn't _that_ volatile.
+	 * 
+	 * 1. https://github.com/fmtlib/fmt/issues/492
+	 * 2. https://github.com/fmtlib/fmt/issues/1507
 	 */
 	template<class Char, class... Args>
 	class FormatStringChecker : public fmt::detail::format_string_checker<Char, Args...> {
 		private:
 			using Base = fmt::detail::format_string_checker<Char, fmt::remove_cvref_t<Args>...>;
-			int maxArgId = -1;
-
-			// Subtract one to avoid signed overflow in totalUsedArgs.
-			//constexpr static int maxArgs = std::numeric_limits<decltype(maxArgId)>::max() - 1;
+			std::bitset<sizeof...(Args)> used;
 
 		public:
 			using Base::Base;
 
 			constexpr ~FormatStringChecker() noexcept(false) {
-				if (totalUsedArgs() < sizeof...(Args)) {
-					throw "More format arguments given then used.";
+				// Check any post-formatting error conditions here.
+				if (!used.all()) {
+					throw "Unused format argument given.";
 				}
 			}
 
-			constexpr auto totalUsedArgs() const noexcept { return maxArgId + 1; }
-
-			using Base::on_arg_id;
-			constexpr int on_arg_id() {
-				return use(Base::on_arg_id());
-			}
-
-			constexpr int on_arg_id(int id) {
-				return use(Base::on_arg_id(id));
-			}
-
-			constexpr int on_arg_id(fmt::basic_string_view<Char> name) {
-				return use(Base::on_arg_id(name));
-			}
+			// Override the base checker on_arg_id functions to track which ones
+			// have been used.
+			constexpr int on_arg_id() { return use(Base::on_arg_id()); }
+			constexpr int on_arg_id(int id) { return use(Base::on_arg_id(id)); }
+			constexpr int on_arg_id(fmt::basic_string_view<Char> name) { return use(Base::on_arg_id(name)); }
 
 		private:
 			constexpr int use(int id) noexcept {
-				maxArgId = std::max(maxArgId, id);
+				used.set(id);
 				return id;
 			}
-
 	};
 
 	/**
@@ -422,13 +405,10 @@ namespace Engine::Log {
 				: format{formatStr}
 				, location{location} {
 
+				// Validate the format string.
 				fmt::basic_string_view<Char> str{format};
 				FormatStringChecker<Char, std::remove_cvref_t<Args>...> checker{str};
 				fmt::detail::parse_format_string<true>(str, checker);
-
-				//if (checker.totalUsedArgs() < sizeof...(Args)) {
-				//	throw "More format arguments given then used.";
-				//}
 			}
 
 			std::basic_string_view<Char> format;
