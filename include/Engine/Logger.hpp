@@ -371,18 +371,15 @@ namespace Engine::Log {
 	class Pointer {
 		public:
 			constexpr Pointer(const void* const value) : value{std::bit_cast<uintptr_t>(value)} {}
-			uintptr_t const value = {};
+			const uintptr_t value = {};
 	};
-
-	template<class T>
-	concept ShouldFormatAsPointer = std::is_pointer_v<T> && !Engine::IsChar_v<std::decay_t<T>>;
 
 	/**
 	 * Forward any non-pointer types. Cast any non-char pointers to void
 	 * pointers.
 	 */
-	ENGINE_INLINE constexpr const auto& castPointers(const auto& value) { return value; }
-	ENGINE_INLINE constexpr Pointer castPointers(const AnyNonChar auto* value) { return {value}; }
+	ENGINE_INLINE constexpr const auto& castPointers(const auto& value) noexcept { return value; }
+	ENGINE_INLINE constexpr Pointer castPointers(AnyNonChar auto* value) noexcept { return {value}; }
 
 	/**
 	 * Figure out what the final type of the argument that is sent to fmt will
@@ -407,7 +404,7 @@ namespace Engine::Log {
 
 				// Validate the format string.
 				fmt::basic_string_view<Char> str{format};
-				FormatStringChecker<Char, std::remove_cvref_t<Args>...> checker{str};
+				FormatStringChecker<Char, std::remove_cvref_t<ArgType<Args>>...> checker{str};
 				fmt::detail::parse_format_string<true>(str, checker);
 			}
 
