@@ -51,7 +51,6 @@ namespace Game {
 		class BlockEntityComponent,
 		class ECSNetworkingComponent,
 		class MapAreaComponent,
-		class MapEditComponent,
 		class ModelComponent,
 		class NetworkStatsComponent,
 		class PhysicsBodyComponent,

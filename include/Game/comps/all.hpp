@@ -6,7 +6,6 @@
 #include <Game/comps/BlockEntityComponent.hpp>
 #include <Game/comps/ECSNetworkingComponent.hpp>
 #include <Game/comps/MapAreaComponent.hpp>
-#include <Game/comps/MapEditComponent.hpp>
 #include <Game/comps/ModelComponent.hpp>
 #include <Game/comps/NetworkStatsComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>

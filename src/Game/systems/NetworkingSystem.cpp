@@ -19,7 +19,6 @@
 // TODO: Do we really need all these components? Maybe try to clean this up.
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/MapAreaComponent.hpp>
-#include <Game/comps/MapEditComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
@@ -522,7 +521,6 @@ namespace Game {
 		}
 
 		world.addComponent<ActionComponent>(ply, world.getTick());
-		world.addComponent<MapEditComponent>(ply);
 	}
 
 	ConnectionInfo& NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) {

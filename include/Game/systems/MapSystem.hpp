@@ -25,7 +25,6 @@
 #include <Game/MapChunk.hpp>
 #include <Game/MapGenerator2.hpp>
 #include <Game/Connection.hpp>
-#include <Game/comps/MapEditComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp> // TODO: split physicsbody from componennt
 
 // TODO: This documentation and comments are likely out of date since the multiplayer and chunk/region/zone reworks.
