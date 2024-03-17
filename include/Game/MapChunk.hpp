@@ -85,6 +85,14 @@ namespace Game {
 					}
 				}
 				insert();
+
+				// Debug compression ratio
+				//{
+				//	const uint64 original = sizeof(data);
+				//	const uint64 compressed = encoding.size();
+				//	const auto ratio = std::imaxdiv(original, compressed);
+				//	ENGINE_LOG2("Compression Ratio: {:4}.{}", ratio.quot, ratio.rem);
+				//}
 			}
 			
 			bool fromRLE(const byte* begin, const byte* end) {

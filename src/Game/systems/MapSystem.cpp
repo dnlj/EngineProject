@@ -284,7 +284,11 @@ namespace Game {
 		auto timeout = world.getTickTime() - std::chrono::seconds{10}; // TODO: how long? 30s?
 		auto& netSys = world.getSystem<NetworkingSystem>();
 
+		// Send chunk updates to clients
+		// On the client side MapAreaComponent is never added to any entities so
+		// this section is skipped, well, not iterated over.
 		for (auto ent : world.getFilter<MapAreaComponent>()) {
+			ENGINE_DEBUG_ASSERT(ENGINE_SERVER, "This code should only be run on the server side.");
 			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ent);
 			const auto begin = mapAreaComp.updates.begin();
 			const auto end = mapAreaComp.updates.end();
@@ -307,8 +311,8 @@ namespace Game {
 				
 				const auto found = activeChunks.find(chunkPos);
 				if (found == activeChunks.end()) { continue; }
-				auto& activeData = found->second;
 
+				auto& activeData = found->second;
 				if (meta.last != activeData.updated) {
 					std::vector<byte>* rle = nullptr;
 
@@ -340,6 +344,10 @@ namespace Game {
 						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
 						msg.writeBlob(data, size);
 					} else {
+						// This warning gets hit quite a bit depending on the clients
+						// network recv rate. So its annoying to leave enabled because
+						// it clutters the logs.
+						// 
 						//ENGINE_WARN("Unable to begin MAP_CHUNK message.");
 					}
 				}

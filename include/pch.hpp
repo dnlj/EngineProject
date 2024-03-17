@@ -8,9 +8,11 @@
 #include <array>
 #include <cassert>
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 #include <csignal>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <functional>
 #include <initializer_list>
@@ -20,14 +22,13 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <source_location>
 #include <sstream>
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include <source_location>
-
 
 // Windows
 #if ENGINE_OS_WINDOWS
