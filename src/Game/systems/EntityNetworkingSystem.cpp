@@ -31,7 +31,6 @@ namespace {
 	using NeighborState = ECSNetworkingComponent::NeighborState;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Client side
 ////////////////////////////////////////////////////////////////////////////////
@@ -237,13 +236,10 @@ namespace {
 		//if (diff.LengthSquared() > 0.0001f) { // TODO: also check q
 		// TODO: why does this ever happen with only one player connected?
 		if (diff.LengthSquared() > eps * eps) { // TODO: also check q
-			ENGINE_INFO(std::setprecision(std::numeric_limits<decltype(physCompState.trans.p.x)>::max_digits10),
-				"Oh boy a mishap has occured on tick ", tick,
-				" (<", physCompState.trans.p.x, ", ", physCompState.trans.p.y, "> - <",
-				trans.p.x, ", ", trans.p.y, "> = <",
-				diff.x, ", ", diff.y,
-				">)"
-			);
+			ENGINE_INFO2(
+				"Oh boy a mishap has occured on tick {} with: {} - {} = {}",
+				tick, physCompState.trans.p, trans.p, diff
+			),
 
 			physCompState.trans = trans;
 			physCompState.vel = vel;

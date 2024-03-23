@@ -1,9 +1,5 @@
 #pragma once
 
-// STD
-#include <sstream>
-#include <ostream>
-
 // FMT
 #include <fmt/format.h>
 
@@ -11,6 +7,10 @@
 #include <Engine/GlobalConfig.hpp>
 #include <Engine/Constants.hpp>
 #include <Engine/Types.hpp>
+
+// STD
+#include <sstream>
+#include <ostream>
 
 
 // TODO: where to put this stuff? we should make something include glm/box2d if they dont use it. May need some kind of integrations/glm.hpp or similar. Glue?
@@ -47,9 +47,10 @@ namespace Engine {
 	};
 };
 
+// TODO: Where to put overloads for 3rd party types?
 template<int L, class T, glm::qualifier Q>
 struct fmt::formatter<glm::vec<L, T, Q>> : fmt::formatter<T> {
-	template <typename FormatContext>
+	template <class FormatContext>
 	auto format(const glm::vec<L, T, Q>& vec, FormatContext& ctx) -> decltype(ctx.out()) {
 		fmt::format_to(ctx.out(), "(");
 		for (int i = 0;;) {
@@ -57,8 +58,21 @@ struct fmt::formatter<glm::vec<L, T, Q>> : fmt::formatter<T> {
 			if (++i == L) { break; }
 			fmt::format_to(ctx.out(), ", ");
 		}
-		fmt::format_to(ctx.out(), ")");
-		return ctx.out();
+		return fmt::format_to(ctx.out(), ")");
+	}
+};
+
+// TODO: Where to put overloads for 3rd party types?
+struct b2Vec2;
+template<>
+struct fmt::formatter<b2Vec2> : fmt::formatter<glm::vec2> {
+	// TODO: Once moved: remove the `std::same_as<b2Vec2> auto` workaround. Its
+	//       currently just there to defer type resolution so we don't need to
+	//       pollute everything with b2_math.h since this file is included
+	//       everywhere.
+	template <class FormatContext>
+	auto format(const std::same_as<b2Vec2> auto& vec, FormatContext& ctx) -> decltype(ctx.out()) {
+		return fmt::formatter<glm::vec2>::format({vec.x, vec.y}, ctx);
 	}
 };
 
