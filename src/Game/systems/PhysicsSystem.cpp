@@ -12,7 +12,6 @@ namespace {
 	using ProxyFilter = Engine::ECS::EntityFilterList<
 		Game::PhysicsBodyComponent
 	>;
-
 }
 
 namespace Game {

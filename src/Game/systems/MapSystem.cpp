@@ -162,7 +162,7 @@ namespace Game {
 	void MapSystem::setup() {
 		using namespace Engine::Gfx;
 
-		{
+		if constexpr (ENGINE_CLIENT) {
 			auto& netSys = world.getSystem<NetworkingSystem>();
 			netSys.setMessageHandler(MessageType::MAP_CHUNK, recv_MAP_CHUNK);
 		}
@@ -338,10 +338,19 @@ namespace Game {
 
 					if (auto msg = conn->beginMessage<MessageType::MAP_CHUNK>()) {
 						meta.last = activeData.updated;
+
+						// Populate data with chunk position and RLE data. Space
+						// for the position is allocated in MapChunk::toRLE. We
+						// should probably rework this. Its fairly unintuitive.
+						// 
+						// We don't need to write any zone info because on the client chunks
+						// are always in the same zone as the player. The chunk zones are
+						// managed in MapSystem::ensurePlayAreaLoaded.
 						const auto size = static_cast<int32>(rle->size() * sizeof(rle->front()));
 						byte* data = reinterpret_cast<byte*>(rle->data());
 						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
 						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
+
 						msg.writeBlob(data, size);
 					} else {
 						// This warning gets hit quite a bit depending on the clients
