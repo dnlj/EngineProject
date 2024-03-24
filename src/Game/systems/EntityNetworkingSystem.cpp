@@ -374,7 +374,7 @@ namespace Game {
 				}
 			}
 
-			if (!zoneChanged.empty()) {
+			if (!zoneChanged.empty() || ecsNetComp.plyZoneChanged) {
 				if (auto msg = conn->beginMessage<MessageType::ECS_ZONE_INFO>()) {
 					const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 					const auto zoneId = physComp.getZoneId();
@@ -396,6 +396,7 @@ namespace Game {
 					}
 				}
 			}
+			ecsNetComp.plyZoneChanged = false;
 		}
 	}
 

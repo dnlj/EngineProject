@@ -26,5 +26,10 @@ namespace Game {
 
 			// TODO: hashmap would probably be better suited here.
 			Engine::SparseSet<Engine::ECS::Entity, NeighborData> neighbors;
+
+			// We need to track when the players zone has changed in addition to
+			// the neighbors so that ECS_ZONE_INFO still gets sent even if there
+			// are no entities near by.
+			bool plyZoneChanged = false;
 	};
 }

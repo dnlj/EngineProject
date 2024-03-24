@@ -335,6 +335,8 @@ namespace Game {
 		if constexpr (ENGINE_SERVER) {
 			// Mark entities for network zone updates.
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
+			ecsNetComp.plyZoneChanged = true;
+
 			for (auto& [ent, data] : ecsNetComp.neighbors) {
 				data.state = ECSNetworkingComponent::NeighborState::ZoneChanged;
 				auto& neighPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
