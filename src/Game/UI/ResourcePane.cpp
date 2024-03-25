@@ -132,7 +132,7 @@ namespace Game::UI {
 			win->center();
 			win->setCloseCallback([&win](EUI::Window*){
 				win = nullptr;
-				return true;
+				win->getContext()->deferredDeletePanel(win);
 			});
 
 			auto cont = win->getContent();

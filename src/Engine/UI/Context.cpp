@@ -399,8 +399,17 @@ namespace Engine::UI {
 	}
 
 	void Context::unsetActive() {
-		active->onEndActivate();
+		// We must set active to null before we call onEndActivate in case
+		// onEndActivate calls another function that might call unsetActive and
+		// cause an infinite onEndActivate loop.
+		//
+		// For example deferredDeletePanel checks if the panel is active before
+		// deleting it and calls unsetActive if it is. This might happen on a
+		// window close button for example. The delete is trigged in
+		// onEndActivate which in turn deletes the parent window.
+		auto* wasActive = active;
 		active = nullptr;
+		wasActive->onEndActivate();
 	}
 
 	void Context::updateHover() {
@@ -522,10 +531,10 @@ namespace Engine::UI {
 			ENGINE_DEBUG_ASSERT(!hoverGuard || !std::ranges::contains(hoverStackBack, curr), "Attempting to delete a panel while it is begin added to the hover stack.");
 
 			// Clear from focus.
+			// This case will happen if a child widget deletes its (grand)parent. A window
+			// close button for example.
 			if (curr == nextFocus) {
-				// TODO: This doesn't seem to ever be called?
 				setFocus(parent);
-				ENGINE_DEBUG_BREAK; // TODO: For debugging, when is this path taken?
 			}
 
 			// Cleanup panel and children

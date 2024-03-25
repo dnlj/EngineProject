@@ -21,10 +21,8 @@ namespace Engine::UI {
 		close->autoText("Close");
 		close->setFixedHeight(h);
 		close->setFixedWidth(close->getWidth());
-		close->setAction([this](Button* btn){
-			if (closeCallback && closeCallback(win)) {
-				getContext()->deferredDeletePanel(win);
-			}
+		close->setAction([this](Button*){
+			if (closeCallback) { closeCallback(win); }
 		});
 
 		addChildren({title, close});

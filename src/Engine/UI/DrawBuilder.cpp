@@ -259,6 +259,7 @@ namespace Engine::UI {
 	}
 
 	void DrawBuilder::drawTexture(Gfx::TextureHandle2D tex, glm::vec2 pos, glm::vec2 size) {
+		ENGINE_DEBUG_ASSERT(tex.valid());
 		const auto old = getTexture();
 		setTexture(tex);
 		drawRect(pos, size);

@@ -9,7 +9,7 @@
 namespace Engine::UI {
 	class Window : public Panel {
 		public:
-			using CloseCallback = std::function<bool(Window*)>;
+			using CloseCallback = std::function<void(Window*)>;
 
 		private:
 			class TitleBar : public Panel {
