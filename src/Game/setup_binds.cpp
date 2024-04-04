@@ -46,6 +46,8 @@ void setupBinds(Game::EngineInstance& engine) {
 	is.registerCommand(Action::MoveRight, [&](Value curr){ updateActionState(world, Action::MoveRight, curr); });
 	is.registerCommand(Action::DebugTeleLeft, [&](Value curr){ updateActionState(world, Action::DebugTeleLeft, curr); });
 	is.registerCommand(Action::DebugTeleRight, [&](Value curr){ updateActionState(world, Action::DebugTeleRight, curr); });
+	is.registerCommand(Action::DebugTeleUp, [&](Value curr){ updateActionState(world, Action::DebugTeleUp, curr); });
+	is.registerCommand(Action::DebugTeleDown, [&](Value curr){ updateActionState(world, Action::DebugTeleDown, curr); });
 	is.registerCommand(Action::Target, [&](Value curr){ updateTargetState(world, curr); });
 
 	bm.addBind(Layer::Game, false, InputSequence{
@@ -92,6 +94,14 @@ void setupBinds(Game::EngineInstance& engine) {
 		InputId{Type::Keyboard, 0, +KeyCode::LAlt},
 		InputId{Type::Keyboard, 0, +KeyCode::D},
 	}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::DebugTeleRight, time, curr); return true; });
+	bm.addBind(Layer::Game, false, InputSequence{
+		InputId{Type::Keyboard, 0, +KeyCode::LAlt},
+		InputId{Type::Keyboard, 0, +KeyCode::W},
+	}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::DebugTeleUp, time, curr); return true; });
+	bm.addBind(Layer::Game, false, InputSequence{
+		InputId{Type::Keyboard, 0, +KeyCode::LAlt},
+		InputId{Type::Keyboard, 0, +KeyCode::S},
+	}, [&](Value curr, Value prev, auto time){ is.pushEvent(Action::DebugTeleDown, time, curr); return true; });
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Interface Binds

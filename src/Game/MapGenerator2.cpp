@@ -291,8 +291,8 @@ namespace Game {
 	void MapGenerator2::init(const IVec2 pos, MapChunk& chunk, std::vector<BlockEntityDesc>& entData) const noexcept {
 		BlockGenData bgd = { .exists = false };
 
-		for (int x = 0; x < MapChunk::size.x; ++x) {
-			for (int y = 0; y < MapChunk::size.y; ++y) {
+		for (int x = 0; x < chunkSize.x; ++x) {
+			for (int y = 0; y < chunkSize.y; ++y) {
 				const auto blockPos = pos + IVec2{x,y};
 				const auto v = value(blockPos.x, blockPos.y, bgd);
 

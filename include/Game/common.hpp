@@ -54,6 +54,8 @@ namespace Game::inline Constants {
 	constexpr inline BlockUnit blocksPerChunk = 64;
 	constexpr inline BlockVec chunkSize = {blocksPerChunk, blocksPerChunk};
 
+	// TODO: Regions should probably be much larger, currently the active area
+	//       around each player is 11x11 which is almost an entire region.
 	constexpr inline RegionUnit chunksPerRegion = 16;
 	constexpr inline RegionVec regionSize = {chunksPerRegion, chunksPerRegion};
 

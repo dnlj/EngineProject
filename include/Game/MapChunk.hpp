@@ -15,7 +15,6 @@
 namespace Game {
 	class MapChunk {
 		public:
-			constexpr static BlockVec size = {64, 64};
 			constexpr static BlockId RLE_COUNT_BIT = static_cast<BlockId>(1ll << ((sizeof(BlockId) * 8) - 1));
 
 			struct RLEPair {
@@ -25,13 +24,13 @@ namespace Game {
 			static_assert(sizeof(RLEPair) == 4); // Ensure tight packing
 
 		public:
-			BlockId data[size.x][size.y] = {};
+			BlockId data[chunkSize.x][chunkSize.y] = {};
 			
 			bool apply(const MapChunk& edit) {
 				bool editMade = false;
 
-				for (int x = 0; x < size.x; ++x) {
-					for (int y = 0; y < size.y; ++y) {
+				for (int x = 0; x < chunkSize.x; ++x) {
+					for (int y = 0; y < chunkSize.y; ++y) {
 						const auto& ed = edit.data[x][y];
 						if (ed == BlockId::None) { continue; }
 
@@ -51,9 +50,9 @@ namespace Game {
 				encoding.clear();
 
 				// Reserve space for position data
-				encoding.insert(encoding.end(), sizeof(size), 0);
+				encoding.insert(encoding.end(), sizeof(chunkSize), 0);
 
-				constexpr auto sz = size.x * size.y;
+				constexpr auto sz = chunkSize.x * chunkSize.y;
 				const BlockId* linear = &data[0][0];
 
 				RLEPair pair = {

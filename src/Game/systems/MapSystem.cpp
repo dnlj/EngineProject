@@ -566,7 +566,7 @@ namespace Game {
 	}
 
 	void MapSystem::setValueAt2(const BlockVec blockPos, BlockId bid) {
-		const auto blockIndex = (MapChunk::size + blockPos % MapChunk::size) % MapChunk::size;
+		const auto blockIndex = (chunkSize + blockPos % chunkSize) % chunkSize;
 		auto& edit = chunkEdits[blockToChunk(blockPos)];
 		edit.data[blockIndex.x][blockIndex.y] = bid;
 	}
@@ -590,13 +590,13 @@ namespace Game {
 		}
 
 		decltype(auto) greedyExpand = [&chunkInfo](auto usable, auto submitArea) ENGINE_INLINE {
-			bool used[MapChunk::size.x][MapChunk::size.y] = {};
+			bool used[chunkSize.x][chunkSize.y] = {};
 			
-			for (glm::ivec2 begin = {0, 0}; begin.x < MapChunk::size.x; ++begin.x) {  
-				for (begin.y = 0; begin.y < MapChunk::size.y;) {
+			for (glm::ivec2 begin = {0, 0}; begin.x < chunkSize.x; ++begin.x) {  
+				for (begin.y = 0; begin.y < chunkSize.y;) {
 					const auto& blockMeta = getBlockMeta(chunkInfo.chunk.data[begin.x][begin.y]);
 					auto end = begin;
-					while (end.y < MapChunk::size.y && !used[end.x][end.y] && usable(end, blockMeta)) { ++end.y; }
+					while (end.y < chunkSize.y && !used[end.x][end.y] && usable(end, blockMeta)) { ++end.y; }
 					if (end.y == begin.y) { ++begin.y; continue; }
 
 					for (bool cond = true; cond;) {
@@ -604,7 +604,7 @@ namespace Game {
 						memset(&used[end.x][begin.y], 1, end.y - begin.y);
 						++end.x;
 
-						if (end.x == MapChunk::size.x) { break; }
+						if (end.x == chunkSize.x) { break; }
 						for (int y = begin.y; y < end.y; ++y) {
 							if (used[end.x][y] || !usable(glm::ivec2{end.x, y}, blockMeta)) { cond = false; break; }
 						}

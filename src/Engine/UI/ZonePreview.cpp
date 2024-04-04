@@ -85,8 +85,6 @@ namespace Game::UI { namespace {
 			glm::vec2 scale() { return getSize() / glm::vec2{img.size()}; }
 
 			void rebuild() {
-				ENGINE_LOG2("ZoneDragArea::rebuild()");
-
 				// TODO: pan/zoom
 				//if (zoomAccum) {
 				//	auto z = std::clamp(zoomAccum * 0.2f, -0.9f, 0.9f);
@@ -127,20 +125,6 @@ namespace Game::UI { namespace {
 
 						const auto& chunkData = activeChunks.find(chunkPos);
 
-						//
-						//
-						//
-						//
-						//
-						// TODO: are regions draw correctly? should their area be much larger than the active? Maybe i shrunk it for debugging? Double check
-						//  p sure something is wrong here.
-						//
-						// Scale might be off. look over copied code
-						//
-						//
-						//
-						//
-
 						if (chunkData != activeChunks.end()) {
 							const auto zoneId = chunkData->second.body.getZoneId();
 							color = zoneColors[zoneId];
@@ -156,6 +140,8 @@ namespace Game::UI { namespace {
 					}
 				}
 
+				// Fix size so 1chunk=1pixel
+				setFixedSize(img.size());
 				tex.setImage(img);
 			}
 

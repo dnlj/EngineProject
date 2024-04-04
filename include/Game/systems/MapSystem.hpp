@@ -49,8 +49,7 @@ namespace Game {
 				std::vector<BlockEntityDesc> entData;
 			};
 
-			constexpr static glm::ivec2 size = {16, 16};
-			ChunkInfo data[size.x][size.y];
+			ChunkInfo data[regionSize.x][regionSize.y];
 			std::atomic<int32> loadedChunks = 0;
 			Engine::Clock::TimePoint lastUsed;
 
@@ -68,7 +67,7 @@ namespace Game {
 					return false;
 				}
 
-				return loadedChunks.load() != size.x * size.y;
+				return loadedChunks.load() != regionSize.x * regionSize.y;
 			}
 			static_assert(decltype(loadedChunks)::is_always_lock_free);
 	};

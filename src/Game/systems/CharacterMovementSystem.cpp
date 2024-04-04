@@ -45,10 +45,9 @@ namespace Game {
 
 			// TODO: disable outside of debug/cvar cheats/etc.
 			if (true) {
-				const bool teleLeft = actComp.getAction(Action::DebugTeleLeft).pressCount;
-				const bool teleRight = actComp.getAction(Action::DebugTeleRight).pressCount;
-				const auto dir = teleRight - teleLeft;
-				if (dir) { physComp.setPosition(physComp.getPosition() + b2Vec2{100.0f * dir, 0}); }
+				const auto dirX = 1.0f*actComp.getAction(Action::DebugTeleRight).pressCount - actComp.getAction(Action::DebugTeleLeft).pressCount;
+				const auto dirY = 1.0f*actComp.getAction(Action::DebugTeleUp).pressCount - actComp.getAction(Action::DebugTeleDown).pressCount;
+				if (dirX || dirY) { physComp.setPosition(physComp.getPosition() + 100.0f * b2Vec2{dirX, dirY}); }
 			}
 		}
 	}
