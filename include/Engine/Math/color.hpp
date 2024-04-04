@@ -18,6 +18,7 @@ namespace Engine::Math {
 	 * @return The rgb representation in the range [0, 1]
 	 */
 	inline glm::vec3 cvtHSLtoRGB(const glm::vec3 hsl) {
+		// TODO: Would probably be better to have all H, S, L in [0, 1] instead of H in [0, 360].
 		const auto c = (1 - std::abs(2 * hsl.z - 1)) * hsl.y;
 		const auto h = hsl.x * (1.0f / 60.0f);
 		const auto x = c * (1 - std::abs(std::fmodf(h, 2) - 1));
@@ -61,5 +62,16 @@ namespace Engine::Math {
 	/** @see cvtApproxLinearToRGB */
 	ENGINE_INLINE inline glm::vec4 cvtApproxRGBToLinear(const glm::vec4 rgb) {
 		return {cvtApproxRGBToLinear({rgb.x, rgb.y, rgb.z}), rgb.w};
+	}
+
+	/**
+	 * Gets the next "random" hue such that all generated hues are equidistributed.
+	 * @return The next hue in the range [0, 360].
+	 * 
+	 * @see https://en.wikipedia.org/wiki/Equidistributed_sequence
+	 * @see https://en.wikipedia.org/wiki/Low-discrepancy_sequence#Additive_recurrence
+	 */
+	ENGINE_INLINE inline float32 nextRandomHue(const float32 prevHue) {
+		return std::fmodf(prevHue + InvPhi<decltype(prevHue)> * 360, 360);
 	}
 }

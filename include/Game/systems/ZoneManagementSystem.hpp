@@ -54,6 +54,8 @@ namespace Game {
 			void migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp);
 			void migrateEntity(Engine::ECS::Entity ent, ZoneId newZoneId, PhysicsBodyComponent& physComp);
 
+			const auto& getZones() const { return zones; }
+
 		private:
 			ZoneId createNewZone(WorldAbsVec pos);
 			ENGINE_INLINE void tick_Server();

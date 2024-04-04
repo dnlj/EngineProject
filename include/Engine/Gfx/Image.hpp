@@ -71,6 +71,24 @@ namespace Engine::Gfx {
 			ENGINE_INLINE byte* data() noexcept { return storage.data(); }
 			ENGINE_INLINE auto sizeBytes() const noexcept { return storage.size(); }
 
+			void fill(glm::u8vec3 rgb) {
+				if constexpr (ENGINE_DEBUG) {
+					const auto& info = getPixelFormatInfo(fmt);
+					ENGINE_DEBUG_ASSERT(info.channels == 3);
+					ENGINE_DEBUG_ASSERT(info.bits.r == 8);
+					ENGINE_DEBUG_ASSERT(info.bits.g == 8);
+					ENGINE_DEBUG_ASSERT(info.bits.b == 8);
+					ENGINE_DEBUG_ASSERT(info.bits.a == 0);
+				}
+
+				const uint64 sz = storage.size();
+				for (uint64 i = 0; i < sz; i += 3) {
+					storage[i+0] = rgb.r;
+					storage[i+1] = rgb.g;
+					storage[i+2] = rgb.b;
+				}
+			}
+
 			void copySettings(const Image& other) {
 				fmt = other.fmt;
 				dims = other.dims;

@@ -59,10 +59,11 @@ namespace Game {
 		const auto vao = mapSys.vertexLayout->get();
 		glBindVertexArray(vao);
 
+		const auto& activeChunks = mapSys.getActiveChunks();
 		for (auto x = minChunk.x; x <= maxChunk.x; ++x) {
 			for (auto y = minChunk.y; y <= maxChunk.y; ++y) {
-				const auto found = mapSys.activeChunks.find({x, y});
-				if (found == mapSys.activeChunks.cend()) { continue; }
+				const auto found = activeChunks.find({x, y});
+				if (found == activeChunks.cend()) { continue; }
 				const auto& data = found->second;
 				if (data.ecount == 0) { continue; }
 

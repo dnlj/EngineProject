@@ -321,6 +321,6 @@ namespace Engine::UI {
 		area->addGraph(std::move(graph), std::move(label));
 		
 		// TODO: let themes specify an array of colors to use for this sort of thing
-		nextColorHSL.x = std::fmodf(nextColorHSL.x + InvPhi<float32> * 360, 360);
+		nextColorHSL.x = Math::nextRandomHue(nextColorHSL.x);
 	}
 }

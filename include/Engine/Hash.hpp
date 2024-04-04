@@ -35,7 +35,17 @@ namespace Engine {
 		[[nodiscard]]
 		size_t operator()(const glm::ivec2& val) const {
 			static_assert(sizeof(size_t) == sizeof(val));
-			return *reinterpret_cast<const size_t*>(&val);
+			return robin_hood::hash_int(std::bit_cast<size_t>(val));
+		}
+	};
+
+	template<>
+	struct Hash<glm::i64vec2> {
+		[[nodiscard]]
+		size_t operator()(const glm::i64vec2& val) const {
+			size_t result = val.x;
+			hashCombine(result, val.y);
+			return result;
 		}
 	};
 

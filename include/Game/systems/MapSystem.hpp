@@ -81,25 +81,6 @@ namespace Game {
 			};
 			static_assert(sizeof(Vertex) == 3*sizeof(GLfloat), "Unexpected vertex size.");
 
-		public:
-			MapSystem(SystemArg arg);
-			~MapSystem();
-
-			void setup();
-			void tick();
-			void update(float32 dt);
-			void ensurePlayAreaLoaded(Engine::ECS::Entity ply); // TODO: should probably be private
-
-			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);
-
-			// TODO: Doc
-			void setValueAt2(const BlockVec blockPos, BlockId bid);
-
-		public: // TODO: make proper accessors if we actually end up needing this stuff
-			Engine::Gfx::ShaderRef shader;
-			Engine::Gfx::Texture2DArray texArr;
-
-			Engine::Gfx::VertexAttributeLayoutRef vertexLayout;
 			struct ActiveChunkData {
 				PhysicsBody body;
 
@@ -115,12 +96,12 @@ namespace Game {
 				std::vector<Engine::ECS::Entity> blockEntities;
 			};
 
-			/** The info for chunks */
-			Engine::FlatHashMap<glm::ivec2, ActiveChunkData> activeChunks;
-			Engine::FlatHashMap<glm::ivec2, MapChunk> chunkEdits;
-
 		private:
 			std::thread threads[ENGINE_DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
+
+			/** The info for chunks */
+			Engine::FlatHashMap<ChunkVec, ActiveChunkData> activeChunks;
+			Engine::FlatHashMap<ChunkVec, MapChunk> chunkEdits;
 
 			/** Used for sending full RLE chunk updates */
 			std::vector<byte> rleTemp;
@@ -139,6 +120,30 @@ namespace Game {
 
 			MapGenerator2 mgen{12345};
 
+		public:
+			MapSystem(SystemArg arg);
+			~MapSystem();
+
+			void setup();
+			void tick();
+			void update(float32 dt);
+			void ensurePlayAreaLoaded(Engine::ECS::Entity ply); // TODO: should probably be private
+
+			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);
+
+			// TODO: Doc
+			void setValueAt2(const BlockVec blockPos, BlockId bid);
+
+			ENGINE_INLINE const auto& getActiveChunks() const noexcept { return activeChunks; }
+			ENGINE_INLINE const auto& getLoadedRegions() const noexcept { return regions; }
+
+		public: // TODO: make proper accessors if we actually end up needing this stuff
+			Engine::Gfx::ShaderRef shader;
+			Engine::Gfx::Texture2DArray texArr;
+
+			Engine::Gfx::VertexAttributeLayoutRef vertexLayout;
+
+		private:
 			// TODO: recycle old bodies?
 			PhysicsBody createBody(ZoneId zoneId);
 

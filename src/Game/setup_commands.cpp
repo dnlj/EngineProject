@@ -1,11 +1,13 @@
-// Engine
-#include <Engine/CommandManager.hpp>
-#include <Engine/from_string.hpp>
-#include <Engine/ArrayView.hpp>
-#include <Engine/Window.hpp>
-
 // Game
 #include <Game/systems/PhysicsSystem.hpp>
+#include <Game/UI/ZonePreview.hpp>
+
+// Engine
+#include <Engine/ArrayView.hpp>
+#include <Engine/CommandManager.hpp>
+#include <Engine/from_string.hpp>
+#include <Engine/UI/Context.hpp>
+#include <Engine/Window.hpp>
 
 
 namespace {
@@ -132,6 +134,13 @@ void setupCommands(Game::EngineInstance& engine, Engine::Window& window) {
 
 		ENGINE_CONSOLE("Bodies: {}  Fixtures: {}", bodyCount, fixtureCount);
 	});
+
+	cm.registerCommand("zone_view", [&engine](auto&){
+		auto& ctx = engine.getUIContext();
+		const auto preview = ctx.createPanel<Game::UI::ZonePreview>(ctx.getRoot());
+		preview->setPos({1200, 32}); // TODO: rm
+	});
+	cm.exec("zone_view"); // TODO: rm
 	
 	// Build CVars
 	{
