@@ -623,6 +623,18 @@ namespace Engine::Win32 {
 		window.callbacks.loseFocus();
 		return 0;
 	}
+
+	template<>
+	LRESULT OpenGLWindow::processMessage<WM_SYSCOMMAND>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
+		// Ignore ALT menu mnemonics which cause beeping since we don't have a menu / matching mnemonics
+		//
+		// Mnemonics are different than shortcuts and accelerators:
+		// - About Accelerators: https://learn.microsoft.com/en-us/windows/win32/menurc/about-keyboard-accelerators
+		// - System Accelerator: https://learn.microsoft.com/en-us/windows/win32/menurc/about-keyboard-accelerators#accelerator-keystroke-assignments
+		// - Menu Mnemonics: https://learn.microsoft.com/en-us/windows/win32/menurc/about-menus#menu-access-keys
+		if (wParam == SC_KEYMENU) { return 0; }
+		return DefWindowProcW(window.getWin32WindowHandle(), WM_SYSCOMMAND, wParam, lParam);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1034,11 +1046,7 @@ namespace Engine::Win32 {
 			HANDLE_MESSAGE(WM_MOUSELEAVE);
 			HANDLE_MESSAGE(WM_SETFOCUS);
 			HANDLE_MESSAGE(WM_KILLFOCUS);
-
-			// Avoid default behaviour that causes hanging and beeps
-			case WM_SYSKEYDOWN: { return 0; };
-			case WM_SYSKEYUP: { return 0; };
-			case WM_SYSCHAR: { return 0; };
+			HANDLE_MESSAGE(WM_SYSCOMMAND);
 
 			/*
 			case WM_IME_CHAR: { ENGINE_LOG("WM_IME_CHAR"); break; }
