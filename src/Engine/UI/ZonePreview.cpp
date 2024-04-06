@@ -178,39 +178,41 @@ namespace Game::UI {
 		const auto cont = getContent();
 		
 		const auto area = ctx->constructPanel<ZoneDragArea>();
-		
-		const auto sec = ctx->createPanel<Panel>(cont);
-		sec->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, theme.sizes.pad1});
-		sec->setAutoSizeHeight(true);
-		
-		constexpr auto textGetter = [](auto& var){ return [&var, last=0.0f](EUI::TextBox& box) mutable {
-			if (var == last) { return; }
-			last = var;
-			box.setText(std::to_string(last));
-		};};
-		
-		const auto textSetter = [area](auto& var){ return [area, &var](EUI::TextBox& box) {
-			std::from_chars(std::to_address(box.getText().begin()), std::to_address(box.getText().end()), var);
-			area->rebuild();
-		};};
-					
-		const auto xMove = ctx->createPanel<EUI::TextBox>(sec);
-		xMove->autoSize();
-		xMove->bind(textGetter(area->offset.x), textSetter(area->offset.x));
-					
-		const auto yMove = ctx->createPanel<EUI::TextBox>(sec);
-		yMove->autoSize();
-		yMove->bind(textGetter(area->offset.y), textSetter(area->offset.y));
-					
-		const auto xZoom = ctx->createPanel<EUI::TextBox>(sec);
-		xZoom->autoSize();
-		xZoom->bind(textGetter(area->zoom.x), textSetter(area->zoom.x));
-					
-		const auto yZoom = ctx->createPanel<EUI::TextBox>(sec);
-		yZoom->autoSize();
-		yZoom->bind(textGetter(area->zoom.y), textSetter(area->zoom.y));
-		
-		sec->setFixedHeight(sec->getHeight());
+
+		// TODO: enable once zoom / pan works
+		//const auto sec = ctx->createPanel<Panel>(cont);
+		//sec->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, theme.sizes.pad1});
+		//sec->setAutoSizeHeight(true);
+		//
+		//constexpr auto textGetter = [](auto& var){ return [&var, last=0.0f](EUI::TextBox& box) mutable {
+		//	if (var == last) { return; }
+		//	last = var;
+		//	box.setText(std::to_string(last));
+		//};};
+		//
+		//const auto textSetter = [area](auto& var){ return [area, &var](EUI::TextBox& box) {
+		//	std::from_chars(std::to_address(box.getText().begin()), std::to_address(box.getText().end()), var);
+		//	area->rebuild();
+		//};};
+		//
+		//const auto xMove = ctx->createPanel<EUI::TextBox>(sec);
+		//xMove->autoSize();
+		//xMove->bind(textGetter(area->offset.x), textSetter(area->offset.x));
+		//
+		//const auto yMove = ctx->createPanel<EUI::TextBox>(sec);
+		//yMove->autoSize();
+		//yMove->bind(textGetter(area->offset.y), textSetter(area->offset.y));
+		//
+		//const auto xZoom = ctx->createPanel<EUI::TextBox>(sec);
+		//xZoom->autoSize();
+		//xZoom->bind(textGetter(area->zoom.x), textSetter(area->zoom.x));
+		//
+		//const auto yZoom = ctx->createPanel<EUI::TextBox>(sec);
+		//yZoom->autoSize();
+		//yZoom->bind(textGetter(area->zoom.y), textSetter(area->zoom.y));
+		//
+		//sec->setFixedHeight(sec->getHeight());
+
 		cont->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Stretch, EUI::Align::Stretch, theme.sizes.pad1});
 		cont->addChild(area);
 		setSize({512, 512});
