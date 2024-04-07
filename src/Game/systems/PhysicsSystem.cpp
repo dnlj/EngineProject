@@ -2,10 +2,11 @@
 #include <Game/World.hpp>
 #include <Game/Math.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
-#include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/NetworkComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
-#include <Game/systems/NetworkingSystem.hpp>
+
 
 namespace {
 	// TODO: rm or rename
@@ -49,9 +50,9 @@ namespace Game {
 			// TODO: when we split the connection object, we really only need the stats part here for ping/jitter.
 			for (const auto& ply : world.getFilter<ActionComponent>()) {
 				const auto& actComp = world.getComponent<ActionComponent>(ply);
-				auto* conn = world.getSystem<NetworkingSystem>().getConnection(ply);
+				auto& conn = world.getComponent<NetworkComponent>(ply).get();
 				buffSize = static_cast<int>(actComp.estBufferSize) + 1;
-				ping = conn->getPing() + conn->getJitter();
+				ping = conn.getPing() + conn.getJitter();
 				break;
 			}
 

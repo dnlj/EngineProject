@@ -1,3 +1,5 @@
+#pragma once
+
 // Game
 #include <Game/Connection.hpp>
 

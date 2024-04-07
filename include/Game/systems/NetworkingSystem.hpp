@@ -15,9 +15,6 @@
 #include <Game/MessageType.hpp>
 #include <Game/ConnectionInfo.hpp>
 
-// TODO: remove once getConnection is removed
-#include <Game/comps/NetworkComponent.hpp>
-
 
 namespace Game {
 	using NetworkMessageHandler = void(*)(EngineInstance& engine, ConnectionInfo& from, const Engine::Net::MessageHeader hdr, Engine::Net::BufferReader& msg);
@@ -55,7 +52,6 @@ namespace Game {
 			#endif
 
 			Engine::FlatHashMap<Engine::Net::IPv4Address, std::unique_ptr<ConnectionInfo>> addrToConn;
-			//Engine::FlatHashMap<Engine::ECS::Entity, ConnectionInfo*> entToConn; // TODO: rm
 			using ConnIt = decltype(addrToConn)::iterator;
 			
 			pcg32 rng;
@@ -96,15 +92,6 @@ namespace Game {
 
 			void addPlayer(ConnectionInfo& conn); // TODO: move addPlayer to EntityNetworkingSystem?
 
-			// TODO: remove/private
-			ConnectionInfo* getConnection(Engine::ECS::Entity ent) {
-				// TODO: rm
-				//auto found = entToConn.find(ent);
-				//return found == entToConn.end() ? nullptr : found->second;
-				return world.getComponent<NetworkComponent>(ent).conn;
-			}
-			
-			// TODO: remove/private
 			ConnectionInfo* getConnection(Engine::Net::IPv4Address addr) {
 				auto found = addrToConn.find(addr);
 				return found == addrToConn.end() ? nullptr : found->second.get();

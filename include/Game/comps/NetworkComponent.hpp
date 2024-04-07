@@ -1,9 +1,19 @@
 #pragma once
 
+// Game
+#include <Game/ConnectionInfo.hpp>
+
 namespace Game {
 	class NetworkComponent {
 		public:
-			// TODO: make this a ref or add a getter
-			class ConnectionInfo* conn;
+			NetworkComponent(ConnectionInfo& conn) : conn{&conn} {}
+
+			ConnectionInfo& get() const noexcept {
+				ENGINE_DEBUG_ASSERT(conn != nullptr, "Connection info is null. This should not happen.");
+				return *conn;
+			}
+
+		private:
+			ConnectionInfo* conn;
 	};
 }

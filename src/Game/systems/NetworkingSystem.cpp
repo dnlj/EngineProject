@@ -19,10 +19,10 @@
 // TODO: Do we really need all these components? Maybe try to clean this up.
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/MapAreaComponent.hpp>
+#include <Game/comps/NetworkComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
-
 
 namespace {
 	using namespace Game;
@@ -482,7 +482,7 @@ namespace Game {
 		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY, "Attempting to add duplicate player.");
 		conn.ent = world.createEntity();
 		const auto ply = conn.ent;
-		world.addComponent<NetworkComponent>(ply, &conn);
+		world.addComponent<NetworkComponent>(ply, conn);
 
 		ENGINE_INFO("Add player: ", ply, " ", world.hasComponent<PlayerFlag>(ply), " Tick: ", world.getTick());
 		auto& physSys = world.getSystem<PhysicsSystem>();
@@ -559,7 +559,7 @@ namespace Game {
 		if (auto rem = msg.remaining(); rem > 0) {
 			ENGINE_WARN("Incomplete read of network message ", meta.name, " (", rem, " bytes remaining). Ignoring.");
 		} else if (rem < 0) {
-			ENGINE_WARN("Read past end of network messge type ", meta.name," (", rem, " bytes remaining).");
+			ENGINE_WARN("Read past end of network message type ", meta.name," (", rem, " bytes remaining).");
 		}
 	}
 }

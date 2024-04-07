@@ -9,10 +9,11 @@
 #include <Game/systems/CharacterSpellSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
-#include <Game/comps/SpriteComponent.hpp>
+#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/NetworkComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
-#include <Game/comps/ActionComponent.hpp>
+#include <Game/comps/SpriteComponent.hpp>
 
 
 namespace {
@@ -154,19 +155,11 @@ namespace Game {
 			fireMissile(event);
 
 			if constexpr (ENGINE_SERVER) {
-				auto& netSys = world.getSystem<NetworkingSystem>();
-
 				// TODO: Only need to send to players in the same zone. Should probably be batching these all into one message.
 				for (const auto ply : world.getFilter<PlayerFlag>()) {
 					if (ply == event.ent) { continue; }
-					auto* conn = netSys.getConnection(ply);
-
-					if (!conn) {
-						ENGINE_WARN("Unable to get network connection. This is a bug.");
-						continue;
-					}
-
-					if (auto msg = conn->beginMessage<MessageType::SPELL>()) {
+					auto& conn = world.getComponent<NetworkComponent>(ply).get();
+					if (auto msg = conn.beginMessage<MessageType::SPELL>()) {
 						msg.write(event.pos);
 						msg.write(event.dir);
 					}

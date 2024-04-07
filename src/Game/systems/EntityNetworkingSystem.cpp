@@ -5,13 +5,12 @@
 #include <Engine/Meta/for.hpp>
 
 // Game
-#include <Game/World.hpp>
-#include <Game/systems/EntityNetworkingSystem.hpp>
-#include <Game/systems/ZoneManagementSystem.hpp>
-#include <Game/comps/all.hpp>
-
-#include <Game/systems/NetworkingSystem.hpp>
 #include <Game/Connection.hpp>
+#include <Game/World.hpp>
+#include <Game/comps/all.hpp>
+#include <Game/systems/EntityNetworkingSystem.hpp>
+#include <Game/systems/NetworkingSystem.hpp>
+#include <Game/systems/ZoneManagementSystem.hpp>
 
 // TODO: rm - shouldnt be accessed from here.
 #include <Game/systems/MapSystem.hpp>
@@ -331,15 +330,9 @@ namespace Game {
 
 		updateNeighbors();
 
-		auto& netSys = world.getSystem<NetworkingSystem>();
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
-
-			auto* conn = netSys.getConnection(ply);
-			if (!conn) [[unlikely]] {
-				ENGINE_WARN("Unable to get connection for entity. This is a bug.");
-				continue;
-			}
+			auto& conn = world.getComponent<NetworkComponent>(ply).get();
 
 			// TODO: see DqVBIIfY
 			// TODO: move elsewhere, this isnt really related to ECS networking
@@ -348,7 +341,7 @@ namespace Game {
 			//       Should it? every few frames is probably fine for keeping it in
 			//       sync. Although when it does desync it will be a larger rollback.
 			const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-			if (auto msg = conn->beginMessage<MessageType::PLAYER_DATA>()) {
+			if (auto msg = conn.beginMessage<MessageType::PLAYER_DATA>()) {
 				// TODO: Is this +1 comment still correct? Shouldn't this be
 				//       removed/updated since networking now happens at the start of
 				//       the loop instead of the end?
@@ -364,9 +357,9 @@ namespace Game {
 			zoneChanged.clear();
 			for (auto& [ent, data] : ecsNetComp.neighbors) {
 				if (data.state == NeighborState::Added) {
-					processAddedNeighbor(*conn, ent, data);
+					processAddedNeighbor(conn, ent, data);
 				} else if (data.state == NeighborState::Removed) {
-					processRemovedNeighbor(*conn, ent, data);
+					processRemovedNeighbor(conn, ent, data);
 				} else if (data.state == NeighborState::Current) {
 					// Do nothing, handled below.
 				} else if (data.state == NeighborState::ZoneChanged) {
@@ -379,12 +372,12 @@ namespace Game {
 				// Regardless of the current state, as long as the entity wasn't
 				// removed, we need to send the current data.
 				if (data.state != NeighborState::Removed) {
-					processCurrentNeighbor(*conn, ent, data);
+					processCurrentNeighbor(conn, ent, data);
 				}
 			}
 
 			if (!zoneChanged.empty() || ecsNetComp.plyZoneChanged) {
-				if (auto msg = conn->beginMessage<MessageType::ECS_ZONE_INFO>()) {
+				if (auto msg = conn.beginMessage<MessageType::ECS_ZONE_INFO>()) {
 					const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 					const auto zoneId = physComp.getZoneId();
 					const auto zonePos = zoneSys.getZone(zoneId).offset;

@@ -2,22 +2,23 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 // Engine
+#include <Engine/Gfx/ResourceContext.hpp>
+#include <Engine/Gfx/ShaderManager.hpp>
 #include <Engine/Glue/Box2D.hpp>
 #include <Engine/Glue/glm.hpp>
-#include <Engine/Gfx/ShaderManager.hpp>
-#include <Engine/Gfx/ResourceContext.hpp>
 
 // Game
+#include <Game/World.hpp>
 #include <Game/comps/ActionComponent.hpp>
 #include <Game/comps/BlockEntityComponent.hpp>
 #include <Game/comps/MapAreaComponent.hpp>
+#include <Game/comps/NetworkComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/ZoneManagementSystem.hpp>
-#include <Game/World.hpp>
 
 
 namespace {
@@ -282,7 +283,6 @@ namespace Game {
 	void MapSystem::update(float32 dt) {
 		const auto tick = world.getTick();
 		auto timeout = world.getTickTime() - std::chrono::seconds{10}; // TODO: how long? 30s?
-		auto& netSys = world.getSystem<NetworkingSystem>();
 
 		// Send chunk updates to clients
 		// On the client side MapAreaComponent is never added to any entities so
@@ -292,13 +292,8 @@ namespace Game {
 			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ent);
 			const auto begin = mapAreaComp.updates.begin();
 			const auto end = mapAreaComp.updates.end();
-
-			auto* conn = netSys.getConnection(ent);
-			if (!conn) {
-				ENGINE_WARN("Unable to get network connection for entity. This is a bug.");
-				return;
-			}
-
+			
+			auto& conn = world.getComponent<NetworkComponent>(ent).get();
 			for (auto it = begin; it != end;) {
 				const auto& chunkPos = it->first;
 				auto& meta = it->second;
@@ -336,7 +331,7 @@ namespace Game {
 						//ENGINE_INFO("Send chunk (edit): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
 					}
 
-					if (auto msg = conn->beginMessage<MessageType::MAP_CHUNK>()) {
+					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
 						meta.last = activeData.updated;
 
 						// Populate data with chunk position and RLE data. Space

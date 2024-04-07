@@ -3,8 +3,9 @@
 #include <Game/systems/ActionSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/comps/ActionComponent.hpp>
-#include <Game/comps/PhysicsBodyComponent.hpp>
+#include <Game/comps/NetworkComponent.hpp>
 #include <Game/comps/NetworkStatsComponent.hpp>
+#include <Game/comps/PhysicsBodyComponent.hpp>
 
 
 namespace {
@@ -228,7 +229,7 @@ namespace Game {
 		auto& cam = engine.getCamera();
 		const auto currTick = world.getTick();
 
-		for (const auto ent : world.getFilter<ActionComponent>()) {
+		for (const auto ent : world.getFilter<ActionComponent, NetworkComponent>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 
 			// TODO: this should probably be moved, this doesnt really depend on the connection status/object/etc
@@ -242,12 +243,7 @@ namespace Game {
 				state.target.y = tpos.y - pos.y;
 			}
 
-			auto* conn = world.getSystem<NetworkingSystem>().getConnection(ent);
-			if (!conn) {
-				ENGINE_WARN("Entity has ConnectedFlag but is missing a valid connection object. This is a bug.");
-				continue;
-			}
-
+			auto& conn = world.getComponent<NetworkComponent>(ent).get();
 			if constexpr (ENGINE_CLIENT) {
 				// Hey! are you wondering why the client sends so much data again?
 				// Well let me save you some time. This code sends about
@@ -256,7 +252,7 @@ namespace Game {
 				// Check trello for more complete explanation. See: O3oJLMde
 
 
-				if (auto msg = conn->beginMessage<MessageType::ACTION>()) {
+				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
 					msg.write(currTick);
 
 					// TODO: how many to send?
@@ -279,7 +275,7 @@ namespace Game {
 			} else if constexpr (ENGINE_SERVER) {
 				auto* state = actComp.state;
 
-				if (auto msg = conn->beginMessage<MessageType::ACTION>()) {
+				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
 					msg.write(currTick);
 					msg.write(state ? state->recvTick : 0);
 					msg.write(estBuffSizeToNet(actComp.estBufferSize));

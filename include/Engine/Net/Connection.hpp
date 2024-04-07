@@ -137,6 +137,9 @@ namespace Engine::Net {
 				rdat2.time = time;
 			}
 
+			Connection(const Connection&) = delete;
+			Connection& operator=(const Connection&) = delete;
+
 			ENGINE_INLINE const auto& address() const { return addr; }
 
 			ENGINE_INLINE auto getPacketSendBudget() const noexcept { return packetSendBudget; }

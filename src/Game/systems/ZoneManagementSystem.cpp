@@ -2,10 +2,9 @@
 #include <Engine/Math/math.hpp>
 
 // Game
+#include <Game/comps/ECSNetworkingComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/systems/ZoneManagementSystem.hpp>
-#include <Game/systems/NetworkingSystem.hpp>
-#include <Game/comps/ECSNetworkingComponent.hpp>
 
 // Engine
 #include <Engine/Glue/glm.hpp>
