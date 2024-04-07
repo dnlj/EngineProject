@@ -319,40 +319,10 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 #if ENGINE_SERVER
 namespace Game {
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	// TODO: Shouldn't this be tick not update?
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
 	void EntityNetworkingSystem::update(float32 dt) {
 		static_assert(ENGINE_SERVER, "This code is server side only.");
+
+		// TODO (zr5IqeBd): distribute messages over each update instead of all messages every 20th of a second.
 		const auto now = world.getTime();
 		if (now < nextUpdate) { return; }
 
@@ -394,16 +364,22 @@ namespace Game {
 			zoneChanged.clear();
 			for (auto& [ent, data] : ecsNetComp.neighbors) {
 				if (data.state == NeighborState::Added) {
-					processAddedNeighbors(*conn, ent, data);
+					processAddedNeighbor(*conn, ent, data);
 				} else if (data.state == NeighborState::Removed) {
-					processRemovedNeighbors(*conn, ent, data);
+					processRemovedNeighbor(*conn, ent, data);
 				} else if (data.state == NeighborState::Current) {
-					processCurrentNeighbors(*conn, ent, data);
+					// Do nothing, handled below.
 				} else if (data.state == NeighborState::ZoneChanged) {
 					zoneChanged.push_back(ent);
 					data.state = NeighborState::Current;
 				} else {
 					ENGINE_DEBUG_BREAK;
+				}
+
+				// Regardless of the current state, as long as the entity wasn't
+				// removed, we need to send the current data.
+				if (data.state != NeighborState::Removed) {
+					processCurrentNeighbor(*conn, ent, data);
 				}
 			}
 
@@ -449,7 +425,7 @@ namespace Game {
 		return false;
 	}
 
-	void EntityNetworkingSystem::processAddedNeighbors(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
+	void EntityNetworkingSystem::processAddedNeighbor(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
 		if (auto msg = conn.beginMessage<MessageType::ECS_ENT_CREATE>()) {
 			ENGINE_LOG2("ECS_ENT_CREATE: {}", ent);
 			msg.write(ent);
@@ -459,7 +435,7 @@ namespace Game {
 		}
 	}
 
-	void EntityNetworkingSystem::processRemovedNeighbors(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
+	void EntityNetworkingSystem::processRemovedNeighbor(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
 		if (auto msg = conn.beginMessage<MessageType::ECS_ENT_DESTROY>()) {
 			ENGINE_LOG2("ECS_ENT_DESTROY: {}", ent);
 			msg.write(ent);
@@ -469,7 +445,7 @@ namespace Game {
 		}
 	}
 	
-	void EntityNetworkingSystem::processCurrentNeighbors(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
+	void EntityNetworkingSystem::processCurrentNeighbor(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
 		const auto compsCurr = world.getComponentsBitset(ent);
 
 		// Non-flag components

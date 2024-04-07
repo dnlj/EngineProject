@@ -42,7 +42,7 @@ namespace Game::UI { namespace {
 				auto* engine = ctx->getUserdata<Game::EngineInstance>();
 				auto& world = engine->getWorld();
 
-				if (world.getTickTime() - lastUpdate > std::chrono::milliseconds{500}) {
+				if (world.getTickTime() - lastUpdate > std::chrono::milliseconds{250}) {
 					lastUpdate = world.getTickTime();
 
 					const auto& mapSys = world.getSystem<MapSystem>();
