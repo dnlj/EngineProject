@@ -24,6 +24,7 @@ namespace Game::UI {
 				TickScale,
 				TickRate,
 				RunDelta,
+				RunDeltaSmooth,
 			};
 
 			InfoPane(EUI::Context* context);

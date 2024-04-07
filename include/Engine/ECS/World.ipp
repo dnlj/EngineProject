@@ -46,6 +46,7 @@ namespace Engine::ECS {
 		deltaTimeNS = endTime - beginTime;
 		beginTime = endTime;
 		deltaTime = Clock::Seconds{deltaTimeNS}.count();
+		deltaTimeSmooth = dtSmoothing * deltaTime + (1 - dtSmoothing) * deltaTimeSmooth;
 
 		if constexpr (ENGINE_CLIENT) {
 			if (rollbackData.tick != -1 && !performingRollback) {

@@ -247,6 +247,27 @@ namespace Engine::ECS {
 			/** Delta time in nanoseconds. @see deltaTime */
 			Clock::Duration deltaTimeNS{0};
 
+			/**
+			 * The exponential smoothing factor to use for the delta time.
+			 * 
+			 * Another way to look at this is what percentage of the most recent
+			 * update is counted toward the smoothed average. At 64 tick and a
+			 * smoothing value of:
+			 *     1 - 0.95 = 0.05 = 5%
+			 * for the most recent run. Then after ~1s any given sample would
+			 * have a contribution of ~10%:
+			 *     x^64 = 0.1 = 10%; x ~= 0.9647 ~= 0.95
+			 */
+			// TODO (C++26): Determine smoothing based on tickrate. The below would give
+			//               use a 10% contribution per sample after ~1s:
+			//                   constexpr float64 dtSmoothing = 1 - std::pow(0.1, 1.0 / TickRate);
+			//               At the moment this is hard coded for ~64 tick = 0.96466
+			constexpr static float32 dtSmoothing = 1 - 0.93f;
+
+			/** The smoothed delta time over the last ~1s. @see dtSmoothing */
+			// The tick interval should be a good approximate start value.
+			float32 deltaTimeSmooth = tickDeltaTime;
+
 		private:
 			template<bool,class,class>
 			friend class SingleComponentFilter;
@@ -744,6 +765,7 @@ namespace Engine::ECS {
 			 * Gets the time (in seconds) last update took to run.
 			 */
 			ENGINE_INLINE float32 getDeltaTime() const noexcept { return deltaTime; }
+			ENGINE_INLINE float32 getDeltaTimeSmooth() const noexcept { return deltaTimeSmooth; }
 
 			/**
 			 * Gets the time (in nanoseconds) last update took to run.
