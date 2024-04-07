@@ -52,6 +52,7 @@ namespace Game {
 		class ECSNetworkingComponent,
 		class MapAreaComponent,
 		class ModelComponent,
+		class NetworkComponent,
 		class NetworkStatsComponent,
 		class PhysicsBodyComponent,
 		class PhysicsInterpComponent,

@@ -399,14 +399,12 @@ namespace Game {
 		#endif
 
 		if (conn.ent) {
+			world.removeComponent<NetworkComponent>(conn.ent);
+
 			if constexpr (ENGINE_SERVER) { // Client should be handled above.
 				world.deferedDestroyEntity(conn.ent);
 			}
 
-			auto found = entToConn.find(conn.ent);
-			if (found != entToConn.end()) {
-				entToConn.erase(found);
-			}
 			conn.ent = {};
 		}
 	}
@@ -484,9 +482,7 @@ namespace Game {
 		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY, "Attempting to add duplicate player.");
 		conn.ent = world.createEntity();
 		const auto ply = conn.ent;
-
-		ENGINE_DEBUG_ASSERT(entToConn[ply] == nullptr, "entToConn map is in an invalid state.");
-		entToConn[ply] = &conn;
+		world.addComponent<NetworkComponent>(ply, &conn);
 
 		ENGINE_INFO("Add player: ", ply, " ", world.hasComponent<PlayerFlag>(ply), " Tick: ", world.getTick());
 		auto& physSys = world.getSystem<PhysicsSystem>();

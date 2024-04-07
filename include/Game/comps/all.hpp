@@ -7,6 +7,7 @@
 #include <Game/comps/ECSNetworkingComponent.hpp>
 #include <Game/comps/MapAreaComponent.hpp>
 #include <Game/comps/ModelComponent.hpp>
+#include <Game/comps/NetworkComponent.hpp>
 #include <Game/comps/NetworkStatsComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
