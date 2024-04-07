@@ -108,6 +108,8 @@ namespace {
 		Engine::ECS::ComponentId cid;
 		if (!msg.read(&cid)) { return; }
 		
+		ENGINE_INFO2("recv_ECS_COMP_ADD: {} {}", remote, cid);
+
 		auto& world = engine.getWorld();
 		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
 		auto local = entNetSystem.getEntityMapping(remote);
@@ -317,7 +319,38 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 #if ENGINE_SERVER
 namespace Game {
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
 	// TODO: Shouldn't this be tick not update?
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
 	void EntityNetworkingSystem::update(float32 dt) {
 		static_assert(ENGINE_SERVER, "This code is server side only.");
 		const auto now = world.getTime();
@@ -384,7 +417,7 @@ namespace Game {
 
 					for (const auto ent : zoneChanged) {
 						msg.write(ent);
-						ENGINE_INFO2("MSG: {} {} {}", ent, zoneId, zonePos);
+						ENGINE_INFO2("ECS_ZONE_INFO (each): {} {} {}", ent, zoneId, zonePos);
 					}
 				} else {
 					// TODO: This code path is largely untested. ATM we don't have a way
@@ -406,6 +439,7 @@ namespace Game {
 		if (NetworkTraits<C>::getReplType(comp) == Engine::Net::Replication::NONE) { return true; }
 
 		if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ADD>()) {
+			ENGINE_INFO2("ECS_COMP_ADD: {} {}", ent, world.getComponentId<C>());
 			msg.write(ent);
 			msg.write(world.getComponentId<C>());
 			NetworkTraits<C>::writeInit(comp, msg.getBufferWriter(), engine, world, ent);
@@ -417,6 +451,7 @@ namespace Game {
 
 	void EntityNetworkingSystem::processAddedNeighbors(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
 		if (auto msg = conn.beginMessage<MessageType::ECS_ENT_CREATE>()) {
+			ENGINE_LOG2("ECS_ENT_CREATE: {}", ent);
 			msg.write(ent);
 		} else {
 			data.state = NeighborState::None;
@@ -426,6 +461,7 @@ namespace Game {
 
 	void EntityNetworkingSystem::processRemovedNeighbors(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
 		if (auto msg = conn.beginMessage<MessageType::ECS_ENT_DESTROY>()) {
+			ENGINE_LOG2("ECS_ENT_DESTROY: {}", ent);
 			msg.write(ent);
 		} else {
 			data.state = NeighborState::None;
@@ -507,7 +543,7 @@ namespace Game {
 
 				// Mark everything as removed for next iteration. Anything that
 				// is still current gets updated below. Anything that isn't
-				// updated perists until next iteration where it will be removed
+				// updated persists until next iteration where it will be removed
 				// above.
 				if (pair.second.state != NeighborState::ZoneChanged) {
 					pair.second.state = NeighborState::Removed;

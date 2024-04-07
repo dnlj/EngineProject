@@ -24,18 +24,26 @@ namespace Game {
 
 	struct Channel_General_RU : Engine::Net::Channel_ReliableUnordered<
 		MessageType::PLAYER_DATA,
-		MessageType::ECS_ZONE_INFO, // TODO: would moving this to ordered with the other ecs flags fix some of the stutter?
 		MessageType::SPELL
 	> {};
 
 	struct Channel_ECS : Engine::Net::Channel_ReliableOrdered<
 		MessageType::CONFIG_NETWORK,
+
+		// All messages that access getEntityMapping _must_ be on the same
+		// channel or else getEntityMapping may return an invalid entity if
+		// messages are received in the wrong order.
+		//
+		// Example: Maybe the player changes zone on the same tick as an entity
+		// is created. Then it would be possible to receive the zone change for
+		// that entity before the entity is created client side.
 		MessageType::ECS_INIT,
 		MessageType::ECS_ENT_CREATE,
 		MessageType::ECS_ENT_DESTROY,
 		MessageType::ECS_COMP_ADD,
 		MessageType::ECS_COMP_ALWAYS,
-		MessageType::ECS_FLAG
+		MessageType::ECS_FLAG,
+		MessageType::ECS_ZONE_INFO
 	> {};
 
 	struct Channel_Map_Blob : Engine::Net::Channel_LargeReliableOrdered<

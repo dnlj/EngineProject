@@ -338,6 +338,13 @@ namespace Game {
 			ecsNetComp.plyZoneChanged = true;
 
 			for (auto& [ent, data] : ecsNetComp.neighbors) {
+				// If an entity was removed we don't need to migrate it. It will
+				// be migrated if the player moves nearby again. Migrating a
+				// removed entity isn't okay because it doesn't exist on the
+				// client side (will crash) and doesn't make sense server side
+				// since its outside of the (typical) interaction range.
+				if (data.state == ECSNetworkingComponent::NeighborState::Removed) { continue; }
+
 				data.state = ECSNetworkingComponent::NeighborState::ZoneChanged;
 				auto& neighPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
 				if (neighPhysComp.getZoneId() != newZoneId) {
@@ -353,6 +360,8 @@ namespace Game {
 		//ZONE_DEBUG("{} - Migrating entity from {} to {}", world.getTick(), oldZoneId, newZoneId);
 		ENGINE_INFO2("{} - Migrating entity ({}) from {} to {}", world.getTick(), ent, oldZoneId, newZoneId);
 		ENGINE_DEBUG_ASSERT(newZoneId != oldZoneId, "Attempting to move entity to same zone. This is a bug.");
+		ENGINE_DEBUG_ASSERT(world.isAlive(ent), "Attempting to migrate dead entity.");
+		ENGINE_DEBUG_ASSERT(world.isEnabled(ent), "Attempting to migrate disabled entity."); // TODO: this should be fine?
 
 		auto& oldZone = zones[oldZoneId];
 		auto& newZone = zones[newZoneId];

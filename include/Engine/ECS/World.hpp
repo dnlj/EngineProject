@@ -436,7 +436,7 @@ namespace Engine::ECS {
 				return const_cast<World*>(this)->getSystem<System>();
 			}
 
-			ENGINE_INLINE void debugEntityCheck(Entity e) const {
+			ENGINE_INLINE_REL void debugEntityCheck(Entity e) const {
 				ENGINE_DEBUG_ASSERT(isValid(e), "Attempting to use invalid entity");
 				ENGINE_DEBUG_ASSERT(isAlive(e), "Attempting to use old entity");
 			}
