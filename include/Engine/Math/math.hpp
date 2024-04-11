@@ -11,7 +11,7 @@
 
 namespace Engine::Math {
 	template<class T>
-	class DivFloorResult {
+	class DivResult {
 		public:
 			T q{}; // Quotient
 			T r{}; // Remainder
@@ -99,16 +99,32 @@ namespace Engine::Math {
 		const auto q0 = q - (r ? num < 0 : 0);
 		const auto r0 = num - den * q0; // TODO: is there a way to get this based on the original r? I don't think so because we also do the floor after.
 
-		return DivFloorResult<T>{ .q = q0, .r = r0 }; 
+		return DivResult<T>{ .q = q0, .r = r0 };
 	}
 
 	template<std::integral T, glm::qualifier Q>
 	[[nodiscard]] ENGINE_INLINE constexpr auto divFloor(glm::vec<2, T, Q> num, T den) noexcept {
 		const auto x = divFloor(num.x, den);
 		const auto y = divFloor(num.y, den);
-		return DivFloorResult<decltype(num)>{
+		return DivResult<decltype(num)>{
 			.q = {x.q, y.q},
 			.r = {x.r, y.r},
 		};
+	}
+
+	/**
+	 * Integer division + ceil
+	 * @param num The numerator to use.
+	 * @param den The positive denominator to use.
+	 *
+	 * @see divFloor
+	 */
+	template<std::integral T>
+	[[nodiscard]] ENGINE_INLINE constexpr auto divCeil(T num, T den) noexcept {
+		const auto q = num / den;
+		const auto r = num % den;
+		const auto q0 = q + (r ? num > 0 : 0);
+		const auto r0 = num - den * q0;
+		return DivResult<T>{ .q = q0, .r = r0 };
 	}
 }

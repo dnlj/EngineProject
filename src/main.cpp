@@ -290,7 +290,6 @@ namespace {
 	void test_divFloor() {
 		using Engine::Math::divFloor;
 
-		// TODO: and negatives
 		{ auto a = divFloor(0, 1); assert(a.q == 0); assert(a.r == 0); }
 		{ auto a = divFloor(0, 2); assert(a.q == 0); assert(a.r == 0); }
 		{ auto a = divFloor(0, 3); assert(a.q == 0); assert(a.r == 0); }
@@ -356,6 +355,77 @@ namespace {
 		{ auto a = divFloor(-5, 3); assert(a.q == -2); assert(a.r == 1); }
 		{ auto a = divFloor(-5, 4); assert(a.q == -2); assert(a.r == 3); }
 		{ auto a = divFloor(-5, 5); assert(a.q == -1); assert(a.r == 0); }
+	}
+	
+	// TODO: add actual actual unit test once gtest is fixed
+	void test_divCeil() {
+		using Engine::Math::divCeil;
+
+		{ auto a = divCeil(0, 1); assert(a.q == 0); assert(a.r == 0); }
+		{ auto a = divCeil(0, 2); assert(a.q == 0); assert(a.r == 0); }
+		{ auto a = divCeil(0, 3); assert(a.q == 0); assert(a.r == 0); }
+		{ auto a = divCeil(0, 4); assert(a.q == 0); assert(a.r == 0); }
+		{ auto a = divCeil(0, 5); assert(a.q == 0); assert(a.r == 0); }
+
+		{ auto a = divCeil(1, 1); assert(a.q == 1); assert(a.r ==  0); }
+		{ auto a = divCeil(1, 2); assert(a.q == 1); assert(a.r == -1); }
+		{ auto a = divCeil(1, 3); assert(a.q == 1); assert(a.r == -2); }
+		{ auto a = divCeil(1, 4); assert(a.q == 1); assert(a.r == -3); }
+		{ auto a = divCeil(1, 5); assert(a.q == 1); assert(a.r == -4); }
+
+		{ auto a = divCeil(2, 1); assert(a.q == 2); assert(a.r ==  0); }
+		{ auto a = divCeil(2, 2); assert(a.q == 1); assert(a.r ==  0); }
+		{ auto a = divCeil(2, 3); assert(a.q == 1); assert(a.r == -1); }
+		{ auto a = divCeil(2, 4); assert(a.q == 1); assert(a.r == -2); }
+		{ auto a = divCeil(2, 5); assert(a.q == 1); assert(a.r == -3); }
+
+		{ auto a = divCeil(3, 1); assert(a.q == 3); assert(a.r ==  0); }
+		{ auto a = divCeil(3, 2); assert(a.q == 2); assert(a.r == -1); }
+		{ auto a = divCeil(3, 3); assert(a.q == 1); assert(a.r ==  0); }
+		{ auto a = divCeil(3, 4); assert(a.q == 1); assert(a.r == -1); }
+		{ auto a = divCeil(3, 5); assert(a.q == 1); assert(a.r == -2); }
+
+		{ auto a = divCeil(4, 1); assert(a.q == 4); assert(a.r ==  0); }
+		{ auto a = divCeil(4, 2); assert(a.q == 2); assert(a.r ==  0); }
+		{ auto a = divCeil(4, 3); assert(a.q == 2); assert(a.r == -2); }
+		{ auto a = divCeil(4, 4); assert(a.q == 1); assert(a.r ==  0); }
+		{ auto a = divCeil(4, 5); assert(a.q == 1); assert(a.r == -1); }
+
+		{ auto a = divCeil(5, 1); assert(a.q == 5); assert(a.r ==  0); }
+		{ auto a = divCeil(5, 2); assert(a.q == 3); assert(a.r == -1); }
+		{ auto a = divCeil(5, 3); assert(a.q == 2); assert(a.r == -1); }
+		{ auto a = divCeil(5, 4); assert(a.q == 2); assert(a.r == -3); }
+		{ auto a = divCeil(5, 5); assert(a.q == 1); assert(a.r ==  0); }
+		
+		{ auto a = divCeil(-1, 1); assert(a.q == -1); assert(a.r ==  0); }
+		{ auto a = divCeil(-1, 2); assert(a.q ==  0); assert(a.r == -1); }
+		{ auto a = divCeil(-1, 3); assert(a.q ==  0); assert(a.r == -1); }
+		{ auto a = divCeil(-1, 4); assert(a.q ==  0); assert(a.r == -1); }
+		{ auto a = divCeil(-1, 5); assert(a.q ==  0); assert(a.r == -1); }
+
+		{ auto a = divCeil(-2, 1); assert(a.q == -2); assert(a.r ==  0); }
+		{ auto a = divCeil(-2, 2); assert(a.q == -1); assert(a.r ==  0); }
+		{ auto a = divCeil(-2, 3); assert(a.q ==  0); assert(a.r == -2); }
+		{ auto a = divCeil(-2, 4); assert(a.q ==  0); assert(a.r == -2); }
+		{ auto a = divCeil(-2, 5); assert(a.q ==  0); assert(a.r == -2); }
+
+		{ auto a = divCeil(-3, 1); assert(a.q == -3); assert(a.r ==  0); }
+		{ auto a = divCeil(-3, 2); assert(a.q == -1); assert(a.r == -1); }
+		{ auto a = divCeil(-3, 3); assert(a.q == -1); assert(a.r ==  0); }
+		{ auto a = divCeil(-3, 4); assert(a.q ==  0); assert(a.r == -3); }
+		{ auto a = divCeil(-3, 5); assert(a.q ==  0); assert(a.r == -3); }
+
+		{ auto a = divCeil(-4, 1); assert(a.q == -4); assert(a.r ==  0); }
+		{ auto a = divCeil(-4, 2); assert(a.q == -2); assert(a.r ==  0); }
+		{ auto a = divCeil(-4, 3); assert(a.q == -1); assert(a.r == -1); }
+		{ auto a = divCeil(-4, 4); assert(a.q == -1); assert(a.r ==  0); }
+		{ auto a = divCeil(-4, 5); assert(a.q ==  0); assert(a.r == -4); }
+
+		{ auto a = divCeil(-5, 1); assert(a.q == -5); assert(a.r ==  0); }
+		{ auto a = divCeil(-5, 2); assert(a.q == -2); assert(a.r == -1); }
+		{ auto a = divCeil(-5, 3); assert(a.q == -1); assert(a.r == -2); }
+		{ auto a = divCeil(-5, 4); assert(a.q == -1); assert(a.r == -1); }
+		{ auto a = divCeil(-5, 5); assert(a.q == -1); assert(a.r ==  0); }
 	}
 }
 
@@ -945,6 +1015,7 @@ int entry(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	test_divFloor(); // TODO: move to gtest once fixed
+	test_divCeil(); // TODO: move to gtest once fixed
 
 	startTime = Engine::Clock::now();
 	run(argc, argv);
