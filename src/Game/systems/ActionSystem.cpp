@@ -251,7 +251,6 @@ namespace Game {
 				// If we want to do better we need to compress this or send fewer states.
 				// Check trello for more complete explanation. See: O3oJLMde
 
-
 				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
 					msg.write(currTick);
 

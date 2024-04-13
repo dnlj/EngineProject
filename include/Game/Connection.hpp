@@ -16,7 +16,7 @@ namespace Game {
 		MessageType::SERVER_INFO,
 		MessageType::CONNECT_REQUEST,
 		MessageType::CONNECT_CHALLENGE,
-		MessageType::CONNECT_CONFIRM,
+		MessageType::CONNECT_AUTH,
 		MessageType::DISCONNECT,
 
 		MessageType::ACTION // TODO: one of these things is not like the others
@@ -28,6 +28,7 @@ namespace Game {
 	> {};
 
 	struct Channel_ECS : Engine::Net::Channel_ReliableOrdered<
+		MessageType::CONNECT_CONFIRM,
 		MessageType::CONFIG_NETWORK,
 
 		// All messages that access getEntityMapping _must_ be on the same

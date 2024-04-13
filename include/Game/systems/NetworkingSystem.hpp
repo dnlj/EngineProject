@@ -39,7 +39,6 @@ namespace Game {
 			Engine::Net::Packet packet = {};
 			const Engine::Net::IPv4Address group;
 			Engine::Clock::TimePoint now = {};
-			Engine::Clock::TimePoint lastUpdate = {};
 
 			NetworkMessageHandler msgHandlers[MessageType::_count] = {};
 

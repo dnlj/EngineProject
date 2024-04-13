@@ -49,15 +49,17 @@ namespace {
 		}
 
 		auto& world = engine.getWorld();
-		ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", from.ent, " Tick: ", world.getTick(), " - ", tick);
+		ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", from.ent, " OldTick: ", world.getTick(), " NewTick: ", tick);
 
+		// It is important that we add the player _AFTER_ setting the next tick
+		// or else we can run into issues where initial entity/component state
+		// is incorrect because it was initialized with the old tick value. The
+		// ActionComponent action sequence buffer is one example.
 		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
 		world.setNextTick(tick + 16);
-		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
-		
-		// TODO: move addPlayer to EntityNetworkingSystem?
 		world.getSystem<Game::NetworkingSystem>().addPlayer(from);
 
+		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
 		ENGINE_DEBUG_ASSERT(entNetSystem.getEntityMapping().size() == 0, "Networked entity map already has entries. This is a bug.");
 		ENGINE_DEBUG_ASSERT(remote, "Attempting to setup invalid entity mapping (remote)");
 		ENGINE_DEBUG_ASSERT(from.ent, "Attempting to setup invalid entity mapping (local)");

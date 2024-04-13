@@ -28,6 +28,65 @@
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Initial Connection Setup and Handshake
+////////////////////////////////////////////////////////////////////////////////
+//
+// 1. Client begins connection > connectTo.
+//    - CLIENT: Clear the server key.
+//    - CLIENT: Allocate a client key if not exists.
+//    - CLIENT: Client side transitions to "Connecting"
+// 2. Client > CONNECT_REQUEST > Server.
+//    - SERVER: Verify correct padding included.
+//    - SERVER: Reads client key or aborts if mismatch with an existing key from a previous, non-timed out, connection attempt.
+//    - SERVER: Allocates a server key if this is a new connection.
+//    - SERVER: Server side transitions to "Connecting".
+// 3. Server > CONNECT_CHALLENGE > Client.
+//    - CLIENT: Reads the server key.
+// 4. Client > CONNECT_AUTH > Server.
+//    - SERVER: Verify correct server key included.
+//    - SERVER: Verify correct padding included.
+//    - SERVER: Server side transitions to "Connected".
+//    - SERVER: Adds player entity.
+// 5. Server > CONNECT_CONFIRM, ECS_INIT, CONFIG_NETWORK > Client.
+//    - These three are all included as a batch (must fit in same packet) and
+//      should be processed sequentially to ensure correct state
+//      transition/world sync/player entity creation.
+//    - CLIENT (CONNECT_CONFIRM): Client side transitions to "Connected".
+//    - CLIENT (ECS_INIT): Sync client tick with server tick
+//    - CLIENT (ECS_INIT): Add player entity
+//    - CLIENT (CONFIG_NETWORK): Send server desired recv rate
+// 6. Client > CONFIG_NETWORK > Server
+//    - SERVER: Configure network rate based on client request.
+//
+// The CONNECT_CONFIRM message may seem cosmetic at first, but it is useful to
+// act as a fence for transitioning from the connecting to connected states and
+// synchronizing from the unordered-unreliable connection handshake messages to
+// the sequential-reliable initial setup messages (ECS_INIT, CONFIG_NETWORK).
+//
+// A key point here is that CONNECT_CONFIRM is the only ordered-reliable
+// handshake message and that it is sent from the connected state on the server
+// and received in the connecting state by the client. Since CONNECT_CONFIRM is
+// the message that transitions from connecting to connected all (non-handshake)
+// messages will be discarded if received before CONNECT_CONFIRM. This ensures
+// that ECS_INIT will be run immediately after the transition to the "Connected"
+// state and that we initialize the world/player entity correctly (before
+// everything else).
+//
+// We must make sure that the setup messages are processed immediately after the
+// connection transitions from connecting to connected to ensure that the
+// correct tick is setup and that there is always an entity for "Connected"
+// connections.
+//
+// The network config is less critical since we could just have some reasonable
+// defaults, but it seems logical to configure that right at the start of a
+// connection. It is also possible to send additional CONFIG_NETWORK messages
+// later to adjust the rates on-the-fly.
+// 
+////////////////////////////////////////////////////////////////////////////////
+
+
 namespace {
 	using namespace Game;
 	using PlayerFilter = Engine::ECS::EntityFilterList<
@@ -166,23 +225,24 @@ namespace Game {
 			return msg.discard();
 		}
 
-		if (auto reply = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
+		if (auto reply = from.beginMessage<MessageType::CONNECT_AUTH>()) {
 			reply.write(remote);
 			writeMessagePadding(reply.getBufferWriter());
+
 			from.setKeyRemote(remote);
-			from.setState(ConnectionState::Connected);
+
 			ENGINE_LOG("CONNECT_CHALLENGE from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
 		} else [[unlikely]] {
-			ENGINE_WARN("Unable to send CONNECT_CONFIRM");
+			ENGINE_WARN("Unable to send CONNECT_AUTH");
 		}
 	}
 
-	HandleMessageDef(MessageType::CONNECT_CONFIRM)
+	HandleMessageDef(MessageType::CONNECT_AUTH)
 		uint16 key = {};
 		msg.read<uint16>(&key);
 
 		if (key != from.getKeyLocal()) {
-			ENGINE_WARN("CONNECT_CONFIRM: Invalid recv key ", key, " != ", from.getKeyLocal());
+			ENGINE_WARN("CONNECT_AUTH: Invalid recv key ", key, " != ", from.getKeyLocal());
 			return msg.discard();
 		}
 
@@ -195,23 +255,43 @@ namespace Game {
 		}
 
 		auto& world = engine.getWorld();
-		auto& netSys = world.getSystem<NetworkingSystem>();
-
 		from.setState(ConnectionState::Connected);
-		netSys.addPlayer(from); // TODO: this step should probably be delayed until we get some kind of CONFIG_CONFIRM message.
-		ENGINE_LOG("CONNECT_CONFIRM from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick(), " ", from.ent);
+		world.getSystem<NetworkingSystem>().addPlayer(from);
 
+		ENGINE_LOG("CONNECT_AUTH from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick(), " ", from.ent);
+
+		// It is important that all three of these messages are sent in the same
+		// packet so that the are processed immediately and before messages in
+		// other channels. That should be true since these messages are very
+		// small and we shouldn't be sending any other messages at this time.
+		// See notes above (top of file) for details.
+		if (auto reply = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
+		} else {
+			// TODO: handle. If we cant send the
+			//       CONNECT_CONFIRM/ECS_INIT/CONFIG_NETWORK we need to abort
+			//       this connection and wait on the client to restart the
+			//       handshake process.
+		}
 
 		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
 		if (auto reply = from.beginMessage<MessageType::ECS_INIT>()) {
 			ENGINE_DEBUG_ASSERT(from.ent, "Attempting to network invalid entity.");
 			reply.write(from.ent);
 			reply.write(world.getTick());
+		} else {
+			// TODO: handle
 		}
 
 		if (auto reply = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
 			reply.write(from.getPacketRecvRate());
+		} else {
+			// TODO: handle
 		}
+	}
+
+	HandleMessageDef(MessageType::CONNECT_CONFIRM)
+		ENGINE_INFO2("CONNECT_CONFIRM");
+		from.setState(ConnectionState::Connected);
 	}
 
 	HandleMessageDef(MessageType::DISCONNECT)
@@ -268,6 +348,7 @@ namespace Game {
 		setMessageHandler(MessageType::CONNECT_REQUEST, handleMessageType<MessageType::CONNECT_REQUEST>);
 		setMessageHandler(MessageType::CONNECT_CHALLENGE, handleMessageType<MessageType::CONNECT_CHALLENGE>);
 		setMessageHandler(MessageType::DISCONNECT, handleMessageType<MessageType::DISCONNECT>);
+		setMessageHandler(MessageType::CONNECT_AUTH, handleMessageType<MessageType::CONNECT_AUTH>);
 		setMessageHandler(MessageType::CONNECT_CONFIRM, handleMessageType<MessageType::CONNECT_CONFIRM>);
 		setMessageHandler(MessageType::CONFIG_NETWORK, handleMessageType<MessageType::CONFIG_NETWORK>);
 
@@ -348,79 +429,62 @@ namespace Game {
 		#endif
 		recvAndDispatchMessages(socket);
 
-		// TODO: instead of sending all connections on every X. Send a smaller number every frame to distribute load.
-		const bool shouldUpdate = now - lastUpdate >= std::chrono::milliseconds{1000 / 20}; // TODO: rate should be configurable somewhere
+		// TODO: This distribution is largely untested since we don't currently
+		//       have an easy way to test with a large number of players.
+		constexpr Engine::Clock::Seconds netUpdateInterval = std::chrono::milliseconds{1000 / 20}; // TODO: rate should be configurable cmdline/cvar/cfg
+		const auto fullNetPerUpdate = Engine::Noise::floorTo<int32>(netUpdateInterval.count() / world.getDeltaTimeSmooth());
+
+		// TODO: should probably also clamp after just in case
+		//ENGINE_LOG2("A: {} / {}", netUpdateInterval.count(), world.getDeltaTimeSmooth());
+		ENGINE_DEBUG_ASSERT(fullNetPerUpdate >= 1.0f, "To few network updates. This is a bug.");
+		ENGINE_DEBUG_ASSERT(fullNetPerUpdate <= 10.0f, "Exceptionally high number of network updates. This is likely a bug.");
 
 		//
 		//
 		//
 		//
-		//
-		// TODO: this network update should only run on server side.
-		//
+		// TODO: Move this partition logic into Math:: function
 		//
 		//
 		//
 		//
-		//
-
-		//
-		//
-		//
-		// TODO: Connections don't have an entity until fully connected. Need to still handle those cases.
-		//
-		//
-		//
-		//
-		//
-		{
-			// TODO: This distribution is largely untested since we don't currently
-			//       have an easy way to test with a large number of players.
-			constexpr Engine::Clock::Seconds netUpdateInterval = std::chrono::milliseconds{1000 / 20};
-			const auto fullNetPerUpdate = Engine::Noise::floorTo<int32>(netUpdateInterval.count() / world.getDeltaTimeSmooth());
-
-			// TODO: should probably also clamp after just in case
-			ENGINE_DEBUG_ASSERT(fullNetPerUpdate >= 1.0f, "To few network updates. This is a bug.");
-			ENGINE_DEBUG_ASSERT(fullNetPerUpdate <= 10.0f, "Exceptionally high number of network updates. This is likely a bug.");
 			
-			// Evenly distribute the remainder between runs.
-			// For example, if we were doing three updates per run we would have:
-			//   #plys=0:    0/3 = 0r0 = runs {0, 0, 0}
-			//   #plys=1:    1/3 = 0r1 = runs {1, 0, 0}
-			//   #plys=2:    2/3 = 0r2 = runs {1, 1, 0}
-			//   #plys=3:    3/3 = 1r0 = runs {1, 1, 1}
-			//   ...
-			//   #plys=9:    9/3 = 3r0 = runs {3, 3, 3}
-			//   #plys=10:  10/3 = 3r1 = runs {4, 3, 3}
-			//   #plys=11:  11/3 = 3r2 = runs {4, 4, 3}
-			//   #plys=12:  12/3 = 4r0 = runs {4, 4, 4}
-			// 
-			// Using simple division would give uneven runs since you need to
-			// include the remaining players in the final loop. For example in the
-			// eleven player case we would have:
-			//   #plys=11:  11/3 = 3r2 = runs {3, 3, 5}
-			//    
-			const auto plys = world.getFilterAll<true, NetworkComponent>();
-			const auto plyCountPerUpdate = Engine::Math::divFloor<int32>(plys.size(), fullNetPerUpdate);
-			const auto step = static_cast<int32>(world.getUpdate() % fullNetPerUpdate);
-			const auto plyCount = plyCountPerUpdate.q + (plyCountPerUpdate.r > step && plyCountPerUpdate.r > 0);
-			const auto start = step * plyCountPerUpdate.q + std::min(plyCountPerUpdate.r, step);
-			ENGINE_LOG2("{} + {} | {}={} / {}", start, plyCount, world.getUpdate(), step, fullNetPerUpdate);
+		// Evenly distribute the remainder between runs.
+		// For example, if we were doing three updates per run we would have:
+		//   #plys=0:    0/3 = 0r0 = runs {0, 0, 0}
+		//   #plys=1:    1/3 = 0r1 = runs {1, 0, 0}
+		//   #plys=2:    2/3 = 0r2 = runs {1, 1, 0}
+		//   #plys=3:    3/3 = 1r0 = runs {1, 1, 1}
+		//   ...
+		//   #plys=9:    9/3 = 3r0 = runs {3, 3, 3}
+		//   #plys=10:  10/3 = 3r1 = runs {4, 3, 3}
+		//   #plys=11:  11/3 = 3r2 = runs {4, 4, 3}
+		//   #plys=12:  12/3 = 4r0 = runs {4, 4, 4}
+		// 
+		// Using simple division would give uneven runs since you need to
+		// include the remaining players in the final loop. For example in the
+		// eleven player case we would have:
+		//   #plys=11:  11/3 = 3r2 = runs {3, 3, 5}
+		//
+		const auto plys = world.getFilterAll<true, NetworkComponent>();
+		const auto plyCountPerUpdate = Engine::Math::divFloor<int32>(plys.size(), fullNetPerUpdate);
+		const auto step = static_cast<int32>(world.getUpdate() % fullNetPerUpdate);
+		const auto plyCount = plyCountPerUpdate.q + (plyCountPerUpdate.r > step && plyCountPerUpdate.r > 0);
+		const auto start = step * plyCountPerUpdate.q + std::min(plyCountPerUpdate.r, step);
+		//ENGINE_LOG2("{} + {} | {}={} / {}", start, plyCount, world.getUpdate(), step, fullNetPerUpdate);
 
-			// This check technically isn't needed since to_address doesn't form
-			// a reference. It currently exists solely so we can leave iterator
-			// checking on in SparseSet::IteratorBase::operator->(). See notes
-			// there for more details.
-			if (plyCount > 0) {
-				const NetPlySet plysThisUpdate{std::to_address(plys.begin() + start), plyCount};
-				
-				for (const auto& [ply, _] : plysThisUpdate) {
-					ENGINE_LOG2("  Player: {}", ply);
-				}
-				
-				Engine::Meta::ForEachIn<SystemsSet>::call([&]<class S>() ENGINE_INLINE {
-					world.getSystem<S>().network(plysThisUpdate);
-				});
+		// This check technically isn't needed since to_address doesn't form
+		// a reference. It currently exists solely so we can leave iterator
+		// checking on in SparseSet::IteratorBase::operator->(). See notes
+		// there for more details.
+		if (plyCount > 0) {
+			const NetPlySet plysThisUpdate{std::to_address(plys.begin() + start), plyCount};	
+			Engine::Meta::ForEachIn<SystemsSet>::call([&]<class S>() ENGINE_INLINE {
+				//world.getSystem<S>().network(plysThisUpdate);
+			});
+
+			for (const auto& [ply, netComp] : plysThisUpdate) {
+				netComp.get().send(socket);
 			}
 		}
 
@@ -440,10 +504,13 @@ namespace Game {
 				}
 			}
 
-			// Send any messages
-			if (shouldUpdate) {
+			// Send for any connections that don't have an associated entity and
+			// as such won't be handled above. Send them on the last step since
+			// that step will always have the least entities due to remainder.
+			if (!conn->ent && (step + 1 == fullNetPerUpdate)) {
 				conn->send(socket);
 			}
+
 			++cur;
 		}
 		
@@ -556,14 +623,14 @@ namespace Game {
 	#endif
 
 	void NetworkingSystem::addPlayer(ConnectionInfo& conn) {
-		// TODO: i feel like this should be handled elsewhere. Where?
 		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY, "Attempting to add duplicate player.");
+		ENGINE_DEBUG_ASSERT(conn.getState() == ConnectionState::Connected, "Attempting to add player from non-connected connection.");
+
 		conn.ent = world.createEntity();
 		const auto ply = conn.ent;
 		world.addComponent<NetworkComponent>(ply, conn);
 
 		ENGINE_INFO("Add player: ", ply, " ", world.hasComponent<PlayerFlag>(ply), " Tick: ", world.getTick());
-		auto& physSys = world.getSystem<PhysicsSystem>();
 
 		if constexpr (ENGINE_SERVER) {
 			world.addComponent<NetworkedFlag>(ply);
@@ -586,6 +653,7 @@ namespace Game {
 			const b2Vec2 pos = {0, 2};
 			world.getSystem<ZoneManagementSystem>().addPlayer(ply, zoneId);
 			
+			auto& physSys = world.getSystem<PhysicsSystem>();
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(
 				ply,
 				physSys.createPhysicsCircle(ply, pos, zoneId, PhysicsCategory::Player)
@@ -620,7 +688,7 @@ namespace Game {
 
 		if (!(meta.recvState & from.getState())) {
 			if (hdr.type != MessageType::DISCONNECT) {
-				ENGINE_WARN2("Messages received in wrong state ({} - {:0X}). Aborting. {}({}) {} != {}", from.address(), (intptr_t)&from, meta.name, +hdr.type, +meta.recvState, +from.getState());
+				ENGINE_WARN2("Messages received in wrong state ({} - {:0X}). Aborting. {}({})  Expected: {} Current: {}", from.address(), (intptr_t)&from, meta.name, +hdr.type, +meta.recvState, +from.getState());
 			}
 			msg.discard();
 			return;
