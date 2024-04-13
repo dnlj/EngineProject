@@ -10,11 +10,17 @@
 
 #ifdef DEBUG
 	#define ENGINE_DEBUG true
-	#define ENGINE_DEBUG_ONLY(x) x
+	#define ENGINE_DEBUG_ONLY(...) __VA_ARGS__
 #else
 	#define ENGINE_DEBUG false
 	#define ENGINE_DEBUG_ONLY(x)
 #endif
+
+/**
+ * Expands to a comma.
+ * Need for passing a comma in macro arguments.
+ */
+#define ENGINE_COMMA ,
 
 /**
  * Used at the start of an union to prevent implicit conversions.
@@ -42,9 +48,10 @@
  * Attempts to force a function to be inlined.
  * This does not apply the effects of the C++ `inline` keyword.
  */
+#define ENGINE_NOINLINE [[msvc::noinline]]
 #define ENGINE_INLINE [[msvc::forceinline]] // TODO: cross platform: [[gnu::always_inline]]
 #if ENGINE_DEBUG
-	#define ENGINE_INLINE_REL
+	#define ENGINE_INLINE_REL ENGINE_NOINLINE
 #else
 	#define ENGINE_INLINE_REL ENGINE_INLINE
 #endif

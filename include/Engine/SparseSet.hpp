@@ -237,11 +237,11 @@ namespace Engine {
 			// TODO: empty
 
 			[[nodiscard]] ENGINE_INLINE_REL auto begin() {
-				return Iterator{dense.data() ENGINE_DEBUG_ONLY(ENGINE_COMMA std::to_address(dense.end())) };
+				return Iterator{dense.data() ENGINE_DEBUG_ONLY(, std::to_address(dense.end())) };
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto cbegin() const {
-				return ConstIterator{dense.data() ENGINE_DEBUG_ONLY(ENGINE_COMMA std::to_address(dense.end())) };
+				return ConstIterator{dense.data() ENGINE_DEBUG_ONLY(, std::to_address(dense.end())) };
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto begin() const {
@@ -249,11 +249,11 @@ namespace Engine {
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto end() {
-				return Iterator{dense.data() + dense.size() ENGINE_DEBUG_ONLY(ENGINE_COMMA std::to_address(dense.end())) };
+				return Iterator{dense.data() + dense.size() ENGINE_DEBUG_ONLY(, std::to_address(dense.end())) };
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto cend() const {
-				return ConstIterator{dense.data() + dense.size() ENGINE_DEBUG_ONLY(ENGINE_COMMA std::to_address(dense.end())) };
+				return ConstIterator{dense.data() + dense.size() ENGINE_DEBUG_ONLY(, std::to_address(dense.end())) };
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto end() const {
