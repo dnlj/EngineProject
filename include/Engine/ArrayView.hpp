@@ -19,6 +19,7 @@ namespace Engine {
 				: dataBegin{begin}
 				, dataEnd{end} {
 				ENGINE_DEBUG_ASSERT(dataBegin <= dataEnd);
+				ENGINE_DEBUG_ASSERT(begin != nullptr || end == nullptr, "Attempting to create a null view with non-zero size.");
 			};
 
 			ENGINE_INLINE constexpr ArrayView(T* data, int64 size)
