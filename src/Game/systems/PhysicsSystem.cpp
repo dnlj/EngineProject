@@ -1,4 +1,5 @@
 // Game
+#include <Game/ConnectionInfo.hpp>
 #include <Game/World.hpp>
 #include <Game/Math.hpp>
 #include <Game/systems/PhysicsSystem.hpp>

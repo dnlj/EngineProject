@@ -8,126 +8,17 @@
 #include <Meta/IndexOf.hpp>
 
 // Engine
-#include <Engine/Engine.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/ECS/ecs.hpp>
-#include <Engine/SequenceBuffer.hpp>
 #include <Engine/ECS/EntityFilter.hpp>
+#include <Engine/ECS/SingleComponentFilter.hpp>
+#include <Engine/Engine.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Meta/for.hpp>
+#include <Engine/SequenceBuffer.hpp>
 
 
 namespace Engine::ECS {
-	// TODO: move
-	// TODO: make copy constructor on this and EntityFilter private
-	template<bool IncludeDisabled, class C, class World>
-	class SingleComponentFilter {
-		private:
-			using It = decltype(std::declval<World>().template getComponentContainer<C>().begin());
-			using CIt = decltype(std::declval<World>().template getComponentContainer<C>().cbegin());
-			World& world;
-
-			class Iter {
-				private:
-					friend class SingleComponentFilter;
-					using I = int32;
-					It it;
-					World& world;
-
-					ENGINE_INLINE static auto& getCont(World& w) { return w.template getComponentContainer<C>(); }
-					ENGINE_INLINE static decltype(auto) getContBegin(World& w) { return getCont(w).begin(); }
-					ENGINE_INLINE static decltype(auto) getContEnd(World& w) { return getCont(w).end(); }
-
-					// TODO: do we also want to check if enabled? maybe filters need some way to specify what flags an entity should/shouoldnt have
-					ENGINE_INLINE bool canUse(Entity ent) const {
-						return world.isAlive(ent) && (IncludeDisabled || world.isEnabled(ent));
-					}
-
-					ENGINE_INLINE void stepNextValid() {
-						const auto end = getContEnd(world);
-						while (it != end && !canUse(it->first)) {
-							++it;
-						}
-					}
-
-					ENGINE_INLINE void stepPrevValid() {
-						const auto begin = getContBegin(world);
-						while (it != begin && !canUse(it->first)) {
-							--it;
-						}
-					}
-
-					static Iter begin(World& w) {
-						Iter temp{getContBegin(w), w};
-						temp.stepNextValid();
-						return temp;
-					}
-
-					static Iter end(World& w) {
-						Iter temp{getContEnd(w), w};
-						return temp;
-					}
-
-					Iter(It it, World& world) : it{it}, world{world} {}
-
-				public:
-					auto& operator++() {
-						const auto end = getContEnd(world);
-						if (it != end) { ++it; }
-						stepNextValid();
-						return *this;
-					}
-
-					auto& operator--() {
-						const auto begin = getContBegin(world);
-						if (it != begin) { --it; }
-						stepPrevValid();
-						return *this;
-					}
-
-					ENGINE_INLINE auto& operator*() {
-						ENGINE_DEBUG_ASSERT(canUse(it->first), "Attempt to dereference invalid iterator.");
-						return it->first;
-					}
-
-					ENGINE_INLINE decltype(auto) operator->() {
-						return &**this;
-					}
-
-					ENGINE_INLINE bool operator==(const Iter& other) const noexcept { return it == other.it; }
-					ENGINE_INLINE bool operator!=(const Iter& other) const noexcept { return !(*this == other); }
-			};
-		public:
-			SingleComponentFilter(World& world) : world{world} {}
-
-			SingleComponentFilter(const SingleComponentFilter&) = delete;
-			SingleComponentFilter& operator=(const SingleComponentFilter&) = delete;
-
-			SingleComponentFilter(SingleComponentFilter&&) = default;
-			SingleComponentFilter& operator=(SingleComponentFilter&&) = default;
-
-			ENGINE_INLINE Iter begin() const {
-				return Iter::begin(world);
-			}
-
-			ENGINE_INLINE Iter end() const {
-				return Iter::end(world);
-			}
-
-			ENGINE_INLINE Entity front() const {
-				return *begin();
-			}
-
-			// TODO: do we actually use this anywhere? Should we also just use std::distance?
-			auto size() const {
-				int32 i = 0;
-				for (auto it = begin(); it != end(); ++it, ++i) {}
-				return i;
-			}
-
-			ENGINE_INLINE bool empty() const { return begin() == end(); }
-	};
-
 	// TODO: move
 	template<class...>
 	struct EntityFilterList {};
@@ -206,12 +97,15 @@ namespace Engine::ECS {
 			template<class C> struct IsFlagComponent {
 				constexpr static bool value = (std::is_same_v<C, Fs_> || ...);
 			};
+
 			template<class C> struct IsNonFlagComponent {
 				constexpr static bool value = (std::is_same_v<C, Ns_> || ...);
 			};
+
 			template<class C> struct IsAnyComponent {
 				constexpr static bool value = IsFlagComponent<C>::value || IsNonFlagComponent<C>::value;
 			};
+
 			template<class C> struct ComponentContainer
 				: std::conditional_t<IsFlagComponent<C>::value, SparseSet<Entity, void>, SparseSet<Entity, C>> {
 			};
@@ -257,6 +151,8 @@ namespace Engine::ECS {
 			 * for the most recent run. Then after ~1s any given sample would
 			 * have a contribution of ~10%:
 			 *     x^64 = 0.1 = 10%; x ~= 0.9647 ~= 0.95
+			 * Keep in mind that is 10% of its original value, not the total
+			 * result value.
 			 */
 			// TODO (C++26): Determine smoothing based on tickrate. The below would give
 			//               use a 10% contribution per sample after ~1s:
@@ -761,6 +657,7 @@ namespace Engine::ECS {
 			 */
 			ENGINE_INLINE Clock::TimePoint getTime() const noexcept { return beginTime; };
 
+			// TODO: should use Clock::Seconds
 			/**
 			 * Gets the time (in seconds) last update took to run.
 			 */

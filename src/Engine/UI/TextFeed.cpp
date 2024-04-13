@@ -415,7 +415,7 @@ namespace Engine::UI {
 			toCopy.reserve(end.line - beg.line);
 
 			constexpr auto capacity = decltype(charBuff)::capacity();
-			const auto copy = [&](Range chars) ENGINE_INLINE_REL {
+			const auto copy = [&](Range chars) -> void ENGINE_INLINE_REL {
 				if (chars.start == chars.stop) { return; }
 				if (chars.stop < chars.start) {
 					toCopy.emplace_back(data + chars.start, capacity - chars.start);

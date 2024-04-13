@@ -82,6 +82,7 @@ namespace Game {
 			
 		public:
 			void update(float32 dt);
+			void network(NetPlySet plys);
 
 		private:
 			void updateNeighbors();

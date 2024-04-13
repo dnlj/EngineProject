@@ -10,11 +10,15 @@
 #include <Engine/ECS/Entity.hpp>
 #include <Engine/Engine.hpp>
 #include <Engine/Meta/for.hpp>
+#include <Engine/Math/math.hpp>
+#include <Engine/ArrayView.hpp>
+#include <Engine/Noise/noise.hpp>
 
 // Game
 #include <Game/systems/EntityNetworkingSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
 #include <Game/systems/ZoneManagementSystem.hpp>
+#include <Game/systems/all.hpp>
 
 // TODO: Do we really need all these components? Maybe try to clean this up.
 #include <Game/comps/ActionComponent.hpp>
@@ -347,6 +351,79 @@ namespace Game {
 		// TODO: instead of sending all connections on every X. Send a smaller number every frame to distribute load.
 		const bool shouldUpdate = now - lastUpdate >= std::chrono::milliseconds{1000 / 20}; // TODO: rate should be configurable somewhere
 
+		//
+		//
+		//
+		//
+		//
+		// TODO: this network update should only run on server side.
+		//
+		//
+		//
+		//
+		//
+		//
+
+		//
+		//
+		//
+		// TODO: Connections don't have an entity until fully connected. Need to still handle those cases.
+		//
+		//
+		//
+		//
+		//
+		{
+			// TODO: This distribution is largely untested since we don't currently
+			//       have an easy way to test with a large number of players.
+			constexpr Engine::Clock::Seconds netUpdateInterval = std::chrono::milliseconds{1000 / 20};
+			const auto fullNetPerUpdate = Engine::Noise::floorTo<int32>(netUpdateInterval.count() / world.getDeltaTimeSmooth());
+
+			// TODO: should probably also clamp after just in case
+			ENGINE_DEBUG_ASSERT(fullNetPerUpdate >= 1.0f, "To few network updates. This is a bug.");
+			ENGINE_DEBUG_ASSERT(fullNetPerUpdate <= 10.0f, "Exceptionally high number of network updates. This is likely a bug.");
+			
+			// Evenly distribute the remainder between runs.
+			// For example, if we were doing three updates per run we would have:
+			//   #plys=0:    0/3 = 0r0 = runs {0, 0, 0}
+			//   #plys=1:    1/3 = 0r1 = runs {1, 0, 0}
+			//   #plys=2:    2/3 = 0r2 = runs {1, 1, 0}
+			//   #plys=3:    3/3 = 1r0 = runs {1, 1, 1}
+			//   ...
+			//   #plys=9:    9/3 = 3r0 = runs {3, 3, 3}
+			//   #plys=10:  10/3 = 3r1 = runs {4, 3, 3}
+			//   #plys=11:  11/3 = 3r2 = runs {4, 4, 3}
+			//   #plys=12:  12/3 = 4r0 = runs {4, 4, 4}
+			// 
+			// Using simple division would give uneven runs since you need to
+			// include the remaining players in the final loop. For example in the
+			// eleven player case we would have:
+			//   #plys=11:  11/3 = 3r2 = runs {3, 3, 5}
+			//    
+			const auto plys = world.getFilterAll<true, NetworkComponent>();
+			const auto plyCountPerUpdate = Engine::Math::divFloor<int32>(plys.size(), fullNetPerUpdate);
+			const auto step = static_cast<int32>(world.getUpdate() % fullNetPerUpdate);
+			const auto plyCount = plyCountPerUpdate.q + (plyCountPerUpdate.r > step && plyCountPerUpdate.r > 0);
+			const auto start = step * plyCountPerUpdate.q + std::min(plyCountPerUpdate.r, step);
+			ENGINE_LOG2("{} + {} | {}={} / {}", start, plyCount, world.getUpdate(), step, fullNetPerUpdate);
+
+			// This check technically isn't needed since to_address doesn't form
+			// a reference. It currently exists solely so we can leave iterator
+			// checking on in SparseSet::IteratorBase::operator->(). See notes
+			// there for more details.
+			if (plyCount > 0) {
+				const NetPlySet plysThisUpdate{std::to_address(plys.begin() + start), plyCount};
+				
+				for (const auto& [ply, _] : plysThisUpdate) {
+					ENGINE_LOG2("  Player: {}", ply);
+				}
+				
+				Engine::Meta::ForEachIn<SystemsSet>::call([&]<class S>() ENGINE_INLINE {
+					world.getSystem<S>().network(plysThisUpdate);
+				});
+			}
+		}
+
 		for (auto cur =  addrToConn.begin(), end = addrToConn.end(); cur != end;) {
 			auto& [addr, conn] = *cur;
 
@@ -376,7 +453,8 @@ namespace Game {
 	}
 
 	int32 NetworkingSystem::playerCount() const {
-		return static_cast<int32>(world.getFilter<PlayerFilter>().size());
+		const auto& filter = world.getFilter<PlayerFilter>();
+		return std::distance(filter.begin(), filter.end());
 	}
 
 	void NetworkingSystem::cleanECS(ConnectionInfo& conn) {
@@ -522,7 +600,7 @@ namespace Game {
 	ConnectionInfo& NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) {
 		auto found = addrToConn.find(addr);
 		if (found == addrToConn.end()) {
-			auto [it,_] = addrToConn.emplace(addr, std::make_unique<ConnectionInfo>(addr, now));
+			auto [it, _] = addrToConn.emplace(addr, std::make_unique<ConnectionInfo>(addr, now));
 			found = it;
 			found->second->setState(ConnectionState::Disconnected);
 			ENGINE_INFO2("Create connection: {} - {:0X}", addr, (intptr_t)found->second.get());

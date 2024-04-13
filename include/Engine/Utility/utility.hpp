@@ -13,6 +13,7 @@ namespace Engine::Utility {
 	 */
 	std::string readFile(const std::string& path);
 
+	// TODO: move to math
 	// TODO: use C++20 concept std::integral instead of static assert - as of VS16.6.0 it compiles but breaks intellisense
 	template<class T>
 	constexpr bool isPowerOfTwo(T i) {

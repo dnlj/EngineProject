@@ -318,6 +318,7 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 #if ENGINE_SERVER
 namespace Game {
+	// TODO: the logic/neighbor updates should be in tick(). The networking should be in network()
 	void EntityNetworkingSystem::update(float32 dt) {
 		static_assert(ENGINE_SERVER, "This code is server side only.");
 
@@ -399,6 +400,20 @@ namespace Game {
 				}
 			}
 			ecsNetComp.plyZoneChanged = false;
+		}
+	}
+	
+	void EntityNetworkingSystem::network(const NetPlySet plys) {
+		ENGINE_INFO2("EntityNetworkingSystem::network = {}\n    {}", plys.size(), [&]{
+			std::string list{};
+			const auto _debug_size = plys.size(); _debug_size;
+			for (const auto& [ply, _] : plys) {
+				list += fmt::to_string(ply) + " ";
+			}
+			return list;
+		}());
+		for (const auto& [ply, netComp] : plys) {
+			ply; netComp;
 		}
 	}
 

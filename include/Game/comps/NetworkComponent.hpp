@@ -1,9 +1,9 @@
 #pragma once
 
-// Game
-#include <Game/ConnectionInfo.hpp>
-
 namespace Game {
+	// Avoid including the actual type in this file since this is required in the base system in System.hpp
+	class ConnectionInfo;
+
 	class NetworkComponent {
 		public:
 			NetworkComponent(ConnectionInfo& conn) : conn{&conn} {}
