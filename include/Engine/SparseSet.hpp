@@ -12,6 +12,7 @@
 
 
 namespace Engine {
+	// TODO (C++23): Fix type punning with start_lifetime_as+byte storage where appropriate. Looks like just the KeyVal stuff.
 	template<class Key, class Value, class Hash = IndexHash<Key>>
 	class SparseSet {
 		private:
@@ -75,9 +76,18 @@ namespace Engine {
 					using AccessType = std::conditional_t<
 						std::is_const_v<Elem>,
 						const typename Elem::Public,
-						typename Elem::Public>;
+						typename Elem::Public
+					>;
+
 					Elem* curr;
+					ENGINE_DEBUG_ONLY(Elem* end = nullptr);
+
 					IteratorBase(Elem* init) : curr{init} {}
+
+					#if ENGINE_DEBUG
+						IteratorBase(Elem* init, Elem* end) : curr{init}, end{end} {};
+						ENGINE_INLINE void check() const { ENGINE_DEBUG_ASSERT(curr < end, "Attempting to use invalid SparseSet iterator."); };
+					#endif
 
 					// Verify our assumption
 					static_assert(sizeof(Elem) == sizeof(AccessType));
@@ -86,40 +96,52 @@ namespace Engine {
 
 				public:
 					// TODO: iterator_traits
+					// For STD compat
+					using value_type = AccessType;
 					
-					auto& operator+=(Index i) { curr += i; return *this; }
-					auto& operator-=(Index i) { curr -= i; return *this; }
+					ENGINE_INLINE auto& operator+=(Index i) { curr += i; return *this; }
+					ENGINE_INLINE auto& operator-=(Index i) { curr -= i; return *this; }
 
-					friend auto operator+(IteratorBase it, Index n) { return it += n; }
-					friend auto operator-(IteratorBase it, Index n) { return it -= n; }
+					ENGINE_INLINE friend auto operator+(IteratorBase it, Index n) { return it += n; }
+					ENGINE_INLINE friend auto operator-(IteratorBase it, Index n) { return it -= n; }
 
-					friend auto operator+(Index n, IteratorBase it) { return it += n; }
-					friend auto operator-(Index n, IteratorBase it) { return it -= n; }
+					ENGINE_INLINE friend auto operator+(Index n, IteratorBase it) { return it += n; }
+					ENGINE_INLINE friend auto operator-(Index n, IteratorBase it) { return it -= n; }
 
-					auto operator-(const IteratorBase& it) { return curr - it.curr; }
+					ENGINE_INLINE auto operator-(const IteratorBase& it) { return curr - it.curr; }
 
-					auto& operator++() { ++curr; return *this; }
-					auto& operator--() { --curr; return *this; }
+					ENGINE_INLINE auto& operator++() { ++curr; return *this; }
+					ENGINE_INLINE auto& operator--() { --curr; return *this; }
 
-					auto operator++(int) { return *this + 1; }
-					auto operator--(int) { return *this - 1; }
+					ENGINE_INLINE auto operator++(int) { return *this + 1; }
+					ENGINE_INLINE auto operator--(int) { return *this - 1; }
 
-					auto& operator*() const { return reinterpret_cast<AccessType&>(*curr); }
-					auto* operator->() const { return &**this; }
-					auto& operator[](Index n) const { return *(*this + n); }
+					ENGINE_INLINE_REL auto& operator*() const { ENGINE_DEBUG_ONLY(check()); return reinterpret_cast<AccessType&>(*curr); }
+					ENGINE_INLINE_REL auto& operator[](Index n) const { return *(*this + n); }
 
-					bool operator==(const IteratorBase& other) const { return curr == other.curr; }
-					bool operator!=(const IteratorBase& other) const { return !(*this == other); }
-					bool operator<(const IteratorBase& other) const { return curr < other.curr; }
-					bool operator<=(const IteratorBase& other) const { return curr <= other.curr; }
-					bool operator>=(const IteratorBase& other) const { return curr >= other.curr; }
-					bool operator>(const IteratorBase& other) const { return curr > other.curr; }
+					// Technically we need to specialize std::pointer_traits<Ptr>::to_address to
+					// return curr directly instead of reusing operator*() because to_address
+					// must return the address without forming a reference and will default to
+					// operator->() without a pointer_traits specialization.
+					//
+					// In practice that isn't an issue right now and we want to explicitly
+					// disallow that to help catch bugs in debug mode. We may need to add it
+					// later to be compliant, but for now we just avoid calling std::to_address
+					// on out-of-bounds iterators.
+					ENGINE_INLINE_REL auto* operator->() const { return &**this; }
+
+					ENGINE_INLINE bool operator==(const IteratorBase& other) const { return curr == other.curr; }
+					ENGINE_INLINE bool operator!=(const IteratorBase& other) const { return !(*this == other); }
+					ENGINE_INLINE bool operator<(const IteratorBase& other) const { return curr < other.curr; }
+					ENGINE_INLINE bool operator<=(const IteratorBase& other) const { return curr <= other.curr; }
+					ENGINE_INLINE bool operator>=(const IteratorBase& other) const { return curr >= other.curr; }
+					ENGINE_INLINE bool operator>(const IteratorBase& other) const { return curr > other.curr; }
 			};
 
+		public:
 			using Iterator = IteratorBase<KeyVal>;
 			using ConstIterator = IteratorBase<const KeyVal>;
 
-		public:
 			// TODO: EBO hash with Engine::BaseMember
 			SparseSet(const Hash& hash = Hash()) : hash{hash} {}
 
@@ -214,12 +236,12 @@ namespace Engine {
 
 			// TODO: empty
 
-			[[nodiscard]] ENGINE_INLINE auto begin() {
-				return Iterator{dense.data()};
+			[[nodiscard]] ENGINE_INLINE_REL auto begin() {
+				return Iterator{dense.data() ENGINE_DEBUG_ONLY(ENGINE_COMMA std::to_address(dense.end())) };
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto cbegin() const {
-				return ConstIterator{dense.data()};
+				return ConstIterator{dense.data() ENGINE_DEBUG_ONLY(ENGINE_COMMA std::to_address(dense.end())) };
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto begin() const {
@@ -227,11 +249,11 @@ namespace Engine {
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto end() {
-				return Iterator{dense.data() + dense.size()};
+				return Iterator{dense.data() + dense.size() ENGINE_DEBUG_ONLY(ENGINE_COMMA std::to_address(dense.end())) };
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto cend() const {
-				return ConstIterator{dense.data() + dense.size()};
+				return ConstIterator{dense.data() + dense.size() ENGINE_DEBUG_ONLY(ENGINE_COMMA std::to_address(dense.end())) };
 			}
 
 			[[nodiscard]] ENGINE_INLINE auto end() const {
