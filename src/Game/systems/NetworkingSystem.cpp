@@ -482,6 +482,22 @@ namespace Game {
 			if (plyCount > 0) {
 				const NetPlySet plysThisUpdate{std::to_address(plys.begin() + start), plyCount};
 				Engine::Meta::ForEachIn<SystemsSet>::call([&]<class S>() ENGINE_INLINE {
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					// TODO: Make sure no network messages are written outside of this function (in debug mode)
+					//       Probably check in beginMessage
+					//
+					//
+					//
+					//
+					//
+					//
+					//
 					world.getSystem<S>().network(plysThisUpdate);
 				});
 

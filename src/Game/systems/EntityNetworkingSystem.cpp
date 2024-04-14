@@ -320,17 +320,76 @@ namespace Game {
 ////////////////////////////////////////////////////////////////////////////////
 #if ENGINE_SERVER
 namespace Game {
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
 	// TODO: the logic/neighbor updates should be in tick(). The networking should be in network()
-	void EntityNetworkingSystem::update(float32 dt) {
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	void EntityNetworkingSystem::tick() {
+		//
+		//
+		//
+		//
+		// TODO: This is a little more complicated because we update neighbors
+		//       more freuqnelty then we network, so we would need to snapshot and
+		//       diff those changes or something. But that gets more complicated with
+		//       zone changes and accumulating.
+		//
+		//       We probably _DO_ want to do something like that though or else we cant use neighbors in other systems, which we really want.
+		//
+		//
+		//
+		//
+		//updateNeighbors();
+	}
+	
+	void EntityNetworkingSystem::network(NetPlySet plys) {
+	//void EntityNetworkingSystem::update(float32 dt) {
 		static_assert(ENGINE_SERVER, "This code is server side only.");
 
 		// TODO (zr5IqeBd): distribute messages over each update instead of all messages every 20th of a second.
-		const auto now = world.getTime();
-		if (now < nextUpdate) { return; }
+		//const auto now = world.getTime();
+		//if (now < nextUpdate) { return; }
+		//
+		//// TODO: config for this
+		//nextUpdate = now + std::chrono::milliseconds{1000 / 20};
 
-		// TODO: config for this
-		nextUpdate = now + std::chrono::milliseconds{1000 / 20};
-
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: we _CANT_ do this here because we need to make sure all neighbors are correct with respect to other entities or else zone changes will be broken.
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: rm
 		updateNeighbors();
 
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
@@ -359,22 +418,29 @@ namespace Game {
 			// Order is important here since some failed writes change neighbor states
 			zoneChanged.clear();
 			for (auto& [ent, data] : ecsNetComp.neighbors) {
-				if (data.state == NeighborState::Added) {
+				if (data.test(NeighborState::Added)) {
 					processAddedNeighbor(conn, ent, data);
-				} else if (data.state == NeighborState::Removed) {
+				} else if (data.test(NeighborState::Removed)) {
 					processRemovedNeighbor(conn, ent, data);
-				} else if (data.state == NeighborState::Current) {
+				} else if (data.test(NeighborState::Current)) {
 					// Do nothing, handled below.
-				} else if (data.state == NeighborState::ZoneChanged) {
+				} else if (data.test(NeighborState::ZoneChanged)) {
+					//
+					//
+					//
+					// TODO: state should only be changed in tick, is this not already handled elsewhere?
+					//
+					//
+					//
 					zoneChanged.push_back(ent);
-					data.state = NeighborState::Current;
+					data.reset(NeighborState::Current);
 				} else {
 					ENGINE_DEBUG_BREAK;
 				}
 
 				// Regardless of the current state, as long as the entity wasn't
 				// removed, we need to send the current data.
-				if (data.state != NeighborState::Removed) {
+				if (!data.test(NeighborState::Removed)) {
 					processCurrentNeighbor(conn, ent, data);
 				}
 			}
@@ -397,27 +463,28 @@ namespace Game {
 					ENGINE_WARN2("Unable to send entity zone change.");
 					ENGINE_DEBUG_BREAK;
 					for (const auto ent : zoneChanged) {
-						ecsNetComp.neighbors[ent].state = NeighborState::ZoneChanged;
+						ecsNetComp.neighbors[ent].update(NeighborState::ZoneChanged);
 					}
 				}
 			}
 			ecsNetComp.plyZoneChanged = false;
 		}
 	}
-	
-	void EntityNetworkingSystem::network(const NetPlySet plys) {
-		ENGINE_INFO2("EntityNetworkingSystem::network = {}\n    {}", plys.size(), [&]{
-			std::string list{};
-			const auto _debug_size = plys.size(); _debug_size;
-			for (const auto& [ply, _] : plys) {
-				list += fmt::to_string(ply) + " ";
-			}
-			return list;
-		}());
-		for (const auto& [ply, netComp] : plys) {
-			ply; netComp;
-		}
-	}
+
+	// TODO: rm
+	//void EntityNetworkingSystem::network(const NetPlySet plys) {
+	//	ENGINE_INFO2("EntityNetworkingSystem::network = {}\n    {}", plys.size(), [&]{
+	//		std::string list{};
+	//		const auto _debug_size = plys.size(); _debug_size;
+	//		for (const auto& [ply, _] : plys) {
+	//			list += fmt::to_string(ply) + " ";
+	//		}
+	//		return list;
+	//	}());
+	//	for (const auto& [ply, netComp] : plys) {
+	//		ply; netComp;
+	//	}
+	//}
 
 	template<class C>
 	bool EntityNetworkingSystem::networkComponent(const Entity ent, Connection& conn) const {
@@ -440,7 +507,7 @@ namespace Game {
 			ENGINE_LOG2("ECS_ENT_CREATE: {}", ent);
 			msg.write(ent);
 		} else {
-			data.state = NeighborState::None;
+			data.reset(NeighborState::None);
 			ENGINE_WARN("Unable to network entity create.");
 		}
 	}
@@ -450,7 +517,7 @@ namespace Game {
 			ENGINE_LOG2("ECS_ENT_DESTROY: {}", ent);
 			msg.write(ent);
 		} else {
-			data.state = NeighborState::None;
+			data.reset(NeighborState::None);
 			ENGINE_WARN("Unable to network entity destroy.");
 		}
 	}
@@ -523,7 +590,7 @@ namespace Game {
 
 			ecsNetComp.neighbors.eraseRemove([](auto& pair){
 				// Remove anything that is still marked as remove from last iteration.
-				if (pair.second.state == NeighborState::Removed) {
+				if (pair.second.test(NeighborState::Removed)) {
 					return true;
 				}
 
@@ -531,8 +598,8 @@ namespace Game {
 				// is still current gets updated below. Anything that isn't
 				// updated persists until next iteration where it will be removed
 				// above.
-				if (pair.second.state != NeighborState::ZoneChanged) {
-					pair.second.state = NeighborState::Removed;
+				if (!pair.second.test(NeighborState::ZoneChanged)) {
+					pair.second.reset(NeighborState::Removed);
 				}
 				return false;
 			});
@@ -568,9 +635,9 @@ namespace Game {
 			auto queryPersist = createQuery(physComp.getZoneId(), world,
 				[&ecsNetComp](const auto& self, Entity ent){
 					if (ecsNetComp.neighbors.contains(ent)) {
-						auto& state = ecsNetComp.neighbors.get(ent).state;
-						if (state != NeighborState::ZoneChanged) {
-							state = NeighborState::Current;
+						auto& data = ecsNetComp.neighbors.get(ent);
+						if (!data.test(NeighborState::ZoneChanged)) {
+							data.reset(NeighborState::Current);
 						}
 					}
 				}

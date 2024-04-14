@@ -342,9 +342,9 @@ namespace Game {
 				// removed entity isn't okay because it doesn't exist on the
 				// client side (will crash) and doesn't make sense server side
 				// since its outside of the (typical) interaction range.
-				if (data.state == ECSNetworkingComponent::NeighborState::Removed) { continue; }
+				if (data.test(ECSNetworkingComponent::NeighborState::Removed)) { continue; }
 
-				data.state = ECSNetworkingComponent::NeighborState::ZoneChanged;
+				data.reset(ECSNetworkingComponent::NeighborState::ZoneChanged);
 				auto& neighPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
 				if (neighPhysComp.getZoneId() != newZoneId) {
 					ENGINE_INFO2("    Move neighbor {} {} {}", ent, neighPhysComp.getZoneId(), newZoneId);
