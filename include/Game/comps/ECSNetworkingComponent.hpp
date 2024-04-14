@@ -38,7 +38,6 @@ namespace Game {
 			};
 			ENGINE_BUILD_ALL_OPS_F(NeighborState, friend);
 
-
 			class NeighborData {
 				private:
 					NeighborState state{};
@@ -52,13 +51,8 @@ namespace Game {
 					ENGINE_INLINE constexpr bool test(NeighborState state) const noexcept { return static_cast<bool>(this->state & state); }
 					ENGINE_INLINE constexpr void reset(NeighborState state) noexcept { this->state = state; }
 
-					ENGINE_INLINE constexpr void update(NeighborState change) noexcept {
-						ENGINE_DEBUG_ASSERT(change != NeighborState::None);
-						if ((change & NeighborState::ChangedStates) != NeighborState::None) {
-							state &= ~NeighborState::ChangedStates;
-						}
-
-						state |= change;
+					ENGINE_INLINE constexpr void zoneChanged() noexcept {
+						state |= NeighborState::ZoneChanged;
 					}
 
 					ENGINE_INLINE constexpr void maybeRemoved() noexcept {
@@ -86,7 +80,6 @@ namespace Game {
 					}
 			};
 
-			// TODO: hashmap would probably be better suited here.
 			Engine::SparseSet<Engine::ECS::Entity, NeighborData> neighbors;
 
 			// We need to track when the players zone has changed in addition to

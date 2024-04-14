@@ -337,27 +337,7 @@ namespace Game {
 			ecsNetComp.plyZoneChanged = true;
 
 			for (auto& [ent, data] : ecsNetComp.neighbors) {
-				//
-				//
-				//
-				// TODO: Is the removed check correct? If an entity is removed
-				//       it still won't get networked because the remove will take
-				//       priority. But we still need to move it serverside no? What if
-				//       a zone change happens > removed > current in the same update
-				//       cycle? We would still need to signal zone changed? Thats
-				//       unlikely to happen but we need to handle it.
-				//
-				//
-				//
-				
-				// If an entity was removed we don't need to migrate it. It will
-				// be migrated if the player moves nearby again. Migrating a
-				// removed entity isn't okay because it doesn't exist on the
-				// client side (will crash) and doesn't make sense server side
-				// since its outside of the (typical) interaction range.
-				if (data.test(ECSNetworkingComponent::NeighborState::Removed)) { continue; }
-
-				data.update(ECSNetworkingComponent::NeighborState::ZoneChanged);
+				data.zoneChanged();
 				auto& neighPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
 				if (neighPhysComp.getZoneId() != newZoneId) {
 					ENGINE_INFO2("    Move neighbor {} {} {}", ent, neighPhysComp.getZoneId(), newZoneId);
