@@ -12,18 +12,28 @@ namespace Game {
 	class ECSNetworkingComponent {
 		public:
 			enum class NeighborState {
-				None = 0 << 0,
+				// Not a neighbor. Wasn't added, isn't current, wasn't removed.
+				// It does not exist as far as neighbors are concerned.
+				//
+				// It is almost certainly an error if you are seeing this
+				// outside of EntityNetworkingSystem::network.
+				None = 0 << 0, 
 
 				Current     = 1 << 0,
-				AddedCurr   = 1 << 1,
-				AddedPrev   = 1 << 2,
-				RemovedCurr = 1 << 3,
-				RemovedPrev = 1 << 4,
+				AddedCurr   = 1 << 1, // Added in the current tick.
+				AddedAny    = 1 << 2, // Added at any point since last network.
+				RemovedCurr = 1 << 3, // Removed in the current tick.
+				RemovedAny  = 1 << 4, // Removed at any point since the last network.
 
 				ZoneChanged = 1 << 5,
+
+				// _Might_ be removed. Used by EntityNetworkingSystem
+				// internally. Its a bug if you are seeing this outside of
+				// EntityNetworkingSystem::updateNeighbors.
+				MaybeRemoved = 1 << 6,
 				
-				Added       = AddedCurr | AddedPrev,
-				Removed     = RemovedCurr | RemovedPrev,
+				Added       = AddedCurr | AddedAny,
+				Removed     = RemovedCurr | RemovedAny,
 				ChangedStates = Current | Added | Removed,
 			};
 			ENGINE_BUILD_ALL_OPS_F(NeighborState, friend);
@@ -43,11 +53,36 @@ namespace Game {
 					ENGINE_INLINE constexpr void reset(NeighborState state) noexcept { this->state = state; }
 
 					ENGINE_INLINE constexpr void update(NeighborState change) noexcept {
+						ENGINE_DEBUG_ASSERT(change != NeighborState::None);
 						if ((change & NeighborState::ChangedStates) != NeighborState::None) {
 							state &= ~NeighborState::ChangedStates;
 						}
 
 						state |= change;
+					}
+
+					ENGINE_INLINE constexpr void maybeRemoved() noexcept {
+						state &= ~(NeighborState::Current | NeighborState::AddedCurr | NeighborState::RemovedCurr);
+						state |= NeighborState::MaybeRemoved;
+					}
+
+					ENGINE_INLINE constexpr void removed() noexcept {
+						// If it was added and removed in the same update just clear
+						// everything and pretend it doesn't/never existed.
+						if (test(NeighborState::Added)) {
+							state = NeighborState::None;
+						} else {
+							// If it was removed it must not be current.
+							state &= ~(NeighborState::Current | NeighborState::Added);
+							state |= NeighborState::Removed;
+						}
+					}
+
+					ENGINE_INLINE constexpr void current() noexcept {
+						// If it was removed, but is now again current, it must
+						// not be removed.
+						state &= ~(NeighborState::Removed | NeighborState::MaybeRemoved | NeighborState::AddedCurr);
+						state |= NeighborState::Current;
 					}
 			};
 

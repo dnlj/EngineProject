@@ -429,6 +429,12 @@ namespace Game {
 		#endif
 		recvAndDispatchMessages(socket);
 
+		//
+		//
+		// TODO: we should have a check if netUpdateInterval doesn't divide nicely into tick rate on server side.
+		//
+		//
+
 		// TODO: This distribution is largely untested since we don't currently
 		//       have an easy way to test with a large number of players.
 		constexpr Engine::Clock::Seconds netUpdateInterval = std::chrono::milliseconds{1000 / 20}; // TODO: rate should be configurable cmdline/cvar/cfg

@@ -77,12 +77,10 @@ namespace Game {
 
 		#if ENGINE_SERVER
 		private:
-			// TODO: rm - Engine::Clock::TimePoint nextUpdate = {};
 			std::vector<Engine::ECS::Entity> zoneChanged = {};
 			
 		public:
 			void tick();
-			// TODO: rm - void update(float32 dt);
 			void network(NetPlySet plys);
 
 		private:
