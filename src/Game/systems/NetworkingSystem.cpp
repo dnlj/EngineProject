@@ -340,7 +340,7 @@ namespace Game {
 		#endif
 		, rng{pcg_extras::seed_seq_from<std::random_device>{}} {
 
-		ENGINE_LOG("Listening on port ", socket.getAddress().port);
+		ENGINE_LOG2("Listening on port {}", socket.getAddress().port);
 
 		setMessageHandler(MessageType::UNKNOWN, handleMessageType<MessageType::UNKNOWN>);
 		setMessageHandler(MessageType::DISCOVER_SERVER, handleMessageType<MessageType::DISCOVER_SERVER>);
@@ -432,13 +432,27 @@ namespace Game {
 		// TODO: This distribution is largely untested since we don't currently
 		//       have an easy way to test with a large number of players.
 		constexpr Engine::Clock::Seconds netUpdateInterval = std::chrono::milliseconds{1000 / 20}; // TODO: rate should be configurable cmdline/cvar/cfg
-		const auto fullNetPerUpdate = Engine::Noise::floorTo<int32>(netUpdateInterval.count() / world.getDeltaTimeSmooth());
+		const auto fullNetPerUpdate = [&]{
+			constexpr float32 epsilon = 0.05f; // Allow a small amount of
+			const auto netPerUpdate = epsilon + netUpdateInterval.count() / world.getDeltaTimeSmooth();
+			const auto result = Engine::Noise::floorTo<int32>(netPerUpdate);
+
+			// On the client this might happen if there is a framerate limit for
+			// example. Only check server side.
+			if (ENGINE_DEBUG && ENGINE_SERVER && result < 1) {
+				ENGINE_WARN2("To few network updates: {}", netPerUpdate);
+			}
+
+			if (ENGINE_DEBUG && result >= 10) {
+				ENGINE_WARN2("Exceptionally high number of network updates: {}. This is likely a bug.", netPerUpdate);
+			}
+
+			return std::clamp(result, 1, 10);
+		}();
 
 		// TODO: should probably also clamp after just in case
 		//ENGINE_LOG2("A: {} / {}", netUpdateInterval.count(), world.getDeltaTimeSmooth());
-		ENGINE_DEBUG_ASSERT(fullNetPerUpdate >= 1.0f, "To few network updates. This is a bug.");
-		ENGINE_DEBUG_ASSERT(fullNetPerUpdate <= 10.0f, "Exceptionally high number of network updates. This is likely a bug.");
-
+		
 		//
 		//
 		//
