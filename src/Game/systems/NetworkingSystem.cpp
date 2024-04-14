@@ -450,19 +450,7 @@ namespace Game {
 			return std::clamp(result, 1, 10);
 		}();
 
-		// TODO: should probably also clamp after just in case
-		//ENGINE_LOG2("A: {} / {}", netUpdateInterval.count(), world.getDeltaTimeSmooth());
-		
-		//
-		//
-		//
-		//
-		// TODO: Move this partition logic into Math:: function
-		//
-		//
-		//
-		//
-			
+		////////////////////////////////////////////////////////////////////////////////
 		// Evenly distribute the remainder between runs.
 		// For example, if we were doing three updates per run we would have:
 		//   #plys=0:    0/3 = 0r0 = runs {0, 0, 0}
@@ -479,31 +467,39 @@ namespace Game {
 		// include the remaining players in the final loop. For example in the
 		// eleven player case we would have:
 		//   #plys=11:  11/3 = 3r2 = runs {3, 3, 5}
-		//
-		const auto plys = world.getFilterAll<true, NetworkComponent>();
-		const auto plyCountPerUpdate = Engine::Math::divFloor<int32>(plys.size(), fullNetPerUpdate);
+		////////////////////////////////////////////////////////////////////////////////
 		const auto step = static_cast<int32>(world.getUpdate() % fullNetPerUpdate);
-		const auto plyCount = plyCountPerUpdate.q + (plyCountPerUpdate.r > step && plyCountPerUpdate.r > 0);
-		const auto start = step * plyCountPerUpdate.q + std::min(plyCountPerUpdate.r, step);
-		//ENGINE_LOG2("{} + {} | {}={} / {}", start, plyCount, world.getUpdate(), step, fullNetPerUpdate);
+		{
+			const auto plys = world.getFilterAll<true, NetworkComponent>();
+			const auto plyCountPerUpdate = Engine::Math::divFloor<int32>(plys.size(), fullNetPerUpdate);
+			const auto plyCount = plyCountPerUpdate.q + (plyCountPerUpdate.r > step && plyCountPerUpdate.r > 0);
+			const auto start = step * plyCountPerUpdate.q + std::min(plyCountPerUpdate.r, step);
 
-		// This check technically isn't needed since to_address doesn't form
-		// a reference. It currently exists solely so we can leave iterator
-		// checking on in SparseSet::IteratorBase::operator->(). See notes
-		// there for more details.
-		if (plyCount > 0) {
-			const NetPlySet plysThisUpdate{std::to_address(plys.begin() + start), plyCount};	
-			Engine::Meta::ForEachIn<SystemsSet>::call([&]<class S>() ENGINE_INLINE {
-				//world.getSystem<S>().network(plysThisUpdate);
-			});
+			// This check technically isn't needed since to_address doesn't form
+			// a reference. It currently exists solely so we can leave iterator
+			// checking on in SparseSet::IteratorBase::operator->(). See notes
+			// there for more details.
+			if (plyCount > 0) {
+				const NetPlySet plysThisUpdate{std::to_address(plys.begin() + start), plyCount};
+				Engine::Meta::ForEachIn<SystemsSet>::call([&]<class S>() ENGINE_INLINE {
+					world.getSystem<S>().network(plysThisUpdate);
+				});
 
-			for (const auto& [ply, netComp] : plysThisUpdate) {
-				netComp.get().send(socket);
+				for (const auto& [ply, netComp] : plysThisUpdate) {
+					netComp.get().send(socket);
+				}
 			}
 		}
 
 		for (auto cur =  addrToConn.begin(), end = addrToConn.end(); cur != end;) {
 			auto& [addr, conn] = *cur;
+
+			// Send for any connections that don't have an associated entity and
+			// as such won't be handled above. Send them on the last step since
+			// that step will always have the least entities due to remainder.
+			if (!conn->ent && (step + 1 == fullNetPerUpdate)) {
+				conn->send(socket);
+			}
 
 			// Handle any disconnects
 			if (now - conn->recvTime() >= timeout) { // Timeout, havent received a message recently.
@@ -516,13 +512,6 @@ namespace Game {
 					cur = disconnect(cur);
 					continue;
 				}
-			}
-
-			// Send for any connections that don't have an associated entity and
-			// as such won't be handled above. Send them on the last step since
-			// that step will always have the least entities due to remainder.
-			if (!conn->ent && (step + 1 == fullNetPerUpdate)) {
-				conn->send(socket);
 			}
 
 			++cur;
