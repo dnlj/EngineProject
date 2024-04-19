@@ -487,25 +487,12 @@ namespace Game {
 			// there for more details.
 			if (plyCount > 0) {
 				const NetPlySet plysThisUpdate{std::to_address(plys.begin() + start), plyCount};
+
+				ENGINE_DEBUG_ONLY(for (auto& [ply, netComp] : plysThisUpdate) { netComp.get()._debug_AllowMessages = true; });
 				Engine::Meta::ForEachIn<SystemsSet>::call([&]<class S>() ENGINE_INLINE {
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					// TODO: Make sure no network messages are written outside of this function (in debug mode)
-					//       Probably check in beginMessage
-					//
-					//
-					//
-					//
-					//
-					//
-					//
 					world.getSystem<S>().network(plysThisUpdate);
 				});
+				ENGINE_DEBUG_ONLY(for (auto& [ply, netComp] : plysThisUpdate) { netComp.get()._debug_AllowMessages = false; });
 
 				for (const auto& [ply, netComp] : plysThisUpdate) {
 					netComp.get().send(socket);

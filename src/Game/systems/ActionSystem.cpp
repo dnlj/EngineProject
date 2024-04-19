@@ -244,6 +244,19 @@ namespace Game {
 			}
 
 			auto& conn = world.getComponent<NetworkComponent>(ent).get();
+
+			//
+			//
+			//
+			// TODO: Reworkd to use network(). This will require updating the
+			//       ACTION message to take a bitset of confirmed ticks instead of
+			//       just the current. We already have a TODO in recv_ACTION_client
+			//       for this so its probably a good idea anyways.
+			//
+			//
+			//
+			conn._debug_AllowMessages = true; // TODO: rm
+
 			if constexpr (ENGINE_CLIENT) {
 				// Hey! are you wondering why the client sends so much data again?
 				// Well let me save you some time. This code sends about
@@ -301,6 +314,8 @@ namespace Game {
 				//	actComp.states.max() - actComp.states.minValid());
 				// If we ever add lag compensation we will need to handle server rollback here.
 			}
+
+			conn._debug_AllowMessages = false; // TODO: rm
 		}
 	}
 

@@ -11,7 +11,10 @@ namespace Game {
 	class MapAreaComponent {
 		public:
 			struct ChunkMeta {
+				/** The last tick this chunk was updated. */
 				Engine::ECS::Tick tick;
+
+				/** The last tick this chunk was networked to this particular client. */
 				Engine::ECS::Tick last;
 			};
 

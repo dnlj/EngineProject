@@ -281,87 +281,9 @@ namespace Game {
 	}
 
 	void MapSystem::update(float32 dt) {
-		const auto tick = world.getTick();
 		auto timeout = world.getTickTime() - std::chrono::seconds{10}; // TODO: how long? 30s?
 
-		// Send chunk updates to clients
-		// On the client side MapAreaComponent is never added to any entities so
-		// this section is skipped, well, not iterated over.
-		for (auto ent : world.getFilter<MapAreaComponent>()) {
-			ENGINE_DEBUG_ASSERT(ENGINE_SERVER, "This code should only be run on the server side.");
-			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ent);
-			const auto begin = mapAreaComp.updates.begin();
-			const auto end = mapAreaComp.updates.end();
-			
-			auto& conn = world.getComponent<NetworkComponent>(ent).get();
-			for (auto it = begin; it != end;) {
-				const auto& chunkPos = it->first;
-				auto& meta = it->second;
-
-				if (meta.tick != tick) {
-					// ENGINE_LOG("Remove: ", chunkPos.x, " ", chunkPos.y);
-					it = mapAreaComp.updates.erase(it);
-					continue;
-				}
-				
-				const auto found = activeChunks.find(chunkPos);
-				if (found == activeChunks.end()) { continue; }
-
-				auto& activeData = found->second;
-				if (meta.last != activeData.updated) {
-					std::vector<byte>* rle = nullptr;
-
-					if (meta.last == 0) { // Fresh chunk
-						const auto regionPos = chunkToRegion(chunkPos);
-						const auto regionIt = regions.find(regionPos);
-						if (regionIt != regions.end() && !regionIt->second->loading()) {
-							const auto chunkIndex = chunkToRegionIndex(chunkPos);
-							auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
-							rleTemp.clear();
-							chunkInfo.chunk.toRLE(rleTemp);
-							rle = &rleTemp;
-							//ENGINE_INFO("Send chunk (fresh): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
-						}
-					} else if (activeData.rle.empty()) {
-						// TODO: i dont think this case should be hit?
-						ENGINE_WARN("No RLE data for chunk");
-						ENGINE_DEBUG_BREAK;
-					} else { // Chunk edit
-						rle = &activeData.rle;
-						//ENGINE_INFO("Send chunk (edit): ", tick, " ", chunkPos.x, " ", chunkPos.y, " ", size);
-					}
-
-					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
-						meta.last = activeData.updated;
-
-						// Populate data with chunk position and RLE data. Space
-						// for the position is allocated in MapChunk::toRLE. We
-						// should probably rework this. Its fairly unintuitive.
-						// 
-						// We don't need to write any zone info because on the client chunks
-						// are always in the same zone as the player. The chunk zones are
-						// managed in MapSystem::ensurePlayAreaLoaded.
-						const auto size = static_cast<int32>(rle->size() * sizeof(rle->front()));
-						byte* data = reinterpret_cast<byte*>(rle->data());
-						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
-						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
-
-						msg.writeBlob(data, size);
-					} else {
-						// This warning gets hit quite a bit depending on the clients
-						// network recv rate. So its annoying to leave enabled because
-						// it clutters the logs.
-						// 
-						//ENGINE_WARN("Unable to begin MAP_CHUNK message.");
-					}
-				}
-
-				++it;
-			}
-		}
-
 		// TODO: Shouldn't this unload logic be in tick instead of update?
-
 		// Unload active chunks
 		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
 			if (it->second.lastUsed < timeout) {
@@ -405,6 +327,88 @@ namespace Game {
 				ENGINE_LOG("Unloading region: ", it->first.x, ", ", it->first.y);
 				it = regions.erase(it);
 			} else {
+				++it;
+			}
+		}
+	}
+
+	void MapSystem::network(const NetPlySet plys) {
+		if constexpr (ENGINE_CLIENT) { return; }
+		const auto tick = world.getTick();
+
+		// Send chunk updates to clients.
+		for (const auto& [ent, netComp] : plys) {
+			ENGINE_DEBUG_ASSERT(ENGINE_SERVER, "Networking chunks should only be run on the server side.");
+			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ent);
+			const auto begin = mapAreaComp.updates.begin();
+			const auto end = mapAreaComp.updates.end();
+			
+			auto& conn = world.getComponent<NetworkComponent>(ent).get();
+			for (auto it = begin; it != end;) {
+				const auto& chunkPos = it->first;
+				auto& meta = it->second;
+
+				// Remove old updates.
+				if (meta.tick != tick) {
+					it = mapAreaComp.updates.erase(it);
+					continue;
+				}
+
+				// Chunk isn't active, nothing to update.
+				const auto found = activeChunks.find(chunkPos);
+				if (found == activeChunks.end()) { continue; }
+
+				// Chunk is active and hasn't already been networked.
+				auto& activeData = found->second;
+				if (meta.last != activeData.updated) {
+					std::vector<byte>* rle = nullptr;
+
+					// TODO (4E5R8u55): This isn't correct. Zero can be a valid tick if they wrap.
+					if (meta.last == 0) { // Fresh chunk
+						const auto regionPos = chunkToRegion(chunkPos);
+						const auto regionIt = regions.find(regionPos);
+						if (regionIt != regions.end() && !regionIt->second->loading()) {
+							const auto chunkIndex = chunkToRegionIndex(chunkPos);
+							auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
+							rleTemp.clear();
+							chunkInfo.chunk.toRLE(rleTemp);
+							rle = &rleTemp;
+							//ENGINE_INFO2("Send chunk (fresh): {} {}", tick, chunkPos);
+						}
+					} else if (activeData.rle.empty()) {
+						// TODO: i dont think this case should be hit?
+						ENGINE_WARN2("No RLE data for chunk");
+						ENGINE_DEBUG_BREAK;
+					} else { // Chunk edit
+						rle = &activeData.rle;
+						//ENGINE_INFO2("Send chunk (edit): {} {}", tick, chunkPos);
+					}
+
+					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
+						meta.last = activeData.updated;
+
+						// Populate data with chunk position and RLE data. Space
+						// for the position is allocated in MapChunk::toRLE. We
+						// should probably rework this. Its fairly unintuitive.
+						// 
+						// We don't need to write any zone info because on the client chunks
+						// are always in the same zone as the player. The chunk zones are
+						// managed in MapSystem::ensurePlayAreaLoaded.
+						const auto size = static_cast<int32>(rle->size() * sizeof(rle->front()));
+						byte* data = reinterpret_cast<byte*>(rle->data());
+						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
+						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
+
+						msg.writeBlob(data, size);
+					} else {
+						// This warning gets hit quite a bit depending on the clients
+						// network recv rate. So its annoying to leave enabled because
+						// it clutters the logs.
+						// 
+						//ENGINE_WARN2("Unable to begin MAP_CHUNK message.");
+					}
+				}
+
 				++it;
 			}
 		}
@@ -463,6 +467,7 @@ namespace Game {
 							queueRegionToLoad(regionPos, *it->second);
 						}
 					}
+
 					continue;
 				}
 
@@ -473,6 +478,11 @@ namespace Game {
 
 				#if ENGINE_SERVER
 				{
+					// TODO: Do we really care if its already tracked? Shouldn't
+					//       we always, no matter what, skip buffer chunks?
+					
+					// If this isn't a buffer chunk, insert it.
+					// If it is already tracked (even if it is a buffer chunk) update it.
 					const auto found = mapAreaComp.updates.contains(chunkPos);
 					if (!isBufferChunk || found) {
 						mapAreaComp.updates[chunkPos].tick = tick;

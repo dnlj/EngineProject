@@ -133,6 +133,9 @@ namespace Engine::Net {
 			}
 
 		public:
+			ENGINE_DEBUG_ONLY(bool _debug_AllowMessages = true);
+
+		public:
 			Connection(IPv4Address addr, Engine::Clock::TimePoint time) : addr{addr} {
 				rdat2.time = time;
 			}
@@ -340,6 +343,7 @@ namespace Engine::Net {
 			[[nodiscard]]
 			decltype(auto) beginMessage() {
 				if constexpr (ENGINE_DEBUG) {
+					ENGINE_DEBUG_ONLY(ENGINE_DEBUG_ASSERT(_debug_AllowMessages, "Attempting to begin message from an invalid location."));
 					if (!(state & getMessageMetaInfo<M>().sendState)) {
 						ENGINE_WARN("Incorrect connection state to begin message of type ",
 							getMessageMetaInfo<M>().name, "(", static_cast<size_t>(M), ")"
@@ -354,5 +358,6 @@ namespace Engine::Net {
 				// TODO: pass bufferwriter by ptr. we convert ot pointer anyways. makes it clearer
 				return channel.beginMessage(channel, M, msgBufferWriter);
 			}
+
 	};
 }

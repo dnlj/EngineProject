@@ -725,7 +725,7 @@ void run(int argc, char* argv[]) {
 	guiContext.setNativeWindowHandle(window.getWin32WindowHandle());
 	windowCallbacks.userdata = &engine;
 
-	// Known problematic tick discrepency. Right on the edge of sequence number
+	// Known problematic tick discrepancy. Right on the edge of sequence number
 	// wrapping. This case _should_ be handled correctly. Often useful for
 	// finding bugs.
 	world.setNextTick(ENGINE_SERVER ?  0x7FFF'FFFF : 0);
