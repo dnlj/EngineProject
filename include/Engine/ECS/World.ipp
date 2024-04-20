@@ -49,7 +49,7 @@ namespace Engine::ECS {
 		deltaTimeSmooth = dtSmoothing * deltaTime + (1 - dtSmoothing) * deltaTimeSmooth;
 
 		if constexpr (ENGINE_CLIENT) {
-			if (rollbackData.tick != -1 && !performingRollback) {
+			if (rollbackData.tick != invalidTick && !performingRollback) {
 				const auto oldTick = currTick;
 				const auto oldTime = tickTime;
 
@@ -60,7 +60,7 @@ namespace Engine::ECS {
 					performingRollback = true;
 				} else {
 					ENGINE_WARN("Unable to perform world rollback to tick ", rollbackData.tick, " ", oldTick);
-					rollbackData.tick = -1;
+					rollbackData.tick = invalidTick;
 				}
 			}
 		} else {
@@ -79,7 +79,7 @@ namespace Engine::ECS {
 			if (currTick == rollbackData.tick) {
 				tickTime = rollbackData.time;
 				performingRollback = false;
-				rollbackData.tick = -1;
+				rollbackData.tick = invalidTick;
 				ENGINE_LOG("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", currTick);
 			}
 		} else {

@@ -89,18 +89,10 @@ namespace {
 
 		const auto buffSize = tick - recvTick;
 
-		//
-		//
-		//
-		// TODO: Zero is a valid tick. Fix.
-		//
-		//
-		//
-
 		// TODO (donfHIq7): The server should probably send a bitset of the recvs it has
 		//                  received each time so it can be redundant like the client
 		//                  side inputs are.
-		if (recvTick == 0) {
+		if (recvTick == Engine::ECS::invalidTick) {
 			auto& actComp = world.getComponent<ActionComponent>(from.ent);
 			auto* state = actComp.states.find(tick);
 			if (state) {
@@ -293,7 +285,7 @@ namespace Game {
 				// Send action ACK and est. buffer update.
 				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
 					msg.write(currTick);
-					msg.write(state ? state->recvTick : 0);
+					msg.write(state ? state->recvTick : Engine::ECS::invalidTick);
 					msg.write(estBuffSizeToNet(actComp.estBufferSize));
 				}
 

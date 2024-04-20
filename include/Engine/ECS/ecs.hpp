@@ -26,6 +26,7 @@ namespace Engine::ECS {
 	 * I don't anticipate any individual server will ever run that long.
 	 */
 	using Tick = uint32;
+	constexpr inline Tick invalidTick = std::numeric_limits<Tick>::max();
 
 	/** The type to use for component ids. */
 	using ComponentId = uint16;

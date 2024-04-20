@@ -176,7 +176,7 @@ namespace Engine::ECS {
 			Clock::TimePoint tickTime = {};
 
 			/** The current tick being run */
-			Tick currTick = -1;
+			Tick currTick = Engine::ECS::invalidTick;
 
 			/** The current update  */
 			uint64 currUpdate = -1;
@@ -197,7 +197,7 @@ namespace Engine::ECS {
 			void* compContainers[sizeof...(Cs)] = {};
 
 			struct {
-				Engine::ECS::Tick tick = -1;
+				Engine::ECS::Tick tick = Engine::ECS::invalidTick;
 				Clock::TimePoint time = {};
 			} rollbackData;
 
