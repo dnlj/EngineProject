@@ -15,7 +15,16 @@ namespace Engine::ECS {
 	/** The maximum number of systems registrable. Ideally this would be exactly the number of systems used. */
 	constexpr size_t MAX_SYSTEMS = 64;
 
-	/** The type used to store tick numbers */
+	/**
+	 * The type used to store tick numbers.
+	 * 
+	 * Tick numbers are sequentially increasing and do _NOT_ wrap. Not wrapping
+	 * should be safe, even for long running servers, because even at a high
+	 * tick rate like 128 it would take over a year to exhaust the tick space:
+	 *   @ 128 = (2^32)/(128*60*60*24) = 388 days
+	 *   @ 64  = (2^32)/(64*60*60*24) = 776 days
+	 * I don't anticipate any individual server will ever run that long.
+	 */
 	using Tick = uint32;
 
 	/** The type to use for component ids. */

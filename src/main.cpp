@@ -728,8 +728,12 @@ void run(int argc, char* argv[]) {
 	// Known problematic tick discrepancy. Right on the edge of sequence number
 	// wrapping. This case _should_ be handled correctly. Often useful for
 	// finding bugs.
-	world.setNextTick(ENGINE_SERVER ?  0x7FFF'FFFF : 0);
-	//world.setNextTick((uint32)Engine::Noise::lcg(std::random_device()()));
+	//
+	// Don't do this in release builds so that we have the maximum availible tick space.
+	if constexpr (ENGINE_DEBUG) {
+		world.setNextTick(ENGINE_SERVER ?  0x7FFF'FFFF : 0);
+		//world.setNextTick((uint32)Engine::Noise::lcg(std::random_device()()));
+	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Initialize Systems
