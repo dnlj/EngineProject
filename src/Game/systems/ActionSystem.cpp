@@ -79,8 +79,6 @@ namespace {
 
 	void recv_ACTION_client(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		auto& world = engine.getWorld();
-		// TODO: what about ordering?
-		// TODO: we dont actually use tick/recvTick. just nw buffsize
 		constexpr float32 maxStates = static_cast<float32>(decltype(ActionComponent::states)::capacity());
 
 		Engine::ECS::Tick tick;
@@ -91,7 +89,18 @@ namespace {
 
 		const auto buffSize = tick - recvTick;
 
-		if (recvTick == 0) { // TODO: The server should probably send a bitset of the recvs it has received each time so it can be redundant like the client side inputs are.
+		//
+		//
+		//
+		// TODO: Zero is a valid tick. Fix.
+		//
+		//
+		//
+
+		// TODO (donfHIq7): The server should probably send a bitset of the recvs it has
+		//                  received each time so it can be redundant like the client
+		//                  side inputs are.
+		if (recvTick == 0) {
 			auto& actComp = world.getComponent<ActionComponent>(from.ent);
 			auto* state = actComp.states.find(tick);
 			if (state) {
@@ -125,7 +134,7 @@ namespace {
 		}
 
 		// TODO: this is ideal buffer size not tick lead...
-		const auto idealTickLead = [&](){
+		const auto idealTickLead = [&]{
 			constexpr auto tickDur = World::getTickInterval();
 			const auto p2 = from.getPing().count() * 0.5f; // One way trip
 			const auto j2 = static_cast<float32>(from.getJitter().count());
@@ -140,7 +149,6 @@ namespace {
 
 		// Used to adjust tickScale when based on trend. Scaled in range [trendAdjust, maxTrendScale + trendAdjust]
 		constexpr float32 maxTickScale = 2.0f;
-		//constexpr float32 maxBufferSize = maxStates;
 
 		float32 diff = actComp.estBufferSize - ideal;
 
@@ -229,6 +237,11 @@ namespace Game {
 		auto& cam = engine.getCamera();
 		const auto currTick = world.getTick();
 
+		// TODO (donfHIq7): The server side should be in System::network instead. Not
+		//                  worth fussing with at the moment though The client side
+		//                  should remain in update so the server has the most
+		//                  up-to-date inputs and reduced buffer size.
+
 		for (const auto ent : world.getFilter<ActionComponent, NetworkComponent>()) {
 			auto& actComp = world.getComponent<ActionComponent>(ent);
 
@@ -245,17 +258,7 @@ namespace Game {
 
 			auto& conn = world.getComponent<NetworkComponent>(ent).get();
 
-			//
-			//
-			//
-			// TODO: Reworkd to use network(). This will require updating the
-			//       ACTION message to take a bitset of confirmed ticks instead of
-			//       just the current. We already have a TODO in recv_ACTION_client
-			//       for this so its probably a good idea anyways.
-			//
-			//
-			//
-			conn._debug_AllowMessages = true; // TODO: rm
+			ENGINE_DEBUG_ONLY(conn._debug_AllowMessages = true);
 
 			if constexpr (ENGINE_CLIENT) {
 				// Hey! are you wondering why the client sends so much data again?
@@ -286,13 +289,15 @@ namespace Game {
 				}
 			} else if constexpr (ENGINE_SERVER) {
 				auto* state = actComp.state;
-
+				
+				// Send action ACK and est. buffer update.
 				if (auto msg = conn.beginMessage<MessageType::ACTION>()) {
 					msg.write(currTick);
 					msg.write(state ? state->recvTick : 0);
 					msg.write(estBuffSizeToNet(actComp.estBufferSize));
 				}
 
+				// Insert missing states.
 				if (!state) {
 					// TODO: duplicate and decay last input?
 					state = actComp.states.find(currTick - 1);
@@ -300,6 +305,7 @@ namespace Game {
 					ENGINE_LOG("Missing input for tick ", currTick, state ? " - using previous input" : " - unable to duplicate previous input"); // TODO: message about duplicate or zero
 				}
 
+				// Update network stats.
 				if constexpr (ENGINE_DEBUG) {
 					if (world.hasComponent<NetworkStatsComponent>(ent)) {
 						auto& netStatsComp = world.getComponent<NetworkStatsComponent>(ent);
@@ -315,7 +321,7 @@ namespace Game {
 				// If we ever add lag compensation we will need to handle server rollback here.
 			}
 
-			conn._debug_AllowMessages = false; // TODO: rm
+			ENGINE_DEBUG_ONLY(conn._debug_AllowMessages = false);
 		}
 	}
 

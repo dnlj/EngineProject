@@ -42,7 +42,9 @@ namespace Game {
 
 	class ActionState {
 		public:
+			/** The tick this state was received. */
 			Engine::ECS::Tick recvTick; // TODO: server only
+
 			glm::vec2 screenTarget; // TODO: client only
 
 			ActionValue buttons[static_cast<int32>(Action::_button_count)];

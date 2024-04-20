@@ -25,7 +25,8 @@ namespace Engine::UI {
 
 		while (curr != end) {
 			ctx->setColor(color);
-			//ctx->drawPoly(points, color);
+
+			// TODO (jkhiBoLa): scale width for x axis
 			ctx->drawLine(worldToGraph({curr->x, 0}), worldToGraph({curr->x, curr->y}), 1);
 			++curr;
 		}

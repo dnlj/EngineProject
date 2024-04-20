@@ -81,7 +81,7 @@ namespace Game {
 			
 		public:
 			void tick();
-			void network(NetPlySet plys);
+			void network(const NetPlySet plys);
 
 		private:
 			void updateNeighbors();

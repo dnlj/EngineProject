@@ -438,6 +438,8 @@ namespace Game {
 		// TODO: This distribution is largely untested since we don't currently
 		//       have an easy way to test with a large number of players.
 		constexpr Engine::Clock::Seconds netUpdateInterval = std::chrono::milliseconds{1000 / 20}; // TODO: rate should be configurable cmdline/cvar/cfg
+		static_assert(netUpdateInterval >= World::getTickInterval(), "The network rate must be less than or equal to the tick rate.");
+
 		const auto fullNetPerUpdate = [&]{
 			constexpr float32 epsilon = 0.05f; // Allow a small amount of
 			const auto netPerUpdate = epsilon + netUpdateInterval.count() / world.getDeltaTimeSmooth();
@@ -488,12 +490,23 @@ namespace Game {
 			if (plyCount > 0) {
 				const NetPlySet plysThisUpdate{std::to_address(plys.begin() + start), plyCount};
 
+				// There are no technical issues with writing messages outside of this scope.
+				// They will still get queued and sent at the correct time, but it is usually
+				// wasteful to write messages outside of this because you will duplicate
+				// information, overwrite previous messages, or send outdated information.
 				ENGINE_DEBUG_ONLY(for (auto& [ply, netComp] : plysThisUpdate) { netComp.get()._debug_AllowMessages = true; });
 				Engine::Meta::ForEachIn<SystemsSet>::call([&]<class S>() ENGINE_INLINE {
 					world.getSystem<S>().network(plysThisUpdate);
 				});
 				ENGINE_DEBUG_ONLY(for (auto& [ply, netComp] : plysThisUpdate) { netComp.get()._debug_AllowMessages = false; });
 
+				//
+				//
+				// TODO: Client side don't we want this every time (not
+				//       networkstep) so we have as accurate inptus as possible?
+				//       Probably just have a configurable rate per client/server.
+				//
+				//
 				for (const auto& [ply, netComp] : plysThisUpdate) {
 					netComp.get().send(socket);
 				}

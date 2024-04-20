@@ -332,7 +332,7 @@ namespace Game {
 		updateNeighbors();
 	}
 	
-	void EntityNetworkingSystem::network(NetPlySet plys) {
+	void EntityNetworkingSystem::network(const NetPlySet plys) {
 		static_assert(ENGINE_SERVER, "This code is server side only.");
 
 		for (auto& ply : world.getFilter<PlayerFilter>()) {

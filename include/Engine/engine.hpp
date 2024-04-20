@@ -16,6 +16,18 @@
 	#define ENGINE_DEBUG_ONLY(x)
 #endif
 
+#if ENGINE_SERVER
+	#define ENGINE_SERVER_ONLY(...) __VA_ARGS__
+#else
+	#define ENGINE_SERVER_ONLY(...)
+#endif
+
+#if ENGINE_CLIENT
+	#define ENGINE_CLIENT_ONLY(...) __VA_ARGS__
+#else
+	#define ENGINE_CLIENT_ONLY(...)
+#endif
+
 /**
  * Expands to a comma.
  * Need for passing a comma in macro arguments.
