@@ -3,7 +3,7 @@ from conan import ConanFile, tools
 class Recipe(ConanFile):
 	name = "assimp"
 	description = "The Asset-Importer-Lib (in short assimp) is a library to load and process geometric scenes from various 3D-Dataformats."
-	license = "BSD 3-clause"
+	license = "BSD-3-Clause"
 	homepage = "https://www.assimp.org"
 	url = "https://github.com/assimp/assimp.git"
 	settings = "arch", "build_type", "compiler", "os"

@@ -51,9 +51,29 @@ SETUP_CONFIG = {
 CONAN_ROOT = _MAIN_SCRIPT_DIR
 CONAN_EXE = "tools/conan/conan"
 
-function conan_setup(cfg)
+function conan_use(pkgs, cfg, prop, func)
 	if not cfg or not CONAN_BUILD_INFO or not CONAN_BUILD_INFO[cfg] then return end
-	CONAN_BUILD_INFO[cfg].setup()
+	local conan = CONAN_BUILD_INFO[cfg]
+
+	if type(pkgs) == "string" then
+		pkgs = {pkgs}
+	end
+
+	for i, pattern in ipairs(pkgs) do
+		for pkg, data in pairs(conan.host["dependencies"]) do
+			if pkg:match(pattern) then
+				func(data[prop])
+			end
+		end
+	end
+end
+
+function conan_setup(pkgs, cfg)
+	conan_use(pkgs, cfg, "includedirs", includedirs)
+	conan_use(pkgs, cfg, "libdirs", libdirs)
+	conan_use(pkgs, cfg, "libs", links)
+	conan_use(pkgs, cfg, "bindirs", bindirs)
+	conan_use(pkgs, cfg, "defines", defines)
 end
 
 CONAN_REMOTES = {
@@ -62,12 +82,10 @@ CONAN_REMOTES = {
 
 CONAN_PACKAGES = {
 	["requires"] = {
+		-- These are what version Conan builds/exports, not necessarily what the project uses.
+		-- See: ENGINE_PACKAGES
 		"box2d/022d9eccfcbebe339f1df3a17d205110d9623a80",
-		--"box2d/411acc32eb6d4f2e96fc70ddbdf01fe5f9b16230",
 		"glm/0.9.9.7",
-		--"imgui/1.82",----------------------------------------------------
-		--"imgui-node-editor/master",----------------------------------------------------
-		--"implot/0.9",----------------------------------------------------
 		"meta/master",
 		"pcg/master",
 		"robin_hood/master",
@@ -75,13 +93,27 @@ CONAN_PACKAGES = {
 		"freetype/2.10.4",
 		"harfbuzz/2.8.1",
 		"fmtlib/10.0.0",
-		--"soil/latest", ----------------------------------------------------
 		"assimp/5.2.3",
-
+		"googletest/1.14.0",
 	},
 	["generators"] = {
 		"premake5",
 	}
+}
+
+ENGINE_PACKAGES = {
+	-- These use Lua patterns, not Conan version ranges.
+	"box2d/.*",
+	"glm/.*",
+	"meta/.*",
+	"pcg/.*",
+	"robin_hood/.*",
+	"soil_littlstar/.*",
+	"freetype/.*",
+	"harfbuzz/.*",
+	"fmtlib/.*",
+	"assimp/.*",
+	-- "googletest/.*", -- Not used by engine. Only tests.
 }
 
 CONAN_PROFILES = {
@@ -266,10 +298,7 @@ workspace(PROJECT_NAME .."Workspace")
 --------------------------------------------------------------------------------
 -- Engine
 --------------------------------------------------------------------------------
---project(PROJECT_NAME .."Engine")
---	kind "None"
-
--- The engine files are put in the workspace since Game, Engine, and Test all use them.
+-- The engine files are put in the workspace since Game, Engine, Bench and Test all use them.
 project("*")
 	files {
 		"include/Engine/**",
@@ -284,8 +313,8 @@ project("*")
 	pchheader "pch.hpp"
 	pchsource "src/pch.cpp"
 	forceincludes "pch.hpp"
-
 	debugdir(os.getcwd())
+
 	filter "platforms:Windows*"
 		links {
 			"opengl32",
@@ -294,10 +323,13 @@ project("*")
 			"hid",
 			"Winmm",
 		}
+
 	filter "configurations:Debug*"
-		conan_setup("debug")
+		conan_setup(ENGINE_PACKAGES, "debug")
+
 	filter "configurations:Release*"
-		conan_setup("release")
+		conan_setup(ENGINE_PACKAGES, "release")
+
 	filter {}
 
 	includedirs {
@@ -366,30 +398,27 @@ project("Bench")
 --------------------------------------------------------------------------------
 -- Test
 --------------------------------------------------------------------------------
---project("Test")
---	defines {"RUNNING_TESTS"}
---
---	files {
---		"./test/**",
---	}
---
---	includedirs {
---		"./deps/googletest/googlemock/include",
---		"./deps/googletest/googletest/include",
---	}
---
---	libdirs {
---		"./deps/googletest/lib/".. CONFIG_TYPE_STR,
---	}
---
---	filter {"platforms:Windows_x64", "configurations:Debug*"}
---		links {
---			"gtestd.lib",
---			"gmockd.lib",
---		}
---
---	filter {"platforms:Windows_x64", "configurations:Release*"}
---		links {
---			"gtest.lib",
---			"gmock.lib",
---		}
+project("Test")
+	uuid "45DC8C7C-3113-8E0D-DAFF-7310C6150A0F"
+	kind "ConsoleApp"
+	flags { "ExcludeFromBuild" }
+
+	files {
+		"./test/**",
+	}
+
+	filter "configurations:Debug*"
+		conan_use("googletest/.*", "debug", "includedirs", includedirs)
+		conan_use("googletest/.*", "debug", "libdirs", libdirs)
+		conan_use("googletest/.*", "debug", "bindirs", bindirs)
+		conan_use("googletest/.*", "debug", "defines", defines)
+		links "gtest"
+
+	filter "configurations:Release*"
+		conan_use("googletest/.*", "release", "includedirs", includedirs)
+		conan_use("googletest/.*", "release", "libdirs", libdirs)
+		conan_use("googletest/.*", "release", "bindirs", bindirs)
+		conan_use("googletest/.*", "release", "defines", defines)
+		links "gtest"
+
+	filter {}

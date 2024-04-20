@@ -90,9 +90,19 @@ def accumulateDeps(deps):
 	all = model.build_info.CppInfo()
 	res = { "dependencies": {} }
 	for req, dep in deps:
+		#
 		# Not 100% sure what `aggregated_components` does here. I assume my
 		# recipes are simple enough that it doesn't matter? Seems to work
 		# fine without it.
+		#
+		# Regarding the above, `aggregated_components` is for supporting
+		# multiple libraries (conan speak: component) from one recipe. For
+		# example, google has a single project for both googletest and
+		# googlemock. This could be implemented as one recipe with two
+		# components.
+		#
+		# See: https://docs.conan.io/2/reference/tools/cpp_info.html#aggregating-information-in-custom-generators
+		#
 		all.merge(dep.cpp_info)
 		dep = dep.cpp_info.aggregated_components().serialize()
 		res["dependencies"][req.ref] = dep["root"]
