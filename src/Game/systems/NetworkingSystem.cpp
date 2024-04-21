@@ -93,6 +93,15 @@ namespace {
 		PlayerFlag
 	>;
 
+	// With the ack size and tick rate equal there will be 1s before acks are
+	// lost. Increasing the tick rate past this will reduce that size, which is
+	// technically fine, but probably not desirable.
+	static_assert(
+		tickrate == Engine::Net::AckBitset::capacity(),
+		"Tick rate does not align with network ack size. "
+		"This will lead to a smaller or larger ack window, which may be fine, but is something needs to be considered."
+	);
+
 	constexpr uint8 msgPadSeq[] = {0x54, 0x68, 0x65, 0x20, 0x63, 0x61, 0x6B, 0x65, 0x20, 0x69, 0x73, 0x20, 0x61, 0x20, 0x6C, 0x69, 0x65, 0x2E, 0x20};
 
 	void writeMessagePadding(Engine::Net::BufferWriter& msg) {
@@ -429,30 +438,39 @@ namespace Game {
 		#endif
 		recvAndDispatchMessages(socket);
 
-		//
-		//
-		// TODO: we should have a check if netUpdateInterval doesn't divide nicely into tick rate on server side.
-		//
-		//
-
 		// TODO: This distribution is largely untested since we don't currently
 		//       have an easy way to test with a large number of players.
-		constexpr Engine::Clock::Seconds netUpdateInterval = std::chrono::milliseconds{1000 / 20}; // TODO: rate should be configurable cmdline/cvar/cfg
-		static_assert(netUpdateInterval >= World::getTickInterval(), "The network rate must be less than or equal to the tick rate.");
+		
+		// We don't actually care if the network rate and tick rate divide exactly,
+		// everything will work fine. Since we divide network updates into buckets/steps
+		// instead of using a timeout we won't run into any issues with fraction/uneven
+		// division. Instead the true network rate will be slightly different than the
+		// given value, which is fine, but could be unexpected and confusing. We have
+		// these warnings just to make that more obvious since the user probably expects
+		// an exact rate.
+		static_assert(tickrate >= netrate, "The network rate must be less than or equal to the tick rate.");
 
-		const auto fullNetPerUpdate = [&]{
-			constexpr float32 epsilon = 0.05f; // Allow a small amount of
-			const auto netPerUpdate = epsilon + netUpdateInterval.count() / world.getDeltaTimeSmooth();
-			const auto result = Engine::Noise::floorTo<int32>(netPerUpdate);
+		// Allow a small difference, this will lead to a slightly higher network
+		// rate, but that is fine. Ideally this would be == 0, but I'm not
+		// willing to sacrifice ack size by going to 66/22 tick/net rate.
+		static_assert(tickrate % netrate < 2, "Network rate does not evenly divide tick rate. This will cause the network rate to be slightly inaccurate.");
+
+		const auto fullUpdatesPerNetworkInterval = [&]{
+			constexpr auto netUpdateInterval = Engine::Clock::Seconds{1.0 / netrate};
+			constexpr float32 epsilon = 0.05f; // Allow a small amount of tollerance
+			const auto updatesPerNetworkInterval = epsilon + netUpdateInterval.count() / world.getDeltaTimeSmooth();
+			const auto result = Engine::Noise::floorTo<int32>(updatesPerNetworkInterval);
+
+			//ENGINE_INFO2("UPN: {} = {}", updatesPerNetworkInterval, result);
 
 			// On the client this might happen if there is a framerate limit for
 			// example. Only check server side.
 			if (ENGINE_DEBUG && ENGINE_SERVER && result < 1) {
-				ENGINE_WARN2("To few network updates: {}", netPerUpdate);
+				ENGINE_WARN2("To few network updates: {}", updatesPerNetworkInterval);
 			}
 
 			if (ENGINE_DEBUG && result >= 10) {
-				ENGINE_WARN2("Exceptionally high number of network updates: {}. This is likely a bug.", netPerUpdate);
+				ENGINE_WARN2("Exceptionally high number of network updates: {}. This is likely a bug.", updatesPerNetworkInterval);
 			}
 
 			return std::clamp(result, 1, 10);
@@ -476,10 +494,10 @@ namespace Game {
 		// eleven player case we would have:
 		//   #plys=11:  11/3 = 3r2 = runs {3, 3, 5}
 		////////////////////////////////////////////////////////////////////////////////
-		const auto step = static_cast<int32>(world.getUpdate() % fullNetPerUpdate);
+		const auto step = static_cast<int32>(world.getUpdate() % fullUpdatesPerNetworkInterval);
 		{
 			const auto plys = world.getFilterAll<true, NetworkComponent>();
-			const auto plyCountPerUpdate = Engine::Math::divFloor<int32>(plys.size(), fullNetPerUpdate);
+			const auto plyCountPerUpdate = Engine::Math::divFloor<int32>(plys.size(), fullUpdatesPerNetworkInterval);
 			const auto plyCount = plyCountPerUpdate.q + (plyCountPerUpdate.r > step && plyCountPerUpdate.r > 0);
 			const auto start = step * plyCountPerUpdate.q + std::min(plyCountPerUpdate.r, step);
 
@@ -519,7 +537,7 @@ namespace Game {
 			// Send for any connections that don't have an associated entity and
 			// as such won't be handled above. Send them on the last step since
 			// that step will always have the least entities due to remainder.
-			if (!conn->ent && (step + 1 == fullNetPerUpdate)) {
+			if (!conn->ent && (step + 1 == fullUpdatesPerNetworkInterval)) {
 				conn->send(socket);
 			}
 

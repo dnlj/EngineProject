@@ -43,6 +43,7 @@ namespace Game::inline Units {
 
 namespace Game::inline Constants {
 	constexpr inline int32 tickrate = 64;
+	constexpr inline int32 netrate = 21;
 
 	constexpr inline int32 pixelsPerBlock = 8;
 	constexpr inline int32 blocksPerMeter = 4;
