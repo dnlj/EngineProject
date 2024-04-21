@@ -518,13 +518,6 @@ namespace Game {
 				});
 				ENGINE_DEBUG_ONLY(for (auto& [ply, netComp] : plysThisUpdate) { netComp.get()._debug_AllowMessages = false; });
 
-				//
-				//
-				// TODO: Client side don't we want this every time (not
-				//       networkstep) so we have as accurate inptus as possible?
-				//       Probably just have a configurable rate per client/server.
-				//
-				//
 				for (const auto& [ply, netComp] : plysThisUpdate) {
 					netComp.get().send(socket);
 				}
@@ -742,7 +735,11 @@ namespace Game {
 		} else {
 			auto func = msgHandlers[hdr.type];
 			ENGINE_DEBUG_ASSERT(func, "No message handler set for type ", meta.name, " (", +hdr.type, ")");
+
+			// Allow responce messages in handlers.
+			ENGINE_DEBUG_ONLY(from._debug_AllowMessages = true);
 			if (func) { func(engine, from, hdr, msg); }
+			ENGINE_DEBUG_ONLY(from._debug_AllowMessages = false);
 		}
 
 		if (auto rem = msg.remaining(); rem > 0) {

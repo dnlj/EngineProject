@@ -43,7 +43,11 @@ namespace Game::inline Units {
 
 namespace Game::inline Constants {
 	constexpr inline int32 tickrate = 64;
-	constexpr inline int32 netrate = 21;
+
+	// Allow up to tickrate messages on the client side so that we always have
+	// the most up to date inputs. Note that this is also limited by the servers
+	// recvRate so it may be getting clamped anyways.
+	constexpr inline int32 netrate = ENGINE_SERVER ? 21 : tickrate;
 
 	constexpr inline int32 pixelsPerBlock = 8;
 	constexpr inline int32 blocksPerMeter = 4;

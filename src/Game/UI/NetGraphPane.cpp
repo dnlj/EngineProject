@@ -87,12 +87,16 @@ namespace {
 					},
 					[conn](EUI::Slider& s){
 						if (conn->getState() == ConnectionState::Connected) {
+
+							// TODO: How to handle this? We don't have a network function here since we aren't in a system.
+							ENGINE_DEBUG_ONLY(conn->_debug_AllowMessages = true);
 							if (auto msg = conn->beginMessage<MessageType::CONFIG_NETWORK>()) {
 								auto v = static_cast<float32>(s.getValue());
 								conn->setPacketRecvRate(v);
 								msg.write(v);
 								return;
 							}
+							ENGINE_DEBUG_ONLY(conn->_debug_AllowMessages = false);
 						}
 
 						ENGINE_WARN("Unable to set network recv rate!");
