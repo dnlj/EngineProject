@@ -33,37 +33,42 @@ namespace Engine::Math::Seq {
 	template<uint32 N>
 	constexpr inline bool AssertSequenceNeighborhood_v = AssertSequenceNeighborhood<N>::value;
 
-	// TODO: add generic SeqNum<U> class to avoid annoying type promotion and allow easier auditing:
-	//class Tick {
+	// TODO: Add generic SeqNum<U> class to avoid annoying type promotion and
+	//       allow easier auditing. Type promotion from a-b to int has caused bugs in
+	//       the past:
+	//template<class Count>
+	//class SeqNum {
 	//	public:
-	//		using Count = uint32;
 	//		Count count;
 	//
-	//		constexpr Tick() noexcept {}
-	//		constexpr explicit Tick(Count count) noexcept : count{count} {}
+	//		constexpr SeqNum() noexcept {
+	//			static_assert(sizeof(SeqNum) == sizeof(Count));
+	//		}
+	//
+	//		constexpr explicit SeqNum(Count count) noexcept : count{count} {}
 	//		constexpr explicit operator Count() const noexcept { return count; }
 	//
-	//		constexpr Tick& operator++() noexcept { ++count; return *this; }
-	//		constexpr Tick& operator--() noexcept { --count; return *this; }
+	//		constexpr SeqNum& operator++() noexcept { ++count; return *this; }
+	//		constexpr SeqNum& operator--() noexcept { --count; return *this; }
 	//
-	//		constexpr friend bool operator==(Tick lhs, Tick rhs) noexcept { return lhs.count == rhs.count; }
-	//		constexpr friend bool operator!=(Tick lhs, Tick rhs) noexcept { return lhs.count != rhs.count; }
+	//		constexpr friend bool operator==(SeqNum lhs, SeqNum rhs) noexcept { return lhs.count == rhs.count; }
+	//		constexpr friend bool operator!=(SeqNum lhs, SeqNum rhs) noexcept { return lhs.count != rhs.count; }
 	//
-	//		constexpr friend Tick operator-(Tick lhs, Count rhs) noexcept { return Tick{lhs.count - rhs}; }
-	//		constexpr friend Tick operator+(Tick lhs, Count rhs) noexcept { return Tick{lhs.count + rhs}; }
+	//		constexpr friend SeqNum operator-(SeqNum lhs, Count rhs) noexcept { return SeqNum{lhs.count - rhs}; }
+	//		constexpr friend SeqNum operator+(SeqNum lhs, Count rhs) noexcept { return SeqNum{lhs.count + rhs}; }
 	//
-	//		constexpr bool nearby(Tick other) const noexcept { return Math::Seq::nearby<4>(count, other.count); }
-	//		constexpr Tick distant() const noexcept { return Tick{Math::Seq::distant<4>(count)}; }
+	//		//constexpr bool nearby(SeqNum other) const noexcept { return Math::Seq::nearby<4>(count, other.count); }
+	//		//constexpr SeqNum distant() const noexcept { return SeqNum{Math::Seq::distant<4>(count)}; }
 	//
-	//      // Do not define these. A sequence number needs to take special care when
-	//      // comparing. Its better to have these as separate functions so it isn't
-	//      // confused for trivial comparision and it is obvious that something nontrivial is happening.
+	//		// Do not define these. A sequence number needs to take special care when
+	//		// comparing. Its better to have these as separate functions so it isn't
+	//		// confused for trivial comparision and it is obvious that something nontrivial is happening.
 	//		// See: Engine::Math::Seq
-	//		constexpr friend bool operator<(Tick lhs, Tick rhs) noexcept = delete;
-	//		constexpr friend bool operator>(Tick lhs, Tick rhs) noexcept = delete;
-	//		constexpr friend bool operator<=(Tick lhs, Tick rhs) noexcept = delete;
-	//		constexpr friend bool operator>=(Tick lhs, Tick rhs) noexcept = delete;
-	//}; static_assert(sizeof(Tick) == sizeof(Tick::Count));
+	//		constexpr friend bool operator<(SeqNum lhs, SeqNum rhs) noexcept = delete;
+	//		constexpr friend bool operator>(SeqNum lhs, SeqNum rhs) noexcept = delete;
+	//		constexpr friend bool operator<=(SeqNum lhs, SeqNum rhs) noexcept = delete;
+	//		constexpr friend bool operator>=(SeqNum lhs, SeqNum rhs) noexcept = delete;
+	//};
 
 	// TODO: Need to thoroughly unit test this such that:
 	//       - nearby(a, distant(a)) == false
