@@ -176,7 +176,7 @@ namespace Engine::ECS {
 			Clock::TimePoint tickTime = {};
 
 			/** The current tick being run */
-			Tick currTick = Engine::ECS::invalidTick;
+			Tick currTick = invalidTick;
 
 			/** The current update  */
 			uint64 currUpdate = -1;
@@ -197,7 +197,8 @@ namespace Engine::ECS {
 			void* compContainers[sizeof...(Cs)] = {};
 
 			struct {
-				Engine::ECS::Tick tick = Engine::ECS::invalidTick;
+				// TODO: what happens here when set call setNextTick? is this okay?
+				Tick tick = invalidTick;
 				Clock::TimePoint time = {};
 			} rollbackData;
 

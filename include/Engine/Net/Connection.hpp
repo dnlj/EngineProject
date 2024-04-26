@@ -192,9 +192,9 @@ namespace Engine::Net {
 				// Update recv packet info
 				do { 
 					const auto min = nextRecvAck - acks.size();
-					if (seqLess(seq, min))  { continue; }
+					if (Math::Seq::less(seq, min))  { continue; }
 
-					while (seqLess(nextRecvAck, seq + 1)) {
+					while (Math::Seq::less(nextRecvAck, seq + 1)) {
 						recvAcks.reset(++nextRecvAck  % recvAcks.size());
 					}
 
@@ -204,8 +204,8 @@ namespace Engine::Net {
 				// Update sent packet info
 				{
 					const auto& next = pkt.getNextAck();
-					const auto min = next - AckBitset::size();
-					for (auto s = min; seqLess(s, next); ++s) {
+					const SeqNum min = next - AckBitset::size();
+					for (auto s = min; Math::Seq::less(s, next); ++s) {
 						if (!acks.test(s % acks.size())) { continue; }
 
 						auto* data = packetData.find(s);

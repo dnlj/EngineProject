@@ -230,7 +230,7 @@ namespace Engine::Net {
 			}
 
 			bool recv(const MessageHeader& hdr, BufferReader buff) noexcept {
-				if (seqGreater(hdr.seq, lastSeq)) {
+				if (Math::Seq::greater(hdr.seq, lastSeq)) {
 					lastSeq = hdr.seq;
 					return true;
 				}
@@ -312,7 +312,7 @@ namespace Engine::Net {
 			void fill(SeqNum pktSeq, BufferWriter& buff) {
 				const auto now = Engine::Clock::now();
 				// BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
-				for (auto seq = msgData.minValid(); seqLess(seq, msgData.max() + 1); ++seq) {
+				for (auto seq = msgData.minValid(); Math::Seq::less(seq, msgData.max() + 1); ++seq) {
 					auto* msg = msgData.find(seq);
 
 					// TODO: resend time should be configurable per channel
@@ -620,7 +620,7 @@ namespace Engine::Net {
 			}
 
 			void fill(SeqNum pktSeq, BufferWriter& buff) {
-				for (auto seq = writeBlobs.minValid(); seqLess(seq, writeBlobs.max() + 1); ++seq) {
+				for (auto seq = writeBlobs.minValid(); Math::Seq::less(seq, writeBlobs.max() + 1); ++seq) {
 					attemptWriteBlob(buff, seq);
 				}
 
@@ -628,7 +628,7 @@ namespace Engine::Net {
 			}
 
 			const MessageHeader* recvNext() {
-				for (auto seq = recvBlobs.minValid(); seqLess(seq, recvBlobs.max() + 1); ++seq) {
+				for (auto seq = recvBlobs.minValid(); Math::Seq::less(seq, recvBlobs.max() + 1); ++seq) {
 					auto* blob = recvBlobs.find(seq);
 
 					if (blob && blob->complete()) {

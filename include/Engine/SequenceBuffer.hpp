@@ -5,18 +5,6 @@
 
 
 namespace Engine {
-	template<class I> // TODO: move
-	ENGINE_INLINE constexpr bool seqGreater(I a, decltype(a) b) noexcept {
-		constexpr auto half = std::numeric_limits<I>::max() / 2 + 1;
-		return ((a > b) && (a - b <= half))
-			|| ((a < b) && (b - a >  half));
-	}
-
-	template<class I> // TODO: move
-	ENGINE_INLINE constexpr bool seqLess(I a, decltype(a) b) noexcept {
-		return seqGreater<I>(b, a);
-	}
-	
 	/**
 	 * A sparsely populated indexable ring buffer with wrapping indices.
 	 * NOTE: When an entry is removed the object stored at that location is not destroyed until it is overwritten.
@@ -29,7 +17,7 @@ namespace Engine {
 			bool entries[N] = {};
 			T storage[N] = {};
 
-			static_assert(!std::numeric_limits<S>::is_signed, "SequenceBuffer assumes a unsigned sequence number.");
+			static_assert(std::is_unsigned_v<S>, "SequenceBuffer assumes a unsigned sequence number.");
 			constexpr static S index(S seq) noexcept { return seq % N; }
 
 			ENGINE_INLINE auto& getEntry(S seq) { return entries[index(seq)]; }
@@ -56,7 +44,7 @@ namespace Engine {
 			}
 
 			ENGINE_INLINE bool canInsert(S seq) const {
-				return !seqLess(seq, min());
+				return !Math::Seq::less(seq, min());
 			}
 
 			T& insertNoInit(S seq) {
@@ -79,15 +67,16 @@ namespace Engine {
 				// - We need to do this clear and set behaviour instead of advancing so that we arent repeating work
 				// - and looping for a long time when seq much greater than max.
 				//
-				if (const S n = seq + 1; seqGreater(n, next)) { // Outside existing range
-					auto mmin = n - capacity();
-
-					if (seqGreater(mmin, max())) { // 5. No overlap with existing range
+				if (const S n = seq + 1; Math::Seq::greater(n, next)) { // Outside existing range
+					S mmin = n - capacity();
+					
+					static_assert(std::is_unsigned_v<decltype(mmin)>, "wut"); // TODO: rm
+					if (Math::Seq::greater(mmin, max())) { // 5. No overlap with existing range
 						clear(seq);
 						getEntry(seq) = true;
 					} else { // 4. Partial overlap with existing range
 						// Unset out of bounds entries 
-						while (seqLess(lowest, mmin)) { getEntry(lowest) = false; ++lowest; }
+						while (Math::Seq::less(lowest, mmin)) { getEntry(lowest) = false; ++lowest; }
 						
 						// Advance lowest to next valid
 						getEntry(seq) = true;
@@ -96,8 +85,8 @@ namespace Engine {
 
 					next = n; // This must be after because of the clear in case 5.
 				} else {
-					if (seqLess(seq, lowest)) { // 2. Prepend to existing range
-						ENGINE_DEBUG_ASSERT(!seqLess(seq, min()), "Attempting to insert out of bounds sequence number.");
+					if (Math::Seq::less(seq, lowest)) { // 2. Prepend to existing range
+						ENGINE_DEBUG_ASSERT(!Math::Seq::less(seq, min()), "Attempting to insert out of bounds sequence number.");
 						lowest = seq;
 					} else { // 1. Inside existing range
 						// Assert disabled because there are rareish cases where we do this intentionally.
@@ -117,13 +106,13 @@ namespace Engine {
 			ENGINE_INLINE void remove(S seq) {
 				getEntry(seq) = false;
 
-				while (seqLess(lowest, next) && !getEntry(lowest)) {
+				while (Math::Seq::less(lowest, next) && !getEntry(lowest)) {
 					++lowest;
 				}
 			}
 
 			ENGINE_INLINE bool contains(S seq) const {
-				return getEntry(seq) && !seqLess(seq, lowest) && seqLess(seq, next);
+				return getEntry(seq) && !Math::Seq::less(seq, lowest) && Math::Seq::less(seq, next);
 			}
 
 			ENGINE_INLINE T* find(S seq) {
