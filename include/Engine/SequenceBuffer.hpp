@@ -11,13 +11,19 @@ namespace Engine {
 	 */
 	template<class S, class T, S N>
 	class SequenceBuffer {
+		// It isn't strictly true that the size must be a power of two. The real
+		// requirement is: std::numeric_limits<S>::max() % N == 0; but having the
+		// size being a power of two guarantees that and allows some other
+		// optimizations so its a useful rule.
+		static_assert(std::has_single_bit(N), "The size of a sequence buffer must be a power of two to allow correct wrapping.");
+		static_assert(std::is_unsigned_v<S>, "SequenceBuffer assumes a unsigned sequence number.");
+
 		private:
 			S lowest = 0;
 			S next = 0;
 			bool entries[N] = {};
 			T storage[N] = {};
 
-			static_assert(std::is_unsigned_v<S>, "SequenceBuffer assumes a unsigned sequence number.");
 			constexpr static S index(S seq) noexcept { return seq % N; }
 
 			ENGINE_INLINE auto& getEntry(S seq) { return entries[index(seq)]; }
