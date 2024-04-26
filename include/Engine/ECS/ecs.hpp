@@ -6,7 +6,7 @@
 #include <Engine/Bitset.hpp>
 #include <Engine/Meta/IsComplete.hpp>
 #include <Engine/ECS/EntityState.hpp>
-#include <Engine/Math/sequence.hpp>
+#include <Engine/Math/seq.hpp>
 
 
 namespace Engine::ECS {

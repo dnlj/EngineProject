@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/Engine.hpp>
+#include <Engine/Math/seq.hpp>
 
 
 namespace Engine {
