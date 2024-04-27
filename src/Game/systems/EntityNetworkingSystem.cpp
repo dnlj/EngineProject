@@ -335,9 +335,9 @@ namespace Game {
 	void EntityNetworkingSystem::network(const NetPlySet plys) {
 		static_assert(ENGINE_SERVER, "This code is server side only.");
 
-		for (auto& ply : world.getFilter<PlayerFilter>()) {
+		for (auto& [ply, netComp] : plys) {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
-			auto& conn = world.getComponent<NetworkComponent>(ply).get();
+			auto& conn = netComp.get();
 
 			// TODO: see DqVBIIfY
 			// TODO: move elsewhere, this isnt really related to ECS networking

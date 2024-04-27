@@ -151,6 +151,8 @@ namespace Game {
 			}
 		}
 
+		// TODO: Should probably rework this and figure out how to handle events
+		//       in more general, how do they interact with rollback, networking, etc.
 		for (const auto& event : events) {
 			fireMissile(event);
 
@@ -159,10 +161,12 @@ namespace Game {
 				for (const auto ply : world.getFilter<PlayerFlag>()) {
 					if (ply == event.ent) { continue; }
 					auto& conn = world.getComponent<NetworkComponent>(ply).get();
+					ENGINE_DEBUG_ONLY(conn._debug_AllowMessages = true); // Workaround until we rework events, see "events" loop comment.
 					if (auto msg = conn.beginMessage<MessageType::SPELL>()) {
 						msg.write(event.pos);
 						msg.write(event.dir);
 					}
+					ENGINE_DEBUG_ONLY(conn._debug_AllowMessages = false);
 				}
 			}
 		}

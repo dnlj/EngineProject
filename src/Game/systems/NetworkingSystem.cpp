@@ -508,6 +508,13 @@ namespace Game {
 			if (plyCount > 0) {
 				const NetPlySet plysThisUpdate{std::to_address(plys.begin() + start), plyCount};
 
+				// Debugging plys/tick
+				//if constexpr (ENGINE_SERVER) {
+				//	std::vector<Engine::ECS::Entity> _debug_plys;
+				//	for (const auto& [ply, netComp] : plysThisUpdate) { _debug_plys.push_back(ply); }
+				//	ENGINE_LOG2("T: {}, {}/{} = {}", world.getUpdate(), step, fullUpdatesPerNetworkInterval, fmt::join(_debug_plys, ", "));
+				//}
+
 				// There are no technical issues with writing messages outside of this scope.
 				// They will still get queued and sent at the correct time, but it is usually
 				// wasteful to write messages outside of this because you will duplicate

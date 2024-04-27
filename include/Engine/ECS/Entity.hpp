@@ -37,11 +37,11 @@ namespace Engine::ECS {
 
 template<>
 struct fmt::formatter<Engine::ECS::Entity> {
-	constexpr auto parse(format_parse_context& ctx) {
+	constexpr auto parse(format_parse_context& ctx) const {
 		return ctx.end();
 	}
 
-	auto format(const Engine::ECS::Entity ent, format_context& ctx) {
+	auto format(const Engine::ECS::Entity ent, format_context& ctx) const {
 		return fmt::format_to(ctx.out(), "Entity({}, {})", ent.id, ent.gen);
 	}
 };
