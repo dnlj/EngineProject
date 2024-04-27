@@ -14,8 +14,8 @@ namespace Engine::UI {
 
 		private:
 			uint8 selectingCount = 0;
-			Caret caret = 0;
-			Caret select = 0;
+			Caret caret;
+			Caret select;
 			OnSubmit onSubmit;
 
 		public:
@@ -26,11 +26,13 @@ namespace Engine::UI {
 			ENGINE_INLINE_REL void setText(std::string_view text) {
 				StringLine::setText(text);
 				moveLineEnd();
+				select = Caret::invalid;
 			}
 
 			ENGINE_INLINE_REL void autoText(std::string_view text) {
 				StringLine::autoText(text);
 				moveLineEnd();
+				select = Caret::invalid;
 			}
 
 			ENGINE_INLINE_REL void insertText(uint32 i, std::string_view text) {
@@ -57,7 +59,7 @@ namespace Engine::UI {
 		private:
 			void tryBeginSelection() noexcept;
 			Caret getCaretInLine(const float32 x) const noexcept;
-			ENGINE_INLINE bool selecting() const noexcept { return selectingCount > 1; }
+			ENGINE_INLINE bool selecting() const noexcept { return selectingCount > 0; }
 
 			void actionSelectWord();
 			void actionSelectAll();
@@ -80,9 +82,9 @@ namespace Engine::UI {
 			void updateCaretPos();
 
 			bool isWordSeparator(Unicode::Unit8* begin) const noexcept {
-				// TODO: should probably use Unicode Character Categories for these
-				// TODO: cont. https://www.compart.com/en/unicode/category
-				// TODO: cont. http://www.unicode.org/reports/tr44/#General_Category_Values
+				// TODO: should probably use Unicode Character Categories for these:
+				//       https://www.compart.com/en/unicode/category
+				//       http://www.unicode.org/reports/tr44/#General_Category_Values
 				for (auto c : {'.','-','_',':','/','\\','#'}) {
 					if (c == +*begin) { return true; }
 				}
@@ -90,6 +92,10 @@ namespace Engine::UI {
 			}
 
 			ENGINE_INLINE bool shouldMoveCaret() const noexcept {
+				// Don't move the caret on the first move after a selection. If
+				// you have a selection and end the selection by pressing
+				// left/right it should jump to the start/end of the selection
+				// and not the char before/after the selection.
 				return selecting() || select == Caret::invalid || select == caret;
 			}
 

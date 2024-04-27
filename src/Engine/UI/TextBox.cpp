@@ -68,20 +68,16 @@ namespace Engine::UI {
 	}
 
 	bool TextBox::onAction(ActionEvent act) {
-		// All actions that involve selection are wrapped in a selectingCount
-		// inc/dec because selecting() is only true when selectingCount > 1. This is
-		// to prevent selection when something changes our caret other than a user
-		// action (calling setText when the caret = size for example).
 		switch (act) {
 			case Action::SelectBegin: { ++selectingCount; break; }
 			case Action::SelectEnd: { if (selectingCount > 0) { --selectingCount; }; break; }
-			case Action::SelectAll: { ++selectingCount; actionSelectAll(); --selectingCount; break; }
-			case Action::MoveCharLeft: { ++selectingCount; moveCharLeft(); --selectingCount; break; }
-			case Action::MoveCharRight: { ++selectingCount; moveCharRight(); --selectingCount; break; }
-			case Action::MoveLineStart: { ++selectingCount; moveLineStart(); --selectingCount; break; }
-			case Action::MoveLineEnd: { ++selectingCount; moveLineEnd(); --selectingCount; break; }
-			case Action::MoveWordLeft: { ++selectingCount; moveWordLeft(); --selectingCount; break; }
-			case Action::MoveWordRight: { ++selectingCount; moveWordRight(); --selectingCount; break; }
+			case Action::SelectAll: { actionSelectAll(); break; }
+			case Action::MoveCharLeft: { moveCharLeft(); break; }
+			case Action::MoveCharRight: { moveCharRight(); break; }
+			case Action::MoveLineStart: { moveLineStart(); break; }
+			case Action::MoveLineEnd: { moveLineEnd(); break; }
+			case Action::MoveWordLeft: { moveWordLeft(); break; }
+			case Action::MoveWordRight: { moveWordRight(); break; }
 			case Action::DeletePrev: { actionDeletePrev(); break; }
 			case Action::DeleteNext: { actionDeleteNext(); break; }
 			case Action::Cut: { actionCut(); break; }
@@ -168,10 +164,10 @@ namespace Engine::UI {
 	}
 
 	void TextBox::actionSelectAll() {
+		moveLineStart();
 		onAction(Action::SelectBegin);
-		onAction(Action::MoveLineEnd);
+		moveLineEnd();
 		onAction(Action::SelectEnd);
-		select = {0,0};
 	}
 
 	ENGINE_INLINE void TextBox::actionCancel() {
