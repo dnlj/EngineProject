@@ -627,36 +627,36 @@ namespace Game {
 		conn->disconnectAt = now + disconnectingPeriod;
 	}
 
-	#if ENGINE_CLIENT
-	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-		for (const auto& [add, con] : addrToConn) {
-			if (con->getState() != ConnectionState::Disconnected) {
-				ENGINE_WARN("Already connected to server (", add, "). Aborting.");
+	ENGINE_CLIENT_ONLY(
+		void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
+			for (const auto& [add, con] : addrToConn) {
+				if (con->getState() != ConnectionState::Disconnected) {
+					ENGINE_WARN("Already connected to server (", add, "). Aborting.");
+					return;
+				}
+			}
+
+			auto& conn = getOrCreateConnection(addr);
+
+			if (conn.getState() != ConnectionState::Disconnected) {
+				ENGINE_WARN("Attempting to connect to same server while already connected. Aborting.");
 				return;
 			}
-		}
-
-		auto& conn = getOrCreateConnection(addr);
-
-		if (conn.getState() != ConnectionState::Disconnected) {
-			ENGINE_WARN("Attempting to connect to same server while already connected. Aborting.");
-			return;
-		}
 		
-		conn.setKeyRemote(0);
-		conn.setState(ConnectionState::Connecting);
+			conn.setKeyRemote(0);
+			conn.setState(ConnectionState::Connecting);
 
-		if (!conn.getKeyLocal()) {
-			conn.setKeyLocal(genKey());
-		}
-		ENGINE_LOG("TRY CONNECT TO: ", addr, " lkey: ", conn.getKeyLocal(), " rkey: ",  conn.getKeyRemote(), " Tick: ", world.getTick());
+			if (!conn.getKeyLocal()) {
+				conn.setKeyLocal(genKey());
+			}
+			ENGINE_LOG("TRY CONNECT TO: ", addr, " lkey: ", conn.getKeyLocal(), " rkey: ",  conn.getKeyRemote(), " Tick: ", world.getTick());
 
-		if (auto msg = conn.beginMessage<MessageType::CONNECT_REQUEST>()) {
-			msg.write(conn.getKeyLocal());
-			writeMessagePadding(msg.getBufferWriter());
+			if (auto msg = conn.beginMessage<MessageType::CONNECT_REQUEST>()) {
+				msg.write(conn.getKeyLocal());
+				writeMessagePadding(msg.getBufferWriter());
+			}
 		}
-	}
-	#endif
+	)
 
 	void NetworkingSystem::addPlayer(ConnectionInfo& conn) {
 		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY, "Attempting to add duplicate player.");

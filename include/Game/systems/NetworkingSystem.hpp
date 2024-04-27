@@ -67,9 +67,7 @@ namespace Game {
 
 			int32 playerCount() const; // TODO: remove or at least make private. Should interact with filter directly.
 
-			#if ENGINE_CLIENT
-				void connectTo(const Engine::Net::IPv4Address& addr);
-			#endif
+			ENGINE_CLIENT_ONLY(void connectTo(const Engine::Net::IPv4Address& addr));
 
 			/**
 			 * Attempt a graceful disconnect.
