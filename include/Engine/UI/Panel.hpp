@@ -151,6 +151,13 @@ namespace Engine::UI {
 				panel->flags = PanelState::Deleted | PanelState::PerformingLayout;
 			}
 
+			/**
+			 * Directly modifies a panels flags. You should use specific
+			 * Panel::set* functions instead. Calling this will put your panels
+			 * in an invalid and unsupported state.
+			 */
+			ENGINE_INLINE static void unsafe_setFlag(Panel* panel, PanelState f, bool e) noexcept { e ? (panel->flags |= f) : (panel->flags &= ~f); }
+
 		public:
 			Panel(Context* context) : ctx{context} {}
 			Panel(Panel&) = delete;
@@ -435,6 +442,7 @@ namespace Engine::UI {
 			ENGINE_INLINE void insertChildren(Panel* before, Panel* first, Panel* last) {
 				insertChildrenNoLayout(before, first, last);
 				performLayout();
+				// TODO (eF1Tp1nZ): we also need to update the context state before this: active/hover/focus
 			}
 
 			/**

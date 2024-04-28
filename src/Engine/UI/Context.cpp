@@ -416,16 +416,16 @@ namespace Engine::UI {
 		ENGINE_DEBUG_ASSERT(hoverGuard == false, "updateHover called recursively from one of the panel hover callbacks.");
 		ENGINE_DEBUG_ONLY(hoverGuard = true);
 
-		auto&& canUse = [](auto&& it) ENGINE_INLINE { return (*it)->canHover(); };
-		auto&& canUseChild = [c=cursor](auto&& itP, auto&& itC) ENGINE_INLINE {
-			return (*itP)->canHoverChild(*itC) && (*itC)->getBounds().contains(c);
+		const auto&& canUse = [](auto&& it) ENGINE_INLINE { return (*it)->canHover(); };
+		const auto&& canUseChild = [&](auto&& itP, auto&& itC) ENGINE_INLINE {
+			return (*itP)->canHoverChild(*itC) && (*itC)->getBounds().contains(cursor); ;
 		};
 
-		auto&& endUse = [](auto&& it) ENGINE_INLINE { return (*it)->onEndHover(); };
-		auto&& endUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onEndChildHover(*itC); };
+		const auto&& endUse = [](auto&& it) ENGINE_INLINE { return (*it)->onEndHover(); };
+		const auto&& endUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onEndChildHover(*itC); };
 
-		auto&& beginUse = [](auto&& it) ENGINE_INLINE { return (*it)->onBeginHover(); };
-		auto&& beginUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onBeginChildHover(*itC); };
+		const auto&& beginUse = [](auto&& it) ENGINE_INLINE { return (*it)->onBeginHover(); };
+		const auto&& beginUseChild = [](auto&& itP, auto&& itC) ENGINE_INLINE { return (*itP)->onBeginChildHover(*itC); };
 
 		ENGINE_DEBUG_ASSERT(hoverStackBack.empty());
 
@@ -520,9 +520,33 @@ namespace Engine::UI {
 	}
 	
 	void Context::deferredDeletePanels(Panel* first, Panel* last) {
+		// TODO (18Gm1SqM0): We need to be doing most of this same stuff when
+		//       disabling a panel also. Currently we don't handle that. Pull
+		//       those bits into a common function, then we could just do
+		//       setDisabled(first,last) then update the relationships and do
+		//       other delete specific stuff. The only caveat is that we would
+		//       want to make sure this doesn't cause layout updates and handle
+		//       that manually like we do now at the bottom of this function.
+		//       - Update active
+		//       - Update hover
+		//       - Update focus
 		ENGINE_DEBUG_ASSERT(first && last);
 		const auto parent = first->getParent();
 		if (parent && parent->isDeleted()) { return; }
+
+		// Disable the panels so they will be excluded from the hover.
+		for (auto curr = first;; curr = curr->getNextSibling()) {
+			Panel::unsafe_setFlag(curr, PanelState::Enabled, false);
+			if (curr == last) { break; }
+		}
+
+		// Update hover. This must be done before the clean step so that onEndChildHover has a valid parent 
+		for (auto panel : hoverStack) {
+			if (panel == parent) {
+				updateHover();
+				break;
+			}
+		}
 
 		// Figure out if we might be in the focus stack
 		Panel* nextFocus = nullptr;
@@ -570,14 +594,6 @@ namespace Engine::UI {
 
 		// Clear from active
 		if (active && active->isDeleted()) { unsetActive(); }
-
-		// Update hover
-		for (auto panel : hoverStack) {
-			if (panel == parent) {
-				updateHover();
-				break;
-			}
-		}
 
 		// Remove from and update parent
 		if (parent) {

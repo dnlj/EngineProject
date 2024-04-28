@@ -171,7 +171,6 @@ namespace Engine::UI {
 			}
 
 			void unsetActive();
-			void updateHover();
 
 			template<class P, class... Args>
 			P* constructPanel(Args&&... args) {
@@ -382,6 +381,8 @@ namespace Engine::UI {
 			void onFocus(const bool has);
 
 		private:
+			void updateHover();
+
 			/**
 			 * Deletes all panels marked for deletion.
 			 * @see deferredDeletePanels
