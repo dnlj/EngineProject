@@ -20,11 +20,9 @@ namespace Engine::UI {
 			glm::vec4 color;
 	};
 
-	/**
-	 * TODO: doc
-	 * TODO: note about updating graph min/max
-	 * TODO: note abotu trimming data
-	 */
+	// TODO: doc
+	// TODO: note about updating graph min/max
+	// TODO: note about trimming data
 	class SubGraph {
 		public:
 			glm::vec2 min = {};

@@ -429,23 +429,39 @@ namespace Engine::UI {
 
 		ENGINE_DEBUG_ASSERT(hoverStackBack.empty());
 
-		// We traverse children in reverse order so that the results match what is rendered when children overlap
-		// Manually check root since it doesn't have a parent (bounds checking would be skipped because of canUseChild)
-		if (auto curr = root; curr->getBounds().contains(cursor)) {
-			ENGINE_DEBUG_ASSERT(canUse(&curr),
-				"This function assumes the root is a usable hover target. The above check will need updated if that changes."
-			); 
-			hoverStackBack.push_back(curr);
-			curr = curr->getLastChild();
+		// We traverse children in reverse order (prev, not next sibling) so
+		// that the results match what is rendered when children overlap. That
+		// is, the last children are drawn on top of the first children so check
+		// the last children first.
+		for (auto curr = root; curr;) {
+			const auto parent = curr->getParent();
+			if (!parent || canUseChild(&parent, &curr)) {
+				hoverStackBack.push_back(curr);
+				curr = curr->getLastChild();
+			} else {
+				curr = curr->getPrevSibling();
+			}
 
-			while (curr) {
-				auto parent = curr->getParent();
-				if (canUse(&curr) && parent && canUseChild(&parent, &curr)) {
-					hoverStackBack.push_back(curr);
-					curr = curr->getLastChild();
-				} else {
-					curr = curr->getPrevSibling();
+			// No previous sibling, step back to parent.
+			while (curr == nullptr) {
+				// Nothing is hoverable.
+				if (hoverStackBack.empty()) {
+					// Also break the outer loop since curr == nullptr
+					break;
 				}
+
+				curr = hoverStackBack.back();
+
+				// TODO: do we want this case to go to the parent? Or just no hover?
+				// The panel has no hoverable children.
+				if (canUse(&curr)) {
+					// Also break the outer loop since curr == nullptr
+					curr = nullptr;
+					break;
+				}
+
+				curr = curr->getPrevSibling();
+				hoverStackBack.pop_back();
 			}
 		}
 
@@ -473,22 +489,27 @@ namespace Engine::UI {
 		ENGINE_DEBUG_ASSERT(focusStackBack.empty());
 
 		{
-			auto curr = panel;
-			while (curr) {
-				USABLE(curr);
+			if (!canUse(&panel)) {
+				// Can't focus the panel we attempted to focus. Since the focus
+				// stack (back) is already empty (see above assert) we do nothing.
+			} else {
+				auto curr = panel;
+				while (curr) {
+					USABLE(curr);
 
-				// This logic is a bit strange since the focus stack is build in
-				// reverse order. If we cant use this panel we need to clear the
-				// stack or else we will have "inaccesible" entries (missing
-				// ancestors) with the wrong parents.
-				const auto parent = curr->getParent();
-				if (canUse(&curr) && (!parent || canUseChild(&parent, &curr))) {
-					focusStackBack.push_back(curr);
-				} else {
-					focusStackBack.clear();
+					// This logic is a bit strange since the focus stack is build in
+					// reverse order. If we cant use this panel we need to clear the
+					// stack or else we will have "inaccesible" entries (missing
+					// ancestors) with the wrong parents.
+					const auto parent = curr->getParent();
+					if (!parent || canUseChild(&parent, &curr)) {
+						focusStackBack.push_back(curr);
+					} else {
+						focusStackBack.clear();
+					}
+
+					curr = parent;
 				}
-
-				curr = parent;
 			}
 		}
 
