@@ -32,5 +32,6 @@ premake5 vs2022
 - Box2D
 - fmt
 - FreeType
+- GoogleTest
 - Harfbuzz
 - SOIL (littlstar)
