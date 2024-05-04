@@ -131,8 +131,8 @@ namespace Game::UI {
 			win->setSize({800, 600});
 			win->center();
 			win->setCloseCallback([&win](EUI::Window*){
-				win = nullptr;
 				win->getContext()->deferredDeletePanel(win);
+				win = nullptr;
 			});
 
 			auto cont = win->getContent();

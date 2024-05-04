@@ -73,7 +73,7 @@ namespace Engine::UI {
 			}
 
 			virtual bool onBeginActivate() override {
-				const auto func = [this](const glm::vec2 pos) {
+				auto func = [this](const glm::vec2 pos) {
 					float32 v = (ctx->getCursor().x - getPos().x) / getWidth();
 					setPercentage(v);
 				};

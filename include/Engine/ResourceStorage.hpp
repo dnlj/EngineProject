@@ -37,10 +37,10 @@ namespace Engine {
 			ResourceStorage(ResourceMemory mem) : ResourceMemory{mem} {}
 
 			ResourceStorage(const ResourceStorage&) = delete;
-			ResourceStorage(ResourceStorage&& other) { *this = std::move(other); }
+			ResourceStorage(ResourceStorage&& other) noexcept { *this = std::move(other); }
 
 			ResourceStorage& operator=(const ResourceStorage&) = delete;
-			ResourceStorage& operator=(ResourceStorage&& other) { swap(*this, other); return *this; }
+			ResourceStorage& operator=(ResourceStorage&& other) noexcept { swap(*this, other); return *this; }
 
 			~ResourceStorage() { destroy(*this); }
 

@@ -59,7 +59,7 @@ namespace Engine {
 
 				Token(Type t) { setType(t); }
 
-				Token(Token&& other) { *this = std::move(other); }
+				Token(Token&& other) noexcept { *this = std::move(other); }
 
 				Token& operator=(Token&& other) {
 					setType(other.type);
@@ -83,7 +83,7 @@ namespace Engine {
 
 					union Data {
 						public:
-							Data() {}
+							Data() noexcept {}
 							~Data() {}
 
 							template<class T>
