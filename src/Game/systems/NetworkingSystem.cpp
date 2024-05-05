@@ -691,10 +691,12 @@ namespace Game {
 		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
 
 		{
-			constexpr ZoneId zoneId = 0;
+			auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+
 			// TODO: query map system and find good spawn location
-			const b2Vec2 pos = {0, 2};
-			world.getSystem<ZoneManagementSystem>().addPlayer(ply, zoneId);
+			const b2Vec2 pos{0, 2};
+			const auto zoneId = zoneSys.findOrCreateZoneFor({pos.x, pos.y});
+			zoneSys.addPlayer(ply, zoneId);
 			
 			auto& physSys = world.getSystem<PhysicsSystem>();
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(

@@ -49,7 +49,7 @@ namespace {
 		}
 
 		auto& world = engine.getWorld();
-		ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", from.ent, " OldTick: ", world.getTick(), " NewTick: ", tick);
+		//ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", from.ent, " OldTick: ", world.getTick(), " NewTick: ", tick);
 
 		// It is important that we add the player _AFTER_ setting the next tick
 		// or else we can run into issues where initial entity/component state
@@ -84,7 +84,7 @@ namespace {
 		
 		ENGINE_DEBUG_ASSERT(remote, "Attempting to setup invalid entity mapping (remote)");
 		ENGINE_DEBUG_ASSERT(from.ent, "Attempting to setup invalid entity mapping (local)");
-		ENGINE_LOG("ECS_ENT_CREATE - Remote: ", remote, " Local: ", local, " Tick: ", world.getTick());
+		//ENGINE_LOG("ECS_ENT_CREATE - Remote: ", remote, " Local: ", local, " Tick: ", world.getTick());
 
 		// TODO: components init
 	}
@@ -97,7 +97,7 @@ namespace {
 		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
 
 		if (auto local = entNetSystem.removeEntityMapping(remote)) {
-			ENGINE_LOG("ECS_ENT_DESTROY - Remote: ", remote, " Local: ", local, " Tick: ", world.getTick());
+			//ENGINE_LOG("ECS_ENT_DESTROY - Remote: ", remote, " Local: ", local, " Tick: ", world.getTick());
 			world.deferedDestroyEntity(local);
 		}
 	}
@@ -109,7 +109,7 @@ namespace {
 		Engine::ECS::ComponentId cid;
 		if (!msg.read(&cid)) { return; }
 		
-		ENGINE_INFO2("recv_ECS_COMP_ADD: {} {}", remote, cid);
+		//ENGINE_INFO2("ECS_COMP_ADD: {} {}", remote, cid);
 
 		auto& world = engine.getWorld();
 		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
@@ -242,7 +242,7 @@ namespace {
 			ENGINE_INFO2(
 				"Oh boy a mishap has occured on tick {} with: {} - {} = {}",
 				tick, physCompState.trans.p, trans.p, diff
-			),
+			);
 
 			physCompState.trans = trans;
 			physCompState.vel = vel;
@@ -417,7 +417,7 @@ namespace Game {
 		if (NetworkTraits<C>::getReplType(comp) == Engine::Net::Replication::NONE) { return true; }
 
 		if (auto msg = conn.beginMessage<MessageType::ECS_COMP_ADD>()) {
-			ENGINE_INFO2("ECS_COMP_ADD: {} {}", ent, world.getComponentId<C>());
+			//ENGINE_LOG2("ECS_COMP_ADD: {} {}", ent, world.getComponentId<C>());
 			msg.write(ent);
 			msg.write(world.getComponentId<C>());
 			NetworkTraits<C>::writeInit(comp, msg.getBufferWriter(), engine, world, ent);
@@ -430,7 +430,7 @@ namespace Game {
 	void EntityNetworkingSystem::processAddedNeighbor(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
 		if (auto msg = conn.beginMessage<MessageType::ECS_ENT_CREATE>()) {
 			data.reset(NeighborState::Current);
-			ENGINE_LOG2("ECS_ENT_CREATE: {}", ent);
+			//ENGINE_LOG2("ECS_ENT_CREATE: {}", ent);
 			msg.write(ent);
 		} else {
 			data.reset(NeighborState::None);
@@ -441,7 +441,7 @@ namespace Game {
 	void EntityNetworkingSystem::processRemovedNeighbor(Connection& conn, const Engine::ECS::Entity ent, ECSNetworkingComponent::NeighborData& data) {
 		if (auto msg = conn.beginMessage<MessageType::ECS_ENT_DESTROY>()) {
 			data.reset(NeighborState::None);
-			ENGINE_LOG2("ECS_ENT_DESTROY: {}", ent);
+			//ENGINE_LOG2("ECS_ENT_DESTROY: {}", ent);
 			msg.write(ent);
 		} else {
 			ENGINE_WARN("Unable to network entity destroy.");

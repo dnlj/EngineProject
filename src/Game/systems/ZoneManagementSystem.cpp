@@ -24,6 +24,16 @@ namespace {
 	ENGINE_INLINE WorldAbsUnit manhattanDist(const WorldAbsVec& a, const WorldAbsVec& b) noexcept {
 		ENGINE_FLATTEN return glm::compAdd(glm::abs(a - b));
 	}
+
+	// The metric to use for comparing distances.
+	// - Using Euclidean is bad because we need to take a square root.
+	// - Using squared Euclidean is bad because it greatly limits our world size to sqrt(INT_MAX)
+	// - Chebyshev or Manhattan should be fine.
+	// 
+	// I went with Manhattan to have less aggressive merges. Might be a
+	// problem depnding on desired interaction range but I doubt we will
+	// need interactions that far out anyways.
+	constexpr auto metric = manhattanDist;
 }
 
 namespace Game {
@@ -41,9 +51,6 @@ namespace Game {
 		// immediately after sending the previous state.
 		static_assert(World::orderAfter<ZoneManagementSystem, EntityNetworkingSystem>());
 		static_assert(World::orderAfter<ZoneManagementSystem, NetworkingSystem>());
-
-		// Should always have at least one zone.
-		zones.emplace_back();
 	}
 
 	void ZoneManagementSystem::setup() {
@@ -51,6 +58,16 @@ namespace Game {
 
 	void ZoneManagementSystem::tick_Server() {
 		const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent>();
+
+		// Having this many zones active at once is likely a bug.
+		// Theoretically it could happen, maybe every player changed zones
+		// multiple times before a chunk unload, but it is incredibly unlikely
+		// without intentionally doing it. In reality triggering this likely
+		// means we are forgetting to removeRef in some external system. Likely
+		// for chunks in the MapSystem. Add one for the zero player case.
+		ENGINE_DEBUG_ASSERT(std::ranges::count(zones, true, &Zone::active) <= (1 + 2*std::ssize(playerFilter)),
+			"Unexpectedly high number of zones. This is likely a bug/leak."
+		);
 
 		//
 		// TODO: One option to support higher player counts might be do instead
@@ -76,16 +93,6 @@ namespace Game {
 		//
 
 		// TODO: one problem is our world scale is a bit off. Should probably be more like 6-8 blocks per meter instead of 4/5.
-
-		// The metric to use for comparing distances.
-		// - Using Euclidean is bad because we need to take a square root.
-		// - Using squared Euclidean is bad because it greatly limits our world size to sqrt(INT_MAX)
-		// - Chebyshev or Manhattan should be fine.
-		// 
-		// I went with Manhattan to have less aggressive merges. Might be a
-		// problem depnding on desired interaction range but I doubt we will
-		// need interactions that far out anyways.
-		constexpr auto metric = manhattanDist;
 
 		// TODO: we can probably combine most of these loops once we have the logic figured out.
 		// TODO: look into various clustering algos, k-means, etc.
@@ -235,7 +242,7 @@ namespace Game {
 			WorldAbsUnit minDist = zoneSameDist;
 			for (const auto ply : group) {
 				const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-				auto const plyZoneId = physComp.getZoneId();
+				const auto plyZoneId = physComp.getZoneId();
 				const auto& zone = zones[plyZoneId];
 				const auto dist = metric(zone.offset, ideal);
 				if (dist < minDist) {
@@ -273,48 +280,74 @@ namespace Game {
 		if constexpr (ENGINE_SERVER) { tick_Server(); }
 		if constexpr (ENGINE_CLIENT) { tick_Client(); }
 
+		// Close any unused zones.
 		for (ZoneId zoneId = 0; zoneId < zones.size(); ++zoneId) {
 			auto& zone = zones[zoneId];
+
+			// Don't close the zone under any of these conditions.
+			if (zone.refCount) { continue; }
+			if (!zone.active) { continue; }
 			if (!zone.getPlayers().empty()) { continue; }
 
-			if (zoneId != 0 && zone.active) {
-				ENGINE_LOG2("{} - Closing zone {}", world.getTick(), zoneId);
+			ENGINE_LOG2("{} - {} {}", world.getTick(), Styled{"Closing zone", Style::FG::Magenta}, zoneId);
 
-				// TODO (mAtTDzjB): save off entities etc
+			// TODO (mAtTDzjB): save off entities etc
 
-				zone.active = false;
-				zone.clear();
-				reuse.push_back(zoneId);
-			}
+			zone.active = false;
+			zone.clear();
+			reuse.push_back(zoneId);
 		}
 	}
 
 	ZoneId ZoneManagementSystem::createNewZone(WorldAbsVec pos) {
-		ZoneId zid = -1;
+		ZoneId zid = zoneInvalidId;
 		if (!reuse.empty()) {
 			zid = reuse.back();
 			reuse.pop_back();
-			return zid;
 		} else {
 			zid = static_cast<ZoneId>(zones.size());
 			zones.emplace_back();
 		}
 
-		ENGINE_DEBUG_ASSERT(zid != -1, "Failed to create valid zone. This is a bug.");
+		ENGINE_DEBUG_ASSERT(zid != zoneInvalidId, "Failed to create valid zone. This is a bug.");
 		auto& zone = zones[zid];
 		zone.offset = pos;
-		zone.active = false;
+		zone.active = true;
 		return zid;
 	}
-	
-	void ZoneManagementSystem::ensureZone(ZoneId zoneId, WorldAbsVec pos) {
-		if (zones.size() <= zoneId) {
-			zones.resize(zoneId + 1);
-			reuse.erase(std::remove(reuse.begin(), reuse.end(), zoneId), reuse.end());
-			zones[zoneId].offset = pos;
+
+	ZoneId ZoneManagementSystem::findOrCreateZoneFor(WorldAbsVec pos) {
+		// Find and existing zone if nearby.
+		const auto size = zones.size();
+		for (ZoneId zoneId = 0; zoneId < size; ++zoneId) {
+			const auto& zone = zones[zoneId];
+			if (!zone.active) { continue; }
+			if (metric(zone.offset, pos) <= zoneSameDist) {
+				return zoneId;
+			}
 		}
 
-		ENGINE_DEBUG_ASSERT(zones[zoneId].offset == pos);
+		// No suitable zone found. Create a new one.
+		return createNewZone(pos);
+	}
+
+	void ZoneManagementSystem::ensureZone(ZoneId zoneId, WorldAbsVec pos) {
+		ENGINE_LOG2("{}: {} {}", Styled{"ensureZone", Style::FG::Magenta | Style::Bold}, zoneId, pos);
+		if (zones.size() <= zoneId) {
+			ENGINE_LOG2("\t{}: {} {}", Styled{"ensureZone", Style::FG::Magenta | Style::Bold}, zoneId, pos);
+			zones.resize(zoneId + 1);
+			reuse.erase(std::remove(reuse.begin(), reuse.end(), zoneId), reuse.end());
+		}
+
+		auto& zone = zones[zoneId];
+		if (!zone.active) {
+			ENGINE_INFO2("\tZone inactive {}", zoneId);
+			zone.offset = pos;
+			zone.active = true;
+		} else {
+			ENGINE_INFO2("\tZone active {}", zoneId);
+			ENGINE_DEBUG_ASSERT(zones[zoneId].offset == pos);
+		}
 	}
 
 	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp)

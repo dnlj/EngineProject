@@ -111,7 +111,7 @@ namespace Game {
 	}
 
 	STORE_BLOCK_ENTITY(Tree) {
-		ENGINE_WARN("TODO: Store Tree"); // TODO: impl
+		//ENGINE_WARN("TODO: Store Tree"); // TODO: impl
 		data.type = 1;
 		data.size = {1,20};
 	}
@@ -121,7 +121,7 @@ namespace Game {
 	}
 
 	STORE_BLOCK_ENTITY(Portal) {
-		ENGINE_WARN("TODO: Store Portal"); // TODO: impl
+		//ENGINE_WARN("TODO: Store Portal"); // TODO: impl
 	}
 }
 
@@ -285,6 +285,7 @@ namespace Game {
 
 		// TODO: Shouldn't this unload logic be in tick instead of update?
 		// Unload active chunks
+		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
 			if (it->second.lastUsed < timeout) {
 				// ENGINE_LOG("Unloading chunk: ", it->first.x, ", ", it->first.y);
@@ -314,6 +315,7 @@ namespace Game {
 					}
 				}
 
+				zoneSys.removeRef(it->second.body.getZoneId());
 				world.getSystem<PhysicsSystem>().destroyBody(it->second.body);
 				it = activeChunks.erase(it);
 			} else {
@@ -419,11 +421,11 @@ namespace Game {
 			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ply);
 		#endif
 		const auto tick = world.getTick();
-		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 		const auto plyPos = Engine::Glue::as<glm::vec2>(physComp.getPosition());
 		const auto plyZoneId = physComp.getZoneId();
-		const auto plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
+		const auto& plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
 		const auto blockPos = worldToBlock2(plyPos, plyZoneOffset);
 
 		// How large of an area to load around the chunk blockPos is in.
@@ -498,6 +500,7 @@ namespace Game {
 					if (isBufferChunk) { continue; }
 
 					// TODO (QmIupKgJ): we really should probably have a cache of inactive chunks that we can reuse instead of constant destroy/create.
+					zoneSys.addRef(plyZoneId);
 					it = activeChunks.try_emplace(chunkPos, createBody(plyZoneId)).first;
 					ENGINE_DEBUG_ASSERT(it->second.body.valid());
 					//ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
@@ -544,8 +547,12 @@ namespace Game {
 					
 					// If the chunk is already loaded make sure the chunk and its entities are in the correct zone.
 					auto& body = it->second.body;
-					if (body.getZoneId() != plyZoneId) {
+					const auto bodyZoneId = body.getZoneId();
+					if (bodyZoneId != plyZoneId) {
 						//ENGINE_INFO2("Moving chunk {} from zone {} to {} @ {}", chunkPos, body.getZoneId(), plyZoneId, tick);
+						zoneSys.removeRef(bodyZoneId);
+						zoneSys.addRef(plyZoneId);
+
 						const auto pos = blockToWorld2(chunkToBlock(chunkPos), plyZoneOffset);
 						body.setPosition({pos.x, pos.y});
 						body.setZone(plyZoneId);
