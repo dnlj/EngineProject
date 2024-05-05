@@ -13,7 +13,7 @@
 	#define ENGINE_DEBUG_ONLY(...) __VA_ARGS__
 #else
 	#define ENGINE_DEBUG false
-	#define ENGINE_DEBUG_ONLY(x)
+	#define ENGINE_DEBUG_ONLY(...)
 #endif
 
 #if ENGINE_SERVER
@@ -269,12 +269,13 @@ namespace Engine {
 	#define ENGINE_VERBOSE2(...)
 	#define ENGINE_WARN2(...)
 #else
-	#define ENGINE_DEBUG2 ::Engine::getGlobalConfig().logger.debug
-	#define ENGINE_LOG2 ::Engine::getGlobalConfig().logger.log
-	#define ENGINE_INFO2 ::Engine::getGlobalConfig().logger.info
-	#define ENGINE_SUCCESS2 ::Engine::getGlobalConfig().logger.success
-	#define ENGINE_VERBOSE2 ::Engine::getGlobalConfig().logger.verbose
-	#define ENGINE_WARN2 ::Engine::getGlobalConfig().logger.warn
+	#define _detail_ENGINE_LOG_USING using ::Engine::Log::Styled; using ::Engine::Log::Style;
+	#define ENGINE_DEBUG2(...) { _detail_ENGINE_LOG_USING ::Engine::getGlobalConfig().logger.debug(__VA_ARGS__); }
+	#define ENGINE_LOG2(...) { _detail_ENGINE_LOG_USING ::Engine::getGlobalConfig().logger.log(__VA_ARGS__); }
+	#define ENGINE_INFO2(...) { _detail_ENGINE_LOG_USING ::Engine::getGlobalConfig().logger.info(__VA_ARGS__); }
+	#define ENGINE_SUCCESS2(...) { _detail_ENGINE_LOG_USING ::Engine::getGlobalConfig().logger.success(__VA_ARGS__); }
+	#define ENGINE_VERBOSE2(...) { _detail_ENGINE_LOG_USING ::Engine::getGlobalConfig().logger.verbose(__VA_ARGS__); }
+	#define ENGINE_WARN2(...) { _detail_ENGINE_LOG_USING ::Engine::getGlobalConfig().logger.warn(__VA_ARGS__); }
 #endif
 
 #define ENGINE_ERROR2 ([]<class... Args>(const ::Engine::Log::FormatString<Args...>& format, const Args&... args) ENGINE_INLINE {\

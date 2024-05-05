@@ -537,8 +537,8 @@ namespace Engine::Win32 {
 	LRESULT OpenGLWindow::processMessage<WM_CHAR>(OpenGLWindow& window, WPARAM wParam, LPARAM lParam) {
 		// See: https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#keystroke-message-flags
 		// See: https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-char#parameters
-		
-		const auto repeat       =  lParam & 0b00000000'00000000'11111111'11111111;
+
+		[[maybe_unused]] const auto repeat       =  lParam & 0b00000000'00000000'11111111'11111111;
 		const auto scancode     = (lParam & 0b00000000'11111111'00000000'00000000) >> 16;
 		//const bool extended   =  lParam & 0b00000001'00000000'00000000'00000000;
 		//const auto reserved   =  lParam & 0b00011110'00000000'00000000'00000000;

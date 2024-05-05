@@ -28,12 +28,12 @@ namespace Engine::Log {
 
 	class StyleBitset {
 		public:
-			uint32 bitset = {};
+			uint32 value = {};
 			consteval StyleBitset() {}
-			consteval StyleBitset(uint32 bitset) : bitset{bitset} {}
-			friend consteval StyleBitset operator&(StyleBitset left, StyleBitset right) { return left.bitset & right.bitset; }
-			friend consteval StyleBitset operator|(StyleBitset left, StyleBitset right) { return left.bitset | right.bitset; }
-			consteval operator bool() const noexcept { return bitset; }
+			consteval StyleBitset(uint32 value) : value{value} {}
+			friend consteval StyleBitset operator&(StyleBitset left, StyleBitset right) { return left.value & right.value; }
+			friend consteval StyleBitset operator|(StyleBitset left, StyleBitset right) { return left.value | right.value; }
+			consteval explicit operator bool() const noexcept { return value; }
 	};
 
 	namespace Detail {
@@ -56,7 +56,7 @@ namespace Engine::Log {
 				consteval NamedColor(uint8 n, bool bright) : color{n,0,0}, useCase{UseCase::Named} {}
 				consteval NamedColor(glm::u8vec3 color) : color{color}, useCase{UseCase::RGB} {}
 				consteval NamedColor(uint8 r, uint8 g, uint8 b) : color{r,g,b}, useCase{UseCase::RGB} {}
-				constexpr operator bool() const noexcept { return useCase != UseCase::None; }
+				constexpr explicit operator bool() const noexcept { return useCase != UseCase::None; }
 		}; static_assert(sizeof(NamedColor) == 4);
 	}
 	
@@ -137,8 +137,8 @@ namespace Engine::Log {
 				: bg{bg} {
 			}
 
-			consteval operator bool() const {
-				return bitset != 0 || fg || bg;
+			consteval explicit operator bool() const noexcept {
+				return bitset.value || fg || bg;
 			}
 
 			friend consteval Style operator|(const Style& left, const Style& right) {
@@ -184,9 +184,6 @@ namespace Engine::Log {
 	};
 
 	class ANSIEscapeSequence {
-		public:
-			constexpr static std::string_view reset = "\033[0m";
-
 		private:
 			using Storage = std::array<char, 31>;
 			const Storage str = {};
@@ -300,6 +297,11 @@ namespace Engine::Log {
 			}
 	}; static_assert(sizeof(ANSIEscapeSequence) == 32);
 
+	// TODO: better examples:
+	//       constexpr Style style = Style::Bold | Style::Foreground{2};
+	//       constexpr auto seq = Engine::Log::ANSIEscapeSequence{style};
+	//       constexpr auto arg = Styled{"My Test Number", style};
+	//       logger.warn("Test log {} {} {} - {}", arg, i, Styled{i, style}, Styled{123, style});
 	template<class T>
 	class Styled {
 		public:
