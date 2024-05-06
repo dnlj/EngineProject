@@ -92,7 +92,7 @@ CONAN_PACKAGES = {
 		"soil_littlstar/master",
 		"freetype/2.10.4",
 		"harfbuzz/2.8.1",
-		"fmtlib/10.0.0",
+		"fmtlib/10.1.0",
 		"assimp/5.2.3",
 		"googletest/1.14.0",
 	},
@@ -236,7 +236,6 @@ workspace(PROJECT_NAME .."Workspace")
 	filter "action:vs*"
 		justmycode "off" -- /JMC adds significant debug build overhead
 		buildoptions {
-			"/wd4996", -- Disable some warnings about things Visual Studio has taken upon itself to deem deprecated
 			"/wd4103", -- Work around for MSVC bug. TODO: remove when fixed - https://developercommunity.visualstudio.com/t/Warning-C4103-in-Visual-Studio-166-Upda/1057589
 			--"/w14061", -- Not enabled because of enum count cases. Enable: missing switch case for enum
 			--"/w14062", -- Not enabled because of enum count cases. Enable: missing switch case for enum, and no default
@@ -260,9 +259,13 @@ workspace(PROJECT_NAME .."Workspace")
         architecture "x64"
 		defines {
 			"ENGINE_OS_WINDOWS",
-			"WIN32_LEAN_AND_MEAN",
-			"NOMINMAX",
 			"ENGINE_BASE_PATH=R\"(".. os.getcwd() .. ")\"",
+			
+			-- Win32 Defines
+			"WIN32_LEAN_AND_MEAN", -- Reduce Windows.h bloat
+			"NOMINMAX", -- Don't define min/max macros in Windows.h
+			"_CRT_SECURE_NO_WARNINGS", -- MSVC has "deprectated" (read: not deprecated, no plan for removal) some standard C/C++ functions in favor of its own safer alternatives.
+			"_CRT_NONSTDC_NO_WARNINGS", -- Use standard POSIX function names instead of
 		}
 
 	filter "configurations:Debug*"

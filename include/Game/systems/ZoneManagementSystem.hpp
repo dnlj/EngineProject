@@ -65,7 +65,7 @@ namespace Game {
 			 * Ensures that the given ZoneId is active and offset at the given position.
 			 */
 			void ensureZone(ZoneId zoneId, WorldAbsVec pos);
-
+			
 			// TODO: server only
 			void migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp);
 			void migrateEntity(Engine::ECS::Entity ent, ZoneId newZoneId, PhysicsBodyComponent& physComp);
