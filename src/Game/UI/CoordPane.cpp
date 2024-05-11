@@ -64,8 +64,8 @@ namespace Game::UI {
 
 			const auto offsetTargetPos = actComp.getTarget();
 			const auto worldTargetPos = offsetTargetPos + Engine::Glue::as<glm::vec2>(physComp.getPosition());
-			const auto blockTargetPos = worldToBlock2(worldTargetPos, zone.offset);
-			const auto blockWorldTargetPos = blockToWorld2(blockTargetPos, zone.offset);
+			const auto blockTargetPos = worldToBlock(worldTargetPos, zone.offset);
+			const auto blockWorldTargetPos = blockToWorld(blockTargetPos, zone.offset);
 			const auto chunkTargetPos = blockToChunk(blockTargetPos);
 			const auto chunkBlockTargetPos = chunkToBlock(chunkTargetPos);
 			const auto regionTargetPos = chunkToRegion(chunkTargetPos);

@@ -64,7 +64,7 @@ namespace Game {
 		fixtureDef.filter.maskBits = PhysicsSystem::getMaskBits(PhysicsCategory::Decoration);
 
 		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset;
-		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld2(desc.pos, zoneOffset));
+		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos, zoneOffset));
 		const auto ent = world.createEntity();
 
 		world.addComponent<NetworkedFlag>(ent);
@@ -208,7 +208,7 @@ namespace Game {
 					//const auto plyBlockPos = BlockVec{plyPos.x, plyPos.y} + ;
 					//const BlockVec target = actComp.getTarget() * blockSize + glm::vec2{plyPos.x, plyPos.y};
 					const WorldVec placementOffset = {x*blockSize, y*blockSize};
-					const BlockVec target = worldToBlock2(
+					const BlockVec target = worldToBlock(
 						WorldVec{plyPos.x, plyPos.y} + actComp.getTarget() + placementOffset,
 						zoneSys.getZone(physComp.getZoneId()).offset
 					);
@@ -426,7 +426,7 @@ namespace Game {
 		const auto plyPos = Engine::Glue::as<glm::vec2>(physComp.getPosition());
 		const auto plyZoneId = physComp.getZoneId();
 		const auto& plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
-		const auto blockPos = worldToBlock2(plyPos, plyZoneOffset);
+		const auto blockPos = worldToBlock(plyPos, plyZoneOffset);
 
 		// How large of an area to load around the chunk blockPos is in.
 		constexpr auto halfAreaSize = ChunkVec{5, 5};
@@ -553,7 +553,7 @@ namespace Game {
 						zoneSys.removeRef(bodyZoneId);
 						zoneSys.addRef(plyZoneId);
 
-						const auto pos = blockToWorld2(chunkToBlock(chunkPos), plyZoneOffset);
+						const auto pos = blockToWorld(chunkToBlock(chunkPos), plyZoneOffset);
 						body.setPosition({pos.x, pos.y});
 						body.setZone(plyZoneId);
 
@@ -690,7 +690,7 @@ namespace Game {
 		{ // Physics
 			auto& body = data.body;
 			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld2(chunkToBlock(chunkPos), zoneSys.getZone(body.getZoneId()).offset));
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos), zoneSys.getZone(body.getZoneId()).offset));
 
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures

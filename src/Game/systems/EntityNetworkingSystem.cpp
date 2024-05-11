@@ -15,7 +15,6 @@
 // TODO: rm - shouldnt be accessed from here.
 #include <Game/systems/MapSystem.hpp>
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Shared
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,11 +41,10 @@ namespace {
 			return;
 		}
 
-		Engine::ECS::Tick tick;
-		if (!msg.read(&tick)) {
-			ENGINE_WARN("Unable to sync ticks.");
-			return;
-		}
+		ENGINE_NET_READ(msg, Engine::ECS::Tick, tick);
+		ENGINE_NET_READ(msg, ZoneId, zoneId);
+		ENGINE_NET_READ(msg, WorldAbsVec, zoneOffset);
+		ENGINE_NET_READ(msg, WorldVec, pos);
 
 		auto& world = engine.getWorld();
 		//ENGINE_LOG("ECS_INIT - Remote: ", remote, " Local: ", from.ent, " OldTick: ", world.getTick(), " NewTick: ", tick);
@@ -55,9 +53,11 @@ namespace {
 		// or else we can run into issues where initial entity/component state
 		// is incorrect because it was initialized with the old tick value. The
 		// ActionComponent action sequence buffer is one example.
-		// TODO: use ping, loss, etc to pick good offset value. We dont actually have good quality values for those stats yet at this point.
+		// 
+		// TODO: use ping, loss, etc to pick good offset value. We don't actually have good quality values for those stats yet at this point.
 		world.setNextTick(tick + 16);
-		world.getSystem<Game::NetworkingSystem>().addPlayer(from);
+		world.getSystem<Game::ZoneManagementSystem>().ensureZone(zoneId, zoneOffset);
+		world.getSystem<Game::NetworkingSystem>().addPlayer(from, zoneId, pos);
 
 		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
 		ENGINE_DEBUG_ASSERT(entNetSystem.getEntityMapping().size() == 0, "Networked entity map already has entries. This is a bug.");
@@ -240,7 +240,7 @@ namespace {
 		// TODO: why does this ever happen with only one player connected?
 		if (diff.LengthSquared() > eps * eps) { // TODO: also check q
 			ENGINE_INFO2(
-				"Oh boy a mishap has occured on tick {} with: {} - {} = {}",
+				"Oh boy a mishap has occurred on tick {} with: {} - {} = {}",
 				tick, physCompState.trans.p, trans.p, diff
 			);
 
@@ -338,6 +338,21 @@ namespace Game {
 		for (auto& [ply, netComp] : plys) {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
 			auto& conn = netComp.get();
+
+			// Player data is sent separately from the normal networking path. This is needed
+			// because the player's data will be processed on the client first and then sent
+			// to the server whereas everything else is processed on the server and sent to
+			// the client. If everything follows a single networking path/strategy there would
+			// be a RTT delay between when the player presses a button and when they actually
+			// sees a change on their screen, which would be awful.
+			//
+			// This happens from two places:
+			// - ECS_INIT > NetworkingSystem::addPlayer - Entity is created and components are added.
+			// - PLAYER_DATA - Player data is networked
+			//
+			// The above should probably be reworked so we aren't calling into
+			// NetworkingSystem (via addPlayer) to create entities, but that's just how
+			// things evolved for now.
 
 			// TODO: see DqVBIIfY
 			// TODO: move elsewhere, this isnt really related to ECS networking

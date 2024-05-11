@@ -87,7 +87,8 @@ namespace Game {
 				msgHandlers[msg] = func;
 			}
 
-			void addPlayer(ConnectionInfo& conn); // TODO: move addPlayer to EntityNetworkingSystem?
+			// TODO: move addPlayer to EntityNetworkingSystem?
+			WorldVec addPlayer(ConnectionInfo& conn, ZoneId zone, WorldVec zoneLocalPos);
 
 			ConnectionInfo* getConnection(Engine::Net::IPv4Address addr) {
 				auto found = addrToConn.find(addr);

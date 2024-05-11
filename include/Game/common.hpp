@@ -108,11 +108,20 @@ namespace Game::inline Units {
 	}
 
 	/**
+	 * Convert from an absolute world position to relative world position.
+	 * @param world The absolute world position.
+	 * @param offset The absolute position offset that @p world will be relative to.
+	 */
+	ENGINE_INLINE inline WorldAbsVec absolueToRelative(const WorldAbsVec world, const WorldAbsVec offset) noexcept {
+		return world - offset;
+	}
+
+	/**
 	 * Convert from a world position to a block position.
 	 * @param world The local world position relative to the absolute offset @offset.
 	 * @param offset The absolute position offset that @p world uses as its origin.
 	 */
-	ENGINE_INLINE inline BlockVec worldToBlock2(const WorldVec world, const WorldAbsVec offset) noexcept {
+	ENGINE_INLINE inline BlockVec worldToBlock(const WorldVec world, const WorldAbsVec offset) noexcept {
 		// Calculate separate and then combine to correctly handle the fractional part.
 		const auto o = offset * static_cast<WorldAbsUnit>(blocksPerMeter);
 		const auto w = glm::floor(world * static_cast<WorldUnit>(blocksPerMeter));
@@ -124,7 +133,7 @@ namespace Game::inline Units {
 	 * @param block The absolute block position to convert.
 	 * @param offset The absolute block position that the resulting local vector will be relative to.
 	 */
-	ENGINE_INLINE constexpr inline WorldVec blockToWorld2(const BlockVec block, const WorldAbsVec offset) noexcept {
+	ENGINE_INLINE constexpr inline WorldVec blockToWorld(const BlockVec block, const WorldAbsVec offset) noexcept {
 		const auto meters = Engine::Math::divFloor(block, static_cast<BlockUnit>(blocksPerMeter));
 		const auto rem = WorldVec{meters.r} / static_cast<WorldUnit>(blocksPerMeter);
 		return WorldVec{meters.q - offset} + rem;

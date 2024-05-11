@@ -265,9 +265,14 @@ namespace Game {
 
 		auto& world = engine.getWorld();
 		from.setState(ConnectionState::Connected);
-		world.getSystem<NetworkingSystem>().addPlayer(from);
-
 		ENGINE_LOG("CONNECT_AUTH from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick(), " ", from.ent);
+
+		// TODO: query map system and find good spawn location
+		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+		constexpr WorldAbsVec pos = {0, 2};
+		const auto zoneId = zoneSys.findOrCreateZoneFor(pos);
+		const auto& zone = zoneSys.getZone(zoneId);
+		const auto finalPos = world.getSystem<NetworkingSystem>().addPlayer(from, zoneId, absolueToRelative(pos, zone.offset));
 
 		// It is important that all three of these messages are sent in the same
 		// packet so that the are processed immediately and before messages in
@@ -287,6 +292,9 @@ namespace Game {
 			ENGINE_DEBUG_ASSERT(from.ent, "Attempting to network invalid entity.");
 			reply.write(from.ent);
 			reply.write(world.getTick());
+			reply.write(zoneId);
+			reply.write(zone.offset);
+			reply.write(finalPos);
 		} else {
 			// TODO: handle
 		}
@@ -665,7 +673,7 @@ namespace Game {
 		}
 	)
 
-	void NetworkingSystem::addPlayer(ConnectionInfo& conn) {
+	WorldVec NetworkingSystem::addPlayer(ConnectionInfo& conn, ZoneId zoneId, WorldVec worldPos) {
 		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY, "Attempting to add duplicate player.");
 		ENGINE_DEBUG_ASSERT(conn.getState() == ConnectionState::Connected, "Attempting to add player from non-connected connection.");
 
@@ -683,6 +691,7 @@ namespace Game {
 			world.addComponent<CameraTargetFlag>(ply);
 		}
 
+		world.addComponent<ActionComponent>(ply, world.getTick());
 		world.addComponent<PhysicsInterpComponent>(ply);
 
 		world.addComponent<PlayerFlag>(ply);
@@ -690,24 +699,18 @@ namespace Game {
 		spriteComp.path = "assets/player.png";
 		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
 
-		{
-			auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-
-			// TODO: query map system and find good spawn location
-			const b2Vec2 pos{0, 2};
-			const auto zoneId = zoneSys.findOrCreateZoneFor({pos.x, pos.y});
-			zoneSys.addPlayer(ply, zoneId);
+		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+		zoneSys.addPlayer(ply, zoneId);
 			
-			auto& physSys = world.getSystem<PhysicsSystem>();
-			auto& physComp = world.addComponent<PhysicsBodyComponent>(
-				ply,
-				physSys.createPhysicsCircle(ply, pos, zoneId, PhysicsCategory::Player)
-			);
+		auto& physSys = world.getSystem<PhysicsSystem>();
+		auto& physComp = world.addComponent<PhysicsBodyComponent>(
+			ply,
+			physSys.createPhysicsCircle(ply, {worldPos.x, worldPos.y}, zoneId, PhysicsCategory::Player)
+		);
 
-			ENGINE_WARN2("\nAdding physics comp: {} {}\n", ply, physComp.zone.id);
-		}
-
-		world.addComponent<ActionComponent>(ply, world.getTick());
+		ENGINE_WARN2("\nAdding physics comp: {} {}\n", ply, physComp.zone.id);
+		const auto realPos = physComp.getPosition();
+		return {realPos.x, realPos.y};
 	}
 
 	ConnectionInfo& NetworkingSystem::getOrCreateConnection(const Engine::Net::IPv4Address& addr) {

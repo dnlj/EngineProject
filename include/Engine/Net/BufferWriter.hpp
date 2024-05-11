@@ -4,6 +4,14 @@
 #include <Engine/Engine.hpp>
 
 
+#define ENGINE_NET_READ(Msg, Type, Var) \
+	Type Var; \
+	if (!Msg.read(&Var)) { \
+		ENGINE_WARN("Unable to read " #Var " from network."); \
+		return; \
+	}
+	
+
 namespace Engine::Net {
 	// TODO: move bit packing into dervied type
 	class BufferWriter {
