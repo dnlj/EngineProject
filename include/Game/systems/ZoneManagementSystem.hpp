@@ -59,7 +59,7 @@ namespace Game {
 			/**
 			 * Find an existing zone or create a new zone suitable for containing the given position.
 			 */
-			ZoneId findOrCreateZoneFor(WorldAbsVec pos);
+			ENGINE_SERVER_ONLY(ZoneId findOrCreateZoneFor(WorldAbsVec pos));
 
 			/**
 			 * Ensures that the given ZoneId is active and offset at the given position.
@@ -92,13 +92,8 @@ namespace Game {
 			}
 
 		private:
-			// TODO: sever only
-			ENGINE_INLINE_REL ZoneId createNewZone(WorldAbsVec pos);
-
-			// TODO: server only
-			ENGINE_INLINE_REL void tick_Server();
-
-			// TODO: client only
-			ENGINE_INLINE_REL void tick_Client();
+			ENGINE_SERVER_ONLY(ENGINE_INLINE_REL ZoneId createNewZone(WorldAbsVec pos));
+			ENGINE_SERVER_ONLY(ENGINE_INLINE_REL void tick_Server());
+			ENGINE_CLIENT_ONLY(ENGINE_INLINE_REL void tick_Client());
 	};
 }

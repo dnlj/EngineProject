@@ -16,12 +16,26 @@
 	#define ENGINE_DEBUG_ONLY(...)
 #endif
 
+/**
+ * Include the wrapped code only on the server or client.
+ * 
+ * For large sections of code it is better to use `#if ENGINE_SERVER` because Visual
+ * Studio (VS only, msvc/cl.exe compiles them fine) is horrible about handling macros and
+ * gives lots of false warnings and errors. This is apparently intended and is "not a
+ * bug". Very cool.
+ *
+ * @see https://developercommunity.visualstudio.com/t/msvc-nagging-about-adding-macros-to-hint-file-afte/284851
+ * @see https://developercommunity.visualstudio.com/t/cpphint-handling-is-still-broken/487335
+ * @see https://developercommunity.visualstudio.com/t/green-squiggles-and-light-bulb-with-macro-in-skipp/248016
+ * @see https://learn.microsoft.com/en-us/cpp/build/reference/hint-files?view=msvc-170
+ */
 #if ENGINE_SERVER
 	#define ENGINE_SERVER_ONLY(...) __VA_ARGS__
 #else
 	#define ENGINE_SERVER_ONLY(...)
 #endif
 
+/** @copydoc ENGINE_SERVER_ONLY */
 #if ENGINE_CLIENT
 	#define ENGINE_CLIENT_ONLY(...) __VA_ARGS__
 #else

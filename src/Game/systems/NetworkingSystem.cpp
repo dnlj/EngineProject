@@ -150,29 +150,124 @@ namespace {
 
 
 namespace Game {
-	HandleMessageDef(MessageType::UNKNOWN)
-	}
-
-	HandleMessageDef(MessageType::DISCOVER_SERVER)
-		// TODO: rate limit per ip (longer if invalid packet)
-		if (verifyMessagePadding(msg)) {
-			if (auto reply = from.beginMessage<MessageType::SERVER_INFO>()) {
-				//constexpr char name[] = "This is the name of the server";
-				std::string name = "This is the name of the server ";
-				name += std::to_string(Engine::getGlobalConfig().port);
-				reply.write<int>(int(std::size(name)));
-				reply.write(name.data(), std::size(name));
+	#if ENGINE_SERVER
+		HandleMessageDef(MessageType::DISCOVER_SERVER)
+			// TODO: rate limit per ip (longer if invalid packet)
+			if (verifyMessagePadding(msg)) {
+				if (auto reply = from.beginMessage<MessageType::SERVER_INFO>()) {
+					//constexpr char name[] = "This is the name of the server";
+					std::string name = "This is the name of the server ";
+					name += std::to_string(Engine::getGlobalConfig().port);
+					reply.write<int>(int(std::size(name)));
+					reply.write(name.data(), std::size(name));
+				}
+			} else if constexpr (ENGINE_DEBUG) {
+				[[maybe_unused]] const auto rem = msg.remaining();
+				ENGINE_DEBUG_ASSERT(false);
 			}
-		} else if constexpr (ENGINE_DEBUG) {
-			[[maybe_unused]] const auto rem = msg.remaining();
-			ENGINE_DEBUG_ASSERT(false);
+
+			msg.discard();
 		}
 
-		msg.discard();
-	}
-	
-	HandleMessageDef(MessageType::SERVER_INFO)
-		#if ENGINE_CLIENT
+		HandleMessageDef(MessageType::CONNECT_REQUEST)
+			uint16 remote = {};
+			msg.read<uint16>(&remote);
+
+			if (!verifyMessagePadding(msg)) {
+				// TODO: rate limit connections with invalid messages
+				ENGINE_WARN("Got invalid connection request from ", from.address());
+				return;
+			} else {
+				msg.discard();
+			}
+
+			if (from.getKeyRemote() && from.getKeyRemote() != remote) {
+				ENGINE_WARN("Got connection request with invalid key from ", from.address(), " (", remote, " != ", from.getKeyRemote(), ")");
+				return msg.discard();
+			} else {
+				from.setKeyRemote(remote);
+			}
+
+			if (from.getState() == ConnectionState::Disconnected) {
+				ENGINE_DEBUG_ASSERT(from.getKeyLocal() == 0, "It should not be possible to have a local key in an unconnected state. This is a bug.");
+				from.setState(ConnectionState::Connecting);
+
+				auto& world = engine.getWorld();
+				auto& netSys = world.getSystem<NetworkingSystem>();
+				from.setKeyLocal(netSys.genKey());
+			} else {
+				ENGINE_DEBUG_ASSERT(from.getKeyLocal() != 0, "It should not be possible to be missing a local key in any non-unconnected state. This is a bug.");
+			}
+
+			if (auto reply = from.beginMessage<MessageType::CONNECT_CHALLENGE>()) {
+				reply.write(from.getKeyLocal());
+				ENGINE_LOG("CONNECT_REQUEST from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
+			}
+		}
+
+		HandleMessageDef(MessageType::CONNECT_AUTH)
+			uint16 key = {};
+			msg.read<uint16>(&key);
+
+			if (key != from.getKeyLocal()) {
+				ENGINE_WARN("CONNECT_AUTH: Invalid recv key ", key, " != ", from.getKeyLocal());
+				return msg.discard();
+			}
+
+			if (!verifyMessagePadding(msg)) {
+				// TODO: rate limit connections with invalid messages
+				ENGINE_WARN("Got invalid connection confirm from ", from.address());
+				return;
+			} else {
+				msg.discard();
+			}
+
+			auto& world = engine.getWorld();
+			from.setState(ConnectionState::Connected);
+			ENGINE_LOG("CONNECT_AUTH from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick(), " ", from.ent);
+
+			// TODO: query map system and find good spawn location
+			auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+			constexpr WorldAbsVec pos = {0, 2};
+			const auto zoneId = zoneSys.findOrCreateZoneFor(pos);
+			const auto& zone = zoneSys.getZone(zoneId);
+			const auto finalPos = world.getSystem<NetworkingSystem>().addPlayer(from, zoneId, absolueToRelative(pos, zone.offset));
+
+			// It is important that all three of these messages are sent in the same
+			// packet so that the are processed immediately and before messages in
+			// other channels. That should be true since these messages are very
+			// small and we shouldn't be sending any other messages at this time.
+			// See notes above (top of file) for details.
+			if (auto reply = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
+			} else {
+				// TODO: handle. If we cant send the
+				//       CONNECT_CONFIRM/ECS_INIT/CONFIG_NETWORK we need to abort
+				//       this connection and wait on the client to restart the
+				//       handshake process.
+			}
+
+			// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
+			if (auto reply = from.beginMessage<MessageType::ECS_INIT>()) {
+				ENGINE_DEBUG_ASSERT(from.ent, "Attempting to network invalid entity.");
+				reply.write(from.ent);
+				reply.write(world.getTick());
+				reply.write(zoneId);
+				reply.write(zone.offset);
+				reply.write(finalPos);
+			} else {
+				// TODO: handle
+			}
+
+			if (auto reply = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
+				reply.write(from.getPacketRecvRate());
+			} else {
+				// TODO: handle
+			}
+		}
+	#endif // ENGINE_SERVER
+
+	#if ENGINE_CLIENT
+		HandleMessageDef(MessageType::SERVER_INFO)
 			int len;
 			if (!msg.read<int>(&len)) { return; }
 
@@ -182,134 +277,38 @@ namespace Game {
 			auto& servInfo = netSys.servers[from.address()];
 			servInfo.name.assign(name, len);
 			servInfo.lastUpdate = world.getTime();
-		#endif
-	}
-
-	HandleMessageDef(MessageType::CONNECT_REQUEST)
-		uint16 remote = {};
-		msg.read<uint16>(&remote);
-
-		if (!verifyMessagePadding(msg)) {
-			// TODO: rate limit connections with invalid messages
-			ENGINE_WARN("Got invalid connection request from ", from.address());
-			return;
-		} else {
-			msg.discard();
 		}
 
-		if (from.getKeyRemote() && from.getKeyRemote() != remote) {
-			ENGINE_WARN("Got connection request with invalid key from ", from.address(), " (", remote, " != ", from.getKeyRemote(), ")");
-			return msg.discard();
-		} else {
-			from.setKeyRemote(remote);
+		HandleMessageDef(MessageType::CONNECT_CHALLENGE)
+			if (from.getKeyRemote()) {
+				ENGINE_WARN("Extraneous CONNECT_CHALLENGE received. Ignoring.");
+				ENGINE_DEBUG_ASSERT(from.getState() == ConnectionState::Connected);
+				return msg.discard();
+			}
+
+			uint16 remote = {};
+			if (!msg.read<uint16>(&remote)) {
+				ENGINE_WARN("Invalid connection challenge received.");
+				return msg.discard();
+			}
+
+			if (auto reply = from.beginMessage<MessageType::CONNECT_AUTH>()) {
+				reply.write(remote);
+				writeMessagePadding(reply.getBufferWriter());
+
+				from.setKeyRemote(remote);
+
+				ENGINE_LOG("CONNECT_CHALLENGE from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
+			} else [[unlikely]] {
+				ENGINE_WARN("Unable to send CONNECT_AUTH");
+			}
 		}
 
-		if (from.getState() == ConnectionState::Disconnected) {
-			ENGINE_DEBUG_ASSERT(from.getKeyLocal() == 0, "It should not be possible to have a local key in an unconnected state. This is a bug.");
-			from.setState(ConnectionState::Connecting);
-
-			auto& world = engine.getWorld();
-			auto& netSys = world.getSystem<NetworkingSystem>();
-			from.setKeyLocal(netSys.genKey());
-		} else {
-			ENGINE_DEBUG_ASSERT(from.getKeyLocal() != 0, "It should not be possible to be missing a local key in any non-unconnected state. This is a bug.");
+		HandleMessageDef(MessageType::CONNECT_CONFIRM)
+			ENGINE_INFO2("CONNECT_CONFIRM");
+			from.setState(ConnectionState::Connected);
 		}
-
-		if (auto reply = from.beginMessage<MessageType::CONNECT_CHALLENGE>()) {
-			reply.write(from.getKeyLocal());
-			ENGINE_LOG("CONNECT_REQUEST from ", from.address(), " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
-		}
-	}
-	
-	HandleMessageDef(MessageType::CONNECT_CHALLENGE)
-		if (from.getKeyRemote()) {
-			ENGINE_WARN("Extraneous CONNECT_CHALLENGE received. Ignoring.");
-			ENGINE_DEBUG_ASSERT(from.getState() == ConnectionState::Connected);
-			return msg.discard();
-		}
-
-		uint16 remote = {};
-		if (!msg.read<uint16>(&remote)) {
-			ENGINE_WARN("Invalid connection challenge received.");
-			return msg.discard();
-		}
-
-		if (auto reply = from.beginMessage<MessageType::CONNECT_AUTH>()) {
-			reply.write(remote);
-			writeMessagePadding(reply.getBufferWriter());
-
-			from.setKeyRemote(remote);
-
-			ENGINE_LOG("CONNECT_CHALLENGE from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote());
-		} else [[unlikely]] {
-			ENGINE_WARN("Unable to send CONNECT_AUTH");
-		}
-	}
-
-	HandleMessageDef(MessageType::CONNECT_AUTH)
-		uint16 key = {};
-		msg.read<uint16>(&key);
-
-		if (key != from.getKeyLocal()) {
-			ENGINE_WARN("CONNECT_AUTH: Invalid recv key ", key, " != ", from.getKeyLocal());
-			return msg.discard();
-		}
-
-		if (!verifyMessagePadding(msg)) {
-			// TODO: rate limit connections with invalid messages
-			ENGINE_WARN("Got invalid connection confirm from ", from.address());
-			return;
-		} else {
-			msg.discard();
-		}
-
-		auto& world = engine.getWorld();
-		from.setState(ConnectionState::Connected);
-		ENGINE_LOG("CONNECT_AUTH from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick(), " ", from.ent);
-
-		// TODO: query map system and find good spawn location
-		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-		constexpr WorldAbsVec pos = {0, 2};
-		const auto zoneId = zoneSys.findOrCreateZoneFor(pos);
-		const auto& zone = zoneSys.getZone(zoneId);
-		const auto finalPos = world.getSystem<NetworkingSystem>().addPlayer(from, zoneId, absolueToRelative(pos, zone.offset));
-
-		// It is important that all three of these messages are sent in the same
-		// packet so that the are processed immediately and before messages in
-		// other channels. That should be true since these messages are very
-		// small and we shouldn't be sending any other messages at this time.
-		// See notes above (top of file) for details.
-		if (auto reply = from.beginMessage<MessageType::CONNECT_CONFIRM>()) {
-		} else {
-			// TODO: handle. If we cant send the
-			//       CONNECT_CONFIRM/ECS_INIT/CONFIG_NETWORK we need to abort
-			//       this connection and wait on the client to restart the
-			//       handshake process.
-		}
-
-		// TODO: change message type of this (for client). This isnt a confirmation this is initial sync or similar.
-		if (auto reply = from.beginMessage<MessageType::ECS_INIT>()) {
-			ENGINE_DEBUG_ASSERT(from.ent, "Attempting to network invalid entity.");
-			reply.write(from.ent);
-			reply.write(world.getTick());
-			reply.write(zoneId);
-			reply.write(zone.offset);
-			reply.write(finalPos);
-		} else {
-			// TODO: handle
-		}
-
-		if (auto reply = from.beginMessage<MessageType::CONFIG_NETWORK>()) {
-			reply.write(from.getPacketRecvRate());
-		} else {
-			// TODO: handle
-		}
-	}
-
-	HandleMessageDef(MessageType::CONNECT_CONFIRM)
-		ENGINE_INFO2("CONNECT_CONFIRM");
-		from.setState(ConnectionState::Connected);
-	}
+	#endif // ENGINE_CLIENT
 
 	HandleMessageDef(MessageType::DISCONNECT)
 		ENGINE_LOG("MessageType::DISCONNECT ", from.address());
@@ -359,15 +358,20 @@ namespace Game {
 
 		ENGINE_LOG2("Listening on port {}", socket.getAddress().port);
 
-		setMessageHandler(MessageType::UNKNOWN, handleMessageType<MessageType::UNKNOWN>);
-		setMessageHandler(MessageType::DISCOVER_SERVER, handleMessageType<MessageType::DISCOVER_SERVER>);
-		setMessageHandler(MessageType::SERVER_INFO, handleMessageType<MessageType::SERVER_INFO>);
-		setMessageHandler(MessageType::CONNECT_REQUEST, handleMessageType<MessageType::CONNECT_REQUEST>);
-		setMessageHandler(MessageType::CONNECT_CHALLENGE, handleMessageType<MessageType::CONNECT_CHALLENGE>);
 		setMessageHandler(MessageType::DISCONNECT, handleMessageType<MessageType::DISCONNECT>);
-		setMessageHandler(MessageType::CONNECT_AUTH, handleMessageType<MessageType::CONNECT_AUTH>);
-		setMessageHandler(MessageType::CONNECT_CONFIRM, handleMessageType<MessageType::CONNECT_CONFIRM>);
 		setMessageHandler(MessageType::CONFIG_NETWORK, handleMessageType<MessageType::CONFIG_NETWORK>);
+
+		ENGINE_SERVER_ONLY(
+			setMessageHandler(MessageType::DISCOVER_SERVER, handleMessageType<MessageType::DISCOVER_SERVER>);
+			setMessageHandler(MessageType::CONNECT_REQUEST, handleMessageType<MessageType::CONNECT_REQUEST>);
+			setMessageHandler(MessageType::CONNECT_AUTH, handleMessageType<MessageType::CONNECT_AUTH>);
+		);
+
+		ENGINE_CLIENT_ONLY(
+			setMessageHandler(MessageType::SERVER_INFO, handleMessageType<MessageType::SERVER_INFO>);
+			setMessageHandler(MessageType::CONNECT_CONFIRM, handleMessageType<MessageType::CONNECT_CONFIRM>);
+			setMessageHandler(MessageType::CONNECT_CHALLENGE, handleMessageType<MessageType::CONNECT_CHALLENGE>);
+		);
 
 		#if ENGINE_SERVER
 		if (group.port) {
@@ -642,36 +646,36 @@ namespace Game {
 		conn->disconnectAt = now + disconnectingPeriod;
 	}
 
-	ENGINE_CLIENT_ONLY(
-		void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
-			for (const auto& [add, con] : addrToConn) {
-				if (con->getState() != ConnectionState::Disconnected) {
-					ENGINE_WARN("Already connected to server (", add, "). Aborting.");
-					return;
-				}
-			}
-
-			auto& conn = getOrCreateConnection(addr);
-
-			if (conn.getState() != ConnectionState::Disconnected) {
-				ENGINE_WARN("Attempting to connect to same server while already connected. Aborting.");
+	#if ENGINE_CLIENT
+	void NetworkingSystem::connectTo(const Engine::Net::IPv4Address& addr) {
+		for (const auto& [add, con] : addrToConn) {
+			if (con->getState() != ConnectionState::Disconnected) {
+				ENGINE_WARN("Already connected to server (", add, "). Aborting.");
 				return;
 			}
-		
-			conn.setKeyRemote(0);
-			conn.setState(ConnectionState::Connecting);
-
-			if (!conn.getKeyLocal()) {
-				conn.setKeyLocal(genKey());
-			}
-			ENGINE_LOG("TRY CONNECT TO: ", addr, " lkey: ", conn.getKeyLocal(), " rkey: ",  conn.getKeyRemote(), " Tick: ", world.getTick());
-
-			if (auto msg = conn.beginMessage<MessageType::CONNECT_REQUEST>()) {
-				msg.write(conn.getKeyLocal());
-				writeMessagePadding(msg.getBufferWriter());
-			}
 		}
-	)
+
+		auto& conn = getOrCreateConnection(addr);
+
+		if (conn.getState() != ConnectionState::Disconnected) {
+			ENGINE_WARN("Attempting to connect to same server while already connected. Aborting.");
+			return;
+		}
+		
+		conn.setKeyRemote(0);
+		conn.setState(ConnectionState::Connecting);
+
+		if (!conn.getKeyLocal()) {
+			conn.setKeyLocal(genKey());
+		}
+		ENGINE_LOG("TRY CONNECT TO: ", addr, " lkey: ", conn.getKeyLocal(), " rkey: ",  conn.getKeyRemote(), " Tick: ", world.getTick());
+
+		if (auto msg = conn.beginMessage<MessageType::CONNECT_REQUEST>()) {
+			msg.write(conn.getKeyLocal());
+			writeMessagePadding(msg.getBufferWriter());
+		}
+	}
+	#endif
 
 	WorldVec NetworkingSystem::addPlayer(ConnectionInfo& conn, ZoneId zoneId, WorldVec worldPos) {
 		ENGINE_DEBUG_ASSERT(conn.ent == Engine::ECS::INVALID_ENTITY, "Attempting to add duplicate player.");
@@ -729,7 +733,7 @@ namespace Game {
 		constexpr auto dir = (ENGINE_SERVER ? Engine::Net::MessageDirection::ClientToServer : Engine::Net::MessageDirection::ServerToClient);
 		if (!(meta.dir & dir)) {
 			ENGINE_WARN("Network message ", meta.name, "(", +hdr.type, ")"," received by wrong side. Aborting.");
-			ENGINE_DEBUG_ASSERT(false);
+			ENGINE_DEBUG_BREAK;
 			msg.discard();
 			return;
 		}

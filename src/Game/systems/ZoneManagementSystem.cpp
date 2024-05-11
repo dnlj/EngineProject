@@ -56,6 +56,7 @@ namespace Game {
 	void ZoneManagementSystem::setup() {
 	}
 
+	#if ENGINE_SERVER
 	void ZoneManagementSystem::tick_Server() {
 		const auto& playerFilter = world.getFilter<PlayerFlag, PhysicsBodyComponent>();
 
@@ -271,14 +272,17 @@ namespace Game {
 			}
 		}
 	}
-	
+	#endif // ENGINE_SERVER
+
+	#if ENGINE_CLIENT
 	void ZoneManagementSystem::tick_Client() {
 		// Nothing client only atm.
 	}
+	#endif
 
 	void ZoneManagementSystem::tick() {
-		if constexpr (ENGINE_SERVER) { tick_Server(); }
-		if constexpr (ENGINE_CLIENT) { tick_Client(); }
+		ENGINE_SERVER_ONLY(tick_Server());
+		ENGINE_CLIENT_ONLY(tick_Client());
 
 		// Close any unused zones.
 		for (ZoneId zoneId = 0; zoneId < zones.size(); ++zoneId) {
@@ -299,6 +303,7 @@ namespace Game {
 		}
 	}
 
+	#if ENGINE_SERVER
 	ZoneId ZoneManagementSystem::createNewZone(WorldAbsVec pos) {
 		ZoneId zid = zoneInvalidId;
 		if (!reuse.empty()) {
@@ -315,7 +320,9 @@ namespace Game {
 		zone.active = true;
 		return zid;
 	}
+	#endif // ENGINE_SERVER
 
+	#if ENGINE_SERVER
 	ZoneId ZoneManagementSystem::findOrCreateZoneFor(WorldAbsVec pos) {
 		// Find and existing zone if nearby.
 		const auto size = zones.size();
@@ -327,9 +334,11 @@ namespace Game {
 			}
 		}
 
+		if (ENGINE_CLIENT) { __debugbreak(); }
 		// No suitable zone found. Create a new one.
 		return createNewZone(pos);
 	}
+	#endif // ENGINE_SERVER
 
 	void ZoneManagementSystem::ensureZone(ZoneId zoneId, WorldAbsVec pos) {
 		ENGINE_LOG2("{}: {} {}", Styled{"ensureZone", Style::FG::Magenta | Style::Bold}, zoneId, pos);
