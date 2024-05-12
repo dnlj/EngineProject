@@ -118,7 +118,7 @@ namespace Game::inline Units {
 
 	/**
 	 * Convert from a world position to a block position.
-	 * @param world The local world position relative to the absolute offset @offset.
+	 * @param world The local world position relative to the absolute offset @p offset.
 	 * @param offset The absolute position offset that @p world uses as its origin.
 	 */
 	ENGINE_INLINE inline BlockVec worldToBlock(const WorldVec world, const WorldAbsVec offset) noexcept {

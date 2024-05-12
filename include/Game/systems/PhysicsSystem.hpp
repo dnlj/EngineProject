@@ -43,6 +43,7 @@ namespace Game {
 			 * Creates a box2d body and associates an entity with it.
 			 * @param[in] ent The entity.
 			 * @param[in] bodyDef The box2d body definition.
+			 * @param[in] zoneId The initial zone for this body.
 			 * @return A box2d body.
 			 */
 			PhysicsBody createBody(Engine::ECS::Entity ent, b2BodyDef& bodyDef, ZoneId zoneId);

@@ -132,7 +132,6 @@ namespace Game {
 
 			BlockId value(const Int x, const Int y, BlockGenData& bgd) const noexcept;
 
-
 			/**
 			 * @param pos The position of the chunk in block coordinates.
 			 * @param chunk The chunk to store the data in.
