@@ -22,6 +22,7 @@ namespace {
 	using Engine::Net::MessageHeader;
 	using Engine::Net::BufferReader;
 
+	#if ENGINE_CLIENT
 	// TODO: Should probably be derived from actionsystem inputs/binds/w.e. not its own message
 	void recv_SPELL(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
 		b2Vec2 pos;
@@ -40,6 +41,7 @@ namespace {
 			.dir = dir,
 		});
 	}
+	#endif // ENGINE_CLIENT
 }
 
 
@@ -51,8 +53,10 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::setup() {
-		auto& netSys = world.getSystem<NetworkingSystem>();
-		netSys.setMessageHandler(MessageType::SPELL, recv_SPELL);
+		ENGINE_CLIENT_ONLY(
+			auto& netSys = world.getSystem<NetworkingSystem>();
+			netSys.setMessageHandler(MessageType::SPELL, recv_SPELL)
+		);
 
 		auto& physSys = world.getSystem<Game::PhysicsSystem>();
 		physSys.addListener(this);

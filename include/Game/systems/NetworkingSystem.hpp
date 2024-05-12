@@ -83,6 +83,13 @@ namespace Game {
 					return;
 				}
 
+				// Catch any incorrect message handlers.
+				if constexpr (ENGINE_DEBUG) {
+					const auto info = getMessageMetaInfo(msg);
+					ENGINE_ASSERT(!ENGINE_SERVER || (info.dir & Engine::Net::MessageDirection::ClientToServer));
+					ENGINE_ASSERT(!ENGINE_CLIENT || (info.dir & Engine::Net::MessageDirection::ServerToClient));
+				}
+
 				ENGINE_DEBUG_ASSERT(!msgHandlers[msg], "Attempting to overwrite message handler.");
 				msgHandlers[msg] = func;
 			}
