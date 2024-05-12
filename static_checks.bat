@@ -4,7 +4,7 @@ set "RED=[31m"
 set "GREEN=[32m"
 set "RESET=[0m"
 set "IGNORE=%~0"
-
+set "COLORS=--colors ""path:none"" --colors ""line:none"" --colors ""column:none"" --colors ""match:none"" --colors ""match:fg:red"" --colors ""path:fg:red"""
 
 rem ################################################################################
 rem # Rules
@@ -15,7 +15,7 @@ call :check "ifdef.*SERVER"
 call :check "ifdef.*CLIENT"
 
 rem Use left const.
-call :check "auto const"
+call :check "^\s*auto const\s|\(\s*auto const\s"
 
 rem ################################################################################
 
@@ -23,7 +23,7 @@ rem ############################################################################
 exit /B %ERRORLEVEL%
 
 :check
-	rg %1 -g "!%IGNORE%" >nul || echo %GREEN%PASS:%RESET% %1
+	rg %1 %COLORS% -g "!%IGNORE%" || echo %GREEN%PASS:%RESET% %1
 	if %ERRORLEVEL% neq 1 goto :fail %1
 exit /B 0
 
