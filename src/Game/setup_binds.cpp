@@ -259,15 +259,14 @@ void setupBinds(Game::EngineInstance& engine) {
 		if (curr.i32) {
 			auto* console = uiSys.getConsole();
 			auto* conCtx = console->getContext();
-			if (!console->isEnabled()) {
-				conCtx->setFocus(console->get()->getInput());
-			}
 
 			console->toggleEnabled();
 
-			// Hide the suggestion popup
-			if (conCtx->getFocus() == console->get()->getInput())
-			{
+			if (console->isEnabled()) {
+				puts("focus");
+				conCtx->setFocus(console->get()->getInput());
+			} else if (conCtx->getFocus() == console->get()->getInput()) {
+				// Hide the suggestion popup
 				conCtx->setFocus(conCtx->getRoot());
 			}
 		}
