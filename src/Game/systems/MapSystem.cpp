@@ -128,13 +128,6 @@ namespace Game {
 		bodyDef.type = b2_staticBody;
 		bodyDef.position = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos, zoneOffset));
 
-
-		//
-		//
-		// TODO: need a better way to define a bodies/fixture that is more concise and smarter.
-		//       For example, if a fixture is a sensor then it should always have .isSensor = true,
-		//
-		//
 		b2FixtureDef fixtureDef = PhysicsSystem::getDefaultFixtureFor(PhysicsCategory::Trigger);
 		fixtureDef.isSensor = true;
 		

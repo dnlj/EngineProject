@@ -23,6 +23,9 @@ namespace Game {
 	ENGINE_BUILD_DECAY_ENUM(PhysicsCategory);
 
 	class PhysicsSystem : public System, public b2ContactListener, public b2ContactFilter {
+		public:
+			using FilterBitset = decltype(b2Filter::categoryBits);
+
 		private:
 			b2World physWorld;
 			std::vector<PhysicsListener*> listeners;
@@ -92,20 +95,6 @@ namespace Game {
 				return reinterpret_cast<Engine::ECS::Entity&>(userdata);
 			};
 
-
-			//
-			//
-			// TODO: most of these static functions should be moved to a PhysicsManager separate from the physics system.
-			//       template<class PhysicsCategory> PhysicsManager;
-			//
-			//
-			//
-
-			// TODO: We shouldn't expose getFilterCategory/getFilterMask. We
-			//       should handle fixture creation so we have a single access point
-			//       to maintain instead of creating them ad-hoc.
-			using FilterBitset = decltype(b2Filter::categoryBits);
-			
 			constexpr static PhysicsCategory getCategory(FilterBitset category) noexcept {
 				return static_cast<PhysicsCategory>(std::countr_zero(category));
 			}
@@ -115,9 +104,9 @@ namespace Game {
 			}
 
 			constexpr static FilterBitset getMaskBitsForCategory(PhysicsCategory category) {
-				constexpr auto makeFilterMask = [](std::initializer_list<PhysicsCategory> categorys) consteval {
+				constexpr auto makeFilterMask = [](std::initializer_list<PhysicsCategory> categories) consteval {
 					FilterBitset result{};
-					for (auto category : categorys) {
+					for (auto category : categories) {
 						result |= getCategoryBits(category);
 					}
 					return result;
