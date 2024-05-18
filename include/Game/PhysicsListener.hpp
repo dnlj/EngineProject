@@ -15,12 +15,12 @@ namespace Game {
 			/**
 			 * Called two entities begin contact.
 			 */
-			virtual void beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) {};
+			virtual void beginContact(const Engine::ECS::Entity entA, const Engine::ECS::Entity entB) {};
 
 			/**
 			 * Called two entities end contact.
 			 */
-			virtual void endContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) {};
+			virtual void endContact(const Engine::ECS::Entity entA, const Engine::ECS::Entity entB) {};
 
 			//TODO: virtual void preSolve() {};
 

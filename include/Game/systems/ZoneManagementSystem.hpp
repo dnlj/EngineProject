@@ -9,7 +9,7 @@
 
 
 namespace Game {
-	class ZoneManagementSystem : public System {
+	class ZoneManagementSystem final : public System {
 		private:
 			using GroupId = uint32;
 			using Dist = int64;

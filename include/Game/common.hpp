@@ -39,6 +39,8 @@ namespace Game::inline Units {
 
 	using ZoneId = uint32;
 	constexpr inline auto zoneInvalidId = std::numeric_limits<ZoneId>::max();
+
+	using RealmId = uint32;
 }
 
 namespace Game::inline Constants {

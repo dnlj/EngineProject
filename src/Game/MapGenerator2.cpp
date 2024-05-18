@@ -35,7 +35,11 @@ namespace {
 		return max->y;
 	}
 
-	ENGINE_INLINE constexpr Game::MapGenerator2::Float operator""_f(const long double v) noexcept {
+	ENGINE_INLINE consteval Game::MapGenerator2::Float operator""_f(const long double v) noexcept {
+		return static_cast<Game::MapGenerator2::Float>(v);
+	}
+
+	ENGINE_INLINE consteval Game::MapGenerator2::Float operator""_f(const uint64 v) noexcept {
 		return static_cast<Game::MapGenerator2::Float>(v);
 	}
 }
@@ -276,6 +280,12 @@ namespace Game {
 		// floor level
 		if (offC.y > -0.3_f) {
 			if (offC.y < 0.5_f && offC.x < 0.2_f && offC.x > -0.2_f) {
+
+				if (offC.x == 0_f && offC.y == 0_f) {
+					bgd.exists = true;
+					bgd.desc.data.type = BlockEntityType::Portal;
+				}
+
 				return {.exists = true, .basis = 1.0_f, .block = BlockId::Debug4 };
 			}
 			return {.exists = true, .basis = grad - 2.0_f, .block = BlockId::None };

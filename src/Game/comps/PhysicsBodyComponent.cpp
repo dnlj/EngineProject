@@ -124,7 +124,7 @@ namespace Game {
 
 		b2FixtureDef fixDef;
 		fixDef.filter.categoryBits = PhysicsSystem::getCategoryBits(static_cast<PhysicsCategory>(category));
-		fixDef.filter.maskBits = PhysicsSystem::getMaskBits(static_cast<PhysicsCategory>(category));
+		fixDef.filter.maskBits = PhysicsSystem::getMaskBitsForCategory(static_cast<PhysicsCategory>(category));
 
 		// TODO: these returns should probably cleanup this body. Maybe an atExit(lambda) helper with a .cancel() func?
 		switch (ftype) {

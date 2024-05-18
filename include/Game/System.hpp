@@ -43,6 +43,15 @@ namespace Game {
 			// It is almost certainly a bug if this is hit
 			System(const System&) = delete;
 
+			/**
+			 * Provides a place for initial setup that is run immediately after all
+			 * systems have been created.
+			 * 
+			 * May be needed when depending on other systems. Accessing other systems in
+			 * the constructor is dependant on the system order. Only systems before this
+			 * one will be initialized at the time of the constructor. So to access systems
+			 * initialized after this one you need to defer it to this setup function.
+			 */
 			ENGINE_INLINE void setup() {}
 
 			ENGINE_INLINE void preTick() {}

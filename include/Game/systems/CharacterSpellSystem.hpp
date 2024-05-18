@@ -33,7 +33,7 @@ namespace Game {
 
 		private:
 			void fireMissile(const FireEvent& event);
-			void beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) override;
+			void beginContact(const Engine::ECS::Entity entA, const Engine::ECS::Entity entB) override;
 			void detonateMissile(Engine::ECS::Entity ent);
 	};
 }

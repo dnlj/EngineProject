@@ -17,6 +17,7 @@ namespace Game {
 		World       = 0,
 		Player      = 1,
 		Decoration  = 2,
+		Trigger     = 3,
 		_count,
 	};
 	ENGINE_BUILD_DECAY_ENUM(PhysicsCategory);
@@ -77,7 +78,7 @@ namespace Game {
 				fixtureDef.shape = &shape;
 				fixtureDef.density = 1.0f;
 				fixtureDef.filter.categoryBits = getCategoryBits(group);
-				fixtureDef.filter.maskBits = getMaskBits(group);
+				fixtureDef.filter.maskBits = getMaskBitsForCategory(group);
 
 				body.createFixture(fixtureDef);
 				return body;
@@ -92,6 +93,14 @@ namespace Game {
 			};
 
 
+			//
+			//
+			// TODO: most of these static functions should be moved to a PhysicsManager separate from the physics system.
+			//       template<class PhysicsCategory> PhysicsManager;
+			//
+			//
+			//
+
 			// TODO: We shouldn't expose getFilterCategory/getFilterMask. We
 			//       should handle fixture creation so we have a single access point
 			//       to maintain instead of creating them ad-hoc.
@@ -101,34 +110,50 @@ namespace Game {
 				return static_cast<PhysicsCategory>(std::countr_zero(category));
 			}
 
-			constexpr static FilterBitset getCategoryBits(PhysicsCategory group) noexcept {
-				return 1 << +group;
+			constexpr static FilterBitset getCategoryBits(PhysicsCategory category) noexcept {
+				return 1 << +category;
 			}
 
-			constexpr static FilterBitset getMaskBits(PhysicsCategory group) {
-				constexpr auto makeFilterMask = [](std::initializer_list<PhysicsCategory> groups){
+			constexpr static FilterBitset getMaskBitsForCategory(PhysicsCategory category) {
+				constexpr auto makeFilterMask = [](std::initializer_list<PhysicsCategory> categorys) consteval {
 					FilterBitset result{};
-					for (auto group : groups) {
-						result |= getCategoryBits(group);
+					for (auto category : categorys) {
+						result |= getCategoryBits(category);
 					}
 					return result;
 				};
 
 				constexpr auto lookup = []() consteval noexcept {
-					std::array<FilterBitset, 16> results;
+					std::array<FilterBitset, +PhysicsCategory::_count> results;
 					constexpr FilterBitset maskAll = -1;
 
 					// By default everything collides with everything
 					std::ranges::fill(results, maskAll);
 
 					// Special cases
-					results[+PhysicsCategory::Player] = makeFilterMask({PhysicsCategory::World});
 					results[+PhysicsCategory::Decoration] = {};
+					results[+PhysicsCategory::Player] = makeFilterMask({PhysicsCategory::World, PhysicsCategory::Trigger});
+					results[+PhysicsCategory::Trigger] = makeFilterMask({PhysicsCategory::Player});
 
 					return results;
 				}();
 
-				return lookup[+group];
+				return lookup[+category];
+			}
+
+			static b2FixtureDef getDefaultFixtureFor(PhysicsCategory category) noexcept {
+				b2FixtureDef fixtureDef;
+
+				// Filter group is setup when adding fixtures in PhysicsBody::createFixture
+				// since the zone is a property of the body, not fixture.
+				fixtureDef.filter.categoryBits = PhysicsSystem::getCategoryBits(category);
+				fixtureDef.filter.maskBits = PhysicsSystem::getMaskBitsForCategory(category);
+
+				if (category == PhysicsCategory::Trigger) {
+					fixtureDef.isSensor = true;
+				}
+
+				return fixtureDef;
 			}
 
 		private:

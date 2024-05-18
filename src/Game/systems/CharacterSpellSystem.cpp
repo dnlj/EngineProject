@@ -117,7 +117,7 @@ namespace Game {
 	}
 
 	void CharacterSpellSystem::detonateMissile(Engine::ECS::Entity ent) {
-		std::cout << "Boom: " << ent << "\n";
+		ENGINE_LOG2("Boom: {}", ent);
 		world.setEnabled(ent, false);
 		world.getComponent<PhysicsBodyComponent>(ent).setActive(false);
 	}
@@ -181,7 +181,7 @@ namespace Game {
 		events.emplace_back(event);
 	}
 
-	void CharacterSpellSystem::beginContact(const Engine::ECS::Entity& entA, const Engine::ECS::Entity& entB) {
+	void CharacterSpellSystem::beginContact(const Engine::ECS::Entity entA, const Engine::ECS::Entity entB) {
 		const auto minEnt = missiles.front();
 		const auto maxEnt = missiles.back();
 

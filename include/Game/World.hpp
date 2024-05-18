@@ -20,6 +20,7 @@ namespace Game {
 		// Must be before physics + rendering. Updating between causes a flash/flick.
 		class EntityNetworkingSystem,
 		class NetworkingSystem,
+		class RealmManagementSystem,
 		class ZoneManagementSystem,
 
 		// Inputs
@@ -56,6 +57,7 @@ namespace Game {
 		class NetworkStatsComponent,
 		class PhysicsBodyComponent,
 		class PhysicsInterpComponent,
+		class RealmComponent,
 		class SpriteComponent
 	>;
 

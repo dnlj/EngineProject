@@ -15,6 +15,7 @@
 #include <Game/comps/NetworkComponent.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
+#include <Game/comps/RealmComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
 #include <Game/systems/MapSystem.hpp>
 #include <Game/systems/NetworkingSystem.hpp>
@@ -52,17 +53,6 @@ namespace Game {
 	}
 
 	BUILD_BLOCK_ENTITY(Tree) {
-		b2BodyDef bodyDef;
-		bodyDef.type = b2_staticBody;
-		bodyDef.fixedRotation = true;
-		bodyDef.linearDamping = 10.0f;
-
-		b2FixtureDef fixtureDef;
-		//fixtureDef.density = 1.0f;
-		// Disable collision
-		fixtureDef.filter.categoryBits = PhysicsSystem::getCategoryBits(PhysicsCategory::Decoration);
-		fixtureDef.filter.maskBits = PhysicsSystem::getMaskBits(PhysicsCategory::Decoration);
-
 		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset;
 		const b2Vec2 pos = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos, zoneOffset));
 		const auto ent = world.createEntity();
@@ -93,14 +83,22 @@ namespace Game {
 		}
 
 		{
+			b2BodyDef bodyDef;
+			bodyDef.type = b2_staticBody;
+			bodyDef.fixedRotation = true;
+			bodyDef.linearDamping = 10.0f;
 			bodyDef.position = pos;
+
 			auto& physSys = world.getSystem<PhysicsSystem>();
 			auto& physComp = world.addComponent<PhysicsBodyComponent>(ent, physSys.createBody(ent, bodyDef, activeChunkData.body.getZoneId()));
 
 			b2PolygonShape shape;
 			const b2Vec2 tsize = 0.5f * blockSize * Engine::Glue::as<b2Vec2>(desc.data.asTree.size);
 			shape.SetAsBox(tsize.x, tsize.y, {0.5f * blockSize, tsize.y}, 0);
+
+			b2FixtureDef fixtureDef = PhysicsSystem::getDefaultFixtureFor(PhysicsCategory::Decoration);
 			fixtureDef.shape = &shape;
+
 			physComp.createFixture(fixtureDef);
 		}
 
@@ -117,11 +115,43 @@ namespace Game {
 	}
 
 	BUILD_BLOCK_ENTITY(Portal) {
-		return Engine::ECS::INVALID_ENTITY;
+		// Currently only needed for the realm change, which is entirely server side.
+		if constexpr (ENGINE_CLIENT) { return Engine::ECS::INVALID_ENTITY; }
+
+		//ENGINE_WARN2("BUILD_BLOCK_ENTITY(Portal)"); // TODO: impl
+
+		const auto ent = world.createEntity();
+		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset;
+		world.addComponent<RealmComponent>(ent);
+
+		b2BodyDef bodyDef{};
+		bodyDef.type = b2_staticBody;
+		bodyDef.position = Engine::Glue::as<b2Vec2>(blockToWorld(desc.pos, zoneOffset));
+
+
+		//
+		//
+		// TODO: need a better way to define a bodies/fixture that is more concise and smarter.
+		//       For example, if a fixture is a sensor then it should always have .isSensor = true,
+		//
+		//
+		b2FixtureDef fixtureDef = PhysicsSystem::getDefaultFixtureFor(PhysicsCategory::Trigger);
+		fixtureDef.isSensor = true;
+		
+		b2PolygonShape shape;
+		const b2Vec2 size = 0.5f * blockSize * b2Vec2{5, 5};
+		shape.SetAsBox(size.x, size.y, {0.5f * blockSize, size.y}, 0);
+		fixtureDef.shape = &shape;
+
+		auto& physSys = world.getSystem<PhysicsSystem>();
+		auto& physComp = world.addComponent<PhysicsBodyComponent>(ent, physSys.createBody(ent, bodyDef, activeChunkData.body.getZoneId()));
+		physComp.createFixture(fixtureDef);
+
+		return ent;
 	}
 
 	STORE_BLOCK_ENTITY(Portal) {
-		//ENGINE_WARN("TODO: Store Portal"); // TODO: impl
+		ENGINE_WARN2("STORE_BLOCK_ENTITY(Portal)"); // TODO: impl
 	}
 }
 

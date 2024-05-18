@@ -12,3 +12,4 @@
 #include <Game/comps/PhysicsBodyComponent.hpp>
 #include <Game/comps/PhysicsInterpComponent.hpp>
 #include <Game/comps/SpriteComponent.hpp>
+#include <Game/comps/RealmComponent.hpp>

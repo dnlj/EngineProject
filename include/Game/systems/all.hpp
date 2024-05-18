@@ -14,6 +14,7 @@
 #include <Game/systems/ParallaxBackgroundSystem.hpp>
 #include <Game/systems/PhysicsInterpSystem.hpp>
 #include <Game/systems/PhysicsSystem.hpp>
+#include <Game/systems/RealmManagementSystem.hpp>
 #include <Game/systems/RenderPassSystem.hpp>
 #include <Game/systems/SpriteSystem.hpp>
 #include <Game/systems/UISystem.hpp>
