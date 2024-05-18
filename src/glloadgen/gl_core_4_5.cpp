@@ -6,8 +6,7 @@
 #if defined(__APPLE__)
 #include <dlfcn.h>
 
-static void* AppleGLGetProcAddress (const char *name)
-{
+static void* AppleGLGetProcAddress (const char *name) {
 	static void* image = NULL;
 	
 	if (NULL == image)
@@ -21,13 +20,11 @@ static void* AppleGLGetProcAddress (const char *name)
 #include <dlfcn.h>
 #include <stdio.h>
 
-static void* SunGetProcAddress (const GLubyte* name)
-{
+static void* SunGetProcAddress (const GLubyte* name) {
   static void* h = NULL;
   static void* gpa;
 
-  if (h == NULL)
-  {
+  if (h == NULL) {
     if ((h = dlopen(NULL, RTLD_LAZY | RTLD_LOCAL)) == NULL) return NULL;
     gpa = dlsym(h, "glXGetProcAddress");
   }
@@ -47,8 +44,7 @@ static void* SunGetProcAddress (const GLubyte* name)
 #pragma warning(disable: 4996)
 #endif
 
-static int TestPointer(const PROC pTest)
-{
+static int TestPointer(const PROC pTest) {
 	ptrdiff_t iTest;
 	if(!pTest) return 0;
 	iTest = (ptrdiff_t)pTest;
@@ -58,12 +54,10 @@ static int TestPointer(const PROC pTest)
 	return 1;
 }
 
-static PROC WinGetProcAddress(const char *name)
-{
+static PROC WinGetProcAddress(const char *name) {
 	HMODULE glMod = NULL;
 	PROC pFunc = wglGetProcAddress((LPCSTR)name);
-	if(TestPointer(pFunc))
-	{
+	if(TestPointer(pFunc)) {
 		return pFunc;
 	}
 	glMod = GetModuleHandleA("OpenGL32.dll");
@@ -756,8 +750,7 @@ void (CODEGEN_FUNCPTR *_ptrc_glVertexArrayElementBuffer)(GLuint vaobj, GLuint bu
 void (CODEGEN_FUNCPTR *_ptrc_glVertexArrayVertexBuffer)(GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride) = NULL;
 void (CODEGEN_FUNCPTR *_ptrc_glVertexArrayVertexBuffers)(GLuint vaobj, GLuint first, GLsizei count, const GLuint * buffers, const GLintptr * offsets, const GLsizei * strides) = NULL;
 
-static int Load_Version_4_5(void)
-{
+static int Load_Version_4_5(void) {
 	int numFailed = 0;
 	_ptrc_glBlendFunc = (void (CODEGEN_FUNCPTR *)(GLenum, GLenum))IntGetProcAddress("glBlendFunc");
 	if(!_ptrc_glBlendFunc) numFailed++;
@@ -2082,12 +2075,10 @@ static ogl_StrToExtMap ExtensionMap[1] = {
 
 static int g_extensionMapSize = 0;
 
-static ogl_StrToExtMap *FindExtEntry(const char *extensionName)
-{
+static ogl_StrToExtMap *FindExtEntry(const char *extensionName) {
 	int loop;
 	ogl_StrToExtMap *currLoc = ExtensionMap;
-	for(loop = 0; loop < g_extensionMapSize; ++loop, ++currLoc)
-	{
+	for(loop = 0; loop < g_extensionMapSize; ++loop, ++currLoc) {
 		if(strcmp(extensionName, currLoc->extensionName) == 0)
 			return currLoc;
 	}
@@ -2095,22 +2086,17 @@ static ogl_StrToExtMap *FindExtEntry(const char *extensionName)
 	return NULL;
 }
 
-static void ClearExtensionVars(void)
-{
+static void ClearExtensionVars(void) {
 }
 
 
-static void LoadExtByName(const char *extensionName)
-{
+static void LoadExtByName(const char *extensionName) {
 	ogl_StrToExtMap *entry = NULL;
 	entry = FindExtEntry(extensionName);
-	if(entry)
-	{
-		if(entry->LoadExtension)
-		{
+	if(entry) {
+		if(entry->LoadExtension) {
 			int numFailed = entry->LoadExtension();
-			if(numFailed == 0)
-			{
+			if(numFailed == 0) {
 				*(entry->extensionVariable) = ogl_LOAD_SUCCEEDED;
 			}
 			else
@@ -2126,21 +2112,18 @@ static void LoadExtByName(const char *extensionName)
 }
 
 
-static void ProcExtsFromExtList(void)
-{
+static void ProcExtsFromExtList(void) {
 	GLint iLoop;
 	GLint iNumExtensions = 0;
 	_ptrc_glGetIntegerv(GL_NUM_EXTENSIONS, &iNumExtensions);
 
-	for(iLoop = 0; iLoop < iNumExtensions; iLoop++)
-	{
+	for(iLoop = 0; iLoop < iNumExtensions; iLoop++) {
 		const char *strExtensionName = (const char *)_ptrc_glGetStringi(GL_EXTENSIONS, iLoop);
 		LoadExtByName(strExtensionName);
 	}
 }
 
-int ogl_LoadFunctions()
-{
+int ogl_LoadFunctions() {
 	int numFailed = 0;
 	ClearExtensionVars();
 	
@@ -2161,28 +2144,24 @@ int ogl_LoadFunctions()
 static int g_major_version = 0;
 static int g_minor_version = 0;
 
-static void GetGLVersion(void)
-{
+static void GetGLVersion(void) {
 	glGetIntegerv(GL_MAJOR_VERSION, &g_major_version);
 	glGetIntegerv(GL_MINOR_VERSION, &g_minor_version);
 }
 
-int ogl_GetMajorVersion(void)
-{
+int ogl_GetMajorVersion(void) {
 	if(g_major_version == 0)
 		GetGLVersion();
 	return g_major_version;
 }
 
-int ogl_GetMinorVersion(void)
-{
+int ogl_GetMinorVersion(void) {
 	if(g_major_version == 0) /*Yes, check the major version to get the minor one.*/
 		GetGLVersion();
 	return g_minor_version;
 }
 
-int ogl_IsVersionGEQ(int majorVersion, int minorVersion)
-{
+int ogl_IsVersionGEQ(int majorVersion, int minorVersion) {
 	if(g_major_version == 0)
 		GetGLVersion();
 	

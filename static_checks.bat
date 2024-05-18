@@ -14,6 +14,9 @@ rem Don't ever use checks like `#ifdef ENGINE_SERVER`. ENGINE_SERVER is always d
 call :check "ifdef.*SERVER"
 call :check "ifdef.*CLIENT"
 
+rem Bad brace formatting.
+call :check -U "\)\s*[\r\n]+\s*\{"
+
 rem Use left const.
 call :check "^\s*auto const\s|\(\s*auto const\s"
 
@@ -23,7 +26,7 @@ rem ############################################################################
 exit /B %ERRORLEVEL%
 
 :check
-	rg %1 %COLORS% -g "!%IGNORE%" || echo %GREEN%PASS:%RESET% %1
+	rg %* %COLORS% -g "!%IGNORE%" || echo %GREEN%PASS:%RESET% %*
 	if %ERRORLEVEL% neq 1 goto :fail %1
 exit /B 0
 

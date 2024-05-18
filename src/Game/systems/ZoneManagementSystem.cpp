@@ -359,8 +359,7 @@ namespace Game {
 		}
 	}
 
-	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp)
-	{
+	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp) {
 		const auto oldZoneId = physComp.getZoneId();
 		//ZONE_DEBUG("{} - Migrating player from {} to {}", world.getTick(), oldZoneId, newZoneId);
 		ENGINE_INFO2("{} - Migrating player ({}) from {} to {}", world.getTick(), ply, oldZoneId, newZoneId);
