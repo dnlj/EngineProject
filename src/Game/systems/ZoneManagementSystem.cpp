@@ -125,10 +125,55 @@ namespace Game {
 				for (auto next = cur; ++next != end;) {
 					const auto& physComp2 = world.getComponent<PhysicsBodyComponent>(*next);
 
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					// TODO: first, try a hack here with just setting a very large distance if they are not in the same zone.
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+					//
+
+					const auto& zone1 = zones[physComp1.zone.id];
+					const auto& zone2 = zones[physComp2.zone.id];
+					//
+					//
+					// TODO: We should really batch relations on a per Realm basis. That
+					//       would make things more efficient since it cuts down the size of N,
+					//       which is big since this is N^2. Although it would probably be even
+					//       better to do some kind of BSP if perf is really our goal here.
+					//
+					//
+					if (zone1.realmId != zone2.realmId) {
+						const auto& rel = relations.emplace_back(*cur, *next);
+						ZONE_DEBUG("Relation between {} and {} = inf", *cur, *next);
+
+						// The distance here should be large enough that it is effectively
+						// infinite. The one hundred factor is an arbitrary "should be big enough"
+						// number, although anything over the split distance should work.
+						ENGINE_DEBUG_ASSERT(rel.dist > 100*zoneMustSplitDist, "Incorrect distance value for players in separate zones.");
+						continue;
+					}
+
 					const auto relPos1 = physComp1.getPosition();
 					const auto relPos2 = physComp2.getPosition();
-					const auto globalPos1 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos1), zones[physComp1.zone.id].offset);
-					const auto globalPos2 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos2), zones[physComp2.zone.id].offset);
+					const auto globalPos1 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos1), zone1.offset);
+					const auto globalPos2 = worldToAbsolute(Engine::Glue::as<WorldVec>(relPos2), zone2.offset);
 					const auto dist = metric(globalPos1, globalPos2);
 					relations.emplace_back(*cur, *next, dist);
 					ZONE_DEBUG("Relation between {} and {} = {}", *cur, *next, dist);
@@ -254,7 +299,16 @@ namespace Game {
 
 			// No existing zone is close enough to use.
 			if (zoneId == -1) {
-				zoneId = createNewZone(ideal);
+
+				//
+				//
+				//
+				// TODO: realm id
+				//
+				//
+				//
+
+				zoneId = createNewZone(0, ideal);
 				ZONE_DEBUG("{} - Creating new zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset);
 			} else {
 				ZONE_DEBUG("{} - Using existing zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset);
@@ -303,8 +357,14 @@ namespace Game {
 		}
 	}
 
+	void ZoneManagementSystem::activateZone(Zone& zone, const RealmId realmId, const WorldAbsVec pos) {
+		zone.offset = pos;
+		zone.active = true;
+		zone.realmId = realmId;
+	}
+
 	#if ENGINE_SERVER
-	ZoneId ZoneManagementSystem::createNewZone(WorldAbsVec pos) {
+	ZoneId ZoneManagementSystem::createNewZone(const RealmId realmId, const WorldAbsVec pos) {
 		ZoneId zid = zoneInvalidId;
 		if (!reuse.empty()) {
 			zid = reuse.back();
@@ -315,80 +375,106 @@ namespace Game {
 		}
 
 		ENGINE_DEBUG_ASSERT(zid != zoneInvalidId, "Failed to create valid zone. This is a bug.");
-		auto& zone = zones[zid];
-		zone.offset = pos;
-		zone.active = true;
+		activateZone(zones[zid], realmId, pos);
+
 		return zid;
 	}
 	#endif // ENGINE_SERVER
 
 	#if ENGINE_SERVER
-	ZoneId ZoneManagementSystem::findOrCreateZoneFor(WorldAbsVec pos) {
+	ZoneId ZoneManagementSystem::findOrCreateZoneFor(const RealmId realmId, const WorldAbsVec pos) {
 		// Find and existing zone if nearby.
 		const auto size = zones.size();
 		for (ZoneId zoneId = 0; zoneId < size; ++zoneId) {
 			const auto& zone = zones[zoneId];
 			if (!zone.active) { continue; }
+			if (zone.realmId != realmId) { continue; }
 			if (metric(zone.offset, pos) <= zoneSameDist) {
 				return zoneId;
 			}
 		}
 
-		if (ENGINE_CLIENT) { __debugbreak(); }
 		// No suitable zone found. Create a new one.
-		return createNewZone(pos);
+		if (ENGINE_CLIENT) { __debugbreak(); }
+		return createNewZone(realmId, pos);
 	}
 	#endif // ENGINE_SERVER
 
-	void ZoneManagementSystem::ensureZone(ZoneId zoneId, WorldAbsVec pos) {
-		ENGINE_LOG2("{}: {} {}", Styled{"ensureZone", Style::FG::Magenta | Style::Bold}, zoneId, pos);
+	#if ENGINE_CLIENT
+	void ZoneManagementSystem::ensureZoneExists(const RealmId realmId, const ZoneId zoneId, const WorldAbsVec pos) {
+		ENGINE_LOG2("{}: {} {}", Styled{"ensureZoneExists", Style::FG::Magenta | Style::Bold}, zoneId, pos);
 		if (zones.size() <= zoneId) {
-			ENGINE_LOG2("\t{}: {} {}", Styled{"ensureZone", Style::FG::Magenta | Style::Bold}, zoneId, pos);
+			ENGINE_LOG2("\t{}: {} {}", Styled{"ensureZoneExists", Style::FG::Magenta | Style::Bold}, zoneId, pos);
 			zones.resize(zoneId + 1);
+
+			// TODO: zones is never shrunk, if we need to insert a new id then this shouldn't actually do anything right?
 			reuse.erase(std::remove(reuse.begin(), reuse.end(), zoneId), reuse.end());
 		}
 
 		auto& zone = zones[zoneId];
 		if (!zone.active) {
 			ENGINE_INFO2("\tZone inactive {}", zoneId);
-			zone.offset = pos;
-			zone.active = true;
+			activateZone(zone, realmId, pos);
 		} else {
 			ENGINE_INFO2("\tZone active {}", zoneId);
 			ENGINE_DEBUG_ASSERT(zones[zoneId].offset == pos);
 		}
 	}
+	#endif // ENGINE_CLIENT
 
 	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp) {
 		const auto oldZoneId = physComp.getZoneId();
+		auto& oldZone = zones[oldZoneId];
+		auto& newZone = zones[newZoneId];
+		const auto zoneOffsetDiff = static_cast<WorldVec>(newZone.offset - oldZone.offset);
+		const auto oldPos = Engine::Glue::as<WorldVec>(physComp.getPosition());
+		migratePlayer(ply, newZoneId, oldPos - zoneOffsetDiff, physComp);
+	}
+
+	void ZoneManagementSystem::migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, const WorldVec newPos, PhysicsBodyComponent& physComp) {
+		const auto oldZoneId = physComp.getZoneId();
 		//ZONE_DEBUG("{} - Migrating player from {} to {}", world.getTick(), oldZoneId, newZoneId);
-		ENGINE_INFO2("{} - Migrating player ({}) from {} to {}", world.getTick(), ply, oldZoneId, newZoneId);
 
 		auto& oldZone = zones[oldZoneId];
 		auto& newZone = zones[newZoneId];
+		ENGINE_INFO2("{} - Migrating player ({}) from {} ({}) to {} ({})", world.getTick(), ply, oldZoneId, oldZone.realmId, newZoneId, newZone.realmId);
 
 		oldZone.removePlayer(ply);
 		newZone.addPlayer(ply);
 
-		migrateEntity(ply, newZoneId, physComp);
+		migrateEntity(newZoneId, newPos, physComp);
 
 		if constexpr (ENGINE_SERVER) {
 			// Mark entities for network zone updates.
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
 			ecsNetComp.plyZoneChanged = true;
 
-			for (auto& [ent, data] : ecsNetComp.neighbors) {
-				data.zoneChanged();
-				auto& neighPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
-				if (neighPhysComp.getZoneId() != newZoneId) {
-					ENGINE_INFO2("    Move neighbor {} {} {}", ent, neighPhysComp.getZoneId(), newZoneId);
-					migrateEntity(ent, newZoneId, neighPhysComp);
+			//
+			//
+			// TODO: This is a hack for now. We don't currenlty have a way to determine what
+			//       entities are where in absolute positions. Maybe that should be managed by
+			//       the ZoneManagementSystem or the MapSystem/Chunk, but both of those have
+			//       different complications. For now assume the player will never migrate
+			//       large distances in the same realm. Really this code should be somewhere
+			//       else and we automatically shift the entities to the appropriate zone as
+			//       players move like we do for chunks and not be reliant on neighbors.
+			//
+			//
+			// Only migrate entities if we are shifting between zone.
+			if (oldZone.realmId == newZone.realmId) {
+				for (auto& [ent, data] : ecsNetComp.neighbors) {
+					data.zoneChanged();
+					auto& neighPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
+					if (neighPhysComp.getZoneId() != newZoneId) {
+						ENGINE_INFO2("    Move neighbor {} {} {}", ent, neighPhysComp.getZoneId(), newZoneId);
+						migrateEntity(ent, newZoneId, neighPhysComp);
+					}
 				}
 			}
 		}
 	}
 
-	void ZoneManagementSystem::migrateEntity(Engine::ECS::Entity ent, ZoneId newZoneId, PhysicsBodyComponent& physComp) {
+	void ZoneManagementSystem::migrateEntity(const Engine::ECS::Entity ent, const ZoneId newZoneId, PhysicsBodyComponent& physComp) {
 		const auto oldZoneId = physComp.getZoneId();
 		//ZONE_DEBUG("{} - Migrating entity from {} to {}", world.getTick(), oldZoneId, newZoneId);
 		ENGINE_INFO2("{} - Migrating entity ({}) from {} to {}", world.getTick(), ent, oldZoneId, newZoneId);
@@ -396,8 +482,25 @@ namespace Game {
 		ENGINE_DEBUG_ASSERT(world.isAlive(ent), "Attempting to migrate dead entity.");
 		ENGINE_DEBUG_ASSERT(world.isEnabled(ent), "Attempting to migrate disabled entity."); // TODO: this should be fine?
 
-		auto& oldZone = zones[oldZoneId];
-		auto& newZone = zones[newZoneId];
-		physComp.moveZone(oldZone.offset, newZoneId, newZone.offset);
+		const auto& oldZone = zones[oldZoneId];
+		const auto& newZone = zones[newZoneId];
+		ENGINE_DEBUG_ASSERT(oldZone.realmId == newZone.realmId, "Attempting to migrate entities between different realms without a location.");
+
+		const auto zoneOffsetDiff = static_cast<WorldVec>(newZone.offset - oldZone.offset);
+		const auto oldPos = Engine::Glue::as<WorldVec>(physComp.getPosition());
+		migrateEntity(newZoneId, oldPos - zoneOffsetDiff, physComp);
 	}
+
+	void ZoneManagementSystem::migrateEntity(const ZoneId newZoneId, const WorldVec newPos, PhysicsBodyComponent& physComp) {
+		physComp.setPosition({newPos.x, newPos.y});
+		physComp.setZone(newZoneId);
+	}
+	
+	#if ENGINE_SERVER
+	// TODO: at this point should we even bother with this helper? probably not.
+	void ZoneManagementSystem::movePlayer(const Engine::ECS::Entity ply, const RealmId realmId, const WorldAbsVec pos) {
+		const auto zoneId = findOrCreateZoneFor(realmId, pos);
+		migratePlayer(ply, zoneId, pos, world.getComponent<PhysicsBodyComponent>(ply));
+	}
+	#endif // ENGINE_SERVER
 }

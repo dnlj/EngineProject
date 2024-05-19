@@ -16,6 +16,7 @@ namespace Game::UI {
 				CursorWorldAbsPos,
 
 				ZoneOffset,
+				RealmId,
 
 				TargetOffset,
 				TargetWorld,

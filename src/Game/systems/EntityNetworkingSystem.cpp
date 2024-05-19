@@ -56,7 +56,14 @@ namespace {
 		// 
 		// TODO: use ping, loss, etc to pick good offset value. We don't actually have good quality values for those stats yet at this point.
 		world.setNextTick(tick + 16);
-		world.getSystem<Game::ZoneManagementSystem>().ensureZone(zoneId, zoneOffset);
+
+		//
+		//
+		// TODO: realmId
+		//
+		//
+
+		world.getSystem<Game::ZoneManagementSystem>().ensureZoneExists(0, zoneId, zoneOffset);
 		world.getSystem<Game::NetworkingSystem>().addPlayer(from, zoneId, pos);
 
 		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
@@ -275,7 +282,14 @@ namespace {
 
 		// We should only be getting this message when the player switches zones
 		// so it is safe to assume that the player also migrated zones.
-		zoneSys.ensureZone(zoneId, zonePos);
+
+		//
+		//
+		// TODO: realmid
+		//
+		//
+
+		zoneSys.ensureZoneExists(0, zoneId, zonePos);
 		zoneSys.migratePlayer(from.ent, zoneId, world.getComponent<PhysicsBodyComponent>(from.ent));
 
 		// TODO: Find a better solution, this is just a hack for now. The issues

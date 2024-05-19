@@ -20,6 +20,7 @@ namespace Game::UI {
 		addLabel("Cursor (world abs): {}m");
 
 		addLabel("Zone Offset ({}): {}m");
+		addLabel("Realm Id: {}");
 
 		addLabel("Target (offset): {:.3f}m");
 		addLabel("Target (world): {:.3f}m");
@@ -58,6 +59,7 @@ namespace Game::UI {
 
 			pane->setLabel(CoordPane::CursorWorldAbsPos, worldToAbsolute(cursorWorldPos, zone.offset));
 			pane->setLabel(CoordPane::ZoneOffset, zoneId, zone.offset);
+			pane->setLabel(CoordPane::RealmId, zone.realmId);
 
 			const auto& actComp = world.getComponent<Game::ActionComponent>(ply);
 			if (!actComp.valid()) { return; }

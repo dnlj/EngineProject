@@ -59,16 +59,28 @@ namespace Game {
 			/**
 			 * Find an existing zone or create a new zone suitable for containing the given position.
 			 */
-			ENGINE_SERVER_ONLY(ZoneId findOrCreateZoneFor(WorldAbsVec pos));
+			ENGINE_SERVER_ONLY(ZoneId findOrCreateZoneFor(const RealmId realmId, const WorldAbsVec pos));
 
 			/**
-			 * Ensures that the given ZoneId is active and offset at the given position.
+			 * Ensures that a _specific_ given ZoneId is active and offset at the given position.
 			 */
-			void ensureZone(ZoneId zoneId, WorldAbsVec pos);
+			ENGINE_CLIENT_ONLY(void ensureZoneExists(const RealmId realmId, const ZoneId zoneId, const WorldAbsVec pos));
 			
-			// TODO: server only
-			void migratePlayer(Engine::ECS::Entity ply, ZoneId newZoneId, PhysicsBodyComponent& physComp);
-			void migrateEntity(Engine::ECS::Entity ent, ZoneId newZoneId, PhysicsBodyComponent& physComp);
+			/**
+			 * Migrate to a new zone relative to the previous zone.
+			 */
+			void migratePlayer(const Engine::ECS::Entity ply, const ZoneId newZoneId, PhysicsBodyComponent& physComp);
+			void migrateEntity(const Engine::ECS::Entity ent, const ZoneId newZoneId, PhysicsBodyComponent& physComp);
+
+			/**
+			 * Migrate to a new zone with a position relative to the new zone offset.
+			 */
+			void migratePlayer(const Engine::ECS::Entity ply, const ZoneId newZoneId, const WorldVec newPos, PhysicsBodyComponent& physComp);
+
+			/**
+			 * Move a player to a given realm at a given position.
+			 */
+			ENGINE_SERVER_ONLY(void movePlayer(const Engine::ECS::Entity ply, const RealmId realmId, const WorldAbsVec pos));
 
 			const auto& getZones() const { return zones; }
 
@@ -92,7 +104,15 @@ namespace Game {
 			}
 
 		private:
-			ENGINE_SERVER_ONLY(ENGINE_INLINE_REL ZoneId createNewZone(WorldAbsVec pos));
+			void migrateEntity(const ZoneId newZoneId, const WorldVec newPos, PhysicsBodyComponent& physComp);
+
+			/**
+			 * Provides a central place for activating (or initializing) zones.
+			 * This is useful since we have to create and reuse zones from multiple places.
+			 */
+			ENGINE_INLINE_REL void activateZone(Zone& zone, const RealmId realmId, const WorldAbsVec pos);
+
+			ENGINE_SERVER_ONLY(ENGINE_INLINE_REL ZoneId createNewZone(const RealmId realmId, const WorldAbsVec pos));
 			ENGINE_SERVER_ONLY(ENGINE_INLINE_REL void tick_Server());
 			ENGINE_CLIENT_ONLY(ENGINE_INLINE_REL void tick_Client());
 	};

@@ -1,5 +1,4 @@
 // Game
-//#include <Game/common.hpp>
 #include <Game/System.hpp>
 #include <Game/PhysicsListener.hpp>
 
@@ -9,8 +8,9 @@ namespace Game {
 		private:
 			class RealmChange {
 				public:
-					Engine::ECS::Entity ent;
+					Engine::ECS::Entity ply;
 					RealmId realmId;
+					BlockVec pos;
 			};
 
 		public:

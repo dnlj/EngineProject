@@ -18,7 +18,8 @@ namespace Game::inline Units {
 	using WorldVec = glm::vec<2, WorldUnit>;
 
 	/**
-	 * An approximate absolute world position.
+	 * An approximate absolute world position in meters.
+	 * This is approximate because it cannot represent fractional positions.
 	 */
 	using WorldAbsUnit = int64;
 	using WorldAbsVec = glm::vec<2, WorldAbsUnit>;
@@ -98,7 +99,10 @@ namespace Game::inline Constants {
 	constexpr WorldAbsUnit zoneSameDist = 500;
 
 	static_assert(zoneMustSplitDist - zoneMustJoinDist > 10, "The zone split distance must be significantly larger than the join distance.");
-	static_assert(zoneMustJoinDist - neighborRangePersist > 10, "The zone join distance should be significantly larger than the neighbor distance");
+
+	// If this wasn't true then you could theoretically run into instances where neighbor
+	// entities are moved to both zones.
+	static_assert(zoneMustJoinDist > 2*neighborRangePersist, "The zone join distance should be at minimum twice as large as the neighbor persist distance");
 }
 
 namespace Game::inline Units {

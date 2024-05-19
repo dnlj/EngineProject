@@ -20,7 +20,7 @@ namespace Game {
 		// Must be before physics + rendering. Updating between causes a flash/flick.
 		class EntityNetworkingSystem,
 		class NetworkingSystem,
-		class RealmManagementSystem,
+		ENGINE_SERVER_ONLY(class RealmManagementSystem,)
 		class ZoneManagementSystem,
 
 		// Inputs

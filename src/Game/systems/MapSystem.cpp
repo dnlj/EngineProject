@@ -122,7 +122,15 @@ namespace Game {
 
 		const auto ent = world.createEntity();
 		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset;
-		world.addComponent<RealmComponent>(ent);
+		auto& realmComp = world.addComponent<RealmComponent>(ent);
+
+		//
+		//
+		// TODO: populate real realm data.
+		//
+		//
+		realmComp.realmId = 1;
+		realmComp.pos = {2, 3};
 
 		b2BodyDef bodyDef{};
 		bodyDef.type = b2_staticBody;
@@ -496,7 +504,7 @@ namespace Game {
 							//
 							//
 							//
-							queueRegionToLoad(1, regionPos, *it->second);
+							queueRegionToLoad(0, regionPos, *it->second);
 						}
 					}
 

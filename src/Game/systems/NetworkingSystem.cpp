@@ -229,7 +229,14 @@ namespace Game {
 			// TODO: query map system and find good spawn location
 			auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 			constexpr WorldAbsVec pos = {0, 2};
-			const auto zoneId = zoneSys.findOrCreateZoneFor(pos);
+
+			//
+			//
+			// TODO: realmId
+			//
+			//
+
+			const auto zoneId = zoneSys.findOrCreateZoneFor(0, pos);
 			const auto& zone = zoneSys.getZone(zoneId);
 			const auto finalPos = world.getSystem<NetworkingSystem>().addPlayer(from, zoneId, absolueToRelative(pos, zone.offset));
 
