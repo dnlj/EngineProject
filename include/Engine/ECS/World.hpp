@@ -687,6 +687,7 @@ namespace Engine::ECS {
 			void callWithComponent(ComponentId cid, Callable&& callable) {
 				using Caller = void(Callable::*)(void) const;
 				constexpr Caller callers[]{ &Callable::template operator()<Cs>... };
+				ENGINE_DEBUG_ASSERT(cid < std::size(callers), "Attempting to index an invalid component callable.");
 				return (callable.*callers[cid])();
 			}
 

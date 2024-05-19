@@ -489,7 +489,14 @@ namespace Game {
 						const auto it = regions.emplace(regionPos, std::move(ptr)).first;
 
 						if constexpr (ENGINE_SERVER) {
-							queueRegionToLoad(regionPos, *it->second);
+							//
+							//
+							//
+							// TODO: realm
+							//
+							//
+							//
+							queueRegionToLoad(1, regionPos, *it->second);
 						}
 					}
 
@@ -735,9 +742,9 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::loadChunk(const glm::ivec2 chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept {
+	void MapSystem::loadChunk(const RealmId realmId, const glm::ivec2 chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept {
 		const auto chunkBlockPos = chunkToBlock(chunkPos);
-		mgen.init(chunkBlockPos, chunkInfo.chunk, chunkInfo.entData);
+		mgen.init(realmId, chunkBlockPos, chunkInfo.chunk, chunkInfo.entData);
 	}
 
 	void MapSystem::loadChunkAsyncWorker() {
@@ -749,22 +756,23 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::queueRegionToLoad(glm::ivec2 regionPos, MapRegion& region) {
-		std::cout << "Queue region: " << regionPos.x << " " << regionPos.y << "\n";
+	void MapSystem::queueRegionToLoad(const RealmId realmId, const glm::ivec2 regionPos, MapRegion& region) {
+		ENGINE_LOG2("Queue region: {}", regionPos);
 		const auto regionStart = regionToChunk(regionPos);
 
 		auto lock = chunkQueue.lock();
 		for (RegionUnit x = 0; x < regionSize.x; ++x) {
 			for (RegionUnit y = 0; y < regionSize.y; ++y) {
-				// TODO: maybe have each thread do a whole row of a region? per chunk seems to granular
-				chunkQueue.unsafeEmplace([this,
+				chunkQueue.unsafeEmplace(
+					[
+						this, &region, realmId,
 						chunkPos = regionStart + RegionVec{x, y},
-						&region,
 						&chunkInfo = region.data[x][y]
 					] {
-					loadChunk(chunkPos, chunkInfo);
-					++region.loadedChunks;
-				});
+						loadChunk(realmId, chunkPos, chunkInfo);
+						++region.loadedChunks;
+					}
+				);
 			}
 		}
 		lock.unlock();

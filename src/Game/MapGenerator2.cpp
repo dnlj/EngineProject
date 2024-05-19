@@ -298,11 +298,21 @@ namespace Game {
 #undef DEF_LANDMARK_SAMPLE
 
 namespace Game {
-	void MapGenerator2::init(const IVec2 pos, MapChunk& chunk, std::vector<BlockEntityDesc>& entData) const noexcept {
+	void MapGenerator2::init(const RealmId realmId, const IVec2 pos, MapChunk& chunk, std::vector<BlockEntityDesc>& entData) const noexcept {
 		BlockGenData bgd = { .exists = false };
 
 		for (int x = 0; x < chunkSize.x; ++x) {
 			for (int y = 0; y < chunkSize.y; ++y) {
+
+				// TODO: Actual support for multiple generators. We will probably want something
+				//       where you do something like TerrainGenerator.getGenFor(realmId), then you
+				//       can just get the correct generator once upfront (in the caller) and call
+				//       it multiple times.
+				if (realmId != 0) {
+					chunk.data[x][y] = BlockId::Debug4;
+					continue;
+				}
+
 				const auto blockPos = pos + IVec2{x,y};
 				const auto v = value(blockPos.x, blockPos.y, bgd);
 
