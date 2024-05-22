@@ -236,14 +236,14 @@ namespace Game {
 			for (int x = -2; x < 3; ++x) {
 				for (int y = -2; y < 3; ++y) {
 					const auto plyPos = physComp.getPosition();
-					//const auto plyBlockPos = BlockVec{plyPos.x, plyPos.y} + ;
-					//const BlockVec target = actComp.getTarget() * blockSize + glm::vec2{plyPos.x, plyPos.y};
+					const auto& zone = zoneSys.getZone(physComp.getZoneId());
 					const WorldVec placementOffset = {x*blockSize, y*blockSize};
 					const BlockVec target = worldToBlock(
 						WorldVec{plyPos.x, plyPos.y} + actComp.getTarget() + placementOffset,
-						zoneSys.getZone(physComp.getZoneId()).offset
+						zone.offset
 					);
-					setValueAt2(target, bid);
+
+					setValueAt2({zone.realmId, target}, bid);
 				}
 			}
 		};
@@ -267,8 +267,7 @@ namespace Game {
 
 		// Apply edits
 		for (auto& [chunkPos, edit] : chunkEdits) {
-			const auto regionPos = chunkToRegion(chunkPos);
-			const auto regionIt = regions.find(regionPos);
+			const auto regionIt = regions.find(chunkPos.toRegion());
 			if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] {
 				// I think we could hit this if we get a chunk from the network before we have that area loaded on the client.
 				// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
@@ -276,7 +275,7 @@ namespace Game {
 				continue;
 			}
 
-			const auto chunkIndex = chunkToRegionIndex(chunkPos);
+			const auto chunkIndex = chunkToRegionIndex(chunkPos.chunkPos);
 			auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y].chunk;
 
 			if (chunk.apply(edit)) {
@@ -299,15 +298,19 @@ namespace Game {
 	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
 		const byte* begin = reinterpret_cast<const byte*>(buff.read(head.size));
 		const byte* end = begin + head.size;
-		glm::ivec2 chunkPos;
-
-		memcpy(&chunkPos.x, begin, sizeof(chunkPos.x));
-		begin += sizeof(chunkPos.x);
+		UniversalChunkVec chunkPos;
 		
-		memcpy(&chunkPos.y, begin, sizeof(chunkPos.y));
-		begin += sizeof(chunkPos.y);
+		memcpy(&chunkPos.realmId, begin, sizeof(chunkPos.realmId));
+		begin += sizeof(chunkPos.realmId);
 
-		// ENGINE_INFO("Recv chunk from net: ", chunkPos.x, " ", chunkPos.y, " ", head.size);
+		memcpy(&chunkPos.chunkPos.x, begin, sizeof(chunkPos.chunkPos.x));
+		begin += sizeof(chunkPos.chunkPos.x);
+		
+		memcpy(&chunkPos.chunkPos.y, begin, sizeof(chunkPos.chunkPos.y));
+		begin += sizeof(chunkPos.chunkPos.y);
+
+		// ENGINE_INFO2("Recv chunk from net: {} {}", head.size, chunkPos);
+
 		chunkEdits[chunkPos].fromRLE(begin, end);
 	}
 
@@ -319,17 +322,16 @@ namespace Game {
 		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
 			if (it->second.lastUsed < timeout) {
-				// ENGINE_LOG("Unloading chunk: ", it->first.x, ", ", it->first.y);
+				// ENGINE_LOG2("Unloading chunk: {}", it->first);
 
 				// Store block entities
 				if constexpr (ENGINE_SERVER) {
-					const auto regionPos = chunkToRegion(it->first);
-					const auto regionIt = regions.find(regionPos);
+					const auto regionIt = regions.find(it->first.toRegion());
 					if (regionIt == regions.end() || regionIt->second->loading()) {
 						ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
 					} else {
 						auto& region = *regionIt->second;
-						const auto chunkIndex = chunkToRegionIndex(it->first);
+						const auto chunkIndex = chunkToRegionIndex(it->first.chunkPos);
 						auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
 						chunkData.entData.clear();
 
@@ -357,7 +359,7 @@ namespace Game {
 		// Unload regions
 		for (auto it = regions.begin(); it != regions.end();) {
 			if (it->second->lastUsed < timeout && !it->second->loading()) {
-				ENGINE_LOG("Unloading region: ", it->first.x, ", ", it->first.y);
+				ENGINE_LOG2("Unloading region: {} {} ", it->first.realmId, it->first.regionPos);
 				it = regions.erase(it);
 			} else {
 				++it;
@@ -376,7 +378,7 @@ namespace Game {
 			const auto begin = mapAreaComp.updates.begin();
 			const auto end = mapAreaComp.updates.end();
 			
-			auto& conn = world.getComponent<NetworkComponent>(ent).get();
+			auto& conn = netComp.get();
 			for (auto it = begin; it != end;) {
 				const auto& chunkPos = it->first;
 				auto& meta = it->second;
@@ -398,10 +400,11 @@ namespace Game {
 
 					// TODO (4E5R8u55): This isn't correct. Zero can be a valid tick if they wrap.
 					if (meta.last == 0) { // Fresh chunk
-						const auto regionPos = chunkToRegion(chunkPos);
+						const auto regionPos = chunkPos.toRegion();
 						const auto regionIt = regions.find(regionPos);
+
 						if (regionIt != regions.end() && !regionIt->second->loading()) {
-							const auto chunkIndex = chunkToRegionIndex(chunkPos);
+							const auto chunkIndex = chunkToRegionIndex(chunkPos.chunkPos);
 							auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
 							rleTemp.clear();
 							chunkInfo.chunk.toRLE(rleTemp);
@@ -429,10 +432,18 @@ namespace Game {
 						// managed in MapSystem::ensurePlayAreaLoaded.
 						const auto size = static_cast<int32>(rle->size() * sizeof(rle->front()));
 						byte* data = reinterpret_cast<byte*>(rle->data());
-						memcpy(data, &chunkPos.x, sizeof(chunkPos.x));
-						memcpy(data + sizeof(chunkPos.x), &chunkPos.y, sizeof(chunkPos.y));
 
-						msg.writeBlob(data, size);
+						// TODO: This is awful and incredibly error prone. Don't do this.
+						memcpy(data, &chunkPos.realmId, sizeof(chunkPos.realmId));
+						data += sizeof(chunkPos.realmId);
+
+						memcpy(data, &chunkPos.chunkPos.x, sizeof(chunkPos.chunkPos.x));
+						data += sizeof(chunkPos.chunkPos.x);
+
+						memcpy(data, &chunkPos.chunkPos.y, sizeof(chunkPos.chunkPos.y));
+						data += sizeof(chunkPos.chunkPos.y);
+
+						msg.writeBlob(rle->data(), size);
 					} else {
 						// This warning gets hit quite a bit depending on the clients
 						// network recv rate. So its annoying to leave enabled because
@@ -451,13 +462,14 @@ namespace Game {
 		#if ENGINE_SERVER
 			auto& mapAreaComp = world.getComponent<MapAreaComponent>(ply);
 		#endif
+
 		const auto tick = world.getTick();
 		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
 		const auto plyPos = Engine::Glue::as<glm::vec2>(physComp.getPosition());
 		const auto plyZoneId = physComp.getZoneId();
-		const auto& plyZoneOffset = zoneSys.getZone(plyZoneId).offset;
-		const auto blockPos = worldToBlock(plyPos, plyZoneOffset);
+		const auto& plyZone = zoneSys.getZone(plyZoneId);
+		const auto blockPos = worldToBlock(plyPos, plyZone.offset);
 
 		// How large of an area to load around the chunk blockPos is in.
 		constexpr auto halfAreaSize = ChunkVec{5, 5};
@@ -466,6 +478,12 @@ namespace Game {
 		// We want a larger unload area so that we arent constantly loading/unloading
 		// when a player is near a chunk border.
 		constexpr auto halfBuffSize = ChunkVec{7, 7};
+
+		//
+		//
+		// TODO: include realm in the vecs instead of prepending it every time.
+		//
+		//
 
 		const auto minAreaChunk = blockToChunk(blockPos) - halfAreaSize;
 		const auto maxAreaChunk = blockToChunk(blockPos) + halfAreaSize;
@@ -480,7 +498,7 @@ namespace Game {
 					|| chunkPos.y > maxAreaChunk.y;
 
 				const auto regionPos = chunkToRegion(chunkPos);
-				auto regionIt = regions.find(regionPos);
+				auto regionIt = regions.find({plyZone.realmId, regionPos});
 
 				// Create a new region if needed
 				if (regionIt == regions.end()) {
@@ -494,17 +512,10 @@ namespace Game {
 						// With below it hits +2GB at most.
 						auto ptr = std::make_unique<MapRegion>();
 						ptr->lastUsed = world.getTickTime();
-						const auto it = regions.emplace(regionPos, std::move(ptr)).first;
+						const auto it = regions.try_emplace({plyZone.realmId, regionPos}, std::move(ptr)).first;
 
 						if constexpr (ENGINE_SERVER) {
-							//
-							//
-							//
-							// TODO: realm
-							//
-							//
-							//
-							queueRegionToLoad(0, regionPos, *it->second);
+							queueRegionToLoad(plyZone.realmId, regionPos, *it->second);
 						}
 					}
 
@@ -523,9 +534,9 @@ namespace Game {
 					
 					// If this isn't a buffer chunk, insert it.
 					// If it is already tracked (even if it is a buffer chunk) update it.
-					const auto found = mapAreaComp.updates.contains(chunkPos);
+					const auto found = mapAreaComp.updates.contains({plyZone.realmId, chunkPos});
 					if (!isBufferChunk || found) {
-						mapAreaComp.updates[chunkPos].tick = tick;
+						mapAreaComp.updates[{plyZone.realmId, chunkPos}].tick = tick;
 					}
 				}
 				#endif
@@ -533,13 +544,13 @@ namespace Game {
 				// Create active chunk data.
 				// The generation of the actual graphics/physics is done in
 				// MapSystem::tick based on the last chunk update tick. 
-				auto it = activeChunks.find(chunkPos);
+				auto it = activeChunks.find({plyZone.realmId, chunkPos});
 				if (it == activeChunks.end()) {
 					if (isBufferChunk) { continue; }
 
 					// TODO (QmIupKgJ): we really should probably have a cache of inactive chunks that we can reuse instead of constant destroy/create.
 					zoneSys.addRef(plyZoneId);
-					it = activeChunks.try_emplace(chunkPos, createBody(plyZoneId)).first;
+					it = activeChunks.try_emplace({plyZone.realmId, chunkPos}, createBody(plyZoneId)).first;
 					ENGINE_DEBUG_ASSERT(it->second.body.valid());
 					//ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
 
@@ -591,7 +602,7 @@ namespace Game {
 						zoneSys.removeRef(bodyZoneId);
 						zoneSys.addRef(plyZoneId);
 
-						const auto pos = blockToWorld(chunkToBlock(chunkPos), plyZoneOffset);
+						const auto pos = blockToWorld(chunkToBlock(chunkPos), plyZone.offset);
 						body.setPosition({pos.x, pos.y});
 						body.setZone(plyZoneId);
 
@@ -603,7 +614,7 @@ namespace Game {
 								// Some entities may have already been moved in the zone system so we need to check the zone here.
 								if (entPhysComp.getZoneId() != plyZoneId) {
 									const auto oldZoneOffset = zoneSys.getZone(entPhysComp.getZoneId()).offset;
-									entPhysComp.moveZone(oldZoneOffset, plyZoneId, plyZoneOffset);
+									entPhysComp.moveZone(oldZoneOffset, plyZoneId, plyZone.offset);
 								}
 							}
 						}
@@ -615,19 +626,18 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::setValueAt2(const BlockVec blockPos, BlockId bid) {
-		const auto blockIndex = (chunkSize + blockPos % chunkSize) % chunkSize;
-		auto& edit = chunkEdits[blockToChunk(blockPos)];
+	void MapSystem::setValueAt2(const UniversalBlockVec blockPos, BlockId bid) {
+		const auto blockIndex = (chunkSize + blockPos.blockPos % chunkSize) % chunkSize;
+		auto& edit = chunkEdits[blockPos.toChunk()];
 		edit.data[blockIndex.x][blockIndex.y] = bid;
 	}
 	
 	// TODO: thread this. Not sure how nice box2d will play with it.
-	void MapSystem::buildActiveChunkData(ActiveChunkData& data, glm::ivec2 chunkPos) {
-		const auto regionPos = chunkToRegion(chunkPos);
-		const auto regionIt = regions.find(regionPos);
+	void MapSystem::buildActiveChunkData(ActiveChunkData& data, const UniversalChunkVec chunkPos) {
+		const auto regionIt = regions.find(chunkPos.toRegion());
 		if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
 				
-		const auto chunkIndex = chunkToRegionIndex(chunkPos);
+		const auto chunkIndex = chunkToRegionIndex(chunkPos.chunkPos);
 		auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
 
 		if constexpr (ENGINE_SERVER) { // Build edits
@@ -728,7 +738,7 @@ namespace Game {
 		{ // Physics
 			auto& body = data.body;
 			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkToBlock(chunkPos), zoneSys.getZone(body.getZoneId()).offset));
+			const auto pos = Engine::Glue::as<b2Vec2>(blockToWorld(chunkPos.toBlock().blockPos, zoneSys.getZone(body.getZoneId()).offset));
 
 			// TODO: Look into edge and chain shapes
 			// Clear all fixtures

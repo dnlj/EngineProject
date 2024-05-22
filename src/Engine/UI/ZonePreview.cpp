@@ -21,7 +21,7 @@ namespace Game::UI { namespace {
 
 			std::vector<glm::u8vec3> zoneColors;
 
-			Engine::FlatHashSet<ChunkVec> lastActiveChunks;
+			Engine::FlatHashSet<UniversalChunkVec> lastActiveChunks;
 			Engine::Clock::TimePoint lastUpdate;
 
 			// Arbitrary starting color. Saturation and lightness will be
@@ -41,6 +41,11 @@ namespace Game::UI { namespace {
 			void render() override {
 				auto* engine = ctx->getUserdata<Game::EngineInstance>();
 				auto& world = engine->getWorld();
+				//
+				//
+				// TODO: dropdown for realm
+				//
+				//
 
 				if (world.getTickTime() - lastUpdate > std::chrono::milliseconds{250}) {
 					lastUpdate = world.getTickTime();
@@ -122,13 +127,19 @@ namespace Game::UI { namespace {
 						// Offset by 256 so (0, 0) is centered instead of bottom left.
 						const ChunkVec chunkPos = {x - 256, y - 256};
 						glm::u8vec3 color = {255, 255, 0};
-
-						const auto& chunkData = activeChunks.find(chunkPos);
+						
+						//
+						//
+						// TODO: realmId
+						//
+						//
+						const UniversalChunkVec pos = {0, chunkPos};
+						const auto& chunkData = activeChunks.find(pos);
 
 						if (chunkData != activeChunks.end()) {
 							const auto zoneId = chunkData->second.body.getZoneId();
 							color = zoneColors[zoneId];
-						} else if (regions.contains(chunkToRegion(chunkPos))) {
+						} else if (regions.contains({pos.realmId, chunkToRegion(chunkPos)})) {
 							color = {70, 70, 70};
 						} else {
 							color = {50, 50, 50};

@@ -50,7 +50,7 @@ namespace Game {
 				encoding.clear();
 
 				// Reserve space for position data
-				encoding.insert(encoding.end(), sizeof(chunkSize), 0);
+				encoding.insert(encoding.end(), sizeof(RealmId) + sizeof(ChunkVec::x) + sizeof(ChunkVec::y), 0);
 
 				constexpr auto sz = chunkSize.x * chunkSize.y;
 				const BlockId* linear = &data[0][0];

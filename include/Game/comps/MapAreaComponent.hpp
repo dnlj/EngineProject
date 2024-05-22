@@ -3,6 +3,9 @@
 // Engine
 #include <Engine/FlatHashMap.hpp>
 
+// TODO: rm and move UniversalChunkVec
+#include <Game/systems/MapSystem.hpp>
+
 namespace Game {
 	// TODO: This is poorly named.
 	/**
@@ -18,7 +21,7 @@ namespace Game {
 				Engine::ECS::Tick last;
 			};
 
-			Engine::FlatHashMap<glm::ivec2, ChunkMeta> updates;
+			Engine::FlatHashMap<UniversalChunkVec, ChunkMeta> updates;
 
 		public:
 			// TODO: Should probably wrap uses in an ENGINE_SERVER so the code

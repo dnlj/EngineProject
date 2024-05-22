@@ -267,10 +267,11 @@ namespace {
 	}
 
 	void recv_ECS_ZONE_INFO(EngineInstance& engine, ConnectionInfo& from, const MessageHeader head, BufferReader& msg) {
+		RealmId realmId;
 		ZoneId zoneId;
 		WorldAbsVec zonePos;
 
-		if (!msg.read(&zoneId) || !msg.read(&zonePos)) {
+		if (!msg.read(&realmId) || !msg.read(&zoneId) || !msg.read(&zonePos)) {
 			ENGINE_WARN2("Unable to read zone info in ECS_ZONE_INFO.");
 			ENGINE_DEBUG_BREAK;
 			return;
@@ -282,14 +283,7 @@ namespace {
 
 		// We should only be getting this message when the player switches zones
 		// so it is safe to assume that the player also migrated zones.
-
-		//
-		//
-		// TODO: realmid
-		//
-		//
-
-		zoneSys.ensureZoneExists(0, zoneId, zonePos);
+		zoneSys.ensureZoneExists(realmId, zoneId, zonePos);
 		zoneSys.migratePlayer(from.ent, zoneId, world.getComponent<PhysicsBodyComponent>(from.ent));
 
 		// TODO: Find a better solution, this is just a hack for now. The issues
@@ -412,13 +406,14 @@ namespace Game {
 				if (auto msg = conn.beginMessage<MessageType::ECS_ZONE_INFO>()) {
 					const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 					const auto zoneId = physComp.getZoneId();
-					const auto zonePos = zoneSys.getZone(zoneId).offset;
+					const auto& zone = zoneSys.getZone(zoneId);
+					msg.write(zone.realmId);
 					msg.write(zoneId);
-					msg.write(zonePos);
+					msg.write(zone.offset);
 
 					for (const auto ent : zoneChanged) {
 						msg.write(ent);
-						ENGINE_INFO2("ECS_ZONE_INFO (each): {} {} {}", ent, zoneId, zonePos);
+						ENGINE_INFO2("ECS_ZONE_INFO (each): {} {} {} {}", ent, zoneId, zone.realmId, zone.offset);
 					}
 				} else {
 					// TODO: This code path is largely untested. ATM we don't have a way

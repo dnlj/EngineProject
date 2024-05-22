@@ -51,10 +51,10 @@ namespace Game {
 
 		const auto ply = plyFilter.front();
 		const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
-		const auto offset = world.getSystem<ZoneManagementSystem>().getZone(physComp.getZoneId()).offset;
+		const auto& zone = world.getSystem<ZoneManagementSystem>().getZone(physComp.getZoneId());
 		const auto bounds = cam.getWorldScreenBounds();
-		const auto minChunk = blockToChunk(worldToBlock(bounds.min, offset));
-		const auto maxChunk = blockToChunk(worldToBlock(bounds.max, offset));
+		const auto minChunk = blockToChunk(worldToBlock(bounds.min, zone.offset));
+		const auto maxChunk = blockToChunk(worldToBlock(bounds.max, zone.offset));
 
 		const auto vao = mapSys.vertexLayout->get();
 		glBindVertexArray(vao);
@@ -62,7 +62,7 @@ namespace Game {
 		const auto& activeChunks = mapSys.getActiveChunks();
 		for (auto x = minChunk.x; x <= maxChunk.x; ++x) {
 			for (auto y = minChunk.y; y <= maxChunk.y; ++y) {
-				const auto found = activeChunks.find({x, y});
+				const auto found = activeChunks.find({zone.realmId, {x, y}});
 				if (found == activeChunks.cend()) { continue; }
 				const auto& data = found->second;
 				if (data.ecount == 0) { continue; }

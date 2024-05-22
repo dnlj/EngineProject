@@ -72,6 +72,71 @@ namespace Game {
 			static_assert(decltype(loadedChunks)::is_always_lock_free);
 	};
 
+
+	//
+	//
+	// TODO: Not sure if i like these, they make math slightly more complicated.
+	//
+	//
+	class UniversalRegionVec {
+		public:
+			RealmId realmId;
+			RegionVec regionPos;
+			bool operator==(const UniversalRegionVec&) const noexcept = default;
+	};
+
+	class UniversalBlockVec;
+	class UniversalChunkVec {
+		public:
+			RealmId realmId;
+			ChunkVec chunkPos;
+			bool operator==(const UniversalChunkVec&) const noexcept = default;
+			ENGINE_INLINE UniversalRegionVec toRegion() const noexcept { return { realmId, chunkToRegion(chunkPos) }; }
+			ENGINE_INLINE inline UniversalBlockVec toBlock() const noexcept;
+	};
+
+	class UniversalBlockVec {
+		public:
+			RealmId realmId;
+			BlockVec blockPos;
+			bool operator==(const UniversalBlockVec&) const noexcept = default;
+			ENGINE_INLINE UniversalChunkVec toChunk() const noexcept { return { realmId, blockToChunk(blockPos) }; }
+	};
+
+	ENGINE_INLINE UniversalBlockVec UniversalChunkVec::toBlock() const noexcept { return { realmId, chunkToBlock(chunkPos) }; }
+}
+
+template<>
+struct Engine::Hash<Game::UniversalRegionVec> {
+	[[nodiscard]]
+	size_t operator()(const Game::UniversalRegionVec& val) const {
+		auto seed = hash(val.realmId);
+		hashCombine(seed, hash(val.regionPos));
+		return seed;
+	}
+};
+
+template<>
+struct Engine::Hash<Game::UniversalChunkVec> {
+	[[nodiscard]]
+	size_t operator()(const Game::UniversalChunkVec& val) const {
+		auto seed = hash(val.realmId);
+		hashCombine(seed, hash(val.chunkPos));
+		return seed;
+	}
+};
+
+template<>
+struct Engine::Hash<Game::UniversalBlockVec> {
+	[[nodiscard]]
+	size_t operator()(const Game::UniversalBlockVec& val) const {
+		auto seed = hash(val.realmId);
+		hashCombine(seed, hash(val.blockPos));
+		return seed;
+	}
+};
+
+namespace Game {
 	class MapSystem : public System {
 		public:
 			struct Vertex {
@@ -99,8 +164,8 @@ namespace Game {
 			std::thread threads[ENGINE_DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
 
 			/** The info for chunks */
-			Engine::FlatHashMap<ChunkVec, ActiveChunkData> activeChunks;
-			Engine::FlatHashMap<ChunkVec, MapChunk> chunkEdits;
+			Engine::FlatHashMap<UniversalChunkVec, ActiveChunkData> activeChunks;
+			Engine::FlatHashMap<UniversalChunkVec, MapChunk> chunkEdits;
 
 			/** Used for sending full RLE chunk updates */
 			std::vector<byte> rleTemp;
@@ -111,7 +176,7 @@ namespace Game {
 
 			using Job = std::function<void()>;
 			Engine::ThreadSafeQueue<Job> chunkQueue;
-			Engine::FlatHashMap<glm::ivec2, std::unique_ptr<MapRegion>> regions;
+			Engine::FlatHashMap<UniversalRegionVec, std::unique_ptr<MapRegion>> regions;
 			Engine::ECS::Entity mapEntity;
 
 			std::vector<Vertex> buildVBOData;
@@ -132,7 +197,7 @@ namespace Game {
 
 			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);
 
-			void setValueAt2(const BlockVec blockPos, BlockId bid);
+			void setValueAt2(const UniversalBlockVec blockPos, BlockId bid);
 
 			ENGINE_INLINE const auto& getActiveChunks() const noexcept { return activeChunks; }
 			ENGINE_INLINE const auto& getLoadedRegions() const noexcept { return regions; }
@@ -147,7 +212,7 @@ namespace Game {
 			// TODO: recycle old bodies?
 			PhysicsBody createBody(ZoneId zoneId);
 
-			void buildActiveChunkData(ActiveChunkData& data, glm::ivec2 chunkPos);
+			void buildActiveChunkData(ActiveChunkData& data, const UniversalChunkVec chunkPos);
 
 			void loadChunk(const RealmId realmId, const glm::ivec2 chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;
 
