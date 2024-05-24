@@ -81,12 +81,12 @@ namespace Game {
 					//
 					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 					constexpr auto dejitter = World::getTickInterval(); // TODO: make cvar
-					constexpr auto netrate = std::chrono::milliseconds{51}; // TODO: dont hardcode. cvar/cmdlline
+					constexpr auto netrate = std::chrono::milliseconds{51}; // TODO: dont hardcode. cvar/cmdline
 					constexpr auto serverTickTime = World::getTickInterval();
 					const auto step = dejitter + ping + netrate + serverTickTime + World::getTickInterval() * buffSize;
 					interpTime = world.getTickTime() - step;
 
-					// TODO: this isnt great on the ECS/snapshot memory layout
+					// TODO: this isn't great on the ECS/snapshot memory layout
 					for (Engine::ECS::Tick t = world.getTick(); t > world.getTick() - tickrate; --t) {
 						const auto& physCompState = world.getComponentState<PhysicsBodyComponent>(ent, t);
 						if (physCompState.rollbackOverride) {

@@ -78,32 +78,36 @@ namespace Game {
 	// TODO: Not sure if i like these, they make math slightly more complicated.
 	//
 	//
+	class UniversalChunkVec;
 	class UniversalRegionVec {
 		public:
 			RealmId realmId;
-			RegionVec regionPos;
-			bool operator==(const UniversalRegionVec&) const noexcept = default;
+			RegionVec pos;
+			constexpr bool operator==(const UniversalRegionVec&) const noexcept = default;
+			ENGINE_INLINE constexpr UniversalChunkVec toChunk() const noexcept;
 	};
 
 	class UniversalBlockVec;
 	class UniversalChunkVec {
 		public:
 			RealmId realmId;
-			ChunkVec chunkPos;
+			ChunkVec pos;
 			bool operator==(const UniversalChunkVec&) const noexcept = default;
-			ENGINE_INLINE UniversalRegionVec toRegion() const noexcept { return { realmId, chunkToRegion(chunkPos) }; }
-			ENGINE_INLINE inline UniversalBlockVec toBlock() const noexcept;
+			constexpr UniversalChunkVec operator+(const ChunkVec vec) const noexcept { return {realmId, pos + vec}; }
+			ENGINE_INLINE constexpr UniversalRegionVec toRegion() const noexcept { return { realmId, chunkToRegion(pos) }; }
+			ENGINE_INLINE constexpr inline UniversalBlockVec toBlock() const noexcept;
 	};
 
 	class UniversalBlockVec {
 		public:
 			RealmId realmId;
-			BlockVec blockPos;
-			bool operator==(const UniversalBlockVec&) const noexcept = default;
-			ENGINE_INLINE UniversalChunkVec toChunk() const noexcept { return { realmId, blockToChunk(blockPos) }; }
+			BlockVec pos;
+			constexpr bool operator==(const UniversalBlockVec&) const noexcept = default;
+			ENGINE_INLINE constexpr UniversalChunkVec toChunk() const noexcept { return { realmId, blockToChunk(pos) }; }
 	};
 
-	ENGINE_INLINE UniversalBlockVec UniversalChunkVec::toBlock() const noexcept { return { realmId, chunkToBlock(chunkPos) }; }
+	ENGINE_INLINE constexpr UniversalBlockVec UniversalChunkVec::toBlock() const noexcept { return { realmId, chunkToBlock(pos) }; }
+	ENGINE_INLINE constexpr UniversalChunkVec UniversalRegionVec::toChunk() const noexcept { return { realmId, regionToChunk(pos) }; }
 }
 
 template<>
@@ -111,7 +115,7 @@ struct Engine::Hash<Game::UniversalRegionVec> {
 	[[nodiscard]]
 	size_t operator()(const Game::UniversalRegionVec& val) const {
 		auto seed = hash(val.realmId);
-		hashCombine(seed, hash(val.regionPos));
+		hashCombine(seed, hash(val.pos));
 		return seed;
 	}
 };
@@ -121,7 +125,7 @@ struct Engine::Hash<Game::UniversalChunkVec> {
 	[[nodiscard]]
 	size_t operator()(const Game::UniversalChunkVec& val) const {
 		auto seed = hash(val.realmId);
-		hashCombine(seed, hash(val.chunkPos));
+		hashCombine(seed, hash(val.pos));
 		return seed;
 	}
 };
@@ -131,7 +135,7 @@ struct Engine::Hash<Game::UniversalBlockVec> {
 	[[nodiscard]]
 	size_t operator()(const Game::UniversalBlockVec& val) const {
 		auto seed = hash(val.realmId);
-		hashCombine(seed, hash(val.blockPos));
+		hashCombine(seed, hash(val.pos));
 		return seed;
 	}
 };
@@ -214,11 +218,11 @@ namespace Game {
 
 			void buildActiveChunkData(ActiveChunkData& data, const UniversalChunkVec chunkPos);
 
-			void loadChunk(const RealmId realmId, const glm::ivec2 chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;
+			void loadChunk(const UniversalChunkVec chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;
 
 			void loadChunkAsyncWorker();
 
-			void queueRegionToLoad(const RealmId realmId, const glm::ivec2 regionPos, MapRegion& region);
+			void queueRegionToLoad(const UniversalRegionVec regionPos, MapRegion& region);
 
 			template<BlockEntityType Type>
 			Engine::ECS::Entity buildBlockEntity(const BlockEntityDesc& data, const ActiveChunkData& activeChunkData) {
