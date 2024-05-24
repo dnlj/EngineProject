@@ -259,6 +259,7 @@ namespace Game {
 				reply.write(from.ent);
 				reply.write(world.getTick());
 				reply.write(zoneId);
+				reply.write(zone.realmId);
 				reply.write(zone.offset);
 				reply.write(finalPos);
 			} else {

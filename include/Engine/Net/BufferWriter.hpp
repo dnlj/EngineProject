@@ -7,7 +7,7 @@
 #define ENGINE_NET_READ(Msg, Type, Var) \
 	Type Var; \
 	if (!Msg.read(&Var)) { \
-		ENGINE_WARN("Unable to read " #Var " from network."); \
+		ENGINE_WARN("Unable to read " #Var "(" #Type ") from network."); \
 		return; \
 	}
 	

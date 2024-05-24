@@ -43,6 +43,7 @@ namespace {
 
 		ENGINE_NET_READ(msg, Engine::ECS::Tick, tick);
 		ENGINE_NET_READ(msg, ZoneId, zoneId);
+		ENGINE_NET_READ(msg, RealmId, realmId);
 		ENGINE_NET_READ(msg, WorldAbsVec, zoneOffset);
 		ENGINE_NET_READ(msg, WorldVec, pos);
 
@@ -56,14 +57,7 @@ namespace {
 		// 
 		// TODO: use ping, loss, etc to pick good offset value. We don't actually have good quality values for those stats yet at this point.
 		world.setNextTick(tick + 16);
-
-		//
-		//
-		// TODO: realmId
-		//
-		//
-
-		world.getSystem<Game::ZoneManagementSystem>().ensureZoneExists(0, zoneId, zoneOffset);
+		world.getSystem<Game::ZoneManagementSystem>().ensureZoneExists(realmId, zoneId, zoneOffset);
 		world.getSystem<Game::NetworkingSystem>().addPlayer(from, zoneId, pos);
 
 		auto& entNetSystem = world.getSystem<Game::EntityNetworkingSystem>();
