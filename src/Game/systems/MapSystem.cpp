@@ -479,12 +479,6 @@ namespace Game {
 		// when a player is near a chunk border.
 		constexpr auto halfBuffSize = ChunkVec{7, 7};
 
-		//
-		//
-		// TODO: include realm in the vecs instead of prepending it every time.
-		//
-		//
-
 		const auto minAreaChunk = blockToChunk(blockPos) - halfAreaSize;
 		const auto maxAreaChunk = blockToChunk(blockPos) + halfAreaSize;
 		const auto minBuffChunk = minAreaChunk - halfBuffSize;

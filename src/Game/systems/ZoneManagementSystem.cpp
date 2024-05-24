@@ -124,42 +124,15 @@ namespace Game {
 
 				for (auto next = cur; ++next != end;) {
 					const auto& physComp2 = world.getComponent<PhysicsBodyComponent>(*next);
-
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					// TODO: first, try a hack here with just setting a very large distance if they are not in the same zone.
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-					//
-
 					const auto& zone1 = zones[physComp1.zone.id];
 					const auto& zone2 = zones[physComp2.zone.id];
-					//
-					//
+
 					// TODO: We should really batch relations on a per Realm basis. That
 					//       would make things more efficient since it cuts down the size of N,
 					//       which is big since this is N^2. Although it would probably be even
 					//       better to do some kind of BSP if perf is really our goal here.
-					//
-					//
 					if (zone1.realmId != zone2.realmId) {
+						// No specified distance = default = max
 						const auto& rel = relations.emplace_back(*cur, *next);
 						ZONE_DEBUG("Relation between {} and {} = inf", *cur, *next);
 
@@ -449,17 +422,15 @@ namespace Game {
 			auto& ecsNetComp = world.getComponent<ECSNetworkingComponent>(ply);
 			ecsNetComp.plyZoneChanged = true;
 
-			//
-			//
-			// TODO: This is a hack for now. We don't currenlty have a way to determine what
-			//       entities are where in absolute positions. Maybe that should be managed by
-			//       the ZoneManagementSystem or the MapSystem/Chunk, but both of those have
-			//       different complications. For now assume the player will never migrate
-			//       large distances in the same realm. Really this code should be somewhere
-			//       else and we automatically shift the entities to the appropriate zone as
-			//       players move like we do for chunks and not be reliant on neighbors.
-			//
-			//
+			// TODO (cdO2U0B0): This is a hack for now. We don't currently have a way to
+			//       determine what entities are where in absolute positions. Maybe that
+			//       should be managed by the ZoneManagementSystem or the MapSystem/Chunk,
+			//       but both of those have different complications. For now assume the
+			//       player will never migrate large distances in the same realm. Really
+			//       this code should be somewhere else and we automatically shift the
+			//       entities to the appropriate zone as players move like we do for
+			//       chunks and not be reliant on neighbors.
+			
 			// Only migrate entities if we are shifting between zone.
 			if (oldZone.realmId == newZone.realmId) {
 				for (auto& [ent, data] : ecsNetComp.neighbors) {
