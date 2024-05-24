@@ -72,13 +72,11 @@ namespace Game {
 			static_assert(decltype(loadedChunks)::is_always_lock_free);
 	};
 
+	// TODO: fmt printers
 
-	//
-	//
-	// TODO: Not sure if i like these, they make math slightly more complicated.
-	//
-	//
 	class UniversalChunkVec;
+	class UniversalBlockVec;
+
 	class UniversalRegionVec {
 		public:
 			RealmId realmId;
@@ -87,7 +85,6 @@ namespace Game {
 			ENGINE_INLINE constexpr UniversalChunkVec toChunk() const noexcept;
 	};
 
-	class UniversalBlockVec;
 	class UniversalChunkVec {
 		public:
 			RealmId realmId;

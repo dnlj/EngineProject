@@ -490,15 +490,16 @@ namespace Game {
 		const auto minBuffChunk = minAreaChunk - halfBuffSize;
 		const auto maxBuffChunk = maxAreaChunk + halfBuffSize;
 
-		for (auto chunkPos = minBuffChunk; chunkPos.x <= maxBuffChunk.x; ++chunkPos.x) {
-			for (chunkPos.y = minBuffChunk.y; chunkPos.y <= maxBuffChunk.y; ++chunkPos.y) {
-				const auto isBufferChunk = chunkPos.x < minAreaChunk.x
-					|| chunkPos.x > maxAreaChunk.x
-					|| chunkPos.y < minAreaChunk.y
-					|| chunkPos.y > maxAreaChunk.y;
+		for (auto chunkPos2 = minBuffChunk; chunkPos2.x <= maxBuffChunk.x; ++chunkPos2.x) {
+			for (chunkPos2.y = minBuffChunk.y; chunkPos2.y <= maxBuffChunk.y; ++chunkPos2.y) {
+				const auto isBufferChunk = chunkPos2.x < minAreaChunk.x
+					|| chunkPos2.x > maxAreaChunk.x
+					|| chunkPos2.y < minAreaChunk.y
+					|| chunkPos2.y > maxAreaChunk.y;
 
-				const auto regionPos = chunkToRegion(chunkPos);
-				auto regionIt = regions.find({plyZone.realmId, regionPos});
+				const UniversalChunkVec chunkPos = {plyZone.realmId, chunkPos2};
+				const auto regionPos = chunkPos.toRegion();
+				auto regionIt = regions.find(regionPos);
 
 				// Create a new region if needed
 				if (regionIt == regions.end()) {
@@ -512,10 +513,10 @@ namespace Game {
 						// With below it hits +2GB at most.
 						auto ptr = std::make_unique<MapRegion>();
 						ptr->lastUsed = world.getTickTime();
-						const auto it = regions.try_emplace({plyZone.realmId, regionPos}, std::move(ptr)).first;
+						const auto it = regions.try_emplace(regionPos, std::move(ptr)).first;
 
 						if constexpr (ENGINE_SERVER) {
-							queueRegionToLoad({plyZone.realmId, regionPos}, *it->second);
+							queueRegionToLoad(regionPos, *it->second);
 						}
 					}
 
@@ -534,9 +535,9 @@ namespace Game {
 					
 					// If this isn't a buffer chunk, insert it.
 					// If it is already tracked (even if it is a buffer chunk) update it.
-					const auto found = mapAreaComp.updates.contains({plyZone.realmId, chunkPos});
+					const auto found = mapAreaComp.updates.contains(chunkPos);
 					if (!isBufferChunk || found) {
-						mapAreaComp.updates[{plyZone.realmId, chunkPos}].tick = tick;
+						mapAreaComp.updates[chunkPos].tick = tick;
 					}
 				}
 				#endif
@@ -544,17 +545,17 @@ namespace Game {
 				// Create active chunk data.
 				// The generation of the actual graphics/physics is done in
 				// MapSystem::tick based on the last chunk update tick. 
-				auto it = activeChunks.find({plyZone.realmId, chunkPos});
+				auto it = activeChunks.find(chunkPos);
 				if (it == activeChunks.end()) {
 					if (isBufferChunk) { continue; }
 
 					// TODO (QmIupKgJ): we really should probably have a cache of inactive chunks that we can reuse instead of constant destroy/create.
 					zoneSys.addRef(plyZoneId);
-					it = activeChunks.try_emplace({plyZone.realmId, chunkPos}, createBody(plyZoneId)).first;
+					it = activeChunks.try_emplace(chunkPos, createBody(plyZoneId)).first;
 					ENGINE_DEBUG_ASSERT(it->second.body.valid());
 					//ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
 
-					const auto chunkIndex = chunkToRegionIndex(chunkPos);
+					const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
 					auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
 
 					// Build chunk entities
@@ -602,7 +603,7 @@ namespace Game {
 						zoneSys.removeRef(bodyZoneId);
 						zoneSys.addRef(plyZoneId);
 
-						const auto pos = blockToWorld(chunkToBlock(chunkPos), plyZone.offset);
+						const auto pos = blockToWorld(chunkToBlock(chunkPos.pos), plyZone.offset);
 						body.setPosition({pos.x, pos.y});
 						body.setZone(plyZoneId);
 
