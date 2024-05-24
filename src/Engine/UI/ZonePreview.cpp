@@ -41,11 +41,6 @@ namespace Game::UI { namespace {
 			void render() override {
 				auto* engine = ctx->getUserdata<Game::EngineInstance>();
 				auto& world = engine->getWorld();
-				//
-				//
-				// TODO: dropdown for realm
-				//
-				//
 
 				if (world.getTickTime() - lastUpdate > std::chrono::milliseconds{250}) {
 					lastUpdate = world.getTickTime();
@@ -105,6 +100,18 @@ namespace Game::UI { namespace {
 				const auto& mapSys = world.getSystem<MapSystem>();
 				const auto& activeChunks = mapSys.getActiveChunks();
 				const auto& regions = mapSys.getLoadedRegions();
+				const auto realmId = [&]() -> RealmId {
+					const auto& filter = world.getFilter<CameraTargetFlag, PhysicsBodyComponent>();
+					if (filter.empty()) { return 0; }
+
+					const auto ply = filter.front();
+					const auto& physComp = world.getComponent<PhysicsBodyComponent>(ply);
+					const auto zoneId = physComp.getZoneId();
+
+					const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+					const auto& zone = zoneSys.getZone(zoneId);
+					return zone.realmId;
+				}();
 
 				// TODO: Automatically rescale based on min/max
 				//ChunkVec min{std::numeric_limits<ChunkUnit>::min(), std::numeric_limits<ChunkUnit>::min()};
@@ -128,12 +135,7 @@ namespace Game::UI { namespace {
 						const ChunkVec chunkPos = {x - 256, y - 256};
 						glm::u8vec3 color = {255, 255, 0};
 						
-						//
-						//
-						// TODO: realmId
-						//
-						//
-						const UniversalChunkVec pos = {0, chunkPos};
+						const UniversalChunkVec pos = {realmId, chunkPos};
 						const auto& chunkData = activeChunks.find(pos);
 
 						if (chunkData != activeChunks.end()) {
