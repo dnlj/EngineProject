@@ -98,7 +98,8 @@ namespace Game {
 		// TODO: we can probably combine most of these loops once we have the logic figured out.
 		// TODO: look into various clustering algos, k-means, etc.
 		groupRemaps.clear();
-		groupsStorage.clear();
+		groupStorage.clear();
+		groupRealms.clear();
 		merged.clear();
 		relations.clear();
 		ZONE_DEBUG("=========================================");
@@ -181,8 +182,8 @@ namespace Game {
 						//ENGINE_DEBUG_ASSERT(physComp1.zone.group != physComp2.zone.group, world.getTick(), " - Attempting to merge group with itself");
 
 						// Merge the larger id group into the smaller id group
-						groupsStorage[groupRemaps[min]].append_range(groupsStorage[groupRemaps[max]]);
-						groupsStorage[groupRemaps[max]].clear();
+						groupStorage[groupRemaps[min]].append_range(groupStorage[groupRemaps[max]]);
+						groupStorage[groupRemaps[max]].clear();
 
 						physComp1.zone.group = min;
 						physComp2.zone.group = min;
@@ -197,22 +198,22 @@ namespace Game {
 						}
 					} else { // ONLY ply1 is in a group. Use that group.
 						physComp2.zone.group = physComp1.zone.group;
-						groupsStorage[groupRemaps[physComp1.zone.group]].push_back(cur->ply2);
+						groupStorage[groupRemaps[physComp1.zone.group]].push_back(cur->ply2);
 						ZONE_DEBUG("{} - Adding1 {} to existing group {} with {}", world.getTick(), cur->ply2, physComp2.zone.group, cur->ply1);
 					}
 				} else if (physComp2.zone.group != -1) { // Only ply2 is in a group. Use that group.
 					physComp1.zone.group = physComp2.zone.group;
-					groupsStorage[groupRemaps[physComp2.zone.group]].push_back(cur->ply1);
+					groupStorage[groupRemaps[physComp2.zone.group]].push_back(cur->ply1);
 					ZONE_DEBUG("{} - Adding2 {} to existing group {} with {}", world.getTick(), cur->ply1, physComp2.zone.group, cur->ply2);
 				} else { // Neither is in a group
-					const auto groupId = static_cast<ZoneId>(groupsStorage.size());
+					const auto groupId = static_cast<ZoneId>(groupStorage.size());
 					physComp1.zone.group = groupId;
 					physComp2.zone.group = groupId;
 
-					ENGINE_DEBUG_ASSERT(groupsStorage.size() == groupRemaps.size());
+					ENGINE_DEBUG_ASSERT(groupStorage.size() == groupRemaps.size());
 
 					groupRemaps.emplace_back(groupId);
-					auto& group = groupsStorage.emplace_back();
+					auto& group = groupStorage.emplace_back();
 					group.push_back(cur->ply1);
 					group.push_back(cur->ply2);
 					ZONE_DEBUG("{} - Creating new group {} for {} and {}", world.getTick(), physComp2.zone.group, cur->ply1, cur->ply2);
@@ -230,9 +231,10 @@ namespace Game {
 				const auto pos = physComp.getPosition();
 				const auto dist = metric({pos.x, pos.y}, {});
 				if (dist > zoneMustSplitDist) {
-					const auto groupId = static_cast<ZoneId>(groupsStorage.size());
+					const auto groupId = static_cast<ZoneId>(groupStorage.size());
 					groupRemaps.emplace_back(groupId);
-					auto& group = groupsStorage.emplace_back();
+					groupRealms.emplace_back(zones[physComp.zone.id].realmId); // Same realm as current zone
+					auto& group = groupStorage.emplace_back();
 					group.push_back(ply);
 					physComp.zone.group = groupId;
 					ZONE_DEBUG("{} - Creating new group {} for {}", world.getTick(), groupId, ply);
@@ -240,9 +242,11 @@ namespace Game {
 			}
 		}
 
+		ENGINE_DEBUG_ASSERT(groupStorage.size() == groupRealms.size());
+
 		// Create zones and shift entities.
 		for (const auto& groupStorageId : groupRemaps) {
-			const auto& group = groupsStorage[groupStorageId];
+			const auto& group = groupStorage[groupStorageId];
 			if (group.empty()) { continue; }
 
 			// Figure out ideal zone origin.
@@ -272,17 +276,9 @@ namespace Game {
 
 			// No existing zone is close enough to use.
 			if (zoneId == -1) {
-
-				//
-				//
-				//
-				// TODO: realm id
-				//
-				//
-				//
-
-				zoneId = createNewZone(0, ideal);
-				ZONE_DEBUG("{} - Creating new zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset);
+				const auto realmId = groupRealms[groupStorageId];
+				zoneId = createNewZone(realmId, ideal);
+				ZONE_DEBUG("{} - Creating new zone: realm={}, zone={}, offset={}", world.getTick(), realmId, zoneId, zones[zoneId].offset);
 			} else {
 				ZONE_DEBUG("{} - Using existing zone: {} @ {}", world.getTick(), zoneId, zones[zoneId].offset);
 			}

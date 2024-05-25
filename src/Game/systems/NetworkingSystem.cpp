@@ -226,15 +226,9 @@ namespace Game {
 			from.setState(ConnectionState::Connected);
 			ENGINE_LOG("CONNECT_AUTH from ", from.address(), " - ", &from, " lkey: ", from.getKeyLocal(), " rkey: ", from.getKeyRemote(), " tick: ", world.getTick(), " ", from.ent);
 
-			// TODO: query map system and find good spawn location
+			// TODO: query map system and find good spawn location and realm
 			auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 			constexpr WorldAbsVec pos = {0, 2};
-
-			//
-			//
-			// TODO: realmId
-			//
-			//
 
 			const auto zoneId = zoneSys.findOrCreateZoneFor(0, pos);
 			const auto& zone = zoneSys.getZone(zoneId);

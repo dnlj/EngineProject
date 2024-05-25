@@ -38,7 +38,8 @@ namespace Game {
 			// merged. Its easier to simply update the mapping instead of updating a
 			// groupId on everything that could possible be referencing that groupId.
 			std::vector<GroupId> groupRemaps;
-			std::vector<std::vector<Engine::ECS::Entity>> groupsStorage;
+			std::vector<std::vector<Engine::ECS::Entity>> groupStorage;
+			std::vector<RealmId> groupRealms;
 
 			// Pairs for groups that should be merged.
 			std::vector<GroupPair> merged;
