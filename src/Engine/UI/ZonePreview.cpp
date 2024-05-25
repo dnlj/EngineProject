@@ -21,7 +21,7 @@ namespace Game::UI { namespace {
 
 			std::vector<glm::u8vec3> zoneColors;
 
-			Engine::FlatHashSet<UniversalChunkVec> lastActiveChunks;
+			Engine::FlatHashSet<UniversalChunkCoord> lastActiveChunks;
 			Engine::Clock::TimePoint lastUpdate;
 
 			// Arbitrary starting color. Saturation and lightness will be
@@ -135,7 +135,7 @@ namespace Game::UI { namespace {
 						const ChunkVec chunkPos = {x - 256, y - 256};
 						glm::u8vec3 color = {255, 255, 0};
 						
-						const UniversalChunkVec pos = {realmId, chunkPos};
+						const UniversalChunkCoord pos = {realmId, chunkPos};
 						const auto& chunkData = activeChunks.find(pos);
 
 						if (chunkData != activeChunks.end()) {

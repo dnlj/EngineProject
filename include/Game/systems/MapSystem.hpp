@@ -32,6 +32,7 @@
 // TODO: convert to use sized types - int32, float32, etc.
 // TODO: Change all mentions of "tile" to "block". Its a more common term.
 // TODO: Standardize terms to be `xyzOffset`, `xyzPosition`, `xyzIndex`
+
 /**
  * World Coordinates - Always relative to Box2D origin. When mapOffset is changed
  * Region - A grouping of chunks. Used for saving/loading.
@@ -74,43 +75,43 @@ namespace Game {
 
 	// TODO: fmt printers
 
-	class UniversalChunkVec;
-	class UniversalBlockVec;
+	class UniversalChunkCoord;
+	class UniversalBlockCoord;
 
-	class UniversalRegionVec {
+	class UniversalRegionCoord {
 		public:
 			RealmId realmId;
 			RegionVec pos;
-			constexpr bool operator==(const UniversalRegionVec&) const noexcept = default;
-			ENGINE_INLINE constexpr UniversalChunkVec toChunk() const noexcept;
+			constexpr bool operator==(const UniversalRegionCoord&) const noexcept = default;
+			ENGINE_INLINE constexpr UniversalChunkCoord toChunk() const noexcept;
 	};
 
-	class UniversalChunkVec {
+	class UniversalChunkCoord {
 		public:
 			RealmId realmId;
 			ChunkVec pos;
-			bool operator==(const UniversalChunkVec&) const noexcept = default;
-			constexpr UniversalChunkVec operator+(const ChunkVec vec) const noexcept { return {realmId, pos + vec}; }
-			ENGINE_INLINE constexpr UniversalRegionVec toRegion() const noexcept { return { realmId, chunkToRegion(pos) }; }
-			ENGINE_INLINE constexpr inline UniversalBlockVec toBlock() const noexcept;
+			bool operator==(const UniversalChunkCoord&) const noexcept = default;
+			constexpr UniversalChunkCoord operator+(const ChunkVec vec) const noexcept { return {realmId, pos + vec}; }
+			ENGINE_INLINE constexpr UniversalRegionCoord toRegion() const noexcept { return { realmId, chunkToRegion(pos) }; }
+			ENGINE_INLINE constexpr inline UniversalBlockCoord toBlock() const noexcept;
 	};
 
-	class UniversalBlockVec {
+	class UniversalBlockCoord {
 		public:
 			RealmId realmId;
 			BlockVec pos;
-			constexpr bool operator==(const UniversalBlockVec&) const noexcept = default;
-			ENGINE_INLINE constexpr UniversalChunkVec toChunk() const noexcept { return { realmId, blockToChunk(pos) }; }
+			constexpr bool operator==(const UniversalBlockCoord&) const noexcept = default;
+			ENGINE_INLINE constexpr UniversalChunkCoord toChunk() const noexcept { return { realmId, blockToChunk(pos) }; }
 	};
 
-	ENGINE_INLINE constexpr UniversalBlockVec UniversalChunkVec::toBlock() const noexcept { return { realmId, chunkToBlock(pos) }; }
-	ENGINE_INLINE constexpr UniversalChunkVec UniversalRegionVec::toChunk() const noexcept { return { realmId, regionToChunk(pos) }; }
+	ENGINE_INLINE constexpr UniversalBlockCoord UniversalChunkCoord::toBlock() const noexcept { return { realmId, chunkToBlock(pos) }; }
+	ENGINE_INLINE constexpr UniversalChunkCoord UniversalRegionCoord::toChunk() const noexcept { return { realmId, regionToChunk(pos) }; }
 }
 
 template<>
-struct Engine::Hash<Game::UniversalRegionVec> {
+struct Engine::Hash<Game::UniversalRegionCoord> {
 	[[nodiscard]]
-	size_t operator()(const Game::UniversalRegionVec& val) const {
+	size_t operator()(const Game::UniversalRegionCoord& val) const {
 		auto seed = hash(val.realmId);
 		hashCombine(seed, hash(val.pos));
 		return seed;
@@ -118,9 +119,9 @@ struct Engine::Hash<Game::UniversalRegionVec> {
 };
 
 template<>
-struct Engine::Hash<Game::UniversalChunkVec> {
+struct Engine::Hash<Game::UniversalChunkCoord> {
 	[[nodiscard]]
-	size_t operator()(const Game::UniversalChunkVec& val) const {
+	size_t operator()(const Game::UniversalChunkCoord& val) const {
 		auto seed = hash(val.realmId);
 		hashCombine(seed, hash(val.pos));
 		return seed;
@@ -128,9 +129,9 @@ struct Engine::Hash<Game::UniversalChunkVec> {
 };
 
 template<>
-struct Engine::Hash<Game::UniversalBlockVec> {
+struct Engine::Hash<Game::UniversalBlockCoord> {
 	[[nodiscard]]
-	size_t operator()(const Game::UniversalBlockVec& val) const {
+	size_t operator()(const Game::UniversalBlockCoord& val) const {
 		auto seed = hash(val.realmId);
 		hashCombine(seed, hash(val.pos));
 		return seed;
@@ -165,8 +166,8 @@ namespace Game {
 			std::thread threads[ENGINE_DEBUG ? 8 : 2]; // TODO: Some kind of worker thread pooling in EngineInstance?
 
 			/** The info for chunks */
-			Engine::FlatHashMap<UniversalChunkVec, ActiveChunkData> activeChunks;
-			Engine::FlatHashMap<UniversalChunkVec, MapChunk> chunkEdits;
+			Engine::FlatHashMap<UniversalChunkCoord, ActiveChunkData> activeChunks;
+			Engine::FlatHashMap<UniversalChunkCoord, MapChunk> chunkEdits;
 
 			/** Used for sending full RLE chunk updates */
 			std::vector<byte> rleTemp;
@@ -177,7 +178,7 @@ namespace Game {
 
 			using Job = std::function<void()>;
 			Engine::ThreadSafeQueue<Job> chunkQueue;
-			Engine::FlatHashMap<UniversalRegionVec, std::unique_ptr<MapRegion>> regions;
+			Engine::FlatHashMap<UniversalRegionCoord, std::unique_ptr<MapRegion>> regions;
 			Engine::ECS::Entity mapEntity;
 
 			std::vector<Vertex> buildVBOData;
@@ -198,7 +199,7 @@ namespace Game {
 
 			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);
 
-			void setValueAt2(const UniversalBlockVec blockPos, BlockId bid);
+			void setValueAt2(const UniversalBlockCoord blockPos, BlockId bid);
 
 			ENGINE_INLINE const auto& getActiveChunks() const noexcept { return activeChunks; }
 			ENGINE_INLINE const auto& getLoadedRegions() const noexcept { return regions; }
@@ -213,13 +214,13 @@ namespace Game {
 			// TODO: recycle old bodies?
 			PhysicsBody createBody(ZoneId zoneId);
 
-			void buildActiveChunkData(ActiveChunkData& data, const UniversalChunkVec chunkPos);
+			void buildActiveChunkData(ActiveChunkData& data, const UniversalChunkCoord chunkPos);
 
-			void loadChunk(const UniversalChunkVec chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;
+			void loadChunk(const UniversalChunkCoord chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;
 
 			void loadChunkAsyncWorker();
 
-			void queueRegionToLoad(const UniversalRegionVec regionPos, MapRegion& region);
+			void queueRegionToLoad(const UniversalRegionCoord regionPos, MapRegion& region);
 
 			template<BlockEntityType Type>
 			Engine::ECS::Entity buildBlockEntity(const BlockEntityDesc& data, const ActiveChunkData& activeChunkData) {

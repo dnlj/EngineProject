@@ -298,7 +298,7 @@ namespace Game {
 	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
 		const byte* begin = reinterpret_cast<const byte*>(buff.read(head.size));
 		const byte* end = begin + head.size;
-		UniversalChunkVec chunkPos;
+		UniversalChunkCoord chunkPos;
 		
 		memcpy(&chunkPos.realmId, begin, sizeof(chunkPos.realmId));
 		begin += sizeof(chunkPos.realmId);
@@ -329,6 +329,7 @@ namespace Game {
 					const auto regionIt = regions.find(it->first.toRegion());
 					if (regionIt == regions.end() || regionIt->second->loading()) {
 						ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
+						ENGINE_DEBUG_BREAK;
 					} else {
 						auto& region = *regionIt->second;
 						const auto chunkIndex = chunkToRegionIndex(it->first.pos);
@@ -491,7 +492,7 @@ namespace Game {
 					|| chunkPos2.y < minAreaChunk.y
 					|| chunkPos2.y > maxAreaChunk.y;
 
-				const UniversalChunkVec chunkPos = {plyZone.realmId, chunkPos2};
+				const UniversalChunkCoord chunkPos = {plyZone.realmId, chunkPos2};
 				const auto regionPos = chunkPos.toRegion();
 				auto regionIt = regions.find(regionPos);
 
@@ -621,14 +622,14 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::setValueAt2(const UniversalBlockVec blockPos, BlockId bid) {
+	void MapSystem::setValueAt2(const UniversalBlockCoord blockPos, BlockId bid) {
 		const auto blockIndex = (chunkSize + blockPos.pos % chunkSize) % chunkSize;
 		auto& edit = chunkEdits[blockPos.toChunk()];
 		edit.data[blockIndex.x][blockIndex.y] = bid;
 	}
 	
 	// TODO: thread this. Not sure how nice box2d will play with it.
-	void MapSystem::buildActiveChunkData(ActiveChunkData& data, const UniversalChunkVec chunkPos) {
+	void MapSystem::buildActiveChunkData(ActiveChunkData& data, const UniversalChunkCoord chunkPos) {
 		const auto regionIt = regions.find(chunkPos.toRegion());
 		if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
 				
@@ -755,7 +756,7 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::loadChunk(const UniversalChunkVec chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept {
+	void MapSystem::loadChunk(const UniversalChunkCoord chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept {
 		const auto chunkBlockPos = chunkPos.toBlock();
 		mgen.init(chunkBlockPos.realmId, chunkBlockPos.pos, chunkInfo.chunk, chunkInfo.entData);
 	}
@@ -769,7 +770,7 @@ namespace Game {
 		}
 	}
 
-	void MapSystem::queueRegionToLoad(const UniversalRegionVec regionPos, MapRegion& region) {
+	void MapSystem::queueRegionToLoad(const UniversalRegionCoord regionPos, MapRegion& region) {
 		ENGINE_LOG2("Queue region: {}", regionPos.pos);
 
 		auto lock = chunkQueue.lock();

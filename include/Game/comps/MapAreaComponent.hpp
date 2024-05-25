@@ -21,7 +21,7 @@ namespace Game {
 				Engine::ECS::Tick last;
 			};
 
-			Engine::FlatHashMap<UniversalChunkVec, ChunkMeta> updates;
+			Engine::FlatHashMap<UniversalChunkCoord, ChunkMeta> updates;
 
 		public:
 			// TODO: Should probably wrap uses in an ENGINE_SERVER so the code
