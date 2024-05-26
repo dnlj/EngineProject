@@ -8,7 +8,7 @@ namespace Engine::Noise {
 	 * @param seed The seed number to use for the LCG.
 	 * @return A pseudorandom number.
 	 */
-	constexpr uint64 lcg(uint64 seed) {
+	constexpr uint64 lcg(uint64 seed) noexcept {
 		// TODO: Are these good LCG constants?
 		return seed * 6364136223846793005l + 1442695040888963407l;
 	}
@@ -23,13 +23,13 @@ namespace Engine::Noise {
 	 * @return The floor of x as type @p Int.
 	 */
 	template<class Int, class Float>
-	constexpr Int floorTo(Float x) {
+	constexpr Int floorTo(Float x) noexcept {
 		Int xi = static_cast<Int>(x);
 		return x < xi ? xi - 1 : xi;
 	}
 
 	template<class Int, class Float>
-	constexpr Int ceilTo(Float x) {
+	constexpr Int ceilTo(Float x) noexcept {
 		Int xi = static_cast<Int>(x);
 		return x > xi ? xi + 1 : xi;
 	}

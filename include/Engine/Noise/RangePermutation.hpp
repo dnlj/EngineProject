@@ -19,7 +19,7 @@ namespace Engine::Noise {
 			constexpr static bool isPowerOfTwo = Size && !(Size & (Size - 1));
 
 		public:
-			RangePermutation(uint64 seed) {
+			constexpr RangePermutation(uint64 seed) noexcept {
 				// Generate a source array with values [0, Size - 1]
 				decltype(perm) source;
 				for (Int i = 0; i < Size; i++) {
@@ -52,9 +52,11 @@ namespace Engine::Noise {
 			}
 
 			template<class... Args>
-			ENGINE_INLINE Int operator()(Args... args) const { return value(args...); }
+			ENGINE_INLINE constexpr Int operator()(Args... args) const noexcept {
+				return value(args...);
+			}
 
-			ENGINE_INLINE Int value(Int x) const {
+			ENGINE_INLINE constexpr Int value(Int x) const noexcept {
 				if constexpr (isPowerOfTwo) {
 					// Some reason this isnt automatically done by the compiler
 					return perm[x & (Size - 1)];
@@ -64,11 +66,11 @@ namespace Engine::Noise {
 				}
 			}
 
-			ENGINE_INLINE Int value(Int x, Int y) const {
+			ENGINE_INLINE constexpr Int value(Int x, Int y) const noexcept {
 				return value(value(x) + y);
 			}
 
-			ENGINE_INLINE Int value(Int x, Int y, Int z) const {
+			ENGINE_INLINE constexpr Int value(Int x, Int y, Int z) const noexcept {
 				return value(value(x, y) + z);
 			}
 	};

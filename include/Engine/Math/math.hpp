@@ -23,15 +23,16 @@ namespace Engine::Math {
 	}
 
 	template<class T, std::floating_point F>
-	ENGINE_INLINE constexpr T lerp(T a, T b, F t) {
+	ENGINE_INLINE constexpr T lerp(T a, T b, F t) noexcept {
 		return t * a + (F{1} - t) * b;
 	}
 
+	// TODO: constexpr-ify, can switch depending on if constexpr or not
 	/**
 	 * Rough estimate of the inverse square root (reciprocal).
 	 * @see rsqrt
 	 */
-	ENGINE_INLINE inline float32 rsqrt0(const float32 x) {
+	ENGINE_INLINE inline float32 rsqrt0(const float32 x) noexcept {
 		return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
 	}
 
@@ -42,7 +43,7 @@ namespace Engine::Math {
 	 * See benchmark "rsqrt" for details.
 	 * @see rsqrt0
 	 */
-	ENGINE_INLINE inline float32 rsqrt(const float32 x) {
+	ENGINE_INLINE inline float32 rsqrt(const float32 x) noexcept {
 		const auto est = rsqrt0(x);
 		return est * (1.5f - x * 0.5f * est * est);
 	}
@@ -50,7 +51,7 @@ namespace Engine::Math {
 	/**
 	 * Rounds a integer up to the next of a given multiple.
 	 */
-	ENGINE_INLINE inline auto roundUpToNearest(std::integral auto const x, std::integral auto const mult) {
+	ENGINE_INLINE constexpr inline auto roundUpToNearest(std::integral auto const x, std::integral auto const mult) noexcept {
 		return ((x + (x > 0 ? mult - 1 : 0)) / mult) * mult;
 	}
 
@@ -62,7 +63,7 @@ namespace Engine::Math {
 	 * @see "Nice Numbers for Graph Labels" by Paul S. Heckbert in "Graphics Gems"
 	 */
 	template<class X>
-	inline auto niceNumber(const X x) {
+	auto niceNumber(const X x) {
 		const auto u = std::pow(X(10), std::floor(std::log10(x))); // The scale of x
 		const auto v = x / u; // How much of the scale we use
 		if (v < decltype(u){1.5}) { return u; }
