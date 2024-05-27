@@ -35,11 +35,13 @@ namespace Game::Terrain {
 	};
 	ENGINE_BUILD_DECAY_ENUM(BiomeType);
 
+	// TODO: getters with debug bounds checking.
 	class Chunk {
 		public:
 			BlockId data[chunkSize.x][chunkSize.y]{};
 	};
 
+	// TODO: getters with debug bounds checking.
 	class Region {
 		public:
 			Chunk chunks[regionSize.x][regionSize.y]{};

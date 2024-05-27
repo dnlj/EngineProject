@@ -83,7 +83,7 @@ namespace Game::UI { namespace {
 				}
 			}
 
-			glm::vec2 scale() { return getSize() / glm::vec2{img.size()}; }
+			glm::vec2 scale() const noexcept { return getSize() / glm::vec2{img.size()}; }
 
 			void rebuild() {
 				// TODO: pan/zoom

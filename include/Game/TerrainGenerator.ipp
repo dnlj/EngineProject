@@ -42,7 +42,8 @@ namespace Game::Terrain {
 		// Call generate for each stage. Each will expand the requestion chunk selection
 		// appropriately for the following stages.
 		Engine::Meta::ForEachInRange<TotalStages>::call([&]<auto I>{
-			generate<I>(terrain, request);
+			// +1 because stage zero = uninitialized, zero stages have been run yet.
+			generate<I+1>(terrain, request);
 		});
 	}
 
@@ -53,9 +54,8 @@ namespace Game::Terrain {
 		const auto min = request.minChunkCoord - offset;
 		const auto max = request.maxChunkCoord + offset;
 
-		auto cur = min;
-		for (; cur.x <= max.x; ++cur.x) {
-			for (; cur.y <= max.y; ++cur.y) {
+		for (auto cur = min; cur.x <= max.x; ++cur.x) {
+			for (cur.y = min.y; cur.y <= max.y; ++cur.y) {
 				auto& region = terrain.getRegion({request.realmId, chunkToRegion(cur)});
 				auto& stage = region.stages[cur.x][cur.y];
 
@@ -87,11 +87,9 @@ namespace Game::Terrain {
 
 		const auto min = chunkToBlock(chunkCoord);
 		const auto max = min + chunkSize;
-
-		auto cur = min;
-		for (; cur.x <= max.x; ++cur.x) {
-			for (; cur.y <= max.y; ++cur.y) {
-
+		
+		for (auto cur = min; cur.x < max.x; ++cur.x) {
+			for (cur.y = min.y; cur.y < max.y; ++cur.y) {
 				// TODO: One thing to consider is that we loose precision when converting
 				//       from BlockCoord to FVec2. Not sure how to solve that other than use
 				//       doubles, and that will be slower and still isn't perfect.

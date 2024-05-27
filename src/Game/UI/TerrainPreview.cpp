@@ -18,7 +18,7 @@ namespace {
 		};
 
 		template<>
-		static void stage<0>(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
+		static void stage<1>(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
 			for (uint32 x = 0; x < chunkSize.x; ++x) {
 				for (uint32 y = 0; y < chunkSize.y; ++y) {
 					if ((x & 1) ^ (y & 1)) {
@@ -68,13 +68,56 @@ namespace {
 			}
 
 			void rebuild() {
-				// TODO:
-				generator.generate1(terrain, Terrain::Request{{}, {}});
-				img.fill({255, 0, 255});
+
+				// (0,0) through (8,8) = 512px / (16 blocks / chunk) = 512 / 16 = 8
+				generator.generate1(terrain, Terrain::Request{{0, 0}, {8, 8}, 0});
+
+				// TODO: Move this color specification to Blocks.xpp, could be useful
+				//       elsewhere. Alternatively, calculate this value based on the avg img
+				//       color when loading them/packing them into atlas.
+				glm::u8vec3 blockToColor[BlockId::_count] = {};
+				blockToColor[BlockId::Entity]	= {0, 120, 189};
+				blockToColor[BlockId::Debug]	= {255,   0,   0};
+				blockToColor[BlockId::Debug2]	= {200,  26, 226};
+				blockToColor[BlockId::Debug3]	= {226,  26, 162};
+				blockToColor[BlockId::Debug4]	= {226,  26, 111};
+				blockToColor[BlockId::Dirt]		= {158,  98,  33};
+				blockToColor[BlockId::Grass]	= { 67, 226,  71};
+				blockToColor[BlockId::Iron]		= {144, 144, 144};
+				blockToColor[BlockId::Gold]		= {255, 235,  65};
+
+				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
+
+				const RealmId realmId = 0;
+				const auto& res = img.size();
+				for (BlockUnit y = 0; y < res.y; ++y) {
+					const auto yspan = y * res.x;
+					for (BlockUnit x = 0; x < res.x; ++x) {
+						const auto blockCoord = UniversalBlockCoord{realmId, {x, y}};
+						const auto chunkCoord = blockCoord.toChunk();
+						const auto regionCoord = chunkCoord.toRegion();
+						auto& region = terrain.getRegion(regionCoord);
+						auto& chunk = region.chunks[chunkCoord.pos.x][chunkCoord.pos.y];
+						ENGINE_DEBUG_ASSERT(region.stages[chunkCoord.pos.x][chunkCoord.pos.y] == 1);
+
+						const auto chunkIndex = blockCoord.pos - chunkCoord.toBlock().pos;
+						ENGINE_DEBUG_ASSERT(chunkIndex.x >= 0 && chunkIndex.x < chunkSize.x);
+						ENGINE_DEBUG_ASSERT(chunkIndex.y >= 0 && chunkIndex.y < chunkSize.y);
+
+						const auto blockId = chunk.data[chunkIndex.x][chunkIndex.y];
+						ENGINE_DEBUG_ASSERT(blockId >= 0 && blockId < BlockId::_count);
+
+						data[x + yspan] = blockToColor[blockId];
+					}
+				}
+
+				// TODO: why does fixed size not work here. Fixed size should always work.
+				setFixedSize(img.size()); // TODO: rm - just for testing
+
 				tex.setImage(img);
 			};
 			
-			glm::vec2 scale() { return getSize() / glm::vec2{img.size()}; }
+			glm::vec2 scale() const noexcept { return getSize() / glm::vec2{img.size()}; }
 
 			bool onAction(EUI::ActionEvent action) override {
 				switch (action) {
@@ -140,12 +183,14 @@ namespace Game::UI {
 		const auto yZoom = ctx->createPanel<EUI::TextBox>(sec);
 		yZoom->autoSize();
 		yZoom->bind(textGetter(area->zoom.y), textSetter(area->zoom.y));
-		
-				sec->setFixedHeight(sec->getHeight());
+
+		// TODO: we really should have fixedSize = true/false and then just use the actual
+		//       size for the size, that would allow autoSize to still work with a fixed size
+		//       (i.e. no layout resizing).
+		sec->setFixedHeight(sec->getHeight());
 
 		cont->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Stretch, EUI::Align::Stretch, theme.sizes.pad1});
 		cont->addChild(area);
-		setSize({512, 512});
 
 		// TODO: probably just tie this to a bind like we do for zoom panel and re-enable.
 		//setCloseCallback([](EUI::Window* win){ win->getContext()->deferredDeletePanel(win); });

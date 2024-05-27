@@ -38,19 +38,6 @@
 #endif
 
 
-//
-//
-//
-//
-// TODO: rm
-//
-//
-//
-//
-//
-#include <Game/TerrainGenerator.hpp>
-
-
 void setupCommands(Game::EngineInstance& engine, Engine::Window& window);
 void setupBinds(Game::EngineInstance& engine);
 
