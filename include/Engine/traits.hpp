@@ -60,4 +60,22 @@ namespace Engine {
 
 	template<class T>
 	concept AnyNumber = IsNumber_v<T>;
+
+	/**
+	 * Converts an integral or enum type to the appropriate underlying type.
+	 */
+	template<class T>
+	struct AsIntegral;
+
+	template<class T>
+	requires std::is_enum_v<T>
+	struct AsIntegral<T> {
+		using type = std::underlying_type_t<T>;
+	};
+
+	template<class T>
+	requires std::is_integral_v<T>
+	struct AsIntegral<T> {
+		using type = T;
+	};
 }

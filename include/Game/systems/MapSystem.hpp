@@ -100,6 +100,7 @@ namespace Game {
 		public:
 			RealmId realmId;
 			BlockVec pos;
+			constexpr UniversalBlockCoord operator+(const BlockVec vec) const noexcept { return {realmId, pos + vec}; }
 			constexpr bool operator==(const UniversalBlockCoord&) const noexcept = default;
 			ENGINE_INLINE constexpr UniversalChunkCoord toChunk() const noexcept { return { realmId, blockToChunk(pos) }; }
 	};

@@ -52,7 +52,7 @@ namespace Game {
 		private:
 			// TODO: add impl that takes perm array ref instead of seed so we can share
 			Engine::Noise::OpenSimplexNoiseGeneric<Float, Int> simplex;
-			Engine::Noise::RangePermutation<256, Int> perm;
+			Engine::Noise::RangePermutation<256> perm;
 
 			struct BiomeBounds {
 				Int depth;

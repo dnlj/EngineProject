@@ -40,4 +40,24 @@ namespace Engine::Meta {
 	ENGINE_INLINE constexpr decltype(auto) forAll(Func&& func) {
 		return ForAllIn<Set>::call(std::forward<Func>(func));
 	}
+
+	namespace Detail {
+		template<class T>
+		struct ForEachInRangeImpl {
+			static_assert(!sizeof(T), "Invalid type T. Expected a std::integer_sequence.");
+		};
+		
+		template<class T, T...Is>
+		struct ForEachInRangeImpl<std::integer_sequence<T, Is...>> {
+			static void call(auto&& func) {
+				(func.template operator()<Is>(), ...);
+			}
+		};
+	}
+
+	/**
+	 * Calls a callable with @p Count times with the call number as a template parameter.
+	 */
+	template<auto Count>
+	struct ForEachInRange : Detail::ForEachInRangeImpl<std::make_integer_sequence<decltype(Count), Count>> {};
 }
