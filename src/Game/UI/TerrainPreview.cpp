@@ -24,7 +24,7 @@ namespace {
 					if ((x & 1) ^ (y & 1)) {
 						chunk.data[x][y] = BlockId::Debug;
 					} else {
-						chunk.data[x][y] = BlockId::Debug2;
+						chunk.data[x][y] = BlockId::Air;
 					}
 				}
 			}
@@ -33,10 +33,36 @@ namespace {
 
 	struct BiomeTwo {
 		template<Game::Terrain::StageId> static void stage(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
+
+		template<>
+		static void stage<1>(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
+			for (uint32 x = 0; x < chunkSize.x; ++x) {
+				for (uint32 y = 0; y < chunkSize.y; ++y) {
+					if (x == y) {
+						chunk.data[x][y] = BlockId::Gold;
+					} else {
+						chunk.data[x][y] = BlockId::Dirt;
+					}
+				}
+			}
+		}
 	};
 
 	struct BiomeThree {
 		template<Game::Terrain::StageId> static void stage(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
+
+		template<>
+		static void stage<1>(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
+			for (uint32 x = 0; x < chunkSize.x; ++x) {
+				for (uint32 y = 0; y < chunkSize.y; ++y) {
+					if (x == 63 - y) {
+						chunk.data[x][y] = BlockId::Grass;
+					} else {
+						chunk.data[x][y] = BlockId::Air;
+					}
+				}
+			}
+		}
 	};
 
 	class TerrainDragArea : public EUI::ImageDisplay {

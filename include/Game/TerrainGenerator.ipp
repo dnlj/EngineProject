@@ -114,6 +114,7 @@ namespace Game::Terrain {
 				//
 
 				const auto biomeInfo = calcBiome(cur);
+				//ENGINE_LOG2("Biome: {}", +biomeInfo.type);
 				stageForBiome[+biomeInfo.type](biomesErased[+biomeInfo.type], terrain, cur, chunk, biomeInfo);
 			}
 		}
@@ -144,7 +145,10 @@ namespace Game::Terrain {
 			++result.scale;
 		}
 
-		result.type = static_cast<BiomeType>(biomeTypePerm(result.cell.x, result.cell.y));
+		// TODO: something is broken here:
+		//result.type = static_cast<BiomeType>(biomeTypePerm(result.cell.x, result.cell.y));
+		//result.type = static_cast<BiomeType>(result.cell.x % sizeof...(Biomes));
+		result.type = static_cast<BiomeType>((blockCoord.x / 64) % sizeof...(Biomes));
 		return result;
 	}
 }
