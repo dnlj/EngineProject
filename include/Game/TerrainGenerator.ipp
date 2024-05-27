@@ -67,55 +67,48 @@ namespace Game::Terrain {
 			}
 		}
 	}
+	
+	template<StageId TotalStages, class... Biomes>
+	template<StageId CurrentStage, class Biome>
+	void Generator<TotalStages, Biomes...>::callStage(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk, const BiomeInfo biomeInfo) {
+		// Force inline the calls to avoid the extra function call overhead. These are exactly
+		// 1:1 so there is no reason to not do this. Originally we passed a `void* self` and
+		// biomes had to recast back to the correct type to use it. Doing things like we do
+		// below instead allows the biomes to act like normal classes and use `this` in the
+		// stage functions. This is ultimately just for convenience and a continuation of the
+		// workaround that we can't overload template specializations (See generateChunk for
+		// details).
+
+		// On MSVC [[msvc::forceinline_calls]] doesn't seem to work 100% of the time and
+		// gives no warning, such as C4714, if it fails. As such all stage functions
+		// should be marked with ENGINE_INLINE also.
+		ENGINE_INLINE_CALLS {
+			std::get<Biome>(biomes).stage<CurrentStage>(terrain, chunkCoord, chunk, biomeInfo);
+		}
+	}
 
 	template<StageId TotalStages, class... Biomes>
 	template<StageId CurrentStage>
 	void Generator<TotalStages, Biomes...>::generateChunk(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk) {
-		// If there is a compilation error here your stage<#> overload is likely missing
-		// `static` or has incorrect arguments.
-		using BiomeStageFunc = void (*)(void* self, Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk, const BiomeInfo biomeInfo);
-		constexpr static BiomeStageFunc stageForBiome[] = { &Biomes::template stage<CurrentStage>... };
-
+		using BiomeStageFunc = void (Generator::*)(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk, const BiomeInfo biomeInfo);
+		constexpr static BiomeStageFunc stageForBiome[] = { &Generator::template callStage<CurrentStage, Biomes> ... };
 
 		// TODO: finish comment
-		// We need to do the biome stages this way because of the artificial limitation
-		// C++ imposes that no template function, _including fully specialized template
-		// functions_, cannot be virtual. Since they can't be specialized and virtual we
-		// have no way to pass the current stage other than to resolve it at runtime,
-		// which would involve at minimum an additional ptr chase and two indexes from the
-		// vtable and stage resolution. We know... TODO: fin
+		// We need to do the biome stages this way (via func ptr) because of the
+		// artificial limitation C++ imposes that no template function, _including fully
+		// specialized template functions_, cannot be virtual. Since they can't be
+		// specialized and virtual we have no way to pass the current stage other than to
+		// resolve it at runtime, which would involve at minimum an additional ptr chase
+		// and two indexes from the vtable and stage resolution. We know... TODO: fin
 
 		const auto min = chunkToBlock(chunkCoord);
 		const auto max = min + chunkSize;
 		
 		for (auto cur = min; cur.x < max.x; ++cur.x) {
 			for (cur.y = min.y; cur.y < max.y; ++cur.y) {
-				// TODO: One thing to consider is that we loose precision when converting
-				//       from BlockCoord to FVec2. Not sure how to solve that other than use
-				//       doubles, and that will be slower and still isn't perfect.
-
-				//
-				//
-				//
-				//
-				// TODO: can we wrap this in a funciton that does the
-				//       `static_cast<Biome*>->stage<N>` and then force inline the stages?
-				//       Then the biomes appear to be normal and there should be no
-				//       additional overhead if things _actually_ get inlined. That should
-				//       be doable with forceinline_calls so we don't have to remember on
-				//       each individual function, but we need to check that that actually
-				//       works, i think last I looked it didn't seem to? Does it trigger
-				//       the warning we have enabled? If not is there a separate warning?
-				//
-				//
-				//
-				//
-				//
-				//
-
 				const auto biomeInfo = calcBiome(cur);
-				//ENGINE_LOG2("Biome: {}", +biomeInfo.type);
-				stageForBiome[+biomeInfo.type](biomesErased[+biomeInfo.type], terrain, cur, chunk, biomeInfo);
+				const auto func = stageForBiome[+biomeInfo.type];
+				(this->*func)(terrain, cur, chunk, biomeInfo);
 			}
 		}
 	}

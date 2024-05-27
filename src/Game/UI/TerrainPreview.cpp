@@ -11,14 +11,15 @@ namespace {
 	using namespace Game;
 	using namespace Game::UI;
 
+	#define STAGE(N) template<> ENGINE_INLINE void stage<N>(Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo)
+
 	struct BiomeOne {
 		template<Game::Terrain::StageId Stage>
-		static void stage(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
+		static void stage(Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
 			static_assert(Stage != Stage, "foo bar");
 		};
 
-		template<>
-		static void stage<1>(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
+		STAGE(1) {
 			for (uint32 x = 0; x < chunkSize.x; ++x) {
 				for (uint32 y = 0; y < chunkSize.y; ++y) {
 					if ((x & 1) ^ (y & 1)) {
@@ -32,10 +33,9 @@ namespace {
 	};
 
 	struct BiomeTwo {
-		template<Game::Terrain::StageId> static void stage(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
+		template<Game::Terrain::StageId> static void stage(Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
 
-		template<>
-		static void stage<1>(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
+		STAGE(1) {
 			for (uint32 x = 0; x < chunkSize.x; ++x) {
 				for (uint32 y = 0; y < chunkSize.y; ++y) {
 					if (x == y) {
@@ -49,10 +49,9 @@ namespace {
 	};
 
 	struct BiomeThree {
-		template<Game::Terrain::StageId> static void stage(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
+		template<Game::Terrain::StageId> static void stage(Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
 
-		template<>
-		static void stage<1>(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
+		STAGE(1) {
 			for (uint32 x = 0; x < chunkSize.x; ++x) {
 				for (uint32 y = 0; y < chunkSize.y; ++y) {
 					if (x == 63 - y) {

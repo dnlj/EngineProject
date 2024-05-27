@@ -96,30 +96,16 @@ namespace Game::Terrain {
 			//Request(const ChunkVec minChunkCoord, const ChunkVec maxChunkCoord);
 	};
 
-	//using BiomeStageFunc = void(*)(void* self);
-	//
-	//template<StageId CurrentStageId, class... Biomes>
-	//class BiomeStage {
-	//	// If there is a compilation error here your stage<#> overload is likely missing
-	//	// `static` or has incorrect arguments.
-	//	constexpr static BiomeStageFunc funcs[] = {&Biomes::template stage<CurrentStageId>...};
-	//};
-	//
-	//template<class T, class... Biomes>
-	//struct BiomeStages;
-	//
-	//template<class T, T... Is, class... Biomes>
-	//struct BiomeStages<std::integer_sequence<T, Is...>, Biomes...> {
-	//	using Tuple = std::tuple<BiomeStage<Is, Biomes...>...>;
-	//	//using Tuple = int;
-	//};
-
 	template<StageId TotalStages, class... Biomes>
 	class Generator {
 		private:
 			using UInt = uint32;
 			using Int = int32;
 			using Float = float32;
+
+			// TODO: One thing to consider is that we loose precision when converting
+			//       from BlockCoord to FVec2. Not sure how to solve that other than use
+			//       doubles, and that will be slower and still isn't perfect.
 			using FVec2 = glm::vec<2, Float>;
 
 			// Must be divisible by the previous depth We want to use divisions by three
@@ -141,6 +127,8 @@ namespace Game::Terrain {
 			//       BiomeType, but we want to sample with BlockUnit.
 			Engine::Noise::RangePermutation<+BiomeType::_count> biomeTypePerm;
 
+			std::tuple<Biomes...> biomes{};
+
 		public:
 			Generator(uint64 seed)
 				: perm{seed}
@@ -156,13 +144,11 @@ namespace Game::Terrain {
 			template<StageId CurrentStage>
 			void generate(Terrain& terrain, const Request& request);
 
+			template<StageId CurrentStage, class Biome>
+			void callStage(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk, const BiomeInfo biomeInfo);
+
 			template<StageId CurrentStage>
 			void generateChunk(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk);
-
-			// TODO: this should really be constexpr... this is all static func ptrs
-			//using Stages = BiomeStages<std::make_integer_sequence<StageId, TotalStages>, Biomes...>::Tuple stages{};
-			std::tuple<Biomes...> biomes{};
-			const std::array<void*, sizeof...(Biomes)> biomesErased = { &std::get<Biomes>(biomes)... };
 
 			BiomeInfo calcBiome(const BlockVec blockCoord);
 	};
