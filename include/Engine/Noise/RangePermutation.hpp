@@ -6,23 +6,28 @@
 
 
 namespace Engine::Noise {
-	template<int32 Size, std::integral Int = int32> // TODO: min, max
+	template<uint32 Size> // TODO: min, max
 	class RangePermutation {
+		using Stored = uint8;
+		static_assert(std::is_unsigned_v<Stored>, "The stored type must be unsigned.");
+
 		public:
-			using Stored = uint8;
+			using StoredUnderlying = Engine::AsIntegral<Stored>::type;
 
 		private:
 			static_assert(Size > 0, "Size must be non-negative.");
-			static_assert(Size <= 256, "Values are currently stored as uint8.");
+			static_assert((Size - 1) <= std::numeric_limits<StoredUnderlying>::max(), "Values are currently stored as uint8.");
 			Stored perm[Size];
 
 			constexpr static bool isPowerOfTwo = Size && !(Size & (Size - 1));
 
 		public:
 			constexpr RangePermutation(uint64 seed) noexcept {
+				using Index = int32;
+
 				// Generate a source array with values [0, Size - 1]
 				decltype(perm) source;
-				for (Int i = 0; i < Size; i++) {
+				for (Index i = 0; i < Size; i++) {
 					source[i] = static_cast<Stored>(i);
 				}
 
@@ -33,15 +38,15 @@ namespace Engine::Noise {
 				seed = lcg(seed);
 
 				// Populate perm
-				for (Int i = Size - 1; i >= 0; i--) {
+				for (Index i = Size - 1; i >= 0; i--) {
 					seed = lcg(seed);
 
 					// Ensure r is positive. We can't use abs because abs(-INT_MAX) = -INT_MAX due to overflow
-					Int r = seed & 0x7FFFFFFF;
+					Index r = seed & 0x7FFFFFFF;
 
 					// TODO: Why the "+ 31"? (originally from OpenSimplexNoise)
 					// Limit r to [0, i]. Using % can introduce bias.
-					r = (Int)((r + 31) % (i + 1));
+					r = (Index)((r + 31) % (i + 1));
 
 					// Populate perm with the value of source[r]
 					perm[i] = source[r];
@@ -52,13 +57,16 @@ namespace Engine::Noise {
 			}
 
 			template<class... Args>
-			ENGINE_INLINE constexpr Int operator()(Args... args) const noexcept {
-				return value(args...);
+			ENGINE_INLINE constexpr Stored operator()(Args... args) const noexcept {
+				// The static cast is just here for compatibility with existing code where
+				// before we had separate index and stored types. Having separate index types
+				// doesn't make sense because we are going to modulo the index anyways.
+				return value(static_cast<Stored>(args)...);
 			}
 
-			ENGINE_INLINE constexpr Int value(Int x) const noexcept {
+			ENGINE_INLINE constexpr Stored value(Stored x) const noexcept {
 				if constexpr (isPowerOfTwo) {
-					// Some reason this isnt automatically done by the compiler
+					// Some reason this _is not_ automatically done by the compiler
 					return perm[x & (Size - 1)];
 				} else {
 					// TODO: look into fastmod: https://www.youtube.com/watch?v=nXaxk27zwlk&t=56m34s
@@ -66,11 +74,16 @@ namespace Engine::Noise {
 				}
 			}
 
-			ENGINE_INLINE constexpr Int value(Int x, Int y) const noexcept {
+			// TODO: Is there a better way to index of multiple dimension than calling
+			//       `value` multiple times? Is that significant to the function of this?
+			//       I don't think so? Need to refresh my memory on how this works.
+			//       Indexing multiple times into the perm array probably isn't ideal
+			//       since this is a known significant (measured) bottleneck.
+			ENGINE_INLINE constexpr Stored value(Stored x, Stored y) const noexcept {
 				return value(value(x) + y);
 			}
 
-			ENGINE_INLINE constexpr Int value(Int x, Int y, Int z) const noexcept {
+			ENGINE_INLINE constexpr Stored value(Stored x, Stored y, Stored z) const noexcept {
 				return value(value(x, y) + z);
 			}
 	};

@@ -157,7 +157,7 @@ namespace Engine::Noise {
 			// Experimentally obtained range is +-0.865921
 			constexpr static Float RescaleMult2D = Float(1.0 / (NORM_CONSTANT_2D * 0.87));
 
-			RangePermutation<256, Int> perm;
+			RangePermutation<256> perm;
 
 			// Gradients for 2D. They approximate the directions to the
 			// vertices of an octagon from the center.
