@@ -96,6 +96,25 @@ namespace Game::Terrain {
 				//       from BlockCoord to FVec2. Not sure how to solve that other than use
 				//       doubles, and that will be slower and still isn't perfect.
 
+				//
+				//
+				//
+				//
+				// TODO: can we wrap this in a funciton that does the
+				//       `static_cast<Biome*>->stage<N>` and then force inline the stages?
+				//       Then the biomes appear to be normal and there should be no
+				//       additional overhead if things _actually_ get inlined. That should
+				//       be doable with forceinline_calls so we don't have to remember on
+				//       each individual function, but we need to check that that actually
+				//       works, i think last I looked it didn't seem to? Does it trigger
+				//       the warning we have enabled? If not is there a separate warning?
+				//
+				//
+				//
+				//
+				//
+				//
+
 				const auto biomeInfo = calcBiome(cur);
 				stageForBiome[+biomeInfo.type](biomesErased[+biomeInfo.type], terrain, cur, chunk, biomeInfo);
 			}

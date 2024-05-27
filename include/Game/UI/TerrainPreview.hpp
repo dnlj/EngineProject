@@ -7,8 +7,8 @@
 #include <Game/UI/ui.hpp>
 
 namespace Game::UI {
-	class ZonePreview : public EUI::Window {
+	class TerrainPreview : public EUI::Window {
 		public:
-			ZonePreview(EUI::Context* context);
+			TerrainPreview(EUI::Context* context);
 	};
 }

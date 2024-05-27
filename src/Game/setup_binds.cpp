@@ -11,7 +11,8 @@
 #include <Game/systems/UISystem.hpp>
 #include <Game/UI/ConsoleWindow.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp>
-//#include <Game/UI/MapPreview.hpp>
+#include <Game/UI/TerrainPreview.hpp>
+
 
 void setupBinds(Game::EngineInstance& engine) {
 	using namespace Engine::Input;
@@ -285,7 +286,7 @@ void setupBinds(Game::EngineInstance& engine) {
 			#if ENGINE_CLIENT
 				uiSys.getConnectWindow()->setEnabled(enable);
 			#endif
-			uiSys.getMapPreview()->setEnabled(enable);
+			uiSys.getTerrainPreview()->setEnabled(enable);
 			uiSys.getConsole()->setEnabled(enable);
 		}
 		return true;

@@ -21,7 +21,7 @@
 #include <Game/UI/NetGraphPane.hpp>
 #include <Game/UI/NetHealthPane.hpp>
 #include <Game/UI/ResourcePane.hpp>
-
+#include <Game/UI/TerrainPreview.hpp>
 
 namespace {
 	namespace EUI = Engine::UI;
@@ -85,9 +85,9 @@ namespace Game {
 		}
 
 		{
-			panels.mapPreviewWin = ctx.createPanel<UI::MapPreview>(ctx.getRoot());
-			panels.mapPreviewWin->setPos({1200, 20});
-			panels.mapPreviewWin->setSize({512, 512});
+			panels.terrainPreviewWin = ctx.createPanel<UI::TerrainPreview>(ctx.getRoot());
+			panels.terrainPreviewWin->setPos({1920-512-16, 16});
+			panels.terrainPreviewWin->setSize({512, 512});
 		}
 
 		#if ENGINE_CLIENT
@@ -149,7 +149,7 @@ namespace Game {
 		// Hide all panels
 		if (!prevLastChild) { prevLastChild = ctx.getRoot()->getFirstChildRaw(); }
 		for (auto* curr = prevLastChild; curr; curr = curr->getNextSibling()) {
-			curr->setEnabled(false);
+			//curr->setEnabled(false);
 		}
 
 		// Show default panels

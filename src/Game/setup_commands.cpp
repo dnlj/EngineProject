@@ -138,7 +138,7 @@ void setupCommands(Game::EngineInstance& engine, Engine::Window& window) {
 	cm.registerCommand("zone_view", [&engine](auto&){
 		auto& ctx = engine.getUIContext();
 		const auto preview = ctx.createPanel<Game::UI::ZonePreview>(ctx.getRoot());
-		preview->setPos({1200, 32}); // TODO: rm
+		preview->setPos({1920-512-16, 1080-512-16}); // TODO: rm
 	});
 	cm.exec("zone_view"); // TODO: rm
 	

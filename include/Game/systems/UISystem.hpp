@@ -3,7 +3,6 @@
 // Game
 #include <Game/System.hpp>
 #include <Game/UI/ConnectWindow.hpp>
-#include <Game/UI/MapPreview.hpp>
 
 namespace Engine::UI {
 	class Context;
@@ -21,6 +20,7 @@ namespace Game::UI {
 	class EntityPane;
 	class ConsoleWindow;
 	class ConsoleSuggestionHandler;
+	class TerrainPreview;
 }
 
 namespace Game {
@@ -34,7 +34,7 @@ namespace Game {
 
 			UI::ConsoleWindow* getConsole() const noexcept { return panels.consoleWindow; }
 			Engine::UI::Window* getDebugWindow() const noexcept { return panels.window; }
-			UI::MapPreview* getMapPreview() const noexcept { return panels.mapPreviewWin; }
+			UI::TerrainPreview* getTerrainPreview() const noexcept { return panels.terrainPreviewWin; }
 
 			#if ENGINE_CLIENT
 				Engine::UI::Window* getConnectWindow() const noexcept { return panels.connectWindow; }
@@ -51,7 +51,7 @@ namespace Game {
 				UI::NetGraphPane* netGraphPane;
 				UI::EntityPane* entityPane;
 
-				UI::MapPreview* mapPreviewWin;
+				UI::TerrainPreview* terrainPreviewWin;
 
 				#if ENGINE_CLIENT
 					UI::ConnectWindow* connectWindow;

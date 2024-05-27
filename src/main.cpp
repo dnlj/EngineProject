@@ -755,15 +755,6 @@ void run(int argc, char* argv[]) {
 	setupCommands(engine, window);
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	// Map Testing
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	if constexpr (ENGINE_CLIENT) {
-		auto preview = world.getSystem<Game::UISystem>().getMapPreview();
-		preview->setPos({1200, 20});
-		preview->setSize({512, 512});
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Main Loop
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	const auto& cfg = Engine::getGlobalConfig();
@@ -1049,35 +1040,8 @@ int entry(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-
-struct StageOne {
-	template<Game::Terrain::StageId> static void stage(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
-};
-
-struct StageTwo {
-	template<Game::Terrain::StageId> static void stage(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
-};
-
-struct StageThree {
-	template<Game::Terrain::StageId> static void stage(void* self, Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
-};
-
 #ifdef ENGINE_OS_WINDOWS
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nCmdShow) {
-
-	//
-	//
-	//
-	//
-	// TODO: rm
-	//
-	//
-	//
-
-	Game::Terrain::Generator<1, StageOne, StageTwo, StageThree> foo{1234};
-	Game::Terrain::Terrain terrain;
-	foo.generate1(terrain, Game::Terrain::Request{{}, {}});
-
 	if (ENGINE_SERVER) {
 		//std::this_thread::sleep_for(std::chrono::milliseconds{2'000});
 	}
