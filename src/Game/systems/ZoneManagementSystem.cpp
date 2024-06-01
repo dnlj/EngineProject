@@ -134,7 +134,7 @@ namespace Game {
 					//       better to do some kind of BSP if perf is really our goal here.
 					if (zone1.realmId != zone2.realmId) {
 						// No specified distance = default = max
-						const auto& rel = relations.emplace_back(*cur, *next);
+						[[maybe_unused]] const auto& rel = relations.emplace_back(*cur, *next);
 						ZONE_DEBUG("Relation between {} and {} = inf", *cur, *next);
 
 						// The distance here should be large enough that it is effectively

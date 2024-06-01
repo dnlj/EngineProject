@@ -37,6 +37,7 @@ namespace Bench {
 	 */
 	ENGINE_INLINE inline void clobber() noexcept {
 		// Cost: none
+		// TODO: should we be using acq_rel or seq_cst here?
 		std::atomic_signal_fence(std::memory_order_acq_rel);
 	}
 

@@ -23,17 +23,17 @@ namespace Game::Terrain {
 	ENGINE_BUILD_ALL_OPS(BiomeScale);
 	ENGINE_BUILD_DECAY_ENUM(BiomeScale);
 
-	enum class BiomeType : uint8 {
-		Default,
-		Forest,
-		Jungle,
-		Taiga,
-		Desert,
-		Savanna,
-		Ocean,
-		_count,
-	};
-	ENGINE_BUILD_DECAY_ENUM(BiomeType);
+	//enum class BiomeType : uint8 {
+	//	Default,
+	//	Forest,
+	//	Jungle,
+	//	Taiga,
+	//	Desert,
+	//	Savanna,
+	//	Ocean,
+	//	_count,
+	//};
+	//ENGINE_BUILD_DECAY_ENUM(BiomeType);
 
 	// TODO: getters with debug bounds checking.
 	class Chunk {
@@ -65,7 +65,7 @@ namespace Game::Terrain {
 	class BiomeInfo {
 		public:
 			BiomeScale scale;
-			BiomeType type;
+			uint32 id;
 
 			/**
 			 * The coordinate in the biome map for this biome.
@@ -96,6 +96,7 @@ namespace Game::Terrain {
 			//Request(const ChunkVec minChunkCoord, const ChunkVec maxChunkCoord);
 	};
 
+	// Support for rescaling is needed for preview support. Should not be used for real generation.
 	template<StageId TotalStages, class... Biomes>
 	class Generator {
 		private:
@@ -106,7 +107,7 @@ namespace Game::Terrain {
 			// TODO: One thing to consider is that we loose precision when converting
 			//       from BlockCoord to FVec2. Not sure how to solve that other than use
 			//       doubles, and that will be slower and still isn't perfect.
-			using FVec2 = glm::vec<2, Float>;
+			//using FVec2 = glm::vec<2, Float>;
 
 			// Must be divisible by the previous depth We want to use divisions by three
 			// so that each biome can potentially spawn at surface level. If we use two
@@ -125,14 +126,14 @@ namespace Game::Terrain {
 
 			// TODO: We need different sample overloads, we want the unit for this to be
 			//       BiomeType, but we want to sample with BlockUnit.
-			Engine::Noise::RangePermutation<+BiomeType::_count> biomeTypePerm;
+			Engine::Noise::RangePermutation<sizeof...(Biomes)> biomePerm;
 
 			std::tuple<Biomes...> biomes{};
 
 		public:
 			Generator(uint64 seed)
 				: perm{seed}
-				, biomeTypePerm{Engine::Noise::lcg(seed)}
+				, biomePerm{Engine::Noise::lcg(seed)}
 			{}
 			void generate1(Terrain& terrain, const Request& request);
 
@@ -145,7 +146,7 @@ namespace Game::Terrain {
 			void generate(Terrain& terrain, const Request& request);
 
 			template<StageId CurrentStage, class Biome>
-			void callStage(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk, const BiomeInfo biomeInfo);
+			ENGINE_INLINE BlockId callStage(Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Chunk& chunk, const BiomeInfo biomeInfo);
 
 			template<StageId CurrentStage>
 			void generateChunk(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk);

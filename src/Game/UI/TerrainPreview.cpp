@@ -11,55 +11,137 @@ namespace {
 	using namespace Game;
 	using namespace Game::UI;
 
-	#define STAGE(N) template<> ENGINE_INLINE void stage<N>(Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo)
+	#define STAGE_DEF \
+		template<Terrain::StageId Stage>\
+		BlockId stage(Terrain::Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Terrain::Chunk& chunk, const Terrain::BiomeInfo biomeInfo) {\
+			static_assert(Stage != Stage, "The requested stage is not defined for this biome.");\
+		}
 
-	struct BiomeOne {
-		template<Game::Terrain::StageId Stage>
-		static void stage(Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {
-			static_assert(Stage != Stage, "foo bar");
-		};
+	#define STAGE(N) template<> ENGINE_INLINE BlockId stage<N>(Terrain::Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Terrain::Chunk& chunk, const Terrain::BiomeInfo biomeInfo)
+	
+	ENINGE_RUNTIME_CHECKS_DISABLE struct RescaleBiome {
+		//float64 rescaleFactor = 0.500001;
+		float64 rescaleFactor = 0.250001;
+
+		ENGINE_INLINE std::tuple<int64, int64> rescale(const int64 x, const int64 y) const noexcept {
+			// NOTE: These numbers here are still correct (relatively speaking), but at the
+			//       time this was measure we were accidentally doing generation
+			//       per-chunk/per-chunk. Meaning that we were generating a entire chunk per
+			//       block, or 64^2 extra generations. We were also operating on int32 and
+			//       double instead of int64 and double, so think might be slightly different.
+
+			// This is unfortunately needed because doing the simple thing of using
+			// std/glm::round is unusably slow. SSE is over an order of magnitude faster:
+			// 6s vs 62s+ in debug and 2s vs 20s in release.
+			if constexpr (true) {
+				// TODO: use a lib, this is all SSE2
+				// TODO: may need _MM_SET_ROUNDING_MODE
+				const auto xy = _mm_set_pd(static_cast<double>(y), static_cast<double>(x));
+				const auto factor = _mm_set_pd1(rescaleFactor);
+				const auto scaled = _mm_mul_pd(xy, factor);
+				const auto rounded = _mm_round_pd(scaled, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+				return {(int64)rounded.m128d_f64[0], (int64)rounded.m128d_f64[1]};
+
+				// Direct access (MSVC specific) ~10.1s
+				// = no additional instructions + no stack checking
+				//return {rounded.m128i_i32[0], rounded.m128i_i32[1]};
+
+				// memcpy ~25.5s
+				// = 1x mov, 2x lea, 1x call memcpy + stack checking
+				//alignas(16) int32 results[4];
+				//memcpy(results, &rounded, sizeof(rounded));
+				//return {results[0], results[1]};
+
+				// mm_store ~25.5s
+				// = 2x movdqa + stack checking = same as union
+				//alignas(16) int32 results[4];
+				//_mm_store_si128((__m128i*)results, rounded);
+				//return {results[0], results[1]};
+
+				// Union ~25.5s
+				// = 2x movdqa + stack checking = same as mm_store
+				//union alignas(16) DataU {
+				//	__m128i sse;
+				//	alignas(16) int32 arr[4];
+				//} data = rounded;
+				//return {data.arr[0], data.arr[1]};
+
+				// Union (direct) ~25.1s
+				// = no additional instructions + stack checking = same as direct w/ additional stack checking
+				// With RTC checks disasbled this is _almost_ as fast as the direct, the
+				// stack check calls are still there, but I assume they don't actually do
+				// anything. With them disabled its ~10.5s.
+				// TODO: See if this can be replaced with start_lifetime_as_array once
+				//       MSVC implements it so it isn't UB (strict aliasing). MSVC use to
+				//       explicitly allow uninos to alias, but I'm not able to find that
+				//       citation anymore. I'm not sure if they removed that or I'm just blind.
+				//union alignas(16) DataU {
+				//	__m128i sse;
+				//	alignas(16) int32 arr[4];
+				//} data = {_mm_cvtpd_epi32(scaled)};
+				//return {data.arr[0], data.arr[1]};
+				
+				// bit_cast ~28.9s
+				// = 2x movaps, 3x movdqa, 1x movups, 1x lea, 2x mov + stack checking
+				//struct alignas(16) DataB {
+				//	alignas(16) int32 results[4];
+				//} data = std::bit_cast<DataB>(rounded);
+				//return {data.results[0], data.results[1]};
+
+				// bit_cast (direct) ~28.9s
+				// exact same as non-direct
+				//struct alignas(16) DataB {
+				//	alignas(16) int32 results[4];
+				//} data = std::bit_cast<DataB>(_mm_cvtpd_epi32(scaled));
+				//return {data.results[0], data.results[1]};
+			} else {
+				ENGINE_FLATTEN
+				return {
+					static_cast<int32>(glm::round(x * rescaleFactor)),
+					static_cast<int32>(glm::round(y * rescaleFactor)),
+				};
+			}
+		}
+	} ENINGE_RUNTIME_CHECKS_RESTORE;
+	
+	struct BiomeOne : RescaleBiome {
+		STAGE_DEF;
+
+		// TODO: maybe these should just take the blockCoord instead, and have this loop
+		//       in the generator. That should be fine since its inlined anyways.
 
 		STAGE(1) {
-			for (uint32 x = 0; x < chunkSize.x; ++x) {
-				for (uint32 y = 0; y < chunkSize.y; ++y) {
-					if ((x & 1) ^ (y & 1)) {
-						chunk.data[x][y] = BlockId::Debug;
-					} else {
-						chunk.data[x][y] = BlockId::Air;
-					}
-				}
+			const auto [x, y] = rescale(blockCoord.x, blockCoord.y);
+			if ((x & 1) ^ (y & 1)) {
+				return BlockId::Debug;
+			} else {
+				return BlockId::Air;
 			}
 		}
 	};
 
-	struct BiomeTwo {
-		template<Game::Terrain::StageId> static void stage(Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
+	struct BiomeTwo : RescaleBiome {
+		STAGE_DEF;
 
 		STAGE(1) {
-			for (uint32 x = 0; x < chunkSize.x; ++x) {
-				for (uint32 y = 0; y < chunkSize.y; ++y) {
-					if (x == y) {
-						chunk.data[x][y] = BlockId::Gold;
-					} else {
-						chunk.data[x][y] = BlockId::Dirt;
-					}
-				}
+			const auto [x, y] = rescale(blockCoord.x, blockCoord.y);
+			if (x == y) {
+				return BlockId::Gold;
+			} else {
+				return BlockId::Dirt;
 			}
 		}
 	};
 
-	struct BiomeThree {
-		template<Game::Terrain::StageId> static void stage(Game::Terrain::Terrain& terrain, const Game::ChunkVec chunkCoord, Game::Terrain::Chunk& chunk, const Game::Terrain::BiomeInfo biomeInfo) {};
+	struct BiomeThree : RescaleBiome {
+		STAGE_DEF;
 
 		STAGE(1) {
-			for (uint32 x = 0; x < chunkSize.x; ++x) {
-				for (uint32 y = 0; y < chunkSize.y; ++y) {
-					if (x == 63 - y) {
-						chunk.data[x][y] = BlockId::Grass;
-					} else {
-						chunk.data[x][y] = BlockId::Air;
-					}
-				}
+			const auto [x, y] = rescale(blockCoord.x, blockCoord.y);
+			if (x == 63 - y) {
+				return BlockId::Grass;
+			} else {
+				return BlockId::Air;
 			}
 		}
 	};
@@ -95,21 +177,30 @@ namespace {
 			void rebuild() {
 
 				// (0,0) through (8,8) = 512px / (16 blocks / chunk) = 512 / 16 = 8
+
+				// TODO: why does only the first call take a huge amount of time?
+				// Allocation? That doesn't explain the diff then. They are already
+				// generated? I think so? Need to force full regen/reset terrain.
+
+				terrain = {};
+				std::atomic_signal_fence(std::memory_order_acq_rel); const auto startTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
 				generator.generate1(terrain, Terrain::Request{{0, 0}, {8, 8}, 0});
+				std::atomic_signal_fence(std::memory_order_acq_rel); const auto endTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
+				ENGINE_LOG2("Generation Time: {}", Engine::Clock::Seconds{endTime - startTime});
 
 				// TODO: Move this color specification to Blocks.xpp, could be useful
 				//       elsewhere. Alternatively, calculate this value based on the avg img
 				//       color when loading them/packing them into atlas.
 				glm::u8vec3 blockToColor[BlockId::_count] = {};
-				blockToColor[BlockId::Entity]	= {0, 120, 189};
-				blockToColor[BlockId::Debug]	= {255,   0,   0};
-				blockToColor[BlockId::Debug2]	= {200,  26, 226};
-				blockToColor[BlockId::Debug3]	= {226,  26, 162};
-				blockToColor[BlockId::Debug4]	= {226,  26, 111};
-				blockToColor[BlockId::Dirt]		= {158,  98,  33};
-				blockToColor[BlockId::Grass]	= { 67, 226,  71};
-				blockToColor[BlockId::Iron]		= {144, 144, 144};
-				blockToColor[BlockId::Gold]		= {255, 235,  65};
+				blockToColor[BlockId::Entity] = {0, 120, 189};
+				blockToColor[BlockId::Debug]  = {255,   0,   0};
+				blockToColor[BlockId::Debug2] = {200,  26, 226};
+				blockToColor[BlockId::Debug3] = {226,  26, 162};
+				blockToColor[BlockId::Debug4] = {226,  26, 111};
+				blockToColor[BlockId::Dirt]	  = {158,  98,  33};
+				blockToColor[BlockId::Grass]  = { 67, 226,  71};
+				blockToColor[BlockId::Iron]	  = {144, 144, 144};
+				blockToColor[BlockId::Gold]	  = {255, 235,  65};
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
 

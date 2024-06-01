@@ -54,6 +54,7 @@ namespace Game::Terrain {
 		const auto min = request.minChunkCoord - offset;
 		const auto max = request.maxChunkCoord + offset;
 
+		// For each chunk in the request
 		for (auto cur = min; cur.x <= max.x; ++cur.x) {
 			for (cur.y = min.y; cur.y <= max.y; ++cur.y) {
 				auto& region = terrain.getRegion({request.realmId, chunkToRegion(cur)});
@@ -70,7 +71,7 @@ namespace Game::Terrain {
 	
 	template<StageId TotalStages, class... Biomes>
 	template<StageId CurrentStage, class Biome>
-	void Generator<TotalStages, Biomes...>::callStage(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk, const BiomeInfo biomeInfo) {
+	ENGINE_INLINE BlockId Generator<TotalStages, Biomes...>::callStage(Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Chunk& chunk, const BiomeInfo biomeInfo) {
 		// Force inline the calls to avoid the extra function call overhead. These are exactly
 		// 1:1 so there is no reason to not do this. Originally we passed a `void* self` and
 		// biomes had to recast back to the correct type to use it. Doing things like we do
@@ -83,14 +84,16 @@ namespace Game::Terrain {
 		// gives no warning, such as C4714, if it fails. As such all stage functions
 		// should be marked with ENGINE_INLINE also.
 		ENGINE_INLINE_CALLS {
-			std::get<Biome>(biomes).stage<CurrentStage>(terrain, chunkCoord, chunk, biomeInfo);
+			return std::get<Biome>(biomes).stage<CurrentStage>(terrain, chunkCoord, blockCoord, chunk, biomeInfo);
 		}
 	}
 
 	template<StageId TotalStages, class... Biomes>
 	template<StageId CurrentStage>
 	void Generator<TotalStages, Biomes...>::generateChunk(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk) {
-		using BiomeStageFunc = void (Generator::*)(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk, const BiomeInfo biomeInfo);
+
+		// TODO: Do we need to pass terrain/chunk? They should probably at least be const. Remove if not used, not sure why we would need chunk here.
+		using BiomeStageFunc = BlockId (Generator::*)(Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Chunk& chunk, const BiomeInfo biomeInfo);
 		constexpr static BiomeStageFunc stageForBiome[] = { &Generator::template callStage<CurrentStage, Biomes> ... };
 
 		// TODO: finish comment
@@ -103,12 +106,19 @@ namespace Game::Terrain {
 
 		const auto min = chunkToBlock(chunkCoord);
 		const auto max = min + chunkSize;
-		
-		for (auto cur = min; cur.x < max.x; ++cur.x) {
-			for (cur.y = min.y; cur.y < max.y; ++cur.y) {
-				const auto biomeInfo = calcBiome(cur);
-				const auto func = stageForBiome[+biomeInfo.type];
-				(this->*func)(terrain, cur, chunk, biomeInfo);
+
+		// TODO: would it be beneficial to generate all biome dat first? as a stage 0?
+
+		// Does a switch work better here for biome? i would assume its the same
+
+		// For each block in the chunk
+		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
+			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
+				const auto blockCoord = min + BlockVec{x, y};
+				const auto biomeInfo = calcBiome(blockCoord);
+				const auto func = stageForBiome[biomeInfo.id];
+				const auto blockId = (this->*func)(terrain, chunkCoord, blockCoord, chunk, biomeInfo);
+				chunk.data[x][y] = blockId;
 			}
 		}
 	}
@@ -120,6 +130,11 @@ namespace Game::Terrain {
 		// TODO: Force/manual unroll? We know that N is always small and that would avoid
 		//       a scale lookup. This function gets called _a lot_.
 		BiomeInfo result{};
+
+		//for (BlockUnit test = 0; test < 10000; ++test) {
+		//	result.cell = Engine::Math::divFloor(BlockVec{test*250ll, 0}, biomeScales[+result.scale]).q;
+		//	ENGINE_LOG2("Biome: {} = {}, {}", result.cell, perm(result.cell.x, result.cell.y), biomePerm(result.cell.x, result.cell.y));
+		//}
 
 		// Determine the scale and sample cell for the biome.
 		// Check each scale. Must be ordered largest to smallest.
@@ -139,9 +154,10 @@ namespace Game::Terrain {
 		}
 
 		// TODO: something is broken here:
-		//result.type = static_cast<BiomeType>(biomeTypePerm(result.cell.x, result.cell.y));
+		result.id = biomePerm(result.cell.x, result.cell.y);
 		//result.type = static_cast<BiomeType>(result.cell.x % sizeof...(Biomes));
-		result.type = static_cast<BiomeType>((blockCoord.x / 64) % sizeof...(Biomes));
+		//ENGINE_LOG2("Cell: {}", result.cell);
+		//result.type = static_cast<BiomeType>((blockCoord.x / 64) % sizeof...(Biomes));
 		return result;
 	}
 }

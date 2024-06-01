@@ -99,6 +99,17 @@
 #define ENGINE_FLATTEN [[msvc::flatten]]
 
 /**
+ * Disable or restore runtime checks for a region of code.
+ * Runtime checks can have an huge cost in compute heavy code. It can be extremely
+ * beneficial to _temporarily_ disable them for a specific section. Terrain generation,
+ * noise generation, processing large files, etc.
+ */
+// TODO: MSVC only
+#define ENINGE_RUNTIME_CHECKS_DISABLE _Pragma(R"(runtime_checks("", off))")
+#define ENINGE_RUNTIME_CHECKS_RESTORE _Pragma(R"(runtime_checks("", restore))")
+	
+
+/**
  * Build various operators for enums.
  */
 #define ENGINE_BUILD_BIN_OP(T, O, F) \
@@ -171,6 +182,7 @@
 /**
  * @def ENGINE_EMPTY_BASE
  * Enables more broad use of empty base optimization on MSVC
+ * @see https://learn.microsoft.com/en-us/cpp/cpp/empty-bases
  * @see https://devblogs.microsoft.com/cppblog/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
  */
 #if ENGINE_OS_WINDOWS
