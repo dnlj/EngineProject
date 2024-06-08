@@ -71,7 +71,7 @@ namespace Game::Terrain {
 	
 	template<StageId TotalStages, class... Biomes>
 	template<StageId CurrentStage, class Biome>
-	ENGINE_INLINE BlockId Generator<TotalStages, Biomes...>::callStage(Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Chunk& chunk, const BiomeInfo biomeInfo) {
+	ENGINE_INLINE_REL BlockId Generator<TotalStages, Biomes...>::callStage(Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Chunk& chunk, const BiomeInfo biomeInfo) {
 		// Force inline the calls to avoid the extra function call overhead. These are exactly
 		// 1:1 so there is no reason to not do this. Originally we passed a `void* self` and
 		// biomes had to recast back to the correct type to use it. Doing things like we do

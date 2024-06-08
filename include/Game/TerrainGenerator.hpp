@@ -135,7 +135,10 @@ namespace Game::Terrain {
 				: perm{seed}
 				, biomePerm{Engine::Noise::lcg(seed)}
 			{}
+
 			void generate1(Terrain& terrain, const Request& request);
+
+			ENGINE_INLINE auto& getBiomes() noexcept { return biomes; }
 
 		private:
 			/**

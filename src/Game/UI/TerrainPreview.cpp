@@ -6,6 +6,9 @@
 #include <Engine/UI/ImageDisplay.hpp>
 #include <Engine/UI/TextBox.hpp>
 
+#include <Engine/Noise/SimplexNoise.hpp>
+#include <Engine/tuple.hpp>
+
 
 namespace {
 	using namespace Game;
@@ -17,13 +20,16 @@ namespace {
 			static_assert(Stage != Stage, "The requested stage is not defined for this biome.");\
 		}
 
-	#define STAGE(N) template<> ENGINE_INLINE BlockId stage<N>(Terrain::Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Terrain::Chunk& chunk, const Terrain::BiomeInfo biomeInfo)
-	
-	ENINGE_RUNTIME_CHECKS_DISABLE struct RescaleBiome {
-		//float64 rescaleFactor = 0.500001;
-		float64 rescaleFactor = 0.250001;
+	#define STAGE(N) template<> ENGINE_INLINE_REL BlockId stage<N>(Terrain::Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Terrain::Chunk& chunk, const Terrain::BiomeInfo biomeInfo)
 
-		ENGINE_INLINE std::tuple<int64, int64> rescale(const int64 x, const int64 y) const noexcept {
+	// TODO: also need translate,
+	ENINGE_RUNTIME_CHECKS_DISABLE struct RescaleBiome {
+		BlockVec trans = {-256, -256};
+		float64 scale = 0.500001;
+		//float64 scale = 0.250001;
+		//float64 scale = 10.5;
+
+		ENGINE_INLINE_REL std::tuple<int64, int64> rescale(const int64 x, const int64 y) const noexcept {
 			// NOTE: These numbers here are still correct (relatively speaking), but at the
 			//       time this was measure we were accidentally doing generation
 			//       per-chunk/per-chunk. Meaning that we were generating a entire chunk per
@@ -36,8 +42,8 @@ namespace {
 			if constexpr (true) {
 				// TODO: use a lib, this is all SSE2
 				// TODO: may need _MM_SET_ROUNDING_MODE
-				const auto xy = _mm_set_pd(static_cast<double>(y), static_cast<double>(x));
-				const auto factor = _mm_set_pd1(rescaleFactor);
+				const auto xy = _mm_set_pd(static_cast<double>(y+trans.y), static_cast<double>(x+trans.x));
+				const auto factor = _mm_set_pd1(scale);
 				const auto scaled = _mm_mul_pd(xy, factor);
 				const auto rounded = _mm_round_pd(scaled, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
 				return {(int64)rounded.m128d_f64[0], (int64)rounded.m128d_f64[1]};
@@ -97,8 +103,8 @@ namespace {
 			} else {
 				ENGINE_FLATTEN
 				return {
-					static_cast<int32>(glm::round(x * rescaleFactor)),
-					static_cast<int32>(glm::round(y * rescaleFactor)),
+					static_cast<int32>(glm::round(x * scale)),
+					static_cast<int32>(glm::round(y * scale)),
 				};
 			}
 		}
@@ -107,16 +113,16 @@ namespace {
 	struct BiomeOne : RescaleBiome {
 		STAGE_DEF;
 
-		// TODO: maybe these should just take the blockCoord instead, and have this loop
-		//       in the generator. That should be fine since its inlined anyways.
+		Engine::Noise::OpenSimplexNoise noise{1234};
 
 		STAGE(1) {
 			const auto [x, y] = rescale(blockCoord.x, blockCoord.y);
-			if ((x & 1) ^ (y & 1)) {
-				return BlockId::Debug;
-			} else {
-				return BlockId::Air;
-			}
+			return noise.value(x * 0.1f, y * 0.1f) > 0 ? BlockId::Debug : BlockId::Air;
+			//if ((x & 1) ^ (y & 1)) {
+			//	return BlockId::Debug;
+			//} else {
+			//	return BlockId::Air;
+			//}
 		}
 	};
 
@@ -175,16 +181,19 @@ namespace {
 			}
 
 			void rebuild() {
-
 				// (0,0) through (8,8) = 512px / (16 blocks / chunk) = 512 / 16 = 8
 
-				// TODO: why does only the first call take a huge amount of time?
-				// Allocation? That doesn't explain the diff then. They are already
-				// generated? I think so? Need to force full regen/reset terrain.
+				// TODO: apply scale/translate to biomes
+				Engine::forEach(generator.getBiomes(), [&](RescaleBiome& biome) {
+
+					// TODO: independant xy zoom like we had before?
+					biome.trans += move;
+					biome.scale += zoomAccum;
+				});
 
 				terrain = {};
 				std::atomic_signal_fence(std::memory_order_acq_rel); const auto startTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
-				generator.generate1(terrain, Terrain::Request{{0, 0}, {8, 8}, 0});
+				generator.generate1(terrain, Terrain::Request{{0,0}, {8, 8}, 0});
 				std::atomic_signal_fence(std::memory_order_acq_rel); const auto endTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
 				ENGINE_LOG2("Generation Time: {}", Engine::Clock::Seconds{endTime - startTime});
 
@@ -232,6 +241,8 @@ namespace {
 
 				tex.setImage(img);
 			};
+
+			// TODO: custom render for timeout, maybe just use an update func?
 			
 			glm::vec2 scale() const noexcept { return getSize() / glm::vec2{img.size()}; }
 
