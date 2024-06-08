@@ -58,11 +58,13 @@ namespace Game::Terrain {
 		for (auto cur = min; cur.x <= max.x; ++cur.x) {
 			for (cur.y = min.y; cur.y <= max.y; ++cur.y) {
 				auto& region = terrain.getRegion({request.realmId, chunkToRegion(cur)});
-				auto& stage = region.stages[cur.x][cur.y];
+				const auto chunkIndex = chunkToRegionIndex(cur);
+				auto& stage = region.stages[chunkIndex.x][chunkIndex.y];
 
 				if (stage < CurrentStage) {
 					ENGINE_DEBUG_ASSERT(stage == CurrentStage - 1);
-					generateChunk<CurrentStage>(terrain, cur, region.chunks[cur.x][cur.y]);
+					generateChunk<CurrentStage>(terrain, cur, region.chunks[chunkIndex.x][chunkIndex.y]);
+					ENGINE_LOG2("Generate Chunk: {}", cur);
 					++stage;
 				}
 			}

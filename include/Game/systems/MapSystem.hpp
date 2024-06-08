@@ -93,6 +93,7 @@ namespace Game {
 			bool operator==(const UniversalChunkCoord&) const noexcept = default;
 			constexpr UniversalChunkCoord operator+(const ChunkVec vec) const noexcept { return {realmId, pos + vec}; }
 			ENGINE_INLINE constexpr UniversalRegionCoord toRegion() const noexcept { return { realmId, chunkToRegion(pos) }; }
+			ENGINE_INLINE constexpr ChunkVec toRegionIndex() const noexcept { return chunkToRegionIndex(pos); }
 			ENGINE_INLINE constexpr inline UniversalBlockCoord toBlock() const noexcept;
 	};
 

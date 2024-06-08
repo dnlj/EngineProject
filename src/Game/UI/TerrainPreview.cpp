@@ -22,13 +22,9 @@ namespace {
 
 	#define STAGE(N) template<> ENGINE_INLINE_REL BlockId stage<N>(Terrain::Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Terrain::Chunk& chunk, const Terrain::BiomeInfo biomeInfo)
 
-	// TODO: also need translate,
+	// TODO: store this info somewhere, we can't use this for biomes because it will break once we have non-independant generation.
+	/*
 	ENINGE_RUNTIME_CHECKS_DISABLE struct RescaleBiome {
-		BlockVec trans = {-256, -256};
-		float64 scale = 0.500001;
-		//float64 scale = 0.250001;
-		//float64 scale = 10.5;
-
 		ENGINE_INLINE_REL std::tuple<int64, int64> rescale(const int64 x, const int64 y) const noexcept {
 			// NOTE: These numbers here are still correct (relatively speaking), but at the
 			//       time this was measure we were accidentally doing generation
@@ -109,15 +105,17 @@ namespace {
 			}
 		}
 	} ENINGE_RUNTIME_CHECKS_RESTORE;
+	*/
 	
-	struct BiomeOne : RescaleBiome {
+	struct BiomeOne {
 		STAGE_DEF;
 
 		Engine::Noise::OpenSimplexNoise noise{1234};
 
 		STAGE(1) {
-			const auto [x, y] = rescale(blockCoord.x, blockCoord.y);
-			return noise.value(x * 0.1f, y * 0.1f) > 0 ? BlockId::Debug : BlockId::Air;
+			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug2; }
+			constexpr float32 scale = 0.1f;
+			return noise.value(blockCoord.x * scale, blockCoord.y * scale) > 0 ? BlockId::Debug : BlockId::Air;
 			//if ((x & 1) ^ (y & 1)) {
 			//	return BlockId::Debug;
 			//} else {
@@ -126,12 +124,11 @@ namespace {
 		}
 	};
 
-	struct BiomeTwo : RescaleBiome {
+	struct BiomeTwo {
 		STAGE_DEF;
 
 		STAGE(1) {
-			const auto [x, y] = rescale(blockCoord.x, blockCoord.y);
-			if (x == y) {
+			if (blockCoord.x == blockCoord.y) {
 				return BlockId::Gold;
 			} else {
 				return BlockId::Dirt;
@@ -139,12 +136,11 @@ namespace {
 		}
 	};
 
-	struct BiomeThree : RescaleBiome {
+	struct BiomeThree {
 		STAGE_DEF;
 
 		STAGE(1) {
-			const auto [x, y] = rescale(blockCoord.x, blockCoord.y);
-			if (x == 63 - y) {
+			if (blockCoord.x == 63 - blockCoord.y) {
 				return BlockId::Grass;
 			} else {
 				return BlockId::Air;
@@ -154,12 +150,12 @@ namespace {
 
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
-			glm::vec2 offset = {0.0, 0.0};
+			BlockVec offset = {0.0, 0.0};
 			glm::vec2 zoom = {1.0, 1.0};
 
 		private:
 			// View
-			glm::vec2 move = {0, 0};
+			glm::vec2 offsetInitial = {0, 0};
 			float32 zoomAccum = 0;
 
 			// Image
@@ -181,19 +177,13 @@ namespace {
 			}
 
 			void rebuild() {
-				// (0,0) through (8,8) = 512px / (16 blocks / chunk) = 512 / 16 = 8
-
-				// TODO: apply scale/translate to biomes
-				Engine::forEach(generator.getBiomes(), [&](RescaleBiome& biome) {
-
-					// TODO: independant xy zoom like we had before?
-					biome.trans += move;
-					biome.scale += zoomAccum;
-				});
+				const auto chunkOffset = blockToChunk(offset);
+				const auto res = img.size();
+				const auto chunksPerImg = blockToChunk(res);
 
 				terrain = {};
 				std::atomic_signal_fence(std::memory_order_acq_rel); const auto startTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
-				generator.generate1(terrain, Terrain::Request{{0,0}, {8, 8}, 0});
+				generator.generate1(terrain, Terrain::Request{chunkOffset, chunkOffset + chunksPerImg, 0});
 				std::atomic_signal_fence(std::memory_order_acq_rel); const auto endTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
 				ENGINE_LOG2("Generation Time: {}", Engine::Clock::Seconds{endTime - startTime});
 
@@ -201,7 +191,7 @@ namespace {
 				//       elsewhere. Alternatively, calculate this value based on the avg img
 				//       color when loading them/packing them into atlas.
 				glm::u8vec3 blockToColor[BlockId::_count] = {};
-				blockToColor[BlockId::Entity] = {0, 120, 189};
+				blockToColor[BlockId::Entity] = {  0, 120, 189};
 				blockToColor[BlockId::Debug]  = {255,   0,   0};
 				blockToColor[BlockId::Debug2] = {200,  26, 226};
 				blockToColor[BlockId::Debug3] = {226,  26, 162};
@@ -213,24 +203,30 @@ namespace {
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
 
-				const RealmId realmId = 0;
-				const auto& res = img.size();
+				const RealmId realmId = 0; // TODO: realm support
 				for (BlockUnit y = 0; y < res.y; ++y) {
 					const auto yspan = y * res.x;
 					for (BlockUnit x = 0; x < res.x; ++x) {
-						const auto blockCoord = UniversalBlockCoord{realmId, {x, y}};
-						const auto chunkCoord = blockCoord.toChunk();
-						const auto regionCoord = chunkCoord.toRegion();
-						auto& region = terrain.getRegion(regionCoord);
-						auto& chunk = region.chunks[chunkCoord.pos.x][chunkCoord.pos.y];
-						ENGINE_DEBUG_ASSERT(region.stages[chunkCoord.pos.x][chunkCoord.pos.y] == 1);
+						const auto blockCoord = offset + BlockVec{x, y};
+						const auto chunkCoord = blockToChunk(blockCoord);
+						const auto regionCoord = chunkToRegion(chunkCoord);
+						auto& region = terrain.getRegion({realmId, regionCoord});
 
-						const auto chunkIndex = blockCoord.pos - chunkCoord.toBlock().pos;
-						ENGINE_DEBUG_ASSERT(chunkIndex.x >= 0 && chunkIndex.x < chunkSize.x);
-						ENGINE_DEBUG_ASSERT(chunkIndex.y >= 0 && chunkIndex.y < chunkSize.y);
+						// Sanity checks
+						ENGINE_DEBUG_ASSERT(blockCoord.x >= offset.x);
+						ENGINE_DEBUG_ASSERT(blockCoord.y >= offset.y);
 
-						const auto blockId = chunk.data[chunkIndex.x][chunkIndex.y];
-						ENGINE_DEBUG_ASSERT(blockId >= 0 && blockId < BlockId::_count);
+						// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
+						const auto chunkIndex = chunkToRegionIndex(chunkCoord, regionCoord);
+						auto& chunk = region.chunks[chunkIndex.x][chunkIndex.y];
+						ENGINE_DEBUG_ASSERT(region.stages[chunkIndex.x][chunkIndex.y] == 1, "Chunk is at incorrect stage.");
+
+						const auto blockIndex = blockToChunkIndex(blockCoord, chunkCoord);
+						ENGINE_DEBUG_ASSERT(blockIndex.x >= 0 && blockIndex.x < chunkSize.x, "Invalid chunk index.");
+						ENGINE_DEBUG_ASSERT(blockIndex.y >= 0 && blockIndex.y < chunkSize.y, "Invalid chunk index.");
+
+						const auto blockId = chunk.data[blockIndex.x][blockIndex.y];
+						ENGINE_DEBUG_ASSERT(blockId >= 0 && blockId < BlockId::_count, "Invalid BlockId.");
 
 						data[x + yspan] = blockToColor[blockId];
 					}
@@ -257,15 +253,15 @@ namespace {
 			}
 
 			bool onBeginActivate() override {
-				move = ctx->getCursor();
+				offsetInitial = ctx->getCursor();
 				return true;
 			}
 
 			void onEndActivate() override {
-				move -= ctx->getCursor();
-				if (move.x || move.y) {
-					move.y = -move.y;
-					const glm::ivec2 diff = glm::round(move * zoom / scale());
+				offsetInitial -= ctx->getCursor();
+				if (offsetInitial.x || offsetInitial.y) {
+					offsetInitial.y = -offsetInitial.y;
+					const BlockVec diff = glm::round(offsetInitial * zoom / scale());
 					offset += diff;
 					rebuild();
 				}
@@ -284,7 +280,7 @@ namespace Game::UI {
 		sec->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, theme.sizes.pad1});
 		sec->setAutoSizeHeight(true);
 		
-		constexpr auto textGetter = [](auto& var){ return [&var, last=0.0f](EUI::TextBox& box) mutable {
+		constexpr auto textGetter = []<class V>(V& var){ return [&var, last=V{}](EUI::TextBox& box) mutable {
 			if (var == last) { return; }
 			last = var;
 			box.setText(std::to_string(last));

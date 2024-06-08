@@ -174,8 +174,9 @@ namespace Game::inline Units {
 		return d;
 	}
 
+	// TODO: Remove this overload when no longer used. New code should prefer the other overload.
 	/**
-	 * Converts from chunk coordinates to an index wrapped at increments of MapRegion::size.
+	 * Converts from chunk coordinates to an index wrapped at increments of regionSize.
 	 */
 	ENGINE_INLINE constexpr inline RegionVec chunkToRegionIndex(const ChunkVec chunk) noexcept {
 		return (regionSize + chunk % regionSize) % regionSize;
@@ -186,6 +187,21 @@ namespace Game::inline Units {
 	 */
 	ENGINE_INLINE constexpr inline ChunkVec regionToChunk(const RegionVec region) noexcept {
 		return region * regionSize;
+	}
+
+	/**
+	 * @copybrief chunkToRegionIndex
+	 * Cheaper overload for when you already know what region the chunk is in.
+	 */
+	ENGINE_INLINE constexpr inline RegionVec chunkToRegionIndex(const ChunkVec chunk, const RegionVec region) noexcept {
+		return chunk - regionToChunk(region);
+	}
+
+	/**
+	 * Converts from block coordinates to an index wrapped at increments of chunkSize.
+	 */
+	ENGINE_INLINE constexpr inline BlockVec blockToChunkIndex(const BlockVec block, const ChunkVec chunk) noexcept {
+		return block - chunkToBlock(chunk);
 	}
 }
 
