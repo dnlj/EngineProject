@@ -128,4 +128,14 @@ namespace Engine::Math {
 		const auto r0 = num - den * q0;
 		return DivResult<T>{ .q = q0, .r = r0 };
 	}
+	
+	template<std::integral T, glm::qualifier Q>
+	[[nodiscard]] ENGINE_INLINE constexpr auto divCeil(glm::vec<2, T, Q> num, T den) noexcept {
+		const auto x = divCeil(num.x, den);
+		const auto y = divCeil(num.y, den);
+		return DivResult<decltype(num)>{
+			.q = {x.q, y.q},
+			.r = {x.r, y.r},
+		};
+	}
 }

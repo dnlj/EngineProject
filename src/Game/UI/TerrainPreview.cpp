@@ -82,7 +82,7 @@ namespace {
 				//	alignas(16) int32 arr[4];
 				//} data = {_mm_cvtpd_epi32(scaled)};
 				//return {data.arr[0], data.arr[1]};
-				
+
 				// bit_cast ~28.9s
 				// = 2x movaps, 3x movdqa, 1x movups, 1x lea, 2x mov + stack checking
 				//struct alignas(16) DataB {
@@ -106,7 +106,7 @@ namespace {
 		}
 	} ENINGE_RUNTIME_CHECKS_RESTORE;
 	*/
-	
+
 	struct BiomeOne {
 		STAGE_DEF;
 
@@ -150,13 +150,14 @@ namespace {
 
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
-			BlockVec offset = {0.0, 0.0};
-			glm::vec2 zoom = {1.0, 1.0};
+			//BlockVec offset = {0.0, 0.0};
+			BlockVec offset = {-127, -69};
+			float64 zoom = 1.0f; // Larger # = farther out = see more = larger FoV
 
 		private:
 			// View
 			glm::vec2 offsetInitial = {0, 0};
-			float32 zoomAccum = 0;
+			Engine::Clock::TimePoint nextZoom{};
 
 			// Image
 			Engine::Gfx::Image img = {};
@@ -177,9 +178,15 @@ namespace {
 			}
 
 			void rebuild() {
+				// Chunk offset isn't affected by zoom. Its a fixed offset so its always the same regardless of zoom.
 				const auto chunkOffset = blockToChunk(offset);
 				const auto res = img.size();
-				const auto chunksPerImg = blockToChunk(res);
+
+				// We can't use blockToChunk because we need ceil not floor.
+				// Say we have a res = 512, zoom = 1.2, blocksPerChunk = 64: 512 * 1.2 = 614.4; 614.4 / 64 = 9.6
+				// For blocks we would say that that block lives in the chunk floor(9.6) = 9, but this isn't blocks.
+				// This is how many chunks will fit in the resolution. The res will hold 9.6 chunks so we need to generate ceil(9.6) = 10.
+				const auto chunksPerImg = Engine::Math::divCeil(applyZoom<BlockVec>(res), blocksPerChunk).q;
 
 				terrain = {};
 				std::atomic_signal_fence(std::memory_order_acq_rel); const auto startTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
@@ -207,7 +214,7 @@ namespace {
 				for (BlockUnit y = 0; y < res.y; ++y) {
 					const auto yspan = y * res.x;
 					for (BlockUnit x = 0; x < res.x; ++x) {
-						const auto blockCoord = offset + BlockVec{x, y};
+						const auto blockCoord = offset + applyZoom(BlockVec{x, y});
 						const auto chunkCoord = blockToChunk(blockCoord);
 						const auto regionCoord = chunkToRegion(chunkCoord);
 						auto& region = terrain.getRegion({realmId, regionCoord});
@@ -238,14 +245,23 @@ namespace {
 				tex.setImage(img);
 			};
 
+			void render() override {
+				ImageDisplay::render();
+				if (Engine::Clock::now() > nextZoom) {
+					ENGINE_INFO2("Zoom: {}", zoom);
+					nextZoom = Engine::Clock::TimePoint::max();
+					rebuild();
+				}
+			}
+
 			// TODO: custom render for timeout, maybe just use an update func?
-			
-			glm::vec2 scale() const noexcept { return getSize() / glm::vec2{img.size()}; }
 
 			bool onAction(EUI::ActionEvent action) override {
 				switch (action) {
 					case EUI::Action::Scroll: {
-						zoomAccum += action.value.f32;
+						ENGINE_LOG2("action.value.f32: {}", action.value.f32);
+						zoom -= action.value.f32 * 0.2;
+						nextZoom = Engine::Clock::now() + std::chrono::milliseconds{1000};
 						return true;
 					}
 				}
@@ -261,11 +277,15 @@ namespace {
 				offsetInitial -= ctx->getCursor();
 				if (offsetInitial.x || offsetInitial.y) {
 					offsetInitial.y = -offsetInitial.y;
-					const BlockVec diff = glm::round(offsetInitial * zoom / scale());
+					const BlockVec diff = applyZoom(offsetInitial);
 					offset += diff;
 					rebuild();
 				}
 			}
+
+		private:
+			template<class Vec>
+			constexpr Vec applyZoom(Vec v) noexcept { return glm::ceil(glm::f64vec2{v} * zoom); }
 	};
 }
 
@@ -273,39 +293,39 @@ namespace Game::UI {
 	TerrainPreview::TerrainPreview(EUI::Context* context) : Window{context} {
 		const auto& theme = ctx->getTheme();
 		const auto cont = getContent();
-		
+
 		const auto area = ctx->constructPanel<TerrainDragArea>();
 
 		const auto sec = ctx->createPanel<Panel>(cont);
 		sec->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, theme.sizes.pad1});
 		sec->setAutoSizeHeight(true);
-		
+
 		constexpr auto textGetter = []<class V>(V& var){ return [&var, last=V{}](EUI::TextBox& box) mutable {
 			if (var == last) { return; }
 			last = var;
 			box.setText(std::to_string(last));
 		};};
-		
+
 		const auto textSetter = [area](auto& var){ return [area, &var](EUI::TextBox& box) {
 			std::from_chars(std::to_address(box.getText().begin()), std::to_address(box.getText().end()), var);
 			area->rebuild();
 		};};
-		
+
 		const auto xMove = ctx->createPanel<EUI::TextBox>(sec);
 		xMove->autoSize();
 		xMove->bind(textGetter(area->offset.x), textSetter(area->offset.x));
-		
+
 		const auto yMove = ctx->createPanel<EUI::TextBox>(sec);
 		yMove->autoSize();
 		yMove->bind(textGetter(area->offset.y), textSetter(area->offset.y));
-		
-		const auto xZoom = ctx->createPanel<EUI::TextBox>(sec);
-		xZoom->autoSize();
-		xZoom->bind(textGetter(area->zoom.x), textSetter(area->zoom.x));
-		
-		const auto yZoom = ctx->createPanel<EUI::TextBox>(sec);
-		yZoom->autoSize();
-		yZoom->bind(textGetter(area->zoom.y), textSetter(area->zoom.y));
+
+		//const auto xZoom = ctx->createPanel<EUI::TextBox>(sec);
+		//xZoom->autoSize();
+		//xZoom->bind(textGetter(area->zoom.x), textSetter(area->zoom.x));
+		//
+		//const auto yZoom = ctx->createPanel<EUI::TextBox>(sec);
+		//yZoom->autoSize();
+		//yZoom->bind(textGetter(area->zoom.y), textSetter(area->zoom.y));
 
 		// TODO: we really should have fixedSize = true/false and then just use the actual
 		//       size for the size, that would allow autoSize to still work with a fixed size
