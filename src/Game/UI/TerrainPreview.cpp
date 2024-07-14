@@ -128,6 +128,7 @@ namespace {
 		STAGE_DEF;
 
 		STAGE(1) {
+			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug3; }
 			if (blockCoord.x == blockCoord.y) {
 				return BlockId::Gold;
 			} else {
@@ -140,6 +141,7 @@ namespace {
 		STAGE_DEF;
 
 		STAGE(1) {
+			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug4; }
 			if (blockCoord.x == 63 - blockCoord.y) {
 				return BlockId::Grass;
 			} else {
@@ -150,8 +152,8 @@ namespace {
 
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
-			//BlockVec offset = {0.0, 0.0};
-			BlockVec offset = {-127, -69};
+			BlockVec offset = {0.0, 0.0};
+			//BlockVec offset = {-127, -69};
 			float64 zoom = 1.0f; // Larger # = farther out = see more = larger FoV
 
 		private:

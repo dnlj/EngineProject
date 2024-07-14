@@ -126,17 +126,14 @@ namespace Game::Terrain {
 	}
 
 	template<StageId TotalStages, class... Biomes>
-	BiomeInfo Generator<TotalStages, Biomes...>::calcBiome(const BlockVec blockCoord) {
+	BiomeInfo Generator<TotalStages, Biomes...>::calcBiome(BlockVec blockCoord) {
+		blockCoord.y += biomeOffsetY;
+
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.
 
 		// TODO: Force/manual unroll? We know that N is always small and that would avoid
 		//       a scale lookup. This function gets called _a lot_.
 		BiomeInfo result{};
-
-		//for (BlockUnit test = 0; test < 10000; ++test) {
-		//	result.cell = Engine::Math::divFloor(BlockVec{test*250ll, 0}, biomeScales[+result.scale]).q;
-		//	ENGINE_LOG2("Biome: {} = {}, {}", result.cell, perm(result.cell.x, result.cell.y), biomePerm(result.cell.x, result.cell.y));
-		//}
 
 		// Determine the scale and sample cell for the biome.
 		// Check each scale. Must be ordered largest to smallest.
@@ -145,21 +142,17 @@ namespace Game::Terrain {
 			// Originally: cell = glm::floor(blockCoord * biomeScalesInv[result.scale]);
 			result.cell = Engine::Math::divFloor(blockCoord, biomeScales[+result.scale]).q;
 
-			// TODO: doc - I think 10 was an arbitrary num here? I believe this controls how
+			// TODO: doc - I think this was an arbitrary num here? I believe this controls how
 			//       frequently each scale is selected? Should be able to use a different number
 			//       for each scale if we want different frequencies.
-			if (perm(result.cell.x, result.cell.y) < 10) { break; }
+			if (perm(result.cell.x, result.cell.y) < 20) { break; }
 
 			// No more scales to check. Don't increment so we use the smallest one.
 			if (result.scale == BiomeScale::_last) { break; }
 			++result.scale;
 		}
 
-		// TODO: something is broken here:
 		result.id = biomePerm(result.cell.x, result.cell.y);
-		//result.type = static_cast<BiomeType>(result.cell.x % sizeof...(Biomes));
-		//ENGINE_LOG2("Cell: {}", result.cell);
-		//result.type = static_cast<BiomeType>((blockCoord.x / 64) % sizeof...(Biomes));
 		return result;
 	}
 }

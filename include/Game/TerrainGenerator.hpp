@@ -17,8 +17,8 @@ namespace Game::Terrain {
 		Large,
 		Medium,
 		Small,
-		_last = Small,
 		_count,
+		_last = Small,
 	};
 	ENGINE_BUILD_ALL_OPS(BiomeScale);
 	ENGINE_BUILD_DECAY_ENUM(BiomeScale);
@@ -109,22 +109,34 @@ namespace Game::Terrain {
 			//       doubles, and that will be slower and still isn't perfect.
 			//using FVec2 = glm::vec<2, Float>;
 
-			// Must be divisible by the previous depth We want to use divisions by three
-			// so that each biome can potentially spawn at surface level. If we use two
-			// then only the first depth will be at surface level and all others will be
-			// above or below it.
+			// Must be divisible by the previous depth. We want to use divisions by three so
+			// that each biome can potentially spawn at surface level. If we use two then only
+			// the first depth will be at surface level and all others will be above or below
+			// it. This is due to the division by two for the biomeOffsetY. We need division
+			// by two because we want biomes evenly centered on y=0.
 			constexpr static BlockUnit biomeScales[] = {
-				9000,
-				3000,
-				1000,
+				// TODO: Use to be 9000, 3000, 1000. Decreased for easy testing.
+				900,
+				300,
+				100,
 			};
 
 			static_assert(std::size(biomeScales) == +BiomeScale::_count, "Incorrect number of biome scales specified.");
 			static_assert(std::ranges::is_sorted(biomeScales, std::greater{}), "Biomes scales should be ordered largest to smallest");
 
+			// Offset used for sampling biomes so they are roughly centered at ground level.
+			//
+			// 
+			// TODO: vvv update this comment vvv. Ground level will change depending on calc. Do the math. Was +200 instead of +0
+			//
+			// 
+			// Experimentally terrain surface is around 100-300.
+			constexpr static BlockUnit biomeOffsetY = biomeScales[0] / 2 + 0;
+
+			// TODO: name
 			Engine::Noise::RangePermutation<256> perm;
 
-			// TODO: We need different sample overloads, we want the unit for this to be
+			// TODO: We need different sample overloads, we want the result unit for this to be
 			//       BiomeType, but we want to sample with BlockUnit.
 			Engine::Noise::RangePermutation<sizeof...(Biomes)> biomePerm;
 
@@ -154,7 +166,7 @@ namespace Game::Terrain {
 			template<StageId CurrentStage>
 			void generateChunk(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk);
 
-			BiomeInfo calcBiome(const BlockVec blockCoord);
+			BiomeInfo calcBiome(BlockVec blockCoord);
 	};
 }
 
