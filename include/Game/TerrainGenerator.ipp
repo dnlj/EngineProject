@@ -138,14 +138,13 @@ namespace Game::Terrain {
 		// Determine the scale and sample cell for the biome.
 		// Check each scale. Must be ordered largest to smallest.
 		while (true) {
+			const auto& scale = biomeScales[+result.scale];
+
 			// Rescale the coord so that all scales sample from the same mapping.
 			// Originally: cell = glm::floor(blockCoord * biomeScalesInv[result.scale]);
-			result.cell = Engine::Math::divFloor(blockCoord, biomeScales[+result.scale]).q;
+			result.cell = Engine::Math::divFloor(blockCoord, scale.scale).q;
 
-			// TODO: doc - I think this was an arbitrary num here? I believe this controls how
-			//       frequently each scale is selected? Should be able to use a different number
-			//       for each scale if we want different frequencies.
-			if (perm(result.cell.x, result.cell.y) < 20) { break; }
+			if (biomeFreq(result.cell.x, result.cell.y) < scale.freq) { break; }
 
 			// No more scales to check. Don't increment so we use the smallest one.
 			if (result.scale == BiomeScale::_last) { break; }

@@ -109,20 +109,28 @@ namespace Game::Terrain {
 			//       doubles, and that will be slower and still isn't perfect.
 			//using FVec2 = glm::vec<2, Float>;
 
+			class BiomeScaleMeta {
+				public:
+					BlockUnit scale;
+
+					/** Percentage frequency out of [0, 255]. */
+					uint8 freq;
+			};
+
 			// Must be divisible by the previous depth. We want to use divisions by three so
 			// that each biome can potentially spawn at surface level. If we use two then only
 			// the first depth will be at surface level and all others will be above or below
 			// it. This is due to the division by two for the biomeOffsetY. We need division
 			// by two because we want biomes evenly centered on y=0.
-			constexpr static BlockUnit biomeScales[] = {
+			constexpr static BiomeScaleMeta biomeScales[] = {
 				// TODO: Use to be 9000, 3000, 1000. Decreased for easy testing.
-				900,
-				300,
-				100,
+				{.scale = 900, .freq = 20},
+				{.scale = 300, .freq = 20},
+				{.scale = 100, .freq = 20},
 			};
 
 			static_assert(std::size(biomeScales) == +BiomeScale::_count, "Incorrect number of biome scales specified.");
-			static_assert(std::ranges::is_sorted(biomeScales, std::greater{}), "Biomes scales should be ordered largest to smallest");
+			static_assert(std::ranges::is_sorted(biomeScales, std::greater{}, &BiomeScaleMeta::scale), "Biomes scales should be ordered largest to smallest");
 
 			// Offset used for sampling biomes so they are roughly centered at ground level.
 			//
@@ -131,20 +139,21 @@ namespace Game::Terrain {
 			//
 			// 
 			// Experimentally terrain surface is around 100-300.
-			constexpr static BlockUnit biomeOffsetY = biomeScales[0] / 2 + 0;
+			constexpr static BlockUnit biomeOffsetY = biomeScales[0].scale / 2 + 0;
 
-			// TODO: name
-			Engine::Noise::RangePermutation<256> perm;
+			/** Used for sampling the biome frequency. */
+			Engine::Noise::RangePermutation<256> biomeFreq;
 
 			// TODO: We need different sample overloads, we want the result unit for this to be
 			//       BiomeType, but we want to sample with BlockUnit.
+			/** Used for sampling the biome type. */
 			Engine::Noise::RangePermutation<sizeof...(Biomes)> biomePerm;
 
 			std::tuple<Biomes...> biomes{};
 
 		public:
 			Generator(uint64 seed)
-				: perm{seed}
+				: biomeFreq{seed}
 				, biomePerm{Engine::Noise::lcg(seed)}
 			{}
 
