@@ -62,10 +62,11 @@ namespace Game::Terrain {
 			}
 	};
 
+	using BiomeId = uint32;
 	class BiomeInfo {
 		public:
 			BiomeScale scale;
-			uint32 id;
+			BiomeId id;
 
 			/**
 			 * The coordinate in the biome map for this biome.
@@ -96,14 +97,28 @@ namespace Game::Terrain {
 			//Request(const ChunkVec minChunkCoord, const ChunkVec maxChunkCoord);
 	};
 
+	template<class T, StageId Stage>
+	concept HasStage = T::template hasStage<Stage>;
+
+	template<class T, StageId Stage = 1>
+	struct MaxStage : public std::conditional_t<
+		HasStage<T, Stage>,
+		MaxStage<T, Stage+1>,
+		std::integral_constant<StageId, Stage - 1>
+	> {};
+
+
 	// Support for rescaling is needed for preview support. Should not be used for real generation.
-	template<StageId TotalStages, class... Biomes>
+	template<class... Biomes>
 	class Generator {
-		private:
+		public:
 			using UInt = uint32;
 			using Int = int32;
 			using Float = float32;
 
+			constexpr static StageId totalStages = std::max({MaxStage<Biomes>::value...});
+
+		private:
 			// TODO: One thing to consider is that we loose precision when converting
 			//       from BlockCoord to FVec2. Not sure how to solve that other than use
 			//       doubles, and that will be slower and still isn't perfect.
@@ -147,7 +162,8 @@ namespace Game::Terrain {
 			// TODO: We need different sample overloads, we want the result unit for this to be
 			//       BiomeType, but we want to sample with BlockUnit.
 			/** Used for sampling the biome type. */
-			Engine::Noise::RangePermutation<sizeof...(Biomes)> biomePerm;
+			Engine::Noise::RangePermutation<256> biomePerm;
+			static_assert(sizeof...(Biomes) <= decltype(biomePerm)::size());
 
 			std::tuple<Biomes...> biomes{};
 
@@ -169,8 +185,17 @@ namespace Game::Terrain {
 			template<StageId CurrentStage>
 			void generate(Terrain& terrain, const Request& request);
 
+			#define TERRAIN_STAGE_ARGS \
+				::Game::Terrain::Terrain& terrain, \
+				const ::Game::ChunkVec chunkCoord, \
+				const ::Game::BlockVec blockCoord, \
+				const ::Game::BlockVec blockIndex, \
+				::Game::Terrain::Chunk& chunk, \
+				const ::Game::Terrain::BiomeInfo biomeInfo, \
+				const ::Game::BlockUnit h0 // The "surface level" offset from zero
+
 			template<StageId CurrentStage, class Biome>
-			ENGINE_INLINE BlockId callStage(Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Chunk& chunk, const BiomeInfo biomeInfo);
+			ENGINE_INLINE BlockId callStage(TERRAIN_STAGE_ARGS);
 
 			template<StageId CurrentStage>
 			void generateChunk(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk);

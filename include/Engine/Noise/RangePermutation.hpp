@@ -56,6 +56,8 @@ namespace Engine::Noise {
 				}
 			}
 
+			constexpr static decltype(Size) size() noexcept { return Size; }
+
 			template<class... Args>
 			ENGINE_INLINE constexpr Stored operator()(Args... args) const noexcept {
 				// The static cast is just here for compatibility with existing code where

@@ -9,7 +9,7 @@
 
 
 namespace Engine::Noise {
-	// Originally from: https://gist.github.com/KdotJPG/b1270127455a94ac5d19 which was/is public domain.
+	// Originally based on: https://gist.github.com/KdotJPG/b1270127455a94ac5d19 which was/is public domain.
 	template<std::floating_point Float, std::integral Int>
 	class OpenSimplexNoiseGeneric {
 		public:

@@ -15,121 +15,83 @@ namespace {
 	using namespace Game::UI;
 
 	#define STAGE_DEF \
+		template<Terrain::StageId Stage> constexpr static bool hasStage = false;\
 		template<Terrain::StageId Stage>\
-		BlockId stage(Terrain::Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Terrain::Chunk& chunk, const Terrain::BiomeInfo biomeInfo) {\
+		ENGINE_INLINE BlockId stage(TERRAIN_STAGE_ARGS) {\
 			static_assert(Stage != Stage, "The requested stage is not defined for this biome.");\
 		}
 
-	#define STAGE(N) template<> ENGINE_INLINE_REL BlockId stage<N>(Terrain::Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Terrain::Chunk& chunk, const Terrain::BiomeInfo biomeInfo)
+	#define STAGE(N)\
+		template<> constexpr static bool hasStage<N> = true;\
+		template<> ENGINE_INLINE_REL BlockId stage<N>(TERRAIN_STAGE_ARGS)
 
-	// TODO: store this info somewhere, we can't use this for biomes because it will break once we have non-independant generation.
-	/*
-	ENINGE_RUNTIME_CHECKS_DISABLE struct RescaleBiome {
-		ENGINE_INLINE_REL std::tuple<int64, int64> rescale(const int64 x, const int64 y) const noexcept {
-			// NOTE: These numbers here are still correct (relatively speaking), but at the
-			//       time this was measure we were accidentally doing generation
-			//       per-chunk/per-chunk. Meaning that we were generating a entire chunk per
-			//       block, or 64^2 extra generations. We were also operating on int32 and
-			//       double instead of int64 and double, so think might be slightly different.
+	using Float = float32;
+	ENGINE_INLINE consteval Float operator""_f(const long double v) noexcept {
+		return static_cast<Float>(v);
+	}
 
-			// This is unfortunately needed because doing the simple thing of using
-			// std/glm::round is unusably slow. SSE is over an order of magnitude faster:
-			// 6s vs 62s+ in debug and 2s vs 20s in release.
-			if constexpr (true) {
-				// TODO: use a lib, this is all SSE2
-				// TODO: may need _MM_SET_ROUNDING_MODE
-				const auto xy = _mm_set_pd(static_cast<double>(y+trans.y), static_cast<double>(x+trans.x));
-				const auto factor = _mm_set_pd1(scale);
-				const auto scaled = _mm_mul_pd(xy, factor);
-				const auto rounded = _mm_round_pd(scaled, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
-				return {(int64)rounded.m128d_f64[0], (int64)rounded.m128d_f64[1]};
-
-				// Direct access (MSVC specific) ~10.1s
-				// = no additional instructions + no stack checking
-				//return {rounded.m128i_i32[0], rounded.m128i_i32[1]};
-
-				// memcpy ~25.5s
-				// = 1x mov, 2x lea, 1x call memcpy + stack checking
-				//alignas(16) int32 results[4];
-				//memcpy(results, &rounded, sizeof(rounded));
-				//return {results[0], results[1]};
-
-				// mm_store ~25.5s
-				// = 2x movdqa + stack checking = same as union
-				//alignas(16) int32 results[4];
-				//_mm_store_si128((__m128i*)results, rounded);
-				//return {results[0], results[1]};
-
-				// Union ~25.5s
-				// = 2x movdqa + stack checking = same as mm_store
-				//union alignas(16) DataU {
-				//	__m128i sse;
-				//	alignas(16) int32 arr[4];
-				//} data = rounded;
-				//return {data.arr[0], data.arr[1]};
-
-				// Union (direct) ~25.1s
-				// = no additional instructions + stack checking = same as direct w/ additional stack checking
-				// With RTC checks disasbled this is _almost_ as fast as the direct, the
-				// stack check calls are still there, but I assume they don't actually do
-				// anything. With them disabled its ~10.5s.
-				// TODO: See if this can be replaced with start_lifetime_as_array once
-				//       MSVC implements it so it isn't UB (strict aliasing). MSVC use to
-				//       explicitly allow uninos to alias, but I'm not able to find that
-				//       citation anymore. I'm not sure if they removed that or I'm just blind.
-				//union alignas(16) DataU {
-				//	__m128i sse;
-				//	alignas(16) int32 arr[4];
-				//} data = {_mm_cvtpd_epi32(scaled)};
-				//return {data.arr[0], data.arr[1]};
-
-				// bit_cast ~28.9s
-				// = 2x movaps, 3x movdqa, 1x movups, 1x lea, 2x mov + stack checking
-				//struct alignas(16) DataB {
-				//	alignas(16) int32 results[4];
-				//} data = std::bit_cast<DataB>(rounded);
-				//return {data.results[0], data.results[1]};
-
-				// bit_cast (direct) ~28.9s
-				// exact same as non-direct
-				//struct alignas(16) DataB {
-				//	alignas(16) int32 results[4];
-				//} data = std::bit_cast<DataB>(_mm_cvtpd_epi32(scaled));
-				//return {data.results[0], data.results[1]};
-			} else {
-				ENGINE_FLATTEN
-				return {
-					static_cast<int32>(glm::round(x * scale)),
-					static_cast<int32>(glm::round(y * scale)),
-				};
-			}
-		}
-	} ENINGE_RUNTIME_CHECKS_RESTORE;
-	*/
+	ENGINE_INLINE consteval Float operator""_f(const uint64 v) noexcept {
+		return static_cast<Float>(v);
+	}
 
 	struct BiomeOne {
 		STAGE_DEF;
 
-		Engine::Noise::OpenSimplexNoise noise{1234};
+		Engine::Noise::OpenSimplexNoise simplex{1234};
 
 		STAGE(1) {
-			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug2; }
-			constexpr float32 scale = 0.1f;
-			return noise.value(blockCoord.x * scale, blockCoord.y * scale) > 0 ? BlockId::Debug : BlockId::Air;
-			//if ((x & 1) ^ (y & 1)) {
-			//	return BlockId::Debug;
-			//} else {
-			//	return BlockId::Air;
-			//}
+			// TODO: if we are always going to be converting to float anyways, should we
+			//       pass in a float version as well? That kind of breaks world size though.
+
+			const auto h1 = h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
+
+			if (blockCoord.y > h1) {
+				return BlockId::Air;
+			} else if ((h1-blockCoord.y) < 1) {
+				return BlockId::Grass;
+			}
+
+			constexpr Float scale = 0.06_f;
+			constexpr Float groundScale = 1.0_f / 100.0_f;
+			const Float groundGrad = std::max(0.0_f, 1.0_f - (h1 - blockCoord.y) * groundScale);
+			const auto val = simplex.value(glm::vec2{blockCoord} * scale) + groundGrad;
+
+			if (val > 0) {
+				return BlockId::Debug;
+			} else {
+				return BlockId::Air;
+			}
+		}
+
+		STAGE(2) {
+			auto& data = chunk.data[blockIndex.x][blockIndex.y];
+			if (((blockCoord.x & 1) ^ (blockCoord.y & 1)) && (data == BlockId::Air)) {
+				return BlockId::Debug2;
+			} else {
+				return data;
+			}
 		}
 	};
 
-	struct BiomeTwo {
+	struct BiomeDebugOne {
+		STAGE_DEF;
+
+		STAGE(1) {
+			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug2; }
+			if ((blockCoord.x & 1) ^ (blockCoord.y & 1)) {
+				return BlockId::Debug;
+			} else {
+				return BlockId::Air;
+			}
+		}
+	};
+
+	struct BiomeDebugTwo {
 		STAGE_DEF;
 
 		STAGE(1) {
 			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug3; }
-			if (blockCoord.x == blockCoord.y) {
+			if (blockCoord.x % 64 == blockCoord.y % 64) {
 				return BlockId::Gold;
 			} else {
 				return BlockId::Dirt;
@@ -137,12 +99,12 @@ namespace {
 		}
 	};
 
-	struct BiomeThree {
+	struct BiomeDebugThree {
 		STAGE_DEF;
 
 		STAGE(1) {
 			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug4; }
-			if (blockCoord.x == 63 - blockCoord.y) {
+			if (blockCoord.x % 64 == (63 - blockCoord.y % 64)) {
 				return BlockId::Grass;
 			} else {
 				return BlockId::Air;
@@ -166,7 +128,7 @@ namespace {
 			Engine::Gfx::Texture2D tex = {};
 
 			// Terrain
-			Terrain::Generator<1, BiomeOne, BiomeTwo, BiomeThree> generator{1234};
+			Terrain::Generator<BiomeOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
 			Terrain::Terrain terrain;
 
 		public:
@@ -228,7 +190,8 @@ namespace {
 						// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
 						const auto chunkIndex = chunkToRegionIndex(chunkCoord, regionCoord);
 						auto& chunk = region.chunks[chunkIndex.x][chunkIndex.y];
-						ENGINE_DEBUG_ASSERT(region.stages[chunkIndex.x][chunkIndex.y] == 1, "Chunk is at incorrect stage.");
+						const auto stage = region.stages[chunkIndex.x][chunkIndex.y];
+						ENGINE_DEBUG_ASSERT(stage == generator.totalStages, "Chunk is at incorrect stage.");
 
 						const auto blockIndex = blockToChunkIndex(blockCoord, chunkCoord);
 						ENGINE_DEBUG_ASSERT(blockIndex.x >= 0 && blockIndex.x < chunkSize.x, "Invalid chunk index.");

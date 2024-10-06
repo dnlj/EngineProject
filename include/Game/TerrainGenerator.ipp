@@ -19,8 +19,8 @@
 //}
 
 namespace Game::Terrain {
-	template<StageId TotalStages, class... Biomes>
-	void Generator<TotalStages, Biomes...>::generate1(Terrain& terrain, const Request& request) {
+	template<class... Biomes>
+	void Generator<Biomes...>::generate1(Terrain& terrain, const Request& request) {
 		//auto& region = terrain.getRegion(chunkCoord.toRegion());
 
 
@@ -37,22 +37,35 @@ namespace Game::Terrain {
 		//     if neighbor is not at correct stage:
 		//       add neighbor to stack;
 
-		//(generate<Biomes>(terrain, request), ...);
-
 		// Call generate for each stage. Each will expand the requestion chunk selection
 		// appropriately for the following stages.
-		Engine::Meta::ForEachInRange<TotalStages>::call([&]<auto I>{
+		Engine::Meta::ForEachInRange<totalStages>::call([&]<auto I>{
 			// +1 because stage zero = uninitialized, zero stages have been run yet.
 			generate<I+1>(terrain, request);
 		});
 	}
 
-	template<StageId TotalStages, class... Biomes>
+	template<class... Biomes>
 	template<StageId CurrentStage>
-	void Generator<TotalStages, Biomes...>::generate(Terrain& terrain, const Request& request) {
-		constexpr ChunkUnit offset = TotalStages - CurrentStage;
+	void Generator<Biomes...>::generate(Terrain& terrain, const Request& request) {
+		constexpr ChunkUnit offset = totalStages - CurrentStage;
 		const auto min = request.minChunkCoord - offset;
 		const auto max = request.maxChunkCoord + offset;
+
+		//
+		// TODO: Feature and decoration generation.
+		// 
+		// - Generate stages.
+		//   - Stage 1, Stage 2, ..., Stage N.
+		// - Generate candidate features for all biomes in the request.
+		// - Cull candidate features based on point (or AABB?) and realized biome.
+		// - Generate non-culled features based on resolved biome.
+		// - Generate decorations.
+		//   - Basically same as stages.
+		//   - Provides a place to smooth/integrate features and terrain.
+		//   - Moss, grass tufts, cobwebs, chests/loot, etc.
+		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
+		//
 
 		// For each chunk in the request
 		for (auto cur = min; cur.x <= max.x; ++cur.x) {
@@ -71,9 +84,9 @@ namespace Game::Terrain {
 		}
 	}
 	
-	template<StageId TotalStages, class... Biomes>
+	template<class... Biomes>
 	template<StageId CurrentStage, class Biome>
-	ENGINE_INLINE_REL BlockId Generator<TotalStages, Biomes...>::callStage(Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Chunk& chunk, const BiomeInfo biomeInfo) {
+	ENGINE_INLINE_REL BlockId Generator<Biomes...>::callStage(TERRAIN_STAGE_ARGS) {
 		// Force inline the calls to avoid the extra function call overhead. These are exactly
 		// 1:1 so there is no reason to not do this. Originally we passed a `void* self` and
 		// biomes had to recast back to the correct type to use it. Doing things like we do
@@ -86,17 +99,27 @@ namespace Game::Terrain {
 		// gives no warning, such as C4714, if it fails. As such all stage functions
 		// should be marked with ENGINE_INLINE also.
 		ENGINE_INLINE_CALLS {
-			return std::get<Biome>(biomes).stage<CurrentStage>(terrain, chunkCoord, blockCoord, chunk, biomeInfo);
+			return std::get<Biome>(biomes).stage<CurrentStage>(terrain, chunkCoord, blockCoord, blockIndex, chunk, biomeInfo, h0);
 		}
 	}
 
-	template<StageId TotalStages, class... Biomes>
+	template<class... Biomes>
 	template<StageId CurrentStage>
-	void Generator<TotalStages, Biomes...>::generateChunk(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk) {
+	void Generator<Biomes...>::generateChunk(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk) {
+		// We need to wrap this in a function to avoid instantiating stages that don't
+		// exist since some biomes will not define all stages.
+		constexpr static auto getStageCall = []<class Biome>() {
+			if constexpr (HasStage<Biome, CurrentStage>) {
+				return &Generator::template callStage<CurrentStage, Biome>;
+			} else {
+				return nullptr;
+			}
+		};
 
 		// TODO: Do we need to pass terrain/chunk? They should probably at least be const. Remove if not used, not sure why we would need chunk here.
-		using BiomeStageFunc = BlockId (Generator::*)(Terrain& terrain, const ChunkVec chunkCoord, const BlockVec blockCoord, Chunk& chunk, const BiomeInfo biomeInfo);
-		constexpr static BiomeStageFunc stageForBiome[] = { &Generator::template callStage<CurrentStage, Biomes> ... };
+		using BiomeStageFunc = BlockId (Generator::*)(TERRAIN_STAGE_ARGS);
+		constexpr static BiomeStageFunc stageForBiome[] = { getStageCall.template operator()<Biomes>()... };
+		constexpr static bool hasStage[] = { HasStage<Biomes, CurrentStage>... };
 
 		// TODO: finish comment
 		// We need to do the biome stages this way (via func ptr) because of the
@@ -110,23 +133,25 @@ namespace Game::Terrain {
 		const auto max = min + chunkSize;
 
 		// TODO: would it be beneficial to generate all biome dat first? as a stage 0?
-
-		// Does a switch work better here for biome? i would assume its the same
+		// TODO: Does a switch work better here for biome? i would assume its the same
 
 		// For each block in the chunk
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
 				const auto blockCoord = min + BlockVec{x, y};
 				const auto biomeInfo = calcBiome(blockCoord);
-				const auto func = stageForBiome[biomeInfo.id];
-				const auto blockId = (this->*func)(terrain, chunkCoord, blockCoord, chunk, biomeInfo);
-				chunk.data[x][y] = blockId;
+
+				if (hasStage[biomeInfo.id]) {
+					const auto func = stageForBiome[biomeInfo.id];
+					const auto blockId = (this->*func)(terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeInfo, 0);
+					chunk.data[x][y] = blockId;
+				}
 			}
 		}
 	}
 
-	template<StageId TotalStages, class... Biomes>
-	BiomeInfo Generator<TotalStages, Biomes...>::calcBiome(BlockVec blockCoord) {
+	template<class... Biomes>
+	BiomeInfo Generator<Biomes...>::calcBiome(BlockVec blockCoord) {
 		blockCoord.y += biomeOffsetY;
 
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.
@@ -151,7 +176,7 @@ namespace Game::Terrain {
 			++result.scale;
 		}
 
-		result.id = biomePerm(result.cell.x, result.cell.y);
+		result.id = biomePerm(result.cell.x, result.cell.y) % sizeof...(Biomes);
 		return result;
 	}
 }
