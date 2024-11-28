@@ -2,6 +2,7 @@
 
 // Engine
 #include <Engine/FlatHashMap.hpp>
+#include <Engine/StaticVector.hpp>
 
 // TODO: rm - once universal coords are moved.
 #include <Game/systems/MapSystem.hpp>
@@ -35,17 +36,93 @@ namespace Game::Terrain {
 	//};
 	//ENGINE_BUILD_DECAY_ENUM(BiomeType);
 
+	using BiomeId = uint32;
+
+	class StructureInfo {
+		public:
+			StructureInfo(BlockVec min, BlockVec max, uint32 id)
+				: min{min}, max{max}, id{id} {
+			}
+
+			/** Structure min bounds. Inclusive. */
+			BlockVec min;
+
+			/** Structure max bounds. */
+			BlockVec max;
+
+			/** A id to identify this structure. Defined by each biome. */
+			uint32 id;
+
+		//protected:
+			bool generate = true;
+			RealmId realmId = {};
+			BiomeId biomeId = {};
+	};
+
+	class BiomeInfo {
+		public:
+			BiomeScale scale;
+			BiomeId id;
+
+			/**
+			 * The coordinate in the biome map for this biome.
+			 * This is not a block coordinate. This is the coordinate where this biome
+			 * would be located in a theoretical grid if all biomes where the same size.
+			 */
+			BlockVec cell;
+	};
+
 	// TODO: getters with debug bounds checking.
 	class Chunk {
 		public:
 			BlockId data[chunkSize.x][chunkSize.y]{};
+
+			/* 3x3 grid of biomes in this chunk */
+			constexpr static BlockVec chunkBiomesSize = {3, 3};
+			BiomeId biomes[chunkBiomesSize.x][chunkBiomesSize.y]{};
+
+
+			/**
+			 * Get a unique list of the biome in each corner of this chunk.
+			 * Used for during generation. At generation time checking each corner should
+			 * yield a unique list of all biomes in this chunk.
+			 */
+			Engine::StaticVector<BiomeId, 4> getUniqueCornerBiomes() const noexcept {
+				Engine::StaticVector<BiomeId, 4> results;
+
+				const auto maybeAdd = [&](BiomeId id) {
+					if (!std::ranges::contains(results, id)) {
+						results.push_back(id);
+					}
+				};
+
+				constexpr static auto x = chunkBiomesSize.x - 1;
+				constexpr static auto y = chunkBiomesSize.y - 1;
+				maybeAdd(biomes[0][0]);
+				maybeAdd(biomes[0][y]);
+				maybeAdd(biomes[x][0]);
+				maybeAdd(biomes[x][y]);
+
+				return results;
+			}
 	};
 
 	// TODO: getters with debug bounds checking.
 	class Region {
 		public:
+			/** Chunk data for each chunk in the region. */
 			Chunk chunks[regionSize.x][regionSize.y]{};
+
+			/** The current stage of each chunk. */
 			StageId stages[regionSize.x][regionSize.y]{};
+
+			// TODO: Does this go on the chunk? How do we handle overlaps?
+			// TODO: Would it be better to store this on the region and use some kind of
+			//       spatial partitioning? BSP/QuadTree/etc.
+			//       Don't know if that would help with size/overlap issues. Potentially lots of
+			//       structures to check for overlaps, but then again the partitioning would
+			//       speed that up quite a bit.
+			//StaticVector<Structure, 4> structures;
 	};
 
 	class Terrain {
@@ -60,20 +137,6 @@ namespace Game::Terrain {
 				}
 				return *found->second;
 			}
-	};
-
-	using BiomeId = uint32;
-	class BiomeInfo {
-		public:
-			BiomeScale scale;
-			BiomeId id;
-
-			/**
-			 * The coordinate in the biome map for this biome.
-			 * This is not a block coordinate. This is the coordinate where this biome
-			 * would be located in a theoretical grid if all biomes where the same size.
-			 */
-			BlockVec cell;
 	};
 
 	class Request {
@@ -107,6 +170,10 @@ namespace Game::Terrain {
 		std::integral_constant<StageId, Stage - 1>
 	> {};
 
+	template<class T>
+	concept HasLandmarks = requires {
+		&T::getLandmarks;
+	};
 
 	// Support for rescaling is needed for preview support. Should not be used for real generation.
 	template<class... Biomes>
@@ -179,11 +246,20 @@ namespace Game::Terrain {
 
 		private:
 			/**
-			 * Generate the request for a given stage.
+			 * Iterate over each chunk in the request.
 			 * The request will be automatically expanded to the correct size for the given stage.
 			 */
-			template<StageId CurrentStage>
-			void generate(Terrain& terrain, const Request& request);
+			template<StageId CurrentStage, class Func>
+			ENGINE_INLINE void forEachChunkAtStage(Terrain& terrain, const Request& request, Func&& func);
+			
+			#define TERRAIN_GET_LANDMARKS_ARGS \
+				::Game::Terrain::Terrain& terrain, \
+				const ::Game::Terrain::Request& request, \
+				std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
+
+			#define TERRAIN_GEN_LANDMARKS_ARGS \
+				::Game::Terrain::Terrain& terrain, \
+				const ::Game::Terrain::StructureInfo& info
 
 			#define TERRAIN_STAGE_ARGS \
 				::Game::Terrain::Terrain& terrain, \
@@ -193,7 +269,7 @@ namespace Game::Terrain {
 				::Game::Terrain::Chunk& chunk, \
 				const ::Game::Terrain::BiomeInfo biomeInfo, \
 				const ::Game::BlockUnit h0 // The "surface level" offset from zero
-
+			
 			template<StageId CurrentStage, class Biome>
 			ENGINE_INLINE BlockId callStage(TERRAIN_STAGE_ARGS);
 

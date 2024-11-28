@@ -64,11 +64,51 @@ namespace {
 		}
 
 		STAGE(2) {
-			auto& data = chunk.data[blockIndex.x][blockIndex.y];
-			if (((blockCoord.x & 1) ^ (blockCoord.y & 1)) && (data == BlockId::Air)) {
+			auto& blockId = chunk.data[blockIndex.x][blockIndex.y];
+			if (((blockCoord.x & 1) ^ (blockCoord.y & 1)) && (blockId == BlockId::Air)) {
 				return BlockId::Debug2;
 			} else {
-				return data;
+				return blockId;
+			}
+		}
+
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: more complex landmark demo
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+
+		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) {
+			for (auto chunkCoord = request.minChunkCoord; chunkCoord.x < request.maxChunkCoord.x; ++chunkCoord.x) {
+				for (chunkCoord.y = request.minChunkCoord.y; chunkCoord.y < request.maxChunkCoord.y; ++chunkCoord.y) {
+					auto blockCoord = chunkToBlock(chunkCoord);
+					inserter = {blockCoord, blockCoord + BlockVec{1, 1}, 0};
+				}
+			}
+		}
+
+		void genLandmarks(TERRAIN_GEN_LANDMARKS_ARGS) {
+			const auto minChunkCoord = blockToChunk(info.min);
+			const auto maxChunkCoord = blockToChunk(info.max);
+			for (auto chunkCoord = minChunkCoord; chunkCoord.x <= maxChunkCoord.x; ++chunkCoord.x) {
+				for (; chunkCoord.y <= maxChunkCoord.y; ++chunkCoord.y) {
+					const UniversalRegionCoord regionCoord = {info.realmId, chunkToRegion(chunkCoord)};
+					auto& region = terrain.getRegion(regionCoord);
+					const auto chunkIdx = chunkToRegionIndex(chunkCoord, regionCoord.pos);
+					auto& chunk = region.chunks[chunkIdx.x][chunkIdx.y];
+					chunk.data[0][0] = BlockId::Gold;
+				}
 			}
 		}
 	};

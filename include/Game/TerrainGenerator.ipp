@@ -21,40 +21,6 @@
 namespace Game::Terrain {
 	template<class... Biomes>
 	void Generator<Biomes...>::generate1(Terrain& terrain, const Request& request) {
-		//auto& region = terrain.getRegion(chunkCoord.toRegion());
-
-
-		// Need a way to optimize this process so we don't go back and forth constantly:
-		// - everything to stage 1
-		// - everything to stage 2
-		// - everything to stage 3
-		// - etc.
-		// - each stage will need to shrink though, so based on the requested chunks we
-		//   need to figure out how far out we need to go.
-		// 
-		// for each chunk in stack:
-		//   for each neighbor of chunk:
-		//     if neighbor is not at correct stage:
-		//       add neighbor to stack;
-
-		// Call generate for each stage. Each will expand the requestion chunk selection
-		// appropriately for the following stages.
-		Engine::Meta::ForEachInRange<totalStages>::call([&]<auto I>{
-			// +1 because stage zero = uninitialized, zero stages have been run yet.
-			generate<I+1>(terrain, request);
-		});
-	}
-
-	template<class... Biomes>
-	template<StageId CurrentStage>
-	void Generator<Biomes...>::generate(Terrain& terrain, const Request& request) {
-		constexpr ChunkUnit offset = totalStages - CurrentStage;
-		const auto min = request.minChunkCoord - offset;
-		const auto max = request.maxChunkCoord + offset;
-
-		//
-		// TODO: Feature and decoration generation.
-		// 
 		// - Generate stages.
 		//   - Stage 1, Stage 2, ..., Stage N.
 		// - Generate candidate features for all biomes in the request.
@@ -65,25 +31,123 @@ namespace Game::Terrain {
 		//   - Provides a place to smooth/integrate features and terrain.
 		//   - Moss, grass tufts, cobwebs, chests/loot, etc.
 		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
-		//
 
-		// For each chunk in the request
-		for (auto cur = min; cur.x <= max.x; ++cur.x) {
-			for (cur.y = min.y; cur.y <= max.y; ++cur.y) {
-				auto& region = terrain.getRegion({request.realmId, chunkToRegion(cur)});
-				const auto chunkIndex = chunkToRegionIndex(cur);
+		// Call generate for each stage. Each will expand the requestion chunk selection
+		// appropriately for the following stages.
+		Engine::Meta::ForEachInRange<totalStages>::call([&]<auto I>{
+			// +1 because stage zero = uninitialized, zero stages have been run yet.
+			constexpr static auto CurrentStage = I+1;
+
+			forEachChunkAtStage<CurrentStage>(terrain, request, [&](auto& region, const auto& chunkCoord, const auto& chunkIndex) ENGINE_INLINE {
 				auto& stage = region.stages[chunkIndex.x][chunkIndex.y];
 
 				if (stage < CurrentStage) {
 					ENGINE_DEBUG_ASSERT(stage == CurrentStage - 1);
-					generateChunk<CurrentStage>(terrain, cur, region.chunks[chunkIndex.x][chunkIndex.y]);
-					ENGINE_LOG2("Generate Chunk: {}", cur);
+					generateChunk<CurrentStage>(terrain, chunkCoord, region.chunks[chunkIndex.x][chunkIndex.y]);
+					ENGINE_LOG2("Generate Chunk: {}", chunkCoord);
 					++stage;
 				}
+			});
+		});
+
+		// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spacial structure.
+		
+		// TODO: How do we want to resolve conflicts? If we just go first come first serve
+		//       then a spacial structure isn't needed, you could just check when
+		//       inserting. If its not FCFS then we need to keep all boxes and resovle at
+		//       the end or else you might over-cull. For exampel say you have a large
+		//       structure that later gets removed by a higher priority small structure.
+		//       Since the large structure is now removed there could be other structures
+		//       which are now valid since the larger structure no longer exists and
+		//       doens't collide.
+
+
+		#define BIOME_GET_DISPATCH(Name, BiomeId) _engine_BiomeGenFuncTable_##Name[BiomeId]
+		#define BIOME_GEN_DISPATCH(Name, ...) \
+			using _engine_BiomeGenFunc_##Name = void (*)(std::tuple<Biomes...>& biomes, __VA_ARGS__); \
+			constexpr static auto _engine_BiomeGenFuncCall_##Name = []<class Biome>() constexpr -> _engine_BiomeGenFunc_##Name { \
+				if constexpr (requires { &Biome::Name; }) { \
+					return []<class... Args>(std::tuple<Biomes...>& biomes, Args... args){ \
+						std::get<Biome>(biomes).Name(args...); \
+					}; \
+				} else { \
+					return nullptr; \
+				} \
+			}; \
+			constexpr static _engine_BiomeGenFunc_##Name BIOME_GET_DISPATCH(Name,) = { _engine_BiomeGenFuncCall_##Name.template operator()<Biomes>()... };
+
+		BIOME_GEN_DISPATCH(getLandmarks, TERRAIN_GET_LANDMARKS_ARGS);
+		BIOME_GEN_DISPATCH(genLandmarks, TERRAIN_GEN_LANDMARKS_ARGS);
+
+		std::vector<StructureInfo> structures;
+		forEachChunkAtStage<totalStages>(terrain, request, [&](Region& region, const ChunkVec& chunkCoord, const RegionVec& chunkIndex) ENGINE_INLINE_REL {
+			//auto& stage = region.stages[chunkIndex.x][chunkIndex.y];
+			//ENGINE_DEBUG_ASSERT(stage == CurrentStage);
+
+			//
+			//
+			//
+			//
+			// TODO: need to populate biome and realm on structures
+			//
+			//
+			//
+			//
+
+			auto const& chunk = region.chunks[chunkIndex.x][chunkIndex.y];
+			for (auto const& biomeId : chunk.getUniqueCornerBiomes()) {
+				const auto func = BIOME_GET_DISPATCH(getLandmarks, biomeId);
+				if (func) {
+					(*func)(biomes, terrain, request, std::back_inserter(structures));
+				}
+			}
+		});
+
+		//
+		//
+		//
+		//
+		// TODO: Cull overlaps
+		//
+		//
+		//
+		//
+		//if (!structures.empty()) {
+		//	auto cur = structures.begin();
+		//	const auto end = structures.end() - 1;
+		//
+		//	while (cur != end) {
+		//		const auto next = cur + 1;
+		//		while
+		//	}
+		//}
+
+		for (const auto& structInfo : structures) {
+			if (structInfo.generate) {
+				const auto func = BIOME_GET_DISPATCH(genLandmarks, structInfo.biomeId);
+				ENGINE_DEBUG_ASSERT(func, "Attempting to generate landmark in biome that does not support them.");
+				(*func)(biomes, terrain, structInfo);
 			}
 		}
 	}
-	
+
+	template<class... Biomes>
+	template<StageId CurrentStage, class Func>
+	void Generator<Biomes...>::forEachChunkAtStage(Terrain& terrain, const Request& request, Func&& func) {
+		constexpr ChunkUnit offset = totalStages - CurrentStage;
+		const auto min = request.minChunkCoord - offset;
+		const auto max = request.maxChunkCoord + offset;
+
+		// TODO: if we split request on region bounds we can avoid the repeated region lookup.
+		for (auto cur = min; cur.x <= max.x; ++cur.x) {
+			for (cur.y = min.y; cur.y <= max.y; ++cur.y) {
+				auto& region = terrain.getRegion({request.realmId, chunkToRegion(cur)});
+				const auto chunkIndex = chunkToRegionIndex(cur); // TODO: use other overload
+				func(region, cur, chunkIndex);
+			}
+		}
+	}
+
 	template<class... Biomes>
 	template<StageId CurrentStage, class Biome>
 	ENGINE_INLINE_REL BlockId Generator<Biomes...>::callStage(TERRAIN_STAGE_ARGS) {
@@ -110,6 +174,9 @@ namespace Game::Terrain {
 		// exist since some biomes will not define all stages.
 		constexpr static auto getStageCall = []<class Biome>() {
 			if constexpr (HasStage<Biome, CurrentStage>) {
+				// TODO (C++26, P1169): We can remove the call* member functions and use a
+				//                      local static lambda with static operators lambdas:
+				//                      return &callStage.template operator()<Biome>;
 				return &Generator::template callStage<CurrentStage, Biome>;
 			} else {
 				return nullptr;
@@ -135,7 +202,7 @@ namespace Game::Terrain {
 		// TODO: would it be beneficial to generate all biome dat first? as a stage 0?
 		// TODO: Does a switch work better here for biome? i would assume its the same
 
-		// For each block in the chunk
+		// For each block in the chunk.
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
 				const auto blockCoord = min + BlockVec{x, y};
@@ -146,6 +213,16 @@ namespace Game::Terrain {
 					const auto blockId = (this->*func)(terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeInfo, 0);
 					chunk.data[x][y] = blockId;
 				}
+			}
+		}
+
+		// Populate biomes.
+		// We still want to calculate per block above so we have smoother transitions.
+		for (BlockUnit x = 0; x < Chunk::chunkBiomesSize.x; ++x) {
+			for (BlockUnit y = 0; y < Chunk::chunkBiomesSize.y; ++y) {
+				constexpr static WorldVec offsetScale = WorldVec{chunkSize} / WorldVec{Chunk::chunkBiomesSize};
+				const BlockVec offset = WorldVec{x, y} * offsetScale;
+				chunk.biomes[x][y] = calcBiome(min + offset).id;
 			}
 		}
 	}

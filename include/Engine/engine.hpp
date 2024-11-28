@@ -77,7 +77,8 @@
 #define ENGINE_NOINLINE [[msvc::noinline]]
 #define ENGINE_INLINE [[msvc::forceinline]] // TODO: cross platform: [[gnu::always_inline]]
 #if ENGINE_DEBUG
-	#define ENGINE_INLINE_REL ENGINE_NOINLINE
+	//#define ENGINE_INLINE_REL ENGINE_NOINLINE
+	#define ENGINE_INLINE_REL
 #else
 	#define ENGINE_INLINE_REL ENGINE_INLINE
 #endif
