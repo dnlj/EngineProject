@@ -18,12 +18,12 @@ namespace Engine::Math {
 	};
 
 	template<class T>
-	ENGINE_INLINE constexpr T pow2(T num) noexcept {
+	ENGINE_INLINE constexpr T pow2(const T num) noexcept {
 		return num * num;
 	}
 
 	template<class T, std::floating_point F>
-	ENGINE_INLINE constexpr T lerp(T a, T b, F t) noexcept {
+	ENGINE_INLINE constexpr T lerp(const T a, const T b, const F t) noexcept {
 		return t * a + (F{1} - t) * b;
 	}
 
@@ -88,7 +88,7 @@ namespace Engine::Math {
 	 * @param den The positive denominator to use.
 	 */
 	template<std::integral T>
-	[[nodiscard]] ENGINE_INLINE constexpr auto divFloor(T num, T den) noexcept {
+	[[nodiscard]] ENGINE_INLINE constexpr auto divFloor(const T num, const T den) noexcept {
 		// There are a number of ways to implement this. This is the fastest
 		// (see Bench, divfloor) and IMO the most readable. Good assembly
 		// between all MSVC/GCC/Clang as a bonus compared to other implementations.
@@ -104,13 +104,18 @@ namespace Engine::Math {
 	}
 
 	template<std::integral T, glm::qualifier Q>
-	[[nodiscard]] ENGINE_INLINE constexpr auto divFloor(glm::vec<2, T, Q> num, T den) noexcept {
-		const auto x = divFloor(num.x, den);
-		const auto y = divFloor(num.y, den);
+	[[nodiscard]] ENGINE_INLINE constexpr auto divFloor(const glm::vec<2, T, Q> num, const glm::vec<2, T, Q> den) noexcept {
+		const auto x = divFloor(num.x, den.x);
+		const auto y = divFloor(num.y, den.y);
 		return DivResult<decltype(num)>{
 			.q = {x.q, y.q},
 			.r = {x.r, y.r},
 		};
+	}
+
+	template<std::integral T, glm::qualifier Q>
+	[[nodiscard]] ENGINE_INLINE constexpr auto divFloor(const glm::vec<2, T, Q> num, const T den) noexcept {
+		return divFloor(num, {den, den});
 	}
 
 	/**
@@ -121,7 +126,7 @@ namespace Engine::Math {
 	 * @see divFloor
 	 */
 	template<std::integral T>
-	[[nodiscard]] ENGINE_INLINE constexpr auto divCeil(T num, T den) noexcept {
+	[[nodiscard]] ENGINE_INLINE constexpr auto divCeil(const T num, const T den) noexcept {
 		const auto q = num / den;
 		const auto r = num % den;
 		const auto q0 = q + (r ? num > 0 : 0);
@@ -130,7 +135,7 @@ namespace Engine::Math {
 	}
 	
 	template<std::integral T, glm::qualifier Q>
-	[[nodiscard]] ENGINE_INLINE constexpr auto divCeil(glm::vec<2, T, Q> num, T den) noexcept {
+	[[nodiscard]] ENGINE_INLINE constexpr auto divCeil(const glm::vec<2, T, Q> num, const T den) noexcept {
 		const auto x = divCeil(num.x, den);
 		const auto y = divCeil(num.y, den);
 		return DivResult<decltype(num)>{

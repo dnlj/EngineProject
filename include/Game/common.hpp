@@ -34,6 +34,7 @@ namespace Game::inline Units {
 
 	using ChunkUnit = BlockUnit;
 	using ChunkVec = glm::vec<2, ChunkUnit>;
+	using ChunkIdx = BlockVec;
 
 	using RegionUnit = BlockUnit;
 	using RegionVec = glm::vec<2, RegionUnit>;

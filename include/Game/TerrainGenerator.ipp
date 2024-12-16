@@ -81,35 +81,33 @@ namespace Game::Terrain {
 
 		std::vector<StructureInfo> structures;
 		forEachChunkAtStage<totalStages>(terrain, request, [&](Region& region, const ChunkVec& chunkCoord, const RegionVec& chunkIndex) ENGINE_INLINE_REL {
-			//auto& stage = region.stages[chunkIndex.x][chunkIndex.y];
-			//ENGINE_DEBUG_ASSERT(stage == CurrentStage);
-
-			//
-			//
-			//
-			//
-			// TODO: need to populate biome and realm on structures
-			//
-			//
-			//
-			//
-
 			auto const& chunk = region.chunks[chunkIndex.x][chunkIndex.y];
 			for (auto const& biomeId : chunk.getUniqueCornerBiomes()) {
+				const auto before = structures.size();
 				const auto func = BIOME_GET_DISPATCH(getLandmarks, biomeId);
+
 				if (func) {
-					(*func)(biomes, terrain, request, std::back_inserter(structures));
+					(*func)(biomes, terrain, chunk, chunkCoord, std::back_inserter(structures));
+				}
+
+				// TODO: could this be done with a custom back_inserter instead of an extra loop after the fact?
+				const auto after = structures.size();
+				if (after != before) {
+					for (auto i = before; i < after; ++i) {
+						auto& info = structures[i];
+						ENGINE_DEBUG_ASSERT(info.min.x <= info.max.x);
+						ENGINE_DEBUG_ASSERT(info.min.y <= info.max.y);
+						info.biomeId = biomeId;
+						info.realmId = request.realmId;
+					}
 				}
 			}
 		});
 
-		//
-		//
+
 		//
 		//
 		// TODO: Cull overlaps
-		//
-		//
 		//
 		//
 		//if (!structures.empty()) {
@@ -121,6 +119,12 @@ namespace Game::Terrain {
 		//		while
 		//	}
 		//}
+
+
+		// TODO: Theoretically a structure could overlap into unloaded/unfinished chunks.
+		//       Don't we need to check and then generate those chunks here? Post culling.
+		//       Or add some extra buffer to the initial request based on the largest known structure. <-- Easiest, but worse perf.
+
 
 		for (const auto& structInfo : structures) {
 			if (structInfo.generate) {

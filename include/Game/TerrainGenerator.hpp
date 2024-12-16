@@ -3,6 +3,7 @@
 // Engine
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/StaticVector.hpp>
+#include <Engine/Math/math.hpp>
 
 // TODO: rm - once universal coords are moved.
 #include <Game/systems/MapSystem.hpp>
@@ -40,9 +41,9 @@ namespace Game::Terrain {
 
 	class StructureInfo {
 		public:
-			StructureInfo(BlockVec min, BlockVec max, uint32 id)
-				: min{min}, max{max}, id{id} {
-			}
+			//StructureInfo(BlockVec min, BlockVec max, uint32 id)
+			//	: min{min}, max{max}, id{id} {
+			//}
 
 			/** Structure min bounds. Inclusive. */
 			BlockVec min;
@@ -77,11 +78,24 @@ namespace Game::Terrain {
 		public:
 			BlockId data[chunkSize.x][chunkSize.y]{};
 
-			/* 3x3 grid of biomes in this chunk */
-			constexpr static BlockVec chunkBiomesSize = {3, 3};
+			//
+			//
+			//
+			//
+			// TODO: would using 4x4 make any of the match cheaper? div by two etc.
+			//
+			//
+			//
+			//
+			/* Grid of biomes in this chunk */
+			constexpr static BlockVec chunkBiomesSize = {4, 4};
 			BiomeId biomes[chunkBiomesSize.x][chunkBiomesSize.y]{};
 
-
+			//
+			//
+			// TODO: Is this still true for 4x4? 
+			//
+			//
 			/**
 			 * Get a unique list of the biome in each corner of this chunk.
 			 * Used for during generation. At generation time checking each corner should
@@ -104,6 +118,13 @@ namespace Game::Terrain {
 				maybeAdd(biomes[x][y]);
 
 				return results;
+			}
+
+			BiomeId getBiomeAt(ChunkIdx chunkIndex) const noexcept {
+				ENGINE_DEBUG_ASSERT(0 <= chunkIndex.x && chunkIndex.x < chunkSize.x, "Invalid chunk index: ", chunkIndex);
+				ENGINE_DEBUG_ASSERT(0 <= chunkIndex.y && chunkIndex.y < chunkSize.y, "Invalid chunk index: ", chunkIndex);
+				const auto idx = Engine::Math::divFloor(chunkIndex, chunkBiomesSize).q;
+				return biomes[idx.x][idx.y];
 			}
 	};
 
@@ -254,7 +275,8 @@ namespace Game::Terrain {
 			
 			#define TERRAIN_GET_LANDMARKS_ARGS \
 				::Game::Terrain::Terrain& terrain, \
-				const ::Game::Terrain::Request& request, \
+				const ::Game::Terrain::Chunk& chunk, \
+				const ::Game::ChunkVec& chunkCoord, \
 				std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 
 			#define TERRAIN_GEN_LANDMARKS_ARGS \

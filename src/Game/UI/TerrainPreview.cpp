@@ -63,51 +63,78 @@ namespace {
 			}
 		}
 
-		STAGE(2) {
-			auto& blockId = chunk.data[blockIndex.x][blockIndex.y];
-			if (((blockCoord.x & 1) ^ (blockCoord.y & 1)) && (blockId == BlockId::Air)) {
-				return BlockId::Debug2;
-			} else {
-				return blockId;
-			}
-		}
-
 		//
 		//
 		//
-		//
-		//
-		//
-		//
-		// TODO: more complex landmark demo
-		//
-		//
-		//
-		//
-		//
+		// TODO: non-square biomes
 		//
 		//
 		//
 
+		//STAGE(2) {
+		//	auto& blockId = chunk.data[blockIndex.x][blockIndex.y];
+		//	if (((blockCoord.x & 1) ^ (blockCoord.y & 1)) && (blockId == BlockId::Air)) {
+		//		return BlockId::Debug2;
+		//	} else {
+		//		return blockId;
+		//	}
+		//}
+
+		//
+		//
+		//
+		// TODO: IS BIOME SIZE == CHUNK SIZE? probably not, i would guess that might be the "issue" (its not an issue) that i am seeing.
+		// - It does not, and that is indeed the issue. Need to sample biome in the get function to ensure it is correct.
+		// - **Instead maybe we should pass in block coords? Would probably make more sense.**
+		//
+		//
+		//
+
+		//
+		//
+		// TODO: Biome culling, sample corners and do the thing
+		//
+		//
 		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) {
-			for (auto chunkCoord = request.minChunkCoord; chunkCoord.x < request.maxChunkCoord.x; ++chunkCoord.x) {
-				for (chunkCoord.y = request.minChunkCoord.y; chunkCoord.y < request.maxChunkCoord.y; ++chunkCoord.y) {
-					auto blockCoord = chunkToBlock(chunkCoord);
-					inserter = {blockCoord, blockCoord + BlockVec{1, 1}, 0};
+			ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
+			auto blockCoord = chunkToBlock(chunkCoord);
+			inserter = {.min = blockCoord, .max = blockCoord, .id = 1};
+
+			const auto maxX = blockCoord.x + chunkSize.x;
+			for (; blockCoord.x < maxX; ++blockCoord.x) {
+				// TODO: need a way to get self biomeId
+				ENGINE_LOG2("BiomeId({})={}", blockCoord, chunk.getBiomeAt(blockCoord));
+				const auto chunkIndex = blockToChunkIndex(blockCoord, chunkCoord);
+				if (chunk.getBiomeAt(chunkIndex) != 0) { continue; }
+				if (blockCoord.x % 7 == 0) {
+					inserter = {blockCoord, blockCoord + BlockVec{2, 8}, 0};
 				}
 			}
 		}
 
 		void genLandmarks(TERRAIN_GEN_LANDMARKS_ARGS) {
-			const auto minChunkCoord = blockToChunk(info.min);
-			const auto maxChunkCoord = blockToChunk(info.max);
-			for (auto chunkCoord = minChunkCoord; chunkCoord.x <= maxChunkCoord.x; ++chunkCoord.x) {
-				for (; chunkCoord.y <= maxChunkCoord.y; ++chunkCoord.y) {
+			// TODO: This is the least efficient way possible to do this. We need a good
+			//       api to efficiently edit multiple blocks spanning multiple chunks and
+			//       regions. We would need to pre split between both regions and then chunks
+			//       and then do something roughly like:
+			//       for region in splitRegions:
+			//           for chunk in splitRegionChunks:
+			//               applyEdit(chunk, editsForChunk(chunk));
+			for (auto blockCoord = info.min; blockCoord.x <= info.max.x; ++blockCoord.x) {
+				for (blockCoord.y = info.min.y; blockCoord.y <= info.max.y; ++blockCoord.y) {
+					const auto chunkCoord = blockToChunk(blockCoord);
 					const UniversalRegionCoord regionCoord = {info.realmId, chunkToRegion(chunkCoord)};
 					auto& region = terrain.getRegion(regionCoord);
-					const auto chunkIdx = chunkToRegionIndex(chunkCoord, regionCoord.pos);
-					auto& chunk = region.chunks[chunkIdx.x][chunkIdx.y];
-					chunk.data[0][0] = BlockId::Gold;
+					const auto regionIdx = chunkToRegionIndex(chunkCoord);
+					auto& chunk = region.chunks[regionIdx.x][regionIdx.y];
+					const auto chunkIdx = blockToChunkIndex(blockCoord, chunkCoord);
+					ENGINE_DEBUG_ASSERT(chunkIdx.x >= 0 && chunkIdx.x < chunkSize.x);
+					ENGINE_DEBUG_ASSERT(chunkIdx.y >= 0 && chunkIdx.y < chunkSize.y);
+					if (chunk.data[chunkIdx.x][chunkIdx.y] != BlockId::Debug4)
+					{
+						chunk.data[chunkIdx.x][chunkIdx.y] = info.id == 0 ? BlockId::Gold : BlockId::Debug3;
+					}
+					ENGINE_LOG2("GEN LANDMARK: {}", chunkCoord);
 				}
 			}
 		}
