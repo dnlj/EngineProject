@@ -86,8 +86,8 @@ namespace Game {
 
 		{
 			panels.terrainPreviewWin = ctx.createPanel<UI::TerrainPreview>(ctx.getRoot());
-			panels.terrainPreviewWin->setPos({1920-512-16, 16});
-			panels.terrainPreviewWin->setSize({512, 512});
+			panels.terrainPreviewWin->setPos({1920-600-16, 16});
+			panels.terrainPreviewWin->setSize({600, 600});
 		}
 
 		#if ENGINE_CLIENT

@@ -37,7 +37,7 @@ namespace Game::Terrain {
 	//};
 	//ENGINE_BUILD_DECAY_ENUM(BiomeType);
 
-	using BiomeId = uint32;
+	using BiomeId = uint8;
 
 	class StructureInfo {
 		public:
@@ -76,56 +76,8 @@ namespace Game::Terrain {
 	// TODO: getters with debug bounds checking.
 	class Chunk {
 		public:
+			// TODO: combine id/data arrays? Depends on how muhc data we have once everything is done.
 			BlockId data[chunkSize.x][chunkSize.y]{};
-
-			//
-			//
-			//
-			//
-			// TODO: would using 4x4 make any of the match cheaper? div by two etc.
-			//
-			//
-			//
-			//
-			/* Grid of biomes in this chunk */
-			constexpr static BlockVec chunkBiomesSize = {4, 4};
-			BiomeId biomes[chunkBiomesSize.x][chunkBiomesSize.y]{};
-
-			//
-			//
-			// TODO: Is this still true for 4x4? 
-			//
-			//
-			/**
-			 * Get a unique list of the biome in each corner of this chunk.
-			 * Used for during generation. At generation time checking each corner should
-			 * yield a unique list of all biomes in this chunk.
-			 */
-			Engine::StaticVector<BiomeId, 4> getUniqueCornerBiomes() const noexcept {
-				Engine::StaticVector<BiomeId, 4> results;
-
-				const auto maybeAdd = [&](BiomeId id) {
-					if (!std::ranges::contains(results, id)) {
-						results.push_back(id);
-					}
-				};
-
-				constexpr static auto x = chunkBiomesSize.x - 1;
-				constexpr static auto y = chunkBiomesSize.y - 1;
-				maybeAdd(biomes[0][0]);
-				maybeAdd(biomes[0][y]);
-				maybeAdd(biomes[x][0]);
-				maybeAdd(biomes[x][y]);
-
-				return results;
-			}
-
-			BiomeId getBiomeAt(ChunkIdx chunkIndex) const noexcept {
-				ENGINE_DEBUG_ASSERT(0 <= chunkIndex.x && chunkIndex.x < chunkSize.x, "Invalid chunk index: ", chunkIndex);
-				ENGINE_DEBUG_ASSERT(0 <= chunkIndex.y && chunkIndex.y < chunkSize.y, "Invalid chunk index: ", chunkIndex);
-				const auto idx = Engine::Math::divFloor(chunkIndex, chunkBiomesSize).q;
-				return biomes[idx.x][idx.y];
-			}
 	};
 
 	// TODO: getters with debug bounds checking.
@@ -144,6 +96,37 @@ namespace Game::Terrain {
 			//       structures to check for overlaps, but then again the partitioning would
 			//       speed that up quite a bit.
 			//StaticVector<Structure, 4> structures;
+
+			BiomeId biomes[biomesPerRegion.x][biomesPerRegion.y]{};
+
+			ENGINE_INLINE constexpr Chunk& chunkAt(RegionIdx regionIdx) noexcept { return chunks[regionIdx.x][regionIdx.y]; }
+			ENGINE_INLINE constexpr const Chunk& chunkAt(RegionIdx regionIdx) const noexcept { return chunks[regionIdx.x][regionIdx.y]; }
+
+			ENGINE_INLINE constexpr BiomeId& biomeAt(RegionBiomeIdx regionBiomeIdx) noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
+			ENGINE_INLINE constexpr BiomeId biomeAt(RegionBiomeIdx regionBiomeIdx) const noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
+
+			/**
+			 * Get a unique list of the biome in each corner of this chunk. Used for
+			 * during generation. At generation time checking each corner should yield a
+			 * unique list of all biomes in this chunk so long as the minimum biome size
+			 * is greater than or equal to the chunk size.
+			 */
+			Engine::StaticVector<BiomeId, 4> getUniqueBiomesApprox(const RegionIdx regionIdx) const noexcept {
+				Engine::StaticVector<BiomeId, 4> results;
+			
+				const auto maybeAdd = [&](BiomeId id) ENGINE_INLINE {
+					if (!std::ranges::contains(results, id))  { results.push_back(id); }
+				};
+
+				const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
+				constexpr static auto off = biomesPerChunk - 1;
+				maybeAdd(biomes[regionBiomeIdx.x][regionBiomeIdx.y]);
+				maybeAdd(biomes[regionBiomeIdx.x][regionBiomeIdx.y + off]);
+				maybeAdd(biomes[regionBiomeIdx.x + off][regionBiomeIdx.y]);
+				maybeAdd(biomes[regionBiomeIdx.x + off][regionBiomeIdx.y + off]);
+			
+				return results;
+			}
 	};
 
 	class Terrain {
@@ -220,11 +203,12 @@ namespace Game::Terrain {
 					uint8 freq;
 			};
 
-			// Must be divisible by the previous depth. We want to use divisions by three so
-			// that each biome can potentially spawn at surface level. If we use two then only
-			// the first depth will be at surface level and all others will be above or below
-			// it. This is due to the division by two for the biomeOffsetY. We need division
-			// by two because we want biomes evenly centered on y=0.
+			// Each scale must be divisible by the previous depth. We want to use
+			// divisions by three so that each biome can potentially spawn at surface
+			// level. If we use two then only the first depth will be at surface level and
+			// all others will be above or below it. This is due to the division by two
+			// for the biomeOffsetY. We need division by two because we want biomes evenly
+			// centered on y=0.
 			constexpr static BiomeScaleMeta biomeScales[] = {
 				// TODO: Use to be 9000, 3000, 1000. Decreased for easy testing.
 				{.scale = 900, .freq = 20},
@@ -254,6 +238,9 @@ namespace Game::Terrain {
 			static_assert(sizeof...(Biomes) <= decltype(biomePerm)::size());
 
 			std::tuple<Biomes...> biomes{};
+			static_assert(std::numeric_limits<BiomeId>::max() >= sizeof...(Biomes),
+				"More biomes supplied than are currently supported."
+			);
 
 		public:
 			Generator(uint64 seed)
@@ -296,7 +283,7 @@ namespace Game::Terrain {
 			ENGINE_INLINE BlockId callStage(TERRAIN_STAGE_ARGS);
 
 			template<StageId CurrentStage>
-			void generateChunk(Terrain& terrain, const ChunkVec chunkCoord, Chunk& chunk);
+			void generateChunk(Terrain& terrain, Region& region, const RegionIdx regionIdx, const ChunkVec chunkCoord, Chunk& chunk);
 
 			BiomeInfo calcBiome(BlockVec blockCoord);
 	};

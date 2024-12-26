@@ -102,10 +102,6 @@ namespace {
 
 			const auto maxX = blockCoord.x + chunkSize.x;
 			for (; blockCoord.x < maxX; ++blockCoord.x) {
-				// TODO: need a way to get self biomeId
-				ENGINE_LOG2("BiomeId({})={}", blockCoord, chunk.getBiomeAt(blockCoord));
-				const auto chunkIndex = blockToChunkIndex(blockCoord, chunkCoord);
-				if (chunk.getBiomeAt(chunkIndex) != 0) { continue; }
 				if (blockCoord.x % 7 == 0) {
 					inserter = {blockCoord, blockCoord + BlockVec{2, 8}, 0};
 				}
@@ -130,6 +126,7 @@ namespace {
 					const auto chunkIdx = blockToChunkIndex(blockCoord, chunkCoord);
 					ENGINE_DEBUG_ASSERT(chunkIdx.x >= 0 && chunkIdx.x < chunkSize.x);
 					ENGINE_DEBUG_ASSERT(chunkIdx.y >= 0 && chunkIdx.y < chunkSize.y);
+
 					if (chunk.data[chunkIdx.x][chunkIdx.y] != BlockId::Debug4)
 					{
 						chunk.data[chunkIdx.x][chunkIdx.y] = info.id == 0 ? BlockId::Gold : BlockId::Debug3;
@@ -366,6 +363,9 @@ namespace Game::UI {
 
 		cont->setLayout(new EUI::DirectionalLayout{EUI::Direction::Vertical, EUI::Align::Stretch, EUI::Align::Stretch, theme.sizes.pad1});
 		cont->addChild(area);
+
+		ENGINE_DEBUG2("Area1: {}, Cont: {}", area->getSize(), cont->getSize());
+		ENGINE_DEBUG2("Area2: {}, Cont: {}", area->getAutoHeight(), cont->getAutoHeight());
 
 		// TODO: probably just tie this to a bind like we do for zoom panel and re-enable.
 		//setCloseCallback([](EUI::Window* win){ win->getContext()->deferredDeletePanel(win); });

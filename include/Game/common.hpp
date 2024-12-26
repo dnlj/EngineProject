@@ -38,6 +38,10 @@ namespace Game::inline Units {
 
 	using RegionUnit = BlockUnit;
 	using RegionVec = glm::vec<2, RegionUnit>;
+	using RegionIdx = ChunkVec;
+
+	using RegionBiomeUnit = ChunkUnit;
+	using RegionBiomeIdx = RegionIdx;
 
 	using ZoneId = uint32;
 	constexpr inline auto zoneInvalidId = std::numeric_limits<ZoneId>::max();
@@ -67,6 +71,10 @@ namespace Game::inline Constants {
 	//       around each player is 11x11 which is almost an entire region.
 	constexpr inline RegionUnit chunksPerRegion = 16;
 	constexpr inline RegionVec regionSize = {chunksPerRegion, chunksPerRegion};
+
+	constexpr inline RegionUnit biomesPerChunk = 4;
+	constexpr inline RegionVec biomesPerRegion = regionSize * biomesPerChunk;
+	static_assert(blocksPerChunk % biomesPerChunk == 0, "The number of biomes per chunk should evenly divide the number of blocks per chunk.");
 
 	// TODO: should these neighbor and zone ranges be cvars?
 
@@ -203,6 +211,13 @@ namespace Game::inline Units {
 	 */
 	ENGINE_INLINE constexpr inline BlockVec blockToChunkIndex(const BlockVec block, const ChunkVec chunk) noexcept {
 		return block - chunkToBlock(chunk);
+	}
+
+	/**
+	 * Converts from a region index to a index into the region biomes space.
+	 */
+	ENGINE_INLINE constexpr inline RegionBiomeIdx regionIdxToRegionBiomeIdx(RegionIdx regionIdx) noexcept {
+		return regionIdx * biomesPerChunk;
 	}
 }
 
