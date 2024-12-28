@@ -30,6 +30,8 @@ namespace Engine {
 
 		public:
 			StaticVector() = default;
+			StaticVector(StaticVector const&) = default;
+			StaticVector(StaticVector&&) = default;
 
 			// TODO: would be nice to have a size constructor
 			template<class... Vals, class = std::enable_if_t<(std::is_assignable_v<Vals, value_type> && ...)>>

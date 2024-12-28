@@ -80,23 +80,8 @@ namespace {
 		//	}
 		//}
 
-		//
-		//
-		//
-		// TODO: IS BIOME SIZE == CHUNK SIZE? probably not, i would guess that might be the "issue" (its not an issue) that i am seeing.
-		// - It does not, and that is indeed the issue. Need to sample biome in the get function to ensure it is correct.
-		// - **Instead maybe we should pass in block coords? Would probably make more sense.**
-		//
-		//
-		//
-
-		//
-		//
-		// TODO: Biome culling, sample corners and do the thing
-		//
-		//
 		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) {
-			ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
+			//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
 			auto blockCoord = chunkToBlock(chunkCoord);
 			inserter = {.min = blockCoord, .max = blockCoord, .id = 1};
 
@@ -131,7 +116,7 @@ namespace {
 					{
 						chunk.data[chunkIdx.x][chunkIdx.y] = info.id == 0 ? BlockId::Gold : BlockId::Debug3;
 					}
-					ENGINE_LOG2("GEN LANDMARK: {}", chunkCoord);
+					//ENGINE_LOG2("GEN LANDMARK: {}", chunkCoord);
 				}
 			}
 		}
@@ -254,8 +239,7 @@ namespace {
 						// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
 						const auto chunkIndex = chunkToRegionIndex(chunkCoord, regionCoord);
 						auto& chunk = region.chunks[chunkIndex.x][chunkIndex.y];
-						const auto stage = region.stages[chunkIndex.x][chunkIndex.y];
-						ENGINE_DEBUG_ASSERT(stage == generator.totalStages, "Chunk is at incorrect stage.");
+						ENGINE_DEBUG_ASSERT(region.stages[chunkIndex.x][chunkIndex.y] == generator.totalStages, "Chunk is at incorrect stage.");
 
 						const auto blockIndex = blockToChunkIndex(blockCoord, chunkCoord);
 						ENGINE_DEBUG_ASSERT(blockIndex.x >= 0 && blockIndex.x < chunkSize.x, "Invalid chunk index.");

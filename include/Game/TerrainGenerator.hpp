@@ -24,6 +24,36 @@ namespace Game::Terrain {
 	};
 	ENGINE_BUILD_ALL_OPS(BiomeScale);
 	ENGINE_BUILD_DECAY_ENUM(BiomeScale);
+	
+
+	constexpr inline int32 biomeBlendDist = 50;
+	constexpr inline int32 biomeBlendDist2 = biomeBlendDist / 2;
+	static_assert(2 * biomeBlendDist2 == biomeBlendDist);
+
+	class BiomeScaleMeta {
+		public:
+			BlockUnit size;
+
+			/** Percentage frequency out of [0, 255]. */
+			uint8 freq;
+	};
+
+	// Each scale must be divisible by the previous depth. We want to use
+	// divisions by three so that each biome can potentially spawn at surface
+	// level. If we use two then only the first depth will be at surface level and
+	// all others will be above or below it. This is due to the division by two
+	// for the biomeOffsetY. We need division by two because we want biomes evenly
+	// centered on y=0.
+	constexpr inline BiomeScaleMeta biomeScales[] = {
+		// TODO: Use to be 9000, 3000, 1000. Decreased for easy testing.
+		{.size = 1800, .freq = 20},
+		{.size =  600, .freq = 20},
+		{.size =  200, .freq = 20},
+	};
+
+	static_assert(std::size(biomeScales) == +BiomeScale::_count, "Incorrect number of biome scales specified.");
+	static_assert(std::ranges::is_sorted(biomeScales, std::greater{}, &BiomeScaleMeta::size), "Biomes scales should be ordered largest to smallest");
+	static_assert(biomeBlendDist <= ((std::end(biomeScales)-1)->size / 2), "Biome blend distances cannot be larger than half the minimum biome size.");
 
 	//enum class BiomeType : uint8 {
 	//	Default,
@@ -64,13 +94,27 @@ namespace Game::Terrain {
 		public:
 			BiomeScale scale;
 			BiomeId id;
-
+	
 			/**
 			 * The coordinate in the biome map for this biome.
 			 * This is not a block coordinate. This is the coordinate where this biome
 			 * would be located in a theoretical grid if all biomes where the same size.
 			 */
 			BlockVec cell;
+	
+			/** The remianing block position within the cell */
+			BlockVec rem;
+	
+			// TODO: use a reference, this is currently a pointer to work around the hack
+			//       implementation for StaticVector that doesn't correctly use storage +
+			//       placement new + destructors. Needed for Generator::calcBiomeBlend
+			const BiomeScaleMeta* meta;
+	};
+
+	class BiomeWeight {
+		public:
+			BiomeId id;
+			float32 weight;
 	};
 
 	// TODO: getters with debug bounds checking.
@@ -174,11 +218,6 @@ namespace Game::Terrain {
 		std::integral_constant<StageId, Stage - 1>
 	> {};
 
-	template<class T>
-	concept HasLandmarks = requires {
-		&T::getLandmarks;
-	};
-
 	// Support for rescaling is needed for preview support. Should not be used for real generation.
 	template<class... Biomes>
 	class Generator {
@@ -195,30 +234,6 @@ namespace Game::Terrain {
 			//       doubles, and that will be slower and still isn't perfect.
 			//using FVec2 = glm::vec<2, Float>;
 
-			class BiomeScaleMeta {
-				public:
-					BlockUnit scale;
-
-					/** Percentage frequency out of [0, 255]. */
-					uint8 freq;
-			};
-
-			// Each scale must be divisible by the previous depth. We want to use
-			// divisions by three so that each biome can potentially spawn at surface
-			// level. If we use two then only the first depth will be at surface level and
-			// all others will be above or below it. This is due to the division by two
-			// for the biomeOffsetY. We need division by two because we want biomes evenly
-			// centered on y=0.
-			constexpr static BiomeScaleMeta biomeScales[] = {
-				// TODO: Use to be 9000, 3000, 1000. Decreased for easy testing.
-				{.scale = 900, .freq = 20},
-				{.scale = 300, .freq = 20},
-				{.scale = 100, .freq = 20},
-			};
-
-			static_assert(std::size(biomeScales) == +BiomeScale::_count, "Incorrect number of biome scales specified.");
-			static_assert(std::ranges::is_sorted(biomeScales, std::greater{}, &BiomeScaleMeta::scale), "Biomes scales should be ordered largest to smallest");
-
 			// Offset used for sampling biomes so they are roughly centered at ground level.
 			//
 			// 
@@ -226,7 +241,7 @@ namespace Game::Terrain {
 			//
 			// 
 			// Experimentally terrain surface is around 100-300.
-			constexpr static BlockUnit biomeOffsetY = biomeScales[0].scale / 2 + 0;
+			constexpr static BlockUnit biomeOffsetY = biomeScales[0].size / 2 + 0;
 
 			/** Used for sampling the biome frequency. */
 			Engine::Noise::RangePermutation<256> biomeFreq;
@@ -276,7 +291,7 @@ namespace Game::Terrain {
 				const ::Game::BlockVec blockCoord, \
 				const ::Game::BlockVec blockIndex, \
 				::Game::Terrain::Chunk& chunk, \
-				const ::Game::Terrain::BiomeInfo biomeInfo, \
+				const ::Game::Terrain::BiomeId biomeId, \
 				const ::Game::BlockUnit h0 // The "surface level" offset from zero
 			
 			template<StageId CurrentStage, class Biome>
@@ -285,7 +300,20 @@ namespace Game::Terrain {
 			template<StageId CurrentStage>
 			void generateChunk(Terrain& terrain, Region& region, const RegionIdx regionIdx, const ChunkVec chunkCoord, Chunk& chunk);
 
-			BiomeInfo calcBiome(BlockVec blockCoord);
+			/**
+			 * Calcuate the final biome for the given block 
+			 */
+			[[nodiscard]] BiomeId calcBiome2(BlockVec blockCoord);
+
+			/**
+			 * Calculate the biome for the given block without any blending/interpolation.
+			 */
+			[[nodiscard]] BiomeInfo calcRawBiome(BlockVec blockCoord);
+
+			/**
+			 * Get all biome contributions for the given block.
+			 */
+			[[nodiscard]] Engine::StaticVector<BiomeWeight, 4> calcBiomeBlend(BlockVec blockCoord);
 	};
 }
 

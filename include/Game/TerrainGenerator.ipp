@@ -163,12 +163,13 @@ namespace Game::Terrain {
 
 		// Populate biomes in chunk.
 		// TODO: We may want a temporary block granularity biome lookup for structure and decoration generation.
+		//       I think there is probably other temp info we would want only during generation also, h0, h1, biome, etc.
 		static_assert(CurrentStage != 0, "Stage zero means no generation. This is a bug.");
 		if constexpr (CurrentStage == 1) {
 			const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
 			for (RegionBiomeUnit x = 0; x < biomesPerChunk; ++x) {
 				for (RegionBiomeUnit y = 0; y < biomesPerChunk; ++y) {
-					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = calcBiome(min + BlockVec{x, y} * biomesPerChunk).id;
+					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = calcBiome2(min + BlockVec{x, y} * biomesPerChunk);
 				}
 			}
 		}
@@ -177,44 +178,203 @@ namespace Game::Terrain {
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
 				const auto blockCoord = min + BlockVec{x, y};
-				const auto biomeInfo = calcBiome(blockCoord);
+				const auto biomeId = calcBiome2(blockCoord);
 
-				const auto func = BIOME_GET_DISPATCH(stage, biomeInfo.id);
+				const auto func = BIOME_GET_DISPATCH(stage, biomeId);
 				if (func) {
-					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeInfo, 0);
+					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeId, 0);
 					chunk.data[x][y] = blockId;
 				}
 			}
 		}
 	}
 
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	// We need to solve the biome/basis blending for all involved biomes. This is needed
+	// so we can determine h0/h1 and transition smoothly between them.
+	//
+	//
+	//
+	//
+	//
+	//
+	// - May want to consider that temp data we have talked about a coupel of times. _might_ make biome sampling cheaper? Idk
+	// - Get biome
+	// - Based on distant to edge get up to 4 biomes
+	// - Based on distance to edge we can determine weight between 0.5 and 1
+	//	 - 0.5 = at edge, 50% biomeA 50% biomeB
+	//   - Will need to normalize by the number of total biomes, either 2 or 4
+	//   - Might be easer to do math between 0 and 1 then scale, idk
+	// - With that we now have weights for each biome
+	// - Call biome basis and multiply by weight for final basis
+	// - Will need another funciton to determine block weight, exactly the same as we needed in the old map generator.
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+
+	// TODO: remove warning disable, only an issue in release builds
+	#pragma warning(disable:4717)
 	template<class... Biomes>
-	BiomeInfo Generator<Biomes...>::calcBiome(BlockVec blockCoord) {
+	BiomeInfo Generator<Biomes...>::calcRawBiome(BlockVec blockCoord) {
 		blockCoord.y += biomeOffsetY;
 
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.
 
 		// TODO: Force/manual unroll? We know that N is always small and that would avoid
 		//       a scale lookup. This function gets called _a lot_.
-		BiomeInfo result{};
 
 		// Determine the scale and sample cell for the biome.
 		// Check each scale. Must be ordered largest to smallest.
+		BiomeScale scale{};
 		while (true) {
-			const auto& scale = biomeScales[+result.scale];
+			BiomeInfo result{ .meta = &biomeScales[+scale] };
 
 			// Rescale the coord so that all scales sample from the same mapping.
 			// Originally: cell = glm::floor(blockCoord * biomeScalesInv[result.scale]);
-			result.cell = Engine::Math::divFloor(blockCoord, scale.scale).q;
-
-			if (biomeFreq(result.cell.x, result.cell.y) < scale.freq) { break; }
+			const auto cell = Engine::Math::divFloor(blockCoord, result.meta->size);
+			result.cell = cell.q;
+			result.rem = cell.r;
 
 			// No more scales to check. Don't increment so we use the smallest one.
-			if (result.scale == BiomeScale::_last) { break; }
-			++result.scale;
+			if ((scale == BiomeScale::_last) || (biomeFreq(result.cell.x, result.cell.y) < result.meta->freq)) {
+				result.id = biomePerm(result.cell.x, result.cell.y) % sizeof...(Biomes);
+				return result;
+			}
+
+			++scale;
+		}
+	}
+	
+	template<class... Biomes>
+	Engine::StaticVector<BiomeWeight, 4> Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord) {
+		const auto info = calcRawBiome(blockCoord);
+		Engine::StaticVector<BiomeWeight, 4> weights{};
+
+		const auto addWeight = [&](BiomeId id, BlockUnit blocks){
+			const float32 weight = static_cast<float32>(blocks);
+
+			// TODO: figure out if we can enable, we should?
+			//ENGINE_DEBUG_ASSERT(blocks > 0);
+			ENGINE_DEBUG_ASSERT(blocks >= 0 && blocks <= biomeBlendDist);
+
+			for (auto& w : weights) {
+				if (w.id == id) {
+					w.weight += weight;
+					return;
+				}
+			}
+
+			weights.push_back({id, weight});
+		};
+
+		addWeight(info.id, biomeBlendDist2);
+
+		// TODO: Something isn't quite right. Some corners don't seem to be weighting correctly.
+
+		// Example:
+		//    size = 8
+		//   blend = 2
+		//    Left = X < 2
+		//   Right = X >= 8 - 2; X >= 6
+		//   0 1 2 3 4 5 6 7
+		//   L L _ _ _ _ R R
+
+		// Distances
+		const auto leftD = info.rem.x;
+		const auto rightD = info.meta->size - info.rem.x;
+		const auto bottomD = info.rem.y;
+		const auto topD = info.meta->size - info.rem.y;
+
+		// Conditions
+		const auto left = leftD < biomeBlendDist;
+		const auto right = rightD <= biomeBlendDist;
+		const auto bottom = bottomD < biomeBlendDist;
+		const auto top = topD <= biomeBlendDist;
+
+		if (!(left || right || bottom || top)) {
+			return weights;
 		}
 
-		result.id = biomePerm(result.cell.x, result.cell.y) % sizeof...(Biomes);
-		return result;
+		// Divide by two so the total is 0.5 + d/2 which gives us a value between 0.5 and
+		// 1 instead of 0 and 1. At the edges each biome contributes 0.5, not zero.
+		addWeight(info.id, std::min({leftD, rightD, bottomD, topD}) / 2);
+
+		// Weights (invert distances)
+		const auto leftW = (biomeBlendDist - leftD) / 2;
+		const auto rightW = (biomeBlendDist - rightD) / 2;
+		const auto bottomW = (biomeBlendDist - bottomD) / 2;
+		const auto topW = (biomeBlendDist - topD) / 2;
+
+		if (left) { // Left
+			addWeight(calcRawBiome({blockCoord.x - biomeBlendDist, blockCoord.y}).id, leftW);
+
+			if (bottom) { // Bottom Left
+				addWeight(calcRawBiome({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(leftW, bottomW));
+			} else if (top) { // Top Left
+				addWeight(calcRawBiome({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(leftW, topW));
+			}
+		} else if (right) { // Right
+			addWeight(calcRawBiome({blockCoord.x + biomeBlendDist, blockCoord.y}).id, rightW);
+
+			if (bottom) { // Bottom Right
+				addWeight(calcRawBiome({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(rightW, bottomW));
+			} else if (top) { // Top Right
+				addWeight(calcRawBiome({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(rightW, topW));
+			}
+		}
+
+		if (bottom) { // Bottom Center
+			addWeight(calcRawBiome({blockCoord.x, blockCoord.y - biomeBlendDist}).id, bottomW);
+		} else if (top) { // Top Center
+			addWeight(calcRawBiome({blockCoord.x, blockCoord.y + biomeBlendDist}).id, topW);
+		}
+
+		ENGINE_DEBUG_ONLY({
+			// The maximum should be at biomeBlendDist2 away from the corner of a biome.
+			// Assuming the bottom left corner, that gives us all four biomes contributing
+			// with the weights:
+			// 
+			//        left = 0.5
+			//      bottom = 0.5
+			// bottom-left = 0.5
+			//        main = 0.5 + 0.25  (0.5 min + 0.25 for halfway between min/max)
+			//       total = 0.5 + 0.5 + 0.5 + (0.5 + 0.25) = 2.25
+			//                
+			const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](float32 accum, const auto& value){ return accum + value.weight; });
+			ENGINE_DEBUG_ASSERT(total >= biomeBlendDist2 && total <= 2.25*biomeBlendDist, "Incorrect biome weight total: ", total);
+		})
+
+		return weights;
+	}
+
+	template<class... Biomes>
+	BiomeId Generator<Biomes...>::calcBiome2(BlockVec blockCoord) {
+		auto weights = calcBiomeBlend(blockCoord);
+		const auto before = weights;
+		const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](float32 accum, const auto& value){ return accum + value.weight; });
+		const auto normF = 1.0f / total;
+		for (auto& w : weights) { w.weight *= normF; }
+
+		ENGINE_DEBUG_ONLY({
+			const auto normTotal = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](float32 accum, const auto& value){ return accum + value.weight; });
+			ENGINE_DEBUG_ASSERT(std::abs(1.0f - normTotal) <= FLT_EPSILON, "Incorrect normalized biome weight total: ", normTotal);
+		})
+
+		return std::ranges::max_element(weights, {}, &BiomeWeight::weight)->id;
+		// TODO: need to sample per biome noise maps to get biome strength and add to
+		//       weight based on distance.
 	}
 }
