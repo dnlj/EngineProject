@@ -263,9 +263,27 @@ namespace Game::Terrain {
 				, biomePerm{Engine::Noise::lcg(seed)}
 			{}
 
+			// TODO: rename
 			void generate1(Terrain& terrain, const Request& request);
 
 			ENGINE_INLINE auto& getBiomes() noexcept { return biomes; }
+
+			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
+
+			/**
+			 * Calcuate the final biome for the given block.
+			 */
+			[[nodiscard]] BiomeId calcBiome(BlockVec blockCoord);
+
+			/**
+			 * Calculate the biome for the given block without any blending/interpolation.
+			 */
+			[[nodiscard]] BiomeInfo calcBiomeRaw(BlockVec blockCoord);
+
+			/**
+			 * Get all biome contributions for the given block.
+			 */
+			[[nodiscard]] Engine::StaticVector<BiomeWeight, 4> calcBiomeBlend(BlockVec blockCoord);
 
 		private:
 			/**
@@ -300,20 +318,6 @@ namespace Game::Terrain {
 			template<StageId CurrentStage>
 			void generateChunk(Terrain& terrain, Region& region, const RegionIdx regionIdx, const ChunkVec chunkCoord, Chunk& chunk);
 
-			/**
-			 * Calcuate the final biome for the given block 
-			 */
-			[[nodiscard]] BiomeId calcBiome2(BlockVec blockCoord);
-
-			/**
-			 * Calculate the biome for the given block without any blending/interpolation.
-			 */
-			[[nodiscard]] BiomeInfo calcRawBiome(BlockVec blockCoord);
-
-			/**
-			 * Get all biome contributions for the given block.
-			 */
-			[[nodiscard]] Engine::StaticVector<BiomeWeight, 4> calcBiomeBlend(BlockVec blockCoord);
 	};
 }
 

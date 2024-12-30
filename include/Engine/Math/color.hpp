@@ -12,6 +12,9 @@
 
 // TODO: ideally these could be constexpr
 namespace Engine::Math {
+	// TODO (C++23): These functions should be constexpr-able with the now constexpr math functions.
+	//               See: https://github.com/microsoft/STL/issues/2530
+	//               See: https://github.com/microsoft/STL/issues/3789
 	/**
 	 * Converts color representation from hue, saturation, lightness to red, green, blue
 	 * @param hsl Hue, saturation, and lightness in the ranges [0, 360], [0, 1], and [0, 1]
@@ -62,6 +65,15 @@ namespace Engine::Math {
 	/** @see cvtApproxLinearToRGB */
 	ENGINE_INLINE inline glm::vec4 cvtApproxRGBToLinear(const glm::vec4 rgb) {
 		return {cvtApproxRGBToLinear({rgb.x, rgb.y, rgb.z}), rgb.w};
+	}
+
+	/**
+	 * Convert from float [0, 1] RGB to byte [0, 255] RGB representation.
+	 */
+	ENGINE_INLINE inline glm::u8vec3 cvtFloatRGBToByteRGB(const glm::vec3 rgb) {
+		// Discussion around formulas, spacing, and error accumulation:
+		// https://stackoverflow.com/questions/1914115/converting-color-value-from-float-0-1-to-byte-0-255
+		return rgb * 255.0f;
 	}
 
 	/**

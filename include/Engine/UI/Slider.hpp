@@ -17,7 +17,7 @@ namespace Engine::UI {
 
 		public:
 			// TODO: label string or decimal count
-			// TODO: snap intervals
+			// TODO: snap intervals - Do we even need this? If bindings are setup correctly this is free since it gets rounded in the setter/getter.
 			// TODO: vertical option
 			Slider(Context* context) : Panel{context} {
 				setSize({32, 16});

@@ -55,7 +55,7 @@ namespace Game::Terrain {
 				if (stage < CurrentStage) {
 					ENGINE_DEBUG_ASSERT(stage == CurrentStage - 1);
 					generateChunk<CurrentStage>(terrain, region, regionIdx, chunkCoord, region.chunkAt(regionIdx));
-					ENGINE_LOG2("Generate Chunk: {}", chunkCoord);
+					//ENGINE_LOG2("Generate Chunk: {}", chunkCoord);
 					++stage;
 				}
 			});
@@ -169,7 +169,7 @@ namespace Game::Terrain {
 			const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
 			for (RegionBiomeUnit x = 0; x < biomesPerChunk; ++x) {
 				for (RegionBiomeUnit y = 0; y < biomesPerChunk; ++y) {
-					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = calcBiome2(min + BlockVec{x, y} * biomesPerChunk);
+					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = calcBiome(min + BlockVec{x, y} * biomesPerChunk);
 				}
 			}
 		}
@@ -178,7 +178,7 @@ namespace Game::Terrain {
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
 				const auto blockCoord = min + BlockVec{x, y};
-				const auto biomeId = calcBiome2(blockCoord);
+				const auto biomeId = calcBiome(blockCoord);
 
 				const auto func = BIOME_GET_DISPATCH(stage, biomeId);
 				if (func) {
@@ -228,7 +228,7 @@ namespace Game::Terrain {
 	// TODO: remove warning disable, only an issue in release builds
 	#pragma warning(disable:4717)
 	template<class... Biomes>
-	BiomeInfo Generator<Biomes...>::calcRawBiome(BlockVec blockCoord) {
+	BiomeInfo Generator<Biomes...>::calcBiomeRaw(BlockVec blockCoord) {
 		blockCoord.y += biomeOffsetY;
 
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.
@@ -260,7 +260,7 @@ namespace Game::Terrain {
 	
 	template<class... Biomes>
 	Engine::StaticVector<BiomeWeight, 4> Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord) {
-		const auto info = calcRawBiome(blockCoord);
+		const auto info = calcBiomeRaw(blockCoord);
 		Engine::StaticVector<BiomeWeight, 4> weights{};
 
 		const auto addWeight = [&](BiomeId id, BlockUnit blocks){
@@ -282,7 +282,26 @@ namespace Game::Terrain {
 
 		addWeight(info.id, biomeBlendDist2);
 
+		//
+		//
+		//
+		//
 		// TODO: Something isn't quite right. Some corners don't seem to be weighting correctly.
+		// Create some solid color biomes for debuggging.
+		//
+		// Walk thorugh the diagonal case manually, i think it might be correct and we just need different weighting.
+		// May want ot remove the implicit weight?
+		// 
+		// Yea, i think its correct. What would i _want_ it to look like though?
+		//  For example What should the inner corner look like given two biomes A and B arranged like:
+		//     A B
+		//     B A
+		// There isn't a way to have smoth A-A and B-B transitions both. Would need to pick one.
+		// - This might be a non-issue. Try with the noise maps and see how that looks.
+		//
+		//
+		//
+		//
 
 		// Example:
 		//    size = 8
@@ -319,28 +338,30 @@ namespace Game::Terrain {
 		const auto topW = (biomeBlendDist - topD) / 2;
 
 		if (left) { // Left
-			addWeight(calcRawBiome({blockCoord.x - biomeBlendDist, blockCoord.y}).id, leftW);
+			addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y}).id, leftW);
 
 			if (bottom) { // Bottom Left
-				addWeight(calcRawBiome({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(leftW, bottomW));
+				addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(leftW, bottomW));
 			} else if (top) { // Top Left
-				addWeight(calcRawBiome({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(leftW, topW));
+				addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(leftW, topW));
 			}
 		} else if (right) { // Right
-			addWeight(calcRawBiome({blockCoord.x + biomeBlendDist, blockCoord.y}).id, rightW);
+			addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y}).id, rightW);
 
 			if (bottom) { // Bottom Right
-				addWeight(calcRawBiome({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(rightW, bottomW));
+				addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(rightW, bottomW));
 			} else if (top) { // Top Right
-				addWeight(calcRawBiome({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(rightW, topW));
+				addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(rightW, topW));
 			}
 		}
 
 		if (bottom) { // Bottom Center
-			addWeight(calcRawBiome({blockCoord.x, blockCoord.y - biomeBlendDist}).id, bottomW);
+			addWeight(calcBiomeRaw({blockCoord.x, blockCoord.y - biomeBlendDist}).id, bottomW);
 		} else if (top) { // Top Center
-			addWeight(calcRawBiome({blockCoord.x, blockCoord.y + biomeBlendDist}).id, topW);
+			addWeight(calcBiomeRaw({blockCoord.x, blockCoord.y + biomeBlendDist}).id, topW);
 		}
+
+		//weights.front().weight = 25.0f + std::min({leftD, rightD, bottomD, topD}) / 2;
 
 		ENGINE_DEBUG_ONLY({
 			// The maximum should be at biomeBlendDist2 away from the corner of a biome.
@@ -361,7 +382,7 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	BiomeId Generator<Biomes...>::calcBiome2(BlockVec blockCoord) {
+	BiomeId Generator<Biomes...>::calcBiome(BlockVec blockCoord) {
 		auto weights = calcBiomeBlend(blockCoord);
 		const auto before = weights;
 		const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](float32 accum, const auto& value){ return accum + value.weight; });

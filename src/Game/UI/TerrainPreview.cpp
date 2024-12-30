@@ -5,14 +5,25 @@
 // Engine
 #include <Engine/UI/ImageDisplay.hpp>
 #include <Engine/UI/TextBox.hpp>
+#include <Engine/UI/Slider.hpp>
 
 #include <Engine/Noise/SimplexNoise.hpp>
 #include <Engine/tuple.hpp>
+#include <Engine/Math/color.hpp>
 
 
 namespace {
 	using namespace Game;
 	using namespace Game::UI;
+
+	enum class Layer {
+		BiomeRawWeights,
+		BiomeBlendWeights,
+		BiomeFinalWeights,
+		Blocks,
+		_count,
+	};
+	ENGINE_BUILD_DECAY_ENUM(Layer);
 
 	#define STAGE_DEF \
 		template<Terrain::StageId Stage> constexpr static bool hasStage = false;\
@@ -126,6 +137,7 @@ namespace {
 		STAGE_DEF;
 
 		STAGE(1) {
+			return BlockId::Debug;
 			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug2; }
 			if ((blockCoord.x & 1) ^ (blockCoord.y & 1)) {
 				return BlockId::Debug;
@@ -139,6 +151,7 @@ namespace {
 		STAGE_DEF;
 
 		STAGE(1) {
+			return BlockId::Debug2;
 			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug3; }
 			if (blockCoord.x % 64 == blockCoord.y % 64) {
 				return BlockId::Gold;
@@ -152,6 +165,7 @@ namespace {
 		STAGE_DEF;
 
 		STAGE(1) {
+			return BlockId::Debug3;
 			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug4; }
 			if (blockCoord.x % 64 == (63 - blockCoord.y % 64)) {
 				return BlockId::Grass;
@@ -166,18 +180,21 @@ namespace {
 			BlockVec offset = {0.0, 0.0};
 			//BlockVec offset = {-127, -69};
 			float64 zoom = 1.0f; // Larger # = farther out = see more = larger FoV
+			Layer mode = Layer::Blocks;
 
 		private:
 			// View
 			glm::vec2 offsetInitial = {0, 0};
-			Engine::Clock::TimePoint nextZoom{};
+			Engine::Clock::TimePoint nextRebuild{};
+			constexpr static inline Engine::Clock::Duration rebuildDelay = std::chrono::milliseconds{300};
 
 			// Image
 			Engine::Gfx::Image img = {};
 			Engine::Gfx::Texture2D tex = {};
 
 			// Terrain
-			Terrain::Generator<BiomeOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
+			//Terrain::Generator<BiomeOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
+			Terrain::Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
 			Terrain::Terrain terrain;
 
 		public:
@@ -190,7 +207,11 @@ namespace {
 				setTexture(tex);
 			}
 
+			void requestRebuild() { nextRebuild = Engine::Clock::now() + rebuildDelay;}
+
+		private:
 			void rebuild() {
+				nextRebuild = Engine::Clock::TimePoint::max();
 				// Chunk offset isn't affected by zoom. Its a fixed offset so its always the same regardless of zoom.
 				const auto chunkOffset = blockToChunk(offset);
 				const auto res = img.size();
@@ -210,16 +231,29 @@ namespace {
 				// TODO: Move this color specification to Blocks.xpp, could be useful
 				//       elsewhere. Alternatively, calculate this value based on the avg img
 				//       color when loading them/packing them into atlas.
-				glm::u8vec3 blockToColor[BlockId::_count] = {};
-				blockToColor[BlockId::Entity] = {  0, 120, 189};
-				blockToColor[BlockId::Debug]  = {255,   0,   0};
-				blockToColor[BlockId::Debug2] = {200,  26, 226};
-				blockToColor[BlockId::Debug3] = {226,  26, 162};
-				blockToColor[BlockId::Debug4] = {226,  26, 111};
-				blockToColor[BlockId::Dirt]	  = {158,  98,  33};
-				blockToColor[BlockId::Grass]  = { 67, 226,  71};
-				blockToColor[BlockId::Iron]	  = {144, 144, 144};
-				blockToColor[BlockId::Gold]	  = {255, 235,  65};
+				static const auto blockToColor = []{
+					std::array<glm::u8vec3, BlockId::_count> colors = {};
+					colors[BlockId::Entity] = {  0, 120, 189};
+					colors[BlockId::Debug]  = {255,   0,   0};
+					colors[BlockId::Debug2] = {200,  26, 226};
+					colors[BlockId::Debug3] = {226,  26, 162};
+					colors[BlockId::Debug4] = {226,  26, 111};
+					colors[BlockId::Dirt]	  = {158,  98,  33};
+					colors[BlockId::Grass]  = { 67, 226,  71};
+					colors[BlockId::Iron]	  = {144, 144, 144};
+					colors[BlockId::Gold]	  = {255, 235,  65};
+					return colors;
+				}();
+
+				static const auto biomeToColor = []{
+					std::array<glm::u8vec3, decltype(generator)::getBiomeCount()> colors{};
+					float32 hue = 0;
+					for (auto& color : colors) {
+						hue = Engine::Math::nextRandomHue(hue);
+						color = Engine::Math::cvtFloatRGBToByteRGB(Engine::Math::cvtHSLtoRGB({hue, 0.85f, 0.5f}));
+					}
+					return colors;
+				}();
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
 
@@ -228,27 +262,39 @@ namespace {
 					const auto yspan = y * res.x;
 					for (BlockUnit x = 0; x < res.x; ++x) {
 						const auto blockCoord = offset + applyZoom(BlockVec{x, y});
-						const auto chunkCoord = blockToChunk(blockCoord);
-						const auto regionCoord = chunkToRegion(chunkCoord);
-						auto& region = terrain.getRegion({realmId, regionCoord});
+						const auto idx = x + yspan;
 
-						// Sanity checks
-						ENGINE_DEBUG_ASSERT(blockCoord.x >= offset.x);
-						ENGINE_DEBUG_ASSERT(blockCoord.y >= offset.y);
+						if (mode == Layer::BiomeRawWeights) {
+							data[idx] = biomeToColor[generator.calcBiomeRaw(blockCoord).id];
+						} else if (mode == Layer::BiomeBlendWeights) {
+							const auto& weights = generator.calcBiomeBlend(blockCoord);
+							const auto bid = std::ranges::max_element(weights, {}, &Terrain::BiomeWeight::weight)->id;
+							data[idx] = biomeToColor[bid];
+						} else if (mode == Layer::BiomeFinalWeights) {
+							data[idx] = biomeToColor[generator.calcBiome(blockCoord)];
+						} else if (mode == Layer::Blocks) {
+							const auto chunkCoord = blockToChunk(blockCoord);
+							const auto regionCoord = chunkToRegion(chunkCoord);
+							auto& region = terrain.getRegion({realmId, regionCoord});
 
-						// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
-						const auto chunkIndex = chunkToRegionIndex(chunkCoord, regionCoord);
-						auto& chunk = region.chunks[chunkIndex.x][chunkIndex.y];
-						ENGINE_DEBUG_ASSERT(region.stages[chunkIndex.x][chunkIndex.y] == generator.totalStages, "Chunk is at incorrect stage.");
+							// Sanity checks
+							ENGINE_DEBUG_ASSERT(blockCoord.x >= offset.x);
+							ENGINE_DEBUG_ASSERT(blockCoord.y >= offset.y);
 
-						const auto blockIndex = blockToChunkIndex(blockCoord, chunkCoord);
-						ENGINE_DEBUG_ASSERT(blockIndex.x >= 0 && blockIndex.x < chunkSize.x, "Invalid chunk index.");
-						ENGINE_DEBUG_ASSERT(blockIndex.y >= 0 && blockIndex.y < chunkSize.y, "Invalid chunk index.");
+							// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
+							const auto chunkIndex = chunkToRegionIndex(chunkCoord, regionCoord);
+							auto& chunk = region.chunks[chunkIndex.x][chunkIndex.y];
+							ENGINE_DEBUG_ASSERT(region.stages[chunkIndex.x][chunkIndex.y] == generator.totalStages, "Chunk is at incorrect stage.");
 
-						const auto blockId = chunk.data[blockIndex.x][blockIndex.y];
-						ENGINE_DEBUG_ASSERT(blockId >= 0 && blockId < BlockId::_count, "Invalid BlockId.");
+							const auto blockIndex = blockToChunkIndex(blockCoord, chunkCoord);
+							ENGINE_DEBUG_ASSERT(blockIndex.x >= 0 && blockIndex.x < chunkSize.x, "Invalid chunk index.");
+							ENGINE_DEBUG_ASSERT(blockIndex.y >= 0 && blockIndex.y < chunkSize.y, "Invalid chunk index.");
 
-						data[x + yspan] = blockToColor[blockId];
+							const auto blockId = chunk.data[blockIndex.x][blockIndex.y];
+							ENGINE_DEBUG_ASSERT(blockId >= 0 && blockId < BlockId::_count, "Invalid BlockId.");
+
+							data[idx] = blockToColor[blockId];
+						}
 					}
 				}
 
@@ -259,12 +305,12 @@ namespace {
 			};
 
 			void render() override {
-				ImageDisplay::render();
-				if (Engine::Clock::now() > nextZoom) {
+				if (Engine::Clock::now() > nextRebuild) {
 					ENGINE_INFO2("Zoom: {}", zoom);
-					nextZoom = Engine::Clock::TimePoint::max();
 					rebuild();
 				}
+
+				ImageDisplay::render();
 			}
 
 			// TODO: custom render for timeout, maybe just use an update func?
@@ -274,7 +320,7 @@ namespace {
 					case EUI::Action::Scroll: {
 						ENGINE_LOG2("action.value.f32: {}", action.value.f32);
 						zoom -= action.value.f32 * 0.2;
-						nextZoom = Engine::Clock::now() + std::chrono::milliseconds{1000};
+						nextRebuild = Engine::Clock::now() + rebuildDelay;
 						return true;
 					}
 				}
@@ -310,7 +356,7 @@ namespace Game::UI {
 		const auto area = ctx->constructPanel<TerrainDragArea>();
 
 		const auto sec = ctx->createPanel<Panel>(cont);
-		sec->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Start, theme.sizes.pad1});
+		sec->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, theme.sizes.pad1});
 		sec->setAutoSizeHeight(true);
 
 		constexpr auto textGetter = []<class V>(V& var){ return [&var, last=V{}](EUI::TextBox& box) mutable {
@@ -321,7 +367,7 @@ namespace Game::UI {
 
 		const auto textSetter = [area](auto& var){ return [area, &var](EUI::TextBox& box) {
 			std::from_chars(std::to_address(box.getText().begin()), std::to_address(box.getText().end()), var);
-			area->rebuild();
+			area->requestRebuild();
 		};};
 
 		const auto xMove = ctx->createPanel<EUI::TextBox>(sec);
@@ -331,6 +377,18 @@ namespace Game::UI {
 		const auto yMove = ctx->createPanel<EUI::TextBox>(sec);
 		yMove->autoSize();
 		yMove->bind(textGetter(area->offset.y), textSetter(area->offset.y));
+
+		const auto layer = ctx->createPanel<EUI::Slider>(sec);
+		layer->setLimits(0, +Layer::_count);
+		layer->bind(
+			[area](EUI::Slider& self){
+				self.setValue(+area->mode);
+			},
+			[area](EUI::Slider& self){
+				area->mode = static_cast<Layer>(std::round(self.getValue()));
+				area->requestRebuild();
+			}
+		);
 
 		//const auto xZoom = ctx->createPanel<EUI::TextBox>(sec);
 		//xZoom->autoSize();
