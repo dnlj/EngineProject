@@ -198,25 +198,24 @@ namespace Game::Terrain {
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
 				const auto blockCoord = min + BlockVec{x, y};
+				BiomeId biomeId;
 
-				//
-				//
-				//
-				//
-				//
-				// TODO: Should only do basis as a stage<0/-1/fixed> pass
-				//
-				//
-				//
-				//
-				//
-				//
+				// Generate basis only on the first stage
+				if constexpr (CurrentStage == 1) {
+					const auto basisInfo = calcBasis(blockCoord);
+					if (basisInfo.basis <= 0.0_f) {
+						// TODO: is there a reason we don't just default to air as 0/{}? Do we need BlockId::None?
+						chunk.data[x][y] = BlockId::Air;
+						continue;
+					}
+					biomeId = basisInfo.id;
+				} else {
+					biomeId = maxBiomeWeight(calcBiome(blockCoord)).id;
+				}
 
-				const auto basisInfo = calcBasis(blockCoord);
-
-				const auto func = BIOME_GET_DISPATCH(stage, basisInfo.id);
+				const auto func = BIOME_GET_DISPATCH(stage, biomeId);
 				if (func) {
-					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, basisInfo.id, 0);
+					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeId, 0);
 					chunk.data[x][y] = blockId;
 				}
 			}
@@ -448,7 +447,7 @@ namespace Game::Terrain {
 		}
 
 		return {
-			.id = std::ranges::max_element(weights, {}, &BiomeWeight::weight)->id,
+			.id = maxBiomeWeight(weights).id,
 			.basis = totalBasis,
 		};
 	}

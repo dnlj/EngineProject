@@ -145,10 +145,6 @@ namespace {
 		Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
 		Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
 
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			return simplex1.value(glm::vec2{blockCoord} * 0.03f);
-		}
-
 		Float getBasisStrength(TERRAIN_GET_BASIS_ARGS) {
 			// These need to be tuned based on biome scales blend dist or else you can get odd clipping type issues.
 			return 0.2f * simplex1.value(glm::vec2{blockCoord} * 0.003f)
@@ -169,8 +165,10 @@ namespace {
 				return BlockId::Air;
 			}
 		}
-
-		//Float getBasisStrength(TERRAIN_GET_BASIS_ARGS) { return 0.0f; }
+		
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+			return std::abs(simplex1.value(glm::vec2{blockCoord} * 0.03_f)) - 0.15_f;
+		}
 	};
 	
 	struct BiomeDebugTwo : public BiomeDebugBase<0xF7F7'F7F7'F7F7'2222> {
@@ -184,6 +182,10 @@ namespace {
 				return BlockId::Dirt;
 			}
 		}
+
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+			return std::abs(simplex1.value(glm::vec2{blockCoord} * 0.06_f)) - 0.75_f;
+		}
 	};
 	
 	struct BiomeDebugThree : public BiomeDebugBase<0xF7F7'F7F7'F7F7'3333> {
@@ -196,6 +198,10 @@ namespace {
 			} else {
 				return BlockId::Air;
 			}
+		}
+
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+			return simplex1.value(glm::vec2{blockCoord} * 0.12_f);
 		}
 	};
 
