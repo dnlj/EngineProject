@@ -1,9 +1,16 @@
 #include <Game/TerrainGenerator.hpp>
 
 
-#define BIOME_GET_DISPATCH(Name, BiomeId) _engine_BiomeGenFuncTable_##Name[BiomeId]
-#define BIOME_GEN_DISPATCH(Name, ...) \
-	using _engine_BiomeGenFunc_##Name = void (*)(std::tuple<Biomes...>& biomes, __VA_ARGS__); \
+#define BIOME_GET_DISPATCH_NAME(Name) _engine_BiomeGenFuncTable_##Name
+#define BIOME_GET_DISPATCH(Name, BiomeId) BIOME_GET_DISPATCH_NAME(Name)[BiomeId]
+
+/**
+ * Generate a function lookup table for biomes.
+ * Some biomes may choose to not define the function. In that case BIOME_GET_DISPATCH will
+ * return nullptr.
+ */
+#define BIOME_GEN_DISPATCH(Name, ReturnType, ...) \
+	using _engine_BiomeGenFunc_##Name = ReturnType (*)(std::tuple<Biomes...>& biomes, __VA_ARGS__); \
 	constexpr static auto _engine_BiomeGenFuncCall_##Name = []<class Biome>() constexpr -> _engine_BiomeGenFunc_##Name { \
 		if constexpr (requires { &Biome::Name; }) { \
 			return []<class... Args>(std::tuple<Biomes...>& biomes, Args... args) ENGINE_INLINE { \
@@ -15,6 +22,19 @@
 	}; \
 	constexpr static _engine_BiomeGenFunc_##Name BIOME_GET_DISPATCH(Name,) = { _engine_BiomeGenFuncCall_##Name.template operator()<Biomes>()... };
 
+/**
+ * Generate a function lookup table for biomes with the requirement that all biomes define the function.
+ * @see BIOME_GEN_DISPATCH
+ */
+#define BIOME_GEN_DISPATCH_REQUIRED(Name, ReturnType, ...) \
+	BIOME_GEN_DISPATCH(Name, ReturnType, __VA_ARGS__); \
+	static_assert(std::ranges::all_of(BIOME_GET_DISPATCH_NAME(Name), [](auto* ptr){ return ptr != nullptr; }), "One or more biomes are missing the required " #Name " function.");
+
+/**
+ * Generate a function lookup table for biomes for a template function.
+ * @param CallName the symbol for the template function with populated template arguments.
+ * @see BIOME_GEN_DISPATCH
+ */
 #define BIOME_GEN_DISPATCH_T(Name, CallName, ReturnType, ...) \
 	using _engine_BiomeGenFunc_##Name = ReturnType (*)(std::tuple<Biomes...>& biomes, __VA_ARGS__); \
 	constexpr static auto _engine_BiomeGenFuncCall_##Name = []<class Biome>() constexpr -> _engine_BiomeGenFunc_##Name { \
@@ -61,8 +81,8 @@ namespace Game::Terrain {
 			});
 		});
 
-		BIOME_GEN_DISPATCH(getLandmarks, TERRAIN_GET_LANDMARKS_ARGS);
-		BIOME_GEN_DISPATCH(genLandmarks, TERRAIN_GEN_LANDMARKS_ARGS);
+		BIOME_GEN_DISPATCH(getLandmarks, void, TERRAIN_GET_LANDMARKS_ARGS);
+		BIOME_GEN_DISPATCH(genLandmarks, void, TERRAIN_GEN_LANDMARKS_ARGS);
 
 		std::vector<StructureInfo> structures;
 		forEachChunkAtStage<totalStages>(terrain, request, [&](Region& region, const ChunkVec& chunkCoord, const RegionIdx& regionIdx) ENGINE_INLINE_REL {
@@ -169,7 +189,7 @@ namespace Game::Terrain {
 			const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
 			for (RegionBiomeUnit x = 0; x < biomesPerChunk; ++x) {
 				for (RegionBiomeUnit y = 0; y < biomesPerChunk; ++y) {
-					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = calcBiome(min + BlockVec{x, y} * biomesPerChunk);
+					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = maxBiomeWeight(calcBiome(min + BlockVec{x, y} * biomesPerChunk)).id;
 				}
 			}
 		}
@@ -178,11 +198,25 @@ namespace Game::Terrain {
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
 				const auto blockCoord = min + BlockVec{x, y};
-				const auto biomeId = calcBiome(blockCoord);
 
-				const auto func = BIOME_GET_DISPATCH(stage, biomeId);
+				//
+				//
+				//
+				//
+				//
+				// TODO: Should only do basis as a stage<0/-1/fixed> pass
+				//
+				//
+				//
+				//
+				//
+				//
+
+				const auto basisInfo = calcBasis(blockCoord);
+
+				const auto func = BIOME_GET_DISPATCH(stage, basisInfo.id);
 				if (func) {
-					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeId, 0);
+					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, basisInfo.id, 0);
 					chunk.data[x][y] = blockId;
 				}
 			}
@@ -228,7 +262,7 @@ namespace Game::Terrain {
 	// TODO: remove warning disable, only an issue in release builds
 	#pragma warning(disable:4717)
 	template<class... Biomes>
-	BiomeInfo Generator<Biomes...>::calcBiomeRaw(BlockVec blockCoord) {
+	BiomeRawInfo Generator<Biomes...>::calcBiomeRaw(BlockVec blockCoord) {
 		blockCoord.y += biomeOffsetY;
 
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.
@@ -240,7 +274,7 @@ namespace Game::Terrain {
 		// Check each scale. Must be ordered largest to smallest.
 		BiomeScale scale{};
 		while (true) {
-			BiomeInfo result{ .meta = &biomeScales[+scale] };
+			BiomeRawInfo result{ .meta = &biomeScales[+scale] };
 
 			// Rescale the coord so that all scales sample from the same mapping.
 			// Originally: cell = glm::floor(blockCoord * biomeScalesInv[result.scale]);
@@ -259,12 +293,12 @@ namespace Game::Terrain {
 	}
 	
 	template<class... Biomes>
-	Engine::StaticVector<BiomeWeight, 4> Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord) {
+	BiomeWeights Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord) {
 		const auto info = calcBiomeRaw(blockCoord);
 		Engine::StaticVector<BiomeWeight, 4> weights{};
 
 		const auto addWeight = [&](BiomeId id, BlockUnit blocks){
-			const float32 weight = static_cast<float32>(blocks);
+			const auto weight = static_cast<Float>(blocks);
 
 			// TODO: figure out if we can enable, we should?
 			//ENGINE_DEBUG_ASSERT(blocks > 0);
@@ -281,27 +315,6 @@ namespace Game::Terrain {
 		};
 
 		addWeight(info.id, biomeBlendDist2);
-
-		//
-		//
-		//
-		//
-		// TODO: Something isn't quite right. Some corners don't seem to be weighting correctly.
-		// Create some solid color biomes for debuggging.
-		//
-		// Walk thorugh the diagonal case manually, i think it might be correct and we just need different weighting.
-		// May want ot remove the implicit weight?
-		// 
-		// Yea, i think its correct. What would i _want_ it to look like though?
-		//  For example What should the inner corner look like given two biomes A and B arranged like:
-		//     A B
-		//     B A
-		// There isn't a way to have smoth A-A and B-B transitions both. Would need to pick one.
-		// - This might be a non-issue. Try with the noise maps and see how that looks.
-		//
-		//
-		//
-		//
 
 		// Example:
 		//    size = 8
@@ -337,9 +350,21 @@ namespace Game::Terrain {
 		const auto bottomW = (biomeBlendDist - bottomD) / 2;
 		const auto topW = (biomeBlendDist - topD) / 2;
 
+		// NOTE: This isn't quite right because you get incorrect blending on internal
+		//       corners. For example assume you have two biomes: A and B. Then when you
+		//       have an internal corner such as:
+		//         A A B B
+		//         A A B B
+		//         B B B B
+		//         B B B B
+		//       The center corner where A and B meet has an odd gradient. This can be
+		//       seein the the terrain preview with Layer::BiomeBlendWeights. This is
+		//       _mostly_ hidden once the basis strength is applied though so its not urgent
+		//       to address.
+
 		if (left) { // Left
 			addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y}).id, leftW);
-
+				
 			if (bottom) { // Bottom Left
 				addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(leftW, bottomW));
 			} else if (top) { // Top Left
@@ -347,21 +372,19 @@ namespace Game::Terrain {
 			}
 		} else if (right) { // Right
 			addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y}).id, rightW);
-
+				
 			if (bottom) { // Bottom Right
 				addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(rightW, bottomW));
 			} else if (top) { // Top Right
 				addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(rightW, topW));
 			}
 		}
-
+			
 		if (bottom) { // Bottom Center
 			addWeight(calcBiomeRaw({blockCoord.x, blockCoord.y - biomeBlendDist}).id, bottomW);
 		} else if (top) { // Top Center
 			addWeight(calcBiomeRaw({blockCoord.x, blockCoord.y + biomeBlendDist}).id, topW);
 		}
-
-		//weights.front().weight = 25.0f + std::min({leftD, rightD, bottomD, topD}) / 2;
 
 		ENGINE_DEBUG_ONLY({
 			// The maximum should be at biomeBlendDist2 away from the corner of a biome.
@@ -374,7 +397,7 @@ namespace Game::Terrain {
 			//        main = 0.5 + 0.25  (0.5 min + 0.25 for halfway between min/max)
 			//       total = 0.5 + 0.5 + 0.5 + (0.5 + 0.25) = 2.25
 			//                
-			const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](float32 accum, const auto& value){ return accum + value.weight; });
+			const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
 			ENGINE_DEBUG_ASSERT(total >= biomeBlendDist2 && total <= 2.25*biomeBlendDist, "Incorrect biome weight total: ", total);
 		})
 
@@ -382,20 +405,51 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	BiomeId Generator<Biomes...>::calcBiome(BlockVec blockCoord) {
+	BiomeWeights Generator<Biomes...>::calcBiome(BlockVec blockCoord) {
 		auto weights = calcBiomeBlend(blockCoord);
-		const auto before = weights;
-		const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](float32 accum, const auto& value){ return accum + value.weight; });
-		const auto normF = 1.0f / total;
-		for (auto& w : weights) { w.weight *= normF; }
-
+		normalizeBiomeWeights(weights);
 		ENGINE_DEBUG_ONLY({
-			const auto normTotal = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](float32 accum, const auto& value){ return accum + value.weight; });
+			const auto normTotal = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
 			ENGINE_DEBUG_ASSERT(std::abs(1.0f - normTotal) <= FLT_EPSILON, "Incorrect normalized biome weight total: ", normTotal);
-		})
+		});
 
-		return std::ranges::max_element(weights, {}, &BiomeWeight::weight)->id;
-		// TODO: need to sample per biome noise maps to get biome strength and add to
-		//       weight based on distance.
+		// TODO: Does each biome need to specify its own basis strength? Again, this is
+		//       the _strength_ of the basis, not the basis itself. I don't think they do.
+
+		// TODO: Do we even need basis strength? Maybe, or maybe just the simple blend
+		//       weights are enough. Do some testing.
+
+		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_ARGS);
+		for (auto& biomeWeight : weights) {
+			// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
+			const auto getBasisStrength = BIOME_GET_DISPATCH(getBasisStrength, biomeWeight.id);
+			const auto basisStr = getBasisStrength(biomes, blockCoord);
+			ENGINE_DEBUG_ASSERT(0.0f <= basisStr && basisStr <= 1.0f, "Invalid basis strength value given for biome ", biomeWeight.id, ". Out of range [0, 1].");
+
+			// Multiply with the existing weight to get a smooth transition.
+			ENGINE_DEBUG_ASSERT(0.0f <= biomeWeight.weight && biomeWeight.weight <= 1.0f, "Invalid biome blend weight for biome ", biomeWeight.id, ". Out of range [0, 1].");
+			biomeWeight.weight *= basisStr;
+		}
+
+		return weights;
+	}
+
+	template<class... Biomes>
+	BasisInfo Generator<Biomes...>::calcBasis(BlockVec blockCoord) {
+		const auto weights = calcBiome(blockCoord);
+		Float totalBasis = 0.0f;
+
+		BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
+		for (auto& biomeWeight : weights) {
+			const auto getBasis = BIOME_GET_DISPATCH(getBasis, biomeWeight.id);
+			const auto basis = getBasis(biomes, blockCoord);
+			ENGINE_DEBUG_ASSERT(-1.0f <= basis && basis <= 1.0f, "Invalid basis value given for biome ", biomeWeight.id, ". Out of range [-1, 1].");
+			totalBasis += biomeWeight.weight * basis;
+		}
+
+		return {
+			.id = std::ranges::max_element(weights, {}, &BiomeWeight::weight)->id,
+			.basis = totalBasis,
+		};
 	}
 }

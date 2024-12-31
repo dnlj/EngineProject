@@ -13,6 +13,9 @@
 // TODO: split out
 namespace Game::Terrain {
 	using StageId = uint8; // TODO: just stage
+	using UInt = uint32;
+	using Int = int32;
+	using Float = float32;
 
 	// Should always be ordered largest to smallest
 	enum class BiomeScale : uint8 {
@@ -26,7 +29,7 @@ namespace Game::Terrain {
 	ENGINE_BUILD_DECAY_ENUM(BiomeScale);
 	
 
-	constexpr inline int32 biomeBlendDist = 50;
+	constexpr inline int32 biomeBlendDist = 200;
 	constexpr inline int32 biomeBlendDist2 = biomeBlendDist / 2;
 	static_assert(2 * biomeBlendDist2 == biomeBlendDist);
 
@@ -46,9 +49,9 @@ namespace Game::Terrain {
 	// centered on y=0.
 	constexpr inline BiomeScaleMeta biomeScales[] = {
 		// TODO: Use to be 9000, 3000, 1000. Decreased for easy testing.
-		{.size = 1800, .freq = 20},
+		{.size = 3600, .freq = 20},
+		{.size = 1200, .freq = 20},
 		{.size =  600, .freq = 20},
-		{.size =  200, .freq = 20},
 	};
 
 	static_assert(std::size(biomeScales) == +BiomeScale::_count, "Incorrect number of biome scales specified.");
@@ -90,7 +93,7 @@ namespace Game::Terrain {
 			BiomeId biomeId = {};
 	};
 
-	class BiomeInfo {
+	class BiomeRawInfo {
 		public:
 			BiomeScale scale;
 			BiomeId id;
@@ -115,6 +118,24 @@ namespace Game::Terrain {
 		public:
 			BiomeId id;
 			float32 weight;
+	};
+
+	using BiomeWeights = Engine::StaticVector<BiomeWeight, 4>;
+
+	void normalizeBiomeWeights(BiomeWeights& weights) {
+		const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
+		const auto normF = 1.0f / total;
+		for (auto& w : weights) { w.weight *= normF; }
+	}
+
+	[[nodiscard]] ENGINE_INLINE BiomeWeight maxBiomeWeight(const BiomeWeights& weights) {
+		return *std::ranges::max_element(weights, {}, &BiomeWeight::weight);
+	}
+
+	class BasisInfo {
+		public:
+			BiomeId id;
+			float32 basis;
 	};
 
 	// TODO: getters with debug bounds checking.
@@ -222,10 +243,6 @@ namespace Game::Terrain {
 	template<class... Biomes>
 	class Generator {
 		public:
-			using UInt = uint32;
-			using Int = int32;
-			using Float = float32;
-
 			constexpr static StageId totalStages = std::max({MaxStage<Biomes>::value...});
 
 		private:
@@ -269,21 +286,25 @@ namespace Game::Terrain {
 			ENGINE_INLINE auto& getBiomes() noexcept { return biomes; }
 
 			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
-
-			/**
-			 * Calcuate the final biome for the given block.
-			 */
-			[[nodiscard]] BiomeId calcBiome(BlockVec blockCoord);
+			
 
 			/**
 			 * Calculate the biome for the given block without any blending/interpolation.
 			 */
-			[[nodiscard]] BiomeInfo calcBiomeRaw(BlockVec blockCoord);
+			[[nodiscard]] BiomeRawInfo calcBiomeRaw(BlockVec blockCoord);
 
 			/**
 			 * Get all biome contributions for the given block.
 			 */
-			[[nodiscard]] Engine::StaticVector<BiomeWeight, 4> calcBiomeBlend(BlockVec blockCoord);
+			[[nodiscard]] BiomeWeights calcBiomeBlend(BlockVec blockCoord);
+
+			/**
+			 * Calcuate the final biome for the given block.
+			 */
+			[[nodiscard]] BiomeWeights calcBiome(BlockVec blockCoord);
+
+			// TODO: doc
+			[[nodiscard]] BasisInfo calcBasis(BlockVec blockCoord);
 
 		private:
 			/**
@@ -293,6 +314,9 @@ namespace Game::Terrain {
 			template<StageId CurrentStage, class Func>
 			ENGINE_INLINE void forEachChunkAtStage(Terrain& terrain, const Request& request, Func&& func);
 			
+			#define TERRAIN_GET_BASIS_ARGS \
+				::Game::BlockVec blockCoord
+
 			#define TERRAIN_GET_LANDMARKS_ARGS \
 				::Game::Terrain::Terrain& terrain, \
 				const ::Game::Terrain::Chunk& chunk, \

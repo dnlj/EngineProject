@@ -161,7 +161,7 @@ namespace Engine::Noise {
 
 			// Gradients for 2D. They approximate the directions to the
 			// vertices of an octagon from the center.
-			const int8 gradients2D[16] = {
+			constexpr static int8 gradients2D[16] = {
 				 5,  2,		 2,  5,
 				-5,  2,		-2,  5,
 				 5, -2,		 2, -5,

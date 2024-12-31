@@ -20,8 +20,10 @@ namespace {
 		BiomeRawWeights,
 		BiomeBlendWeights,
 		BiomeFinalWeights,
+		BiomeFinalWeightsFull,
 		Blocks,
 		_count,
+		_last = _count - 1,
 	};
 	ENGINE_BUILD_DECAY_ENUM(Layer);
 
@@ -91,6 +93,10 @@ namespace {
 		//	}
 		//}
 
+		Float getBasisStrength(TERRAIN_GET_BASIS_ARGS) {
+			return simplex.value(blockCoord);
+		}
+
 		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) {
 			//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
 			auto blockCoord = chunkToBlock(chunkCoord);
@@ -133,9 +139,27 @@ namespace {
 		}
 	};
 
-	struct BiomeDebugOne {
-		STAGE_DEF;
+	template<uint64 Seed>
+	struct BiomeDebugBase {
+		Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(Seed)};
+		Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
+		Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
 
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+			return simplex1.value(glm::vec2{blockCoord} * 0.03f);
+		}
+
+		Float getBasisStrength(TERRAIN_GET_BASIS_ARGS) {
+			// These need to be tuned based on biome scales blend dist or else you can get odd clipping type issues.
+			return 0.2f * simplex1.value(glm::vec2{blockCoord} * 0.003f)
+				 + 0.2f * simplex2.value(glm::vec2{blockCoord} * 0.010f)
+				 + 0.1f * simplex3.value(glm::vec2{blockCoord} * 0.100f)
+				 + 0.5f;
+		}
+	};
+
+	struct BiomeDebugOne : public BiomeDebugBase<0xF7F7'F7F7'F7F7'1111> {
+		STAGE_DEF;
 		STAGE(1) {
 			return BlockId::Debug;
 			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug2; }
@@ -145,11 +169,12 @@ namespace {
 				return BlockId::Air;
 			}
 		}
+
+		//Float getBasisStrength(TERRAIN_GET_BASIS_ARGS) { return 0.0f; }
 	};
-
-	struct BiomeDebugTwo {
+	
+	struct BiomeDebugTwo : public BiomeDebugBase<0xF7F7'F7F7'F7F7'2222> {
 		STAGE_DEF;
-
 		STAGE(1) {
 			return BlockId::Debug2;
 			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug3; }
@@ -160,10 +185,9 @@ namespace {
 			}
 		}
 	};
-
-	struct BiomeDebugThree {
+	
+	struct BiomeDebugThree : public BiomeDebugBase<0xF7F7'F7F7'F7F7'3333> {
 		STAGE_DEF;
-
 		STAGE(1) {
 			return BlockId::Debug3;
 			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug4; }
@@ -179,8 +203,8 @@ namespace {
 		public:
 			BlockVec offset = {0.0, 0.0};
 			//BlockVec offset = {-127, -69};
-			float64 zoom = 1.0f; // Larger # = farther out = see more = larger FoV
-			Layer mode = Layer::Blocks;
+			float64 zoom = 9.5f; // Larger # = farther out = see more = larger FoV
+			Layer mode = Layer::BiomeFinalWeights;
 
 		private:
 			// View
@@ -222,11 +246,13 @@ namespace {
 				// This is how many chunks will fit in the resolution. The res will hold 9.6 chunks so we need to generate ceil(9.6) = 10.
 				const auto chunksPerImg = Engine::Math::divCeil(applyZoom<BlockVec>(res), blocksPerChunk).q;
 
-				terrain = {};
-				std::atomic_signal_fence(std::memory_order_acq_rel); const auto startTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
-				generator.generate1(terrain, Terrain::Request{chunkOffset, chunkOffset + chunksPerImg, 0});
-				std::atomic_signal_fence(std::memory_order_acq_rel); const auto endTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
-				ENGINE_LOG2("Generation Time: {}", Engine::Clock::Seconds{endTime - startTime});
+				if (mode == Layer::Blocks) {
+					terrain = {};
+					std::atomic_signal_fence(std::memory_order_acq_rel); const auto startTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
+					generator.generate1(terrain, Terrain::Request{chunkOffset, chunkOffset + chunksPerImg, 0});
+					std::atomic_signal_fence(std::memory_order_acq_rel); const auto endTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
+					ENGINE_LOG2("Generation Time: {}", Engine::Clock::Seconds{endTime - startTime});
+				}
 
 				// TODO: Move this color specification to Blocks.xpp, could be useful
 				//       elsewhere. Alternatively, calculate this value based on the avg img
@@ -267,11 +293,18 @@ namespace {
 						if (mode == Layer::BiomeRawWeights) {
 							data[idx] = biomeToColor[generator.calcBiomeRaw(blockCoord).id];
 						} else if (mode == Layer::BiomeBlendWeights) {
-							const auto& weights = generator.calcBiomeBlend(blockCoord);
-							const auto bid = std::ranges::max_element(weights, {}, &Terrain::BiomeWeight::weight)->id;
-							data[idx] = biomeToColor[bid];
+							auto weights = generator.calcBiomeBlend(blockCoord);
+							normalizeBiomeWeights(weights);
+							const auto biome = maxBiomeWeight(weights);
+							data[idx] = glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id]));
 						} else if (mode == Layer::BiomeFinalWeights) {
-							data[idx] = biomeToColor[generator.calcBiome(blockCoord)];
+							auto weights = generator.calcBiome(blockCoord);
+							const auto biome = maxBiomeWeight(weights);
+							data[idx] = biomeToColor[biome.id];
+						} else if (mode == Layer::BiomeFinalWeightsFull) {
+							auto weights = generator.calcBiome(blockCoord);
+							const auto biome = maxBiomeWeight(weights);
+							data[idx] = glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id]));
 						} else if (mode == Layer::Blocks) {
 							const auto chunkCoord = blockToChunk(blockCoord);
 							const auto regionCoord = chunkToRegion(chunkCoord);
@@ -379,7 +412,7 @@ namespace Game::UI {
 		yMove->bind(textGetter(area->offset.y), textSetter(area->offset.y));
 
 		const auto layer = ctx->createPanel<EUI::Slider>(sec);
-		layer->setLimits(0, +Layer::_count);
+		layer->setLimits(0, +Layer::_last);
 		layer->bind(
 			[area](EUI::Slider& self){
 				self.setValue(+area->mode);
