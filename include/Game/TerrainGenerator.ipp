@@ -258,8 +258,6 @@ namespace Game::Terrain {
 	//
 	//
 
-	// TODO: remove warning disable, only an issue in release builds
-	#pragma warning(disable:4717)
 	template<class... Biomes>
 	BiomeRawInfo Generator<Biomes...>::calcBiomeRaw(BlockVec blockCoord) {
 		blockCoord.y += biomeOffsetY;
@@ -298,9 +296,6 @@ namespace Game::Terrain {
 
 		const auto addWeight = [&](BiomeId id, BlockUnit blocks){
 			const auto weight = static_cast<Float>(blocks);
-
-			// TODO: figure out if we can enable, we should?
-			//ENGINE_DEBUG_ASSERT(blocks > 0);
 			ENGINE_DEBUG_ASSERT(blocks >= 0 && blocks <= biomeBlendDist);
 
 			for (auto& w : weights) {
@@ -357,7 +352,7 @@ namespace Game::Terrain {
 		//         B B B B
 		//         B B B B
 		//       The center corner where A and B meet has an odd gradient. This can be
-		//       seein the the terrain preview with Layer::BiomeBlendWeights. This is
+		//       seen in the the terrain preview with Layer::BiomeBlendWeights. This is
 		//       _mostly_ hidden once the basis strength is applied though so its not urgent
 		//       to address.
 
@@ -414,9 +409,10 @@ namespace Game::Terrain {
 
 		// TODO: Does each biome need to specify its own basis strength? Again, this is
 		//       the _strength_ of the basis, not the basis itself. I don't think they do.
-
-		// TODO: Do we even need basis strength? Maybe, or maybe just the simple blend
-		//       weights are enough. Do some testing.
+		//       We could probably just create sizeof(Biomes) simplex samplers and then
+		//       use the BiomeId+1/2/3 for the weight of any given biome. Its fine being
+		//       defined on the biomes for now though until we have more complete use
+		//       cases.
 
 		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_ARGS);
 		for (auto& biomeWeight : weights) {

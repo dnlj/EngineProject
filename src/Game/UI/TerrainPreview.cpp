@@ -76,14 +76,6 @@ namespace {
 			}
 		}
 
-		//
-		//
-		//
-		// TODO: non-square biomes
-		//
-		//
-		//
-
 		//STAGE(2) {
 		//	auto& blockId = chunk.data[blockIndex.x][blockIndex.y];
 		//	if (((blockCoord.x & 1) ^ (blockCoord.y & 1)) && (blockId == BlockId::Air)) {
