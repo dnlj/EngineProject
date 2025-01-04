@@ -19,7 +19,7 @@ namespace Engine {
 			BaseMember() {}
 
 			template<class... Args>
-			BaseMember(Args... args) : value(std::forward<Args>(args)...) {}
+			BaseMember(Args&&... args) : value(std::forward<Args>(args)...) {}
 
 			[[nodiscard]] ENGINE_INLINE T& get() noexcept { return value; }
 			[[nodiscard]] ENGINE_INLINE const T& get() const noexcept { return value; }
@@ -33,7 +33,7 @@ namespace Engine {
 			BaseMember() {}
 
 			template<class... Args>
-			BaseMember(Args... args) {}
+			BaseMember(Args&&... args) {}
 
 			[[nodiscard]] ENGINE_INLINE T& get() noexcept { return *this; }
 			[[nodiscard]] ENGINE_INLINE const T& get() const noexcept { return *this; }

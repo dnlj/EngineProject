@@ -21,6 +21,8 @@ namespace {
 		BiomeBlendWeights,
 		BiomeFinalWeights,
 		BiomeFinalWeightsFull,
+		TerrainHeight0,
+		//TerrainHeight1,
 		Blocks,
 		_count,
 		_last = _count - 1,
@@ -38,14 +40,9 @@ namespace {
 		template<> constexpr static bool hasStage<N> = true;\
 		template<> ENGINE_INLINE_REL BlockId stage<N>(TERRAIN_STAGE_ARGS)
 
-	using Float = float32;
-	ENGINE_INLINE consteval Float operator""_f(const long double v) noexcept {
-		return static_cast<Float>(v);
-	}
-
-	ENGINE_INLINE consteval Float operator""_f(const uint64 v) noexcept {
-		return static_cast<Float>(v);
-	}
+	using Float = Terrain::Float;
+	ENGINE_INLINE consteval Float operator""_f(const long double v) noexcept { return static_cast<Float>(v); }
+	ENGINE_INLINE consteval Float operator""_f(const uint64 v) noexcept { return static_cast<Float>(v); }
 
 	struct BiomeOne {
 		STAGE_DEF;
@@ -85,7 +82,7 @@ namespace {
 		//	}
 		//}
 
-		Float getBasisStrength(TERRAIN_GET_BASIS_ARGS) {
+		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) {
 			return simplex.value(blockCoord);
 		}
 
@@ -137,12 +134,41 @@ namespace {
 		Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
 		Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
 
-		Float getBasisStrength(TERRAIN_GET_BASIS_ARGS) {
+		Float getBasisHeightBlend(const BlockUnit h0, const BlockUnit y) {
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			return (200 - std::min<BlockUnit>(h0 - y, 200)) * (1.0_f / 200.0_f);
+		}
+
+		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) {
 			// These need to be tuned based on biome scales blend dist or else you can get odd clipping type issues.
 			return 0.2f * simplex1.value(glm::vec2{blockCoord} * 0.003f)
 				 + 0.2f * simplex2.value(glm::vec2{blockCoord} * 0.010f)
 				 + 0.1f * simplex3.value(glm::vec2{blockCoord} * 0.100f)
 				 + 0.5f;
+		}
+
+		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
+			// TODO:
+			return 0;
 		}
 	};
 
@@ -159,7 +185,8 @@ namespace {
 		}
 		
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			return std::abs(simplex1.value(glm::vec2{blockCoord} * 0.03_f)) - 0.15_f;
+			if (blockCoord.y > h0) { return 0.0f; }
+			return getBasisHeightBlend(h0, blockCoord.y) + std::abs(simplex1.value(glm::vec2{blockCoord} * 0.03_f)) - 0.15_f;
 		}
 	};
 	
@@ -176,7 +203,8 @@ namespace {
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			return std::abs(simplex1.value(glm::vec2{blockCoord} * 0.06_f)) - 0.75_f;
+			if (blockCoord.y > h0) { return 0.0f; }
+			return getBasisHeightBlend(h0, blockCoord.y) + std::abs(simplex1.value(glm::vec2{blockCoord} * 0.06_f)) - 0.75_f;
 		}
 	};
 	
@@ -193,16 +221,17 @@ namespace {
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			return simplex1.value(glm::vec2{blockCoord} * 0.12_f);
+			if (blockCoord.y > h0) { return 0.0f; }
+			return getBasisHeightBlend(h0, blockCoord.y) + simplex1.value(glm::vec2{blockCoord} * 0.12_f);
 		}
 	};
 
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
-			BlockVec offset = {0.0, 0.0};
+			BlockVec offset = {77967.0, 0.0};
 			//BlockVec offset = {-127, -69};
-			float64 zoom = 9.5f; // Larger # = farther out = see more = larger FoV
-			Layer mode = Layer::BiomeFinalWeights;
+			float64 zoom = 4.5f; // Larger # = farther out = see more = larger FoV
+			Layer mode = Layer::BiomeRawWeights;
 
 		private:
 			// View
@@ -243,6 +272,7 @@ namespace {
 				// For blocks we would say that that block lives in the chunk floor(9.6) = 9, but this isn't blocks.
 				// This is how many chunks will fit in the resolution. The res will hold 9.6 chunks so we need to generate ceil(9.6) = 10.
 				const auto chunksPerImg = Engine::Math::divCeil(applyZoom<BlockVec>(res), blocksPerChunk).q;
+				const auto indexToBlock = [&](BlockVec index) ENGINE_INLINE { return offset + applyZoom(index); };
 
 				if (mode == Layer::Blocks) {
 					terrain = {};
@@ -250,6 +280,9 @@ namespace {
 					generator.generate1(terrain, Terrain::Request{chunkOffset, chunkOffset + chunksPerImg, 0});
 					std::atomic_signal_fence(std::memory_order_acq_rel); const auto endTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
 					ENGINE_LOG2("Generation Time: {}", Engine::Clock::Seconds{endTime - startTime});
+				} else {
+					// The height cache is still needs to be populated for biome sampling.
+					generator.populateHeightCache0(indexToBlock({0, 0}).x - Terrain::biomeBlendDist, indexToBlock(res).x + Terrain::biomeBlendDist);
 				}
 
 				// TODO: Move this color specification to Blocks.xpp, could be useful
@@ -278,23 +311,31 @@ namespace {
 					}
 					return colors;
 				}();
-
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
 
 				const RealmId realmId = 0; // TODO: realm support
 				for (BlockUnit y = 0; y < res.y; ++y) {
 					const auto yspan = y * res.x;
 					for (BlockUnit x = 0; x < res.x; ++x) {
-						const auto blockCoord = offset + applyZoom(BlockVec{x, y});
+						const auto blockCoord = indexToBlock({x, y});
 						const auto idx = x + yspan;
 
 						if (mode == Layer::BiomeRawWeights) {
-							data[idx] = biomeToColor[generator.calcBiomeRaw(blockCoord).id];
+
+							const auto sizeToColor = [](BlockUnit size){
+								return 0.5_f + size / (2.0_f * Terrain::biomeScales[0].size);
+							};
+
+
+
+
+							const auto info = generator.calcBiomeRaw(blockCoord);
+							data[idx] = sizeToColor(info.meta->size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
 							auto weights = generator.calcBiomeBlend(blockCoord);
 							normalizeBiomeWeights(weights);
 							const auto biome = maxBiomeWeight(weights);
-							data[idx] = glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id]));
+							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::BiomeFinalWeights) {
 							auto weights = generator.calcBiome(blockCoord);
 							const auto biome = maxBiomeWeight(weights);
@@ -302,7 +343,17 @@ namespace {
 						} else if (mode == Layer::BiomeFinalWeightsFull) {
 							auto weights = generator.calcBiome(blockCoord);
 							const auto biome = maxBiomeWeight(weights);
-							data[idx] = glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id]));
+							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
+						} else if (mode == Layer::TerrainHeight0) {
+							auto weights = generator.calcBiome(blockCoord);
+							const auto biome = maxBiomeWeight(weights);
+
+							// We need to clamp blockCoord at maxBlock because of the applyZoom
+							// does ceil which can give slightly off results from some values of
+							// zoom < 1 due to float precision.
+							const auto& heightCache = generator.getHeightCache();
+							const auto h0 = heightCache.get(std::min(heightCache.getMaxBlock() - 1, blockCoord.x));
+							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
 						} else if (mode == Layer::Blocks) {
 							const auto chunkCoord = blockToChunk(blockCoord);
 							const auto regionCoord = chunkToRegion(chunkCoord);
@@ -409,6 +460,27 @@ namespace Game::UI {
 		yMove->autoSize();
 		yMove->bind(textGetter(area->offset.y), textSetter(area->offset.y));
 
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: why does this refresh instantly? Where is the delay?
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		const auto zoom = ctx->createPanel<EUI::TextBox>(sec);
+		zoom->autoSize();
+		zoom->bind(textGetter(area->zoom), textSetter(area->zoom));
+
 		const auto layer = ctx->createPanel<EUI::Slider>(sec);
 		layer->setLimits(0, +Layer::_last);
 		layer->bind(
@@ -420,14 +492,6 @@ namespace Game::UI {
 				area->requestRebuild();
 			}
 		);
-
-		//const auto xZoom = ctx->createPanel<EUI::TextBox>(sec);
-		//xZoom->autoSize();
-		//xZoom->bind(textGetter(area->zoom.x), textSetter(area->zoom.x));
-		//
-		//const auto yZoom = ctx->createPanel<EUI::TextBox>(sec);
-		//yZoom->autoSize();
-		//yZoom->bind(textGetter(area->zoom.y), textSetter(area->zoom.y));
 
 		// TODO: we really should have fixedSize = true/false and then just use the actual
 		//       size for the size, that would allow autoSize to still work with a fixed size

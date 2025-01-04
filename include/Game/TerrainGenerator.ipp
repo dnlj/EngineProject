@@ -1,6 +1,11 @@
 #include <Game/TerrainGenerator.hpp>
 
 
+// TODO: Notes on terms to document:
+//       Basis - The shape/topology of the terrain regardless of the specific blocks. Needed to combine terrain when blending between biomes.
+//       Basis Strength - Needed blending biomes. How "strong" is the biome at this point. Allows us to interpolate and smooth between biomes.
+
+
 #define BIOME_GET_DISPATCH_NAME(Name) _engine_BiomeGenFuncTable_##Name
 #define BIOME_GET_DISPATCH(Name, BiomeId) BIOME_GET_DISPATCH_NAME(Name)[BiomeId]
 
@@ -52,6 +57,9 @@
 namespace Game::Terrain {
 	template<class... Biomes>
 	void Generator<Biomes...>::generate1(Terrain& terrain, const Request& request) {
+
+		// TODO: add biome stages
+		// TODO: add h0/h1 stages
 		// - Generate stages.
 		//   - Stage 1, Stage 2, ..., Stage N.
 		// - Generate candidate features for all biomes in the request.
@@ -63,6 +71,16 @@ namespace Game::Terrain {
 		//   - Moss, grass tufts, cobwebs, chests/loot, etc.
 		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
 
+		// TODO: Should this be cached (or stored?) on the terrain? Maybe cache on the
+		//       generator? Right now we re-generate for every request.
+
+		// TODO: split height0/height1?
+		// We need to include the biome blend distance for biome sampling in calcBiomeRaw.
+		populateHeightCache0(
+			chunkToBlock(request.minChunkCoord).x - biomeBlendDist,
+			chunkToBlock(request.maxChunkCoord + ChunkVec{1, 0}).x + biomeBlendDist
+		);
+
 		// Call generate for each stage. Each will expand the requestion chunk selection
 		// appropriately for the following stages.
 		Engine::Meta::ForEachInRange<totalStages>::call([&]<auto I>{
@@ -71,7 +89,7 @@ namespace Game::Terrain {
 
 			forEachChunkAtStage<CurrentStage>(terrain, request, [&](auto& region, const auto& chunkCoord, const auto& regionIdx) ENGINE_INLINE {
 				auto& stage = region.stages[regionIdx.x][regionIdx.y];
-
+				
 				if (stage < CurrentStage) {
 					ENGINE_DEBUG_ASSERT(stage == CurrentStage - 1);
 					generateChunk<CurrentStage>(terrain, region, regionIdx, chunkCoord, region.chunkAt(regionIdx));
@@ -196,13 +214,15 @@ namespace Game::Terrain {
 
 		// For each block in the chunk.
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
+			const auto h0 = heightCache.get(min.x + x);
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
 				const auto blockCoord = min + BlockVec{x, y};
 				BiomeId biomeId;
 
 				// Generate basis only on the first stage
 				if constexpr (CurrentStage == 1) {
-					const auto basisInfo = calcBasis(blockCoord);
+					const auto basisInfo = calcBasis(blockCoord, h0);
+
 					if (basisInfo.basis <= 0.0_f) {
 						// TODO: is there a reason we don't just default to air as 0/{}? Do we need BlockId::None?
 						chunk.data[x][y] = BlockId::Air;
@@ -215,7 +235,7 @@ namespace Game::Terrain {
 
 				const auto func = BIOME_GET_DISPATCH(stage, biomeId);
 				if (func) {
-					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeId, 0);
+					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeId, h0);
 					chunk.data[x][y] = blockId;
 				}
 			}
@@ -259,9 +279,37 @@ namespace Game::Terrain {
 	//
 
 	template<class... Biomes>
-	BiomeRawInfo Generator<Biomes...>::calcBiomeRaw(BlockVec blockCoord) {
-		blockCoord.y += biomeOffsetY;
+	void Generator<Biomes...>::populateHeightCache0(const BlockUnit minBlock, const BlockUnit maxBlock) {
+		heightCache.reset(minBlock, maxBlock);
 
+		for (BlockUnit blockCoord = minBlock; blockCoord < maxBlock; ++blockCoord) {
+			// TODO: use _f for Float. Move from TerrainPreview.
+
+			// TODO: keep in mind that this is +- amplitude, and for each ocatve we increase the contrib;
+
+			//
+			//
+			//
+			//
+			//
+			//
+			// TODO: tune + octaves, atm this is way to steep
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+
+			heightCache.get(blockCoord) = static_cast<BlockUnit>(1000 * simplex1.value(blockCoord * 0.00005f, 0));
+		}
+	}
+
+	template<class... Biomes>
+	BiomeRawInfo Generator<Biomes...>::calcBiomeRaw(BlockVec blockCoord) {
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.
 
 		// TODO: Force/manual unroll? We know that N is always small and that would avoid
@@ -291,6 +339,9 @@ namespace Game::Terrain {
 	
 	template<class... Biomes>
 	BiomeWeights Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord) {
+		// Offset the coord by the scale offset so biomes are roughly centered on {0, 0}
+		blockCoord -= biomeScaleOffset + heightCache.get(blockCoord.x);
+
 		const auto info = calcBiomeRaw(blockCoord);
 		Engine::StaticVector<BiomeWeight, 4> weights{};
 
@@ -414,7 +465,7 @@ namespace Game::Terrain {
 		//       defined on the biomes for now though until we have more complete use
 		//       cases.
 
-		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_ARGS);
+		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_STRENGTH_ARGS);
 		for (auto& biomeWeight : weights) {
 			// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
 			const auto getBasisStrength = BIOME_GET_DISPATCH(getBasisStrength, biomeWeight.id);
@@ -430,15 +481,20 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	BasisInfo Generator<Biomes...>::calcBasis(BlockVec blockCoord) {
+	BasisInfo Generator<Biomes...>::calcBasis(const BlockVec blockCoord, const BlockUnit h0) {
 		const auto weights = calcBiome(blockCoord);
 		Float totalBasis = 0.0f;
 
 		BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
 		for (auto& biomeWeight : weights) {
 			const auto getBasis = BIOME_GET_DISPATCH(getBasis, biomeWeight.id);
-			const auto basis = getBasis(biomes, blockCoord);
-			ENGINE_DEBUG_ASSERT(-1.0f <= basis && basis <= 1.0f, "Invalid basis value given for biome ", biomeWeight.id, ". Out of range [-1, 1].");
+			const auto basis = getBasis(biomes, blockCoord, h0);
+
+			// This isn't quite correct. A basis doesn't _need_ to be between [-1, 1], but
+			// all biomes should have roughly the same range. If one is [-100, 100] and
+			// another is [-1, 1] they won't blend well since the one with the larger
+			// range will always dominate regardless of the blend weight.
+			//ENGINE_DEBUG_ASSERT(-1.0f <= basis && basis <= 1.0f, "Invalid basis value given for biome ", biomeWeight.id, ". Out of range [-1, 1].");
 			totalBasis += biomeWeight.weight * basis;
 		}
 
