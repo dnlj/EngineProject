@@ -335,7 +335,7 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
 			ENGINE_INLINE constexpr auto& getHeightCache() const noexcept { return heightCache; }
 
-			void populateHeightCache0(const BlockUnit minBlock, const BlockUnit maxBlock);
+			void populateHeight0Cache(const BlockUnit minBlock, const BlockUnit maxBlock);
 
 			/**
 			 * Calculate the biome for the given block without any blending/interpolation.

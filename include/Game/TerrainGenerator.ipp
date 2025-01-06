@@ -76,7 +76,7 @@ namespace Game::Terrain {
 
 		// TODO: split height0/height1?
 		// We need to include the biome blend distance for biome sampling in calcBiomeRaw.
-		populateHeightCache0(
+		populateHeight0Cache(
 			chunkToBlock(request.minChunkCoord).x - biomeBlendDist,
 			chunkToBlock(request.maxChunkCoord + ChunkVec{1, 0}).x + biomeBlendDist
 		);
@@ -156,6 +156,12 @@ namespace Game::Terrain {
 		// TODO: Theoretically a structure could overlap into unloaded/unfinished chunks.
 		//       Don't we need to check and then generate those chunks here? Post culling.
 		//       Or add some extra buffer to the initial request based on the largest known structure. <-- Easiest, but worse perf.
+		//       
+		//       Maybe at this point we could issue additional generation requests to generate
+		//       those needed chunks. This is probably be the best option, but we need to add a
+		//       way to generate those structs up to hte block stage and then not to structs.
+		//       Right now we already store the stage so we just need to add a stage for structs
+		//       and that should be fairly doable.
 
 		for (const auto& structInfo : structures) {
 			if (structInfo.generate) {
@@ -242,44 +248,9 @@ namespace Game::Terrain {
 		}
 	}
 
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	// We need to solve the biome/basis blending for all involved biomes. This is needed
-	// so we can determine h0/h1 and transition smoothly between them.
-	//
-	//
-	//
-	//
-	//
-	//
-	// - May want to consider that temp data we have talked about a coupel of times. _might_ make biome sampling cheaper? Idk
-	// - Get biome
-	// - Based on distant to edge get up to 4 biomes
-	// - Based on distance to edge we can determine weight between 0.5 and 1
-	//	 - 0.5 = at edge, 50% biomeA 50% biomeB
-	//   - Will need to normalize by the number of total biomes, either 2 or 4
-	//   - Might be easer to do math between 0 and 1 then scale, idk
-	// - With that we now have weights for each biome
-	// - Call biome basis and multiply by weight for final basis
-	// - Will need another funciton to determine block weight, exactly the same as we needed in the old map generator.
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-
 	template<class... Biomes>
-	void Generator<Biomes...>::populateHeightCache0(const BlockUnit minBlock, const BlockUnit maxBlock) {
+	void Generator<Biomes...>::populateHeight0Cache(const BlockUnit minBlock, const BlockUnit maxBlock) {
+		// TODO: if the new range overlaps the old range split and shift so we don't have to regenerate those heights.
 		heightCache.reset(minBlock, maxBlock);
 
 		for (BlockUnit blockCoord = minBlock; blockCoord < maxBlock; ++blockCoord) {
@@ -304,7 +275,7 @@ namespace Game::Terrain {
 			//
 			//
 
-			heightCache.get(blockCoord) = static_cast<BlockUnit>(1000 * simplex1.value(blockCoord * 0.00005f, 0));
+			heightCache.get(blockCoord) = static_cast<BlockUnit>(500 * simplex1.value(blockCoord * 0.00005f, 0));
 		}
 	}
 
@@ -404,7 +375,7 @@ namespace Game::Terrain {
 		//         B B B B
 		//       The center corner where A and B meet has an odd gradient. This can be
 		//       seen in the the terrain preview with Layer::BiomeBlendWeights. This is
-		//       _mostly_ hidden once the basis strength is applied though so its not urgent
+		//       _somewhat_ hidden once the basis strength is applied though so its not urgent
 		//       to address.
 
 		if (left) { // Left

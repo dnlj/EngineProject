@@ -282,7 +282,7 @@ namespace {
 					ENGINE_LOG2("Generation Time: {}", Engine::Clock::Seconds{endTime - startTime});
 				} else {
 					// The height cache is still needs to be populated for biome sampling.
-					generator.populateHeightCache0(indexToBlock({0, 0}).x - Terrain::biomeBlendDist, indexToBlock(res).x + Terrain::biomeBlendDist);
+					generator.populateHeight0Cache(indexToBlock({0, 0}).x - Terrain::biomeBlendDist, indexToBlock(res).x + Terrain::biomeBlendDist);
 				}
 
 				// TODO: Move this color specification to Blocks.xpp, could be useful
@@ -311,7 +311,13 @@ namespace {
 					}
 					return colors;
 				}();
+
+				static const auto sizeToBrightness = [](BlockUnit size){
+					return 0.5_f + size / (2.0_f * Terrain::biomeScales[0].size);
+				};
+
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
+				const auto& heightCache = generator.getHeightCache();
 
 				const RealmId realmId = 0; // TODO: realm support
 				for (BlockUnit y = 0; y < res.y; ++y) {
@@ -322,15 +328,10 @@ namespace {
 
 						if (mode == Layer::BiomeRawWeights) {
 
-							const auto sizeToColor = [](BlockUnit size){
-								return 0.5_f + size / (2.0_f * Terrain::biomeScales[0].size);
-							};
-
-
-
-
-							const auto info = generator.calcBiomeRaw(blockCoord);
-							data[idx] = sizeToColor(info.meta->size) * glm::vec3(biomeToColor[info.id]);
+							// Need to include the biome offset or else things won't line up when switching layers.
+							const auto blockCoordAdj = blockCoord - (Terrain::biomeScaleOffset + heightCache.get(blockCoord.x));
+							const auto info = generator.calcBiomeRaw(blockCoordAdj);
+							data[idx] = sizeToBrightness(info.meta->size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
 							auto weights = generator.calcBiomeBlend(blockCoord);
 							normalizeBiomeWeights(weights);
@@ -351,7 +352,6 @@ namespace {
 							// We need to clamp blockCoord at maxBlock because of the applyZoom
 							// does ceil which can give slightly off results from some values of
 							// zoom < 1 due to float precision.
-							const auto& heightCache = generator.getHeightCache();
 							const auto h0 = heightCache.get(std::min(heightCache.getMaxBlock() - 1, blockCoord.x));
 							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
 						} else if (mode == Layer::Blocks) {
