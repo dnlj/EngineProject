@@ -57,7 +57,6 @@
 namespace Game::Terrain {
 	template<class... Biomes>
 	void Generator<Biomes...>::generate1(Terrain& terrain, const Request& request) {
-
 		// TODO: add biome stages
 		// TODO: add h0/h1 stages
 		// - Generate stages.
@@ -74,7 +73,6 @@ namespace Game::Terrain {
 		// TODO: Should this be cached (or stored?) on the terrain? Maybe cache on the
 		//       generator? Right now we re-generate for every request.
 
-		// TODO: split height0/height1?
 		// We need to include the biome blend distance for biome sampling in calcBiomeRaw.
 		populateHeight0Cache(
 			chunkToBlock(request.minChunkCoord).x - biomeBlendDist,
@@ -366,6 +364,16 @@ namespace Game::Terrain {
 		const auto bottomW = (biomeBlendDist - bottomD) / 2;
 		const auto topW = (biomeBlendDist - topD) / 2;
 
+		// The below note isn't quite correct either. Some inner corners are actually
+		// fine, others aren't. Seems to be a slightly more complex interaction.
+		// See: 83990, -5346
+		//
+		// There is also some sections fade between lighter and darker. I think this might
+		// be related to the biome scale? I'm not sure why that would be though since we
+		// aren't using the scale here. We just sample the biome.
+		//
+		// Could this be because we use the size in the distances calcs above? I think so?
+		// 
 		// NOTE: This isn't quite right because you get incorrect blending on internal
 		//       corners. For example assume you have two biomes: A and B. Then when you
 		//       have an internal corner such as:

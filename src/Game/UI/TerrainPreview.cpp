@@ -17,6 +17,7 @@ namespace {
 	using namespace Game::UI;
 
 	enum class Layer {
+		BiomeBaseGrid,
 		BiomeRawWeights,
 		BiomeBlendWeights,
 		BiomeFinalWeights,
@@ -134,27 +135,9 @@ namespace {
 		Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
 		Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
 
+		// TODO: create and example/concept/check with only the _needed_/optional functions.
+		//       getBasisHeightBlend is not part of the TerrainGenerator requirements.
 		Float getBasisHeightBlend(const BlockUnit h0, const BlockUnit y) {
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
 			return (200 - std::min<BlockUnit>(h0 - y, 200)) * (1.0_f / 200.0_f);
 		}
 
@@ -295,10 +278,10 @@ namespace {
 					colors[BlockId::Debug2] = {200,  26, 226};
 					colors[BlockId::Debug3] = {226,  26, 162};
 					colors[BlockId::Debug4] = {226,  26, 111};
-					colors[BlockId::Dirt]	  = {158,  98,  33};
+					colors[BlockId::Dirt]	= {158,  98,  33};
 					colors[BlockId::Grass]  = { 67, 226,  71};
-					colors[BlockId::Iron]	  = {144, 144, 144};
-					colors[BlockId::Gold]	  = {255, 235,  65};
+					colors[BlockId::Iron]	= {144, 144, 144};
+					colors[BlockId::Gold]	= {255, 235,  65};
 					return colors;
 				}();
 
@@ -326,8 +309,13 @@ namespace {
 						const auto blockCoord = indexToBlock({x, y});
 						const auto idx = x + yspan;
 
-						if (mode == Layer::BiomeRawWeights) {
-
+						if (mode == Layer::BiomeBaseGrid) {
+							// This won't line up 100% because we don't include the height offset (see
+							// BiomeRawWeights), but that's the point. Showing the undistorted biome grid.
+							const auto blockCoordAdj = blockCoord - Terrain::biomeScaleOffset;
+							const auto info = generator.calcBiomeRaw(blockCoordAdj);
+							data[idx] = sizeToBrightness(info.meta->size) * glm::vec3(biomeToColor[info.id]);
+						} else if (mode == Layer::BiomeRawWeights) {
 							// Need to include the biome offset or else things won't line up when switching layers.
 							const auto blockCoordAdj = blockCoord - (Terrain::biomeScaleOffset + heightCache.get(blockCoord.x));
 							const auto info = generator.calcBiomeRaw(blockCoordAdj);
