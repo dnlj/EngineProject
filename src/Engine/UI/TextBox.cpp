@@ -10,9 +10,9 @@ namespace Engine::UI {
 		const auto& font = str.getFont();
 		const auto lineHeight = font->getLineHeight();
 		const glm::vec2 size = getSize();
-		const glm::vec4 bg = {0.3,0.3,0.3,1};
-		const glm::vec4 bo = {0,0,0,1};
-
+		constexpr static glm::vec4 bg = {0.3,0.3,0.3,1};
+		constexpr static glm::vec4 bo = {0,0,0,1};
+		const bool isFocused = ctx->getFocus() == this;
 		ctx->setColor(bg);
 		ctx->drawRect({}, size);
 
@@ -23,7 +23,7 @@ namespace Engine::UI {
 			const auto a = caret.pos < select.pos ? caret : select;
 			const auto b = caret.pos < select.pos ? select : caret;
 
-			ctx->setColor(bo);
+			ctx->setColor(isFocused ? theme.colors.textSelection : theme.colors.textSelectionM1);
 			ctx->drawRect(topCaret + glm::vec2{a.pos, 0}, {b.pos - a.pos, lineHeight});
 
 			// Separate color for selection
@@ -52,7 +52,7 @@ namespace Engine::UI {
 			ctx->drawString(off, &str);
 		}
 
-		if (ctx->getFocus() == this && ctx->isBlinking()) {
+		if (isFocused && ctx->isBlinking()) {
 			ctx->setColor(bo);
 			ctx->drawRect(
 				topCaret + glm::vec2{caret.pos, 0},

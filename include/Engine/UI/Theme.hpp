@@ -52,7 +52,11 @@ namespace Engine::UI {
 				glm::vec4 feature;
 
 				/** Button */
-				glm::vec4 button; 
+				glm::vec4 button;
+
+				/** Text */
+				glm::vec4 textSelectionM1;
+				glm::vec4 textSelection;
 
 
 			} colors;

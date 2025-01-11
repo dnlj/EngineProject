@@ -235,6 +235,9 @@ namespace Engine::UI {
 			.feature = {0.9, 0.9, 0.9, 1},
 
 			.button = hsl({202, s, l, 1}),
+
+			.textSelectionM1 = rgb({0.5, 0.5, 0.6, 1.0}),
+			.textSelection = rgb({0.1, 0.5, 0.9, 1}),
 		};
 	}
 
