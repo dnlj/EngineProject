@@ -108,7 +108,7 @@ namespace Game::Terrain {
 
 				if (func) {
 					auto const& chunk = region.chunkAt(regionIdx);
-					(*func)(biomes, terrain, chunk, chunkCoord, std::back_inserter(structures));
+					(*func)(biomes, terrain, chunk, chunkCoord, heightCache, std::back_inserter(structures));
 				}
 
 				// TODO: could this be done with a custom back_inserter instead of an extra loop after the fact?

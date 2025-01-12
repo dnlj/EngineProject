@@ -25,6 +25,7 @@ namespace {
 		BiomeFinalWeights,
 		BiomeFinalWeightsFull,
 		TerrainHeight0,
+		TerrainBasis,
 		//TerrainHeight1,
 		Blocks,
 		_count,
@@ -109,12 +110,14 @@ namespace {
 
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
-			BlockVec offset = {80367, 525};
+			BlockVec offset = {81489, -516};
 			//BlockVec offset = {77967.0, 0.0};
 			//BlockVec offset = {-127, -69};
 
-			float64 zoom = 5.0f; // Larger # = farther out = see more = larger FoV
+			float64 zoom = 2.0f; // Larger # = farther out = see more = larger FoV
 			Layer mode = Layer::BiomeRawWeights;
+			Float minBasis = FLT_MAX;
+			Float maxBasis = -FLT_MAX;
 
 		private:
 			// View
@@ -242,6 +245,16 @@ namespace {
 							// zoom < 1 due to float precision.
 							const auto h0 = heightCache.get(std::min(heightCache.getMaxBlock() - 1, blockCoord.x));
 							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
+						} else if (mode == Layer::TerrainBasis) {
+							// Clamp is needed. See comment in TerrainHeight0.
+							const auto h0 = heightCache.get(std::min(heightCache.getMaxBlock() - 1, blockCoord.x));
+							const auto basisInfo = generator.calcBasis(blockCoord, h0);
+							minBasis = std::min(minBasis, basisInfo.basis);
+							maxBasis = std::max(maxBasis, basisInfo.basis);
+
+							const auto range = maxBasis - minBasis;
+							const auto scale = (basisInfo.basis - minBasis) / range;
+							data[idx] = scale * glm::vec3(biomeToColor[basisInfo.id]);
 						} else if (mode == Layer::Blocks) {
 							const auto chunkCoord = blockToChunk(blockCoord);
 							const auto regionCoord = chunkToRegion(chunkCoord);
