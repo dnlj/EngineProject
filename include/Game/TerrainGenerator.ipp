@@ -320,7 +320,10 @@ namespace Game::Terrain {
 
 			for (auto& w : weights) {
 				if (w.id == id) {
+					//w.weight = 0.8f * weight + 0.2f * w.weight;
 					w.weight += weight;
+					//w.weight = std::max(weight, w.weight);
+					//w.weight = (weight + w.weight) / 2;
 					return;
 				}
 			}
@@ -364,50 +367,101 @@ namespace Game::Terrain {
 		const auto bottomW = (biomeBlendDist - bottomD) / 2;
 		const auto topW = (biomeBlendDist - topD) / 2;
 
-		// The below note isn't quite correct either. Some inner corners are actually
-		// fine, others aren't. Seems to be a slightly more complex interaction.
-		// See: 83990, -5346
+		// Blending Issue:
+		//   The issue is that when you are on a edge (not at corner) we only check the
+		//   biome opposite the current coord, but not the diagonals. This causes the
+		//   blending issue when you have a large biome next to a smaller biome on an edge.
+		//   
+		//   Consider you have three biome areas. A large area (X), a small area (Y) with
+		//   the same id as X, and a small area (Z) with a different id than X. The blending
+		//   issue occurs on the inner edge where the all three X, Y, and Z meet.
+		//   
+		//     X X X X X X
+		//     X X X X X X
+		//     X X O X X X <-- Block O  part of the large biome X. Used a different letter for ease of referencing it.
+		//     Z Z Y Y ? ? <-- "?" Is just a placeholder for any biome. We don't care about the biome here.
+		//     Z Z Y Y ? ?
+		//   
+		//   For the blending of block O it will only consider the Y biome below it since it
+		//   is not at a corner. This leads to the sharp biome weight transition/step.
+		//   
+		//   One solution for this is to simply sample the full 3x3 (9 samples total)
+		//   centered on the current coord. This works, but slows down generation
+		//   _significantly_. This isn't trivial to address using the current logic because
+		//   we need the weight of the diagonals, which we don't have here. It is expensive
+		//   to get those weights since they aren't based on the size of the current biome
+		//   (at block O = X), they are based on Z. The diagonals are only cheap to get at the corners.
+		//   
+		//   This current logic does work if all biomes are the same scale. One option might
+		//   be to make all biomes the same scale and instead have some type of logic to
+		//   generate clusters of the same biome.
 		//
-		// There is also some sections fade between lighter and darker. I think this might
-		// be related to the biome scale? I'm not sure why that would be though since we
-		// aren't using the scale here. We just sample the biome.
-		//
-		// Could this be because we use the size in the distances calcs above? I think so?
-		// 
-		// NOTE: This isn't quite right because you get incorrect blending on internal
-		//       corners. For example assume you have two biomes: A and B. Then when you
-		//       have an internal corner such as:
-		//         A A B B
-		//         A A B B
-		//         B B B B
-		//         B B B B
-		//       The center corner where A and B meet has an odd gradient. This can be
-		//       seen in the the terrain preview with Layer::BiomeBlendWeights. This is
-		//       _somewhat_ hidden once the basis strength is applied though so its not urgent
-		//       to address.
+		//   It is also possible to get the correct weight based on the calcBiomeRaw like
+		//   we do above for the current biome, but again, that is q good bit more
+		//   calculations and slows things down a lot. We should be able to better than
+		//   the naive 3x3 mentioned above though, but again more logic and still more
+		//   computations than it is currently.
 
-		if (left) { // Left
-			addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y}).id, leftW);
-				
-			if (bottom) { // Bottom Left
-				addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(leftW, bottomW));
-			} else if (top) { // Top Left
-				addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(leftW, topW));
+		if constexpr (true) {
+			if (left) { // Left
+				addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y}).id, leftW);
+					
+				if (bottom) { // Bottom Left
+					addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(leftW, bottomW));
+				} else if (top) { // Top Left
+					addWeight(calcBiomeRaw({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(leftW, topW));
+				}
+			} else if (right) { // Right
+				addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y}).id, rightW);
+					
+				if (bottom) { // Bottom Right
+					addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(rightW, bottomW));
+				} else if (top) { // Top Right
+					addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(rightW, topW));
+				}
 			}
-		} else if (right) { // Right
-			addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y}).id, rightW);
 				
-			if (bottom) { // Bottom Right
-				addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(rightW, bottomW));
-			} else if (top) { // Top Right
-				addWeight(calcBiomeRaw({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(rightW, topW));
+			if (bottom) { // Bottom Center
+				addWeight(calcBiomeRaw({blockCoord.x, blockCoord.y - biomeBlendDist}).id, bottomW);
+			} else if (top) { // Top Center
+				addWeight(calcBiomeRaw({blockCoord.x, blockCoord.y + biomeBlendDist}).id, topW);
 			}
-		}
-			
-		if (bottom) { // Bottom Center
-			addWeight(calcBiomeRaw({blockCoord.x, blockCoord.y - biomeBlendDist}).id, bottomW);
-		} else if (top) { // Top Center
-			addWeight(calcBiomeRaw({blockCoord.x, blockCoord.y + biomeBlendDist}).id, topW);
+		} else {
+			// Naive 3x3 9 samples. This is the most brute force way possible. We should
+			// be able to do a good bit better than this if we want to put in that effort.
+			// I wonder if the biome clustering mentioned above would be better and
+			// potentally lead to more interesting biome geometry.
+			const auto test = [](BlockUnit a, BlockUnit b){
+				if (a < 0 && b >= 0) { return b; }
+				if (b < 0 && a >= 0) { return a; }
+				return std::min(a, b);
+			};
+
+			const auto weightAt = [&](BlockVec coord) -> std::pair<BiomeId, BlockUnit> {
+				const auto info = calcBiomeRaw(coord);
+				const auto d1 = info.rem.x;
+				const auto d2 = info.meta->size - info.rem.x;
+				const auto d3 = info.rem.y;
+				const auto d4 = info.meta->size - info.rem.y;
+				return {info.id, test(d1, test(d2, test(d3, test(d4, biomeBlendDist))))};
+			};
+
+			const auto maybe = [&](BlockVec coord) {
+				auto w = weightAt(coord);
+				addWeight(w.first, w.second);
+			};
+		
+			leftW;rightW;topW;bottomW;
+			weights.clear();
+			maybe({blockCoord.x, blockCoord.y});
+			maybe({blockCoord.x - biomeBlendDist, blockCoord.y});
+			maybe({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist});
+			maybe({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist});
+			maybe({blockCoord.x + biomeBlendDist, blockCoord.y});
+			maybe({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist});
+			maybe({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist});
+			maybe({blockCoord.x, blockCoord.y - biomeBlendDist});
+			maybe({blockCoord.x, blockCoord.y + biomeBlendDist});
 		}
 
 		ENGINE_DEBUG_ONLY({

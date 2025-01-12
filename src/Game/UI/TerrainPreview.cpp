@@ -211,9 +211,11 @@ namespace {
 
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
-			BlockVec offset = {77967.0, 0.0};
+			BlockVec offset = {80367, 525};
+			//BlockVec offset = {77967.0, 0.0};
 			//BlockVec offset = {-127, -69};
-			float64 zoom = 4.5f; // Larger # = farther out = see more = larger FoV
+
+			float64 zoom = 1.0f; // Larger # = farther out = see more = larger FoV
 			Layer mode = Layer::BiomeRawWeights;
 
 		private:
@@ -245,6 +247,8 @@ namespace {
 
 		private:
 			void rebuild() {
+				std::atomic_signal_fence(std::memory_order_acq_rel); const auto startTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
+
 				nextRebuild = Engine::Clock::TimePoint::max();
 				// Chunk offset isn't affected by zoom. Its a fixed offset so its always the same regardless of zoom.
 				const auto chunkOffset = blockToChunk(offset);
@@ -259,10 +263,7 @@ namespace {
 
 				if (mode == Layer::Blocks) {
 					terrain = {};
-					std::atomic_signal_fence(std::memory_order_acq_rel); const auto startTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
 					generator.generate1(terrain, Terrain::Request{chunkOffset, chunkOffset + chunksPerImg, 0});
-					std::atomic_signal_fence(std::memory_order_acq_rel); const auto endTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
-					ENGINE_LOG2("Generation Time: {}", Engine::Clock::Seconds{endTime - startTime});
 				} else {
 					// The height cache is still needs to be populated for biome sampling.
 					generator.populateHeight0Cache(indexToBlock({0, 0}).x - Terrain::biomeBlendDist, indexToBlock(res).x + Terrain::biomeBlendDist);
@@ -365,8 +366,17 @@ namespace {
 
 							data[idx] = blockToColor[blockId];
 						}
+
+						BlockVec poi = {80670, 889};
+						const auto tol = 2 * zoom; // The zoom multiplier gives use a x*x pixel dot at the point.
+						if ((blockCoord.x >= poi.x) && (blockCoord.x <= poi.x + tol) && (blockCoord.y >= poi.y) && (blockCoord.y <= poi.y + tol)) {
+							data[idx] = {200, 0, 0};
+						}
 					}
 				}
+
+				std::atomic_signal_fence(std::memory_order_acq_rel); const auto endTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
+				ENGINE_LOG2("Generation Time: {}", Engine::Clock::Seconds{endTime - startTime});
 
 				// TODO: why does fixed size not work here. Fixed size should always work.
 				setFixedSize(img.size()); // TODO: rm - just for testing
