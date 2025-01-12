@@ -1,6 +1,7 @@
 // Game
 #include <Game/UI/TerrainPreview.hpp>
 #include <Game/TerrainGenerator.hpp>
+#include <Game/Terrain/biomes/BiomeOne.hpp>
 
 // Engine
 #include <Engine/UI/ImageDisplay.hpp>
@@ -15,6 +16,7 @@
 namespace {
 	using namespace Game;
 	using namespace Game::UI;
+	using namespace Game::Terrain;
 
 	enum class Layer {
 		BiomeBaseGrid,
@@ -29,105 +31,6 @@ namespace {
 		_last = _count - 1,
 	};
 	ENGINE_BUILD_DECAY_ENUM(Layer);
-
-	#define STAGE_DEF \
-		template<Terrain::StageId Stage> constexpr static bool hasStage = false;\
-		template<Terrain::StageId Stage>\
-		ENGINE_INLINE BlockId stage(TERRAIN_STAGE_ARGS) {\
-			static_assert(Stage != Stage, "The requested stage is not defined for this biome.");\
-		}
-
-	#define STAGE(N)\
-		template<> constexpr static bool hasStage<N> = true;\
-		template<> ENGINE_INLINE_REL BlockId stage<N>(TERRAIN_STAGE_ARGS)
-
-	using Float = Terrain::Float;
-	ENGINE_INLINE consteval Float operator""_f(const long double v) noexcept { return static_cast<Float>(v); }
-	ENGINE_INLINE consteval Float operator""_f(const uint64 v) noexcept { return static_cast<Float>(v); }
-
-	struct BiomeOne {
-		STAGE_DEF;
-
-		Engine::Noise::OpenSimplexNoise simplex{1234};
-
-		STAGE(1) {
-			// TODO: if we are always going to be converting to float anyways, should we
-			//       pass in a float version as well? That kind of breaks world size though.
-
-			const auto h1 = h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
-
-			if (blockCoord.y > h1) {
-				return BlockId::Air;
-			} else if ((h1-blockCoord.y) < 1) {
-				return BlockId::Grass;
-			}
-
-			constexpr Float scale = 0.06_f;
-			constexpr Float groundScale = 1.0_f / 100.0_f;
-			const Float groundGrad = std::max(0.0_f, 1.0_f - (h1 - blockCoord.y) * groundScale);
-			const auto val = simplex.value(glm::vec2{blockCoord} * scale) + groundGrad;
-
-			if (val > 0) {
-				return BlockId::Debug;
-			} else {
-				return BlockId::Air;
-			}
-		}
-
-		//STAGE(2) {
-		//	auto& blockId = chunk.data[blockIndex.x][blockIndex.y];
-		//	if (((blockCoord.x & 1) ^ (blockCoord.y & 1)) && (blockId == BlockId::Air)) {
-		//		return BlockId::Debug2;
-		//	} else {
-		//		return blockId;
-		//	}
-		//}
-
-		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) {
-			return simplex.value(blockCoord);
-		}
-
-		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) {
-			//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
-			auto blockCoord = chunkToBlock(chunkCoord);
-			inserter = {.min = blockCoord, .max = blockCoord, .id = 1};
-
-			const auto maxX = blockCoord.x + chunkSize.x;
-			for (; blockCoord.x < maxX; ++blockCoord.x) {
-				if (blockCoord.x % 7 == 0) {
-					inserter = {blockCoord, blockCoord + BlockVec{2, 8}, 0};
-				}
-			}
-		}
-
-		void genLandmarks(TERRAIN_GEN_LANDMARKS_ARGS) {
-			// TODO: This is the least efficient way possible to do this. We need a good
-			//       api to efficiently edit multiple blocks spanning multiple chunks and
-			//       regions. We would need to pre split between both regions and then chunks
-			//       and then do something roughly like:
-			//       for region in splitRegions:
-			//           for chunk in splitRegionChunks:
-			//               applyEdit(chunk, editsForChunk(chunk));
-			for (auto blockCoord = info.min; blockCoord.x <= info.max.x; ++blockCoord.x) {
-				for (blockCoord.y = info.min.y; blockCoord.y <= info.max.y; ++blockCoord.y) {
-					const auto chunkCoord = blockToChunk(blockCoord);
-					const UniversalRegionCoord regionCoord = {info.realmId, chunkToRegion(chunkCoord)};
-					auto& region = terrain.getRegion(regionCoord);
-					const auto regionIdx = chunkToRegionIndex(chunkCoord);
-					auto& chunk = region.chunks[regionIdx.x][regionIdx.y];
-					const auto chunkIdx = blockToChunkIndex(blockCoord, chunkCoord);
-					ENGINE_DEBUG_ASSERT(chunkIdx.x >= 0 && chunkIdx.x < chunkSize.x);
-					ENGINE_DEBUG_ASSERT(chunkIdx.y >= 0 && chunkIdx.y < chunkSize.y);
-
-					if (chunk.data[chunkIdx.x][chunkIdx.y] != BlockId::Debug4)
-					{
-						chunk.data[chunkIdx.x][chunkIdx.y] = info.id == 0 ? BlockId::Gold : BlockId::Debug3;
-					}
-					//ENGINE_LOG2("GEN LANDMARK: {}", chunkCoord);
-				}
-			}
-		}
-	};
 
 	template<uint64 Seed>
 	struct BiomeDebugBase {
@@ -147,11 +50,6 @@ namespace {
 				 + 0.2f * simplex2.value(glm::vec2{blockCoord} * 0.010f)
 				 + 0.1f * simplex3.value(glm::vec2{blockCoord} * 0.100f)
 				 + 0.5f;
-		}
-
-		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
-			// TODO:
-			return 0;
 		}
 	};
 
@@ -215,7 +113,7 @@ namespace {
 			//BlockVec offset = {77967.0, 0.0};
 			//BlockVec offset = {-127, -69};
 
-			float64 zoom = 1.0f; // Larger # = farther out = see more = larger FoV
+			float64 zoom = 5.0f; // Larger # = farther out = see more = larger FoV
 			Layer mode = Layer::BiomeRawWeights;
 
 		private:
@@ -230,8 +128,9 @@ namespace {
 
 			// Terrain
 			//Terrain::Generator<BiomeOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
-			Terrain::Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
-			Terrain::Terrain terrain;
+			//Terrain::Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
+			Generator<BiomeOne, BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
+			Game::Terrain::Terrain terrain;
 
 		public:
 			TerrainDragArea(EUI::Context* context)
@@ -263,10 +162,10 @@ namespace {
 
 				if (mode == Layer::Blocks) {
 					terrain = {};
-					generator.generate1(terrain, Terrain::Request{chunkOffset, chunkOffset + chunksPerImg, 0});
+					generator.generate1(terrain, Request{chunkOffset, chunkOffset + chunksPerImg, 0});
 				} else {
 					// The height cache is still needs to be populated for biome sampling.
-					generator.populateHeight0Cache(indexToBlock({0, 0}).x - Terrain::biomeBlendDist, indexToBlock(res).x + Terrain::biomeBlendDist);
+					generator.populateHeight0Cache(indexToBlock({0, 0}).x - biomeBlendDist, indexToBlock(res).x + biomeBlendDist);
 				}
 
 				// TODO: Move this color specification to Blocks.xpp, could be useful
@@ -297,7 +196,7 @@ namespace {
 				}();
 
 				static const auto sizeToBrightness = [](BlockUnit size){
-					return 0.5_f + size / (2.0_f * Terrain::biomeScales[0].size);
+					return 0.5_f + size / (2.0_f * biomeScales[0].size);
 				};
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
@@ -313,12 +212,12 @@ namespace {
 						if (mode == Layer::BiomeBaseGrid) {
 							// This won't line up 100% because we don't include the height offset (see
 							// BiomeRawWeights), but that's the point. Showing the undistorted biome grid.
-							const auto blockCoordAdj = blockCoord - Terrain::biomeScaleOffset;
+							const auto blockCoordAdj = blockCoord - biomeScaleOffset;
 							const auto info = generator.calcBiomeRaw(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.meta->size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeRawWeights) {
 							// Need to include the biome offset or else things won't line up when switching layers.
-							const auto blockCoordAdj = blockCoord - (Terrain::biomeScaleOffset + heightCache.get(blockCoord.x));
+							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + heightCache.get(blockCoord.x));
 							const auto info = generator.calcBiomeRaw(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.meta->size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {

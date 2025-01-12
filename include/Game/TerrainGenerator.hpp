@@ -1,5 +1,8 @@
 #pragma once
 
+// Game
+#include <Game/Terrain/terrain.hpp>
+
 // Engine
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/StaticVector.hpp>
@@ -13,11 +16,6 @@
 
 // TODO: split out
 namespace Game::Terrain {
-	using StageId = uint8; // TODO: just stage
-	using UInt = uint32;
-	using Int = int32;
-	using Float = float32;
-
 	// Should always be ordered largest to smallest
 	enum class BiomeScale : uint8 {
 		Large,
