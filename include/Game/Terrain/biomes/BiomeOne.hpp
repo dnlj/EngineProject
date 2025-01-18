@@ -1,7 +1,7 @@
 #include <Game/Terrain/biome.hpp>
 
 namespace Game::Terrain {
-	struct BiomeOne {
+	struct BiomeOne : public SimpleBiome {
 		STAGE_DEF;
 
 		Engine::Noise::OpenSimplexNoise simplex{1234};
@@ -10,24 +10,48 @@ namespace Game::Terrain {
 			// TODO: if we are always going to be converting to float anyways, should we
 			//       pass in a float version as well? That kind of breaks world size though.
 
-			const auto h1 = h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
+			//
+			//
+			//
+			//
+			//
+			//
+			// TODO: change to use basis
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
 
-			if (blockCoord.y > h1) {
-				return BlockId::Air;
-			} else if ((h1-blockCoord.y) < 1) {
-				return BlockId::Grass;
-			}
 
-			constexpr Float scale = 0.06_f;
-			constexpr Float groundScale = 1.0_f / 100.0_f;
-			const Float groundGrad = std::max(0.0_f, 1.0_f - (h1 - blockCoord.y) * groundScale);
-			const auto val = simplex.value(glm::vec2{blockCoord} * scale) + groundGrad;
+			// if y > h0 && blocksEmpty(y, y+5);
 
-			if (val > 0) {
-				return BlockId::Debug;
-			} else {
-				return BlockId::Air;
-			}
+			//const auto h1 = h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
+			//
+			//if (blockCoord.y > h1) {
+			//	return BlockId::Air;
+			//} else if ((h1-blockCoord.y) < 1) {
+			//	return BlockId::Grass;
+			//}
+
+			//constexpr Float scale = 0.06_f;
+			//constexpr Float groundScale = 1.0_f / 100.0_f;
+			//const Float groundGrad = std::max(0.0_f, 1.0_f - (h1 - blockCoord.y) * groundScale);
+			//const auto val = simplex.value(glm::vec2{blockCoord} * scale) + groundGrad;
+			//
+			//if (val > 0) {
+			//	return BlockId::Debug;
+			//} else {
+			//	return BlockId::Air;
+			//}
+
+			return BlockId::Debug;
 		}
 
 		//STAGE(2) {
@@ -44,8 +68,14 @@ namespace Game::Terrain {
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			if (blockCoord.y > h0) { return 0.0f; }
-			return 1.0f;
+			const auto h1 = h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
+			if (blockCoord.y > h1) { return outGrad(h1, blockCoord.y, 1.0_f / 5.0_f); }
+			
+			constexpr Float scale = 0.06_f;
+			constexpr Float groundScale = 1.0_f / 100.0_f;
+			return
+				+ inGrad(h1, blockCoord.y, groundScale)
+				+ simplex.value(glm::vec2{blockCoord} * scale);
 		}
 
 		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) {
@@ -56,7 +86,12 @@ namespace Game::Terrain {
 			const auto maxX = blockCoord.x + chunkSize.x;
 			for (; blockCoord.x < maxX; ++blockCoord.x) {
 				if (blockCoord.x % 7 == 0) {
-					inserter = {blockCoord, blockCoord + BlockVec{2, 8}, 0};
+					if (blockCoord.y >= heightCache.get(blockCoord.x))
+					{
+						// TODO: land on surface
+
+						inserter = {blockCoord, blockCoord + BlockVec{2, 8}, 0};
+					}
 				}
 			}
 		}

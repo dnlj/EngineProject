@@ -2,6 +2,7 @@
 #include <Game/UI/TerrainPreview.hpp>
 #include <Game/TerrainGenerator.hpp>
 #include <Game/Terrain/biomes/BiomeOne.hpp>
+#include <Game/Terrain/biomes/BiomeDebug.hpp>
 
 // Engine
 #include <Engine/UI/ImageDisplay.hpp>
@@ -33,88 +34,14 @@ namespace {
 	};
 	ENGINE_BUILD_DECAY_ENUM(Layer);
 
-	template<uint64 Seed>
-	struct BiomeDebugBase {
-		Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(Seed)};
-		Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
-		Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
-
-		// TODO: create and example/concept/check with only the _needed_/optional functions.
-		//       getBasisHeightBlend is not part of the TerrainGenerator requirements.
-		Float getBasisHeightBlend(const BlockUnit h0, const BlockUnit y) {
-			return (200 - std::min<BlockUnit>(h0 - y, 200)) * (1.0_f / 200.0_f);
-		}
-
-		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) {
-			// These need to be tuned based on biome scales blend dist or else you can get odd clipping type issues.
-			return 0.2f * simplex1.value(glm::vec2{blockCoord} * 0.003f)
-				 + 0.2f * simplex2.value(glm::vec2{blockCoord} * 0.010f)
-				 + 0.1f * simplex3.value(glm::vec2{blockCoord} * 0.100f)
-				 + 0.5f;
-		}
-	};
-
-	struct BiomeDebugOne : public BiomeDebugBase<0xF7F7'F7F7'F7F7'1111> {
-		STAGE_DEF;
-		STAGE(1) {
-			return BlockId::Debug;
-			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug2; }
-			if ((blockCoord.x & 1) ^ (blockCoord.y & 1)) {
-				return BlockId::Debug;
-			} else {
-				return BlockId::Air;
-			}
-		}
-		
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			if (blockCoord.y > h0) { return 0.0f; }
-			return getBasisHeightBlend(h0, blockCoord.y) + std::abs(simplex1.value(glm::vec2{blockCoord} * 0.03_f)) - 0.15_f;
-		}
-	};
-	
-	struct BiomeDebugTwo : public BiomeDebugBase<0xF7F7'F7F7'F7F7'2222> {
-		STAGE_DEF;
-		STAGE(1) {
-			return BlockId::Debug2;
-			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug3; }
-			if (blockCoord.x % 64 == blockCoord.y % 64) {
-				return BlockId::Gold;
-			} else {
-				return BlockId::Dirt;
-			}
-		}
-
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			if (blockCoord.y > h0) { return 0.0f; }
-			return getBasisHeightBlend(h0, blockCoord.y) + std::abs(simplex1.value(glm::vec2{blockCoord} * 0.06_f)) - 0.75_f;
-		}
-	};
-	
-	struct BiomeDebugThree : public BiomeDebugBase<0xF7F7'F7F7'F7F7'3333> {
-		STAGE_DEF;
-		STAGE(1) {
-			return BlockId::Debug3;
-			if (blockCoord.x < 0 || blockCoord.y < 0) { return BlockId::Debug4; }
-			if (blockCoord.x % 64 == (63 - blockCoord.y % 64)) {
-				return BlockId::Grass;
-			} else {
-				return BlockId::Air;
-			}
-		}
-
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			if (blockCoord.y > h0) { return 0.0f; }
-			return getBasisHeightBlend(h0, blockCoord.y) + simplex1.value(glm::vec2{blockCoord} * 0.12_f);
-		}
-	};
-
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
-			BlockVec offset = {81489, -516};
+			//BlockVec offset = {81489, -516};
+			BlockVec offset = {82331, -168}; // z = 0.5
 			//BlockVec offset = {77967.0, 0.0};
 			//BlockVec offset = {-127, -69};
 
-			float64 zoom = 2.0f; // Larger # = farther out = see more = larger FoV
+			float64 zoom = 0.5f; // Larger # = farther out = see more = larger FoV
 			Layer mode = Layer::BiomeRawWeights;
 			Float minBasis = FLT_MAX;
 			Float maxBasis = -FLT_MAX;
@@ -130,9 +57,10 @@ namespace {
 			Engine::Gfx::Texture2D tex = {};
 
 			// Terrain
-			//Terrain::Generator<BiomeOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
-			//Terrain::Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
-			Generator<BiomeOne, BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
+			//Generator<BiomeOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
+			Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
+			//Generator<BiomeOne, BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
+			//Generator<BiomeOne, BiomeDebugTwo> generator{1234};
 			Game::Terrain::Terrain terrain;
 
 		public:
