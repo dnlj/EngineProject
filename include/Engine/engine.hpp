@@ -89,7 +89,7 @@
 #define ENGINE_INLINE_CALLS [[msvc::forceinline_calls]]
 
 /**
- * Attempts to flatten all calls in a block or statement.
+ * Attempts to flatten all calls in a block or statement recursively.
  * https://twitter.com/molecularmusing/status/1578657585334714368
  * https://twitter.com/terrym4h/status/1579311539781505026
  * https://web.archive.org/web/20221111110723/https://twitter.com/molecularmusing/status/1578657585334714368

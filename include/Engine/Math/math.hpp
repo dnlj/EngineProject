@@ -17,6 +17,7 @@ namespace Engine::Math {
 			T r{}; // Remainder
 	};
 
+	// TODO: isn't pow2 usual 2^x not x^2? Change name
 	template<class T>
 	ENGINE_INLINE constexpr T pow2(const T num) noexcept {
 		return num * num;

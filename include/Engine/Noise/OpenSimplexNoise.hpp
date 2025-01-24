@@ -7,6 +7,9 @@
 #include <Engine/Noise/noise.hpp>
 #include <Engine/Noise/RangePermutation.hpp>
 
+// See also: https://github.com/KdotJPG/OpenSimplex2
+// See also: https://github.com/Auburn/FastNoiseLite/tree/master/Cpp
+
 
 namespace Engine::Noise {
 	// Originally based on: https://gist.github.com/KdotJPG/b1270127455a94ac5d19 which was/is public domain.
@@ -31,25 +34,25 @@ namespace Engine::Noise {
 			[[nodiscard]]
 			Float value(Float x, Float y) const noexcept {
 				// Place input coordinates onto grid.
-				Float stretchOffset = (x + y) * STRETCH_CONSTANT_2D;
-				Float xs = x + stretchOffset;
-				Float ys = y + stretchOffset;
+				const Float stretchOffset = (x + y) * STRETCH_CONSTANT_2D;
+				const Float xs = x + stretchOffset;
+				const Float ys = y + stretchOffset;
 
 				// Floor to get grid coordinates of rhombus (stretched square) super-cell origin.
 				Int xsb = floorTo<Int>(xs);
 				Int ysb = floorTo<Int>(ys);
 
 				// Skew out to get actual coordinates of rhombus origin. We'll need these later.
-				Float squishOffset = (xsb + ysb) * SQUISH_CONSTANT_2D;
-				Float xb = xsb + squishOffset;
-				Float yb = ysb + squishOffset;
+				const Float squishOffset = (xsb + ysb) * SQUISH_CONSTANT_2D;
+				const Float xb = xsb + squishOffset;
+				const Float yb = ysb + squishOffset;
 
 				// Compute grid coordinates relative to rhombus origin.
-				Float xins = xs - xsb;
-				Float yins = ys - ysb;
+				const Float xins = xs - xsb;
+				const Float yins = ys - ysb;
 
 				// Sum those together to get a value that determines which region we're in.
-				Float inSum = xins + yins;
+				const Float inSum = xins + yins;
 
 				// Positions relative to origin point.
 				Float dx0 = x - xb;
@@ -62,8 +65,8 @@ namespace Engine::Noise {
 				Float value = 0;
 
 				// Contribution (1,0)
-				Float dx1 = dx0 - 1 - SQUISH_CONSTANT_2D;
-				Float dy1 = dy0 - 0 - SQUISH_CONSTANT_2D;
+				const Float dx1 = dx0 - 1 - SQUISH_CONSTANT_2D;
+				const Float dy1 = dy0 - 0 - SQUISH_CONSTANT_2D;
 				Float attn1 = 2 - dx1 * dx1 - dy1 * dy1;
 				if (attn1 > 0) {
 					attn1 *= attn1;
@@ -71,8 +74,8 @@ namespace Engine::Noise {
 				}
 
 				// Contribution (0,1)
-				Float dx2 = dx0 - 0 - SQUISH_CONSTANT_2D;
-				Float dy2 = dy0 - 1 - SQUISH_CONSTANT_2D;
+				const Float dx2 = dx0 - 0 - SQUISH_CONSTANT_2D;
+				const Float dy2 = dy0 - 1 - SQUISH_CONSTANT_2D;
 				Float attn2 = 2 - dx2 * dx2 - dy2 * dy2;
 				if (attn2 > 0) {
 					attn2 *= attn2;
@@ -80,7 +83,7 @@ namespace Engine::Noise {
 				}
 
 				if (inSum <= 1) { // We're inside the triangle (2-Simplex) at (0,0)
-					Float zins = 1 - inSum;
+					const Float zins = 1 - inSum;
 					if (zins > xins || zins > yins) { // (0,0) is one of the closest two triangular vertices
 						if (xins > yins) {
 							xsv_ext = xsb + 1;
@@ -100,7 +103,7 @@ namespace Engine::Noise {
 						dy_ext = dy0 - 1 - 2 * SQUISH_CONSTANT_2D;
 					}
 				} else { // We're inside the triangle (2-Simplex) at (1,1)
-					Float zins = 2 - inSum;
+					const Float zins = 2 - inSum;
 					if (zins < xins || zins < yins) { // (0,0) is one of the closest two triangular vertices
 						if (xins > yins) {
 							xsv_ext = xsb + 2;
@@ -157,6 +160,8 @@ namespace Engine::Noise {
 			// Experimentally obtained range is +-0.865921
 			constexpr static Float RescaleMult2D = Float(1.0 / (NORM_CONSTANT_2D * 0.87));
 
+			// TODO (Qn46mY7Y0): look into using a function instead of lookup table. Some
+			//                   shader toy implementations do this for example.
 			RangePermutation<256> perm;
 
 			// Gradients for 2D. They approximate the directions to the

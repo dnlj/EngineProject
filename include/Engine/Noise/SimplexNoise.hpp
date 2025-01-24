@@ -13,7 +13,7 @@ namespace Engine::Noise {
 
 		private:
 			const RangePermutation<256> perm;
-
+			 
 			// We exclude the extremes to get more visually appealing results
 			constexpr static Float grads[] = {
 				//0.198912367f,

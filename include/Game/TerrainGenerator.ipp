@@ -523,11 +523,12 @@ namespace Game::Terrain {
 			const auto getBasis = BIOME_GET_DISPATCH(getBasis, biomeWeight.id);
 			const auto basis = getBasis(biomes, blockCoord, h0);
 
-			// This isn't quite correct. A basis doesn't _need_ to be between [-1, 1], but
-			// all biomes should have roughly the same range. If one is [-100, 100] and
-			// another is [-1, 1] they won't blend well since the one with the larger
-			// range will always dominate regardless of the blend weight.
-			//ENGINE_DEBUG_ASSERT(-1.0f <= basis && basis <= 1.0f, "Invalid basis value given for biome ", biomeWeight.id, ". Out of range [-1, 1].");
+			// This is a _somewhat_ artificial limitation. A basis doesn't _need_ to be
+			// between [-1, 1], but all biomes should have roughly the same range. If one
+			// is [-100, 100] and another is [-1, 1] they won't blend well since the one
+			// with the larger range will always dominate regardless of the blend weight.
+			// Keeping things normalized avoids that.
+			ENGINE_DEBUG_ASSERT(-1.0_f <= basis && basis <= 1.0_f, "Invalid basis value given for biome ", biomeWeight.id, ". Out of range [-1, 1].");
 			totalBasis += biomeWeight.weight * basis;
 		}
 

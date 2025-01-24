@@ -37,12 +37,12 @@ namespace {
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
 			//BlockVec offset = {81489, -516};
-			BlockVec offset = {82331, -168}; // z = 0.5
+			BlockVec offset = {82963, -94}; // z = 0.5
 			//BlockVec offset = {77967.0, 0.0};
 			//BlockVec offset = {-127, -69};
 
-			float64 zoom = 0.5f; // Larger # = farther out = see more = larger FoV
-			Layer mode = Layer::BiomeRawWeights;
+			float64 zoom = 0.35f; // Larger # = farther out = see more = larger FoV
+			Layer mode = Layer::TerrainBasis;
 			Float minBasis = FLT_MAX;
 			Float maxBasis = -FLT_MAX;
 
