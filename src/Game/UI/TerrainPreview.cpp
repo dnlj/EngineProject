@@ -42,6 +42,7 @@ namespace {
 			//BlockVec offset = {-127, -69};
 
 			float64 zoom = 0.35f; // Larger # = farther out = see more = larger FoV
+			//float64 zoom = 7.35f; // Larger # = farther out = see more = larger FoV
 			Layer mode = Layer::TerrainBasis;
 			Float minBasis = FLT_MAX;
 			Float maxBasis = -FLT_MAX;
@@ -127,7 +128,7 @@ namespace {
 				}();
 
 				static const auto sizeToBrightness = [](BlockUnit size){
-					return 0.5_f + size / (2.0_f * biomeScales[0].size);
+					return 0.5_f + size / (2.0_f * biomeScaleLarge.size);
 				};
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
@@ -145,12 +146,12 @@ namespace {
 							// BiomeRawWeights), but that's the point. Showing the undistorted biome grid.
 							const auto blockCoordAdj = blockCoord - biomeScaleOffset;
 							const auto info = generator.calcBiomeRaw(blockCoordAdj);
-							data[idx] = sizeToBrightness(info.meta->size) * glm::vec3(biomeToColor[info.id]);
+							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeRawWeights) {
 							// Need to include the biome offset or else things won't line up when switching layers.
 							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + heightCache.get(blockCoord.x));
 							const auto info = generator.calcBiomeRaw(blockCoordAdj);
-							data[idx] = sizeToBrightness(info.meta->size) * glm::vec3(biomeToColor[info.id]);
+							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
 							auto weights = generator.calcBiomeBlend(blockCoord);
 							normalizeBiomeWeights(weights);

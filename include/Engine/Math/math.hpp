@@ -13,9 +13,21 @@ namespace Engine::Math {
 	template<class T>
 	class DivResult {
 		public:
-			T q{}; // Quotient
-			T r{}; // Remainder
+			using Type = std::remove_cvref_t<T>;
+			Type q{}; // Quotient
+			Type r{}; // Remainder
 	};
+
+	template<class T>
+	[[nodiscard]] consteval T pow(T base, T exp) {
+		if (exp < 0) { throw "Invalid exponent"; }
+		if (exp > 100) { throw "Abnormally large exponent"; }
+		if (exp == 0) { return 1; }
+		auto value = base;
+		while (--exp) { value *= base; }
+		return value;
+	}
+
 
 	// TODO: isn't pow2 usual 2^x not x^2? Change name
 	template<class T>

@@ -281,29 +281,47 @@ namespace Game::Terrain {
 	BiomeRawInfo Generator<Biomes...>::calcBiomeRaw(BlockVec blockCoord) {
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.
 
-		// TODO: Force/manual unroll? We know that N is always small and that would avoid
-		//       a scale lookup. This function gets called _a lot_.
+		// TODO: Could apply some perturb if we want non square biomes. I don't think
+		//       Voronoi is worth looking at, its makes it harder to position biomes at surface
+		//       level and still produces mostly straight edges, not much better than a square.
 
-		// Determine the scale and sample cell for the biome.
-		// Check each scale. Must be ordered largest to smallest.
-		BiomeScale scale{};
-		while (true) {
-			BiomeRawInfo result{ .meta = &biomeScales[+scale] };
+		// Having this manually unrolled instead of a loop is ~15% faster in debug mode
+		// and allows the divs to be removed/optimized in release mode. In the loop
+		// version, even with full visibility constexpr data, the divs do not get removed
+		// even though the theoretically should be able to.
 
-			// Rescale the coord so that all scales sample from the same mapping.
-			// Originally: cell = glm::floor(blockCoord * biomeScalesInv[result.scale]);
-			const auto cell = Engine::Math::divFloor(blockCoord, result.meta->size);
-			result.cell = cell.q;
-			result.rem = cell.r;
+		// Always return the small cell size so that we don't get inflection points when
+		// blending biomes. See the blending issue notes in calcBiomeBlend.
+		const auto smallCell = Engine::Math::divFloor(blockCoord, biomeScaleSmall.size);
+		BiomeRawInfo result = {
+			.cell = smallCell.q,
+			.rem = smallCell.r,
+			.size = biomeScaleSmall.size,
+		};
 
-			// No more scales to check. Don't increment so we use the smallest one.
-			if ((scale == BiomeScale::_last) || (biomeFreq(result.cell.x, result.cell.y) < result.meta->freq)) {
-				result.id = biomePerm(result.cell.x, result.cell.y) % sizeof...(Biomes);
+		{ // Large
+			const auto cell = Engine::Math::divFloor(blockCoord, biomeScaleLarge.size);
+			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleLarge.freq) {
+				result.id = biomePerm(cell.q.x, cell.q.y) % sizeof...(Biomes);
 				return result;
 			}
-
-			++scale;
 		}
+
+		{ // Med
+			const auto cell = Engine::Math::divFloor(blockCoord, biomeScaleMed.size);
+			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleMed.freq) {
+				result.id = biomePerm(cell.q.x, cell.q.y) % sizeof...(Biomes);
+				return result;
+			}
+		}
+
+		{ // Small
+			// The small size is used when no other biomes match so frequency doesn't matter.
+			static_assert(biomeScaleSmall.freq == 0, "No frequency should be given for the small biome size.");
+			result.id = biomePerm(smallCell.q.x, smallCell.q.y) % sizeof...(Biomes);
+			return result;
+		}
+
 	}
 	
 	template<class... Biomes>
@@ -343,9 +361,9 @@ namespace Game::Terrain {
 
 		// Distances
 		const auto leftD = info.rem.x;
-		const auto rightD = info.meta->size - info.rem.x;
+		const auto rightD = info.size - info.rem.x;
 		const auto bottomD = info.rem.y;
-		const auto topD = info.meta->size - info.rem.y;
+		const auto topD = info.size - info.rem.y;
 
 		// Conditions
 		const auto left = leftD < biomeBlendDist;

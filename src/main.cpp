@@ -427,6 +427,37 @@ namespace {
 		{ auto a = divCeil(-5, 4); assert(a.q == -1); assert(a.r == -1); }
 		{ auto a = divCeil(-5, 5); assert(a.q == -1); assert(a.r ==  0); }
 	}
+
+	void test_pow() {
+		using Engine::Math::pow;
+		static_assert(pow(0, 0) == 1);
+		static_assert(pow(0, 1) == 0);
+		static_assert(pow(0, 2) == 0);
+		static_assert(pow(0, 3) == 0);
+		static_assert(pow(0, 4) == 0);
+		static_assert(pow(0, 5) == 0);
+
+		static_assert(pow(1, 0) == 1);
+		static_assert(pow(1, 1) == 1);
+		static_assert(pow(1, 2) == 1);
+		static_assert(pow(1, 3) == 1);
+		static_assert(pow(1, 4) == 1);
+		static_assert(pow(1, 5) == 1);
+
+		static_assert(pow(2, 0) == 1);
+		static_assert(pow(2, 1) == 2);
+		static_assert(pow(2, 2) == 4);
+		static_assert(pow(2, 3) == 8);
+		static_assert(pow(2, 4) == 16);
+		static_assert(pow(2, 5) == 32);
+
+		static_assert(pow(3, 0) == 1);
+		static_assert(pow(3, 1) == 3);
+		static_assert(pow(3, 2) == 9);
+		static_assert(pow(3, 3) == 27);
+		static_assert(pow(3, 4) == 81);
+		static_assert(pow(3, 5) == 243);
+	}
 }
 
 // TODO: cleanup all this map this mess.

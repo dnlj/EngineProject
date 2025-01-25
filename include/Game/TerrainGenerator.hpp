@@ -13,25 +13,8 @@
 #include <Game/systems/MapSystem.hpp>
 
 
-
 // TODO: split out
 namespace Game::Terrain {
-	// Should always be ordered largest to smallest
-	enum class BiomeScale : uint8 {
-		Large,
-		Medium,
-		Small,
-		_count,
-		_last = Small,
-	};
-	ENGINE_BUILD_ALL_OPS(BiomeScale);
-	ENGINE_BUILD_DECAY_ENUM(BiomeScale);
-	
-
-	constexpr inline int32 biomeBlendDist = 200;
-	constexpr inline int32 biomeBlendDist2 = biomeBlendDist / 2;
-	static_assert(2 * biomeBlendDist2 == biomeBlendDist);
-
 	class BiomeScaleMeta {
 		public:
 			BlockUnit size;
@@ -39,7 +22,7 @@ namespace Game::Terrain {
 			/** Percentage frequency out of [0, 255]. */
 			uint8 freq;
 	};
-
+	
 	// Each scale must be divisible by the previous depth. If they aren't then you will
 	// get small "remainder" biomes around the edges of large ones which isn't a technical
 	// issue, but it looks very strange to have a very small biome.
@@ -48,35 +31,27 @@ namespace Game::Terrain {
 	// level. If we use two then only the first depth will be at surface level and all others
 	// will be above or below it. This is due to the division by two for the biomeScaleOffset.
 	// We need division by two because we want biomes evenly centered on y=0.
-	// 
-	// @see biomeScaleOffset
-	constexpr inline BiomeScaleMeta biomeScales[] = {
-		// TODO: Use to be 9000, 3000, 1000. Decreased for easy testing.
-		{.size = 5400, .freq = 20},
-		{.size = 1800, .freq = 20},
-		{.size =  600, .freq = 20},
-	};
+	constexpr inline BiomeScaleMeta biomeScaleSmall = { .size = 600, .freq = 0 };// TODO: use pow 2? 512?
+	constexpr inline BiomeScaleMeta biomeScaleMed = { .size = biomeScaleSmall.size * 3, .freq = 20 };
+	constexpr inline BiomeScaleMeta biomeScaleLarge = { .size = biomeScaleMed.size * 3, .freq = 20 };
+
+	constexpr inline int32 biomeBlendDist = 200;
+	constexpr inline int32 biomeBlendDist2 = biomeBlendDist / 2;
+	static_assert(2 * biomeBlendDist2 == biomeBlendDist);
+	static_assert(biomeBlendDist <= biomeScaleSmall.size / 2, "Biome blend distances cannot be larger than half the minimum biome size.");
 
 	// The main idea is that we want the biomes to be centered on {0,0} so that surface
 	// level (Y) is in the middle of a biome instead of right on the edge. Same for X, we
 	// want the center of the world to be in the middle instead of on the edge.
 	//
 	// This is why its important that each biome scale is a 3x multiple of the previous.
-	// That makes it so that when you divide by two all biomes are centered regardless of
-	// scale.
-	//
-	// @see biomeScales
+	// That makes it so that when you divide by two all biomes are centered regardless of scale.
 	constexpr static BlockVec biomeScaleOffset = {
-		biomeScales[0].size / 2,
+		biomeScaleLarge.size / 2,
 		// TODO: recalc the +200 part, that is from the old map gen
 		// Experimentally terrain surface is around 100-300
-		biomeScales[0].size / 2,// + 200.0
+		biomeScaleLarge.size / 2,// + 200.0
 	};
-
-
-	static_assert(std::size(biomeScales) == +BiomeScale::_count, "Incorrect number of biome scales specified.");
-	static_assert(std::ranges::is_sorted(biomeScales, std::greater{}, &BiomeScaleMeta::size), "Biomes scales should be ordered largest to smallest");
-	static_assert(biomeBlendDist <= ((std::end(biomeScales)-1)->size / 2), "Biome blend distances cannot be larger than half the minimum biome size.");
 
 	//enum class BiomeType : uint8 {
 	//	Default,
@@ -115,7 +90,6 @@ namespace Game::Terrain {
 
 	class BiomeRawInfo {
 		public:
-			BiomeScale scale;
 			BiomeId id;
 	
 			/**
@@ -125,13 +99,14 @@ namespace Game::Terrain {
 			 */
 			BlockVec cell;
 	
-			/** The remianing block position within the cell */
+			/** The remaining block position within the cell */
 			BlockVec rem;
-	
-			// TODO: use a reference, this is currently a pointer to work around the hack
-			//       implementation for StaticVector that doesn't correctly use storage +
-			//       placement new + destructors. Needed for Generator::calcBiomeBlend
-			const BiomeScaleMeta* meta;
+
+			/**
+			 * The width/height of the biome cell. This will be one of a few fixed values.
+			 * @see biomeScaleSmall, biomeScaleMed, biomeScaleLarge
+			 */
+			BlockUnit size;
 	};
 
 	class BiomeWeight {
@@ -302,6 +277,16 @@ namespace Game::Terrain {
 			//       doubles, and that will be slower and still isn't perfect.
 			//using FVec2 = glm::vec<2, Float>;
 
+			// TODO: This isn't great. This has a repeat every X biomes. This can be
+			//       easily seen in the terrain preview by going to BiomeBaseGrid mode and
+			//       then jumping between X = 0 to X = PermSize * SmallBiomeSize. Notice
+			//       it is almost identical. It won't be exactly identical because we have
+			//       three octaves of biomes at different sizes. So each octaves will
+			//       repeat at a different scale, but it would be very noticable in
+			//       gameplay. We should be able to significantly improve this range by
+			//       using a hash-like function instead of a permutation table.
+			//       Related: Qn46mY7Y
+			//
 			/** Used for sampling the biome frequency. */
 			Engine::Noise::RangePermutation<256> biomeFreq;
 
