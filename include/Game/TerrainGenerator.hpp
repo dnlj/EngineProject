@@ -99,7 +99,7 @@ namespace Game::Terrain {
 			 */
 			BlockVec cell;
 	
-			/** The remaining block position within the cell */
+			/** The remaining block position within the size of a small cell. */
 			BlockVec rem;
 
 			/**

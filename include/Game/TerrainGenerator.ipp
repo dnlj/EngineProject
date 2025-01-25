@@ -296,13 +296,13 @@ namespace Game::Terrain {
 		BiomeRawInfo result = {
 			.cell = smallCell.q,
 			.rem = smallCell.r,
-			.size = biomeScaleSmall.size,
 		};
 
 		{ // Large
 			const auto cell = Engine::Math::divFloor(blockCoord, biomeScaleLarge.size);
 			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleLarge.freq) {
 				result.id = biomePerm(cell.q.x, cell.q.y) % sizeof...(Biomes);
+				result.size = biomeScaleLarge.size;
 				return result;
 			}
 		}
@@ -311,6 +311,7 @@ namespace Game::Terrain {
 			const auto cell = Engine::Math::divFloor(blockCoord, biomeScaleMed.size);
 			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleMed.freq) {
 				result.id = biomePerm(cell.q.x, cell.q.y) % sizeof...(Biomes);
+				result.size = biomeScaleMed.size;
 				return result;
 			}
 		}
@@ -319,6 +320,7 @@ namespace Game::Terrain {
 			// The small size is used when no other biomes match so frequency doesn't matter.
 			static_assert(biomeScaleSmall.freq == 0, "No frequency should be given for the small biome size.");
 			result.id = biomePerm(smallCell.q.x, smallCell.q.y) % sizeof...(Biomes);
+			result.size = biomeScaleSmall.size;
 			return result;
 		}
 
@@ -361,9 +363,9 @@ namespace Game::Terrain {
 
 		// Distances
 		const auto leftD = info.rem.x;
-		const auto rightD = info.size - info.rem.x;
+		const auto rightD = biomeScaleSmall.size - info.rem.x;
 		const auto bottomD = info.rem.y;
-		const auto topD = info.size - info.rem.y;
+		const auto topD = biomeScaleSmall.size - info.rem.y;
 
 		// Conditions
 		const auto left = leftD < biomeBlendDist;
