@@ -211,7 +211,7 @@ namespace Game::Terrain {
 			const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
 			for (RegionBiomeUnit x = 0; x < biomesPerChunk; ++x) {
 				for (RegionBiomeUnit y = 0; y < biomesPerChunk; ++y) {
-					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = maxBiomeWeight(calcBiome(min + BlockVec{x, y} * biomesPerChunk)).id;
+					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = maxBiomeWeight(calcBiome(min + BlockVec{x, y} * biomesPerChunk).weights).id;
 				}
 			}
 		}
@@ -294,8 +294,8 @@ namespace Game::Terrain {
 		// blending biomes. See the blending issue notes in calcBiomeBlend.
 		const auto smallCell = Engine::Math::divFloor(blockCoord, biomeScaleSmall.size);
 		BiomeRawInfo result = {
-			.cell = smallCell.q,
-			.rem = smallCell.r,
+			.smallCell = smallCell.q,
+			.smallRem = smallCell.r,
 		};
 
 		{ // Large
@@ -303,6 +303,8 @@ namespace Game::Terrain {
 			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleLarge.freq) {
 				result.id = biomePerm(cell.q.x, cell.q.y) % sizeof...(Biomes);
 				result.size = biomeScaleLarge.size;
+				result.biomeCell = cell.q;
+				result.biomeRem = cell.r;
 				return result;
 			}
 		}
@@ -312,6 +314,8 @@ namespace Game::Terrain {
 			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleMed.freq) {
 				result.id = biomePerm(cell.q.x, cell.q.y) % sizeof...(Biomes);
 				result.size = biomeScaleMed.size;
+				result.biomeCell = cell.q;
+				result.biomeRem = cell.r;
 				return result;
 			}
 		}
@@ -321,24 +325,28 @@ namespace Game::Terrain {
 			static_assert(biomeScaleSmall.freq == 0, "No frequency should be given for the small biome size.");
 			result.id = biomePerm(smallCell.q.x, smallCell.q.y) % sizeof...(Biomes);
 			result.size = biomeScaleSmall.size;
+			result.biomeCell = smallCell.q;
+			result.biomeRem = smallCell.r;
 			return result;
 		}
 
 	}
 	
 	template<class... Biomes>
-	BiomeWeights Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord) {
+	BiomeBlend Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord) {
 		// Offset the coord by the scale offset so biomes are roughly centered on {0, 0}
 		blockCoord -= biomeScaleOffset + heightCache.get(blockCoord.x);
 
-		const auto info = calcBiomeRaw(blockCoord);
-		Engine::StaticVector<BiomeWeight, 4> weights{};
+		BiomeBlend blend = {
+			.info = calcBiomeRaw(blockCoord),
+			.weights = {},
+		};
 
 		const auto addWeight = [&](BiomeId id, BlockUnit blocks){
 			const auto weight = static_cast<Float>(blocks);
 			ENGINE_DEBUG_ASSERT(blocks >= 0 && blocks <= biomeBlendDist);
 
-			for (auto& w : weights) {
+			for (auto& w : blend.weights) {
 				if (w.id == id) {
 					//w.weight = 0.8f * weight + 0.2f * w.weight;
 					w.weight += weight;
@@ -348,10 +356,10 @@ namespace Game::Terrain {
 				}
 			}
 
-			weights.push_back({id, weight});
+			blend.weights.push_back({id, weight});
 		};
 
-		addWeight(info.id, biomeBlendDist2);
+		addWeight(blend.info.id, biomeBlendDist2);
 
 		// Example:
 		//    size = 8
@@ -362,10 +370,10 @@ namespace Game::Terrain {
 		//   L L _ _ _ _ R R
 
 		// Distances
-		const auto leftD = info.rem.x;
-		const auto rightD = biomeScaleSmall.size - info.rem.x;
-		const auto bottomD = info.rem.y;
-		const auto topD = biomeScaleSmall.size - info.rem.y;
+		const auto leftD = blend.info.smallRem.x;
+		const auto rightD = biomeScaleSmall.size - blend.info.smallRem.x;
+		const auto bottomD = blend.info.smallRem.y;
+		const auto topD = biomeScaleSmall.size - blend.info.smallRem.y;
 
 		// Conditions
 		const auto left = leftD < biomeBlendDist;
@@ -374,12 +382,12 @@ namespace Game::Terrain {
 		const auto top = topD <= biomeBlendDist;
 
 		if (!(left || right || bottom || top)) {
-			return weights;
+			return blend;
 		}
 
 		// Divide by two so the total is 0.5 + d/2 which gives us a value between 0.5 and
 		// 1 instead of 0 and 1. At the edges each biome contributes 0.5, not zero.
-		addWeight(info.id, std::min({leftD, rightD, bottomD, topD}) / 2);
+		addWeight(blend.info.id, std::min({leftD, rightD, bottomD, topD}) / 2);
 
 		// Weights (invert distances)
 		const auto leftW = (biomeBlendDist - leftD) / 2;
@@ -472,7 +480,7 @@ namespace Game::Terrain {
 			};
 		
 			leftW;rightW;topW;bottomW;
-			weights.clear();
+			blend.weights.clear();
 			maybe({blockCoord.x, blockCoord.y});
 			maybe({blockCoord.x - biomeBlendDist, blockCoord.y});
 			maybe({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist});
@@ -495,19 +503,19 @@ namespace Game::Terrain {
 			//        main = 0.5 + 0.25  (0.5 min + 0.25 for halfway between min/max)
 			//       total = 0.5 + 0.5 + 0.5 + (0.5 + 0.25) = 2.25
 			//                
-			const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
+			const auto total = std::reduce(blend.weights.cbegin(), blend.weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
 			ENGINE_DEBUG_ASSERT(total >= biomeBlendDist2 && total <= 2.25*biomeBlendDist, "Incorrect biome weight total: ", total);
 		})
 
-		return weights;
+		return blend;
 	}
 
 	template<class... Biomes>
-	BiomeWeights Generator<Biomes...>::calcBiome(BlockVec blockCoord) {
-		auto weights = calcBiomeBlend(blockCoord);
-		normalizeBiomeWeights(weights);
+	BiomeBlend Generator<Biomes...>::calcBiome(BlockVec blockCoord) {
+		auto blend = calcBiomeBlend(blockCoord);
+		normalizeBiomeWeights(blend.weights);
 		ENGINE_DEBUG_ONLY({
-			const auto normTotal = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
+			const auto normTotal = std::reduce(blend.weights.cbegin(), blend.weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
 			ENGINE_DEBUG_ASSERT(std::abs(1.0f - normTotal) <= FLT_EPSILON, "Incorrect normalized biome weight total: ", normTotal);
 		});
 
@@ -519,7 +527,7 @@ namespace Game::Terrain {
 		//       cases.
 
 		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_STRENGTH_ARGS);
-		for (auto& biomeWeight : weights) {
+		for (auto& biomeWeight : blend.weights) {
 			// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
 			const auto getBasisStrength = BIOME_GET_DISPATCH(getBasisStrength, biomeWeight.id);
 			const auto basisStr = getBasisStrength(biomes, blockCoord);
@@ -530,18 +538,18 @@ namespace Game::Terrain {
 			biomeWeight.weight *= basisStr;
 		}
 
-		return weights;
+		return blend;
 	}
 
 	template<class... Biomes>
 	BasisInfo Generator<Biomes...>::calcBasis(const BlockVec blockCoord, const BlockUnit h0) {
-		const auto weights = calcBiome(blockCoord);
+		const auto blend = calcBiome(blockCoord);
 		Float totalBasis = 0.0f;
 
 		BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
-		for (auto& biomeWeight : weights) {
+		for (auto& biomeWeight : blend.weights) {
 			const auto getBasis = BIOME_GET_DISPATCH(getBasis, biomeWeight.id);
-			const auto basis = getBasis(biomes, blockCoord, h0);
+			const auto basis = getBasis(biomes, blockCoord, h0, blend.info);
 
 			// This is a _somewhat_ artificial limitation. A basis doesn't _need_ to be
 			// between [-1, 1], but all biomes should have roughly the same range. If one
@@ -553,8 +561,9 @@ namespace Game::Terrain {
 		}
 
 		return {
-			.id = maxBiomeWeight(weights).id,
+			.id = maxBiomeWeight(blend.weights).id,
 			.basis = totalBasis,
+			.rawInfo = blend.info,
 		};
 	}
 }

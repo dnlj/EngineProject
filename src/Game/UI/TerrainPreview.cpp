@@ -58,10 +58,7 @@ namespace {
 			Engine::Gfx::Texture2D tex = {};
 
 			// Terrain
-			//Generator<BiomeOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
-			Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
-			//Generator<BiomeOne, BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree> generator{1234};
-			//Generator<BiomeOne, BiomeDebugTwo> generator{1234};
+			Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain> generator{1234};
 			Game::Terrain::Terrain terrain;
 
 		public:
@@ -153,20 +150,20 @@ namespace {
 							const auto info = generator.calcBiomeRaw(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
-							auto weights = generator.calcBiomeBlend(blockCoord);
+							auto weights = generator.calcBiomeBlend(blockCoord).weights;
 							normalizeBiomeWeights(weights);
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::BiomeFinalWeights) {
-							auto weights = generator.calcBiome(blockCoord);
+							auto weights = generator.calcBiome(blockCoord).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biomeToColor[biome.id];
 						} else if (mode == Layer::BiomeFinalWeightsFull) {
-							auto weights = generator.calcBiome(blockCoord);
+							auto weights = generator.calcBiome(blockCoord).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::TerrainHeight0) {
-							auto weights = generator.calcBiome(blockCoord);
+							auto weights = generator.calcBiome(blockCoord).weights;
 							const auto biome = maxBiomeWeight(weights);
 
 							// We need to clamp blockCoord at maxBlock because of the applyZoom

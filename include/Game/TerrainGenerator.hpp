@@ -97,10 +97,14 @@ namespace Game::Terrain {
 			 * This is not a block coordinate. This is the coordinate where this biome
 			 * would be located in a theoretical grid if all biomes where the same size.
 			 */
-			BlockVec cell;
+			BlockVec smallCell;
 	
 			/** The remaining block position within the size of a small cell. */
-			BlockVec rem;
+			BlockVec smallRem;
+
+			// TODO: doc
+			BlockVec biomeCell;
+			BlockVec biomeRem;
 
 			/**
 			 * The width/height of the biome cell. This will be one of a few fixed values.
@@ -117,6 +121,12 @@ namespace Game::Terrain {
 
 	using BiomeWeights = Engine::StaticVector<BiomeWeight, 4>;
 
+	class BiomeBlend {
+		public:
+			BiomeRawInfo info;
+			BiomeWeights weights;
+	};
+
 	void normalizeBiomeWeights(BiomeWeights& weights) {
 		const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
 		const auto normF = 1.0f / total;
@@ -131,6 +141,7 @@ namespace Game::Terrain {
 		public:
 			BiomeId id;
 			float32 basis;
+			BiomeRawInfo rawInfo;
 	};
 
 	// TODO: getters with debug bounds checking.
@@ -328,12 +339,12 @@ namespace Game::Terrain {
 			/**
 			 * Get all biome contributions for the given block.
 			 */
-			[[nodiscard]] BiomeWeights calcBiomeBlend(BlockVec blockCoord);
+			[[nodiscard]] BiomeBlend calcBiomeBlend(BlockVec blockCoord);
 
 			/**
 			 * Calcuate the final biome for the given block.
 			 */
-			[[nodiscard]] BiomeWeights calcBiome(BlockVec blockCoord);
+			[[nodiscard]] BiomeBlend calcBiome(BlockVec blockCoord);
 
 			// TODO: doc
 			[[nodiscard]] BasisInfo calcBasis(const BlockVec blockCoord, const BlockUnit h0);
@@ -354,7 +365,8 @@ namespace Game::Terrain {
 
 			#define TERRAIN_GET_BASIS_ARGS \
 				const ::Game::BlockVec blockCoord, \
-				const ::Game::BlockUnit h0
+				const ::Game::BlockUnit h0, \
+				const ::Game::Terrain::BiomeRawInfo& rawInfo
 
 			#define TERRAIN_GET_LANDMARKS_ARGS \
 				::Game::Terrain::Terrain& terrain, \
