@@ -163,6 +163,8 @@ namespace Game::Terrain {
 		STAGE(1) { return BlockId::Debug3; }
 	};
 
+	// Mountains would actually be okay to spawn at multiple scales so long as they are
+	// adjacent since they just end up looking like peaks.
 	struct BiomeDebugMountain : public BiomeDebugBase<0xF7F7'F7F7'F7F7'4444, 60.0_f, 0.04_f, 0.12_f, 0.0_f> {
 		STAGE_DEF;
 		STAGE(1) { return BlockId::Debug4; }
@@ -194,6 +196,37 @@ namespace Game::Terrain {
 			
 			Float value = std::clamp(surface, -1.0_f, 1.0_f);
 			return value;
+		}
+	};
+
+	struct BiomeDebugOcean : public BiomeDebugBase<0xF7F7'F7F7'F7F7'5555, 60.0_f, 0.04_f, 0.12_f, 0.0_f> {
+		STAGE_DEF;
+		STAGE(1) {
+			auto thresh = 0.45_f;
+			thresh += 0.04_f * simplex1.value(FVec2{blockCoord} * 0.025_f);
+			thresh += 0.02_f * simplex1.value(FVec2{blockCoord} * 0.05_f);
+			thresh += 0.01_f + 0.01_f * simplex2.value(FVec2{blockCoord} * 0.1_f);
+
+			if (basisInfo.weight > thresh) {
+				return BlockId::Grass;
+			}
+			return BlockId::Gold;
+		}
+
+		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) {
+			//return 0.2_f * simplex1.value(FVec2{blockCoord} * 0.003_f)
+			//	 + 0.2_f * simplex2.value(FVec2{blockCoord} * 0.010_f)
+			//	 + 0.1_f * simplex3.value(FVec2{blockCoord} * 0.100_f)
+			//	 + 0.5_f;
+			return 1.0f;
+		}
+
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+			if (blockCoord.y > h0) {
+				return -1;
+			}
+
+			return 1;
 		}
 	};
 }

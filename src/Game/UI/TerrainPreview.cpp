@@ -36,12 +36,12 @@ namespace {
 
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
-			//BlockVec offset = {81489, -516};
-			BlockVec offset = {82963, -94}; // z = 0.5
+			BlockVec offset = {81778, -1623};
+			//BlockVec offset = {82963, -94}; // z = 0.5
 			//BlockVec offset = {77967.0, 0.0};
 			//BlockVec offset = {-127, -69};
 
-			float64 zoom = 0.35f; // Larger # = farther out = see more = larger FoV
+			float64 zoom = 3; // Larger # = farther out = see more = larger FoV
 			//float64 zoom = 7.35f; // Larger # = farther out = see more = larger FoV
 			Layer mode = Layer::TerrainBasis;
 			Float minBasis = FLT_MAX;
@@ -58,7 +58,7 @@ namespace {
 			Engine::Gfx::Texture2D tex = {};
 
 			// Terrain
-			Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain> generator{1234};
+			Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain, BiomeDebugOcean> generator{1234};
 			Game::Terrain::Terrain terrain;
 
 		public:

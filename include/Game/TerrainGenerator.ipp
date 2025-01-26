@@ -216,6 +216,13 @@ namespace Game::Terrain {
 			}
 		}
 
+		// TODO: Find a better solution. This is currently a hack as it isn't populated by
+		//       any stage other than the first. We either need to split the first stage
+		//       to have its own args or cache the biome info per generate call? Since we
+		//       don't need it currently in any of the following stages I'm leaning toward
+		//       the first?
+		BasisInfo basisInfo{};
+
 		// For each block in the chunk.
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
 			const auto h0 = heightCache.get(min.x + x);
@@ -225,7 +232,7 @@ namespace Game::Terrain {
 
 				// Generate basis only on the first stage
 				if constexpr (CurrentStage == 1) {
-					const auto basisInfo = calcBasis(blockCoord, h0);
+					basisInfo = calcBasis(blockCoord, h0);
 
 					if (basisInfo.basis <= 0.0_f) {
 						// TODO: is there a reason we don't just default to air as 0/{}? Do we need BlockId::None?
@@ -239,7 +246,7 @@ namespace Game::Terrain {
 
 				const auto func = BIOME_GET_DISPATCH(stage, biomeId);
 				if (func) {
-					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeId, h0);
+					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeId, h0, basisInfo);
 					chunk.data[x][y] = blockId;
 				}
 			}
@@ -514,10 +521,12 @@ namespace Game::Terrain {
 	BiomeBlend Generator<Biomes...>::calcBiome(BlockVec blockCoord) {
 		auto blend = calcBiomeBlend(blockCoord);
 		normalizeBiomeWeights(blend.weights);
+		blend.rawWeights = blend.weights;
 		ENGINE_DEBUG_ONLY({
 			const auto normTotal = std::reduce(blend.weights.cbegin(), blend.weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
 			ENGINE_DEBUG_ASSERT(std::abs(1.0f - normTotal) <= FLT_EPSILON, "Incorrect normalized biome weight total: ", normTotal);
 		});
+
 
 		// TODO: Does each biome need to specify its own basis strength? Again, this is
 		//       the _strength_ of the basis, not the basis itself. I don't think they do.
@@ -549,7 +558,7 @@ namespace Game::Terrain {
 		BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
 		for (auto& biomeWeight : blend.weights) {
 			const auto getBasis = BIOME_GET_DISPATCH(getBasis, biomeWeight.id);
-			const auto basis = getBasis(biomes, blockCoord, h0, blend.info);
+			const auto basis = getBasis(biomes, blockCoord, h0, blend.info, biomeWeight.weight);
 
 			// This is a _somewhat_ artificial limitation. A basis doesn't _need_ to be
 			// between [-1, 1], but all biomes should have roughly the same range. If one
@@ -560,10 +569,13 @@ namespace Game::Terrain {
 			totalBasis += biomeWeight.weight * basis;
 		}
 
+		const auto maxBiome = maxBiomeWeight(blend.weights);
 		return {
-			.id = maxBiomeWeight(blend.weights).id,
+			.id = maxBiome.id,
+			.weight = maxBiome.weight,
 			.basis = totalBasis,
 			.rawInfo = blend.info,
+			.rawWeight = maxBiomeWeight(blend.rawWeights).weight,
 		};
 	}
 }

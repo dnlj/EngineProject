@@ -125,6 +125,7 @@ namespace Game::Terrain {
 		public:
 			BiomeRawInfo info;
 			BiomeWeights weights;
+			BiomeWeights rawWeights;
 	};
 
 	void normalizeBiomeWeights(BiomeWeights& weights) {
@@ -140,8 +141,10 @@ namespace Game::Terrain {
 	class BasisInfo {
 		public:
 			BiomeId id;
+			Float weight;
 			float32 basis;
 			BiomeRawInfo rawInfo;
+			Float rawWeight;
 	};
 
 	// TODO: getters with debug bounds checking.
@@ -366,7 +369,8 @@ namespace Game::Terrain {
 			#define TERRAIN_GET_BASIS_ARGS \
 				const ::Game::BlockVec blockCoord, \
 				const ::Game::BlockUnit h0, \
-				const ::Game::Terrain::BiomeRawInfo& rawInfo
+				const ::Game::Terrain::BiomeRawInfo& rawInfo, \
+				const ::Game::Terrain::Float biomeWeight
 
 			#define TERRAIN_GET_LANDMARKS_ARGS \
 				::Game::Terrain::Terrain& terrain, \
@@ -386,7 +390,8 @@ namespace Game::Terrain {
 				const ::Game::BlockVec blockIndex, \
 				::Game::Terrain::Chunk& chunk, \
 				const ::Game::Terrain::BiomeId biomeId, \
-				const ::Game::BlockUnit h0 /* The "surface level" offset from zero */
+				const ::Game::BlockUnit h0, \
+				const ::Game::Terrain::BasisInfo& basisInfo
 
 			template<StageId CurrentStage, class Biome>
 			ENGINE_INLINE BlockId callStage(TERRAIN_STAGE_ARGS);
