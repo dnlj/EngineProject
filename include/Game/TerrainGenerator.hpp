@@ -142,7 +142,8 @@ namespace Game::Terrain {
 		public:
 			BiomeId id;
 			Float weight;
-			float32 basis;
+			Float basis;
+			Float h2;
 			BiomeRawInfo rawInfo;
 			Float rawWeight;
 	};
@@ -342,12 +343,12 @@ namespace Game::Terrain {
 			/**
 			 * Get all biome contributions for the given block.
 			 */
-			[[nodiscard]] BiomeBlend calcBiomeBlend(BlockVec blockCoord);
+			[[nodiscard]] BiomeBlend calcBiomeBlend(BlockVec blockCoord, const BlockUnit h0);
 
 			/**
 			 * Calcuate the final biome for the given block.
 			 */
-			[[nodiscard]] BiomeBlend calcBiome(BlockVec blockCoord);
+			[[nodiscard]] BiomeBlend calcBiome(BlockVec blockCoord, const BlockUnit h0);
 
 			// TODO: doc
 			[[nodiscard]] BasisInfo calcBasis(const BlockVec blockCoord, const BlockUnit h0);
@@ -359,23 +360,32 @@ namespace Game::Terrain {
 			 */
 			template<StageId CurrentStage, class Func>
 			ENGINE_INLINE void forEachChunkAtStage(Terrain& terrain, const Request& request, Func&& func);
-			
-			#define TERRAIN_GET_HEIGHT_ARGS \
-				const ::Game::Terrain::Float x
-			
+
+			// Use Float instad of BlockUnit for height in generator functions since all
+			// the generators work in floats and any values should be well within range.
+
 			#define TERRAIN_GET_BASIS_STRENGTH_ARGS \
 				const ::Game::BlockVec blockCoord 
+			
+			#define TERRAIN_GET_HEIGHT_ARGS \
+				const ::Game::BlockVec blockCoord, \
+				const ::Game::Terrain::Float h0, \
+				const ::Game::Terrain::BiomeRawInfo& rawInfo, \
+				const ::Game::Terrain::Float biomeWeight
 
 			#define TERRAIN_GET_BASIS_ARGS \
 				const ::Game::BlockVec blockCoord, \
-				const ::Game::BlockUnit h0, \
+				const ::Game::Terrain::Float h0, \
+				const ::Game::Terrain::Float h2, \
 				const ::Game::Terrain::BiomeRawInfo& rawInfo, \
 				const ::Game::Terrain::Float biomeWeight
 
 			#define TERRAIN_GET_LANDMARKS_ARGS \
 				::Game::Terrain::Terrain& terrain, \
-				const ::Game::Terrain::Chunk& chunk, \
+				const ::Game::UniversalRegionCoord& regionCoord, \
+				const ::Game::RegionIdx& regionIdx, \
 				const ::Game::ChunkVec& chunkCoord, \
+				const ::Game::Terrain::Chunk& chunk, \
 				const ::Game::Terrain::HeightCache& heightCache, \
 				std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 

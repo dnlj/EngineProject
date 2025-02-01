@@ -26,6 +26,7 @@ namespace {
 		BiomeFinalWeights,
 		BiomeFinalWeightsFull,
 		TerrainHeight0,
+		TerrainHeight2,
 		TerrainBasis,
 		//TerrainHeight1,
 		Blocks,
@@ -36,14 +37,14 @@ namespace {
 
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
-			BlockVec offset = {81778, -1623};
+			BlockVec offset = {81776, -227};
 			//BlockVec offset = {82963, -94}; // z = 0.5
 			//BlockVec offset = {77967.0, 0.0};
 			//BlockVec offset = {-127, -69};
 
-			float64 zoom = 3; // Larger # = farther out = see more = larger FoV
+			float64 zoom = 1.5; // Larger # = farther out = see more = larger FoV
 			//float64 zoom = 7.35f; // Larger # = farther out = see more = larger FoV
-			Layer mode = Layer::TerrainBasis;
+			Layer mode = Layer::TerrainHeight2;
 			Float minBasis = FLT_MAX;
 			Float maxBasis = -FLT_MAX;
 
@@ -58,6 +59,7 @@ namespace {
 			Engine::Gfx::Texture2D tex = {};
 
 			// Terrain
+			//Generator<BiomeOne, BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain, BiomeDebugOcean> generator{1234};
 			Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain, BiomeDebugOcean> generator{1234};
 			Game::Terrain::Terrain terrain;
 
@@ -138,6 +140,11 @@ namespace {
 						const auto blockCoord = indexToBlock({x, y});
 						const auto idx = x + yspan;
 
+						// We need to clamp blockCoord at maxBlock because of the applyZoom
+						// does ceil which can give slightly off results from some values of
+						// zoom < 1 due to float precision.
+						const auto h0 = heightCache.get(std::min(heightCache.getMaxBlock() - 1, blockCoord.x));
+
 						if (mode == Layer::BiomeBaseGrid) {
 							// This won't line up 100% because we don't include the height offset (see
 							// BiomeRawWeights), but that's the point. Showing the undistorted biome grid.
@@ -150,30 +157,26 @@ namespace {
 							const auto info = generator.calcBiomeRaw(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
-							auto weights = generator.calcBiomeBlend(blockCoord).weights;
+							auto weights = generator.calcBiomeBlend(blockCoord, h0).weights;
 							normalizeBiomeWeights(weights);
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::BiomeFinalWeights) {
-							auto weights = generator.calcBiome(blockCoord).weights;
+							const auto weights = generator.calcBiome(blockCoord, h0).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biomeToColor[biome.id];
 						} else if (mode == Layer::BiomeFinalWeightsFull) {
-							auto weights = generator.calcBiome(blockCoord).weights;
+							const auto weights = generator.calcBiome(blockCoord, h0).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::TerrainHeight0) {
-							auto weights = generator.calcBiome(blockCoord).weights;
+							const auto weights = generator.calcBiome(blockCoord, h0).weights;
 							const auto biome = maxBiomeWeight(weights);
-
-							// We need to clamp blockCoord at maxBlock because of the applyZoom
-							// does ceil which can give slightly off results from some values of
-							// zoom < 1 due to float precision.
-							const auto h0 = heightCache.get(std::min(heightCache.getMaxBlock() - 1, blockCoord.x));
 							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
+						} else if (mode == Layer::TerrainHeight2) {
+							const auto basisInfo = generator.calcBasis(blockCoord, h0);
+							data[idx] = blockCoord.y <= basisInfo.h2 ? glm::u8vec3(basisInfo.weight * glm::vec3(biomeToColor[basisInfo.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainBasis) {
-							// Clamp is needed. See comment in TerrainHeight0.
-							const auto h0 = heightCache.get(std::min(heightCache.getMaxBlock() - 1, blockCoord.x));
 							const auto basisInfo = generator.calcBasis(blockCoord, h0);
 							minBasis = std::min(minBasis, basisInfo.basis);
 							maxBasis = std::max(maxBasis, basisInfo.basis);

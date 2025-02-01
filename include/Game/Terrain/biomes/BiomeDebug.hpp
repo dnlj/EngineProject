@@ -46,14 +46,18 @@ namespace Game::Terrain {
 				 + 0.5_f;
 		}
 
+		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
+			return h0 + HAmp * simplex1.value(blockCoord.x * HFeatScale, 0); // TODO: 1d simplex
+		}
+
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
 
 			// Note that we have limited horizontal detail because we only have fade in
 			// the vertical direction. With that in mind it may be better to use fbm +
 			// warp instead. That also (mostly) avoids the floating island problem.
 
-			const auto xWarp = 0;
-			const auto yWarp = 0;
+			//const auto xWarp = 0;
+			//const auto yWarp = 0;
 
 			//const auto xWarp =
 			//	+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
@@ -76,8 +80,8 @@ namespace Game::Terrain {
 			//	return 1_f;
 			//}
 
-			const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp}; // TODO: rm if unused
-			auto h1 = h0 + HAmp * simplex1.value(bcoord.x * HFeatScale, 0); // TODO: 1d simplex
+			//const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp}; // TODO: rm if unused
+			//auto h1 = h0 + HAmp * simplex1.value(bcoord.x * HFeatScale, 0); // TODO: 1d simplex
 
 			// Going from 1 to 0 is effectively a max(biomeA, biomeB) since the basies are added together.
 			// Going from 1 to -1 seems more correct and gives smoother transitions, but
@@ -114,16 +118,17 @@ namespace Game::Terrain {
 			//
 			//
 
-			const bool above = bcoord.y > h1;
+			const auto bcoord = blockCoord; // TODO: rm if unused
+			const bool above = bcoord.y > h2;
 			const auto surface = [&]{
 				if (above) {
 					// Going below below -1 reduces the floating islands/ cancels 
 					// `2 / dist` instead of `1 / dist` since we are going [-1, 1] instead of [-1, 0] so the distance is doubled.
-					return std::max(-3_f,1_f + (h1 - bcoord.y) * (2_f / 16_f));
+					return std::max(-3_f,1_f + (h2 - bcoord.y) * (2_f / 16_f));
 					//return 1_f + 2_f * std::max(-1_f, (h1 - bcoord.y) * (1.0f / 8_f));
 					//return std::max(-1_f, (h1 - bcoord.y) * (1.0f / 8_f));
 				} else {
-					return std::max(0_f, 1_f - (h1 - bcoord.y) * (1_f / 128_f));
+					return std::max(0_f, 1_f - (h2 - bcoord.y) * (1_f / 128_f));
 				}
 			}();
 			
@@ -169,26 +174,29 @@ namespace Game::Terrain {
 		STAGE_DEF;
 		STAGE(1) { return BlockId::Debug4; }
 
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			const auto xWarp =
-				+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
-				+ 3.0_f * simplex2.value(FVec2{blockCoord} * 0.1f)
-				+ 1.5_f * simplex3.value(FVec2{blockCoord} * 0.2f);
-			const auto yWarp =
-				+ 5.0_f * simplex3.value(FVec2{blockCoord} * 0.05f)
-				+ 3.0_f * simplex1.value(FVec2{blockCoord} * 0.1f)
-				+ 1.5_f * simplex2.value(FVec2{blockCoord} * 0.2f);
-			const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp};
-
+		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
 			const auto half = rawInfo.size / 2;
 			const auto off = half - std::abs(rawInfo.biomeRem.x - half);
 			const auto hMargin = 30;
-			const auto h1 = h0 + off - hMargin;
+			return h0 + off - hMargin;
+		}
 
-			const bool above = bcoord.y > h1;
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+			//const auto xWarp =
+			//	+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
+			//	+ 3.0_f * simplex2.value(FVec2{blockCoord} * 0.1f)
+			//	+ 1.5_f * simplex3.value(FVec2{blockCoord} * 0.2f);
+			//const auto yWarp =
+			//	+ 5.0_f * simplex3.value(FVec2{blockCoord} * 0.05f)
+			//	+ 3.0_f * simplex1.value(FVec2{blockCoord} * 0.1f)
+			//	+ 1.5_f * simplex2.value(FVec2{blockCoord} * 0.2f);
+			//const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp};
+			const auto bcoord = blockCoord;
+
+			const bool above = bcoord.y > h2;
 			const auto surface = [&]{
 				if (above) {
-					return std::max(-1_f, 1_f + (h1 - bcoord.y) * (2_f / 16_f));
+					return std::max(-1_f, 1_f + (h2 - bcoord.y) * (2_f / 16_f));
 				} else {
 					return 1_f;
 				}
@@ -210,6 +218,7 @@ namespace Game::Terrain {
 			if (basisInfo.weight > thresh) {
 				return BlockId::Grass;
 			}
+
 			return BlockId::Gold;
 		}
 
@@ -221,8 +230,12 @@ namespace Game::Terrain {
 			return 1.0f;
 		}
 
+		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
+			return h0;
+		}
+
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			if (blockCoord.y > h0) {
+			if (blockCoord.y > h2) {
 				return -1;
 			}
 

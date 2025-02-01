@@ -19,6 +19,7 @@
 	constexpr static auto _engine_BiomeGenFuncCall_##Name = []<class Biome>() constexpr -> _engine_BiomeGenFunc_##Name { \
 		if constexpr (requires { &Biome::Name; }) { \
 			return []<class... Args>(std::tuple<Biomes...>& biomes, Args... args) ENGINE_INLINE { \
+				static_assert(std::same_as<ReturnType, decltype(std::get<Biome>(biomes).Name(args...))>, "Biome dispatch function has incorrect return type."); \
 				ENGINE_INLINE_CALLS { return std::get<Biome>(biomes).Name(args...); }\
 			}; \
 		} else { \
@@ -85,7 +86,7 @@ namespace Game::Terrain {
 			// +1 because stage zero = uninitialized, zero stages have been run yet.
 			constexpr static auto CurrentStage = I+1;
 
-			forEachChunkAtStage<CurrentStage>(terrain, request, [&](auto& region, const auto& chunkCoord, const auto& regionIdx) ENGINE_INLINE {
+			forEachChunkAtStage<CurrentStage>(terrain, request, [&](Region& region, const UniversalRegionCoord& regionCoord, const RegionIdx& regionIdx, const ChunkVec& chunkCoord) ENGINE_INLINE {
 				auto& stage = region.stages[regionIdx.x][regionIdx.y];
 				
 				if (stage < CurrentStage) {
@@ -101,14 +102,14 @@ namespace Game::Terrain {
 		BIOME_GEN_DISPATCH(genLandmarks, void, TERRAIN_GEN_LANDMARKS_ARGS);
 
 		std::vector<StructureInfo> structures;
-		forEachChunkAtStage<totalStages>(terrain, request, [&](Region& region, const ChunkVec& chunkCoord, const RegionIdx& regionIdx) ENGINE_INLINE_REL {
+		forEachChunkAtStage<totalStages>(terrain, request, [&](Region& region, const UniversalRegionCoord& regionCoord, const RegionIdx& regionIdx, const ChunkVec& chunkCoord) ENGINE_INLINE_REL {
 			for (auto const& biomeId : region.getUniqueBiomesApprox(regionIdx)) {
 				const auto before = structures.size();
 				const auto func = BIOME_GET_DISPATCH(getLandmarks, biomeId);
 
 				if (func) {
 					auto const& chunk = region.chunkAt(regionIdx);
-					(*func)(biomes, terrain, chunk, chunkCoord, heightCache, std::back_inserter(structures));
+					(*func)(biomes, terrain, regionCoord, regionIdx, chunkCoord, chunk, heightCache, std::back_inserter(structures));
 				}
 
 				// TODO: could this be done with a custom back_inserter instead of an extra loop after the fact?
@@ -180,10 +181,10 @@ namespace Game::Terrain {
 		// TODO: if we split request on region bounds we can avoid the repeated region lookup.
 		for (auto chunkCoord = min; chunkCoord.x <= max.x; ++chunkCoord.x) {
 			for (chunkCoord.y = min.y; chunkCoord.y <= max.y; ++chunkCoord.y) {
-				const auto regionCoord = chunkToRegion(chunkCoord);
-				auto& region = terrain.getRegion({request.realmId, regionCoord});
-				const auto chunkIndex = chunkToRegionIndex(chunkCoord, regionCoord);
-				func(region, chunkCoord, chunkIndex);
+				const UniversalRegionCoord regionCoord = {request.realmId, chunkToRegion(chunkCoord)};
+				auto& region = terrain.getRegion(regionCoord);
+				const auto regionIdx = chunkToRegionIndex(chunkCoord, regionCoord.pos);
+				func(region, regionCoord, regionIdx, chunkCoord);
 			}
 		}
 	}
@@ -210,8 +211,9 @@ namespace Game::Terrain {
 		if constexpr (CurrentStage == 1) {
 			const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
 			for (RegionBiomeUnit x = 0; x < biomesPerChunk; ++x) {
+				const auto h0 = heightCache.get(min.x + x);
 				for (RegionBiomeUnit y = 0; y < biomesPerChunk; ++y) {
-					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = maxBiomeWeight(calcBiome(min + BlockVec{x, y} * biomesPerChunk).weights).id;
+					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = maxBiomeWeight(calcBiome(min + BlockVec{x, y} * biomesPerChunk, h0).weights).id;
 				}
 			}
 		}
@@ -340,9 +342,9 @@ namespace Game::Terrain {
 	}
 	
 	template<class... Biomes>
-	BiomeBlend Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord) {
+	BiomeBlend Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord, const BlockUnit h0) {
 		// Offset the coord by the scale offset so biomes are roughly centered on {0, 0}
-		blockCoord -= biomeScaleOffset + heightCache.get(blockCoord.x);
+		blockCoord -= biomeScaleOffset + h0;
 
 		BiomeBlend blend = {
 			.info = calcBiomeRaw(blockCoord),
@@ -518,8 +520,8 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	BiomeBlend Generator<Biomes...>::calcBiome(BlockVec blockCoord) {
-		auto blend = calcBiomeBlend(blockCoord);
+	BiomeBlend Generator<Biomes...>::calcBiome(BlockVec blockCoord, const BlockUnit h0) {
+		auto blend = calcBiomeBlend(blockCoord, h0);
 		normalizeBiomeWeights(blend.weights);
 		blend.rawWeights = blend.weights;
 		ENGINE_DEBUG_ONLY({
@@ -552,13 +554,43 @@ namespace Game::Terrain {
 
 	template<class... Biomes>
 	BasisInfo Generator<Biomes...>::calcBasis(const BlockVec blockCoord, const BlockUnit h0) {
-		const auto blend = calcBiome(blockCoord);
-		Float totalBasis = 0.0f;
+		const auto blend = calcBiome(blockCoord, h0);
 
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: why do we not see the height reflected in the basis anymore? Clearly messed something up during transition
+		//
+		// Why are we seeing the weight come through more now?
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+
+		const Float h0F = static_cast<Float>(h0);
+		Float h2 = 0;
+		BIOME_GEN_DISPATCH_REQUIRED(getHeight, Float, TERRAIN_GET_HEIGHT_ARGS);
+		for (auto& biomeWeight : blend.weights) {
+			const auto getHeight = BIOME_GET_DISPATCH(getHeight, biomeWeight.id);
+			const auto h1 = getHeight(biomes, blockCoord, h0F, blend.info, biomeWeight.weight);
+			h2 += biomeWeight.weight * h1;
+		}
+
+		h2 = std::floor(h2);
+		Float totalBasis = 0;
 		BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
 		for (auto& biomeWeight : blend.weights) {
 			const auto getBasis = BIOME_GET_DISPATCH(getBasis, biomeWeight.id);
-			const auto basis = getBasis(biomes, blockCoord, h0, blend.info, biomeWeight.weight);
+			const auto basis = getBasis(biomes, blockCoord, h0F, h2, blend.info, biomeWeight.weight);
 
 			// This is a _somewhat_ artificial limitation. A basis doesn't _need_ to be
 			// between [-1, 1], but all biomes should have roughly the same range. If one
@@ -574,6 +606,7 @@ namespace Game::Terrain {
 			.id = maxBiome.id,
 			.weight = maxBiome.weight,
 			.basis = totalBasis,
+			.h2 = h2,
 			.rawInfo = blend.info,
 			.rawWeight = maxBiomeWeight(blend.rawWeights).weight,
 		};
