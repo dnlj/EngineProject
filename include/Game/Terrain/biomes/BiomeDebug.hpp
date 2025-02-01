@@ -175,6 +175,8 @@ namespace Game::Terrain {
 		STAGE(1) { return BlockId::Debug4; }
 
 		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
+			// TODO: To avoid the odd bulges in neighboring biomes we should do something like:
+			//       `if (rawInfo.id != this.id) { return h0; }`
 			const auto half = rawInfo.size / 2;
 			const auto off = half - std::abs(rawInfo.biomeRem.x - half);
 			const auto hMargin = 30;
@@ -182,16 +184,15 @@ namespace Game::Terrain {
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			//const auto xWarp =
-			//	+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
-			//	+ 3.0_f * simplex2.value(FVec2{blockCoord} * 0.1f)
-			//	+ 1.5_f * simplex3.value(FVec2{blockCoord} * 0.2f);
-			//const auto yWarp =
-			//	+ 5.0_f * simplex3.value(FVec2{blockCoord} * 0.05f)
-			//	+ 3.0_f * simplex1.value(FVec2{blockCoord} * 0.1f)
-			//	+ 1.5_f * simplex2.value(FVec2{blockCoord} * 0.2f);
-			//const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp};
-			const auto bcoord = blockCoord;
+			const auto xWarp =
+				+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
+				+ 3.0_f * simplex2.value(FVec2{blockCoord} * 0.1f)
+				+ 1.5_f * simplex3.value(FVec2{blockCoord} * 0.2f);
+			const auto yWarp =
+				+ 5.0_f * simplex3.value(FVec2{blockCoord} * 0.05f)
+				+ 3.0_f * simplex1.value(FVec2{blockCoord} * 0.1f)
+				+ 1.5_f * simplex2.value(FVec2{blockCoord} * 0.2f);
+			const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp};
 
 			const bool above = bcoord.y > h2;
 			const auto surface = [&]{

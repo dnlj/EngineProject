@@ -555,31 +555,14 @@ namespace Game::Terrain {
 	template<class... Biomes>
 	BasisInfo Generator<Biomes...>::calcBasis(const BlockVec blockCoord, const BlockUnit h0) {
 		const auto blend = calcBiome(blockCoord, h0);
-
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: why do we not see the height reflected in the basis anymore? Clearly messed something up during transition
-		//
-		// Why are we seeing the weight come through more now?
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-
 		const Float h0F = static_cast<Float>(h0);
 		Float h2 = 0;
+
+		// Its _very_ important that we use the _raw weights_ for blending height
+		// transitions. If we don't then you will get alterations between different biome
+		// heights and huge floating islands due the basisStrength.
 		BIOME_GEN_DISPATCH_REQUIRED(getHeight, Float, TERRAIN_GET_HEIGHT_ARGS);
-		for (auto& biomeWeight : blend.weights) {
+		for (auto& biomeWeight : blend.rawWeights) {
 			const auto getHeight = BIOME_GET_DISPATCH(getHeight, biomeWeight.id);
 			const auto h1 = getHeight(biomes, blockCoord, h0F, blend.info, biomeWeight.weight);
 			h2 += biomeWeight.weight * h1;
