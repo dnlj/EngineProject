@@ -76,7 +76,7 @@ namespace Game::Terrain {
 			/** Structure min bounds. Inclusive. */
 			BlockVec min;
 
-			/** Structure max bounds. */
+			/** Structure max bounds. Exclusive. */
 			BlockVec max;
 
 			/** A id to identify this structure. Defined by each biome. */

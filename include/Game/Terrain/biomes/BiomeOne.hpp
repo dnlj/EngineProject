@@ -132,37 +132,22 @@ namespace Game::Terrain {
 
 		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) {
 			//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
-			auto blockCoord = chunkToBlock(chunkCoord);
-			inserter = {.min = blockCoord, .max = blockCoord, .id = 1};
+			const auto minBlockCoord = chunkToBlock(chunkCoord);
+			inserter = {.min = minBlockCoord, .max = minBlockCoord, .id = 1};
 
-			// TODO: need to cull based on h2.
-			//{ // Cull any chunks outside of the chunk containing the ground level. This won't work since this is h0 not h1.
-			//	const auto h2 = h2Cache.get(blockCoord.x);
-			//	if (blockCoord.y != h2) {
-			//		return;
-			//	}
-			//}
-
-			// TODO: why is the getting called in other biomes that arent "BiomeOne"? And
-			//       in these other biomes why does the generation depend on what is in
-			//       the viewport? It seems like it is considering all biomes in the
-			//       blend? And som reason these biomes aren't in the blend if they aren't
-			//       in the viewport for some reason? The blend should always be the same
-			//       regardless of if it is in the viewport or not.
-			//       -----------------------------------------
-			//       I think the above might be because we aren't culling yet? And we have
-			//       a BiomeOne above the area in question. Since we aren't culling based
-			//       on h2 we generate those structures, but they are using the h2Cache y
-			//       so they "drop down" to the other biome that is actually at surface
-			//       level.
+			constexpr BlockUnit width = 3;
+			constexpr BlockUnit spacing = 9;
+			constexpr BlockUnit stride = spacing + width;
 
 			// TODO: coudl step more that ++1 since we know we have a fixed modulus.
-			const auto maxX = blockCoord.x + chunkSize.x;
-			for (; blockCoord.x < maxX; ++blockCoord.x) {
-				if (blockCoord.x % 7 == 0) {
-					const auto h2 = h2Cache.get(blockCoord.x);
-					blockCoord.y = h2;
-					inserter = {blockCoord, blockCoord + BlockVec{2, 12}, 0};
+			const auto maxBlockCoord = minBlockCoord + chunkSize;
+			for (auto blockCoord = minBlockCoord; blockCoord.x < maxBlockCoord.x; ++blockCoord.x) {
+				if (blockCoord.x % stride == 0) {
+					blockCoord.y = h2Cache.get(blockCoord.x);
+					if (blockCoord.y >= minBlockCoord.y && blockCoord.y < maxBlockCoord.y) {
+						// TODO: random horizontal variation, etc.
+						inserter = {blockCoord, blockCoord + BlockVec{width, 12}, 0};
+					}
 				}
 			}
 		}
@@ -175,8 +160,8 @@ namespace Game::Terrain {
 			//       for region in splitRegions:
 			//           for chunk in splitRegionChunks:
 			//               applyEdit(chunk, editsForChunk(chunk));
-			for (auto blockCoord = info.min; blockCoord.x <= info.max.x; ++blockCoord.x) {
-				for (blockCoord.y = info.min.y; blockCoord.y <= info.max.y; ++blockCoord.y) {
+			for (auto blockCoord = info.min; blockCoord.x < info.max.x; ++blockCoord.x) {
+				for (blockCoord.y = info.min.y; blockCoord.y < info.max.y; ++blockCoord.y) {
 					const auto chunkCoord = blockToChunk(blockCoord);
 					const UniversalRegionCoord regionCoord = {info.realmId, chunkToRegion(chunkCoord)};
 					auto& region = terrain.getRegion(regionCoord);
