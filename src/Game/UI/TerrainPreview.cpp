@@ -59,8 +59,8 @@ namespace {
 			Engine::Gfx::Texture2D tex = {};
 
 			// Terrain
-			//Generator<BiomeOne, BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain, BiomeDebugOcean> generator{1234};
-			Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain, BiomeDebugOcean> generator{1234};
+			Generator<BiomeOne, BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain, BiomeDebugOcean> generator{1234};
+			//Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain, BiomeDebugOcean> generator{1234};
 			Game::Terrain::Terrain terrain;
 
 		public:

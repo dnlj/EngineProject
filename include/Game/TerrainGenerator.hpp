@@ -401,6 +401,7 @@ namespace Game::Terrain {
 				const ::Game::ChunkVec& chunkCoord, \
 				const ::Game::Terrain::Chunk& chunk, \
 				const ::Game::Terrain::HeightCache& h0Cache, \
+				const ::Game::Terrain::HeightCache& h2Cache, \
 				std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 
 			#define TERRAIN_GEN_LANDMARKS_ARGS \

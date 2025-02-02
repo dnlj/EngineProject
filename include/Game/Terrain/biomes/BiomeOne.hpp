@@ -1,5 +1,51 @@
 #include <Game/Terrain/biome.hpp>
 
+
+// TODO: Remove if never needed. This is to test vertically if an area is open.
+/*const auto testY = [&](BlockVec blockCoord){
+	// TODO: should probably use distance (meters) and translate to blocks instead of blocks directly since block scale will change.
+	constexpr static BlockUnit queryD = 10;
+
+	// TODO: its not 100% that we can use these right? they assume the start coord is in the query? thats probably fine?
+	auto curRegionIdx = regionIdx;
+	auto curRegionCoord = regionCoord;
+	Region const* curRegion = &terrain.getRegion(curRegionCoord); // TODO: should pass in initially
+	//Chunk const* curChunk = &chunk; // TODO: its not 100% that the test coord is the same as the landmak chunk right?
+	Chunk const* curChunk = &curRegion->chunkAt(curRegionIdx);
+	auto rem = queryD;
+	const auto initialChunkIdx = blockToChunkIndex(blockCoord, chunkCoord);
+	const BlockUnit x = initialChunkIdx.x;
+	BlockUnit y = initialChunkIdx.y;
+
+	while (true) {
+		while (true) {
+			while (y < chunkSize.y) {
+				if (chunk.data[x][y] != BlockId::Air) {
+					// Found a collision, abort early.
+					return false;
+				}
+
+				++y;
+				--rem;
+			
+				if (rem == 0) {
+					// Search done, no collision found.
+					return true;
+				}
+			}
+
+			y = 0;
+			++curRegionIdx.y;
+			if (curRegionIdx.y >= regionSize.y) { break; }
+			curChunk = &curRegion->chunkAt(curRegionIdx);
+		}
+
+		curRegionIdx.y = 0;
+		++curRegionCoord.pos.y;
+		curRegion = &terrain.getRegion(curRegionCoord);
+	}
+};*/
+
 namespace Game::Terrain {
 	struct BiomeOne : public SimpleBiome {
 		STAGE_DEF;
@@ -67,15 +113,18 @@ namespace Game::Terrain {
 			return 0.5_f + 0.5_f * simplex.value(glm::vec2{blockCoord} * 0.03_f);
 		}
 
+		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
+			return h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
+		}
+
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
-			const auto h1 = h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
-			if (blockCoord.y > h1) { return outGrad(h1, blockCoord.y, 1.0_f / 5.0_f); }
+			if (blockCoord.y > h2) { return outGrad(h2, blockCoord.y, 1.0_f / 5.0_f); }
 
 			// TODO: redo this, extract some helpers from the debug biomes.
 			constexpr Float scale = 0.06_f;
 			constexpr Float groundScale = 1.0_f / 100.0_f;
 			Float value =
-				+ inGrad(h1, blockCoord.y, groundScale)
+				+ inGrad(h2, blockCoord.y, groundScale)
 				+ simplex.value(glm::vec2{blockCoord} * scale);
 
 			return std::clamp(value, -1_f, 1_f);
@@ -86,90 +135,34 @@ namespace Game::Terrain {
 			auto blockCoord = chunkToBlock(chunkCoord);
 			inserter = {.min = blockCoord, .max = blockCoord, .id = 1};
 
+			// TODO: need to cull based on h2.
+			//{ // Cull any chunks outside of the chunk containing the ground level. This won't work since this is h0 not h1.
+			//	const auto h2 = h2Cache.get(blockCoord.x);
+			//	if (blockCoord.y != h2) {
+			//		return;
+			//	}
+			//}
 
-			// TODO: need to cull based on h2 instead.
-			{ // Cull any chunks outside of the chunk containing the ground level. This won't work since this is h0 not h1.
-				const auto h0 = h0Cache.get(blockCoord.x);
-				if (blockCoord.y < h0 || blockCoord.y > h0 + chunkSize.y) {
-					return;
-				}
-			}
+			// TODO: why is the getting called in other biomes that arent "BiomeOne"? And
+			//       in these other biomes why does the generation depend on what is in
+			//       the viewport? It seems like it is considering all biomes in the
+			//       blend? And som reason these biomes aren't in the blend if they aren't
+			//       in the viewport for some reason? The blend should always be the same
+			//       regardless of if it is in the viewport or not.
+			//       -----------------------------------------
+			//       I think the above might be because we aren't culling yet? And we have
+			//       a BiomeOne above the area in question. Since we aren't culling based
+			//       on h2 we generate those structures, but they are using the h2Cache y
+			//       so they "drop down" to the other biome that is actually at surface
+			//       level.
 
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: If we now have h2 do we even need the y test?
-			// - add h2 cache
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-
-			const auto testY = [&](BlockVec blockCoord){
-				// TODO: should probably use distance (meters) and translate to blocks instead of blocks directly since block scale will change.
-				constexpr static BlockUnit queryD = 10;
-
-				// TODO: its not 100% that we can use these right? they assume the start coord is in the query? thats probably fine?
-				auto curRegionIdx = regionIdx;
-				auto curRegionCoord = regionCoord;
-				Region const* curRegion = &terrain.getRegion(curRegionCoord); // TODO: should pass in initially
-				//Chunk const* curChunk = &chunk; // TODO: its not 100% that the test coord is the same as the landmak chunk right?
-				Chunk const* curChunk = &curRegion->chunkAt(curRegionIdx);
-				auto rem = queryD;
-				const auto initialChunkIdx = blockToChunkIndex(blockCoord, chunkCoord);
-				const BlockUnit x = initialChunkIdx.x;
-				BlockUnit y = initialChunkIdx.y;
-
-				while (true) {
-					while (true) {
-						while (y < chunkSize.y) {
-							if (chunk.data[x][y] != BlockId::Air) {
-								// Found a collision, abort early.
-								return false;
-							}
-
-							++y;
-							--rem;
-						
-							if (rem == 0) {
-								// Search done, no collision found.
-								return true;
-							}
-						}
-
-						y = 0;
-						++curRegionIdx.y;
-						if (curRegionIdx.y >= regionSize.y) { break; }
-						curChunk = &curRegion->chunkAt(curRegionIdx);
-					}
-
-					curRegionIdx.y = 0;
-					++curRegionCoord.pos.y;
-					curRegion = &terrain.getRegion(curRegionCoord);
-				}
-			};
-
+			// TODO: coudl step more that ++1 since we know we have a fixed modulus.
 			const auto maxX = blockCoord.x + chunkSize.x;
 			for (; blockCoord.x < maxX; ++blockCoord.x) {
 				if (blockCoord.x % 7 == 0) {
-					if (blockCoord.y >= h0Cache.get(blockCoord.x))
-					{
-						// TODO: land on surface
-
-						if (testY(blockCoord)) {
-							inserter = {blockCoord, blockCoord + BlockVec{2, 8}, 0};
-						}
-					}
+					const auto h2 = h2Cache.get(blockCoord.x);
+					blockCoord.y = h2;
+					inserter = {blockCoord, blockCoord + BlockVec{2, 12}, 0};
 				}
 			}
 		}
