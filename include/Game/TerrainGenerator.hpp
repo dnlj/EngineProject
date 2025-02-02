@@ -138,6 +138,7 @@ namespace Game::Terrain {
 		return *std::ranges::max_element(weights, {}, &BiomeWeight::weight);
 	}
 
+	// TODO: doc fields
 	class BasisInfo {
 		public:
 			BiomeId id;
@@ -240,6 +241,9 @@ namespace Game::Terrain {
 	};
 
 	class HeightCache {
+		public:
+			constexpr static BlockUnit invalid = std::numeric_limits<BlockUnit>::max();
+
 		private:
 			BlockUnit minBlock = 0; // Inclusive
 			BlockUnit maxBlock = 0; // Exclusive
@@ -250,24 +254,28 @@ namespace Game::Terrain {
 				minBlock = minBlockX;
 				maxBlock = maxBlockX;
 				heights.clear();
-				heights.resize(maxBlock - minBlock, std::numeric_limits<BlockUnit>::max());
+				heights.resize(maxBlock - minBlock, invalid);
 			}
 
-			BlockUnit& get(const BlockUnit blockCoord) noexcept {
-				ENGINE_DEBUG_ASSERT(minBlock <= blockCoord);
-				ENGINE_DEBUG_ASSERT(blockCoord < maxBlock);
+			ENGINE_INLINE [[nodiscard]] BlockUnit& get(const BlockUnit blockCoord) noexcept {
+				debugBoundsCheck(blockCoord);
 				return heights[blockCoord - minBlock];
 			}
 
-			BlockUnit get(const BlockUnit blockCoord) const noexcept {
-				ENGINE_DEBUG_ASSERT(minBlock <= blockCoord);
-				ENGINE_DEBUG_ASSERT(blockCoord < maxBlock);
-				ENGINE_DEBUG_ASSERT(std::numeric_limits<BlockUnit>::max() != heights[blockCoord - minBlock], "Uninitialized height value at ", blockCoord);
+			ENGINE_INLINE [[nodiscard]] BlockUnit get(const BlockUnit blockCoord) const noexcept {
+				debugBoundsCheck(blockCoord);
+				ENGINE_DEBUG_ASSERT(invalid != heights[blockCoord - minBlock], "Uninitialized height value at ", blockCoord);
 				return heights[blockCoord - minBlock];
 			}
 
 			ENGINE_INLINE [[nodiscard]] BlockUnit getMinBlock() const noexcept { return minBlock; }
 			ENGINE_INLINE [[nodiscard]] BlockUnit getMaxBlock() const noexcept { return maxBlock; }
+
+		private:
+			ENGINE_INLINE void debugBoundsCheck(const BlockUnit blockCoord) const noexcept {
+				ENGINE_DEBUG_ASSERT(minBlock <= blockCoord, "Height cache block coordinate is out of bounds.");
+				ENGINE_DEBUG_ASSERT(blockCoord < maxBlock, "Height cache block coordinate is out of bounds.");
+			}
 	};
 
 	template<class T, StageId Stage>
@@ -318,7 +326,8 @@ namespace Game::Terrain {
 
 			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(21212)};
 
-			HeightCache heightCache;
+			HeightCache h0Cache;
+			HeightCache h2Cache;
 
 		public:
 			Generator(uint64 seed)
@@ -331,9 +340,9 @@ namespace Game::Terrain {
 
 			ENGINE_INLINE auto& getBiomes() noexcept { return biomes; }
 			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
-			ENGINE_INLINE constexpr auto& getHeightCache() const noexcept { return heightCache; }
+			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return h0Cache; }
 
-			void populateHeight0Cache(const BlockUnit minBlock, const BlockUnit maxBlock);
+			void setupHeightCaches(const BlockUnit minBlock, const BlockUnit maxBlock);
 
 			/**
 			 * Calculate the biome for the given block without any blending/interpolation.
@@ -346,11 +355,14 @@ namespace Game::Terrain {
 			[[nodiscard]] BiomeBlend calcBiomeBlend(BlockVec blockCoord, const BlockUnit h0);
 
 			/**
-			 * Calcuate the final biome for the given block.
+			 * Calculate the final biome for the given block.
 			 */
 			[[nodiscard]] BiomeBlend calcBiome(BlockVec blockCoord, const BlockUnit h0);
 
-			// TODO: doc
+			/**
+			 * Calculate the basis terrain info for the given block.
+			 * @see BasisInfo
+			 */
 			[[nodiscard]] BasisInfo calcBasis(const BlockVec blockCoord, const BlockUnit h0);
 
 		private:
@@ -361,12 +373,14 @@ namespace Game::Terrain {
 			template<StageId CurrentStage, class Func>
 			ENGINE_INLINE void forEachChunkAtStage(Terrain& terrain, const Request& request, Func&& func);
 
-			// Use Float instad of BlockUnit for height in generator functions since all
+			// Use Float instead of BlockUnit for height in generator functions since all
 			// the generators work in floats and any values should be well within range.
 
 			#define TERRAIN_GET_BASIS_STRENGTH_ARGS \
 				const ::Game::BlockVec blockCoord 
-			
+
+			// TODO: Add assert in constructor that checks the Y-independence in constructor.
+			// NOTE: Height functions should be Y-independent.
 			#define TERRAIN_GET_HEIGHT_ARGS \
 				const ::Game::BlockVec blockCoord, \
 				const ::Game::Terrain::Float h0, \
@@ -386,7 +400,7 @@ namespace Game::Terrain {
 				const ::Game::RegionIdx& regionIdx, \
 				const ::Game::ChunkVec& chunkCoord, \
 				const ::Game::Terrain::Chunk& chunk, \
-				const ::Game::Terrain::HeightCache& heightCache, \
+				const ::Game::Terrain::HeightCache& h0Cache, \
 				std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 
 			#define TERRAIN_GEN_LANDMARKS_ARGS \

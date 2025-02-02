@@ -86,8 +86,10 @@ namespace Game::Terrain {
 			auto blockCoord = chunkToBlock(chunkCoord);
 			inserter = {.min = blockCoord, .max = blockCoord, .id = 1};
 
+
+			// TODO: need to cull based on h2 instead.
 			{ // Cull any chunks outside of the chunk containing the ground level. This won't work since this is h0 not h1.
-				const auto h0 = heightCache.get(blockCoord.x);
+				const auto h0 = h0Cache.get(blockCoord.x);
 				if (blockCoord.y < h0 || blockCoord.y > h0 + chunkSize.y) {
 					return;
 				}
@@ -100,7 +102,8 @@ namespace Game::Terrain {
 			//
 			//
 			//
-			// TODO: tree on ground placement. Need to create a helper to query the emptyness of trees
+			// TODO: If we now have h2 do we even need the y test?
+			// - add h2 cache
 			//
 			//
 			//
@@ -159,7 +162,7 @@ namespace Game::Terrain {
 			const auto maxX = blockCoord.x + chunkSize.x;
 			for (; blockCoord.x < maxX; ++blockCoord.x) {
 				if (blockCoord.x % 7 == 0) {
-					if (blockCoord.y >= heightCache.get(blockCoord.x))
+					if (blockCoord.y >= h0Cache.get(blockCoord.x))
 					{
 						// TODO: land on surface
 

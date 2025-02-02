@@ -44,7 +44,7 @@ namespace {
 
 			float64 zoom = 1.5; // Larger # = farther out = see more = larger FoV
 			//float64 zoom = 7.35f; // Larger # = farther out = see more = larger FoV
-			Layer mode = Layer::TerrainHeight2;
+			Layer mode = Layer::TerrainBasis;
 			Float minBasis = FLT_MAX;
 			Float maxBasis = -FLT_MAX;
 
@@ -96,7 +96,7 @@ namespace {
 					generator.generate1(terrain, Request{chunkOffset, chunkOffset + chunksPerImg, 0});
 				} else {
 					// The height cache is still needs to be populated for biome sampling.
-					generator.populateHeight0Cache(indexToBlock({0, 0}).x - biomeBlendDist, indexToBlock(res).x + biomeBlendDist);
+					generator.setupHeightCaches(indexToBlock({0, 0}).x - biomeBlendDist, indexToBlock(res).x + biomeBlendDist);
 				}
 
 				// TODO: Move this color specification to Blocks.xpp, could be useful
@@ -131,7 +131,7 @@ namespace {
 				};
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
-				const auto& heightCache = generator.getHeightCache();
+				const auto& h0Cache = generator.getH0Cache();
 
 				const RealmId realmId = 0; // TODO: realm support
 				for (BlockUnit y = 0; y < res.y; ++y) {
@@ -143,7 +143,7 @@ namespace {
 						// We need to clamp blockCoord at maxBlock because of the applyZoom
 						// does ceil which can give slightly off results from some values of
 						// zoom < 1 due to float precision.
-						const auto h0 = heightCache.get(std::min(heightCache.getMaxBlock() - 1, blockCoord.x));
+						const auto h0 = h0Cache.get(std::min(h0Cache.getMaxBlock() - 1, blockCoord.x));
 
 						if (mode == Layer::BiomeBaseGrid) {
 							// This won't line up 100% because we don't include the height offset (see
@@ -153,7 +153,7 @@ namespace {
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeRawWeights) {
 							// Need to include the biome offset or else things won't line up when switching layers.
-							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + heightCache.get(blockCoord.x));
+							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + h0Cache.get(blockCoord.x));
 							const auto info = generator.calcBiomeRaw(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
