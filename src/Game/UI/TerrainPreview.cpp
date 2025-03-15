@@ -1,8 +1,6 @@
 // Game
 #include <Game/UI/TerrainPreview.hpp>
-#include <Game/TerrainGenerator.hpp>
-#include <Game/Terrain/biomes/BiomeOne.hpp>
-#include <Game/Terrain/biomes/BiomeDebug.hpp>
+#include <Game/Terrain/TestGenerator.hpp>
 
 // Engine
 #include <Engine/UI/ImageDisplay.hpp>
@@ -59,8 +57,7 @@ namespace {
 			Engine::Gfx::Texture2D tex = {};
 
 			// Terrain
-			Generator<BiomeOne, BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain, BiomeDebugOcean> generator{1234};
-			//Generator<BiomeDebugOne, BiomeDebugTwo, BiomeDebugThree, BiomeDebugMountain, BiomeDebugOcean> generator{1234};
+			TestGenerator generator{TestSeed};
 			Game::Terrain::Terrain terrain;
 
 		public:
@@ -93,7 +90,7 @@ namespace {
 
 				if (mode == Layer::Blocks) {
 					terrain = {};
-					generator.generate1(terrain, Request{chunkOffset, chunkOffset + chunksPerImg, 0});
+					generator.generate(terrain, Request{chunkOffset, chunkOffset + chunksPerImg, 0});
 				} else {
 					// The height cache is still needs to be populated for biome sampling.
 					generator.setupHeightCaches(indexToBlock({0, 0}).x - biomeBlendDist, indexToBlock(res).x + biomeBlendDist);

@@ -1,4 +1,4 @@
-#include <Game/TerrainGenerator.hpp>
+#include <Game/Terrain/Generator.hpp>
 
 
 // TODO: Notes on terms to document:
@@ -57,7 +57,7 @@
 
 namespace Game::Terrain {
 	template<class... Biomes>
-	void Generator<Biomes...>::generate1(Terrain& terrain, const Request& request) {
+	void Generator<Biomes...>::generate(Terrain& terrain, const Request& request) {
 		// TODO: add biome stages
 		// - Generate stages.
 		//   - Stage 1, Stage 2, ..., Stage N.

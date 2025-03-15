@@ -348,8 +348,7 @@ namespace Game::Terrain {
 				, biomePerm{Engine::Noise::lcg(seed)}
 			{}
 
-			// TODO: rename
-			void generate1(Terrain& terrain, const Request& request);
+			void generate(Terrain& terrain, const Request& request);
 
 			ENGINE_INLINE auto& getBiomes() noexcept { return biomes; }
 			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
@@ -447,4 +446,4 @@ namespace Game::Terrain {
 	};
 }
 
-#include <Game/TerrainGenerator.ipp>
+#include <Game/Terrain/Generator.ipp>
