@@ -59,7 +59,6 @@ namespace Game::Terrain {
 	template<class... Biomes>
 	void Generator<Biomes...>::generate1(Terrain& terrain, const Request& request) {
 		// TODO: add biome stages
-		// TODO: add h0/h1 stages
 		// - Generate stages.
 		//   - Stage 1, Stage 2, ..., Stage N.
 		// - Generate candidate features for all biomes in the request.
@@ -71,10 +70,10 @@ namespace Game::Terrain {
 		//   - Moss, grass tufts, cobwebs, chests/loot, etc.
 		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
 
-		// TODO: Should this be cached (or stored?) on the terrain? Maybe cache on the
+		// TODO: Should height caches be cached (or stored?) on the terrain? Maybe cache on the
 		//       generator? Right now we re-generate for every request.
-
-		// TODO: does this need ot be +1 chunk? Can't we just do +1 block?
+		// 
+		// TODO: Do height caches need to be +1 chunk? Can't we just do +1 block?
 		setupHeightCaches(chunkToBlock(request.minChunkCoord).x, chunkToBlock(request.maxChunkCoord + ChunkVec{1, 0}).x);
 
 		// Call generate for each stage. Each will expand the requestion chunk selection
@@ -123,16 +122,16 @@ namespace Game::Terrain {
 			}
 		});
 
-		// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spacial structure.
+		// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial structure.
 		
 		// TODO: How do we want to resolve conflicts? If we just go first come first serve
-		//       then a spacial structure isn't needed, you could just check when
-		//       inserting. If its not FCFS then we need to keep all boxes and resovle at
-		//       the end or else you might over-cull. For exampel say you have a large
+		//       then a spatial  structure isn't needed, you could just check when
+		//       inserting. If its not FCFS then we need to keep all boxes and resolve at
+		//       the end or else you might over-cull. For example say you have a large
 		//       structure that later gets removed by a higher priority small structure.
 		//       Since the large structure is now removed there could be other structures
 		//       which are now valid since the larger structure no longer exists and
-		//       doens't collide.
+		//       doesn't collide.
 
 		//
 		//
@@ -545,7 +544,6 @@ namespace Game::Terrain {
 			const auto normTotal = std::reduce(blend.weights.cbegin(), blend.weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
 			ENGINE_DEBUG_ASSERT(std::abs(1.0f - normTotal) <= FLT_EPSILON, "Incorrect normalized biome weight total: ", normTotal);
 		});
-
 
 		// TODO: Does each biome need to specify its own basis strength? Again, this is
 		//       the _strength_ of the basis, not the basis itself. I don't think they do.

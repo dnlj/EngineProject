@@ -165,15 +165,23 @@ namespace Game::Terrain {
 			/** The current stage of each chunk. */
 			StageId stages[regionSize.x][regionSize.y]{};
 
-			// TODO: Does this go on the chunk? How do we handle overlaps?
-			// TODO: Would it be better to store this on the region and use some kind of
-			//       spatial partitioning? BSP/QuadTree/etc.
-			//       Don't know if that would help with size/overlap issues. Potentially lots of
-			//       structures to check for overlaps, but then again the partitioning would
-			//       speed that up quite a bit.
-			//StaticVector<Structure, 4> structures;
-
 			BiomeId biomes[biomesPerRegion.x][biomesPerRegion.y]{};
+
+			// TODO: These are currently never used/generated. Waiting on MapSystem integration.
+			//
+			// TODO: What about non-block entities? Currently no use case so no point in supporting.
+			// 
+			// TODO: This (BlockEntityDesc) is a hold over from the old map generator. Can
+			//       probably rework to be a good bit simpler. No point in doing that until we
+			//       solve disk serialization. Can probably reuse some of that here.
+			// 
+			// TODO: Consider using some type of sparse structure/partitonaing
+			//       here(BSP/QuadTree/etc.). Most chunks won't have entities. And those
+			//       that do will probably only have a few. Could do one sparse per
+			//       region or sparse per chunks and dense entities.
+			// 
+			// Block entities per chunk.
+			std::vector<BlockEntityDesc> blockEntities[regionSize.x][regionSize.y]{};
 
 			ENGINE_INLINE constexpr Chunk& chunkAt(RegionIdx regionIdx) noexcept { return chunks[regionIdx.x][regionIdx.y]; }
 			ENGINE_INLINE constexpr const Chunk& chunkAt(RegionIdx regionIdx) const noexcept { return chunks[regionIdx.x][regionIdx.y]; }
@@ -326,6 +334,11 @@ namespace Game::Terrain {
 
 			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(21212)};
 
+			// h0 = broad, world-scale terrain height variations.
+			// h1 = biome specific height variations. h1 includes h0 as an input. h1 is
+			//      currently only used as part of an intermediate step and not stored
+			//      anywhere.
+			// h2 = final blended height between all influencing biomes.
 			HeightCache h0Cache;
 			HeightCache h2Cache;
 
@@ -404,6 +417,13 @@ namespace Game::Terrain {
 				const ::Game::Terrain::HeightCache& h2Cache, \
 				std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 
+			// TODO: It might be better to look into some kind of trait/tag based system
+			//       for landmark generation instead of having it baked in at the biome
+			//       level. That would allow us to say something like:
+			//           Boss portals for LavaGuy can spawn anywhere with a temperature > 100deg or with the tag HasLavaGuy.
+			//       With genLandmarks that will need to be explicitly included in every
+			//       relevant biome. The tag/trait based system would also be useful for generating temporary
+			//       entities such as mobs.
 			#define TERRAIN_GEN_LANDMARKS_ARGS \
 				::Game::Terrain::Terrain& terrain, \
 				const ::Game::Terrain::StructureInfo& info
