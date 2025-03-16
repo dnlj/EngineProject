@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Game/Terrain/terrain.hpp>
+#include <Game/Terrain/Generator.hpp>
 
 
 #define STAGE_DEF \

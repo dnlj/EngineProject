@@ -1,16 +1,17 @@
 #pragma once
 
 // Game
+#include <Game/BlockEntityData.hpp>
+#include <Game/BlockMeta.hpp>
 #include <Game/Terrain/terrain.hpp>
+#include <Game/universal.hpp>
 
 // Engine
-#include <Engine/FlatHashMap.hpp>
-#include <Engine/StaticVector.hpp>
-#include <Engine/Math/math.hpp>
 #include <Engine/Array.hpp>
-
-// TODO: rm - once universal coords are moved.
-#include <Game/systems/MapSystem.hpp>
+#include <Engine/FlatHashMap.hpp>
+#include <Engine/Math/math.hpp>
+#include <Engine/Noise/OpenSimplexNoise.hpp>
+#include <Engine/StaticVector.hpp>
 
 
 // TODO: split out
@@ -128,13 +129,13 @@ namespace Game::Terrain {
 			BiomeWeights rawWeights;
 	};
 
-	void normalizeBiomeWeights(BiomeWeights& weights) {
+	inline void normalizeBiomeWeights(BiomeWeights& weights) {
 		const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
 		const auto normF = 1.0f / total;
 		for (auto& w : weights) { w.weight *= normF; }
 	}
 
-	[[nodiscard]] ENGINE_INLINE BiomeWeight maxBiomeWeight(const BiomeWeights& weights) {
+	[[nodiscard]] ENGINE_INLINE inline BiomeWeight maxBiomeWeight(const BiomeWeights& weights) {
 		return *std::ranges::max_element(weights, {}, &BiomeWeight::weight);
 	}
 
