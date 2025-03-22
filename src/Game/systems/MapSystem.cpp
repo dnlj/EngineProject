@@ -374,7 +374,24 @@ namespace Game {
 		}
 		
 		// Unload regions
+		// 
+		// 
+		// 
+		// 
+		// 
+		// 
+		// 
 		// TODO: update for new terrain system.
+		// 
+		// 
+		// 
+		// 
+		// 
+		// 
+		// 
+		// 
+		// 
+		// 
 		#if MAP_OLD
 		for (auto it = regions.begin(); it != regions.end();) {
 			if (it->second->lastUsed < timeout && !it->second->loading()) {
@@ -562,11 +579,17 @@ namespace Game {
 					if (!isBufferChunk && !terrain.isChunkLoaded(chunkPos)) {
 						// TODO: Could/should probably optimize the sum of all requests
 						//       before sending the actual generation commands.
-						queueGeneration({
-							.minChunkCoord = minAreaChunk,
-							.maxChunkCoord = maxAreaChunk,
-							.realmId = plyZone.realmId,
-						});
+						if constexpr (ENGINE_SERVER) {
+							queueGeneration({
+								.minChunkCoord = minAreaChunk,
+								.maxChunkCoord = maxAreaChunk,
+								.realmId = plyZone.realmId,
+							});
+						} else {
+							// Ensure space for the chunk is allocated. This is needed so that we
+							// can apply the chunk data that will be received from the server.
+							terrain.forceAllocateChunk(chunkPos);
+						}
 					}
 				#endif
 
@@ -873,9 +896,14 @@ namespace Game {
 		chunkQueue.notify();
 	}
 #else
-	void MapSystem::queueGeneration(const Terrain::Request& request) {
-		// TODO: Avoid duplicate requests, hash map?
-		testGenerator.generate(terrain, request);
-	}
+	#if ENGINE_SERVER
+		void MapSystem::queueGeneration(const Terrain::Request& request) {
+			// TODO: Avoid duplicate requests, hash map?
+			// TODO: Consider a way to do chunks in an outward spiral order so that the
+			//       chunks generate near the player first.
+			//       Maybe?: https://en.wikipedia.org/wiki/Space-filling_curve?useskin=vector
+			testGenerator.generate(terrain, request);
+		}
+	#endif
 #endif
 }

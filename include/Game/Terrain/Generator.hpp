@@ -166,7 +166,7 @@ namespace Game::Terrain {
 			/** Chunk data for each chunk in the region. */
 			Chunk chunks[regionSize.x][regionSize.y]{};
 
-			/** The current stage of each chunk. */
+			/** The current stage of each chunk. Stage zero is uninitialized. */
 			StageId stages[regionSize.x][regionSize.y]{};
 
 			BiomeId biomes[biomesPerRegion.x][biomesPerRegion.y]{};
@@ -235,7 +235,11 @@ namespace Game::Terrain {
 			//           if (!terrain.isChunkLoaded(pos)) { return; }
 			//           auto& chunk = terrain.getChunk(pos);
 			//           // Do something with chunk.
+			//       Really this applies to all functions here, they are all used in
+			//       conjunction with each other and all call the same few functions
+			//       redundantly.
 
+			// TODO: rename/update to (stage check): bool isChunkFinalized(const UniversalChunkCoord chunkCoord) const {
 			bool isChunkLoaded(const UniversalChunkCoord chunkCoord) const {
 				// TODO: Cache last region checked? Since we are always checking
 				//       sequential chunks its very likely that all checks will be for the same
@@ -247,6 +251,14 @@ namespace Game::Terrain {
 					return false;
 				}
 
+				// TODO: What does loaded really mean. Just because we aren't on stage
+				// zero doesn't mean that the chunk is final. Evaluate the logic using
+				// this to ensure it makes sense. I think we usually really want this to
+				// be on the final stage, not just any non-zero stage.
+				//
+				// We could define a convention where final stage always ==
+				// StageId::max(). Then the terrain doesn't need to know what the final
+				// stage is.
 				auto const idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);
 				return found->second->stages[idx.x][idx.y];
 			}
@@ -265,6 +277,21 @@ namespace Game::Terrain {
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());
 				return found->second->chunkAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
+			}
+
+			/**
+			 * Ensures that space is allocated for the given chunk.
+			 * This function never populates any data. If the chunk did not exist an empty
+			 * chunk will be created there.
+			 */
+			void forceAllocateChunk(const UniversalChunkCoord chunkCoord) {
+				auto const regionCoord = chunkCoord.toRegion();
+				auto& region = getRegion(regionCoord);
+				auto const idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);
+
+				// TODO: What stage to use, see TODO in isChunkLoaded.
+				auto& stage = region.stages[idx.x][idx.y];
+				stage = std::max<StageId>(stage, 1);
 			}
 	};
 

@@ -59,11 +59,12 @@
 //             we can still have one main thread for each request and each of those main threads
 //             can fork and join per chunk.
 //       [ ] Threading active chunk data generation.
-//       [ ] Unload terrain/regions
-//       [x] Apply edits
-//       [ ] Load chunk entities
-//       [ ] Store chunk entities
-//       [ ] Cleanup includes
+//       [ ] Unload terrain/regions.
+//       [x] Apply edits.
+//       [ ] Load chunk entities.
+//       [ ] Store chunk entities.
+//       [ ] Cleanup includes.
+//       [ ] Update zone preview.
 #define MAP_OLD false
 #if MAP_OLD
 namespace Game {
@@ -151,7 +152,7 @@ namespace Game {
 				MapGenerator2 mgen{12345};
 			#else
 				Terrain::Terrain terrain;
-				Terrain::TestGenerator testGenerator{Terrain::TestSeed};
+				ENGINE_SERVER_ONLY(Terrain::TestGenerator testGenerator{Terrain::TestSeed});
 			#endif
 
 		public:
@@ -192,6 +193,7 @@ namespace Game {
 				void loadChunkAsyncWorker();
 				void queueRegionToLoad(const UniversalRegionCoord regionPos, MapRegion& region);
 			#else
+				// Server only, still declared here for simplicity.
 				void queueGeneration(const Terrain::Request& request);
 			#endif
 
