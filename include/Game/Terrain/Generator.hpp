@@ -230,6 +230,12 @@ namespace Game::Terrain {
 				return *found->second;
 			}
 
+			// TODO: Should have a way to combine isChunkLoaded with getChunk. In most
+			//       (all?) places we have a patterna like:
+			//           if (!terrain.isChunkLoaded(pos)) { return; }
+			//           auto& chunk = terrain.getChunk(pos);
+			//           // Do something with chunk.
+
 			bool isChunkLoaded(const UniversalChunkCoord chunkCoord) const {
 				// TODO: Cache last region checked? Since we are always checking
 				//       sequential chunks its very likely that all checks will be for the same
@@ -246,6 +252,14 @@ namespace Game::Terrain {
 			}
 
 			Chunk const& getChunk(const UniversalChunkCoord chunkCoord) const {
+				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
+				auto const regionCoord = chunkCoord.toRegion();
+				const auto found = regions.find(regionCoord);
+				ENGINE_DEBUG_ASSERT(found != regions.end());
+				return found->second->chunkAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
+			}
+
+			Chunk& getChunkMutable(const UniversalChunkCoord chunkCoord) {
 				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
 				auto const regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);

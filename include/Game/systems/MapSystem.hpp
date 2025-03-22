@@ -48,7 +48,7 @@
 
 
 // TODO: New map/terrain:
-//       [ ] Load terrain. Regions need two more things:
+//       [o] Load terrain. Regions need two more things:
 //           - Generation status (added with isChunkLoaded)
 //           - Last used - Needed for unloading. Does this go on the chunk? region? Map or Terrain?
 //             - I'm thinking probably the region level. That's how we save them so I think that makes sense.
@@ -60,7 +60,7 @@
 //             can fork and join per chunk.
 //       [ ] Threading active chunk data generation.
 //       [ ] Unload terrain/regions
-//       [ ] Apply edits
+//       [x] Apply edits
 //       [ ] Load chunk entities
 //       [ ] Store chunk entities
 //       [ ] Cleanup includes

@@ -270,8 +270,8 @@ namespace Game {
 		}
 
 		// Apply edits
-		#if MAP_OLD
-			for (auto& [chunkPos, edit] : chunkEdits) {
+		for (auto& [chunkPos, edit] : chunkEdits) {
+			#if MAP_OLD
 				const auto regionIt = regions.find(chunkPos.toRegion());
 				if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] {
 					// I think we could hit this if we get a chunk from the network before we have that area loaded on the client.
@@ -282,15 +282,23 @@ namespace Game {
 
 				const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
 				auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y].chunk;
+			#else
+				if (!terrain.isChunkLoaded(chunkPos)) [[unlikely]] {
+					// I think we could hit this if we get a chunk from the network before we have that area loaded on the client.
+					// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
+					ENGINE_WARN("Attempting to edit unloaded chunk/region");
+					continue;
+				}
+				auto& chunk = terrain.getChunkMutable(chunkPos);
+			#endif
 
-				if (chunk.apply(edit)) {
-					const auto found = activeChunks.find(chunkPos);
-					if (found != activeChunks.end()) {
-						found->second.updated = currTick;
-					}
+			if (chunk.apply(edit)) {
+				const auto found = activeChunks.find(chunkPos);
+				if (found != activeChunks.end()) {
+					found->second.updated = currTick;
 				}
 			}
-		#endif
+		}
 
 		for (auto& [chunkPos, activeData] : activeChunks) {
 			if (activeData.updated == currTick) {
@@ -414,27 +422,6 @@ namespace Game {
 
 					// TODO (4E5R8u55): This isn't correct. Zero can be a valid tick if they wrap.
 					if (meta.last == 0) { // Fresh chunk
-						//
-						//
-						//
-						//
-						//
-						//
-						// TODO: need to update this part to use terrain, Make sure to co-implement with MAP_OLD
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-
 						#if MAP_OLD
 							const auto regionPos = chunkPos.toRegion();
 							const auto regionIt = regions.find(regionPos);
@@ -457,7 +444,7 @@ namespace Game {
 							}
 						#endif
 					} else if (activeData.rle.empty()) {
-						// TODO: i dont think this case should be hit?
+						// TODO: I don't think this case should be hit?
 						ENGINE_WARN2("No RLE data for chunk");
 						ENGINE_DEBUG_BREAK;
 					} else { // Chunk edit
