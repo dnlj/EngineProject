@@ -76,6 +76,10 @@ namespace Game::Terrain {
 		// TODO: Do height caches need to be +1 chunk? Can't we just do +1 block?
 		setupHeightCaches(chunkToBlock(request.minChunkCoord).x, chunkToBlock(request.maxChunkCoord + ChunkVec{1, 0}).x);
 
+
+		// TODO: Shrink request based on current stage of chunks. If all chunks, a row, or
+		//       a column are already at the final stage we can shrink/skip the request.
+
 		// Call generate for each stage. Each will expand the requestion chunk selection
 		// appropriately for the following stages.
 		Engine::Meta::ForEachInRange<totalStages>::call([&]<auto I>{

@@ -35,6 +35,7 @@
 // TODO: Change all mentions of "tile" to "block". Its a more common term.
 // TODO: Standardize terms to be `xyzOffset`, `xyzPosition`, `xyzIndex`
 
+
 /**
  * World Coordinates - Always relative to Box2D origin. When mapOffset is changed
  * Region - A grouping of chunks. Used for saving/loading.
@@ -44,6 +45,27 @@
  * xyzIndex - The index of xyz into its storage array.
  *
  */
+
+
+// TODO: New map/terrain:
+//       [ ] Load terrain. Regions need two more things:
+//           - Generation status (added with isChunkLoaded)
+//           - Last used - Needed for unloading. Does this go on the chunk? region? Map or Terrain?
+//             - I'm thinking probably the region level. That's how we save them so I think that makes sense.
+//             - Is this part of the map or terrain system? Idk.
+//       [ ] Threading terrain generation
+//           - We need a join between each stage since each stage can depend on the last.
+//           - Although, we only need that join per request. Assuming no two requests overlap
+//             we can still have one main thread for each request and each of those main threads
+//             can fork and join per chunk.
+//       [ ] Threading active chunk data generation.
+//       [ ] Unload terrain/regions
+//       [ ] Apply edits
+//       [ ] Load chunk entities
+//       [ ] Store chunk entities
+//       [ ] Cleanup includes
+#define MAP_OLD false
+#if MAP_OLD
 namespace Game {
 	class MapRegion {
 		public:
@@ -75,6 +97,7 @@ namespace Game {
 			static_assert(decltype(loadedChunks)::is_always_lock_free);
 	};
 }
+#endif
 
 namespace Game {
 	class MapSystem : public System {
@@ -114,16 +137,22 @@ namespace Game {
 			std::atomic<bool> threadsShouldExit = false;
 			static_assert(decltype(threadsShouldExit)::is_always_lock_free);
 
-			using Job = std::function<void()>;
-			Engine::ThreadSafeQueue<Job> chunkQueue;
-			Engine::FlatHashMap<UniversalRegionCoord, std::unique_ptr<MapRegion>> regions;
 			Engine::ECS::Entity mapEntity;
+			#if MAP_OLD
+				using Job = std::function<void()>;
+				Engine::ThreadSafeQueue<Job> chunkQueue;
+				Engine::FlatHashMap<UniversalRegionCoord, std::unique_ptr<MapRegion>> regions;
+			#endif
 
 			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;
 
-			MapGenerator2 mgen{12345};
-			Terrain::TestGenerator testGenerator{Terrain::TestSeed};
+			#if MAP_OLD
+				MapGenerator2 mgen{12345};
+			#else
+				Terrain::Terrain terrain;
+				Terrain::TestGenerator testGenerator{Terrain::TestSeed};
+			#endif
 
 		public:
 			MapSystem(SystemArg arg);
@@ -141,7 +170,10 @@ namespace Game {
 			void setValueAt2(const UniversalBlockCoord blockPos, BlockId bid);
 
 			ENGINE_INLINE const auto& getActiveChunks() const noexcept { return activeChunks; }
-			ENGINE_INLINE const auto& getLoadedRegions() const noexcept { return regions; }
+
+			#if MAP_OLD
+				ENGINE_INLINE const auto& getLoadedRegions() const noexcept { return regions; }
+			#endif
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			Engine::Gfx::ShaderRef shader;
@@ -155,11 +187,13 @@ namespace Game {
 
 			void buildActiveChunkData(ActiveChunkData& data, const UniversalChunkCoord chunkPos);
 
-			void loadChunk(const UniversalChunkCoord chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;
-
-			void loadChunkAsyncWorker();
-
-			void queueRegionToLoad(const UniversalRegionCoord regionPos, MapRegion& region);
+			#if MAP_OLD
+				void loadChunk(const UniversalChunkCoord chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;
+				void loadChunkAsyncWorker();
+				void queueRegionToLoad(const UniversalRegionCoord regionPos, MapRegion& region);
+			#else
+				void queueGeneration(const Terrain::Request& request);
+			#endif
 
 			template<BlockEntityType Type>
 			Engine::ECS::Entity buildBlockEntity(const BlockEntityDesc& data, const ActiveChunkData& activeChunkData) {

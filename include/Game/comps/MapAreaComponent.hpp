@@ -1,10 +1,11 @@
 #pragma once
 
+// Game
+#include <Game/universal.hpp>
+
 // Engine
 #include <Engine/FlatHashMap.hpp>
 
-// TODO: rm and move UniversalChunkVec
-#include <Game/systems/MapSystem.hpp>
 
 namespace Game {
 	// TODO: This is poorly named.

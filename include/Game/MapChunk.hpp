@@ -25,7 +25,8 @@ namespace Game {
 
 		public:
 			BlockId data[chunkSize.x][chunkSize.y] = {};
-			
+
+		public:
 			bool apply(const MapChunk& edit) {
 				bool editMade = false;
 

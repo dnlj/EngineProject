@@ -3,6 +3,7 @@
 // Game
 #include <Game/BlockEntityData.hpp>
 #include <Game/BlockMeta.hpp>
+#include <Game/MapChunk.hpp> // TODO: Replace/rename/update MapChunk.
 #include <Game/Terrain/terrain.hpp>
 #include <Game/universal.hpp>
 
@@ -150,12 +151,14 @@ namespace Game::Terrain {
 			Float rawWeight;
 	};
 
+	// TODO: Replace/rename/update MapChunk.
+	using Chunk = MapChunk;
 	// TODO: getters with debug bounds checking.
-	class Chunk {
-		public:
-			// TODO: combine id/data arrays? Depends on how muhc data we have once everything is done.
-			BlockId data[chunkSize.x][chunkSize.y]{};
-	};
+	//class Chunk {
+	//	public:
+	//		// TODO: combine id/data arrays? Depends on how much data we have once everything is done.
+	//		BlockId data[chunkSize.x][chunkSize.y]{};
+	//};
 
 	// TODO: getters with debug bounds checking.
 	class Region {
@@ -225,6 +228,29 @@ namespace Game::Terrain {
 					return *regions.try_emplace(regionCoord, std::make_unique<Region>()).first->second;
 				}
 				return *found->second;
+			}
+
+			bool isChunkLoaded(const UniversalChunkCoord chunkCoord) const {
+				// TODO: Cache last region checked? Since we are always checking
+				//       sequential chunks its very likely that all checks will be for the same
+				//       region. May not be worth. Would need to profile.
+
+				const auto regionCoord = chunkCoord.toRegion();
+				const auto found = regions.find(regionCoord);
+				if (found == regions.end()) {
+					return false;
+				}
+
+				auto const idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);
+				return found->second->stages[idx.x][idx.y];
+			}
+
+			Chunk const& getChunk(const UniversalChunkCoord chunkCoord) const {
+				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
+				auto const regionCoord = chunkCoord.toRegion();
+				const auto found = regions.find(regionCoord);
+				ENGINE_DEBUG_ASSERT(found != regions.end());
+				return found->second->chunkAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 	};
 

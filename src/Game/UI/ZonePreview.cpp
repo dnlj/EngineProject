@@ -86,6 +86,8 @@ namespace Game::UI { namespace {
 			glm::vec2 scale() const noexcept { return getSize() / glm::vec2{img.size()}; }
 
 			void rebuild() {
+				// TODO: update for terrain.
+				#if MAP_OLD
 				// TODO: pan/zoom
 				//if (zoomAccum) {
 				//	auto z = std::clamp(zoomAccum * 0.2f, -0.9f, 0.9f);
@@ -157,6 +159,7 @@ namespace Game::UI { namespace {
 				// Fix size so 1chunk=1pixel
 				setFixedSize(img.size());
 				tex.setImage(img);
+				#endif
 			}
 
 			bool onAction(EUI::ActionEvent action) override {
