@@ -373,32 +373,37 @@ namespace Game {
 			}
 		}
 		
-		// Unload regions
-		// 
-		// 
-		// 
-		// 
-		// 
-		// 
-		// 
-		// TODO: update for new terrain system.
-		// 
-		// 
-		// 
-		// 
-		// 
-		// 
-		// 
-		// 
-		// 
-		// 
+		// Unload regions.
 		#if MAP_OLD
-		for (auto it = regions.begin(); it != regions.end();) {
-			if (it->second->lastUsed < timeout && !it->second->loading()) {
-				ENGINE_LOG2("Unloading region: {} {} ", it->first.realmId, it->first.pos);
-				it = regions.erase(it);
-			} else {
-				++it;
+		{
+			for (auto it = regions.begin(); it != regions.end();) {
+				if (it->second->lastUsed < timeout && !it->second->loading()) {
+					ENGINE_LOG2("Unloading region: {} {} ", it->first.realmId, it->first.pos);
+					it = regions.erase(it);
+				} else {
+					++it;
+				}
+			}
+		}
+		#else
+		{
+			// It is safe to cache end here since end is not invalidated by erase.
+			const auto end = regionLastUsed.end();
+			for (auto it = regionLastUsed.begin(); it != end;) {
+				// TODO: Before this update we also checked if the region was loading. Is
+				//       this nessesary? This would only be an issue if the region takes
+				//       longer to load than the timeout I think? It is probably safe to
+				//       remove. If this turns into an issue the simpler solution would be
+				//       to update the regionLastUsed instead of introducing a region wide
+				//       loading flag to track.
+				//       if (it->second->lastUsed < timeout && !it->second->loading()) {
+				if (it->second < timeout) {
+					ENGINE_LOG2("Unloading region: {} {} ", it->first.realmId, it->first.pos);
+					terrain.eraseRegion(it->first);
+					it = regionLastUsed.erase(it);
+				} else {
+					++it;
+				}
 			}
 		}
 		#endif
@@ -576,6 +581,7 @@ namespace Game {
 					region->lastUsed = world.getTickTime();
 					if (region->loading()) { continue; }
 				#else
+					const auto regionCoord = chunkPos.toRegion();
 					if (!isBufferChunk && !terrain.isChunkLoaded(chunkPos)) {
 						// TODO: Could/should probably optimize the sum of all requests
 						//       before sending the actual generation commands.
@@ -591,6 +597,9 @@ namespace Game {
 							terrain.forceAllocateChunk(chunkPos);
 						}
 					}
+
+					// Update region usage.
+					regionLastUsed[regionCoord] = world.getTickTime();
 				#endif
 
 				#if ENGINE_SERVER
@@ -610,14 +619,14 @@ namespace Game {
 				// Create active chunk data.
 				// The generation of the actual graphics/physics is done in
 				// MapSystem::tick based on the last chunk update tick. 
-				auto it = activeChunks.find(chunkPos);
-				if (it == activeChunks.end()) {
+				auto activeChunkIt = activeChunks.find(chunkPos);
+				if (activeChunkIt == activeChunks.end()) {
 					if (isBufferChunk) { continue; }
 
 					// TODO (QmIupKgJ): we really should probably have a cache of inactive chunks that we can reuse instead of constant destroy/create.
 					zoneSys.addRef(plyZoneId);
-					it = activeChunks.try_emplace(chunkPos, createBody(plyZoneId)).first;
-					ENGINE_DEBUG_ASSERT(it->second.body.valid());
+					activeChunkIt = activeChunks.try_emplace(chunkPos, createBody(plyZoneId)).first;
+					ENGINE_DEBUG_ASSERT(activeChunkIt->second.body.valid());
 					//ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
 
 					// TODO: update for new terrain system.
@@ -631,12 +640,12 @@ namespace Game {
 								Engine::ECS::Entity ent;
 
 								desc.data.with([&]<auto Type>(auto& data) ENGINE_INLINE {
-									ent = buildBlockEntity<Type>(desc, it->second);
+									ent = buildBlockEntity<Type>(desc, activeChunkIt->second);
 									if (ent != Engine::ECS::INVALID_ENTITY) {
 										auto& beComp = world.addComponent<BlockEntityComponent>(ent);
 										beComp.type = desc.data.type;
 										beComp.block = desc.pos;
-										it->second.blockEntities.push_back(ent);
+										activeChunkIt->second.blockEntities.push_back(ent);
 									} else {
 										ENGINE_WARN("Attempting to create invalid block entity.");
 									}
@@ -645,8 +654,8 @@ namespace Game {
 						}
 					#endif
 
-					// ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (it->second.updated == tick) ? "fresh" : "stale", ")");
-					it->second.updated = tick;
+					// ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (activeChunkIt->second.updated == tick) ? "fresh" : "stale", ")");
+					activeChunkIt->second.updated = tick;
 				} else if (!isBufferChunk) {
 					// Only move the non-buffer chunks to avoid any stutter when moving
 					// between zones. The buffer chunks will be moved later if the player
@@ -664,7 +673,7 @@ namespace Game {
 					// since we only update the nonbuffered chunks immediately.
 					
 					// If the chunk is already loaded make sure the chunk and its entities are in the correct zone.
-					auto& body = it->second.body;
+					auto& body = activeChunkIt->second.body;
 					const auto bodyZoneId = body.getZoneId();
 					if (bodyZoneId != plyZoneId) {
 						//ENGINE_INFO2("Moving chunk {} from zone {} to {} @ {}", chunkPos, body.getZoneId(), plyZoneId, tick);
@@ -677,7 +686,7 @@ namespace Game {
 
 						// Client side this is handled through the entity networking system.
 						if constexpr (ENGINE_SERVER) {
-							for (const auto ent : it->second.blockEntities) {
+							for (const auto ent : activeChunkIt->second.blockEntities) {
 								auto& entPhysComp = world.getComponent<PhysicsBodyComponent>(ent);
 								
 								// Some entities may have already been moved in the zone system so we need to check the zone here.
@@ -690,7 +699,8 @@ namespace Game {
 					}
 				}
 				
-				it->second.lastUsed = world.getTickTime();
+				// Update active chunk usage.
+				activeChunkIt->second.lastUsed = world.getTickTime();
 			}
 		}
 	}

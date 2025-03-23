@@ -222,6 +222,10 @@ namespace Game::Terrain {
 			Engine::FlatHashMap<UniversalRegionCoord, std::unique_ptr<Region>> regions;
 
 		public:
+			void eraseRegion(const UniversalRegionCoord regionCoord) {
+				regions.erase(regionCoord);
+			}
+
 			Region& getRegion(const UniversalRegionCoord regionCoord) {
 				const auto found = regions.find(regionCoord);
 				if (found == regions.end()) {

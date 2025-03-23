@@ -48,7 +48,7 @@
 
 
 // TODO: New map/terrain:
-//       [o] Load terrain. Regions need two more things:
+//       [x] Load terrain. Regions need two more things:
 //           - Generation status (added with isChunkLoaded)
 //           - Last used - Needed for unloading. Does this go on the chunk? region? Map or Terrain?
 //             - I'm thinking probably the region level. That's how we save them so I think that makes sense.
@@ -59,7 +59,7 @@
 //             we can still have one main thread for each request and each of those main threads
 //             can fork and join per chunk.
 //       [ ] Threading active chunk data generation.
-//       [ ] Unload terrain/regions.
+//       [x] Unload terrain/regions.
 //       [x] Apply edits.
 //       [ ] Load chunk entities.
 //       [ ] Store chunk entities.
@@ -153,6 +153,7 @@ namespace Game {
 			#else
 				Terrain::Terrain terrain;
 				ENGINE_SERVER_ONLY(Terrain::TestGenerator testGenerator{Terrain::TestSeed});
+				Engine::FlatHashMap<UniversalRegionCoord, Engine::Clock::TimePoint> regionLastUsed;
 			#endif
 
 		public:
