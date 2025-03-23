@@ -133,7 +133,7 @@ namespace Game::Terrain {
 		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) {
 			//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
 			const auto minBlockCoord = chunkToBlock(chunkCoord);
-			inserter = {.min = minBlockCoord, .max = minBlockCoord, .id = 1};
+			inserter = {.min = minBlockCoord, .max = minBlockCoord + BlockVec{1,1}, .id = 1};
 
 			constexpr BlockUnit width = 3;
 			constexpr BlockUnit spacing = 9;
@@ -153,6 +153,11 @@ namespace Game::Terrain {
 		}
 
 		void genLandmarks(TERRAIN_GEN_LANDMARKS_ARGS) {
+			// TODO: Come up with a system for landmark ids.
+			//       Currently:
+			//       - info.id = 0 = tree
+			//       - info.id = 1 = debug chunk marker
+
 			// TODO: This is the least efficient way possible to do this. We need a good
 			//       api to efficiently edit multiple blocks spanning multiple chunks and
 			//       regions. We would need to pre split between both regions and then chunks
@@ -171,12 +176,27 @@ namespace Game::Terrain {
 					ENGINE_DEBUG_ASSERT(chunkIdx.x >= 0 && chunkIdx.x < chunkSize.x);
 					ENGINE_DEBUG_ASSERT(chunkIdx.y >= 0 && chunkIdx.y < chunkSize.y);
 
+					// TODO: what is this debug4 check for?
 					if (chunk.data[chunkIdx.x][chunkIdx.y] != BlockId::Debug4)
 					{
-						chunk.data[chunkIdx.x][chunkIdx.y] = info.id == 0 ? BlockId::Gold : BlockId::Debug3;
+						chunk.data[chunkIdx.x][chunkIdx.y] = info.id == 0 ? BlockId::Gold : BlockId::Grass;
 					}
+
 					//ENGINE_LOG2("GEN LANDMARK: {}", chunkCoord);
 				}
+			}
+
+			if (info.id == 0) {
+				const auto chunkCoord = blockToChunk(info.min);
+				const UniversalRegionCoord regionCoord = {info.realmId, chunkToRegion(chunkCoord)};
+				auto& region = terrain.getRegion(regionCoord);
+				const auto regionIdx = chunkToRegionIndex(chunkCoord);
+				auto& ents = region.entitiesAt(regionIdx);
+				auto& ent = ents.emplace_back();
+				ent.pos = info.min; // TODO: center
+				ent.data.type = BlockEntityType::Tree;
+				ent.data.asTree.type = Engine::Noise::lcg(ent.pos.x) % 3; // TODO: random tree variant
+				ent.data.asTree.size = {3, 9}; // TODO: size
 			}
 		}
 	};

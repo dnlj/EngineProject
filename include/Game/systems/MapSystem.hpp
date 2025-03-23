@@ -61,10 +61,11 @@
 //       [ ] Threading active chunk data generation.
 //       [x] Unload terrain/regions.
 //       [x] Apply edits.
-//       [ ] Load chunk entities.
+//       [x] Load chunk entities.
 //       [ ] Store chunk entities.
+//       [ ] Portal entities.
 //       [ ] Cleanup includes.
-//       [ ] Update zone preview.
+//       [x] Update zone preview.
 #define MAP_OLD false
 #if MAP_OLD
 namespace Game {

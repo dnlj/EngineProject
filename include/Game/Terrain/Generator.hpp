@@ -151,6 +151,7 @@ namespace Game::Terrain {
 			Float rawWeight;
 	};
 
+	using ChunkEntities = std::vector<BlockEntityDesc>;
 	// TODO: Replace/rename/update MapChunk.
 	using Chunk = MapChunk;
 	// TODO: getters with debug bounds checking.
@@ -184,11 +185,16 @@ namespace Game::Terrain {
 			//       that do will probably only have a few. Could do one sparse per
 			//       region or sparse per chunks and dense entities.
 			// 
-			// Block entities per chunk.
-			std::vector<BlockEntityDesc> blockEntities[regionSize.x][regionSize.y]{};
+			// Entities per chunk.
+			ChunkEntities entities[regionSize.x][regionSize.y]{};
 
 			ENGINE_INLINE constexpr Chunk& chunkAt(RegionIdx regionIdx) noexcept { return chunks[regionIdx.x][regionIdx.y]; }
 			ENGINE_INLINE constexpr const Chunk& chunkAt(RegionIdx regionIdx) const noexcept { return chunks[regionIdx.x][regionIdx.y]; }
+
+			ENGINE_INLINE constexpr StageId stageAt(RegionIdx regionIdx) const noexcept { return stages[regionIdx.x][regionIdx.y]; }
+
+			ENGINE_INLINE constexpr ChunkEntities& entitiesAt(RegionIdx regionIdx) noexcept { return entities[regionIdx.x][regionIdx.y]; }
+			ENGINE_INLINE constexpr const ChunkEntities& entitiesAt(RegionIdx regionIdx) const noexcept { return entities[regionIdx.x][regionIdx.y]; }
 
 			ENGINE_INLINE constexpr BiomeId& biomeAt(RegionBiomeIdx regionBiomeIdx) noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
 			ENGINE_INLINE constexpr BiomeId biomeAt(RegionBiomeIdx regionBiomeIdx) const noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
@@ -222,11 +228,11 @@ namespace Game::Terrain {
 			Engine::FlatHashMap<UniversalRegionCoord, std::unique_ptr<Region>> regions;
 
 		public:
-			void eraseRegion(const UniversalRegionCoord regionCoord) {
+			void eraseRegion(const UniversalRegionCoord regionCoord) noexcept {
 				regions.erase(regionCoord);
 			}
 
-			Region& getRegion(const UniversalRegionCoord regionCoord) {
+			Region& getRegion(const UniversalRegionCoord regionCoord) noexcept {
 				const auto found = regions.find(regionCoord);
 				if (found == regions.end()) {
 					return *regions.try_emplace(regionCoord, std::make_unique<Region>()).first->second;
@@ -234,7 +240,7 @@ namespace Game::Terrain {
 				return *found->second;
 			}
 
-			bool isRegionLoaded(const UniversalRegionCoord regionCoord) const {
+			bool isRegionLoaded(const UniversalRegionCoord regionCoord) const noexcept {
 				const auto found = regions.find(regionCoord);
 				return found != regions.end();
 			}
@@ -249,7 +255,7 @@ namespace Game::Terrain {
 			//       redundantly.
 
 			// TODO: rename/update to (stage check): bool isChunkFinalized(const UniversalChunkCoord chunkCoord) const {
-			bool isChunkLoaded(const UniversalChunkCoord chunkCoord) const {
+			bool isChunkLoaded(const UniversalChunkCoord chunkCoord) const noexcept {
 				// TODO: Cache last region checked? Since we are always checking
 				//       sequential chunks its very likely that all checks will be for the same
 				//       region. May not be worth. Would need to profile.
@@ -268,11 +274,10 @@ namespace Game::Terrain {
 				// We could define a convention where final stage always ==
 				// StageId::max(). Then the terrain doesn't need to know what the final
 				// stage is.
-				auto const idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);
-				return found->second->stages[idx.x][idx.y];
+				return found->second->stageAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 
-			Chunk const& getChunk(const UniversalChunkCoord chunkCoord) const {
+			Chunk const& getChunk(const UniversalChunkCoord chunkCoord) const noexcept {
 				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
 				auto const regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
@@ -280,12 +285,20 @@ namespace Game::Terrain {
 				return found->second->chunkAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 
-			Chunk& getChunkMutable(const UniversalChunkCoord chunkCoord) {
+			Chunk& getChunkMutable(const UniversalChunkCoord chunkCoord) noexcept {
 				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
 				auto const regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());
 				return found->second->chunkAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
+			}
+
+			const ChunkEntities& getEntities(const UniversalChunkCoord chunkCoord) const noexcept {
+				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
+				auto const regionCoord = chunkCoord.toRegion();
+				const auto found = regions.find(regionCoord);
+				ENGINE_DEBUG_ASSERT(found != regions.end());
+				return found->second->entitiesAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 
 			/**
@@ -293,7 +306,7 @@ namespace Game::Terrain {
 			 * This function never populates any data. If the chunk did not exist an empty
 			 * chunk will be created there.
 			 */
-			void forceAllocateChunk(const UniversalChunkCoord chunkCoord) {
+			void forceAllocateChunk(const UniversalChunkCoord chunkCoord) noexcept {
 				auto const regionCoord = chunkCoord.toRegion();
 				auto& region = getRegion(regionCoord);
 				auto const idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);

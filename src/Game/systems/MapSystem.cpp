@@ -337,7 +337,34 @@ namespace Game {
 		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
 			if (it->second.lastUsed < timeout) {
 				// ENGINE_LOG2("Unloading chunk: {}", it->first);
-
+				
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				// TODO: update for new terrain system.
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
 				#if MAP_OLD
 					// Store block entities
 					if constexpr (ENGINE_SERVER) {
@@ -629,30 +656,32 @@ namespace Game {
 					ENGINE_DEBUG_ASSERT(activeChunkIt->second.body.valid());
 					//ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
 
-					// TODO: update for new terrain system.
 					#if MAP_OLD
 						const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
 						auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
-
-						// Build chunk entities
-						if constexpr (ENGINE_SERVER) {
-							for (const auto& desc : chunkInfo.entData) {
-								Engine::ECS::Entity ent;
-
-								desc.data.with([&]<auto Type>(auto& data) ENGINE_INLINE {
-									ent = buildBlockEntity<Type>(desc, activeChunkIt->second);
-									if (ent != Engine::ECS::INVALID_ENTITY) {
-										auto& beComp = world.addComponent<BlockEntityComponent>(ent);
-										beComp.type = desc.data.type;
-										beComp.block = desc.pos;
-										activeChunkIt->second.blockEntities.push_back(ent);
-									} else {
-										ENGINE_WARN("Attempting to create invalid block entity.");
-									}
-								});
-							}
-						}
+						auto const& entData = chunkInfo.entData;
+					#else
+						auto const& entData = terrain.getEntities(chunkPos);
 					#endif
+
+					// Build chunk entities
+					if constexpr (ENGINE_SERVER) {
+						for (const auto& desc : entData) {
+							Engine::ECS::Entity ent;
+
+							desc.data.with([&]<auto Type>(auto& data) ENGINE_INLINE {
+								ent = buildBlockEntity<Type>(desc, activeChunkIt->second);
+								if (ent != Engine::ECS::INVALID_ENTITY) {
+									auto& beComp = world.addComponent<BlockEntityComponent>(ent);
+									beComp.type = desc.data.type;
+									beComp.block = desc.pos;
+									activeChunkIt->second.blockEntities.push_back(ent);
+								} else {
+									ENGINE_WARN("Attempting to create invalid block entity.");
+								}
+							});
+						}
+					}
 
 					// ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (activeChunkIt->second.updated == tick) ? "fresh" : "stale", ")");
 					activeChunkIt->second.updated = tick;
