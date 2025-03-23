@@ -234,6 +234,11 @@ namespace Game::Terrain {
 				return *found->second;
 			}
 
+			bool isRegionLoaded(const UniversalRegionCoord regionCoord) const {
+				const auto found = regions.find(regionCoord);
+				return found != regions.end();
+			}
+
 			// TODO: Should have a way to combine isChunkLoaded with getChunk. In most
 			//       (all?) places we have a patterna like:
 			//           if (!terrain.isChunkLoaded(pos)) { return; }

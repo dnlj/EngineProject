@@ -86,8 +86,6 @@ namespace Game::UI { namespace {
 			glm::vec2 scale() const noexcept { return getSize() / glm::vec2{img.size()}; }
 
 			void rebuild() {
-				// TODO: update for terrain.
-				#if MAP_OLD
 				// TODO: pan/zoom
 				//if (zoomAccum) {
 				//	auto z = std::clamp(zoomAccum * 0.2f, -0.9f, 0.9f);
@@ -102,7 +100,6 @@ namespace Game::UI { namespace {
 				const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 				const auto& mapSys = world.getSystem<MapSystem>();
 				const auto& activeChunks = mapSys.getActiveChunks();
-				const auto& regions = mapSys.getLoadedRegions();
 				const auto realmId = [&]() -> RealmId {
 					const auto& filter = world.getFilter<CameraTargetFlag, PhysicsBodyComponent>();
 					if (filter.empty()) { return 0; }
@@ -132,21 +129,33 @@ namespace Game::UI { namespace {
 				ENGINE_DEBUG_ASSERT(img.format() == Engine::Gfx::PixelFormat::RGB8, "This code assumes rgb (8, 8, 8) format.");
 				const auto& res = img.size();
 				byte* data = img.data();
+
+				#if MAP_OLD
+					const auto& regions = mapSys.getLoadedRegions();
+				#else
+					const auto& terrain = mapSys.getTerrain();
+				#endif
 				for (int32 y = 0; y < res.y; ++y) {
 					for (int32 x = 0; x < res.x; ++x) {
 						// Offset by 256 so (0, 0) is centered instead of bottom left.
 						const ChunkVec chunkPos = {x - 256, y - 256};
-						glm::u8vec3 color = {255, 255, 0};
-						
 						const UniversalChunkCoord pos = {realmId, chunkPos};
 						const auto& chunkData = activeChunks.find(pos);
+						glm::u8vec3 color = {255, 255, 0};
 
 						if (chunkData != activeChunks.end()) {
+							// The chunk is active.
 							const auto zoneId = chunkData->second.body.getZoneId();
 							color = zoneColors[zoneId];
+					#if MAP_OLD
 						} else if (regions.contains({pos.realmId, chunkToRegion(chunkPos)})) {
+					#else
+						} else if (terrain.isRegionLoaded({pos.realmId, chunkToRegion(chunkPos)})) {
+					#endif
+							// The chunk is loaded, but not active.
 							color = {70, 70, 70};
 						} else {
+							// The chunk is not loaded.
 							color = {50, 50, 50};
 						}
 
@@ -159,7 +168,6 @@ namespace Game::UI { namespace {
 				// Fix size so 1chunk=1pixel
 				setFixedSize(img.size());
 				tex.setImage(img);
-				#endif
 			}
 
 			bool onAction(EUI::ActionEvent action) override {

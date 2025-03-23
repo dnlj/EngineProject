@@ -175,6 +175,8 @@ namespace Game {
 
 			#if MAP_OLD
 				ENGINE_INLINE const auto& getLoadedRegions() const noexcept { return regions; }
+			#else
+				ENGINE_INLINE const auto& getTerrain() const noexcept { return terrain; }
 			#endif
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
