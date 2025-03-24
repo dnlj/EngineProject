@@ -301,6 +301,14 @@ namespace Game::Terrain {
 				return found->second->entitiesAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 
+			ChunkEntities& getEntitiesMutable(const UniversalChunkCoord chunkCoord) noexcept {
+				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
+				auto const regionCoord = chunkCoord.toRegion();
+				const auto found = regions.find(regionCoord);
+				ENGINE_DEBUG_ASSERT(found != regions.end());
+				return found->second->entitiesAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
+			}
+
 			/**
 			 * Ensures that space is allocated for the given chunk.
 			 * This function never populates any data. If the chunk did not exist an empty

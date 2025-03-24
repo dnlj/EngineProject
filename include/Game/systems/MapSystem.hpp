@@ -46,7 +46,6 @@
  *
  */
 
-
 // TODO: New map/terrain:
 //       [x] Load terrain. Regions need two more things:
 //           - Generation status (added with isChunkLoaded)
@@ -62,9 +61,11 @@
 //       [x] Unload terrain/regions.
 //       [x] Apply edits.
 //       [x] Load chunk entities.
-//       [ ] Store chunk entities.
+//       [x] Store chunk entities.
 //       [ ] Portal entities.
 //       [ ] Cleanup includes.
+//       [ ] (lzjAs29I) Cleanup Terrain/Region/Chunk data access and avoid duplicate calcs.
+//           See comments in Terrain functions.
 //       [x] Update zone preview.
 #define MAP_OLD false
 #if MAP_OLD

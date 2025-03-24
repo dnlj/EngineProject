@@ -336,61 +336,44 @@ namespace Game {
 		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
 			if (it->second.lastUsed < timeout) {
-				// ENGINE_LOG2("Unloading chunk: {}", it->first);
-				
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				// TODO: update for new terrain system.
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				//
-				#if MAP_OLD
-					// Store block entities
-					if constexpr (ENGINE_SERVER) {
-						const auto regionIt = regions.find(it->first.toRegion());
-						if (regionIt == regions.end() || regionIt->second->loading()) {
-							ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
-							ENGINE_DEBUG_BREAK;
-						} else {
-							auto& region = *regionIt->second;
-							const auto chunkIndex = chunkToRegionIndex(it->first.pos);
-							auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
-							chunkData.entData.clear();
+				// ENGINE_LOG2("Unloading chunk: realm={}, chunkCoord={}", it->first.realmId, it->first.pos);
 
-							for (const auto ent : it->second.blockEntities) {
-								auto& desc = chunkData.entData.emplace_back();
-								const auto& beComp = world.getComponent<BlockEntityComponent>(ent);
-								desc.data.type = beComp.type;
-								desc.pos = beComp.block;
-								desc.data.with([&]<auto Type>(auto& data){
-									storeBlockEntity<Type>(data, ent);
-								});
-								world.deferedDestroyEntity(ent);
-							}
+				// Store block entities
+				if constexpr (ENGINE_SERVER) {
+				#if MAP_OLD
+					const auto regionIt = regions.find(it->first.toRegion());
+					if (regionIt == regions.end() || regionIt->second->loading()) {
+				#else
+					if (!terrain.isRegionLoaded(it->first.toRegion())) {
+				#endif
+						ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
+						ENGINE_DEBUG_BREAK;
+					} else {
+					#if MAP_OLD
+						auto& region = *regionIt->second;
+						const auto chunkIndex = chunkToRegionIndex(it->first.pos);
+						auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
+						auto& entData = chunkData.entData;
+					#else
+						auto& entData = terrain.getEntitiesMutable(it->first);
+					#endif
+
+						// TODO: This is more/less useless atm other than for entity
+						//       cleanup because we don't actually do anything with regions
+						//       before unloading them.
+						entData.clear();
+						for (const auto ent : it->second.blockEntities) {
+							auto& desc = entData.emplace_back();
+							const auto& beComp = world.getComponent<BlockEntityComponent>(ent);
+							desc.data.type = beComp.type;
+							desc.pos = beComp.block;
+							desc.data.with([&]<auto Type>(auto& data){
+								storeBlockEntity<Type>(data, ent);
+							});
+							world.deferedDestroyEntity(ent);
 						}
 					}
-				#endif
+				}
 
 				zoneSys.removeRef(it->second.body.getZoneId());
 				world.getSystem<PhysicsSystem>().destroyBody(it->second.body);
