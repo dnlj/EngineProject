@@ -109,7 +109,7 @@ namespace Game::Terrain {
 
 				if (func) {
 					auto const& chunk = region.chunkAt(regionIdx);
-					(*func)(biomes, terrain, regionCoord, regionIdx, chunkCoord, chunk, h0Cache, h2Cache, std::back_inserter(structures));
+					(*func)(biomes, terrain, regionCoord, regionIdx, chunkCoord, chunk, /*h0Cache,*/ h2Cache, std::back_inserter(structures));
 				}
 
 				// TODO: could this be done with a custom back_inserter instead of an extra loop after the fact?
@@ -211,7 +211,7 @@ namespace Game::Terrain {
 		if constexpr (CurrentStage == 1) {
 			const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
 			for (RegionBiomeUnit x = 0; x < biomesPerChunk; ++x) {
-				const auto h0 = h0Cache.get(min.x + x);
+				const auto h0 = layerWorldBaseHeight.get(min.x + x);
 				for (RegionBiomeUnit y = 0; y < biomesPerChunk; ++y) {
 					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = maxBiomeWeight(calcBiome(min + BlockVec{x, y} * biomesPerChunk, h0).weights).id;
 				}
@@ -227,7 +227,7 @@ namespace Game::Terrain {
 
 		// For each block in the chunk.
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
-			const auto h0 = h0Cache.get(min.x + x);
+			const auto h0 = layerWorldBaseHeight.get(min.x + x);
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
 				const auto blockCoord = min + BlockVec{x, y};
 				BiomeId biomeId;
@@ -258,35 +258,21 @@ namespace Game::Terrain {
 	template<class... Biomes>
 	void Generator<Biomes...>::setupHeightCaches(const BlockUnit minBlock, const BlockUnit maxBlock) {
 		// We need to include the biome blend distance for h0 for biome sampling in calcBiomeRaw.
-		h0Cache.reset(minBlock - biomeBlendDist, maxBlock + biomeBlendDist);
 		h2Cache.reset(minBlock, maxBlock);
 
 		// H2 is currently populated as needed in calcBasis. Would be nice to do it here
 		// but it require full biome info which is expensive. Would need to bench and see
 		// if it is worth it.
 
-		{
-			const auto h0Min = h0Cache.getMinBlock();
-			const auto h0Max = h0Cache.getMaxBlock();
-			for (BlockUnit blockCoord = h0Min; blockCoord < h0Max; ++blockCoord) {
-				// TODO: use _f for Float. Move from TerrainPreview.
-				// TODO: keep in mind that this is +- amplitude, and for each octave we increase the contrib;
+		// TODO: Generate should be called by the Terrain/Generator request stack once implemented.
+		layerWorldBaseHeight.request({minBlock - biomeBlendDist, maxBlock + biomeBlendDist});
+		layerWorldBaseHeight.generate({minBlock - biomeBlendDist, maxBlock + biomeBlendDist});
 
-				//
-				//
-				// TODO: tune + octaves, atm this is way to steep
-				//
-				//
-				h0Cache.get(blockCoord) = static_cast<BlockUnit>(500 * simplex1.value(blockCoord * 0.00005f, 0));
-			}
-		}
-
-		
 		{
 			const auto h2Min = h2Cache.getMinBlock();
 			const auto h2Max = h2Cache.getMaxBlock();
 			for (BlockUnit blockCoord = h2Min; blockCoord < h2Max; ++blockCoord) {
-				const auto h0 = h0Cache.get(blockCoord);
+				const auto h0 = layerWorldBaseHeight.get(blockCoord);
 				const Float h0F = static_cast<Float>(h0);
 				const auto& blend = calcBiome({blockCoord, h0}, h0);
 				Float h2 = 0;
@@ -308,57 +294,7 @@ namespace Game::Terrain {
 
 	template<class... Biomes>
 	BiomeRawInfo Generator<Biomes...>::calcBiomeRaw(BlockVec blockCoord) {
-		// TODO: if we simd-ified this we could do all scale checks in a single pass.
-
-		// TODO: Could apply some perturb if we want non square biomes. I don't think
-		//       Voronoi is worth looking at, its makes it harder to position biomes at surface
-		//       level and still produces mostly straight edges, not much better than a square.
-
-		// Having this manually unrolled instead of a loop is ~15% faster in debug mode
-		// and allows the divs to be removed/optimized in release mode. In the loop
-		// version, even with full visibility constexpr data, the divs do not get removed
-		// even though the theoretically should be able to.
-
-		// Always return the small cell size so that we don't get inflection points when
-		// blending biomes. See the blending issue notes in calcBiomeBlend.
-		const auto smallCell = Engine::Math::divFloor(blockCoord, biomeScaleSmall.size);
-		BiomeRawInfo result = {
-			.smallCell = smallCell.q,
-			.smallRem = smallCell.r,
-		};
-
-		{ // Large
-			const auto cell = Engine::Math::divFloor(blockCoord, biomeScaleLarge.size);
-			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleLarge.freq) {
-				result.id = biomePerm(cell.q.x, cell.q.y) % sizeof...(Biomes);
-				result.size = biomeScaleLarge.size;
-				result.biomeCell = cell.q;
-				result.biomeRem = cell.r;
-				return result;
-			}
-		}
-
-		{ // Med
-			const auto cell = Engine::Math::divFloor(blockCoord, biomeScaleMed.size);
-			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleMed.freq) {
-				result.id = biomePerm(cell.q.x, cell.q.y) % sizeof...(Biomes);
-				result.size = biomeScaleMed.size;
-				result.biomeCell = cell.q;
-				result.biomeRem = cell.r;
-				return result;
-			}
-		}
-
-		{ // Small
-			// The small size is used when no other biomes match so frequency doesn't matter.
-			static_assert(biomeScaleSmall.freq == 0, "No frequency should be given for the small biome size.");
-			result.id = biomePerm(smallCell.q.x, smallCell.q.y) % sizeof...(Biomes);
-			result.size = biomeScaleSmall.size;
-			result.biomeCell = smallCell.q;
-			result.biomeRem = smallCell.r;
-			return result;
-		}
-
+		return layerBiomeRaw.get(blockCoord);
 	}
 	
 	template<class... Biomes>

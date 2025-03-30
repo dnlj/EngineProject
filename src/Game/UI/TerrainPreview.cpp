@@ -318,13 +318,13 @@ namespace Game::UI {
 		zoom->bind(textGetter(area->zoom), textSetter(area->zoom));
 
 		const auto layer = ctx->createPanel<EUI::Slider>(sec);
-		layer->setLimits(0, +Layer::_last);
+		layer->setLimits(0, +::Layer::_last);
 		layer->bind(
 			[area](EUI::Slider& self){
 				self.setValue(+area->mode);
 			},
 			[area](EUI::Slider& self){
-				area->mode = static_cast<Layer>(std::round(self.getValue()));
+				area->mode = static_cast<::Layer>(std::round(self.getValue()));
 				area->requestRebuild();
 			}
 		);
