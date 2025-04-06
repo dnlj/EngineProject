@@ -78,7 +78,6 @@ namespace Game::Terrain {
 			// TODO: avoid name conflict with arguments `request`
 			const auto offset = ChunkVec{1,1}; // Arbitrary offset. This should be handled automatically by the request, just trying to get things running atm.
 			this->request<Layer::BiomeWeights>({request.minChunkCoord - offset, request.maxChunkCoord + offset});
-			layerBiomeWeights.generate({request.minChunkCoord - offset, request.maxChunkCoord + offset}, *this);
 			
 		}
 
@@ -87,7 +86,6 @@ namespace Game::Terrain {
 		// 
 		// TODO: Do height caches need to be +1 chunk? Can't we just do +1 block?
 		setupHeightCaches(chunkToBlock(request.minChunkCoord).x, chunkToBlock(request.maxChunkCoord + ChunkVec{1, 0}).x);
-
 
 		// TODO: Shrink request based on current stage of chunks. If all chunks, a row, or
 		//       a column are already at the final stage we can shrink/skip the request.
@@ -277,8 +275,8 @@ namespace Game::Terrain {
 		// if it is worth it.
 
 		// TODO: Generate should be called by the Terrain/Generator request stack once implemented.
-		layerWorldBaseHeight.request({minBlock - biomeBlendDist, maxBlock + biomeBlendDist}, *this);
-		layerWorldBaseHeight.generate({minBlock - biomeBlendDist, maxBlock + biomeBlendDist}, *this);
+		request<Layer::WorldBaseHeight>({minBlock - biomeBlendDist, maxBlock + biomeBlendDist});
+		generateLayers();
 
 		{
 			const auto h2Min = h2Cache.getMinBlock();

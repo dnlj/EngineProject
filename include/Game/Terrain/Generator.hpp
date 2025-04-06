@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO: cleanup includes
+
 // Game
 #include <Game/BlockEntityData.hpp>
 #include <Game/BlockMeta.hpp>
@@ -13,7 +15,10 @@
 #include <Engine/Math/math.hpp>
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/StaticVector.hpp>
+#include <Engine/tuple.hpp>
 
+// Meta
+#include <Meta/TypeSet/IndexOf.hpp>
 
 // TODO: cleanup/remove this file.
 #include <Game/Terrain/temp.hpp>
@@ -24,6 +29,24 @@
 #include <Game/Terrain/Layer/WorldBaseHeight.hpp>
 
 namespace Game::Terrain {
+	
+
+	template<class LayersSet>
+	class Requests;
+
+	template<template<class...> class Set, class... Layers>
+	class Requests<Set<Layers...>> {
+		public:
+			std::tuple<std::vector<typename Layers::Range>...> ranges;
+	};
+
+	//
+	//
+	//
+	// TODO: Can we reframe the generator as a top level layer? I think so, or at least have one as a member.
+	//
+	//
+	//
 	// Support for rescaling is needed for preview support. Should not be used for real generation.
 	template<class... Biomes>
 	class Generator {
@@ -37,11 +60,15 @@ namespace Game::Terrain {
 			//using FVec2 = glm::vec<2, Float>;
 
 		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
-			std::tuple<
+			// TODO: static assert layer dependency order
+			using Layers = std::tuple<
 				Layer::WorldBaseHeight,
 				Layer::BiomeRaw,
 				Layer::BiomeWeights
-			> layers;
+			>;
+
+			Layers layers;
+			Requests<Layers> requests; // TODO: flatten to just a type helper if no functions are needed.
 
 			// TODO: rm
 			Layer::BiomeRaw& layerBiomeRaw = std::get<Layer::BiomeRaw>(layers);
@@ -50,12 +77,25 @@ namespace Game::Terrain {
 
 			template<class Layer>
 			ENGINE_INLINE void request(Layer::Range range) {
+				std::get<Meta::TypeSet::IndexOf<Layers, Layer>::value>(requests.ranges).push_back(range);
 				std::get<Layer>(layers).request(range, *this);
 			}
 
 			template<class Layer>
 			ENGINE_INLINE auto get(Layer::Index index) const {
 				return std::get<Layer>(layers).get(index);
+			}
+
+			void generateLayers() {
+				// TODO: optimize/combine/remove overlapping and redundant requests.
+				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+					auto const v = Meta::TypeSet::IndexOf<Layers, Layer>::value;v;
+					auto& ranges = std::get<Meta::TypeSet::IndexOf<Layers, Layer>::value>(requests.ranges);
+					for (const auto& range : ranges) {
+						std::get<Layer>(layers).generate(range, *this);
+					}
+					ranges.clear();
+				});
 			}
 
 		private:

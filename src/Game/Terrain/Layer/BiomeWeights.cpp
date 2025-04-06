@@ -31,10 +31,6 @@ namespace Game::Terrain::Layer {
 		// TODO: These generations should be handled by the generator once transition is
 		//       complete. Not done in layer.
 		
-		generator.layerWorldBaseHeight.generate({area.min.x * blocksPerChunk, area.max.x * blocksPerChunk}, generator);
-		generator.layerBiomeRaw.generate(area, generator);
-
-
 		// For each chunk in the given range:
 		//   - Find the region for the chunk.
 		//   - Get the chunk data.
