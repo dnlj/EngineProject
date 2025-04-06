@@ -72,9 +72,14 @@ namespace Game::Terrain {
 
 		{
 			// TODO: Why do we need this offset? Not saying its wrong, but we need to understand and comment why it is needed.
+			// TODO: I think this accounts for biomeBlendDistance, that should no longer
+			//       be needed here once everything is converted to layers and setupHeightCaches
+			//       is removed.
+			// TODO: avoid name conflict with arguments `request`
 			const auto offset = ChunkVec{1,1}; // Arbitrary offset. This should be handled automatically by the request, just trying to get things running atm.
-			layerBiomeWeights.request({request.minChunkCoord - offset, request.maxChunkCoord + offset}, *this);
+			this->request<Layer::BiomeWeights>({request.minChunkCoord - offset, request.maxChunkCoord + offset});
 			layerBiomeWeights.generate({request.minChunkCoord - offset, request.maxChunkCoord + offset}, *this);
+			
 		}
 
 		// TODO: Should height caches be cached (or stored?) on the terrain? Maybe cache on the

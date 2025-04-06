@@ -10,7 +10,14 @@
 
 namespace Game::Terrain::Layer {
 	void BiomeWeights::request(const Range area, TestGenerator& generator) {
-		generator.request<WorldBaseHeight>({area.min.x * blocksPerChunk, area.max.x * blocksPerChunk+1});
+		ENGINE_LOG2("BiomeWeights::request min={}, max={}", area.min, area.max);
+
+
+		generator.request<WorldBaseHeight>({area.min.x * blocksPerChunk, area.max.x * blocksPerChunk});
+
+		// TODO: I think these are true, but don't matter atm since BiomeRaw doesn't cache currently.
+		// TODO: don't we also need to consider biomeScaleOffset + h0?
+		// TODO: need to account for biomeBlendDist in biomeRaw request
 		generator.request<BiomeRaw>(area);
 	}
 
@@ -63,7 +70,7 @@ namespace Game::Terrain::Layer {
 
 	[[nodiscard]] BiomeBlend BiomeWeights::populate(BlockVec blockCoord, const TestGenerator& generator, const BlockUnit h0) const noexcept {
 		// Offset the coord by the scale offset so biomes are roughly centered on {0, 0}
-		blockCoord -= biomeScaleOffset + h0;
+		blockCoord -= biomeScaleOffset + BlockVec{0, h0};
 
 		BiomeBlend blend = {
 			.info = generator.get<BiomeRaw>(blockCoord),

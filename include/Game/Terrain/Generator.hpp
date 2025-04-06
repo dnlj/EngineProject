@@ -37,37 +37,25 @@ namespace Game::Terrain {
 			//using FVec2 = glm::vec<2, Float>;
 
 		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
-			Layer::BiomeRaw layerBiomeRaw;
-			Layer::WorldBaseHeight layerWorldBaseHeight;
-			Layer::BiomeWeights layerBiomeWeights;
+			std::tuple<
+				Layer::WorldBaseHeight,
+				Layer::BiomeRaw,
+				Layer::BiomeWeights
+			> layers;
 
-			// TODO: split
+			// TODO: rm
+			Layer::BiomeRaw& layerBiomeRaw = std::get<Layer::BiomeRaw>(layers);
+			Layer::WorldBaseHeight& layerWorldBaseHeight = std::get<Layer::WorldBaseHeight>(layers);
+			Layer::BiomeWeights& layerBiomeWeights = std::get<Layer::BiomeWeights>(layers);
+
 			template<class Layer>
-			void request(Layer::Range range) {
-				// TODO: simplify with tuple instead of static members once conversion gets further along.
-				if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::BiomeRaw>) {
-					return layerBiomeRaw.request(range, *this);
-				} else if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::WorldBaseHeight>) {
-					return layerWorldBaseHeight.request(range, *this);
-				} else if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::BiomeWeights>) {
-					return layerBiomeWeights.request(range, *this);
-				}
+			ENGINE_INLINE void request(Layer::Range range) {
+				std::get<Layer>(layers).request(range, *this);
 			}
 
 			template<class Layer>
-			auto get(Layer::Index index) const -> decltype(std::declval<Layer>().get(std::declval<typename Layer::Index>())) {
-				// TODO: impl - lookup in tuple and call
-				// TODO: remove return type, just use auto direct. This is just to avoid
-				//       errors while templating out everything.
-				
-				// TODO: simplify with tuple instead of static members once conversion gets further along.
-				if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::BiomeRaw>) {
-					return layerBiomeRaw.get(index);
-				} else if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::WorldBaseHeight>) {
-					return layerWorldBaseHeight.get(index);
-				} else if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::BiomeWeights>) {
-					return layerBiomeWeights.get(index);
-				}
+			ENGINE_INLINE auto get(Layer::Index index) const {
+				return std::get<Layer>(layers).get(index);
 			}
 
 		private:
@@ -84,7 +72,13 @@ namespace Game::Terrain {
 			HeightCache h2Cache;
 
 		public:
-			Generator(uint64 seed) : layerBiomeRaw{seed} {}
+			Generator(uint64 seed)
+				: layers{
+					Layer::WorldBaseHeight{},
+					Layer::BiomeRaw{seed},
+					Layer::BiomeWeights{},
+				}
+			{}
 
 			void generate(Terrain& terrain, const Request& request);
 
