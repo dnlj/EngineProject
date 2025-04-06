@@ -20,6 +20,7 @@
 
 // TODO: fix include dependencies. This uglyness goes away once we remove/split the above classes.
 #include <Game/Terrain/Layer/BiomeRaw.hpp>
+#include <Game/Terrain/Layer/BiomeWeights.hpp>
 #include <Game/Terrain/Layer/WorldBaseHeight.hpp>
 
 namespace Game::Terrain {
@@ -35,9 +36,41 @@ namespace Game::Terrain {
 			//       doubles, and that will be slower and still isn't perfect.
 			//using FVec2 = glm::vec<2, Float>;
 
-			Layer::BiomeRaw<sizeof...(Biomes)> layerBiomeRaw;
+		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
+			Layer::BiomeRaw layerBiomeRaw;
 			Layer::WorldBaseHeight layerWorldBaseHeight;
+			Layer::BiomeWeights layerBiomeWeights;
 
+			// TODO: split
+			template<class Layer>
+			void request(Layer::Range range) {
+				// TODO: simplify with tuple instead of static members once conversion gets further along.
+				if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::BiomeRaw>) {
+					return layerBiomeRaw.request(range, *this);
+				} else if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::WorldBaseHeight>) {
+					return layerWorldBaseHeight.request(range, *this);
+				} else if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::BiomeWeights>) {
+					return layerBiomeWeights.request(range, *this);
+				}
+			}
+
+			template<class Layer>
+			auto get(Layer::Index index) const -> decltype(std::declval<Layer>().get(std::declval<typename Layer::Index>())) {
+				// TODO: impl - lookup in tuple and call
+				// TODO: remove return type, just use auto direct. This is just to avoid
+				//       errors while templating out everything.
+				
+				// TODO: simplify with tuple instead of static members once conversion gets further along.
+				if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::BiomeRaw>) {
+					return layerBiomeRaw.get(index);
+				} else if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::WorldBaseHeight>) {
+					return layerWorldBaseHeight.get(index);
+				} else if constexpr (std::is_same_v<Layer, ::Game::Terrain::Layer::BiomeWeights>) {
+					return layerBiomeWeights.get(index);
+				}
+			}
+
+		private:
 			std::tuple<Biomes...> biomes{};
 			static_assert(std::numeric_limits<BiomeId>::max() >= sizeof...(Biomes),
 				"More biomes supplied than are currently supported."
@@ -60,11 +93,6 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.h0Cache; }
 
 			void setupHeightCaches(const BlockUnit minBlock, const BlockUnit maxBlock);
-
-			/**
-			 * Calculate the biome for the given block without any blending/interpolation.
-			 */
-			[[nodiscard]] BiomeRawInfo calcBiomeRaw(BlockVec blockCoord);
 
 			/**
 			 * Get all biome contributions for the given block.
@@ -101,14 +129,14 @@ namespace Game::Terrain {
 			#define TERRAIN_GET_HEIGHT_ARGS \
 				const ::Game::BlockVec blockCoord, \
 				const ::Game::Terrain::Float h0, \
-				const ::Game::Terrain::BiomeRawInfo& rawInfo, \
+				const ::Game::Terrain::BiomeRawInfo2& rawInfo, \
 				const ::Game::Terrain::Float biomeWeight
 
 			#define TERRAIN_GET_BASIS_ARGS \
 				const ::Game::BlockVec blockCoord, \
 				const ::Game::Terrain::Float h0, \
 				const ::Game::Terrain::Float h2, \
-				const ::Game::Terrain::BiomeRawInfo& rawInfo, \
+				const ::Game::Terrain::BiomeRawInfo2& rawInfo, \
 				const ::Game::Terrain::Float biomeWeight
 
 			#define TERRAIN_GET_LANDMARKS_ARGS \

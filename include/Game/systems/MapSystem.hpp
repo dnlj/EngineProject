@@ -28,6 +28,8 @@
 #include <Game/Connection.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp> // TODO: split physicsbody from componennt
 #include <Game/Terrain/TestGenerator.hpp>
+#include <Game/Terrain/Generator.hpp>
+#include <Game/Terrain/biomes/all.hpp>
 
 // TODO: This documentation and comments are likely out of date since the multiplayer and chunk/region/zone reworks.
 // TODO: Document the different coordinate systems and terms used here.

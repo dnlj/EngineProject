@@ -1,6 +1,8 @@
 // Game
 #include <Game/UI/TerrainPreview.hpp>
 #include <Game/Terrain/TestGenerator.hpp>
+#include <Game/Terrain/Generator.hpp>
+#include <Game/Terrain/biomes/all.hpp>
 
 // Engine
 #include <Engine/UI/ImageDisplay.hpp>
@@ -88,13 +90,15 @@ namespace {
 				const auto chunksPerImg = Engine::Math::divCeil(applyZoom<BlockVec>(res), blocksPerChunk).q;
 				const auto indexToBlock = [&](BlockVec index) ENGINE_INLINE { return offset + applyZoom(index); };
 
-				if (mode == Layer::Blocks) {
-					terrain = {};
-					generator.generate(terrain, Request{chunkOffset, chunkOffset + chunksPerImg, 0});
-				} else {
-					// The height cache is still needs to be populated for biome sampling.
-					generator.setupHeightCaches(indexToBlock({0, 0}).x - biomeBlendDist, indexToBlock(res).x + biomeBlendDist);
-				}
+				// TODO: enable some type of per-layer preview to replace this
+				//if (mode == Layer::Blocks) {
+				//	terrain = {};
+				//	generator.generate(terrain, Request{chunkOffset, chunkOffset + chunksPerImg, 0});
+				//} else {
+				//	// The height cache is still needs to be populated for biome sampling.
+				//	generator.setupHeightCaches(indexToBlock({0, 0}).x - biomeBlendDist, indexToBlock(res).x + biomeBlendDist);
+				//}
+				generator.generate(terrain, Request{chunkOffset, chunkOffset + chunksPerImg, 0});
 
 				// TODO: Move this color specification to Blocks.xpp, could be useful
 				//       elsewhere. Alternatively, calculate this value based on the avg img
@@ -146,12 +150,12 @@ namespace {
 							// This won't line up 100% because we don't include the height offset (see
 							// BiomeRawWeights), but that's the point. Showing the undistorted biome grid.
 							const auto blockCoordAdj = blockCoord - biomeScaleOffset;
-							const auto info = generator.calcBiomeRaw(blockCoordAdj);
+							const auto info = generator.layerBiomeRaw.get(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeRawWeights) {
 							// Need to include the biome offset or else things won't line up when switching layers.
 							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + h0Cache.get(blockCoord.x));
-							const auto info = generator.calcBiomeRaw(blockCoordAdj);
+							const auto info = generator.layerBiomeRaw.get(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
 							auto weights = generator.calcBiomeBlend(blockCoord, h0).weights;

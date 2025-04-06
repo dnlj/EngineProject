@@ -6,14 +6,16 @@ namespace Game::Terrain::Layer {
 	// The large world-scale height variation that persists between all biomes.
 	class WorldBaseHeight : public DependsOn<> {
 		public:
-			class Input {
+			class Range {
 				public:
 					BlockUnit xMin;
 					BlockUnit xMax;
 			};
 
+			using Index = BlockUnit;
+
 		public:
-			void request(const Input area) {
+			void request(const Range area, TestGenerator& generator) {
 				// TODO: Reset isn't quite right here. It could/will be possible to have
 				//       multiple requests "active" at once/threaded. This is fine
 				//       currently because we happen to only have one request at
@@ -22,7 +24,7 @@ namespace Game::Terrain::Layer {
 				h0Cache.reset(area.xMin, area.xMax);
 			}
 
-			void generate(const Input area) noexcept {
+			void generate(const Range area, TestGenerator& generator) noexcept {
 				// TODO: use _f for Float. Move from TerrainPreview.
 				// TODO: keep in mind that this is +- amplitude, and for each octave we increase the contrib;
 				// TODO: tune + octaves, atm this is way to steep.
@@ -31,7 +33,7 @@ namespace Game::Terrain::Layer {
 				}
 			}
 
-			BlockUnit get(BlockUnit x) const noexcept {
+			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept {
 				return h0Cache.get(x);
 			}
 

@@ -3,12 +3,11 @@
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 
 namespace Game::Terrain::Layer {
-	// The direct, raw, biome info. Determines what biome is where before any blending.
-
-	template<BiomeId BiomeCount>
+	// The direct, raw, biome info. Determines what biome is where before any blending/interpolation.
 	class BiomeRaw : public DependsOn<> {
 		public:
-			using Input = ChunkArea;
+			using Range = ChunkArea;
+			using Index = BlockVec;
 
 		public:
 			BiomeRaw(uint64 seed)
@@ -16,9 +15,9 @@ namespace Game::Terrain::Layer {
 				, biomePerm{Engine::Noise::lcg(seed)}
 			{}
 
-			void request(const Input& area);
-			void generate(BlockVec blockCoord);
-			BiomeRawInfo get(BlockVec blockCoord) const noexcept;
+			void request(const Range area, TestGenerator& generator);
+			void generate(const Range blockCoord, TestGenerator& generator);
+			[[nodiscard]] BiomeRawInfo2 get(const Index blockCoord) const noexcept;
 
 		private:
 			// TODO: This isn't great. This has a repeat every X biomes. This can be
@@ -43,5 +42,3 @@ namespace Game::Terrain::Layer {
 			//static_assert(sizeof...(Biomes) <= decltype(biomePerm)::size());
 	};
 }
-
-#include <Game/Terrain/Layer/BiomeRaw.ipp>

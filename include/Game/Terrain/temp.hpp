@@ -6,6 +6,7 @@
 #include <Game/MapChunk.hpp> // TODO: Replace/rename/update MapChunk.
 #include <Game/Terrain/terrain.hpp>
 #include <Game/universal.hpp>
+#include <Game/Terrain/TestGenerator.hpp>
 
 // Engine
 #include <Engine/Array.hpp>
@@ -26,10 +27,96 @@ namespace Game::Terrain::Layer {
 			ChunkVec min;
 			ChunkVec max;
 	};
+
+	// TODO: make all cache/store types uncopyable. These should be accessed by ref.
+	
+	template<class T>
+	class ChunkStore {
+		private:
+			T store[chunkSize.x][chunkSize.y]{};
+
+		public:
+			ENGINE_INLINE_REL T& at(ChunkVec chunkIndex) noexcept {
+				ENGINE_DEBUG_ASSERT((chunkIndex.x >= 0) && (chunkIndex.x < chunkSize.x));
+				ENGINE_DEBUG_ASSERT((chunkIndex.y >= 0) && (chunkIndex.y < chunkSize.y));
+				return store[chunkIndex.x][chunkIndex.y];
+			}
+
+			ENGINE_INLINE_REL const T& at(ChunkVec chunkIndex) const noexcept {
+				return const_cast<ChunkStore*>(this)->at(chunkIndex);
+			}
+	};
+
+	template<class T>
+	class RegionStore {
+		private:
+			T store[regionSize.x][regionSize.y]{};
+			bool populated[regionSize.x][regionSize.y]{};
+
+		public:
+			ENGINE_INLINE_REL bool isPopulated(RegionVec regionIndex) const noexcept {
+				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x));
+				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y));
+				return populated[regionIndex.x][regionIndex.y];
+			}
+
+			ENGINE_INLINE_REL void setPopulated(RegionVec regionIndex) noexcept {
+				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x));
+				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y));
+				populated[regionIndex.x][regionIndex.y] = true;
+			}
+
+			ENGINE_INLINE_REL T& at(RegionVec regionIndex) noexcept {
+				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x));
+				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y));
+				return store[regionIndex.x][regionIndex.y];
+			}
+
+			ENGINE_INLINE_REL const T& at(RegionVec regionIndex) const noexcept {
+				ENGINE_DEBUG_ASSERT(isPopulated(regionIndex));
+				return const_cast<RegionStore*>(this)->at(regionIndex);
+			}
+	};
+
+	template<class T>
+	class ChunkAreaCache {
+		private:
+			using Store = RegionStore<ChunkStore<T>>;
+			Engine::FlatHashMap<RegionVec, std::unique_ptr<Store>> regions;
+
+		public:
+			ENGINE_INLINE_REL Store& at(RegionVec regionCoord) noexcept {
+				const auto found = regions.find(regionCoord);
+				ENGINE_DEBUG_ASSERT(found != regions.end());
+				return *found->second;
+			}
+
+			ENGINE_INLINE_REL const Store& at(RegionVec regionCoord) const noexcept {
+				return const_cast<ChunkAreaCache*>(this)->at(regionCoord);
+			}
+
+			ENGINE_INLINE_REL void reserve(RegionVec regionCoord) noexcept {
+				const auto found = regions.find(regionCoord);
+				if (found == regions.end()) {
+					regions.try_emplace(regionCoord, std::make_unique<Store>());
+				}
+			}
+	};
 }
 
 // TODO: split out
 namespace Game::Terrain {
+	using Biomes = Meta::TypeSet::TypeSet<
+		// TODO: these should be class not struct...
+		struct BiomeOne,
+		struct BiomeDebugOne,
+		struct BiomeDebugTwo,
+		struct BiomeDebugThree,
+		struct BiomeDebugMountain,
+		struct BiomeDebugOcean
+	>;
+	constexpr inline auto biomeCount = Biomes::size; // TODO: define in terms of TestGenerator/param
+
 	class BiomeScaleMeta {
 		public:
 			BlockUnit size;
@@ -103,7 +190,7 @@ namespace Game::Terrain {
 			BiomeId biomeId = {};
 	};
 
-	class BiomeRawInfo {
+	class BiomeRawInfo2 {
 		public:
 			BiomeId id;
 	
@@ -138,7 +225,7 @@ namespace Game::Terrain {
 
 	class BiomeBlend {
 		public:
-			BiomeRawInfo info;
+			BiomeRawInfo2 info;
 			BiomeWeights weights;
 			BiomeWeights rawWeights;
 	};
@@ -160,7 +247,7 @@ namespace Game::Terrain {
 			Float weight;
 			Float basis;
 			Float h2;
-			BiomeRawInfo rawInfo;
+			BiomeRawInfo2 rawInfo;
 			Float rawWeight;
 	};
 
@@ -376,12 +463,12 @@ namespace Game::Terrain {
 				heights.resize(maxBlock - minBlock, invalid);
 			}
 
-			ENGINE_INLINE [[nodiscard]] BlockUnit& get(const BlockUnit blockCoord) noexcept {
+			ENGINE_INLINE_REL [[nodiscard]] BlockUnit& get(const BlockUnit blockCoord) noexcept {
 				debugBoundsCheck(blockCoord);
 				return heights[blockCoord - minBlock];
 			}
 
-			ENGINE_INLINE [[nodiscard]] BlockUnit get(const BlockUnit blockCoord) const noexcept {
+			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const BlockUnit blockCoord) const noexcept {
 				debugBoundsCheck(blockCoord);
 				ENGINE_DEBUG_ASSERT(invalid != heights[blockCoord - minBlock], "Uninitialized height value at ", blockCoord);
 				return heights[blockCoord - minBlock];
@@ -391,7 +478,7 @@ namespace Game::Terrain {
 			ENGINE_INLINE [[nodiscard]] BlockUnit getMaxBlock() const noexcept { return maxBlock; }
 
 		private:
-			ENGINE_INLINE void debugBoundsCheck(const BlockUnit blockCoord) const noexcept {
+			ENGINE_INLINE_REL void debugBoundsCheck(const BlockUnit blockCoord) const noexcept {
 				ENGINE_DEBUG_ASSERT(minBlock <= blockCoord, "Height cache block coordinate is out of bounds.");
 				ENGINE_DEBUG_ASSERT(blockCoord < maxBlock, "Height cache block coordinate is out of bounds.");
 			}
