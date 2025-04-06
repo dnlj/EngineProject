@@ -37,8 +37,8 @@ namespace Game::Terrain::Layer {
 
 		public:
 			ENGINE_INLINE_REL T& at(ChunkVec chunkIndex) noexcept {
-				ENGINE_DEBUG_ASSERT((chunkIndex.x >= 0) && (chunkIndex.x < chunkSize.x));
-				ENGINE_DEBUG_ASSERT((chunkIndex.y >= 0) && (chunkIndex.y < chunkSize.y));
+				ENGINE_DEBUG_ASSERT((chunkIndex.x >= 0) && (chunkIndex.x < chunkSize.x), "Attempting to access block outside of ChunkStore.");
+				ENGINE_DEBUG_ASSERT((chunkIndex.y >= 0) && (chunkIndex.y < chunkSize.y), "Attempting to access block outside of ChunkStore.");
 				return store[chunkIndex.x][chunkIndex.y];
 			}
 
@@ -47,6 +47,7 @@ namespace Game::Terrain::Layer {
 			}
 	};
 
+	// IsSpecialized allows for specialization while still inheriting from the 
 	template<class T>
 	class RegionStore {
 		private:
@@ -55,25 +56,25 @@ namespace Game::Terrain::Layer {
 
 		public:
 			ENGINE_INLINE_REL bool isPopulated(RegionVec regionIndex) const noexcept {
-				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x));
-				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y));
+				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x), "Attempting to access chunk outside of RegionStore.");
+				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y), "Attempting to access chunk outside of RegionStore.");
 				return populated[regionIndex.x][regionIndex.y];
 			}
 
 			ENGINE_INLINE_REL void setPopulated(RegionVec regionIndex) noexcept {
-				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x));
-				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y));
+				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x), "Attempting to access chunk outside of RegionStore.");
+				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y), "Attempting to access chunk outside of RegionStore.");
 				populated[regionIndex.x][regionIndex.y] = true;
 			}
 
 			ENGINE_INLINE_REL T& at(RegionVec regionIndex) noexcept {
-				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x));
-				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y));
+				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x), "Attempting to access chunk outside of RegionStore.");
+				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y), "Attempting to access chunk outside of RegionStore.");
 				return store[regionIndex.x][regionIndex.y];
 			}
 
 			ENGINE_INLINE_REL const T& at(RegionVec regionIndex) const noexcept {
-				ENGINE_DEBUG_ASSERT(isPopulated(regionIndex));
+				ENGINE_DEBUG_ASSERT(isPopulated(regionIndex), "Attempting to access unpopulated chunk.");
 				return const_cast<RegionStore*>(this)->at(regionIndex);
 			}
 	};
@@ -85,20 +86,43 @@ namespace Game::Terrain::Layer {
 			Engine::FlatHashMap<RegionVec, std::unique_ptr<Store>> regions;
 
 		public:
-			ENGINE_INLINE_REL Store& at(RegionVec regionCoord) noexcept {
+			ENGINE_INLINE Store& at(RegionVec regionCoord) noexcept {
 				const auto found = regions.find(regionCoord);
-				ENGINE_DEBUG_ASSERT(found != regions.end());
+				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access region outside of ChunkAreaCache.");
 				return *found->second;
 			}
 
-			ENGINE_INLINE_REL const Store& at(RegionVec regionCoord) const noexcept {
+			ENGINE_INLINE const Store& at(RegionVec regionCoord) const noexcept {
 				return const_cast<ChunkAreaCache*>(this)->at(regionCoord);
 			}
 
-			ENGINE_INLINE_REL void reserve(RegionVec regionCoord) noexcept {
+			ENGINE_INLINE void reserve(RegionVec regionCoord) noexcept {
 				const auto found = regions.find(regionCoord);
 				if (found == regions.end()) {
 					regions.try_emplace(regionCoord, std::make_unique<Store>());
+				}
+			}
+
+			ENGINE_INLINE void forEachChunk(ChunkArea area, auto&& func) {
+				// TODO: Could be a bit more effecient by dividing into regions first. Then you
+				//       just iterate over the regions+indexes directly. instead of doing
+				//       chunkToRegion + chunkToRegionIndex for every chunk in the Range. It would
+				//       also be more efficient because we would only need to do chunkToRegion
+				//       once and then can use offsets instead of per chunk.
+				for (auto chunkCoord = area.min; chunkCoord.x < area.max.x; ++chunkCoord.x) {
+					for (chunkCoord.y = area.min.y; chunkCoord.y < area.max.y; ++chunkCoord.y) {
+						const auto regionCoord = chunkToRegion(chunkCoord);
+						reserve(regionCoord);
+
+						auto& regionStore = at(regionCoord);
+						const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
+
+						if (!regionStore.isPopulated(regionIndex)) {
+							regionStore.setPopulated(regionIndex);
+							auto& chunkStore = regionStore.at(regionIndex);
+							func(chunkCoord, chunkStore);
+						}
+					}
 				}
 			}
 	};

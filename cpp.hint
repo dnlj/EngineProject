@@ -7,3 +7,4 @@
 	template<> ENGINE_INLINE_REL BlockId stage<N>(TERRAIN_STAGE_ARGS)
 
 #define ENGINE_INLINE [[msvc::forceinline]]
+#define ENGINE_INLINE_REL

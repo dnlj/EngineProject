@@ -22,41 +22,21 @@ namespace Game::Terrain::Layer {
 	}
 
 	void BiomeWeights::generate(const Range area, TestGenerator& generator) {
-		// TODO: Could be a bit more effecient by dividing into regions first. Then you
-		//       just iterate over the regions+indexes directly. instead of doing
-		//       chunkToRegion + chunkToRegionIndex for every chunk in the Range. It would
-		//       also be more effecient because we would only need to do chunkToRegion
-		//       once and then can use offsets instead of per chunk.
-
-		// TODO: These generations should be handled by the generator once transition is
-		//       complete. Not done in layer.
-		
 		// For each chunk in the given range:
 		//   - Find the region for the chunk.
 		//   - Get the chunk data.
 		//   - If the chunk data isn't populated:
 		//     - Populate all blocks in the chunk data.
-		for (auto chunkCoord = area.min; chunkCoord.x < area.max.x; ++chunkCoord.x) {
-			for (chunkCoord.y = area.min.y; chunkCoord.y < area.max.y; ++chunkCoord.y) {
-				const auto regionCoord = chunkToRegion(chunkCoord);
-				cache.reserve(regionCoord);
-				auto& regionStore = cache.at(regionCoord);
-				const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
-
-				if (!regionStore.isPopulated(regionIndex)) {
-					regionStore.setPopulated(regionIndex);
-					auto& chunkStore = regionStore.at(regionIndex);
-					const auto baseBlockCoord = chunkToBlock(chunkCoord);
-					for (BlockVec chunkIndex = {0,0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
-						const auto h0 = generator.get<WorldBaseHeight>(baseBlockCoord.x + chunkIndex.x);
-						for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
-							const auto blockCoord = baseBlockCoord + chunkIndex;
-							chunkStore.at(chunkIndex) = populate(blockCoord, generator, h0);
-						}
-					}
+		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE {
+			const auto baseBlockCoord = chunkToBlock(chunkCoord);
+			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
+				const auto h0 = generator.get<WorldBaseHeight>(baseBlockCoord.x + chunkIndex.x);
+				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
+					const auto blockCoord = baseBlockCoord + chunkIndex;
+					chunkStore.at(chunkIndex) = populate(blockCoord, generator, h0);
 				}
 			}
-		}
+		});
 	}
 
 	const ChunkStore<BiomeBlend>& BiomeWeights::get(const Index chunkCoord) const noexcept {
