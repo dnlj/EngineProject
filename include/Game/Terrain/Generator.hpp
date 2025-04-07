@@ -82,7 +82,7 @@ namespace Game::Terrain {
 			}
 
 			template<class Layer>
-			ENGINE_INLINE auto get(Layer::Index index) const {
+			ENGINE_INLINE decltype(auto) get(Layer::Index index) const {
 				return std::get<Layer>(layers).get(index);
 			}
 

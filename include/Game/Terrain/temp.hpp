@@ -36,6 +36,10 @@ namespace Game::Terrain::Layer {
 			T store[chunkSize.x][chunkSize.y]{};
 
 		public:
+			ChunkStore() = default;
+			ChunkStore(ChunkStore&&) = default;
+			ChunkStore(const ChunkStore&) = delete;
+
 			ENGINE_INLINE_REL T& at(ChunkVec chunkIndex) noexcept {
 				ENGINE_DEBUG_ASSERT((chunkIndex.x >= 0) && (chunkIndex.x < chunkSize.x), "Attempting to access block outside of ChunkStore.");
 				ENGINE_DEBUG_ASSERT((chunkIndex.y >= 0) && (chunkIndex.y < chunkSize.y), "Attempting to access block outside of ChunkStore.");
@@ -55,6 +59,10 @@ namespace Game::Terrain::Layer {
 			bool populated[regionSize.x][regionSize.y]{};
 
 		public:
+			RegionStore() = default;
+			RegionStore(RegionStore&&) = default;
+			RegionStore(const RegionStore&) = delete;
+
 			ENGINE_INLINE_REL bool isPopulated(RegionVec regionIndex) const noexcept {
 				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x), "Attempting to access chunk outside of RegionStore.");
 				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y), "Attempting to access chunk outside of RegionStore.");
@@ -86,6 +94,10 @@ namespace Game::Terrain::Layer {
 			Engine::FlatHashMap<RegionVec, std::unique_ptr<Store>> regions;
 
 		public:
+			ChunkAreaCache() = default;
+			ChunkAreaCache(ChunkAreaCache&&) = default;
+			ChunkAreaCache(const ChunkAreaCache&) = delete;
+
 			ENGINE_INLINE Store& at(RegionVec regionCoord) noexcept {
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access region outside of ChunkAreaCache.");

@@ -28,7 +28,7 @@ namespace Game::Terrain::Layer {
 			/**
 			 * Generate the value at a single index.
 			 */
-			[[nodiscard]] BiomeBlend populate(BlockVec blockCoord, const TestGenerator& generator, const BlockUnit h0) const noexcept;
+			[[nodiscard]] BiomeBlend populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept;
 	};
 }
 

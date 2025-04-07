@@ -274,8 +274,6 @@ namespace Game::Terrain {
 		// but it require full biome info which is expensive. Would need to bench and see
 		// if it is worth it.
 
-		// TODO: Generate should be called by the Terrain/Generator request stack once implemented.
-		request<Layer::WorldBaseHeight>({minBlock - biomeBlendDist, maxBlock + biomeBlendDist});
 		generateLayers();
 
 		{

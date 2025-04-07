@@ -44,7 +44,8 @@ namespace {
 
 			float64 zoom = 1.5; // Larger # = farther out = see more = larger FoV
 			//float64 zoom = 7.35f; // Larger # = farther out = see more = larger FoV
-			Layer mode = Layer::TerrainBasis;
+			//Layer mode = Layer::TerrainBasis;
+			Layer mode = Layer::Blocks;
 			Float minBasis = FLT_MAX;
 			Float maxBasis = -FLT_MAX;
 
@@ -153,7 +154,10 @@ namespace {
 							const auto info = generator.layerBiomeRaw.get(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeRawWeights) {
-							// Need to include the biome offset or else things won't line up when switching layers.
+							// Need to include the biome offset or else things won't line
+							// up when switching layers. This is because of how we handle
+							// biome offsets between BiomeRaw and BiomeWeights. See
+							// comments in those classes for details.
 							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + h0Cache.get(blockCoord.x));
 							const auto info = generator.layerBiomeRaw.get(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);

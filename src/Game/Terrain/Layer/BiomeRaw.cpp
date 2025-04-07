@@ -1,21 +1,37 @@
+// Game
 #include <Game/Terrain/Layer/BiomeRaw.hpp>
 
+
 namespace Game::Terrain::Layer {
-	// TODO: if this is unused we should add the ability to just exclude it?
 	void BiomeRaw::request(const Range area, TestGenerator& generator) {
-		// No dependants.
+		// No dependencies.
 	}
-	
-	void BiomeRaw::generate(const Range blockCoord, TestGenerator& generator) {
-		// TODO: implement caching.
+
+	void BiomeRaw::generate(const Range area, TestGenerator& generator) {
+
+		// TODO: add some kind of empty debug verifier to ensure all get calls are in range of area.
+
+		// No generation/cache.
+		// 
+		// It is roughly ~15% faster in debug and ~5% in release to just do it inline.
+		// This is likely due to the two layers of lookup and area conversion needed
+		// between BiomeWeights and BiomeRaw to restructure it like that.
+		//
+		// If we ever have multiple users of this it might be worth reconsidering, but at
+		// the time of writing this the only user of BiomeRaw is BiomeWeight. With only
+		// one user it is better to do it inline.
 	}
-	
+
 	BiomeRawInfo2 BiomeRaw::get(const Index blockCoord) const noexcept {
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.
 
 		// TODO: Could apply some perturb if we want non square biomes. I don't think
 		//       Voronoi is worth looking at, its makes it harder to position biomes at surface
 		//       level and still produces mostly straight edges, not much better than a square.
+		
+		// Note that we don't consider biomeScaleOffset or world height (h0) here. In theory we
+		// should, in practice its easier and faster to do that in BiomeWeight. Since
+		// BiomeWeight is the only user of this class that is fine.
 
 		// Having this manually unrolled instead of a loop is ~15% faster in debug mode
 		// and allows the divs to be removed/optimized in release mode. In the loop

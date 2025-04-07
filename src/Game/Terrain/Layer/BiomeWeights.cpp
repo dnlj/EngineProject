@@ -1,6 +1,6 @@
+// Game
 #include <Game/Terrain/Layer/BiomeRaw.hpp>
 #include <Game/Terrain/Layer/BiomeWeights.hpp>
-#include <Game/Terrain/Layer/WorldBaseHeight.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -10,30 +10,29 @@
 
 namespace Game::Terrain::Layer {
 	void BiomeWeights::request(const Range area, TestGenerator& generator) {
-		ENGINE_LOG2("BiomeWeights::request min={}, max={}", area.min, area.max);
+		// TODO: constexpr biomeBlendDist > chunk offset
+		constexpr ChunkVec offset = {0, 0};
 
-
+		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
+		ENGINE_LOG2("BiomeWeights::request area=({}, {})", area.min, area.max);
 		generator.request<WorldBaseHeight>({area.min.x * blocksPerChunk, area.max.x * blocksPerChunk});
 
-		// TODO: I think these are true, but don't matter atm since BiomeRaw doesn't cache currently.
-		// TODO: don't we also need to consider biomeScaleOffset + h0?
-		// TODO: need to account for biomeBlendDist in biomeRaw request
-		generator.request<BiomeRaw>(area);
+		// Note that since BiomeRaw is not cached this call effectively does nothing.
+		generator.request<BiomeRaw>({area.min - offset, area.max + offset});
 	}
 
 	void BiomeWeights::generate(const Range area, TestGenerator& generator) {
-		// For each chunk in the given range:
-		//   - Find the region for the chunk.
-		//   - Get the chunk data.
-		//   - If the chunk data isn't populated:
-		//     - Populate all blocks in the chunk data.
+		ENGINE_LOG2("BiomeWeights::generate area=({}, {})", area.min, area.max);
 		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE {
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
-				const auto h0 = generator.get<WorldBaseHeight>(baseBlockCoord.x + chunkIndex.x);
+				// Theoretically this offset should go in BiomeRaw. In practice its more
+				// efficient and easier to do it here. This avoids the need to use a cache
+				// in BiomeRaw which makes it ~15% faster and not use any memory.
+				const auto offset = biomeScaleOffset + BlockVec{0, generator.get<WorldBaseHeight>(baseBlockCoord.x + chunkIndex.x)};
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
-					const auto blockCoord = baseBlockCoord + chunkIndex;
-					chunkStore.at(chunkIndex) = populate(blockCoord, generator, h0);
+					const auto blockCoord = baseBlockCoord + chunkIndex - offset;
+					chunkStore.at(chunkIndex) = populate(blockCoord, generator);
 				}
 			}
 		});
@@ -44,16 +43,13 @@ namespace Game::Terrain::Layer {
 		return cache.at(regionCoord).at(chunkToRegionIndex(chunkCoord, regionCoord));
 	}
 
-	[[nodiscard]] BiomeBlend BiomeWeights::populate(BlockVec blockCoord, const TestGenerator& generator, const BlockUnit h0) const noexcept {
-		// Offset the coord by the scale offset so biomes are roughly centered on {0, 0}
-		blockCoord -= biomeScaleOffset + BlockVec{0, h0};
-
+	[[nodiscard]] BiomeBlend BiomeWeights::populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept {
 		BiomeBlend blend = {
 			.info = generator.get<BiomeRaw>(blockCoord),
 			.weights = {},
 		};
 
-		const auto addWeight = [&](BiomeId id, BlockUnit blocks){
+		const auto addWeight = [&](BiomeId id, BlockUnit blocks) {
 			const auto weight = static_cast<Float>(blocks);
 			ENGINE_DEBUG_ASSERT(blocks >= 0 && blocks <= biomeBlendDist);
 
