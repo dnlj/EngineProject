@@ -2,23 +2,29 @@
 
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 
+// TODO: Need calc biome first.
 namespace Game::Terrain::Layer {
-	class BiomeRaw;
+	class BiomeWeights;
 	class WorldBaseHeight;
 
 	// The absolute weight of each biome. These are non-normalized.
-	class BiomeWeights : public DependsOn<BiomeRaw, WorldBaseHeight> {
+	class BiomeHeight : public DependsOn<BiomeWeights, WorldBaseHeight> {
 		public:
-			using Range = ChunkArea;
-			using Index = ChunkVec;
+			class Range {
+				public:
+					BlockUnit xMin;
+					BlockUnit xMax;
+			};
+
+			using Index = BlockUnit;
 
 		private:
-			ChunkAreaCache<BiomeBlend> cache;
+			HeightCache cache;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
 			void generate(const Range area, TestGenerator& generator);
-			[[nodiscard]] const ChunkStore<BiomeBlend>& get(const Index chunkCoord) const noexcept;
+			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept { return cache.get(x); }
 
 		private:
 			// TODO: create an example layer with notes such as:

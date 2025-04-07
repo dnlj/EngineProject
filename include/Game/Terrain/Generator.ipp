@@ -15,10 +15,10 @@
  * return nullptr.
  */
 #define BIOME_GEN_DISPATCH(Name, ReturnType, ...) \
-	using _engine_BiomeGenFunc_##Name = ReturnType (*)(std::tuple<Biomes...>& biomes, __VA_ARGS__); \
+	using _engine_BiomeGenFunc_##Name = ReturnType (*)(const std::tuple<Biomes...>& biomes, __VA_ARGS__); \
 	constexpr static auto _engine_BiomeGenFuncCall_##Name = []<class Biome>() constexpr -> _engine_BiomeGenFunc_##Name { \
 		if constexpr (requires { &Biome::Name; }) { \
-			return []<class... Args>(std::tuple<Biomes...>& biomes, Args... args) ENGINE_INLINE { \
+			return []<class... Args>(const std::tuple<Biomes...>& biomes, Args... args) ENGINE_INLINE { \
 				static_assert(std::same_as<ReturnType, decltype(std::get<Biome>(biomes).Name(args...))>, "Biome dispatch function has incorrect return type."); \
 				ENGINE_INLINE_CALLS { return std::get<Biome>(biomes).Name(args...); }\
 			}; \
@@ -42,10 +42,10 @@
  * @see BIOME_GEN_DISPATCH
  */
 #define BIOME_GEN_DISPATCH_T(Name, CallName, ReturnType, ...) \
-	using _engine_BiomeGenFunc_##Name = ReturnType (*)(std::tuple<Biomes...>& biomes, __VA_ARGS__); \
+	using _engine_BiomeGenFunc_##Name = ReturnType (*)(const std::tuple<Biomes...>& biomes, __VA_ARGS__); \
 	constexpr static auto _engine_BiomeGenFuncCall_##Name = []<class Biome>() constexpr -> _engine_BiomeGenFunc_##Name { \
 		if constexpr (requires { &Biome::template CallName; }) { \
-			return []<class... Args>(std::tuple<Biomes...>& biomes, Args... args) ENGINE_INLINE { \
+			return []<class... Args>(const std::tuple<Biomes...>& biomes, Args... args) ENGINE_INLINE { \
 				ENGINE_INLINE_CALLS { return std::get<Biome>(biomes).template CallName(args...); }\
 			}; \
 		} else { \
@@ -77,7 +77,8 @@ namespace Game::Terrain {
 			//       is removed.
 			// TODO: avoid name conflict with arguments `request`
 			const auto offset = ChunkVec{1,1}; // Arbitrary offset. This should be handled automatically by the request, just trying to get things running atm.
-			this->request<Layer::BiomeWeights>({request.minChunkCoord - offset, request.maxChunkCoord + offset});
+			//this->request<Layer::BiomeWeights>({request.minChunkCoord - offset, request.maxChunkCoord + offset});
+			this->request<Layer::BiomeBlended>({request.minChunkCoord - offset, request.maxChunkCoord + offset});
 			
 		}
 
@@ -307,36 +308,21 @@ namespace Game::Terrain {
 		return chunk.at(blockToChunkIndex(blockCoord, chunkCoord));
 	}
 
+	
+	template<class... Biomes>
+	Float Generator<Biomes...>::rm_getBasisStrength(BiomeId id, BlockVec blockCoord) const {
+		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_STRENGTH_ARGS);
+		// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
+		const auto getBasisStrength = BIOME_GET_DISPATCH(getBasisStrength, id);
+		const auto basisStr = getBasisStrength(biomes, blockCoord);
+		return basisStr;
+	}
+	
 	template<class... Biomes>
 	BiomeBlend Generator<Biomes...>::calcBiome(BlockVec blockCoord, const BlockUnit h0) {
-		auto blend = calcBiomeBlend(blockCoord, h0);
-		normalizeBiomeWeights(blend.weights);
-		blend.rawWeights = blend.weights;
-		ENGINE_DEBUG_ONLY({
-			const auto normTotal = std::reduce(blend.weights.cbegin(), blend.weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
-			ENGINE_DEBUG_ASSERT(std::abs(1.0f - normTotal) <= FLT_EPSILON, "Incorrect normalized biome weight total: ", normTotal);
-		});
-
-		// TODO: Does each biome need to specify its own basis strength? Again, this is
-		//       the _strength_ of the basis, not the basis itself. I don't think they do.
-		//       We could probably just create sizeof(Biomes) simplex samplers and then
-		//       use the BiomeId+1/2/3 for the weight of any given biome. Its fine being
-		//       defined on the biomes for now though until we have more complete use
-		//       cases.
-
-		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_STRENGTH_ARGS);
-		for (auto& biomeWeight : blend.weights) {
-			// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
-			const auto getBasisStrength = BIOME_GET_DISPATCH(getBasisStrength, biomeWeight.id);
-			const auto basisStr = getBasisStrength(biomes, blockCoord);
-			ENGINE_DEBUG_ASSERT(0.0f <= basisStr && basisStr <= 1.0f, "Invalid basis strength value given for biome ", biomeWeight.id, ". Out of range [0, 1].");
-
-			// Multiply with the existing weight to get a smooth transition.
-			ENGINE_DEBUG_ASSERT(0.0f <= biomeWeight.weight && biomeWeight.weight <= 1.0f, "Invalid biome blend weight for biome ", biomeWeight.id, ". Out of range [0, 1].");
-			biomeWeight.weight *= basisStr;
-		}
-
-		return blend;
+		const auto chunkCoord = blockToChunk(blockCoord);
+		const auto& chunk = layerBiomeBlended.get(chunkCoord);
+		return chunk.at(blockToChunkIndex(blockCoord, chunkCoord));
 	}
 
 	template<class... Biomes>

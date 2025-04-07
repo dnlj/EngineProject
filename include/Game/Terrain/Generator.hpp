@@ -27,6 +27,7 @@
 #include <Game/Terrain/Layer/BiomeRaw.hpp>
 #include <Game/Terrain/Layer/BiomeWeights.hpp>
 #include <Game/Terrain/Layer/WorldBaseHeight.hpp>
+#include <Game/Terrain/Layer/BiomeBlended.hpp>
 
 namespace Game::Terrain {
 	
@@ -64,7 +65,8 @@ namespace Game::Terrain {
 			using Layers = std::tuple<
 				Layer::WorldBaseHeight,
 				Layer::BiomeRaw,
-				Layer::BiomeWeights
+				Layer::BiomeWeights,
+				Layer::BiomeBlended
 			>;
 
 			Layers layers;
@@ -74,6 +76,7 @@ namespace Game::Terrain {
 			Layer::BiomeRaw& layerBiomeRaw = std::get<Layer::BiomeRaw>(layers);
 			Layer::WorldBaseHeight& layerWorldBaseHeight = std::get<Layer::WorldBaseHeight>(layers);
 			Layer::BiomeWeights& layerBiomeWeights = std::get<Layer::BiomeWeights>(layers);
+			Layer::BiomeBlended& layerBiomeBlended = std::get<Layer::BiomeBlended>(layers);
 
 			template<class Layer>
 			ENGINE_INLINE void request(Layer::Range range) {
@@ -98,6 +101,9 @@ namespace Game::Terrain {
 				});
 			}
 
+			// TODO: rm - tmep during transition to layers.
+			Float rm_getBasisStrength(BiomeId id, BlockVec blockCoord) const;
+
 		private:
 			std::tuple<Biomes...> biomes{};
 			static_assert(std::numeric_limits<BiomeId>::max() >= sizeof...(Biomes),
@@ -117,6 +123,7 @@ namespace Game::Terrain {
 					Layer::WorldBaseHeight{},
 					Layer::BiomeRaw{seed},
 					Layer::BiomeWeights{},
+					Layer::BiomeBlended{},
 				}
 			{}
 

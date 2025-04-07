@@ -109,15 +109,15 @@ namespace Game::Terrain {
 		//	}
 		//}
 
-		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) {
+		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) const {
 			return 0.5_f + 0.5_f * simplex.value(glm::vec2{blockCoord} * 0.03_f);
 		}
 
-		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
+		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) const {
 			return h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
 		}
 
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
 			if (blockCoord.y > h2) { return outGrad(h2, blockCoord.y, 1.0_f / 5.0_f); }
 
 			// TODO: redo this, extract some helpers from the debug biomes.
@@ -130,7 +130,7 @@ namespace Game::Terrain {
 			return std::clamp(value, -1_f, 1_f);
 		}
 
-		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) {
+		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) const {
 			//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
 			const auto minBlockCoord = chunkToBlock(chunkCoord);
 			inserter = {.min = minBlockCoord, .max = minBlockCoord + BlockVec{1,1}, .id = 1};
@@ -152,7 +152,7 @@ namespace Game::Terrain {
 			}
 		}
 
-		void genLandmarks(TERRAIN_GEN_LANDMARKS_ARGS) {
+		void genLandmarks(TERRAIN_GEN_LANDMARKS_ARGS) const {
 			// TODO: Come up with a system for landmark ids.
 			//       Currently:
 			//       - info.id = 0 = tree

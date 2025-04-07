@@ -114,6 +114,8 @@ namespace Game::inline Constants {
 	static_assert(zoneMustJoinDist > 2*neighborRangePersist, "The zone join distance should be at minimum twice as large as the neighbor persist distance");
 }
 
+// TODO: Oddly, using divFloor in these conversion functions introduces a noticeable
+//       slowdown. Consistently ~7% in terrain generation for example.
 namespace Game::inline Units {
 	/**
 	 * Convert from a world position and an absolute offset to an approximate absolute world position.

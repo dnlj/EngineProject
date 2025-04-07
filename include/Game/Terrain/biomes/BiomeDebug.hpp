@@ -38,7 +38,7 @@ namespace Game::Terrain {
 		Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
 		Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
 
-		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) {
+		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) const {
 			// These need to be tuned based on biome scales blend dist or else you can get odd clipping type issues.
 			return 0.2_f * simplex1.value(FVec2{blockCoord} * 0.003_f)
 				 + 0.2_f * simplex2.value(FVec2{blockCoord} * 0.010_f)
@@ -46,11 +46,11 @@ namespace Game::Terrain {
 				 + 0.5_f;
 		}
 
-		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
+		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) const {
 			return h0 + HAmp * simplex1.value(blockCoord.x * HFeatScale, 0); // TODO: 1d simplex
 		}
 
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
 
 			// Note that we have limited horizontal detail because we only have fade in
 			// the vertical direction. With that in mind it may be better to use fbm +
@@ -174,7 +174,7 @@ namespace Game::Terrain {
 		STAGE_DEF;
 		STAGE(1) { return BlockId::Debug4; }
 
-		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
+		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) const {
 			// TODO: To avoid the odd bulges in neighboring biomes we should do something like:
 			//       `if (rawInfo.id != this.id) { return h0; }`
 			const auto half = rawInfo.size / 2;
@@ -183,7 +183,7 @@ namespace Game::Terrain {
 			return h0 + off - hMargin;
 		}
 
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
 			const auto xWarp =
 				+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
 				+ 3.0_f * simplex2.value(FVec2{blockCoord} * 0.1f)
@@ -223,7 +223,7 @@ namespace Game::Terrain {
 			return BlockId::Gold;
 		}
 
-		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) {
+		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) const {
 			//return 0.2_f * simplex1.value(FVec2{blockCoord} * 0.003_f)
 			//	 + 0.2_f * simplex2.value(FVec2{blockCoord} * 0.010_f)
 			//	 + 0.1_f * simplex3.value(FVec2{blockCoord} * 0.100_f)
@@ -231,11 +231,11 @@ namespace Game::Terrain {
 			return 1.0f;
 		}
 
-		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) {
+		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) const {
 			return h0;
 		}
 
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) {
+		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
 			if (blockCoord.y > h2) {
 				return -1;
 			}
