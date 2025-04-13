@@ -18,7 +18,7 @@ namespace Game::Terrain::Layer {
 		//       that whole chunks worth of heights? Double check.
 		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
 		ENGINE_LOG2("BiomeWeights::request area=({}, {})", area.min, area.max);
-		generator.request<WorldBaseHeight>({area.min.x, area.max.x});
+		generator.request<WorldBaseHeight>({area.min.x * blocksPerChunk, area.max.x * blocksPerChunk + blocksPerChunk});
 
 		// Note that since BiomeRaw is not cached this call effectively does nothing.
 		generator.request<BiomeRaw>({area.min - offset, area.max + offset});
