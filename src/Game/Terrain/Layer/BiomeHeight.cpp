@@ -14,7 +14,6 @@ namespace Game::Terrain::Layer {
 		//       currently because we happen to only have one request at
 		//       once/single thread. We will need to revisit this once we get to
 		//       multithreading and request optimization.
-		ENGINE_LOG2("BiomeHeight::request area=({}, {})", area.min, area.max);
 		cache.reserve(area);
 
 		generator.requestAwait<WorldBaseHeight>(area);
@@ -39,8 +38,6 @@ namespace Game::Terrain::Layer {
 	}
 
 	void BiomeHeight::generate(const Range area, TestGenerator& generator) {
-		ENGINE_LOG2("BiomeHeight::generate area=({}, {})", area.min, area.max);
-		
 		// TODO: Add static asserts to ensure that the biome height layers _ARE NOT_
 		//       cached. Since we don't issue requests cached height layers won't work. They
 		//       also don't make sense. The BiomeHeight layer (this layer) is what should be

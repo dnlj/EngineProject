@@ -10,12 +10,10 @@
 
 namespace Game::Terrain::Layer {
 	void BiomeBlended::request(const Range area, TestGenerator& generator) {
-		ENGINE_LOG2("BiomeBlended::request area=({}, {})", area.min, area.max);
 		generator.request<BiomeWeights>(area);
 	}
 
 	void BiomeBlended::generate(const Range area, TestGenerator& generator) {
-		ENGINE_LOG2("BiomeBlended::generate area=({}, {})", area.min, area.max);
 		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE_REL {
 			const auto& chunkBiomeWeights = generator.get<BiomeWeights>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);

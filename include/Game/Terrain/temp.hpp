@@ -259,7 +259,6 @@ namespace Game::Terrain::Layer {
 			ENGINE_INLINE void reserve(const ChunkSpanX area) noexcept {
 				// TODO: Reset isn't quite right here. See comments in WorldBaseHeight and
 				//       BiomeHeight ::request function.
-				ENGINE_LOG2("BlockSpanCache::reserve area=({}, {}) = ({}, {})", area.min, area.max, area.min * blocksPerChunk, area.max * blocksPerChunk);
 				cache.reset(area.min * blocksPerChunk, area.max * blocksPerChunk);
 			}
 			
@@ -282,6 +281,38 @@ namespace Game::Terrain::Layer {
 			}
 	};
 }
+
+template<>
+struct fmt::formatter<Game::Terrain::Layer::ChunkArea> {
+	constexpr auto parse(format_parse_context& ctx) const {
+		return ctx.end();
+	}
+
+	auto format(const Game::Terrain::Layer::ChunkArea area, format_context& ctx) const {
+		return fmt::format_to(ctx.out(), "ChunkArea({}, {}) = BlockArea({}, {})",
+			area.min,
+			area.max,
+			area.min * Game::blocksPerChunk,
+			area.max * Game::blocksPerChunk
+		);
+	}
+};
+
+template<>
+struct fmt::formatter<Game::Terrain::Layer::ChunkSpanX> {
+	constexpr auto parse(format_parse_context& ctx) const {
+		return ctx.end();
+	}
+
+	auto format(const Game::Terrain::Layer::ChunkSpanX area, format_context& ctx) const {
+		return fmt::format_to(ctx.out(), "ChunkSpanX({}, {}) = BlockArea({}, {})",
+			area.min,
+			area.max,
+			area.min * Game::blocksPerChunk,
+			area.max * Game::blocksPerChunk
+		);
+	}
+};
 
 // TODO: split out
 namespace Game::Terrain {

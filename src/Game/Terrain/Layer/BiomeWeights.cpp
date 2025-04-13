@@ -11,7 +11,6 @@
 namespace Game::Terrain::Layer {
 	void BiomeWeights::request(const Range area, TestGenerator& generator) {
 		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
-		ENGINE_LOG2("BiomeWeights::request area=({}, {})", area.min, area.max);
 		generator.request<WorldBaseHeight>({area.min.x, area.max.x});
 
 		// Note that since BiomeRaw is not cached this call effectively does nothing.
@@ -19,7 +18,6 @@ namespace Game::Terrain::Layer {
 	}
 
 	void BiomeWeights::generate(const Range area, TestGenerator& generator) {
-		ENGINE_LOG2("BiomeWeights::generate area=({}, {})", area.min, area.max);
 		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE_REL {
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {

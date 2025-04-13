@@ -16,6 +16,8 @@
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/StaticVector.hpp>
 #include <Engine/tuple.hpp>
+#include <Engine/Debug/debug.hpp>
+#include <Engine/Debug/PrintScopeIndent.hpp>
 
 // Meta
 #include <Meta/TypeSet/IndexOf.hpp>
@@ -73,8 +75,6 @@ namespace Game::Terrain {
 			>;
 
 			Layers layers;
-			//Requests<Layers> requests; // TODO: flatten to just a type helper if no functions are needed.
-
 
 			// TODO: Add a Pool<T> class for this. Dynamic capacity, dynamic size, but non-destructive on empty/pop.
 			size_t currentRequestScope = 0;
@@ -97,6 +97,8 @@ namespace Game::Terrain {
 
 			template<class Layer>
 			ENGINE_INLINE void request(typename const Layer::Range range) {
+				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- request<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
+
 				requests<Layer>().push_back(range);
 				std::get<Layer>(layers).request(range, *this);
 			}
@@ -107,6 +109,8 @@ namespace Game::Terrain {
 					requestScopes.resize(size + size);
 					ENGINE_WARN2("Increasing request depth. Before: {}, After: {}", size, requestScopes.size());
 				}
+
+				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- await<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
 
 				++currentRequestScope;
 				request<Layer>(range);
@@ -122,9 +126,12 @@ namespace Game::Terrain {
 
 			void generateLayers() {
 				// TODO: optimize/combine/remove overlapping and redundant requests.
+				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
+
 				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
 					auto& ranges = requests<Layer>();
 					for (const auto& range : ranges) {
+						ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generate<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
 						std::get<Layer>(layers).generate(range, *this);
 					}
 					ranges.clear();

@@ -23,12 +23,10 @@ namespace Game::Terrain::Layer {
 				//       currently because we happen to only have one request at
 				//       once/single thread. We will need to revisit this once we get to
 				//       multithreading and request optimization.
-				ENGINE_LOG2("WorldBaseHeight::request area=({}, {}) = ({}, {})", area.min, area.max, area.min * blocksPerChunk, area.max * blocksPerChunk);
 				cache.reserve(area);
 			}
 
 			void generate(const Range area, TestGenerator& generator) noexcept {
-				ENGINE_LOG2("WorldBaseHeight::generate area=({}, {}) = ({}, {})", area.min, area.max, area.min * blocksPerChunk, area.max * blocksPerChunk);
 				// TODO: use _f for Float. Move from TerrainPreview.
 				// TODO: keep in mind that this is +- amplitude, and for each octave we increase the contrib;
 				// TODO: tune + octaves, atm this is way to steep.
