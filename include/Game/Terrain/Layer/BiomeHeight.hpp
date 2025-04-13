@@ -13,13 +13,13 @@ namespace Game::Terrain::Layer {
 			using Range = ChunkSpanX;
 			using Index = BlockUnit;
 
-		private:
-			HeightCache cache;
+		public: // TODO: private, currently public during transition to layers.
+			BlockSpanCache<BlockUnit> cache;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
 			void generate(const Range area, TestGenerator& generator);
-			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept { return cache.get(x); }
+			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept { return cache.at(x); }
 
 		private:
 			[[nodiscard]] BiomeBlend populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept;

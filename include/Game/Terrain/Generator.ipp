@@ -70,25 +70,19 @@ namespace Game::Terrain {
 		//   - Moss, grass tufts, cobwebs, chests/loot, etc.
 		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
 
-		{
-			// TODO: I think the offset accounts for biomeBlendDistance, that should no longer
-			//       be needed here once everything is converted to layers and setupHeightCaches
-			//       is removed.
-			// TODO: avoid name conflict with arguments `request`
-			//this->request<Layer::BiomeWeights>({request.minChunkCoord - offset, request.maxChunkCoord + offset});
-
-			// TODO: Doesn't this the need to add one here and for setupHeightCaches
-			// indicate the caller is treating the request upper bound as inclusive
-			// wrather than exclusive? I don't think it should be needed to add anything
-			// here.
-			this->request<Layer::BiomeBlended>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
-			
-		}
-
-		// TODO: Do height caches need to be +1 chunk? Can't we just do +1 block? Or do we
-		//       run into the issue where chunks are rounded up so add one to the chunk is
-		//       effectively a ceil?
-		setupHeightCaches(chunkToBlock(request.minChunkCoord).x, chunkToBlock(request.maxChunkCoord + ChunkVec{1, 0}).x);
+		// TODO: I think the offset accounts for biomeBlendDistance, that should no longer
+		//       be needed here once everything is converted to layers and setupHeightCaches
+		//       is removed.
+		// 
+		// TODO: avoid name conflict with arguments `request`
+		//
+		// TODO: Doesn't this the need to add one here and for setupHeightCaches
+		//       indicate the caller is treating the request upper bound as inclusive
+		//       wrather than exclusive? I don't think it should be needed to add anything
+		//       here.
+		this->request<Layer::BiomeBlended>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
+		this->request<Layer::BiomeHeight>({request.minChunkCoord.x, request.maxChunkCoord.x + 1});
+		generateLayers();
 
 		// TODO: Shrink request based on current stage of chunks. If all chunks, a row, or
 		//       a column are already at the final stage we can shrink/skip the request.
@@ -122,7 +116,7 @@ namespace Game::Terrain {
 
 				if (func) {
 					auto const& chunk = region.chunkAt(regionIdx);
-					(*func)(biomes, terrain, regionCoord, regionIdx, chunkCoord, chunk, /*h0Cache,*/ h2Cache, std::back_inserter(structures));
+					(*func)(biomes, terrain, regionCoord, regionIdx, chunkCoord, chunk, /*h0Cache,*/ layerBiomeHeight.cache.cache, std::back_inserter(structures));
 				}
 
 				// TODO: could this be done with a custom back_inserter instead of an extra loop after the fact?
@@ -269,41 +263,24 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	void Generator<Biomes...>::setupHeightCaches(const BlockUnit minBlock, const BlockUnit maxBlock) {
-		// We need to include the biome blend distance for h0 for biome sampling in calcBiomeRaw.
-		ENGINE_LOG2("setupHeightCaches: {} {}", minBlock, maxBlock);
-		h2Cache.reset(minBlock, maxBlock);
+	Float Generator<Biomes...>::rm_getHeight1(
+		const BiomeId id,
+		const BlockUnit blockCoordX,
+		const Float h0,
+		const BiomeRawInfo2& rawInfo,
+		const Float biomeWeight) const {
+		BIOME_GEN_DISPATCH_REQUIRED(getHeight, Float, TERRAIN_GET_HEIGHT_ARGS);
+		const auto getHeight = BIOME_GET_DISPATCH(getHeight, id);
+		return getHeight(biomes, blockCoordX, h0, rawInfo, biomeWeight);
+	}
 
-		// H2 is currently populated as needed in calcBasis. Would be nice to do it here
-		// but it require full biome info which is expensive. Would need to bench and see
-		// if it is worth it.
-
-		// TODO: pass in min/max chunk directly instead of converting to block.
-		//request<Layer::BiomeHeight>({minBlock, maxBlock});
-		generateLayers();
-
-		{
-			const auto h2Min = h2Cache.getMinBlock();
-			const auto h2Max = h2Cache.getMaxBlock();
-			for (BlockUnit blockCoord = h2Min; blockCoord < h2Max; ++blockCoord) {
-				const auto h0 = layerWorldBaseHeight.get(blockCoord);
-				const Float h0F = static_cast<Float>(h0);
-				const auto& blend = calcBiome({blockCoord, h0}, h0);
-				Float h2 = 0;
-
-				// Its _very_ important that we use the _raw weights_ for blending height
-				// transitions. If we don't then you will get alterations between different biome
-				// heights and huge floating islands due the basisStrength.
-				for (auto& biomeWeight : blend.rawWeights) {
-					BIOME_GEN_DISPATCH_REQUIRED(getHeight, Float, TERRAIN_GET_HEIGHT_ARGS);
-					const auto getHeight = BIOME_GET_DISPATCH(getHeight, biomeWeight.id);
-					const auto h1 = getHeight(biomes, {blockCoord, h0}, h0F, blend.info, biomeWeight.weight);
-					h2 += biomeWeight.weight * h1;
-				}
-
-				h2Cache.get(blockCoord) = static_cast<BlockUnit>(std::floor(h2));
-			}
-		}
+	template<class... Biomes>
+	Float Generator<Biomes...>::rm_getBasisStrength(const BiomeId id, const BlockVec blockCoord) const {
+		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_STRENGTH_ARGS);
+		// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
+		const auto getBasisStrength = BIOME_GET_DISPATCH(getBasisStrength, id);
+		const auto basisStr = getBasisStrength(biomes, blockCoord);
+		return basisStr;
 	}
 
 	template<class... Biomes>
@@ -311,16 +288,6 @@ namespace Game::Terrain {
 		const auto chunkCoord = blockToChunk(blockCoord);
 		const auto& chunk = layerBiomeWeights.get(chunkCoord);
 		return chunk.at(blockToChunkIndex(blockCoord, chunkCoord));
-	}
-
-	
-	template<class... Biomes>
-	Float Generator<Biomes...>::rm_getBasisStrength(BiomeId id, BlockVec blockCoord) const {
-		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_STRENGTH_ARGS);
-		// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
-		const auto getBasisStrength = BIOME_GET_DISPATCH(getBasisStrength, id);
-		const auto basisStr = getBasisStrength(biomes, blockCoord);
-		return basisStr;
 	}
 	
 	template<class... Biomes>
@@ -334,7 +301,8 @@ namespace Game::Terrain {
 	BasisInfo Generator<Biomes...>::calcBasis(const BlockVec blockCoord, const BlockUnit h0) {
 		const auto blend = calcBiome(blockCoord, h0);
 		const Float h0F = static_cast<Float>(h0);
-		const Float h2 = static_cast<Float>(h2Cache.get(blockCoord.x));
+		//const Float h2 = static_cast<Float>(h2Cache.get(blockCoord.x));
+		const auto h2 = static_cast<Float>(layerBiomeHeight.get(blockCoord.x));
 
 		Float totalBasis = 0;
 		for (auto& biomeWeight : blend.weights) {

@@ -85,6 +85,7 @@ namespace Game::Terrain {
 			Layer::WorldBaseHeight& layerWorldBaseHeight = std::get<Layer::WorldBaseHeight>(layers);
 			Layer::BiomeWeights& layerBiomeWeights = std::get<Layer::BiomeWeights>(layers);
 			Layer::BiomeBlended& layerBiomeBlended = std::get<Layer::BiomeBlended>(layers);
+			Layer::BiomeHeight& layerBiomeHeight = std::get<Layer::BiomeHeight>(layers);
 
 			// TODO: private
 			template<class Layer>
@@ -131,7 +132,8 @@ namespace Game::Terrain {
 			}
 
 			// TODO: rm - tmep during transition to layers.
-			Float rm_getBasisStrength(BiomeId id, BlockVec blockCoord) const;
+			Float rm_getHeight1(const BiomeId id, const BlockUnit blockCoordX, const Float h0, const BiomeRawInfo2& rawInfo, const Float biomeWeight) const;
+			Float rm_getBasisStrength(const BiomeId id, const BlockVec blockCoord) const;
 
 		private:
 			std::tuple<Biomes...> biomes{};
@@ -144,7 +146,6 @@ namespace Game::Terrain {
 			//      currently only used as part of an intermediate step and not stored
 			//      anywhere.
 			// h2 = final blended height between all influencing biomes.
-			HeightCache h2Cache;
 
 		public:
 			Generator(uint64 seed)
@@ -164,8 +165,6 @@ namespace Game::Terrain {
 			ENGINE_INLINE auto& getBiomes() noexcept { return biomes; }
 			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
 			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
-
-			void setupHeightCaches(const BlockUnit minBlock, const BlockUnit maxBlock);
 
 			/**
 			 * Get all biome contributions for the given block.
@@ -200,7 +199,7 @@ namespace Game::Terrain {
 			// TODO: Add assert in constructor that checks the Y-independence in constructor.
 			// NOTE: Height functions should be Y-independent.
 			#define TERRAIN_GET_HEIGHT_ARGS \
-				const ::Game::BlockVec blockCoord, \
+				const ::Game::BlockUnit blockCoordX, \
 				const ::Game::Terrain::Float h0, \
 				const ::Game::Terrain::BiomeRawInfo2& rawInfo, \
 				const ::Game::Terrain::Float biomeWeight

@@ -10,18 +10,12 @@
 
 namespace Game::Terrain::Layer {
 	void BiomeWeights::request(const Range area, TestGenerator& generator) {
-		// TODO: constexpr biomeBlendDist > chunk offset
-		constexpr ChunkVec offset = {0, 0};
-
-		// TODO: Why do we need +1 here for max? I think this is because max
-		//       could land on the first (or middle of) block in a new chunk and as such we need to generate
-		//       that whole chunks worth of heights? Double check.
 		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
 		ENGINE_LOG2("BiomeWeights::request area=({}, {})", area.min, area.max);
-		generator.request<WorldBaseHeight>({area.min.x, area.max.x + 1});
+		generator.request<WorldBaseHeight>({area.min.x, area.max.x});
 
 		// Note that since BiomeRaw is not cached this call effectively does nothing.
-		generator.request<BiomeRaw>({area.min - offset, area.max + offset});
+		generator.request<BiomeRaw>(area);
 	}
 
 	void BiomeWeights::generate(const Range area, TestGenerator& generator) {

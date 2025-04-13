@@ -47,7 +47,7 @@ namespace Game::Terrain {
 		}
 
 		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) const {
-			return h0 + HAmp * simplex1.value(blockCoord.x * HFeatScale, 0); // TODO: 1d simplex
+			return h0 + HAmp * simplex1.value(blockCoordX * HFeatScale, 0); // TODO: 1d simplex
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {

@@ -6,7 +6,7 @@
 // Engine
 #include <Engine/Engine.hpp>
 
-
+// TODO: Move to Math/bit.hpp
 namespace Engine::Bit {
 	/**
 	 * Counts the number of trailing zeros in an integer.
