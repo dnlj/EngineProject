@@ -16,7 +16,7 @@ namespace Game::Terrain::Layer {
 
 	void BiomeBlended::generate(const Range area, TestGenerator& generator) {
 		ENGINE_LOG2("BiomeBlended::generate area=({}, {})", area.min, area.max);
-		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE {
+		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE_REL {
 			const auto& chunkBiomeWeights = generator.get<BiomeWeights>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {

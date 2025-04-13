@@ -13,9 +13,12 @@ namespace Game::Terrain::Layer {
 		// TODO: constexpr biomeBlendDist > chunk offset
 		constexpr ChunkVec offset = {0, 0};
 
+		// TODO: Why do we need +blocksPerChunk here for max? I think this is because max
+		//       could land on the first (or middle of) block in a new chunk and as such we need to generate
+		//       that whole chunks worth of heights? Double check.
 		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
 		ENGINE_LOG2("BiomeWeights::request area=({}, {})", area.min, area.max);
-		generator.request<WorldBaseHeight>({area.min.x * blocksPerChunk, area.max.x * blocksPerChunk});
+		generator.request<WorldBaseHeight>({area.min.x, area.max.x});
 
 		// Note that since BiomeRaw is not cached this call effectively does nothing.
 		generator.request<BiomeRaw>({area.min - offset, area.max + offset});
@@ -23,7 +26,7 @@ namespace Game::Terrain::Layer {
 
 	void BiomeWeights::generate(const Range area, TestGenerator& generator) {
 		ENGINE_LOG2("BiomeWeights::generate area=({}, {})", area.min, area.max);
-		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE {
+		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE_REL {
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
 				// Theoretically this offset should go in BiomeRaw. In practice its more

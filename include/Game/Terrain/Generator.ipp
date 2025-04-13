@@ -71,21 +71,23 @@ namespace Game::Terrain {
 		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
 
 		{
-			// TODO: Why do we need this offset? Not saying its wrong, but we need to understand and comment why it is needed.
-			// TODO: I think this accounts for biomeBlendDistance, that should no longer
+			// TODO: I think the offset accounts for biomeBlendDistance, that should no longer
 			//       be needed here once everything is converted to layers and setupHeightCaches
 			//       is removed.
 			// TODO: avoid name conflict with arguments `request`
-			const auto offset = ChunkVec{1,1}; // Arbitrary offset. This should be handled automatically by the request, just trying to get things running atm.
 			//this->request<Layer::BiomeWeights>({request.minChunkCoord - offset, request.maxChunkCoord + offset});
-			this->request<Layer::BiomeBlended>({request.minChunkCoord - offset, request.maxChunkCoord + offset});
+
+			// TODO: Doesn't this the need to add one here and for setupHeightCaches
+			// indicate the caller is treating the request upper bound as inclusive
+			// wrather than exclusive? I don't think it should be needed to add anything
+			// here.
+			this->request<Layer::BiomeBlended>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
 			
 		}
 
-		// TODO: Should height caches be cached (or stored?) on the terrain? Maybe cache on the
-		//       generator? Right now we re-generate for every request.
-		// 
-		// TODO: Do height caches need to be +1 chunk? Can't we just do +1 block?
+		// TODO: Do height caches need to be +1 chunk? Can't we just do +1 block? Or do we
+		//       run into the issue where chunks are rounded up so add one to the chunk is
+		//       effectively a ceil?
 		setupHeightCaches(chunkToBlock(request.minChunkCoord).x, chunkToBlock(request.maxChunkCoord + ChunkVec{1, 0}).x);
 
 		// TODO: Shrink request based on current stage of chunks. If all chunks, a row, or
@@ -269,12 +271,15 @@ namespace Game::Terrain {
 	template<class... Biomes>
 	void Generator<Biomes...>::setupHeightCaches(const BlockUnit minBlock, const BlockUnit maxBlock) {
 		// We need to include the biome blend distance for h0 for biome sampling in calcBiomeRaw.
+		ENGINE_LOG2("setupHeightCaches: {} {}", minBlock, maxBlock);
 		h2Cache.reset(minBlock, maxBlock);
 
 		// H2 is currently populated as needed in calcBasis. Would be nice to do it here
 		// but it require full biome info which is expensive. Would need to bench and see
 		// if it is worth it.
 
+		// TODO: pass in min/max chunk directly instead of converting to block.
+		//request<Layer::BiomeHeight>({minBlock, maxBlock});
 		generateLayers();
 
 		{

@@ -28,6 +28,8 @@
 #include <Game/Terrain/Layer/BiomeWeights.hpp>
 #include <Game/Terrain/Layer/WorldBaseHeight.hpp>
 #include <Game/Terrain/Layer/BiomeBlended.hpp>
+#include <Game/Terrain/Layer/BiomeHeight.hpp>
+
 
 namespace Game::Terrain {
 	
@@ -66,11 +68,17 @@ namespace Game::Terrain {
 				Layer::WorldBaseHeight,
 				Layer::BiomeRaw,
 				Layer::BiomeWeights,
-				Layer::BiomeBlended
+				Layer::BiomeBlended,
+				Layer::BiomeHeight
 			>;
 
 			Layers layers;
-			Requests<Layers> requests; // TODO: flatten to just a type helper if no functions are needed.
+			//Requests<Layers> requests; // TODO: flatten to just a type helper if no functions are needed.
+
+
+			// TODO: Add a Pool<T> class for this. Dynamic capacity, dynamic size, but non-destructive on empty/pop.
+			size_t currentRequestScope = 0;
+			std::vector<Requests<Layers>> requestScopes;
 
 			// TODO: rm
 			Layer::BiomeRaw& layerBiomeRaw = std::get<Layer::BiomeRaw>(layers);
@@ -78,22 +86,43 @@ namespace Game::Terrain {
 			Layer::BiomeWeights& layerBiomeWeights = std::get<Layer::BiomeWeights>(layers);
 			Layer::BiomeBlended& layerBiomeBlended = std::get<Layer::BiomeBlended>(layers);
 
+			// TODO: private
 			template<class Layer>
-			ENGINE_INLINE void request(Layer::Range range) {
-				std::get<Meta::TypeSet::IndexOf<Layers, Layer>::value>(requests.ranges).push_back(range);
+			auto& requests() {
+				return std::get<Meta::TypeSet::IndexOf<Layers, Layer>::value>(
+					requestScopes[currentRequestScope].ranges
+				);
+			}
+
+			template<class Layer>
+			ENGINE_INLINE void request(typename const Layer::Range range) {
+				requests<Layer>().push_back(range);
 				std::get<Layer>(layers).request(range, *this);
 			}
 
 			template<class Layer>
-			ENGINE_INLINE decltype(auto) get(Layer::Index index) const {
+			ENGINE_INLINE void requestAwait(typename const Layer::Range range) {
+				if (const auto size = requestScopes.size(); currentRequestScope + 1 == size) {
+					requestScopes.resize(size + size);
+					ENGINE_WARN2("Increasing request depth. Before: {}, After: {}", size, requestScopes.size());
+				}
+
+				++currentRequestScope;
+				request<Layer>(range);
+				generateLayers();
+				requests<Layer>().clear();
+				--currentRequestScope;
+			}
+
+			template<class Layer>
+			ENGINE_INLINE decltype(auto) get(typename const Layer::Index index) const {
 				return std::get<Layer>(layers).get(index);
 			}
 
 			void generateLayers() {
 				// TODO: optimize/combine/remove overlapping and redundant requests.
 				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
-					auto const v = Meta::TypeSet::IndexOf<Layers, Layer>::value;v;
-					auto& ranges = std::get<Meta::TypeSet::IndexOf<Layers, Layer>::value>(requests.ranges);
+					auto& ranges = requests<Layer>();
 					for (const auto& range : ranges) {
 						std::get<Layer>(layers).generate(range, *this);
 					}
@@ -124,8 +153,11 @@ namespace Game::Terrain {
 					Layer::BiomeRaw{seed},
 					Layer::BiomeWeights{},
 					Layer::BiomeBlended{},
-				}
-			{}
+					Layer::BiomeHeight{},
+				} {
+				// Arbitrary size, seems like a reasonable default.
+				requestScopes.resize(4);
+			}
 
 			void generate(Terrain& terrain, const Request& request);
 

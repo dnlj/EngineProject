@@ -7,12 +7,7 @@ namespace Game::Terrain::Layer {
 	// The large world-scale height variation that persists between all biomes.
 	class WorldBaseHeight : public DependsOn<> {
 		public:
-			class Range {
-				public:
-					BlockUnit xMin;
-					BlockUnit xMax;
-			};
-
+			using Range = ChunkSpanX;
 			using Index = BlockUnit;
 
 		public:
@@ -22,16 +17,16 @@ namespace Game::Terrain::Layer {
 				//       currently because we happen to only have one request at
 				//       once/single thread. We will need to revisit this once we get to
 				//       multithreading and request optimization.
-				ENGINE_LOG2("WorldBaseHeight::request area=({}, {})", area.xMin, area.xMax);
-				h0Cache.reset(area.xMin, area.xMax);
+				ENGINE_LOG2("WorldBaseHeight::request area=({}, {})", area.min, area.max);
+				h0Cache.reset(area.min, area.max);
 			}
 
 			void generate(const Range area, TestGenerator& generator) noexcept {
-				ENGINE_LOG2("WorldBaseHeight::generate area=({}, {})", area.xMin, area.xMax);
+				ENGINE_LOG2("WorldBaseHeight::generate area=({}, {})", area.min, area.max);
 				// TODO: use _f for Float. Move from TerrainPreview.
 				// TODO: keep in mind that this is +- amplitude, and for each octave we increase the contrib;
 				// TODO: tune + octaves, atm this is way to steep.
-				for (auto x = area.xMin; x < area.xMax; ++x) {
+				for (auto x = area.min; x < area.max; ++x) {
 					h0Cache.get(x) = static_cast<BlockUnit>(500 * simplex1.value(x * 0.00005f, 0));
 				}
 			}

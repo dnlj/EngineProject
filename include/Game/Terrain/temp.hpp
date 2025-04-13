@@ -16,6 +16,47 @@
 #include <Engine/StaticVector.hpp>
 
 
+namespace Game::Terrain {
+	// TODO: Remove, use/combine with ChunkSpanCache.
+	class HeightCache {
+		public:
+			constexpr static BlockUnit invalid = std::numeric_limits<BlockUnit>::max();
+
+		private:
+			BlockUnit minBlock = 0; // Inclusive
+			BlockUnit maxBlock = 0; // Exclusive
+			std::vector<BlockUnit> heights;
+
+		public:
+			void reset(BlockUnit minBlockX, BlockUnit maxBlockX) {
+				minBlock = minBlockX;
+				maxBlock = maxBlockX;
+				heights.clear();
+				heights.resize(maxBlock - minBlock, invalid);
+			}
+
+			ENGINE_INLINE_REL [[nodiscard]] BlockUnit& get(const BlockUnit blockCoord) noexcept {
+				debugBoundsCheck(blockCoord);
+				return heights[blockCoord - minBlock];
+			}
+
+			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const BlockUnit blockCoord) const noexcept {
+				debugBoundsCheck(blockCoord);
+				ENGINE_DEBUG_ASSERT(invalid != heights[blockCoord - minBlock], "Uninitialized height value at ", blockCoord);
+				return heights[blockCoord - minBlock];
+			}
+
+			ENGINE_INLINE [[nodiscard]] BlockUnit getMinBlock() const noexcept { return minBlock; }
+			ENGINE_INLINE [[nodiscard]] BlockUnit getMaxBlock() const noexcept { return maxBlock; }
+
+		private:
+			ENGINE_INLINE_REL void debugBoundsCheck(const BlockUnit blockCoord) const noexcept {
+				ENGINE_DEBUG_ASSERT(minBlock <= blockCoord, "Height cache block coordinate is out of bounds.");
+				ENGINE_DEBUG_ASSERT(blockCoord < maxBlock, "Height cache block coordinate is out of bounds.");
+			}
+	};
+}
+
 // TODO: split out
 namespace Game::Terrain::Layer {
 	// TODO: incorperate this at the terrain level to verify the correct requests are made and avoid cycles.
@@ -24,11 +65,18 @@ namespace Game::Terrain::Layer {
 
 	class ChunkArea {
 		public:
-			ChunkVec min;
-			ChunkVec max;
+			ChunkVec min; // Inclusive
+			ChunkVec max; // Exclusive
+	};
+	
+	class ChunkSpanX {
+		public:
+			BlockUnit min; // Inclusive
+			BlockUnit max; // Exclusive
 	};
 
 	// TODO: make all cache/store types uncopyable. These should be accessed by ref.
+	// TODO: These cache/store/span/area types probably should probably be in just Game::Terrain not Game::Terrain::Layer.
 	
 	template<class T>
 	class ChunkStore {
@@ -135,6 +183,38 @@ namespace Game::Terrain::Layer {
 							func(chunkCoord, chunkStore);
 						}
 					}
+				}
+			}
+	};
+
+	template<class T>
+	class ChunkSpanCache {
+		private:
+			HeightCache cache; // TODO: remove HeightCache, integrate into ChunkSpanCache.
+
+		public:
+			ChunkSpanCache() = default;
+			ChunkSpanCache(ChunkSpanCache&&) = default;
+			ChunkSpanCache(const ChunkSpanCache&) = delete;
+
+			ENGINE_INLINE T& at(BlockUnit x) noexcept {
+				return cache.get(x);
+			}
+
+			ENGINE_INLINE T at(BlockUnit x) const noexcept {
+				static_assert(sizeof(T) < 4*sizeof(size_t), "Returning large type by value, this is likely not intended.");
+				return cache.get(x);
+			}
+
+			ENGINE_INLINE void reserve(ChunkSpanX area) noexcept {
+				// TODO: Reset isn't quite right here. See comments in WorldBaseHeight and
+				//       BiomeHeight ::request function.
+				cache.reset(area);
+			}
+
+			ENGINE_INLINE void forEachChunk(ChunkSpanX area, auto&& func) {
+				for (auto x = area.min; x < area.max; ++x) {
+					func(x, at(x));
 				}
 			}
 	};
@@ -480,44 +560,6 @@ namespace Game::Terrain {
 			// - All chunks are expected to be in the neighborhood of initRegionCoord
 			// - 
 			//Request(const ChunkVec minChunkCoord, const ChunkVec maxChunkCoord);
-	};
-
-	class HeightCache {
-		public:
-			constexpr static BlockUnit invalid = std::numeric_limits<BlockUnit>::max();
-
-		private:
-			BlockUnit minBlock = 0; // Inclusive
-			BlockUnit maxBlock = 0; // Exclusive
-			std::vector<BlockUnit> heights;
-
-		public:
-			void reset(BlockUnit minBlockX, BlockUnit maxBlockX) {
-				minBlock = minBlockX;
-				maxBlock = maxBlockX;
-				heights.clear();
-				heights.resize(maxBlock - minBlock, invalid);
-			}
-
-			ENGINE_INLINE_REL [[nodiscard]] BlockUnit& get(const BlockUnit blockCoord) noexcept {
-				debugBoundsCheck(blockCoord);
-				return heights[blockCoord - minBlock];
-			}
-
-			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const BlockUnit blockCoord) const noexcept {
-				debugBoundsCheck(blockCoord);
-				ENGINE_DEBUG_ASSERT(invalid != heights[blockCoord - minBlock], "Uninitialized height value at ", blockCoord);
-				return heights[blockCoord - minBlock];
-			}
-
-			ENGINE_INLINE [[nodiscard]] BlockUnit getMinBlock() const noexcept { return minBlock; }
-			ENGINE_INLINE [[nodiscard]] BlockUnit getMaxBlock() const noexcept { return maxBlock; }
-
-		private:
-			ENGINE_INLINE_REL void debugBoundsCheck(const BlockUnit blockCoord) const noexcept {
-				ENGINE_DEBUG_ASSERT(minBlock <= blockCoord, "Height cache block coordinate is out of bounds.");
-				ENGINE_DEBUG_ASSERT(blockCoord < maxBlock, "Height cache block coordinate is out of bounds.");
-			}
 	};
 
 	template<class T, StageId Stage>
