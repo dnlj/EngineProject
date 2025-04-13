@@ -11,6 +11,12 @@ namespace Game::Terrain::Layer {
 			using Index = BlockUnit;
 
 		public:
+			// TODO: May be threading considerations. Maybe have an option to do
+			//       independent layer/per thread/top level request?
+			// TODO: Would like a way to ask it to clear cache per top level request/"batch" if possible.
+			BlockSpanCache<BlockUnit> cache;
+
+		public:
 			void request(const Range area, TestGenerator& generator) {
 				// TODO: Reset isn't quite right here. It could/will be possible to have
 				//       multiple requests "active" at once/threaded. This is fine
@@ -18,7 +24,7 @@ namespace Game::Terrain::Layer {
 				//       once/single thread. We will need to revisit this once we get to
 				//       multithreading and request optimization.
 				ENGINE_LOG2("WorldBaseHeight::request area=({}, {})", area.min, area.max);
-				h0Cache.reset(area.min, area.max);
+				cache.reserve(area);
 			}
 
 			void generate(const Range area, TestGenerator& generator) noexcept {
@@ -26,23 +32,18 @@ namespace Game::Terrain::Layer {
 				// TODO: use _f for Float. Move from TerrainPreview.
 				// TODO: keep in mind that this is +- amplitude, and for each octave we increase the contrib;
 				// TODO: tune + octaves, atm this is way to steep.
-				for (auto x = area.min; x < area.max; ++x) {
-					h0Cache.get(x) = static_cast<BlockUnit>(500 * simplex1.value(x * 0.00005f, 0));
-				}
+				//for (auto x = area.min; x < area.max; ++x) {
+				//	cache.get(x) = static_cast<BlockUnit>(500 * simplex1.value(x * 0.00005f, 0));
+				//}
+
+				cache.forEachBlock(area, [&](const BlockUnit x, BlockUnit& h0) ENGINE_INLINE_REL {
+					h0 = static_cast<BlockUnit>(500 * simplex1.value(x * 0.00005f, 0));
+				});
 			}
 
 			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept {
-				return h0Cache.get(x);
+				return cache.at(x);
 			}
-
-		// TODO: private, currently just to ease transition to Layers in terrain preview.
-		//       Should fix logic there to ensure within bounds. Shouldn't be any need to know
-		//       the min/max of the cache.
-		public:
-			// TODO: May be threading considerations. Maybe have an option to do
-			//       independent layer/per thread/top level request?
-			// TODO: Would like a way to ask it to clear cache per top level request/"batch" if possible.
-			HeightCache h0Cache;
 
 		private:
 			// TODO: Should we have a mechanism for sharing noise generators between multiple systems?

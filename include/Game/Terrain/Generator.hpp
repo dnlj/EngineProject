@@ -163,7 +163,7 @@ namespace Game::Terrain {
 
 			ENGINE_INLINE auto& getBiomes() noexcept { return biomes; }
 			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
-			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.h0Cache; }
+			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
 
 			void setupHeightCaches(const BlockUnit minBlock, const BlockUnit maxBlock);
 

@@ -17,7 +17,7 @@
 
 
 namespace Game::Terrain {
-	// TODO: Remove, use/combine with ChunkSpanCache.
+	// TODO: Remove, use/combine with BlockSpanCache.
 	class HeightCache {
 		public:
 			constexpr static BlockUnit invalid = std::numeric_limits<BlockUnit>::max();
@@ -187,33 +187,41 @@ namespace Game::Terrain::Layer {
 			}
 	};
 
+
+	// TODO: Doc, caches value for every block in a span. In increments of chunks. This is
+	//       done per chunk because it is easier to interop with other caches and layers that
+	//       typically work per-chunk and avoids conversion/off-by-one errors.
 	template<class T>
-	class ChunkSpanCache {
-		private:
-			HeightCache cache; // TODO: remove HeightCache, integrate into ChunkSpanCache.
+	class BlockSpanCache {
+		public: // TODO: private, currently public for easy TerrainPreview compat during transition.
+			static_assert(std::same_as<T, BlockUnit>, "BlockUnit is currently the only supported type due to the use of HeightCache.");
+			HeightCache cache; // TODO: remove HeightCache, integrate into BlockSpanCache.
 
 		public:
-			ChunkSpanCache() = default;
-			ChunkSpanCache(ChunkSpanCache&&) = default;
-			ChunkSpanCache(const ChunkSpanCache&) = delete;
+			BlockSpanCache() = default;
+			BlockSpanCache(BlockSpanCache&&) = default;
+			BlockSpanCache(const BlockSpanCache&) = delete;
 
-			ENGINE_INLINE T& at(BlockUnit x) noexcept {
+			ENGINE_INLINE T& at(const BlockUnit x) noexcept {
 				return cache.get(x);
 			}
 
-			ENGINE_INLINE T at(BlockUnit x) const noexcept {
+			ENGINE_INLINE T at(const BlockUnit x) const noexcept {
 				static_assert(sizeof(T) < 4*sizeof(size_t), "Returning large type by value, this is likely not intended.");
 				return cache.get(x);
 			}
 
-			ENGINE_INLINE void reserve(ChunkSpanX area) noexcept {
+			ENGINE_INLINE void reserve(const ChunkSpanX area) noexcept {
 				// TODO: Reset isn't quite right here. See comments in WorldBaseHeight and
 				//       BiomeHeight ::request function.
-				cache.reset(area);
+				ENGINE_LOG2("BlockSpanCache::reserve area=({}, {}) = ({}, {})", area.min, area.max, area.min * blocksPerChunk, area.max * blocksPerChunk);;
+				cache.reset(area.min * blocksPerChunk, area.max * blocksPerChunk);
 			}
 
-			ENGINE_INLINE void forEachChunk(ChunkSpanX area, auto&& func) {
-				for (auto x = area.min; x < area.max; ++x) {
+			ENGINE_INLINE void forEachBlock(const ChunkSpanX area, auto&& func) {
+				const auto min = area.min * blocksPerChunk;
+				const auto max = area.max * blocksPerChunk;
+				for (auto x = min; x < max; ++x) {
 					func(x, at(x));
 				}
 			}
