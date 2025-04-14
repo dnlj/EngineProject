@@ -1,6 +1,8 @@
 #pragma once
 
+// Game
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
+
 
 namespace Game::Terrain::Layer {
 	class BiomeWeights;
@@ -20,7 +22,7 @@ namespace Game::Terrain::Layer {
 			[[nodiscard]] const ChunkStore<BiomeBlend>& get(const Index chunkCoord) const noexcept;
 
 		private:
-			[[nodiscard]] BiomeBlend populate(BlockVec blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept;
+			[[nodiscard]] BiomeBlend populate(const BlockVec blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept;
 	};
 }
 

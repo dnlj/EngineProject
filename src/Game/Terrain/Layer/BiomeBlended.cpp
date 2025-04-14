@@ -14,7 +14,7 @@ namespace Game::Terrain::Layer {
 	}
 
 	void BiomeBlended::generate(const Range area, TestGenerator& generator) {
-		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE_REL {
+		cache.forEachChunk(area, [&](const ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE_REL {
 			const auto& chunkBiomeWeights = generator.get<BiomeWeights>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
@@ -31,7 +31,7 @@ namespace Game::Terrain::Layer {
 		return cache.at(regionCoord).at(chunkToRegionIndex(chunkCoord, regionCoord));
 	}
 
-	[[nodiscard]] BiomeBlend BiomeBlended::populate(BlockVec blockCoord,  BiomeBlend blend, const TestGenerator& generator) const noexcept {
+	[[nodiscard]] BiomeBlend BiomeBlended::populate(const BlockVec blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept {
 		normalizeBiomeWeights(blend.weights);
 		blend.rawWeights = blend.weights;
 		ENGINE_DEBUG_ONLY({

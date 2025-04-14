@@ -301,7 +301,6 @@ namespace Game::Terrain {
 	BasisInfo Generator<Biomes...>::calcBasis(const BlockVec blockCoord, const BlockUnit h0) {
 		const auto blend = calcBiome(blockCoord, h0);
 		const Float h0F = static_cast<Float>(h0);
-		//const Float h2 = static_cast<Float>(h2Cache.get(blockCoord.x));
 		const auto h2 = static_cast<Float>(layerBiomeHeight.get(blockCoord.x));
 
 		Float totalBasis = 0;
@@ -324,9 +323,6 @@ namespace Game::Terrain {
 			.id = maxBiome.id,
 			.weight = maxBiome.weight,
 			.basis = totalBasis,
-			.h2 = h2,
-			.rawInfo = blend.info,
-			.rawWeight = maxBiomeWeight(blend.rawWeights).weight,
 		};
 	}
 }

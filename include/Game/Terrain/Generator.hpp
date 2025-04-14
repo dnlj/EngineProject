@@ -141,6 +141,7 @@ namespace Game::Terrain {
 			// TODO: rm - tmep during transition to layers.
 			Float rm_getHeight1(const BiomeId id, const BlockUnit blockCoordX, const Float h0, const BiomeRawInfo2& rawInfo, const Float biomeWeight) const;
 			Float rm_getBasisStrength(const BiomeId id, const BlockVec blockCoord) const;
+			Float rm_getBasis(const BiomeId id, const BlockVec blockCoord) const;
 
 		private:
 			std::tuple<Biomes...> biomes{};

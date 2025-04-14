@@ -450,15 +450,14 @@ namespace Game::Terrain {
 		return *std::ranges::max_element(weights, {}, &BiomeWeight::weight);
 	}
 
-	// TODO: doc fields
+	// TODO: Once everything is converted to layers i think this class can just go away.
+	//       We just need a float for basis and other values can be pulled from other systems.
+	//       Unless there is value in caching things like weight here.
 	class BasisInfo {
 		public:
 			BiomeId id;
 			Float weight;
 			Float basis;
-			Float h2;
-			BiomeRawInfo2 rawInfo;
-			Float rawWeight;
 	};
 
 	using ChunkEntities = std::vector<BlockEntityDesc>;
