@@ -82,6 +82,7 @@ namespace Game::Terrain {
 		//       here.
 		this->request<Layer::BiomeBlended>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
 		this->request<Layer::BiomeHeight>({request.minChunkCoord.x, request.maxChunkCoord.x + 1});
+		this->request<Layer::BiomeBasis>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
 		generateLayers();
 
 		// TODO: Shrink request based on current stage of chunks. If all chunks, a row, or
@@ -279,8 +280,14 @@ namespace Game::Terrain {
 		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_STRENGTH_ARGS);
 		// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
 		const auto getBasisStrength = BIOME_GET_DISPATCH(getBasisStrength, id);
-		const auto basisStr = getBasisStrength(biomes, blockCoord);
-		return basisStr;
+		return getBasisStrength(biomes, blockCoord);
+	}
+	
+	template<class... Biomes>
+	Float Generator<Biomes...>::rm_getBasis(const BiomeId id, const BlockVec blockCoord) const {
+		BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
+		const auto getBasis = BIOME_GET_DISPATCH(getBasis, id);
+		return getBasis(biomes, blockCoord, layerBiomeHeight);
 	}
 
 	template<class... Biomes>
@@ -299,27 +306,8 @@ namespace Game::Terrain {
 
 	template<class... Biomes>
 	BasisInfo Generator<Biomes...>::calcBasis(const BlockVec blockCoord, const BlockUnit h0) {
-		const auto blend = calcBiome(blockCoord, h0);
-		Float totalBasis = 0;
-		for (auto& biomeWeight : blend.weights) {
-			BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
-			const auto getBasis = BIOME_GET_DISPATCH(getBasis, biomeWeight.id);
-			const auto basis = getBasis(biomes, blockCoord, layerBiomeHeight);
-
-			// This is a _somewhat_ artificial limitation. A basis doesn't _need_ to be
-			// between [-1, 1], but all biomes should have roughly the same range. If one
-			// is [-100, 100] and another is [-1, 1] they won't blend well since the one
-			// with the larger range will always dominate regardless of the blend weight.
-			// Keeping things normalized avoids that.
-			ENGINE_DEBUG_ASSERT(-1.0_f <= basis && basis <= 1.0_f, "Invalid basis value given for biome ", biomeWeight.id, ". Out of range [-1, 1].");
-			totalBasis += biomeWeight.weight * basis;
-		}
-
-		const auto maxBiome = maxBiomeWeight(blend.weights);
-		return {
-			.id = maxBiome.id,
-			.weight = maxBiome.weight,
-			.basis = totalBasis,
-		};
+		const auto chunkCoord = blockToChunk(blockCoord);
+		const auto& chunk = layerBiomeBasis.get(chunkCoord);
+		return chunk.at(blockToChunkIndex(blockCoord, chunkCoord));
 	}
 }

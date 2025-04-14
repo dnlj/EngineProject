@@ -1,4 +1,3 @@
-/*
 #pragma once
 
 // Game
@@ -19,10 +18,9 @@ namespace Game::Terrain::Layer {
 		public:
 			void request(const Range area, TestGenerator& generator);
 			void generate(const Range area, TestGenerator& generator);
-			//[[nodiscard]] const ChunkStore<BasisInfo>& get(const Index chunkCoord) const noexcept;
+			[[nodiscard]] const ChunkStore<BasisInfo>& get(const Index chunkCoord) const noexcept;
 
 		private:
 			[[nodiscard]] BasisInfo populate(const BlockVec blockCoord, const BiomeBlend& blend, const TestGenerator& generator) const noexcept;
 	};
 }
-*/

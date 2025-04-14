@@ -31,6 +31,7 @@
 #include <Game/Terrain/Layer/WorldBaseHeight.hpp>
 #include <Game/Terrain/Layer/BiomeBlended.hpp>
 #include <Game/Terrain/Layer/BiomeHeight.hpp>
+#include <Game/Terrain/Layer/BiomeBasis.hpp>
 
 
 namespace Game::Terrain {
@@ -71,7 +72,8 @@ namespace Game::Terrain {
 				Layer::BiomeRaw,
 				Layer::BiomeWeights,
 				Layer::BiomeBlended,
-				Layer::BiomeHeight
+				Layer::BiomeHeight,
+				Layer::BiomeBasis
 			>;
 
 			Layers layers;
@@ -86,6 +88,7 @@ namespace Game::Terrain {
 			Layer::BiomeWeights& layerBiomeWeights = std::get<Layer::BiomeWeights>(layers);
 			Layer::BiomeBlended& layerBiomeBlended = std::get<Layer::BiomeBlended>(layers);
 			Layer::BiomeHeight& layerBiomeHeight = std::get<Layer::BiomeHeight>(layers);
+			Layer::BiomeBasis& layerBiomeBasis = std::get<Layer::BiomeBasis>(layers);
 
 			// TODO: private
 			template<class Layer>
@@ -163,6 +166,7 @@ namespace Game::Terrain {
 					Layer::BiomeWeights{},
 					Layer::BiomeBlended{},
 					Layer::BiomeHeight{},
+					Layer::BiomeBasis{},
 				} {
 				// Arbitrary size, seems like a reasonable default.
 				requestScopes.resize(4);
