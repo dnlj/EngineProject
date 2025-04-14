@@ -214,10 +214,7 @@ namespace Game::Terrain {
 
 			#define TERRAIN_GET_BASIS_ARGS \
 				const ::Game::BlockVec blockCoord, \
-				const ::Game::Terrain::Float h0, \
-				const ::Game::Terrain::Float h2, \
-				const ::Game::Terrain::BiomeRawInfo2& rawInfo, \
-				const ::Game::Terrain::Float biomeWeight
+				const ::Game::Terrain::Layer::BiomeHeight& layerBiomeHeight
 
 			#define TERRAIN_GET_LANDMARKS_ARGS \
 				::Game::Terrain::Terrain& terrain, \
@@ -225,7 +222,6 @@ namespace Game::Terrain {
 				const ::Game::RegionIdx& regionIdx, \
 				const ::Game::ChunkVec& chunkCoord, \
 				const ::Game::Terrain::Chunk& chunk, \
-				/*const ::Game::Terrain::HeightCache& h0Cache, \*/ \
 				const ::Game::Terrain::HeightCache& h2Cache, \
 				std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 

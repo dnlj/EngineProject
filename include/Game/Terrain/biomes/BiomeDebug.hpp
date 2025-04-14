@@ -51,7 +51,7 @@ namespace Game::Terrain {
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
-
+			const auto h2 = layerBiomeHeight.get(blockCoord.x);
 			// Note that we have limited horizontal detail because we only have fade in
 			// the vertical direction. With that in mind it may be better to use fbm +
 			// warp instead. That also (mostly) avoids the floating island problem.
@@ -194,6 +194,7 @@ namespace Game::Terrain {
 				+ 1.5_f * simplex2.value(FVec2{blockCoord} * 0.2f);
 			const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp};
 
+			const auto h2 = layerBiomeHeight.get(blockCoord.x);
 			const bool above = bcoord.y > h2;
 			const auto surface = [&]{
 				if (above) {
@@ -236,6 +237,7 @@ namespace Game::Terrain {
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
+			const auto h2 = layerBiomeHeight.get(blockCoord.x);
 			if (blockCoord.y > h2) {
 				return -1;
 			}

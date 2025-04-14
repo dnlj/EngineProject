@@ -118,7 +118,8 @@ namespace Game::Terrain {
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
-			if (blockCoord.y > h2) { return outGrad(h2, blockCoord.y, 1.0_f / 5.0_f); }
+			const auto h2 = layerBiomeHeight.get(blockCoord.x);
+			if (blockCoord.y > h2) { return outGrad(static_cast<Float>(h2), blockCoord.y, 1.0_f / 5.0_f); }
 
 			// TODO: redo this, extract some helpers from the debug biomes.
 			constexpr Float scale = 0.06_f;

@@ -300,14 +300,11 @@ namespace Game::Terrain {
 	template<class... Biomes>
 	BasisInfo Generator<Biomes...>::calcBasis(const BlockVec blockCoord, const BlockUnit h0) {
 		const auto blend = calcBiome(blockCoord, h0);
-		const Float h0F = static_cast<Float>(h0);
-		const auto h2 = static_cast<Float>(layerBiomeHeight.get(blockCoord.x));
-
 		Float totalBasis = 0;
 		for (auto& biomeWeight : blend.weights) {
 			BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
 			const auto getBasis = BIOME_GET_DISPATCH(getBasis, biomeWeight.id);
-			const auto basis = getBasis(biomes, blockCoord, h0F, h2, blend.info, biomeWeight.weight);
+			const auto basis = getBasis(biomes, blockCoord, layerBiomeHeight);
 
 			// This is a _somewhat_ artificial limitation. A basis doesn't _need_ to be
 			// between [-1, 1], but all biomes should have roughly the same range. If one
