@@ -178,22 +178,6 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
 			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
 
-			/**
-			 * Get all biome contributions for the given block.
-			 */
-			[[nodiscard]] BiomeBlend calcBiomeBlend(BlockVec blockCoord, const BlockUnit h0);
-
-			/**
-			 * Calculate the final biome for the given block.
-			 */
-			[[nodiscard]] BiomeBlend calcBiome(BlockVec blockCoord, const BlockUnit h0);
-
-			/**
-			 * Calculate the basis terrain info for the given block.
-			 * @see BasisInfo
-			 */
-			[[nodiscard]] BasisInfo calcBasis(const BlockVec blockCoord, const BlockUnit h0);
-
 		private:
 			/**
 			 * Iterate over each chunk in the request.

@@ -80,7 +80,7 @@ namespace Game::Terrain {
 		//       indicate the caller is treating the request upper bound as inclusive
 		//       wrather than exclusive? I don't think it should be needed to add anything
 		//       here.
-		this->request<Layer::BiomeBlended>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
+		//this->request<Layer::BiomeBlended>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
 		this->request<Layer::BiomeHeight>({request.minChunkCoord.x, request.maxChunkCoord.x + 1});
 		this->request<Layer::BiomeBasis>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
 		generateLayers();
@@ -211,6 +211,7 @@ namespace Game::Terrain {
 
 		const auto min = chunkToBlock(chunkCoord);
 		const auto max = min + chunkSize;
+		const auto& blendStore = layerBiomeBlended.get(chunkCoord);
 
 		// Populate biomes in chunk.
 		// TODO: We may want a temporary block granularity biome lookup for structure and decoration generation.
@@ -219,9 +220,9 @@ namespace Game::Terrain {
 		if constexpr (CurrentStage == 1) {
 			const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
 			for (RegionBiomeUnit x = 0; x < biomesPerChunk; ++x) {
-				const auto h0 = layerWorldBaseHeight.get(min.x + x);
 				for (RegionBiomeUnit y = 0; y < biomesPerChunk; ++y) {
-					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = maxBiomeWeight(calcBiome(min + BlockVec{x, y} * biomesPerChunk, h0).weights).id;
+					const auto chunkIndex = BlockVec{x, y} * biomesPerChunk;
+					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = maxBiomeWeight(blendStore.at(chunkIndex).weights).id;
 				}
 			}
 		}
@@ -231,18 +232,23 @@ namespace Game::Terrain {
 		//       to have its own args or cache the biome info per generate call? Since we
 		//       don't need it currently in any of the following stages I'm leaning toward
 		//       the first?
-		BasisInfo basisInfo{};
+		// 
+		//       The above is still correct. Info has been moved into the loop, but still
+		//       only _needed_ by the first. The layer architecture should help with this.
+		//BasisInfo basisInfo{};
 
 		// For each block in the chunk.
+		const auto& basisStore = layerBiomeBasis.get(chunkCoord);
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
 			const auto h0 = layerWorldBaseHeight.get(min.x + x);
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
-				const auto blockCoord = min + BlockVec{x, y};
+				const auto chunkIndex = BlockVec{x, y};
+				const auto blockCoord = min + chunkIndex;
+				const auto basisInfo = basisStore.at(chunkIndex);
 				BiomeId biomeId;
 
 				// Generate basis only on the first stage
 				if constexpr (CurrentStage == 1) {
-					basisInfo = calcBasis(blockCoord, h0);
 
 					if (basisInfo.basis <= 0.0_f) {
 						// TODO: is there a reason we don't just default to air as 0/{}? Do we need BlockId::None?
@@ -251,7 +257,7 @@ namespace Game::Terrain {
 					}
 					biomeId = basisInfo.id;
 				} else {
-					biomeId = maxBiomeWeight(calcBiome(blockCoord)).id;
+					biomeId = maxBiomeWeight(blendStore.at(chunkIndex)).id;
 				}
 
 				const auto func = BIOME_GET_DISPATCH(stage, biomeId);
@@ -288,26 +294,5 @@ namespace Game::Terrain {
 		BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
 		const auto getBasis = BIOME_GET_DISPATCH(getBasis, id);
 		return getBasis(biomes, blockCoord, layerBiomeHeight);
-	}
-
-	template<class... Biomes>
-	BiomeBlend Generator<Biomes...>::calcBiomeBlend(BlockVec blockCoord, const BlockUnit h0) {
-		const auto chunkCoord = blockToChunk(blockCoord);
-		const auto& chunk = layerBiomeWeights.get(chunkCoord);
-		return chunk.at(blockToChunkIndex(blockCoord, chunkCoord));
-	}
-	
-	template<class... Biomes>
-	BiomeBlend Generator<Biomes...>::calcBiome(BlockVec blockCoord, const BlockUnit h0) {
-		const auto chunkCoord = blockToChunk(blockCoord);
-		const auto& chunk = layerBiomeBlended.get(chunkCoord);
-		return chunk.at(blockToChunkIndex(blockCoord, chunkCoord));
-	}
-
-	template<class... Biomes>
-	BasisInfo Generator<Biomes...>::calcBasis(const BlockVec blockCoord, const BlockUnit h0) {
-		const auto chunkCoord = blockToChunk(blockCoord);
-		const auto& chunk = layerBiomeBasis.get(chunkCoord);
-		return chunk.at(blockToChunkIndex(blockCoord, chunkCoord));
 	}
 }

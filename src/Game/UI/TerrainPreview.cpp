@@ -38,13 +38,8 @@ namespace {
 	class TerrainDragArea : public EUI::ImageDisplay {
 		public:
 			BlockVec offset = {81776, -227};
-			//BlockVec offset = {82963, -94}; // z = 0.5
-			//BlockVec offset = {77967.0, 0.0};
-			//BlockVec offset = {-127, -69};
-
 			float64 zoom = 1.5; // Larger # = farther out = see more = larger FoV
 			//float64 zoom = 7.35f; // Larger # = farther out = see more = larger FoV
-			//Layer mode = Layer::TerrainBasis;
 			Layer mode = Layer::Blocks;
 			Float minBasis = FLT_MAX;
 			Float maxBasis = -FLT_MAX;
@@ -147,6 +142,9 @@ namespace {
 						// zoom < 1 due to float precision.
 						const auto h0 = h0Cache.get(std::min(h0Cache.getMaxBlock() - 1, blockCoord.x));
 
+						const auto chunkCoord = blockToChunk(blockCoord);
+						const auto chunkIndex = blockToChunkIndex(blockCoord, chunkCoord);
+
 						if (mode == Layer::BiomeBaseGrid) {
 							// This won't line up 100% because we don't include the height offset (see
 							// BiomeRawWeights), but that's the point. Showing the undistorted biome grid.
@@ -162,28 +160,28 @@ namespace {
 							const auto info = generator.layerBiomeRaw.get(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
-							auto weights = generator.calcBiomeBlend(blockCoord, h0).weights;
+							auto weights = generator.layerBiomeWeights.get(chunkCoord).at(chunkIndex).weights;
 							normalizeBiomeWeights(weights);
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::BiomeFinalWeights) {
-							const auto weights = generator.calcBiome(blockCoord, h0).weights;
+							const auto weights = generator.layerBiomeBlended.get(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biomeToColor[biome.id];
 						} else if (mode == Layer::BiomeFinalWeightsFull) {
-							const auto weights = generator.calcBiome(blockCoord, h0).weights;
+							const auto weights = generator.layerBiomeBlended.get(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::TerrainHeight0) {
-							const auto weights = generator.calcBiome(blockCoord, h0).weights;
+							const auto weights = generator.layerBiomeBlended.get(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainHeight2) {
 							const auto h2 = generator.layerBiomeHeight.cache.cache.get(blockCoord.x);
-							const auto basisInfo = generator.calcBasis(blockCoord, h0);
+							const auto basisInfo = generator.layerBiomeBasis.get(chunkCoord).at(chunkIndex);
 							data[idx] = blockCoord.y <= h2 ? glm::u8vec3(basisInfo.weight * glm::vec3(biomeToColor[basisInfo.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainBasis) {
-							const auto basisInfo = generator.calcBasis(blockCoord, h0);
+							const auto basisInfo = generator.layerBiomeBasis.get(chunkCoord).at(chunkIndex);
 							minBasis = std::min(minBasis, basisInfo.basis);
 							maxBasis = std::max(maxBasis, basisInfo.basis);
 
@@ -191,7 +189,6 @@ namespace {
 							const auto scale = (basisInfo.basis - minBasis) / range;
 							data[idx] = scale * glm::vec3(biomeToColor[basisInfo.id]);
 						} else if (mode == Layer::Blocks) {
-							const auto chunkCoord = blockToChunk(blockCoord);
 							const auto regionCoord = chunkToRegion(chunkCoord);
 							auto& region = terrain.getRegion({realmId, regionCoord});
 
@@ -200,9 +197,9 @@ namespace {
 							ENGINE_DEBUG_ASSERT(blockCoord.y >= offset.y);
 
 							// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
-							const auto chunkIndex = chunkToRegionIndex(chunkCoord, regionCoord);
-							auto& chunk = region.chunks[chunkIndex.x][chunkIndex.y];
-							ENGINE_DEBUG_ASSERT(region.stages[chunkIndex.x][chunkIndex.y] == generator.totalStages, "Chunk is at incorrect stage.");
+							const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
+							auto& chunk = region.chunks[regionIndex.x][regionIndex.y];
+							ENGINE_DEBUG_ASSERT(region.stages[regionIndex.x][regionIndex.y] == generator.totalStages, "Chunk is at incorrect stage.");
 
 							const auto blockIndex = blockToChunkIndex(blockCoord, chunkCoord);
 							ENGINE_DEBUG_ASSERT(blockIndex.x >= 0 && blockIndex.x < chunkSize.x, "Invalid chunk index.");
