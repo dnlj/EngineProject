@@ -32,6 +32,7 @@
 #include <Game/Terrain/Layer/BiomeBlended.hpp>
 #include <Game/Terrain/Layer/BiomeHeight.hpp>
 #include <Game/Terrain/Layer/BiomeBasis.hpp>
+#include <Game/Terrain/Layer/BiomeBlock.hpp>
 
 
 namespace Game::Terrain {
@@ -73,7 +74,8 @@ namespace Game::Terrain {
 				Layer::BiomeWeights,
 				Layer::BiomeBlended,
 				Layer::BiomeHeight,
-				Layer::BiomeBasis
+				Layer::BiomeBasis,
+				Layer::BiomeBlock
 			>;
 
 			Layers layers;
@@ -89,6 +91,7 @@ namespace Game::Terrain {
 			Layer::BiomeBlended& layerBiomeBlended = std::get<Layer::BiomeBlended>(layers);
 			Layer::BiomeHeight& layerBiomeHeight = std::get<Layer::BiomeHeight>(layers);
 			Layer::BiomeBasis& layerBiomeBasis = std::get<Layer::BiomeBasis>(layers);
+			Layer::BiomeBlock& layerBiomeBlock = std::get<Layer::BiomeBlock>(layers);
 
 			// TODO: private
 			template<class Layer>
@@ -145,6 +148,7 @@ namespace Game::Terrain {
 			Float rm_getHeight1(const BiomeId id, const BlockUnit blockCoordX, const Float h0, const BiomeRawInfo2& rawInfo, const Float biomeWeight) const;
 			Float rm_getBasisStrength(const BiomeId id, const BlockVec blockCoord) const;
 			Float rm_getBasis(const BiomeId id, const BlockVec blockCoord) const;
+			BlockId rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const;
 
 		private:
 			std::tuple<Biomes...> biomes{};
@@ -167,6 +171,7 @@ namespace Game::Terrain {
 					Layer::BiomeBlended{},
 					Layer::BiomeHeight{},
 					Layer::BiomeBasis{},
+					Layer::BiomeBlock{},
 				} {
 				// Arbitrary size, seems like a reasonable default.
 				requestScopes.resize(4);
@@ -225,13 +230,7 @@ namespace Game::Terrain {
 				const ::Game::Terrain::StructureInfo& info
 
 			#define TERRAIN_STAGE_ARGS \
-				::Game::Terrain::Terrain& terrain, \
-				const ::Game::ChunkVec chunkCoord, \
 				const ::Game::BlockVec blockCoord, \
-				const ::Game::BlockVec blockIndex, \
-				::Game::Terrain::Chunk& chunk, \
-				const ::Game::Terrain::BiomeId biomeId, \
-				const ::Game::BlockUnit h0, \
 				const ::Game::Terrain::BasisInfo& basisInfo
 
 			template<StageId CurrentStage, class Biome>

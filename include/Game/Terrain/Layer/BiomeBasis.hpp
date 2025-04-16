@@ -13,7 +13,7 @@ namespace Game::Terrain::Layer {
 			using Index = ChunkVec;
 
 		private:
-			ChunkAreaCache<BasisInfo> cache;
+			ChunkCache<BasisInfo> cache;
 
 		public:
 			void request(const Range area, TestGenerator& generator);

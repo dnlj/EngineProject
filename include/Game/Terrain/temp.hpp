@@ -135,25 +135,28 @@ namespace Game::Terrain::Layer {
 			}
 	};
 
-	template<class T>
-	class ChunkAreaCache {
+	/**
+	 * Store chunk data grouped at the region level.
+	 */
+	template<class ChunkData>
+	class RegionCache {
 		private:
-			using Store = RegionStore<ChunkStore<T>>;
+			using Store = RegionStore<ChunkData>;
 			Engine::FlatHashMap<RegionVec, std::unique_ptr<Store>> regions;
 
 		public:
-			ChunkAreaCache() = default;
-			ChunkAreaCache(ChunkAreaCache&&) = default;
-			ChunkAreaCache(const ChunkAreaCache&) = delete;
+			RegionCache() = default;
+			RegionCache(RegionCache&&) = default;
+			RegionCache(const RegionCache&) = delete;
 
 			ENGINE_INLINE Store& at(RegionVec regionCoord) noexcept {
 				const auto found = regions.find(regionCoord);
-				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access region outside of ChunkAreaCache.");
+				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access region outside of RegionCache.");
 				return *found->second;
 			}
 
 			ENGINE_INLINE const Store& at(RegionVec regionCoord) const noexcept {
-				return const_cast<ChunkAreaCache*>(this)->at(regionCoord);
+				return const_cast<RegionCache*>(this)->at(regionCoord);
 			}
 
 			ENGINE_INLINE void reserve(RegionVec regionCoord) noexcept {
@@ -180,13 +183,19 @@ namespace Game::Terrain::Layer {
 
 						if (!regionStore.isPopulated(regionIndex)) {
 							regionStore.setPopulated(regionIndex);
-							auto& chunkStore = regionStore.at(regionIndex);
-							func(chunkCoord, chunkStore);
+							auto& chunkData = regionStore.at(regionIndex);
+							func(chunkCoord, chunkData);
 						}
 					}
 				}
 			}
 	};
+
+	/**
+	 * Caches block data grouped at the chunk level.
+	 */
+	template<class BlockData>
+	class ChunkCache : public RegionCache<ChunkStore<BlockData>> {};
 
 
 	// TODO: Doc, caches value for every block in a span. In increments of chunks. This is

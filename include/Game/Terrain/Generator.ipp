@@ -80,9 +80,8 @@ namespace Game::Terrain {
 		//       indicate the caller is treating the request upper bound as inclusive
 		//       wrather than exclusive? I don't think it should be needed to add anything
 		//       here.
-		//this->request<Layer::BiomeBlended>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
 		this->request<Layer::BiomeHeight>({request.minChunkCoord.x, request.maxChunkCoord.x + 1});
-		this->request<Layer::BiomeBasis>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
+		this->request<Layer::BiomeBlock>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
 		generateLayers();
 
 		// TODO: Shrink request based on current stage of chunks. If all chunks, a row, or
@@ -227,44 +226,14 @@ namespace Game::Terrain {
 			}
 		}
 
-		// TODO: Find a better solution. This is currently a hack as it isn't populated by
-		//       any stage other than the first. We either need to split the first stage
-		//       to have its own args or cache the biome info per generate call? Since we
-		//       don't need it currently in any of the following stages I'm leaning toward
-		//       the first?
-		// 
-		//       The above is still correct. Info has been moved into the loop, but still
-		//       only _needed_ by the first. The layer architecture should help with this.
-		//BasisInfo basisInfo{};
+		// TODO: rm - sanity check while transition to layers.
+		static_assert(CurrentStage == 1);
 
 		// For each block in the chunk.
-		const auto& basisStore = layerBiomeBasis.get(chunkCoord);
+		const auto chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
-			const auto h0 = layerWorldBaseHeight.get(min.x + x);
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
-				const auto chunkIndex = BlockVec{x, y};
-				const auto blockCoord = min + chunkIndex;
-				const auto basisInfo = basisStore.at(chunkIndex);
-				BiomeId biomeId;
-
-				// Generate basis only on the first stage
-				if constexpr (CurrentStage == 1) {
-
-					if (basisInfo.basis <= 0.0_f) {
-						// TODO: is there a reason we don't just default to air as 0/{}? Do we need BlockId::None?
-						chunk.data[x][y] = BlockId::Air;
-						continue;
-					}
-					biomeId = basisInfo.id;
-				} else {
-					biomeId = maxBiomeWeight(blendStore.at(chunkIndex)).id;
-				}
-
-				const auto func = BIOME_GET_DISPATCH(stage, biomeId);
-				if (func) {
-					const auto blockId = func(biomes, terrain, chunkCoord, blockCoord, {x, y}, chunk, biomeId, h0, basisInfo);
-					chunk.data[x][y] = blockId;
-				}
+				chunk.data[x][y] = chunkBiomeBlock.data[x][y];
 			}
 		}
 	}
@@ -294,5 +263,12 @@ namespace Game::Terrain {
 		BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
 		const auto getBasis = BIOME_GET_DISPATCH(getBasis, id);
 		return getBasis(biomes, blockCoord, layerBiomeHeight);
+	}
+
+	template<class... Biomes>
+	BlockId Generator<Biomes...>::rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const {
+		BIOME_GEN_DISPATCH_T(stage, stage<1>, BlockId, TERRAIN_STAGE_ARGS);
+		const auto getStage = BIOME_GET_DISPATCH(stage, id);
+		return getStage(biomes, blockCoord, basisInfo);
 	}
 }
