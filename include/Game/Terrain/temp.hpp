@@ -406,7 +406,6 @@ namespace Game::Terrain {
 			uint32 id;
 
 		//protected:
-			bool generate = true;
 			BiomeId biomeId = {};
 	};
 
@@ -489,8 +488,6 @@ namespace Game::Terrain {
 			/** The current stage of each chunk. Stage zero is uninitialized. */
 			StageId stages[regionSize.x][regionSize.y]{};
 
-			BiomeId biomes[biomesPerRegion.x][biomesPerRegion.y]{};
-
 			// TODO: These are currently never used/generated. Waiting on MapSystem integration.
 			//
 			// TODO: What about non-block entities? Currently no use case so no point in supporting.
@@ -514,32 +511,6 @@ namespace Game::Terrain {
 
 			ENGINE_INLINE constexpr ChunkEntities& entitiesAt(RegionIdx regionIdx) noexcept { return entities[regionIdx.x][regionIdx.y]; }
 			ENGINE_INLINE constexpr const ChunkEntities& entitiesAt(RegionIdx regionIdx) const noexcept { return entities[regionIdx.x][regionIdx.y]; }
-
-			//ENGINE_INLINE constexpr BiomeId& biomeAt(RegionBiomeIdx regionBiomeIdx) noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
-			//ENGINE_INLINE constexpr BiomeId biomeAt(RegionBiomeIdx regionBiomeIdx) const noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
-
-			/**
-			 * Get a unique list of the biome in each corner of this chunk. Used for
-			 * during generation. At generation time checking each corner should yield a
-			 * unique list of all biomes in this chunk so long as the minimum biome size
-			 * is greater than or equal to the chunk size.
-			 */
-			Engine::StaticVector<BiomeId, 4> getUniqueBiomesApprox(const RegionIdx regionIdx) const noexcept {
-				Engine::StaticVector<BiomeId, 4> results;
-			
-				const auto maybeAdd = [&](BiomeId id) ENGINE_INLINE {
-					if (!std::ranges::contains(results, id))  { results.push_back(id); }
-				};
-
-				const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
-				constexpr static auto off = biomesPerChunk - 1;
-				maybeAdd(biomes[regionBiomeIdx.x][regionBiomeIdx.y]);
-				maybeAdd(biomes[regionBiomeIdx.x][regionBiomeIdx.y + off]);
-				maybeAdd(biomes[regionBiomeIdx.x + off][regionBiomeIdx.y]);
-				maybeAdd(biomes[regionBiomeIdx.x + off][regionBiomeIdx.y + off]);
-			
-				return results;
-			}
 	};
 
 	class Terrain {

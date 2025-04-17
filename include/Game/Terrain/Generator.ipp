@@ -83,8 +83,10 @@ namespace Game::Terrain {
 		const Layer::ChunkArea chunkArea = {request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}};
 		this->request<Layer::BiomeHeight>({request.minChunkCoord.x, request.maxChunkCoord.x + 1});
 		this->request<Layer::BiomeBlock>(chunkArea);
-		this->request<Layer::BiomeStructureInfo>(chunkArea);
+		this->request<Layer::BiomeStructures>(chunkArea);
 		generateLayers();
+
+		static_assert(totalStages == 1); // TODO: rm - Sanity check during layer transition
 
 		// TODO: Shrink request based on current stage of chunks. If all chunks, a row, or
 		//       a column are already at the final stage we can shrink/skip the request.
@@ -107,54 +109,7 @@ namespace Game::Terrain {
 			});
 		});
 
-		BIOME_GEN_DISPATCH(genLandmarks, void, TERRAIN_GEN_LANDMARKS_ARGS);
-
-		static_assert(totalStages == 1); // TODO: rm - Sanity check during layer transition
-		// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial structure.
-		
-		// TODO: How do we want to resolve conflicts? If we just go first come first serve
-		//       then a spatial  structure isn't needed, you could just check when
-		//       inserting. If its not FCFS then we need to keep all boxes and resolve at
-		//       the end or else you might over-cull. For example say you have a large
-		//       structure that later gets removed by a higher priority small structure.
-		//       Since the large structure is now removed there could be other structures
-		//       which are now valid since the larger structure no longer exists and
-		//       doesn't collide.
-
-		//
-		//
-		// TODO: Cull overlaps
-		//
-		//
-		//if (!structures.empty()) {
-		//	auto cur = structures.begin();
-		//	const auto end = structures.end() - 1;
-		//
-		//	while (cur != end) {
-		//		const auto next = cur + 1;
-		//		while
-		//	}
-		//}
-
-		// TODO: Theoretically a structure could overlap into unloaded/unfinished chunks.
-		//       Don't we need to check and then generate those chunks here? Post culling.
-		//       Or add some extra buffer to the initial request based on the largest known structure. <-- Easiest, but worse perf.
-		//       
-		//       Maybe at this point we could issue additional generation requests to generate
-		//       those needed chunks. This is probably be the best option, but we need to add a
-		//       way to generate those structs up to hte block stage and then not to structs.
-		//       Right now we already store the stage so we just need to add a stage for structs
-		//       and that should be fairly doable.
-
-		std::vector<StructureInfo> structures;
-		layerBiomeStructureInfo.get(chunkArea, *this, structures);
-		for (const auto& structInfo : structures) {
-			if (structInfo.generate) {
-				const auto func = BIOME_GET_DISPATCH(genLandmarks, structInfo.biomeId);
-				ENGINE_DEBUG_ASSERT(func, "Attempting to generate landmark in biome that does not support them.");
-				func(biomes, terrain, request.realmId, structInfo);
-			}
-		}
+		layerBiomeStructures.get(chunkArea, *this, request.realmId, terrain);
 	}
 
 	template<class... Biomes>
@@ -178,34 +133,8 @@ namespace Game::Terrain {
 	template<class... Biomes>
 	template<StageId CurrentStage>
 	void Generator<Biomes...>::generateChunk(Terrain& terrain, Region& region, const RegionIdx regionIdx, const ChunkVec chunkCoord, Chunk& chunk) {
-		// TODO: finish comment
-		// We need to do the biome stages this way (via func ptr) because of the
-		// artificial limitation C++ imposes that no template function, _including fully
-		// specialized template functions_, cannot be virtual. Since they can't be
-		// specialized and virtual we have no way to pass the current stage other than to
-		// resolve it at runtime, which would involve at minimum an additional ptr chase
-		// and two indexes from the vtable and stage resolution. We know... TODO: fin
-		BIOME_GEN_DISPATCH_T(stage, stage<CurrentStage>, BlockId, TERRAIN_STAGE_ARGS);
-
-		const auto min = chunkToBlock(chunkCoord);
-		const auto max = min + chunkSize;
-		const auto& blendStore = layerBiomeBlended.get(chunkCoord);
-
-		// Populate biomes in chunk.
-		// TODO: We may want a temporary block granularity biome lookup for structure and decoration generation.
-		//       I think there is probably other temp info we would want only during generation also, h0, h1, biome, etc.
-		static_assert(CurrentStage != 0, "Stage zero means no generation. This is a bug.");
-		if constexpr (CurrentStage == 1) {
-			const auto regionBiomeIdx = regionIdxToRegionBiomeIdx(regionIdx);
-			for (RegionBiomeUnit x = 0; x < biomesPerChunk; ++x) {
-				for (RegionBiomeUnit y = 0; y < biomesPerChunk; ++y) {
-					const auto chunkIndex = BlockVec{x, y} * biomesPerChunk;
-					region.biomes[regionBiomeIdx.x + x][regionBiomeIdx.y + y] = maxBiomeWeight(blendStore.at(chunkIndex).weights).id;
-				}
-			}
-		}
-
 		// TODO: rm - sanity check while transition to layers.
+		static_assert(CurrentStage != 0, "Stage zero means no generation. This is a bug.");
 		static_assert(CurrentStage == 1);
 
 		// For each block in the chunk.
@@ -254,12 +183,20 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	void Generator<Biomes...>::rm_getStructures(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter) {
+	void Generator<Biomes...>::rm_getStructureInfo(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter) {
 		BIOME_GEN_DISPATCH(getLandmarks, void, TERRAIN_GET_LANDMARKS_ARGS);
 		const auto func = BIOME_GET_DISPATCH(getLandmarks, id);
 
 		if (func) {
 			(*func)(biomes, chunkCoord, layerBiomeHeight.cache.cache, inserter);
 		}
+	}
+
+	template<class... Biomes>
+	void Generator<Biomes...>::rm_getStructures(const StructureInfo& info, const RealmId realmId, Terrain& terrain) {
+		BIOME_GEN_DISPATCH(genLandmarks, void, TERRAIN_GEN_LANDMARKS_ARGS);
+		const auto func = BIOME_GET_DISPATCH(genLandmarks, info.biomeId);
+		ENGINE_DEBUG_ASSERT(func, "Attempting to generate landmark in biome that does not support them.");
+		func(biomes, terrain, realmId, info);
 	}
 }

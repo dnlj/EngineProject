@@ -34,6 +34,7 @@
 #include <Game/Terrain/Layer/BiomeBasis.hpp>
 #include <Game/Terrain/Layer/BiomeBlock.hpp>
 #include <Game/Terrain/Layer/BiomeStructureInfo.hpp>
+#include <Game/Terrain/Layer/BiomeStructures.hpp>
 
 
 namespace Game::Terrain {
@@ -75,7 +76,8 @@ namespace Game::Terrain {
 				Layer::BiomeHeight,
 				Layer::BiomeBasis,
 				Layer::BiomeBlock,
-				Layer::BiomeStructureInfo
+				Layer::BiomeStructureInfo,
+				Layer::BiomeStructures
 			>;
 
 			Layers layers;
@@ -93,6 +95,7 @@ namespace Game::Terrain {
 			Layer::BiomeBasis& layerBiomeBasis = std::get<Layer::BiomeBasis>(layers);
 			Layer::BiomeBlock& layerBiomeBlock = std::get<Layer::BiomeBlock>(layers);
 			Layer::BiomeStructureInfo& layerBiomeStructureInfo = std::get<Layer::BiomeStructureInfo>(layers);
+			Layer::BiomeStructures& layerBiomeStructures = std::get<Layer::BiomeStructures>(layers);
 
 			// TODO: private
 			template<class Layer>
@@ -150,7 +153,8 @@ namespace Game::Terrain {
 			Float rm_getBasisStrength(const BiomeId id, const BlockVec blockCoord) const;
 			Float rm_getBasis(const BiomeId id, const BlockVec blockCoord) const;
 			BlockId rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const;
-			void rm_getStructures(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter);
+			void rm_getStructureInfo(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter);
+			void rm_getStructures(const StructureInfo& info, const RealmId realmId, Terrain& terrain);
 
 		private:
 			std::tuple<Biomes...> biomes{};
@@ -175,6 +179,7 @@ namespace Game::Terrain {
 					Layer::BiomeBasis{},
 					Layer::BiomeBlock{},
 					Layer::BiomeStructureInfo{},
+					Layer::BiomeStructures{},
 				} {
 				// Arbitrary size, seems like a reasonable default.
 				requestScopes.resize(4);

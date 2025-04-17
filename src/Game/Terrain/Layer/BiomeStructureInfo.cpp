@@ -54,7 +54,7 @@ namespace Game::Terrain::Layer {
 
 		for (auto const& biomeId : biomes) {
 			const auto before = structures.size();
-			generator.rm_getStructures(biomeId, chunkCoord, std::back_inserter(structures));
+			generator.rm_getStructureInfo(biomeId, chunkCoord, std::back_inserter(structures));
 			// TODO: could this be done with a custom back_inserter instead of an extra loop after the fact?
 			const auto after = structures.size();
 			if (after != before) {
