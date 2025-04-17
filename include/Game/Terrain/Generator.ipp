@@ -80,8 +80,10 @@ namespace Game::Terrain {
 		//       indicate the caller is treating the request upper bound as inclusive
 		//       wrather than exclusive? I don't think it should be needed to add anything
 		//       here.
+		const Layer::ChunkArea chunkArea = {request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}};
 		this->request<Layer::BiomeHeight>({request.minChunkCoord.x, request.maxChunkCoord.x + 1});
-		this->request<Layer::BiomeBlock>({request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}});
+		this->request<Layer::BiomeBlock>(chunkArea);
+		this->request<Layer::BiomeStructureInfo>(chunkArea);
 		generateLayers();
 
 		// TODO: Shrink request based on current stage of chunks. If all chunks, a row, or
@@ -105,34 +107,9 @@ namespace Game::Terrain {
 			});
 		});
 
-		BIOME_GEN_DISPATCH(getLandmarks, void, TERRAIN_GET_LANDMARKS_ARGS);
 		BIOME_GEN_DISPATCH(genLandmarks, void, TERRAIN_GEN_LANDMARKS_ARGS);
 
-		std::vector<StructureInfo> structures;
-		forEachChunkAtStage<totalStages>(terrain, request, [&](Region& region, const UniversalRegionCoord& regionCoord, const RegionIdx& regionIdx, const ChunkVec& chunkCoord) ENGINE_INLINE_REL {
-			for (auto const& biomeId : region.getUniqueBiomesApprox(regionIdx)) {
-				const auto before = structures.size();
-				const auto func = BIOME_GET_DISPATCH(getLandmarks, biomeId);
-
-				if (func) {
-					auto const& chunk = region.chunkAt(regionIdx);
-					(*func)(biomes, terrain, regionCoord, regionIdx, chunkCoord, chunk, /*h0Cache,*/ layerBiomeHeight.cache.cache, std::back_inserter(structures));
-				}
-
-				// TODO: could this be done with a custom back_inserter instead of an extra loop after the fact?
-				const auto after = structures.size();
-				if (after != before) {
-					for (auto i = before; i < after; ++i) {
-						auto& info = structures[i];
-						ENGINE_DEBUG_ASSERT(info.min.x <= info.max.x);
-						ENGINE_DEBUG_ASSERT(info.min.y <= info.max.y);
-						info.biomeId = biomeId;
-						info.realmId = request.realmId;
-					}
-				}
-			}
-		});
-
+		static_assert(totalStages == 1); // TODO: rm - Sanity check during layer transition
 		// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial structure.
 		
 		// TODO: How do we want to resolve conflicts? If we just go first come first serve
@@ -169,11 +146,13 @@ namespace Game::Terrain {
 		//       Right now we already store the stage so we just need to add a stage for structs
 		//       and that should be fairly doable.
 
+		std::vector<StructureInfo> structures;
+		layerBiomeStructureInfo.get(chunkArea, *this, structures);
 		for (const auto& structInfo : structures) {
 			if (structInfo.generate) {
 				const auto func = BIOME_GET_DISPATCH(genLandmarks, structInfo.biomeId);
 				ENGINE_DEBUG_ASSERT(func, "Attempting to generate landmark in biome that does not support them.");
-				func(biomes, terrain, structInfo);
+				func(biomes, terrain, request.realmId, structInfo);
 			}
 		}
 	}
@@ -230,6 +209,8 @@ namespace Game::Terrain {
 		static_assert(CurrentStage == 1);
 
 		// For each block in the chunk.
+		// TODO: Once layers are done this loop should go away. Can just acecss the
+		//       layerBiomeBlock directly.
 		const auto chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
 		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
 			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
@@ -270,5 +251,15 @@ namespace Game::Terrain {
 		BIOME_GEN_DISPATCH_T(stage, stage<1>, BlockId, TERRAIN_STAGE_ARGS);
 		const auto getStage = BIOME_GET_DISPATCH(stage, id);
 		return getStage(biomes, blockCoord, basisInfo);
+	}
+
+	template<class... Biomes>
+	void Generator<Biomes...>::rm_getStructures(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter) {
+		BIOME_GEN_DISPATCH(getLandmarks, void, TERRAIN_GET_LANDMARKS_ARGS);
+		const auto func = BIOME_GET_DISPATCH(getLandmarks, id);
+
+		if (func) {
+			(*func)(biomes, chunkCoord, layerBiomeHeight.cache.cache, inserter);
+		}
 	}
 }

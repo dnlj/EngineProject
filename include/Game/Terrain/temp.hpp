@@ -63,6 +63,8 @@ namespace Game::Terrain::Layer {
 	template<class...>
 	class DependsOn{};
 
+	// TODO: Make a generic Area<T> with iterator based access. Iterator based access
+	//       would be useful in most biome layers to replace manual bounded for loops.
 	class ChunkArea {
 		public:
 			ChunkVec min; // Inclusive
@@ -405,7 +407,6 @@ namespace Game::Terrain {
 
 		//protected:
 			bool generate = true;
-			RealmId realmId = {};
 			BiomeId biomeId = {};
 	};
 
@@ -514,8 +515,8 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr ChunkEntities& entitiesAt(RegionIdx regionIdx) noexcept { return entities[regionIdx.x][regionIdx.y]; }
 			ENGINE_INLINE constexpr const ChunkEntities& entitiesAt(RegionIdx regionIdx) const noexcept { return entities[regionIdx.x][regionIdx.y]; }
 
-			ENGINE_INLINE constexpr BiomeId& biomeAt(RegionBiomeIdx regionBiomeIdx) noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
-			ENGINE_INLINE constexpr BiomeId biomeAt(RegionBiomeIdx regionBiomeIdx) const noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
+			//ENGINE_INLINE constexpr BiomeId& biomeAt(RegionBiomeIdx regionBiomeIdx) noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
+			//ENGINE_INLINE constexpr BiomeId biomeAt(RegionBiomeIdx regionBiomeIdx) const noexcept { return biomes[regionBiomeIdx.x][regionBiomeIdx.y]; }
 
 			/**
 			 * Get a unique list of the biome in each corner of this chunk. Used for

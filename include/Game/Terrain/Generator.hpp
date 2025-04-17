@@ -33,11 +33,10 @@
 #include <Game/Terrain/Layer/BiomeHeight.hpp>
 #include <Game/Terrain/Layer/BiomeBasis.hpp>
 #include <Game/Terrain/Layer/BiomeBlock.hpp>
+#include <Game/Terrain/Layer/BiomeStructureInfo.hpp>
 
 
 namespace Game::Terrain {
-	
-
 	template<class LayersSet>
 	class Requests;
 
@@ -75,7 +74,8 @@ namespace Game::Terrain {
 				Layer::BiomeBlended,
 				Layer::BiomeHeight,
 				Layer::BiomeBasis,
-				Layer::BiomeBlock
+				Layer::BiomeBlock,
+				Layer::BiomeStructureInfo
 			>;
 
 			Layers layers;
@@ -92,6 +92,7 @@ namespace Game::Terrain {
 			Layer::BiomeHeight& layerBiomeHeight = std::get<Layer::BiomeHeight>(layers);
 			Layer::BiomeBasis& layerBiomeBasis = std::get<Layer::BiomeBasis>(layers);
 			Layer::BiomeBlock& layerBiomeBlock = std::get<Layer::BiomeBlock>(layers);
+			Layer::BiomeStructureInfo& layerBiomeStructureInfo = std::get<Layer::BiomeStructureInfo>(layers);
 
 			// TODO: private
 			template<class Layer>
@@ -149,6 +150,7 @@ namespace Game::Terrain {
 			Float rm_getBasisStrength(const BiomeId id, const BlockVec blockCoord) const;
 			Float rm_getBasis(const BiomeId id, const BlockVec blockCoord) const;
 			BlockId rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const;
+			void rm_getStructures(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter);
 
 		private:
 			std::tuple<Biomes...> biomes{};
@@ -172,6 +174,7 @@ namespace Game::Terrain {
 					Layer::BiomeHeight{},
 					Layer::BiomeBasis{},
 					Layer::BiomeBlock{},
+					Layer::BiomeStructureInfo{},
 				} {
 				// Arbitrary size, seems like a reasonable default.
 				requestScopes.resize(4);
@@ -198,7 +201,6 @@ namespace Game::Terrain {
 				const ::Game::BlockVec blockCoord 
 
 			// TODO: Add assert in constructor that checks the Y-independence in constructor.
-			// NOTE: Height functions should be Y-independent.
 			#define TERRAIN_GET_HEIGHT_ARGS \
 				const ::Game::BlockUnit blockCoordX, \
 				const ::Game::Terrain::Float h0, \
@@ -210,11 +212,7 @@ namespace Game::Terrain {
 				const ::Game::Terrain::Layer::BiomeHeight& layerBiomeHeight
 
 			#define TERRAIN_GET_LANDMARKS_ARGS \
-				::Game::Terrain::Terrain& terrain, \
-				const ::Game::UniversalRegionCoord& regionCoord, \
-				const ::Game::RegionIdx& regionIdx, \
 				const ::Game::ChunkVec& chunkCoord, \
-				const ::Game::Terrain::Chunk& chunk, \
 				const ::Game::Terrain::HeightCache& h2Cache, \
 				std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 
@@ -227,6 +225,7 @@ namespace Game::Terrain {
 			//       entities such as mobs.
 			#define TERRAIN_GEN_LANDMARKS_ARGS \
 				::Game::Terrain::Terrain& terrain, \
+				::Game::RealmId realmId, \
 				const ::Game::Terrain::StructureInfo& info
 
 			#define TERRAIN_STAGE_ARGS \

@@ -169,7 +169,7 @@ namespace Game::Terrain {
 			for (auto blockCoord = info.min; blockCoord.x < info.max.x; ++blockCoord.x) {
 				for (blockCoord.y = info.min.y; blockCoord.y < info.max.y; ++blockCoord.y) {
 					const auto chunkCoord = blockToChunk(blockCoord);
-					const UniversalRegionCoord regionCoord = {info.realmId, chunkToRegion(chunkCoord)};
+					const UniversalRegionCoord regionCoord = {realmId, chunkToRegion(chunkCoord)};
 					auto& region = terrain.getRegion(regionCoord);
 					const auto regionIdx = chunkToRegionIndex(chunkCoord);
 					auto& chunk = region.chunks[regionIdx.x][regionIdx.y];
@@ -189,7 +189,7 @@ namespace Game::Terrain {
 
 			if (info.id == 0) {
 				const auto chunkCoord = blockToChunk(info.min);
-				const UniversalRegionCoord regionCoord = {info.realmId, chunkToRegion(chunkCoord)};
+				const UniversalRegionCoord regionCoord = {realmId, chunkToRegion(chunkCoord)};
 				auto& region = terrain.getRegion(regionCoord);
 				const auto regionIdx = chunkToRegionIndex(chunkCoord);
 				auto& ents = region.entitiesAt(regionIdx);
