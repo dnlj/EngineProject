@@ -58,7 +58,7 @@
 namespace Game::Terrain {
 	template<class... Biomes>
 	void Generator<Biomes...>::generate(Terrain& terrain, const Request& request) {
-		// TODO: add biome stages
+		// TODO: Move/redocument things in terms of layers once transition is done.
 		// - Generate stages.
 		//   - Stage 1, Stage 2, ..., Stage N.
 		// - Generate candidate features for all biomes in the request.
@@ -93,59 +93,43 @@ namespace Game::Terrain {
 
 		// Call generate for each stage. Each will expand the requestion chunk selection
 		// appropriately for the following stages.
-		Engine::Meta::ForEachInRange<totalStages>::call([&]<auto I>{
+		{
 			// +1 because stage zero = uninitialized, zero stages have been run yet.
-			constexpr static auto CurrentStage = I+1;
 
-			forEachChunkAtStage<CurrentStage>(terrain, request, [&](Region& region, const UniversalRegionCoord& regionCoord, const RegionIdx& regionIdx, const ChunkVec& chunkCoord) ENGINE_INLINE {
-				auto& stage = region.stages[regionIdx.x][regionIdx.y];
+			for (auto chunkCoord = request.minChunkCoord; chunkCoord.x <= request.maxChunkCoord.x; ++chunkCoord.x) {
+				for (chunkCoord.y = request.minChunkCoord.y; chunkCoord.y <= request.maxChunkCoord.y; ++chunkCoord.y) {
+					const auto regionCoord = chunkToRegion(chunkCoord);
+					auto& region = terrain.getRegion({request.realmId, regionCoord});
+					const auto regionIdx = chunkToRegionIndex(chunkCoord, regionCoord);
+					auto& stage = region.stages[regionIdx.x][regionIdx.y];
 				
-				if (stage < CurrentStage) {
-					ENGINE_DEBUG_ASSERT(stage == CurrentStage - 1);
-					generateChunk<CurrentStage>(terrain, region, regionIdx, chunkCoord, region.chunkAt(regionIdx));
-					//ENGINE_LOG2("Generate Chunk: {}", chunkCoord);
-					++stage;
+					constexpr static auto CurrentStage = 1;
+					if (stage < CurrentStage) {
+						ENGINE_DEBUG_ASSERT(stage == CurrentStage - 1);
+
+						{
+							static_assert(CurrentStage == 1);
+
+							// For each block in the chunk.
+							// TODO: Once layers are done this loop should go away. Can just acecss the
+							//       layerBiomeBlock directly.
+							const auto chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
+							auto& chunk = region.chunkAt(regionIdx);
+							for (BlockUnit x = 0; x < chunkSize.x; ++x) {
+								for (BlockUnit y = 0; y < chunkSize.y; ++y) {
+									chunk.data[x][y] = chunkBiomeBlock.data[x][y];
+								}
+							}
+						}
+
+						++stage;
+						ENGINE_DEBUG_ASSERT(stage == 1);
+					}
 				}
-			});
-		});
+			}
+		}
 
 		layerBiomeStructures.get(chunkArea, *this, request.realmId, terrain);
-	}
-
-	template<class... Biomes>
-	template<StageId CurrentStage, class Func>
-	void Generator<Biomes...>::forEachChunkAtStage(Terrain& terrain, const Request& request, Func&& func) {
-		constexpr ChunkUnit offset = totalStages - CurrentStage;
-		const auto min = request.minChunkCoord - offset;
-		const auto max = request.maxChunkCoord + offset;
-
-		// TODO: if we split request on region bounds we can avoid the repeated region lookup.
-		for (auto chunkCoord = min; chunkCoord.x <= max.x; ++chunkCoord.x) {
-			for (chunkCoord.y = min.y; chunkCoord.y <= max.y; ++chunkCoord.y) {
-				const UniversalRegionCoord regionCoord = {request.realmId, chunkToRegion(chunkCoord)};
-				auto& region = terrain.getRegion(regionCoord);
-				const auto regionIdx = chunkToRegionIndex(chunkCoord, regionCoord.pos);
-				func(region, regionCoord, regionIdx, chunkCoord);
-			}
-		}
-	}
-
-	template<class... Biomes>
-	template<StageId CurrentStage>
-	void Generator<Biomes...>::generateChunk(Terrain& terrain, Region& region, const RegionIdx regionIdx, const ChunkVec chunkCoord, Chunk& chunk) {
-		// TODO: rm - sanity check while transition to layers.
-		static_assert(CurrentStage != 0, "Stage zero means no generation. This is a bug.");
-		static_assert(CurrentStage == 1);
-
-		// For each block in the chunk.
-		// TODO: Once layers are done this loop should go away. Can just acecss the
-		//       layerBiomeBlock directly.
-		const auto chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
-		for (BlockUnit x = 0; x < chunkSize.x; ++x) {
-			for (BlockUnit y = 0; y < chunkSize.y; ++y) {
-				chunk.data[x][y] = chunkBiomeBlock.data[x][y];
-			}
-		}
 	}
 
 	template<class... Biomes>

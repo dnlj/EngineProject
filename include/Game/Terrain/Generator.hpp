@@ -67,7 +67,15 @@ namespace Game::Terrain {
 			//using FVec2 = glm::vec<2, Float>;
 
 		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
+			//
+			//
+			//
+			//
 			// TODO: static assert layer dependency order
+			//
+			//
+			//
+			//
 			using Layers = std::tuple<
 				Layer::WorldBaseHeight,
 				Layer::BiomeRaw,
@@ -108,7 +116,7 @@ namespace Game::Terrain {
 			template<class Layer>
 			ENGINE_INLINE void request(typename const Layer::Range range) {
 				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- request<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
-
+				ENGINE_DEBUG_ASSERT(!range.empty(), "Attempting to request empty layer range.");
 				requests<Layer>().push_back(range);
 				std::get<Layer>(layers).request(range, *this);
 			}
@@ -192,16 +200,6 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
 
 		private:
-			/**
-			 * Iterate over each chunk in the request.
-			 * The request will be automatically expanded to the correct size for the given stage.
-			 */
-			template<StageId CurrentStage, class Func>
-			ENGINE_INLINE void forEachChunkAtStage(Terrain& terrain, const Request& request, Func&& func);
-
-			// Use Float instead of BlockUnit for height in generator functions since all
-			// the generators work in floats and any values should be well within range.
-
 			#define TERRAIN_GET_BASIS_STRENGTH_ARGS \
 				const ::Game::BlockVec blockCoord 
 
@@ -236,12 +234,6 @@ namespace Game::Terrain {
 			#define TERRAIN_STAGE_ARGS \
 				const ::Game::BlockVec blockCoord, \
 				const ::Game::Terrain::BasisInfo& basisInfo
-
-			template<StageId CurrentStage, class Biome>
-			ENGINE_INLINE BlockId callStage(TERRAIN_STAGE_ARGS);
-
-			template<StageId CurrentStage>
-			void generateChunk(Terrain& terrain, Region& region, const RegionIdx regionIdx, const ChunkVec chunkCoord, Chunk& chunk);
 
 	};
 }

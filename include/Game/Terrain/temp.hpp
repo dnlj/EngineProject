@@ -69,12 +69,14 @@ namespace Game::Terrain::Layer {
 		public:
 			ChunkVec min; // Inclusive
 			ChunkVec max; // Exclusive
+			ENGINE_INLINE constexpr bool empty() const noexcept { return (min.x >= max.x) || (min.y >= max.y); }
 	};
 	
 	class ChunkSpanX {
 		public:
 			BlockUnit min; // Inclusive
 			BlockUnit max; // Exclusive
+			ENGINE_INLINE constexpr bool empty() const noexcept { return min >= max; }
 	};
 
 	// TODO: make all cache/store types uncopyable. These should be accessed by ref.
@@ -569,7 +571,7 @@ namespace Game::Terrain {
 
 			Chunk const& getChunk(const UniversalChunkCoord chunkCoord) const noexcept {
 				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
-				auto const regionCoord = chunkCoord.toRegion();
+				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());
 				return found->second->chunkAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
@@ -577,7 +579,7 @@ namespace Game::Terrain {
 
 			Chunk& getChunkMutable(const UniversalChunkCoord chunkCoord) noexcept {
 				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
-				auto const regionCoord = chunkCoord.toRegion();
+				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());
 				return found->second->chunkAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
@@ -585,7 +587,7 @@ namespace Game::Terrain {
 
 			const ChunkEntities& getEntities(const UniversalChunkCoord chunkCoord) const noexcept {
 				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
-				auto const regionCoord = chunkCoord.toRegion();
+				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());
 				return found->second->entitiesAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
@@ -593,7 +595,7 @@ namespace Game::Terrain {
 
 			ChunkEntities& getEntitiesMutable(const UniversalChunkCoord chunkCoord) noexcept {
 				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
-				auto const regionCoord = chunkCoord.toRegion();
+				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());
 				return found->second->entitiesAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
@@ -605,9 +607,9 @@ namespace Game::Terrain {
 			 * chunk will be created there.
 			 */
 			void forceAllocateChunk(const UniversalChunkCoord chunkCoord) noexcept {
-				auto const regionCoord = chunkCoord.toRegion();
+				const auto regionCoord = chunkCoord.toRegion();
 				auto& region = getRegion(regionCoord);
-				auto const idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);
+				const auto idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);
 
 				// TODO: What stage to use, see TODO in isChunkLoaded.
 				auto& stage = region.stages[idx.x][idx.y];

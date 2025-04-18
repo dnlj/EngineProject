@@ -178,8 +178,7 @@ namespace Game::Terrain {
 					ENGINE_DEBUG_ASSERT(chunkIdx.y >= 0 && chunkIdx.y < chunkSize.y);
 
 					// TODO: what is this debug4 check for?
-					if (chunk.data[chunkIdx.x][chunkIdx.y] != BlockId::Debug4)
-					{
+					if (chunk.data[chunkIdx.x][chunkIdx.y] != BlockId::Debug4) {
 						chunk.data[chunkIdx.x][chunkIdx.y] = info.id == 0 ? BlockId::Gold : BlockId::Grass;
 					}
 

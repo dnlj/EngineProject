@@ -19,8 +19,8 @@ namespace Game::Terrain::Layer {
 		generator.requestAwait<WorldBaseHeight>(area);
 
 		{
-			auto const blockMinX = area.min * blocksPerChunk;
-			auto const blockMaxX = area.max * blocksPerChunk;
+			const auto blockMinX = area.min * blocksPerChunk;
+			const auto blockMaxX = area.max * blocksPerChunk;
 			auto hMin = generator.get<WorldBaseHeight>(blockMinX);
 			auto hMax = hMin;
 			for (auto x = blockMinX + 1; x < blockMaxX; ++x) {
@@ -31,7 +31,7 @@ namespace Game::Terrain::Layer {
 
 			generator.request<BiomeBlended>({
 				.min = blockToChunk({blockMinX, hMin}),
-				.max = blockToChunk({blockMaxX, hMax}),
+				.max = blockToChunk({blockMaxX, hMax}) + ChunkVec{0, 1}, // Add one to get an _exlusive_ bound instead of inclusive.
 			});
 		}
 
