@@ -486,9 +486,7 @@ namespace Game::Terrain {
 		public:
 			/** Chunk data for each chunk in the region. */
 			Chunk chunks[regionSize.x][regionSize.y]{};
-
-			/** The current stage of each chunk. Stage zero is uninitialized. */
-			StageId stages[regionSize.x][regionSize.y]{};
+			bool populated[regionSize.x][regionSize.y]{};
 
 			// TODO: These are currently never used/generated. Waiting on MapSystem integration.
 			//
@@ -509,7 +507,7 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr Chunk& chunkAt(RegionIdx regionIdx) noexcept { return chunks[regionIdx.x][regionIdx.y]; }
 			ENGINE_INLINE constexpr const Chunk& chunkAt(RegionIdx regionIdx) const noexcept { return chunks[regionIdx.x][regionIdx.y]; }
 
-			ENGINE_INLINE constexpr StageId stageAt(RegionIdx regionIdx) const noexcept { return stages[regionIdx.x][regionIdx.y]; }
+			ENGINE_INLINE constexpr bool isPopulated(RegionIdx regionIdx) const noexcept { return populated[regionIdx.x][regionIdx.y]; }
 
 			ENGINE_INLINE constexpr ChunkEntities& entitiesAt(RegionIdx regionIdx) noexcept { return entities[regionIdx.x][regionIdx.y]; }
 			ENGINE_INLINE constexpr const ChunkEntities& entitiesAt(RegionIdx regionIdx) const noexcept { return entities[regionIdx.x][regionIdx.y]; }
@@ -538,7 +536,7 @@ namespace Game::Terrain {
 			}
 
 			// TODO: Should have a way to combine isChunkLoaded with getChunk. In most
-			//       (all?) places we have a patterna like:
+			//       (all?) places we have a pattern like:
 			//           if (!terrain.isChunkLoaded(pos)) { return; }
 			//           auto& chunk = terrain.getChunk(pos);
 			//           // Do something with chunk.
@@ -566,7 +564,7 @@ namespace Game::Terrain {
 				// We could define a convention where final stage always ==
 				// StageId::max(). Then the terrain doesn't need to know what the final
 				// stage is.
-				return found->second->stageAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
+				return found->second->isPopulated(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 
 			Chunk const& getChunk(const UniversalChunkCoord chunkCoord) const noexcept {
@@ -610,10 +608,7 @@ namespace Game::Terrain {
 				const auto regionCoord = chunkCoord.toRegion();
 				auto& region = getRegion(regionCoord);
 				const auto idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);
-
-				// TODO: What stage to use, see TODO in isChunkLoaded.
-				auto& stage = region.stages[idx.x][idx.y];
-				stage = std::max<StageId>(stage, 1);
+				region.populated[idx.x][idx.y] = true;
 			}
 	};
 

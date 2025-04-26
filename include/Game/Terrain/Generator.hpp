@@ -50,16 +50,14 @@ namespace Game::Terrain {
 	//
 	//
 	//
-	// TODO: Can we reframe the generator as a top level layer? I think so, or at least have one as a member.
+	// TODO: Can we reframe the generator as a top level layer? I don't think so, not
+	//       quite. How would we do things like apply structures over block data?
 	//
 	//
 	//
 	// Support for rescaling is needed for preview support. Should not be used for real generation.
 	template<class... Biomes>
 	class Generator {
-		public:
-			constexpr static StageId totalStages = std::max({MaxStage<Biomes>::value...});
-
 		private:
 			// TODO: One thing to consider is that we loose precision when converting
 			//       from BlockCoord to FVec2. Not sure how to solve that other than use

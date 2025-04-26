@@ -78,7 +78,7 @@ namespace Game::Terrain {
 		//
 		// TODO: Doesn't this the need to add one here and for setupHeightCaches
 		//       indicate the caller is treating the request upper bound as inclusive
-		//       wrather than exclusive? I don't think it should be needed to add anything
+		//       rather than exclusive? I don't think it should be needed to add anything
 		//       here.
 		const Layer::ChunkArea chunkArea = {request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}};
 		this->request<Layer::BiomeHeight>({request.minChunkCoord.x, request.maxChunkCoord.x + 1});
@@ -86,45 +86,29 @@ namespace Game::Terrain {
 		this->request<Layer::BiomeStructures>(chunkArea);
 		generateLayers();
 
-		static_assert(totalStages == 1); // TODO: rm - Sanity check during layer transition
-
-		// TODO: Shrink request based on current stage of chunks. If all chunks, a row, or
-		//       a column are already at the final stage we can shrink/skip the request.
-
+		// TODO: Update comment. Stages have been removed.
 		// Call generate for each stage. Each will expand the requestion chunk selection
 		// appropriately for the following stages.
-		{
-			// +1 because stage zero = uninitialized, zero stages have been run yet.
-
-			for (auto chunkCoord = request.minChunkCoord; chunkCoord.x <= request.maxChunkCoord.x; ++chunkCoord.x) {
-				for (chunkCoord.y = request.minChunkCoord.y; chunkCoord.y <= request.maxChunkCoord.y; ++chunkCoord.y) {
-					const auto regionCoord = chunkToRegion(chunkCoord);
-					auto& region = terrain.getRegion({request.realmId, regionCoord});
-					const auto regionIdx = chunkToRegionIndex(chunkCoord, regionCoord);
-					auto& stage = region.stages[regionIdx.x][regionIdx.y];
+		for (auto chunkCoord = request.minChunkCoord; chunkCoord.x <= request.maxChunkCoord.x; ++chunkCoord.x) {
+			for (chunkCoord.y = request.minChunkCoord.y; chunkCoord.y <= request.maxChunkCoord.y; ++chunkCoord.y) {
+				const auto regionCoord = chunkToRegion(chunkCoord);
+				auto& region = terrain.getRegion({request.realmId, regionCoord});
+				const auto regionIdx = chunkToRegionIndex(chunkCoord, regionCoord);
+				auto& populated = region.populated[regionIdx.x][regionIdx.y];
 				
-					constexpr static auto CurrentStage = 1;
-					if (stage < CurrentStage) {
-						ENGINE_DEBUG_ASSERT(stage == CurrentStage - 1);
-
-						{
-							static_assert(CurrentStage == 1);
-
-							// For each block in the chunk.
-							// TODO: Once layers are done this loop should go away. Can just acecss the
-							//       layerBiomeBlock directly.
-							const auto chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
-							auto& chunk = region.chunkAt(regionIdx);
-							for (BlockUnit x = 0; x < chunkSize.x; ++x) {
-								for (BlockUnit y = 0; y < chunkSize.y; ++y) {
-									chunk.data[x][y] = chunkBiomeBlock.data[x][y];
-								}
-							}
+				if (!populated) {
+					// For each block in the chunk.
+					// TODO: Once layers are done this loop should go away. Can just access the
+					//       layerBiomeBlock directly.
+					const auto chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
+					auto& chunk = region.chunkAt(regionIdx);
+					for (BlockUnit x = 0; x < chunkSize.x; ++x) {
+						for (BlockUnit y = 0; y < chunkSize.y; ++y) {
+							chunk.data[x][y] = chunkBiomeBlock.data[x][y];
 						}
-
-						++stage;
-						ENGINE_DEBUG_ASSERT(stage == 1);
 					}
+
+					populated = true;
 				}
 			}
 		}

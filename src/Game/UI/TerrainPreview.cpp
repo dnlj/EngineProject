@@ -199,7 +199,7 @@ namespace {
 							// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
 							const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
 							auto& chunk = region.chunks[regionIndex.x][regionIndex.y];
-							ENGINE_DEBUG_ASSERT(region.stages[regionIndex.x][regionIndex.y] == generator.totalStages, "Chunk is at incorrect stage.");
+							ENGINE_DEBUG_ASSERT(region.isPopulated(regionIndex), "Chunk is at incorrect stage.");
 
 							const auto blockIndex = blockToChunkIndex(blockCoord, chunkCoord);
 							ENGINE_DEBUG_ASSERT(blockIndex.x >= 0 && blockIndex.x < chunkSize.x, "Invalid chunk index.");
