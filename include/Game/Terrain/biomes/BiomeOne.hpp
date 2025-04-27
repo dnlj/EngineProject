@@ -113,10 +113,6 @@ namespace Game::Terrain {
 			return 0.5_f + 0.5_f * simplex.value(glm::vec2{blockCoord} * 0.03_f);
 		}
 
-		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) const {
-			return h0 + 15 * simplex.value(blockCoordX * 0.05_f, 0); // TODO: 1d simplex
-		}
-
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
 			const auto h2 = layerBiomeHeight.get(blockCoord.x);
 			if (blockCoord.y > h2) { return outGrad(static_cast<Float>(h2), blockCoord.y, 1.0_f / 5.0_f); }

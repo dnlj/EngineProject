@@ -46,10 +46,6 @@ namespace Game::Terrain {
 				 + 0.5_f;
 		}
 
-		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) const {
-			return h0 + HAmp * simplex1.value(blockCoordX * HFeatScale, 0); // TODO: 1d simplex
-		}
-
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
 			const auto h2 = layerBiomeHeight.get(blockCoord.x);
 			// Note that we have limited horizontal detail because we only have fade in
@@ -174,15 +170,6 @@ namespace Game::Terrain {
 		STAGE_DEF;
 		STAGE(1) { return BlockId::Debug4; }
 
-		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) const {
-			// TODO: To avoid the odd bulges in neighboring biomes we should do something like:
-			//       `if (rawInfo.id != this.id) { return h0; }`
-			const auto half = rawInfo.size / 2;
-			const auto off = half - std::abs(rawInfo.biomeRem.x - half);
-			const auto hMargin = 30;
-			return h0 + off - hMargin;
-		}
-
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
 			const auto xWarp =
 				+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
@@ -230,10 +217,6 @@ namespace Game::Terrain {
 			//	 + 0.1_f * simplex3.value(FVec2{blockCoord} * 0.100_f)
 			//	 + 0.5_f;
 			return 1.0f;
-		}
-
-		Float getHeight(TERRAIN_GET_HEIGHT_ARGS) const {
-			return h0;
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
