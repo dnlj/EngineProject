@@ -117,18 +117,6 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	Float Generator<Biomes...>::rm_getHeight1(
-		const BiomeId id,
-		const BlockUnit blockCoordX,
-		const Float h0,
-		const BiomeRawInfo2& rawInfo,
-		const Float biomeWeight) const {
-		BIOME_GEN_DISPATCH_REQUIRED(getHeight, Float, TERRAIN_GET_HEIGHT_ARGS);
-		const auto getHeight = BIOME_GET_DISPATCH(getHeight, id);
-		return getHeight(biomes, blockCoordX, h0, rawInfo, biomeWeight);
-	}
-
-	template<class... Biomes>
 	Float Generator<Biomes...>::rm_getBasisStrength(const BiomeId id, const BlockVec blockCoord) const {
 		BIOME_GEN_DISPATCH_REQUIRED(getBasisStrength, Float, TERRAIN_GET_BASIS_STRENGTH_ARGS);
 		// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.

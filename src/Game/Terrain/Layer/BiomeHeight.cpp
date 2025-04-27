@@ -33,6 +33,14 @@ namespace Game::Terrain::Layer {
 				.min = blockToChunk({blockMinX, hMin}),
 				.max = blockToChunk({blockMaxX, hMax}) + ChunkVec{0, 1}, // Add one to get an _exlusive_ bound instead of inclusive.
 			});
+
+			// TODO: We should probably be doing this with correct `request` calls to the blended biomes.
+			// 
+			// Note that we don't send requests to the biome in the blend. In theory we
+			// should be doing a requestAwait for BiomeBlended and then also sending
+			// requests to each biome in the resulting blend. Currently this is "okay" to
+			// skip because all biome layers are expected to resolve in `get` anyways.
+			// Although this does bypass the request/generate dependency model.
 		}
 
 	}
@@ -58,7 +66,14 @@ namespace Game::Terrain::Layer {
 			// transitions. If we don't then you will get alterations between different biome
 			// heights and huge floating islands due the basisStrength.
 			for (auto& biomeWeight : blend.rawWeights) {
-				const auto h1 = generator.rm_getHeight1(biomeWeight.id, blockCoordX, h0F, blend.info, biomeWeight.weight);
+				// PERF: Basically every biome height layer is going to want the h0 and
+				//       blend info as input, so we pass that in as a param to avoid the
+				//       lookup + conversion per biome weight. That does break the
+				//       request/generate dependency model though.
+				const auto h1 = Engine::withTypeAt<TestGenerator::Biomes2>(biomeWeight.id, [&]<class Biome>(){
+					return generator.get2<typename Biome::Height>(blockCoordX, h0F, blend.info);
+				});
+
 				h2 += biomeWeight.weight * h1;
 			}
 

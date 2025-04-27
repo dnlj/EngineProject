@@ -16,6 +16,12 @@
 #include <Engine/StaticVector.hpp>
 
 
+#define BIOME_HEIGHT_ARGS \
+	const ::Game::BlockUnit blockCoordX, \
+	const ::Game::Terrain::Float h0, \
+	const ::Game::Terrain::BiomeRawInfo2& rawInfo
+
+
 namespace Game::Terrain {
 	// TODO: Remove, use/combine with BlockSpanCache.
 	class HeightCache {

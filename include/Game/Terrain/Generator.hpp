@@ -36,6 +36,9 @@
 #include <Game/Terrain/Layer/BiomeStructureInfo.hpp>
 #include <Game/Terrain/Layer/BiomeStructures.hpp>
 
+#include <Game/Terrain/Layer/BiomeFoo.hpp>
+#include <Game/Terrain/Layer/BiomeDebug.hpp>
+
 
 namespace Game::Terrain {
 	template<class LayersSet>
@@ -74,8 +77,38 @@ namespace Game::Terrain {
 			//
 			//
 			//
+
+			// TODO: auto unpack biomes into `Layers` tuple
+			// TODO: rename
+			// TODO: For the time being these need to match the exact order as in TestGenerator until layer transition is complete.
+			using Biomes2 = std::tuple<
+				Layer::BiomeFoo,
+				Layer::BiomeDebugOne,
+				Layer::BiomeDebugTwo,
+				Layer::BiomeDebugThree,
+				Layer::BiomeDebugMountain,
+				Layer::BiomeDebugOcean
+			>;
+
+			//
+			//
+			//
+			//
+			// TODO: rename the biome accumulation layers to something other than BiomeX to avoid conflict with actual biomes.
+			//
+			//
+			//
 			using Layers = std::tuple<
 				Layer::WorldBaseHeight,
+
+				// TODO: how to structure and init biome layeres.
+				Layer::BiomeFoo::Height,
+				Layer::BiomeDebugOne::Height,
+				Layer::BiomeDebugTwo::Height,
+				Layer::BiomeDebugThree::Height,
+				Layer::BiomeDebugMountain::Height,
+				Layer::BiomeDebugOcean::Height,
+
 				Layer::BiomeRaw,
 				Layer::BiomeWeights,
 				Layer::BiomeBlended,
@@ -140,6 +173,23 @@ namespace Game::Terrain {
 				return std::get<Layer>(layers).get(index);
 			}
 
+			//
+			//
+			//
+			//
+			//
+			// TODO: Is there any value in the normal `get`? I don't think we need Layer::Index anymore.
+			//
+			//
+			//
+			//
+			//
+			//
+			template<class Layer, class... Args>
+			ENGINE_INLINE decltype(auto) get2(Args&&... args) const {
+				return std::get<Layer>(layers).get(std::forward<Args>(args)...);
+			}
+
 			void generateLayers() {
 				// TODO: optimize/combine/remove overlapping and redundant requests.
 				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
@@ -155,7 +205,6 @@ namespace Game::Terrain {
 			}
 
 			// TODO: rm - tmep during transition to layers.
-			Float rm_getHeight1(const BiomeId id, const BlockUnit blockCoordX, const Float h0, const BiomeRawInfo2& rawInfo, const Float biomeWeight) const;
 			Float rm_getBasisStrength(const BiomeId id, const BlockVec blockCoord) const;
 			Float rm_getBasis(const BiomeId id, const BlockVec blockCoord) const;
 			BlockId rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const;
@@ -178,6 +227,14 @@ namespace Game::Terrain {
 			Generator(uint64 seed)
 				: layers{
 					Layer::WorldBaseHeight{},
+					
+					Layer::BiomeFoo::Height{},
+					Layer::BiomeDebugOne::Height{},
+					Layer::BiomeDebugTwo::Height{},
+					Layer::BiomeDebugThree::Height{},
+					Layer::BiomeDebugMountain::Height{},
+					Layer::BiomeDebugOcean::Height{},
+
 					Layer::BiomeRaw{seed},
 					Layer::BiomeWeights{},
 					Layer::BiomeBlended{},
@@ -205,8 +262,7 @@ namespace Game::Terrain {
 			#define TERRAIN_GET_HEIGHT_ARGS \
 				const ::Game::BlockUnit blockCoordX, \
 				const ::Game::Terrain::Float h0, \
-				const ::Game::Terrain::BiomeRawInfo2& rawInfo, \
-				const ::Game::Terrain::Float biomeWeight
+				const ::Game::Terrain::BiomeRawInfo2& rawInfo
 
 			#define TERRAIN_GET_BASIS_ARGS \
 				const ::Game::BlockVec blockCoord, \

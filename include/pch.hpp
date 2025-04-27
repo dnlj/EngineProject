@@ -58,6 +58,7 @@
 
 // Engine
 #include <Engine/engine.hpp>
+#include <Engine/tuple.hpp>
 #include <Engine/Clock.hpp>
 #include <Engine/FlatHashMap.hpp>
 #include <Engine/Hash.hpp>
