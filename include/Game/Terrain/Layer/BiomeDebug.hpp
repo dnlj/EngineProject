@@ -6,6 +6,7 @@
 
 namespace Game::Terrain::Layer {
 	class WorldBaseHeight;
+	class BiomeHeight;
 
 	template<uint64 Seed, Float HAmp, Float HFeatScale>
 	class BiomeDebugBaseHeight : public Layer::DependsOn<WorldBaseHeight> {
@@ -52,10 +53,7 @@ namespace Game::Terrain::Layer {
 		public:
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
-
-			Float get(BIOME_HEIGHT_ARGS) const noexcept {
-				return h0;
-			}
+			Float get(BIOME_HEIGHT_ARGS) const noexcept { return h0; }
 	};
 
 	/////////////////////////////////////////////////////////////////////
@@ -91,10 +89,60 @@ namespace Game::Terrain::Layer {
 		public:
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
+			constexpr Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept { return 1.0_f; }
+	};
 
-			constexpr Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
-				return 1.0_f;
-			}
+	/////////////////////////////////////////////////////////////////////
+	
+	template<uint64 Seed, Float HAmp, Float HFeatScale, Float BScale, Float BOff, auto BTrans = [](auto b){ return b; }>
+	class BiomeDebugBasis : public Layer::DependsOn<> {
+		public:
+			using Range = ChunkArea;
+
+		public:
+			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
+			Float get(BIOME_BASIS_ARGS) const noexcept;
+
+		private:
+			// TODO: Shared data/noise at the Generator level.
+			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(Seed)};
+			Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
+			Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
+	};
+
+	template<uint64 Seed>
+	class BiomeDebugMountainBasis : public Layer::DependsOn<> {
+		public:
+			using Range = ChunkArea;
+
+		public:
+			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
+			Float get(BIOME_BASIS_ARGS) const noexcept;
+
+		private:
+			// TODO: Shared data/noise at the Generator level.
+			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(Seed)};
+			Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
+			Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
+	};
+
+	template<uint64 Seed>
+	class BiomeDebugOceanBasis : public Layer::DependsOn<> {
+		public:
+			using Range = ChunkArea;
+
+		public:
+			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
+			Float get(BIOME_BASIS_ARGS) const noexcept;
+
+		private:
+			// TODO: Shared data/noise at the Generator level.
+			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(Seed)};
+			Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
+			Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
 	};
 
 	/////////////////////////////////////////////////////////////////////
@@ -102,22 +150,31 @@ namespace Game::Terrain::Layer {
 	class BiomeDebugOne {
 		public:
 			constexpr static uint64 seed = 0xF7F7'F7F7'F7F7'1111;
-			using Height = BiomeDebugBaseHeight<seed, 15.0_f, 0.01_f>;
+			constexpr static Float HAmp = 15.0_f;
+			constexpr static Float HFeatScale = 0.01_f;
+			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
+			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.03_f, 0.15_f, &std::fabsf>;
 	};
 
 	class BiomeDebugTwo {
 		public:
 			constexpr static uint64 seed = 0xF7F7'F7F7'F7F7'2222;
-			using Height = BiomeDebugBaseHeight<seed, 30.0_f, 0.02_f>;
+			constexpr static Float HAmp = 30.0_f;
+			constexpr static Float HFeatScale = 0.02_f;
+			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
+			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.06_f, 0.75_f, &std::fabsf>;
 	};
 
 	class BiomeDebugThree {
 		public:
 			constexpr static uint64 seed = 0xF7F7'F7F7'F7F7'3333;
-			using Height = BiomeDebugBaseHeight<seed, 60.0_f, 0.04_f>;
+			constexpr static Float HAmp = 60.0_f;
+			constexpr static Float HFeatScale = 0.04_f;
+			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
+			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.12_f, 0.0_f>;
 	};
 
 	class BiomeDebugMountain {
@@ -125,11 +182,17 @@ namespace Game::Terrain::Layer {
 			constexpr static uint64 seed = 0xF7F7'F7F7'F7F7'4444;
 			using Height = BiomeDebugMountainHeight;
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
+			using Basis = BiomeDebugMountainBasis<seed>;
 	};
 
 	class BiomeDebugOcean {
 		public:
+			constexpr static uint64 seed = 0xF7F7'F7F7'F7F7'5555;
 			using Height = BiomeDebugOceanHeight;
 			using BasisStrength = BiomeDebugOceanBasisStrength;
+			using Basis = BiomeDebugOceanBasis<seed>;
 	};
 }
+
+
+#include <Game/Terrain/biomes/BiomeDebug.ipp>

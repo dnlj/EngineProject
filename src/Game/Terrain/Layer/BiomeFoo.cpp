@@ -7,7 +7,29 @@
 #include <Game/Terrain/TestGenerator.hpp>
 #include <Game/Terrain/Generator.hpp>
 #include <Game/Terrain/biomes/all.hpp>
+#include <Game/Terrain/biome.hpp>
 
+
+// TODO: move to layer utils or similar.
+namespace Game::Terrain::Layer {
+	namespace
+	{
+		// TODO: doc, blends from 1 to 0
+		ENGINE_INLINE constexpr Float inGrad(Float h, BlockUnit y, Float scale) noexcept {
+			return std::max(0.0_f, 1.0_f - (h - y) * scale);
+		}
+
+		ENGINE_INLINE constexpr Float inGrad(BlockUnit h, BlockUnit y, Float scale) noexcept {
+			// This is fine since h will always be within float range of 0.
+			return inGrad(static_cast<Float>(h), y, scale);
+		}
+			
+		// TODO: doc, blends from 0 to -1
+		ENGINE_INLINE constexpr Float outGrad(Float h, BlockUnit y, Float scale) noexcept {
+			return  std::max(-1.0_f, (h - y) * scale);
+		}
+	}
+}
 
 namespace Game::Terrain::Layer {
 	void BiomeFooHeight::request(const Range area, TestGenerator& generator) {
@@ -24,5 +46,18 @@ namespace Game::Terrain::Layer {
 
 	Float BiomeFooBasisStrength::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
 		return 0.5_f + 0.5_f * simplex.value(glm::vec2{blockCoord} * 0.03_f);
+	}
+
+	Float BiomeFooBasis::get(BIOME_BASIS_ARGS) const noexcept {
+		if (blockCoord.y > h2) { return outGrad(static_cast<Float>(h2), blockCoord.y, 1.0_f / 5.0_f); }
+
+		// TODO: redo this, extract some helpers from the debug biomes.
+		constexpr Float scale = 0.06_f;
+		constexpr Float groundScale = 1.0_f / 100.0_f;
+		Float value =
+			+ inGrad(h2, blockCoord.y, groundScale)
+			+ simplex.value(glm::vec2{blockCoord} * scale);
+
+		return std::clamp(value, -1_f, 1_f);
 	}
 }

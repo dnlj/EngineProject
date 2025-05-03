@@ -116,6 +116,13 @@ namespace Game::Terrain {
 				Layer::BiomeDebugMountain::BasisStrength,
 				Layer::BiomeDebugOcean::BasisStrength,
 
+				Layer::BiomeFoo::Basis,
+				Layer::BiomeDebugOne::Basis,
+				Layer::BiomeDebugTwo::Basis,
+				Layer::BiomeDebugThree::Basis,
+				Layer::BiomeDebugMountain::Basis,
+				Layer::BiomeDebugOcean::Basis,
+
 				Layer::BiomeRaw,
 				Layer::BiomeWeights,
 				Layer::BiomeBlended,
@@ -211,8 +218,7 @@ namespace Game::Terrain {
 				});
 			}
 
-			// TODO: rm - tmep during transition to layers.
-			Float rm_getBasis(const BiomeId id, const BlockVec blockCoord) const;
+			// TODO: rm - temp during transition to layers.
 			BlockId rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const;
 			void rm_getStructureInfo(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter);
 			void rm_getStructures(const StructureInfo& info, const RealmId realmId, Terrain& terrain);
@@ -248,6 +254,13 @@ namespace Game::Terrain {
 					Layer::BiomeDebugMountain::BasisStrength{},
 					Layer::BiomeDebugOcean::BasisStrength{},
 
+					Layer::BiomeFoo::Basis{},
+					Layer::BiomeDebugOne::Basis{},
+					Layer::BiomeDebugTwo::Basis{},
+					Layer::BiomeDebugThree::Basis{},
+					Layer::BiomeDebugMountain::Basis{},
+					Layer::BiomeDebugOcean::Basis{},
+
 					Layer::BiomeRaw{seed},
 					Layer::BiomeWeights{},
 					Layer::BiomeBlended{},
@@ -268,16 +281,6 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
 
 		private:
-			// TODO: Add assert in constructor that checks the Y-independence in constructor.
-			#define TERRAIN_GET_HEIGHT_ARGS \
-				const ::Game::BlockUnit blockCoordX, \
-				const ::Game::Terrain::Float h0, \
-				const ::Game::Terrain::BiomeRawInfo2& rawInfo
-
-			#define TERRAIN_GET_BASIS_ARGS \
-				const ::Game::BlockVec blockCoord, \
-				const ::Game::Terrain::Layer::BiomeHeight& layerBiomeHeight
-
 			#define TERRAIN_GET_LANDMARKS_ARGS \
 				const ::Game::ChunkVec& chunkCoord, \
 				const ::Game::Terrain::HeightCache& h2Cache, \

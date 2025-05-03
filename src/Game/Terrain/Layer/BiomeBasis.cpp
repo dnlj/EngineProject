@@ -1,5 +1,6 @@
 // Game
 #include <Game/Terrain/Layer/BiomeBasis.hpp>
+#include <Game/Terrain/Layer/BiomeHeight.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -10,6 +11,7 @@
 namespace Game::Terrain::Layer {
 	void BiomeBasis::request(const Range area, TestGenerator& generator) {
 		generator.request<BiomeBlended>(area);
+		generator.request<BiomeHeight>({area.min.x, area.max.x});
 	}
 
 	void BiomeBasis::generate(const Range area, TestGenerator& generator) {
@@ -33,8 +35,12 @@ namespace Game::Terrain::Layer {
 
 	BasisInfo BiomeBasis::populate(BlockVec blockCoord, const BiomeBlend& blend, const TestGenerator& generator) const noexcept {
 		Float totalBasis = 0;
+		const auto h2 = generator.get<BiomeHeight>(blockCoord.x);
 		for (auto& biomeWeight : blend.weights) {
-			const auto basis = generator.rm_getBasis(biomeWeight.id, blockCoord);
+			// TODO: rm - const auto basis = generator.rm_getBasis(biomeWeight.id, blockCoord);
+			const auto basis = Engine::withTypeAt<TestGenerator::Biomes2>(biomeWeight.id, [&]<class Biome>(){
+				return generator.get2<typename Biome::Basis>(blockCoord, h2);
+			});
 
 			// This is a _somewhat_ artificial limitation. A basis doesn't _need_ to be
 			// between [-1, 1], but all biomes should have roughly the same range. If one

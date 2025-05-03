@@ -117,13 +117,6 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	Float Generator<Biomes...>::rm_getBasis(const BiomeId id, const BlockVec blockCoord) const {
-		BIOME_GEN_DISPATCH_REQUIRED(getBasis, Float, TERRAIN_GET_BASIS_ARGS);
-		const auto getBasis = BIOME_GET_DISPATCH(getBasis, id);
-		return getBasis(biomes, blockCoord, layerBiomeHeight);
-	}
-
-	template<class... Biomes>
 	BlockId Generator<Biomes...>::rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const {
 		BIOME_GEN_DISPATCH_T(stage, stage<1>, BlockId, TERRAIN_STAGE_ARGS);
 		const auto getStage = BIOME_GET_DISPATCH(stage, id);

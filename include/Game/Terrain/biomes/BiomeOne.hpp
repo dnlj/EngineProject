@@ -109,20 +109,6 @@ namespace Game::Terrain {
 		//	}
 		//}
 
-		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
-			const auto h2 = layerBiomeHeight.get(blockCoord.x);
-			if (blockCoord.y > h2) { return outGrad(static_cast<Float>(h2), blockCoord.y, 1.0_f / 5.0_f); }
-
-			// TODO: redo this, extract some helpers from the debug biomes.
-			constexpr Float scale = 0.06_f;
-			constexpr Float groundScale = 1.0_f / 100.0_f;
-			Float value =
-				+ inGrad(h2, blockCoord.y, groundScale)
-				+ simplex.value(glm::vec2{blockCoord} * scale);
-
-			return std::clamp(value, -1_f, 1_f);
-		}
-
 		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) const {
 			//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
 			const auto minBlockCoord = chunkToBlock(chunkCoord);
