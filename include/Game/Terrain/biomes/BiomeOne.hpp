@@ -109,10 +109,6 @@ namespace Game::Terrain {
 		//	}
 		//}
 
-		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) const {
-			return 0.5_f + 0.5_f * simplex.value(glm::vec2{blockCoord} * 0.03_f);
-		}
-
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
 			const auto h2 = layerBiomeHeight.get(blockCoord.x);
 			if (blockCoord.y > h2) { return outGrad(static_cast<Float>(h2), blockCoord.y, 1.0_f / 5.0_f); }

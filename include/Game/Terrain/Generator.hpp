@@ -109,6 +109,13 @@ namespace Game::Terrain {
 				Layer::BiomeDebugMountain::Height,
 				Layer::BiomeDebugOcean::Height,
 
+				Layer::BiomeFoo::BasisStrength,
+				Layer::BiomeDebugOne::BasisStrength,
+				Layer::BiomeDebugTwo::BasisStrength,
+				Layer::BiomeDebugThree::BasisStrength,
+				Layer::BiomeDebugMountain::BasisStrength,
+				Layer::BiomeDebugOcean::BasisStrength,
+
 				Layer::BiomeRaw,
 				Layer::BiomeWeights,
 				Layer::BiomeBlended,
@@ -205,7 +212,6 @@ namespace Game::Terrain {
 			}
 
 			// TODO: rm - tmep during transition to layers.
-			Float rm_getBasisStrength(const BiomeId id, const BlockVec blockCoord) const;
 			Float rm_getBasis(const BiomeId id, const BlockVec blockCoord) const;
 			BlockId rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const;
 			void rm_getStructureInfo(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter);
@@ -235,6 +241,13 @@ namespace Game::Terrain {
 					Layer::BiomeDebugMountain::Height{},
 					Layer::BiomeDebugOcean::Height{},
 
+					Layer::BiomeFoo::BasisStrength{},
+					Layer::BiomeDebugOne::BasisStrength{},
+					Layer::BiomeDebugTwo::BasisStrength{},
+					Layer::BiomeDebugThree::BasisStrength{},
+					Layer::BiomeDebugMountain::BasisStrength{},
+					Layer::BiomeDebugOcean::BasisStrength{},
+
 					Layer::BiomeRaw{seed},
 					Layer::BiomeWeights{},
 					Layer::BiomeBlended{},
@@ -255,9 +268,6 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
 
 		private:
-			#define TERRAIN_GET_BASIS_STRENGTH_ARGS \
-				const ::Game::BlockVec blockCoord 
-
 			// TODO: Add assert in constructor that checks the Y-independence in constructor.
 			#define TERRAIN_GET_HEIGHT_ARGS \
 				const ::Game::BlockUnit blockCoordX, \

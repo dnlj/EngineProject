@@ -38,14 +38,6 @@ namespace Game::Terrain {
 		Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
 		Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
 
-		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) const {
-			// These need to be tuned based on biome scales blend dist or else you can get odd clipping type issues.
-			return 0.2_f * simplex1.value(FVec2{blockCoord} * 0.003_f)
-				 + 0.2_f * simplex2.value(FVec2{blockCoord} * 0.010_f)
-				 + 0.1_f * simplex3.value(FVec2{blockCoord} * 0.100_f)
-				 + 0.5_f;
-		}
-
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {
 			const auto h2 = layerBiomeHeight.get(blockCoord.x);
 			// Note that we have limited horizontal detail because we only have fade in
@@ -209,14 +201,6 @@ namespace Game::Terrain {
 			}
 
 			return BlockId::Gold;
-		}
-
-		Float getBasisStrength(TERRAIN_GET_BASIS_STRENGTH_ARGS) const {
-			//return 0.2_f * simplex1.value(FVec2{blockCoord} * 0.003_f)
-			//	 + 0.2_f * simplex2.value(FVec2{blockCoord} * 0.010_f)
-			//	 + 0.1_f * simplex3.value(FVec2{blockCoord} * 0.100_f)
-			//	 + 0.5_f;
-			return 1.0f;
 		}
 
 		Float getBasis(TERRAIN_GET_BASIS_ARGS) const {

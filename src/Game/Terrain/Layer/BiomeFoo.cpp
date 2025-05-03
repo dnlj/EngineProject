@@ -17,4 +17,12 @@ namespace Game::Terrain::Layer {
 	Float BiomeFooHeight::get(BIOME_HEIGHT_ARGS) const noexcept {
 		return h0 + 15 * simplex.value(blockCoordX * 0.05_f, 0); // TODO: 1d simplex
 	}
+
+	void BiomeFooBasisStrength::request(const Range area, TestGenerator& generator) {
+		// TODO: request verifier
+	}
+
+	Float BiomeFooBasisStrength::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
+		return 0.5_f + 0.5_f * simplex.value(glm::vec2{blockCoord} * 0.03_f);
+	}
 }

@@ -21,6 +21,8 @@
 	const ::Game::Terrain::Float h0, \
 	const ::Game::Terrain::BiomeRawInfo2& rawInfo
 
+#define BIOME_BASIS_STRENGTH_ARGS \
+	const ::Game::BlockVec blockCoord 
 
 namespace Game::Terrain {
 	// TODO: Remove, use/combine with BlockSpanCache.

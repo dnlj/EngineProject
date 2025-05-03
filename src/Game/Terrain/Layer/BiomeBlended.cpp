@@ -47,7 +47,10 @@ namespace Game::Terrain::Layer {
 
 		for (auto& biomeWeight : blend.weights) {
 			// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
-			const auto basisStr = generator.rm_getBasisStrength(biomeWeight.id, blockCoord);
+			const auto basisStr = Engine::withTypeAt<TestGenerator::Biomes2>(biomeWeight.id, [&]<class Biome>(){
+				return generator.get2<typename Biome::BasisStrength>(blockCoord);
+			});
+
 			ENGINE_DEBUG_ASSERT(0.0f <= basisStr && basisStr <= 1.0f, "Invalid basis strength value given for biome ", biomeWeight.id, ". Out of range [0, 1].");
 
 			// Multiply with the existing weight to get a smooth transition.
