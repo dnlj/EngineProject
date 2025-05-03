@@ -117,13 +117,6 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	BlockId Generator<Biomes...>::rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const {
-		BIOME_GEN_DISPATCH_T(stage, stage<1>, BlockId, TERRAIN_STAGE_ARGS);
-		const auto getStage = BIOME_GET_DISPATCH(stage, id);
-		return getStage(biomes, blockCoord, basisInfo);
-	}
-
-	template<class... Biomes>
 	void Generator<Biomes...>::rm_getStructureInfo(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter) {
 		BIOME_GEN_DISPATCH(getLandmarks, void, TERRAIN_GET_LANDMARKS_ARGS);
 		const auto func = BIOME_GET_DISPATCH(getLandmarks, id);

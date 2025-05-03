@@ -33,10 +33,11 @@ namespace Game::Terrain::Layer {
 
 	[[nodiscard]] BlockId BiomeBlock::populate(const BlockVec blockCoord, const BasisInfo& basisInfo, const TestGenerator& generator) const noexcept {
 		if (basisInfo.basis <= 0.0_f) {
-			// TODO: is there a reason we don't just default to air as 0/{}? Do we need BlockId::None?
 			return BlockId::Air;
 		}
 
-		return generator.rm_getStage(basisInfo.id, blockCoord, basisInfo);
+		return Engine::withTypeAt<TestGenerator::Biomes2>(basisInfo.id, [&]<class Biome>(){
+			return generator.get2<typename Biome::Block>(blockCoord, basisInfo);
+		});
 	}
 }

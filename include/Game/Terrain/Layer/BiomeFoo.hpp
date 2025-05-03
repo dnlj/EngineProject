@@ -2,6 +2,7 @@
 
 // Game
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
+#include <Game/Terrain/Layer/BiomeDebug.hpp>
 
 
 namespace Game::Terrain::Layer {
@@ -53,5 +54,6 @@ namespace Game::Terrain::Layer {
 			using Height = BiomeFooHeight;
 			using BasisStrength = BiomeFooBasisStrength;
 			using Basis = BiomeFooBasis;
+			using Block = BiomeDebugBlock<BlockId::Debug, 1>;
 	};
 }

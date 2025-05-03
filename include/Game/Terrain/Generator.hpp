@@ -123,6 +123,13 @@ namespace Game::Terrain {
 				Layer::BiomeDebugMountain::Basis,
 				Layer::BiomeDebugOcean::Basis,
 
+				Layer::BiomeFoo::Block,
+				Layer::BiomeDebugOne::Block,
+				Layer::BiomeDebugTwo::Block,
+				Layer::BiomeDebugThree::Block,
+				Layer::BiomeDebugMountain::Block,
+				Layer::BiomeDebugOcean::Block,
+
 				Layer::BiomeRaw,
 				Layer::BiomeWeights,
 				Layer::BiomeBlended,
@@ -219,7 +226,6 @@ namespace Game::Terrain {
 			}
 
 			// TODO: rm - temp during transition to layers.
-			BlockId rm_getStage(const BiomeId id, const BlockVec blockCoord, const BasisInfo& basisInfo) const;
 			void rm_getStructureInfo(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter);
 			void rm_getStructures(const StructureInfo& info, const RealmId realmId, Terrain& terrain);
 
@@ -261,6 +267,13 @@ namespace Game::Terrain {
 					Layer::BiomeDebugMountain::Basis{},
 					Layer::BiomeDebugOcean::Basis{},
 
+					Layer::BiomeFoo::Block{},
+					Layer::BiomeDebugOne::Block{},
+					Layer::BiomeDebugTwo::Block{},
+					Layer::BiomeDebugThree::Block{},
+					Layer::BiomeDebugMountain::Block{},
+					Layer::BiomeDebugOcean::Block{},
+
 					Layer::BiomeRaw{seed},
 					Layer::BiomeWeights{},
 					Layer::BiomeBlended{},
@@ -297,10 +310,6 @@ namespace Game::Terrain {
 				::Game::Terrain::Terrain& terrain, \
 				::Game::RealmId realmId, \
 				const ::Game::Terrain::StructureInfo& info
-
-			#define TERRAIN_STAGE_ARGS \
-				const ::Game::BlockVec blockCoord, \
-				const ::Game::Terrain::BasisInfo& basisInfo
 
 	};
 }

@@ -40,40 +40,19 @@ namespace Game::Terrain {
 	};
 
 	struct BiomeDebugOne : public BiomeDebugBase<0xF7F7'F7F7'F7F7'1111, 15.0_f, 0.01_f, 0.03_f, 0.15_f, &std::fabsf> {
-		STAGE_DEF;
-		STAGE(1) { return BlockId::Debug; }
 	};
 	
 	struct BiomeDebugTwo : public BiomeDebugBase<0xF7F7'F7F7'F7F7'2222, 30.0_f, 0.02_f, 0.06_f, 0.75_f, &std::fabsf> {
-		STAGE_DEF;
-		STAGE(1) { return BlockId::Debug2; }
 	};
 	
 	struct BiomeDebugThree : public BiomeDebugBase<0xF7F7'F7F7'F7F7'3333, 60.0_f, 0.04_f, 0.12_f, 0.0_f> {
-		STAGE_DEF;
-		STAGE(1) { return BlockId::Debug3; }
 	};
 
 	// Mountains would actually be okay to spawn at multiple scales so long as they are
 	// adjacent since they just end up looking like peaks.
 	struct BiomeDebugMountain : public BiomeDebugBase<0xF7F7'F7F7'F7F7'4444, 60.0_f, 0.04_f, 0.12_f, 0.0_f> {
-		STAGE_DEF;
-		STAGE(1) { return BlockId::Debug4; }
 	};
 
 	struct BiomeDebugOcean : public BiomeDebugBase<0xF7F7'F7F7'F7F7'5555, 60.0_f, 0.04_f, 0.12_f, 0.0_f> {
-		STAGE_DEF;
-		STAGE(1) {
-			auto thresh = 0.45_f;
-			thresh += 0.04_f * simplex1.value(FVec2{blockCoord} * 0.025_f);
-			thresh += 0.02_f * simplex1.value(FVec2{blockCoord} * 0.05_f);
-			thresh += 0.01_f + 0.01_f * simplex2.value(FVec2{blockCoord} * 0.1_f);
-
-			if (basisInfo.weight > thresh) {
-				return BlockId::Grass;
-			}
-
-			return BlockId::Gold;
-		}
 	};
 }

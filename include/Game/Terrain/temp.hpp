@@ -28,6 +28,10 @@
 	const ::Game::BlockVec blockCoord, \
 	const ::Game::BlockUnit h2
 
+#define BIOME_BLOCK_ARGS \
+	const ::Game::BlockVec blockCoord, \
+	const ::Game::Terrain::BasisInfo& basisInfo
+
 namespace Game::Terrain {
 	// TODO: Remove, use/combine with BlockSpanCache.
 	class HeightCache {

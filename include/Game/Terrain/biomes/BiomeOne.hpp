@@ -48,66 +48,7 @@
 
 namespace Game::Terrain {
 	struct BiomeOne : public SimpleBiome {
-		STAGE_DEF;
-
 		Engine::Noise::OpenSimplexNoise simplex{1234};
-
-		STAGE(1) {
-			// TODO: if we are always going to be converting to float anyways, should we
-			//       pass in a float version as well? That kind of breaks world size though.
-
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: change to use basis
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-
-
-			// if y > h0 && blocksEmpty(y, y+5);
-
-			//const auto h1 = h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
-			//
-			//if (blockCoord.y > h1) {
-			//	return BlockId::Air;
-			//} else if ((h1-blockCoord.y) < 1) {
-			//	return BlockId::Grass;
-			//}
-
-			//constexpr Float scale = 0.06_f;
-			//constexpr Float groundScale = 1.0_f / 100.0_f;
-			//const Float groundGrad = std::max(0.0_f, 1.0_f - (h1 - blockCoord.y) * groundScale);
-			//const auto val = simplex.value(glm::vec2{blockCoord} * scale) + groundGrad;
-			//
-			//if (val > 0) {
-			//	return BlockId::Debug;
-			//} else {
-			//	return BlockId::Air;
-			//}
-
-			return BlockId::Debug;
-		}
-
-		//STAGE(2) {
-		//	auto& blockId = chunk.data[blockIndex.x][blockIndex.y];
-		//	if (((blockCoord.x & 1) ^ (blockCoord.y & 1)) && (blockId == BlockId::Air)) {
-		//		return BlockId::Debug2;
-		//	} else {
-		//		return blockId;
-		//	}
-		//}
 
 		void getLandmarks(TERRAIN_GET_LANDMARKS_ARGS) const {
 			//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);

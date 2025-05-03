@@ -89,7 +89,7 @@ namespace Game::Terrain::Layer {
 		public:
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
-			constexpr Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept { return 1.0_f; }
+			constexpr static Float get(BIOME_BASIS_STRENGTH_ARGS) noexcept { return 1.0_f; }
 	};
 
 	/////////////////////////////////////////////////////////////////////
@@ -146,6 +146,49 @@ namespace Game::Terrain::Layer {
 	};
 
 	/////////////////////////////////////////////////////////////////////
+
+	template<BlockId Block, int = 0 /* used to avoid duplicate type in tuple*/>
+	class BiomeDebugBlock : public Layer::DependsOn<> {
+		public:
+			using Range = ChunkArea;
+
+		public:
+			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
+			constexpr static BlockId get(BIOME_BLOCK_ARGS) noexcept { return Block; };
+	};
+
+	template<uint64 Seed>
+	class BiomeDebugOceanBlock : public Layer::DependsOn<> {
+		public:
+			using Range = ChunkArea;
+
+		public:
+			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
+			constexpr BlockId get(BIOME_BLOCK_ARGS) const noexcept {
+				auto thresh = 0.45_f;
+
+				// TODO: Shouldn't these use simplex 1/2/3 instead of 1/1/2?
+				thresh += 0.04_f * simplex1.value(FVec2{blockCoord} * 0.025_f);
+				thresh += 0.02_f * simplex1.value(FVec2{blockCoord} * 0.05_f);
+				thresh += 0.01_f + 0.01_f * simplex2.value(FVec2{blockCoord} * 0.1_f);
+
+				if (basisInfo.weight > thresh) {
+					return BlockId::Grass;
+				}
+
+				return BlockId::Gold;
+			};
+
+		private:
+			// TODO: Shared data/noise at the Generator level.
+			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(Seed)};
+			Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
+			Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
+	};
+
+	/////////////////////////////////////////////////////////////////////
 	
 	class BiomeDebugOne {
 		public:
@@ -155,6 +198,7 @@ namespace Game::Terrain::Layer {
 			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
 			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.03_f, 0.15_f, &std::fabsf>;
+			using Block = BiomeDebugBlock<BlockId::Debug>;
 	};
 
 	class BiomeDebugTwo {
@@ -165,6 +209,7 @@ namespace Game::Terrain::Layer {
 			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
 			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.06_f, 0.75_f, &std::fabsf>;
+			using Block = BiomeDebugBlock<BlockId::Debug2>;
 	};
 
 	class BiomeDebugThree {
@@ -175,6 +220,7 @@ namespace Game::Terrain::Layer {
 			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
 			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.12_f, 0.0_f>;
+			using Block = BiomeDebugBlock<BlockId::Debug3>;
 	};
 
 	class BiomeDebugMountain {
@@ -183,6 +229,7 @@ namespace Game::Terrain::Layer {
 			using Height = BiomeDebugMountainHeight;
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
 			using Basis = BiomeDebugMountainBasis<seed>;
+			using Block = BiomeDebugBlock<BlockId::Debug4>;
 	};
 
 	class BiomeDebugOcean {
@@ -191,6 +238,7 @@ namespace Game::Terrain::Layer {
 			using Height = BiomeDebugOceanHeight;
 			using BasisStrength = BiomeDebugOceanBasisStrength;
 			using Basis = BiomeDebugOceanBasis<seed>;
+			using Block = BiomeDebugOceanBlock<seed>;
 	};
 }
 
