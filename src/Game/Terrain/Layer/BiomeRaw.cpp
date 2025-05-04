@@ -1,5 +1,6 @@
 // Game
 #include <Game/Terrain/Layer/BiomeRaw.hpp>
+#include <Game/Terrain/TestGenerator.hpp>
 
 
 namespace Game::Terrain::Layer {

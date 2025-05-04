@@ -37,7 +37,7 @@ namespace Game::Terrain::Layer {
 		const auto h2 = generator.get<BiomeHeight>(blockCoord.x);
 		for (auto& biomeWeight : blend.weights) {
 			// TODO: rm - const auto basis = generator.rm_getBasis(biomeWeight.id, blockCoord);
-			const auto basis = Engine::withTypeAt<TestGenerator::Biomes2>(biomeWeight.id, [&]<class Biome>(){
+			const auto basis = Engine::withTypeAt<Biomes>(biomeWeight.id, [&]<class Biome>(){
 				return generator.get2<typename Biome::Basis>(blockCoord, h2);
 			});
 

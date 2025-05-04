@@ -3,12 +3,6 @@
 // Game
 #include <Game/Terrain/Layer/BiomeDebug.hpp>
 
-//// TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
-//#include <Game/Terrain/TestGenerator.hpp>
-//#include <Game/Terrain/Generator.hpp>
-//#include <Game/Terrain/biomes/all.hpp>
-#include <Game/Terrain/Layer/BiomeHeight.hpp>
-
 
 //namespace Game::Terrain { namespace {
 //	Float heightGrad(BlockUnit hb, BlockUnit yb, BlockUnit fadeb) {

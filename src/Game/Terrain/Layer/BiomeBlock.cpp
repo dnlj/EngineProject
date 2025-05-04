@@ -35,7 +35,7 @@ namespace Game::Terrain::Layer {
 			return BlockId::Air;
 		}
 
-		return Engine::withTypeAt<TestGenerator::Biomes2>(basisInfo.id, [&]<class Biome>(){
+		return Engine::withTypeAt<Biomes>(basisInfo.id, [&]<class Biome>(){
 			return generator.get2<typename Biome::Block>(blockCoord, basisInfo);
 		});
 	}

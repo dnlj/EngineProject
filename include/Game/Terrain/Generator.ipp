@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Game/Terrain/Generator.hpp>
 
 
@@ -56,8 +58,8 @@
 
 
 namespace Game::Terrain {
-	template<class... Biomes>
-	void Generator<Biomes...>::generate(Terrain& terrain, const Request& request) {
+	template<class Self, class MyLayers>
+	void Generator<Self, MyLayers>::generate(Terrain& terrain, const Request& request) {
 		// TODO: Move/redocument things in terms of layers once transition is done.
 		// - Generate stages.
 		//   - Stage 1, Stage 2, ..., Stage N.
@@ -113,6 +115,6 @@ namespace Game::Terrain {
 			}
 		}
 
-		layerBiomeStructures.get(chunkArea, *this, request.realmId, terrain);
+		layerBiomeStructures.get(chunkArea, self(), request.realmId, terrain);
 	}
 }

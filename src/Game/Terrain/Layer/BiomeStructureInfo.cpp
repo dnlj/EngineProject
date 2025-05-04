@@ -55,7 +55,7 @@ namespace Game::Terrain::Layer {
 			const auto before = structures.size();
 			//generator.rm_getStructureInfo(biomeId, chunkCoord, std::back_inserter(structures));
 			
-			Engine::withTypeAt<TestGenerator::Biomes2>(biomeId, [&]<class Biome>(){
+			Engine::withTypeAt<Biomes>(biomeId, [&]<class Biome>(){
 				// TODO: remove direct layer access to height cache.
 				// TODO: document somewhere the structure info is optional.
 				if constexpr (requires { typename Biome::StructureInfo; }) {

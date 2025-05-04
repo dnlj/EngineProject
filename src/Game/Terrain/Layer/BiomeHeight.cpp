@@ -70,7 +70,7 @@ namespace Game::Terrain::Layer {
 				//       blend info as input, so we pass that in as a param to avoid the
 				//       lookup + conversion per biome weight. That does break the
 				//       request/generate dependency model though.
-				const auto h1 = Engine::withTypeAt<TestGenerator::Biomes2>(biomeWeight.id, [&]<class Biome>(){
+				const auto h1 = Engine::withTypeAt<Biomes>(biomeWeight.id, [&]<class Biome>(){
 					return generator.get2<typename Biome::Height>(blockCoordX, h0F, blend.info);
 				});
 

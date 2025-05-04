@@ -77,4 +77,81 @@ namespace Engine {
 	decltype(auto) withTypeAt(const size_t idx, Func&& func) {
 		return Detail::WithTypeAt<Tuple, Func>{}.call(idx, std::forward<Func>(func));
 	}
+
+	/**
+	 * Used to check if a type has the given member.
+	 * 
+	 * Used in conjunction with other trait classes. This is achieved using SFINAE + requires
+	 * clauses like can be seen with MemberTypeIfExists. Using the requires in the
+	 * decltype(lambda) as well as at the user trait class effectively lets us forward/pass the
+	 * concept from the call site to the trait. We then use the return value + decltype to pass
+	 * the actual type.
+	 */
+	#define ENGINE_TRAIT_MEMBER_TYPE_CHECK(Member) decltype([]<class T>(const T&) -> typename T::Member requires requires { typename T::Member; } {})
+
+	/**
+	 * Defines either a type list containing the member type if it exists, otherwise an empty type list.
+	 * Useful for excluding items from a template type pack.
+	 * 
+	 * @see ENGINE_TRAIT_MEMBER_TYPE_CHECK
+	 */
+	template<class Check, class T>
+	struct MemberTypeIfExists {
+		using Type = std::tuple<>;
+	};
+	
+	template<class Check, class T>
+	requires requires { (std::declval<Check>()(std::declval<T>())); }
+	struct MemberTypeIfExists<Check, T> {
+		using Type = std::tuple<decltype(std::declval<Check>()(std::declval<T>()))>;
+	};
+
+	template<class Check, class T>
+	using MemberTypeIfExists_t = MemberTypeIfExists<Check, T>::Type;
+
+	/**
+	 * Joins two type lists together.
+	 */
+	template<class Tuple1, class Tuple2, class... TupleN>
+	struct TupleConcat;
+	
+	template<template<class...> class Tuple, class... Args1, class... Args2>
+	struct TupleConcat<Tuple<Args1...>, Tuple<Args2...>> {
+		using Type = Tuple<Args1..., Args2...>;
+	};
+
+	template<template<class...> class Tuple, class... Args1, class... Args2, class Tuple3, class... TupleN>
+	struct TupleConcat<Tuple<Args1...>, Tuple<Args2...>, Tuple3, TupleN...>
+		: TupleConcat<Tuple<Args1..., Args2...>, Tuple3, TupleN...> {
+	};
+
+	template<class... TupleN>
+	using TupleConcat_t = TupleConcat<TupleN...>::Type;
+
+	
+	// TODO: It is also possible to write this by defining a operator+ (concat) for
+	//       TypeList and then we can use fold expressions on empty types to do the join
+	//       inside like: decltype(... + args). That doesn't change this implementation,
+	//       but when used elsewhere the fold expressions tend to be more readable than
+	//       recursive inheritance like you otherwise need to do. I also wonder if one has
+	//       better compile perf than the other. Need to test.
+	/**
+	 * Concatenates the member types from each tuple type if it exists, otherwise they are excluded.
+	 */
+	template<class Check, class Tuple>
+	struct TupleJoinMembersTypesIfExists;
+	
+	template<class Check, template<class...> class Tuple>
+	struct TupleJoinMembersTypesIfExists<Check, Tuple<>> { using Type = Tuple<>; };
+	
+	template<class Check, template<class...> class Tuple, class... Args, class T>
+	struct TupleJoinMembersTypesIfExists<Check, Tuple<T, Args...>>
+		: TupleConcat<
+			MemberTypeIfExists_t<Check, T>,
+			typename TupleJoinMembersTypesIfExists<Check, Tuple<Args...>>::Type // Cannot use the _t alias in the definition. Must use the dependant type name.
+		>
+	{};
+
+	template<class Check, class Tuple>
+	using TupleJoinMembersTypesIfExists_t = TupleJoinMembersTypesIfExists<Check, Tuple>::Type;
 }

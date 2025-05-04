@@ -43,7 +43,7 @@ namespace Game::Terrain::Layer {
 		std::vector<StructureInfo> structures;
 		generator.layerBiomeStructureInfo.get(chunkArea, generator, structures);
 		for (const auto& info : structures) {
-			Engine::withTypeAt<TestGenerator::Biomes2>(info.biomeId, [&]<class Biome>(){
+			Engine::withTypeAt<Biomes>(info.biomeId, [&]<class Biome>(){
 				// TODO: document somewhere the structure is optional.
 				if constexpr (requires { typename Biome::Structure; }) {
 					generator.get2<typename Biome::Structure>(terrain, realmId, info);

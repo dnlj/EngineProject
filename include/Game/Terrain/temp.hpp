@@ -6,7 +6,6 @@
 #include <Game/MapChunk.hpp> // TODO: Replace/rename/update MapChunk.
 #include <Game/Terrain/terrain.hpp>
 #include <Game/universal.hpp>
-#include <Game/Terrain/TestGenerator.hpp>
 
 // Engine
 #include <Engine/Array.hpp>
@@ -52,6 +51,8 @@
 	const ::Game::Terrain::StructureInfo& info
 
 namespace Game::Terrain {
+	class TestGenerator; // TODO: rm
+
 	// TODO: Remove, use/combine with BlockSpanCache.
 	class HeightCache {
 		public:
@@ -364,18 +365,6 @@ struct fmt::formatter<Game::Terrain::Layer::ChunkSpanX> {
 
 // TODO: split out
 namespace Game::Terrain {
-	// TODO: these should be defined on the generator, not here.
-	using Biomes = Meta::TypeSet::TypeSet<
-		// TODO: these should be class not struct...
-		struct BiomeFoo,
-		struct BiomeDebugOne,
-		struct BiomeDebugTwo,
-		struct BiomeDebugThree,
-		struct BiomeDebugMountain,
-		struct BiomeDebugOcean
-	>;
-	constexpr inline auto biomeCount = Biomes::size; // TODO: define in terms of TestGenerator/param
-
 	class BiomeScaleMeta {
 		public:
 			BlockUnit size;

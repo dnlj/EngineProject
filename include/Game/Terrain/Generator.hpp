@@ -50,22 +50,17 @@ namespace Game::Terrain {
 			std::tuple<std::vector<typename Layers::Range>...> ranges;
 	};
 
-	//
-	//
-	//
-	// TODO: Can we reframe the generator as a top level layer? I don't think so, not
-	//       quite. How would we do things like apply structures over block data?
-	//
-	//
-	//
 	// Support for rescaling is needed for preview support. Should not be used for real generation.
-	template<class... Biomes>
+	template<class Self, class Layers>
 	class Generator {
 		private:
 			// TODO: One thing to consider is that we loose precision when converting
 			//       from BlockCoord to FVec2. Not sure how to solve that other than use
 			//       doubles, and that will be slower and still isn't perfect.
 			//using FVec2 = glm::vec<2, Float>;
+			
+			Self& self() { return static_cast<Self&>(*this); }
+			Self& self() const { return static_cast<const Self&>(*this); }
 
 		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
 			//
@@ -77,86 +72,8 @@ namespace Game::Terrain {
 			//
 			//
 			//
-
-			// TODO: auto unpack biomes into `Layers` tuple
-			// TODO: rename
-			// TODO: For the time being these need to match the exact order as in TestGenerator until layer transition is complete.
-			using Biomes2 = std::tuple<
-				Layer::BiomeFoo,
-				Layer::BiomeDebugOne,
-				Layer::BiomeDebugTwo,
-				Layer::BiomeDebugThree,
-				Layer::BiomeDebugMountain,
-				Layer::BiomeDebugOcean
-			>;
-
-			//
-			//
-			//
-			//
-			// TODO: rename the biome accumulation layers to something other than BiomeX to avoid conflict with actual biomes.
-			//
-			//
-			//
-			using Layers = std::tuple<
-				Layer::WorldBaseHeight,
-
-				// TODO: how to structure and init biome layeres.
-				Layer::BiomeFoo::Height,
-				Layer::BiomeDebugOne::Height,
-				Layer::BiomeDebugTwo::Height,
-				Layer::BiomeDebugThree::Height,
-				Layer::BiomeDebugMountain::Height,
-				Layer::BiomeDebugOcean::Height,
-
-				Layer::BiomeFoo::BasisStrength,
-				Layer::BiomeDebugOne::BasisStrength,
-				Layer::BiomeDebugTwo::BasisStrength,
-				Layer::BiomeDebugThree::BasisStrength,
-				Layer::BiomeDebugMountain::BasisStrength,
-				Layer::BiomeDebugOcean::BasisStrength,
-
-				Layer::BiomeFoo::Basis,
-				Layer::BiomeDebugOne::Basis,
-				Layer::BiomeDebugTwo::Basis,
-				Layer::BiomeDebugThree::Basis,
-				Layer::BiomeDebugMountain::Basis,
-				Layer::BiomeDebugOcean::Basis,
-
-				Layer::BiomeFoo::Block,
-				Layer::BiomeDebugOne::Block,
-				Layer::BiomeDebugTwo::Block,
-				Layer::BiomeDebugThree::Block,
-				Layer::BiomeDebugMountain::Block,
-				Layer::BiomeDebugOcean::Block,
-
-				Layer::BiomeFoo::StructureInfo,
-
-				Layer::BiomeFoo::Structure,
-
-				Layer::BiomeRaw,
-				Layer::BiomeWeights,
-				Layer::BiomeBlended,
-				Layer::BiomeHeight,
-				Layer::BiomeBasis,
-				Layer::BiomeBlock,
-				Layer::BiomeStructureInfo,
-				Layer::BiomeStructures
-			>;
-
-			struct P1 {
-				using Baz = float;
-			};
-			struct P2 {
-				//using Baz = double;
-			};
-			struct P3 {
-				using Baz = int;
-			};
-
-			//using TestJoin = TupleJoinMembersTypesIfExists<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Baz), TypeList<P1, P2, P3>>::Type;
-
-			Layers layers;
+			
+			Layers layers{};
 
 			// TODO: Add a Pool<T> class for this. Dynamic capacity, dynamic size, but non-destructive on empty/pop.
 			size_t currentRequestScope = 0;
@@ -186,7 +103,7 @@ namespace Game::Terrain {
 				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- request<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
 				ENGINE_DEBUG_ASSERT(!range.empty(), "Attempting to request empty layer range.");
 				requests<Layer>().push_back(range);
-				std::get<Layer>(layers).request(range, *this);
+				std::get<Layer>(layers).request(range, self());
 			}
 
 			template<class Layer>
@@ -224,17 +141,13 @@ namespace Game::Terrain {
 					auto& ranges = requests<Layer>();
 					for (const auto& range : ranges) {
 						ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generate<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
-						std::get<Layer>(layers).generate(range, *this);
+						std::get<Layer>(layers).generate(range, self());
 					}
 					ranges.clear();
 				});
 			}
 
 		private:
-			std::tuple<Biomes...> biomes{};
-			static_assert(std::numeric_limits<BiomeId>::max() >= sizeof...(Biomes),
-				"More biomes supplied than are currently supported."
-			);
 
 			// h0 = broad, world-scale terrain height variations.
 			// h1 = biome specific height variations. h1 includes h0 as an input. h1 is
@@ -243,59 +156,13 @@ namespace Game::Terrain {
 			// h2 = final blended height between all influencing biomes.
 
 		public:
-			Generator(uint64 seed)
-				: layers{
-					Layer::WorldBaseHeight{},
-					
-					Layer::BiomeFoo::Height{},
-					Layer::BiomeDebugOne::Height{},
-					Layer::BiomeDebugTwo::Height{},
-					Layer::BiomeDebugThree::Height{},
-					Layer::BiomeDebugMountain::Height{},
-					Layer::BiomeDebugOcean::Height{},
-
-					Layer::BiomeFoo::BasisStrength{},
-					Layer::BiomeDebugOne::BasisStrength{},
-					Layer::BiomeDebugTwo::BasisStrength{},
-					Layer::BiomeDebugThree::BasisStrength{},
-					Layer::BiomeDebugMountain::BasisStrength{},
-					Layer::BiomeDebugOcean::BasisStrength{},
-
-					Layer::BiomeFoo::Basis{},
-					Layer::BiomeDebugOne::Basis{},
-					Layer::BiomeDebugTwo::Basis{},
-					Layer::BiomeDebugThree::Basis{},
-					Layer::BiomeDebugMountain::Basis{},
-					Layer::BiomeDebugOcean::Basis{},
-
-					Layer::BiomeFoo::Block{},
-					Layer::BiomeDebugOne::Block{},
-					Layer::BiomeDebugTwo::Block{},
-					Layer::BiomeDebugThree::Block{},
-					Layer::BiomeDebugMountain::Block{},
-					Layer::BiomeDebugOcean::Block{},
-
-					Layer::BiomeFoo::StructureInfo{},
-
-					Layer::BiomeFoo::Structure{},
-
-					Layer::BiomeRaw{seed},
-					Layer::BiomeWeights{},
-					Layer::BiomeBlended{},
-					Layer::BiomeHeight{},
-					Layer::BiomeBasis{},
-					Layer::BiomeBlock{},
-					Layer::BiomeStructureInfo{},
-					Layer::BiomeStructures{},
-				} {
+			Generator(uint64 seed) {
 				// Arbitrary size, seems like a reasonable default.
 				requestScopes.resize(4);
 			}
 
 			void generate(Terrain& terrain, const Request& request);
 
-			ENGINE_INLINE auto& getBiomes() noexcept { return biomes; }
-			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
 			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
 
 	};

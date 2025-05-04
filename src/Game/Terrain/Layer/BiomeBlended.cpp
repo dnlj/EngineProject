@@ -2,8 +2,8 @@
 #include <Game/Terrain/Layer/BiomeBlended.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
-#include <Game/Terrain/TestGenerator.hpp>
 #include <Game/Terrain/Generator.hpp>
+#include <Game/Terrain/TestGenerator.hpp>
 
 
 namespace Game::Terrain::Layer {
@@ -46,7 +46,7 @@ namespace Game::Terrain::Layer {
 
 		for (auto& biomeWeight : blend.weights) {
 			// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
-			const auto basisStr = Engine::withTypeAt<TestGenerator::Biomes2>(biomeWeight.id, [&]<class Biome>(){
+			const auto basisStr = Engine::withTypeAt<Biomes>(biomeWeight.id, [&]<class Biome>(){
 				return generator.get2<typename Biome::BasisStrength>(blockCoord);
 			});
 

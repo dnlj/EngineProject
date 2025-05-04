@@ -10,9 +10,9 @@ namespace Game::Terrain::Layer {
 			using Index = BlockVec;
 
 		public:
-			BiomeRaw(uint64 seed)
-				: biomeFreq{seed}
-				, biomePerm{Engine::Noise::lcg(seed)}
+			BiomeRaw() // TODO: seed from generator.
+				: biomeFreq{1234}
+				, biomePerm{Engine::Noise::lcg(1234)}
 			{}
 
 			void request(const Range area, TestGenerator& generator);
