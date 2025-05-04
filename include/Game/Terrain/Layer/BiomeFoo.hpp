@@ -35,7 +35,7 @@ namespace Game::Terrain::Layer {
 			Engine::Noise::OpenSimplexNoise simplex{1234}; // TODO: Shared data/noise at the Generator level.
 	};
 
-	class BiomeFooBasis: public Layer::DependsOn<WorldBaseHeight> {
+	class BiomeFooBasis : public Layer::DependsOn<WorldBaseHeight> {
 		public:
 			using Range = Layer::ChunkArea;
 
@@ -48,7 +48,7 @@ namespace Game::Terrain::Layer {
 			Engine::Noise::OpenSimplexNoise simplex{1234}; // TODO: Shared data/noise at the Generator level.
 	};
 
-	class BiomeFooStructureInfo: public Layer::DependsOn<> {
+	class BiomeFooStructureInfo : public Layer::DependsOn<> {
 		public:
 			using Range = Layer::ChunkArea;
 
@@ -61,7 +61,17 @@ namespace Game::Terrain::Layer {
 			Engine::Noise::OpenSimplexNoise simplex{1234}; // TODO: Shared data/noise at the Generator level.
 	};
 
-	// TODO: Doc what layers biomes can have somewhere.
+	class BiomeFooStructure : public Layer::DependsOn<> {
+		public:
+			using Range = Layer::ChunkArea;
+
+		public:
+			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
+			void get(BIOME_STRUCTURE_ARGS) const noexcept;
+	};
+
+	// TODO: Doc what layers biomes can have somewhere. and which are optional.
 	class BiomeFoo {
 		public:
 			using Height = BiomeFooHeight;
@@ -69,5 +79,6 @@ namespace Game::Terrain::Layer {
 			using Basis = BiomeFooBasis;
 			using Block = BiomeDebugBlock<BlockId::Debug, 1>;
 			using StructureInfo = BiomeFooStructureInfo;
+			using Structure = BiomeFooStructure;
 	};
 }

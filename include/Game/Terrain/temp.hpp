@@ -38,6 +38,19 @@
 	const ::Game::Terrain::HeightCache& h2Cache, \
 	std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 
+
+// TODO: It might be better to look into some kind of trait/tag based system
+//       for landmark generation instead of having it baked in at the biome
+//       level. That would allow us to say something like:
+//           Boss portals for LavaGuy can spawn anywhere with a temperature > 100deg or with the tag HasLavaGuy.
+//       With genLandmarks that will need to be explicitly included in every
+//       relevant biome. The tag/trait based system would also be useful for generating temporary
+//       entities such as mobs.
+#define BIOME_STRUCTURE_ARGS \
+	::Game::Terrain::Terrain& terrain, \
+	::Game::RealmId realmId, \
+	const ::Game::Terrain::StructureInfo& info
+
 namespace Game::Terrain {
 	// TODO: Remove, use/combine with BlockSpanCache.
 	class HeightCache {
@@ -351,9 +364,10 @@ struct fmt::formatter<Game::Terrain::Layer::ChunkSpanX> {
 
 // TODO: split out
 namespace Game::Terrain {
+	// TODO: these should be defined on the generator, not here.
 	using Biomes = Meta::TypeSet::TypeSet<
 		// TODO: these should be class not struct...
-		struct BiomeOne,
+		struct BiomeFoo,
 		struct BiomeDebugOne,
 		struct BiomeDebugTwo,
 		struct BiomeDebugThree,

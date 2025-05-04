@@ -468,7 +468,7 @@ namespace Game {
 							}
 						#else
 							if (terrain.isChunkLoaded(chunkPos)) {
-								auto const& chunk = terrain.getChunk(chunkPos);
+								const auto& chunk = terrain.getChunk(chunkPos);
 								rleTemp.clear();
 								chunk.toRLE(rleTemp);
 								rle = &rleTemp;
@@ -642,9 +642,9 @@ namespace Game {
 					#if MAP_OLD
 						const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
 						auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
-						auto const& entData = chunkInfo.entData;
+						const auto& entData = chunkInfo.entData;
 					#else
-						auto const& entData = terrain.getEntities(chunkPos);
+						const auto& entData = terrain.getEntities(chunkPos);
 					#endif
 
 					// Build chunk entities
@@ -734,7 +734,7 @@ namespace Game {
 			auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
 		#else
 			if (!terrain.isChunkLoaded(chunkPos)) { return; }
-			auto const& chunk = terrain.getChunk(chunkPos);
+			const auto& chunk = terrain.getChunk(chunkPos);
 		#endif
 
 		if constexpr (ENGINE_SERVER) { // Build edits

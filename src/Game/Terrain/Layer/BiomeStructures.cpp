@@ -4,7 +4,6 @@
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
 #include <Game/Terrain/Generator.hpp>
-#include <Game/Terrain/biomes/all.hpp>
 
 
 namespace Game::Terrain::Layer {
@@ -44,7 +43,12 @@ namespace Game::Terrain::Layer {
 		std::vector<StructureInfo> structures;
 		generator.layerBiomeStructureInfo.get(chunkArea, generator, structures);
 		for (const auto& info : structures) {
-			generator.rm_getStructures(info, realmId, terrain);
+			Engine::withTypeAt<TestGenerator::Biomes2>(info.biomeId, [&]<class Biome>(){
+				// TODO: document somewhere the structure is optional.
+				if constexpr (requires { typename Biome::Structure; }) {
+					generator.get2<typename Biome::Structure>(terrain, realmId, info);
+				}
+			});
 		}
 	}
 }

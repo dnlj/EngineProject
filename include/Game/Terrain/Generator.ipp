@@ -115,12 +115,4 @@ namespace Game::Terrain {
 
 		layerBiomeStructures.get(chunkArea, *this, request.realmId, terrain);
 	}
-
-	template<class... Biomes>
-	void Generator<Biomes...>::rm_getStructures(const StructureInfo& info, const RealmId realmId, Terrain& terrain) {
-		BIOME_GEN_DISPATCH(genLandmarks, void, TERRAIN_GEN_LANDMARKS_ARGS);
-		const auto func = BIOME_GET_DISPATCH(genLandmarks, info.biomeId);
-		ENGINE_DEBUG_ASSERT(func, "Attempting to generate landmark in biome that does not support them.");
-		func(biomes, terrain, realmId, info);
-	}
 }

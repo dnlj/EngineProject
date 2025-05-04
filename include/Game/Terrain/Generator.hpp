@@ -132,6 +132,8 @@ namespace Game::Terrain {
 
 				Layer::BiomeFoo::StructureInfo,
 
+				Layer::BiomeFoo::Structure,
+
 				Layer::BiomeRaw,
 				Layer::BiomeWeights,
 				Layer::BiomeBlended,
@@ -227,9 +229,6 @@ namespace Game::Terrain {
 				});
 			}
 
-			// TODO: rm - temp during transition to layers.
-			void rm_getStructures(const StructureInfo& info, const RealmId realmId, Terrain& terrain);
-
 		private:
 			std::tuple<Biomes...> biomes{};
 			static_assert(std::numeric_limits<BiomeId>::max() >= sizeof...(Biomes),
@@ -277,6 +276,8 @@ namespace Game::Terrain {
 
 					Layer::BiomeFoo::StructureInfo{},
 
+					Layer::BiomeFoo::Structure{},
+
 					Layer::BiomeRaw{seed},
 					Layer::BiomeWeights{},
 					Layer::BiomeBlended{},
@@ -295,19 +296,6 @@ namespace Game::Terrain {
 			ENGINE_INLINE auto& getBiomes() noexcept { return biomes; }
 			ENGINE_INLINE constexpr static auto getBiomeCount() noexcept { return sizeof...(Biomes); }
 			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
-
-		private:
-			// TODO: It might be better to look into some kind of trait/tag based system
-			//       for landmark generation instead of having it baked in at the biome
-			//       level. That would allow us to say something like:
-			//           Boss portals for LavaGuy can spawn anywhere with a temperature > 100deg or with the tag HasLavaGuy.
-			//       With genLandmarks that will need to be explicitly included in every
-			//       relevant biome. The tag/trait based system would also be useful for generating temporary
-			//       entities such as mobs.
-			#define TERRAIN_GEN_LANDMARKS_ARGS \
-				::Game::Terrain::Terrain& terrain, \
-				::Game::RealmId realmId, \
-				const ::Game::Terrain::StructureInfo& info
 
 	};
 }

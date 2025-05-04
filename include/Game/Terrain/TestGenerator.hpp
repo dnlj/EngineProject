@@ -6,7 +6,5 @@ namespace Game::Terrain {
 	// TODO: update to use Terrain::Biomes
 
 	template<class...> class Generator;
-	using TestGenerator = Generator<
-		struct BiomeOne
-	>;
+	using TestGenerator = Generator<>;
 }

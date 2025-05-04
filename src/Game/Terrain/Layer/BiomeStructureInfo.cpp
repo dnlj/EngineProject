@@ -4,7 +4,6 @@
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
 #include <Game/Terrain/Generator.hpp>
-#include <Game/Terrain/biomes/all.hpp>
 
 
 namespace Game::Terrain::Layer {
@@ -52,7 +51,7 @@ namespace Game::Terrain::Layer {
 			tryAdd({chunkSize.x - 1, chunkSize.y - 1});
 		}
 
-		for (auto const& biomeId : biomes) {
+		for (const auto& biomeId : biomes) {
 			const auto before = structures.size();
 			//generator.rm_getStructureInfo(biomeId, chunkCoord, std::back_inserter(structures));
 			

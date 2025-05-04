@@ -2,7 +2,6 @@
 #include <Game/UI/TerrainPreview.hpp>
 #include <Game/Terrain/TestGenerator.hpp>
 #include <Game/Terrain/Generator.hpp>
-#include <Game/Terrain/biomes/all.hpp>
 
 // Engine
 #include <Engine/UI/ImageDisplay.hpp>
