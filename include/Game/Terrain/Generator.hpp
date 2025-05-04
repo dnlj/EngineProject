@@ -35,6 +35,7 @@
 #include <Game/Terrain/Layer/BiomeBlock.hpp>
 #include <Game/Terrain/Layer/BiomeStructureInfo.hpp>
 #include <Game/Terrain/Layer/BiomeStructures.hpp>
+#include <Game/Terrain/Layer/BiomeOcean.hpp>
 
 #include <Game/Terrain/Layer/BiomeFoo.hpp>
 #include <Game/Terrain/Layer/BiomeDebug.hpp>

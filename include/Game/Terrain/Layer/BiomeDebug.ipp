@@ -159,13 +159,4 @@ namespace Game::Terrain::Layer {
 		Float value = std::clamp(surface, -1.0_f, 1.0_f);
 		return value;
 	}
-
-	template<uint64 Seed>
-	Float BiomeDebugOceanBasis<Seed>::get(BIOME_BASIS_ARGS) const noexcept {
-		if (blockCoord.y > h2) {
-			return -1;
-		}
-
-		return 1;
-	}
 }

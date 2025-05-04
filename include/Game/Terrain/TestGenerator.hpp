@@ -17,7 +17,7 @@ namespace Game::Terrain {
 		Layer::BiomeDebugTwo,
 		Layer::BiomeDebugThree,
 		Layer::BiomeDebugMountain,
-		Layer::BiomeDebugOcean
+		Layer::BiomeOcean
 	>;
 	constexpr inline auto biomeCount = std::tuple_size_v<Biomes>;
 	
