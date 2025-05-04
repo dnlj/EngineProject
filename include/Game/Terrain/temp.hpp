@@ -32,6 +32,12 @@
 	const ::Game::BlockVec blockCoord, \
 	const ::Game::Terrain::BasisInfo& basisInfo
 
+
+#define BIOME_STRUCTURE_INFO_ARGS \
+	const ::Game::ChunkVec& chunkCoord, \
+	const ::Game::Terrain::HeightCache& h2Cache, \
+	std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
+
 namespace Game::Terrain {
 	// TODO: Remove, use/combine with BlockSpanCache.
 	class HeightCache {

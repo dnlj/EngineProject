@@ -130,6 +130,8 @@ namespace Game::Terrain {
 				Layer::BiomeDebugMountain::Block,
 				Layer::BiomeDebugOcean::Block,
 
+				Layer::BiomeFoo::StructureInfo,
+
 				Layer::BiomeRaw,
 				Layer::BiomeWeights,
 				Layer::BiomeBlended,
@@ -226,7 +228,6 @@ namespace Game::Terrain {
 			}
 
 			// TODO: rm - temp during transition to layers.
-			void rm_getStructureInfo(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter);
 			void rm_getStructures(const StructureInfo& info, const RealmId realmId, Terrain& terrain);
 
 		private:
@@ -274,6 +275,8 @@ namespace Game::Terrain {
 					Layer::BiomeDebugMountain::Block{},
 					Layer::BiomeDebugOcean::Block{},
 
+					Layer::BiomeFoo::StructureInfo{},
+
 					Layer::BiomeRaw{seed},
 					Layer::BiomeWeights{},
 					Layer::BiomeBlended{},
@@ -294,11 +297,6 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
 
 		private:
-			#define TERRAIN_GET_LANDMARKS_ARGS \
-				const ::Game::ChunkVec& chunkCoord, \
-				const ::Game::Terrain::HeightCache& h2Cache, \
-				std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
-
 			// TODO: It might be better to look into some kind of trait/tag based system
 			//       for landmark generation instead of having it baked in at the biome
 			//       level. That would allow us to say something like:

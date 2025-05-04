@@ -7,11 +7,6 @@ namespace Game::Terrain {
 
 	template<class...> class Generator;
 	using TestGenerator = Generator<
-		struct BiomeOne,
-		struct BiomeDebugOne,
-		struct BiomeDebugTwo,
-		struct BiomeDebugThree,
-		struct BiomeDebugMountain,
-		struct BiomeDebugOcean
+		struct BiomeOne
 	>;
 }

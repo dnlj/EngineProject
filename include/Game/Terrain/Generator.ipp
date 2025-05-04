@@ -117,16 +117,6 @@ namespace Game::Terrain {
 	}
 
 	template<class... Biomes>
-	void Generator<Biomes...>::rm_getStructureInfo(const BiomeId id, const ChunkVec chunkCoord, std::back_insert_iterator<std::vector<StructureInfo>> inserter) {
-		BIOME_GEN_DISPATCH(getLandmarks, void, TERRAIN_GET_LANDMARKS_ARGS);
-		const auto func = BIOME_GET_DISPATCH(getLandmarks, id);
-
-		if (func) {
-			(*func)(biomes, chunkCoord, layerBiomeHeight.cache.cache, inserter);
-		}
-	}
-
-	template<class... Biomes>
 	void Generator<Biomes...>::rm_getStructures(const StructureInfo& info, const RealmId realmId, Terrain& terrain) {
 		BIOME_GEN_DISPATCH(genLandmarks, void, TERRAIN_GEN_LANDMARKS_ARGS);
 		const auto func = BIOME_GET_DISPATCH(genLandmarks, info.biomeId);

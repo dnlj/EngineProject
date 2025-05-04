@@ -54,7 +54,16 @@ namespace Game::Terrain::Layer {
 
 		for (auto const& biomeId : biomes) {
 			const auto before = structures.size();
-			generator.rm_getStructureInfo(biomeId, chunkCoord, std::back_inserter(structures));
+			//generator.rm_getStructureInfo(biomeId, chunkCoord, std::back_inserter(structures));
+			
+			Engine::withTypeAt<TestGenerator::Biomes2>(biomeId, [&]<class Biome>(){
+				// TODO: remove direct layer access to height cache.
+				// TODO: document somewhere the structure info is optional.
+				if constexpr (requires { typename Biome::StructureInfo; }) {
+					generator.get2<typename Biome::StructureInfo>(chunkCoord, generator.layerBiomeHeight.cache.cache, std::back_inserter(structures));
+				}
+			});
+
 			// TODO: could this be done with a custom back_inserter instead of an extra loop after the fact?
 			const auto after = structures.size();
 			if (after != before) {

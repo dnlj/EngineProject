@@ -10,6 +10,34 @@
 #include <Game/Terrain/Layer/BiomeHeight.hpp>
 
 
+//namespace Game::Terrain { namespace {
+//	Float heightGrad(BlockUnit hb, BlockUnit yb, BlockUnit fadeb) {
+//		// Fade from one to -1 over a distance of fade for y values above h. Useful for
+//		// debugging blending. Something like:
+//		//   Float getBasis(TERRAIN_GET_BASIS_ARGS) { return heightGrad(h0 + 8, blockCoord.y, 16); }
+//		// 
+//		// Note that you may will still see sharp transitions if the heiht discrepency is
+//		// larger than the fade distances. For a truely smooth transition we need to scale
+//		// the fade distance with the biome strength or always use a fade distances that
+//		// is larger than the maximum discrepency possible. It should also be noted that
+//		// large fade distances are undesirable because the large the fade distance the
+//		// more floating islands occur.
+//		//
+//		// Even if we add a dynamic fade distance based on biome weight we still are
+//		// limited by at most a discrepency of biomeBlendDist since that is the maximum
+//		// distance of which we blend. As such we should aim to always have the edge of
+//		// biomes roughly at h0. The between blending (biome strength) and this fade
+//		// distance we can still deal with some differences, but it is limited.
+//
+//		Float h = static_cast<Float>(hb);
+//		Float y = static_cast<Float>(yb);
+//		Float fade = static_cast<Float>(fadeb);
+//		// `2 / dist` instead of `1 / dist` since we are going [-1, 1] instead of [-1, 0] so the distance is doubled.
+//		if (y > h) { return std::max(-1_f, 1_f + (h - y) * (2_f / fade)); }
+//		return 1_f;
+//	}
+//}}
+
 namespace Game::Terrain::Layer {
 	template<uint64 Seed, Float HAmp, Float HFeatScale, Float BScale, Float BOff, auto BTrans>
 	Float BiomeDebugBasis<Seed, HAmp, HFeatScale, BScale, BOff, BTrans>::get(BIOME_BASIS_ARGS) const noexcept {
