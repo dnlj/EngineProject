@@ -144,6 +144,18 @@ namespace Game::Terrain {
 				Layer::BiomeStructures
 			>;
 
+			struct P1 {
+				using Baz = float;
+			};
+			struct P2 {
+				//using Baz = double;
+			};
+			struct P3 {
+				using Baz = int;
+			};
+
+			//using TestJoin = TupleJoinMembersTypesIfExists<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Baz), TypeList<P1, P2, P3>>::Type;
+
 			Layers layers;
 
 			// TODO: Add a Pool<T> class for this. Dynamic capacity, dynamic size, but non-destructive on empty/pop.
@@ -198,18 +210,7 @@ namespace Game::Terrain {
 				return std::get<Layer>(layers).get(index);
 			}
 
-			//
-			//
-			//
-			//
-			//
 			// TODO: Is there any value in the normal `get`? I don't think we need Layer::Index anymore.
-			//
-			//
-			//
-			//
-			//
-			//
 			template<class Layer, class... Args>
 			ENGINE_INLINE decltype(auto) get2(Args&&... args) const {
 				return std::get<Layer>(layers).get(std::forward<Args>(args)...);
