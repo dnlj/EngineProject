@@ -28,24 +28,6 @@ namespace Game::Terrain::Layer {
 			Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
 	};
 
-	struct BiomeDebugMountainHeight {
-		public:
-			using Range = Layer::ChunkSpanX;
-
-		public:
-			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
-
-			Float get(BIOME_HEIGHT_ARGS) const noexcept {
-				// TODO: To avoid the odd bulges in neighboring biomes we should do something like:
-				//       `if (rawInfo.id != this.id) { return h0; }`
-				const auto half = rawInfo.size / 2;
-				const auto off = half - std::abs(rawInfo.biomeRem.x - half);
-				const auto hMargin = 30;
-				return h0 + off - hMargin;
-			}
-	};
-
 	/////////////////////////////////////////////////////////////////////
 	
 	template<uint64 Seed>
@@ -76,23 +58,6 @@ namespace Game::Terrain::Layer {
 	
 	template<uint64 Seed, Float HAmp, Float HFeatScale, Float BScale, Float BOff, auto BTrans = [](auto b){ return b; }>
 	class BiomeDebugBasis : public Layer::DependsOn<> {
-		public:
-			using Range = ChunkArea;
-
-		public:
-			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
-			Float get(BIOME_BASIS_ARGS) const noexcept;
-
-		private:
-			// TODO: Shared data/noise at the Generator level.
-			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(Seed)};
-			Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(Seed))};
-			Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(Seed)))};
-	};
-
-	template<uint64 Seed>
-	class BiomeDebugMountainBasis : public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
 
@@ -154,15 +119,6 @@ namespace Game::Terrain::Layer {
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
 			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.12_f, 0.0_f>;
 			using Block = BiomeDebugBlock<BlockId::Debug3>;
-	};
-
-	class BiomeDebugMountain {
-		public:
-			constexpr static uint64 seed = 0xF7F7'F7F7'F7F7'4444;
-			using Height = BiomeDebugMountainHeight;
-			using BasisStrength = BiomeDebugBasisStrength<seed>;
-			using Basis = BiomeDebugMountainBasis<seed>;
-			using Block = BiomeDebugBlock<BlockId::Debug4>;
 	};
 }
 

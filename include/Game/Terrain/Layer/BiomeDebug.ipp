@@ -134,29 +134,4 @@ namespace Game::Terrain::Layer {
 			ENGINE_DEBUG_ASSERT(-1.0_f <= value && value <= 1.0_f);
 			return value;
 	}
-
-	template<uint64 Seed>
-	Float BiomeDebugMountainBasis<Seed>::get(BIOME_BASIS_ARGS) const noexcept {
-		const auto xWarp =
-			+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
-			+ 3.0_f * simplex2.value(FVec2{blockCoord} * 0.1f)
-			+ 1.5_f * simplex3.value(FVec2{blockCoord} * 0.2f);
-		const auto yWarp =
-			+ 5.0_f * simplex3.value(FVec2{blockCoord} * 0.05f)
-			+ 3.0_f * simplex1.value(FVec2{blockCoord} * 0.1f)
-			+ 1.5_f * simplex2.value(FVec2{blockCoord} * 0.2f);
-		const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp};
-
-		const bool above = bcoord.y > h2;
-		const auto surface = [&]{
-			if (above) {
-				return std::max(-1_f, 1_f + (h2 - bcoord.y) * (2_f / 16_f));
-			} else {
-				return 1_f;
-			}
-		}();
-
-		Float value = std::clamp(surface, -1.0_f, 1.0_f);
-		return value;
-	}
 }
