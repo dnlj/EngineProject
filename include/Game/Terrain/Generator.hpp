@@ -53,7 +53,7 @@ namespace Game::Terrain {
 	};
 
 	// Support for rescaling is needed for preview support. Should not be used for real generation.
-	template<class Self, class Layers>
+	template<class Self, class Layers, class SharedData>
 	class Generator {
 		private:
 			// TODO: One thing to consider is that we loose precision when converting
@@ -62,7 +62,7 @@ namespace Game::Terrain {
 			//using FVec2 = glm::vec<2, Float>;
 			
 			Self& self() { return static_cast<Self&>(*this); }
-			Self& self() const { return static_cast<const Self&>(*this); }
+			const Self& self() const { return static_cast<const Self&>(*this); }
 
 		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
 			//
@@ -76,12 +76,13 @@ namespace Game::Terrain {
 			//
 			
 			Layers layers{};
+			SharedData sharedData{};
 
 			// TODO: Add a Pool<T> class for this. Dynamic capacity, dynamic size, but non-destructive on empty/pop.
 			size_t currentRequestScope = 0;
 			std::vector<Requests<Layers>> requestScopes;
 
-			// TODO: rm
+			// TODO: rm - Can't the preview just use `get<Layer>()` ?
 			Layer::BiomeRaw& layerBiomeRaw = std::get<Layer::BiomeRaw>(layers);
 			Layer::WorldBaseHeight& layerWorldBaseHeight = std::get<Layer::WorldBaseHeight>(layers);
 			Layer::BiomeWeights& layerBiomeWeights = std::get<Layer::BiomeWeights>(layers);
@@ -91,6 +92,11 @@ namespace Game::Terrain {
 			Layer::BiomeBlock& layerBiomeBlock = std::get<Layer::BiomeBlock>(layers);
 			Layer::BiomeStructureInfo& layerBiomeStructureInfo = std::get<Layer::BiomeStructureInfo>(layers);
 			Layer::BiomeStructures& layerBiomeStructures = std::get<Layer::BiomeStructures>(layers);
+
+			template<class Data>
+			auto const& shared() const noexcept {
+				return std::get<Data>(sharedData);
+			}
 
 			// TODO: private
 			template<class Layer>
@@ -132,7 +138,7 @@ namespace Game::Terrain {
 			// TODO: Is there any value in the normal `get`? I don't think we need Layer::Index anymore.
 			template<class Layer, class... Args>
 			ENGINE_INLINE decltype(auto) get2(Args&&... args) const {
-				return std::get<Layer>(layers).get(std::forward<Args>(args)...);
+				return std::get<Layer>(layers).get(self(), std::forward<Args>(args)...);
 			}
 
 			void generateLayers() {
@@ -148,15 +154,6 @@ namespace Game::Terrain {
 					ranges.clear();
 				});
 			}
-
-		private:
-
-			// h0 = broad, world-scale terrain height variations.
-			// h1 = biome specific height variations. h1 includes h0 as an input. h1 is
-			//      currently only used as part of an intermediate step and not stored
-			//      anywhere.
-			// h2 = final blended height between all influencing biomes.
-
 		public:
 			Generator(uint64 seed) {
 				// Arbitrary size, seems like a reasonable default.

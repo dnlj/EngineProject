@@ -16,23 +16,28 @@
 
 
 #define BIOME_HEIGHT_ARGS \
+	const TestGenerator& generator, \
 	const ::Game::BlockUnit blockCoordX, \
 	const ::Game::Terrain::Float h0, \
 	const ::Game::Terrain::BiomeRawInfo2& rawInfo
 
 #define BIOME_BASIS_STRENGTH_ARGS \
+	const TestGenerator& generator, \
 	const ::Game::BlockVec blockCoord
 
 #define BIOME_BASIS_ARGS \
+	const TestGenerator& generator, \
 	const ::Game::BlockVec blockCoord, \
 	const ::Game::BlockUnit h2
 
 #define BIOME_BLOCK_ARGS \
+	const TestGenerator& generator, \
 	const ::Game::BlockVec blockCoord, \
 	const ::Game::Terrain::BasisInfo& basisInfo
 
 
 #define BIOME_STRUCTURE_INFO_ARGS \
+	const TestGenerator& generator, \
 	const ::Game::ChunkVec& chunkCoord, \
 	const ::Game::Terrain::HeightCache& h2Cache, \
 	std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
@@ -46,6 +51,7 @@
 //       relevant biome. The tag/trait based system would also be useful for generating temporary
 //       entities such as mobs.
 #define BIOME_STRUCTURE_ARGS \
+	const TestGenerator& generator, \
 	::Game::Terrain::Terrain& terrain, \
 	::Game::RealmId realmId, \
 	const ::Game::Terrain::StructureInfo& info

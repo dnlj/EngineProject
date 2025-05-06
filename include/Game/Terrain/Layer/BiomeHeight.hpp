@@ -4,7 +4,13 @@
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 
 
-// TODO: Need calc biome first.
+
+// h0 = broad, world-scale terrain height variations.
+// h1 = biome specific height variations. h1 includes h0 as an input. h1 is
+//      currently only used as part of an intermediate step and not stored
+//      anywhere.
+// h2 = final blended height between all influencing biomes.
+
 namespace Game::Terrain::Layer {
 	class BiomeWeights;
 	class WorldBaseHeight;

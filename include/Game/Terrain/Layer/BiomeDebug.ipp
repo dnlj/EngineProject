@@ -91,15 +91,7 @@ namespace Game::Terrain::Layer {
 			//	return std::clamp(value, -1.0_f, 1.0_f);
 			//}
 
-			//
-			//
-			//
-			//
 			// TODO: can't we just do a gradient clamp((y - h)^4) or something, for sharper falloff?
-			//
-			//
-			//
-			//
 
 			const auto bcoord = blockCoord; // TODO: rm if unused
 			const bool above = bcoord.y > h2;

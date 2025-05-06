@@ -35,7 +35,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeDebugMountain {
 		public:
-			constexpr static uint64 seed = 0xF7F7'F7F7'F7F7'4444;
+			constexpr static uint64 seed = BiomeMountainSeed;
 			using Height = BiomeMountainHeight;
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
 			using Basis = BiomeMountainBasis;

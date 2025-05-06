@@ -58,8 +58,8 @@
 
 
 namespace Game::Terrain {
-	template<class Self, class MyLayers>
-	void Generator<Self, MyLayers>::generate(Terrain& terrain, const Request& request) {
+	template<class Self, class Layers, class SharedData>
+	void Generator<Self, Layers, SharedData>::generate(Terrain& terrain, const Request& request) {
 		// TODO: Move/redocument things in terms of layers once transition is done.
 		// - Generate stages.
 		//   - Stage 1, Stage 2, ..., Stage N.

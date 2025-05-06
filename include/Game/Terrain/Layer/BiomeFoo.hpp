@@ -17,9 +17,6 @@ namespace Game::Terrain::Layer {
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
-
-		private:
-			Engine::Noise::OpenSimplexNoise simplex{1234}; // TODO: Shared data/noise at the Generator level.
 	};
 
 	class BiomeFooBasisStrength : public Layer::DependsOn<WorldBaseHeight> {
@@ -30,9 +27,6 @@ namespace Game::Terrain::Layer {
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
-
-		private:
-			Engine::Noise::OpenSimplexNoise simplex{1234}; // TODO: Shared data/noise at the Generator level.
 	};
 
 	class BiomeFooBasis : public Layer::DependsOn<WorldBaseHeight> {
@@ -43,9 +37,6 @@ namespace Game::Terrain::Layer {
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_ARGS) const noexcept;
-
-		private:
-			Engine::Noise::OpenSimplexNoise simplex{1234}; // TODO: Shared data/noise at the Generator level.
 	};
 
 	class BiomeFooStructureInfo : public Layer::DependsOn<> {
@@ -56,9 +47,6 @@ namespace Game::Terrain::Layer {
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
-
-		private:
-			Engine::Noise::OpenSimplexNoise simplex{1234}; // TODO: Shared data/noise at the Generator level.
 	};
 
 	class BiomeFooStructure : public Layer::DependsOn<> {
@@ -71,6 +59,12 @@ namespace Game::Terrain::Layer {
 			void get(BIOME_STRUCTURE_ARGS) const noexcept;
 	};
 
+	class BiomeFooSharedData {
+		public:
+			// TODO: seed from generator.
+			Engine::Noise::OpenSimplexNoise simplex{1234}; // TODO: Shared data/noise at the Generator level.
+	};
+
 	// TODO: Doc what layers biomes can have somewhere. and which are optional.
 	class BiomeFoo {
 		public:
@@ -80,5 +74,6 @@ namespace Game::Terrain::Layer {
 			using Block = BiomeDebugBlock<BlockId::Debug, 1>;
 			using StructureInfo = BiomeFooStructureInfo;
 			using Structure = BiomeFooStructure;
+			using SharedData = BiomeFooSharedData;
 	};
 }

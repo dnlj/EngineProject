@@ -51,6 +51,10 @@ namespace Game::Terrain {
 		>
 	>;
 
-	class TestGenerator : public Generator<TestGenerator, Layers> {
+	using SharedData = Engine::TupleConcat_t<
+		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(SharedData), Biomes>
+	>;
+
+	class TestGenerator : public Generator<TestGenerator, Layers, SharedData> {
 	};
 }

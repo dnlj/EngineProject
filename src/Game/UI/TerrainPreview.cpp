@@ -113,9 +113,7 @@ namespace {
 				}();
 
 				static const auto biomeToColor = []{
-					// TODO: udpate for layers:
-					//std::array<glm::u8vec3, decltype(generator)::getBiomeCount()> colors{};
-					std::array<glm::u8vec3, 6> colors{};
+					std::array<glm::u8vec3, biomeCount> colors{};
 					float32 hue = 0;
 					for (auto& color : colors) {
 						hue = Engine::Math::nextRandomHue(hue);

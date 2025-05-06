@@ -80,6 +80,7 @@ namespace Game::Terrain::Layer {
 	}
 
 	Float BiomeFooHeight::get(BIOME_HEIGHT_ARGS) const noexcept {
+		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
 		return h0 + 15 * simplex.value(blockCoordX * 0.05_f, 0); // TODO: 1d simplex
 	}
 
@@ -88,6 +89,7 @@ namespace Game::Terrain::Layer {
 	}
 
 	Float BiomeFooBasisStrength::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
+		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
 		return 0.5_f + 0.5_f * simplex.value(glm::vec2{blockCoord} * 0.03_f);
 	}
 
@@ -95,6 +97,7 @@ namespace Game::Terrain::Layer {
 		if (blockCoord.y > h2) { return outGrad(static_cast<Float>(h2), blockCoord.y, 1.0_f / 5.0_f); }
 
 		// TODO: redo this, extract some helpers from the debug biomes.
+		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
 		constexpr Float scale = 0.06_f;
 		constexpr Float groundScale = 1.0_f / 100.0_f;
 		Float value =
