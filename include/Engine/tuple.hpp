@@ -112,9 +112,19 @@ namespace Engine {
 	/**
 	 * Joins two type lists together.
 	 */
-	template<class Tuple1, class Tuple2, class... TupleN>
+	template<class Tuple1 = void, class Tuple2 = void, class... TupleN>
 	struct TupleConcat;
 	
+	template<>
+	struct TupleConcat<void, void> {
+		using Type = std::tuple<>;
+	};
+
+	template<class Tuple1>
+	struct TupleConcat<Tuple1, void> {
+		using Type = Tuple1;
+	};
+
 	template<template<class...> class Tuple, class... Args1, class... Args2>
 	struct TupleConcat<Tuple<Args1...>, Tuple<Args2...>> {
 		using Type = Tuple<Args1..., Args2...>;
