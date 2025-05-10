@@ -21,6 +21,7 @@ namespace Game::Terrain {
 	>;
 	constexpr inline auto biomeCount = std::tuple_size_v<Biomes>;
 	
+
 	//
 	//
 	//
@@ -58,3 +59,5 @@ namespace Game::Terrain {
 	class TestGenerator : public Generator<TestGenerator, Layers, SharedData> {
 	};
 }
+
+#include <Game/Terrain/Layer/BiomeDebug.ipp>

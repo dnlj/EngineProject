@@ -35,12 +35,6 @@ namespace Game::Terrain::Layer {
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_ARGS) const noexcept;
-
-		private:
-			// TODO: Shared data/noise at the Generator level.
-			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(BiomeOceanSeed)};
-			Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(BiomeOceanSeed))};
-			Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(BiomeOceanSeed)))};
 	};
 
 	class BiomeOceanBlock : public Layer::DependsOn<> {
@@ -51,9 +45,11 @@ namespace Game::Terrain::Layer {
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
-
-		private:
-			// TODO: Shared data/noise at the Generator level.
+	};
+	
+	class BiomeOceanSharedData {
+		public:
+			// TODO: seed/transform from generator.
 			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(BiomeOceanSeed)};
 			Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(BiomeOceanSeed))};
 			Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(BiomeOceanSeed)))};
@@ -65,5 +61,6 @@ namespace Game::Terrain::Layer {
 			using BasisStrength = BiomeOceanBasisStrength;
 			using Basis = BiomeOceanBasis;
 			using Block = BiomeOceanBlock;
+			using SharedData = BiomeOceanSharedData;
 	};
 }

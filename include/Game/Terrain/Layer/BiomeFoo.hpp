@@ -4,7 +4,6 @@
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 #include <Game/Terrain/Layer/BiomeDebug.hpp>
 
-
 namespace Game::Terrain::Layer {
 	class WorldBaseHeight;
 	class BiomeHeight;
@@ -61,8 +60,8 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooSharedData {
 		public:
-			// TODO: seed from generator.
-			Engine::Noise::OpenSimplexNoise simplex{1234}; // TODO: Shared data/noise at the Generator level.
+			// TODO: seed/transform from generator.
+			Engine::Noise::OpenSimplexNoise simplex{1234};
 	};
 
 	// TODO: Doc what layers biomes can have somewhere. and which are optional.

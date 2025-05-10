@@ -89,7 +89,7 @@ namespace Game::Terrain::Layer {
 	}
 
 	Float BiomeFooBasisStrength::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
-		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
+		auto const& simplex = generator.shared<BiomeFooSharedData>().simplex;
 		return 0.5_f + 0.5_f * simplex.value(glm::vec2{blockCoord} * 0.03_f);
 	}
 

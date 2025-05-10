@@ -33,15 +33,35 @@
 //}}
 
 namespace Game::Terrain::Layer {
+	template<uint64 Seed, Float HAmp, Float HFeatScale>
+	Float BiomeDebugBaseHeight<Seed, HAmp, HFeatScale>::get(BIOME_HEIGHT_ARGS) const noexcept {
+		auto const& simplex1 = generator.shared<BiomeDebugSharedData<Seed>>().simplex1;
+		return h0 + HAmp * simplex1.value(blockCoordX * HFeatScale, 0); // TODO: 1d simplex
+	}
+
+	template<uint64 Seed>
+	Float BiomeDebugBasisStrength<Seed>::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
+		auto const& shared = generator.shared<BiomeDebugSharedData<Seed>>();
+		auto const& simplex1 = shared.simplex1;
+		auto const& simplex2 = shared.simplex2;
+		auto const& simplex3 = shared.simplex3;
+
+		// These need to be tuned based on biome scales blend dist or else you can get odd clipping type issues.
+		return 0.2_f * simplex1.value(FVec2{blockCoord} * 0.003_f)
+				+ 0.2_f * simplex2.value(FVec2{blockCoord} * 0.010_f)
+				+ 0.1_f * simplex3.value(FVec2{blockCoord} * 0.100_f)
+				+ 0.5_f;
+	}
+
 	template<uint64 Seed, Float HAmp, Float HFeatScale, Float BScale, Float BOff, auto BTrans>
 	Float BiomeDebugBasis<Seed, HAmp, HFeatScale, BScale, BOff, BTrans>::get(BIOME_BASIS_ARGS) const noexcept {
 			// Note that we have limited horizontal detail because we only have fade in
 			// the vertical direction. With that in mind it may be better to use fbm +
 			// warp instead. That also (mostly) avoids the floating island problem.
-
+			
 			//const auto xWarp = 0;
 			//const auto yWarp = 0;
-
+			
 			//const auto xWarp =
 			//	+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
 			//	+ 3.0_f * simplex2.value(FVec2{blockCoord} * 0.1f)
@@ -62,10 +82,10 @@ namespace Game::Terrain::Layer {
 			//} else {
 			//	return 1_f;
 			//}
-
+			
 			//const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp}; // TODO: rm if unused
 			//auto h1 = h0 + HAmp * simplex1.value(bcoord.x * HFeatScale, 0); // TODO: 1d simplex
-
+			
 			// Going from 1 to 0 is effectively a max(biomeA, biomeB) since the basies are added together.
 			// Going from 1 to -1 seems more correct and gives smoother transitions, but
 			// result in the caves issue in mountains peaks. That seems like it should be
@@ -90,8 +110,13 @@ namespace Game::Terrain::Layer {
 			//	
 			//	return std::clamp(value, -1.0_f, 1.0_f);
 			//}
-
+			
 			// TODO: can't we just do a gradient clamp((y - h)^4) or something, for sharper falloff?
+			
+			auto const& shared = generator.shared<BiomeDebugSharedData<Seed>>();
+			auto const& simplex1 = shared.simplex1;
+			auto const& simplex2 = shared.simplex2;
+			auto const& simplex3 = shared.simplex3;
 
 			const auto bcoord = blockCoord; // TODO: rm if unused
 			const bool above = bcoord.y > h2;

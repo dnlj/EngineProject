@@ -25,14 +25,8 @@ namespace Game::Terrain::Layer {
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_ARGS) const noexcept;
-
-		private:
-			// TODO: Shared data/noise at the Generator level.
-			Engine::Noise::OpenSimplexNoise simplex1{Engine::Noise::lcg(BiomeMountainSeed)};
-			Engine::Noise::OpenSimplexNoise simplex2{Engine::Noise::lcg(Engine::Noise::lcg(BiomeMountainSeed))};
-			Engine::Noise::OpenSimplexNoise simplex3{Engine::Noise::lcg(Engine::Noise::lcg(Engine::Noise::lcg(BiomeMountainSeed)))};
 	};
-
+	
 	class BiomeDebugMountain {
 		public:
 			constexpr static uint64 seed = BiomeMountainSeed;
@@ -40,5 +34,6 @@ namespace Game::Terrain::Layer {
 			using BasisStrength = BiomeDebugBasisStrength<seed>;
 			using Basis = BiomeMountainBasis;
 			using Block = BiomeDebugBlock<BlockId::Debug4>;
+			using SharedData = BiomeDebugSharedData<seed>;
 	};
 }
