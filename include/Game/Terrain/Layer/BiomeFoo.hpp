@@ -10,7 +10,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooHeight : public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Range = Layer::ChunkSpanX;
+			using Range = ChunkSpanX;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
@@ -20,7 +20,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooBasisStrength : public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Range = Layer::ChunkArea;
+			using Range = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
@@ -30,7 +30,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooBasis : public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Range = Layer::ChunkArea;
+			using Range = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
@@ -40,7 +40,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooStructureInfo : public Layer::DependsOn<> {
 		public:
-			using Range = Layer::ChunkArea;
+			using Range = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
@@ -50,7 +50,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooStructure : public Layer::DependsOn<> {
 		public:
-			using Range = Layer::ChunkArea;
+			using Range = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);

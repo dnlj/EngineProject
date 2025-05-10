@@ -3,60 +3,6 @@
 #include <Game/Terrain/Generator.hpp>
 
 
-// TODO: Notes on terms to document:
-//       Basis - The shape/topology of the terrain regardless of the specific blocks. Needed to combine terrain when blending between biomes.
-//       Basis Strength - Needed blending biomes. How "strong" is the biome at this point. Allows us to interpolate and smooth between biomes.
-
-
-#define BIOME_GET_DISPATCH_NAME(Name) _engine_BiomeGenFuncTable_##Name
-#define BIOME_GET_DISPATCH(Name, BiomeId) BIOME_GET_DISPATCH_NAME(Name)[BiomeId]
-
-/**
- * Generate a function lookup table for biomes.
- * Some biomes may choose to not define the function. In that case BIOME_GET_DISPATCH will
- * return nullptr.
- */
-#define BIOME_GEN_DISPATCH(Name, ReturnType, ...) \
-	using _engine_BiomeGenFunc_##Name = ReturnType (*)(const std::tuple<Biomes...>& biomes, __VA_ARGS__); \
-	constexpr static auto _engine_BiomeGenFuncCall_##Name = []<class Biome>() constexpr -> _engine_BiomeGenFunc_##Name { \
-		if constexpr (requires { &Biome::Name; }) { \
-			return []<class... Args>(const std::tuple<Biomes...>& biomes, Args... args) ENGINE_INLINE { \
-				static_assert(std::same_as<ReturnType, decltype(std::get<Biome>(biomes).Name(args...))>, "Biome dispatch function has incorrect return type."); \
-				ENGINE_INLINE_CALLS { return std::get<Biome>(biomes).Name(args...); }\
-			}; \
-		} else { \
-			return nullptr; \
-		} \
-	}; \
-	constexpr static _engine_BiomeGenFunc_##Name BIOME_GET_DISPATCH(Name,) = { _engine_BiomeGenFuncCall_##Name.template operator()<Biomes>()... };
-
-/**
- * Generate a function lookup table for biomes with the requirement that all biomes define the function.
- * @see BIOME_GEN_DISPATCH
- */
-#define BIOME_GEN_DISPATCH_REQUIRED(Name, ReturnType, ...) \
-	BIOME_GEN_DISPATCH(Name, ReturnType, __VA_ARGS__); \
-	static_assert(std::ranges::all_of(BIOME_GET_DISPATCH_NAME(Name), [](auto* ptr){ return ptr != nullptr; }), "One or more biomes are missing the required " #Name " function.");
-
-/**
- * Generate a function lookup table for biomes for a template function.
- * @param CallName the symbol for the template function with populated template arguments.
- * @see BIOME_GEN_DISPATCH
- */
-#define BIOME_GEN_DISPATCH_T(Name, CallName, ReturnType, ...) \
-	using _engine_BiomeGenFunc_##Name = ReturnType (*)(const std::tuple<Biomes...>& biomes, __VA_ARGS__); \
-	constexpr static auto _engine_BiomeGenFuncCall_##Name = []<class Biome>() constexpr -> _engine_BiomeGenFunc_##Name { \
-		if constexpr (requires { &Biome::template CallName; }) { \
-			return []<class... Args>(const std::tuple<Biomes...>& biomes, Args... args) ENGINE_INLINE { \
-				ENGINE_INLINE_CALLS { return std::get<Biome>(biomes).template CallName(args...); }\
-			}; \
-		} else { \
-			return nullptr; \
-		} \
-	}; \
-	constexpr static _engine_BiomeGenFunc_##Name BIOME_GET_DISPATCH(Name,) = { _engine_BiomeGenFuncCall_##Name.template operator()<Biomes>()... };
-
-
 namespace Game::Terrain {
 	template<class Self, class Layers, class SharedData>
 	void Generator<Self, Layers, SharedData>::generate(Terrain& terrain, const Request& request) {
@@ -82,7 +28,7 @@ namespace Game::Terrain {
 		//       indicate the caller is treating the request upper bound as inclusive
 		//       rather than exclusive? I don't think it should be needed to add anything
 		//       here.
-		const Layer::ChunkArea chunkArea = {request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}};
+		const ChunkArea chunkArea = {request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}};
 		this->request<Layer::BiomeHeight>({request.minChunkCoord.x, request.maxChunkCoord.x + 1});
 		this->request<Layer::BiomeBlock>(chunkArea);
 		this->request<Layer::BiomeStructures>(chunkArea);

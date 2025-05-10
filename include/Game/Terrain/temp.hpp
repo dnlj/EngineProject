@@ -6,6 +6,10 @@
 #include <Game/MapChunk.hpp> // TODO: Replace/rename/update MapChunk.
 #include <Game/Terrain/terrain.hpp>
 #include <Game/universal.hpp>
+#include <Game/Terrain/ChunkArea.hpp>
+#include <Game/Terrain/ChunkSpan.hpp>
+#include <Game/Terrain/ChunkStore.hpp>
+#include <Game/Terrain/RegionStore.hpp>
 
 // Engine
 #include <Engine/Array.hpp>
@@ -105,82 +109,10 @@ namespace Game::Terrain::Layer {
 	template<class...>
 	class DependsOn{};
 
-	// TODO: Make a generic Area<T> with iterator based access. Iterator based access
-	//       would be useful in most biome layers to replace manual bounded for loops.
-	class ChunkArea {
-		public:
-			ChunkVec min; // Inclusive
-			ChunkVec max; // Exclusive
-			ENGINE_INLINE constexpr bool empty() const noexcept { return (min.x >= max.x) || (min.y >= max.y); }
-	};
-	
-	class ChunkSpanX {
-		public:
-			BlockUnit min; // Inclusive
-			BlockUnit max; // Exclusive
-			ENGINE_INLINE constexpr bool empty() const noexcept { return min >= max; }
-	};
-
 	// TODO: make all cache/store types uncopyable. These should be accessed by ref.
 	// TODO: These cache/store/span/area types probably should probably be in just Game::Terrain not Game::Terrain::Layer.
-	
-	template<class T>
-	class ChunkStore {
-		private:
-			T store[chunkSize.x][chunkSize.y]{};
 
-		public:
-			ChunkStore() = default;
-			ChunkStore(ChunkStore&&) = default;
-			ChunkStore(const ChunkStore&) = delete;
-
-			ENGINE_INLINE_REL T& at(ChunkVec chunkIndex) noexcept {
-				ENGINE_DEBUG_ASSERT((chunkIndex.x >= 0) && (chunkIndex.x < chunkSize.x), "Attempting to access block outside of ChunkStore.");
-				ENGINE_DEBUG_ASSERT((chunkIndex.y >= 0) && (chunkIndex.y < chunkSize.y), "Attempting to access block outside of ChunkStore.");
-				return store[chunkIndex.x][chunkIndex.y];
-			}
-
-			ENGINE_INLINE_REL const T& at(ChunkVec chunkIndex) const noexcept {
-				return const_cast<ChunkStore*>(this)->at(chunkIndex);
-			}
-	};
-
-	// IsSpecialized allows for specialization while still inheriting from the 
-	template<class T>
-	class RegionStore {
-		private:
-			T store[regionSize.x][regionSize.y]{};
-			bool populated[regionSize.x][regionSize.y]{};
-
-		public:
-			RegionStore() = default;
-			RegionStore(RegionStore&&) = default;
-			RegionStore(const RegionStore&) = delete;
-
-			ENGINE_INLINE_REL bool isPopulated(RegionVec regionIndex) const noexcept {
-				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x), "Attempting to access chunk outside of RegionStore.");
-				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y), "Attempting to access chunk outside of RegionStore.");
-				return populated[regionIndex.x][regionIndex.y];
-			}
-
-			ENGINE_INLINE_REL void setPopulated(RegionVec regionIndex) noexcept {
-				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x), "Attempting to access chunk outside of RegionStore.");
-				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y), "Attempting to access chunk outside of RegionStore.");
-				populated[regionIndex.x][regionIndex.y] = true;
-			}
-
-			ENGINE_INLINE_REL T& at(RegionVec regionIndex) noexcept {
-				ENGINE_DEBUG_ASSERT((regionIndex.x >= 0) && (regionIndex.x < regionSize.x), "Attempting to access chunk outside of RegionStore.");
-				ENGINE_DEBUG_ASSERT((regionIndex.y >= 0) && (regionIndex.y < regionSize.y), "Attempting to access chunk outside of RegionStore.");
-				return store[regionIndex.x][regionIndex.y];
-			}
-
-			ENGINE_INLINE_REL const T& at(RegionVec regionIndex) const noexcept {
-				ENGINE_DEBUG_ASSERT(isPopulated(regionIndex), "Attempting to access unpopulated chunk.");
-				return const_cast<RegionStore*>(this)->at(regionIndex);
-			}
-	};
-
+	// TODO: Need to rethink cache names. All caches store world-wide data. As opposed to *Store naming which stores data for at the named level.
 	/**
 	 * Store chunk data grouped at the region level.
 	 */
@@ -336,38 +268,6 @@ namespace Game::Terrain::Layer {
 			}
 	};
 }
-
-template<>
-struct fmt::formatter<Game::Terrain::Layer::ChunkArea> {
-	constexpr auto parse(format_parse_context& ctx) const {
-		return ctx.end();
-	}
-
-	auto format(const Game::Terrain::Layer::ChunkArea area, format_context& ctx) const {
-		return fmt::format_to(ctx.out(), "ChunkArea({}, {}) = BlockArea({}, {})",
-			area.min,
-			area.max,
-			area.min * Game::blocksPerChunk,
-			area.max * Game::blocksPerChunk
-		);
-	}
-};
-
-template<>
-struct fmt::formatter<Game::Terrain::Layer::ChunkSpanX> {
-	constexpr auto parse(format_parse_context& ctx) const {
-		return ctx.end();
-	}
-
-	auto format(const Game::Terrain::Layer::ChunkSpanX area, format_context& ctx) const {
-		return fmt::format_to(ctx.out(), "ChunkSpanX({}, {}) = BlockArea({}, {})",
-			area.min,
-			area.max,
-			area.min * Game::blocksPerChunk,
-			area.max * Game::blocksPerChunk
-		);
-	}
-};
 
 // TODO: split out
 namespace Game::Terrain {
@@ -663,14 +563,4 @@ namespace Game::Terrain {
 			// - 
 			//Request(const ChunkVec minChunkCoord, const ChunkVec maxChunkCoord);
 	};
-
-	template<class T, StageId Stage>
-	concept HasStage = T::template hasStage<Stage>;
-
-	template<class T, StageId Stage = 1>
-	struct MaxStage : public std::conditional_t<
-		HasStage<T, Stage>,
-		MaxStage<T, Stage+1>,
-		std::integral_constant<StageId, Stage - 1>
-	> {};
 }

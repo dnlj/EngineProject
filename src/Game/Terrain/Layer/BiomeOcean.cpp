@@ -15,13 +15,12 @@ namespace Game::Terrain::Layer {
 		auto const& shared = generator.shared<BiomeOceanSharedData>();
 		auto const& simplex1 = shared.simplex1;
 		auto const& simplex2 = shared.simplex2;
-		//auto const& simplex3 = shared.simplex3;
+		auto const& simplex3 = shared.simplex3;
 
-		// TODO: Shouldn't these use simplex 1/2/3 instead of 1/1/2?
 		auto thresh = 0.45_f;
 		thresh += 0.04_f * simplex1.value(FVec2{blockCoord} * 0.025_f);
-		thresh += 0.02_f * simplex1.value(FVec2{blockCoord} * 0.05_f);
-		thresh += 0.01_f + 0.01_f * simplex2.value(FVec2{blockCoord} * 0.1_f);
+		thresh += 0.02_f * simplex2.value(FVec2{blockCoord} * 0.05_f);
+		thresh += 0.01_f + 0.01_f * simplex3.value(FVec2{blockCoord} * 0.1_f);
 
 		if (basisInfo.weight > thresh) {
 			return BlockId::Grass;

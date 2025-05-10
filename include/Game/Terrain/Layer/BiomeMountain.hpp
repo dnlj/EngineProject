@@ -9,7 +9,7 @@ namespace Game::Terrain::Layer {
 
 	struct BiomeMountainHeight {
 		public:
-			using Range = Layer::ChunkSpanX;
+			using Range = ChunkSpanX;
 
 		public:
 			void request(const Range area, TestGenerator& generator);

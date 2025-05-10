@@ -11,7 +11,7 @@ namespace Game::Terrain::Layer {
 	template<uint64 Seed, Float HAmp, Float HFeatScale>
 	class BiomeDebugBaseHeight : public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Range = Layer::ChunkSpanX;
+			using Range = ChunkSpanX;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
