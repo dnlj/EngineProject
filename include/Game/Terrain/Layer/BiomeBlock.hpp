@@ -11,7 +11,7 @@ namespace Game::Terrain::Layer {
 			using Index = ChunkVec;
 
 		private:
-			RegionCache<MapChunk> cache;
+			RegionDataCache<MapChunk> cache;
 
 		public:
 			void request(const Range area, TestGenerator& generator);

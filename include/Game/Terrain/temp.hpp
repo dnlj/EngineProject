@@ -10,6 +10,8 @@
 #include <Game/Terrain/ChunkSpan.hpp>
 #include <Game/Terrain/ChunkStore.hpp>
 #include <Game/Terrain/RegionStore.hpp>
+#include <Game/Terrain/RegionDataCache.hpp>
+#include <Game/Terrain/ChunkDataCache.hpp>
 
 // Engine
 #include <Engine/Array.hpp>
@@ -111,69 +113,6 @@ namespace Game::Terrain::Layer {
 
 	// TODO: make all cache/store types uncopyable. These should be accessed by ref.
 	// TODO: These cache/store/span/area types probably should probably be in just Game::Terrain not Game::Terrain::Layer.
-
-	// TODO: Need to rethink cache names. All caches store world-wide data. As opposed to *Store naming which stores data for at the named level.
-	/**
-	 * Store chunk data grouped at the region level.
-	 */
-	template<class ChunkData>
-	class RegionCache {
-		private:
-			using Store = RegionStore<ChunkData>;
-			Engine::FlatHashMap<RegionVec, std::unique_ptr<Store>> regions;
-
-		public:
-			RegionCache() = default;
-			RegionCache(RegionCache&&) = default;
-			RegionCache(const RegionCache&) = delete;
-
-			ENGINE_INLINE Store& at(RegionVec regionCoord) noexcept {
-				const auto found = regions.find(regionCoord);
-				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access region outside of RegionCache.");
-				return *found->second;
-			}
-
-			ENGINE_INLINE const Store& at(RegionVec regionCoord) const noexcept {
-				return const_cast<RegionCache*>(this)->at(regionCoord);
-			}
-
-			ENGINE_INLINE void reserve(RegionVec regionCoord) noexcept {
-				const auto found = regions.find(regionCoord);
-				if (found == regions.end()) {
-					regions.try_emplace(regionCoord, std::make_unique<Store>());
-				}
-			}
-
-			// TODO: Function sig concept
-			ENGINE_INLINE void forEachChunk(ChunkArea area, auto&& func) {
-				// TODO: Could be a bit more effecient by dividing into regions first. Then you
-				//       just iterate over the regions+indexes directly. instead of doing
-				//       chunkToRegion + chunkToRegionIndex for every chunk in the Range. It would
-				//       also be more efficient because we would only need to do chunkToRegion
-				//       once and then can use offsets instead of per chunk.
-				for (auto chunkCoord = area.min; chunkCoord.x < area.max.x; ++chunkCoord.x) {
-					for (chunkCoord.y = area.min.y; chunkCoord.y < area.max.y; ++chunkCoord.y) {
-						const auto regionCoord = chunkToRegion(chunkCoord);
-						reserve(regionCoord);
-
-						auto& regionStore = at(regionCoord);
-						const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
-
-						if (!regionStore.isPopulated(regionIndex)) {
-							regionStore.setPopulated(regionIndex);
-							auto& chunkData = regionStore.at(regionIndex);
-							func(chunkCoord, chunkData);
-						}
-					}
-				}
-			}
-	};
-
-	/**
-	 * Caches block data grouped at the chunk level.
-	 */
-	template<class BlockData>
-	class ChunkCache : public RegionCache<ChunkStore<BlockData>> {};
 
 
 	// TODO: Doc, caches value for every block in a span. In increments of chunks. This is
