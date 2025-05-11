@@ -139,7 +139,8 @@ namespace {
 						// We need to clamp blockCoord at maxBlock because of the applyZoom
 						// does ceil which can give slightly off results from some values of
 						// zoom < 1 due to float precision.
-						const auto h0 = h0Cache.get(std::min(h0Cache.getMaxBlock() - 1, blockCoord.x));
+						//const auto h0 = h0Cache.at(std::min(h0Cache.getMaxBlock() - 1, blockCoord.x));
+						const auto h0 = h0Cache.at(blockCoord.x);
 
 						const auto chunkCoord = blockToChunk(blockCoord);
 						const auto chunkIndex = blockToChunkIndex(blockCoord, chunkCoord);
@@ -155,7 +156,7 @@ namespace {
 							// up when switching layers. This is because of how we handle
 							// biome offsets between BiomeRaw and BiomeWeights. See
 							// comments in those classes for details.
-							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + h0Cache.get(blockCoord.x));
+							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + h0Cache.at(blockCoord.x));
 							const auto info = generator.layerBiomeRaw.get(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
@@ -176,7 +177,7 @@ namespace {
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainHeight2) {
-							const auto h2 = generator.layerBiomeHeight.cache.cache.get(blockCoord.x);
+							const auto h2 = generator.layerBiomeHeight.cache.at(blockCoord.x);
 							const auto basisInfo = generator.layerBiomeBasis.get(chunkCoord).at(chunkIndex);
 							data[idx] = blockCoord.y <= h2 ? glm::u8vec3(basisInfo.weight * glm::vec3(biomeToColor[basisInfo.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainBasis) {

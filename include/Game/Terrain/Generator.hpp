@@ -162,7 +162,7 @@ namespace Game::Terrain {
 
 			void generate(Terrain& terrain, const Request& request);
 
-			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache.cache; }
+			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache; }
 
 	};
 }

@@ -12,6 +12,7 @@
 #include <Game/Terrain/RegionStore.hpp>
 #include <Game/Terrain/RegionDataCache.hpp>
 #include <Game/Terrain/ChunkDataCache.hpp>
+#include <Game/Terrain/BlockSpanCache.hpp>
 
 // Engine
 #include <Engine/Array.hpp>
@@ -45,7 +46,7 @@
 #define BIOME_STRUCTURE_INFO_ARGS \
 	const TestGenerator& generator, \
 	const ::Game::ChunkVec& chunkCoord, \
-	const ::Game::Terrain::HeightCache& h2Cache, \
+	const ::Game::Terrain::BlockSpanCache<BlockUnit>& h2Cache, \
 	std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 
 
@@ -114,98 +115,6 @@ namespace Game::Terrain::Layer {
 	// TODO: make all cache/store types uncopyable. These should be accessed by ref.
 	// TODO: These cache/store/span/area types probably should probably be in just Game::Terrain not Game::Terrain::Layer.
 
-
-	// TODO: Doc, caches value for every block in a span. In increments of chunks. This is
-	//       done per chunk because it is easier to interop with other caches and layers that
-	//       typically work per-chunk and avoids conversion/off-by-one errors.
-	template<class T>
-	class BlockSpanCache {
-		public:
-			/**
-			 * Iterates each block in the given span.
-			 */
-			class Iterator {
-				private:
-					friend class BlockSpanCache;
-					BlockSpanCache& cache;
-					ChunkUnit chunkCoord;
-					const ChunkUnit chunkCoordMax;
-					BlockUnit chunkIndex = 0;
-					BlockUnit blockCoord = chunkCoord * blocksPerChunk;
-
-					Iterator(
-						BlockSpanCache& cache,
-						ChunkSpanX area)
-						: cache{cache}
-						, chunkCoord{area.min}
-						, chunkCoordMax{area.max}
-					{}
-
-				public:
-					ENGINE_INLINE Iterator& operator++() noexcept {
-						ENGINE_DEBUG_ASSERT(chunkCoord != chunkCoordMax);
-						++blockCoord;
-						++chunkIndex;
-						if (chunkIndex == chunkSize.x) {
-							++chunkCoord;
-							chunkIndex = 0;
-						}
-						return *this;
-					}
-
-					ENGINE_INLINE T& operator*() noexcept { return cache.at(blockCoord); }
-					ENGINE_INLINE operator bool() const noexcept { return chunkCoord != chunkCoordMax; }
-					ENGINE_INLINE ChunkUnit getChunkCoord() const noexcept { return chunkCoord; }
-					ENGINE_INLINE BlockUnit getChunkIndex() const noexcept { return chunkIndex; }
-					ENGINE_INLINE BlockUnit getBlockCoord() const noexcept { return blockCoord; }
-			};
-
-		public: // TODO: private, currently public for easy TerrainPreview compat during transition.
-			static_assert(std::same_as<T, BlockUnit>, "BlockUnit is currently the only supported type due to the use of HeightCache.");
-			HeightCache cache; // TODO: remove HeightCache, integrate into BlockSpanCache.
-
-		public:
-			BlockSpanCache() = default;
-			BlockSpanCache(BlockSpanCache&&) = default;
-			BlockSpanCache(const BlockSpanCache&) = delete;
-
-			ENGINE_INLINE Iterator walk(ChunkSpanX area) noexcept {
-				return Iterator{*this, area};
-			}
-
-			ENGINE_INLINE T& at(const BlockUnit x) noexcept {
-				return cache.get(x);
-			}
-
-			ENGINE_INLINE T at(const BlockUnit x) const noexcept {
-				static_assert(sizeof(T) < 4*sizeof(size_t), "Returning large type by value, this is likely not intended.");
-				return cache.get(x);
-			}
-
-			ENGINE_INLINE void reserve(const ChunkSpanX area) noexcept {
-				// TODO: Reset isn't quite right here. See comments in WorldBaseHeight and
-				//       BiomeHeight ::request function.
-				cache.reset(area.min * blocksPerChunk, area.max * blocksPerChunk);
-			}
-			
-			// TODO: Function sig concept
-			ENGINE_INLINE void forEachBlock(const ChunkSpanX area, auto&& func) {
-				const auto min = area.min * blocksPerChunk;
-				const auto max = area.max * blocksPerChunk;
-				for (auto x = min; x < max; ++x) {
-					func(x, at(x));
-				}
-			}
-			
-			// TODO: Function sig concept
-			ENGINE_INLINE void forEachChunk(const ChunkSpanX area, auto&& func) {
-				const auto min = area.min;
-				const auto max = area.max;
-				for (auto x = min; x < max; ++x) {
-					func(x, at(x));
-				}
-			}
-	};
 }
 
 // TODO: split out

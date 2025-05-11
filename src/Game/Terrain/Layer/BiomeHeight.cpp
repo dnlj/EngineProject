@@ -9,18 +9,14 @@
 
 namespace Game::Terrain::Layer {
 	void BiomeHeight::request(const Range area, TestGenerator& generator) {
-		// TODO: Reset isn't quite right here. It could/will be possible to have
-		//       multiple requests "active" at once/threaded. This is fine
-		//       currently because we happen to only have one request at
-		//       once/single thread. We will need to revisit this once we get to
-		//       multithreading and request optimization.
+		ENGINE_LOG2("BiomeHeight::request {}", area);
 		cache.reserve(area);
 
 		generator.requestAwait<WorldBaseHeight>(area);
 
 		{
-			const auto blockMinX = area.min * blocksPerChunk;
-			const auto blockMaxX = area.max * blocksPerChunk;
+			const auto blockMinX = area.min * chunksPerRegion * blocksPerChunk;
+			const auto blockMaxX = area.max * chunksPerRegion * blocksPerChunk;
 			auto hMin = generator.get<WorldBaseHeight>(blockMinX);
 			auto hMax = hMin;
 			for (auto x = blockMinX + 1; x < blockMaxX; ++x) {

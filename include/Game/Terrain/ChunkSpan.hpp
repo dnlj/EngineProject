@@ -1,5 +1,8 @@
 #pragma once
 
+// Game
+#include <Game/Terrain/RegionSpanX.hpp>
+
 
 namespace Game::Terrain {
 	/**
@@ -10,6 +13,9 @@ namespace Game::Terrain {
 			ChunkUnit min; // Inclusive
 			ChunkUnit max; // Exclusive
 			ENGINE_INLINE constexpr bool empty() const noexcept { return min >= max; }
+			ENGINE_INLINE constexpr RegionSpanX toRegionSpan() const noexcept {
+				return {chunkToRegion({min, 0}).x, chunkToRegion({max, 0}).x + 1};
+			}
 	};
 }
 

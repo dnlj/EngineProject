@@ -29,7 +29,7 @@ namespace Game::Terrain {
 		//       rather than exclusive? I don't think it should be needed to add anything
 		//       here.
 		const ChunkArea chunkArea = {request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}};
-		this->request<Layer::BiomeHeight>({request.minChunkCoord.x, request.maxChunkCoord.x + 1});
+		this->request<Layer::BiomeHeight>(ChunkSpanX{request.minChunkCoord.x, request.maxChunkCoord.x + 1}.toRegionSpan());
 		this->request<Layer::BiomeBlock>(chunkArea);
 		this->request<Layer::BiomeStructures>(chunkArea);
 		generateLayers();

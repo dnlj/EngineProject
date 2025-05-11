@@ -8,6 +8,12 @@ namespace Game {
 	using namespace Engine::Types;
 }
 
+// TODO: Adjust terminology to have block/chunk index be the same as the coord version.
+//       I.e. a chunkCoord is the coordinate of a chunk so a chunkIndex should be the
+//       index _of_ that chunk, not an index _into_ that chunk. This has gone back and
+//       forth a number of times, but I think having them align is probably a simpler
+//       rule.
+
 namespace Game::inline Units {
 	/**
 	 * A position in world units (Box2D meters). These will always be relative to some origin

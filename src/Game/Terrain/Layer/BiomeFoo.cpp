@@ -76,7 +76,7 @@ namespace Game::Terrain::Layer {
 
 namespace Game::Terrain::Layer {
 	void BiomeFooHeight::request(const Range area, TestGenerator& generator) {
-		generator.request<WorldBaseHeight>(area);
+		generator.request<WorldBaseHeight>(area.toRegionSpan());
 	}
 
 	Float BiomeFooHeight::get(BIOME_HEIGHT_ARGS) const noexcept {
@@ -169,7 +169,7 @@ namespace Game::Terrain::Layer {
 		const auto maxBlockCoord = minBlockCoord + chunkSize;
 		for (auto blockCoord = minBlockCoord; blockCoord.x < maxBlockCoord.x; ++blockCoord.x) {
 			if (blockCoord.x % stride == 0) {
-				blockCoord.y = h2Cache.get(blockCoord.x);
+				blockCoord.y = h2Cache.at(blockCoord.x);
 				if (blockCoord.y >= minBlockCoord.y && blockCoord.y < maxBlockCoord.y) {
 					// TODO: random horizontal variation, etc.
 					inserter = {blockCoord, blockCoord + BlockVec{width, 12}, 0};

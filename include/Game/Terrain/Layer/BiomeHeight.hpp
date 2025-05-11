@@ -18,7 +18,7 @@ namespace Game::Terrain::Layer {
 	// The absolute weight of each biome. These are non-normalized.
 	class BiomeHeight : public DependsOn<BiomeWeights, WorldBaseHeight> {
 		public:
-			using Range = ChunkSpanX;
+			using Range = RegionSpanX;
 			using Index = BlockUnit;
 
 		public: // TODO: private, currently public during transition to layers.

@@ -10,7 +10,7 @@
 namespace Game::Terrain::Layer {
 	void BiomeBasis::request(const Range area, TestGenerator& generator) {
 		generator.request<BiomeBlended>(area);
-		generator.request<BiomeHeight>({area.min.x, area.max.x});
+		generator.request<BiomeHeight>(ChunkSpanX{area.min.x, area.max.x}.toRegionSpan());
 	}
 
 	void BiomeBasis::generate(const Range area, TestGenerator& generator) {

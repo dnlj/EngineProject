@@ -7,7 +7,7 @@ namespace Game::Terrain::Layer {
 	// The large world-scale height variation that persists between all biomes.
 	class WorldBaseHeight : public DependsOn<> {
 		public:
-			using Range = ChunkSpanX;
+			using Range = RegionSpanX;
 			using Index = BlockUnit;
 
 		public:
@@ -18,11 +18,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			void request(const Range area, TestGenerator& generator) {
-				// TODO: Reset isn't quite right here. It could/will be possible to have
-				//       multiple requests "active" at once/threaded. This is fine
-				//       currently because we happen to only have one request at
-				//       once/single thread. We will need to revisit this once we get to
-				//       multithreading and request optimization.
+				ENGINE_LOG2("WorldBaseHeight::request {}", area);
 				cache.reserve(area);
 			}
 
@@ -30,18 +26,22 @@ namespace Game::Terrain::Layer {
 				// TODO: use _f for Float. Move from TerrainPreview.
 				// TODO: keep in mind that this is +- amplitude, and for each octave we increase the contrib;
 				// TODO: tune + octaves, atm this is way to steep.
-				//for (auto x = area.min; x < area.max; ++x) {
-				//	cache.get(x) = static_cast<BlockUnit>(500 * simplex1.value(x * 0.00005f, 0));
-				//}
-
-				cache.forEachBlock(area, [&](const BlockUnit x, BlockUnit& h0) ENGINE_INLINE_REL {
-					h0 = static_cast<BlockUnit>(500 * simplex1.value(x * 0.00005f, 0));
-				});
+				auto cur = cache.walk(area);
+				while (cur) {
+					const auto blockCoordX = cur.getBlockCoord();
+					*cur = static_cast<BlockUnit>(500 * simplex1.value(blockCoordX * 0.00005f, 0));
+					++cur;
+				}
 			}
 
+			// TODO: remove, temp during biome span region transition.
 			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept {
 				return cache.at(x);
 			}
+			 
+			//ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Range area) const noexcept {
+			//	return cache.walk(area);
+			//}
 
 		private:
 			// TODO: Should we have a mechanism for sharing noise generators between multiple systems?

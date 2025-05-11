@@ -10,7 +10,7 @@
 namespace Game::Terrain::Layer {
 	void BiomeWeights::request(const Range area, TestGenerator& generator) {
 		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
-		generator.request<WorldBaseHeight>({area.min.x, area.max.x});
+		generator.request<WorldBaseHeight>(ChunkSpanX{area.min.x, area.max.x}.toRegionSpan());
 
 		// Note that since BiomeRaw is not cached this call effectively does nothing.
 		generator.request<BiomeRaw>(area);
