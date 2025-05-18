@@ -16,13 +16,20 @@ namespace Engine {
 			T value;
 
 		public:
-			BaseMember() {}
+			constexpr BaseMember() {}
 
 			template<class... Args>
-			BaseMember(Args&&... args) : value(std::forward<Args>(args)...) {}
+			constexpr BaseMember(Args&&... args) : value(std::forward<Args>(args)...) {}
 
-			[[nodiscard]] ENGINE_INLINE T& get() noexcept { return value; }
-			[[nodiscard]] ENGINE_INLINE const T& get() const noexcept { return value; }
+			[[nodiscard]] ENGINE_INLINE constexpr T& get() noexcept { return value; }
+			[[nodiscard]] ENGINE_INLINE constexpr const T& get() const noexcept { return value; }
+	};
+
+	template<>
+	class ENGINE_EMPTY_BASE BaseMember<void> {
+		public:
+			constexpr BaseMember() {}
+			ENGINE_INLINE constexpr void get() const noexcept {}
 	};
 
 	/** @see BaseMember */
@@ -30,12 +37,12 @@ namespace Engine {
 	requires std::is_empty_v<T>
 	class ENGINE_EMPTY_BASE BaseMember<T> : public T {
 		public:
-			BaseMember() {}
+			constexpr BaseMember() {}
 
 			template<class... Args>
-			BaseMember(Args&&... args) {}
+			constexpr BaseMember(Args&&... args) : T(std::forward<Args>(args)...) {}
 
-			[[nodiscard]] ENGINE_INLINE T& get() noexcept { return *this; }
-			[[nodiscard]] ENGINE_INLINE const T& get() const noexcept { return *this; }
+			[[nodiscard]] ENGINE_INLINE constexpr T& get() noexcept { return *this; }
+			[[nodiscard]] ENGINE_INLINE constexpr const T& get() const noexcept { return *this; }
 	};
 }

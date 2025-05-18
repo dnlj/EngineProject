@@ -9,3 +9,4 @@
 #define ENGINE_INLINE [[msvc::forceinline]]
 #define ENGINE_INLINE_REL
 #define ENGINE_DEBUG_ASSERT
+#define ENGINE_EMPTY_BASE __declspec(empty_bases)

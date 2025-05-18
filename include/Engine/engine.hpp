@@ -99,6 +99,12 @@
 // TODO: once msvc upgrade: #define ENGINE_FLATTEN [[msvc::flatten]] // TODO: cross platform: [[gnu::flatten]]
 #define ENGINE_FLATTEN [[msvc::flatten]]
 
+#if ENGINE_OS_WINDOWS
+	#define ENGINE_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#else
+	#define ENGINE_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#endif
+
 /**
  * Disable or restore runtime checks for a region of code.
  * Runtime checks can have an huge cost in compute heavy code. It can be extremely
@@ -108,7 +114,6 @@
 // TODO: MSVC only
 #define ENINGE_RUNTIME_CHECKS_DISABLE _Pragma(R"(runtime_checks("", off))")
 #define ENINGE_RUNTIME_CHECKS_RESTORE _Pragma(R"(runtime_checks("", restore))")
-	
 
 /**
  * Build various operators for enums.
@@ -206,7 +211,7 @@ namespace Engine {
 	/**
 	 * A generic, unique, constructable, type for none/void/nil/null.
 	 */
-	struct None { constexpr None() = default; };
+	struct None { constexpr None() noexcept = default; };
 }
 
 /**
