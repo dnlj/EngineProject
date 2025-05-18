@@ -37,7 +37,7 @@
 #include <timeapi.h>
 #endif
 
-
+void test_AreaWalker();
 void setupCommands(Game::EngineInstance& engine, Engine::Window& window);
 void setupBinds(Game::EngineInstance& engine);
 
@@ -1044,8 +1044,10 @@ int entry(int argc, char* argv[]) {
 	//_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW | _CRTDBG_MODE_DEBUG);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	test_divFloor(); // TODO: move to gtest once fixed
-	test_divCeil(); // TODO: move to gtest once fixed
+	// TODO: move to gtest once fixed.
+	test_divFloor();
+	test_divCeil();
+	test_AreaWalker();
 
 	startTime = Engine::Clock::now();
 	run(argc, argv);
