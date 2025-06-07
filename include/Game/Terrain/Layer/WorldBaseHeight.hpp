@@ -8,7 +8,7 @@ namespace Game::Terrain::Layer {
 	class WorldBaseHeight : public DependsOn<> {
 		public:
 			using Range = RegionSpanX;
-			using Index = BlockUnit;
+			using Index = RegionSpanX;
 
 		public:
 			// TODO: May be threading considerations. Maybe have an option to do
@@ -35,13 +35,13 @@ namespace Game::Terrain::Layer {
 			}
 
 			// TODO: remove, temp during biome span region transition.
-			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept {
+			ENGINE_INLINE_REL [[nodiscard]] BlockUnit getOld(const BlockUnit x) const noexcept {
 				return cache.at(x);
 			}
 			 
-			//ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Range area) const noexcept {
-			//	return cache.walk(area);
-			//}
+			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Index area) const noexcept {
+				return cache.walk(area);
+			}
 
 		private:
 			// TODO: Should we have a mechanism for sharing noise generators between multiple systems?

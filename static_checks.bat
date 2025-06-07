@@ -20,6 +20,12 @@ call :check -U "\)\s*[\r\n]+\s*\{"
 rem Use left const.
 call :check "^\s*auto const\s|\(\s*auto const\s"
 
+rem Use the common template syntax: template<class T>
+call :check "template <"
+
+rem Templates should use class over typename.
+call :check "template\s*<\s*typename"
+
 rem ################################################################################
 
 

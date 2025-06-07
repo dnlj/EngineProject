@@ -16,7 +16,7 @@ namespace Game::Terrain {
 				private:
 					friend class BlockSpanCache;
 					using CacheT = std::conditional_t<IsConst, const BlockSpanCache, BlockSpanCache>;
-					using StoreItT = std::conditional_t<IsConst, const Store, Store>::iterator;
+					using StoreItT = std::conditional_t<IsConst, Store::const_iterator, Store::iterator>;
 
 					CacheT& cache;
 					RegionUnit regionCoord;
@@ -39,6 +39,7 @@ namespace Game::Terrain {
 					}
 			
 				public:
+					// TODO: Could this be simplified with AreaWalker?
 					ENGINE_INLINE_REL IteratorImpl& operator++() noexcept {
 						ENGINE_DEBUG_ASSERT(regionCoord != regionCoordMax);
 
@@ -62,7 +63,6 @@ namespace Game::Terrain {
 								} else {
 									// We need this case because it is valid to increment _to_ the
 									// end iterator, just not use or increment it.
-									//data = nullptr;
 									data = {};
 								}
 
@@ -131,6 +131,8 @@ namespace Game::Terrain {
 					cache.try_emplace(x);
 				}
 			}
+
+
 
 			// TODO: Should these each take a block/chunk/region span instead of one as a whole?
 			//// TODO: Function sig concept

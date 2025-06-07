@@ -14,13 +14,14 @@ namespace Game::Terrain::Layer {
 
 		generator.requestAwait<WorldBaseHeight>(area);
 
+		auto h0walk = generator.get<WorldBaseHeight>(area);
 		{
 			const auto blockMinX = area.min * chunksPerRegion * blocksPerChunk;
 			const auto blockMaxX = area.max * chunksPerRegion * blocksPerChunk;
-			auto hMin = generator.get<WorldBaseHeight>(blockMinX);
+			auto hMin = *h0walk;
 			auto hMax = hMin;
-			for (auto x = blockMinX + 1; x < blockMaxX; ++x) {
-				const auto h0 = generator.get<WorldBaseHeight>(x);
+			for (++h0walk; h0walk; ++h0walk) {
+				const auto h0 = *h0walk;
 				hMin = std::min(hMin, h0);
 				hMax = std::max(hMax, h0);
 			}
@@ -46,11 +47,12 @@ namespace Game::Terrain::Layer {
 		//       cached. Since we don't issue requests cached height layers won't work. They
 		//       also don't make sense. The BiomeHeight layer (this layer) is what should be
 		//       doing the caching. Other layers should be sampling the BiomeHeight layer, not specific biomes.
-
+		
+		auto h0walk = generator.get<WorldBaseHeight>(area);
 		auto cur = cache.walk(area);
 		while (cur) {
 			const auto blockCoordX = cur.getBlockCoord();
-			const auto h0 = generator.get<WorldBaseHeight>(blockCoordX);
+			const auto h0 = *h0walk;
 			const auto h0F = static_cast<Float>(h0);
 			const auto chunkCoord = blockToChunk({blockCoordX, h0});
 			const auto& chunkStore = generator.get<BiomeBlended>(chunkCoord);
@@ -75,6 +77,7 @@ namespace Game::Terrain::Layer {
 
 			cache.at(blockCoordX) = static_cast<BlockUnit>(std::floor(h2));
 			++cur;
+			++h0walk;
 		}
 	}
 }
