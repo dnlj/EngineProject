@@ -42,6 +42,10 @@ namespace Game::Terrain::Layer {
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Index area) const noexcept {
 				return cache.walk(area);
 			}
+			 
+			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const ChunkUnit chunkX) const noexcept {
+				return cache.walk(chunkX);
+			}
 
 		private:
 			// TODO: Should we have a mechanism for sharing noise generators between multiple systems?

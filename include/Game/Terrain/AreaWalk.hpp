@@ -19,9 +19,32 @@
 //       naming is accurate and pairs nicely with the X naming. I'm referring to names such
 //       as `onNextChunkY(...)` vs just `onNextChunk(...)`
 namespace Game::Terrain {
+	class AreaWalkRegionParam {
+		public:
+			RegionVec regionCoord;
+	};
+
+	class AreaWalkChunkParam : public AreaWalkRegionParam {
+		public:
+			RegionVec regionIndex;
+			ChunkVec chunkCoord;
+	};
+
+	class AreaWalkBlockParam : public AreaWalkChunkParam {
+		public:
+			ChunkVec chunkIndex;
+			BlockVec blockCoord;
+	};
+
+	class AreaWalkParam : public AreaWalkBlockParam {
+	};
+
 	namespace Detail {
 		////////////////////////////////////////////////////////////////////////////////
 
+		// TODO: This isn't good... would need to be more advanced. Doesn't do the
+		//       isPopulated skipping for already populated areas that the region cache
+		//       does. We could add a return value to the callbacks?
 		/**
 		 * This serves as the leaf node for walker inheritance. This is where we can
 		 * define how we walk different types/areas/stores/caches.
@@ -37,8 +60,8 @@ namespace Game::Terrain {
 					// TODO: Specialize, if no region walkers are given then we can ignore
 					//       regions and just iterate chunks. How common is that use case
 					//       though? I think right now we frequently end up going chunk >
-					//       region internally in our manual loops anyways. If thats the
-					//       case then this would be a more effecient option.
+					//       region internally in our manual loops anyways. If that's the
+					//       case then this would still be a more efficient option.
 					//
 					//       Same for blocks. If we don't specify region or chunk walkers we
 					//       can just iterate blocks directly unless we need the index for some reason.
@@ -53,73 +76,60 @@ namespace Game::Terrain {
 					auto regionIndexUpperLimit = regionSize;
 
 					// Per region
-					for (auto regionCoord = regionCoordMin; regionCoord.x < regionCoordMax.x; ++regionCoord.x) {
+					AreaWalkParam param{};
+					for (param.regionCoord = regionCoordMin; param.regionCoord.x < regionCoordMax.x; ++param.regionCoord.x) {
 						// Check if we need to limit the upper index x within the region.
-						if (regionCoord.x == regionCoordMax.x - 1) {
+						if (param.regionCoord.x == regionCoordMax.x - 1) {
 							regionIndexUpperLimit.x = regionIndexMax.x;
 						}
 
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						// TODO: next step is integrating the walkers
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
-						//
+						if constexpr (requires { this->getRegionWalkerX(); }) {
+							this->getRegionWalkerX()(std::as_const(param));
+						}
 
-						//if constexpr (requires { getRegionWalkerX(); }) {
-						//	getRegionWalkerX();
-						//}
-
-						for (regionCoord.y = regionCoordMin.y; regionCoord.y < regionCoordMax.y; ++regionCoord.y) {
+						for (param.regionCoord.y = regionCoordMin.y; param.regionCoord.y < regionCoordMax.y; ++param.regionCoord.y) {
 							// Check if we need to limit the upper index y within the region.
-							if (regionCoord.y == regionCoordMax.y - 1) {
+							if (param.regionCoord.y == regionCoordMax.y - 1) {
 								regionIndexUpperLimit.y = regionIndexMax.y;
 							}
 
+							if constexpr (requires { this->getRegionWalkerY(); }) {
+								this->getRegionWalkerY()(std::as_const(param));
+							}
+
 							// Every chunk in this region between the upper and lower limits.
-							auto regionIndex = regionIndexLowerLimit;
-							for (; regionIndex.x < regionIndexUpperLimit.x; ++regionIndex.x) {
+							param.regionIndex = regionIndexLowerLimit;
+							const auto regionChunkCoord = regionToChunk(param.regionCoord);
+							for (; param.regionIndex.x < regionIndexUpperLimit.x; ++param.regionIndex.x) {
+								param.regionIndex.y = regionIndexLowerLimit.y;
+								param.chunkCoord = regionChunkCoord + param.regionIndex;
 
-								//
-								//
-								//
-								// TODO: Cache base walk per x.
-								// Actually, they are cached at the region level so we should
-								// be able to lift the caching there and just add a get(x) and
-								// we are back to basic subtraction then
-								//
-								//
-								//
-								//
+								if constexpr (requires { this->getChunkWalkerX(); }) {
+									this->getChunkWalkerX()(std::as_const(param));
+								}
 
-								for (regionIndex.y = regionIndexLowerLimit.y; regionIndex.y < regionIndexUpperLimit.y; ++regionIndex.y) {
-									//
-									//
-									//
-									// TODO: Reset to base walk,
-									//
-									//
-									//
-									//
+								for (; param.regionIndex.y < regionIndexUpperLimit.y; ++param.regionIndex.y) {
+									param.chunkCoord.y = param.regionCoord.y + param.regionIndex.y;
+									if constexpr (requires { this->getChunkWalkerY(); }) {
+										this->getChunkWalkerY()(std::as_const(param));
+									}
+
+									// For every block in the chunk
+									param.chunkIndex = {};
+									const auto chunkBlockCoord = chunkToBlock(param.chunkCoord);
+									for (; param.chunkIndex.x < chunkSize.x; ++param.chunkIndex.x) {
+										param.blockCoord = chunkBlockCoord + param.chunkIndex;
+										if constexpr (requires { this->getChunkWalkerY(); }) {
+											this->getBlockWalkerX()(std::as_const(param));
+										}
+
+										for (; param.chunkIndex.y < chunkSize.y; ++param.chunkIndex.y) {
+											param.blockCoord.y = chunkBlockCoord.y + param.chunkIndex.y;
+											if constexpr (requires { this->getChunkWalkerY(); }) {
+												this->getBlockWalkerY()(std::as_const(param));
+											}
+										}
+									}
 								}
 							}
 
@@ -129,7 +139,8 @@ namespace Game::Terrain {
 
 						// We will never visit the x lower limit again. Start over at the y lower limit.
 						regionIndexLowerLimit.x = 0;
-						regionIndexLowerLimit.y = regionCoordMin.y;
+						regionIndexLowerLimit.y = regionIndexMin.y;
+						regionIndexUpperLimit.y = regionSize.y;
 					}
 				};
 		};
@@ -341,7 +352,14 @@ namespace Game::Terrain {
 		};
 		////////////////////////////////////////////////////////////////////////////////
 	}
-	
+
+	// TODO: One big issue right now is how you have to pass data between functions. Define them
+	//       outside everything and then capture by reference. One option might be to pass in
+	//       every cache like `.walk(area, cache1, cache2, ...)`. Then have the walker know how
+	//       to pull data from each? Then that could be added to the param as a tuple which
+	//       would let us do `auto& [cache1Value, cache2Value] = param.values` in the lambda.
+	//       That might help a bit, but doesn't solve any other variables and dervied data so
+	//       probably not worth.
 	/**
 	 * Allows you to define function objects ("walkers") to be called at various stages when iterating an area.
 	 * 

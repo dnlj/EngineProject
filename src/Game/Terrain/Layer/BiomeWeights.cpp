@@ -18,40 +18,18 @@ namespace Game::Terrain::Layer {
 	}
 
 	void BiomeWeights::generate(const Range area, TestGenerator& generator) {
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: This doens't quite work, we need to track the last X and if x > last then
-		// ++h0walk. This is needed since you visit the same x multiple times for each
-		// chunk vertically.
-		//
-		//
-		//
-		//
-		// Since they are cached at the region level we should be able to 
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//auto h0walk = generator.get<WorldBaseHeight>(baseBlockCoord.x + chunkIndex.x);
 		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE_REL {
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
+			auto h0Walk = generator.get2<WorldBaseHeight>(chunkCoord.x);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
 				// Theoretically this offset should go in BiomeRaw. In practice its more
 				// efficient and easier to do it here. This avoids the need to use a cache
 				// in BiomeRaw which makes it ~15% faster and not use any memory.
 				
-				//const auto offset = biomeScaleOffset + BlockVec{0, generator.get<WorldBaseHeight>(baseBlockCoord.x + chunkIndex.x)};
-				const auto offset = biomeScaleOffset + BlockVec{0, generator.layerWorldBaseHeight.getOld(baseBlockCoord.x + chunkIndex.x)};
+				// TODO: rm - just for debugging during transition.
+				ENGINE_DEBUG_ASSERT(*h0Walk == generator.layerWorldBaseHeight.getOld(baseBlockCoord.x + chunkIndex.x));
+				const auto offset = biomeScaleOffset + BlockVec{0, *h0Walk};
+				++h0Walk;
 
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
 					const auto blockCoord = baseBlockCoord + chunkIndex - offset;
@@ -60,42 +38,39 @@ namespace Game::Terrain::Layer {
 			}
 		});
 
+		// TODO: WIP transition to area walker. Probably abort this. It doesn't do the
+		//       isPopulated skipping that the region cache forEach does. So we would need
+		//       to add a return value and skipping. Combined with the annoying
+		//       forward-define for shared variables its probably not worth if we can find
+		//       a better solution.
+		//{
+		//	RegionStore<ChunkStore<BiomeBlend>>* regionStore = nullptr;
+		//	ChunkStore<BiomeBlend>* chunkStore = nullptr;
+		//	BlockVec baseBlockCoord = {};
+		//	BlockVec offset = {};
 		//
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: Now we need to figure out how to actualy do the walking. I wonder if this
-		//       is better defined on the caches themselves. Like cache.walk(areaWalk);
-		//       Otherwise the walker needes to know about all the cache types. I defining on the caches makes most sense?
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-
-		{
-			BlockVec offset{};
-			BlockVec baseBlockCoord{};
-			AreaWalk{}
-				.onNextRegionX([&]{ // TODO: cache h0 lookup
-					//generator.layerWorldBaseHeight.cache;
-				})
-				.onNextChunkX([&]{ // TODO: reset h0 cache + offset
-					//baseBlockCoord = chunkToBlock(chunkCoord);
-				})
-				.onNextBlockX([&]{
-					//offset = biomeScaleOffset + BlockVec{0, generator.get2<WorldBaseHeight>(baseBlockCoord.x + chunkIndex.x)};
-				})
-				.walk(area);
-		}
+		//	AreaWalk{}
+		//		.onNextRegionX([&](AreaWalkRegionParam const& param) { // TODO: cache h0 lookup
+		//			param;
+		//		})
+		//		.onNextRegionY([&](AreaWalkRegionParam const& param) {
+		//			cache.reserve(param.regionCoord);
+		//			regionStore = &cache.at(param.regionCoord);
+		//		})
+		//		.onNextChunkY([&](AreaWalkChunkParam const& param) { // TODO: reset h0 cache + offset
+		//			// TODO: shoulnd't base block be part of param? Don't we get that for free?
+		//			baseBlockCoord = chunkToBlock(param.chunkCoord);
+		//			chunkStore = &regionStore->at(param.regionIndex);
+		//		})
+		//		.onNextBlockX([&](AreaWalkBlockParam const& param) {
+		//			offset = biomeScaleOffset + BlockVec{0, generator.layerWorldBaseHeight.getOld(baseBlockCoord.x + param.chunkIndex.x)};
+		//		})
+		//		.onNextBlockY([&](AreaWalkBlockParam const& param) {
+		//			BiomeBlend& blend = chunkStore->at(param.chunkIndex);
+		//			blend = populate(param.blockCoord - offset, generator);
+		//		})
+		//		.walk(area);
+		//}
 	}
 
 	const ChunkStore<BiomeBlend>& BiomeWeights::get(const Index chunkCoord) const noexcept {

@@ -12,15 +12,15 @@ namespace Game::Terrain {
 			 * Iterates each block in the given span.
 			 */
 			template<bool IsConst>
-			class IteratorImpl {
+			class RegionIteratorImpl {
 				private:
 					friend class BlockSpanCache;
 					using CacheT = std::conditional_t<IsConst, const BlockSpanCache, BlockSpanCache>;
 					using StoreItT = std::conditional_t<IsConst, Store::const_iterator, Store::iterator>;
 
-					CacheT& cache;
+					CacheT* cache; // ref
 					RegionUnit regionCoord;
-					const ChunkUnit regionCoordMax;
+					ChunkUnit regionCoordMax; // const
 					StoreItT data{};
 					ChunkUnit chunkCoord = regionToChunk({regionCoord, 0}).x;
 					BlockUnit chunkIndex = 0;
@@ -28,10 +28,10 @@ namespace Game::Terrain {
 					BlockUnit blockCoord = chunkToBlock({chunkCoord, 0}).x;
 					ENGINE_DEBUG_ONLY(int sanity = 0);
 			
-					IteratorImpl(
+					RegionIteratorImpl(
 						CacheT& cache,
 						RegionSpanX area)
-						: cache{cache}
+						: cache{&cache}
 						, regionCoord{area.min}
 						, regionCoordMax{area.max} {
 
@@ -40,14 +40,13 @@ namespace Game::Terrain {
 			
 				public:
 					// TODO: Could this be simplified with AreaWalker?
-					ENGINE_INLINE_REL IteratorImpl& operator++() noexcept {
+					ENGINE_INLINE_REL RegionIteratorImpl& operator++() noexcept {
 						ENGINE_DEBUG_ASSERT(regionCoord != regionCoordMax);
 
 						ENGINE_DEBUG_ONLY(++sanity);
 						ENGINE_DEBUG_ASSERT(sanity < 10'000);
 
 						++blockCoord;
-			
 						++chunkIndex;
 						if (chunkIndex == chunkSize.x) {
 							++chunkCoord;
@@ -86,15 +85,15 @@ namespace Game::Terrain {
 
 				private:
 					void dataFromRegionCoord() {
-						auto newData = cache.cache.find(regionCoord);
-						ENGINE_DEBUG_ASSERT(newData != cache.cache.end());
+						auto newData = cache->cache.find(regionCoord);
+						ENGINE_DEBUG_ASSERT(newData != cache->cache.end());
 						data = newData->second.begin();
 					}
 			};
 
 		public: 
-			using Iterator = IteratorImpl<false>;
-			using ConstIterator = IteratorImpl<true>;
+			using Iterator = RegionIteratorImpl<false>;
+			using ConstIterator = RegionIteratorImpl<true>;
 
 		private:
 			Engine::FlatHashMap<RegionUnit, Store> cache{};
@@ -110,6 +109,19 @@ namespace Game::Terrain {
 
 			ENGINE_INLINE auto walk(RegionSpanX area) const noexcept {
 				return ConstIterator{*this, area};
+			}
+
+			ENGINE_INLINE auto walk(ChunkUnit chunkX) const noexcept {
+				const auto regionCoordX = chunkToRegion({chunkX, 0}).x;
+				const auto found = cache.find(regionCoordX);
+				ENGINE_DEBUG_ASSERT(found != cache.end());
+
+				const auto baseBlockCoord = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
+				const auto blockCoord = chunkToBlock({chunkX, 0}).x;
+				const auto offset = blockCoord - baseBlockCoord;
+				ENGINE_DEBUG_ASSERT(offset >= 0 && offset <= std::tuple_size_v<Store>);
+
+				return found->second.begin() + offset;
 			}
 			
 			// TODO: remove, this is temp while fixing block psan cache to use regions.
