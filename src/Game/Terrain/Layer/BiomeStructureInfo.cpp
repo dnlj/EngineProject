@@ -69,6 +69,7 @@ namespace Game::Terrain::Layer {
 					auto& info = structures[i];
 					ENGINE_DEBUG_ASSERT(info.min.x <= info.max.x);
 					ENGINE_DEBUG_ASSERT(info.min.y <= info.max.y);
+					ENGINE_DEBUG_ASSERT(info.biomeId == BiomeId{}, "The structure info biome id should not be populated by the biomes themselves.");
 					info.biomeId = biomeId;
 				}
 			}

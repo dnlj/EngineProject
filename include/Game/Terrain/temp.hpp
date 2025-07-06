@@ -65,60 +65,11 @@
 
 namespace Game::Terrain {
 	class TestGenerator; // TODO: rm
-
-	// TODO: Remove, use/combine with BlockSpanCache.
-	class HeightCache {
-		public:
-			constexpr static BlockUnit invalid = std::numeric_limits<BlockUnit>::max();
-
-		private:
-			BlockUnit minBlock = 0; // Inclusive
-			BlockUnit maxBlock = 0; // Exclusive
-			std::vector<BlockUnit> heights;
-
-		public:
-			void reset(BlockUnit minBlockX, BlockUnit maxBlockX) {
-				minBlock = minBlockX;
-				maxBlock = maxBlockX;
-				heights.clear();
-				heights.resize(maxBlock - minBlock, invalid);
-			}
-
-			ENGINE_INLINE_REL [[nodiscard]] BlockUnit& get(const BlockUnit blockCoord) noexcept {
-				debugBoundsCheck(blockCoord);
-				return heights[blockCoord - minBlock];
-			}
-
-			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const BlockUnit blockCoord) const noexcept {
-				debugBoundsCheck(blockCoord);
-				ENGINE_DEBUG_ASSERT(invalid != heights[blockCoord - minBlock], "Uninitialized height value at ", blockCoord);
-				return heights[blockCoord - minBlock];
-			}
-
-			ENGINE_INLINE [[nodiscard]] BlockUnit getMinBlock() const noexcept { return minBlock; }
-			ENGINE_INLINE [[nodiscard]] BlockUnit getMaxBlock() const noexcept { return maxBlock; }
-
-		private:
-			ENGINE_INLINE_REL void debugBoundsCheck(const BlockUnit blockCoord) const noexcept {
-				ENGINE_DEBUG_ASSERT(minBlock <= blockCoord, "Height cache block coordinate is out of bounds.");
-				ENGINE_DEBUG_ASSERT(blockCoord < maxBlock, "Height cache block coordinate is out of bounds.");
-			}
-	};
-}
-
-// TODO: split out
-namespace Game::Terrain::Layer {
-	// TODO: incorperate this at the terrain level to verify the correct requests are made and avoid cycles.
-	template<class...>
-	class DependsOn{};
-
-	// TODO: make all cache/store types uncopyable. These should be accessed by ref.
-	// TODO: These cache/store/span/area types probably should probably be in just Game::Terrain not Game::Terrain::Layer.
-
 }
 
 // TODO: split out
 namespace Game::Terrain {
+	// TODO: make all cache/store types uncopyable. These should be accessed by ref.
 	class BiomeScaleMeta {
 		public:
 			BlockUnit size;
@@ -157,26 +108,10 @@ namespace Game::Terrain {
 		biomeScaleLarge.size / 2,// + 200.0
 	};
 
-	//enum class BiomeType : uint8 {
-	//	Default,
-	//	Forest,
-	//	Jungle,
-	//	Taiga,
-	//	Desert,
-	//	Savanna,
-	//	Ocean,
-	//	_count,
-	//};
-	//ENGINE_BUILD_DECAY_ENUM(BiomeType);
-
 	using BiomeId = uint8;
 
 	class StructureInfo {
 		public:
-			//StructureInfo(BlockVec min, BlockVec max, uint32 id)
-			//	: min{min}, max{max}, id{id} {
-			//}
-
 			/** Structure min bounds. Inclusive. */
 			BlockVec min;
 
@@ -186,7 +121,11 @@ namespace Game::Terrain {
 			/** A id to identify this structure. Defined by each biome. */
 			uint32 id;
 
-		//protected:
+			// We would like this to be private so it cant accidentally be modified during
+			// biome structure generation, but that causes constructor issues since we use
+			// a back_inserter which doesn't play nice with conversion. More hastle than
+			// is worth right now.
+			/** The biome this structure is in. */
 			BiomeId biomeId = {};
 	};
 
@@ -275,7 +214,7 @@ namespace Game::Terrain {
 			//       probably rework to be a good bit simpler. No point in doing that until we
 			//       solve disk serialization. Can probably reuse some of that here.
 			// 
-			// TODO: Consider using some type of sparse structure/partitonaing
+			// TODO: Consider using some type of sparse structure/partitioning
 			//       here(BSP/QuadTree/etc.). Most chunks won't have entities. And those
 			//       that do will probably only have a few. Could do one sparse per
 			//       region or sparse per chunks and dense entities.
@@ -347,7 +286,7 @@ namespace Game::Terrain {
 			}
 
 			Chunk const& getChunk(const UniversalChunkCoord chunkCoord) const noexcept {
-				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
+				// TODO: Again, could benefit from region caching. See notes in isChunkLoaded.
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());
@@ -355,7 +294,7 @@ namespace Game::Terrain {
 			}
 
 			Chunk& getChunkMutable(const UniversalChunkCoord chunkCoord) noexcept {
-				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
+				// TODO: Again, could benefit from region caching. See notes in isChunkLoaded.
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());
@@ -363,7 +302,7 @@ namespace Game::Terrain {
 			}
 
 			const ChunkEntities& getEntities(const UniversalChunkCoord chunkCoord) const noexcept {
-				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
+				// TODO: Again, could benefit from region caching. See notes in isChunkLoaded.
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());
@@ -371,7 +310,7 @@ namespace Game::Terrain {
 			}
 
 			ChunkEntities& getEntitiesMutable(const UniversalChunkCoord chunkCoord) noexcept {
-				// TODO: Again, could benefic from region caching. See notes in isChunkLoaded.
+				// TODO: Again, could benefit from region caching. See notes in isChunkLoaded.
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end());

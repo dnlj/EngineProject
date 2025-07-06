@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
+#include <Game/Terrain/Layer/DependsOn.hpp>
 
 namespace Game::Terrain::Layer {
 	// The direct, raw, biome info. Determines what biome is where before any blending/interpolation.

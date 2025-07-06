@@ -10,7 +10,6 @@
 namespace Game::Terrain {
 	constexpr inline int64 TestSeed = 1234;
 
-	// TODO: This should probably be defined on the generator?
 	using Biomes = std::tuple<
 		Layer::BiomeFoo,
 		Layer::BiomeDebugOne,

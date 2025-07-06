@@ -2,9 +2,6 @@
 
 
 namespace Game::Terrain {
-	// TODO: Make a generic Area<T> with iterator based access. Iterator based access
-	//       would be useful in most biome layers to replace manual bounded for loops.
-
 	/**
 	 * Represents an AABB chunk area, in chunks.
 	 */

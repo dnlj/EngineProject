@@ -52,7 +52,6 @@ namespace Game::Terrain {
 			std::tuple<std::vector<typename Layers::Range>...> ranges;
 	};
 
-	// Support for rescaling is needed for preview support. Should not be used for real generation.
 	template<class Self, class Layers, class SharedData>
 	class Generator {
 		private:
@@ -65,15 +64,6 @@ namespace Game::Terrain {
 			const Self& self() const { return static_cast<const Self&>(*this); }
 
 		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
-			//
-			//
-			//
-			//
-			// TODO: static assert layer dependency order
-			//
-			//
-			//
-			//
 			
 			Layers layers{};
 			SharedData sharedData{};
