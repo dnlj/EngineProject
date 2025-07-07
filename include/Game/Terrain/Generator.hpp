@@ -6,6 +6,7 @@
 #include <Game/BlockEntityData.hpp>
 #include <Game/BlockMeta.hpp>
 #include <Game/MapChunk.hpp> // TODO: Replace/rename/update MapChunk.
+#include <Game/Terrain/Request.hpp>
 #include <Game/Terrain/terrain.hpp>
 #include <Game/universal.hpp>
 
@@ -83,12 +84,7 @@ namespace Game::Terrain {
 			Layer::BiomeStructureInfo& layerBiomeStructureInfo = std::get<Layer::BiomeStructureInfo>(layers);
 			Layer::BiomeStructures& layerBiomeStructures = std::get<Layer::BiomeStructures>(layers);
 
-			template<class Data>
-			auto const& shared() const noexcept {
-				return std::get<Data>(sharedData);
-			}
-
-			// TODO: private
+		private:
 			template<class Layer>
 			auto& requests() {
 				return std::get<Meta::TypeSet::IndexOf<Layers, Layer>::value>(
@@ -96,6 +92,7 @@ namespace Game::Terrain {
 				);
 			}
 
+		public:
 			template<class Layer>
 			ENGINE_INLINE void request(typename const Layer::Range range) {
 				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- request<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
@@ -144,6 +141,12 @@ namespace Game::Terrain {
 					ranges.clear();
 				});
 			}
+
+			template<class Data>
+			auto const& shared() const noexcept {
+				return std::get<Data>(sharedData);
+			}
+
 		public:
 			Generator(uint64 seed) {
 				// Arbitrary size, seems like a reasonable default.

@@ -1,7 +1,8 @@
 // Game
+#include <Game/Terrain/AreaWalk.hpp>
+#include <Game/Terrain/BiomeScale.hpp>
 #include <Game/Terrain/Layer/BiomeRaw.hpp>
 #include <Game/Terrain/Layer/BiomeWeights.hpp>
-#include <Game/Terrain/AreaWalk.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>

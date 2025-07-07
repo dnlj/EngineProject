@@ -1,4 +1,5 @@
 // Game
+#include <Game/Terrain/BiomeScale.hpp>
 #include <Game/Terrain/Layer/BiomeRaw.hpp>
 #include <Game/Terrain/TestGenerator.hpp>
 
@@ -9,7 +10,6 @@ namespace Game::Terrain::Layer {
 	}
 
 	void BiomeRaw::generate(const Range area, TestGenerator& generator) {
-
 		// TODO: add some kind of empty debug verifier to ensure all get calls are in range of area.
 
 		// No generation/cache.
