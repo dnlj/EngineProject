@@ -81,7 +81,7 @@ struct fmt::formatter<Engine::Net::IPv4Address> {
 		return ctx.begin();
 	}
 
-	template <typename FormatContext>
+	template<class FormatContext>
 	auto format(const Engine::Net::IPv4Address& addr, FormatContext& ctx) -> decltype(ctx.out()) {
 		fmt::format_to(ctx.out(), "{}.{}.{}.{}:{}", addr.a, addr.b, addr.c, addr.d, addr.port);
 		return ctx.out();

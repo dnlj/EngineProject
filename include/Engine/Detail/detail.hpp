@@ -50,7 +50,7 @@ namespace Engine {
 // TODO: Where to put overloads for 3rd party types?
 template<int L, class T, glm::qualifier Q>
 struct fmt::formatter<glm::vec<L, T, Q>> : fmt::formatter<T> {
-	template <class FormatContext>
+	template<class FormatContext>
 	auto format(const glm::vec<L, T, Q>& vec, FormatContext& ctx) -> decltype(ctx.out()) {
 		fmt::format_to(ctx.out(), "(");
 		for (int i = 0;;) {
@@ -70,7 +70,7 @@ struct fmt::formatter<b2Vec2> : fmt::formatter<glm::vec2> {
 	//       currently just there to defer type resolution so we don't need to
 	//       pollute everything with b2_math.h since this file is included
 	//       everywhere.
-	template <class FormatContext>
+	template<class FormatContext>
 	auto format(const std::same_as<b2Vec2> auto& vec, FormatContext& ctx) -> decltype(ctx.out()) {
 		return fmt::formatter<glm::vec2>::format({vec.x, vec.y}, ctx);
 	}

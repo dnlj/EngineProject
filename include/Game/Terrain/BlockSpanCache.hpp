@@ -127,10 +127,10 @@ namespace Game::Terrain {
 			// TODO: remove, this is temp while fixing block psan cache to use regions.
 			//       They should instead be using walk for effecient access.
 			T& at(const BlockUnit x) noexcept {
-				auto const region = chunkToRegion(blockToChunk({x, 0})).x;
+				const auto region = chunkToRegion(blockToChunk({x, 0})).x;
 				ENGINE_DEBUG_ASSERT(cache.contains(region));
 
-				auto const regionOffset = region * chunksPerRegion * blocksPerChunk;
+				const auto regionOffset = region * chunksPerRegion * blocksPerChunk;
 				return cache.at(region).at(x - regionOffset);
 			}
 

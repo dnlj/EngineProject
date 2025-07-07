@@ -1,7 +1,7 @@
 #pragma once
 
 // RHH
-#include <robin_hood.h>
+#include<robin_hood.h>
 
 // Engine
 #include <Engine/Hash.hpp>
@@ -9,7 +9,7 @@
 
 
 namespace Engine {
-	template <
+	template<
 		class KeyType,
 		class ValueType,
 		class Hash = Hash<KeyType>,
@@ -25,7 +25,7 @@ namespace Engine {
 		using FlatHashMap = std::unordered_map<KeyType, ValueType, Hash, Equal>;
 	#endif
 		
-	template <
+	template<
 		class KeyType,
 		class Hash = Hash<KeyType>,
 		class Equal = EqualTo<KeyType>,
