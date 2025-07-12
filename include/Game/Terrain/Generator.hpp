@@ -76,10 +76,7 @@ namespace Game::Terrain {
 			// TODO: rm - Can't the preview just use `get<Layer>()` ?
 			Layer::BiomeRaw& layerBiomeRaw = std::get<Layer::BiomeRaw>(layers);
 			Layer::WorldBaseHeight& layerWorldBaseHeight = std::get<Layer::WorldBaseHeight>(layers);
-			Layer::BiomeWeights& layerBiomeWeights = std::get<Layer::BiomeWeights>(layers);
-			Layer::BiomeBlended& layerBiomeBlended = std::get<Layer::BiomeBlended>(layers);
 			Layer::BiomeHeight& layerBiomeHeight = std::get<Layer::BiomeHeight>(layers);
-			Layer::BiomeBasis& layerBiomeBasis = std::get<Layer::BiomeBasis>(layers);
 			Layer::BiomeBlock& layerBiomeBlock = std::get<Layer::BiomeBlock>(layers);
 			Layer::BiomeStructureInfo& layerBiomeStructureInfo = std::get<Layer::BiomeStructureInfo>(layers);
 			Layer::BiomeStructures& layerBiomeStructures = std::get<Layer::BiomeStructures>(layers);

@@ -161,28 +161,28 @@ namespace {
 							const auto info = generator.layerBiomeRaw.get(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
-							auto weights = generator.layerBiomeWeights.get(chunkCoord).at(chunkIndex).weights;
+							auto weights = generator.get<Game::Terrain::Layer::BiomeWeights>(chunkCoord).at(chunkIndex).weights;
 							normalizeBiomeWeights(weights);
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::BiomeFinalWeights) {
-							const auto weights = generator.layerBiomeBlended.get(chunkCoord).at(chunkIndex).weights;
+							const auto weights = generator.get<Game::Terrain::Layer::BiomeBlended>(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biomeToColor[biome.id];
 						} else if (mode == Layer::BiomeFinalWeightsFull) {
-							const auto weights = generator.layerBiomeBlended.get(chunkCoord).at(chunkIndex).weights;
+							const auto weights = generator.get<Game::Terrain::Layer::BiomeBlended>(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::TerrainHeight0) {
-							const auto weights = generator.layerBiomeBlended.get(chunkCoord).at(chunkIndex).weights;
+							const auto weights = generator.get<Game::Terrain::Layer::BiomeBlended>(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainHeight2) {
 							const auto h2 = generator.layerBiomeHeight.cache.at(blockCoord.x);
-							const auto basisInfo = generator.layerBiomeBasis.get(chunkCoord).at(chunkIndex);
+							const auto basisInfo = generator.get<Game::Terrain::Layer::BiomeBasis>(chunkCoord).at(chunkIndex);
 							data[idx] = blockCoord.y <= h2 ? glm::u8vec3(basisInfo.weight * glm::vec3(biomeToColor[basisInfo.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainBasis) {
-							const auto basisInfo = generator.layerBiomeBasis.get(chunkCoord).at(chunkIndex);
+							const auto basisInfo = generator.get<Game::Terrain::Layer::BiomeBasis>(chunkCoord).at(chunkIndex);
 							minBasis = std::min(minBasis, basisInfo.basis);
 							maxBasis = std::max(maxBasis, basisInfo.basis);
 

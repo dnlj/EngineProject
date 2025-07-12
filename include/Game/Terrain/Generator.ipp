@@ -46,16 +46,11 @@ namespace Game::Terrain {
 				
 				if (!populated) {
 					// For each block in the chunk.
-					// TODO: Once layers are done this loop should go away. Can just access the
+					// TODO: Once layers are done this should go away. Can just access the
 					//       layerBiomeBlock directly.
-					const auto chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
+					const auto& chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
 					auto& chunk = region.chunkAt(regionIdx);
-					for (BlockUnit x = 0; x < chunkSize.x; ++x) {
-						for (BlockUnit y = 0; y < chunkSize.y; ++y) {
-							chunk.data[x][y] = chunkBiomeBlock.data[x][y];
-						}
-					}
-
+					chunk = chunkBiomeBlock;
 					populated = true;
 				}
 			}
