@@ -43,6 +43,10 @@ namespace Game::Terrain::Layer {
 				return cache.walk(area);
 			}
 			 
+			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const BlockSpanX blockSpanX) const noexcept {
+				return cache.walk(blockSpanX);
+			}
+			 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const ChunkUnit chunkX) const noexcept {
 				return cache.walk(chunkX);
 			}

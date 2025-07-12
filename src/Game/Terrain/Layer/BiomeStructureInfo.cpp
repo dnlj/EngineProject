@@ -58,7 +58,7 @@ namespace Game::Terrain::Layer {
 				// TODO: remove direct layer access to height cache.
 				// TODO: document somewhere the structure info is optional.
 				if constexpr (requires { typename Biome::StructureInfo; }) {
-					generator.get2<typename Biome::StructureInfo>(chunkCoord, generator.layerBiomeHeight.cache, std::back_inserter(structures));
+					generator.get2<typename Biome::StructureInfo>(chunkCoord, std::back_inserter(structures));
 				}
 			});
 

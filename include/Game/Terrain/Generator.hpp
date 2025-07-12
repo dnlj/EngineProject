@@ -74,9 +74,8 @@ namespace Game::Terrain {
 			std::vector<Requests<Layers>> requestScopes;
 
 			// TODO: rm - Can't the preview just use `get<Layer>()` ?
+			Layer::WorldBaseHeight& layerWorldBaseHeight = std::get<Layer::WorldBaseHeight>(layers); // TODO: Can be removed, currently just for debugging during transition.
 			Layer::BiomeRaw& layerBiomeRaw = std::get<Layer::BiomeRaw>(layers);
-			Layer::WorldBaseHeight& layerWorldBaseHeight = std::get<Layer::WorldBaseHeight>(layers);
-			Layer::BiomeHeight& layerBiomeHeight = std::get<Layer::BiomeHeight>(layers);
 			Layer::BiomeBlock& layerBiomeBlock = std::get<Layer::BiomeBlock>(layers);
 			Layer::BiomeStructureInfo& layerBiomeStructureInfo = std::get<Layer::BiomeStructureInfo>(layers);
 			Layer::BiomeStructures& layerBiomeStructures = std::get<Layer::BiomeStructures>(layers);
@@ -151,8 +150,6 @@ namespace Game::Terrain {
 			}
 
 			void generate(Terrain& terrain, const Request& request);
-
-			ENGINE_INLINE constexpr auto& getH0Cache() const noexcept { return layerWorldBaseHeight.cache; }
 
 	};
 }

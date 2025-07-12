@@ -27,6 +27,8 @@ namespace Game::Terrain::Layer {
 		public:
 			void request(const Range area, TestGenerator& generator);
 			void generate(const Range area, TestGenerator& generator);
+
+			// TODO: Should return a walk similar to WorldBaseHeight.
 			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept { return cache.at(x); }
 
 		private:

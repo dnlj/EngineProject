@@ -46,7 +46,6 @@
 #define BIOME_STRUCTURE_INFO_ARGS \
 	const TestGenerator& generator, \
 	const ::Game::ChunkVec& chunkCoord, \
-	const ::Game::Terrain::BlockSpanCache<BlockUnit>& h2Cache, \
 	std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 
 

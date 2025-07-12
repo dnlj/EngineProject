@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Game/Terrain/BlockSpanX.hpp>
+
 
 namespace Game::Terrain {
 	// TODO: Doc, caches value for every block in a span. In increments of regions.
@@ -75,9 +77,16 @@ namespace Game::Terrain {
 						++data;
 						return *this;
 					}
-			
-					ENGINE_INLINE_REL auto& operator*() noexcept { return *data; }
+
+					// TODO: remove operator bool. Since the iterator isn't always created
+					//       with a regionSpanX we would also need to track max
+					//       block/chunk. This is only used in a few places anyways so we
+					//       should be able to find a more stable solution. This will also
+					//       allow us to remove regionCoordMax and save on a bunch of
+					//       calcs at call sites.
 					ENGINE_INLINE_REL operator bool() const noexcept { return regionCoord != regionCoordMax; }
+
+					ENGINE_INLINE_REL auto& operator*() noexcept { return *data; }
 					ENGINE_INLINE_REL BlockUnit getBlockCoord() const noexcept { return blockCoord; }
 					ENGINE_INLINE_REL BlockUnit getChunkIndex() const noexcept { return chunkIndex; }
 					ENGINE_INLINE_REL ChunkUnit getChunkCoord() const noexcept { return chunkCoord; }
@@ -109,6 +118,24 @@ namespace Game::Terrain {
 
 			ENGINE_INLINE auto walk(RegionSpanX area) const noexcept {
 				return ConstIterator{*this, area};
+			}
+
+			ENGINE_INLINE auto walk(BlockSpanX area) const noexcept {
+				// Need to add one to max because it is an _exclusive_ bound. Technically,
+				// the +1 isn't needed if area.max happens to be at index 0 of a new
+				// region, but its simpler to always add one.
+				const auto maxRegion = chunkToRegion(blockToChunk({area.max, 0})).x + 1;
+				const auto minRegion = chunkToRegion(blockToChunk({area.min, 0})).x;
+				const auto minRegionBlock = chunkToBlock(regionToChunk({minRegion, 0})).x;
+				const auto blockRegionOffset = area.min - minRegionBlock;
+
+				// TODO: Calc with a closed-form expression instead of loop.
+				ConstIterator result{*this, {minRegion, maxRegion}};
+				for (auto i = blockRegionOffset; i > 0; --i) {
+					++result;
+				};
+
+				return result;
 			}
 
 			ENGINE_INLINE auto walk(ChunkUnit chunkX) const noexcept {
