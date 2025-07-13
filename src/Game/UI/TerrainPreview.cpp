@@ -149,7 +149,7 @@ namespace {
 							// This won't line up 100% because we don't include the height offset (see
 							// BiomeRawWeights), but that's the point. Showing the undistorted biome grid.
 							const auto blockCoordAdj = blockCoord - biomeScaleOffset;
-							const auto info = generator.layerBiomeRaw.get(blockCoordAdj);
+							const auto info = generator.get<Game::Terrain::Layer::BiomeRaw>(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeRawWeights) {
 							// Need to include the biome offset or else things won't line
@@ -157,7 +157,7 @@ namespace {
 							// biome offsets between BiomeRaw and BiomeWeights. See
 							// comments in those classes for details.
 							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + h0);
-							const auto info = generator.layerBiomeRaw.get(blockCoordAdj);
+							const auto info = generator.get<Game::Terrain::Layer::BiomeRaw>(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
 							auto weights = generator.get<Game::Terrain::Layer::BiomeWeights>(chunkCoord).at(chunkIndex).weights;

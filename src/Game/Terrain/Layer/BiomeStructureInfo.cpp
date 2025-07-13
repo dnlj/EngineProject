@@ -16,7 +16,7 @@ namespace Game::Terrain::Layer {
 		// This data is only ever used exactly once so caching is overhead.
 	}
 
-	void BiomeStructureInfo::get(const Index chunkArea, TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept {
+	void BiomeStructureInfo::get(const TestGenerator& generator, const Index chunkArea, std::vector<StructureInfo>& structures) const noexcept {
 		for (auto chunkCoord = chunkArea.min; chunkCoord.x < chunkArea.max.x; ++chunkCoord.x) {
 			for (chunkCoord.y = chunkArea.min.y; chunkCoord.y < chunkArea.max.y; ++chunkCoord.y) {
 				populate(chunkCoord, generator, structures);
@@ -24,7 +24,7 @@ namespace Game::Terrain::Layer {
 		}
 	}
 
-	void BiomeStructureInfo::populate(const ChunkVec chunkCoord, TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept {
+	void BiomeStructureInfo::populate(const ChunkVec chunkCoord, const TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept {
 		// TODO: Would there be any perf implications where it might be better to cache
 		//       the struct info so that things are processed more layer-like (as opposed
 		//       to on-the-fly, like is done here)? My gut reaction would be that since

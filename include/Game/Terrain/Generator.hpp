@@ -60,12 +60,7 @@ namespace Game::Terrain {
 			//       from BlockCoord to FVec2. Not sure how to solve that other than use
 			//       doubles, and that will be slower and still isn't perfect.
 			//using FVec2 = glm::vec<2, Float>;
-			
-			Self& self() { return static_cast<Self&>(*this); }
-			const Self& self() const { return static_cast<const Self&>(*this); }
 
-		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
-			
 			Layers layers{};
 			SharedData sharedData{};
 
@@ -73,14 +68,16 @@ namespace Game::Terrain {
 			size_t currentRequestScope = 0;
 			std::vector<Requests<Layers>> requestScopes;
 
+		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
 			// TODO: rm - Can't the preview just use `get<Layer>()` ?
 			Layer::WorldBaseHeight& layerWorldBaseHeight = std::get<Layer::WorldBaseHeight>(layers); // TODO: Can be removed, currently just for debugging during transition.
-			Layer::BiomeRaw& layerBiomeRaw = std::get<Layer::BiomeRaw>(layers);
 			Layer::BiomeBlock& layerBiomeBlock = std::get<Layer::BiomeBlock>(layers);
-			Layer::BiomeStructureInfo& layerBiomeStructureInfo = std::get<Layer::BiomeStructureInfo>(layers);
 			Layer::BiomeStructures& layerBiomeStructures = std::get<Layer::BiomeStructures>(layers);
 
 		private:
+			Self& self() { return static_cast<Self&>(*this); }
+			const Self& self() const { return static_cast<const Self&>(*this); }
+
 			template<class Layer>
 			auto& requests() {
 				return std::get<Meta::TypeSet::IndexOf<Layers, Layer>::value>(

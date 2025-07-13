@@ -35,9 +35,9 @@ namespace Game::Terrain::Layer {
 			// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial type for
 			//       structure storage. That could help with culling becomes an issue, otherwise
 			//       you would need ot do N^2 AABB checks. Basically a broad-phase.
-			void get(const Index chunkArea, TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept;
+			void get(const TestGenerator& generator, const Index chunkArea, std::vector<StructureInfo>& structures) const noexcept;
 
 		private:
-			void populate(const ChunkVec chunkCoord, TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept;
+			void populate(const ChunkVec chunkCoord, const TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept;
 	};
 }
