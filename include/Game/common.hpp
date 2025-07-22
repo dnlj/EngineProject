@@ -77,6 +77,7 @@ namespace Game::inline Constants {
 	//       around each player is 11x11 which is almost an entire region.
 	constexpr inline RegionUnit chunksPerRegion = 16;
 	constexpr inline RegionVec regionSize = {chunksPerRegion, chunksPerRegion};
+	constexpr inline BlockUnit blocksPerRegion = blocksPerChunk * chunksPerRegion;
 
 	constexpr inline RegionUnit biomesPerChunk = 4;
 	constexpr inline RegionVec biomesPerRegion = regionSize * biomesPerChunk;

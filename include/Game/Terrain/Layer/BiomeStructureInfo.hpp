@@ -26,10 +26,12 @@ namespace Game::Terrain::Layer {
 			// neighbors in sample range (at corner). If you move left from center the right
 			// neighbors are out of range etc.
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 			using Index = Range;
 
 		public:
 			void request(const Range chunkArea, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			void generate(const Range chunkArea, TestGenerator& generator);
 
 			// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial type for

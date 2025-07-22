@@ -10,6 +10,7 @@ namespace Game::Terrain::Layer {
 	class BiomeBlock : public DependsOn<> {
 		public:
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 			using Index = ChunkVec;
 
 		private:
@@ -17,6 +18,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			void generate(const Range area, TestGenerator& generator);
 			[[nodiscard]] const MapChunk& get(const Index chunkCoord) const noexcept;
 

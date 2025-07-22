@@ -19,6 +19,7 @@ namespace Game::Terrain::Layer {
 	class BiomeHeight : public DependsOn<BiomeWeights, WorldBaseHeight> {
 		public:
 			using Range = RegionSpanX;
+			using Partition = RegionSpanX;
 			using Index = BlockUnit;
 
 		public: // TODO: private, currently public during transition to layers.
@@ -26,6 +27,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			void generate(const Range area, TestGenerator& generator);
 
 			// TODO: Should return a walk similar to WorldBaseHeight.

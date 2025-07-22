@@ -8,6 +8,7 @@ namespace Game::Terrain::Layer {
 	class WorldBaseHeight : public DependsOn<> {
 		public:
 			using Range = RegionSpanX;
+			using Partition = RegionUnit;
 			using Index = RegionSpanX;
 
 		public:
@@ -17,20 +18,26 @@ namespace Game::Terrain::Layer {
 			BlockSpanCache<BlockUnit> cache;
 
 		public:
-			void request(const Range area, TestGenerator& generator) {
+			ENGINE_INLINE void request(const Range area, TestGenerator& generator) {
 				ENGINE_LOG2("WorldBaseHeight::request {}", area);
 				cache.reserve(area);
 			}
 
-			void generate(const Range area, TestGenerator& generator) noexcept {
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) {
+				flattenRequests(requests, partitions);
+			}
+
+			void generate(const Partition regionCoordX, TestGenerator& generator) noexcept {
+				// TODO: Shouldnt this skip already generated areas?
 				// TODO: use _f for Float. Move from TerrainPreview.
 				// TODO: keep in mind that this is +- amplitude, and for each octave we increase the contrib;
 				// TODO: tune + octaves, atm this is way to steep.
-				auto cur = cache.walk(area);
-				while (cur) {
-					const auto blockCoordX = cur.getBlockCoord();
-					*cur = static_cast<BlockUnit>(500 * simplex1.value(blockCoordX * 0.00005f, 0));
-					++cur;
+
+				auto& data = cache.get(regionCoordX);
+				const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
+				for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
+					const auto blockCoordX = baseBlockCoordX + blockRegionIndex;
+					data[blockRegionIndex] = static_cast<BlockUnit>(500 * simplex1.value(blockCoordX * 0.00005f, 0));
 				}
 			}
 

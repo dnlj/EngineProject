@@ -11,6 +11,7 @@ namespace Game::Terrain::Layer {
 	class BiomeBasis : public DependsOn<BiomeBlended> {
 		public:
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 			using Index = ChunkVec;
 
 		private:
@@ -18,6 +19,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			void generate(const Range area, TestGenerator& generator);
 			[[nodiscard]] const ChunkStore<BasisInfo>& get(const Index chunkCoord) const noexcept;
 

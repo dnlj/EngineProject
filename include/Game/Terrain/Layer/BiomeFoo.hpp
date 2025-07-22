@@ -11,9 +11,11 @@ namespace Game::Terrain::Layer {
 	class BiomeFooHeight : public Layer::DependsOn<WorldBaseHeight> {
 		public:
 			using Range = ChunkSpanX;
+			using Partition = ChunkSpanX;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
@@ -21,9 +23,11 @@ namespace Game::Terrain::Layer {
 	class BiomeFooBasisStrength : public Layer::DependsOn<WorldBaseHeight> {
 		public:
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
 	};
@@ -31,9 +35,11 @@ namespace Game::Terrain::Layer {
 	class BiomeFooBasis : public Layer::DependsOn<WorldBaseHeight> {
 		public:
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
@@ -41,9 +47,11 @@ namespace Game::Terrain::Layer {
 	class BiomeFooStructureInfo : public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
 	};
@@ -51,9 +59,11 @@ namespace Game::Terrain::Layer {
 	class BiomeFooStructure : public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			void get(BIOME_STRUCTURE_ARGS) const noexcept;
 	};

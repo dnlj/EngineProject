@@ -112,12 +112,26 @@ namespace Game::Terrain {
 			BlockSpanCache(BlockSpanCache&&) = default;
 			BlockSpanCache(const BlockSpanCache&) = delete;
 
+			// TODO: cleanup/normalize these various walk functions. Most of these don't
+			//       work correctly as walks since they don't have correct bool operators for
+			//       end range.
+
 			ENGINE_INLINE auto walk(RegionSpanX area) noexcept {
 				return Iterator{*this, area};
 			}
 
 			ENGINE_INLINE auto walk(RegionSpanX area) const noexcept {
 				return ConstIterator{*this, area};
+			}
+			
+			ENGINE_INLINE Store& get(RegionUnit regionCoordX) noexcept {
+				const auto found = cache.find(regionCoordX);
+				ENGINE_DEBUG_ASSERT(found != cache.end());
+				return found->second;
+			}
+			
+			ENGINE_INLINE const Store& get(RegionUnit regionCoordX) const noexcept {
+				return const_cast<BlockSpanCache*>(this)->get(regionCoordX);
 			}
 
 			ENGINE_INLINE auto walk(BlockSpanX area) const noexcept {
@@ -140,15 +154,11 @@ namespace Game::Terrain {
 
 			ENGINE_INLINE auto walk(ChunkUnit chunkX) const noexcept {
 				const auto regionCoordX = chunkToRegion({chunkX, 0}).x;
-				const auto found = cache.find(regionCoordX);
-				ENGINE_DEBUG_ASSERT(found != cache.end());
-
 				const auto baseBlockCoord = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
 				const auto blockCoord = chunkToBlock({chunkX, 0}).x;
 				const auto offset = blockCoord - baseBlockCoord;
 				ENGINE_DEBUG_ASSERT(offset >= 0 && offset <= std::tuple_size_v<Store>);
-
-				return found->second.begin() + offset;
+				return get(regionCoordX).begin() + offset;
 			}
 			
 			// TODO: remove, this is temp while fixing block psan cache to use regions.

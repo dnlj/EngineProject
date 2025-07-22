@@ -12,9 +12,11 @@ namespace Game::Terrain::Layer {
 	class BiomeDebugBaseHeight : public Layer::DependsOn<WorldBaseHeight> {
 		public:
 			using Range = ChunkSpanX;
+			using Partition = ChunkSpanX;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
@@ -23,9 +25,11 @@ namespace Game::Terrain::Layer {
 	class BiomeDebugBasisStrength : public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
 	};
@@ -34,9 +38,11 @@ namespace Game::Terrain::Layer {
 	class BiomeDebugBasis : public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
@@ -45,9 +51,11 @@ namespace Game::Terrain::Layer {
 	class BiomeDebugBlock : public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
+			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
 			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			constexpr static BlockId get(BIOME_BLOCK_ARGS) noexcept { return Block; };
 	};
