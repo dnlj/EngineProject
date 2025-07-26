@@ -42,22 +42,23 @@ namespace Game::Terrain::Layer {
 
 	}
 
-	void BiomeHeight::generate(const Range area, TestGenerator& generator) {
+	void BiomeHeight::generate(const Partition regionCoordX, TestGenerator& generator) {
 		// TODO: Add static asserts to ensure that the biome height layers _ARE NOT_
 		//       cached. Since we don't issue requests cached height layers won't work. They
 		//       also don't make sense. The BiomeHeight layer (this layer) is what should be
 		//       doing the caching. Other layers should be sampling the BiomeHeight layer, not specific biomes.
 		
-		auto h0walk = generator.get<WorldBaseHeight>(area);
-		auto cur = cache.walk(area);
-		while (cur) {
-			const auto blockCoordX = cur.getBlockCoord();
-			const auto h0 = *h0walk;
+		const auto& h0Data = generator.get3<WorldBaseHeight>(regionCoordX);
+		auto& h2Data = cache.get(regionCoordX);
+		const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
+		for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
+			const auto blockCoordX = baseBlockCoordX + blockRegionIndex;
+			const auto h0 = h0Data[blockRegionIndex];
 			const auto h0F = static_cast<Float>(h0);
 			const auto chunkCoord = blockToChunk({blockCoordX, h0});
 			const auto& chunkStore = generator.get<BiomeBlended>(chunkCoord);
-			const auto chunkIndexY = blockToChunkIndex({0, h0}, chunkCoord).y;
-			const auto& blend = chunkStore.at({cur.getChunkIndex(), chunkIndexY});
+			const auto chunkIndex = blockToChunkIndex({blockCoordX, h0}, chunkCoord);
+			const auto& blend = chunkStore.at(chunkIndex);
 			Float h2 = 0;
 
 			// Its _very_ important that we use the _raw weights_ for blending height
@@ -75,9 +76,7 @@ namespace Game::Terrain::Layer {
 				h2 += biomeWeight.weight * h1;
 			}
 
-			cache.at(blockCoordX) = static_cast<BlockUnit>(std::floor(h2));
-			++cur;
-			++h0walk;
+			h2Data[blockRegionIndex] = static_cast<BlockUnit>(std::floor(h2));
 		}
 	}
 }

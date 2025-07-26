@@ -46,6 +46,10 @@ namespace Game::Terrain::Layer {
 				return cache.at(x);
 			}
 			 
+			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Partition regionCoordX) const noexcept {
+				return cache.get(regionCoordX);
+			}
+
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Index area) const noexcept {
 				return cache.walk(area);
 			}

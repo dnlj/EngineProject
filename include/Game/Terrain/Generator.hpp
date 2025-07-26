@@ -140,6 +140,11 @@ namespace Game::Terrain {
 			ENGINE_INLINE decltype(auto) get2(Args&&... args) const {
 				return std::get<Layer>(layers).get(self(), std::forward<Args>(args)...);
 			}
+			
+			template<class Layer>
+			ENGINE_INLINE decltype(auto) get3(const auto& index) const {
+				return std::get<Layer>(layers).get(index);
+			}
 
 			void generateLayers() {
 				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
