@@ -9,7 +9,7 @@ namespace Game::Terrain::Layer {
 		// No dependencies.
 	}
 
-	void BiomeRaw::generate(const Range area, TestGenerator& generator) {
+	void BiomeRaw::generate(const Partition chunkCoord, TestGenerator& generator) {
 		// TODO: add some kind of empty debug verifier to ensure all get calls are in range of area.
 
 		// No generation/cache.

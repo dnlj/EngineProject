@@ -8,7 +8,7 @@ namespace Game::Terrain::Layer {
 	class BiomeRaw : public DependsOn<> {
 		public:
 			using Range = ChunkArea;
-			using Partition = ChunkArea;
+			using Partition = ChunkVec;
 			using Index = BlockVec;
 
 		public:
@@ -18,8 +18,12 @@ namespace Game::Terrain::Layer {
 			{}
 
 			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
-			void generate(const Range blockCoord, TestGenerator& generator);
+
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) {
+				// Do nothing. BiomeRaw is generated on-demand. See .cpp file.
+			}
+
+			void generate(const Partition chunkCoord, TestGenerator& generator);
 			[[nodiscard]] BiomeRawInfo2 get(const Index blockCoord) const noexcept;
 
 		private:

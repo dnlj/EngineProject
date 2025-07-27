@@ -18,27 +18,28 @@ namespace Game::Terrain::Layer {
 		generator.request<BiomeRaw>(area);
 	}
 
-	void BiomeWeights::generate(const Range area, TestGenerator& generator) {
-		cache.forEachChunk(area, [&](ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE_REL {
-			const auto baseBlockCoord = chunkToBlock(chunkCoord);
-			auto h0Walk = generator.get2<WorldBaseHeight>(chunkCoord.x);
-			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
-				// Theoretically this offset should go in BiomeRaw. In practice its more
-				// efficient and easier to do it here. This avoids the need to use a cache
-				// in BiomeRaw which makes it ~15% faster and not use any memory.
-				
-				// TODO: rm - just for debugging during transition.
-				ENGINE_DEBUG_ASSERT(*h0Walk == generator.layerWorldBaseHeight.getOld(baseBlockCoord.x + chunkIndex.x));
-				const auto offset = biomeScaleOffset + BlockVec{0, *h0Walk};
-				++h0Walk;
+	void BiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {
+		cache.reserve(chunkToRegion(chunkCoord));
+		if (cache.isPopulated(chunkCoord)) { return; }
 
-				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
-					const auto blockCoord = baseBlockCoord + chunkIndex - offset;
-					chunkStore.at(chunkIndex) = populate(blockCoord, generator);
-				}
+		const auto baseBlockCoord = chunkToBlock(chunkCoord);
+		auto h0Walk = generator.get2<WorldBaseHeight>(chunkCoord.x);
+		auto& chunkStore = cache.populateChunk(chunkCoord);
+		for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
+			// Theoretically this offset should go in BiomeRaw. In practice its more
+			// efficient and easier to do it here. This avoids the need to use a cache
+			// in BiomeRaw which makes it ~15% faster and not use any memory.
+			
+			// TODO: rm - just for debugging during transition.
+			ENGINE_DEBUG_ASSERT(*h0Walk == generator.layerWorldBaseHeight.getOld(baseBlockCoord.x + chunkIndex.x));
+			const auto offset = biomeScaleOffset + BlockVec{0, *h0Walk};
+			++h0Walk;
+			for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
+				const auto blockCoord = baseBlockCoord + chunkIndex - offset;
+				chunkStore.at(chunkIndex) = populate(blockCoord, generator);
 			}
-		});
-
+		}
+		
 		// TODO: WIP transition to area walker. Probably abort this. It doesn't do the
 		//       isPopulated skipping that the region cache forEach does. So we would need
 		//       to add a return value and skipping. Combined with the annoying
