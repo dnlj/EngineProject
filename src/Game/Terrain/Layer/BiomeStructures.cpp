@@ -11,7 +11,7 @@ namespace Game::Terrain::Layer {
 		generator.request<BiomeStructureInfo>(chunkArea);
 	}
 
-	void BiomeStructures::generate(const Range chunkArea, TestGenerator& generator) {
+	void BiomeStructures::generate(const Partition chunkCoord, TestGenerator& generator) {
 		// No need for caching.
 		// This data is only ever used exactly once so caching is overhead.
 	}

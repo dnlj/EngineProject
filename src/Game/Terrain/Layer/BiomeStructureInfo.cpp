@@ -11,7 +11,7 @@ namespace Game::Terrain::Layer {
 		generator.request<BiomeBlended>(chunkArea);
 	}
 
-	void BiomeStructureInfo::generate(const Range chunkArea, TestGenerator& generator) {
+	void BiomeStructureInfo::generate(const Partition chunkCoord, TestGenerator& generator) {
 		// No need for caching.
 		// This data is only ever used exactly once so caching is overhead.
 	}

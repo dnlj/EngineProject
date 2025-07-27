@@ -11,8 +11,8 @@ namespace Game::Terrain::Layer {
 		generator.request<BiomeBasis>(area);
 	}
 
-	void BiomeBlock::generate(const Range area, TestGenerator& generator) {
-		cache.forEachChunk(area, [&](const ChunkVec chunkCoord, MapChunk& chunkStore) ENGINE_INLINE_REL {
+	void BiomeBlock::generate(const Partition chunkCoord, TestGenerator& generator) {
+		cache.populate(chunkCoord, [&](MapChunk& chunkStore) ENGINE_INLINE_REL {
 			const auto& chunkBiomeBasis = generator.get<BiomeBasis>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {

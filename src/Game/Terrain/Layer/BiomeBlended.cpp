@@ -10,8 +10,8 @@ namespace Game::Terrain::Layer {
 		generator.request<BiomeWeights>(area);
 	}
 
-	void BiomeBlended::generate(const Range area, TestGenerator& generator) {
-		cache.forEachChunk(area, [&](const ChunkVec chunkCoord, auto& chunkStore) ENGINE_INLINE_REL {
+	void BiomeBlended::generate(const Partition chunkCoord, TestGenerator& generator) {
+		cache.populate(chunkCoord, [&](auto& chunkStore) ENGINE_INLINE_REL {
 			const auto& chunkBiomeWeights = generator.get<BiomeWeights>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {

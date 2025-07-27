@@ -13,9 +13,8 @@ namespace Game::Terrain::Layer {
 		generator.request<BiomeHeight>(ChunkSpanX{area.min.x, area.max.x}.toRegionSpan());
 	}
 
-	void BiomeBasis::generate(const Range area, TestGenerator& generator) {
-		// TODO: consider if an iterator approach would be better, like we do in BiomeHeight.
-		cache.forEachChunk(area, [&](const ChunkVec chunkCoord, auto& basisStore) ENGINE_INLINE_REL {
+	void BiomeBasis::generate(const Partition chunkCoord, TestGenerator& generator) {
+		cache.populate(chunkCoord, [&](auto& basisStore) ENGINE_INLINE_REL {
 			const auto& blendStore = generator.get<BiomeBlended>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {

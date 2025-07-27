@@ -33,6 +33,14 @@ namespace Game::Terrain {
 				}
 			}
 
+			ENGINE_INLINE Store& ensureAt(RegionVec regionCoord) noexcept {
+				const auto found = regions.find(regionCoord);
+				if (found == regions.end()) {
+					return *regions.try_emplace(regionCoord, std::make_unique<Store>()).first->second;
+				}
+				return *found->second;
+			}
+
 			// TODO: Function sig concept
 			ENGINE_INLINE void forEachChunk(ChunkArea area, auto&& func) {
 				// TODO: Could be a bit more effecient by dividing into regions first. Then you
@@ -55,6 +63,17 @@ namespace Game::Terrain {
 						}
 					}
 				}
+			}
+
+			ENGINE_INLINE decltype(auto) populate(const ChunkVec chunkCoord, auto&& func) {
+				const auto regionCoord = chunkToRegion(chunkCoord);
+				const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
+				auto& regionStore = this->ensureAt(regionCoord);
+				if (regionStore.isPopulated(regionIndex)) { return; }
+
+				regionStore.setPopulated(regionIndex);
+				auto& chunkStore = regionStore.at(regionIndex);
+				return func(chunkStore);
 			}
 	};
 }
