@@ -10,6 +10,10 @@
 namespace Game::Terrain {
 	constexpr inline int64 TestSeed = 1234;
 
+	// TODO: Note somewhere that biomes don't need generation/partition since they are on
+	//       demand. The caching is done at the BiomeBlock level. May want to consider a
+	//       different structure for biomes since half of the Layer functionality isn't
+	//       used?
 	using Biomes = std::tuple<
 		Layer::BiomeFoo,
 		Layer::BiomeDebugOne,

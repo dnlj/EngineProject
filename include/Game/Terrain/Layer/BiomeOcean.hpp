@@ -3,56 +3,49 @@
 // Game
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 #include <Game/Terrain/Layer/DependsOn.hpp>
+#include <Game/Terrain/Layer/OnDemandLayer.hpp>
 
 
 namespace Game::Terrain::Layer {
 	constexpr inline auto BiomeOceanSeed = 0xF7F7'F7F7'F7F7'5555; // TODO: pull/transform seed from generator.
 
-	class BiomeOceanHeight {
+	class BiomeOceanHeight : public OnDemandLayer {
 		public:
 			using Range = ChunkSpanX;
 			using Partition = ChunkSpanX;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_HEIGHT_ARGS) const noexcept { return h0; }
 	};
 
-	class BiomeOceanBasisStrength: public Layer::DependsOn<> {
+	class BiomeOceanBasisStrength : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			constexpr static Float get(BIOME_BASIS_STRENGTH_ARGS) noexcept { return 1.0_f; }
 	};
 
-	class BiomeOceanBasis : public Layer::DependsOn<> {
+	class BiomeOceanBasis : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
-	class BiomeOceanBlock : public Layer::DependsOn<> {
+	class BiomeOceanBlock : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
 	};
 	

@@ -2,6 +2,7 @@
 
 // Game
 #include <Game/Terrain/Layer/DependsOn.hpp>
+#include <Game/Terrain/Layer/OnDemandLayer.hpp>
 
 
 namespace Game::Terrain::Layer {
@@ -9,54 +10,46 @@ namespace Game::Terrain::Layer {
 	class BiomeHeight;
 
 	template<uint64 Seed, Float HAmp, Float HFeatScale>
-	class BiomeDebugBaseHeight : public Layer::DependsOn<WorldBaseHeight> {
+	class BiomeDebugBaseHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
 			using Range = ChunkSpanX;
 			using Partition = ChunkSpanX;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 
 	template<uint64 Seed>
-	class BiomeDebugBasisStrength : public Layer::DependsOn<> {
+	class BiomeDebugBasisStrength : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
 	};
 
 	template<uint64 Seed, Float HAmp, Float HFeatScale, Float BScale, Float BOff, auto BTrans = [](auto b){ return b; }>
-	class BiomeDebugBasis : public Layer::DependsOn<> {
+	class BiomeDebugBasis : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
 	template<BlockId Block, int = 0 /* used to avoid duplicate type in tuple*/>
-	class BiomeDebugBlock : public Layer::DependsOn<> {
+	class BiomeDebugBlock : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = std::move(requests); }
-			ENGINE_INLINE void generate(const Range area, TestGenerator& generator) {}; // No generation.
 			constexpr static BlockId get(BIOME_BLOCK_ARGS) noexcept { return Block; };
 	};
 	
