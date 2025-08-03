@@ -33,42 +33,18 @@ namespace Game::Terrain {
 				}
 			}
 
-			ENGINE_INLINE Store& ensureAt(RegionVec regionCoord) noexcept {
-				const auto found = regions.find(regionCoord);
-				if (found == regions.end()) {
-					return *regions.try_emplace(regionCoord, std::make_unique<Store>()).first->second;
-				}
-				return *found->second;
-			}
-
-			// TODO: Function sig concept
-			ENGINE_INLINE void forEachChunk(ChunkArea area, auto&& func) {
-				// TODO: Could be a bit more effecient by dividing into regions first. Then you
-				//       just iterate over the regions+indexes directly. instead of doing
-				//       chunkToRegion + chunkToRegionIndex for every chunk in the Range. It would
-				//       also be more efficient because we would only need to do chunkToRegion
-				//       once and then can use offsets instead of per chunk.
-				for (auto chunkCoord = area.min; chunkCoord.x < area.max.x; ++chunkCoord.x) {
-					for (chunkCoord.y = area.min.y; chunkCoord.y < area.max.y; ++chunkCoord.y) {
-						const auto regionCoord = chunkToRegion(chunkCoord);
-						reserve(regionCoord);
-
-						auto& regionStore = at(regionCoord);
-						const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
-
-						if (!regionStore.isPopulated(regionIndex)) {
-							regionStore.setPopulated(regionIndex);
-							auto& chunkData = regionStore.at(regionIndex);
-							func(chunkCoord, chunkData);
-						}
+			ENGINE_INLINE void reserve(RegionArea regionArea) noexcept {
+				for (auto x = regionArea.min.x; x < regionArea.max.x; ++x) {
+					for (auto y = regionArea.min.y; y < regionArea.max.y; ++y) {
+						reserve({x, y});
 					}
 				}
 			}
 
-			ENGINE_INLINE decltype(auto) populate(const ChunkVec chunkCoord, auto&& func) {
+			ENGINE_INLINE_REL decltype(auto) populate(const ChunkVec chunkCoord, auto&& func) {
 				const auto regionCoord = chunkToRegion(chunkCoord);
 				const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
-				auto& regionStore = this->ensureAt(regionCoord);
+				auto& regionStore = this->at(regionCoord);
 				if (regionStore.isPopulated(regionIndex)) { return; }
 
 				regionStore.setPopulated(regionIndex);

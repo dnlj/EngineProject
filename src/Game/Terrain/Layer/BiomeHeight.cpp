@@ -9,7 +9,6 @@
 
 namespace Game::Terrain::Layer {
 	void BiomeHeight::request(const Range area, TestGenerator& generator) {
-		ENGINE_LOG2("BiomeHeight::request {}", area);
 		cache.reserve(area);
 
 		generator.requestAwait<WorldBaseHeight>(area);

@@ -13,8 +13,11 @@ namespace Game::Terrain {
 			ChunkUnit min; // Inclusive
 			ChunkUnit max; // Exclusive
 			ENGINE_INLINE constexpr bool empty() const noexcept { return min >= max; }
+
 			ENGINE_INLINE constexpr RegionSpanX toRegionSpan() const noexcept {
-				return {chunkToRegion({min, 0}).x, chunkToRegion({max, 0}).x + 1};
+				// Since max is exclusive we need to convert an inclusive range,
+				// convert to region, then back to exclusive.
+				return {chunkToRegion({min, 0}).x, chunkToRegion({max - 1, 0}).x + 1};
 			}
 	};
 }

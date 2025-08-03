@@ -9,8 +9,10 @@
 
 namespace Game::Terrain::Layer {
 	void BiomeBasis::request(const Range area, TestGenerator& generator) {
+		const auto regionArea = area.toRegionArea();
 		generator.request<BiomeBlended>(area);
-		generator.request<BiomeHeight>(ChunkSpanX{area.min.x, area.max.x}.toRegionSpan());
+		generator.request<BiomeHeight>(regionArea.toSpanX());
+		cache.reserve(regionArea);
 	}
 
 	void BiomeBasis::generate(const Partition chunkCoord, TestGenerator& generator) {

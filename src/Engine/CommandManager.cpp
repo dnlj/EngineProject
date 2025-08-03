@@ -13,7 +13,7 @@ namespace Engine {
 		ENGINE_DEBUG_ASSERT(+id < commands.size(), "Attempting to execute invalid command.");
 
 		if (id == CommandId::Invalid) {
-			ENGINE_WARN("Invalid command id");
+			ENGINE_WARN2("Invalid command id");
 			arguments.clear();
 			return;
 		}
@@ -27,7 +27,7 @@ namespace Engine {
 		parse(str);
 
 		if (arguments.empty()) {
-			ENGINE_WARN("Invalid command: ", str);
+			ENGINE_WARN2("Invalid command: {}", str);
 			return;
 		}
 

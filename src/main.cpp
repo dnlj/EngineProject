@@ -695,6 +695,7 @@ void run(int argc, char* argv[]) {
 		auto& logger = Engine::getGlobalConfig<true>().logger;
 		logger.userdata = &engine;
 
+		// TODO: Not thread safe. Fix.
 		logger.cleanWritter = [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
 			fmt::memory_buffer buffer;
 			auto out = std::back_inserter(buffer);

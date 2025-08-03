@@ -19,7 +19,6 @@ namespace Game::Terrain::Layer {
 
 		public:
 			ENGINE_INLINE void request(const Range area, TestGenerator& generator) {
-				ENGINE_LOG2("WorldBaseHeight::request {}", area);
 				cache.reserve(area);
 			}
 

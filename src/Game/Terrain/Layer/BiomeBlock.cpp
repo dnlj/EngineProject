@@ -8,7 +8,9 @@
 
 namespace Game::Terrain::Layer {
 	void BiomeBlock::request(const Range area, TestGenerator& generator) {
+		const auto regionArea = area.toRegionArea();
 		generator.request<BiomeBasis>(area);
+		cache.reserve(regionArea);
 	}
 
 	void BiomeBlock::generate(const Partition chunkCoord, TestGenerator& generator) {

@@ -1,5 +1,8 @@
 #pragma once
 
+// Game
+#include <Game/Terrain/RegionArea.hpp>
+
 
 namespace Game::Terrain {
 	/**
@@ -10,6 +13,16 @@ namespace Game::Terrain {
 			ChunkVec min; // Inclusive
 			ChunkVec max; // Exclusive
 			ENGINE_INLINE constexpr bool empty() const noexcept { return (min.x >= max.x) || (min.y >= max.y); }
+
+			RegionArea toRegionArea() const noexcept {
+				return {
+					chunkToRegion(min),
+
+					// Since max is exclusive we need to convert an inclusive range,
+					// convert to region, then back to exclusive.
+					chunkToRegion(max - ChunkVec{1,1}) + RegionVec{1,1}
+				};
+			}
 	};
 
 	inline void flattenRequests(std::vector<ChunkArea>& requests, std::vector<ChunkVec>& partitions) {

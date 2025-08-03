@@ -8,6 +8,7 @@
 namespace Game::Terrain::Layer {
 	void BiomeBlended::request(const Range area, TestGenerator& generator) {
 		generator.request<BiomeWeights>(area);
+		cache.reserve(area.toRegionArea());
 	}
 
 	void BiomeBlended::generate(const Partition chunkCoord, TestGenerator& generator) {
