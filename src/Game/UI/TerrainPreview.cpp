@@ -86,15 +86,8 @@ namespace {
 				const auto chunksPerImg = Engine::Math::divCeil(applyZoom<BlockVec>(res), blocksPerChunk).q;
 				const auto indexToBlock = [&](BlockVec index) ENGINE_INLINE { return offset + applyZoom(index); };
 
-				// TODO: enable some type of per-layer preview to replace this
-				//if (mode == Layer::Blocks) {
-				//	terrain = {};
-				//	generator.generate(terrain, Request{chunkOffset, chunkOffset + chunksPerImg, 0});
-				//} else {
-				//	// The height cache is still needs to be populated for biome sampling.
-				//	generator.setupHeightCaches(indexToBlock({0, 0}).x - biomeBlendDist, indexToBlock(res).x + biomeBlendDist);
-				//}
-				generator.generate(terrain, Request{chunkOffset, chunkOffset + chunksPerImg, 0});
+				// +1 because upper bound is exclusive.
+				generator.generate(terrain, Request{chunkOffset, chunkOffset + chunksPerImg + ChunkVec{1, 1}, 0});
 
 				// TODO: Move this color specification to Blocks.xpp, could be useful
 				//       elsewhere. Alternatively, calculate this value based on the avg img

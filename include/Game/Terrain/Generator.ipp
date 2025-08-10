@@ -18,27 +18,15 @@ namespace Game::Terrain {
 		//   - Moss, grass tufts, cobwebs, chests/loot, etc.
 		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
 
-		// TODO: I think the offset accounts for biomeBlendDistance, that should no longer
-		//       be needed here once everything is converted to layers and setupHeightCaches
-		//       is removed.
-		// 
 		// TODO: avoid name conflict with arguments `request`
-		//
-		// TODO: Doesn't this the need to add one here and for setupHeightCaches
-		//       indicate the caller is treating the request upper bound as inclusive
-		//       rather than exclusive? I don't think it should be needed to add anything
-		//       here.
-		const ChunkArea chunkArea = {request.minChunkCoord, request.maxChunkCoord + ChunkVec{1, 1}};
-		this->request<Layer::BiomeHeight>(ChunkSpanX{request.minChunkCoord.x, request.maxChunkCoord.x + 1}.toRegionSpan());
+		const ChunkArea chunkArea = {request.minChunkCoord, request.maxChunkCoord};
 		this->request<Layer::BiomeBlock>(chunkArea);
 		this->request<Layer::BiomeStructures>(chunkArea);
 		generateLayers();
 
-		// TODO: Update comment. Stages have been removed.
-		// Call generate for each stage. Each will expand the requestion chunk selection
-		// appropriately for the following stages.
-		for (auto chunkCoord = request.minChunkCoord; chunkCoord.x <= request.maxChunkCoord.x; ++chunkCoord.x) {
-			for (chunkCoord.y = request.minChunkCoord.y; chunkCoord.y <= request.maxChunkCoord.y; ++chunkCoord.y) {
+		// Copy the generator data to the terrain.
+		for (auto chunkCoord = request.minChunkCoord; chunkCoord.x < request.maxChunkCoord.x; ++chunkCoord.x) {
+			for (chunkCoord.y = request.minChunkCoord.y; chunkCoord.y < request.maxChunkCoord.y; ++chunkCoord.y) {
 				const auto regionCoord = chunkToRegion(chunkCoord);
 				auto& region = terrain.getRegion({request.realmId, regionCoord});
 				const auto regionIdx = chunkToRegionIndex(chunkCoord, regionCoord);
@@ -56,6 +44,7 @@ namespace Game::Terrain {
 			}
 		}
 
+		// TODO: Should be part of layers and/or have a populated check.
 		layerBiomeStructures.get(chunkArea, self(), request.realmId, terrain);
 	}
 }

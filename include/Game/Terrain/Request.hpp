@@ -5,7 +5,7 @@ namespace Game::Terrain {
 	class Request {
 		public:
 			const ChunkVec minChunkCoord; // Inclusive
-			const ChunkVec maxChunkCoord; // Inclusive
+			const ChunkVec maxChunkCoord; // Exclusive
 			const RealmId realmId;
 
 		public:

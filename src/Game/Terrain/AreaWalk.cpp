@@ -79,7 +79,7 @@ void test_AreaWalker() {
 
 			// Initially they have the same value.
 			auto& walkerRegionY = walk.getRegionWalkerY();
-			auto& walkerChunkY = walk.getChunkWalkerY();
+			[[maybe_unused]] auto& walkerChunkY = walk.getChunkWalkerY();
 			assert(walkerRegionY() == walkerChunkY());
 
 			// Incrementing one does not increment the other, indicating that they do not

@@ -75,17 +75,6 @@ namespace Game::Terrain {
 			std::tuple<RequestSet<Layers>...> store;
 	};
 
-
-	template<class Layer>
-	class GenerateLayerPartitionArgs {
-		public:
-			Layer& layer;
-			const Layer::Partition& partition;
-
-		public:
-			static GenerateLayerPartitionArgs& from(void* args) noexcept { return *reinterpret_cast<GenerateLayerPartitionArgs*>(args); }
-	};
-
 	template<class Self, class Layers, class SharedData>
 	class Generator {
 		private:
