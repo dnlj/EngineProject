@@ -55,8 +55,8 @@ namespace {
 			Engine::Gfx::Texture2D tex = {};
 
 			// Terrain
-			TestGenerator generator{TestSeed};
 			Game::Terrain::Terrain terrain;
+			TestGenerator generator{terrain, TestSeed};
 
 		public:
 			TerrainDragArea(EUI::Context* context)
@@ -87,7 +87,13 @@ namespace {
 				const auto indexToBlock = [&](BlockVec index) ENGINE_INLINE { return offset + applyZoom(index); };
 
 				// +1 because upper bound is exclusive.
-				generator.generate(terrain, Request{chunkOffset, chunkOffset + chunksPerImg + ChunkVec{1, 1}, 0});
+				generator.generate(Request{chunkOffset, chunkOffset + chunksPerImg + ChunkVec{1, 1}, 0});
+				generator.submit();
+
+				// Wait for generation to finish.
+				while (generator.isPending()) {
+					std::this_thread::yield();
+				}
 
 				// TODO: Move this color specification to Blocks.xpp, could be useful
 				//       elsewhere. Alternatively, calculate this value based on the avg img
@@ -121,12 +127,10 @@ namespace {
 				};
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
-				const auto debugIndex = BlockSpanX{indexToBlock({}).x, indexToBlock(res).x}; // TODO:" rm
-				const auto h0WalkInitial = generator.get2<Game::Terrain::Layer::WorldBaseHeight>(
-					BlockSpanX{indexToBlock({}).x, indexToBlock(res).x}
-				);
-
+				const BlockSpanX blockSpan = {indexToBlock({}).x, indexToBlock(res).x};
+				const auto h0WalkInitial = generator.get2<Game::Terrain::Layer::WorldBaseHeight>(blockSpan);
 				const RealmId realmId = 0; // TODO: realm support
+
 				for (BlockUnit y = 0; y < res.y; ++y) {
 					const auto yspan = y * res.x;
 					auto h0Walk = h0WalkInitial;

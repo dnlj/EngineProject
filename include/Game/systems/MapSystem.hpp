@@ -156,7 +156,7 @@ namespace Game {
 				MapGenerator2 mgen{12345};
 			#else
 				Terrain::Terrain terrain;
-				ENGINE_SERVER_ONLY(Terrain::TestGenerator testGenerator{Terrain::TestSeed});
+				ENGINE_SERVER_ONLY(Terrain::TestGenerator testGenerator{terrain, Terrain::TestSeed});
 				Engine::FlatHashMap<UniversalRegionCoord, Engine::Clock::TimePoint> regionLastUsed;
 			#endif
 

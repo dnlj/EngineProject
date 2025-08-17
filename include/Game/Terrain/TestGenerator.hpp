@@ -60,6 +60,7 @@ namespace Game::Terrain {
 	>;
 
 	class TestGenerator : public Generator<TestGenerator, Layers, SharedData> {
+		using Generator::Generator;
 	};
 }
 

@@ -1,11 +1,13 @@
 #pragma once
 
+// Game
+#include <Game/Terrain/ChunkArea.hpp>
+
 
 namespace Game::Terrain {
 	class Request {
 		public:
-			const ChunkVec minChunkCoord; // Inclusive
-			const ChunkVec maxChunkCoord; // Exclusive
+			const ChunkArea chunkArea;
 			const RealmId realmId;
 
 		public:

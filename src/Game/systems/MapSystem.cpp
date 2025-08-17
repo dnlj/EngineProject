@@ -233,6 +233,7 @@ namespace Game {
 	}
 
 	void MapSystem::tick() {
+		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		const auto currTick = world.getTick();
 
 		const auto makeEdit = [&](BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp) {
@@ -300,13 +301,15 @@ namespace Game {
 			}
 		}
 
+		chunkEdits.clear();
+
+		// Rebuild any updated active chunks.
 		for (auto& [chunkPos, activeData] : activeChunks) {
 			if (activeData.updated == currTick) {
 				buildActiveChunkData(activeData, chunkPos);
 			}
 		}
 
-		chunkEdits.clear();
 	}
 
 	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
@@ -329,6 +332,7 @@ namespace Game {
 	}
 
 	void MapSystem::update(float32 dt) {
+		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		auto timeout = world.getTickTime() - std::chrono::seconds{10}; // TODO: how long? 30s?
 
 		// TODO: Shouldn't this unload logic be in tick instead of update?
@@ -421,6 +425,7 @@ namespace Game {
 
 	void MapSystem::network(const NetPlySet plys) {
 		if constexpr (ENGINE_CLIENT) { return; }
+		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		const auto tick = world.getTick();
 
 		// Send chunk updates to clients.
@@ -597,8 +602,10 @@ namespace Game {
 						//       before sending the actual generation commands.
 						if constexpr (ENGINE_SERVER) {
 							queueGeneration({
-								.minChunkCoord = minAreaChunk,
-								.maxChunkCoord = maxAreaChunk,
+								.chunkArea = {
+									.min = minAreaChunk,
+									.max = maxAreaChunk,
+								},
 								.realmId = plyZone.realmId,
 							});
 						} else {
@@ -924,7 +931,7 @@ namespace Game {
 			// TODO: Consider a way to do chunks in an outward spiral order so that the
 			//       chunks generate near the player first.
 			//       Maybe?: https://en.wikipedia.org/wiki/Space-filling_curve?useskin=vector
-			testGenerator.generate(terrain, request);
+			testGenerator.generate(request);
 		}
 	#endif
 #endif

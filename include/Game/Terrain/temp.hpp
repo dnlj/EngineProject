@@ -21,6 +21,9 @@
 #include <Engine/Noise/OpenSimplexNoise.hpp>
 #include <Engine/StaticVector.hpp>
 
+// STD
+#include <mutex>
+
 
 #define BIOME_HEIGHT_ARGS \
 	const TestGenerator& generator, \
@@ -163,6 +166,8 @@ namespace Game::Terrain {
 		public:
 			/** Chunk data for each chunk in the region. */
 			Chunk chunks[regionSize.x][regionSize.y]{};
+
+			// TODO: should we use a bitset for this? That would probably make checkif if all chunks populated easier.
 			bool populated[regionSize.x][regionSize.y]{};
 
 			// TODO: These are currently never used/generated. Waiting on MapSystem integration.
@@ -193,8 +198,13 @@ namespace Game::Terrain {
 	class Terrain {
 		private:
 			Engine::FlatHashMap<UniversalRegionCoord, std::unique_ptr<Region>> regions;
+			std::mutex mutex{};
 
 		public:
+			ENGINE_INLINE std::lock_guard<std::mutex> lock() {
+				return std::lock_guard{mutex};
+			}
+
 			void eraseRegion(const UniversalRegionCoord regionCoord) noexcept {
 				regions.erase(regionCoord);
 			}
@@ -248,7 +258,7 @@ namespace Game::Terrain {
 				// TODO: Again, could benefit from region caching. See notes in isChunkLoaded.
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
-				ENGINE_DEBUG_ASSERT(found != regions.end());
+				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access unloaded region.");
 				return found->second->chunkAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 
@@ -256,7 +266,7 @@ namespace Game::Terrain {
 				// TODO: Again, could benefit from region caching. See notes in isChunkLoaded.
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
-				ENGINE_DEBUG_ASSERT(found != regions.end());
+				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access unloaded region.");
 				return found->second->chunkAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 
@@ -264,7 +274,7 @@ namespace Game::Terrain {
 				// TODO: Again, could benefit from region caching. See notes in isChunkLoaded.
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
-				ENGINE_DEBUG_ASSERT(found != regions.end());
+				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access unloaded region.");
 				return found->second->entitiesAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 
@@ -272,7 +282,7 @@ namespace Game::Terrain {
 				// TODO: Again, could benefit from region caching. See notes in isChunkLoaded.
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto found = regions.find(regionCoord);
-				ENGINE_DEBUG_ASSERT(found != regions.end());
+				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access unloaded region.");
 				return found->second->entitiesAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
 			}
 
