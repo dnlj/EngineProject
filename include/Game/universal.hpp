@@ -39,6 +39,7 @@ namespace Game {
 	ENGINE_INLINE constexpr UniversalChunkCoord UniversalRegionCoord::toChunk() const noexcept { return { realmId, regionToChunk(pos) }; }
 }
 
+
 template<>
 struct Engine::Hash<Game::UniversalRegionCoord> {
 	[[nodiscard]]
@@ -66,5 +67,33 @@ struct Engine::Hash<Game::UniversalBlockCoord> {
 		auto seed = hash(val.realmId);
 		hashCombine(seed, hash(val.pos));
 		return seed;
+	}
+};
+
+
+template<>
+struct fmt::formatter<Game::UniversalRegionCoord> {
+	constexpr auto parse(format_parse_context& ctx) const { return ctx.end(); }
+
+	auto format(const Game::UniversalRegionCoord coord, format_context& ctx) const {
+		return fmt::format_to(ctx.out(), "UniversalRegionCoord({}, {}, r{})", coord.pos.x, coord.pos.y, coord.realmId);
+	}
+};
+
+template<>
+struct fmt::formatter<Game::UniversalChunkCoord> {
+	constexpr auto parse(format_parse_context& ctx) const { return ctx.end(); }
+
+	auto format(const Game::UniversalChunkCoord coord, format_context& ctx) const {
+		return fmt::format_to(ctx.out(), "UniversalChunkCoord({}, {}, r{})", coord.pos.x, coord.pos.y, coord.realmId);
+	}
+};
+
+template<>
+struct fmt::formatter<Game::UniversalBlockCoord> {
+	constexpr auto parse(format_parse_context& ctx) const { return ctx.end(); }
+
+	auto format(const Game::UniversalBlockCoord coord, format_context& ctx) const {
+		return fmt::format_to(ctx.out(), "UniversalBlockCoord({}, {}, r{})", coord.pos.x, coord.pos.y, coord.realmId);
 	}
 };

@@ -111,7 +111,7 @@ namespace Game::Terrain {
 						auto& region = terrain.getRegion({genRequest.realmId, regionCoord});
 						const auto regionIdx = chunkToRegionIndex(chunkCoord, regionCoord);
 						auto& populated = region.populated[regionIdx.x][regionIdx.y];
-				
+
 						if (!populated) {
 							// For each block in the chunk.
 							// TODO: Once layers are done this should go away. Can just access the

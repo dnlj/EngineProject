@@ -270,6 +270,12 @@ namespace Game {
 			}
 		}
 
+		#if !MAP_OLD
+			// Submit any newly loaded queued areas from ensurePlayAreaLoaded above.
+			ENGINE_SERVER_ONLY(testGenerator.submit());
+		#endif
+
+
 		// Apply edits
 		for (auto& [chunkPos, edit] : chunkEdits) {
 			#if MAP_OLD
@@ -285,7 +291,8 @@ namespace Game {
 				auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y].chunk;
 			#else
 				if (!terrain.isChunkLoaded(chunkPos)) [[unlikely]] {
-					// I think we could hit this if we get a chunk from the network before we have that area loaded on the client.
+					// I think we could hit this if we get a chunk from the network before we
+					// have that area loaded on the client. Invalid edits are discarded.
 					// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
 					ENGINE_WARN("Attempting to edit unloaded chunk/region");
 					continue;
@@ -301,8 +308,6 @@ namespace Game {
 			}
 		}
 
-		chunkEdits.clear();
-
 		// Rebuild any updated active chunks.
 		for (auto& [chunkPos, activeData] : activeChunks) {
 			if (activeData.updated == currTick) {
@@ -310,6 +315,8 @@ namespace Game {
 			}
 		}
 
+		// chunkEdits must be cleared _after_ buildActiveChunkData since buildActiveChunkData uses chunkEdits.
+		chunkEdits.clear();
 	}
 
 	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
@@ -448,7 +455,10 @@ namespace Game {
 
 				// Chunk isn't active, nothing to update.
 				const auto found = activeChunks.find(chunkPos);
-				if (found == activeChunks.end()) { continue; }
+				if (found == activeChunks.end()) {
+					++it;
+					continue;
+				}
 
 				// TODO: May be a good chance for multithreading here when doing toRLE/fromRLE.
 
@@ -481,15 +491,19 @@ namespace Game {
 							}
 						#endif
 					} else if (activeData.rle.empty()) {
-						// TODO: I don't think this case should be hit?
-						ENGINE_WARN2("No RLE data for chunk");
+						// TODO: I don't think this case should ever be hit? Wouldn't this be a bug?
+						ENGINE_WARN2("No RLE data for chunk {}.", chunkPos);
 						ENGINE_DEBUG_BREAK;
+						++it;
+						continue;
 					} else { // Chunk edit
 						rle = &activeData.rle;
 						//ENGINE_INFO2("Send chunk (edit): {} {}", tick, chunkPos);
 					}
 
-					// TODO: What is this? `rle` isn't set in some branches above... Why did this work before? Clearly I'm missing something.
+					// TODO: What is this? `rle` isn't set in some branches above... Why
+					//       did this work before? Clearly I'm missing something. When is the no
+					//       data case hit?
 					ENGINE_DEBUG_ASSERT(rle != nullptr);
 
 					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
@@ -557,6 +571,8 @@ namespace Game {
 		const auto minBuffChunk = minAreaChunk - halfBuffSize;
 		const auto maxBuffChunk = maxAreaChunk + halfBuffSize;
 
+		ENGINE_SERVER_ONLY(bool reqGen = false);
+
 		for (auto chunkPos2 = minBuffChunk; chunkPos2.x <= maxBuffChunk.x; ++chunkPos2.x) {
 			for (chunkPos2.y = minBuffChunk.y; chunkPos2.y <= maxBuffChunk.y; ++chunkPos2.y) {
 				const auto isBufferChunk = chunkPos2.x < minAreaChunk.x
@@ -596,26 +612,25 @@ namespace Game {
 					region->lastUsed = world.getTickTime();
 					if (region->loading()) { continue; }
 				#else
-					const auto regionCoord = chunkPos.toRegion();
-					if (!isBufferChunk && !terrain.isChunkLoaded(chunkPos)) {
-						// TODO: Could/should probably optimize the sum of all requests
-						//       before sending the actual generation commands.
-						if constexpr (ENGINE_SERVER) {
-							queueGeneration({
-								.chunkArea = {
-									.min = minAreaChunk,
-									.max = maxAreaChunk,
-								},
-								.realmId = plyZone.realmId,
-							});
-						} else {
-							// Ensure space for the chunk is allocated. This is needed so that we
-							// can apply the chunk data that will be received from the server.
-							terrain.forceAllocateChunk(chunkPos);
+					// TODO: Isn't this going to be resubmitting every frame? Need an chunk
+					//       state to say WIP or something? Or just let the map system eat it?
+					//       Probably not the best idea.
+					if (!terrain.isChunkLoaded(chunkPos)) {
+						if (!isBufferChunk) {
+							if constexpr (ENGINE_SERVER) {
+								ENGINE_SERVER_ONLY(reqGen = true);
+							} else {
+								// Ensure space for the chunk is allocated. This is needed so that we
+								// can apply the chunk data that will be received from the server.
+								terrain.forceAllocateChunk(chunkPos);
+							}
 						}
+
+						continue;
 					}
 
 					// Update region usage.
+					const auto regionCoord = chunkPos.toRegion();
 					regionLastUsed[regionCoord] = world.getTickTime();
 				#endif
 
@@ -673,7 +688,7 @@ namespace Game {
 						}
 					}
 
-					// ENGINE_LOG("Activating chunk: ", chunkPos.x, ", ", chunkPos.y, " (", (activeChunkIt->second.updated == tick) ? "fresh" : "stale", ")");
+					ENGINE_LOG2("Activating chunk: {} r{} ({})", chunkPos.pos, chunkPos.realmId, (activeChunkIt->second.updated == tick) ? "fresh" : "stale");
 					activeChunkIt->second.updated = tick;
 				} else if (!isBufferChunk) {
 					// Only move the non-buffer chunks to avoid any stutter when moving
@@ -722,6 +737,19 @@ namespace Game {
 				activeChunkIt->second.lastUsed = world.getTickTime();
 			}
 		}
+
+		#if ENGINE_SERVER
+		if (reqGen)
+		{
+			queueGeneration({
+				.chunkArea = {
+					.min = minAreaChunk,
+					.max = maxAreaChunk,
+				},
+				.realmId = plyZone.realmId,
+			});
+		}
+		#endif
 	}
 
 	void MapSystem::setValueAt2(const UniversalBlockCoord blockPos, BlockId bid) {
@@ -744,10 +772,13 @@ namespace Game {
 			const auto& chunk = terrain.getChunk(chunkPos);
 		#endif
 
-		if constexpr (ENGINE_SERVER) { // Build edits
+		// Build edits
+		if constexpr (ENGINE_SERVER) {
 			const auto found = chunkEdits.find(chunkPos);
 			if (found == chunkEdits.end()) {
-				data.rle.clear();
+				// This case happens when we first activate new chunks. There have been no
+				// edits but we still need to build the initial active chunk data.
+				ENGINE_DEBUG_ASSERT(data.rle.empty(), "Unexpected RLE chunk data for ", chunkPos.pos.x, ", ", chunkPos.pos.y, ", r", chunkPos.realmId);
 			} else {
 				found->second.toRLE(data.rle);
 			}
