@@ -68,7 +68,7 @@ namespace {
 				setTexture(tex);
 			}
 
-			void requestRebuild() { nextRebuild = Engine::Clock::now() + rebuildDelay;}
+			void requestRebuild() {nextRebuild = Engine::Clock::now() + rebuildDelay;}
 
 		private:
 			void rebuild() {
@@ -146,39 +146,39 @@ namespace {
 							// This won't line up 100% because we don't include the height offset (see
 							// BiomeRawWeights), but that's the point. Showing the undistorted biome grid.
 							const auto blockCoordAdj = blockCoord - biomeScaleOffset;
-							const auto info = generator.get<Game::Terrain::Layer::BiomeRaw>(blockCoordAdj);
+							const auto info = generator.get<Game::Terrain::Layer::RawBiome>(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeRawWeights) {
 							// Need to include the biome offset or else things won't line
 							// up when switching layers. This is because of how we handle
-							// biome offsets between BiomeRaw and BiomeWeights. See
+							// biome offsets between RawBiome and BiomeRawWeights. See
 							// comments in those classes for details.
 							const auto blockCoordAdj = blockCoord - (biomeScaleOffset + h0);
-							const auto info = generator.get<Game::Terrain::Layer::BiomeRaw>(blockCoordAdj);
+							const auto info = generator.get<Game::Terrain::Layer::RawBiome>(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeBlendWeights) {
-							auto weights = generator.get<Game::Terrain::Layer::BiomeWeights>(chunkCoord).at(chunkIndex).weights;
+							auto weights = generator.get<Game::Terrain::Layer::RawBiomeWeights>(chunkCoord).at(chunkIndex).weights;
 							normalizeBiomeWeights(weights);
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::BiomeFinalWeights) {
-							const auto weights = generator.get<Game::Terrain::Layer::BiomeBlended>(chunkCoord).at(chunkIndex).weights;
+							const auto weights = generator.get<Game::Terrain::Layer::BlendedBiomeWeights>(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biomeToColor[biome.id];
 						} else if (mode == Layer::BiomeFinalWeightsFull) {
-							const auto weights = generator.get<Game::Terrain::Layer::BiomeBlended>(chunkCoord).at(chunkIndex).weights;
+							const auto weights = generator.get<Game::Terrain::Layer::BlendedBiomeWeights>(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::TerrainHeight0) {
-							const auto weights = generator.get<Game::Terrain::Layer::BiomeBlended>(chunkCoord).at(chunkIndex).weights;
+							const auto weights = generator.get<Game::Terrain::Layer::BlendedBiomeWeights>(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainHeight2) {
-							const auto h2 = generator.get<Game::Terrain::Layer::BiomeHeight>(blockCoord.x);
-							const auto basisInfo = generator.get<Game::Terrain::Layer::BiomeBasis>(chunkCoord).at(chunkIndex);
+							const auto h2 = generator.get<Game::Terrain::Layer::BlendedBiomeHeight>(blockCoord.x);
+							const auto basisInfo = generator.get<Game::Terrain::Layer::BlendedBiomeBasis>(chunkCoord).at(chunkIndex);
 							data[idx] = blockCoord.y <= h2 ? glm::u8vec3(basisInfo.weight * glm::vec3(biomeToColor[basisInfo.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainBasis) {
-							const auto basisInfo = generator.get<Game::Terrain::Layer::BiomeBasis>(chunkCoord).at(chunkIndex);
+							const auto basisInfo = generator.get<Game::Terrain::Layer::BlendedBiomeBasis>(chunkCoord).at(chunkIndex);
 							minBasis = std::min(minBasis, basisInfo.basis);
 							maxBasis = std::max(maxBasis, basisInfo.basis);
 
@@ -299,23 +299,6 @@ namespace Game::UI {
 		yMove->autoSize();
 		yMove->bind(textGetter(area->offset.y), textSetter(area->offset.y));
 
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: why does this refresh instantly? Where is the delay?
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
 		const auto zoom = ctx->createPanel<EUI::TextBox>(sec);
 		zoom->autoSize();
 		zoom->bind(textGetter(area->zoom), textSetter(area->zoom));

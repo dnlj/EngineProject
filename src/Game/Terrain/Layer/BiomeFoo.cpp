@@ -169,7 +169,7 @@ namespace Game::Terrain::Layer {
 		const auto maxBlockCoord = minBlockCoord + chunkSize;
 		for (auto blockCoord = minBlockCoord; blockCoord.x < maxBlockCoord.x; ++blockCoord.x) {
 			if (blockCoord.x % stride == 0) {
-				blockCoord.y = generator.get<BiomeHeight>(blockCoord.x);
+				blockCoord.y = generator.get<BlendedBiomeHeight>(blockCoord.x);
 				if (blockCoord.y >= minBlockCoord.y && blockCoord.y < maxBlockCoord.y) {
 					// TODO: random horizontal variation, etc.
 					inserter = {blockCoord, blockCoord + BlockVec{width, 12}, 0};

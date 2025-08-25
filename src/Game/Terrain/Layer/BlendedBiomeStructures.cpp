@@ -1,5 +1,5 @@
 // Game
-#include <Game/Terrain/Layer/BiomeStructures.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeStructures.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -7,16 +7,16 @@
 
 
 namespace Game::Terrain::Layer {
-	void BiomeStructures::request(const Range chunkArea, TestGenerator& generator) {
-		generator.request<BiomeStructureInfo>(chunkArea);
+	void BlendedBiomeStructures::request(const Range chunkArea, TestGenerator& generator) {
+		generator.request<BlendedBiomeStructureInfo>(chunkArea);
 	}
 
-	void BiomeStructures::generate(const Partition chunkCoord, TestGenerator& generator) {
+	void BlendedBiomeStructures::generate(const Partition chunkCoord, TestGenerator& generator) {
 		// No need for caching.
 		// This data is only ever used exactly once so caching is overhead.
 	}
 
-	void BiomeStructures::get(const Index chunkArea, TestGenerator& generator, const RealmId realmId, Terrain& terrain) const noexcept {
+	void BlendedBiomeStructures::get(const Index chunkArea, TestGenerator& generator, const RealmId realmId, Terrain& terrain) const noexcept {
 		// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial structure.
 		
 		// TODO: How do we want to resolve conflicts? If we just go first come first serve
@@ -41,7 +41,7 @@ namespace Game::Terrain::Layer {
 		//       and that should be fairly doable.
 
 		std::vector<StructureInfo> structures;
-		generator.get2<Layer::BiomeStructureInfo>(chunkArea, structures);
+		generator.get2<Layer::BlendedBiomeStructureInfo>(chunkArea, structures);
 		for (const auto& info : structures) {
 			Engine::withTypeAt<Biomes>(info.biomeId, [&]<class Biome>(){
 				// TODO: document somewhere the structure is optional.

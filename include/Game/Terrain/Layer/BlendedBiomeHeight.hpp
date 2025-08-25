@@ -12,11 +12,11 @@
 // h2 = final blended height between all influencing biomes.
 
 namespace Game::Terrain::Layer {
-	class BiomeWeights;
+	class RawBiomeWeights;
 	class WorldBaseHeight;
 
 	// The absolute weight of each biome. These are non-normalized.
-	class BiomeHeight : public DependsOn<BiomeWeights, WorldBaseHeight> {
+	class BlendedBiomeHeight : public DependsOn<RawBiomeWeights, WorldBaseHeight> {
 		public:
 			using Range = RegionSpanX;
 			using Partition = RegionUnit;

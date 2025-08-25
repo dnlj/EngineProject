@@ -6,7 +6,7 @@
 
 
 namespace Game::Terrain::Layer {
-	class BiomeStructures : public DependsOn<> {
+	class BlendedBiomeStructures : public DependsOn<> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkVec;

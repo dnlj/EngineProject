@@ -18,35 +18,6 @@ namespace Game::Terrain {
 		//   - Moss, grass tufts, cobwebs, chests/loot, etc.
 		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
 
-		//// TODO: avoid name conflict with arguments `request`
-		//this->request<Layer::BiomeBlock>(request.chunkArea);
-		//this->request<Layer::BiomeStructures>(request.chunkArea);
-		//generateLayers();
-		//
-		//// Copy the generator data to the terrain.
-		//for (auto chunkCoord = request.chunkArea.min; chunkCoord.x < request.chunkArea.max.x; ++chunkCoord.x) {
-		//	for (chunkCoord.y = request.chunkArea.min.y; chunkCoord.y < request.chunkArea.max.y; ++chunkCoord.y) {
-		//		const auto regionCoord = chunkToRegion(chunkCoord);
-		//		auto& region = terrain.getRegion({request.realmId, regionCoord});
-		//		const auto regionIdx = chunkToRegionIndex(chunkCoord, regionCoord);
-		//		auto& populated = region.populated[regionIdx.x][regionIdx.y];
-		//		
-		//		if (!populated) {
-		//			// For each block in the chunk.
-		//			// TODO: Once layers are done this should go away. Can just access the
-		//			//       layerBiomeBlock directly.
-		//			const auto& chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
-		//			auto& chunk = region.chunkAt(regionIdx);
-		//			chunk = chunkBiomeBlock;
-		//			populated = true;
-		//		}
-		//	}
-		//}
-		//
-		//// TODO: Should be part of layers and/or have a populated check.
-		//layerBiomeStructures.get(request.chunkArea, self(), request.realmId, terrain);
-
-
 		// TODO: We should have a third queue on the main thread so that we don't need to
 		//       lock here? Then we could have a dedicate swap function once all requests
 		//       are done + cv. Its not quite that simple because we don't know that the
@@ -84,10 +55,9 @@ namespace Game::Terrain {
 
 	template<class Self, class Layers, class SharedData>
 	void Generator<Self, Layers, SharedData>::processGenRequests() {
-		// TODO: doesn't genRequests need a mutext? Should have two queues and swap to avodi blocking.
 		for (const auto& genRequest : genRequestsBack) {
-			this->request<Layer::BiomeBlock>(genRequest.chunkArea);
-			this->request<Layer::BiomeStructures>(genRequest.chunkArea);
+			this->request<Layer::BlendedBiomeBlock>(genRequest.chunkArea);
+			this->request<Layer::BlendedBiomeStructures>(genRequest.chunkArea);
 		}
 
 		generateLayers();
@@ -115,17 +85,15 @@ namespace Game::Terrain {
 						if (!populated) {
 							// For each block in the chunk.
 							// TODO: Once layers are done this should go away. Can just access the
-							//       layerBiomeBlock directly.
-							const auto& chunkBiomeBlock = layerBiomeBlock.get(chunkCoord);
-							auto& chunk = region.chunkAt(regionIdx);
-							chunk = chunkBiomeBlock;
+							//       layerBlendedBiomeBlock directly*.
+							region.chunkAt(regionIdx) = layerBlendedBiomeBlock.get(chunkCoord);
 							populated = true;
 						}
 					}
 				}
 
 				// TODO: Should be part of layers and/or have a populated check.
-				layerBiomeStructures.get(genRequest.chunkArea, self(), genRequest.realmId, terrain);
+				layerBlendedBiomeStructures.get(genRequest.chunkArea, self(), genRequest.realmId, terrain);
 			}
 		}
 

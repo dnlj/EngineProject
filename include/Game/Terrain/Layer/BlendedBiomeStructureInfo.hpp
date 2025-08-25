@@ -7,7 +7,7 @@
 
 
 namespace Game::Terrain::Layer {
-	class BiomeStructureInfo : public DependsOn<> {
+	class BlendedBiomeStructureInfo : public DependsOn<> {
 		public:
 			// Biome structures doesn't necessarily need to use the chunk grid, at the
 			// moment its just convenient. Any grid size so long as:

@@ -1,35 +1,35 @@
 // Game
-#include <Game/Terrain/Layer/BiomeBlended.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeWeights.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
 
 
 namespace Game::Terrain::Layer {
-	void BiomeBlended::request(const Range area, TestGenerator& generator) {
-		generator.request<BiomeWeights>(area);
+	void BlendedBiomeWeights::request(const Range area, TestGenerator& generator) {
+		generator.request<RawBiomeWeights>(area);
 		cache.reserve(area.toRegionArea());
 	}
 
-	void BiomeBlended::generate(const Partition chunkCoord, TestGenerator& generator) {
+	void BlendedBiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {
 		cache.populate(chunkCoord, [&](auto& chunkStore) ENGINE_INLINE_REL {
-			const auto& chunkBiomeWeights = generator.get<BiomeWeights>(chunkCoord);
+			const auto& chunkRawBiomeWeights = generator.get<RawBiomeWeights>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
 					const auto blockCoord = baseBlockCoord + chunkIndex;
-					chunkStore.at(chunkIndex) = populate(blockCoord, chunkBiomeWeights.at(chunkIndex), generator);
+					chunkStore.at(chunkIndex) = populate(blockCoord, chunkRawBiomeWeights.at(chunkIndex), generator);
 				}
 			}
 		});
 	}
 
-	const ChunkStore<BiomeBlend>& BiomeBlended::get(const Index chunkCoord) const noexcept {
+	const ChunkStore<BiomeBlend>& BlendedBiomeWeights::get(const Index chunkCoord) const noexcept {
 		const auto regionCoord = chunkToRegion(chunkCoord);
 		return cache.at(regionCoord).at(chunkToRegionIndex(chunkCoord, regionCoord));
 	}
 
-	[[nodiscard]] BiomeBlend BiomeBlended::populate(const BlockVec blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept {
+	[[nodiscard]] BiomeBlend BlendedBiomeWeights::populate(const BlockVec blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept {
 		normalizeBiomeWeights(blend.weights);
 		blend.rawWeights = blend.weights;
 		ENGINE_DEBUG_ONLY({

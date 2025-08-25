@@ -32,15 +32,15 @@
 #include <Game/Terrain/temp.hpp>
 
 // TODO: fix include dependencies. This uglyness goes away once we remove/split the above classes.
-#include <Game/Terrain/Layer/BiomeRaw.hpp>
-#include <Game/Terrain/Layer/BiomeWeights.hpp>
+#include <Game/Terrain/Layer/RawBiome.hpp>
+#include <Game/Terrain/Layer/RawBiomeWeights.hpp>
 #include <Game/Terrain/Layer/WorldBaseHeight.hpp>
-#include <Game/Terrain/Layer/BiomeBlended.hpp>
-#include <Game/Terrain/Layer/BiomeHeight.hpp>
-#include <Game/Terrain/Layer/BiomeBasis.hpp>
-#include <Game/Terrain/Layer/BiomeBlock.hpp>
-#include <Game/Terrain/Layer/BiomeStructureInfo.hpp>
-#include <Game/Terrain/Layer/BiomeStructures.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeWeights.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeHeight.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeBasis.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeBlock.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeStructureInfo.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeStructures.hpp>
 #include <Game/Terrain/Layer/BiomeOcean.hpp>
 #include <Game/Terrain/Layer/BiomeMountain.hpp>
 
@@ -123,8 +123,8 @@ namespace Game::Terrain {
 		public: // TODO: rm/private - Currently public to ease transition to layers architecture in TerrainPreview.
 			// TODO: rm - Can't the preview just use `get<Layer>()` ?
 			Layer::WorldBaseHeight& layerWorldBaseHeight = std::get<Layer::WorldBaseHeight>(layers); // TODO: Can be removed, currently just for debugging during transition.
-			Layer::BiomeBlock& layerBiomeBlock = std::get<Layer::BiomeBlock>(layers);
-			Layer::BiomeStructures& layerBiomeStructures = std::get<Layer::BiomeStructures>(layers);
+			Layer::BlendedBiomeBlock& layerBlendedBiomeBlock = std::get<Layer::BlendedBiomeBlock>(layers);
+			Layer::BlendedBiomeStructures& layerBlendedBiomeStructures = std::get<Layer::BlendedBiomeStructures>(layers);
 
 		private:
 			Self& self() { return static_cast<Self&>(*this); }

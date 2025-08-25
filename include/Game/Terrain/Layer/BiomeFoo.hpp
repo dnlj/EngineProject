@@ -7,7 +7,7 @@
 
 namespace Game::Terrain::Layer {
 	class WorldBaseHeight;
-	class BiomeHeight;
+	class BlendedBiomeHeight;
 
 	class BiomeFooHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:

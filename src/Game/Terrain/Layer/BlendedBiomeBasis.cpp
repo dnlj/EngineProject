@@ -1,6 +1,6 @@
 // Game
-#include <Game/Terrain/Layer/BiomeBasis.hpp>
-#include <Game/Terrain/Layer/BiomeHeight.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeBasis.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeHeight.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -8,16 +8,16 @@
 
 
 namespace Game::Terrain::Layer {
-	void BiomeBasis::request(const Range area, TestGenerator& generator) {
+	void BlendedBiomeBasis::request(const Range area, TestGenerator& generator) {
 		const auto regionArea = area.toRegionArea();
-		generator.request<BiomeBlended>(area);
-		generator.request<BiomeHeight>(regionArea.toSpanX());
+		generator.request<BlendedBiomeWeights>(area);
+		generator.request<BlendedBiomeHeight>(regionArea.toSpanX());
 		cache.reserve(regionArea);
 	}
 
-	void BiomeBasis::generate(const Partition chunkCoord, TestGenerator& generator) {
+	void BlendedBiomeBasis::generate(const Partition chunkCoord, TestGenerator& generator) {
 		cache.populate(chunkCoord, [&](auto& basisStore) ENGINE_INLINE_REL {
-			const auto& blendStore = generator.get<BiomeBlended>(chunkCoord);
+			const auto& blendStore = generator.get<BlendedBiomeWeights>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
@@ -28,14 +28,14 @@ namespace Game::Terrain::Layer {
 		});
 	}
 
-	const ChunkStore<BasisInfo>& BiomeBasis::get(const Index chunkCoord) const noexcept {
+	const ChunkStore<BasisInfo>& BlendedBiomeBasis::get(const Index chunkCoord) const noexcept {
 		const auto regionCoord = chunkToRegion(chunkCoord);
 		return cache.at(regionCoord).at(chunkToRegionIndex(chunkCoord, regionCoord));
 	}
 
-	BasisInfo BiomeBasis::populate(BlockVec blockCoord, const BiomeBlend& blend, const TestGenerator& generator) const noexcept {
+	BasisInfo BlendedBiomeBasis::populate(BlockVec blockCoord, const BiomeBlend& blend, const TestGenerator& generator) const noexcept {
 		Float totalBasis = 0;
-		const auto h2 = generator.get<BiomeHeight>(blockCoord.x);
+		const auto h2 = generator.get<BlendedBiomeHeight>(blockCoord.x);
 		for (auto& biomeWeight : blend.weights) {
 			// TODO: rm - const auto basis = generator.rm_getBasis(biomeWeight.id, blockCoord);
 			const auto basis = Engine::withTypeAt<Biomes>(biomeWeight.id, [&]<class Biome>(){

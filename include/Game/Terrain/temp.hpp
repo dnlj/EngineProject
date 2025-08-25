@@ -29,7 +29,7 @@
 	const TestGenerator& generator, \
 	const ::Game::BlockUnit blockCoordX, \
 	const ::Game::Terrain::Float h0, \
-	const ::Game::Terrain::BiomeRawInfo2& rawInfo
+	const ::Game::Terrain::RawBiomeInfo& rawInfo
 
 #define BIOME_BASIS_STRENGTH_ARGS \
 	const TestGenerator& generator, \
@@ -91,7 +91,7 @@ namespace Game::Terrain {
 			BiomeId biomeId = {};
 	};
 
-	class BiomeRawInfo2 {
+	class RawBiomeInfo {
 		public:
 			BiomeId id;
 	
@@ -126,7 +126,7 @@ namespace Game::Terrain {
 
 	class BiomeBlend {
 		public:
-			BiomeRawInfo2 info;
+			RawBiomeInfo info;
 			BiomeWeights weights;
 			BiomeWeights rawWeights;
 	};

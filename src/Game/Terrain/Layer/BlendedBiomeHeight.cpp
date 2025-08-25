@@ -1,6 +1,6 @@
 // Game
-#include <Game/Terrain/Layer/BiomeHeight.hpp>
-#include <Game/Terrain/Layer/BiomeBlended.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeHeight.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeWeights.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -8,7 +8,7 @@
 
 
 namespace Game::Terrain::Layer {
-	void BiomeHeight::request(const Range area, TestGenerator& generator) {
+	void BlendedBiomeHeight::request(const Range area, TestGenerator& generator) {
 		cache.reserve(area);
 
 		generator.requestAwait<WorldBaseHeight>(area);
@@ -25,7 +25,7 @@ namespace Game::Terrain::Layer {
 				hMax = std::max(hMax, h0);
 			}
 
-			generator.request<BiomeBlended>({
+			generator.request<BlendedBiomeWeights>({
 				.min = blockToChunk({blockMinX, hMin}),
 				.max = blockToChunk({blockMaxX, hMax}) + ChunkVec{0, 1}, // Add one to get an _exlusive_ bound instead of inclusive.
 			});
@@ -33,7 +33,7 @@ namespace Game::Terrain::Layer {
 			// TODO: We should probably be doing this with correct `request` calls to the blended biomes.
 			// 
 			// Note that we don't send requests to the biome in the blend. In theory we
-			// should be doing a requestAwait for BiomeBlended and then also sending
+			// should be doing a requestAwait for BlendedBiomeWeights and then also sending
 			// requests to each biome in the resulting blend. Currently this is "okay" to
 			// skip because all biome layers are expected to resolve in `get` anyways.
 			// Although this does bypass the request/generate dependency model.
@@ -41,11 +41,11 @@ namespace Game::Terrain::Layer {
 
 	}
 
-	void BiomeHeight::generate(const Partition regionCoordX, TestGenerator& generator) {
+	void BlendedBiomeHeight::generate(const Partition regionCoordX, TestGenerator& generator) {
 		// TODO: Add static asserts to ensure that the biome height layers _ARE NOT_
 		//       cached. Since we don't issue requests cached height layers won't work. They
-		//       also don't make sense. The BiomeHeight layer (this layer) is what should be
-		//       doing the caching. Other layers should be sampling the BiomeHeight layer, not specific biomes.
+		//       also don't make sense. The BlendedBiomeHeight layer (this layer) is what should be
+		//       doing the caching. Other layers should be sampling the BlendedBiomeHeight layer, not specific biomes.
 		
 		const auto& h0Data = generator.get3<WorldBaseHeight>(regionCoordX);
 		auto& h2Data = cache.get(regionCoordX);
@@ -55,7 +55,7 @@ namespace Game::Terrain::Layer {
 			const auto h0 = h0Data[blockRegionIndex];
 			const auto h0F = static_cast<Float>(h0);
 			const auto chunkCoord = blockToChunk({blockCoordX, h0});
-			const auto& chunkStore = generator.get<BiomeBlended>(chunkCoord);
+			const auto& chunkStore = generator.get<BlendedBiomeWeights>(chunkCoord);
 			const auto chunkIndex = blockToChunkIndex({blockCoordX, h0}, chunkCoord);
 			const auto& blend = chunkStore.at(chunkIndex);
 			Float h2 = 0;

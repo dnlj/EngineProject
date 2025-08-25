@@ -1,5 +1,5 @@
 // Game
-#include <Game/Terrain/Layer/BiomeStructureInfo.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeStructureInfo.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -7,16 +7,16 @@
 
 
 namespace Game::Terrain::Layer {
-	void BiomeStructureInfo::request(const Range chunkArea, TestGenerator& generator) {
-		generator.request<BiomeBlended>(chunkArea);
+	void BlendedBiomeStructureInfo::request(const Range chunkArea, TestGenerator& generator) {
+		generator.request<BlendedBiomeWeights>(chunkArea);
 	}
 
-	void BiomeStructureInfo::generate(const Partition chunkCoord, TestGenerator& generator) {
+	void BlendedBiomeStructureInfo::generate(const Partition chunkCoord, TestGenerator& generator) {
 		// No need for caching.
 		// This data is only ever used exactly once so caching is overhead.
 	}
 
-	void BiomeStructureInfo::get(const TestGenerator& generator, const Index chunkArea, std::vector<StructureInfo>& structures) const noexcept {
+	void BlendedBiomeStructureInfo::get(const TestGenerator& generator, const Index chunkArea, std::vector<StructureInfo>& structures) const noexcept {
 		for (auto chunkCoord = chunkArea.min; chunkCoord.x < chunkArea.max.x; ++chunkCoord.x) {
 			for (chunkCoord.y = chunkArea.min.y; chunkCoord.y < chunkArea.max.y; ++chunkCoord.y) {
 				populate(chunkCoord, generator, structures);
@@ -24,13 +24,13 @@ namespace Game::Terrain::Layer {
 		}
 	}
 
-	void BiomeStructureInfo::populate(const ChunkVec chunkCoord, const TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept {
+	void BlendedBiomeStructureInfo::populate(const ChunkVec chunkCoord, const TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept {
 		// TODO: Would there be any perf implications where it might be better to cache
 		//       the struct info so that things are processed more layer-like (as opposed
 		//       to on-the-fly, like is done here)? My gut reaction would be that since
 		//       structure generation is (will be) quite random access I doubt there would
 		//       be much if any gain.
-		const auto& chunkBiomeBlended = generator.get<BiomeBlended>(chunkCoord);
+		const auto& chunkBlendedBiomeWeights = generator.get<BlendedBiomeWeights>(chunkCoord);
 		Engine::StaticVector<BiomeId, 4> biomes;
 		
 		// TODO: Is this true? Investigate and leave more details on why. Static asserts if possible.
@@ -40,7 +40,7 @@ namespace Game::Terrain::Layer {
 		//       > is greater than or equal to the chunk size.
 		{ // Should be moved into dedicated layer w/ caching if any other consumers are ever needed.
 			const auto tryAdd = [&](const BlockVec chunkIndex) ENGINE_INLINE {
-				const auto biomeId = maxBiomeWeight(chunkBiomeBlended.at(chunkIndex).weights).id;
+				const auto biomeId = maxBiomeWeight(chunkBlendedBiomeWeights.at(chunkIndex).weights).id;
 				if (!std::ranges::contains(biomes, biomeId))  { biomes.push_back(biomeId); }
 			};
 

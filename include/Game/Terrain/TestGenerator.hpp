@@ -11,7 +11,7 @@ namespace Game::Terrain {
 	constexpr inline int64 TestSeed = 1234;
 
 	// TODO: Note somewhere that biomes don't need generation/partition since they are on
-	//       demand. The caching is done at the BiomeBlock level. May want to consider a
+	//       demand. The caching is done at the BlendedBiomeBlock level. May want to consider a
 	//       different structure for biomes since half of the Layer functionality isn't
 	//       used?
 	using Biomes = std::tuple<
@@ -24,14 +24,6 @@ namespace Game::Terrain {
 	>;
 	constexpr inline auto biomeCount = std::tuple_size_v<Biomes>;
 	
-
-	//
-	//
-	//
-	// TODO: rename the biome accumulation layers to something other than BiomeX to avoid conflict with actual biomes.
-	//
-	//
-	//
 	using Layers = Engine::TupleConcat_t<
 		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Height), Biomes>,
 		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(BasisStrength), Biomes>,
@@ -44,14 +36,14 @@ namespace Game::Terrain {
 		//       biome layers are immediate (no caching) so it doesn't matter.
 		std::tuple<
 			Layer::WorldBaseHeight,
-			Layer::BiomeRaw,
-			Layer::BiomeWeights,
-			Layer::BiomeBlended,
-			Layer::BiomeHeight,
-			Layer::BiomeBasis,
-			Layer::BiomeBlock,
-			Layer::BiomeStructureInfo,
-			Layer::BiomeStructures
+			Layer::RawBiome,
+			Layer::RawBiomeWeights,
+			Layer::BlendedBiomeWeights,
+			Layer::BlendedBiomeHeight,
+			Layer::BlendedBiomeBasis,
+			Layer::BlendedBiomeBlock,
+			Layer::BlendedBiomeStructureInfo,
+			Layer::BlendedBiomeStructures
 		>
 	>;
 

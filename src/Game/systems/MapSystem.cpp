@@ -126,7 +126,7 @@ namespace Game {
 
 		//
 		//
-		// TODO: populate real realm data.
+		// TODO: populate real realm id/pos data.
 		//
 		//
 		realmComp.realmId = 1;
@@ -688,7 +688,7 @@ namespace Game {
 						}
 					}
 
-					ENGINE_LOG2("Activating chunk: {} r{} ({})", chunkPos.pos, chunkPos.realmId, (activeChunkIt->second.updated == tick) ? "fresh" : "stale");
+					//ENGINE_LOG2("Activating chunk: {} ({})", chunkPos, (activeChunkIt->second.updated == tick) ? "fresh" : "stale");
 					activeChunkIt->second.updated = tick;
 				} else if (!isBufferChunk) {
 					// Only move the non-buffer chunks to avoid any stutter when moving
@@ -739,8 +739,7 @@ namespace Game {
 		}
 
 		#if ENGINE_SERVER
-		if (reqGen)
-		{
+		if (reqGen) {
 			queueGeneration({
 				.chunkArea = {
 					.min = minAreaChunk,

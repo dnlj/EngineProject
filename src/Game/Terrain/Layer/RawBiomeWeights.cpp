@@ -1,8 +1,8 @@
 // Game
 #include <Game/Terrain/AreaWalk.hpp>
 #include <Game/Terrain/BiomeScale.hpp>
-#include <Game/Terrain/Layer/BiomeRaw.hpp>
-#include <Game/Terrain/Layer/BiomeWeights.hpp>
+#include <Game/Terrain/Layer/RawBiome.hpp>
+#include <Game/Terrain/Layer/RawBiomeWeights.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -10,26 +10,26 @@
 
 
 namespace Game::Terrain::Layer {
-	void BiomeWeights::request(const Range area, TestGenerator& generator) {
+	void RawBiomeWeights::request(const Range area, TestGenerator& generator) {
 		const auto regionArea = area.toRegionArea();
 
 		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
 		generator.request<WorldBaseHeight>(regionArea.toSpanX());
 
-		// Note that since BiomeRaw is not cached this call effectively does nothing.
-		generator.request<BiomeRaw>(area);
+		// Note that since RawBiome is not cached this call effectively does nothing.
+		generator.request<RawBiome>(area);
 
 		cache.reserve(regionArea);
 	}
 
-	void BiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {
+	void RawBiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {
 		cache.populate(chunkCoord, [&](auto& chunkStore) {
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			auto h0Walk = generator.get2<WorldBaseHeight>(chunkCoord.x);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
-				// Theoretically this offset should go in BiomeRaw. In practice its more
+				// Theoretically this offset should go in RawBiome. In practice its more
 				// efficient and easier to do it here. This avoids the need to use a cache
-				// in BiomeRaw which makes it ~15% faster and not use any memory.
+				// in RawBiome which makes it ~15% faster and not use any memory.
 			
 				// TODO: rm - just for debugging during transition.
 				ENGINE_DEBUG_ASSERT(*h0Walk == generator.layerWorldBaseHeight.getOld(baseBlockCoord.x + chunkIndex.x));
@@ -43,14 +43,14 @@ namespace Game::Terrain::Layer {
 		});
 	}
 
-	const ChunkStore<BiomeBlend>& BiomeWeights::get(const Index chunkCoord) const noexcept {
+	const ChunkStore<BiomeBlend>& RawBiomeWeights::get(const Index chunkCoord) const noexcept {
 		const auto regionCoord = chunkToRegion(chunkCoord);
 		return cache.at(regionCoord).at(chunkToRegionIndex(chunkCoord, regionCoord));
 	}
 
-	[[nodiscard]] BiomeBlend BiomeWeights::populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept {
+	[[nodiscard]] BiomeBlend RawBiomeWeights::populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept {
 		BiomeBlend blend = {
-			.info = generator.get<BiomeRaw>(blockCoord),
+			.info = generator.get<RawBiome>(blockCoord),
 			.weights = {},
 		};
 
@@ -136,7 +136,7 @@ namespace Game::Terrain::Layer {
 		//   be to make all biomes the same scale and instead have some type of logic to
 		//   generate clusters of the same biome.
 		//
-		//   It is also possible to get the correct weight based on the calcBiomeRaw like
+		//   It is also possible to get the correct weight based on the calcRawBiome like
 		//   we do above for the current biome, but again, that is q good bit more
 		//   calculations and slows things down a lot. We should be able to better than
 		//   the naive 3x3 mentioned above though, but again more logic and still more
@@ -144,27 +144,27 @@ namespace Game::Terrain::Layer {
 
 		if constexpr (true) {
 			if (left) { // Left
-				addWeight(generator.get<BiomeRaw>({blockCoord.x - biomeBlendDist, blockCoord.y}).id, leftW);
+				addWeight(generator.get<RawBiome>({blockCoord.x - biomeBlendDist, blockCoord.y}).id, leftW);
 					
 				if (bottom) { // Bottom Left
-					addWeight(generator.get<BiomeRaw>({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(leftW, bottomW));
+					addWeight(generator.get<RawBiome>({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(leftW, bottomW));
 				} else if (top) { // Top Left
-					addWeight(generator.get<BiomeRaw>({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(leftW, topW));
+					addWeight(generator.get<RawBiome>({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(leftW, topW));
 				}
 			} else if (right) { // Right
-				addWeight(generator.get<BiomeRaw>({blockCoord.x + biomeBlendDist, blockCoord.y}).id, rightW);
+				addWeight(generator.get<RawBiome>({blockCoord.x + biomeBlendDist, blockCoord.y}).id, rightW);
 					
 				if (bottom) { // Bottom Right
-					addWeight(generator.get<BiomeRaw>({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(rightW, bottomW));
+					addWeight(generator.get<RawBiome>({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(rightW, bottomW));
 				} else if (top) { // Top Right
-					addWeight(generator.get<BiomeRaw>({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(rightW, topW));
+					addWeight(generator.get<RawBiome>({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(rightW, topW));
 				}
 			}
 				
 			if (bottom) { // Bottom Center
-				addWeight(generator.get<BiomeRaw>({blockCoord.x, blockCoord.y - biomeBlendDist}).id, bottomW);
+				addWeight(generator.get<RawBiome>({blockCoord.x, blockCoord.y - biomeBlendDist}).id, bottomW);
 			} else if (top) { // Top Center
-				addWeight(generator.get<BiomeRaw>({blockCoord.x, blockCoord.y + biomeBlendDist}).id, topW);
+				addWeight(generator.get<RawBiome>({blockCoord.x, blockCoord.y + biomeBlendDist}).id, topW);
 			}
 		} else {
 			// Naive 3x3 9 samples. This is the most brute force way possible. We should
@@ -179,7 +179,7 @@ namespace Game::Terrain::Layer {
 
 			const auto weightAt = [&](BlockVec coord) -> std::pair<BiomeId, BlockUnit> {
 				// TODO: Should this be using biomeRem or smallRem? This wasn't updated until later. I think this is okay?
-				const auto info = generator.get<BiomeRaw>(coord);
+				const auto info = generator.get<RawBiome>(coord);
 				const auto d1 = info.biomeRem.x;
 				const auto d2 = info.size - info.biomeRem.x;
 				const auto d3 = info.biomeRem.y;

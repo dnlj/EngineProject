@@ -3,11 +3,11 @@
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 
 namespace Game::Terrain::Layer {
-	class BiomeRaw;
+	class RawBiome;
 	class WorldBaseHeight;
 
 	// The absolute weight of each biome. These are non-normalized.
-	class BiomeWeights : public DependsOn<BiomeRaw, WorldBaseHeight> {
+	class RawBiomeWeights : public DependsOn<RawBiome, WorldBaseHeight> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkVec;

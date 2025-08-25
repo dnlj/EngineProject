@@ -7,7 +7,7 @@
 
 namespace Game::Terrain::Layer {
 	class WorldBaseHeight;
-	class BiomeHeight;
+	class BlendedBiomeHeight;
 
 	template<uint64 Seed, Float HAmp, Float HFeatScale>
 	class BiomeDebugBaseHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
