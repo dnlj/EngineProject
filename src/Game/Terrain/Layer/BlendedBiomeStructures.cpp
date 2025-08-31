@@ -11,11 +11,6 @@ namespace Game::Terrain::Layer {
 		generator.request<BlendedBiomeStructureInfo>(chunkArea);
 	}
 
-	void BlendedBiomeStructures::generate(const Partition chunkCoord, TestGenerator& generator) {
-		// No need for caching.
-		// This data is only ever used exactly once so caching is overhead.
-	}
-
 	void BlendedBiomeStructures::get(const Index chunkArea, TestGenerator& generator, const RealmId realmId, Terrain& terrain) const noexcept {
 		// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial structure.
 		

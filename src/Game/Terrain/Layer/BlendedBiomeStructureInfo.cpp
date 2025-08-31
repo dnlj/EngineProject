@@ -11,11 +11,6 @@ namespace Game::Terrain::Layer {
 		generator.request<BlendedBiomeWeights>(chunkArea);
 	}
 
-	void BlendedBiomeStructureInfo::generate(const Partition chunkCoord, TestGenerator& generator) {
-		// No need for caching.
-		// This data is only ever used exactly once so caching is overhead.
-	}
-
 	void BlendedBiomeStructureInfo::get(const TestGenerator& generator, const Index chunkArea, std::vector<StructureInfo>& structures) const noexcept {
 		for (auto chunkCoord = chunkArea.min; chunkCoord.x < chunkArea.max.x; ++chunkCoord.x) {
 			for (chunkCoord.y = chunkArea.min.y; chunkCoord.y < chunkArea.max.y; ++chunkCoord.y) {

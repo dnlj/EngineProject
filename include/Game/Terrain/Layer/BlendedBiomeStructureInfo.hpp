@@ -4,10 +4,11 @@
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 #include <Game/Terrain/ChunkArea.hpp>
 #include <Game/Terrain/Layer/DependsOn.hpp>
+#include <Game/Terrain/Layer/OnDemandLayer.hpp>
 
 
 namespace Game::Terrain::Layer {
-	class BlendedBiomeStructureInfo : public DependsOn<> {
+	class BlendedBiomeStructureInfo : public OnDemandLayer, public DependsOn<> {
 		public:
 			// Biome structures doesn't necessarily need to use the chunk grid, at the
 			// moment its just convenient. Any grid size so long as:
@@ -31,12 +32,6 @@ namespace Game::Terrain::Layer {
 
 		public:
 			void request(const Range chunkArea, TestGenerator& generator);
-
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) {
-				// Do nothing. Generated on-demand. See .cpp file.
-			}
-
-			void generate(const Partition chunkCoord, TestGenerator& generator);
 
 			// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial type for
 			//       structure storage. That could help with culling becomes an issue, otherwise

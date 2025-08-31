@@ -3,6 +3,7 @@
 // Game
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 
+
 namespace Game::Terrain::Layer {
 	// The large world-scale height variation that persists between all biomes.
 	class WorldBaseHeight : public DependsOn<> {
@@ -59,6 +60,10 @@ namespace Game::Terrain::Layer {
 			 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const ChunkUnit chunkX) const noexcept {
 				return cache.walk(chunkX);
+			}
+
+			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {
+				return cache.getCacheSizeBytes();
 			}
 
 		private:

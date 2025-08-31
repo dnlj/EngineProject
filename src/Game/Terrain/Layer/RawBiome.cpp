@@ -9,19 +9,19 @@ namespace Game::Terrain::Layer {
 		// No dependencies.
 	}
 
-	void RawBiome::generate(const Partition chunkCoord, TestGenerator& generator) {
-		// TODO: add some kind of empty debug verifier to ensure all get calls are in range of area.
-
-		// No generation/cache.
-		// 
-		// It is roughly ~15% faster in debug and ~5% in release to just do it inline.
-		// This is likely due to the two layers of lookup and area conversion needed
-		// between RawBiomeWeights and RawBiome to restructure it like that.
-		//
-		// If we ever have multiple users of this it might be worth reconsidering, but at
-		// the time of writing this the only user of RawBiome is BiomeWeight. With only
-		// one user it is better to do it inline.
-	}
+	//void RawBiome::generate(const Partition chunkCoord, TestGenerator& generator) {
+	//	// TODO: add some kind of empty debug verifier to ensure all get calls are in range of area.
+	//
+	//	// No generation/cache.
+	//	// 
+	//	// It is roughly ~15% faster in debug and ~5% in release to just do it inline.
+	//	// This is likely due to the two layers of lookup and area conversion needed
+	//	// between RawBiomeWeights and RawBiome to restructure it like that.
+	//	//
+	//	// If we ever have multiple users of this it might be worth reconsidering, but at
+	//	// the time of writing this the only user of RawBiome is BiomeWeight. With only
+	//	// one user it is better to do it inline.
+	//}
 
 	RawBiomeInfo RawBiome::get(const Index blockCoord) const noexcept {
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.

@@ -29,6 +29,38 @@ namespace Game::Terrain {
 			pending.test_and_set();
 			genRequestsFront.push_back(request);
 		}
+
+		//
+		//
+		//
+		//
+		//
+		// TODO: this is just for compile checking. Figure out where we want this.s
+		//
+		//
+		//
+		//
+		//
+		//
+		cleanCaches();
+	}
+	
+	template<class Self, class Layers, class SharedData>
+	void Generator<Self, Layers, SharedData>::cleanCaches() {
+		// TODO: Where to call this from?
+		// TODO: Should alos have a time/tick based metric.
+
+		constexpr static uint64 byteThreshold = 1024 * 1024 * 1024;
+
+		uint64 totalBytes = 0;
+		Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+			totalBytes += layer.getCacheSizeBytes();
+		});
+
+		if (totalBytes >= byteThreshold) {
+			// TODO: clear caches.
+		}
+
 	}
 
 	template<class Self, class Layers, class SharedData>

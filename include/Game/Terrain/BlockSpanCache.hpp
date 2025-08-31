@@ -1,5 +1,6 @@
 #pragma once
 
+// Game
 #include <Game/Terrain/BlockSpanX.hpp>
 
 
@@ -8,7 +9,7 @@ namespace Game::Terrain {
 	template<class T>
 	class BlockSpanCache {
 		public:
-			using Store = std::array<BlockUnit, regionSize.x * chunkSize.x>;
+			using Store = std::array<T, regionSize.x * chunkSize.x>;
 
 			/**
 			 * Iterates each block in the given span.
@@ -18,7 +19,7 @@ namespace Game::Terrain {
 				private:
 					friend class BlockSpanCache;
 					using CacheT = std::conditional_t<IsConst, const BlockSpanCache, BlockSpanCache>;
-					using StoreItT = std::conditional_t<IsConst, Store::const_iterator, Store::iterator>;
+					using StoreItT = std::conditional_t<IsConst, typename Store::const_iterator, typename Store::iterator>;
 
 					CacheT* cache; // ref
 					RegionUnit regionCoord;
@@ -171,8 +172,8 @@ namespace Game::Terrain {
 				return cache.at(region).at(x - regionOffset);
 			}
 
-			// TODO: remove, this is temp while fixing block psan cache to use regions.
-			const T& at(const BlockUnit x) const noexcept {
+			// TODO: remove, this is temp while fixing block span cache to use regions.
+			ENGINE_INLINE const T& at(const BlockUnit x) const noexcept {
 				return const_cast<BlockSpanCache&>(*this).at(x);
 			}
 
@@ -182,7 +183,10 @@ namespace Game::Terrain {
 				}
 			}
 
-
+			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {
+				static_assert(std::is_trivially_destructible_v<T>, "Will need to account for sizes in getCacheSizeBytes if non-trivial type is used.");
+				return cache.size() * sizeof(Store);
+			}
 
 			// TODO: Should these each take a block/chunk/region span instead of one as a whole?
 			//// TODO: Function sig concept

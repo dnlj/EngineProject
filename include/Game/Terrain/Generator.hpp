@@ -264,7 +264,20 @@ namespace Game::Terrain {
 				return std::get<Data>(sharedData);
 			}
 
+		public:
+			void generate(const Request& request);
+			void submit() { reqThreadWait.notify_one(); }
+			
+			/**
+			 * Is the Generator actively processing requests (or has any pending).
+			 * Should rarely be needed. Only used for things that need direct access the
+			 * generator directly such as the TerrainPreview.
+			 */
+			bool isPending() const { return pending.test(); }
+
 		private:
+			void cleanCaches();
+
 			void layerCoordinatorThread();
 
 			void layerGenerateThread() {
@@ -314,17 +327,6 @@ namespace Game::Terrain {
 			}
 
 			void processGenRequests();
-
-		public:
-			void generate(const Request& request);
-			void submit() { reqThreadWait.notify_one(); }
-			
-			/**
-			 * Is the Generator actively processing requests (or has any pending).
-			 * Should rarely be needed. Only used for things that need direct access the
-			 * generator directly such as the TerrainPreview.
-			 */
-			bool isPending() const { return pending.test(); }
 	};
 }
 

@@ -27,12 +27,9 @@ namespace Game::Terrain::Layer {
 
 		public:
 			void request(const Range area, TestGenerator& generator);
-
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) {
-				flattenRequests(requests, partitions);
-			}
-
+			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { flattenRequests(requests, partitions); }
 			void generate(const Partition regionCoordX, TestGenerator& generator);
+			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return cache.getCacheSizeBytes(); }
 
 			// TODO: Should return a walk similar to WorldBaseHeight.
 			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept { return cache.at(x); }

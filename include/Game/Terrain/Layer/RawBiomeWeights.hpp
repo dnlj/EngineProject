@@ -22,6 +22,10 @@ namespace Game::Terrain::Layer {
 			void generate(const Partition chunkCoord, TestGenerator& generator);
 			[[nodiscard]] const ChunkStore<BiomeBlend>& get(const Index chunkCoord) const noexcept;
 
+			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {
+				return cache.getCacheSizeBytes();
+			}
+
 		private:
 			// TODO: create an example layer with notes such as:
 			// 

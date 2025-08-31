@@ -2,10 +2,11 @@
 
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 #include <Game/Terrain/Layer/DependsOn.hpp>
+#include <Game/Terrain/Layer/OnDemandLayer.hpp>
 
 namespace Game::Terrain::Layer {
 	// The direct, raw, biome info. Determines what biome is where before any blending/interpolation.
-	class RawBiome : public DependsOn<> {
+	class RawBiome : public OnDemandLayer, public DependsOn<> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkVec;
@@ -18,12 +19,6 @@ namespace Game::Terrain::Layer {
 			{}
 
 			void request(const Range area, TestGenerator& generator);
-
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) {
-				// Do nothing. RawBiome is generated on-demand. See .cpp file.
-			}
-
-			void generate(const Partition chunkCoord, TestGenerator& generator);
 			[[nodiscard]] RawBiomeInfo get(const Index blockCoord) const noexcept;
 
 		private:

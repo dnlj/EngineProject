@@ -5,6 +5,7 @@ namespace Game::Terrain {
 	template<class T>
 	class ChunkStore {
 		private:
+			static_assert(std::is_trivially_destructible_v<T>, "Will need to account for sizes in getCacheSizeBytes if non-trivial type is used.");
 			T store[chunkSize.x][chunkSize.y]{};
 
 		public:

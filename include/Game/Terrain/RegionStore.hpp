@@ -8,6 +8,7 @@ namespace Game::Terrain {
 	template<class T>
 	class RegionStore {
 		private:
+			static_assert(std::is_trivially_destructible_v<T>, "Will need to account for sizes in getCacheSizeBytes if non-trivial type is used.");
 			T store[regionSize.x][regionSize.y]{};
 			bool populated[regionSize.x][regionSize.y]{};
 
