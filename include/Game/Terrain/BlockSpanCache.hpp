@@ -1,6 +1,7 @@
 #pragma once
 
 // Game
+#include <Game/Terrain/temp.hpp>
 #include <Game/Terrain/BlockSpanX.hpp>
 
 
@@ -9,7 +10,15 @@ namespace Game::Terrain {
 	template<class T>
 	class BlockSpanCache {
 		public:
-			using Store = std::array<T, regionSize.x * chunkSize.x>;
+			using Data = std::array<T, regionSize.x * chunkSize.x>;
+			class Store {
+				public:
+					Data data;
+
+					// TODO: Remove mutable? Its misleading and could be confusing. Will
+					// need to remove const from some layer get functions though.
+					mutable SeqNum lastUsed;
+			};
 
 			/**
 			 * Iterates each block in the given span.
@@ -19,7 +28,7 @@ namespace Game::Terrain {
 				private:
 					friend class BlockSpanCache;
 					using CacheT = std::conditional_t<IsConst, const BlockSpanCache, BlockSpanCache>;
-					using StoreItT = std::conditional_t<IsConst, typename Store::const_iterator, typename Store::iterator>;
+					using StoreItT = std::conditional_t<IsConst, typename Data::const_iterator, typename Data::iterator>;
 
 					CacheT* cache; // ref
 					RegionUnit regionCoord;
@@ -29,15 +38,17 @@ namespace Game::Terrain {
 					BlockUnit chunkIndex = 0;
 					ChunkUnit regionIndex = 0;
 					BlockUnit blockCoord = chunkToBlock({chunkCoord, 0}).x;
+					SeqNum curSeq;
 					ENGINE_DEBUG_ONLY(int sanity = 0);
 			
 					RegionIteratorImpl(
 						CacheT& cache,
-						RegionSpanX area)
+						RegionSpanX area,
+						SeqNum curSeq)
 						: cache{&cache}
 						, regionCoord{area.min}
-						, regionCoordMax{area.max} {
-
+						, regionCoordMax{area.max}
+						, curSeq{curSeq} {
 						dataFromRegionCoord();
 					}
 			
@@ -97,7 +108,8 @@ namespace Game::Terrain {
 					void dataFromRegionCoord() {
 						auto newData = cache->cache.find(regionCoord);
 						ENGINE_DEBUG_ASSERT(newData != cache->cache.end());
-						data = newData->second.begin();
+						newData->second.lastUsed = curSeq;
+						data = newData->second.data.begin();
 					}
 			};
 
@@ -117,25 +129,26 @@ namespace Game::Terrain {
 			//       work correctly as walks since they don't have correct bool operators for
 			//       end range.
 
-			ENGINE_INLINE auto walk(RegionSpanX area) noexcept {
-				return Iterator{*this, area};
+			ENGINE_INLINE auto walk(RegionSpanX area, SeqNum curSeq) noexcept {
+				return Iterator{*this, area, curSeq};
 			}
 
-			ENGINE_INLINE auto walk(RegionSpanX area) const noexcept {
-				return ConstIterator{*this, area};
+			ENGINE_INLINE auto walk(RegionSpanX area, SeqNum curSeq) const noexcept {
+				return ConstIterator{*this, area, curSeq};
 			}
 			
-			ENGINE_INLINE Store& get(RegionUnit regionCoordX) noexcept {
+			ENGINE_INLINE Data& get(RegionUnit regionCoordX, SeqNum curSeq) noexcept {
 				const auto found = cache.find(regionCoordX);
 				ENGINE_DEBUG_ASSERT(found != cache.end());
-				return found->second;
+				found->second.lastUsed = curSeq;
+				return found->second.data;
 			}
 			
-			ENGINE_INLINE const Store& get(RegionUnit regionCoordX) const noexcept {
-				return const_cast<BlockSpanCache*>(this)->get(regionCoordX);
+			ENGINE_INLINE const Data& get(RegionUnit regionCoordX, SeqNum curSeq) const noexcept {
+				return const_cast<BlockSpanCache*>(this)->get(regionCoordX, curSeq);
 			}
 
-			ENGINE_INLINE auto walk(BlockSpanX area) const noexcept {
+			ENGINE_INLINE auto walk(BlockSpanX area, SeqNum curSeq) const noexcept {
 				// Need to add one to max because it is an _exclusive_ bound. Technically,
 				// the +1 isn't needed if area.max happens to be at index 0 of a new
 				// region, but its simpler to always add one.
@@ -145,7 +158,7 @@ namespace Game::Terrain {
 				const auto blockRegionOffset = area.min - minRegionBlock;
 
 				// TODO: Calc with a closed-form expression instead of loop.
-				ConstIterator result{*this, {minRegion, maxRegion}};
+				ConstIterator result{*this, {minRegion, maxRegion}, curSeq};
 				for (auto i = blockRegionOffset; i > 0; --i) {
 					++result;
 				};
@@ -153,28 +166,28 @@ namespace Game::Terrain {
 				return result;
 			}
 
-			ENGINE_INLINE auto walk(ChunkUnit chunkX) const noexcept {
+			ENGINE_INLINE auto walk(ChunkUnit chunkX, SeqNum curSeq) const noexcept {
 				const auto regionCoordX = chunkToRegion({chunkX, 0}).x;
 				const auto baseBlockCoord = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
 				const auto blockCoord = chunkToBlock({chunkX, 0}).x;
 				const auto offset = blockCoord - baseBlockCoord;
-				ENGINE_DEBUG_ASSERT(offset >= 0 && offset <= std::tuple_size_v<Store>);
-				return get(regionCoordX).begin() + offset;
+				ENGINE_DEBUG_ASSERT(offset >= 0 && offset <= std::tuple_size_v<Data>);
+				return get(regionCoordX, curSeq).begin() + offset;
 			}
 			
 			// TODO: remove, this is temp while fixing block psan cache to use regions.
 			//       They should instead be using walk for effecient access.
-			T& at(const BlockUnit x) noexcept {
-				const auto region = chunkToRegion(blockToChunk({x, 0})).x;
-				ENGINE_DEBUG_ASSERT(cache.contains(region));
+			T& at(const BlockUnit x, SeqNum curSeq) noexcept {
+				const auto regionCoordX = chunkToRegion(blockToChunk({x, 0})).x;
+				ENGINE_DEBUG_ASSERT(cache.contains(regionCoordX));
 
-				const auto regionOffset = region * chunksPerRegion * blocksPerChunk;
-				return cache.at(region).at(x - regionOffset);
+				const auto regionOffset = regionCoordX * chunksPerRegion * blocksPerChunk;
+				return get(regionCoordX, curSeq).at(x - regionOffset);
 			}
 
 			// TODO: remove, this is temp while fixing block span cache to use regions.
-			ENGINE_INLINE const T& at(const BlockUnit x) const noexcept {
-				return const_cast<BlockSpanCache&>(*this).at(x);
+			ENGINE_INLINE const T& at(const BlockUnit x, SeqNum curSeq) const noexcept {
+				return const_cast<BlockSpanCache&>(*this).at(x, curSeq);
 			}
 
 			ENGINE_INLINE_REL void reserve(const RegionSpanX area) noexcept {
@@ -187,6 +200,9 @@ namespace Game::Terrain {
 				static_assert(std::is_trivially_destructible_v<T>, "Will need to account for sizes in getCacheSizeBytes if non-trivial type is used.");
 				return cache.size() * sizeof(Store);
 			}
+
+			//ENGINE_INLINE uint64 clearCache(uint64 curStep, uint64 maxAge) const noexcept {
+			//}
 
 			// TODO: Should these each take a block/chunk/region span instead of one as a whole?
 			//// TODO: Function sig concept

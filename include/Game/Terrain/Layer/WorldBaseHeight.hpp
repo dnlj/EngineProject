@@ -1,12 +1,14 @@
 #pragma once
 
 // Game
+#include <Game/Terrain/BlockSpanCache.hpp>
+#include <Game/Terrain/Layer/CachedLayer.hpp>
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 
 
 namespace Game::Terrain::Layer {
 	// The large world-scale height variation that persists between all biomes.
-	class WorldBaseHeight : public DependsOn<> {
+	class WorldBaseHeight : public CachedLayer, public DependsOn<> {
 		public:
 			using Range = RegionSpanX;
 			using Partition = RegionUnit;
@@ -19,6 +21,8 @@ namespace Game::Terrain::Layer {
 			BlockSpanCache<BlockUnit> cache;
 
 		public:
+			using CachedLayer::CachedLayer;
+
 			ENGINE_INLINE void request(const Range area, TestGenerator& generator) {
 				cache.reserve(area);
 			}
@@ -33,7 +37,7 @@ namespace Game::Terrain::Layer {
 				// TODO: keep in mind that this is +- amplitude, and for each octave we increase the contrib;
 				// TODO: tune + octaves, atm this is way to steep.
 
-				auto& data = cache.get(regionCoordX);
+				auto& data = cache.get(regionCoordX, getSeq());
 				const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
 				for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
 					const auto blockCoordX = baseBlockCoordX + blockRegionIndex;
@@ -43,26 +47,26 @@ namespace Game::Terrain::Layer {
 
 			// TODO: remove, temp during biome span region transition.
 			ENGINE_INLINE_REL [[nodiscard]] BlockUnit getOld(const BlockUnit x) const noexcept {
-				return cache.at(x);
+				return cache.at(x, getSeq());
 			}
 			 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Partition regionCoordX) const noexcept {
-				return cache.get(regionCoordX);
+				return cache.get(regionCoordX, getSeq());
 			}
 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Index area) const noexcept {
-				return cache.walk(area);
+				return cache.walk(area, getSeq());
 			}
 			 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const BlockSpanX blockSpanX) const noexcept {
-				return cache.walk(blockSpanX);
+				return cache.walk(blockSpanX, getSeq());
 			}
 			 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const ChunkUnit chunkX) const noexcept {
-				return cache.walk(chunkX);
+				return cache.walk(chunkX, getSeq());
 			}
 
-			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {
+			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {
 				return cache.getCacheSizeBytes();
 			}
 

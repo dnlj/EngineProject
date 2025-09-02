@@ -1,5 +1,9 @@
 #pragma once
 
+// Game
+#include <Game/Terrain/ChunkStore.hpp>
+#include <Game/Terrain/RegionDataCache.hpp>
+
 
 namespace Game::Terrain {
 	/**

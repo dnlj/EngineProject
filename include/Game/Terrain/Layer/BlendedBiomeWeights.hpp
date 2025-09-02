@@ -2,14 +2,14 @@
 
 // Game
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
+#include <Game/Terrain/Layer/CachedLayer.hpp>
 #include <Game/Terrain/Layer/DependsOn.hpp>
+#include <Game/Terrain/ChunkDataCache.hpp>
 
 
 namespace Game::Terrain::Layer {
-	class RawBiomeWeights;
-
 	// The biome weights for a given area.
-	class BlendedBiomeWeights : public DependsOn<RawBiomeWeights> {
+	class BlendedBiomeWeights : public CachedLayer, public DependsOn<> {
 		public:
 			using Range = ChunkArea;
 			using Partition = ChunkVec;
@@ -19,11 +19,13 @@ namespace Game::Terrain::Layer {
 			ChunkDataCache<BiomeBlend> cache;
 
 		public:
+			using CachedLayer::CachedLayer;
+
 			void request(const Range area, TestGenerator& generator);
 			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { flattenRequests(requests, partitions); }
 			void generate(const Partition chunkCoord, TestGenerator& generator);
 			[[nodiscard]] const ChunkStore<BiomeBlend>& get(const Index chunkCoord) const noexcept;
-			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return cache.getCacheSizeBytes(); }
+			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return cache.getCacheSizeBytes(); }
 
 		private:
 			[[nodiscard]] BiomeBlend populate(const BlockVec blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept;

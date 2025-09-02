@@ -48,7 +48,7 @@ namespace Game::Terrain::Layer {
 		//       doing the caching. Other layers should be sampling the BlendedBiomeHeight layer, not specific biomes.
 		
 		const auto& h0Data = generator.get3<WorldBaseHeight>(regionCoordX);
-		auto& h2Data = cache.get(regionCoordX);
+		auto& h2Data = cache.get(regionCoordX, getSeq());
 		const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
 		for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
 			const auto blockCoordX = baseBlockCoordX + blockRegionIndex;

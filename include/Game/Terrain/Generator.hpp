@@ -83,6 +83,7 @@ namespace Game::Terrain {
 			//       doubles, and that will be slower and still isn't perfect.
 			//using FVec2 = glm::vec<2, Float>;
 
+			SeqNum curSeq = 0;
 			Layers layers;
 			SharedData sharedData;
 
@@ -141,7 +142,9 @@ namespace Game::Terrain {
 			}
 
 		public:
-			Generator(Terrain& terrain, uint64 seed) : terrain{terrain} {
+			Generator(Terrain& terrain, uint64 seed)
+				: layers{Engine::makeAll<Layers>(self(), curSeq)}
+				, terrain{terrain} {
 				// Arbitrary size, seems like a reasonable default.
 				requestScopes.resize(4);
 
@@ -160,6 +163,8 @@ namespace Game::Terrain {
 
 				reqThread.join();
 			}
+
+			[[nodiscard]] ENGINE_INLINE SeqNum getSeq() const noexcept { return curSeq; }
 
 			template<class Layer>
 			ENGINE_INLINE void request(typename const Layer::Range range) {

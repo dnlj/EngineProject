@@ -1,5 +1,8 @@
 #pragma once
 
+// Game
+#include <Game/Terrain/RegionStore.hpp>
+
 
 namespace Game::Terrain {
 	/**
@@ -54,7 +57,7 @@ namespace Game::Terrain {
 
 			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {
 				static_assert(std::is_trivially_destructible_v<ChunkData>, "Will need to account for sizes in getCacheSizeBytes if non-trivial type is used.");
-				return regions.size() * sizeof(ChunkData);
+				return regions.size() * sizeof(Store);
 			}
 	};
 }

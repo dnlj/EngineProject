@@ -14,6 +14,8 @@ namespace Game::Terrain::Layer {
 			using Index = Range;
 
 		public:
+			using OnDemandLayer::OnDemandLayer;
+
 			void request(const Range chunkArea, TestGenerator& generator);
 			void get(const Index chunkArea, TestGenerator& generator, const RealmId realmId, Terrain& terrain) const noexcept;
 	};

@@ -15,6 +15,7 @@ namespace Game::Terrain::Layer {
 			using Partition = ChunkSpanX;
 
 		public:
+			using OnDemandLayer::OnDemandLayer;
 			void request(const Range area, TestGenerator& generator);
 			Float get(BIOME_HEIGHT_ARGS) const noexcept { return h0; }
 	};
@@ -25,6 +26,7 @@ namespace Game::Terrain::Layer {
 			using Partition = ChunkArea;
 
 		public:
+			using OnDemandLayer::OnDemandLayer;
 			void request(const Range area, TestGenerator& generator);
 			constexpr static Float get(BIOME_BASIS_STRENGTH_ARGS) noexcept { return 1.0_f; }
 	};
@@ -35,6 +37,7 @@ namespace Game::Terrain::Layer {
 			using Partition = ChunkArea;
 
 		public:
+			using OnDemandLayer::OnDemandLayer;
 			void request(const Range area, TestGenerator& generator);
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
@@ -45,6 +48,7 @@ namespace Game::Terrain::Layer {
 			using Partition = ChunkArea;
 
 		public:
+			using OnDemandLayer::OnDemandLayer;
 			void request(const Range area, TestGenerator& generator);
 			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
 	};

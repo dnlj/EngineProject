@@ -13,7 +13,7 @@ namespace Game::Terrain::Layer {
 			using Index = BlockVec;
 
 		public:
-			RawBiome() // TODO: seed from generator.
+			RawBiome(TestGenerator&, SeqNum&) // TODO: seed from generator.
 				: biomeFreq{1234}
 				, biomePerm{Engine::Noise::lcg(1234)}
 			{}

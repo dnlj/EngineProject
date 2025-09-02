@@ -164,4 +164,26 @@ namespace Engine {
 
 	template<class Check, class Tuple>
 	using TupleJoinMembersTypesIfExists_t = TupleJoinMembersTypesIfExists<Check, Tuple>::Type;
+
+
+	namespace Detail {
+		template<class Set>
+		struct MakeAll;
+
+		template<template<class...> class Set, class... Ts>
+		struct MakeAll<Set<Ts...>> {
+			template<class... Args>
+			decltype(auto) call(Args&... args) {
+				return Set(Ts(args...)...);
+			}
+		};
+	}
+	
+	/**
+	 * Construct a tuple we the same constructor arguments for each tuple element.
+	 */
+	template<class Set, class... Args>
+	decltype(auto) makeAll(Args&... args) {
+		return Detail::MakeAll<Set>{}.call(args...);
+	}
 }

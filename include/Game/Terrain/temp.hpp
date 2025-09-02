@@ -8,11 +8,6 @@
 #include <Game/universal.hpp>
 #include <Game/Terrain/ChunkArea.hpp>
 #include <Game/Terrain/ChunkSpan.hpp>
-#include <Game/Terrain/ChunkStore.hpp>
-#include <Game/Terrain/RegionStore.hpp>
-#include <Game/Terrain/RegionDataCache.hpp>
-#include <Game/Terrain/ChunkDataCache.hpp>
-#include <Game/Terrain/BlockSpanCache.hpp>
 
 // Engine
 #include <Engine/Array.hpp>
@@ -67,6 +62,7 @@
 
 namespace Game::Terrain {
 	class TestGenerator; // TODO: rm
+	using SeqNum = uint64;
 }
 
 // TODO: make all cache/store types uncopyable. These should be accessed by ref.
@@ -284,6 +280,35 @@ namespace Game::Terrain {
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access unloaded region.");
 				return found->second->entitiesAt(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
+			}
+
+			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				// TODO:
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
+				//
 			}
 
 			/**

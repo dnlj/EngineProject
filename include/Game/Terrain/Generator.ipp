@@ -48,19 +48,42 @@ namespace Game::Terrain {
 	template<class Self, class Layers, class SharedData>
 	void Generator<Self, Layers, SharedData>::cleanCaches() {
 		// TODO: Where to call this from?
-		// TODO: Should alos have a time/tick based metric.
+		// TODO: Should also have a time/tick based metric. With cfg/cmd/console control.
 
-		constexpr static uint64 byteThreshold = 1024 * 1024 * 1024;
-
+		constexpr static uint64 byteThreshold = 2ull * 1024 * 1024 * 1024; // TODO: should be cfg/cmd/console value.
 		uint64 totalBytes = 0;
-		Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
-			totalBytes += layer.getCacheSizeBytes();
-		});
 
-		if (totalBytes >= byteThreshold) {
-			// TODO: clear caches.
+		{
+			std::lock_guard lock{layerGenThreadMutex};
+			Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+				totalBytes += layer.getCacheSizeBytes();
+			});
+
+			ENGINE_LOG2("cache bytes: {} / {} ({:.2f}%)({:.2f}GB)",
+				totalBytes,
+				byteThreshold,
+				totalBytes * (100 / static_cast<double>(byteThreshold)),
+				totalBytes * (1.0 / (1 << 30))
+			);
+
+			if (totalBytes >= byteThreshold) {
+				//
+				//
+				//
+				//
+				//
+				// TODO: clear caches.
+				//
+				//
+				//
+				//
+				//
+				//
+				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+					//layer.clearCache(curTime, 1min);
+				});
+			}
 		}
-
 	}
 
 	template<class Self, class Layers, class SharedData>

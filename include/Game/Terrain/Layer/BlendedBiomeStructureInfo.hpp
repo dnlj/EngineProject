@@ -31,6 +31,8 @@ namespace Game::Terrain::Layer {
 			using Index = Range;
 
 		public:
+			using OnDemandLayer::OnDemandLayer;
+
 			void request(const Range chunkArea, TestGenerator& generator);
 
 			// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial type for
