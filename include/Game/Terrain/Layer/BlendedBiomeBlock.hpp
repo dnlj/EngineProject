@@ -26,6 +26,7 @@ namespace Game::Terrain::Layer {
 			void generate(const Partition chunkCoord, TestGenerator& generator);
 			[[nodiscard]] const MapChunk& get(const Index chunkCoord) const noexcept;
 			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return cache.getCacheSizeBytes(); }
+			[[nodiscard]] ENGINE_INLINE decltype(auto) clearCache(SeqNum minAge) noexcept { return cache.clearCache(minAge); }
 
 		private:
 			// TODO: no reason populate to be a member function on most (all) layers. Move to plain function in the cpp file.

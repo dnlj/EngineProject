@@ -70,6 +70,10 @@ namespace Game::Terrain::Layer {
 				return cache.getCacheSizeBytes();
 			}
 
+			[[nodiscard]] ENGINE_INLINE decltype(auto) clearCache(SeqNum minAge) noexcept {
+				return cache.clearCache(minAge);
+			}
+
 		private:
 			// TODO: Should we have a mechanism for sharing noise generators between multiple systems?
 			// TODO: should have see as constructor param.

@@ -19,11 +19,11 @@ namespace Game::Terrain::Layer {
 		// Note that since RawBiome is not cached this call effectively does nothing.
 		generator.request<RawBiome>(area);
 
-		cache.reserve(regionArea);
+		cache.reserve(regionArea, getSeq());
 	}
 
 	void RawBiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {
-		cache.populate(chunkCoord, [&](auto& chunkStore) {
+		cache.populate(chunkCoord, getSeq(), [&](auto& chunkStore) {
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			auto h0Walk = generator.get2<WorldBaseHeight>(chunkCoord.x);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
@@ -45,7 +45,7 @@ namespace Game::Terrain::Layer {
 
 	const ChunkStore<BiomeBlend>& RawBiomeWeights::get(const Index chunkCoord) const noexcept {
 		const auto regionCoord = chunkToRegion(chunkCoord);
-		return cache.at(regionCoord).at(chunkToRegionIndex(chunkCoord, regionCoord));
+		return cache.at(regionCoord, getSeq()).at(chunkToRegionIndex(chunkCoord, regionCoord));
 	}
 
 	[[nodiscard]] BiomeBlend RawBiomeWeights::populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept {

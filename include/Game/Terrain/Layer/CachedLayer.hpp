@@ -14,7 +14,7 @@ namespace Game::Terrain::Layer {
 				: generator{generator}
 				, curSeq{curSeq} {
 			}
-				
+
 			[[nodiscard]] ENGINE_INLINE SeqNum getSeq() const noexcept { return curSeq; }
 
 		protected:

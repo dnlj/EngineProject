@@ -125,7 +125,7 @@ namespace Game {
 
 					const auto i = static_cast<float32>(std::min(1.0, std::max(0.0, physInterpComp.calcInterpValue(interpTime))));
 					physBodyComp.setTransform(
-						Math::lerp(physInterpComp.nextTrans.p, physInterpComp.prevTrans.p, i),
+						Math::lerp(physInterpComp.prevTrans.p, physInterpComp.nextTrans.p, i),
 						0
 					);
 					// TODO: ang, vel, etc. although vel doesnt make sense since this is a static body.

@@ -10,11 +10,11 @@ namespace Game::Terrain::Layer {
 	void BlendedBiomeBlock::request(const Range area, TestGenerator& generator) {
 		const auto regionArea = area.toRegionArea();
 		generator.request<BlendedBiomeBasis>(area);
-		cache.reserve(regionArea);
+		cache.reserve(regionArea, getSeq());
 	}
 
 	void BlendedBiomeBlock::generate(const Partition chunkCoord, TestGenerator& generator) {
-		cache.populate(chunkCoord, [&](MapChunk& chunkStore) ENGINE_INLINE_REL {
+		cache.populate(chunkCoord, getSeq(), [&](MapChunk& chunkStore) ENGINE_INLINE_REL {
 			const auto& chunkBiomeBasis = generator.get<BlendedBiomeBasis>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
@@ -29,7 +29,7 @@ namespace Game::Terrain::Layer {
 
 	const MapChunk& BlendedBiomeBlock::get(const Index chunkCoord) const noexcept {
 		const auto regionCoord = chunkToRegion(chunkCoord);
-		return cache.at(regionCoord).at(chunkToRegionIndex(chunkCoord, regionCoord));
+		return cache.at(regionCoord, getSeq()).at(chunkToRegionIndex(chunkCoord, regionCoord));
 	}
 
 	[[nodiscard]] BlockId BlendedBiomeBlock::populate(const BlockVec blockCoord, const BasisInfo& basisInfo, const TestGenerator& generator) const noexcept {

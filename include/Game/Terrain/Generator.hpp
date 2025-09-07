@@ -83,7 +83,10 @@ namespace Game::Terrain {
 			//       doubles, and that will be slower and still isn't perfect.
 			//using FVec2 = glm::vec<2, Float>;
 
+			// nextSeq is update from the main thread and copied to curSeq at generation time.
+			std::atomic<SeqNum> nextSeq = 0;
 			SeqNum curSeq = 0;
+
 			Layers layers;
 			SharedData sharedData;
 
@@ -270,8 +273,22 @@ namespace Game::Terrain {
 			}
 
 		public:
+			/**
+			 * Queue a request for generation.
+			 * The request queue does not begin processing new requests until submit() is called.
+			 */
 			void generate(const Request& request);
-			void submit() { reqThreadWait.notify_one(); }
+
+			/**
+			 * Begin processing the current request queue.
+			 * 
+			 * @param seq The sequence number to use for this batch of requests. The sequence
+			 *            numbers are used for cache cleanup purposes.
+			 */
+			void submit(Engine::Clock::TimePoint time) {
+				nextSeq = time.time_since_epoch().count();
+				reqThreadWait.notify_one();
+			}
 			
 			/**
 			 * Is the Generator actively processing requests (or has any pending).

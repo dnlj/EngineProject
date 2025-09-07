@@ -16,7 +16,7 @@ namespace Game::Terrain {
 					Data data;
 
 					// TODO: Remove mutable? Its misleading and could be confusing. Will
-					// need to remove const from some layer get functions though.
+					//       need to remove const from some layer get functions though.
 					mutable SeqNum lastUsed;
 			};
 
@@ -201,8 +201,28 @@ namespace Game::Terrain {
 				return cache.size() * sizeof(Store);
 			}
 
-			//ENGINE_INLINE uint64 clearCache(uint64 curStep, uint64 maxAge) const noexcept {
-			//}
+			ENGINE_INLINE_REL void clearCache(SeqNum minAge) noexcept {
+
+				const auto before = getCacheSizeBytes();
+
+				for (auto it = cache.begin(); it != cache.end();) {
+					if (it->second.lastUsed < minAge) {
+						it = cache.erase(it);
+					} else {
+						++it;
+					}
+				}
+
+				//
+				//
+				//
+				// TODO: remove once confirmed working (and before above);
+				//
+				//
+				//
+				const auto after = getCacheSizeBytes();
+				ENGINE_INFO2("BlockSpanCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
+			}
 
 			// TODO: Should these each take a block/chunk/region span instead of one as a whole?
 			//// TODO: Function sig concept

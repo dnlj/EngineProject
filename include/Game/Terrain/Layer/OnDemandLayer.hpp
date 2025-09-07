@@ -13,5 +13,6 @@ namespace Game::Terrain::Layer {
 			ENGINE_INLINE void partition(const auto&...) {};
 			ENGINE_INLINE void generate(const auto&...) {};
 			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return 0; }
+			ENGINE_INLINE void clearCache(SeqNum minAge) const noexcept {}
 	};
 }

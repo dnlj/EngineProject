@@ -12,6 +12,14 @@ namespace Game::Terrain {
 			T store[regionSize.x][regionSize.y]{};
 			bool populated[regionSize.x][regionSize.y]{};
 
+		protected:
+			template<class>
+			friend class RegionDataCache;
+
+			// TODO: Remove mutable? Its misleading and could be confusing. Will
+			//       need to remove const from some layer get functions though.
+			mutable SeqNum lastUsed;
+
 		public:
 			RegionStore() = default;
 			RegionStore(RegionStore&&) = default;

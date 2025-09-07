@@ -29,58 +29,41 @@ namespace Game::Terrain {
 			pending.test_and_set();
 			genRequestsFront.push_back(request);
 		}
-
-		//
-		//
-		//
-		//
-		//
-		// TODO: this is just for compile checking. Figure out where we want this.s
-		//
-		//
-		//
-		//
-		//
-		//
-		cleanCaches();
 	}
 	
 	template<class Self, class Layers, class SharedData>
 	void Generator<Self, Layers, SharedData>::cleanCaches() {
 		// TODO: Where to call this from?
-		// TODO: Should also have a time/tick based metric. With cfg/cmd/console control.
-
-		constexpr static uint64 byteThreshold = 2ull * 1024 * 1024 * 1024; // TODO: should be cfg/cmd/console value.
-		uint64 totalBytes = 0;
-
 		{
+			// TOOD: note, global config is not thread safe.
+			//Engine::getGlobalConfig().cvars.
+			constexpr static uint64 cacheTargetThresholdBytes = 2ull * 1024 * 1024 * 1024; // TODO: should be cfg/cmd/console value.
+			constexpr static uint64 cacheMaxThresholdBytes = 6ull * 1024 * 1024 * 1024; // TODO: should be cfg/cmd/console value.
+			//constexpr static auto cacheTargetTimeout = Engine::Clock::Duration{std::chrono::minutes{2}}; // TODO: should be cfg/cmd/console value.
+			constexpr static auto cacheTargetTimeout = Engine::Clock::Duration{std::chrono::seconds{20}}; // TODO: should be cfg/cmd/console value.
+			uint64 totalBytes = 0;
+
 			std::lock_guard lock{layerGenThreadMutex};
 			Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
 				totalBytes += layer.getCacheSizeBytes();
 			});
 
-			ENGINE_LOG2("cache bytes: {} / {} ({:.2f}%)({:.2f}GB)",
+			ENGINE_LOG2("cache bytes: {} / {} ({:.2f}%; {:.2f}%)({:.2f}GB)",
 				totalBytes,
-				byteThreshold,
-				totalBytes * (100 / static_cast<double>(byteThreshold)),
+				cacheTargetThresholdBytes,
+				totalBytes * (100 / static_cast<double>(cacheTargetThresholdBytes)),
+				totalBytes * (100 / static_cast<double>(cacheMaxThresholdBytes)),
 				totalBytes * (1.0 / (1 << 30))
 			);
 
-			if (totalBytes >= byteThreshold) {
-				//
-				//
-				//
-				//
-				//
-				// TODO: clear caches.
-				//
-				//
-				//
-				//
-				//
-				//
+			if (totalBytes > cacheTargetThresholdBytes) {
+				// Reduce the timeout based on how overcapacity the cache is. Down to zero at the max threshold.
+				const auto t = totalBytes * (1.0 / cacheMaxThresholdBytes);
+				const auto timeout = Engine::Math::lerp(cacheTargetTimeout, Engine::Clock::Duration{0}, std::min(1.0, t));
+				const auto minAge = curSeq - static_cast<SeqNum>(timeout.count());
+
 				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
-					//layer.clearCache(curTime, 1min);
+					layer.clearCache(minAge);
 				});
 			}
 		}
@@ -115,6 +98,9 @@ namespace Game::Terrain {
 			this->request<Layer::BlendedBiomeStructures>(genRequest.chunkArea);
 		}
 
+		// nextSeq may or may not have been updated at this point. We just copy to curSeq
+		// to avoid the need for an extra lock or frequent atomic lookup during generateLayers.
+		curSeq = nextSeq;
 		generateLayers();
 
 		{
@@ -153,5 +139,6 @@ namespace Game::Terrain {
 		}
 
 		genRequestsBack.clear();
+		cleanCaches();
 	}
 }

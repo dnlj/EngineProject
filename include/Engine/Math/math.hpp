@@ -35,9 +35,16 @@ namespace Engine::Math {
 		return num * num;
 	}
 
+	/**
+	 * Naive linearly interpolation from @p a to @p b by @p t.
+	 * This does not account for various edge cases such as NaN and infinity. If a more robust
+	 * version is required use std::lerp.
+	 */
 	template<class T, std::floating_point F>
-	ENGINE_INLINE constexpr T lerp(const T a, const T b, const F t) noexcept {
-		return t * a + (F{1} - t) * b;
+	ENGINE_INLINE constexpr auto lerp(const T a, const T b, const F t) noexcept {
+		// We need to guarantee that we return exactly a and b at t = 0 and t = 1. Because of that
+		// we avoid the simpler formula: a + t * (b - a).
+		return (F{1} - t) * a +  t * b;
 	}
 
 	// TODO: constexpr-ify, can switch depending on if constexpr or not

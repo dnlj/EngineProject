@@ -88,7 +88,7 @@ namespace {
 
 				// +1 because upper bound is exclusive.
 				generator.generate(Request{chunkOffset, chunkOffset + chunksPerImg + ChunkVec{1, 1}, 0});
-				generator.submit();
+				generator.submit(Engine::Clock::now());
 
 				// Wait for generation to finish.
 				while (generator.isPending()) {
