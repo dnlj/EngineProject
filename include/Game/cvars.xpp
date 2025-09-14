@@ -1,16 +1,24 @@
 // Name, Type, Default, ... = Min, Max
+// See: setup_commands.cpp
+// See: GlobalConfig.hpp
 #define L(...) __VA_ARGS__
 
 // Network
-X(net_packet_rate_min, float32,   8,  L(Clamp<1.0f, 1024.0f>))
-X(net_packet_rate_max, float32, 256,  L(Clamp<1.0f, 1024.0f>))
+X(net_packet_rate_min, SHARED, float32,   8,  L(Clamp<1.0f, 1024.0f>))
+X(net_packet_rate_max, SHARED, float32, 256,  L(Clamp<1.0f, 1024.0f>))
 
 // Render
-X(r_frametime,    float64,             0, L(Clamp<0.0, 100.0>, WarnIfDecimal_Win32<"Windows does not support fractional timer precision.">)) // Duration of each frame in ms = 1/fps. Limited to ms resolution because of Win32. See timeGetDevCaps.
-X(r_frametime_bg, float64,            50, L(Clamp<0.0, 100.0>, WarnIfDecimal_Win32<"Windows does not support fractional timer precision.">))
-X(r_vsync,          int32, ENGINE_CLIENT, L(Clamp<-3, 3>)) // -1 = Adaptive, 0 = Off, 1+ = vsync interval. See wglSwapIntervalEXT.
+X(r_frametime,    SHARED, float64,             0, L(Clamp<0.0, 100.0>, WarnIfDecimal_Win32<"Windows does not support fractional timer precision.">)) // Duration of each frame in ms = 1/fps. Limited to ms resolution because of Win32. See timeGetDevCaps.
+X(r_frametime_bg, SHARED, float64,            50, L(Clamp<0.0, 100.0>, WarnIfDecimal_Win32<"Windows does not support fractional timer precision.">))
+X(r_vsync,        SHARED, int32,   ENGINE_CLIENT, L(Clamp<-3, 3>)) // -1 = Adaptive, 0 = Off, 1+ = vsync interval. See wglSwapIntervalEXT.
 
-X(test, uint32, 0, L())
+// Terrain
+X(tn_gen_threads,           SHARED,       uint32,     8, L(Min<1u>), "The number of threads to use for terrain generation.")
+X(tn_gen_cache_target_size, SHARED,       uint32,  2048, L(Min<1024u>), "The target terrain generation cache size.") // In MB
+X(tn_gen_cache_max_size,    SHARED,       uint32,  4096, L(Min<1024u>), "The maximum terrain generation cache size.") // In MB
+X(tn_gen_cache_timeout,     SHARED, milliseconds, 12000, L(Min<1ll>), "The target terrain generation cache timeout. Tapered based on target and max size.") // In ms
+
+X(test, SHARED, uint32, 0, L())
 
 #undef L
 #undef X

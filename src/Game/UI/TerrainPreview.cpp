@@ -70,6 +70,8 @@ namespace {
 
 			void requestRebuild() {nextRebuild = Engine::Clock::now() + rebuildDelay;}
 
+			TestGenerator& getGenerator() noexcept { return generator; }
+
 		private:
 			void rebuild() {
 				std::atomic_signal_fence(std::memory_order_acq_rel); const auto startTime = Engine::Clock::now(); std::atomic_signal_fence(std::memory_order_acq_rel);
@@ -275,6 +277,7 @@ namespace Game::UI {
 		const auto cont = getContent();
 
 		const auto area = ctx->constructPanel<TerrainDragArea>();
+		testGenerator = &area->getGenerator();
 
 		const auto sec = ctx->createPanel<Panel>(cont);
 		sec->setLayout(new EUI::DirectionalLayout{EUI::Direction::Horizontal, EUI::Align::Stretch, EUI::Align::Center, theme.sizes.pad1});

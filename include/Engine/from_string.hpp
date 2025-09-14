@@ -19,4 +19,17 @@ namespace Engine {
 		const auto& [_, err] = std::from_chars(std::to_address(str.cbegin()), std::to_address(str.cend()), value);
 		return err == std::errc{};
 	}
+
+
+	template<class T, class R>
+	ENGINE_INLINE bool fromString(std::string_view str, std::chrono::duration<T, R>& value) {
+		T temp{};
+
+		if (fromString(str, temp)) {
+			value = std::chrono::duration<T, R>{temp};
+			return true;
+		}
+
+		return false;
+	}
 }

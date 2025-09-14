@@ -1,6 +1,9 @@
 // Game
 #include <Game/systems/PhysicsSystem.hpp>
+#include <Game/systems/MapSystem.hpp>
+#include <Game/systems/UISystem.hpp>
 #include <Game/UI/ZonePreview.hpp>
+#include <Game/UI/TerrainPreview.hpp>
 
 // Engine
 #include <Engine/ArrayView.hpp>
@@ -28,15 +31,23 @@ namespace {
 	 * validation function signals an abort the old value is restored
 	 */
 	namespace Validation {
-		template<auto Min, decltype(Min) Max>
-		constexpr auto Clamp = [](Engine::AnyNumber auto& value) constexpr noexcept -> bool {
+		template<auto MinValue, decltype(MinValue) MaxValue>
+		constexpr auto Clamp = []<class T>(T& value) constexpr noexcept -> bool {
+			static_assert(std::same_as<T, decltype(MinValue)>
+				|| requires { requires std::same_as<typename T::rep, decltype(MinValue)>; },
+				"Type mismatch between clamp bounds and argument type."
+			);
+
 			const auto before = value;
-			value = std::clamp(value, Min, Max);
+			value = std::clamp(value, static_cast<T>(MinValue), static_cast<T>(MaxValue));
 			if (before != value) {
 				ENGINE_WARN2("Invalid value. Clamping to {}.", value);
 			}
 			return false;
 		};
+
+		template<auto MinValue>
+		constexpr auto Min = Clamp<MinValue, std::numeric_limits<decltype(MinValue)>::max()>;
 
 		template<Engine::CompileString Msg>
 		constexpr auto WarnIfDecimal = [](std::floating_point auto& value) constexpr noexcept -> bool {
@@ -107,8 +118,42 @@ namespace {
 
 	template<>
 	ENGINE_INLINE auto makeOnChanged<&CVars::r_vsync>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
-		return [&window](const auto& prev, const auto& current){
+		return [&window](const auto& prev, const auto& current) {
 			window.setSwapInterval(current);
+		};
+	}
+
+	template<>
+	ENGINE_INLINE auto makeOnChanged<&CVars::tn_gen_threads>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
+		return [&](const auto& prev, const auto& current) {
+			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>()->generator().allocThreads(current));
+			engine.getWorld().getSystem<UISystem>().getTerrainPreview()->generator().allocThreads(current);
+		};
+	}
+
+	template<>
+	ENGINE_INLINE auto makeOnChanged<&CVars::tn_gen_cache_target_size>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
+		return [&](const auto& prev, const auto& current) {
+			const auto& cvars = Engine::getGlobalConfig().cvars;
+			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>()->generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size));
+			engine.getWorld().getSystem<UISystem>().getTerrainPreview()->generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size);
+		};
+	}
+
+	template<>
+	ENGINE_INLINE auto makeOnChanged<&CVars::tn_gen_cache_max_size>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
+		return [&](const auto& prev, const auto& current) {
+			const auto& cvars = Engine::getGlobalConfig().cvars;
+			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>()->generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size));
+			engine.getWorld().getSystem<UISystem>().getTerrainPreview()->generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size);
+		};
+	}
+
+	template<>
+	ENGINE_INLINE auto makeOnChanged<&CVars::tn_gen_cache_timeout>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
+		return [&](const auto& prev, const auto& current) {
+			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>()->generator().setCacheTimeout(current));
+			engine.getWorld().getSystem<UISystem>().getTerrainPreview()->generator().setCacheTimeout(current);
 		};
 	}
 }
@@ -145,11 +190,18 @@ void setupCommands(Game::EngineInstance& engine, Engine::Window& window) {
 	// Build CVars
 	{
 		using namespace Validation;
-		#define X(Name, Type, Default, Validators) \
+		using std::chrono::nanoseconds;
+		using std::chrono::microseconds;
+		using std::chrono::milliseconds;
+		using std::chrono::seconds;
+		using std::chrono::minutes;
+		using std::chrono::hours;
+
+		#define X(Name, Side, Type, Default, Validators, ...) ENGINE_SIDE_ONLY(Side)(\
 			cm.registerCommand(#Name, makeCVarFunc<&CVars::Name>( \
 				makeValidateForSteps(Validators), \
 				makeOnChanged<&CVars::Name>(engine, window) \
-			));
+			)));
 		#include <Game/cvars.xpp>
 	}
 

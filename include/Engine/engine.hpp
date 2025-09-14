@@ -43,6 +43,19 @@
 #endif
 
 /**
+ * Always includes the wrapped code block.
+ * For compatibility with ENGINE_SERVER_ONLY and ENGINE_CLIENT_ONLY in generic code.
+ * @see ENGINE_SIDE_ONLY
+ */
+#define ENGINE_SHARED_ONLY(...) __VA_ARGS__
+
+/**
+ * Token pasting for client/server sided _ONLY macros.
+ * @see ENGINE_SERVER_ONLY
+ */
+#define ENGINE_SIDE_ONLY(Side) ENGINE_##Side##_ONLY
+
+/**
  * Expands to a comma.
  * Need for passing a comma in macro arguments.
  */

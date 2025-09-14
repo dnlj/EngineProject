@@ -25,7 +25,14 @@ namespace Engine {
 
 			// TODO: shouldn't be including "Game" files in Engine
 			struct CVars {
-				#define X(Name, Type, Default, ...) Type Name = Default;
+				using nanoseconds = std::chrono::nanoseconds;
+				using microseconds = std::chrono::microseconds;
+				using milliseconds = std::chrono::milliseconds;
+				using seconds = std::chrono::seconds;
+				using minutes = std::chrono::minutes;
+				using horus = std::chrono::hours;
+
+				#define X(Name, Side, Type, Default, ...) ENGINE_SIDE_ONLY(Side)(Type Name = Type{Default});
 				#include <Game/cvars.xpp>
 			} cvars;
 	};

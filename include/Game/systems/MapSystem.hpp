@@ -169,6 +169,8 @@ namespace Game {
 			void update(float32 dt);
 			void network(const NetPlySet plys);
 
+			ENGINE_SERVER_ONLY(Terrain::TestGenerator& generator() noexcept { return testGenerator; });
+
 			void ensurePlayAreaLoaded(Engine::ECS::Entity ply); // TODO: should probably be private
 
 			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);

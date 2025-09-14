@@ -33,39 +33,31 @@ namespace Game::Terrain {
 	
 	template<class Self, class Layers, class SharedData>
 	void Generator<Self, Layers, SharedData>::cleanCaches() {
-		// TODO: Where to call this from?
-		{
-			// TOOD: note, global config is not thread safe.
-			//Engine::getGlobalConfig().cvars.
-			constexpr static uint64 cacheTargetThresholdBytes = 2ull * 1024 * 1024 * 1024; // TODO: should be cfg/cmd/console value.
-			constexpr static uint64 cacheMaxThresholdBytes = 6ull * 1024 * 1024 * 1024; // TODO: should be cfg/cmd/console value.
-			//constexpr static auto cacheTargetTimeout = Engine::Clock::Duration{std::chrono::minutes{2}}; // TODO: should be cfg/cmd/console value.
-			constexpr static auto cacheTargetTimeout = Engine::Clock::Duration{std::chrono::seconds{20}}; // TODO: should be cfg/cmd/console value.
-			uint64 totalBytes = 0;
+		uint64 totalBytes = 0;
 
-			std::lock_guard lock{layerGenThreadMutex};
+		// We do not need to lock layerGenThreadMutex here because cleanCaches is only called
+		// synchronously from the coordinator thread after layer generation.
+		Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+			totalBytes += layer.getCacheSizeBytes();
+		});
+
+		ENGINE_LOG2("cache bytes: {} / {} ({:.2f}%; {:.2f}%)({:.2f}GB)",
+			totalBytes,
+			cacheTargetThresholdBytes,
+			totalBytes * (100 / static_cast<double>(cacheTargetThresholdBytes)),
+			totalBytes * (100 / static_cast<double>(cacheMaxThresholdBytes)),
+			totalBytes * (1.0 / (1 << 30))
+		);
+
+		if (totalBytes > cacheTargetThresholdBytes) {
+			// Reduce the timeout based on how overcapacity the cache is. Down to zero at the max threshold.
+			const auto t = totalBytes * (1.0 / cacheMaxThresholdBytes);
+			const auto timeout = Engine::Math::lerp(cacheTargetTimeout, Engine::Clock::Duration{0}, std::min(1.0, t));
+			const auto minAge = curSeq - static_cast<SeqNum>(timeout.count());
+
 			Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
-				totalBytes += layer.getCacheSizeBytes();
+				layer.clearCache(minAge);
 			});
-
-			ENGINE_LOG2("cache bytes: {} / {} ({:.2f}%; {:.2f}%)({:.2f}GB)",
-				totalBytes,
-				cacheTargetThresholdBytes,
-				totalBytes * (100 / static_cast<double>(cacheTargetThresholdBytes)),
-				totalBytes * (100 / static_cast<double>(cacheMaxThresholdBytes)),
-				totalBytes * (1.0 / (1 << 30))
-			);
-
-			if (totalBytes > cacheTargetThresholdBytes) {
-				// Reduce the timeout based on how overcapacity the cache is. Down to zero at the max threshold.
-				const auto t = totalBytes * (1.0 / cacheMaxThresholdBytes);
-				const auto timeout = Engine::Math::lerp(cacheTargetTimeout, Engine::Clock::Duration{0}, std::min(1.0, t));
-				const auto minAge = curSeq - static_cast<SeqNum>(timeout.count());
-
-				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
-					layer.clearCache(minAge);
-				});
-			}
 		}
 	}
 
