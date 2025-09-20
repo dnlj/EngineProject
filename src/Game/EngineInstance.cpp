@@ -17,6 +17,7 @@
 
 // Game
 #include <Game/World.hpp>
+#include <Game/GameSink.hpp>
 
 
 namespace {
@@ -60,6 +61,7 @@ namespace Game {
 			});
 
 		public:
+			Game::GameSink gameSink;
 			Engine::Camera camera;
 			Engine::CommandManager commandManager;
 			Engine::Input::BindManager bindManager;
@@ -67,7 +69,7 @@ namespace Game {
 			Engine::UI::Context uiContext = {gfxResCtx.shaderLoader, gfxResCtx.textureLoader, camera};
 	};
 	
-	EngineInstance::EngineInstance() : pimpl{std::make_unique<EngineInstancePimpl>()} {
+	EngineInstance::EngineInstance() : pimpl{std::make_unique<EngineInstancePimpl>(*this)} {
 		// Must be set before constructing our Game::World.
 		getUIContext().setUserdata(this);
 
@@ -90,7 +92,9 @@ namespace Game {
 
 	EngineInstance::~EngineInstance() {
 	}
-	
+
+	GameSink& EngineInstance::getGameSink() noexcept { return pimpl->gameSink; }
+
 	Engine::CommandManager& EngineInstance::getCommandManager() noexcept { return pimpl->commandManager; }
 	Engine::Input::BindManager& EngineInstance::getBindManager() noexcept { return pimpl->bindManager; }
 

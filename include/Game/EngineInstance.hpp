@@ -50,6 +50,8 @@ namespace Game {
 			EngineInstance(const EngineInstance&) = delete;
 			~EngineInstance();
 
+			class GameSink& getGameSink() noexcept;
+
 			Engine::CommandManager& getCommandManager() noexcept;
 
 			Engine::Input::BindManager& getBindManager() noexcept;

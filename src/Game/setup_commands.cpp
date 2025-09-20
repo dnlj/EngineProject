@@ -126,7 +126,7 @@ namespace {
 	template<>
 	ENGINE_INLINE auto makeOnChanged<&CVars::tn_gen_threads>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
 		return [&](const auto& prev, const auto& current) {
-			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>()->generator().allocThreads(current));
+			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>().generator().allocThreads(current));
 			engine.getWorld().getSystem<UISystem>().getTerrainPreview()->generator().allocThreads(current);
 		};
 	}
@@ -135,7 +135,7 @@ namespace {
 	ENGINE_INLINE auto makeOnChanged<&CVars::tn_gen_cache_target_size>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
 		return [&](const auto& prev, const auto& current) {
 			const auto& cvars = Engine::getGlobalConfig().cvars;
-			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>()->generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size));
+			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>().generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size));
 			engine.getWorld().getSystem<UISystem>().getTerrainPreview()->generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size);
 		};
 	}
@@ -144,7 +144,7 @@ namespace {
 	ENGINE_INLINE auto makeOnChanged<&CVars::tn_gen_cache_max_size>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
 		return [&](const auto& prev, const auto& current) {
 			const auto& cvars = Engine::getGlobalConfig().cvars;
-			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>()->generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size));
+			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>().generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size));
 			engine.getWorld().getSystem<UISystem>().getTerrainPreview()->generator().setCacheSize(cvars.tn_gen_cache_target_size, cvars.tn_gen_cache_max_size);
 		};
 	}
@@ -152,7 +152,7 @@ namespace {
 	template<>
 	ENGINE_INLINE auto makeOnChanged<&CVars::tn_gen_cache_timeout>(Game::EngineInstance& engine, Engine::Window& window) noexcept {
 		return [&](const auto& prev, const auto& current) {
-			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>()->generator().setCacheTimeout(current));
+			ENGINE_SERVER_ONLY(engine.getWorld().getSystem<MapSystem>().generator().setCacheTimeout(current));
 			engine.getWorld().getSystem<UISystem>().getTerrainPreview()->generator().setCacheTimeout(current);
 		};
 	}

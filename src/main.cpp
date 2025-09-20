@@ -28,6 +28,7 @@
 #include <Game/systems/UISystem.hpp>
 #include <Game/UI/ConsoleWindow.hpp>
 #include <Game/UI/MapPreview.hpp>
+#include <Game/GameSink.hpp>
 
 // FMT
 #include <fmt/xchar.h>
@@ -694,25 +695,9 @@ void run(int argc, char* argv[]) {
 	{
 		auto& logger = Engine::getGlobalConfig<true>().logger;
 		logger.userdata = &engine;
-
-		// TODO: Not thread safe. Fix.
-		logger.cleanWritter = [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
-			fmt::memory_buffer buffer;
-			auto out = std::back_inserter(buffer);
-
-			// Don't prepend user defined levels
-			if (info.level < Engine::Log::Level::User) {
-				out = '[';
-				buffer.append(info.label);
-				out = ']';
-				out = ' ';
-			}
-
-			// Write to console
+		logger.cleanSink = [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
 			auto* engine = static_cast<Game::EngineInstance*>(logger.userdata);
-			auto& uiSys = engine->getWorld().getSystem<Game::UISystem>();
-			fmt::vformat_to(out, format, args);
-			uiSys.getConsole()->push(std::string_view{buffer});
+			engine->getGameSink().write(logger, info, format, std::move(args));
 		};
 	}
 
@@ -819,6 +804,9 @@ void run(int argc, char* argv[]) {
 	while (!window.shouldClose()) {
 		const auto tstart = std::chrono::high_resolution_clock::now();
 		window.poll();
+
+		// Write any queued console log messages.
+		engine.getGameSink().printToConsole();
 
 		// Rendering
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -967,6 +955,8 @@ int entry(int argc, char* argv[]) {
 		}
 
 		{ // Setup logger
+			// TODO: Not thread safe. Need to queue if the logging thread isn't the main thread.
+			//       Similar to GameSink except only queue on secondary threads.
 			const auto writter = []<bool TimeOnly, bool Style>{
 				return [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
 					fmt::memory_buffer buffer;
@@ -979,13 +969,13 @@ int entry(int argc, char* argv[]) {
 			};
 
 			if (cfg.logColor && cfg.logTimeOnly) {
-				cfg.logger.styledWritter = writter.template operator()<true, true>();
+				cfg.logger.styledSink = writter.template operator()<true, true>();
 			} else if (cfg.logColor) {
-				cfg.logger.styledWritter = writter.template operator()<false, true>();
+				cfg.logger.styledSink = writter.template operator()<false, true>();
 			} else if (cfg.logTimeOnly) {
-				cfg.logger.styledWritter = writter.template operator()<true, false>();
+				cfg.logger.styledSink = writter.template operator()<true, false>();
 			} else {
-				cfg.logger.styledWritter = writter.template operator()<false, false>();
+				cfg.logger.styledSink = writter.template operator()<false, false>();
 			}
 		}
 	}

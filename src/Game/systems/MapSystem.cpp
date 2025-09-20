@@ -272,7 +272,7 @@ namespace Game {
 
 		#if !MAP_OLD
 			// Submit any newly loaded queued areas from ensurePlayAreaLoaded above.
-			ENGINE_SERVER_ONLY(testGenerator.submit());
+			ENGINE_SERVER_ONLY(testGenerator.submit(world.getTime()));
 		#endif
 
 

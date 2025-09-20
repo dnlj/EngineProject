@@ -11,6 +11,8 @@
 #include <Engine/engine.hpp>
 #include <Engine/traits.hpp>
 
+// TODO: split as appropriate and migrate to Engine/Log/*.hpp files.
+
 
 namespace Engine::Log {
 	enum class Level {
@@ -186,8 +188,8 @@ namespace Engine::Log {
 	class ANSIEscapeSequence {
 		private:
 			using Storage = std::array<char, 31>;
-			const Storage str = {};
-			const uint8 len = 0;
+			Storage str = {};
+			uint8 len = 0;
 
 		public:
 			consteval auto size() const noexcept {
@@ -440,11 +442,11 @@ namespace Engine::Log {
 
 			class Info {
 				public:
-					const std::source_location location;
-					const Level level;
-					const std::string_view label;
-					const TimePoint time;
-					const ANSIEscapeSequence style;
+					std::source_location location;
+					Level level;
+					std::string_view label;
+					TimePoint time;
+					ANSIEscapeSequence style;
 
 					constexpr std::string_view relative() const noexcept {
 						return location.file_name() + sizeof(ENGINE_BASE_PATH);
@@ -454,10 +456,13 @@ namespace Engine::Log {
 			using OutputFunc = void (*)(const Engine::Log::Logger& logger, const Engine::Log::Logger::Info& info, std::string_view format, fmt::format_args args);
 
 		public:
-			OutputFunc styledWritter = nullptr;
-			OutputFunc cleanWritter = nullptr;
+			// NOTE: The sinks and userdata are not inherently thread safe.
+			OutputFunc styledSink = nullptr;
+			OutputFunc cleanSink = nullptr;
 			void* userdata = nullptr;
 
+			// TODO: Since everything goes through macros is there any reason to support all these
+			//       functions? Couldn't these just be defined as part of the macro?
 			template<class... Args>
 			void debug(FormatString<Args...> format, const Args&... args) const {
 				write(format.location, Level::Debug, "DEBUG", Style::Foreground{3}, format.format, args...);
@@ -537,12 +542,12 @@ namespace Engine::Log {
 				// with castPointers to sanely print pointers without bloating
 				// our code with static_cast<const void*>(xyz) everywhere.
 
-				if (styledWritter) {
-					styledWritter(*this, info, format, fmt::make_format_args(castPointers(args)...));
+				if (styledSink) {
+					styledSink(*this, info, format, fmt::make_format_args(castPointers(args)...));
 				}
 
-				if (cleanWritter) {
-					cleanWritter(*this, info, format, fmt::make_format_args(StyleFilter{}(castPointers(args))...));
+				if (cleanSink) {
+					cleanSink(*this, info, format, fmt::make_format_args(StyleFilter{}(castPointers(args))...));
 				}
 			}
 

@@ -33,6 +33,9 @@ namespace Engine::Types { // TODO: C++20: namespace Engine::inline Types {
 	using uintf32 = uint_fast32_t;
 	using uintf64 = uint_fast64_t;
 
+	using uintz = size_t;
+	using intz = ptrdiff_t;
+
 	using float32 = float;
 	static_assert(sizeof(float32) == 4, "float32 is an incorrect number of bytes.");
 	static_assert(std::numeric_limits<float32>::is_iec559, "float32 is not IEEE 754 single-precision (binary32) format.");
