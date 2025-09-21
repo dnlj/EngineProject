@@ -18,12 +18,6 @@ namespace Game::Terrain {
 		//   - Moss, grass tufts, cobwebs, chests/loot, etc.
 		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
 
-		// TODO: We should have a third queue on the main thread so that we don't need to
-		//       lock here? Then we could have a dedicate swap function once all requests
-		//       are done + cv. Its not quite that simple because we don't know that the
-		//       back queue has finished processing at the time we swap. So we would need
-		//       to instead append to each list. Unclear if that would be better.
-		
 		{
 			std::lock_guard lock{reqThreadMutex};
 			pending.test_and_set();
@@ -102,7 +96,7 @@ namespace Game::Terrain {
 			// decouple them), but then it is more work on the caller's side since you
 			// would need to track the requests and keep checking if they are done.
 			//
-			// This is more straight forward to implement and also more effecient, at the
+			// This is more straight forward to implement and also more efficient, at the
 			// cost of slight coupling between the terrain and generator.
 			const auto lock = terrain.lock();
 

@@ -160,7 +160,7 @@ namespace {
 
 		const Engine::Noise::RangePermutation<256> realPerm = 1234;
 		auto perm = [&](auto... as){ return realPerm(as...); };
-		//auto dist = [](auto...) { return 1; }; // TODO: cosntexpr SFINAE possible with consteval?
+		//auto dist = [](auto...) { return 1; }; // TODO: constexpr SFINAE possible with consteval?
 		auto dist = Engine::Noise::ConstantDistribution<1>{};
 		auto metric = Engine::Noise::MetricEuclidean2{};
 		//auto metric = Engine::Noise::MetricManhattan{};
@@ -692,12 +692,13 @@ void run(int argc, char* argv[]) {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup logging
 	////////////////////////////////////////////////////////////////////////////////////////////////
+	Game::GameSink gameSink(engine);
 	{
 		auto& logger = Engine::getGlobalConfig<true>().logger;
-		logger.userdata = &engine;
+		logger.userdata = &gameSink;
 		logger.cleanSink = [](const Engine::Logger& logger, const Engine::Logger::Info& info, std::string_view format, fmt::format_args args){
-			auto* engine = static_cast<Game::EngineInstance*>(logger.userdata);
-			engine->getGameSink().write(logger, info, format, std::move(args));
+			auto* gameSink = static_cast<Game::GameSink*>(logger.userdata);
+			gameSink->write(logger, info, format, std::move(args));
 		};
 	}
 
@@ -806,7 +807,7 @@ void run(int argc, char* argv[]) {
 		window.poll();
 
 		// Write any queued console log messages.
-		engine.getGameSink().printToConsole();
+		gameSink.printToConsole();
 
 		// Rendering
 		glClear(GL_COLOR_BUFFER_BIT);
