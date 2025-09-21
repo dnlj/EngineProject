@@ -11,6 +11,7 @@ namespace Game::Terrain::Layer {
 
 		return 1;
 	}
+
 	BlockId BiomeOceanBlock::get(BIOME_BLOCK_ARGS) const noexcept {
 		auto const& shared = generator.shared<BiomeOceanSharedData>();
 		auto const& simplex1 = shared.simplex1;
@@ -28,4 +29,24 @@ namespace Game::Terrain::Layer {
 
 		return BlockId::Gold;
 	};
+
+	void BiomeOceanStructureInfo::get(BIOME_STRUCTURE_INFO_ARGS) const noexcept {
+		const auto minBlockCoord = chunkToBlock(chunkCoord);
+		inserter = {.min = minBlockCoord, .max = minBlockCoord + BlockVec{1,1}, .id = 1};
+	}
+
+	void BiomeOceanStructure::get(BIOME_STRUCTURE_ARGS) const noexcept {
+		const UniversalChunkCoord chunkCoord = { .realmId = realmId, .pos = blockToChunk(info.min) };
+		auto& chunk = terrain.getChunkMutable(chunkCoord);
+		const auto chunkIdx = blockToChunkIndex(info.min, chunkCoord.pos);
+		chunk.data[chunkIdx.x][chunkIdx.y] = BlockId::Debug;
+
+		// TODO: Populate portal with realm data/id/pos.
+		auto& ents = terrain.getEntitiesMutable(chunkCoord);
+		auto& ent = ents.emplace_back();
+		ent.pos = info.min;
+		ent.data.type = BlockEntityType::Portal;
+		ent.data.asPortal.realmId = !realmId;
+		ent.data.asPortal.blockPos = {10, 10};
+	}
 }

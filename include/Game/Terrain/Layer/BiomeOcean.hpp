@@ -4,6 +4,7 @@
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
 #include <Game/Terrain/Layer/DependsOn.hpp>
 #include <Game/Terrain/Layer/OnDemandLayer.hpp>
+#include <Game/Terrain/StructureInfo.hpp>
 
 
 namespace Game::Terrain::Layer {
@@ -52,6 +53,28 @@ namespace Game::Terrain::Layer {
 			void request(const Range area, TestGenerator& generator);
 			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
 	};
+
+	class BiomeOceanStructureInfo : public OnDemandLayer, public Layer::DependsOn<> {
+		public:
+			using Range = ChunkArea;
+			using Partition = ChunkVec;
+
+		public:
+			using OnDemandLayer::OnDemandLayer;
+			void request(const Range area, TestGenerator& generator);
+			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
+	};
+
+	class BiomeOceanStructure : public OnDemandLayer, public Layer::DependsOn<> {
+		public:
+			using Range = ChunkArea;
+			using Partition = ChunkVec;
+
+		public:
+			using OnDemandLayer::OnDemandLayer;
+			void request(const Range area, TestGenerator& generator);
+			void get(BIOME_STRUCTURE_ARGS) const noexcept;
+	};
 	
 	class BiomeOceanSharedData {
 		public:
@@ -67,6 +90,8 @@ namespace Game::Terrain::Layer {
 			using BasisStrength = BiomeOceanBasisStrength;
 			using Basis = BiomeOceanBasis;
 			using Block = BiomeOceanBlock;
+			using StructureInfo = BiomeOceanStructureInfo;
+			using Structure = BiomeOceanStructure;
 			using SharedData = BiomeOceanSharedData;
 	};
 }

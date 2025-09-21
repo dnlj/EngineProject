@@ -27,6 +27,8 @@ namespace Game {
 	template<>
 	class BlockEntityTypeData<BlockEntityType::Portal> {
 		public:
+			RealmId realmId;
+			BlockVec blockPos;
 	};
 
 	class BlockEntityDataUnion {

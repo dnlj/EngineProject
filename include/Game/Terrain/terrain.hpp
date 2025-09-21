@@ -23,6 +23,19 @@
 	const ::Game::BlockVec blockCoord, \
 	const ::Game::Terrain::BasisInfo& basisInfo
 
+
+// TODO: Add an example biome with this documentation.
+/**
+ * Adding structures to a biome.
+ * - Create two OnDemandLayer based layers. MyBiomeStructureInfo and MyBiomeStructure.
+ * - The structure info layer populates the structure description. This includes the structure
+ *   bounding box and an id that identifies each structure. These are populated by assigning to the
+ *   @p inserter argument.
+ * - The Generator resolves any conflicts, invalid structures, overlaps, etc. from any relevant
+ *   biomes and forwards the remaining structure descriptions to the structure layer for generation.
+ * - The structure layer is called once for each relevant structure and can access the Terrain to
+ *   modify chunk/block data and insert any ChunkEntities if needed.
+ */
 #define BIOME_STRUCTURE_INFO_ARGS \
 	const TestGenerator& generator, \
 	const ::Game::ChunkVec& chunkCoord, \

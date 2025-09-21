@@ -18,6 +18,22 @@ namespace Game::Terrain {
 		//   - Moss, grass tufts, cobwebs, chests/loot, etc.
 		//   - Do these things really need extra passes? Could this be done during the initial stages and feature generation?
 
+
+		// Rough layer overview. In general any "blended" layer is one that deals with the influence
+		// of multiple biomes (BiomeWeights).
+		// 
+		// - Determine the ground level (WorldBaseHeight).
+		// - Determine the biome influence (RawBiome, RawBiomeWeights).
+		// - Determine the adjusted primary biome (BlendedBiomeWeights).
+		// - Determine the biome adjusted ground level (BlendedBiomeHeight).
+		// - Determine basis/density (if solid or air) (BlendedBiomeBasis).
+		// - Determine the natrual block if solid (BlendedBiomeBlock).
+		// - Determine possible structures (BlendedBiomeStructureInfo).
+		// - Modify the terrain and add entities for any valid/non-overlapping structures (BlendedBiomeStructures).
+
+
+		// TODO: Need to handle request realm.
+
 		{
 			std::lock_guard lock{reqThreadMutex};
 			pending.test_and_set();

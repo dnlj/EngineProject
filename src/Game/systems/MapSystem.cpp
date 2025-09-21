@@ -124,13 +124,8 @@ namespace Game {
 		const auto zoneOffset = world.getSystem<ZoneManagementSystem>().getZone(activeChunkData.body.getZoneId()).offset;
 		auto& realmComp = world.addComponent<RealmComponent>(ent);
 
-		//
-		//
-		// TODO: populate real realm id/pos data.
-		//
-		//
-		realmComp.realmId = 1;
-		realmComp.pos = {2, 3};
+		realmComp.realmId = desc.data.asPortal.realmId;
+		realmComp.pos = desc.data.asPortal.blockPos;
 
 		b2BodyDef bodyDef{};
 		bodyDef.type = b2_staticBody;
