@@ -1,9 +1,10 @@
 #pragma once
 
 // Game
-#include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
+#include <Game/Terrain/terrain.hpp>
 #include <Game/Terrain/Layer/BiomeDebug.hpp>
 #include <Game/Terrain/Layer/OnDemandLayer.hpp>
+#include <Game/Terrain/StructureInfo.hpp>
 
 namespace Game::Terrain::Layer {
 	class WorldBaseHeight;

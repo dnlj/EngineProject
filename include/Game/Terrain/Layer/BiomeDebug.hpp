@@ -1,8 +1,13 @@
 #pragma once
 
 // Game
+#include <Game/BlockMeta.hpp>
 #include <Game/Terrain/Layer/DependsOn.hpp>
 #include <Game/Terrain/Layer/OnDemandLayer.hpp>
+#include <Game/Terrain/ChunkSpan.hpp>
+#include <Game/Terrain/RawBiomeInfo.hpp>
+#include <Game/Terrain/ChunkArea.hpp>
+#include <Game/Terrain/temp.hpp> // TODO: remove once file split.
 
 
 namespace Game::Terrain::Layer {

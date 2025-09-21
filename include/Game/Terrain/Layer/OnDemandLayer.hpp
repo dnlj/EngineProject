@@ -1,5 +1,9 @@
 #pragma once
 
+// Game
+#include <Game/Terrain/terrain.hpp>
+
+
 namespace Game::Terrain::Layer {
 	/**
 	 * Base class for layers that don't cache generation results. This is usually because

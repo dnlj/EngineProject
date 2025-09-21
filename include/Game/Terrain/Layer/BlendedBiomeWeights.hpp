@@ -1,7 +1,7 @@
 #pragma once
 
 // Game
-#include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
+#include <Game/Terrain/BiomeBlend.hpp>
 #include <Game/Terrain/Layer/CachedLayer.hpp>
 #include <Game/Terrain/Layer/DependsOn.hpp>
 #include <Game/Terrain/ChunkDataCache.hpp>

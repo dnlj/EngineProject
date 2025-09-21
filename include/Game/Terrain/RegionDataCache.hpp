@@ -2,6 +2,7 @@
 
 // Game
 #include <Game/Terrain/RegionStore.hpp>
+#include <Game/Terrain/RegionArea.hpp>
 
 
 namespace Game::Terrain {
