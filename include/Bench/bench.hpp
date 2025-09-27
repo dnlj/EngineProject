@@ -98,7 +98,7 @@ struct fmt::formatter<Bench::BenchmarkId> : fmt::formatter<std::string_view> {
 
 template<>
 struct Engine::Hash<Bench::BenchmarkId> {
-	size_t operator()(const Bench::BenchmarkId& val) const {
+	[[nodiscard]] ENGINE_INLINE size_t operator()(const Bench::BenchmarkId& val) const {
 		auto seed = Engine::hash(val.name);
 		Engine::hashCombine(seed, Engine::hash(val.dataset));
 		return seed;

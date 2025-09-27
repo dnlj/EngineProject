@@ -42,8 +42,7 @@ namespace Game {
 
 template<>
 struct Engine::Hash<Game::UniversalRegionCoord> {
-	[[nodiscard]]
-	size_t operator()(const Game::UniversalRegionCoord& val) const {
+	[[nodiscard]] ENGINE_INLINE size_t operator()(const Game::UniversalRegionCoord& val) const {
 		auto seed = hash(val.realmId);
 		hashCombine(seed, hash(val.pos));
 		return seed;
@@ -52,8 +51,7 @@ struct Engine::Hash<Game::UniversalRegionCoord> {
 
 template<>
 struct Engine::Hash<Game::UniversalChunkCoord> {
-	[[nodiscard]]
-	size_t operator()(const Game::UniversalChunkCoord& val) const {
+	[[nodiscard]] ENGINE_INLINE size_t operator()(const Game::UniversalChunkCoord& val) const {
 		auto seed = hash(val.realmId);
 		hashCombine(seed, hash(val.pos));
 		return seed;
@@ -62,8 +60,7 @@ struct Engine::Hash<Game::UniversalChunkCoord> {
 
 template<>
 struct Engine::Hash<Game::UniversalBlockCoord> {
-	[[nodiscard]]
-	size_t operator()(const Game::UniversalBlockCoord& val) const {
+	[[nodiscard]] ENGINE_INLINE size_t operator()(const Game::UniversalBlockCoord& val) const {
 		auto seed = hash(val.realmId);
 		hashCombine(seed, hash(val.pos));
 		return seed;

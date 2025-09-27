@@ -147,7 +147,7 @@ namespace Game {
 	}
 
 	STORE_BLOCK_ENTITY(Portal) {
-		ENGINE_WARN2("STORE_BLOCK_ENTITY(Portal)"); // TODO: impl
+		//ENGINE_WARN2("STORE_BLOCK_ENTITY(Portal)"); // TODO: impl
 	}
 }
 

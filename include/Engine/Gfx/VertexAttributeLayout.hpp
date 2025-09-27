@@ -55,7 +55,7 @@ namespace Engine::Gfx {
 
 template<>
 struct Engine::Hash<Engine::Gfx::VertexAttributeLayoutDesc> {
-	size_t operator()(const Engine::Gfx::VertexAttributeLayoutDesc& val) const {
+	[[nodiscard]] ENGINE_INLINE size_t operator()(const Engine::Gfx::VertexAttributeLayoutDesc& val) const {
 		auto res = hashBytes(val.attribs.data(), val.attribs.size() * sizeof(val.attribs[0]));
 		hashCombine(res, hashBytes(val.divisors.data(), val.divisors.size() * sizeof(val.divisors[0])));
 		return res;

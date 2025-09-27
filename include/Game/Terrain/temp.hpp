@@ -107,9 +107,11 @@ namespace Game::Terrain {
 				return *found->second;
 			}
 
-			bool isRegionLoaded(const UniversalRegionCoord regionCoord) const noexcept {
-				const auto found = regions.find(regionCoord);
-				return found != regions.end();
+			[[nodiscard]] ENGINE_INLINE bool isRegionLoaded(const UniversalRegionCoord regionCoord) const noexcept {
+				ENGINE_FLATTEN {
+					const auto found = regions.find(regionCoord);
+					return found != regions.end();
+				}
 			}
 
 			// TODO: Should have a way to combine isChunkLoaded with getChunk. In most

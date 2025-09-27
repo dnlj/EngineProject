@@ -25,7 +25,7 @@ namespace Engine::UI::Detail {
 
 template<> 
 struct Engine::Hash<Engine::UI::Detail::FontId> {
-	size_t operator()(const Engine::UI::Detail::FontId& val) const {
+	[[nodiscard]] ENGINE_INLINE size_t operator()(const Engine::UI::Detail::FontId& val) const {
 		static_assert(sizeof(size_t) == sizeof(val.font));
 		size_t seed = reinterpret_cast<const size_t&>(val.font);
 		hashCombine(seed, val.size);

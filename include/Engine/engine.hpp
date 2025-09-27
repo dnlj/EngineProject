@@ -125,8 +125,8 @@
  * noise generation, processing large files, etc.
  */
 // TODO: MSVC only
-#define ENINGE_RUNTIME_CHECKS_DISABLE _Pragma(R"(runtime_checks("", off))")
-#define ENINGE_RUNTIME_CHECKS_RESTORE _Pragma(R"(runtime_checks("", restore))")
+#define ENGINE_RUNTIME_CHECKS_DISABLE _Pragma(R"(runtime_checks("", off))")
+#define ENGINE_RUNTIME_CHECKS_RESTORE _Pragma(R"(runtime_checks("", restore))")
 
 /**
  * Build various operators for enums.
