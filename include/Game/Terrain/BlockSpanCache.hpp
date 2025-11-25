@@ -23,7 +23,7 @@ namespace Game::Terrain {
 			/**
 			 * Iterates each block in the given span.
 			 */
-			template<bool IsConst>
+			/*template<bool IsConst>
 			class RegionIteratorImpl {
 				private:
 					friend class BlockSpanCache;
@@ -115,7 +115,7 @@ namespace Game::Terrain {
 
 		public: 
 			using Iterator = RegionIteratorImpl<false>;
-			using ConstIterator = RegionIteratorImpl<true>;
+			using ConstIterator = RegionIteratorImpl<true>;*/
 
 		private:
 			Engine::FlatHashMap<RegionUnit, Store> cache{};
@@ -125,18 +125,10 @@ namespace Game::Terrain {
 			BlockSpanCache(BlockSpanCache&&) = default;
 			BlockSpanCache(const BlockSpanCache&) = delete;
 
-			// TODO: cleanup/normalize these various walk functions. Most of these don't
+			// TODO: cleanup/normalize these various get/at/walk functions. Most of these don't
 			//       work correctly as walks since they don't have correct bool operators for
 			//       end range.
 
-			ENGINE_INLINE auto walk(RegionSpanX area, SeqNum curSeq) noexcept {
-				return Iterator{*this, area, curSeq};
-			}
-
-			ENGINE_INLINE auto walk(RegionSpanX area, SeqNum curSeq) const noexcept {
-				return ConstIterator{*this, area, curSeq};
-			}
-			
 			ENGINE_INLINE Data& get(RegionUnit regionCoordX, SeqNum curSeq) noexcept {
 				const auto found = cache.find(regionCoordX);
 				ENGINE_DEBUG_ASSERT(found != cache.end());
@@ -146,24 +138,6 @@ namespace Game::Terrain {
 			
 			ENGINE_INLINE const Data& get(RegionUnit regionCoordX, SeqNum curSeq) const noexcept {
 				return const_cast<BlockSpanCache*>(this)->get(regionCoordX, curSeq);
-			}
-
-			ENGINE_INLINE auto walk(BlockSpanX area, SeqNum curSeq) const noexcept {
-				// Need to add one to max because it is an _exclusive_ bound. Technically,
-				// the +1 isn't needed if area.max happens to be at index 0 of a new
-				// region, but its simpler to always add one.
-				const auto maxRegion = chunkToRegion(blockToChunk({area.max, 0})).x + 1;
-				const auto minRegion = chunkToRegion(blockToChunk({area.min, 0})).x;
-				const auto minRegionBlock = chunkToBlock(regionToChunk({minRegion, 0})).x;
-				const auto blockRegionOffset = area.min - minRegionBlock;
-
-				// TODO: Calc with a closed-form expression instead of loop.
-				ConstIterator result{*this, {minRegion, maxRegion}, curSeq};
-				for (auto i = blockRegionOffset; i > 0; --i) {
-					++result;
-				};
-
-				return result;
 			}
 
 			ENGINE_INLINE auto walk(ChunkUnit chunkX, SeqNum curSeq) const noexcept {
@@ -202,7 +176,6 @@ namespace Game::Terrain {
 			}
 
 			ENGINE_INLINE_REL void clearCache(SeqNum minAge) noexcept {
-
 				const auto before = getCacheSizeBytes();
 
 				for (auto it = cache.begin(); it != cache.end();) {
@@ -223,26 +196,5 @@ namespace Game::Terrain {
 				const auto after = getCacheSizeBytes();
 				ENGINE_INFO2("BlockSpanCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
 			}
-
-			// TODO: Should these each take a block/chunk/region span instead of one as a whole?
-			//// TODO: Function sig concept
-			//ENGINE_INLINE void forEachBlock(const RegionSpanX area, auto&& func) {
-			//	const auto min = area.min * chunksPerRegion * blocksPerChunk;
-			//	const auto max = area.max * chunksPerRegion * blocksPerChunk;
-			//	for (auto x = min; x < max; ++x) { func(x, at(x)); }
-			//}
-			//
-			//// TODO: Function sig concept
-			//ENGINE_INLINE void forEachChunk(const RegionSpanX area, auto&& func) {
-			//	const auto min = area.min * chunksPerRegion;
-			//	const auto max = area.max * chunksPerRegion;
-			//	for (auto x = min; x < max; ++x) { func(x, at(x)); }
-			//}
-			//
-			//ENGINE_INLINE void forEachRegion(const RegionSpanX area, auto&& func) {
-			//	const auto min = area.min;
-			//	const auto max = area.max;
-			//	for (auto x = min; x < max; ++x) { func(x, at(x)); }
-			//}
 	};
 }

@@ -45,22 +45,22 @@ namespace Game::Terrain::Layer {
 				}
 			}
 
-			// TODO: remove, temp during biome span region transition.
-			ENGINE_INLINE_REL [[nodiscard]] BlockUnit getOld(const BlockUnit x) const noexcept {
-				return cache.at(x, getSeq());
-			}
+			//// TODO: remove, temp during biome span region transition.
+			//ENGINE_INLINE_REL [[nodiscard]] BlockUnit getOld(const BlockUnit x) const noexcept {
+			//	return cache.at(x, getSeq());
+			//}
 			 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Partition regionCoordX) const noexcept {
 				return cache.get(regionCoordX, getSeq());
 			}
 
-			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Index area) const noexcept {
-				return cache.walk(area, getSeq());
-			}
+			//ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Index area) const noexcept {
+			//	return cache.walk(area, getSeq());
+			//}
 			 
-			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const BlockSpanX blockSpanX) const noexcept {
-				return cache.walk(blockSpanX, getSeq());
-			}
+			//ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const BlockSpanX blockSpanX) const noexcept {
+			//	return cache.walk(blockSpanX, getSeq());
+			//}
 			 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const ChunkUnit chunkX) const noexcept {
 				return cache.walk(chunkX, getSeq());

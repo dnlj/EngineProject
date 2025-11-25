@@ -35,6 +35,15 @@ namespace Game::Terrain::Layer {
 
 	BasisInfo BlendedBiomeBasis::populate(BlockVec blockCoord, const BiomeBlend& blend, const TestGenerator& generator) const noexcept {
 		Float totalBasis = 0;
+
+		//
+		//
+		//
+		// TODO: Lift the BlendedBiomeHeight into generate and modify only when x is incremented.
+		//       Right now this re-gets for each y coord also.
+		//
+		//
+		//
 		const auto h2 = generator.get<BlendedBiomeHeight>(blockCoord.x);
 		for (auto& biomeWeight : blend.weights) {
 			// TODO: rm - const auto basis = generator.rm_getBasis(biomeWeight.id, blockCoord);

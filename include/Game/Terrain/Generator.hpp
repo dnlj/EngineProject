@@ -268,7 +268,41 @@ namespace Game::Terrain {
 								layer.generate(partition, self());
 							}
 						} else {
-							// TODO: Exclude already generated partitions before dispatching to threads.
+							// TODO: Exclude already generated partitions before dispatching to
+							//       threads. Currently this is handled on a per layer basis with
+							//       the caches with ChunkDataCache/RegionDataCache. Doing something
+							//       with a more central interface would be good to avoid forgetting
+							//       to use the right type of cache.
+
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							// Right now some layers do get cached through the ChunkDataCache/RegionDataCache, but not all since they aren't used.
+							// For example all the `BlendedBiomeHeight` does not get cached.
+							// - Check how the structure layers work and are cached/lack thereof.
+							// - It would be better to have this as a generic feature of the layer
+							//   instead of something each layer needs to remember to implement.
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+							//
+
 							{
 								std::lock_guard lock{layerGenThreadMutex};
 

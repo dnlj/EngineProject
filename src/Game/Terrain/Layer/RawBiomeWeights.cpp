@@ -31,8 +31,6 @@ namespace Game::Terrain::Layer {
 				// efficient and easier to do it here. This avoids the need to use a cache
 				// in RawBiome which makes it ~15% faster and not use any memory.
 			
-				// TODO: rm - just for debugging during transition.
-				ENGINE_DEBUG_ASSERT(*h0Walk == generator.layerWorldBaseHeight.getOld(baseBlockCoord.x + chunkIndex.x));
 				const auto offset = biomeScaleOffset + BlockVec{0, *h0Walk};
 				++h0Walk;
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {

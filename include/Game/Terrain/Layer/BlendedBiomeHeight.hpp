@@ -27,11 +27,19 @@ namespace Game::Terrain::Layer {
 		public:
 			using CachedLayer::CachedLayer;
 
-			void request(const Range area, TestGenerator& generator);
+			void request(const Range regionArea, TestGenerator& generator);
 			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { flattenRequests(requests, partitions); }
 			void generate(const Partition regionCoordX, TestGenerator& generator);
 			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return cache.getCacheSizeBytes(); }
 			[[nodiscard]] ENGINE_INLINE decltype(auto) clearCache(SeqNum minAge) noexcept { return cache.clearCache(minAge); }
+
+			//
+			//
+			//
+			// TODO: Where is `get` used? It would almost certainly be better to return per region or chunk.
+			//
+			//
+			//
 
 			// TODO: Should return a walk similar to WorldBaseHeight.
 			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept { return cache.at(x, getSeq()); }

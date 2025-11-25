@@ -96,6 +96,7 @@ namespace Game::Terrain {
 	template<class Self, class Layers, class SharedData>
 	void Generator<Self, Layers, SharedData>::processGenRequests() {
 		for (const auto& genRequest : genRequestsBack) {
+			// TODO: genRequest.realmId
 			this->request<Layer::BlendedBiomeBlock>(genRequest.chunkArea);
 			this->request<Layer::BlendedBiomeStructures>(genRequest.chunkArea);
 		}
@@ -135,7 +136,16 @@ namespace Game::Terrain {
 					}
 				}
 
+				//
+				//
+				//
+				//
 				// TODO: Should be part of layers and/or have a populated check.
+				//
+				//
+				//
+				//
+				//
 				layerBlendedBiomeStructures.get(genRequest.chunkArea, self(), genRequest.realmId, terrain);
 			}
 		}

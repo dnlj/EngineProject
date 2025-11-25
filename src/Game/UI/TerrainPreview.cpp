@@ -130,19 +130,17 @@ namespace {
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
 				const BlockSpanX blockSpan = {indexToBlock({}).x, indexToBlock(res).x};
-				const auto h0WalkInitial = generator.get2<Game::Terrain::Layer::WorldBaseHeight>(blockSpan);
 				const RealmId realmId = 0; // TODO: realm support
 
 				for (BlockUnit y = 0; y < res.y; ++y) {
 					const auto yspan = y * res.x;
-					auto h0Walk = h0WalkInitial;
 
-					for (BlockUnit x = 0; x < res.x; ++x, ++h0Walk) {
+					for (BlockUnit x = 0; x < res.x; ++x) {
 						const auto blockCoord = indexToBlock({x, y});
 						const auto idx = x + yspan;
-						const auto h0 = *h0Walk;
 						const auto chunkCoord = blockToChunk(blockCoord);
 						const auto chunkIndex = blockToChunkIndex(blockCoord, chunkCoord);
+						const auto h0 = *generator.get2<Game::Terrain::Layer::WorldBaseHeight>(chunkCoord.x);
 
 						if (mode == Layer::BiomeBaseGrid) {
 							// This won't line up 100% because we don't include the height offset (see
