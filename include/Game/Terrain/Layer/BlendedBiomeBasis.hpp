@@ -30,6 +30,6 @@ namespace Game::Terrain::Layer {
 			[[nodiscard]] ENGINE_INLINE decltype(auto) clearCache(SeqNum minAge) noexcept { return cache.clearCache(minAge); }
 
 		private:
-			[[nodiscard]] BasisInfo populate(const BlockVec blockCoord, const BiomeBlend& blend, const TestGenerator& generator) const noexcept;
+			[[nodiscard]] BasisInfo populate(const BlockVec blockCoord, const BlockUnit h2, const BiomeBlend& blend, const TestGenerator& generator) const noexcept;
 	};
 }

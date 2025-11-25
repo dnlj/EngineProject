@@ -20,9 +20,11 @@ namespace Game::Terrain::Layer {
 			const auto& blendStore = generator.get<BlendedBiomeWeights>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
+				const auto blockCoordX = baseBlockCoord.x + chunkIndex.x;
+				const auto h2 = generator.get<BlendedBiomeHeight>(blockCoordX);
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
-					const auto blockCoord = baseBlockCoord + chunkIndex;
-					basisStore.at(chunkIndex) = populate(blockCoord, blendStore.at(chunkIndex), generator);
+					const auto blockCoordY = baseBlockCoord.y + chunkIndex.y;
+					basisStore.at(chunkIndex) = populate({blockCoordX, blockCoordY}, h2, blendStore.at(chunkIndex), generator);
 				}
 			}
 		});
@@ -33,20 +35,9 @@ namespace Game::Terrain::Layer {
 		return cache.at(regionCoord, getSeq()).at(chunkToRegionIndex(chunkCoord, regionCoord));
 	}
 
-	BasisInfo BlendedBiomeBasis::populate(BlockVec blockCoord, const BiomeBlend& blend, const TestGenerator& generator) const noexcept {
+	BasisInfo BlendedBiomeBasis::populate(BlockVec blockCoord, const BlockUnit h2, const BiomeBlend& blend, const TestGenerator& generator) const noexcept {
 		Float totalBasis = 0;
-
-		//
-		//
-		//
-		// TODO: Lift the BlendedBiomeHeight into generate and modify only when x is incremented.
-		//       Right now this re-gets for each y coord also.
-		//
-		//
-		//
-		const auto h2 = generator.get<BlendedBiomeHeight>(blockCoord.x);
 		for (auto& biomeWeight : blend.weights) {
-			// TODO: rm - const auto basis = generator.rm_getBasis(biomeWeight.id, blockCoord);
 			const auto basis = Engine::withTypeAt<Biomes>(biomeWeight.id, [&]<class Biome>(){
 				return generator.get2<typename Biome::Basis>(blockCoord, h2);
 			});
