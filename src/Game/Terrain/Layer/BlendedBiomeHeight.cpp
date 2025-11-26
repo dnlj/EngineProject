@@ -23,18 +23,16 @@ namespace Game::Terrain::Layer {
 				h0Max = std::max(h0Max, *regionMax);
 			}
 
-			//
-			//
-			//
-			// TODO: regionArea.max is already exclusive. Is this a bug or just a leftover? Try removing the +1;
-			//
-			//
-			//
 			const auto blockMinX = regionArea.min * chunksPerRegion * blocksPerChunk;
 			const auto blockMaxX = regionArea.max * chunksPerRegion * blocksPerChunk;
 			generator.request<BlendedBiomeWeights>({
 				.min = blockToChunk({blockMinX, h0Min}),
-				.max = blockToChunk({blockMaxX, h0Max}) + ChunkVec{0, 1}, // Add one to get an _exclusive_ bound instead of inclusive.
+
+				// Add one to get an _exclusive_ bound instead of inclusive. Note that this is in
+				// the Y direction, not the X. The X direction is already exclusive, but the h0Max
+				// is not. We need to add the +1 to the chunk and not the block since h0Max+1 might
+				// still be in the same chunk as h0Max.
+				.max = blockToChunk({blockMaxX, h0Max}) + ChunkVec{0, 1}, 
 			});
 
 			// TODO: We should probably be doing this with correct `request` calls to the blended biomes.
@@ -54,51 +52,36 @@ namespace Game::Terrain::Layer {
 		//       also don't make sense. The BlendedBiomeHeight layer (this layer) is what should be
 		//       doing the caching. Other layers should be sampling the BlendedBiomeHeight layer, not specific biomes.
 
-		//
-		//
-		//
-		//
-		//
-		// TODO: cache populated check
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
+		cache.populate(regionCoordX, getSeq(), [&](decltype(cache)::Data& h2Data) ENGINE_INLINE {
+			const auto& h0Data = generator.get3<WorldBaseHeight>(regionCoordX);
+			const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
+			for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
+				const auto blockCoordX = baseBlockCoordX + blockRegionIndex;
+				const auto h0 = h0Data[blockRegionIndex];
+				const auto h0F = static_cast<Float>(h0);
+				const auto chunkCoord = blockToChunk({blockCoordX, h0});
+				const auto& chunkStore = generator.get<BlendedBiomeWeights>(chunkCoord);
+				const auto chunkIndex = blockToChunkIndex({blockCoordX, h0}, chunkCoord);
+				const auto& blend = chunkStore.at(chunkIndex);
+				Float h2 = 0;
 
-		auto& h2Data = cache.get(regionCoordX, getSeq());
-		const auto& h0Data = generator.get3<WorldBaseHeight>(regionCoordX);
-		const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
-		for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
-			const auto blockCoordX = baseBlockCoordX + blockRegionIndex;
-			const auto h0 = h0Data[blockRegionIndex];
-			const auto h0F = static_cast<Float>(h0);
-			const auto chunkCoord = blockToChunk({blockCoordX, h0});
-			const auto& chunkStore = generator.get<BlendedBiomeWeights>(chunkCoord);
-			const auto chunkIndex = blockToChunkIndex({blockCoordX, h0}, chunkCoord);
-			const auto& blend = chunkStore.at(chunkIndex);
-			Float h2 = 0;
+				// Its _very_ important that we use the _raw weights_ for blending height
+				// transitions. If we don't then you will get alterations between different biome
+				// heights and huge floating islands due the basisStrength.
+				for (auto& biomeWeight : blend.rawWeights) {
+					// PERF: Basically every biome height layer is going to want the h0 and
+					//       blend info as input, so we pass that in as a param to avoid the
+					//       lookup + conversion per biome weight. That does break the
+					//       request/generate dependency model though.
+					const auto h1 = Engine::withTypeAt<Biomes>(biomeWeight.id, [&]<class Biome>(){
+						return generator.get2<typename Biome::Height>(blockCoordX, h0F, blend.info);
+					});
 
-			// Its _very_ important that we use the _raw weights_ for blending height
-			// transitions. If we don't then you will get alterations between different biome
-			// heights and huge floating islands due the basisStrength.
-			for (auto& biomeWeight : blend.rawWeights) {
-				// PERF: Basically every biome height layer is going to want the h0 and
-				//       blend info as input, so we pass that in as a param to avoid the
-				//       lookup + conversion per biome weight. That does break the
-				//       request/generate dependency model though.
-				const auto h1 = Engine::withTypeAt<Biomes>(biomeWeight.id, [&]<class Biome>(){
-					return generator.get2<typename Biome::Height>(blockCoordX, h0F, blend.info);
-				});
+					h2 += biomeWeight.weight * h1;
+				}
 
-				h2 += biomeWeight.weight * h1;
+				h2Data[blockRegionIndex] = static_cast<BlockUnit>(std::floor(h2));
 			}
-
-			h2Data[blockRegionIndex] = static_cast<BlockUnit>(std::floor(h2));
-		}
+		});
 	}
 }

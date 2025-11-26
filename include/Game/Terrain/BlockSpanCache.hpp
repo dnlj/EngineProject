@@ -18,6 +18,8 @@ namespace Game::Terrain {
 					// TODO: Remove mutable? Its misleading and could be confusing. Will
 					//       need to remove const from some layer get functions though.
 					mutable SeqNum lastUsed;
+
+					bool populated = false;
 			};
 
 			/**
@@ -129,15 +131,11 @@ namespace Game::Terrain {
 			//       work correctly as walks since they don't have correct bool operators for
 			//       end range.
 
-			ENGINE_INLINE Data& get(RegionUnit regionCoordX, SeqNum curSeq) noexcept {
+			ENGINE_INLINE const Data& get(RegionUnit regionCoordX, SeqNum curSeq) const noexcept {
 				const auto found = cache.find(regionCoordX);
 				ENGINE_DEBUG_ASSERT(found != cache.end());
 				found->second.lastUsed = curSeq;
 				return found->second.data;
-			}
-			
-			ENGINE_INLINE const Data& get(RegionUnit regionCoordX, SeqNum curSeq) const noexcept {
-				return const_cast<BlockSpanCache*>(this)->get(regionCoordX, curSeq);
 			}
 
 			ENGINE_INLINE auto walk(ChunkUnit chunkX, SeqNum curSeq) const noexcept {
@@ -150,18 +148,13 @@ namespace Game::Terrain {
 			}
 			
 			// TODO: remove, this is temp while fixing block psan cache to use regions.
-			//       They should instead be using walk for effecient access.
-			T& at(const BlockUnit x, SeqNum curSeq) noexcept {
+			//       They should instead be using walk for efficient access.
+			ENGINE_INLINE const T& at(const BlockUnit x, SeqNum curSeq) const noexcept {
 				const auto regionCoordX = chunkToRegion(blockToChunk({x, 0})).x;
 				ENGINE_DEBUG_ASSERT(cache.contains(regionCoordX));
 
 				const auto regionOffset = regionCoordX * chunksPerRegion * blocksPerChunk;
 				return get(regionCoordX, curSeq).at(x - regionOffset);
-			}
-
-			// TODO: remove, this is temp while fixing block span cache to use regions.
-			ENGINE_INLINE const T& at(const BlockUnit x, SeqNum curSeq) const noexcept {
-				return const_cast<BlockSpanCache&>(*this).at(x, curSeq);
 			}
 
 			ENGINE_INLINE_REL void reserve(const RegionSpanX area) noexcept {
@@ -195,6 +188,16 @@ namespace Game::Terrain {
 				//
 				const auto after = getCacheSizeBytes();
 				ENGINE_INFO2("BlockSpanCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
+			}
+
+			ENGINE_INLINE void populate(RegionUnit regionCoordX, SeqNum curSeq, auto&& func) {
+				const auto found = cache.find(regionCoordX);
+				ENGINE_DEBUG_ASSERT(found != cache.end());
+				found->second.lastUsed = curSeq;
+				if (found->second.populated) { return; }
+
+				found->second.populated = true;
+				func(found->second.data);
 			}
 	};
 }

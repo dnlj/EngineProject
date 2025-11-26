@@ -37,12 +37,13 @@ namespace Game::Terrain::Layer {
 				// TODO: keep in mind that this is +- amplitude, and for each octave we increase the contrib;
 				// TODO: tune + octaves, atm this is way to steep.
 
-				auto& data = cache.get(regionCoordX, getSeq());
-				const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
-				for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
-					const auto blockCoordX = baseBlockCoordX + blockRegionIndex;
-					data[blockRegionIndex] = static_cast<BlockUnit>(500 * simplex1.value(blockCoordX * 0.00005f, 0));
-				}
+				cache.populate(regionCoordX, getSeq(), [&](decltype(cache)::Data& data) {
+					const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
+					for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
+						const auto blockCoordX = baseBlockCoordX + blockRegionIndex;
+						data[blockRegionIndex] = static_cast<BlockUnit>(500 * simplex1.value(blockCoordX * 0.00005f, 0));
+					}
+				});
 			}
 
 			//// TODO: remove, temp during biome span region transition.
