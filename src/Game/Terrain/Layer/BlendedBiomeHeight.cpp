@@ -17,8 +17,8 @@ namespace Game::Terrain::Layer {
 			auto h0Min = std::numeric_limits<BlockUnit>::max();
 			auto h0Max = std::numeric_limits<BlockUnit>::min();
 			for (auto regionCoordX = regionArea.min; regionCoordX < regionArea.max; ++regionCoordX) {
-				auto const& regionH0 = generator.get3<WorldBaseHeight>(regionCoordX);
-				auto const [regionMin, regionMax] = std::minmax_element(regionH0.cbegin(), regionH0.cend());
+				const auto& regionH0 = generator.get3<WorldBaseHeight>(regionCoordX);
+				const auto [regionMin, regionMax] = std::minmax_element(regionH0.cbegin(), regionH0.cend());
 				h0Min = std::min(h0Min, *regionMin);
 				h0Max = std::max(h0Max, *regionMax);
 			}

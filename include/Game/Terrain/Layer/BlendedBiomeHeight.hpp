@@ -19,7 +19,7 @@ namespace Game::Terrain::Layer {
 		public:
 			using Range = RegionSpanX;
 			using Partition = RegionUnit;
-			using Index = BlockUnit;
+			using Index = ChunkUnit;
 
 		public: // TODO: private, currently public during transition to layers.
 			BlockSpanCache<BlockUnit> cache;
@@ -32,17 +32,7 @@ namespace Game::Terrain::Layer {
 			void generate(const Partition regionCoordX, TestGenerator& generator);
 			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return cache.getCacheSizeBytes(); }
 			[[nodiscard]] ENGINE_INLINE decltype(auto) clearCache(SeqNum minAge) noexcept { return cache.clearCache(minAge); }
-
-			//
-			//
-			//
-			// TODO: Where is `get` used? It would almost certainly be better to return per region or chunk.
-			//
-			//
-			//
-
-			// TODO: Should return a walk similar to WorldBaseHeight.
-			ENGINE_INLINE_REL [[nodiscard]] BlockUnit get(const Index x) const noexcept { return cache.at(x, getSeq()); }
+			ENGINE_INLINE_REL [[nodiscard]] auto get(const ChunkUnit chunkCoordX) const noexcept { return cache.walk(chunkCoordX, getSeq()); }
 
 		private:
 			[[nodiscard]] BiomeBlend populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept;

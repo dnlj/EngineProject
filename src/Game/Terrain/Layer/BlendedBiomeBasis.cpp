@@ -19,12 +19,12 @@ namespace Game::Terrain::Layer {
 		cache.populate(chunkCoord, getSeq(), [&](auto& basisStore) ENGINE_INLINE_REL {
 			const auto& blendStore = generator.get<BlendedBiomeWeights>(chunkCoord);
 			const auto baseBlockCoord = chunkToBlock(chunkCoord);
-			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
+			auto h2It = generator.get<BlendedBiomeHeight>(chunkCoord.x);
+			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x, ++h2It) {
 				const auto blockCoordX = baseBlockCoord.x + chunkIndex.x;
-				const auto h2 = generator.get<BlendedBiomeHeight>(blockCoordX);
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
 					const auto blockCoordY = baseBlockCoord.y + chunkIndex.y;
-					basisStore.at(chunkIndex) = populate({blockCoordX, blockCoordY}, h2, blendStore.at(chunkIndex), generator);
+					basisStore.at(chunkIndex) = populate({blockCoordX, blockCoordY}, *h2It, blendStore.at(chunkIndex), generator);
 				}
 			}
 		});

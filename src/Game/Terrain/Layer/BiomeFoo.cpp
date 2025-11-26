@@ -167,9 +167,10 @@ namespace Game::Terrain::Layer {
 
 		// TODO: coudl step more that ++1 since we know we have a fixed modulus.
 		const auto maxBlockCoord = minBlockCoord + chunkSize;
-		for (auto blockCoord = minBlockCoord; blockCoord.x < maxBlockCoord.x; ++blockCoord.x) {
+		auto h2It = generator.get<BlendedBiomeHeight>(chunkCoord.x);
+		for (auto blockCoord = minBlockCoord; blockCoord.x < maxBlockCoord.x; ++blockCoord.x, ++h2It) {
 			if (blockCoord.x % stride == 0) {
-				blockCoord.y = generator.get<BlendedBiomeHeight>(blockCoord.x);
+				blockCoord.y = *h2It;
 				if (blockCoord.y >= minBlockCoord.y && blockCoord.y < maxBlockCoord.y) {
 					// TODO: random horizontal variation, etc.
 					inserter = {blockCoord, blockCoord + BlockVec{width, 12}, 0};

@@ -174,9 +174,9 @@ namespace {
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainHeight2) {
-							const auto h2 = generator.get<Game::Terrain::Layer::BlendedBiomeHeight>(blockCoord.x);
+							const auto h2 = generator.get<Game::Terrain::Layer::BlendedBiomeHeight>(chunkCoord.x) + chunkIndex.x;
 							const auto basisInfo = generator.get<Game::Terrain::Layer::BlendedBiomeBasis>(chunkCoord).at(chunkIndex);
-							data[idx] = blockCoord.y <= h2 ? glm::u8vec3(basisInfo.weight * glm::vec3(biomeToColor[basisInfo.id])) : glm::u8vec3{};
+							data[idx] = blockCoord.y <= *h2 ? glm::u8vec3(basisInfo.weight * glm::vec3(biomeToColor[basisInfo.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainBasis) {
 							const auto basisInfo = generator.get<Game::Terrain::Layer::BlendedBiomeBasis>(chunkCoord).at(chunkIndex);
 							minBasis = std::min(minBasis, basisInfo.basis);
