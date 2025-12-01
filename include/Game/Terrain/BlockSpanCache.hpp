@@ -190,6 +190,13 @@ namespace Game::Terrain {
 				ENGINE_INFO2("BlockSpanCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
 			}
 
+			ENGINE_INLINE bool isPopulated(RegionUnit regionCoordX, SeqNum curSeq) {
+				const auto found = cache.find(regionCoordX);
+				if (found == cache.end()) { return false; }
+				found->second.lastUsed = curSeq;
+				return found->second.populated;
+			}
+
 			ENGINE_INLINE void populate(RegionUnit regionCoordX, SeqNum curSeq, auto&& func) {
 				const auto found = cache.find(regionCoordX);
 				ENGINE_DEBUG_ASSERT(found != cache.end());
@@ -200,4 +207,9 @@ namespace Game::Terrain {
 				func(found->second.data);
 			}
 	};
+
+	template<class T>
+	ENGINE_INLINE inline void removeGeneratedPartitions(BlockSpanCache<T>& cache, SeqNum seqNum, std::vector<RegionUnit>& partitions) {
+		std::erase_if(partitions, [&](const RegionUnit& regionCoordX){ return cache.isPopulated(regionCoordX, seqNum); });
+	}
 }

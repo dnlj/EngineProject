@@ -258,6 +258,20 @@ namespace Game::Terrain {
 					ENGINE_DEBUG_ASSERT(reqs.partitions.empty(), "Unexpected partitions already populated.");
 					layer.partition(reqs.ranges, reqs.partitions);
 
+					//ENGINE_DEBUG_ONLY(const auto _debugBefore = reqs.partitions.size());
+					layer.removeGenerated(reqs.partitions);
+					//ENGINE_DEBUG_ONLY(const auto _debugAfter = reqs.partitions.size());
+
+					// Very helpful for debugging and optimizing requests/partitions.
+					//ENGINE_DEBUG2("Reqs {} | Ranges: {} | before: {} after: {} total: {}",
+					//	Engine::Debug::ClassName<Layer>(),
+					//	//reqs.ranges,
+					//	reqs.ranges.size(),
+					//	_debugBefore,
+					//	_debugAfter,
+					//	_debugBefore - _debugAfter
+					//);
+
 					if (!reqs.partitions.empty()) {
 						if constexpr (false /* Single threaded for debugging. */) {
 							// NOTE: It's up to each Layer::generate to avoid duplicate data generation. We

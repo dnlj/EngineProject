@@ -50,6 +50,27 @@ namespace Game::Terrain {
 				}
 			}
 		}
+
+		// This is just here for debugging. We _do_ actually expect duplicates here. See the above comment.
+		if constexpr (ENGINE_DEBUG) {
+			//std::ranges::sort(partitions,
+			//	[](const ChunkVec& left, const ChunkVec& right) {
+			//		if (left.x < right.x) { return true; }
+			//		if (right.x < left.x) { return false; }
+			//		if (left.y < right.y) { return true; }
+			//		return false;
+			//	}
+			//);
+
+			// Going all the way and totally avoiding duplicates does not seem beneficial,
+			// especially considering we already have a step to remove already generated partitions
+			// after this. Would need more rigorous and repeatable tests to justify doing this.
+			//partitions.erase(std::unique(partitions.begin(), partitions.end()), partitions.end());
+			
+			//ENGINE_DEBUG_ASSERT(std::adjacent_find(partitions.cbegin(), partitions.cend()) == partitions.cend(),
+			//	"Unexpected duplicate chunk area in request partition. This should not be possible."
+			//);
+		}
 	}
 }
 

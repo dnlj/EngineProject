@@ -31,6 +31,10 @@ namespace Game::Terrain::Layer {
 				flattenRequests(requests, partitions);
 			}
 
+			ENGINE_INLINE void removeGenerated(std::vector<Partition>& partitions) {
+				std::erase_if(partitions, [&](const Partition& regionCoordX){ return cache.isPopulated(regionCoordX, getSeq()); });
+			}
+
 			void generate(const Partition regionCoordX, TestGenerator& generator) noexcept {
 				// TODO: Shouldnt this skip already generated areas?
 				// TODO: use _f for Float. Move from TerrainPreview.
@@ -46,23 +50,10 @@ namespace Game::Terrain::Layer {
 				});
 			}
 
-			//// TODO: remove, temp during biome span region transition.
-			//ENGINE_INLINE_REL [[nodiscard]] BlockUnit getOld(const BlockUnit x) const noexcept {
-			//	return cache.at(x, getSeq());
-			//}
-			 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Partition regionCoordX) const noexcept {
 				return cache.get(regionCoordX, getSeq());
 			}
 
-			//ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Index area) const noexcept {
-			//	return cache.walk(area, getSeq());
-			//}
-			 
-			//ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const BlockSpanX blockSpanX) const noexcept {
-			//	return cache.walk(blockSpanX, getSeq());
-			//}
-			 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const ChunkUnit chunkX) const noexcept {
 				return cache.walk(chunkX, getSeq());
 			}

@@ -47,6 +47,13 @@ namespace Game::Terrain {
 					}
 				}
 			}
+			
+			ENGINE_INLINE bool isPopulated(const ChunkVec chunkCoord, SeqNum curSeq) {
+				const auto regionCoord = chunkToRegion(chunkCoord);
+				const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
+				auto& regionStore = this->at(regionCoord, curSeq);
+				return regionStore.isPopulated(regionIndex);
+			}
 
 			ENGINE_INLINE_REL decltype(auto) populate(const ChunkVec chunkCoord, SeqNum curSeq, auto&& func) {
 				const auto regionCoord = chunkToRegion(chunkCoord);
@@ -87,4 +94,9 @@ namespace Game::Terrain {
 				ENGINE_INFO2("RegionDataCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
 			}
 	};
+
+	template<class T>
+	ENGINE_INLINE inline void removeGeneratedPartitions(RegionDataCache<T>& cache, SeqNum seqNum, std::vector<ChunkVec>& partitions) {
+		std::erase_if(partitions, [&](const ChunkVec& chunkCoord){ return cache.isPopulated(chunkCoord, seqNum); });
+	}
 }
