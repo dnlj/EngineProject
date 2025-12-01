@@ -12,6 +12,8 @@ namespace Game::Terrain::Layer {
 	 */
 	class OnDemandLayer {
 		public:
+			constexpr static bool IsOnDemand = true;
+
 			OnDemandLayer() = default;
 			OnDemandLayer(TestGenerator& generator, const SeqNum& curSeq) {}
 			ENGINE_INLINE void partition(const auto&...) {};

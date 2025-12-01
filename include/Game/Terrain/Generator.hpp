@@ -252,6 +252,8 @@ namespace Game::Terrain {
 				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
 
 				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+					if constexpr (requires { Layer::IsOnDemand; }) { return; }
+
 					auto& reqs = requests<Layer>();
 					if (reqs.empty()) { return; }
 
@@ -259,7 +261,11 @@ namespace Game::Terrain {
 					layer.partition(reqs.ranges, reqs.partitions);
 
 					//ENGINE_DEBUG_ONLY(const auto _debugBefore = reqs.partitions.size());
+
+					// NOTE: removeGenerated does _not_ remove the need for `cache.populated(...)`
+					//       since partition does not currently guarantee no duplicates.
 					layer.removeGenerated(reqs.partitions);
+
 					//ENGINE_DEBUG_ONLY(const auto _debugAfter = reqs.partitions.size());
 
 					// Very helpful for debugging and optimizing requests/partitions.
@@ -272,6 +278,45 @@ namespace Game::Terrain {
 					//	_debugBefore - _debugAfter
 					//);
 
+					// TODO: Consider using an unordered_set for partitions so we can avoid this
+					//       sorting entirely. That would also potentially simplify some of the
+					//       flattenRequests by letting use naively insert all partitions and let
+					//       the map sort out duplicates. At that point we might be able to just
+					//       remove the per-layer flatten all together and add that here instead.
+					//
+					//       Its unclear if that would actually be better than using a vector though.
+					//       Would need more formalized benchmarks/tests. It would also complicate the
+					//       thread partition selection and potentially be worse for things such as the
+					//       blended layers where sorted partitions are more likely to be spacially
+					//       local and in the same biome as well as related cache impacts.
+					//
+					//       Overall needs a lot of consideration, but potential room for improvement.
+
+					// This ends up just being slower than doing the actual generation (duplicates
+					// are caught by the caches. The end result is similar, but just multithreaded.
+					// The downside is each layer needs to remember to avoid duplicates, but its 40%
+					// faster so that is worth it.
+					// 
+					//if constexpr (!requires { Layer::IsOnDemand; }) {
+					//	std::sort(reqs.partitions.begin(), reqs.partitions.end(), []<class T>(const T& left, const T& right){
+					//		if constexpr (std::is_same_v<T, glm::vec<2, int64, glm::packed_highp>>) {
+					//			if (left.x < right.x) { return true; }
+					//			if (right.x < left.x) { return false; }
+					//			if (left.y < right.y) { return true; }
+					//			return false;
+					//		} else {
+					//			return left < right;
+					//		}
+					//	});
+					//
+					//	const auto before = reqs.partitions.size();
+					//	reqs.partitions.erase(std::unique(reqs.partitions.begin(), reqs.partitions.end()), reqs.partitions.end());
+					//	const auto after = reqs.partitions.size();
+					//	if (before != after) {
+					//		ENGINE_DEBUG2("Before {} After {}", before, after);
+					//	}
+					//}
+
 					if (!reqs.partitions.empty()) {
 						if constexpr (false /* Single threaded for debugging. */) {
 							// NOTE: It's up to each Layer::generate to avoid duplicate data generation. We
@@ -282,17 +327,6 @@ namespace Game::Terrain {
 								layer.generate(partition, self());
 							}
 						} else {
-							// TODO: Exclude already generated partitions before dispatching to
-							//       threads. Currently this is handled on a per layer basis with
-							//       the caches with ChunkDataCache/RegionDataCache. Doing something
-							//       with a more central interface would be good to avoid forgetting
-							//       to use the right type of cache.
-							//       ----
-							//       Even without moving the actual caching out of the individual layers
-							//       we can still add an interrogation function `needsGeneration` to
-							//       exclude already generated partitions, potentially all partitions, in
-							//       the first place before dispatching to threads. Just add that right above after `layer.partition(...)`
-
 							{
 								std::lock_guard lock{layerGenThreadMutex};
 
