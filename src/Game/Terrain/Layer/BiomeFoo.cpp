@@ -75,17 +75,13 @@ namespace Game::Terrain::Layer {
 }
 
 namespace Game::Terrain::Layer {
-	void BiomeFooHeight::request(const Range area, TestGenerator& generator) {
-		generator.request<WorldBaseHeight>(area.toRegionSpan());
+	void BiomeFooHeight::request(const Range chunkCoordX, TestGenerator& generator) {
+		generator.request<WorldBaseHeight>(chunkCoordX);
 	}
 
 	Float BiomeFooHeight::get(BIOME_HEIGHT_ARGS) const noexcept {
 		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
 		return h0 + 15 * simplex.value(blockCoordX * 0.05_f, 0); // TODO: 1d simplex
-	}
-
-	void BiomeFooBasisStrength::request(const Range area, TestGenerator& generator) {
-		// TODO: request verifier
 	}
 
 	Float BiomeFooBasisStrength::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {

@@ -10,9 +10,9 @@ namespace Game::Terrain::Layer {
 	// The large world-scale height variation that persists between all biomes.
 	class WorldBaseHeight : public CachedLayer, public DependsOn<> {
 		public:
-			using Range = RegionSpanX;
 			using Partition = RegionUnit;
-			using Index = RegionSpanX;
+			using Range = Partition;
+			using Index = RegionUnit;
 
 		public:
 			// TODO: May be threading considerations. Maybe have an option to do
@@ -28,7 +28,7 @@ namespace Game::Terrain::Layer {
 			}
 
 			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) {
-				flattenRequests(requests, partitions);
+				partitions = requests;
 			}
 
 			ENGINE_INLINE void removeGenerated(std::vector<Partition>& partitions) {

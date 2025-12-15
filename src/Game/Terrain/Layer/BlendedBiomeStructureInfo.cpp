@@ -7,16 +7,13 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeStructureInfo::request(const Range chunkArea, TestGenerator& generator) {
-		generator.request<BlendedBiomeWeights>(chunkArea);
+	void BlendedBiomeStructureInfo::request(const Partition chunkCoord, TestGenerator& generator) {
+		generator.request<BlendedBiomeWeights>(chunkCoord);
 	}
 
-	void BlendedBiomeStructureInfo::get(const TestGenerator& generator, const Index chunkArea, std::vector<StructureInfo>& structures) const noexcept {
-		for (auto chunkCoord = chunkArea.min; chunkCoord.x < chunkArea.max.x; ++chunkCoord.x) {
-			for (chunkCoord.y = chunkArea.min.y; chunkCoord.y < chunkArea.max.y; ++chunkCoord.y) {
-				populate(chunkCoord, generator, structures);
-			}
-		}
+	void BlendedBiomeStructureInfo::get(const TestGenerator& generator, const Index chunkCoord, std::vector<StructureInfo>& structures) const noexcept {
+		// TODO: just remove populate at this point
+		populate(chunkCoord, generator, structures);
 	}
 
 	void BlendedBiomeStructureInfo::populate(const ChunkVec chunkCoord, const TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept {

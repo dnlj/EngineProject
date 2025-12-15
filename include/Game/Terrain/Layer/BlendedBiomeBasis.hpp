@@ -12,7 +12,6 @@ namespace Game::Terrain::Layer {
 
 	class BlendedBiomeBasis : public CachedLayer, public DependsOn<BlendedBiomeWeights> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkVec;
 			using Index = ChunkVec;
 
@@ -22,8 +21,7 @@ namespace Game::Terrain::Layer {
 		public:
 			using CachedLayer::CachedLayer;
 
-			void request(const Range area, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { flattenRequests(requests, partitions); }
+			void request(const Partition chunkCoord, TestGenerator& generator);
 			ENGINE_INLINE void removeGenerated(std::vector<Partition>& partitions) { removeGeneratedPartitions(cache, getSeq(), partitions); }
 			void generate(const Partition chunkCoord, TestGenerator& generator);
 			[[nodiscard]] const ChunkStore<BasisInfo>& get(const Index chunkCoord) const noexcept;

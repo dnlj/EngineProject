@@ -31,21 +31,43 @@ namespace Game::Terrain {
 				return const_cast<RegionDataCache*>(this)->at(regionCoord, curSeq);
 			}
 
-			ENGINE_INLINE void reserve(RegionVec regionCoord, SeqNum curSeq) noexcept {
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			// TODO: need to ensure the reserve overloads work correctly between regionCoord/chunkCooord.
+			//       They don't currently since changing for area to coord i think.
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+
+			//
+			//
+			// TODO: rename to just `reserve` once strong typdefs are in place for ChunkVec/RegionVec.
+			//
+			//
+			ENGINE_INLINE void reserveRegion(RegionVec regionCoord, SeqNum curSeq) noexcept {
 				auto found = regions.find(regionCoord);
 				if (found == regions.end()) {
 					found = regions.try_emplace(regionCoord, std::make_unique<Store>()).first;
 				}
 
 				found->second->lastUsed = curSeq;
-			}
-
-			ENGINE_INLINE void reserve(RegionArea regionArea, SeqNum curSeq) noexcept {
-				for (auto x = regionArea.min.x; x < regionArea.max.x; ++x) {
-					for (auto y = regionArea.min.y; y < regionArea.max.y; ++y) {
-						reserve({x, y}, curSeq);
-					}
-				}
 			}
 			
 			ENGINE_INLINE bool isPopulated(const ChunkVec chunkCoord, SeqNum curSeq) {

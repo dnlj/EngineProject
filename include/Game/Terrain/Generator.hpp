@@ -52,7 +52,14 @@ namespace Game::Terrain {
 	template<class Layer>
 	class RequestSet {
 		public:
-			std::vector<typename Layer::Range> ranges;
+			//
+			//
+			//
+			// TODO: remove (this entire class?) now that ranges are gone.
+			//
+			//
+			//
+			std::vector<typename Layer::Partition> ranges;
 			std::vector<typename Layer::Partition> partitions;
 
 			ENGINE_INLINE void clear() {
@@ -209,15 +216,14 @@ namespace Game::Terrain {
 			[[nodiscard]] ENGINE_INLINE SeqNum getSeq() const noexcept { return curSeq; }
 
 			template<class Layer>
-			ENGINE_INLINE void request(typename const Layer::Range range) {
+			ENGINE_INLINE void request(typename const Layer::Partition partition) {
 				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- request<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
-				ENGINE_DEBUG_ASSERT(!range.empty(), "Attempting to request empty layer range.");
-				requests<Layer>().ranges.push_back(range);
-				std::get<Layer>(layers).request(range, self());
+				requests<Layer>().ranges.push_back(partition);
+				std::get<Layer>(layers).request(partition, self());
 			}
 
 			template<class Layer>
-			ENGINE_INLINE void requestAwait(typename const Layer::Range range) {
+			ENGINE_INLINE void requestAwait(typename const Layer::Partition partition) {
 				if (const auto size = requestScopes.size(); currentRequestScope + 1 == size) {
 					requestScopes.resize(size + size);
 					ENGINE_WARN2("Increasing request depth. Before: {}, After: {}", size, requestScopes.size());
@@ -226,7 +232,7 @@ namespace Game::Terrain {
 				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- await<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
 
 				++currentRequestScope;
-				request<Layer>(range);
+				request<Layer>(partition);
 				generateLayers();
 				requests<Layer>().clear();
 				--currentRequestScope;
@@ -242,11 +248,6 @@ namespace Game::Terrain {
 			ENGINE_INLINE decltype(auto) get2(Args&&... args) const {
 				return std::get<Layer>(layers).get(self(), std::forward<Args>(args)...);
 			}
-			
-			template<class Layer>
-			ENGINE_INLINE decltype(auto) get3(const auto& index) const {
-				return std::get<Layer>(layers).get(index);
-			}
 
 			void generateLayers() {
 				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
@@ -257,8 +258,17 @@ namespace Game::Terrain {
 					auto& reqs = requests<Layer>();
 					if (reqs.empty()) { return; }
 
-					ENGINE_DEBUG_ASSERT(reqs.partitions.empty(), "Unexpected partitions already populated.");
-					layer.partition(reqs.ranges, reqs.partitions);
+					//
+					//
+					// TODO: Remove layer.partition from all layers once Layer::Range is removed.
+					//       Look at below TODO about unordered set and consider that or sort +
+					//       removeGenerated.
+					//
+					//
+
+					//ENGINE_DEBUG_ASSERT(reqs.partitions.empty(), "Unexpected partitions already populated.");
+					//layer.partition(reqs.ranges, reqs.partitions);
+					reqs.partitions = reqs.ranges;
 
 					//ENGINE_DEBUG_ONLY(const auto _debugBefore = reqs.partitions.size());
 

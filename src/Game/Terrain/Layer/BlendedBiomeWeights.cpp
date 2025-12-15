@@ -6,9 +6,9 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeWeights::request(const Range area, TestGenerator& generator) {
-		generator.request<RawBiomeWeights>(area);
-		cache.reserve(area.toRegionArea(), getSeq());
+	void BlendedBiomeWeights::request(const Partition chunkCoord, TestGenerator& generator) {
+		generator.request<RawBiomeWeights>(chunkCoord);
+		cache.reserveRegion(chunkToRegion(chunkCoord), getSeq());
 	}
 
 	void BlendedBiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {

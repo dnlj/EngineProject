@@ -97,14 +97,41 @@ namespace Game::Terrain {
 	void Generator<Self, Layers, SharedData>::processGenRequests() {
 		for (const auto& genRequest : genRequestsBack) {
 			// TODO: genRequest.realmId
-			this->request<Layer::BlendedBiomeBlock>(genRequest.chunkArea);
-			this->request<Layer::BlendedBiomeStructures>(genRequest.chunkArea);
+
+			//
+			//
+			//
+			//
+			//
+			// TODO: Cull requests upfront to avoid re-generating data that is not cached based on
+			//       the `Terrain` (not layer caches). Without doing this we will be constantly
+			//       regenerating the same data since it will eventually be cleared from the cache.
+			//
+			//
+			//
+			//
+			//
+
+			genRequest.chunkArea.forEach([&](const auto& chunkCoord) {
+				this->request<Layer::BlendedBiomeBlock>(chunkCoord);
+				this->request<Layer::BlendedBiomeStructures>(chunkCoord);
+			});
 		}
 
 		// nextSeq may or may not have been updated at this point. We just copy to curSeq
 		// to avoid the need for an extra lock or frequent atomic lookup during generateLayers.
 		curSeq = nextSeq;
 		generateLayers();
+
+		//
+		//
+		//
+		//
+		// TODO: need to cull requests based on what terrain is already generated. Without that we will always regenerate it...
+		// TODO: Then we also need a similar populated check for structures on the terrain since they are not tied to specific chunks/regions.
+		//
+		//
+		//
 
 		{
 			// We need the lock on the terrain and not the generator because we have
@@ -140,13 +167,16 @@ namespace Game::Terrain {
 				//
 				//
 				//
-				// TODO: Should be part of layers and/or have a populated check.
+				// TODO: Should be part of layers and/or have a populated check. Currently this is all on-demand which is not cheap.
+				// TODO: is there a reason this takes a chunk area instead of just a chunk unit like above? Strange.
 				//
 				//
 				//
 				//
 				//
-				layerBlendedBiomeStructures.get(genRequest.chunkArea, self(), genRequest.realmId, terrain);
+				genRequest.chunkArea.forEach([&](const auto& chunkCoord){
+					layerBlendedBiomeStructures.get(chunkCoord, self(), genRequest.realmId, terrain);
+				});
 			}
 		}
 

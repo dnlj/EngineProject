@@ -7,10 +7,9 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeBlock::request(const Range area, TestGenerator& generator) {
-		const auto regionArea = area.toRegionArea();
-		generator.request<BlendedBiomeBasis>(area);
-		cache.reserve(regionArea, getSeq());
+	void BlendedBiomeBlock::request(const Partition chunkCoord, TestGenerator& generator) {
+		generator.request<BlendedBiomeBasis>(chunkCoord);
+		cache.reserveRegion(chunkToRegion(chunkCoord), getSeq());
 	}
 
 	void BlendedBiomeBlock::generate(const Partition chunkCoord, TestGenerator& generator) {

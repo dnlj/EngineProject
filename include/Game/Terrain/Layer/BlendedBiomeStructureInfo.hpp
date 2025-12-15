@@ -26,19 +26,18 @@ namespace Game::Terrain::Layer {
 			// the same biome, and if you move in any direction you will have at most four
 			// neighbors in sample range (at corner). If you move left from center the right
 			// neighbors are out of range etc.
-			using Range = ChunkArea;
 			using Partition = ChunkVec;
-			using Index = Range;
+			using Index = Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
 
-			void request(const Range chunkArea, TestGenerator& generator);
+			void request(const Partition chunkCoord, TestGenerator& generator);
 
 			// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial type for
 			//       structure storage. That could help with culling becomes an issue, otherwise
 			//       you would need ot do N^2 AABB checks. Basically a broad-phase.
-			void get(const TestGenerator& generator, const Index chunkArea, std::vector<StructureInfo>& structures) const noexcept;
+			void get(const TestGenerator& generator, const Index chunkCoord, std::vector<StructureInfo>& structures) const noexcept;
 
 		private:
 			void populate(const ChunkVec chunkCoord, const TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept;

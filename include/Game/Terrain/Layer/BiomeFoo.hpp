@@ -12,12 +12,12 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Range = ChunkSpanX;
-			using Partition = ChunkSpanX;
+			using Range = ChunkUnit;
+			using Partition = BlockUnit;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Range chunkCoordX, TestGenerator& generator);
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 

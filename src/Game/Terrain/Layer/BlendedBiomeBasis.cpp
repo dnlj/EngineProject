@@ -8,11 +8,11 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeBasis::request(const Range area, TestGenerator& generator) {
-		const auto regionArea = area.toRegionArea();
-		generator.request<BlendedBiomeWeights>(area);
-		generator.request<BlendedBiomeHeight>(regionArea.toSpanX());
-		cache.reserve(regionArea, getSeq());
+	void BlendedBiomeBasis::request(const Partition chunkCoord, TestGenerator& generator) {
+		const auto regionCoord = chunkToRegion(chunkCoord);
+		generator.request<BlendedBiomeWeights>(chunkCoord);
+		generator.request<BlendedBiomeHeight>(regionCoord.x);
+		cache.reserveRegion(regionCoord, getSeq());
 	}
 
 	void BlendedBiomeBasis::generate(const Partition chunkCoord, TestGenerator& generator) {

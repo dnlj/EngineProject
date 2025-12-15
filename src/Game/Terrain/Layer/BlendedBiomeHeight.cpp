@@ -8,31 +8,28 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeHeight::request(const Range regionArea, TestGenerator& generator) {
-		cache.reserve(regionArea);
+	void BlendedBiomeHeight::request(const Range regionCoordX, TestGenerator& generator) {
+		cache.reserve(regionCoordX);
 
-		generator.requestAwait<WorldBaseHeight>(regionArea);
+		generator.requestAwait<WorldBaseHeight>(regionCoordX);
 
 		{
-			auto h0Min = std::numeric_limits<BlockUnit>::max();
-			auto h0Max = std::numeric_limits<BlockUnit>::min();
-			for (auto regionCoordX = regionArea.min; regionCoordX < regionArea.max; ++regionCoordX) {
-				const auto& regionH0 = generator.get3<WorldBaseHeight>(regionCoordX);
-				const auto [regionMin, regionMax] = std::minmax_element(regionH0.cbegin(), regionH0.cend());
-				h0Min = std::min(h0Min, *regionMin);
-				h0Max = std::max(h0Max, *regionMax);
-			}
+			const auto& regionH0 = generator.get<WorldBaseHeight>(regionCoordX);
+			const auto [h0Min, h0Max] = std::minmax_element(regionH0.cbegin(), regionH0.cend());
 
-			const auto blockMinX = regionArea.min * chunksPerRegion * blocksPerChunk;
-			const auto blockMaxX = regionArea.max * chunksPerRegion * blocksPerChunk;
-			generator.request<BlendedBiomeWeights>({
-				.min = blockToChunk({blockMinX, h0Min}),
+			const auto chunkCoordMinX = regionCoordX * chunksPerRegion;
+			const ChunkArea chunkArea = {
+				.min = {chunkCoordMinX, blockToChunk({0, *h0Min}).y},
 
 				// Add one to get an _exclusive_ bound instead of inclusive. Note that this is in
 				// the Y direction, not the X. The X direction is already exclusive, but the h0Max
 				// is not. We need to add the +1 to the chunk and not the block since h0Max+1 might
 				// still be in the same chunk as h0Max.
-				.max = blockToChunk({blockMaxX, h0Max}) + ChunkVec{0, 1}, 
+				.max = {chunkCoordMinX + chunksPerRegion, blockToChunk({0, *h0Max}).y + 1},
+			};
+
+			chunkArea.forEach([&](const auto& chunkCoord) ENGINE_INLINE {
+				generator.request<BlendedBiomeWeights>(chunkCoord);
 			});
 
 			// TODO: We should probably be doing this with correct `request` calls to the blended biomes.
@@ -43,7 +40,6 @@ namespace Game::Terrain::Layer {
 			// skip because all biome layers are expected to resolve in `get` anyways.
 			// Although this does bypass the request/generate dependency model.
 		}
-
 	}
 
 	void BlendedBiomeHeight::generate(const Partition regionCoordX, TestGenerator& generator) {
@@ -52,8 +48,8 @@ namespace Game::Terrain::Layer {
 		//       also don't make sense. The BlendedBiomeHeight layer (this layer) is what should be
 		//       doing the caching. Other layers should be sampling the BlendedBiomeHeight layer, not specific biomes.
 
-		cache.populate(regionCoordX, getSeq(), [&](decltype(cache)::Data& h2Data) ENGINE_INLINE {
-			const auto& h0Data = generator.get3<WorldBaseHeight>(regionCoordX);
+		cache.populate(regionCoordX, getSeq(), [&](decltype(cache)::Data& h2Data) ENGINE_INLINE_REL {
+			const auto& h0Data = generator.get<WorldBaseHeight>(regionCoordX);
 			const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
 			for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
 				const auto blockCoordX = baseBlockCoordX + blockRegionIndex;

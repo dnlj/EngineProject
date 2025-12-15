@@ -157,10 +157,8 @@ namespace Game::Terrain {
 				return get(regionCoordX, curSeq).at(x - regionOffset);
 			}
 
-			ENGINE_INLINE_REL void reserve(const RegionSpanX area) noexcept {
-				for (RegionUnit x = area.min; x < area.max; ++x) {
-					cache.try_emplace(x);
-				}
+			ENGINE_INLINE_REL void reserve(const RegionUnit regionCoordX) noexcept {
+				cache.try_emplace(regionCoordX);
 			}
 
 			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {

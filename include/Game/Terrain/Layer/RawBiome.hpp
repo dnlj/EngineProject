@@ -8,7 +8,6 @@ namespace Game::Terrain::Layer {
 	// The direct, raw, biome info. Determines what biome is where before any blending/interpolation.
 	class RawBiome : public OnDemandLayer, public DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkVec;
 			using Index = BlockVec;
 
@@ -18,7 +17,7 @@ namespace Game::Terrain::Layer {
 				, biomePerm{Engine::Noise::lcg(1234)}
 			{}
 
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition chunkCoord, TestGenerator& generator);
 			[[nodiscard]] RawBiomeInfo get(const Index blockCoord) const noexcept;
 
 		private:

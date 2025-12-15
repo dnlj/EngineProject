@@ -10,16 +10,16 @@
 
 
 namespace Game::Terrain::Layer {
-	void RawBiomeWeights::request(const Range area, TestGenerator& generator) {
-		const auto regionArea = area.toRegionArea();
+	void RawBiomeWeights::request(const Partition chunkCoord, TestGenerator& generator) {
+		const auto regionCoord = chunkToRegion(chunkCoord);
 
 		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
-		generator.request<WorldBaseHeight>(regionArea.toSpanX());
+		generator.request<WorldBaseHeight>(regionCoord.x);
 
 		// Note that since RawBiome is not cached this call effectively does nothing.
-		generator.request<RawBiome>(area);
+		generator.request<RawBiome>(chunkCoord);
 
-		cache.reserve(regionArea, getSeq());
+		cache.reserveRegion(regionCoord, getSeq());
 	}
 
 	void RawBiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {
