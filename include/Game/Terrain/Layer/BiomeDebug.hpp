@@ -17,48 +17,44 @@ namespace Game::Terrain::Layer {
 	template<uint64 Seed, Float HAmp, Float HFeatScale>
 	class BiomeDebugBaseHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Range = ChunkSpanX;
 			using Partition = ChunkSpanX;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 
 	template<uint64 Seed>
 	class BiomeDebugBasisStrength : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
 	};
 
 	template<uint64 Seed, Float HAmp, Float HFeatScale, Float BScale, Float BOff, auto BTrans = [](auto b){ return b; }>
 	class BiomeDebugBasis : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
 	template<BlockId Block, int = 0 /* used to avoid duplicate type in tuple*/>
 	class BiomeDebugBlock : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			constexpr static BlockId get(BIOME_BLOCK_ARGS) noexcept { return Block; };
 	};
 	

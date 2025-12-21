@@ -11,7 +11,6 @@ namespace Game::Terrain::Layer {
 	class WorldBaseHeight : public CachedLayer, public DependsOn<> {
 		public:
 			using Partition = RegionUnit;
-			using Range = Partition;
 			using Index = RegionUnit;
 
 		public:
@@ -23,12 +22,8 @@ namespace Game::Terrain::Layer {
 		public:
 			using CachedLayer::CachedLayer;
 
-			ENGINE_INLINE void request(const Range area, TestGenerator& generator) {
+			ENGINE_INLINE void request(const Partition area, TestGenerator& generator) {
 				cache.reserve(area);
-			}
-
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) {
-				partitions = requests;
 			}
 
 			ENGINE_INLINE void removeGenerated(std::vector<Partition>& partitions) {

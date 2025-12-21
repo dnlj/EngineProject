@@ -10,23 +10,21 @@ namespace Game::Terrain::Layer {
 
 	class BiomeMountainHeight : public OnDemandLayer {
 		public:
-			using Range = ChunkSpanX;
 			using Partition = ChunkSpanX;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 
 	class BiomeMountainBasis : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 	

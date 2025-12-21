@@ -12,56 +12,51 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Range = ChunkUnit;
 			using Partition = BlockUnit;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range chunkCoordX, TestGenerator& generator);
+			void request(const Partition chunkCoordX, TestGenerator& generator);
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 
 	class BiomeFooBasisStrength : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkVec;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
 	};
 
 	class BiomeFooBasis : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkVec;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
 	class BiomeFooStructureInfo : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkVec;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
 	};
 
 	class BiomeFooStructure : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkVec;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			void get(BIOME_STRUCTURE_ARGS) const noexcept;
 	};
 

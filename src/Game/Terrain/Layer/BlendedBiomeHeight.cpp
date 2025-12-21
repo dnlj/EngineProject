@@ -8,7 +8,7 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeHeight::request(const Range regionCoordX, TestGenerator& generator) {
+	void BlendedBiomeHeight::request(const Partition regionCoordX, TestGenerator& generator) {
 		cache.reserve(regionCoordX);
 
 		generator.requestAwait<WorldBaseHeight>(regionCoordX);

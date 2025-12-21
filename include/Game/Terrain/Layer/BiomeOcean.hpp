@@ -12,67 +12,61 @@ namespace Game::Terrain::Layer {
 
 	class BiomeOceanHeight : public OnDemandLayer {
 		public:
-			using Range = ChunkSpanX;
 			using Partition = ChunkSpanX;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			Float get(BIOME_HEIGHT_ARGS) const noexcept { return h0; }
 	};
 
 	class BiomeOceanBasisStrength : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			constexpr static Float get(BIOME_BASIS_STRENGTH_ARGS) noexcept { return 1.0_f; }
 	};
 
 	class BiomeOceanBasis : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
 	class BiomeOceanBlock : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkArea;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
 	};
 
 	class BiomeOceanStructureInfo : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkVec;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
 	};
 
 	class BiomeOceanStructure : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Range = ChunkArea;
 			using Partition = ChunkVec;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator);
 			void get(BIOME_STRUCTURE_ARGS) const noexcept;
 	};
 	

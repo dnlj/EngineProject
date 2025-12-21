@@ -75,7 +75,7 @@ namespace Game::Terrain::Layer {
 }
 
 namespace Game::Terrain::Layer {
-	void BiomeFooHeight::request(const Range chunkCoordX, TestGenerator& generator) {
+	void BiomeFooHeight::request(const Partition chunkCoordX, TestGenerator& generator) {
 		generator.request<WorldBaseHeight>(chunkCoordX);
 	}
 

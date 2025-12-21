@@ -31,9 +31,6 @@ namespace Game::Terrain {
 		// - Determine possible structures (BlendedBiomeStructureInfo).
 		// - Modify the terrain and add entities for any valid/non-overlapping structures (BlendedBiomeStructures).
 
-
-		// TODO: Need to handle request realm.
-
 		{
 			std::lock_guard lock{reqThreadMutex};
 			pending.test_and_set();
@@ -95,43 +92,34 @@ namespace Game::Terrain {
 
 	template<class Self, class Layers, class SharedData>
 	void Generator<Self, Layers, SharedData>::processGenRequests() {
-		for (const auto& genRequest : genRequestsBack) {
-			// TODO: genRequest.realmId
+		ENGINE_DEBUG_ASSERT(genRequestsBackFlat.empty());
 
-			//
-			//
-			//
-			//
-			//
-			// TODO: Cull requests upfront to avoid re-generating data that is not cached based on
-			//       the `Terrain` (not layer caches). Without doing this we will be constantly
-			//       regenerating the same data since it will eventually be cleared from the cache.
-			//
-			//
-			//
-			//
-			//
+		{
+			// Avoid regenerating already generated data. Even with caches data from immediate
+			// layers would be regenerated without this. We would also regenerate data that timed
+			// out of the cache that is already loaded on the terrain.
+			const auto lock = terrain.lock();
 
-			genRequest.chunkArea.forEach([&](const auto& chunkCoord) {
-				this->request<Layer::BlendedBiomeBlock>(chunkCoord);
-				this->request<Layer::BlendedBiomeStructures>(chunkCoord);
-			});
+			for (const auto& genRequest : genRequestsBack) {
+				genRequest.chunkArea.forEach([&](const auto& chunkCoord) {
+					const UniversalChunkCoord uniChunkCoord = {genRequest.realmId, chunkCoord};
+					if (!terrain.isChunkLoaded(uniChunkCoord)) {
+						genRequestsBackFlat.push_back(uniChunkCoord);
+					}
+				});
+			}
+		}
+
+		for (const auto& chunkCoord : genRequestsBackFlat) {
+			// TODO: Handle realm generation. chunkCoord.realmId;
+			this->request<Layer::BlendedBiomeBlock>(chunkCoord.pos);
+			this->request<Layer::BlendedBiomeStructures>(chunkCoord.pos);
 		}
 
 		// nextSeq may or may not have been updated at this point. We just copy to curSeq
 		// to avoid the need for an extra lock or frequent atomic lookup during generateLayers.
 		curSeq = nextSeq;
 		generateLayers();
-
-		//
-		//
-		//
-		//
-		// TODO: need to cull requests based on what terrain is already generated. Without that we will always regenerate it...
-		// TODO: Then we also need a similar populated check for structures on the terrain since they are not tied to specific chunks/regions.
-		//
-		//
-		//
 
 		{
 			// We need the lock on the terrain and not the generator because we have
@@ -144,42 +132,40 @@ namespace Game::Terrain {
 			// cost of slight coupling between the terrain and generator.
 			const auto lock = terrain.lock();
 
-			// Copy the generator data to the terrain.
-			for (const auto& genRequest : genRequestsBack) {
-				for (auto chunkCoord = genRequest.chunkArea.min; chunkCoord.x < genRequest.chunkArea.max.x; ++chunkCoord.x) {
-					for (chunkCoord.y = genRequest.chunkArea.min.y; chunkCoord.y < genRequest.chunkArea.max.y; ++chunkCoord.y) {
-						const auto regionCoord = chunkToRegion(chunkCoord);
-						auto& region = terrain.getRegion({genRequest.realmId, regionCoord});
-						const auto regionIdx = chunkToRegionIndex(chunkCoord, regionCoord);
-						auto& populated = region.populated[regionIdx.x][regionIdx.y];
+			// Copy the block data to the terrain.
+			// We need two loops. One for block data and one for structure data. This is needed
+			// since generating structures may rely on the terrain data and could end up
+			// reading/writing structure data before that chunk is generated otherwise. If you try
+			// combining them you will noticed that _some_ (not all) structures that span chunk
+			// boundries may end up cut off. Which ones are cut off depends on the generation order.
+			for (const auto& chunkCoord : genRequestsBackFlat) {
+				const auto regionCoord = chunkToRegion(chunkCoord.pos);
+				auto& region = terrain.getRegion({chunkCoord.realmId, regionCoord});
+				const auto regionIdx = chunkToRegionIndex(chunkCoord.pos, regionCoord);
+				auto& populated = region.populated[regionIdx.x][regionIdx.y];
 
-						if (!populated) {
-							// For each block in the chunk.
-							// TODO: Once layers are done this should go away. Can just access the
-							//       layerBlendedBiomeBlock directly*.
-							region.chunkAt(regionIdx) = layerBlendedBiomeBlock.get(chunkCoord);
-							populated = true;
-						}
-					}
+				if (!populated) {
+					// Populated is set below after generating structure data.
+					region.chunkAt(regionIdx) = layerBlendedBiomeBlock.get(chunkCoord.pos);
 				}
+			}
 
-				//
-				//
-				//
-				//
-				// TODO: Should be part of layers and/or have a populated check. Currently this is all on-demand which is not cheap.
-				// TODO: is there a reason this takes a chunk area instead of just a chunk unit like above? Strange.
-				//
-				//
-				//
-				//
-				//
-				genRequest.chunkArea.forEach([&](const auto& chunkCoord){
-					layerBlendedBiomeStructures.get(chunkCoord, self(), genRequest.realmId, terrain);
-				});
+			// Copy the structure data to the terrain.
+			for (const auto& chunkCoord : genRequestsBackFlat) {
+				const auto regionCoord = chunkToRegion(chunkCoord.pos);
+				auto& region = terrain.getRegion({chunkCoord.realmId, regionCoord});
+				const auto regionIdx = chunkToRegionIndex(chunkCoord.pos, regionCoord);
+				auto& populated = region.populated[regionIdx.x][regionIdx.y];
+
+				if (!populated) {
+					// TODO: change to take a UniversalChunkCoord instead of pos + realm.
+					layerBlendedBiomeStructures.get(chunkCoord.pos, self(), chunkCoord.realmId, terrain);
+					populated = true;
+				}
 			}
 		}
 
+		genRequestsBackFlat.clear();
 		genRequestsBack.clear();
 		cleanCaches();
 	}

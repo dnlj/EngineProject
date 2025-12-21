@@ -18,7 +18,6 @@ namespace Game::Terrain::Layer {
 	class BlendedBiomeHeight : public CachedLayer, public DependsOn<> {
 		public:
 			using Partition = RegionUnit;
-			using Range = Partition;
 			using Index = ChunkUnit;
 
 		public: // TODO: private, currently public during transition to layers.
@@ -27,8 +26,7 @@ namespace Game::Terrain::Layer {
 		public:
 			using CachedLayer::CachedLayer;
 
-			void request(const Range regionCoordX, TestGenerator& generator);
-			ENGINE_INLINE void partition(std::vector<Range>& requests, std::vector<Partition>& partitions) { partitions = requests; }
+			void request(const Partition regionCoordX, TestGenerator& generator);
 			ENGINE_INLINE void removeGenerated(std::vector<Partition>& partitions) { removeGeneratedPartitions(cache, getSeq(), partitions); }
 			void generate(const Partition regionCoordX, TestGenerator& generator);
 			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return cache.getCacheSizeBytes(); }
