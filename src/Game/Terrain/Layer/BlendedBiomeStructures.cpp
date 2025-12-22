@@ -38,21 +38,16 @@ namespace Game::Terrain::Layer {
 		std::vector<StructureInfo> structures;
 		generator.get2<Layer::BlendedBiomeStructureInfo>(chunkCoord, structures);
 		for (const auto& info : structures) {
-			//
-			//
-			//
-			//
-			// TODO: need a way to check if a structure has already been generated.
-			//
-			//
-			//
-			//
-			//
-			//
-			//
 			Engine::withTypeAt<Biomes>(info.biomeId, [&]<class Biome>(){
 				// TODO: document somewhere the structure is optional.
 				if constexpr (requires { typename Biome::Structure; }) {
+					ENGINE_DEBUG_ONLY(const auto [_, inserted] = generatedStructures.emplace(info));
+					if constexpr (ENGINE_DEBUG) {
+						if (!inserted) {
+							ENGINE_ERROR2("Generating duplicate structure. This is a bug. Either with the generator itself or more likely the the biome structure info layer. Biome: {}; Structure: {}", info.biomeId, info.id);
+						}
+					}
+
 					generator.get2<typename Biome::Structure>(terrain, realmId, info);
 				}
 			});

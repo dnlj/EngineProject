@@ -33,31 +33,6 @@ namespace Game::Terrain {
 
 			//
 			//
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: need to ensure the reserve overloads work correctly between regionCoord/chunkCooord.
-			//       They don't currently since changing for area to coord i think.
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-
-			//
-			//
 			// TODO: rename to just `reserve` once strong typdefs are in place for ChunkVec/RegionVec.
 			//
 			//
