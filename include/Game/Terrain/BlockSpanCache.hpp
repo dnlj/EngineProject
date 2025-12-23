@@ -41,7 +41,7 @@ namespace Game::Terrain {
 				return found->second.data;
 			}
 
-			ENGINE_INLINE auto walk(ChunkUnit chunkX, SeqNum curSeq) const noexcept {
+			ENGINE_INLINE_REL auto walk(ChunkUnit chunkX, SeqNum curSeq) const noexcept {
 				const auto regionCoordX = chunkToRegion({chunkX, 0}).x;
 				const auto baseBlockCoord = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
 				const auto blockCoord = chunkToBlock({chunkX, 0}).x;
@@ -70,7 +70,7 @@ namespace Game::Terrain {
 			}
 
 			ENGINE_INLINE_REL void clearCache(SeqNum minAge) noexcept {
-				const auto before = getCacheSizeBytes();
+				//const auto before = getCacheSizeBytes();
 
 				for (auto it = cache.begin(); it != cache.end();) {
 					if (it->second.lastUsed < minAge) {
@@ -80,15 +80,8 @@ namespace Game::Terrain {
 					}
 				}
 
-				//
-				//
-				//
-				// TODO: remove once confirmed working (and before above);
-				//
-				//
-				//
-				const auto after = getCacheSizeBytes();
-				ENGINE_INFO2("BlockSpanCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
+				//const auto after = getCacheSizeBytes();
+				//ENGINE_INFO2("BlockSpanCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
 			}
 
 			ENGINE_INLINE bool isPopulated(RegionUnit regionCoordX, SeqNum curSeq) {

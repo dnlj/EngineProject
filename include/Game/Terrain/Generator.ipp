@@ -48,7 +48,7 @@ namespace Game::Terrain {
 			totalBytes += layer.getCacheSizeBytes();
 		});
 
-		ENGINE_LOG2("cache bytes: {} / {} ({:.2f}%; {:.2f}%)({:.2f}GB)",
+		ENGINE_LOG2("Generation Cache: {} / {} ({:.2f}%; {:.2f}%)({:.2f}GB)",
 			totalBytes,
 			cacheTargetThresholdBytes,
 			totalBytes * (100 / static_cast<double>(cacheTargetThresholdBytes)),

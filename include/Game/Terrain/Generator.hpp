@@ -238,17 +238,8 @@ namespace Game::Terrain {
 
 					//ENGINE_DEBUG_ONLY(const auto _debugBefore = reqs.size());
 
-					//
-					//
-					//
-					// TODO: Is this still true? Are there any cases where the Partition unit
-					//       doesn't align with the cache unit? With the removal of ranges we might
-					//       be able to simplify this now?
-					//
-					//
-					
 					// NOTE: removeGenerated does _not_ remove the need for `cache.populated(...)`
-					//       since partition does not currently guarantee no duplicates.
+					//       since the partition unit is not necessarily the same as the cache unit.
 					layer.removeGenerated(reqs);
 
 					//ENGINE_DEBUG_ONLY(const auto _debugAfter = reqs.size());

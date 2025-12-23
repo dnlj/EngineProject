@@ -65,8 +65,7 @@ namespace Game::Terrain {
 			}
 
 			ENGINE_INLINE_REL void clearCache(SeqNum minAge) noexcept {
-
-				const auto before = getCacheSizeBytes();
+				//const auto before = getCacheSizeBytes();
 
 				for (auto it = regions.begin(); it != regions.end();) {
 					if (it->second->lastUsed < minAge) {
@@ -76,15 +75,8 @@ namespace Game::Terrain {
 					}
 				}
 
-				//
-				//
-				//
-				// TODO: remove once confirmed working (and before above);
-				//
-				//
-				//
-				const auto after = getCacheSizeBytes();
-				ENGINE_INFO2("RegionDataCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
+				//const auto after = getCacheSizeBytes();
+				//ENGINE_INFO2("RegionDataCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
 			}
 	};
 
