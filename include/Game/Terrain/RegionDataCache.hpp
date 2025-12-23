@@ -31,11 +31,7 @@ namespace Game::Terrain {
 				return const_cast<RegionDataCache*>(this)->at(regionCoord, curSeq);
 			}
 
-			//
-			//
 			// TODO: rename to just `reserve` once strong typdefs are in place for ChunkVec/RegionVec.
-			//
-			//
 			ENGINE_INLINE void reserveRegion(RegionVec regionCoord, SeqNum curSeq) noexcept {
 				auto found = regions.find(regionCoord);
 				if (found == regions.end()) {

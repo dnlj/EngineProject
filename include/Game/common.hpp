@@ -14,6 +14,40 @@ namespace Game {
 //       forth a number of times, but I think having them align is probably a simpler
 //       rule.
 
+
+// Unfortunately this is just more effort than it is worth atm. Maybe once/if we add our own vector types.
+// Note that we can't use explicit as much as we would like since that makes working with all the
+// glm functions and operators very cumbersome. This at least buys us overload saftey for the most
+// part. Not great but very slightly better than nothing.
+//#define ENGINE_GLM_WEAK_TYPEDEF(Type, Underlying) \
+//	class Type : public Underlying {\
+//		public:\
+//			using Base = Underlying;\
+//			using Base::Base;\
+//			\
+//			template<class T> Type(const T&) { static_assert(ENGINE_TMP_FALSE(T), "Implicit conversion is not allowed for typedefs."); };\
+//			constexpr Type(const Base& value) : Base(value) {};\
+//			constexpr Type(Base&& value) : Base(::std::move(value)) {};\
+//			\
+//			/* Doesn't get us anything since we inherit from the base instead of a member.*/\
+//			/*explicit operator Base&() noexcept { return *this; };*/\
+//			/*explicit operator const Base&() const noexcept { return *this; };*/\
+//	};
+// 
+//template<>
+//struct fmt::formatter<Game::Units::RegionVec> : fmt::formatter<Game::Units::RegionUnit> {
+//	template<class FormatContext>
+//	auto format(const Game::Units::RegionVec& vec, FormatContext& ctx) -> decltype(ctx.out()) {
+//		fmt::format_to(ctx.out(), "RegionVec(");
+//		fmt::formatter<Game::Units::RegionUnit>::format(vec.x, ctx);
+//		fmt::format_to(ctx.out(), ", ");
+//		fmt::formatter<Game::Units::RegionUnit>::format(vec.y, ctx);
+//		return fmt::format_to(ctx.out(), ")");
+//	}
+//};
+//
+//template<> struct Engine::Hash<Game::Units::RegionVec> : Hash<Game::Units::RegionVec::Base> {};
+
 namespace Game::inline Units {
 	/**
 	 * A position in world units (Box2D meters). These will always be relative to some origin
@@ -44,6 +78,7 @@ namespace Game::inline Units {
 
 	using RegionUnit = BlockUnit;
 	using RegionVec = glm::vec<2, RegionUnit>;
+
 	using RegionIdx = ChunkVec;
 
 	using RegionBiomeUnit = ChunkUnit;
