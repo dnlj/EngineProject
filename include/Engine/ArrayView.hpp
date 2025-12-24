@@ -22,7 +22,7 @@ namespace Engine {
 				ENGINE_DEBUG_ASSERT(begin != nullptr || end == nullptr, "Attempting to create a null view with non-zero size.");
 			};
 
-			ENGINE_INLINE constexpr ArrayView(T* data, int64 size)
+			ENGINE_INLINE constexpr ArrayView(T* data, intz size)
 				: ArrayView(data, data + size) {
 			};
 
@@ -54,8 +54,8 @@ namespace Engine {
 			ENGINE_INLINE constexpr T* data() noexcept { return dataBegin; }
 			ENGINE_INLINE constexpr const T* data() const noexcept { return dataBegin; }
 
-			ENGINE_INLINE constexpr T& operator[](int64 i) noexcept { return dataBegin[i]; }
-			ENGINE_INLINE constexpr const T& operator[](int64 i) const noexcept { return dataBegin[i]; }
+			ENGINE_INLINE constexpr T& operator[](intz i) noexcept { return dataBegin[i]; }
+			ENGINE_INLINE constexpr const T& operator[](intz i) const noexcept { return dataBegin[i]; }
 
 			ENGINE_INLINE constexpr T& front() noexcept { return *dataBegin; }
 			ENGINE_INLINE constexpr const T& front() const noexcept { return *dataBegin; }
@@ -66,18 +66,18 @@ namespace Engine {
 			/**
 			 * Creates a new view containing the elements [begin, end).
 			 */
-			ENGINE_INLINE constexpr ArrayView slice(int64 begin, int64 end) const noexcept { return {dataBegin + begin, dataEnd + end}; }
-			ENGINE_INLINE constexpr ArrayView slice(int64 begin) const noexcept { return {dataBegin + begin, dataEnd}; }
+			ENGINE_INLINE constexpr ArrayView slice(intz begin, intz end) const noexcept { return {dataBegin + begin, dataEnd + end}; }
+			ENGINE_INLINE constexpr ArrayView slice(intz begin) const noexcept { return {dataBegin + begin, dataEnd}; }
 
 			/**
 			 * Creates a new view containing this views first @p n elements.
 			 */
-			ENGINE_INLINE constexpr ArrayView first(int64 n) const noexcept { return {dataBegin, dataBegin + n}; }
+			ENGINE_INLINE constexpr ArrayView first(intz n) const noexcept { return {dataBegin, dataBegin + n}; }
 			
 			/**
 			 * Creates a new view containing this views last @p n elements.
 			 */
-			ENGINE_INLINE constexpr ArrayView last(int64 n) const noexcept { return {dataEnd - n, dataEnd}; }
+			ENGINE_INLINE constexpr ArrayView last(intz n) const noexcept { return {dataEnd - n, dataEnd}; }
 	};
 
 	template<class T>

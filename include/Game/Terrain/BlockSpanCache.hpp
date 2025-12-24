@@ -30,36 +30,22 @@ namespace Game::Terrain {
 			BlockSpanCache(BlockSpanCache&&) = default;
 			BlockSpanCache(const BlockSpanCache&) = delete;
 
-			// TODO: cleanup/normalize these various get/at/walk functions. Most of these don't
-			//       work correctly as walks since they don't have correct bool operators for
-			//       end range.
-
-			ENGINE_INLINE const Data& get(RegionUnit regionCoordX, SeqNum curSeq) const noexcept {
+			// TODO: Rename `get` once we have strong typedefs for overload.
+			ENGINE_INLINE const Data& getRegion(RegionUnit regionCoordX, SeqNum curSeq) const noexcept {
 				const auto found = cache.find(regionCoordX);
 				ENGINE_DEBUG_ASSERT(found != cache.end());
 				found->second.lastUsed = curSeq;
 				return found->second.data;
 			}
 
-			ENGINE_INLINE_REL auto walk(ChunkUnit chunkX, SeqNum curSeq) const noexcept {
+			// TODO: Rename `get` once we have strong typedefs for overload.
+			ENGINE_INLINE_REL auto getChunk(ChunkUnit chunkX, SeqNum curSeq) const noexcept {
 				const auto regionCoordX = chunkToRegion({chunkX, 0}).x;
-				const auto baseBlockCoord = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
-				const auto blockCoord = chunkToBlock({chunkX, 0}).x;
-				const auto offset = blockCoord - baseBlockCoord;
-				ENGINE_DEBUG_ASSERT(offset >= 0 && offset <= std::tuple_size_v<Data>);
-				return get(regionCoordX, curSeq).begin() + offset;
+				const auto offsetBlocks = chunkSize.x * (chunkX - regionToChunk({regionCoordX, 0}).x);
+				ENGINE_DEBUG_ASSERT(offsetBlocks >= 0 && offsetBlocks <= std::tuple_size_v<Data>);
+				return getRegion(regionCoordX, curSeq).begin() + offsetBlocks;
 			}
 			
-			// TODO: remove, this is temp while fixing block psan cache to use regions.
-			//       They should instead be using walk for efficient access.
-			ENGINE_INLINE const T& at(const BlockUnit x, SeqNum curSeq) const noexcept {
-				const auto regionCoordX = chunkToRegion(blockToChunk({x, 0})).x;
-				ENGINE_DEBUG_ASSERT(cache.contains(regionCoordX));
-
-				const auto regionOffset = regionCoordX * chunksPerRegion * blocksPerChunk;
-				return get(regionCoordX, curSeq).at(x - regionOffset);
-			}
-
 			ENGINE_INLINE_REL void reserve(const RegionUnit regionCoordX) noexcept {
 				cache.try_emplace(regionCoordX);
 			}

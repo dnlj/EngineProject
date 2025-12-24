@@ -31,7 +31,7 @@ namespace Game::Terrain::Layer {
 			void generate(const Partition regionCoordX, TestGenerator& generator);
 			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return cache.getCacheSizeBytes(); }
 			[[nodiscard]] ENGINE_INLINE decltype(auto) clearCache(SeqNum minAge) noexcept { return cache.clearCache(minAge); }
-			ENGINE_INLINE_REL [[nodiscard]] auto get(const ChunkUnit chunkCoordX) const noexcept { return cache.walk(chunkCoordX, getSeq()); }
+			ENGINE_INLINE_REL [[nodiscard]] auto get(const ChunkUnit chunkCoordX) const noexcept { return cache.getChunk(chunkCoordX, getSeq()); }
 
 		private:
 			[[nodiscard]] BiomeBlend populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept;

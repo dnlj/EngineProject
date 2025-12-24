@@ -46,11 +46,11 @@ namespace Game::Terrain::Layer {
 			}
 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const Partition regionCoordX) const noexcept {
-				return cache.get(regionCoordX, getSeq());
+				return cache.getRegion(regionCoordX, getSeq());
 			}
 
 			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const ChunkUnit chunkX) const noexcept {
-				return cache.walk(chunkX, getSeq());
+				return cache.getChunk(chunkX, getSeq());
 			}
 
 			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {
