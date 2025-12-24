@@ -40,6 +40,16 @@ namespace Game::Terrain::Layer {
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
+	class BiomeFooBlock : public OnDemandLayer, public Layer::DependsOn<> {
+		public:
+			using Partition = ChunkArea;
+
+		public:
+			using OnDemandLayer::OnDemandLayer;
+			void request(const Partition area, TestGenerator& generator);
+			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
+	};
+
 	class BiomeFooStructureInfo : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
 			using Partition = ChunkVec;
@@ -72,7 +82,7 @@ namespace Game::Terrain::Layer {
 			using Height = BiomeFooHeight;
 			using BasisStrength = BiomeFooBasisStrength;
 			using Basis = BiomeFooBasis;
-			using Block = BiomeDebugBlock<BlockId::Debug, 1>;
+			using Block = BiomeFooBlock;
 			using StructureInfo = BiomeFooStructureInfo;
 			using Structure = BiomeFooStructure;
 			using SharedData = BiomeFooSharedData;

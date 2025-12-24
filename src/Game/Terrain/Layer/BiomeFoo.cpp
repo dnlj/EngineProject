@@ -103,6 +103,35 @@ namespace Game::Terrain::Layer {
 		return std::clamp(value, -1_f, 1_f);
 	}
 
+	BlockId BiomeFooBlock::get(BIOME_BLOCK_ARGS) const noexcept {
+		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
+		const glm::vec2 blockCoordF = blockCoord;
+
+		struct ResourceSpec {
+			consteval ResourceSpec(BlockId b, Float s, Float d)
+				: block{b}, scale{1.0_f/s}, density{d * 2.0_f - 1.0_f} {
+			}
+
+			BlockId block = BlockId::None;
+			Float scale = 1.0_f;
+			Float density = 0.0_f;
+		};
+
+		// TODO: min/max depth range with taper distance.
+		constexpr ResourceSpec ores[] = {
+			{BlockId::Gold, 7.0_f, 0.11_f},
+			{BlockId::Iron, 5.0_f, 0.2_f},
+		};
+
+		for (const auto& ore : ores) {
+			if (simplex.value(blockCoordF * ore.scale) < ore.density) {
+				return ore.block;
+			}
+		}
+
+		return BlockId::Dirt;
+	}
+
 	// TODO: BiomeFooBlock
 	//STAGE(1) {
 	//	// TODO: if we are always going to be converting to float anyways, should we
