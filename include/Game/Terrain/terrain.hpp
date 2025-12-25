@@ -21,6 +21,7 @@
 #define BIOME_BLOCK_ARGS \
 	const TestGenerator& generator, \
 	const ::Game::BlockVec blockCoord, \
+	const ::Game::BlockUnit h2, \
 	const ::Game::Terrain::BasisInfo& basisInfo
 
 

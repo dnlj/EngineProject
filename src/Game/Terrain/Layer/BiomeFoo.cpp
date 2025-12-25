@@ -107,6 +107,10 @@ namespace Game::Terrain::Layer {
 		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
 		const glm::vec2 blockCoordF = blockCoord;
 
+		if (blockCoord.y > h2 - 3) {
+			return BlockId::Grass;
+		}
+
 		struct ResourceSpec {
 			consteval ResourceSpec(BlockId b, Float s, Float d)
 				: block{b}, scale{1.0_f/s}, density{d * 2.0_f - 1.0_f} {
@@ -132,55 +136,6 @@ namespace Game::Terrain::Layer {
 		return BlockId::Dirt;
 	}
 
-	// TODO: BiomeFooBlock
-	//STAGE(1) {
-	//	// TODO: if we are always going to be converting to float anyways, should we
-	//	//       pass in a float version as well? That kind of breaks world size though.
-	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//	// TODO: change to use basis
-	//	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//	//
-	//
-	//
-	//	// if y > h0 && blocksEmpty(y, y+5);
-	//
-	//	//const auto h1 = h0 + 15 * simplex.value(blockCoord.x * 0.05_f, 0); // TODO: 1d simplex
-	//	//
-	//	//if (blockCoord.y > h1) {
-	//	//	return BlockId::Air;
-	//	//} else if ((h1-blockCoord.y) < 1) {
-	//	//	return BlockId::Grass;
-	//	//}
-	//
-	//	//constexpr Float scale = 0.06_f;
-	//	//constexpr Float groundScale = 1.0_f / 100.0_f;
-	//	//const Float groundGrad = std::max(0.0_f, 1.0_f - (h1 - blockCoord.y) * groundScale);
-	//	//const auto val = simplex.value(glm::vec2{blockCoord} * scale) + groundGrad;
-	//	//
-	//	//if (val > 0) {
-	//	//	return BlockId::Debug;
-	//	//} else {
-	//	//	return BlockId::Air;
-	//	//}
-	//
-	//	return BlockId::Debug;
-	//}
-	
 	void BiomeFooStructureInfo::get(BIOME_STRUCTURE_INFO_ARGS) const noexcept {
 		//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
 		const auto minBlockCoord = chunkToBlock(chunkCoord);

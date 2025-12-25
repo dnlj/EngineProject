@@ -29,6 +29,6 @@ namespace Game::Terrain::Layer {
 
 		private:
 			// TODO: no reason populate to be a member function on most (all) layers. Move to plain function in the cpp file.
-			[[nodiscard]] BlockId populate(const BlockVec blockCoord, const BasisInfo& basisInfo, const TestGenerator& generator) const noexcept;
+			[[nodiscard]] BlockId populate(const BlockVec blockCoord, const BlockUnit h2, const BasisInfo& basisInfo, const TestGenerator& generator) const noexcept;
 	};
 }
