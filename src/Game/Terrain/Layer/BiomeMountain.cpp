@@ -15,22 +15,22 @@ namespace Game::Terrain::Layer {
 	}
 
 	Float BiomeMountainBasis::get(BIOME_BASIS_ARGS) const noexcept {
-		auto const& shared = generator.shared<BiomeDebugMountain::SharedData>();
-		auto const& simplex1 = shared.simplex1;
-		auto const& simplex2 = shared.simplex2;
-		auto const& simplex3 = shared.simplex3;
+		const auto& shared = generator.shared<BiomeDebugMountain::SharedData>();
+		const auto& simplex1 = shared.simplex1;
+		const auto& simplex2 = shared.simplex2;
+		const auto& simplex3 = shared.simplex3;
 
 		const auto xWarp =
-			+ 5.0_f * simplex1.value(FVec2{blockCoord} * 0.05f)
-			+ 3.0_f * simplex2.value(FVec2{blockCoord} * 0.1f)
-			+ 1.5_f * simplex3.value(FVec2{blockCoord} * 0.2f);
+			+ 5.0_f * simplex1.value(blockCoordF * 0.05f)
+			+ 3.0_f * simplex2.value(blockCoordF * 0.1f)
+			+ 1.5_f * simplex3.value(blockCoordF * 0.2f);
 
 		const auto yWarp =
-			+ 5.0_f * simplex3.value(FVec2{blockCoord} * 0.05f)
-			+ 3.0_f * simplex1.value(FVec2{blockCoord} * 0.1f)
-			+ 1.5_f * simplex2.value(FVec2{blockCoord} * 0.2f);
+			+ 5.0_f * simplex3.value(blockCoordF * 0.05f)
+			+ 3.0_f * simplex1.value(blockCoordF * 0.1f)
+			+ 1.5_f * simplex2.value(blockCoordF * 0.2f);
 
-		const auto bcoord = FVec2{blockCoord} + FVec2{xWarp, yWarp};
+		const auto bcoord = blockCoordF + FVec2{xWarp, yWarp};
 
 		const bool above = bcoord.y > h2;
 		const auto surface = [&]{

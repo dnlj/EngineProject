@@ -75,39 +75,38 @@ namespace Game::Terrain::Layer {
 }
 
 namespace Game::Terrain::Layer {
-	void BiomeFooHeight::request(const Partition chunkCoordX, TestGenerator& generator) {
-		generator.request<WorldBaseHeight>(chunkCoordX);
+	void BiomeFooHeight::request(const Partition regionCoordX, TestGenerator& generator) {
+		generator.request<WorldBaseHeight>(regionCoordX);
 	}
 
 	Float BiomeFooHeight::get(BIOME_HEIGHT_ARGS) const noexcept {
 		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
-		return h0 + 15 * simplex.value(blockCoordX * 0.05_f, 0); // TODO: 1d simplex
+		return h0 + 15 * simplex.value(blockCoordX.pos * 0.05_f, 0); // TODO: 1d simplex
 	}
 
 	Float BiomeFooBasisStrength::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
 		auto const& simplex = generator.shared<BiomeFooSharedData>().simplex;
-		return 0.5_f + 0.5_f * simplex.value(glm::vec2{blockCoord} * 0.03_f);
+		return 0.5_f + 0.5_f * simplex.value(blockCoordF * 0.03_f);
 	}
 
 	Float BiomeFooBasis::get(BIOME_BASIS_ARGS) const noexcept {
-		if (blockCoord.y > h2) { return outGrad(static_cast<Float>(h2), blockCoord.y, 1.0_f / 5.0_f); }
+		if (blockCoord.pos.y > h2) { return outGrad(static_cast<Float>(h2), blockCoord.pos.y, 1.0_f / 5.0_f); }
 
 		// TODO: redo this, extract some helpers from the debug biomes.
 		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
 		constexpr Float scale = 0.06_f;
 		constexpr Float groundScale = 1.0_f / 100.0_f;
 		Float value =
-			+ inGrad(h2, blockCoord.y, groundScale)
-			+ simplex.value(glm::vec2{blockCoord} * scale);
+			+ inGrad(h2, blockCoord.pos.y, groundScale)
+			+ simplex.value(blockCoordF * scale);
 
 		return std::clamp(value, -1_f, 1_f);
 	}
 
 	BlockId BiomeFooBlock::get(BIOME_BLOCK_ARGS) const noexcept {
 		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
-		const glm::vec2 blockCoordF = blockCoord;
 
-		if (blockCoord.y > h2 - 3) {
+		if (blockCoord.pos.y > h2 - 3) {
 			return BlockId::Grass;
 		}
 
@@ -138,7 +137,7 @@ namespace Game::Terrain::Layer {
 
 	void BiomeFooStructureInfo::get(BIOME_STRUCTURE_INFO_ARGS) const noexcept {
 		//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
-		const auto minBlockCoord = chunkToBlock(chunkCoord);
+		const auto minBlockCoord = chunkCoord.toBlock().pos;
 		inserter = {.min = minBlockCoord, .max = minBlockCoord + BlockVec{1,1}, .id = 1};
 
 		constexpr BlockUnit width = 3;
@@ -147,7 +146,7 @@ namespace Game::Terrain::Layer {
 
 		// TODO: coudl step more that ++1 since we know we have a fixed modulus.
 		const auto maxBlockCoord = minBlockCoord + chunkSize;
-		auto h2It = generator.get<BlendedBiomeHeight>(chunkCoord.x);
+		auto h2It = generator.get<BlendedBiomeHeight>(chunkCoord.toX());
 		for (auto blockCoord = minBlockCoord; blockCoord.x < maxBlockCoord.x; ++blockCoord.x, ++h2It) {
 			if (blockCoord.x % stride == 0) {
 				blockCoord.y = *h2It;

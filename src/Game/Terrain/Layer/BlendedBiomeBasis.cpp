@@ -9,37 +9,39 @@
 
 namespace Game::Terrain::Layer {
 	void BlendedBiomeBasis::request(const Partition chunkCoord, TestGenerator& generator) {
-		const auto regionCoord = chunkToRegion(chunkCoord);
+		const auto regionCoord = chunkCoord.toRegion();
 		generator.request<BlendedBiomeWeights>(chunkCoord);
-		generator.request<BlendedBiomeHeight>(regionCoord.x);
+		generator.request<BlendedBiomeHeight>(regionCoord.toX());
 		cache.reserveRegion(regionCoord, getSeq());
 	}
 
 	void BlendedBiomeBasis::generate(const Partition chunkCoord, TestGenerator& generator) {
 		cache.populate(chunkCoord, getSeq(), [&](auto& basisStore) ENGINE_INLINE_REL {
 			const auto& blendStore = generator.get<BlendedBiomeWeights>(chunkCoord);
-			const auto baseBlockCoord = chunkToBlock(chunkCoord);
-			auto h2It = generator.get<BlendedBiomeHeight>(chunkCoord.x);
+			const auto baseBlockCoord = chunkCoord.toBlock();
+			auto h2It = generator.get<BlendedBiomeHeight>(chunkCoord.toX());
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x, ++h2It) {
-				const auto blockCoordX = baseBlockCoord.x + chunkIndex.x;
+				const auto blockCoordX = baseBlockCoord.pos.x + chunkIndex.x;
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
-					const auto blockCoordY = baseBlockCoord.y + chunkIndex.y;
-					basisStore.at(chunkIndex) = populate({blockCoordX, blockCoordY}, *h2It, blendStore.at(chunkIndex), generator);
+					const auto blockCoordY = baseBlockCoord.pos.y + chunkIndex.y;
+					const UniversalBlockCoord blockCoord = {.realmId = baseBlockCoord.realmId, .pos = {blockCoordX, blockCoordY}};
+					basisStore.at(chunkIndex) = populate(blockCoord, *h2It, blendStore.at(chunkIndex), generator);
 				}
 			}
 		});
 	}
 
 	const ChunkStore<BasisInfo>& BlendedBiomeBasis::get(const Index chunkCoord) const noexcept {
-		const auto regionCoord = chunkToRegion(chunkCoord);
-		return cache.at(regionCoord, getSeq()).at(chunkToRegionIndex(chunkCoord, regionCoord));
+		const auto regionCoord = chunkCoord.toRegion();
+		return cache.at(regionCoord, getSeq()).at(chunkCoord.toRegionIndex(regionCoord));
 	}
 
-	BasisInfo BlendedBiomeBasis::populate(BlockVec blockCoord, const BlockUnit h2, const BiomeBlend& blend, const TestGenerator& generator) const noexcept {
+	BasisInfo BlendedBiomeBasis::populate(const UniversalBlockCoord blockCoord, const BlockUnit h2, const BiomeBlend& blend, const TestGenerator& generator) const noexcept {
 		Float totalBasis = 0;
+		FVec2 blockCoordF = blockCoord.pos;
 		for (auto& biomeWeight : blend.weights) {
 			const auto basis = Engine::withTypeAt<Biomes>(biomeWeight.id, [&]<class Biome>(){
-				return generator.get2<typename Biome::Basis>(blockCoord, h2);
+				return generator.get2<typename Biome::Basis>(blockCoord, blockCoordF, h2);
 			});
 
 			// This is a _somewhat_ artificial limitation. A basis doesn't _need_ to be

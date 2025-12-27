@@ -12,7 +12,7 @@
 namespace Game::Terrain::Layer {
 	class BlendedBiomeStructures : public OnDemandLayer, public DependsOn<> {
 		public:
-			using Partition = ChunkVec;
+			using Partition = UniversalChunkCoord;
 			using Index = Partition;
 
 		public:
@@ -22,6 +22,6 @@ namespace Game::Terrain::Layer {
 			using OnDemandLayer::OnDemandLayer;
 
 			void request(const Partition chunkCoord, TestGenerator& generator);
-			void get(const Index chunkCoord, TestGenerator& generator, const RealmId realmId, Terrain& terrain) const noexcept;
+			void get(const Index chunkCoord, TestGenerator& generator, Terrain& terrain) const noexcept;
 	};
 }

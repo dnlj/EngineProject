@@ -17,8 +17,8 @@ namespace Game::Terrain::Layer {
 	// The absolute weight of each biome. These are non-normalized.
 	class BlendedBiomeHeight : public CachedLayer, public DependsOn<> {
 		public:
-			using Partition = RegionUnit;
-			using Index = ChunkUnit;
+			using Partition = UniversalRegionSubCoord;
+			using Index = UniversalChunkSubCoord;
 
 		public: // TODO: private, currently public during transition to layers.
 			BlockSpanCache<BlockUnit> cache;
@@ -31,10 +31,10 @@ namespace Game::Terrain::Layer {
 			void generate(const Partition regionCoordX, TestGenerator& generator);
 			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept { return cache.getCacheSizeBytes(); }
 			[[nodiscard]] ENGINE_INLINE decltype(auto) clearCache(SeqNum minAge) noexcept { return cache.clearCache(minAge); }
-			ENGINE_INLINE_REL [[nodiscard]] auto get(const ChunkUnit chunkCoordX) const noexcept { return cache.getChunk(chunkCoordX, getSeq()); }
+			ENGINE_INLINE_REL [[nodiscard]] auto get(const Index chunkCoordX) const noexcept { return cache.getChunk(chunkCoordX, getSeq()); }
 
 		private:
-			[[nodiscard]] BiomeBlend populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept;
+			[[nodiscard]] BiomeBlend populate(const BlockVec blockCoord, const TestGenerator& generator) const noexcept;
 	};
 }
 

@@ -11,8 +11,8 @@ namespace Game::Terrain::Layer {
 	// The biome weights for a given area.
 	class BlendedBiomeWeights : public CachedLayer, public DependsOn<> {
 		public:
-			using Partition = ChunkVec;
-			using Index = ChunkVec;
+			using Partition = UniversalChunkCoord;
+			using Index = UniversalChunkCoord;
 
 		private:
 			ChunkDataCache<BiomeBlend> cache;
@@ -28,7 +28,7 @@ namespace Game::Terrain::Layer {
 			[[nodiscard]] ENGINE_INLINE decltype(auto) clearCache(SeqNum minAge) noexcept { return cache.clearCache(minAge); }
 
 		private:
-			[[nodiscard]] BiomeBlend populate(const BlockVec blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept;
+			[[nodiscard]] BiomeBlend populate(const UniversalBlockCoord blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept;
 	};
 }
 

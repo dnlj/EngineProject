@@ -5,6 +5,7 @@
 #include <Game/Terrain/ChunkArea.hpp>
 #include <Game/Terrain/Layer/DependsOn.hpp>
 #include <Game/Terrain/Layer/OnDemandLayer.hpp>
+#include <Game/universal.hpp>
 
 
 namespace Game::Terrain::Layer {
@@ -26,7 +27,7 @@ namespace Game::Terrain::Layer {
 			// the same biome, and if you move in any direction you will have at most four
 			// neighbors in sample range (at corner). If you move left from center the right
 			// neighbors are out of range etc.
-			using Partition = ChunkVec;
+			using Partition = UniversalChunkCoord;
 			using Index = Partition;
 
 		public:
@@ -38,8 +39,5 @@ namespace Game::Terrain::Layer {
 			//       structure storage. That could help with culling becomes an issue, otherwise
 			//       you would need ot do N^2 AABB checks. Basically a broad-phase.
 			void get(const TestGenerator& generator, const Index chunkCoord, std::vector<StructureInfo>& structures) const noexcept;
-
-		private:
-			void populate(const ChunkVec chunkCoord, const TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept;
 	};
 }

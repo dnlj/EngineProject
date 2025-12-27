@@ -36,7 +36,7 @@ namespace Game::Terrain::Layer {
 	template<uint64 Seed, Float HAmp, Float HFeatScale>
 	Float BiomeDebugBaseHeight<Seed, HAmp, HFeatScale>::get(BIOME_HEIGHT_ARGS) const noexcept {
 		auto const& simplex1 = generator.shared<BiomeDebugSharedData<Seed>>().simplex1;
-		return h0 + HAmp * simplex1.value(blockCoordX * HFeatScale, 0); // TODO: 1d simplex
+		return h0 + HAmp * simplex1.value(blockCoordX.pos * HFeatScale, 0); // TODO: 1d simplex
 	}
 
 	template<uint64 Seed>
@@ -47,9 +47,9 @@ namespace Game::Terrain::Layer {
 		auto const& simplex3 = shared.simplex3;
 
 		// These need to be tuned based on biome scales blend dist or else you can get odd clipping type issues.
-		return 0.2_f * simplex1.value(FVec2{blockCoord} * 0.003_f)
-				+ 0.2_f * simplex2.value(FVec2{blockCoord} * 0.010_f)
-				+ 0.1_f * simplex3.value(FVec2{blockCoord} * 0.100_f)
+		return 0.2_f * simplex1.value(blockCoordF * 0.003_f)
+				+ 0.2_f * simplex2.value(blockCoordF * 0.010_f)
+				+ 0.1_f * simplex3.value(blockCoordF * 0.100_f)
 				+ 0.5_f;
 	}
 
@@ -118,21 +118,19 @@ namespace Game::Terrain::Layer {
 			auto const& simplex2 = shared.simplex2;
 			auto const& simplex3 = shared.simplex3;
 
-			const auto bcoord = blockCoord; // TODO: rm if unused
-			const bool above = bcoord.y > h2;
+			const bool above = blockCoord.pos.y > h2;
 			const auto surface = [&]{
 				if (above) {
 					// Going below below -1 reduces the floating islands/ cancels 
 					// `2 / dist` instead of `1 / dist` since we are going [-1, 1] instead of [-1, 0] so the distance is doubled.
-					return std::max(-3_f,1_f + (h2 - bcoord.y) * (2_f / 16_f));
-					//return 1_f + 2_f * std::max(-1_f, (h1 - bcoord.y) * (1.0f / 8_f));
-					//return std::max(-1_f, (h1 - bcoord.y) * (1.0f / 8_f));
+					return std::max(-3_f,1_f + (h2 - blockCoord.pos.y) * (2_f / 16_f));
+					//return 1_f + 2_f * std::max(-1_f, (h1 - blockCoord.pos.y) * (1.0f / 8_f));
+					//return std::max(-1_f, (h1 - blockCoord.pos.y) * (1.0f / 8_f));
 				} else {
-					return std::max(0_f, 1_f - (h2 - bcoord.y) * (1_f / 128_f));
+					return std::max(0_f, 1_f - (h2 - blockCoord.pos.y) * (1_f / 128_f));
 				}
 			}();
 			
-			const FVec2 blockCoordF = bcoord;
 			Float value = 0;
 			
 			// Cave contribution

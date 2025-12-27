@@ -5,7 +5,7 @@
 
 namespace Game::Terrain::Layer {
 	Float BiomeOceanBasis::get(BIOME_BASIS_ARGS) const noexcept {
-		if (blockCoord.y > h2) {
+		if (blockCoord.pos.y > h2) {
 			return -1;
 		}
 
@@ -19,9 +19,9 @@ namespace Game::Terrain::Layer {
 		auto const& simplex3 = shared.simplex3;
 
 		auto thresh = 0.45_f;
-		thresh += 0.04_f * simplex1.value(FVec2{blockCoord} * 0.025_f);
-		thresh += 0.02_f * simplex2.value(FVec2{blockCoord} * 0.05_f);
-		thresh += 0.01_f + 0.01_f * simplex3.value(FVec2{blockCoord} * 0.1_f);
+		thresh += 0.04_f * simplex1.value(blockCoordF * 0.025_f);
+		thresh += 0.02_f * simplex2.value(blockCoordF * 0.05_f);
+		thresh += 0.01_f + 0.01_f * simplex3.value(blockCoordF * 0.1_f);
 
 		if (basisInfo.weight > thresh) {
 			return BlockId::Grass;
@@ -31,7 +31,7 @@ namespace Game::Terrain::Layer {
 	};
 
 	void BiomeOceanStructureInfo::get(BIOME_STRUCTURE_INFO_ARGS) const noexcept {
-		const auto minBlockCoord = chunkToBlock(chunkCoord);
+		const auto minBlockCoord = chunkCoord.toBlock().pos;
 		inserter = {.min = minBlockCoord, .max = minBlockCoord + BlockVec{1,1}, .id = 1};
 	}
 

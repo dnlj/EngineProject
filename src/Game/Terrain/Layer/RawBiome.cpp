@@ -24,6 +24,17 @@ namespace Game::Terrain::Layer {
 	//}
 
 	RawBiomeInfo RawBiome::get(const Index blockCoord) const noexcept {
+		if (blockCoord.realmId != 0) {
+			return {
+				.id = 1,
+				.smallCell = {0, 0},
+				.smallRem = {0, 0},
+				.biomeCell = {0, 0},
+				.biomeRem = {0, 0},
+				.size = biomeScaleSmall.size,
+			};
+		}
+
 		// TODO: if we simd-ified this we could do all scale checks in a single pass.
 
 		// TODO: Could apply some perturb if we want non square biomes. I don't think
@@ -41,14 +52,14 @@ namespace Game::Terrain::Layer {
 
 		// Always return the small cell size so that we don't get inflection points when
 		// blending biomes. See the blending issue notes in calcBiomeBlend.
-		const auto smallCell = Engine::Math::divFloor(blockCoord, biomeScaleSmall.size);
+		const auto smallCell = Engine::Math::divFloor(blockCoord.pos, biomeScaleSmall.size);
 		RawBiomeInfo result = {
 			.smallCell = smallCell.q,
 			.smallRem = smallCell.r,
 		};
 
 		{ // Large
-			const auto cell = Engine::Math::divFloor(blockCoord, biomeScaleLarge.size);
+			const auto cell = Engine::Math::divFloor(blockCoord.pos, biomeScaleLarge.size);
 			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleLarge.freq) {
 				result.id = biomePerm(cell.q.x, cell.q.y) % biomeCount;
 				result.size = biomeScaleLarge.size;
@@ -59,7 +70,7 @@ namespace Game::Terrain::Layer {
 		}
 
 		{ // Med
-			const auto cell = Engine::Math::divFloor(blockCoord, biomeScaleMed.size);
+			const auto cell = Engine::Math::divFloor(blockCoord.pos, biomeScaleMed.size);
 			if (biomeFreq(cell.q.x, cell.q.y) < biomeScaleMed.freq) {
 				result.id = biomePerm(cell.q.x, cell.q.y) % biomeCount;
 				result.size = biomeScaleMed.size;

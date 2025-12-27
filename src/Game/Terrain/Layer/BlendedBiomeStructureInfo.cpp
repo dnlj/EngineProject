@@ -12,11 +12,6 @@ namespace Game::Terrain::Layer {
 	}
 
 	void BlendedBiomeStructureInfo::get(const TestGenerator& generator, const Index chunkCoord, std::vector<StructureInfo>& structures) const noexcept {
-		// TODO: just remove populate at this point
-		populate(chunkCoord, generator, structures);
-	}
-
-	void BlendedBiomeStructureInfo::populate(const ChunkVec chunkCoord, const TestGenerator& generator, std::vector<StructureInfo>& structures) const noexcept {
 		// TODO: Would there be any perf implications where it might be better to cache
 		//       the struct info so that things are processed more layer-like (as opposed
 		//       to on-the-fly, like is done here)? My gut reaction would be that since

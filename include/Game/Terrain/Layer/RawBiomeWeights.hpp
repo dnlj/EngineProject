@@ -10,8 +10,8 @@ namespace Game::Terrain::Layer {
 	// The absolute weight of each biome. These are non-normalized.
 	class RawBiomeWeights : public CachedLayer, public DependsOn<> {
 		public:
-			using Partition = ChunkVec;
-			using Index = ChunkVec;
+			using Partition = UniversalChunkCoord;
+			using Index = UniversalChunkCoord;
 
 		private:
 			ChunkDataCache<BiomeBlend> cache;
@@ -36,7 +36,7 @@ namespace Game::Terrain::Layer {
 			/**
 			 * Generate the value at a single index.
 			 */
-			[[nodiscard]] BiomeBlend populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept;
+			[[nodiscard]] BiomeBlend populate(UniversalBlockCoord blockCoord, const TestGenerator& generator) const noexcept;
 	};
 }
 

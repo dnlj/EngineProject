@@ -111,9 +111,8 @@ namespace Game::Terrain {
 		}
 
 		for (const auto& chunkCoord : genRequestsBackFlat) {
-			// TODO: Handle realm generation. chunkCoord.realmId;
-			this->request<Layer::BlendedBiomeBlock>(chunkCoord.pos);
-			this->request<Layer::BlendedBiomeStructures>(chunkCoord.pos);
+			this->request<Layer::BlendedBiomeBlock>(chunkCoord);
+			this->request<Layer::BlendedBiomeStructures>(chunkCoord);
 		}
 
 		// nextSeq may or may not have been updated at this point. We just copy to curSeq
@@ -139,14 +138,14 @@ namespace Game::Terrain {
 			// combining them you will noticed that _some_ (not all) structures that span chunk
 			// boundries may end up cut off. Which ones are cut off depends on the generation order.
 			for (const auto& chunkCoord : genRequestsBackFlat) {
-				const auto regionCoord = chunkToRegion(chunkCoord.pos);
-				auto& region = terrain.getRegion({chunkCoord.realmId, regionCoord});
-				const auto regionIdx = chunkToRegionIndex(chunkCoord.pos, regionCoord);
+				const auto regionCoord = chunkCoord.toRegion();
+				auto& region = terrain.getRegion(regionCoord);
+				const auto regionIdx = chunkCoord.toRegionIndex(regionCoord);
 				auto& populated = region.populated[regionIdx.x][regionIdx.y];
 
 				if (!populated) {
 					// Populated is set below after generating structure data.
-					region.chunkAt(regionIdx) = layerBlendedBiomeBlock.get(chunkCoord.pos);
+					region.chunkAt(regionIdx) = layerBlendedBiomeBlock.get(chunkCoord);
 				}
 			}
 
@@ -158,8 +157,7 @@ namespace Game::Terrain {
 				auto& populated = region.populated[regionIdx.x][regionIdx.y];
 
 				if (!populated) {
-					// TODO: change to take a UniversalChunkCoord instead of pos + realm.
-					layerBlendedBiomeStructures.get(chunkCoord.pos, self(), chunkCoord.realmId, terrain);
+					layerBlendedBiomeStructures.get(chunkCoord, self(), terrain);
 					populated = true;
 				}
 			}

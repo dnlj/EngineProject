@@ -9,14 +9,14 @@
 namespace Game::Terrain::Layer {
 	void BlendedBiomeBlock::request(const Partition chunkCoord, TestGenerator& generator) {
 		generator.request<BlendedBiomeBasis>(chunkCoord);
-		cache.reserveRegion(chunkToRegion(chunkCoord), getSeq());
+		cache.reserveRegion(chunkCoord.toRegion(), getSeq());
 	}
 
 	void BlendedBiomeBlock::generate(const Partition chunkCoord, TestGenerator& generator) {
 		cache.populate(chunkCoord, getSeq(), [&](MapChunk& chunkStore) ENGINE_INLINE_REL {
 			const auto& chunkBiomeBasis = generator.get<BlendedBiomeBasis>(chunkCoord);
-			const auto& chunkHeight = generator.get<BlendedBiomeHeight>(chunkCoord.x);
-			const auto baseBlockCoord = chunkToBlock(chunkCoord);
+			const auto& chunkHeight = generator.get<BlendedBiomeHeight>(chunkCoord.toX());
+			const auto baseBlockCoord = chunkCoord.toBlock();
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
 				const auto h2 = chunkHeight[chunkIndex.x];
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
@@ -29,17 +29,18 @@ namespace Game::Terrain::Layer {
 	}
 
 	const MapChunk& BlendedBiomeBlock::get(const Index chunkCoord) const noexcept {
-		const auto regionCoord = chunkToRegion(chunkCoord);
-		return cache.at(regionCoord, getSeq()).at(chunkToRegionIndex(chunkCoord, regionCoord));
+		const auto regionCoord = chunkCoord.toRegion();
+		return cache.at(regionCoord, getSeq()).at(chunkCoord.toRegionIndex(regionCoord));
 	}
 
-	[[nodiscard]] BlockId BlendedBiomeBlock::populate(const BlockVec blockCoord, const BlockUnit h2, const BasisInfo& basisInfo, const TestGenerator& generator) const noexcept {
+	[[nodiscard]] BlockId BlendedBiomeBlock::populate(const UniversalBlockCoord blockCoord, const BlockUnit h2, const BasisInfo& basisInfo, const TestGenerator& generator) const noexcept {
 		if (basisInfo.basis <= 0.0_f) {
 			return BlockId::Air;
 		}
 
+		const FVec2 blockCoordF = blockCoord.pos;
 		return Engine::withTypeAt<Biomes>(basisInfo.id, [&]<class Biome>(){
-			return generator.get2<typename Biome::Block>(blockCoord, h2, basisInfo);
+			return generator.get2<typename Biome::Block>(blockCoord, blockCoordF, h2, basisInfo);
 		});
 	}
 }

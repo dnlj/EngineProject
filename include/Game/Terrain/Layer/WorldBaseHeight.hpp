@@ -10,8 +10,8 @@ namespace Game::Terrain::Layer {
 	// The large world-scale height variation that persists between all biomes.
 	class WorldBaseHeight : public CachedLayer, public DependsOn<> {
 		public:
-			using Partition = RegionUnit;
-			using Index = RegionUnit;
+			using Partition = UniversalRegionSubCoord;
+			using Index = UniversalRegionSubCoord;
 
 		public:
 			// TODO: May be threading considerations. Maybe have an option to do
@@ -37,7 +37,8 @@ namespace Game::Terrain::Layer {
 				// TODO: tune + octaves, atm this is way to steep.
 
 				cache.populate(regionCoordX, getSeq(), [&](decltype(cache)::Data& data) {
-					const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
+					//const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
+					const auto baseBlockCoordX = regionCoordX.toChunk().toBlock().pos;
 					for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
 						const auto blockCoordX = baseBlockCoordX + blockRegionIndex;
 						data[blockRegionIndex] = static_cast<BlockUnit>(500 * simplex1.value(blockCoordX * 0.00005f, 0));
@@ -49,7 +50,7 @@ namespace Game::Terrain::Layer {
 				return cache.getRegion(regionCoordX, getSeq());
 			}
 
-			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const ChunkUnit chunkX) const noexcept {
+			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const UniversalChunkSubCoord chunkX) const noexcept {
 				return cache.getChunk(chunkX, getSeq());
 			}
 

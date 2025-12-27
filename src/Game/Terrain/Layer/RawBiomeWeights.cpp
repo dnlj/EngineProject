@@ -11,10 +11,10 @@
 
 namespace Game::Terrain::Layer {
 	void RawBiomeWeights::request(const Partition chunkCoord, TestGenerator& generator) {
-		const auto regionCoord = chunkToRegion(chunkCoord);
+		const auto regionCoord = chunkCoord.toRegion();
 
 		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
-		generator.request<WorldBaseHeight>(regionCoord.x);
+		generator.request<WorldBaseHeight>(regionCoord.toX());
 
 		// Note that since RawBiome is not cached this call effectively does nothing.
 		generator.request<RawBiome>(chunkCoord);
@@ -24,8 +24,8 @@ namespace Game::Terrain::Layer {
 
 	void RawBiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {
 		cache.populate(chunkCoord, getSeq(), [&](auto& chunkStore) {
-			const auto baseBlockCoord = chunkToBlock(chunkCoord);
-			auto h0Walk = generator.get2<WorldBaseHeight>(chunkCoord.x);
+			const auto baseBlockCoord = chunkCoord.toBlock();
+			auto h0Walk = generator.get2<WorldBaseHeight>(chunkCoord.toX());
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
 				// Theoretically this offset should go in RawBiome. In practice its more
 				// efficient and easier to do it here. This avoids the need to use a cache
@@ -42,11 +42,11 @@ namespace Game::Terrain::Layer {
 	}
 
 	const ChunkStore<BiomeBlend>& RawBiomeWeights::get(const Index chunkCoord) const noexcept {
-		const auto regionCoord = chunkToRegion(chunkCoord);
-		return cache.at(regionCoord, getSeq()).at(chunkToRegionIndex(chunkCoord, regionCoord));
+		const auto regionCoord = chunkCoord.toRegion();
+		return cache.at(regionCoord, getSeq()).at(chunkCoord.toRegionIndex(regionCoord));
 	}
 
-	[[nodiscard]] BiomeBlend RawBiomeWeights::populate(BlockVec blockCoord, const TestGenerator& generator) const noexcept {
+	[[nodiscard]] BiomeBlend RawBiomeWeights::populate(UniversalBlockCoord blockCoord, const TestGenerator& generator) const noexcept {
 		BiomeBlend blend = {
 			.info = generator.get<RawBiome>(blockCoord),
 			.weights = {},
@@ -139,30 +139,35 @@ namespace Game::Terrain::Layer {
 		//   calculations and slows things down a lot. We should be able to better than
 		//   the naive 3x3 mentioned above though, but again more logic and still more
 		//   computations than it is currently.
+		
+		constexpr static BlockVec offLeft = {-biomeBlendDist, 0};
+		constexpr static BlockVec offRight = {biomeBlendDist, 0};
+		constexpr static BlockVec offBottom = {0, -biomeBlendDist};
+		constexpr static BlockVec offTop = {0, biomeBlendDist};
 
 		if constexpr (true) {
 			if (left) { // Left
-				addWeight(generator.get<RawBiome>({blockCoord.x - biomeBlendDist, blockCoord.y}).id, leftW);
+				addWeight(generator.get<RawBiome>(blockCoord + offLeft).id, leftW);
 					
 				if (bottom) { // Bottom Left
-					addWeight(generator.get<RawBiome>({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(leftW, bottomW));
+					addWeight(generator.get<RawBiome>(blockCoord + offLeft + offBottom).id, std::min(leftW, bottomW));
 				} else if (top) { // Top Left
-					addWeight(generator.get<RawBiome>({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(leftW, topW));
+					addWeight(generator.get<RawBiome>(blockCoord + offLeft + offTop).id, std::min(leftW, topW));
 				}
 			} else if (right) { // Right
-				addWeight(generator.get<RawBiome>({blockCoord.x + biomeBlendDist, blockCoord.y}).id, rightW);
+				addWeight(generator.get<RawBiome>(blockCoord + offRight).id, rightW);
 					
 				if (bottom) { // Bottom Right
-					addWeight(generator.get<RawBiome>({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist}).id, std::min(rightW, bottomW));
+					addWeight(generator.get<RawBiome>(blockCoord + offRight + offBottom).id, std::min(rightW, bottomW));
 				} else if (top) { // Top Right
-					addWeight(generator.get<RawBiome>({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist}).id, std::min(rightW, topW));
+					addWeight(generator.get<RawBiome>(blockCoord + offRight + offTop).id, std::min(rightW, topW));
 				}
 			}
 				
 			if (bottom) { // Bottom Center
-				addWeight(generator.get<RawBiome>({blockCoord.x, blockCoord.y - biomeBlendDist}).id, bottomW);
+				addWeight(generator.get<RawBiome>(blockCoord + offBottom).id, bottomW);
 			} else if (top) { // Top Center
-				addWeight(generator.get<RawBiome>({blockCoord.x, blockCoord.y + biomeBlendDist}).id, topW);
+				addWeight(generator.get<RawBiome>(blockCoord + offTop).id, topW);
 			}
 		} else {
 			// Naive 3x3 9 samples. This is the most brute force way possible. We should
@@ -175,7 +180,7 @@ namespace Game::Terrain::Layer {
 				return std::min(a, b);
 			};
 
-			const auto weightAt = [&](BlockVec coord) -> std::pair<BiomeId, BlockUnit> {
+			const auto weightAt = [&](UniversalBlockCoord coord) -> std::pair<BiomeId, BlockUnit> {
 				// TODO: Should this be using biomeRem or smallRem? This wasn't updated until later. I think this is okay?
 				const auto info = generator.get<RawBiome>(coord);
 				const auto d1 = info.biomeRem.x;
@@ -185,22 +190,22 @@ namespace Game::Terrain::Layer {
 				return {info.id, test(d1, test(d2, test(d3, test(d4, biomeBlendDist))))};
 			};
 
-			const auto maybe = [&](BlockVec coord) {
+			const auto maybe = [&](UniversalBlockCoord coord) {
 				auto w = weightAt(coord);
 				addWeight(w.first, w.second);
 			};
 		
 			leftW;rightW;topW;bottomW;
 			blend.weights.clear();
-			maybe({blockCoord.x, blockCoord.y});
-			maybe({blockCoord.x - biomeBlendDist, blockCoord.y});
-			maybe({blockCoord.x - biomeBlendDist, blockCoord.y - biomeBlendDist});
-			maybe({blockCoord.x - biomeBlendDist, blockCoord.y + biomeBlendDist});
-			maybe({blockCoord.x + biomeBlendDist, blockCoord.y});
-			maybe({blockCoord.x + biomeBlendDist, blockCoord.y - biomeBlendDist});
-			maybe({blockCoord.x + biomeBlendDist, blockCoord.y + biomeBlendDist});
-			maybe({blockCoord.x, blockCoord.y - biomeBlendDist});
-			maybe({blockCoord.x, blockCoord.y + biomeBlendDist});
+			maybe(blockCoord);
+			maybe(blockCoord + offBottom);
+			maybe(blockCoord + offTop);
+			maybe(blockCoord + offLeft);
+			maybe(blockCoord + offLeft + offBottom);
+			maybe(blockCoord + offLeft + offTop);
+			maybe(blockCoord + offRight);
+			maybe(blockCoord + offRight + offBottom);
+			maybe(blockCoord + offRight + offTop);
 		}
 
 		ENGINE_DEBUG_ONLY({

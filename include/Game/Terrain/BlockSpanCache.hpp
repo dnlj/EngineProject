@@ -23,7 +23,7 @@ namespace Game::Terrain {
 			};
 
 		private:
-			Engine::FlatHashMap<RegionUnit, Store> cache{};
+			Engine::FlatHashMap<UniversalRegionSubCoord, Store> cache{};
 
 		public:
 			BlockSpanCache() = default;
@@ -31,7 +31,7 @@ namespace Game::Terrain {
 			BlockSpanCache(const BlockSpanCache&) = delete;
 
 			// TODO: Rename `get` once we have strong typedefs for overload.
-			ENGINE_INLINE const Data& getRegion(RegionUnit regionCoordX, SeqNum curSeq) const noexcept {
+			ENGINE_INLINE const Data& getRegion(UniversalRegionSubCoord regionCoordX, const SeqNum curSeq) const noexcept {
 				const auto found = cache.find(regionCoordX);
 				ENGINE_DEBUG_ASSERT(found != cache.end());
 				found->second.lastUsed = curSeq;
@@ -39,14 +39,14 @@ namespace Game::Terrain {
 			}
 
 			// TODO: Rename `get` once we have strong typedefs for overload.
-			ENGINE_INLINE_REL auto getChunk(ChunkUnit chunkX, SeqNum curSeq) const noexcept {
-				const auto regionCoordX = chunkToRegion({chunkX, 0}).x;
-				const auto offsetBlocks = chunkSize.x * (chunkX - regionToChunk({regionCoordX, 0}).x);
+			ENGINE_INLINE_REL auto getChunk(const UniversalChunkSubCoord chunkX, const SeqNum curSeq) const noexcept {
+				const auto regionCoordX = chunkX.toRegion();
+				const auto offsetBlocks = chunkSize.x * (chunkX.pos - regionCoordX.toChunk().pos);
 				ENGINE_DEBUG_ASSERT(offsetBlocks >= 0 && offsetBlocks <= std::tuple_size_v<Data>);
 				return getRegion(regionCoordX, curSeq).begin() + offsetBlocks;
 			}
 			
-			ENGINE_INLINE_REL void reserve(const RegionUnit regionCoordX) noexcept {
+			ENGINE_INLINE_REL void reserve(const UniversalRegionSubCoord regionCoordX) noexcept {
 				cache.try_emplace(regionCoordX);
 			}
 
@@ -70,14 +70,14 @@ namespace Game::Terrain {
 				//ENGINE_INFO2("BlockSpanCache::clearCache = {} - {} = {} ({:.2f}GB)", before, after, before - after, (before-after) * (1.0 / (1 << 30)));
 			}
 
-			ENGINE_INLINE bool isPopulated(RegionUnit regionCoordX, SeqNum curSeq) {
+			ENGINE_INLINE bool isPopulated(UniversalRegionSubCoord regionCoordX, const SeqNum curSeq) {
 				const auto found = cache.find(regionCoordX);
 				if (found == cache.end()) { return false; }
 				found->second.lastUsed = curSeq;
 				return found->second.populated;
 			}
 
-			ENGINE_INLINE void populate(RegionUnit regionCoordX, SeqNum curSeq, auto&& func) {
+			ENGINE_INLINE void populate(UniversalRegionSubCoord regionCoordX, const SeqNum curSeq, auto&& func) {
 				const auto found = cache.find(regionCoordX);
 				ENGINE_DEBUG_ASSERT(found != cache.end());
 				found->second.lastUsed = curSeq;
@@ -89,7 +89,7 @@ namespace Game::Terrain {
 	};
 
 	template<class T>
-	ENGINE_INLINE inline void removeGeneratedPartitions(BlockSpanCache<T>& cache, SeqNum seqNum, std::vector<RegionUnit>& partitions) {
-		std::erase_if(partitions, [&](const RegionUnit& regionCoordX){ return cache.isPopulated(regionCoordX, seqNum); });
+	ENGINE_INLINE inline void removeGeneratedPartitions(BlockSpanCache<T>& cache, const SeqNum curSeq, std::vector<UniversalRegionSubCoord>& partitions) {
+		std::erase_if(partitions, [&](const UniversalRegionSubCoord& regionCoordX){ return cache.isPopulated(regionCoordX, curSeq); });
 	}
 }

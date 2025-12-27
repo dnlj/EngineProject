@@ -3,6 +3,7 @@
 // Game
 #include <Game/Terrain/RegionStore.hpp>
 #include <Game/Terrain/RegionArea.hpp>
+#include <Game/universal.hpp>
 
 
 namespace Game::Terrain {
@@ -13,26 +14,26 @@ namespace Game::Terrain {
 	class RegionDataCache {
 		private:
 			using Store = RegionStore<ChunkData>;
-			Engine::FlatHashMap<RegionVec, std::unique_ptr<Store>> regions;
+			Engine::FlatHashMap<UniversalRegionCoord, std::unique_ptr<Store>> regions;
 
 		public:
 			RegionDataCache() = default;
 			RegionDataCache(RegionDataCache&&) = default;
 			RegionDataCache(const RegionDataCache&) = delete;
 
-			ENGINE_INLINE Store& at(RegionVec regionCoord, SeqNum curSeq) noexcept {
+			ENGINE_INLINE Store& at(UniversalRegionCoord regionCoord, SeqNum curSeq) noexcept {
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access region outside of RegionDataCache.");
 				found->second->lastUsed = curSeq;
 				return *found->second;
 			}
 
-			ENGINE_INLINE const Store& at(RegionVec regionCoord, SeqNum curSeq) const noexcept {
+			ENGINE_INLINE const Store& at(UniversalRegionCoord regionCoord, SeqNum curSeq) const noexcept {
 				return const_cast<RegionDataCache*>(this)->at(regionCoord, curSeq);
 			}
 
 			// TODO: rename to just `reserve` once strong typdefs are in place for ChunkVec/RegionVec.
-			ENGINE_INLINE void reserveRegion(RegionVec regionCoord, SeqNum curSeq) noexcept {
+			ENGINE_INLINE void reserveRegion(UniversalRegionCoord regionCoord, SeqNum curSeq) noexcept {
 				auto found = regions.find(regionCoord);
 				if (found == regions.end()) {
 					found = regions.try_emplace(regionCoord, std::make_unique<Store>()).first;
@@ -41,16 +42,16 @@ namespace Game::Terrain {
 				found->second->lastUsed = curSeq;
 			}
 			
-			ENGINE_INLINE bool isPopulated(const ChunkVec chunkCoord, SeqNum curSeq) {
-				const auto regionCoord = chunkToRegion(chunkCoord);
-				const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
+			ENGINE_INLINE bool isPopulated(const UniversalChunkCoord chunkCoord, SeqNum curSeq) {
+				const auto regionCoord = chunkCoord.toRegion();
+				const auto regionIndex = chunkCoord.toRegionIndex(regionCoord);
 				auto& regionStore = this->at(regionCoord, curSeq);
 				return regionStore.isPopulated(regionIndex);
 			}
 
-			ENGINE_INLINE_REL decltype(auto) populate(const ChunkVec chunkCoord, SeqNum curSeq, auto&& func) {
-				const auto regionCoord = chunkToRegion(chunkCoord);
-				const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
+			ENGINE_INLINE_REL decltype(auto) populate(const UniversalChunkCoord chunkCoord, SeqNum curSeq, auto&& func) {
+				const auto regionCoord = chunkCoord.toRegion();
+				const auto regionIndex = chunkCoord.toRegionIndex(regionCoord);
 				auto& regionStore = this->at(regionCoord, curSeq);
 				if (regionStore.isPopulated(regionIndex)) { return; }
 
@@ -81,7 +82,7 @@ namespace Game::Terrain {
 	};
 
 	template<class T>
-	ENGINE_INLINE inline void removeGeneratedPartitions(RegionDataCache<T>& cache, SeqNum seqNum, std::vector<ChunkVec>& partitions) {
-		std::erase_if(partitions, [&](const ChunkVec& chunkCoord){ return cache.isPopulated(chunkCoord, seqNum); });
+	ENGINE_INLINE inline void removeGeneratedPartitions(RegionDataCache<T>& cache, SeqNum seqNum, std::vector<UniversalChunkCoord>& partitions) {
+		std::erase_if(partitions, [&](const UniversalChunkCoord& chunkCoord){ return cache.isPopulated(chunkCoord, seqNum); });
 	}
 }

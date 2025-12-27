@@ -5,22 +5,25 @@
 
 #define BIOME_HEIGHT_ARGS \
 	const TestGenerator& generator, \
-	const ::Game::BlockUnit blockCoordX, \
+	const ::Game::UniversalBlockSubCoord blockCoordX, \
 	const ::Game::Terrain::Float h0, \
 	const ::Game::Terrain::RawBiomeInfo& rawInfo
 
 #define BIOME_BASIS_STRENGTH_ARGS \
 	const TestGenerator& generator, \
-	const ::Game::BlockVec blockCoord
+	const ::Game::UniversalBlockCoord blockCoord, \
+	const ::Game::Terrain::FVec2 blockCoordF 
 
 #define BIOME_BASIS_ARGS \
 	const TestGenerator& generator, \
-	const ::Game::BlockVec blockCoord, \
+	const ::Game::UniversalBlockCoord blockCoord, \
+	const ::Game::Terrain::FVec2 blockCoordF, \
 	const ::Game::BlockUnit h2
 
 #define BIOME_BLOCK_ARGS \
 	const TestGenerator& generator, \
-	const ::Game::BlockVec blockCoord, \
+	const ::Game::UniversalBlockCoord blockCoord, \
+	const ::Game::Terrain::FVec2 blockCoordF, \
 	const ::Game::BlockUnit h2, \
 	const ::Game::Terrain::BasisInfo& basisInfo
 
@@ -39,7 +42,7 @@
  */
 #define BIOME_STRUCTURE_INFO_ARGS \
 	const TestGenerator& generator, \
-	const ::Game::ChunkVec& chunkCoord, \
+	const ::Game::UniversalChunkCoord& chunkCoord, \
 	std::back_insert_iterator<std::vector<::Game::Terrain::StructureInfo>> inserter
 
 // TODO: It might be better to look into some kind of trait/tag based system

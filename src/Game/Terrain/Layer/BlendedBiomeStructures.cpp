@@ -11,7 +11,7 @@ namespace Game::Terrain::Layer {
 		generator.request<BlendedBiomeStructureInfo>(chunkCoord);
 	}
 
-	void BlendedBiomeStructures::get(const Index chunkCoord, TestGenerator& generator, const RealmId realmId, Terrain& terrain) const noexcept {
+	void BlendedBiomeStructures::get(const Index chunkCoord, TestGenerator& generator, Terrain& terrain) const noexcept {
 		// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial structure.
 		
 		// TODO: How do we want to resolve conflicts? If we just go first come first serve
@@ -48,7 +48,7 @@ namespace Game::Terrain::Layer {
 						}
 					}
 
-					generator.get2<typename Biome::Structure>(terrain, realmId, info);
+					generator.get2<typename Biome::Structure>(terrain, chunkCoord.realmId, info);
 				}
 			});
 		}

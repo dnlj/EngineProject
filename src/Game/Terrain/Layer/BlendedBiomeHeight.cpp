@@ -17,7 +17,7 @@ namespace Game::Terrain::Layer {
 			const auto& regionH0 = generator.get<WorldBaseHeight>(regionCoordX);
 			const auto [h0Min, h0Max] = std::minmax_element(regionH0.cbegin(), regionH0.cend());
 
-			const auto chunkCoordMinX = regionCoordX * chunksPerRegion;
+			const auto chunkCoordMinX = regionCoordX.toChunk().pos;
 			const ChunkArea chunkArea = {
 				.min = {chunkCoordMinX, blockToChunk({0, *h0Min}).y},
 
@@ -29,7 +29,7 @@ namespace Game::Terrain::Layer {
 			};
 
 			chunkArea.forEach([&](const auto& chunkCoord) ENGINE_INLINE {
-				generator.request<BlendedBiomeWeights>(chunkCoord);
+				generator.request<BlendedBiomeWeights>({.realmId = regionCoordX.realmId, .pos = chunkCoord});
 			});
 
 			// TODO: We should probably be doing this with correct `request` calls to the blended biomes.
@@ -50,14 +50,15 @@ namespace Game::Terrain::Layer {
 
 		cache.populate(regionCoordX, getSeq(), [&](decltype(cache)::Data& h2Data) ENGINE_INLINE_REL {
 			const auto& h0Data = generator.get<WorldBaseHeight>(regionCoordX);
-			const auto baseBlockCoordX = chunkToBlock(regionToChunk({regionCoordX, 0})).x;
+			const auto baseBlockCoordX = regionCoordX.toChunk().toBlock();
 			for (BlockUnit blockRegionIndex = 0; blockRegionIndex < blocksPerRegion; ++blockRegionIndex) {
 				const auto blockCoordX = baseBlockCoordX + blockRegionIndex;
 				const auto h0 = h0Data[blockRegionIndex];
 				const auto h0F = static_cast<Float>(h0);
-				const auto chunkCoord = blockToChunk({blockCoordX, h0});
+				const auto blockCoord = UniversalBlockCoord{blockCoordX.realmId, {blockCoordX.pos, h0}};
+				const auto chunkCoord = blockCoord.toChunk();
 				const auto& chunkStore = generator.get<BlendedBiomeWeights>(chunkCoord);
-				const auto chunkIndex = blockToChunkIndex({blockCoordX, h0}, chunkCoord);
+				const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
 				const auto& blend = chunkStore.at(chunkIndex);
 				Float h2 = 0;
 

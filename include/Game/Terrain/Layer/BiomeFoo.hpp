@@ -12,17 +12,17 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Partition = BlockUnit;
+			using Partition = UniversalRegionSubCoord;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition chunkCoordX, TestGenerator& generator);
+			void request(const Partition regionCoordX, TestGenerator& generator);
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 
 	class BiomeFooBasisStrength : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Partition = ChunkVec;
+			using Partition = UniversalChunkCoord;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
@@ -32,7 +32,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooBasis : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Partition = ChunkVec;
+			using Partition = UniversalChunkCoord;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
@@ -52,7 +52,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooStructureInfo : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkVec;
+			using Partition = UniversalChunkCoord;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
@@ -62,7 +62,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooStructure : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkVec;
+			using Partition = UniversalChunkCoord;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;

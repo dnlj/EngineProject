@@ -8,8 +8,8 @@ namespace Game::Terrain::Layer {
 	// The direct, raw, biome info. Determines what biome is where before any blending/interpolation.
 	class RawBiome : public OnDemandLayer, public DependsOn<> {
 		public:
-			using Partition = ChunkVec;
-			using Index = BlockVec;
+			using Partition = UniversalChunkCoord;
+			using Index = UniversalBlockCoord;
 
 		public:
 			RawBiome(TestGenerator&, SeqNum&) // TODO: seed from generator.

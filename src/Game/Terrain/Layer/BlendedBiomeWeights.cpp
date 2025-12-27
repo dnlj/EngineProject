@@ -8,13 +8,13 @@
 namespace Game::Terrain::Layer {
 	void BlendedBiomeWeights::request(const Partition chunkCoord, TestGenerator& generator) {
 		generator.request<RawBiomeWeights>(chunkCoord);
-		cache.reserveRegion(chunkToRegion(chunkCoord), getSeq());
+		cache.reserveRegion(chunkCoord.toRegion(), getSeq());
 	}
 
 	void BlendedBiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {
 		cache.populate(chunkCoord, getSeq(), [&](auto& chunkStore) ENGINE_INLINE_REL {
 			const auto& chunkRawBiomeWeights = generator.get<RawBiomeWeights>(chunkCoord);
-			const auto baseBlockCoord = chunkToBlock(chunkCoord);
+			const auto baseBlockCoord = chunkCoord.toBlock();
 			for (BlockVec chunkIndex = {0, 0}; chunkIndex.x < chunkSize.x; ++chunkIndex.x) {
 				for (chunkIndex.y = 0; chunkIndex.y < chunkSize.y; ++chunkIndex.y) {
 					const auto blockCoord = baseBlockCoord + chunkIndex;
@@ -25,11 +25,11 @@ namespace Game::Terrain::Layer {
 	}
 
 	const ChunkStore<BiomeBlend>& BlendedBiomeWeights::get(const Index chunkCoord) const noexcept {
-		const auto regionCoord = chunkToRegion(chunkCoord);
-		return cache.at(regionCoord, getSeq()).at(chunkToRegionIndex(chunkCoord, regionCoord));
+		const auto regionCoord = chunkCoord.toRegion();
+		return cache.at(regionCoord, getSeq()).at(chunkCoord.toRegionIndex(regionCoord));
 	}
 
-	[[nodiscard]] BiomeBlend BlendedBiomeWeights::populate(const BlockVec blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept {
+	[[nodiscard]] BiomeBlend BlendedBiomeWeights::populate(const UniversalBlockCoord blockCoord, BiomeBlend blend, const TestGenerator& generator) const noexcept {
 		normalizeBiomeWeights(blend.weights);
 		blend.rawWeights = blend.weights;
 		ENGINE_DEBUG_ONLY({
@@ -44,10 +44,11 @@ namespace Game::Terrain::Layer {
 		//       defined on the biomes for now though until we have more complete use
 		//       cases.
 
+		const FVec2 blockCoordF = blockCoord.pos;
 		for (auto& biomeWeight : blend.weights) {
 			// Output should be between 0 and 1. This is the strength of the basis, not the basis itself.
 			const auto basisStr = Engine::withTypeAt<Biomes>(biomeWeight.id, [&]<class Biome>(){
-				return generator.get2<typename Biome::BasisStrength>(blockCoord);
+				return generator.get2<typename Biome::BasisStrength>(blockCoord, blockCoordF);
 			});
 
 			ENGINE_DEBUG_ASSERT(0.0f <= basisStr && basisStr <= 1.0f, "Invalid basis strength value given for biome ", biomeWeight.id, ". Out of range [0, 1].");

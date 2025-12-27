@@ -130,17 +130,17 @@ namespace {
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
 				const BlockSpanX blockSpan = {indexToBlock({}).x, indexToBlock(res).x};
-				const RealmId realmId = 0; // TODO: realm support
+				const RealmId realmId = 0; // TODO: realm support/slider
 
 				for (BlockUnit y = 0; y < res.y; ++y) {
 					const auto yspan = y * res.x;
 
 					for (BlockUnit x = 0; x < res.x; ++x) {
-						const auto blockCoord = indexToBlock({x, y});
+						const UniversalBlockCoord blockCoord = {realmId, indexToBlock({x, y})};
 						const auto idx = x + yspan;
-						const auto chunkCoord = blockToChunk(blockCoord);
-						const auto chunkIndex = blockToChunkIndex(blockCoord, chunkCoord);
-						const auto h0 = *generator.get2<Game::Terrain::Layer::WorldBaseHeight>(chunkCoord.x);
+						const auto chunkCoord = blockCoord.toChunk();
+						const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
+						const auto h0 = *generator.get2<Game::Terrain::Layer::WorldBaseHeight>(chunkCoord.toX());
 
 						if (mode == Layer::BiomeBaseGrid) {
 							// This won't line up 100% because we don't include the height offset (see
@@ -172,11 +172,11 @@ namespace {
 						} else if (mode == Layer::TerrainHeight0) {
 							const auto weights = generator.get<Game::Terrain::Layer::BlendedBiomeWeights>(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
-							data[idx] = blockCoord.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
+							data[idx] = blockCoord.pos.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainHeight2) {
-							const auto h2 = generator.get<Game::Terrain::Layer::BlendedBiomeHeight>(chunkCoord.x) + chunkIndex.x;
+							const auto h2 = generator.get<Game::Terrain::Layer::BlendedBiomeHeight>(chunkCoord.toX()) + chunkIndex.x;
 							const auto basisInfo = generator.get<Game::Terrain::Layer::BlendedBiomeBasis>(chunkCoord).at(chunkIndex);
-							data[idx] = blockCoord.y <= *h2 ? glm::u8vec3(basisInfo.weight * glm::vec3(biomeToColor[basisInfo.id])) : glm::u8vec3{};
+							data[idx] = blockCoord.pos.y <= *h2 ? glm::u8vec3(basisInfo.weight * glm::vec3(biomeToColor[basisInfo.id])) : glm::u8vec3{};
 						} else if (mode == Layer::TerrainBasis) {
 							const auto basisInfo = generator.get<Game::Terrain::Layer::BlendedBiomeBasis>(chunkCoord).at(chunkIndex);
 							minBasis = std::min(minBasis, basisInfo.basis);
@@ -186,19 +186,19 @@ namespace {
 							const auto scale = (basisInfo.basis - minBasis) / range;
 							data[idx] = scale * glm::vec3(biomeToColor[basisInfo.id]);
 						} else if (mode == Layer::Blocks) {
-							const auto regionCoord = chunkToRegion(chunkCoord);
-							auto& region = terrain.getRegion({realmId, regionCoord});
+							const auto regionCoord = chunkCoord.toRegion();
+							auto& region = terrain.getRegion(regionCoord);
 
 							// Sanity checks
-							ENGINE_DEBUG_ASSERT(blockCoord.x >= offset.x);
-							ENGINE_DEBUG_ASSERT(blockCoord.y >= offset.y);
+							ENGINE_DEBUG_ASSERT(blockCoord.pos.x >= offset.x);
+							ENGINE_DEBUG_ASSERT(blockCoord.pos.y >= offset.y);
 
 							// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
-							const auto regionIndex = chunkToRegionIndex(chunkCoord, regionCoord);
+							const auto regionIndex = chunkCoord.toRegionIndex(regionCoord);
 							auto& chunk = region.chunks[regionIndex.x][regionIndex.y];
 							ENGINE_DEBUG_ASSERT(region.isPopulated(regionIndex), "Chunk is at incorrect stage.");
 
-							const auto blockIndex = blockToChunkIndex(blockCoord, chunkCoord);
+							const auto blockIndex = blockCoord.toChunkIndex(chunkCoord);
 							ENGINE_DEBUG_ASSERT(blockIndex.x >= 0 && blockIndex.x < chunkSize.x, "Invalid chunk index.");
 							ENGINE_DEBUG_ASSERT(blockIndex.y >= 0 && blockIndex.y < chunkSize.y, "Invalid chunk index.");
 
@@ -210,7 +210,7 @@ namespace {
 
 						BlockVec poi = {80670, 889};
 						const auto tol = 2 * zoom; // The zoom multiplier gives use a x*x pixel dot at the point.
-						if ((blockCoord.x >= poi.x) && (blockCoord.x <= poi.x + tol) && (blockCoord.y >= poi.y) && (blockCoord.y <= poi.y + tol)) {
+						if ((blockCoord.pos.x >= poi.x) && (blockCoord.pos.x <= poi.x + tol) && (blockCoord.pos.y >= poi.y) && (blockCoord.pos.y <= poi.y + tol)) {
 							data[idx] = {200, 0, 0};
 						}
 					}
