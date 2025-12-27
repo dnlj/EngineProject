@@ -10,8 +10,8 @@ namespace Game::Terrain::Layer {
 	// The large world-scale height variation that persists between all biomes.
 	class WorldBaseHeight : public CachedLayer, public DependsOn<> {
 		public:
-			using Partition = UniversalRegionSubCoord;
-			using Index = UniversalRegionSubCoord;
+			using Partition = UniversalRegionCoordX;
+			using Index = UniversalRegionCoordX;
 
 		public:
 			// TODO: May be threading considerations. Maybe have an option to do
@@ -50,7 +50,7 @@ namespace Game::Terrain::Layer {
 				return cache.getRegion(regionCoordX, getSeq());
 			}
 
-			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const UniversalChunkSubCoord chunkX) const noexcept {
+			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const UniversalChunkCoordX chunkX) const noexcept {
 				return cache.getChunk(chunkX, getSeq());
 			}
 

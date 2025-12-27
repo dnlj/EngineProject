@@ -12,7 +12,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Partition = UniversalRegionSubCoord;
+			using Partition = UniversalRegionCoordX;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;

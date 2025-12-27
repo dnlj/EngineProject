@@ -5,14 +5,14 @@
 
 #define BIOME_HEIGHT_ARGS \
 	const TestGenerator& generator, \
-	const ::Game::UniversalBlockSubCoord blockCoordX, \
+	const ::Game::UniversalBlockCoordX blockCoordX, \
 	const ::Game::Terrain::Float h0, \
 	const ::Game::Terrain::RawBiomeInfo& rawInfo
 
 #define BIOME_BASIS_STRENGTH_ARGS \
 	const TestGenerator& generator, \
 	const ::Game::UniversalBlockCoord blockCoord, \
-	const ::Game::Terrain::FVec2 blockCoordF 
+	const ::Game::Terrain::FVec2 blockCoordF
 
 #define BIOME_BASIS_ARGS \
 	const TestGenerator& generator, \

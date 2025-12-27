@@ -17,8 +17,8 @@ namespace Game::Terrain::Layer {
 	// The absolute weight of each biome. These are non-normalized.
 	class BlendedBiomeHeight : public CachedLayer, public DependsOn<> {
 		public:
-			using Partition = UniversalRegionSubCoord;
-			using Index = UniversalChunkSubCoord;
+			using Partition = UniversalRegionCoordX;
+			using Index = UniversalChunkCoordX;
 
 		public: // TODO: private, currently public during transition to layers.
 			BlockSpanCache<BlockUnit> cache;
