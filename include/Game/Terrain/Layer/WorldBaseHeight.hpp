@@ -50,8 +50,8 @@ namespace Game::Terrain::Layer {
 				return cache.getRegion(regionCoordX, getSeq());
 			}
 
-			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const UniversalChunkCoordX chunkX) const noexcept {
-				return cache.getChunk(chunkX, getSeq());
+			ENGINE_INLINE_REL [[nodiscard]] decltype(auto) get(const TestGenerator&, const UniversalChunkCoordX chunkCoordX) const noexcept {
+				return cache.getChunk(chunkCoordX, getSeq());
 			}
 
 			[[nodiscard]] ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {

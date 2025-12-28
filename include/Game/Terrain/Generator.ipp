@@ -43,7 +43,7 @@ namespace Game::Terrain {
 		uint64 totalBytes = 0;
 
 		// We do not need to lock layerGenThreadMutex here because cleanCaches is only called
-		// synchronously from the coordinator thread after layer generation.
+		// synchronously from the coordinator thread.
 		Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
 			totalBytes += layer.getCacheSizeBytes();
 		});
@@ -93,6 +93,16 @@ namespace Game::Terrain {
 	template<class Self, class Layers, class SharedData>
 	void Generator<Self, Layers, SharedData>::processGenRequests() {
 		ENGINE_DEBUG_ASSERT(genRequestsBackFlat.empty());
+
+		// We clean caches at the start instead of the end to avoid issues with the TerrainPreview
+		// when generating large ammounts of terrain, which fills the entire cache, and then trying
+		// to access layers which have already been cleaned. Moving it to the start instead of end
+		// avoids this by deferring the cleanup until the next call so the layers are not cleaned
+		// immediately.
+		//
+		// From the gameplay side this should be fine since we are queueing requests all the time so
+		// that cache will be cleaned either way.
+		cleanCaches();
 
 		{
 			// Avoid regenerating already generated data. Even with caches data from immediate
@@ -165,6 +175,5 @@ namespace Game::Terrain {
 
 		genRequestsBackFlat.clear();
 		genRequestsBack.clear();
-		cleanCaches();
 	}
 }

@@ -31,17 +31,17 @@ namespace Game::Terrain {
 			BlockSpanCache(const BlockSpanCache&) = delete;
 
 			// TODO: Rename `get` once we have strong typedefs for overload.
-			ENGINE_INLINE const Data& getRegion(UniversalRegionCoordX regionCoordX, const SeqNum curSeq) const noexcept {
+			ENGINE_INLINE_REL const Data& getRegion(UniversalRegionCoordX regionCoordX, const SeqNum curSeq) const noexcept {
 				const auto found = cache.find(regionCoordX);
-				ENGINE_DEBUG_ASSERT(found != cache.end());
+				ENGINE_DEBUG_ASSERT(found != cache.end(), "Attempting to get uninitialized region.");
 				found->second.lastUsed = curSeq;
 				return found->second.data;
 			}
 
 			// TODO: Rename `get` once we have strong typedefs for overload.
-			ENGINE_INLINE_REL auto getChunk(const UniversalChunkCoordX chunkX, const SeqNum curSeq) const noexcept {
-				const auto regionCoordX = chunkX.toRegion();
-				const auto offsetBlocks = chunkSize.x * (chunkX.pos - regionCoordX.toChunk().pos);
+			ENGINE_INLINE_REL auto getChunk(const UniversalChunkCoordX chunkCoordX, const SeqNum curSeq) const noexcept {
+				const auto regionCoordX = chunkCoordX.toRegion();
+				const auto offsetBlocks = chunkSize.x * (chunkCoordX.pos - regionCoordX.toChunk().pos);
 				ENGINE_DEBUG_ASSERT(offsetBlocks >= 0 && offsetBlocks <= std::tuple_size_v<Data>);
 				return getRegion(regionCoordX, curSeq).begin() + offsetBlocks;
 			}

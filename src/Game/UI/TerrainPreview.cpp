@@ -97,6 +97,27 @@ namespace {
 					std::this_thread::yield();
 				}
 
+				// TODO: Currently we can have some invalid access/asserts due to accessing underlying layers that have already been cleared from the cache:
+				//       1. Generate an area.
+				//          - This is easier to observer at higher (further out) zoom levels so that
+				//            the cache is cleared more frequently. In testing I would normally use 9.
+				//       2. Move away from that area until those regions are cleared from the layer caches.
+				//          - In this specific case I was observing this by adding a print to BlockSpanCache::clearCache.
+				//       3. Once those areas are freed from the cache, revisit that area.
+				//          - Since that area is already loaded on the Terrain it is not regenerated,
+				//            but it is also not in the cache so accessing the underlying layers is not
+				//            allowed.
+				//
+				// More specifically I was seeing this with WorldBaseHeight when getting h0 for the
+				// debug layers below. So you will need to ensure that one of those is active when
+				// testing.
+				// 
+				// There isn't an obvious and non-invasive way to address that so we are just
+				// ignoring it for now. The solution should not significantly change the Generator
+				// since it currently works as expected for normal gameplay. The issue is that we
+				// access the underlying layers here in unsafe ways, which is needed for the debug
+				// views.
+
 				// TODO: Move this color specification to Blocks.xpp, could be useful
 				//       elsewhere. Alternatively, calculate this value based on the avg img
 				//       color when loading them/packing them into atlas.
@@ -140,7 +161,6 @@ namespace {
 						const auto idx = x + yspan;
 						const auto chunkCoord = blockCoord.toChunk();
 						const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
-						const auto h0 = *generator.get2<Game::Terrain::Layer::WorldBaseHeight>(chunkCoord.toX());
 
 						if (mode == Layer::BiomeBaseGrid) {
 							// This won't line up 100% because we don't include the height offset (see
@@ -149,6 +169,7 @@ namespace {
 							const auto info = generator.get<Game::Terrain::Layer::RawBiome>(blockCoordAdj);
 							data[idx] = sizeToBrightness(info.size) * glm::vec3(biomeToColor[info.id]);
 						} else if (mode == Layer::BiomeRawWeights) {
+							const auto h0 = *generator.get2<Game::Terrain::Layer::WorldBaseHeight>(chunkCoord.toX());
 							// Need to include the biome offset or else things won't line
 							// up when switching layers. This is because of how we handle
 							// biome offsets between RawBiome and BiomeRawWeights. See
@@ -170,6 +191,7 @@ namespace {
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = biome.weight * glm::vec3(biomeToColor[biome.id]);
 						} else if (mode == Layer::TerrainHeight0) {
+							const auto h0 = *generator.get2<Game::Terrain::Layer::WorldBaseHeight>(chunkCoord.toX());
 							const auto weights = generator.get<Game::Terrain::Layer::BlendedBiomeWeights>(chunkCoord).at(chunkIndex).weights;
 							const auto biome = maxBiomeWeight(weights);
 							data[idx] = blockCoord.pos.y <= h0 ? glm::u8vec3(biome.weight * glm::vec3(biomeToColor[biome.id])) : glm::u8vec3{};

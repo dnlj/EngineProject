@@ -368,7 +368,7 @@ namespace Game::Terrain {
 		private:
 			/**
 			 * Clear the layer caches if needed based on cache target and max thresholds.
-			 * Should only be called on the coordinator thread.
+			 * Run exclusively from the coordinator thread.
 			 * @see setCacheSize
 			 */
 			void cleanCaches();
@@ -421,6 +421,10 @@ namespace Game::Terrain {
 				std::get<Layer>(layers).generate((*partitions)[index], self());
 			}
 
+			/**
+			 * Process requests and generate the layers.
+			 * Run exclusively from the coordinator thread.
+			 */
 			void processGenRequests();
 	};
 }
