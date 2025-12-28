@@ -19,7 +19,22 @@ namespace Game {
 
 		public:
 			PhysicsBodyComponent(PhysicsBody body);
+
+			/**
+			 * @see PhysicsBody::setZone
+			 */
+			void setZone(ZoneId zoneId);
+
+			/**
+			 * @see PhysicsBody::moveZone
+			 */
 			void moveZone(WorldAbsVec oldZoneOffset, ZoneId newZoneId, WorldAbsVec newZoneOffset);
+
+		private:
+			// Ensure we don't use these directly. Whenever the zone is modified we need to ensure
+			// snap is set to avoid interp errors.
+			using PhysicsBody::setZone;
+			using PhysicsBody::moveZone;
 	};
 }
 
@@ -50,6 +65,7 @@ namespace Engine::ECS {
 			static void fromSnapshot(Game::PhysicsBodyComponent& obj, const Type& snap) noexcept {
 				// Don't rollback between zones
 				if (obj.getZoneId() != snap.zoneId) { return; }
+
 				obj.setTransform(snap.trans.p, snap.trans.q.GetAngle());
 				obj.setVelocity(snap.vel);
 				obj.setAngularVelocity(snap.angVel);

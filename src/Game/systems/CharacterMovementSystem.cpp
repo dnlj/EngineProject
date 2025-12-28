@@ -45,9 +45,9 @@ namespace Game {
 
 			// TODO: disable outside of debug/cvar cheats/etc.
 			if (true) {
-				const auto dirX = 1.0f*actComp.getAction(Action::DebugTeleRight).pressCount - actComp.getAction(Action::DebugTeleLeft).pressCount;
-				const auto dirY = 1.0f*actComp.getAction(Action::DebugTeleUp).pressCount - actComp.getAction(Action::DebugTeleDown).pressCount;
-				if (dirX || dirY) { physComp.setPosition(physComp.getPosition() + 100.0f * b2Vec2{dirX, dirY}); }
+				const auto dirX = static_cast<float32>(actComp.getAction(Action::DebugTeleRight).pressCount - actComp.getAction(Action::DebugTeleLeft).pressCount);
+				const auto dirY = static_cast<float32>(actComp.getAction(Action::DebugTeleUp).pressCount - actComp.getAction(Action::DebugTeleDown).pressCount);
+				if (dirX || dirY) { physComp.setPosition(physComp.getPosition() + 950.0f * b2Vec2{dirX, dirY}); }
 			}
 		}
 	}

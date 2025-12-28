@@ -42,11 +42,11 @@ namespace Game::Terrain::Layer {
 		chunk.data[chunkIdx.x][chunkIdx.y] = BlockId::Debug;
 
 		// TODO: Populate portal with realm data/id/pos.
-		//auto& ents = terrain.getEntitiesMutable(chunkCoord);
-		//auto& ent = ents.emplace_back();
-		//ent.pos = info.min;
-		//ent.data.type = BlockEntityType::Portal;
-		//ent.data.asPortal.realmId = !realmId;
-		//ent.data.asPortal.blockPos = {10, 10};
+		auto& ents = terrain.getEntitiesMutable(chunkCoord);
+		auto& ent = ents.emplace_back();
+		ent.pos = info.min;
+		ent.data.type = BlockEntityType::Portal;
+		ent.data.asPortal.realmId = !realmId;
+		ent.data.asPortal.blockPos = {10, 10};
 	}
 }

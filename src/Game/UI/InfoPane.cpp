@@ -19,6 +19,7 @@ namespace Game::UI {
 		addLabel("Tick: {}");
 		addLabel("Tick Scale: {:.3f}");
 		addLabel("Tick Rate: {}");
+		addLabel("Run: {}");
 		addLabel("Run Delta: {}");
 		addLabel("Run Delta Smooth: {}");
 		setLabel(UI::InfoPane::TickRate, Game::tickrate);
@@ -150,6 +151,7 @@ namespace Game::UI {
 
 		setLabel(UI::InfoPane::Tick, world.getTick());
 		setLabel(UI::InfoPane::TickScale, world.tickScale);
+		setLabel(UI::InfoPane::Run, curr.frames);
 		setLabel(UI::InfoPane::RunDelta, std::chrono::duration<double, std::milli>{world.getDeltaTimeNS()});
 		setLabel(UI::InfoPane::RunDeltaSmooth, world.getDeltaTimeSmooth());
 	}

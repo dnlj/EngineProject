@@ -5,8 +5,12 @@
 
 namespace Game {
 	PhysicsBodyComponent::PhysicsBodyComponent(PhysicsBody body)
-		: PhysicsBody{std::move(body)}
-	{
+		: PhysicsBody{std::move(body)} {
+	}
+	
+	void PhysicsBodyComponent::setZone(ZoneId zoneId) {
+		PhysicsBody::setZone(zoneId);
+		snap = true;
 	}
 
 	void PhysicsBodyComponent::moveZone(WorldAbsVec oldZoneOffset, ZoneId newZoneId, WorldAbsVec newZoneOffset) {

@@ -33,15 +33,28 @@ namespace Game {
 			ENGINE_INLINE bool valid() const noexcept { return body; }
 			void clear() noexcept;
 
-			void setZone(ZoneId zoneId);
-			ENGINE_INLINE ZoneId getZoneId() const noexcept { return zone.id; }
-
 			ENGINE_INLINE b2Body* takeOwnership() noexcept {
 				const auto temp = body;
 				*this = {};
 				return temp;
 			}
-			
+
+			/**
+			 * Directly set the zone for this body and its fixtures.
+			 * Unlike moveZone this does not take the zone offsets into account and does not
+			 * actually change the transform.
+			 *
+			 * @see moveZone
+			 */
+			void setZone(ZoneId zoneId);
+			ENGINE_INLINE ZoneId getZoneId() const noexcept { return zone.id; }
+
+			/**
+			 * Moves this body from one zone to another taking into account the zone offsets to
+			 * ensure the body is in the same absolute location.
+			 *
+			 * @see setZone
+			 */
 			void moveZone(WorldAbsVec oldZoneOffset, ZoneId newZoneId, WorldAbsVec newZoneOffset);
 
 			ENGINE_INLINE const b2Fixture* getFixtureList() const noexcept { return body->GetFixtureList(); }

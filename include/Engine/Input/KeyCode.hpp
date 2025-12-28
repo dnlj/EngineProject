@@ -7,7 +7,7 @@
 namespace Engine::Input {
 	/**
 	 * Known scancodes.
-	 * These do not account for different keyboard layouts. Purely hardware postion.
+	 * These do not account for different keyboard layouts. Purely hardware positions.
 	 * 
 	 * @see https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawkeyboard
 	 * @see [USB HID to PS/2 Scan Code Translation Table](https://download.microsoft.com/download/1/6/1/161ba512-40e2-4cc9-843a-923143f3456c/translate.pdf)
