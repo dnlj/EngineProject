@@ -24,7 +24,7 @@ namespace Game::Terrain::Layer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
 			void request(const Partition area, TestGenerator& generator) = delete;
-			constexpr static Float get(BIOME_BASIS_STRENGTH_ARGS) noexcept { return 1.0_f; }
+			constexpr static Float get(BIOME_WEIGHT_ARGS) noexcept { return 1.0_f; }
 	};
 
 	class BiomeOceanBasis : public OnDemandLayer, public Layer::DependsOn<> {

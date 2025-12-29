@@ -25,7 +25,7 @@ namespace Game::Terrain::Layer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
 			void request(const Partition area, TestGenerator& generator) = delete;
-			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
+			Float get(BIOME_WEIGHT_ARGS) const noexcept;
 	};
 
 	class BiomeFooBasis : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {

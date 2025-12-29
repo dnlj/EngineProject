@@ -27,7 +27,7 @@ namespace Game::Terrain::Layer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
 			void request(const Partition area, TestGenerator& generator) = delete;;
-			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
+			Float get(BIOME_WEIGHT_ARGS) const noexcept;
 	};
 
 	template<uint64 Seed, Float HAmp, Float HFeatScale, Float BScale, Float BOff, auto BTrans = [](auto b){ return b; }>

@@ -2,7 +2,6 @@
 
 // Game
 #include <Game/Terrain/RegionStore.hpp>
-#include <Game/Terrain/RegionArea.hpp>
 #include <Game/universal.hpp>
 
 

@@ -9,7 +9,7 @@
 	const ::Game::Terrain::Float h0, \
 	const ::Game::Terrain::RawBiomeInfo& rawInfo
 
-#define BIOME_BASIS_STRENGTH_ARGS \
+#define BIOME_WEIGHT_ARGS \
 	const TestGenerator& generator, \
 	const ::Game::UniversalBlockCoord blockCoord, \
 	const ::Game::Terrain::FVec2 blockCoordF

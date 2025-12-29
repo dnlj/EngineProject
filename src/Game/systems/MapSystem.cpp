@@ -364,9 +364,6 @@ namespace Game {
 						auto& entData = terrain.getEntitiesMutable(it->first);
 					#endif
 
-						// TODO: This is more/less useless atm other than for entity
-						//       cleanup because we don't actually do anything with regions
-						//       before unloading them.
 						entData.clear();
 						for (const auto ent : it->second.blockEntities) {
 							auto& desc = entData.emplace_back();
@@ -924,9 +921,6 @@ namespace Game {
 		}
 	}
 
-	//
-	// TODO: Udpate to use Terrain::Request instead.
-	//
 	void MapSystem::queueRegionToLoad(const UniversalRegionCoord regionPos, MapRegion& region) {
 		ENGINE_LOG2("Queue region: {}", regionPos.pos);
 
@@ -952,7 +946,6 @@ namespace Game {
 #else
 	#if ENGINE_SERVER
 		void MapSystem::queueGeneration(const Terrain::Request& request) {
-			// TODO: Avoid duplicate requests, hash map?
 			// TODO: Consider a way to do chunks in an outward spiral order so that the
 			//       chunks generate near the player first.
 			//       Maybe?: https://en.wikipedia.org/wiki/Space-filling_curve?useskin=vector
