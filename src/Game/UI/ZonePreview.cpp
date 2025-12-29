@@ -23,7 +23,8 @@ namespace Game::UI { namespace {
 			std::vector<glm::u8vec3> zoneColors;
 
 			Engine::FlatHashSet<UniversalChunkCoord> lastActiveChunks;
-			Engine::Clock::TimePoint lastUpdate;
+			Engine::Clock::TimePoint lastUpdate = {};
+			Engine::ECS::Tick lastUpdateTick = {};
 
 			// Arbitrary starting color. Saturation and lightness will be
 			// maintained between all generated colors.
@@ -48,10 +49,9 @@ namespace Game::UI { namespace {
 
 					const auto& mapSys = world.getSystem<MapSystem>();
 					const auto& activeChunks = mapSys.getActiveChunks();
-					const auto tick = world.getTick();
 					bool shouldRebuild = false;
 
-					// A chunk was unloaded
+					// A chunk was unloaded.
 					const auto activeChunksEnd = activeChunks.end();
 					for (auto it = lastActiveChunks.begin(); it != lastActiveChunks.end();) {
 						const auto found = activeChunks.find(*it);
@@ -64,15 +64,18 @@ namespace Game::UI { namespace {
 						}
 					}
 
-					// A chunk has been loaded or updated
+					// A chunk has been loaded or updated.
 					for (const auto& [pos, chunk] : activeChunks) {
 						lastActiveChunks.emplace(pos);
-						shouldRebuild = shouldRebuild || chunk.updated == tick;
+						shouldRebuild = shouldRebuild || (chunk.updated >= lastUpdateTick);
 					}
 
 					if (shouldRebuild) {
+						ENGINE_WARN2("ZONE REBUILD");
 						rebuild();
 					}
+
+					lastUpdateTick = world.getTick();
 				}
 
 				ImageDisplay::render();
