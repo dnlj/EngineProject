@@ -1,10 +1,7 @@
 #pragma once
 
 // Game
-#include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
-#include <Game/Terrain/Layer/DependsOn.hpp>
-#include <Game/Terrain/Layer/OnDemandLayer.hpp>
-#include <Game/Terrain/StructureInfo.hpp>
+#include <Game/Terrain/Layer/biome.hpp>
 
 
 namespace Game::Terrain::Layer {
@@ -12,61 +9,61 @@ namespace Game::Terrain::Layer {
 
 	class BiomeOceanHeight : public OnDemandLayer {
 		public:
-			using Partition = ChunkSpanX;
+			using Partition = BlendedBiomeHeight::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			Float get(BIOME_HEIGHT_ARGS) const noexcept { return h0; }
 	};
 
-	class BiomeOceanBasisStrength : public OnDemandLayer, public Layer::DependsOn<> {
+	class BiomeOceanWeight : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkArea;
+			using Partition = BlendedBiomeWeights::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			constexpr static Float get(BIOME_BASIS_STRENGTH_ARGS) noexcept { return 1.0_f; }
 	};
 
 	class BiomeOceanBasis : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkArea;
+			using Partition = BlendedBiomeBasis::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
 	class BiomeOceanBlock : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkArea;
+			using Partition = BlendedBiomeBlock::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
 	};
 
 	class BiomeOceanStructureInfo : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkVec;
+			using Partition = BlendedBiomeStructureInfo::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
 	};
 
 	class BiomeOceanStructure : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkVec;
+			using Partition = BlendedBiomeStructures::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			void get(BIOME_STRUCTURE_ARGS) const noexcept;
 	};
 	
@@ -81,7 +78,7 @@ namespace Game::Terrain::Layer {
 	class BiomeOcean {
 		public:
 			using Height = BiomeOceanHeight;
-			using BasisStrength = BiomeOceanBasisStrength;
+			using Weight = BiomeOceanWeight;
 			using Basis = BiomeOceanBasis;
 			using Block = BiomeOceanBlock;
 			using StructureInfo = BiomeOceanStructureInfo;

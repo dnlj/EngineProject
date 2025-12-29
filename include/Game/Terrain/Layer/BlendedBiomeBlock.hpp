@@ -2,7 +2,6 @@
 
 // Game
 #include <Game/Terrain/temp.hpp> // TODO: remove once everything is cleaned up.
-#include <Game/Terrain/ChunkArea.hpp>
 #include <Game/Terrain/Layer/CachedLayer.hpp>
 #include <Game/Terrain/Layer/DependsOn.hpp>
 #include <Game/Terrain/RegionDataCache.hpp>

@@ -2,7 +2,6 @@
 
 // Game
 #include <Game/Terrain/StructureInfo.hpp>
-#include <Game/Terrain/ChunkArea.hpp>
 #include <Game/Terrain/Layer/DependsOn.hpp>
 #include <Game/Terrain/Layer/OnDemandLayer.hpp>
 #include <Game/universal.hpp>

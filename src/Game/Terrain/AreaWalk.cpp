@@ -1,3 +1,5 @@
+#if false
+
 // Game
 #include <Game/Terrain/AreaWalk.hpp>
 
@@ -88,3 +90,4 @@ void test_AreaWalker() {
 			assert(walkerRegionY() != walkerChunkY());
 		}
 }
+#endif

@@ -6,7 +6,6 @@
 #include <Game/MapChunk.hpp> // TODO: Replace/rename/update MapChunk.
 #include <Game/Terrain/terrain.hpp>
 #include <Game/universal.hpp>
-#include <Game/Terrain/ChunkArea.hpp>
 #include <Game/Terrain/ChunkSpan.hpp>
 #include <Game/Terrain/RawBiomeInfo.hpp>
 #include <Game/Terrain/BiomeWeight.hpp>

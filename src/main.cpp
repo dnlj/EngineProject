@@ -38,7 +38,6 @@
 #include <timeapi.h>
 #endif
 
-void test_AreaWalker();
 void setupCommands(Game::EngineInstance& engine, Engine::Window& window);
 void setupBinds(Game::EngineInstance& engine);
 
@@ -1039,7 +1038,7 @@ int entry(int argc, char* argv[]) {
 	// TODO: move to gtest once fixed.
 	test_divFloor();
 	test_divCeil();
-	test_AreaWalker();
+	//test_AreaWalker(); Currently disabled/unused.
 
 	startTime = Engine::Clock::now();
 	run(argc, argv);

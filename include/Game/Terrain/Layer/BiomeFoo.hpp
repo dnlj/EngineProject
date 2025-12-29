@@ -1,10 +1,8 @@
 #pragma once
 
 // Game
-#include <Game/Terrain/terrain.hpp>
-#include <Game/Terrain/Layer/BiomeDebug.hpp>
-#include <Game/Terrain/Layer/OnDemandLayer.hpp>
-#include <Game/Terrain/StructureInfo.hpp>
+#include <Game/Terrain/Layer/biome.hpp>
+
 
 namespace Game::Terrain::Layer {
 	class WorldBaseHeight;
@@ -12,7 +10,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeFooHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Partition = UniversalRegionCoordX;
+			using Partition = BlendedBiomeHeight::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
@@ -20,53 +18,53 @@ namespace Game::Terrain::Layer {
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 
-	class BiomeFooBasisStrength : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
+	class BiomeFooWeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Partition = UniversalChunkCoord;
+			using Partition = BlendedBiomeWeights::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
 	};
 
 	class BiomeFooBasis : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
 		public:
-			using Partition = UniversalChunkCoord;
+			using Partition = BlendedBiomeBasis::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
 	class BiomeFooBlock : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkArea;
+			using Partition = BlendedBiomeBlock::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
 	};
 
 	class BiomeFooStructureInfo : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = UniversalChunkCoord;
+			using Partition = BlendedBiomeStructureInfo::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
 	};
 
 	class BiomeFooStructure : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = UniversalChunkCoord;
+			using Partition = BlendedBiomeStructures::Partition;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;
 			void get(BIOME_STRUCTURE_ARGS) const noexcept;
 	};
 
@@ -80,7 +78,7 @@ namespace Game::Terrain::Layer {
 	class BiomeFoo {
 		public:
 			using Height = BiomeFooHeight;
-			using BasisStrength = BiomeFooBasisStrength;
+			using Weight = BiomeFooWeight;
 			using Basis = BiomeFooBasis;
 			using Block = BiomeFooBlock;
 			using StructureInfo = BiomeFooStructureInfo;

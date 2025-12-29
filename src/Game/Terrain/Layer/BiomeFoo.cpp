@@ -84,7 +84,7 @@ namespace Game::Terrain::Layer {
 		return h0 + 15 * simplex.value(blockCoordX.pos * 0.05_f, 0); // TODO: 1d simplex
 	}
 
-	Float BiomeFooBasisStrength::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
+	Float BiomeFooWeight::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
 		auto const& simplex = generator.shared<BiomeFooSharedData>().simplex;
 		return 0.5_f + 0.5_f * simplex.value(blockCoordF * 0.03_f);
 	}

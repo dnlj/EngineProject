@@ -1,13 +1,7 @@
 #pragma once
 
 // Game
-#include <Game/BlockMeta.hpp>
-#include <Game/Terrain/Layer/DependsOn.hpp>
-#include <Game/Terrain/Layer/OnDemandLayer.hpp>
-#include <Game/Terrain/ChunkSpan.hpp>
-#include <Game/Terrain/RawBiomeInfo.hpp>
-#include <Game/Terrain/ChunkArea.hpp>
-#include <Game/Terrain/temp.hpp> // TODO: remove once file split.
+#include <Game/Terrain/Layer/biome.hpp>
 
 
 namespace Game::Terrain::Layer {
@@ -21,40 +15,40 @@ namespace Game::Terrain::Layer {
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;;
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 
 	template<uint64 Seed>
-	class BiomeDebugBasisStrength : public OnDemandLayer, public Layer::DependsOn<> {
+	class BiomeDebugWeight : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkArea;
+			using Partition = UniversalChunkCoord;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;;
 			Float get(BIOME_BASIS_STRENGTH_ARGS) const noexcept;
 	};
 
 	template<uint64 Seed, Float HAmp, Float HFeatScale, Float BScale, Float BOff, auto BTrans = [](auto b){ return b; }>
 	class BiomeDebugBasis : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkArea;
+			using Partition = UniversalChunkCoord;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;;
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
 	template<BlockId Block, int = 0 /* used to avoid duplicate type in tuple*/>
 	class BiomeDebugBlock : public OnDemandLayer, public Layer::DependsOn<> {
 		public:
-			using Partition = ChunkArea;
+			using Partition = UniversalChunkCoord;
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Partition area, TestGenerator& generator) = delete;;
 			constexpr static BlockId get(BIOME_BLOCK_ARGS) noexcept { return Block; };
 	};
 	
@@ -73,7 +67,7 @@ namespace Game::Terrain::Layer {
 			constexpr static Float HAmp = 15.0_f;
 			constexpr static Float HFeatScale = 0.01_f;
 			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
-			using BasisStrength = BiomeDebugBasisStrength<seed>;
+			using Weight = BiomeDebugWeight<seed>;
 			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.03_f, 0.15_f, &std::fabsf>;
 			using Block = BiomeDebugBlock<BlockId::Debug>;
 			using SharedData = BiomeDebugSharedData<seed>;
@@ -85,7 +79,7 @@ namespace Game::Terrain::Layer {
 			constexpr static Float HAmp = 30.0_f;
 			constexpr static Float HFeatScale = 0.02_f;
 			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
-			using BasisStrength = BiomeDebugBasisStrength<seed>;
+			using Weight = BiomeDebugWeight<seed>;
 			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.06_f, 0.75_f, &std::fabsf>;
 			using Block = BiomeDebugBlock<BlockId::Debug2>;
 			using SharedData = BiomeDebugSharedData<seed>;
@@ -97,7 +91,7 @@ namespace Game::Terrain::Layer {
 			constexpr static Float HAmp = 60.0_f;
 			constexpr static Float HFeatScale = 0.04_f;
 			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
-			using BasisStrength = BiomeDebugBasisStrength<seed>;
+			using Weight = BiomeDebugWeight<seed>;
 			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.12_f, 0.0_f>;
 			using Block = BiomeDebugBlock<BlockId::Debug3>;
 			using SharedData = BiomeDebugSharedData<seed>;

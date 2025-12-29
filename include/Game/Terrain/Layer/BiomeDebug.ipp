@@ -40,7 +40,7 @@ namespace Game::Terrain::Layer {
 	}
 
 	template<uint64 Seed>
-	Float BiomeDebugBasisStrength<Seed>::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
+	Float BiomeDebugWeight<Seed>::get(BIOME_BASIS_STRENGTH_ARGS) const noexcept {
 		auto const& shared = generator.shared<BiomeDebugSharedData<Seed>>();
 		auto const& simplex1 = shared.simplex1;
 		auto const& simplex2 = shared.simplex2;
