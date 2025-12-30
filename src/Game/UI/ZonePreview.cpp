@@ -71,7 +71,6 @@ namespace Game::UI { namespace {
 					}
 
 					if (shouldRebuild) {
-						ENGINE_WARN2("ZONE REBUILD");
 						rebuild();
 					}
 

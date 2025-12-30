@@ -48,13 +48,16 @@ namespace Game::Terrain {
 			totalBytes += layer.getCacheSizeBytes();
 		});
 
-		ENGINE_LOG2("Generation Cache: {} / {} ({:.2f}%; {:.2f}%)({:.2f}GB)",
-			totalBytes,
-			cacheTargetThresholdBytes,
-			totalBytes * (100 / static_cast<double>(cacheTargetThresholdBytes)),
-			totalBytes * (100 / static_cast<double>(cacheMaxThresholdBytes)),
-			totalBytes * (1.0 / (1 << 30))
-		);
+		// Don't spam the server console with constant cleanup messages.
+		if constexpr (ENGINE_CLIENT) {
+			ENGINE_LOG2("Generation Cache: {} / {} ({:.2f}%; {:.2f}%)({:.2f}GB)",
+				totalBytes,
+				cacheTargetThresholdBytes,
+				totalBytes * (100 / static_cast<double>(cacheTargetThresholdBytes)),
+				totalBytes * (100 / static_cast<double>(cacheMaxThresholdBytes)),
+				totalBytes * (1.0 / (1 << 30))
+			);
+		}
 
 		if (totalBytes > cacheTargetThresholdBytes) {
 			// Reduce the timeout based on how overcapacity the cache is. Down to zero at the max threshold.

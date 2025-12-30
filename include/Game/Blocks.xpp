@@ -1,13 +1,18 @@
 // Name, Solid, Path
+
 X(None, false, nullptr)
 X(Air, false, nullptr)
-X(Entity, false, "assets/block_entity.bmp")
-X(Debug, false, "assets/block_debug.bmp")
-X(Debug2, false, "assets/block_debug2.bmp")
-X(Debug3, false, "assets/block_debug3.bmp")
-X(Debug4, false, "assets/block_debug4.bmp")
-	X(Dirt, false, "assets/block_dirt.bmp")
-	X(Grass, false, "assets/block_grass.bmp")
-	X(Iron, false, "assets/block_iron.bmp")
-	X(Gold, false, "assets/block_gold.bmp")
+
+X(Entity, false, "assets/dev/blocks/entity.png")
+
+X(Debug, false, "assets/dev/blocks/debug1.png")
+X(Debug2, false, "assets/dev/blocks/debug2.png")
+X(Debug3, false, "assets/dev/blocks/debug3.png")
+X(Debug4, false, "assets/dev/blocks/debug4.png")
+
+X(Dirt, false, "assets/dev/blocks/dirt.png")
+X(Grass, false, "assets/dev/blocks/grass.png")
+X(Iron, false, "assets/dev/blocks/iron.png")
+X(Gold, false, "assets/dev/blocks/gold.png")
+
 #undef X

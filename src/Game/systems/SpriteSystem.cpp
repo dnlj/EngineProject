@@ -96,6 +96,7 @@ namespace Game {
 			Game::SpriteComponent,
 			Game::PhysicsInterpComponent
 		>();
+
 		if (filter.empty()) { return; }
 
 		// Cleanup

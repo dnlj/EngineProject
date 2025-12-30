@@ -207,14 +207,19 @@ namespace Game {
 			textures[i - offset] = getBlockMeta(static_cast<BlockId>(i)).path;
 		}
 
+		// TODO: should just be driven the the img when loaded.
+		constexpr static auto imgSize = 64;
+
 		// TODO: really no reason to use RGBA here. we dont use alpha
-		texArr.setStorage(TextureFormat::SRGBA8, {8, 8, std::size(textures)});
+		texArr.setStorage(TextureFormat::SRGBA8, {imgSize, imgSize, std::size(textures)});
 		texArr.setFilter(TextureFilter::Nearest);
 
 		Image img;
 		for (int i = 0; auto path : textures) {
 			img = path;
 			img.flipY();
+			ENGINE_DEBUG_ASSERT(img.size().x == imgSize, "Unexpected block texture size.");
+			ENGINE_DEBUG_ASSERT(img.size().y == imgSize, "Unexpected block texture size.");
 			texArr.setSubImage(0, {0, 0, i++}, {img.size(), 1}, img);
 		}
 	}
@@ -822,18 +827,20 @@ namespace Game {
 					#endif
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
 				// Add buffer data
-				glm::vec2 origin = glm::vec2{begin} * blockSize;
-				glm::vec2 size = glm::vec2{end - begin} * blockSize;
+				glm::vec2 origin = glm::vec2{begin} * blockSize; // Meters
+				glm::vec2 size = glm::vec2{end - begin} * blockSize; // Meters
 				const auto vertexCount = static_cast<GLushort>(buildVBOData.size());
 
 				static_assert(BlockId::_count <= 255,
 					"Texture index is a byte. You will need to change its type if you now have more than 255 blocks."
 				);
+
 				#if MAP_OLD
 					const auto tex = static_cast<GLfloat>(chunkInfo.chunk.data[begin.x][begin.y] - 2); // TODO: -2 for None and Air. Handle this better.
 				#else
 					const auto tex = static_cast<GLfloat>(chunk.data[begin.x][begin.y] - 2); // TODO: -2 for None and Air. Handle this better.
 				#endif
+
 				buildVBOData.push_back({.pos = origin, .tex = tex});
 				buildVBOData.push_back({.pos = origin + glm::vec2{size.x, 0}, .tex = tex});
 				buildVBOData.push_back({.pos = origin + size, .tex = tex});

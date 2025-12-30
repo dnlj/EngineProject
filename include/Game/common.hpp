@@ -98,10 +98,10 @@ namespace Game::inline Constants {
 	// recvRate so it may be getting clamped anyways.
 	constexpr inline int32 netrate = ENGINE_SERVER ? 21 : tickrate;
 
-	constexpr inline int32 pixelsPerBlock = 8;
-	constexpr inline int32 blocksPerMeter = 4;
+	constexpr inline int32 pixelScale = 3;
+	constexpr inline int32 pixelsPerBlock = 2;
+	constexpr inline int32 blocksPerMeter = 10;
 	constexpr inline int32 pixelsPerMeter = pixelsPerBlock * blocksPerMeter;
-	constexpr inline int32 pixelScale = 2;
 	constexpr inline float32 pixelRescaleFactor = 1.0f / (pixelsPerMeter * pixelScale);
 	constexpr inline float32 blockSize = 1.0f / blocksPerMeter;
 
