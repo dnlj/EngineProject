@@ -99,9 +99,10 @@ namespace Game::inline Constants {
 	constexpr inline int32 netrate = ENGINE_SERVER ? 21 : tickrate;
 
 	constexpr inline int32 pixelScale = 3;
-	constexpr inline int32 pixelsPerBlock = 2;
-	constexpr inline int32 blocksPerMeter = 10;
+	constexpr inline int32 pixelsPerBlock = 1;
+	constexpr inline int32 blocksPerMeter = 30; // Estimated for scale using char height = 55px = 1.85m. So 55px = (55/pixelsPerBlock)b = 55b = 1.85m; Therefor 1m ~= 30b
 	constexpr inline int32 pixelsPerMeter = pixelsPerBlock * blocksPerMeter;
+	constexpr inline float32 metersPerPixel = 1.0f / pixelsPerMeter;
 	constexpr inline float32 pixelRescaleFactor = 1.0f / (pixelsPerMeter * pixelScale);
 	constexpr inline float32 blockSize = 1.0f / blocksPerMeter;
 

@@ -238,17 +238,19 @@ namespace Game {
 
 		const auto makeEdit = [&](BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp) {
 			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-			for (int x = -2; x < 3; ++x) {
-				for (int y = -2; y < 3; ++y) {
-					const auto plyPos = physComp.getPosition();
-					const auto& zone = zoneSys.getZone(physComp.getZoneId());
-					const WorldVec placementOffset = {x*blockSize, y*blockSize};
-					const BlockVec target = worldToBlock(
-						WorldVec{plyPos.x, plyPos.y} + actComp.getTarget() + placementOffset,
-						zone.offset
-					);
+			const auto plyPos = physComp.getPosition();
+			const auto& zone = zoneSys.getZone(physComp.getZoneId());
+			const auto targetWorldPos = WorldVec{plyPos.x, plyPos.y} + actComp.getTarget();
+			const BlockVec targetBlockPos = worldToBlock(targetWorldPos, zone.offset);
 
-					setValueAt2({zone.realmId, target}, bid);
+			constexpr auto lowerBound = -blocksPerMeter / 2 + ((blocksPerMeter & 1) == 0); 
+			constexpr auto upperBound = blocksPerMeter / 2;
+
+			for (int x = lowerBound; x <= upperBound; ++x) {
+				for (int y = lowerBound; y <= upperBound; ++y) {
+					//const WorldVec placementOffset = {x*blockSize, y*blockSize};
+					//const BlockVec target = worldToBlock(targetPos + placementOffset, zone.offset);
+					setValueAt2({zone.realmId, targetBlockPos + BlockVec{x, y}}, bid);
 				}
 			}
 		};

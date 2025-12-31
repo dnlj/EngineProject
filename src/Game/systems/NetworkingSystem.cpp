@@ -702,8 +702,10 @@ namespace Game {
 
 		world.addComponent<PlayerFlag>(ply);
 		auto& spriteComp = world.addComponent<SpriteComponent>(ply);
-		spriteComp.path = "assets/player.png";
+		spriteComp.path = "assets/dev/char.png";
 		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
+		spriteComp.scale = {64, 64};
+		spriteComp.scale *= metersPerPixel;
 
 		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		zoneSys.addPlayer(ply, zoneId);
