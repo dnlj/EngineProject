@@ -174,6 +174,7 @@ namespace Game {
 				}
 			}
 		}
+
 		events.clear();
 	}
 	

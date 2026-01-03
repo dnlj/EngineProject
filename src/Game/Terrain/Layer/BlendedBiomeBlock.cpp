@@ -8,6 +8,8 @@
 
 namespace Game::Terrain::Layer {
 	void BlendedBiomeBlock::request(const Partition chunkCoord, TestGenerator& generator) {
+		// TODO: We should technically be making request calls to the relevant biomes for
+		//       chunkCoord here. Also in other Blended* systems?
 		generator.request<BlendedBiomeBasis>(chunkCoord);
 		cache.reserveRegion(chunkCoord.toRegion(), getSeq());
 	}

@@ -77,7 +77,7 @@ namespace Game {
 		spriteComp.layer = RenderLayer::Background;
 		{
 			const auto& sz = spriteComp.texture.get()->size;
-			spriteComp.scale = {pixelsPerBlock, pixelsPerBlock};
+			spriteComp.scale = glm::vec2{sz} * metersPerPixel;
 			spriteComp.position.x = blockSize * 0.5f;
 			spriteComp.position.y = sz.y * (0.5f / pixelsPerMeter);
 		}

@@ -150,7 +150,7 @@ namespace Game {
 	}
 
 	DEF_BIOME_BLOCK(Forest) {
-		return BlockId::Debug + (BlockId)bounds.depth;
+		return BlockId::Debug1 + (BlockId)bounds.depth;
 	}
 
 	DEF_BIOME_BLOCK_STRENGTH(Forest) {
@@ -184,7 +184,7 @@ namespace Game {
 	}
 
 	DEF_BIOME_BLOCK(Jungle) {
-		return BlockId::Debug + (BlockId)bounds.depth;
+		return BlockId::Debug1 + (BlockId)bounds.depth;
 	}
 
 	DEF_BIOME_BLOCK_STRENGTH(Jungle) {
@@ -326,7 +326,7 @@ namespace Game {
 				}
 
 				if (chunk.data[x][y] > BlockId::Air && (x == 0 || y == 0) && chunk.data[x][y] != BlockId::Debug2) {
-					chunk.data[x][y] = BlockId::Debug;
+					chunk.data[x][y] = BlockId::Debug1;
 				}
 			}
 		}
@@ -348,7 +348,7 @@ namespace Game {
 			CASE(Biome::Jungle)
 			default: {
 				ENGINE_WARN("Unknown biome ", static_cast<int>(b));
-				return BlockId::Debug;
+				return BlockId::Debug1;
 			}
 		}
 		#undef CASE

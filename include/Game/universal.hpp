@@ -46,8 +46,6 @@ namespace Game {
 
 			ENGINE_INLINE constexpr UniversalRegionCoord toRegion() const noexcept { return { realmId, chunkToRegion(pos) }; }
 
-			// TODO: this is questionable since we have two overloads of chunkToRegionIndex.
-			ENGINE_INLINE constexpr ChunkVec toRegionIndex() const noexcept { return chunkToRegionIndex(pos); }
 			ENGINE_INLINE constexpr ChunkVec toRegionIndex(UniversalRegionCoord regionCoord) const noexcept { return chunkToRegionIndex(pos, regionCoord.pos); }
 			ENGINE_INLINE constexpr inline UniversalBlockCoord toBlock() const noexcept;
 	};

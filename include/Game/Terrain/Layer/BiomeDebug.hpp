@@ -69,7 +69,7 @@ namespace Game::Terrain::Layer {
 			using Height = BiomeDebugBaseHeight<seed, HAmp, HFeatScale>;
 			using Weight = BiomeDebugWeight<seed>;
 			using Basis = BiomeDebugBasis<seed, HAmp, HFeatScale, 0.03_f, 0.15_f, &std::fabsf>;
-			using Block = BiomeDebugBlock<BlockId::Debug>;
+			using Block = BiomeDebugBlock<BlockId::Debug1>;
 			using SharedData = BiomeDebugSharedData<seed>;
 	};
 

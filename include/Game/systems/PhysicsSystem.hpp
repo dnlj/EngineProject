@@ -65,7 +65,7 @@ namespace Game {
 			void addListener(PhysicsListener* listener);
 
 			// TODO: rm - temp
-			PhysicsBody createPhysicsCircle(Engine::ECS::Entity ent, b2Vec2 position, ZoneId zoneId, PhysicsCategory group) {
+			PhysicsBody createPhysicsRect(Engine::ECS::Entity ent, b2Vec2 position, glm::vec2 size, glm::vec2 offset, ZoneId zoneId, PhysicsCategory group) {
 				b2BodyDef bodyDef;
 				bodyDef.type = b2_dynamicBody;
 				bodyDef.position = position;
@@ -74,8 +74,8 @@ namespace Game {
 
 				auto body = createBody(ent, bodyDef, zoneId);
 
-				b2CircleShape shape;
-				shape.m_radius = 0.49f;
+				b2PolygonShape shape;
+				shape.SetAsBox(0.5f * size.x, 0.5f * size.y, {offset.x, offset.y}, 0);
 
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &shape;

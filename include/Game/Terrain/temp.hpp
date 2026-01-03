@@ -50,6 +50,14 @@ namespace Game::Terrain {
 	// TODO: getters with debug bounds checking.
 	using Chunk = MapChunk;
 
+	enum class ChunkStage : uint8 {
+		Uninitialized = 0,
+		TerrainComplete,
+		StructuresComplete,
+
+		Done = StructuresComplete,
+	};
+
 	// TODO: getters with debug bounds checking.
 	class Region {
 		public:
@@ -57,7 +65,7 @@ namespace Game::Terrain {
 			Chunk chunks[regionSize.x][regionSize.y]{};
 
 			// TODO: should we use a bitset for this? That would probably make check if all chunks populated easier.
-			bool populated[regionSize.x][regionSize.y]{};
+			ChunkStage populated[regionSize.x][regionSize.y]{};
 
 			// TODO: These are currently never used/generated. Waiting on MapSystem integration.
 			//
@@ -78,7 +86,7 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr Chunk& chunkAt(RegionIdx regionIdx) noexcept { return chunks[regionIdx.x][regionIdx.y]; }
 			ENGINE_INLINE constexpr const Chunk& chunkAt(RegionIdx regionIdx) const noexcept { return chunks[regionIdx.x][regionIdx.y]; }
 
-			ENGINE_INLINE constexpr bool isPopulated(RegionIdx regionIdx) const noexcept { return populated[regionIdx.x][regionIdx.y]; }
+			ENGINE_INLINE constexpr ChunkStage getChunkStage(RegionIdx regionIdx) const noexcept { return populated[regionIdx.x][regionIdx.y]; }
 
 			ENGINE_INLINE constexpr ChunkEntities& entitiesAt(RegionIdx regionIdx) noexcept { return entities[regionIdx.x][regionIdx.y]; }
 			ENGINE_INLINE constexpr const ChunkEntities& entitiesAt(RegionIdx regionIdx) const noexcept { return entities[regionIdx.x][regionIdx.y]; }
@@ -142,7 +150,7 @@ namespace Game::Terrain {
 				// We could define a convention where final stage always ==
 				// StageId::max(). Then the terrain doesn't need to know what the final
 				// stage is.
-				return found->second->isPopulated(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos));
+				return found->second->getChunkStage(chunkToRegionIndex(chunkCoord.pos, regionCoord.pos)) == ChunkStage::Done;
 			}
 
 			Chunk const& getChunk(const UniversalChunkCoord chunkCoord) const noexcept {
@@ -185,8 +193,14 @@ namespace Game::Terrain {
 			void forceAllocateChunk(const UniversalChunkCoord chunkCoord) noexcept {
 				const auto regionCoord = chunkCoord.toRegion();
 				auto& region = getRegion(regionCoord);
+
+				//
+				//
+				// TODO: Why is this needed. Seems like a bug. Investigate.
+				//
+				//
 				const auto idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);
-				region.populated[idx.x][idx.y] = true;
+				region.populated[idx.x][idx.y] = ChunkStage::Done;
 			}
 	};
 }

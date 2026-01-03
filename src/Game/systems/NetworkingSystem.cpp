@@ -704,16 +704,21 @@ namespace Game {
 		auto& spriteComp = world.addComponent<SpriteComponent>(ply);
 		spriteComp.path = "assets/dev/char.png";
 		spriteComp.texture = engine.getTextureLoader().get2D(spriteComp.path);
-		spriteComp.scale = {64, 64};
-		spriteComp.scale *= metersPerPixel;
+		spriteComp.scale = glm::vec2{spriteComp.texture.get()->size} * metersPerPixel;
 
 		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		zoneSys.addPlayer(ply, zoneId);
-			
+
+		glm::vec2 physSize = {31, 55}; // pixels
+		physSize *= metersPerPixel;
+
+		glm::vec2 physOffset = {1.5f, -4.5f}; // pixels
+		physOffset *= metersPerPixel;
+
 		auto& physSys = world.getSystem<PhysicsSystem>();
 		auto& physComp = world.addComponent<PhysicsBodyComponent>(
 			ply,
-			physSys.createPhysicsCircle(ply, {worldPos.x, worldPos.y}, zoneId, PhysicsCategory::Player)
+			physSys.createPhysicsRect(ply, {worldPos.x, worldPos.y}, physSize, physOffset, zoneId, PhysicsCategory::Player)
 		);
 
 		ENGINE_WARN2("\nAdding physics comp: {} {}\n", ply, physComp.zone.id);

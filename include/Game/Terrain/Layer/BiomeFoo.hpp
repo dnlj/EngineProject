@@ -64,7 +64,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator) = delete;
+			void request(const Partition area, TestGenerator& generator);
 			void get(BIOME_STRUCTURE_ARGS) const noexcept;
 	};
 

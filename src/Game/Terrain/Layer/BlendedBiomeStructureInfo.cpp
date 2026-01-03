@@ -20,12 +20,15 @@ namespace Game::Terrain::Layer {
 		const auto& chunkBlendedBiomeWeights = generator.get<BlendedBiomeWeights>(chunkCoord);
 		Engine::StaticVector<BiomeId, 4> biomes;
 		
-		// TODO: Is this true? Investigate and leave more details on why. Static asserts if possible.
-		//       > Get a unique list of the biome in each corner of this chunk. Used for
-		//       > during generation. At generation time checking each corner should yield a
-		//       > unique list of all biomes in this chunk so long as the minimum biome size
-		//       > is greater than or equal to the chunk size.
-		{ // Should be moved into dedicated layer w/ caching if any other consumers are ever needed.
+		// Get a unique list of the biome in each corner of this chunk. Used for during generation.
+		// At generation time checking each corner should yield a unique list of all biomes in this
+		// chunk so long as the minimum biome size is greater than or equal to the chunk size. This
+		// four biome limit is due to the RawBiome layer which distributes biomes on a grid. Its not
+		// pure random.
+		//
+		// Should be moved into dedicated layer w/ caching if any other consumers are ever needed.
+		// See ChunkBiomeContributions
+		{ 
 			const auto tryAdd = [&](const BlockVec chunkIndex) ENGINE_INLINE {
 				const auto biomeId = maxBiomeWeight(chunkBlendedBiomeWeights.at(chunkIndex).weights).id;
 				if (!std::ranges::contains(biomes, biomeId))  { biomes.push_back(biomeId); }

@@ -124,7 +124,7 @@ namespace {
 				static const auto blockToColor = []{
 					std::array<glm::u8vec3, BlockId::_count> colors = {};
 					colors[BlockId::Entity] = {  0, 120, 189};
-					colors[BlockId::Debug]  = {255,   0,   0};
+					colors[BlockId::Debug1]  = {255,   0,   0};
 					colors[BlockId::Debug2] = {200,  26, 226};
 					colors[BlockId::Debug3] = {226,  26, 162};
 					colors[BlockId::Debug4] = {226,  26, 111};
@@ -218,7 +218,7 @@ namespace {
 							// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
 							const auto regionIndex = chunkCoord.toRegionIndex(regionCoord);
 							auto& chunk = region.chunks[regionIndex.x][regionIndex.y];
-							ENGINE_DEBUG_ASSERT(region.isPopulated(regionIndex), "Chunk is at incorrect stage.");
+							ENGINE_DEBUG_ASSERT(region.getChunkStage(regionIndex) == ChunkStage::Done, "Chunk is at incorrect stage.");
 
 							const auto blockIndex = blockCoord.toChunkIndex(chunkCoord);
 							ENGINE_DEBUG_ASSERT(blockIndex.x >= 0 && blockIndex.x < chunkSize.x, "Invalid chunk index.");

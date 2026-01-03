@@ -8,7 +8,7 @@
 
 
 namespace Game::Terrain {
-	constexpr inline int64 TestSeed = 1234;
+	constexpr inline int64 TestSeed = 12345;
 
 	// TODO: Note somewhere that biomes don't need generation/partition since they are on
 	//       demand. The caching is done at the BlendedBiomeBlock level. May want to consider a
@@ -42,6 +42,7 @@ namespace Game::Terrain {
 			Layer::BlendedBiomeHeight,
 			Layer::BlendedBiomeBasis,
 			Layer::BlendedBiomeBlock,
+			//Layer::ChunkBiomeContributions,
 			Layer::BlendedBiomeStructureInfo,
 			Layer::BlendedBiomeStructures
 		>

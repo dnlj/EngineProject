@@ -106,6 +106,9 @@ namespace Game::Terrain::Layer {
 	BlockId BiomeFooBlock::get(BIOME_BLOCK_ARGS) const noexcept {
 		auto& simplex = generator.shared<BiomeFooSharedData>().simplex;
 
+		if (blockCoord.pos.x % chunkSize.x == 0) { return BlockId::Debug1; }
+		if (blockCoord.pos.y % chunkSize.y == 0) { return BlockId::Debug2; }
+
 		if (blockCoord.pos.y > h2 - 3) {
 			return BlockId::Grass;
 		}
@@ -136,33 +139,33 @@ namespace Game::Terrain::Layer {
 	}
 
 	void BiomeFooStructureInfo::get(BIOME_STRUCTURE_INFO_ARGS) const noexcept {
-		//ENGINE_LOG2("GET LANDMARK: {}", chunkCoord);
 		const auto minBlockCoord = chunkCoord.toBlock().pos;
-		inserter = {.min = minBlockCoord, .max = minBlockCoord + BlockVec{1,1}, .id = 1};
 
-		constexpr BlockUnit width = 3;
-		constexpr BlockUnit spacing = 9;
+		constexpr BlockUnit width = 60;
+		constexpr BlockUnit spacing = 2*width;
 		constexpr BlockUnit stride = spacing + width;
 
-		// TODO: coudl step more that ++1 since we know we have a fixed modulus.
+		// TODO: Could be smart about iteration instead of checking every block += stride, etc.
 		const auto maxBlockCoord = minBlockCoord + chunkSize;
 		auto h2It = generator.get<BlendedBiomeHeight>(chunkCoord.toX());
 		for (auto blockCoord = minBlockCoord; blockCoord.x < maxBlockCoord.x; ++blockCoord.x, ++h2It) {
 			if (blockCoord.x % stride == 0) {
 				blockCoord.y = *h2It;
 				if (blockCoord.y >= minBlockCoord.y && blockCoord.y < maxBlockCoord.y) {
-					// TODO: random horizontal variation, etc.
-					inserter = {blockCoord, blockCoord + BlockVec{width, 12}, 0};
+					inserter = {blockCoord, blockCoord + BlockVec{width, width}, 0};
 				}
 			}
 		}
+	}
+
+	void BiomeFooStructure::request(const Partition area, TestGenerator& generator) {
+		// TODO: this should no longer be needed since it is handled by BlendedBiomeStructures based on bounding boxes.
 	}
 
 	void BiomeFooStructure::get(BIOME_STRUCTURE_ARGS) const noexcept {
 		// TODO: Come up with a system for landmark ids.
 		//       Currently:
 		//       - info.id = 0 = tree
-		//       - info.id = 1 = debug chunk marker
 
 		// TODO: This is the least efficient way possible to do this. We need a good
 		//       api to efficiently edit multiple blocks spanning multiple chunks and
@@ -171,23 +174,19 @@ namespace Game::Terrain::Layer {
 		//       for region in splitRegions:
 		//           for chunk in splitRegionChunks:
 		//               applyEdit(chunk, editsForChunk(chunk));
-		for (auto blockCoord = info.min; blockCoord.x < info.max.x; ++blockCoord.x) {
-			for (blockCoord.y = info.min.y; blockCoord.y < info.max.y; ++blockCoord.y) {
-				const auto chunkCoord = blockToChunk(blockCoord);
-				const UniversalRegionCoord regionCoord = {realmId, chunkToRegion(chunkCoord)};
+		for (UniversalBlockCoord blockCoord = {realmId, info.min}; blockCoord.pos.x < info.max.x; ++blockCoord.pos.x) {
+			for (blockCoord.pos.y = info.min.y; blockCoord.pos.y < info.max.y; ++blockCoord.pos.y) {
+				const UniversalChunkCoord chunkCoord = blockCoord.toChunk();
+				const UniversalRegionCoord regionCoord = chunkCoord.toRegion();
 				auto& region = terrain.getRegion(regionCoord);
-				const auto regionIdx = chunkToRegionIndex(chunkCoord);
+				const auto regionIdx = chunkCoord.toRegionIndex(regionCoord);
 				auto& chunk = region.chunks[regionIdx.x][regionIdx.y];
-				const auto chunkIdx = blockToChunkIndex(blockCoord, chunkCoord);
+				const auto chunkIdx = blockCoord.toChunkIndex(chunkCoord);
 				ENGINE_DEBUG_ASSERT(chunkIdx.x >= 0 && chunkIdx.x < chunkSize.x);
 				ENGINE_DEBUG_ASSERT(chunkIdx.y >= 0 && chunkIdx.y < chunkSize.y);
+				ENGINE_DEBUG_ASSERT(region.getChunkStage(regionIdx) == ChunkStage::TerrainComplete);
 
-				// TODO: what is this debug4 check for?
-				if (chunk.data[chunkIdx.x][chunkIdx.y] != BlockId::Debug4) {
-					chunk.data[chunkIdx.x][chunkIdx.y] = info.id == 0 ? BlockId::Gold : BlockId::Grass;
-				}
-
-				//ENGINE_LOG2("GEN LANDMARK: {}", chunkCoord);
+				chunk.data[chunkIdx.x][chunkIdx.y] = BlockId::Gold;
 			}
 		}
 

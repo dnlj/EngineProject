@@ -185,7 +185,7 @@ namespace {
 
 		Color blockToColor[Game::BlockId::_count] = {};
 		blockToColor[Game::BlockId::Entity]	= {0, 120, 189};
-		blockToColor[Game::BlockId::Debug]	= {255, 0, 0};
+		blockToColor[Game::BlockId::Debug1]	= {255, 0, 0};
 		blockToColor[Game::BlockId::Debug2]	= {200, 26, 226};
 		blockToColor[Game::BlockId::Debug3]	= {226, 26, 162};
 		blockToColor[Game::BlockId::Debug4]	= {226, 26, 111};

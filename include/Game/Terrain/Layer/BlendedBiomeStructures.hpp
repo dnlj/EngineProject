@@ -15,7 +15,7 @@ namespace Game::Terrain::Layer {
 			using Partition = UniversalChunkCoord;
 			using Index = Partition;
 
-		public:
+		private:
 			ENGINE_DEBUG_ONLY(mutable Engine::FlatHashSet<StructureInfo> generatedStructures);
 
 		public:

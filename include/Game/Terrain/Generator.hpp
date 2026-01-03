@@ -39,6 +39,7 @@
 #include <Game/Terrain/Layer/BlendedBiomeHeight.hpp>
 #include <Game/Terrain/Layer/BlendedBiomeBasis.hpp>
 #include <Game/Terrain/Layer/BlendedBiomeBlock.hpp>
+#include <Game/Terrain/Layer/ChunkBiomeContributions.hpp>
 #include <Game/Terrain/Layer/BlendedBiomeStructureInfo.hpp>
 #include <Game/Terrain/Layer/BlendedBiomeStructures.hpp>
 #include <Game/Terrain/Layer/BiomeOcean.hpp>
@@ -87,7 +88,6 @@ namespace Game::Terrain {
 			uint64 cacheTargetThresholdBytes = 0;
 			uint64 cacheMaxThresholdBytes = 0;
 			Engine::Clock::Duration cacheTargetTimeout{};
-			std::vector<UniversalChunkCoord> genRequestsBackFlat;
 
 			// TODO: add a lock-and-swap vector?
 			std::vector<Request> genRequestsFront;
@@ -103,7 +103,7 @@ namespace Game::Terrain {
 
 			// Guarded by the layerGenThreadMutex.
 			int64 activeLayerGenNextPartition = -1;
-			void* activeLayerGenPartitions = nullptr;
+			const void* activeLayerGenPartitions = nullptr;
 			using LayerGenerateThreadFuncPtr = void(Generator::*)(decltype(activeLayerGenNextPartition) index);
 			LayerGenerateThreadFuncPtr activeLayerGenFunc = nullptr;
 
@@ -218,6 +218,8 @@ namespace Game::Terrain {
 
 			template<class Layer>
 			ENGINE_INLINE decltype(auto) get(typename const Layer::Index index) const {
+				// TODO: Add dependency checking in debug mode to `get` (and `get2`) calls based on
+				//       request scopes to ensure correct dependencies. 
 				return std::get<Layer>(layers).get(index);
 			}
 
@@ -227,9 +229,7 @@ namespace Game::Terrain {
 				return std::get<Layer>(layers).get(self(), std::forward<Args>(args)...);
 			}
 
-			void generateLayers() {
-				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
-
+			void removeGeneratedRequests() {
 				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
 					if constexpr (requires { Layer::IsOnDemand; }) { return; }
 
@@ -253,6 +253,23 @@ namespace Game::Terrain {
 					//	_debugAfter,
 					//	_debugBefore - _debugAfter
 					//);
+				});
+			}
+
+			void clearRequests() {
+				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+					requests<Layer>().clear();
+				});
+			}
+
+			void generateLayers() {
+				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
+
+				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+					if constexpr (requires { Layer::IsOnDemand; }) { return; }
+
+					const auto& reqs = requests<Layer>();
+					if (reqs.empty()) { return; }
 
 					// TODO: Consider using an unordered_set for partitions so we can avoid this
 					//       sorting entirely. That would also potentially simplify some of the
@@ -330,8 +347,6 @@ namespace Game::Terrain {
 							activeLayerGenPartitions = nullptr;
 						}
 					}
-
-					reqs.clear();
 				});
 			}
 
@@ -413,7 +428,7 @@ namespace Game::Terrain {
 			template<class Layer>
 			void layerGenerateLayer(int64 index) {
 				// Get the next partition.
-				const auto* partitions = reinterpret_cast<std::vector<typename Layer::Partition>*>(activeLayerGenPartitions);
+				const auto* partitions = reinterpret_cast<const std::vector<typename Layer::Partition>*>(activeLayerGenPartitions);
 				ENGINE_DEBUG_ASSERT(partitions != nullptr);
 				ENGINE_DEBUG_ASSERT(!partitions->empty());
 

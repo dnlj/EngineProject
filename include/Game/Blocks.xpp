@@ -5,10 +5,10 @@ X(Air, false, nullptr)
 
 X(Entity, false, "assets/dev/blocks/entity.png")
 
-X(Debug, true, "assets/dev/blocks/debug1.png")
-X(Debug2, true, "assets/dev/blocks/debug2.png")
-X(Debug3, true, "assets/dev/blocks/debug3.png")
-X(Debug4, true, "assets/dev/blocks/debug4.png")
+X(Debug1, false, "assets/dev/blocks/debug1.png")
+X(Debug2, false, "assets/dev/blocks/debug2.png")
+X(Debug3, false, "assets/dev/blocks/debug3.png")
+X(Debug4, false, "assets/dev/blocks/debug4.png")
 
 X(Dirt, true, "assets/dev/blocks/dirt.png")
 X(Grass, true, "assets/dev/blocks/grass.png")
