@@ -22,8 +22,10 @@ namespace Game::Terrain::Layer {
 		public:
 			using CachedLayer::CachedLayer;
 
-			ENGINE_INLINE void request(const Partition area, TestGenerator& generator) {
-				cache.reserve(area);
+			ENGINE_INLINE_REL void request(const Range<Partition>& regionCoordXs, TestGenerator& generator) {
+				regionCoordXs.forEach([&](const Partition& regionCoordX){
+					cache.reserve(regionCoordX);
+				});
 			}
 
 			ENGINE_INLINE void removeGenerated(std::vector<Partition>& partitions) {

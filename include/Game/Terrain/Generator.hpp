@@ -52,12 +52,12 @@
 namespace Game::Terrain {
 	// TODO: Should probably just remove this and add a generic tuple unpack helper.
 	template<class LayersSet>
-	class Requests;
+	class RequestsStore;
 
 	template<template<class...> class Set, class... Layers>
-	class Requests<Set<Layers...>> {
+	class RequestsStore<Set<Layers...>> {
 		public:
-			std::tuple<std::vector<typename Layers::Partition>...> store;
+			std::tuple<Range<typename Layers::Partition>...> store;
 	};
 
 	template<class Self, class Layers, class SharedData>
@@ -67,12 +67,10 @@ namespace Game::Terrain {
 			std::atomic<SeqNum> nextSeq = 0;
 
 			// Layer data.
+			/** All the layers used by this generator. Should be ordered from least dependent to most dependent. */
 			Layers layers;
 			SharedData sharedData;
-
-			// TODO: Add a Pool<T> class for this. Dynamic capacity, dynamic size, but non-destructive on empty/pop.
-			size_t currentRequestScope = 0;
-			std::vector<Requests<Layers>> requestScopes;
+			RequestsStore<Layers> requestStore;
 
 			// All threads.
 			// NOTE: The coordinator thread and generation threads never have contention since
@@ -92,6 +90,7 @@ namespace Game::Terrain {
 			// TODO: add a lock-and-swap vector?
 			std::vector<Request> genRequestsFront;
 			std::vector<Request> genRequestsBack;
+			uintz currentLayer = 0;
 
 			// Generation threads.
 			std::vector<std::thread> layerGenThreads;
@@ -120,20 +119,15 @@ namespace Game::Terrain {
 			const Self& self() const { return static_cast<const Self&>(*this); }
 
 			/**
-			 * Get the container of all requests for all layers in the current request scope.
+			 * Get the container of all requests for the given layer.
 			 */
 			template<class Layer>
-			auto& requests() {
-				return std::get<Meta::TypeSet::IndexOf<Layers, Layer>::value>(
-					requestScopes[currentRequestScope].store
-				);
-			}
+			auto& requests() { return std::get<Meta::TypeSet::IndexOf<Layers, Layer>::value>(requestStore.store); }
 
 		public:
 			Generator(Terrain& terrain, uint64 seed)
 				: layers{Engine::makeAll<Layers>(self(), curSeq)}
 				, terrain{terrain} {
-				requestScopes.resize(4); // Arbitrary size, seems like a reasonable default.
 
 				const auto& cfg = Engine::getGlobalConfig();
 				allocThreads(cfg.cvars.tn_gen_threads);
@@ -194,26 +188,65 @@ namespace Game::Terrain {
 			[[nodiscard]] ENGINE_INLINE SeqNum getSeq() const noexcept { return curSeq; }
 
 			template<class Layer>
-			ENGINE_INLINE void request(typename const Layer::Partition partition) {
+			ENGINE_INLINE_REL void request(typename const Layer::Partition partition) {
 				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- request<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
-				requests<Layer>().push_back(partition);
-				std::get<Layer>(layers).request(partition, self());
+
+				// Ensure correct layer order.
+				ENGINE_DEBUG_ASSERT(layerId<Layer>() < currentLayer, "Incorrect layer request order.");
+
+				// We can cut out a lot of duplicate requests by checking the last inserted
+				// requests. This tends to come up a lot due to upcasting from block > chunk >
+				// region where you have multiple underlying requests that map to the same area.
+				auto& reqs = requests<Layer>();
+				if (reqs.range.empty() || (reqs.range.back() != partition)) {
+					reqs.range.push_back(partition);
+				}
 			}
 
 			template<class Layer>
-			ENGINE_INLINE void requestAwait(typename const Layer::Partition partition) {
-				if (const auto size = requestScopes.size(); currentRequestScope + 1 == size) {
-					requestScopes.resize(size + size);
-					ENGINE_WARN2("Increasing request depth. Before: {}, After: {}", size, requestScopes.size());
-				}
+			ENGINE_INLINE_REL void request(const Range<typename Layer::Partition>& range) {
+				range.forEach([&](const Layer::Partition& partition){
+					request<Layer>(partition);
+				});
+			}
 
+			ENGINE_INLINE void awaitGeneration() {
 				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- await<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
 
-				++currentRequestScope;
-				request<Layer>(partition);
+				{ // Finish requesting lower level layers.
+					const auto originalCurrentLayer = currentLayer;
+
+					Engine::forEachReverse(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+						currentLayer = layerId<Layer>();
+						if (currentLayer < originalCurrentLayer) {
+							processRequests<Layer>();
+						}
+					});
+
+					currentLayer = originalCurrentLayer;
+				}
+
+				// Generate up to the current layer.
 				generateLayers();
-				requests<Layer>().clear();
-				--currentRequestScope;
+			}
+
+			template<class Layer>
+			void processRequests() {
+				auto name = Engine::Debug::ClassName<Layer>(); name;
+				if constexpr (requires { &Layer::request; }) {
+					const auto& reqs = requests<Layer>();
+					if (reqs.range.empty()) { return; }
+
+					//
+					//
+					//
+					// TODO: remove duplicate requests. Use unordered_set?
+					//
+					//
+					//
+
+					std::get<Layer>(layers).request(std::as_const(reqs), self());
+				}
 			}
 
 			template<class Layer>
@@ -229,47 +262,17 @@ namespace Game::Terrain {
 				return std::get<Layer>(layers).get(self(), std::forward<Args>(args)...);
 			}
 
-			void removeGeneratedRequests() {
-				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
-					if constexpr (requires { Layer::IsOnDemand; }) { return; }
-
-					auto& reqs = requests<Layer>();
-					if (reqs.empty()) { return; }
-
-					//ENGINE_DEBUG_ONLY(const auto _debugBefore = reqs.size());
-
-					// NOTE: removeGenerated does _not_ remove the need for `cache.populated(...)`
-					//       since the partition unit is not necessarily the same as the cache unit.
-					layer.removeGenerated(reqs);
-
-					//ENGINE_DEBUG_ONLY(const auto _debugAfter = reqs.size());
-
-					// Very helpful for debugging and optimizing requests/partitions.
-					//ENGINE_DEBUG2("Reqs {} | Ranges: {} | before: {} after: {} total: {}",
-					//	Engine::Debug::ClassName<Layer>(),
-					//	//reqs.ranges,
-					//	reqs.ranges.size(),
-					//	_debugBefore,
-					//	_debugAfter,
-					//	_debugBefore - _debugAfter
-					//);
-				});
-			}
-
-			void clearRequests() {
-				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
-					requests<Layer>().clear();
-				});
-			}
-
 			void generateLayers() {
-				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
+				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
+
+				removeGeneratedRequests();
 
 				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
 					if constexpr (requires { Layer::IsOnDemand; }) { return; }
+					if (layerId<Layer>() >= currentLayer) { return; }
 
 					const auto& reqs = requests<Layer>();
-					if (reqs.empty()) { return; }
+					if (reqs.range.empty()) { return; }
 
 					// TODO: Consider using an unordered_set for partitions so we can avoid this
 					//       sorting entirely. That would also potentially simplify some of the
@@ -310,7 +313,7 @@ namespace Game::Terrain {
 					//	}
 					//}
 
-					if (!reqs.empty()) {
+					if (!reqs.range.empty()) {
 						if constexpr (false /* Single threaded for debugging. */) {
 							// NOTE: It's up to each Layer::generate to avoid duplicate data generation. We
 							//       can't handle that here because some of the data in the partition could
@@ -323,7 +326,7 @@ namespace Game::Terrain {
 							{
 								std::lock_guard lock{layerGenThreadMutex};
 
-								ENGINE_DEBUG_ASSERT(!reqs.empty());
+								ENGINE_DEBUG_ASSERT(!reqs.range.empty());
 								ENGINE_DEBUG_ASSERT(activeLayerGenFunc == nullptr);
 								ENGINE_DEBUG_ASSERT(activeLayerGenPartitions == nullptr);
 								ENGINE_DEBUG_ASSERT(activeLayerGenRemaining == 0);
@@ -331,7 +334,7 @@ namespace Game::Terrain {
 
 								activeLayerGenFunc = &Generator::layerGenerateLayer<Layer>;
 								activeLayerGenPartitions = &reqs;
-								activeLayerGenRemaining = std::ssize(reqs);
+								activeLayerGenRemaining = std::ssize(reqs.range);
 								activeLayerGenNextPartition = activeLayerGenRemaining - 1;
 								layerGenThreadWait.notify_all();
 							}
@@ -348,6 +351,8 @@ namespace Game::Terrain {
 						}
 					}
 				});
+
+				clearRequests();
 			}
 
 			template<class Data>
@@ -381,6 +386,85 @@ namespace Game::Terrain {
 			bool isPending() const { return pending.test(); }
 
 		private:
+			template<class Layer>
+			consteval static uintz layerId() noexcept { return Meta::TypeSet::IndexOf<Layers, Layer>::value; }
+			consteval static uintz layerIdEnd() noexcept { return std::tuple_size_v<Layers>; }
+			
+
+			std::vector<Layer::BlendedBiomeBlock::Partition> totalBlendedBiomeBlockRequests;
+			std::vector<Layer::BlendedBiomeStructures::Partition> totalBlendedBiomeStructuresRequests;
+
+			/**
+			 * Clears any active generated requests.
+			 * Run exclusively from generateLayers on the coordinator thread.
+			 * @see generateLayers
+			 */
+			void clearRequests() {
+				// TODO: would like a better, non layer-specific way to handle this if possible.
+				//       Maybe a layer flag that can say if we should capture all requests?
+				//       IsTopLevelLayer? or similar.
+
+				if (layerId<Layer::BlendedBiomeBlock>() >= currentLayer) {
+					totalBlendedBiomeBlockRequests.append_range(requests<Layer::BlendedBiomeBlock>().range);
+				}
+
+				if (layerId<Layer::BlendedBiomeStructures>() >= currentLayer) {
+					totalBlendedBiomeStructuresRequests.append_range(requests<Layer::BlendedBiomeStructures>().range);
+				}
+
+				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+					if (layerId<Layer>() >= currentLayer) { return; }
+					requests<Layer>().range.clear();
+				});
+			}
+			
+			/**
+			 * Removes any already generated requests.
+			 * Run exclusively from generateLayers on the coordinator thread.
+			 * @see generateLayers
+			 */
+			void removeGeneratedRequests() {
+				//Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+				//	if constexpr (requires { Layer::IsOnDemand; }) { return; }
+				//	auto& reqs = requests<Layer>();
+				//	std::sort(reqs.begin(), reqs.end());
+				//	reqs.erase(std::unique(reqs.begin(), reqs.end()), reqs.end());
+				//});
+
+				//
+				//
+				// TODO: This actually can't work unless we add extra logic... It can cause us to
+				//       miss areas when copying to terrain data. So we need a way to avoid that.
+				//       Maybe just copy to a diff structure?
+				//
+				//
+				
+				//Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+				//	if constexpr (requires { Layer::IsOnDemand; }) { return; }
+				//
+				//	auto& reqs = requests<Layer>();
+				//	if (reqs.empty()) { return; }
+				//
+				//	//ENGINE_DEBUG_ONLY(const auto _debugBefore = reqs.size());
+				//
+				//	// NOTE: removeGenerated does _not_ remove the need for `cache.populated(...)`
+				//	//       since the partition unit is not necessarily the same as the cache unit.
+				//	layer.removeGenerated(reqs);
+				//
+				//	//ENGINE_DEBUG_ONLY(const auto _debugAfter = reqs.size());
+				//
+				//	// Very helpful for debugging and optimizing requests/partitions.
+				//	//ENGINE_DEBUG2("Reqs {} | Ranges: {} | before: {} after: {} total: {}",
+				//	//	Engine::Debug::ClassName<Layer>(),
+				//	//	//reqs.ranges,
+				//	//	reqs.ranges.size(),
+				//	//	_debugBefore,
+				//	//	_debugAfter,
+				//	//	_debugBefore - _debugAfter
+				//	//);
+				//});
+			}
+
 			/**
 			 * Clear the layer caches if needed based on cache target and max thresholds.
 			 * Run exclusively from the coordinator thread.

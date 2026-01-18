@@ -48,6 +48,28 @@ namespace Engine {
 		return forEach(std::forward<Tuple>(tuple), std::forward<Func>(func), std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>{});
 	}
 
+	/**
+	 * Calls a callable once with each tuple element, in reverse order.
+	 * @param tuple The tuple whos elements are passed to the callable.
+	 * @param func The callable to call with each tuple element.
+	 * @return A tuple of all results of calling the callable.
+	 * @see forEach
+	 */
+	template<class Tuple, class Func, auto... Is>
+	ENGINE_INLINE decltype(auto) forEachReverse(Tuple&& tuple, Func&& func, std::index_sequence<Is...>) {
+		// It is important that we use braced initialization `Ret{}` as opposed to `Ret()`
+		// here to ensure evaluation order.
+		// See: [dcl.init.list/4]: https://eel.is/c++draft/dcl.init.list#4
+		using Ret = std::tuple<decltype(resultOrNothing(func, std::get<Is>(std::forward<Tuple>(tuple))))...>;
+		return Ret{resultOrNothing(func, std::get<sizeof...(Is) - Is - 1>(std::forward<Tuple>(tuple)))...};
+	}
+
+	/** @see forEachReverse */
+	template<class Tuple, class Func>
+	ENGINE_INLINE decltype(auto) forEachReverse(Tuple&& tuple, Func&& func) {
+		return forEachReverse(std::forward<Tuple>(tuple), std::forward<Func>(func), std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>{});
+	}
+
 	namespace Detail {
 		template<class Tuple, class Func>
 		class WithTypeAt;

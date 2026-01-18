@@ -12,6 +12,9 @@ namespace Game::Terrain {
 		public:
 			ChunkUnit min; // Inclusive
 			ChunkUnit max; // Exclusive
+
+			ENGINE_INLINE constexpr bool operator<(const ChunkSpanX& right) const noexcept { return (min < right.min) && (max < right.max); }
+			ENGINE_INLINE constexpr bool operator==(const ChunkSpanX&) const noexcept = default;
 			ENGINE_INLINE constexpr bool empty() const noexcept { return min >= max; }
 
 			ENGINE_INLINE constexpr RegionSpanX toRegionSpan() const noexcept {

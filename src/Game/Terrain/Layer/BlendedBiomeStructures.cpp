@@ -1,5 +1,6 @@
 // Game
 #include <Game/Terrain/Layer/BlendedBiomeStructures.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeStructureInfo.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -7,38 +8,45 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeStructures::request(const Partition chunkCoord, TestGenerator& generator) {
-		generator.requestAwait<BlendedBiomeStructureInfo>(chunkCoord);
+	void BlendedBiomeStructures::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
+		//generator.requestAwait<BlendedBiomeStructureInfo>(chunkCoords);
+		generator.request<BlendedBiomeStructureInfo>(chunkCoords);
+		generator.awaitGeneration();
+
+
+		// TODO: this doesn't quite work, you still need to get the structure info for the most
+		//       expanded region. You you need to request the info for a larger area, and only then queue
+		//       the bounding boxes.
 
 		// TODO: Cache struct info.
-		std::vector<StructureInfo> structures; 
-		generator.get2<BlendedBiomeStructureInfo>(chunkCoord, structures);
-
-		if (!structures.empty()) {
-			auto cur = structures.cbegin();
-			const auto end = structures.cend();
-			if (cur != end) {
-				BlockVec minBlock = cur->min;
-				BlockVec maxBlock = cur->max;
-
-				while (++cur != end) {
-					minBlock = glm::min(minBlock, cur->min);
-					maxBlock = glm::max(maxBlock, cur->max);
-				}
-
-				ChunkArea area = {
-					.min = blockToChunk(minBlock),
-					.max = blockToChunk(maxBlock) + ChunkVec{1, 1},
-				};
-
-				// Ensure the underlying terrain is already generated.
-				area.forEach([&](const ChunkVec pos){
-					generator.request<BlendedBiomeBlock>({.realmId = chunkCoord.realmId, .pos = pos});
-				});
-
-				// TODO: forward request to relevant biomes for each struct.
-			}
-		}
+		//std::vector<StructureInfo> structures; 
+		//generator.get2<BlendedBiomeStructureInfo>(chunkCoord, structures);
+		//
+		//if (!structures.empty()) {
+		//	auto cur = structures.cbegin();
+		//	const auto end = structures.cend();
+		//	if (cur != end) {
+		//		BlockVec minBlock = cur->min;
+		//		BlockVec maxBlock = cur->max;
+		//
+		//		while (++cur != end) {
+		//			minBlock = glm::min(minBlock, cur->min);
+		//			maxBlock = glm::max(maxBlock, cur->max);
+		//		}
+		//
+		//		ChunkArea area = {
+		//			.min = blockToChunk(minBlock),
+		//			.max = blockToChunk(maxBlock) + ChunkVec{1, 1},
+		//		};
+		//
+		//		// Ensure the underlying terrain is already generated.
+		//		area.forEach([&](const ChunkVec pos){
+		//			generator.request<BlendedBiomeBlock>({.realmId = chunkCoord.realmId, .pos = pos});
+		//		});
+		//
+		//		// TODO: forward request to relevant biomes for each struct.
+		//	}
+		//}
 	}
 
 	void BlendedBiomeStructures::get(const Index chunkCoord, TestGenerator& generator, Terrain& terrain) const noexcept {

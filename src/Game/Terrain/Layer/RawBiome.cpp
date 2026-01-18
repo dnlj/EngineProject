@@ -5,7 +5,7 @@
 
 
 namespace Game::Terrain::Layer {
-	void RawBiome::request(const Partition chunkCoord, TestGenerator& generator) {
+	void RawBiome::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
 		// No dependencies.
 	}
 

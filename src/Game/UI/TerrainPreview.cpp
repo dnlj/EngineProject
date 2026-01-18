@@ -218,6 +218,8 @@ namespace {
 							// TODO: cant we just do chunkCoord - regionCoord.toChunk() which should be a lot cheaper?
 							const auto regionIndex = chunkCoord.toRegionIndex(regionCoord);
 							auto& chunk = region.chunks[regionIndex.x][regionIndex.y];
+
+							const auto debug = region.getChunkStage(regionIndex); debug; // TODO: rm
 							ENGINE_DEBUG_ASSERT(region.getChunkStage(regionIndex) == ChunkStage::Done, "Chunk is at incorrect stage.");
 
 							const auto blockIndex = blockCoord.toChunkIndex(chunkCoord);

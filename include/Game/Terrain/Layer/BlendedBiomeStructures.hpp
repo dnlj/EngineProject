@@ -21,7 +21,7 @@ namespace Game::Terrain::Layer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
 
-			void request(const Partition chunkCoord, TestGenerator& generator);
+			void request(const Range<Partition>& chunkCoords, TestGenerator& generator);
 			void get(const Index chunkCoord, TestGenerator& generator, Terrain& terrain) const noexcept;
 	};
 }

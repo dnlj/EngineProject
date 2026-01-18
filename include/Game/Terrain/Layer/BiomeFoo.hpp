@@ -14,7 +14,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition regionCoordX, TestGenerator& generator);
+			void request(const Range<Partition>& regionCoordXs, TestGenerator& generator);
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 
@@ -24,7 +24,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator) = delete;
+			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			Float get(BIOME_WEIGHT_ARGS) const noexcept;
 	};
 
@@ -34,7 +34,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator) = delete;
+			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
@@ -44,7 +44,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator) = delete;
+			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
 	};
 
@@ -54,7 +54,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator) = delete;
+			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
 	};
 
@@ -64,7 +64,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator);
+			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			void get(BIOME_STRUCTURE_ARGS) const noexcept;
 	};
 

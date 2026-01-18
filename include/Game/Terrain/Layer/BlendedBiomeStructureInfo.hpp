@@ -1,6 +1,7 @@
 #pragma once
 
 // Game
+#include <Game/Terrain/temp.hpp> // TODO: rm/split - Range<T>
 #include <Game/Terrain/StructureInfo.hpp>
 #include <Game/Terrain/Layer/DependsOn.hpp>
 #include <Game/Terrain/Layer/OnDemandLayer.hpp>
@@ -32,7 +33,7 @@ namespace Game::Terrain::Layer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
 
-			void request(const Partition chunkCoord, TestGenerator& generator);
+			void request(const Range<Partition>& chunkCoords, TestGenerator& generator);
 
 			// TODO: Consider using a BSP tree, quad tree, BVH, etc. some spatial type for
 			//       structure storage. That could help with culling becomes an issue, otherwise

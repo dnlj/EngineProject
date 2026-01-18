@@ -1,6 +1,7 @@
 // Game
 #include <Game/Terrain/Layer/BlendedBiomeHeight.hpp>
 #include <Game/Terrain/Layer/BlendedBiomeWeights.hpp>
+#include <Game/Terrain/Layer/WorldBaseHeight.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -8,12 +9,15 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeHeight::request(const Partition regionCoordX, TestGenerator& generator) {
-		cache.reserve(regionCoordX);
+	void BlendedBiomeHeight::request(const Range<Partition>& regionCoordXs, TestGenerator& generator) {
+		regionCoordXs.forEach([&](const Partition& regionCoordX){
+			cache.reserve(regionCoordX);
+			generator.request<WorldBaseHeight>(regionCoordX);
+		});
 
-		generator.requestAwait<WorldBaseHeight>(regionCoordX);
+		generator.awaitGeneration();
 
-		{
+		regionCoordXs.forEach([&](const Partition& regionCoordX){
 			const auto& regionH0 = generator.get<WorldBaseHeight>(regionCoordX);
 			const auto [h0Min, h0Max] = std::minmax_element(regionH0.cbegin(), regionH0.cend());
 
@@ -39,7 +43,7 @@ namespace Game::Terrain::Layer {
 			// requests to each biome in the resulting blend. Currently this is "okay" to
 			// skip because all biome layers are expected to resolve in `get` anyways.
 			// Although this does bypass the request/generate dependency model.
-		}
+		});
 	}
 
 	void BlendedBiomeHeight::generate(const Partition regionCoordX, TestGenerator& generator) {

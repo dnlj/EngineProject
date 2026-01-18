@@ -24,6 +24,18 @@
 // TODO: make all cache/store types uncopyable. These should be accessed by ref.
 // TODO: split out
 namespace Game::Terrain {
+	template<class T>
+	class Range {
+		public:
+			std::vector<T> range;
+
+			ENGINE_INLINE void forEach(auto&& func) const {
+				for (const auto& part : range) {
+					func(part);
+				}
+			}
+	};
+
 	inline void normalizeBiomeWeights(BiomeWeights& weights) {
 		const auto total = std::reduce(weights.cbegin(), weights.cend(), 0.0f, [](Float accum, const auto& value){ return accum + value.weight; });
 		const auto normF = 1.0f / total;

@@ -50,6 +50,10 @@ namespace Game::Terrain {
 				cache.try_emplace(regionCoordX);
 			}
 
+			ENGINE_INLINE_REL void reserve(const UniversalRegionSpanX regionSpanX) noexcept {
+				regionSpanX.forEach([&](UniversalRegionCoordX regionCoordX){ reserve(regionCoordX); });
+			}
+
 			ENGINE_INLINE uint64 getCacheSizeBytes() const noexcept {
 				static_assert(std::is_trivially_destructible_v<T>, "Will need to account for sizes in getCacheSizeBytes if non-trivial type is used.");
 				return cache.size() * sizeof(Store);
@@ -77,9 +81,9 @@ namespace Game::Terrain {
 				return found->second.populated;
 			}
 
-			ENGINE_INLINE void populate(UniversalRegionCoordX regionCoordX, const SeqNum curSeq, auto&& func) {
+			ENGINE_INLINE_REL void populate(UniversalRegionCoordX regionCoordX, const SeqNum curSeq, auto&& func) {
 				const auto found = cache.find(regionCoordX);
-				ENGINE_DEBUG_ASSERT(found != cache.end());
+				ENGINE_DEBUG_ASSERT(found != cache.end(), "Attempting to populate unreserved block span region.");
 				found->second.lastUsed = curSeq;
 				if (found->second.populated) { return; }
 

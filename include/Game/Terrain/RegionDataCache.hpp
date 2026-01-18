@@ -20,7 +20,7 @@ namespace Game::Terrain {
 			RegionDataCache(RegionDataCache&&) = default;
 			RegionDataCache(const RegionDataCache&) = delete;
 
-			ENGINE_INLINE Store& at(UniversalRegionCoord regionCoord, SeqNum curSeq) noexcept {
+			ENGINE_INLINE_REL Store& at(UniversalRegionCoord regionCoord, SeqNum curSeq) noexcept {
 				const auto found = regions.find(regionCoord);
 				ENGINE_DEBUG_ASSERT(found != regions.end(), "Attempting to access region outside of RegionDataCache.");
 				found->second->lastUsed = curSeq;
@@ -44,8 +44,21 @@ namespace Game::Terrain {
 			ENGINE_INLINE bool isPopulated(const UniversalChunkCoord chunkCoord, SeqNum curSeq) {
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto regionIndex = chunkCoord.toRegionIndex(regionCoord);
-				auto& regionStore = this->at(regionCoord, curSeq);
-				return regionStore.isPopulated(regionIndex);
+
+
+				//
+				//
+				// TODO: why was this changed? Is this needed? Or is this masking a failure to reserve correctly?
+				//
+				//
+				//
+
+				//auto& regionStore = this->at(regionCoord, curSeq);
+				//return regionStore.isPopulated(regionIndex);
+
+				const auto found = regions.find(regionCoord);
+				if (found == regions.end()) { return false; }
+				return found->second->isPopulated(regionIndex);
 			}
 
 			ENGINE_INLINE_REL decltype(auto) populate(const UniversalChunkCoord chunkCoord, SeqNum curSeq, auto&& func) {

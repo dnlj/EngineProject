@@ -96,7 +96,7 @@ namespace Game::Terrain {
 	template<class Self, class Layers, class SharedData>
 	void Generator<Self, Layers, SharedData>::processGenRequests() {
 		// We clean caches at the start instead of the end to avoid issues with the TerrainPreview
-		// when generating large ammounts of terrain, which fills the entire cache, and then trying
+		// when generating large amounts of terrain, which fills the entire cache, and then trying
 		// to access layers which have already been cleaned. Moving it to the start instead of end
 		// avoids this by deferring the cleanup until the next call so the layers are not cleaned
 		// immediately.
@@ -104,6 +104,7 @@ namespace Game::Terrain {
 		// From the gameplay side this should be fine since we are queueing requests all the time so
 		// that cache will be cleaned either way.
 		cleanCaches();
+		currentLayer = layerIdEnd();
 
 		{
 			// Avoid regenerating already generated data. Even with caches data from immediate
@@ -125,14 +126,27 @@ namespace Game::Terrain {
 			}
 		}
 
-		removeGeneratedRequests();
+		// It is important we use forEachReverse and not forEach so that the _most_
+		// dependent layers are evaluated first.
+		Engine::forEachReverse(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
+			currentLayer = layerId<Layer>();
+			processRequests<Layer>();
+		});
+
+		ENGINE_DEBUG_ASSERT(currentLayer == 0);
+		currentLayer = layerIdEnd();
 
 		// nextSeq may or may not have been updated at this point. We just copy to curSeq
 		// to avoid the need for an extra lock or frequent atomic lookup during generateLayers.
-		curSeq = nextSeq;
+		curSeq = nextSeq; // TODO: shouldn't we be doing this at the start of the function?
+
 		generateLayers();
 
 		{
+			// TODO: totalBlendedBiomeBlockRequests and totalBlendedBiomeStructuresRequests likely
+			//       contain a lot of duplicates at this point. Try deduplicating or using a set to se how
+			//       that affects things.
+			
 			// We need the lock on the terrain and not the generator because we have
 			// access to the requests here. It would be nice if the generator had the lock
 			// instead of the terrain (then we could move this external and completely
@@ -144,12 +158,12 @@ namespace Game::Terrain {
 			const auto lock = terrain.lock();
 
 			// Copy the block data to the terrain.
-			// We need two loops. One for block data and one for structure data. This is needed
+			// We need two	 loops. One for block data and one for structure data. This is needed
 			// since generating structures may rely on the terrain data and could end up
 			// reading/writing structure data before that chunk is generated otherwise. If you try
 			// combining them you will noticed that _some_ (not all) structures that span chunk
 			// boundries may end up cut off. Which ones are cut off depends on the generation order.
-			for (const auto& chunkCoord : requests<Layer::BlendedBiomeBlock>()) {
+			for (const auto& chunkCoord : totalBlendedBiomeBlockRequests) {
 				const auto regionCoord = chunkCoord.toRegion();
 				auto& region = terrain.getRegion(regionCoord);
 				const auto regionIdx = chunkCoord.toRegionIndex(regionCoord);
@@ -162,7 +176,7 @@ namespace Game::Terrain {
 			}
 
 			// Copy the structure data to the terrain.
-			for (const auto& chunkCoord :  requests<Layer::BlendedBiomeStructures>()) {
+			for (const auto& chunkCoord : totalBlendedBiomeStructuresRequests) {
 				const auto regionCoord = chunkToRegion(chunkCoord.pos);
 				auto& region = terrain.getRegion({chunkCoord.realmId, regionCoord});
 				const auto regionIdx = chunkToRegionIndex(chunkCoord.pos, regionCoord);
@@ -175,7 +189,6 @@ namespace Game::Terrain {
 			}
 		}
 
-		clearRequests();
 		genRequestsBack.clear();
 	}
 }

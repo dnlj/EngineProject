@@ -1,14 +1,17 @@
 // Game
 #include <Game/Terrain/Layer/BlendedBiomeWeights.hpp>
+#include <Game/Terrain/Layer/RawBiomeWeights.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeWeights::request(const Partition chunkCoord, TestGenerator& generator) {
-		generator.request<RawBiomeWeights>(chunkCoord);
-		cache.reserveRegion(chunkCoord.toRegion(), getSeq());
+	void BlendedBiomeWeights::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
+		chunkCoords.forEach([&](const Partition& chunkCoord) {
+			generator.request<RawBiomeWeights>(chunkCoord);
+			cache.reserveRegion(chunkCoord.toRegion(), getSeq());
+		});
 	}
 
 	void BlendedBiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {

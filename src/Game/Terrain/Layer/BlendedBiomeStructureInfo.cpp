@@ -1,5 +1,6 @@
 // Game
 #include <Game/Terrain/Layer/BlendedBiomeStructureInfo.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeWeights.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -7,8 +8,8 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeStructureInfo::request(const Partition chunkCoord, TestGenerator& generator) {
-		generator.request<BlendedBiomeWeights>(chunkCoord);
+	void BlendedBiomeStructureInfo::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
+		generator.request<BlendedBiomeWeights>(chunkCoords);
 	}
 
 	void BlendedBiomeStructureInfo::get(const TestGenerator& generator, const Index chunkCoord, std::vector<StructureInfo>& structures) const noexcept {

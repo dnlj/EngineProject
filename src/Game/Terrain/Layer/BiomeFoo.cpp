@@ -2,6 +2,7 @@
 
 // Game
 #include <Game/Terrain/Layer/BiomeFoo.hpp>
+#include <Game/Terrain/Layer/WorldBaseHeight.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -75,8 +76,10 @@ namespace Game::Terrain::Layer {
 }
 
 namespace Game::Terrain::Layer {
-	void BiomeFooHeight::request(const Partition regionCoordX, TestGenerator& generator) {
-		generator.request<WorldBaseHeight>(regionCoordX);
+	void BiomeFooHeight::request(const Range<Partition>& regionCoordXs, TestGenerator& generator) {
+		regionCoordXs.forEach([&](const Partition& regionCoordX){
+			generator.request<WorldBaseHeight>(regionCoordX);
+		});
 	}
 
 	Float BiomeFooHeight::get(BIOME_HEIGHT_ARGS) const noexcept {
@@ -156,10 +159,6 @@ namespace Game::Terrain::Layer {
 				}
 			}
 		}
-	}
-
-	void BiomeFooStructure::request(const Partition area, TestGenerator& generator) {
-		// TODO: this should no longer be needed since it is handled by BlendedBiomeStructures based on bounding boxes.
 	}
 
 	void BiomeFooStructure::get(BIOME_STRUCTURE_ARGS) const noexcept {

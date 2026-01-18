@@ -4,6 +4,40 @@
 #include <Game/Terrain/Layer/biome.hpp>
 
 
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// TODo: add specific biome type basses with the using delcations based on the blend layers defualt deletlt
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+
 namespace Game::Terrain::Layer {
 	constexpr inline auto BiomeOceanSeed = 0xF7F7'F7F7'F7F7'5555; // TODO: pull/transform seed from generator.
 
@@ -13,7 +47,7 @@ namespace Game::Terrain::Layer {
 
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Partition area, TestGenerator& generator) = delete;
+			void request(const Partition regionCoordX, TestGenerator& generator) = delete;
 			Float get(BIOME_HEIGHT_ARGS) const noexcept { return h0; }
 	};
 

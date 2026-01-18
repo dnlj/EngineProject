@@ -1,6 +1,19 @@
 #pragma once
 
-
+//
+//
+//
+//
+// TODO: remove? See UniversalChunkArea.
+//
+//
+//
+//
+//
+//
+//
+//
+//
 namespace Game::Terrain {
 	/**
 	 * Represents an AABB chunk area, in chunks.
@@ -13,6 +26,7 @@ namespace Game::Terrain {
 
 			template<class Func>
 			void forEach(Func&& func) const {
+				// TODO: it would likely be more optimal to iterate per region per chunk instead of all chunk x then all chunk y.
 				for (auto chunkCoord = min; chunkCoord.x < max.x; ++chunkCoord.x) {
 					for (chunkCoord.y = min.y; chunkCoord.y < max.y; ++chunkCoord.y) {
 						func(std::as_const(chunkCoord));

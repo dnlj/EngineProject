@@ -1,6 +1,7 @@
 // Game
 #include <Game/Terrain/Layer/BlendedBiomeBasis.hpp>
 #include <Game/Terrain/Layer/BlendedBiomeHeight.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeWeights.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -8,11 +9,13 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeBasis::request(const Partition chunkCoord, TestGenerator& generator) {
-		const auto regionCoord = chunkCoord.toRegion();
-		generator.request<BlendedBiomeWeights>(chunkCoord);
-		generator.request<BlendedBiomeHeight>(regionCoord.toX());
-		cache.reserveRegion(regionCoord, getSeq());
+	void BlendedBiomeBasis::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
+		chunkCoords.forEach([&](const Partition& chunkCoord){
+			const auto regionCoord = chunkCoord.toRegion();
+			generator.request<BlendedBiomeWeights>(chunkCoord);
+			generator.request<BlendedBiomeHeight>(regionCoord.toX());
+			cache.reserveRegion(regionCoord, getSeq());
+		});
 	}
 
 	void BlendedBiomeBasis::generate(const Partition chunkCoord, TestGenerator& generator) {

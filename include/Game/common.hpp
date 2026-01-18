@@ -209,6 +209,17 @@ namespace Game::inline Units {
 		d.y = d.y * chunkSize.y == block.y ? d.y : d.y - (block.y < 0);
 		return d;
 	}
+	
+	/**
+     * Converts from block coordinates to exclusive chunk coordinates. The upper bound in a range for example.
+     */
+	ENGINE_INLINE constexpr inline RegionVec blockToChunkExclude(const ChunkVec chunk) noexcept {
+		// Integer division + ceil
+		auto d = chunk / chunkSize;
+		d.x = d.x * chunkSize.x == chunk.x ? d.x : d.x + (chunk.x > 0);
+		d.y = d.y * chunkSize.y == chunk.y ? d.y : d.y + (chunk.y > 0);
+		return d;
+	}
 
 	/**
 	 * Converts from chunk coordinates to block coordinates.
@@ -228,6 +239,17 @@ namespace Game::inline Units {
 		return d;
 	}
 
+	/**
+     * Converts from chunk coordinates to exclusive region coordinates. The upper bound in a range for example.
+     */
+	ENGINE_INLINE constexpr inline RegionVec chunkToRegionExclude(const ChunkVec chunk) noexcept {
+		// Integer division + ceil
+		auto d = chunk / regionSize;
+		d.x = d.x * regionSize.x == chunk.x ? d.x : d.x + (chunk.x > 0);
+		d.y = d.y * regionSize.y == chunk.y ? d.y : d.y + (chunk.y > 0);
+		return d;
+	}
+
 	// TODO: Remove this overload when no longer used. New code should prefer the other overload.
 	/**
 	 * Converts from chunk coordinates to an index wrapped at increments of regionSize.
@@ -241,6 +263,11 @@ namespace Game::inline Units {
 	 */
 	ENGINE_INLINE constexpr inline ChunkVec regionToChunk(const RegionVec region) noexcept {
 		return region * regionSize;
+	}
+
+	ENGINE_INLINE constexpr inline ChunkVec regionToChunkExclude(const RegionVec region) noexcept {
+		// Add one since this is exclusive.
+		return region * regionSize + ChunkVec{1, 1};
 	}
 
 	/**

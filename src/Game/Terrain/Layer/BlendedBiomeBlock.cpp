@@ -1,5 +1,6 @@
 // Game
 #include <Game/Terrain/Layer/BlendedBiomeBlock.hpp>
+#include <Game/Terrain/Layer/BlendedBiomeBasis.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -7,11 +8,13 @@
 
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeBlock::request(const Partition chunkCoord, TestGenerator& generator) {
+	void BlendedBiomeBlock::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
 		// TODO: We should technically be making request calls to the relevant biomes for
 		//       chunkCoord here. Also in other Blended* systems?
-		generator.request<BlendedBiomeBasis>(chunkCoord);
-		cache.reserveRegion(chunkCoord.toRegion(), getSeq());
+		chunkCoords.forEach([&](const Partition& chunkCoord){
+			generator.request<BlendedBiomeBasis>(chunkCoord);
+			cache.reserveRegion(chunkCoord.toRegion(), getSeq());
+		});
 	}
 
 	void BlendedBiomeBlock::generate(const Partition chunkCoord, TestGenerator& generator) {

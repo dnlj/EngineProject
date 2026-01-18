@@ -3,6 +3,7 @@
 #include <Game/Terrain/BiomeScale.hpp>
 #include <Game/Terrain/Layer/RawBiome.hpp>
 #include <Game/Terrain/Layer/RawBiomeWeights.hpp>
+#include <Game/Terrain/Layer/WorldBaseHeight.hpp>
 
 // TODO: Would be ideal to cleanup these includes so we only need the biomes we care about.
 #include <Game/Terrain/TestGenerator.hpp>
@@ -10,16 +11,18 @@
 
 
 namespace Game::Terrain::Layer {
-	void RawBiomeWeights::request(const Partition chunkCoord, TestGenerator& generator) {
-		const auto regionCoord = chunkCoord.toRegion();
+	void RawBiomeWeights::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
+		chunkCoords.forEach([&](const Partition& chunkCoord){
+			const auto regionCoord = chunkCoord.toRegion();
 
-		// TODO: shouldn't this need to consider blendDist as well? Why is this working?
-		generator.request<WorldBaseHeight>(regionCoord.toX());
+			// TODO: shouldn't this need to consider blendDist as well? Why is this working?
+			generator.request<WorldBaseHeight>(regionCoord.toX());
 
-		// Note that since RawBiome is not cached this call effectively does nothing.
-		generator.request<RawBiome>(chunkCoord);
+			// Note that since RawBiome is not cached this call effectively does nothing.
+			generator.request<RawBiome>(chunkCoord);
 
-		cache.reserveRegion(regionCoord, getSeq());
+			cache.reserveRegion(regionCoord, getSeq());
+		});
 	}
 
 	void RawBiomeWeights::generate(const Partition chunkCoord, TestGenerator& generator) {

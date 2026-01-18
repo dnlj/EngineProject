@@ -23,29 +23,33 @@ namespace Game::Terrain {
 		Layer::BiomeOcean
 	>;
 	constexpr inline auto biomeCount = std::tuple_size_v<Biomes>;
-	
-	using Layers = Engine::TupleConcat_t<
-		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Height), Biomes>,
-		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Weight), Biomes>,
-		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Basis), Biomes>,
-		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Block), Biomes>,
-		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(StructureInfo), Biomes>,
-		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Structure), Biomes>,
 
-		// TODO: Really these should be interleaved with the biome layers, but atm the
-		//       biome layers are immediate (no caching) so it doesn't matter.
-		std::tuple<
-			Layer::WorldBaseHeight,
-			Layer::RawBiome,
-			Layer::RawBiomeWeights,
-			Layer::BlendedBiomeWeights,
-			Layer::BlendedBiomeHeight,
-			Layer::BlendedBiomeBasis,
-			Layer::BlendedBiomeBlock,
-			//Layer::ChunkBiomeContributions,
-			Layer::BlendedBiomeStructureInfo,
-			Layer::BlendedBiomeStructures
-		>
+	// The order biomes are listed is the order they are evaluated, so it is critical that all
+	// dependencies for a given layer appear _before_ that layer.
+	using Layers = Engine::TupleConcat_t<
+		std::tuple<Layer::WorldBaseHeight>,
+		std::tuple<Layer::RawBiome>,
+		std::tuple<Layer::RawBiomeWeights>,
+
+		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Weight), Biomes>,
+		std::tuple<Layer::BlendedBiomeWeights>,
+
+		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Height), Biomes>,
+		std::tuple<Layer::BlendedBiomeHeight>,
+
+		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Basis), Biomes>,
+		std::tuple<Layer::BlendedBiomeBasis>,
+
+		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Block), Biomes>,
+		std::tuple<Layer::BlendedBiomeBlock>,
+
+		//std::tuple<Layer::ChunkBiomeContributions>,		
+
+		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(StructureInfo), Biomes>,
+		std::tuple<Layer::BlendedBiomeStructureInfo>,
+
+		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Structure), Biomes>,
+		std::tuple<Layer::BlendedBiomeStructures>
 	>;
 
 	using SharedData = Engine::TupleConcat_t<
