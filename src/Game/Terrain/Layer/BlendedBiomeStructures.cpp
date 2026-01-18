@@ -9,7 +9,6 @@
 
 namespace Game::Terrain::Layer {
 	void BlendedBiomeStructures::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
-		//generator.requestAwait<BlendedBiomeStructureInfo>(chunkCoords);
 		generator.request<BlendedBiomeStructureInfo>(chunkCoords);
 		generator.awaitGeneration();
 

@@ -34,7 +34,7 @@
 
 namespace Game::Terrain::Layer {
 	template<uint64 Seed, Float HAmp, Float HFeatScale>
-	Float BiomeDebugBaseHeight<Seed, HAmp, HFeatScale>::get(BIOME_HEIGHT_ARGS) const noexcept {
+	Float BiomeDebugHeight<Seed, HAmp, HFeatScale>::get(BIOME_HEIGHT_ARGS) const noexcept {
 		auto const& simplex1 = generator.shared<BiomeDebugSharedData<Seed>>().simplex1;
 		return h0 + HAmp * simplex1.value(blockCoordX.pos * HFeatScale, 0); // TODO: 1d simplex
 	}

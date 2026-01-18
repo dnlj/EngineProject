@@ -2,69 +2,47 @@
 
 // Game
 #include <Game/Terrain/Layer/biome.hpp>
+#include <Game/Terrain/Layer/BaseBiome.hpp>
 
 
 namespace Game::Terrain::Layer {
 	class WorldBaseHeight;
 	class BlendedBiomeHeight;
 
-	class BiomeFooHeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
-		public:
-			using Partition = BlendedBiomeHeight::Partition;
-
+	class BiomeFooHeight : public BaseBiomeHeight, public OnDemandLayer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
 			void request(const Range<Partition>& regionCoordXs, TestGenerator& generator);
 			Float get(BIOME_HEIGHT_ARGS) const noexcept;
 	};
 
-	class BiomeFooWeight : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
-		public:
-			using Partition = BlendedBiomeWeights::Partition;
-
+	class BiomeFooWeight : public BaseBiomeWeight, public OnDemandLayer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			Float get(BIOME_WEIGHT_ARGS) const noexcept;
 	};
 
-	class BiomeFooBasis : public OnDemandLayer, public Layer::DependsOn<WorldBaseHeight> {
-		public:
-			using Partition = BlendedBiomeBasis::Partition;
-
+	class BiomeFooBasis : public BaseBiomeBasis, public OnDemandLayer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			Float get(BIOME_BASIS_ARGS) const noexcept;
 	};
 
-	class BiomeFooBlock : public OnDemandLayer, public Layer::DependsOn<> {
-		public:
-			using Partition = BlendedBiomeBlock::Partition;
-
+	class BiomeFooBlock : public BaseBiomeBlock, public OnDemandLayer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			BlockId get(BIOME_BLOCK_ARGS) const noexcept;
 	};
 
-	class BiomeFooStructureInfo : public OnDemandLayer, public Layer::DependsOn<> {
-		public:
-			using Partition = BlendedBiomeStructureInfo::Partition;
-
+	class BiomeFooStructureInfo : public BaseBiomeStructureInfo, public OnDemandLayer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
 	};
 
-	class BiomeFooStructure : public OnDemandLayer, public Layer::DependsOn<> {
-		public:
-			using Partition = BlendedBiomeStructures::Partition;
-
+	class BiomeFooStructure : public BaseBiomeStructure, public OnDemandLayer {
 		public:
 			using OnDemandLayer::OnDemandLayer;
-			void request(const Range<Partition>&, TestGenerator& generator) = delete;
 			void get(BIOME_STRUCTURE_ARGS) const noexcept;
 	};
 
