@@ -35,7 +35,7 @@ namespace Game {
 
 			ENGINE_INLINE constexpr UniversalChunkSpanX toChunkSpanX() const noexcept;
 
-			void forEach(auto&& func) const noexcept {
+			ENGINE_INLINE void forEach(auto&& func) const noexcept {
 				for (RegionUnit x = min; x < max; ++x) {
 					func(UniversalRegionCoordX{.realmId = realmId, .pos = x});
 				}
@@ -48,7 +48,7 @@ namespace Game {
 			RegionVec min;
 			RegionVec max; // Exclusive
 
-			void forEach(auto&& func) const noexcept {
+			ENGINE_INLINE void forEach(auto&& func) const noexcept {
 				for (RegionUnit x = min.x; x < max.x; ++x) {
 					for (RegionUnit y = min.y; y < max.y; ++y) {
 						func(UniversalRegionCoord{.realmId = realmId, .pos = {x, y}});
@@ -56,7 +56,7 @@ namespace Game {
 				}
 			}
 
-			UniversalRegionSpanX toSpanX() const noexcept {
+			ENGINE_INLINE UniversalRegionSpanX toSpanX() const noexcept {
 				return {realmId, min.x, max.x};
 			}
 	};
@@ -94,7 +94,7 @@ namespace Game {
 			ChunkUnit min;
 			ChunkUnit max; // Exclusive
 
-			void forEach(auto&& func) const noexcept {
+			ENGINE_INLINE void forEach(auto&& func) const noexcept {
 				for (ChunkUnit x = min; x < max; ++x) {
 					func(UniversalChunkCoord{.realmId = realmId, .pos = x});
 				}
@@ -109,7 +109,7 @@ namespace Game {
 
 			ENGINE_INLINE constexpr UniversalRegionArea toRegionArea() const noexcept { return {realmId, chunkToRegion(min), chunkToRegionExclude(max)}; }
 
-			void forEach(auto&& func) const noexcept {
+			ENGINE_INLINE void forEach(auto&& func) const noexcept {
 				for (RegionUnit x = min.x; x < max.x; ++x) {
 					for (RegionUnit y = min.y; y < max.y; ++y) {
 						func(UniversalChunkCoord{.realmId = realmId, .pos = {x, y}});
@@ -146,7 +146,7 @@ namespace Game {
 			BlockVec min;
 			BlockVec max; // Exclusive
 
-			void forEach(auto&& func) const noexcept {
+			ENGINE_INLINE void forEach(auto&& func) const noexcept {
 				for (RegionUnit x = min.x; x < max.x; ++x) {
 					for (RegionUnit y = min.y; y < max.y; ++y) {
 						func(UniversalBlockCoord{.realmId = realmId, .pos = {x, y}});

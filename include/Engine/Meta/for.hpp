@@ -8,7 +8,7 @@ namespace Engine::Meta {
 	template<class... Ts>
 	struct ForEach {
 		template<class Func>
-		ENGINE_INLINE static void call(Func&& func) {
+		ENGINE_INLINE constexpr static void call(Func&& func) {
 			(func.operator()<Ts>(), ...);
 		}
 	};

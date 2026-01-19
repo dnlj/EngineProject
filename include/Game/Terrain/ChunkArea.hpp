@@ -25,7 +25,7 @@ namespace Game::Terrain {
 			ENGINE_INLINE constexpr bool empty() const noexcept { return (min.x >= max.x) || (min.y >= max.y); }
 
 			template<class Func>
-			void forEach(Func&& func) const {
+			ENGINE_INLINE void forEach(Func&& func) const {
 				// TODO: it would likely be more optimal to iterate per region per chunk instead of all chunk x then all chunk y.
 				for (auto chunkCoord = min; chunkCoord.x < max.x; ++chunkCoord.x) {
 					for (chunkCoord.y = min.y; chunkCoord.y < max.y; ++chunkCoord.y) {

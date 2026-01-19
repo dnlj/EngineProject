@@ -77,9 +77,7 @@ namespace Game::Terrain::Layer {
 
 namespace Game::Terrain::Layer {
 	void BiomeFooHeight::request(const Range<Partition>& regionCoordXs, TestGenerator& generator) {
-		regionCoordXs.forEach([&](const Partition& regionCoordX){
-			generator.request<WorldBaseHeight>(regionCoordX);
-		});
+		generator.request<WorldBaseHeight>(regionCoordXs);
 	}
 
 	Float BiomeFooHeight::get(BIOME_HEIGHT_ARGS) const noexcept {

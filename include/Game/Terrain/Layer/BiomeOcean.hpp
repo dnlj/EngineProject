@@ -34,6 +34,7 @@ namespace Game::Terrain::Layer {
 
 	class BiomeOceanStructureInfo : public BaseBiomeStructureInfo, public OnDemandLayer {
 		public:
+			constexpr static ChunkUnit maxStructureExtent = 1;
 			using OnDemandLayer::OnDemandLayer;
 			void get(BIOME_STRUCTURE_INFO_ARGS) const noexcept;
 	};

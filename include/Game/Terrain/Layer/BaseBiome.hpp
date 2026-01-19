@@ -30,6 +30,11 @@ namespace Game::Terrain::Layer {
 
 	class BaseBiomeStructureInfo {
 		public:
+			// Structures should also define the maxStructExtent. Assuming your structures are
+			// randomly distributed within chunk, this is effectively the maximum structure size
+			// rounded up to the nearest chunk.
+			//constexpr ChunkUnit maxStructExtent = 0;
+
 			using Partition = BlendedBiomeStructureInfo::Partition;
 			void request(const Range<Partition>& chunkCoords, TestGenerator& generator) = delete;
 	};

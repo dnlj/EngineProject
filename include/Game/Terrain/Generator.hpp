@@ -86,6 +86,8 @@ namespace Game::Terrain {
 			uint64 cacheTargetThresholdBytes = 0;
 			uint64 cacheMaxThresholdBytes = 0;
 			Engine::Clock::Duration cacheTargetTimeout{};
+			Engine::FlatHashSet<Layer::BlendedBiomeBlock::Partition> totalBlendedBiomeBlockRequests;
+			Engine::FlatHashSet<Layer::BlendedBiomeStructures::Partition> totalBlendedBiomeStructuresRequests;
 
 			// TODO: add a lock-and-swap vector?
 			std::vector<Request> genRequestsFront;
@@ -389,10 +391,6 @@ namespace Game::Terrain {
 			template<class Layer>
 			consteval static uintz layerId() noexcept { return Meta::TypeSet::IndexOf<Layers, Layer>::value; }
 			consteval static uintz layerIdEnd() noexcept { return std::tuple_size_v<Layers>; }
-			
-
-			std::vector<Layer::BlendedBiomeBlock::Partition> totalBlendedBiomeBlockRequests;
-			std::vector<Layer::BlendedBiomeStructures::Partition> totalBlendedBiomeStructuresRequests;
 
 			/**
 			 * Clears any active generated requests.
@@ -405,11 +403,13 @@ namespace Game::Terrain {
 				//       IsTopLevelLayer? or similar.
 
 				if (layerId<Layer::BlendedBiomeBlock>() >= currentLayer) {
-					totalBlendedBiomeBlockRequests.append_range(requests<Layer::BlendedBiomeBlock>().range);
+					auto& range = requests<Layer::BlendedBiomeBlock>().range;
+					totalBlendedBiomeBlockRequests.insert(range.begin(), range.end());
 				}
 
 				if (layerId<Layer::BlendedBiomeStructures>() >= currentLayer) {
-					totalBlendedBiomeStructuresRequests.append_range(requests<Layer::BlendedBiomeStructures>().range);
+					auto& range = requests<Layer::BlendedBiomeStructures>().range;
+					totalBlendedBiomeStructuresRequests.insert(range.begin(), range.end());
 				}
 
 				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {

@@ -9,6 +9,8 @@
 
 
 namespace Game::Terrain::Layer {
+	// TODO: It would probably be better to define structures separately from biomes. Then be able to
+	//       define under what conditions certain structures can spawn. Biome, Y height, etc.
 	class BlendedBiomeStructureInfo : public OnDemandLayer, public DependsOn<> {
 		public:
 			// Biome structures doesn't necessarily need to use the chunk grid, at the

@@ -142,6 +142,13 @@ namespace Game::Terrain {
 
 		generateLayers();
 
+
+		// TODO (zs3tbZGB): Consider moving this copying to layers. Then we could get:
+		//       - Multithreading for free.
+		//       - Unified request deduplication.
+		//       - Removal of the totalBlendedBiomeBlockRequests and totalBlendedBiomeStructuresRequests special cases.
+		// Only consideration is the terrain lock. Maybe we could just add a preGenerate/postGenerate functions to solve that?
+
 		{
 			// TODO: totalBlendedBiomeBlockRequests and totalBlendedBiomeStructuresRequests likely
 			//       contain a lot of duplicates at this point. Try deduplicating or using a set to se how
@@ -158,11 +165,11 @@ namespace Game::Terrain {
 			const auto lock = terrain.lock();
 
 			// Copy the block data to the terrain.
-			// We need two	 loops. One for block data and one for structure data. This is needed
+			// We need two loops. One for block data and one for structure data. This is needed
 			// since generating structures may rely on the terrain data and could end up
 			// reading/writing structure data before that chunk is generated otherwise. If you try
 			// combining them you will noticed that _some_ (not all) structures that span chunk
-			// boundries may end up cut off. Which ones are cut off depends on the generation order.
+			// boundaries may end up cut off. Which ones are cut off depends on the generation order.
 			for (const auto& chunkCoord : totalBlendedBiomeBlockRequests) {
 				const auto regionCoord = chunkCoord.toRegion();
 				auto& region = terrain.getRegion(regionCoord);
@@ -178,17 +185,32 @@ namespace Game::Terrain {
 			// Copy the structure data to the terrain.
 			for (const auto& chunkCoord : totalBlendedBiomeStructuresRequests) {
 				const auto regionCoord = chunkToRegion(chunkCoord.pos);
+				const auto& region = terrain.getRegion({chunkCoord.realmId, regionCoord});
+				const auto regionIdx = chunkToRegionIndex(chunkCoord.pos, regionCoord);
+				const auto chunkStage = region.populated[regionIdx.x][regionIdx.y];
+
+				if (chunkStage == ChunkStage::TerrainComplete) {
+					layerBlendedBiomeStructures.get(chunkCoord, self(), terrain);
+				}
+			}
+
+			// Mark the chunks as structure complete. This must be done in a second loop since there
+			// can be multiple structures per chunk and as such marking it in the above loop would
+			// involve modifying and already StructuresComplete chunk.
+			for (const auto& chunkCoord : totalBlendedBiomeStructuresRequests) {
+				const auto regionCoord = chunkToRegion(chunkCoord.pos);
 				auto& region = terrain.getRegion({chunkCoord.realmId, regionCoord});
 				const auto regionIdx = chunkToRegionIndex(chunkCoord.pos, regionCoord);
 				auto& chunkStage = region.populated[regionIdx.x][regionIdx.y];
 
 				if (chunkStage == ChunkStage::TerrainComplete) {
-					layerBlendedBiomeStructures.get(chunkCoord, self(), terrain);
 					chunkStage = ChunkStage::StructuresComplete;
 				}
 			}
 		}
 
+		totalBlendedBiomeBlockRequests.clear();
+		totalBlendedBiomeStructuresRequests.clear();
 		genRequestsBack.clear();
 	}
 }

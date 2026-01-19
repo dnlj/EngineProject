@@ -27,6 +27,10 @@ namespace Game::Terrain {
 	template<class T>
 	class Range {
 		public:
+			// TODO: Test an unordered_set instead of a vector. One of the benefits of a vector was
+			//       that sequential elements are generally spacially/cache local. Since we have
+			//       multithreading now that benefit is likely diminished and since we care about
+			//       duplicates a bit more now a set might outweigh that.
 			std::vector<T> range;
 
 			ENGINE_INLINE void forEach(auto&& func) const {
