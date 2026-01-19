@@ -150,7 +150,6 @@ namespace {
 				};
 
 				auto* data = reinterpret_cast<glm::u8vec3*>(img.data());
-				const BlockSpanX blockSpan = {indexToBlock({}).x, indexToBlock(res).x};
 				const RealmId realmId = 0; // TODO: realm support/slider
 
 				for (BlockUnit y = 0; y < res.y; ++y) {
