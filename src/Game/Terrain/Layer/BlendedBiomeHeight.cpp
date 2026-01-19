@@ -22,7 +22,8 @@ namespace Game::Terrain::Layer {
 			const auto [h0Min, h0Max] = std::minmax_element(regionH0.cbegin(), regionH0.cend());
 
 			const auto chunkCoordMinX = regionCoordX.toChunk().pos;
-			const ChunkArea chunkArea = {
+			const UniversalChunkArea chunkArea = {
+				.realmId = regionCoordX.realmId,
 				.min = {chunkCoordMinX, blockToChunk({0, *h0Min}).y},
 
 				// Add one to get an _exclusive_ bound instead of inclusive. Note that this is in
@@ -33,7 +34,7 @@ namespace Game::Terrain::Layer {
 			};
 
 			chunkArea.forEach([&](const auto& chunkCoord) ENGINE_INLINE {
-				generator.request<BlendedBiomeWeights>({.realmId = regionCoordX.realmId, .pos = chunkCoord});
+				generator.request<BlendedBiomeWeights>(chunkCoord);
 			});
 
 			// TODO: We should probably be doing this with correct `request` calls to the blended biomes.

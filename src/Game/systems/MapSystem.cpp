@@ -740,11 +740,9 @@ namespace Game {
 		#if ENGINE_SERVER
 		if (reqGen) {
 			queueGeneration({
-				.chunkArea = {
-					.min = minAreaChunk,
-					.max = maxAreaChunk,
-				},
 				.realmId = plyZone.realmId,
+				.min = minAreaChunk,
+				.max = maxAreaChunk,
 			});
 		}
 		#endif

@@ -203,18 +203,13 @@ namespace Game::Terrain {
 
 			/**
 			 * Ensures that space is allocated for the given chunk.
-			 * This function never populates any data. If the chunk did not exist an empty
-			 * chunk will be created there.
+			 * This function never populates any data. If the chunk did not exist an empty chunk
+			 * will be created there. For example, used client side when setting up an initial chunk
+			 * from the server.
 			 */
 			void forceAllocateChunk(const UniversalChunkCoord chunkCoord) noexcept {
 				const auto regionCoord = chunkCoord.toRegion();
 				auto& region = getRegion(regionCoord);
-
-				//
-				//
-				// TODO: Why is this needed. Seems like a bug. Investigate.
-				//
-				//
 				const auto idx = chunkToRegionIndex(chunkCoord.pos, regionCoord.pos);
 				region.populated[idx.x][idx.y] = ChunkStage::Done;
 			}

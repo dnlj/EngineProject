@@ -265,7 +265,7 @@ namespace Game::Terrain {
 			}
 
 			void generateLayers() {
-				ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
+				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- generateLayers\n");
 
 				removeGeneratedRequests();
 

@@ -113,14 +113,13 @@ namespace Game::Terrain {
 			const auto lock = terrain.lock();
 
 			for (const auto& genRequest : genRequestsBack) {
-				genRequest.chunkArea.forEach([&](const auto& chunkCoord) {
+				genRequest.forEach([&](const UniversalChunkCoord& chunkCoord) {
 					// TODO: It might be beneficial to create a struct that contains all of
 					//       region/chunk/block coord+indexes and calculate that upfront since basically
 					//       every system does those conversions.
-					const UniversalChunkCoord uniChunkCoord = {genRequest.realmId, chunkCoord};
-					if (!terrain.isChunkLoaded(uniChunkCoord)) {
-						this->request<Layer::BlendedBiomeBlock>(uniChunkCoord);
-						this->request<Layer::BlendedBiomeStructures>(uniChunkCoord);
+					if (!terrain.isChunkLoaded(chunkCoord)) {
+						this->request<Layer::BlendedBiomeBlock>(chunkCoord);
+						this->request<Layer::BlendedBiomeStructures>(chunkCoord);
 					}
 				});
 			}

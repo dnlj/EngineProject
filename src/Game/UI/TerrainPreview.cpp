@@ -89,7 +89,7 @@ namespace {
 				const auto indexToBlock = [&](BlockVec index) ENGINE_INLINE { return offset + applyZoom(index); };
 
 				// +1 because upper bound is exclusive.
-				generator.generate(Request{chunkOffset, chunkOffset + chunksPerImg + ChunkVec{1, 1}, 0});
+				generator.generate(Request{0, chunkOffset, chunkOffset + chunksPerImg + ChunkVec{1, 1}});
 				generator.submit(Engine::Clock::now());
 
 				// Wait for generation to finish.

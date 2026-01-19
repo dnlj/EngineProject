@@ -65,14 +65,15 @@ namespace Game::Terrain::Layer {
 							maxBlock = glm::max(maxBlock, cur->max);
 						}
 						
-						ChunkArea area = {
+						UniversalChunkArea area = {
+							.realmId = chunkCoord.realmId,
 							.min = blockToChunk(minBlock),
 							.max = blockToChunk(maxBlock) + ChunkVec{1, 1},
 						};
 						
 						// Ensure the underlying terrain is already generated.
-						area.forEach([&](const ChunkVec pos){
-							generator.request<BlendedBiomeBlock>({.realmId = chunkCoord.realmId, .pos = pos});
+						area.forEach([&](const UniversalChunkCoord coord){
+							generator.request<BlendedBiomeBlock>(coord);
 							// TODO: forward request to relevant biomes for each struct.
 						});
 					}
