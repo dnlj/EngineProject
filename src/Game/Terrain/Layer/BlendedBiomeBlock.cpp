@@ -13,7 +13,7 @@ namespace Game::Terrain::Layer {
 		//       chunkCoord here. Also in other Blended* systems?
 		chunkCoords.forEach([&](const Partition& chunkCoord){
 			generator.request<BlendedBiomeBasis>(chunkCoord);
-			cache.reserveRegion(chunkCoord.toRegion(), getSeq());
+			cache.reserve(chunkCoord.toRegion(), getSeq());
 		});
 	}
 

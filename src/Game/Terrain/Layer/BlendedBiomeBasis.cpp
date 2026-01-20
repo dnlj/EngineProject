@@ -14,7 +14,7 @@ namespace Game::Terrain::Layer {
 			const auto regionCoord = chunkCoord.toRegion();
 			generator.request<BlendedBiomeWeights>(chunkCoord);
 			generator.request<BlendedBiomeHeight>(regionCoord.toX());
-			cache.reserveRegion(regionCoord, getSeq());
+			cache.reserve(regionCoord, getSeq());
 		});
 	}
 

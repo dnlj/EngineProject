@@ -21,7 +21,7 @@ namespace Game::Terrain::Layer {
 			// Note that since RawBiome is not cached this call effectively does nothing.
 			generator.request<RawBiome>(chunkCoord);
 
-			cache.reserveRegion(regionCoord, getSeq());
+			cache.reserve(regionCoord, getSeq());
 		});
 	}
 

@@ -31,8 +31,7 @@ namespace Game::Terrain {
 				return const_cast<RegionDataCache*>(this)->at(regionCoord, curSeq);
 			}
 
-			// TODO: rename to just `reserve` once strong typdefs are in place for ChunkVec/RegionVec.
-			ENGINE_INLINE void reserveRegion(UniversalRegionCoord regionCoord, SeqNum curSeq) noexcept {
+			ENGINE_INLINE void reserve(UniversalRegionCoord regionCoord, SeqNum curSeq) noexcept {
 				auto found = regions.find(regionCoord);
 				if (found == regions.end()) {
 					found = regions.try_emplace(regionCoord, std::make_unique<Store>()).first;
@@ -45,20 +44,14 @@ namespace Game::Terrain {
 				const auto regionCoord = chunkCoord.toRegion();
 				const auto regionIndex = chunkCoord.toRegionIndex(regionCoord);
 
+				auto& regionStore = this->at(regionCoord, curSeq);
+				return regionStore.isPopulated(regionIndex);
 
-				//
-				//
-				// TODO: why was this changed? Is this needed? Or is this masking a failure to reserve correctly?
-				//
-				//
-				//
-
-				//auto& regionStore = this->at(regionCoord, curSeq);
-				//return regionStore.isPopulated(regionIndex);
-
-				const auto found = regions.find(regionCoord);
-				if (found == regions.end()) { return false; }
-				return found->second->isPopulated(regionIndex);
+				// TODO: Why was this changed? Is this needed? Or is this masking a failure to
+				//       reserve correctly? Seems to work correctly now without it, as expected.
+				//const auto found = regions.find(regionCoord);
+				//if (found == regions.end()) { return false; }
+				//return found->second->isPopulated(regionIndex);
 			}
 
 			ENGINE_INLINE_REL decltype(auto) populate(const UniversalChunkCoord chunkCoord, SeqNum curSeq, auto&& func) {
