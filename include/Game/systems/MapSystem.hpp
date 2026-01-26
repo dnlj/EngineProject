@@ -175,8 +175,6 @@ namespace Game {
 
 			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);
 
-			void setValueAt2(const UniversalBlockCoord blockPos, BlockId bid);
-
 			ENGINE_INLINE const auto& getActiveChunks() const noexcept { return activeChunks; }
 
 			#if MAP_OLD
@@ -188,10 +186,25 @@ namespace Game {
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			Engine::Gfx::ShaderRef shader;
 			Engine::Gfx::Texture2DArray texArr;
-
 			Engine::Gfx::VertexAttributeLayoutRef vertexLayout;
 
+			// Block connectivity.
+			constexpr static intz bcInvalidGroup = -1;
+			std::vector<int32> bcGroups;
+			Engine::FlatHashMap<BlockVec, intz> bcLookup;
+			std::vector<BlockVec> bcQueue;
+
 		private:
+			/**
+			 * @warning Does not lock the terrain. That is up to the caller.
+			 */
+			void makeEdit(BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp);
+
+			/**
+			 * @warning Does not lock the terrain. That is up to the caller.
+			 */
+			bool setValueAt(const UniversalBlockCoord blockCoord, BlockId bid);
+
 			// TODO: recycle old bodies?
 			PhysicsBody createBody(ZoneId zoneId);
 

@@ -236,25 +236,6 @@ namespace Game {
 		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		const auto currTick = world.getTick();
 
-		const auto makeEdit = [&](BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp) {
-			const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
-			const auto plyPos = physComp.getPosition();
-			const auto& zone = zoneSys.getZone(physComp.getZoneId());
-			const auto targetWorldPos = WorldVec{plyPos.x, plyPos.y} + actComp.getTarget();
-			const BlockVec targetBlockPos = worldToBlock(targetWorldPos, zone.offset);
-
-			constexpr auto lowerBound = -blocksPerMeter / 2 + ((blocksPerMeter & 1) == 0); 
-			constexpr auto upperBound = blocksPerMeter / 2;
-
-			for (int x = lowerBound; x <= upperBound; ++x) {
-				for (int y = lowerBound; y <= upperBound; ++y) {
-					//const WorldVec placementOffset = {x*blockSize, y*blockSize};
-					//const BlockVec target = worldToBlock(targetPos + placementOffset, zone.offset);
-					setValueAt2({zone.realmId, targetBlockPos + BlockVec{x, y}}, bid);
-				}
-			}
-		};
-
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			const auto& actComp = world.getComponent<ActionComponent>(ply);
 
@@ -748,10 +729,185 @@ namespace Game {
 		#endif
 	}
 
-	void MapSystem::setValueAt2(const UniversalBlockCoord blockPos, BlockId bid) {
-		const auto blockIndex = (chunkSize + blockPos.pos % chunkSize) % chunkSize;
-		auto& edit = chunkEdits[blockPos.toChunk()];
-		edit.data[blockIndex.x][blockIndex.y] = bid;
+	
+	void MapSystem::makeEdit(BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp) {
+		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
+		const auto plyPos = physComp.getPosition();
+		const auto& zone = zoneSys.getZone(physComp.getZoneId());
+		const auto targetWorldPos = WorldVec{plyPos.x, plyPos.y} + actComp.getTarget();
+		const BlockVec targetBlockPos = worldToBlock(targetWorldPos, zone.offset);
+
+		constexpr auto radius = blocksPerMeter / 2;
+		//constexpr auto lowerBound = -blocksPerMeter / 2 + ((blocksPerMeter & 1) == 0); 
+		//constexpr auto upperBound = blocksPerMeter / 2;
+
+		//for (int x = lowerBound; x <= upperBound; ++x) {
+		//	for (int y = lowerBound; y <= upperBound; ++y) {
+		//		setValueAt({zone.realmId, targetBlockPos + BlockVec{x, y}}, bid);
+		//	}
+		//}
+
+		// Debug background.
+		if constexpr (false) {
+			for (int x = -radius; x <= radius; ++x) {
+				for (int y = -radius; y <= radius; ++y) {
+					setValueAt({zone.realmId, targetBlockPos + BlockVec{x, y}}, BlockId::Debug3);
+				}
+			}
+		}
+
+		ENGINE_DEBUG_ASSERT(bcGroups.empty(), "Expected empty block connectivity groups.");
+		ENGINE_DEBUG_ASSERT(bcLookup.empty(), "Expected empty block connectivity lookup.");
+		ENGINE_DEBUG_ASSERT(bcQueue.empty(), "Expected empty block connectivity queue.");
+
+		const auto queue = [&](const BlockVec v) ENGINE_INLINE {
+			// Configure block connectivity.
+			if (!bcLookup.contains(v)) {
+				bcQueue.push_back(v);
+				bcLookup[v] = bcGroups.size();
+				bcGroups.push_back(0);
+			}
+		};
+			
+		// This appears to be the fastest way to draw a circle based on: https://stackoverflow.com/a/59211338
+		// Have _not_ done first hand benchmarks with terrain/edit integration.
+		// 
+		// The additional +radius*0.8 to radiusSqr produces a nicer and rounder looking circle
+		// that aligns better with Asprite. Determined experimentally at a variety of radii (odd/even 3-45).
+		const auto radiusSqr = radius*radius + static_cast<decltype(radius)>(radius * 0.8f);
+		for (auto x = -radius; x <= radius; ++x) {
+			const auto halfHeight = static_cast<decltype(x)>(std::sqrt(radiusSqr - x*x));
+			const auto pointX = targetBlockPos.x + x;
+			const auto minY = targetBlockPos.y - halfHeight;
+			const auto maxY = targetBlockPos.y + halfHeight;
+			const auto atEdgeX = (x == -radius) || (x == radius);
+			for (auto pointY = minY; pointY <= maxY; ++pointY) {
+				BlockVec point = {pointX, pointY};
+
+				//
+				//
+				//
+				//
+				// TOOD: we need to defer connectivity checks until after the edit is actually made
+				//       or else we have bad connectivity data...
+				//       How do we add exceptions then... do we need to track the edit type now?
+				//
+				//
+				//
+				//
+
+				// Only check block connectivity if a change will be made.
+				if (!setValueAt({zone.realmId, point}, bid)) { continue; }
+
+				// Only check for block connectivity around the edges of the circle.
+				const auto atEdgeY = (pointY == minY) || (pointY == maxY);
+				if (!atEdgeX && !atEdgeY) { continue; }
+
+				// Mark the circle blocks as invalid to avoid unnecessary lookup during the expand loop below.
+				bcLookup[{pointX, pointY}] = bcInvalidGroup;
+
+				if (x < 0) {
+					queue({pointX - 1, pointY});
+				} else if (x > 0) {
+					queue({pointX + 1, pointY});
+				}
+
+				if (pointY < targetBlockPos.y) {
+					queue({pointX, pointY - 1});
+				} else if (pointY > targetBlockPos.y) {
+					queue({pointX, pointY + 1});
+				}
+			}
+		}
+
+		//
+		//
+		//
+		// TODO: Limit max block count/minimum island size.
+		// TODO: track bounding box for approx spike detection.
+		//
+		//
+		//
+		//
+		//
+		//
+		
+		const auto expand = [&](const BlockVec v, intz group) ENGINE_INLINE_REL {
+			// Attempt to expand the group by the given block.
+			const auto found = bcLookup.find(v);
+			if (found == bcLookup.end()) {
+				ENGINE_DEBUG_ASSERT(!std::ranges::contains(bcQueue, v), "Attempting to insert duplicate connectivity block.");
+				bcQueue.push_back(v);
+				bcLookup[v] = group;
+			} else if (found->second != 0) {
+				// Already in a different existing group or marked as inside the edit area.
+				if ((found->second != group) && (found->second != bcInvalidGroup)) {
+					// Merge the existing group into the current group.
+					const auto mergeGroup = found->second;
+					for (auto& [_, existingGroup] : bcLookup) {
+						if (existingGroup == mergeGroup) {
+							existingGroup = group;
+						}
+					}
+
+					bcGroups[mergeGroup] = -1; // TODO: Not needed if we don't use it elsewhere.
+				}
+			}
+		};
+
+		// TODO: Could be improved by storing per chunk and then incrementing index to avoid a lot of conversions.
+		for (uintz i = 0; i < bcQueue.size(); ++i) {
+			const auto point = bcQueue[i];
+			ENGINE_DEBUG_ASSERT(bcLookup.contains(point));
+			const auto group = bcLookup[point];
+			if (group == bcInvalidGroup) { continue; }
+
+			const UniversalBlockCoord blockCoord = {.realmId = zone.realmId, .pos = point};
+			const auto chunkCoord = blockCoord.toChunk();
+			const auto& chunk = terrain.getChunk(chunkCoord);
+			const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
+
+			//if (ENGINE_CLIENT) {
+			//	ENGINE_LOG2("CHECK: {}", blockCoord);
+			//}
+
+			if (chunk.data[chunkIndex.x][chunkIndex.y] == BlockId::Air) { continue; }
+			ENGINE_DEBUG_ASSERT(chunk.data[chunkIndex.x][chunkIndex.y] != BlockId::None);
+			++bcGroups[group];
+
+			// TODO: limit group size.
+
+			expand({point.x - 1, point.y}, group);
+			expand({point.x + 1, point.y}, group);
+			expand({point.x, point.y + 1}, group);
+			expand({point.x, point.y - 1}, group);
+		}
+
+		//
+		//
+		//
+		// TODO: at this point we should have all blocks grouped.
+		//
+		//
+		//
+
+		// TODO: queue the blocks-to-break and do it over time w/ effects, sounds, etc?
+
+		bcGroups.clear();
+		bcLookup.clear();
+		bcQueue.clear();
+	}
+
+	bool MapSystem::setValueAt(const UniversalBlockCoord blockCoord, BlockId bid) {
+		const auto chunkCoord = blockCoord.toChunk();
+		const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
+		if (terrain.getChunk(chunkCoord).data[chunkIndex.x][chunkIndex.y] != bid) {
+			auto& edit = chunkEdits[chunkCoord];
+			edit.data[chunkIndex.x][chunkIndex.y] = bid;
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	// TODO: Thread this. Not sure how nice box2d will play with it. If it doesn't when we
