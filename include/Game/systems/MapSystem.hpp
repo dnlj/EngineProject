@@ -188,17 +188,21 @@ namespace Game {
 			Engine::Gfx::Texture2DArray texArr;
 			Engine::Gfx::VertexAttributeLayoutRef vertexLayout;
 
+		private:
 			// Block connectivity.
+			using BCGroupSize = int32;
 			constexpr static intz bcInvalidGroup = -1;
-			std::vector<int32> bcGroups;
-			Engine::FlatHashMap<BlockVec, intz> bcLookup;
-			std::vector<BlockVec> bcQueue;
+			std::vector<BCGroupSize> bcGroups;
+			Engine::FlatHashMap<UniversalBlockCoord, intz> bcLookup;
+			std::vector<UniversalBlockCoord> bcQueue;
 
 		private:
 			/**
 			 * @warning Does not lock the terrain. That is up to the caller.
 			 */
 			void makeEdit(BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp);
+
+			void checkBlockConnectivity();
 
 			/**
 			 * @warning Does not lock the terrain. That is up to the caller.

@@ -300,6 +300,30 @@ namespace Game {
 
 		// chunkEdits must be cleared _after_ buildActiveChunkData since buildActiveChunkData uses chunkEdits.
 		chunkEdits.clear();
+
+		//
+		//
+		//
+		//
+		//
+		// TODO: There appears to be a networking sync issue between client server that causes
+		//       phantom blocks on the client. I suspect we aren't tying chunk edits to ticks and just
+		//       throwing the network edits in where ever we want.
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+
+
+		// TODO: This will cause a "redundant" chunk update next tick, but we need to be able to
+		//       handle that situation anyways because we want to add a crumble effect instead of deleting
+		//       all blocks at once.
+		checkBlockConnectivity();
 	}
 
 	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
@@ -729,23 +753,13 @@ namespace Game {
 		#endif
 	}
 
-	
 	void MapSystem::makeEdit(BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp) {
 		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		const auto plyPos = physComp.getPosition();
 		const auto& zone = zoneSys.getZone(physComp.getZoneId());
 		const auto targetWorldPos = WorldVec{plyPos.x, plyPos.y} + actComp.getTarget();
 		const BlockVec targetBlockPos = worldToBlock(targetWorldPos, zone.offset);
-
 		constexpr auto radius = blocksPerMeter / 2;
-		//constexpr auto lowerBound = -blocksPerMeter / 2 + ((blocksPerMeter & 1) == 0); 
-		//constexpr auto upperBound = blocksPerMeter / 2;
-
-		//for (int x = lowerBound; x <= upperBound; ++x) {
-		//	for (int y = lowerBound; y <= upperBound; ++y) {
-		//		setValueAt({zone.realmId, targetBlockPos + BlockVec{x, y}}, bid);
-		//	}
-		//}
 
 		// Debug background.
 		if constexpr (false) {
@@ -760,11 +774,11 @@ namespace Game {
 		ENGINE_DEBUG_ASSERT(bcLookup.empty(), "Expected empty block connectivity lookup.");
 		ENGINE_DEBUG_ASSERT(bcQueue.empty(), "Expected empty block connectivity queue.");
 
-		const auto queue = [&](const BlockVec v) ENGINE_INLINE {
+		const auto queue = [&](const UniversalBlockCoord blockCoord) ENGINE_INLINE {
 			// Configure block connectivity.
-			if (!bcLookup.contains(v)) {
-				bcQueue.push_back(v);
-				bcLookup[v] = bcGroups.size();
+			if (!bcLookup.contains(blockCoord)) {
+				bcQueue.push_back(blockCoord);
+				bcLookup[blockCoord] = bcGroups.size();
 				bcGroups.push_back(0);
 			}
 		};
@@ -784,64 +798,56 @@ namespace Game {
 			for (auto pointY = minY; pointY <= maxY; ++pointY) {
 				BlockVec point = {pointX, pointY};
 
-				//
-				//
-				//
-				//
-				// TOOD: we need to defer connectivity checks until after the edit is actually made
-				//       or else we have bad connectivity data...
-				//       How do we add exceptions then... do we need to track the edit type now?
-				//
-				//
-				//
-				//
-
 				// Only check block connectivity if a change will be made.
 				if (!setValueAt({zone.realmId, point}, bid)) { continue; }
+
+				// Only check block connectivity if we are removing blocks.
+				if (bid != BlockId::Air) { continue; }
 
 				// Only check for block connectivity around the edges of the circle.
 				const auto atEdgeY = (pointY == minY) || (pointY == maxY);
 				if (!atEdgeX && !atEdgeY) { continue; }
 
-				// Mark the circle blocks as invalid to avoid unnecessary lookup during the expand loop below.
-				bcLookup[{pointX, pointY}] = bcInvalidGroup;
-
 				if (x < 0) {
-					queue({pointX - 1, pointY});
+					queue({.realmId = zone.realmId, .pos = {pointX - 1, pointY}});
 				} else if (x > 0) {
-					queue({pointX + 1, pointY});
+					queue({.realmId = zone.realmId, .pos = {pointX + 1, pointY}});
 				}
 
 				if (pointY < targetBlockPos.y) {
-					queue({pointX, pointY - 1});
+					queue({.realmId = zone.realmId, .pos = {pointX, pointY - 1}});
 				} else if (pointY > targetBlockPos.y) {
-					queue({pointX, pointY + 1});
+					queue({.realmId = zone.realmId, .pos = {pointX, pointY + 1}});
 				}
 			}
 		}
+	}
+	
+	void MapSystem::checkBlockConnectivity() {
+		//
+		//
+		//
+		// TODO: Track group bounding box for approx spike detection.
+		//
+		//
+		//
 
-		//
-		//
-		//
-		// TODO: Limit max block count/minimum island size.
-		// TODO: track bounding box for approx spike detection.
-		//
-		//
-		//
-		//
-		//
-		//
+		// Search threshold is just for debugging. There is currently no reason to search beyond the
+		// crumble threshold.
+		constexpr static BCGroupSize crumbleThreshold = 100;
+		constexpr static BCGroupSize searchThreshold = 2*crumbleThreshold; // TODO: rm or comment out, this is just for debugging. No reason to search beyond the crumble threshold.
+		//constexpr static BCGroupSize searchThreshold = crumbleThreshold;
 		
-		const auto expand = [&](const BlockVec v, intz group) ENGINE_INLINE_REL {
+		const auto expand = [&](const UniversalBlockCoord blockCoord, intz group) ENGINE_INLINE_REL {
 			// Attempt to expand the group by the given block.
-			const auto found = bcLookup.find(v);
+			const auto found = bcLookup.find(blockCoord);
 			if (found == bcLookup.end()) {
-				ENGINE_DEBUG_ASSERT(!std::ranges::contains(bcQueue, v), "Attempting to insert duplicate connectivity block.");
-				bcQueue.push_back(v);
-				bcLookup[v] = group;
-			} else if (found->second != 0) {
+				ENGINE_DEBUG_ASSERT(!std::ranges::contains(bcQueue, blockCoord), "Attempting to insert duplicate connectivity block.");
+				bcQueue.push_back(blockCoord);
+				bcLookup[blockCoord] = group;
+			} else if (found->second != bcInvalidGroup) {
 				// Already in a different existing group or marked as inside the edit area.
-				if ((found->second != group) && (found->second != bcInvalidGroup)) {
+				if (found->second != group) {
 					// Merge the existing group into the current group.
 					const auto mergeGroup = found->second;
 					for (auto& [_, existingGroup] : bcLookup) {
@@ -857,39 +863,49 @@ namespace Game {
 
 		// TODO: Could be improved by storing per chunk and then incrementing index to avoid a lot of conversions.
 		for (uintz i = 0; i < bcQueue.size(); ++i) {
-			const auto point = bcQueue[i];
-			ENGINE_DEBUG_ASSERT(bcLookup.contains(point));
-			const auto group = bcLookup[point];
+			const auto blockCoord = bcQueue[i];
+			const auto foundGroup = bcLookup.find(blockCoord);
+			ENGINE_DEBUG_ASSERT(foundGroup != bcLookup.end(), "Group missing for queued block connectivity.");
+
+			const auto group = foundGroup->second;
 			if (group == bcInvalidGroup) { continue; }
 
-			const UniversalBlockCoord blockCoord = {.realmId = zone.realmId, .pos = point};
 			const auto chunkCoord = blockCoord.toChunk();
 			const auto& chunk = terrain.getChunk(chunkCoord);
 			const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
+			if (chunk.data[chunkIndex.x][chunkIndex.y] == BlockId::Air) {
+				foundGroup->second = bcInvalidGroup;
+				continue;
+			}
 
-			//if (ENGINE_CLIENT) {
-			//	ENGINE_LOG2("CHECK: {}", blockCoord);
-			//}
-
-			if (chunk.data[chunkIndex.x][chunkIndex.y] == BlockId::Air) { continue; }
 			ENGINE_DEBUG_ASSERT(chunk.data[chunkIndex.x][chunkIndex.y] != BlockId::None);
-			++bcGroups[group];
+
+			auto& groupSize = bcGroups[group];
+			++groupSize;
 
 			// TODO: limit group size.
-
-			expand({point.x - 1, point.y}, group);
-			expand({point.x + 1, point.y}, group);
-			expand({point.x, point.y + 1}, group);
-			expand({point.x, point.y - 1}, group);
+			if (groupSize < searchThreshold) {
+				expand(blockCoord + BlockVec{-1, 0}, group);
+				expand(blockCoord + BlockVec{+1, 0}, group);
+				expand(blockCoord + BlockVec{0, +1}, group);
+				expand(blockCoord + BlockVec{0, -1}, group);
+			}
 		}
 
-		//
-		//
-		//
-		// TODO: at this point we should have all blocks grouped.
-		//
-		//
-		//
+		// At this point we should have all blocks grouped.
+		for (const auto& [blockCoord, group] : bcLookup) {
+			if (group == bcInvalidGroup) { continue; }
+			if (bcGroups[group] > crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug1); }
+			if (bcGroups[group] <= crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug4); }
+
+			if constexpr (ENGINE_DEBUG) {
+				const auto chunkCoord = blockCoord.toChunk();
+				const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
+				const auto bid = terrain.getChunk(chunkCoord).data[chunkIndex.x][chunkIndex.y];
+				ENGINE_DEBUG_ASSERT(bid != BlockId::Air, "Attempting to perform block connectivity update on air. This is a bug.");
+				ENGINE_DEBUG_ASSERT(bid != BlockId::None, "Attempting to perform block connectivity on unloaded chunk.");
+			}
+		}
 
 		// TODO: queue the blocks-to-break and do it over time w/ effects, sounds, etc?
 
