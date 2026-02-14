@@ -23,13 +23,13 @@ namespace Game {
 		snap = true;
 	}
 
-	void NetworkTraits<PhysicsBodyComponent>::write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+	void NetworkTraits<PhysicsBodyComponent>::write(const PhysicsBodyComponent& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 		buff.write<b2Transform>(obj.getTransform());
 		buff.write<b2Vec2>(obj.getVelocity());
 		buff.write<ZoneId>(obj.getZoneId());
 	}
 
-	void NetworkTraits<PhysicsBodyComponent>::writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+	void NetworkTraits<PhysicsBodyComponent>::writeInit(const PhysicsBodyComponent& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 		buff.write(obj.getType());
 
 		if (const auto* fix = obj.getFixtureList()) {

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="Engine::Net::StaticBufferWriter">
+		<DisplayString>{{ size={curr - start}; capacity={stop - start} }}</DisplayString>
+		<Expand>
+			<Synthetic Name="[elements]">
+				<DisplayString>{{ size={curr - start} }}</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>curr - start</Size>
+						<ValuePointer>start</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="[storage]">
+				<DisplayString>{{ capacity={stop - start} }}</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>stop - start</Size>
+						<ValuePointer>start</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+		</Expand>
+	</Type>
+</AutoVisualizer>

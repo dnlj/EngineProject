@@ -102,6 +102,7 @@ namespace Game {
 
 				int i = 0;
 				while (begin != end) {
+					ENGINE_DEBUG_ASSERT(i < chunkSize.x * chunkSize.y);
 					pair.bid = *reinterpret_cast<const decltype(pair.bid)*>(begin);
 					begin += sizeof(pair.bid);
 

@@ -35,7 +35,7 @@ namespace Engine::Net {
 
 			SequenceBuffer<SeqNum, PacketData, AckBitset::size()> packetData;
 			byte msgBuffer[sizeof(Packet::body)];
-			BufferWriter msgBufferWriter;
+			StaticBufferWriter msgBufferWriter{msgBuffer};
 
 			/** How many packets per second we can send */
 			float32 packetSendRate = 16.0f;
@@ -240,7 +240,7 @@ namespace Engine::Net {
 
 				// Read from channels if current packet empty
 				if (rdat2.curr == rdat2.last) {
-					// Its fine to use hdr directly here since channels store data in max aligned storage (std::vector at the time of writting this)
+					// Its fine to use hdr directly here since channels store data in max aligned storage (std::vector at the time of writing this)
 					// If we need more flexibility with storage we need to do a buffer reader like we do below.
 					const MessageHeader* hdr = nullptr;
 					((hdr = getChannel<Cs>().recvNext()) || ...); // Takes advantage of || short circuit
@@ -304,9 +304,9 @@ namespace Engine::Net {
 					const auto seq = nextSeqNum;
 
 					Packet pkt; // TODO: if we keep this move to be a member variable instead; - should be able to merge with msgBuffer?
-					msgBufferWriter.reset(pkt.body);
-					(getChannel<Cs>().fill(seq, msgBufferWriter), ...);
-					if (msgBufferWriter.size() == 0) { break; }
+					StaticBufferWriter pktBufferWriter{pkt.body};
+					(getChannel<Cs>().fill(seq, pktBufferWriter), ...);
+					if (pktBufferWriter.size() == 0) { break; }
 					++nextSeqNum;
 
 					pkt.setKey(keyRemote); // TODO: should just be set once after packet is changed to member variable
@@ -322,7 +322,7 @@ namespace Engine::Net {
 
 					packetData.insert(seq) = { .sendTime = now, };
 
-					const auto sz = sizeof(pkt.head) + msgBufferWriter.size();
+					const auto sz = sizeof(pkt.head) + pktBufferWriter.size();
 					packetSentBandwidthAccum += sz;
 					sock.send(&pkt, (int32)sz, addr);
 					packetSendBudget -= 1;
@@ -353,9 +353,7 @@ namespace Engine::Net {
 
 				// TODO: check that no other message is active
 				auto& channel = getChannelForMessage<M>();
-				msgBufferWriter.reset(msgBuffer);
-
-				// TODO: pass bufferwriter by ptr. we convert ot pointer anyways. makes it clearer
+				msgBufferWriter.reset();
 				return channel.beginMessage(channel, M, msgBufferWriter);
 			}
 

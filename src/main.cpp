@@ -458,6 +458,39 @@ namespace {
 		static_assert(pow(3, 4) == 81);
 		static_assert(pow(3, 5) == 243);
 	}
+
+	void test_StaticBufferWriter() {
+		uintz data[64]{};
+		Engine::Net::StaticBufferWriter buffWriter{&data, sizeof(data)};
+		
+		for (uintz i = 0; i < std::size(data); ++i) {
+			const auto w = Engine::hash(i);
+			buffWriter.write(&w, sizeof(w));
+		}
+
+		for (uintz i = 0; i < std::size(data); ++i) {
+			const auto w = Engine::hash(i);
+			assert(data[i] == w);
+		}
+	}
+
+	void test_DynamicBufferWriter() {
+		constexpr uintz size = 64;
+		std::vector<byte> data;
+		Engine::Net::DynamicBufferWriter buffWriter{&data};
+		
+		for (uintz i = 0; i < size; ++i) {
+			const auto w = Engine::hash(i);
+			buffWriter.write(&w, sizeof(w));
+		}
+
+		for (uintz i = 0; i < size; ++i) {
+			const auto w = Engine::hash(i);
+			uintz r = 0;
+			memcpy(&r, &data[i*sizeof(uintz)], sizeof(uintz));
+			assert(r == w);
+		}
+	}
 }
 
 // TODO: cleanup all this map this mess.
@@ -1039,6 +1072,8 @@ int entry(int argc, char* argv[]) {
 	test_divFloor();
 	test_divCeil();
 	//test_AreaWalker(); Currently disabled/unused.
+	test_StaticBufferWriter();
+	test_DynamicBufferWriter();
 
 	startTime = Engine::Clock::now();
 	run(argc, argv);

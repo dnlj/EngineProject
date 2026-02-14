@@ -82,8 +82,8 @@ namespace Game {
 				return (obj.getType() == b2_staticBody) ? Engine::Net::Replication::ONCE : Engine::Net::Replication::ALWAYS;
 			}
 
-			static void writeInit(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
-			static void write(const PhysicsBodyComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
+			static void writeInit(const PhysicsBodyComponent& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
+			static void write(const PhysicsBodyComponent& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
 
 			static void readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);
 			static void read(PhysicsBodyComponent& obj, Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent);

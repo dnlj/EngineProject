@@ -34,10 +34,10 @@ namespace Game {
 				return Engine::Net::Replication::ONCE;
 			}
 
-			static void writeInit(const PhysicsInterpComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+			static void writeInit(const PhysicsInterpComponent& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 			}
 
-			static void write(const PhysicsInterpComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+			static void write(const PhysicsInterpComponent& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 			}
 
 			static void readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {

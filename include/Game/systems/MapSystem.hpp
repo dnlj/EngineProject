@@ -133,6 +133,22 @@ namespace Game {
 
 			/** The info for chunks */
 			Engine::FlatHashMap<UniversalChunkCoord, ActiveChunkData> activeChunks;
+
+			//
+			//
+			//
+			//
+			//
+			//
+			// TODO: Seq buffer for per tick edits.
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//SequenceBuffer
 			Engine::FlatHashMap<UniversalChunkCoord, MapChunk> chunkEdits;
 
 			/** Used for sending full RLE chunk updates */

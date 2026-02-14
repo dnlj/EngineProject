@@ -7,6 +7,7 @@
 #include <Engine/Clock.hpp>
 #include <Engine/SequenceBuffer.hpp>
 
+
 // TODO (0W4vlcPN): We shouldn't be calling SequenceBuffer::insert anywhere in
 //                  the channels since it leads to a lot of potentially large
 //                  and redundant allocations. The whole point was to reuse the
@@ -18,11 +19,23 @@
 //                  appropriately.
 
 
+// Unless explicitly stated otherwise, all messages must fit within a single packet.
 namespace Engine::Net {
 	// TODO: make MAX_ACTIVE_MESSAGES_PER_CHANNEL a template argument of Channel_ReliableSender instead of global?
 	constexpr inline int MAX_ACTIVE_MESSAGES_PER_CHANNEL = 64;
 
-	template<class Channel>
+	// TODO: This isn't ideal for reliable channels (Channel_ReliableSender). We do an extra copy of
+	//       all data:
+	// 
+	//       1. Copy to the temp buffer. That is the buffer passed to the constructor from Connection::beginMessage.
+	//       2. When endMessage is called (then Channel_ReliableSender::endMessage) the data is copied a
+	//          second time to another buffer.
+	// 
+	//       For reliable channels we should have a way to write directly to the channels buffer and skip
+	//       the extra copy to the temp Connection buffer.
+	// 
+	// TODO: Change to just inherit BufferWriter to avoid re-implementing write functions.
+	template<class Channel, class BufferWriter, bool PopulateHeader>
 	class MessageWriter {
 		private:
 			BufferWriter* buff;
@@ -30,31 +43,46 @@ namespace Engine::Net {
 
 		public:
 			MessageWriter(Channel& channel, MessageType type, BufferWriter* buff)
-				: buff{buff} 
+				: buff{buff}
 				, channel{channel} {
 
-				if (buff) {
+				// Not all channels want the header populated automatically. For example, when
+				// splitting large messages between multiple packets.
+				
+				// TODO: We should probably instead change this to defer to the underlying channel
+				//       instead of passing behavior bools. So here you would do
+				//       channel.beginMessage (which could add the message header the channel wants
+				//       to) and in the destructor do channel.endMessage.
+				//
+				//       Currently the relation is reversed, where channel.beginMessage creates a
+				//       MessageWriter. Instead we would need the Connection to create the message
+				//       writer instead of defering to the Channel.
+				if (PopulateHeader && buff) {
 					ENGINE_DEBUG_ASSERT(buff->size() == 0, "Non-empty buffer given to MessageWriter.");
 					buff->write(MessageHeader{
 						.type = type,
 					});
+				} else {
+					//ENGINE_WARN2("Cannot write message!");
 				}
 			}
 
 			~MessageWriter() {
-				if (buff) {
+				if (PopulateHeader && buff) {
 					auto* hdr = reinterpret_cast<MessageHeader*>(buff->data());
 					hdr->size = static_cast<uint16>(buff->size() - sizeof(MessageHeader));
 					channel.endMessage(*buff);
 				}
 			}
 
+			/**
+			 * Check if the message can be written to.
+			 */
 			ENGINE_INLINE operator bool() const noexcept {
 				return buff;
 			}
 
 			ENGINE_INLINE BufferWriter& getBufferWriter() noexcept {
-				ENGINE_DEBUG_ASSERT(buff);
 				return *buff;
 			}
 
@@ -65,11 +93,11 @@ namespace Engine::Net {
 
 			template<int N>
 			ENGINE_INLINE void write(uint32 t) {
-				return buff->write<N>(t);
+				return buff->writeBits<N>(t);
 			}
 
 			ENGINE_INLINE void writeFlushBits() {
-				buff->writeFlushBits();
+				return buff->writeFlushBits();
 			}
 	};
 
@@ -133,22 +161,22 @@ namespace Engine::Net {
 			 */
 			template<class Channel>
 			[[nodiscard]]
-			auto beginMessage(Channel& channel, MessageType type, BufferWriter& buff) {
-				return MessageWriter<Channel>{channel, type, channel.canWriteMessage() ? &buff : nullptr};
+			auto beginMessage(Channel& channel, MessageType type, StaticBufferWriter& buff) {
+				return MessageWriter<Channel, StaticBufferWriter, true>{channel, type, channel.canWriteMessage() ? &buff : nullptr};
 			}
 
 			/**
 			 * Called once a message returned by beginMessage is complete.
 			 * @param buff The buffer the message was written to.
 			 */
-			void endMessage(BufferWriter& buff) = delete;
+			void endMessage(StaticBufferWriter& buff) = delete;
 
 			/**
 			 * Fills the given packet/buffer with messages from this channel.
 			 * @param pktSeq The sequence number of the packet to fill.
 			 * @param buff The buffer to write the messages to.
 			 */
-			void fill(SeqNum pktSeq, BufferWriter& buff) = delete;
+			void fill(SeqNum pktSeq, StaticBufferWriter& buff) = delete;
 
 			/**
 			 * Determines if a message should be processed by a connection.
@@ -189,13 +217,13 @@ namespace Engine::Net {
 				return true;
 			}
 			
-			void endMessage(BufferWriter& buff) {
+			void endMessage(StaticBufferWriter& buff) {
 				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
 				messages.emplace_back(buff.cbegin(), buff.cend());
 			}
 			
-			void fill(SeqNum pktSeq, BufferWriter& buff) {
+			void fill(SeqNum pktSeq, StaticBufferWriter& buff) {
 				while (messages.size()) {
 					const auto& msg = messages.back();
 					if (buff.write(msg.data(), msg.size())) {
@@ -238,13 +266,13 @@ namespace Engine::Net {
 				return false;
 			}
 
-			void endMessage(BufferWriter& buff) {
+			void endMessage(StaticBufferWriter& buff) {
 				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
 				messages.emplace_back(buff.cbegin(), buff.cend());
 			}
 			
-			void fill(SeqNum pktSeq, BufferWriter& buff) {
+			void fill(SeqNum pktSeq, StaticBufferWriter& buff) {
 				while (messages.size()) {
 					const auto& msg = messages.back();
 					if (buff.write(msg.data(), msg.size())) {
@@ -298,7 +326,7 @@ namespace Engine::Net {
 				return !msgData.entryAt(nextSeq);
 			}
 
-			void endMessage(BufferWriter& buff) {
+			void endMessage(StaticBufferWriter& buff) {
 				ENGINE_DEBUG_ASSERT(canWriteMessage());
 				auto* hdr = reinterpret_cast<MessageHeader*>(buff.data());
 				hdr->seq = nextSeq++;
@@ -309,7 +337,7 @@ namespace Engine::Net {
 				msg.lastSendTime = {};
 			}
 			
-			void fill(SeqNum pktSeq, BufferWriter& buff) {
+			void fill(SeqNum pktSeq, StaticBufferWriter& buff) {
 				const auto now = Engine::Clock::now();
 				// BUG: at our current call rate this may overwrite packets before we have a chance to ack them because they are overwritten with a new packets info
 				for (auto seq = msgData.minValid(); Math::Seq::less(seq, msgData.max() + 1); ++seq) {
@@ -396,36 +424,13 @@ namespace Engine::Net {
 			}
 	};
 
+	// TODO: What determines this? Seems arbitrary.
 	constexpr int32 MAX_MESSAGE_BLOB_SIZE = 0x7FFFFFFF;
 
-	template<class Channel>
-	class MessageBlobWriter {
-		private:
-			Channel& channel;
-			MessageType type;
-			BufferWriter* buff = nullptr;
-
-		public:
-			MessageBlobWriter(Channel& channel, MessageType type, BufferWriter* buff)
-				: channel{channel}
-				, type{type} 
-				, buff{buff} {
-			}
-
-			~MessageBlobWriter() {
-			}
-
-			ENGINE_INLINE operator bool() const noexcept { return buff; }
-
-			ENGINE_INLINE void writeBlob(const byte* data, int32 size) {
-				ENGINE_DEBUG_ASSERT(size <= MAX_MESSAGE_BLOB_SIZE, "Attempting to send too much data");
-				channel.writeBlob(*buff, type, data, size);
-			}
-	};
-
-	// TODO: update desc for Channel_LargeReliableOrdered
 	/**
-	 * A reliable ordered network channel.
+	 * A reliable ordered network channel with support for message splitting so that we are able to
+	 * handle data larger than a single packet.
+	 * @see Channel_ReliableSender
 	 * @see Channel_Base
 	 */
 	template<MessageType... Ms>
@@ -498,12 +503,20 @@ namespace Engine::Net {
 				}
 			};
 
+			// TODO: MAX_BLOBS is actually a bottleneck atm. If any blobs fit within one packet,
+			//       then we are still limited by MAX_BLOBS even though we might be able to do more writes
+			//       to the Base channel.
 			constexpr static int MAX_BLOBS = 8; // TODO: this should be configurable
 			SequenceBuffer<SeqNum, WriteBlob, MAX_BLOBS> writeBlobs;
 			SequenceBuffer<SeqNum, RecvBlob, MAX_BLOBS> recvBlobs;
+			DynamicBufferWriter bufferWriter{nullptr};
 
 			struct BlobHeader {
+				// TODO: rework this, super sloppy.
+				
+				// The first bit of the length field is used to indicate the first/initial part of a blob.
 				constexpr static int32 LEN_MASK = 0x7FFFFFFF;
+
 				// 4 bytes start
 				// 2 bytes seqnum
 				byte data[4 + 2];
@@ -517,36 +530,43 @@ namespace Engine::Net {
 			static_assert(sizeof(BlobHeader) == 4 + 2);
 
 		public:
-
-			bool canWriteMessage() const noexcept {
-				return !writeBlobs.entryAt(nextBlob);
-			};
-
 			template<class Channel>
 			[[nodiscard]]
-			auto beginMessage(Channel& channel, MessageType type, BufferWriter& buff) {
-				return MessageBlobWriter<Channel>{channel, type, canWriteMessage() ? &buff : nullptr};
+			auto beginMessage(Channel& channel, MessageType type, StaticBufferWriter& /*buff*/) {
+				// We need to grab the canWrite state before we insert the write blob.
+				// TODO: Shouldn't this use canInsert? What is the difference?
+				const bool canWrite = !writeBlobs.entryAt(nextBlob);
+
+				if (canWrite) {
+					auto& blob = writeBlobs.insert(nextBlob);
+					blob.type = type;
+					bufferWriter.reset(&blob.data);
+					++nextBlob;
+				}
+
+				return MessageWriter<Channel, DynamicBufferWriter, false>{channel, type, canWrite ? &bufferWriter : nullptr};
 			}
 
-			void writeBlob(BufferWriter& buff, MessageType type, const byte* data, int32 size) {
-				ENGINE_DEBUG_ASSERT(canWriteMessage(), "Unable to write message");
-				auto& blob = writeBlobs.insert(nextBlob);
-				blob.type = type;
-				blob.data.assign(data, data + size);
-				attemptWriteBlob(buff, nextBlob);
-				++nextBlob;
+			ENGINE_NOINLINE void endMessage(DynamicBufferWriter& buff) {
+				ENGINE_DEBUG_ASSERT(bufferWriter.size() < MAX_MESSAGE_BLOB_SIZE, "Unexpectedly large blob.");
+				bufferWriter.reset(nullptr);
 			}
 
-			bool recv(const MessageHeader& hdr, BufferReader buff) {
+			bool recv(const MessageHeader& hdr, const BufferReader& buff) {
 				if (recvData.canInsert(hdr.seq) && !recvData.contains(hdr.seq)) {
 					recvData.insert(hdr.seq);
 
 					const byte* dataBegin = buff.peek();
 
+					// Read the blob header. The blob header is only used for assembling parts so we
+					// do not include it in the assembled message data.
 					// TODO: cant just reinterpret, should memcpy, possible alignment issues
 					const auto& info = *reinterpret_cast<const BlobHeader*>(dataBegin);
-					dataBegin += sizeof(info);
+					dataBegin += sizeof(BlobHeader);
 
+					// Prepend the a MessageHeader if this is the first part of this message. The
+					// message header details are populated in recvNext because we don't know the
+					// final details until we have all parts of the message.
 					auto found = recvBlobs.find(info.seq());
 					if (found == nullptr) {
 						found = &recvBlobs.insert(info.seq());
@@ -560,21 +580,23 @@ namespace Engine::Net {
 						);
 					}
 
+					// If this is the first part of a blob read the final total message length.
 					if (info.start() & ~BlobHeader::LEN_MASK) {
 						// TODO: cant just reinterpret, should memcpy, possible alignment issues
 						found->total = *reinterpret_cast<const int32*>(dataBegin);
 						dataBegin += sizeof(found->total);
 					}
 
+					// Append the blob part data.
 					const auto dataEnd = buff.end();
-					// ENGINE_INFO("Recv blob part: ", info.seq(), " ", dataEnd - dataBegin, " ", info.start() & BlobHeader::LEN_MASK);
+					//ENGINE_INFO("Recv blob part: ", info.seq(), " ", dataEnd - dataBegin, " ", info.start() & BlobHeader::LEN_MASK);
 					found->insert(info.start() & BlobHeader::LEN_MASK, dataBegin, dataEnd);
 				}
 
 				return false;
 			}
 
-			void attemptWriteBlob(BufferWriter& buff, SeqNum seq) {
+			void attemptWriteBlob(StaticBufferWriter& buff, SeqNum seq) {
 				auto* blob = writeBlobs.find(seq);
 				if (!blob) { return; }
 
@@ -603,23 +625,31 @@ namespace Engine::Net {
 						head.seq() = seq;
 						msg.write(head);
 
+						// If this is the first part of the blob, also include the final total message length.
 						if (blob->curr == 0) {
 							msg.write(static_cast<int32>(blob->data.size()));
 						}
 
 						const int32 len = std::min(space, blob->remaining());
 						msg.write(blob->data.data() + blob->curr, len);
-						// ENGINE_INFO("Write blob part: ", head.seq(), " = ", seq, " ", len);
+						//ENGINE_INFO("Write blob part: ", head.seq(), " = ", seq, " ", len);
 						blob->curr += len;
 						++blob->parts;
 						buff.advance(alias.size());
+
+						// TODO: If we have written the whole blob to the base at this point, we
+						//       should be good to go ahead an discard the blob so we can free up
+						//       the write slot. This would allow better throughput if any blobs fit
+						//       within a single message. If we could then do an attemptWriteBlob in
+						//       the endMessage, it would solve the MAX_BLOBS bottleneck issue.
+
 					} else {
 						ENGINE_DEBUG_ASSERT(false, "Unable to write to underlying channel. This should not occur.");
 					}
 				}
 			}
 
-			void fill(SeqNum pktSeq, BufferWriter& buff) {
+			void fill(SeqNum pktSeq, StaticBufferWriter& buff) {
 				for (auto seq = writeBlobs.minValid(); Math::Seq::less(seq, writeBlobs.max() + 1); ++seq) {
 					attemptWriteBlob(buff, seq);
 				}
@@ -665,7 +695,7 @@ namespace Engine::Net {
 							// ENGINE_INFO("Blob part ack: ", pktSeq, " ", s, " ", seq, " ", blob->parts);
 							if (blob->parts == 0 && blob->remaining() == 0) {
 								writeBlobs.remove(seq);
-								// ENGINE_SUCCESS("Blob complete! ", seq);
+								//ENGINE_SUCCESS2("Blob complete! {}", seq);
 							}
 						} else {
 							// This shouldn't happen?

@@ -32,7 +32,7 @@ namespace Game {
 				return Engine::Net::Replication::ONCE;
 			}
 
-			static void writeInit(const SpriteComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+			static void writeInit(const SpriteComponent& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 				buff.write(engine.getTextureId(obj.path));
 				buff.write(obj.position);
 				buff.write(obj.scale);
@@ -41,7 +41,7 @@ namespace Game {
 				buff.write(static_cast<uint8>(obj.layer));
 			}
 
-			static void write(const SpriteComponent& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {}
+			static void write(const SpriteComponent& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {}
 
 			static void readInit(Engine::Net::BufferReader& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 				uint32 tex;

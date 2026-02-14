@@ -20,11 +20,11 @@ namespace Game {
 				static_assert(!sizeof(T), "NetworkTraits::getReplType must be implemented for type T.");
 			}
 
-			static void writeInit(const T& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+			static void writeInit(const T& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 				static_assert(!sizeof(T), "NetworkTraits::writeInit must be implemented for type T.");
 			}
 
-			static void write(const T& obj, Engine::Net::BufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
+			static void write(const T& obj, Engine::Net::StaticBufferWriter& buff, EngineInstance& engine, World& world, Engine::ECS::Entity ent) {
 				static_assert(!sizeof(T), "NetworkTraits::write must be implemented for type T.");
 			}
 			

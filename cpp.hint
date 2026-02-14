@@ -2,6 +2,11 @@
 // You can change how broken macros are displayed under:
 //   > Options > Text Editor > C/C++ > View > Macros in Skipped Browsing Regions
 
+
+///////////////////////////////////////////////////////////////////////////////
+// 1st Party
+///////////////////////////////////////////////////////////////////////////////
+
 #define STAGE(N)\
 	template<> constexpr static bool hasStage<N> = true;\
 	template<> ENGINE_INLINE_REL BlockId stage<N>(TERRAIN_STAGE_ARGS)
@@ -10,3 +15,9 @@
 #define ENGINE_INLINE_REL
 #define ENGINE_DEBUG_ASSERT
 #define ENGINE_EMPTY_BASE __declspec(empty_bases)
+
+///////////////////////////////////////////////////////////////////////////////
+// 3rd Party
+///////////////////////////////////////////////////////////////////////////////
+#define assert(e) (e)
+

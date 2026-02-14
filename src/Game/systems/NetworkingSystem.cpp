@@ -104,7 +104,7 @@ namespace {
 
 	constexpr uint8 msgPadSeq[] = {0x54, 0x68, 0x65, 0x20, 0x63, 0x61, 0x6B, 0x65, 0x20, 0x69, 0x73, 0x20, 0x61, 0x20, 0x6C, 0x69, 0x65, 0x2E, 0x20};
 
-	void writeMessagePadding(Engine::Net::BufferWriter& msg) {
+	void writeMessagePadding(Engine::Net::StaticBufferWriter& msg) {
 		while (msg.write(msgPadSeq)) {}
 		msg.write(msgPadSeq, msg.space());
 	}

@@ -233,6 +233,9 @@ namespace Game {
 	}
 
 	void MapSystem::tick() {
+		// Nothing to do if we are in a rollback since we don't rollback terrain.
+		if (world.isPerformingRollback()) { return; }
+
 		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		const auto currTick = world.getTick();
 
@@ -301,25 +304,6 @@ namespace Game {
 		// chunkEdits must be cleared _after_ buildActiveChunkData since buildActiveChunkData uses chunkEdits.
 		chunkEdits.clear();
 
-		//
-		//
-		//
-		//
-		//
-		// TODO: There appears to be a networking sync issue between client server that causes
-		//       phantom blocks on the client. I suspect we aren't tying chunk edits to ticks and just
-		//       throwing the network edits in where ever we want.
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-
-
 		// TODO: This will cause a "redundant" chunk update next tick, but we need to be able to
 		//       handle that situation anyways because we want to add a crumble effect instead of deleting
 		//       all blocks at once.
@@ -329,8 +313,10 @@ namespace Game {
 	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
 		const byte* begin = reinterpret_cast<const byte*>(buff.read(head.size));
 		const byte* end = begin + head.size;
+
+		//ENGINE_NET_READ(buff, Engine::ECS::Tick, tick);
+
 		UniversalChunkCoord chunkPos;
-		
 		memcpy(&chunkPos.realmId, begin, sizeof(chunkPos.realmId));
 		begin += sizeof(chunkPos.realmId);
 
@@ -340,7 +326,7 @@ namespace Game {
 		memcpy(&chunkPos.pos.y, begin, sizeof(chunkPos.pos.y));
 		begin += sizeof(chunkPos.pos.y);
 
-		// ENGINE_INFO2("Recv chunk from net: {} {}", head.size, chunkPos);
+		//ENGINE_INFO2("Recv chunk from net: {} {}", head.size, chunkPos);
 
 		chunkEdits[chunkPos].fromRLE(begin, end);
 	}
@@ -436,6 +422,7 @@ namespace Game {
 
 	void MapSystem::network(const NetPlySet plys) {
 		if constexpr (ENGINE_CLIENT) { return; }
+
 		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		const auto tick = world.getTick();
 
@@ -470,13 +457,13 @@ namespace Game {
 				auto& activeData = found->second;
 				if (meta.last != activeData.updated) {
 					std::vector<byte>* rle = nullptr;
-
+					
 					// TODO (4E5R8u55): This isn't correct. Zero can be a valid tick if they wrap.
 					if (meta.last == 0) { // Fresh chunk
 						#if MAP_OLD
 							const auto regionPos = chunkPos.toRegion();
 							const auto regionIt = regions.find(regionPos);
-
+					
 							if (regionIt != regions.end() && !regionIt->second->loading()) {
 								const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
 								auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
@@ -520,8 +507,21 @@ namespace Game {
 						// We don't need to write any zone info because on the client chunks
 						// are always in the same zone as the player. The chunk zones are
 						// managed in MapSystem::ensurePlayAreaLoaded.
-						const auto size = static_cast<int32>(rle->size() * sizeof(rle->front()));
+						const auto size = rle->size() * sizeof(rle->front());
 						byte* data = reinterpret_cast<byte*>(rle->data());
+
+						//
+						//
+						//
+						// TODO: Change this to use multiple write calls instead of pre-alloc in rle
+						//       now that we support multiple writes for large data.
+						//
+						//
+						//
+						//
+						//
+						//static int i = 0;
+						//ENGINE_DEBUG2("MAP_CHUNK SEND {:>4}: {} {}", i++, chunkPos, size);
 
 						// TODO: This is awful and incredibly error prone. Don't do this.
 						memcpy(data, &chunkPos.realmId, sizeof(chunkPos.realmId));
@@ -533,7 +533,7 @@ namespace Game {
 						memcpy(data, &chunkPos.pos.y, sizeof(chunkPos.pos.y));
 						data += sizeof(chunkPos.pos.y);
 
-						msg.writeBlob(rle->data(), size);
+						msg.write(rle->data(), size);
 					} else {
 						// This warning gets hit quite a bit depending on the clients
 						// network recv rate. So its annoying to leave enabled because
@@ -754,6 +754,21 @@ namespace Game {
 	}
 
 	void MapSystem::makeEdit(BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp) {
+		//
+		//
+		//
+		//
+		//
+		// TODO: Need to look into how chunks are networked. ATM it produces strange artifacts that
+		//       seem consistent with artifacts when enabled. My guess would be that for some reason
+		//       the server edit and client edit don't match.
+		//
+		//
+		//
+		//
+		//
+		if constexpr (ENGINE_CLIENT) { return; }
+
 		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		const auto plyPos = physComp.getPosition();
 		const auto& zone = zoneSys.getZone(physComp.getZoneId());
@@ -942,14 +957,17 @@ namespace Game {
 
 		// Build edits
 		if constexpr (ENGINE_SERVER) {
-			const auto found = chunkEdits.find(chunkPos);
-			if (found == chunkEdits.end()) {
-				// This case happens when we first activate new chunks. There have been no
-				// edits but we still need to build the initial active chunk data.
-				ENGINE_DEBUG_ASSERT(data.rle.empty(), "Unexpected RLE chunk data for ", chunkPos.pos.x, ", ", chunkPos.pos.y, ", r", chunkPos.realmId);
-			} else {
-				found->second.toRLE(data.rle);
-			}
+			//// TODO: remove, old path with only edit networks.
+			//const auto found = chunkEdits.find(chunkPos);
+			//if (found == chunkEdits.end()) {
+			//	// This case happens when we first activate new chunks. There have been no
+			//	// edits but we still need to build the initial active chunk data.
+			//	ENGINE_DEBUG_ASSERT(data.rle.empty(), "Unexpected RLE chunk data for ", chunkPos.pos.x, ", ", chunkPos.pos.y, ", r", chunkPos.realmId);
+			//} else {
+			//	found->second.toRLE(data.rle);
+			//}
+
+			chunk.toRLE(data.rle);
 		}
 
 		#if MAP_OLD
