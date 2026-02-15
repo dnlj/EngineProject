@@ -52,13 +52,13 @@ namespace Game {
 
 			void netRead(Engine::Net::BufferReader& msg) {
 				for (auto& b : buttons) {
-					msg.read<2>(&b.pressCount);
-					msg.read<2>(&b.releaseCount);
-					msg.read<1>(&b.latest);
+					msg.readBits<2>(&b.pressCount);
+					msg.readBits<2>(&b.releaseCount);
+					msg.readBits<1>(&b.latest);
 				}
 
-				const auto x = msg.read<32, uint32>();
-				const auto y = msg.read<32, uint32>();
+				const auto x = msg.readBits<32, uint32>();
+				const auto y = msg.readBits<32, uint32>();
 				target.x = reinterpret_cast<const float32&>(x);
 				target.y = reinterpret_cast<const float32&>(y);
 			}

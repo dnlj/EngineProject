@@ -4,7 +4,7 @@
 #include <Engine/Engine.hpp>
 
 #define ENGINE_NET_READ_TO(Msg, Type, Var) \
-	if (!Msg.read(&Var)) { \
+	if (!Msg.read<Type>(&Var)) { \
 		ENGINE_WARN("Unable to read " #Var "(" #Type ") from network."); \
 		return; \
 	}
@@ -22,7 +22,7 @@ namespace Engine::Net {
 			uint64 bitCount = 0;
 
 		public:
-			// TODO: don't these need to have retunr values like the other write functions?
+			// TODO: don't these need to have return values like the other write functions?
 			template<int N>
 			void writeBits(uint32 t) {
 				static_assert(0 < N && N <= 32, "Attempting to write invalid number of bits");
@@ -261,7 +261,7 @@ namespace Engine::Net {
 			}
 
 			template<uint64 N, std::integral T>
-			bool read(T* out) noexcept {
+			bool readBits(T* out) noexcept {
 				static_assert(0 < N && N <= 32, "Attempting to read invalid number of bits");
 				static_assert(sizeof(T) * CHAR_BIT >= N, "Invalid output type for given number of bits");
 
@@ -281,9 +281,9 @@ namespace Engine::Net {
 			}
 
 			template<uint64 N, class T>
-			T read() noexcept {
+			T readBits() noexcept {
 				T res = 0;
-				read<N>(&res);
+				readBits<N>(&res);
 				return res;
 			}
 

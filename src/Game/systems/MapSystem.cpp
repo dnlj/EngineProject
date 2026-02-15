@@ -311,24 +311,16 @@ namespace Game {
 	}
 
 	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
-		const byte* begin = reinterpret_cast<const byte*>(buff.read(head.size));
-		const byte* end = begin + head.size;
-
 		//ENGINE_NET_READ(buff, Engine::ECS::Tick, tick);
 
 		UniversalChunkCoord chunkPos;
-		memcpy(&chunkPos.realmId, begin, sizeof(chunkPos.realmId));
-		begin += sizeof(chunkPos.realmId);
-
-		memcpy(&chunkPos.pos.x, begin, sizeof(chunkPos.pos.x));
-		begin += sizeof(chunkPos.pos.x);
-		
-		memcpy(&chunkPos.pos.y, begin, sizeof(chunkPos.pos.y));
-		begin += sizeof(chunkPos.pos.y);
+		ENGINE_NET_READ_TO(buff, RealmId, chunkPos.realmId);
+		ENGINE_NET_READ_TO(buff, BlockUnit, chunkPos.pos.x);
+		ENGINE_NET_READ_TO(buff, BlockUnit, chunkPos.pos.y);
 
 		//ENGINE_INFO2("Recv chunk from net: {} {}", head.size, chunkPos);
-
-		chunkEdits[chunkPos].fromRLE(begin, end);
+		auto const rle = buff.read(buff.remaining());
+		chunkEdits[chunkPos].fromRLE(rle, buff.end());
 	}
 
 	void MapSystem::update(float32 dt) {
@@ -500,43 +492,20 @@ namespace Game {
 					if (auto msg = conn.beginMessage<MessageType::MAP_CHUNK>()) {
 						meta.last = activeData.updated;
 
-						// Populate data with chunk position and RLE data. Space
-						// for the position is allocated in MapChunk::toRLE. We
-						// should probably rework this. Its fairly unintuitive.
-						// 
 						// We don't need to write any zone info because on the client chunks
 						// are always in the same zone as the player. The chunk zones are
 						// managed in MapSystem::ensurePlayAreaLoaded.
-						const auto size = rle->size() * sizeof(rle->front());
-						byte* data = reinterpret_cast<byte*>(rle->data());
 
-						//
-						//
-						//
-						// TODO: Change this to use multiple write calls instead of pre-alloc in rle
-						//       now that we support multiple writes for large data.
-						//
-						//
-						//
-						//
-						//
 						//static int i = 0;
 						//ENGINE_DEBUG2("MAP_CHUNK SEND {:>4}: {} {}", i++, chunkPos, size);
 
-						// TODO: This is awful and incredibly error prone. Don't do this.
-						memcpy(data, &chunkPos.realmId, sizeof(chunkPos.realmId));
-						data += sizeof(chunkPos.realmId);
-
-						memcpy(data, &chunkPos.pos.x, sizeof(chunkPos.pos.x));
-						data += sizeof(chunkPos.pos.x);
-
-						memcpy(data, &chunkPos.pos.y, sizeof(chunkPos.pos.y));
-						data += sizeof(chunkPos.pos.y);
-
-						msg.write(rle->data(), size);
+						msg.write(chunkPos.realmId);
+						msg.write(chunkPos.pos.x);
+						msg.write(chunkPos.pos.y);
+						msg.write(rle->data(), rle->size() * sizeof(rle->front()));
 					} else {
 						// This warning gets hit quite a bit depending on the clients
-						// network recv rate. So its annoying to leave enabled because
+						// network recv rate and MAX_BLOBS. So its annoying to leave enabled because
 						// it clutters the logs.
 						// 
 						//ENGINE_WARN2("Unable to begin MAP_CHUNK message.");
