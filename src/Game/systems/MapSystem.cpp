@@ -239,6 +239,16 @@ namespace Game {
 		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		const auto currTick = world.getTick();
 
+		// TODO: This will cause a "redundant" chunk update next tick, but we need to be able to
+		//       handle that situation anyways because we want to add a crumble effect instead of deleting
+		//       all blocks at once.
+		// 
+		// This must be run before player input or else you will get incorrect results since the
+		// player edits will have not been applied yet. It could theoretically also be done at the
+		// end of a tick, which would then be applied next tick, but we introduced a restriction
+		// that all edits must be applied on the tick where they are made.
+		checkBlockConnectivity();
+
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			const auto& actComp = world.getComponent<ActionComponent>(ply);
 
@@ -261,9 +271,8 @@ namespace Game {
 			ENGINE_SERVER_ONLY(testGenerator.submit(world.getTime()));
 		#endif
 
-
 		// Apply edits
-		for (auto& [chunkPos, edit] : chunkEdits) {
+		for (auto& [chunkPos, edit] : chunkEdits) { // TODO: rm
 			#if MAP_OLD
 				const auto regionIt = regions.find(chunkPos.toRegion());
 				if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] {
@@ -283,6 +292,7 @@ namespace Game {
 					ENGINE_WARN("Attempting to edit unloaded chunk/region");
 					continue;
 				}
+
 				auto& chunk = terrain.getChunkMutable(chunkPos);
 			#endif
 
@@ -294,6 +304,90 @@ namespace Game {
 			}
 		}
 
+		#if ENGINE_CLIENT
+			for (auto const& chunkPos : chunksUpdatedFromEdits) {
+				// Skip chunks that would otherwise be immediately updated again anyways when appling network edits.
+				if (chunksUpdatedFromNet.contains(chunkPos)) {
+					continue;
+				}
+
+				const auto found = activeChunks.find(chunkPos);
+				if (found == activeChunks.end()) {
+					// This should never happen I think? We would have to edit a chunk and then
+					// unload it before the edits are applied, which shouldn't be possible.
+					ENGINE_WARN2("Attempting to edit an unloaded chunk.");
+					continue;
+				}
+
+				auto& activeChunk = found->second;
+				if (activeChunk.edits.empty()) {
+					// This shouldn't be possible since this chunk was added to chunksUpdatedFromEdits.
+					ENGINE_WARN2("Invalid chunk edit state.");
+					continue;
+				}
+
+				// Since edits are applied every tick, back() should always be the edits for the current tick.
+				auto const& edit = activeChunk.edits.back();
+				ENGINE_DEBUG_ASSERT(edit.tick == currTick);
+
+				if (terrain.getChunkMutable(chunkPos).apply(edit.chunk)) {
+					activeChunk.updated = currTick;
+					ENGINE_LOG2("Update from client");
+				} else {
+					// We shouldn't have empty edits. These should be prevent when building the edits.
+					// I thinks this could happen if a block when from BlockA > BlockB > BlockA within the same tick?
+					ENGINE_WARN2("Unexpected empty chunk edit.");
+				}
+			}
+
+			for (auto const& chunkPos : chunksUpdatedFromNet) {
+				// TODO: move inside the active chunk check?
+				if (!terrain.isChunkLoaded(chunkPos)) [[unlikely]] {
+					// I think we could hit this if we get a chunk from the network before we
+					// have that area loaded on the client. Invalid edits are discarded.
+					// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
+					ENGINE_WARN("Attempting to apply unloaded chunk data to unloaded chunk");
+					continue;
+				}
+
+				//
+				//
+				//
+				// TODO: need to rollback chunks after X seconds/ticks if not confirmed.
+				//
+				//
+				//
+
+				const auto found = activeChunks.find(chunkPos);
+				if (found == activeChunks.end()) {
+					// TODO: Is this expected? Maybe when transitioning zones? It should be fine to
+					//       ignore either way since it should get re-networked when moving back into
+					//       range? Really all data should probably be cached client side and only
+					//       re-networked if there is a mismatch?
+					ENGINE_WARN2("Received network chunk data for inactive chunk. Ignoring.");
+				} else {
+					// Drop any edits before the latest confirmed chunk state.
+					auto& activeChunk = found->second;
+					while (!activeChunk.edits.empty() && activeChunk.edits.back().tick <= activeChunk.lastConfirmedTick) {
+						activeChunk.edits.pop();
+					}
+
+					// TODO: only copy if still edits to apply;
+					auto predChunkData = activeChunk.lastConfimedChunkData;
+					for (auto const& predChunkEdit : activeChunk.edits) {
+						predChunkData.apply(predChunkEdit.chunk);
+					}
+
+					// If the chunk edits where mis-predicted, correct it.
+					auto& chunk = terrain.getChunkMutable(chunkPos);
+					if (chunk.data != predChunkData.data) {
+						chunk = predChunkData;
+						activeChunk.updated = currTick;
+					}
+				}
+			}
+		#endif
+
 		// Rebuild any updated active chunks.
 		for (auto& [chunkPos, activeData] : activeChunks) {
 			if (activeData.updated == currTick) {
@@ -303,29 +397,79 @@ namespace Game {
 
 		// chunkEdits must be cleared _after_ buildActiveChunkData since buildActiveChunkData uses chunkEdits.
 		chunkEdits.clear();
-
-		// TODO: This will cause a "redundant" chunk update next tick, but we need to be able to
-		//       handle that situation anyways because we want to add a crumble effect instead of deleting
-		//       all blocks at once.
-		checkBlockConnectivity();
+		chunksUpdatedFromNet.clear();
+		ENGINE_CLIENT_ONLY(chunksUpdatedFromEdits.clear());
 	}
-
+#if ENGINE_CLIENT
 	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
-		//ENGINE_NET_READ(buff, Engine::ECS::Tick, tick);
+		ENGINE_NET_READ(buff, Engine::ECS::Tick, tick);
 
 		UniversalChunkCoord chunkPos;
 		ENGINE_NET_READ_TO(buff, RealmId, chunkPos.realmId);
 		ENGINE_NET_READ_TO(buff, BlockUnit, chunkPos.pos.x);
 		ENGINE_NET_READ_TO(buff, BlockUnit, chunkPos.pos.y);
 
-		//ENGINE_INFO2("Recv chunk from net: {} {}", head.size, chunkPos);
+		ENGINE_INFO2("Recv chunk from net: {} {} {}", tick, chunkPos, buff.remaining());
+
 		auto const rle = buff.read(buff.remaining());
-		chunkEdits[chunkPos].fromRLE(rle, buff.end());
+		//auto& chunkFromNet = chunksFromNet[chunkPos];
+		//
+		//if (tick > chunkFromNet.tick) {
+		//	chunkFromNet.chunk.fromRLE(rle, buff.end());
+		//	chunkFromNet.tick = tick;
+		//} else if (tick == chunkFromNet.tick) {
+		//	// TODO: This should be impossible right? This would be a bug?
+		//	ENGINE_WARN("Received duplicate chunk from net.");
+		//} else {
+		//	// TODO: This shoulnd't be possible currently since large messages are always
+		//	//       reliable-ordered. We should add a reliable-latests network type that only reliably sends
+		//	//       the latest message for a given id, then we can have id=tick+chunkPos and only network
+		//	//       the latest chunks.
+		//	ENGINE_WARN("Received out of order chunk from net.");
+		//}
+
+		auto found = activeChunks.find(chunkPos);
+		if (found == activeChunks.end()) {
+			ENGINE_WARN("Received inactive chunk from net.");
+			return;
+		}
+
+		if (tick > found->second.lastConfirmedTick) {
+			found->second.lastConfimedChunkData.fromRLE(rle, buff.end());
+			found->second.lastConfirmedTick = tick;
+			chunksUpdatedFromNet.emplace(chunkPos);
+		} else if (tick == found->second.lastConfirmedTick) {
+			// TODO: This should be impossible right? This would be a bug?
+			ENGINE_WARN("Received duplicate chunk from net.");
+		} else {
+			// TODO: This shoulnd't be possible currently since large messages are always
+			//       reliable-ordered. We should add a reliable-latests network type that only reliably sends
+			//       the latest message for a given id, then we can have id=tick+chunkPos and only network
+			//       the latest chunks.
+			ENGINE_WARN("Received out of order chunk from net.");
+		}
 	}
+#endif
 
 	void MapSystem::update(float32 dt) {
 		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		auto timeout = world.getTickTime() - std::chrono::seconds{10}; // TODO: how long? 30s?
+
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: when unloading a chunk, reset the data to the last confirmed data if there are still pending edits.
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
 
 		// TODO: Shouldn't this unload logic be in tick instead of update?
 		// Unload active chunks
@@ -498,7 +642,7 @@ namespace Game {
 
 						//static int i = 0;
 						//ENGINE_DEBUG2("MAP_CHUNK SEND {:>4}: {} {}", i++, chunkPos, size);
-
+						msg.write(tick);
 						msg.write(chunkPos.realmId);
 						msg.write(chunkPos.pos.x);
 						msg.write(chunkPos.pos.y);
@@ -736,7 +880,7 @@ namespace Game {
 		//
 		//
 		//
-		if constexpr (ENGINE_CLIENT) { return; }
+		//if constexpr (ENGINE_CLIENT) { return; }
 
 		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		const auto plyPos = physComp.getPosition();
@@ -901,13 +1045,72 @@ namespace Game {
 	bool MapSystem::setValueAt(const UniversalBlockCoord blockCoord, BlockId bid) {
 		const auto chunkCoord = blockCoord.toChunk();
 		const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
-		if (terrain.getChunk(chunkCoord).data[chunkIndex.x][chunkIndex.y] != bid) {
-			auto& edit = chunkEdits[chunkCoord];
-			edit.data[chunkIndex.x][chunkIndex.y] = bid;
-			return true;
-		} else {
-			return false;
-		}
+
+		#if ENGINE_CLIENT
+			auto found = activeChunks.find(chunkCoord);
+			if (found == activeChunks.end()) [[unlikely]] {
+				ENGINE_WARN2("Attempting to edit an unloaded chunk: {}", chunkCoord);
+			}
+
+			auto& edits = found->second.edits;
+			auto const& chunk = terrain.getChunk(chunkCoord);
+			auto const& inChunk = chunk.data[chunkIndex.x][chunkIndex.y] == bid;
+
+			// This could be greatly simplified if we didn't care about inserting empty edits, but we do
+			// care since the number of edits has significant performance implications during a mis-prediction.
+			if (inChunk) {
+				if (!edits.empty() && edits.back().tick == world.getTick()) {
+					// Remove from edit if it has already been inserted by another edit. This could
+					// theoretically happen if there are three edits in one tick: BlockA > BlockB >
+					// BlockA.
+					if (edits.back().chunk.data[chunkIndex.x][chunkIndex.y] != BlockId::None) {
+						// TODO: We could also use chunksUpdatedFromEdits to keep track of the
+						// number of non-empty blocks per edit per tick and remove edits entirely.
+						// Not worth it right now as that should be a very rare situation.
+						edits.back().chunk.data[chunkIndex.x][chunkIndex.y] = BlockId::None;
+						return true;
+					}
+				}
+
+				// Nothing to edit.
+				return false;
+			} else {
+				if (edits.empty() || edits.back().tick != world.getTick()) {
+					edits.push({.tick = world.getTick()});
+				}
+
+				if (edits.back().chunk.data[chunkIndex.x][chunkIndex.y] != bid) {
+					edits.back().chunk.data[chunkIndex.x][chunkIndex.y] = bid;
+					chunksUpdatedFromEdits.emplace(chunkCoord);
+					return true;
+				}
+
+				// Nothing to edit.
+				return false;
+			}
+		#else
+			//
+			//
+			//
+			//
+			//
+			// TODO: Update to new edit system.
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+
+			if (terrain.getChunk(chunkCoord).data[chunkIndex.x][chunkIndex.y] != bid) {
+				auto& edit = chunkEdits[chunkCoord];
+				edit.data[chunkIndex.x][chunkIndex.y] = bid;
+				return true;
+			} else {
+				return false;
+			}
+		#endif
 	}
 	
 	// TODO: Thread this. Not sure how nice box2d will play with it. If it doesn't when we

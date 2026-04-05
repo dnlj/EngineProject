@@ -24,7 +24,7 @@ namespace Game {
 			static_assert(sizeof(RLEPair) == 4); // Ensure tight packing
 
 		public:
-			BlockId data[chunkSize.x][chunkSize.y] = {};
+			std::array<std::array<BlockId, chunkSize.y>, chunkSize.x> data = {};
 
 		public:
 			bool apply(const MapChunk& edit) {

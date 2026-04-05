@@ -113,6 +113,13 @@ namespace Game {
 			};
 			static_assert(sizeof(Vertex) == 3*sizeof(GLfloat), "Unexpected vertex size.");
 
+			// TODO: private
+			class MapChunkSnapshot { // TODO: move
+				public:
+					Engine::ECS::Tick tick;
+					MapChunk chunk;
+			};
+
 			struct ActiveChunkData {
 				PhysicsBody body;
 
@@ -120,12 +127,26 @@ namespace Game {
 				Engine::Gfx::Buffer ebuff;
 				uint32 ecount;
 
+				/** When was the last time this chunk was used. For unloading old/distant chunks. */
 				Engine::Clock::TimePoint lastUsed;
+
+				/** Used to indicate if active data should be rebuilt (if updated == current). */
 				Engine::ECS::Tick updated = {};
+
+				/** Cached RLE data for sending to multiple clients. */
 				std::vector<byte> rle;
 
 				// TODO: need to serialize for unloaded/inactive chunks. Just a vector<byte> should work?
 				std::vector<Engine::ECS::Entity> blockEntities;
+
+				/** The latest confirmed tick for this chunk received from the server. */
+				ENGINE_CLIENT_ONLY(Engine::ECS::Tick lastConfirmedTick);
+
+				/** The latest confirmed data for this chunk received from the server. */
+				ENGINE_CLIENT_ONLY(MapChunk lastConfimedChunkData);
+
+				/** Unconfirmed client side predicted edits. */
+				ENGINE_CLIENT_ONLY(Engine::RingBuffer<MapChunkSnapshot> edits);
 			};
 
 		private:
@@ -150,6 +171,12 @@ namespace Game {
 			//
 			//SequenceBuffer
 			Engine::FlatHashMap<UniversalChunkCoord, MapChunk> chunkEdits;
+
+			/** Which chunks have been updated from the server. */
+			Engine::FlatHashSet<UniversalChunkCoord> chunksUpdatedFromNet;
+
+			/** Which chunks have been updated from client side predicted edits. */
+			ENGINE_CLIENT_ONLY(Engine::FlatHashSet<UniversalChunkCoord> chunksUpdatedFromEdits);
 
 			/** Used for sending full RLE chunk updates */
 			std::vector<byte> rleTemp;

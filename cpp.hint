@@ -15,6 +15,8 @@
 #define ENGINE_INLINE_REL
 #define ENGINE_DEBUG_ASSERT
 #define ENGINE_EMPTY_BASE __declspec(empty_bases)
+#define ENGINE_CLIENT_ONLY(...) __VA_ARGS__
+#define ENGINE_SERVER_ONLY(...) __VA_ARGS__
 
 ///////////////////////////////////////////////////////////////////////////////
 // 3rd Party

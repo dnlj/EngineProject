@@ -279,7 +279,7 @@ namespace Engine {
 				
 				friend void swap(RingBufferImpl& first, RingBufferImpl& second) requires IsDynamic {
 					using std::swap;
-					swap(first.data, second.data);
+					swap(first.storage, second.storage);
 					swap(first.tail, second.tail);
 					swap(first.head, second.head);
 					swap(first.isEmpty, second.isEmpty);
