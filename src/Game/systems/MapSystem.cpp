@@ -271,42 +271,42 @@ namespace Game {
 			ENGINE_SERVER_ONLY(testGenerator.submit(world.getTime()));
 		#endif
 
-		// Apply edits
-		for (auto& [chunkPos, edit] : chunkEdits) { // TODO: rm
-			#if MAP_OLD
-				const auto regionIt = regions.find(chunkPos.toRegion());
-				if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] {
-					// I think we could hit this if we get a chunk from the network before we have that area loaded on the client.
-					// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
-					ENGINE_WARN("Attempting to edit unloaded chunk/region");
-					continue;
-				}
+		// Apply chunk edits.
+		#if ENGINE_SERVER // Server side chunk editing. No networking and prediction.
+			for (auto& [chunkPos, edit] : serverChunkEdits) {
+				#if MAP_OLD
+					const auto regionIt = regions.find(chunkPos.toRegion());
+					if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] {
+						// I think we could hit this if we get a chunk from the network before we have that area loaded on the client.
+						// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
+						ENGINE_WARN("Attempting to edit unloaded chunk/region");
+						continue;
+					}
 
-				const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
-				auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y].chunk;
-			#else
-				if (!terrain.isChunkLoaded(chunkPos)) [[unlikely]] {
-					// I think we could hit this if we get a chunk from the network before we
-					// have that area loaded on the client. Invalid edits are discarded.
-					// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
-					ENGINE_WARN("Attempting to edit unloaded chunk/region");
-					continue;
-				}
+					const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
+					auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y].chunk;
+				#else
+					if (!terrain.isChunkLoaded(chunkPos)) [[unlikely]] {
+						// I think we could hit this if we get a chunk from the network before we
+						// have that area loaded on the client. Invalid edits are discarded.
+						// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
+						ENGINE_WARN("Attempting to edit unloaded chunk/region");
+						continue;
+					}
 
-				auto& chunk = terrain.getChunkMutable(chunkPos);
-			#endif
+					auto& chunk = terrain.getChunkMutable(chunkPos);
+				#endif
 
-			if (chunk.apply(edit)) {
-				const auto found = activeChunks.find(chunkPos);
-				if (found != activeChunks.end()) {
-					found->second.updated = currTick;
+				if (chunk.apply(edit)) {
+					const auto found = activeChunks.find(chunkPos);
+					if (found != activeChunks.end()) {
+						found->second.updated = currTick;
+					}
 				}
 			}
-		}
-
-		#if ENGINE_CLIENT
+		#else // Client side chunk editing with networking and prediction.
 			for (auto const& chunkPos : chunksUpdatedFromEdits) {
-				// Skip chunks that would otherwise be immediately updated again anyways when appling network edits.
+				// Skip chunks that would otherwise be immediately updated again anyways when applying network edits.
 				if (chunksUpdatedFromNet.contains(chunkPos)) {
 					continue;
 				}
@@ -372,7 +372,7 @@ namespace Game {
 						activeChunk.edits.pop();
 					}
 
-					// TODO: only copy if still edits to apply;
+					// TODO: only copy/create predChunkData if there are still edits to apply.
 					auto predChunkData = activeChunk.lastConfimedChunkData;
 					for (auto const& predChunkEdit : activeChunk.edits) {
 						predChunkData.apply(predChunkEdit.chunk);
@@ -381,7 +381,7 @@ namespace Game {
 					// If the chunk edits where mis-predicted, correct it.
 					auto& chunk = terrain.getChunkMutable(chunkPos);
 					if (chunk.data != predChunkData.data) {
-						chunk = predChunkData;
+						chunk = std::move(predChunkData);
 						activeChunk.updated = currTick;
 					}
 				}
@@ -395,9 +395,9 @@ namespace Game {
 			}
 		}
 
-		// chunkEdits must be cleared _after_ buildActiveChunkData since buildActiveChunkData uses chunkEdits.
-		chunkEdits.clear();
-		chunksUpdatedFromNet.clear();
+		// Chunk edits/updates must be cleared _after_ buildActiveChunkData since buildActiveChunkData uses them.
+		ENGINE_SERVER_ONLY(serverChunkEdits.clear());
+		ENGINE_CLIENT_ONLY(chunksUpdatedFromNet.clear());
 		ENGINE_CLIENT_ONLY(chunksUpdatedFromEdits.clear());
 	}
 #if ENGINE_CLIENT
@@ -412,22 +412,6 @@ namespace Game {
 		ENGINE_INFO2("Recv chunk from net: {} {} {}", tick, chunkPos, buff.remaining());
 
 		auto const rle = buff.read(buff.remaining());
-		//auto& chunkFromNet = chunksFromNet[chunkPos];
-		//
-		//if (tick > chunkFromNet.tick) {
-		//	chunkFromNet.chunk.fromRLE(rle, buff.end());
-		//	chunkFromNet.tick = tick;
-		//} else if (tick == chunkFromNet.tick) {
-		//	// TODO: This should be impossible right? This would be a bug?
-		//	ENGINE_WARN("Received duplicate chunk from net.");
-		//} else {
-		//	// TODO: This shoulnd't be possible currently since large messages are always
-		//	//       reliable-ordered. We should add a reliable-latests network type that only reliably sends
-		//	//       the latest message for a given id, then we can have id=tick+chunkPos and only network
-		//	//       the latest chunks.
-		//	ENGINE_WARN("Received out of order chunk from net.");
-		//}
-
 		auto found = activeChunks.find(chunkPos);
 		if (found == activeChunks.end()) {
 			ENGINE_WARN("Received inactive chunk from net.");
@@ -1089,22 +1073,8 @@ namespace Game {
 				return false;
 			}
 		#else
-			//
-			//
-			//
-			//
-			//
-			// TODO: Update to new edit system.
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-
 			if (terrain.getChunk(chunkCoord).data[chunkIndex.x][chunkIndex.y] != bid) {
-				auto& edit = chunkEdits[chunkCoord];
+				auto& edit = serverChunkEdits[chunkCoord];
 				edit.data[chunkIndex.x][chunkIndex.y] = bid;
 				return true;
 			} else {

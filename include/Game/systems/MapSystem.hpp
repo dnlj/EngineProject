@@ -155,25 +155,14 @@ namespace Game {
 			/** The info for chunks */
 			Engine::FlatHashMap<UniversalChunkCoord, ActiveChunkData> activeChunks;
 
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: Seq buffer for per tick edits.
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//SequenceBuffer
-			Engine::FlatHashMap<UniversalChunkCoord, MapChunk> chunkEdits;
+			/**
+			 * Server side chunk edits. These can be handled much simpler than client side since we
+			 * don't need prediction and network correction.
+			 */
+			ENGINE_SERVER_ONLY(Engine::FlatHashMap<UniversalChunkCoord, MapChunk> serverChunkEdits);
 
 			/** Which chunks have been updated from the server. */
-			Engine::FlatHashSet<UniversalChunkCoord> chunksUpdatedFromNet;
+			ENGINE_CLIENT_ONLY(Engine::FlatHashSet<UniversalChunkCoord> chunksUpdatedFromNet);
 
 			/** Which chunks have been updated from client side predicted edits. */
 			ENGINE_CLIENT_ONLY(Engine::FlatHashSet<UniversalChunkCoord> chunksUpdatedFromEdits);
