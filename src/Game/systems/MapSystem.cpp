@@ -157,6 +157,28 @@ namespace Game {
 
 
 namespace Game {
+	#if ENGINE_CLIENT
+		bool MapSystem::ActiveChunkData::popEditsBefore(Engine::ECS::Tick tick) {
+			bool removedAny = false;
+			while (!edits.empty() && edits.back().tick <= tick) {
+				edits.pop();
+				removedAny = true;
+			}
+
+			return removedAny;
+		}
+
+		MapChunk MapSystem::ActiveChunkData::lastWithEdits() {
+			// TODO: only copy/create predChunkData if there are still edits to apply.
+			auto predChunkData = lastConfimedChunkData;
+			for (auto const& predChunkEdit : edits) {
+				predChunkData.apply(predChunkEdit.chunk);
+			}
+
+			return predChunkData;
+		}
+	#endif
+
 	MapSystem::MapSystem(SystemArg arg)
 		: System{arg} {
 		static_assert(World::orderAfter<MapSystem, CameraTrackingSystem>());
@@ -320,14 +342,6 @@ namespace Game {
 					continue;
 				}
 
-				//
-				//
-				//
-				// TODO: need to rollback chunks after X seconds/ticks if not confirmed.
-				//
-				//
-				//
-
 				const auto found = activeChunks.find(chunkPos);
 				if (found == activeChunks.end()) {
 					// TODO: Is this expected? Maybe when transitioning zones? It should be fine to
@@ -338,15 +352,10 @@ namespace Game {
 				} else {
 					// Drop any edits before the latest confirmed chunk state.
 					auto& activeChunk = found->second;
-					while (!activeChunk.edits.empty() && activeChunk.edits.back().tick <= activeChunk.lastConfirmedTick) {
-						activeChunk.edits.pop();
-					}
+					activeChunk.popEditsBefore(activeChunk.lastConfirmedTick);
 
 					// TODO: only copy/create predChunkData if there are still edits to apply.
-					auto predChunkData = activeChunk.lastConfimedChunkData;
-					for (auto const& predChunkEdit : activeChunk.edits) {
-						predChunkData.apply(predChunkEdit.chunk);
-					}
+					auto predChunkData = activeChunk.lastWithEdits();
 
 					// If the chunk edits where mis-predicted, correct it.
 					auto& chunk = terrain.getChunkMutable(chunkPos);
@@ -360,6 +369,32 @@ namespace Game {
 
 		// Rebuild any updated active chunks.
 		for (auto& [chunkPos, activeData] : activeChunks) {
+			#if ENGINE_CLIENT
+				// Rollback any old unconfirmed edits.
+				if (activeData.popEditsBefore(currTick - clientPredictedTerrainRejectionTicks)) {
+					auto predChunkData = activeData.lastWithEdits();
+					auto& chunk = terrain.getChunkMutable(chunkPos);
+					if (predChunkData.data != chunk.data) {
+						ENGINE_WARN2("Unconfirmed predicted chunk edit. Reverting.");
+						chunk = std::move(predChunkData);
+						activeData.updated = currTick;
+					} else {
+						// TODO: This should never happen right? if the predictions after edits is
+						//       equal to the current state that would mean we have an empty edit
+						//       for some reason? I don't think that is expected?
+						// 
+						//       I think this can happen right now if you make multiple edits in a
+						//       single tick that go: blockA > blockB > blockA resulting in an empty
+						//       edit? See chunksUpdatedFromEdits loop above.
+						//
+						//       Once this is confirmed fixed we should be able to just do
+						//       `terrain.getChunkMutable(chunkPos) = activeData.lastWithEdits()`
+						//       directly to avoid an extra copy.
+						ENGINE_WARN2("Mis-predicted chunk data. Empty edit found.");
+					}
+				}
+			#endif
+
 			if (activeData.updated == currTick) {
 				buildActiveChunkData(activeData, chunkPos);
 			}

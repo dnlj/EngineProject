@@ -85,33 +85,45 @@ namespace Game {
 					MapChunk chunk;
 			};
 
-			struct ActiveChunkData {
-				PhysicsBody body;
+			class ActiveChunkData {
+				public:
+					PhysicsBody body;
 
-				Engine::Gfx::Buffer vbuff;
-				Engine::Gfx::Buffer ebuff;
-				uint32 ecount;
+					Engine::Gfx::Buffer vbuff;
+					Engine::Gfx::Buffer ebuff;
+					uint32 ecount;
 
-				/** When was the last time this chunk was used. For unloading old/distant chunks. */
-				Engine::Clock::TimePoint lastUsed;
+					/** When was the last time this chunk was used. For unloading old/distant chunks. */
+					Engine::Clock::TimePoint lastUsed;
 
-				/** Used to indicate if active data should be rebuilt (if updated == current). */
-				Engine::ECS::Tick updated = {};
+					/** Used to indicate if active data should be rebuilt (if updated == current). */
+					Engine::ECS::Tick updated = {};
 
-				/** Cached RLE data for sending to multiple clients. */
-				std::vector<byte> rle;
+					/** Cached RLE data for sending to multiple clients. */
+					std::vector<byte> rle;
 
-				// TODO: need to serialize for unloaded/inactive chunks. Just a vector<byte> should work?
-				std::vector<Engine::ECS::Entity> blockEntities;
+					// TODO: need to serialize for unloaded/inactive chunks. Just a vector<byte> should work?
+					std::vector<Engine::ECS::Entity> blockEntities;
 
-				/** The latest confirmed tick for this chunk received from the server. */
-				ENGINE_CLIENT_ONLY(Engine::ECS::Tick lastConfirmedTick);
+					/** The latest confirmed tick for this chunk received from the server. */
+					ENGINE_CLIENT_ONLY(Engine::ECS::Tick lastConfirmedTick);
 
-				/** The latest confirmed data for this chunk received from the server. */
-				ENGINE_CLIENT_ONLY(MapChunk lastConfimedChunkData);
+					/** The latest confirmed data for this chunk received from the server. */
+					ENGINE_CLIENT_ONLY(MapChunk lastConfimedChunkData);
 
-				/** Unconfirmed client side predicted edits. */
-				ENGINE_CLIENT_ONLY(Engine::RingBuffer<MapChunkSnapshot> edits);
+					/** Unconfirmed client side predicted edits. */
+					ENGINE_CLIENT_ONLY(Engine::RingBuffer<MapChunkSnapshot> edits);
+
+					/**
+					 * Remove edits up to and including the given tick.
+					 * @return True if any edits were removed.
+					 */
+					ENGINE_CLIENT_ONLY(bool popEditsBefore(Engine::ECS::Tick tick));
+
+					/**
+					 * Create a copy of the latest confirmed data plus the predicted edits.
+					 */
+					ENGINE_CLIENT_ONLY(MapChunk lastWithEdits());
 			};
 
 		private:

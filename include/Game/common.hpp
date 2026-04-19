@@ -109,6 +109,9 @@ namespace Game::inline Constants {
 	constexpr inline BlockUnit blocksPerChunk = 64;
 	constexpr inline BlockVec chunkSize = {blocksPerChunk, blocksPerChunk};
 
+	/** The number of ticks to wait before rejecting a unconfirmed client side predicted terrain edit. */
+	constexpr inline int32 clientPredictedTerrainRejectionTicks = tickrate * 3/* seconds */;
+
 	// TODO: Regions should probably be much larger, currently the active area
 	//       around each player is 11x11 which is almost an entire region.
 	constexpr inline RegionUnit chunksPerRegion = 16;
