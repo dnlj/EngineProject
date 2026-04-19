@@ -171,23 +171,9 @@ namespace Game {
 				{1, 1, Gfx::NumberType::Float32, Gfx::VertexAttribTarget::Float, false, offsetof(Game::MapSystem::Vertex, tex), 0}
 			}
 		});
-		
-		#if MAP_OLD
-			for (auto& t : threads) {
-				t = std::thread{&MapSystem::loadChunkAsyncWorker, this};
-			}
-		#endif
 	}
 
 	MapSystem::~MapSystem() {
-		#if MAP_OLD
-			threadsShouldExit = true;
-			chunkQueue.notify();
-
-			for (auto& t : threads) {
-				t.join();
-			}
-		#endif
 	}
 
 	void MapSystem::setup() {
@@ -266,37 +252,21 @@ namespace Game {
 			}
 		}
 
-		#if !MAP_OLD
-			// Submit any newly loaded queued areas from ensurePlayAreaLoaded above.
-			ENGINE_SERVER_ONLY(testGenerator.submit(world.getTime()));
-		#endif
+		// Submit any newly loaded queued areas from ensurePlayAreaLoaded above.
+		ENGINE_SERVER_ONLY(testGenerator.submit(world.getTime()));
 
 		// Apply chunk edits.
 		#if ENGINE_SERVER // Server side chunk editing. No networking and prediction.
 			for (auto& [chunkPos, edit] : serverChunkEdits) {
-				#if MAP_OLD
-					const auto regionIt = regions.find(chunkPos.toRegion());
-					if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] {
-						// I think we could hit this if we get a chunk from the network before we have that area loaded on the client.
-						// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
-						ENGINE_WARN("Attempting to edit unloaded chunk/region");
-						continue;
-					}
+				if (!terrain.isChunkLoaded(chunkPos)) [[unlikely]] {
+					// I think we could hit this if we get a chunk from the network before we
+					// have that area loaded on the client. Invalid edits are discarded.
+					// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
+					ENGINE_WARN("Attempting to edit unloaded chunk/region");
+					continue;
+				}
 
-					const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
-					auto& chunk = regionIt->second->data[chunkIndex.x][chunkIndex.y].chunk;
-				#else
-					if (!terrain.isChunkLoaded(chunkPos)) [[unlikely]] {
-						// I think we could hit this if we get a chunk from the network before we
-						// have that area loaded on the client. Invalid edits are discarded.
-						// TODO: Would it be better to just have it load that area here instead of trying to pre-load on the client?
-						ENGINE_WARN("Attempting to edit unloaded chunk/region");
-						continue;
-					}
-
-					auto& chunk = terrain.getChunkMutable(chunkPos);
-				#endif
-
+				auto& chunk = terrain.getChunkMutable(chunkPos);
 				if (chunk.apply(edit)) {
 					const auto found = activeChunks.find(chunkPos);
 					if (found != activeChunks.end()) {
@@ -464,25 +434,13 @@ namespace Game {
 
 				// Store block entities
 				if constexpr (ENGINE_SERVER) {
-				#if MAP_OLD
-					const auto regionIt = regions.find(it->first.toRegion());
-					if (regionIt == regions.end() || regionIt->second->loading()) {
-				#else
 					if (!terrain.isRegionLoaded(it->first.toRegion())) {
-				#endif
 						ENGINE_WARN("Attempting to unload a active chunk into unloaded region.");
 						ENGINE_DEBUG_BREAK;
 					} else {
-					#if MAP_OLD
-						auto& region = *regionIt->second;
-						const auto chunkIndex = chunkToRegionIndex(it->first.pos);
-						auto& chunkData = region.data[chunkIndex.x][chunkIndex.y];
-						auto& entData = chunkData.entData;
-					#else
 						auto& entData = terrain.getEntitiesMutable(it->first);
-					#endif
-
 						entData.clear();
+
 						for (const auto ent : it->second.blockEntities) {
 							auto& desc = entData.emplace_back();
 							const auto& beComp = world.getComponent<BlockEntityComponent>(ent);
@@ -505,18 +463,6 @@ namespace Game {
 		}
 		
 		// Unload regions.
-		#if MAP_OLD
-		{
-			for (auto it = regions.begin(); it != regions.end();) {
-				if (it->second->lastUsed < timeout && !it->second->loading()) {
-					ENGINE_LOG2("Unloading region: {} {} ", it->first.realmId, it->first.pos);
-					it = regions.erase(it);
-				} else {
-					++it;
-				}
-			}
-		}
-		#else
 		{
 			// It is safe to cache end here since end is not invalidated by erase.
 			const auto end = regionLastUsed.end();
@@ -537,7 +483,6 @@ namespace Game {
 				}
 			}
 		}
-		#endif
 	}
 
 	void MapSystem::network(const NetPlySet plys) {
@@ -580,27 +525,13 @@ namespace Game {
 					
 					// TODO (4E5R8u55): This isn't correct. Zero can be a valid tick if they wrap.
 					if (meta.last == 0) { // Fresh chunk
-						#if MAP_OLD
-							const auto regionPos = chunkPos.toRegion();
-							const auto regionIt = regions.find(regionPos);
-					
-							if (regionIt != regions.end() && !regionIt->second->loading()) {
-								const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
-								auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
-								rleTemp.clear();
-								chunkInfo.chunk.toRLE(rleTemp);
-								rle = &rleTemp;
-								//ENGINE_INFO2("Send chunk (fresh): {} {}", tick, chunkPos);
-							}
-						#else
-							if (terrain.isChunkLoaded(chunkPos)) {
-								const auto& chunk = terrain.getChunk(chunkPos);
-								rleTemp.clear();
-								chunk.toRLE(rleTemp);
-								rle = &rleTemp;
-								//ENGINE_INFO2("Send chunk (fresh): {} {}", tick, chunkPos);
-							}
-						#endif
+						if (terrain.isChunkLoaded(chunkPos)) {
+							const auto& chunk = terrain.getChunk(chunkPos);
+							rleTemp.clear();
+							chunk.toRLE(rleTemp);
+							rle = &rleTemp;
+							//ENGINE_INFO2("Send chunk (fresh): {} {}", tick, chunkPos);
+						}
 					} else if (activeData.rle.empty()) {
 						// TODO: I don't think this case should ever be hit? Wouldn't this be a bug?
 						ENGINE_WARN2("No RLE data for chunk {}.", chunkPos);
@@ -682,58 +613,27 @@ namespace Game {
 					|| chunkPos2.y > maxAreaChunk.y;
 
 				const UniversalChunkCoord chunkPos = {plyZone.realmId, chunkPos2};
-				#if MAP_OLD
-					const auto regionPos = chunkPos.toRegion();
-					auto regionIt = regions.find(regionPos);
 
-					// Create a new region if needed
-					if (regionIt == regions.end()) {
-						if (!isBufferChunk) {
-							//const auto it = regions.emplace(regionPos, new MapRegion{
-							//	.lastUsed = world.getTickTime(),
-							//}).first;
-							// 
-							// Work around for MSVC compiler heap bug.
-							// If we use the above RAM usage hits +8GB (runs out of memory, error).
-							// With below it hits +2GB at most.
-							auto ptr = std::make_unique<MapRegion>();
-							ptr->lastUsed = world.getTickTime();
-							const auto it = regions.try_emplace(regionPos, std::move(ptr)).first;
-
-							if constexpr (ENGINE_SERVER) {
-								queueRegionToLoad(regionPos, *it->second);
-							}
+				// TODO: Isn't this going to be resubmitting every frame? Need an chunk
+				//       state to say WIP or something? Or just let the map system eat it?
+				//       Probably not the best idea.
+				if (!terrain.isChunkLoaded(chunkPos)) {
+					if (!isBufferChunk) {
+						if constexpr (ENGINE_SERVER) {
+							ENGINE_SERVER_ONLY(reqGen = true);
+						} else {
+							// Ensure space for the chunk is allocated. This is needed so that we
+							// can apply the chunk data that will be received from the server.
+							terrain.forceAllocateChunk(chunkPos);
 						}
-
-						continue;
 					}
 
-					// Update chunk usage info
-					const auto& region = regionIt->second;
-					region->lastUsed = world.getTickTime();
-					if (region->loading()) { continue; }
-				#else
-					// TODO: Isn't this going to be resubmitting every frame? Need an chunk
-					//       state to say WIP or something? Or just let the map system eat it?
-					//       Probably not the best idea.
-					if (!terrain.isChunkLoaded(chunkPos)) {
-						if (!isBufferChunk) {
-							if constexpr (ENGINE_SERVER) {
-								ENGINE_SERVER_ONLY(reqGen = true);
-							} else {
-								// Ensure space for the chunk is allocated. This is needed so that we
-								// can apply the chunk data that will be received from the server.
-								terrain.forceAllocateChunk(chunkPos);
-							}
-						}
+					continue;
+				}
 
-						continue;
-					}
-
-					// Update region usage.
-					const auto regionCoord = chunkPos.toRegion();
-					regionLastUsed[regionCoord] = world.getTickTime();
-				#endif
+				// Update region usage.
+				const auto regionCoord = chunkPos.toRegion();
+				regionLastUsed[regionCoord] = world.getTickTime();
 
 				#if ENGINE_SERVER
 				{
@@ -762,16 +662,9 @@ namespace Game {
 					ENGINE_DEBUG_ASSERT(activeChunkIt->second.body.valid());
 					//ENGINE_INFO2("Make active {}, {}", chunkPos, plyZoneId);
 
-					#if MAP_OLD
-						const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
-						auto& chunkInfo = region->data[chunkIndex.x][chunkIndex.y];
-						const auto& entData = chunkInfo.entData;
-					#else
-						const auto& entData = terrain.getEntities(chunkPos);
-					#endif
-
 					// Build chunk entities
 					if constexpr (ENGINE_SERVER) {
+						const auto& entData = terrain.getEntities(chunkPos);
 						for (const auto& desc : entData) {
 							Engine::ECS::Entity ent;
 
@@ -1086,16 +979,8 @@ namespace Game {
 	// TODO: Thread this. Not sure how nice box2d will play with it. If it doesn't when we
 	//       can still create the physics data and the actual box2d objects later.
 	void MapSystem::buildActiveChunkData(ActiveChunkData& data, const UniversalChunkCoord chunkPos) {
-		#if MAP_OLD
-			const auto regionIt = regions.find(chunkPos.toRegion());
-			if (regionIt == regions.end() || regionIt->second->loading()) [[unlikely]] { return; }
-				
-			const auto chunkIndex = chunkToRegionIndex(chunkPos.pos);
-			auto& chunkInfo = regionIt->second->data[chunkIndex.x][chunkIndex.y];
-		#else
-			if (!terrain.isChunkLoaded(chunkPos)) { return; }
-			const auto& chunk = terrain.getChunk(chunkPos);
-		#endif
+		if (!terrain.isChunkLoaded(chunkPos)) { return; }
+		const auto& chunk = terrain.getChunk(chunkPos);
 
 		// Build edits
 		if constexpr (ENGINE_SERVER) {
@@ -1112,20 +997,12 @@ namespace Game {
 			chunk.toRLE(data.rle);
 		}
 
-		#if MAP_OLD
-		decltype(auto) greedyExpand = [&chunkInfo](auto usable, auto submitArea) ENGINE_INLINE {
-		#else
 		decltype(auto) greedyExpand = [&chunk](auto usable, auto submitArea) ENGINE_INLINE {
-		#endif
 			bool used[chunkSize.x][chunkSize.y] = {};
 			
 			for (glm::ivec2 begin = {0, 0}; begin.x < chunkSize.x; ++begin.x) {  
 				for (begin.y = 0; begin.y < chunkSize.y;) {
-					#if MAP_OLD
-						const auto& blockMeta = getBlockMeta(chunkInfo.chunk.data[begin.x][begin.y]);
-					#else
-						const auto& blockMeta = getBlockMeta(chunk.data[begin.x][begin.y]);
-					#endif
+					const auto& blockMeta = getBlockMeta(chunk.data[begin.x][begin.y]);
 					auto end = begin;
 					while (end.y < chunkSize.y && !used[end.x][end.y] && usable(end, blockMeta)) { ++end.y; }
 					if (end.y == begin.y) { ++begin.y; continue; }
@@ -1152,11 +1029,7 @@ namespace Game {
 			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE {
 				return blockMeta.id != BlockId::None
 					&& blockMeta.id != BlockId::Air
-					#if MAP_OLD
-						&& chunkInfo.chunk.data[pos.x][pos.y] == blockMeta.id;
-					#else
-						&& chunk.data[pos.x][pos.y] == blockMeta.id;
-					#endif
+					&& chunk.data[pos.x][pos.y] == blockMeta.id;
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
 				// Add buffer data
 				glm::vec2 origin = glm::vec2{begin} * blockSize; // Meters
@@ -1167,11 +1040,7 @@ namespace Game {
 					"Texture index is a byte. You will need to change its type if you now have more than 255 blocks."
 				);
 
-				#if MAP_OLD
-					const auto tex = static_cast<GLfloat>(chunkInfo.chunk.data[begin.x][begin.y] - 2); // TODO: -2 for None and Air. Handle this better.
-				#else
-					const auto tex = static_cast<GLfloat>(chunk.data[begin.x][begin.y] - 2); // TODO: -2 for None and Air. Handle this better.
-				#endif
+				const auto tex = static_cast<GLfloat>(chunk.data[begin.x][begin.y] - 2); // TODO: -2 for None and Air. Handle this better.
 
 				buildVBOData.push_back({.pos = origin, .tex = tex});
 				buildVBOData.push_back({.pos = origin + glm::vec2{size.x, 0}, .tex = tex});
@@ -1231,11 +1100,7 @@ namespace Game {
 			fixtureDef.shape = &shape;
 
 			greedyExpand([&](const auto& pos, const auto& blockMeta) ENGINE_INLINE {
-				#if MAP_OLD
-					return getBlockMeta(chunkInfo.chunk.data[pos.x][pos.y]).solid;
-				#else
-					return getBlockMeta(chunk.data[pos.x][pos.y]).solid;
-				#endif
+				return getBlockMeta(chunk.data[pos.x][pos.y]).solid;
 			}, [&](const auto& begin, const auto& end) ENGINE_INLINE {
 				const auto halfSize = blockSize * 0.5f * Engine::Glue::as<b2Vec2>(end - begin);
 				const auto center = blockSize * Engine::Glue::as<b2Vec2>(begin) + halfSize;
@@ -1245,44 +1110,6 @@ namespace Game {
 		}
 	}
 	
-#if MAP_OLD
-	void MapSystem::loadChunk(const UniversalChunkCoord chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept {
-		const auto chunkBlockPos = chunkPos.toBlock();
-		mgen.init(chunkBlockPos.realmId, chunkBlockPos.pos, chunkInfo.chunk, chunkInfo.entData);
-	}
-
-	void MapSystem::loadChunkAsyncWorker() {
-		Job job;
-		while (!threadsShouldExit) {
-			if (chunkQueue.popOrWait(job)) {
-				job();
-			}
-		}
-	}
-
-	void MapSystem::queueRegionToLoad(const UniversalRegionCoord regionPos, MapRegion& region) {
-		ENGINE_LOG2("Queue region: {}", regionPos.pos);
-
-		auto lock = chunkQueue.lock();
-		const auto startChunkPos = regionPos.toChunk();
-		for (RegionUnit x = 0; x < regionSize.x; ++x) {
-			for (RegionUnit y = 0; y < regionSize.y; ++y) {
-				chunkQueue.unsafeEmplace(
-					[
-						this, &region,
-						chunkPos = startChunkPos + ChunkVec{x, y},
-						&chunkInfo = region.data[x][y]
-					] {
-						loadChunk(chunkPos, chunkInfo);
-						++region.loadedChunks;
-					}
-				);
-			}
-		}
-		lock.unlock();
-		chunkQueue.notify();
-	}
-#else
 	#if ENGINE_SERVER
 		void MapSystem::queueGeneration(const Terrain::Request& request) {
 			// TODO: Consider a way to do chunks in an outward spiral order so that the
@@ -1291,5 +1118,4 @@ namespace Game {
 			testGenerator.generate(request);
 		}
 	#endif
-#endif
 }

@@ -24,7 +24,6 @@
 #include <Game/common.hpp>
 #include <Game/universal.hpp>
 #include <Game/MapChunk.hpp>
-#include <Game/MapGenerator2.hpp>
 #include <Game/Connection.hpp>
 #include <Game/comps/PhysicsBodyComponent.hpp> // TODO: split physicsbody from componennt
 #include <Game/Terrain/TestGenerator.hpp>
@@ -69,40 +68,6 @@
 //       [ ] (lzjAs29I) Cleanup Terrain/Region/Chunk data access and avoid duplicate calcs.
 //           See comments in Terrain functions.
 //       [x] Update zone preview.
-#define MAP_OLD false
-#if MAP_OLD
-namespace Game {
-	class MapRegion {
-		public:
-			struct ChunkInfo {
-				MapChunk chunk;
-				std::vector<BlockEntityDesc> entData;
-			};
-
-			ChunkInfo data[regionSize.x][regionSize.y];
-			std::atomic<int32> loadedChunks = 0;
-			Engine::Clock::TimePoint lastUsed;
-
-			bool loading() const {
-				// TODO: look into which memory order is needed
-
-				// TODO: Why is this always false on the client? I assume it was
-				// something to do with always loading the chunks on the server?
-				//
-				// Even if thats the case we should be able to premptevly
-				// generate them on the client and then update them once we get
-				// the real info from the server?
-
-				if constexpr (ENGINE_CLIENT) {
-					return false;
-				}
-
-				return loadedChunks.load() != regionSize.x * regionSize.y;
-			}
-			static_assert(decltype(loadedChunks)::is_always_lock_free);
-	};
-}
-#endif
 
 namespace Game {
 	class MapSystem : public System {
@@ -175,22 +140,12 @@ namespace Game {
 			static_assert(decltype(threadsShouldExit)::is_always_lock_free);
 
 			Engine::ECS::Entity mapEntity;
-			#if MAP_OLD
-				using Job = std::function<void()>;
-				Engine::ThreadSafeQueue<Job> chunkQueue;
-				Engine::FlatHashMap<UniversalRegionCoord, std::unique_ptr<MapRegion>> regions;
-			#endif
-
 			std::vector<Vertex> buildVBOData;
 			std::vector<GLushort> buildEBOData;
 
-			#if MAP_OLD
-				MapGenerator2 mgen{12345};
-			#else
-				Terrain::Terrain terrain;
-				ENGINE_SERVER_ONLY(Terrain::TestGenerator testGenerator{terrain, Terrain::TestSeed});
-				Engine::FlatHashMap<UniversalRegionCoord, Engine::Clock::TimePoint> regionLastUsed;
-			#endif
+			Terrain::Terrain terrain;
+			ENGINE_SERVER_ONLY(Terrain::TestGenerator testGenerator{terrain, Terrain::TestSeed});
+			Engine::FlatHashMap<UniversalRegionCoord, Engine::Clock::TimePoint> regionLastUsed;
 
 		public:
 			MapSystem(SystemArg arg);
@@ -208,12 +163,7 @@ namespace Game {
 			void chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff);
 
 			ENGINE_INLINE const auto& getActiveChunks() const noexcept { return activeChunks; }
-
-			#if MAP_OLD
-				ENGINE_INLINE const auto& getLoadedRegions() const noexcept { return regions; }
-			#else
-				ENGINE_INLINE const auto& getTerrain() const noexcept { return terrain; }
-			#endif
+			ENGINE_INLINE const auto& getTerrain() const noexcept { return terrain; }
 
 		public: // TODO: make proper accessors if we actually end up needing this stuff
 			Engine::Gfx::ShaderRef shader;
@@ -246,14 +196,8 @@ namespace Game {
 
 			void buildActiveChunkData(ActiveChunkData& data, const UniversalChunkCoord chunkPos);
 
-			#if MAP_OLD
-				void loadChunk(const UniversalChunkCoord chunkPos, MapRegion::ChunkInfo& chunkInfo) const noexcept;
-				void loadChunkAsyncWorker();
-				void queueRegionToLoad(const UniversalRegionCoord regionPos, MapRegion& region);
-			#else
-				// Server only, still declared here for simplicity.
-				void queueGeneration(const Terrain::Request& request);
-			#endif
+			// Server only, still declared here for simplicity.
+			void queueGeneration(const Terrain::Request& request);
 
 			template<BlockEntityType Type>
 			Engine::ECS::Entity buildBlockEntity(const BlockEntityDesc& data, const ActiveChunkData& activeChunkData) {

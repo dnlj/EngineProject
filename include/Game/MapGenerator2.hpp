@@ -13,6 +13,10 @@
 namespace Game {
 	class MapChunk;
 
+	/**
+	 * Old map generator. No longer used.
+	 * @see Game::Terrain::Generator
+	 */
 	class MapGenerator2 {
 		public:
 			using Float = float32;
