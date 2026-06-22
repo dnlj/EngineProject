@@ -132,6 +132,12 @@ namespace Game {
 			/** The info for chunks */
 			Engine::FlatHashMap<UniversalChunkCoord, ActiveChunkData> activeChunks;
 
+			/** Blocks marked to crumble, in order. */
+			Engine::RingBuffer<UniversalBlockCoord> crumbleBlocks;
+
+			/** Blocks marked to crumble, for quick lookup to avoid duplicates. */
+			Engine::FlatHashSet<UniversalBlockCoord> crumbleBlocksCheck;
+
 			/**
 			 * Server side chunk edits. These can be handled much simpler than client side since we
 			 * don't need prediction and network correction.
@@ -185,9 +191,16 @@ namespace Game {
 		private:
 			// Block connectivity.
 			using BCGroupSize = int32;
-			constexpr static intz bcInvalidGroup = -1;
+			using GroupId = intz;
+			class GroupVisit {
+				public:
+					GroupId id;
+					int32 visitOrder;
+			};
+
+			constexpr static GroupId bcInvalidGroup = -1;
 			std::vector<BCGroupSize> bcGroups;
-			Engine::FlatHashMap<UniversalBlockCoord, intz> bcLookup;
+			Engine::FlatHashMap<UniversalBlockCoord, GroupVisit> bcLookup;
 			std::vector<UniversalBlockCoord> bcQueue;
 
 		private:

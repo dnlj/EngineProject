@@ -257,6 +257,65 @@ namespace Game {
 		// that all edits must be applied on the tick where they are made.
 		checkBlockConnectivity();
 
+		//
+		//
+		// TODO: It appears that if you delete blocks without dragging and there is a single block
+		//       touching your selection, that block is not queued for deletion for some reason. I
+		//       suspect this would be due to how we are checking block connectivity. Do we only
+		//       check cardinal directions maybe?
+		//
+		//
+
+
+		// TODO: always run, just lower tick for slower easier visual debugging.
+		//if (world.getTick() % 4)
+		{
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			// TODO: We should rework this logic to be min+% based so we can't have crazy buildup.
+			//       For example max(10, 20%)
+			// 
+			// TODO: We should also define this in blocks per second instead of a flat number. This
+			//       is called in tick so we need to account for TPS here.
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			constexpr static uint32 maxCrumbles = 20;
+			auto crumbles = std::min(maxCrumbles, crumbleBlocks.size());
+
+			while (crumbles && !crumbleBlocks.empty()) {
+				const auto blockCoord = crumbleBlocks.front();
+				crumbleBlocks.pop();
+				crumbleBlocksCheck.erase(blockCoord);
+
+				// We need to check if the block was actually cleared because the block could have
+				// been manually removed before it crumbled.
+				if (setValueAt(blockCoord, BlockId::Air)) {
+					--crumbles;
+				}
+			}
+		}
+
 		for (auto& ply : world.getFilter<PlayerFilter>()) {
 			const auto& actComp = world.getComponent<ActionComponent>(ply);
 
@@ -324,7 +383,7 @@ namespace Game {
 
 				if (terrain.getChunkMutable(chunkPos).apply(edit.chunk)) {
 					activeChunk.updated = currTick;
-					ENGINE_LOG2("Update from client");
+					//ENGINE_LOG2("Update from client");
 				} else {
 					// We shouldn't have empty edits. These should be prevent when building the edits.
 					// I thinks this could happen if a block when from BlockA > BlockB > BlockA within the same tick?
@@ -414,7 +473,7 @@ namespace Game {
 		ENGINE_NET_READ_TO(buff, BlockUnit, chunkPos.pos.x);
 		ENGINE_NET_READ_TO(buff, BlockUnit, chunkPos.pos.y);
 
-		ENGINE_INFO2("Recv chunk from net: {} {} {}", tick, chunkPos, buff.remaining());
+		//ENGINE_INFO2("Recv chunk from net: {} {} {}", tick, chunkPos, buff.remaining());
 
 		auto const rle = buff.read(buff.remaining());
 		auto found = activeChunks.find(chunkPos);
@@ -818,7 +877,7 @@ namespace Game {
 			// Configure block connectivity.
 			if (!bcLookup.contains(blockCoord)) {
 				bcQueue.push_back(blockCoord);
-				bcLookup[blockCoord] = bcGroups.size();
+				bcLookup[blockCoord].id = bcGroups.size();
 				bcGroups.push_back(0);
 			}
 		};
@@ -872,27 +931,27 @@ namespace Game {
 		//
 		//
 
-		// Search threshold is just for debugging. There is currently no reason to search beyond the
-		// crumble threshold.
-		constexpr static BCGroupSize crumbleThreshold = 100;
-		constexpr static BCGroupSize searchThreshold = 2*crumbleThreshold; // TODO: rm or comment out, this is just for debugging. No reason to search beyond the crumble threshold.
+		// Search threshold is just for debugging. There is currently no reason to search
+		// beyond the crumble threshold.
+		constexpr static BCGroupSize crumbleThreshold = 200;
 		//constexpr static BCGroupSize searchThreshold = crumbleThreshold;
-		
+		constexpr static BCGroupSize searchThreshold = 2*crumbleThreshold; // This is just for debugging. No reason to search beyond the crumble threshold.
+
 		const auto expand = [&](const UniversalBlockCoord blockCoord, intz group) ENGINE_INLINE_REL {
 			// Attempt to expand the group by the given block.
 			const auto found = bcLookup.find(blockCoord);
 			if (found == bcLookup.end()) {
 				ENGINE_DEBUG_ASSERT(!std::ranges::contains(bcQueue, blockCoord), "Attempting to insert duplicate connectivity block.");
 				bcQueue.push_back(blockCoord);
-				bcLookup[blockCoord] = group;
-			} else if (found->second != bcInvalidGroup) {
+				bcLookup[blockCoord].id = group;
+			} else if (found->second.id != bcInvalidGroup) {
 				// Already in a different existing group or marked as inside the edit area.
-				if (found->second != group) {
+				if (found->second.id != group) {
 					// Merge the existing group into the current group.
-					const auto mergeGroup = found->second;
+					const auto mergeGroup = found->second.id;
 					for (auto& [_, existingGroup] : bcLookup) {
-						if (existingGroup == mergeGroup) {
-							existingGroup = group;
+						if (existingGroup.id == mergeGroup) {
+							existingGroup.id = group;
 						}
 					}
 
@@ -902,41 +961,83 @@ namespace Game {
 		};
 
 		// TODO: Could be improved by storing per chunk and then incrementing index to avoid a lot of conversions.
+		int32 lastVisit = 0;
 		for (uintz i = 0; i < bcQueue.size(); ++i) {
 			const auto blockCoord = bcQueue[i];
 			const auto foundGroup = bcLookup.find(blockCoord);
 			ENGINE_DEBUG_ASSERT(foundGroup != bcLookup.end(), "Group missing for queued block connectivity.");
 
 			const auto group = foundGroup->second;
-			if (group == bcInvalidGroup) { continue; }
+			if (group.id == bcInvalidGroup) { continue; }
 
 			const auto chunkCoord = blockCoord.toChunk();
 			const auto& chunk = terrain.getChunk(chunkCoord);
 			const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
 			if (chunk.data[chunkIndex.x][chunkIndex.y] == BlockId::Air) {
-				foundGroup->second = bcInvalidGroup;
+				foundGroup->second.id = bcInvalidGroup;
 				continue;
 			}
 
 			ENGINE_DEBUG_ASSERT(chunk.data[chunkIndex.x][chunkIndex.y] != BlockId::None);
 
-			auto& groupSize = bcGroups[group];
+			// Track the visit order so we can have a visually nice crumble order.
+			foundGroup->second.visitOrder = lastVisit;
+			++lastVisit;
+
+			// Track the group size.
+			auto& groupSize = bcGroups[group.id];
 			++groupSize;
 
-			// TODO: limit group size.
+			// Only if the group is larger than the search threshold there is no reason
+			// to keep searching.
 			if (groupSize < searchThreshold) {
-				expand(blockCoord + BlockVec{-1, 0}, group);
-				expand(blockCoord + BlockVec{+1, 0}, group);
-				expand(blockCoord + BlockVec{0, +1}, group);
-				expand(blockCoord + BlockVec{0, -1}, group);
+				expand(blockCoord + BlockVec{-1, 0}, group.id);
+				expand(blockCoord + BlockVec{+1, 0}, group.id);
+				expand(blockCoord + BlockVec{0, +1}, group.id);
+				expand(blockCoord + BlockVec{0, -1}, group.id);
 			}
 		}
 
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		// TODO: this is wrong, If a group is large enough it doesn't need to crumble, but those
+		//       blocks were assigned a visit id. so this will be inserting blank blockIds, which will be
+		//       the origin block coord...
+		//
+		// Tested and this is a real problem. Need to clean this up a bit.
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		const auto initCrumbleSize = crumbleBlocks.size();
+		crumbleBlocks.resize(initCrumbleSize + lastVisit);
+
 		// At this point we should have all blocks grouped.
 		for (const auto& [blockCoord, group] : bcLookup) {
-			if (group == bcInvalidGroup) { continue; }
-			if (bcGroups[group] > crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug1); }
-			if (bcGroups[group] <= crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug4); }
+			if (group.id == bcInvalidGroup) { continue; }
+
+			if constexpr (ENGINE_DEBUG) {
+				if (bcGroups[group.id] > crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug1); }
+			}
+
+			if (bcGroups[group.id] <= crumbleThreshold) {
+				if (!crumbleBlocksCheck.contains(blockCoord)) {
+					setValueAt(blockCoord, BlockId::Debug4);
+					crumbleBlocks[initCrumbleSize + group.visitOrder] = blockCoord;
+					crumbleBlocksCheck.insert(blockCoord);
+				}
+			}
 
 			if constexpr (ENGINE_DEBUG) {
 				const auto chunkCoord = blockCoord.toChunk();
@@ -946,8 +1047,6 @@ namespace Game {
 				ENGINE_DEBUG_ASSERT(bid != BlockId::None, "Attempting to perform block connectivity on unloaded chunk.");
 			}
 		}
-
-		// TODO: queue the blocks-to-break and do it over time w/ effects, sounds, etc?
 
 		bcGroups.clear();
 		bcLookup.clear();
