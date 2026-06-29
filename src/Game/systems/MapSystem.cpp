@@ -998,32 +998,7 @@ namespace Game {
 			}
 		}
 
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: this is wrong, If a group is large enough it doesn't need to crumble, but those
-		//       blocks were assigned a visit id. so this will be inserting blank blockIds, which will be
-		//       the origin block coord...
-		//
-		// Tested and this is a real problem. Need to clean this up a bit.
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		const auto initCrumbleSize = crumbleBlocks.size();
-		crumbleBlocks.resize(initCrumbleSize + lastVisit);
-
-		// At this point we should have all blocks grouped.
+		// At this point we have all blocks grouped, determine which need to crumble.
 		for (const auto& [blockCoord, group] : bcLookup) {
 			if (group.id == bcInvalidGroup) { continue; }
 
@@ -1033,9 +1008,7 @@ namespace Game {
 
 			if (bcGroups[group.id] <= crumbleThreshold) {
 				if (!crumbleBlocksCheck.contains(blockCoord)) {
-					setValueAt(blockCoord, BlockId::Debug4);
-					crumbleBlocks[initCrumbleSize + group.visitOrder] = blockCoord;
-					crumbleBlocksCheck.insert(blockCoord);
+					crumbleBlockSorting.push_back({.visitOrder = group.visitOrder,.blockCoord = blockCoord});
 				}
 			}
 
@@ -1048,9 +1021,21 @@ namespace Game {
 			}
 		}
 
+		// Maintain visit order for visual effect.
+		std::ranges::sort(crumbleBlockSorting, {}, &CrumbleBlock::visitOrder);
+
+		// Append crumble blocks.
+		for (const auto& [_, blockCoord] : crumbleBlockSorting) {
+			setValueAt(blockCoord, BlockId::Debug4);
+			crumbleBlocks.push(blockCoord);
+			crumbleBlocksCheck.insert(blockCoord);
+		}
+
+		// Clearn temporary buffers.
 		bcGroups.clear();
 		bcLookup.clear();
 		bcQueue.clear();
+		crumbleBlockSorting.clear();
 	}
 
 	bool MapSystem::setValueAt(const UniversalBlockCoord blockCoord, BlockId bid) {

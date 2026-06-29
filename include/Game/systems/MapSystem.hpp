@@ -138,6 +138,15 @@ namespace Game {
 			/** Blocks marked to crumble, for quick lookup to avoid duplicates. */
 			Engine::FlatHashSet<UniversalBlockCoord> crumbleBlocksCheck;
 
+			class CrumbleBlock {
+				public:
+					int32 visitOrder;
+					UniversalBlockCoord blockCoord;
+			};
+
+			/** Temporary crumble block storage to facilitate sorting. */
+			std::vector<CrumbleBlock> crumbleBlockSorting;
+
 			/**
 			 * Server side chunk edits. These can be handled much simpler than client side since we
 			 * don't need prediction and network correction.
