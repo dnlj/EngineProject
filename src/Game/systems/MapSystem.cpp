@@ -259,49 +259,25 @@ namespace Game {
 
 		//
 		//
-		// TODO: It appears that if you delete blocks without dragging and there is a single block
-		//       touching your selection, that block is not queued for deletion for some reason. I
-		//       suspect this would be due to how we are checking block connectivity. Do we only
-		//       check cardinal directions maybe?
+		// TODO: You can get into a situation where you have dangling blocks if they are only
+		//       connected at a diagonal. Not clear why those aren't cleaned up? Probably missed in the
+		//       border detection code? 
+		//       To replicate place a circle down, move your cursor 45deg about half the radius,
+		//       delete, there should be a floating diagonal at the tips of the deleted section now.
+		//       Delete one side of the island and the single floater is left.
+		// 
 		//
 		//
 
-
-		// TODO: always run, just lower tick for slower easier visual debugging.
-		//if (world.getTick() % 4)
 		{
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			// TODO: We should rework this logic to be min+% based so we can't have crazy buildup.
-			//       For example max(10, 20%)
-			// 
-			// TODO: We should also define this in blocks per second instead of a flat number. This
-			//       is called in tick so we need to account for TPS here.
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			//
-			constexpr static uint32 maxCrumbles = 20;
-			auto crumbles = std::min(maxCrumbles, crumbleBlocks.size());
+			// Include a percentage factor so we never fall to far behind if a lot of breaking is happening.
+			constexpr static uint32 crumblesPerSec = 20*64;
+			constexpr static auto crumblesPerTick = crumblesPerSec / tickrate;
+			auto crumbles = std::max(crumblesPerTick, static_cast<uint32>(crumbleBlocks.size() * 0.1));
+
+			if (ENGINE_DEBUG && (crumbles > crumblesPerTick)) {
+				ENGINE_LOG2("Terrain crumbling catchup: {}", crumbles - crumblesPerTick);
+			}
 
 			while (crumbles && !crumbleBlocks.empty()) {
 				const auto blockCoord = crumbleBlocks.front();
@@ -838,19 +814,7 @@ namespace Game {
 	}
 
 	void MapSystem::makeEdit(BlockId bid, const ActionComponent& actComp, const PhysicsBodyComponent& physComp) {
-		//
-		//
-		//
-		//
-		//
-		// TODO: Need to look into how chunks are networked. ATM it produces strange artifacts that
-		//       seem consistent with artifacts when enabled. My guess would be that for some reason
-		//       the server edit and client edit don't match.
-		//
-		//
-		//
-		//
-		//
+		// Skip on client for debugging.
 		//if constexpr (ENGINE_CLIENT) { return; }
 
 		const auto& zoneSys = world.getSystem<ZoneManagementSystem>();
@@ -858,7 +822,7 @@ namespace Game {
 		const auto& zone = zoneSys.getZone(physComp.getZoneId());
 		const auto targetWorldPos = WorldVec{plyPos.x, plyPos.y} + actComp.getTarget();
 		const BlockVec targetBlockPos = worldToBlock(targetWorldPos, zone.offset);
-		constexpr auto radius = blocksPerMeter / 2;
+		constexpr BlockUnit radius = blocksPerMeter / 2;
 
 		// Debug background.
 		if constexpr (false) {
@@ -884,42 +848,49 @@ namespace Game {
 			
 		// This appears to be the fastest way to draw a circle based on: https://stackoverflow.com/a/59211338
 		// Have _not_ done first hand benchmarks with terrain/edit integration.
-		// 
-		// The additional +radius*0.8 to radiusSqr produces a nicer and rounder looking circle
-		// that aligns better with Asprite. Determined experimentally at a variety of radii (odd/even 3-45).
-		const auto radiusSqr = radius*radius + static_cast<decltype(radius)>(radius * 0.8f);
-		for (auto x = -radius; x <= radius; ++x) {
-			const auto halfHeight = static_cast<decltype(x)>(std::sqrt(radiusSqr - x*x));
-			const auto pointX = targetBlockPos.x + x;
-			const auto minY = targetBlockPos.y - halfHeight;
-			const auto maxY = targetBlockPos.y + halfHeight;
-			const auto atEdgeX = (x == -radius) || (x == radius);
-			for (auto pointY = minY; pointY <= maxY; ++pointY) {
-				BlockVec point = {pointX, pointY};
+		//
+		// Drawing the circle in two monotonically increasing halfs makes edge detection easy since
+		// we can use the previous columns min/maxY to check for edges.
+		const auto drawHalf = [&](const auto& initial, const auto& condition, const auto& expression, const auto& offset) ENGINE_INLINE_REL {
+			auto prevMaxY = std::numeric_limits<BlockUnit>::min();
+			auto prevMinY = std::numeric_limits<BlockUnit>::max();
+			for (auto x = initial; condition(x, 0); x = expression(x, 1)) {
+				static_assert(std::is_integral_v<decltype(x)>);
+				static_assert(std::is_integral_v<decltype(radius)>);
+			
+				// The additional +radius*0.8 to radiusSqr produces a nicer and rounder looking circle
+				// that aligns better with Asprite. Determined experimentally at a variety of radii (odd/even 3-45).
+				constexpr auto radiusSqr = radius*radius + static_cast<decltype(radius)>(radius * 0.8f);
+				const auto halfHeight = static_cast<BlockUnit>(std::sqrt(radiusSqr - x*x));
+				const auto pointX = targetBlockPos.x + x;
+				const auto minY = targetBlockPos.y - halfHeight;
+				const auto maxY = targetBlockPos.y + halfHeight;
+				for (auto pointY = minY; pointY <= maxY; ++pointY) {
+					// Only check block connectivity if a change will be made.
+					if (!setValueAt({zone.realmId, {pointX, pointY}}, bid)) { continue; }
 
-				// Only check block connectivity if a change will be made.
-				if (!setValueAt({zone.realmId, point}, bid)) { continue; }
+					// Only check block connectivity if we are removing blocks.
+					if (bid != BlockId::Air) { continue; }
 
-				// Only check block connectivity if we are removing blocks.
-				if (bid != BlockId::Air) { continue; }
+					// Check for block connectivity around the edges of the circle.
+					if ((pointY > prevMaxY) || (pointY < prevMinY)) {
+						queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY}});
+					}
 
-				// Only check for block connectivity around the edges of the circle.
-				const auto atEdgeY = (pointY == minY) || (pointY == maxY);
-				if (!atEdgeX && !atEdgeY) { continue; }
-
-				if (x < 0) {
-					queue({.realmId = zone.realmId, .pos = {pointX - 1, pointY}});
-				} else if (x > 0) {
-					queue({.realmId = zone.realmId, .pos = {pointX + 1, pointY}});
+					if (pointY == maxY) {
+						queue({.realmId = zone.realmId, .pos = {pointX, pointY + 1}});
+					} else if (pointY == minY) {
+						queue({.realmId = zone.realmId, .pos = {pointX, pointY - 1}});
+					}
 				}
 
-				if (pointY < targetBlockPos.y) {
-					queue({.realmId = zone.realmId, .pos = {pointX, pointY - 1}});
-				} else if (pointY > targetBlockPos.y) {
-					queue({.realmId = zone.realmId, .pos = {pointX, pointY + 1}});
-				}
+				prevMaxY = maxY;
+				prevMinY = minY;
 			}
-		}
+		};
+
+		drawHalf(-radius, std::less_equal{}, std::plus{}, std::minus{}); // Left half.
+		drawHalf(radius, std::greater{}, std::minus{}, std::plus{}); // Right half.
 	}
 	
 	void MapSystem::checkBlockConnectivity() {
