@@ -247,6 +247,15 @@ namespace Game {
 		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		const auto currTick = world.getTick();
 
+		//
+		//
+		// TODO: While slow-medium drag-erasing blocks there is some client-side only pop around the
+		//       edges of the erased selection. I suspect this might have to do with the client-side
+		//       prediction, receiving chunk updates, and multiple edits of the same chunk. Investigate.
+		//
+		//
+		//
+
 		// TODO: This will cause a "redundant" chunk update next tick, but we need to be able to
 		//       handle that situation anyways because we want to add a crumble effect instead of deleting
 		//       all blocks at once.
@@ -256,18 +265,6 @@ namespace Game {
 		// end of a tick, which would then be applied next tick, but we introduced a restriction
 		// that all edits must be applied on the tick where they are made.
 		checkBlockConnectivity();
-
-		//
-		//
-		// TODO: You can get into a situation where you have dangling blocks if they are only
-		//       connected at a diagonal. Not clear why those aren't cleaned up? Probably missed in the
-		//       border detection code? 
-		//       To replicate place a circle down, move your cursor 45deg about half the radius,
-		//       delete, there should be a floating diagonal at the tips of the deleted section now.
-		//       Delete one side of the island and the single floater is left.
-		// 
-		//
-		//
 
 		{
 			// Include a percentage factor so we never fall to far behind if a lot of breaking is happening.
@@ -297,7 +294,7 @@ namespace Game {
 
 			if (actComp.getAction(Action::Attack1).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
-				makeEdit(BlockId::Dirt, actComp, physBodyComp);
+				makeEdit(BlockId::Gold, actComp, physBodyComp);
 			}
 			if (actComp.getAction(Action::Attack2).latest) {
 				const auto& physBodyComp = world.getComponent<PhysicsBodyComponent>(ply);
@@ -440,6 +437,7 @@ namespace Game {
 		ENGINE_CLIENT_ONLY(chunksUpdatedFromNet.clear());
 		ENGINE_CLIENT_ONLY(chunksUpdatedFromEdits.clear());
 	}
+
 #if ENGINE_CLIENT
 	void MapSystem::chunkFromNet(const Engine::Net::MessageHeader& head, Engine::Net::BufferReader& buff) {
 		ENGINE_NET_READ(buff, Engine::ECS::Tick, tick);
@@ -822,6 +820,7 @@ namespace Game {
 		const auto& zone = zoneSys.getZone(physComp.getZoneId());
 		const auto targetWorldPos = WorldVec{plyPos.x, plyPos.y} + actComp.getTarget();
 		const BlockVec targetBlockPos = worldToBlock(targetWorldPos, zone.offset);
+		//const BlockVec targetBlockPos = (bid == BlockId::Gold) ? BlockVec{42, 92} : BlockVec{42+9, 92+10};
 		constexpr BlockUnit radius = blocksPerMeter / 2;
 
 		// Debug background.
@@ -837,12 +836,29 @@ namespace Game {
 		ENGINE_DEBUG_ASSERT(bcLookup.empty(), "Expected empty block connectivity lookup.");
 		ENGINE_DEBUG_ASSERT(bcQueue.empty(), "Expected empty block connectivity queue.");
 
-		const auto queue = [&](const UniversalBlockCoord blockCoord) ENGINE_INLINE {
+		//
+		//
+		// TODO: remove debug.
+		//
+		//
+		const auto queue = [&](const UniversalBlockCoord blockCoord, int debug) ENGINE_INLINE_REL {
 			// Configure block connectivity.
+
+			//
+			//
+			// TODO: we should be able to get rid of duplicates with better edge detection?
+			//
+			//
+			//ENGINE_DEBUG_ASSERT(!bcLookup.contains(blockCoord));
+
 			if (!bcLookup.contains(blockCoord)) {
 				bcQueue.push_back(blockCoord);
 				bcLookup[blockCoord].id = bcGroups.size();
 				bcGroups.push_back(0);
+
+				//if (setValueAt(blockCoord, BlockId::Air)) {
+				//	setValueAt(blockCoord, static_cast<BlockId>(+BlockId::Debug1 + debug));
+				//}
 			}
 		};
 			
@@ -857,7 +873,9 @@ namespace Game {
 			for (auto x = initial; condition(x, 0); x = expression(x, 1)) {
 				static_assert(std::is_integral_v<decltype(x)>);
 				static_assert(std::is_integral_v<decltype(radius)>);
-			
+
+				// TODO: this isn't quite circlular for some reason, it is 1px taller than wide.
+
 				// The additional +radius*0.8 to radiusSqr produces a nicer and rounder looking circle
 				// that aligns better with Asprite. Determined experimentally at a variety of radii (odd/even 3-45).
 				constexpr auto radiusSqr = radius*radius + static_cast<decltype(radius)>(radius * 0.8f);
@@ -872,15 +890,27 @@ namespace Game {
 					// Only check block connectivity if we are removing blocks.
 					if (bid != BlockId::Air) { continue; }
 
+					// Queue all possible blocks, for debugging.
+					//for (auto xd = pointX-1; xd <= pointX+1; ++xd) {
+					//	for (auto yd = pointY-1; yd <= pointY+1; ++yd) {
+					//		queue({.realmId = zone.realmId, .pos = {xd, yd}}, 2);
+					//	}
+					//}
+
 					// Check for block connectivity around the edges of the circle.
 					if ((pointY > prevMaxY) || (pointY < prevMinY)) {
-						queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY}});
+						queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY}}, 2);
+						//queue({.realmId = zone.realmId, .pos = {offset(pointX, 2), pointY}}, 2); // TODO: remove if not needed.
 					}
-
+					
 					if (pointY == maxY) {
-						queue({.realmId = zone.realmId, .pos = {pointX, pointY + 1}});
+						queue({.realmId = zone.realmId, .pos = {pointX, pointY + 1}}, 2);
+						//queue({.realmId = zone.realmId, .pos = {pointX, pointY + 2}}, 0);
+						queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY + 1}}, 3); // TODO: remove if not needed.
 					} else if (pointY == minY) {
-						queue({.realmId = zone.realmId, .pos = {pointX, pointY - 1}});
+						queue({.realmId = zone.realmId, .pos = {pointX, pointY - 1}}, 0);
+						//queue({.realmId = zone.realmId, .pos = {pointX, pointY - 2}}, 0);
+						queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY - 1}}, 3); // TODO: remove if not needed.
 					}
 				}
 
@@ -908,7 +938,20 @@ namespace Game {
 		//constexpr static BCGroupSize searchThreshold = crumbleThreshold;
 		constexpr static BCGroupSize searchThreshold = 2*crumbleThreshold; // This is just for debugging. No reason to search beyond the crumble threshold.
 
+		// TODO: Look into various union-find implementations. That is effectively what we are doing
+		//       here. Probably some insight to be gained from that.
 		const auto expand = [&](const UniversalBlockCoord blockCoord, intz group) ENGINE_INLINE_REL {
+			ENGINE_DEBUG_ASSERT(group != bcInvalidGroup);
+
+			// Skip air blocks. We need to avoid air so that we don't merge groups connected by a
+			// single air gap before the air gap has been skipped in the main loop.
+			const auto chunkCoord = blockCoord.toChunk();
+			const auto& chunk = terrain.getChunk(chunkCoord);
+			const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
+			if (chunk.data[chunkIndex.x][chunkIndex.y] == BlockId::Air) {
+				return;
+			}
+			
 			// Attempt to expand the group by the given block.
 			const auto found = bcLookup.find(blockCoord);
 			if (found == bcLookup.end()) {
@@ -926,10 +969,47 @@ namespace Game {
 						}
 					}
 
+					//
+					//
+					//
+					// TODO: the majority of merges are just sz=0(uncounted) or 1. Might be worth
+					//       short circuting the bcLookup loop in the simple case?
+					//
+					//
+					//
+					//
+
+					//
+					//
+					// TODO: We need to update `group`'s size to be `+=bcGroups[mergeGroup]` so the
+					//       total is correct? Untested. Why does it work fine without this? Note
+					//       that the initial size of each group is zero and then incremented in the
+					//       loop below, wonder if that has anything to do with it.
+					//
+					//
+					ENGINE_WARN2("Merge group {} ({}sz) into {}({}sz)", mergeGroup, bcGroups[mergeGroup], group, bcGroups[group]);
+					//ENGINE_DEBUG_ASSERT(bcGroups[mergeGroup] > 0);
+					//bcGroups[group] += bcGroups[mergeGroup];
+
 					bcGroups[mergeGroup] = -1; // TODO: Not needed if we don't use it elsewhere.
 				}
 			}
 		};
+
+		// Avoid air gaps, same reason as in `expand` above. Without skipping air it would be
+		// possible for groups to merge across a one wide air gap.
+		std::erase_if(bcQueue, [&](const UniversalBlockCoord& blockCoord){
+			const auto chunkCoord = blockCoord.toChunk();
+			const auto& chunk = terrain.getChunk(chunkCoord);
+			const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
+			if (chunk.data[chunkIndex.x][chunkIndex.y] == BlockId::Air) {
+				ENGINE_DEBUG_ASSERT(bcLookup.contains(blockCoord));
+				bcLookup.erase(blockCoord);
+				return true;
+			};
+		
+			return false;
+		});
 
 		// TODO: Could be improved by storing per chunk and then incrementing index to avoid a lot of conversions.
 		int32 lastVisit = 0;
@@ -941,15 +1021,13 @@ namespace Game {
 			const auto group = foundGroup->second;
 			if (group.id == bcInvalidGroup) { continue; }
 
-			const auto chunkCoord = blockCoord.toChunk();
-			const auto& chunk = terrain.getChunk(chunkCoord);
-			const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
-			if (chunk.data[chunkIndex.x][chunkIndex.y] == BlockId::Air) {
-				foundGroup->second.id = bcInvalidGroup;
-				continue;
+			if constexpr (ENGINE_DEBUG) {
+				const auto chunkCoord = blockCoord.toChunk();
+				const auto& chunk = terrain.getChunk(chunkCoord);
+				const auto chunkIndex = blockCoord.toChunkIndex(chunkCoord);
+				ENGINE_DEBUG_ASSERT(chunk.data[chunkIndex.x][chunkIndex.y] != BlockId::Air);
+				ENGINE_DEBUG_ASSERT(chunk.data[chunkIndex.x][chunkIndex.y] != BlockId::None);
 			}
-
-			ENGINE_DEBUG_ASSERT(chunk.data[chunkIndex.x][chunkIndex.y] != BlockId::None);
 
 			// Track the visit order so we can have a visually nice crumble order.
 			foundGroup->second.visitOrder = lastVisit;
@@ -959,9 +1037,12 @@ namespace Game {
 			auto& groupSize = bcGroups[group.id];
 			++groupSize;
 
+			ENGINE_DEBUG_ASSERT(groupSize > 0);
+
 			// Only if the group is larger than the search threshold there is no reason
 			// to keep searching.
 			if (groupSize < searchThreshold) {
+				// Note that in expand we check against bcLookup
 				expand(blockCoord + BlockVec{-1, 0}, group.id);
 				expand(blockCoord + BlockVec{+1, 0}, group.id);
 				expand(blockCoord + BlockVec{0, +1}, group.id);
@@ -974,12 +1055,12 @@ namespace Game {
 			if (group.id == bcInvalidGroup) { continue; }
 
 			if constexpr (ENGINE_DEBUG) {
-				if (bcGroups[group.id] > crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug1); }
+				//if (bcGroups[group.id] > crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug1); }
 			}
 
 			if (bcGroups[group.id] <= crumbleThreshold) {
 				if (!crumbleBlocksCheck.contains(blockCoord)) {
-					crumbleBlockSorting.push_back({.visitOrder = group.visitOrder,.blockCoord = blockCoord});
+					crumbleBlockSorting.push_back({.visitOrder = group.visitOrder, .blockCoord = blockCoord});
 				}
 			}
 
@@ -997,9 +1078,15 @@ namespace Game {
 
 		// Append crumble blocks.
 		for (const auto& [_, blockCoord] : crumbleBlockSorting) {
-			setValueAt(blockCoord, BlockId::Debug4);
+			//setValueAt(blockCoord, BlockId::Debug4);
 			crumbleBlocks.push(blockCoord);
 			crumbleBlocksCheck.insert(blockCoord);
+		}
+
+		constexpr UniversalBlockCoord debugCoord = {.realmId = 0, .pos = {36, 106}};
+		if (const auto found = bcLookup.find(debugCoord); found != bcLookup.end()) {
+			const auto& gv = bcLookup[debugCoord];
+			ENGINE_WARN2("Debug; Group = {}, Visit = {}, Size = {}", gv.id, gv.visitOrder, bcGroups[gv.id]);
 		}
 
 		// Clearn temporary buffers.
