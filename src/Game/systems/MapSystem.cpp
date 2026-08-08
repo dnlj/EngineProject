@@ -935,8 +935,8 @@ namespace Game {
 		// Search threshold is just for debugging. There is currently no reason to search
 		// beyond the crumble threshold.
 		constexpr static BCGroupSize crumbleThreshold = 200;
-		//constexpr static BCGroupSize searchThreshold = crumbleThreshold;
-		constexpr static BCGroupSize searchThreshold = 2*crumbleThreshold; // This is just for debugging. No reason to search beyond the crumble threshold.
+		constexpr static BCGroupSize searchThreshold = crumbleThreshold;
+		//constexpr static BCGroupSize searchThreshold = 2*crumbleThreshold; // This is just for debugging. No reason to search beyond the crumble threshold.
 
 		// TODO: Look into various union-find implementations. That is effectively what we are doing
 		//       here. Probably some insight to be gained from that.
@@ -1057,7 +1057,7 @@ namespace Game {
 
 			// Only if the group is larger than the search threshold there is no reason
 			// to keep searching.
-			if (groupSize < searchThreshold) {
+			if (groupSize <= searchThreshold) {
 				// Note that in expand we check against bcLookup
 				expand(blockCoord + BlockVec{-1, 0}, group.id);
 				expand(blockCoord + BlockVec{+1, 0}, group.id);
@@ -1069,10 +1069,6 @@ namespace Game {
 		// At this point we have all blocks grouped, determine which need to crumble.
 		for (const auto& [blockCoord, group] : bcLookup) {
 			if (group.id == bcInvalidGroup) { continue; }
-
-			if constexpr (ENGINE_DEBUG) {
-				//if (bcGroupSizes[group.id] > crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug1); }
-			}
 
 			if (bcGroupSizes[group.id] <= crumbleThreshold) {
 				if (!crumbleBlocksCheck.contains(blockCoord)) {
@@ -1094,12 +1090,11 @@ namespace Game {
 
 		// Append crumble blocks.
 		for (const auto& [_, blockCoord] : crumbleBlockSorting) {
-			//setValueAt(blockCoord, BlockId::Debug4);
 			crumbleBlocks.push(blockCoord);
 			crumbleBlocksCheck.insert(blockCoord);
 		}
 
-		// Clearn temporary buffers.
+		// Clear temporary buffers.
 		bcGroupSizes.clear();
 		bcLookup.clear();
 		bcQueue.clear();
