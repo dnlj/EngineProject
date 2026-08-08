@@ -4,7 +4,7 @@
 		https://gist.github.com/ikrima/1184c75b979cbfa655c0883c0d4ab068
 		https://github.com/martinus/robin-hood-hashing/issues/111
 	-->
-	<Type Name="robin_hood::detail::Table&lt;*&gt;">
+	<Type Name="robin_hood::detail::Table&lt;*,*,*,*,*,*&gt;">
 		<DisplayString>{{ size = { mNumElements } }}</DisplayString>
 		<Expand>
 			<!--<Item Name="[size]">mNumElements</Item>-->

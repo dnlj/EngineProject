@@ -832,7 +832,7 @@ namespace Game {
 			}
 		}
 
-		ENGINE_DEBUG_ASSERT(bcGroups.empty(), "Expected empty block connectivity groups.");
+		ENGINE_DEBUG_ASSERT(bcGroupSizes.empty(), "Expected empty block connectivity groups.");
 		ENGINE_DEBUG_ASSERT(bcLookup.empty(), "Expected empty block connectivity lookup.");
 		ENGINE_DEBUG_ASSERT(bcQueue.empty(), "Expected empty block connectivity queue.");
 
@@ -853,8 +853,8 @@ namespace Game {
 
 			if (!bcLookup.contains(blockCoord)) {
 				bcQueue.push_back(blockCoord);
-				bcLookup[blockCoord].id = bcGroups.size();
-				bcGroups.push_back(0);
+				bcLookup[blockCoord].id = bcGroupSizes.size();
+				bcGroupSizes.push_back(1);
 
 				//if (setValueAt(blockCoord, BlockId::Air)) {
 				//	setValueAt(blockCoord, static_cast<BlockId>(+BlockId::Debug1 + debug));
@@ -940,7 +940,7 @@ namespace Game {
 
 		// TODO: Look into various union-find implementations. That is effectively what we are doing
 		//       here. Probably some insight to be gained from that.
-		const auto expand = [&](const UniversalBlockCoord blockCoord, intz group) ENGINE_INLINE_REL {
+		const auto expand = [&](const UniversalBlockCoord blockCoord, const intz group) ENGINE_INLINE_REL {
 			ENGINE_DEBUG_ASSERT(group != bcInvalidGroup);
 
 			// Skip air blocks. We need to avoid air so that we don't merge groups connected by a
@@ -951,6 +951,13 @@ namespace Game {
 			if (chunk.data[chunkIndex.x][chunkIndex.y] == BlockId::Air) {
 				return;
 			}
+
+			// Sanity check: No blocks are assigned to already-merged groups.
+			ENGINE_DEBUG_ONLY({
+				for (const auto& [_, debugGroup] : bcLookup) {
+					ENGINE_DEBUG_ASSERT(bcGroupSizes[debugGroup.id] != bcInvalidGroup);
+				}
+			});
 			
 			// Attempt to expand the group by the given block.
 			const auto found = bcLookup.find(blockCoord);
@@ -958,40 +965,42 @@ namespace Game {
 				ENGINE_DEBUG_ASSERT(!std::ranges::contains(bcQueue, blockCoord), "Attempting to insert duplicate connectivity block.");
 				bcQueue.push_back(blockCoord);
 				bcLookup[blockCoord].id = group;
+				++bcGroupSizes[group];
 			} else if (found->second.id != bcInvalidGroup) {
 				// Already in a different existing group or marked as inside the edit area.
 				if (found->second.id != group) {
-					// Merge the existing group into the current group.
 					const auto mergeGroup = found->second.id;
-					for (auto& [_, existingGroup] : bcLookup) {
-						if (existingGroup.id == mergeGroup) {
-							existingGroup.id = group;
+					auto& mergeGroupSize = bcGroupSizes[mergeGroup];
+
+					//ENGINE_WARN2("Merge group {} ({}sz) into {}({}sz)", mergeGroup, mergeGroupSize, group, bcGroupSizes[group]);
+					ENGINE_DEBUG_ASSERT(mergeGroupSize > 0);
+
+					// Merge the existing group into the current group.
+					if (mergeGroupSize == 1) {
+						// If there is only one block in the group (size == 1), we can update lookup
+						// directly instead of looping over all entries. This is worth
+						// special-casing for since it is by _far_ the most common case.
+						found->second.id = group;
+					
+						// Sanity check: If size is 1 there should only be a single block
+						// (blockCoord) assigned to that group. Leave commented out unless in use
+						// for perf reasons.
+						// 
+						//ENGINE_DEBUG_ONLY({
+						//	for (const auto& [_, debugGroup] : bcLookup) {
+						//		ENGINE_DEBUG_ASSERT(debugGroup.id != mergeGroup);
+						//	}
+						//});
+					} else {
+						for (auto& [_, existingGroup] : bcLookup) {
+							if (existingGroup.id == mergeGroup) {
+								existingGroup.id = group;
+							}
 						}
 					}
 
-					//
-					//
-					//
-					// TODO: the majority of merges are just sz=0(uncounted) or 1. Might be worth
-					//       short circuting the bcLookup loop in the simple case?
-					//
-					//
-					//
-					//
-
-					//
-					//
-					// TODO: We need to update `group`'s size to be `+=bcGroups[mergeGroup]` so the
-					//       total is correct? Untested. Why does it work fine without this? Note
-					//       that the initial size of each group is zero and then incremented in the
-					//       loop below, wonder if that has anything to do with it.
-					//
-					//
-					ENGINE_WARN2("Merge group {} ({}sz) into {}({}sz)", mergeGroup, bcGroups[mergeGroup], group, bcGroups[group]);
-					//ENGINE_DEBUG_ASSERT(bcGroups[mergeGroup] > 0);
-					//bcGroups[group] += bcGroups[mergeGroup];
-
-					bcGroups[mergeGroup] = -1; // TODO: Not needed if we don't use it elsewhere.
+					bcGroupSizes[group] += mergeGroupSize;
+					mergeGroupSize = bcInvalidGroup;
 				}
 			}
 		};
@@ -1009,6 +1018,15 @@ namespace Game {
 			};
 		
 			return false;
+		});
+
+		// Sanity check: Lookups are setup correctly with unique groups.
+		ENGINE_DEBUG_ONLY({
+			Engine::FlatHashSet<GroupId> found;
+			for (const auto& [blockCoord, group] : bcLookup) {
+				ENGINE_DEBUG_ASSERT(!found.contains(group.id));
+				found.emplace(group.id);
+			}
 		});
 
 		// TODO: Could be improved by storing per chunk and then incrementing index to avoid a lot of conversions.
@@ -1034,9 +1052,7 @@ namespace Game {
 			++lastVisit;
 
 			// Track the group size.
-			auto& groupSize = bcGroups[group.id];
-			++groupSize;
-
+			auto const& groupSize = bcGroupSizes[group.id];
 			ENGINE_DEBUG_ASSERT(groupSize > 0);
 
 			// Only if the group is larger than the search threshold there is no reason
@@ -1055,10 +1071,10 @@ namespace Game {
 			if (group.id == bcInvalidGroup) { continue; }
 
 			if constexpr (ENGINE_DEBUG) {
-				//if (bcGroups[group.id] > crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug1); }
+				//if (bcGroupSizes[group.id] > crumbleThreshold) { setValueAt(blockCoord, BlockId::Debug1); }
 			}
 
-			if (bcGroups[group.id] <= crumbleThreshold) {
+			if (bcGroupSizes[group.id] <= crumbleThreshold) {
 				if (!crumbleBlocksCheck.contains(blockCoord)) {
 					crumbleBlockSorting.push_back({.visitOrder = group.visitOrder, .blockCoord = blockCoord});
 				}
@@ -1083,14 +1099,8 @@ namespace Game {
 			crumbleBlocksCheck.insert(blockCoord);
 		}
 
-		constexpr UniversalBlockCoord debugCoord = {.realmId = 0, .pos = {36, 106}};
-		if (const auto found = bcLookup.find(debugCoord); found != bcLookup.end()) {
-			const auto& gv = bcLookup[debugCoord];
-			ENGINE_WARN2("Debug; Group = {}, Visit = {}, Size = {}", gv.id, gv.visitOrder, bcGroups[gv.id]);
-		}
-
 		// Clearn temporary buffers.
-		bcGroups.clear();
+		bcGroupSizes.clear();
 		bcLookup.clear();
 		bcQueue.clear();
 		crumbleBlockSorting.clear();

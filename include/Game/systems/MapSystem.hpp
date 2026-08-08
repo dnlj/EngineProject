@@ -208,7 +208,7 @@ namespace Game {
 			};
 
 			constexpr static GroupId bcInvalidGroup = -1;
-			std::vector<BCGroupSize> bcGroups; // Size of each group. -1 = has been merged.
+			std::vector<BCGroupSize> bcGroupSizes; // Size of each group. -1 = has been merged.
 			Engine::FlatHashMap<UniversalBlockCoord, GroupVisit> bcLookup; // If we have visted a block yet, and in what order.
 			std::vector<UniversalBlockCoord> bcQueue; // Queue of blocks to check.
 
