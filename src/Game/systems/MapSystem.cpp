@@ -836,29 +836,12 @@ namespace Game {
 		ENGINE_DEBUG_ASSERT(bcLookup.empty(), "Expected empty block connectivity lookup.");
 		ENGINE_DEBUG_ASSERT(bcQueue.empty(), "Expected empty block connectivity queue.");
 
-		//
-		//
-		// TODO: remove debug.
-		//
-		//
-		const auto queue = [&](const UniversalBlockCoord blockCoord, int debug) ENGINE_INLINE_REL {
+		const auto queue = [&](const UniversalBlockCoord blockCoord) ENGINE_INLINE_REL {
 			// Configure block connectivity.
-
-			//
-			//
-			// TODO: we should be able to get rid of duplicates with better edge detection?
-			//
-			//
-			//ENGINE_DEBUG_ASSERT(!bcLookup.contains(blockCoord));
-
 			if (!bcLookup.contains(blockCoord)) {
 				bcQueue.push_back(blockCoord);
 				bcLookup[blockCoord].id = bcGroupSizes.size();
 				bcGroupSizes.push_back(1);
-
-				//if (setValueAt(blockCoord, BlockId::Air)) {
-				//	setValueAt(blockCoord, static_cast<BlockId>(+BlockId::Debug1 + debug));
-				//}
 			}
 		};
 			
@@ -874,8 +857,6 @@ namespace Game {
 				static_assert(std::is_integral_v<decltype(x)>);
 				static_assert(std::is_integral_v<decltype(radius)>);
 
-				// TODO: this isn't quite circlular for some reason, it is 1px taller than wide.
-
 				// The additional +radius*0.8 to radiusSqr produces a nicer and rounder looking circle
 				// that aligns better with Asprite. Determined experimentally at a variety of radii (odd/even 3-45).
 				constexpr auto radiusSqr = radius*radius + static_cast<decltype(radius)>(radius * 0.8f);
@@ -890,27 +871,28 @@ namespace Game {
 					// Only check block connectivity if we are removing blocks.
 					if (bid != BlockId::Air) { continue; }
 
-					// Queue all possible blocks, for debugging.
-					//for (auto xd = pointX-1; xd <= pointX+1; ++xd) {
-					//	for (auto yd = pointY-1; yd <= pointY+1; ++yd) {
-					//		queue({.realmId = zone.realmId, .pos = {xd, yd}}, 2);
-					//	}
-					//}
+					// Diagonals shouldn't be needed since fixing a number crumble block
+					// connectivity bugs. Keeping for reference and debugging in the future since
+					// this code isn't the easiest to wrap your head around.
 
 					// Check for block connectivity around the edges of the circle.
 					if ((pointY > prevMaxY) || (pointY < prevMinY)) {
-						queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY}}, 2);
-						//queue({.realmId = zone.realmId, .pos = {offset(pointX, 2), pointY}}, 2); // TODO: remove if not needed.
+						// Fill vertical edges. Left/Right.
+						queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY}});
 					}
 					
 					if (pointY == maxY) {
-						queue({.realmId = zone.realmId, .pos = {pointX, pointY + 1}}, 2);
-						//queue({.realmId = zone.realmId, .pos = {pointX, pointY + 2}}, 0);
-						queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY + 1}}, 3); // TODO: remove if not needed.
+						// Fill horizontal edge. Top.
+						queue({.realmId = zone.realmId, .pos = {pointX, pointY + 1}});
+						
+						// Fill in diagonals.
+						//queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY + 1}});
 					} else if (pointY == minY) {
-						queue({.realmId = zone.realmId, .pos = {pointX, pointY - 1}}, 0);
-						//queue({.realmId = zone.realmId, .pos = {pointX, pointY - 2}}, 0);
-						queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY - 1}}, 3); // TODO: remove if not needed.
+						// Fill horizontal edge. Bottom.
+						queue({.realmId = zone.realmId, .pos = {pointX, pointY - 1}});
+
+						// Fill in diagonals.
+						//queue({.realmId = zone.realmId, .pos = {offset(pointX, 1), pointY - 1}});
 					}
 				}
 
