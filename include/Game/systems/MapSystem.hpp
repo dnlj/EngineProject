@@ -53,11 +53,7 @@
 //           - Last used - Needed for unloading. Does this go on the chunk? region? Map or Terrain?
 //             - I'm thinking probably the region level. That's how we save them so I think that makes sense.
 //             - Is this part of the map or terrain system? Idk.
-//       [ ] Threading terrain generation
-//           - We need a join between each stage since each stage can depend on the last.
-//           - Although, we only need that join per request. Assuming no two requests overlap
-//             we can still have one main thread for each request and each of those main threads
-//             can fork and join per chunk.
+//       [x] Threading terrain generation
 //       [ ] Threading active chunk data generation.
 //       [x] Unload terrain/regions.
 //       [x] Apply edits.
@@ -71,19 +67,19 @@
 
 namespace Game {
 	class MapSystem : public System {
+		private:
+			class MapChunkSnapshot {
+				public:
+					Engine::ECS::Tick tick;
+					MapChunk chunk;
+			};
+
 		public:
 			struct Vertex {
 				glm::vec2 pos;
 				GLfloat tex;
 			};
 			static_assert(sizeof(Vertex) == 3*sizeof(GLfloat), "Unexpected vertex size.");
-
-			// TODO: private
-			class MapChunkSnapshot { // TODO: move
-				public:
-					Engine::ECS::Tick tick;
-					MapChunk chunk;
-			};
 
 			class ActiveChunkData {
 				public:
@@ -161,10 +157,6 @@ namespace Game {
 
 			/** Used for sending full RLE chunk updates */
 			std::vector<byte> rleTemp;
-
-			// TODO: C++20: use atomic_flag since it now has a `test` member function.
-			std::atomic<bool> threadsShouldExit = false;
-			static_assert(decltype(threadsShouldExit)::is_always_lock_free);
 
 			Engine::ECS::Entity mapEntity;
 			std::vector<Vertex> buildVBOData;

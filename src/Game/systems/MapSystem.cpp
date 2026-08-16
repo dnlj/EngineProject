@@ -246,16 +246,7 @@ namespace Game {
 
 		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		const auto currTick = world.getTick();
-
-		//
-		//
-		// TODO: While slow-medium drag-erasing blocks there is some client-side only pop around the
-		//       edges of the erased selection. I suspect this might have to do with the client-side
-		//       prediction, receiving chunk updates, and multiple edits of the same chunk. Investigate.
-		//
-		//
-		//
-
+		
 		// TODO: This will cause a "redundant" chunk update next tick, but we need to be able to
 		//       handle that situation anyways because we want to add a crumble effect instead of deleting
 		//       all blocks at once.
@@ -477,28 +468,14 @@ namespace Game {
 		const auto terrainLock = terrain.lock(); // TODO: reevaluate/narrow scope if possible.
 		auto timeout = world.getTickTime() - std::chrono::seconds{10}; // TODO: how long? 30s?
 
-		//
-		//
-		//
-		//
-		//
-		//
-		// TODO: when unloading a chunk, reset the data to the last confirmed data if there are still pending edits.
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-
 		// TODO: Shouldn't this unload logic be in tick instead of update?
 		// Unload active chunks
 		auto& zoneSys = world.getSystem<ZoneManagementSystem>();
 		for (auto it = activeChunks.begin(); it != activeChunks.end();) {
 			if (it->second.lastUsed < timeout) {
 				// ENGINE_LOG2("Unloading chunk: realm={}, chunkCoord={}", it->first.realmId, it->first.pos);
+
+				// TODO: When unloading a chunk, reset the data to the last confirmed data if there are still pending edits.
 
 				// Store block entities
 				if constexpr (ENGINE_SERVER) {
@@ -820,7 +797,6 @@ namespace Game {
 		const auto& zone = zoneSys.getZone(physComp.getZoneId());
 		const auto targetWorldPos = WorldVec{plyPos.x, plyPos.y} + actComp.getTarget();
 		const BlockVec targetBlockPos = worldToBlock(targetWorldPos, zone.offset);
-		//const BlockVec targetBlockPos = (bid == BlockId::Gold) ? BlockVec{42, 92} : BlockVec{42+9, 92+10};
 		constexpr BlockUnit radius = blocksPerMeter / 2;
 
 		// Debug background.
@@ -906,22 +882,16 @@ namespace Game {
 	}
 	
 	void MapSystem::checkBlockConnectivity() {
-		//
-		//
-		//
 		// TODO: Track group bounding box for approx spike detection.
-		//
-		//
-		//
-
+		// TODO: Look into various union-find implementations. That is effectively what we are doing
+		//       here. Probably some insight to be gained from that.
+		
 		// Search threshold is just for debugging. There is currently no reason to search
 		// beyond the crumble threshold.
 		constexpr static BCGroupSize crumbleThreshold = 200;
 		constexpr static BCGroupSize searchThreshold = crumbleThreshold;
 		//constexpr static BCGroupSize searchThreshold = 2*crumbleThreshold; // This is just for debugging. No reason to search beyond the crumble threshold.
 
-		// TODO: Look into various union-find implementations. That is effectively what we are doing
-		//       here. Probably some insight to be gained from that.
 		const auto expand = [&](const UniversalBlockCoord blockCoord, const intz group) ENGINE_INLINE_REL {
 			ENGINE_DEBUG_ASSERT(group != bcInvalidGroup);
 
