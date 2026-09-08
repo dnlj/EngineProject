@@ -6,6 +6,7 @@ namespace Game {
 	class UniversalChunkSpanX;
 	class UniversalBlockCoord;
 	class UniversalBlockCoordX;
+	class UniversalBlockArea;
 
 	class UniversalRegionCoordX {
 		public:
@@ -107,7 +108,16 @@ namespace Game {
 			ChunkVec min;
 			ChunkVec max; // Exclusive
 
-			ENGINE_INLINE constexpr UniversalRegionArea toRegionArea() const noexcept { return {realmId, chunkToRegion(min), chunkToRegionExclude(max)}; }
+
+			ENGINE_INLINE constexpr static UniversalChunkArea fromChunkCoord(UniversalChunkCoord chunkCoord) {
+				return {chunkCoord.realmId, chunkCoord.pos, chunkCoord.pos + ChunkUnit{1}};
+			}
+
+			ENGINE_INLINE constexpr UniversalRegionArea toRegionArea() const noexcept {
+				return {realmId, chunkToRegion(min), chunkToRegionExclude(max)};
+			}
+
+			ENGINE_INLINE constexpr UniversalBlockArea toBlockArea() const noexcept;
 
 			ENGINE_INLINE void forEach(auto&& func) const noexcept {
 				for (RegionUnit x = min.x; x < max.x; ++x) {
@@ -155,6 +165,11 @@ namespace Game {
 			}
 	};
 	
+	ENGINE_INLINE constexpr UniversalBlockArea UniversalChunkArea::toBlockArea() const noexcept {
+		const auto blockMin = chunkToBlock(min);
+		return {realmId, blockMin, blockMin + chunkSize};
+	}
+
 	ENGINE_INLINE constexpr UniversalBlockCoord UniversalChunkCoord::toBlock() const noexcept { return {realmId, chunkToBlock(pos)}; }
 	ENGINE_INLINE constexpr UniversalBlockCoordX UniversalChunkCoordX::toBlock() const noexcept { return {realmId, chunkToBlock({pos, 0}).x}; }
 	ENGINE_INLINE constexpr UniversalChunkCoord UniversalRegionCoord::toChunk() const noexcept { return {realmId, regionToChunk(pos)}; }

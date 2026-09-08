@@ -23,6 +23,18 @@
 // TODO: make all cache/store types uncopyable. These should be accessed by ref.
 // TODO: split out
 namespace Game::Terrain {
+
+	// TODO: There are some improvements we could make to the request structure.
+	//
+	//       For example, in many places we have something like:
+	//         Range<Chunk>.forEach([](chunk){ ... chunk.toRegion() ... })
+	//         Where we have chunk coords but want region coords, so we do a conversion for each chunk. If
+	//         we know ranges are continuous, which I am not sure is true any more (need to check
+	//         generator), then we could just convert for first and last chunk instead of all of them.
+	//      
+	//       Extending that, again assuming chunks are continuous, we could probably just do a single
+	//       request type that tracks min/max block/chunk/region so we don't need to repeate conversions
+	//       at different layers. There are many cases where through dependencies we do multiple of the same conversion.
 	template<class T>
 	class Range {
 		public:
@@ -67,10 +79,21 @@ namespace Game::Terrain {
 
 	enum class ChunkStage : uint8 {
 		Uninitialized = 0,
-		TerrainComplete,
-		StructuresComplete,
 
-		Done = StructuresComplete,
+		// The full terrain has been generated, but no structures have been generated yet.
+		TerrainComplete,
+
+		// Structures originating in this chunk are complete. Other structures may still overlap
+		// into this chunk from TerrainComplete neighbors when they generate structures.
+		// Neighbor chunks up to maxStructureExtent potentially effect this chunk during structure
+		// generation.
+		LocalStructuresComplete,
+
+		// All structures that could effect this chunk have been generated. Both local
+		// and non-local.
+		AllStructuresComplete,
+
+		Done = AllStructuresComplete,
 	};
 
 	// TODO: getters with debug bounds checking.

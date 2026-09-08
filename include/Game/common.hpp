@@ -71,6 +71,10 @@ namespace Game::inline Units {
 	 */
 	using BlockUnit = int64;
 	using BlockVec = glm::vec<2, BlockUnit>;
+	struct BlockArea {
+		BlockVec min;
+		BlockVec max; // Exclusive.
+	};
 
 	using ChunkUnit = BlockUnit;
 	using ChunkVec = glm::vec<2, ChunkUnit>;

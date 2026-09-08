@@ -7,6 +7,8 @@
 namespace Game::Terrain {
 	class StructureInfo {
 		public:
+			// TODO: Update to use blockArea instead of manual min/max.
+
 			/** Structure min bounds. Inclusive. */
 			BlockVec min;
 

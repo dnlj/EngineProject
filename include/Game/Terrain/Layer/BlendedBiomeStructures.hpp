@@ -10,6 +10,21 @@
 #include <Game/Terrain/Layer/OnDemandLayer.hpp>
 
 namespace Game::Terrain::Layer {
+
+	/**
+	 * Pre layer to evaluate biome info an request the needed chunks.
+	 */
+	class BlendedBiomeStructuresEvaluator : public OnDemandLayer, public DependsOn<> {
+		public:
+			using Partition = UniversalChunkCoord;
+			using Index = Partition;
+
+		public:
+			using OnDemandLayer::OnDemandLayer;
+
+			void request(const Range<Partition>& chunkCoords, TestGenerator& generator);
+	};
+
 	class BlendedBiomeStructures : public OnDemandLayer, public DependsOn<> {
 		public:
 			using Partition = UniversalChunkCoord;

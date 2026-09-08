@@ -17,7 +17,7 @@ namespace Game::Terrain::Layer {
 				, biomePerm{Engine::Noise::lcg(1234)}
 			{}
 
-			void request(const Range<Partition>& chunkCoords, TestGenerator& generator);
+			void request(const Range<Partition>& chunkCoords, TestGenerator& generator) { /* No dependencies. */ };
 			[[nodiscard]] RawBiomeInfo get(const Index blockCoord) const noexcept;
 
 		private:

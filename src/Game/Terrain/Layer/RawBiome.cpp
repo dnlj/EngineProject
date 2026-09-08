@@ -5,10 +5,6 @@
 
 
 namespace Game::Terrain::Layer {
-	void RawBiome::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
-		// No dependencies.
-	}
-
 	//void RawBiome::generate(const Partition chunkCoord, TestGenerator& generator) {
 	//	// TODO: add some kind of empty debug verifier to ensure all get calls are in range of area.
 	//

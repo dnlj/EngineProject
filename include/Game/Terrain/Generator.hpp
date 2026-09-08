@@ -88,6 +88,7 @@ namespace Game::Terrain {
 			Engine::Clock::Duration cacheTargetTimeout{};
 			Engine::FlatHashSet<Layer::BlendedBiomeBlock::Partition> totalBlendedBiomeBlockRequests;
 			Engine::FlatHashSet<Layer::BlendedBiomeStructures::Partition> totalBlendedBiomeStructuresRequests;
+			Engine::FlatHashSet<Layer::BlendedBiomeStructuresEvaluator::Partition> totalBlendedBiomeStructuresEvaluatorRequests;
 
 			// TODO: add a lock-and-swap vector?
 			std::vector<Request> genRequestsFront;
@@ -191,10 +192,14 @@ namespace Game::Terrain {
 
 			template<class Layer>
 			ENGINE_INLINE_REL void request(typename const Layer::Partition partition) {
-				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- request<{}> range = {}\n", Engine::Debug::ClassName<Layer>(), range);
+				//ENGINE_DEBUG_PRINT_SCOPE("Generator::Layers", "- request<{}> partition = {}\n", Engine::Debug::ClassName<Layer>(), partition);
 
 				// Ensure correct layer order.
 				ENGINE_DEBUG_ASSERT(layerId<Layer>() < currentLayer, "Incorrect layer request order.");
+
+				// TODO: processRequests<Layer> ignores requests for layers without a
+				//       Layer::request, with that can't we just discard them here instead of storing them
+				//       for no reason? We keep the calls just for the debug prints above reasons.
 
 				// We can cut out a lot of duplicate requests by checking the last inserted
 				// requests. This tends to come up a lot due to upcasting from block > chunk >
@@ -410,6 +415,11 @@ namespace Game::Terrain {
 				if (layerId<Layer::BlendedBiomeStructures>() >= currentLayer) {
 					auto& range = requests<Layer::BlendedBiomeStructures>().range;
 					totalBlendedBiomeStructuresRequests.insert(range.begin(), range.end());
+				}
+
+				if (layerId<Layer::BlendedBiomeStructuresEvaluator>() >= currentLayer) {
+					auto& range = requests<Layer::BlendedBiomeStructuresEvaluator>().range;
+					totalBlendedBiomeStructuresEvaluatorRequests.insert(range.begin(), range.end());
 				}
 
 				Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {

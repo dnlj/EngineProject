@@ -10,6 +10,10 @@
 namespace Game::Terrain::Layer {
 	void BlendedBiomeStructureInfo::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
 		generator.request<BlendedBiomeWeights>(chunkCoords);
+		
+		chunkCoords.forEach([&](const Partition& chunkCoord) {
+			generator.request<BlendedBiomeHeight>(chunkCoord.toRegion().toX());
+		});
 	}
 
 	void BlendedBiomeStructureInfo::get(const TestGenerator& generator, const Index chunkCoord, std::vector<StructureInfo>& structures) const noexcept {

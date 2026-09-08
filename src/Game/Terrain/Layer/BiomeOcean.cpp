@@ -36,7 +36,6 @@ namespace Game::Terrain::Layer {
 	}
 
 	void BiomeOceanStructure::get(BIOME_STRUCTURE_ARGS) const noexcept {
-		const UniversalChunkCoord chunkCoord = { .realmId = realmId, .pos = blockToChunk(info.min) };
 		auto& chunk = terrain.getChunkMutable(chunkCoord);
 		const auto chunkIdx = blockToChunkIndex(info.min, chunkCoord.pos);
 		chunk.data[chunkIdx.x][chunkIdx.y] = BlockId::Entity;

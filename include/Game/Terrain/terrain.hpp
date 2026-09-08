@@ -55,7 +55,7 @@
 #define BIOME_STRUCTURE_ARGS \
 	const TestGenerator& generator, \
 	::Game::Terrain::Terrain& terrain, \
-	::Game::RealmId realmId, \
+	const ::Game::UniversalChunkCoord& chunkCoord, \
 	const ::Game::Terrain::StructureInfo& info
 
 

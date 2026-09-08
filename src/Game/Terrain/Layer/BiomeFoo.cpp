@@ -171,27 +171,34 @@ namespace Game::Terrain::Layer {
 		//       for region in splitRegions:
 		//           for chunk in splitRegionChunks:
 		//               applyEdit(chunk, editsForChunk(chunk));
-		for (UniversalBlockCoord blockCoord = {realmId, info.min}; blockCoord.pos.x < info.max.x; ++blockCoord.pos.x) {
+
+		for (UniversalBlockCoord blockCoord = {chunkCoord.realmId, info.min}; blockCoord.pos.x < info.max.x; ++blockCoord.pos.x) {
 			for (blockCoord.pos.y = info.min.y; blockCoord.pos.y < info.max.y; ++blockCoord.pos.y) {
-				const UniversalChunkCoord chunkCoord = blockCoord.toChunk();
-				const UniversalRegionCoord regionCoord = chunkCoord.toRegion();
+
+				const UniversalChunkCoord chunkCoord2 = blockCoord.toChunk();
+				const UniversalRegionCoord regionCoord = chunkCoord2.toRegion();
 				auto& region = terrain.getRegion(regionCoord);
-				const auto regionIdx = chunkCoord.toRegionIndex(regionCoord);
+				const auto regionIdx = chunkCoord2.toRegionIndex(regionCoord);
 				auto& chunk = region.chunks[regionIdx.x][regionIdx.y];
-				const auto chunkIdx = blockCoord.toChunkIndex(chunkCoord);
+				const auto chunkIdx = blockCoord.toChunkIndex(chunkCoord2);
 				ENGINE_DEBUG_ASSERT(chunkIdx.x >= 0 && chunkIdx.x < chunkSize.x);
 				ENGINE_DEBUG_ASSERT(chunkIdx.y >= 0 && chunkIdx.y < chunkSize.y);
-				ENGINE_DEBUG_ASSERT(region.getChunkStage(regionIdx) == ChunkStage::TerrainComplete);
+
+				// We need >= here since some neighbor chunks may already be
+				// ChunkStage::LocalStructuresComplete if a structure can span multiple chunks. See
+				// ChunkStage for more details on ChunkStage::LocalStructuresComplete.
+				const auto stage = region.getChunkStage(regionIdx);
+				ENGINE_DEBUG_ASSERT(stage >= ChunkStage::TerrainComplete);
+				ENGINE_DEBUG_ASSERT(stage <= ChunkStage::LocalStructuresComplete);
 
 				chunk.data[chunkIdx.x][chunkIdx.y] = BlockId::Gold;
 			}
 		}
 
 		if (info.id == 0) {
-			const auto chunkCoord = blockToChunk(info.min);
-			const UniversalRegionCoord regionCoord = {realmId, chunkToRegion(chunkCoord)};
+			const auto regionCoord = chunkCoord.toRegion();
 			auto& region = terrain.getRegion(regionCoord);
-			const auto regionIdx = chunkToRegionIndex(chunkCoord);
+			const auto regionIdx = chunkCoord.toRegionIndex(regionCoord);
 			auto& ents = region.entitiesAt(regionIdx);
 			auto& ent = ents.emplace_back();
 			ent.pos = info.min; // TODO: center

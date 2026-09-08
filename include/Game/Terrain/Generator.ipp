@@ -65,6 +65,7 @@ namespace Game::Terrain {
 			const auto timeout = Engine::Math::lerp(cacheTargetTimeout, Engine::Clock::Duration{0}, std::min(1.0, t));
 			const auto minAge = curSeq - static_cast<SeqNum>(timeout.count());
 
+			//ENGINE_LOG2("Cleaning caches");
 			Engine::forEach(layers, [&]<class Layer>(Layer& layer) ENGINE_INLINE_REL {
 				layer.clearCache(minAge);
 			});
@@ -119,7 +120,14 @@ namespace Game::Terrain {
 					//       every system does those conversions.
 					if (!terrain.isChunkLoaded(chunkCoord)) {
 						this->request<Layer::BlendedBiomeBlock>(chunkCoord);
+						this->request<Layer::BlendedBiomeStructuresEvaluator>(chunkCoord);
+
+						// We need the call to structures directly since the evaluator only calls it
+						// if there are structures to generate. Without this chunks that don't have
+						// structures will not be moved from TerrainComplete to
+						// LocalStructuresComplete. This is a hack that should be refactored at some point.
 						this->request<Layer::BlendedBiomeStructures>(chunkCoord);
+
 					}
 				});
 			}
@@ -171,45 +179,51 @@ namespace Game::Terrain {
 			// boundaries may end up cut off. Which ones are cut off depends on the generation order.
 			for (const auto& chunkCoord : totalBlendedBiomeBlockRequests) {
 				const auto regionCoord = chunkCoord.toRegion();
-				auto& region = terrain.getRegion(regionCoord);
 				const auto regionIdx = chunkCoord.toRegionIndex(regionCoord);
+				auto& region = terrain.getRegion(regionCoord);
 				auto& chunkStage = region.populated[regionIdx.x][regionIdx.y];
 
 				if (chunkStage == ChunkStage::Uninitialized) {
 					region.chunkAt(regionIdx) = layerBlendedBiomeBlock.get(chunkCoord);
 					chunkStage = ChunkStage::TerrainComplete;
+					//ENGINE_LOG2("ChunkStage::TerrainComplete {} for {}", curSeq, chunkCoord);
 				}
 			}
 
 			// Copy the structure data to the terrain.
 			for (const auto& chunkCoord : totalBlendedBiomeStructuresRequests) {
-				const auto regionCoord = chunkToRegion(chunkCoord.pos);
-				const auto& region = terrain.getRegion({chunkCoord.realmId, regionCoord});
-				const auto regionIdx = chunkToRegionIndex(chunkCoord.pos, regionCoord);
-				const auto chunkStage = region.populated[regionIdx.x][regionIdx.y];
-
-				if (chunkStage == ChunkStage::TerrainComplete) {
-					layerBlendedBiomeStructures.get(chunkCoord, self(), terrain);
-				}
-			}
-
-			// Mark the chunks as structure complete. This must be done in a second loop since there
-			// can be multiple structures per chunk and as such marking it in the above loop would
-			// involve modifying and already StructuresComplete chunk.
-			for (const auto& chunkCoord : totalBlendedBiomeStructuresRequests) {
-				const auto regionCoord = chunkToRegion(chunkCoord.pos);
-				auto& region = terrain.getRegion({chunkCoord.realmId, regionCoord});
-				const auto regionIdx = chunkToRegionIndex(chunkCoord.pos, regionCoord);
+				const auto regionCoord = chunkCoord.toRegion();
+				const auto regionIdx = chunkCoord.toRegionIndex(regionCoord);
+				auto& region = terrain.getRegion(regionCoord);
 				auto& chunkStage = region.populated[regionIdx.x][regionIdx.y];
 
 				if (chunkStage == ChunkStage::TerrainComplete) {
-					chunkStage = ChunkStage::StructuresComplete;
+					layerBlendedBiomeStructures.get(chunkCoord, self(), terrain);
+					chunkStage = ChunkStage::LocalStructuresComplete;
+					//ENGINE_LOG2("ChunkStage::LocalStructuresComplete {} for {}", curSeq, chunkCoord);
+				}
+			}
+
+			// TODO: Can we just iterate over genRequestsBack again and remove the need for totalBlendedBiomeStructuresEvaluatorRequests?
+
+			// All local structures from potentially dependent chunks have been generated meaning
+			// that these chunks are now complete with both local and non-local structures.
+			for (const auto& chunkCoord : totalBlendedBiomeStructuresEvaluatorRequests) {
+				const auto regionCoord = chunkCoord.toRegion();
+				const auto regionIdx = chunkCoord.toRegionIndex(regionCoord);
+				auto& region = terrain.getRegion(regionCoord);
+				auto& chunkStage = region.populated[regionIdx.x][regionIdx.y];
+				
+				if (chunkStage == ChunkStage::LocalStructuresComplete) {
+					chunkStage = ChunkStage::AllStructuresComplete;
+					//ENGINE_LOG2("ChunkStage::AllStructuresComplete {} for {}", curSeq, chunkCoord);
 				}
 			}
 		}
 
 		totalBlendedBiomeBlockRequests.clear();
 		totalBlendedBiomeStructuresRequests.clear();
+		totalBlendedBiomeStructuresEvaluatorRequests.clear();
 		genRequestsBack.clear();
 	}
 }

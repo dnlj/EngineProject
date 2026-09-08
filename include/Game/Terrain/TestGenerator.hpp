@@ -49,7 +49,9 @@ namespace Game::Terrain {
 		std::tuple<Layer::BlendedBiomeStructureInfo>,
 
 		Engine::TupleJoinMembersTypesIfExists_t<ENGINE_TRAIT_MEMBER_TYPE_CHECK(Structure), Biomes>,
-		std::tuple<Layer::BlendedBiomeStructures>
+		std::tuple<Layer::BlendedBiomeStructures>,
+
+		std::tuple<Layer::BlendedBiomeStructuresEvaluator>
 	>;
 
 	using SharedData = Engine::TupleConcat_t<

@@ -10,7 +10,7 @@
 #include <Engine/Debug/debug.hpp>
 
 namespace Game::Terrain::Layer {
-	void BlendedBiomeStructures::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
+	void BlendedBiomeStructuresEvaluator::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
 		// We need to check an expanded area around each requested chunk because structures could
 		// overlap into this chunk or from this chunk into neighbors.
 		constexpr auto maxExtent = []() consteval {
@@ -25,12 +25,14 @@ namespace Game::Terrain::Layer {
 			return max;
 		}();
 		static_assert(maxExtent != 0, "Unexpectedly low maxExtent. This is likely a bug. maxExtent should not be zero unless none of your biomes support structures.");
+		static_assert(maxExtent >= 0, "maxExtent nevChunkUniter be negative.");
 
+		// Get the info for structures that could potentially impact this chunk.
 		chunkCoords.forEach([&](const Partition& centerRequestChunkCoord) ENGINE_INLINE_REL {
 			const UniversalChunkArea requestArea = {
 				.realmId = centerRequestChunkCoord.realmId,
 				.min = centerRequestChunkCoord.pos - maxExtent,
-				.max = centerRequestChunkCoord.pos + maxExtent,
+				.max = centerRequestChunkCoord.pos + maxExtent + ChunkUnit{1},  // +1 because max is exclusive.
 			};
 
 			requestArea.forEach([&](const UniversalChunkCoord& chunkCoord) ENGINE_INLINE_REL {
@@ -40,46 +42,54 @@ namespace Game::Terrain::Layer {
 
 		generator.awaitGeneration();
 
-		// TODO: Cache struct info.
+		// Request the underlying blocks for the full area of each structure that impacts this
+		// request. Since structures can span up to maxStructureExtent, this _may_ end up being
+		// (probably is) a larger area than the original chunkCoords.
 		std::vector<StructureInfo> structures;
 		chunkCoords.forEach([&](const Partition& centerRequestChunkCoord) ENGINE_INLINE_REL {
 			const UniversalChunkArea requestArea = {
 				.realmId = centerRequestChunkCoord.realmId,
 				.min = centerRequestChunkCoord.pos - maxExtent,
-				.max = centerRequestChunkCoord.pos + maxExtent,
+				.max = centerRequestChunkCoord.pos + maxExtent + ChunkUnit{1}, // +1 because max is exclusive.
 			};
 		
 			requestArea.forEach([&](const UniversalChunkCoord& chunkCoord) ENGINE_INLINE_REL {
 				structures.clear();
 				generator.get2<BlendedBiomeStructureInfo>(chunkCoord, structures);
 				
-				if (!structures.empty()) {
-					auto cur = structures.cbegin();
-					const auto end = structures.cend();
-					if (cur != end) {
-						BlockVec minBlock = cur->min;
-						BlockVec maxBlock = cur->max;
+				auto cur = structures.cbegin();
+				const auto end = structures.cend();
+				if (cur != end) {
+					// Figure out the area for all local structures in this chunk.
+					BlockVec minBlock = cur->min;
+					BlockVec maxBlock = cur->max;
 						
-						while (++cur != end) {
-							minBlock = glm::min(minBlock, cur->min);
-							maxBlock = glm::max(maxBlock, cur->max);
-						}
-						
-						UniversalChunkArea area = {
-							.realmId = chunkCoord.realmId,
-							.min = blockToChunk(minBlock),
-							.max = blockToChunk(maxBlock) + ChunkVec{1, 1},
-						};
-						
-						// Ensure the underlying terrain is already generated.
-						area.forEach([&](const UniversalChunkCoord coord){
-							generator.request<BlendedBiomeBlock>(coord);
-							// TODO: forward request to relevant biomes for each struct.
-						});
+					while (++cur != end) {
+						minBlock = glm::min(minBlock, cur->min);
+						maxBlock = glm::max(maxBlock, cur->max);
 					}
+						
+					UniversalChunkArea area = {
+						.realmId = chunkCoord.realmId,
+						.min = blockToChunk(minBlock),
+						.max = blockToChunk(maxBlock) + ChunkUnit{1},
+					};
+						
+					// Ensure the underlying terrain is generated.
+					area.forEach([&](const UniversalChunkCoord coord){
+						generator.request<BlendedBiomeBlock>(coord);
+						// TODO: forward request to relevant biomes for each struct.
+					});
+
+					// Ensure the local structure is generated.
+					generator.request<BlendedBiomeStructures>(chunkCoord);
 				}
 			});
 		});
+	}
+
+	void BlendedBiomeStructures::request(const Range<Partition>& chunkCoords, TestGenerator& generator) {
+		// Nothing to do. Should already be handled in BlendedBiomeStructuresEvaluator.
 	}
 
 	void BlendedBiomeStructures::get(const Index chunkCoord, TestGenerator& generator, Terrain& terrain) const noexcept {
@@ -115,11 +125,13 @@ namespace Game::Terrain::Layer {
 					ENGINE_DEBUG_ONLY(const auto [_, inserted] = generatedStructures.emplace(info));
 					if constexpr (ENGINE_DEBUG) {
 						if (!inserted) {
-							ENGINE_ERROR2("Generating duplicate structure. This is a bug. Either with the generator itself or more likely the the biome structure info layer. Biome: {}; Structure: {}", info.biomeId, info.id);
+							// TODO: currently this can happen because we don't save generated
+							//       terrain and generatedStructures is never cleared.
+							//ENGINE_ERROR2("Generating duplicate structure. This is a bug. Either with the generator itself or more likely the the biome structure info layer. Biome: {}; Structure: {}", info.biomeId, info.id);
 						}
 					}
 
-					generator.get2<typename Biome::Structure>(terrain, chunkCoord.realmId, info);
+					generator.get2<typename Biome::Structure>(terrain, chunkCoord, info);
 				}
 			});
 		}
